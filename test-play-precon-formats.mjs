@@ -23,3 +23,13 @@ const listed=constructedPrecon(deck([card('Angel A',4),lands(56)]),entry);
 assert.equal(playSourceEntries({format:'Modern',precons:[listed]}).precons.length,1,'a Standard-legal list is offered in Modern too');
 assert.equal(playSourceEntries({format:'Commander',precons:[listed]}).precons.length,0);
 console.log('PASS: Standard/Modern precons are published 60-card lists offered only where every card and quantity is legal, unchanged.');
+
+import {weeklyPrecons} from './play-precon-formats.js';
+{
+  const idx = Array.from({length: 120}, (_, i) => ({type: 'Theme Deck', fileName: `D${i}_X.json`}));
+  const a = weeklyPrecons(idx, '2026-W45'), b = weeklyPrecons(idx, '2026-W46');
+  if (a.length !== 5 || new Set(a).size !== 5) throw new Error('five different precons a week');
+  if (JSON.stringify(a) !== JSON.stringify(weeklyPrecons([...idx].reverse(), '2026-W45'))) throw new Error('same week, same five, in any list order');
+  if (JSON.stringify(a) === JSON.stringify(b)) throw new Error('the store rotates weekly');
+  console.log('PASS: the weekly precon store picks five, stable within a week, new each week.');
+}

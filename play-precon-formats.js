@@ -37,3 +37,18 @@ export function constructedPrecon(payload, entry) {
   const merge = list => { const out = new Map(); for (const c of list) out.set(c.name, (out.get(c.name) || 0) + c.count); return [...out].map(([name, qty]) => ({ name, qty })); };
   return { file: entry.fileName, name: d.name || entry.name, released: entry.releaseDate || '', product: entry.type, format: formats[0], formats, commander: '', cards: merge(main), side: merge(side) };
 }
+
+// The weekly precon store (Randall 5 Nov 2026): five constructed precons rotate in each Play week and
+// are the only ones that can be bought whole with coins. Every other precon is built by crafting its
+// missing cards with seals. Deterministic from the week, so the server and every client agree.
+export const WEEKLY_PRECONS = 5;
+const weekHash = s => { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+export function weeklyPrecons(index, week = '', n = WEEKLY_PRECONS) {
+  const pool = [...new Set((index || []).filter(d => CONSTRUCTED_PRECON_TYPES.includes(d?.type) && typeof d.fileName === 'string' && /^[A-Za-z0-9_.-]+$/.test(d.fileName)).map(d => d.fileName.replace(/\.json$/, '')))].sort();
+  const out = []; let h = weekHash('pc:' + week);
+  for (let tries = 0; out.length < Math.min(n, pool.length) && tries < n * 40; tries++) {
+    const f = pool[h % pool.length]; h = Math.imul(h ^ (h >>> 13), 2654435761) >>> 0;
+    if (!out.includes(f)) out.push(f);
+  }
+  return out;
+}

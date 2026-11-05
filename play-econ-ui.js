@@ -119,7 +119,7 @@ export function secretLairShelf(snapshot) {
     <div class="pe-sl-foot">${btn}</div></section>`;
 }
 
-// The Secret Lair store row (Arena's card-style store): ten cards a week, some on sale, a refresh timer.
+// The Secret Lair store row (Arena's card-style store): six cards a week, some on sale, a refresh timer.
 const SEAL_WORD = {c: 'common', u: 'uncommon', r: 'rare', m: 'mythic'};
 export function secretLairStore(snapshot) {
   const s = snapshot.state, st = s?.secretLairStore; if (!st?.offers?.length) return '';
@@ -417,24 +417,24 @@ function preconShelf(snapshot, pc = {}, deckEmblem = null) {
   const s = snapshot.state, owned = ownedByName(s.cards || []);
   if (pc.open) {
     const o = pc.open, rows = o.rows || [], sh = deckShortfall(rows, owned, new Map(rows.map(r => [r.name, r.rarity])));
-    const missing = sh.missing.reduce((t, m) => t + m.need, 0), price = preconPrice(sh.seals, s.config), coins = s.wallet?.coins || 0;
+    const missing = sh.missing.reduce((t, m) => t + m.need, 0), price = preconPrice(sh.seals, s.config), coins = s.wallet?.coins || 0, inStore = !missing || !!(s.preconStore?.files || []).includes(String(o.file || '').replace(/\.json$/, ''));
     const have = new Map(owned), card = r => { const got = isBasicLand(r.name) ? r.qty : Math.min(r.qty, have.get(r.name) || 0); have.set(r.name, Math.max(0, (have.get(r.name) || 0) - got));
       return `<figure class="pe-precon-card${got < r.qty ? ' is-missing' : ''}"><img src="${esc(scryfallImage(r.id) || cardImageByName(r.name))}" alt="${esc(r.name)}" loading="lazy" decoding="async" referrerpolicy="no-referrer"><figcaption>${r.qty}×${got < r.qty ? ` <span>${r.qty - got} new</span>` : ''}</figcaption></figure>`; };
     const main = rows.filter(r => r.board !== 'side'), side = rows.filter(r => r.board === 'side');
     return `<div class="pe-precon-open"><div class="pe-precon-top"><button class="btn ghost" data-act="playEconPreconClose">All precons</button>
       <div class="pe-precon-title"><h3>${keepWords(o.name)}</h3>${(() => { const e = deckEmblem ? deckEmblem({cards: rows, format: o.formats?.[0] || ''}) : null; return e ? `<span class="chip dark deck-format-emblem pe-precon-emblem"><span class="pe-deck-pips" role="img" aria-label="Colors: ${pipLabel(e.colors)}">${deckPips(e.colors)}</span>Precon${e.style ? `<span class="pe-deck-style"> · ${esc(e.style)}</span>` : ''}</span>${e.meta ? `<span class="pe-deck-meta">Meta · ${esc(e.meta)}</span>` : ''}` : ''; })()}<p>${esc(o.product || 'Precon')} · ${esc(year(o.released))}${o.formats?.length ? ' · ' + o.formats.map(esc).join(', ') : ' · Casual'}</p></div>
-      <div class="pe-precon-buy"><p>${missing ? `${missing} card${missing === 1 ? '' : 's'} to add · <b>${price.toLocaleString()} coins</b>` : 'You own every card'}</p>
-      <button class="btn" data-act="playEconBuyPrecon" ${snapshot.busy || (price > coins) ? 'disabled' : ''}>${price > coins ? 'Not enough coins' : missing ? 'Buy deck' : 'Add to my decks'}</button></div></div>
+      <div class="pe-precon-buy"><p>${missing ? `${missing} card${missing === 1 ? '' : 's'} to add${inStore ? ` · <b>${price.toLocaleString()} coins</b>` : ' · craft them with seals'}` : 'You own every card'}</p>
+      ${inStore ? `<button class="btn" data-act="playEconBuyPrecon" ${snapshot.busy || (price > coins) ? 'disabled' : ''}>${price > coins ? 'Not enough coins' : missing ? 'Buy deck' : 'Add to my decks'}</button>` : ''}</div></div>
       <div class="pe-precon-cards">${main.map(card).join('')}</div>
       ${side.length ? `<h4 class="pe-precon-side">Sideboard</h4><div class="pe-precon-cards">${side.map(card).join('')}</div>` : ''}</div>`;
   }
   if (pc.busy && !pc.index) return '<p class="pe-count" role="status">Loading the precon list…</p>';
   if (pc.error) return `<p class="note warn">${esc(pc.error)}</p>`;
   if (!pc.index) return '<button class="btn ghost" data-act="playEconPrecons">Show the precons</button>';
-  const q = (pc.query || '').trim().toLowerCase(), list = pc.index.filter(d => !q || d.name.toLowerCase().includes(q) || (d.code || '').toLowerCase() === q || d.type.toLowerCase().includes(q)), shown = list.slice(0, pc.limit || 12);
+  const q = (pc.query || '').trim().toLowerCase(), weekly = new Set(snapshot.state?.preconStore?.files || []), isWeekly = d => weekly.has(String(d.fileName || '').replace(/\.json$/, '')), list = pc.index.filter(d => !q || d.name.toLowerCase().includes(q) || (d.code || '').toLowerCase() === q || d.type.toLowerCase().includes(q)).sort((a, b) => isWeekly(b) - isWeekly(a)), shown = list.slice(0, pc.limit || 12);
   return `<label class="pe-search"><span>Find a precon</span><input type="search" data-input="playEconPreconQuery" value="${esc(pc.query || '')}" maxlength="80" placeholder="Precon or set name"></label>
     ${pc.busy ? '<p class="pe-count" role="status">Opening the deck box…</p>' : ''}
-    <div class="pe-precon-grid">${shown.map(d => { const f = pc.faces?.[d.fileName], art = f?.id ? artCrop(f.id) : ''; return `<button class="pe-precon${art ? ' has-art' : ''}" data-act="playEconPrecon" data-econ-file="${esc(d.fileName)}" aria-label="${esc(d.name)}, ${esc(d.type)}, ${esc(year(d.releaseDate))}">${art ? `<span class="pe-precon-art" style="background-image:url('${esc(art)}')" aria-hidden="true"></span>` : ''}<span class="set-icon" style="--icon:url('${esc(setIconUrl(String(d.code || '').toLowerCase()))}')" aria-hidden="true"></span><span class="pe-precon-name">${keepWords(d.name)}</span><span class="pe-precon-line">${esc(d.type)} · ${esc(year(d.releaseDate))}</span></button>`; }).join('') || '<p class="pe-count">No precons match.</p>'}</div>
+    <div class="pe-precon-grid">${shown.map(d => { const f = pc.faces?.[d.fileName], art = f?.id ? artCrop(f.id) : ''; return `<button class="pe-precon${art ? ' has-art' : ''}" data-act="playEconPrecon" data-econ-file="${esc(d.fileName)}" aria-label="${esc(d.name)}, ${esc(d.type)}, ${esc(year(d.releaseDate))}">${art ? `<span class="pe-precon-art" style="background-image:url('${esc(art)}')" aria-hidden="true"></span>` : ''}<span class="set-icon" style="--icon:url('${esc(setIconUrl(String(d.code || '').toLowerCase()))}')" aria-hidden="true"></span><span class="pe-precon-name">${keepWords(d.name)}</span><span class="pe-precon-line">${esc(d.type)} · ${esc(year(d.releaseDate))}${isWeekly(d) ? ' · In the store' : ''}</span></button>`; }).join('') || '<p class="pe-count">No precons match.</p>'}</div>
     ${list.length > shown.length ? `<button class="btn ghost" data-act="playEconPreconMore">Show more (${list.length - shown.length})</button>` : ''}`;
 }
 function importPanel(snapshot, check) {

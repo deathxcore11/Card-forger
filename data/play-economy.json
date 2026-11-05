@@ -13,15 +13,6 @@
     "starterDecks": true
   },
   "packPrice": 500,
-  "precon": {
-    "min": 250,
-    "perRarity": {
-      "c": 25,
-      "u": 75,
-      "r": 500,
-      "m": 1500
-    }
-  },
   "sealTrack": {
     "u": 3,
     "r": 5,

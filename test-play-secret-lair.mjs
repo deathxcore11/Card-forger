@@ -14,7 +14,7 @@ const sc = (n, num, artist, released = '2024-04-01', extra = {}) => ({id: id(n),
     cards: Array.from({length: 4}, (_, k) => ({id: id(d * 10 + k), o: ora(d * 10 + (k % 3)), n: k === 3 ? 'Island' : 'Card ' + (d * 10 + k), r: ['common', 'uncommon', 'rare', 'mythic'][k], num: String(k), f: ['nonfoil'], a: 'A'}))}));
   const offers = weeklySecretLairOffers(big, '2026-W45', '2026-11-03', 'sld-0');
   assert.equal(offers.length, SECRET_LAIR_OFFERS, 'ten a week');
-  assert.equal(new Set(offers.map(c => c.o)).size, 10, 'ten different cards');
+  assert.equal(new Set(offers.map(c => c.o)).size, 6, 'six different cards');
   assert.ok(offers.every(c => c.n !== 'Island'), 'no basic lands');
   assert.ok(offers.every(c => !c.id.startsWith('00000000') && !['00000001', '00000002'].includes(c.id.slice(0, 8))), 'never the bundle\'s cards');
   assert.deepEqual(offers.filter(c => c.off).map(c => c.off).sort((a, b) => a - b), [25, 40, 50, 60], 'four on sale');
@@ -26,7 +26,7 @@ const sc = (n, num, artist, released = '2024-04-01', extra = {}) => ({id: id(n),
   assert.equal(secretLairOfferPrice({r: 'rare', off: 60}).coins, 120);
   assert.equal(secretLairOfferPrice({r: 'rare'}, {secretLair: {offerCoins: {rare: 400}}}).coins, 400, 'config retunes it');
   const so = secretLairStoreOffer(big, new Date('2026-11-04T12:00:00Z'));
-  assert.equal(so.week, '2026-W45'); assert.equal(so.ends, '2026-11-09T00:00:00.000Z'); assert.equal(so.offers.length, 10);
+  assert.equal(so.week, '2026-W45'); assert.equal(so.ends, '2026-11-09T00:00:00.000Z'); assert.equal(so.offers.length, 6);
   assert.ok(!JSON.stringify(so).includes('usd'), 'no prices, ever');
 }
 
@@ -46,9 +46,9 @@ const sc = (n, num, artist, released = '2024-04-01', extra = {}) => ({id: id(n),
   assert.ok(w && w.cards.length >= 3, 'a bundle is 3 to 8 cards');
   assert.deepEqual(weeklySecretLair(drops, '2026-W45', '2026-11-03'), w, 'one bundle per week');
   assert.equal(weeklySecretLair(drops, '2026-W45', '2020-01-01'), null, 'unreleased drops are never sold');
-  assert.equal(secretLairPrice({cards: [1, 2, 3]}), 1000, '3 cards: the 1,000-coin floor');
-  assert.equal(secretLairPrice({cards: [1, 2, 3, 4, 5]}), 1500, '300 coins a card');
-  assert.equal(secretLairPrice({cards: Array(12)}), 2500, '2,500 at most');
+  assert.equal(secretLairPrice({cards: [{r: 'rare'}, {r: 'mythic'}, {r: 'common'}]}), 1000, 'priced card by card: 300 + 500 + 200');
+  assert.equal(secretLairPrice({cards: [{r: 'common'}, {r: 'uncommon'}]}), 400, 'two cheap cards, no floor');
+  assert.equal(secretLairPrice({cards: Array(12).fill({r: 'rare'})}), 3600, 'no ceiling');
   assert.deepEqual(secretLairLabel({released: '2024-04-01', artists: ['A', 'B']}), {title: 'Secret Lair · Apr 2024', by: 'Art by A and B'}, 'an honest label: month and artists');
   assert.equal(secretLairImage(id(1)), `https://cards.scryfall.io/normal/front/0/0/${id(1)}.jpg`);
   assert.equal(secretLairImage('../x'), '', 'only real ids make image links');
