@@ -36,8 +36,9 @@ import kotlinx.coroutines.withContext
 
 /** What the Cards tab showed last, so coming back paints at once. How it is sorted and filtered lives in the engine (S.ui), as on the site. */
 private object CardsCache {
-    var model: CollectionCardsModel? = null
-    var q = ""
+    /** Each game's page as last drawn (Magic, Yu-Gi-Oh!, Pokémon). */
+    val models = HashMap<CardGame, CollectionCardsModel>()
+    val q = HashMap<CardGame, String>()
 }
 
 /**
@@ -52,8 +53,11 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
     val profile by Account.profile.collectAsState()
-    var model by remember { mutableStateOf(CardsCache.model) }
-    var query by remember { mutableStateOf(CardsCache.q) }
+    // The game the header's tabs chose (tcg.js A.setGame): Home, Cards and Decks all follow it.
+    remember { CollectionGame.init(context) }
+    val game by CollectionGame.current.collectAsState()
+    var model by remember(game) { mutableStateOf(CardsCache.models[game]) }
+    var query by remember(game) { mutableStateOf(CardsCache.q[game] ?: "") }
     var asked by remember { mutableStateOf<Pair<String, String>?>(null) }
     /** The card pages open over the list, the last on top (a card opened from a card goes back to it). */
     var cards by remember { mutableStateOf(listOf<CardOpen>()) }
@@ -61,24 +65,27 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
     // The view last chosen here (the site keeps it in the account's settings.displayModes; the app keeps it too, as the set page does).
     val prefs = remember { context.getSharedPreferences("collection", android.content.Context.MODE_PRIVATE) }
+    val viewKey = if (game == CardGame.MTG) "cardsView" else "cardsView-" + game.id
     suspend fun paint(control: Pair<String, String>? = null) {
+        val g = game
         val m = withContext(Dispatchers.Default) {
-            prefs.getString("cardsView", null)?.let { v -> if (control?.first != "view") runCatching { CollectionEngine.cardsDo("mtg", "view", v) } }
-            CollectionCardsModel.parse(if (control != null) CollectionEngine.cardsDo("mtg", control.first, control.second) else CollectionEngine.cards("mtg"))
+            prefs.getString(viewKey, null)?.let { v -> if (control?.first != "view") runCatching { CollectionEngine.cardsDo(g.id, "view", v) } }
+            CollectionCardsModel.parse(if (control != null) CollectionEngine.cardsDo(g.id, control.first, control.second) else CollectionEngine.cards(g.id))
         }
-        model = m; CardsCache.model = m
+        if (g == CollectionGame.current.value) { model = m; CardsCache.models[g] = m }
     }
-    // The account's copy, then the names the catalog lacks (prices and pictures fill in as they arrive).
-    LaunchedEffect(session?.userId, revision) { try {
+    // The account's copy, then the names the catalog lacks (prices and pictures fill in as they arrive); for Yu-Gi-Oh! and Pokémon the
+    // shown cards' data (app.js route's tcgEnsureMany), kept for the next visit.
+    LaunchedEffect(session?.userId, revision, game) { try {
         if (!ensureCollection(context, session?.userId, session != null, revision)) return@LaunchedEffect
         paint()
         coroutineScope {
             val repaint = launch { while (true) { delay(1200); paint() } }
-            try { CollectionEngine.refresh("mtg") } finally { repaint.cancel(); withContext(kotlinx.coroutines.NonCancellable) { keepCatalog(context) } }
+            try { CollectionEngine.refresh(game.id) } finally { repaint.cancel(); withContext(kotlinx.coroutines.NonCancellable) { keepCatalog(context) } }
         }
         paint()
         // app.js render() on the Magic Collection view: the day's price refresh (refreshMagicCollectionPrices).
-        if (session != null) CollectionWrites.refreshMagicPrices(context)
+        if (session != null && game == CardGame.MTG) CollectionWrites.refreshMagicPrices(context)
         failed = null
     } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) {
         HomeCache.loaded = null
@@ -91,38 +98,52 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     var seen by remember { mutableStateOf(written) }
     LaunchedEffect(written) { if (written != seen) { seen = written; if (HomeCache.loaded != null) runCatching { paint() } } }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
-    LaunchedEffect(query) {
-        if (query == CardsCache.q) return@LaunchedEffect
-        delay(180); CardsCache.q = query
+    LaunchedEffect(query, game) {
+        if (query == (CardsCache.q[game] ?: "")) return@LaunchedEffect
+        delay(180); CardsCache.q[game] = query
         if (HomeCache.loaded != null) runCatching { paint("search" to query) }
     }
     val site = "https://cardstashy.com/"
     val coll = site + "#collection"
     fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
-    val act = remember {
+    // The website, for what isn't native yet: on Yu-Gi-Oh! or Pokémon it picks that game first (A.setGame), then presses [sel].
+    fun site(sel: String) { val g = CollectionGame.current.value; web(coll, if (g == CardGame.MTG) sel else "[data-act=\"setGame\"][data-game=\"${g.id}\"]\n$sel") }
+    val act = remember(game) {
+        val tcg = game != CardGame.MTG
         CollectionCardsActions(
-            game = { g -> if (g != CardGame.MTG) web(coll, "[data-act=\"setGame\"][data-game=\"${g.id}\"]") },
-            tab = { k -> web(coll, "[data-act=\"collTab\"][data-id=\"${css(k)}\"]") },
-            view = { mode -> prefs.edit().putString("cardsView", mode).apply(); asked = "view" to mode },
-            select = { web(coll, "[data-act=\"batchStart\"]") },
+            game = { g -> CollectionGame.set(g) },
+            tab = { k -> site(if (tcg) "[data-act=\"tCollTab\"][data-id=\"${css(k)}\"]" else "[data-act=\"collTab\"][data-id=\"${css(k)}\"]") },
+            view = { mode -> prefs.edit().putString(viewKey, mode).apply(); asked = "view" to mode },
+            select = { site("[data-act=\"batchStart\"]") },
             menu = { web(coll, "[data-act=\"collMenu\"]") },
             sort = { v -> asked = "sort" to v },
             direction = { v -> asked = "direction" to v },
             filter = { v -> asked = "filter" to v },
             search = { q -> query = q },
             more = { asked = "more" to "" },
-            card = { r -> val tile = if (r.wanted) "[data-act=\"card\"][data-name=\"${css(r.name)}\"]" else "[data-act=\"card\"][data-entry=\"${css(r.id)}\"]"
-                if (nativeCard) cards = cards + CardOpen(r.name, entry = if (r.wanted) "" else r.id, page = coll, tile = tile) else web(coll, tile) },
+            card = { r ->
+                // tcg.js A.tCard (data-id, data-entry): the Yu-Gi-Oh! and Pokémon card page is native; Magic's follows NATIVE_CARD.
+                if (tcg) cards = cards + CardOpen(r.name, entry = if (r.wanted) "" else r.id, page = coll, tile = "[data-act=\"tCard\"][data-id=\"${css(r.cardId)}\"]", game = game.id, id = r.cardId)
+                else { val tile = if (r.wanted) "[data-act=\"card\"][data-name=\"${css(r.name)}\"]" else "[data-act=\"card\"][data-entry=\"${css(r.id)}\"]"
+                    if (nativeCard) cards = cards + CardOpen(r.name, entry = if (r.wanted) "" else r.id, page = coll, tile = tile) else web(coll, tile) } },
             set = { code -> if (code.isNotBlank()) onSet?.invoke(code.lowercase()) ?: web(site + "#set/" + android.net.Uri.encode(code.lowercase()), null) },
             price = { r -> web(coll, "[data-act=\"buyCard\"][data-lot=\"${css(r.id)}\"]") },
-            // app.js A.qty and A.wishRemove, saved here (CollectionWrites).
-            qty = { r, d -> scope.launch { CollectionWrites.act(context, "qty", com.google.gson.JsonObject().apply { addProperty("id", r.id); addProperty("delta", d.toString()) }) } },
+            // app.js A.qty and A.wishRemove (tcg.js A.tEntryQty and A.tWish), saved here (CollectionWrites).
+            qty = { r, d -> scope.launch { if (tcg) CollectionWrites.act(context, "tEntryQty", com.google.gson.JsonObject().apply { addProperty("game", game.id); addProperty("id", r.id); addProperty("delta", d.toString()) })
+                else CollectionWrites.act(context, "qty", com.google.gson.JsonObject().apply { addProperty("id", r.id); addProperty("delta", d.toString()) }) } },
             // app.js A.editLot and A.own: the add sheet, saved here (AddLotSheet).
             edit = { r -> CollectionWrites.openAdd(com.google.gson.JsonObject().apply { addProperty("entry", r.id) }) },
-            got = { r -> CollectionWrites.openAdd(com.google.gson.JsonObject().apply { addProperty("own", r.name) }) },
-            unwish = { r -> scope.launch { CollectionWrites.act(context, "wishRemove", com.google.gson.JsonObject().apply { addProperty("id", r.wishId) }) } },
+            // tcg.js A.tOwn (data-id): the site's Add to collection sheet, saved here (TcgAddSheet).
+            got = { r -> if (tcg) CollectionWrites.tAdding.value = CollectionWrites.TcgAddOpen(com.google.gson.JsonObject().apply { addProperty("id", r.cardId); addProperty("game", game.id) })
+                else CollectionWrites.openAdd(com.google.gson.JsonObject().apply { addProperty("own", r.name) }) },
+            unwish = { r -> scope.launch { if (tcg) CollectionWrites.act(context, "tWish", com.google.gson.JsonObject().apply { addProperty("game", game.id); addProperty("id", r.wishId) })
+                else CollectionWrites.act(context, "wishRemove", com.google.gson.JsonObject().apply { addProperty("id", r.wishId) }) } },
+            pick = { name, v -> asked = "filter" to "$name=$v" },
+            refresh = { site("[data-act=\"tRefreshPrices\"]") },
+            button = { a -> site("[data-act=\"${css(a)}\"]") },
             // A.addCard opens the add sheet here; its "Paste or upload a list" (A.importCollection) is still the website's.
-            emptyAct = { a -> if (a == "addCard") CollectionWrites.openAdd(com.google.gson.JsonObject()) { web(coll, "[data-act=\"importCollection\"]") }
+            emptyAct = { a -> if (tcg) { if (a == "go") web(site + "#search", null) else site("[data-act=\"${css(a)}\"]") }
+                else if (a == "addCard") CollectionWrites.openAdd(com.google.gson.JsonObject()) { web(coll, "[data-act=\"importCollection\"]") }
                 else web(coll, "[data-act=\"${css(a)}\"]") },
         )
     }

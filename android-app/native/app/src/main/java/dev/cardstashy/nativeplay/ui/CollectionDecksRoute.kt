@@ -37,7 +37,8 @@ import kotlinx.coroutines.withContext
 
 /** What the Decks tab showed last, so coming back paints at once. */
 private object DecksCache {
-    var model: CollectionDecksModel? = null
+    /** Each game's page as last drawn. */
+    val models = HashMap<CardGame, CollectionDecksModel>()
     var q = ""
 }
 
@@ -53,22 +54,26 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
     val profile by Account.profile.collectAsState()
-    var model by remember { mutableStateOf(DecksCache.model) }
+    // The game the header's tabs chose (tcg.js A.setGame): Home, Cards and Decks follow it.
+    remember { CollectionGame.init(context) }
+    val game by CollectionGame.current.collectAsState()
+    var model by remember(game) { mutableStateOf(DecksCache.models[game]) }
     var query by remember { mutableStateOf(DecksCache.q) }
     var failed by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
     suspend fun paint() {
         val o = JsonObject().apply { addProperty("q", DecksCache.q) }
-        val m = withContext(Dispatchers.Default) { CollectionDecksModel.parse(CollectionEngine.decks("mtg", o)) }
-        model = m; DecksCache.model = m
+        val g = game
+        val m = withContext(Dispatchers.Default) { CollectionDecksModel.parse(CollectionEngine.decks(g.id, o)) }
+        if (g == CollectionGame.current.value) { model = m; DecksCache.models[g] = m }
     }
     // The account's copy, then the names the catalog lacks (art and power fill in as they arrive).
-    LaunchedEffect(session?.userId, revision) { try {
+    LaunchedEffect(session?.userId, revision, game) { try {
         if (!ensureCollection(context, session?.userId, session != null, revision)) return@LaunchedEffect
         paint()
         coroutineScope {
             val repaint = launch { while (true) { delay(1200); paint() } }
-            try { CollectionEngine.refresh("mtg") } finally { repaint.cancel(); withContext(kotlinx.coroutines.NonCancellable) { keepCatalog(context) } }
+            try { CollectionEngine.refresh(game.id) } finally { repaint.cancel(); withContext(kotlinx.coroutines.NonCancellable) { keepCatalog(context) } }
         }
         paint()
         failed = null
@@ -85,15 +90,19 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     val site = "https://cardstashy.com/"
     val decks = site + "#decks"
     fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
+    // The website, for what isn't native yet: on Yu-Gi-Oh! or Pokémon it picks that game first (A.setGame), then presses [sel].
+    fun page(url: String, sel: String?) { val g = CollectionGame.current.value
+        web(url, if (g == CardGame.MTG) sel else listOfNotNull("[data-act=\"setGame\"][data-game=\"${g.id}\"]", sel).joinToString("\n")) }
     val act = remember {
         CollectionDecksActions(
-            game = { g -> if (g != CardGame.MTG) web(decks, "[data-act=\"setGame\"][data-game=\"${g.id}\"]") },
-            button = { a -> if (a.isNotBlank()) web(decks, "[data-act=\"${css(a)}\"]") },
-            tab = { k -> web(decks, "[data-act=\"decksTab\"][data-id=\"${css(k)}\"]") },
+            game = { g -> CollectionGame.set(g) },
+            button = { a -> if (a.isNotBlank()) page(decks, "[data-act=\"${css(a)}\"]") },
+            tab = { k -> page(decks, "[data-act=\"decksTab\"][data-id=\"${css(k)}\"]") },
             search = { q -> query = q },
             deck = { d ->
                 val id = Regex("^#deck/([^/]+)").find(d.to)?.groupValues?.get(1)?.let(android.net.Uri::decode)
-                if (onDeck != null && id != null) onDeck(id) else web(site + d.to.ifBlank { "#decks" }, null)
+                // A Yu-Gi-Oh! or Pokémon deck (#tdeck/<id>) opens on the website for now.
+                if (onDeck != null && id != null) onDeck(id) else page(site + d.to.ifBlank { "#decks" }, null)
             },
         )
     }

@@ -32,6 +32,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -129,8 +131,17 @@ class CollRow(val id: String, val name: String, val wanted: Boolean, val tier: S
               /** ui.js tileChrome on the art (the gallery shows it): colour emblems, the set symbol in its rarity, the importance mark. */
               val chrome: CollChrome? = null,
               /** .want-tag's word on a wishlist card's art ("Wishlist"). */
-              val wantTag: String = "")
+              val wantTag: String = "",
+              /** A Yu-Gi-Oh! or Pokémon lot: its card's id (A.tCard) and its .lot-sub as pieces. */
+              val cardId: String = "", val pieces: List<CollPiece> = emptyList())
 class CollChrome(val emb: List<Pair<String, String>>, val set: String?, val rarity: String, val title: String, val imp: SiteSvg?)
+/**
+ * One piece of a Yu-Gi-Oh! or Pokémon lot's .lot-sub, in order ([k]): "svg" an emblem (energy disc, level star, attribute), "set" the
+ * start of the set badge (.tset, its [title] and rarity [tone]), "img" a set symbol or rarity mark ([ink]: black ink the site inverts),
+ * "t" words ([bold] the badge's code, [small] its number, [strong] .hp / .lvl). [set]: inside the set badge.
+ */
+class CollPiece(val k: String, val t: String, val bold: Boolean, val small: Boolean, val strong: Boolean, val tone: String, val set: Boolean,
+                val icon: SiteSvg?, val src: String, val alt: String, val ink: Boolean, val title: String)
 
 class CollectionCardsModel(val game: CardGame, val title: String, val banner: String?, val views: List<CollView>, val selectLabel: String, val selectIcon: SiteSvg?,
                            val menu: String, val menuLabel: String, val tabs: List<CollTab>, val emptyTitle: String?, val emptyText: String, val emptyMark: String,
@@ -142,7 +153,11 @@ class CollectionCardsModel(val game: CardGame, val title: String, val banner: St
                            /** The Select button's visible word (shown from 600 dp; the phone keeps the icon). */
                            val selectText: String = "",
                            /** workbench-ui.js modeFor(game, "collection"): gallery, compact (the site's default here) or symbols. */
-                           val mode: String = "compact") {
+                           val mode: String = "compact",
+                           /** tcg.js tcgCollection: the game's filter pills (set, kind, rarity, owned or wishlist), the value line's refresh
+                            *  button (.coll-summary) and the buttons under the list (Copy wishlist, Paste a list, Export CSV). */
+                           val filters: List<CollSelect> = emptyList(), val refresh: SiteSvg? = null, val refreshLabel: String = "",
+                           val actions: List<SiteButton> = emptyList()) {
     companion object {
         private fun JsonObject.s(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asString ?: ""
         private fun JsonObject.b(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asBoolean ?: false
@@ -180,10 +195,14 @@ class CollectionCardsModel(val game: CardGame, val title: String, val banner: St
                         r.s("origin"), r.get("qty")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0, r.b("edit"), r.s("got"), r.o("print"),
                         r.o("chrome")?.let { c -> val cs = c.o("set")
                             CollChrome(c.objs("emb").map { it.s("src") to it.s("alt") }, cs?.s("src")?.let { Regex("/sets/([^/.?]+)\\.svg").find(it)?.groupValues?.get(1) },
-                                cs?.s("rarity") ?: "common", cs?.s("title") ?: "", svg(c.o("imp"))) }, r.s("wantTag"))
+                                cs?.s("rarity") ?: "common", cs?.s("title") ?: "", svg(c.o("imp"))) }, r.s("wantTag"), r.s("cardId"),
+                        r.objs("pieces").map { x -> CollPiece(x.s("k"), x.s("t"), x.b("b"), x.b("s"), x.b("strong"), x.s("tone"), x.b("set"), svg(x.o("icon")),
+                            x.s("src"), x.s("alt").ifBlank { x.s("label") }, x.b("ink"), x.s("title")) })
                 }, j.s("none"), more?.s("label"), more?.get("count")?.asInt ?: 0,
                 j.o("glyphs")?.entrySet()?.mapNotNull { (k, v) -> svg(v.takeIf { it.isJsonObject }?.asJsonObject)?.let { k to it } }?.toMap().orEmpty(),
-                j.o("select")?.s("label") ?: "", j.s("mode").ifBlank { "compact" })
+                j.o("select")?.s("label") ?: "", j.s("mode").ifBlank { "compact" },
+                j.objs("filters").mapNotNull(::select), svg(j.o("refresh")?.o("icon")), j.o("refresh")?.s("aria") ?: "",
+                j.objs("actions").map { SiteButton(it.s("label"), it.s("act"), it.b("ghost"), it.b("chest"), it.s("aria"), svg(it.o("icon"))) })
         }
     }
 }
@@ -214,6 +233,11 @@ class CollectionCardsActions(
     val got: (CollRow) -> Unit = {},
     val unwish: (CollRow) -> Unit = {},
     val emptyAct: (String) -> Unit = {},
+    /** Yu-Gi-Oh! and Pokémon: a filter pill (its name, as the engine gave it, and the value), the value line's refresh
+     *  (data-act tRefreshPrices) and a button under the list (its data-act). */
+    val pick: (String, String) -> Unit = { _, _ -> },
+    val refresh: () -> Unit = {},
+    val button: (String) -> Unit = {},
 )
 
 // ---------------------------------------------------------------- site colours (style.css tokens as the live page computes them)
@@ -351,7 +375,7 @@ private fun CardsPage(m: CollectionCardsModel, top: @Composable (tabs: (@Composa
                 CollTabs(m.tabs, act.tab)
                 if (m.emptyTitle != null) Empty(m, act)
                 else {
-                    Summary(m.summary)
+                    if (m.game != CardGame.MTG) ValueLine(m, act) else Summary(m.summary)
                     Tools(m, act, wide, query)
                 }
             }
@@ -391,9 +415,82 @@ private fun CardsPage(m: CollectionCardsModel, top: @Composable (tabs: (@Composa
                     }
                 }
             }
+            // .actions.wrap: Copy wishlist, Paste a list, Export CSV (btn ghost small), 14 below the list.
+            if (m.actions.isNotEmpty()) item(key = "actions") {
+                @OptIn(ExperimentalLayoutApi::class)
+                FlowRow(Modifier.fillMaxWidth().padding(horizontal = gutter).padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (b in m.actions) Row(Modifier.heightIn(min = 36.dp).clip(RoundedCornerShape(999.dp)).background(GlassFill).border(1.dp, GlassLine, RoundedCornerShape(999.dp))
+                        .clickable { act.button(b.act) }.padding(horizontal = 12.dp, vertical = 7.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        SiteIcon(b.icon, 16.dp, Ink)
+                        Text(b.label, style = sans(13f, 700, Ink))
+                    }
+                }
+            }
         }
     }
     }
+}
+
+/** tcg.js .coll-summary: the collection's value (28 px, 800; it opens Value), then copies and wishlist in muted 13 px; the refresh button at the right. */
+@Composable
+private fun ValueLine(m: CollectionCardsModel, act: CollectionCardsActions) {
+    if (m.summary.isEmpty()) return
+    Row(Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.weight(1f).clickable { act.tab("value") }.semantics { contentDescription = "See collection value" }, horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.Bottom) {
+            m.summary.firstOrNull { it.bold }?.let { Text(it.t, style = sans(28f, 800, Ink, lh = 1.1f, ls = -.56f)) }
+            Text(m.summary.filter { !it.bold }.joinToString("") { it.t }, Modifier.padding(bottom = 3.dp), maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(13f, 400, Mute))
+        }
+        if (m.refresh != null) Box(Modifier.size(40.dp).clip(CircleShape).background(GlassFill).border(1.dp, GlassLine, CircleShape).clickable(onClick = act.refresh)
+            .semantics { contentDescription = m.refreshLabel }, contentAlignment = Alignment.Center) { SiteIcon(m.refresh, 20.dp, Ink) }
+    }
+}
+
+/** A Yu-Gi-Oh! or Pokémon lot's .lot-sub: emblems (16 dp), .hp / .lvl (13 px 800), the set badge (.tset) and the words after it. */
+@Composable
+private fun PieceItems(pieces: List<CollPiece>) {
+    var i = 0
+    while (i < pieces.size) {
+        val p = pieces[i]
+        if (p.k == "set") {
+            var j = i + 1; while (j < pieces.size && pieces[j].set) j++
+            SetBadge(p, pieces.subList(i + 1, j)); i = j; continue
+        }
+        when (p.k) {
+            "svg" -> SiteIcon(p.icon, 16.dp, Ink, Modifier.semantics { if (p.alt.isNotBlank()) contentDescription = p.alt })
+            "img" -> PieceImg(p, 16.dp, 16.dp)
+            else -> if (p.t.isNotBlank()) Text(p.t.trim(), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                style = if (p.strong) sans(13f, 800, Ink) else sans(12f, 400, Mute, lh = 1.35f))
+        }
+        i++
+    }
+}
+
+/** .tset: 1 × 6 padding, 6 corners on surface-2 with its line; set symbol (16) and rarity mark (11 tall), the code bold 11 px, the number 10 px muted (or its rarity's tint). */
+@Composable
+private fun SetBadge(head: CollPiece, parts: List<CollPiece>) {
+    Row(Modifier.clip(RoundedCornerShape(6.dp)).background(Color(0xFF171A20)).border(1.dp, Color(0x1FFFFFFF), RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 1.dp)
+        .semantics { contentDescription = head.title }, horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+        val tint = when (head.tone) { "super" -> Color(0xFF9AD0FF); "ultra" -> Color(0xFFFFD166); "secret" -> Color(0xFFFF8FD8); "rare" -> Color(0xFFCFD6E0); else -> Mute }
+        for (p in parts) when (p.k) {
+            "img" -> if (p.alt.isNotBlank() && p.src.contains("/pks/s/")) PieceImg(p, 16.dp, 16.dp) else PieceImg(p, 28.dp, 11.dp)
+            "svg" -> SiteIcon(p.icon, 12.dp, Ink)
+            else -> if (p.t.isNotBlank()) Text(p.t.trim(), style = if (p.small) sans(10f, 700, tint) else sans(11f, 700, Ink))
+        }
+    }
+}
+
+// img.pks and img.pkr.ink: black ink the site turns light (invert(1) hue-rotate(180deg)).
+// The two in one matrix: CSS's hue-rotate(180deg) rows (H) applied to 255 − x, i.e. −H with 255 added (each row of H sums to 1).
+private val InvertInk = androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(
+    .574f, -1.43f, -.144f, 0f, 255f, -.426f, -.43f, -.144f, 0f, 255f, -.426f, -1.43f, .856f, 0f, 255f, 0f, 0f, 0f, 1f, 0f)))
+
+@Composable
+private fun PieceImg(p: CollPiece, w: Dp, h: Dp) {
+    val painter = heroPainter(p.src.takeIf { it.isNotBlank() }?.let(homeArt)) ?: return
+    val symbol = p.src.contains("/pks/s/")
+    Image(painter, p.alt.ifBlank { null }, Modifier.heightIn(max = h).widthIn(max = w).then(if (symbol) Modifier.size(w, h) else Modifier.height(h)),
+        contentScale = ContentScale.Fit, colorFilter = if (symbol || p.ink) InvertInk else null)
 }
 
 // ---------------------------------------------------------------- header: banner art, title, view switch, Select, ⋯
@@ -510,6 +607,10 @@ private fun Tools(m: CollectionCardsModel, act: CollectionCardsActions, wide: Bo
         }
         Search(query, m.searchPlaceholder, act.search, Modifier.fillMaxWidth())
         Row { m.filter?.let { Pick(it, act.filter, Modifier, big = false) } }
+    }
+    // .filter-pills (Yu-Gi-Oh! and Pokémon): set, kind, rarity and owned or wishlist, 8 apart, scrolling sideways.
+    if (m.filters.isNotEmpty()) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (f in m.filters) Pick(f, { v -> act.pick(f.name, v) }, Modifier.widthIn(max = 260.dp), big = false)
     }
 }
 
@@ -753,6 +854,7 @@ private fun WantInfo(r: CollRow, act: CollectionCardsActions, wide: Boolean, mod
             if (r.wantChip.isNotBlank()) Box(Modifier.clip(RoundedCornerShape(99.dp)).background(Color(0x1FFF7896)).padding(horizontal = 8.dp, vertical = 1.dp)) {
                 Text(r.wantChip, style = sans(11f, 700, Color(0xFFFF8FA3)))
             }
+            if (r.pieces.isNotEmpty()) PieceItems(r.pieces)
             if (r.mana.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) { r.mana.forEach { (src, alt) -> Mana(src, alt) } }
             r.sub.forEach { Text(it.t, style = sans(12f, 400, Mute, lh = 1.35f)) }
         }
@@ -822,6 +924,7 @@ internal fun LotSetBadge(s: CollSet, wide: Boolean, onClick: () -> Unit) {
 @Composable
 private fun SubLine(r: CollRow) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+        if (r.pieces.isNotEmpty()) PieceItems(r.pieces)
         if (r.mana.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) { r.mana.forEach { (src, alt) -> Mana(src, alt) } }
         if (r.sub.isNotEmpty()) Text(buildAnnotatedString {
             for (s in r.sub) if (s.foil) withStyle(SpanStyle(color = FoilInk, fontWeight = FontWeight.Bold)) { append(s.t) } else append(s.t)
@@ -1046,6 +1149,7 @@ private fun SymbolLot(r: CollRow, act: CollectionCardsActions, wide: Boolean, re
             Text(r.name, Modifier.clickable { act.card(r) }, maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(16f, 700, Ink.copy(alpha = .72f), lh = 1.25f))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
                 if (r.wantChip.isNotBlank()) WantChip(r.wantChip, 14.85f)
+                if (r.pieces.isNotEmpty()) PieceItems(r.pieces)
                 if (r.mana.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) { r.mana.forEach { (src, alt) -> Mana(src, alt) } }
                 r.sub.forEach { Text(it.t, style = sans(12f, 400, Mute, lh = 1.35f)) }
             }

@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.ui.BiasAlignment
+import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -73,7 +75,11 @@ class SiteButton(val label: String, val act: String, val ghost: Boolean, val che
 class DeckTileModel(val id: String, val to: String, val cover: String?, val tier: String, val tierColor: String, val format: String, val formatIcon: SiteSvg?,
                     val boxColor: String, val boxCards: List<String>, val dots: List<Pair<String, String>>, val name: String, val line: String,
                     val power: String, val powerLabel: String, val powerLevel: String, val powerTitle: String,
-                    val owned: String, val ownedText: String, val find: String, val findText: String, val bar: Float)
+                    val owned: String, val ownedText: String, val find: String, val findText: String, val bar: Float,
+                    /** tcg.js deckTile (Yu-Gi-Oh!, Pokémon): the cover's fallbacks and "pokemon" for a card's art window (.pk-crop), the
+                     *  legality chip (its words and ok / warn / bad), and every stat as the tile words it (owned, value, to finish). */
+                    val sources: List<String> = emptyList(), val crop: String = "", val check: Pair<String, String>? = null,
+                    val stats: List<Pair<String, String>> = emptyList())
 
 class CollectionDecksModel(val game: CardGame, val title: String, val actions: List<SiteButton>, val tabs: List<CollTab>, val tools: List<SiteButton>,
                            val searchValue: String?, val searchPlaceholder: String, val tiles: List<DeckTileModel>, val none: String,
@@ -92,11 +98,13 @@ class CollectionDecksModel(val game: CardGame, val title: String, val actions: L
                 search?.s("value"), search?.s("placeholder") ?: "",
                 j.objs("tiles").map { t ->
                     val f = t.o("format"); val box = t.o("box"); val p = t.o("power")
-                    DeckTileModel(t.s("id"), t.s("to"), t.o("cover")?.s("src")?.ifBlank { null }, t.s("tier"), t.s("tierColor"), f?.s("name") ?: "", CollectionCardsModel.svg(f?.o("icon")),
+                    DeckTileModel(t.s("id"), t.s("to"), t.o("cover")?.s("src")?.ifBlank { null } ?: t.s("art").ifBlank { null }, t.s("tier"), t.s("tierColor"), f?.s("name") ?: "", CollectionCardsModel.svg(f?.o("icon")),
                         box?.s("color") ?: "", box?.get("cards")?.takeIf { it.isJsonArray }?.asJsonArray?.map { it.asString }.orEmpty(),
                         t.objs("dots").map { it.s("src") to it.s("alt") }, t.s("name"), t.s("line"),
                         p?.s("value") ?: "", p?.s("label") ?: "", p?.s("level") ?: "mid", p?.s("title") ?: "",
-                        t.s("owned"), t.s("ownedText"), t.s("find"), t.s("findText"), t.get("bar")?.takeIf { it.isJsonPrimitive }?.asFloat ?: 0f)
+                        t.s("owned"), t.s("ownedText"), t.s("find"), t.s("findText"), t.get("bar")?.takeIf { it.isJsonPrimitive }?.asFloat ?: 0f,
+                        t.get("sources")?.takeIf { it.isJsonArray }?.asJsonArray?.map { it.asString }.orEmpty(), t.s("crop"),
+                        t.o("check")?.let { it.s("text") to it.s("tone") }, t.objs("stats").map { it.s("value") to it.s("label") })
                 }, j.s("none"), e?.s("title"), e?.s("text") ?: "", e?.objs("actions")?.map(::button).orEmpty())
         }
     }
@@ -267,8 +275,12 @@ private fun DeckTile(d: DeckTileModel, wide: Boolean, modifier: Modifier, onClic
         .clip(shape).background(Surface2).border(1.dp, LineC, shape).clickable(onClick = onClick).semantics { contentDescription = d.name; role = Role.Button }) {
         // .tile-art img (cover, centred) and its tier outline (2 px, offset -2, 6 corners; the tile's own corners clip it).
         Box(Modifier.matchParentSize().padding(1.dp)) {
-            val p = heroPainter(d.cover?.let(homeArt))
-            if (p != null) Image(p, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            // A Yu-Gi-Oh! or Pokémon cover walks its fallbacks (ygoCropArt, pokemonArtCrop); a Pokémon card shows its art window.
+            val raw = if (d.sources.size > 1) firstOf(d.sources) else heroPainter(d.cover?.let(homeArt))
+            val p = if (d.crop == "pokemon" && raw != null) remember(raw) { PkArtCrop(raw) } else raw
+            // .tcg-tile .tile-card-art.cropped (Yu-Gi-Oh!'s cropped art): no zoom, 50 % 35 %.
+            if (p != null) Image(p, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop,
+                alignment = if (d.sources.isNotEmpty() && d.crop != "pokemon") BiasAlignment(0f, -.3f) else Alignment.Center)
             if (tier != null) Box(Modifier.matchParentSize().drawBehind {
                 val w = 2.dp.toPx()
                 drawRoundRect(tier, topLeft = Offset(w / 2, w / 2), size = Size(size.width - w, size.height - w), cornerRadius = CornerRadius(6.dp.toPx()), style = Stroke(w))
@@ -284,6 +296,8 @@ private fun DeckTile(d: DeckTileModel, wide: Boolean, modifier: Modifier, onClic
                     FormatChip(d.format, d.formatIcon)
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) { d.dots.forEach { (src, alt) -> Dot(src, alt) } }
+                // tcg.js: the deck check's chip (dark glass; ok-chip mint, bad-chip coral, warn amber).
+                d.check?.let { (words, tone) -> FormatChip(words, null, when (tone) { "ok" -> Color(0xFFA6F0C4); "bad" -> Color(0xFFFFB3A8); "warn" -> Color(0xFFFFD98A); else -> Color.White }) }
             }
             TileBody(d)
         }
@@ -292,13 +306,13 @@ private fun DeckTile(d: DeckTileModel, wide: Boolean, modifier: Modifier, onClic
 
 /** .chip.dark.deck-format-emblem: the format's emblem (crown, shield or star) and name on black glass. */
 @Composable
-private fun FormatChip(name: String, icon: SiteSvg?) {
+private fun FormatChip(name: String, icon: SiteSvg?, ink: Color = Color.White) {
     if (name.isBlank()) return
     Row(Modifier.clip(RoundedCornerShape(999.dp)).background(Color(0x8C000000)).border(1.dp, Color(0x26FFFFFF), RoundedCornerShape(999.dp))
         .padding(start = 8.dp, end = 9.dp, top = 3.dp, bottom = 3.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
         // .format-emblem: 14 px, filled gold (crown) as the site paints it.
         SiteIcon(icon, 14.dp, Color(0xFFE8B95B), filled = true)
-        Text(name, maxLines = 1, style = sans(12f, 700, Color.White, lh = 1.45f))
+        Text(name, maxLines = 1, style = sans(12f, 700, ink, lh = 1.45f))
     }
 }
 
@@ -319,13 +333,21 @@ private fun TileBody(d: DeckTileModel) {
             shadow = Shadow(Color(0xAA000000), Offset(0f, 2f), 10f)))
         if (d.line.isNotBlank()) Text(d.line, maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(12.5f, 400, Color(0xFFD5D9E0), lh = 1.45f))
         // .tile-stats: 4 below, 10 apart, the find count pushed to the right.
-        Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        val power = @Composable {
             if (d.power.isNotBlank()) Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.semantics { contentDescription = d.powerTitle }) {
                 val (bg, ink) = when (d.powerLevel) { "hi" -> Color(0x406FD29A) to Color(0xFFA6F0C4); "lo" -> Color(0x40F08A7E) to Color(0xFFFFB3A8); else -> Color(0x40E8B95B) to Color(0xFFFFD98A) }
                 Text(d.power, Modifier.clip(RoundedCornerShape(6.dp)).background(bg).padding(horizontal = 6.dp), style = sans(13f, 800, ink, lh = 1.45f))
                 if (d.powerLabel.isNotBlank()) Text(d.powerLabel, style = sans(11.5f, 400, Color(0xFFC4C9D2)))
             }
+        }
+        // tcg.js's tile words every stat (owned, value, to finish) after the power chip; .tile-stats wraps them, 10 apart.
+        if (d.stats.isNotEmpty()) FlowRow(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(2.dp),
+            itemVerticalAlignment = Alignment.CenterVertically) {
+            power(); d.stats.forEach { (v, l) -> Stat(v, l) }
+        }
+        else Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            power()
             if (d.owned.isNotBlank()) Stat(d.owned, d.ownedText)
             Spacer(Modifier.weight(1f))
             if (d.find.isNotBlank()) Stat(d.find, d.findText) else if (d.findText.isNotBlank()) Text(d.findText, style = sans(11.5f, 400, Color(0xFFC4C9D2)))

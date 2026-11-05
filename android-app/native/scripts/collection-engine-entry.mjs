@@ -35,7 +35,7 @@ import {mtgPairQueries, rankPairs, edhPop} from 'WEB/pairing.js';
 import {ICON, actionIcon} from 'WEB/icons.js';
 import {contextAction, contextHeader, deckContextShortcuts} from 'WEB/card-actions.js';
 import {deckBoxMarkup, deckBoxFields, boxAppearance} from 'WEB/deck-box.js';
-import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf, SOURCES as tcgSources, cache as tcgCache, ensureCard as tcgEnsureCard, gs as tcgGs, tcgCardSheet, setContextCard as tcgSetContextCard, currentYgoCatalogue as tcgYgoCatalogue, trackTcgValue, collectionValue as tcgCollectionValue, persistQuoteCache as tcgPersistQuoteCache, entryPrice as tcgEntryPrice, referenceEntryPrice as tcgReferenceEntryPrice, tcgHome, readTcgValueHistory, loadCache as tcgLoadCache, ensureMany as tcgEnsureMany, needsCardRefresh as tcgNeedsRefresh} from 'WEB/tcg.js';
+import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf, SOURCES as tcgSources, cache as tcgCache, ensureCard as tcgEnsureCard, gs as tcgGs, tcgCardSheet, setContextCard as tcgSetContextCard, currentYgoCatalogue as tcgYgoCatalogue, trackTcgValue, collectionValue as tcgCollectionValue, persistQuoteCache as tcgPersistQuoteCache, entryPrice as tcgEntryPrice, referenceEntryPrice as tcgReferenceEntryPrice, tcgHome, tcgCollection, tcgDecks, readTcgValueHistory, loadCache as tcgLoadCache, ensureMany as tcgEnsureMany, needsCardRefresh as tcgNeedsRefresh} from 'WEB/tcg.js';
 import {adjustOwnedLot} from 'WEB/quick-quantity.js';
 import {workspaceSig, isEmptyWorkspace} from 'WEB/cloud.js';
 import {mergeAccountWorkspaces, workspaceContentSig} from 'WEB/sync-merge.js';
@@ -314,6 +314,59 @@ function cardsPage(game, o = {}) {
     glyphs: Object.fromEntries(["minus", "plus", "more", "heart"].map(k => [k, icon(svgIn(tree(ICON[k])))]))};
 }
 
+// tcg.js tcgCollection(): a Yu-Gi-Oh! or Pokémon collection's Cards tab, read into cardsPage's model. The game's own filters
+// (set, kind, rarity, owned or wishlist) come as [filters]; the value line over the list as [summary]; each row keeps its card's id.
+// A Yu-Gi-Oh! or Pokémon lot's .lot-sub in order: the game's emblems (energy discs, level stars, attribute, as svg), the set badge
+// (.tset: set symbol and rarity mark as img, its bold code and small number, its rarity tone) and the words after it.
+function subPieces(n) {
+  const out = [];
+  const walk = (x, st) => { for (const k of x.kids || []) {
+    if (k.text !== undefined) { const t = k.text.replace(/\s+/g, ' '); if (t.trim() || (t === ' ' && out.length)) out.push({k: 't', t, b: st.b, s: st.s, tone: st.tone, set: st.set, strong: st.strong}); continue; }
+    if (!k.tag || k.attrs?.hidden !== undefined || cls('sr-only')(k)) continue;
+    if (k.tag === 'svg') { out.push({k: 'svg', icon: icon(k), label: k.attrs['aria-label'] || text(one(k, tagIs('title'))), set: st.set}); continue; }
+    if (k.tag === 'img') { out.push({k: 'img', src: abs(k.attrs.src || ''), alt: k.attrs.alt || '', ink: cls('ink')(k), set: st.set}); continue; }
+    const c = classes(k), tset = c.includes('tset');
+    if (tset) out.push({k: 'set', title: k.attrs.title || '', tone: ['secret', 'ultra', 'super', 'rare', 'common'].find(x => c.includes(x)) || ''});
+    walk(k, {b: st.b || k.tag === 'b' || k.tag === 'strong', s: st.s || k.tag === 'small', tone: c.find(x => /^rx-/.test(x) && x !== 'rx-code') || st.tone, set: st.set || tset,
+      // .hp and .lvl: 13 px, 800, in the text colour (the rest of the line is the muted 12 px).
+      strong: st.strong || c.includes('hp') || c.includes('lvl')});
+  } };
+  walk(n || {kids: []}, {b: false, s: false, tone: '', set: false, strong: false});
+  return out;
+}
+const tcgSelectOf = sel => { const m = selectOf(sel); if (m && sel.attrs['data-field']) m.name += ':' + sel.attrs['data-field']; return m; };
+function tcgCardsPage(G, o = {}) {
+  tcgFocus(G, 'collection'); const U = tcgUi(G).coll; if (o.limit) U.limit = Number(o.limit) || 120; U.tab = 'cards';
+  const t = tree(tcgCollection()), head = one(t, cls('page-head')), seg = one(t, cls('seg')), empty = one(t, cls('empty'));
+  const view = one(head, cls('view-switch')), batch = one(head, x => x.attrs['data-act'] === 'batchStart');
+  const tools = one(t, cls('coll-tools')), search = one(tools, x => x.tag === 'input'), list = one(t, cls('display-list')), more = one(t, x => x.attrs['data-act'] === 'tCollMore');
+  const sum = one(t, cls('coll-summary')), refresh = one(sum, x => x.attrs['data-act'] === 'tRefreshPrices');
+  return {game: G, mode: modeFor(G, 'collection'), title: text(one(head, tagIs('h1'))), banner: picture(one(head, cls('page-hero-img'))), bannerCard: head?.attrs['data-banner-card'] || '',
+    views: view ? all(view, tagIs('button')).map(b => ({mode: b.attrs['data-mode'], label: b.attrs['aria-label'] || b.attrs.title || '', on: b.attrs['aria-checked'] === 'true', icon: icon(svgIn(b))})) : [],
+    select: batch && {label: text(batch), aria: batch.attrs['aria-label'] || '', icon: icon(svgIn(batch))}, menu: null,
+    tabs: all(seg, tagIs('button')).map(b => ({key: b.attrs['data-id'], label: text(b), on: b.attrs['aria-selected'] === 'true', icon: icon(svgIn(b))})),
+    empty: empty && {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p'))), mark: text(one(empty, cls('empty-mark'))), actions: all(empty, tagIs('button')).map(b => ({label: text(b), act: b.attrs['data-act'] || '', ghost: cls('ghost')(b)}))},
+    // .coll-summary: the collection's value (its button opens Value), copies and wishlist, then the refresh button.
+    summary: sum ? runs({kids: (one(sum, cls('cs-value'))?.kids || [])}) : [], refresh: refresh ? {aria: refresh.attrs['aria-label'] || '', icon: icon(svgIn(refresh))} : null,
+    sort: selectOf(one(tools, x => x.tag === 'select' && x.attrs['data-change'] === 'tCollSort')), direction: selectOf(one(tools, x => x.tag === 'select' && x.attrs['data-change'] === 'tCollDirection')),
+    search: search && {value: search.attrs.value || '', placeholder: search.attrs.placeholder || '', label: search.attrs['aria-label'] || ''},
+    filter: null, filters: all(one(tools, cls('filter-pills')), tagIs('select')).map(tcgSelectOf),
+    rows: list ? all(list, x => cls('lot')(x) && x.tag === 'div').map(n => { const r = lotRow(n), nm = one(n, cls('lot-name')), x = one(n, cls('want-x'));
+      return {...r, cardId: nm?.attrs['data-id'] || '', wishId: x?.attrs['data-id'] || r.wishId, sub: [], pieces: subPieces(one(n, cls('lot-sub')))}; }) : [], none: '',
+    more: more ? {label: text(more), count: Number((/·\s*(\d+)\s+remaining/.exec(text(more)) || [])[1]) || 0} : null,
+    actions: all(one(t, x => cls('actions')(x) && cls('wrap')(x)), tagIs('button')).map(button),
+    glyphs: Object.fromEntries(["minus", "plus", "more", "heart"].map(k => [k, icon(svgIn(tree(ICON[k])))]))};
+}
+// tcg.js's handlers for the Cards tab's controls (C.tCollSort, C.tCollDirection, I.tCollQ, C.tCollSet, C.tCollKind, A.tCollMore), the site's own.
+const tcgCardsAct = {
+  sort: v => TC.tCollSort({value: v}), direction: v => TC.tCollDirection({value: v}), search: v => TI.tCollQ({value: v}), more: () => TA.tCollMore(),
+  // A filter select, by the name tcgSelectOf gave it (data-change, then :data-field).
+  filter: v => { const at = v.indexOf('='), name = v.slice(0, at), value = v.slice(at + 1), [change, field] = name.split(':');
+    if (change === 'tCollSet') TC.tCollSet({value}); else if (change === 'tCollKind') TC.tCollKind({value, dataset: {field}}); else throw Error('unknown filter ' + name); },
+  // workbench-ui.js A.viewSave for area "collection": the game's own settings.displayModes.
+  view: v => { if (['gallery', 'compact', 'symbols'].includes(v)) ((S.state.settings.displayModes ||= {})[tcgGame()] ||= {}).collection = v; },
+};
+
 // icons.js decorateGlyphs: a label that starts with one of these and a space wears that icon in its place (LEAD, as the site has it).
 const LEAD = { "▲": "warn", "●": "stop", "⚔": "sword", "☠": "poison", "🎲": "random", "⚒": "build", "✧": "ideas", "🏆": "trophy", "⇄": "compare", "♡": "heart", "♥": "heartOn", "＋": "plus", "+": "plus", "↥": "import", "↓": "export", "⟳": "refresh", "↻": "flip", "⧉": "copy", "🔗": "link", "🖨": "print", "📷": "camera", "◈": "pack", "☆": "bookmark", "▦": "collection", "📖": "book", "◷": "history", "🛒": "bag", "⌕": "search", "☑": "pick", "⚠": "warn", "🖌": "brush", "✓": "check", "←": "back", "‹": "back", "▧": "scan" };
 const glyph = s => { const m = /^(\s*)(\S)\uFE0F?[ \u00a0](?=\S)/u.exec(s); return m && LEAD[m[2]] && ICON[LEAD[m[2]]] ? {icon: icon(svgIn(tree(ICON[LEAD[m[2]]]))), label: s.slice(m[0].length)} : {icon: null, label: s}; };
@@ -354,6 +407,31 @@ function decksPage(game, o = {}) {
     empty: empty && {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p'))), mark: text(one(empty, cls('empty-mark'))), actions: all(empty, tagIs('button')).map(button)}};
 }
 
+
+// tcg.js deckTile, a Yu-Gi-Oh! or Pokémon deck: its cover (ygoCropArt's cropped art, or pokemonArtCrop's art window), format chip and
+// deck box, the legality chip, name, plan and size, power, then every stat as the tile words it (owned, value, to finish), and the bar.
+function tcgDeckTileModel(n) {
+  const to = n.attrs['data-to'] || '', top = one(n, cls('tile-top')), stack = one(top, cls('deck-format-stack')), box = one(n, cls('deck-box')), body = one(n, cls('tile-body'));
+  const chip = one(n, cls('power-chip')), em = text(one(chip, tagIs('em'))), check = (top?.kids || []).find(k => k.tag && cls('chip')(k));
+  const stats = (one(body, cls('tile-stats'))?.kids || []).filter(k => k.tag === 'span' && !cls('power-chip')(k)).map(k => { const v = text(one(k, tagIs('em'))); return {value: v, label: text(k).slice(v.length).trim()}; });
+  return {id: decodeURIComponent(to.replace(/^#tdeck\//, '')), to, cover: null, ...coverPic(one(n, cls('tile-art'))), tier: '', tierColor: '',
+    format: {name: text(one(stack, cls('chip'))), icon: null},
+    box: box && {color: ((/--deck-box-color:\s*([^;]+)/.exec(box.attrs.style || '') || [])[1] || '').trim(), cards: all(one(box, cls('deck-box-cards')), tagIs('img')).map(i => i.attrs.src || '')},
+    dots: [], check: check ? {text: text(check), tone: cls('bad-chip')(check) ? 'bad' : cls('warn')(check) ? 'warn' : cls('ok-chip')(check) ? 'ok' : ''} : null,
+    name: text(one(body, tagIs('b'))), line: text(one(body, tagIs('small'))),
+    power: chip && {value: em, label: text(chip).slice(em.length).trim(), level: ((/\bp-(hi|mid|lo)\b/.exec(chip.attrs.class || '') || [])[1]) || 'mid', title: chip.attrs.title || ''},
+    stats, bar: widthOf(one(one(body, cls('bar')), tagIs('span'))) / 100};
+}
+// tcg.js tcgDecks(), My decks of a Yu-Gi-Oh! or Pokémon collection, in decksPage's model.
+function tcgDecksPage(G) {
+  tcgFocus(G, 'decks'); S.ui.decksTab = 'mine';
+  const t = tree(tcgDecks()), head = one(t, cls('page-head')), empty = one(t, cls('empty'));
+  return {game: G, title: text(one(head, tagIs('h1'))), actions: all(one(head, cls('row')), tagIs('button')).map(button),
+    tabs: all(one(t, cls('seg')), tagIs('button')).map(b => ({key: b.attrs['data-id'], label: text(b), on: b.attrs['aria-selected'] === 'true', icon: icon(svgIn(b))})),
+    tools: all(one(t, cls('random-tools')), tagIs('button')).map(button), search: null,
+    tiles: all(t, x => cls('deck-tile')(x)).map(tcgDeckTileModel), none: '',
+    empty: empty && {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p'))), mark: text(one(empty, cls('empty-mark'))), actions: all(empty, tagIs('button')).map(button)}};
+}
 
 // views.js deckPage(), the Cards tab: deckShell's hero (deck-viewer.js), the actions under it, the deck tabs, the card toolbar,
 // the cards as deckRow / mtgSideboard draw them, the emblem panel (importance.js deckEmblemHtml) and "Take it to the table".
@@ -2110,15 +2188,17 @@ globalThis.Collection = {
   hints(game) { return json({prompt: SEARCH_PROMPT, first: 4000, every: 4200, fade: 260, pool: hintPool(game, game === 'mtg' ? S.state.collection.map(e => e.name) : (S.state.tcg?.[game]?.collection || []).map(e => e.name))}); },
   // views.js home() / tcg.js tcgHome(), section by section, as models.
   // views.js collection(): the Cards tab, [optsJson] = {sort, direction, filter, q, limit} as the site's controls set them.
-  cards(game, optsJson) { mtgFocus(); return json(cardsPage(game, optsJson ? JSON.parse(optsJson) : {})); },
+  cards(game, optsJson) { const o = optsJson ? JSON.parse(optsJson) : {}; if (game && game !== 'mtg') { const m = tcgCardsPage(game, o); tcgScreenCards(game, 'cards', {ids: m.rows.map(r => r.cardId).filter(Boolean)}); return json(m); } mtgFocus(); return json(cardsPage(game, o)); },
   // One of the page's controls, as the site handles it (cardsAct), then the page again.
   // views.js decks(), My decks; [optsJson] = {q} (I.shelfSearch).
-  decks(game, optsJson) { mtgFocus(); return json(decksPage(game, optsJson ? JSON.parse(optsJson) : {})); },
+  decks(game, optsJson) { if (game && game !== 'mtg') { const m = tcgDecksPage(game); tcgScreenCards(game, 'decks'); return json(m); } mtgFocus(); return json(decksPage(game, optsJson ? JSON.parse(optsJson) : {})); },
   // views.js deckPage(), the Cards tab of deck [id]; deckDo applies one of its controls as the site's handler does (deckAct), then draws it again.
   // [opts] = {search, filter, sort, view}: the controls as the app last left them, applied before the page draws.
   deck(game, id, opts) { mtgFocus(); deckOpen(id); const o = opts ? JSON.parse(opts) : {}; for (const k of Object.keys(deckAct)) if (o[k] != null) deckAct[k](o[k]); return json(deckPageModel(game, id)); },
   deckDo(game, id, kind, value) { if (!deckAct[kind]) throw Error('unknown deck control ' + kind); mtgFocus(); deckOpen(id); deckAct[kind](value); return json(deckPageModel(game, id)); },
-  cardsDo(game, kind, value) { if (!cardsAct[kind]) throw Error('unknown Cards control ' + kind); mtgFocus(); cardsAct[kind](value); return json(cardsPage(game)); },
+  cardsDo(game, kind, value) {
+    if (game && game !== 'mtg') { if (!tcgCardsAct[kind]) throw Error('unknown Cards control ' + kind); tcgFocus(game, 'collection'); tcgCardsAct[kind](value); return json(tcgCardsPage(game)); }
+    if (!cardsAct[kind]) throw Error('unknown Cards control ' + kind); mtgFocus(); cardsAct[kind](value); return json(cardsPage(game)); },
   // views.js cardSheet(): a card's page; [opts] = {name, entry, deck} as the tapped tile has them. cardLoad starts its lookups
   // (the app pumps them with settle()); cardDo applies one of its controls (cardAct).
   card(game, opts) { mtgFocus(); const ctx = cardOpen(JSON.parse(opts)); return json(cardPageModel(ctx)); },
