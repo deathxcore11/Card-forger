@@ -879,8 +879,10 @@ private fun Blocks(blocks: List<CardBlock>, act: CollectionCardActions, meta: Bo
                 Rich(s.runs, sans(15f, 400, Ink, lh = 1.5f), act.rule, Modifier.weight(1f))
             } }
         }
-        "list" -> Column(Modifier.padding(start = 18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            b.items.forEach { s -> Row { Text("•  ", style = sans(15f, 400, Mute, lh = 1.5f)); Rich(s.runs, sans(15f, 400, Ink, lh = 1.5f), act.rule, Modifier.weight(1f)) } }
+        // .card-guide .guide-list: 18 in, 8 apart; the disc marker in gold sits in that 18.
+        "list" -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            b.items.forEach { s -> Row { Box(Modifier.width(18.dp).padding(start = 3.dp)) { Text("•", style = sans(15f, 400, GoldC, lh = 1.5f)) }
+                Rich(s.runs, sans(15f, 400, Ink, lh = 1.5f), act.rule, Modifier.weight(1f)) } }
         }
         "along" -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             b.items.forEach { r -> Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).siteGlass(12.dp).clickable { r.press?.let(::go) }.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -905,9 +907,14 @@ private fun Blocks(blocks: List<CardBlock>, act: CollectionCardActions, meta: Bo
         "head" -> Text(b.text.uppercase(), style = sans(13f, 700, Ink, lh = 1.45f, ls = .78f), modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
         "limits" -> FlowRowEqual2(b.items) { r ->
             val c = when (r.level) { "ok" -> Good; "warn" -> Warn; else -> Bad }
-            Column(Modifier.fillMaxWidth().siteGlass(14.dp).drawBehind { drawRoundRect(c, topLeft = Offset(0f, 9.dp.toPx()), size = Size(3.dp.toPx(), size.height - 18.dp.toPx()),
-                cornerRadius = CornerRadius(3.dp.toPx())) }.padding(start = 14.dp, end = 12.dp, top = 8.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(r.formats, style = sans(11f, 400, Mute, lh = 1.45f)); Text(r.copies, style = sans(13f, 700, c, lh = 1.45f))
+            // polish.css 636-639: 8 12 8 14 in, the level's 3 wide bar 8 from each end; a grid, so a box stretched to its row's
+            // height shares the spare height between its two lines.
+            StretchRows(Modifier.fillMaxSize().siteGlass(14.dp).drawBehind {
+                val bw = 3.dp.toPx(); val r3 = 3.dp.toPx()
+                drawPath(androidx.compose.ui.graphics.Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(-r3, 8.dp.toPx(), bw, size.height - 8.dp.toPx(), CornerRadius(r3))) }, c)
+            }.padding(start = 14.dp, end = 12.dp, top = 8.dp, bottom = 8.dp), gap = 2.dp) {
+                // Only a format it is banned in colours its words (polish.css 640).
+                Text(r.formats, style = sans(11f, 400, Mute, lh = 1.45f)); Text(r.copies, style = sans(13f, 700, if (r.level == "bad") Bad else Ink, lh = 1.45f))
             }
         }
         "rulings" -> Column(Modifier.padding(top = 12.dp).fillMaxWidth().drawBehind { drawRect(LineC, size = Size(size.width, 1.dp.toPx())) }.padding(top = 12.dp)) {
@@ -944,10 +951,23 @@ private fun Blocks(blocks: List<CardBlock>, act: CollectionCardActions, meta: Bo
 
 /** .guide-limits: two equal columns. */
 @Composable
-private fun FlowRowEqual2(items: List<CardItem>, cell: @Composable (CardItem) -> Unit) {
-    Column(Modifier.padding(bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items.chunked(2).forEach { row -> Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            row.forEach { Box(Modifier.weight(1f).fillMaxHeight()) { cell(it) } }; if (row.size == 1) Spacer(Modifier.weight(1f))
+private fun FlowRowEqual2(items: List<CardItem>, cell: @Composable (CardItem) -> Unit) = BoxWithConstraints(Modifier.padding(bottom = 10.dp)) {
+    // grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)), 8 apart; each row as tall as its tallest box.
+    val cols = ((maxWidth + 8.dp) / 140.dp).toInt().coerceAtLeast(1)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        items.chunked(cols).forEach { row -> Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            row.forEach { Box(Modifier.weight(1f).fillMaxHeight()) { cell(it) } }; repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
         } }
     }
+}
+
+/** A grid column of rows: each child at its own height, any spare height shared equally between them (align-content: stretch). */
+@Composable
+private fun StretchRows(modifier: Modifier, gap: Dp, content: @Composable () -> Unit) = androidx.compose.ui.layout.Layout(content, modifier) { ms, c ->
+    val g = gap.roundToPx()
+    val ps = ms.map { it.measure(c.copy(minWidth = 0, minHeight = 0)) }
+    val natural = ps.sumOf { it.height } + g * (ps.size - 1).coerceAtLeast(0)
+    val h = natural.coerceIn(c.minHeight, c.maxHeight)
+    val extra = if (ps.isEmpty()) 0 else (h - natural).coerceAtLeast(0) / ps.size
+    layout(c.maxWidth.takeIf { c.hasBoundedWidth } ?: (ps.maxOfOrNull { it.width } ?: 0), h) { var y = 0; ps.forEach { it.place(0, y); y += it.height + extra + g } }
 }
