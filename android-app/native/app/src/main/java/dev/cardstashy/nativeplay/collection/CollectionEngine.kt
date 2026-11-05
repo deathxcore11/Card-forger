@@ -62,6 +62,18 @@ object CollectionEngine {
     }.toString()
 
     private suspend fun <T> on(block: (QuickJs) -> T): T = withContext(thread) { block(js()) }
+    /**
+     * One turn of the bundle: the answers that came in, its jobs and due timers run, and the fetches it asked for sent. A cancelled
+     * caller can't cut it short (a fetch the bundle asked for that nobody sent would leave its promise open for good). [after]
+     * reads what the caller needs in the same turn ([landed]: an answer came in).
+     */
+    private suspend fun <T> turn(after: (q: QuickJs, p: JsonObject, landed: Boolean) -> T): Pair<JsonObject, T> = withContext(kotlinx.coroutines.NonCancellable + thread) {
+        val q = js(); var landed = false
+        while (true) { val a = answers.poll() ?: break; landed = true; q.evaluate("__host.answer(${a.first}, ${a.second}, ${str(a.third.first)}, ${str(a.third.second)})") }
+        val p = JsonParser.parseString(q.evaluate("__host.pump(${System.currentTimeMillis()})") as String).asJsonObject
+        for (x in p.getAsJsonArray("requests")) send(x.asJsonObject)
+        p to after(q, p, landed)
+    }
     private fun str(v: String) = JsonPrimitive(v).toString()
 
     /** app.js normalize() of the account's workspace data, with the catalog this device saved last time. */
@@ -77,12 +89,7 @@ object CollectionEngine {
         val until = System.currentTimeMillis() + maxMs
         var status = JsonObject()
         while (System.currentTimeMillis() < until) {
-            val (p, s) = on { q ->
-                while (true) { val a = answers.poll() ?: break; q.evaluate("__host.answer(${a.first}, ${a.second}, ${str(a.third.first)}, ${str(a.third.second)})") }
-                JsonParser.parseString(q.evaluate("__host.pump(${System.currentTimeMillis()})") as String).asJsonObject to
-                    JsonParser.parseString(q.evaluate("Collection.poll()") as String).asJsonObject
-            }
-            for (r in p.getAsJsonArray("requests")) send(r.asJsonObject)
+            val (p, s) = turn { q, _, _ -> JsonParser.parseString(q.evaluate("Collection.poll()") as String).asJsonObject }
             status = s
             s.get("step")?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }?.let(onStep)
             if (!s.get("busy").asBoolean && p.get("open").asInt == 0 && answers.isEmpty()) break
@@ -135,13 +142,7 @@ object CollectionEngine {
     suspend fun settle(maxMs: Long = 30_000, model: String? = null, onModel: (JsonObject) -> Unit = {}) {
         val until = System.currentTimeMillis() + maxMs
         while (System.currentTimeMillis() < until) {
-            val (p, m) = on { q ->
-                var landed = false
-                while (true) { val a = answers.poll() ?: break; landed = true; q.evaluate("__host.answer(${a.first}, ${a.second}, ${str(a.third.first)}, ${str(a.third.second)})") }
-                val p = JsonParser.parseString(q.evaluate("__host.pump(${System.currentTimeMillis()})") as String).asJsonObject
-                p to if (model != null && (landed || p.get("ran").asInt > 0)) JsonParser.parseString(q.evaluate(model) as String).asJsonObject else null
-            }
-            for (r in p.getAsJsonArray("requests")) send(r.asJsonObject)
+            val (p, m) = turn { q, p, landed -> if (model != null && (landed || p.get("ran").asInt > 0)) JsonParser.parseString(q.evaluate(model) as String).asJsonObject else null }
             m?.let(onModel)
             // Quiet: nothing in flight and no timer due soon (a far timer, such as a cache's expiry, does not hold the page).
             val nt = p.get("nextTimer")?.takeIf { it.isJsonPrimitive }?.asLong
@@ -221,17 +222,41 @@ object CollectionEngine {
         on { q -> q.evaluate("Collection.act(${str(kind)}, ${str(data.toString())})") }
         val until = System.currentTimeMillis() + 15_000
         while (true) {
-            val (p, r) = on { q ->
-                while (true) { val a = answers.poll() ?: break; q.evaluate("__host.answer(${a.first}, ${a.second}, ${str(a.third.first)}, ${str(a.third.second)})") }
-                JsonParser.parseString(q.evaluate("__host.pump(${System.currentTimeMillis()})") as String).asJsonObject to
-                    JsonParser.parseString(q.evaluate("Collection.actPoll()") as String).asJsonObject
-            }
-            for (x in p.getAsJsonArray("requests")) send(x.asJsonObject)
+            val (p, r) = turn { q, _, _ -> JsonParser.parseString(q.evaluate("Collection.actPoll()") as String).asJsonObject }
             if (r.get("done")?.asBoolean == true) return r
             if (System.currentTimeMillis() > until) return r.apply { addProperty("done", true); addProperty("error", "That took too long. Try again.") }
             if (p.get("ran").asInt == 0) delay(10)
         }
     }
+    /** Pumps the bundle's jobs, timers and fetches until [poll] says done (or [ms] pass); [each] sees every answer on the way. */
+    private suspend fun pumpUntil(poll: String, ms: Long, each: (JsonObject) -> Unit = {}): JsonObject {
+        val until = System.currentTimeMillis() + ms
+        while (true) {
+            val (p, r) = turn { q, _, _ -> JsonParser.parseString(q.evaluate(poll) as String).asJsonObject }
+            each(r)
+            if (r.get("done")?.asBoolean == true || System.currentTimeMillis() > until) return r
+            if (p.get("ran").asInt == 0) delay(10)
+        }
+    }
+    /** The account's sign-in for the site's condition feed. */
+    suspend fun auth(token: String?) { on { q -> q.evaluate("Collection.auth(${str(token ?: "")})") } }
+    /** app.js addSheet: the add / edit sheet's model ({entry} to edit, {own, fromCard} for Got it, {} empty). */
+    suspend fun addOpen(o: JsonObject): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.addOpen(${str(o.toString())})") as String).asJsonObject }
+    suspend fun addClose(id: Int) { on { q -> q.evaluate("Collection.addClose($id)") } }
+    /** app.js A.addLookup: {name, preview, clearPrint} or {error}. */
+    suspend fun addLookup(name: String): JsonObject {
+        on { q -> q.evaluate("Collection.addLookup(${str(name)})") }
+        return pumpUntil("Collection.lookupPoll()", 20_000).also { if (it["done"]?.asBoolean != true) it.addProperty("error", "That took too long. Try again.") }
+    }
+    /** app.js refreshConditionPrice for the add sheet: [paint] gets {blocks, placeholder} at once and again when the feed answers. */
+    suspend fun addPrice(form: JsonObject, retry: Boolean, paint: (JsonObject) -> Unit) {
+        on { q -> q.evaluate("Collection.addPrice(${str(form.toString())}, $retry)") }
+        var last = ""
+        pumpUntil("Collection.pricePoll()", 30_000) { r -> val t = r.toString(); if (t != last) { last = t; paint(r) } }
+    }
+    /** Saves the bundle made outside a tap since the last ask (condition quotes kept on lots). */
+    suspend fun bg(): Int = on { q -> (q.evaluate("Collection.bg()") as Number).toInt() }
+
     /** app.js A.undo: the state before the last undoable change, written the same way; {writes, toasts}. */
     suspend fun undo(): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.undo()") as String).asJsonObject }
     /** The workspace as the account keeps it (this device's copy, and what a push sends). */

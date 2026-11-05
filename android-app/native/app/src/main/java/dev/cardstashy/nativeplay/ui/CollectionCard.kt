@@ -1542,6 +1542,13 @@ private fun History(h: CardHistory, act: CollectionCardActions, vw: Dp, vh: Dp, 
     }
 }
 
+/** The card sheet's site pieces for the other Collection sheets (the add sheet): the glass field, the gold glide, the glass button. */
+internal fun Modifier.siteGlassField(r: Dp): Modifier = glassField(r)
+internal fun Modifier.siteGoldGlide(pal: SheetPal): Modifier = goldGlide(pal)
+@Composable
+internal fun SiteGhost(label: String, modifier: Modifier = Modifier, h: Dp = 44.dp, fs: Float = 13.5f, pad: Dp = 12.dp, onClick: () -> Unit) =
+    Ghost(label, null, modifier, h = h, fs = fs, pad = pad, onClick = onClick)
+
 /** .glide on a segmented control: the gold plate, its 1 gold ring, its soft glow and the light along its top. */
 private fun Modifier.goldGlide(pal: SheetPal): Modifier = this.drawBehind {
     val r = CornerRadius(size.height / 2)

@@ -115,10 +115,13 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             price = { r -> web(coll, "[data-act=\"buyCard\"][data-lot=\"${css(r.id)}\"]") },
             // app.js A.qty and A.wishRemove, saved here (CollectionWrites).
             qty = { r, d -> scope.launch { CollectionWrites.act(context, "qty", com.google.gson.JsonObject().apply { addProperty("id", r.id); addProperty("delta", d.toString()) }) } },
-            edit = { r -> web(coll, "[data-act=\"editLot\"][data-id=\"${css(r.id)}\"]") },
-            got = { r -> web(coll, "[data-act=\"own\"][data-name=\"${css(r.name)}\"]") },
+            // app.js A.editLot and A.own: the add sheet, saved here (AddLotSheet).
+            edit = { r -> CollectionWrites.openAdd(com.google.gson.JsonObject().apply { addProperty("entry", r.id) }) },
+            got = { r -> CollectionWrites.openAdd(com.google.gson.JsonObject().apply { addProperty("own", r.name) }) },
             unwish = { r -> scope.launch { CollectionWrites.act(context, "wishRemove", com.google.gson.JsonObject().apply { addProperty("id", r.wishId) }) } },
-            emptyAct = { a -> web(coll, "[data-act=\"${css(a)}\"]") },
+            // A.addCard opens the add sheet here; its "Paste or upload a list" (A.importCollection) is still the website's.
+            emptyAct = { a -> if (a == "addCard") CollectionWrites.openAdd(com.google.gson.JsonObject()) { web(coll, "[data-act=\"importCollection\"]") }
+                else web(coll, "[data-act=\"${css(a)}\"]") },
         )
     }
     val top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit = { tabs ->

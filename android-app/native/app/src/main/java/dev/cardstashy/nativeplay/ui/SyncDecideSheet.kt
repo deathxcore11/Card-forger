@@ -9,11 +9,13 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -36,6 +38,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -55,7 +59,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -72,7 +78,7 @@ import kotlinx.coroutines.withContext
 private val INK = Color(0xFFEEF0F4)
 private val MUTED = Color(0xFF9AA2B1)
 private fun sans(size: Float, weight: Int, line: Float, color: Color = INK, track: Float = 0f) =
-    TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight(weight), fontSize = size.sp, lineHeight = line.sp, color = color, letterSpacing = track.sp)
+    TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight(weight), fontSize = size.sp, lineHeight = line.sp, color = color, letterSpacing = track.sp, lineHeightStyle = CSS_LINE)
 
 /** views.js when(): new Date(iso).toLocaleString(), or "never". */
 internal fun siteWhen(millis: Long?): String {
@@ -84,9 +90,9 @@ internal fun siteWhen(iso: String?): String = siteWhen(iso?.let { runCatching { 
     ?: runCatching { java.time.Instant.parse(it).toEpochMilli() }.getOrNull() })
 
 /**
- * views.js syncDecideSheet ("choose"), opened from the account panel's "Choose which copy to keep" (app.js A.syncDecide) as the
- * site's #sheet: a bottom sheet on a phone, a centred 720 card from 700 wide, glass over the blurred app. Its buttons are
- * app.js A.syncChoice: replacing the account asks first; keeping the account's copy says so in a toast.
+ * views.js syncDecideSheet ("choose"), opened from the account panel's "Choose which copy to keep" (app.js A.syncDecide) in the
+ * site's #sheet ([SiteSheet]). Its buttons are app.js A.syncChoice: replacing the account asks first; keeping the account's copy
+ * says so in a toast.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -100,6 +106,40 @@ fun SyncDecideSheet(backdrop: GraphicsLayer?, onClose: () -> Unit) {
         value = withContext(Dispatchers.IO) { WorkspaceSync.summarize(Decks.deviceFile(context, p0.userId).takeIf { it.isFile }?.readText()) }
     }
     val cloud = remember(p0) { WorkspaceSync.summarize(p0.cloud.data) }
+    fun choose(c: String) {
+        val pending = WorkspaceSync.pending.value
+        suspend fun run() { if (pending !== WorkspaceSync.pending.value) return; onClose(); WorkspaceSync.resolve(context.applicationContext, c, pending)
+            if (c == "account") CollectionWrites.show("Loaded your account copy. This device’s previous data was downloaded as a backup.") }
+        if (c == "device") CollectionWrites.confirm("Replace your account copy with this device’s? The account copy is downloaded as a backup first.") { run() }
+        else scope.launch { run() }
+    }
+    SiteSheet("Which copy should we keep?", backdrop, onClose) {
+        Text("This device and your account both have cards, and they’re different. The other copy is downloaded as a backup file. Keep that file before continuing. CardStashy doesn’t merge copies automatically, so cards are never counted twice.",
+            Modifier.padding(top = 6.dp), style = sans(13f, 400, 18.85f, MUTED))
+        // .sync-compare: two columns, 8 apart, 12 above and below.
+        Row(Modifier.fillMaxWidth().padding(vertical = 12.dp).height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val l = local
+            Side("This device", l, "Saved " + siteWhen(l?.saved), Modifier.weight(1f))
+            Side("Your account", cloud, "Saved " + siteWhen(p.cloud.updatedAt) + (p.cloud.device?.takeIf { it.isNotEmpty() }?.let { " · $it" } ?: ""), Modifier.weight(1f))
+        }
+        // .actions.wrap (its 10 above collapses into the 12 under the copies): the gold button and the glass one, wrapping; then the link.
+        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SheetButton("Use account copy on this device", ghost = false) { choose("account") }
+            SheetButton("Replace account with device copy", ghost = true) { choose("device") }
+        }
+        Text("Decide later (sync stays paused)", Modifier.clip(RoundedCornerShape(6.dp)).clickable { choose("later") }.padding(vertical = 4.dp),
+            style = sans(13f, 600, 18.85f, Site.Gold))
+    }
+}
+
+/**
+ * The site's #sheet (dialog.sheet): a bottom sheet on a phone, a centred 720 card from 700 wide, glass over the blurred app
+ * (solid where there is no backdrop-filter), springing in. #sheetBody scrolls under its sticky .sheet-head: 8 down at rest,
+ * pinned to the top once scrolled. [content] is the body's, inside its side padding (16, or 22 from 700); its argument is
+ * the screen's width.
+ */
+@Composable
+internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> Unit, content: @Composable ColumnScope.(vw: androidx.compose.ui.unit.Dp) -> Unit) {
     val still = Motion.still
     val fade = remember { Animatable(if (still) 1f else 0f) }
     val y = remember { Animatable(if (still) 0f else 46f) }; val k = remember { Animatable(if (still) 1f else .985f) }; val a = remember { Animatable(if (still) 1f else .2f) }
@@ -113,16 +153,11 @@ fun SyncDecideSheet(backdrop: GraphicsLayer?, onClose: () -> Unit) {
         a.animateTo(1f, keyframes { durationMillis = 420; .2f at 0 using e; 1f at 252 using e })
     }
     BackHandler { onClose() }
-    fun choose(c: String) {
-        val pending = WorkspaceSync.pending.value
-        suspend fun run() { if (pending !== WorkspaceSync.pending.value) return; onClose(); WorkspaceSync.resolve(context.applicationContext, c, pending)
-            if (c == "account") CollectionWrites.show("Loaded your account copy. This device’s previous data was downloaded as a backup.") }
-        if (c == "device") CollectionWrites.confirm("Replace your account copy with this device’s? The account copy is downloaded as a backup first.") { run() }
-        else scope.launch { run() }
-    }
     val dim = androidx.compose.ui.graphics.rememberGraphicsLayer(); val frost = androidx.compose.ui.graphics.rememberGraphicsLayer()
     val sheetBox = remember { arrayOf(androidx.compose.ui.geometry.Rect.Zero) }
     val glass = backdrop != null && android.os.Build.VERSION.SDK_INT >= 31; val bg = Site.Bg
+    val scroll = rememberScrollState()
+    var headH by remember { mutableIntStateOf(0) }
     BoxWithConstraints(Modifier.fillMaxSize()
         .drawBehind {
             // body.glass dialog.sheet::backdrop { background: rgba(4, 5, 8, .45); backdrop-filter: blur(3px) }, fading in.
@@ -134,12 +169,15 @@ fun SyncDecideSheet(backdrop: GraphicsLayer?, onClose: () -> Unit) {
             }
             drawRect(Color(0x73040508), alpha = fade.value)
         }
-        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onClose() }) {
+        // A tap outside the sheet closes it (no semantics of its own: the sheet's close button is the accessible way out).
+        .pointerInput(Unit) { detectTapGestures { onClose() } }
+        .imePadding()) {
+        val vw = maxWidth
         val big = maxWidth >= 700.dp
         val gutter = if (big) 22.dp else 16.dp
         val shape = if (big) RoundedCornerShape(22.dp) else RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
         val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-        Column(Modifier.align(if (big) Alignment.Center else Alignment.BottomCenter)
+        Box(Modifier.align(if (big) Alignment.Center else Alignment.BottomCenter)
             .width(if (big) minOf(720.dp, maxWidth - 32.dp) else minOf(640.dp, maxWidth))
             .heightIn(max = maxHeight * .92f)
             .graphicsLayer { translationY = y.value * density; scaleX = k.value; scaleY = k.value; alpha = a.value }
@@ -165,14 +203,21 @@ fun SyncDecideSheet(backdrop: GraphicsLayer?, onClose: () -> Unit) {
                 drawRect(Color(0x1AFFFFFF), size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx()))
             }
             .border(1.dp, Color(0x31EDC980), shape)
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}) {
+            // Taps on the sheet stay on it.
+            .pointerInput(Unit) { detectTapGestures { } }) {
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            // #sheetBody: 8 over the head, the head's height, then the body; 22 under it (and the navigation bar's).
+            Column(Modifier.fillMaxWidth().verticalScroll(scroll).padding(top = 8.dp + with(density) { headH.toDp() })
+                .padding(start = gutter, end = gutter, bottom = 22.dp + navBottom)) { content(vw) }
             // .sheet-head (glass): sticky, rgba(18, 20, 26, .8), a .06 white rule under it; h2 Manrope 19/800; the 44 close.
-            Row(Modifier.fillMaxWidth().background(if (glass) Color(0xCC12141A) else bg)
+            Row(Modifier.fillMaxWidth().onSizeChanged { headH = it.height }
+                .graphicsLayer { translationY = maxOf(0f, 8.dp.toPx() - scroll.value) }
+                .background(if (glass) Color(0xCC12141A) else bg)
                 .drawBehind { drawRect(Color(0x0FFFFFFF), topLeft = Offset(0f, size.height - 1.dp.toPx()), size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }
-                .padding(start = gutter, end = gutter, top = 12.dp, bottom = 10.dp),
+                .padding(start = gutter, end = gutter, top = 12.dp, bottom = 11.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Which copy should we keep?", Modifier.weight(1f), style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 19.sp,
-                    lineHeight = 21.85.sp, letterSpacing = (-.38).sp, color = INK))
+                Text(title, Modifier.weight(1f), style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 19.sp,
+                    lineHeight = 21.85.sp, letterSpacing = (-.38).sp, color = INK, lineHeightStyle = CSS_LINE))
                 Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF1F232B)).border(1.dp, Color(0xFF2A2F39), RoundedCornerShape(12.dp))
                     .clickable(onClick = onClose).semantics { contentDescription = "Close" }, contentAlignment = Alignment.Center) {
                     // ICON.close: m6.5 6.5 11 11 M17.5 6.5l-11 11, stroke 1.75 on a 24 grid.
@@ -180,23 +225,6 @@ fun SyncDecideSheet(backdrop: GraphicsLayer?, onClose: () -> Unit) {
                         drawLine(INK, Offset(6.5f * u, 6.5f * u), Offset(17.5f * u, 17.5f * u), st.width, StrokeCap.Round)
                         drawLine(INK, Offset(17.5f * u, 6.5f * u), Offset(6.5f * u, 17.5f * u), st.width, StrokeCap.Round) }
                 }
-            }
-            Column(Modifier.verticalScroll(rememberScrollState()).padding(start = gutter, end = gutter, top = 6.dp, bottom = 22.dp + navBottom)) {
-                Text("This device and your account both have cards, and they’re different. The other copy is downloaded as a backup file. Keep that file before continuing. CardStashy doesn’t merge copies automatically, so cards are never counted twice.",
-                    style = sans(13f, 400, 18.85f, MUTED))
-                // .sync-compare: two columns, 8 apart, 12 above and below.
-                Row(Modifier.fillMaxWidth().padding(vertical = 12.dp).height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val l = local
-                    Side("This device", l, "Saved " + siteWhen(l?.saved), Modifier.weight(1f))
-                    Side("Your account", cloud, "Saved " + siteWhen(p.cloud.updatedAt) + (p.cloud.device?.takeIf { it.isNotEmpty() }?.let { " · $it" } ?: ""), Modifier.weight(1f))
-                }
-                // .actions.wrap (its 10 above collapses into the 12 under the copies): the gold button and the glass one, wrapping; then the link.
-                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SheetButton("Use account copy on this device", ghost = false) { choose("account") }
-                    SheetButton("Replace account with device copy", ghost = true) { choose("device") }
-                }
-                Text("Decide later (sync stays paused)", Modifier.clip(RoundedCornerShape(6.dp)).clickable { choose("later") }.padding(vertical = 4.dp),
-                    style = sans(13f, 600, 18.85f, Site.Gold))
             }
         }
     }

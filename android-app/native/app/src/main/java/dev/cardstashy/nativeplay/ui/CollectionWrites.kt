@@ -56,20 +56,78 @@ internal object CollectionWrites {
     }
 
     /**
-     * One saving tap: [kind] is the site's data-act (cardWishlist, cardOwnedQty, qty, wishRemove, tEntryQty, tWish) and [data]
-     * the button's dataset. True when something was saved.
+     * One saving tap: [kind] is the site's data-act (cardWishlist, cardOwnedQty, qty, wishRemove, tEntryQty, tWish, addDelete) and
+     * [data] the button's dataset. True when something was saved.
      */
     suspend fun act(context: Context, kind: String, data: JsonObject): Boolean {
-        val s = Account.session.value ?: run { show("Sign in to save cards to your collection."); return false }
-        val app = context.applicationContext
         pendingAsk = Ask("", kind, data)
-        val r = WorkspaceSync.lock.withLock {
-            if (!ensureCollection(app, s.userId, true, Decks.fullRevision.value)) return false.also { show("Your collection is still loading. Try again in a moment.") }
+        val r = commitAct(context, kind, data) ?: return false
+        val saved = done(r)
+        if (kind == "addDelete" && saved) adding.value = null
+        if (saved) settleLater(context)
+        return saved
+    }
+
+    /** The write itself: under the sync's lock, in the engine holding this device's copy, then that copy written. Null: not run. */
+    private suspend fun commitAct(context: Context, kind: String, data: JsonObject): JsonObject? {
+        val s = Account.session.value ?: run { show("Sign in to save cards to your collection."); return null }
+        val app = context.applicationContext
+        return WorkspaceSync.lock.withLock {
+            if (!ensureCollection(app, s.userId, true, Decks.fullRevision.value)) return null.also { show("Your collection is still loading. Try again in a moment.") }
             val r = CollectionEngine.act(kind, data)
-            if ((r["writes"]?.asInt ?: 0) > 0) { val text = CollectionEngine.saved(); withContext(Dispatchers.IO) { WorkspaceSync.wroteLocally(app, s.userId, text) } }
+            if ((r["writes"]?.asInt ?: 0) > 0 || CollectionEngine.bg() > 0) { val text = CollectionEngine.saved(); withContext(Dispatchers.IO) { WorkspaceSync.wroteLocally(app, s.userId, text) } }
             r
         }
-        return done(r)
+    }
+
+    /**
+     * What a commit sets going after it (app.js: the changed lots' condition quotes, kept on them and saved): the engine runs it
+     * to the end, and anything it saved is written like a tap.
+     */
+    fun settleLater(context: Context) {
+        val app = context.applicationContext
+        settling?.cancel()
+        settling = bg.launch { CollectionEngine.settle(20_000); keepBackground(app) }
+    }
+    private val bg = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO)
+    private var settling: kotlinx.coroutines.Job? = null
+    /** Saves the engine made outside a tap (condition quotes on lots) go to this device's copy and the account. */
+    suspend fun keepBackground(context: Context) {
+        val s = Account.session.value ?: return
+        WorkspaceSync.lock.withLock {
+            if (CollectionEngine.bg() > 0) { val text = CollectionEngine.saved(); WorkspaceSync.wroteLocally(context.applicationContext, s.userId, text); _written.value++ }
+        }
+    }
+
+    /** The add / edit sheet (app.js addSheet): what opened it, and the route's way to the site's list import (not native yet). */
+    data class AddOpen(val req: JsonObject, val onList: (() -> Unit)? = null, val id: Long = System.nanoTime())
+    val adding = MutableStateFlow<AddOpen?>(null)
+    fun openAdd(req: JsonObject, onList: (() -> Unit)? = null) { adding.value = AddOpen(req, onList) }
+    /** app.js closeSheet for the add sheet whose model said [ctx]. */
+    fun addClosed(ctx: Int) { bg.launch { CollectionEngine.addClose(ctx) } }
+
+    /**
+     * app.js addSheet's model for [req] ({entry} to edit a lot, {own, fromCard} for Got it, {} empty): this device's collection
+     * held by the engine, and the account's sign-in handed to the condition feed. Null (with a toast) when it can't open.
+     */
+    suspend fun addModel(context: Context, req: JsonObject): JsonObject? {
+        val s = Account.session.value ?: return null.also { show("Sign in to save cards to your collection.") }
+        val app = context.applicationContext
+        val token = Account.token()
+        return WorkspaceSync.lock.withLock {
+            if (!ensureCollection(app, s.userId, true, Decks.fullRevision.value)) return null.also { show("Your collection is still loading. Try again in a moment.") }
+            CollectionEngine.auth(token)
+            CollectionEngine.addOpen(req)
+        }
+    }
+
+    /** app.js saveLot: the form's save. Null when saved (the sheet closes, the toast says so); otherwise the words for under the form. */
+    suspend fun addSave(context: Context, form: JsonObject): String? {
+        val r = commitAct(context, "addSave", form) ?: return "Your collection is still loading. Try again in a moment."
+        r["error"]?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }?.let { return it }
+        if ((r["writes"]?.asInt ?: 0) == 0) return null.also { adding.value = null }
+        done(r); adding.value = null; settleLater(context)
+        return null
     }
 
     /** app.js A.undo: the toast's Undo. */
@@ -79,7 +137,7 @@ internal object CollectionWrites {
         val r = WorkspaceSync.lock.withLock {
             if (!ensureCollection(app, s.userId, true, Decks.fullRevision.value)) return
             val r = CollectionEngine.undo()
-            if ((r["writes"]?.asInt ?: 0) > 0) { val text = CollectionEngine.saved(); withContext(Dispatchers.IO) { WorkspaceSync.wroteLocally(app, s.userId, text) } }
+            if ((r["writes"]?.asInt ?: 0) > 0 || CollectionEngine.bg() > 0) { val text = CollectionEngine.saved(); withContext(Dispatchers.IO) { WorkspaceSync.wroteLocally(app, s.userId, text) } }
             r
         }
         done(r)

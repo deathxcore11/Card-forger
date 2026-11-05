@@ -164,4 +164,111 @@ class CollectionWritesTest {
         CollectionEngine.act("cardWishlist", JsonObject().apply { addProperty("game", "mtg"); addProperty("name", "Sol Ring"); addProperty("id", "") })
         assertEquals(0, JsonParser.parseString(CollectionEngine.saved()).asJsonObject.getAsJsonArray("valueHistory").size())
     }
+
+    /** app.js addSheet and saveLot: Save without lookup adds the lot, the edit sheet's save changes it (the site's fixtures). */
+    @Test fun addSheetSaves() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        // The empty sheet (A.addCard): nothing looked up, so only Save without lookup can save.
+        val add = fx("add-card-mtg.json")
+        CollectionEngine.load(add["before"].asJsonObject, null)
+        val m = CollectionEngine.addOpen(JsonObject())
+        println("ADD $m")
+        assertEquals("Add to collection", m["title"].asString); assertEquals("Add to collection", m["save"].asString)
+        assertEquals(false, m["canSave"].asBoolean); assertEquals(false, m["editing"].asBoolean)
+        assertEquals("Look up the card, check the picture, then save.", m["empty"].asString)
+        assertEquals("1", m["qty"].asString); assertEquals("nonfoil", m["finish"].asString); assertEquals("Near Mint", m["condition"].asString); assertEquals("en", m["language"].asString)
+        val loc = m.getAsJsonObject("location")
+        assertEquals("Where it lives", loc["label"].asString)
+        assertEquals("""[["","Unsorted / no location"],["binder:new","＋ Create a binder…"],["new","＋ Add a new location…"]]""", loc["options"].toString())
+        assertEquals("Choose a binder, a saved location, or create one when you save this card.", loc["hint"].asString)
+        val form = add["form"].asJsonObject
+        val r = CollectionEngine.act("addSave", JsonObject().apply {
+            addProperty("name", form["name"].asString); addProperty("qty", form["qty"].asInt.toString()); addProperty("value", "")
+            addProperty("set", ""); addProperty("number", ""); addProperty("finish", form["finish"].asString); addProperty("language", form["language"].asString)
+            addProperty("condition", form["condition"].asString); addProperty("location", ""); addProperty("picker", ""); addProperty("unverified", true)
+        })
+        println("ADD SAVE $r")
+        assertTrue(r.toString(), r["error"] == null)
+        assertEquals(1, r["writes"].asInt)
+        assertEquals(add["toast"].asString, r.getAsJsonArray("toasts")[0].asJsonObject["text"].asString)
+        val after = clean(JsonParser.parseString(CollectionEngine.saved()))
+        after.getAsJsonArray("collection").forEach { e -> val o = e.asJsonObject; if (o["id"].asString != "l1") o.addProperty("id", "fx-lot-new") }
+        assertEquals(clean(add["after"]), after)
+
+        // The edit sheet (A.editLot): the lot's own values, then its save (A.addSave) with what the fixture's form changed.
+        val edit = fx("lot-edit.json")
+        val catalog = """{"lightning bolt":{"name":"Lightning Bolt","type_line":"Instant","set":"lea","prices":{"usd":"1.50"}}}"""
+        CollectionEngine.load(edit["before"].asJsonObject, catalog)
+        val e = CollectionEngine.addOpen(JsonObject().apply { addProperty("entry", "l1") })
+        println("EDIT $e")
+        assertEquals("Edit card", e["title"].asString); assertEquals("Save changes", e["save"].asString); assertEquals(true, e["editing"].asBoolean)
+        assertEquals("Lightning Bolt", e["name"].asString); assertEquals("2", e["qty"].asString); assertEquals(true, e["canSave"].asBoolean)
+        assertEquals("Reference $1.50 · LEA", e.getAsJsonObject("preview")["line"].asString)
+        val ef = edit["form"].asJsonObject
+        val s = CollectionEngine.act("addSave", JsonObject().apply {
+            addProperty("name", "Lightning Bolt"); addProperty("qty", ef["qty"].asInt.toString()); addProperty("value", ef["manualValue"].asDouble.toString())
+            addProperty("set", ""); addProperty("number", ""); addProperty("finish", ef["finish"].asString); addProperty("language", "en")
+            addProperty("condition", ef["condition"].asString); addProperty("location", ef["location"].asString); addProperty("picker", "new")
+        })
+        println("EDIT SAVE $s")
+        assertTrue(s.toString(), s["error"] == null)
+        assertEquals(edit["toast"].asString, s.getAsJsonArray("toasts")[0].asJsonObject["text"].asString)
+        val lot = clean(JsonParser.parseString(CollectionEngine.saved())).getAsJsonArray("collection")[0].asJsonObject
+        // A save after a lookup marks the name as checked (saveLot: e.nameVerified); the fixture's form was saved past it.
+        assertEquals(true, lot.remove("nameVerified")?.asBoolean)
+        assertEquals(clean(edit["after"]).getAsJsonArray("collection")[0], lot)
+        assertEquals(clean(edit["after"])["settings"], clean(JsonParser.parseString(CollectionEngine.saved()))["settings"])
+    }
+
+    /** saveLot's own checks, word for word; A.addDelete asks first; A.own fills the sheet with the card. */
+    @Test fun addSheetChecksAndDelete() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        val edit = fx("lot-edit.json")
+        val catalog = """{"lightning bolt":{"name":"Lightning Bolt","type_line":"Instant","set":"lea","prices":{"usd":"1.50"}}}"""
+        CollectionEngine.load(edit["before"].asJsonObject, catalog)
+        CollectionEngine.addOpen(JsonObject())
+        suspend fun save(vararg kv: Pair<String, String>) = CollectionEngine.act("addSave", JsonObject().apply { addProperty("unverified", true); kv.forEach { (k, v) -> addProperty(k, v) } })
+        assertEquals("Look up or type a card name first.", save("name" to " ", "qty" to "1")["error"].asString)
+        assertEquals("Copies must be a whole number from 1 to 100000.", save("name" to "Sol Ring", "qty" to "0")["error"].asString)
+        assertEquals("Copies must be a whole number from 1 to 100000.", save("name" to "Sol Ring", "qty" to "1.5")["error"].asString)
+        assertEquals("Enter a non-negative value or leave it blank.", save("name" to "Sol Ring", "qty" to "1", "value" to "-1")["error"].asString)
+        assertEquals(clean(edit["before"]), clean(JsonParser.parseString(CollectionEngine.saved())))
+        // Got it (A.own): the card, looked up already, one copy.
+        val own = CollectionEngine.addOpen(JsonObject().apply { addProperty("own", "Lightning Bolt") })
+        assertEquals("Lightning Bolt", own["name"].asString); assertEquals(true, own["canSave"].asBoolean); assertEquals("1", own["qty"].asString)
+        assertEquals("Instant", own.getAsJsonObject("preview")["type"].asString)
+        // Delete: asked, then removed on a yes.
+        CollectionEngine.addOpen(JsonObject().apply { addProperty("entry", "l1") })
+        val q = CollectionEngine.act("addDelete", JsonObject())
+        assertEquals("Delete 2× Lightning Bolt from your collection?", q["ask"].asString); assertEquals(0, q["writes"].asInt)
+        val yes = CollectionEngine.act("addDelete", JsonObject().apply { addProperty("confirmed", true) })
+        assertEquals(1, yes["writes"].asInt)
+        assertEquals("Removed from collection.", yes.getAsJsonArray("toasts")[0].asJsonObject["text"].asString)
+        assertEquals(0, JsonParser.parseString(CollectionEngine.saved()).asJsonObject.getAsJsonArray("collection").size())
+        // A lot that is gone can't be edited.
+        assertEquals("This card is no longer in your collection.", CollectionEngine.addOpen(JsonObject().apply { addProperty("entry", "l1") })["error"].asString)
+    }
+
+    /** refreshConditionPrice on the add sheet: the card's reference painted at once, read back block by block. */
+    @Test fun addSheetConditionPreview() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        val edit = fx("lot-edit.json")
+        CollectionEngine.load(edit["before"].asJsonObject, null)
+        CollectionEngine.addOpen(JsonObject())
+        var painted: JsonObject? = null
+        CollectionEngine.addPrice(JsonObject().apply { addProperty("condition", "Near Mint"); addProperty("finish", "nonfoil"); addProperty("language", "en"); addProperty("value", "") }, false) { painted = it }
+        println("PRICE $painted")
+        val b = painted!!.getAsJsonArray("blocks").map { it.asJsonObject }
+        assertEquals("label", b[0]["k"].asString); assertEquals("Near Mint · USD per copy", b[0]["text"].asString)
+        assertEquals("state", b[1]["k"].asString); assertEquals("Condition price unavailable", b[1]["text"].asString)
+        assertEquals("desc", b[2]["k"].asString)
+        assertEquals("No matching quote is available for this condition and version. You can record a per-copy value. This copy is excluded from your total until it has a value.", b[2]["text"].asString)
+        // A value of your own: its amount and the dashed Custom pill.
+        CollectionEngine.addPrice(JsonObject().apply { addProperty("condition", "Near Mint"); addProperty("finish", "nonfoil"); addProperty("language", "en"); addProperty("value", "2.5") }, false) { painted = it }
+        val h = painted!!.getAsJsonArray("blocks").map { it.asJsonObject }.first { it["k"].asString == "hero" }
+        assertEquals("$2.50", h["amount"].asString); assertEquals("Custom", h["kind"].asString); assertEquals(true, h["custom"].asBoolean)
+    }
 }

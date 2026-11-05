@@ -2,6 +2,7 @@ package dev.cardstashy.nativeplay.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,6 +55,14 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
             CollectionEngine.cardModel().takeIf { it.size() > 0 }?.let { model = CollectionCardModel.parse(it) }
         }
     }
+    // A save made over this page (the add sheet's): the page is read again, so its owned count is the new one.
+    val written by CollectionWrites.written.collectAsState()
+    var seenWrite by remember(open) { mutableStateOf(written) }
+    LaunchedEffect(written) {
+        if (written == seenWrite) return@LaunchedEffect
+        seenWrite = written
+        runCatching { CollectionEngine.cardModel().takeIf { it.size() > 0 }?.let { model = CollectionCardModel.parse(it) } }
+    }
     LaunchedEffect(asked) {
         val (kind, value) = asked ?: return@LaunchedEffect
         runCatching {
@@ -79,6 +88,8 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
             p.act == "set" && !d["code"].isNullOrBlank() -> onSet?.invoke(d.getValue("code").lowercase()) ?: web("https://cardstashy.com/#set/" + android.net.Uri.encode(d.getValue("code").lowercase()), null)
             // The heart and the owned − / ＋ save here: the site's handler, then the page again (CollectionWrites).
             p.act in CollectionWrites.CARD_ACTS -> scope.launch { if (CollectionWrites.act(context, p.act, dataset(d))) CollectionEngine.cardModel().takeIf { it.size() > 0 }?.let { model = CollectionCardModel.parse(it) } }
+            // pricing-presentation.js's Add to collection (A.own): the add sheet with this printing, saved here.
+            p.act == "own" && !d["name"].isNullOrBlank() -> CollectionWrites.openAdd(JsonObject().apply { addProperty("own", d.getValue("name")); addProperty("fromCard", true) })
             p.act == "magicVersionsMore" -> asked = "more" to ""
             p.act == "flipFace" -> asked = "face" to ""
             p.act == "cardTab" && d["tab"] in setOf("overview", "meta", "guide", "prices") -> asked = "tab" to d.getValue("tab")

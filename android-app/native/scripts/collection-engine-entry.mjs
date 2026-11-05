@@ -3,7 +3,7 @@
 // Nothing is decided here: every number, list and order comes from the site's functions; this file only calls them
 // and hands their models to the app instead of HTML.
 import {S, blank, meta, cacheCard, slim, inv, uid} from 'WEB/store.js';
-import {cardKey} from 'WEB/core.js';
+import {cardKey, typeText, cardPrice} from 'WEB/core.js';
 import {validateWorkspace} from 'WEB/confidence.js';
 import {normalizeHomeDeckActivity, recordHomeDeckWork} from 'WEB/home-deck-activity.js';
 import {collectionValue, recordValuePoint} from 'WEB/insights.js';
@@ -13,23 +13,27 @@ import {dailyDetails, todaySetMarkup} from 'WEB/home-today.js';
 import {hintPool, SEARCH_PROMPT} from 'WEB/search-hints.js';
 import {useMyPrices, ensureTcgPrices} from 'WEB/mtg-tcgprice.js';
 import {formatOf} from 'WEB/formats.js';
-import {art, esc, registerSetIcons} from 'WEB/ui.js';
+import {art, esc, registerSetIcons, usd, options as htmlOptions} from 'WEB/ui.js';
 import {createScryfallClient} from 'WEB/scryfall-client.js';
 import {loadMeta, metaState, allCachedMeta} from 'WEB/meta.js';
 import {mtgMetaKey} from 'WEB/power.js';
 import {loadCommunity, communitySlides} from 'WEB/community-feed.js';
 import {loadPulse} from 'WEB/news-pulse.js';
-import {collection as collectionPage, decks as decksView, deckPage as deckView, cardSheet as cardView, setsPage as setsView, setPage as setView} from 'WEB/views.js';
+import {collection as collectionPage, decks as decksView, deckPage as deckView, cardSheet as cardView, setsPage as setsView, setPage as setView, rowsFor} from 'WEB/views.js';
 import {loadMagicPrintingPage, mergeMagicCards} from 'WEB/catalog-tools.js';
 import {magicOwnedDetail, magicOwnedContext, magicOwnedCurrent} from 'WEB/magic-owned-detail.js';
 import {selectPreviewFinish, finishAttrs} from 'WEB/finish-preview.js';
-import {selectedFinish, quoteForContext} from 'WEB/pricing-presentation.js';
+import {selectedFinish, quoteForContext, conditionBuyLink} from 'WEB/pricing-presentation.js';
+import {conditionName, conditionValue, conditionPriceHtml, conditionManualPlaceholder} from 'WEB/condition-value.js';
+import {configureConditionAuth, clearConditionAttempts, forgetConditionAttempt, loadConditionQuotes, applyConditionQuotes, conditionRequest, conditionQuoteEntry, CONDITION_IDENTITY} from 'WEB/condition-feed.js';
+import {createConditionRefreshScheduler, changedConditionLots, conditionLotIdentity} from 'WEB/condition-refresh-scheduler.js';
+import {locationPicker, rememberLocation} from 'WEB/collection-locations.js';
 import {quoteModel, recordQuote, HISTORY_RANGES, modeFor} from 'WEB/workbench-ui.js';
 import {loadSharedHistory} from 'WEB/shared-history.js';
 import {playedAlongside} from 'WEB/guide.js';
 import {mtgPairQueries, rankPairs, edhPop} from 'WEB/pairing.js';
 import {ICON} from 'WEB/icons.js';
-import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf, SOURCES as tcgSources, cache as tcgCache, ensureCard as tcgEnsureCard, gs as tcgGs, tcgCardSheet, setContextCard as tcgSetContextCard, currentYgoCatalogue as tcgYgoCatalogue, trackTcgValue, collectionValue as tcgCollectionValue} from 'WEB/tcg.js';
+import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf, SOURCES as tcgSources, cache as tcgCache, ensureCard as tcgEnsureCard, gs as tcgGs, tcgCardSheet, setContextCard as tcgSetContextCard, currentYgoCatalogue as tcgYgoCatalogue, trackTcgValue, collectionValue as tcgCollectionValue, persistQuoteCache as tcgPersistQuoteCache} from 'WEB/tcg.js';
 import {adjustOwnedLot} from 'WEB/quick-quantity.js';
 import {workspaceSig, isEmptyWorkspace} from 'WEB/cloud.js';
 import {mergeAccountWorkspaces, workspaceContentSig} from 'WEB/sync-merge.js';
@@ -41,7 +45,7 @@ import {packEligible, setImageUrl, setArtworkSources} from 'WEB/set-experience.j
 import {packTemplateArt, packArtSources} from 'WEB/pack-wrappers.js';
 import {pkCatalogueSymbolSources, pkRarity} from 'WEB/emblems.js';
 import {rarityKind} from 'WEB/rarity-emblem.js';
-import {cardImage} from 'WEB/ui.js';
+import {cardImage, img as imgHtml} from 'WEB/ui.js';
 import {massEntryUrl} from 'WEB/buy.js';
 
 // app.js:193-198, verbatim.
@@ -53,8 +57,16 @@ const stripCache = (s) => {
 const normalize = (s) => normalizeHomeDeckActivity(stripCache({ ...blank(), ...validateWorkspace(s) }));
 const key = cardKey;
 
-// app.js resolveNames (497-527), verbatim but for the progress line and the catalog save (the app keeps the catalog).
 const api = createScryfallClient();
+// app.js resolve (489-495), verbatim.
+async function resolve(name, fuzzy = false, refresh = false) {
+  if (!String(name || "").trim()) throw Error("No card name given.");
+  const c = meta(name);
+  if (c && !refresh) return c;
+  const d = await api("/cards/named?" + new URLSearchParams({ [fuzzy ? "fuzzy" : "exact"]: name }));
+  return cacheCard(d, [name]);
+}
+// app.js resolveNames (497-527), verbatim but for the progress line and the catalog save (the app keeps the catalog).
 async function resolveNames(names, progress = () => {}, refresh = false, current = () => true) {
   const wanted = [...new Map(names.filter(Boolean).map((n) => [key(n), n])).values()].filter((n) => refresh || !meta(n)),
     failed = [],
@@ -1316,6 +1328,8 @@ function commit(fn, {msg = '', undo = '', guard = null, navigationWrite = false,
     valid.lastSavedAt = new Date().toISOString();
     S.state = valid;
     commits++;
+    const changedLots = changedConditionLots(previous, valid);
+    if (changedLots.length) setTimeout(() => refreshChangedConditions(changedLots), 0);
     useMyPrices(S.state.myPrices); // app.js render(): the account's own prices count in every value
     if (undo) { lastUndo = {state: before, label: undo}; toasts.push({text: msg || undo, undo: true}); } else if (msg) toasts.push({text: msg, undo: false});
     return out;
@@ -1393,7 +1407,260 @@ const writeActs = {
   // tcg.js A.tEntryQty and A.tWish, the site's own handlers, for a Yu-Gi-Oh! or Pokémon lot (the game's page holds settings.game).
   async tEntryQty(d) { tcgFocus(d.game, S.ui.view || 'collection'); await TA.tEntryQty({dataset: d}); },
   async tWish(d) { tcgFocus(d.game, S.ui.view || 'collection'); await TA.tWish({dataset: d}); },
+  // app.js saveLot: the add sheet's Add to collection / Save changes ([d]: the form; unverified: Save without lookup). Its words go
+  // back as the error, shown under the form.
+  async addSave(d) {
+    const ctx = addCtx, unverified = !!d.unverified,
+      editing = ctx?.entry,
+      name = unverified ? String(d.name || '').trim() : ctx?.lookup?.name;
+    if (!name) throw Error('Look up or type a card name first.');
+    const qty = Number(d.qty);
+    if (!Number.isInteger(qty) || qty < 1 || qty > 100000) throw Error('Copies must be a whole number from 1 to 100000.');
+    const rawValue = d.value || '', manualValue = rawValue === '' ? null : Number(rawValue);
+    if (manualValue !== null && (!Number.isFinite(manualValue) || manualValue < 0)) throw Error('Enter a non-negative value or leave it blank.');
+    const e = {
+      ...(editing || {}),
+      manualValue, manualValueCondition: conditionName(d.condition),
+      id: editing?.id || uid(),
+      name,
+      qty,
+      set: String(d.set || '').trim(),
+      collectorNumber: String(d.number || '').trim(),
+      finish: d.finish,
+      language: d.language,
+      condition: d.condition,
+      location: String(d.location || '').trim(),
+      reserved: Math.min(editing?.reserved || 0, qty),
+      printingId: null,
+      printingVerified: false,
+      raw: editing?.raw || {},
+    };
+    delete e.lookupFailed;
+    const createBinder = d.picker === 'binder:new';
+    if (!unverified && e.set && e.collectorNumber) {
+      const c = await verifyPhysical(e);
+      if (addCtx !== ctx) return;
+      if (key(c.name) !== key(name)) throw Error(`That set and number is ${c.name}, not ${name}.`);
+      Object.assign(e, verifiedLot(e, c));
+    } else if (!unverified) e.nameVerified = true;
+    await commit(
+      (s) => {
+        e.location = rememberLocation(s, 'mtg', e.location, {createBinder});
+        s.collection = editing ? s.collection.map((x) => (x.id === e.id ? e : x)) : [...s.collection, e];
+        s.example = false;
+        s.printings = { ...s.printings, ...(S.pendingPrintings || {}) };
+      },
+      { msg: editing ? 'Saved.' : `${qty}× ${name} added.`, guard: () => addCtx === ctx },
+    );
+    if (addCtx !== ctx) return;
+    S.pendingPrintings = null;
+    addCtx = null;
+  },
+  // app.js A.addDelete: the edit sheet's Delete, asked first.
+  async addDelete(d) {
+    const e = addCtx?.entry;
+    if (!e || !ask(`Delete ${e.qty}× ${e.name} from your collection?`, d.confirmed)) return;
+    await commit((s) => (s.collection = s.collection.filter((x) => x.id !== e.id)), { msg: 'Removed from collection.' });
+    addCtx = null;
+  },
 };
+
+/* ---------- Condition prices (app.js 3006-3085) ---------- */
+// The site's condition feed (/api/prices/conditions) with the account's token; quotes it brings back are kept on the matching
+// lots and saved, as app.js does. A save made here outside a tap (bgSaves) is written to the device by the app (CollectionWrites).
+let conditionToken = '', conditionWorkspaceRevision = 0, bgSaves = 0;
+configureConditionAuth(async () => conditionToken);
+let conditionScheduler = createConditionRefreshScheduler();
+const queueWorkspaceWrite = fn => { const r = writes.then(fn, fn); writes = r.catch(() => {}); return r; };
+// app.js save({queued: true}): the workspace was changed in place (a lot's quotes); stamped, and the app writes it.
+const saveInPlace = () => { S.state.lastSavedAt = new Date().toISOString(); bgSaves++; };
+function conditionCardFor(entry,game){
+ const card=game==='mtg'?(entry.printingVerified&&S.state.printings?.[entry.printingId])||meta(entry.name):tcgCardOf(game,entry.cardId);
+ return card&&!card.brief&&!(game==='mtg'&&entry.printingVerified&&card.id!==entry.printingId)?card:null;
+}
+function conditionSelectionAllowed(card,entry,game){
+ if(!card?.id||card.brief||!conditionRequest(card,entry,game))return false;
+ if(game==='ygo'){
+  if(entry.setReleaseUnverified)return false;
+  const raw=tcgCardOf(game,card.id)||card;
+  const matches=(raw?.sets||[]).filter(p=>p.code===entry.printing&&(!entry.rarity||p.rarity===entry.rarity));
+  if(matches.length>1)return false;
+  if(entry.setReleaseId){
+   const scoped=tcgSetContextCard(game,raw,entry.setReleaseId,tcgYgoCatalogue());
+   if(scoped?.setContext?.status!=='resolved'||scoped.setContext.printings.filter(p=>p.code===entry.printing&&p.rarity===entry.rarity&&!p.releasePriceAmbiguous).length!==1)return false;
+  }
+ }
+ return true;
+}
+function fetchConditionValue(card,entry,game,done,options={}){
+ const selected=conditionQuoteEntry(card,entry),workspaceRevision=conditionWorkspaceRevision;
+ if(globalThis.navigator?.onLine===false)return Promise.resolve({changed:false,status:'deferred',reason:'offline'});
+ if(!conditionSelectionAllowed(card,selected,game))return Promise.resolve({changed:false,status:'deferred',reason:'unverified-selection'});
+ const current=()=>workspaceRevision===conditionWorkspaceRevision&&conditionSelectionAllowed(card,selected,game)&&(!options.current||options.current());
+ const identityMatches=q=>{const resolved=conditionQuoteEntry(card,q);return CONDITION_IDENTITY.every(k=>String(resolved[k]||'')===String(selected[k]||''));};
+ const cached=[...new Map([...(card.conditionQuotes||[]),...(selected.conditionQuotes||[])].filter(identityMatches).map(q=>[JSON.stringify(q),q])).values()];
+ const value=conditionValue(null,selected,cached);
+ if(value.kind==='manual'&&!options.retry)return Promise.resolve({changed:false,status:'manual'});
+ const request=value.kind==='condition-quote'&&!options.retry?Promise.resolve({changed:false,status:'available',rawQuotes:cached,reused:true}):
+  conditionScheduler.request(conditionRequest(card,selected,game),()=>{
+   if(!conditionSelectionAllowed(card,selected,game))return {changed:false,status:'deferred',reason:'unverified-selection'};
+   if(options.retry)forgetConditionAttempt(conditionRequest(card,selected,game));
+   return loadConditionQuotes({...card,conditionQuotes:[...(card.conditionQuotes||[])]},selected,game);
+  },{...options,current});
+ return request.then(async result=>{
+  if(workspaceRevision!==conditionWorkspaceRevision)return {changed:false,status:'deferred',reason:'workspace-changed'};
+  if(!conditionSelectionAllowed(card,selected,game))return {changed:false,status:'deferred',reason:'unverified-selection'};
+  let changed=false;
+  if(['available','unpriced','unmapped'].includes(result.status)||result.rawQuotes?.length){
+   const rawQuotes=result.rawQuotes||result.quotes||[];
+   changed=applyConditionQuotes(card,selected,rawQuotes).changed||!!result.changed;
+   await queueWorkspaceWrite(async()=>{
+    if(workspaceRevision!==conditionWorkspaceRevision||!conditionSelectionAllowed(card,selected,game))return;
+    const canonical=conditionCardFor(selected,game);
+    if(canonical&&canonical.id===card.id)changed=applyConditionQuotes(canonical,selected,rawQuotes).changed||changed;
+    const lots=game==='mtg'?S.state.collection:tcgGs(game).collection;
+    let saved=false;
+    for(const lot of lots)if((game==='mtg'?key(lot.name)===key(card.name):lot.cardId===card.id)&&
+     !lot.setReleaseUnverified&&(!selected.setReleaseId||lot.setReleaseId===selected.setReleaseId)&&identityMatches(lot)&&
+     conditionSelectionAllowed(card,lot,game)){
+      const holder={conditionQuotes:lot.conditionQuotes||[]};
+      if(applyConditionQuotes(holder,selected,rawQuotes).changed){lot.conditionQuotes=holder.conditionQuotes;saved=true;}
+    }
+    if(changed){if(game==='mtg')S.catalogDirty=true;else tcgPersistQuoteCache();}
+    if(saved){changed=true;saveInPlace();}
+   });
+  }
+  const output={...result,changed};if(current())done?.(output);return output;
+ });
+}
+function refreshChangedConditions(changed){
+ for(const {game,entry} of changed){
+  const identity=conditionLotIdentity(entry),current=()=>{
+   const lots=game==='mtg'?S.state.collection:tcgGs(game).collection;
+   return lots.some(lot=>lot.id===entry.id&&conditionLotIdentity(lot)===identity);
+  };
+  if(!current())continue;
+  const card=conditionCardFor(entry,game);
+  if(card)void fetchConditionValue(card,entry,game,()=>{},{source:'saved',current});
+ }
+}
+
+/* ---------- Add to collection / Edit card (app.js addSheet 5374, A.own 5403, A.addLookup, saveLot 5450, A.addDelete) ---------- */
+let addCtx = null, addSeq = 0;
+// app.js addPreview, read back: the picture as ui.js img() makes it (its price tier's ring), the name, type line and reference.
+const addPreview = c => {
+  const i = one(tree(imgHtml(cardImage(c, 'small') || cardImage(c), c.name, 'card-img')), tagIs('img'));
+  return {img: i?.attrs.src || '', tierKey: i?.attrs['data-tier'] || '', tier: styleVar(i, 'tier'), name: c.name, type: typeText(c), line: `Reference ${usd(cardPrice(c))} · ${(c.set || '').toUpperCase()}`};
+};
+const ADD_FINISHES = [['nonfoil', 'Nonfoil'], ['foil', 'Foil'], ['etched', 'Etched']];
+const ADD_CONDITIONS = ['Near Mint', 'Lightly Played', 'Moderately Played', 'Heavily Played', 'Damaged'].map(x => [x, x]);
+const ADD_LANGUAGES = [['en', 'English'], ['ja', 'Japanese'], ['de', 'German'], ['fr', 'French'], ['es', 'Spanish'], ['it', 'Italian'], ['pt', 'Portuguese'], ['ru', 'Russian'], ['ko', 'Korean'], ['zhs', 'Chinese (S)'], ['zht', 'Chinese (T)']];
+// collection-locations.js locationPicker, read back: its label, choices, the one chosen, the name box and its hint.
+function locationModel(state, game, value) {
+  const t = tree(locationPicker(state, game, 'addLocation', value)), sel = one(t, tagIs('select')), input = one(t, tagIs('input'));
+  const opts = all(sel, tagIs('option'));
+  return {label: text(one(t, tagIs('label'))), options: opts.map(o => [o.attrs.value ?? '', text(o)]), selected: (opts.find(o => o.attrs.selected !== undefined) || opts[0])?.attrs.value ?? '',
+    input: input?.attrs.value || '', placeholder: input?.attrs.placeholder || '', hint: text(one(t, cls('location-hint')))};
+}
+function addSheetModel(entry = null, preset = {}) {
+  const lookup = entry ? (entry.printingVerified && S.state.printings?.[entry.printingId]) || meta(entry.name) : preset.card || null;
+  addCtx = {type: 'add', entry, lookup, id: ++addSeq};
+  return {ctx: addCtx.id, editing: !!entry, title: entry ? 'Edit card' : 'Add to collection', name: entry?.name || lookup?.name || preset.name || '',
+    preview: lookup ? addPreview(lookup) : null, empty: 'Look up the card, check the picture, then save.',
+    qty: String(entry?.qty || preset.qty || 1), finish: entry?.finish || preset.finish || 'nonfoil', condition: entry?.condition || 'Near Mint', language: entry?.language || 'en',
+    finishes: ADD_FINISHES, conditions: ADD_CONDITIONS, languages: ADD_LANGUAGES,
+    location: locationModel(S.state, 'mtg', entry ? entry.location || '' : preset.location ?? null),
+    set: entry?.set || preset.set || '', number: entry?.collectorNumber || preset.number || '', printOpen: !!(entry?.set || preset.set),
+    value: Number.isFinite(entry?.manualValue) ? String(entry.manualValue) : '', canSave: !!lookup,
+    save: entry ? 'Save changes' : 'Add to collection'};
+}
+// app.js A.own: "Got it" (and the card page's Add to collection): the sheet filled with the card, the printing being looked at
+// and the copies a deck is missing. [fromCard]: the card page is the open sheet (S.ui.sheetCtx).
+function ownPreset(name, fromCard) {
+  const ctx = fromCard ? S.ui.sheetCtx : null, d = ctx?.deckId ? S.state.decks.find(x => String(x.id) === String(ctx.deckId)) : null,
+    row = d ? rowsFor(d).find(r => key(r.name) === key(name)) : null,
+    print = ctx?.print && key(ctx.print.name) === key(name) ? ctx.print : null;
+  return {card: print || meta(name), name, qty: row?.missing || 1, set: print?.set?.toUpperCase(), number: print?.collector_number,
+    finish: ctx?.type === 'buy' ? ctx.finish : print && ctx?.priceFinish ? selectedFinish('mtg', print, ctx.priceFinish) : null};
+}
+// condition-value.js conditionPriceHtml, read back block by block.
+function conditionModel(html) {
+  return (tree(html).kids || []).filter(n => n.tag).map(n => {
+    const c = classes(n);
+    if (n.tag === 'small' && c.includes('condition-reference')) { const b = one(n, tagIs('b')); return {k: 'ref', b: text(b), text: text({kids: n.kids.filter(x => x !== b)})}; }
+    if (n.tag === 'small') return {k: 'label', text: text(n)};
+    if (c.includes('condition-price-hero')) { const kind = one(n, cls('condition-price-kind')); return {k: 'hero', amount: text(one(n, cls('condition-price-amount'))), kind: text(kind), custom: classes(kind).includes('is-custom')}; }
+    if (c.includes('condition-price-state')) return {k: 'state', text: text(n)};
+    if (c.includes('condition-price-meta')) return {k: 'meta', text: text(n)};
+    if (n.tag === 'p') return {k: 'desc', text: text(n)};
+    if (c.includes('condition-market-secondary')) return {k: 'compare', b: text(one(n, tagIs('b'))), text: text(one(n, tagIs('small')))};
+    if (c.includes('condition-retry')) return {k: 'retry', text: text(n)};
+    if (n.tag === 'a') return {k: 'buy', text: text(n), url: n.attrs.href || ''};
+    return {k: 'desc', text: text(n)};
+  });
+}
+// app.js refreshConditionPrice for the add sheet ([f]: the form as it stands): painted at once, then again when the feed answers.
+function conditionPreview(f, retry, run) {
+  const ctx = addCtx; if (!ctx) return;
+  const raw = f.value ?? '', manualValue = raw === '' ? null : Number(raw);
+  let price, sourceCard = null, reference = null;
+  const card = (ctx.entry?.printingVerified && S.state.printings?.[ctx.entry.printingId]) || ctx.lookup;
+  const entry = {...ctx.entry, condition: f.condition, finish: f.finish, language: f.language, manualValue, manualValueCondition: conditionName(f.condition)};
+  price = conditionValue(cardPrice(card, entry.finish), {...entry, manualValue: null}, card?.conditionQuotes || []).price;
+  const set = String(f.set || '').trim().toLowerCase(), number = String(f.number || '').trim();
+  if ((set && set !== String(card?.set || '').toLowerCase()) || (number && number !== String(card?.collector_number || ''))) price = null;
+  else { sourceCard = card; reference = cardPrice(card, entry.finish); }
+  const referenceInfo = {reference, referenceLabel: 'Reference price', retryAction: sourceCard ? 'retryConditionPrice' : '', buyLink: sourceCard ? conditionBuyLink('mtg', sourceCard, entry) : null};
+  const paint = (value, quotes, lookup) => { run.blocks = conditionModel(conditionPriceHtml(value, entry, quotes, lookup)); run.placeholder = conditionManualPlaceholder(entry, quotes, lookup); };
+  paint(price, [...(sourceCard?.conditionQuotes || []), ...(entry.conditionQuotes || [])], referenceInfo);
+  if (!sourceCard) { run.done = true; return; }
+  const current = () => addCtx === ctx && run === priceRun;
+  if (price == null) paint(price, [...(sourceCard.conditionQuotes || []), ...(entry.conditionQuotes || [])], {...referenceInfo, status: 'loading'});
+  Promise.resolve(fetchConditionValue(sourceCard, entry, 'mtg', null, {source: 'search', current, retry})).then(result => {
+    if (current() && result) {
+      const quotes = [...(sourceCard.conditionQuotes || []), ...(entry.conditionQuotes || [])], fresh = conditionValue(price, {...entry, manualValue: null}, quotes).price;
+      paint(fresh, quotes, {...referenceInfo, ...result});
+    }
+  }).finally(() => { run.done = true; });
+}
+let priceRun = null, lookupRun = null, setsIndex = null;
+async function verifyPhysical(e) {
+  if (e.printingId) return S.state.printings?.[e.printingId] || (await api('/cards/' + encodeURIComponent(e.printingId)));
+  let set = e.set?.trim();
+  if (!set && e.setName) {
+    if (!setsIndex) setsIndex = (await api('/sets')).data;
+    const m = setsIndex.find((s) => key(s.name) === key(e.setName));
+    if (!m) throw Error('Set name not recognized; enter a set code.');
+    set = m.code;
+  }
+  if (set && e.collectorNumber)
+    return api(`/cards/${encodeURIComponent(set.toLowerCase())}/${encodeURIComponent(e.collectorNumber)}/${encodeURIComponent(e.language || 'en')}`).catch(() =>
+      api(`/cards/${encodeURIComponent(set.toLowerCase())}/${encodeURIComponent(e.collectorNumber)}`),
+    );
+  if (set && e.name) {
+    const r = await api('/cards/search?' + new URLSearchParams({ q: `!"${e.name.replace(/"/g, '')}" set:${set} game:paper`, unique: 'prints' }));
+    if (r.total_cards !== 1) {
+      e.candidates = r.data.slice(0, 30);
+      throw Error('Several printings match. Pick one.');
+    }
+    return r.data[0];
+  }
+  throw Error('Exact printing needs a set code and collector number.');
+}
+function verifiedLot(e, c) {
+  if (e.name && key(e.name) !== key(c.name)) throw Error('That printing is ' + c.name + '; check the name.');
+  if (e.set && e.set.toLowerCase() !== c.set.toLowerCase()) throw Error('Printing ID and set disagree.');
+  if (e.collectorNumber && String(e.collectorNumber) !== String(c.collector_number)) throw Error('Printing ID and collector number disagree.');
+  if (e.finish && Array.isArray(c.finishes) && !c.finishes.includes(e.finish)) throw Error(`This printing doesn’t come in ${e.finish}.`);
+  const copy = slim({ ...c, checkedAt: c.checkedAt || new Date().toISOString() });
+  S.pendingPrintings = { ...(S.pendingPrintings || {}), [c.id]: copy };
+  if (!meta(c.name)) cacheCard(c);
+  return {
+    ...e, name: c.name, printingId: c.id, oracleId: c.oracle_id, set: c.set.toUpperCase(), setName: c.set_name,
+    collectorNumber: c.collector_number, language: c.lang || e.language || 'en', printingVerified: true, nameVerified: true,
+  };
+}
+
 let acting = null;
 globalThis.Collection = {
   // The account's workspace row data (cloud.js), normalized as app.js loads it; [catalogJson] is the app's saved catalog.
@@ -1404,6 +1671,8 @@ globalThis.Collection = {
     S.catalog = catalogJson ? JSON.parse(catalogJson) : {};
     // cloud.js reconciled: the account's copy is here, so value observations may be recorded (app.js valueHistoryReady).
     valueHistoryReady = !!ws; lastUndo = null;
+    // A new copy of the workspace (app.js account switch): pending condition answers are for the old one.
+    conditionWorkspaceRevision++; addCtx = null; bgSaves = 0;
     useMyPrices(S.state.myPrices); // app.js render(): the account's own prices count in every value
     return json({copies: S.state.collection.reduce((n, e) => n + (Number(e.qty) || 0), 0), decks: S.state.decks.length});
   },
@@ -1437,6 +1706,33 @@ globalThis.Collection = {
       e => { Object.assign(run, {done: true, error: String(e?.message || e), ask: '', toasts, writes: commits - n}); });
   },
   actPoll() { return json(acting || {done: true, writes: 0, toasts: []}); },
+  // The account's sign-in for the condition feed (cloud.js access token), set by the app before the add sheet asks.
+  auth(token) { conditionToken = token || ''; },
+  // The add sheet (app.js addSheet): [o] {entry: lot id} to edit, {own: name, fromCard} for Got it, or {} for an empty one.
+  addOpen(o) {
+    const d = JSON.parse(o || '{}');
+    if (d.entry) { const e = S.state.collection.find(x => x.id === d.entry); if (!e) return json({error: 'This card is no longer in your collection.'}); return json(addSheetModel(e)); }
+    return json(addSheetModel(null, d.own ? ownPreset(d.own, !!d.fromCard) : {}));
+  },
+  // app.js closeSheet: the sheet [id] opened is gone (a newer one is left alone).
+  addClose(id) { if (addCtx && addCtx.id === id) { addCtx = null; priceRun = lookupRun = null; } },
+  // app.js A.addLookup: the name looked up (resolve, fuzzy); lookupPoll() reads {done, name, preview, clearPrint} or {done, error}.
+  addLookup(name) {
+    const ctx = addCtx, run = lookupRun = {done: false};
+    if (!ctx) { run.done = true; return; }
+    Promise.resolve().then(() => resolve(String(name || '').trim(), true)).then(c => {
+      if (addCtx !== ctx) return;
+      const clearPrint = !!(ctx.lookup && key(ctx.lookup.name) !== key(c.name));
+      ctx.lookup = c;
+      Object.assign(run, {name: c.name, preview: addPreview(c), clearPrint});
+    }, e => { if (addCtx !== ctx) return; ctx.lookup = null; run.error = String(e?.message || e); }).finally(() => { run.done = true; });
+  },
+  lookupPoll() { return json(lookupRun || {done: true}); },
+  // app.js refreshConditionPrice ([f]: condition, finish, language, set, number, value as the form has them; retry: Refresh price).
+  addPrice(f, retry) { const run = priceRun = {done: false, blocks: [], placeholder: ''}; conditionPreview(JSON.parse(f || '{}'), !!retry, run); },
+  pricePoll() { return json(priceRun || {done: true, blocks: [], placeholder: ''}); },
+  // Saves made outside a tap since the last ask (a lot's condition quotes): the app writes the workspace when this is above 0.
+  bg() { const n = bgSaves; bgSaves = 0; return n; },
   // app.js A.undo (6514): the state before the last undoable change comes back through the same write (replaceWorkspace).
   undo() {
     if (!lastUndo) return json({writes: 0, toasts: [{text: 'Nothing to undo.', undo: false}]});
