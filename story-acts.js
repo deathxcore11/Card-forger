@@ -116,8 +116,11 @@ export const STORY_ACTS = [
   {act: 38, age: 'The Gatewatch Years', title: 'The Great Race', years: '2025',
     sets: ['dft', 'tdm'], landSet: 'dft', packSets: ['dft', 'tdm'],
     art: {set: 'tdm', number: '118', name: 'Sarkhan, Dragon Ascendant', crop: 'https://cards.scryfall.io/art_crop/front/c/2/c2200646-7b7c-489d-bbae-16b03e1d7fb2.jpg?1783907353'}},
+  {act: 39, age: 'Crossings', title: 'Final Fantasy', years: '2025',
+    sets: ['fin'], landSet: 'fin', packSets: ['fin'],
+    art: {set: 'fin', number: '115', name: 'Sephiroth, Fabled SOLDIER', crop: 'https://cards.scryfall.io/art_crop/front/8/5/85eaf5e7-77dc-4842-a70c-ce4ac7f724df.jpg?1783906617'}},
 ];
-export const SET_NAMES = {dft: 'Aetherdrift', tdm: 'Tarkir: Dragonstorm', lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
+export const SET_NAMES = {fin: 'Final Fantasy', dft: 'Aetherdrift', tdm: 'Tarkir: Dragonstorm', lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
   '3ed': 'Revised Edition', leg: 'Legends', drk: 'The Dark', fem: 'Fallen Empires', ice: 'Ice Age', hml: 'Homelands', all: 'Alliances', '4ed': 'Fourth Edition',
   mir: 'Mirage', vis: 'Visions', '5ed': 'Fifth Edition',
   wth: 'Weatherlight', tmp: 'Tempest', sth: 'Stronghold', exo: 'Exodus',
