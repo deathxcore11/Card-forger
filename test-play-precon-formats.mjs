@@ -52,17 +52,23 @@ import {commanderStorePool, commanderDeckLegal} from './play-precon-formats.js';
   console.log('PASS: the Commander store features the newest release and rotates legal older decks.');
 }
 
-import {preconQuote, preconListPrice} from './play-econ-rules.js';
+import {preconQuote, preconListPrice, preconClass} from './play-econ-rules.js';
 {
   const rows = [{name: 'M', qty: 1, rarity: 'mythic'}, {name: 'R', qty: 4, rarity: 'rare'}, {name: 'U', qty: 4, rarity: 'uncommon'}, {name: 'C', qty: 4, rarity: 'common'}, {name: 'Mountain', qty: 20, rarity: 'common'}];
+  const now = Date.UTC(2026, 10, 5), std = {type: 'Challenger Deck', released: '2026-03-01', now};
   // total value = 60 + 80 + 12 + 4 = 156
-  const none = preconQuote(rows, new Map(), {type: 'Challenger Deck'});
-  if (none.price !== 3000 || none.share !== 1) throw new Error('nothing owned pays the list price');
-  const half = preconQuote(rows, new Map([['M', 1], ['R', 4]]), {type: 'Challenger Deck'});
-  if (half.price !== Math.round(3000 * 16 / 156 / 5) * 5 || half.missing !== 8) throw new Error('owning the expensive cards drops the price: ' + half.price);
-  if (preconQuote(rows, new Map([['M', 1], ['R', 4], ['U', 4], ['C', 4]]), {type: 'Challenger Deck'}).price !== 0) throw new Error('owning everything is free');
-  if (preconQuote(rows, new Map([['M', 1], ['R', 4], ['U', 4], ['C', 3]]), {type: 'Challenger Deck'}).price !== 250) throw new Error('250 floor');
-  if (preconListPrice('Commander Deck') !== 5000 || preconListPrice('Starter Kit') !== 1500 || preconListPrice('Theme Deck') !== 3000) throw new Error('list prices by product type');
-  if (preconListPrice('Commander Deck', {precon: {list: {commander: 4000}}}) !== 4000) throw new Error('config retunes list prices');
-  console.log('PASS: precon prices are the list price times the share of deck value you do not own.');
+  const none = preconQuote(rows, new Map(), std);
+  if (none.price !== 2500 || none.share !== 1 || none.cls !== 'standard') throw new Error('nothing owned pays the Standard list price: ' + none.price);
+  const half = preconQuote(rows, new Map([['M', 1], ['R', 4]]), std);
+  if (half.price !== Math.round(2500 * 16 / 156 / 5) * 5 || half.missing !== 8) throw new Error('owning the expensive cards drops the price: ' + half.price);
+  if (preconQuote(rows, new Map([['M', 1], ['R', 4], ['U', 4], ['C', 4]]), std).price !== 0) throw new Error('owning everything is free');
+  if (preconQuote(rows, new Map([['M', 1], ['R', 4], ['U', 4], ['C', 3]]), std).price !== 250) throw new Error('250 floor');
+  const cls = (type, released, r = rows) => preconClass(type, {rows: r, released, now});
+  if (cls('Commander Deck', '2020-01-01') !== 'commander' || cls('Brawl Deck', '2024-01-01') !== 'brawl' || cls('Starter Kit', '2005-01-01') !== 'standard') throw new Error('classes by type');
+  if (cls('Theme Deck', '2015-01-01') !== 'modern' || cls('Theme Deck', '1999-01-01') !== 'legacy' || cls('Theme Deck', '2025-05-01') !== 'standard') throw new Error('classes by era');
+  if (cls('Theme Deck', '2025-05-01', [{name: 'A', qty: 4, rarity: 'common'}, {name: 'B', qty: 4, rarity: 'uncommon'}]) !== 'pauper') throw new Error('no rares = Pauper');
+  const lists = ['pauper', 'standard', 'brawl', 'modern', 'commander', 'legacy'].map(c => preconListPrice(c));
+  if (lists.join() !== '1500,2500,3000,3500,5000,7500') throw new Error('the half-scale ladder: ' + lists);
+  if (preconListPrice('commander', {precon: {list: {commander: 4000}}}) !== 4000) throw new Error('config retunes list prices');
+  console.log('PASS: precon prices are the class list price times the share of deck value you do not own.');
 }

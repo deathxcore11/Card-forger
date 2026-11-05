@@ -416,7 +416,7 @@ const keepWords = t => esc(t).replace(/\S*-\S*/g, w => `<span class="nowrap">${w
 function preconShelf(snapshot, pc = {}, deckEmblem = null) {
   const s = snapshot.state, owned = ownedByName(s.cards || []);
   if (pc.open) {
-    const o = pc.open, rows = o.rows || [], quote = preconQuote(rows, owned, {type: o.product || '', config: s.config, cap: o.product === 'Commander Deck' ? 1 : (s.config?.maxCopies || 4)});
+    const o = pc.open, rows = o.rows || [], quote = preconQuote(rows, owned, {type: o.product || '', released: o.released || '', config: s.config, cap: o.product === 'Commander Deck' ? 1 : (s.config?.maxCopies || 4)});
     const missing = quote.missing, price = quote.price, coins = s.wallet?.coins || 0, inStore = !missing || !!(s.preconStore?.files || []).includes(String(o.file || '').replace(/\.json$/, ''));
     const have = new Map(owned), card = r => { const got = isBasicLand(r.name) ? r.qty : Math.min(r.qty, have.get(r.name) || 0); have.set(r.name, Math.max(0, (have.get(r.name) || 0) - got));
       return `<figure class="pe-precon-card${got < r.qty ? ' is-missing' : ''}"><img src="${esc(scryfallImage(r.id) || cardImageByName(r.name))}" alt="${esc(r.name)}" loading="lazy" decoding="async" referrerpolicy="no-referrer"><figcaption>${r.qty}×${got < r.qty ? ` <span>${r.qty - got} new</span>` : ''}</figcaption></figure>`; };

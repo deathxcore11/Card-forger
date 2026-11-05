@@ -135,28 +135,39 @@ export function stepDeckCard(deck = [], name, step, owned = new Map(), format = 
 // {c,u,r,m} from deckShortfall(...).seals. Rates come from play.config precon.perRarity, so they retune
 // without a release. Minimum 250, no cap. A deck you already own entirely is free to add.
 export const PRECON_RATES = Object.freeze({c: 25, u: 75, r: 500, m: 1500});
-// Value pricing (Randall 5 Nov 19:59Z, option A): 1 pack = 500 coins = $5. Each product has a list price
-// from its MSRP (config precon.list: starter 1,500, standard 3,000 for Challenger and the 60-card
-// precons, commander 5,000); a player pays that list price times the share of the deck's value they
-// don't own yet. Card value weights are common 1, uncommon 3, rare 20, mythic 60; basic lands are free.
-export const PRECON_LIST = Object.freeze({starter: 1500, standard: 3000, commander: 5000});
+// Value pricing (Randall 5 Nov 20:12Z, half-scale ladder): 1 pack = 500 coins = $5. Each product class has a
+// list price (config precon.list) and a player pays it times the share of the deck's value they don't own.
+// Value weights: common 1, uncommon 3, rare 20, mythic 60; basic lands are free. The class comes from the
+// MTGJSON deck type, then the cards (no rare or mythic = Pauper), then the release era (precon.eras).
+export const PRECON_LIST = Object.freeze({pauper: 1500, standard: 2500, brawl: 3000, modern: 3500, commander: 5000, legacy: 7500});
+// MTGJSON deck type -> class; anything not listed is classed by its cards and release date.
+export const PRECON_TYPE_CLASS = Object.freeze({'Commander Deck': 'commander', 'Brawl Deck': 'brawl', 'Starter Kit': 'standard', 'Arena Starter Kit': 'standard',
+  'Intro Pack': 'standard', 'Welcome Deck': 'standard', 'Clash Pack': 'standard', 'Masters Deck': 'legacy', 'From the Vault': 'legacy', 'Premium Deck': 'legacy'});
+// Release-date eras for the rest (a date opens its class): Standard = the last three years.
+export const PRECON_ERAS = Object.freeze({modern: '2012-10-05', legacy: '1900-01-01'});
 export const PRECON_VALUE = Object.freeze({c: 1, u: 3, r: 20, m: 60});
-const STARTER_TYPES = /^(?:Starter Kit|Arena Starter Kit|Intro Pack|Welcome Deck|Clash Pack)$/i;
-export function preconListPrice(type = '', config = {}) {
-  const list = {...PRECON_LIST, ...(config?.precon?.list || {})};
-  return Number(/^Commander Deck$/i.test(type) ? list.commander : STARTER_TYPES.test(type) ? list.starter : list.standard) || PRECON_LIST.standard;
+export function preconClass(type = '', {rows = [], released = '', config = {}, now = Date.now()} = {}) {
+  const types = {...PRECON_TYPE_CLASS, ...(config?.precon?.types || {})}, eras = {...PRECON_ERAS, ...(config?.precon?.eras || {})};
+  if (types[type]) return types[type];
+  const cards = rows.filter(r => r?.name && !isBasicLand(r.name));
+  if (cards.length && cards.every(r => ['common', 'uncommon'].includes(rarityOf(r.rarity)))) return 'pauper';
+  const std = new Date(now - 3 * 366 * 864e5).toISOString().slice(0, 10), d = String(released || '');
+  return !d || d >= std ? 'standard' : d >= eras.modern ? 'modern' : 'legacy';
 }
-// {price, missing, share, seals}: rows [{name,qty,rarity}], owned Map, type = MTGJSON deck type.
-export function preconQuote(rows = [], owned = new Map(), {type = '', config = {}, cap = 4} = {}) {
+export function preconListPrice(cls = 'standard', config = {}) {
+  return Number({...PRECON_LIST, ...(config?.precon?.list || {})}[cls]) || PRECON_LIST.standard;
+}
+// {price, missing, share, seals, cls}: rows [{name,qty,rarity}], owned Map, type = MTGJSON deck type.
+export function preconQuote(rows = [], owned = new Map(), {type = '', released = '', config = {}, cap = 4, now = Date.now()} = {}) {
   const rarity = new Map(rows.map(r => [r.name, r.rarity])), short = deckShortfall(rows, owned, rarity, cap);
   const w = r => PRECON_VALUE[RARITY_SEAL[rarityOf(r)]] || 1, capOf = typeof cap === 'function' ? cap : () => cap;
   const want = new Map();
   for (const r of rows) if (r?.name && !isBasicLand(r.name)) want.set(r.name, (want.get(r.name) || 0) + Math.max(1, r.qty | 0));
   let total = 0; for (const [name, qty] of want) total += Math.min(qty, capOf(name) ?? 4) * w(rarity.get(name));
   const miss = short.missing.reduce((t, m) => t + m.need * w(m.rarity), 0), share = total ? Math.min(1, miss / total) : 0;
-  const missing = short.missing.reduce((t, m) => t + m.need, 0), min = config?.precon?.min ?? 250;
-  const price = miss <= 0 ? 0 : Math.max(min, Math.round(preconListPrice(type, config) * share / 5) * 5);
-  return {price, missing, share, seals: short.seals, short};
+  const missing = short.missing.reduce((t, m) => t + m.need, 0), min = config?.precon?.min ?? 250, cls = preconClass(type, {rows, released, config, now});
+  const price = miss <= 0 ? 0 : Math.max(min, Math.round(preconListPrice(cls, config) * share / 5) * 5);
+  return {price, missing, share, seals: short.seals, short, cls};
 }
 export function preconPrice(missing = 0, config = {}) {
   const p = config?.precon || {};
