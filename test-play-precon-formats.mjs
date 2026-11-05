@@ -35,3 +35,19 @@ import {weeklyPrecons, weeklyPreconsByFormat, STORE_FORMATS} from './play-precon
   if (JSON.stringify(a) === JSON.stringify(b)) throw new Error('the store rotates weekly');
   console.log('PASS: the weekly precon store picks four of every format, stable within a week, new each week.');
 }
+
+import {commanderStorePool, commanderDeckLegal} from './play-precon-formats.js';
+{
+  const idx = [
+    ...Array.from({length: 4}, (_, i) => ({type: 'Commander Deck', fileName: `Trek_${i}_TRC.json`, code: 'TRC', releaseDate: '2026-11-13'})),
+    ...Array.from({length: 40}, (_, i) => ({type: 'Commander Deck', fileName: `Old_${i}_OLD.json`, code: 'OLD' + (i % 8), releaseDate: `20${10 + (i % 15)}-06-01`})),
+    {type: 'Theme Deck', fileName: 'Theme_X.json', code: 'X', releaseDate: '2030-01-01'}];
+  const a = commanderStorePool(idx, '2026-W45'), b = commanderStorePool(idx, '2026-W46');
+  if (a.featured.length !== 4 || !a.featured.every(f => f.startsWith('Trek_')) || a.code !== 'TRC' || a.released !== '2026-11-13') throw new Error('the newest Commander release is featured');
+  if (a.order.some(f => a.featured.includes(f)) || a.order.length < 3) throw new Error('older decks rotate behind it');
+  if (JSON.stringify(a.order) === JSON.stringify(b.order)) throw new Error('the older decks rotate weekly');
+  const card = {legalities: {commander: 'Legal'}}, deck = {commander: [card], mainBoard: Array.from({length: 99}, () => card)};
+  if (!commanderDeckLegal(deck)) throw new Error('a legal Commander deck passes');
+  if (commanderDeckLegal({...deck, mainBoard: [...deck.mainBoard.slice(1), {legalities: {commander: 'Banned'}}]})) throw new Error('a banned card fails');
+  console.log('PASS: the Commander store features the newest release and rotates legal older decks.');
+}

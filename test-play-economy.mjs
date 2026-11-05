@@ -66,6 +66,7 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
   const card = id => ({id, ...(foilCards ? {finishes: ['nonfoil', 'foil']} : {}), oracle_id: id.padEnd(8, '0') + '-0000-0000-0000-000000000000', name: id, rarity: id.startsWith('r') ? 'rare' : 'common', colors: [], prices: {usd: '1.00'}});
   const pc = (name, count, rarity, extra = {}) => ({name, count, rarity, setCode: 'TMP', number: String(count), identifiers: {scryfallId: name.length.toString(16).padStart(8, '0') + '-1111-2222-3333-444444444444', scryfallOracleId: name.length.toString(16).padStart(8, '0') + '-0000-0000-0000-000000000000'}, ...extra});
   const precon = {name: 'Test Precon', mainBoard: [pc('Bolt', 4, 'common'), pc('Dragonlord', 2, 'rare'), pc('Mountain', 20, 'common', {supertypes: ['Basic']})], sideBoard: [pc('Bolt', 1, 'common')]};
+  const cmdrDeck = {name: 'Test Commander', commander: [pc('Big Boss', 1, 'mythic')], mainBoard: [pc('Cmd Rare', 1, 'rare'), pc('Cmd Common', 1, 'common'), pc('Mountain', 97, 'common', {supertypes: ['Basic']})], sideBoard: []};
   const fetcher = async (url, init = {}) => {
     const u = String(url);
     if (u.includes('/rest/v1/rpc/')) {
@@ -77,7 +78,8 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
     if (u.endsWith('/data/mtg-boosters/tst.json')) return new Response(JSON.stringify(booster));
     if (u.endsWith('/data/mtg-boosters/index.json')) return new Response(JSON.stringify({sets: {fra: {}, tst: {}}}));
     if (u.includes('/cards/collection')) return new Response(JSON.stringify({data: JSON.parse(init.body).identifiers.map(i => card(i.id || i.name))}));
-    if (u.includes('mtgjson.com/api/v5/DeckList.json')) return new Response(JSON.stringify({data: [{type: 'Theme Deck', fileName: 'TST_Precon', name: 'Test', releaseDate: '2026-01-01'}]}));
+    if (u.includes('mtgjson.com/api/v5/DeckList.json')) return new Response(JSON.stringify({data: [{type: 'Theme Deck', fileName: 'TST_Precon', name: 'Test', releaseDate: '2026-01-01'}, {type: 'Commander Deck', fileName: 'TST_Cmdr', code: 'TCM', name: 'Test Commander', releaseDate: '2026-02-01'}]}));
+    if (u.includes('mtgjson.com/api/v5/decks/TST_Cmdr.json')) return new Response(JSON.stringify({data: cmdrDeck}));
     if (u.includes('mtgjson.com/api/v5/decks/TST_Precon.json')) return new Response(JSON.stringify({data: precon}));
     if (u.includes('/forge-rules/')) return new Response(JSON.stringify({standardSets: []}));
     if (u.includes('/sets')) return new Response(JSON.stringify({data: []}));
@@ -144,6 +146,16 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
   assert.deepEqual(pSave[1].p_cards.find(c => c.name === 'Mountain'), {name: 'Mountain', qty: 20, set: 'tmp', number: '20'}, 'basic lands keep their printing too');
   assert.equal(pSave[1].p_format, 'Modern');
   assert.equal((await progressRoute(req('precon', {file: 'TST_Precon'}), env, {verifyBearer, fetcher})).status, 409, '50 coins left is short');
+  {
+    // A Commander precon in the store: singleton pricing (mythic commander 1,500 + rare 500 + common 25), saved as a Commander deck.
+    wallet = {...wallet, coins: 5000}; calls.length = 0;
+    const cm = await (await progressRoute(req('precon', {file: 'TST_Cmdr'}), env, {verifyBearer, fetcher})).json();
+    assert.equal(cm.price, 2025, 'commander 1,500 + rare 500 + common 25');
+    const save = calls.find(c => c[0] === 'play_save_deck');
+    assert.equal(save[1].p_format, 'Commander');
+    assert.ok(save[1].p_cards.some(c => c.name === 'Big Boss' && c.board === 'commander'), 'the commander is saved with board commander');
+    wallet = {...wallet, coins: 50};
+  }
   assert.equal((await progressRoute(req('precon', {file: '../x'}), env, {verifyBearer, fetcher})).status, 400);
   calls.length = 0;
   const forged = await (await progressRoute(req('forge', {to: 'u', times: 2}), env, {verifyBearer, fetcher})).json();
