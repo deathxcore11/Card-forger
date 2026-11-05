@@ -133,6 +133,10 @@ object CollectionEngine {
      */
     suspend fun rules(game: String, format: String): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.rules(${str(game)}, ${str(format)})") as String).asJsonObject }
+    /** A Yu-Gi-Oh! or Pokémon deck's [tab] other than Cards (tcg.js A.tDeckTab): tcgDeck's .deck-body as such a panel (the page: [deck] with "tab"). */
+    suspend fun deckPanel(game: String, id: String, tab: String): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.deckPanel(${str(game)}, ${str(id)}, ${str(tab)})") as String).asJsonObject }
+    const val PANEL_MODEL = "Collection.panelModel()"
     suspend fun panelTap(id: Int): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.panelTap($id)") as String).asJsonObject }
     suspend fun panelType(id: Int, value: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.panelType($id, ${str(value)})") as String).asJsonObject }
 

@@ -235,12 +235,14 @@ export class Document {
 
 // For the app: the nodes as JSON (tag, attributes, children; text as strings), each element with its id for taps and typing.
 // [svg]: what an <svg> becomes instead of its nodes (the engine's icon model).
-export function serialize(n, svg) {
+// [svg]: a drawing's icon model; [img]: a picture's sources, for the app to draw them.
+export function serialize(n, svg, img) {
   if (n.nodeType === 3) return n.data;
   if (svg && n.localName === 'svg') return {t: 'svg', i: n._id, a: n.attributes, k: [], icon: svg(n)};
-  const kids = []; for (const k of n.childNodes) { if (k.nodeType === 3 && kids.length && typeof kids[kids.length - 1] === 'string') kids[kids.length - 1] += k.data; else kids.push(serialize(k, svg)); }
+  const kids = []; for (const k of n.childNodes) { if (k.nodeType === 3 && kids.length && typeof kids[kids.length - 1] === 'string') kids[kids.length - 1] += k.data; else kids.push(serialize(k, svg, img)); }
   const o = {t: n.localName, i: n._id, a: n.attributes, k: kids};
   if (n._value !== undefined) o.v = n._value;
+  if (img && n.localName === 'img') o.pic = img(n);
   return o;
 }
 export function byId(root, id) { if (root._id === id) return root; let hit = null; walk(root, n => { if (!hit && n._id === id) hit = n; }); return hit; }

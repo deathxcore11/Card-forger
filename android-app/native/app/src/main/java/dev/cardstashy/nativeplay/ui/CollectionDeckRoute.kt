@@ -20,6 +20,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -39,7 +41,12 @@ private object DeckCache {
     var id: String? = null
     var model: CollectionDeckModel? = null
     var q = ""
+    /** The tab open (tcg.js S.ui.tdeckTab): Cards, or one drawn from the site's own markup (TCG_SITE_TABS). */
+    var tab = "cards"
 }
+
+/** The Yu-Gi-Oh! and Pokémon deck tabs drawn here from the site's own markup and listeners (SitePanel); the others open the website's tab. */
+private val TCG_SITE_TABS = setOf("rules", "matchups")
 
 /**
  * A deck's page (views.js deckPage, its Cards tab; for Yu-Gi-Oh! and Pokémon tcg.js tcgDeck) through the site's own code, drawn natively. Search, the type chips,
@@ -60,8 +67,13 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
     val profile by Account.profile.collectAsState()
-    if (DeckCache.id != game.id + ":" + deckId) { DeckCache.id = game.id + ":" + deckId; DeckCache.model = null; DeckCache.q = "" }
+    if (DeckCache.id != game.id + ":" + deckId) { DeckCache.id = game.id + ":" + deckId; DeckCache.model = null; DeckCache.q = ""; DeckCache.tab = "cards" }
     var model by remember(deckId) { mutableStateOf(DeckCache.model) }
+    var deckTab by remember(deckId) { mutableStateOf(DeckCache.tab) }
+    /** The open tab's body when it is the site's markup (CollectionEngine.deckPanel), as its listeners leave it. */
+    var panel by remember(deckId) { mutableStateOf<SitePanelModel?>(null) }
+    /** The collection is loaded in the engine (ensureCollection) and the page drawn once: a tab's body can be asked for. */
+    var ready by remember(deckId) { mutableStateOf(false) }
     var query by remember(deckId) { mutableStateOf(DeckCache.q) }
     var failed by remember(deckId) { mutableStateOf<String?>(null) }
     /** A control waiting for the site's handler (kind to value), applied on the engine's thread. */
@@ -74,13 +86,13 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
     val viewPref = if (game == CardGame.MTG) "deckView" else "deckView-" + game.id
     suspend fun paint() {
         // The search as typed and the view last chosen (the site keeps the view in the account's settings; the app keeps it here).
-        val o = com.google.gson.JsonObject().apply { addProperty("search", DeckCache.q); prefs.getString(viewPref, null)?.let { addProperty("view", it) } }
+        val o = com.google.gson.JsonObject().apply { addProperty("search", DeckCache.q); prefs.getString(viewPref, null)?.let { addProperty("view", it) }; addProperty("tab", deckTab) }
         val m = withContext(Dispatchers.Default) { CollectionDeckModel.parse(CollectionEngine.deck(game.id, deckId, o)) }
         model = m; DeckCache.model = m
     }
     LaunchedEffect(deckId, session?.userId, revision) { try {
         if (!ensureCollection(context, session?.userId, session != null, revision)) return@LaunchedEffect
-        paint()
+        paint(); ready = true
         coroutineScope {
             val repaint = launch { while (true) { delay(1200); paint() } }
             try { CollectionEngine.refresh(game.id, deckId = deckId) } finally { repaint.cancel(); withContext(kotlinx.coroutines.NonCancellable) { keepCatalog(context) } }
@@ -121,9 +133,49 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
     val tcg = game != CardGame.MTG
     val page = site + (if (tcg) "#tdeck/" else "#deck/") + android.net.Uri.encode(deckId)
     fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
-    // A Yu-Gi-Oh! or Pokémon page of the website opens on its game (tcg.js A.setGame pressed first).
     val webAt = web
+    // A Yu-Gi-Oh! or Pokémon page of the website opens on its game (tcg.js A.setGame pressed first).
     fun web(url: String, press: String?) = webAt(url, if (!tcg) press else listOfNotNull("[data-act=\"setGame\"][data-game=\"${game.id}\"]", press).joinToString("\n"))
+    /**
+     * The panel as the site's scripts leave it; a data-act they leave to app.js that runs elsewhere (Ask a Judge, the game's guide,
+     * a rule's card search) opens the website's tab and presses the same button there.
+     */
+    fun take(m: SitePanelModel) {
+        panel = m
+        val a = m.acted ?: return
+        val act = a.get("act")?.takeIf { it.isJsonPrimitive }?.asString ?: return
+        val data = a.getAsJsonObject("data")?.entrySet().orEmpty()
+            .filter { (k, v) -> k != "act" && v.isJsonPrimitive && v.asString.length < 120 && !v.asString.startsWith("{") && !v.asString.startsWith("[") }
+        val sel = "[data-act=\"${css(act)}\"]" + data.joinToString("") { (k, v) -> "[data-" + k.replace(Regex("[A-Z]")) { "-" + it.value.lowercase() } + "=\"${css(v.asString)}\"]" }
+        web("$page/" + android.net.Uri.encode(deckTab), sel)
+    }
+    /** A tap or typing in the panel: the site's listeners, then what they start (the rulebook, a source) as it lands. */
+    fun panelDo(call: suspend () -> com.google.gson.JsonObject) = scope.launch {
+        if (HomeCache.loaded == null) return@launch
+        runCatching {
+            take(SitePanelModel.parse(call()))
+            CollectionEngine.settle(15_000, CollectionEngine.PANEL_MODEL) { j -> if (j.has("key")) take(SitePanelModel.parse(j)) }
+        }
+    }
+    val screenW = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp
+    val siteUi = remember(deckId, screenW) {
+        SiteUi(tap = { id -> panelDo { CollectionEngine.panelTap(id) } }, type = { id, v -> panelDo { CollectionEngine.panelType(id, v) } },
+            open = { href -> runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(href)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) } },
+            screen = screenW)
+    }
+    // A tab (tcg.js A.tDeckTab): the page again with it open, and its body from the site's markup; the rest open the website's tab.
+    LaunchedEffect(deckTab, ready) {
+        DeckCache.tab = deckTab
+        if (!ready || HomeCache.loaded == null) return@LaunchedEffect
+        runCatching { paint() }
+        if (deckTab == "cards") { panel = null; return@LaunchedEffect }
+        runCatching {
+            take(SitePanelModel.parse(CollectionEngine.deckPanel(game.id, deckId, deckTab)))
+            CollectionEngine.settle(15_000, CollectionEngine.PANEL_MODEL) { j -> if (j.has("key")) take(SitePanelModel.parse(j)) }
+        }
+    }
+    /** tcg.js A.tDeckTab: Cards and the tabs drawn here open here; the others open the website's tab. */
+    fun openTab(k: String) { if (k == "cards" || (tcg && k in TCG_SITE_TABS)) deckTab = k else web("$page/" + android.net.Uri.encode(k), null) }
     fun tcgWrite(kind: String, c: DeckCard?, vararg data: Pair<String, String>) = write(kind, "game" to game.id, *data,
         *(if (c == null) emptyArray() else listOfNotNull("zone" to c.zone, "id" to c.cardId, c.rowIndex?.let { "rowIndex" to it }, c.purchaseIdentity?.let { "purchaseIdentity" to it }).toTypedArray()))
     fun tcgOpen(id: String, name: String = "", open: Map<String, String> = emptyMap()) {
@@ -140,12 +192,12 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
             act = { a, id ->
                 when {
                     a == "deckPlayCpu" -> onPractice(deckId, model?.format.orEmpty())
-                    // tcg.js A.tDeckTab (War Chest, Power): that tab of the website's deck page.
-                    a == "tDeckTab" -> web("$page/" + android.net.Uri.encode(id), null)
+                    // tcg.js A.tDeckTab (War Chest, Power): that tab, here when it is drawn here (openTab), else the website's.
+                    a == "tDeckTab" -> openTab(id)
                     // A.deckMenu: the menu here (DeckMenuSheet); what it still leaves to the website opens the site's menu and taps it.
                     // tcg.js A.tDeckMenu: the menu here too (DeckMenuSheet on tcg.js's sheet); Share deck opens the website's menu and taps it.
                     a == "tDeckMenu" && onDeck != null -> CollectionWrites.menu.value = CollectionWrites.DeckMenuOpen(deckId,
-                        tab = { k -> if (k != "cards") web("$page/" + android.net.Uri.encode(k), null) },
+                        tab = { k -> openTab(k) },
                         web = { x, _ -> web(page, "[data-act=\"tDeckMenu\"]\n[data-act=\"${css(x)}\"]") },
                         openDeck = onDeck, deleted = onBack, game = game.id)
                     // tcg.js A.tDeckExport (the hero's and the price panel's): the game's file, saved to Downloads.
@@ -161,7 +213,7 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
                     else -> web(page, "[data-act=\"${css(a)}\"]")
                 }
             },
-            tab = { k -> if (k == "cards") Unit else web("$page/" + android.net.Uri.encode(k), null) },
+            tab = { k -> openTab(k) },
             tcgCard = { id -> tcgOpen(id) },
             tcgRow = { c -> tcgOpen(c.cardId, c.r.name, c.open) },
             tcgQty = { c, d -> tcgWrite("tDeckQty", c, "delta" to d.toString()) },
@@ -199,7 +251,10 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
     }
     val m = model
     Box(Modifier.fillMaxSize()) {
-    if (m != null) CollectionDeck(m, top, act, nav, query)
+    // The page is recorded as it draws, so the rule glass can blur what is under it (backdrop-filter).
+    val pageLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    if (m != null) Box(Modifier.fillMaxSize().drawWithContent { pageLayer.record { this@drawWithContent.drawContent() }; drawLayer(pageLayer) }) {
+        CollectionDeck(m, top, act, nav, query, site = panel.takeIf { deckTab != "cards" }, siteUi = siteUi) }
     else Column(Modifier.fillMaxSize().background(Site.Bg)) {
         Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { top(null) }
         Column(Modifier.weight(1f).fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -208,6 +263,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
         }
         nav(false)
     }
+    // rule-dex.js showRuleHint's glass over the page; a tap outside it closes it (its ✕, as its own outside listener does).
+    panel?.takeIf { deckTab != "cards" }?.let { p -> SiteGlass(p, siteUi, pageLayer) { p.glass?.find { it.has("rule-dismiss") }?.let { siteUi.tap(it.id) } } }
     cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) { CollectionCardHost(c, onClose = { cards = cards.dropLast(1) }, onOpen = { cards = cards + it }, web = web, onSet = onSet) } }
     }
 }

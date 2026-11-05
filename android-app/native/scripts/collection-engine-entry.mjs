@@ -51,6 +51,7 @@ import {cardImage, img as imgHtml} from 'WEB/ui.js';
 import {massEntryUrl} from 'WEB/buy.js';
 import {interactiveRules, attachRuleLearning} from 'WEB/rule-learning.js';
 import {showRuleHint} from 'WEB/rule-dex.js';
+import {rollDice} from 'WEB/war-chest.js';
 import '../scripts/web-bytes.mjs';
 import {Document as SiteDocument, serialize as domJson, byId as domById, tap as domTap, type as domType} from '../scripts/site-dom.mjs';
 
@@ -562,8 +563,10 @@ function tcgDeckRow(n) {
     // What its A.tCard hands the card page (purchaseRowAttrs): Pokémon's purchase variant, Yu-Gi-Oh!'s printing and edition.
     open: Object.fromEntries([['data-set-variant', 'setVariant'], ['data-printing', 'printing'], ['data-edition', 'edition']].filter(([a]) => nm?.attrs[a] !== undefined).map(([a, k]) => [k, nm.attrs[a]]))};
 }
-function tcgDeckPageModel(G, id) {
-  tcgFocus(G, 'tdeck'); S.ui.tdeckId = id; (S.ui.tdeckTab ||= {})[G + ':' + id] = 'cards';
+// [tab]: the tab open (A.tDeckTab keeps it in S.ui.tdeckTab); left out, the one open stays. Any other than Cards draws its body
+// as a panel (deckPanel); the page model then carries the hero, actions and tabs.
+function tcgDeckPageModel(G, id, tab) {
+  tcgFocus(G, 'tdeck'); S.ui.tdeckId = id; if (tab) (S.ui.tdeckTab ||= {})[G + ':' + id] = tab;
   const t = tree(tcgDeck(id)), hero = one(t, cls('ds-hero'));
   if (!hero) { const e = one(t, cls('empty')); return {game: G, id, missing: {title: text(one(e, tagIs('h3'))), text: text(one(e, tagIs('p')))}}; }
   const body = one(t, cls('deck-body')), viewer = one(body, cls('deck-viewer')), add = one(body, cls('deck-add')), addIn = one(add, tagIs('input')), addBtn = one(add, tagIs('button'));
@@ -2223,22 +2226,55 @@ function panelRun(f) {
   try { return f(); } finally { for (const k of ['document', 'window']) { if (was[k] === undefined) delete globalThis[k]; else globalThis[k] = was[k]; } }
 }
 const PANEL_ACTS = {ruleHint: t => showRuleHint(t)};
-function panelOpen(key, html, attach) {
+// [acts]: the page's own data-act handlers for this panel (a deck tab's, TDECK_ACTS), before the shared ones.
+function panelOpen(key, html, attach, acts = {}) {
   if (panel?.key === key) return;
   const doc = new SiteDocument(), host = doc.createElement('div');
-  panel = {key, doc, host, acted: null};
+  panel = {key, doc, host, acted: null, acts, toasts: []};
   doc.body.append(host);
   // app.js's document click: the nearest data-act, unless disabled, runs its handler (the ones this page has here).
   doc.addEventListener('click', e => {
     const t = e.target.closest('[data-act]'); if (!t || t.disabled) return;
-    const fn = PANEL_ACTS[t.dataset.act];
+    const fn = panel.acts[t.dataset.act] || PANEL_ACTS[t.dataset.act];
     if (t.localName === 'a' && t.getAttribute('href')) return;
     e.preventDefault();
+    // What a handler toasts (tcg.js ctx.toast) goes to the app with the panel.
+    const n0 = toasts.length, was = toasts;
     if (fn) fn(t, e); else panel.acted = {act: t.dataset.act, data: {...t.dataset}};
+    if (was === toasts) panel.toasts.push(...toasts.splice(n0));
   });
   panelRun(() => { host.innerHTML = html; attach?.(host); });
 }
-const panelModel = () => { const reveal = panel.doc.reveals.splice(0); const acted = panel.acted; panel.acted = null; return json({key: panel.key, body: domJson(panel.doc.body, el => icon(svgIn(tree(el.outerHTML)))), reveal: reveal.length ? reveal[reveal.length - 1] : null, acted}); };
+const panelModel = () => { const reveal = panel.doc.reveals.splice(0); const acted = panel.acted; panel.acted = null;
+  return json({key: panel.key, body: domJson(panel.doc.body, el => icon(svgIn(tree(el.outerHTML))), el => picture(one(tree(el.outerHTML), tagIs('img')))),
+    reveal: reveal.length ? reveal[reveal.length - 1] : null, acted, toasts: panel.toasts.splice(0).map(t => t.text)}); };
+// What app.js attaches to a deck tab's body once it is drawn: the Rules tab's rule-learning.js listeners.
+const PANEL_ATTACH = {rules: host => attachRuleLearning(host)};
+// A deck tab's data-acts as app.js and tcg.js run them on the page (their render() draws the page again: here the tab's body,
+// panel.redraw). War Chest (app.js chestTool): Dice & coin writes its roll in the chest, Draw a hand brings #chestDraw into view,
+// Goldfish opens Power; Game Night, Share table, Table Spirit, Deck journal, Ask the Judge and Card lookup go to the app (acted).
+// The sample hand: tcg.js A.tDraw and A.tDrawOne.
+const TDECK_ACTS = {
+  chestTool: t => {
+    const tool = t.dataset.tool;
+    if (tool === 'dice') { const n = panel.doc.querySelector('[data-chest-result]'); if (n) n.textContent = rollDice(); return; }
+    if (tool === 'draw') return panel.doc.getElementById('chestDraw')?.scrollIntoView({behavior: 'smooth', block: 'start'});
+    if (tool === 'goldfish') { panel.acted = {act: 'tDeckTab', data: {deck: S.ui.tdeckId, id: 'insights'}}; return; }
+    panel.acted = {act: 'chestTool', data: {tool}};
+  },
+  tDraw: t => { TA.tDraw(t); panel.redraw(); },
+  tDrawOne: t => { TA.tDrawOne(t); panel.redraw(); },
+};
+// tcg.js tcgDeck with [tab] open: its .deck-body, as the page draws it, becomes the panel, fresh each time the tab opens (as A.tDeckTab draws the page again).
+function tcgDeckPanel(G, id, tab) {
+  tcgFocus(G, 'tdeck'); S.ui.tdeckId = id; (S.ui.tdeckTab ||= {})[G + ':' + id] = tab;
+  const d = tcgGs(G).decks.find(x => x.id === id), key = ['tdeck', G, id, tab, d?.format || ''].join('|');
+  panel = null;
+  const body = () => { const box = new SiteDocument().createElement('div'); box.innerHTML = tcgDeck(id); return box.querySelector('.deck-body')?.innerHTML || ''; };
+  const attach = host => PANEL_ATTACH[tab]?.(host);
+  panelOpen(key, body(), attach, TDECK_ACTS);
+  panel.redraw = () => { tcgFocus(G, 'tdeck'); S.ui.tdeckId = id; panelRun(() => { panel.host.innerHTML = body(); attach(panel.host); }); };
+}
 
 globalThis.Collection = {
   // The account's workspace row data (cloud.js), normalized as app.js loads it; [catalogJson] is the app's saved catalog.
@@ -2386,6 +2422,8 @@ globalThis.Collection = {
   setWent() { const m = /^#set\/(.+)$/.exec(tcgWent); return m ? decodeURIComponent(m[1]) : ''; },
   // The deck page's Rules tab (tcg.js: interactiveRules(g, {format: d.format})), and taps and typing on whatever panel is open.
   rules(game, format) { panelOpen('rules|' + game + '|' + (format || ''), interactiveRules(game, {format: format || ''}), host => attachRuleLearning(host)); return panelModel(); },
+  // A Yu-Gi-Oh! or Pokémon deck's tab other than Cards (tcg.js A.tDeckTab): its body as a panel; the page itself comes from deck() with opts.tab.
+  deckPanel(game, id, tab) { tcgDeckPanel(game, id, tab); return panelModel(); },
   panelModel() { return panel ? panelModel() : '{}'; },
   panelTap(id) { const el = panel && domById(panel.doc.documentElement, Number(id)); if (el) panelRun(() => domTap(el)); return panel ? panelModel() : '{}'; },
   panelType(id, value) { const el = panel && domById(panel.doc.documentElement, Number(id)); if (el) panelRun(() => domType(el, value)); return panel ? panelModel() : '{}'; },
@@ -2401,7 +2439,7 @@ globalThis.Collection = {
   // views.js deckPage(), the Cards tab of deck [id]; deckDo applies one of its controls as the site's handler does (deckAct), then draws it again.
   // [opts] = {search, filter, sort, view}: the controls as the app last left them, applied before the page draws.
   deck(game, id, opts) { if (game && game !== 'mtg') { tcgFocus(game, 'tdeck'); S.ui.tdeckId = id; const o = opts ? JSON.parse(opts) : {}; if (o.view != null) tcgDeckAct.view(o.view);
-    tdeckAt = [game, id]; tcgScreenCards(game, 'tdeck', {id}); return json(tcgDeckPageModel(game, id)); }
+    tdeckAt = [game, id]; tcgScreenCards(game, 'tdeck', {id}); return json(tcgDeckPageModel(game, id, o.tab || 'cards')); }
     mtgFocus(); deckOpen(id); const o = opts ? JSON.parse(opts) : {}; for (const k of Object.keys(deckAct)) if (o[k] != null) deckAct[k](o[k]); return json(deckPageModel(game, id)); },
   // The open Yu-Gi-Oh! or Pokémon deck page again (after settle: a search's results, prices and card data that came in).
   tdeckModel() { if (!tdeckAt) return '{}'; const [g, id] = tdeckAt; return json(tcgDeckPageModel(g, id)); },

@@ -273,18 +273,21 @@ private val HeroShadow = Shadow(Color(0xBB000000), Offset(0f, 1.5f), 4f)
 
 @Composable
 fun CollectionDeck(m: CollectionDeckModel, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, act: CollectionDeckActions = CollectionDeckActions(),
-                   nav: @Composable (vertical: Boolean) -> Unit = {}, query: String = m.searchValue) {
+                   nav: @Composable (vertical: Boolean) -> Unit = {}, query: String = m.searchValue,
+                   /** A Yu-Gi-Oh! or Pokémon deck's open tab other than Cards: its body, the site's own markup (CollectionEngine.deckPanel), and its taps. */
+                   site: SitePanelModel? = null, siteUi: SiteUi? = null) {
     androidx.compose.runtime.CompositionLocalProvider(LocalSheetPal provides sheetPal(m.game), LocalGameGold provides m.game.gold, LocalDeckGame provides m.game) {
     BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
         val screen = maxWidth
-        if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); DeckPage(m, top, act, Modifier.weight(1f).fillMaxHeight(), screen, query) }
-        else Column(Modifier.fillMaxSize()) { DeckPage(m, top, act, Modifier.weight(1f).fillMaxWidth(), screen, query); nav(false) }
+        if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); DeckPage(m, top, act, Modifier.weight(1f).fillMaxHeight(), screen, query, site, siteUi) }
+        else Column(Modifier.fillMaxSize()) { DeckPage(m, top, act, Modifier.weight(1f).fillMaxWidth(), screen, query, site, siteUi); nav(false) }
     }
     }
 }
 
 @Composable
-private fun DeckPage(m: CollectionDeckModel, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, act: CollectionDeckActions, modifier: Modifier, screen: Dp, query: String) {
+private fun DeckPage(m: CollectionDeckModel, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, act: CollectionDeckActions, modifier: Modifier, screen: Dp, query: String,
+                     site: SitePanelModel?, siteUi: SiteUi?) {
     val wide = screen >= 600.dp
     val small = screen <= 480.dp
     val gutter = if (wide) 22.dp else 16.dp
@@ -297,6 +300,8 @@ private fun DeckPage(m: CollectionDeckModel, top: @Composable (tabs: (@Composabl
     // A Yu-Gi-Oh! or Pokémon deck (tcg.js deckCardsTab): "Add a card by name" as typed (I.tDeckQ), the rules review open or shut;
     // the hero's "n to fix" opens the review and brings it into view (A.tIssues).
     val tcg = m.find != null
+    // tcg.js tcgDeck: a tab other than Cards draws its own body (.deck-body) under the tabs, not the cards' tools.
+    val sited = m.game != CardGame.MTG && (m.tabs.firstOrNull { it.on }?.key ?: "cards") != "cards"
     var findText by remember(m.id) { mutableStateOf(m.find?.value.orEmpty()) }
     var issuesOpen by remember(m.id) { mutableStateOf(false) }
     val issuesSeen = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
@@ -329,7 +334,8 @@ private fun DeckPage(m: CollectionDeckModel, top: @Composable (tabs: (@Composabl
                 m.note?.let { add(Triple(10.dp, 10.dp) { NoteWarn(it, m.noteLines) }) }
                 if (m.tabs.isNotEmpty()) add(Triple(12.dp, 12.dp) { DeckTabs(m.tabs, screen, act.tab) })
                 m.commanderNote?.let { add(Triple(10.dp, 10.dp) { NoteWarn("⚠ $it", emptyList(), Modifier.clickable { act.tab("upgrade") }) }) }
-                if (tcg) {
+                if (sited) Unit
+                else if (tcg) {
                     // .deck-view-toolbar (16 / 12), .searchbar.deck-add (12 / 6), .add-results (its 10 under it), the format's note,
                     // the staples panel and the rules review (.panel, 12 / 12).
                     add(Triple((-16).dp, 12.dp) { TcgViewBar(m.viewLabel, m.views, act.view) })
@@ -352,6 +358,17 @@ private fun DeckPage(m: CollectionDeckModel, top: @Composable (tabs: (@Composabl
                 for ((top, bottom, block) in blocks) { Spacer(Modifier.height(if (top < 0.dp) below - top else maxOf(below, top))); block(); below = bottom }
                 Spacer(Modifier.height(below))
             }
+        }
+        if (sited) {
+            // .deck-body: 4 above (its padding top, under the tabs' 12), then the tab's markup as the site's scripts leave it.
+            item(key = "site") {
+                val ui = remember(siteUi, screen) { siteUi?.let { SiteUi(it.tap, it.type, it.open, screen, it.anchor) } }
+                Box(Modifier.fillMaxWidth().padding(horizontal = gutter).padding(top = 4.dp)) {
+                    if (site != null && ui != null) SitePanel(site, ui)
+                    else Text("Opening this tab…", Modifier.fillMaxWidth().padding(vertical = 24.dp), style = sans(15f, 400, Mute), textAlign = TextAlign.Center)
+                }
+            }
+            return@LazyColumn
         }
         if (tcg) { tcgZones(m, act, gutter, inner, small, reduced); return@LazyColumn }
         if (m.groups.isEmpty()) item(key = "none") {
