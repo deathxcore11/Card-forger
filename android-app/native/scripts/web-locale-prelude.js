@@ -1,0 +1,130 @@
+// The browser's en-US number and date formatting for the QuickJS bundles (QuickJS has no Intl): what the site's
+// usd(), toLocaleString() and toLocaleDateString() print in an English browser. Checked against Node's ICU by
+// scripts/test-web-locale.mjs. Only the options the bundled site code passes are supported; any other option
+// throws, so a new use shows up in the export instead of printing something the site would not.
+const NUMBER_KEYS = new Set(['style', 'currency', 'minimumFractionDigits', 'maximumFractionDigits', 'useGrouping']);
+const SYMBOLS = {USD: '$', EUR: '€', GBP: '£', JPY: '¥', CAD: 'CA$', AUD: 'A$'};
+const DIGITS = {JPY: 0};
+
+function decimal(n, minF, maxF, shift = 0) {
+  // The shortest digits that read back as n (what ICU rounds), then half away from zero at maxF.
+  let [mant, exp = '0'] = String(n).split('e'), [int, frac = ''] = mant.split('.'), digits = int + frac, point = int.length + Number(exp) + shift;
+  if (point < 0) { digits = '0'.repeat(-point) + digits; point = 0; }
+  if (point > digits.length) digits += '0'.repeat(point - digits.length);
+  int = digits.slice(0, point) || '0'; frac = digits.slice(point);
+  if (frac.length > maxF) {
+    const up = frac[maxF] >= '5'; frac = frac.slice(0, maxF);
+    if (up) {
+      const all = (int + frac).split('').map(Number); let k = all.length - 1;
+      for (; k >= 0; k--) { if (all[k] === 9) all[k] = 0; else { all[k]++; break; } }
+      if (k < 0) all.unshift(1);
+      const t = all.join(''); int = t.slice(0, t.length - frac.length); frac = t.slice(t.length - frac.length);
+    }
+  }
+  frac = frac.replace(/0+$/, ''); while (frac.length < minF) frac += '0';
+  return {int: int.replace(/^0+(?=\d)/, ''), frac};
+}
+
+class NumberFormat {
+  constructor(locales, options = {}) {
+    for (const k of Object.keys(options || {})) if (!NUMBER_KEYS.has(k)) throw new RangeError(`NumberFormat option ${k} is not supported in the app`);
+    const o = options || {}, style = o.style || 'decimal';
+    if (!['decimal', 'currency', 'percent'].includes(style)) throw new RangeError(`NumberFormat style ${style} is not supported in the app`);
+    const cur = style === 'currency' ? String(o.currency || '').toUpperCase() : '';
+    if (style === 'currency' && !cur) throw new TypeError('Currency code is required with currency style.');
+    const cd = cur ? (DIGITS[cur] ?? 2) : 0, mnDefault = style === 'currency' ? cd : 0, mxDefault = style === 'currency' ? cd : style === 'percent' ? 0 : 3;
+    let mn = o.minimumFractionDigits, mx = o.maximumFractionDigits;
+    if (mn !== undefined) mn = Math.floor(Number(mn)); if (mx !== undefined) mx = Math.floor(Number(mx));
+    if (mn === undefined && mx === undefined) { mn = mnDefault; mx = mxDefault; }
+    else if (mn === undefined) mn = Math.min(mnDefault, mx);
+    else if (mx === undefined) mx = Math.max(mxDefault, mn);
+    if (!(mn >= 0 && mn <= 100 && mx >= 0 && mx <= 100) || mn > mx) throw new RangeError('maximumFractionDigits value is out of range.');
+    this.o = {style, cur, mn, mx, group: o.useGrouping !== false && o.useGrouping !== 'false'};
+  }
+  format(value) {
+    let n = Number(value); const {style, cur, mn, mx, group} = this.o;
+    const neg = n < 0 || Object.is(n, -0); n = Math.abs(n);
+    let body;
+    if (Number.isNaN(n)) body = 'NaN';
+    else if (n === Infinity) body = '∞';
+    else {
+      const d = decimal(n, mn, mx, style === 'percent' ? 2 : 0);
+      body = (group ? d.int.replace(/\B(?=(\d{3})+$)/g, ',') : d.int) + (d.frac ? '.' + d.frac : '');
+    }
+    if (style === 'percent') body += '%';
+    if (style === 'currency') body = (SYMBOLS[cur] || cur + ' ') + body;
+    return (neg ? '-' : '') + body;
+  }
+}
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DATE_KEYS = new Set(['weekday', 'year', 'month', 'day', 'timeZone']);
+function dateString(date, options) {
+  const o = options || {};
+  for (const k of Object.keys(o)) if (!DATE_KEYS.has(k)) throw new RangeError(`Date option ${k} is not supported in the app`);
+  if (o.timeZone !== undefined && !/^(UTC|Etc\/UTC|GMT)$/i.test(o.timeZone)) throw new RangeError(`Time zone ${o.timeZone} is not supported in the app`);
+  const t = date.getTime(); if (!Number.isFinite(t)) return 'Invalid Date';
+  const utc = o.timeZone !== undefined, y = utc ? date.getUTCFullYear() : date.getFullYear(), m = utc ? date.getUTCMonth() : date.getMonth(),
+    d = utc ? date.getUTCDate() : date.getDate(), w = utc ? date.getUTCDay() : date.getDay();
+  const none = !o.weekday && !o.year && !o.month && !o.day, year = none ? 'numeric' : o.year, month = none ? 'numeric' : o.month, day = none ? 'numeric' : o.day;
+  const yy = year === '2-digit' ? String(y % 100).padStart(2, '0') : year ? String(y) : '', dd = day === '2-digit' ? String(d).padStart(2, '0') : day ? String(d) : '';
+  const wd = o.weekday === 'long' ? WEEKDAYS[w] : o.weekday === 'short' ? WEEKDAYS[w].slice(0, 3) : o.weekday === 'narrow' ? WEEKDAYS[w][0] : '';
+  let out;
+  if (month === 'numeric' || month === '2-digit') {
+    const mm = month === '2-digit' ? String(m + 1).padStart(2, '0') : String(m + 1);
+    out = [mm, dd, yy].filter(Boolean).join('/');
+  } else if (month) {
+    const name = month === 'long' ? MONTHS[m] : month === 'narrow' ? MONTHS[m][0] : MONTHS[m].slice(0, 3);
+    out = dd && yy ? `${name} ${dd}, ${yy}` : dd ? `${name} ${dd}` : yy ? `${name} ${yy}` : name;
+  } else out = [dd, yy].filter(Boolean).join(', ');
+  return wd ? (out ? `${wd}, ${out}` : wd) : out;
+}
+
+// Intl.DateTimeFormat as daily-clock.js uses it: en-CA numeric fields in a named time zone. A zone's UTC offsets come from
+// the device's own time zone rules: the host sets globalThis.__tz = {zone: [[fromMs, offsetMinutes], …]} (CollectionEngine.kt).
+const DTF_KEYS = new Set(['timeZone', 'year', 'month', 'day', 'hour', 'minute', 'second', 'hourCycle']);
+class DateTimeFormat {
+  constructor(locales, options = {}) {
+    const o = options || {}, locale = Array.isArray(locales) ? locales[0] : locales;
+    for (const k of Object.keys(o)) if (!DTF_KEYS.has(k)) throw new RangeError(`DateTimeFormat option ${k} is not supported in the app`);
+    if (locale !== 'en-CA') throw new RangeError(`DateTimeFormat locale ${locale} is not supported in the app`);
+    if (o.hour && o.hourCycle !== 'h23') throw new RangeError('DateTimeFormat needs hourCycle h23 in the app');
+    for (const k of ['year', 'month', 'day', 'hour', 'minute', 'second']) if (o[k] && o[k] !== 'numeric' && o[k] !== '2-digit') throw new RangeError(`DateTimeFormat ${k}: ${o[k]} is not supported in the app`);
+    const zone = o.timeZone;
+    if (zone !== undefined && !/^(UTC|Etc\/UTC|GMT)$/i.test(zone) && !/^[A-Za-z_]+\/[A-Za-z_\/]+$/.test(zone)) throw new RangeError(`Invalid time zone specified: ${zone}`);
+    this.o = {...o, zone};
+  }
+  offset(ms) {
+    const zone = this.o.zone;
+    if (zone === undefined) return -new Date(ms).getTimezoneOffset();
+    if (/^(UTC|Etc\/UTC|GMT)$/i.test(zone)) return 0;
+    const rows = globalThis.__tz?.[zone];
+    if (!rows?.length) throw new RangeError(`Time zone ${zone} has no rules in the app`);
+    let off = rows[0][1]; for (const [from, minutes] of rows) { if (from <= ms) off = minutes; else break; }
+    return off;
+  }
+  formatToParts(date = Date.now()) {
+    const ms = date instanceof Date ? date.getTime() : Number(date);
+    if (!Number.isFinite(ms)) throw new RangeError('Invalid time value');
+    const t = new Date(ms + this.offset(ms) * 60000), o = this.o, two = n => String(n).padStart(2, '0'), out = [];
+    const field = (type, n, style) => out.push({type, value: style === '2-digit' ? two(n) : String(n)});
+    const lit = v => out.push({type: 'literal', value: v});
+    if (o.year) field('year', t.getUTCFullYear(), 'numeric');
+    if (o.month) { if (out.length) lit('-'); field('month', t.getUTCMonth() + 1, o.month); }
+    if (o.day) { if (out.length) lit('-'); field('day', t.getUTCDate(), o.day); }
+    if (o.hour || o.minute || o.second) {
+      if (out.length) lit(', ');
+      const time = [o.hour && ['hour', t.getUTCHours(), o.hour], o.minute && ['minute', t.getUTCMinutes(), '2-digit'], o.second && ['second', t.getUTCSeconds(), '2-digit']].filter(Boolean);
+      time.forEach(([type, n, style], i) => { if (i) lit(':'); field(type, n, style); });
+    }
+    return out;
+  }
+  format(date) { return this.formatToParts(date).map(p => p.value).join(''); }
+}
+
+const intl = typeof globalThis.Intl === 'object' && globalThis.Intl ? globalThis.Intl : {};
+globalThis.Intl = Object.assign({}, intl, {NumberFormat, DateTimeFormat});
+Number.prototype.toLocaleString = function (locales, options) { return new NumberFormat(locales, options).format(this); };
+Date.prototype.toLocaleDateString = function (locales, options) { return dateString(this, options); };
+export {NumberFormat as __NumberFormat, dateString as __dateString, DateTimeFormat as __DateTimeFormat};
