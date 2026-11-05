@@ -102,20 +102,20 @@ export function stylesFor(styles = [], oracle = '') {
 }
 
 // The Secret Lair store (Randall 3 Nov 22:34Z, like Arena's card-style store): six single Secret Lair
-// cards a week beside the bundle, a few of them on sale. Each one is the real printing: into the Trunk,
-// with its Secret Lair art unlocked. Pay in coins, or one seal of the card's rarity.
+// cards a week, a few of them on sale. Each one is the real printing: into the Trunk,
+// with its Secret Lair art unlocked. Coins only (no seals, no bundle).
 const SALES = [60, 50, 40, 25];
 const BASIC = /^(?:Snow-Covered )?(?:Plains|Island|Swamp|Mountain|Forest|Wastes)$/;
 export const SECRET_LAIR_OFFERS = 6;
 export function weeklySecretLairOffers(drops = [], week = '', today = '', bundleId = '', n = SECRET_LAIR_OFFERS) {
-  const pool = drops.filter(d => d.id !== bundleId && (!today || d.released <= today)).flatMap(d => d.cards).filter(c => !BASIC.test(c.n));
-  const out = [], seen = new Set();
-  let h = hash('slo:' + week);
-  for (let tries = 0; out.length < n && tries < n * 20 && pool.length; tries++) {
-    const c = pool[h % pool.length]; h = Math.imul(h ^ (h >>> 13), 2654435761) >>> 0;
-    if (seen.has(c.o)) continue;
-    seen.add(c.o); out.push(c);
-  }
+  // Every printing is on offer in turn (Randall 5 Nov: nothing unobtainable). The pool is put in a fixed
+  // shuffled order and each week takes the next window of six, so a full lap shows every printing once
+  // before any repeats. New drops join the order without disturbing the rest.
+  const pool = drops.filter(d => d.id !== bundleId && (!today || d.released <= today)).flatMap(d => d.cards).filter(c => !BASIC.test(c.n))
+    .map(c => [hash('slo-order:' + c.id), c]).sort((a, b) => a[0] - b[0] || String(a[1].id).localeCompare(String(b[1].id))).map(x => x[1]);
+  const [y, w] = String(week).split('-W'), jan4 = Date.UTC(Number(y) || 2020, 0, 4), monday = jan4 - ((new Date(jan4).getUTCDay() + 6) % 7) * 864e5,
+    k = Math.round((monday + ((Number(w) || 1) - 1) * 7 * 864e5) / (7 * 864e5)); // consecutive for every Play week
+  const out = []; for (let i = 0; i < Math.min(n, pool.length); i++) out.push(pool[(k * n + i) % pool.length]);
   // Four are on sale, at 60, 50, 40 and 25% off, in places that change every week.
   const saleAt = new Set(); for (let i = 0; saleAt.size < Math.min(SALES.length, out.length); i++) saleAt.add((hash('sls:' + week + i)) % out.length);
   const order = [...saleAt];

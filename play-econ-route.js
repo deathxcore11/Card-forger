@@ -197,7 +197,7 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       const sl = l ? secretLairOffer(drops, s.config) : null, preconStore = await preconStoreFiles(fetcher).catch(() => null);
       const store = l ? secretLairStoreOffer(drops) : null;
       return json({...s, rewardSet: sets.reward, shop: sets.shop, counters: c || {}, claimed: claimed || [], story: Array.isArray(story) ? story : [],
-        styles: l?.styles || [], secretLair: sl ? {...sl, bought: (l.bundles || []).includes(sl.ref)} : null, secretLairStore: store, preconStore});
+        styles: l?.styles || [], secretLair: null, secretLairStore: store, preconStore});
     }
     if (path === 'achievements' && request.method === 'GET') {
       // Every achievement, quest and log-in reward, worked out for this player (play-achievements.js).
@@ -254,6 +254,8 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       const [card] = await scryfallCollection([{id}], fetcher);
       const seal = RARITY_SEAL[card?.rarity];
       if (!card?.oracle_id || !seal) return fail('bad_card');
+      // Secret Lair printings are never crafted: the weekly store (coins), solo, and achievements only.
+      if (card.set === 'sld') return fail('no_craft_sld', 409);
       const s = await state(), owned = (s.cards || []).find(c => c.o === card.oracle_id)?.c || 0;
       if (owned >= (s.config?.maxCopies || 4)) return fail('have_max', 409);
       // A holo stamp costs the stamp plus the holo upgrade (1 + 2 seals of the card's rarity).
@@ -412,6 +414,10 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       return json({counters: out.counters});
     }
     if (path === 'secretlair') {
+      // The weekly bundle is retired (Randall 5 Nov): Secret Lair cards sell one at a time in the store, for coins.
+      return fail('no_bundle', 404);
+    }
+    if (path === 'secretlair-retired') {
       // This week's Secret Lair bundle: coins for real Secret Lair printings, each card into the Trunk with
       // its Secret Lair art unlocked as a style. Once per week (the sl:<week> ref).
       const [s, l, drops] = await Promise.all([state(), looks(), secretLairDrops(env, request, fetcher)]);
@@ -439,7 +445,8 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       const card = store.offers.find(c => c.id === body.id), full = card && drops.flatMap(d => d.cards).find(c => c.id === card.id);
       if (!card || !full) return fail('no_offer', 404);
       if ((l.styles || []).some(x => x.id === card.id)) return fail('bought', 409);
-      const price = secretLairOfferPrice(card, s.config), seal = body.pay === 'seal';
+      const price = secretLairOfferPrice(card, s.config), seal = false;
+      if (body.pay === 'seal') return fail('coins_only', 409);
       if (seal ? (s.wallet?.['seal_' + price.seal] || 0) < 1 : (s.wallet?.coins || 0) < price.coins) return fail(seal ? 'no_seal' : 'short_coins', 409);
       const ref = `slo:${store.week}:${card.id}`;
       const paid = await apply(ref, 'secretlair', {...(seal ? {seals: {[price.seal]: -1}} : {coins: -price.coins}), cards: [secretLairCardDelta(full)]});

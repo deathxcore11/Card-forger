@@ -126,14 +126,14 @@ export function secretLairStore(snapshot) {
   const coins = s.wallet?.coins | 0, have = new Set((s.styles || []).map(x => x.id));
   const ms = Math.max(0, Date.parse(st.ends) - Date.now()), d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5);
   const left = d ? `${d} day${d === 1 ? '' : 's'} ${h} h` : `${h} hour${h === 1 ? '' : 's'}`;
-  const tile = (c, i) => { const p = secretLairOfferPrice(c, s.config), owned = have.has(c.id), seals = s.wallet?.['seal_' + p.seal] | 0;
+  const tile = (c, i) => { const p = secretLairOfferPrice(c, s.config), owned = have.has(c.id);
     return `<li class="pe-slo${c.off ? ' pe-slo--sale' : ''}${owned ? ' is-owned' : ''}" style="--i:${i}">
       <button class="pe-slo-art" data-act="card" data-name="${esc(c.n)}" data-play-card="1" aria-label="Open ${esc(c.n)}"><img src="${esc(secretLairImage(c.id))}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">${c.off ? `<span class="pe-slo-ribbon" aria-hidden="true">${c.off}% off</span>` : ''}</button>
       <p class="pe-slo-name">${esc(c.n)}</p>
       ${owned ? '<span class="pe-sl-done">Yours</span>' : `<div class="pe-slo-pay">
         ${c.off ? `<s class="pe-slo-was" aria-label="Was ${n(p.was)} coins">${n(p.was)}</s>` : ''}
         <button class="pe-buy" data-act="playEconSlOffer" data-econ-card="${esc(c.id)}" data-econ-pay="coins" ${coins < p.coins || snapshot.busy ? 'disabled' : ''} aria-label="Buy ${esc(c.n)} for ${n(p.coins)} coins${c.off ? `, ${c.off}% off` : ''}">${coinIcon('pe-coin--sm')}<b>${n(p.coins)}</b></button>
-        <button class="pe-buy pe-buy--seal" data-act="playEconSlOffer" data-econ-card="${esc(c.id)}" data-econ-pay="seal" ${seals < 1 || snapshot.busy ? 'disabled' : ''} aria-label="Buy ${esc(c.n)} for 1 ${SEAL_WORD[p.seal]} seal">${sealIcon(p.seal)}<b>1</b></button></div>`}</li>`; };
+      </div>`}</li>`; };
   return `<section class="pe-shelf pe-slo-shelf" aria-labelledby="peSloTitle"><div class="pe-sl-head"><h2 id="peSloTitle">Secret Lair cards</h2><span class="pe-sl-left">New cards in ${esc(left)}</span></div>
     <ul class="pe-slo-row" data-audit-scroll>${st.offers.map(tile).join('')}</ul></section>`;
 }
