@@ -282,6 +282,15 @@ export const LESSONS = {
   'Station': 'Station: tap your creatures to add charge to a Spacecraft. Once it is charged enough, it comes alive as a vehicle with real power.',
   'Warp': 'Warp: cast it cheaper from your hand, but it is exiled at end of turn. You can cast it again from exile later, at full cost.',
   'Void': 'Void turns on if a permanent left the battlefield or a spell was warped this turn. Plan the turn so the bonus lands.',
+  'Web-slinging': 'Web-slinging: cast it for its web cost by returning a tapped creature you control to your hand. A swing and a reset.',
+  'Mayhem': 'Mayhem: if you discarded this card this turn, you may cast it from your graveyard right away, before the turn ends.',
+  'Bending': 'Bending: each element has its own trick. Airbending sends a permanent to exile so you can cast it again for two. Firebending adds mana on attack.',
+  'Earthbend': 'Earthbend: a land becomes a creature with +1/+1 counters and haste. If it dies or is exiled, it returns tapped. Rock is a stubborn element.',
+  'Sneak': 'Sneak: when an attacker you control is unblocked, return it to hand and cast a stronger fighter attacking in its place for the sneak cost.',
+  'Alliance': 'Alliance: each time another creature enters on your side, this one gets a small bonus. Keep the crowd coming.',
+  'Disappear': 'Disappear: if one of your permanents left the battlefield this turn, the creature brings a bonus Ninja token.',
+  'Teamwork': 'Teamwork: tap creatures with enough total power as an extra cost and the spell does more. A crowd turns a small spell into a big one.',
+  'Power-up': 'Power-up: pay once to put counters on the creature. It costs less the turn it enters.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
