@@ -80,6 +80,8 @@ import {
   collectionValue, lotPrice, lotValuation, swapImpact, applySwapsToCards, cardSig,
 } from "./insights.js";
 import { bracketEstimate, manaBase, manaBaseExplanation, isOut, deckReview, explainSwap, podSpeed } from "./extras.js";
+// Commander chips say the official bracket, as the real game does; other formats keep the meta Tier.
+const deckBracket = (d) => { if (d?.format !== "Commander") return null; try { const b = bracketEstimate(d, S.catalog)?.bracket; return Number.isInteger(b) ? b : null; } catch { return null; } };
 import { buildability, rankBuildable } from "./share.js";
 import { formatsFor } from "./builder.js";
 import { gameBinders, gameSwitch, homeHero, homeToday, heroFor, quickTiles, randomTools, draftPath, nextCard, startHidden, savedSearches } from "./tcg.js";
@@ -177,7 +179,7 @@ export function refreshDeckScores(root) {
     if (node.isConnected === false) continue;
     const deck = deckById(node.dataset.deckScore);
     if (!deck) continue;
-    const html = powerChip(mtgPower(deck),{tier:true});
+    const html = powerChip(mtgPower(deck),{tier:true,bracket:deckBracket(deck)});
     if (node.innerHTML !== html) node.innerHTML = html;
   }
 }
@@ -201,7 +203,7 @@ export function deckTile(d, wide = false, {playSelection = null} = {}) {
     <span class="tile-body">
       <b>${esc(d.name)}</b>
       <small>${esc(formatOf(d).commander ? d.commander || "No commander yet" : mtgPower(d).plan)} · ${main}/${target}${side ? ` · ${side} sideboard` : ""}</small>
-      <span class="tile-stats"><span data-deck-score="${esc(d.id)}">${powerChip(mtgPower(d),{tier:true})}</span><span class="tile-owned"><em>${Math.round(owned * 100)}%</em> owned</span><span class="tile-find">${t.missing ? `<em>${t.missing}</em> to find` : t.copies ? "Ready" : ""}</span></span>
+      <span class="tile-stats"><span data-deck-score="${esc(d.id)}">${powerChip(mtgPower(d),{tier:true,bracket:deckBracket(d)})}</span><span class="tile-owned"><em>${Math.round(owned * 100)}%</em> owned</span><span class="tile-find">${t.missing ? `<em>${t.missing}</em> to find` : t.copies ? "Ready" : ""}</span></span>
       ${bar(owned, "thin")}
     </span>
   </button>`;
