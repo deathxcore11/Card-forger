@@ -114,6 +114,24 @@ object Decks {
         return ((d.getAsJsonArray("mainBoard")?.map { row(it.asJsonObject, null) } ?: emptyList()) + (d.getAsJsonArray("sideBoard")?.map { row(it.asJsonObject, "side") } ?: emptyList())).filter { it.name.isNotEmpty() }
     }
 
+    /**
+     * preconFace (play-econ-rules.js): the card a precon tile shows, as (name, Scryfall id). The commander when there
+     * is one, else the weightiest nonland spell: planeswalkers, then creatures, then rarity, mana value and foil, less
+     * a point per copy (so a one-of lead beats a four-of).
+     */
+    fun preconFace(d: JsonObject): Pair<String, String>? {
+        fun pick(c: JsonObject?): Pair<String, String>? = c?.getAsJsonObject("identifiers")?.s("scryfallId")?.ifEmpty { null }?.let { c.s("name") to it }
+        pick(d.getAsJsonArray("commander")?.firstOrNull() as? JsonObject)?.let { return it }
+        fun strings(c: JsonObject, k: String) = c.getAsJsonArray(k)?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString } ?: emptyList()
+        fun num(c: JsonObject, k: String) = c.get(k)?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.asDouble?.toInt() ?: 0
+        fun weight(c: JsonObject): Int { val types = strings(c, "types"); val r = when (c.s("rarity")) { "mythic" -> 3; "rare" -> 2; "uncommon" -> 1; else -> 0 }
+            return (if ("Planeswalker" in types) 40 else if ("Creature" in types) 20 else 0) + r * 12 + minOf(10, num(c, "manaValue")) +
+                (if (c.get("isFoil")?.takeIf { it.isJsonPrimitive }?.asBoolean == true) 2 else 0) - minOf(4, num(c, "count")) }
+        val pool = (d.getAsJsonArray("mainBoard") ?: return null).mapNotNull { it as? JsonObject }
+            .filter { it.getAsJsonObject("identifiers")?.s("scryfallId")?.isNotEmpty() == true && "Basic" !in strings(it, "supertypes") && "Land" !in strings(it, "types") }
+        return pick(pool.sortedByDescending(::weight).firstOrNull())
+    }
+
     private val PRECON_FORMATS = listOf("Standard" to "standard", "Pioneer" to "pioneer", "Modern" to "modern", "Legacy" to "legacy", "Vintage" to "vintage", "Pauper" to "pauper")
     /** constructedPrecon(payload, entry).formats, or null when it isn't playable as published. */
     fun preconFormats(payload: JsonObject): List<String>? {

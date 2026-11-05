@@ -46,4 +46,18 @@ class DecksTest {
         val body = dev.cardstashy.nativeplay.ui.rowsJson(Decks.parsePaste("4 Lightning Bolt\nSideboard\n2 Pyroblast"))
         assertEquals("""[{"name":"Lightning Bolt","qty":4},{"name":"Pyroblast","qty":2,"board":"side"}]""", body.toString())
     }
+
+    /** preconFace against the site's play-econ-rules.js (goldens from node): commander first, then the weightiest nonland spell. */
+    @Test fun preconFaceMatchesSite() {
+        val deck = JsonParser.parseString("""{"mainBoard":[{"name":"Forest","count":16,"supertypes":["Basic"],"types":["Land"],"rarity":"common","manaValue":0,"identifiers":{"scryfallId":"a0000000-0000-0000-0000-000000000000"}},{"name":"Llanowar Elves","count":4,"types":["Creature"],"rarity":"common","manaValue":1,"identifiers":{"scryfallId":"b0000000-0000-0000-0000-000000000000"}},{"name":"Big Wurm","count":2,"types":["Creature"],"rarity":"rare","manaValue":7,"identifiers":{"scryfallId":"c0000000-0000-0000-0000-000000000000"}},{"name":"Mythic Wurm","count":4,"types":["Creature"],"rarity":"mythic","manaValue":6,"identifiers":{"scryfallId":"d0000000-0000-0000-0000-000000000000"}},{"name":"Giant Growth","count":1,"types":["Instant"],"rarity":"mythic","manaValue":1,"isFoil":true,"identifiers":{"scryfallId":"e0000000-0000-0000-0000-000000000000"}},{"name":"Garruk","count":1,"types":["Planeswalker"],"rarity":"uncommon","manaValue":4,"identifiers":{"scryfallId":"f0000000-0000-0000-0000-000000000000"}},{"name":"No Id","count":1,"types":["Planeswalker"],"rarity":"mythic","manaValue":9,"identifiers":{}},{"name":"Tie A","count":1,"types":["Creature"],"rarity":"mythic","manaValue":2}]}""").asJsonObject
+        fun face(d: JsonObject) = Decks.preconFace(d)?.let { "${it.first}|${it.second}" }
+        assertEquals("Mythic Wurm|d0000000-0000-0000-0000-000000000000", face(deck))
+        val cmd = deck.deepCopy().apply { add("commander", JsonParser.parseString("""[{"name":"Cmd","identifiers":{"scryfallId":"90000000-0000-0000-0000-000000000000"}}]""")) }
+        assertEquals("Cmd|90000000-0000-0000-0000-000000000000", face(cmd))
+        val noId = deck.deepCopy().apply { add("commander", JsonParser.parseString("""[{"name":"Cmd","identifiers":{}}]""")) }
+        assertEquals("Mythic Wurm|d0000000-0000-0000-0000-000000000000", face(noId))
+        val walker = deck.deepCopy().apply { getAsJsonArray("mainBoard").map { it.asJsonObject }.first { it.get("name").asString == "Garruk" }.addProperty("rarity", "mythic") }
+        assertEquals("Garruk|f0000000-0000-0000-0000-000000000000", face(walker))
+        assertEquals(null, face(JsonObject().apply { add("mainBoard", com.google.gson.JsonArray().apply { add(deck.getAsJsonArray("mainBoard")[0]) }) }))
+    }
 }

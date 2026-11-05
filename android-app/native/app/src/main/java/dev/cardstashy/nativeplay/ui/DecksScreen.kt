@@ -77,7 +77,9 @@ private fun JsonObject?.s(k: String) = this?.get(k)?.takeIf { it.isJsonPrimitive
 
 /** What the precon shelf holds (app.js preconUi): the index, the search, how many show, the open deck. */
 class PreconUi { var index by mutableStateOf<List<Decks.PreconEntry>?>(null); var busy by mutableStateOf(false); var error by mutableStateOf("")
-    var query by mutableStateOf(""); var limit by mutableStateOf(12); var open by mutableStateOf<OpenPrecon?>(null) }
+    var query by mutableStateOf(""); var limit by mutableStateOf(12); var open by mutableStateOf<OpenPrecon?>(null)
+    /** loadPreconFaces: each tile's face card (name, Scryfall id) by deck file, kept on the device; files that gave none this visit. */
+    val faces = androidx.compose.runtime.mutableStateMapOf<String, Pair<String, String>>(); val faceTried = java.util.Collections.synchronizedSet(HashSet<String>()) }
 data class OpenPrecon(val file: String, val name: String, val product: String, val released: String, val formats: List<String>, val rows: List<Decks.Row>)
 /** Paste a list (app.js econUi.check). */
 data class Check(val text: String = "", val name: String = "", val busy: Boolean = false, val error: String = "", val rows: List<Decks.Row>? = null,
@@ -103,7 +105,8 @@ fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit,
     LaunchedEffect(decks, precon.open) { dev.cardstashy.nativeplay.play.CardFacts.wantNames(decks.flatMap { Decks.rows(it).map { r -> r.name } } + precon.open?.rows.orEmpty().map { it.name }) }
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         Backdrop() // #ambient: the shared art (glass on, or Aura)
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).windowInsetsPadding(WindowInsets.statusBars).padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 120.dp),
+        // The page scrolls below the status bar, so tiles never slide under the clock (Randall 5 Nov 16:58Z).
+        Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars).verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)) {
             PageHeader("Decks", "Play", onBack = onBack)
             BoxWithConstraints(Modifier.fillMaxWidth()) {
@@ -266,6 +269,7 @@ private fun PreconShelf(state: JsonObject, pc: PreconUi, owned: Map<String, Int>
         scope.launch { val j = fetchJson("https://mtgjson.com/api/v5/DeckList.json", dayCache = true); if (j != null) pc.index = Decks.preconIndex(j) else pc.error = "Could not load the precon list right now."; pc.busy = false } }
     LaunchedEffect(Unit) { load() }
     val o = pc.open
+    BackHandler(enabled = o != null) { pc.open = null }
     if (o != null) { OpenPreconView(state, o, owned, pc, toast); return }
     when {
         pc.busy && pc.index == null -> Text("Loading the precon list…", style = t(13f, color = Site.Muted))
@@ -276,12 +280,13 @@ private fun PreconShelf(state: JsonObject, pc: PreconUi, owned: Map<String, Int>
             val list = pc.index!!.filter { q.isEmpty() || it.name.lowercase().contains(q) || it.code.lowercase() == q || it.type.lowercase().contains(q) }
             val shown = list.take(pc.limit)
             LaunchedEffect(shown.map { it.code }) { dev.cardstashy.nativeplay.play.SetFacts.ensure(shown.map { it.code.lowercase() }) }
+            LaunchedEffect(shown.map { it.fileName }) { loadPreconFaces(pc, shown) }
             Field(pc.query, "Precon or set name") { pc.query = it; pc.limit = 12 }
             if (pc.busy) Text("Opening the deck box…", style = t(13f, color = Site.Muted))
             if (shown.isEmpty()) Text("No precons match.", style = t(13f, color = Site.Muted))
             BoxWithConstraints { val cols = maxOf(1, (maxWidth / 230.dp).toInt())
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { shown.chunked(cols).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    row.forEach { d -> PreconButton(d, Modifier.weight(1f)) { openPrecon(scope, pc, d, toast) } }; repeat(cols - row.size) { Spacer(Modifier.weight(1f)) } } } } }
+                    row.forEach { d -> PreconButton(d, pc.faces[d.fileName]?.second, Modifier.weight(1f)) { openPrecon(scope, pc, d, toast) } }; repeat(cols - row.size) { Spacer(Modifier.weight(1f)) } } } } }
             if (list.size > shown.size) GhostButton("Show more (${list.size - shown.size})") { pc.limit += 24 }
         }
     }
@@ -298,11 +303,40 @@ private fun openPrecon(scope: kotlinx.coroutines.CoroutineScope, pc: PreconUi, e
     }
 }
 
+/** The deck files' faces kept on the device (the web keeps them in localStorage cs.preconFaces.v1). */
+private fun facesFile() = preconCacheDir?.resolve("precon-faces-v1.json")
+private val facesLoaded = java.util.concurrent.atomic.AtomicBoolean(false)
+private val faceStore = java.util.concurrent.ConcurrentHashMap<String, Pair<String, String>>()
+
+/**
+ * loadPreconFaces (app.js): for the tiles on show without a face, read each deck file three at a time and keep its
+ * preconFace. A file that gives none is not asked again this visit. The deck files are not kept in memory.
+ */
+private suspend fun loadPreconFaces(pc: PreconUi, shown: List<Decks.PreconEntry>) {
+    if (facesLoaded.compareAndSet(false, true)) withContext(Dispatchers.IO) {
+        runCatching { facesFile()?.takeIf { it.exists() }?.readText()?.let { com.google.gson.JsonParser.parseString(it).asJsonObject } }.getOrNull()
+            ?.entrySet()?.forEach { (k, v) -> (v as? JsonObject)?.let { o -> val id = o.s("id"); if (id.isNotEmpty()) faceStore.putIfAbsent(k, o.s("name") to id) } }
+    }
+    faceStore.forEach { (k, v) -> if (k !in pc.faces) pc.faces[k] = v }
+    val todo = java.util.concurrent.ConcurrentLinkedQueue(shown.filter { it.fileName !in pc.faces && it.fileName !in pc.faceTried })
+    if (todo.isEmpty()) return
+    todo.forEach { pc.faceTried.add(it.fileName) }
+    var dirty = false
+    kotlinx.coroutines.coroutineScope {
+        repeat(3) { launch(Dispatchers.IO) {
+            while (true) { val e = todo.poll() ?: break
+                val j = runCatching { Http.call("GET", "https://mtgjson.com/api/v5/decks/" + e.fileName.removeSuffix(".json") + ".json", mapOf("Accept" to "application/json"), null, 30_000) as? JsonObject }.getOrNull()
+                val f = j?.let { Decks.preconFace(it.getAsJsonObject("data") ?: it) }
+                if (f != null) { faceStore[e.fileName] = f; withContext(Dispatchers.Main) { pc.faces[e.fileName] = f }; dirty = true } }
+        } }
+    }
+    if (dirty) withContext(Dispatchers.IO) { runCatching { facesFile()?.writeText(JsonObject().apply { faceStore.forEach { (k, v) -> add(k, JsonObject().apply { addProperty("name", v.first); addProperty("id", v.second) }) } }.toString()) } }
+}
+
 @Composable
-private fun PreconButton(d: Decks.PreconEntry, modifier: Modifier, onClick: () -> Unit) {
-    // Signature art tile: the set's lead art behind a glass shade, set emblem, name, product and year.
-    val sets by dev.cardstashy.nativeplay.play.SetFacts.sets.collectAsState()
-    val code = d.code.lowercase(); val p = heroPainter((sets[code]?.art?.ifBlank { null } ?: DECKS_ART).let(homeArt))
+private fun PreconButton(d: Decks.PreconEntry, faceId: String?, modifier: Modifier, onClick: () -> Unit) {
+    // .pe-precon: the deck's own face card (preconFace) as art_crop behind a glass shade, set emblem, name, product and year.
+    val code = d.code.lowercase(); val p = heroPainter(faceId?.let { Decks.scryfallImage(it).replace("/normal/", "/art_crop/") }?.ifBlank { null }?.let(homeArt))
     Box(modifier.height(140.dp).softTile().clickable(onClick = onClick)) {
         if (p != null) Image(p, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         else Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFF1B1F29), Color(0xFF0F1117)))))
@@ -325,7 +359,8 @@ private fun OpenPreconView(state: JsonObject, o: OpenPrecon, owned: Map<String, 
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         // The deck's face: its lead card's exact art, the same art-bleed hero as a Play deck.
         val lead = o.rows.firstOrNull { it.board != "side" && !Decks.isBasicLand(it.name) } ?: o.rows.firstOrNull()
-        val heroArt = lead?.id?.let { Decks.scryfallImage(it).replace("/normal/", "/art_crop/") }?.ifBlank { null }
+        // The same face as its tile (Randall 5 Nov 17:00Z), then the lead card when the tile had none yet.
+        val heroArt = (pc.faces[o.file]?.second ?: lead?.id)?.let { Decks.scryfallImage(it).replace("/normal/", "/art_crop/") }?.ifBlank { null }
         val hp = heroPainter(heroArt?.let(homeArt))
         Box(Modifier.fillMaxWidth().height(180.dp).softTile()) {
             if (hp != null) Image(hp, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
@@ -441,7 +476,6 @@ private fun SaveRow(c: Check, onChange: (Check) -> Unit, onSave: (Check) -> Unit
 fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> Unit, onTrunkSet: (String) -> Unit = {}) {
     val state by dev.cardstashy.nativeplay.play.Progress.state.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
-    val finderLive = (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
     preconCacheDir = context.cacheDir
     LaunchedEffect(Unit) { dev.cardstashy.nativeplay.play.Progress.loadCached(); dev.cardstashy.nativeplay.play.Progress.refresh() }
     val s = state ?: run { Box(Modifier.fillMaxSize().background(Site.Bg), contentAlignment = Alignment.Center) { Text("Opening your decks…", style = Site.Body) }; return }
@@ -465,8 +499,8 @@ fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
         } else DecksScreen(s, onBack,
             // A saved deck (a precon too) opens as its list; the Trunk's cards come up with Add cards (Randall 5 Nov 16:53Z).
             onDeck = { id -> editor = EditorUi().apply { adding = false; edit = dev.cardstashy.nativeplay.play.DeckEdit.open(s.getAsJsonArray("decks")?.mapNotNull { it as? JsonObject }?.firstOrNull { it.get("id")?.asString == id }) } },
-            // The finder ships in a signed build only once its web twin (PR #105) is live: native never leads the web.
-            onFinder = { if (finderLive) finder = finder ?: FinderUi() else editor = EditorUi().apply { edit = dev.cardstashy.nativeplay.play.DeckEdit.Edit(null, "", "Standard", emptyList()) } },
+            // Build a deck opens the finder, as on the live site (decksMarkup's data-econ-view="finder").
+            onFinder = { finder = finder ?: FinderUi() },
             toast = toast, nav = { PlayNav(PlayTab.DECKS, onNav) })
         card?.let { pick ->
             CardSheet(pick, s, CardSheetActions(
