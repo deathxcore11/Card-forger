@@ -139,6 +139,19 @@ class CollectionEngineTest {
             .getAsJsonArray("rows").map { it.asJsonObject["name"].asString })
         val out = File(System.getProperty("repoRoot"), "android-app/native/app/build/shot-art/home").apply { mkdirs() }
         File(out, "collection-cards.json").writeText(CollectionEngine.cards("mtg", JsonObject().apply { addProperty("q", ""); addProperty("sort", "recent"); addProperty("filter", "all") }).toString())
+        // The view switch (workbench-ui.js A.viewSave): the same rows, the mode the page is drawn in, the switch's checked button.
+        assertEquals("compact", m["mode"].asString)
+        for (v in listOf("gallery", "symbols")) {
+            val g = CollectionEngine.cardsDo("mtg", "view", v)
+            assertEquals(v, g["mode"].asString)
+            assertEquals(listOf(v), g.getAsJsonArray("views").filter { it.asJsonObject["on"].asBoolean }.map { it.asJsonObject["mode"].asString })
+            assertEquals(14, g.getAsJsonArray("rows").size())
+            File(out, "collection-cards-$v.json").writeText(g.toString())
+        }
+        // The gallery's emblem dock (ui.js tileChrome) rides on each row: Ragavan's red emblem and its set symbol.
+        val rag = CollectionEngine.cards("mtg").getAsJsonArray("rows").map { it.asJsonObject }.first { it["name"].asString.startsWith("Ragavan") }
+        assertTrue(rag["chrome"].asJsonObject["set"].asJsonObject["src"].asString.contains("/sets/"))
+        assertEquals("compact", CollectionEngine.cardsDo("mtg", "view", "compact")["mode"].asString)
     }
 
     /** views.js decks() → My decks through the engine: four decks over the sample printings; writes the shot fixture. */

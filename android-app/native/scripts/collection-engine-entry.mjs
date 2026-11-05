@@ -24,7 +24,7 @@ import {loadMagicPrintingPage, mergeMagicCards} from 'WEB/catalog-tools.js';
 import {magicOwnedDetail, magicOwnedContext, magicOwnedCurrent} from 'WEB/magic-owned-detail.js';
 import {selectPreviewFinish, finishAttrs} from 'WEB/finish-preview.js';
 import {selectedFinish, quoteForContext} from 'WEB/pricing-presentation.js';
-import {quoteModel, recordQuote, HISTORY_RANGES} from 'WEB/workbench-ui.js';
+import {quoteModel, recordQuote, HISTORY_RANGES, modeFor} from 'WEB/workbench-ui.js';
 import {loadSharedHistory} from 'WEB/shared-history.js';
 import {playedAlongside} from 'WEB/guide.js';
 import {mtgPairQueries, rankPairs, edhPop} from 'WEB/pairing.js';
@@ -227,6 +227,14 @@ const runs = n => { const out = []; const walk = (x, bold, muted) => { for (cons
   return out.reduce((a, r) => { const last = a[a.length - 1]; if (last && last.b === r.b && last.m === r.m) last.t += r.t; else a.push({...r}); return a; }, []).map((r, i, a) => ({...r, t: i === 0 ? r.t.replace(/^\s+/, '') : i === a.length - 1 ? r.t.replace(/\s+$/, '') : r.t})); };
 
 // views.js collection() / collectionList(): the Cards tab as the site draws it, row by row.
+// ui.js tileChrome on a row's art: the colour emblems (mana symbols) and the set symbol in its rarity, docked at the foot
+// (the gallery shows it; the list views hide it).
+function lotChrome(n) {
+  const c = one(one(n, cls('lot-art')), cls('tile-chrome')); if (!c) return null; const set = one(c, cls('set-icon')), imp = one(c, cls('imp-tile'));
+  return {emb: all(one(c, cls('tile-emb')), tagIs('img')).map(i => ({src: i.attrs.src || '', alt: i.attrs.alt || ''})),
+    set: set ? {src: ((/url\('([^']+)'\)/.exec(set.attrs.style || '') || [])[1] || ''), rarity: (classes(set).find(x => x.startsWith('r-')) || 'r-common').slice(2), title: one(c, cls('tset'))?.attrs.title || ''} : null,
+    imp: imp ? icon(svgIn(imp)) : null};
+}
 function lotRow(n) {
   const art = one(n, cls('lot-art')), img = one(art, tagIs('img')), name = one(n, cls('lot-name')), badge = one(name, cls('set-badge')), sub = one(n, cls('lot-sub')),
     emb = one(name, cls('imp-row')), tag = one(n, cls('tag')), step = one(n, cls('stepper')), cond = one(n, cls('condition-badge')), origin = one(n, cls('price-origin'));
@@ -245,7 +253,8 @@ function lotRow(n) {
     price: text(one(n, cls('price'))), condition: cond && {code: text(cond), info: cond.attrs['data-condition-info'] || ''}, origin: origin ? text(origin) : '',
     qty: step ? Number(text(one(step, tagIs('b')))) || 0 : 0, edit: !!one(n, x => x.attrs['data-act'] === 'editLot' && cls('link')(x)), got: text(one(n, cls('want-got'))),
     // The copy's printing when it shows a finish: the app draws that foil from it (finish-preview.js reads the same record).
-    print: finish && finish.key && finish.key !== 'nonfoil' && finish.printingId ? S.state.printings?.[finish.printingId] || null : null};
+    print: finish && finish.key && finish.key !== 'nonfoil' && finish.printingId ? S.state.printings?.[finish.printingId] || null : null,
+    chrome: lotChrome(n), wantTag: text(one(art, cls('want-tag')))};
 }
 // app.js's handlers for the Cards tab's controls (C.collSort, C.collDirection, C.collFilter, I.collSearch, A.collMore), verbatim
 // but for the redraw, which is the app's.
@@ -255,6 +264,8 @@ const cardsAct = {
   filter: v => { S.ui.collFilter = v; },
   search: v => { S.ui.q.coll = v; S.ui.collLimit = 120; },
   more: () => { S.ui.collLimit += 200; },
+  // workbench-ui.js A.viewSave for area "collection": the account's settings.displayModes (the app keeps the choice too).
+  view: v => { if (['gallery', 'compact', 'symbols'].includes(v)) ((S.state.settings.displayModes ||= {}).mtg ||= {}).collection = v; },
 };
 function cardsPage(game, o = {}) {
   const ui = S.ui;
@@ -264,7 +275,7 @@ function cardsPage(game, o = {}) {
   const t = tree(collectionPage()), head = one(t, cls('page-head')), seg = one(t, cls('seg')), empty = one(t, cls('empty'));
   const view = one(head, cls('view-switch')), batch = one(head, x => x.attrs['data-act'] === 'batchStart'), menu = one(head, x => x.attrs['data-act'] === 'collMenu');
   const tools = one(t, cls('coll-tools')), search = one(tools, x => x.tag === 'input'), list = one(t, cls('display-list')), more = one(t, x => x.attrs['data-act'] === 'collMore');
-  return {game, title: text(one(head, tagIs('h1'))), banner: picture(one(head, cls('page-hero-img'))), bannerCard: head?.attrs['data-banner-card'] || '',
+  return {game, mode: modeFor(game, 'collection'), title: text(one(head, tagIs('h1'))), banner: picture(one(head, cls('page-hero-img'))), bannerCard: head?.attrs['data-banner-card'] || '',
     views: view ? all(view, tagIs('button')).map(b => ({mode: b.attrs['data-mode'], label: b.attrs['aria-label'] || b.attrs.title || '', on: b.attrs['aria-checked'] === 'true', icon: icon(svgIn(b))})) : [],
     select: batch && {label: text(batch), aria: batch.attrs['aria-label'] || '', icon: icon(svgIn(batch))}, menu: menu && {label: text(menu), aria: menu.attrs['aria-label'] || ''},
     tabs: all(seg, tagIs('button')).map(b => ({key: b.attrs['data-id'], label: text(b), on: b.attrs['aria-selected'] === 'true', icon: icon(svgIn(b))})),
@@ -334,10 +345,7 @@ function deckRowModel(n) {
     legal: all(sub, cls('tag')).map(t => ({text: text(t), bad: cls('bad')(t)})),
     chip: chip ? text(chip) : '', stepper: !!one(side, cls('stepper')),
     // ui.js tileChrome on the art: the colour emblems (mana symbols) and the set symbol in its rarity, docked at the foot.
-    chrome: (() => { const c = one(one(n, cls('lot-art')), cls('tile-chrome')); if (!c) return null; const set = one(c, cls('set-icon')), imp = one(c, cls('imp-tile'));
-      return {emb: all(one(c, cls('tile-emb')), tagIs('img')).map(i => ({src: i.attrs.src || '', alt: i.attrs.alt || ''})),
-        set: set ? {src: ((/url\('([^']+)'\)/.exec(set.attrs.style || '') || [])[1] || ''), rarity: (classes(set).find(x => x.startsWith('r-')) || 'r-common').slice(2), title: one(c, cls('tset'))?.attrs.title || ''} : null,
-        imp: imp ? icon(svgIn(imp)) : null}; })()};
+    chrome: lotChrome(n)};
 }
 function miniRowModel(n) {
   const img = one(n, tagIs('img')), small = one(n, x => x.tag === 'span' && cls('small')(x));

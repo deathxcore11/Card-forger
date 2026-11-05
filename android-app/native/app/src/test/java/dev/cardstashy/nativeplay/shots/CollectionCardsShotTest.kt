@@ -71,4 +71,24 @@ class CollectionCardsShotTest {
         try { shot("collection-cards", 844, 390) { page() } } finally { dev.cardstashy.nativeplay.ui.HomeTest.forceShort = null }
         if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
     }
+
+    /** The Gallery and Symbols views (workbench-ui.js viewControl), the same rows from collection-cards-<view>.json. */
+    @Test fun views() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        dev.cardstashy.nativeplay.ui.Foil.testFallback = true
+        dev.cardstashy.nativeplay.ui.homeArt = ::art
+        for (v in listOf("gallery", "symbols")) {
+            val fx = home.resolve("collection-cards-$v.json")
+            assumeTrue("write the fixture first (CollectionEngineTest.cardsModel)", fx.exists())
+            val m = CollectionCardsModel.parse(JsonParser.parseString(fx.readText()).asJsonObject)
+            val page = @Composable {
+                CollectionCards(m, top = { tabs -> TopBarItems(Mode.COLLECTION, null, "Randall", unread = true, onSwitch = {}, onProfile = {}, middle = tabs) },
+                    nav = { n -> CollectionNav(CollectionTab.CARDS, vertical = n, scan = !n) {} })
+            }
+            shot("collection-cards-$v", 390, 844) { page() }
+            shot("collection-cards-$v-page", 390, if (v == "gallery") 3600 else 2600) { page() }
+            shot("collection-cards-$v-page", 884, if (v == "gallery") 2200 else 1600) { page() }
+        }
+        if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
+    }
 }

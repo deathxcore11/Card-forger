@@ -42,8 +42,8 @@ private object CardsCache {
 
 /**
  * Collection's Cards tab: the account's collection through the site's own views.js collection(), drawn natively. Sort,
- * direction, filter, search and Show more ask the site's code again; everything that changes the collection (the steppers,
- * Edit, Got it), the card page, Binders, Value, Select and the ⋯ menu still open the website's page, which does it there.
+ * direction, filter, search, the view (Gallery, Compact, Symbols) and Show more ask the site's code again; everything that changes
+ * the collection (the steppers, Edit, Got it), Binders, Value, Select and the ⋯ menu still open the website's page, which does it there.
  */
 @Composable
 fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, web: (url: String, press: String?) -> Unit, onDecks: (() -> Unit)? = null, nativeCard: Boolean = false,
@@ -59,8 +59,13 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     var cards by remember { mutableStateOf(listOf<CardOpen>()) }
     var failed by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
+    // The view last chosen here (the site keeps it in the account's settings.displayModes; the app keeps it too, as the set page does).
+    val prefs = remember { context.getSharedPreferences("collection", android.content.Context.MODE_PRIVATE) }
     suspend fun paint(control: Pair<String, String>? = null) {
-        val m = withContext(Dispatchers.Default) { CollectionCardsModel.parse(if (control != null) CollectionEngine.cardsDo("mtg", control.first, control.second) else CollectionEngine.cards("mtg")) }
+        val m = withContext(Dispatchers.Default) {
+            prefs.getString("cardsView", null)?.let { v -> if (control?.first != "view") runCatching { CollectionEngine.cardsDo("mtg", "view", v) } }
+            CollectionCardsModel.parse(if (control != null) CollectionEngine.cardsDo("mtg", control.first, control.second) else CollectionEngine.cards("mtg"))
+        }
         model = m; CardsCache.model = m
     }
     // The account's copy, then the names the catalog lacks (prices and pictures fill in as they arrive).
@@ -91,7 +96,7 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
         CollectionCardsActions(
             game = { g -> if (g != CardGame.MTG) web(coll, "[data-act=\"setGame\"][data-game=\"${g.id}\"]") },
             tab = { k -> web(coll, "[data-act=\"collTab\"][data-id=\"${css(k)}\"]") },
-            view = { mode -> web(coll, "[data-act=\"viewSave\"][data-mode=\"${css(mode)}\"][data-area=\"collection\"]") },
+            view = { mode -> prefs.edit().putString("cardsView", mode).apply(); asked = "view" to mode },
             select = { web(coll, "[data-act=\"batchStart\"]") },
             menu = { web(coll, "[data-act=\"collMenu\"]") },
             sort = { v -> asked = "sort" to v },

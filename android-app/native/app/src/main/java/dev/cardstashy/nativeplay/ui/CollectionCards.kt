@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -124,7 +125,12 @@ class CollRow(val id: String, val name: String, val wanted: Boolean, val tier: S
               val mana: List<Pair<String, String>>, val sub: List<CollSub>, val wantChip: String, val wishId: String, val tag: String, val tagWarn: Boolean,
               val price: String, val condition: String, val conditionInfo: String, val origin: String, val qty: Int, val edit: Boolean, val got: String,
               /** The printing record (Scryfall card) when the copy shows a finish: what its foil is drawn from. */
-              val print: JsonObject? = null)
+              val print: JsonObject? = null,
+              /** ui.js tileChrome on the art (the gallery shows it): colour emblems, the set symbol in its rarity, the importance mark. */
+              val chrome: CollChrome? = null,
+              /** .want-tag's word on a wishlist card's art ("Wishlist"). */
+              val wantTag: String = "")
+class CollChrome(val emb: List<Pair<String, String>>, val set: String?, val rarity: String, val title: String, val imp: SiteSvg?)
 
 class CollectionCardsModel(val game: CardGame, val title: String, val banner: String?, val views: List<CollView>, val selectLabel: String, val selectIcon: SiteSvg?,
                            val menu: String, val menuLabel: String, val tabs: List<CollTab>, val emptyTitle: String?, val emptyText: String, val emptyMark: String,
@@ -134,7 +140,9 @@ class CollectionCardsModel(val game: CardGame, val title: String, val banner: St
                            /** icons.js ICON.minus / plus / more: what decorateGlyphs draws in a button whose only text is −, ＋ or ⋯. */
                            val glyphs: Map<String, SiteSvg> = emptyMap(),
                            /** The Select button's visible word (shown from 600 dp; the phone keeps the icon). */
-                           val selectText: String = "") {
+                           val selectText: String = "",
+                           /** workbench-ui.js modeFor(game, "collection"): gallery, compact (the site's default here) or symbols. */
+                           val mode: String = "compact") {
     companion object {
         private fun JsonObject.s(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asString ?: ""
         private fun JsonObject.b(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asBoolean ?: false
@@ -169,10 +177,13 @@ class CollectionCardsModel(val game: CardGame, val title: String, val banner: St
                         set?.let { CollSet(it.s("code"), it.s("rarity"), it.b("unknown"), it.s("label"), it.s("title")) },
                         r.objs("mana").map { it.s("src") to it.s("alt") }, r.objs("sub").map { CollSub(it.s("t"), it.b("foil")) },
                         r.s("wantChip"), r.s("wishId"), tag?.s("text") ?: "", tag?.b("warn") ?: false, r.s("price"), cond?.s("code") ?: "", cond?.s("info") ?: "",
-                        r.s("origin"), r.get("qty")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0, r.b("edit"), r.s("got"), r.o("print"))
+                        r.s("origin"), r.get("qty")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0, r.b("edit"), r.s("got"), r.o("print"),
+                        r.o("chrome")?.let { c -> val cs = c.o("set")
+                            CollChrome(c.objs("emb").map { it.s("src") to it.s("alt") }, cs?.s("src")?.let { Regex("/sets/([^/.?]+)\\.svg").find(it)?.groupValues?.get(1) },
+                                cs?.s("rarity") ?: "common", cs?.s("title") ?: "", svg(c.o("imp"))) }, r.s("wantTag"))
                 }, j.s("none"), more?.s("label"), more?.get("count")?.asInt ?: 0,
                 j.o("glyphs")?.entrySet()?.mapNotNull { (k, v) -> svg(v.takeIf { it.isJsonObject }?.asJsonObject)?.let { k to it } }?.toMap().orEmpty(),
-                j.o("select")?.s("label") ?: "")
+                j.o("select")?.s("label") ?: "", j.s("mode").ifBlank { "compact" })
         }
     }
 }
@@ -324,7 +335,9 @@ private fun CardsPage(m: CollectionCardsModel, top: @Composable (tabs: (@Composa
     val reduced = Playmats.reduced(LocalContext.current)
     // .list: one column on a phone, two from 600 dp, three from 1200 (style.css), 6 apart.
     val cols = if (screen >= 1200.dp) 3 else if (wide) 2 else 1
-    LazyColumn(modifier, state = state, contentPadding = PaddingValues(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    BoxWithConstraints(modifier) {
+    val inner = maxWidth - gutter * 2
+    LazyColumn(Modifier.fillMaxSize(), state = state, contentPadding = PaddingValues(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         item(key = "top") {
             // As on the app's Home: the game tabs ride in the bar when there is room, and sit centred under it on a phone.
             Box(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)) {
@@ -347,8 +360,22 @@ private fun CardsPage(m: CollectionCardsModel, top: @Composable (tabs: (@Composa
             if (m.rows.isEmpty()) item(key = "none") {
                 Text(m.none.ifBlank { "No cards match." }, Modifier.fillMaxWidth().padding(horizontal = gutter).padding(vertical = 24.dp), style = sans(15f, color = Mute), textAlign = TextAlign.Center)
             }
-            val row: @Composable (CollRow, Modifier) -> Unit = { r, mod -> if (r.wanted) WantedRow(r, act, wide, reduced, m.glyphs, mod) else LotRow(r, act, wide, reduced, m.glyphs, mod) }
-            if (cols == 1) items(m.rows, key = { it.id.ifBlank { it.name } }) { r -> Box(Modifier.padding(horizontal = gutter)) { row(r, Modifier.fillMaxWidth()) } }
+            val row: @Composable (CollRow, Modifier) -> Unit = when (m.mode) {
+                "symbols" -> { r, mod -> SymbolLot(r, act, wide, reduced, m.glyphs, mod) }
+                else -> { r, mod -> if (r.wanted) WantedRow(r, act, wide, reduced, m.glyphs, mod) else LotRow(r, act, wide, reduced, m.glyphs, mod) }
+            }
+            if (m.mode == "gallery") {
+                // 18 between lines: the list's own 6 and 12 more.
+                val gc = galleryCols(screen, inner)
+                val lines = m.rows.chunked(gc)
+                items(lines, key = { line -> "g:" + line.joinToString("|") { it.id.ifBlank { it.name } } }) { line ->
+                    Row(Modifier.padding(horizontal = gutter).padding(bottom = if (line === lines.last()) 0.dp else 12.dp).height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                        for (r in line) GalleryLot(r, act, wide, reduced, m.glyphs, Modifier.weight(1f))
+                        repeat(gc - line.size) { Spacer(Modifier.weight(1f)) }
+                    }
+                }
+            }
+            else if (cols == 1) items(m.rows, key = { it.id.ifBlank { it.name } }) { r -> Box(Modifier.padding(horizontal = gutter)) { row(r, Modifier.fillMaxWidth()) } }
             // A grid line is as tall as its tallest card (grid rows stretch).
             else items(m.rows.chunked(cols), key = { line -> line.joinToString("|") { it.id.ifBlank { it.name } } }) { line ->
                 Row(Modifier.padding(horizontal = gutter).height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -365,6 +392,7 @@ private fun CardsPage(m: CollectionCardsModel, top: @Composable (tabs: (@Composa
                 }
             }
         }
+    }
     }
 }
 
@@ -624,17 +652,8 @@ internal fun Modifier.lotFrame(r: CollRow, reduced: Boolean): Modifier {
 @Composable
 private fun LotRow(r: CollRow, act: CollectionCardsActions, wide: Boolean, reduced: Boolean, glyphs: Map<String, SiteSvg>, modifier: Modifier) {
     val tier = tierColor(r.tierColor)
-    val value = @Composable { gap: Dp ->
-        Row(horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.CenterVertically) {
-            Text(r.price, Modifier.clickable { act.price(r) }.padding(vertical = 4.dp), style = sans(13f, 700, mixed(tier)))
-            if (r.condition.isNotBlank()) Box(Modifier.heightIn(min = 24.dp).clip(RoundedCornerShape(999.dp)).background(Surface2).border(1.dp, LineC, RoundedCornerShape(999.dp))
-                .semantics { contentDescription = r.conditionInfo }.padding(horizontal = 8.dp, vertical = 2.dp), contentAlignment = Alignment.Center) {
-                Text(r.condition, style = sans(11.5f, 750, Mute, lh = 1f, ls = .345f))
-            }
-            if (r.origin.isNotBlank()) Text(r.origin, style = sans(11f, 700, GoldC))
-        }
-    }
-    val edit = @Composable { mod: Modifier -> if (r.edit) Box(mod.clickable { act.edit(r) }.padding(vertical = 4.dp, horizontal = if (wide) 0.dp else 4.dp), contentAlignment = Alignment.Center) { Text("Edit", style = sans(13f, 600, GoldC)) } }
+    val value = @Composable { gap: Dp -> LotValue(r, act, sans(13f, 700, mixed(tier)), gap) }
+    val edit = @Composable { mod: Modifier -> LotEdit(r, act, mod, if (wide) 0.dp else 4.dp) }
     if (wide) Row(modifier.lotFrame(r, reduced).padding(7.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         LotArt(r, Modifier, 58.dp, 80.dp) { act.card(r) }
         Info(r, act, wide, Modifier.weight(1f))
@@ -659,11 +678,30 @@ private fun LotRow(r: CollRow, act: CollectionCardsActions, wide: Boolean, reduc
     }
 }
 
+/** .lot-value: the price (tap: where to buy it), the condition chip, and where the price came from when it is yours. */
+@Composable
+private fun LotValue(r: CollRow, act: CollectionCardsActions, price: TextStyle, gap: Dp) {
+    Row(horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.CenterVertically) {
+        Text(r.price, Modifier.clickable { act.price(r) }.padding(vertical = 4.dp), style = price)
+        if (r.condition.isNotBlank()) Box(Modifier.heightIn(min = 24.dp).clip(RoundedCornerShape(999.dp)).background(Surface2).border(1.dp, LineC, RoundedCornerShape(999.dp))
+            .semantics { contentDescription = r.conditionInfo }.padding(horizontal = 8.dp, vertical = 2.dp), contentAlignment = Alignment.Center) {
+            Text(r.condition, style = sans(11.5f, 750, Mute, lh = 1f, ls = .345f))
+        }
+        if (r.origin.isNotBlank()) Text(r.origin, style = sans(11f, 700, GoldC))
+    }
+}
+
+/** .lot-side .link.small: "Edit" in gold, 13 / 600, 4 above and below. */
+@Composable
+private fun LotEdit(r: CollRow, act: CollectionCardsActions, modifier: Modifier, side: Dp = 0.dp) {
+    if (r.edit) Box(modifier.clickable { act.edit(r) }.padding(vertical = 4.dp, horizontal = side), contentAlignment = Alignment.Center) { Text("Edit", style = sans(13f, 600, GoldC)) }
+}
+
 /** .lot-info: the name line, the sub line (mana, set and number, finish), and a printing or binder tag. */
 @Composable
-private fun Info(r: CollRow, act: CollectionCardsActions, wide: Boolean, modifier: Modifier) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(if (wide) 2.dp else 1.dp)) {
-        NameLine(r, act, wide)
+private fun Info(r: CollRow, act: CollectionCardsActions, wide: Boolean, modifier: Modifier, nameSize: Float = if (wide) 16f else 15f) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(if (wide || nameSize >= 16f) 2.dp else 1.dp)) {
+        NameLine(r, act, wide, nameSize)
         SubLine(r)
         if (r.tag.isNotBlank()) Tag(r.tag, r.tagWarn) { if (r.tagWarn) act.edit(r) }
     }
@@ -759,9 +797,9 @@ internal fun LotArt(r: CollRow, modifier: Modifier, w: Dp, h: Dp, grey: Boolean 
 
 /** .lot-name: one line, cut with an ellipsis; the importance emblem and the set badge follow it. */
 @Composable
-private fun NameLine(r: CollRow, act: CollectionCardsActions, wide: Boolean) {
+private fun NameLine(r: CollRow, act: CollectionCardsActions, wide: Boolean, size: Float = if (wide) 16f else 15f) {
     Row(Modifier.clickable { act.card(r) }, verticalAlignment = Alignment.CenterVertically) {
-        Text(r.name, Modifier.weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(if (wide) 16f else 15f, 700, Ink, lh = 1.25f))
+        Text(r.name, Modifier.weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(size, 700, Ink, lh = 1.25f))
         if (r.emblem != null) SiteIcon(r.emblem, 16.dp, Ink, Modifier.padding(start = 4.dp).semantics { contentDescription = r.emblemTitle })
         r.set?.let { s -> Box(Modifier.padding(start = 5.dp)) { LotSetBadge(s, wide) { if (!s.unknown) act.set(s.code) } } }
     }
@@ -840,6 +878,199 @@ private fun Empty(m: CollectionCardsModel, act: CollectionCardsActions) {
                     Text(label, style = sans(14f, 700, if (i == 0) Color(0xFF1A1408) else Ink))
                 }
             }
+        }
+    }
+}
+
+// ---------------------------------------------------------------- the Gallery and Symbols views (workbench-ui.js viewControl)
+
+/**
+ * .view-gallery .display-list: two cards a line on a phone (and up to 700 wide, style.css), else repeat(auto-fill, minmax(170px, 1fr));
+ * 14 apart, 18 between lines.
+ */
+internal fun galleryCols(screen: Dp, inner: Dp) = if (screen <= 700.dp) 2 else ((inner.value + 14f) / 184f).toInt().coerceAtLeast(1)
+
+/** CSS justify-content: space-between with a gap: FlowRow breaks lines as if the items were [gap] apart, then spreads each line. */
+private class SpaceBetweenGap(gap: Dp) : Arrangement.Horizontal {
+    override val spacing = gap
+    override fun androidx.compose.ui.unit.Density.arrange(totalSize: Int, sizes: IntArray, layoutDirection: androidx.compose.ui.unit.LayoutDirection, outPositions: IntArray) =
+        with(Arrangement.SpaceBetween) { arrange(totalSize, sizes, layoutDirection, outPositions) }
+}
+private val SideGap = SpaceBetweenGap(6.dp)
+
+/**
+ * A gallery card (.view-gallery .display-list .lot): the card in its price band with its aura (polish.css, the deck page's frame at an
+ * 18 blur), the emblem dock on its foot; 8 under it the name on one line with its set badge; 8 under that the value, the stepper
+ * (drawn at .86 towards its right) and Edit, spread across the line and wrapping when they don't fit.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun GalleryLot(r: CollRow, act: CollectionCardsActions, wide: Boolean, reduced: Boolean, glyphs: Map<String, SiteSvg>, modifier: Modifier) {
+    if (r.wanted) { GalleryWanted(r, act, wide, glyphs, modifier); return }
+    val tier = tierColor(r.tierColor)
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        TierFrame(r.tier, reduced, Modifier.fillMaxWidth().clickable { act.card(r) }.semantics { contentDescription = "Open ${r.name}" }, blur = 18f) { framed ->
+            Box(Modifier.fillMaxSize().padding(if (framed) 3.75.dp else 0.dp)) { RowPicture(r, Modifier.fillMaxSize(), RoundedCornerShape(percent = 4)) }
+            r.chrome?.let { c -> TileDock(c.emb, c.set, c.rarity, c.title, c.imp, Modifier.align(Alignment.BottomStart).padding(start = 4.dp, end = 4.dp, bottom = 2.dp)) }
+        }
+        GalleryName(r, act, wide, sans(15f, 600, Ink, lh = 1.25f), Modifier.padding(horizontal = 2.dp))
+        FlowRow(Modifier.fillMaxWidth().padding(horizontal = 2.dp), horizontalArrangement = SideGap, verticalArrangement = Arrangement.spacedBy(6.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+            // .price: 15 / 700 in the tier's colour (75 % of it), muted for the cheapest tier.
+            LotValue(r, act, sans(15f, 700, if (r.tier == "t0") Mute else mixed(tier, .75f)), 4.dp)
+            Box(Modifier.graphicsLayer { scaleX = .86f; scaleY = .86f; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(1f, .5f) }) {
+                Stepper(r.qty, glyphs, { act.qty(r, -1) }, { act.qty(r, 1) })
+            }
+            LotEdit(r, act, Modifier)
+        }
+    }
+}
+
+/**
+ * .lot-name in the gallery: one line, the name then its set badge 5 on. CSS cuts the line with an ellipsis: a badge that doesn't fit
+ * goes and "…" takes its place; a name that doesn't fit itself is cut.
+ */
+@Composable
+private fun GalleryName(r: CollRow, act: CollectionCardsActions, wide: Boolean, style: TextStyle, modifier: Modifier) {
+    androidx.compose.ui.layout.Layout(content = {
+        Text(r.name, maxLines = 1, softWrap = false, style = style)
+        Text(r.name + " …", maxLines = 1, softWrap = false, style = style)
+        Text(r.name, maxLines = 1, overflow = TextOverflow.Ellipsis, style = style)
+        r.set?.let { s -> LotSetBadge(s, wide) { if (!s.unknown) act.set(s.code) } }
+    }, modifier.fillMaxWidth().clickable { act.card(r) }) { ms, c ->
+        val w = c.maxWidth
+        val full = ms[0].measure(androidx.compose.ui.unit.Constraints())
+        val badge = ms.getOrNull(3)?.measure(androidx.compose.ui.unit.Constraints())
+        val gap = 5.dp.roundToPx()
+        when {
+            badge == null && full.width <= w -> layout(w, full.height) { full.place(0, 0) }
+            badge != null && full.width + gap + badge.width <= w -> layout(w, maxOf(full.height, badge.height)) {
+                full.place(0, 0); badge.place(full.width + gap, (full.height - badge.height) / 2)
+            }
+            else -> {
+                val cut = ms[1].measure(androidx.compose.ui.unit.Constraints())
+                if (badge != null && cut.width <= w) layout(w, cut.height) { cut.place(0, 0) }
+                else { val e = ms[2].measure(androidx.compose.ui.unit.Constraints.fixedWidth(w)); layout(w, e.height) { e.place(0, 0) } }
+            }
+        }
+    }
+}
+
+/**
+ * A wishlist card in the gallery: no band, the plate in a dashed edge 3 out (.28 white) and a dashed line inside with a soft sheen,
+ * the picture greyed, "♥ Wishlist" at its foot; the name at .72, "Not owned" under it; the price faint, then Got it and ×.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun GalleryWanted(r: CollRow, act: CollectionCardsActions, wide: Boolean, glyphs: Map<String, SiteSvg>, modifier: Modifier) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Box(Modifier.fillMaxWidth().aspectRatio(63f / 88f)
+            .drawBehind {
+                // outline: 1.5px dashed rgba(255,255,255,.28), 3 out; the corners 4.6 % / 3.3 % of the box, plus the offset.
+                val o = 3.dp.toPx(); val px = 1.dp.toPx()
+                drawRoundRect(Color(0x47FFFFFF), topLeft = Offset(-o - px / 2, -o - px / 2), size = Size(size.width + 2 * o + px, size.height + 2 * o + px),
+                    cornerRadius = CornerRadius(size.width * .046f + o, size.height * .033f + o), style = Stroke(px, pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(3 * px, 3 * px))))
+            }
+            .clip(RoundedCornerShape(percent = 4)).background(Surface2).clickable { act.card(r) }.semantics { contentDescription = "Open ${r.name} (on your wishlist, not owned)" }) {
+            if (r.art != null) heroPainter(homeArt(r.art))?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, colorFilter = Greyed, alpha = .8f) }
+            else Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("◇", style = sans(18f, 400, Mute)); Text("Art unavailable", style = sans(11f, 400, Mute))
+            }
+            r.chrome?.let { c -> Box(Modifier.align(Alignment.BottomStart).graphicsLayer { alpha = .55f }) { TileDock(c.emb, c.set, c.rarity, c.title, c.imp, Modifier.padding(start = 4.dp, end = 4.dp, bottom = 2.dp)) } }
+            // ::after: 1px dashed text at .4 inside, and linear-gradient(160deg, rgba(255,255,255,.16), transparent 42%).
+            Box(Modifier.matchParentSize().drawBehind {
+                val dx = .342f; val dy = .940f; val half = (size.width * dx + size.height * dy) / 2
+                drawRect(Brush.linearGradient(0f to Color(0x29FFFFFF), .42f to Color.Transparent, start = center - Offset(dx * half, dy * half), end = center + Offset(dx * half, dy * half)))
+                val px = 1.dp.toPx()
+                drawRoundRect(Ink.copy(alpha = .4f), topLeft = Offset(px / 2, px / 2), size = Size(size.width - px, size.height - px), cornerRadius = CornerRadius(size.width * .046f, size.height * .033f),
+                    style = Stroke(px, pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(3 * px, 3 * px))))
+            })
+            WantTag(r.wantTag.ifBlank { "Wishlist" }, glyphs["heart"], Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp))
+        }
+        Column(Modifier.padding(horizontal = 2.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            GalleryName(r, act, wide, sans(15f, 600, Ink.copy(alpha = .72f), lh = 1.25f), Modifier)
+            if (r.wantChip.isNotBlank()) WantChip(r.wantChip, 16.5f)
+        }
+        FlowRow(Modifier.fillMaxWidth().padding(horizontal = 2.dp), horizontalArrangement = SideGap, verticalArrangement = Arrangement.spacedBy(6.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+            Text(r.price, style = sans(14f, 700, Ink.copy(alpha = .25f)))
+            WantActions(r, act, glyphs, got = 30.dp, gotPad = 10.dp, gotSize = 13f, x = 28.dp, xSize = 16f)
+        }
+    }
+}
+
+/** .want-tag: "♥ WISHLIST", 10 / 800 tracked .08 em in rose on a dark pill with a rose hairline, the heart 12 and filled. */
+@Composable
+private fun WantTag(text: String, heart: SiteSvg?, modifier: Modifier) {
+    Row(modifier.clip(RoundedCornerShape(99.dp)).background(Color(0xD10A0A10)).border(1.dp, Color(0x55FF8FA3), RoundedCornerShape(99.dp)).padding(horizontal = 9.dp, vertical = 3.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+        SiteIcon(heart, 12.dp, Color(0xFFFF8FA3), filled = true)
+        Text(text.uppercase(), style = sans(10f, 800, Color(0xFFFF8FA3), ls = .8f))
+    }
+}
+
+/** .want-chip: rose on a rose wash, 11 / 700, 8 in. */
+@Composable
+private fun WantChip(text: String, lh: Float) {
+    Box(Modifier.clip(RoundedCornerShape(99.dp)).background(Color(0x1FFF7896)).padding(horizontal = 8.dp, vertical = 1.dp)) {
+        Text(text, style = sans(11f, 700, Color(0xFFFF8FA3), lh = lh / 11f))
+    }
+}
+
+/** .want-actions: the gold ＋ Got it and the round ×, 6 apart, sized as each view has them. */
+@Composable
+private fun WantActions(r: CollRow, act: CollectionCardsActions, glyphs: Map<String, SiteSvg>, got: Dp, gotPad: Dp, gotSize: Float, x: Dp, xSize: Float) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (r.got.isNotBlank()) Row(Modifier.heightIn(min = got).clip(RoundedCornerShape(11.dp)).background(GoldC).clickable { act.got(r) }.padding(horizontal = gotPad),
+            horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            val lead = r.got.trimStart().firstOrNull()?.let { it == '＋' || it == '+' } == true
+            if (lead) SiteIcon(glyphs["plus"], (gotSize * 1.2f).dp, Color(0xFF1B1406), stroke = 2f)
+            Text(if (lead) r.got.trimStart().drop(1).trim() else r.got, style = sans(gotSize, 700, Color(0xFF1B1406)))
+        }
+        Box(Modifier.size(x).clip(CircleShape).border(1.dp, LineC, CircleShape).clickable { act.unwish(r) }.semantics { contentDescription = "Remove ${r.name} from wishlist" }, contentAlignment = Alignment.Center) {
+            Text("×", style = sans(xSize, 400, Mute, lh = 1f))
+        }
+    }
+}
+
+/**
+ * A row of the Symbols view: the collection row and its ring with no picture (the art's ◈ is hidden), 10 / 8 inside its line,
+ * at least 60 tall. A phone puts the value and the stepper on a line under the name with Edit below; from 600 the side column
+ * (88) sits right, as in the compact view. A wishlist row keeps its price, Got it and × in a right-hand column.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SymbolLot(r: CollRow, act: CollectionCardsActions, wide: Boolean, reduced: Boolean, glyphs: Map<String, SiteSvg>, modifier: Modifier) {
+    val frame = modifier.lotFrame(r, reduced).heightIn(min = 60.dp).padding(horizontal = 9.dp, vertical = 11.dp)
+    val tier = tierColor(r.tierColor)
+    if (r.wanted) Row(frame, horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(r.name, Modifier.clickable { act.card(r) }, maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(16f, 700, Ink.copy(alpha = .72f), lh = 1.25f))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+                if (r.wantChip.isNotBlank()) WantChip(r.wantChip, 14.85f)
+                if (r.mana.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) { r.mana.forEach { (src, alt) -> Mana(src, alt) } }
+                r.sub.forEach { Text(it.t, style = sans(12f, 400, Mute, lh = 1.35f)) }
+            }
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp), horizontalAlignment = Alignment.End) {
+            Text(r.price, style = sans(13f, 700, Ink.copy(alpha = .3f)))
+            WantActions(r, act, glyphs, got = 34.dp, gotPad = 12.dp, gotSize = 13.5f, x = 32.dp, xSize = 18f)
+        }
+    }
+    else if (wide) Row(frame, horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Info(r, act, wide, Modifier.weight(1f), nameSize = 16f)
+        Column(Modifier.width(88.dp), verticalArrangement = Arrangement.spacedBy(6.dp), horizontalAlignment = Alignment.End) {
+            LotValue(r, act, sans(13f, 700, mixed(tier)), 4.dp)
+            Stepper(r.qty, glyphs, { act.qty(r, -1) }, { act.qty(r, 1) })
+            LotEdit(r, act, Modifier)
+        }
+    } else Column(frame, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Info(r, act, wide, Modifier, nameSize = 16f)
+        // .lot-side: a grid of 1fr and 88, 6 apart: the value beside the stepper, Edit under the value.
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) { LotValue(r, act, sans(13f, 700, mixed(tier)), 4.dp) }
+                Box(Modifier.width(88.dp), contentAlignment = Alignment.CenterEnd) { Stepper(r.qty, glyphs, { act.qty(r, -1) }, { act.qty(r, 1) }) }
+            }
+            LotEdit(r, act, Modifier)
         }
     }
 }
