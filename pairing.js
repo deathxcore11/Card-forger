@@ -17,7 +17,7 @@ import { commanderTheme, CREATURE_THEMES, creatureTypes as cardCreatureTypes } f
 
 export const TAG_LABEL = {
   artifact: "artifacts", enchantment: "enchantments", token: "tokens", creature_token: "creature tokens", noncreature_token: "noncreature tokens", counters: "+1/+1 counters", spell: "cheap instants & sorceries",
-  discard: "discarding", mill: "a stocked graveyard", lifegain: "life gain", sac_outlet: "a sacrifice outlet", fodder: "creatures to sacrifice",
+  discard: "discarding", creature_burn: "damage to one creature", cast_spell: "instants & sorceries", expend: "spells that cost 3-4", expend_spell: "Expend payoffs", mill: "a stocked graveyard", lifegain: "life gain", sac_outlet: "a sacrifice outlet", fodder: "creatures to sacrifice",
   etb: "enters effects", blink: "flicker", extra_land: "extra land drops", evasive: "evasive creatures", ramp: "extra mana", big: "big spells",
   tuner: "Tuner", evolution: "Evolution Pokémon", basic: "Basic Pokémon", stage2: "Stage 2 Pokémon", supporter: "Supporters", rulebox: "Pokémon ex / V",
   tool: "Pokémon Tools", special_energy: "Special Energy", stadium: "Stadiums", ability: "Pokémon with Abilities", fossil: "Fossils", ritualspell: "a Ritual Spell", fusionspell: "a Fusion Spell", evolve_trigger: "evolve-trigger Abilities", switching: "switching", energy_accel: "Energy acceleration", searcher: "deck search",
@@ -81,6 +81,14 @@ export function mtgTags(c) {
   for (const tag of ["token", "etb", "lifegain"]) needs.delete(tag);
   for (const effect of effects.provides) provides.add(effect.tag);
   for (const effect of effects.needs) needs.add(effect.tag);
+  // Directional spell links (a spell and the cards that trigger off it). Plain text rules.
+  const spell = /Instant|Sorcery/.test(type);
+  if (spell) provides.add("cast_spell");
+  if (spell && /\bdeals \d+ damage to target creature(?! or| you control| and)/.test(t) && !/up to one other target/.test(t)) provides.add("creature_burn");
+  if (!/Land/.test(type) && Number(c?.cmc) >= 3 && Number(c?.cmc) <= 4) provides.add("expend");
+  if (/instant or sorcery spell you control that targets only a single creature/.test(t)) needs.add("creature_burn");
+  if (/whenever you cast an? (?:instant or sorcery|instant|sorcery)\b|whenever you cast a spell, if it'?s the first (?:instant|sorcery)|\bcopy that spell\b|that spell gains deathtouch/.test(t)) needs.add("cast_spell");
+  if (/whenever you expend \d/.test(t)) needs.add("expend");
   for(const tribe of commanderTheme(c).tribes)needs.add('sub:'+tribe);
   if(creature&&/\bchangeling\b|(?:is|are) every creature type/i.test(t))for(const tribe of CREATURE_THEMES)provides.add('sub:'+tribe);
   return { provides, needs, effects };
@@ -91,10 +99,12 @@ export const MTG_PROVIDE_Q = {
   enchantment: "t:enchantment cmc<=2", creature_token: 'o:create o:"creature token"', token: 'o:create o:"creature token"', fodder: 'o:create o:"creature token"',
   counters: 'o:put o:"+1/+1 counter"', spell: "(t:instant or t:sorcery) cmc<=2 (o:draw or o:damage)", discard: 'o:"discard a card" o:draw',
   mill: "(o:mill or o:surveil)", lifegain: '(keyword:lifelink or (o:gain o:life))', sac_outlet: 'o:"sacrifice a creature:"',
+  creature_burn: 'otag:burn-creature (t:instant or t:sorcery)', cast_spell: '(t:instant or t:sorcery) cmc<=3 (o:damage or o:draw)', expend: '(t:instant or t:sorcery) (cmc=3 or cmc=4)',
   etb: 't:creature o:"when" o:"enters"', blink: 'o:exile o:return o:"to the battlefield"', extra_land: '(o:"play an additional land" or (o:"search your library for a basic land" o:battlefield))',
   evasive: "t:creature (keyword:flying or keyword:hexproof) cmc<=3", ramp: '(o:"add {" or o:"search your library for a basic land") cmc<=3 -t:land',
 };
 export const MTG_NEED_Q = {
+  creature_burn: 'o:"spell you control that targets only a single creature"', cast_spell: '(o:"whenever you cast an instant or sorcery" or o:"copy that spell")', expend: 'o:"whenever you expend"',
   artifact: '(o:"whenever an artifact you control enters" or o:"for each artifact you control")', enchantment: 'o:"whenever you cast an enchantment"',
   creature_token: '(o:"creature tokens you control" or o:"creatures you control get +1/+1")', token: 'o:"tokens you control"', fodder: 'o:"sacrifice a creature"', counters: '(o:"for each +1/+1 counter" or keyword:proliferate)',
   spell: '(o:"whenever you cast an instant or sorcery" or keyword:prowess or keyword:magecraft)', discard: '(keyword:madness or keyword:flashback or o:"whenever you discard")',
@@ -103,7 +113,7 @@ export const MTG_NEED_Q = {
   ramp: '(cmc>=6 or o:"{X}") -t:land', big: '(o:"add {" or o:"search your library for a basic land") cmc<=3 -t:land',
 };
 // Up to three Scryfall searches: cards that give it what it needs, then payoffs for what it provides.
-export function mtgPairQueries(c, tags = mtgTags(c), max = 4) {
+export function mtgPairQueries(c, tags = mtgTags(c), max = 5) {
   const id = (c.color_identity || []).join("") || "c",
     tail = ` id<=${id} -!"${String(c.name).split(" // ")[0]}" -t:basic`,
     out = [];
