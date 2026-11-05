@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-act40-43114-v486";
+const CACHE = "cardforge-shell-pack-art-guide-43115-v487";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
@@ -105,7 +105,7 @@ const ASSETS = [
   "./magic-matchups.css",
   "./settings-theme.js",
   "./settings-storage.js",
-  "./mobile-tilt.js", "./set-experience.js", "./pack-preview.js", "./pack-wrappers.js", "./mtg-boosters.js", "./rarity-emblem.js", "./data-loading.js", "./collector-search.js",
+  "./mobile-tilt.js", "./set-experience.js", "./pack-preview.js", "./pack-wrappers.js", "./pack-art-data.js", "./mtg-boosters.js", "./rarity-emblem.js", "./data-loading.js", "./collector-search.js",
   "./sync-merge.js",
   "./recovery-store.js",
   "./magic-card-color.js",
@@ -215,6 +215,8 @@ const ASSETS = [
   "./mtg-cheap.js",
   "./mtg-tags.js",
   "./mtg-tags.json",
+  "./mtg-synergy.js",
+  "./mtg-synergy.json",
   "./mtg-tcgprice.js",
   "./dialog.js",
   "./buy.js",

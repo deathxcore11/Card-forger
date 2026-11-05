@@ -48,6 +48,7 @@ import { searchFanMarkup } from "./search-fan.js";
 import { trackedQuote, priceHistoryHtml, alertsPanel, alertStatus } from "./pricehist.js";
 import { installNudge, installCardMarkup } from "./install.js";
 import {knownSetCount,setRowContent,setYearSections,setProgressMarkup,setCardFacets,filterSortSetCards} from './set-list-ui.js';
+import { worksWith, watchOuts, loadMtgSynergy } from "./mtg-synergy.js";
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
 import { ICON, actionIcon, labelIcon } from "./icons.js";
 import { searchEmblem } from "./home-search.js";
@@ -323,12 +324,15 @@ const money = (v, cur) => (v === null || v === undefined || v === "" ? "—" : c
 
 // The card's Play guide tab: what it does, when to play it, synergies and cards that pair well.
 function mtgCardGuide(c, rulings = "", ruleLinks = "") {
+  loadMtgSynergy();
   const g = playGuide("mtg", c),
     cache = S.ui.guide?.["mtg:" + c.name];
   return guideHtml("mtg", c, g, {
     alongside: playedAlongside("mtg", c, allCachedMeta()),
     alongsideAttrs: (x) => `data-act="card" data-name="${esc(x.name)}"`,
     alongsideName: (x) => x.name,
+    worksWith: worksWith(c, { owned: (n) => inv(n).owned }),
+    watch: watchOuts(c),
     complements: cache?.cards || [],
     complementsLoading: !cache || cache.loading,
     complementsNote: cache?.note || "",
