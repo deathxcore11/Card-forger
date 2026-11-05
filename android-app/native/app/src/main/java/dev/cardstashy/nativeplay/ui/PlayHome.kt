@@ -10,6 +10,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -603,10 +604,12 @@ private fun ArtShimmer(modifier: Modifier) {
 
 /** Randall's pack wrappers (art piece 16): where each wrapper's black band sits, as fractions of its height. */
 class Wrap(val aspect: Float, val notch: Float, val top: Float, val bottom: Float, val iconInNotch: Boolean = false)
+/** Randall 3 Nov 21:37Z: one painted template for every set (1024×1536, silver crimps, gold art window, black band).
+ *  Measured on the files: notch peak 59.6 %, band 63.2 % to 85.9 %. The empty-window template (PackTemplate) is the same frame. */
+val PACK_TEMPLATE_WRAP = Wrap(1024f / 1536f, notch = .596f, top = .632f, bottom = .859f)
 val WRAPPERS: Map<String, Wrap> = run {
-    // Randall 3 Nov 21:37Z: one painted template for every set (1024×1536, silver crimps, gold art window, black band).
-    // Measured on the files: notch peak 59.6 %, band 63.2 % to 85.9 %. hob, msh and mh2 are redrawn on it; fra keeps its own.
-    val template = Wrap(1024f / 1536f, notch = .596f, top = .632f, bottom = .859f)
+    // hob, msh and mh2 are redrawn on the template; fra keeps its own.
+    val template = PACK_TEMPLATE_WRAP
     listOf("acr", "aer", "afr", "akh", "blb", "bng", "bro", "dft", "dmu", "dom", "dsk", "ecl", "eld", "emn", "eoe", "fdn", "fin", "frf", "grn", "hob", "hou", "iko", "jou", "khm", "kld", "ktk", "lci", "m15", "m19", "m20", "m21", "mat", "mh1", "mh2", "mh3", "mid", "mkm", "mom", "msh", "neo", "ogw", "one", "otj", "rix", "rna", "snc", "soi", "sos", "spm", "stx", "tdm", "thb", "tla", "tmt", "vow", "war", "woe", "xln", "znr", "m14", "rtr", "gtc", "dgm", "ths", "m12", "m13", "isd", "dka", "avr", "nph", "mbs", "som", "m11", "roe", "wwk", "zen", "m10", "arb", "con", "ala", "eve", "shm", "mor", "lrw", "10e", "fut", "plc", "tsp", "csp", "2x2", "5dn", "8ed", "9ed", "bok", "chk", "clb", "clu", "cmm", "cmr", "dbl", "dis", "dmr", "dst", "gpt", "inr", "ltr", "mb2", "mbc", "mrd", "rav", "rvr", "sok", "tsr", "unf", "2xm", "a25", "apc", "bbd", "cn2", "cns", "ema", "ima", "jud", "lgn", "mm2", "mm3", "mma", "ody", "ons", "scg", "tor", "uma", "unh", "ust", "2ed", "3ed", "4ed", "5ed", "6ed", "7ed", "all", "arn", "atq", "chr", "drk", "exo", "fem", "hml", "ice", "inv", "lea", "leb", "leg", "mir", "mmq", "nem", "pcy", "pls", "ren", "rin", "sth", "sum", "tmp", "uds", "ugl", "ulg", "usg", "vis", "wth").associateWith { template } +
         ("fra" to Wrap(600f / 918f, notch = .641f, top = .676f, bottom = .892f))
 }
@@ -630,13 +633,16 @@ fun wrapperFor(code: String): Pair<String, Wrap>? = WRAPPERS[code.lowercase()]?.
  * the set symbol in gold, the set name in Cinzel and PLAY BOOSTER, all moving as one with the sheen.
  */
 @Composable
-private fun WrappedBooster(code: String, label: String, wrap: Wrap, img: ImageBitmap, modifier: Modifier, mini: Boolean, collector: Boolean = false, fill: Boolean = false) {
+internal fun WrappedBooster(code: String, label: String, wrap: Wrap, img: ImageBitmap, modifier: Modifier, mini: Boolean, collector: Boolean = false, fill: Boolean = false,
+                            under: (@Composable BoxScope.() -> Unit)? = null) {
     // fill: the caller already sized the box to the wrapper (the pack opener), so the picture takes all of it.
     Box(if (fill) modifier else modifier.aspectRatio(5f / 8.2f), contentAlignment = Alignment.BottomCenter) {
         BoxWithConstraints((if (fill) Modifier.fillMaxSize() else Modifier.fillMaxWidth().aspectRatio(wrap.aspect, matchHeightConstraintsFirst = true))
             .then(if (collector) Modifier.collectorGlow() else Modifier)
             .graphicsLayer { shadowElevation = 14.dp.toPx(); shape = RoundedCornerShape(4.dp); clip = false }) {
             val w = maxWidth; val h = maxHeight
+            // The pack template's set art, under the frame's empty window (PackTemplate).
+            under?.invoke(this)
             Image(img, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
             // The star emblem, centred in the band's notch.
             if (wrap.iconInNotch) SetIcon(code, Modifier.align(Alignment.TopCenter).offset(y = h * wrap.notch - w * .05f).size(w * .1f))

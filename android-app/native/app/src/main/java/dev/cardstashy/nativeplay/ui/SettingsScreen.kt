@@ -555,6 +555,7 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Packs" to "Every set's pack shows a hand-picked card's art in its window, and the art shifts behind the frame as you tilt the phone or slide a finger.",
     "Story" to "Act 1's first four battles teach as you play: the Rift whispers a tip and the cards it means glow. Skip lessons turns them off.",
     "Story" to "Acts 33 to 38 are playable, and early acts are retuned. Act 2's Tetsuo's Court, The Deck and the Elder Dragon's lair have living mats.",
     "Packs" to "Seven older packs lose the black box behind them, and Khans of Tarkir shows Siege Rhino.",

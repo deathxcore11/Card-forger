@@ -7,6 +7,10 @@ import android.media.SoundPool
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.core.Animatable
+import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.AnimationVector2D
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -238,6 +242,8 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
     var busy by remember { mutableStateOf(false) }
     var sound by remember { mutableStateOf(PackSfx.on) }
     var tiltOn by remember { mutableStateOf(PackSfx.tilt) }
+    // The template pack's art drift, -1..1 each way: the sealed pack drives it and the torn pack keeps it, so the art stays put.
+    val drift = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
     var tiltHint by remember { mutableStateOf(false) }
     var inspecting by remember { mutableStateOf<Pull?>(inspectAtStart?.let { first.pulls.getOrNull(it) }) }
     var backPull by remember { mutableFloatStateOf(0f) }
@@ -348,7 +354,7 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
                 RoundTool("Close pack", onClick = { Feel.cancel(context); onClose() }) { CloseGlyph() }
             }
             Box(Modifier.weight(1f).fillMaxWidth()) {
-                if (stage == PackStage.SEALED || stage == PackStage.TEARING) Sealed(pack, stage == PackStage.TEARING, ::tear, loading = pack.note == LOADING, eager = tearQueued)
+                if (stage == PackStage.SEALED || stage == PackStage.TEARING) Sealed(pack, stage == PackStage.TEARING, ::tear, loading = pack.note == LOADING, eager = tearQueued, drift = drift, tiltOn = tiltOn)
                 else Dealt(pack, stage, revealed, focus, charging, moment, momentLevel, flipping, slide, flung, allOpen, tiltOn && inspecting == null,
                     onLanded = { if (stage == PackStage.DEALING) stage = PackStage.DEALT },
                     onDealt = { i, best -> if (best) { feel("pack-rumble"); PackSfx.play("PACK-019", .7f); PackSfx.play("PACK-005", .55f, .94f) } else { PackSfx.play("PACK-005", .55f, 1f + i * .02f); feel("pack-deal") } },
@@ -364,7 +370,7 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
                         pack.pulls.forEachIndexed { j, p -> if (j !in revealed) { if (p.level > best) { best = p.level; at = j }; reveal(j, silent = true) } }
                         if (at >= 0) { focus = at; feel(FEELS[best]); PackSfx.play(REVEAL_SOUND[best]); momentLevel = best; moment++; flipping++ } else focus = n / 2
                     },
-                    onNext = if (onNext != null) ::next else null, busy = busy)
+                    onNext = if (onNext != null) ::next else null, busy = busy, drift = { drift.value })
             }
             Text(status, Modifier.fillMaxWidth().heightIn(min = 16.dp).padding(top = 2.dp), style = TextStyle(fontFamily = Site.Body.fontFamily, fontSize = 11.5.sp, lineHeight = 17.sp, color = Site.Gold, textAlign = TextAlign.Center))
         }
@@ -417,15 +423,42 @@ private val GlyphInk = Color(0xFFD9DDE6)
 /** The wrapper's size in the pack's body (.pack-wrapper: min(56vw, 250 px) wide at 400:734, never taller than the room). */
 private fun packHeight(w: Dp, h: Dp) = minOf(w * .56f * (734f / 400f), 250.dp * (734f / 400f), h - 40.dp)
 
-/** The pack as drawn: the site's wrapper width, at the painted wrapper's own shape, so the seam, the strip and the torn ghost all sit on the picture. */
-private fun packSize(set: String, w: Dp, h: Dp): Pair<Dp, Dp> {
-    val pw = packHeight(w, h) * (400f / 734f); val aspect = wrapperFor(set)?.second?.aspect ?: (5f / 8.2f)
+/** The pack as drawn: the site's wrapper width, at the painted wrapper's own shape, so the seam, the strip and the torn ghost all sit on the picture.
+ *  A set with template art is the template's 2:3 (sets-ui.css .pack-wrapper.pack-tpl). */
+private fun packSize(set: String, w: Dp, h: Dp, template: Boolean = false): Pair<Dp, Dp> {
+    val pw = packHeight(w, h) * (400f / 734f); val aspect = if (template) 2f / 3f else wrapperFor(set)?.second?.aspect ?: (5f / 8.2f)
     return pw to pw / aspect
 }
 
 @Composable
-private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loading: Boolean = false, eager: Boolean = false) = BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    val (w, h) = packSize(pack.set, maxWidth, maxHeight)
+private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loading: Boolean = false, eager: Boolean = false,
+                   drift: Animatable<Offset, AnimationVector2D>? = null, tiltOn: Boolean = false) {
+    val ctx = LocalContext.current
+    val template = remember(pack.set) { PackTemplate.art(ctx, pack.set) != null } && drift != null
+    // The template pack's parallax (pack-preview.js): a finger over the screen, placed against the pack, or the phone's tilt when
+    // pack tilt is on, eased over 120 ms (.pack-tpl-art transition .12s linear). Reduce motion: still. A lifted finger leaves the
+    // art where it was unless the tilt takes over again, as on the site.
+    var touch by remember { mutableStateOf<Offset?>(null) }
+    val phone = if (template && tiltOn && !Motion.still) rememberTilt() else null
+    if (template && drift != null) LaunchedEffect(phone) {
+        snapshotFlow {
+            val t = touch; val p = phone?.value
+            when { Motion.still -> Offset.Zero; t != null -> t; p != null && p.live -> Offset(p.x, p.y); else -> drift.targetValue }
+        }.collectLatest { drift.animateTo(it, tween(120, easing = LinearEasing)) }
+    }
+    BoxWithConstraints(Modifier.fillMaxSize().pointerInput(template, phone) {
+        if (!template) return@pointerInput
+        awaitEachGesture {
+            while (true) {
+                val c = awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull() ?: break
+                if (!c.pressed) { if (phone?.value?.live == true) touch = null; break }
+                val (pw, ph) = packSize(pack.set, size.width.toDp(), size.height.toDp(), true)
+                val wpx = pw.toPx(); val hpx = ph.toPx()
+                touch = Offset(((c.position.x - (size.width - wpx) / 2f) / wpx * 2f - 1f).coerceIn(-1f, 1f), ((c.position.y - (size.height - hpx) / 2f) / hpx * 2f - 1f).coerceIn(-1f, 1f))
+            }
+        }
+    }, contentAlignment = Alignment.Center) {
+    val (w, h) = packSize(pack.set, maxWidth, maxHeight, template)
     // While the server rolls the pack: a gold aura breathes around it, embers rise and it trembles, harder once tapped.
     val power = if (!loading) 0f else if (Motion.still) .6f else rememberInfiniteTransition(label = "power").animateFloat(0f, 1f, infiniteRepeatable(tween(if (eager) 420 else 900, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "p").value
     val ember = if (!loading) 0f else if (Motion.still) .35f else rememberInfiniteTransition(label = "ember").animateFloat(0f, 1f, infiniteRepeatable(tween(1600, easing = LinearEasing)), label = "e").value
@@ -500,8 +533,10 @@ private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loadi
     }.glow(Color(0xFFE8B95B), if (loading) .25f + .4f * power * (if (eager) 1.4f else 1f) else 0f, .08f + .05f * power, .06f + .04f * power, .08f, 36.dp)
         .glow(Color.Black, .6f, .02f, .03f, .04f, 30.dp)
         .clickable(remember { MutableInteractionSource() }, dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onTear).semantics { contentDescription = "Open the ${pack.name} pack" }) {
-        Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true)
-        if (!Motion.still && !tearing) {
+        // The set's art under Randall's template when the set has one (its painted wrapper until the art is in), else the wrapper.
+        val tpl = TemplatePack(pack.set, pack.name, { drift?.value ?: Offset.Zero }, Modifier.fillMaxSize()) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true) }
+        // .pack-tpl .pack-crimp, .pack-tpl .pack-sheen { display: none }: the template pack has neither.
+        if (!tpl && !Motion.still && !tearing) {
             // pack-sheen-move: a soft rainbow band sweeping across every 3.2 s.
             val sweep = rememberInfiniteTransition(label = "sheen").animateFloat(1.2f, -.2f, infiniteRepeatable(tween(3200, easing = FastOutSlowInEasing)), label = "s").value
             Box(Modifier.fillMaxSize().drawWithContent {
@@ -510,7 +545,7 @@ private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loadi
             })
         }
         // .pack-crimp.top: the 9 % crimp band (fine white ribs), which tears off: translate(30 %, -180 %) rotate(-14°) and fades.
-        if (tearing) Canvas(Modifier.fillMaxWidth().height(h * .09f).graphicsLayer {
+        if (tearing && !tpl) Canvas(Modifier.fillMaxWidth().height(h * .09f).graphicsLayer {
             val s = strip.value; translationX = size.width * .3f * s; translationY = -size.height * 1.8f * s; rotationZ = -14f * s; alpha = 1f - s
         }) {
             val step = 5.dp.toPx(); val rib = 2.dp.toPx(); var x = 0f
@@ -534,6 +569,7 @@ private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loadi
         }
     }
 }
+}
 
 // ---------------------------------------------------------------- dealt
 
@@ -541,7 +577,7 @@ private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loadi
 private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus: Int, charging: Int?, moment: Int, momentLevel: Int, flipping: Int, slide: Int,
                   flung: Pair<Pull, Int>?, allOpen: Boolean, tilt: Boolean,
                   onLanded: () -> Unit, onDealt: (Int, Boolean) -> Unit, onShow: (Int, Boolean) -> Unit, onReveal: (Int) -> Unit, onFocusTap: () -> Unit,
-                  onHold: (Int) -> Unit, onSwipe: (Int) -> Unit, onFlungDone: () -> Unit, onRevealAll: () -> Unit, onNext: (() -> Unit)?, busy: Boolean) = BoxWithConstraints(Modifier.fillMaxSize()) {
+                  onHold: (Int) -> Unit, onSwipe: (Int) -> Unit, onFlungDone: () -> Unit, onRevealAll: () -> Unit, onNext: (() -> Unit)?, busy: Boolean, drift: () -> Offset = { Offset.Zero }) = BoxWithConstraints(Modifier.fillMaxSize()) {
     val n = pack.pulls.size
     val bodyW = maxWidth; val bodyH = maxHeight
     val density = LocalDensity.current
@@ -593,7 +629,9 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
     // The flight, above everything: the torn pack (cards under it until they clear its top), then the cards.
     if (stage == PackStage.DEALING && deal.value < 1f) with(density) {
         // The ghost takes the sealed pack's exact place (from = w.getBoundingClientRect()): centred in the whole body.
-        val (pw, ph) = packSize(pack.set, bodyW, bodyH)
+        val ctx = LocalContext.current
+        val template = remember(pack.set) { PackTemplate.art(ctx, pack.set) != null }
+        val (pw, ph) = packSize(pack.set, bodyW, bodyH, template)
         val packTop = (bodyH - ph) / 2; val packLeft = (bodyW - pw) / 2
         // Ghost: holds while the cards leave, then sinks 36 % and fades; light glows in its open mouth.
         val ghostHold = min(.8f, (n * gap).toFloat() / (total + 260))
@@ -603,7 +641,9 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
             val e = CubicBezierEasing(.45f, 0f, .55f, 1f).transform(sink)
             translationY = size.height * .36f * e; scaleX = 1f - .1f * e; scaleY = scaleX; alpha = 1f - e
         }) {
-            Box(Modifier.fillMaxSize().drawWithContent { clipRect(top = size.height * .085f) { this@drawWithContent.drawContent() } }) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true) }
+            Box(Modifier.fillMaxSize().drawWithContent { clipRect(top = size.height * .085f) { this@drawWithContent.drawContent() } }) {
+                TemplatePack(pack.set, pack.name, drift, Modifier.fillMaxSize()) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true) }
+            }
             val m = (t / 900f).coerceIn(0f, 1f)
             val ma = if (m < .35f) m / .35f else 1f - (m - .35f) / .65f
             Canvas(Modifier.fillMaxWidth().height(ph * .2f).offset(y = ph * .0f).graphicsLayer { scaleX = if (m < .35f) .4f + .6f * (m / .35f) else 1f; alpha = ma }) {

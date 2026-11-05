@@ -33,6 +33,9 @@ node "$HERE/scripts/export-board-icons.mjs" "$REPO" "$A/board-icons.json"
 node "$HERE/scripts/export-story-deeds.mjs" "$REPO" "$A/story-deeds.json"
 # Story lessons: the duel page's lesson lines and the Rift's in-match whispers with the lesson battles' stacked draws.
 node "$HERE/scripts/export-story-lessons.mjs" "$REPO" "$A/story-lessons.json"
+# The pack opener's template (pack-preview.js): the empty-window frame, its window mask and one art per Magic set.
+cp "$REPO/assets/packs/pack-template.webp" "$REPO/assets/packs/pack-window.png" "$A/play/"
+node "$HERE/scripts/export-pack-art.mjs" "$REPO" "$A/pack-art.json"
 # Every Story act's battles and card pool, the fallback when the site's copy can't be reached (or is not published yet).
 mkdir -p "$A/story" && cp "$REPO"/data/story/act-*.json "$REPO"/data/story/pool-*.json "$A/story/"
 node "$HERE/scripts/export-audio-loops.mjs" "$REPO" "$A/audio-loops.json"
