@@ -48,6 +48,9 @@ object ForgeService {
     private val _status = MutableStateFlow<Status>(Status.Idle)
     val status: StateFlow<Status> = _status
 
+    /** This engine build takes a lesson's match setup (setup.stack + noMulligan, rebuild-bridge.sh): older engines refuse the key. */
+    val matchSetup: Boolean by lazy { runCatching { Class.forName("cardstashy.forge.NativeMatchSetup", false, ForgeService::class.java.classLoader) }.isSuccess }
+
     @Volatile private var loading: Future<*>? = null
     @Volatile private var rulesValidUntil: String? = null
     @Volatile private var rulesVersion: String? = null

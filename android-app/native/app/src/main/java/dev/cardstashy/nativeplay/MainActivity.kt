@@ -382,10 +382,22 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
             if (round == 0) Speed.record(if (s.known) Speed.KNOWN else Speed.NEW, SystemClock.elapsedRealtime() - t0)
         }
         if (bubbles != null && outcome != null) LaunchedEffect(Unit) { controller.shown.filterNotNull().collect { st -> bubbles.update(st).forEach { outcome.bubbles.add(it) } } }
+        // Story lessons (story-lessons.js): the Rift's whispers on your side of a Story match, fed only what the table shows while play is on.
+        val lessons = remember { (pick as? Pick.Table)?.story?.takeIf { it.seat == "hero" }?.let { c -> dev.cardstashy.nativeplay.ui.LessonTable(context, c.lessonBattle, c.seat) } }
+        if (lessons != null) LaunchedEffect(Unit) { controller.shown.filterNotNull().collect { st ->
+            when (controller.stage.value) { dev.cardstashy.nativeplay.match.Stage.PLAYING -> lessons.update(st); dev.cardstashy.nativeplay.match.Stage.FINISHED, dev.cardstashy.nativeplay.match.Stage.FAILED -> lessons.destroy(); else -> {} }
+        } }
+        // The Story scene over the table holds the clock and the first turn.
+        LaunchedEffect(holdForScene) { controller.setScene(holdForScene) }
         BackHandler { /* the table's menu has Leave; Back never drops a match by accident */ }
-        if (versus || holdForScene) VersusScreen(s.you, s.cpu, intro = false) else TableScreen(controller, onHome = onHome, onRematch = { round++ }, resultNote = outcome?.note, cpuPlate = s.cpu,
+        if (versus || holdForScene) VersusScreen(s.you, s.cpu, intro = false) else Box {
+          androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalLessonGlow provides (lessons?.glow ?: emptySet())) {
+          TableScreen(controller, onHome = onHome, onRematch = { round++ }, resultNote = outcome?.note, cpuPlate = s.cpu,
             mat = (pick as? Pick.Table)?.story?.let { c -> remember { dev.cardstashy.nativeplay.ui.StoryMats.forBattle(context, c.act, c.battle.get("slot")?.takeIf { it.isJsonPrimitive }?.asInt, c.battle.get("kind")?.takeIf { it.isJsonPrimitive }?.asString) } },
             storyMusic = (pick as? Pick.Table)?.story?.let { dev.cardstashy.nativeplay.audio.TableMusic.StoryMusic(it.act, it.battle.get("mood")?.takeIf { m -> m.isJsonPrimitive }?.asString, it.battle.get("kind")?.takeIf { m -> m.isJsonPrimitive }?.asString) })
+          }
+          lessons?.let { dev.cardstashy.nativeplay.ui.LessonWhisper(it) }
+        }
     }
 }
 

@@ -336,14 +336,17 @@ fun StoryRoute(startAct: Int? = null, onBack: () -> Unit, onDuel: (dev.cardstash
     } }
     StoryDuelPage(open, data!!, b, p, rules.setNames, profile?.avatarUrl, ownDecks, duel, { duel = it }, { battle = null; duel = StoryDuelUi() },
         { seat, own -> onDuel(storyPick(open, data!!, b, seat, own, StoryLogic.battleCleared(p, b["id"].asString), profile?.avatarUrl,
+            dev.cardstashy.nativeplay.play.StoryLessons.load(ctx).takeIf { !dev.cardstashy.nativeplay.play.StoryLessons.off(ctx) },
             decks.firstOrNull { it["id"].asString == own }?.let { d -> dev.cardstashy.nativeplay.play.Decks.rows(d).filter { it.board != "side" } }, ownDecks.firstOrNull { it.id == own }?.art)) },
         listFor = { id -> decks.firstOrNull { it["id"].asString == id }?.let { d -> dev.cardstashy.nativeplay.play.Decks.rows(d).filter { it.board != "side" }.map { it.name to it.qty } } }, purse = purse)
 }
 
 private val STORY_LEVEL = mapOf("Easy" to "Easy", "Normal" to "Medium", "Hard" to "Hard")
 
-/** app.js storyPlay's launch: Vintage, the battle's level, a random first player; the Story deck (or your own) against the other side's deck. */
+/** app.js storyPlay's launch: Vintage, the battle's level, a random first player; the Story deck (or your own) against the other side's deck.
+ *  An Act 1 lesson ([lessons] on, first hero-side play) meets the battle's lesson deck, with the lesson's stacked draws and you going first. */
 private fun storyPick(act: Int, data: JsonObject, b: JsonObject, seat: String, own: String?, cleared: Boolean, avatar: String?,
+                      lessons: dev.cardstashy.nativeplay.play.StoryLessons?,
                       ownRows: List<dev.cardstashy.nativeplay.play.Decks.Row>?, ownFace: String?): dev.cardstashy.nativeplay.match.Pick.Table {
     val me = if (seat == "villain" && cleared) "villain" else "hero"; val other = if (me == "hero") "villain" else "hero"
     fun deck(id: String, name: String, cards: List<Triple<String, Int, String?>>) = JsonObject().apply {
@@ -354,11 +357,16 @@ private fun storyPick(act: Int, data: JsonObject, b: JsonObject, seat: String, o
     fun sideDeck(k: String, id: String) = side(k).let { d -> deck(id, d["name"].asString, d.getAsJsonArray("cards").map { it.asJsonObject }.map { Triple(it["name"].asString, it["qty"].asInt, it.get("id")?.takeIf { x -> x.isJsonPrimitive }?.asString) }) }
     val id = b["id"].asString
     val you = if (own != null && ownRows != null) deck(own, "Your deck", ownRows.map { Triple(it.name, it.qty, null) }) else sideDeck(me, "story:$id:$me")
-    val cpu = sideDeck(other, "story:$id:$other")
+    val lessonRun = me == "hero" && !cleared && lessons?.isLessonBattle(id) == true
+    val lessonDeck = b.getAsJsonObject("lessonDeck")?.getAsJsonObject("deck")?.takeIf { lessonRun }
+    val cpu = lessonDeck?.let { d -> deck("story:$id:$other", d["name"].asString, d.getAsJsonArray("cards").map { it.asJsonObject }.map { Triple(it["name"].asString, it["qty"].asInt, it.get("id")?.takeIf { x -> x.isJsonPrimitive }?.asString) }) }
+        ?: sideDeck(other, "story:$id:$other")
     val cast = data.getAsJsonObject("cast")
     fun lines(k: String) = data.getAsJsonArray(k)?.map { it.asJsonObject } ?: emptyList()
     val face = ownFace?.takeIf { own != null } ?: side(me).getAsJsonArray("cards").map { it.asJsonObject["name"].asString }.firstOrNull { !basicLand.matches(it) }
-    val ctx = dev.cardstashy.nativeplay.match.StoryCtx(act, b, cast, me, own != null, b["slot"].asInt == 1 && me == "hero" && !cleared, avatar, lines("intro"), lines("finale"), lines("villainFinale"))
+    val setup = if (lessonRun && dev.cardstashy.nativeplay.engine.ForgeService.matchSetup) lessons?.setup(id) else null
+    val ctx = dev.cardstashy.nativeplay.match.StoryCtx(act, b, cast, me, own != null, b["slot"].asInt == 1 && me == "hero" && !cleared, avatar, lines("intro"), lines("finale"), lines("villainFinale"),
+        lessonBattle = id.takeIf { lessonRun }, setup = setup)
     return dev.cardstashy.nativeplay.match.Pick.Table(you, you["name"].asString, "Vintage", face, cpu, STORY_LEVEL[b["difficulty"].asString] ?: "Medium", quick = false, story = ctx)
 }
 private val basicLand = Regex("^(snow-covered )?(plains|island|swamp|mountain|forest)$", RegexOption.IGNORE_CASE)

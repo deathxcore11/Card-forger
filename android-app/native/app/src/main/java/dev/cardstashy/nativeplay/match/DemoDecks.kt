@@ -32,10 +32,12 @@ fun podDeck(deck: JsonObject): JsonObject = JsonObject().apply {
  * pod): deck names stay on the versus plate and never reach Forge's lines.
  */
 fun forgeInput(format: String, you: JsonObject, cpu: JsonObject, level: String = "Medium", startingPlayer: String = "random",
-               quick: Boolean = true, extras: List<Pair<JsonObject, String>> = emptyList()): String {
+               quick: Boolean = true, extras: List<Pair<JsonObject, String>> = emptyList(), setup: JsonObject? = null): String {
     require(level in CPU_POLICIES) { "Choose Easy, Normal or Hard." }
     require(startingPlayer in setOf("random", "first", "second"))
     require(extras.isEmpty() || (format == "Commander" && !quick && extras.size <= 2)) { "A pod is Commander Practice with up to 3 CPUs." }
+    // A lesson's match setup (host PR #121's setup.stack + noMulligan): CPU matches only, never a pod, with a chosen first player.
+    require(setup == null || (extras.isEmpty() && !quick)) { "A match setup is for a Story lesson against one CPU." }
     val f = if (format == "Standard Brawl") "Brawl" else format
     fun seat(d: JsonObject, name: String) = EngineNames.deck(d).apply { addProperty("format", f); addProperty("name", name) }
     val pod = extras.isNotEmpty()
@@ -45,6 +47,7 @@ fun forgeInput(format: String, you: JsonObject, cpu: JsonObject, level: String =
         add("opponentDeck", seat(cpu, "CPU").let { if (pod) podDeck(it) else it })
         addProperty("difficultyPolicyVersion", CPU_POLICIES.getValue(if (quick) "Medium" else level))
         addProperty("startingPlayer", if (quick) "random" else startingPlayer); addProperty("playStyle", if (quick) "quick" else "practice")
+        setup?.let { add("setup", it) }
         if (pod) add("extraOpponents", JsonArray().apply { extras.forEachIndexed { i, (d, lv) ->
             add(JsonObject().apply { add("deck", podDeck(seat(d, "CPU ${i + 2}"))); addProperty("difficultyPolicyVersion", CPU_POLICIES[lv] ?: CPU_POLICIES.getValue("Medium")) })
         } })

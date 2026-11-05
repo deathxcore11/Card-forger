@@ -124,7 +124,25 @@ fun CardFace(
             c.nativeCanvas.drawRoundRect(-spread, -spread, size.width + spread, size.height + spread, r, r, p)
         }
     } else Modifier
+    // A Story lesson's whisper points here (story-mode.css .st-glow): a gold ring 2 px out with a soft halo, breathing every 2.4 s.
+    val lessonLit = card.id in LocalLessonGlow.current
+    val lessonGlow = if (lessonLit) {
+        // The pulse is read only while drawing, so a glowing card redraws each frame without recomposing.
+        val pulse = if (Motion.still) null else rememberInfiniteTransition(label = "lesson").animateFloat(0f, 1f, infiniteRepeatable(tween(1200, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "l")
+        val halo = remember { androidx.compose.ui.graphics.Paint().asFrameworkPaint().apply { isAntiAlias = true } }
+        Modifier.drawBehind {
+            val t = pulse?.value ?: 0f; val r = w.toPx() * .06f
+            val spread = (6f - 3f * t).dp.toPx()
+            halo.color = Color(0xFFF1D27A).copy(alpha = .8f - .3f * t).toArgb()
+            halo.maskFilter = android.graphics.BlurMaskFilter((11f - 5f * t).dp.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL)
+            drawIntoCanvas { c -> c.nativeCanvas.drawRoundRect(-spread, -spread, size.width + spread, size.height + spread, r + spread, r + spread, halo) }
+            val o = 3.5.dp.toPx()
+            drawRoundRect(Color(0xFFF1D27A).copy(alpha = 1f - .5f * t), androidx.compose.ui.geometry.Offset(-o, -o), androidx.compose.ui.geometry.Size(size.width + 2 * o, size.height + 2 * o),
+                androidx.compose.ui.geometry.CornerRadius(r + o), style = androidx.compose.ui.graphics.drawscope.Stroke(3.dp.toPx()))
+        }
+    } else Modifier
     Box(modifier.size(w, h).then(glow).then(if (anchors != null && card.zone == "Battlefield") Modifier.onGloballyPositioned { anchors.put("c${card.id}", it.boundsInRoot().center) } else Modifier).graphicsLayer { rotationZ = turn; translationY = lift * density }
+        .then(lessonGlow)
         .then(if (onTap == null && onHold == null) Modifier else Modifier.pointerInput(card.id, onTap, onHold) { detectTapGestures(onTap = { onTap?.invoke() }, onLongPress = { onHold?.invoke() }) })) {
         Box(Modifier.fillMaxSize().clip(shape).background(Color(0xFF15151A))) {
             if (card.hidden) CardBack(Modifier.fillMaxSize())

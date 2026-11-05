@@ -126,8 +126,11 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
 
     @Volatile private var session: EngineSession? = null
     @Volatile private var latest: MatchState? = null
+    /** A Story lesson's engine keeps your opening seven (setup.noMulligan): Forge never asks, so there is no keep to wait for. */
+    private val keepsOpeningHand = runCatching { com.google.gson.JsonParser.parseString(input).asJsonObject.getAsJsonObject("input")
+        ?.getAsJsonObject("setup")?.get("noMulligan")?.asBoolean == true }.getOrDefault(false)
     /** You have answered the opening hand (keep, or the cards to bottom). Until then no later snapshot is shown, in every mode. */
-    @Volatile private var answeredMulligan = false
+    @Volatile private var answeredMulligan = keepsOpeningHand
     private val snapshots = Channel<MatchState>(Channel.UNLIMITED)
     private var skip: CompletableDeferred<Unit>? = null
     private var lastSeq = 0L
@@ -181,6 +184,9 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     /** While the app is in the background the CPU's beats wait, so nothing plays out unseen. */
     private val paused = MutableStateFlow(false)
     fun setPaused(on: Boolean) { paused.value = on }
+    /** A Story scene over the table: the clock holds and the first turn waits until it ends, so nothing is missed behind it. */
+    private val scene = MutableStateFlow(false)
+    fun setScene(on: Boolean) { scene.value = on }
 
     private suspend fun hold(ms: Long) {
         paused.first { !it }
@@ -213,7 +219,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     fun hold(reason: String, on: Boolean) { if (on) holds.add(reason) else holds.remove(reason) }
     private val timer = TurnClock.Timer(
         snapshot = { latest?.takeIf { _stage.value == Stage.PLAYING || _stage.value == Stage.MULLIGAN } },
-        paused = { paused.value || holds.isNotEmpty() || _beat.value != null || _sending.value || _shown.value?.revision != latest?.revision },
+        paused = { paused.value || scene.value || holds.isNotEmpty() || _beat.value != null || _sending.value || _shown.value?.revision != latest?.revision },
         act = { w, st, done ->
             autoAnswering = true
             try {
@@ -243,7 +249,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
 
     private suspend fun play() {
         var gatePassed = false
-        var mulliganSeen = false
+        var mulliganSeen = keepsOpeningHand
         var cpuHandAtKeep = 0
         for (st in snapshots) {
             queued--
@@ -254,6 +260,8 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             // The board stays closed until Forge has actually asked for the keep at least once.
             if (!gatePassed && st.isMulligan && !st.busy && (st.prompt != null || st.inputType != null)) mulliganSeen = true
             if (!gatePassed && !mulliganSeen) continue
+            // A lesson's opening seven is kept by the engine: the deal is never drawn as a choice, the table opens on turn 1.
+            if (!gatePassed && keepsOpeningHand && st.isMulligan) continue
             // A snapshot past the opening hand before you answered it is never drawn (unless the game now waits on you, so it can never stall).
             if (!gatePassed && !st.isMulligan && !answeredMulligan && !st.waitingOnMe) continue
             if (!gatePassed && st.isMulligan) {
@@ -273,6 +281,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                 show(st); continue
             }
             if (!gatePassed) {
+                scene.first { !it }
                 gatePassed = true
                 // 2. Into hand, a quiet beat, then the first banner.
                 _stage.value = Stage.INTRO

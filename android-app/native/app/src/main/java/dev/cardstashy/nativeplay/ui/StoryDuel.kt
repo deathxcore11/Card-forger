@@ -123,7 +123,8 @@ fun StoryDuelPage(
         seat == "hero" && "villain" !in rec && rw?.obj("villain")?.obj("card") != null -> "Their side" to StoryLogic.rewardText(rw.obj("villain"), set, setNames)
         else -> "Reward claimed" to ""
     }
-    val teaches = b.getAsJsonArray("teaches")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }?.filter { it in StoryLessons.map }.orEmpty()
+    val lessonText = StoryLessons.load(androidx.compose.ui.platform.LocalContext.current).map
+    val teaches = b.getAsJsonArray("teaches")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }?.filter { it in lessonText }.orEmpty()
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val loanLead = mine.obj("deck")?.cards()?.firstOrNull { !basic.matches(it.first) }
     val loanArt = mine.obj("deck")?.getAsJsonArray("cards")?.map { it.asJsonObject }?.firstOrNull { c -> !basic.matches(c.str("name").orEmpty()) }?.str("id")?.takeIf { it.length == 36 }
@@ -160,7 +161,7 @@ fun StoryDuelPage(
         }
         if (teaches.isNotEmpty()) item("learn") {
             LearnBox("New in this battle") { teaches.forEach { t -> Text(androidx.compose.ui.text.buildAnnotatedString {
-                pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.ExtraBold)); append(t); pop(); append(" "); append(StoryLessons.map.getValue(t)) }, style = storyText(14f, FontWeight.Medium, Site.Text)) } }
+                pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.ExtraBold)); append(t); pop(); append(" "); append(lessonText.getValue(t)) }, style = storyText(14f, FontWeight.Medium, Site.Text)) } }
         }
         item("decks") {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {

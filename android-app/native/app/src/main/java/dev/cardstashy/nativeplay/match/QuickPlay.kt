@@ -42,7 +42,10 @@ sealed interface Pick {
 
 /** A Story battle's context (app.js storyPlay): which battle and side, whether your own deck plays, and the act's cast, scenes and cues. */
 class StoryCtx(val act: Int, val battle: JsonObject, val cast: JsonObject?, val seat: String, val own: Boolean, val firstVisit: Boolean, val avatarUrl: String?,
-               val intro: List<JsonObject>, val finale: List<JsonObject>, val villainFinale: List<JsonObject>)
+               val intro: List<JsonObject>, val finale: List<JsonObject>, val villainFinale: List<JsonObject>,
+               /** An Act 1 lesson run (first hero-side play, lessons on): the battle whose ideas the Rift whispers, and the engine's
+                *  match setup (stacked draws, no mulligan; you go first) when this engine has it. */
+               val lessonBattle: String? = null, val setup: JsonObject? = null)
 
 /** One side of the versus beat. */
 data class Plate(val name: String, val who: String, val face: String?)
@@ -101,7 +104,10 @@ object QuickPlay {
         if (cpu != null) { val u = ForgeService.unknownNames(EngineNames.names(EngineNames.deck(cpu))); if (u.isNotEmpty()) return@withContext Setup.Unknown(u.sorted()) }
         if (cpu == null) {
             val lists = MetaDecks.lists(context, format)
-            cpu = MetaDecks.pick(lists.filter { ForgeService.unknownNames(EngineNames.names(EngineNames.deck(it))).isEmpty() }, you)
+            // One engine question for every list's names, not one per list.
+            val names = lists.map { EngineNames.names(EngineNames.deck(it)) }
+            val bad = ForgeService.unknownNames(names.flatten().toSet()).toSet()
+            cpu = MetaDecks.pick(lists.filterIndexed { i, _ -> names[i].none { it in bad } }, you)
             if (cpu == null && format == demos.format) cpu = demos.decks.firstOrNull { it.id != pick.id }?.let(demos::seat)
         }
         val cpuDeck: JsonObject = cpu ?: return@withContext Setup.Failed("Couldn’t load a $format opponent. Check your connection and try again.")
@@ -109,7 +115,9 @@ object QuickPlay {
         // Meta lists are named by their key cards ("Karn, the Great Creator · Expedition Map"): the plate shows the first.
         val cpuName = cpuDeck.get("name")?.asString?.substringBefore(" · ")?.trim()?.ifBlank { null } ?: "Tournament list"
         val faces = listOfNotNull(pick.face, faceOf(cpuDeck))
-        Setup.Ready((pick as? Pick.Table)?.let { forgeInput(format, you, cpuDeck, it.level, quick = it.quick) } ?: quickInput(format, you, cpuDeck), Plate(pick.name, "You", pick.face), Plate(cpuName, "CPU · $format", faceOf(cpuDeck)),
+        Setup.Ready((pick as? Pick.Table)?.let { val lesson = it.story?.setup
+            forgeInput(format, you, cpuDeck, it.level, startingPlayer = if (lesson != null) "first" else "random", quick = it.quick, setup = lesson) } ?: quickInput(format, you, cpuDeck),
+            Plate(pick.name, "You", pick.face), Plate(cpuName, "CPU · $format", faceOf(cpuDeck)),
             youRows + cpuRows, faces, CardArt.knowsRows(youRows + cpuRows))
     }
 

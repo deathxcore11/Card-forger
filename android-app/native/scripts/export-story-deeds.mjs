@@ -8,5 +8,6 @@ const [root, out] = process.argv.slice(2);
 const d = await import(pathToFileURL(join(root, 'story-deeds.js')).href);
 const slim = x => ({id: x.id, act: x.act, battle: x.battle, title: x.title, seat: x.seat, when: x.when, hidden: !!x.hidden, gold: !!x.gold});
 const acts = d.STORY_ACT_DEEDS.map(x => ({id: x.id, act: x.act, kind: x.kind, title: x.title}));
-writeFileSync(out, JSON.stringify({deeds: d.STORY_DEEDS.map(slim), acts}));
+// KEY_FEATS: each act's three key feats for its secret battle (checked against StoryLogic.KEY_FEATS by StoryLogicTest).
+writeFileSync(out, JSON.stringify({deeds: d.STORY_DEEDS.map(slim), acts, keyFeats: d.KEY_FEATS}));
 console.log(`story deeds: ${d.STORY_DEEDS.length} battle deeds, ${acts.length} act deeds`);

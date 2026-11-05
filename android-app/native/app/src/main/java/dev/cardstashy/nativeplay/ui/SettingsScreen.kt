@@ -555,12 +555,12 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Story" to "Act 1's first four battles teach as you play: the Rift whispers a tip and the cards it means glow. Skip lessons turns them off.",
+    "Story" to "Acts 33 to 38 are playable, and early acts are retuned.",
+    "Fix" to "Quick Play no longer freezes while it picks a Commander opponent.",
+    "Foil" to "A card that only comes in foil now shows its foil.",
     "3D cards" to "Big cards have depth: the art sits behind the frame and shifts as you tilt. Settings \u203a 3D cards turns it off.",
-    "Foil" to "Gilded, neon, textured and oil-slick Magic foils now shine only where their special ink is printed.",
-    "Story" to "Acts 29 to 32 are playable.",
     "Updates" to "The app finds new versions and installs them for you.",
-    "Fix" to "Cards only glow when you can pay for them.",
-    "Handhelds" to "Matches run on Android 8 to 13 devices like the Portal 2.",
 )
 
 private data class Topic(val id: String, val category: String, val title: String, val summary: String, val route: String, val action: String, val details: List<String>)

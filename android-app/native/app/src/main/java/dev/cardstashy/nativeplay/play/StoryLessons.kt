@@ -1,143 +1,52 @@
 package dev.cardstashy.nativeplay.play
 
-/** story-ui.js LESSONS: one plain sentence per mechanic a battle introduces (battle.teaches). Generated from the live site file; regenerate when it grows. */
-object StoryLessons {
-    val map: Map<String, String> = linkedMapOf(
-        "Land drops and mana" to "Play one land a turn and tap lands for mana to cast your spells.",
-        "Casting creatures" to "Creatures can't attack the turn they arrive. Next turn, they fight.",
-        "Attacking and blocking" to "Attack with creatures; your opponent chooses which of theirs block. Unblocked damage hits the player.",
-        "Flying" to "Creatures with flying can only be blocked by other flyers.",
-        "First strike" to "A first striker deals its combat damage before creatures without it.",
-        "Protection from a colour" to "Protection from a colour: it can't be blocked, targeted, damaged or enchanted by that colour.",
-        "Instants on the opponent's turn" to "Instants can be cast any time, even during your opponent's turn. Hold mana open to surprise them.",
-        "Bounce" to "Bounce returns a permanent to its owner's hand. They have to pay for it again.",
-        "Artifacts" to "Artifacts are colourless, so any deck can play them.",
-        "Answering artifacts" to "Some cards destroy artifacts outright. Save them for the biggest machine.",
-        "Tempo" to "Tempo means using your mana better than your opponent each turn, so they fall behind.",
-        "Counterspells" to "A counterspell stops a spell as it's cast. Leave blue mana open to threaten one.",
-        "Artifact creatures" to "Artifact creatures are both artifacts and creatures, so artifact removal hits them too.",
-        "Sacrifice" to "Sacrifice means putting your own permanent into the graveyard to pay for an effect.",
-        "Two colours of mana" to "Two-colour decks need both land types. Watch which colours your hand needs.",
-        "Legendary creatures" to "Legendary creatures are named heroes. You can only control one with each name.",
-        "Three colours" to "Three-colour cards need all three mana colours. Dual lands make that possible.",
-        "Tokens" to "Tokens are creatures made by other cards. They count as creatures until they leave play.",
-        "Counters" to "Counters placed on a card change it, like spore counters that grow into Thallids.",
-        "Multicolour gold cards" to "Gold cards need more than one colour of mana and are usually stronger for it.",
-        "Card advantage" to "Card advantage: getting more cards than your opponent. More cards, more choices.",
-        "Playing around counterspells" to "Against counterspells, cast your less important spell first, or wait until their mana is tapped.",
-        "Discard" to "Discard makes a player throw cards from hand. Play your cards before they're taken.",
-        "Snow" to "Snow lands make snow mana, which powers the cards of the long winter.",
-        "Cumulative upkeep" to "Cumulative upkeep: pay more each turn to keep it, or let it go.",
-        "Paying life" to "Some cards cost life instead of mana. Life is a resource until it runs out.",
-        "Direct damage" to "Direct damage spells hit creatures or go straight at the player.",
-        "Growing creatures" to "Some creatures grow with counters or pump spells. Answer them early.",
-        "Alternate costs" to "Alternate costs let you cast a spell without paying its mana, at a price.",
-        "Racing a card-draw engine" to "They pay life to draw cards. Attack hard: every point you deal is one they can't spend.",
-        "Flanking" to "Flanking: when a creature without flanking blocks it, the blocker gets -1/-1 first.",
-        "Phasing" to "Phasing: every other turn the card blinks out of time, then returns untouched. Plan around the gaps.",
-        "Locking creatures down" to "Tap their best creature or keep it from untapping, and it can't attack or block.",
-        "Racing" to "Racing: when both sides attack, count the turns. Spend life to deal damage faster than they can.",
-        "Shadow" to "Shadow creatures can only block or be blocked by other shadow creatures.",
-        "Buyback" to "Buyback: pay the extra cost and the spell returns to your hand to cast again.",
-        "Slivers" to "Every sliver shares its ability with all slivers, theirs included. Each one makes the hive stronger.",
-        "Gaining life" to "Gaining life buys you turns. Use the time to build a board that wins.",
-        "The graveyard" to "Your graveyard is a resource: some cards bring creatures back from it.",
-        "Playing against reanimation" to "They fill their graveyard and bring back their best creatures. Answer the big one, and pressure them early.",
-        "Enchantments" to "Enchantments stay in play and keep working every turn. Some make all your creatures stronger.",
-        "Echo" to "Echo: next upkeep, pay the cost again or sacrifice it. Strong cards, paid for twice.",
-        "Cycling" to "Cycling: pay a little and discard a card you don't need to draw a new one.",
-        "Mana creatures" to "Some creatures tap for mana. Play them early and cast big spells sooner.",
-        "Artifact mana" to "Artifacts that make mana let you cast spells far ahead of schedule. Answer them early.",
-        "Enchantments returning" to "Some spells return every enchantment from the graveyard at once. Don't overcommit into it.",
-        "Rebels" to "Rebels search your deck for more rebels. Pay the cost, tap one, and another joins the fight. Get one early and it keeps calling friends.",
-        "Spellshapers" to "Spellshapers turn a card you discard into a spell. A land you do not need becomes a bolt.",
-        "Rhystic" to "Rhystic spells work unless any player pays. If they keep mana open to pay, they cannot spend it on their own turn.",
-        "Fading" to "Fading creatures arrive with counters and lose one each turn. When they run out, they are gone. Attack while they are big.",
-        "Lords" to "A lord changes the creatures around it. Kill the lord and the whole army shrinks back.",
-        "Kicker" to "Kicker is an optional extra cost. Pay it and the spell does more. Cheap early, strong late.",
-        "Split cards" to "A split card is two spells on one card. You cast one half, and it goes to the graveyard.",
-        "Combat math" to "Before you attack, count: their blockers' power against your toughness, and yours against theirs. Attack when the trade is good.",
-        "Threshold" to "Threshold: with seven or more cards in your graveyard, threshold cards get stronger. Long games feed them.",
-        "Flashback" to "Flashback lets you cast a spell again from your graveyard for its flashback cost. One card, two uses.",
-        "Madness" to "Madness: if you discard a madness card, you may cast it for its madness cost. Discarding turns into a free spell.",
-        "Equipment" to "Equipment stays in play. Pay its equip cost to attach it to your creature; if the creature dies, move it to another.",
-        "Affinity" to "Affinity for artifacts: the spell costs one less for each artifact you control. Artifact lands count.",
-        "Artifact lands" to "Artifact lands are lands and artifacts at once. They make mana, feed affinity, and die to artifact removal.",
-        "Imprint" to "Imprint: the machine exiles a card when it arrives and keeps it. What it holds decides what it does.",
-        "Modular" to "Modular: it enters with +1/+1 counters, and when it dies they can move onto another artifact creature.",
-        "Indestructible" to "Indestructible permanents can't be destroyed by damage or destroy effects. Exile, bounce or make them sacrificed instead.",
-        "Sunburst" to "Sunburst: the card gets a counter for each colour of mana spent to cast it. More colours, bigger machine.",
-        "Entwine" to "Entwine: a spell with two choices. Pay the entwine cost as well and you get both.",
-        "Bushido" to "Bushido: when this creature blocks or becomes blocked, it gets bigger until end of turn.",
-        "Soulshift" to "Soulshift: when this Spirit dies, return a smaller Spirit card from your graveyard to your hand.",
-        "Splice" to "Splice onto Arcane: when you cast an Arcane spell, pay the splice cost to add this card's effect too. You keep the spliced card.",
-        "Ninjutsu" to "Ninjutsu: when your attacker is unblocked, pay the ninjutsu cost and swap it for a Ninja from your hand. The Ninja deals the damage.",
-        "Flip cards" to "Flip cards: when the condition is met, the creature turns upside down and becomes the stronger creature printed below.",
-        "Convoke" to "Convoke: tap your creatures to help pay for this spell. Each one pays one mana of its colour, or one generic.",
-        "Dredge" to "Dredge: instead of drawing a card, mill that many cards and return this card from your graveyard to your hand.",
-        "Bloodthirst" to "Bloodthirst: this creature enters with +1/+1 counters if an opponent was dealt damage this turn.",
-        "Transmute" to "Transmute: pay the cost and discard this card to search your library for a card with the same mana value.",
-        "Haunt" to "Haunt: when this dies, exile it haunting a creature. When that creature dies, you get the effect again.",
-        "Forecast" to "Forecast: during your upkeep, reveal this card from your hand to use its effect. It stays in your hand.",
-        "Graft" to "Graft: enters with +1/+1 counters. When another creature enters, you may move one counter onto it.",
-        "Suspend" to "Suspend: pay the suspend cost to exile the card with time counters. Remove one each upkeep; when the last one comes off, cast it for free.",
-        "Split second" to "Split second: while this spell is on the stack, nobody can cast spells or activate abilities. It just happens.",
-        "Card types" to "Card types: creature, instant, sorcery, land, enchantment, artifact. Some cards count how many types are in the graveyards.",
-        "Evoke" to "Evoke: pay a cheaper evoke cost and the creature arrives, does its arrival trick, then is sacrificed at once.",
-        "Planeswalkers" to "Planeswalkers: cast with loyalty counters. Once a turn, use one ability to add or remove loyalty. Creatures can attack them instead of you.",
-        "Flash" to "Flash: these permanents can be cast any time you could cast an instant, even in combat or on the other player's turn.",
-        "Wither" to "Wither: this creature deals damage as -1/-1 counters, which stay after the turn ends.",
-        "Persist" to "Persist: when it dies without a -1/-1 counter on it, it comes back with one.",
-        "Champion" to "Champion: when it arrives, exile one of your creatures of the named type. When it leaves, that creature comes back.",
-        "Leaves the battlefield" to "Leaves the battlefield: some cards trigger when they leave play for any reason, so killing them still gives you value.",
-        "Hybrid mana" to "Hybrid mana: a two-colour symbol can be paid with either colour, so the card fits a deck of either colour.",
-        "Toughness as power" to "Toughness as power: with Doran out, every creature deals combat damage equal to its toughness instead of its power.",
-        "Exalted" to "Exalted: whenever a creature you control attacks alone, it gets +1/+1 for each exalted permanent you control.",
-        "Devour" to "Devour: as it arrives, sacrifice any number of creatures. It gets +1/+1 counters for each one it eats.",
-        "Ultimates" to "Ultimates: a planeswalker's biggest ability costs lots of loyalty. Protect it long enough and that ability can win the game.",
-        "Unearth" to "Unearth: pay the unearth cost to return a creature from your graveyard with haste. At end of turn, or if it would leave play, exile it.",
-        "Cascade" to "Cascade: when you cast it, reveal cards from your library until you hit a cheaper nonland card, and cast that card for free.",
-        "Morph" to "Morph: cast a creature face down as a 2/2 for three mana, then pay its morph cost any time to turn it face up. Watch for face-down cards.",
-        "Tribes" to "Tribal cards care about creature types. Elves pump elves, goblins pump goblins. Play the tribe together.",
-        "Alternate wins" to "Some cards win the game a different way. If Phage deals combat damage to a player, that player loses. Block her or kill her.",
-        "Punishing full hands" to "Black Vise deals 1 damage each turn for every card over four in your hand. Play cards fast, keep your hand small, and break the Vises.",
-        "Landfall" to "Landfall: whenever a land enters the battlefield under your control, a landfall card triggers. Play a land every turn, and hold one back for the right moment.",
-        "Quests" to "Quests: a quest enchantment collects counters as you do something, like playing lands. When it has enough, sacrifice it for a big reward.",
-        "Allies" to "Allies: whenever another Ally enters the battlefield under your control, every Ally you already have triggers. The more you have, the better each new one gets.",
-        "Level up" to "Level up: pay the level up cost any time you could cast a sorcery to put a level counter on the creature. At enough levels it gets bigger and gains abilities.",
-        "Eldrazi Spawn" to "Eldrazi Spawn: 0/1 tokens you can sacrifice for one colourless mana. They chump block too. The decks that make them are ramping into something huge.",
-        "Annihilator" to "Annihilator: whenever it attacks, the defending player sacrifices that many permanents. Keep cheap permanents to give up, and kill it before it attacks twice.",
-        "Metalcraft" to "Metalcraft: some cards get stronger while you control three or more artifacts. Keep your artifacts on the table, and kill the opponent's to switch theirs off.",
-        "Infect" to "Infect: these creatures deal damage as -1/-1 counters to creatures and as poison counters to players. Ten poison counters and you lose, whatever your life total.",
-        "Proliferate" to "Proliferate: choose any players and permanents that already have counters, and give each one more of a kind it already has. Poison counters count too.",
-        "Phyrexian mana" to "Phyrexian mana: you can pay each Phyrexian symbol with one mana of its colour or with 2 life. Any deck can cast these cards, but the life adds up.",
-        "Battle cry" to "Battle cry: whenever this creature attacks, each other attacking creature gets +1/+0. Go wide and attack together.",
-        "Transform" to "Transform: double-faced cards have two sides. A werewolf is human until a turn passes with no spells cast, then it turns over into a wolf. Two spells in one turn turn it back.",
-        "Morbid" to "Morbid: these cards get a bonus if a creature died this turn. Any creature counts, yours or theirs, so every trade can switch one on.",
-        "Undying" to "Undying: when a creature with undying dies, if it had no +1/+1 counter on it, it comes back with one. Kill it twice, or exile it.",
-        "Miracle" to "Miracle: if a miracle card is the first card you draw in a turn, you may reveal it and cast it right away for its much cheaper miracle cost.",
-        "Populate" to "Populate: create a copy of a creature token you already control. Make one strong token first, then every populate copies it.",
-        "Battalion" to "Battalion: whenever this creature and at least two other creatures attack, it gets its bonus. Attack in threes.",
-        "Evolve" to "Evolve: whenever a creature with greater power or toughness enters under your control, an evolve creature gets a +1/+1 counter. Play small creatures first.",
-        "Cipher" to "Cipher: after a cipher spell resolves, it is encoded on a creature. Whenever that creature deals combat damage to a player, its controller casts the spell again for free.",
-        "Extort" to "Extort: whenever you cast a spell, you may pay one more mana to make each opponent lose 1 life while you gain that much.",
-        "Overload" to "Overload: some spells have a second, bigger cost. Cast with overload, a spell that says \"target\" says \"each\" instead and hits everything it can.",
-        "Heroic" to "Heroic: whenever you cast a spell that targets a heroic creature, its ability triggers. Cheap Auras and pump spells on one hero can win the game.",
-        "Bestow" to "Bestow: cast the creature as an Aura for its bestow cost and it gives its stats to the creature it enchants. If that creature dies, the Aura stays as a creature.",
-        "Devotion" to "Devotion: count the mana symbols of one colour in the costs of your permanents. Gods only become creatures when your devotion to their colour is high enough.",
-        "Monstrosity" to "Monstrosity: pay the cost once and the creature gets that many +1/+1 counters and often a bonus. It can only become monstrous once.",
-        "Constellation" to "Constellation: whenever an enchantment enters the battlefield under your control, a constellation card triggers. Enchantment creatures count.",
-        "Ferocious" to "Ferocious: these cards get a bonus if you control a creature with power 4 or greater. Land a big creature first, then the rest gets better.",
-        "Prowess" to "Prowess: whenever you cast a noncreature spell, this creature gets +1/+1 until end of turn. Cast your spells before combat damage.",
-        "Delve" to "Delve: each card you exile from your graveyard while casting this spell pays for one generic mana. A full graveyard makes big spells cheap.",
-        "Raid" to "Raid: these cards get a bonus if you attacked with a creature this turn. Attack first, then cast them after combat.",
-        "Manifest" to "Manifest: put the top card of your library onto the battlefield face down as a 2/2 creature. If it is a creature card, you can turn it face up for its mana cost.",
-        "Outlast" to "Outlast: pay the cost and tap the creature to put a +1/+1 counter on it, any time you could cast a sorcery. Some cards reward every creature with a counter.",
-        "Ingest" to "Ingest: whenever an ingest creature deals combat damage to a player, that player exiles the top card of their library. Processors then use those exiled cards for bonuses.",
-        "Awaken" to "Awaken: cast the spell for its awaken cost and one of your lands also becomes a 0/0 Elemental creature with that many +1/+1 counters. It stays a land.",
-        "Spell mastery" to "Spell mastery: these spells get a bonus if there are two or more instant and sorcery cards in your graveyard.",
-        "Devoid" to "Devoid: the card has no colour, even though its cost uses coloured mana. Effects that care about colour do not see it.",
-        "Surge" to "Surge: you may cast the spell for its surge cost if you or a teammate has cast another spell this turn. Chain a cheap spell into it.",
-        "Playing under a lock" to "A lock stops cards from untapping or moving. Break it, or win with what's already in play."
-    )
+import android.content.Context
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
+
+/**
+ * The web's Story lessons, generated from its own modules (scripts/export-story-lessons.mjs, assets/story-lessons.json):
+ * [map] is story-ui.js LESSONS, one plain sentence per mechanic a battle introduces (battle.teaches); the rest is
+ * story-lessons.js, the Rift's in-match whispers: the ideas each Act 1 lesson battle teaches ([battles], [say]), the
+ * new-mechanic words for later acts ([words]) and the lesson battles' stacked draws ([stacks]).
+ */
+class StoryLessons(json: JsonObject) {
+    class Word(val name: String, val re: Regex?, val text: String)
+
+    val map: Map<String, String> = json.obj("lessons").entrySet().associateTo(LinkedHashMap()) { it.key to it.value.asString }
+    val battles: Map<String, List<String>> = json.obj("battles").entrySet().associate { it.key to it.value.asJsonArray.map { e -> e.asString } }
+    val say: Map<String, String> = json.obj("say").entrySet().associate { it.key to it.value.asString }
+    val words: List<Word> = (json.get("words") as? JsonArray ?: JsonArray()).map { it.asJsonObject }.map { w ->
+        val re = w.get("re")?.takeIf { it.isJsonPrimitive }?.asString
+        Word(w["name"].asString, re?.let { Regex(it, if (w.get("ignoreCase")?.asBoolean == true) setOf(RegexOption.IGNORE_CASE) else emptySet()) }, w["text"].asString)
+    }
+    private val stacks: JsonObject = json.obj("stacks")
+
+    /** isLessonBattle: one of the four Act 1 lesson battles. */
+    fun isLessonBattle(id: String?): Boolean = id != null && id in battles
+
+    /** lessonSetup: the engine's match setting for a lesson battle, its stacked draws (top of the library first; the first
+     *  seven are the opening hand) and no mulligan. Forge still shuffles, deals and plays; null for any other battle. */
+    fun setup(id: String): JsonObject? = stacks.get(id)?.takeIf { it.isJsonObject }?.let { st ->
+        JsonObject().apply { add("stack", st.deepCopy()); addProperty("noMulligan", true) }
+    }
+
+    companion object {
+        private val EMPTY = JsonObject()
+        private fun JsonObject.obj(k: String): JsonObject = get(k)?.takeIf { it.isJsonObject }?.asJsonObject ?: EMPTY
+
+        @Volatile private var cached: StoryLessons? = null
+        fun load(context: Context): StoryLessons = cached ?: synchronized(this) {
+            cached ?: runCatching { StoryLessons(JsonParser.parseString(context.assets.open("story-lessons.json").use { String(it.readBytes()) }).asJsonObject) }
+                .getOrElse { StoryLessons(JsonObject()) }.also { cached = it }
+        }
+
+        // Each idea is shown once per device (seen flags), and Skip lessons turns them off (story-lessons.js KEY_SEEN, KEY_OFF).
+        private fun prefs(context: Context) = context.applicationContext.getSharedPreferences("story-lessons", Context.MODE_PRIVATE)
+        fun off(context: Context): Boolean = prefs(context).getBoolean("off", false)
+        fun setOff(context: Context, off: Boolean) = prefs(context).edit().putBoolean("off", off).apply()
+        fun seen(context: Context): MutableSet<String> = HashSet(prefs(context).getStringSet("seen", emptySet()) ?: emptySet())
+        fun saveSeen(context: Context, seen: Set<String>) = prefs(context).edit().putStringSet("seen", HashSet(seen)).apply()
+    }
 }
