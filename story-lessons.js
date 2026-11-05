@@ -156,7 +156,9 @@ export const LESSON_STACKS = {
     villain: ['Forest', 'Llanowar Elves', 'Forest', 'Ghazbán Ogre', 'Giant Growth', 'Forest', 'Scryb Sprites', 'Forest', 'Grizzly Bears', 'Forest'],
   },
 };
-// OFF until the Forge host with setup.stack is deployed (PR #121 + Randall's yes). Older hosts and older APK engines
-// refuse an unknown `setup` key, so sending it early would break the four lesson battles. Flip to true with the host deploy.
-export const STACK_LIVE = false;
+// The Forge host with setup.stack went live 5 Nov 00:22Z (PR #121, 0996b7e6). The in-app engine (older APKs, the web build inside the
+// APK) refuses an unknown `setup` key until the APK with the engine port ships: flip STACK_LOCAL_LIVE then.
+export const STACK_HOST_LIVE = true;
+export const STACK_LOCAL_LIVE = false;
+const STACK_LIVE = STACK_HOST_LIVE;
 export const lessonSetup = (id, live = STACK_LIVE) => live && LESSON_STACKS[id] ? {stack: structuredClone(LESSON_STACKS[id]), noMulligan: true} : null;

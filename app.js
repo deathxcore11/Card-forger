@@ -180,7 +180,7 @@ import {deckEmblem} from "./play-deck-emblem.js";
 import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows,PLAY_FORMATS,deckRules,copyCap} from "./play-econ-rules.js";
 import {STORY_ACTS} from "./story-acts.js";
 import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
-import {createLessonCoach,isLessonBattle,lessonsOff,lessonSetup} from "./story-lessons.js";
+import {createLessonCoach,isLessonBattle,lessonsOff,lessonSetup,STACK_HOST_LIVE,STACK_LOCAL_LIVE} from "./story-lessons.js";
 import {storyHomeMarkup,storyActMarkup,storyBattleMarkup,playScene,createStoryBubbles,starsRow,rewardText} from "./story-ui.js";
 import {storyDeedsEarned} from "./story-deeds.js";
 import { initCloud, pauseLocalConflict, communityRequest, presenceRequest, tableInviteRequest, cloudAccessToken, cloudInfo, realtimeClient, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
@@ -2375,7 +2375,7 @@ A.playFriendLaunch=async matchId=>{
   const base=playSetup.snapshot();if(!base.selected)return toast('Pick your deck first.');
   for(const [id,href] of [['practiceTableStyles','experiments/phase-engine/match-table.css'],['forgeHostedTableStyles','play-forge-table.css']])if(!document.getElementById(id)){const css=document.createElement('link');css.id=id;css.rel='stylesheet';css.href=href;document.head.append(css);}
   playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Friend match player mat');document.body.append(playerMatRoot);mountPlaymatScene(playerMatRoot);document.body.classList.add('practice-table-open');void lockPlayLandscape();const app=document.getElementById('app');if(app)app.inert=true;
-  const setup={...base,playStyle:'quick',lesson:lessonRun?lessonSetup(b.id):null,opponent:{name:'Friend\'s deck',format:base.match.format,cards:[]},friend:friendShown(friendRoom?.opponent),friendMatch:{matchId}};
+  const setup={...base,playStyle:'quick',lesson:null,opponent:{name:'Friend\'s deck',format:base.match.format,cards:[]},friend:friendShown(friendRoom?.opponent),friendMatch:{matchId}};
   const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
   let createForgePlayerMat,lateTimer=0;const late=new Set();
   try{({createForgePlayerMat}=await import('./play-forge-player-mat.js'));}catch(e){if(playerMatRoot)playModuleFailed(e);return;}
@@ -2468,6 +2468,8 @@ A.storyPlay=async({skipScene=false}={})=>{
    if(!b.host){const local=await import('./play-forge-local-client.js');if(local.localForgeAvailable()&&await local.localForgeCurrent())localClient=local.createForgeLocalClient;}}
   catch(e){if(playerMatRoot)playModuleFailed(e);return;}
   if(!current()||!playerMatRoot)return;
+  // Stacked lesson draws go to the Forge host; the in-app engine only gets them once its APK has the port.
+  if(lessonRun)setup.lesson=lessonSetup(b.id,localClient?STACK_LOCAL_LIVE:STACK_HOST_LIVE);
   const root=playerMatRoot;
   if(!skipScene){const lines=[...(b.slot===1&&seat==='hero'&&data.intro&&!battleCleared(storyProgress.snapshot().progress,b.id)?data.intro:[]),...b.scene,...(seat==='villain'&&b.villainScene?b.villainScene:[])];void playScene({lines,cast:data.cast,leftWho:b.hero.who,rightWho:b.villain.who,avatarUrl:storyAvatar(),title:b.title});}
   bubbles=createStoryBubbles({root,battle:b,cast:data.cast,playerSide:seat,avatarUrl:storyAvatar()});

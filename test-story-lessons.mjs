@@ -35,7 +35,7 @@ for(const b of act.battles.slice(0,4)){
   for(const [side,set] of [['hero',hero],['villain',vil]]){assert.ok(st[side].length<=15);for(const n of st[side])assert.ok(set.has(n),`${b.id} ${side}: ${n}`);}
   assert.equal(st.hero.slice(0,7).filter(n=>/^(Plains|Island)$/.test(n)).length>=3||b.id==='a1b4',true);
 }
-assert.equal(lessonSetup('a1b5',true),null);assert.equal(lessonSetup('a1b1'),null,'off until the host deploy');
+assert.equal(lessonSetup('a1b5',true),null);assert.equal(lessonSetup('a1b1',false),null,'off for the in-app engine until its APK');assert.equal(lessonSetup('a1b1').noMulligan,true,'on for the host');
 // The request: first player, quick style, stack + no mulligan; ordinary Story stays random with no setup.
 const {exactForgeInput}=await import('./play-forge-host-client.js');
 const deck={name:'d',cards:[{name:'Plains',qty:60}]};
