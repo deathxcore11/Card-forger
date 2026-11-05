@@ -45,8 +45,9 @@ private object DeckCache {
     var tab = "cards"
 }
 
-/** The Yu-Gi-Oh! and Pokémon deck tabs drawn here from the site's own markup and listeners (SitePanel); the others open the website's tab. */
-private val TCG_SITE_TABS = setOf("rules", "matchups", "playtest")
+/** The Yu-Gi-Oh! and Pokémon deck tabs drawn here from the site's own markup and listeners (SitePanel): Rules, Power (insights,
+ *  which Matchups and Upgrade lab now open: tcg.js tcgPowerPage) and War Chest; the others open the website's tab. */
+private val TCG_SITE_TABS = setOf("rules", "insights", "playtest")
 /** A Magic deck's tabs drawn here (views.js deckPage): Rules, and Power, which Matchups and Upgrade lab now open (powerHub). */
 private val MTG_SITE_TABS = setOf("rules", "engine")
 
@@ -54,12 +55,13 @@ private val MTG_SITE_TABS = setOf("rules", "engine")
  * A deck's page (views.js deckPage, its Cards tab; for Yu-Gi-Oh! and Pokémon tcg.js tcgDeck) through the site's own code, drawn natively. Search, the type chips,
  * the grouping and the four views ask the site's code again (app.js deckSearch / deckChip / deckSort / deckView);
  * Practice seats the deck in the native Practice lobby as A.deckPlayCpu does. The − / ＋, the swaps and "+ Add" save here
- * (app.js deckQty / deckEmbSwap / deckAdd through CollectionWrites), and the ⋯ menu is native (DeckMenuSheet). Review, Share,
- * the footer and the other tabs (Rules, Power, Matchups, Upgrade lab, Versions, War Chest) open the website's page, which does
- * them there.
+ * (app.js deckQty / deckEmbSwap / deckAdd through CollectionWrites), and the ⋯ menu is native (DeckMenuSheet). Rules and Power
+ * (which Matchups and Upgrade lab open) are drawn here from the site's markup (MTG_SITE_TABS); Review, Share, the footer, Versions,
+ * War Chest and what those tabs leave to a sheet or the AI open the website's page, which does them there.
  * A Yu-Gi-Oh! or Pokémon deck ([game]): its view, Find and Close results are the site's handlers in the engine; − / ＋, → side,
  * a found card's ＋ and a staple's Swap save here (tcg.js tDeckQty / tDeckMove / tDeckAdd / tDeckEmbSwap); its cards open the native
- * card page. Its ⋯ menu, the other tabs, Export, Game Night and the price tools open the website's page (the game chosen first).
+ * card page. Rules, Power and War Chest are drawn here (TCG_SITE_TABS). Its ⋯ menu, Versions, Export, Game Night, the price tools
+ * and what the drawn tabs leave to a sheet or the AI open the website's page (the game chosen first).
  */
 @Composable
 fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Unit, onBack: () -> Unit, onHome: () -> Unit, onCards: () -> Unit,
@@ -140,8 +142,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
     fun web(url: String, press: String?) = webAt(url, if (!tcg) press else listOfNotNull("[data-act=\"setGame\"][data-game=\"${game.id}\"]", press).joinToString("\n"))
     /** tcg.js A.tDeckTab: Cards and the tabs drawn here open here; the others open the website's tab. */
     fun openTab(k0: String) {
-        // views.js deckPage: a Magic deck's Matchups and Upgrade lab are Power now.
-        val k = if (!tcg && (k0 == "matchups" || k0 == "upgrade")) "engine" else k0
+        // views.js deckPage and tcg.js tcgDeck: a deck's Matchups and Upgrade lab are Power now.
+        val k = if (k0 == "matchups" || k0 == "upgrade") (if (tcg) "insights" else "engine") else k0
         if (k == "cards" || (tcg && k in TCG_SITE_TABS) || (!tcg && k in MTG_SITE_TABS)) deckTab = k else web("$page/" + android.net.Uri.encode(k), null)
     }
     fun tcgWrite(kind: String, c: DeckCard?, vararg data: Pair<String, String>) = write(kind, "game" to game.id, *data,
@@ -168,6 +170,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
             act == "tCard" && got("id").isNotEmpty() -> { tcgOpen(got("id")); return }
             // A tab the panel opens (the War Chest's Goldfish, tcg.js A.tDeckTab): here when drawn here, else the website's.
             act == "tDeckTab" && got("id").isNotEmpty() -> { openTab(got("id")); return }
+            // A card Power names by name only (tcg.js A.tDeckFindName): the Cards tab, searching for it.
+            act == "tDeckFindName" && tcg && got("name").isNotEmpty() -> { deckTab = "cards"; asked = "find" to got("name"); return }
         }
         val data = a.getAsJsonObject("data")?.entrySet().orEmpty()
             .filter { (k, v) -> k != "act" && v.isJsonPrimitive && v.asString.length < 120 && !v.asString.startsWith("{") && !v.asString.startsWith("[") }

@@ -33,7 +33,8 @@ import java.io.File
  * A Yu-Gi-Oh! and a Pokémon deck's Rules tab (tcg.js tcgDeck with A.tDeckTab "rules": rule-learning.js interactiveRules with
  * attachRuleLearning), over the collection TcgDeckShotTest uses: the tab as it opens, Try a turn and its steps, a rule word's glass
  * (rule-dex.js showRuleHint), the searchable rulebook (rule-corpus.js, the copy kept on this device) and Ask, which opens the website;
- * and the War Chest (war-chest.js warChestMarkup with tcg.js deckPlaytest): its tools, the dice, a sample hand.
+ * Power (tcg.js tcgPowerPage: the merged view Matchups and Upgrade lab open, with its Full breakdown); and the War Chest
+ * (war-chest.js warChestMarkup with tcg.js deckPlaytest): its tools, the dice, a sample hand.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -48,7 +49,8 @@ class TcgDeckRulesShotTest {
 
     private fun settle() = repeat(20) { Thread.sleep(150); rule.mainClock.advanceTimeBy(150); rule.waitForIdle() }
     private fun shot(name: String) = rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "tdeck-rules-$name.png").path)
-    private fun shows(t: String, substring: Boolean = true) = rule.onAllNodesWithText(t, substring = substring).fetchSemanticsNodes().isNotEmpty()
+    private fun shows(t: String, substring: Boolean = true, ignoreCase: Boolean = false) =
+        rule.onAllNodesWithText(t, substring = substring, ignoreCase = ignoreCase).fetchSemanticsNodes().isNotEmpty()
 
     private fun open(g: CardGame, id: String, title: String, tab: String = "Rules", ready: String = "Try a turn →") {
         dev.cardstashy.nativeplay.ui.Motion.still = true
@@ -122,13 +124,33 @@ class TcgDeckRulesShotTest {
         assertTrue(press.orEmpty(), press.orEmpty().contains("[data-act=\"askRules\"]"))
     }
 
-    /** Matchups (tcg.js deckMatchupsT): the site's own panel, which says Pokémon and Yu-Gi-Oh! matchups are coming soon. */
-    @Test fun pokemonMatchups() {
-        open(CardGame.PTCG, pikachu, "Pikachu ex")
-        tap("Matchups")
-        rule.waitUntil(20_000) { shows("Pokémon matchups are coming soon") }
-        assertTrue(shows("AI MATCHUPS")); assertTrue(webs.isEmpty())
-        shot("ptcg-matchups")
+    /**
+     * Power (tcg.js tcgPowerPage, which Matchups and Upgrade lab now open): the hero, Ramp, How it works and wins, Matchups and
+     * Upgrades drawn here; Full breakdown opens the old Power panels (deckInsights) in place; Simulate matchups is the site's
+     * A.tMuRun, run here (it shows its progress or its answer in the card, never the website).
+     */
+    @Test fun pokemonPower() {
+        open(CardGame.PTCG, pikachu, "Pikachu ex", tab = "Power", ready = "Simulate matchups")
+        shot("ptcg-power")
+        assertTrue(shows("Tier not rated yet")); assertTrue(shows("Draw or search on turn 1"))
+        // Upgrades asks to load tournament decks until they are here (then Against the meta shows what they say).
+        assertTrue(shows("Load tournament decks") || shows("Against the meta", ignoreCase = true))
+        assertTrue(webs.isEmpty())
+        tap("FULL BREAKDOWN")
+        rule.waitUntil(20_000) { shows("Finish the deck before rating Power") }
+        rule.onNode(hasText("Finish the deck before rating Power")).performScrollTo(); settle()
+        shot("ptcg-power-full")
+        rule.onNode(hasText("Simulate matchups", substring = false) and hasClickAction()).performScrollTo().performClick()
+        rule.waitUntil(120_000) { listOf("Loading tournament results", "Loading ", "No tournament decks to compare", "Couldn", "still loading", "Simulated against").any { shows(it) } }
+        assertTrue(webs.isEmpty())
+    }
+
+    /** Yu-Gi-Oh! Power: Opening hands in place of Ramp; Matchups and Upgrades as on the site. Matchups and Upgrade lab open it too. */
+    @Test fun yugiohPower() {
+        open(CardGame.YGO, magician, "Dark Magician", tab = "Power", ready = "Simulate matchups")
+        assertTrue(shows("Opening hands", substring = false, ignoreCase = true)); assertTrue(shows("Bricked hand"))
+        assertTrue(webs.isEmpty())
+        shot("ygo-power")
     }
 
     /** The War Chest (A.tDeckTab "playtest"): the chest's tools and the sample hand; Dice & coin rolls in place (war-chest.js rollDice). */
@@ -153,17 +175,17 @@ class TcgDeckRulesShotTest {
         rule.waitUntil(20_000) { shows("8 in hand") }
     }
 
-    /** Goldfish opens Power (A.tDeckTab "insights", still the website's); Game Night is the website's (app.js chestTool). */
+    /** Goldfish opens Power (A.tDeckTab "insights"), here; Game Night is the website's (app.js chestTool). */
     @Test fun pokemonChestTools() {
         open(CardGame.PTCG, pikachu, "Pikachu ex", tab = "War Chest", ready = "Draw opening 7")
-        tap("Goldfish")
-        rule.waitUntil(20_000) { webs.isNotEmpty() }
-        assertTrue(webs.last().first, webs.last().first.endsWith("#tdeck/$pikachu/insights"))
         // The chest's own Game Night (the deck header has one too).
         rule.onAllNodes(hasText("Game Night", substring = false) and hasClickAction()).onLast().performScrollTo().performClick(); settle()
-        rule.waitUntil(20_000) { webs.size >= 2 }
+        rule.waitUntil(20_000) { webs.isNotEmpty() }
         assertTrue(webs.last().first, webs.last().first.endsWith("#tdeck/$pikachu/playtest"))
         assertTrue(webs.last().second.orEmpty(), webs.last().second.orEmpty().contains("[data-act=\"chestTool\"][data-tool=\"gameNight\"]"))
+        tap("Goldfish")
+        rule.waitUntil(30_000) { shows("Simulate matchups", substring = false) }
+        assertTrue(webs.size == 1)
     }
 
     /** Yu-Gi-Oh!: Going first (5) / Going second (6). */

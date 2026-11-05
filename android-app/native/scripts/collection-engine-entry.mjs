@@ -2290,7 +2290,24 @@ const TDECK_ACTS = {
   },
   tDraw: t => { TA.tDraw(t); panel.redraw(); },
   tDrawOne: t => { TA.tDrawOne(t); panel.redraw(); },
+  // Power (tcg.js tcgPowerPage): Simulate matchups is A.tMuRun, Load tournament decks A.tMetaRefresh, each drawing the tab
+  // again as it starts and as it ends. A.tMuRun's progress line also looks for the site's build overlay (document.querySelector)
+  // after each await, when the tap's panelRun has handed document back, so this panel's document stays in place until it ends.
+  tMuRun: t => tcgPanelAsync(() => TA.tMuRun(t)),
+  tMetaRefresh: t => tcgPanelAsync(() => TA.tMetaRefresh(t)),
 };
+function tcgPanelAsync(f) {
+  const p0 = panel, doc = p0.doc;
+  let mine = false;
+  const p = Promise.resolve().then(() => { if (!('document' in globalThis)) { globalThis.document = doc; mine = true; } });
+  let run;
+  try { run = Promise.resolve(f()); } catch (e) { run = Promise.reject(e); }
+  panel.redraw();
+  return Promise.all([p, run]).catch(e => toasts.push({text: e?.message || String(e), undo: false})).finally(() => {
+    if (mine && globalThis.document === doc) delete globalThis.document;
+    if (panel === p0) panel.redraw();
+  });
+}
 // tcg.js tcgDeck with [tab] open: its .deck-body, as the page draws it, becomes the panel, fresh each time the tab opens (as A.tDeckTab draws the page again).
 function tcgDeckPanel(G, id, tab) {
   tcgFocus(G, 'tdeck'); S.ui.tdeckId = id; (S.ui.tdeckTab ||= {})[G + ':' + id] = tab;

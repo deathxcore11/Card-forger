@@ -1,6 +1,8 @@
 package dev.cardstashy.nativeplay.shots
 
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onRoot
@@ -54,9 +56,12 @@ class TcgDeckShotTest {
         setUp(g, view)
         rule.setContent { CollectionDeckRoute(id, onPlay = {}, onProfile = {}, onBack = {}, onHome = {}, onCards = {}, onPractice = { _, _ -> }, web = { _, _ -> }, game = g) }
         rule.waitUntil(60_000) { rule.onAllNodesWithText(title).fetchSemanticsNodes().isNotEmpty() }
+        // The page reopens on the tab it was left on (tcg.js S.ui.tdeckTab, kept while the app runs): Cards, as these tests look at it.
+        rule.onAllNodes(hasText("Cards", substring = false) and hasClickAction()).fetchSemanticsNodes().firstOrNull()?.let {
+            rule.onAllNodes(hasText("Cards", substring = false) and hasClickAction())[0].performClick() }
         settle()
-        for (w in words) assertTrue("$w shows", rule.onAllNodesWithText(w, substring = true).fetchSemanticsNodes().isNotEmpty())
         if (shot) rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "tcg-deck-${g.id}-$view-390.png").path)
+        for (w in words) assertTrue("$w shows", rule.onAllNodesWithText(w, substring = true).fetchSemanticsNodes().isNotEmpty())
     }
 
     private val pikachu = "1c5ee49c-a4ba-4506-ae2b-1e0761e20324"
