@@ -559,6 +559,7 @@ private val WHATS_NEW = listOf(
     "Story" to "Acts 33 to 38 are playable, and early acts are retuned. Act 2's Tetsuo's Court, The Deck and the Elder Dragon's lair have living mats.",
     "Packs" to "Seven older packs lose the black box behind them, and Khans of Tarkir shows Siege Rhino.",
     "Fix" to "Quick Play no longer freezes while it picks a Commander opponent.",
+    "Smoother" to "3D depth runs only on the card you are looking at, and the foil behind an open card holds still, so screens stay smooth.",
     "Foil" to "A card that only comes in foil now shows its foil.",
     "3D cards" to "Big cards have depth: the art sits behind the frame and shifts as you tilt. Settings \u203a 3D cards turns it off.",
     "Updates" to "The app finds new versions and installs them for you.",
