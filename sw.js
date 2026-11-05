@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-power-view-43127-v499";
+const CACHE = "cardforge-shell-pack-open-fix-43128-v500";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
