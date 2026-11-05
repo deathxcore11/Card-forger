@@ -401,8 +401,10 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   // Confirm is offered then; an optional one offers "No target" instead.
   const picks=(n.selection?.cards?.length||0)+(n.selection?.targets?.length||0),input=String(n.inputType||'');
   const asking=presentation.hosted&&!n.prompt&&picks>0&&!['InputPassPriority','InputAttack','InputBlock','InputConfirmMulligan','InputLockUI'].includes(input)&&!input.startsWith('InputPayMana')&&!discard;
-  const oneTarget=asking&&input==='InputSelectTargets'&&n.selection?.max===1&&!(n.selection?.chosen||[]).length;
+  const oneTarget=asking&&(input==='InputSelectTargets'||input==='InputSelectCardsFromList'&&n.selection?.min===1)&&n.selection?.max===1&&!(n.selection?.chosen||[]).length;
   if(asking){const first=lines.find(l=>!/^(Priority|Turn|Phase|Stack):/.test(l))||'';let ask=cpuName(first).replace(/\s*\[Phase: [^\]]*\]/g,'').trim();
+   // A choice from the CPU's spell comes as "<card> (id)", " - <rules text>", then the real ask last ("Select 1 creature ... to sacrifice."): that last Select/Choose line is the ask.
+   {const later=lines.slice(lines.indexOf(first)+1).reverse().find(l=>/^(Select|Choose)\b/i.test(l));if(later&&!/^(Select|Choose)\b/i.test(ask))ask=cpuName(later).replace(/\s*\[Phase: [^\]]*\]/g,'').trim();}
    if(/legend(ary)? rule|same name|choose .* to keep|keep one/i.test(ask))ask='Two legendary permanents share a name. Choose the one to keep.';
    // Forge writes "<card> - <its rules text>"; the dock says what to do, the card itself is on the stack.
    const named=ask.match(/^(.{2,60}?) - (.+)$/);
@@ -412,6 +414,10 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    else if(input==='InputSelectTargets'&&named)ask=`Choose a target for ${named[1]}`;
    else if(named)ask=named[2];
    if(!ask)ask=input==='InputSelectTargets'?'Choose a target':'Choose a card on the table';if(oneTarget)ask=ask.replace(/^(Select|Choose) (a )?targets? for/i,'Tap a target for');else ask=ask.replace(/^Select\b/,'Choose');
+   // "Select 1 creature they control with the highest mana value to sacrifice." reads "Tap a creature to sacrifice" when one tap on the table commits it.
+   {const m=ask.match(/^(?:Select|Choose) (?:\d+|an?|one) ([^.]+?)(?:\(s\)|s)? to ([^.]+?)\.?$/i);
+    if(m&&input==='InputSelectCardsFromList'){const what=m[1].replace(/\s+(?:they control|you control|with|among|that|from)\b.*$/i,'').replace(/\(s\)$/,'').trim(),ids=new Set((n.selection?.cards||[]).map(r=>r.id)),onTable=(n.players||[]).some(p=>(p.zones?.Battlefield?.cards||[]).some(c=>ids.has(c.id)));
+     if(what)ask=`${oneTarget&&onTable?'Tap':'Choose'} ${/^[aeiou]/i.test(what)?'an':'a'} ${what.toLowerCase()} to ${m[2]}`;}}
    actions.dataset.state=ask;actions.dataset.ask='true';askLine(ask);}
   // A payment your mana can't finish says so above the hand; Cancel is the way out.
   else if(presentation.hosted&&paying?.short){actions.dataset.state=`Not enough mana${paying.name?` for ${paying.name}`:''}`;actions.dataset.ask='true';askLine(actions.dataset.state);}
