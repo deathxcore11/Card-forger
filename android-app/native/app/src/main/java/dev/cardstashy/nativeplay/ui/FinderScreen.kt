@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
@@ -158,15 +159,20 @@ fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (De
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (!embedded) { PageHeader("Build a deck", "Play", onBack = onBack)
                         PlayMath.purse(state)?.let { PurseRow(it, level = PlayMath.mastery(state, it.xp)) } }
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Finder.FORMATS.forEach { f -> Chip(f, f == ui.format) { if (f != ui.format) { ui.format = f; ui.limit = 8 } } }
-                    }
+                    // One filter bar (Randall 5 Nov 18:53Z), as on Precons: formats in one sideways row, the deck filters in the next,
+                    // then the count with Sort as a chip of the same height.
+                    ShelfRow { items(Finder.FORMATS, key = { it }) { f -> ShelfChip(f, f == ui.format) { if (f != ui.format) { ui.format = f; ui.limit = 8 } } } }
                     if (!embedded) GhostButton("Start empty") { onUse(DeckEdit.Edit(null, "", "Standard", emptyList()), false) }
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Finder.FILTERS.forEach { (k, l) -> FilterChip(k, l, counts[k], k == ui.filter, k == "craftable" && rarityBusy) { ui.filter = k; ui.limit = 8 } }
+                    ShelfRow { items(Finder.FILTERS, key = { it.first }) { (k, l) ->
+                        ShelfChip(l, k == ui.filter, counts[k], Modifier.alpha(if (k == "craftable" && rarityBusy) .7f else 1f), leading = when (k) {
+                            "trunk" -> { { Text("✓", style = t(13.5f, FontWeight.Bold, if (k == ui.filter) Site.Gold else Site.Muted)) } }
+                            "craftable" -> { { SealMini("r", 16.dp) } }
+                            else -> null }) { ui.filter = k; ui.limit = 8 } } }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("${"%,d".format(ranked.size)} deck${if (ranked.size == 1) "" else "s"}", style = t(13f, color = Site.Muted), modifier = Modifier.weight(1f))
+                        ShelfSort(Finder.SORTS.firstOrNull { it.first == ui.sort }?.second ?: Finder.SORTS.first().second) {
+                            val i = Finder.SORTS.indexOfFirst { it.first == ui.sort }; ui.sort = Finder.SORTS[(i + 1) % Finder.SORTS.size].first; ui.limit = 8 }
                     }
-                    Select("Sort", Finder.SORTS, ui.sort, Modifier.fillMaxWidth()) { ui.sort = it; ui.limit = 8 }
-                    Text("${"%,d".format(ranked.size)} deck${if (ranked.size == 1) "" else "s"}", style = t(13f, color = Site.Muted))
                     var q by remember { mutableStateOf(ui.query) }
                     LaunchedEffect(q) { delay(250); ui.query = q; ui.limit = 8 }
                     Field(q, "Deck or card name") { q = it.take(60) }
@@ -185,19 +191,6 @@ fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (De
             if (archs.size > ui.limit) item { GhostButton("More decks", Modifier.fillMaxWidth()) { ui.limit += 8 } }
         }
         if (!embedded) Box(Modifier.align(Alignment.BottomCenter)) { nav() }
-    }
-}
-
-@Composable
-private fun FilterChip(key: String, label: String, count: Int?, on: Boolean, busy: Boolean, onClick: () -> Unit) {
-    Row(Modifier.height(40.dp).clip(RoundedCornerShape(20.dp)).background(if (on) Color(0x26E8B95B) else Color(0x0AFFFFFF))
-        .border(1.dp, if (on) Brush.verticalGradient(listOf(Color(0xCCE8B95B), Color(0x66E8B95B))) else SoftRim, RoundedCornerShape(20.dp)).clickable(onClick = onClick)
-        .padding(horizontal = 14.dp).alpha(if (busy) .7f else 1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (key == "trunk") Text("✓", style = t(14f, FontWeight.Bold))
-        if (key == "craftable") SealMini("r", 18.dp)
-        Text(label, style = t(14f, FontWeight.SemiBold))
-        if (count != null) Text("%,d".format(count), style = t(12.5f, FontWeight.ExtraBold, if (on) Site.Gold else Site.Muted),
-            modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Color(0x14FFFFFF)).padding(horizontal = 7.dp, vertical = 1.dp))
     }
 }
 

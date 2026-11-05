@@ -31,6 +31,9 @@ class DecksTest {
         val cfg = JsonParser.parseString("""{"precon":{"min":100,"max":900,"perCard":10}}""").asJsonObject
         for (p in g.getAsJsonArray("precon")) { val a = p.asJsonArray
             assertEquals(a[1].asInt, Decks.preconPrice(a[0].asInt, null)); assertEquals(a[2].asInt, Decks.preconPrice(a[0].asInt, cfg)) }
+        val rarityCfg = JsonParser.parseString("""{"precon":{"min":100,"perRarity":{"c":10,"r":300}}}""").asJsonObject
+        for (p in g.getAsJsonArray("preconSeals")) { val a = p.asJsonArray; val seals = a[0].asJsonObject.entrySet().associate { it.key to it.value.asInt }
+            assertEquals(a.toString(), a[1].asInt, Decks.preconPrice(seals, null)); assertEquals(a.toString(), a[2].asInt, Decks.preconPrice(seals, rarityCfg)) }
         for (r in g.getAsJsonArray("rules")) { val a = r.asJsonArray; val o = a[1].asJsonObject
             assertEquals(Decks.Rules(o["size"].asInt, o["copies"].asInt, o["exact"].asBoolean), Decks.deckRules(a[0].asString)) }
         for (b in g.getAsJsonArray("basics")) assertEquals(b.asJsonArray[1].asBoolean, Decks.isBasicLand(b.asJsonArray[0].asString))

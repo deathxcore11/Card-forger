@@ -193,16 +193,22 @@ fun preconInWindow(e: Decks.PreconEntry, format: String, today: java.time.LocalD
     "Standard" -> e.releaseDate >= today.minusDays(3 * 366L).toString(); "Pioneer" -> e.releaseDate >= "2012-10-05"; "Modern" -> e.releaseDate >= "2003-07-28"; else -> true }
 
 /** A deck against the Trunk and the purse: what is missing, the seals by rarity, what the seals don't cover, the coin price. */
-data class PreconNeed(val sh: Decks.Shortfall, val short: Map<String, Int>, val price: Int, val share: Double) {
+/** [inStore]: buyable whole with coins (one of this week's five store precons, or every card owned); the rest craft with seals. */
+data class PreconNeed(val sh: Decks.Shortfall, val short: Map<String, Int>, val price: Int, val share: Double, val inStore: Boolean = false) {
     val total get() = sh.total
     val craftable get() = !sh.complete && short.values.all { it == 0 }
 }
-fun preconNeed(rows: List<Decks.Row>, owned: Map<String, Int>, state: JsonObject): PreconNeed {
+/** state.preconStore.files: this week's five store precons (play-precon-formats weeklyPrecons, from the server). */
+fun weeklyPrecons(state: JsonObject?): Set<String> =
+    (state?.get("preconStore") as? JsonObject)?.getAsJsonArray("files")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }?.toSet().orEmpty()
+fun isWeeklyPrecon(state: JsonObject?, file: String) = file.removeSuffix(".json") in weeklyPrecons(state)
+fun preconNeed(rows: List<Decks.Row>, owned: Map<String, Int>, state: JsonObject, file: String = ""): PreconNeed {
     val sh = Decks.shortfall(rows, owned, rows.associate { it.name to it.rarity })
     val wallet = state.getAsJsonObject("wallet")
     val short = SEAL_KEYS.associateWith { k -> maxOf(0, (sh.seals[k] ?: 0) - (wallet?.get("seal_$k")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0)) }
     val want = rows.filter { !Decks.isBasicLand(it.name) }.sumOf { maxOf(1, it.qty) }
-    return PreconNeed(sh, short, Decks.preconPrice(sh.total, state.getAsJsonObject("config")), if (want > 0) (want - sh.total).coerceAtLeast(0).toDouble() / want else 1.0)
+    return PreconNeed(sh, short, Decks.preconPrice(sh.seals, state.getAsJsonObject("config")), if (want > 0) (want - sh.total).coerceAtLeast(0).toDouble() / want else 1.0,
+        sh.complete || isWeeklyPrecon(state, file))
 }
 
 // ---------------------------------------------------------------- tab bar
@@ -264,12 +270,15 @@ fun PreconsTab(state: JsonObject, pc: PreconUi, owned: Map<String, Int>, onOpen:
     val candidates = remember(searched, f.product, f.format) { searched.filter { (f.product.isEmpty() || preconLine(it.type) == f.product) && (f.format.isEmpty() || preconInWindow(it, f.format)) } }
     fun matches(s: PreconStore.Summary) = (f.format.isEmpty() || f.format in s.formats) && f.colors.all { it in s.colors }
     val needs = remember(state, owned) { HashMap<String, PreconNeed>() }
-    fun needOf(file: String): PreconNeed? = PreconStore.summaries[file]?.let { s -> needs.getOrPut(file) { preconNeed(s.rows, owned, state) } }
+    fun needOf(file: String): PreconNeed? = PreconStore.summaries[file]?.let { s -> needs.getOrPut(file) { preconNeed(s.rows, owned, state, file) } }
+    // The week's five store precons come first (preconShelf sorts isWeekly first).
+    val weekly = remember(state) { weeklyPrecons(state) }
+    fun isWeekly(e: Decks.PreconEntry) = e.fileName.removeSuffix(".json") in weekly
     val shown: List<Decks.PreconEntry> = when {
         rails -> emptyList()
-        !needSummary -> (if (f.sort == "name") candidates.sortedBy { it.name } else candidates).take(pc.limit)
+        !needSummary -> (if (f.sort == "name") candidates.sortedBy { it.name } else candidates).sortedByDescending(::isWeekly).take(pc.limit)
         else -> candidates.filter { e -> PreconStore.summaries[e.fileName]?.let(::matches) == true }
-            .let { l -> when (f.sort) { "closest" -> l.sortedBy { needOf(it.fileName)?.total ?: Int.MAX_VALUE }; "name" -> l.sortedBy { it.name }; else -> l } }.take(pc.limit)
+            .let { l -> when (f.sort) { "closest" -> l.sortedBy { needOf(it.fileName)?.total ?: Int.MAX_VALUE }; "name" -> l.sortedBy { it.name }; else -> l } }.sortedByDescending(::isWeekly).take(pc.limit)
     }
     // A filter that needs the deck files reads them in order until a page of matches is in (Closest checks the first 60).
     LaunchedEffect(rails, needSummary, candidates, f.format, f.colors, f.sort, pc.limit, PreconStore.summaries.size, failedCount) {
@@ -285,10 +294,11 @@ fun PreconsTab(state: JsonObject, pc: PreconUi, owned: Map<String, Int>, onOpen:
     }
     LazyColumn(Modifier.fillMaxSize(), state = f.list, contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item(key = "find") { Field(pc.query, "Find a precon or set") { pc.query = it; pc.limit = 12 } }
-        item(key = "lines") { ChipRow { ChipOn("All", f.product.isEmpty(), searched.size) { f.product = ""; pc.limit = 12 }
-            lines.forEach { (l, es) -> ChipOn(l, f.product == l, es.size) { f.product = if (f.product == l) "" else l; pc.limit = 12 } } } }
-        item(key = "formats") { ChipRow { ChipOn("Any format", f.format.isEmpty()) { f.format = ""; pc.limit = 12 }
-            PRECON_FORMATS.forEach { x -> ChipOn(x, f.format == x) { f.format = if (f.format == x) "" else x; pc.limit = 12 } } } }
+        // One filter bar (Randall 5 Nov 18:53Z): each filter one sideways row to the screen's edges, the colors and Sort on the last.
+        item(key = "lines") { ShelfRow { item(key = "all") { ShelfChip("All", f.product.isEmpty(), searched.size) { f.product = ""; pc.limit = 12 } }
+            items(lines, key = { it.first }) { (l, es) -> ShelfChip(l, f.product == l, es.size) { f.product = if (f.product == l) "" else l; pc.limit = 12 } } } }
+        item(key = "formats") { ShelfRow { item(key = "any") { ShelfChip("Any format", f.format.isEmpty()) { f.format = ""; pc.limit = 12 } }
+            items(PRECON_FORMATS, key = { it }) { x -> ShelfChip(x, f.format == x) { f.format = if (f.format == x) "" else x; pc.limit = 12 } } } }
         item(key = "colors") { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             "WUBRG".forEach { c -> val k = c.toString(); val on = k in f.colors
                 Box(Modifier.size(36.dp).clip(CircleShape).background(if (on) Color(0x26E8B95B) else Color(0x0AFFFFFF)).border(1.dp, if (on) SolidColor(Color(0xAAE2B866)) else SoftRim, CircleShape)
@@ -297,32 +307,39 @@ fun PreconsTab(state: JsonObject, pc: PreconUi, owned: Map<String, Int>, onOpen:
                     Box(Modifier.alpha(if (on || f.colors.isEmpty()) 1f else .4f)) { Symbol(k, 22.dp) } } }
             Spacer(Modifier.weight(1f))
             val label = mapOf("new" to "Newest", "closest" to "Closest", "name" to "A–Z")
-            Text(buildAnnotatedString { append("Sort "); pushStyle(SpanStyle(color = Color.White, fontWeight = FontWeight.ExtraBold)); append(label[f.sort] ?: "Newest"); append(" ▾"); pop() },
-                style = t(13.5f, color = Site.Muted), modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable {
-                    f.sort = when (f.sort) { "new" -> "closest"; "closest" -> "name"; else -> "new" }; pc.limit = 12 }.padding(horizontal = 6.dp, vertical = 8.dp))
+            ShelfSort(label[f.sort] ?: "Newest") { f.sort = when (f.sort) { "new" -> "closest"; "closest" -> "name"; else -> "new" }; pc.limit = 12 }
         } }
         when {
             pc.busy && index == null -> item(key = "loading") { Text("Loading the precon list…", style = t(13f, color = Site.Muted)) }
             pc.error.isNotEmpty() -> item(key = "error") { Text(pc.error, style = t(14f, color = Warn)) }
             index == null -> item(key = "show") { GhostButton("Show the precons") { onLoad() } }
-            rails -> lines.forEach { (l, es) ->
+            rails -> {
+                val store = searched.filter(::isWeekly)
+                if (store.isNotEmpty()) {
+                    item(key = "h:store") { Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("In the store", style = cinzel(18f)); Text("  ${store.size}", style = t(13f, FontWeight.Bold, Site.Muted)); Spacer(Modifier.weight(1f))
+                        Text("This week", style = t(13f, FontWeight.Bold, Site.Muted)) } }
+                    item(key = "r:store") { LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                        items(store, key = { it.fileName }) { e -> PreconTile(e, needOf(e.fileName), Modifier.width(262.dp), weekly = true) { onOpen(e) } } } }
+                }
+                lines.forEach { (l, es) ->
                 item(key = "h:$l") { Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(l, style = cinzel(18f)); Text("  ${es.size}", style = t(13f, FontWeight.Bold, Site.Muted)); Spacer(Modifier.weight(1f))
                     if (es.size > 1) Text("See all ›", style = t(13.5f, FontWeight.Bold, Site.Gold), modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable { f.product = l; pc.limit = 12 }.padding(6.dp)) } }
                 item(key = "r:$l") {
                     val rs = remember(l) { f.rails.getOrPut(l) { LazyListState() } }
                     LazyRow(state = rs, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                        items(es.take(16), key = { it.fileName }) { e -> PreconTile(e, needOf(e.fileName), Modifier.width(262.dp)) { onOpen(e) } }
+                        items(es.take(16), key = { it.fileName }) { e -> PreconTile(e, needOf(e.fileName), Modifier.width(262.dp), weekly = isWeekly(e)) { onOpen(e) } }
                     }
                 }
-            }
+            } }
             else -> {
                 item(key = "count") { Text(when {
                     shown.isEmpty() && pending > 0 -> "Checking the precons…"
                     shown.isEmpty() -> "No precons match."
                     needSummary && pending > 0 -> "${shown.size} so far · checking more…"
                     else -> "${if (needSummary) shown.size else candidates.size} precon${if ((if (needSummary) shown.size else candidates.size) == 1) "" else "s"}" }, style = t(13f, color = Site.Muted)) }
-                itemsIndexed(shown, key = { _, e -> "t:" + e.fileName }) { _, e -> PreconTile(e, needOf(e.fileName), Modifier.fillMaxWidth().animateItem()) { onOpen(e) } }
+                itemsIndexed(shown, key = { _, e -> "t:" + e.fileName }) { _, e -> PreconTile(e, needOf(e.fileName), Modifier.fillMaxWidth().animateItem(), weekly = isWeekly(e)) { onOpen(e) } }
                 val more = if (needSummary) (shown.size >= pc.limit) else candidates.size > shown.size
                 if (more) item(key = "more") { GhostButton("Show more", Modifier.fillMaxWidth()) { pc.limit += 12 } }
             }
@@ -334,18 +351,14 @@ fun PreconsTab(state: JsonObject, pc: PreconUi, owned: Map<String, Int>, onOpen:
     Row(Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) { content() }
 
 @Composable
-private fun ChipOn(label: String, on: Boolean, count: Int? = null, onClick: () -> Unit) {
-    Row(Modifier.height(38.dp).clip(RoundedCornerShape(19.dp)).background(if (on) Color(0x26E8B95B) else Color(0x0AFFFFFF))
-        .border(1.dp, if (on) Brush.verticalGradient(listOf(Color(0xCCE8B95B), Color(0x66E8B95B))) else SoftRim, RoundedCornerShape(19.dp))
-        .semantics { selected = on }.clickable(onClick = onClick).padding(horizontal = 13.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(label, style = t(13.5f, FontWeight.Bold, if (on) Cream else Site.Muted), maxLines = 1)
-        if (count != null) Text("%,d".format(count), style = t(12f, FontWeight.ExtraBold, if (on) Site.Gold else Site.Muted))
-    }
-}
+private fun ChipOn(label: String, on: Boolean, count: Int? = null, onClick: () -> Unit) = ShelfChip(label, on, count, onClick = onClick)
 
-/** A precon tile: its face, set emblem, pips, product and year, formats, how much of it the Trunk holds, and what's left in seals or coins. */
+/**
+ * A precon tile: its face, set emblem, pips, product and year (" · In the store" for this week's five), formats, how much
+ * of it the Trunk holds, and what's left in seals, or coins for a store precon.
+ */
 @Composable
-fun PreconTile(e: Decks.PreconEntry, need: PreconNeed?, modifier: Modifier, onClick: () -> Unit) {
+fun PreconTile(e: Decks.PreconEntry, need: PreconNeed?, modifier: Modifier, weekly: Boolean = false, shop: Boolean = false, onClick: () -> Unit) {
     val s = PreconStore.summaries[e.fileName]
     LaunchedEffect(e.fileName) { if (s == null) PreconStore.want(listOf(e.fileName)) }
     val code = e.code.lowercase()
@@ -363,15 +376,20 @@ fun PreconTile(e: Decks.PreconEntry, need: PreconNeed?, modifier: Modifier, onCl
         }
         Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(horizontal = 13.dp, vertical = 11.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(e.name, style = t(17f, FontWeight.ExtraBold, Color.White, line = 20f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text("${e.type} · ${e.releaseDate.take(4)}", style = t(12.5f, color = Color(0xFFD5D9E0)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("${e.type} · ${e.releaseDate.take(4)}" + if (weekly) " · In the store" else "", style = t(12.5f, color = Color(0xFFD5D9E0)), maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (s != null) Text(s.formats.take(3).joinToString(" · ").ifEmpty { "Casual" }, style = t(11.5f, FontWeight.Bold, Site.Gold), maxLines = 1)
             if (need != null) {
                 Box(Modifier.padding(top = 5.dp).fillMaxWidth().height(5.dp).clip(RoundedCornerShape(3.dp)).background(Color(0x1FFFFFFF))) {
                     Box(Modifier.fillMaxWidth(need.share.toFloat().coerceIn(0f, 1f)).fillMaxHeight().clip(RoundedCornerShape(3.dp)).background(Brush.horizontalGradient(listOf(Color(0xFFD9A94F), Color(0xFFF6D58F))))) }
                 Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (need.sh.complete) Text("✓ Every card is in your Trunk", style = t(12.5f, FontWeight.Bold, Ok))
+                    // In the Shop it is coins only: what's left to add and the deck's price.
+                    else if (shop) { Text("${need.total} card${if (need.total == 1) "" else "s"} to add", style = t(12.5f, color = Color(0xFFD5D9E0)), modifier = Modifier.weight(1f))
+                        Row(Modifier.clip(RoundedCornerShape(999.dp)).background(Color(0x99000000)).border(1.dp, Color(0x66E8B95B), RoundedCornerShape(999.dp)).padding(horizontal = 9.dp, vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                            CoinDot(14.dp); Text("%,d".format(need.price), style = t(13.5f, FontWeight.ExtraBold, Color.White)) } }
                     else { SealCosts(need.sh.seals, need.short, 15.dp, Modifier.weight(1f))
-                        Text(buildAnnotatedString { append("or "); pushStyle(SpanStyle(color = Color.White, fontWeight = FontWeight.ExtraBold)); append("%,d".format(need.price)); pop(); append(" coins") }, style = t(12.5f, color = Color(0xFFD5D9E0))) }
+                        if (need.inStore) Text(buildAnnotatedString { append("or "); pushStyle(SpanStyle(color = Color.White, fontWeight = FontWeight.ExtraBold)); append("%,d".format(need.price)); pop(); append(" coins") }, style = t(12.5f, color = Color(0xFFD5D9E0))) }
                 }
             } else Text("Checking the list…", style = t(12f, color = Site.Muted), modifier = Modifier.padding(top = 6.dp))
         }
@@ -399,7 +417,7 @@ fun SealCosts(cost: Map<String, Int>, short: Map<String, Int>, size: Dp, modifie
 @Composable
 fun PreconPage(state: JsonObject, o: OpenPrecon, owned: Map<String, Int>, pc: PreconUi, onBack: () -> Unit, onCard: (String) -> Unit, toast: (String) -> Unit, nav: @Composable () -> Unit) {
     val scope = rememberCoroutineScope()
-    val need = remember(o, owned, state) { preconNeed(o.rows, owned, state) }
+    val need = remember(o, owned, state) { preconNeed(o.rows, owned, state, o.file) }
     val sh = need.sh
     val coins = state.getAsJsonObject("wallet")?.get("coins")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0
     val have = remember(state) { SEAL_KEYS.associateWith { k -> state.getAsJsonObject("wallet")?.get("seal_$k")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0 } }
@@ -465,7 +483,7 @@ fun PreconPage(state: JsonObject, o: OpenPrecon, owned: Map<String, Int>, pc: Pr
                 if (sh.complete) Text("You own every card", style = t(16f, FontWeight.ExtraBold, Ok))
                 else Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("${sh.total}", style = t(28f, FontWeight.ExtraBold, Color.White, line = 30f))
-                    Text("card${if (sh.total == 1) "" else "s"} to add · ${wantAll - sh.total} of $wantAll in your Trunk", style = t(13.5f, color = Site.Muted), modifier = Modifier.padding(bottom = 3.dp)) }
+                    Text("card${if (sh.total == 1) "" else "s"} to add · ${wantAll - sh.total} of $wantAll in your Trunk" + if (need.inStore) "" else " · craft them with seals", style = t(13.5f, color = Site.Muted), modifier = Modifier.padding(bottom = 3.dp)) }
                 Box(Modifier.fillMaxWidth().height(5.dp).clip(RoundedCornerShape(3.dp)).background(Color(0x1FFFFFFF))) {
                     Box(Modifier.fillMaxWidth(need.share.toFloat().coerceIn(0f, 1f)).fillMaxHeight().background(Brush.horizontalGradient(listOf(Color(0xFFD9A94F), Color(0xFFF6D58F))))) }
                 if (!sh.complete) Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -484,7 +502,8 @@ fun PreconPage(state: JsonObject, o: OpenPrecon, owned: Map<String, Int>, pc: Pr
                             GhostButton("Craft all ${sh.total}", Modifier.fillMaxWidth(), enabled = false) {}
                         }
                     }
-                    Way("Buy the deck", Modifier.weight(1f)) {
+                    // Whole-deck coin buys are only for this week's five store precons (the server answers not_in_store).
+                    if (need.inStore) Way("Buy the deck", Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             CoinDot(18.dp); Text("%,d".format(need.price), style = t(22f, FontWeight.ExtraBold, Color.White, line = 26f)); Text("coins", style = t(13f, color = Site.Muted)) }
                         Text("You have ${"%,d".format(coins)}. The exact printings go to your Trunk and the deck to My decks.", style = t(12f, color = Site.Muted, line = 16f))

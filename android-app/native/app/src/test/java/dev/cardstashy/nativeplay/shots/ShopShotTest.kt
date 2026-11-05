@@ -3,6 +3,7 @@ package dev.cardstashy.nativeplay.shots
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -21,7 +22,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
-/** The Shop hub's three tabs and one set's page, on the Fold's cover screen, drawn tall so the scroll shows. */
+/** The Shop's storefront, Every set, Your packs and one set's page, on the Fold's cover screen, drawn tall so the scroll shows. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = "w390dp-h2400dp-xxhdpi")
@@ -54,16 +55,68 @@ class ShopShotTest {
         return JsonObject().apply {
             add("wallet", JsonParser.parseString("""{"coins":12450,"xp":2300,"seal_c":3,"seal_u":15,"seal_r":7,"seal_m":2,"starter_at":"2026-11-01T10:00:00Z"}"""))
             add("packs", JsonParser.parseString("""[{"id":"p1","set":"fra","source":"quest"},{"id":"p2","set":"fra","source":"quest"},{"id":"p3","set":"hob","source":"story"},{"id":"p4","set":"fra","source":"collector"}]"""))
-            add("cards", cards); add("shop", shop); add("config", JsonObject()); add("secretLair", sl); add("counters", JsonObject())
+            add("cards", cards); add("shop", shop); add("config", JsonObject()); add("counters", JsonObject())
+            add("rewardSet", JsonParser.parseString("""{"code":"fra","name":"Reality Fracture","released":"2026-02-06"}"""))
+            // The week's Secret Lair store (play-econ-route secretLairStoreOffer): twenty real printings, four on sale, one already yours.
+            val slds = offers()
+            add("secretLairStore", JsonObject().apply { addProperty("week", "2026-W45"); addProperty("ends", java.time.Instant.now().plusSeconds(2 * 86400 + 5 * 3600 + 120).toString())
+                add("offers", JsonArray().apply { slds.forEachIndexed { i, c -> add(c.deepCopy().apply { mapOf(1 to 60, 4 to 50, 9 to 40, 14 to 25)[i]?.let { addProperty("off", it) } }) } }) })
+            add("styles", JsonArray().apply { slds.getOrNull(2)?.let { c -> add(JsonObject().apply { addProperty("id", c["id"].asString); addProperty("o", c["o"].asString) }) } })
+            add("preconStore", JsonParser.parseString("""{"week":"2026-W45","files":["fin-ub","fin-rw","blb-gw","blb-ur","otj-br"]}"""))
         }
     }
 
+    private var slCache: List<JsonObject>? = null
+    /** Twenty Secret Lair printings from Scryfall (no basics), as the store hands them: id, oracle, name, rarity, finishes. */
+    private fun offers(): List<JsonObject> = slCache ?: runCatching {
+        JsonParser.parseString(get("https://api.scryfall.com/cards/search?order=released&dir=desc&unique=prints&q=" + java.net.URLEncoder.encode("e:sld -t:basic -t:token -t:emblem -is:digital", "UTF-8"))).asJsonObject
+            .getAsJsonArray("data").map { it.asJsonObject }.filter { it.has("image_uris") }.take(20).map { c -> JsonObject().apply {
+                addProperty("id", c["id"].asString); addProperty("o", c["oracle_id"].asString); addProperty("n", c["name"].asString); addProperty("r", c["rarity"].asString)
+                add("f", c.getAsJsonArray("finishes")) } }
+    }.getOrDefault(emptyList()).also { slCache = it }
+
+    /** The store precons: the app's five starter precons with Scryfall's cards (as PlayDecksTabsShotTest builds them), as the Shop's precon list. */
+    private fun precons(): dev.cardstashy.nativeplay.ui.PreconUi {
+        val all = JsonParser.parseString(File(System.getProperty("repoRoot"), "data/play-starters/precons.json").readText()).asJsonObject["decks"].asJsonArray.map { it.asJsonObject }
+            .filter { it["format"].asString == "Standard" }
+        val ids = LinkedHashMap<String, JsonObject>()
+        for (p in all) for (r in p["rows"].asJsonArray.map { it.asJsonObject }) ids.putIfAbsent(r["name"].asString, JsonObject().apply { addProperty("name", r["name"].asString) })
+        val cards = ids.values.chunked(75).flatMap { chunk -> Thread.sleep(120)
+            val c = java.net.URI("https://api.scryfall.com/cards/collection").toURL().openConnection() as java.net.HttpURLConnection
+            c.requestMethod = "POST"; c.doOutput = true; c.setRequestProperty("Content-Type", "application/json"); c.setRequestProperty("User-Agent", "CardStashyNativeTest/1.0")
+            c.outputStream.use { it.write(JsonObject().apply { add("identifiers", JsonArray().apply { chunk.forEach { add(it) } }) }.toString().toByteArray()) }
+            JsonParser.parseString(c.inputStream.bufferedReader().readText()).asJsonObject["data"].asJsonArray.map { it.asJsonObject } }
+        dev.cardstashy.nativeplay.ui.PreconStore.clearForTest()
+        val formats = mapOf(0 to listOf("Standard", "Pioneer", "Modern"), 1 to listOf("Standard", "Pioneer"), 2 to listOf("Pioneer", "Modern"), 3 to listOf("Standard"), 4 to listOf("Modern", "Pauper"))
+        val index = all.mapIndexed { i, p -> val face = cards.firstOrNull { it["name"].asString == p["face"].asString }
+            val rows = p["rows"].asJsonArray.map { it.asJsonObject }.map { r -> val c = cards.firstOrNull { it["name"].asString == r["name"].asString || it["name"].asString.split(" // ")[0] == r["name"].asString }
+                dev.cardstashy.nativeplay.play.Decks.Row(r["name"].asString, r["qty"].asInt, r["board"]?.asString, c?.get("set")?.asString ?: "", c?.get("collector_number")?.asString ?: "", c?.get("id")?.asString ?: "", c?.get("rarity")?.asString ?: "common") }
+            dev.cardstashy.nativeplay.ui.PreconStore.summaries[p["key"].asString + ".json"] = dev.cardstashy.nativeplay.ui.PreconStore.Summary(
+                (face?.get("name")?.asString ?: "") to (face?.get("id")?.asString ?: ""), listOf("W", "U", "B", "R", "G").filter { k -> (face?.getAsJsonArray("color_identity")?.map { it.asString } ?: emptyList()).contains(k) }, formats.getValue(i % 5), rows)
+            dev.cardstashy.nativeplay.play.Decks.PreconEntry(p["name"].asString, (face?.get("set")?.asString ?: "").uppercase(), "Starter Kit", p["released"].asString, p["key"].asString + ".json") }
+        return dev.cardstashy.nativeplay.ui.PreconUi().apply { this.index = index }
+    }
+    private fun art() { dev.cardstashy.nativeplay.ui.Motion.still = true
+        dev.cardstashy.nativeplay.ui.homeArt = { url -> runCatching { java.net.URI(url).toURL().openConnection().apply { setRequestProperty("User-Agent", "CardStashyNativeTest/1.0") }
+            .getInputStream().use { android.graphics.BitmapFactory.decodeStream(it) }?.asImageBitmap() }.getOrNull() ?: url } }
+
+    /** The storefront (Randall 5 Nov 18:54Z): the aisle bar, the Secret Lair showcase, the featured pack and the shelf, the store precons, the Forge. */
     @Test fun hub() {
+        art(); val st = state(); Progress.setForTest(st, null); val pc = precons()
+        rule.setContent { ShopRoute(onBack = {}, nav = { PlayNav(PlayTab.SHOP, {}) }, precon = pc) }
+        settle(60); shot("front")
+        rule.onNodeWithText("Every set, every year").performClick(); settle(20); shot("sets")
+    }
+    /** The storefront's first screen on the Fold's cover screen, as you land on it. */
+    @Test @Config(qualifiers = "w390dp-h844dp-xxhdpi") fun front() {
+        art(); Progress.setForTest(state(), null); val pc = precons()
+        rule.setContent { ShopRoute(onBack = {}, nav = { PlayNav(PlayTab.SHOP, {}) }, precon = pc) }
+        settle(60); shot("front-top")
+    }
+    @Test fun packs() {
         Progress.setForTest(state(), null)
-        rule.setContent { ShopRoute(onBack = {}, nav = { PlayNav(PlayTab.SHOP, {}) }) }
-        settle(); shot("sets")
-        rule.onNodeWithText("Your packs · 4").performClick(); settle(10); shot("packs")
-        rule.onNodeWithText("Forge").performClick(); settle(10); shot("forge")
+        rule.setContent { ShopRoute(onBack = {}, startTab = "packs", nav = { PlayNav(PlayTab.SHOP, {}) }) }
+        settle(); shot("packs")
     }
 
     /**
@@ -80,8 +133,8 @@ class ShopShotTest {
         val was = dev.cardstashy.nativeplay.ui.homeArt
         dev.cardstashy.nativeplay.ui.homeArt = { url -> runCatching { java.net.URI(url).toURL().openStream().use { android.graphics.BitmapFactory.decodeStream(it) }?.asImageBitmap() }.getOrNull() }
         try {
-            rule.setContent { ShopRoute(onBack = {}, nav = { PlayNav(PlayTab.SHOP, {}) }) }
-            settle(); rule.onNodeWithText("Your packs · 1730").performClick(); settle(20); shot("packs-portrait")
+            rule.setContent { ShopRoute(onBack = {}, startTab = "packs", nav = { PlayNav(PlayTab.SHOP, {}) }) }
+            settle(); shot("packs-portrait")
         } finally { dev.cardstashy.nativeplay.ui.homeArt = was }
     }
 
@@ -97,7 +150,7 @@ class ShopShotTest {
         try {
             rule.setContent { ShopRoute(onBack = {}, nav = { PlayNav(PlayTab.SHOP, {}) }) }
             settle(); rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "theme-light-shop-sets.png").path)
-            rule.onNodeWithText("Forge").performClick(); settle(10); rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "theme-light-shop-forge.png").path)
+            rule.onAllNodesWithText("Forge")[0].performClick(); settle(20); rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "theme-light-shop-forge.png").path)
         } finally { dev.cardstashy.nativeplay.ui.AppSettings.applyTheme("dark") }
     }
 

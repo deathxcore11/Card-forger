@@ -25,6 +25,8 @@ const g = {
   owned: Object.fromEntries(owned), rarity: Object.fromEntries(rarity), legal: Object.fromEntries(legal),
   legalFormats: lists.map(l => ({rows: l, out: R.legalFormats(l, legal)})),
   precon: [0, 1, 5, 10, 40, 59, 60, 61, 200].map(n => [n, R.preconPrice(n, {}), R.preconPrice(n, {precon: {min: 100, max: 900, perCard: 10}})]),
+  // By rarity (deckShortfall seals): default rates, a retuned perRarity, and the 250 floor.
+  preconSeals: [{c: 0, u: 0, r: 0, m: 0}, {c: 3}, {c: 7, u: 22, r: 13, m: 2}, {u: 1}, {r: 1, m: 1}, {c: 40, u: 10}].map(x => [x, R.preconPrice(x, {}), R.preconPrice(x, {precon: {min: 100, perRarity: {c: 10, r: 300}}})]),
   rules: R.PLAY_FORMATS.concat(['Casual', '']).map(f => [f, R.deckRules(f)]),
   basics: ['Plains', 'snow-covered island', 'Wastes', 'Snow-Covered Wastes', ' Forest ', 'Island // x'].map(n => [n, R.isBasicLand(n)]),
 };

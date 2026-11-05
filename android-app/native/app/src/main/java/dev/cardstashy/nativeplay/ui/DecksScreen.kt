@@ -278,6 +278,15 @@ private suspend fun fetchJson(url: String, dayCache: Boolean = false): JsonObjec
     out
 }
 
+/** The precon list (MTGJSON's DeckList, kept a day), into [pc] once. */
+internal suspend fun loadPreconIndex(pc: PreconUi) {
+    if (pc.index != null || pc.busy) return
+    pc.busy = true; pc.error = ""
+    val j = fetchJson("https://mtgjson.com/api/v5/DeckList.json", dayCache = true)
+    if (j != null) pc.index = Decks.preconIndex(j) else pc.error = "Could not load the precon list right now."
+    pc.busy = false
+}
+
 internal fun openPrecon(scope: kotlinx.coroutines.CoroutineScope, pc: PreconUi, e: Decks.PreconEntry, toast: (String) -> Unit) {
     if (pc.opening) return; pc.opening = true
     scope.launch {

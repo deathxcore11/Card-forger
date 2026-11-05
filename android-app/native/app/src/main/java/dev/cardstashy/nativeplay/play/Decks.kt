@@ -14,13 +14,14 @@ object Decks {
     data class Missing(val name: String, val need: Int, val rarity: String, val seal: String)
     data class Shortfall(val missing: List<Missing>, val seals: Map<String, Int>, val complete: Boolean) { val total get() = missing.sumOf { it.need } }
 
-    val PLAY_FORMATS = listOf("Standard", "Pioneer", "Modern", "Legacy", "Vintage", "Pauper", "Commander")
+    val PLAY_FORMATS = listOf("Standard", "Pioneer", "Modern", "Legacy", "Vintage", "Pauper", "Commander", "Standard Brawl")
     private val BASICS = Regex("^(?:plains|island|swamp|mountain|forest|wastes|snow-covered (?:plains|island|swamp|mountain|forest))$", RegexOption.IGNORE_CASE)
     fun isBasicLand(name: String?) = BASICS.matches((name ?: "").trim())
     private fun rarityOf(r: String?) = when (r) { "common", "uncommon", "rare", "mythic" -> r; "special" -> "rare"; "bonus" -> "mythic"; else -> "common" }
     val RARITY_SEAL = mapOf("common" to "c", "uncommon" to "u", "rare" to "r", "mythic" to "m", "special" to "r", "bonus" to "m")
 
-    fun deckRules(format: String?) = if (format == "Commander") Rules(100, 1, true) else Rules(60, 4, false)
+    /** deckRules: the singleton formats (Commander 100, Standard Brawl 60) are exact at one copy; the rest 60+ at four. */
+    fun deckRules(format: String?) = Finder.deckRules(format).let { Rules(it.size, it.copies, it.exact) }
 
     fun shortfall(deck: List<Row>, owned: Map<String, Int>, rarity: Map<String, String> = emptyMap(), maxCopies: Int = 4): Shortfall {
         val want = LinkedHashMap<String, Int>()
@@ -35,10 +36,25 @@ object Decks {
         return Shortfall(missing, seals, missing.isEmpty())
     }
 
-    fun preconPrice(missing: Int, config: JsonObject?): Int {
+    /**
+     * preconPrice: only the cards you don't own yet, priced by rarity (Randall 5 Nov 18:05Z). [missing] is a count at the
+     * flat perCard rate or deckShortfall's seals {c,u,r,m} at play.config precon.perRarity (PRECON_RATES by default).
+     * Minimum 250, no cap; a deck you own entirely is free.
+     */
+    val PRECON_RATES = mapOf("c" to 25, "u" to 75, "r" to 500, "m" to 1500)
+    private fun preconTotal(total: Int, config: JsonObject?): Int {
         val p = config?.getAsJsonObject("precon")
-        fun n(k: String, d: Int) = p?.get(k)?.takeIf { it.isJsonPrimitive }?.asInt ?: d
-        return if (missing <= 0) 0 else maxOf(n("min", 250), minOf(n("max", 1500), missing * n("perCard", 25)))
+        val min = p?.get("min")?.takeIf { it.isJsonPrimitive }?.asInt ?: 250
+        return if (total <= 0) 0 else maxOf(min, total)
+    }
+    fun preconPrice(missing: Int, config: JsonObject?): Int {
+        val per = config?.getAsJsonObject("precon")?.get("perCard")?.takeIf { it.isJsonPrimitive }?.asInt ?: 25
+        return preconTotal(missing * per, config)
+    }
+    fun preconPrice(seals: Map<String, Int>, config: JsonObject?): Int {
+        val custom = config?.getAsJsonObject("precon")?.getAsJsonObject("perRarity")
+        val rates = PRECON_RATES.mapValues { (k, v) -> custom?.get(k)?.takeIf { it.isJsonPrimitive }?.asDouble?.toInt() ?: v }
+        return preconTotal(listOf("c", "u", "r", "m").sumOf { (seals[it] ?: 0) * (rates[it] ?: 0) }, config)
     }
 
     /** legalFormats: every card legal (Vintage allows restricted at one copy) and the deck rules met. */

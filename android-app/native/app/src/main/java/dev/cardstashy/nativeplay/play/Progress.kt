@@ -87,7 +87,7 @@ object Progress {
     /** Server answers carry the wallet; the shop, reward set, counters and claims ride along (keep()). */
     private fun keep(next: JsonObject, extra: JsonObject? = null): JsonObject = next.deepCopy().apply {
         val s = _state.value
-        for (k in listOf("rewardSet", "shop", "styles", "secretLair")) if (!has(k)) s?.get(k)?.let { add(k, it) }
+        for (k in listOf("rewardSet", "shop", "styles", "secretLair", "secretLairStore", "preconStore")) if (!has(k)) s?.get(k)?.let { add(k, it) }
         add("counters", s?.get("counters") ?: JsonObject()); add("claimed", s?.get("claimed") ?: JsonArray())
         add("login", s?.get("login") ?: com.google.gson.JsonNull.INSTANCE)
         extra?.entrySet()?.forEach { (k, v) -> add(k, v) }
@@ -232,6 +232,9 @@ object Progress {
     /** This week's Secret Lair bundle for coins (play-econ-client secretLair): the cards land in the Trunk in their Secret Lair art. */
     suspend fun secretLair(week: String) = run("secretlair", "secretlair", JsonObject().apply { addProperty("week", week); addProperty("tz", tz) }) { out ->
         JsonObject().apply { out.get("styles")?.let { add("styles", it) }; out.get("secretLair")?.let { add("secretLair", it) } } }
+    /** One card of this week's Secret Lair store for coins (play-econ-client secretLairCard): into the Trunk, its Secret Lair art unlocked. */
+    suspend fun secretLairCard(id: String, week: String?) = run("sloffer:$id", "sloffer", JsonObject().apply { addProperty("id", id); addProperty("pay", "coins"); week?.let { addProperty("week", it) }; addProperty("tz", tz) }) { out ->
+        JsonObject().apply { out.get("styles")?.let { add("styles", it) }; out.get("secretLairStore")?.let { add("secretLairStore", it) } } }
     suspend fun precon(file: String, format: String) = run("precon", "precon", JsonObject().apply { addProperty("file", file); addProperty("format", format) })
     suspend fun holo(oracle: String) = run("holo", "holo", JsonObject().apply { addProperty("oracle", oracle) })
     suspend fun craft(id: String, holo: Boolean = false) = run("craft", "craft", JsonObject().apply { addProperty("id", id); addProperty("holo", holo) })
@@ -263,6 +266,10 @@ object Progress {
         "claimed" to "You already claimed that reward.",
         "not_ready" to "Quests open once the next update finishes.",
         "no_reward_set" to "The reward packs are not ready yet. Try again in a moment.",
+        "bought" to "That Secret Lair is already yours.",
+        "no_offer" to "That card has left the Secret Lair store.",
+        "bundle_gone" to "That Secret Lair has left the Merchant. A new one is in.",
+        "no_bundle" to "No Secret Lair at the Merchant right now.",
     )
 }
 
