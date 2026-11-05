@@ -1,0 +1,128 @@
+--- a/ForgeHttpBridge.java
++++ b/ForgeHttpBridge.java
+@@ -299,7 +299,10 @@
+     @com.google.common.eventbus.Subscribe
+     public void onGameStarted(forge.game.event.GameEventGameStarted event){
+         if(startingPlayer==null||event.firstTurn()==null||!pregame.isEmpty())return;
++        // Scripted lesson: reorder the libraries after Forge's shuffle and before the opening draw.
++        Map<String,Object> setupReceipt=startingPlayer.setup()==null?null:startingPlayer.setup().apply(game);
+         pregame=obj("schema","cardstashy.forge-pregame.v1","firstPlayerId",event.firstTurn().getId(),"selection",startingPlayer.selection(),"playStyle",startingPlayer.playStyle());
++        if(setupReceipt!=null){pregame=new java.util.LinkedHashMap<>(pregame);pregame.put("setup",setupReceipt);}
+         if(exactAdmission!=null)exactAdmission.receipt().put("pregame",pregame);
+     }
+ 
+--- a/NativeDeckAdmission.java
++++ b/NativeDeckAdmission.java
+@@ -41,9 +41,11 @@
+   List<String> errors=new ArrayList<>();NativeDeckInput.Resolution human=null,opponent=null;List<NativeDeckInput.Resolution> extras=new ArrayList<>();List<BoundedHeuristicPolicy> extraPolicies=new ArrayList<>();List<Map<String,Object>> extraReceipts=new ArrayList<>();boolean extrasResolved=true;
+   BoundedHeuristicPolicy selectedPolicy=null;Map<String,Object> cpuPolicy=null;String policyVersion=null;boolean policy=false,legal=false,nativeLegal=false,dataSupported=false;Map<String,Object> rulesData=null;String humanDigest=null,opponentDigest=null,requestDigest=null;
+   try{
+-   Set<String> keys=input==null?Set.of():new HashSet<>(input.keySet());boolean pod=keys.remove("extraOpponents");
++   Set<String> keys=input==null?Set.of():new HashSet<>(input.keySet());boolean pod=keys.remove("extraOpponents"),setup=keys.remove("setup");
+    if(input==null||!(keys.equals(Set.of("format","humanDeck","opponentDeck","difficultyPolicyVersion"))||keys.equals(Set.of("format","humanDeck","opponentDeck","difficultyPolicyVersion","startingPlayer","playStyle"))))throw new IllegalArgumentException("invalid_match_input");
+    NativeStartingPlayer.parse(input);
++   // A match setup is for scripted CPU lessons: never a pod, and only with a starting player choice.
++   if(setup&&(pod||!input.has("startingPlayer")))throw new IllegalArgumentException("invalid_match_setup");
+    NativeDeckInput.bounded(input,0,new int[]{0});
+    requestDigest=NativeDeckInput.digest(input);humanDigest=NativeDeckInput.digest(input.get("humanDeck"));opponentDigest=NativeDeckInput.digest(input.get("opponentDeck"));
+    policyVersion=NativeDeckInput.string(input.get("difficultyPolicyVersion"),"difficultyPolicyVersion",80);selectedPolicy=NativeCpuPolicyIntegration.parse(policyVersion);cpuPolicy=NativeCpuPolicyIntegration.receipt(selectedPolicy);policy=NativeMatchFormat.supported(NativeDeckInput.string(input.get("format"),"format",80));
+--- a/NativeStartingPlayer.java
++++ b/NativeStartingPlayer.java
+@@ -13,16 +13,19 @@
+ /** Pregame preferences only. Native Forge still tosses, draws, mulligans and plays.
+  * For random, its coin winner starts. Practice may explicitly select a seat.
+  * The override is a native controller choice, never a post-deal board mutation. */
+-public record NativeStartingPlayer(String selection, String playStyle) {
++public record NativeStartingPlayer(String selection, String playStyle, NativeMatchSetup setup) {
++    public NativeStartingPlayer(String selection, String playStyle){this(selection,playStyle,null);}
+     public static NativeStartingPlayer parse(JsonObject input) {
+         boolean selectionPresent=input.has("startingPlayer"), stylePresent=input.has("playStyle");
+         if(!selectionPresent&&!stylePresent)return null; // retain historical proof inputs
+         if(!selectionPresent||!stylePresent)throw new IllegalArgumentException("invalid_starting_player_selection");
+         String selection=NativeDeckInput.string(input.get("startingPlayer"),"startingPlayer",16);
+         String style=NativeDeckInput.string(input.get("playStyle"),"playStyle",16);
++        NativeMatchSetup setup=NativeMatchSetup.parse(input);
++        // A scripted lesson may ask for the human to go first in a quick match.
+         if(!Set.of("random","first","second").contains(selection)||!Set.of("quick","practice").contains(style)
+-                ||style.equals("quick")&&!selection.equals("random"))throw new IllegalArgumentException("invalid_starting_player_selection");
+-        return new NativeStartingPlayer(selection,style);
++                ||style.equals("quick")&&!selection.equals("random")&&(setup==null||!selection.equals("first")))throw new IllegalArgumentException("invalid_starting_player_selection");
++        return new NativeStartingPlayer(selection,style,setup);
+     }
+     Player choose(Player nativeCoinWinner) {
+         if(selection.equals("random"))return nativeCoinWinner;
+@@ -47,6 +50,9 @@
+                     @Override public Player chooseStartingPlayer(boolean firstGame) {
+                         return firstGame?choose(player):super.chooseStartingPlayer(false);
+                     }
++                    @Override public boolean mulliganKeepHand(Player mulliganingPlayer,int cardsToReturn) {
++                        return setup!=null&&setup.noMulligan()||super.mulliganKeepHand(mulliganingPlayer,cardsToReturn);
++                    }
+                 });
+                 return player;
+             }
+--- /dev/null
++++ b/NativeMatchSetup.java
+@@ -0,0 +1,62 @@
++package cardstashy.forge;
++
++import com.google.gson.JsonElement;
++import com.google.gson.JsonObject;
++import forge.game.Game;
++import forge.game.card.Card;
++import forge.game.player.Player;
++import forge.game.zone.ZoneType;
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++
++/** Optional match start setting for scripted lessons (CPU matches only).
++ * stack.hero / stack.villain name the cards to draw first, top of the library first.
++ * noMulligan keeps the opening seven. The match is still dealt, drawn and played by native Forge:
++ * only the order of the shuffled library changes, before the opening draw. */
++public record NativeMatchSetup(List<String> hero, List<String> villain, boolean noMulligan) {
++    static final int MAX_NAMES = 15, MAX_NAME_LENGTH = 120;
++    public static NativeMatchSetup parse(JsonObject input) {
++        if(!input.has("setup"))return null;
++        if(!input.get("setup").isJsonObject())throw new IllegalArgumentException("invalid_match_setup");
++        JsonObject setup=input.getAsJsonObject("setup");
++        if(!Set.of("stack","noMulligan").containsAll(setup.keySet()))throw new IllegalArgumentException("invalid_match_setup");
++        List<String> hero=List.of(),villain=List.of();
++        if(setup.has("stack")){
++            if(!setup.get("stack").isJsonObject())throw new IllegalArgumentException("invalid_match_setup");
++            JsonObject stack=setup.getAsJsonObject("stack");
++            if(!Set.of("hero","villain").containsAll(stack.keySet()))throw new IllegalArgumentException("invalid_match_setup");
++            hero=names(stack.get("hero"));villain=names(stack.get("villain"));
++        }
++        boolean noMulligan=false;
++        if(setup.has("noMulligan")){
++            JsonElement e=setup.get("noMulligan");
++            if(!e.isJsonPrimitive()||!e.getAsJsonPrimitive().isBoolean())throw new IllegalArgumentException("invalid_match_setup");
++            noMulligan=e.getAsBoolean();
++        }
++        return new NativeMatchSetup(hero,villain,noMulligan);
++    }
++    private static List<String> names(JsonElement e) {
++        if(e==null)return List.of();
++        if(!e.isJsonArray()||e.getAsJsonArray().size()>MAX_NAMES)throw new IllegalArgumentException("invalid_match_setup");
++        List<String> out=new ArrayList<>();
++        for(JsonElement n:e.getAsJsonArray())out.add(NativeDeckInput.string(n,"setup.stack",MAX_NAME_LENGTH));
++        return List.copyOf(out);
++    }
++    /** Moves the named cards to the top of each library. Returns a small receipt. */
++    Map<String,Object> apply(Game game) {
++        int hero=0,villain=0;
++        for(Player p:game.getPlayers())if(p.isAI())villain=stack(p,villain());else hero=stack(p,hero());
++        return Map.of("hero",hero,"villain",villain,"noMulligan",noMulligan);
++    }
++    private static int stack(Player player,List<String> names) {
++        if(names.isEmpty())return 0;
++        List<Card> rest=new ArrayList<>(player.getCardsIn(ZoneType.Library)),top=new ArrayList<>();
++        for(String name:names)for(int i=0;i<rest.size();i++)if(rest.get(i).getName().equals(name)){top.add(rest.remove(i));break;}
++        int moved=top.size();
++        top.addAll(rest);
++        player.getZone(ZoneType.Library).setCards(top);
++        return moved;
++    }
++}

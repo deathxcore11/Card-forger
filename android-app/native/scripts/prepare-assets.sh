@@ -7,10 +7,10 @@
 #   app/src/main/assets/cards/       Scryfall images for the two demo decks (normal + art_crop) and the Home tiles
 #   app/src/main/assets/{play,sfx}/  the existing playmat, banners and table sounds from the website
 #
-#   ENGINE_TGZ  engine build (default: the shared pods build the beta APK uses)
+#   ENGINE_TGZ  engine build (default: the pods build plus the lesson match setup, forge-engine/rebuild-bridge.sh)
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")/.." && pwd); REPO=$(cd "$HERE/../.." && pwd)
-ENGINE_TGZ=${ENGINE_TGZ:-/mnt/project-files/android/forge-engine-build/forge-engine-android-e5a0f81-pods.tgz}
+ENGINE_TGZ=${ENGINE_TGZ:-/mnt/project-files/android/forge-engine-build/forge-engine-android-e5a0f81-pods-setup.tgz}
 A="$HERE/app/src/main/assets"; T=$(mktemp -d)
 rm -rf "$HERE/engine-libs" "$A"; mkdir -p "$HERE/engine-libs" "$A/forge-engine" "$A/forge-rules-seed" "$A/cards" "$A/play" "$A/sfx"
 tar -xzf "$ENGINE_TGZ" -C "$T"
@@ -31,6 +31,8 @@ cp "$HERE/decks/demo-decks.json" "$A/"
 node "$HERE/scripts/export-play-rules.mjs" "$REPO" "$A/play-rules.json"
 node "$HERE/scripts/export-board-icons.mjs" "$REPO" "$A/board-icons.json"
 node "$HERE/scripts/export-story-deeds.mjs" "$REPO" "$A/story-deeds.json"
+# Story lessons: the duel page's lesson lines and the Rift's in-match whispers with the lesson battles' stacked draws.
+node "$HERE/scripts/export-story-lessons.mjs" "$REPO" "$A/story-lessons.json"
 # Every Story act's battles and card pool, the fallback when the site's copy can't be reached (or is not published yet).
 mkdir -p "$A/story" && cp "$REPO"/data/story/act-*.json "$REPO"/data/story/pool-*.json "$A/story/"
 node "$HERE/scripts/export-audio-loops.mjs" "$REPO" "$A/audio-loops.json"

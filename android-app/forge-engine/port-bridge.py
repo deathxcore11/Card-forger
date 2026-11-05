@@ -11,6 +11,8 @@ SOURCES = ['ForgeHttpBridge.java', 'BoundedHeuristicPolicy.java', 'NativeCpuPoli
            'NativeDeckAdmission.java', 'NativeDeckInput.java', 'NativeMatchFormat.java',
            'NativeRulesData.java', 'NativeStartingPlayer.java', 'NativeHumanPriorityProof.java',
            'NativePatchsetProof.java']
+# Ported when the host has them: the lesson match setup (host PR #121) is in the app engine before the host deploys it.
+OPTIONAL = ['NativeMatchSetup.java']
 
 EDITS = {
     'ForgeHttpBridge.java': [
@@ -43,7 +45,8 @@ COMMON = [
 def main(src, out):
     src, out = pathlib.Path(src), pathlib.Path(out)
     out.mkdir(parents=True, exist_ok=True)
-    for name in SOURCES:
+    names = SOURCES + [n for n in OPTIONAL if (src / n).exists()]
+    for name in names:
         text = (src / name).read_text()
         for old, new, count in EDITS.get(name, []):
             found = text.count(old)
@@ -57,7 +60,7 @@ def main(src, out):
             if re.search(banned, text):
                 raise SystemExit(f'{name}: still uses {banned}')
         (out / name).write_text(text)
-    print('PORTED', len(SOURCES), 'bridge sources')
+    print('PORTED', len(names), 'bridge sources')
 
 if __name__ == '__main__':
     main(*sys.argv[1:])
