@@ -74,7 +74,7 @@ internal suspend fun keepCatalog(context: android.content.Context) = withContext
 }
 
 @Composable
-fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: String, press: String?) -> Unit, open: (String) -> Unit, onCards: (() -> Unit)? = null) {
+fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: String, press: String?) -> Unit, open: (String) -> Unit, onCards: (() -> Unit)? = null, onDecks: (() -> Unit)? = null) {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
@@ -128,7 +128,7 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
                 CollectionTab.HOME -> {}
                 CollectionTab.CARDS -> onCards?.invoke() ?: web(site + "#collection", null)
                 CollectionTab.SEARCH -> web(site + "#search", null)
-                CollectionTab.DECKS -> web(site + "#decks", null)
+                CollectionTab.DECKS -> onDecks?.invoke() ?: web(site + "#decks", null)
                 CollectionTab.SCAN -> web(site + "#scan", null)
             }
         }

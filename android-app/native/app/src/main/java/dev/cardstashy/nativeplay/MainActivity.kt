@@ -75,6 +75,8 @@ private const val LOBBY_LIVE = true
 
 /** Collection's native Cards tab. Off until Randall has seen its preview (PREVIEW-FIRST): Home's Cards tab opens the website's. */
 private const val NATIVE_CARDS = false
+/** Collection's native Decks tab (My decks). Off until Randall has seen its preview. */
+private const val NATIVE_DECKS = false
 
 private sealed interface Screen {
     data object Home : Screen
@@ -85,6 +87,8 @@ private sealed interface Screen {
     data object Collection : Screen
     /** Collection's Cards tab (its card list; the rest of its pages are still the website's). */
     data object CollectionCards : Screen
+    /** Collection's Decks tab (My decks; a deck page and the other tabs are still the website's). */
+    data object CollectionDecks : Screen
     /** Play's own collection (the Trunk) with its card view. */
     data object Trunk : Screen
     /** Play decks: the list, precons and Paste a list. */
@@ -285,12 +289,19 @@ private fun App(activity: MainActivity) {
             dev.cardstashy.nativeplay.ui.CollectionHomeRoute(onPlay = { if (trail.size > 1) back() else go(Screen.Home) }, onProfile = { go(Screen.SignIn) },
                 web = { url, press -> go(Screen.Web(url, press)) },
                 open = { url -> if (url.startsWith("https://") || url.startsWith("http://")) runCatching { activity.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))) } },
-                onCards = if (NATIVE_CARDS) ({ go(Screen.CollectionCards) }) else null)
+                onCards = if (NATIVE_CARDS) ({ go(Screen.CollectionCards) }) else null, onDecks = if (NATIVE_DECKS) ({ go(Screen.CollectionDecks) }) else null)
         }
         Screen.CollectionCards -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.CollectionCardsRoute(onPlay = { go(Screen.Home) }, onProfile = { go(Screen.SignIn) },
                 onHome = { if (trail.getOrNull(trail.size - 2) == Screen.Collection) back() else go(Screen.Collection) },
+                web = { url, press -> go(Screen.Web(url, press)) }, onDecks = if (NATIVE_DECKS) ({ go(Screen.CollectionDecks) }) else null)
+        }
+        Screen.CollectionDecks -> {
+            LaunchedEffect(Unit) { activity.inGame(false) }
+            dev.cardstashy.nativeplay.ui.CollectionDecksRoute(onPlay = { go(Screen.Home) }, onProfile = { go(Screen.SignIn) },
+                onHome = { if (trail.getOrNull(trail.size - 2) == Screen.Collection) back() else go(Screen.Collection) },
+                onCards = { if (NATIVE_CARDS) go(Screen.CollectionCards) else go(Screen.Web("https://cardstashy.com/#collection", null)) },
                 web = { url, press -> go(Screen.Web(url, press)) })
         }
         is Screen.Web -> { LaunchedEffect(s.url) { activity.inGame(false, play = s.url.contains("planeswalk")) }; CollectionScreen(onPlay = { back() }, url = s.url, press = s.press) }

@@ -46,7 +46,7 @@ private object CardsCache {
  * Edit, Got it), the card page, Binders, Value, Select and the ⋯ menu still open the website's page, which does it there.
  */
 @Composable
-fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, web: (url: String, press: String?) -> Unit) {
+fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, web: (url: String, press: String?) -> Unit, onDecks: (() -> Unit)? = null) {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
@@ -115,7 +115,7 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
                 CollectionTab.HOME -> onHome()
                 CollectionTab.CARDS -> {}
                 CollectionTab.SEARCH -> web(site + "#search", null)
-                CollectionTab.DECKS -> web(site + "#decks", null)
+                CollectionTab.DECKS -> onDecks?.invoke() ?: web(site + "#decks", null)
                 CollectionTab.SCAN -> web(site + "#scan", null)
             }
         }

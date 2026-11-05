@@ -140,4 +140,42 @@ class CollectionEngineTest {
         val out = File(System.getProperty("repoRoot"), "android-app/native/app/build/shot-art/home").apply { mkdirs() }
         File(out, "collection-cards.json").writeText(CollectionEngine.cards("mtg", JsonObject().apply { addProperty("q", ""); addProperty("sort", "recent"); addProperty("filter", "all") }).toString())
     }
+
+    /** views.js decks() → My decks through the engine: four decks over the sample printings; writes the shot fixture. */
+    @Test fun decksModel() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        val prints = JsonParser.parseString(javaClass.classLoader!!.getResource("collection/printings.json")!!.readText()).asJsonArray.map { it.asJsonObject }
+        val lots = JsonArray(); val printings = JsonObject(); val catalog = JsonObject()
+        prints.forEachIndexed { i, c ->
+            val name = c["name"].asString
+            printings.add(c["id"].asString, c); catalog.add(name.lowercase(), c)
+            lots.add(JsonObject().apply {
+                addProperty("id", "l${i + 1}"); addProperty("name", name); addProperty("qty", if (name == "Swamp") 12 else if (name == "Lightning Bolt") 4 else 1); addProperty("printingId", c["id"].asString)
+                addProperty("set", c["set"].asString); addProperty("collectorNumber", c["collector_number"].asString); addProperty("finish", "nonfoil")
+                addProperty("condition", "Near Mint"); addProperty("language", "en"); addProperty("printingVerified", true); add("raw", JsonObject())
+            })
+        }
+        fun rows(vararg r: Pair<Int, String>) = r.joinToString(",") { (q, n) -> """{"name":${com.google.gson.JsonPrimitive(n)},"qty":$q}""" }
+        val decks = """[
+            {"id":"d1","name":"Goblin Horde","format":"commander","commander":"Krenko, Mob Boss","cards":[${rows(1 to "Krenko, Mob Boss", 1 to "Goblin Instigator", 1 to "Sol Ring", 1 to "Arcane Signet", 1 to "Lightning Bolt")}]},
+            {"id":"d2","name":"Izzet Tempo","format":"modern","cards":[${rows(4 to "Ragavan, Nimble Pilferer", 4 to "Lightning Bolt", 4 to "Counterspell", 2 to "Talrand, Sky Summoner")}],"side":[${rows(2 to "Counterspell")}]},
+            {"id":"d3","name":"Mono Black","format":"standard","cards":[${rows(4 to "Sheoldred, the Apocalypse", 20 to "Swamp")}]},
+            {"id":"d4","name":"Talrand Spells","format":"commander","commander":"Talrand, Sky Summoner","cards":[${rows(1 to "Talrand, Sky Summoner", 1 to "Counterspell", 1 to "The One Ring", 1 to "Sol Ring")}]}]"""
+        val ws = JsonParser.parseString("""{"version":3,"wishlist":[],"notes":[],"collection":$lots,"printings":$printings,"decks":$decks}""").asJsonObject
+        CollectionEngine.load(ws, catalog.toString())
+        val m = CollectionEngine.decks("mtg")
+        val tiles = m.getAsJsonArray("tiles").map { it.asJsonObject }
+        println("DECKS ${m["title"]} actions=${m["actions"].asJsonArray.map { it.asJsonObject["label"] }} tabs=${m["tabs"].asJsonArray.map { it.asJsonObject["label"] }} tools=${m["tools"].asJsonArray.map { it.asJsonObject["label"] }}")
+        tiles.forEach { t -> println("  ${t["tier"]} ${t["name"]} | ${t["line"]} | ${t["format"]} | ${t["power"]} | ${t["owned"]} ${t["find"]} ${t["bar"]}") }
+        assertEquals("Decks", m["title"].asString)
+        assertEquals(listOf("War Chest", "Import", "New"), m["actions"].asJsonArray.map { it.asJsonObject["label"].asString })
+        assertEquals(4, tiles.size)
+        assertEquals("Commander", tiles[0]["format"].asJsonObject["name"].asString)
+        assertTrue(tiles.all { it["cover"].isJsonObject })
+        // The site's own deck search (I.shelfSearch).
+        assertEquals(listOf("Talrand Spells"), CollectionEngine.decks("mtg", JsonObject().apply { addProperty("q", "talrand") }).getAsJsonArray("tiles").map { it.asJsonObject["name"].asString })
+        val out = File(System.getProperty("repoRoot"), "android-app/native/app/build/shot-art/home").apply { mkdirs() }
+        File(out, "collection-decks.json").writeText(CollectionEngine.decks("mtg", JsonObject().apply { addProperty("q", "") }).toString())
+    }
 }

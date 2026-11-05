@@ -18,7 +18,7 @@ import {createScryfallClient} from 'WEB/scryfall-client.js';
 import {loadMeta, metaState} from 'WEB/meta.js';
 import {loadCommunity, communitySlides} from 'WEB/community-feed.js';
 import {loadPulse} from 'WEB/news-pulse.js';
-import {collection as collectionPage} from 'WEB/views.js';
+import {collection as collectionPage, decks as decksView} from 'WEB/views.js';
 import {ICON} from 'WEB/icons.js';
 
 // app.js:193-198, verbatim.
@@ -93,7 +93,7 @@ function tree(html) {
   }
   return root;
 }
-const classes = n => (n.attrs?.class || '').split(/\s+/);
+const classes = n => (n?.attrs?.class || '').split(/\s+/);
 const all = (n, ok, out = []) => { for (const k of n?.kids || []) { if (k.tag && ok(k)) out.push(k); all(k, ok, out); } return out; };
 const one = (n, ok) => all(n, ok)[0] || null;
 const cls = c => n => classes(n).includes(c);
@@ -167,13 +167,14 @@ function loadToday(game) {
 
 // An inline site icon (icons.js actionIcon / importance.js emblemIcon), as drawing items the app paints itself: the svg's own
 // shapes, strokes and gradients, with currentColor left for the caller (the button's colour).
-function icon(svg) {
+function icon(svg, css = {}) {
   if (!svg) return null;
   const num = v => v === undefined || v === '' ? undefined : Number(v);
   const grads = {};
   for (const g of all(svg, tagIs('lineargradient'))) grads[g.attrs.id] = {x1: num(g.attrs.x1) ?? 0, y1: num(g.attrs.y1) ?? 0, x2: num(g.attrs.x2) ?? 1, y2: num(g.attrs.y2) ?? 0,
     stops: all(g, tagIs('stop')).map(s => [num(String(s.attrs.offset || '0').replace('%', '')) / (String(s.attrs.offset || '').includes('%') ? 100 : 1), s.attrs['stop-color'] || '#000'])};
-  const base = {fill: svg.attrs.fill ?? 'currentColor', stroke: svg.attrs.stroke ?? 'none', sw: num(svg.attrs['stroke-width']) ?? 1, cap: svg.attrs['stroke-linecap'] || 'butt', join: svg.attrs['stroke-linejoin'] || 'miter'};
+  // [css]: what a stylesheet rule sets on this svg (e.g. .wc-open svg strokes an outline), over its own attributes.
+  const base = {fill: css.fill ?? svg.attrs.fill ?? 'currentColor', stroke: css.stroke ?? svg.attrs.stroke ?? 'none', sw: css.sw ?? num(svg.attrs['stroke-width']) ?? 1, cap: css.cap || svg.attrs['stroke-linecap'] || 'butt', join: css.join || svg.attrs['stroke-linejoin'] || 'miter'};
   const paint = (n, inh) => ({fill: n.attrs.fill ?? inh.fill, stroke: n.attrs.stroke ?? inh.stroke, sw: num(n.attrs['stroke-width']) ?? inh.sw, cap: n.attrs['stroke-linecap'] || inh.cap, join: n.attrs['stroke-linejoin'] || inh.join});
   const items = [];
   const walk = (n, inh) => { for (const k of n.kids || []) { if (!k.tag || k.tag === 'defs') continue; const p = paint(k, inh), a = k.attrs;
@@ -250,6 +251,46 @@ function cardsPage(game, o = {}) {
     glyphs: Object.fromEntries(["minus", "plus", "more", "heart"].map(k => [k, icon(svgIn(tree(ICON[k])))]))};
 }
 
+// icons.js decorateGlyphs: a label that starts with one of these and a space wears that icon in its place (LEAD, as the site has it).
+const LEAD = { "▲": "warn", "●": "stop", "⚔": "sword", "☠": "poison", "🎲": "random", "⚒": "build", "✧": "ideas", "🏆": "trophy", "⇄": "compare", "♡": "heart", "♥": "heartOn", "＋": "plus", "+": "plus", "↥": "import", "↓": "export", "⟳": "refresh", "↻": "flip", "⧉": "copy", "🔗": "link", "🖨": "print", "📷": "camera", "◈": "pack", "☆": "bookmark", "▦": "collection", "📖": "book", "◷": "history", "🛒": "bag", "⌕": "search", "☑": "pick", "⚠": "warn", "🖌": "brush", "✓": "check", "←": "back", "‹": "back", "▧": "scan" };
+const glyph = s => { const m = /^(\s*)(\S)\uFE0F?[ \u00a0](?=\S)/u.exec(s); return m && LEAD[m[2]] && ICON[LEAD[m[2]]] ? {icon: icon(svgIn(tree(ICON[LEAD[m[2]]]))), label: s.slice(m[0].length)} : {icon: null, label: s}; };
+// style.css .wc-open svg: an outline, 1.8 wide, round ends.
+const WC_SVG = {fill: 'none', stroke: 'currentColor', sw: 1.8, cap: 'round', join: 'round'};
+const button = b => { const g = glyph(text(b)); return {label: g.label, act: b.attrs['data-act'] || '', ghost: cls('ghost')(b), chest: cls('wc-open')(b), aria: b.attrs['aria-label'] || '', icon: icon(svgIn(b), cls('wc-open')(b) ? WC_SVG : {}) || g.icon}; };
+const widthOf = n => Number((/width:\s*([\d.]+)%/.exec(n?.attrs?.style || '') || [])[1]) || 0;
+
+// views.js deckTile: cover art, format chip and its emblem, the deck box (power.js / deck-box.js), colour identity, name, size line,
+// power chip, owned share and what is left to find, and the owned bar.
+function deckTileModel(n) {
+  const to = n.attrs['data-to'] || '', fmt = one(n, cls('deck-format-emblem')), box = one(n, cls('deck-box')), body = one(n, cls('tile-body')), chip = one(n, cls('power-chip'));
+  const owned = one(n, cls('tile-owned')), find = one(n, cls('tile-find')), em = text(one(chip, tagIs('em')));
+  const cover = one(one(n, cls('tile-art')), tagIs('img'));
+  // ui.js img / tierRing: the cover card's price tier rings the art.
+  return {id: decodeURIComponent(to.replace(/^#deck\//, '')), to, wide: cls('wide')(n), cover: picture(cover), tier: cover?.attrs['data-tier'] || '', tierColor: ((/--tier:\s*([^;]+)/.exec(cover?.attrs.style || '') || [])[1] || '').trim(),
+    format: {name: text(fmt), icon: icon(svgIn(fmt))},
+    box: box && {color: ((/--deck-box-color:\s*([^;]+)/.exec(box.attrs.style || '') || [])[1] || '').trim(), cards: all(one(box, cls('deck-box-cards')), tagIs('img')).map(i => i.attrs.src || '')},
+    dots: all(one(n, cls('dots')), tagIs('img')).map(i => ({src: i.attrs.src || '', alt: i.attrs.alt || ''})),
+    name: text(one(body, tagIs('b'))), line: text(one(body, tagIs('small'))),
+    power: chip && {value: em, label: text(chip).slice(em.length).trim(), level: ((/\bp-(hi|mid|lo)\b/.exec(chip.attrs.class || '') || [])[1]) || 'mid', title: chip.attrs.title || ''},
+    owned: text(one(owned, tagIs('em'))), ownedText: text(owned).slice(text(one(owned, tagIs('em'))).length).trim(),
+    find: text(one(find, tagIs('em'))), findText: text(find).slice(text(one(find, tagIs('em'))).length).trim(),
+    bar: widthOf(one(one(body, cls('bar')), tagIs('span'))) / 100};
+}
+
+// views.js decks(), My decks: the page head, its tabs and tools, and every deck as deckTile draws it. [o] = {q} as I.shelfSearch sets it.
+function decksPage(game, o = {}) {
+  const ui = S.ui;
+  ui.decksTab = 'mine'; if (o.q !== undefined) ui.q.shelf = String(o.q);
+  const t = tree(decksView()), head = one(t, cls('page-head')), empty = one(t, cls('empty')), search = one(one(t, cls('toolbar')), tagIs('input')), list = one(t, x => x.attrs.id === 'shelfList');
+  return {game, title: text(one(head, tagIs('h1'))), actions: all(one(head, cls('head-actions')), tagIs('button')).map(button),
+    tabs: all(one(t, cls('seg')), tagIs('button')).map(b => ({key: b.attrs['data-id'], label: text(b), on: b.attrs['aria-selected'] === 'true', icon: icon(svgIn(b))})),
+    tools: all(one(t, cls('random-tools')), tagIs('button')).map(button),
+    search: search && {value: search.attrs.value || '', placeholder: search.attrs.placeholder || '', label: search.attrs['aria-label'] || ''},
+    tiles: all(t, x => cls('deck-tile')(x)).map(deckTileModel),
+    none: list ? text(one(list, x => x.tag === 'p')) : '',
+    empty: empty && {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p'))), mark: text(one(empty, cls('empty-mark'))), actions: all(empty, tagIs('button')).map(button)}};
+}
+
 let job = 0, status = {busy: false, step: '', error: null};
 const json = v => JSON.stringify(v);
 globalThis.Collection = {
@@ -286,6 +327,8 @@ globalThis.Collection = {
   // views.js collection(): the Cards tab, [optsJson] = {sort, direction, filter, q, limit} as the site's controls set them.
   cards(game, optsJson) { return json(cardsPage(game, optsJson ? JSON.parse(optsJson) : {})); },
   // One of the page's controls, as the site handles it (cardsAct), then the page again.
+  // views.js decks(), My decks; [optsJson] = {q} (I.shelfSearch).
+  decks(game, optsJson) { return json(decksPage(game, optsJson ? JSON.parse(optsJson) : {})); },
   cardsDo(game, kind, value) { if (!cardsAct[kind]) throw Error('unknown Cards control ' + kind); cardsAct[kind](value); return json(cardsPage(game)); },
   home(game) {
     const st = S.state, value = collectionValue(st.collection, S.catalog, st.printings, st.decks);

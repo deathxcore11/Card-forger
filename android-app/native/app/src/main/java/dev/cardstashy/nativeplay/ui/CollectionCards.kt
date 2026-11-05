@@ -217,7 +217,7 @@ private val FoilInk = Color(0xFF9FD7F0)
 private fun sans(size: Float, weight: Int = 400, color: Color = Ink, lh: Float = 1.45f, ls: Float = 0f) =
     TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight(weight), fontSize = size.sp, lineHeight = (size * lh).sp, letterSpacing = ls.sp, color = color)
 
-private fun cssColor(v: String, current: Color): Color? {
+internal fun cssColor(v: String, current: Color): Color? {
     val s = v.trim()
     if (s.isEmpty() || s == "none" || s == "transparent") return null
     if (s == "currentColor") return current
@@ -272,7 +272,7 @@ private fun SiteSvg.vector(color: Color, stroke: Float? = null): ImageVector {
 }
 
 @Composable
-private fun SiteIcon(icon: SiteSvg?, size: Dp, color: Color, modifier: Modifier = Modifier, stroke: Float? = null, filled: Boolean = false) {
+internal fun SiteIcon(icon: SiteSvg?, size: Dp, color: Color, modifier: Modifier = Modifier, stroke: Float? = null, filled: Boolean = false) {
     if (icon == null) return
     // [filled]: a rule like .want-tag svg { fill: currentColor } over an outline icon.
     val v = remember(icon, color, stroke, filled) { (if (filled) SiteSvg(icon.vb, icon.items.map { SiteSvg.Item(it.t, it.d, it.x, it.y, it.w, it.h, it.r, it.rx, it.ry,
@@ -311,7 +311,7 @@ private fun CardsPage(m: CollectionCardsModel, top: @Composable (tabs: (@Composa
             Column(Modifier.fillMaxWidth().padding(horizontal = gutter).padding(top = if (wide) 16.dp else 10.dp)) {
                 if (!wide) GameTabs(m.game, act.game, compact = true, Modifier.align(Alignment.CenterHorizontally).widthIn(max = 280.dp).padding(bottom = 12.dp))
                 Hero(m, act, wide)
-                Tabs(m.tabs, act)
+                CollTabs(m.tabs, act.tab)
                 if (m.emptyTitle != null) Empty(m, act)
                 else {
                     Summary(m.summary)
@@ -407,8 +407,9 @@ private fun HeroActions(m: CollectionCardsModel, act: CollectionCardsActions, wi
 
 // ---------------------------------------------------------------- Cards / Binders / Value
 
+/** ui.js segmented(): Collection's Cards / Binders / Value, Decks' My decks / Ideas / Meta decks. */
 @Composable
-private fun Tabs(tabs: List<CollTab>, act: CollectionCardsActions) {
+internal fun CollTabs(tabs: List<CollTab>, onTab: (String) -> Unit) {
     if (tabs.isEmpty()) return
     Row(Modifier.fillMaxWidth().padding(vertical = 12.dp).drawBehind {
         drawLine(GlassLine, Offset(0f, size.height - .5f), Offset(size.width, size.height - .5f), 1.dp.toPx())
@@ -422,7 +423,7 @@ private fun Tabs(tabs: List<CollTab>, act: CollectionCardsActions) {
                         topLeft = Offset.Zero, size = size)
                     drawRect(Brush.horizontalGradient(.18f to Color.Transparent, .5f to GoldC, .82f to Color.Transparent), Offset(0f, size.height - 2.dp.toPx()), Size(size.width, 2.dp.toPx()))
                 }
-            }.clickable { if (!on) act.tab(t.key) }.semantics { role = Role.Tab }.padding(horizontal = 6.dp, vertical = 8.dp),
+            }.clickable { if (!on) onTab(t.key) }.semantics { role = Role.Tab }.padding(horizontal = 6.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
                 SiteIcon(t.icon, 16.dp, if (on) Ink else Mute.copy(alpha = .75f))
                 Text(t.label, maxLines = 1, style = sans(13.5f, if (on) 750 else 650, if (on) Ink else Mute, ls = -.135f))
@@ -522,7 +523,7 @@ private val LOT_BG = Brush.linearGradient(listOf(Color(0x0BFFFFFF), Color(0x00FF
  * A CSS outer box-shadow: drawn only outside the rounded box (box-shadow never shows through a see-through background, which
  * an elevation shadow would), [blur] and [spread] in dp as CSS gives them.
  */
-private fun DrawScope.outerShadow(color: Color, blur: Float, dy: Float, spread: Float, corner: Float) {
+internal fun DrawScope.outerShadow(color: Color, blur: Float, dy: Float, spread: Float, corner: Float) {
     val r = corner.dp.toPx(); val sp = spread.dp.toPx()
     val outline = Path().apply { addRoundRect(RoundRect(Rect(Offset.Zero, size), CornerRadius(r))) }
     clipPath(outline, androidx.compose.ui.graphics.ClipOp.Difference) {
