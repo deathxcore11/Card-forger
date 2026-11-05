@@ -117,6 +117,45 @@ object CollectionEngine {
     suspend fun deckDo(game: String, id: String, kind: String, value: String = ""): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.deckDo(${str(game)}, ${str(id)}, ${str(kind)}, ${str(value)})") as String).asJsonObject }
 
+    /** views.js cardSheet(), a card's page, as a model; [opts] = {name, entry, deck} as the tapped tile has them. */
+    suspend fun card(game: String, opts: JsonObject): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.card(${str(game)}, ${str(opts.toString())})") as String).asJsonObject }
+
+    /** One card-page control as app.js handles it (tab, face, finish, print, source, more), then the page again. */
+    suspend fun cardDo(kind: String, value: String = ""): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.cardDo(${str(kind)}, ${str(value)})") as String).asJsonObject }
+
+    /** Starts the open card page's lookups (app.js loadCardExtras, its printings, the guide and the set index). */
+    suspend fun cardLoad() = on { q -> q.evaluate("Collection.cardLoad()"); Unit }
+
+    /**
+     * Carries the bundle's open requests and timers until it goes quiet or [maxMs] passes; after each round in which an
+     * answer landed, [model] is read again and handed to [onModel] (the page draws what has arrived so far).
+     */
+    suspend fun settle(maxMs: Long = 30_000, model: String? = null, onModel: (JsonObject) -> Unit = {}) {
+        val until = System.currentTimeMillis() + maxMs
+        while (System.currentTimeMillis() < until) {
+            val (p, m) = on { q ->
+                var landed = false
+                while (true) { val a = answers.poll() ?: break; landed = true; q.evaluate("__host.answer(${a.first}, ${a.second}, ${str(a.third.first)}, ${str(a.third.second)})") }
+                val p = JsonParser.parseString(q.evaluate("__host.pump(${System.currentTimeMillis()})") as String).asJsonObject
+                p to if (model != null && (landed || p.get("ran").asInt > 0)) JsonParser.parseString(q.evaluate(model) as String).asJsonObject else null
+            }
+            for (r in p.getAsJsonArray("requests")) send(r.asJsonObject)
+            m?.let(onModel)
+            // Quiet: nothing in flight and no timer due soon (a far timer, such as a cache's expiry, does not hold the page).
+            val nt = p.get("nextTimer")?.takeIf { it.isJsonPrimitive }?.asLong
+            if (p.get("open").asInt == 0 && p.getAsJsonArray("requests").size() == 0 && answers.isEmpty() && (nt == null || nt - System.currentTimeMillis() > 1500)) break
+            if (p.get("ran").asInt == 0 && answers.isEmpty()) {
+                val next = p.get("nextTimer")?.takeIf { it.isJsonPrimitive }?.asLong
+                delay(if (next != null) (next - System.currentTimeMillis()).coerceIn(1, 25) else 15)
+            }
+        }
+    }
+    /** The open card page as a model again (after [settle]); empty when none is open. */
+    const val CARD_MODEL = "Collection.cardModel()"
+    suspend fun cardModel(): JsonObject = on { q -> JsonParser.parseString(q.evaluate(CARD_MODEL) as String).asJsonObject }
+
     /** search-hints.js: the search field's prompt and the names and questions it fades through. */
     suspend fun hints(game: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.hints(${str(game)})") as String).asJsonObject }
 

@@ -146,5 +146,5 @@ fun CardFace(painter: androidx.compose.ui.graphics.painter.Painter, look: Foil.L
     }
 }
 
-private fun Modifier.graphicsLayerOffscreen() = this.graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
-private fun Modifier.drawWithBrush(brush: Brush) = this.drawWithContent { drawContent(); drawRect(brush, blendMode = BlendMode.SrcIn) }
+internal fun Modifier.graphicsLayerOffscreen() = this.graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+internal fun Modifier.drawWithBrush(brush: Brush) = this.drawWithContent { drawContent(); drawRect(brush, blendMode = BlendMode.SrcIn) }

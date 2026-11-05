@@ -559,7 +559,7 @@ private fun DeckTabs(tabs: List<CollTab>, screen: Dp, onTab: (String) -> Unit) {
  * ([grow]). FlowRow's weights break on the shortest width instead, which splits "Upgrade lab" where the site wraps it whole.
  */
 @Composable
-private fun FlexWrap(modifier: Modifier, gap: Dp, grow: Boolean, content: @Composable () -> Unit) {
+internal fun FlexWrap(modifier: Modifier, gap: Dp, grow: Boolean, content: @Composable () -> Unit) {
     androidx.compose.ui.layout.Layout(content, modifier) { ms, c ->
         val g = gap.roundToPx(); val maxW = c.maxWidth
         val natural = ms.map { it.maxIntrinsicWidth(c.maxHeight).coerceAtMost(maxW) }

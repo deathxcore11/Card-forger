@@ -2,7 +2,7 @@
 // (views.js home(), home-ui.js) around the web modules, bundled unchanged for QuickJS (CollectionEngine.kt).
 // Nothing is decided here: every number, list and order comes from the site's functions; this file only calls them
 // and hands their models to the app instead of HTML.
-import {S, blank, meta, cacheCard} from 'WEB/store.js';
+import {S, blank, meta, cacheCard, slim, inv} from 'WEB/store.js';
 import {cardKey} from 'WEB/core.js';
 import {validateWorkspace} from 'WEB/confidence.js';
 import {normalizeHomeDeckActivity} from 'WEB/home-deck-activity.js';
@@ -11,15 +11,22 @@ import {homeValueModel, homeMetaKey, homeMetaSlides, homeMetaArticle, homeMetaCa
 import {heroFor, loadHero, homeHero, homeToday} from './tcg-daily-hero.mjs';
 import {dailyDetails, todaySetMarkup} from 'WEB/home-today.js';
 import {hintPool, SEARCH_PROMPT} from 'WEB/search-hints.js';
-import {useMyPrices} from 'WEB/mtg-tcgprice.js';
+import {useMyPrices, ensureTcgPrices} from 'WEB/mtg-tcgprice.js';
 import {formatOf} from 'WEB/formats.js';
-import {art} from 'WEB/ui.js';
+import {art, esc, registerSetIcons} from 'WEB/ui.js';
 import {createScryfallClient} from 'WEB/scryfall-client.js';
-import {loadMeta, metaState} from 'WEB/meta.js';
+import {loadMeta, metaState, allCachedMeta} from 'WEB/meta.js';
 import {mtgMetaKey} from 'WEB/power.js';
 import {loadCommunity, communitySlides} from 'WEB/community-feed.js';
 import {loadPulse} from 'WEB/news-pulse.js';
-import {collection as collectionPage, decks as decksView, deckPage as deckView} from 'WEB/views.js';
+import {collection as collectionPage, decks as decksView, deckPage as deckView, cardSheet as cardView} from 'WEB/views.js';
+import {loadMagicPrintingPage, mergeMagicCards} from 'WEB/catalog-tools.js';
+import {magicOwnedDetail, magicOwnedContext, magicOwnedCurrent} from 'WEB/magic-owned-detail.js';
+import {selectPreviewFinish} from 'WEB/finish-preview.js';
+import {selectedFinish} from 'WEB/pricing-presentation.js';
+import {quoteModel, recordQuote} from 'WEB/workbench-ui.js';
+import {playedAlongside} from 'WEB/guide.js';
+import {mtgPairQueries, rankPairs, edhPop} from 'WEB/pairing.js';
 import {ICON} from 'WEB/icons.js';
 
 // app.js:193-198, verbatim.
@@ -394,6 +401,299 @@ function deckPageModel(game, id) {
     glyphs: Object.fromEntries(["minus", "plus", "more", "back"].map(k => [k, icon(svgIn(tree(ICON[k])))]))};
 }
 
+// ---------------------------------------------------------------- A card's page (views.js cardSheet, the Collection lens)
+// app.js A.card opens the sheet on a context (S.ui.sheetCtx); loadCardExtras, loadMagicVersions, mtgGuideLoad and the
+// rulings lookup fill it in the background; A.cardTab, A.flipFace, A.cardFinishPreview, A.viewPrint and A.priceSource
+// change it. Ported here as the site has them, with the sheet's redraw left to the app (refreshSheet is its repaint).
+let sheet = null;
+const still = ctx => S.ui.sheetCtx === ctx;
+// app.js A.card (3554-3615): [o] = {name, entry, deck}, as the tapped tile's data-name / data-entry / data-deck.
+function cardOpen(o) {
+  const name = String(o.name || ''), entryId = String(o.entry || ''), deckId = o.deck ? String(o.deck) : null, as = JSON.stringify([name, entryId, deckId]);
+  if (sheet && sheet.openedAs === as && S.ui.sheetCtx === sheet) return sheet;
+  const ctx = {type: 'card', name, entryId, deckId, random: false, openedAs: as};
+  sheet = S.ui.sheetCtx = ctx;
+  if (entryId) {
+    const owned = magicOwnedDetail(S.state, entryId, name);
+    if (!owned.identity) { ctx.ownedNotice = owned.reason; ctx.blocked = true; return ctx; }
+    Object.assign(ctx, magicOwnedContext(owned));
+    if (owned.status === 'loading') ctx.ownedLoading = owned.identity;
+    else if (owned.status !== 'ready') ctx.blocked = true;
+  }
+  return ctx;
+}
+// The saved copy's exact printing, fetched when the device has not cached it (A.card's entry branch).
+async function ownedLoad(ctx) {
+  const id = ctx.ownedLoading; if (!id) return;
+  try {
+    const full = await api('/cards/' + encodeURIComponent(id.printingId));
+    if (!still(ctx)) return;
+    if (!magicOwnedCurrent(S.state, id)) { ctx.ownedNotice = 'This saved copy changed. Reopen it from your collection.'; ctx.blocked = true; return; }
+    const owned = magicOwnedDetail(S.state, ctx.entryId, ctx.name, full);
+    if (owned.status !== 'ready') throw Error(owned.reason);
+    Object.assign(ctx, magicOwnedContext({...owned, card: slim({...full, full: true, checkedAt: new Date().toISOString()})}));
+  } catch (e) { if (still(ctx)) { ctx.ownedNotice = e.message; ctx.blocked = true; } }
+  finally { delete ctx.ownedLoading; }
+}
+// app.js loadCardExtras (3616-3660): the full card (flavor text, artist), then its printings.
+async function cardExtras(ctx) {
+  if (ctx.detailsBusy) return;
+  let c = ctx.print || meta(ctx.name);
+  const owned = ctx.ownedDetail, requestedPrint = ctx.print?.id, ok = () => still(ctx) && (!requestedPrint || ctx.print?.id === requestedPrint) && (!owned || ctx.ownedDetail === owned && magicOwnedCurrent(S.state, owned));
+  ctx.detailsBusy = true;
+  const oldDetailsError = ctx.detailsError;
+  ctx.detailsError = '';
+  if (!ctx.prints || ctx.printsError === oldDetailsError) ctx.printsError = '';
+  try {
+    if (c?.id && !c.full) {
+      const full = await api('/cards/' + encodeURIComponent(c.id));
+      if (!ok()) { ctx.detailsError = ctx.printsError = 'Extra details paused. Retry to finish loading this card.'; return; }
+      if (full.id !== c.id) throw Error('The card database returned a different printing. Retry this card’s details.');
+      if (owned) { const exact = magicOwnedDetail(S.state, owned.entryId, ctx.name, full); if (exact.status !== 'ready') throw Error(exact.reason); }
+      if (ctx.print) { c = slim({...full, full: true, checkedAt: new Date().toISOString()}); if (ctx.print.id === c.id) ctx.print = c; }
+      else c = cacheCard({...full, full: true}, [ctx.name]);
+    }
+    if (!c?.oracle_id || !ok()) return;
+    if (!Array.isArray(ctx.prints)) await magicVersions(ctx);
+  } catch (e) { ctx.detailsError = ctx.printsError = e.message; }
+  finally { ctx.detailsBusy = false; }
+}
+// app.js loadMagicVersions (3662-3698), first page or the next one.
+async function magicVersions(ctx, next = false) {
+  if (ctx?.type !== 'card' || ctx.printsBusy || (next && !ctx.printsNext)) return;
+  const card = ctx.print || meta(ctx.name), cursor = next ? ctx.printsNext : null;
+  const token = Symbol('magic-versions');
+  ctx.printsRequest = token; ctx.printsBusy = true; ctx.printsError = '';
+  try {
+    const page = await loadMagicPrintingPage(card, {cursor, request: api});
+    if (!still(ctx) || ctx.printsRequest !== token) return;
+    const pages = [...(next ? ctx.printsPages || [] : []), ...(cursor ? [cursor] : [])];
+    const repeated = page.nextCursor && pages.includes(page.nextCursor);
+    ctx.prints = mergeMagicCards(next ? ctx.prints || [] : [], page.cards, {printings: true});
+    ctx.printsNext = repeated ? null : page.nextCursor;
+    ctx.printsComplete = !repeated && page.complete;
+    ctx.printsTotal = page.total;
+    ctx.printsPages = pages;
+    ctx.pricesAt = new Date().toISOString();
+    if (repeated) ctx.printsError = 'The card database repeated a printing page. Showing the verified printings loaded so far.';
+    ensureTcgPrices(page.cards);
+  } catch (e) { if (still(ctx) && ctx.printsRequest === token) ctx.printsError = e.message; }
+  finally { if (ctx.printsRequest === token) { ctx.printsBusy = false; if (!still(ctx) && !ctx.prints) ctx.printsError = 'Printing lookup paused. Retry to load this card’s printings.'; } }
+}
+// app.js mtgGuideLoad (6159-6190), verbatim but for the redraw.
+async function mtgGuideLoad(c) {
+  if (!c) return;
+  const k = 'mtg:' + c.name;
+  S.ui.guide ||= {};
+  if (S.ui.guide[k]) return;
+  S.ui.guide[k] = {loading: true};
+  const qs = mtgPairQueries(c),
+    results = await Promise.all(qs.map((q) => api('/cards/search?' + new URLSearchParams({q: q.q, order: 'edhrec', unique: 'cards'})).catch(() => null))),
+    cands = [];
+  for (const r of results) for (const x of (r?.data || []).slice(0, 30)) {
+    cacheCard(x);
+    cands.push({card: x, pop: edhPop(x.edhrec_rank), owned: inv(x.name).owned > 0});
+  }
+  const al = playedAlongside('mtg', c, allCachedMeta(), 15);
+  for (const x of al.cards) {
+    const card = meta(x.name);
+    if (card) cands.push({card, lift: Math.max(0, x.share - x.overall), share: x.share, pop: edhPop(card.edhrec_rank), owned: inv(card.name).owned > 0});
+  }
+  if (rankPairs('mtg', c, cands).filter((x) => !x.fallback).length < 4) {
+    const id = (c.color_identity || []).join('') || 'c',
+      r = await api('/cards/search?' + new URLSearchParams({q: `id<=${id} -t:basic -!"${c.name.split(' // ')[0]}" ${/Land/.test(c.type_line || '') ? '' : '-t:land'}`, order: 'edhrec', unique: 'cards'})).catch(() => null);
+    for (const x of (r?.data || []).slice(0, 12)) {
+      cacheCard(x);
+      cands.push({card: x, pop: edhPop(x.edhrec_rank), owned: inv(x.name).owned > 0, fallback: true, why: `staple in its colors${x.edhrec_rank ? ` (EDHREC #${Number(x.edhrec_rank).toLocaleString()})` : ''}`});
+    }
+  }
+  const ranked = rankPairs('mtg', c, cands);
+  S.ui.guide[k] = {
+    cards: ranked.map((p) => ({name: p.card.name, image: p.card.image_uris?.small || p.card.card_faces?.[0]?.image_uris?.small || '', attrs: `data-act="card" data-name="${esc(p.card.name)}"`, reasons: p.reasons, score: p.score, fallback: p.fallback})),
+    note: ranked.length ? 'Ranked by how well they fit (what each card needs and gives), tournament pairings, popularity and what you own.' : results.some((r) => !r) ? 'Couldn’t reach Scryfall right now.' : 'No strong pairings found in its text or tournament lists.',
+  };
+}
+// app.js A.cardTab's lookups (5039-5084): the Play guide's pairings and official rulings, and the Prices tab's quote record.
+async function cardTabLoads(ctx) {
+  if (ctx.tab === 'guide') {
+    mtgGuideLoad(meta(ctx.name));
+    if (!ctx.rulings && !ctx.rulingsBusy) {
+      const c = ctx.print || meta(ctx.name);
+      ctx.rulingsBusy = true;
+      try { const r = await api('/cards/' + encodeURIComponent(c.id) + '/rulings'); if (still(ctx)) ctx.rulings = r.data || []; }
+      catch { if (still(ctx)) ctx.rulings = []; }
+      finally { ctx.rulingsBusy = false; }
+    }
+  }
+}
+// app.js loadSetIndex (617-656): the official set list (names, sizes, symbols), cached for a day; the site loads it on its
+// Collection and Sets pages, so a card opened from there names its set and counts the set's cards.
+const SET_INDEX = 'cardforge-sets-v1';
+async function loadSetIndex() {
+  const ui = S.ui.sets;
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem(SET_INDEX) || 'null'); } catch {}
+  if (cached?.sets?.length) { ui.list = cached.sets; ui.checkedAt = Number(cached.at) || 0; registerSetIcons(Object.fromEntries(cached.sets.map((x) => [x.code, x.icon]))); }
+  const fresh = cached?.sets?.length && Number(cached.at) > 0 && Date.now() >= cached.at && Date.now() - cached.at < 864e5;
+  if (ui.busy || fresh) return;
+  ui.busy = true; ui.error = '';
+  try {
+    const r = await api('/sets');
+    if (!Array.isArray(r.data) || !r.data.length || r.data.some(x => !x?.code || !x?.name)) throw Error('The source returned an empty or invalid set catalogue. Try again.');
+    const sets = r.data.map((x) => ({code: x.code, parent_set_code: x.parent_set_code || '', name: x.name, released_at: x.released_at || '', set_type: x.set_type, card_count: x.card_count, digital: !!x.digital, icon: x.icon_svg_uri}));
+    ui.list = sets; ui.checkedAt = Date.now();
+    registerSetIcons(Object.fromEntries(sets.map((x) => [x.code, x.icon])));
+    try { localStorage.setItem(SET_INDEX, JSON.stringify({at: ui.checkedAt, sets})); } catch {}
+  } catch (e) { ui.error = e.message + (ui.list.length ? ' Showing the last checked catalogue.' : ''); }
+  finally { ui.busy = false; }
+}
+// The sheet's own controls, as app.js handles them; the redraw is the app's.
+const cardAct = {
+  tab: v => {
+    const ctx = sheet; if (!['overview', 'meta', 'guide', 'prices', 'rulings', 'legal'].includes(v)) return;
+    ctx.tab = ['legal', 'rulings'].includes(v) ? 'guide' : v;
+    // The site records the quote it shows (workbench-ui.js recordQuote) in the account's market history; the app's
+    // copy of the workspace is not saved back, so this only lives for this visit.
+    if (ctx.tab === 'prices') { const c = ctx.print || meta(ctx.name); recordQuote(S.state, quoteModel('mtg', c, selectedFinish('mtg', c, ctx.priceFinish), ctx.priceEdition, ctx.priceYgoEdition)); }
+  },
+  face: () => { sheet.face = sheet.face ? 0 : 1; },
+  finish: v => {
+    const ctx = sheet, card = ctx.print || meta(ctx.name);
+    if (!selectPreviewFinish('mtg', card, ctx, v)) return;
+    if (ctx.ownedDetail && ctx.priceFinish !== magicOwnedDetail(S.state, ctx.entryId).finish) { ctx.entryId = ''; delete ctx.entry; delete ctx.ownedDetail; delete ctx.condition; delete ctx.language; }
+  },
+  // A.viewPrint (3699-3714): one of Overview's other printings.
+  print: v => {
+    const ctx = sheet; if (!ctx?.prints) return;
+    const print = ctx.prints[Number(v)]; if (!print) return;
+    ctx.print = print; ctx.setId = print.set || '';
+    ctx.priceFinish = selectedFinish('mtg', print, ctx.priceFinish);
+    ctx.entryId = ''; delete ctx.entry; delete ctx.ownedDetail; delete ctx.condition; delete ctx.language;
+    ctx.setVariant = ctx.priceFinish; ctx.face = 0;
+  },
+  source: v => { sheet.source = v; },
+  more: () => { const ctx = sheet; const c = ctx.print || meta(ctx.name); if (ctx.printsNext) magicVersions(ctx, true); else if (!c?.full) cardExtras(ctx); else magicVersions(ctx); },
+};
+
+// views.js cardSheet() read into a model, block by block as the site draws it.
+const styleVar = (n, v) => ((new RegExp('--' + v + ':\\s*([^;]+)').exec(n?.attrs?.style || '') || [])[1] || '').trim();
+const urlIn = s => (/url\(['"]?([^'")]+)['"]?\)/.exec(s || '') || [])[1] || '';
+const attrsOf = n => Object.fromEntries(Object.entries(n?.attrs || {}).filter(([k]) => k.startsWith('data-')).map(([k, v]) => [k.slice(5), v]));
+// A tap target: what it says, its icon (an svg inside, or a LEAD glyph) and the site's data-* attributes, so the app can hand the
+// same press to the site (or do it itself where it is native).
+const press = n => { if (!n) return null; const g = glyph(text(n)); const p = {label: g.label, icon: icon(svgIn(n)) || g.icon, act: n.attrs['data-act'] || '', data: attrsOf(n), href: n.attrs.href || '', aria: n.attrs['aria-label'] || '', title: n.attrs.title || '',
+  ghost: cls('ghost')(n), small: cls('small')(n), link: cls('link')(n), on: cls('on')(n) || n.attrs['aria-pressed'] === 'true', disabled: n.attrs.disabled !== undefined};
+  for (const k of Object.keys(p)) if (!p[k] || k === 'data' && !Object.keys(p[k]).length) delete p[k]; return p; };
+// Rules text with its symbols and rule words in order: {t} words, {sym} a mana symbol, {rule} a tappable rule word.
+const richRuns = n => { const out = []; const walk = (x, b, i) => { for (const k of x.kids || []) {
+  if (k.text !== undefined) { const t = k.text.replace(/\s+/g, ' '); if (t) { const last = out[out.length - 1]; if (last && last.t !== undefined && last.b === b && last.i === i) last.t += t; else out.push({t, b, i}); } }
+  else if (k.tag === 'img') out.push({sym: k.attrs.src || '', alt: k.attrs.alt || '', title: k.attrs.title || ''});
+  else if (k.tag === 'button' && cls('rule-word')(k)) out.push({rule: k.attrs['data-rule'] || '', label: text(k)});
+  else if (k.tag !== 'svg') walk(k, b || k.tag === 'b' || k.tag === 'strong', i || k.tag === 'i' || k.tag === 'em'); } };
+  walk(n || {kids: []}, false, false);
+  if (out[0]?.t !== undefined) out[0].t = out[0].t.replace(/^\s+/, ''); const z = out[out.length - 1]; if (z?.t !== undefined) z.t = z.t.replace(/\s+$/, '');
+  return out.filter(r => r.t === undefined || r.t); };
+// A guide or meta block, as a list of typed pieces in the order the site draws them.
+function blocks(sec) {
+  const out = [];
+  for (const k of sec?.kids || []) {
+    if (!k.tag) { const t = (k.text || '').trim(); if (t) out.push({kind: 'text', runs: [{t}]}); continue; }
+    if (k.tag === 'h3') { const sub = one(k, cls('muted')); out.push({kind: 'title', text: text({kids: (k.kids || []).filter(x => x !== sub)}), sub: text(sub)}); }
+    else if (k.tag === 'ol' || k.tag === 'ul') out.push({kind: k.tag === 'ol' ? 'steps' : 'list', items: all(k, tagIs('li')).map(li => ({runs: richRuns(li), foot: text(one(li, tagIs('small')))}))});
+    else if (cls('guide-along')(k)) out.push({kind: 'along', rows: all(k, cls('guide-along-row')).map(r => ({name: text(one(r, cls('ellip'))), pct: text(one(r, tagIs('b'))), fill: widthOf(one(r, tagIs('i'))) / 100, press: press(r)}))});
+    else if (cls('pair-list')(k)) out.push({kind: 'pairs', rows: all(k, cls('pair-row')).map(r => ({name: text(one(one(r, cls('pair-txt')), tagIs('b'))), why: text(one(one(r, cls('pair-txt')), tagIs('small'))), image: one(r, tagIs('img'))?.attrs.src || '',
+      score: text(one(r, cls('pair-score'))), owned: cls('owned')(r), press: press(r)}))});
+    else if (cls('guide-limits')(k)) out.push({kind: 'limits', rows: (k.kids || []).filter(x => x.tag).map(x => ({level: ['ok', 'warn', 'bad'].find(c => cls(c)(x)) || '', formats: text(one(x, tagIs('small'))), copies: text(one(x, tagIs('b')))}))});
+    else if (cls('guide-rulings')(k)) out.push({kind: 'rulings', head: text(one(k, cls('list-head'))), items: all(k, tagIs('li')).map(li => ({runs: richRuns(one(li, tagIs('p'))), source: text(one(li, tagIs('small')))})),
+      note: text(one(k, x => x.tag === 'p' && cls('muted')(x)))});
+    else if (cls('guide-roles')(k)) out.push({kind: 'roles', items: (k.kids || []).filter(x => x.tag).map(x => ({label: text(x), main: cls('main')(x)}))});
+    else if (cls('list')(k) && cls('compact')(k)) out.push({kind: 'rows', rows: all(k, cls('mini-row')).map(r => ({title: text(one(one(r, cls('ellip')), tagIs('b'))), line: text(one(one(r, cls('ellip')), tagIs('small'))), go: text(one(r, cls('link'))), press: press(r)}))});
+    else if (k.tag === 'p' && cls('list-head')(k)) out.push({kind: 'head', text: text(k)});
+    else if (k.tag === 'p' && cls('foot')(k)) out.push({kind: 'foot', text: text(k)});
+    else if (k.tag === 'p' && cls('eyebrow')(k)) out.push({kind: 'eyebrow', text: text(k)});
+    else if (k.tag === 'p') out.push({kind: 'text', runs: richRuns(k), muted: cls('muted')(k), small: cls('small')(k), lead: cls('guide-what')(k)});
+    else if (k.tag === 'div' && (cls('actions')(k) || cls('row')(k) || cls('guide-rule-links')(k) || cls('chips')(k))) out.push({kind: 'buttons', items: (k.kids || []).filter(x => x.tag === 'button' || x.tag === 'a').map(x => ({...press(x), chip: cls('chip')(x)}))});
+    else if (k.tag === 'details') out.push({kind: 'more', summary: text(one(k, tagIs('summary'))), blocks: blocks({kids: (k.kids || []).filter(x => x.tag !== 'summary')})});
+    else if (k.tag === 'section' || k.tag === 'div') out.push({kind: 'group', cls: k.attrs.class || '', blocks: blocks(k)});
+  }
+  return out;
+}
+function cardPageModel(ctx) {
+  if (!ctx) return {missing: true};
+  const c = ctx.print || meta(ctx.name);
+  if (ctx.blocked || !c) return {name: ctx.name, notice: ctx.ownedNotice || '', loading: !ctx.blocked, deck: ctx.deckId || ''};
+  const t = tree(cardView(c, ctx)), title = one(t, cls('cs-title')), typeP = one(title, cls('type-line')), owned = one(typeP, cls('card-owned-summary'));
+  const head = {art: one(one(t, cls('cs-hero')), cls('cs-art'))?.attrs.src || '', title: text(one(title, tagIs('h2'))),
+    type: text({kids: (typeP?.kids || []).filter(k => k !== owned)}), owned: owned ? {label: text(owned), aria: owned.attrs['aria-label'] || ''} : null,
+    mana: all(one(title, cls('mana')), tagIs('img')).map(i => ({src: i.attrs.src || '', alt: i.attrs.alt || '', title: i.attrs.title || ''})), back: !!one(one(t, cls('sheet-head')), x => x.attrs['data-act'] === 'sheetBack')};
+  const tabs = all(one(t, cls('cs-tabs')), tagIs('button')).map(b => ({key: b.attrs['data-tab'], label: text(b), on: cls('on')(b), icon: icon(svgIn(b))}));
+  const tab = tabs.find(x => x.on)?.key || 'overview';
+  // .cs-overview-head: emblems, the set and its progress, the quick price.
+  const oh = one(t, cls('cs-overview-head')), setB = one(oh, cls('card-set-summary')), setI = one(setB, cls('set-icon')), setName = one(one(setB, cls('card-set-identity')), tagIs('b'));
+  const prog = one(setB, cls('set-collection-progress')), bar = one(prog, x => x.attrs.role === 'progressbar'), fill = one(bar, tagIs('span'));
+  const qa = one(oh, cls('card-price-actions'));
+  const price = qa ? {buy: (b => b && {brand: text(one(b, cls('card-buy-brand'))), label: text({kids: (b.kids || []).filter(k => !cls('card-buy-brand')(k))}), href: b.attrs.href || '', title: b.attrs.title || '', aria: b.attrs['aria-label'] || ''})(one(qa, cls('card-buy-link'))),
+    ref: (b => b && {value: text(one(b, tagIs('strong'))), label: text(one(b, tagIs('span'))), finish: text(one(b, tagIs('small'))), press: press(b)})(one(qa, cls('card-price-reference'))),
+    mine: press(one(qa, cls('personal-price-edit'))), add: press(one(qa, cls('card-add-collection'))),
+    note: text(one(one(oh, cls('card-price-summary')), x => x.tag === 'p'))} : null;
+  const overviewHead = {
+    emblems: all(one(oh, cls('imp-chips')), cls('imp-chip')).map(x => ({kind: (classes(x).find(c => c.startsWith('imp-') && c !== 'imp-chip') || '').slice(4), icon: icon(svgIn(x)), title: text(one(x, tagIs('b'))), line: text(one(x, tagIs('small')))})),
+    set: setB ? {code: setB.attrs['data-code'] || '', act: setB.attrs['data-act'] || '', rarity: (classes(setI).find(c => c.startsWith('r-')) || 'r-common').slice(2), icon: urlIn(styleVar(setI, 'icon')), iconTitle: setI?.attrs.title || '',
+      name: text({kids: (setName?.kids || []).filter(k => !cls('set-go')(k))}), go: !!one(setName, cls('set-go')), line: text(one(one(setB, cls('card-set-identity')), tagIs('small'))),
+      progress: prog ? {eyebrow: text(one(prog, cls('eyebrow'))), label: text(one(one(one(prog, cls('set-progress-top')), tagIs('span')), x => x.tag === 'span' && !cls('eyebrow')(x))), pct: text(one(prog, tagIs('strong'))),
+        fill: Number(styleVar(fill, 'progress-to')) || 0, caption: text(one(prog, cls('set-progress-caption')))} : null} : null,
+    price};
+  // Overview: the card, its finishes, its other printings; then the rules text and what you do with it.
+  const ov = one(t, x => x.attrs.id === 'card-panel-overview'), stack = one(ov, cls('cd-art-stack')), cdImg = one(stack, cls('cd-img')), zoom = one(cdImg, cls('cd-zoom')), img = one(zoom, tagIs('img'));
+  let finishModel = null; try { finishModel = JSON.parse(cdImg?.attrs['data-finish-model'] || 'null'); } catch {}
+  const fp = one(stack, cls('finish-preview')), pp = one(stack, cls('card-printing-preview')), flip = one(stack, x => x.attrs['data-act'] === 'flipFace');
+  const card = {image: img?.attrs.src || '', sources: sources(img), tier: styleVar(img, 'tier'), tierKey: img?.attrs['data-tier'] || '', zoom: zoom ? {src: zoom.attrs['data-src'] || '', hi: zoom.attrs['data-hi'] || '', art: zoom.attrs['data-art'] || '', aria: zoom.attrs['aria-label'] || ''} : null,
+    finish: finishModel && {key: finishModel.key || '', label: finishModel.label || '', effect: finishModel.effect || cdImg?.attrs['data-finish-effect'] || ''},
+    flip: flip ? press(flip) : null,
+    finishes: fp ? {label: text(one(fp, x => cls('small')(x) && cls('muted')(x) && !cls('finish-choice-hint')(x))), chips: all(fp, cls('finish-choice-chip')).map(b => ({finish: b.attrs['data-finish'] || '', label: text(b), on: cls('on')(b),
+      swatch: (classes(one(b, cls('rarity-swatch'))).find(c => c.startsWith('rarity-swatch-')) || '').slice(14)})), foot: text(one(fp, cls('foot')))} : null,
+    profile: press(one(stack, cls('card-profile-photo'))),
+    printings: pp ? {title: text(one(pp, tagIs('h3'))), more: press(one(one(pp, cls('row')), tagIs('button'))),
+      rows: all(pp, cls('card-printing-mini')).map(b => ({i: Number(b.attrs['data-i']), picture: picture(one(b, tagIs('img'))), name: text(one(b, tagIs('b'))), num: text(one(b, tagIs('small'))), aria: b.attrs['aria-label'] || '', on: cls('on')(b) || b.attrs['aria-current'] !== undefined})),
+      notes: (pp.kids || []).filter(k => k.tag === 'p' && !cls('foot')(k)).map(k => ({text: text(k), retry: press(one(k, tagIs('button')))})), foot: text(one(pp, x => x.tag === 'p' && cls('foot')(x)))} : null,
+    printingsShown: ctx.print?.id || c.id || ''};
+  const side = one(ov, cls('cs-card-side')), readable = one(side, cls('cs-readable')), disc = one(readable, cls('card-discovery'));
+  const faces = all(readable, x => x.tag === 'section' && cls('cd-text')(x)).map(s => {
+    const multi = one(s, x => cls('row')(x) && cls('between')(x) && !cls('small')(x)), fl = one(s, cls('flavor')), foot = one(s, x => cls('row')(x) && cls('small')(x)), artist = one(foot, cls('card-artist'));
+    return {eyebrow: text(one(s, cls('effect-label'))), name: text(one(multi, tagIs('b'))), mana: all(one(multi, cls('mana')), tagIs('img')).map(i => ({src: i.attrs.src || '', alt: i.attrs.alt || ''})),
+      type: multi ? text(one(s, x => x.tag === 'p' && cls('type-line')(x))) : '', lines: all(one(s, cls('oracle')), cls('effect-line')).map(richRuns),
+      flavor: fl ? {label: text(one(fl, tagIs('small'))), text: text({kids: (fl.kids || []).filter(k => k.tag !== 'small')})} : null,
+      pt: text(one(foot, cls('pt'))), artist: artist ? {name: text(one(artist, tagIs('button'))) || text(artist).replace(/^🖌\s*/u, ''), press: press(one(artist, tagIs('button')))} : null};
+  });
+  const loading = one(readable, x => x.attrs.id === 'cardLoading');
+  const deckPanel = one(side, x => cls('panel')(x) && cls('tight')(x)), legal = one(side, cls('deck-legal')), sec = one(side, cls('cs-secondary')), fact = one(sec, cls('fact'));
+  const actions = one(side, cls('card-secondary-actions')), groups = one(actions, cls('owned-groups')), ca = one(actions, cls('card-actions'));
+  const overview = {card, discovery: disc ? {summary: text(one(disc, tagIs('summary'))), text: text(one(disc, tagIs('p'))), chips: all(disc, tagIs('button')).map(press)} : null, faces,
+    loading: loading ? {text: text({kids: (loading.kids || []).filter(k => k.tag !== 'button')}), retry: press(one(loading, tagIs('button')))} : null,
+    rulesEntry: press(one(one(readable, cls('card-rules-entry')), tagIs('button'))),
+    alert: (b => b && {title: text(one(b, tagIs('b'))), line: text(one(b, tagIs('small'))), press: press(b)})(one(side, cls('watch-status'))),
+    own: text(one(side, cls('own-line'))),
+    legal: legal ? {level: ['ok-text', 'warn-text', 'bad-text'].find(c => cls(c)(legal))?.replace('-text', '') || '', ...(g => ({icon: g.icon, runs: runs({kids: [{text: g.label}]})}))(glyph(text({kids: (legal.kids || []).filter(k => !cls('muted')(k))}))),
+      deck: text(one(legal, cls('muted')))} : null,
+    deck: deckPanel ? {title: text(one(one(deckPanel, cls('row')), tagIs('b'))), qty: Number(text(one(one(deckPanel, cls('stepper')), tagIs('b')))) || 0,
+      steps: all(one(deckPanel, cls('stepper')), tagIs('button')).map(press), remove: press(one(deckPanel, x => x.attrs['data-act'] === 'deckRemove'))} : null,
+    chips: all(one(sec, cls('chips')), cls('chip')).map(x => ({label: text(x), role: (classes(x).find(k => k.startsWith('role-')) || '').slice(5), warn: cls('warn')(x)})),
+    fact: fact ? {label: text(one(fact, cls('fact-label'))), text: text(one(fact, tagIs('p')))} : null,
+    research: {label: text(one(one(sec, cls('research')), cls('muted'))), links: (one(sec, cls('research'))?.kids || []).filter(k => k.tag === 'a' || k.tag === 'button').map(press)},
+    owned: groups ? {aria: groups.attrs['aria-label'] || '', groups: all(groups, cls('owned-group')).map(g => ({lot: g.attrs['data-owned-group'] || '', label: text(one(g, cls('owned-group-label'))),
+      qty: Number(text(one(one(g, cls('owned-copy-details')), tagIs('b')))) || 0, steps: all(one(g, cls('owned-pill')), x => x.tag === 'button' && x.attrs['data-act'] === 'cardOwnedQty').map(press), details: press(one(g, cls('owned-copy-details')))}))} : null,
+    main: all(one(ca, cls('ca-main')), x => x.tag === 'button' || x.tag === 'a').map(press), more: all(one(ca, cls('ca-more')), x => x.tag === 'button' || x.tag === 'a').map(press)};
+  const panel = id => one(t, x => x.attrs.id === 'card-panel-' + id);
+  const metaP = panel('meta'), guideP = panel('guide'), guide = one(guideP, cls('card-guide'));
+  return {game: 'mtg', name: ctx.name, deck: ctx.deckId || '', entry: ctx.entryId || '', tab, head, tabs, overviewHead, overview,
+    meta: metaP ? {sections: all(metaP, cls('meta-use')).map(blocks), foot: text((metaP.kids || []).find(k => k.tag === 'p' && cls('foot')(k)))} : null,
+    guide: guide ? {sections: (guide.kids || []).filter(k => k.tag).map(k => ({cls: k.attrs.class || '', panel: cls('guide-panel')(k), hero: cls('guide-hero')(k), blocks: k.tag === 'p' ? [{kind: cls('foot')(k) ? 'foot' : 'text', text: text(k), runs: richRuns(k)}] : blocks(k)}))} : null,
+    // The card the picture is drawn from (finish-preview.js reads the same record): the app's foil needs its frame and finishes.
+    shown: (({prices, legalities, purchase_uris, related_uris, all_parts, prints_search_uri, rulings_uri, ...rest}) => rest)(ctx.print || c),
+    busy: !!(ctx.detailsBusy || ctx.printsBusy || ctx.rulingsBusy || ctx.ownedLoading || S.ui.guide?.['mtg:' + c.name]?.loading),
+    glyphs: Object.fromEntries(['minus', 'plus', 'close', 'back', 'heart', 'heartOn'].map(k => [k, ICON[k] ? icon(svgIn(tree(ICON[k]))) : null]))};
+}
+
 let job = 0, status = {busy: false, step: '', error: null};
 const json = v => JSON.stringify(v);
 globalThis.Collection = {
@@ -441,6 +741,13 @@ globalThis.Collection = {
   deck(game, id, opts) { deckOpen(id); const o = opts ? JSON.parse(opts) : {}; for (const k of Object.keys(deckAct)) if (o[k] != null) deckAct[k](o[k]); return json(deckPageModel(game, id)); },
   deckDo(game, id, kind, value) { if (!deckAct[kind]) throw Error('unknown deck control ' + kind); deckOpen(id); deckAct[kind](value); return json(deckPageModel(game, id)); },
   cardsDo(game, kind, value) { if (!cardsAct[kind]) throw Error('unknown Cards control ' + kind); cardsAct[kind](value); return json(cardsPage(game)); },
+  // views.js cardSheet(): a card's page; [opts] = {name, entry, deck} as the tapped tile has them. cardLoad starts its lookups
+  // (the app pumps them with settle()); cardDo applies one of its controls (cardAct).
+  card(game, opts) { const ctx = cardOpen(JSON.parse(opts)); return json(cardPageModel(ctx)); },
+  cardModel() { return sheet ? json(cardPageModel(sheet)) : '{}'; },
+  cardHtml() { const ctx = sheet, c = ctx && (ctx.print || meta(ctx.name)); return c ? cardView(c, ctx) : ''; },
+  cardLoad() { const ctx = sheet; if (!ctx) return; (async () => { if (ctx.ownedLoading) await ownedLoad(ctx); if (!ctx.blocked && still(ctx)) { if (!(ctx.print || meta(ctx.name))) await resolveNames([ctx.name], () => {}, false, () => still(ctx)).catch(() => {}); await Promise.all([cardExtras(ctx), cardTabLoads(ctx), loadSetIndex()]); } })(); },
+  cardDo(kind, value) { if (!cardAct[kind] || !sheet) throw Error('unknown card control ' + kind); cardAct[kind](value); return json(cardPageModel(sheet)); },
   home(game) {
     const st = S.state, value = collectionValue(st.collection, S.catalog, st.printings, st.decks);
     return json({game, hero: hero(game), value: homeValueModel({ game, ...value, decks: st.decks.length, history: st.valueHistory }),

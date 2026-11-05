@@ -46,7 +46,7 @@ private object CardsCache {
  * Edit, Got it), the card page, Binders, Value, Select and the ⋯ menu still open the website's page, which does it there.
  */
 @Composable
-fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, web: (url: String, press: String?) -> Unit, onDecks: (() -> Unit)? = null) {
+fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, web: (url: String, press: String?) -> Unit, onDecks: (() -> Unit)? = null, nativeCard: Boolean = false) {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
@@ -54,6 +54,8 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     var model by remember { mutableStateOf(CardsCache.model) }
     var query by remember { mutableStateOf(CardsCache.q) }
     var asked by remember { mutableStateOf<Pair<String, String>?>(null) }
+    /** The card pages open over the list, the last on top (a card opened from a card goes back to it). */
+    var cards by remember { mutableStateOf(listOf<CardOpen>()) }
     var failed by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
     suspend fun paint(control: Pair<String, String>? = null) {
@@ -96,7 +98,8 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             filter = { v -> asked = "filter" to v },
             search = { q -> query = q },
             more = { asked = "more" to "" },
-            card = { r -> web(coll, if (r.wanted) "[data-act=\"card\"][data-name=\"${css(r.name)}\"]" else "[data-act=\"card\"][data-entry=\"${css(r.id)}\"]") },
+            card = { r -> val tile = if (r.wanted) "[data-act=\"card\"][data-name=\"${css(r.name)}\"]" else "[data-act=\"card\"][data-entry=\"${css(r.id)}\"]"
+                if (nativeCard) cards = cards + CardOpen(r.name, entry = if (r.wanted) "" else r.id, page = coll, tile = tile) else web(coll, tile) },
             set = { code -> if (code.isNotBlank()) web(site + "#set/" + android.net.Uri.encode(code.lowercase()), null) },
             price = { r -> web(coll, "[data-act=\"buyCard\"][data-lot=\"${css(r.id)}\"]") },
             qty = { r, d -> web(coll, "[data-act=\"qty\"][data-id=\"${css(r.id)}\"][data-delta=\"$d\"]") },
@@ -121,6 +124,7 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
         }
     }
     val m = model
+    Box(Modifier.fillMaxSize()) {
     if (m != null) CollectionCards(m, top, act, nav, query)
     else Column(Modifier.fillMaxSize().background(Site.Bg)) {
         Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { top(null) }
@@ -129,5 +133,7 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             Text(failed ?: "Your cards and profile will appear here.", style = Site.Meta.copy(color = Site.Muted), textAlign = TextAlign.Center)
         }
         nav(false)
+    }
+    cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) { CollectionCardHost(c, onClose = { cards = cards.dropLast(1) }, onOpen = { cards = cards + it }, web = web) } }
     }
 }

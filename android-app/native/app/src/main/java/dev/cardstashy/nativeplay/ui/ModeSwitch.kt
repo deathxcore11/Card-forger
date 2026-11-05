@@ -121,8 +121,9 @@ fun CollectionScreen(onPlay: () -> Unit, url: String = "https://cardstashy.com/"
                     override fun onPageFinished(view: WebView, loaded: String?) {
                         if (press == null || pressed) return
                         pressed = true
-                        val sel = org.json.JSONObject.quote(press)
-                        view.evaluateJavascript("(function t(n){var b=document.querySelector($sel);if(b&&b.getClientRects().length){b.click();}else if(n<50){setTimeout(function(){t(n+1)},200);}})(0)", null)
+                        // Several selectors, one per line, press in turn: a tile, then a control in the sheet it opens.
+                        val sels = org.json.JSONArray(press.split("\n").filter { it.isNotBlank() }).toString()
+                        view.evaluateJavascript("(function t(s,i,n){if(i>=s.length)return;var b=document.querySelector(s[i]);if(b&&b.getClientRects().length){b.click();setTimeout(function(){t(s,i+1,0)},120);}else if(n<50){setTimeout(function(){t(s,i,n+1)},200);}})($sels,0,0)", null)
                     }
                 }
                 loadUrl(url)

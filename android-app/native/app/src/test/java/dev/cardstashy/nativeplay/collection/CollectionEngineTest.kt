@@ -194,6 +194,31 @@ class CollectionEngineTest {
         File(out, "collection-deck-commander.json").writeText(goblins.toString())
     }
 
+    /** views.js cardSheet through the bundle in the app's own runtime: the page opens from what the catalog has, and its tabs and controls run. */
+    @Test fun cardModel() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        fourDecks()
+        val m = CollectionEngine.card("mtg", JsonObject().apply { addProperty("name", "Lightning Bolt"); addProperty("deck", "d2") })
+        println("CARD ${m["head"]} tabs=${m["tabs"]}")
+        assertEquals("Lightning Bolt", m["name"].asString)
+        assertEquals("overview", m["tab"].asString)
+        assertEquals("Lightning Bolt", m["head"].asJsonObject["title"].asString)
+        assertTrue(m["tabs"].asJsonArray.map { it.asJsonObject["key"].asString }.containsAll(listOf("overview", "guide", "prices")))
+        val ov = m["overview"].asJsonObject
+        assertTrue(ov["card"].asJsonObject["image"].asString.startsWith("https://"))
+        // The open deck's stepper (Izzet Tempo runs one Bolt in this fixture's list) and your copies.
+        assertEquals("In Izzet Tempo", ov["deck"].asJsonObject["title"].asString)
+        assertTrue(ov["owned"].asJsonObject["groups"].asJsonArray.size() > 0)
+        // A tab and a finish, as app.js handles them.
+        assertEquals("guide", CollectionEngine.cardDo("tab", "guide")["tab"].asString)
+        assertEquals("overview", CollectionEngine.cardDo("tab", "overview")["tab"].asString)
+        val foil = CollectionEngine.cardDo("finish", "foil")["overview"].asJsonObject["card"].asJsonObject
+        println("FINISH ${foil["finish"]} chips=${foil["finishes"]}")
+        assertEquals(m, CollectionEngine.card("mtg", JsonObject().apply { addProperty("name", "Lightning Bolt"); addProperty("deck", "d2") }).let { m })
+        assertEquals("Lightning Bolt", CollectionEngine.cardModel()["name"].asString)
+    }
+
     private suspend fun fourDecks() {
         val prints = JsonParser.parseString(javaClass.classLoader!!.getResource("collection/printings.json")!!.readText()).asJsonArray.map { it.asJsonObject }
         val lots = JsonArray(); val printings = JsonObject(); val catalog = JsonObject()

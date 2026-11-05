@@ -79,6 +79,8 @@ private const val NATIVE_CARDS = false
 private const val NATIVE_DECKS = false
 /** A deck's own page (its Cards tab), opened from the native Decks tab. Off until Randall has seen its preview. */
 private const val NATIVE_DECK = false
+/** A card's page (Overview, Meta, Play guide), opened from the native Cards tab and deck page. Off until Randall has seen its preview. */
+private const val NATIVE_CARD = false
 
 private sealed interface Screen {
     data object Home : Screen
@@ -299,7 +301,7 @@ private fun App(activity: MainActivity) {
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.CollectionCardsRoute(onPlay = { go(Screen.Home) }, onProfile = { go(Screen.SignIn) },
                 onHome = { if (trail.getOrNull(trail.size - 2) == Screen.Collection) back() else go(Screen.Collection) },
-                web = { url, press -> go(Screen.Web(url, press)) }, onDecks = if (NATIVE_DECKS) ({ go(Screen.CollectionDecks) }) else null)
+                web = { url, press -> go(Screen.Web(url, press)) }, onDecks = if (NATIVE_DECKS) ({ go(Screen.CollectionDecks) }) else null, nativeCard = NATIVE_CARD)
         }
         Screen.CollectionDecks -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
@@ -316,7 +318,7 @@ private fun App(activity: MainActivity) {
                 onCards = { if (NATIVE_CARDS) go(Screen.CollectionCards) else go(Screen.Web("https://cardstashy.com/#collection", null)) },
                 // A.deckPlayCpu: the Practice lobby with this deck in your seat.
                 onPractice = { id, format -> lobbies.getOrPut("practice") { dev.cardstashy.nativeplay.ui.LobbyModel("practice") }.practiceWith(id, format); go(Screen.Lobby("practice")) },
-                web = { url, press -> go(Screen.Web(url, press)) })
+                web = { url, press -> go(Screen.Web(url, press)) }, nativeCard = NATIVE_CARD)
         }
         is Screen.Web -> { LaunchedEffect(s.url) { activity.inGame(false, play = s.url.contains("planeswalk")) }; CollectionScreen(onPlay = { back() }, url = s.url, press = s.press) }
         Screen.SignIn -> {

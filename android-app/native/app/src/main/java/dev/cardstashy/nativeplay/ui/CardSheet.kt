@@ -250,11 +250,11 @@ internal class Frost(val layer: androidx.compose.ui.graphics.layer.GraphicsLayer
 }
 internal val LocalFrost = androidx.compose.runtime.staticCompositionLocalOf<Frost?> { null }
 
-private fun tone(saturation: Float, brightness: Float) = ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply {
+internal fun tone(saturation: Float, brightness: Float) = ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply {
     setToSaturation(saturation); timesAssign(androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(brightness, 0f, 0f, 0f, 0f, 0f, brightness, 0f, 0f, 0f, 0f, 0f, brightness, 0f, 0f, 0f, 0f, 0f, 1f, 0f))) })
 
 /** Fade a layer out downwards between [from] and [to] (px from the top): polish.css mask-image on the bleed layers. */
-private fun Modifier.fadeDown(from: Float, to: Float) = graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+internal fun Modifier.fadeDown(from: Float, to: Float) = graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
     .drawWithContent { drawContent(); val h = size.height.coerceAtLeast(1f)
         drawRect(Brush.verticalGradient((from / h).coerceIn(0f, 1f) to Color.Black, (to / h).coerceIn(0f, 1f) to Color.Transparent), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn) }
 
@@ -271,7 +271,7 @@ private fun ArtRun(p: androidx.compose.ui.graphics.painter.Painter, heroH: andro
  * The finished backdrop is also recorded into [frost] so each glass panel can blur what is behind it.
  */
 @Composable
-private fun GlassBackdrop(art: String?, frost: Frost) {
+internal fun GlassBackdrop(art: String?, frost: Frost, layers: (@Composable (androidx.compose.ui.graphics.painter.Painter) -> Unit)? = null) {
     val p = heroPainter(art?.let(homeArt)) ?: return
     val heroH = 210.dp
     // Bake once the art is in and has drawn: two frames after it loads (and again if the sheet changes size, as when a Fold opens).
@@ -295,6 +295,7 @@ private fun GlassBackdrop(art: String?, frost: Frost) {
     }
     Box(Modifier.fillMaxSize().onGloballyPositioned { frost.origin = it.positionInRoot(); size = it.size }
         .drawWithContent { frost.layer.record { this@drawWithContent.drawContent() }; drawLayer(frost.layer) }) {
+        if (layers != null) { layers(p); return@Box }
         Image(p, null, Modifier.fillMaxSize().blur(40.dp), contentScale = ContentScale.Crop, alignment = BiasAlignment(0f, -.4f), colorFilter = tone(1.45f, .62f))
         val hp = with(androidx.compose.ui.platform.LocalDensity.current) { heroH.toPx() }
         ArtRun(p, heroH, tone(1.3f, .78f), Modifier.fillMaxSize().blur(18.dp).fadeDown(hp + 60f * 3, hp + 900f * 3))

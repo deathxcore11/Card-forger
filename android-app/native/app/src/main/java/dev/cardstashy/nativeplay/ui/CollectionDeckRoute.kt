@@ -50,7 +50,7 @@ private object DeckCache {
  */
 @Composable
 fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Unit, onBack: () -> Unit, onHome: () -> Unit, onCards: () -> Unit,
-                        onPractice: (id: String, format: String) -> Unit, web: (url: String, press: String?) -> Unit) {
+                        onPractice: (id: String, format: String) -> Unit, web: (url: String, press: String?) -> Unit, nativeCard: Boolean = false) {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
@@ -61,6 +61,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
     var failed by remember(deckId) { mutableStateOf<String?>(null) }
     /** A control waiting for the site's handler (kind to value), applied on the engine's thread. */
     var asked by remember(deckId) { mutableStateOf<Pair<String, String>?>(null) }
+    /** The card pages open over the deck, the last on top (a card opened from a card goes back to it). */
+    var cards by remember(deckId) { mutableStateOf(listOf<CardOpen>()) }
     LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
     val prefs = remember { context.getSharedPreferences("collection", android.content.Context.MODE_PRIVATE) }
     suspend fun paint() {
@@ -116,7 +118,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
             chip = { v -> asked = "filter" to v },
             group = { v -> asked = "sort" to v },
             view = { v -> prefs.edit().putString("deckView", v).apply(); asked = "view" to v },
-            card = { n -> web(page, "[data-act=\"card\"][data-name=\"${css(n)}\"]") },
+            card = { n -> val tile = "[data-act=\"card\"][data-name=\"${css(n)}\"]"
+                if (nativeCard) cards = cards + CardOpen(n, deck = deckId, page = page, tile = tile) else web(page, tile) },
             set = { code -> if (code.isNotBlank()) web(site + "#set/" + android.net.Uri.encode(code.lowercase()), null) },
             qty = { n, d -> web(page, "[data-act=\"deckQty\"][data-name=\"${css(n)}\"][data-delta=\"$d\"]") },
             swap = { o, i -> web(page, "[data-act=\"deckEmbSwap\"][data-out=\"${css(o)}\"][data-in=\"${css(i)}\"]") },
@@ -137,6 +140,7 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
         }
     }
     val m = model
+    Box(Modifier.fillMaxSize()) {
     if (m != null) CollectionDeck(m, top, act, nav, query)
     else Column(Modifier.fillMaxSize().background(Site.Bg)) {
         Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { top(null) }
@@ -145,5 +149,7 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
             Text(failed ?: "Its cards will appear here.", style = Site.Meta.copy(color = Site.Muted), textAlign = TextAlign.Center)
         }
         nav(false)
+    }
+    cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) { CollectionCardHost(c, onClose = { cards = cards.dropLast(1) }, onOpen = { cards = cards + it }, web = web) } }
     }
 }
