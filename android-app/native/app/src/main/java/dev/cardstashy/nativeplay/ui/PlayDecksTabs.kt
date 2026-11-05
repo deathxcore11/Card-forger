@@ -431,9 +431,12 @@ fun SealCosts(cost: Map<String, Int>, short: Map<String, Int>, size: Dp, modifie
  * The opened precon (preconShelf's open view, as its own page): the face, emblem and formats; To finish it with the
  * two ways (seals: what they cover now or all at once; coins: Buy deck); Craft these first (missing cards that meta
  * lists or your Play decks also use); then the list with each missing card's craft and its shared badge.
+ * [shop]: opened from the Shop, where a precon is bought with coins only (Randall 5 Nov 21:41Z: the rotation is there to give
+ * coins something to buy; the same decks outside the store still craft with seals), so no seal crafting shows there.
  */
 @Composable
-fun PreconPage(state: JsonObject, o: OpenPrecon, owned: Map<String, Int>, pc: PreconUi, onBack: () -> Unit, onCard: (String) -> Unit, toast: (String) -> Unit, nav: @Composable () -> Unit) {
+fun PreconPage(state: JsonObject, o: OpenPrecon, owned: Map<String, Int>, pc: PreconUi, onBack: () -> Unit, onCard: (String) -> Unit, toast: (String) -> Unit, nav: @Composable () -> Unit,
+               shop: Boolean = false) {
     val scope = rememberCoroutineScope()
     val need = remember(o, owned, state) { preconNeed(o.rows, owned, state, o.file, o.product, o.released) }
     val sh = need.sh
@@ -504,8 +507,11 @@ fun PreconPage(state: JsonObject, o: OpenPrecon, owned: Map<String, Int>, pc: Pr
                     Text("card${if (sh.total == 1) "" else "s"} to add · ${wantAll - sh.total} of $wantAll in your Trunk" + if (need.inStore) "" else " · craft them with seals", style = t(13.5f, color = Site.Muted), modifier = Modifier.padding(bottom = 3.dp)) }
                 Box(Modifier.fillMaxWidth().height(5.dp).clip(RoundedCornerShape(3.dp)).background(Color(0x1FFFFFFF))) {
                     Box(Modifier.fillMaxWidth(need.share.toFloat().coerceIn(0f, 1f)).fillMaxHeight().background(Brush.horizontalGradient(listOf(Color(0xFFD9A94F), Color(0xFFF6D58F))))) }
-                if (!sh.complete) Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Way("Craft with seals", Modifier.weight(1f)) {
+                if (!sh.complete) BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    // The two ways sit side by side only where each has room (560 and up); on a phone they stack, so the price and
+                    // the button never squeeze ("coin s", "Not enoug": Randall 5 Nov 21:41Z).
+                    val side = maxWidth >= 560.dp
+                    val sealWay: (@Composable (Modifier) -> Unit)? = if (shop) null else { wm -> Way("Craft with seals", wm) {
                         SEAL_KEYS.filter { (sh.seals[it] ?: 0) > 0 }.forEach { k -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             SealMini(k, 18.dp); Text("${sh.seals[k]}", style = t(13.5f, FontWeight.ExtraBold, if ((need.short[k] ?: 0) > 0) Warn else Color.White))
                             Text("· you have ${have[k] ?: 0}", style = t(11.5f, color = Site.Muted), maxLines = 1) } }
@@ -519,17 +525,19 @@ fun PreconPage(state: JsonObject, o: OpenPrecon, owned: Map<String, Int>, pc: Pr
                                 arm("now") { craft(plan, "these cards") } }
                             GhostButton("Craft all ${sh.total}", Modifier.fillMaxWidth(), enabled = false) {}
                         }
-                    }
+                    } }
                     // Whole-deck coin buys are only for this week's five store precons (the server answers not_in_store).
-                    if (need.inStore) Way("Buy the deck", Modifier.weight(1f)) {
+                    val coinWay: (@Composable (Modifier) -> Unit)? = if (!need.inStore) null else { wm -> Way("Buy the deck", wm) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            CoinDot(18.dp); Text("%,d".format(need.price), style = t(22f, FontWeight.ExtraBold, Color.White, line = 26f)); Text("coins", style = t(13f, color = Site.Muted)) }
+                            CoinDot(18.dp); Text("%,d".format(need.price), style = t(22f, FontWeight.ExtraBold, Color.White, line = 26f)); Text("coins", style = t(13f, color = Site.Muted), maxLines = 1, softWrap = false) }
                         Text("You have ${"%,d".format(coins)}. The exact printings go to your Trunk and the deck to My decks.", style = t(12f, color = Site.Muted, line = 16f))
                         GoldCta(if (need.price > coins) "Not enough coins" else "Buy deck", Modifier.fillMaxWidth(), enabled = !busy && need.price <= coins) { buy(scope, o, pc, toast) { busy = it } }
-                    }
+                    } }
+                    if (side) Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { sealWay?.invoke(Modifier.weight(1f)); coinWay?.invoke(Modifier.weight(1f)) }
+                    else Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { sealWay?.invoke(Modifier.fillMaxWidth()); coinWay?.invoke(Modifier.fillMaxWidth()) }
                 } else GoldCta("Add to my decks", Modifier.fillMaxWidth(), enabled = !busy) { buy(scope, o, pc, toast) { busy = it } }
             } }
-            if (shared.isNotEmpty()) item(key = "first") { GlassPanel {
+            if (!shop && shared.isNotEmpty()) item(key = "first") { GlassPanel {
                 Row(verticalAlignment = Alignment.CenterVertically) { Text("Craft these first", style = cinzel(16f), modifier = Modifier.weight(1f))
                     Text(if (metaCount.isNotEmpty()) "Shared with meta decks" else "Shared with your decks", style = t(12f, color = Site.Muted)) }
                 shared.take(4).forEach { m -> val metaN = metaCount[m.name] ?: 0; val mine = deckUse[m.name].orEmpty()
@@ -549,13 +557,13 @@ fun PreconPage(state: JsonObject, o: OpenPrecon, owned: Map<String, Int>, pc: Pr
             val cmd = o.rows.filter { it.board == "commander" }; val main = o.rows.filter { it.board != "side" && it.board != "commander" }; val side = o.rows.filter { it.board == "side" }
             if (cmd.isNotEmpty()) {
                 item(key = "cmdHead") { Text("Commander", style = t(15f, FontWeight.Bold)) }
-                preconCardRows(cmd, owned, missingOnly, "c", metaCount, deckUse, armed, busy, have, onCard, { k, go -> arm(k, go) }) { name, n -> craft(listOf(name to n), name) }
+                preconCardRows(cmd, owned, missingOnly, "c", metaCount, deckUse, armed, busy, have, onCard, { k, go -> arm(k, go) }, !shop) { name, n -> craft(listOf(name to n), name) }
                 item(key = "mainHead") { Text("The 99", style = t(15f, FontWeight.Bold)) }
             }
-            preconCardRows(main, owned, missingOnly, "m", metaCount, deckUse, armed, busy, have, onCard, { k, go -> arm(k, go) }) { name, n -> craft(listOf(name to n), name) }
+            preconCardRows(main, owned, missingOnly, "m", metaCount, deckUse, armed, busy, have, onCard, { k, go -> arm(k, go) }, !shop) { name, n -> craft(listOf(name to n), name) }
             if (side.isNotEmpty()) {
                 item(key = "sideHead") { Text("Sideboard", style = t(15f, FontWeight.Bold)) }
-                preconCardRows(side, owned, missingOnly, "s", metaCount, deckUse, armed, busy, have, onCard, { k, go -> arm(k, go) }) { name, n -> craft(listOf(name to n), name) }
+                preconCardRows(side, owned, missingOnly, "s", metaCount, deckUse, armed, busy, have, onCard, { k, go -> arm(k, go) }, !shop) { name, n -> craft(listOf(name to n), name) }
             }
         }
         }
@@ -577,7 +585,7 @@ private fun buy(scope: CoroutineScope, o: OpenPrecon, pc: PreconUi, toast: (Stri
 /** The list three across: each card dimmed while you lack copies, its count and "N new", the shared badge, and its craft. */
 private fun androidx.compose.foundation.lazy.LazyListScope.preconCardRows(rows: List<Decks.Row>, owned: Map<String, Int>, missingOnly: Boolean, tag: String,
     metaCount: Map<String, Int>, deckUse: Map<String, List<String>>, armed: String, busy: Boolean, have: Map<String, Int>, onCard: (String) -> Unit,
-    arm: (String, () -> Unit) -> Unit, craft: (String, Int) -> Unit) {
+    arm: (String, () -> Unit) -> Unit, crafts: Boolean, craft: (String, Int) -> Unit) {
     val left = HashMap(owned)
     val cells = rows.map { r -> val got = if (Decks.isBasicLand(r.name)) r.qty else minOf(r.qty, left[r.name] ?: 0); left[r.name] = maxOf(0, (left[r.name] ?: 0) - got); r to got }
         .filter { (r, got) -> !missingOnly || got < r.qty }
@@ -592,7 +600,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.preconCardRows(rows: 
                         modifier = Modifier.align(Alignment.TopEnd).padding(5.dp).clip(RoundedCornerShape(999.dp)).background(Color(0xD90C0E13)).border(1.dp, Color(0x99F0C66D), RoundedCornerShape(999.dp)).padding(horizontal = 6.dp, vertical = 1.dp))
                 }
                 Text(buildAnnotatedString { append("${r.qty}×"); if (got < r.qty) { append(" "); pushStyle(SpanStyle(color = Site.Gold, fontWeight = FontWeight.Bold)); append("${r.qty - got} new"); pop() } else if (!Decks.isBasicLand(r.name)) append(" owned") }, style = t(12f, color = Site.Muted))
-                if (got < r.qty) { val seal = Decks.RARITY_SEAL[r.rarity] ?: "c"; val n = r.qty - got
+                if (crafts && got < r.qty) { val seal = Decks.RARITY_SEAL[r.rarity] ?: "c"; val n = r.qty - got
                     CraftChip(seal, n, armed == "c:" + r.name, enabled = !busy && (have[seal] ?: 0) >= n) { arm("c:" + r.name) { craft(r.name, n) } } }
             } }
             repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }

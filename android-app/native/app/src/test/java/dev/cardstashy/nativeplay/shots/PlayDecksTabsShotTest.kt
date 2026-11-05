@@ -63,7 +63,10 @@ class PlayDecksTabsShotTest {
         c.requestMethod = "POST"; c.doOutput = true; c.setRequestProperty("Content-Type", "application/json"); c.setRequestProperty("User-Agent", ua)
         c.outputStream.use { it.write(body.toByteArray()) }; return JsonParser.parseString(c.inputStream.bufferedReader().readText()).asJsonObject }
 
-    @Test fun tabs() {
+    private class Fx(val all: List<JsonObject>, val rows: (JsonObject) -> List<Decks.Row>, val state: JsonObject, val index: List<Decks.PreconEntry>)
+
+    /** Standard starter precons (data/play-starters/precons.json) with Scryfall's cards, a Trunk, seals c6 u3 r2 m1 and 1,250 coins. */
+    private fun fixture(): Fx {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         dev.cardstashy.nativeplay.ui.homeArt = { url -> runCatching { java.net.URI(url).toURL().openConnection().apply { setRequestProperty("User-Agent", ua) }
             .getInputStream().use { android.graphics.BitmapFactory.decodeStream(it) }?.asImageBitmap() }.getOrNull() ?: url }
@@ -99,6 +102,11 @@ class PlayDecksTabsShotTest {
             add("cards", JsonArray().apply { rows(pr).forEach { r -> add(JsonObject().apply { addProperty("name", r.name); addProperty("qty", r.qty); addProperty("set", r.set); addProperty("number", r.number); addProperty("id", r.id) }) } }) }
         val state = JsonParser.parseString("""{"wallet":{"coins":1250,"xp":2750,"seal_c":6,"seal_u":3,"seal_r":2,"seal_m":1},"packs":[],"config":{"holoSeals":2}}""").asJsonObject.apply {
             add("cards", trunk); add("decks", JsonArray().apply { add(saved("fin-ub", "d1")); add(saved("blb-gw", "d2")) }) }
+        return Fx(all, ::rows, state, index)
+    }
+
+    @Test fun tabs() {
+        val fx = fixture(); val all = fx.all; val state = fx.state; val index = fx.index; val rows = fx.rows
         // Meta: the Standard feed (/api/meta/mtg, saved 5 Nov), as the Finder loads it.
         MetaLists.seed("Standard", JsonParser.parseString(javaClass.classLoader!!.getResource("play-decks/meta-standard.json")!!.readText()).asJsonObject)
         val meta = FinderUi().apply { format = "Standard"; lists = MetaLists.cached("Standard"); loadedFor = "Standard" }
@@ -143,5 +151,28 @@ class PlayDecksTabsShotTest {
         rule.onNodeWithText("Random deck").performClick(); settle(10)
         assertTrue("the tile opens the Deck Forge sheet", rule.onAllNodesWithText("Build random deck").fetchSemanticsNodes().isNotEmpty())
         shot("random")
+    }
+
+    /**
+     * A store precon opened from the Shop is bought with coins only (Randall 5 Nov 21:41Z): no Craft with seals, no Craft these first,
+     * no per-card crafts; Buy the deck takes the full width, so its price ("2,500 coins") and its button stay whole on a phone.
+     */
+    @Test fun shopPrecon() {
+        val fx = fixture()
+        val state = fx.state.deepCopy().apply { add("preconStore", JsonParser.parseString("""{"files":["fin-rw"]}""")) }
+        val rw = fx.all.first { it["key"].asString == "fin-rw" }
+        val pc = PreconUi().apply { index = fx.index; open = OpenPrecon("fin-rw.json", rw["name"].asString, "Final Fantasy Starter Kit", rw["released"].asString, listOf("Standard", "Pioneer"), fx.rows(rw)) }
+        val owned = Decks.ownedByName(state)
+        rule.setContent { PreconLayer(pc) { o, back -> PreconPage(state, o, owned, pc, onBack = back, onCard = {}, toast = {}, nav = { PlayNav(PlayTab.SHOP, {}) }, shop = true) } }
+        settle(30)
+        assertTrue("Buy the deck shows", rule.onAllNodesWithText("BUY THE DECK").fetchSemanticsNodes().isNotEmpty())
+        assertTrue("no seal crafting in the Shop", rule.onAllNodesWithText("CRAFT WITH SEALS").fetchSemanticsNodes().isEmpty())
+        assertTrue("…nor Craft these first", rule.onAllNodesWithText("Craft these first").fetchSemanticsNodes().isEmpty())
+        assertTrue("the button says it whole", rule.onAllNodesWithText("Not enough coins").fetchSemanticsNodes().isNotEmpty() || rule.onAllNodesWithText("Buy deck").fetchSemanticsNodes().isNotEmpty())
+        shot("shop-precon")
+        val page = rule.onAllNodes(hasScrollAction())[rule.onAllNodes(hasScrollAction()).fetchSemanticsNodes().size - 1]
+        page.performScrollToNode(hasText("The list")); page.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, 1300f) }; settle(20)
+        assertTrue("no per-card crafts", rule.onAllNodesWithText("Craft ×", substring = true).fetchSemanticsNodes().isEmpty())
+        shot("shop-precon-list")
     }
 }

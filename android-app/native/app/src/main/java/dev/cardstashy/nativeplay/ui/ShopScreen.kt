@@ -168,8 +168,8 @@ fun ShopRoute(onBack: () -> Unit, nav: @Composable () -> Unit, startTab: String 
         }
         Box(Modifier.align(Alignment.BottomCenter)) { nav() }
         }
-        // A store precon opens as the Decks tab's precon page, over the Shop.
-        PreconLayer(precon) { o, back -> PreconPage(s, o, owned, precon, onBack = back, onCard = { n -> open = CardPick(n, "", null, "nonfoil") }, toast = toast, nav = nav) }
+        // A store precon opens as the Decks tab's precon page, over the Shop, bought with coins only.
+        PreconLayer(precon) { o, back -> PreconPage(s, o, owned, precon, onBack = back, onCard = { n -> open = CardPick(n, "", null, "nonfoil") }, toast = toast, nav = nav, shop = true) }
         if (precon.opening) Box(Modifier.fillMaxSize().background(Color(0x66000000)), contentAlignment = Alignment.Center) { BrandMark(52.dp) }
         open?.let { pick ->
             CardSheet(pick, s, act = CardSheetActions(merchant = { c, _ -> open = null; set = c }, set = { c -> open = null; set = c }, toast = toast), onClose = { open = null })
