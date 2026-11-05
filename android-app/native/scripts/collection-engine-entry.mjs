@@ -3,17 +3,17 @@
 // Nothing is decided here: every number, list and order comes from the site's functions; this file only calls them
 // and hands their models to the app instead of HTML.
 import {S, blank, meta, cacheCard, slim, inv, uid} from 'WEB/store.js';
-import {cardKey, typeText, cardPrice, mergeDeckCard} from 'WEB/core.js';
+import {cardKey, typeText, cardPrice, mergeDeckCard, exportDeckText} from 'WEB/core.js';
 import {validateWorkspace} from 'WEB/confidence.js';
 import {normalizeHomeDeckActivity, recordHomeDeckWork} from 'WEB/home-deck-activity.js';
-import {collectionValue, recordValuePoint} from 'WEB/insights.js';
+import {collectionValue, recordValuePoint, withSnapshot} from 'WEB/insights.js';
 import {homeValueCoverage, homeValueModel, homeMetaKey, homeMetaSlides, homeMetaArticle, homeMetaCarousel, homeDeckShelf, homeCommunity, featureArticle} from 'WEB/home-ui.js';
 import {heroFor, loadHero, homeHero, homeToday} from './tcg-daily-hero.mjs';
 import {dailyDetails, todaySetMarkup} from 'WEB/home-today.js';
 import {hintPool, SEARCH_PROMPT} from 'WEB/search-hints.js';
 import {useMyPrices, ensureTcgPrices} from 'WEB/mtg-tcgprice.js';
-import {formatOf} from 'WEB/formats.js';
-import {art, esc, registerSetIcons, usd, options as htmlOptions} from 'WEB/ui.js';
+import {formatOf, FORMATS, hasCommander} from 'WEB/formats.js';
+import {art, esc, registerSetIcons, usd, options as htmlOptions, safeHref} from 'WEB/ui.js';
 import {createScryfallClient} from 'WEB/scryfall-client.js';
 import {loadMeta, metaState, allCachedMeta} from 'WEB/meta.js';
 import {mtgMetaKey} from 'WEB/power.js';
@@ -32,7 +32,9 @@ import {quoteModel, recordQuote, HISTORY_RANGES, modeFor} from 'WEB/workbench-ui
 import {loadSharedHistory} from 'WEB/shared-history.js';
 import {playedAlongside} from 'WEB/guide.js';
 import {mtgPairQueries, rankPairs, edhPop} from 'WEB/pairing.js';
-import {ICON} from 'WEB/icons.js';
+import {ICON, actionIcon} from 'WEB/icons.js';
+import {contextAction, contextHeader, deckContextShortcuts} from 'WEB/card-actions.js';
+import {deckBoxMarkup, deckBoxFields, boxAppearance} from 'WEB/deck-box.js';
 import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf, SOURCES as tcgSources, cache as tcgCache, ensureCard as tcgEnsureCard, gs as tcgGs, tcgCardSheet, setContextCard as tcgSetContextCard, currentYgoCatalogue as tcgYgoCatalogue, trackTcgValue, collectionValue as tcgCollectionValue, persistQuoteCache as tcgPersistQuoteCache} from 'WEB/tcg.js';
 import {adjustOwnedLot} from 'WEB/quick-quantity.js';
 import {workspaceSig, isEmptyWorkspace} from 'WEB/cloud.js';
@@ -1305,7 +1307,7 @@ function packModel() {
 // recordHomeDeckWork), stamped, then becomes the workspace. What the site does after that is the app's: the device write and
 // the account sync (cloud.js pushNow and its merge, WorkspaceSync.kt over saved()), the toast, haptics and redraw. One write at
 // a time, as queueWorkspaceWrite: QuickJS has one thread and every write here is a chain link.
-let lastUndo = null, writes = Promise.resolve(), commits = 0, toasts = [], asked = '', valueHistoryReady = false;
+let lastUndo = null, writes = Promise.resolve(), commits = 0, toasts = [], asked = '', made = '', valueHistoryReady = false;
 // The workspace as the account keeps it: a Yu-Gi-Oh! or Pokémon page borrows settings.game while it is open (tcgFocus), and the
 // player's own choice is what is saved.
 function saveable(s = S.state) {
@@ -1359,6 +1361,75 @@ function trackValue(state = S.state, previous = null, valueGames = null) {
 // dialog.js ask: the app shows the question and taps again with confirmed when the player says yes.
 const ask = (question, confirmed) => { if (confirmed) return true; asked = question; return false; };
 const ownedQuantityBusy = new Set();
+// ---------------------------------------------------------------- A deck's ⋯ menu (app.js A.deckMenu 6108), as the site draws it
+// app.js formatSelect (5864), verbatim.
+function formatSelect(id, current) {
+  const groups = [...new Set(FORMATS.map((f) => f.group))];
+  return `<select id="${id}" data-format-select>${groups.map((g) => `<optgroup label="${g}">${FORMATS.filter((f) => f.group === g).map((f) => `<option value="${esc(f.name)}" ${formatOf(current).name === f.name ? "selected" : ""}>${esc(f.name)}</option>`).join("")}</optgroup>`).join("")}</select>`;
+}
+// A.deckMenu's sheet, verbatim but for options (ui.js options, imported as htmlOptions here).
+function deckMenuHtml(d) {
+  const options = htmlOptions;
+  const count=(d.cards||[]).reduce((n,r)=>n+(Number(r.qty)||0),0),images=(d.cards||[]).map(r=>cardImage(meta(r.name))).filter(Boolean);
+  return `<div class="context-menu context-deck">${contextHeader({kind:'Magic deck',name:d.name,meta:[formatOf(d.format).name,`${count} cards`].join(' · '),art:deckBoxMarkup(d,{images})})}
+    ${deckContextShortcuts(d.id)}
+    <details class="context-edit"><summary>${ICON.settings}<span>Edit deck<small>Name, format, budget & appearance</small></span>${ICON.chevron}</summary><div class="context-edit-body">
+    <div class="grid2"><label class="span2">Name<input id="dmName" maxlength="100" value="${esc(d.name)}"></label><label class="span2">Format${formatSelect("dmFormat", d.format)}</label><label>Budget $<input id="dmBudget" type="number" min="0" value="${d.budget ?? 25}"></label><label>Focus<select id="dmStrategy">${options(["Auto", "Tokens", "Dragons", "Graveyard", "Spells", "Artifacts", "Lifegain", "Landfall", "Creature"].map((x) => [x, x]), d.strategy || "Auto")}</select></label></div>
+    ${deckBoxFields(d,(d.cards||[]).map(r=>({name:r.name,image:cardImage(meta(r.name))})))}
+    <button class="btn block context-save" data-act="deckSaveInfo">Save changes</button></div></details>
+    <div class="context-group" aria-label="Share and export">
+      ${contextAction('deckShare','share','Share deck',{hint:'Send a link'})}
+      ${contextAction('deckCopy','copy','Copy decklist')}
+      ${contextAction('deckExport','export','Export decklist',{hint:'Text file (.txt)'})}
+      ${contextAction('deckToPlay','play','Copy to Play',{hint:'Missing cards stay greyed there'})}
+    </div>
+    <div class="context-group" aria-label="Manage deck">
+      ${contextAction('snapshot','history','Save a version')}
+      ${contextAction('deckDup','decks','Duplicate deck')}
+      ${contextAction('refreshDeck','refresh','Refresh cards & prices')}
+    </div>
+    <details class="context-edit context-tools"><summary>${actionIcon('more')}<span>More deck tools<small>Reserve copies, import & playtest printing</small></span>${ICON.chevron}</summary><div class="context-edit-body">
+      <label class="check toggle"><input type="checkbox" data-change="deckLock" ${d.locked ? "checked" : ""}><span><b>Assembled</b><small>Reserve these copies for this deck.</small></span></label>
+      ${contextAction('proxies','print','Print playtest proxies',{attrs:'data-scope="all"'})}
+      ${contextAction('deckBought','cardStack','Add deck to collection',{hint:'Add the cards you bought'})}
+      ${contextAction('importDeck','import','Re-import / replace list')}
+    </div></details>
+    <div class="context-group context-danger">${contextAction('deckDelete','close','Delete deck',{danger:true})}</div>
+    ${d.source ? `<p class="context-source muted small">Source: ${esc(d.source.kind || "")} · ${esc(d.source.website || "")}${d.source.author ? " · by " + esc(d.source.author) : ""}${d.source.url ? ` · <a href="${esc(safeHref(d.source.url))}" target="_blank" rel="noopener noreferrer">original</a>` : ""}</p>` : ""}</div>`;
+}
+// The menu read off that markup: the head (the deck box, kind, name, meta), the shortcuts, Edit deck's form, the groups of actions,
+// More deck tools (Assembled and its actions), Delete, and the source line.
+function deckMenuModel(id) {
+  const d = deckOf(id);
+  if (!d) return {missing: true};
+  const t = tree(deckMenuHtml(d)), head = one(t, cls('context-head')), box = one(head, cls('deck-box'));
+  const action = b => ({act: b.attrs['data-act'] || '', label: text({kids: (one(b, tagIs('span'))?.kids || []).filter(k => k.tag !== 'small')}), hint: text(one(b, tagIs('small'))),
+    icon: icon(svgIn(b)), danger: cls('danger')(b), tab: b.attrs['data-tab'] || '', scope: b.attrs['data-scope'] || ''});
+  const summary = det => { const sm = one(det, tagIs('summary')), svgs = all(sm, tagIs('svg')); return {title: text({kids: (one(sm, tagIs('span'))?.kids || []).filter(k => k.tag !== 'small')}), hint: text(one(sm, tagIs('small'))), icon: icon(svgs[0]), chev: icon(svgs[svgs.length - 1])}; };
+  const [edit, tools] = all(t, x => x.tag === 'details' && cls('context-edit')(x));
+  const field = idv => one(edit, x => x.attrs.id === idv);
+  const labelOf = n => text({kids: (n?.kids || []).filter(k => k.text !== undefined)});
+  const fmt = field('dmFormat'), boxS = one(edit, cls('deck-box-settings')), lock = one(tools, cls('toggle'));
+  const source = one(t, cls('context-source'));
+  return {id: String(d.id), name: d.name,
+    head: {kind: text(one(head, cls('context-kicker'))), name: text(one(head, tagIs('h2'))), meta: text(one(one(head, cls('context-identity')), tagIs('p'))), close: icon(svgIn(one(head, cls('context-close')))),
+      box: box && {color: ((/--deck-box-color:\s*([^;]+)/.exec(box.attrs.style || '') || [])[1] || '').trim(), cards: all(one(box, cls('deck-box-cards')), tagIs('img')).map(i => i.attrs.src || '')}},
+    shortcuts: all(one(t, cls('context-shortcuts')), tagIs('button')).map(action),
+    edit: {...summary(edit), labels: all(one(edit, cls('grid2')), tagIs('label')).map(labelOf),
+      name: field('dmName')?.attrs.value || '', max: Number(field('dmName')?.attrs.maxlength || 100),
+      formats: all(fmt, tagIs('optgroup')).map(g => ({group: g.attrs.label || '', options: all(g, tagIs('option')).map(o => [o.attrs.value ?? text(o), text(o)])})),
+      format: (all(fmt, tagIs('option')).find(o => o.attrs.selected !== undefined)?.attrs.value) || '',
+      budget: field('dmBudget')?.attrs.value || '', strategy: selectOf(field('dmStrategy')),
+      box: {summary: text(one(boxS, tagIs('summary'))), labels: all(boxS, tagIs('label')).map(labelOf), color: field('deckBoxColor')?.attrs.value || '', image: selectOf(field('deckBoxImage')), foot: text(one(boxS, cls('foot')))},
+      save: text(one(edit, cls('context-save')))},
+    groups: all(t, x => cls('context-group')(x) && !cls('context-danger')(x)).map(g => ({aria: g.attrs['aria-label'] || '', actions: all(g, tagIs('button')).map(action)})),
+    tools: {...summary(tools), lock: {on: one(lock, tagIs('input'))?.attrs.checked !== undefined, title: text(one(lock, tagIs('b'))), hint: text(one(lock, tagIs('small')))},
+      actions: all(tools, x => x.tag === 'button' && cls('context-action')(x)).map(action)},
+    danger: all(one(t, cls('context-danger')), tagIs('button')).map(action),
+    source: source ? {text: text({kids: (source.kids || []).filter(k => k.tag !== 'a')}).replace(/\s*·\s*$/, ''), link: one(source, tagIs('a'))?.attrs.href || '', linkText: text(one(source, tagIs('a')))} : null,
+    // app.js A.snapshot's suggested name.
+    version: 'Version ' + ((d.versions || []).length + 1)};
+}
 // store.js deckById, and app.js scopedEditDeck for the deck with that id: it throws when the deck went away before the write ran.
 const deckOf = (id) => (id == null ? null : S.state.decks.find((x) => String(x.id) === String(id)) || null);
 const editDeckOf = (id) => (fn, opts = {}) => commit((s) => { const i = s.decks.findIndex((x) => x.id === id); if (i < 0) throw Error('This deck is no longer available.'); s.decks[i] = fn(s.decks[i]) || s.decks[i]; }, opts);
@@ -1451,6 +1522,42 @@ const writeActs = {
       const i = s.decks.findIndex((y) => y.id === x.id);
       s.decks[i] = mergeDeckCard(s.decks[i], name, 1);
     }, { msg: `Added to ${x.name}.` });
+  },
+  // ---- The ⋯ menu (app.js 6143-6262); [d].deck names the deck, the form's values ride in [d] as the site reads them off the sheet.
+  // app.js A.deckSaveInfo: Edit deck's Save changes (readDeckBox: the box colour and cover).
+  async deckSaveInfo(d) {
+    const edit = editDeckOf(deckOf(d.deck)?.id);
+    const format = formatOf(d.format).name, name = String(d.name || '').trim(), budget = Math.max(0, Number(d.budget) || 0), strategy = d.strategy, boxAppearance_ = boxAppearance({color: d.color, image: d.image});
+    await edit((x) => ({ ...x, name: name || x.name, budget, strategy, format, boxAppearance: boxAppearance_, commander: hasCommander(format) ? x.commander : "" }), { msg: "Saved." });
+  },
+  // app.js C.deckLock: More deck tools' Assembled.
+  async deckLock(d) { const on = d.checked === true || d.checked === 'true'; await editDeckOf(deckOf(d.deck)?.id)((x) => ({ ...x, locked: on }), { msg: on ? "Copies reserved for this deck." : "Reservation released." }); },
+  // app.js A.snapshot: Save a version, named as the player said ([d].label; the app asks askText's question first).
+  async snapshot(d) {
+    const x = deckOf(d.deck), edit = editDeckOf(x?.id);
+    const before = (x?.versions || []).length;
+    await edit((y) => withSnapshot(y, d.label || "Snapshot"));
+    toasts.push({text: (deckOf(d.deck)?.versions || []).length > before ? "Version saved." : "No changes since the last version.", undo: false});
+  },
+  // app.js A.deckDup: the copy, made the active deck; the app opens it ([made]).
+  async deckDup(d) {
+    const x = deckOf(d.deck); if (!x) return;
+    const copy = { ...structuredClone(x), id: uid(), name: x.name + " (copy)", locked: false };
+    await commit((s) => { s.decks.push(copy); s.activeDeck = copy.id; }, { msg: "Duplicated." });
+    made = copy.id;
+  },
+  // app.js A.deckDelete: asked first; the app goes back to the decks.
+  async deckDelete(d) {
+    const x = deckOf(d.deck); if (!x) return;
+    if (!ask(`Delete ${x.name}? Your collection is not affected.`, d.confirmed)) return;
+    await commit((s) => { s.decks = s.decks.filter((y) => y.id !== x.id); if (s.activeDeck === x.id) s.activeDeck = s.decks[0]?.id || null; }, { undo: `Deleted ${x.name}.` });
+  },
+  // app.js A.refreshDeck: every card looked up again (resolveNames, refresh), renamed to what Scryfall calls it.
+  async refreshDeck(d) {
+    const x = deckOf(d.deck), edit = editDeckOf(x?.id); if (!x) return;
+    const r = await resolveNames(x.cards.map((c) => c.name), (m) => toasts.push({text: String(m), undo: false}), true);
+    await edit((y) => ({ ...y, cards: y.cards.map((c) => ({ ...c, name: r.matched.get(key(c.name)) || c.name })) }), { recordDeckWork: false });
+    toasts.push({text: r.failed.length ? `${r.failed.length} cards not found: ${r.failed.slice(0, 3).join(", ")}` : "Card data and prices refreshed.", undo: false});
   },
   // app.js saveLot: the add sheet's Add to collection / Save changes ([d]: the form; unverified: Save without lookup). Its words go
   // back as the error, shown under the form.
@@ -1745,9 +1852,9 @@ globalThis.Collection = {
   // pumped its chain: {done, error, ask (a question to put to the player first), toasts [{text, undo}], writes (commits made)}.
   act(kind, dataJson) {
     if (!writeActs[kind]) throw Error('unknown write ' + kind);
-    const run = acting = {done: false}; toasts = []; asked = ''; const n = commits;
+    const run = acting = {done: false}; toasts = []; asked = ''; made = ''; const n = commits;
     Promise.resolve().then(() => writeActs[kind](JSON.parse(dataJson || '{}'))).then(
-      () => { Object.assign(run, {done: true, ask: asked, toasts, writes: commits - n}); },
+      () => { Object.assign(run, {done: true, ask: asked, toasts, writes: commits - n, made}); },
       e => { Object.assign(run, {done: true, error: String(e?.message || e), ask: '', toasts, writes: commits - n}); });
   },
   actPoll() { return json(acting || {done: true, writes: 0, toasts: []}); },
@@ -1760,6 +1867,10 @@ globalThis.Collection = {
     return json(addSheetModel(null, d.own ? ownPreset(d.own, !!d.fromCard) : {}));
   },
   // app.js closeSheet: the sheet [id] opened is gone (a newer one is left alone).
+  // app.js A.deckMenu (6108): the ⋯ menu of deck [id] (deckMenuModel).
+  deckMenu(id) { return json(deckMenuModel(id)); },
+  // app.js A.deckCopy / A.deckExport: the decklist as the site writes it (core.js exportDeckText) and the file it saves (fileSafe).
+  deckText(id) { const d = deckOf(id); return json(d ? {text: exportDeckText(d), file: `CardStashy_${String(d.name).replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "") || "deck"}.txt`} : {}); },
   // app.js A.cardDeckPicker (4782): the decks a card page's Add to deck offers ([id, name]), and the one its <select> shows first.
   deckPick(game) {
     const decks = game === 'mtg' ? S.state.decks : tcgGs(game).decks, want = String((game === 'mtg' ? S.state.activeDeck : decks.at(-1)?.id) ?? '');

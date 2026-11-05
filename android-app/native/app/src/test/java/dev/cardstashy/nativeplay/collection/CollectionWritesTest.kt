@@ -163,6 +163,57 @@ class CollectionWritesTest {
         assertEquals("This deck is no longer available.", gone["error"].asString); assertEquals(0, gone["writes"].asInt)
     }
 
+    /** app.js A.deckMenu's sheet and its saving actions: Edit deck, Assembled, Save a version, Duplicate, Delete (asked first). */
+    @Test fun deckMenu() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        val before = fx("deck-qty-minus.json")["before"].asJsonObject.deepCopy().apply {
+            add("decks", JsonParser.parseString("""[{"id":"c1","name":"Goblins","format":"Commander","commander":"Krenko, Mob Boss","budget":25,"cards":[{"name":"Krenko, Mob Boss","qty":1},{"name":"Mountain","qty":30}],"source":{"kind":"User export","website":"Local export"}}]"""))
+        }
+        CollectionEngine.load(before, """{"mountain":{"id":"m","name":"Mountain","image_uris":{"normal":"https://cards.scryfall.io/normal/front/m.jpg"}}}""")
+        val m = CollectionEngine.deckMenu("c1")
+        println("MENU $m")
+        assertEquals("Magic deck", m["head"].asJsonObject["kind"].asString)
+        assertEquals("Commander · 31 cards", m["head"].asJsonObject["meta"].asString)
+        assertEquals(listOf("Cards", "Power", "Matchups", "Playtest"), m["shortcuts"].asJsonArray.map { it.asJsonObject["label"].asString })
+        assertEquals(listOf("cards", "engine", "matchups", "playtest"), m["shortcuts"].asJsonArray.map { it.asJsonObject["tab"].asString })
+        val e = m["edit"].asJsonObject
+        assertEquals("Edit deck", e["title"].asString); assertEquals("Name, format, budget & appearance", e["hint"].asString)
+        assertEquals(listOf("Name", "Format", "Budget $", "Focus"), e["labels"].asJsonArray.map { it.asString })
+        assertEquals("Commander", e["format"].asString); assertEquals("25", e["budget"].asString)
+        assertEquals(listOf("Constructed", "Commander", "Arena", "Casual"), e["formats"].asJsonArray.map { it.asJsonObject["group"].asString })
+        assertEquals("#7664a0", e["box"].asJsonObject["color"].asString)
+        assertEquals(listOf("Share deck", "Copy decklist", "Export decklist", "Copy to Play"), m["groups"].asJsonArray[0].asJsonObject["actions"].asJsonArray.map { it.asJsonObject["label"].asString })
+        assertEquals(listOf("Save a version", "Duplicate deck", "Refresh cards & prices"), m["groups"].asJsonArray[1].asJsonObject["actions"].asJsonArray.map { it.asJsonObject["label"].asString })
+        assertEquals("Assembled", m["tools"].asJsonObject["lock"].asJsonObject["title"].asString)
+        assertEquals("Delete deck", m["danger"].asJsonArray[0].asJsonObject["label"].asString)
+        assertEquals("Source: User export · Local export", m["source"].asJsonObject["text"].asString)
+        assertEquals("Version 1", m["version"].asString)
+        assertEquals("1 Krenko, Mob Boss\n30 Mountain", CollectionEngine.deckText("c1")["text"].asString)
+        assertEquals("CardStashy_Goblins.txt", CollectionEngine.deckText("c1")["file"].asString)
+
+        suspend fun deck() = JsonParser.parseString(CollectionEngine.saved()).asJsonObject.getAsJsonArray("decks").map { it.asJsonObject }
+        val save = CollectionEngine.act("deckSaveInfo", JsonObject().apply { addProperty("deck", "c1"); addProperty("name", "Goblin Horde"); addProperty("format", "Modern"); addProperty("budget", "40"); addProperty("strategy", "Tokens"); addProperty("color", "#aa3300"); addProperty("image", "") })
+        assertEquals("Saved.", save.getAsJsonArray("toasts")[0].asJsonObject["text"].asString)
+        deck()[0].let { assertEquals("Goblin Horde", it["name"].asString); assertEquals("Modern", it["format"].asString); assertEquals(40, it["budget"].asInt); assertEquals("", it["commander"].asString)
+            assertEquals("#aa3300", it["boxAppearance"].asJsonObject["color"].asString) }
+        assertEquals("Copies reserved for this deck.", CollectionEngine.act("deckLock", JsonObject().apply { addProperty("deck", "c1"); addProperty("checked", true) }).getAsJsonArray("toasts")[0].asJsonObject["text"].asString)
+        assertTrue(deck()[0]["locked"].asBoolean)
+        assertEquals("Version saved.", CollectionEngine.act("snapshot", JsonObject().apply { addProperty("deck", "c1"); addProperty("label", "Before the swap") }).getAsJsonArray("toasts")[0].asJsonObject["text"].asString)
+        assertEquals("No changes since the last version.", CollectionEngine.act("snapshot", JsonObject().apply { addProperty("deck", "c1"); addProperty("label", "Again") }).getAsJsonArray("toasts")[0].asJsonObject["text"].asString)
+        assertEquals("Before the swap", deck()[0].getAsJsonArray("versions")[0].asJsonObject["label"].asString)
+        val dup = CollectionEngine.act("deckDup", JsonObject().apply { addProperty("deck", "c1") })
+        assertEquals("Duplicated.", dup.getAsJsonArray("toasts")[0].asJsonObject["text"].asString)
+        val copy = dup["made"].asString
+        deck().let { assertEquals(2, it.size); assertEquals("Goblin Horde (copy)", it[1]["name"].asString); assertEquals(copy, it[1]["id"].asString); assertEquals(false, it[1]["locked"].asBoolean) }
+        assertEquals(copy, JsonParser.parseString(CollectionEngine.saved()).asJsonObject["activeDeck"].asString)
+        val del = CollectionEngine.act("deckDelete", JsonObject().apply { addProperty("deck", copy) })
+        assertEquals("Delete Goblin Horde (copy)? Your collection is not affected.", del["ask"].asString); assertEquals(0, del["writes"].asInt)
+        val yes = CollectionEngine.act("deckDelete", JsonObject().apply { addProperty("deck", copy); addProperty("confirmed", true) })
+        assertEquals("Deleted Goblin Horde (copy).", yes.getAsJsonArray("toasts")[0].asJsonObject["text"].asString)
+        deck().let { assertEquals(1, it.size); assertEquals("c1", JsonParser.parseString(CollectionEngine.saved()).asJsonObject["activeDeck"].asString) }
+    }
+
     /** cloud.js's automatic account-first merge (sync-merge.js), as the site's fixtures resolve it. */
     @Test fun mergeFixtures() = runBlocking {
         assumeTrue(bundle.isFile)
