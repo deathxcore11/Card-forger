@@ -377,3 +377,9 @@ body:not(.glass) .set-atmosphere{display:none}
 .pack-tpl .pack-wrap-brand{display:grid;inset:auto 14% 12.5% 14%;height:21%;align-content:center;gap:4px;font-size:clamp(11px,3.6vw,15px);line-height:1.15;z-index:1}
 .pack-tpl .pack-wrap-brand svg{width:26%}
 @media(prefers-reduced-motion:reduce){.pack-tpl-art{transition:none;transform:scale(1.07)}}
+
+/* Pokémon sets show their real logo on the band; the name and mark return if it fails to load. */
+.pack-tpl-logo{display:none;width:auto;max-width:100%;height:76%;object-fit:contain;justify-self:center}
+.pack-has-logo .pack-tpl-logo{display:block}.pack-has-logo .pack-wrap-brand>svg,.pack-has-logo .pack-wrap-brand>b{display:none}
+.pack-tpl-sub{font-size:.8em;letter-spacing:.14em;color:#d6ad64}
+.pack-has-sub .pack-wrap-brand>svg{display:none}.pack-has-sub .pack-wrap-brand{gap:6px}.pack-has-sub .pack-wrap-brand>b{font-size:clamp(11px,3.4vw,15px);letter-spacing:.02em}

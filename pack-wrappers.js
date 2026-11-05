@@ -5,11 +5,15 @@ export function packWrapperUrl(game,set={}){
  const code=String(set.code||set.id||'').toLowerCase();
  return game==='mtg'&&CODES.has(code)?`./assets/packs/pack-${code}.webp`:'';
 }
-import {PACK_ART,PACK_ART_BASE} from './pack-art-data.js';
-// Real set art under the template's empty window: the art layer moves, the frame stays (parallax). Magic only for now.
+import {PACK_ART,PACK_ART_BASE,PTCG_PACK_ART,YGO_PACK_ART} from './pack-art-data.js';
+// Real set art under the template's empty window: the art layer moves, the frame stays (parallax).
+// Magic: Scryfall art crop. Pokémon: art baked into assets/packs/art (no crop endpoint exists). Yu-Gi-Oh!: YGOPRODeck's ready-made crop.
 const FOCUS={ktk:[64,40]};// [x,y] percent where the default centre crop hides the subject
 export function packTemplateArt(game,set={}){
- const e=game==='mtg'?PACK_ART[String(set.code||set.id||'').toLowerCase()]:null;
- return e?{art:PACK_ART_BASE+e.art,x:(FOCUS[String(set.code||set.id||'').toLowerCase()]||[50,35])[0],y:(FOCUS[String(set.code||set.id||'').toLowerCase()]||[50,35])[1],card:e.card}:null;
+ const key=String(set.code||set.id||'').toLowerCase();
+ if(game==='mtg'){const e=PACK_ART[key];if(!e)return null;const [x,y]=FOCUS[key]||[50,35];return {art:PACK_ART_BASE+e.art,x,y,card:e.card};}
+ if(game==='ptcg'){const e=PTCG_PACK_ART[String(set.id||set.code||'').toLowerCase()];return e?{art:`./assets/packs/art/ptcg-${encodeURIComponent(String(set.id||set.code).toLowerCase())}.webp`,x:50,y:40,card:e.card,logo:e.logo||''}:null;}
+ if(game==='ygo'){const e=YGO_PACK_ART[String(set.code||'').toUpperCase()];return e?{art:`https://images.ygoprodeck.com/images/cards_cropped/${e.id}.jpg`,x:50,y:30,card:e.card,sub:String(set.code).toUpperCase()}:null;}
+ return null;
 }
 export function packArtSources(game,set={},remote=''){return [packWrapperUrl(game,set),remote].filter(Boolean);}
