@@ -7936,6 +7936,7 @@ async function boot() {
   // Scryfall role tags arrive after first paint; redraw Magic pages so Deck Power counts them.
   // TCGplayer prices for printings Scryfall leaves unpriced arrive in the background.
   window.addEventListener("cf:tcg-prices", () => { refreshHomeValueGlance(); if (S.ui.sheetCtx?.type === "card" && $("#sheet").open) refreshSheet(); else if (S.ui.view !== "home") render(); });
+  window.addEventListener("cf:mtg-synergy", () => { if ((S.state.settings?.game || "mtg") === "mtg") refreshSheet?.(); });
   window.addEventListener("cf:mtg-tags", () => { if ((S.state.settings?.game || "mtg") === "mtg") render(); });
   window.addEventListener("online", () => {
     setSaveStatus("Online", "ok");

@@ -215,6 +215,8 @@ const ASSETS = [
   "./mtg-cheap.js",
   "./mtg-tags.js",
   "./mtg-tags.json",
+  "./mtg-synergy.js",
+  "./mtg-synergy.json",
   "./mtg-tcgprice.js",
   "./dialog.js",
   "./buy.js",
