@@ -77,6 +77,7 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
     if (u.endsWith('/data/mtg-boosters/tst.json')) return new Response(JSON.stringify(booster));
     if (u.endsWith('/data/mtg-boosters/index.json')) return new Response(JSON.stringify({sets: {fra: {}, tst: {}}}));
     if (u.includes('/cards/collection')) return new Response(JSON.stringify({data: JSON.parse(init.body).identifiers.map(i => card(i.id || i.name))}));
+    if (u.includes('mtgjson.com/api/v5/DeckList.json')) return new Response(JSON.stringify({data: [{type: 'Theme Deck', fileName: 'TST_Precon', name: 'Test', releaseDate: '2026-01-01'}]}));
     if (u.includes('mtgjson.com/api/v5/decks/TST_Precon.json')) return new Response(JSON.stringify({data: precon}));
     if (u.includes('/forge-rules/')) return new Response(JSON.stringify({standardSets: []}));
     if (u.includes('/sets')) return new Response(JSON.stringify({data: []}));
@@ -130,14 +131,14 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
     assert.equal((await progressRoute(req('holo', {oracle: o}), env, {verifyBearer, fetcher})).status, 409, '1 seal is short');
     stateCards = []; wallet = {...wallet, seal_c: 7};
   }
-  // Precons: pay 25 coins a missing card (250 at least), get those copies in the exact printing,
+  // Precons: pay by rarity for each missing card (25/75/500/1500, 250 at least), only for the week's store decks, get those copies in the exact printing,
   // and the list is saved with its printings; basic lands are never charged.
-  wallet = {...wallet, coins: 300};
+  wallet = {...wallet, coins: 1150};
   const bought = await (await progressRoute(req('precon', {file: 'TST_Precon', format: 'Modern'}), env, {verifyBearer, fetcher})).json();
-  assert.equal(bought.price, 250, '6 missing cards cost the 250 minimum');
+  assert.equal(bought.price, 1100, '4 commons at 25 and 2 rares at 500');
   assert.equal(bought.granted, 6, 'Bolt capped at 4 copies across main and side, Dragonlord x2; no Mountains');
   const pApply = calls.find(c => c[0] === 'play_apply' && /^precon:/.test(c[1].p_ref));
-  assert.equal(pApply[1].p_delta.coins, -250);
+  assert.equal(pApply[1].p_delta.coins, -1100);
   assert.ok(pApply[1].p_delta.cards.every(c => c.set === 'tmp' && /cards\.scryfall\.io\/normal/.test(c.image)), 'exact printing for every copy');
   const pSave = calls.find(c => c[0] === 'play_save_deck');
   assert.deepEqual(pSave[1].p_cards.find(c => c.name === 'Mountain'), {name: 'Mountain', qty: 20, set: 'tmp', number: '20'}, 'basic lands keep their printing too');

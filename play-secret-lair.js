@@ -65,8 +65,8 @@ export const secretLairRef = week => 'sl:' + week;
 
 // Coins for the bundle: 300 a card, 1,000 to 2,500 (a pack is 500). config.secretLair can retune it.
 export function secretLairPrice(drop, config = {}) {
-  const c = config?.secretLair || {}, per = c.cardCoins ?? 300, min = c.minCoins ?? 1000, max = c.maxCoins ?? 2500;
-  return Math.max(min, Math.min(max, per * (drop?.cards?.length || 0)));
+  // Priced card by card (Randall 5 Nov): each card at its rarity's coin price, then summed.
+  return (drop?.cards || []).reduce((t, c) => t + secretLairOfferPrice({r: c.r}, config).was, 0);
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -87,7 +87,9 @@ export const secretLairStyle = c => ({o: c.o, id: c.id, n: c.n, i: secretLairIma
 // A rare style drop: the Secret Lair art of a card you own and have no style for yet. Owning none, it is a
 // card with a Secret Lair printing, and the card comes with it. Null when every printing is unlocked.
 export function pickSecretLairStyle(drops = [], owned = new Set(), unlocked = new Set(), rng = Math.random) {
-  const all = drops.flatMap(d => d.cards).filter(c => !unlocked.has(c.id));
+  const locked = drops.flatMap(d => d.cards).filter(c => !unlocked.has(c.id));
+  // Secret printings first: the store sells the rest, so rewards are where the secrets live.
+  const secrets = locked.filter(isSecretLair), all = secrets.length ? secrets : locked;
   const mine = all.filter(c => owned.has(c.o));
   const pool = mine.length ? mine : all;
   if (!pool.length) return null;
@@ -101,21 +103,25 @@ export function stylesFor(styles = [], oracle = '') {
   return {list, on: list.find(s => s.on) || null};
 }
 
-// The Secret Lair store (Randall 3 Nov 22:34Z, like Arena's card-style store): ten single Secret Lair
-// cards a week beside the bundle, a few of them on sale. Each one is the real printing: into the Trunk,
-// with its Secret Lair art unlocked. Pay in coins, or one seal of the card's rarity.
+// The Secret Lair store (Randall 3 Nov 22:34Z, like Arena's card-style store): single Secret Lair
+// cards a week, a few of them on sale. Each one is the real printing: into the Trunk,
+// with its Secret Lair art unlocked. Coins only (no seals, no bundle).
 const SALES = [60, 50, 40, 25];
 const BASIC = /^(?:Snow-Covered )?(?:Plains|Island|Swamp|Mountain|Forest|Wastes)$/;
-export const SECRET_LAIR_OFFERS = 10;
+export const SECRET_LAIR_OFFERS = 20;
+// Secret cards (Randall 5 Nov: "who says you are meant to collect them all, that's what makes them
+// special"): about one printing in seven never appears in the store. They come only from achievements,
+// Story bosses, god packs and other secret unlocks, so completing the set is a real feat.
+export const isSecretLair = card => hash('slsecret:' + (card?.id || '')) % 100 < 15;
 export function weeklySecretLairOffers(drops = [], week = '', today = '', bundleId = '', n = SECRET_LAIR_OFFERS) {
-  const pool = drops.filter(d => d.id !== bundleId && (!today || d.released <= today)).flatMap(d => d.cards).filter(c => !BASIC.test(c.n));
-  const out = [], seen = new Set();
-  let h = hash('slo:' + week);
-  for (let tries = 0; out.length < n && tries < n * 20 && pool.length; tries++) {
-    const c = pool[h % pool.length]; h = Math.imul(h ^ (h >>> 13), 2654435761) >>> 0;
-    if (seen.has(c.o)) continue;
-    seen.add(c.o); out.push(c);
-  }
+  // Every printing is on offer in turn (Randall 5 Nov: nothing unobtainable). The pool is put in a fixed
+  // shuffled order and each week takes the next window of six, so a full lap shows every printing once
+  // before any repeats. New drops join the order without disturbing the rest.
+  const pool = drops.filter(d => d.id !== bundleId && (!today || d.released <= today)).flatMap(d => d.cards).filter(c => !BASIC.test(c.n) && !isSecretLair(c))
+    .map(c => [hash('slo-order:' + c.id), c]).sort((a, b) => a[0] - b[0] || String(a[1].id).localeCompare(String(b[1].id))).map(x => x[1]);
+  const [y, w] = String(week).split('-W'), jan4 = Date.UTC(Number(y) || 2020, 0, 4), monday = jan4 - ((new Date(jan4).getUTCDay() + 6) % 7) * 864e5,
+    k = Math.round((monday + ((Number(w) || 1) - 1) * 7 * 864e5) / (7 * 864e5)); // consecutive for every Play week
+  const out = []; for (let i = 0; i < Math.min(n, pool.length); i++) out.push(pool[(k * n + i) % pool.length]);
   // Four are on sale, at 60, 50, 40 and 25% off, in places that change every week.
   const saleAt = new Set(); for (let i = 0; saleAt.size < Math.min(SALES.length, out.length); i++) saleAt.add((hash('sls:' + week + i)) % out.length);
   const order = [...saleAt];
