@@ -62,7 +62,7 @@ class ShopShotTest {
             add("secretLairStore", JsonObject().apply { addProperty("week", "2026-W45"); addProperty("ends", java.time.Instant.now().plusSeconds(2 * 86400 + 5 * 3600 + 120).toString())
                 add("offers", JsonArray().apply { slds.forEachIndexed { i, c -> add(c.deepCopy().apply { mapOf(1 to 60, 4 to 50, 9 to 40, 14 to 25)[i]?.let { addProperty("off", it) } }) } }) })
             add("styles", JsonArray().apply { slds.getOrNull(2)?.let { c -> add(JsonObject().apply { addProperty("id", c["id"].asString); addProperty("o", c["o"].asString) }) } })
-            add("preconStore", JsonParser.parseString("""{"week":"2026-W45","files":["fin-ub","fin-rw","blb-gw","blb-ur","otj-br"]}"""))
+            add("preconStore", JsonParser.parseString("""{"week":"2026-W45","files":["fin-ub","fin-rw","blb-gw","blb-ur","otj-br"],"formats":{"Standard":["fin-ub","fin-rw"],"Pioneer":["blb-gw","blb-ur"],"Modern":["otj-br"],"Legacy":[]}}"""))
         }
     }
 
@@ -105,6 +105,8 @@ class ShopShotTest {
         art(); val st = state(); Progress.setForTest(st, null); val pc = precons()
         rule.setContent { ShopRoute(onBack = {}, nav = { PlayNav(PlayTab.SHOP, {}) }, precon = pc) }
         settle(60); shot("front")
+        // The per-format store (preconStore.formats): Pioneer's shelf.
+        rule.onNodeWithText("Pioneer").performClick(); settle(20); shot("front-pioneer")
         rule.onNodeWithText("Every set, every year").performClick(); settle(20); shot("sets")
     }
     /** The storefront's first screen on the Fold's cover screen, as you land on it. */

@@ -201,6 +201,14 @@ data class PreconNeed(val sh: Decks.Shortfall, val short: Map<String, Int>, val 
 /** state.preconStore.files: this week's five store precons (play-precon-formats weeklyPrecons, from the server). */
 fun weeklyPrecons(state: JsonObject?): Set<String> =
     (state?.get("preconStore") as? JsonObject)?.getAsJsonArray("files")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }?.toSet().orEmpty()
+/**
+ * This week's store precons by format: /state preconStore.formats (play-precon-formats.js weeklyPreconsByFormat, PR #130:
+ * four each of Standard, Pioneer, Modern and Legacy), in the server's order. Empty from a server that only sends files.
+ */
+fun weeklyPreconFormats(state: JsonObject?): Map<String, List<String>> =
+    ((state?.get("preconStore") as? JsonObject)?.get("formats") as? JsonObject)?.entrySet()
+        ?.associate { (k, v) -> k to (v as? JsonArray)?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }.orEmpty() }
+        ?.filterValues { it.isNotEmpty() }.orEmpty()
 fun isWeeklyPrecon(state: JsonObject?, file: String) = file.removeSuffix(".json") in weeklyPrecons(state)
 fun preconNeed(rows: List<Decks.Row>, owned: Map<String, Int>, state: JsonObject, file: String = ""): PreconNeed {
     val sh = Decks.shortfall(rows, owned, rows.associate { it.name to it.rarity })

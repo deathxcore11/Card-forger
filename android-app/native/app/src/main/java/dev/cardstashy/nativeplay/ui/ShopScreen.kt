@@ -220,7 +220,7 @@ private fun Storefront(s: JsonObject, busy: Boolean, start: String, weekly: Set<
         stickyHeader(key = "aisles") { AisleBar(aisles, at, onAisle = { k -> scope.launch { list.animateScrollToItem(rowOf(k)) } }) }
         if (store != null && offers.isNotEmpty()) item(key = "sl") { SecretLairShowcase(s, store, busy, onSecretLair, onCard, onBrowse = { onSet("sld") }) }
         item(key = "packs") { PacksAisle(s, busy, onBuy, onSet, onAll = { onPage("sets") }) }
-        if (weekly.isNotEmpty()) item(key = "precons") { PreconAisle(precons, needOf, onPrecon) }
+        if (weekly.isNotEmpty()) item(key = "precons") { PreconAisle(precons, remember(s) { weeklyPreconFormats(s) }, needOf, onPrecon) }
         item(key = "forge") { Column(verticalArrangement = Arrangement.spacedBy(14.dp)) { Forge(s, actions); SealPress(s, busy, onStamp, onCard) } }
     }
 }
@@ -444,21 +444,34 @@ private fun ShelfPack(code: String, name: String, row: Trunk.SetRow?, price: Int
     }
 }
 
-/** This week's store precons (preconStore.files), by format when they span several; each is bought whole for coins. */
+/**
+ * This week's store precons, each bought whole for coins. With the server's per-format store (preconStore.formats) it is
+ * one shelf per format behind a row of format chips, Standard first; from a server that only sends the flat list, the
+ * precons are grouped by the formats their cards are legal in.
+ */
 @Composable
-private fun PreconAisle(precons: List<Decks.PreconEntry>?, needOf: (String) -> PreconNeed?, onOpen: (Decks.PreconEntry) -> Unit) {
+private fun PreconAisle(precons: List<Decks.PreconEntry>?, byFormat: Map<String, List<String>>, needOf: (String) -> PreconNeed?, onOpen: (Decks.PreconEntry) -> Unit) {
     var format by rememberSaveable { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         AisleHead("Precons", "Whole decks for coins. You only pay for the cards you don't have yet.")
         if (precons == null) { Text("Opening the deck boxes…", style = small); return@Column }
-        val formatsOf = { e: Decks.PreconEntry -> PreconStore.summaries[e.fileName]?.formats.orEmpty() }
-        val formats = precons.flatMap(formatsOf).distinct().sortedBy { Decks.PLAY_FORMATS.indexOf(it).let { i -> if (i < 0) 99 else i } }
-        if (formats.size > 1) ShelfRow {
-            item(key = "all") { ShelfChip("All", format.isEmpty(), precons.size) { format = "" } }
-            items(formats, key = { it }) { f -> ShelfChip(f, format == f, precons.count { f in formatsOf(it) }) { format = if (format == f) "" else f } }
+        val shown = if (byFormat.isNotEmpty()) {
+            val stocked = byFormat.mapValues { (_, files) -> files.mapNotNull { f -> precons.firstOrNull { it.fileName.removeSuffix(".json") == f } } }.filterValues { it.isNotEmpty() }
+            val at = format.takeIf { it in stocked } ?: stocked.keys.firstOrNull().orEmpty()
+            if (stocked.size > 1) ShelfRow { items(stocked.keys.toList(), key = { it }) { f -> ShelfChip(f, at == f, stocked.getValue(f).size) { format = f } } }
+            stocked[at].orEmpty()
+        } else {
+            val formatsOf = { e: Decks.PreconEntry -> PreconStore.summaries[e.fileName]?.formats.orEmpty() }
+            val formats = precons.flatMap(formatsOf).distinct().sortedBy { Decks.PLAY_FORMATS.indexOf(it).let { i -> if (i < 0) 99 else i } }
+            if (formats.size > 1) ShelfRow {
+                item(key = "all") { ShelfChip("All", format.isEmpty(), precons.size) { format = "" } }
+                items(formats, key = { it }) { f -> ShelfChip(f, format == f, precons.count { f in formatsOf(it) }) { format = if (format == f) "" else f } }
+            }
+            precons.filter { format.isEmpty() || format in formatsOf(it) }
         }
-        val shown = precons.filter { format.isEmpty() || format in formatsOf(it) }
-        LazyRow(Modifier.bleed(16.dp), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        val row = androidx.compose.foundation.lazy.rememberLazyListState()
+        LaunchedEffect(format) { row.scrollToItem(0) }
+        LazyRow(Modifier.bleed(16.dp), state = row, contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(shown, key = { it.fileName }) { e -> PreconTile(e, needOf(e.fileName), Modifier.width(272.dp), shop = true) { onOpen(e) } }
         }
     }
