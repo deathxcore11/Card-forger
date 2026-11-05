@@ -94,10 +94,10 @@ function verdictText(p, comp) {
   return `<b>${esc(tier.label)}.</b>${cap ? ` Held back by one thing above all: <b>${esc(cap.label.toLowerCase())}</b>. ${esc(cap.why || "")}` : ""}${gap} ${fixes.length ? `First things to fix: ${esc(list(fixes, 2))}.` : "The build checks find nothing major to fix."}`;
 }
 
-export function scoutingReport(p) {
-  if (!p) return "";
+export function scoutingRows(p) {
+  if (!p) return [];
   const comp = competitiveScore(p);
-  const rows = [
+  return [
     ["The plan", planText(p)],
     [p.goldfish?.limitations?.length ? "Simplified sequence" : "How a game goes", gameText(p)],
     ["What makes it work", synergyText(p)],
@@ -105,5 +105,11 @@ export function scoutingReport(p) {
     ["Against the field", fieldText(p)],
     ["Verdict", verdictText(p, comp)],
   ].filter(([, t]) => t);
+}
+
+export function scoutingReport(p) {
+  if (!p) return "";
+  const comp = competitiveScore(p);
+  const rows = scoutingRows(p);
   return `<section class="panel scout"><p class="eyebrow">Scouting report</p>${rows.map(([h, t]) => `<div class="scout-row"><h3>${h}</h3><p>${t}</p></div>`).join("")}<p class="foot">Written from this list's own numbers: shuffled hands, a played-out goldfish, rules-text links and recent tournament results. It reads cards, not opponents, so test the matchups it points to.</p></section>`;
 }
