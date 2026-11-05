@@ -267,10 +267,10 @@ private fun SheetButton(label: String, ghost: Boolean, onClick: () -> Unit) {
     }
 }
 
-/** blur(r) saturate(1.4): the saturation as a colour matrix chained under the blur (Android 12+; earlier, no backdrop-filter). */
-private fun frostEffect(r: Float): androidx.compose.ui.graphics.RenderEffect? {
+/** blur(r) saturate([sat]): the saturation as a colour matrix chained under the blur (Android 12+; earlier, no backdrop-filter). */
+internal fun frostEffect(r: Float, sat: Float = 1.4f): androidx.compose.ui.graphics.RenderEffect? {
     if (android.os.Build.VERSION.SDK_INT < 31) return null
-    val m = android.graphics.ColorMatrix().apply { setSaturation(1.4f) }
+    val m = android.graphics.ColorMatrix().apply { setSaturation(sat) }
     return android.graphics.RenderEffect.createChainEffect(android.graphics.RenderEffect.createColorFilterEffect(android.graphics.ColorMatrixColorFilter(m)),
         android.graphics.RenderEffect.createBlurEffect(r, r, android.graphics.Shader.TileMode.CLAMP)).asComposeRenderEffect()
 }

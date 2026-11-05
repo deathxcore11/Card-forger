@@ -352,12 +352,13 @@ private fun Stat(value: String, label: String) {
  * first card (cover at 50 % 22 %), under a 155° gloss.
  */
 @Composable
-private fun SiteDeckBox(cards: List<String>, color: String, wide: Boolean, modifier: Modifier) {
+internal fun SiteDeckBox(cards: List<String>, color: String, wide: Boolean, modifier: Modifier, box: androidx.compose.ui.unit.DpSize? = null) {
     val base = cssColor(color, Color(0xFF7664A0)) ?: Color(0xFF7664A0)
-    val (bw, bh) = if (wide) 50.dp to 54.dp else 42.dp to 46.dp
+    // [box]: a .deck-box sized by its place (.context-art: 48 × 58), the cards centred in it as polish.css centres them.
+    val (bw, bh) = box?.let { it.width to it.height } ?: if (wide) 50.dp to 54.dp else 42.dp to 46.dp
     val (cw, ch) = if (wide) 38.dp to 53.dp else 33.dp to 46.dp
     val card = RoundedCornerShape(5.dp)
-    Box(modifier.size(bw, bh), contentAlignment = Alignment.TopCenter) {
+    Box(modifier.size(bw, bh), contentAlignment = if (box != null) Alignment.Center else Alignment.TopCenter) {
         cards.forEachIndexed { i, src ->
             val p = heroPainter(homeArt(src))
             Box(Modifier.size(cw, ch).graphicsLayer {

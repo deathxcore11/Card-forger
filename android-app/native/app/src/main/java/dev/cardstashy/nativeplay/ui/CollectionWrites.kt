@@ -29,11 +29,18 @@ internal object CollectionWrites {
     fun show(text: String, undo: Boolean = false) { _toast.value = Toast(text, undo) }
 
     /** dialog.js ask: a question the player answers before the write runs; yes taps again with confirmed (or runs [then]). */
-    data class Ask(val question: String, val kind: String, val data: JsonObject, val then: (suspend () -> Unit)? = null)
+    data class Ask(val question: String, val kind: String, val data: JsonObject, val then: (suspend () -> Unit)? = null, val after: ((JsonObject) -> Unit)? = null)
     private val _ask = MutableStateFlow<Ask?>(null); val ask: StateFlow<Ask?> = _ask
     fun answer(yes: Boolean, context: Context, scope: kotlinx.coroutines.CoroutineScope) {
         val a = _ask.value ?: return; _ask.value = null
-        if (yes) scope.launch { a.then?.invoke() ?: act(context, a.kind, a.data.deepCopy().apply { addProperty("confirmed", true) }) }
+        if (yes) scope.launch { a.then?.invoke() ?: act(context, a.kind, a.data.deepCopy().apply { addProperty("confirmed", true) }, a.after) }
+    }
+    /** dialog.js askText(question, value): the words typed (trimmed), or null for Cancel. One at a time. */
+    data class AskText(val question: String, val value: String, val reply: kotlinx.coroutines.CompletableDeferred<String?> = kotlinx.coroutines.CompletableDeferred())
+    val askingText = MutableStateFlow<AskText?>(null)
+    suspend fun askText(question: String, value: String): String? {
+        val a = AskText(question, value); askingText.value = a
+        return try { a.reply.await() } finally { if (askingText.value === a) askingText.value = null }
     }
     /** dialog.js ask(question) for anything else: [then] runs on yes. */
     fun confirm(question: String, then: suspend () -> Unit) { _ask.value = Ask(question, "", JsonObject(), then) }
@@ -58,14 +65,15 @@ internal object CollectionWrites {
     /**
      * One saving tap: [kind] is the site's data-act (cardWishlist, cardOwnedQty, qty, wishRemove, tEntryQty, tWish, addDelete, deckQty,
      * deckRemove, deckEmbSwap, deckAdd, addToDeck) and
-     * [data] the button's dataset. True when something was saved.
+     * [data] the button's dataset. True when something was saved; [after] then gets the result (its `made`), here or once a
+     * question before it is answered yes.
      */
-    suspend fun act(context: Context, kind: String, data: JsonObject): Boolean {
-        pendingAsk = Ask("", kind, data)
+    suspend fun act(context: Context, kind: String, data: JsonObject, after: ((JsonObject) -> Unit)? = null): Boolean {
+        pendingAsk = Ask("", kind, data, after = after)
         val r = commitAct(context, kind, data) ?: return false
         val saved = done(r)
         if (kind == "addDelete" && saved) adding.value = null
-        if (saved) settleLater(context)
+        if (saved) { settleLater(context); after?.invoke(r) }
         return saved
     }
 
@@ -117,6 +125,40 @@ internal object CollectionWrites {
             if (!ensureCollection(context.applicationContext, s.userId, true, Decks.fullRevision.value)) return null.also { show("Your collection is still loading. Try again in a moment.") }
             CollectionEngine.deckPick(game)
         }
+    }
+
+    /**
+     * A deck's ⋯ menu (app.js A.deckMenu) over the page that opened it: what its shortcuts, the actions still on the website, a
+     * duplicate and a deletion do there.
+     */
+    data class DeckMenuOpen(val deck: String, val tab: (String) -> Unit, val web: (act: String, scope: String) -> Unit, val openDeck: (String) -> Unit,
+                            val deleted: () -> Unit, val id: Long = System.nanoTime())
+    val menu = MutableStateFlow<DeckMenuOpen?>(null)
+    /** The menu's model from this device's collection (CollectionEngine.deckMenu). Null (with a toast) when it can't open. */
+    suspend fun deckMenuModel(context: Context, deck: String): JsonObject? = withCollection(context) { CollectionEngine.deckMenu(deck) }
+    /** core.js exportDeckText for the deck and app.js's file name for it: {text, file}. */
+    suspend fun deckText(context: Context, deck: String): JsonObject? = withCollection(context) { CollectionEngine.deckText(deck) }
+    private suspend fun withCollection(context: Context, run: suspend () -> JsonObject): JsonObject? {
+        val s = Account.session.value ?: return null.also { show("Sign in to save cards to your collection.") }
+        return WorkspaceSync.lock.withLock {
+            if (!ensureCollection(context.applicationContext, s.userId, true, Decks.fullRevision.value)) return null.also { show("Your collection is still loading. Try again in a moment.") }
+            run()
+        }
+    }
+    /** app.js download(name, text): the file in Downloads (this app's own folder before Android 10), as the browser saves it. */
+    @Volatile internal var download: (Context, String, String) -> Unit = { c, name, text -> saveText(c, name, text) }
+    private fun saveText(c: Context, name: String, text: String) {
+        val bytes = text.toByteArray()
+        if (android.os.Build.VERSION.SDK_INT >= 29) {
+            val r = c.contentResolver
+            val v = android.content.ContentValues().apply {
+                put(android.provider.MediaStore.Downloads.DISPLAY_NAME, name); put(android.provider.MediaStore.Downloads.MIME_TYPE, "text/plain")
+                put(android.provider.MediaStore.Downloads.IS_PENDING, 1)
+            }
+            val uri = r.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, v) ?: error("Couldn’t save the file.")
+            r.openOutputStream(uri)!!.use { it.write(bytes) }
+            r.update(uri, android.content.ContentValues().apply { put(android.provider.MediaStore.Downloads.IS_PENDING, 0) }, null, null)
+        } else java.io.File(c.getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS) ?: c.filesDir, name).writeBytes(bytes)
     }
 
     /** app.js closeSheet for the add sheet whose model said [ctx]. */

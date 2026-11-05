@@ -339,7 +339,7 @@ private fun App(activity: MainActivity) {
                 onCards = { if (NATIVE_CARDS) go(Screen.CollectionCards) else go(Screen.Web("https://cardstashy.com/#collection", null)) },
                 // A.deckPlayCpu: the Practice lobby with this deck in your seat.
                 onPractice = { id, format -> lobbies.getOrPut("practice") { dev.cardstashy.nativeplay.ui.LobbyModel("practice") }.practiceWith(id, format); go(Screen.Lobby("practice")) },
-                web = { url, press -> go(Screen.Web(url, press)) }, nativeCard = NATIVE_CARD, onSet = setOpen)
+                web = { url, press -> go(Screen.Web(url, press)) }, nativeCard = NATIVE_CARD, onSet = setOpen, onDeck = { id -> go(Screen.CollectionDeck(id)) })
         }
         is Screen.CollectionSets -> {
             LaunchedEffect(Unit) { activity.inGame(false) }

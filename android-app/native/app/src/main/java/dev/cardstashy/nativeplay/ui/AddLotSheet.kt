@@ -335,7 +335,8 @@ internal fun FormInput(value: String, onValue: (String) -> Unit, style: TextStyl
 
 /** A <select> as glass-select.js draws it: the chosen option on the glass field and the arrow; a tap opens the list. */
 @Composable
-internal fun FormSelect(options: List<Pair<String, String>>, selected: String, style: TextStyle, minH: Dp = 44.dp, desc: String = "", onPick: (String) -> Unit) {
+internal fun FormSelect(options: List<Pair<String, String>>, selected: String, style: TextStyle, minH: Dp = 44.dp, desc: String = "", groups: List<String> = emptyList(),
+                        onPick: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Box {
         Row(Modifier.fillMaxWidth().heightIn(min = minH).siteGlassField(11.dp).clip(RoundedCornerShape(11.dp)).clickable { open = true }
@@ -347,7 +348,11 @@ internal fun FormSelect(options: List<Pair<String, String>>, selected: String, s
             })
         }
         DropdownMenu(open, { open = false }, containerColor = Color(0xFF1A1E26)) {
-            options.forEach { (v, l) ->
+            options.forEachIndexed { i, (v, l) ->
+                // <optgroup>: glass-select.js's .gp-title over its first option (10.5 / 800, uppercase, white at 50 %).
+                groups.getOrNull(i)?.takeIf { it.isNotEmpty() }?.let { g ->
+                    Text(g.uppercase(), Modifier.padding(start = 10.dp, end = 10.dp, top = if (i == 0) 4.dp else 10.dp, bottom = 6.dp), style = cssType(10.5f, 800, 14f, Color(0x80FFFFFF), 1.05f))
+                }
                 DropdownMenuItem(text = { Text(l, style = cssType(14f, if (v == selected) 700 else 400, 20f, if (v == selected) Site.Gold else AInk)) },
                     onClick = { open = false; if (v != selected) onPick(v) })
             }

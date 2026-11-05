@@ -45,13 +45,14 @@ private object DeckCache {
  * A deck's page (views.js deckPage, its Cards tab) through the site's own code, drawn natively. Search, the type chips,
  * the grouping and the four views ask the site's code again (app.js deckSearch / deckChip / deckSort / deckView);
  * Practice seats the deck in the native Practice lobby as A.deckPlayCpu does. The − / ＋, the swaps and "+ Add" save here
- * (app.js deckQty / deckEmbSwap / deckAdd through CollectionWrites). The menu, review, Share, the footer and the other tabs
- * (Rules, Power, Matchups, Upgrade lab, Versions, War Chest) open the website's page, which does them there.
+ * (app.js deckQty / deckEmbSwap / deckAdd through CollectionWrites), and the ⋯ menu is native (DeckMenuSheet). Review, Share,
+ * the footer and the other tabs (Rules, Power, Matchups, Upgrade lab, Versions, War Chest) open the website's page, which does
+ * them there.
  */
 @Composable
 fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Unit, onBack: () -> Unit, onHome: () -> Unit, onCards: () -> Unit,
                         onPractice: (id: String, format: String) -> Unit, web: (url: String, press: String?) -> Unit, nativeCard: Boolean = false,
-                        onSet: ((String) -> Unit)? = null) {
+                        onSet: ((String) -> Unit)? = null, onDeck: ((String) -> Unit)? = null) {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
@@ -117,6 +118,11 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
             act = { a, id ->
                 when {
                     a == "deckPlayCpu" -> onPractice(deckId, model?.format.orEmpty())
+                    // A.deckMenu: the menu here (DeckMenuSheet); what it still leaves to the website opens the site's menu and taps it.
+                    a == "deckMenu" && onDeck != null -> CollectionWrites.menu.value = CollectionWrites.DeckMenuOpen(deckId,
+                        tab = { k -> if (k != "cards") web("$page/" + android.net.Uri.encode(k), null) },
+                        web = { x, sc -> web(page, "[data-act=\"deckMenu\"]\n[data-act=\"${css(x)}\"]" + (if (sc.isNotEmpty()) "[data-scope=\"${css(sc)}\"]" else "")) },
+                        openDeck = onDeck, deleted = onBack)
                     a.isBlank() -> {}
                     id.isNotBlank() -> web(page, "[data-act=\"${css(a)}\"][data-id=\"${css(id)}\"]")
                     else -> web(page, "[data-act=\"${css(a)}\"]")
