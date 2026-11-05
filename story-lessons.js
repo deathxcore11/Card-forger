@@ -159,6 +159,6 @@ export const LESSON_STACKS = {
 // The Forge host with setup.stack went live 5 Nov 00:22Z (PR #121, 0996b7e6). The in-app engine (older APKs, the web build inside the
 // APK) refuses an unknown `setup` key until the APK with the engine port ships: flip STACK_LOCAL_LIVE then.
 export const STACK_HOST_LIVE = true;
-export const STACK_LOCAL_LIVE = false;
+export const STACK_LOCAL_LIVE = true;
 const STACK_LIVE = STACK_HOST_LIVE;
 export const lessonSetup = (id, live = STACK_LIVE) => live && LESSON_STACKS[id] ? {stack: structuredClone(LESSON_STACKS[id]), noMulligan: true} : null;
