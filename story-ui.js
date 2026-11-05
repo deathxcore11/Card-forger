@@ -279,6 +279,9 @@ export const LESSONS = {
   'Double strike': 'Double strike deals damage twice, first-strike and regular. Boosts are doubled too.',
   'Job select': 'Job select: when this equipment enters, it makes a 1/1 Hero and attaches itself. A new job for a new body.',
   'Summons': 'Summons are Saga creatures. They arrive, act over three turns, then leave. Time them before the big attack.',
+  'Station': 'Station: tap your creatures to add charge to a Spacecraft. Once it is charged enough, it comes alive as a vehicle with real power.',
+  'Warp': 'Warp: cast it cheaper from your hand, but it is exiled at end of turn. You can cast it again from exile later, at full cost.',
+  'Void': 'Void turns on if a permanent left the battlefield or a spell was warped this turn. Plan the turn so the bonus lands.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or

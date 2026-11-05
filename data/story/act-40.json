@@ -1,0 +1,2751 @@
+{
+ "act": 40,
+ "era": "2025-08-01",
+ "title": "The Edge of Eternities",
+ "years": "2025",
+ "sets": [
+  "eoe",
+  "eos"
+ ],
+ "landSet": "eoe",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Past the last Omenpath, the stars thin out. This is Sothera, and the stories here are about endings."
+  },
+  {
+   "who": "stage",
+   "line": "Kav miners, Eumidian gardeners, Uthros scientists and a faith that worships the dark all share one edge of the galaxy."
+  },
+  {
+   "who": "stage",
+   "line": "Recorded: the Edge of Eternities, August 2025. A new kind of Magic, set among the stars."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "The supervoid collapses on itself and the Monoist hymn goes quiet."
+  },
+  {
+   "who": "haliya",
+   "line": "Beyond the edge of faith lies eternal hope.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Sunstar light reaches the Edge again. The road bends on toward whatever comes next."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "In this version the dark keeps the Edge. The stars go out one by one."
+  },
+  {
+   "who": "alpharael",
+   "line": "All things end. I'd rather embrace that truth than the fantasy of eternal light.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The Omenpath home flickers, and holds, just long enough for you to leave."
+  }
+ ],
+ "vibe": "edge-of-the-galaxy",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Starfighter Pilot",
+    "set": "eoe",
+    "number": "38",
+    "id": "1e571246-aadc-4d1f-a284-9a529e150fe0",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/e/1e571246-aadc-4d1f-a284-9a529e150fe0.jpg?1783905990",
+    "artist": "Nathaniel Himawan",
+    "focus": "50% 30%"
+   }
+  },
+  "sami": {
+   "name": "Sami",
+   "title": "Ship's Engineer",
+   "portrait": {
+    "card": "Sami, Wildcat Captain",
+    "set": "eoe",
+    "number": "226",
+    "id": "bed64207-9193-4770-8f8f-e3203289d5a6",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/e/bed64207-9193-4770-8f8f-e3203289d5a6.jpg?1783905925",
+    "artist": "Kieran Yanner",
+    "focus": "50% 25%"
+   }
+  },
+  "kav": {
+   "name": "The Kav Miners",
+   "title": "Of Kavaron",
+   "portrait": {
+    "card": "Slagdrill Scrapper",
+    "set": "eoe",
+    "number": "160",
+    "id": "155dcf54-8fdb-4715-97dc-4eb5d3d80d78",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/5/155dcf54-8fdb-4715-97dc-4eb5d3d80d78.jpg?1783905946",
+    "artist": "Edgar Sánchez Hidalgo",
+    "focus": "50% 30%"
+   }
+  },
+  "eumidians": {
+   "name": "The Eumidians",
+   "title": "Of Evendo",
+   "portrait": {
+    "card": "Eumidian Terrabotanist",
+    "set": "eoe",
+    "number": "180",
+    "id": "64fb2981-86ed-478a-89cd-c6bb078a5bc7",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/4/64fb2981-86ed-478a-89cd-c6bb078a5bc7.jpg?1783905940",
+    "artist": "Loïc Canavaggia",
+    "focus": "50% 30%"
+   }
+  },
+  "navy": {
+   "name": "The Kavaron Memorial Navy",
+   "title": "Of the Edge",
+   "portrait": {
+    "card": "Vaultguard Trooper",
+    "set": "eoe",
+    "number": "166",
+    "id": "36afe3b1-43a2-47b4-bc0a-24efb1e2e5a0",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/6/36afe3b1-43a2-47b4-bc0a-24efb1e2e5a0.jpg?1783905944",
+    "artist": "David Palumbo",
+    "focus": "50% 30%"
+   }
+  },
+  "uthros": {
+   "name": "The Uthros Combine",
+   "title": "Of the Godcore",
+   "portrait": {
+    "card": "Mechan Navigator",
+    "set": "eoe",
+    "number": "64",
+    "id": "a1fe1d39-42c8-41d0-8bf0-46973e4b07d4",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/1/a1fe1d39-42c8-41d0-8bf0-46973e4b07d4.jpg?1783905980",
+    "artist": "Konstantin Porubov",
+    "focus": "50% 30%"
+   }
+  },
+  "tezzeret": {
+   "name": "Tezzeret",
+   "title": "Cruel Captain",
+   "portrait": {
+    "card": "Tezzeret, Cruel Captain",
+    "set": "eoe",
+    "number": "2",
+    "id": "02e8e540-8aa3-4e6a-9a11-c3949cab5f0f",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/2/02e8e540-8aa3-4e6a-9a11-c3949cab5f0f.jpg?1783906001",
+    "artist": "Chris Rahn",
+    "focus": "50% 25%"
+   }
+  },
+  "sunstar": {
+   "name": "The Sunstar Free Company",
+   "title": "Of Taman IV",
+   "portrait": {
+    "card": "Dawnstrike Vanguard",
+    "set": "eoe",
+    "number": "10",
+    "id": "5a041722-9483-469f-9c17-7f0253b0db50",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/a/5a041722-9483-469f-9c17-7f0253b0db50.jpg?1783905997",
+    "artist": "Arif Wijaya",
+    "focus": "50% 30%"
+   }
+  },
+  "haliya": {
+   "name": "Haliya",
+   "title": "Guided by Light",
+   "portrait": {
+    "card": "Haliya, Guided by Light",
+    "set": "eoe",
+    "number": "19",
+    "id": "6f7c63ae-5df3-410f-8643-b8c69133ca9d",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/f/6f7c63ae-5df3-410f-8643-b8c69133ca9d.jpg?1783905996",
+    "artist": "Kieran Yanner",
+    "focus": "50% 25%"
+   }
+  },
+  "alpharael": {
+   "name": "Alpharael",
+   "title": "Stonechosen",
+   "portrait": {
+    "card": "Alpharael, Stonechosen",
+    "set": "eoe",
+    "number": "87",
+    "id": "33063d26-37f7-4e35-8da2-5770dfabdc41",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/3/33063d26-37f7-4e35-8da2-5770dfabdc41.jpg?1783905971",
+    "artist": "Kieran Yanner",
+    "focus": "50% 25%"
+   }
+  },
+  "drix": {
+   "name": "The Drix",
+   "title": "Weftwalkers",
+   "portrait": {
+    "card": "Genemorph Imago",
+    "set": "eoe",
+    "number": "217",
+    "id": "40f0ecf7-f49e-46ff-aa5b-9ff5361b72c5",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/0/40f0ecf7-f49e-46ff-aa5b-9ff5361b72c5.jpg?1783905926",
+    "artist": "Brian Valeza",
+    "focus": "50% 30%"
+   }
+  },
+  "wilds": {
+   "name": "The Wilds of Evendo",
+   "title": "Thawing",
+   "portrait": {
+    "card": "Frenzied Baloth",
+    "set": "eoe",
+    "number": "183",
+    "id": "c72d85e9-a0bc-4f73-8d73-c58843577f4e",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/7/c72d85e9-a0bc-4f73-8d73-c58843577f4e.jpg?1783905939",
+    "artist": "Diana Franco",
+    "focus": "50% 30%"
+   }
+  },
+  "pinnacle": {
+   "name": "The Pinnacle Envoys",
+   "title": "Of the Edge",
+   "portrait": {
+    "card": "Mechan Shieldmate",
+    "set": "eoe",
+    "number": "65",
+    "id": "745b2119-4d9f-431f-89b9-10ad48b6dc47",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/4/745b2119-4d9f-431f-89b9-10ad48b6dc47.jpg?1783905978",
+    "artist": "Daniel Ljunggren",
+    "focus": "50% 30%"
+   }
+  },
+  "syr": {
+   "name": "Syr Vondam",
+   "title": "The Lucent",
+   "portrait": {
+    "card": "Syr Vondam, Sunstar Exemplar",
+    "set": "eoe",
+    "number": "231",
+    "id": "49554198-549b-4066-86ce-77a03fda0a2f",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/9/49554198-549b-4066-86ce-77a03fda0a2f.jpg?1783905923",
+    "artist": "Ryan Pancoast",
+    "focus": "50% 25%"
+   }
+  },
+  "reckoning": {
+   "name": "The Kav Reckoning",
+   "title": "Last of Kavaron",
+   "portrait": {
+    "card": "Mutinous Massacre",
+    "set": "eoe",
+    "number": "222",
+    "id": "42d5034f-18f0-4d57-9840-6be52c286247",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/2/42d5034f-18f0-4d57-9840-6be52c286247.jpg?1783905925",
+    "artist": "Quintin Gleim",
+    "focus": "50% 30%"
+   }
+  },
+  "illvoi": {
+   "name": "The Illvoi",
+   "title": "Cloudkill Scientists",
+   "portrait": {
+    "card": "Cryoshatter",
+    "set": "eoe",
+    "number": "53",
+    "id": "7b62b1e2-9e43-4a66-a647-7e5de2871f2a",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/b/7b62b1e2-9e43-4a66-a647-7e5de2871f2a.jpg?1783905983",
+    "artist": "Jeremy Wilson",
+    "focus": "50% 30%"
+   }
+  },
+  "alliance": {
+   "name": "The Edge Alliance",
+   "title": "Sunstar and Kav",
+   "portrait": {
+    "card": "Sami, Wildcat Captain",
+    "set": "eoe",
+    "number": "226",
+    "id": "bed64207-9193-4770-8f8f-e3203289d5a6",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/e/bed64207-9193-4770-8f8f-e3203289d5a6.jpg?1783905925",
+    "artist": "Kieran Yanner",
+    "focus": "50% 25%"
+   }
+  },
+  "sothera": {
+   "name": "Sothera",
+   "title": "The Supervoid",
+   "portrait": {
+    "card": "Sothera, the Supervoid",
+    "set": "eoe",
+    "number": "115",
+    "id": "e99d6fc0-dcf2-4b25-81c2-02c230a36246",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/9/e99d6fc0-dcf2-4b25-81c2-02c230a36246.jpg?1783905962",
+    "artist": "Dominik Mayer",
+    "focus": "50% 25%"
+   }
+  },
+  "tannuk": {
+   "name": "Tannuk",
+   "title": "Memorial Ensign",
+   "portrait": {
+    "card": "Tannuk, Memorial Ensign",
+    "set": "eoe",
+    "number": "233",
+    "id": "52498b7b-0389-4e7b-b29f-7ac86aab9229",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/2/52498b7b-0389-4e7b-b29f-7ac86aab9229.jpg?1783905921",
+    "artist": "David Auden Nash",
+    "focus": "50% 25%"
+   }
+  },
+  "station": {
+   "name": "Infinite Guideline Station",
+   "title": "The Station Monitors",
+   "portrait": {
+    "card": "Station Monitor",
+    "set": "eoe",
+    "number": "230",
+    "id": "ba9f6d16-ee3e-4fbb-b78a-6292188eb61f",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/a/ba9f6d16-ee3e-4fbb-b78a-6292188eb61f.jpg?1783905924",
+    "artist": "Camille Alquier",
+    "focus": "50% 30%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a40b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "Salvage Rights",
+   "difficulty": "Easy",
+   "teaches": [
+    "Station"
+   ],
+   "blurb": "A skeleton crew, a patched ship and a mining claim somebody else wants.",
+   "rewardSet": "eoe",
+   "host": false,
+   "hero": {
+    "who": "sami",
+    "deck": {
+     "name": "Sami's Salvage Crew",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Sami, Ship's Engineer",
+       "set": "eoe",
+       "number": "225",
+       "id": "75c38cc9-07de-46d4-8195-f04b2b7e0fee"
+      },
+      {
+       "qty": 2,
+       "name": "Tannuk, Steadfast Second",
+       "set": "eoe",
+       "number": "162",
+       "id": "44607ed3-9523-40ac-9f61-0edd011cf762"
+      },
+      {
+       "qty": 4,
+       "name": "Starfighter Pilot",
+       "set": "eoe",
+       "number": "38",
+       "id": "1e571246-aadc-4d1f-a284-9a529e150fe0"
+      },
+      {
+       "qty": 3,
+       "name": "Rayblade Trooper",
+       "set": "eoe",
+       "number": "30",
+       "id": "c08c7bf9-a2ed-45c6-8b48-15122d9d9e37"
+      },
+      {
+       "qty": 4,
+       "name": "Plasma Bolt",
+       "set": "eoe",
+       "number": "152",
+       "id": "a1a1834b-76c2-4496-b8c5-18b69ab34c4c"
+      },
+      {
+       "qty": 2,
+       "name": "Radiant Strike",
+       "set": "eoe",
+       "number": "29",
+       "id": "8c38e4cb-918b-4493-872b-66c90dcfd339"
+      },
+      {
+       "qty": 2,
+       "name": "Nutrient Block",
+       "set": "eoe",
+       "number": "243",
+       "id": "a26064bb-c568-4ed6-86db-3aab69b050db"
+      },
+      {
+       "qty": 4,
+       "name": "Sunstar Expansionist",
+       "set": "eoe",
+       "number": "41",
+       "id": "93b0e6e5-9fb6-4342-9322-1a4cc09a7a76"
+      },
+      {
+       "qty": 4,
+       "name": "Exosuit Savior",
+       "set": "eoe",
+       "number": "16",
+       "id": "826c0455-a6ce-43ad-bd5c-0a5df169da90"
+      },
+      {
+       "qty": 4,
+       "name": "Weftstalker Ardent",
+       "set": "eoe",
+       "number": "169",
+       "id": "cddb48cc-8eb1-47ce-90f0-7aad1e93e2c4"
+      },
+      {
+       "qty": 4,
+       "name": "Kavaron Turbodrone",
+       "set": "eoe",
+       "number": "141",
+       "id": "f5e92cdd-75df-499e-94f7-22287f1000b3"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "eoe",
+       "number": "265",
+       "id": "3204f401-1bcb-4d97-b15d-113a5d3c3e9f"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "eoe",
+       "number": "262",
+       "id": "089ae01b-e042-4255-b0ee-17d8f416a8d9"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "kav",
+    "deck": {
+     "name": "The Kav Miners",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Slagdrill Scrapper",
+       "set": "eoe",
+       "number": "160",
+       "id": "155dcf54-8fdb-4715-97dc-4eb5d3d80d78"
+      },
+      {
+       "qty": 4,
+       "name": "Oreplate Pangolin",
+       "set": "eoe",
+       "number": "150",
+       "id": "90209957-95db-4b59-979a-316d14ef876c"
+      },
+      {
+       "qty": 4,
+       "name": "Kavaron Turbodrone",
+       "set": "eoe",
+       "number": "141",
+       "id": "f5e92cdd-75df-499e-94f7-22287f1000b3"
+      },
+      {
+       "qty": 1,
+       "name": "Bombard",
+       "set": "eoe",
+       "number": "129",
+       "id": "29492df8-3077-4ded-a6e2-51d3bd4669b4"
+      },
+      {
+       "qty": 4,
+       "name": "Frontline War-Rager",
+       "set": "eoe",
+       "number": "134",
+       "id": "fa232943-818b-4944-be60-2d80c806bf62"
+      },
+      {
+       "qty": 4,
+       "name": "Molecular Modifier",
+       "set": "eoe",
+       "number": "146",
+       "id": "7b80b9c9-a871-4c04-b8be-feb81a900591"
+      },
+      {
+       "qty": 4,
+       "name": "Weftstalker Ardent",
+       "set": "eoe",
+       "number": "169",
+       "id": "cddb48cc-8eb1-47ce-90f0-7aad1e93e2c4"
+      },
+      {
+       "qty": 4,
+       "name": "Zookeeper Mechan",
+       "set": "eoe",
+       "number": "170",
+       "id": "8d5cd0be-4337-4aba-a4f6-5adab7735a73"
+      },
+      {
+       "qty": 4,
+       "name": "Terrapact Intimidator",
+       "set": "eoe",
+       "number": "164",
+       "id": "13fe3358-fd68-4245-a2ad-aa9200cf4655"
+      },
+      {
+       "qty": 3,
+       "name": "Memorial Team Leader",
+       "set": "eoe",
+       "number": "144",
+       "id": "3ddc240a-62df-4773-98d7-48a9adaf1846"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "eoe",
+       "number": "265",
+       "id": "3204f401-1bcb-4d97-b15d-113a5d3c3e9f"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "7f1edf4c-46a1-426d-8ce9-757a4c27367d",
+      "name": "Slagdrill Scrapper",
+      "rarity": "common",
+      "set": "eoe",
+      "id": "155dcf54-8fdb-4715-97dc-4eb5d3d80d78",
+      "image": "https://cards.scryfall.io/normal/front/1/5/155dcf54-8fdb-4715-97dc-4eb5d3d80d78.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "sami",
+     "line": "The hard way it is.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "We're a few bones short of a skeleton crew, Sami, but we've got plenty of spine.",
+     "quote": true
+    },
+    {
+     "who": "sami",
+     "line": "Station: tap your creatures to charge a Spacecraft. When it is charged, it is a real ship."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "kav",
+     "line": "Soon we'll have enough firepower to rid Evendo of its bug infestation.",
+     "quote": true
+    },
+    {
+     "who": "kav",
+     "line": "Kav miners: the claim is ours. Dig first, argue later."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "The hard way it is.",
+     "big": "Full burn!",
+     "low": "Hull is cracking...",
+     "win": "Claim secured.",
+     "loss": "Abandon ship...",
+     "half": "Charge the ship with your creatures."
+    },
+    "villain": {
+     "start": "Dig!",
+     "big": "Open the drills!",
+     "low": "The claim is slipping...",
+     "win": "Ours.",
+     "loss": "Lost it..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a40b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "The Thaw of Evendo",
+   "difficulty": "Easy",
+   "teaches": [
+    "Warp"
+   ],
+   "blurb": "The Eumidians are thawing a frozen moon. The Kav Navy has other ideas.",
+   "rewardSet": "eoe",
+   "host": false,
+   "hero": {
+    "who": "eumidians",
+    "deck": {
+     "name": "The Eumidians of Evendo",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Seedship Agrarian",
+       "set": "eoe",
+       "number": "204",
+       "id": "2fc7946d-37b0-4dc8-9daa-8d2204d8e4d2"
+      },
+      {
+       "qty": 4,
+       "name": "Lashwhip Predator",
+       "set": "eoe",
+       "number": "195",
+       "id": "24553e98-29a9-47e3-91c7-9add708d9ad1"
+      },
+      {
+       "qty": 3,
+       "name": "Terrasymbiosis",
+       "set": "eoe",
+       "number": "210",
+       "id": "26008c7d-5dbe-4da2-b475-4dd307e7bc68"
+      },
+      {
+       "qty": 4,
+       "name": "Biosynthic Burst",
+       "set": "eoe",
+       "number": "173",
+       "id": "6d73a4a8-5d52-4c12-a96a-45cd202bcc62"
+      },
+      {
+       "qty": 2,
+       "name": "Eusocial Engineering",
+       "set": "eoe",
+       "number": "181",
+       "id": "011bd7d8-6d60-482a-91b7-d3f0aad13b71"
+      },
+      {
+       "qty": 4,
+       "name": "Skystinger",
+       "set": "eoe",
+       "number": "207",
+       "id": "dfea9941-3675-4c0f-bc4d-981c28deed36"
+      },
+      {
+       "qty": 4,
+       "name": "Galactic Wayfarer",
+       "set": "eoe",
+       "number": "185",
+       "id": "85b898d2-050f-49a2-87af-07d54d105336"
+      },
+      {
+       "qty": 4,
+       "name": "Thawbringer",
+       "set": "eoe",
+       "number": "211",
+       "id": "0b7f934f-8eb4-408b-a55f-245ec5cc4a8a"
+      },
+      {
+       "qty": 4,
+       "name": "Meltstrider Eulogist",
+       "set": "eoe",
+       "number": "197",
+       "id": "df61aa0c-effc-4d57-be19-876a82c41d33"
+      },
+      {
+       "qty": 3,
+       "name": "Broodguard Elite",
+       "set": "eoe",
+       "number": "175",
+       "id": "08b1d019-65ab-4dea-9076-041fd6338a35"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "eoe",
+       "number": "266",
+       "id": "8335b9f1-e726-423b-8ba7-6151448ab3fd"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "navy",
+    "deck": {
+     "name": "The Kavaron Memorial Navy",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Vaultguard Trooper",
+       "set": "eoe",
+       "number": "166",
+       "id": "36afe3b1-43a2-47b4-bc0a-24efb1e2e5a0"
+      },
+      {
+       "qty": 4,
+       "name": "Frontline War-Rager",
+       "set": "eoe",
+       "number": "134",
+       "id": "fa232943-818b-4944-be60-2d80c806bf62"
+      },
+      {
+       "qty": 3,
+       "name": "Devastating Onslaught",
+       "set": "eoe",
+       "number": "132",
+       "id": "fc779971-24e2-46a8-86be-16f0b244a3d2"
+      },
+      {
+       "qty": 2,
+       "name": "Invasive Maneuvers",
+       "set": "eoe",
+       "number": "137",
+       "id": "b68010e2-7810-43cb-a52e-e73b1834e54e"
+      },
+      {
+       "qty": 3,
+       "name": "Terminal Velocity",
+       "set": "eoe",
+       "number": "163",
+       "id": "1d18dc06-16f0-4a3b-8d52-dbf4aa2c393d"
+      },
+      {
+       "qty": 2,
+       "name": "Rig for War",
+       "set": "eoe",
+       "number": "156",
+       "id": "3edd0515-dcc4-4cb5-8b54-9c00173d8a6d"
+      },
+      {
+       "qty": 4,
+       "name": "Kavaron Turbodrone",
+       "set": "eoe",
+       "number": "141",
+       "id": "f5e92cdd-75df-499e-94f7-22287f1000b3"
+      },
+      {
+       "qty": 4,
+       "name": "Oreplate Pangolin",
+       "set": "eoe",
+       "number": "150",
+       "id": "90209957-95db-4b59-979a-316d14ef876c"
+      },
+      {
+       "qty": 4,
+       "name": "Molecular Modifier",
+       "set": "eoe",
+       "number": "146",
+       "id": "7b80b9c9-a871-4c04-b8be-feb81a900591"
+      },
+      {
+       "qty": 4,
+       "name": "Weftstalker Ardent",
+       "set": "eoe",
+       "number": "169",
+       "id": "cddb48cc-8eb1-47ce-90f0-7aad1e93e2c4"
+      },
+      {
+       "qty": 2,
+       "name": "Zookeeper Mechan",
+       "set": "eoe",
+       "number": "170",
+       "id": "8d5cd0be-4337-4aba-a4f6-5adab7735a73"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "eoe",
+       "number": "265",
+       "id": "3204f401-1bcb-4d97-b15d-113a5d3c3e9f"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "e15c78d4-6fb1-4bd3-8219-c66b83fcaba1",
+      "name": "Vaultguard Trooper",
+      "rarity": "uncommon",
+      "set": "eoe",
+      "id": "36afe3b1-43a2-47b4-bc0a-24efb1e2e5a0",
+      "image": "https://cards.scryfall.io/normal/front/3/6/36afe3b1-43a2-47b4-bc0a-24efb1e2e5a0.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "eumidians",
+     "line": "To plant the seeds of the other is to cultivate the self.",
+     "quote": true
+    },
+    {
+     "who": "eumidians",
+     "line": "Warp: cast it cheaper, ambush with it, and it leaves at end of turn. You can cast it again from exile later."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "navy",
+     "line": "Adapt to this, you bug-eyed planet-squatters!",
+     "quote": true
+    },
+    {
+     "who": "navy",
+     "line": "Memorial Navy: advance, give everything, and hold the line."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "We grow as the world grows.",
+     "big": "Bloom!",
+     "low": "The thaw stalls...",
+     "win": "Evendo lives.",
+     "loss": "The ice returns...",
+     "half": "Warp in, then warp out. The card comes back."
+    },
+    "villain": {
+     "start": "Advance!",
+     "big": "Give everything!",
+     "low": "Fall back...",
+     "win": "The moon is ours.",
+     "loss": "Retreat!"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a40b3",
+   "slot": 3,
+   "kind": "Rival",
+   "mood": "rival",
+   "title": "The Uthros Combine",
+   "difficulty": "Normal",
+   "teaches": [
+    "Void"
+   ],
+   "blurb": "Uthros scientists keep secrets. A cruel captain wants to buy them.",
+   "rewardSet": "eoe",
+   "host": false,
+   "hero": {
+    "who": "uthros",
+    "deck": {
+     "name": "The Uthros Combine",
+     "colors": "U",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Mechan Navigator",
+       "set": "eoe",
+       "number": "64",
+       "id": "a1fe1d39-42c8-41d0-8bf0-46973e4b07d4"
+      },
+      {
+       "qty": 2,
+       "name": "Illvoi Galeblade",
+       "set": "eoe",
+       "number": "58",
+       "id": "769f7d13-a312-4d79-8639-6ae248452448"
+      },
+      {
+       "qty": 2,
+       "name": "Cerebral Download",
+       "set": "eoe",
+       "number": "48",
+       "id": "4d3b5d73-694c-4f9a-8b4f-d8d8c58c8d65"
+      },
+      {
+       "qty": 1,
+       "name": "Mental Modulation",
+       "set": "eoe",
+       "number": "67",
+       "id": "0f2d12fc-38a0-42e6-9caa-7c18bfcf0011"
+      },
+      {
+       "qty": 3,
+       "name": "Consult the Star Charts",
+       "set": "eoe",
+       "number": "51",
+       "id": "a16a6555-2e3a-4587-aacd-0307d696b26c"
+      },
+      {
+       "qty": 2,
+       "name": "Tractor Beam",
+       "set": "eoe",
+       "number": "82",
+       "id": "efc96d54-d6e1-49b6-b4c2-70b997776548"
+      },
+      {
+       "qty": 4,
+       "name": "Nanoform Sentinel",
+       "set": "eoe",
+       "number": "71",
+       "id": "3eeae8c3-7939-4c79-92f0-fbdb9c1b71d3"
+      },
+      {
+       "qty": 4,
+       "name": "Codecracker Hound",
+       "set": "eoe",
+       "number": "50",
+       "id": "6723b891-6013-4ec6-b439-2233d270dc48"
+      },
+      {
+       "qty": 4,
+       "name": "Uthros Psionicist",
+       "set": "eoe",
+       "number": "84",
+       "id": "e23cc5fd-afe4-480c-8858-ed80a082584e"
+      },
+      {
+       "qty": 4,
+       "name": "Cloudsculpt Technician",
+       "set": "eoe",
+       "number": "49",
+       "id": "51077a54-15cf-4088-8e84-088d72e8e861"
+      },
+      {
+       "qty": 4,
+       "name": "Sinister Cryologist",
+       "set": "eoe",
+       "number": "75",
+       "id": "e8fbe740-05ec-4ced-bb9d-3084c8c2b631"
+      },
+      {
+       "qty": 4,
+       "name": "Mechan Shieldmate",
+       "set": "eoe",
+       "number": "65",
+       "id": "745b2119-4d9f-431f-89b9-10ad48b6dc47"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "eoe",
+       "number": "263",
+       "id": "76313c69-8ec7-49e3-a34e-ade26097284c"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "tezzeret",
+    "deck": {
+     "name": "Tezzeret's Corsairs",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Tezzeret, Cruel Captain",
+       "set": "eoe",
+       "number": "2",
+       "id": "02e8e540-8aa3-4e6a-9a11-c3949cab5f0f"
+      },
+      {
+       "qty": 2,
+       "name": "Desculpting Blast",
+       "set": "eoe",
+       "number": "54",
+       "id": "77fdbf32-b5f4-4346-846d-d8e0e53e6e53"
+      },
+      {
+       "qty": 1,
+       "name": "Gravkill",
+       "set": "eoe",
+       "number": "103",
+       "id": "cfa6c57f-a193-48cc-9764-d8348548a111"
+      },
+      {
+       "qty": 4,
+       "name": "Gravpack Monoist",
+       "set": "eoe",
+       "number": "104",
+       "id": "2a968f01-36ef-4cf6-b1db-630c9cde2064"
+      },
+      {
+       "qty": 4,
+       "name": "Insatiable Skittermaw",
+       "set": "eoe",
+       "number": "108",
+       "id": "e9d30cca-ea33-418f-bba3-5103f1dbd751"
+      },
+      {
+       "qty": 4,
+       "name": "Faller's Faithful",
+       "set": "eoe",
+       "number": "100",
+       "id": "cbb1b46f-72e0-4c2f-8012-74529bd29a0d"
+      },
+      {
+       "qty": 4,
+       "name": "Comet Crawler",
+       "set": "eoe",
+       "number": "92",
+       "id": "becca990-ab2e-4aa4-be7d-293ec727cb08"
+      },
+      {
+       "qty": 4,
+       "name": "Nanoform Sentinel",
+       "set": "eoe",
+       "number": "71",
+       "id": "3eeae8c3-7939-4c79-92f0-fbdb9c1b71d3"
+      },
+      {
+       "qty": 4,
+       "name": "Susurian Voidborn",
+       "set": "eoe",
+       "number": "118",
+       "id": "beb97e7b-0ae7-4b08-9ceb-6a7f825bcd49"
+      },
+      {
+       "qty": 4,
+       "name": "Mechan Shieldmate",
+       "set": "eoe",
+       "number": "65",
+       "id": "745b2119-4d9f-431f-89b9-10ad48b6dc47"
+      },
+      {
+       "qty": 2,
+       "name": "Beamsaw Prospector",
+       "set": "eoe",
+       "number": "89",
+       "id": "6f717a3f-c6db-4e8d-8b62-6361ab33d000"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "eoe",
+       "number": "263",
+       "id": "76313c69-8ec7-49e3-a34e-ade26097284c"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "eoe",
+       "number": "264",
+       "id": "3e724e54-a622-4c77-8183-5a397a7c14a9"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "0eb11b2d-a397-48da-a0f3-9f0f83f42282",
+      "name": "Tezzeret, Cruel Captain",
+      "rarity": "mythic",
+      "set": "eoe",
+      "id": "02e8e540-8aa3-4e6a-9a11-c3949cab5f0f",
+      "image": "https://cards.scryfall.io/normal/front/0/2/02e8e540-8aa3-4e6a-9a11-c3949cab5f0f.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "uthros",
+     "line": "The Uthros Combine's first question for any scientific breakthrough is always: \"How can this be used to keep our next breakthrough secret?\"",
+     "quote": true
+    },
+    {
+     "who": "uthros",
+     "line": "Void turns on when something leaves play or a spell is warped. Plan the turn so it lands."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "tezzeret",
+     "line": "Your atoms will serve my ambitions in a much more useful form.",
+     "quote": true
+    },
+    {
+     "who": "tezzeret",
+     "line": "The Uthros Combine owes me a favor. I collect favors."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Observe, and say nothing.",
+     "big": "Cloudkill!",
+     "low": "Their ship is in range...",
+     "win": "Data secured.",
+     "loss": "Signal lost...",
+     "half": "Make something leave play to light Void."
+    },
+    "villain": {
+     "start": "Mine.",
+     "big": "Atoms for ambition!",
+     "low": "Annoying...",
+     "win": "Collected.",
+     "loss": "Cursed..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a40b4",
+   "slot": 4,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "The Sunstar Free Company",
+   "difficulty": "Normal",
+   "teaches": [
+    "Lifelink"
+   ],
+   "blurb": "Light-forged knights of Sunstar against the faith that worships the dark between stars.",
+   "rewardSet": "eoe",
+   "host": false,
+   "hero": {
+    "who": "sunstar",
+    "deck": {
+     "name": "The Sunstar Free Company",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Haliya, Guided by Light",
+       "set": "eoe",
+       "number": "19",
+       "id": "6f7c63ae-5df3-410f-8643-b8c69133ca9d"
+      },
+      {
+       "qty": 3,
+       "name": "Dawnstrike Vanguard",
+       "set": "eoe",
+       "number": "10",
+       "id": "5a041722-9483-469f-9c17-7f0253b0db50"
+      },
+      {
+       "qty": 4,
+       "name": "Radiant Strike",
+       "set": "eoe",
+       "number": "29",
+       "id": "8c38e4cb-918b-4493-872b-66c90dcfd339"
+      },
+      {
+       "qty": 1,
+       "name": "Honor",
+       "set": "eoe",
+       "number": "21",
+       "id": "d0b4e925-1d59-41a1-bc06-9982695d778f"
+      },
+      {
+       "qty": 2,
+       "name": "Banishing Light",
+       "set": "eoe",
+       "number": "6",
+       "id": "c45f11cd-a0aa-4d14-aa21-57f0969f3e2b"
+      },
+      {
+       "qty": 3,
+       "name": "Focus Fire",
+       "set": "eoe",
+       "number": "18",
+       "id": "a9ddfcbc-0f84-4315-aaa3-ca54ff64d7de"
+      },
+      {
+       "qty": 4,
+       "name": "Exosuit Savior",
+       "set": "eoe",
+       "number": "16",
+       "id": "826c0455-a6ce-43ad-bd5c-0a5df169da90"
+      },
+      {
+       "qty": 4,
+       "name": "Flight-Deck Coordinator",
+       "set": "eoe",
+       "number": "17",
+       "id": "88cc6328-a035-4f74-b786-390e5c7c324c"
+      },
+      {
+       "qty": 4,
+       "name": "Dual-Sun Adepts",
+       "set": "eoe",
+       "number": "12",
+       "id": "c7e8c830-77ae-437f-8e28-ce61c5fde6b6"
+      },
+      {
+       "qty": 4,
+       "name": "Honored Knight-Captain",
+       "set": "eoe",
+       "number": "22",
+       "id": "05a6ab03-f0b9-4738-a5f9-5d95bb22de75"
+      },
+      {
+       "qty": 4,
+       "name": "Brightspear Zealot",
+       "set": "eoe",
+       "number": "8",
+       "id": "e7f7541a-5910-4f33-8c1d-3507ce3a426e"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "eoe",
+       "number": "262",
+       "id": "089ae01b-e042-4255-b0ee-17d8f416a8d9"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "alpharael",
+    "deck": {
+     "name": "The Monoist Faith",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Alpharael, Stonechosen",
+       "set": "eoe",
+       "number": "87",
+       "id": "33063d26-37f7-4e35-8da2-5770dfabdc41"
+      },
+      {
+       "qty": 4,
+       "name": "Gravkill",
+       "set": "eoe",
+       "number": "103",
+       "id": "cfa6c57f-a193-48cc-9764-d8348548a111"
+      },
+      {
+       "qty": 3,
+       "name": "Embrace Oblivion",
+       "set": "eoe",
+       "number": "98",
+       "id": "3754fc20-7aaa-437d-97df-d6cf1c29586c"
+      },
+      {
+       "qty": 3,
+       "name": "Tragic Trajectory",
+       "set": "eoe",
+       "number": "122",
+       "id": "78c8bc60-1378-4028-8ab1-3286e459bffb"
+      },
+      {
+       "qty": 2,
+       "name": "Vote Out",
+       "set": "eoe",
+       "number": "126",
+       "id": "4f50bb47-cc4d-4b81-b5f1-817ca8744d12"
+      },
+      {
+       "qty": 4,
+       "name": "Susurian Voidborn",
+       "set": "eoe",
+       "number": "118",
+       "id": "beb97e7b-0ae7-4b08-9ceb-6a7f825bcd49"
+      },
+      {
+       "qty": 4,
+       "name": "Gravpack Monoist",
+       "set": "eoe",
+       "number": "104",
+       "id": "2a968f01-36ef-4cf6-b1db-630c9cde2064"
+      },
+      {
+       "qty": 4,
+       "name": "Comet Crawler",
+       "set": "eoe",
+       "number": "92",
+       "id": "becca990-ab2e-4aa4-be7d-293ec727cb08"
+      },
+      {
+       "qty": 4,
+       "name": "Insatiable Skittermaw",
+       "set": "eoe",
+       "number": "108",
+       "id": "e9d30cca-ea33-418f-bba3-5103f1dbd751"
+      },
+      {
+       "qty": 4,
+       "name": "Lightless Evangel",
+       "set": "eoe",
+       "number": "109",
+       "id": "6860556a-6c34-4c41-89ea-f0bc495a159c"
+      },
+      {
+       "qty": 1,
+       "name": "Beamsaw Prospector",
+       "set": "eoe",
+       "number": "89",
+       "id": "6f717a3f-c6db-4e8d-8b62-6361ab33d000"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "eoe",
+       "number": "264",
+       "id": "3e724e54-a622-4c77-8183-5a397a7c14a9"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "ed43f1f9-ef96-47bc-8a54-e59154319f9d",
+      "name": "Alpharael, Stonechosen",
+      "rarity": "mythic",
+      "set": "eoe",
+      "id": "33063d26-37f7-4e35-8da2-5770dfabdc41",
+      "image": "https://cards.scryfall.io/normal/front/3/3/33063d26-37f7-4e35-8da2-5770dfabdc41.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "sunstar",
+     "line": "Arrive as the dawn, and banish night through your brilliance!",
+     "quote": true
+    },
+    {
+     "who": "sunstar",
+     "line": "Lifelink turns their damage into your life. Race, and win the exchange."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "alpharael",
+     "line": "All things end. I'd rather embrace that truth than the fantasy of eternal light.",
+     "quote": true
+    },
+    {
+     "who": "alpharael",
+     "line": "The Monoists fight a war of attrition. Victory is inevitable if they stay true."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Arrive as the dawn.",
+     "big": "Light!",
+     "low": "The dark presses in...",
+     "win": "The dawn holds.",
+     "loss": "The light goes out...",
+     "half": "Gain life to stay ahead of the Faith."
+    },
+    "villain": {
+     "start": "All things end.",
+     "big": "Embrace it!",
+     "low": "Not yet...",
+     "win": "To the Zero Point.",
+     "loss": "The light..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a40b5",
+   "slot": 5,
+   "kind": "Frontier",
+   "mood": "comic",
+   "title": "The Weft and the Wilds",
+   "difficulty": "Normal",
+   "teaches": [
+    "Reach"
+   ],
+   "blurb": "Drix weftwalkers cross Evendo. The newly thawed wilds have teeth.",
+   "rewardSet": "eoe",
+   "host": false,
+   "hero": {
+    "who": "drix",
+    "deck": {
+     "name": "The Drix Weavers",
+     "colors": "GU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Genemorph Imago",
+       "set": "eoe",
+       "number": "217",
+       "id": "40f0ecf7-f49e-46ff-aa5b-9ff5361b72c5"
+      },
+      {
+       "qty": 4,
+       "name": "Biomechan Engineer",
+       "set": "eoe",
+       "number": "213",
+       "id": "7edcef2c-029c-46bd-bfeb-ff56a57dd63a"
+      },
+      {
+       "qty": 3,
+       "name": "Pull Through the Weft",
+       "set": "eoe",
+       "number": "202",
+       "id": "a70d0877-1a1e-436b-bf8c-0ff6df9efc6a"
+      },
+      {
+       "qty": 3,
+       "name": "Unravel",
+       "set": "eoe",
+       "number": "83",
+       "id": "e8978214-c853-453d-872d-af56bdaaa3d7"
+      },
+      {
+       "qty": 2,
+       "name": "Biosynthic Burst",
+       "set": "eoe",
+       "number": "173",
+       "id": "6d73a4a8-5d52-4c12-a96a-45cd202bcc62"
+      },
+      {
+       "qty": 4,
+       "name": "Codecracker Hound",
+       "set": "eoe",
+       "number": "50",
+       "id": "6723b891-6013-4ec6-b439-2233d270dc48"
+      },
+      {
+       "qty": 4,
+       "name": "Sinister Cryologist",
+       "set": "eoe",
+       "number": "75",
+       "id": "e8fbe740-05ec-4ced-bb9d-3084c8c2b631"
+      },
+      {
+       "qty": 4,
+       "name": "Skystinger",
+       "set": "eoe",
+       "number": "207",
+       "id": "dfea9941-3675-4c0f-bc4d-981c28deed36"
+      },
+      {
+       "qty": 4,
+       "name": "Cloudsculpt Technician",
+       "set": "eoe",
+       "number": "49",
+       "id": "51077a54-15cf-4088-8e84-088d72e8e861"
+      },
+      {
+       "qty": 4,
+       "name": "Illvoi Operative",
+       "set": "eoe",
+       "number": "61",
+       "id": "d0ae9fc7-1802-4806-9996-1f1f458ff6a7"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "eoe",
+       "number": "266",
+       "id": "8335b9f1-e726-423b-8ba7-6151448ab3fd"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "eoe",
+       "number": "263",
+       "id": "76313c69-8ec7-49e3-a34e-ade26097284c"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "wilds",
+    "deck": {
+     "name": "The Wilds of Evendo",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Frenzied Baloth",
+       "set": "eoe",
+       "number": "183",
+       "id": "c72d85e9-a0bc-4f73-8d73-c58843577f4e"
+      },
+      {
+       "qty": 2,
+       "name": "Fungal Colossus",
+       "set": "eoe",
+       "number": "184",
+       "id": "9dc9559f-cece-4c85-807c-158291666007"
+      },
+      {
+       "qty": 2,
+       "name": "Hemosymbic Mite",
+       "set": "eoe",
+       "number": "190",
+       "id": "c14137a4-2d44-444c-ad50-e2edf9380571"
+      },
+      {
+       "qty": 4,
+       "name": "Meltstrider Eulogist",
+       "set": "eoe",
+       "number": "197",
+       "id": "df61aa0c-effc-4d57-be19-876a82c41d33"
+      },
+      {
+       "qty": 4,
+       "name": "Galactic Wayfarer",
+       "set": "eoe",
+       "number": "185",
+       "id": "85b898d2-050f-49a2-87af-07d54d105336"
+      },
+      {
+       "qty": 4,
+       "name": "Thawbringer",
+       "set": "eoe",
+       "number": "211",
+       "id": "0b7f934f-8eb4-408b-a55f-245ec5cc4a8a"
+      },
+      {
+       "qty": 4,
+       "name": "Eumidian Terrabotanist",
+       "set": "eoe",
+       "number": "180",
+       "id": "64fb2981-86ed-478a-89cd-c6bb078a5bc7"
+      },
+      {
+       "qty": 4,
+       "name": "Skystinger",
+       "set": "eoe",
+       "number": "207",
+       "id": "dfea9941-3675-4c0f-bc4d-981c28deed36"
+      },
+      {
+       "qty": 4,
+       "name": "Drix Fatemaker",
+       "set": "eoe",
+       "number": "178",
+       "id": "1beb7566-305e-4091-bdc4-cf4c789ac05a"
+      },
+      {
+       "qty": 4,
+       "name": "Blooming Stinger",
+       "set": "eoe",
+       "number": "174",
+       "id": "2ee859bd-d99c-4b1d-9372-7ff4fc1e8c6a"
+      },
+      {
+       "qty": 2,
+       "name": "Tapestry Warden",
+       "set": "eoe",
+       "number": "209",
+       "id": "7cbbab6c-43ae-4e50-97ce-532a3316591a"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "eoe",
+       "number": "266",
+       "id": "8335b9f1-e726-423b-8ba7-6151448ab3fd"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "6a4ef075-9254-4d36-9572-622833fae54e",
+      "name": "Frenzied Baloth",
+      "rarity": "rare",
+      "set": "eoe",
+      "id": "c72d85e9-a0bc-4f73-8d73-c58843577f4e",
+      "image": "https://cards.scryfall.io/normal/front/c/7/c72d85e9-a0bc-4f73-8d73-c58843577f4e.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "drix",
+     "line": "That which should not have happened is undone, and a new pattern takes its place.",
+     "quote": true
+    },
+    {
+     "who": "drix",
+     "line": "Reach lets a creature block fliers. The wilds have a lot of reach."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "wilds",
+     "line": "Oh, look at the size of those petals! That one's eaten well this season.",
+     "quote": true
+    },
+    {
+     "who": "wilds",
+     "line": "Evendo was frozen for ten thousand years. It is hungry."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "The pattern shifts.",
+     "big": "Weft!",
+     "low": "The wilds close in...",
+     "win": "Pattern restored.",
+     "loss": "Lost in the weave...",
+     "half": "Block fliers with reach."
+    },
+    "villain": {
+     "start": "Hungry.",
+     "big": "Bloom!",
+     "low": "Cold again...",
+     "win": "Fed.",
+     "loss": "Frozen..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a40b6",
+   "slot": 6,
+   "kind": "Rival",
+   "mood": "boss",
+   "title": "The Zero Point",
+   "difficulty": "Normal",
+   "teaches": [
+    "Counterspells"
+   ],
+   "blurb": "Pinnacle envoys and a fanatical knight argue about what the great destroyers left behind.",
+   "rewardSet": "eoe",
+   "host": false,
+   "hero": {
+    "who": "pinnacle",
+    "deck": {
+     "name": "The Pinnacle Envoys",
+     "colors": "UW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Mechan Shieldmate",
+       "set": "eoe",
+       "number": "65",
+       "id": "745b2119-4d9f-431f-89b9-10ad48b6dc47"
+      },
+      {
+       "qty": 4,
+       "name": "Station Monitor",
+       "set": "eoe",
+       "number": "230",
+       "id": "ba9f6d16-ee3e-4fbb-b78a-6292188eb61f"
+      },
+      {
+       "qty": 1,
+       "name": "Banishing Light",
+       "set": "eoe",
+       "number": "6",
+       "id": "c45f11cd-a0aa-4d14-aa21-57f0969f3e2b"
+      },
+      {
+       "qty": 4,
+       "name": "Codecracker Hound",
+       "set": "eoe",
+       "number": "50",
+       "id": "6723b891-6013-4ec6-b439-2233d270dc48"
+      },
+      {
+       "qty": 4,
+       "name": "Nanoform Sentinel",
+       "set": "eoe",
+       "number": "71",
+       "id": "3eeae8c3-7939-4c79-92f0-fbdb9c1b71d3"
+      },
+      {
+       "qty": 4,
+       "name": "Exosuit Savior",
+       "set": "eoe",
+       "number": "16",
+       "id": "826c0455-a6ce-43ad-bd5c-0a5df169da90"
+      },
+      {
+       "qty": 4,
+       "name": "Uthros Psionicist",
+       "set": "eoe",
+       "number": "84",
+       "id": "e23cc5fd-afe4-480c-8858-ed80a082584e"
+      },
+      {
+       "qty": 4,
+       "name": "Flight-Deck Coordinator",
+       "set": "eoe",
+       "number": "17",
+       "id": "88cc6328-a035-4f74-b786-390e5c7c324c"
+      },
+      {
+       "qty": 4,
+       "name": "Dual-Sun Adepts",
+       "set": "eoe",
+       "number": "12",
+       "id": "c7e8c830-77ae-437f-8e28-ce61c5fde6b6"
+      },
+      {
+       "qty": 3,
+       "name": "Dockworker Drone",
+       "set": "eoe",
+       "number": "11",
+       "id": "eeff069f-427b-42ad-afb1-36f0e547fb74"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "eoe",
+       "number": "263",
+       "id": "76313c69-8ec7-49e3-a34e-ade26097284c"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "eoe",
+       "number": "262",
+       "id": "089ae01b-e042-4255-b0ee-17d8f416a8d9"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "syr",
+    "deck": {
+     "name": "The Monoist Zealots",
+     "colors": "BW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Syr Vondam, Sunstar Exemplar",
+       "set": "eoe",
+       "number": "231",
+       "id": "49554198-549b-4066-86ce-77a03fda0a2f"
+      },
+      {
+       "qty": 2,
+       "name": "Umbral Collar Zealot",
+       "set": "eoe",
+       "number": "123",
+       "id": "bbcc1d84-9772-475d-924a-75bb54c9bc20"
+      },
+      {
+       "qty": 1,
+       "name": "Hardlight Containment",
+       "set": "eoe",
+       "number": "20",
+       "id": "0b934241-4d6b-4b9c-99f1-c49cb387cf56"
+      },
+      {
+       "qty": 4,
+       "name": "Insatiable Skittermaw",
+       "set": "eoe",
+       "number": "108",
+       "id": "e9d30cca-ea33-418f-bba3-5103f1dbd751"
+      },
+      {
+       "qty": 4,
+       "name": "Flight-Deck Coordinator",
+       "set": "eoe",
+       "number": "17",
+       "id": "88cc6328-a035-4f74-b786-390e5c7c324c"
+      },
+      {
+       "qty": 4,
+       "name": "Faller's Faithful",
+       "set": "eoe",
+       "number": "100",
+       "id": "cbb1b46f-72e0-4c2f-8012-74529bd29a0d"
+      },
+      {
+       "qty": 4,
+       "name": "Exosuit Savior",
+       "set": "eoe",
+       "number": "16",
+       "id": "826c0455-a6ce-43ad-bd5c-0a5df169da90"
+      },
+      {
+       "qty": 4,
+       "name": "Lightless Evangel",
+       "set": "eoe",
+       "number": "109",
+       "id": "6860556a-6c34-4c41-89ea-f0bc495a159c"
+      },
+      {
+       "qty": 4,
+       "name": "Rayblade Trooper",
+       "set": "eoe",
+       "number": "30",
+       "id": "c08c7bf9-a2ed-45c6-8b48-15122d9d9e37"
+      },
+      {
+       "qty": 4,
+       "name": "Comet Crawler",
+       "set": "eoe",
+       "number": "92",
+       "id": "becca990-ab2e-4aa4-be7d-293ec727cb08"
+      },
+      {
+       "qty": 2,
+       "name": "Brightspear Zealot",
+       "set": "eoe",
+       "number": "8",
+       "id": "e7f7541a-5910-4f33-8c1d-3507ce3a426e"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "eoe",
+       "number": "264",
+       "id": "3e724e54-a622-4c77-8183-5a397a7c14a9"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "eoe",
+       "number": "262",
+       "id": "089ae01b-e042-4255-b0ee-17d8f416a8d9"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "9e597063-c077-4236-a9e4-b0721b24677f",
+      "name": "Syr Vondam, Sunstar Exemplar",
+      "rarity": "rare",
+      "set": "eoe",
+      "id": "49554198-549b-4066-86ce-77a03fda0a2f",
+      "image": "https://cards.scryfall.io/normal/front/4/9/49554198-549b-4066-86ce-77a03fda0a2f.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "pinnacle",
+     "line": "Your ship and crew have been contaminated by the great destroyers. We cannot risk their spread. Prepare for unraveling.",
+     "quote": true
+    },
+    {
+     "who": "pinnacle",
+     "line": "Counterspells answer a spell before it resolves. Hold the mana and choose your target."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "syr",
+     "line": "A new dawn, burning away the darkness.",
+     "quote": true
+    },
+    {
+     "who": "syr",
+     "line": "Death is a trick of the light. Snuff it out and discover immortality."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Hold the line.",
+     "big": "Unravel it!",
+     "low": "They are pushing through...",
+     "win": "Contained.",
+     "loss": "Contamination...",
+     "half": "Counter the big threat."
+    },
+    "villain": {
+     "start": "Burn it all.",
+     "big": "The Zero Point!",
+     "low": "Doubt...",
+     "win": "Light.",
+     "loss": "Dark."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a40b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "The Kav Reckoning",
+   "difficulty": "Hard",
+   "teaches": [
+    "Playing around counterspells"
+   ],
+   "blurb": "The last Kav war host runs into the Illvoi and a very patient wall of counters.",
+   "rewardSet": "eoe",
+   "host": false,
+   "hero": {
+    "who": "reckoning",
+    "deck": {
+     "name": "The Kav Reckoning",
+     "colors": "RB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Mutinous Massacre",
+       "set": "eoe",
+       "number": "222",
+       "id": "42d5034f-18f0-4d57-9840-6be52c286247"
+      },
+      {
+       "qty": 4,
+       "name": "Blade of the Swarm",
+       "set": "eoe",
+       "number": "90",
+       "id": "b157330a-2652-4ed9-b8fa-8e72b4eda15c"
+      },
+      {
+       "qty": 4,
+       "name": "Plasma Bolt",
+       "set": "eoe",
+       "number": "152",
+       "id": "a1a1834b-76c2-4496-b8c5-18b69ab34c4c"
+      },
+      {
+       "qty": 3,
+       "name": "Weapons Manufacturing",
+       "set": "eoe",
+       "number": "168",
+       "id": "a058f1a6-318c-4bba-981e-ace079ada806"
+      },
+      {
+       "qty": 2,
+       "name": "Pain for All",
+       "set": "eoe",
+       "number": "151",
+       "id": "d2948913-817b-4715-92d5-ed3cde347be7"
+      },
+      {
+       "qty": 4,
+       "name": "Susurian Voidborn",
+       "set": "eoe",
+       "number": "118",
+       "id": "beb97e7b-0ae7-4b08-9ceb-6a7f825bcd49"
+      },
+      {
+       "qty": 4,
+       "name": "Gravpack Monoist",
+       "set": "eoe",
+       "number": "104",
+       "id": "2a968f01-36ef-4cf6-b1db-630c9cde2064"
+      },
+      {
+       "qty": 4,
+       "name": "Weftstalker Ardent",
+       "set": "eoe",
+       "number": "169",
+       "id": "cddb48cc-8eb1-47ce-90f0-7aad1e93e2c4"
+      },
+      {
+       "qty": 4,
+       "name": "Faller's Faithful",
+       "set": "eoe",
+       "number": "100",
+       "id": "cbb1b46f-72e0-4c2f-8012-74529bd29a0d"
+      },
+      {
+       "qty": 4,
+       "name": "Frontline War-Rager",
+       "set": "eoe",
+       "number": "134",
+       "id": "fa232943-818b-4944-be60-2d80c806bf62"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "eoe",
+       "number": "265",
+       "id": "3204f401-1bcb-4d97-b15d-113a5d3c3e9f"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "eoe",
+       "number": "264",
+       "id": "3e724e54-a622-4c77-8183-5a397a7c14a9"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "illvoi",
+    "deck": {
+     "name": "The Illvoi Control",
+     "colors": "UW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Cryoshatter",
+       "set": "eoe",
+       "number": "53",
+       "id": "7b62b1e2-9e43-4a66-a647-7e5de2871f2a"
+      },
+      {
+       "qty": 1,
+       "name": "Unravel",
+       "set": "eoe",
+       "number": "83",
+       "id": "e8978214-c853-453d-872d-af56bdaaa3d7"
+      },
+      {
+       "qty": 3,
+       "name": "Mechan Assembler",
+       "set": "eoe",
+       "number": "63",
+       "id": "3fd46726-095e-4eb2-a804-eeeb988eee1d"
+      },
+      {
+       "qty": 4,
+       "name": "Dual-Sun Adepts",
+       "set": "eoe",
+       "number": "12",
+       "id": "c7e8c830-77ae-437f-8e28-ce61c5fde6b6"
+      },
+      {
+       "qty": 4,
+       "name": "Nanoform Sentinel",
+       "set": "eoe",
+       "number": "71",
+       "id": "3eeae8c3-7939-4c79-92f0-fbdb9c1b71d3"
+      },
+      {
+       "qty": 4,
+       "name": "Rayblade Trooper",
+       "set": "eoe",
+       "number": "30",
+       "id": "c08c7bf9-a2ed-45c6-8b48-15122d9d9e37"
+      },
+      {
+       "qty": 4,
+       "name": "Cloudsculpt Technician",
+       "set": "eoe",
+       "number": "49",
+       "id": "51077a54-15cf-4088-8e84-088d72e8e861"
+      },
+      {
+       "qty": 4,
+       "name": "Codecracker Hound",
+       "set": "eoe",
+       "number": "50",
+       "id": "6723b891-6013-4ec6-b439-2233d270dc48"
+      },
+      {
+       "qty": 4,
+       "name": "Flight-Deck Coordinator",
+       "set": "eoe",
+       "number": "17",
+       "id": "88cc6328-a035-4f74-b786-390e5c7c324c"
+      },
+      {
+       "qty": 4,
+       "name": "Exosuit Savior",
+       "set": "eoe",
+       "number": "16",
+       "id": "826c0455-a6ce-43ad-bd5c-0a5df169da90"
+      },
+      {
+       "qty": 2,
+       "name": "Steelswarm Operator",
+       "set": "eoe",
+       "number": "80",
+       "id": "ca468b86-f31a-4cd7-a574-eb984bc4bc3e"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "eoe",
+       "number": "263",
+       "id": "76313c69-8ec7-49e3-a34e-ade26097284c"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "eoe",
+       "number": "262",
+       "id": "089ae01b-e042-4255-b0ee-17d8f416a8d9"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "865715e9-6759-4e01-803d-702c959e386e",
+      "name": "Cryoshatter",
+      "rarity": "common",
+      "set": "eoe",
+      "id": "7b62b1e2-9e43-4a66-a647-7e5de2871f2a",
+      "image": "https://cards.scryfall.io/normal/front/7/b/7b62b1e2-9e43-4a66-a647-7e5de2871f2a.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "reckoning",
+     "line": "The Kav have more than ideology or profit on the line. They fight for a home.",
+     "quote": true
+    },
+    {
+     "who": "reckoning",
+     "line": "Illvoi control holds counters. Bait with a small spell first, then land the big one."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "illvoi",
+     "line": "Illvoi hope for the best outcomes but engineer for the worst.",
+     "quote": true
+    },
+    {
+     "who": "illvoi",
+     "line": "Every spell cast into the dark is a spell we can undo."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Give everything.",
+     "big": "Break the wall!",
+     "low": "They counter everything...",
+     "win": "For Kavaron.",
+     "loss": "Another world lost...",
+     "half": "Bait first, then land the big spell."
+    },
+    "villain": {
+     "start": "Engineered.",
+     "big": "Annul!",
+     "low": "Contingency...",
+     "win": "As planned.",
+     "loss": "Unplanned..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a40b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Sothera, the Supervoid",
+   "difficulty": "Hard",
+   "teaches": [
+    "Deathtouch"
+   ],
+   "blurb": "Alliance against the supervoid: Sunstar light, Kav grit and one dying star.",
+   "rewardSet": "eoe",
+   "host": true,
+   "hero": {
+    "who": "alliance",
+    "deck": {
+     "name": "The Edge Alliance",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Haliya, Guided by Light",
+       "set": "eoe",
+       "number": "19",
+       "id": "6f7c63ae-5df3-410f-8643-b8c69133ca9d"
+      },
+      {
+       "qty": 3,
+       "name": "Honored Knight-Captain",
+       "set": "eoe",
+       "number": "22",
+       "id": "05a6ab03-f0b9-4738-a5f9-5d95bb22de75"
+      },
+      {
+       "qty": 3,
+       "name": "Sami, Wildcat Captain",
+       "set": "eoe",
+       "number": "226",
+       "id": "bed64207-9193-4770-8f8f-e3203289d5a6"
+      },
+      {
+       "qty": 2,
+       "name": "Tannuk, Steadfast Second",
+       "set": "eoe",
+       "number": "162",
+       "id": "44607ed3-9523-40ac-9f61-0edd011cf762"
+      },
+      {
+       "qty": 2,
+       "name": "Radiant Strike",
+       "set": "eoe",
+       "number": "29",
+       "id": "8c38e4cb-918b-4493-872b-66c90dcfd339"
+      },
+      {
+       "qty": 1,
+       "name": "Plasma Bolt",
+       "set": "eoe",
+       "number": "152",
+       "id": "a1a1834b-76c2-4496-b8c5-18b69ab34c4c"
+      },
+      {
+       "qty": 4,
+       "name": "Rayblade Trooper",
+       "set": "eoe",
+       "number": "30",
+       "id": "c08c7bf9-a2ed-45c6-8b48-15122d9d9e37"
+      },
+      {
+       "qty": 4,
+       "name": "Exosuit Savior",
+       "set": "eoe",
+       "number": "16",
+       "id": "826c0455-a6ce-43ad-bd5c-0a5df169da90"
+      },
+      {
+       "qty": 4,
+       "name": "Flight-Deck Coordinator",
+       "set": "eoe",
+       "number": "17",
+       "id": "88cc6328-a035-4f74-b786-390e5c7c324c"
+      },
+      {
+       "qty": 4,
+       "name": "Frontline War-Rager",
+       "set": "eoe",
+       "number": "134",
+       "id": "fa232943-818b-4944-be60-2d80c806bf62"
+      },
+      {
+       "qty": 4,
+       "name": "Brightspear Zealot",
+       "set": "eoe",
+       "number": "8",
+       "id": "e7f7541a-5910-4f33-8c1d-3507ce3a426e"
+      },
+      {
+       "qty": 2,
+       "name": "Molecular Modifier",
+       "set": "eoe",
+       "number": "146",
+       "id": "7b80b9c9-a871-4c04-b8be-feb81a900591"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "eoe",
+       "number": "265",
+       "id": "3204f401-1bcb-4d97-b15d-113a5d3c3e9f"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "eoe",
+       "number": "262",
+       "id": "089ae01b-e042-4255-b0ee-17d8f416a8d9"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "sothera",
+    "deck": {
+     "name": "The Supervoid",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Alpharael, Stonechosen",
+       "set": "eoe",
+       "number": "87",
+       "id": "33063d26-37f7-4e35-8da2-5770dfabdc41"
+      },
+      {
+       "qty": 3,
+       "name": "Sothera, the Supervoid",
+       "set": "eoe",
+       "number": "115",
+       "id": "e99d6fc0-dcf2-4b25-81c2-02c230a36246"
+      },
+      {
+       "qty": 3,
+       "name": "Xu-Ifit, Osteoharmonist",
+       "set": "eoe",
+       "number": "127",
+       "id": "c0838f25-2193-4305-b73a-bf0c0bb4981a"
+      },
+      {
+       "qty": 4,
+       "name": "Faller's Faithful",
+       "set": "eoe",
+       "number": "100",
+       "id": "cbb1b46f-72e0-4c2f-8012-74529bd29a0d"
+      },
+      {
+       "qty": 3,
+       "name": "Gravkill",
+       "set": "eoe",
+       "number": "103",
+       "id": "cfa6c57f-a193-48cc-9764-d8348548a111"
+      },
+      {
+       "qty": 3,
+       "name": "Tragic Trajectory",
+       "set": "eoe",
+       "number": "122",
+       "id": "78c8bc60-1378-4028-8ab1-3286e459bffb"
+      },
+      {
+       "qty": 2,
+       "name": "Depressurize",
+       "set": "eoe",
+       "number": "95",
+       "id": "25520d5a-1a83-42cc-8ace-8b1156019d64"
+      },
+      {
+       "qty": 4,
+       "name": "Susurian Voidborn",
+       "set": "eoe",
+       "number": "118",
+       "id": "beb97e7b-0ae7-4b08-9ceb-6a7f825bcd49"
+      },
+      {
+       "qty": 4,
+       "name": "Virus Beetle",
+       "set": "eoe",
+       "number": "124",
+       "id": "e96c986c-684c-4546-a9c9-b6b903bda101"
+      },
+      {
+       "qty": 4,
+       "name": "Lightless Evangel",
+       "set": "eoe",
+       "number": "109",
+       "id": "6860556a-6c34-4c41-89ea-f0bc495a159c"
+      },
+      {
+       "qty": 3,
+       "name": "Comet Crawler",
+       "set": "eoe",
+       "number": "92",
+       "id": "becca990-ab2e-4aa4-be7d-293ec727cb08"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "eoe",
+       "number": "264",
+       "id": "3e724e54-a622-4c77-8183-5a397a7c14a9"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "760ede92-a826-4144-9de8-84ba9b8743d1",
+      "name": "Sothera, the Supervoid",
+      "rarity": "mythic",
+      "set": "eoe",
+      "id": "e99d6fc0-dcf2-4b25-81c2-02c230a36246",
+      "image": "https://cards.scryfall.io/normal/front/e/9/e99d6fc0-dcf2-4b25-81c2-02c230a36246.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "haliya",
+     "line": "Beyond the edge of faith lies eternal hope.",
+     "quote": true
+    },
+    {
+     "who": "sunstar",
+     "line": "A new dawn, burning away the darkness.",
+     "quote": true
+    },
+    {
+     "who": "haliya",
+     "line": "Deathtouch kills anything it damages. Trade your small creatures for their big ones."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "sothera",
+     "line": "Rejoice! For within sekhar, the final sacrifice, you will find passage to the Next Eternity.",
+     "quote": true
+    },
+    {
+     "who": "sothera",
+     "line": "The supervoid does not hate you. It is simply where everything ends up."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Light be with us.",
+     "big": "For the Edge!",
+     "low": "The void is pulling us in...",
+     "win": "Dawn.",
+     "loss": "Into the dark...",
+     "half": "Trade small for big. Do not feed the void."
+    },
+    "villain": {
+     "start": "All is the void.",
+     "big": "Sekhar!",
+     "low": "It resists...",
+     "win": "The Zero Point.",
+     "loss": "The light..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a40b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Infinite Guideline Station",
+   "difficulty": "Hard",
+   "teaches": [
+    "Menace"
+   ],
+   "blurb": "The station at the heart of the Edge has one more watch to keep.",
+   "rewardSet": "eoe",
+   "host": true,
+   "archive": {
+    "deck": "The Station Monitors",
+    "when": "Summer 2025",
+    "format": "Story archive, no tournament list.",
+    "what": "A blue-white fleet of Station Monitors and Mechan from the set, a hub of the Edge that never sleeps.",
+    "why": "It stands for the station at the heart of the story and is not a list anyone won with.",
+    "beat": "Race it before the Mechan stack up, and keep removal for the big ship.",
+    "after": "Nothing; this is the optional superboss at the end of the story."
+   },
+   "hero": {
+    "who": "tannuk",
+    "deck": {
+     "name": "The Liberation Crew",
+     "colors": "GR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Tannuk, Memorial Ensign",
+       "set": "eoe",
+       "number": "233",
+       "id": "52498b7b-0389-4e7b-b29f-7ac86aab9229"
+      },
+      {
+       "qty": 4,
+       "name": "Plasma Bolt",
+       "set": "eoe",
+       "number": "152",
+       "id": "a1a1834b-76c2-4496-b8c5-18b69ab34c4c"
+      },
+      {
+       "qty": 3,
+       "name": "Seedship Impact",
+       "set": "eoe",
+       "number": "205",
+       "id": "d060d95f-f33a-4fc0-b002-c394d4cd82ce"
+      },
+      {
+       "qty": 3,
+       "name": "Biosynthic Burst",
+       "set": "eoe",
+       "number": "173",
+       "id": "6d73a4a8-5d52-4c12-a96a-45cd202bcc62"
+      },
+      {
+       "qty": 2,
+       "name": "Sami's Curiosity",
+       "set": "eoe",
+       "number": "203",
+       "id": "703ad0f3-bd05-42b0-85fb-0cd37807dc91"
+      },
+      {
+       "qty": 4,
+       "name": "Galactic Wayfarer",
+       "set": "eoe",
+       "number": "185",
+       "id": "85b898d2-050f-49a2-87af-07d54d105336"
+      },
+      {
+       "qty": 4,
+       "name": "Broodguard Elite",
+       "set": "eoe",
+       "number": "175",
+       "id": "08b1d019-65ab-4dea-9076-041fd6338a35"
+      },
+      {
+       "qty": 4,
+       "name": "Blooming Stinger",
+       "set": "eoe",
+       "number": "174",
+       "id": "2ee859bd-d99c-4b1d-9372-7ff4fc1e8c6a"
+      },
+      {
+       "qty": 4,
+       "name": "Skystinger",
+       "set": "eoe",
+       "number": "207",
+       "id": "dfea9941-3675-4c0f-bc4d-981c28deed36"
+      },
+      {
+       "qty": 4,
+       "name": "Eumidian Terrabotanist",
+       "set": "eoe",
+       "number": "180",
+       "id": "64fb2981-86ed-478a-89cd-c6bb078a5bc7"
+      },
+      {
+       "qty": 1,
+       "name": "Zookeeper Mechan",
+       "set": "eoe",
+       "number": "170",
+       "id": "8d5cd0be-4337-4aba-a4f6-5adab7735a73"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "eoe",
+       "number": "266",
+       "id": "8335b9f1-e726-423b-8ba7-6151448ab3fd"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "eoe",
+       "number": "265",
+       "id": "3204f401-1bcb-4d97-b15d-113a5d3c3e9f"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "station",
+    "deck": {
+     "name": "The Station Monitors",
+     "colors": "UW",
+     "archetype": null,
+     "label": "tribute",
+     "note": "Built from cards in this act's set only. No tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Station Monitor",
+       "set": "eoe",
+       "number": "230",
+       "id": "ba9f6d16-ee3e-4fbb-b78a-6292188eb61f"
+      },
+      {
+       "qty": 4,
+       "name": "Mechan Assembler",
+       "set": "eoe",
+       "number": "63",
+       "id": "3fd46726-095e-4eb2-a804-eeeb988eee1d"
+      },
+      {
+       "qty": 4,
+       "name": "Selfcraft Mechan",
+       "set": "eoe",
+       "number": "74",
+       "id": "5b2de056-5c27-44d6-871d-909411bd52dd"
+      },
+      {
+       "qty": 3,
+       "name": "Mechan Shieldmate",
+       "set": "eoe",
+       "number": "65",
+       "id": "745b2119-4d9f-431f-89b9-10ad48b6dc47"
+      },
+      {
+       "qty": 3,
+       "name": "Specimen Freighter",
+       "set": "eoe",
+       "number": "76",
+       "id": "b862a9f8-2361-4220-99bd-ae2530905195"
+      },
+      {
+       "qty": 2,
+       "name": "Starwinder",
+       "set": "eoe",
+       "number": "79",
+       "id": "27d1a010-5790-4b35-9fdc-0e366eed021d"
+      },
+      {
+       "qty": 4,
+       "name": "Brightspear Zealot",
+       "set": "eoe",
+       "number": "8",
+       "id": "e7f7541a-5910-4f33-8c1d-3507ce3a426e"
+      },
+      {
+       "qty": 4,
+       "name": "Uthros Psionicist",
+       "set": "eoe",
+       "number": "84",
+       "id": "e23cc5fd-afe4-480c-8858-ed80a082584e"
+      },
+      {
+       "qty": 4,
+       "name": "Exosuit Savior",
+       "set": "eoe",
+       "number": "16",
+       "id": "826c0455-a6ce-43ad-bd5c-0a5df169da90"
+      },
+      {
+       "qty": 4,
+       "name": "Sinister Cryologist",
+       "set": "eoe",
+       "number": "75",
+       "id": "e8fbe740-05ec-4ced-bb9d-3084c8c2b631"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "eoe",
+       "number": "263",
+       "id": "76313c69-8ec7-49e3-a34e-ade26097284c"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "eoe",
+       "number": "262",
+       "id": "089ae01b-e042-4255-b0ee-17d8f416a8d9"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "94e8791b-e72f-4aed-b761-826779337168",
+      "name": "Station Monitor",
+      "rarity": "uncommon",
+      "set": "eoe",
+      "id": "ba9f6d16-ee3e-4fbb-b78a-6292188eb61f",
+      "image": "https://cards.scryfall.io/normal/front/b/a/ba9f6d16-ee3e-4fbb-b78a-6292188eb61f.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "tannuk",
+     "line": "We're a few bones short of a skeleton crew, Sami, but we've got plenty of spine.",
+     "quote": true
+    },
+    {
+     "who": "station",
+     "line": "Keeping tabs on a whole station is too much for just one."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "station",
+     "line": "Keeping tabs on a whole station is too much for just one.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: the station goes quiet. The Edge of Eternities lies behind you."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Crew, to the station.",
+     "big": "Break it open!",
+     "low": "There are too many...",
+     "win": "Station cleared.",
+     "loss": "Locked out...",
+     "half": "Race it before the Mechan stack up."
+    },
+    "villain": {
+     "start": "Monitoring.",
+     "big": "Lockdown!",
+     "low": "Fault detected...",
+     "win": "Secured.",
+     "loss": "Breach..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}
