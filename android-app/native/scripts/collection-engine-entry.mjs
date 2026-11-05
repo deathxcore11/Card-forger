@@ -35,7 +35,7 @@ import {mtgPairQueries, rankPairs, edhPop} from 'WEB/pairing.js';
 import {ICON, actionIcon} from 'WEB/icons.js';
 import {contextAction, contextHeader, deckContextShortcuts} from 'WEB/card-actions.js';
 import {deckBoxMarkup, deckBoxFields, boxAppearance} from 'WEB/deck-box.js';
-import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf, SOURCES as tcgSources, cache as tcgCache, ensureCard as tcgEnsureCard, gs as tcgGs, tcgCardSheet, setContextCard as tcgSetContextCard, currentYgoCatalogue as tcgYgoCatalogue, trackTcgValue, collectionValue as tcgCollectionValue, persistQuoteCache as tcgPersistQuoteCache, entryPrice as tcgEntryPrice, referenceEntryPrice as tcgReferenceEntryPrice, tcgHome, tcgCollection, tcgDecks, readTcgValueHistory, loadCache as tcgLoadCache, ensureMany as tcgEnsureMany, needsCardRefresh as tcgNeedsRefresh} from 'WEB/tcg.js';
+import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf, SOURCES as tcgSources, cache as tcgCache, ensureCard as tcgEnsureCard, gs as tcgGs, tcgCardSheet, setContextCard as tcgSetContextCard, currentYgoCatalogue as tcgYgoCatalogue, trackTcgValue, collectionValue as tcgCollectionValue, persistQuoteCache as tcgPersistQuoteCache, entryPrice as tcgEntryPrice, referenceEntryPrice as tcgReferenceEntryPrice, tcgHome, tcgCollection, tcgDecks, tcgDeck, readTcgValueHistory, loadCache as tcgLoadCache, ensureMany as tcgEnsureMany, needsCardRefresh as tcgNeedsRefresh} from 'WEB/tcg.js';
 import {adjustOwnedLot} from 'WEB/quick-quantity.js';
 import {workspaceSig, isEmptyWorkspace} from 'WEB/cloud.js';
 import {mergeAccountWorkspaces, workspaceContentSig} from 'WEB/sync-merge.js';
@@ -477,16 +477,40 @@ const deckAct = {
 };
 // app.js route(): opening another deck clears the deck search.
 function deckOpen(id) { if (id !== S.ui.deckId) { S.ui.q.deck = ''; S.ui.deckId = id; } }
+// deck-viewer.js deckShell, as views.js deckPage and tcg.js tcgDeck both fill it: the hero (art, ← and ⋯, the eyebrow chips and the
+// rules review, the name, the stats and the owned bar), the actions under it, a warning (Magic's .note, a TCG draft's .ds-status) and the
+// deck's tabs. A Pokémon hero is pokemonArtCrop's art window (crop "pokemon").
+function shellOf(t, game) {
+  const hero = one(t, cls('ds-hero')), nav = one(hero, cls('ds-nav')), menu = one(nav, cls('ds-menu')), brow = one(hero, cls('deck-hero-eyebrow'));
+  const eyebrow = (brow?.kids || []).filter(k => k.tag).map(k => cls('review-badge')(k) ? {kind: 'review', level: ['bad', 'warn', 'ok'].find(c => cls(c)(k)) || 'warn', ...lead(k), act: k.attrs['data-act'] || ''}
+    : cls('dots')(k) ? {kind: 'dots', label: k.attrs['aria-label'] || '', dots: all(k, tagIs('img')).map(i => ({src: i.attrs.src || '', alt: i.attrs.alt || ''}))}
+    : {kind: 'chip', label: text(k), title: k.attrs.title || '', badge: cls('ds-badge')(k)});
+  const art = (hero?.kids || []).find(k => k.tag && cls('hero-art')(k)), artImg = art?.tag === 'img' ? art : one(art, tagIs('img'));
+  const status = one(t, cls('ds-status'));
+  return {hero: {art: artImg ? {...picture(artImg), crop: cls('pk-crop')(art) ? 'pokemon' : ''} : null, back: !!one(nav, cls('icon')), menu: menu ? {label: menu.attrs['aria-label'] || '', title: menu.attrs.title || '', act: menu.attrs['data-act'] || ''} : null,
+      eyebrow, title: text(one(hero, tagIs('h1'))), line: text(one(hero, cls('ds-line'))),
+      stats: all(one(hero, cls('ds-stats')), cls('ds-stat')).map(x => ({value: text(one(x, tagIs('b'))), label: text(one(x, x => x.tag === 'span' && !cls('ds-stat')(x))), warn: cls('warn')(x), button: x.tag === 'button', act: x.attrs['data-act'] || '', id: x.attrs['data-id'] || ''})),
+      owned: one(hero, cls('ds-bar')) ? widthOf(one(one(hero, cls('ds-bar')), tagIs('i'))) / 100 : null},
+    // desktop-play.js syncDesktopPlayEntries: on every touch device Magic's Practice plate shows (the page draws it hidden until then).
+    actions: all(one(t, cls('ds-actions')), tagIs('button')).map(b => ({label: text({kids: b.kids}), act: b.attrs['data-act'] || '', id: b.attrs['data-id'] || '', primary: cls('ds-primary')(b), plate: cls('cs-plate')(b),
+      shown: b.attrs['data-desktop-play-entry'] === 'practice' ? game === 'mtg' : b.attrs.hidden === undefined})),
+    note: (() => { const n = one(t, x => cls('note')(x) && cls('warn')(x) && x.tag === 'div'); return n ? {text: text({kids: (n.kids || []).filter(k => k.tag !== 'p')}), lines: all(n, tagIs('p')).map(text)}
+      : status ? {text: text(status), lines: []} : null; })(),
+    tabs: all(one(t, x => x.tag === 'nav' && cls('tabs')(x)), tagIs('button')).map(b => ({key: b.attrs['data-id'], label: text(b), on: b.attrs['aria-selected'] === 'true', icon: icon(svgIn(b))}))};
+}
+// importance.js deckEmblemHtml: the meta and staple tally, then each owned staple that could replace a card with no emblem.
+// [outKey] / [inKey]: the Swap button's data-out / data-in (Magic's card names, a Yu-Gi-Oh! or Pokémon card's id).
+const emblemsOf = embS => embS ? {tally: all(one(embS, cls('emb-tally')), cls('emb-count')).map(x => { const b = text(one(x, tagIs('b'))); return {kind: (classes(x).find(c => c.startsWith('imp-')) || '').slice(4), icon: icon(svgIn(x)), count: b, label: text(x).slice(b.length).trim()}; }),
+  none: text(one(one(embS, cls('emb-tally')), cls('muted'))), head: text(one(embS, cls('list-head'))),
+  swaps: all(embS, cls('emb-swap')).map(x => { const [o, i] = all(x, x => x.tag === 'button' && cls('link')(x)); const btn = one(x, x => cls('btn')(x));
+    return {out: o?.attrs['data-name'] || text(o), in: i?.attrs['data-name'] || text(i), outKey: btn?.attrs['data-out'] || '', inKey: btn?.attrs['data-in'] || '', inIcon: icon(svgIn(i)), button: text(btn), why: text(one(x, cls('emb-why')))}; }),
+  foot: text(one(embS, cls('foot')))} : null;
 function deckPageModel(game, id) {
   const ui = S.ui;
   deckOpen(id);
   ui.deckTab = 'cards';
   const t = tree(deckView()), hero = one(t, cls('ds-hero'));
   if (!hero) { const e = one(t, cls('empty')); return {game, id, missing: {title: text(one(e, tagIs('h3'))), text: text(one(e, tagIs('p')))}}; }
-  const nav = one(hero, cls('ds-nav')), menu = one(nav, cls('ds-menu')), brow = one(hero, cls('deck-hero-eyebrow'));
-  const eyebrow = (brow?.kids || []).filter(k => k.tag).map(k => cls('review-badge')(k) ? {kind: 'review', level: ['bad', 'warn', 'ok'].find(c => cls(c)(k)) || 'warn', ...lead(k), act: k.attrs['data-act'] || ''}
-    : cls('dots')(k) ? {kind: 'dots', label: k.attrs['aria-label'] || '', dots: all(k, tagIs('img')).map(i => ({src: i.attrs.src || '', alt: i.attrs.alt || ''}))}
-    : {kind: 'chip', label: text(k), title: k.attrs.title || '', badge: cls('ds-badge')(k)});
   const viewer = one(t, cls('deck-viewer')), list = one(viewer, x => x.attrs.id === 'deckList'), toolbar = one(t, cls('deck-toolbar'));
   const groups = all(list, x => x.tag === 'details' && cls('group')(x) && !cls('side-group')(x)).map(g => {
     const sum = one(g, tagIs('summary')), first = one(sum, tagIs('span')), em = one(first, tagIs('em'));
@@ -502,15 +526,7 @@ function deckPageModel(game, id) {
   for (const r of groups.flatMap(g => g.rows)) if (r.zone !== 'side') for (const role of r.roles) roles.set(role, (roles.get(role) || 0) + (Number(r.qty) || 0));
   const cmdNote = one(t, x => cls('block-note')(x));
   return {game, id, format: (S.state.decks || []).find(d => String(d.id) === String(id))?.format || '', view: viewer?.attrs['data-deck-view'] || 'gallery',
-    hero: {art: picture(one(hero, cls('hero-art'))), back: !!one(nav, cls('icon')), menu: menu ? {label: menu.attrs['aria-label'] || '', title: menu.attrs.title || ''} : null,
-      eyebrow, title: text(one(hero, tagIs('h1'))), line: text(one(hero, cls('ds-line'))),
-      stats: all(one(hero, cls('ds-stats')), cls('ds-stat')).map(x => ({value: text(one(x, tagIs('b'))), label: text(one(x, tagIs('span'))), warn: cls('warn')(x), button: x.tag === 'button', act: x.attrs['data-act'] || '', id: x.attrs['data-id'] || ''})),
-      owned: one(hero, cls('ds-bar')) ? widthOf(one(one(hero, cls('ds-bar')), tagIs('i'))) / 100 : null},
-    // desktop-play.js syncDesktopPlayEntries: on every touch device Magic's Practice plate shows (the page draws it hidden until then).
-    actions: all(one(t, cls('ds-actions')), tagIs('button')).map(b => ({label: text({kids: b.kids}), act: b.attrs['data-act'] || '', id: b.attrs['data-id'] || '', primary: cls('ds-primary')(b), plate: cls('cs-plate')(b),
-      shown: b.attrs['data-desktop-play-entry'] === 'practice' ? game === 'mtg' : b.attrs.hidden === undefined})),
-    note: (() => { const n = one(t, x => cls('note')(x) && cls('warn')(x) && x.tag === 'div'); return n ? {text: text({kids: (n.kids || []).filter(k => k.tag !== 'p')}), lines: all(n, tagIs('p')).map(text)} : null; })(),
-    tabs: all(one(t, x => x.tag === 'nav' && cls('tabs')(x)), tagIs('button')).map(b => ({key: b.attrs['data-id'], label: text(b), on: b.attrs['aria-selected'] === 'true', icon: icon(svgIn(b))})),
+    ...shellOf(t, game),
     commanderNote: cmdNote ? {text: text(cmdNote).replace(/^⚠\s*/, ''), act: cmdNote.attrs['data-act'] || '', id: cmdNote.attrs['data-id'] || ''} : null,
     search: (() => { const i = one(toolbar, tagIs('input')); return i && {value: i.attrs.value || '', placeholder: i.attrs.placeholder || '', label: i.attrs['aria-label'] || ''}; })(),
     chips: all(one(toolbar, cls('deck-chips')), tagIs('button')).map(b => { const c = text(one(b, tagIs('b'))); const l = text(b); return {id: b.attrs['data-id'], label: c ? l.slice(0, l.length - c.length).trim() : l, count: c, on: cls('on')(b)}; }),
@@ -521,15 +537,71 @@ function deckPageModel(game, id) {
     roles: [...roles].map(([role, count]) => ({role, count})),
     side: sideG ? {count: text(one(sideFirst, tagIs('em'))), over: text(one(sideFirst, cls('warn-text'))).replace(/^·\s*/, ''), status: text(one(sideSum, cls('muted'))),
       text: text(one(sideG, x => x.tag === 'p')), rows: sideRows, stacks: stacksOf(sideRows, text(sideFirst))} : null,
-    emblems: embS ? {tally: all(one(embS, cls('emb-tally')), cls('emb-count')).map(x => { const b = text(one(x, tagIs('b'))); return {kind: (classes(x).find(c => c.startsWith('imp-')) || '').slice(4), icon: icon(svgIn(x)), count: b, label: text(x).slice(b.length).trim()}; }),
-      none: text(one(one(embS, cls('emb-tally')), cls('muted'))), head: text(one(embS, cls('list-head'))),
-      swaps: all(embS, cls('emb-swap')).map(x => { const [o, i] = all(x, x => x.tag === 'button' && cls('link')(x)); const btn = one(x, x => cls('btn')(x));
-        return {out: o?.attrs['data-name'] || text(o), in: i?.attrs['data-name'] || text(i), inIcon: icon(svgIn(i)), button: text(btn), why: text(one(x, cls('emb-why')))}; }),
-      foot: text(one(embS, cls('foot')))} : null,
+    emblems: emblemsOf(embS),
     table: foot ? {title: text(one(foot, tagIs('h3'))), line: runs(footP || {kids: []}), bar: widthOf(one(one(foot, cls('bar')), tagIs('span'))) / 100,
       actions: all(one(foot, cls('deck-table-actions')), tagIs('button')).map(b => ({label: text(b), act: b.attrs['data-act'] || '', ghost: cls('ghost')(b)}))} : null,
     glyphs: Object.fromEntries(["minus", "plus", "more", "back"].map(k => [k, icon(svgIn(tree(ICON[k])))]))};
 }
+
+// tcg.js tcgDeck(), a Yu-Gi-Oh! or Pokémon deck's page on its Cards tab (deckCardsTab), in deckPageModel's shape: the same deckShell
+// parts, then the deck view switch, "Add a card by name" and what it found, the format's note, the emblem panel, the rules review,
+// each zone as its heading (Deck / Main Deck, Extra Deck, Side Deck with count and rule) and its rows, and the panel under them
+// (what is left to get and its cost, the price tools, the foot).
+function tcgDeckRow(n) {
+  const r = deckRowModel(n), nm = one(n, cls('lot-name')), sub = one(n, cls('lot-sub')), side = one(n, cls('lot-side')), art = one(n, cls('lot-art')), less = one(side, x => x.attrs['data-act'] === 'tDeckQty'), move = one(side, x => x.attrs['data-act'] === 'tDeckMove');
+  // The Yu-Gi-Oh! purchase identity a row may carry (deckActionRow): passed back with the row's ± and move as the site's buttons carry it.
+  const row = less ? Object.fromEntries(['data-row-index', 'data-purchase-identity'].filter(k => less.attrs[k] !== undefined).map(k => [k === 'data-row-index' ? 'rowIndex' : 'purchaseIdentity', less.attrs[k]])) : {};
+  return {...r, cardId: nm?.attrs['data-id'] || '', price: text(one(art, cls('art-price'))),
+    // .lot-sub in order, the legality tags left to [legal]: the game's emblems, the set badge, the purchase note.
+    pieces: subPieces({kids: (sub?.kids || []).filter(k => !(k.tag && cls('tag')(k)))}), tchrome: tcgChromeOf(one(art, cls('tile-chrome'))),
+    tcgFinish: tcgFinishOf(art, tcgCardOf(tcgGame(), nm?.attrs['data-id'] || '')), move: move ? text(move) : '', row,
+    // What its A.tCard hands the card page (purchaseRowAttrs): Pokémon's purchase variant, Yu-Gi-Oh!'s printing and edition.
+    open: Object.fromEntries([['data-set-variant', 'setVariant'], ['data-printing', 'printing'], ['data-edition', 'edition']].filter(([a]) => nm?.attrs[a] !== undefined).map(([a, k]) => [k, nm.attrs[a]]))};
+}
+function tcgDeckPageModel(G, id) {
+  tcgFocus(G, 'tdeck'); S.ui.tdeckId = id; (S.ui.tdeckTab ||= {})[G + ':' + id] = 'cards';
+  const t = tree(tcgDeck(id)), hero = one(t, cls('ds-hero'));
+  if (!hero) { const e = one(t, cls('empty')); return {game: G, id, missing: {title: text(one(e, tagIs('h3'))), text: text(one(e, tagIs('p')))}}; }
+  const body = one(t, cls('deck-body')), viewer = one(body, cls('deck-viewer')), add = one(body, cls('deck-add')), addIn = one(add, tagIs('input')), addBtn = one(add, tagIs('button'));
+  const found = one(body, cls('add-results')), issues = one(one(body, x => x.attrs.id === 'tIssuesPanel'), tagIs('details'));
+  const groups = []; let open = null;
+  for (const k of viewer?.kids || []) {
+    if (!k.tag) continue;
+    if (cls('section-head')(k)) { const h = one(k, tagIs('h2')), em = one(h, tagIs('span')), all_ = text(h); open = {name: all_.slice(0, all_.length - text(em).length).trim(), count: text(em), rows: [], none: ''}; groups.push(open); continue; }
+    if (!open) continue;
+    if (k.attrs['data-deck-list'] !== undefined) open.rows = all(k, x => cls('deck-row')(x)).map(tcgDeckRow);
+    else if (k.tag === 'p') open.none = text(k);
+  }
+  for (const g of groups) g.stacks = stacksOf(g.rows, g.name);
+  const roles = new Map();
+  for (const r of groups.flatMap(g => g.rows)) if (r.zone !== 'side') for (const role of r.roles) roles.set(role, (roles.get(role) || 0) + (Number(r.qty) || 0));
+  // The price panel closes the tab (the staples panel, section.panel.deck-emb, sits above the zones).
+  const panel = (body?.kids || []).find(k => k.tag === 'section' && cls('panel')(k) && !cls('deck-emb')(k)), sum = one(panel, cls('row'));
+  const d = tcgGs(G).decks.find(x => x.id === id);
+  return {game: G, id, format: d?.format || '', view: viewer?.attrs['data-deck-view'] || 'gallery', ...shellOf(t, G),
+    commanderNote: null, search: null, chips: [], group: null, add: null,
+    views: all(one(body, cls('deck-view-switch')), tagIs('button')).map(b => ({mode: b.attrs['data-mode'], label: b.attrs['aria-label'] || b.attrs.title || '', on: b.attrs['aria-checked'] === 'true', icon: icon(svgIn(b))})),
+    viewLabel: text(one(one(body, cls('deck-view-toolbar')), x => x.tag === 'span')),
+    find: add ? {value: addIn?.attrs.value || '', placeholder: addIn?.attrs.placeholder || '', label: addIn?.attrs['aria-label'] || '', button: text(addBtn), busy: addBtn?.attrs.disabled !== undefined} : null,
+    found: found ? {rows: all(found, cls('mini-row')).map(r => { const e = one(r, cls('ellip')), sm = one(e, tagIs('small')), b = one(r, tagIs('button'));
+      return {id: b?.attrs['data-id'] || '', name: text(e).slice(0, text(e).length - text(sm).length).trim(), sub: text(sm), picture: picture(one(r, tagIs('img')))}; }), close: text(one(found, cls('link')))} : null,
+    formatNote: text((body?.kids || []).find(k => k.tag === 'p' && cls('small')(k) && cls('muted')(k)) || {kids: []}),
+    emblems: emblemsOf(one(body, cls('deck-emb'))),
+    issues: issues ? {summary: text(one(issues, tagIs('summary'))), items: all(issues, tagIs('li')).map(text)} : null,
+    groups, none: '', roles: [...roles].map(([role, count]) => ({role, count})), side: null, table: null,
+    panel: panel ? {left: text(one(sum, tagIs('span'))), right: text(one(sum, tagIs('b'))),
+      actions: all(one(panel, cls('actions')), tagIs('button')).map(b => ({...button(b), id: b.attrs['data-id'] || '', title: b.attrs.title || '', primary: !cls('ghost')(b)})),
+      foot: text(one(panel, cls('foot')))} : null,
+    glyphs: Object.fromEntries(["minus", "plus", "more", "back"].map(k => [k, icon(svgIn(tree(ICON[k])))]))};
+}
+// tcg.js's handlers for the deck page's controls: deck-viewer.js A.deckView (the game's own settings.displayModes), I.tDeckQ, A.tDeckFind
+// (a search: the results land on the page when the card source answers) and A.tDeckAddClose.
+const tcgDeckAct = {
+  view: v => { if (DECK_VIEWS.includes(v)) ((S.state.settings.displayModes ||= {})[tcgGame()] ||= {}).deck = v; },
+  q: v => TI.tDeckQ({value: String(v)}),
+  find: v => { if (v != null && v !== '') TI.tDeckQ({value: String(v)}); TA.tDeckFind(); },
+  close: () => TA.tDeckAddClose(),
+};
 
 // ---------------------------------------------------------------- A card's page (views.js cardSheet, the Collection lens)
 // app.js A.card opens the sheet on a context (S.ui.sheetCtx); loadCardExtras, loadMagicVersions, mtgGuideLoad and the
@@ -777,7 +849,7 @@ function setOpen(code) {
 // these pages to the open game (settings.game) and route (S.ui.view, S.ui.tsetId), so a set page holds them while it is open and
 // Magic's pages hand them back.
 const TA = {}, TC = {}, TI = {}, tcgCtx = {};
-let tcgWent = '';
+let tcgWent = '', tdeckAt = null;
 let tcgOn = false, tcgPrev, setsGame = 'mtg', setGame = 'mtg';
 // tcg.js takes openSheet / closeSheet once (registerTcg), so they forward: the Add to collection sheet listens while it opens and saves.
 let tcgSheetHook = () => {}, tcgCloseHook = () => {};
@@ -868,15 +940,32 @@ function setTileModel(n) {
 // A Yu-Gi-Oh! or Pokémon card of the set grid (tcg.js tcgSet): its art and finish (finish-preview.js reads data-finish-model), the
 // tile chrome (tiles.js: Level and Attribute, or energy types; the set code and rarity code, or the set and rarity symbols), the
 // number and name, the price and what kind of price it is, and what you own. The card itself opens the site's card page (tCard).
+// tiles.js tileChrome on a Yu-Gi-Oh! or Pokémon picture (.tile-chrome): the emblems (Level / Rank star and number, Attribute or energy
+// orbs) and the set badge (Yu-Gi-Oh!'s set code and rarity code; Pokémon's set and rarity symbols).
+function tcgChromeOf(c) {
+  if (!c) return null;
+  const pk = x => x ? [x.attrs.src, x.attrs['data-direct']].filter(Boolean).map(abs) : [];
+  const ts = one(one(c, cls('tile-set')), cls('tset')), rx = one(ts, cls('rx-code')), pks = one(ts, cls('pks')), pkr = one(ts, cls('pkr')), rar = one(ts, cls('rar'));
+  const emb = (one(one(c, cls('tile-emb')), cls('emblems'))?.kids || []).filter(k => k.tag).map(k => k.tag === 'svg' ? {icon: icon(k)}
+    : cls('lvl')(k) ? {icon: icon(svgIn(k)), text: text(k), label: k.attrs['aria-label'] || ''} : cls('more')(k) || cls('hp')(k) ? {text: text(k)} : {icon: icon(svgIn(k)), text: text(k)});
+  return {emb, set: ts ? {tone: classes(ts).find(x => ['secret', 'ultra', 'super', 'rare', 'common'].includes(x)) || '', code: text(one(ts, tagIs('b'))),
+    rarity: rx ? {text: text(rx), kind: (classes(rx).find(x => x.startsWith('rx-') && x !== 'rx-code') || 'rx-common').slice(3)} : null,
+    symbol: pk(pks), mark: pkr ? {src: pk(pkr), ink: cls('ink')(pkr), alt: pkr.attrs.alt || ''} : rar ? {text: text(rar), gold: cls('gold')(rar)} : null,
+    title: ts.attrs.title || ''} : null,
+    // importance.js tileEmblem: the meta / staple mark at the dock's right.
+    imp: (x => x ? icon(svgIn(x)) : null)(one(c, cls('imp-tile')))};
+}
+// finish-preview.js's model on a Yu-Gi-Oh! or Pokémon picture (data-finish-model): the recipe, its masks, the Level-star foil, the frame.
+function tcgFinishOf(n, card) {
+  let f = null; try { f = JSON.parse(n?.attrs['data-finish-model'] || 'null'); } catch {}
+  return f && {key: f.key || '', effect: f.effect || n.attrs['data-finish-effect'] || '', status: f.status || '', stars: Number(f.stars) || 0,
+    treatment: f.treatment || '', mask: f.layers?.[0]?.mask || '', clip: f.overlayProfiles?.[0]?.mask || '', frame: String(card?.frame || card?.cardType || card?.typeLine || '')};
+}
 function tcgTileModel(n, G) {
   const img = one(n, cls('card-img')) || one(n, tagIs('img')), c = one(n, cls('tile-chrome')), meta = one(n, cls('grid-meta')), badge = one(n, cls('owned-badge'));
   let f = null; try { f = JSON.parse(n.attrs['data-finish-model'] || 'null'); } catch {}
   const spans = (meta?.kids || []).filter(k => k.tag === 'span'), pr = spans[1], id = n.attrs['data-id'] || '';
   const card = tcgCardOf(G, id);
-  const pk = x => x ? [x.attrs.src, x.attrs['data-direct']].filter(Boolean).map(abs) : [];
-  const ts = one(one(c, cls('tile-set')), cls('tset')), rx = one(ts, cls('rx-code')), pks = one(ts, cls('pks')), pkr = one(ts, cls('pkr')), rar = one(ts, cls('rar'));
-  const emb = (one(one(c, cls('tile-emb')), cls('emblems'))?.kids || []).filter(k => k.tag).map(k => k.tag === 'svg' ? {icon: icon(k)}
-    : cls('lvl')(k) ? {icon: icon(svgIn(k)), text: text(k), label: k.attrs['aria-label'] || ''} : cls('more')(k) || cls('hp')(k) ? {text: text(k)} : {icon: icon(svgIn(k)), text: text(k)});
   const printing = n.attrs['data-printing'] || '';
   // What the tile hands A.tCard: the set it was opened from, the finish the page prices, Yu-Gi-Oh!'s printing and edition.
   const open = {setId: n.attrs['data-set-id'] || '', setVariant: n.attrs['data-set-variant'] || '', printing, edition: n.attrs['data-edition'] || ''};
@@ -884,10 +973,7 @@ function tcgTileModel(n, G) {
     finish: f && {key: f.key || '', effect: f.effect || n.attrs['data-finish-effect'] || '', status: f.status || '', stars: Number(f.stars) || 0,
       treatment: f.treatment || '', mask: f.layers?.[0]?.mask || '', clip: f.overlayProfiles?.[0]?.mask || '', source: abs(typeof f.source === 'string' && /^https?:/.test(f.source) ? f.source : ''),
       rarity: n.attrs['data-printed-rarity'] || '', code: printing.split('::')[0] || '', date: f.printingRelease?.date || '', frame: String(card?.frame || card?.cardType || card?.typeLine || '')},
-    chrome: c ? {emb, set: ts ? {tone: classes(ts).find(x => ['secret', 'ultra', 'super', 'rare', 'common'].includes(x)) || '', code: text(one(ts, tagIs('b'))),
-      rarity: rx ? {text: text(rx), kind: (classes(rx).find(x => x.startsWith('rx-') && x !== 'rx-code') || 'rx-common').slice(3)} : null,
-      symbol: pk(pks), mark: pkr ? {src: pk(pkr), ink: cls('ink')(pkr), alt: pkr.attrs.alt || ''} : rar ? {text: text(rar), gold: cls('gold')(rar)} : null,
-      title: ts.attrs.title || ''} : null} : null,
+    chrome: tcgChromeOf(c),
     label: text(spans[0]), price: text({kids: (pr?.kids || []).filter(k => k.tag !== 'small')}), priceNote: text(one(pr, tagIs('small'))), priceTitle: pr?.attrs.title || '',
     badge: badge ? {text: text(badge), other: cls('other')(badge), title: badge.attrs.title || ''} : null, own: cls('own')(n), printing, edition: n.attrs['data-edition'] || ''};
 }
@@ -1580,6 +1666,12 @@ const writeActs = {
   // tcg.js A.tEntryQty and A.tWish, the site's own handlers, for a Yu-Gi-Oh! or Pokémon lot (the game's page holds settings.game).
   async tEntryQty(d) { tcgFocus(d.game, S.ui.view || 'collection'); await TA.tEntryQty({dataset: d}); },
   async tWish(d) { tcgFocus(d.game, S.ui.view || 'collection'); await TA.tWish({dataset: d}); },
+  // tcg.js A.tDeckQty, A.tDeckMove, A.tDeckAdd and A.tDeckEmbSwap, the site's own, on a Yu-Gi-Oh! or Pokémon deck's page ([d].deck): a row's
+  // − / ＋ and → side / → deck (data-zone, data-id, Yu-Gi-Oh!'s data-row-index and data-purchase-identity), a found card's ＋, a staple's Swap.
+  async tDeckQty(d) { tcgFocus(d.game, 'tdeck'); S.ui.tdeckId = d.deck; await TA.tDeckQty({dataset: d}); },
+  async tDeckMove(d) { tcgFocus(d.game, 'tdeck'); S.ui.tdeckId = d.deck; await TA.tDeckMove({dataset: d}); },
+  async tDeckAdd(d) { tcgFocus(d.game, 'tdeck'); S.ui.tdeckId = d.deck; await TA.tDeckAdd({dataset: d}); },
+  async tDeckEmbSwap(d) { tcgFocus(d.game, 'tdeck'); S.ui.tdeckId = d.deck; await TA.tDeckEmbSwap({dataset: d}); },
   // tcg.js A.tOwnSave, the site's own: it reads its form from the page (#tQty, #tCond…), so the form as the app has it stands in for
   // those fields while the handler reads them (before its first await); it closes the sheet when saved (made: "closed").
   async tOwnSave(d) {
@@ -2194,8 +2286,13 @@ globalThis.Collection = {
   decks(game, optsJson) { if (game && game !== 'mtg') { const m = tcgDecksPage(game); tcgScreenCards(game, 'decks'); return json(m); } mtgFocus(); return json(decksPage(game, optsJson ? JSON.parse(optsJson) : {})); },
   // views.js deckPage(), the Cards tab of deck [id]; deckDo applies one of its controls as the site's handler does (deckAct), then draws it again.
   // [opts] = {search, filter, sort, view}: the controls as the app last left them, applied before the page draws.
-  deck(game, id, opts) { mtgFocus(); deckOpen(id); const o = opts ? JSON.parse(opts) : {}; for (const k of Object.keys(deckAct)) if (o[k] != null) deckAct[k](o[k]); return json(deckPageModel(game, id)); },
-  deckDo(game, id, kind, value) { if (!deckAct[kind]) throw Error('unknown deck control ' + kind); mtgFocus(); deckOpen(id); deckAct[kind](value); return json(deckPageModel(game, id)); },
+  deck(game, id, opts) { if (game && game !== 'mtg') { tcgFocus(game, 'tdeck'); S.ui.tdeckId = id; const o = opts ? JSON.parse(opts) : {}; if (o.view != null) tcgDeckAct.view(o.view);
+    tdeckAt = [game, id]; tcgScreenCards(game, 'tdeck', {id}); return json(tcgDeckPageModel(game, id)); }
+    mtgFocus(); deckOpen(id); const o = opts ? JSON.parse(opts) : {}; for (const k of Object.keys(deckAct)) if (o[k] != null) deckAct[k](o[k]); return json(deckPageModel(game, id)); },
+  // The open Yu-Gi-Oh! or Pokémon deck page again (after settle: a search's results, prices and card data that came in).
+  tdeckModel() { if (!tdeckAt) return '{}'; const [g, id] = tdeckAt; return json(tcgDeckPageModel(g, id)); },
+  deckDo(game, id, kind, value) { if (game && game !== 'mtg') { if (!tcgDeckAct[kind]) throw Error('unknown deck control ' + kind); tcgFocus(game, 'tdeck'); S.ui.tdeckId = id; tdeckAt = [game, id]; tcgDeckAct[kind](value); return json(tcgDeckPageModel(game, id)); }
+    if (!deckAct[kind]) throw Error('unknown deck control ' + kind); mtgFocus(); deckOpen(id); deckAct[kind](value); return json(deckPageModel(game, id)); },
   cardsDo(game, kind, value) {
     if (game && game !== 'mtg') { if (!tcgCardsAct[kind]) throw Error('unknown Cards control ' + kind); tcgFocus(game, 'collection'); tcgCardsAct[kind](value); return json(tcgCardsPage(game)); }
     if (!cardsAct[kind]) throw Error('unknown Cards control ' + kind); mtgFocus(); cardsAct[kind](value); return json(cardsPage(game)); },

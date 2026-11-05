@@ -85,6 +85,8 @@ import androidx.compose.ui.unit.sp
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import dev.cardstashy.nativeplay.play.CardData
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import kotlinx.coroutines.launch
 
 // ---------------------------------------------------------------- the model (CollectionEngine.deck, views.js deckPage(), Cards tab)
 
@@ -92,30 +94,48 @@ import dev.cardstashy.nativeplay.play.CardData
 class DeckCard(val r: CollRow, val qty: Int, val zone: String, val category: String, val roles: List<String>, val own: String?, val owned: Boolean,
                val legal: List<Pair<String, Boolean>>, val chip: String, val stepper: Boolean,
                /** ui.js tileChrome: the colour emblems (mana symbols) and the set symbol, docked on the art. */
-               val chromeEmb: List<Pair<String, String>>, val chromeSet: String?, val chromeRarity: String, val chromeTitle: String, val chromeImp: SiteSvg?)
+               val chromeEmb: List<Pair<String, String>>, val chromeSet: String?, val chromeRarity: String, val chromeTitle: String, val chromeImp: SiteSvg?,
+               /** A Yu-Gi-Oh! or Pokémon row (tcg.js deckCardsTab): its card's id, the price on its art, "→ side" / "→ deck" (Yu-Gi-Oh!), the purchase
+                *  identity its buttons carry (data-row-index, data-purchase-identity), its .lot-sub as pieces, its tile chrome and its foil. */
+               val cardId: String = "", val price: String = "", val move: String = "", val rowIndex: String? = null, val purchaseIdentity: String? = null,
+               val pieces: List<CollPiece> = emptyList(), val tcgEmb: List<TcgEmb> = emptyList(), val tcgSet: TcgSetBadge? = null, val tcgFinish: TcgFinish? = null,
+               /** What its A.tCard hands the card page: setVariant (Pokémon's purchase variant), printing and edition (Yu-Gi-Oh!'s). */
+               val open: Map<String, String> = emptyMap())
 /** A sideboard card (mtgSideboard's .mini-row): its art, "2× Name" and what is still to get. */
 class DeckMini(val name: String, val qty: Int, val category: String, val roles: List<String>, val art: String?, val tier: String, val tierColor: String,
                val label: String, val own: String?, val ok: Boolean)
 /** deck-viewer.js stackList as data: a type's piles of up to six cards (indexes into the list). */
 class DeckStack(val category: String, val count: Int, val hidden: Boolean, val piles: List<List<Int>>)
 class DeckStacks(val groups: List<DeckStack>, val piles: Int)
-class DeckGroup(val name: String, val count: String, val cards: List<DeckCard>, val stacks: DeckStacks)
-class DeckEyebrow(val kind: String, val label: String, val title: String, val badge: Boolean, val level: String, val icon: SiteSvg?, val dots: List<Pair<String, String>>)
+/** A type group (Magic) or a zone (Yu-Gi-Oh!, Pokémon: its heading, "16 · 60", and "Empty." when it has no cards). */
+class DeckGroup(val name: String, val count: String, val cards: List<DeckCard>, val stacks: DeckStacks, val none: String = "")
+class DeckEyebrow(val kind: String, val label: String, val title: String, val badge: Boolean, val level: String, val icon: SiteSvg?, val dots: List<Pair<String, String>>, val act: String = "")
 class DeckStat(val value: String, val label: String, val warn: Boolean, val button: Boolean, val act: String, val id: String)
 class DeckPageAction(val label: String, val act: String, val id: String, val primary: Boolean, val plate: Boolean, val shown: Boolean)
 class DeckChip(val id: String, val label: String, val count: String, val on: Boolean)
-class DeckSwap(val out: String, val into: String, val icon: SiteSvg?, val button: String, val why: String)
+class DeckSwap(val out: String, val into: String, val icon: SiteSvg?, val button: String, val why: String, val outKey: String = "", val inKey: String = "")
 class DeckTally(val kind: String, val icon: SiteSvg?, val count: String, val label: String)
 class DeckSide(val count: String, val over: String, val status: String, val text: String, val rows: List<DeckMini>, val stacks: DeckStacks)
 class DeckEmblems(val tally: List<DeckTally>, val none: String, val head: String, val swaps: List<DeckSwap>, val foot: String)
 class DeckTable(val title: String, val line: List<CollRun>, val bar: Float, val actions: List<Triple<String, String, Boolean>>)
+/** tcg.js deckCardsTab's "Add a card by name" and its Find (busy: "…" while the card source answers). */
+class DeckFind(val value: String, val placeholder: String, val label: String, val button: String, val busy: Boolean)
+/** One card the search found (.add-results .mini-row): its picture, name, set or type line, and its ＋ (A.tDeckAdd). */
+class DeckFound(val id: String, val name: String, val sub: String, val art: List<String>)
+/** The panel under the zones: what is left to get and its cost, the price tools (Cheapest printings, Buy on TCGplayer, Export, Refresh), the foot. */
+class DeckPanel(val left: String, val right: String, val actions: List<Pair<SiteButton, String>>, val foot: String)
 
 class CollectionDeckModel(val game: CardGame, val id: String, val format: String, val view: String, val missingTitle: String?, val missingText: String,
                           val art: String?, val menuLabel: String, val eyebrow: List<DeckEyebrow>, val title: String, val line: String, val stats: List<DeckStat>, val owned: Float?,
                           val actions: List<DeckPageAction>, val note: String?, val noteLines: List<String>, val tabs: List<CollTab>, val commanderNote: String?,
                           val searchValue: String, val searchPlaceholder: String, val chips: List<DeckChip>, val group: CollSelect?, val addLabel: String, val addIcon: SiteSvg?,
                           val views: List<CollView>, val groups: List<DeckGroup>, val none: String, val roles: List<Pair<String, Int>>, val side: DeckSide?,
-                          val emblems: DeckEmblems?, val table: DeckTable?, val glyphs: Map<String, SiteSvg>) {
+                          val emblems: DeckEmblems?, val table: DeckTable?, val glyphs: Map<String, SiteSvg>,
+                          /** A Yu-Gi-Oh! or Pokémon deck (tcg.js tcgDeck): the cover's addresses in turn, "pokemon" for its art window, the ⋯'s handler. */
+                          val artSources: List<String> = emptyList(), val artCrop: String = "", val menuAct: String = "deckMenu",
+                          /** Its Cards tab: "Deck view", the find row and its results, the format's note, the rules review, the panel under the zones. */
+                          val viewLabel: String = "", val find: DeckFind? = null, val found: List<DeckFound>? = null, val foundClose: String = "", val formatNote: String = "",
+                          val issues: Pair<String, List<String>>? = null, val panel: DeckPanel? = null) {
     companion object {
         private fun JsonObject.s(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asString ?: ""
         private fun JsonObject.b(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asBoolean ?: false
@@ -137,11 +157,20 @@ class CollectionDeckModel(val game: CardGame, val id: String, val format: String
                 r.objs("mana").map { it.s("src") to it.s("alt") }, emptyList(), "", "", "", false, "", "", "", "", r.i("qty"), false, "", r.o("print"))
         }
         private fun card(j: JsonObject): DeckCard {
-            val own = j.o("own"); val c = j.o("chrome"); val set = c?.o("set")
+            val own = j.o("own"); val c = j.o("chrome"); val set = c?.o("set"); val t = j.o("tchrome"); val ts = t?.o("set"); val f = j.o("tcgFinish"); val row = j.o("row")
             return DeckCard(row(j), j.i("qty"), j.s("zone"), j.s("category"), j.strs("roles"), own?.s("text"), own?.b("yes") ?: false,
                 j.objs("legal").map { it.s("text") to it.b("bad") }, j.s("chip"), j.b("stepper"),
                 c?.objs("emb").orEmpty().map { it.s("src") to it.s("alt") },
-                set?.s("src")?.let { Regex("/sets/([^/.?]+)\\.svg").find(it)?.groupValues?.get(1) }, set?.s("rarity") ?: "common", set?.s("title") ?: "", svg(c?.o("imp")))
+                set?.s("src")?.let { Regex("/sets/([^/.?]+)\\.svg").find(it)?.groupValues?.get(1) }, set?.s("rarity") ?: "common", set?.s("title") ?: "", svg(c?.o("imp") ?: t?.o("imp")),
+                j.s("cardId"), j.s("price"), j.s("move"), row?.takeIf { it.has("rowIndex") }?.s("rowIndex"), row?.takeIf { it.has("purchaseIdentity") }?.s("purchaseIdentity"),
+                j.objs("pieces").map { x -> CollPiece(x.s("k"), x.s("t"), x.b("b"), x.b("s"), x.b("strong"), x.s("tone"), x.b("set"), svg(x.o("icon")),
+                    x.s("src"), x.s("alt").ifBlank { x.s("label") }, x.b("ink"), x.s("title")) },
+                t?.objs("emb").orEmpty().map { TcgEmb(svg(it.o("icon")), it.s("text"), it.s("label")) },
+                ts?.let { b -> val mark = b.o("mark"); val rx = b.o("rarity")
+                    TcgSetBadge(b.s("tone"), b.s("code"), rx?.s("text") ?: "", rx?.s("kind") ?: "", b.strs("symbol"), mark?.strs("src").orEmpty(), mark?.b("ink") ?: false,
+                        mark?.s("text") ?: "", mark?.b("gold") ?: false, b.s("title")) },
+                f?.let { TcgFinish(it.s("effect"), it.s("treatment"), it.s("mask"), it.s("clip"), it.get("stars")?.takeIf { x -> x.isJsonPrimitive }?.asFloat ?: 0f, it.s("frame")) },
+                j.o("open")?.entrySet()?.associate { (k, v) -> k to (if (v.isJsonPrimitive) v.asString else "") }.orEmpty())
         }
         private fun mini(j: JsonObject) = DeckMini(j.s("name"), j.i("qty"), j.s("category"), j.strs("roles"), j.o("picture")?.s("src")?.ifBlank { null }, j.s("tier"), j.s("tierColor"),
             j.s("label"), j.o("own")?.s("text"), j.o("own")?.b("ok") ?: false)
@@ -150,7 +179,7 @@ class CollectionDeckModel(val game: CardGame, val id: String, val format: String
             val missing = j.o("missing"); val h = j.o("hero"); val note = j.o("note"); val side = j.o("side"); val emb = j.o("emblems"); val table = j.o("table")
             return CollectionDeckModel(CardGame.of(j.s("game")), j.s("id"), j.s("format"), j.s("view").ifBlank { "gallery" }, missing?.s("title"), missing?.s("text") ?: "",
                 h?.o("art")?.s("src")?.ifBlank { null }, h?.o("menu")?.s("label") ?: "",
-                h?.objs("eyebrow").orEmpty().map { DeckEyebrow(it.s("kind"), it.s("label"), it.s("title"), it.b("badge"), it.s("level"), svg(it.o("icon")), it.objs("dots").map { d -> d.s("src") to d.s("alt") }) },
+                h?.objs("eyebrow").orEmpty().map { DeckEyebrow(it.s("kind"), it.s("label"), it.s("title"), it.b("badge"), it.s("level"), svg(it.o("icon")), it.objs("dots").map { d -> d.s("src") to d.s("alt") }, it.s("act")) },
                 h?.s("title") ?: "", h?.s("line") ?: "", h?.objs("stats").orEmpty().map { DeckStat(it.s("value"), it.s("label"), it.b("warn"), it.b("button"), it.s("act"), it.s("id")) },
                 h?.get("owned")?.takeIf { it.isJsonPrimitive }?.asFloat,
                 j.objs("actions").map { DeckPageAction(it.s("label"), it.s("act"), it.s("id"), it.b("primary"), it.b("plate"), it.b("shown")) },
@@ -159,14 +188,21 @@ class CollectionDeckModel(val game: CardGame, val id: String, val format: String
                 j.o("search")?.s("value") ?: "", j.o("search")?.s("placeholder") ?: "", j.objs("chips").map { DeckChip(it.s("id"), it.s("label"), it.s("count"), it.b("on")) },
                 select(j.o("group")), j.o("add")?.s("label") ?: "", svg(j.o("add")?.o("icon")),
                 j.objs("views").map { CollView(it.s("mode"), it.s("label"), it.b("on"), svg(it.o("icon"))) },
-                j.objs("groups").map { g -> DeckGroup(g.s("name"), g.s("count"), g.objs("rows").map(::card), stacks(g.o("stacks"))) }, j.s("none"),
+                j.objs("groups").map { g -> DeckGroup(g.s("name"), g.s("count"), g.objs("rows").map(::card), stacks(g.o("stacks")), g.s("none")) }, j.s("none"),
                 j.objs("roles").map { it.s("role") to it.i("count") },
                 side?.let { DeckSide(it.s("count"), it.s("over"), it.s("status"), it.s("text"), it.objs("rows").map(::mini), stacks(it.o("stacks"))) },
                 emb?.let { e -> DeckEmblems(e.objs("tally").map { DeckTally(it.s("kind"), svg(it.o("icon")), it.s("count"), it.s("label")) }, e.s("none"), e.s("head"),
-                    e.objs("swaps").map { DeckSwap(it.s("out"), it.s("in"), svg(it.o("inIcon")), it.s("button"), it.s("why")) }, e.s("foot")) },
+                    e.objs("swaps").map { DeckSwap(it.s("out"), it.s("in"), svg(it.o("inIcon")), it.s("button"), it.s("why"), it.s("outKey"), it.s("inKey")) }, e.s("foot")) },
                 table?.let { t -> DeckTable(t.s("title"), t.objs("line").map { CollRun(it.s("t"), it.b("b"), it.b("m")) }, t.get("bar")?.asFloat ?: 0f,
                     t.objs("actions").map { Triple(it.s("label"), it.s("act"), it.b("ghost")) }) },
-                j.o("glyphs")?.entrySet()?.mapNotNull { (k, v) -> svg(v.takeIf { it.isJsonObject }?.asJsonObject)?.let { k to it } }?.toMap().orEmpty())
+                j.o("glyphs")?.entrySet()?.mapNotNull { (k, v) -> svg(v.takeIf { it.isJsonObject }?.asJsonObject)?.let { k to it } }?.toMap().orEmpty(),
+                h?.o("art")?.strs("sources").orEmpty(), h?.o("art")?.s("crop") ?: "", h?.o("menu")?.s("act")?.ifBlank { null } ?: "deckMenu",
+                j.s("viewLabel"), j.o("find")?.let { DeckFind(it.s("value"), it.s("placeholder"), it.s("label"), it.s("button"), it.b("busy")) },
+                j.o("found")?.objs("rows")?.map { DeckFound(it.s("id"), it.s("name"), it.s("sub"), it.o("picture")?.let { p -> p.strs("sources").ifEmpty { listOf(p.s("src")) } }.orEmpty().filter(String::isNotBlank)) },
+                j.o("found")?.s("close") ?: "", j.s("formatNote"),
+                j.o("issues")?.let { it.s("summary") to it.strs("items") },
+                j.o("panel")?.let { p -> DeckPanel(p.s("left"), p.s("right"),
+                    p.objs("actions").map { SiteButton(it.s("label"), it.s("act"), !it.b("primary"), it.b("chest"), it.s("title").ifBlank { it.s("aria") }, svg(it.o("icon"))) to it.s("id") }, p.s("foot")) })
         }
     }
 }
@@ -190,7 +226,23 @@ class CollectionDeckActions(
     val swap: (out: String, into: String) -> Unit = { _, _ -> },
     /** app.js A.deckAdd: the add row's name; [done] says whether it was saved (the site's page then draws again, the row closed). */
     val addCard: (name: String, done: (Boolean) -> Unit) -> Unit = { _, _ -> },
+    /** A Yu-Gi-Oh! or Pokémon deck (tcg.js): its card (A.tCard, the card's id), a row's − / ＋ (A.tDeckQty) and → side / → deck (A.tDeckMove),
+     *  Find with what was typed (I.tDeckQ, A.tDeckFind), Close results (A.tDeckAddClose), a found card's ＋ (A.tDeckAdd), a staple's Swap (A.tDeckEmbSwap). */
+    val tcgCard: (String) -> Unit = {},
+    val tcgRow: (DeckCard) -> Unit = {},
+    val tcgQty: (DeckCard, Int) -> Unit = { _, _ -> },
+    val tcgMove: (DeckCard) -> Unit = {},
+    val find: (String) -> Unit = {},
+    val findClose: () -> Unit = {},
+    val foundAdd: (String) -> Unit = {},
+    val tcgSwap: (outKey: String, inKey: String) -> Unit = { _, _ -> },
 )
+
+/** A card's tap and its − / ＋: Magic's by name (A.card, A.deckQty), a Yu-Gi-Oh! or Pokémon row's by its card (A.tCard, A.tDeckQty). */
+private fun CollectionDeckActions.open(c: DeckCard) = if (c.cardId.isNotBlank()) tcgRow(c) else card(c.r.name)
+private fun CollectionDeckActions.step(c: DeckCard, d: Int) = if (c.cardId.isNotBlank()) tcgQty(c, d) else qty(c.r.name, d)
+/** The deck's game, for a Yu-Gi-Oh! or Pokémon picture's foil (finish-preview.js's recipe is the game's). */
+private val LocalDeckGame = androidx.compose.runtime.staticCompositionLocalOf { CardGame.MTG }
 
 // ---------------------------------------------------------------- site colours
 
@@ -202,12 +254,13 @@ private val Mute = Color(0xFF9AA2B1)
 private val Mute2 = Color(0xFF8B93A3)
 private val LineC = Color(0xFF2A2F39)
 private val Surface2 = Color(0xFF1F232B)
-private val GoldC = Color(0xFFE8B95B)
+/** --gold and --gold-ink: the open game's accent (Magic's gold, Yu-Gi-Oh!'s violet, Pokémon's coral) and the ink on it. */
+private val GoldC: Color @Composable @androidx.compose.runtime.ReadOnlyComposable get() = LocalSheetPal.current.gold
 private val Warn = Color(0xFFF2C66D)
 private val Good = Color(0xFF6FD29A)
 private val Bad = Color(0xFFF08A7E)
 private val Plate = Color(0xFF2A1906)
-private val BtnInk = Color(0xFF1B1406)
+private val BtnInk: Color @Composable @androidx.compose.runtime.ReadOnlyComposable get() = LocalSheetPal.current.ink
 
 private fun sans(size: Float, weight: Int = 400, color: Color = Ink, lh: Float = 1.45f, ls: Float = 0f) =
     TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight(weight), fontSize = size.sp, lineHeight = (size * lh).sp, letterSpacing = ls.sp, color = color)
@@ -221,10 +274,12 @@ private val HeroShadow = Shadow(Color(0xBB000000), Offset(0f, 1.5f), 4f)
 @Composable
 fun CollectionDeck(m: CollectionDeckModel, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, act: CollectionDeckActions = CollectionDeckActions(),
                    nav: @Composable (vertical: Boolean) -> Unit = {}, query: String = m.searchValue) {
+    androidx.compose.runtime.CompositionLocalProvider(LocalSheetPal provides sheetPal(m.game), LocalGameGold provides m.game.gold, LocalDeckGame provides m.game) {
     BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
         val screen = maxWidth
         if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); DeckPage(m, top, act, Modifier.weight(1f).fillMaxHeight(), screen, query) }
         else Column(Modifier.fillMaxSize()) { DeckPage(m, top, act, Modifier.weight(1f).fillMaxWidth(), screen, query); nav(false) }
+    }
     }
 }
 
@@ -239,6 +294,17 @@ private fun DeckPage(m: CollectionDeckModel, top: @Composable (tabs: (@Composabl
     var adding by remember(m.id) { mutableStateOf(false) }
     var addName by remember(m.id) { mutableStateOf("") }
     fun add() { val n = addName.trim(); if (n.isNotEmpty()) act.addCard(n) { saved -> if (saved) { adding = false; addName = "" } } }
+    // A Yu-Gi-Oh! or Pokémon deck (tcg.js deckCardsTab): "Add a card by name" as typed (I.tDeckQ), the rules review open or shut;
+    // the hero's "n to fix" opens the review and brings it into view (A.tIssues).
+    val tcg = m.find != null
+    var findText by remember(m.id) { mutableStateOf(m.find?.value.orEmpty()) }
+    var issuesOpen by remember(m.id) { mutableStateOf(false) }
+    val issuesSeen = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val review: (DeckEyebrow) -> Unit = { e ->
+        if (e.act == "tIssues") { issuesOpen = true; scope.launch { kotlinx.coroutines.delay(50); runCatching { issuesSeen.bringIntoView() } } }
+        else act.act(e.act.ifBlank { "deckReview" }, m.id)
+    }
     LazyColumn(modifier, contentPadding = PaddingValues(bottom = 28.dp)) {
         item(key = "top") {
             Box(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)) {
@@ -255,7 +321,7 @@ private fun DeckPage(m: CollectionDeckModel, top: @Composable (tabs: (@Composabl
             }
             return@LazyColumn
         }
-        item(key = "hero") { Box(Modifier.padding(horizontal = gutter).padding(top = 4.dp)) { Hero(m, act, wide, screen, reduced) } }
+        item(key = "hero") { Box(Modifier.padding(horizontal = gutter).padding(top = 4.dp)) { Hero(m, act, wide, screen, reduced, review) } }
         item(key = "head") {
             // Block margins collapse as on the site: .ds-actions 14, .note 10, nav.tabs 12, .deck-toolbar 14 / 12 (the groups' 12 meets its 12).
             val blocks = buildList<Triple<Dp, Dp, @Composable () -> Unit>> {
@@ -263,10 +329,21 @@ private fun DeckPage(m: CollectionDeckModel, top: @Composable (tabs: (@Composabl
                 m.note?.let { add(Triple(10.dp, 10.dp) { NoteWarn(it, m.noteLines) }) }
                 if (m.tabs.isNotEmpty()) add(Triple(12.dp, 12.dp) { DeckTabs(m.tabs, screen, act.tab) })
                 m.commanderNote?.let { add(Triple(10.dp, 10.dp) { NoteWarn("⚠ $it", emptyList(), Modifier.clickable { act.tab("upgrade") }) }) }
+                if (tcg) {
+                    // .deck-view-toolbar (16 / 12), .searchbar.deck-add (12 / 6), .add-results (its 10 under it), the format's note,
+                    // the staples panel and the rules review (.panel, 12 / 12).
+                    add(Triple((-16).dp, 12.dp) { TcgViewBar(m.viewLabel, m.views, act.view) })
+                    m.find?.let { f -> add(Triple(12.dp, 6.dp) { FindRow(f, findText, { findText = it }) { act.find(findText) } }) }
+                    m.found?.takeIf { it.isNotEmpty() }?.let { rows -> add(Triple(0.dp, 10.dp) { FoundList(rows, m.foundClose, act) }) }
+                    if (m.formatNote.isNotBlank()) add(Triple(0.dp, 13.dp) { Text(m.formatNote, style = sans(13f, 400, Mute)) })
+                    m.emblems?.let { e -> add(Triple(0.dp, 0.dp) { EmblemPanel(e, act) }) }
+                    m.issues?.let { (sum, items) -> add(Triple(12.dp, 12.dp) { IssuesPanel(sum, items, issuesOpen, { issuesOpen = !issuesOpen }, Modifier.bringIntoViewRequester(issuesSeen)) }) }
+                } else {
                 // .deck-body's 4 top padding keeps the toolbar's 14 from collapsing into what is above it.
                 add(Triple((-18).dp, 12.dp) { Toolbar(m, act, wide, query, adding) { adding = !adding } })
                 // .add-row: margin 10 0, meeting the toolbar's 12 above and the list's 12 below.
                 if (adding) add(Triple(10.dp, 12.dp) { DeckAddRow(addName, { addName = it }, ::add) })
+                }
                 if (m.view == "stacks" && m.roles.isNotEmpty()) add(Triple(0.dp, 0.dp) { RoleSummary(m.roles) })
             }
             Column(Modifier.padding(horizontal = gutter)) {
@@ -276,6 +353,7 @@ private fun DeckPage(m: CollectionDeckModel, top: @Composable (tabs: (@Composabl
                 Spacer(Modifier.height(below))
             }
         }
+        if (tcg) { tcgZones(m, act, gutter, inner, small, reduced); return@LazyColumn }
         if (m.groups.isEmpty()) item(key = "none") {
             Text(m.none.ifBlank { "No cards match." }, Modifier.fillMaxWidth().padding(horizontal = gutter, vertical = 16.dp), style = sans(15f, 400, Mute), textAlign = TextAlign.Center)
         }
@@ -326,11 +404,159 @@ private fun DeckPage(m: CollectionDeckModel, top: @Composable (tabs: (@Composabl
     }
 }
 
+// ---------------------------------------------------------------- a Yu-Gi-Oh! or Pokémon deck's zones (tcg.js deckCardsTab)
+
+/**
+ * Each zone (Deck; Main Deck, Extra Deck, Side Deck) as its .section-head (22 above, 8 under) and its cards in the chosen view, or
+ * "Empty."; then the panel: what is left to get and its cost, the price tools, the foot.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+private fun androidx.compose.foundation.lazy.LazyListScope.tcgZones(m: CollectionDeckModel, act: CollectionDeckActions, gutter: Dp, inner: Dp, small: Boolean, reduced: Boolean) {
+    // The head's last margin (the review's 12) meets the first heading's 22; "Empty." leaves 6 under it.
+    var above = 12.dp
+    for (g in m.groups) {
+        val top = (22.dp - above).coerceAtLeast(0.dp)
+        item(key = "z:" + g.name) { Box(Modifier.padding(horizontal = gutter).padding(top = top, bottom = 8.dp)) { ZoneHead(g.name, g.count) } }
+        if (g.cards.isEmpty()) {
+            item(key = "ze:" + g.name) { Text(g.none.ifBlank { "Empty." }, Modifier.padding(horizontal = gutter).padding(vertical = 6.dp), style = sans(13f, 400, Mute)) }
+            above = 6.dp; continue
+        }
+        above = 0.dp
+        val lastCard = g.cards.last()
+        when (m.view) {
+            // Each type's piles side by side (deck-viewer.js stackList), as wide as its piles.
+            "stacks" -> item(key = "zs:" + g.name) {
+                val foot = if (g.cards.any { it.move.isNotBlank() }) 81.dp else 54.dp
+                FlowRow(Modifier.padding(horizontal = gutter).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(if (small) 10.dp else 18.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                    for (st in g.stacks.groups) {
+                        val w = (if (small) st.piles.size * 158 - 10 else st.piles.size * 206 - 16).dp.coerceAtMost(inner).coerceAtLeast(minOf(if (small) 128.dp else 174.dp, inner))
+                        StackList(DeckStacks(listOf(st), st.piles.size), w - 6.dp, small, Modifier.padding(start = 3.dp, end = 3.dp, top = 8.dp), foot) { i, mod, last -> StackCard(g.cards[i], m.glyphs, last, small, act, mod) }
+                    }
+                }
+            }
+            "compact" -> itemsIndexed(g.cards, key = { i, c -> "c:" + g.name + ":" + i + ":" + c.cardId }) { _, c ->
+                Box(Modifier.padding(horizontal = gutter).padding(bottom = if (c === lastCard) 0.dp else 8.dp)) { CompactCard(c, small, reduced, m.glyphs, act) }
+            }
+            "symbols" -> itemsIndexed(g.cards, key = { i, c -> "n:" + g.name + ":" + i + ":" + c.cardId }) { _, c ->
+                Box(Modifier.padding(horizontal = gutter).padding(bottom = if (c === lastCard) 0.dp else 4.dp)) { NameCard(c, reduced, m.glyphs, act) }
+            }
+            else -> {
+                val gap = if (small) 10.dp else 14.dp
+                val cols = if (small) 2 else ((inner.value + gap.value) / (170f + gap.value)).toInt().coerceAtLeast(1)
+                val lines = g.cards.chunked(cols)
+                itemsIndexed(lines, key = { i, line -> "a:" + g.name + ":" + i + ":" + line.joinToString("|") { it.cardId } }) { _, line ->
+                    Row(Modifier.padding(horizontal = gutter).padding(bottom = if (line === lines.last()) 0.dp else if (small) 16.dp else 20.dp).height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(gap)) {
+                        for (c in line) GalleryCard(c, small, reduced, m.glyphs, act, Modifier.weight(1f).fillMaxHeight())
+                        repeat(cols - line.size) { Spacer(Modifier.weight(1f)) }
+                    }
+                }
+            }
+        }
+    }
+    m.panel?.let { pn -> item(key = "panel") { Box(Modifier.padding(horizontal = gutter).padding(top = (12.dp - above).coerceAtLeast(0.dp))) { DeckPanelBox(pn, act) } } }
+}
+
+/** .section-head h2: the zone in Manrope 19 / 800 (-.02em), its count and rule ("11 · 40–60") muted and small after it. */
+@Composable
+private fun ZoneHead(name: String, count: String) {
+    Text(buildAnnotatedString { append(name); if (count.isNotBlank()) withStyle(SpanStyle(color = Mute, fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.sp)) { append(" " + count) } },
+        style = manrope(19f, 800, Ink, lh = 1.15f, ls = -.38f))
+}
+
+/** .deck-view-toolbar: "Deck view" (small, muted) and the view switch at the right. */
+@Composable
+private fun TcgViewBar(label: String, views: List<CollView>, onView: (String) -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Text(label, style = sans(13f, 400, Mute))
+        ViewSwitch(views, onView)
+    }
+}
+
+/** .searchbar.deck-add: the glass field (44 tall, 11 corners) and Find in the game's colour, 8 apart; "…" while the card source answers. */
+@Composable
+private fun FindRow(f: DeckFind, value: String, onValue: (String) -> Unit, onFind: () -> Unit) {
+    val shape = RoundedCornerShape(11.dp)
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        BasicTextField(value, onValue, Modifier.weight(1f).height(44.dp).clip(shape).background(GlassFill).border(1.dp, GlassLine, shape).semantics { contentDescription = f.label },
+            singleLine = true, textStyle = sans(15f, 400, Ink), cursorBrush = SolidColor(GoldC),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { onFind() }),
+            decorationBox = { inner ->
+                Box(Modifier.padding(horizontal = 12.dp), contentAlignment = Alignment.CenterStart) {
+                    if (value.isEmpty()) Text(f.placeholder, style = sans(15f, 400, Mute), maxLines = 1)
+                    inner()
+                }
+            })
+        Box(Modifier.height(44.dp).clip(shape).background(GoldC.copy(alpha = if (f.busy) .55f else 1f)).clickable(enabled = !f.busy, onClick = onFind).semantics { role = Role.Button }
+            .padding(horizontal = 16.dp), contentAlignment = Alignment.Center) { Text(f.button, style = sans(15f, 700, BtnInk)) }
+    }
+}
+
+/** .add-results: what Find found, each as its picture (40 × 56), name and set, and ＋ (A.tDeckAdd); "Close results" under them. */
+@Composable
+private fun FoundList(rows: List<DeckFound>, close: String, act: CollectionDeckActions) {
+    val shape = RoundedCornerShape(14.dp)
+    Column(Modifier.fillMaxWidth().clip(shape).background(Surface46).border(1.dp, GlassLine, shape).padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        rows.forEachIndexed { i, r ->
+            Row(Modifier.fillMaxWidth().drawBehind { if (i < rows.lastIndex) drawLine(GlassLine, Offset(0f, size.height + 2.dp.toPx()), Offset(size.width, size.height + 2.dp.toPx()), 1.dp.toPx()) }
+                .clickable { act.tcgCard(r.id) }.padding(horizontal = 2.dp, vertical = 9.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(40.dp, 56.dp).clip(RoundedCornerShape(4.dp)).background(Surface2)) {
+                    firstOf(r.art)?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                }
+                Text(buildAnnotatedString { append(r.name); if (r.sub.isNotBlank()) withStyle(SpanStyle(color = Mute, fontSize = 13.sp)) { append(" " + r.sub) } },
+                    Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(14f, 400, Ink))
+                Box(Modifier.heightIn(min = 34.dp).clip(RoundedCornerShape(11.dp)).background(GoldC).clickable { act.foundAdd(r.id) }.semantics { role = Role.Button; contentDescription = "Add ${r.name}" }
+                    .padding(horizontal = 12.dp), contentAlignment = Alignment.Center) { Text("＋", style = sans(13.5f, 700, BtnInk)) }
+            }
+        }
+        if (close.isNotBlank()) Text(close, Modifier.heightIn(min = 44.dp).clickable(onClick = act.findClose).semantics { role = Role.Button }.padding(horizontal = 2.dp, vertical = 12.dp),
+            style = sans(13f, 600, GoldC))
+    }
+}
+
+/** details.panel.issues-panel: "Rules review · n to fix" (44 tall); open, what the rules found, one to a line. */
+@Composable
+private fun IssuesPanel(summary: String, items: List<String>, open: Boolean, onToggle: () -> Unit, modifier: Modifier) {
+    val shape = RoundedCornerShape(14.dp)
+    Column(modifier.fillMaxWidth().clip(shape).background(Surface46).border(1.dp, GlassLine, shape).padding(14.dp)) {
+        Box(Modifier.fillMaxWidth().heightIn(min = 44.dp).clickable(onClick = onToggle).semantics { role = Role.Button; stateDescription = if (open) "Expanded" else "Collapsed" },
+            contentAlignment = Alignment.CenterStart) { Text(summary, style = sans(15f, 400, Ink)) }
+        if (open) Column(Modifier.padding(start = 6.dp, top = 6.dp, bottom = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            for (it in items) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { Text("•", style = sans(14f, 400, Mute)); Text(it, style = sans(14f, 400, Ink)) }
+        }
+    }
+}
+
+/** section.panel under the zones: "n cards to get" and its cost, the price tools (.btn.small: the game's colour, or glass with an icon), the foot. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DeckPanelBox(p: DeckPanel, act: CollectionDeckActions) {
+    val shape = RoundedCornerShape(14.dp)
+    Column(Modifier.fillMaxWidth().padding(bottom = 12.dp).clip(shape).background(Surface46).border(1.dp, GlassLine, shape).padding(14.dp)) {
+        if (p.left.isNotBlank() || p.right.isNotBlank()) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(p.left, Modifier.weight(1f), style = sans(15f, 400, Ink))
+            Text(p.right, style = sans(15f, 700, Ink))
+        }
+        if (p.actions.isNotEmpty()) FlowRow(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            for ((b, id) in p.actions) {
+                val bs = RoundedCornerShape(11.dp)
+                Row(Modifier.heightIn(min = 38.dp).clip(bs).then(if (b.ghost) Modifier.background(GlassFill).border(1.dp, GlassLine, bs) else Modifier.background(GoldC))
+                    .clickable { act.act(b.act, id) }.semantics { role = Role.Button; if (b.aria.isNotBlank()) contentDescription = b.label + ". " + b.aria }.padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    val ink = if (b.ghost) Ink else BtnInk
+                    if (b.icon != null) SiteIcon(b.icon, 16.dp, ink)
+                    Text(b.label.removePrefix("↓ "), maxLines = 1, style = sans(13.5f, 700, ink, lh = 1.45f))
+                }
+            }
+        }
+        if (p.foot.isNotBlank()) Text(p.foot, Modifier.padding(top = 10.dp, bottom = 6.dp), style = sans(12f, 400, Mute2))
+    }
+}
+
 // ---------------------------------------------------------------- deckShell: the hero (deck-viewer.js), 300 tall, 18 corners
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Hero(m: CollectionDeckModel, act: CollectionDeckActions, wide: Boolean, screen: Dp, reduced: Boolean) {
+private fun Hero(m: CollectionDeckModel, act: CollectionDeckActions, wide: Boolean, screen: Dp, reduced: Boolean, review: (DeckEyebrow) -> Unit) {
     val shape = RoundedCornerShape(18.dp)
     // --ds-h: clamp(300px, 34vw, 380px); a phone (under 700) 300.
     val h = if (screen < 700.dp) 300.dp else (screen.value * .34f).coerceIn(300f, 380f).dp
@@ -341,13 +567,16 @@ private fun Hero(m: CollectionDeckModel, act: CollectionDeckActions, wide: Boole
         }
         .clip(shape).background(Brush.linearGradient(listOf(Color(0xFF252936), Color(0xFF141720)), Offset.Zero, Offset.Infinite))) {
         // .hero-art: cover, 50% 28%.
-        val p = heroPainter(m.art?.let(homeArt))
+        // A Yu-Gi-Oh! or Pokémon cover walks its addresses; a Pokémon card shows its art window (pokemonArtCrop: the window covers the hero, centred).
+        val raw = if (m.artSources.size > 1) firstOf(m.artSources) else heroPainter(m.art?.let(homeArt))
+        val pk = m.artCrop == "pokemon"
+        val p = if (pk && raw != null) remember(raw) { PkArtCrop(raw) } else raw
         // header-breathe: the art eases to 103.5 % and back over 20 s (none with reduced motion). The site clips the art itself, so
         // it pokes a few px past the hero's edge at full scale; here it stays inside the rounded box.
         val breathe = if (reduced || Motion.still) null else rememberInfiniteTransition(label = "hero")
             .animateFloat(1f, 1.035f, infiniteRepeatable(tween(20_000, easing = androidx.compose.animation.core.CubicBezierEasing(.42f, 0f, .58f, 1f)), RepeatMode.Reverse), label = "breathe")
         if (p != null) Image(p, null, Modifier.matchParentSize().graphicsLayer { val k = breathe?.value ?: 1f; scaleX = k; scaleY = k },
-            contentScale = ContentScale.Crop, alignment = BiasAlignment(0f, -.44f))
+            contentScale = ContentScale.Crop, alignment = if (pk) Alignment.Center else BiasAlignment(0f, -.44f))
         // .hero-shade: up from the foot (.98 → .85 at 30% → .44 at 58% → .08), and in from the left (.7 → clear at 55%); a top light and an inner vignette.
         Box(Modifier.matchParentSize().drawBehind {
             drawRect(Brush.verticalGradient(0f to Color(0x140B0E15), .42f to Color(0x700B0E15), .7f to Color(0xD90B0E15), 1f to Color(0xFA0B0E15)))
@@ -367,7 +596,7 @@ private fun Hero(m: CollectionDeckModel, act: CollectionDeckActions, wide: Boole
                     SiteIcon(m.glyphs["back"], 20.dp, Color.White)
                 }
                 Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xC70B0E15)).border(1.dp, GoldC.copy(alpha = .42f), RoundedCornerShape(12.dp))
-                    .clickable { act.act("deckMenu", m.id) }.semantics { contentDescription = m.menuLabel; role = Role.Button }.padding(bottom = 4.dp), contentAlignment = Alignment.Center) {
+                    .clickable { act.act(m.menuAct, m.id) }.semantics { contentDescription = m.menuLabel; role = Role.Button }.padding(bottom = 4.dp), contentAlignment = Alignment.Center) {
                     SiteIcon(m.glyphs["more"], 20.dp, GoldC)
                 }
             }
@@ -376,7 +605,7 @@ private fun Hero(m: CollectionDeckModel, act: CollectionDeckActions, wide: Boole
             Column(Modifier.padding(horizontal = if (wide) 18.dp else 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
                     for (e in m.eyebrow) when (e.kind) {
-                        "review" -> ReviewBadge(e) { act.act("deckReview", m.id) }
+                        "review" -> ReviewBadge(e) { review(e) }
                         "dots" -> Row(Modifier.semantics { contentDescription = e.label }, horizontalArrangement = Arrangement.spacedBy(2.dp)) { e.dots.forEach { (src, alt) -> Mana(src, alt) } }
                         else -> HeroChip(e)
                     }
@@ -403,7 +632,8 @@ private fun Hero(m: CollectionDeckModel, act: CollectionDeckActions, wide: Boole
                 }
                 m.owned?.let { o ->
                     Box(Modifier.fillMaxWidth().height(3.dp).background(Color(0x14FFFFFF))) {
-                        Box(Modifier.fillMaxWidth(o.coerceIn(0f, 1f)).fillMaxHeight().background(Brush.horizontalGradient(listOf(Color(0xFFEFCE8C), GoldC))))
+                        // linear-gradient(90deg, --gold 70 % into white, --gold).
+                        Box(Modifier.fillMaxWidth(o.coerceIn(0f, 1f)).fillMaxHeight().background(Brush.horizontalGradient(listOf(lerp(Color.White, GoldC, .7f), GoldC))))
                     }
                 }
             }
@@ -447,7 +677,7 @@ private fun ReviewBadge(e: DeckEyebrow, onClick: () -> Unit) {
 private fun HeroStat(s: DeckStat, onClick: () -> Unit) {
     Row(Modifier.then(if (s.button) Modifier.heightIn(min = 28.dp).clickable(onClick = onClick).semantics { role = Role.Button } else Modifier),
         horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (s.button) Box(Modifier.widthIn(min = 30.dp).clip(RoundedCornerShape(7.dp)).background(Color(0xFF443A27)).border(1.dp, GoldC.copy(alpha = .45f), RoundedCornerShape(7.dp))
+        if (s.button) Box(Modifier.widthIn(min = 30.dp).clip(RoundedCornerShape(7.dp)).background(lerp(Color(0xFF0B0E15), GoldC, .26f)).border(1.dp, GoldC.copy(alpha = .45f), RoundedCornerShape(7.dp))
             .padding(horizontal = 7.dp, vertical = 1.dp), contentAlignment = Alignment.Center) { Text(s.value, style = manrope(15f, 800, GoldC)) }
         else Text(s.value, style = manrope(15f, 800, if (s.warn) Warn else Color.White).copy(shadow = HeroShadow))
         Text(s.label, style = sans(12f, 400, Color(0xFFCFD4DE)).copy(shadow = HeroShadow))
@@ -464,11 +694,11 @@ private fun Actions(m: CollectionDeckModel, act: CollectionDeckActions, wide: Bo
     val tap = { a: DeckPageAction -> if (a.act == "deckTab") act.tab(a.id) else act.act(a.act, a.id) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         if (wide) Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            primary.forEach { PracticePlate(it.label, Modifier.widthIn(min = 180.dp).fillMaxHeight()) { tap(it) } }
+            primary.forEach { if (it.plate) PracticePlate(it.label, Modifier.widthIn(min = 180.dp).fillMaxHeight()) { tap(it) } else DeckGold(it.label, Modifier.widthIn(min = 180.dp).fillMaxHeight(), minHeight = 46.dp) { tap(it) } }
             ghosts.forEach { DeckGhost(it.label, Modifier.fillMaxHeight(), minHeight = 50.dp, pad = 16.dp) { tap(it) } }
         } else {
             // A phone: the plate takes the row; the others share the next one.
-            primary.forEach { PracticePlate(it.label, Modifier.fillMaxWidth()) { tap(it) } }
+            primary.forEach { if (it.plate) PracticePlate(it.label, Modifier.fillMaxWidth()) { tap(it) } else DeckGold(it.label, Modifier.fillMaxWidth(), minHeight = 46.dp, pad = 10.dp) { tap(it) } }
             if (ghosts.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { ghosts.forEach { DeckGhost(it.label, Modifier.weight(1f), minHeight = 46.dp, pad = 10.dp) { tap(it) } } }
         }
     }
@@ -545,6 +775,7 @@ private fun NoteWarn(text: String, lines: List<String>, modifier: Modifier = Mod
 private fun DeckTabs(tabs: List<CollTab>, screen: Dp, onTab: (String) -> Unit) {
     if (tabs.isEmpty()) return
     val wrap = screen < 900.dp
+    val gold = GoldC
     FlexWrap(Modifier.fillMaxWidth().drawBehind {
         drawLine(GlassLine, Offset(0f, size.height - .5f), Offset(size.width, size.height - .5f), 1.dp.toPx())
     }.padding(horizontal = 2.dp), gap = 2.dp, grow = wrap) {
@@ -552,8 +783,8 @@ private fun DeckTabs(tabs: List<CollTab>, screen: Dp, onTab: (String) -> Unit) {
             val on = t.on
             Row(Modifier.heightIn(min = 44.dp).drawBehind {
                 if (on) {
-                    drawRect(Brush.radialGradient(listOf(GoldC.copy(alpha = .24f), Color.Transparent), Offset(size.width / 2, size.height), size.width * .6f * .7f), size = size)
-                    drawRect(Brush.horizontalGradient(.18f to Color.Transparent, .5f to GoldC, .82f to Color.Transparent), Offset(0f, size.height - 2.dp.toPx()), Size(size.width, 2.dp.toPx()))
+                    drawRect(Brush.radialGradient(listOf(gold.copy(alpha = .24f), Color.Transparent), Offset(size.width / 2, size.height), size.width * .6f * .7f), size = size)
+                    drawRect(Brush.horizontalGradient(.18f to Color.Transparent, .5f to gold, .82f to Color.Transparent), Offset(0f, size.height - 2.dp.toPx()), Size(size.width, 2.dp.toPx()))
                 }
             }.clickable { if (!on) onTab(t.key) }.semantics { role = Role.Tab }.padding(horizontal = 14.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
@@ -658,7 +889,8 @@ private fun DeckSearchField(value: String, placeholder: String, onChange: (Strin
 @Composable
 private fun DeckChipButton(c: DeckChip, onClick: () -> Unit) {
     val shape = RoundedCornerShape(999.dp)
-    Row(Modifier.height(44.dp).then(if (c.on) Modifier.drawBehind { drawRoundRect(GoldC.copy(alpha = .2f), topLeft = Offset(-1.dp.toPx(), -1.dp.toPx()),
+    val gold = GoldC
+    Row(Modifier.height(44.dp).then(if (c.on) Modifier.drawBehind { drawRoundRect(gold.copy(alpha = .2f), topLeft = Offset(-1.dp.toPx(), -1.dp.toPx()),
             size = Size(size.width + 2.dp.toPx(), size.height + 2.dp.toPx()), cornerRadius = CornerRadius(size.height)) } else Modifier)
         .clip(shape).background(if (c.on) Brush.verticalGradient(listOf(Color(0xFF2A2418), Color(0xFF1D1912))) else SolidColor(Color(0x99171A20)))
         .border(1.dp, if (c.on) GoldC.copy(alpha = .6f) else LineC, shape).clickable(onClick = onClick).semantics { role = Role.Button }.padding(horizontal = 14.dp),
@@ -739,7 +971,7 @@ private fun NameWithBadge(c: DeckCard, style: TextStyle, maxLines: Int, act: Col
     val inline = if (s == null) emptyMap() else mapOf("set" to InlineTextContent(Placeholder(w, 17.sp, PlaceholderVerticalAlign.TextCenter)) {
         Box(Modifier.padding(start = 0.dp)) { DeckSetBadge(s) { if (!s.unknown) act.set(s.code) } }
     })
-    Text(text, modifier.clickable { act.card(c.r.name) }, inlineContent = inline, maxLines = maxLines, overflow = TextOverflow.Ellipsis, style = style)
+    Text(text, modifier.clickable { act.open(c) }, inlineContent = inline, maxLines = maxLines, overflow = TextOverflow.Ellipsis, style = style)
 }
 
 private val BadgeType = sans(11f, 600, lh = 1.2f, ls = .385f)
@@ -765,12 +997,36 @@ private fun OwnLine(text: String, yes: Boolean, size: Float = 12f) {
     }
 }
 
-/** .lot-side: the stepper, or the Commander chip. */
+/** .lot-side: the stepper, or the Commander chip; a Yu-Gi-Oh! row's → side / → deck under the stepper, at its right (13 / 600 in the accent). */
 @Composable
 private fun Side(c: DeckCard, glyphs: Map<String, SiteSvg>, act: CollectionDeckActions) {
-    if (c.stepper) Stepper(c.qty, glyphs, { act.qty(c.r.name, -1) }, { act.qty(c.r.name, 1) })
+    if (c.stepper && c.move.isNotBlank()) Column(Modifier.width(IntrinsicSize.Max), horizontalAlignment = Alignment.End) {
+        Stepper(c.qty, glyphs, { act.step(c, -1) }, { act.step(c, 1) })
+        MoveLink(c, act)
+    }
+    else if (c.stepper) Stepper(c.qty, glyphs, { act.step(c, -1) }, { act.step(c, 1) })
     else if (c.chip.isNotBlank()) Box(Modifier.clip(RoundedCornerShape(999.dp)).background(Surface2).border(1.dp, LineC, RoundedCornerShape(999.dp)).padding(horizontal = 9.dp, vertical = 3.dp)) {
         Text(c.chip, style = sans(12f, 700, Ink))
+    }
+}
+
+/** button.link.small[data-act=tDeckMove]: "→ side" (or "→ deck" in the Side Deck), 4 above and below, 44 tall to the touch. */
+@Composable
+private fun MoveLink(c: DeckCard, act: CollectionDeckActions, modifier: Modifier = Modifier) {
+    Text(c.move, modifier.heightIn(min = 27.dp).clickable { act.tcgMove(c) }.semantics { role = Role.Button }.padding(vertical = 4.dp), style = sans(13f, 600, GoldC))
+}
+
+/** The dock on a card's foot: Magic's colour emblems and set symbol (TileChrome), or a Yu-Gi-Oh! / Pokémon card's (tiles.js tileChrome). */
+@Composable
+private fun DeckDock(c: DeckCard, reduced: Boolean, modifier: Modifier) =
+    if (c.cardId.isNotBlank()) TcgDock(c.tcgEmb, c.tcgSet, reduced, modifier.padding(start = 4.dp, end = 4.dp, bottom = 3.dp), imp = c.chromeImp) else TileChrome(c, modifier)
+
+/** .art-price: the price on a Yu-Gi-Oh! / Pokémon card's art, 11 / 700 white on dark glass, 9 in from the corner. */
+@Composable
+private fun ArtPrice(text: String, modifier: Modifier) {
+    if (text.isBlank()) return
+    Box(modifier.clip(RoundedCornerShape(99.dp)).background(Color(0xC7080A10)).padding(horizontal = 7.dp, vertical = 2.dp)) {
+        Text(text, maxLines = 1, style = sans(11f, 700, Color.White, lh = 1.45f))
     }
 }
 
@@ -815,7 +1071,16 @@ internal fun TileDock(emb: List<Pair<String, String>>, set: String?, rarity: Str
 
 /** The card's own picture, and its foil when the deck's printing has one (finish-preview.js), as the Cards tab draws it. */
 @Composable
-private fun DeckPicture(c: DeckCard, modifier: Modifier, shape: androidx.compose.ui.graphics.Shape) = RowPicture(c.r, modifier, shape)
+private fun DeckPicture(c: DeckCard, modifier: Modifier, shape: androidx.compose.ui.graphics.Shape) {
+    if (c.cardId.isBlank()) { RowPicture(c.r, modifier, shape); return }
+    // A Yu-Gi-Oh! / Pokémon card walks its picture's addresses and wears its foil (finish-preview.js → foil/FoilLayer.kt), as the set page's tiles do.
+    val p = firstOf(c.r.artSources.ifEmpty { listOfNotNull(c.r.art) })
+    if (p == null) { Box(modifier.clip(shape).background(Surface2), contentAlignment = Alignment.Center) { Text(c.r.fallback.ifBlank { "◇" }, style = sans(10f, 400, Mute)) }; return }
+    val context = LocalContext.current; val game = LocalDeckGame.current
+    val finish = remember(c.tcgFinish, c.r.art) { c.tcgFinish?.let { tcgFinishOf(context, game, it, c.r.art ?: "") } }
+    val tilt = if (finish != null) rememberFoilTilt(live = true, phase = (c.r.name.hashCode() and 0xff) / 255f, tile = true) else null
+    CardFace(p, null, tilt, modifier, shape, desc = null, finish = finish)
+}
 
 /** A card row's own picture, and its foil when its printing has one (finish-preview.js), as the Cards tab draws it. */
 @Composable
@@ -849,7 +1114,8 @@ private fun FramedArt(c: DeckCard, reduced: Boolean, modifier: Modifier) = TierF
         val shape = RoundedCornerShape(percent = 4)
         DeckPicture(c, Modifier.fillMaxSize(), shape)
     }
-    TileChrome(c, Modifier.align(Alignment.BottomStart))
+    DeckDock(c, reduced, Modifier.align(Alignment.BottomStart))
+    ArtPrice(c.price, Modifier.align(Alignment.TopEnd).padding(9.dp))
 }
 
 /**
@@ -950,7 +1216,7 @@ private fun DrawScope.drawBand(tier: String, p: Float) {
 @Composable
 private fun GalleryCard(c: DeckCard, small: Boolean, reduced: Boolean, glyphs: Map<String, SiteSvg>, act: CollectionDeckActions, modifier: Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        FramedArt(c, reduced, Modifier.fillMaxWidth().clickable { act.card(c.r.name) }.semantics { contentDescription = "Open ${c.r.name}" })
+        FramedArt(c, reduced, Modifier.fillMaxWidth().clickable { act.open(c) }.semantics { contentDescription = "Open ${c.r.name}" })
         Column(Modifier.padding(horizontal = 3.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Box(Modifier.heightIn(min = 44.dp), contentAlignment = Alignment.CenterStart) { NameWithBadge(c, sans(13f, 600, Ink, lh = 1.3f), 1, act) }
             c.own?.let { OwnLine(it, c.owned) }
@@ -968,14 +1234,16 @@ private fun CompactCard(c: DeckCard, small: Boolean, reduced: Boolean, glyphs: M
     // The row's padding sits inside a 1 transparent border; the art is centred on the text (align-items: center).
     Row(Modifier.fillMaxWidth().lotFrame(c.r, reduced).padding(if (small) 7.dp else 9.dp), horizontalArrangement = Arrangement.spacedBy(if (small) 7.dp else 10.dp)) {
         val w = if (small) 48.dp else 58.dp; val h = if (small) 67.dp else 81.dp
-        Box(Modifier.align(Alignment.CenterVertically).size(w, h).clip(RoundedCornerShape(9.dp)).background(Surface2).clickable { act.card(c.r.name) }.semantics { contentDescription = "Open ${c.r.name}" }) {
+        Box(Modifier.align(Alignment.CenterVertically).size(w, h).clip(RoundedCornerShape(9.dp)).background(Surface2).clickable { act.open(c) }.semantics { contentDescription = "Open ${c.r.name}" }) {
             DeckPicture(c, Modifier.fillMaxSize(), RoundedCornerShape(6.dp))
-            TileChrome(c, Modifier.align(Alignment.BottomStart))
+            DeckDock(c, reduced, Modifier.align(Alignment.BottomStart))
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             NameWithBadge(c, sans(14f, 700, Ink, lh = 1.25f), 3, act)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
                 if (c.r.mana.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) { c.r.mana.forEach { (src, alt) -> Mana(src, alt) } }
+                // A Yu-Gi-Oh! / Pokémon row's .lot-sub: its emblems, HP or Level, the set badge, the purchase note.
+                if (c.pieces.isNotEmpty()) PieceItems(c.pieces)
                 c.legal.forEach { (t, bad) -> LegalTag(t, bad) }
             }
             c.own?.let { OwnLine(it, c.owned) }
@@ -988,7 +1256,7 @@ private fun CompactCard(c: DeckCard, small: Boolean, reduced: Boolean, glyphs: M
 private fun NameCard(c: DeckCard, reduced: Boolean, glyphs: Map<String, SiteSvg>, act: CollectionDeckActions) {
     // 10 padding inside a 1 border; the name and the stepper centred on each other.
     Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).lotFrame(c.r, reduced).padding(11.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(c.r.name, Modifier.weight(1f).clickable { act.card(c.r.name) }, style = sans(16f, 700, Ink, lh = 1.25f))
+        Text(c.r.name, Modifier.weight(1f).clickable { act.open(c) }, style = sans(16f, 700, Ink, lh = 1.25f))
         Side(c, glyphs, act)
     }
 }
@@ -1006,7 +1274,7 @@ private fun LegalTag(text: String, bad: Boolean) {
 /** The piles of one list: each type (its heading unless the list's own heading names it), its piles side by side in columns at least 168 (128) wide. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun StackList(st: DeckStacks, width: Dp, small: Boolean, modifier: Modifier, card: @Composable (index: Int, mod: Modifier, last: Boolean) -> Unit) {
+private fun StackList(st: DeckStacks, width: Dp, small: Boolean, modifier: Modifier, foot: Dp = 54.dp, card: @Composable (index: Int, mod: Modifier, last: Boolean) -> Unit) {
     Column(modifier.width(width), verticalArrangement = Arrangement.spacedBy(24.dp)) {
         for (g in st.groups) Column {
             if (!g.hidden) Row(Modifier.padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(9.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -1019,7 +1287,7 @@ private fun StackList(st: DeckStacks, width: Dp, small: Boolean, modifier: Modif
             val cols = ((width.value + gap) / (min + gap)).toInt().coerceAtLeast(1)
             val colW = ((width.value - gap * (cols - 1)) / cols).dp
             FlowRow(horizontalArrangement = Arrangement.spacedBy(gap.dp), verticalArrangement = Arrangement.spacedBy(if (small) 18.dp else 20.dp)) {
-                for (pile in g.piles) Pile(pile, colW, small, card)
+                for (pile in g.piles) Pile(pile, colW, small, foot, card)
             }
         }
     }
@@ -1027,11 +1295,11 @@ private fun StackList(st: DeckStacks, width: Dp, small: Boolean, modifier: Modif
 
 /** .deck-stack-pile: the cards overlap so each shows its title strip (38 dp, 32 at 480 and under); the top card shows whole, its stepper hanging under it. */
 @Composable
-private fun Pile(pile: List<Int>, width: Dp, small: Boolean, card: @Composable (index: Int, mod: Modifier, last: Boolean) -> Unit) {
+private fun Pile(pile: List<Int>, width: Dp, small: Boolean, foot: Dp, card: @Composable (index: Int, mod: Modifier, last: Boolean) -> Unit) {
     // polish.css: each card's strip is tall enough for the −/+ of the card under it: 48, 44 at 480 and under.
     val step = if (small) 44.dp else 48.dp
     val h = width * (88f / 63f)
-    Box(Modifier.width(width).height(step * (pile.size - 1) + h + 54.dp)) {
+    Box(Modifier.width(width).height(step * (pile.size - 1) + h + foot)) {
         pile.forEachIndexed { i, idx -> card(idx, Modifier.padding(top = step * i).width(width), i == pile.lastIndex) }
     }
 }
@@ -1041,17 +1309,22 @@ private fun Pile(pile: List<Int>, width: Dp, small: Boolean, card: @Composable (
 private fun StackCard(c: DeckCard, glyphs: Map<String, SiteSvg>, last: Boolean, small: Boolean, act: CollectionDeckActions, modifier: Modifier) {
     Box(modifier) {
         Box(Modifier.fillMaxWidth().aspectRatio(63f / 88f).drawBehind { outerShadow(Color(0xBB000000), 16f, 7f, -10f, 8f) }
-            .clip(RoundedCornerShape(percent = 4)).background(Surface46).clickable { act.card(c.r.name) }.semantics { contentDescription = "${c.qty}× ${c.r.name}" }) {
+            .clip(RoundedCornerShape(percent = 4)).background(Surface46).clickable { act.open(c) }.semantics { contentDescription = "${c.qty}× ${c.r.name}" }) {
             DeckPicture(c, Modifier.fillMaxSize(), RoundedCornerShape(percent = 4))
             TierOutline(c.r.tier, c.r.tierColor)
-            TileChrome(c, Modifier.align(Alignment.BottomStart))
+            DeckDock(c, Playmats.reduced(LocalContext.current), Modifier.align(Alignment.BottomStart))
             if (c.qty > 1) CountTab("${c.qty}×", Modifier.align(Alignment.TopEnd).padding(5.dp))
             if (c.roles.isNotEmpty()) RolesTab(c.roles.joinToString(" · "), Modifier.align(Alignment.BottomEnd).padding(end = 4.dp, bottom = 3.dp).fillMaxWidth(.5f))
         }
         if (last && c.stepper) {
             Box(Modifier.fillMaxWidth().padding(top = 6.dp).offsetBelowCard(), contentAlignment = Alignment.TopCenter) {
                 Box(Modifier.clip(RoundedCornerShape(12.dp)).background(Brush.verticalGradient(0f to Color(0xF02F3138), .55f to Color(0xEB0E1016), 1f to Color(0xEB0A0C12)))
-                    .border(1.dp, Color(0x50F4BF58), RoundedCornerShape(12.dp)).padding(1.dp)) { BigStepper(c.qty, glyphs, { act.qty(c.r.name, -1) }, { act.qty(c.r.name, 1) }) }
+                    .border(1.dp, Color(0x50F4BF58), RoundedCornerShape(12.dp)).padding(1.dp)) {
+                    Column {
+                        BigStepper(c.qty, glyphs, { act.step(c, -1) }, { act.step(c, 1) })
+                        if (c.move.isNotBlank()) MoveLink(c, act, Modifier.padding(start = 2.dp, end = 10.dp))
+                    }
+                }
             }
         }
     }
@@ -1171,6 +1444,8 @@ private fun MiniStack(r: DeckMini, act: CollectionDeckActions, modifier: Modifie
 @Composable
 private fun EmblemPanel(e: DeckEmblems, act: CollectionDeckActions) {
     val shape = RoundedCornerShape(14.dp)
+    // Yu-Gi-Oh! and Pokémon swap and open by card id (data-out / data-in); Magic by name.
+    val tcg = LocalDeckGame.current != CardGame.MTG
     Column(Modifier.fillMaxWidth().padding(vertical = 12.dp).drawBehind { outerShadow(Color(0x38000000), 30f, 10f, 0f, 14f) }
         .clip(shape).background(Surface46).background(Brush.linearGradient(listOf(Color(0x0BFFFFFF), Color(0x00FFFFFF)), Offset.Zero, Offset(300f, 520f)))
         .border(1.dp, GlassLine, shape).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1185,13 +1460,13 @@ private fun EmblemPanel(e: DeckEmblems, act: CollectionDeckActions) {
             Text(e.head.uppercase(), Modifier.padding(top = 12.dp, bottom = 4.dp), style = sans(13f, 700, Ink, ls = .78f))
             for (s in e.swaps) Column(Modifier.padding(horizontal = 2.dp, vertical = 9.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(s.out, Modifier.weight(1f).clickable { act.card(s.out) }.padding(vertical = 4.dp), maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(14f, 600, GoldC))
+                    Text(s.out, Modifier.weight(1f).clickable { if (tcg) act.tcgCard(s.outKey) else act.card(s.out) }.padding(vertical = 4.dp), maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(14f, 600, GoldC))
                     Text("→", style = sans(14f, 400, Mute))
-                    Row(Modifier.weight(1f).clickable { act.card(s.into) }.padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.weight(1f).clickable { if (tcg) act.tcgCard(s.inKey) else act.card(s.into) }.padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                         SiteIcon(s.icon, 15.dp, Ink)
                         Text(s.into, maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(14f, 700, GoldC))
                     }
-                    DeckGold(s.button, minHeight = 34.dp, pad = 12.dp, size = 13.5f) { act.swap(s.out, s.into) }
+                    DeckGold(s.button, minHeight = 34.dp, pad = 12.dp, size = 13.5f) { if (tcg) act.tcgSwap(s.outKey, s.inKey) else act.swap(s.out, s.into) }
                 }
                 Text(s.why, style = sans(11.5f, 400, Mute))
             }

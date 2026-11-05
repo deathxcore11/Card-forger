@@ -448,7 +448,7 @@ private fun ValueLine(m: CollectionCardsModel, act: CollectionCardsActions) {
 
 /** A Yu-Gi-Oh! or Pokémon lot's .lot-sub: emblems (16 dp), .hp / .lvl (13 px 800), the set badge (.tset) and the words after it. */
 @Composable
-private fun PieceItems(pieces: List<CollPiece>) {
+internal fun PieceItems(pieces: List<CollPiece>) {
     var i = 0
     while (i < pieces.size) {
         val p = pieces[i]

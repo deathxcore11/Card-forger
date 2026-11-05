@@ -82,7 +82,7 @@ class CollectionSetModel(val code: String, val title: String, val line: String, 
             val pic = j.o("picture"); val fin = j.o("finish"); val c = j.o("chrome"); val set = c?.o("set"); val badge = j.o("badge"); val mark = set?.o("mark"); val rx = set?.o("rarity")
             val r = CollRow("set:" + j.s("id"), j.s("name"), false, j.s("tier").ifBlank { "tn" }, j.s("tierColor"), pic?.s("src")?.ifBlank { null }, pic?.strs("sources").orEmpty(),
                 j.s("fallback"), fin?.s("key") ?: "", fin?.s("effect") ?: "", "", null, null, emptyList(), emptyList(), "", "", "", false, j.s("price"), "", "", "", 0, false, "")
-            return SetTileM(r, -1, j.s("label"), j.s("price"), badge?.s("text"), badge?.b("other") ?: false, badge?.s("title") ?: "", j.b("own"), false, emptyList(), null, "", "", null,
+            return SetTileM(r, -1, j.s("label"), j.s("price"), badge?.s("text"), badge?.b("other") ?: false, badge?.s("title") ?: "", j.b("own"), false, emptyList(), null, "", "", CollectionCardsModel.svg(c?.o("imp")),
                 j.s("id"), c?.objs("emb").orEmpty().map { TcgEmb(CollectionCardsModel.svg(it.o("icon")), it.s("text"), it.s("label")) },
                 set?.let { TcgSetBadge(it.s("tone"), it.s("code"), rx?.s("text") ?: "", rx?.s("kind") ?: "", it.strs("symbol"), mark?.strs("src").orEmpty(), mark?.b("ink") ?: false,
                     mark?.s("text") ?: "", mark?.b("gold") ?: false, it.s("title")) }, j.s("priceNote"),
@@ -535,8 +535,8 @@ private fun Modifier.dockPill(start: Boolean, end: Boolean, h: Dp) = this
  * joined by a gold hairline.
  */
 @Composable
-private fun TcgDock(emb: List<TcgEmb>, set: TcgSetBadge?, reduced: Boolean, modifier: Modifier, h: Dp = 18.dp) {
-    if (emb.isEmpty() && set == null) return
+internal fun TcgDock(emb: List<TcgEmb>, set: TcgSetBadge?, reduced: Boolean, modifier: Modifier, h: Dp = 18.dp, imp: SiteSvg? = null) {
+    if (emb.isEmpty() && set == null && imp == null) return
     val both = emb.isNotEmpty() && set != null
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         if (emb.isNotEmpty()) Row(Modifier.dockPill(true, !both, h).padding(start = 6.dp, end = 5.dp), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -550,6 +550,7 @@ private fun TcgDock(emb: List<TcgEmb>, set: TcgSetBadge?, reduced: Boolean, modi
                 SetBadgeParts(b, reduced, 9.5f, 8.5f, 15.dp, 10.dp)
             }
         }
+        if (imp != null) { Spacer(Modifier.weight(1f)); SiteIcon(imp, 16.dp, Ink) }
     }
 }
 
@@ -619,7 +620,7 @@ private fun TcgGridCard(t: SetTileM, game: CardGame, reduced: Boolean, act: Coll
                 Box(Modifier.fillMaxSize().padding(fw)) {
                     TcgPicture(t, game, Modifier.fillMaxSize(), if (tn) RoundedCornerShape(percent = 4) else RoundedCornerShape((12.dp - fw).coerceAtLeast(2.dp)))
                 }
-                TcgDock(t.tcgEmb, t.tcgSet, reduced, Modifier.align(Alignment.BottomStart).offset(y = 6.dp).padding(start = 10.75.dp, end = 6.dp))
+                TcgDock(t.tcgEmb, t.tcgSet, reduced, Modifier.align(Alignment.BottomStart).offset(y = 6.dp).padding(start = 10.75.dp, end = 6.dp), imp = t.imp)
             }
             t.badge?.let { Badge(it, t.badgeOther, t.badgeTitle, Modifier.align(Alignment.TopEnd).offset(y = (-9).dp).padding(end = 8.dp)) }
         }

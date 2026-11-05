@@ -49,7 +49,7 @@ private object DecksCache {
  */
 @Composable
 fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, onCards: () -> Unit, web: (url: String, press: String?) -> Unit,
-                         onDeck: ((id: String) -> Unit)? = null) {
+                         onDeck: ((id: String, game: CardGame) -> Unit)? = null) {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
@@ -100,9 +100,11 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             tab = { k -> page(decks, "[data-act=\"decksTab\"][data-id=\"${css(k)}\"]") },
             search = { q -> query = q },
             deck = { d ->
-                val id = Regex("^#deck/([^/]+)").find(d.to)?.groupValues?.get(1)?.let(android.net.Uri::decode)
-                // A Yu-Gi-Oh! or Pokémon deck (#tdeck/<id>) opens on the website for now.
-                if (onDeck != null && id != null) onDeck(id) else page(site + d.to.ifBlank { "#decks" }, null)
+                // A Magic deck (#deck/<id>) or a Yu-Gi-Oh! / Pokémon deck (#tdeck/<id>, the open game's): its page here.
+                val hit = Regex("^#(t?)deck/([^/]+)").find(d.to)?.groupValues
+                val id = hit?.get(2)?.let(android.net.Uri::decode)
+                val g = if (hit?.get(1) == "t") CollectionGame.current.value else CardGame.MTG
+                if (onDeck != null && id != null) onDeck(id, g) else page(site + d.to.ifBlank { "#decks" }, null)
             },
         )
     }
