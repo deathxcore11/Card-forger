@@ -1,0 +1,9 @@
+{
+  "name": "cardstashy-native-js-tools",
+  "private": true,
+  "description": "Bundles the site's own modules for QuickJS (scripts/bundle-web.mjs): esbuild, and core-js for the browser URL classes QuickJS lacks.",
+  "dependencies": {
+    "core-js": "3.49.0",
+    "esbuild": "0.24.0"
+  }
+}

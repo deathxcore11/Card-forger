@@ -6,6 +6,7 @@
 #                                    on first launch where CardStashyForge.updateRules would put a download
 #   app/src/main/assets/cards/       Scryfall images for the two demo decks (normal + art_crop) and the Home tiles
 #   app/src/main/assets/{play,sfx}/  the existing playmat, banners and table sounds from the website
+#   app/src/main/assets/random-build.js  the site's random deck builder for QuickJS (needs npm: scripts/js-tools)
 #
 #   ENGINE_TGZ  engine build (default: the pods build plus the lesson match setup, forge-engine/rebuild-bridge.sh)
 set -euo pipefail
@@ -41,6 +42,10 @@ mkdir -p "$A/story" && cp "$REPO"/data/story/act-*.json "$REPO"/data/story/pool-
 node "$HERE/scripts/export-audio-loops.mjs" "$REPO" "$A/audio-loops.json"
 # The card pop-up's rule words and foil recipes, from the web's own modules.
 node "$HERE/scripts/export-card-data.mjs" "$REPO" "$A/card-data.json"
+# The site's own random deck builder for QuickJS (Lobby > Random, play/RandomBuild.kt), bundled from the web modules with the
+# esbuild pinned in scripts/js-tools. Until 5 Nov this step was missing, so no APK carried it and Random always stopped.
+(cd "$HERE/scripts/js-tools" && npm ci --no-audit --no-fund --silent)
+node "$HERE/scripts/export-random-build.mjs" "$REPO" "$HERE/scripts/js-tools/node_modules/.bin/esbuild"
 # Randall's painted art pieces (each replaces its code-drawn version; a missing piece keeps the code one).
 for f in "$HERE"/art/*.webp; do [ -e "$f" ] && cp "$f" "$A/play/"; done
 # The table playmats (all 128 files): without them the table is a flat black card, so this script now does it too.
