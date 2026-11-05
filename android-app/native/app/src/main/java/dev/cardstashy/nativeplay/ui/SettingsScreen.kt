@@ -555,6 +555,7 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Collection" to "Collection opens on its own Home, built into the app: the Card of the Day, your collection\u2019s value, your decks, Meta decks and news, laid out like the website. Pokémon and Yu-Gi-Oh!, search and the other tabs still open the website\u2019s page for now.",
     "Fix" to "When a spell makes you sacrifice, the table says which card to tap instead of showing a greyed-out OK.",
     "Fix" to "Random deck in the lobby builds a deck again; its builder was missing from the app.",
     "Packs" to "Every set's pack shows a hand-picked card's art in its window, and the art shifts behind the frame as you tilt the phone or slide a finger.",
