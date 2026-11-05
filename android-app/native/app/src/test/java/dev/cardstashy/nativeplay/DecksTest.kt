@@ -39,6 +39,15 @@ class DecksTest {
         for (b in g.getAsJsonArray("basics")) assertEquals(b.asJsonArray[1].asBoolean, Decks.isBasicLand(b.asJsonArray[0].asString))
     }
 
+    /** The precon route's Commander deck (play-econ-route.js): commander row first with board "commander", singleton, saved as Commander. */
+    @Test fun commanderPrecon() {
+        val j = JsonParser.parseString("""{"data":{"name":"Limit Break","commander":[{"name":"Cloud, Ex-SOLDIER","count":1,"setCode":"FIC","number":"1","rarity":"mythic","identifiers":{"scryfallId":"x"}}],
+            "mainBoard":[{"name":"Sol Ring","count":1,"setCode":"FIC","number":"2","rarity":"uncommon"},{"name":"Mountain","count":30,"setCode":"FIC","number":"3","rarity":"common"}]}}""").asJsonObject
+        val rows = Decks.preconRows(j.getAsJsonObject("data"))
+        assertEquals(listOf(Decks.Row("Cloud, Ex-SOLDIER", 1, "commander", "fic", "1", "x", "mythic"), Decks.Row("Sol Ring", 1, null, "fic", "2", "", "uncommon"), Decks.Row("Mountain", 30, null, "fic", "3", "", "common")), rows)
+        assertEquals(listOf("Commander"), Decks.preconFormatsAny(j)); assertEquals(1, Decks.preconCopies(rows)); assertEquals(4, Decks.preconCopies(rows.drop(1)))
+    }
+
     @Test fun paste() {
         val rows = Decks.parsePaste("Deck\n4 Lightning Bolt\n2x Counterspell (MH2) 267\n\nSideboard\n3 Pyroblast\nnot a card\n300 Island")
         assertEquals(listOf(Decks.Row("Lightning Bolt", 4), Decks.Row("Counterspell", 2), Decks.Row("Pyroblast", 3, "side"), Decks.Row("Island", 250, "side")), rows)

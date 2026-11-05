@@ -119,8 +119,12 @@ object Decks {
     val CONSTRUCTED_PRECON_TYPES = listOf("Theme Deck", "Starter Kit", "Challenger Deck", "Pioneer Challenger Deck", "Planeswalker Deck", "Game Night Deck", "Arena Starter Kit", "Event Deck", "Duel Deck", "Clash Pack", "Intro Pack")
     data class PreconEntry(val name: String, val code: String, val type: String, val releaseDate: String, val fileName: String)
 
-    fun preconIndex(json: JsonObject): List<PreconEntry> = (json.getAsJsonArray("data")?.mapNotNull { it as? JsonObject } ?: emptyList())
-        .filter { it.s("type") in CONSTRUCTED_PRECON_TYPES && it.get("name")?.isJsonPrimitive == true && Regex("^[A-Za-z0-9_.-]+$").matches(it.s("fileName")) }
+    fun preconIndex(json: JsonObject): List<PreconEntry> = deckList(json, CONSTRUCTED_PRECON_TYPES)
+    /** MTGJSON's Commander decks (play-precon-formats.js COMMANDER_PRECON_TYPE): sold whole only from the weekly store. */
+    const val COMMANDER_PRECON_TYPE = "Commander Deck"
+    fun commanderPreconIndex(json: JsonObject): List<PreconEntry> = deckList(json, listOf(COMMANDER_PRECON_TYPE))
+    private fun deckList(json: JsonObject, types: List<String>) = (json.getAsJsonArray("data")?.mapNotNull { it as? JsonObject } ?: emptyList())
+        .filter { it.s("type") in types && it.get("name")?.isJsonPrimitive == true && Regex("^[A-Za-z0-9_.-]+$").matches(it.s("fileName")) }
         .map { PreconEntry(it.s("name"), it.s("code"), it.s("type"), it.s("releaseDate"), it.s("fileName")) }
         .sortedWith(compareByDescending<PreconEntry> { it.releaseDate }.thenBy { it.name })
 
@@ -129,6 +133,21 @@ object Decks {
             c.getAsJsonObject("identifiers")?.s("scryfallId") ?: "", rarityOf(c.s("rarity")))
         return ((d.getAsJsonArray("mainBoard")?.map { row(it.asJsonObject, null) } ?: emptyList()) + (d.getAsJsonArray("sideBoard")?.map { row(it.asJsonObject, "side") } ?: emptyList())).filter { it.name.isNotEmpty() }
     }
+
+    /**
+     * The precon route's rows (play-econ-route.js 'precon'): a Commander deck's commander zone first, one copy each with
+     * board "commander", then mtgjsonDeckRows (the 99, or a constructed deck's main and side).
+     */
+    fun preconRows(d: JsonObject): List<Row> {
+        val cmd = d.getAsJsonArray("commander")?.mapNotNull { it as? JsonObject }.orEmpty().map { c ->
+            Row(c.s("name"), 1, "commander", c.s("setCode").lowercase(), c.s("number"), c.getAsJsonObject("identifiers")?.s("scryfallId") ?: "", rarityOf(c.s("rarity"))) }
+        return cmd.filter { it.name.isNotEmpty() } + mtgjsonDeckRows(d)
+    }
+    fun isCommanderPrecon(d: JsonObject) = (d.getAsJsonArray("commander")?.size() ?: 0) > 0
+    /** A Commander deck is saved as Commander (the route's p_format); a constructed one plays where constructedPrecon allows. */
+    fun preconFormatsAny(payload: JsonObject): List<String>? = (payload.getAsJsonObject("data") ?: payload).let { d -> if (isCommanderPrecon(d)) listOf("Commander") else preconFormats(payload) }
+    /** deckShortfall's copy cap on the route: a Commander deck is singleton, one copy of each card. */
+    fun preconCopies(rows: List<Row>) = if (rows.any { it.board == "commander" }) 1 else 4
 
     /**
      * preconFace (play-econ-rules.js): the card a precon tile shows, as (name, Scryfall id). The commander when there

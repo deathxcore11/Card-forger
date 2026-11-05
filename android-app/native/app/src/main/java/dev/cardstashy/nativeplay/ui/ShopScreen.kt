@@ -143,7 +143,7 @@ fun ShopRoute(onBack: () -> Unit, nav: @Composable () -> Unit, startTab: String 
     // This week's store precons (state.preconStore.files) as the precon list knows them, and what each still needs.
     val owned = remember(s) { Decks.ownedByName(s) }
     val weekly = remember(s) { weeklyPrecons(s) }
-    val storePrecons = remember(precon.index, weekly) { precon.index?.filter { it.fileName.removeSuffix(".json") in weekly } }
+    val storePrecons = remember(precon.index, precon.commander, weekly) { precon.index?.let { it + precon.commander }?.filter { it.fileName.removeSuffix(".json") in weekly } }
     val needs = remember(s, owned) { HashMap<String, PreconNeed>() }
     fun needOf(file: String): PreconNeed? = PreconStore.summaries[file]?.let { x -> needs.getOrPut(file) { preconNeed(x.rows, owned, s, file) } }
     val calm = open == null && opener == null && precon.open == null
@@ -220,7 +220,7 @@ private fun Storefront(s: JsonObject, busy: Boolean, start: String, weekly: Set<
         stickyHeader(key = "aisles") { AisleBar(aisles, at, onAisle = { k -> scope.launch { list.animateScrollToItem(rowOf(k)) } }) }
         if (store != null && offers.isNotEmpty()) item(key = "sl") { SecretLairShowcase(s, store, busy, onSecretLair, onCard, onBrowse = { onSet("sld") }) }
         item(key = "packs") { PacksAisle(s, busy, onBuy, onSet, onAll = { onPage("sets") }) }
-        if (weekly.isNotEmpty()) item(key = "precons") { PreconAisle(precons, remember(s) { weeklyPreconFormats(s) }, needOf, onPrecon) }
+        if (weekly.isNotEmpty()) item(key = "precons") { PreconAisle(precons, remember(s) { weeklyPreconFormats(s) }, remember(s) { preconPrerelease(s) }, needOf, onPrecon) }
         item(key = "forge") { Column(verticalArrangement = Arrangement.spacedBy(14.dp)) { Forge(s, actions); SealPress(s, busy, onStamp, onCard) } }
     }
 }
@@ -446,19 +446,25 @@ private fun ShelfPack(code: String, name: String, row: Trunk.SetRow?, price: Int
 
 /**
  * This week's store precons, each bought whole for coins. With the server's per-format store (preconStore.formats) it is
- * one shelf per format behind a row of format chips, Standard first; from a server that only sends the flat list, the
- * precons are grouped by the formats their cards are legal in.
+ * one shelf per format behind a row of format chips, Standard first, or Commander first while a pre-release is on
+ * (preconStore.prerelease: the newest Commander decks, sold before their set is out). From a server that only sends the
+ * flat list, the precons are grouped by the formats their cards are legal in.
  */
 @Composable
-private fun PreconAisle(precons: List<Decks.PreconEntry>?, byFormat: Map<String, List<String>>, needOf: (String) -> PreconNeed?, onOpen: (Decks.PreconEntry) -> Unit) {
+private fun PreconAisle(precons: List<Decks.PreconEntry>?, byFormat: Map<String, List<String>>, pre: PreconPrerelease?, needOf: (String) -> PreconNeed?, onOpen: (Decks.PreconEntry) -> Unit) {
     var format by rememberSaveable { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         AisleHead("Precons", "Whole decks for coins. You only pay for the cards you don't have yet.")
         if (precons == null) { Text("Opening the deck boxes…", style = small); return@Column }
         val shown = if (byFormat.isNotEmpty()) {
+            // While a pre-release is on, its Commander shelf leads the row and opens first.
             val stocked = byFormat.mapValues { (_, files) -> files.mapNotNull { f -> precons.firstOrNull { it.fileName.removeSuffix(".json") == f } } }.filterValues { it.isNotEmpty() }
-            val at = format.takeIf { it in stocked } ?: stocked.keys.firstOrNull().orEmpty()
-            if (stocked.size > 1) ShelfRow { items(stocked.keys.toList(), key = { it }) { f -> ShelfChip(f, at == f, stocked.getValue(f).size) { format = f } } }
+                .entries.sortedBy { if (pre != null && it.key == "Commander") 0 else 1 }.associate { it.key to it.value }
+            val lead = stocked.keys.firstOrNull().orEmpty()
+            val at = format.takeIf { it in stocked } ?: lead
+            if (stocked.size > 1) ShelfRow { items(stocked.keys.toList(), key = { it }) { f ->
+                ShelfChip(f, at == f, stocked.getValue(f).size, leading = if (f == "Commander" && pre != null) { { Text("✦", style = TextStyle(fontSize = 12.sp, color = Color(0xFFC9B2FF))) } } else null) { format = f } } }
+            if (at == "Commander" && pre != null) PrereleaseNote(pre)
             stocked[at].orEmpty()
         } else {
             val formatsOf = { e: Decks.PreconEntry -> PreconStore.summaries[e.fileName]?.formats.orEmpty() }
@@ -471,8 +477,26 @@ private fun PreconAisle(precons: List<Decks.PreconEntry>?, byFormat: Map<String,
         }
         val row = androidx.compose.foundation.lazy.rememberLazyListState()
         LaunchedEffect(format) { row.scrollToItem(0) }
+        val early = pre?.files.orEmpty().toSet()
         LazyRow(Modifier.bleed(16.dp), state = row, contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(shown, key = { it.fileName }) { e -> PreconTile(e, needOf(e.fileName), Modifier.width(272.dp), shop = true) { onOpen(e) } }
+            items(shown, key = { it.fileName }) { e ->
+                PreconTile(e, needOf(e.fileName), Modifier.width(272.dp), shop = true, tag = if (e.fileName.removeSuffix(".json") in early) "Pre-release" else null) { onOpen(e) } }
+        }
+    }
+}
+
+/** The pre-release sign over the Commander shelf: the set's name and the day it comes out. */
+@Composable
+private fun PrereleaseNote(pre: PreconPrerelease) {
+    val day = runCatching { java.time.LocalDate.parse(pre.releases).format(java.time.format.DateTimeFormatter.ofPattern("d MMM", java.util.Locale.UK)) }.getOrDefault(pre.releases)
+    val shape = RoundedCornerShape(16.dp)
+    Row(Modifier.fillMaxWidth().clip(shape).background(Brush.horizontalGradient(listOf(Color(0x3D7B5CFF), Color(0x14C9B2FF))))
+        .border(1.dp, Brush.horizontalGradient(listOf(Color(0x99C9B2FF), Color(0x40E8B95B))), shape).padding(horizontal = 14.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("✦", style = TextStyle(fontSize = 16.sp, color = Color(0xFFC9B2FF)))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Text("PRE-RELEASE", style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, letterSpacing = 1.6.sp, color = Color(0xFFC9B2FF)))
+            Text("${pre.name.ifBlank { pre.set.uppercase() }} decks, before the set is out on $day.", style = small.copy(fontSize = 13.sp, lineHeight = 18.sp, color = Site.Text))
         }
     }
 }

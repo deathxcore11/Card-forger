@@ -78,6 +78,8 @@ private fun JsonObject?.s(k: String) = this?.get(k)?.takeIf { it.isJsonPrimitive
 
 /** What the precon shelf holds (app.js preconUi): the index, the search, how many show, the open deck. */
 class PreconUi { var index by mutableStateOf<List<Decks.PreconEntry>?>(null); var busy by mutableStateOf(false); var error by mutableStateOf("")
+    /** MTGJSON's Commander decks, read with the index: only the weekly store's are offered (Shop, In the store). */
+    var commander by mutableStateOf<List<Decks.PreconEntry>>(emptyList())
     var query by mutableStateOf(""); var limit by mutableStateOf(12); var open by mutableStateOf<OpenPrecon?>(null); var opening by mutableStateOf(false)
     /** loadPreconFaces: each tile's face card (name, Scryfall id) by deck file, kept on the device; files that gave none this visit. */
     val faces = androidx.compose.runtime.mutableStateMapOf<String, Pair<String, String>>()
@@ -111,7 +113,7 @@ fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit,
     val pager = androidx.compose.foundation.pager.rememberPagerState(initialPage = tabs.tab) { 3 }
     LaunchedEffect(pager.currentPage) { tabs.tab = pager.currentPage }
     fun loadIndex() { if (precon.index != null || precon.busy) return; precon.busy = true; precon.error = ""
-        scope.launch { val j = fetchJson("https://mtgjson.com/api/v5/DeckList.json", dayCache = true); if (j != null) precon.index = Decks.preconIndex(j) else precon.error = "Could not load the precon list right now."; precon.busy = false } }
+        scope.launch { val j = fetchJson("https://mtgjson.com/api/v5/DeckList.json", dayCache = true); if (j != null) { precon.commander = Decks.commanderPreconIndex(j); precon.index = Decks.preconIndex(j) } else precon.error = "Could not load the precon list right now."; precon.busy = false } }
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         Backdrop() // #ambient: the shared art (glass on, or Aura)
         // The page sits below the status bar, so tiles never slide under the clock (Randall 5 Nov 16:58Z).
@@ -283,7 +285,7 @@ internal suspend fun loadPreconIndex(pc: PreconUi) {
     if (pc.index != null || pc.busy) return
     pc.busy = true; pc.error = ""
     val j = fetchJson("https://mtgjson.com/api/v5/DeckList.json", dayCache = true)
-    if (j != null) pc.index = Decks.preconIndex(j) else pc.error = "Could not load the precon list right now."
+    if (j != null) { pc.commander = Decks.commanderPreconIndex(j); pc.index = Decks.preconIndex(j) } else pc.error = "Could not load the precon list right now."
     pc.busy = false
 }
 
@@ -293,7 +295,7 @@ internal fun openPrecon(scope: kotlinx.coroutines.CoroutineScope, pc: PreconUi, 
         val j = fetchJson("https://mtgjson.com/api/v5/decks/" + e.fileName.removeSuffix(".json") + ".json")
         val d = j?.getAsJsonObject("data") ?: j
         if (d == null) toast("That precon could not be opened.")
-        else { pc.open = OpenPrecon(e.fileName, d.s("name").ifBlank { e.name }, e.type, e.releaseDate, Decks.preconFormats(j!!) ?: emptyList(), Decks.mtgjsonDeckRows(d))
+        else { pc.open = OpenPrecon(e.fileName, d.s("name").ifBlank { e.name }, e.type, e.releaseDate, Decks.preconFormatsAny(j!!) ?: emptyList(), Decks.preconRows(d))
             if (e.fileName !in PreconStore.summaries) PreconStore.put(e.fileName, j) }
         pc.opening = false
     }

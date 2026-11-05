@@ -157,8 +157,8 @@ object PreconStore {
         val colors = HashSet<String>()
         for (k in listOf("commander", "mainBoard")) d.getAsJsonArray(k)?.forEach { e -> val c = e as? JsonObject ?: return@forEach
             BASIC_COLOR[c.s("name")]?.let { colors.add(it) }; c.getAsJsonArray("colorIdentity")?.forEach { x -> if (x.isJsonPrimitive && x.asString != "C") colors.add(x.asString) } }
-        return Summary(Decks.preconFace(d), "WUBRG".map { it.toString() }.filter { it in colors }, Decks.preconFormats(payload) ?: emptyList(),
-            Decks.mtgjsonDeckRows(d).map { Decks.Row(it.name, it.qty, it.board, rarity = it.rarity) })
+        return Summary(Decks.preconFace(d), "WUBRG".map { it.toString() }.filter { it in colors }, Decks.preconFormatsAny(payload) ?: emptyList(),
+            Decks.preconRows(d).map { Decks.Row(it.name, it.qty, it.board, rarity = it.rarity) })
     }
     private fun readDisk() {
         if (!read.compareAndSet(false, true)) return
@@ -209,9 +209,15 @@ fun weeklyPreconFormats(state: JsonObject?): Map<String, List<String>> =
     ((state?.get("preconStore") as? JsonObject)?.get("formats") as? JsonObject)?.entrySet()
         ?.associate { (k, v) -> k to (v as? JsonArray)?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }.orEmpty() }
         ?.filterValues { it.isNotEmpty() }.orEmpty()
+/** preconStore.prerelease: the newest Commander release's decks, listed before its set is out (null otherwise). */
+data class PreconPrerelease(val set: String, val name: String, val releases: String, val files: List<String>)
+fun preconPrerelease(state: JsonObject?): PreconPrerelease? = ((state?.get("preconStore") as? JsonObject)?.get("prerelease") as? JsonObject)?.let { o ->
+    fun str(k: String) = o.get(k)?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
+    PreconPrerelease(str("set"), str("name"), str("releases"), (o.get("files") as? JsonArray)?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }.orEmpty())
+}?.takeIf { it.files.isNotEmpty() }
 fun isWeeklyPrecon(state: JsonObject?, file: String) = file.removeSuffix(".json") in weeklyPrecons(state)
 fun preconNeed(rows: List<Decks.Row>, owned: Map<String, Int>, state: JsonObject, file: String = ""): PreconNeed {
-    val sh = Decks.shortfall(rows, owned, rows.associate { it.name to it.rarity })
+    val sh = Decks.shortfall(rows, owned, rows.associate { it.name to it.rarity }, Decks.preconCopies(rows))
     val wallet = state.getAsJsonObject("wallet")
     val short = SEAL_KEYS.associateWith { k -> maxOf(0, (sh.seals[k] ?: 0) - (wallet?.get("seal_$k")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0)) }
     val want = rows.filter { !Decks.isBasicLand(it.name) }.sumOf { maxOf(1, it.qty) }
@@ -322,7 +328,8 @@ fun PreconsTab(state: JsonObject, pc: PreconUi, owned: Map<String, Int>, onOpen:
             pc.error.isNotEmpty() -> item(key = "error") { Text(pc.error, style = t(14f, color = Warn)) }
             index == null -> item(key = "show") { GhostButton("Show the precons") { onLoad() } }
             rails -> {
-                val store = searched.filter(::isWeekly)
+                // The week's Commander decks come from the store alone (the Precons list itself is constructed decks).
+                val store = (searched + pc.commander.filter { q.isEmpty() || it.name.lowercase().contains(q) || it.code.lowercase() == q }).filter(::isWeekly)
                 if (store.isNotEmpty()) {
                     item(key = "h:store") { Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("In the store", style = cinzel(18f)); Text("  ${store.size}", style = t(13f, FontWeight.Bold, Site.Muted)); Spacer(Modifier.weight(1f))
@@ -366,7 +373,7 @@ private fun ChipOn(label: String, on: Boolean, count: Int? = null, onClick: () -
  * of it the Trunk holds, and what's left in seals, or coins for a store precon.
  */
 @Composable
-fun PreconTile(e: Decks.PreconEntry, need: PreconNeed?, modifier: Modifier, weekly: Boolean = false, shop: Boolean = false, onClick: () -> Unit) {
+fun PreconTile(e: Decks.PreconEntry, need: PreconNeed?, modifier: Modifier, weekly: Boolean = false, shop: Boolean = false, tag: String? = null, onClick: () -> Unit) {
     val s = PreconStore.summaries[e.fileName]
     LaunchedEffect(e.fileName) { if (s == null) PreconStore.want(listOf(e.fileName)) }
     val code = e.code.lowercase()
@@ -377,7 +384,7 @@ fun PreconTile(e: Decks.PreconEntry, need: PreconNeed?, modifier: Modifier, week
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x55000000), .3f to Color(0x10000000), .62f to Color(0xE608090C), 1f to Color(0xF508090C))))
         Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(Modifier.size(34.dp).softPill(CircleShape), contentAlignment = Alignment.Center) { SetIcon(code, Modifier.size(20.dp), Cream) }
-            when { need?.sh?.complete == true -> Ribbon("Ready", Ok); need?.craftable == true -> Ribbon("Craftable now", Color(0xFFF0C66D)) }
+            when { tag != null -> Ribbon(tag, Color(0xFFC9B2FF)); need?.sh?.complete == true -> Ribbon("Ready", Ok); need?.craftable == true -> Ribbon("Craftable now", Color(0xFFF0C66D)) }
             Spacer(Modifier.weight(1f))
             if (s != null) Row(Modifier.softPill(RoundedCornerShape(999.dp)).padding(horizontal = 6.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                 s.colors.ifEmpty { listOf("C") }.forEach { Symbol(it, 17.dp) } }
@@ -536,7 +543,12 @@ fun PreconPage(state: JsonObject, o: OpenPrecon, owned: Map<String, Int>, pc: Pr
                 Text("The list", style = cinzel(16f), modifier = Modifier.weight(1f))
                 val all = o.rows.filter { it.board != "side" }.sumOf { it.qty }
                 ChipOn("All", !missingOnly, all) { missingOnly = false }; if (!sh.complete) ChipOn("Missing", missingOnly, sh.total) { missingOnly = true } } }
-            val main = o.rows.filter { it.board != "side" }; val side = o.rows.filter { it.board == "side" }
+            val cmd = o.rows.filter { it.board == "commander" }; val main = o.rows.filter { it.board != "side" && it.board != "commander" }; val side = o.rows.filter { it.board == "side" }
+            if (cmd.isNotEmpty()) {
+                item(key = "cmdHead") { Text("Commander", style = t(15f, FontWeight.Bold)) }
+                preconCardRows(cmd, owned, missingOnly, "c", metaCount, deckUse, armed, busy, have, onCard, { k, go -> arm(k, go) }) { name, n -> craft(listOf(name to n), name) }
+                item(key = "mainHead") { Text("The 99", style = t(15f, FontWeight.Bold)) }
+            }
             preconCardRows(main, owned, missingOnly, "m", metaCount, deckUse, armed, busy, have, onCard, { k, go -> arm(k, go) }) { name, n -> craft(listOf(name to n), name) }
             if (side.isNotEmpty()) {
                 item(key = "sideHead") { Text("Sideboard", style = t(15f, FontWeight.Bold)) }

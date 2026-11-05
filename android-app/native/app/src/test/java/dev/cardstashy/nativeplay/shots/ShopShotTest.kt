@@ -62,7 +62,7 @@ class ShopShotTest {
             add("secretLairStore", JsonObject().apply { addProperty("week", "2026-W45"); addProperty("ends", java.time.Instant.now().plusSeconds(2 * 86400 + 5 * 3600 + 120).toString())
                 add("offers", JsonArray().apply { slds.forEachIndexed { i, c -> add(c.deepCopy().apply { mapOf(1 to 60, 4 to 50, 9 to 40, 14 to 25)[i]?.let { addProperty("off", it) } }) } }) })
             add("styles", JsonArray().apply { slds.getOrNull(2)?.let { c -> add(JsonObject().apply { addProperty("id", c["id"].asString); addProperty("o", c["o"].asString) }) } })
-            add("preconStore", JsonParser.parseString("""{"week":"2026-W45","files":["fin-ub","fin-rw","blb-gw","blb-ur","otj-br"],"formats":{"Standard":["fin-ub","fin-rw"],"Pioneer":["blb-gw","blb-ur"],"Modern":["otj-br"],"Legacy":[]}}"""))
+            add("preconStore", JsonParser.parseString("""{"week":"2026-W45","files":["fin-ub","fin-rw","blb-gw","blb-ur","otj-br","msc-avengers","msc-wakanda","fic-cloud","fic-yshtola","tdc-sultai"],"formats":{"Standard":["fin-ub","fin-rw"],"Pioneer":["blb-gw","blb-ur"],"Modern":["otj-br"],"Legacy":[],"Commander":["msc-avengers","msc-wakanda","fic-cloud","fic-yshtola","tdc-sultai"]},"prerelease":{"set":"msc","name":"Marvel Super Heroes Commander","releases":"2026-11-13","files":["msc-avengers","msc-wakanda"]}}"""))
         }
     }
 
@@ -77,10 +77,12 @@ class ShopShotTest {
 
     /** The store precons: the app's five starter precons with Scryfall's cards (as PlayDecksTabsShotTest builds them), as the Shop's precon list. */
     private fun precons(): dev.cardstashy.nativeplay.ui.PreconUi {
-        val all = JsonParser.parseString(File(System.getProperty("repoRoot"), "data/play-starters/precons.json").readText()).asJsonObject["decks"].asJsonArray.map { it.asJsonObject }
-            .filter { it["format"].asString == "Standard" }
+        val every = JsonParser.parseString(File(System.getProperty("repoRoot"), "data/play-starters/precons.json").readText()).asJsonObject["decks"].asJsonArray.map { it.asJsonObject }
+        val all = every.filter { it["format"].asString == "Standard" }
+        // The app's Commander precons stand in for the store's Commander decks (the commander as its own row, board "commander").
+        val cmd = every.filter { it["format"].asString == "Commander" }
         val ids = LinkedHashMap<String, JsonObject>()
-        for (p in all) for (r in p["rows"].asJsonArray.map { it.asJsonObject }) ids.putIfAbsent(r["name"].asString, JsonObject().apply { addProperty("name", r["name"].asString) })
+        for (p in all + cmd) for (r in p["rows"].asJsonArray.map { it.asJsonObject }) ids.putIfAbsent(r["name"].asString, JsonObject().apply { addProperty("name", r["name"].asString) })
         val cards = ids.values.chunked(75).flatMap { chunk -> Thread.sleep(120)
             val c = java.net.URI("https://api.scryfall.com/cards/collection").toURL().openConnection() as java.net.HttpURLConnection
             c.requestMethod = "POST"; c.doOutput = true; c.setRequestProperty("Content-Type", "application/json"); c.setRequestProperty("User-Agent", "CardStashyNativeTest/1.0")
@@ -94,7 +96,14 @@ class ShopShotTest {
             dev.cardstashy.nativeplay.ui.PreconStore.summaries[p["key"].asString + ".json"] = dev.cardstashy.nativeplay.ui.PreconStore.Summary(
                 (face?.get("name")?.asString ?: "") to (face?.get("id")?.asString ?: ""), listOf("W", "U", "B", "R", "G").filter { k -> (face?.getAsJsonArray("color_identity")?.map { it.asString } ?: emptyList()).contains(k) }, formats.getValue(i % 5), rows)
             dev.cardstashy.nativeplay.play.Decks.PreconEntry(p["name"].asString, (face?.get("set")?.asString ?: "").uppercase(), "Starter Kit", p["released"].asString, p["key"].asString + ".json") }
-        return dev.cardstashy.nativeplay.ui.PreconUi().apply { this.index = index }
+        fun card(n: String) = cards.firstOrNull { it["name"].asString == n || it["name"].asString.split(" // ")[0] == n }
+        val commander = cmd.map { p -> val face = card(p["face"].asString)
+            val rows = listOf(dev.cardstashy.nativeplay.play.Decks.Row(p["face"].asString, 1, "commander", rarity = face?.get("rarity")?.asString ?: "mythic")) +
+                p["rows"].asJsonArray.map { it.asJsonObject }.filter { it["name"].asString != p["face"].asString }.map { r -> dev.cardstashy.nativeplay.play.Decks.Row(r["name"].asString, r["qty"].asInt, null, rarity = card(r["name"].asString)?.get("rarity")?.asString ?: "common") }
+            dev.cardstashy.nativeplay.ui.PreconStore.summaries[p["key"].asString + ".json"] = dev.cardstashy.nativeplay.ui.PreconStore.Summary(
+                (face?.get("name")?.asString ?: "") to (face?.get("id")?.asString ?: ""), listOf("W", "U", "B", "R", "G").filter { k -> (face?.getAsJsonArray("color_identity")?.map { it.asString } ?: emptyList()).contains(k) }, listOf("Commander"), rows)
+            dev.cardstashy.nativeplay.play.Decks.PreconEntry(p["name"].asString, p["key"].asString.substringBefore('-').uppercase(), "Commander Deck", p["released"]?.asString?.ifEmpty { null } ?: "2025-04-11", p["key"].asString + ".json") }
+        return dev.cardstashy.nativeplay.ui.PreconUi().apply { this.index = index; this.commander = commander }
     }
     private fun art() { dev.cardstashy.nativeplay.ui.Motion.still = true
         dev.cardstashy.nativeplay.ui.homeArt = { url -> runCatching { java.net.URI(url).toURL().openConnection().apply { setRequestProperty("User-Agent", "CardStashyNativeTest/1.0") }
@@ -107,6 +116,7 @@ class ShopShotTest {
         settle(60); shot("front")
         // The per-format store (preconStore.formats): Pioneer's shelf.
         rule.onNodeWithText("Pioneer").performClick(); settle(20); shot("front-pioneer")
+        rule.onAllNodesWithText("Standard")[0].performClick(); settle(20); shot("front-standard")
         rule.onNodeWithText("Every set, every year").performClick(); settle(20); shot("sets")
     }
     /** The storefront's first screen on the Fold's cover screen, as you land on it. */
