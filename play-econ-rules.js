@@ -130,11 +130,19 @@ export function stepDeckCard(deck = [], name, step, owned = new Map(), format = 
   return rows.filter(c => c.qty > 0);
 }
 
-// Precons (Randall 1 Nov 19:49Z): pay only for the cards you don't own yet, 25 coins each, between
-// 250 and 1,500 (three packs). A deck you already own entirely is free to add. play.config can rebalance.
+// Precons: pay only for the cards you don't own yet, priced by rarity (Randall 5 Nov 18:05Z, "price by
+// rarity, keep seals"). `missing` is a number (flat perCard, the old rate) or a seals-style count
+// {c,u,r,m} from deckShortfall(...).seals. Rates come from play.config precon.perRarity, so they retune
+// without a release. Minimum 250, no cap. A deck you already own entirely is free to add.
+export const PRECON_RATES = Object.freeze({c: 25, u: 75, r: 500, m: 1500});
 export function preconPrice(missing = 0, config = {}) {
   const p = config?.precon || {};
-  return missing <= 0 ? 0 : Math.max(p.min ?? 250, Math.min(p.max ?? 1500, missing * (p.perCard ?? 25)));
+  let total;
+  if (missing && typeof missing === 'object') {
+    const rates = {...PRECON_RATES, ...(p.perRarity || {})};
+    total = SEALS.reduce((t, s) => t + (missing[s.key] | 0) * (Number(rates[s.key]) || 0), 0);
+  } else total = (missing | 0) * (p.perCard ?? 25);
+  return total <= 0 ? 0 : Math.max(p.min ?? 250, total);
 }
 // One MTGJSON deck card as a Play card grant: the exact printing in the product (set and number),
 // so era decks keep their era art, basic lands included.

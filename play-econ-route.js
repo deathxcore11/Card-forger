@@ -4,6 +4,7 @@
 // just shows what this returns. Play's wall: nothing here touches the real collection or prices.
 // Spec: play-progression.md sections 3 to 9.
 import {SUPABASE} from './config.js';
+import {weeklyPrecons} from './play-precon-formats.js';
 import {loadMtgBooster, mtgBoosterCards, drawMtgBooster, mtgGodPackPicks} from './mtg-boosters.js';
 import {rewardSet, setFormats} from './play-econ-sets.js';
 import {isBasicLand, starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconPrice, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName, isCollectorPack, collectorOdds, collectorPicks, collectorSource, godPackOdds} from './play-econ-rules.js';
@@ -51,6 +52,18 @@ async function secretLairDrops(env, request, fetcher) {
   if (!slCache) slCache = asset(env, request, '/data/secret-lair/drops.json', fetcher).then(d => (Array.isArray(d?.drops) ? d.drops : null)).then(d => { if (!d) slCache = null; return d || []; });
   return slCache;
 }
+
+// MTGJSON's deck list, read once an hour per isolate, for the weekly precon store.
+let preconListCache = null;
+async function preconStoreFiles(fetcher, now = new Date()) {
+  const week = playWeek(now.toISOString().slice(0, 10));
+  if (!preconListCache || Date.now() - preconListCache.at > 3600e3) {
+    const r = await fetcher('https://mtgjson.com/api/v5/DeckList.json', {headers: {Accept: 'application/json', 'User-Agent': 'CardStashy/1.0 (play precons)'}}).catch(() => null);
+    const j = r?.ok ? await r.json().catch(() => null) : null;
+    if (Array.isArray(j?.data)) preconListCache = {at: Date.now(), data: j.data};
+  }
+  return preconListCache ? {week, files: weeklyPrecons(preconListCache.data, week)} : null;
+}
 // This Play week's bundle (UTC weeks, Monday to Sunday), as the Merchant shows it.
 export function secretLairOffer(drops, config = {}, now = new Date()) {
   const today = now.toISOString().slice(0, 10), week = playWeek(today), drop = weeklySecretLair(drops, week, today);
@@ -60,7 +73,7 @@ export function secretLairOffer(drops, config = {}, now = new Date()) {
     cards: drop.cards.map(c => ({id: c.id, o: c.o, n: c.n, r: c.r, f: c.f}))};
 }
 
-// This Play week's Secret Lair store: ten single cards beside the bundle, four on sale (Arena's style store).
+// This Play week's Secret Lair store: six single cards beside the bundle, four on sale (Arena's style store).
 export function secretLairStoreOffer(drops, now = new Date()) {
   const today = now.toISOString().slice(0, 10), week = playWeek(today), bundle = weeklySecretLair(drops, week, today);
   const offers = weeklySecretLairOffers(drops, week, today, bundle?.id || '');
@@ -181,10 +194,10 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
     if (path === 'state' && request.method === 'GET') {
       const [s, sets, c, claimed, story] = await Promise.all([state(), shopSets(env, request, fetcher), counters.read(), counters.claims(), storyRefs()]);
       const [l, drops] = await Promise.all([looks(), secretLairDrops(env, request, fetcher)]);
-      const sl = l ? secretLairOffer(drops, s.config) : null;
+      const sl = l ? secretLairOffer(drops, s.config) : null, preconStore = await preconStoreFiles(fetcher).catch(() => null);
       const store = l ? secretLairStoreOffer(drops) : null;
       return json({...s, rewardSet: sets.reward, shop: sets.shop, counters: c || {}, claimed: claimed || [], story: Array.isArray(story) ? story : [],
-        styles: l?.styles || [], secretLair: sl ? {...sl, bought: (l.bundles || []).includes(sl.ref)} : null, secretLairStore: store});
+        styles: l?.styles || [], secretLair: sl ? {...sl, bought: (l.bundles || []).includes(sl.ref)} : null, secretLairStore: store, preconStore});
     }
     if (path === 'achievements' && request.method === 'GET') {
       // Every achievement, quest and log-in reward, worked out for this player (play-achievements.js).
@@ -287,7 +300,9 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if (!d?.mainBoard?.length || (d.commander || []).length) return fail('bad_precon');
       const rows = mtgjsonDeckRows(d), byName = new Map([...(d.mainBoard || []), ...(d.sideBoard || [])].map(c => [c.name, c]));
       const s = await state(), short = deckShortfall(rows, ownedByName(s.cards || []), new Map(rows.map(x => [x.name, x.rarity])), s.config?.maxCopies || 4);
-      const missing = short.missing.reduce((t, m) => t + m.need, 0), price = preconPrice(missing, s.config);
+      const missing = short.missing.reduce((t, m) => t + m.need, 0), price = preconPrice(short.seals, s.config);
+      // Whole-deck coin purchases are only for this week's five store precons; the rest are built with seals.
+      if (price > 0) { const store = await preconStoreFiles(fetcher).catch(() => null); if (!store || !store.files.includes(file)) return fail('not_in_store', 409); }
       if ((s.wallet?.coins || 0) < price) return fail('short_coins', 409);
       const cards = short.missing.flatMap(m => Array.from({length: m.need}, () => mtgjsonCardDelta(byName.get(m.name)))).filter(c => c.oracle_id);
       const preconRef = 'precon:' + crypto.randomUUID();

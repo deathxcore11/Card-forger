@@ -65,8 +65,8 @@ export const secretLairRef = week => 'sl:' + week;
 
 // Coins for the bundle: 300 a card, 1,000 to 2,500 (a pack is 500). config.secretLair can retune it.
 export function secretLairPrice(drop, config = {}) {
-  const c = config?.secretLair || {}, per = c.cardCoins ?? 300, min = c.minCoins ?? 1000, max = c.maxCoins ?? 2500;
-  return Math.max(min, Math.min(max, per * (drop?.cards?.length || 0)));
+  // Priced card by card (Randall 5 Nov): each card at its rarity's coin price, then summed.
+  return (drop?.cards || []).reduce((t, c) => t + secretLairOfferPrice({r: c.r}, config).was, 0);
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -101,12 +101,12 @@ export function stylesFor(styles = [], oracle = '') {
   return {list, on: list.find(s => s.on) || null};
 }
 
-// The Secret Lair store (Randall 3 Nov 22:34Z, like Arena's card-style store): ten single Secret Lair
+// The Secret Lair store (Randall 3 Nov 22:34Z, like Arena's card-style store): six single Secret Lair
 // cards a week beside the bundle, a few of them on sale. Each one is the real printing: into the Trunk,
 // with its Secret Lair art unlocked. Pay in coins, or one seal of the card's rarity.
 const SALES = [60, 50, 40, 25];
 const BASIC = /^(?:Snow-Covered )?(?:Plains|Island|Swamp|Mountain|Forest|Wastes)$/;
-export const SECRET_LAIR_OFFERS = 10;
+export const SECRET_LAIR_OFFERS = 6;
 export function weeklySecretLairOffers(drops = [], week = '', today = '', bundleId = '', n = SECRET_LAIR_OFFERS) {
   const pool = drops.filter(d => d.id !== bundleId && (!today || d.released <= today)).flatMap(d => d.cards).filter(c => !BASIC.test(c.n));
   const out = [], seen = new Set();
