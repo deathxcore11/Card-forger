@@ -75,6 +75,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
@@ -107,7 +108,7 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 
 /**
- * What a press on the card page does. The tabs (but Prices), the finish chips, the other printings, the flip, a card named in
+ * What a press on the card page does. The tabs, the finish chips, the history ranges and sources, the other printings, the flip, a card named in
  * the guide and a rule word are the app's own; the rest ([press]) are the site's handlers, which the route opens on the website.
  */
 class CollectionCardActions(
@@ -118,6 +119,10 @@ class CollectionCardActions(
     val card: (String) -> Unit = {},
     val rule: (String) -> Unit = {},
     val profile: () -> Unit = {},
+    /** Prices: a history range (30, 90, 180, 365, all), a Market details source, and a history source for a quote's series. */
+    val range: (String) -> Unit = {},
+    val source: (String) -> Unit = {},
+    val historySource: (key: String, source: String) -> Unit = { _, _ -> },
     val press: (CardPress) -> Unit = {},
 )
 
@@ -294,6 +299,7 @@ fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onCl
                     when (m.tab) {
                         "meta" -> item(key = "meta") { MetaPanel(m, act, gutter) }
                         "guide" -> item(key = "guide") { GuidePanel(m, act, gutter) }
+                        "prices" -> item(key = "prices") { m.prices?.let { PricesPanel(it, act, gutter, screenW, screenH) } }
                         else -> {
                             item(key = "head") { OverviewHead(m, act, big, gutter) }
                             item(key = "overview") { m.overview?.let { Overview(m, it, act, sheetW - gutter * 2 > 600.dp, gutter) { zoom = true } } }
@@ -970,4 +976,354 @@ private fun StretchRows(modifier: Modifier, gap: Dp, content: @Composable () -> 
     val h = natural.coerceIn(c.minHeight, c.maxHeight)
     val extra = if (ps.isEmpty()) 0 else (h - natural).coerceAtLeast(0) / ps.size
     layout(c.maxWidth.takeIf { c.hasBoundedWidth } ?: (ps.maxOfOrNull { it.width } ?: 0), h) { var y = 0; ps.forEach { it.place(0, y); y += it.height + extra + g } }
+}
+
+// ---------------------------------------------------------------- Prices
+
+/** Shots only: the Prices tab's folded parts (About these prices, Market details, a quote warning) drawn open. */
+internal object CardSheetTest { var open = false }
+
+private val Tnum = "tnum"
+/** The site's glass field (select, .history-ranges): --glass-1 (31 35 43 / .52), the gold edge, a white top line (.07), a faint ring (.024). Not clipped. */
+private fun Modifier.glassField(r: Dp): Modifier = this.drawBehind {
+    val rr = minOf(r.toPx(), size.height / 2); val cr = CornerRadius(rr); val px = 1.dp.toPx()
+    drawRoundRect(Color(0x851F232B), cornerRadius = cr)
+    drawRoundRect(Color(0x06FFFFFF), topLeft = Offset(px, px), size = Size(size.width - px * 2, size.height - px * 2), cornerRadius = CornerRadius(rr - px),
+        style = androidx.compose.ui.graphics.drawscope.Stroke(px))
+    drawRect(Color(0x12FFFFFF), topLeft = Offset(rr * .7f, px), size = Size(size.width - rr * 1.4f, px))
+}.border(1.dp, Edge, RoundedCornerShape(r))
+/** A hairline along the top (border-top: 1px solid var(--line)). */
+private fun Modifier.topLine(): Modifier = this.drawBehind { drawRect(LineC, size = Size(size.width, 1.dp.toPx())) }.padding(top = 1.dp)
+
+/** <summary>: Chrome's disclosure triangle (right, or down when open), then the words. */
+@Composable
+private fun Summary(text: String, open: Boolean, style: TextStyle, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).clickable(onClick = onClick).padding(horizontal = 2.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(7.dp, 7.dp).drawBehind {
+            val w = size.width; val h = size.height
+            drawPath(androidx.compose.ui.graphics.Path().apply { if (open) { moveTo(0f, h * .15f); lineTo(w, h * .15f); lineTo(w / 2, h * .95f) } else { moveTo(w * .1f, 0f); lineTo(w * .95f, h / 2); lineTo(w * .1f, h) }; close() }, style.color)
+        })
+        Spacer(Modifier.width(6.dp))
+        Text(text, style = style)
+    }
+}
+
+/** A <select> as glass-select.js draws it: the chosen option over the glass field and the arrow; a tap opens the list. */
+@Composable
+private fun SiteSelect(options: List<CardOpt>, fs: Float, selected: Int, onPick: (Int) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).glassField(11.dp).clip(RoundedCornerShape(11.dp)).clickable { open = true }.padding(horizontal = 12.dp, vertical = 9.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(options.getOrNull(selected)?.label.orEmpty(), style = sans(fs, 600, Ink, lh = 1.45f), modifier = Modifier.weight(1f))
+            Box(Modifier.size(10.dp, 8.dp).drawBehind {
+                drawPath(androidx.compose.ui.graphics.Path().apply { moveTo(0f, 0f); lineTo(size.width, 0f); lineTo(size.width / 2, size.height); close() }, Color(0xFFB4BAC6))
+            })
+        }
+        androidx.compose.material3.DropdownMenu(open, { open = false }, containerColor = Color(0xFF1A1E26)) {
+            options.forEachIndexed { i, o -> androidx.compose.material3.DropdownMenuItem(text = { Text(o.label, style = sans(14f, if (i == selected) 700 else 400, if (i == selected) GoldC else Ink)) },
+                onClick = { open = false; if (i != selected) onPick(i) }) }
+        }
+    }
+}
+
+/** Words with their bold parts and tones, a control as a gold link (.link). */
+@Composable
+private fun Inline(runs: List<CardInline>, style: TextStyle, go: (CardPress) -> Unit) {
+    Text(buildAnnotatedString {
+        for (r in runs) when {
+            r.press != null -> withLink(LinkAnnotation.Clickable("p:" + r.press.label, TextLinkStyles(SpanStyle(color = GoldC, fontWeight = FontWeight(600))) ) { go(r.press) }) { append(r.press.label) }
+            else -> withStyle(SpanStyle(fontWeight = if (r.bold) FontWeight.Bold else null, color = when (r.tone) { "ok" -> Good; "warn" -> Warn; "bad" -> Bad; else -> Color.Unspecified })) { append(r.t.orEmpty()) }
+        }
+    }, style = style)
+}
+
+/**
+ * The Prices tab (workbench-ui.js priceOverview, then views.js's Market details): the market price, your copy, the price
+ * history for the finish chosen on Overview, the sellers, and the sources and finishes. [vw] and [vh] are the screen's, which
+ * the site's media rules read (one column under 420, the roomier seller rows from 680, the shorter chart on a short sideways screen).
+ */
+@Composable
+private fun PricesPanel(p: CardPrices, act: CollectionCardActions, gutter: Dp, vw: Dp, vh: Dp) {
+    val uri = LocalUriHandler.current
+    fun go(x: CardPress) = when {
+        x.act == "marketRange" -> act.range(x.data["range"].orEmpty())
+        x.act == "priceSource" -> act.source(x.data["src"].orEmpty())
+        x.href.isNotBlank() && x.act.isBlank() -> { runCatching { uri.openUri(x.href) }; Unit }
+        else -> act.press(x)
+    }
+    // Each piece with its CSS margins (top, bottom); siblings' margins collapse to the larger.
+    val parts = ArrayList<Triple<Dp, Dp, @Composable () -> Unit>>()
+    p.hero?.let { h -> parts += Triple(6.dp, 12.dp) { PriceHero(h, vw > 420.dp) } }
+    p.copies.forEach { c -> parts += Triple(0.dp, 12.dp) { PriceCopy(c) } }
+    p.warning?.let { w -> parts += Triple(12.dp, 12.dp) { QuoteWarning(w) } }
+    p.history?.let { h -> parts += Triple(20.dp, 24.dp) { History(h, act, vw, vh, ::go) } }
+    p.sellers?.let { s -> parts += Triple(0.dp, 24.dp) { Sellers(s, vw) { href -> runCatching { uri.openUri(href) } } } }
+    p.details?.let { d -> parts += Triple(24.dp, 0.dp) { MarketDetails(d, act, ::go) } }
+    Column(Modifier.padding(horizontal = gutter).fillMaxWidth()) {
+        var prev = 0.dp
+        parts.forEachIndexed { i, (top, bottom, draw) -> Spacer(Modifier.height(if (i == 0) top else maxOf(prev, top))); draw(); prev = bottom }
+        Spacer(Modifier.height(prev))
+    }
+}
+
+/** .price-fresh: a 28 pill, a 7 dot in its colour (green when fresh, amber when stale, muted when the date is unknown). */
+@Composable
+private fun Fresh(f: CardFresh) {
+    val c = when (f.state) { "fresh" -> Good; "stale" -> Warn; else -> Mute }
+    Row(Modifier.heightIn(min = 28.dp).clip(RoundedCornerShape(999.dp)).background(Color(0x851F232B)).border(1.dp, LineC, RoundedCornerShape(999.dp))
+        .semantics { contentDescription = f.title.ifBlank { f.text } }.padding(horizontal = 10.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(7.dp).clip(CircleShape).background(c))
+        Text(f.text, style = sans(12f, 700, c, lh = 1.45f), maxLines = 1, softWrap = false)
+    }
+}
+
+/** .history-status: muted words behind a 2 gold rule. */
+@Composable
+private fun Status(text: String, modifier: Modifier = Modifier) {
+    Text(text, style = sans(12f, 400, Mute, lh = 1.5f), modifier = modifier.fillMaxWidth().drawBehind { drawRect(GoldC, size = Size(2.dp.toPx(), size.height)) }.padding(start = 10.dp))
+}
+
+/** .price-hero: the market price, the printing it is for, and how fresh it is; the freshness sits beside it from 421 wide, under it below. */
+@Composable
+private fun PriceHero(h: CardPriceHero, two: Boolean) {
+    Column(Modifier.fillMaxWidth().sitePanel(18.dp).padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(h.eyebrow.uppercase(), style = Eyebrow)
+                Text(h.value, style = sans(32f, 800, Ink, lh = 1.15f, ls = -.64f).copy(fontFeatureSettings = Tnum))
+                if (h.id.isNotBlank()) Text(h.id, style = sans(13f, 400, Mute, lh = 1.4f))
+                if (h.rarity.isNotBlank()) Text(h.rarity, style = sans(12f, 700, GoldC, lh = 1.45f))
+            }
+            if (two) h.fresh?.let { Fresh(it) }
+        }
+        if (!two) h.fresh?.let { Fresh(it) }
+        h.notes.forEach { Status(it, Modifier.padding(top = 4.dp)) }
+    }
+}
+
+/** .price-copy: your saved copy at its condition, or your private value. */
+@Composable
+private fun PriceCopy(c: CardPriceCopy) {
+    Column(Modifier.fillMaxWidth().sitePanel(18.dp).padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) { Text(c.label, style = sans(12f, 400, Mute)); Text(c.title, style = sans(14f, 700, Ink)) }
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(c.value, style = sans(18f, 700, Ink).copy(fontFeatureSettings = Tnum)); if (c.note.isNotBlank()) Text(c.note, style = sans(12f, 400, Mute), textAlign = TextAlign.End)
+            }
+        }
+        if (c.foot.isNotBlank()) Text(c.foot, style = sans(12f, 400, Foot, lh = 1.45f), modifier = Modifier.padding(top = 2.dp))
+    }
+}
+
+/** .quote-warning: when the sources differ tenfold, a gold-edged note that opens to say why. */
+@Composable
+private fun QuoteWarning(w: Pair<String, String>) {
+    var open by remember { mutableStateOf(CardSheetTest.open) }
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0x0CD6B35B)).border(1.dp, Color(0x66D6B35B), RoundedCornerShape(12.dp)).padding(horizontal = 14.dp)) {
+        Summary(w.first, open, sans(12f, 400, Color(0xFFE6C780), lh = 1.5f)) { open = !open }
+        if (open) Text(w.second, style = sans(12f, 400, Foot, lh = 1.45f), modifier = Modifier.padding(bottom = 12.dp))
+    }
+}
+
+/** workbench-ui.js historyPanel: the series for the quote shown, its range buttons, the chart (or its one point), and what it covers. */
+@Composable
+private fun History(h: CardHistory, act: CollectionCardActions, vw: Dp, vh: Dp, go: (CardPress) -> Unit) {
+    val shape = RoundedCornerShape(18.dp)
+    // padding: clamp(12px, 2.5vw, 22px); the panel's 160° wash of 5 % gold into the surface.
+    val pad = (vw * .025f).coerceIn(12.dp, 22.dp)
+    val ready = h.state == "ready" || h.state == "range-empty"
+    val margins: (String) -> Pair<Dp, Dp> = { k -> when (k) {
+        "identity" -> 10.dp to 14.dp; "status" -> 6.dp to 6.dp; "ranges" -> 14.dp to 14.dp; "chart" -> 12.dp to 6.dp; "single" -> 10.dp to 4.dp
+        "coverage" -> 12.dp to 0.dp; "footStatus", "attribution" -> 10.dp to 6.dp; "about" -> 10.dp to 0.dp; else -> 0.dp to 0.dp } }
+    Column(Modifier.fillMaxWidth().clip(shape).drawBehind { cssLinear(160f, 0f to Color(0xFF212223), 1f to Surface) }.border(1.dp, LineC, shape).padding(pad)) {
+        var prev = 0.dp
+        h.blocks.forEachIndexed { i, b ->
+            val (top, bottom) = margins(b.kind)
+            Spacer(Modifier.height(if (i == 0) top else maxOf(prev, top))); prev = bottom
+            when (b.kind) {
+                "head" -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+                    Text(b.title, style = manrope(16f, 700, Ink, lh = 1.4f, ls = -.32f), modifier = Modifier.weight(1f))
+                    Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        if (b.value.isNotBlank()) Text(b.value, style = sans(20f, 700, Ink).copy(fontFeatureSettings = Tnum))
+                        Text(b.label, style = sans(11f, 400, Mute), textAlign = TextAlign.End)
+                    }
+                }
+                "title" -> Text(b.text, style = manrope(16f, 700, Ink, lh = 1.4f, ls = -.32f))
+                "identity" -> Text(b.text, style = sans(11f, 400, Mute, lh = 1.6f))
+                "status" -> Status(b.text)
+                "footStatus" -> Status(b.text)
+                "source" -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(b.label, style = sans(12.5f, 600, Mute))
+                    SiteSelect(b.options, 12.5f, b.options.indexOfFirst { it.on }.coerceAtLeast(0)) { j -> act.historySource(b.key, b.options[j].value) }
+                }
+                "ranges" -> Row(Modifier.fillMaxWidth().glassField(999.dp).padding(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    b.ranges.forEach { r -> Box(Modifier.weight(1f).heightIn(min = 44.dp).then(if (r.on) Modifier.goldGlide() else Modifier).clip(RoundedCornerShape(999.dp))
+                        .clickable { if (!r.on) act.range(r.range) }.semantics { contentDescription = r.label }.padding(horizontal = 5.dp, vertical = 8.dp), contentAlignment = Alignment.Center) {
+                        Text(r.label, style = sans(12f, 650, if (r.on) BtnInk else Mute, ls = -.12f), maxLines = 1)
+                    } }
+                }
+                "range" -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(b.text, style = sans(13f, 400, Mute), modifier = Modifier.weight(1f))
+                    if (b.value.isNotBlank()) Text(b.value, style = sans(13f, 700, if (b.tone == "ok") Good else Bad))
+                }
+                "chart" -> PriceChart(b, if (vw > vh && vh <= 540.dp) 180.dp else 260.dp)
+                "dates" -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { b.items.forEach { Text(it, style = sans(13f, 400, Mute)) } }
+                "single" -> Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Ink.copy(alpha = .05f)).semantics { contentDescription = b.text }
+                    .padding(horizontal = 14.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    // .history-start-dot: 10 across in the accent with a 4 ring of it at 22 %.
+                    Box(Modifier.size(10.dp).drawBehind { drawCircle(GoldC.copy(alpha = .22f), size.minDimension / 2 + 4.dp.toPx()); drawCircle(GoldC) })
+                    Text(buildAnnotatedString { b.runs.forEach { r -> withStyle(SpanStyle(color = if (r.bold) Ink else Mute, fontWeight = if (r.bold) FontWeight.Bold else null)) { append(r.t.orEmpty()) } } },
+                        style = sans(14f, 400, Mute))
+                }
+                "empty" -> Box(Modifier.fillMaxWidth().heightIn(min = if (ready) 140.dp else 80.dp), contentAlignment = Alignment.Center) {
+                    Text(b.text, style = sans(13f, 400, Mute, lh = 1.6f), textAlign = TextAlign.Center)
+                }
+                "button" -> b.press?.let { x -> Ghost(x.label, x.icon, h = 34.dp, pad = 12.dp, fs = 13.5f) { go(x) } }
+                "coverage" -> Text(b.text, style = sans(11f, 400, Foot, lh = 1.6f))
+                "attribution" -> Text(b.text, style = sans(12f, 400, GoldC, lh = 1.45f), modifier = Modifier.clickable { go(CardPress(b.text, null, "", emptyMap(), b.href, "", "", false, false, true, false, false)) })
+                "about" -> About(b)
+                "text" -> Text(b.text, style = sans(13f, 400, Mute, lh = 1.6f))
+            }
+        }
+    }
+}
+
+/** .glide on a segmented control: the gold plate, its 1 gold ring, its soft glow and the light along its top. */
+private fun Modifier.goldGlide(): Modifier = this.drawBehind {
+    val r = CornerRadius(size.height / 2)
+    drawIntoCanvas { c ->
+        val glow = androidx.compose.ui.graphics.Paint().asFrameworkPaint().apply { isAntiAlias = true }
+        // 0 0 22 gold .22, then 0 6 18 -6 gold .7 (blur radius is twice the mask's sigma).
+        glow.color = Color(0x38E8B95B).toArgb(); glow.maskFilter = android.graphics.BlurMaskFilter(11.dp.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL)
+        c.nativeCanvas.drawRoundRect(0f, 0f, size.width, size.height, r.x, r.y, glow)
+        val s = 6.dp.toPx()
+        glow.color = Color(0xB3E8B95B).toArgb(); glow.maskFilter = android.graphics.BlurMaskFilter(9.dp.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL)
+        c.nativeCanvas.drawRoundRect(s, s + s, size.width - s, size.height, r.x, r.y, glow)
+    }
+    drawRoundRect(Color(0xA6E8B95B), topLeft = Offset(-1.dp.toPx(), -1.dp.toPx()), size = Size(size.width + 2.dp.toPx(), size.height + 2.dp.toPx()), cornerRadius = CornerRadius(r.x + 1.dp.toPx()))
+    cssLinear(180f, 0f to Color(0xFFEDC87F), .58f to GoldC, 1f to Color(0xFFC79F4E), corner = r)
+    drawRoundRect(Color(0x70FFFFFF), topLeft = Offset(size.height / 2, 0f), size = Size(size.width - size.height, 1.dp.toPx()))
+}
+
+/**
+ * The history chart: the site's own 360 × 154 drawing (12-348 across, 26-136 down), a gold line 2.5 wide over a gold wash
+ * at 8 %, a dot at each point up to 60 of them. It is as tall as its width keeps it (120 to [maxH]); the drawing keeps its shape, centred.
+ */
+@Composable
+private fun PriceChart(b: CardHistBlock, maxH: Dp) = BoxWithConstraints(Modifier.fillMaxWidth()) {
+    val h = (maxWidth * (154f / 360f)).coerceIn(120.dp, maxH)
+    androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(h).semantics { contentDescription = b.text }) {
+        if (b.points.isEmpty()) return@Canvas
+        val s = minOf(size.width / 360f, size.height / 154f); val ox = (size.width - 360f * s) / 2; val oy = (size.height - 154f * s) / 2
+        fun at(p: Pair<Float, Float>) = Offset(ox + p.first * s, oy + p.second * s)
+        val line = androidx.compose.ui.graphics.Path().apply { b.points.forEachIndexed { i, p -> val o = at(p); if (i == 0) moveTo(o.x, o.y) else lineTo(o.x, o.y) } }
+        val area = androidx.compose.ui.graphics.Path().apply { addPath(line); lineTo(at(b.points.last()).x, oy + 150f * s); lineTo(at(b.points.first()).x, oy + 150f * s); close() }
+        drawPath(area, GoldC.copy(alpha = .08f))
+        drawPath(line, GoldC, style = androidx.compose.ui.graphics.drawscope.Stroke(2.5f * s, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+        if (b.dots) b.points.forEach { drawCircle(GoldC, 2.5f * s, at(it)) }
+    }
+}
+
+/** .history-about: what the prices are and where they come from; a day can be looked up in it. */
+@Composable
+private fun About(b: CardHistBlock) {
+    var open by remember { mutableStateOf(CardSheetTest.open) }
+    var day by remember(b.options) { mutableStateOf(0) }
+    Column(Modifier.fillMaxWidth().topLine()) {
+        Summary(b.text, open, sans(12f, 400, Ink, lh = 1.5f)) { open = !open }
+        if (open) {
+            // .history-values (10 over, a hairline), the inspector 12 in; each foot 10 over and 6 under, margins collapsing.
+            val inspect = b.inspect != null && b.options.isNotEmpty()
+            if (inspect) Column(Modifier.padding(top = 10.dp).fillMaxWidth().topLine().padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(b.inspect.orEmpty(), style = sans(12f, 600, Mute))
+                SiteSelect(b.options, 12f, day) { day = it }
+            }
+            var prev = if (inspect) 12.dp else 0.dp
+            b.foots.forEach { f -> Spacer(Modifier.height(maxOf(prev, 10.dp))); Text(f, style = sans(12f, 400, Foot, lh = 1.45f)); prev = 6.dp }
+            Spacer(Modifier.height(prev))
+        }
+    }
+}
+
+/** pricing-presentation.js sellerRows: each store's reference price and its link; one framed list. */
+@Composable
+private fun Sellers(s: CardSellers, vw: Dp, open: (String) -> Unit) {
+    // Under 381: 12 in, 10 apart, 1fr .85fr, the price at 15. From 680: 18 20 in, 1.5fr 1fr. Between: 16 in, 16 apart, 1fr .8fr.
+    val narrow = vw <= 380.dp; val wide = vw >= 680.dp
+    val (w1, w2) = when { wide -> 1.5f to 1f; narrow -> 1f to .85f; else -> 1f to .8f }
+    Column(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+            Text(s.title, style = manrope(16f, 700, Ink, lh = 1.4f, ls = -.32f), modifier = Modifier.weight(1f))
+            if (s.sub.isNotBlank()) Text(s.sub, style = sans(13f, 400, Mute))
+        }
+        if (s.foot.isNotBlank()) Text(s.foot, style = sans(11f, 400, Foot, lh = 1.6f), modifier = Modifier.padding(top = 7.dp, bottom = 14.dp))
+        val shape = RoundedCornerShape(16.dp)
+        Column(Modifier.fillMaxWidth().clip(shape).background(Surface).border(1.dp, LineC, shape).padding(1.dp)) {
+            s.rows.forEachIndexed { i, r ->
+                Row(Modifier.fillMaxWidth().heightIn(min = 76.dp).clickable { open(r.href) }.semantics { contentDescription = r.aria }
+                    .then(if (i < s.rows.lastIndex) Modifier.drawBehind { drawRect(LineC, Offset(0f, size.height - 1.dp.toPx()), Size(size.width, 1.dp.toPx())) }.padding(bottom = 1.dp) else Modifier)
+                    .padding(horizontal = if (wide) 20.dp else if (narrow) 12.dp else 16.dp, vertical = if (wide) 18.dp else if (narrow) 12.dp else 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(if (narrow) 10.dp else 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(w1), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text(r.name, style = sans(14f, 700, Ink, lh = 1.4f))
+                        if (r.scope.isNotBlank()) Text(r.scope, style = sans(11f, 400, Mute, lh = 1.5f))
+                        if (r.provenance.isNotBlank()) Text(r.provenance, style = sans(11f, 400, Mute, lh = 1.5f))
+                    }
+                    Column(Modifier.weight(w2), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text(r.value, style = sans(if (narrow) 15f else 17f, 700, Ink, lh = 1.3f).copy(fontFeatureSettings = Tnum), textAlign = TextAlign.End)
+                        if (r.unit.isNotBlank()) Text(r.unit, style = sans(11f, 400, Mute, lh = 1.5f), textAlign = TextAlign.End)
+                        Text(r.action, style = sans(11f, 400, GoldC, lh = 1.5f), textAlign = TextAlign.End)
+                    }
+                }
+            }
+            if (s.rows.isEmpty() && s.empty.isNotBlank()) Text(s.empty, style = sans(13f, 400, Mute), modifier = Modifier.padding(16.dp))
+        }
+    }
+}
+
+/** views.js Market details: the source chips, this printing's price in each finish, and the cheapest and dearest printings. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun MarketDetails(d: CardMarket, act: CollectionCardActions, go: (CardPress) -> Unit) {
+    var open by remember { mutableStateOf(CardSheetTest.open) }
+    Column(Modifier.fillMaxWidth().topLine().padding(top = 13.dp)) {
+        Summary(d.summary, open, sans(12f, 600, Ink, lh = 1.5f)) { open = !open }
+        if (!open) return@Column
+        FlowRow(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            d.sources.forEach { x ->
+                val shape = RoundedCornerShape(999.dp)
+                Box(Modifier.clip(shape).then(if (x.on) Modifier.background(GoldC).border(1.dp, GoldC, shape) else Modifier.background(Color(0x851F232A)).border(1.dp, Edge, shape))
+                    .clickable { if (!x.on) go(x) }.padding(horizontal = 12.dp, vertical = 7.dp)) {
+                    Text(x.label, style = sans(13f, 700, if (x.on) BtnInk else Ink), maxLines = 1, softWrap = false)
+                }
+            }
+        }
+        if (d.cols.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            val shape = RoundedCornerShape(14.dp)
+            Column(Modifier.fillMaxWidth().clip(shape).border(1.dp, LineC, shape).padding(1.dp)) {
+                // grid-template-columns: 1.6fr repeat(n, 1fr), 6 apart, 10 12 in.
+                Row(Modifier.fillMaxWidth().background(Surface2).padding(horizontal = 12.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Spacer(Modifier.weight(1.6f))
+                    d.cols.forEach { (f, l) -> Text(l, style = sans(12.5f, 700, if (f == "foil") Color(0xFFFF9F68) else Ink), textAlign = TextAlign.End, maxLines = 1, modifier = Modifier.weight(1f)) }
+                }
+                d.rows.forEach { r ->
+                    Row(Modifier.fillMaxWidth().topLine().padding(horizontal = 12.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(buildAnnotatedString { append(r.label); if (r.sub.isNotBlank()) { append(" "); withStyle(SpanStyle(fontSize = 11.67.sp, color = Mute)) { append(r.sub) } } },
+                            style = sans(14f, 400, Ink), overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1.6f))
+                        r.cells.forEach { c -> Text(c, style = sans(14f, 400, Ink).copy(fontFeatureSettings = Tnum), textAlign = TextAlign.End, maxLines = 1, modifier = Modifier.weight(1f)) }
+                    }
+                }
+            }
+        }
+        var prev = if (d.cols.isNotEmpty()) 8.dp else 12.dp
+        d.lines.forEach { (foot, runs) ->
+            val top = if (foot) 10.dp else 6.dp
+            Spacer(Modifier.height(maxOf(prev, top)))
+            Inline(runs, if (foot) sans(12f, 400, Foot, lh = 1.45f) else sans(13f, 400, Ink), go)
+            prev = 6.dp
+        }
+        Spacer(Modifier.height(prev))
+    }
 }

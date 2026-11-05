@@ -215,6 +215,17 @@ class CollectionEngineTest {
         assertEquals("overview", CollectionEngine.cardDo("tab", "overview")["tab"].asString)
         val foil = CollectionEngine.cardDo("finish", "foil")["overview"].asJsonObject["card"].asJsonObject
         println("FINISH ${foil["finish"]} chips=${foil["finishes"]}")
+        // Prices: the hero, the history's range buttons and Market details' source chips, as workbench-ui.js and app.js set them.
+        val pr = CollectionEngine.cardDo("tab", "prices")
+        assertEquals("prices", pr["tab"].asString)
+        println("PRICES ${pr["prices"]}".take(1500))
+        assertTrue(pr["prices"].asJsonObject["hero"].asJsonObject["value"].asString.isNotBlank())
+        fun onRange(j: JsonObject) = j["prices"].asJsonObject["history"].asJsonObject["blocks"].asJsonArray.map { it.asJsonObject }.first { it["kind"].asString == "ranges" }["items"]
+            .asJsonArray.map { it.asJsonObject }.first { it["on"].asBoolean }["range"].asString
+        assertEquals("365", onRange(pr))
+        assertEquals("90", onRange(CollectionEngine.cardDo("range", "90")))
+        val src = CollectionEngine.cardDo("source", "cardmarket")["prices"].asJsonObject["details"].asJsonObject["sources"].asJsonArray.map { it.asJsonObject }.first { it.has("on") }
+        assertEquals("cardmarket", src["data"].asJsonObject["src"].asString)
         assertEquals(m, CollectionEngine.card("mtg", JsonObject().apply { addProperty("name", "Lightning Bolt"); addProperty("deck", "d2") }).let { m })
         assertEquals("Lightning Bolt", CollectionEngine.cardModel()["name"].asString)
     }

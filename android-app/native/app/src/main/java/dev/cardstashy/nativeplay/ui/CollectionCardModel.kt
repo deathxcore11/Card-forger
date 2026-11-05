@@ -49,9 +49,29 @@ class CardOverview(val image: String, val sources: List<String>, val tier: Strin
                    val factLabel: String, val fact: String, val researchLabel: String, val research: List<CardPress>, val ownedAria: String, val owned: List<CardOwnedGroup>,
                    val main: List<CardPress>, val more: List<CardPress>)
 
+// Prices (workbench-ui.js priceOverview, historyPanel; pricing-presentation.js sellerRows; views.js Market details).
+class CardOpt(val value: String, val label: String, val on: Boolean)
+/** A line's pieces: words (bold, a tone: ok / warn / bad) or a control. */
+class CardInline(val t: String?, val bold: Boolean, val tone: String, val press: CardPress?)
+class CardFresh(val text: String, val state: String, val title: String)
+class CardPriceHero(val eyebrow: String, val value: String, val id: String, val rarity: String, val fresh: CardFresh?, val notes: List<String>)
+class CardPriceCopy(val label: String, val title: String, val value: String, val note: String, val foot: String, val private: Boolean)
+class CardRange(val range: String, val label: String, val on: Boolean)
+/** One piece of the price history panel, in the order historyPanel draws them (kind = the markup it came from). */
+class CardHistBlock(val kind: String, val text: String = "", val title: String = "", val value: String = "", val label: String = "", val key: String = "",
+                    val options: List<CardOpt> = emptyList(), val ranges: List<CardRange> = emptyList(), val tone: String = "", val points: List<Pair<Float, Float>> = emptyList(),
+                    val dots: Boolean = false, val items: List<String> = emptyList(), val runs: List<CardInline> = emptyList(), val press: CardPress? = null, val href: String = "",
+                    val inspect: String? = null, val foots: List<String> = emptyList())
+class CardHistory(val state: String, val source: String, val blocks: List<CardHistBlock>)
+class CardSeller(val name: String, val scope: String, val provenance: String, val value: String, val unit: String, val action: String, val href: String, val aria: String)
+class CardSellers(val title: String, val sub: String, val foot: String, val rows: List<CardSeller>, val empty: String)
+class CardPriceRow(val label: String, val sub: String, val cells: List<String>)
+class CardMarket(val summary: String, val sources: List<CardPress>, val cols: List<Pair<String, String>>, val rows: List<CardPriceRow>, val lines: List<Pair<Boolean, List<CardInline>>>)
+class CardPrices(val hero: CardPriceHero?, val copies: List<CardPriceCopy>, val warning: Pair<String, String>?, val history: CardHistory?, val sellers: CardSellers?, val details: CardMarket?)
+
 class CollectionCardModel(val name: String, val deck: String, val entry: String, val tab: String, val notice: String?, val loading: Boolean, val head: CardHead?, val tabs: List<CollTab>,
                           val emblems: List<CardEmblem>, val set: CardSetSummary?, val price: CardPrice?, val overview: CardOverview?, val meta: List<List<CardBlock>>, val metaFoot: String,
-                          val guide: List<CardSection>, val shown: JsonObject?, val busy: Boolean, val glyphs: Map<String, SiteSvg>) {
+                          val guide: List<CardSection>, val shown: JsonObject?, val busy: Boolean, val glyphs: Map<String, SiteSvg>, val prices: CardPrices? = null) {
     companion object {
         private fun JsonObject.s(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asString ?: ""
         private fun JsonObject.b(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asBoolean ?: false
@@ -81,6 +101,31 @@ class CollectionCardModel(val name: String, val deck: String, val entry: String,
                 items = (b.objs("items").takeIf { kind != "buttons" } ?: emptyList()).map(::item) + b.objs("rows").map(::item),
                 buttons = if (kind == "buttons") presses(b.objs("items")) else emptyList(), muted = b.b("muted"), small = b.b("small"), lead = b.b("lead"), head = b.s("head"),
                 note = b.s("note"), blocks = blocks(b.objs("blocks")), cls = b.s("cls"))
+        }
+
+        private fun opts(a: List<JsonObject>) = a.map { CardOpt(it.s("value"), it.s("label"), it.b("on")) }
+        private fun inline(a: List<JsonObject>) = a.map { r -> CardInline(r.get("t")?.takeIf { it.isJsonPrimitive }?.asString, r.b("b"), r.s("tone"), press(r.o("press"))) }
+        private fun histBlock(b: JsonObject): CardHistBlock {
+            val about = b.o("inspect")
+            // 'range' keeps its change (−7.9 %) in value; 'about' its inspector's label in inspect and its days in options.
+            return CardHistBlock(b.s("kind"), b.s("text").ifBlank { b.s("summary") }, b.s("title"), b.s("value").ifBlank { b.o("change")?.s("text").orEmpty() }, b.s("label"), b.s("key"),
+                opts(b.objs("options").ifEmpty { about?.objs("options").orEmpty() }), b.objs("items").takeIf { b.s("kind") == "ranges" }.orEmpty().map { CardRange(it.s("range"), it.s("label"), it.b("on")) },
+                b.o("change")?.s("tone").orEmpty(), b.arr("points")?.mapNotNull { p -> p.takeIf { it.isJsonArray }?.asJsonArray?.let { it[0].asFloat to it[1].asFloat } }.orEmpty(),
+                b.b("dots"), b.arr("items")?.takeIf { b.s("kind") == "dates" }?.map { it.asString }.orEmpty(), inline(b.objs("runs")), press(b.o("press")), b.s("href"),
+                about?.s("label"), b.arr("foots")?.map { it.asString }.orEmpty())
+        }
+        fun prices(p: JsonObject?): CardPrices? = p?.let { j ->
+            val hero = j.o("hero"); val h = j.o("history"); val sl = j.o("sellers"); val d = j.o("details"); val t = d?.o("table")
+            CardPrices(hero?.let { x -> CardPriceHero(x.s("eyebrow"), x.s("value"), x.s("id"), x.s("rarity"), x.o("fresh")?.let { CardFresh(it.s("text"), it.s("state"), it.s("title")) },
+                    x.arr("notes")?.map { it.asString }.orEmpty()) },
+                j.objs("copies").map { CardPriceCopy(it.s("label"), it.s("title"), it.s("value"), it.s("note"), it.s("foot"), it.b("private")) },
+                j.o("warning")?.let { it.s("summary") to it.s("text") },
+                h?.let { CardHistory(it.s("state"), it.s("source"), it.objs("blocks").map(::histBlock)) },
+                sl?.let { s -> CardSellers(s.s("title"), s.s("sub"), s.s("foot"), s.objs("rows").map { CardSeller(it.s("name"), it.s("scope"), it.s("provenance"), it.s("value"), it.s("unit"),
+                    it.s("action"), it.s("href"), it.s("aria")) }, s.s("empty")) },
+                d?.let { m -> CardMarket(m.s("summary"), presses(m.objs("sources")), t?.objs("cols").orEmpty().map { it.s("finish") to it.s("label") },
+                    t?.objs("rows").orEmpty().map { r -> CardPriceRow(r.s("label"), r.s("sub"), r.arr("cells")?.map { it.asString }.orEmpty()) },
+                    m.objs("lines").map { it.b("foot") to inline(it.objs("runs")) }) })
         }
 
         fun parse(j: JsonObject): CollectionCardModel {
@@ -126,7 +171,8 @@ class CollectionCardModel(val name: String, val deck: String, val entry: String,
                 j.o("meta")?.s("foot").orEmpty(),
                 j.o("guide")?.objs("sections").orEmpty().map { s -> CardSection(s.s("cls"), s.b("panel"), s.b("hero"), blocks(s.objs("blocks"))) },
                 j.o("shown"), j.b("busy"),
-                j.o("glyphs")?.entrySet()?.mapNotNull { (k, v) -> v.takeIf { it.isJsonObject }?.let { k to svg(it.asJsonObject)!! } }?.toMap().orEmpty())
+                j.o("glyphs")?.entrySet()?.mapNotNull { (k, v) -> v.takeIf { it.isJsonObject }?.let { k to svg(it.asJsonObject)!! } }?.toMap().orEmpty(),
+                prices(j.o("prices")))
         }
     }
 }

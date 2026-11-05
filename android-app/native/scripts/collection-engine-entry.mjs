@@ -23,8 +23,9 @@ import {collection as collectionPage, decks as decksView, deckPage as deckView, 
 import {loadMagicPrintingPage, mergeMagicCards} from 'WEB/catalog-tools.js';
 import {magicOwnedDetail, magicOwnedContext, magicOwnedCurrent} from 'WEB/magic-owned-detail.js';
 import {selectPreviewFinish} from 'WEB/finish-preview.js';
-import {selectedFinish} from 'WEB/pricing-presentation.js';
-import {quoteModel, recordQuote} from 'WEB/workbench-ui.js';
+import {selectedFinish, quoteForContext} from 'WEB/pricing-presentation.js';
+import {quoteModel, recordQuote, HISTORY_RANGES} from 'WEB/workbench-ui.js';
+import {loadSharedHistory} from 'WEB/shared-history.js';
 import {playedAlongside} from 'WEB/guide.js';
 import {mtgPairQueries, rankPairs, edhPop} from 'WEB/pairing.js';
 import {ICON} from 'WEB/icons.js';
@@ -525,6 +526,9 @@ async function cardTabLoads(ctx) {
       finally { ctx.rulingsBusy = false; }
     }
   }
+  // workbench-ui.js historyPanel asks shared-history.js requestHistory for the shown quote's series as it draws; that only
+  // loads where there is a window, so the app starts the same load here (it keeps its own dedupe and cache times).
+  if (ctx.tab === 'prices') { const c = ctx.print || meta(ctx.name); if (c) await loadSharedHistory(quoteForContext('mtg', c, ctx)).catch(() => {}); }
 }
 // app.js loadSetIndex (617-656): the official set list (names, sizes, symbols), cached for a day; the site loads it on its
 // Collection and Sets pages, so a card opened from there names its set and counts the set's cards.
@@ -572,6 +576,9 @@ const cardAct = {
     ctx.setVariant = ctx.priceFinish; ctx.face = 0;
   },
   source: v => { sheet.source = v; },
+  // workbench-ui.js A.marketRange and C.marketSource ([v] = {key, source}, the select's data-key and value).
+  range: v => { if (HISTORY_RANGES.some(([r]) => r === v)) sheet.priceRange = v; },
+  historySource: v => { const {key, source} = JSON.parse(v); (S.ui.historySource ||= {})[key] = source; },
   more: () => { const ctx = sheet; const c = ctx.print || meta(ctx.name); if (ctx.printsNext) magicVersions(ctx, true); else if (!c?.full) cardExtras(ctx); else magicVersions(ctx); },
 };
 
@@ -617,6 +624,69 @@ function blocks(sec) {
     else if (k.tag === 'section' || k.tag === 'div') out.push({kind: 'group', cls: k.attrs.class || '', blocks: blocks(k)});
   }
   return out;
+}
+// Prices: workbench-ui.js priceOverview (the hero, your copy, a quote warning, historyPanel, pricing-presentation.js sellerRows)
+// and views.js's Market details, each read as the site draws it.
+const toneOf = n => ['ok', 'warn', 'bad'].find(t => cls(t + '-text')(n)) || '';
+// A line with its bold parts, tones and buttons in order: {t, b, tone} words, {press} a control.
+const inlineRuns = n => { const out = []; const walk = (x, b, tone) => { for (const k of x.kids || []) {
+  if (k.text !== undefined) { const t = k.text.replace(/\s+/g, ' '); if (t) out.push({t, b, tone}); }
+  else if (k.tag === 'button' || k.tag === 'a') out.push({press: press(k)});
+  else if (k.tag !== 'svg') walk(k, b || k.tag === 'b' || k.tag === 'strong', toneOf(k) || tone); } };
+  walk(n || {kids: []}, false, '');
+  if (out[0]?.t !== undefined) out[0].t = out[0].t.replace(/^\s+/, ''); const z = out[out.length - 1]; if (z?.t !== undefined) z.t = z.t.replace(/\s+$/, '');
+  return out.filter(r => r.t === undefined || r.t); };
+const optionsOf = sel => all(sel, tagIs('option')).map(o => ({value: o.attrs.value ?? text(o), label: text(o), on: o.attrs.selected !== undefined}));
+const pathPoints = d => { const n = (d || '').match(/-?\d+(?:\.\d+)?/g) || []; const out = []; for (let i = 0; i + 1 < n.length; i += 2) out.push([Number(n[i]), Number(n[i + 1])]); return out; };
+function pricesModel(p) {
+  const hero = one(p, cls('price-hero')), fresh = one(hero, cls('price-fresh'));
+  const copy = c => { const l = one(c, cls('price-copy-label')), v = one(c, cls('price-copy-value'));
+    return {label: text(one(l, tagIs('small'))), title: text(one(l, tagIs('b'))), value: text(one(v, tagIs('b'))), note: text(one(v, tagIs('small'))), foot: text(one(c, cls('foot'))), private: cls('price-private')(c)}; };
+  const warn = one(p, cls('quote-warning'));
+  // historyPanel, piece by piece in the order it draws them.
+  const h = one(p, x => x.attrs.id === 'card-history'), history = h ? {state: h.attrs['data-history-state'] || '', source: h.attrs['data-history-source-state'] || '', blocks: []} : null;
+  for (const k of h?.kids || []) {
+    if (!k.tag) continue;
+    const b = history.blocks;
+    if (k.tag === 'h3') b.push({kind: 'title', text: text(k)});
+    else if (cls('market-section-head')(k)) { const l = one(k, cls('history-latest')); b.push({kind: 'head', title: text(one(k, tagIs('h3'))), value: text(one(l, tagIs('b'))), label: text(one(l, tagIs('small')))}); }
+    else if (cls('history-identity')(k)) b.push({kind: 'identity', text: text(k)});
+    else if (cls('history-status')(k)) b.push({kind: cls('foot')(k) ? 'footStatus' : 'status', text: text(k)});
+    else if (k.tag === 'label') { const sel = one(k, tagIs('select')); b.push({kind: 'source', label: text({kids: (k.kids || []).filter(x => x !== sel)}), key: sel?.attrs['data-key'] || '', options: optionsOf(sel)}); }
+    else if (cls('history-ranges')(k)) b.push({kind: 'ranges', aria: k.attrs['aria-label'] || '', items: all(k, tagIs('button')).map(x => ({range: x.attrs['data-range'] || '', label: text(x), on: cls('on')(x)}))});
+    else if (k.tag === 'svg') { const line = one(k, x => x.tag === 'path' && x.attrs.fill === 'none'); b.push({kind: 'chart', aria: k.attrs['aria-label'] || '', points: pathPoints(line?.attrs.d), dots: !!one(k, tagIs('circle'))}); }
+    else if (cls('row')(k) && cls('muted')(k)) b.push({kind: 'dates', items: all(k, tagIs('span')).map(text)});
+    else if (cls('row')(k)) { const c = one(k, tagIs('b')); b.push({kind: 'range', text: text(one(k, cls('muted'))), change: c ? {text: text(c), tone: toneOf(c)} : null}); }
+    else if (cls('history-start')(k)) b.push({kind: 'single', aria: k.attrs['aria-label'] || '', runs: inlineRuns(k)});
+    else if (cls('history-empty')(k)) b.push({kind: 'empty', text: text(k)});
+    else if (k.tag === 'button') b.push({kind: 'button', press: press(k)});
+    else if (cls('history-coverage')(k)) b.push({kind: 'coverage', text: text(k)});
+    else if (cls('history-attribution')(k)) { const a = one(k, tagIs('a')); b.push({kind: 'attribution', text: text(a), href: a?.attrs.href || ''}); }
+    else if (k.tag === 'details') { const sel = one(k, tagIs('select')), ins = one(k, cls('history-inspector'));
+      b.push({kind: 'about', summary: text(one(k, tagIs('summary'))), inspect: ins ? {label: text({kids: (ins.kids || []).filter(x => x !== sel)}), options: optionsOf(sel)} : null,
+        foots: (k.kids || []).filter(x => x.tag === 'p').map(text)}); }
+    else if (k.tag === 'p') b.push({kind: 'text', text: text(k)});
+  }
+  const sellers = one(p, cls('market-sellers')), list = one(sellers, cls('vendor-list'));
+  const details = (p.kids || []).find(k => k.tag === 'details' && cls('market-details')(k)), table = one(details, cls('price-table'));
+  return {
+    hero: hero ? {eyebrow: text(one(hero, cls('eyebrow'))), value: text(one(hero, cls('price-hero-value'))), id: text(one(hero, cls('price-hero-id'))), rarity: text(one(hero, cls('printing-rarity-label'))),
+      fresh: fresh ? {text: text(fresh), state: ['fresh', 'stale', 'unknown'].find(c => cls(c)(fresh)) || 'unknown', title: fresh.attrs.title || ''} : null,
+      notes: (hero.kids || []).filter(k => k.tag === 'p').map(text)} : null,
+    copies: all(p, cls('price-copy')).map(copy),
+    warning: warn ? {summary: text(one(warn, tagIs('summary'))), text: text(one(warn, tagIs('p')))} : null,
+    history,
+    sellers: sellers ? {title: text(one(sellers, tagIs('h3'))), sub: text(one(one(sellers, cls('market-section-head')), tagIs('span'))), foot: text((sellers.kids || []).find(k => k.tag === 'p' && cls('foot')(k))),
+      rows: all(list, cls('vendor-row')).map(a => { const c = one(a, cls('vendor-copy')), q = one(a, cls('vendor-quote'));
+        return {name: text(one(c, tagIs('b'))), scope: text(one(c, x => x.tag === 'small' && !cls('vendor-provenance')(x))), provenance: text(one(c, cls('vendor-provenance'))),
+          value: text(one(q, tagIs('strong'))), unit: text(one(q, tagIs('small'))), action: text(one(q, cls('vendor-action'))), href: a.attrs.href || '', aria: a.attrs['aria-label'] || ''}; }),
+      empty: text(one(list, tagIs('p')))} : null,
+    details: details ? {summary: text(one(details, tagIs('summary'))), sources: all(one(details, cls('src-row')), tagIs('button')).map(press),
+      table: table ? {cols: all(one(table, cls('pt-head')), tagIs('b')).map(x => ({finish: x.attrs.class || '', label: text(x)})),
+        rows: all(table, cls('pt-row')).map(r => { const l = one(r, cls('pt-label')), sm = one(l, tagIs('small'));
+          return {label: text({kids: (l?.kids || []).filter(x => x !== sm)}), sub: text(sm), cells: (r.kids || []).filter(x => x.tag === 'span' && x !== l).map(text)}; })} : null,
+      lines: (details.kids || []).filter(k => k.tag === 'p').map(k => ({foot: cls('foot')(k), runs: inlineRuns(k)}))} : null,
+  };
 }
 function cardPageModel(ctx) {
   if (!ctx) return {missing: true};
@@ -684,9 +754,10 @@ function cardPageModel(ctx) {
       qty: Number(text(one(one(g, cls('owned-copy-details')), tagIs('b')))) || 0, steps: all(one(g, cls('owned-pill')), x => x.tag === 'button' && x.attrs['data-act'] === 'cardOwnedQty').map(press), details: press(one(g, cls('owned-copy-details')))}))} : null,
     main: all(one(ca, cls('ca-main')), x => x.tag === 'button' || x.tag === 'a').map(press), more: all(one(ca, cls('ca-more')), x => x.tag === 'button' || x.tag === 'a').map(press)};
   const panel = id => one(t, x => x.attrs.id === 'card-panel-' + id);
-  const metaP = panel('meta'), guideP = panel('guide'), guide = one(guideP, cls('card-guide'));
+  const metaP = panel('meta'), guideP = panel('guide'), guide = one(guideP, cls('card-guide')), pricesP = panel('prices');
   return {game: 'mtg', name: ctx.name, deck: ctx.deckId || '', entry: ctx.entryId || '', tab, head, tabs, overviewHead, overview,
     meta: metaP ? {sections: all(metaP, cls('meta-use')).map(blocks), foot: text((metaP.kids || []).find(k => k.tag === 'p' && cls('foot')(k)))} : null,
+    prices: pricesP ? pricesModel(pricesP) : null,
     guide: guide ? {sections: (guide.kids || []).filter(k => k.tag).map(k => ({cls: k.attrs.class || '', panel: cls('guide-panel')(k), hero: cls('guide-hero')(k), blocks: k.tag === 'p' ? [{kind: cls('foot')(k) ? 'foot' : 'text', text: text(k), runs: richRuns(k)}] : blocks(k)}))} : null,
     // The card the picture is drawn from (finish-preview.js reads the same record): the app's foil needs its frame and finishes.
     shown: (({prices, legalities, purchase_uris, related_uris, all_parts, prints_search_uri, rulings_uri, ...rest}) => rest)(ctx.print || c),
@@ -747,7 +818,8 @@ globalThis.Collection = {
   cardModel() { return sheet ? json(cardPageModel(sheet)) : '{}'; },
   cardHtml() { const ctx = sheet, c = ctx && (ctx.print || meta(ctx.name)); return c ? cardView(c, ctx) : ''; },
   cardLoad() { const ctx = sheet; if (!ctx) return; (async () => { if (ctx.ownedLoading) await ownedLoad(ctx); if (!ctx.blocked && still(ctx)) { if (!(ctx.print || meta(ctx.name))) await resolveNames([ctx.name], () => {}, false, () => still(ctx)).catch(() => {}); await Promise.all([cardExtras(ctx), cardTabLoads(ctx), loadSetIndex()]); } })(); },
-  cardDo(kind, value) { if (!cardAct[kind] || !sheet) throw Error('unknown card control ' + kind); cardAct[kind](value); return json(cardPageModel(sheet)); },
+  // A.cardTab starts the tab's lookups (the guide's pairings and rulings, the price history); a finish or printing changes the quote.
+  cardDo(kind, value) { if (!cardAct[kind] || !sheet) throw Error('unknown card control ' + kind); cardAct[kind](value); if (['tab', 'finish', 'print'].includes(kind)) cardTabLoads(sheet).catch(() => {}); return json(cardPageModel(sheet)); },
   home(game) {
     const st = S.state, value = collectionValue(st.collection, S.catalog, st.printings, st.decks);
     return json({game, hero: hero(game), value: homeValueModel({ game, ...value, decks: st.decks.length, history: st.valueHistory }),

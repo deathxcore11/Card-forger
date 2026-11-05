@@ -91,6 +91,18 @@ class CollectionCardShotTest {
         if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
     }
 
+    @Test fun prices() {
+        setUp()
+        val page = page("lightning-bolt-prices"); assumeTrue("write the card fixtures first", page != null)
+        shot("collection-card-prices", 390, 844) { page!!() }
+        shot("collection-card-prices-page", 390, 2600) { page!!() }
+        shot("collection-card-prices", 884, 1104) { page!!() }
+        shot("collection-card-prices-page", 884, 2400) { page!!() }
+        dev.cardstashy.nativeplay.ui.CardSheetTest.open = true
+        try { shot("collection-card-prices-open", 390, 3200) { page!!() } } finally { dev.cardstashy.nativeplay.ui.CardSheetTest.open = false }
+        if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
+    }
+
     @Test fun metaAndGuide() {
         setUp()
         for (t in listOf("meta", "guide")) {

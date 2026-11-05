@@ -24,9 +24,9 @@ private fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
 /**
  * views.js cardSheet through the site's own code (Collection.card / cardDo), drawn natively over the page that opened it.
  * The page draws at once from what the catalog has; app.js's lookups (the full card, its printings, the guide's pairings,
- * rulings and the set index) then fill it in as they land. Overview, Meta and the Play guide are drawn here; the Prices
- * tab, rule words and the actions that change the account (own, wishlist, the ±, decks, your price, Compare, Build,
- * Sort & filter, the wiki, the proven lists) open the website's card sheet and press the same control there.
+ * rulings, the price history and the set index) then fill it in as they land. Overview, Meta, the Play guide and Prices are
+ * drawn here; rule words and the actions that change the account (own, wishlist, the ±, decks, your price, Compare, Build,
+ * Sort & filter, the wiki, the proven lists, Compare all printings) open the website's card sheet and press the same control there.
  */
 @Composable
 fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -> Unit, web: (url: String, press: String?) -> Unit) {
@@ -47,7 +47,8 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
         val (kind, value) = asked ?: return@LaunchedEffect
         runCatching {
             model = withContext(Dispatchers.Default) { CollectionCardModel.parse(CollectionEngine.cardDo(kind, value)) }
-            // A printing or "Load more" starts lookups of its own (app.js loadMagicVersions / loadCardExtras).
+            // A printing or "Load more" starts lookups of its own (app.js loadMagicVersions / loadCardExtras); a tab, finish or
+            // printing its tab's (the guide's pairings and rulings, the price history).
             CollectionEngine.settle(20_000, CollectionEngine.CARD_MODEL) { j -> if (j.size() > 0) model = CollectionCardModel.parse(j) }
         }
         asked = null
@@ -67,13 +68,18 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
             p.act == "set" && !d["code"].isNullOrBlank() -> web("https://cardstashy.com/#set/" + android.net.Uri.encode(d.getValue("code").lowercase()), null)
             p.act == "magicVersionsMore" -> asked = "more" to ""
             p.act == "flipFace" -> asked = "face" to ""
-            p.act == "cardTab" && d["tab"] in setOf("overview", "meta", "guide") -> asked = "tab" to d.getValue("tab")
+            p.act == "cardTab" && d["tab"] in setOf("overview", "meta", "guide", "prices") -> asked = "tab" to d.getValue("tab")
+            p.act == "marketRange" && !d["range"].isNullOrBlank() -> asked = "range" to d.getValue("range")
+            p.act == "priceSource" && !d["src"].isNullOrBlank() -> asked = "source" to d.getValue("src")
             p.act.isNotBlank() -> site("[data-act=\"${css(p.act)}\"]" + d.filterKeys { it != "act" }.entries.joinToString("") { (k, v) -> "[data-${k}=\"${css(v)}\"]" })
         }
     }
     val m = model ?: return
     val act = CollectionCardActions(
-        tab = { k -> if (k in setOf("overview", "meta", "guide")) asked = "tab" to k else site("[data-act=\"cardTab\"][data-tab=\"${css(k)}\"]") },
+        tab = { k -> if (k in setOf("overview", "meta", "guide", "prices")) asked = "tab" to k else site("[data-act=\"cardTab\"][data-tab=\"${css(k)}\"]") },
+        range = { r -> asked = "range" to r },
+        source = { src -> asked = "source" to src },
+        historySource = { key, src -> asked = "historySource" to JsonObject().apply { addProperty("key", key); addProperty("source", src) }.toString() },
         finish = { f -> asked = "finish" to f },
         print = { i -> asked = "print" to i.toString() },
         face = { asked = "face" to "" },
