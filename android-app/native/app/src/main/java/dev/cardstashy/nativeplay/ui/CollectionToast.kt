@@ -108,6 +108,8 @@ fun CollectionWritesHost(backdrop: androidx.compose.ui.graphics.layer.GraphicsLa
     if (deciding && pending != null) key(pending) { SyncDecideSheet(backdrop, onClose = { CollectionWrites.deciding.value = false }) }
     val adding by CollectionWrites.adding.collectAsState()
     adding?.let { a -> key(a.id) { AddLotSheet(a, backdrop, onClose = { if (CollectionWrites.adding.value === a) CollectionWrites.adding.value = null }) } }
+    val tAdding by CollectionWrites.tAdding.collectAsState()
+    tAdding?.let { a -> key(a.id) { TcgAddSheet(a, backdrop, onClose = { if (CollectionWrites.tAdding.value === a) CollectionWrites.tAdding.value = null }) } }
     val picking by CollectionWrites.picking.collectAsState()
     picking?.let { pk -> key(pk.id) { DeckPickSheet(pk, backdrop, onBack = { if (CollectionWrites.picking.value === pk) CollectionWrites.picking.value = null }) } }
     val menu by CollectionWrites.menu.collectAsState()

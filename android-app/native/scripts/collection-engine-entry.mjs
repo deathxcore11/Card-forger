@@ -35,7 +35,7 @@ import {mtgPairQueries, rankPairs, edhPop} from 'WEB/pairing.js';
 import {ICON, actionIcon} from 'WEB/icons.js';
 import {contextAction, contextHeader, deckContextShortcuts} from 'WEB/card-actions.js';
 import {deckBoxMarkup, deckBoxFields, boxAppearance} from 'WEB/deck-box.js';
-import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf, SOURCES as tcgSources, cache as tcgCache, ensureCard as tcgEnsureCard, gs as tcgGs, tcgCardSheet, setContextCard as tcgSetContextCard, currentYgoCatalogue as tcgYgoCatalogue, trackTcgValue, collectionValue as tcgCollectionValue, persistQuoteCache as tcgPersistQuoteCache} from 'WEB/tcg.js';
+import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf, SOURCES as tcgSources, cache as tcgCache, ensureCard as tcgEnsureCard, gs as tcgGs, tcgCardSheet, setContextCard as tcgSetContextCard, currentYgoCatalogue as tcgYgoCatalogue, trackTcgValue, collectionValue as tcgCollectionValue, persistQuoteCache as tcgPersistQuoteCache, entryPrice as tcgEntryPrice, referenceEntryPrice as tcgReferenceEntryPrice} from 'WEB/tcg.js';
 import {adjustOwnedLot} from 'WEB/quick-quantity.js';
 import {workspaceSig, isEmptyWorkspace} from 'WEB/cloud.js';
 import {mergeAccountWorkspaces, workspaceContentSig} from 'WEB/sync-merge.js';
@@ -693,9 +693,11 @@ function setOpen(code) {
 // Magic's pages hand them back.
 const TA = {}, TC = {}, TI = {}, tcgCtx = {};
 let tcgOn = false, tcgPrev, setsGame = 'mtg', setGame = 'mtg';
+// tcg.js takes openSheet / closeSheet once (registerTcg), so they forward: the Add to collection sheet listens while it opens and saves.
+let tcgSheetHook = () => {}, tcgCloseHook = () => {};
 function tcgReady() {
   if (tcgOn) return; tcgOn = true;
-  Object.assign(tcgCtx, {A: TA, C: TC, I: TI, commit, render() {}, openSheet() {}, closeSheet() {}, refreshSheet() {}, toast: text => { if (text) toasts.push({text: String(text), undo: false}); }, go() {}, download() {},
+  Object.assign(tcgCtx, {A: TA, C: TC, I: TI, commit, render() {}, openSheet: (html, ctx) => tcgSheetHook(html, ctx), closeSheet: () => tcgCloseHook(), refreshSheet() {}, toast: text => { if (text) toasts.push({text: String(text), undo: false}); }, go() {}, download() {},
     copyText() {}, busy: () => () => {}, rerenderKeepingFocus() {}, writeRecord: async () => {}, navigationStamp: () => null, navigationCurrent: () => true});
   registerTcg(tcgCtx);
 }
@@ -1481,6 +1483,23 @@ const writeActs = {
   // tcg.js A.tEntryQty and A.tWish, the site's own handlers, for a Yu-Gi-Oh! or Pokémon lot (the game's page holds settings.game).
   async tEntryQty(d) { tcgFocus(d.game, S.ui.view || 'collection'); await TA.tEntryQty({dataset: d}); },
   async tWish(d) { tcgFocus(d.game, S.ui.view || 'collection'); await TA.tWish({dataset: d}); },
+  // tcg.js A.tOwnSave, the site's own: it reads its form from the page (#tQty, #tCond…), so the form as the app has it stands in for
+  // those fields while the handler reads them (before its first await); it closes the sheet when saved (made: "closed").
+  async tOwnSave(d) {
+    const ctx = taddCtx;
+    if (!ctx) { toasts.push({text: 'Reopen Add to collection before saving this card.', undo: false}); return; }
+    tcgFocus(ctx.game, S.ui.view || 'collection'); S.ui.sheetCtx = ctx;
+    const f = d.form || {}, vals = {'#tQty': f.qty, '#tPrint': f.print, '#tEdition': f.edition, '#tCond': f.condition, '#tLanguage': f.language, '#tLoc': f.location, '#tLocPicker': f.picker, '#lotManualValue': f.value};
+    let closed = false; tcgCloseHook = () => { closed = true; };
+    const was = globalThis.document;
+    globalThis.document = {querySelector: q => vals[q] == null ? null : {value: String(vals[q])}};
+    let saving;
+    try { saving = TA.tOwnSave({dataset: {id: ctx.id, ...(d.setId ? {setId: d.setId} : {})}}); } finally { if (was === undefined) delete globalThis.document; else globalThis.document = was; }
+    try { await saving; } finally {
+      tcgCloseHook = () => {};
+      if (closed) { if (S.ui.sheetCtx === ctx) S.ui.sheetCtx = taddPrev; if (taddCtx === ctx) { taddCtx = taddPrev = null; priceRun = null; } made = 'closed'; }
+    }
+  },
   // ---- A deck's cards (app.js 6216-6300). The site edits the open deck (scopedEditDeck: currentDeck() when tapped); the app names it
   // in [d].deck, as the deck page or the card page opened from it has it.
   // app.js A.deckQty (6288): the − and ＋ on a deck's card, on the deck page and in the card page's "In <deck>" panel.
@@ -1776,6 +1795,54 @@ function conditionPreview(f, retry, run) {
   }).finally(() => { run.done = true; });
 }
 let priceRun = null, lookupRun = null, setsIndex = null;
+
+/* ---------- A Yu-Gi-Oh! or Pokémon card's Add to collection (tcg.js A.tOwn 2479, tcgAddSheet, A.tOwnSave 2733; app.js refreshConditionPrice) ---------- */
+let taddCtx = null, taddPrev = null;
+// tcg.js tcgAddSheet, read back: the card, each field as the site fills it (in its order), its note, where it lives, the custom value, the button.
+function taddModel(html, ctx) {
+  const t = tree(html), seed = one(t, cls('build-seed')), grid = one(t, cls('grid2')), more = one(t, tagIs('details')), save = one(t, x => x.attrs['data-act'] === 'tOwnSave');
+  const fields = all(grid, tagIs('label')).filter(l => !cls('location-picker')(l) && one(l, x => x.tag === 'select' || x.tag === 'input')).map(l => {
+    const f = one(l, x => x.tag === 'select' || x.tag === 'input'), opts = all(f, tagIs('option'));
+    return {id: f.attrs.id || '', label: text({kids: (l.kids || []).filter(k => k !== f)}), span: cls('span2')(l), kind: f.tag,
+      value: f.tag === 'input' ? f.attrs.value || '' : (opts.find(o => o.attrs.selected !== undefined) || opts[0])?.attrs.value ?? '',
+      options: opts.map(o => [o.attrs.value ?? '', text(o)]), min: f.attrs.min || '', max: f.attrs.max || ''};
+  });
+  const img = one(seed, tagIs('img'));
+  return {ctx: ctx.taddId, game: ctx.game, title: text(one(t, tagIs('h2'))),
+    card: {img: img?.attrs.src ? abs(img.attrs.src) : '', name: text(one(seed, tagIs('b'))), type: text(one(seed, tagIs('small')))},
+    fields, foot: text(one(grid, cls('foot'))), location: locationModel(S.state, ctx.game, null),
+    more: more ? {title: text(one(more, tagIs('summary'))), open: more.attrs.open !== undefined, label: text({kids: (one(more, tagIs('label'))?.kids || []).filter(k => k.tag !== 'input')}),
+      placeholder: one(more, tagIs('input'))?.attrs.placeholder || '', help: text(one(more, cls('foot')))} : null,
+    save: text(save), setId: save?.attrs['data-set-id'] || ''};
+}
+// app.js refreshConditionPrice, its "tadd" side ([f]: the form as it stands): painted at once, then again when the feed answers.
+function taddPreview(f, retry, run) {
+  const ctx = taddCtx; if (!ctx) { run.done = true; return; }
+  const game = ctx.game, raw = f.value ?? '', manualValue = raw === '' ? null : Number(raw);
+  const card = contextTcgCard(game, ctx.id, ctx), pr = f.print || '', [printing, rarity] = game === 'ygo' ? pr.split('|') : ['', ''];
+  let entry = {cardId: card?.id, ...(ctx.setId ? {setReleaseId: ctx.setId} : {}), condition: f.condition, language: f.language || 'en', variant: game === 'ptcg' ? pr : '', printing: printing || '', rarity: rarity || '',
+    edition: f.edition || '', manualValue, manualValueCondition: conditionName(f.condition)};
+  entry = conditionQuoteEntry(card, entry);
+  const exact = !ctx.setId || (card?.setContext?.status === 'resolved' && (game !== 'ygo' || card.setContext.printings.filter(p => p.code === printing && p.rarity === rarity && !p.releasePriceAmbiguous).length === 1
+    && (tcgCardOf(game, ctx.id)?.sets || []).filter(p => p.code === printing && p.rarity === rarity).length === 1));
+  let price = exact ? tcgEntryPrice(card, {...entry, manualValue: null}) : null, sourceCard = null, reference = null, referenceLabel = 'Reference price';
+  if (exact) {
+    sourceCard = card; reference = tcgReferenceEntryPrice(card, entry);
+    if (reference == null && game === 'ygo') { const matches = (card.sets || []).filter(p => p.code === printing && p.rarity === rarity); if (matches.length === 1) { reference = matches[0].price ?? null; referenceLabel = 'Set reference · edition unverified'; } }
+  }
+  const referenceInfo = {reference, referenceLabel, retryAction: sourceCard ? 'retryConditionPrice' : '', buyLink: sourceCard ? conditionBuyLink(game, sourceCard, entry) : null};
+  const paint = (value, quotes, lookup) => { run.blocks = conditionModel(conditionPriceHtml(value, entry, quotes, lookup)); run.placeholder = conditionManualPlaceholder(entry, quotes, lookup); };
+  paint(price, [...(sourceCard?.conditionQuotes || []), ...(entry.conditionQuotes || [])], referenceInfo);
+  if (!sourceCard) { run.done = true; return; }
+  const current = () => taddCtx === ctx && run === priceRun;
+  if (price == null) paint(price, [...(sourceCard.conditionQuotes || []), ...(entry.conditionQuotes || [])], {...referenceInfo, status: 'loading'});
+  Promise.resolve(fetchConditionValue(sourceCard, entry, game, null, {source: 'search', current, retry})).then(result => {
+    if (current() && result) {
+      const quotes = [...(sourceCard.conditionQuotes || []), ...(entry.conditionQuotes || [])], fresh = conditionValue(price, {...entry, manualValue: null}, quotes).price;
+      paint(fresh, quotes, {...referenceInfo, ...result});
+    }
+  }).finally(() => { run.done = true; });
+}
 async function verifyPhysical(e) {
   if (e.printingId) return S.state.printings?.[e.printingId] || (await api('/cards/' + encodeURIComponent(e.printingId)));
   let set = e.set?.trim();
@@ -1812,6 +1879,76 @@ function verifiedLot(e, c) {
     collectorNumber: c.collector_number, language: c.lang || e.language || 'en', printingVerified: true, nameVerified: true,
   };
 }
+
+// app.js refreshMagicCollectionPrices (3085), run as the site runs it on the Magic Collection view: each saved card whose data is a day
+// old (an hour between tries; [force]: all of them, and the names never matched) is read again from Scryfall in batches of 75, at most
+// 150 a pass. Fresh data brings today's prices and the printing's TCGplayer product number, which the condition prices and "Find
+// this condition on TCGplayer" key on. The catalog takes it (the app saves it), and the printings saved with lots are rewritten
+// (a save outside a tap: bgSaves). The account or workspace changing (a load) retires the pass.
+let magicPriceRefresh = null;
+const magicPriceAttempts = new Map();
+async function refreshMagicCollectionPrices(force = false) {
+  const rev = conditionWorkspaceRevision, current = () => rev === conditionWorkspaceRevision;
+  const result = {total: 0, refreshed: 0, failed: 0, skipped: 0, cancelled: false, committed: false, offline: false};
+  const pending = magicPriceRefresh;
+  if (pending?.current()) {
+    const previous = await pending.promise;
+    if (force && !pending.force && current()) return refreshMagicCollectionPrices(true);
+    return previous;
+  }
+  const now = Date.now(), requests = new Map();
+  for (const e of S.state.collection) {
+    const c = (e.printingVerified && S.state.printings?.[e.printingId]) || meta(e.name);
+    if (!c?.id) {
+      if (force && e.name) { const token = 'name:' + key(e.name); requests.set(token, {token, name: e.name, identifier: {name: e.name.split(' // ')[0]}}); }
+      continue;
+    }
+    const time = Date.parse(c.checkedAt), token = 'id:' + c.id;
+    if (force || ((!Number.isFinite(time) || now - time >= 86400000) && now - (magicPriceAttempts.get(c.id) || 0) >= 3600000)) requests.set(token, {token, card: c, identifier: {id: c.id}});
+  }
+  const queue = [...requests.values()].slice(0, force ? 5000 : 150);
+  result.total = requests.size; result.skipped = result.total - queue.length;
+  if (!queue.length) return result;
+  const job = {force, current, promise: null};
+  magicPriceRefresh = job;
+  job.promise = (async () => {
+    const updated = new Map();
+    for (let i = 0; i < queue.length && current(); i += 75) {
+      const batch = queue.slice(i, i + 75);
+      batch.forEach(r => { if (r.card) magicPriceAttempts.set(r.card.id, now); });
+      try {
+        const data = await api('/cards/collection', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({identifiers: batch.map(r => r.identifier)})});
+        if (!current()) break;
+        const matched = new Set();
+        for (const c of data.data || []) {
+          const names = new Set([c.name, c.name?.split(' // ')[0], ...(c.card_faces || []).map(f => f.name)].filter(Boolean).map(key));
+          const matches = batch.filter(r => r.card ? r.card.id === c.id : names.has(key(r.name)) || names.has(key(r.name.split(' // ')[0])));
+          if (!c.id || !matches.length) continue;
+          const old = matches.find(r => r.card)?.card;
+          const fresh = slim({...c, conditionQuotes: old?.conditionQuotes, checkedAt: new Date().toISOString()});
+          updated.set(c.id, fresh);
+          const aliases = matches.filter(r => r.name).map(r => r.name);
+          if (aliases.length || meta(c.name)?.id === c.id) cacheCard(fresh, aliases);
+          matches.forEach(r => matched.add(r.token));
+        }
+        result.refreshed += matched.size; result.failed += batch.length - matched.size;
+      } catch { if (current()) result.failed += batch.length; }
+    }
+    result.cancelled = !current();
+    if (result.cancelled) return result;
+    if (updated.size) {
+      result.committed = await commit(s => {
+        for (const [id, fresh] of updated) if (s.printings?.[id]) s.printings[id] = {...fresh, conditionQuotes: s.printings[id].conditionQuotes || fresh.conditionQuotes};
+        return true;
+      }, {guard: current, recordDeckWork: false, valueGames: ['mtg']}) === true;
+      if (result.committed) bgSaves++;
+      result.cancelled = !current();
+    }
+    return result;
+  })();
+  try { return await job.promise; } finally { if (magicPriceRefresh === job) magicPriceRefresh = null; }
+}
+let pricesRun = null;
 
 let acting = null;
 globalThis.Collection = {
@@ -1878,6 +2015,22 @@ globalThis.Collection = {
     return json({decks: list, selected: list.some(o => o[0] === want) ? want : list[0]?.[0] || ''});
   },
   addClose(id) { if (addCtx && addCtx.id === id) { addCtx = null; priceRun = lookupRun = null; } },
+  // tcg.js A.tOwn: a Yu-Gi-Oh! or Pokémon card's Add to collection ([o]: the pressed button's dataset and its game), on the card page's
+  // context when it is that card's (its release, finish and edition); the sheet becomes the open one until it closes (tAddClose).
+  tAddOpen(o) {
+    const d = JSON.parse(o || '{}'), G = d.game === 'ptcg' ? 'ptcg' : 'ygo';
+    tcgFocus(G, S.ui.view || 'collection');
+    let opened = null; tcgSheetHook = (html, ctx) => { opened = {html, ctx}; };
+    try { TA.tOwn({dataset: Object.fromEntries(Object.entries(d).filter(([k]) => k !== 'game'))}); } finally { tcgSheetHook = () => {}; }
+    if (!opened?.ctx) return json({error: 'This card is no longer available. Reopen it and try again.'});
+    opened.ctx.taddId = ++addSeq;
+    if (S.ui.sheetCtx !== taddCtx || !taddCtx) taddPrev = S.ui.sheetCtx;
+    taddCtx = S.ui.sheetCtx = opened.ctx;
+    return json(taddModel(opened.html, opened.ctx));
+  },
+  // app.js closeSheet for it: the page under it is the open sheet again.
+  tAddClose(id) { if (taddCtx && taddCtx.taddId === id) { if (S.ui.sheetCtx === taddCtx) S.ui.sheetCtx = taddPrev; taddCtx = taddPrev = null; priceRun = null; } },
+  tAddPrice(f, retry) { const run = priceRun = {done: false, blocks: [], placeholder: ''}; taddPreview(JSON.parse(f || '{}'), !!retry, run); },
   // app.js A.addLookup: the name looked up (resolve, fuzzy); lookupPoll() reads {done, name, preview, clearPrint} or {done, error}.
   addLookup(name) {
     const ctx = addCtx, run = lookupRun = {done: false};
@@ -1895,6 +2048,9 @@ globalThis.Collection = {
   pricePoll() { return json(priceRun || {done: true, blocks: [], placeholder: ''}); },
   // Saves made outside a tap since the last ask (a lot's condition quotes): the app writes the workspace when this is above 0.
   bg() { const n = bgSaves; bgSaves = 0; return n; },
+  // app.js refreshMagicCollectionPrices on the Magic Collection view ([force]: Refresh card data); pricesPoll() reads {done, result}.
+  pricesRefresh(force) { const run = pricesRun = {done: false}; refreshMagicCollectionPrices(!!force).then(r => { run.result = r; }, e => { run.error = String(e?.message || e); }).finally(() => { run.done = true; }); },
+  pricesPoll() { return json(pricesRun || {done: true}); },
   // app.js A.undo (6514): the state before the last undoable change comes back through the same write (replaceWorkspace).
   undo() {
     if (!lastUndo) return json({writes: 0, toasts: [{text: 'Nothing to undo.', undo: false}]});

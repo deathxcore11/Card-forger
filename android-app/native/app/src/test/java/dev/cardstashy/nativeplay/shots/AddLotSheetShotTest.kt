@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
@@ -68,6 +70,34 @@ class AddLotSheetShotTest {
     /** #sheetBody scrolled to its end (addsheet.cjs: scrollTop = 9999). */
     private fun bottom() {
         rule.onNode(androidx.compose.ui.test.hasScrollAction()).performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.ScrollBy) { it(0f, 9999f) }; settle()
+    }
+
+    /**
+     * Randall 5 Nov 16:05Z: on the glass sheet, labels scrolled under the header showed crisp through it. Over a backdrop (the glass
+     * look, Android 12+), what scrolls under the header now only shows through its blur, as backdrop-filter: blur(20px) does.
+     */
+    @Test fun glassHeadOverScrolledBody() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        dev.cardstashy.nativeplay.ui.homeArt = ::art
+        Account.setForTest(Account.Session("t", "r", Long.MAX_VALUE, "u", "randall@example.com"), null)
+        dev.cardstashy.nativeplay.ui.HomeCache.loaded = null; dev.cardstashy.nativeplay.ui.HomeCache.warm = false
+        val card = JsonParser.parseString(javaClass.getResource("/account-writes/add-sheet-sol-ring.json")!!.readText()).asJsonObject["card"]
+        val ws = JsonParser.parseString(javaClass.getResource("/account-writes/lot-edit.json")!!.readText()).asJsonObject["before"].asJsonObject
+        Decks.deviceFile(app, "u").apply { parentFile?.mkdirs() }.writeText(ws.toString())
+        dev.cardstashy.nativeplay.ui.catalogFile(app).writeText(JsonObject().apply { add("sol ring", card) }.toString())
+        rule.setContent {
+            val page = androidx.compose.ui.graphics.rememberGraphicsLayer()
+            Box(Modifier.fillMaxSize()) {
+                Box(Modifier.fillMaxSize().drawWithContent { page.record { this@drawWithContent.drawContent() }; drawLayer(page) }
+                    .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(androidx.compose.ui.graphics.Color(0xFF3A2410), Site.Bg, androidx.compose.ui.graphics.Color(0xFF14304A)))))
+                CollectionWritesHost(page)
+            }
+        }
+        try {
+            open(JsonObject().apply { addProperty("own", "Sol Ring") })
+            rule.onNode(androidx.compose.ui.test.hasScrollAction()).performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.ScrollBy) { it(0f, 380f * app.resources.displayMetrics.density) }; settle()
+            shot("glass-scrolled-390")
+        } finally { CollectionWrites.adding.value = null }
     }
 
     @Test fun addOnCover() {

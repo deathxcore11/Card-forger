@@ -134,7 +134,8 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
  * draws at once from what the set page has, then the full card, Pokémon's other printings, the set list, the Play guide's pairings and
  * the price history fill it in (A.tCard). The tabs, finish chips, Yu-Gi-Oh!'s rarity chips and Edition / Printing pickers, the price
  * jump, the history range, other printings and the set are drawn here; the wishlist heart and the owned − / ＋ save from here
- * (CollectionWrites); the rest that changes the account (own, decks, your price, Compare, Build), the archetype list, a set by name
+ * (CollectionWrites), and Add to collection opens the site's add sheet here (TcgAddSheet); the rest that changes the account (decks, your price,
+ * Compare, Build), the archetype list, a set by name
  * and the wiki open the website's card sheet and press the same control.
  */
 @Composable
@@ -184,6 +185,9 @@ private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) 
                     game = open.game, id = v("id"), setId = v("set-id"), setVariant = v("set-variant"), printing = v("printing"), edition = v("edition")))
             p.act == "tSet" && v("id").isNotBlank() && onSet != null -> onSet(v("id"))
             p.act in CollectionWrites.CARD_ACTS -> scope.launch { if (CollectionWrites.act(context, p.act, dataset(d))) show(CollectionEngine.tcardModel()) }
+            // pricing-presentation.js's Add to collection (A.tOwn): the site's add sheet over this page, saved here; the page shows the copies after.
+            p.act == "tOwn" && v("id").isNotBlank() -> CollectionWrites.tAdding.value = CollectionWrites.TcgAddOpen(dataset(d).apply { addProperty("game", open.game) },
+                saved = { scope.launch { show(CollectionEngine.tcardModel()) } }, closeAll = onClose)
             p.act == "go" && v("to").isNotBlank() -> web("https://cardstashy.com/" + v("to"), null)
             p.act == "cardTab" && v("tab") in setOf("overview", "meta", "guide", "prices", "rulings", "legal") -> asked = "tab" to v("tab")
             p.act == "cardFinishPreview" && v("finish").isNotBlank() -> asked = "finish" to v("finish")

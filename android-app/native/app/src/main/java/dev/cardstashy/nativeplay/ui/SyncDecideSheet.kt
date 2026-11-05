@@ -54,6 +54,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
@@ -155,6 +157,7 @@ internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> U
     }
     BackHandler { (onBack ?: onClose)() }
     val dim = androidx.compose.ui.graphics.rememberGraphicsLayer(); val frost = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val body = androidx.compose.ui.graphics.rememberGraphicsLayer(); val headBlur = androidx.compose.ui.graphics.rememberGraphicsLayer()
     val sheetBox = remember { arrayOf(androidx.compose.ui.geometry.Rect.Zero) }
     val glass = backdrop != null && android.os.Build.VERSION.SDK_INT >= 31; val bg = Site.Bg
     val scroll = rememberScrollState()
@@ -209,11 +212,25 @@ internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> U
             val density = androidx.compose.ui.platform.LocalDensity.current
             // Inside the sheet's 1 border, #sheetBody: 8 over the head, the head's height, then the body; 22 under it (and the
             // navigation bar's), then the border again.
-            Column(Modifier.fillMaxWidth().verticalScroll(scroll).padding(top = 9.dp + with(density) { headH.toDp() })
+            // Under the glass head, what scrolls up is seen only through its blur (backdrop-filter: blur(20px) saturate(1.3)): the body is
+            // drawn below the head's bottom, and the head draws it blurred (Randall 5 Nov: labels showed crisp through the header).
+            Column(Modifier.fillMaxWidth()
+                .then(if (glass) Modifier.drawWithContent {
+                    body.record { this@drawWithContent.drawContent() }
+                    clipRect(top = maxOf(0f, 9.dp.toPx() - scroll.value) + headH) { drawLayer(body) }
+                } else Modifier)
+                .verticalScroll(scroll).padding(top = 9.dp + with(density) { headH.toDp() })
                 .padding(start = gutter, end = gutter, bottom = 23.dp + navBottom)) { content(vw) }
             // .sheet-head (glass): sticky, rgba(18, 20, 26, .8), a .06 white rule under it; h2 Manrope 19/800; the 44 close.
             Row(Modifier.fillMaxWidth().onSizeChanged { headH = it.height }
                 .graphicsLayer { translationY = maxOf(0f, 9.dp.toPx() - scroll.value) }
+                .then(if (glass) Modifier.drawBehind {
+                    if (body.size.width > 0) {
+                        headBlur.renderEffect = frostEffect(20.dp.toPx(), 1.3f)
+                        headBlur.record(body.size) { drawLayer(body) }
+                        clipRect { translate(0f, -maxOf(0f, 9.dp.toPx() - scroll.value)) { drawLayer(headBlur) } }
+                    }
+                } else Modifier)
                 .background(if (glass) Color(0xCC12141A) else bg)
                 .drawBehind { drawRect(Color(0x0FFFFFFF), topLeft = Offset(0f, size.height - 1.dp.toPx()), size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }
                 .padding(start = gutter, end = gutter, top = 12.dp, bottom = 11.dp),

@@ -100,6 +100,18 @@ internal object CollectionWrites {
     }
     private val bg = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO)
     private var settling: kotlinx.coroutines.Job? = null
+    /**
+     * app.js refreshMagicCollectionPrices, as the Magic Collection view runs it: a day-old card's data read again (today's prices and its
+     * TCGplayer number, which the condition prices and "Find this condition on TCGplayer" need). The catalog and the printings saved
+     * with lots are kept (the account too); the page repaints.
+     */
+    suspend fun refreshMagicPrices(context: Context) {
+        val app = context.applicationContext
+        val r = runCatching { CollectionEngine.pricesRefresh(false) }.getOrNull()
+        keepCatalog(app)
+        keepBackground(app)
+        if (r?.getAsJsonObject("result")?.get("refreshed")?.asInt ?: 0 > 0) _written.value++
+    }
     /** Saves the engine made outside a tap (condition quotes on lots) go to this device's copy and the account. */
     suspend fun keepBackground(context: Context) {
         val s = Account.session.value ?: return
@@ -160,6 +172,16 @@ internal object CollectionWrites {
             r.update(uri, android.content.ContentValues().apply { put(android.provider.MediaStore.Downloads.IS_PENDING, 0) }, null, null)
         } else java.io.File(c.getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS) ?: c.filesDir, name).writeBytes(bytes)
     }
+
+    /** A Yu-Gi-Oh! or Pokémon card's Add to collection (tcg.js A.tOwn): the button's dataset and its game; [saved] repaints what opened it, [closeAll] is the ✕ (the card page goes too). */
+    data class TcgAddOpen(val req: JsonObject, val saved: () -> Unit = {}, val closeAll: () -> Unit = {}, val id: Long = System.nanoTime())
+    val tAdding = MutableStateFlow<TcgAddOpen?>(null)
+    /** tcgAddSheet's model from this device's collection, the condition feed signed in. Null (with a toast) when it can't open. */
+    suspend fun tAddModel(context: Context, req: JsonObject): JsonObject? {
+        val token = Account.token()
+        return withCollection(context) { CollectionEngine.auth(token); CollectionEngine.tAddOpen(req) }
+    }
+    fun tAddClosed(ctx: Int) { bg.launch { CollectionEngine.tAddClose(ctx) } }
 
     /** app.js closeSheet for the add sheet whose model said [ctx]. */
     fun addClosed(ctx: Int) { bg.launch { CollectionEngine.addClose(ctx) } }

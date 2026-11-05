@@ -243,6 +243,20 @@ object CollectionEngine {
     /** app.js addSheet: the add / edit sheet's model ({entry} to edit, {own, fromCard} for Got it, {} empty). */
     suspend fun addOpen(o: JsonObject): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.addOpen(${str(o.toString())})") as String).asJsonObject }
     suspend fun addClose(id: Int) { on { q -> q.evaluate("Collection.addClose($id)") } }
+    /** tcg.js A.tOwn: a Yu-Gi-Oh! or Pokémon card's Add to collection ([o]: the button's dataset and its game), as the site fills it ({error} when it can't open). */
+    suspend fun tAddOpen(o: JsonObject): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.tAddOpen(${str(o.toString())})") as String).asJsonObject }
+    suspend fun tAddClose(id: Int) { on { q -> q.evaluate("Collection.tAddClose($id)") } }
+    /** app.js refreshMagicCollectionPrices: the saved Magic cards a day old read again from Scryfall (prices, TCGplayer numbers); {total, refreshed, committed…}. */
+    suspend fun pricesRefresh(force: Boolean): JsonObject {
+        on { q -> q.evaluate("Collection.pricesRefresh($force)") }
+        return pumpUntil("Collection.pricesPoll()", 120_000)
+    }
+    /** app.js refreshConditionPrice for that sheet ([form]: qty, condition, language, print, edition, value): painted as it changes. */
+    suspend fun tAddPrice(form: JsonObject, retry: Boolean, paint: (JsonObject) -> Unit) {
+        on { q -> q.evaluate("Collection.tAddPrice(${str(form.toString())}, $retry)") }
+        var last = ""
+        pumpUntil("Collection.pricePoll()", 30_000) { r -> val t = r.toString(); if (t != last) { last = t; paint(r) } }
+    }
     /** app.js A.deckMenu: deck [id]'s ⋯ menu as the site draws it ({missing} when the deck is gone). */
     suspend fun deckMenu(id: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.deckMenu(${str(id)})") as String).asJsonObject }
     /** app.js A.deckCopy / A.deckExport: {text, file}. */

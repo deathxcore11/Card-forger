@@ -77,6 +77,8 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             try { CollectionEngine.refresh("mtg") } finally { repaint.cancel(); withContext(kotlinx.coroutines.NonCancellable) { keepCatalog(context) } }
         }
         paint()
+        // app.js render() on the Magic Collection view: the day's price refresh (refreshMagicCollectionPrices).
+        if (session != null) CollectionWrites.refreshMagicPrices(context)
         failed = null
     } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) {
         HomeCache.loaded = null

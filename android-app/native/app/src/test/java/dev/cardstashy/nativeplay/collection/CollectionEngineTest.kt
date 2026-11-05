@@ -386,6 +386,47 @@ class CollectionEngineTest {
         assertEquals("Magic sets", CollectionEngine.setsModel()["title"].asString)
     }
 
+    /**
+     * tcg.js A.tOwn → tcgAddSheet over a Yu-Gi-Oh! and a Pokémon card page (opened from its set's first tile), the condition price
+     * (refreshConditionPrice), then A.tOwnSave with 2 Lightly Played copies: the lot is in the game's collection and the sheet closes.
+     */
+    @Test fun tcgAddSheet() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        fourDecks()
+        for (g in listOf("ygo", "ptcg")) {
+            CollectionEngine.sets(g); CollectionEngine.setsLoad(); CollectionEngine.settle(60_000)
+            val id = CollectionEngine.setsModel()["sections"].asJsonArray.flatMap { it.asJsonObject["rows"].asJsonArray.map { r -> r.asJsonObject } }.first()["code"].asString
+            CollectionEngine.set(g, id); CollectionEngine.setLoad(); CollectionEngine.settle(120_000)
+            val tile = CollectionEngine.setModel()["tiles"].asJsonArray.map { it.asJsonObject }.first()
+            val o = JsonObject().apply { addProperty("game", g); addProperty("id", tile["id"].asString); tile["open"].asJsonObject.entrySet().forEach { (k, v) -> add(k, v) } }
+            CollectionEngine.tcard(o); CollectionEngine.tcardLoad(); CollectionEngine.settle(120_000)
+            val m = CollectionEngine.tAddOpen(JsonObject().apply { addProperty("game", g); addProperty("id", tile["id"].asString) })
+            println("TADD $g ${m.toString().take(1500)}")
+            assertEquals("Add to collection", m["title"].asString)
+            assertEquals("Add to collection", m["save"].asString)
+            assertTrue(m["card"].asJsonObject["name"].asString.isNotBlank())
+            val ids = m["fields"].asJsonArray.map { it.asJsonObject["id"].asString }
+            assertEquals(listOf("tQty", "tCond", "tLanguage"), ids.take(3))
+            if (g == "ygo") assertTrue("tEdition" in ids)
+            assertEquals("Where it lives", m["location"].asJsonObject["label"].asString)
+            val form = JsonObject().apply { addProperty("qty", "2"); addProperty("condition", "Lightly Played"); addProperty("language", "en"); addProperty("print", ""); addProperty("edition", ""); addProperty("value", ""); addProperty("location", ""); addProperty("picker", "") }
+            CollectionEngine.tAddPrice(form, false) {}
+            val before = JsonParser.parseString(CollectionEngine.saved()).asJsonObject.getAsJsonObject("tcg")?.getAsJsonObject(g)?.getAsJsonArray("collection")?.size() ?: 0
+            val r = CollectionEngine.act("tOwnSave", JsonObject().apply { add("form", form); addProperty("setId", m["setId"].asString) })
+            println("TOWN $g $r")
+            assertEquals("closed", r["made"].asString)
+            assertTrue(r["toasts"].asJsonArray.any { it.asJsonObject["text"].asString.startsWith("Added 2×") })
+            val lots = JsonParser.parseString(CollectionEngine.saved()).asJsonObject["tcg"].asJsonObject[g].asJsonObject["collection"].asJsonArray.map { it.asJsonObject }
+            assertEquals(before + 1, lots.size)
+            assertTrue(lots.any { it["cardId"].asString == tile["id"].asString && it["qty"].asInt == 2 && it["condition"].asString == "Lightly Played" })
+            // The sheet is gone: a second save asks to reopen it.
+            val again = CollectionEngine.act("tOwnSave", JsonObject().apply { add("form", form) })
+            assertEquals(0, again["writes"].asInt)
+        }
+        CollectionEngine.sets("mtg"); Unit
+    }
+
     /** app.js A.openSetPack → pack-preview.js's draw from Duskmourn's real booster sheets, a new pack, and a pulled card's page. */
     @Test fun openPack() = runBlocking {
         assumeTrue(bundle.isFile)

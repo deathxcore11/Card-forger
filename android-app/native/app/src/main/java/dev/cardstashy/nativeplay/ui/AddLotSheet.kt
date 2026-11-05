@@ -372,10 +372,10 @@ internal fun FormMore(title: String, open: Boolean, onToggle: () -> Unit, conten
 
 /** .btn: the gold button, 44 tall, 11 corners, 15 / 700 on gold; [pad] in from its sides (17 with its 1 border); dimmed while it can't be used. */
 @Composable
-internal fun FormGold(label: String, enabled: Boolean = true, modifier: Modifier = Modifier, pad: Dp = 17.dp, onClick: () -> Unit) =
-    Box(modifier.heightIn(min = 44.dp).alpha(if (enabled) 1f else .45f).clip(RoundedCornerShape(11.dp)).background(Site.Gold)
+internal fun FormGold(label: String, enabled: Boolean = true, modifier: Modifier = Modifier, pad: Dp = 17.dp, pal: SheetPal? = null, onClick: () -> Unit) =
+    Box(modifier.heightIn(min = 44.dp).alpha(if (enabled) 1f else .45f).clip(RoundedCornerShape(11.dp)).background(pal?.gold ?: Site.Gold)
         .clickable(enabled = enabled, onClick = onClick).semantics { role = androidx.compose.ui.semantics.Role.Button }.padding(horizontal = pad, vertical = 4.dp), contentAlignment = Alignment.Center) {
-        Text(label, style = cssType(15f, 700, 21.75f, Color(0xFF1B1406)), maxLines = 1)
+        Text(label, style = cssType(15f, 700, 21.75f, pal?.ink ?: Color(0xFF1B1406)), maxLines = 1)
     }
 
 /** .link (small): 13 / 600 words, 4 above and below. */
@@ -431,5 +431,145 @@ private fun ConditionPrice(blocks: List<JsonObject>, vw: Dp, onRetry: () -> Unit
                 "buy" -> SiteGhost(b.str("text"), Modifier.fillMaxWidth(), h = 34.dp, fs = 13.5f, pad = 12.dp) { onBuy(b.str("url")) }
             }
         }
+    }
+}
+
+/**
+ * tcg.js tcgAddSheet: a Yu-Gi-Oh! or Pokémon card's "Add to collection" (its card page's button, A.tOwn), in the site's #sheet over
+ * the card. The engine opens it with the site's own handler (the release, version and edition the card page was showing), paints its
+ * condition price (app.js refreshConditionPrice) and saves it with A.tOwnSave; this draws the form as the site fills it.
+ */
+@Composable
+internal fun TcgAddSheet(open: CollectionWrites.TcgAddOpen, backdrop: GraphicsLayer?, onClose: () -> Unit) {
+    val context = LocalContext.current
+    val model by produceState<JsonObject?>(null, open.id) {
+        val r = CollectionWrites.tAddModel(context, open.req)
+        val err = r?.str("error").orEmpty()
+        when { r == null -> onClose(); err.isNotEmpty() -> { CollectionWrites.show(err); onClose() }; else -> value = r }
+    }
+    val m = model ?: return
+    DisposableEffect(m) { val id = m.get("ctx")?.asInt ?: 0; onDispose { CollectionWrites.tAddClosed(id) } }
+    TcgAddForm(m, open, backdrop, onClose)
+}
+
+@Composable
+private fun TcgAddForm(m: JsonObject, open: CollectionWrites.TcgAddOpen, backdrop: GraphicsLayer?, onClose: () -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uri = LocalUriHandler.current
+    val fields = remember(m) { m.getAsJsonArray("fields")?.mapNotNull { it as? JsonObject }.orEmpty() }
+    val values = remember(m) { androidx.compose.runtime.mutableStateMapOf<String, String>().apply { fields.forEach { put(it.str("id"), it.str("value")) } } }
+    val loc = m.obj("location") ?: JsonObject()
+    val more = m.obj("more")
+    var picker by remember { mutableStateOf(loc.str("selected")) }
+    var location by remember { mutableStateOf(loc.str("input")) }
+    var locShown by remember { mutableStateOf(false) }
+    var locPlaceholder by remember { mutableStateOf(loc.str("placeholder")) }
+    var locHint by remember { mutableStateOf(loc.str("hint")) }
+    var locFocus by remember { mutableIntStateOf(0) }
+    var customOpen by remember { mutableStateOf(more?.flag("open") ?: true) }
+    var value by remember { mutableStateOf("") }
+    var valueHint by remember { mutableStateOf(more?.str("placeholder").orEmpty()) }
+    var blocks by remember { mutableStateOf<List<JsonObject>>(emptyList()) }
+    var saving by remember { mutableStateOf(false) }
+    val gen = remember { intArrayOf(0) }
+
+    fun form() = JsonObject().apply {
+        addProperty("qty", values["tQty"].orEmpty()); addProperty("condition", values["tCond"].orEmpty()); addProperty("language", values["tLanguage"].orEmpty())
+        addProperty("print", values["tPrint"].orEmpty()); addProperty("edition", values["tEdition"].orEmpty()); addProperty("value", value)
+        addProperty("location", location); addProperty("picker", picker)
+    }
+    // refreshConditionPrice: painted at once, then again when the feed answers; only the newest ask paints.
+    fun price(retry: Boolean = false) {
+        val g = ++gen[0]; val f = form()
+        scope.launch {
+            CollectionEngine.tAddPrice(f, retry) { r ->
+                val b = r.getAsJsonArray("blocks")?.mapNotNull { it.takeIf { e -> e.isJsonObject }?.asJsonObject }.orEmpty()
+                if (g == gen[0] && b.isNotEmpty()) { blocks = b; valueHint = r.str("placeholder") }
+            }
+        }
+    }
+    LaunchedEffect(Unit) { price() }
+    // A.tOwnSave: one save at a time; saved, the sheet closes and the card page shows the copies.
+    fun save() {
+        if (saving) return
+        saving = true
+        scope.launch {
+            CollectionWrites.act(context, "tOwnSave", JsonObject().apply { add("form", form()); addProperty("setId", m.str("setId")) }) { r ->
+                if (r.str("made") == "closed") { open.saved(); onClose() }
+            }
+            saving = false
+        }
+    }
+    // collection-locations.js chooseLocation.
+    fun chooseLocation(v: String) {
+        picker = v
+        val newName = v == "new" || v == "binder:new"
+        locShown = newName
+        location = if (newName) "" else if (v.startsWith("location:")) v.removePrefix("location:") else ""
+        locPlaceholder = if (v == "binder:new") "Name your binder…" else "e.g. Deck box, Blue box…"
+        locHint = if (v == "binder:new") "This creates a named binder and places the card in it when you save." else "Saved names can be selected again for your next card."
+        if (newName) locFocus++
+    }
+
+    // Opened from the card page (app.js sheet history): back returns to it, ✕ closes both.
+    SiteSheet(m.str("title"), backdrop, onClose = { onClose(); open.closeAll() }, onBack = onClose) { vw ->
+        val one = vw <= 480.dp
+        // .build-seed: the card's picture (56 square, 10 corners, cover), its name and type line 10 over and 8 down; 4 above, and the
+        // grid's 10 below. The live phone page draws the row 66 tall (56 when wide).
+        val card = m.obj("card") ?: JsonObject()
+        Spacer(Modifier.height(4.dp))
+        Row(Modifier.fillMaxWidth().height(if (one) 66.dp else 56.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            CardPicture(card.str("img").ifEmpty { null }, null, null, Modifier.size(56.dp), RoundedCornerShape(10.dp), androidx.compose.ui.layout.ContentScale.Crop)
+            Column(Modifier.weight(1f).padding(top = 8.dp)) {
+                Text(card.str("name"), style = cssType(15f, 700, 21.75f))
+                if (card.str("type").isNotEmpty()) Text(card.str("type"), style = cssType(12.5f, 400, 18.125f, AMute))
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        // .grid2: Copies and Condition side by side (one column up to 480), the rest across both; then the note and where it lives.
+        @Composable fun field(f: JsonObject, md: Modifier) {
+            val id = f.str("id")
+            FormLabeled(f.str("label"), md) {
+                if (f.str("kind") == "input") FormInput(values[id].orEmpty(), { values[id] = it }, SHEET_IN_LABEL, desc = f.str("label"), keyboard = KeyboardType.Number)
+                else FormSelect(f.pairs("options"), values[id].orEmpty(), SHEET_IN_LABEL, desc = f.str("label")) { values[id] = it; value = ""; price() }
+            }
+        }
+        val pairs = fields.filter { !it.flag("span") }
+        val spans = fields.filter { it.flag("span") }
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            pairs.chunked(2).forEach { row ->
+                if (row.size == 2) Pair2(one, { md -> field(row[0], md) }, { md -> field(row[1], md) }) else field(row[0], Modifier.fillMaxWidth())
+            }
+            spans.forEach { field(it, Modifier.fillMaxWidth()) }
+            // p.foot: 10 above and 6 below on top of the grid's gaps.
+            if (m.str("foot").isNotEmpty()) Text(m.str("foot"), Modifier.padding(top = 10.dp, bottom = 6.dp), style = cssType(12f, 400, 17.4f, AFoot))
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(loc.str("label"), style = cssType(13f, 600, 18.85f, AMute))
+                FormSelect(loc.pairs("options"), picker, SHEET_PLAIN, minH = 46.dp, desc = loc.str("label")) { chooseLocation(it) }
+                if (locShown) {
+                    val focus = remember { FocusRequester() }
+                    FormInput(location, { location = it.take(100) }, SHEET_PLAIN, locPlaceholder, Modifier.focusRequester(focus), minH = 46.dp,
+                        desc = if (picker == "binder:new") "New binder name" else "New location name")
+                    LaunchedEffect(locFocus) { runCatching { focus.requestFocus() } }
+                }
+                Text(locHint, style = cssType(11f, 400, 15.95f, AMute))
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        ConditionPrice(blocks, vw, onRetry = { price(true) }, onBuy = { u -> runCatching { uri.openUri(u) } })
+        if (more != null) {
+            Spacer(Modifier.height(12.dp))
+            FormMore(more.str("title"), customOpen, { customOpen = !customOpen }) {
+                FormLabeled(more.str("label"), Modifier.fillMaxWidth()) {
+                    FormInput(value, { value = it; price() }, SHEET_IN_LABEL, valueHint, desc = more.str("label"), keyboard = KeyboardType.Decimal)
+                }
+                Spacer(Modifier.height(10.dp))
+                Text(more.str("help"), style = cssType(12f, 400, 17.4f, AFoot))
+            }
+        }
+        // .btn.block in the game's own colour, the sheet's width: 22 under the custom value on the live page (its 10 and the details' 12).
+        Spacer(Modifier.height(22.dp))
+        FormGold(m.str("save"), modifier = Modifier.fillMaxWidth(), pal = sheetPal(if (m.str("game") == "ptcg") CardGame.PTCG else CardGame.YGO)) { save() }
     }
 }
