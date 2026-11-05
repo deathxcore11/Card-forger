@@ -87,7 +87,9 @@ export const secretLairStyle = c => ({o: c.o, id: c.id, n: c.n, i: secretLairIma
 // A rare style drop: the Secret Lair art of a card you own and have no style for yet. Owning none, it is a
 // card with a Secret Lair printing, and the card comes with it. Null when every printing is unlocked.
 export function pickSecretLairStyle(drops = [], owned = new Set(), unlocked = new Set(), rng = Math.random) {
-  const all = drops.flatMap(d => d.cards).filter(c => !unlocked.has(c.id));
+  const locked = drops.flatMap(d => d.cards).filter(c => !unlocked.has(c.id));
+  // Secret printings first: the store sells the rest, so rewards are where the secrets live.
+  const secrets = locked.filter(isSecretLair), all = secrets.length ? secrets : locked;
   const mine = all.filter(c => owned.has(c.o));
   const pool = mine.length ? mine : all;
   if (!pool.length) return null;
@@ -101,17 +103,21 @@ export function stylesFor(styles = [], oracle = '') {
   return {list, on: list.find(s => s.on) || null};
 }
 
-// The Secret Lair store (Randall 3 Nov 22:34Z, like Arena's card-style store): six single Secret Lair
+// The Secret Lair store (Randall 3 Nov 22:34Z, like Arena's card-style store): single Secret Lair
 // cards a week, a few of them on sale. Each one is the real printing: into the Trunk,
 // with its Secret Lair art unlocked. Coins only (no seals, no bundle).
 const SALES = [60, 50, 40, 25];
 const BASIC = /^(?:Snow-Covered )?(?:Plains|Island|Swamp|Mountain|Forest|Wastes)$/;
-export const SECRET_LAIR_OFFERS = 6;
+export const SECRET_LAIR_OFFERS = 20;
+// Secret cards (Randall 5 Nov: "who says you are meant to collect them all, that's what makes them
+// special"): about one printing in seven never appears in the store. They come only from achievements,
+// Story bosses, god packs and other secret unlocks, so completing the set is a real feat.
+export const isSecretLair = card => hash('slsecret:' + (card?.id || '')) % 100 < 15;
 export function weeklySecretLairOffers(drops = [], week = '', today = '', bundleId = '', n = SECRET_LAIR_OFFERS) {
   // Every printing is on offer in turn (Randall 5 Nov: nothing unobtainable). The pool is put in a fixed
   // shuffled order and each week takes the next window of six, so a full lap shows every printing once
   // before any repeats. New drops join the order without disturbing the rest.
-  const pool = drops.filter(d => d.id !== bundleId && (!today || d.released <= today)).flatMap(d => d.cards).filter(c => !BASIC.test(c.n))
+  const pool = drops.filter(d => d.id !== bundleId && (!today || d.released <= today)).flatMap(d => d.cards).filter(c => !BASIC.test(c.n) && !isSecretLair(c))
     .map(c => [hash('slo-order:' + c.id), c]).sort((a, b) => a[0] - b[0] || String(a[1].id).localeCompare(String(b[1].id))).map(x => x[1]);
   const [y, w] = String(week).split('-W'), jan4 = Date.UTC(Number(y) || 2020, 0, 4), monday = jan4 - ((new Date(jan4).getUTCDay() + 6) % 7) * 864e5,
     k = Math.round((monday + ((Number(w) || 1) - 1) * 7 * 864e5) / (7 * 864e5)); // consecutive for every Play week
