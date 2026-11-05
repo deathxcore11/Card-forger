@@ -1,0 +1,348 @@
+{
+ "handler": "cloud.js act(\"conflict\"/\"adopt\") -> mergeAccountWorkspaces",
+ "source": "sync-merge.js:41",
+ "toast": "Changes from both devices were combined. The previous device copy is saved in Recovery.",
+ "baseline": {
+  "version": 3,
+  "references": [],
+  "printings": {},
+  "importHistory": [],
+  "collection": [
+   {
+    "id": "l1",
+    "name": "Lightning Bolt",
+    "qty": 2,
+    "set": "",
+    "collectorNumber": "",
+    "finish": "nonfoil",
+    "language": "en",
+    "condition": "Near Mint",
+    "location": "",
+    "reserved": 0,
+    "printingId": null,
+    "printingVerified": false,
+    "raw": {},
+    "manualValue": null,
+    "manualValueCondition": "Near Mint"
+   },
+   {
+    "id": "l2",
+    "name": "Island",
+    "qty": 10,
+    "set": "",
+    "collectorNumber": "",
+    "finish": "nonfoil",
+    "language": "en",
+    "condition": "Near Mint",
+    "location": "",
+    "reserved": 0,
+    "printingId": null,
+    "printingVerified": false,
+    "raw": {},
+    "manualValue": null,
+    "manualValueCondition": "Near Mint"
+   }
+  ],
+  "decks": [],
+  "activeDeck": null,
+  "wishlist": [
+   {
+    "id": "w1",
+    "name": "Sol Ring",
+    "finish": "nonfoil",
+    "qty": 1,
+    "addedAt": "2026-11-01T00:00:00.000Z"
+   }
+  ],
+  "notes": [],
+  "valueHistory": [],
+  "settings": {
+   "shipping": 4.99,
+   "tax": 0,
+   "budget": 25,
+   "theme": "dark"
+  },
+  "example": false,
+  "lastSavedAt": "2026-11-05T09:00:00.000Z",
+  "tcg": {
+   "ygo": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   },
+   "ptcg": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   }
+  }
+ },
+ "local": {
+  "version": 3,
+  "references": [],
+  "printings": {},
+  "importHistory": [],
+  "collection": [
+   {
+    "id": "l1",
+    "name": "Lightning Bolt",
+    "qty": 2,
+    "set": "",
+    "collectorNumber": "",
+    "finish": "nonfoil",
+    "language": "en",
+    "condition": "Near Mint",
+    "location": "",
+    "reserved": 0,
+    "printingId": null,
+    "printingVerified": false,
+    "raw": {},
+    "manualValue": null,
+    "manualValueCondition": "Near Mint"
+   },
+   {
+    "id": "l2",
+    "name": "Island",
+    "qty": 10,
+    "set": "",
+    "collectorNumber": "",
+    "finish": "nonfoil",
+    "language": "en",
+    "condition": "Near Mint",
+    "location": "",
+    "reserved": 0,
+    "printingId": null,
+    "printingVerified": false,
+    "raw": {},
+    "manualValue": null,
+    "manualValueCondition": "Near Mint"
+   },
+   {
+    "id": "fx-lot-phone",
+    "name": "Counterspell",
+    "qty": 1,
+    "set": "",
+    "collectorNumber": "",
+    "finish": "nonfoil",
+    "language": "en",
+    "condition": "Near Mint",
+    "location": "",
+    "reserved": 0,
+    "printingId": null,
+    "printingVerified": false,
+    "raw": {},
+    "manualValue": null,
+    "manualValueCondition": "Near Mint"
+   }
+  ],
+  "decks": [],
+  "activeDeck": null,
+  "wishlist": [
+   {
+    "id": "w1",
+    "name": "Sol Ring",
+    "finish": "nonfoil",
+    "qty": 1,
+    "addedAt": "2026-11-01T00:00:00.000Z"
+   }
+  ],
+  "notes": [],
+  "valueHistory": [],
+  "settings": {
+   "shipping": 4.99,
+   "tax": 0,
+   "budget": 25,
+   "theme": "dark"
+  },
+  "example": false,
+  "lastSavedAt": "2026-11-05T09:00:00.000Z",
+  "tcg": {
+   "ygo": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   },
+   "ptcg": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   }
+  }
+ },
+ "remote": {
+  "version": 3,
+  "references": [],
+  "printings": {},
+  "importHistory": [],
+  "collection": [
+   {
+    "id": "l1",
+    "name": "Lightning Bolt",
+    "qty": 2,
+    "set": "",
+    "collectorNumber": "",
+    "finish": "nonfoil",
+    "language": "en",
+    "condition": "Near Mint",
+    "location": "",
+    "reserved": 0,
+    "printingId": null,
+    "printingVerified": false,
+    "raw": {},
+    "manualValue": null,
+    "manualValueCondition": "Near Mint"
+   },
+   {
+    "id": "l2",
+    "name": "Island",
+    "qty": 11,
+    "set": "",
+    "collectorNumber": "",
+    "finish": "nonfoil",
+    "language": "en",
+    "condition": "Near Mint",
+    "location": "",
+    "reserved": 0,
+    "printingId": null,
+    "printingVerified": false,
+    "raw": {},
+    "manualValue": null,
+    "manualValueCondition": "Near Mint"
+   }
+  ],
+  "decks": [],
+  "activeDeck": null,
+  "wishlist": [
+   {
+    "id": "w1",
+    "name": "Sol Ring",
+    "finish": "nonfoil",
+    "qty": 1,
+    "addedAt": "2026-11-01T00:00:00.000Z"
+   }
+  ],
+  "notes": [],
+  "valueHistory": [],
+  "settings": {
+   "shipping": 4.99,
+   "tax": 0,
+   "budget": 25,
+   "theme": "dark"
+  },
+  "example": false,
+  "lastSavedAt": "2026-11-05T09:00:00.000Z",
+  "tcg": {
+   "ygo": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   },
+   "ptcg": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   }
+  }
+ },
+ "mergedState": {
+  "version": 3,
+  "references": [],
+  "printings": {},
+  "importHistory": [],
+  "collection": [
+   {
+    "id": "l1",
+    "name": "Lightning Bolt",
+    "qty": 2,
+    "set": "",
+    "collectorNumber": "",
+    "finish": "nonfoil",
+    "language": "en",
+    "condition": "Near Mint",
+    "location": "",
+    "reserved": 0,
+    "printingId": null,
+    "printingVerified": false,
+    "raw": {},
+    "manualValue": null,
+    "manualValueCondition": "Near Mint"
+   },
+   {
+    "id": "l2",
+    "name": "Island",
+    "qty": 11,
+    "set": "",
+    "collectorNumber": "",
+    "finish": "nonfoil",
+    "language": "en",
+    "condition": "Near Mint",
+    "location": "",
+    "reserved": 0,
+    "printingId": null,
+    "printingVerified": false,
+    "raw": {},
+    "manualValue": null,
+    "manualValueCondition": "Near Mint"
+   },
+   {
+    "id": "fx-lot-phone",
+    "name": "Counterspell",
+    "qty": 1,
+    "set": "",
+    "collectorNumber": "",
+    "finish": "nonfoil",
+    "language": "en",
+    "condition": "Near Mint",
+    "location": "",
+    "reserved": 0,
+    "printingId": null,
+    "printingVerified": false,
+    "raw": {},
+    "manualValue": null,
+    "manualValueCondition": "Near Mint"
+   }
+  ],
+  "decks": [],
+  "activeDeck": null,
+  "wishlist": [
+   {
+    "id": "w1",
+    "name": "Sol Ring",
+    "finish": "nonfoil",
+    "qty": 1,
+    "addedAt": "2026-11-01T00:00:00.000Z"
+   }
+  ],
+  "notes": [],
+  "valueHistory": [],
+  "settings": {
+   "shipping": 4.99,
+   "tax": 0,
+   "budget": 25,
+   "theme": "dark"
+  },
+  "example": false,
+  "lastSavedAt": "2026-11-05T09:00:00.000Z",
+  "tcg": {
+   "ygo": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   },
+   "ptcg": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   }
+  }
+ },
+ "conflicts": []
+}

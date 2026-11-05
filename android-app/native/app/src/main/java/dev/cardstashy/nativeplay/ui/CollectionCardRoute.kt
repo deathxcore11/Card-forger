@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.google.gson.JsonObject
 import dev.cardstashy.nativeplay.collection.CollectionEngine
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -32,13 +33,15 @@ private fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
  * views.js cardSheet through the site's own code (Collection.card / cardDo), drawn natively over the page that opened it.
  * The page draws at once from what the catalog has; app.js's lookups (the full card, its printings, the guide's pairings,
  * rulings, the price history and the set index) then fill it in as they land. Overview, Meta, the Play guide and Prices are
- * drawn here; rule words and the actions that change the account (own, wishlist, the ±, decks, your price, Compare, Build,
- * Sort & filter, the wiki, the proven lists, Compare all printings) open the website's card sheet and press the same control there.
+ * drawn here; the wishlist heart and the owned − / ＋ save from here (CollectionWrites); rule words and the other actions that change
+ * the account (own, decks, your price, Compare, Build, Sort & filter, the wiki, the proven lists, Compare all printings) open the
+ * website's card sheet and press the same control there.
  */
 @Composable
 fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -> Unit, web: (url: String, press: String?) -> Unit, onSet: ((String) -> Unit)? = null) {
     if (open.game != "mtg") return TcgCardHost(open, onClose, onOpen, web, onSet)
     val context = LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     var model by remember(open) { mutableStateOf<CollectionCardModel?>(null) }
     /** A control waiting for the site's handler (kind to value). */
     var asked by remember(open) { mutableStateOf<Pair<String, String>?>(null) }
@@ -74,6 +77,8 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
             p.act == "card" && !d["name"].isNullOrBlank() -> onOpen(open.copy(name = d.getValue("name"), entry = "", setI = null, setFinish = "", pack = null))
             p.act == "go" && !d["to"].isNullOrBlank() -> web("https://cardstashy.com/" + d.getValue("to"), null)
             p.act == "set" && !d["code"].isNullOrBlank() -> onSet?.invoke(d.getValue("code").lowercase()) ?: web("https://cardstashy.com/#set/" + android.net.Uri.encode(d.getValue("code").lowercase()), null)
+            // The heart and the owned − / ＋ save here: the site's handler, then the page again (CollectionWrites).
+            p.act in CollectionWrites.CARD_ACTS -> scope.launch { if (CollectionWrites.act(context, p.act, dataset(d))) CollectionEngine.cardModel().takeIf { it.size() > 0 }?.let { model = CollectionCardModel.parse(it) } }
             p.act == "magicVersionsMore" -> asked = "more" to ""
             p.act == "flipFace" -> asked = "face" to ""
             p.act == "cardTab" && d["tab"] in setOf("overview", "meta", "guide", "prices") -> asked = "tab" to d.getValue("tab")
@@ -110,12 +115,14 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
  * tcg.js tcgCardSheet through the site's own code (Collection.tcard / tcardDo), drawn natively over the page that opened it: the card
  * draws at once from what the set page has, then the full card, Pokémon's other printings, the set list, the Play guide's pairings and
  * the price history fill it in (A.tCard). The tabs, finish chips, Yu-Gi-Oh!'s rarity chips and Edition / Printing pickers, the price
- * jump, the history range, other printings and the set are drawn here; everything that changes the account (own, wishlist, decks,
- * your price, Compare, Build), the archetype list, a set by name and the wiki open the website's card sheet and press the same control.
+ * jump, the history range, other printings and the set are drawn here; the wishlist heart and the owned − / ＋ save from here
+ * (CollectionWrites); the rest that changes the account (own, decks, your price, Compare, Build), the archetype list, a set by name
+ * and the wiki open the website's card sheet and press the same control.
  */
 @Composable
 private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -> Unit, web: (url: String, press: String?) -> Unit, onSet: ((String) -> Unit)?) {
     val context = LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     var model by remember(open) { mutableStateOf<CollectionCardModel?>(null) }
     var asked by remember(open) { mutableStateOf<Pair<String, String>?>(null) }
     fun show(j: JsonObject) { if (j.size() > 0 && j.get("missing") == null) model = CollectionCardModel.parse(j) }
@@ -158,6 +165,7 @@ private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) 
                     tile = listOfNotNull(open.tile.ifBlank { null }, "#sheet[open] [data-act=\"tCard\"][data-id=\"${css(v("id"))}\"]").joinToString("\n"),
                     game = open.game, id = v("id"), setId = v("set-id"), setVariant = v("set-variant"), printing = v("printing"), edition = v("edition")))
             p.act == "tSet" && v("id").isNotBlank() && onSet != null -> onSet(v("id"))
+            p.act in CollectionWrites.CARD_ACTS -> scope.launch { if (CollectionWrites.act(context, p.act, dataset(d))) show(CollectionEngine.tcardModel()) }
             p.act == "go" && v("to").isNotBlank() -> web("https://cardstashy.com/" + v("to"), null)
             p.act == "cardTab" && v("tab") in setOf("overview", "meta", "guide", "prices", "rulings", "legal") -> asked = "tab" to v("tab")
             p.act == "cardFinishPreview" && v("finish").isNotBlank() -> asked = "finish" to v("finish")
@@ -186,3 +194,6 @@ private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) 
     )
     CollectionCardSheet(m, act, onClose)
 }
+
+/** A tapped button's data-* attributes as the site's handler reads them (t.dataset). */
+internal fun dataset(d: Map<String, String>) = JsonObject().apply { for ((k, v) in d) if (k != "act") addProperty(k, v) }

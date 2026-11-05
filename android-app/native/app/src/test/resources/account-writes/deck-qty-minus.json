@@ -1,0 +1,119 @@
+{
+ "handler": "A.deckQty",
+ "source": "app.js:6288",
+ "dataset": {
+  "name": "Lightning Bolt",
+  "delta": "-1"
+ },
+ "commitOpts": {
+  "undo": "−1 Lightning Bolt",
+  "via": "scopedEditDeck(d1)"
+ },
+ "toast": "−1 Lightning Bolt",
+ "toastHasUndo": true,
+ "notes": "after.lastSavedAt is pinned to clock; the site writes the real time. Compare everything else exactly.",
+ "clock": "2026-11-05T12:00:00.000Z",
+ "before": {
+  "version": 3,
+  "references": [],
+  "printings": {},
+  "importHistory": [],
+  "collection": [],
+  "decks": [
+   {
+    "id": "d1",
+    "name": "Mono Red",
+    "format": "Modern",
+    "cards": [
+     {
+      "name": "Lightning Bolt",
+      "qty": 4
+     },
+     {
+      "name": "Mountain",
+      "qty": 20
+     }
+    ],
+    "createdAt": "2026-11-01T00:00:00.000Z"
+   }
+  ],
+  "activeDeck": "d1",
+  "wishlist": [],
+  "notes": [],
+  "valueHistory": [],
+  "settings": {
+   "shipping": 4.99,
+   "tax": 0,
+   "budget": 25,
+   "theme": "dark"
+  },
+  "example": false,
+  "lastSavedAt": "2026-11-05T09:00:00.000Z",
+  "tcg": {
+   "ygo": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   },
+   "ptcg": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   }
+  }
+ },
+ "after": {
+  "version": 3,
+  "references": [],
+  "printings": {},
+  "importHistory": [],
+  "collection": [],
+  "decks": [
+   {
+    "id": "d1",
+    "name": "Mono Red",
+    "format": "Modern",
+    "cards": [
+     {
+      "name": "Lightning Bolt",
+      "qty": 3
+     },
+     {
+      "name": "Mountain",
+      "qty": 20
+     }
+    ],
+    "createdAt": "2026-11-01T00:00:00.000Z"
+   }
+  ],
+  "activeDeck": "d1",
+  "wishlist": [],
+  "notes": [],
+  "valueHistory": [],
+  "settings": {
+   "shipping": 4.99,
+   "tax": 0,
+   "budget": 25,
+   "theme": "dark"
+  },
+  "example": false,
+  "lastSavedAt": "2026-11-05T12:00:00.000Z",
+  "tcg": {
+   "ygo": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   },
+   "ptcg": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   }
+  }
+ },
+ "commitReturn": null
+}

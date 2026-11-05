@@ -32,6 +32,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -54,7 +55,7 @@ internal object HomeCache {
  * Puts this device's copy of the account's workspace into the engine (once per account and revision; Home and the Cards tab
  * share it). False while signed in but the account's copy has never been read here: show nothing rather than an empty collection.
  */
-internal suspend fun ensureCollection(context: android.content.Context, userId: String?, signedIn: Boolean, revision: Long): Boolean {
+internal suspend fun ensureCollection(context: android.content.Context, userId: String?, signedIn: Boolean, revision: Long): Boolean = loadLock.withLock {
     CollectionEngine.init(context)
     val raw = withContext(Dispatchers.IO) { Decks.fullCopy(context) }
     if (signedIn && raw == null) return false
@@ -65,8 +66,10 @@ internal suspend fun ensureCollection(context: android.content.Context, userId: 
         CollectionEngine.load(raw ?: "", catalog)
         HomeCache.loaded = key; HomeCache.warm = true
     }
-    return true
+    true
 }
+/** One check-and-load at a time: a page's load can never land between a save's load and its write (CollectionWrites). */
+private val loadLock = kotlinx.coroutines.sync.Mutex()
 internal fun catalogFile(context: android.content.Context) = File(context.filesDir, "collection-catalog.json")
 /** The card names a visit looked up, kept for the next one. */
 internal suspend fun keepCatalog(context: android.content.Context) = withContext(Dispatchers.IO) {

@@ -2,12 +2,12 @@
 // (views.js home(), home-ui.js) around the web modules, bundled unchanged for QuickJS (CollectionEngine.kt).
 // Nothing is decided here: every number, list and order comes from the site's functions; this file only calls them
 // and hands their models to the app instead of HTML.
-import {S, blank, meta, cacheCard, slim, inv} from 'WEB/store.js';
+import {S, blank, meta, cacheCard, slim, inv, uid} from 'WEB/store.js';
 import {cardKey} from 'WEB/core.js';
 import {validateWorkspace} from 'WEB/confidence.js';
-import {normalizeHomeDeckActivity} from 'WEB/home-deck-activity.js';
-import {collectionValue} from 'WEB/insights.js';
-import {homeValueModel, homeMetaKey, homeMetaSlides, homeMetaArticle, homeMetaCarousel, homeDeckShelf, homeCommunity, featureArticle} from 'WEB/home-ui.js';
+import {normalizeHomeDeckActivity, recordHomeDeckWork} from 'WEB/home-deck-activity.js';
+import {collectionValue, recordValuePoint} from 'WEB/insights.js';
+import {homeValueCoverage, homeValueModel, homeMetaKey, homeMetaSlides, homeMetaArticle, homeMetaCarousel, homeDeckShelf, homeCommunity, featureArticle} from 'WEB/home-ui.js';
 import {heroFor, loadHero, homeHero, homeToday} from './tcg-daily-hero.mjs';
 import {dailyDetails, todaySetMarkup} from 'WEB/home-today.js';
 import {hintPool, SEARCH_PROMPT} from 'WEB/search-hints.js';
@@ -29,7 +29,10 @@ import {loadSharedHistory} from 'WEB/shared-history.js';
 import {playedAlongside} from 'WEB/guide.js';
 import {mtgPairQueries, rankPairs, edhPop} from 'WEB/pairing.js';
 import {ICON} from 'WEB/icons.js';
-import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf, SOURCES as tcgSources, cache as tcgCache, ensureCard as tcgEnsureCard, gs as tcgGs, tcgCardSheet, setContextCard as tcgSetContextCard, currentYgoCatalogue as tcgYgoCatalogue} from 'WEB/tcg.js';
+import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf, SOURCES as tcgSources, cache as tcgCache, ensureCard as tcgEnsureCard, gs as tcgGs, tcgCardSheet, setContextCard as tcgSetContextCard, currentYgoCatalogue as tcgYgoCatalogue, trackTcgValue, collectionValue as tcgCollectionValue} from 'WEB/tcg.js';
+import {adjustOwnedLot} from 'WEB/quick-quantity.js';
+import {workspaceSig, isEmptyWorkspace} from 'WEB/cloud.js';
+import {mergeAccountWorkspaces, workspaceContentSig} from 'WEB/sync-merge.js';
 import {packArtUrl, samplePack, packSize, packRarity, packFinishes, packPrice, trustedPackPrice, packRevealHaptic, packFinishLabel, packNeedsHydration, godPackText, collectorText, packRandom, ptcgSetRarities} from 'WEB/pack-preview.js';
 import {loadMtgBooster, mtgBoosterCards, drawMtgBooster, mtgGodPackPicks, GOD_PACK_ODDS as MTG_GOD_ODDS} from 'WEB/mtg-boosters.js';
 import {COLLECTOR_ODDS, collectorPicks} from 'WEB/play-econ-rules.js';
@@ -678,7 +681,7 @@ const TA = {}, TC = {}, TI = {}, tcgCtx = {};
 let tcgOn = false, tcgPrev, setsGame = 'mtg', setGame = 'mtg';
 function tcgReady() {
   if (tcgOn) return; tcgOn = true;
-  Object.assign(tcgCtx, {A: TA, C: TC, I: TI, commit: async () => {}, render() {}, openSheet() {}, closeSheet() {}, refreshSheet() {}, toast() {}, go() {}, download() {},
+  Object.assign(tcgCtx, {A: TA, C: TC, I: TI, commit, render() {}, openSheet() {}, closeSheet() {}, refreshSheet() {}, toast: text => { if (text) toasts.push({text: String(text), undo: false}); }, go() {}, download() {},
     copyText() {}, busy: () => () => {}, rerenderKeepingFocus() {}, writeRecord: async () => {}, navigationStamp: () => null, navigationCurrent: () => true});
   registerTcg(tcgCtx);
 }
@@ -1284,6 +1287,114 @@ function packModel() {
     shop: {lines, title: 'Shopping list copied', text: `${n} preview cards; check exact printings (${lines.length} line${lines.length === 1 ? '' : 's'}) are on your clipboard. On TCGplayer, paste them into Mass Entry and tap Add to cart.`,
       failTitle: 'Couldn\'t copy', failText: 'Your browser blocked the clipboard. On TCGplayer, open Mass Entry and type the list, or copy it from the deck page.', ok: 'Open TCGplayer', cancel: 'Done', url: massEntryUrl(game)}};
 }
+
+/* ---------- Account writes ---------- */
+// app.js commit (423-476): the change runs on a copy of the workspace, is validated (normalize), observed (trackValue,
+// recordHomeDeckWork), stamped, then becomes the workspace. What the site does after that is the app's: the device write and
+// the account sync (cloud.js pushNow and its merge, WorkspaceSync.kt over saved()), the toast, haptics and redraw. One write at
+// a time, as queueWorkspaceWrite: QuickJS has one thread and every write here is a chain link.
+let lastUndo = null, writes = Promise.resolve(), commits = 0, toasts = [], asked = '', valueHistoryReady = false;
+// The workspace as the account keeps it: a Yu-Gi-Oh! or Pokémon page borrows settings.game while it is open (tcgFocus), and the
+// player's own choice is what is saved.
+function saveable(s = S.state) {
+  const out = stripCache(s);
+  if (tcgPrev === undefined) return out;
+  const settings = {...out.settings}; if (tcgPrev === null) delete settings.game; else settings.game = tcgPrev;
+  return {...out, settings};
+}
+function commit(fn, {msg = '', undo = '', guard = null, navigationWrite = false, recordDeckWork = true, observeValue = true, valueGames = null} = {}) {
+  const transaction = async () => {
+    // Confirm against the latest committed state, without allowing another queued edit to pass.
+    if (guard && !await guard(S.state)) return;
+    const before = undo ? structuredClone(saveable(S.state)) : null;
+    const previous = S.state;
+    const next = structuredClone(stripCache(S.state));
+    const out = fn(next);
+    const valid = normalize(next);
+    if (valueHistoryReady && !navigationWrite && observeValue) trackValue(valid, previous, valueGames);
+    if (recordDeckWork && !navigationWrite) recordHomeDeckWork(previous, valid);
+    valid.lastSavedAt = new Date().toISOString();
+    S.state = valid;
+    commits++;
+    useMyPrices(S.state.myPrices); // app.js render(): the account's own prices count in every value
+    if (undo) { lastUndo = {state: before, label: undo}; toasts.push({text: msg || undo, undo: true}); } else if (msg) toasts.push({text: msg, undo: false});
+    return out;
+  };
+  const result = writes.then(transaction, transaction);
+  writes = result.catch(() => {});
+  return result;
+}
+commit.scoped = () => commit;
+// app.js trackValue (7711-7725), verbatim but for tcg.js's own exports in place of T.*. A game is observed only when every saved
+// card's data is here (the site keeps its whole catalog on the device; the app fills it as pages are visited, and Yu-Gi-Oh! and
+// Pokémon Home are not in the app yet): a partial total would write a false dip into the account's value history.
+function trackValue(state = S.state, previous = null, valueGames = null) {
+  if (!valueHistoryReady) return;
+  useMyPrices(state.myPrices);
+  try {
+    const changed = (a,b) => JSON.stringify(a ?? null) !== JSON.stringify(b ?? null);
+    const known = g => (state.tcg?.[g]?.collection || []).every(e => tcgCardOf(g, e.cardId));
+    for (const g of ["ptcg", "ygo"]) if ((valueGames?.includes(g) || previous && changed(previous.tcg?.[g]?.collection, state.tcg?.[g]?.collection)) && known(g)) trackTcgValue(g, tcgCollectionValue(g, state), state);
+    if (!valueGames?.includes("mtg") && (valueGames || previous && !changed(previous.collection,state.collection) && !changed(previous.myPrices,state.myPrices))) return;
+    if (!state.collection.every(e => (e.printingVerified && state.printings?.[e.printingId]) || meta(e.name))) return;
+    const v = collectionValue(state.collection, S.catalog, state.printings, []);
+    if (!state.collection.length && !state.valueHistory?.length) return;
+    state.valueHistory = recordValuePoint(state.valueHistory, v.total, v.copies, homeValueCoverage(v));
+  } finally { useMyPrices(S.state.myPrices); }
+}
+// dialog.js ask: the app shows the question and taps again with confirmed when the player says yes.
+const ask = (question, confirmed) => { if (confirmed) return true; asked = question; return false; };
+const ownedQuantityBusy = new Set();
+// The site's handlers for the Collection taps that save to the account: app.js's closures line for line (their DOM halves, the
+// button's busy state and the pill's pulse, are the app's), tcg.js's through registerTcg. [d] is the tapped button's dataset.
+const writeActs = {
+  // app.js A.cardWishlist (4770): one toggle for the card page and the hold menu, by the game's identity rule (Magic by name,
+  // Pokémon and Yu-Gi-Oh! by card id). Only the wishlist changes. (The site first checks the tap is for the open game: here the
+  // page that sent it is the open game's.)
+  async cardWishlist(d) {
+    const game = d.game, name = d.name, id = d.id;
+    const matches = w => game === 'mtg' ? key(w.name) === key(name) : String(w.cardId) === String(id), current = game === 'mtg' ? S.state : tcgGs(game);
+    const adding = !current.wishlist.some(matches);
+    await commit(state => { const st = game === 'mtg' ? state : state.tcg[game];
+      st.wishlist = st.wishlist.filter(w => !matches(w));
+      if (adding) st.wishlist.push({id: uid(), name, ...(game === 'mtg' ? {finish: 'nonfoil'} : {cardId: id}), qty: 1, addedAt: new Date().toISOString()});
+    }, {enrich: false, undo: adding ? 'Added to wishlist.' : 'Removed from wishlist.'});
+  },
+  // app.js A.cardOwnedQty (4751): ± one copy of a saved version on a card's page.
+  async cardOwnedQty(d) {
+    const game = d.game, id = d.lot, delta = Number(d.delta);
+    if (![-1, 1].includes(delta) || ownedQuantityBusy.has(id)) return;
+    const workspace = game === 'mtg' ? S.state : S.state.tcg[game], lot = workspace?.collection.find(e => e.id === id); if (!lot) return;
+    ownedQuantityBusy.add(id);
+    try {
+      await commit(state => adjustOwnedLot(game === 'mtg' ? state : state.tcg[game], id, delta), {undo: delta < 0 ? `−1 ${lot.name}` : '', guard: state => !!(game === 'mtg' ? state : state.tcg[game])?.collection.find(e => e.id === id)});
+    } finally { ownedQuantityBusy.delete(id); }
+  },
+  // app.js A.qty (5560): the Cards tab's − and + on a Magic lot; taking the last copy asks first.
+  async qty(d) {
+    const id = d.id, delta = Number(d.delta), e = S.state.collection.find(x => x.id === id);
+    if (!e) return;
+    await commit(s => {
+      const x = s.collection.find(y => y.id === id);
+      if (!x) return;
+      x.qty = Math.max(0, x.qty + delta);
+      x.reserved = Math.min(x.reserved || 0, x.qty);
+      s.collection = s.collection.filter(y => y.qty > 0);
+    }, {
+      undo: delta < 0 ? `−1 ${e.name}` : '',
+      guard: async s => {
+        const current = s.collection.find(x => x.id === id);
+        return !!current && (current.qty + delta > 0 || ask(`Remove ${current.name} from your collection?`, d.confirmed));
+      },
+    });
+  },
+  // app.js A.wishRemove (5688): the × on a wanted card.
+  async wishRemove(d) { await commit(s => (s.wishlist = s.wishlist.filter(w => w.id !== d.id))); },
+  // tcg.js A.tEntryQty and A.tWish, the site's own handlers, for a Yu-Gi-Oh! or Pokémon lot (the game's page holds settings.game).
+  async tEntryQty(d) { tcgFocus(d.game, S.ui.view || 'collection'); await TA.tEntryQty({dataset: d}); },
+  async tWish(d) { tcgFocus(d.game, S.ui.view || 'collection'); await TA.tWish({dataset: d}); },
+};
+let acting = null;
 globalThis.Collection = {
   // The account's workspace row data (cloud.js), normalized as app.js loads it; [catalogJson] is the app's saved catalog.
   load(workspaceJson, catalogJson) {
@@ -1291,6 +1402,8 @@ globalThis.Collection = {
     const ws = workspaceJson ? JSON.parse(workspaceJson) : null;
     S.state = ws && Object.keys(ws).length ? normalize(ws) : blank();
     S.catalog = catalogJson ? JSON.parse(catalogJson) : {};
+    // cloud.js reconciled: the account's copy is here, so value observations may be recorded (app.js valueHistoryReady).
+    valueHistoryReady = !!ws; lastUndo = null;
     useMyPrices(S.state.myPrices); // app.js render(): the account's own prices count in every value
     return json({copies: S.state.collection.reduce((n, e) => n + (Number(e.qty) || 0), 0), decks: S.state.decks.length});
   },
@@ -1313,6 +1426,42 @@ globalThis.Collection = {
     const deck = deckId ? S.state.decks.find(d => String(d.id) === String(deckId)) : null, mk = deck ? mtgMetaKey(deck) : null;
     if (mk) { const M = metaState(mk); if (!M.busy && (!M.data || Date.now() - M.at > 12 * 3600e3)) loadMeta(mk).catch(() => {}); }
     Promise.allSettled([loadCommunity(game), loadPulse(game)]);
+  },
+  // One of the site's saving taps (writeActs) with the tapped button's dataset; actPoll() reads how it ended once the app has
+  // pumped its chain: {done, error, ask (a question to put to the player first), toasts [{text, undo}], writes (commits made)}.
+  act(kind, dataJson) {
+    if (!writeActs[kind]) throw Error('unknown write ' + kind);
+    const run = acting = {done: false}; toasts = []; asked = ''; const n = commits;
+    Promise.resolve().then(() => writeActs[kind](JSON.parse(dataJson || '{}'))).then(
+      () => { Object.assign(run, {done: true, ask: asked, toasts, writes: commits - n}); },
+      e => { Object.assign(run, {done: true, error: String(e?.message || e), ask: '', toasts, writes: commits - n}); });
+  },
+  actPoll() { return json(acting || {done: true, writes: 0, toasts: []}); },
+  // app.js A.undo (6514): the state before the last undoable change comes back through the same write (replaceWorkspace).
+  undo() {
+    if (!lastUndo) return json({writes: 0, toasts: [{text: 'Nothing to undo.', undo: false}]});
+    const label = lastUndo.label, valid = normalize(structuredClone(lastUndo.state));
+    valid.lastSavedAt = new Date().toISOString();
+    if (tcgPrev !== undefined) valid.settings.game = S.state.settings?.game;
+    S.state = valid; lastUndo = null; useMyPrices(S.state.myPrices);
+    return json({writes: 1, toasts: [{text: `Undone: ${label.replace(/\.$/, '')}.`, undo: false}]});
+  },
+  // The workspace as the account keeps it, for this device's copy and the push.
+  saved() { return JSON.stringify(saveable()); },
+  // cloud.js pushNow's no-op check and decideSync's guard: the fingerprint of what would be pushed, and whether it is empty.
+  syncInfo() { const s = saveable(); return json({sig: workspaceSig(s), empty: isEmptyWorkspace(s)}); },
+  sigOf(dataJson) { return workspaceSig(JSON.parse(dataJson)); },
+  // cloud.js act(): the account moved on while this device had edits; sync-merge.js combines the three copies (the last synced
+  // one, this device's, the account's) and the result becomes this device's copy, to push next. [baseJson] null: no trusted
+  // baseline (mergeAccountWorkspaces' own rule then applies).
+  mergeIn(baseJson, cloudJson) {
+    const local = saveable(), remote = JSON.parse(cloudJson), trusted = baseJson ? JSON.parse(baseJson) : null;
+    const merged = mergeAccountWorkspaces(trusted, local, remote);
+    const authored = workspaceContentSig(local) !== workspaceContentSig(trusted || remote);
+    const held = S.state.settings?.game, valid = normalize(merged.state);
+    if (tcgPrev !== undefined) valid.settings.game = held;
+    S.state = valid; lastUndo = null; useMyPrices(S.state.myPrices);
+    return json({conflicts: merged.conflicts, notice: authored ? (merged.conflicts.length ? 'Your account copy is active. This device’s other edits are saved in Recovery.' : 'Changes from both devices were combined. The previous device copy is saved in Recovery.') : ''});
   },
   poll() { return json(status); },
   catalog() { return json(S.catalog); },

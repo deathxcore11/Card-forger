@@ -248,10 +248,12 @@ object PackSfx {
         if (pool != null) return
         val p = SoundPool.Builder().setMaxStreams(8).setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()).build()
         pool = p
-        runCatching { for (n in context.assets.list("sfx").orEmpty()) if (n.startsWith("PACK-") && n.endsWith(".ogg")) context.assets.openFd("sfx/$n").use { ids[n.removeSuffix(".ogg")] = p.load(it, 1) } }
+        runCatching { for (n in context.assets.list("sfx").orEmpty()) if ((n.startsWith("PACK-") || n.startsWith("COL-")) && n.endsWith(".ogg")) context.assets.openFd("sfx/$n").use { ids[n.removeSuffix(".ogg")] = p.load(it, 1) } }
     }
     fun toggle(context: Context) { on = !on; context.getSharedPreferences("play", Context.MODE_PRIVATE).edit().putBoolean("packSound", on).apply() }
     fun toggleTilt(context: Context) { tilt = !tilt; context.getSharedPreferences("play", Context.MODE_PRIVATE).edit().putBoolean("motionTilt", tilt).apply() }
+    /** audio.js appSound: an app sound (Collection's chime), on the app-sounds setting alone. */
+    fun app(id: String, volume: Float = .6f) { if (!AppSettings.appSounds) return; val p = pool ?: return; ids[id]?.let { p.play(it, volume, volume, 1, 0, 1f) } }
     fun play(id: String, volume: Float = 1f, rate: Float = 1f) { if (!on || !AppSettings.appSounds) return; val p = pool ?: return; ids[id]?.let { p.play(it, volume.coerceIn(0f, 1f), volume.coerceIn(0f, 1f), 1, 0, rate) } }
 }
 

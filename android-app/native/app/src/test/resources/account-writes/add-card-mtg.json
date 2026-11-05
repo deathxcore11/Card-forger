@@ -1,0 +1,149 @@
+{
+ "handler": "A.addSaveRaw (saveLot, unverified=true)",
+ "source": "app.js:5450",
+ "dataset": {},
+ "form": {
+  "name": "Counterspell",
+  "qty": 3,
+  "set": "",
+  "collectorNumber": "",
+  "finish": "nonfoil",
+  "language": "en",
+  "condition": "Lightly Played",
+  "location": "",
+  "manualValue": null
+ },
+ "commitOpts": {
+  "msg": "3× Counterspell added."
+ },
+ "toast": "3× Counterspell added.",
+ "sound": "COL-005",
+ "notes": "after.lastSavedAt is pinned to clock; the site writes the real time. Compare everything else exactly.",
+ "clock": "2026-11-05T12:00:00.000Z",
+ "before": {
+  "version": 3,
+  "references": [],
+  "printings": {},
+  "importHistory": [],
+  "collection": [
+   {
+    "id": "l1",
+    "name": "Lightning Bolt",
+    "qty": 2,
+    "set": "",
+    "collectorNumber": "",
+    "finish": "nonfoil",
+    "language": "en",
+    "condition": "Near Mint",
+    "location": "",
+    "reserved": 0,
+    "printingId": null,
+    "printingVerified": false,
+    "raw": {},
+    "manualValue": null,
+    "manualValueCondition": "Near Mint"
+   }
+  ],
+  "decks": [],
+  "activeDeck": null,
+  "wishlist": [],
+  "notes": [],
+  "valueHistory": [],
+  "settings": {
+   "shipping": 4.99,
+   "tax": 0,
+   "budget": 25,
+   "theme": "dark"
+  },
+  "example": false,
+  "lastSavedAt": "2026-11-05T09:00:00.000Z",
+  "tcg": {
+   "ygo": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   },
+   "ptcg": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   }
+  }
+ },
+ "after": {
+  "version": 3,
+  "references": [],
+  "printings": {},
+  "importHistory": [],
+  "collection": [
+   {
+    "id": "l1",
+    "name": "Lightning Bolt",
+    "qty": 2,
+    "set": "",
+    "collectorNumber": "",
+    "finish": "nonfoil",
+    "language": "en",
+    "condition": "Near Mint",
+    "location": "",
+    "reserved": 0,
+    "printingId": null,
+    "printingVerified": false,
+    "raw": {},
+    "manualValue": null,
+    "manualValueCondition": "Near Mint"
+   },
+   {
+    "id": "fx-lot-new",
+    "name": "Counterspell",
+    "qty": 3,
+    "set": "",
+    "collectorNumber": "",
+    "finish": "nonfoil",
+    "language": "en",
+    "condition": "Lightly Played",
+    "location": "",
+    "reserved": 0,
+    "printingId": null,
+    "printingVerified": false,
+    "raw": {},
+    "manualValue": null,
+    "manualValueCondition": "Lightly Played"
+   }
+  ],
+  "decks": [],
+  "activeDeck": null,
+  "wishlist": [],
+  "notes": [],
+  "valueHistory": [],
+  "settings": {
+   "shipping": 4.99,
+   "tax": 0,
+   "budget": 25,
+   "theme": "dark",
+   "savedLocations": {},
+   "lastLocation": {
+    "mtg": ""
+   }
+  },
+  "example": false,
+  "lastSavedAt": "2026-11-05T12:00:00.000Z",
+  "tcg": {
+   "ygo": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   },
+   "ptcg": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   }
+  }
+ },
+ "commitReturn": null
+}

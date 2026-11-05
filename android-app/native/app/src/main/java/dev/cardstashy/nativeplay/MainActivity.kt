@@ -148,9 +148,12 @@ class MainActivity : ComponentActivity() {
         dev.cardstashy.nativeplay.play.CardData.warm(this); dev.cardstashy.nativeplay.ui.PackSfx.warm(this)
         // Offline play: when a network comes back, matches finished without signal are sent (the server still decides rewards).
         runCatching { (getSystemService(CONNECTIVITY_SERVICE) as android.net.ConnectivityManager).registerDefaultNetworkCallback(object : android.net.ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: android.net.Network) { kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch { dev.cardstashy.nativeplay.play.Progress.flushQueue() } }
+            override fun onAvailable(network: android.net.Network) { kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch { dev.cardstashy.nativeplay.play.Progress.flushQueue() }
+                // Collection saves made without signal go to the account now (cloud.js: the online event starts a sync).
+                dev.cardstashy.nativeplay.collection.WorkspaceSync.kick(applicationContext) }
         }) }
         dev.cardstashy.nativeplay.ui.Pad.watch(this)
+        dev.cardstashy.nativeplay.ui.CollectionWrites.init()
         setContent {
             // The app is recorded into a layer as it draws, so the toast pill can blur what is under it (backdrop-filter).
             val page = androidx.compose.ui.graphics.rememberGraphicsLayer()
@@ -161,6 +164,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 dev.cardstashy.nativeplay.ui.AchievementToastHost(page)
+                dev.cardstashy.nativeplay.ui.CollectionWritesHost(page)
                 UpdateHost(this@MainActivity)
                 PadHintHost()
             }
@@ -168,7 +172,7 @@ class MainActivity : ComponentActivity() {
         Updater.check(this)
     }
 
-    override fun onResume() { super.onResume(); Updater.resumed(this) }
+    override fun onResume() { super.onResume(); Updater.resumed(this); dev.cardstashy.nativeplay.collection.WorkspaceSync.kick(this) }
 
     override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean { FreezeReport.touched(ev); return super.dispatchTouchEvent(ev) }
 

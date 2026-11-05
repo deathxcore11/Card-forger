@@ -91,4 +91,32 @@ class CollectionCardsShotTest {
         }
         if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
     }
+
+    /** A save's toast (app.js toast with Undo, and the ok tone with its tick) and dialog.js ask's question before a removal, over the list. */
+    @Test fun saves() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        dev.cardstashy.nativeplay.ui.Foil.testFallback = true
+        dev.cardstashy.nativeplay.ui.homeArt = ::art
+        val fx = home.resolve("collection-cards.json")
+        assumeTrue("write the fixture first (CollectionEngineTest.cardsFixture)", fx.exists())
+        val m = CollectionCardsModel.parse(JsonParser.parseString(fx.readText()).asJsonObject)
+        val W = dev.cardstashy.nativeplay.ui.CollectionWrites
+        val page = @Composable {
+            androidx.compose.foundation.layout.Box {
+                CollectionCards(m, top = { tabs -> TopBarItems(Mode.COLLECTION, null, "Randall", unread = true, onSwitch = {}, onProfile = {}, middle = tabs) },
+                    nav = { v -> CollectionNav(CollectionTab.CARDS, vertical = v, scan = !v) {} })
+                dev.cardstashy.nativeplay.ui.CollectionWritesHost()
+            }
+        }
+        try {
+            for ((w, h) in listOf(390 to 844, 884 to 1104)) {
+                W.show("−1 Lightning Bolt", undo = true); shot("collection-save-undo", w, h) { page() }
+                W.show("Added to wishlist.", undo = true); shot("collection-save-ok", w, h) { page() }
+                W.dismiss(W.toast.value!!)
+                W.askForTest(dev.cardstashy.nativeplay.ui.CollectionWrites.Ask("Remove Sol Ring from your collection?", "qty", com.google.gson.JsonObject()))
+                shot("collection-save-ask", w, h) { page() }
+                W.askForTest(null)
+            }
+        } finally { W.askForTest(null); W.toast.value?.let(W::dismiss) }
+    }
 }

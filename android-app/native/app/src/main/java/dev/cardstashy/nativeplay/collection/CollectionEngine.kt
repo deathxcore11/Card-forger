@@ -212,6 +212,38 @@ object CollectionEngine {
     }
     suspend fun packClose() = on { q -> q.evaluate("Collection.packClose()"); Unit }
 
+    /**
+     * One of the site's saving taps (the engine's writeActs: app.js's cardWishlist, cardOwnedQty, qty, wishRemove; tcg.js's
+     * tEntryQty, tWish) with the tapped button's dataset, run through app.js's commit; returns once its chain has finished:
+     * {done, error, ask (a question to put to the player, then tap again with confirmed), toasts [{text, undo}], writes}.
+     */
+    suspend fun act(kind: String, data: JsonObject): JsonObject {
+        on { q -> q.evaluate("Collection.act(${str(kind)}, ${str(data.toString())})") }
+        val until = System.currentTimeMillis() + 15_000
+        while (true) {
+            val (p, r) = on { q ->
+                while (true) { val a = answers.poll() ?: break; q.evaluate("__host.answer(${a.first}, ${a.second}, ${str(a.third.first)}, ${str(a.third.second)})") }
+                JsonParser.parseString(q.evaluate("__host.pump(${System.currentTimeMillis()})") as String).asJsonObject to
+                    JsonParser.parseString(q.evaluate("Collection.actPoll()") as String).asJsonObject
+            }
+            for (x in p.getAsJsonArray("requests")) send(x.asJsonObject)
+            if (r.get("done")?.asBoolean == true) return r
+            if (System.currentTimeMillis() > until) return r.apply { addProperty("done", true); addProperty("error", "That took too long. Try again.") }
+            if (p.get("ran").asInt == 0) delay(10)
+        }
+    }
+    /** app.js A.undo: the state before the last undoable change, written the same way; {writes, toasts}. */
+    suspend fun undo(): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.undo()") as String).asJsonObject }
+    /** The workspace as the account keeps it (this device's copy, and what a push sends). */
+    suspend fun saved(): String = on { q -> q.evaluate("Collection.saved()") as String }
+    /** cloud.js workspaceSig and isEmptyWorkspace of [saved]: {sig, empty}. */
+    suspend fun syncInfo(): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.syncInfo()") as String).asJsonObject }
+    /** cloud.js workspaceSig of an account copy's data. */
+    suspend fun sigOf(data: String): String = on { q -> q.evaluate("Collection.sigOf(${str(data)})") as String }
+    /** sync-merge.js mergeAccountWorkspaces(base, this device's copy, the account's): the result becomes this device's copy. */
+    suspend fun mergeIn(base: String?, cloud: String): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.mergeIn(${base?.let(::str) ?: "null"}, ${str(cloud)})") as String).asJsonObject }
+
     /** search-hints.js: the search field's prompt and the names and questions it fades through. */
     suspend fun hints(game: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.hints(${str(game)})") as String).asJsonObject }
 

@@ -48,16 +48,19 @@ object Decks {
     private fun cacheFile(context: Context, user: String) = File(context.filesDir, "workspace-$user.json")
     /** The whole account workspace as last read or saved here: Collection Home runs the site's Home code over it. */
     private fun fullFile(context: Context, user: String) = File(context.filesDir, "workspace-full-$user.json")
+    /** This device's copy of the account's workspace: what Collection runs on and saves into (WorkspaceSync keeps it in step). */
+    internal fun deviceFile(context: Context, user: String) = fullFile(context, user)
     private val _full = MutableStateFlow(0L)
-    /** Bumped each time this device's full copy of the workspace changes. */
+    /** Bumped each time this device's full copy of the workspace changes from outside the Collection engine. */
     val fullRevision: StateFlow<Long> = _full
+    /** The device copy changed from outside the engine (an account copy arrived or was merged in): pages reload it. */
+    internal fun deviceChanged(): Long = ++_full.value
     /** The full copy for the signed-in account, or null (signed out, or never read on this device yet). */
     fun fullCopy(context: Context): String? = Account.session.value?.let { s -> fullFile(context, s.userId).takeIf { it.isFile }?.readText() }
-    private fun keepFull(context: Context, user: String, data: JsonObject?) {
-        if (data == null) return
-        // Unchanged on a re-read: no write and no bump, so Home doesn't reload and repaint for nothing.
-        try { val f = fullFile(context, user); val text = data.toString(); if (f.isFile && f.readText() == text) return
-            val tmp = File(f.path + ".tmp"); tmp.writeText(text); tmp.renameTo(f); _full.value++ } catch (_: Exception) {}
+    /** The account's row arrived: cloud.js's sync decides what the device copy becomes (unchanged on a re-read: no write, no reload). */
+    private suspend fun keepFull(context: Context, user: String, revision: Long?, data: JsonObject?) {
+        if (data == null || revision == null) return
+        try { dev.cardstashy.nativeplay.collection.WorkspaceSync.fromAccount(context, user, revision, data.toString()) } catch (_: Exception) {}
     }
 
     fun parse(workspace: JsonObject?): List<UserDeck> {
@@ -86,11 +89,12 @@ object Decks {
             val rows = Http.call("GET", "${Account.URL}/rest/v1/workspaces?select=data,revision&user_id=eq.${s.userId}",
                 mapOf("apikey" to Account.KEY, "Authorization" to "Bearer $token"), timeoutMs = 15000)?.asJsonArray
             val data = rows?.firstOrNull()?.asJsonObject?.getAsJsonObject("data")
+            val revision = rows?.firstOrNull()?.asJsonObject?.get("revision")?.takeIf { it.isJsonPrimitive }?.asLong
             // Only the decks and saved online lists are kept on this device.
             val slim = JsonObject().apply { add("decks", data?.getAsJsonArray("decks") ?: JsonArray()); add("references", data?.getAsJsonArray("references") ?: JsonArray())
                 data?.getAsJsonObject("settings")?.getAsJsonObject("playDeckCovers")?.let { c -> add("settings", JsonObject().apply { add("playDeckCovers", c) }) } }
             file.writeText(slim.toString())
-            keepFull(context, s.userId, data)
+            keepFull(context, s.userId, revision, data)
             _decks.value = parse(slim); _references.value = refs(slim); _covers.value = covers(slim); _error.value = null
             timings.value = timings.value + ("decksFromAccount" to System.currentTimeMillis() - t0)
         } catch (e: Exception) {
@@ -131,7 +135,7 @@ object Decks {
             if (out != null && out.size() > 0) {
                 _decks.value = parse(data)
                 _references.value = refs(data); _covers.value = covers(data)
-                keepFull(context, s.userId, data)
+                keepFull(context, s.userId, revision + 1, data)
                 try { cacheFile(context, s.userId).writeText(JsonObject().apply { add("decks", data.getAsJsonArray("decks") ?: JsonArray()); add("references", data.getAsJsonArray("references") ?: JsonArray())
                     data.getAsJsonObject("settings")?.getAsJsonObject("playDeckCovers")?.let { c -> add("settings", JsonObject().apply { add("playDeckCovers", c) }) } }.toString()) } catch (_: Exception) {}
                 return@withContext null

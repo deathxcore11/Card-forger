@@ -1,0 +1,158 @@
+{
+ "handler": "A.cardOwnedQty (MTG list uses A.qty app.js:5560 with the same math)",
+ "source": "app.js:4751; quick-quantity.js:5",
+ "dataset": {
+  "game": "mtg",
+  "lot": "l1",
+  "delta": "-1"
+ },
+ "commitOpts": {
+  "undo": "−1 Lightning Bolt",
+  "guard": "lot l1 still exists"
+ },
+ "toast": "−1 Lightning Bolt",
+ "toastHasUndo": true,
+ "haptic": "warn",
+ "removalConfirm": null,
+ "notes": "after.lastSavedAt is pinned to clock; the site writes the real time. Compare everything else exactly.",
+ "clock": "2026-11-05T12:00:00.000Z",
+ "before": {
+  "version": 3,
+  "references": [],
+  "printings": {},
+  "importHistory": [],
+  "collection": [
+   {
+    "id": "l1",
+    "name": "Lightning Bolt",
+    "qty": 2,
+    "set": "",
+    "collectorNumber": "",
+    "finish": "nonfoil",
+    "language": "en",
+    "condition": "Near Mint",
+    "location": "",
+    "reserved": 2,
+    "printingId": null,
+    "printingVerified": false,
+    "raw": {},
+    "manualValue": null,
+    "manualValueCondition": "Near Mint"
+   },
+   {
+    "id": "l2",
+    "name": "Island",
+    "qty": 10,
+    "set": "",
+    "collectorNumber": "",
+    "finish": "nonfoil",
+    "language": "en",
+    "condition": "Near Mint",
+    "location": "",
+    "reserved": 0,
+    "printingId": null,
+    "printingVerified": false,
+    "raw": {},
+    "manualValue": null,
+    "manualValueCondition": "Near Mint"
+   }
+  ],
+  "decks": [],
+  "activeDeck": null,
+  "wishlist": [],
+  "notes": [],
+  "valueHistory": [],
+  "settings": {
+   "shipping": 4.99,
+   "tax": 0,
+   "budget": 25,
+   "theme": "dark"
+  },
+  "example": false,
+  "lastSavedAt": "2026-11-05T09:00:00.000Z",
+  "tcg": {
+   "ygo": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   },
+   "ptcg": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   }
+  }
+ },
+ "after": {
+  "version": 3,
+  "references": [],
+  "printings": {},
+  "importHistory": [],
+  "collection": [
+   {
+    "id": "l1",
+    "name": "Lightning Bolt",
+    "qty": 1,
+    "set": "",
+    "collectorNumber": "",
+    "finish": "nonfoil",
+    "language": "en",
+    "condition": "Near Mint",
+    "location": "",
+    "reserved": 1,
+    "printingId": null,
+    "printingVerified": false,
+    "raw": {},
+    "manualValue": null,
+    "manualValueCondition": "Near Mint"
+   },
+   {
+    "id": "l2",
+    "name": "Island",
+    "qty": 10,
+    "set": "",
+    "collectorNumber": "",
+    "finish": "nonfoil",
+    "language": "en",
+    "condition": "Near Mint",
+    "location": "",
+    "reserved": 0,
+    "printingId": null,
+    "printingVerified": false,
+    "raw": {},
+    "manualValue": null,
+    "manualValueCondition": "Near Mint"
+   }
+  ],
+  "decks": [],
+  "activeDeck": null,
+  "wishlist": [],
+  "notes": [],
+  "valueHistory": [],
+  "settings": {
+   "shipping": 4.99,
+   "tax": 0,
+   "budget": 25,
+   "theme": "dark"
+  },
+  "example": false,
+  "lastSavedAt": "2026-11-05T12:00:00.000Z",
+  "tcg": {
+   "ygo": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   },
+   "ptcg": {
+    "collection": [],
+    "decks": [],
+    "wishlist": [],
+    "valueHistory": []
+   }
+  }
+ },
+ "commitReturn": true
+}

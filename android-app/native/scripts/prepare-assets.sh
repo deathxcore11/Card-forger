@@ -22,7 +22,7 @@ cp "$REPO"/forge-rules/current/{manifest.json,cards.json,official-format-facts.j
 for f in playmat-charcoal-table.webp playmat-charcoal-table-glow.webp turn-you.webp turn-cpu.webp result-win.webp result-loss.webp result-draw.webp; do cp "$REPO/assets/play/$f" "$A/play/"; done
 cp "$REPO/art-packs/planeswalk-codex/Existing_Project_Art/chandra.jpg" "$A/play/planeswalk-tile.jpg" 2>/dev/null || cp "$REPO/assets/planeswalk-tile.jpg" "$A/play/planeswalk-tile.jpg"
 # The sound ids play-table-audio.js uses at the table.
-for id in CARD-001 CARD-002 CARD-005 CARD-006 CARD-008 CARD-010 CARD-014 CARD-018 CARD-019 CARD-020 CARD-025 CARD-027 CMB-002 CMB-003 CMB-004 CMB-005 CMB-007 CMB-009 CMB-018 CMB-019 TT-001 TT-002 TT-003 QP-012 QP-017 QP-018 QP-019 PACK-003 PACK-004 PACK-005 PACK-006 PACK-014 PACK-015 PACK-016 PACK-017 PACK-018 PACK-019 PACK-020 RWD-001 RWD-006 CMB-001 CMB-006 CMB-016 QP-010 QP-011 QP-013 QP-014 QP-015 TT-006 TT-007 TT-008; do
+for id in CARD-001 CARD-002 CARD-005 CARD-006 CARD-008 CARD-010 CARD-014 CARD-018 CARD-019 CARD-020 CARD-025 CARD-027 CMB-002 CMB-003 CMB-004 CMB-005 CMB-007 CMB-009 CMB-018 CMB-019 TT-001 TT-002 TT-003 QP-012 QP-017 QP-018 QP-019 PACK-003 PACK-004 PACK-005 PACK-006 PACK-014 PACK-015 PACK-016 PACK-017 PACK-018 PACK-019 PACK-020 COL-005 RWD-001 RWD-006 CMB-001 CMB-006 CMB-016 QP-010 QP-011 QP-013 QP-014 QP-015 TT-006 TT-007 TT-008; do
   cp "$REPO/assets/audio/sfx/$id.ogg" "$A/sfx/"
 done
 # The table-feel cues made for the app (sounds thread, 4 Nov): block slam, clash with its hit-stop, face-hit boom, life tick.

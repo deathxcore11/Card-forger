@@ -42,8 +42,8 @@ private object CardsCache {
 
 /**
  * Collection's Cards tab: the account's collection through the site's own views.js collection(), drawn natively. Sort,
- * direction, filter, search, the view (Gallery, Compact, Symbols) and Show more ask the site's code again; everything that changes
- * the collection (the steppers, Edit, Got it), Binders, Value, Select and the ⋯ menu still open the website's page, which does it there.
+ * direction, filter, search, the view (Gallery, Compact, Symbols) and Show more ask the site's code again; the steppers and a wanted
+ * card's × save from here (CollectionWrites); Edit, Got it, Binders, Value, Select and the ⋯ menu still open the website's page.
  */
 @Composable
 fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, web: (url: String, press: String?) -> Unit, onDecks: (() -> Unit)? = null, nativeCard: Boolean = false,
@@ -84,6 +84,11 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     } }
     // A control changed: the site's handler runs, then the page is read again. Typing waits a beat before it searches.
     LaunchedEffect(asked) { asked?.let { c -> if (HomeCache.loaded != null) runCatching { paint(c) }; asked = null } }
+    // A save (here or on a card page over the list): the list is read again.
+    val written by CollectionWrites.written.collectAsState()
+    var seen by remember { mutableStateOf(written) }
+    LaunchedEffect(written) { if (written != seen) { seen = written; if (HomeCache.loaded != null) runCatching { paint() } } }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     LaunchedEffect(query) {
         if (query == CardsCache.q) return@LaunchedEffect
         delay(180); CardsCache.q = query
@@ -108,10 +113,11 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
                 if (nativeCard) cards = cards + CardOpen(r.name, entry = if (r.wanted) "" else r.id, page = coll, tile = tile) else web(coll, tile) },
             set = { code -> if (code.isNotBlank()) onSet?.invoke(code.lowercase()) ?: web(site + "#set/" + android.net.Uri.encode(code.lowercase()), null) },
             price = { r -> web(coll, "[data-act=\"buyCard\"][data-lot=\"${css(r.id)}\"]") },
-            qty = { r, d -> web(coll, "[data-act=\"qty\"][data-id=\"${css(r.id)}\"][data-delta=\"$d\"]") },
+            // app.js A.qty and A.wishRemove, saved here (CollectionWrites).
+            qty = { r, d -> scope.launch { CollectionWrites.act(context, "qty", com.google.gson.JsonObject().apply { addProperty("id", r.id); addProperty("delta", d.toString()) }) } },
             edit = { r -> web(coll, "[data-act=\"editLot\"][data-id=\"${css(r.id)}\"]") },
             got = { r -> web(coll, "[data-act=\"own\"][data-name=\"${css(r.name)}\"]") },
-            unwish = { r -> web(coll, "[data-act=\"wishRemove\"][data-id=\"${css(r.wishId)}\"]") },
+            unwish = { r -> scope.launch { CollectionWrites.act(context, "wishRemove", com.google.gson.JsonObject().apply { addProperty("id", r.wishId) }) } },
             emptyAct = { a -> web(coll, "[data-act=\"${css(a)}\"]") },
         )
     }
