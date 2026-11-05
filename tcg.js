@@ -62,7 +62,8 @@ import { tileChrome } from "./tiles.js";
 // Yu-Gi-Oh! and Pokémon: collection, search, sets and deck building, sharing one
 // set of screens. Each game's data, rules and formats come from its adapter.
 import { S, uid, slim, meta as mtgDeckMeta } from "./store.js";
-import { esc, safeHref, usd, empty, bar, options, segmented, referencePrintingPills } from "./ui.js";
+import { esc, safeHref, usd, empty, bar, options, segmented, referencePrintingPills, ring } from "./ui.js";
+import { scoutingRows, competitiveScore } from "./scouting.js";
 import { GAMES, GAME_ICON, GAME_COLOR, GAME_IDS, blankGame, gameOf } from "./games.js";
 import { ICON, actionIcon, labelIcon } from "./icons.js";
 import { tcgCompareSheet } from "./tcgcompare.js";
@@ -1430,7 +1431,7 @@ export function tcgDeck(id) {
     cover = deckCoverCard(g, d),
     shown = shownPower(tcgPower(g, d, f, x => cardOf(g, x))),
     buildCheck = d.buildDiagnostics ? tcgBuildDiagnostics(g, { ...d, budget: d.buildDiagnostics.purchaseBudget }, f) : null;
-  const tab = S.ui.tdeckTab?.[g+":"+d.id] || "cards";
+  const tab0 = S.ui.tdeckTab?.[g+":"+d.id] || "cards", tab = tab0 === "matchups" || tab0 === "upgrade" ? "insights" : tab0;
   return `${deckShell({game:g,source:"mine",artHtml:g === "ptcg" && cover ? pokemonArtCrop(cover, "hero-art") : imgTag(cover, "hero-art", true),title:d.name,
     back:`<button class="icon light" data-act="go" data-to="#decks" aria-label="Back">←</button>`,
     menu:`<button class="ds-menu" data-act="tDeckMenu" data-id="${esc(d.id)}" aria-label="Deck options for ${esc(d.name)}" title="Rename, format, deck box, delete">⋯</button>`,
@@ -1447,8 +1448,8 @@ export function tcgDeck(id) {
       {label:"War Chest",primary:true,attrs:`data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="playtest"`},
       {label:`Export ${SOURCES[g].exportExt === "ydk" ? ".ydk" : "list"}`,attrs:`data-act="tDeckExport" data-id="${esc(d.id)}"`},{label:"Game Night",attrs:`data-act="gameNight"`}],
     status:`${buildCheck && (!buildCheck.ready || !buildCheck.purchaseEstimateVerified || buildCheck.summoningReview.length) ? `<p class="small warn-text ds-status">${buildCheck.open ? `Incomplete draft: ${buildCheck.open} slots remain. ` : !buildCheck.legalChecked ? "Draft: deck checks still need review. " : buildCheck.missingRequiredSeeds.length ? `Draft: required build-around card missing: ${esc(buildCheck.missingRequiredSeeds.map(s => s.name).join(", "))}. ` : buildCheck.missingEnergy ? `Draft: ${buildCheck.missingEnergy} intended Energy copies are still missing. ` : !buildCheck.ready ? "Draft: the requested purchase budget is not verified. " : ""}${buildCheck.summoningReview.length ? `${buildCheck.coreRouteUnverified ? `${buildCheck.ready ? "Complete list" : "Draft"}, core route unverified` : `${buildCheck.ready ? "Complete list" : "Draft"} · Extra Deck summoning needs review`}. ${esc(buildCheck.summoningReview.map(x => x.explanation).join(" "))} ` : ""}${buildCheck.unpricedPurchaseCopies ? `Known purchase subtotal only; ${buildCheck.unpricedPurchaseCopies} missing copies are unpriced. Total purchase cost is unverified, not free.` : ""}</p>` : ""}`})}
-  <nav class="tabs" role="tablist">${[["cards", "Cards", "cardStack"], ["rules", "Rules", "book"], ["insights", "Power", "trophy"], ["matchups", "Matchups", "sword"], ["upgrade", "Upgrade lab", "build"], ["playtest", "War Chest", "random"]].map(([id, l, icon]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="${id}">${labelIcon(icon)}${l}</button>`).join("")}</nav>
-  <div class="deck-body">${tab === "rules" ? interactiveRules(g, {format:d.format}) : tab === "insights" ? deckInsights(g, d, f, s) : tab === "matchups" ? deckMatchupsT(g, d, f) : tab === "upgrade" ? deckUpgradeTab(g, d, f, s) : tab === "playtest" ? warChestMarkup({deck:{id:d.id,name:d.name},resume:chestResume(g)}) + `<section class="wc-draw" id="chestDraw"><h3>Draw a hand</h3>${deckPlaytest(g, d, f)}</section>` : tab === "versions" ? deckVersions(g, d) : deckCardsTab(g, d, f, s, issues)}</div>`;
+  <nav class="tabs" role="tablist">${[["cards", "Cards", "cardStack"], ["rules", "Rules", "book"], ["insights", "Power", "trophy"], ["playtest", "War Chest", "random"]].map(([id, l, icon]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="${id}">${labelIcon(icon)}${l}</button>`).join("")}</nav>
+  <div class="deck-body">${tab === "rules" ? interactiveRules(g, {format:d.format}) : tab === "insights" ? tcgPowerPage(g, d, f, s) : tab === "playtest" ? warChestMarkup({deck:{id:d.id,name:d.name},resume:chestResume(g)}) + `<section class="wc-draw" id="chestDraw"><h3>Draw a hand</h3>${deckPlaytest(g, d, f)}</section>` : tab === "versions" ? deckVersions(g, d) : deckCardsTab(g, d, f, s, issues)}</div>`;
 }
 
 // Meta / staple tally for the deck, and owned staples that could replace no-emblem cards.
@@ -1528,6 +1529,48 @@ const tRows = (g, zone) => (zone || []).map((r) => ({ qty: r.qty, c: cardOf(g, r
 const tPower = (g, f, main, extra = []) => (g === "ygo" ? ygoPower([...main.map((r) => ({ ...r, zone: "main" })), ...extra.map((r) => ({ ...r, zone: "extra" }))], f) : ptcgPower(main, f));
 // The calibration of the field archetype this deck copies (see calibrateField), else 0.
 const myBiasFor = (p, field) => { const m = p?.match; if (!canBorrowResults(p)) return 0; const f = (field || []).find((x) => String(x.name).toLowerCase() === String(m.archetype).toLowerCase()); return f?.bias || 0; };
+
+/* ---------- The merged Power view for Pokémon / Yu-Gi-Oh! (same cards as the Magic deck page) ---------- */
+// Strong and weak matchups from the field simulation (tMuRun loads the field). Pokémon numbers are
+// pulled toward recorded Limitless results (realResults); both are models, and the card says so.
+function tcgMatchupCard(g, d, f, pw, main, extra) {
+  const st = muStateT(g, d), fkey = tcgFieldKey(g);
+  const wrap = (inner) => `<section class="ph-card ph-wide"><h3>Matchups</h3>${inner}</section>`;
+  if (st.busy) return wrap(`<p class="ph-note" role="status">${esc(st.msg || "Simulating matchups…")}</p>`);
+  if (!st.field?.length || st.fieldKey !== fkey) { const cached = metaState(g)?.data ? fieldStore.get(fkey) : null; if (cached?.length) { st.field = cached; st.fieldKey = fkey; } }
+  if (!st.field?.length || st.fieldKey !== fkey) return wrap(`<p class="ph-note">Simulate this deck against the decks winning right now.</p>${st.error ? `<p class="ph-note warn-text">${esc(st.error)}</p>` : ""}<button class="btn" data-act="tMuRun">Simulate matchups</button>`);
+  const me = profileOf(g, pw, main, extra);
+  if (!me) return wrap(`<p class="ph-note">This deck's cards are still loading.</p>`);
+  let sims = computeMatchups(fkey + "|" + listSig({ main: d.zones.main || [], side: d.zones.side || [] }), st.field, me, () => null, (a, b) => simulateMatchup(g, a, b), 0);
+  if (g === "ptcg") sims = realResults(sims, pw);
+  const rows = sims.map((m) => ({ name: m.name, w: m.sim.win, why: (m.sim.reasons || [])[0] || "" }));
+  const strong = rows.filter((m) => m.w >= 0.55).sort((a, b) => b.w - a.w).slice(0, 3), weak = rows.filter((m) => m.w <= 0.45).sort((a, b) => a.w - b.w).slice(0, 3);
+  const li = (m, c) => `<li class="ph-m"><span><b>${esc(m.name)}</b>${m.why ? `<small>${esc(m.why)}</small>` : ""}</span><em class="${c}">${Math.round(m.w * 100)}%</em></li>`;
+  return wrap(`<div class="ph-pc"><div class="ph-pro"><h4>Strong against</h4><ul>${strong.map((m) => li(m, "up")).join("") || '<li class="ph-note">No clear edge against this field.</li>'}</ul></div><div class="ph-con"><h4>Weak against</h4><ul>${weak.map((m) => li(m, "down")).join("") || '<li class="ph-note">No clear weakness in this field.</li>'}</ul></div></div><p class="ph-note">Simulated against ${rows.length} tournament decks, 2,000 games each${g === "ptcg" ? ", adjusted toward recorded online results" : ""}. A model, not match data.</p>`);
+}
+function tcgPowerPage(g, d, f, s) {
+  const N = (d.zones.main || []).reduce((a, r) => a + r.qty, 0);
+  if (!N) return deckInsights(g, d, f, s);
+  const pw = tcgPower(g, d, f, (x) => cardOf(g, x)), score = shownPower(pw), comp = competitiveScore(pw);
+  const tier = comp == null ? "Tier not rated yet" : comp >= 88 ? "Tier 1" : comp >= 75 ? "Tier 2" : comp >= 62 ? "Tier 3" : "Below Tier 3";
+  const hero = `<section class="ph-card ph-hero${score == null ? " no-ring" : ""}">${score == null ? "" : `<div class="ph-ring">${ring(score, 96)}</div>`}<div class="ph-hero-t"><p class="ph-tier">${esc(tier)}</p><p class="ph-plan">${esc(pw.plan || pw.lens || "")}</p><p class="ph-sub">${score == null ? "Power unavailable until the checks below pass" : comp == null ? "from the deck's own cards" : "vs. what's winning now"}</p></div></section>`;
+  const gf = pw.goldfish, dist = gf?.turnDist, mx = dist ? Math.max(...dist.d, 1) : 1;
+  const tiles = gf?.metrics?.length ? gf.metrics.slice(0, 4).map((m) => { const v = m.pct ? Math.round(m.value * 100) + "%" : m.value.toFixed(1), ok = m.bad ? m.value <= m.good : m.value >= m.good; return `<span class="${ok ? "ok" : "bad"}"><b>${v}</b>${esc(m.label)}</span>`; }) : (pw.sims || []).slice(0, 4).map((x) => { const ok = x.lower ? x.p <= x.target : x.p >= x.target; return `<span class="${ok ? "ok" : "bad"}"><b>${Math.round(x.p * 100)}%</b>${esc(x.label)}</span>`; });
+  const ramp = dist || tiles.length ? `<section class="ph-card"><h3>${g === "ygo" ? "Opening hands" : "Ramp"}</h3>${dist ? `<div class="ph-bars" role="img" aria-label="${esc(dist.label)}">${dist.d.map((x, i) => `<i><em>${x >= 0.01 ? Math.round(x * 100) + "%" : ""}</em><span style="height:${Math.max(3, Math.round(x / mx * 78))}px"></span><small>${i === dist.maxT ? "later" : "T" + (i + 1)}</small></i>`).join("")}</div>` : ""}${gf?.headline ? `<p class="ph-note">${esc(gf.headline)}</p>` : ""}${tiles.length ? `<div class="ph-tiles">${tiles.join("")}</div>` : ""}</section>` : "";
+  const keep = { "The plan": 1, "What makes it work": 1, "How it wins": 1, "Modeled output": 1 };
+  const rows = scoutingRows(pw).filter(([h]) => keep[h]);
+  const how = rows.length ? `<section class="ph-card"><h3>How it works and wins</h3><dl class="ph-how">${rows.map(([h, t]) => `<div><dt>${esc(h.replace("What makes it work", "Synergy").replace("The plan", "Plan"))}</dt><dd>${t}</dd></div>`).join("")}</dl></section>` : "";
+  const c = pw.ctx || {}, m = pw.match;
+  const bits = [m ? `<span class="ph-chip">${m.sim >= 0.35 ? "Matches" : "Closest list"} <b>${esc(m.archetype)}</b> · ${Math.round(m.sim * 100)}% same cards</span>` : "", ...(c.field || []).slice(0, 4).map((a) => `<span class="ph-chip">${esc(a.name)}${a.share ? ` <b>${Math.round(a.share * 100)}%</b>` : ""}</span>`)].filter(Boolean);
+  const metaCard = bits.length ? `<section class="ph-card"><h3>Against the meta</h3><div class="ph-chips">${bits.join("")}</div></section>` : "";
+  const mu = tcgMatchupCard(g, d, f, pw, tRows(g, d.zones.main), tRows(g, d.zones.extra));
+  // Upgrades: what placing lists of the same archetype play that this list does not.
+  const U = pw.upgrades;
+  const sw = U ? `<ul class="ph-swaps">${U.adds.slice(0, 4).map((x) => `<li><span class="in" style="text-align:left">+ ${esc(x.name)}</span><i></i><span></span><small>${Math.round(x.share * 100)}% of ${esc(m.archetype)} lists play it · they run ${x.typical}, you run ${x.have}</small></li>`).join("")}</ul>${U.cuts.length ? `<p class="ph-note"><b>Few placing lists play:</b> ${U.cuts.slice(0, 4).map((x) => esc(x.name)).join(", ")}</p>` : ""}` : "";
+  const up = `<section class="ph-card ph-wide"><h3>Upgrades</h3>${sw}${pw.metaLoaded ? "" : `<p class="ph-note">Load recent tournament decks to see what lists like yours play.</p><button class="btn" data-act="tMetaRefresh">Load tournament decks</button>`}<p class="ph-note">From recent tournament results. Heuristics, not measured win rates.</p><details class="ph-more"><summary>Cuts, staples and budget builds</summary>${deckUpgradeTab(g, d, f, s)}</details></section>`;
+  return `<div class="ph-root"><div class="ph">${hero}${ramp}${how}${metaCard}${mu}${up}</div><details class="ph-full"><summary>Full breakdown</summary><div class="ph-cols">${deckInsights(g, d, f, s)}</div></details></div>`;
+}
+
 function deckMatchupsT(g, d, f) {
  return `<section class="panel"><p class="eyebrow">AI MATCHUPS</p><h2>${g==='ptcg'?'Pokémon':'Yu-Gi-Oh!'} matchups are coming soon</h2><p>We are starting with Magic. Your deck's Power tools remain available and unchanged.</p><button class="btn" disabled>Coming soon</button></section>`;
 }
