@@ -44,6 +44,8 @@ internal object HomeCache {
     var loaded: String? = null
     /** The engine holds a catalog (card names already looked up): a reload carries it over instead of the saved file. */
     var warm = false
+    /** The game [hints] were drawn for. */
+    var hintsGame: CardGame? = null
 }
 
 /**
@@ -63,6 +65,8 @@ internal suspend fun ensureCollection(context: android.content.Context, userId: 
     if (HomeCache.loaded != key) {
         // Deck covers come from the catalog: starting a reload from less than the engine already knows would blank them.
         val catalog = if (HomeCache.warm) CollectionEngine.catalog() else withContext(Dispatchers.IO) { catalogFile(context).takeIf { it.isFile }?.readText() }
+        // tcg.js loadCache: the Yu-Gi-Oh! and Pokémon card data kept from the last visit, once for a fresh engine.
+        if (!HomeCache.warm) CollectionEngine.tcgCacheLoad(withContext(Dispatchers.IO) { tcgCacheFile(context).takeIf { it.isFile }?.readText() })
         CollectionEngine.load(raw ?: "", catalog)
         HomeCache.loaded = key; HomeCache.warm = true
     }
@@ -71,9 +75,26 @@ internal suspend fun ensureCollection(context: android.content.Context, userId: 
 /** One check-and-load at a time: a page's load can never land between a save's load and its write (CollectionWrites). */
 private val loadLock = kotlinx.coroutines.sync.Mutex()
 internal fun catalogFile(context: android.content.Context) = File(context.filesDir, "collection-catalog.json")
-/** The card names a visit looked up, kept for the next one. */
+internal fun tcgCacheFile(context: android.content.Context) = File(context.filesDir, "collection-tcg-cache.json")
+/** The card names a visit looked up (and the Yu-Gi-Oh! / Pokémon cards it fetched), kept for the next one. */
 internal suspend fun keepCatalog(context: android.content.Context) = withContext(Dispatchers.IO) {
     runCatching { val f = catalogFile(context); val tmp = File(f.path + ".tmp"); tmp.writeText(CollectionEngine.catalog()); tmp.renameTo(f) }
+    runCatching { val f = tcgCacheFile(context); val tmp = File(f.path + ".tmp"); tmp.writeText(CollectionEngine.tcgCache()); tmp.renameTo(f) }
+}
+
+/**
+ * The game Collection has open (tcg.js game(): the header's game tabs). The site keeps it with the page's route; the app keeps it on
+ * this device, so Home, Cards and Decks open on the game last picked.
+ */
+object CollectionGame {
+    private var prefs: android.content.SharedPreferences? = null
+    val current = kotlinx.coroutines.flow.MutableStateFlow(CardGame.MTG)
+    fun init(context: android.content.Context) {
+        if (prefs != null) return
+        prefs = context.applicationContext.getSharedPreferences("collection", android.content.Context.MODE_PRIVATE)
+        current.value = CardGame.of(prefs?.getString("game", "mtg") ?: "mtg")
+    }
+    fun set(g: CardGame) { current.value = g; prefs?.edit()?.putString("game", g.id)?.apply() }
 }
 
 @Composable
@@ -83,24 +104,28 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
     val profile by Account.profile.collectAsState()
+    remember { CollectionGame.init(context) }
+    val game by CollectionGame.current.collectAsState()
     var model by remember { mutableStateOf(HomeCache.model) }
-    var hints by remember { mutableStateOf(HomeCache.hints) }
+    var hints by remember { mutableStateOf(HomeCache.hints?.takeIf { HomeCache.hintsGame == game }) }
+    // A card page opened from Home (the Card of the Day of Yu-Gi-Oh! or Pokémon), over it.
+    var cards by remember { mutableStateOf(listOf<CardOpen>()) }
     // The account copy refreshes on every visit; the saved copy shows meanwhile.
     LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
     var failed by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(session?.userId, revision) { try {
+    LaunchedEffect(session?.userId, revision, game) { try {
         if (!ensureCollection(context, session?.userId, session != null, revision)) return@LaunchedEffect
         suspend fun paint() {
-            val m = withContext(Dispatchers.Default) { CollectionHomeModel.parse(CollectionEngine.home("mtg")) }
+            val m = withContext(Dispatchers.Default) { CollectionHomeModel.parse(CollectionEngine.home(game.id)) }
             model = m; HomeCache.model = m
         }
         paint()
-        if (hints == null) withContext(Dispatchers.Default) { CollectionHomeModel.hints(CollectionEngine.hints("mtg")) }.also { hints = it; HomeCache.hints = it }
+        if (hints == null || HomeCache.hintsGame != game) withContext(Dispatchers.Default) { CollectionHomeModel.hints(CollectionEngine.hints(game.id)) }.also { hints = it; HomeCache.hints = it; HomeCache.hintsGame = game }
         // Card names the catalog lacks, the Card of the Day, Meta and News: repaint as they arrive.
         coroutineScope {
             val repaint = launch { while (true) { delay(1200); paint() } }
             // Whatever names this visit looked up are kept, even when it is cut short.
-            try { CollectionEngine.refresh("mtg") } finally { repaint.cancel(); withContext(kotlinx.coroutines.NonCancellable) { keepCatalog(context) } }
+            try { CollectionEngine.refresh(game.id) } finally { repaint.cancel(); withContext(kotlinx.coroutines.NonCancellable) { keepCatalog(context) } }
         }
         paint()
         failed = null
@@ -110,15 +135,21 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
         if (model == null) failed = e.message?.takeIf { it.isNotBlank() } ?: "Your collection couldn’t be opened here."
     } }
     val site = "https://cardstashy.com/"
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     val act = remember {
         CollectionHomeActions(
-            // Pokémon and Yu-Gi-Oh! Home are still the website's: open it and pick that game there.
-            game = { g -> if (g != CardGame.MTG) web(site, "[data-act=\"setGame\"][data-game=\"${g.id}\"]") },
-            go = { to -> if (to == "#sets" && onSets != null) onSets() else web(site + to, null) },
+            // tcg.js A.setGame: the header's game tabs switch Home (and Cards and Decks) to that game.
+            game = { g -> CollectionGame.set(g) },
+            go = { to -> if (to == "#sets" && onSets != null) onSets() else if (to == "#decks" && onDecks != null) onDecks() else web(site + to, null) },
             open = open,
             search = { web(site + "#search", null) },
-            daily = { web(site, "[data-act=\"homeDailyCard\"]") },
-            set = { code -> if (code.isNotBlank()) onSet?.invoke(code.lowercase()) ?: web(site + "#set/" + android.net.Uri.encode(code.lowercase()), null) },
+            // A.homeDailyCard: Magic's opens the website's sheet for now; Yu-Gi-Oh!'s and Pokémon's open the native card page (A.tCard).
+            daily = { d -> val g = CollectionGame.current.value
+                if (g == CardGame.MTG) web(site, "[data-act=\"homeDailyCard\"]") else cards = cards + CardOpen(d.name, page = site, tile = "", game = g.id, id = d.id) },
+            // Magic's set codes are lower case; a Pokémon set's id is kept as it is.
+            set = { code -> val c = if (CollectionGame.current.value == CardGame.MTG) code.lowercase() else code
+                if (c.isNotBlank()) onSet?.invoke(c) ?: web(site + "#set/" + android.net.Uri.encode(c), null) },
+            setName = { name -> scope.launch { val id = CollectionEngine.setByName(CollectionGame.current.value.id, name); if (id.isNotBlank()) onSet?.invoke(id) } },
             // The deck itself opens from the site's own carousel; until that page is native, the Meta decks page.
             metaDeck = { web(site + "#decks/inspiration", null) },
         )
@@ -138,6 +169,7 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
         }
     }
     val m = model
+    Box(Modifier.fillMaxSize()) {
     if (m != null) CollectionHome(m, hints, top, act, nav)
     else Column(Modifier.fillMaxSize().background(Site.Bg)) {
         Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { top(null) }
@@ -147,5 +179,7 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
             Text(failed ?: "Your cards and profile will appear here.", style = Site.Meta.copy(color = Site.Muted), textAlign = TextAlign.Center)
         }
         nav(false)
+    }
+    cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) { CollectionCardHost(c, onClose = { cards = cards.dropLast(1) }, onOpen = { cards = cards + it }, web = web, onSet = onSet) } }
     }
 }

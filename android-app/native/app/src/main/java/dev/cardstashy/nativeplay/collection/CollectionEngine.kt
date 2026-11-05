@@ -290,6 +290,18 @@ object CollectionEngine {
         on { q -> JsonParser.parseString(q.evaluate("Collection.mergeIn(${base?.let(::str) ?: "null"}, ${str(cloud)})") as String).asJsonObject }
 
     /** search-hints.js: the search field's prompt and the names and questions it fades through. */
+    /** tcg.js loadCache: the Yu-Gi-Oh! and Pokémon card data this device kept ([raw], the saved record), merged as the site does. */
+    suspend fun tcgCacheLoad(raw: String?) { on { q -> q.evaluate("Collection.tcgCacheLoad(${raw?.let(::str) ?: "null"})") }; turn { _, _, _ -> } }
+    /** tcg.js's card cache as the site saves it (TCG_CACHE), to keep for the next visit. */
+    suspend fun tcgCache(): String = on { q -> q.evaluate("Collection.tcgCache()") as String }
+
+    /** tcg.js A.tSetByName: the set a Yu-Gi-Oh! set name points to (its id), or "" when none is found in [maxMs]. */
+    suspend fun setByName(game: String, name: String, maxMs: Long = 30_000): String {
+        on { q -> q.evaluate("Collection.setByName(${str(game)}, ${str(name)})") }
+        settle(maxMs)
+        return on { q -> q.evaluate("Collection.setWent()") as String }
+    }
+
     suspend fun hints(game: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.hints(${str(game)})") as String).asJsonObject }
 
     /** The catalog the lookups filled (store.js S.catalog), for the app to keep between visits. */

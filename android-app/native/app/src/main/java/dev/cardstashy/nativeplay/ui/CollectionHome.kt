@@ -143,10 +143,15 @@ enum class CollectionTab(val label: String) { HOME("Home"), CARDS("Collection"),
 class HomeLink(val label: String, val href: String, val to: String, val act: String)
 /** community-art.js communityArtwork: the picture, what it is, its credit, the fallback caption and the one fallback picture. */
 class HomeArt(val src: String, val kind: String, val credit: String, val caption: String, val fallback: String, val fallbackLabel: String, val theme: Boolean)
-class DailyCard(val id: String, val name: String, val date: String, val art: String, val label: String, val set: String, val setCode: String, val rarity: String)
+/** [crop] "pokemon": the art is the card picture's art window (artwork.js pokemonArtCrop), as Pokémon's hero draws it. */
+class DailyCard(val id: String, val name: String, val date: String, val art: String, val label: String, val set: String, val setCode: String, val rarity: String, val crop: String = "",
+                /** Yu-Gi-Oh!'s set link names its set (data-name) instead of an id. */
+                val setName: String = "", val sources: List<String> = emptyList())
 class HomeValue(val amount: String, val note: String, val copies: String, val decks: String, val movement: String, val direction: String, val explanation: String)
-class ShelfLead(val id: String, val empty: Boolean, val eyebrow: String, val name: String, val line: String, val action: HomeLink?, val to: String, val art: String?)
-class ShelfDeck(val id: String, val name: String, val line: String, val art: String?, val to: String)
+/** A deck's cover: [art], its fallbacks ([sources], data-art-sources) and [crop] "pokemon" for a Pokémon card's art window (.pk-crop). */
+class ShelfLead(val id: String, val empty: Boolean, val eyebrow: String, val name: String, val line: String, val action: HomeLink?, val to: String, val art: String?,
+                val sources: List<String> = emptyList(), val crop: String = "")
+class ShelfDeck(val id: String, val name: String, val line: String, val art: String?, val to: String, val sources: List<String> = emptyList(), val crop: String = "")
 class HomeShelf(val title: String, val all: HomeLink?, val lead: ShelfLead?, val decks: List<ShelfDeck>)
 class MetaSlide(val key: String, val state: String, val eyebrow: String, val title: String, val result: String, val source: String, val method: String,
                 val note: String, val original: String, val explore: HomeLink?, val art: HomeArt?, val format: String)
@@ -173,11 +178,11 @@ class CollectionHomeModel(val game: CardGame, val heroEyebrow: String, val heroT
             val me = j.o("meta") ?: JsonObject(); val nw = j.o("news") ?: JsonObject()
             return CollectionHomeModel(
                 CardGame.of(j.s("game")), hero.s("eyebrow"), hero.s("title"), hero.s("prompt"),
-                hero.o("card")?.let { DailyCard(it.s("id"), it.s("name"), it.s("date"), it.s("art"), it.s("label"), it.s("set"), it.s("setCode"), it.s("rarity")) },
+                hero.o("card")?.let { DailyCard(it.s("id"), it.s("name"), it.s("date"), it.s("art"), it.s("label"), it.s("set"), it.s("setCode"), it.s("rarity"), it.s("crop"), it.s("setName"), it.strs("sources")) },
                 HomeValue(v.s("amount"), v.s("note"), v.s("copies"), v.s("decks"), v.s("movement"), v.s("direction"), v.s("explanation")),
                 j.s("example"),
-                HomeShelf(sh.s("title"), link(sh.o("all")), sh.o("lead")?.let { ShelfLead(it.s("id"), it.b("empty"), it.s("eyebrow"), it.s("name"), it.s("line"), link(it.o("action")), it.s("to"), it.s("art").ifBlank { null }) },
-                    sh.objs("decks").map { ShelfDeck(it.s("id"), it.s("name"), it.s("line"), it.s("art").ifBlank { null }, it.s("to")) }),
+                HomeShelf(sh.s("title"), link(sh.o("all")), sh.o("lead")?.let { ShelfLead(it.s("id"), it.b("empty"), it.s("eyebrow"), it.s("name"), it.s("line"), link(it.o("action")), it.s("to"), it.s("art").ifBlank { null }, it.strs("sources"), it.s("crop")) },
+                    sh.objs("decks").map { ShelfDeck(it.s("id"), it.s("name"), it.s("line"), it.s("art").ifBlank { null }, it.s("to"), it.strs("sources"), it.s("crop")) }),
                 HomeMeta(me.s("title"), link(me.o("all")), me.objs("slides").map {
                     MetaSlide(it.s("key"), it.s("state"), it.s("eyebrow"), it.s("title"), it.s("result"), it.s("source"), it.s("method"), it.s("note"), it.s("original"), link(it.o("explore")), art(it.o("art")), it.s("format"))
                 }, me.b("empty"), me.get("interval")?.takeIf { it.isJsonPrimitive }?.asLong ?: 8000),
@@ -202,8 +207,10 @@ class CollectionHomeActions(
     val search: () -> Unit = {},
     /** hh-credit data-act="homeDailyCard": the Card of the Day's page. */
     val daily: (DailyCard) -> Unit = {},
-    /** today-set-name data-act="set": the set's page. */
+    /** today-set-name data-act="set" (or tSet): the set's page. */
     val set: (String) -> Unit = {},
+    /** today-set-name data-act="tSetByName": the Yu-Gi-Oh! set it names. */
+    val setName: (String) -> Unit = {},
     /** home-meta-open data-act="mtgProven": that Meta deck. */
     val metaDeck: (MetaSlide) -> Unit = {},
 )
@@ -216,14 +223,19 @@ class CollectionHomeActions(
  */
 @Composable
 fun CollectionHome(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit,
-                   act: CollectionHomeActions = CollectionHomeActions(), nav: @Composable (vertical: Boolean) -> Unit = {}) {
+                   act: CollectionHomeActions = CollectionHomeActions(), nav: @Composable (vertical: Boolean) -> Unit = {}) =
+    // body[data-game]: the open game's --gold (Yu-Gi-Oh!'s violet, Pokémon's coral) on every gold word of the page.
+    androidx.compose.runtime.CompositionLocalProvider(LocalGameGold provides m.game.gold) {
     BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
         // Sideways (handhelds, a phone on its side): the nav stands up as a rail so the short height goes to the page.
         val screen = maxWidth
         if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); Page(m, hints, top, act, Modifier.weight(1f).fillMaxHeight(), screen) }
         else Column(Modifier.fillMaxSize()) { Page(m, hints, top, act, Modifier.weight(1f).fillMaxWidth(), screen); nav(false) }
     }
-}
+    }
+
+/** --gold on Home: Magic's (with its light theme), or the open game's own. */
+private val HGold: Color @Composable @androidx.compose.runtime.ReadOnlyComposable get() = LocalGameGold.current.takeIf { it != Color(0xFFE8B95B) } ?: Site.Gold
 
 @Composable
 private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, act: CollectionHomeActions, modifier: Modifier, screen: Dp) {
@@ -235,7 +247,7 @@ private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (
     val density = LocalDensity.current
     Box(modifier.verticalScroll(rememberScrollState()).onGloballyPositioned { root = it }) {
         // hh-art + hh-shade: 590 tall, starting 124 above the search pill, so it runs on under the value line.
-        DailyArt(m.daily?.art, with(density) { pillTop.toDp() } + 466.dp)
+        DailyArt(m.daily?.art, with(density) { pillTop.toDp() } + 466.dp, pokemon = m.daily?.crop == "pokemon", sources = m.daily?.sources.orEmpty())
         Column(Modifier.fillMaxWidth()) {
             // The status bar and the bar float on the art; a short scrim keeps them readable (as on Play's hero).
             Box(Modifier.fillMaxWidth()) {
@@ -263,8 +275,10 @@ private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (
 // ---------------------------------------------------------------- the Card of the Day art behind the top of the page
 
 @Composable
-private fun DailyArt(url: String?, height: Dp) {
-    val p = url?.takeIf { it.isNotBlank() }?.let { heroPainter(homeArt(it)) }
+private fun DailyArt(url: String?, height: Dp, pokemon: Boolean = false, sources: List<String> = emptyList()) {
+    // The img's data-art-sources, walked in order as its onerror does.
+    val raw = if (sources.size > 1) firstOf(sources) else url?.takeIf { it.isNotBlank() }?.let { heroPainter(homeArt(it)) }
+    val p = if (pokemon && raw != null) remember(raw) { PkArtCrop(raw) } else raw
     Box(Modifier.fillMaxWidth().height(height)) {
         // opacity .78, object-position 50% 32%, mask: #000 5%, #000e 40%, #0006 74%, transparent.
         if (p != null) Image(p, null, Modifier.matchParentSize().graphicsLayer { alpha = .78f; compositingStrategy = CompositingStrategy.Offscreen }
@@ -381,16 +395,17 @@ private fun Today(card: DailyCard, screen: Dp, act: CollectionHomeActions) {
         .padding(top = if (wide) 26.dp else 22.dp, bottom = if (wide) 24.dp else 22.dp), verticalArrangement = Arrangement.Center) {
         Column(Modifier.clip(RoundedCornerShape(10.dp)).clickable { act.daily(card) }.semantics { contentDescription = "Explore ${card.name}, Card of the Day" }
             .padding(top = 8.dp, end = 42.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(card.label, style = sans(11f, FontWeight.Bold, Site.Gold, lh = 1.4f, ls = .66f).copy(shadow = Shadow(Color(0x99000000), Offset(0f, 2f), 18f)))
+            Text(card.label, style = sans(11f, FontWeight.Bold, HGold, lh = 1.4f, ls = .66f).copy(shadow = Shadow(Color(0x99000000), Offset(0f, 2f), 18f)))
             // #homeToday .hh-credit b: clamp(19px, 5vw, 24px), Manrope 800.
             Text(card.name, style = manrope((screen.value * .05f).coerceIn(19f, 24f), FontWeight.ExtraBold, Color.White, lh = 1.15f, ls = -.035f)
                 .copy(shadow = Shadow(Color(0xCC000000), Offset(0f, 2f), 12f)))
         }
         if (card.set.isNotEmpty() || card.rarity.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp),
             itemVerticalAlignment = Alignment.CenterVertically) {
-            if (card.set.isNotEmpty()) Text(card.set, modifier = Modifier.clickable { act.set(card.setCode) },
+            if (card.set.isNotEmpty()) Text(card.set, modifier = Modifier.clickable { if (card.setCode.isEmpty() && card.setName.isNotEmpty()) act.setName(card.setName) else act.set(card.setCode) },
                 style = sans(12.5f, color = Color.White).copy(shadow = Shadow(Color(0xBB000000), Offset(0f, 1f), 8f)))
-            if (card.rarity.isNotEmpty()) Chip(card.rarity.replaceFirstChar { it.uppercase() }, 11f)
+            // .today-rarity: text-transform capitalize, each word.
+            if (card.rarity.isNotEmpty()) Chip(card.rarity.split(' ').joinToString(" ") { w -> w.replaceFirstChar { it.uppercase() } }, 11f)
         }
     }
 }
@@ -399,9 +414,10 @@ private fun Today(card: DailyCard, screen: Dp, act: CollectionHomeActions) {
 @Composable
 private fun Chip(text: String, size: Float, ls: Float = 0f) {
     val shape = RoundedCornerShape(999.dp)
-    Box(Modifier.heightIn(min = if (size < 11f) 23.dp else 0.dp).clip(shape).background(Color(0x77000000)).border(1.dp, Site.Gold.copy(alpha = .45f), shape).padding(horizontal = 8.dp, vertical = 2.dp),
+    Box(Modifier.heightIn(min = if (size < 11f) 23.dp else 0.dp).clip(shape).background(Color(0x77000000)).border(1.dp, HGold.copy(alpha = .45f), shape).padding(horizontal = 8.dp, vertical = 2.dp),
         contentAlignment = Alignment.Center) {
-        Text(text, style = sans(size, FontWeight.SemiBold, Color(0xFFEDC77C), ls = ls))
+        // color-mix(in srgb, var(--gold) 80%, #fff)
+        Text(text, style = sans(size, FontWeight.SemiBold, LocalGameGold.current.let { g -> if (g == Color(0xFFE8B95B)) Color(0xFFEDC77C) else androidx.compose.ui.graphics.lerp(g, Color.White, .2f) }, ls = ls))
     }
 }
 
@@ -415,7 +431,7 @@ private fun ValueRow(v: HomeValue, screen: Dp, act: CollectionHomeActions) {
         .padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = if (screen >= 600.dp) 16.dp else 18.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = if (roomy) Arrangement.spacedBy(56.dp) else Arrangement.SpaceBetween) {
         Column(Modifier.weight(1f, fill = !roomy).heightIn(min = 44.dp).clickable { act.go("#collection/value") }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Your collection", style = sans(11f, FontWeight.Bold, Site.Gold, ls = .66f))
+            Text("Your collection", style = sans(11f, FontWeight.Bold, HGold, ls = .66f))
             Text(v.amount, style = manrope(32f, FontWeight.ExtraBold, Site.Text, lh = 1.15f, ls = -.045f).copy(fontFeatureSettings = "tnum"))
             Text(v.note, style = sans(11f, color = Site.Muted))
             if (v.movement.isNotEmpty()) Text(v.movement, style = sans(11f, FontWeight.SemiBold, if (v.direction == "flat") Site.Muted else Site.Text, lh = 1.55f))
@@ -475,21 +491,25 @@ private fun Heading(title: String, link: HomeLink?, linkSize: Float, act: Collec
         Text(title, style = manrope(17f, FontWeight.ExtraBold, Site.Text, lh = 1.15f, ls = -.02f), modifier = Modifier.weight(1f, fill = false))
         if (link != null) Box(Modifier.heightIn(min = 36.dp).clickable { if (link.to.isNotEmpty()) act.go(link.to) else if (link.href.isNotEmpty()) act.open(link.href) }
             .padding(start = 12.dp, top = 4.dp, bottom = 4.dp), contentAlignment = Alignment.Center) {
-            Text(link.label, style = sans(linkSize, FontWeight.SemiBold, Site.Gold))
+            Text(link.label, style = sans(linkSize, FontWeight.SemiBold, HGold))
         }
     }
 
 /** .home-personal-deck: the deck's cover under a dark wash, framed by a gold-to-glass hairline (brighter on the lead). */
 @Composable
-private fun TileFrame(art: String?, lead: Boolean, minH: Dp, modifier: Modifier, onClick: () -> Unit, label: String, content: @Composable () -> Unit) {
+private fun TileFrame(art: String?, lead: Boolean, minH: Dp, modifier: Modifier, onClick: () -> Unit, label: String, sources: List<String> = emptyList(), crop: String = "",
+                      content: @Composable () -> Unit) {
     val shape = RoundedCornerShape(18.dp)
-    val p = art?.let { heroPainter(homeArt(it)) }
+    // The cover and the fallbacks its img walks (ygoCropArt, pokemonArtCrop); a Pokémon card shows its art window.
+    val raw = if (sources.size > 1) firstOf(sources) else art?.let { heroPainter(homeArt(it)) }
+    val p = if (crop == "pokemon" && raw != null) remember(raw) { PkArtCrop(raw) } else raw
+    val loading = raw
     // A deck's cover can change while its card names arrive: the last cover shown holds until the new one has loaded.
-    val state = (p as? coil3.compose.AsyncImagePainter)?.state?.collectAsState()?.value
-    val ready = p != null && (p !is coil3.compose.AsyncImagePainter || state is coil3.compose.AsyncImagePainter.State.Success)
+    val state = (loading as? coil3.compose.AsyncImagePainter)?.state?.collectAsState()?.value
+    val ready = p != null && (loading !is coil3.compose.AsyncImagePainter || state is coil3.compose.AsyncImagePainter.State.Success)
     var shown by remember { mutableStateOf<String?>(null) }
     if (ready && shown != art) SideEffect { shown = art }
-    val held = shown?.takeIf { !ready && it != art }?.let { heroPainter(homeArt(it)) }
+    val held = shown?.takeIf { !ready && it != art }?.let { heroPainter(homeArt(it)) }?.let { h -> if (crop == "pokemon") PkArtCrop(h) else h }
     Box(modifier.heightIn(min = minH).shadow(14.dp, shape, ambientColor = Color.Black.copy(alpha = .35f), spotColor = Color.Black.copy(alpha = .85f))
         .clip(shape).background(cssGradient(135f, 0f to Color(0xFF252936), 1f to Color(0xFF141720))).clickable(onClick = onClick).semantics { contentDescription = label }) {
         if (held != null) Image(held, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
@@ -508,9 +528,9 @@ private val tileShadow = Shadow(Color(0xBB000000), Offset(0f, 1f), 2f)
 /** The deck you last worked on (or one of yours, picked for this visit): its words sit in the middle of the tile. */
 @Composable
 private fun LeadTile(l: ShelfLead, minH: Dp, modifier: Modifier, act: CollectionHomeActions) =
-    TileFrame(l.art, true, minH, modifier, { act.go(l.to) }, "Open ${l.name}") {
+    TileFrame(l.art, true, minH, modifier, { act.go(l.to) }, "Open ${l.name}", l.sources, l.crop) {
         Column(Modifier.fillMaxWidth().heightIn(min = minH).padding(18.dp), verticalArrangement = Arrangement.Center) {
-            if (l.eyebrow.isNotEmpty()) Text(l.eyebrow, style = sans(11f, FontWeight.Bold, Site.Gold, ls = .66f).copy(shadow = tileShadow), modifier = Modifier.padding(bottom = 6.dp))
+            if (l.eyebrow.isNotEmpty()) Text(l.eyebrow, style = sans(11f, FontWeight.Bold, HGold, ls = .66f).copy(shadow = tileShadow), modifier = Modifier.padding(bottom = 6.dp))
             Text(l.name, style = manrope(19f, FontWeight.ExtraBold, Color(0xFFF5F6FA), lh = 1.35f, ls = -.02f).copy(shadow = tileShadow), modifier = Modifier.padding(bottom = 4.dp))
             if (l.line.isNotEmpty()) Text(l.line, style = sans(12f, color = Color(0xB0FFFFFF), lh = 1.6f).copy(shadow = tileShadow))
         }
@@ -518,7 +538,7 @@ private fun LeadTile(l: ShelfLead, minH: Dp, modifier: Modifier, act: Collection
 
 @Composable
 private fun DeckTile(d: ShelfDeck, minH: Dp, modifier: Modifier, act: CollectionHomeActions) =
-    TileFrame(d.art, false, minH, modifier, { act.go(d.to) }, "Open ${d.name}") {
+    TileFrame(d.art, false, minH, modifier, { act.go(d.to) }, "Open ${d.name}", d.sources, d.crop) {
         Column(Modifier.fillMaxWidth().heightIn(min = minH).padding(if (minH < 150.dp) 16.dp else 18.dp), verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.Bottom)) {
             Text(d.name, style = sans(17f, FontWeight.Bold, Color(0xFFF5F6FA), lh = 1.2f).copy(shadow = tileShadow))
             Text(d.line, style = sans(11f, color = Color(0xFFE0E3EB)).copy(shadow = tileShadow))
@@ -535,7 +555,7 @@ private fun EmptyShelf(l: ShelfLead, game: CardGame, act: CollectionHomeActions)
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(l.line, style = sans(12f, color = Color(0xB0FFFFFF), lh = 1.6f), modifier = Modifier.weight(1f))
         l.action?.let { a -> Box(Modifier.heightIn(min = 44.dp).clip(CircleShape).clickable { act.go(a.to.ifEmpty { "#decks" }) }.padding(horizontal = 12.dp, vertical = 8.dp), contentAlignment = Alignment.Center) {
-            Text(a.label, style = sans(12f, FontWeight.Bold, Site.Gold))
+            Text(a.label, style = sans(12f, FontWeight.Bold, HGold))
         } }
     }
 }
@@ -585,23 +605,23 @@ private fun MetaCard(s: MetaSlide, game: CardGame, screen: Dp, quiet: Boolean, a
         Row(Modifier.fillMaxWidth().clip(shape).background(Site.Surface.copy(alpha = .6f)).border(1.dp, Site.Line, shape).padding(horizontal = 18.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
             Text(s.title, style = sans(14f, FontWeight.SemiBold, Site.Muted), modifier = Modifier.weight(1f).padding(vertical = 12.dp))
-            s.explore?.let { e -> Box(Modifier.heightIn(min = 44.dp).clickable { act.go(e.to) }, contentAlignment = Alignment.Center) { Text(e.label, style = sans(13f, FontWeight.SemiBold, Site.Gold)) } }
+            s.explore?.let { e -> Box(Modifier.heightIn(min = 44.dp).clickable { act.go(e.to) }, contentAlignment = Alignment.Center) { Text(e.label, style = sans(13f, FontWeight.SemiBold, HGold)) } }
         }
         return
     }
     Box(Modifier.fillMaxWidth().heightIn(min = 150.dp).cardShadow(shape).clip(shape).background(Color(0xFF121218))) {
         CommunityArt(s.art, game, Modifier.matchParentSize(), meta = true)
         Column(Modifier.fillMaxWidth(if (screen >= 900.dp) .65f else 1f).padding(horizontal = 18.dp, vertical = 16.dp).padding(top = if (s.state == "loading") 18.dp else 0.dp)) {
-            if (s.eyebrow.isNotEmpty()) Text(s.eyebrow.uppercase(), style = sans(11f, FontWeight.Bold, Site.Gold, ls = .66f), modifier = Modifier.padding(bottom = 4.dp))
+            if (s.eyebrow.isNotEmpty()) Text(s.eyebrow.uppercase(), style = sans(11f, FontWeight.Bold, HGold, ls = .66f), modifier = Modifier.padding(bottom = 4.dp))
             Text(s.title, style = manrope((screen.value * .048f).coerceIn(18f, 22f), FontWeight.ExtraBold, Color.White, lh = 1.18f, ls = -.02f).copy(shadow = Shadow(Color(0xCC000000), Offset(0f, 2f), 12f)),
                 modifier = Modifier.padding(bottom = 6.dp).then(if (s.key.isNotEmpty()) Modifier.clickable { act.metaDeck(s) } else Modifier))
             if (s.result.isNotEmpty()) Text(s.result, style = sans(12.5f, color = Color(0xC4FFFFFF), lh = 1.5f), modifier = Modifier.padding(bottom = 6.dp))
             if (s.note.isNotEmpty()) Text(s.note, style = sans(11f, color = Site.Muted, lh = 1.6f))
             for (t in listOf(s.source, s.method)) if (t.isNotEmpty()) Text(t, style = sans(10.5f, color = Color(0x9CFFFFFF), lh = 1.65f), modifier = Modifier.padding(vertical = 2.dp))
             if (s.original.isNotEmpty()) Box(Modifier.padding(top = 3.dp).heightIn(min = 35.dp).clickable { act.open(s.original) }, contentAlignment = Alignment.CenterStart) {
-                Text("Original source", style = sans(10f, FontWeight.SemiBold, Site.Gold))
+                Text("Original source", style = sans(10f, FontWeight.SemiBold, HGold))
             }
-            s.explore?.let { e -> Box(Modifier.heightIn(min = 44.dp).clickable { act.go(e.to) }, contentAlignment = Alignment.CenterStart) { Text(e.label, style = sans(13f, FontWeight.SemiBold, Site.Gold)) } }
+            s.explore?.let { e -> Box(Modifier.heightIn(min = 44.dp).clickable { act.go(e.to) }, contentAlignment = Alignment.CenterStart) { Text(e.label, style = sans(13f, FontWeight.SemiBold, HGold)) } }
         }
         CardEdge(shape)
     }
@@ -641,7 +661,7 @@ private fun News(news: HomeNews, game: CardGame, screen: Dp, act: CollectionHome
             } else Column(swipe, verticalArrangement = Arrangement.spacedBy(12.dp)) { shown.forEach { NewsCard(it, game, screen, Modifier.fillMaxWidth(), act) } }
         }
         Row(Modifier.padding(top = 9.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-            news.links.forEach { l -> Text(l.label, style = sans(14f, FontWeight.SemiBold, Site.Gold), modifier = Modifier.clickable { act.open(l.href) }.padding(vertical = 5.6.dp)) }
+            news.links.forEach { l -> Text(l.label, style = sans(14f, FontWeight.SemiBold, HGold), modifier = Modifier.clickable { act.open(l.href) }.padding(vertical = 5.6.dp)) }
         }
         if (!news.empty) Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(news.status, style = sans(10f, color = Site.Muted, lh = 1.55f), modifier = Modifier.weight(1f))

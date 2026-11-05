@@ -316,7 +316,9 @@ private fun App(activity: MainActivity) {
                 web = { url, press -> go(Screen.Web(url, press)) },
                 open = { url -> if (url.startsWith("https://") || url.startsWith("http://")) runCatching { activity.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))) } },
                 onCards = if (NATIVE_CARDS) ({ go(Screen.CollectionCards) }) else null, onDecks = if (NATIVE_DECKS) ({ go(Screen.CollectionDecks) }) else null,
-                onSet = setOpen, onSets = if (NATIVE_SETS) ({ go(Screen.CollectionSets()) }) else null)
+                // The open game's sets (tcg.js: the today-set link and #sets follow the game Home shows).
+                onSet = if (NATIVE_SETS) ({ code -> go(Screen.CollectionSet(code, dev.cardstashy.nativeplay.ui.CollectionGame.current.value.id)) }) else null,
+                onSets = if (NATIVE_SETS) ({ go(Screen.CollectionSets(dev.cardstashy.nativeplay.ui.CollectionGame.current.value.id)) }) else null)
         }
         Screen.CollectionCards -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
@@ -347,7 +349,7 @@ private fun App(activity: MainActivity) {
                 onCards = { if (NATIVE_CARDS) go(Screen.CollectionCards) else go(Screen.Web("https://cardstashy.com/#collection", null)) },
                 onDecks = { if (NATIVE_DECKS) go(Screen.CollectionDecks) else go(Screen.Web("https://cardstashy.com/#decks", null)) },
                 onSet = { g, code -> go(Screen.CollectionSet(code, g)) }, web = { url, press -> go(Screen.Web(url, press)) },
-                game = s.game, tcg = NATIVE_TCG_SETS, onGame = { g -> swap(Screen.CollectionSets(g)) })
+                game = s.game, tcg = NATIVE_TCG_SETS, onGame = { g -> dev.cardstashy.nativeplay.ui.CollectionGame.set(dev.cardstashy.nativeplay.ui.CardGame.of(g)); swap(Screen.CollectionSets(g)) })
         }
         is Screen.CollectionSet -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
@@ -358,7 +360,7 @@ private fun App(activity: MainActivity) {
                 onSets = { if (trail.getOrNull(trail.size - 2) == Screen.CollectionSets(s.game)) back() else go(Screen.CollectionSets(s.game)) },
                 onSet = { code -> go(Screen.CollectionSet(code, s.game)) }, web = { url, press -> go(Screen.Web(url, press)) }, nativeCard = NATIVE_CARD, nativePack = NATIVE_PACK, nativeTcgCards = NATIVE_TCG_CARDS,
                 // Another game's tab: its set list here when those are native, else the website's.
-                onGame = { g -> if (g == "mtg" || NATIVE_TCG_SETS) swap(Screen.CollectionSets(g)) else go(Screen.Web("https://cardstashy.com/#sets", "[data-act=\"setGame\"][data-game=\"$g\"]")) })
+                onGame = { g -> dev.cardstashy.nativeplay.ui.CollectionGame.set(dev.cardstashy.nativeplay.ui.CardGame.of(g)); if (g == "mtg" || NATIVE_TCG_SETS) swap(Screen.CollectionSets(g)) else go(Screen.Web("https://cardstashy.com/#sets", "[data-act=\"setGame\"][data-game=\"$g\"]")) })
         }
         is Screen.Web -> { LaunchedEffect(s.url) { activity.inGame(false, play = s.url.contains("planeswalk")) }; CollectionScreen(onPlay = { back() }, url = s.url, press = s.press) }
         Screen.SignIn -> {

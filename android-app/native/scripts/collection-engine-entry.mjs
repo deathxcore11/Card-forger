@@ -35,7 +35,7 @@ import {mtgPairQueries, rankPairs, edhPop} from 'WEB/pairing.js';
 import {ICON, actionIcon} from 'WEB/icons.js';
 import {contextAction, contextHeader, deckContextShortcuts} from 'WEB/card-actions.js';
 import {deckBoxMarkup, deckBoxFields, boxAppearance} from 'WEB/deck-box.js';
-import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf, SOURCES as tcgSources, cache as tcgCache, ensureCard as tcgEnsureCard, gs as tcgGs, tcgCardSheet, setContextCard as tcgSetContextCard, currentYgoCatalogue as tcgYgoCatalogue, trackTcgValue, collectionValue as tcgCollectionValue, persistQuoteCache as tcgPersistQuoteCache, entryPrice as tcgEntryPrice, referenceEntryPrice as tcgReferenceEntryPrice} from 'WEB/tcg.js';
+import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf, SOURCES as tcgSources, cache as tcgCache, ensureCard as tcgEnsureCard, gs as tcgGs, tcgCardSheet, setContextCard as tcgSetContextCard, currentYgoCatalogue as tcgYgoCatalogue, trackTcgValue, collectionValue as tcgCollectionValue, persistQuoteCache as tcgPersistQuoteCache, entryPrice as tcgEntryPrice, referenceEntryPrice as tcgReferenceEntryPrice, tcgHome, readTcgValueHistory, loadCache as tcgLoadCache, ensureMany as tcgEnsureMany, needsCardRefresh as tcgNeedsRefresh} from 'WEB/tcg.js';
 import {adjustOwnedLot} from 'WEB/quick-quantity.js';
 import {workspaceSig, isEmptyWorkspace} from 'WEB/cloud.js';
 import {mergeAccountWorkspaces, workspaceContentSig} from 'WEB/sync-merge.js';
@@ -146,17 +146,20 @@ function artOf(n) {
 }
 const link = n => n ? {label: text(n), href: n.attrs.href || '', to: n.attrs['data-to'] || '', act: n.attrs['data-act'] || ''} : null;
 
-// home-ui.js homeDeckShelf, with views.js / tcg.js's describe (format name and cover art).
+// home-ui.js homeDeckShelf, with views.js / tcg.js's describe (format name and cover art). Yu-Gi-Oh! and Pokémon read it from tcg.js
+// tcgHome itself (its describe: formatOf's name, and the cover as ygoCropArt or pokemonArtCrop), with the game open.
+// A cover's picture: its address and fallbacks (data-art-sources), and "pokemon" when it is the card's art window (.pk-crop).
+const coverPic = n => { const img = one(n, tagIs('img')); return img ? {art: abs(img.attrs.src || ''), sources: sources(img).map(abs), crop: one(n, cls('pk-crop')) ? 'pokemon' : ''} : {art: null, sources: [], crop: ''}; };
 function shelf(game) {
-  const describe = game === 'mtg' ? deck => ({format: formatOf(deck).name, artHTML: coverOf(deck) ? `<img src="${coverOf(deck).replace(/"/g, '&quot;')}">` : ''}) : deck => ({format: deck.format || ''});
-  const t = tree(homeDeckShelf(game, describe)), head = one(t, cls('home-shelf-heading'));
+  const describe = deck => ({format: formatOf(deck).name, artHTML: coverOf(deck) ? `<img src="${coverOf(deck).replace(/"/g, '&quot;')}">` : ''});
+  const t = game === 'mtg' ? tree(homeDeckShelf(game, describe)) : (tcgFocus(game, 'home'), tree(tcgHome())), head = one(t, cls('home-shelf-heading'));
   const lead = one(t, cls('home-personal-resume')) || one(t, cls('home-resume')), resume = cls('home-resume')(lead || {}) ? lead : one(lead, cls('home-resume'));
-  const row = n => ({id: n.attrs['data-home-personal-deck'] || '', name: text(one(n, tagIs('b'))), line: text(one(n, tagIs('small'))), art: one(n, tagIs('img'))?.attrs.src || null, to: n.attrs['data-to'] || ''});
+  const row = n => ({id: n.attrs['data-home-personal-deck'] || '', name: text(one(n, tagIs('b'))), line: text(one(n, tagIs('small'))), ...coverPic(n), to: n.attrs['data-to'] || ''});
   return {title: text(one(head, tagIs('h2'))), all: link(one(head, tagIs('button'))),
     lead: lead && {id: resume?.attrs['data-resume-deck'] || resume?.attrs['data-home-deck-pick'] || '', empty: cls('home-resume-empty')(resume || {}),
       eyebrow: text(one(resume, cls('eyebrow'))), name: text(one(resume, tagIs('h2'))), line: text(all(resume, tagIs('p')).filter(p => !cls('eyebrow')(p)).pop()),
       action: link(one(resume, n => n.tag === 'button' && !cls('home-resume-open')(n))), to: one(resume, cls('home-resume-open'))?.attrs['data-to'] || '',
-      art: cls('home-personal-resume')(lead) ? one(lead, tagIs('img'))?.attrs.src || null : null},
+      ...(cls('home-personal-resume')(lead) ? coverPic(lead) : {art: null, sources: [], crop: ''})},
     decks: all(t, n => cls('home-personal-deck')(n) && n.tag === 'button').map(row)};
 }
 
@@ -195,8 +198,12 @@ function hero(game) {
   const h = heroFor(game), hh = tree(homeHero(game)), d = h && today.get(h.id + '|' + h.date);
   const set = d?.set ? tree(todaySetMarkup(game, d.set, {rarity: d.rarity})) : null;
   return {eyebrow: text(one(hh, cls('eyebrow'))), title: text(one(hh, tagIs('h1'))), prompt: one(hh, tagIs('input'))?.attrs.placeholder || '',
-    card: h ? {id: h.id, name: h.name, date: h.date, art: h.art || '', artDirect: h.artDirect || '', label: text(one(one(tree(homeToday(game)), cls('hh-credit')), tagIs('span'))),
-      set: set ? text(one(set, cls('today-set-name'))) : '', setCode: set ? one(set, cls('today-set-name'))?.attrs['data-code'] || '' : '', rarity: set ? text(one(set, cls('today-rarity'))) : ''} : null};
+    // The hero's picture as homeHero draws it: Yu-Gi-Oh!'s is the site's own crop (img/ygo/a/…) then the direct one; Pokémon's the card's art window.
+    card: h ? {id: h.id, name: h.name, date: h.date, art: abs(one(hh, tagIs('img'))?.attrs.src || h.art || ''), artDirect: h.artDirect || '', sources: sources(one(hh, tagIs('img'))).map(abs),
+      crop: one(hh, cls('pk-crop')) ? 'pokemon' : '', label: text(one(one(tree(homeToday(game)), cls('hh-credit')), tagIs('span'))),
+      set: set ? text(one(set, cls('today-set-name'))) : '', setCode: set ? one(set, cls('today-set-name'))?.attrs['data-code'] || one(set, cls('today-set-name'))?.attrs['data-id'] || '' : '',
+      // home-today.js setAction: Yu-Gi-Oh!'s link names its set (A.tSetByName finds it).
+      setName: set ? one(set, cls('today-set-name'))?.attrs['data-name'] || '' : '', rarity: set ? text(one(set, cls('today-rarity'))) : ''} : null};
 }
 function loadToday(game) {
   return loadHero(game).catch(() => false).then(() => { const h = heroFor(game); if (!h) return; return dailyDetails(game, h).then(d => { if (d) today.set(h.id + '|' + h.date, d); }, () => {}); });
@@ -692,13 +699,16 @@ function setOpen(code) {
 // these pages to the open game (settings.game) and route (S.ui.view, S.ui.tsetId), so a set page holds them while it is open and
 // Magic's pages hand them back.
 const TA = {}, TC = {}, TI = {}, tcgCtx = {};
+let tcgWent = '';
 let tcgOn = false, tcgPrev, setsGame = 'mtg', setGame = 'mtg';
 // tcg.js takes openSheet / closeSheet once (registerTcg), so they forward: the Add to collection sheet listens while it opens and saves.
 let tcgSheetHook = () => {}, tcgCloseHook = () => {};
 function tcgReady() {
   if (tcgOn) return; tcgOn = true;
-  Object.assign(tcgCtx, {A: TA, C: TC, I: TI, commit, render() {}, openSheet: (html, ctx) => tcgSheetHook(html, ctx), closeSheet: () => tcgCloseHook(), refreshSheet() {}, toast: text => { if (text) toasts.push({text: String(text), undo: false}); }, go() {}, download() {},
-    copyText() {}, busy: () => () => {}, rerenderKeepingFocus() {}, writeRecord: async () => {}, navigationStamp: () => null, navigationCurrent: () => true});
+  Object.assign(tcgCtx, {A: TA, C: TC, I: TI, commit, render() {}, openSheet: (html, ctx) => tcgSheetHook(html, ctx), closeSheet: () => tcgCloseHook(), refreshSheet() {}, toast: text => { if (text) toasts.push({text: String(text), undo: false}); }, download() {},
+    copyText() {}, busy: () => () => {},
+    // The route a handler goes to (A.tSetByName's #set/<id>), for the app to follow.
+    go(h) { tcgWent = String(h || ''); }, rerenderKeepingFocus() {}, writeRecord: async () => {}, navigationStamp: () => null, navigationCurrent: () => true});
   registerTcg(tcgCtx);
 }
 function tcgFocus(G, view, id = '') {
@@ -711,6 +721,15 @@ function mtgFocus() {
   const st = S.state.settings ||= {}; if (tcgPrev === null) delete st.game; else st.game = tcgPrev; tcgPrev = undefined;
 }
 const tcgGame = () => S.state.settings?.game;
+// app.js route()'s "Load card data and prices for what's on screen" for a Yu-Gi-Oh! / Pokémon view: Home and Decks the first card of
+// each deck, the Cards tab its shown lots (the first [limit]), a deck page all of its zones.
+function tcgScreenCards(g, view, o = {}) {
+  const st = tcgGs(g);
+  const ids = view === 'cards' ? (o.ids || []) : view === 'tdeck' ? (() => { const d = st.decks.find(x => x.id === o.id); return d?.zones ? ['main', 'extra', 'side'].flatMap(z => (d.zones[z] || []).map(r => r.cardId)) : []; })()
+    : view === 'collection' ? st.collection.map(e => e.cardId) : st.decks.flatMap(d => (d.zones?.main || []).slice(0, 1).map(r => r.cardId));
+  const missing = [...new Set(ids.filter(id => tcgNeedsRefresh(g, tcgCardOf(g, id))))];
+  if (missing.length) tcgEnsureMany(g, missing, () => {}).catch(() => {});
+}
 // tcg.js's set browser and set page handlers, as the site wires them (data-act / data-change / data-input).
 const tcgSetsAct = {
   search: v => TI.tSetsQ({value: v}), family: v => TA.tSetsFamily({dataset: {value: v}}), type: v => TC.tSetsType({value: v}),
@@ -1979,6 +1998,7 @@ globalThis.Collection = {
   // [deckId]: the open deck page also fetches its own format's tournament decks (app.js route: Deck Power and the emblems
   // compare against them), when they are missing or older than 12 hours.
   feeds(game, deckId) {
+    if (game && game !== 'mtg') tcgScreenCards(game, 'home');
     loadToday(game);
     loadMeta(homeMetaKey(game)).catch(() => {});
     const deck = deckId ? S.state.decks.find(d => String(d.id) === String(deckId)) : null, mk = deck ? mtgMetaKey(deck) : null;
@@ -2078,6 +2098,13 @@ globalThis.Collection = {
     return json({conflicts: merged.conflicts, notice: authored ? (merged.conflicts.length ? 'Your account copy is active. This device’s other edits are saved in Recovery.' : 'Changes from both devices were combined. The previous device copy is saved in Recovery.') : ''});
   },
   poll() { return json(status); },
+  // tcg.js loadCache / its saved record (TCG_CACHE): the Yu-Gi-Oh! and Pokémon card data this device has, kept between visits.
+  tcgCacheLoad(raw) { tcgReady(); let rec = null; try { rec = raw ? JSON.parse(raw) : null; } catch {} return tcgLoadCache(async () => rec); },
+  tcgCache() { return json(tcgCache); },
+  // tcg.js A.tSetByName (the Card of the Day's Yu-Gi-Oh! set): the set list if it is not here yet, then the set it names; the app pumps
+  // it and reads setWent() for the #set/<id> it went to.
+  setByName(game, name) { tcgFocus(game, 'home'); tcgWent = ''; Promise.resolve(TA.tSetByName({dataset: {name}})).catch(() => {}); },
+  setWent() { const m = /^#set\/(.+)$/.exec(tcgWent); return m ? decodeURIComponent(m[1]) : ''; },
   catalog() { return json(S.catalog); },
   // search-hints.js hintPool: the names and questions the search field fades through (the player's own cards mixed in).
   hints(game) { return json({prompt: SEARCH_PROMPT, first: 4000, every: 4200, fade: 260, pool: hintPool(game, game === 'mtg' ? S.state.collection.map(e => e.name) : (S.state.tcg?.[game]?.collection || []).map(e => e.name))}); },
@@ -2156,6 +2183,11 @@ globalThis.Collection = {
   setHtml() { return setGame === 'mtg' ? setView() : tcgSetView(); },
   setsHtml() { return setsGame === 'mtg' ? setsView() : tcgSetsView(); },
   home(game) {
+    if (game && game !== 'mtg') {
+      // tcg.js tcgHome: the game's value (collectionValue, its own history), no example note.
+      tcgFocus(game, 'home'); const st = tcgGs(game), v = tcgCollectionValue(game);
+      return json({game, hero: hero(game), value: homeValueModel({game, ...v, decks: st.decks.length, history: readTcgValueHistory(game)}), example: '', shelf: shelf(game), meta: metaRail(game), news: newsRail(game)});
+    }
     mtgFocus(); const st = S.state, value = collectionValue(st.collection, S.catalog, st.printings, st.decks);
     return json({game, hero: hero(game), value: homeValueModel({ game, ...value, decks: st.decks.length, history: st.valueHistory }),
       example: st.example ? 'Example data is loaded. Reset it in Settings before adding real cards.' : '', shelf: shelf(game), meta: metaRail(game), news: newsRail(game)});
