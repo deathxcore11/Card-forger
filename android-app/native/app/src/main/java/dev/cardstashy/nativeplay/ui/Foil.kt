@@ -9,6 +9,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
@@ -211,13 +212,23 @@ fun Modifier.foil(look: Foil.Look, tilt: State<Offset>): Modifier = if (!look.sh
     }
 }
 
+
+/** A card view (CardSheet) in front of a grid: while one is open the grid's foil tiles hold their light still, so the phone draws
+ *  the shimmer only where you are looking. */
+object FoilFocus {
+    private var covers by androidx.compose.runtime.mutableIntStateOf(0)
+    val covered: Boolean get() = covers > 0
+    @Composable fun Cover() { androidx.compose.runtime.DisposableEffect(Unit) { covers++; onDispose { covers-- } } }
+}
+
 /** The light's drift when nothing tilts the card: a slow figure-eight, like the site's idle gallery shimmer. */
 @Composable
-fun rememberFoilTilt(live: Boolean = true, phase: Float = 0f, touch: State<Offset?>? = null): State<Offset> {
+fun rememberFoilTilt(live: Boolean = true, phase: Float = 0f, touch: State<Offset?>? = null, tile: Boolean = false): State<Offset> {
     val context = LocalContext.current
     val tiltOn = AppSettings.tilt
-    // "Card lighting & foil effects" off: the light holds still (finish-preview.js setFinishEffects).
-    @Suppress("NAME_SHADOWING") val live = live && AppSettings.finish
+    // "Card lighting & foil effects" off: the light holds still (finish-preview.js setFinishEffects). A grid [tile] also holds
+    // still while a card view covers it (FoilFocus), so only the card in front moves and redraws.
+    @Suppress("NAME_SHADOWING") val live = live && AppSettings.finish && !(tile && FoilFocus.covered)
     val phone = if (live && tiltOn) rememberTilt() else null
     val clock = if (live && !Motion.still) androidx.compose.animation.core.rememberInfiniteTransition(label = "foil")
         .animateFloat(0f, 1f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(9000, easing = androidx.compose.animation.core.LinearEasing)), label = "drift") else null

@@ -5,13 +5,14 @@ import android.graphics.RuntimeShader
 import android.os.Build
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Offset
@@ -22,6 +23,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import dev.cardstashy.nativeplay.ui.AppSettings
 import dev.cardstashy.nativeplay.ui.Foil
+import kotlinx.coroutines.delay
 import kotlin.math.hypot
 
 /**
@@ -52,6 +54,8 @@ object Depth {
     const val SIGN_Y = -1f
     /** Tiles narrower than this stay flat: the slide would be under a pixel and the extra layer costs scrolling. */
     val MIN_WIDTH = 220.dp
+    /** How long a card not measured yet must stay in view before the phone measures it. */
+    const val SETTLE_MS = 450L
 
     /** Where a card face's art recedes: [win] the printed art window in card space (x0, y0, x1, y1); for a full art ([open]) the whole
      *  card, whose own edge is the only clip. */
@@ -132,6 +136,23 @@ half4 main(float2 fc){
 }
 
 /**
+ * Which big cards wear the 3D layer now: the card in focus (a card view, a zoom, a pull, two cards at most), never a grid of big
+ * tiles on a tablet or an open foldable. Each card at least [Depth.MIN_WIDTH] wide registers its width; a card is live when it is
+ * as big as the biggest on screen (within 10 %) and at most two cards are. The others draw as the flat card with its foil, as with
+ * Settings "3D cards" off, so a grid never runs the depth pass per tile per frame and never queues the model.
+ */
+internal object DepthFocus {
+    private val cards = mutableStateMapOf<Any, Float>()
+    fun put(key: Any, width: Float) { if (cards[key] != width) cards[key] = width }
+    fun remove(key: Any) { cards.remove(key) }
+    fun live(key: Any): Boolean {
+        val w = cards[key] ?: return false
+        val top = cards.values.maxOrNull() ?: return false
+        return w >= top * .9f && cards.values.count { it >= top * .9f } <= 2
+    }
+}
+
+/**
  * Wears the depth layer on this card plane. Apply it inside the foil (after Modifier.finish in the chain) so the foil reads the moved card.
  * [tilt] is -1..1 on each axis, the same light the foil follows; reading it only re-draws the layer. A card shown big enough for 3D
  * gets its figure measured once (DepthLayers); until that lands, and wherever the gate says no, the window recedes alone.
@@ -145,19 +166,24 @@ fun Modifier.depth(finish: CardFinish?, tilt: State<Offset>?): Modifier =
         val shader = remember { runCatching { RuntimeShader(Depth.AGSL) }.getOrNull() } ?: return@composed this
         val image = Depth.image(finish)
         val minPx = with(LocalDensity.current) { Depth.MIN_WIDTH.toPx() }
-        var big by remember { mutableStateOf(false) }
-        val layers by produceState<DepthLayers.Ready?>(null, big, image, win) {
-            if (big && image != null) DepthLayers.layers(context.applicationContext, image, win, open).collect { value = it }
+        val me = remember { Any() }
+        DisposableEffect(me) { onDispose { DepthFocus.remove(me) } }
+        val live by remember { derivedStateOf { DepthFocus.live(me) } }
+        val layers by produceState<DepthLayers.Ready?>(null, live, image, win) {
+            if (!live || image == null) return@produceState
+            // A card not measured yet waits until it has settled in view, so opening or swiping past it never starts the model.
+            if (!DepthLayers.known(image, win, open)) delay(Depth.SETTLE_MS)
+            DepthLayers.layers(context.applicationContext, image, win, open).collect { value = it }
         }
         val blank = remember { FoilMaps.blank }
         val ease = remember { Animatable(0f) }
         LaunchedEffect(layers) { if (layers != null) ease.animateTo(1f, tween(450)) else ease.snapTo(0f) }
-        this.onSizeChanged { big = it.width >= minPx }.graphicsLayer {
+        this.onSizeChanged { if (it.width >= minPx) DepthFocus.put(me, it.width.toFloat()) else DepthFocus.remove(me) }.graphicsLayer {
             val t by tilt
             val w = size.width; val h = size.height
             val l = layers
             // A full art stays the flat card until its layers are measured: with no frame, nothing may move before the cut is known.
-            if (w >= minPx && h > 0f && (!open || l != null)) {
+            if (live && w >= minPx && h > 0f && (!open || l != null)) {
                 val ww = (win[2] - win[0]) * w
                 // Px the plate moves; the sign follows the card's own turn (rotationY = tilt.x * 8 deg), so the plate reads as behind the frame.
                 val sx = Depth.SIGN_X * t.x * Depth.K * ww; val sy = Depth.SIGN_Y * t.y * Depth.K * ww

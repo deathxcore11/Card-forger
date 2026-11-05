@@ -16,6 +16,7 @@ import dev.cardstashy.nativeplay.R
 import dev.cardstashy.nativeplay.art.CardArt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
@@ -56,7 +57,9 @@ object DepthModel {
         try {
             val env = OrtEnvironment.getEnvironment()
             val s = session ?: env.createSession(context.resources.openRawResource(R.raw.depth_anything_v2_small).use { it.readBytes() },
-                OrtSession.SessionOptions().apply { setIntraOpNumThreads(2); setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT) }
+                // Two threads that sleep when idle (no spin-waiting), created from the background thread so they share its low priority.
+                OrtSession.SessionOptions().apply { setIntraOpNumThreads(2); setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+                    runCatching { addConfigEntry("session.intra_op.allow_spinning", "0"); addConfigEntry("session.inter_op.allow_spinning", "0") } }
             ).also { session = it }
             val img = Bitmap.createScaledBitmap(crop, SIZE, SIZE, true)
             val px = IntArray(SIZE * SIZE); img.getPixels(px, 0, SIZE, 0, 0, SIZE, SIZE)
@@ -81,6 +84,16 @@ object DepthModel {
 }
 
 /**
+ * The depth work's own threads, at Android's background priority: measuring a card or rebuilding its layers never competes with
+ * the screen for a core, so a card opens and tilts at full frame rate while its figure is cut.
+ */
+internal object Background {
+    val dispatcher = java.util.concurrent.Executors.newFixedThreadPool(2) { r ->
+        Thread({ android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND); r.run() }, "depth").apply { isDaemon = true }
+    }.asCoroutineDispatcher()
+}
+
+/**
  * Each card's figure layer, measured once and kept: the cut on disk (filesDir/depth, a few dozen KB a card), the plate and shadow
  * rebuilt from it in a blink when the card comes back. Only cards someone is still looking at get measured, one at a time.
  */
@@ -94,10 +107,13 @@ object DepthLayers {
     private const val VERSION = 2
     /** Most width the layers are drawn at: sharper than any phone shows the window, small enough to keep a few cards in memory. */
     private const val MAX_WIDTH = 720
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = CoroutineScope(SupervisorJob() + Background.dispatcher)
     private val flows = object : LinkedHashMap<String, MutableStateFlow<Ready?>>(16, .75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, MutableStateFlow<Ready?>>) = size > 6
     }
+
+    /** True when this card's layers are already in memory (no wait, no model). */
+    fun known(image: String, win: FloatArray, open: Boolean): Boolean = synchronized(flows) { flows["$image|${win.joinToString(",")}|$open"]?.value != null }
 
     /** [open] for a full art: no window, the whole card is cut and the card's own edge is the only clip. */
     fun layers(context: Context, image: String, win: FloatArray, open: Boolean): StateFlow<Ready?> = synchronized(flows) {

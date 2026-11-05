@@ -122,29 +122,44 @@ private fun lift(p: Float): Float = when {
 
 class Tilt(val x: Float, val y: Float, val live: Boolean)
 
-/** The phone's tilt in -1..1 on each axis from the game rotation vector (no magnetometer jitter); not live without a sensor. */
+/** The phone's tilt in -1..1 on each axis from the game rotation vector (no magnetometer jitter); not live without a sensor.
+ *  Every caller shares one sensor listener: a grid of foil tiles is one stream of readings, not one per tile. */
 @Composable
 fun rememberTilt(): State<Tilt> {
     val context = LocalContext.current
-    val state = remember { mutableStateOf(Tilt(0f, 0f, false)) }
-    DisposableEffect(Unit) {
-        val sm = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
-        val sensor = sm?.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR)
-        val rot = FloatArray(9); val ori = FloatArray(3)
-        var base: FloatArray? = null
-        val l = object : SensorEventListener {
-            override fun onSensorChanged(e: SensorEvent) {
-                SensorManager.getRotationMatrixFromVector(rot, e.values); SensorManager.getOrientation(rot, ori)
-                val b = base ?: ori.copyOf().also { base = it }
-                // Ease the resting point toward how the phone is held, so the light reacts to movement, not posture.
-                for (i in 1..2) b[i] += (ori[i] - b[i]) * .02f
-                val x = ((ori[2] - b[2]) / .5f).coerceIn(-1f, 1f); val y = ((ori[1] - b[1]) / .5f).coerceIn(-1f, 1f)
-                state.value = Tilt(x, y, true)
-            }
-            override fun onAccuracyChanged(s: Sensor?, a: Int) {}
+    DisposableEffect(Unit) { SharedTilt.acquire(context); onDispose { SharedTilt.release() } }
+    return SharedTilt.state
+}
+
+private object SharedTilt {
+    val state = mutableStateOf(Tilt(0f, 0f, false))
+    private var users = 0
+    private var sm: SensorManager? = null
+    private val rot = FloatArray(9); private val ori = FloatArray(3)
+    private var base: FloatArray? = null
+    private val listener = object : SensorEventListener {
+        override fun onSensorChanged(e: SensorEvent) {
+            SensorManager.getRotationMatrixFromVector(rot, e.values); SensorManager.getOrientation(rot, ori)
+            val b = base ?: ori.copyOf().also { base = it }
+            // Ease the resting point toward how the phone is held, so the light reacts to movement, not posture.
+            for (i in 1..2) b[i] += (ori[i] - b[i]) * .02f
+            val x = ((ori[2] - b[2]) / .5f).coerceIn(-1f, 1f); val y = ((ori[1] - b[1]) / .5f).coerceIn(-1f, 1f)
+            state.value = Tilt(x, y, true)
         }
-        if (sensor != null) sm.registerListener(l, sensor, SensorManager.SENSOR_DELAY_GAME)
-        onDispose { sm?.unregisterListener(l) }
+        override fun onAccuracyChanged(s: Sensor?, a: Int) {}
     }
-    return state
+
+    fun acquire(context: Context) {
+        if (users++ > 0) return
+        val m = context.applicationContext.getSystemService(Context.SENSOR_SERVICE) as? SensorManager ?: return
+        val sensor = m.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR) ?: return
+        base = null; sm = m
+        m.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_GAME)
+    }
+
+    fun release() {
+        if (--users > 0) return
+        users = 0; sm?.unregisterListener(listener); sm = null
+        state.value = Tilt(0f, 0f, false)
+    }
 }

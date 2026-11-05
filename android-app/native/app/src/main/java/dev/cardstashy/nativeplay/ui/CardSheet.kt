@@ -153,6 +153,8 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
     LaunchedEffect(Unit) { if (Motion.still) y.snapTo(0f) else y.animateTo(0f, tween(320, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
     fun close() { scope.launch { if (!Motion.still) y.animateTo(1f, tween(220)); onClose() } }
     BackHandler(enabled = rule == null && !zoom) { close() }
+    // The grid under the sheet holds its foil still: only this card moves.
+    FoilFocus.Cover()
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val h = constraints.maxHeight.toFloat()
