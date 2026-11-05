@@ -1,9 +1,9 @@
 {
   ".dockerignore": "22050b43f43a2d9f93d5b863f49b10b3e45c70dfce806512a9a3a9aca1246cd9",
-  "Dockerfile": "597fd9d3a0fabc56a18c6ff345a3a9593dee10481c2954844ae995ce76912bf3",
+  "Dockerfile": "f4fb12101d2ee7ea595839c7b5fca6b66b22958bb2307ff21353de1bacafaebc",
   "hosting/assemble.sh": "4a631468cef0b41772b24ee82b9a34d0b05601de0faa0103608bc69936243d43",
   "hosting/bootstrap.py": "f527cdd5ba61faab856690aa72fd01a0535be9ff904efdb435eced4258d9859d",
-  "hosting/checkpoint-files.json": "e40a6c26580380d28081c023f30283f1d377ec91ff0d0f08a4e7ed3ebfa4914d",
+  "hosting/checkpoint-files.json": "df57d79869e0d51bf4432020410ddab2d338465a3c199bb9752270af28f69431",
   "hosting/gateway.py": "e796deec7aaf397fac3b118530baa8af06671c4f279aa2e4b450fa6edf69135e",
   "native/BASE-CANDIDATE.json": "8efcc09d4f3260904034aa1f2e1e9f9b8d66f1ad8aa3668c404a020b55d0dbbf",
   "native/CONTRACT.md": "3206da2ab12c8a826ff3ca7ce7852a32e82a90cfee232c7e1fe0d21c2e964462",
@@ -11,7 +11,7 @@
   "native/EXPERIMENTAL-CPU.md": "dfe69ba274f9316249c07e0dd9d8e4904e77aa9d61c5175f11e080050b423ff0",
   "native/LICENSE": "8b1ba204bb69a0ade2bfcf65ef294a920f6bb361b317dba43c7ef29d96332b9b",
   "native/PROVENANCE.md": "abb3a884dff038fb6e51e3414bb91a680d072b886c3ddc3137172145ed703a52",
-  "native/RULES-DATA.md": "3350dbfa0782b8a42aa66aaf888bd1e1dfe5759309e337480ceaa6b9e0165f93",
+  "native/RULES-DATA.md": "6c9fd903c8f0b320cbe7405e1a5876a6b87d89c066b4a4ea195ef61138794ce5",
   "native/adapter/src/cardstashy/forge/BoundedHeuristicPolicy.java": "0ff14a30d82048d77d040064ad9bd4fe569e120cf72bfc2b3da4d31c8212b8c2",
   "native/adapter/src/cardstashy/forge/BridgeContractChecks.java": "6dda6a3aafb5cd566f9f2fd7adb41f4fbd63f4912f7ca433af7c9f67d5228099",
   "native/adapter/src/cardstashy/forge/BridgeNativeTerminalChecks.java": "0794ccfc0427bbc8abcf4eb3a22dc859dbf9ba00c086b39639ec960d687c7189",
@@ -52,6 +52,6 @@
   "native/human/src/forge/ai/HumanActionAffordability.java": "b851c3e64696289079c51109f51c925ce141c53ddab651fcdfb9050d695373ac",
   "native/human/src/forge/gamemodes/match/input/InputPayMana.java": "b780a4f005b28099aace1ff9c8f811c0ddea464cc0cdec27ce7991c1f5be3365",
   "native/rules-data/current/cards.json": "4b3baeb06d878590ae256751fbafe96ea48f238b8d8f54a5acd31a24e4ed1caf",
-  "native/rules-data/current/manifest.json": "439a491106727033ad39b069d165e93dfcdb2e2c5551b18cd3fde115afc9e6f7",
-  "native/rules-data/current/official-format-facts.json": "66c6e847f6806626fffc2c00c94815317aa3dd1444b216bb9dad4a0e540373e7"
+  "native/rules-data/current/manifest.json": "db80aeaac7cb35ecee0cb0b1df29282165c425f7cbf5fdb2f91a4b9515e37be8",
+  "native/rules-data/current/official-format-facts.json": "fcd3d62aa6f22e58d041bd5ef6e5d4c62b122dc63377d97c9b7384941d1eab86"
 }
