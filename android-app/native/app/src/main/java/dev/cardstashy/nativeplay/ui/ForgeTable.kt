@@ -409,7 +409,7 @@ fun ForgeBoard(
                     if (attackAll) {
                         GoldPill(ok, live && okOn, upperM, d) { intents.ok() }
                         GlassPill("Attack all", live, attackM, d, tone = Color(0xFFFFD9CF), edge = Color(0x88FF8A6A)) { intents.attackAll(offered.map { it.id }) }
-                    } else if (oneTarget(st)) {
+                    } else if (oneTarget(st) || onePick(st)) {
                         second?.let { GlassPill(it, live, upperM, d) { intents.cancel() } }
                         if (st.selection.min == 0 && st.buttons.okEnabled) GoldPill("No target", live, lowerM, d) { intents.ok() }
                     } else if (short && second != null) {
@@ -1169,7 +1169,10 @@ internal fun askLine(st: MatchState): String? {
     val picks = st.selection.cards.size + st.selection.targetCards.size + st.selection.players.size + st.selection.stackTargets.size
     val asking = picks > 0 && input !in setOf("InputPassPriority", "InputAttack", "InputBlock", "InputConfirmMulligan", "InputLockUI") && !input.startsWith("InputPayMana") && !discard
     if (asking) {
-        val first = st.message.lines().firstOrNull { !Regex("^(Priority|Turn|Phase|Stack):").containsMatchIn(it) } ?: ""
+        val lines = st.message.lines().map { it.trim() }.filter { it.isNotEmpty() && !Regex("^(Priority|Turn|Phase|Stack):").containsMatchIn(it) }
+        // A choose-cards input (InputSelectCardsFromList, e.g. Break Under Pressure making you sacrifice) writes "<card> (id)",
+        // " - <its rules text>" and then what to do on its own line ("Select 1 creature …(s) to sacrifice."): that last line is the ask.
+        val first = lines.drop(1).lastOrNull { Regex("^(Select|Choose)\\b", RegexOption.IGNORE_CASE).containsMatchIn(it) } ?: lines.firstOrNull() ?: ""
         var ask = first.replace(Regex("Forge AI(?:\\s+—[^·\\n]*·?)?"), "CPU").replace(Regex("\\s*\\[Phase: [^\\]]*\\]"), "").trim()
         if (Regex("legend(ary)? rule|same name|choose .* to keep|keep one", RegexOption.IGNORE_CASE).containsMatchIn(ask)) ask = "Two legendary permanents share a name. Choose the one to keep."
         val named = Regex("^(.{2,60}?) - (.+)$").find(ask)
@@ -1184,6 +1187,15 @@ internal fun askLine(st: MatchState): String? {
             }
             input == "InputSelectTargets" && named != null -> ask = "Choose a target for ${named.groupValues[1]}"
             named != null -> ask = named.groupValues[2]
+        }
+        // Forge's "Select 1 creature or planeswalker they control with the highest mana value …(s) to sacrifice." reads as
+        // "Tap a creature or planeswalker to sacrifice" (the table already lights the cards that qualify).
+        Regex("^(?:Select|Choose) (\\d+) (.+?)(?:\\(s\\))? to ([a-z][a-z ]*?)\\.?$", RegexOption.IGNORE_CASE).find(ask)?.let { m ->
+            val n = m.groupValues[1].toInt(); val action = m.groupValues[3].trim()
+            val what = m.groupValues[2].replace(Regex("\\s+(?:(?:they|you) control|with|among|that|from)\\b.*$", RegexOption.IGNORE_CASE), "").trim().ifEmpty { "card" }
+            val verb = if (onePick(st) && st.selection.cards.all { st.card(it)?.zone == "Battlefield" }) "Tap" else "Choose"
+            ask = if (n == 1) "$verb ${if (Regex("^[aeiou]", RegexOption.IGNORE_CASE).containsMatchIn(what)) "an" else "a"} $what to $action"
+                else "Choose $n ${what.split(" or ").joinToString(" or ") { if (it.endsWith("s")) it else it + "s" }} to $action"
         }
         if (ask.isEmpty()) ask = if (input == "InputSelectTargets") "Choose a target" else "Choose a card on the table"
         ask = if (oneTarget(st)) ask.replace(Regex("^(Select|Choose) (a )?targets? for", RegexOption.IGNORE_CASE), "Tap a target for") else ask.replace(Regex("^Select\\b"), "Choose")
@@ -1204,6 +1216,9 @@ internal fun askLine(st: MatchState): String? {
 
 /** A required single target commits on the tap (Arena): no Confirm then; an optional one offers "No target". */
 internal fun oneTarget(st: MatchState): Boolean = st.prompt == null && st.inputType == "InputSelectTargets" && st.selection.max == 1 && st.selection.chosenCards.isEmpty() && st.selection.chosenPlayers.isEmpty()
+/** Forge's pick-exactly-one card list (a sacrifice, a card to keep): the tap commits it, so a dead OK is never shown. */
+internal fun onePick(st: MatchState): Boolean = st.prompt == null && st.inputType == "InputSelectCardsFromList" && st.selection.min == 1 && st.selection.max == 1 &&
+    st.selection.cards.isNotEmpty() && st.selection.chosenCards.isEmpty()
 
 /** .forge-ask-line on a phone: centred 30 du right of the middle, its bottom 4 du above your hand. */
 @Composable
