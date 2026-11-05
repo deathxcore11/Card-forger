@@ -229,9 +229,11 @@ private fun Tile(c: Trunk.Card, print: JsonObject?, fact: CardFacts.Fact?, data:
     val number = print?.get("collector_number")?.asString ?: c.pnumber ?: ""
     val image = print?.let { p -> p.getAsJsonObject("image_uris")?.get("normal")?.asString ?: p.getAsJsonArray("card_faces")?.firstOrNull()?.asJsonObject?.getAsJsonObject("image_uris")?.get("normal")?.asString }
         ?: c.pimage ?: fact?.i ?: "https://api.scryfall.com/cards/named?format=image&version=normal&exact=" + java.net.URLEncoder.encode(c.n, "UTF-8")
-    val look = data?.let { Foil.look(it, print, if (c.holo) "foil" else "nonfoil") }
+    // A printing that only comes in foil shows its foil whichever copy this is.
+    val finish = Foil.finishFor(print, if (c.holo) "foil" else "nonfoil")
+    val look = data?.let { Foil.look(it, print, finish) }
     // Holo copies shimmer on their own; the stamp only catches the light when tilted.
-    val tilt = rememberFoilTilt(live = c.holo, phase = (c.o.hashCode() and 0xff) / 255f)
+    val tilt = rememberFoilTilt(live = finish != "nonfoil", phase = (c.o.hashCode() and 0xff) / 255f)
     // .pe-lot in the Trunk: no plate; the art (corners 4.6 % / 3.3 %, a 1.5 px #9aa3ad ring at 70 %, a soft drop shadow),
     // then the name (DM Sans 600 15 px) with its set badge, then Holo and the copy pips. The mana and set line is hidden (.lot-sub display none).
     Column(Modifier.combinedClickable(onLongClick = { onHold(image, set) }, onClick = onClick), verticalArrangement = Arrangement.spacedBy(8.dp)) {

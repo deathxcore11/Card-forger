@@ -141,7 +141,8 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
     LaunchedEffect(pick) { pick.printId?.let { CardFacts.wantPrint(it) } ?: CardFacts.want(listOf(pick.oracle to null)) }
     val shown: JsonObject? = pick.printId?.let { prints[it] } ?: facts[pick.oracle]?.card
     var tab by remember(pick) { mutableStateOf(startTab) }
-    var finish by remember(pick) { mutableStateOf(pick.finish) }
+    var asked by remember(pick) { mutableStateOf(pick.finish) }
+    val finish = Foil.finishFor(shown, asked)
     var face by remember(pick) { mutableStateOf(0) }
     var rule by remember { mutableStateOf<CardData.Rule?>(null) }
     var zoom by remember { mutableStateOf(false) }
@@ -189,7 +190,7 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
                 stickyHeader { Tabs(tab) { tab = it } }
                 when (tab) {
                     "overview" -> item {
-                        Overview(name, shown, faces, imgFaces, face, image, finish, data, state, owned, act, { finish = it }, { face = 1 - face }, { rule = it }, { zoom = true }) { tab = "get" }
+                        Overview(name, shown, faces, imgFaces, face, image, finish, data, state, owned, act, { asked = it }, { face = 1 - face }, { rule = it }, { zoom = true }) { tab = "get" }
                     }
                     "guide" -> item { Guide(shown, data) { rule = it } }
                     else -> item { GetIt(name, shown, state, owned, act) }

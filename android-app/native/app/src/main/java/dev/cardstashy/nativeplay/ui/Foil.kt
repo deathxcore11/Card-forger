@@ -141,6 +141,14 @@ half4 main(float2 fc){
         val measure: String? get() = image?.takeIf { recipe != null && dev.cardstashy.nativeplay.foil.MtgFoil.needsMaps(recipe.cover, recipe.relief, recipe.film, recipe.pat) }
     }
 
+    /** The finish a printing is shown in: the one asked for when the printing comes in it, else the one it does come in, so a
+     *  foil-only printing opens in its foil (Randall 5 Nov, Omnipresence FRA #459) even from a copy not marked holo. */
+    fun finishFor(card: JsonObject?, want: String): String {
+        val have = card?.getAsJsonArray("finishes")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }.orEmpty()
+        if (have.isEmpty() || want in have) return want
+        return listOf("nonfoil", "foil", "etched").firstOrNull { it in have } ?: want
+    }
+
     fun look(data: CardData, card: JsonObject?, finish: String): Look {
         val p = data.profile(card, finish)
         val recipe = data.recipes[p.treatment]
