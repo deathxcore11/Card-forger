@@ -63,7 +63,7 @@ import { tileChrome } from "./tiles.js";
 // set of screens. Each game's data, rules and formats come from its adapter.
 import { S, uid, slim, meta as mtgDeckMeta } from "./store.js";
 import { esc, safeHref, usd, empty, bar, options, segmented, referencePrintingPills, ring } from "./ui.js";
-import { scoutingRows, competitiveScore } from "./scouting.js";
+import { competitiveScore } from "./scouting.js";
 import { GAMES, GAME_ICON, GAME_COLOR, GAME_IDS, blankGame, gameOf } from "./games.js";
 import { ICON, actionIcon, labelIcon } from "./icons.js";
 import { tcgCompareSheet } from "./tcgcompare.js";
@@ -75,7 +75,7 @@ import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, en
 import { ygoSource, ygoZoneRange, ygoImageDirect, YGO_SET_CACHE_KEY, YGO_SET_LEGACY_CACHE_KEY, normalizeYgoSets, migrateYgoSetCache, resolveYgoSet, ygoSetPrintings, normalizeYgoSearch, ygoSearchFormatLabel, ygoSearchFormatSupported, ygoSearchEligibility, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
 import { ptcgSource, ptcgImage, ptcgPrintingMatches, SET_SUBSETS, normalizePtcgSearch, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES, plainText } from "./ptcg.js";
 import { loadMeta, metaState, ptcgIcon, allCachedMeta, cleanName, PTCG_META_FORMATS } from "./meta.js";
-import { tcgPower, powerPanel, powerChip, shownPower, asShown, powerReadiness } from "./power.js";
+import { tcgPower, powerPanel, powerChip, shownPower, asShown, powerReadiness, powerPageHtml } from "./power.js";
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
 import { rankPairs, ygoTags, ptcgTags } from "./pairing.js";
 import { scanLookupNames, nameCandidates, scanCandidateMatches, parseYgoSetCode, ygoSetCodes, ygoPasscodes, ptcgNumbers, similarity, scanNameKey, textPhrases, attackNames } from "./scan.js";
@@ -847,7 +847,7 @@ export function tcgCardSheet(c, sctx = {}) {
             .map(
               (s) => `<div class="print">
         <button class="print-main" data-act="tSetByName" data-name="${esc(s.name)}">${thumb}<span class="print-name"><span class="ellip"><b>${esc(s.name)}</b><small>${ygoPrintBadge(s)} ${esc(s.rarity || "")} · reference art</small></span></span></button>
-        <span class="print-prices"><a class="pp buy" href="${esc(safeHref(s.url || `https://www.tcgplayer.com/search/yugioh/product?productLineName=yugioh&q=${encodeURIComponent(s.code+' '+s.rarity)}`))}" target="_blank" rel="noopener noreferrer" aria-label="Buy the ${esc(s.code)} printing">Buy</a><span class="pp"><small>reference</small>${s.quotes?.length ? s.quotes.map(q=>`<span class="printing-quote"><small>${esc(q.edition)} · ${referenceLabel(referenceQuote(q)?.kind)}</small>${usd(referenceQuote(q)?.value)}</span>`).join("") : s.price ? usd(s.price) : "Unavailable"}</span></span>
+        <span class="print-prices"><a class="pp buy" href="${esc(safeHref(s.url || `https://www.tcgplayer.com/search/yugioh/product?productLineName=yugioh&q=${encodeURIComponent(s.code+' '+s.rarity)}`))}" target="_blank" rel="noopener noreferrer" aria-label="Buy the ${esc(s.code)} printing">Buy</a><span class="pwp"><small>reference</small>${s.quotes?.length ? s.quotes.map(q=>`<span class="printing-quote"><small>${esc(q.edition)} · ${referenceLabel(referenceQuote(q)?.kind)}</small>${usd(referenceQuote(q)?.value)}</span>`).join("") : s.price ? usd(s.price) : "Unavailable"}</span></span>
       </div>`,
             )
             .join("")}</div><p class="foot">${c.sets.length} printings, priciest first. Thumbnails are reference art; inspect the seller’s edition and rarity. Tap a printing to open its set.</p>`
@@ -1535,40 +1535,39 @@ const myBiasFor = (p, field) => { const m = p?.match; if (!canBorrowResults(p)) 
 // pulled toward recorded Limitless results (realResults); both are models, and the card says so.
 function tcgMatchupCard(g, d, f, pw, main, extra) {
   const st = muStateT(g, d), fkey = tcgFieldKey(g);
-  const wrap = (inner) => `<section class="ph-card ph-wide"><h3>Matchups</h3>${inner}</section>`;
-  if (st.busy) return wrap(`<p class="ph-note" role="status">${esc(st.msg || "Simulating matchups…")}</p>`);
+  const wrap = (inner) => `<section class="pwp-card"><h3>Matchups</h3>${inner}</section>`;
+  if (st.busy) return wrap(`<p class="pwp-text" role="status">${esc(st.msg || "Simulating matchups…")}</p>`);
   if (!st.field?.length || st.fieldKey !== fkey) { const cached = metaState(g)?.data ? fieldStore.get(fkey) : null; if (cached?.length) { st.field = cached; st.fieldKey = fkey; } }
-  if (!st.field?.length || st.fieldKey !== fkey) return wrap(`<p class="ph-note">Simulate this deck against the decks winning right now.</p>${st.error ? `<p class="ph-note warn-text">${esc(st.error)}</p>` : ""}<button class="btn" data-act="tMuRun">Simulate matchups</button>`);
+  if (!st.field?.length || st.fieldKey !== fkey) return wrap(`<p class="pwp-text">Simulate this deck against the decks winning right now.</p>${st.error ? `<p class="pwp-text warn-text">${esc(st.error)}</p>` : ""}<button class="btn pwp-btn" data-act="tMuRun">Simulate matchups</button>`);
   const me = profileOf(g, pw, main, extra);
-  if (!me) return wrap(`<p class="ph-note">This deck's cards are still loading.</p>`);
+  if (!me) return wrap(`<p class="pwp-text">This deck's cards are still loading.</p>`);
   let sims = computeMatchups(fkey + "|" + listSig({ main: d.zones.main || [], side: d.zones.side || [] }), st.field, me, () => null, (a, b) => simulateMatchup(g, a, b), 0);
   if (g === "ptcg") sims = realResults(sims, pw);
   const rows = sims.map((m) => ({ name: m.name, w: m.sim.win, why: (m.sim.reasons || [])[0] || "" }));
   const strong = rows.filter((m) => m.w >= 0.55).sort((a, b) => b.w - a.w).slice(0, 3), weak = rows.filter((m) => m.w <= 0.45).sort((a, b) => a.w - b.w).slice(0, 3);
-  const li = (m, c) => `<li class="ph-m"><span><b>${esc(m.name)}</b>${m.why ? `<small>${esc(m.why)}</small>` : ""}</span><em class="${c}">${Math.round(m.w * 100)}%</em></li>`;
-  return wrap(`<div class="ph-pc"><div class="ph-pro"><h4>Strong against</h4><ul>${strong.map((m) => li(m, "up")).join("") || '<li class="ph-note">No clear edge against this field.</li>'}</ul></div><div class="ph-con"><h4>Weak against</h4><ul>${weak.map((m) => li(m, "down")).join("") || '<li class="ph-note">No clear weakness in this field.</li>'}</ul></div></div><p class="ph-note">Simulated against ${rows.length} tournament decks, 2,000 games each${g === "ptcg" ? ", adjusted toward recorded online results" : ""}. A model, not match data.</p>`);
+  const li = (m, c) => `<div class="pwp-m"><span><b>${esc(m.name)}</b>${m.why ? `<small>${esc(m.why)}</small>` : ""}</span><em class="${c}">${Math.round(m.w * 100)}%</em></div>`;
+  return wrap(`<div class="pwp-pc"><div class="pwp-pro"><h4>Strong against</h4>${strong.map((m) => li(m, "up")).join("") || '<p class="pwp-text">No clear edge in this field.</p>'}</div><div class="pwp-con"><h4>Weak against</h4>${weak.map((m) => li(m, "down")).join("") || '<p class="pwp-text">No clear weakness in this field.</p>'}</div></div><small>${rows.length} tournament decks, 2,000 games each${g === "ptcg" ? ", adjusted toward recorded online results" : ""}.</small>`);
 }
 function tcgPowerPage(g, d, f, s) {
   const N = (d.zones.main || []).reduce((a, r) => a + r.qty, 0);
   if (!N) return deckInsights(g, d, f, s);
   const pw = tcgPower(g, d, f, (x) => cardOf(g, x)), score = shownPower(pw), comp = competitiveScore(pw);
   const tier = comp == null ? "Tier not rated yet" : comp >= 88 ? "Tier 1" : comp >= 75 ? "Tier 2" : comp >= 62 ? "Tier 3" : "Below Tier 3";
-  const hero = `<section class="ph-card ph-hero${score == null ? " no-ring" : ""}">${score == null ? "" : `<div class="ph-ring">${ring(score, 96)}</div>`}<div class="ph-hero-t"><p class="ph-tier">${esc(tier)}</p><p class="ph-plan">${esc(pw.plan || pw.lens || "")}</p><p class="ph-sub">${score == null ? "Power unavailable until the checks below pass" : comp == null ? "from the deck's own cards" : "vs. what's winning now"}</p></div></section>`;
-  const gf = pw.goldfish, dist = gf?.turnDist, mx = dist ? Math.max(...dist.d, 1) : 1;
-  const tiles = gf?.metrics?.length ? gf.metrics.slice(0, 4).map((m) => { const v = m.pct ? Math.round(m.value * 100) + "%" : m.value.toFixed(1), ok = m.bad ? m.value <= m.good : m.value >= m.good; return `<span class="${ok ? "ok" : "bad"}"><b>${v}</b>${esc(m.label)}</span>`; }) : (pw.sims || []).slice(0, 4).map((x) => { const ok = x.lower ? x.p <= x.target : x.p >= x.target; return `<span class="${ok ? "ok" : "bad"}"><b>${Math.round(x.p * 100)}%</b>${esc(x.label)}</span>`; });
-  const ramp = dist || tiles.length ? `<section class="ph-card"><h3>${g === "ygo" ? "Opening hands" : "Ramp"}</h3>${dist ? `<div class="ph-bars" role="img" aria-label="${esc(dist.label)}">${dist.d.map((x, i) => `<i><em>${x >= 0.01 ? Math.round(x * 100) + "%" : ""}</em><span style="height:${Math.max(3, Math.round(x / mx * 78))}px"></span><small>${i === dist.maxT ? "later" : "T" + (i + 1)}</small></i>`).join("")}</div>` : ""}${gf?.headline ? `<p class="ph-note">${esc(gf.headline)}</p>` : ""}${tiles.length ? `<div class="ph-tiles">${tiles.join("")}</div>` : ""}</section>` : "";
-  const keep = { "The plan": 1, "What makes it work": 1, "How it wins": 1, "Modeled output": 1 };
-  const rows = scoutingRows(pw).filter(([h]) => keep[h]);
-  const how = rows.length ? `<section class="ph-card"><h3>How it works and wins</h3><dl class="ph-how">${rows.map(([h, t]) => `<div><dt>${esc(h.replace("What makes it work", "Synergy").replace("The plan", "Plan"))}</dt><dd>${t}</dd></div>`).join("")}</dl></section>` : "";
-  const c = pw.ctx || {}, m = pw.match;
-  const bits = [m ? `<span class="ph-chip">${m.sim >= 0.35 ? "Matches" : "Closest list"} <b>${esc(m.archetype)}</b> · ${Math.round(m.sim * 100)}% same cards</span>` : "", ...(c.field || []).slice(0, 4).map((a) => `<span class="ph-chip">${esc(a.name)}${a.share ? ` <b>${Math.round(a.share * 100)}%</b>` : ""}</span>`)].filter(Boolean);
-  const metaCard = bits.length ? `<section class="ph-card"><h3>Against the meta</h3><div class="ph-chips">${bits.join("")}</div></section>` : "";
+  const gf = pw.goldfish, st = pw.strategic;
+  const drivers = st?.dimensions?.length ? st.dimensions.map((x) => ({ label: x.label, ratio: x.ratio })) : (pw.parts || []).filter((x) => x.max).slice(0, 4).map((x) => ({ label: x.label, ratio: x.earned / x.max }));
+  const tiles = gf?.metrics?.length ? gf.metrics.slice(0, 4).map((m) => ({ v: m.pct ? Math.round(m.value * 100) + "%" : m.value.toFixed(1), label: m.label, ok: m.bad ? m.value <= m.good : m.value >= m.good })) : (pw.sims || []).slice(0, 4).map((x) => ({ v: Math.round(x.p * 100) + "%", label: x.label, ok: x.lower ? x.p <= x.target : x.p >= x.target }));
+  const tempo = { title: g === "ygo" ? "Opening hands" : "Tempo", dist: gf?.turnDist, note: gf?.turnDist ? "modeled turn to reach 20 damage" : "", tiles };
+  const sources = [...String(gf?.winCon || "").matchAll(/([^,()]+?) \((\d+)%\)/g)].map((x) => ({ name: x[1].replace(/^.*comes from\s+/i, "").trim(), share: +x[2] / 100 })).slice(0, 4);
+  const chains = [...(pw.engine?.links || []).reduce((mp, x) => { const text = "wants " + String(x.need).replace(/^type:(\w+)/i, (m, t) => t[0].toUpperCase() + t.slice(1) + " Energy") + ": " + x.providers.slice(0, 3).map((q) => `${q.qty}× ${q.name}`).join(", "); const e = mp.get(text); e ? e.heads.push(x.payoff) : mp.set(text, { heads: [x.payoff], text }); return mp; }, new Map()).values()].slice(0, 3).map((e) => ({ head: e.heads.join(" and "), text: e.text }));
+  const m = pw.match, c = pw.ctx || {};
+  const meta = { match: m ? { archetype: m.archetype, sim: m.sim, lists: m.lists, share: m.share, missing: (m.missing || []).slice(0, 3), extra: (m.extra || []).slice(0, 3) } : null, field: c.field || [] };
+  const risks = (pw.strategicRisk?.axes || []).map((a) => ({ label: a.label, copies: a.copies }));
   const mu = tcgMatchupCard(g, d, f, pw, tRows(g, d.zones.main), tRows(g, d.zones.extra));
-  // Upgrades: what placing lists of the same archetype play that this list does not.
   const U = pw.upgrades;
-  const sw = U ? `<ul class="ph-swaps">${U.adds.slice(0, 4).map((x) => `<li><span class="in" style="text-align:left">+ ${esc(x.name)}</span><i></i><span></span><small>${Math.round(x.share * 100)}% of ${esc(m.archetype)} lists play it · they run ${x.typical}, you run ${x.have}</small></li>`).join("")}</ul>${U.cuts.length ? `<p class="ph-note"><b>Few placing lists play:</b> ${U.cuts.slice(0, 4).map((x) => esc(x.name)).join(", ")}</p>` : ""}` : "";
-  const up = `<section class="ph-card ph-wide"><h3>Upgrades</h3>${sw}${pw.metaLoaded ? "" : `<p class="ph-note">Load recent tournament decks to see what lists like yours play.</p><button class="btn" data-act="tMetaRefresh">Load tournament decks</button>`}<p class="ph-note">From recent tournament results. Heuristics, not measured win rates.</p><details class="ph-more"><summary>Cuts, staples and budget builds</summary>${deckUpgradeTab(g, d, f, s)}</details></section>`;
-  return `<div class="ph-root"><div class="ph">${hero}${ramp}${how}${metaCard}${mu}${up}</div><details class="ph-full"><summary>Full breakdown</summary><div class="ph-cols">${deckInsights(g, d, f, s)}</div></details></div>`;
+  const up = `<section class="pwp-card"><h3>Upgrades</h3>${U ? U.adds.slice(0, 4).map((x) => `<div class="pwp-sw"><span class="n" style="grid-column:1/-1;text-align:left">+ ${esc(x.name)}</span><small>${Math.round(x.share * 100)}% of ${esc(m.archetype)} lists play it · they run ${x.typical}, you run ${x.have}</small></div>`).join("") + (U.cuts.length ? `<small>Few placing lists play: ${U.cuts.slice(0, 4).map((x) => esc(x.name)).join(", ")}</small>` : "") : ""}${pw.metaLoaded ? "" : `<small>Load recent tournament decks to see what lists like yours play.</small><button class="btn pwp-btn" data-act="tMetaRefresh">Load tournament decks</button>`}<details class="pwp-more"><summary>Staples and budget builds</summary>${deckUpgradeTab(g, d, f, s)}</details></section>`;
+  const foot = `Estimates from this list${gf?.runs ? `: ${gf.runs.toLocaleString()} solitaire trials` : ""}, tournament lists. Not match results.`;
+  const tcgMore = `<details class="pwp-more"><summary>Card odds, roles and Extra Deck</summary><div class="pwp-cols">${deckInsights(g, d, f, s, true)}</div></details><details class="pwp-more"><summary>AI coach</summary>${aiReviewPanel(g, d, x => cardOf(g, x), pw, tcgCoachHooks(g, d, f, pw))}</details>`;
+  return powerPageHtml({ score, tier, plan: pw.plan || pw.lens || "", sub: score == null ? "Power unavailable until the checks pass" : comp == null ? "from the deck's own cards" : "against what is winning now", chips: [], drivers, tempo, wins: { sources, chains, text: sources.length ? "" : gf?.winCon || "" }, meta, risks, matchups: mu, upgrades: up, foot }) + tcgMore;
 }
 
 function deckMatchupsT(g, d, f) {
@@ -1622,13 +1621,13 @@ export function tcgCoachHooks(g, d, f, pw) {
   };
 }
 
-function deckInsights(g, d, f, s) {
+function deckInsights(g, d, f, s, inPage = false) {
   const main = (d.zones.main || []).map((r) => ({ r, c: cardOf(g, r.cardId) })),
     N = main.reduce((a, x) => a + x.r.qty, 0),
     top = [...s.rows].filter((x) => x.c && price(x.c)).sort((a, b) => price(b.c) - price(a.c)).slice(0, 5);
   if (!N) return `<p class="muted pad">Add cards to see composition and odds.</p>`;
   const pw = tcgPower(g, d, f, (x) => cardOf(g, x)),
-    powerHtml = aiReviewPanel(g, d, x => cardOf(g, x), pw, tcgCoachHooks(g, d, f, pw)) + powerPanel(pw, { loadAct: `data-act="tMetaRefresh"`, cardAct: (x) => (x.id || g === "ygo" ? `data-act="tCard" data-id="${esc(x.id || x.key)}"` : `data-act="tDeckFindName" data-name="${esc(x.name)}"`) });
+    powerHtml = inPage ? "" : aiReviewPanel(g, d, x => cardOf(g, x), pw, tcgCoachHooks(g, d, f, pw)) + powerPanel(pw, { loadAct: `data-act="tMetaRefresh"`, cardAct: (x) => (x.id || g === "ygo" ? `data-act="tCard" data-id="${esc(x.id || x.key)}"` : `data-act="tDeckFindName" data-name="${esc(x.name)}"`) });
   const bars = (items) => `<div class="comp">${items.map(([label, n, total, note]) => `<div class="meter"><span>${esc(label)}</span>${bar(total ? n / total : 0)}<b>${n}</b></div>${note ? `<p class="foot">${note}</p>` : ""}`).join("")}</div>`;
   // Each card's role comes from the Deck Power engine, so the table shows why a card matters.
   const roleChips = (id) => (pw.roles?.get(String(id)) || []).map((r) => `<span class="role-chip">${esc(r)}</span>`).join(""),
@@ -1650,7 +1649,7 @@ function deckInsights(g, d, f, s) {
     <section class="panel"><h3>Card by card</h3>
       <p class="muted small">Chance to draw at least one copy (exact odds). First-turn scenarios use ${firstTurnCards} cards going first and ${secondTurnCards} going second under this format profile; these are not extra draw effects. Labels show each card's job in the deck; the hand simulation above combines them.</p>
       <table class="metrics"><thead><tr><th>Card</th><th class="num">Qty</th><th class="num" title="Going first: ${firstTurnCards} cards">1st (${firstTurnCards})</th><th class="num" title="Going second: ${secondTurnCards} cards">2nd (${secondTurnCards})</th></tr></thead><tbody>${main.sort((a, b) => b.r.qty - a.r.qty || String(a.r.name||a.c?.name||a.r.cardId||"").localeCompare(String(b.r.name||b.c?.name||b.r.cardId||""))).map((x) => oddsRow(x, [firstTurnCards, secondTurnCards])).join("")}</tbody></table>
-    </section>${valuePanel}`;
+    </section>${inPage ? "" : valuePanel}`;
   }
   // Pokémon
   const cat = (k) => main.filter((x) => (x.c?.category || "Pokemon") === k).reduce((a, x) => a + x.r.qty, 0),
@@ -1668,7 +1667,7 @@ function deckInsights(g, d, f, s) {
     ${needTypes.length ? `<div class="note warn">Attacks need ${needTypes.map(esc).join(", ")} Energy, but the deck has no basic ${needTypes.map(esc).join("/")} Energy.</div>` : ""}
   </section>
   <section class="panel"><h3>Card by card</h3><p class="muted small">Chance to have at least one copy (exact odds). Six cards go to your Prizes, so a single copy is prized about ${pctTxt(6 / Math.max(N, 1))} of games. Labels show each card's job in the deck.</p>
-    <table class="metrics"><thead><tr><th>Card</th><th class="num">Qty</th><th class="num" title="Opening hand of 7">In 7</th><th class="num" title="By turn 2: 9 cards">By T2</th></tr></thead><tbody>${main.sort((a, b) => b.r.qty - a.r.qty || String(a.r.name||a.c?.name||a.r.cardId||"").localeCompare(String(b.r.name||b.c?.name||b.r.cardId||""))).filter((x) => !x.c?.basicEnergy).map((x) => oddsRow(x, [7, 9])).join("")}</tbody></table></section>${valuePanel}`;
+    <table class="metrics"><thead><tr><th>Card</th><th class="num">Qty</th><th class="num" title="Opening hand of 7">In 7</th><th class="num" title="By turn 2: 9 cards">By T2</th></tr></thead><tbody>${main.sort((a, b) => b.r.qty - a.r.qty || String(a.r.name||a.c?.name||a.r.cardId||"").localeCompare(String(b.r.name||b.c?.name||b.r.cardId||""))).filter((x) => !x.c?.basicEnergy).map((x) => oddsRow(x, [7, 9])).join("")}</tbody></table></section>${inPage ? "" : valuePanel}`;
 }
 function levelChart(levels) {
   const max = Math.max(1, ...levels);
