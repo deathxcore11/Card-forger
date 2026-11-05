@@ -61,7 +61,7 @@ import { binderShelf } from "./binders.js";
 // Screen renderers. Each returns HTML for #content; interaction is wired by
 // data-act / data-change / data-input attributes handled centrally in app.js.
 import { metaState, MTG_META_FORMATS, DEFAULT_MTG_META_FORMAT, allCachedMeta } from "./meta.js";
-import { mtgPower, powerPanel, powerChip, shownPower, powerReadiness } from "./power.js";
+import { mtgPower, powerPanel, powerChip, shownPower, powerReadiness, powerPageHtml } from "./power.js";
 import { factBox, overviewFacts } from "./facts.js";
 import { ensureTcgPrices } from "./mtg-tcgprice.js";
 import { S, meta, inv, deckById, currentDeck, priceOf } from "./store.js";
@@ -1554,37 +1554,38 @@ function phMatchups(d, pw, p) {
     weak = f.filter((m) => m.w <= even - 0.05).sort((a, b) => a.w - b.w).slice(0, 3);
   return { strong, weak, even, n: f.length };
 }
-function phMatchRow(m, cls) { return `<li class="ph-m"><span><b>${esc(m.name)}</b>${m.why ? `<small>${esc(m.why)}</small>` : ""}</span><em class="${cls}">${Math.round(m.w * 100)}%</em></li>`; }
+function phMatchRow(m, cls) { return `<div class="pwp-m"><span><b>${esc(m.name)}</b>${m.why ? `<small>${esc(m.why)}</small>` : ""}</span><em class="${cls}">${Math.round(m.w * 100)}%</em></div>`; }
 
-function powerHub(d, pw, p) {
+function powerHub(d, pw, p, issues) {
   const score = shownPower(pw), tier = phTier(d, pw), g = pw.goldfish, fm = formatOf(d);
-  const chips = [[p.counts.Lands, "lands"], [p.counts.Creatures, "creatures"], [p.counts.Interaction ?? p.counts.Removal, "interaction"], [p.counts["Card flow"] ?? p.counts.Draw, "card flow"], [p.avg === null ? "—" : p.avg.toFixed(2), "avg cost"]].filter(([n]) => n !== undefined && n !== null);
-  const hero = `<section class="ph-card ph-hero${score == null ? " no-ring" : ""}">${score == null ? "" : `<div class="ph-ring">${ring(score, 96)}</div>`}<div class="ph-hero-t"><p class="ph-tier">${esc(tier.word)}</p><p class="ph-plan">${esc(pw.plan || pw.lens || "")}</p><p class="ph-sub">${score == null ? "Power unavailable until the checks below pass" : esc(tier.sub)}</p></div><div class="ph-chips">${chips.map(([n, l]) => `<span class="ph-chip"><b>${esc(String(n))}</b> ${l}</span>`).join("")}</div></section>`;
-  // Ramp: when it gets there, plus mana health.
-  const dist = g?.turnDist, mx = dist ? Math.max(...dist.d, 1) : 1;
-  const ramp = g ? `<section class="ph-card"><h3>Ramp</h3>${dist ? `<div class="ph-bars" role="img" aria-label="${esc(dist.label)}">${dist.d.map((x, i) => `<i><em>${x >= 0.01 ? Math.round(x * 100) + "%" : ""}</em><span style="height:${Math.max(3, Math.round(x / mx * 78))}px"></span><small>${i === dist.maxT ? "later" : "T" + (i + 1)}</small></i>`).join("")}</div>` : ""}<p class="ph-note">${esc(g.headline)}</p>${g.metrics?.length ? `<div class="ph-tiles">${g.metrics.slice(0, 4).map((m) => { const v = m.pct ? Math.round(m.value * 100) + "%" : m.value.toFixed(1), ok = m.bad ? m.value <= m.good : m.value >= m.good; return `<span class="${ok ? "ok" : "bad"}"><b>${v}</b>${esc(m.label)}</span>`; }).join("")}</div>` : ""}</section>` : "";
-  // How it works and wins: the scouting rows that explain the deck.
-  const keep = { "The plan": 1, "What makes it work": 1, "How it wins": 1, "Modeled output": 1 };
-  const rows = scoutingRows(pw).filter(([h]) => keep[h]);
-  const how = rows.length ? `<section class="ph-card"><h3>How it works and wins</h3><dl class="ph-how">${rows.map(([h, t]) => `<div><dt>${esc(h.replace("What makes it work", "Synergy").replace("The plan", "Plan"))}</dt><dd>${t}</dd></div>`).join("")}</dl></section>` : "";
-  // Meta context: only when the format has tournament data.
-  const c = pw.ctx || {}, m = pw.match;
-  const metaBits = [m ? `<span class="ph-chip">${m.sim >= 0.35 ? "Matches" : "Closest list"} <b>${esc(m.archetype)}</b> · ${Math.round(m.sim * 100)}% same cards</span>` : "", ...(c.field || []).slice(0, 4).map((a) => `<span class="ph-chip">${esc(a.name)}${a.share ? ` <b>${pct(a.share)}</b>` : ""}</span>`)].filter(Boolean);
-  const metaCard = metaBits.length ? `<section class="ph-card"><h3>Against the meta</h3><div class="ph-chips">${metaBits.join("")}</div></section>` : "";
+  const cnt = (...ks) => { for (const k of ks) if (p.counts[k] !== undefined) return p.counts[k]; return null; };
+  const chips = [[cnt("Lands"), "lands"], [cnt("Creatures"), "creatures"], [cnt("Interaction", "Removal"), "interaction"], [cnt("Card flow", "Draw"), "card flow"], [p.avg === null ? null : p.avg.toFixed(2), "avg cost"]].filter(([n]) => n !== null && n !== undefined);
+  const st = pw.strategic, drivers = st?.dimensions?.length ? st.dimensions.map((x) => ({ label: x.label, ratio: x.ratio })) : (pw.parts || []).filter((x) => x.max).slice(0, 4).map((x) => ({ label: x.label, ratio: x.earned / x.max }));
+  const tempo = g ? { dist: g.turnDist, note: g.turnDist ? "modeled turn to reach 20 damage" : "", tiles: (g.metrics || []).slice(0, 4).map((x) => ({ v: x.pct ? Math.round(x.value * 100) + "%" : x.value.toFixed(1), label: x.label, ok: x.bad ? x.value <= x.good : x.value >= x.good })) } : null;
+  // Damage sources are parsed from the goldfish line "… comes from A (58%), B (30%) …".
+  const sources = [...String(g?.winCon || "").matchAll(/([^,()]+?) \((\d+)%\)/g)].map((x) => ({ name: x[1].replace(/^.*comes from\s+/i, "").trim(), share: +x[2] / 100 })).slice(0, 4);
+  const chains = [...(pw.engine?.links || []).reduce((mp, x) => { const text = "wants " + String(x.need).replace(/^type:(\w+)/i, (m, t) => t[0].toUpperCase() + t.slice(1) + " Energy") + ": " + x.providers.slice(0, 3).map((q) => `${q.qty}× ${q.name}`).join(", "); const e = mp.get(text); e ? e.heads.push(x.payoff) : mp.set(text, { heads: [x.payoff], text }); return mp; }, new Map()).values()].slice(0, 3).map((e) => ({ head: e.heads.join(" and "), text: e.text }));
+  const wins = { sources, chains, text: sources.length ? "" : g?.winCon || "" };
+  const m = pw.match, c = pw.ctx || {};
+  const meta = { match: m ? { archetype: m.archetype, sim: m.sim, lists: m.lists, share: m.share, missing: (m.missing || []).slice(0, 3), extra: (m.extra || []).slice(0, 3) } : null, field: c.field || [] };
+  const risks = (pw.strategicRisk?.axes || []).map((a) => ({ label: a.label, copies: a.copies }));
+  const colorTotal = Object.values(p.pips).reduce((a, b) => a + b, 0), srcTotal = Object.values(p.sources).reduce((a, b) => a + b, 0), colors = Object.keys(p.pips).filter((k) => p.pips[k] > 0 || p.sources[k] > 0);
+  const curve = curveChart(p.curve) + (colors.length ? `<div class="pwp-colors">${colors.map((k) => `<div class="meter two"><span>${sym(k)}</span><span class="pair">${bar(colorTotal ? p.pips[k] / colorTotal : 0, "c-" + k)}${bar(srcTotal ? p.sources[k] / srcTotal : 0, "c-" + k + " faint")}</span><b class="small">${pct(colorTotal ? p.pips[k] / colorTotal : 0)} cost · ${pct(srcTotal ? p.sources[k] / srcTotal : 0)} lands</b></div>`).join("")}</div>` : "");
   // Matchups as pros and cons.
   const M = phMatchups(d, pw, p);
-  const mu = `<section class="ph-card ph-wide"><h3>Matchups</h3>${M.none ? `<p class="ph-note">${esc(M.none)}</p>` : M.busy ? `<p class="ph-note" role="status">${esc(M.busy)}</p>` : M.load ? `<p class="ph-note">Simulate this deck against the decks winning right now.</p>${M.error ? `<p class="ph-note warn-text">${esc(M.error)}</p>` : ""}<button class="btn" data-act="muRun">Simulate matchups</button>` : `<div class="ph-pc"><div class="ph-pro"><h4>Strong against</h4><ul>${M.strong.map((x) => phMatchRow(x, "up")).join("") || '<li class="ph-note">No clear edge against this field.</li>'}</ul></div><div class="ph-con"><h4>Weak against</h4><ul>${M.weak.map((x) => phMatchRow(x, "down")).join("") || '<li class="ph-note">No clear weakness in this field.</li>'}</ul></div></div><p class="ph-note">Simulated against ${M.n} tournament decks, 2,000 games each, ${M.even < 0.5 ? "as a share of four-player pods" : "chance to win"}. A model, not match data.</p>`}<div class="ph-actions"><button class="btn ghost small" data-act="amOpen" data-tab="setup">Ask AI about a specific opponent</button></div></section>`;
+  const mu = `<section class="pwp-card"><h3>Matchups</h3>${M.none ? `<p class="pwp-text">${esc(M.none)}</p>` : M.busy ? `<p class="pwp-text" role="status">${esc(M.busy)}</p>` : M.load ? `<p class="pwp-text">Simulate this deck against the decks winning right now.</p>${M.error ? `<p class="pwp-text warn-text">${esc(M.error)}</p>` : ""}<div class="pwp-actions"><button class="btn pwp-btn" data-act="muRun">Simulate matchups</button><button class="btn ghost pwp-btn" data-act="amOpen" data-tab="setup">Ask AI about an opponent</button></div>` : `<div class="pwp-pc"><div class="pwp-pro"><h4>Strong against</h4>${M.strong.map((x) => phMatchRow(x, "up")).join("") || '<p class="pwp-text">No clear edge in this field.</p>'}</div><div class="pwp-con"><h4>Weak against</h4>${M.weak.map((x) => phMatchRow(x, "down")).join("") || '<p class="pwp-text">No clear weakness in this field.</p>'}</div></div><small>${M.n} tournament decks, 2,000 games each${M.even < 0.5 ? ", share of four-player pods" : ""}.</small>`}${M.load ? "" : `<button class="btn ghost pwp-btn" data-act="amOpen" data-tab="setup">Ask AI about an opponent</button>`}</section>`;
   // Upgrades.
   const U = S.ui.upgrade, B = S.ui.build;
   let up;
   if (d.format === "Commander") {
     const plans = U.deckId === d.id ? U.plans : {}, plan = plans[U.budget];
-    up = `<section class="ph-card ph-wide"><h3>Upgrades</h3>${plan?.swaps?.length ? `<ul class="ph-swaps">${plan.swaps.slice(0, 4).map((s) => `<li><span class="out">${esc(s.cut)}</span><i>→</i><span class="in">${esc(s.add)}</span><small>${s.powerBefore != null && s.powerAfter != null ? `Power ${s.powerBefore} → ${s.powerAfter}` : ""}</small></li>`).join("")}</ul>` : ""}<p class="ph-note" role="status" id="upMsg">${esc(U.msg || "")}</p><button class="btn" data-act="upRun" ${U.busy ? "disabled" : ""}>${U.busy ? "Working…" : plan ? "↻ Refresh" : "Find upgrades"}</button>${plan ? `<details class="ph-more"><summary>Review and apply swaps</summary>${swapPanel(d)}${swapResults(d, plan)}</details>` : ""}</section>`;
+    up = `<section class="pwp-card"><h3>Upgrades</h3>${plan?.swaps?.length ? plan.swaps.slice(0, 4).map((s) => `<div class="pwp-sw"><span class="o">${esc(s.cut)}</span><i>→</i><span class="n">${esc(s.add)}</span>${s.powerBefore != null && s.powerAfter != null ? `<small>Power ${s.powerBefore} → ${s.powerAfter}</small>` : ""}</div>`).join("") : ""}${U.msg ? `<small role="status" id="upMsg">${esc(U.msg)}</small>` : ""}<button class="btn pwp-btn" data-act="upRun" ${U.busy ? "disabled" : ""}>${U.busy ? "Working…" : plan ? "↻ Refresh" : "Find upgrades"}</button>${plan ? `<details class="pwp-more"><summary>Review and apply swaps</summary>${swapPanel(d)}${swapResults(d, plan)}</details>` : ""}</section>`;
   } else {
     const swaps = B.fillDeck === d.id ? B.formatSwaps || [] : [], count = sumQty(d.cards);
-    up = `<section class="ph-card ph-wide"><h3>Upgrades</h3>${swaps.length ? `<ul class="ph-swaps">${swaps.map((s, i) => `<li><span class="out">${esc(s.cardOut)}</span><i>→</i><span class="in">${esc(s.cardIn)}</span><small>${esc(s.reason)}</small><button class="btn ghost small" data-act="applyFormatUpgrade" data-i="${i}">Swap 1 copy</button></li>`).join("")}</ul>` : ""}${count === fm.size ? `<button class="btn" data-act="suggestFormatUpgrades" ${B.busy ? "disabled" : ""}>${swaps.length ? "↻ Refresh" : "Find paired upgrades"}</button>` : ""}<p class="ph-note">Same-role swaps within your $${esc(d.budget ?? 25)} budget. Heuristics, not measured win rates.</p><details class="ph-more"><summary>${count < fm.size ? "Fill open slots and compare budgets" : "Complete this list and compare budgets"}</summary>${fillAnyPanel(d, fm, count)}</details></section>`;
+    up = `<section class="pwp-card"><h3>Upgrades</h3>${swaps.map((s, i) => `<div class="pwp-sw"><span class="o">${esc(s.cardOut)}</span><i>→</i><span class="n">${esc(s.cardIn)}</span><small>${esc(s.reason)}</small><button class="btn ghost pwp-btn" data-act="applyFormatUpgrade" data-i="${i}">Swap 1 copy</button></div>`).join("")}${count === fm.size ? `<button class="btn pwp-btn" data-act="suggestFormatUpgrades" ${B.busy ? "disabled" : ""}>${swaps.length ? "↻ Refresh" : "Find paired upgrades"}</button>` : ""}<details class="pwp-more"><summary>${count < fm.size ? "Fill open slots and compare budgets" : "Complete this list and compare budgets"}</summary>${fillAnyPanel(d, fm, count)}</details></section>`;
   }
-  return `<div class="ph">${hero}${ramp}${how}${metaCard}${mu}${up}</div>`;
+  const foot = `Estimates from this list: ${g ? g.runs.toLocaleString() + " solitaire trials, " : ""}${pw.sims?.length ? "3,000 shuffles, " : ""}tournament lists. Not match results. Rules checks: <b class="${issues.length ? "warn-text" : "ok-text"}">${issues.length ? issues.length + " to fix" : "pass"}</b>`;
+  return powerPageHtml({ score, tier: tier.word, plan: pw.plan || pw.lens || "", sub: score == null ? "Power unavailable until the checks pass" : tier.sub, chips, drivers, tempo, wins, meta, risks, curve, matchups: mu, upgrades: up, foot });
 }
 
 function deckEngine(d) {
@@ -1597,20 +1598,11 @@ function deckEngine(d) {
   const pw = mtgPower(d);
   const fm0 = formatOf(d);
   if (fm0.commander && !canLead(meta(d.commander), fm0)) return commanderPicker(d);
-  return `<div class="ph-root">${powerHub(d, pw, p)}<details class="ph-full"><summary>Full breakdown</summary><div class="ph-cols">${aiReviewPanel("mtg", d, meta, pw, mtgCoachHooks(d, pw))}${powerPanel(pw, { loadAct: pw.metaKey ? `data-act="deckMetaLoad" data-key="${esc(pw.metaKey)}"` : "", findAct: (x) => `data-act="findRole" data-role="${esc(x.fix)}"`, cardAct: (x) => `data-act="card" data-name="${esc(x.name)}"` })}
-  ${p.unknown ? `<div class="note warn">${p.unknown} cards have no card data yet, so they aren’t counted. <button class="link" data-act="refreshDeck">Load card data</button></div>` : ""}
-  ${d.format === "Commander" ? bracketPanel(d) : ""}  <section class="panel"><div class="row between"><h3>Mana curve</h3><span class="muted small">avg ${p.avg === null ? "—" : p.avg.toFixed(2)} · ${p.counts.Lands} lands</span></div>${curveChart(p.curve)}</section>
-  ${
-    colors.length
-      ? `<section class="panel"><h3>Color balance</h3><p class="muted small">Estimated colored payment share vs. land-source share. Hybrid symbols are counted once, not as both colors. See Mana base for payment choices and limits.${p.mana.complete ? "" : " Some alternative costs are omitted; no basic split is recommended."}</p>${colors
-          .map((k) => `<div class="meter two"><span>${sym(k)}</span><span class="pair">${bar(colorTotal ? p.pips[k] / colorTotal : 0, "c-" + k)}${bar(srcTotal ? p.sources[k] / srcTotal : 0, "c-" + k + " faint")}</span><b class="small">${pct(colorTotal ? p.pips[k] / colorTotal : 0)} estimate · ${pct(srcTotal ? p.sources[k] / srcTotal : 0)} sources</b></div>`)
-          .join("")}</section>`
-      : ""
-  }
-  ${manaBasePanel(d, p)}
-  ${mtgCardByCard(d, pw)}
-  ${mtgMostValuable(d)}
-  <details class="panel" ${issues.length ? "" : ""}><summary><b>Rules checks</b> <span class="chip ${issues.length ? "warn" : "ok"}">${issues.length ? issues.length + " to fix" : "pass"}</span></summary><ul class="issues">${issues.slice(0, 40).map((i) => `<li>${esc(i.text)}</li>`).join("") || "<li>Color identity, legality and copy limits pass.</li>"}</ul><p class="foot">Single commander only. Legality comes from cached card data — refresh before an event.</p></details></details></div></details></div>`;
+  return `${p.unknown ? `<div class="note warn">${p.unknown} cards have no card data yet, so they aren’t counted. <button class="link" data-act="refreshDeck">Load card data</button></div>` : ""}${powerHub(d, pw, p, issues)}
+  ${d.format === "Commander" ? `<details class="pwp-more"><summary>Why Bracket ${bracketEstimate(d, S.catalog).bracket}</summary>${bracketPanel(d)}</details>` : ""}
+  <details class="pwp-more"><summary>Mana base and payment</summary>${manaBasePanel(d, p)}</details>
+  <details class="pwp-more"><summary>AI coach</summary>${aiReviewPanel("mtg", d, meta, pw, mtgCoachHooks(d, pw))}</details>
+  ${issues.length ? `<details class="pwp-more"><summary>${issues.length} rules checks to fix</summary><ul class="issues">${issues.slice(0, 40).map((i) => `<li>${esc(i.text)}</li>`).join("")}</ul></details>` : ""}`;
 }
 
 const nameLinks = (names, d) =>
