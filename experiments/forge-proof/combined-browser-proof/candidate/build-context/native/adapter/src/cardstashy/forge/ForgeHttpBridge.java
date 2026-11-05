@@ -349,7 +349,10 @@ public final class ForgeHttpBridge implements IRemote {
     @com.google.common.eventbus.Subscribe
     public void onGameStarted(forge.game.event.GameEventGameStarted event){
         if(startingPlayer==null||event.firstTurn()==null||!pregame.isEmpty())return;
+        // Scripted lesson: reorder the libraries after Forge's shuffle and before the opening draw.
+        Map<String,Object> setupReceipt=startingPlayer.setup()==null?null:startingPlayer.setup().apply(game);
         pregame=obj("schema","cardstashy.forge-pregame.v1","firstPlayerId",event.firstTurn().getId(),"selection",startingPlayer.selection(),"playStyle",startingPlayer.playStyle());
+        if(setupReceipt!=null){pregame=new java.util.LinkedHashMap<>(pregame);pregame.put("setup",setupReceipt);}
         if(exactAdmission!=null)exactAdmission.receipt().put("pregame",pregame);
         // A friend match: the seat not asked to act first gets no prompt to publish, so it would
         // keep reporting "initializing" and the host never sees the table ready. Publish it now.

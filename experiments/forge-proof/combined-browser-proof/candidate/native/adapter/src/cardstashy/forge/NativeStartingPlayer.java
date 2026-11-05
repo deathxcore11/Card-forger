@@ -13,16 +13,19 @@ import java.util.Set;
 /** Pregame preferences only. Native Forge still tosses, draws, mulligans and plays.
  * For random, its coin winner starts. Practice may explicitly select a seat.
  * The override is a native controller choice, never a post-deal board mutation. */
-public record NativeStartingPlayer(String selection, String playStyle) {
+public record NativeStartingPlayer(String selection, String playStyle, NativeMatchSetup setup) {
+    public NativeStartingPlayer(String selection, String playStyle){this(selection,playStyle,null);}
     public static NativeStartingPlayer parse(JsonObject input) {
         boolean selectionPresent=input.has("startingPlayer"), stylePresent=input.has("playStyle");
         if(!selectionPresent&&!stylePresent)return null; // retain historical proof inputs
         if(!selectionPresent||!stylePresent)throw new IllegalArgumentException("invalid_starting_player_selection");
         String selection=NativeDeckInput.string(input.get("startingPlayer"),"startingPlayer",16);
         String style=NativeDeckInput.string(input.get("playStyle"),"playStyle",16);
+        NativeMatchSetup setup=NativeMatchSetup.parse(input);
+        // A scripted lesson may ask for the human to go first in a quick match.
         if(!Set.of("random","first","second").contains(selection)||!Set.of("quick","practice").contains(style)
-                ||style.equals("quick")&&!selection.equals("random"))throw new IllegalArgumentException("invalid_starting_player_selection");
-        return new NativeStartingPlayer(selection,style);
+                ||style.equals("quick")&&!selection.equals("random")&&(setup==null||!selection.equals("first")))throw new IllegalArgumentException("invalid_starting_player_selection");
+        return new NativeStartingPlayer(selection,style,setup);
     }
     Player choose(Player nativeCoinWinner) {
         if(selection.equals("random"))return nativeCoinWinner;
@@ -46,6 +49,9 @@ public record NativeStartingPlayer(String selection, String playStyle) {
                 player.setFirstController(new PlayerControllerHuman(game,player,this) {
                     @Override public Player chooseStartingPlayer(boolean firstGame) {
                         return firstGame?choose(player):super.chooseStartingPlayer(false);
+                    }
+                    @Override public boolean mulliganKeepHand(Player mulliganingPlayer,int cardsToReturn) {
+                        return setup!=null&&setup.noMulligan()||super.mulliganKeepHand(mulliganingPlayer,cardsToReturn);
                     }
                 });
                 return player;
