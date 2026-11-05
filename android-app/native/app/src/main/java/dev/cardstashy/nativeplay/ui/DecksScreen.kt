@@ -58,6 +58,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.google.gson.JsonArray
@@ -77,22 +78,26 @@ private fun JsonObject?.s(k: String) = this?.get(k)?.takeIf { it.isJsonPrimitive
 
 /** What the precon shelf holds (app.js preconUi): the index, the search, how many show, the open deck. */
 class PreconUi { var index by mutableStateOf<List<Decks.PreconEntry>?>(null); var busy by mutableStateOf(false); var error by mutableStateOf("")
-    var query by mutableStateOf(""); var limit by mutableStateOf(12); var open by mutableStateOf<OpenPrecon?>(null)
+    var query by mutableStateOf(""); var limit by mutableStateOf(12); var open by mutableStateOf<OpenPrecon?>(null); var opening by mutableStateOf(false)
     /** loadPreconFaces: each tile's face card (name, Scryfall id) by deck file, kept on the device; files that gave none this visit. */
-    val faces = androidx.compose.runtime.mutableStateMapOf<String, Pair<String, String>>(); val faceTried = java.util.Collections.synchronizedSet(HashSet<String>()) }
+    val faces = androidx.compose.runtime.mutableStateMapOf<String, Pair<String, String>>()
+    /** The Precons tab's product, format, colors and sort, and where its lists were scrolled to. */
+    val filters = PreconFilters() }
 data class OpenPrecon(val file: String, val name: String, val product: String, val released: String, val formats: List<String>, val rows: List<Decks.Row>)
 /** Paste a list (app.js econUi.check). */
 data class Check(val text: String = "", val name: String = "", val busy: Boolean = false, val error: String = "", val rows: List<Decks.Row>? = null,
                  val rarity: Map<String, String> = emptyMap(), val formats: List<String> = emptyList(), val format: String? = null)
 
 /**
- * The Play Decks page, decksMarkup in play-econ-ui.js: the deck shelf (Build a deck, then your Play decks as the
- * app's deck tiles with share in your Trunk and cards to stamp, × to delete), Precons from MTGJSON with their exact
- * printings and the price for only the cards you lack, and Paste a list with its legal formats and seal costs.
+ * The Play Decks page (decksMarkup in play-econ-ui.js) as three tabs you swipe between (Randall 5 Nov 17:03Z): My decks
+ * (Build a deck opens the Finder, Random deck runs Deck Forge, your Play decks as the app's deck tiles, Paste a list),
+ * Precons (product lines, format and color filters, what each still needs) and Meta (the Finder's lists, embedded).
  */
 @Composable
 fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit, onFinder: () -> Unit, toast: (String) -> Unit,
-                nav: @Composable () -> Unit, precon: PreconUi = remember { PreconUi() }, initialCheck: Check = Check()) {
+                nav: @Composable () -> Unit, precon: PreconUi = remember { PreconUi() }, initialCheck: Check = Check(), tabs: DecksTabs = remember { DecksTabs() },
+                meta: FinderUi = remember { FinderUi() }, onOpenPrecon: (Decks.PreconEntry) -> Unit = {}, onUse: (dev.cardstashy.nativeplay.play.DeckEdit.Edit, Boolean) -> Unit = { _, _ -> },
+                onCard: (String) -> Unit = {}, onPack: (String) -> Unit = {}) {
     val scope = rememberCoroutineScope()
     var check by remember { mutableStateOf(initialCheck) }
     var deleting by remember { mutableStateOf<JsonObject?>(null) }
@@ -101,28 +106,46 @@ fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit,
     val owned = remember(state) { Decks.ownedByName(state) }
     val decks = state.getAsJsonArray("decks")?.mapNotNull { it as? JsonObject } ?: emptyList()
     val nameFact = rememberNameFacts()
-    // playDeckEmblemWants: every deck's names, and the open precon's, so the emblems can read their cards.
-    LaunchedEffect(decks, precon.open) { dev.cardstashy.nativeplay.play.CardFacts.wantNames(decks.flatMap { Decks.rows(it).map { r -> r.name } } + precon.open?.rows.orEmpty().map { it.name }) }
+    // playDeckEmblemWants: every deck's names, so the emblems can read their cards.
+    LaunchedEffect(decks) { dev.cardstashy.nativeplay.play.CardFacts.wantNames(decks.flatMap { Decks.rows(it).map { r -> r.name } }) }
+    val pager = androidx.compose.foundation.pager.rememberPagerState(initialPage = tabs.tab) { 3 }
+    LaunchedEffect(pager.currentPage) { tabs.tab = pager.currentPage }
+    fun loadIndex() { if (precon.index != null || precon.busy) return; precon.busy = true; precon.error = ""
+        scope.launch { val j = fetchJson("https://mtgjson.com/api/v5/DeckList.json", dayCache = true); if (j != null) precon.index = Decks.preconIndex(j) else precon.error = "Could not load the precon list right now."; precon.busy = false } }
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         Backdrop() // #ambient: the shared art (glass on, or Aura)
-        // The page scrolls below the status bar, so tiles never slide under the clock (Randall 5 Nov 16:58Z).
-        Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars).verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)) {
-            PageHeader("Decks", "Play", onBack = onBack)
-            BoxWithConstraints(Modifier.fillMaxWidth()) {
-                val cols = when { maxWidth >= 1000.dp -> 3; maxWidth >= 640.dp -> 2; else -> 1 }
-                val tiles: List<@Composable (Modifier) -> Unit> = listOf<@Composable (Modifier) -> Unit>({ m -> NewDeckTile(m, onFinder) }) +
-                    decks.map { d -> @Composable { m: Modifier -> PlayDeckTile(d, owned, m, nameFact, { onDeck(d.s("id")) }, onHold = { holding = d }) { deleting = d } } }
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    tiles.chunked(cols).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        row.forEach { it(Modifier.weight(1f)) }; repeat(cols - row.size) { Spacer(Modifier.weight(1f)) } } }
-                }
+        // The page sits below the status bar, so tiles never slide under the clock (Randall 5 Nov 16:58Z).
+        Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars)) {
+            Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                PageHeader("Decks", "Play", onBack = onBack)
+                DecksTabBar(listOf("My decks", "Precons", "Meta"), pager.currentPage + pager.currentPageOffsetFraction, pager.currentPage) { scope.launch { pager.animateScrollToPage(it) } }
             }
-            Panel("Precons", "Published decks with their real printings. You only pay for the cards you don't have yet.") { PreconShelf(state, precon, owned, toast) }
-            // Paste a list builds a deck: not under a precon you are looking through (Randall 5 Nov 16:53Z).
-            if (precon.open == null) Panel("Paste a list", null) { ImportPanel(check, owned, { check = it }) { c -> scope.launch { check = checkList(c) } } ; SaveRow(check, { check = it }) { c ->
-                scope.launch { runCatching { Progress.saveDeck(JsonObject().apply { addProperty("name", c.name.ifBlank { "Play deck" }); addProperty("format", c.format); add("cards", rowsJson(c.rows!!)) }) }
-                    .onSuccess { check = Check(); toast("Saved to your Play decks.") }.onFailure { toast(it.message ?: "Could not save the deck.") } } } }
+            androidx.compose.foundation.pager.HorizontalPager(pager, Modifier.fillMaxWidth().weight(1f), key = { it }) { page -> when (page) {
+                0 -> Column(Modifier.fillMaxSize().verticalScroll(tabs.mine).padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        DeckActionTile("Build a deck", "From your Trunk, with meta ideas", DECKS_ART, Modifier.weight(1f), onClick = onFinder)
+                        DeckActionTile("Random deck", "Deck Forge builds one for you", null, Modifier.weight(1f), sparkle = true) { tabs.randomOpen = true }
+                    }
+                    BoxWithConstraints(Modifier.fillMaxWidth()) {
+                        val cols = when { maxWidth >= 1000.dp -> 3; maxWidth >= 640.dp -> 2; else -> 1 }
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            decks.chunked(cols).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                row.forEach { d -> PlayDeckTile(d, owned, Modifier.weight(1f), nameFact, { onDeck(d.s("id")) }, onHold = { holding = d }) { deleting = d } }
+                                repeat(cols - row.size) { Spacer(Modifier.weight(1f)) } } }
+                        }
+                    }
+                    if (decks.isEmpty()) Text("No Play decks yet. Build one, roll a random one, or pick a precon.", style = t(14f, color = Site.Muted))
+                    Panel("Paste a list", null) { ImportPanel(check, owned, { check = it }) { c -> scope.launch { check = checkList(c) } } ; SaveRow(check, { check = it }) { c ->
+                        scope.launch { runCatching { Progress.saveDeck(JsonObject().apply { addProperty("name", c.name.ifBlank { "Play deck" }); addProperty("format", c.format); add("cards", rowsJson(c.rows!!)) }) }
+                            .onSuccess { check = Check(); toast("Saved to your Play decks.") }.onFailure { toast(it.message ?: "Could not save the deck.") } } } }
+                }
+                1 -> PreconsTab(state, precon, owned, onOpen = onOpenPrecon, onLoad = ::loadIndex)
+                // The Finder ranks every meta list when it composes, so it waits for the swipe to land on Meta and the
+                // swipe stays smooth; until then the page shows soft loading tiles.
+                else -> if (pager.settledPage == 2) FinderScreen(state, meta, onBack = {}, onUse = onUse, onCard = onCard, toast = toast, onPack = onPack, nav = {}, embedded = true)
+                    else Column(Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = 4.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        repeat(3) { Box(Modifier.fillMaxWidth().height(180.dp).softTile(22.dp)) } }
+            } }
         }
         Box(Modifier.align(Alignment.BottomCenter)) { nav() }
     }
@@ -175,13 +198,6 @@ private fun TileFrame(art: String?, modifier: Modifier, artAlpha: Float = 1f, on
         if (p != null) Image(p, null, Modifier.fillMaxSize().alpha(artAlpha), contentScale = ContentScale.Crop)
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x40000000), .3f to Color.Transparent, .72f to Color(0xEB08090C), 1f to Color(0xEB08090C))))
         content()
-    }
-}
-
-@Composable
-private fun NewDeckTile(modifier: Modifier, onClick: () -> Unit) = TileFrame(DECKS_ART, modifier, .75f, onClick = onClick) {
-    Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.Bottom) {
-        Text("Build a deck", style = t(18f, FontWeight.ExtraBold, Color.White)); Text("From the cards in your Trunk", style = t(12.5f, color = Color(0xFFD5D9E0)))
     }
 }
 
@@ -262,151 +278,16 @@ private suspend fun fetchJson(url: String, dayCache: Boolean = false): JsonObjec
     out
 }
 
-@Composable
-private fun PreconShelf(state: JsonObject, pc: PreconUi, owned: Map<String, Int>, toast: (String) -> Unit) {
-    val scope = rememberCoroutineScope()
-    fun load() { if (pc.index != null || pc.busy) return; pc.busy = true; pc.error = ""
-        scope.launch { val j = fetchJson("https://mtgjson.com/api/v5/DeckList.json", dayCache = true); if (j != null) pc.index = Decks.preconIndex(j) else pc.error = "Could not load the precon list right now."; pc.busy = false } }
-    LaunchedEffect(Unit) { load() }
-    val o = pc.open
-    BackHandler(enabled = o != null) { pc.open = null }
-    if (o != null) { OpenPreconView(state, o, owned, pc, toast); return }
-    when {
-        pc.busy && pc.index == null -> Text("Loading the precon list…", style = t(13f, color = Site.Muted))
-        pc.error.isNotEmpty() -> Text(pc.error, style = t(14f, color = Color(0xFFFFB86B)))
-        pc.index == null -> GhostButton("Show the precons") { load() }
-        else -> {
-            val q = pc.query.trim().lowercase()
-            val list = pc.index!!.filter { q.isEmpty() || it.name.lowercase().contains(q) || it.code.lowercase() == q || it.type.lowercase().contains(q) }
-            val shown = list.take(pc.limit)
-            LaunchedEffect(shown.map { it.code }) { dev.cardstashy.nativeplay.play.SetFacts.ensure(shown.map { it.code.lowercase() }) }
-            LaunchedEffect(shown.map { it.fileName }) { loadPreconFaces(pc, shown) }
-            Field(pc.query, "Precon or set name") { pc.query = it; pc.limit = 12 }
-            if (pc.busy) Text("Opening the deck box…", style = t(13f, color = Site.Muted))
-            if (shown.isEmpty()) Text("No precons match.", style = t(13f, color = Site.Muted))
-            BoxWithConstraints { val cols = maxOf(1, (maxWidth / 230.dp).toInt())
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { shown.chunked(cols).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    row.forEach { d -> PreconButton(d, pc.faces[d.fileName]?.second, Modifier.weight(1f)) { openPrecon(scope, pc, d, toast) } }; repeat(cols - row.size) { Spacer(Modifier.weight(1f)) } } } } }
-            if (list.size > shown.size) GhostButton("Show more (${list.size - shown.size})") { pc.limit += 24 }
-        }
-    }
-}
-
-private fun openPrecon(scope: kotlinx.coroutines.CoroutineScope, pc: PreconUi, e: Decks.PreconEntry, toast: (String) -> Unit) {
-    if (pc.busy) return; pc.busy = true
+internal fun openPrecon(scope: kotlinx.coroutines.CoroutineScope, pc: PreconUi, e: Decks.PreconEntry, toast: (String) -> Unit) {
+    if (pc.opening) return; pc.opening = true
     scope.launch {
         val j = fetchJson("https://mtgjson.com/api/v5/decks/" + e.fileName.removeSuffix(".json") + ".json")
         val d = j?.getAsJsonObject("data") ?: j
         if (d == null) toast("That precon could not be opened.")
-        else pc.open = OpenPrecon(e.fileName, d.s("name").ifBlank { e.name }, e.type, e.releaseDate, Decks.preconFormats(j!!) ?: emptyList(), Decks.mtgjsonDeckRows(d))
-        pc.busy = false
+        else { pc.open = OpenPrecon(e.fileName, d.s("name").ifBlank { e.name }, e.type, e.releaseDate, Decks.preconFormats(j!!) ?: emptyList(), Decks.mtgjsonDeckRows(d))
+            if (e.fileName !in PreconStore.summaries) PreconStore.put(e.fileName, j) }
+        pc.opening = false
     }
-}
-
-/** The deck files' faces kept on the device (the web keeps them in localStorage cs.preconFaces.v1). */
-private fun facesFile() = preconCacheDir?.resolve("precon-faces-v1.json")
-private val facesLoaded = java.util.concurrent.atomic.AtomicBoolean(false)
-private val faceStore = java.util.concurrent.ConcurrentHashMap<String, Pair<String, String>>()
-
-/**
- * loadPreconFaces (app.js): for the tiles on show without a face, read each deck file three at a time and keep its
- * preconFace. A file that gives none is not asked again this visit. The deck files are not kept in memory.
- */
-private suspend fun loadPreconFaces(pc: PreconUi, shown: List<Decks.PreconEntry>) {
-    if (facesLoaded.compareAndSet(false, true)) withContext(Dispatchers.IO) {
-        runCatching { facesFile()?.takeIf { it.exists() }?.readText()?.let { com.google.gson.JsonParser.parseString(it).asJsonObject } }.getOrNull()
-            ?.entrySet()?.forEach { (k, v) -> (v as? JsonObject)?.let { o -> val id = o.s("id"); if (id.isNotEmpty()) faceStore.putIfAbsent(k, o.s("name") to id) } }
-    }
-    faceStore.forEach { (k, v) -> if (k !in pc.faces) pc.faces[k] = v }
-    val todo = java.util.concurrent.ConcurrentLinkedQueue(shown.filter { it.fileName !in pc.faces && it.fileName !in pc.faceTried })
-    if (todo.isEmpty()) return
-    todo.forEach { pc.faceTried.add(it.fileName) }
-    var dirty = false
-    kotlinx.coroutines.coroutineScope {
-        repeat(3) { launch(Dispatchers.IO) {
-            while (true) { val e = todo.poll() ?: break
-                val j = runCatching { Http.call("GET", "https://mtgjson.com/api/v5/decks/" + e.fileName.removeSuffix(".json") + ".json", mapOf("Accept" to "application/json"), null, 30_000) as? JsonObject }.getOrNull()
-                val f = j?.let { Decks.preconFace(it.getAsJsonObject("data") ?: it) }
-                if (f != null) { faceStore[e.fileName] = f; withContext(Dispatchers.Main) { pc.faces[e.fileName] = f }; dirty = true } }
-        } }
-    }
-    if (dirty) withContext(Dispatchers.IO) { runCatching { facesFile()?.writeText(JsonObject().apply { faceStore.forEach { (k, v) -> add(k, JsonObject().apply { addProperty("name", v.first); addProperty("id", v.second) }) } }.toString()) } }
-}
-
-@Composable
-private fun PreconButton(d: Decks.PreconEntry, faceId: String?, modifier: Modifier, onClick: () -> Unit) {
-    // .pe-precon: the deck's own face card (preconFace) as art_crop behind a glass shade, set emblem, name, product and year.
-    val code = d.code.lowercase(); val p = heroPainter(faceId?.let { Decks.scryfallImage(it).replace("/normal/", "/art_crop/") }?.ifBlank { null }?.let(homeArt))
-    Box(modifier.height(140.dp).softTile().clickable(onClick = onClick)) {
-        if (p != null) Image(p, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        else Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFF1B1F29), Color(0xFF0F1117)))))
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x33000000), .35f to Color(0x10000000), .75f to Color(0xE608090C), 1f to Color(0xF208090C))))
-        Box(Modifier.padding(10.dp).size(34.dp).softPill(CircleShape), contentAlignment = Alignment.Center) {
-            SetIcon(code, Modifier.size(20.dp), Color(0xFFF3E3BD)) }
-        Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 12.dp, vertical = 10.dp)) {
-            Text(d.name, style = t(16f, FontWeight.ExtraBold, Color.White, line = 20f), maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Text("${d.type} · ${d.releaseDate.take(4)}", style = t(12.5f, color = Color(0xFFD5D9E0)))
-        }
-    }
-}
-
-@Composable
-private fun OpenPreconView(state: JsonObject, o: OpenPrecon, owned: Map<String, Int>, pc: PreconUi, toast: (String) -> Unit) {
-    val scope = rememberCoroutineScope()
-    val sh = Decks.shortfall(o.rows, owned, o.rows.associate { it.name to it.rarity })
-    val missing = sh.total; val price = Decks.preconPrice(missing, state.getAsJsonObject("config")); val coins = state.getAsJsonObject("wallet")?.get("coins")?.asInt ?: 0
-    var busy by remember { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        // The deck's face: its lead card's exact art, the same art-bleed hero as a Play deck.
-        val lead = o.rows.firstOrNull { it.board != "side" && !Decks.isBasicLand(it.name) } ?: o.rows.firstOrNull()
-        // The same face as its tile (Randall 5 Nov 17:00Z), then the lead card when the tile had none yet.
-        val heroArt = (pc.faces[o.file]?.second ?: lead?.id)?.let { Decks.scryfallImage(it).replace("/normal/", "/art_crop/") }?.ifBlank { null }
-        val hp = heroPainter(heroArt?.let(homeArt))
-        Box(Modifier.fillMaxWidth().height(180.dp).softTile()) {
-            if (hp != null) Image(hp, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x33000000), .4f to Color.Transparent, .8f to Color(0xE608090C), 1f to Color(0xF208090C))))
-            Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 14.dp, vertical = 12.dp)) {
-                Text(o.name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 21.sp, lineHeight = 25.sp, color = Color(0xFFF3E3BD)))
-                val e = emblemOf(o.rows, o.formats.firstOrNull() ?: "", rememberNameFacts())
-                EmblemPlate("Precon", e, Modifier.padding(vertical = 4.dp)); if (e.meta.isNotEmpty()) MetaLine(e.meta)
-                Text("${o.product.ifBlank { "Precon" }} · ${o.released.take(4)}" + if (o.formats.isNotEmpty()) " · " + o.formats.joinToString(", ") else " · Casual", style = t(13.5f, color = Color(0xFFD5D9E0)))
-            }
-        }
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-            GhostButton("All precons") { pc.open = null }
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(if (missing > 0) "$missing card${if (missing == 1) "" else "s"} to add · ${"%,d".format(price)} coins" else "You own every card", style = t(14f))
-                GoldCta(if (price > coins) "Not enough coins" else if (missing > 0) "Buy deck" else "Add to my decks", enabled = !busy && price <= coins) {
-                    busy = true
-                    scope.launch {
-                        runCatching { Progress.precon(o.file, o.formats.firstOrNull() ?: "Casual") }.onSuccess { out -> pc.open = null
-                            val g = out.get("granted")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0
-                            toast(if (g > 0) "${o.name} is yours. $g new card${if (g == 1) "" else "s"} in your Trunk." else "${o.name} is in your decks.") }
-                        busy = false; Progress.refresh()
-                    }
-                }
-            }
-        }
-        PreconCards(o.rows.filter { it.board != "side" }, owned)
-        val side = o.rows.filter { it.board == "side" }
-        if (side.isNotEmpty()) { Text("Sideboard", style = t(15f, FontWeight.Bold)); PreconCards(side, owned) }
-    }
-}
-
-private fun Modifier.widthInMin(w: androidx.compose.ui.unit.Dp) = this.then(Modifier.width(w))
-
-@Composable
-private fun PreconCards(rows: List<Decks.Row>, owned: Map<String, Int>) {
-    val have = HashMap(owned)
-    val cells = rows.map { r -> val got = if (Decks.isBasicLand(r.name)) r.qty else minOf(r.qty, have[r.name] ?: 0); have[r.name] = maxOf(0, (have[r.name] ?: 0) - got); r to got }
-    BoxWithConstraints { val cols = maxOf(3, (maxWidth / 110.dp).toInt())
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { cells.chunked(cols).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            row.forEach { (r, got) -> Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                CardPicture(Decks.scryfallImage(r.id).ifBlank { "https://api.scryfall.com/cards/named?format=image&version=normal&exact=" + java.net.URLEncoder.encode(r.name, "UTF-8") }, null, null,
-                    Modifier.fillMaxWidth().aspectRatio(63f / 88f).alpha(if (got < r.qty) .55f else 1f), RoundedCornerShape(6.dp))
-                Text(androidx.compose.ui.text.buildAnnotatedString { append("${r.qty}×"); if (got < r.qty) { append(" "); pushStyle(androidx.compose.ui.text.SpanStyle(color = Site.Gold, fontWeight = FontWeight.Bold)); append("${r.qty - got} new"); pop() } }, style = t(12f, color = Site.Muted))
-            } }
-            repeat(cols - row.size) { Spacer(Modifier.weight(1f)) } } } } }
 }
 
 // ---------------------------------------------------------------- Paste a list
@@ -471,37 +352,55 @@ private fun SaveRow(c: Check, onChange: (Check) -> Unit, onSave: (Check) -> Unit
     }
 }
 
-/** The Decks page with live Play state; the editor and finder open on the web until 0.4.1 and 0.4.2. */
+/** The Decks page with live Play state: the tabs, and on top of them the Finder, the editor or a precon's page. */
 @Composable
 fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> Unit, onTrunkSet: (String) -> Unit = {}) {
     val state by dev.cardstashy.nativeplay.play.Progress.state.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
-    preconCacheDir = context.cacheDir
+    preconCacheDir = context.cacheDir; PreconStore.dir = context.cacheDir
     LaunchedEffect(Unit) { dev.cardstashy.nativeplay.play.Progress.loadCached(); dev.cardstashy.nativeplay.play.Progress.refresh() }
     val s = state ?: run { Box(Modifier.fillMaxSize().background(Site.Bg), contentAlignment = Alignment.Center) { Text("Opening your decks…", style = Site.Body) }; return }
     val toast = { m: String -> android.widget.Toast.makeText(context, m, android.widget.Toast.LENGTH_SHORT).show() }
+    val scope = rememberCoroutineScope()
     var editor by remember { mutableStateOf<EditorUi?>(null) }
     var finder by remember { mutableStateOf<FinderUi?>(null) }
     var card by remember { mutableStateOf<CardPick?>(null) }
     var cardTab by remember { mutableStateOf("overview") }
+    val tabs = remember { DecksTabs() }
+    val precon = remember { PreconUi() }
+    val meta = remember { FinderUi() }
+    val owned = remember(s) { Decks.ownedByName(s) }
     val ed = editor
     LaunchedEffect(Unit) { if (dev.cardstashy.nativeplay.account.Account.session.value != null && Workspace.decks.value == null) runCatching { Workspace.load(context) } }
+    // playFinderUse: a list opens in the editor as a new deck, its list first when it is complete.
+    val use = { e: dev.cardstashy.nativeplay.play.DeckEdit.Edit, complete: Boolean -> editor = EditorUi().apply { edit = e; mode = if (complete || e.cards.isEmpty()) "mine" else "all" } }
+    val onCard = { name: String -> card = CardPick(name, "", null, "nonfoil") }
     Box(Modifier.fillMaxSize()) {
         val fu = finder
         if (ed == null && fu != null) {
             BackHandler { finder = null }
-            FinderScreen(s, fu, onBack = { finder = null }, onUse = { e, complete -> editor = EditorUi().apply { edit = e; mode = if (complete || e.cards.isEmpty()) "mine" else "all" } },
-                onCard = { name -> card = CardPick(name, "", null, "nonfoil") }, toast = toast, onPack = { finder = null; onTrunkSet(it) }, nav = { PlayNav(PlayTab.DECKS, onNav) })
+            FinderScreen(s, fu, onBack = { finder = null }, onUse = use, onCard = onCard, toast = toast, onPack = { finder = null; onTrunkSet(it) }, nav = { PlayNav(PlayTab.DECKS, onNav) })
         } else if (ed != null) {
             BackHandler { editor = null }
             DeckEditor(s, ed, onBack = { editor = null }, onCard = { cardTab = "overview"; card = it }, onPack = { editor = null; onTrunkSet(it) }, toast = toast,
                 onCardTab = { p, tab -> cardTab = tab; card = p }, nav = { PlayNav(PlayTab.DECKS, onNav) })
-        } else DecksScreen(s, onBack,
-            // A saved deck (a precon too) opens as its list; the Trunk's cards come up with Add cards (Randall 5 Nov 16:53Z).
-            onDeck = { id -> editor = EditorUi().apply { adding = false; edit = dev.cardstashy.nativeplay.play.DeckEdit.open(s.getAsJsonArray("decks")?.mapNotNull { it as? JsonObject }?.firstOrNull { it.get("id")?.asString == id }) } },
-            // Build a deck opens the finder, as on the live site (decksMarkup's data-econ-view="finder").
-            onFinder = { finder = finder ?: FinderUi() },
-            toast = toast, nav = { PlayNav(PlayTab.DECKS, onNav) })
+        } else {
+            DecksScreen(s, onBack,
+                // A saved deck (a precon too) opens as its list; the Trunk's cards come up with Add cards (Randall 5 Nov 16:53Z).
+                onDeck = { id -> editor = EditorUi().apply { adding = false; edit = dev.cardstashy.nativeplay.play.DeckEdit.open(s.getAsJsonArray("decks")?.mapNotNull { it as? JsonObject }?.firstOrNull { it.get("id")?.asString == id }) } },
+                // Build a deck opens the finder, as on the live site (decksMarkup's data-econ-view="finder").
+                onFinder = { finder = finder ?: FinderUi() },
+                toast = toast, nav = { PlayNav(PlayTab.DECKS, onNav) }, precon = precon, tabs = tabs, meta = meta,
+                onOpenPrecon = { e -> openPrecon(scope, precon, e, toast) }, onUse = use, onCard = onCard, onPack = { onTrunkSet(it) })
+            // A meta list's cards (See the cards) and a precon open as their own pages over the tabs; back returns to the same spot.
+            if (meta.open != null) FinderScreen(s, meta, onBack = { meta.open = null }, onUse = use, onCard = onCard, toast = toast, onPack = { meta.open = null; onTrunkSet(it) }, nav = { PlayNav(PlayTab.DECKS, onNav) })
+            PreconLayer(precon) { o, back -> PreconPage(s, o, owned, precon, onBack = back, onCard = onCard, toast = toast, nav = { PlayNav(PlayTab.DECKS, onNav) }) }
+            if (precon.opening) Box(Modifier.fillMaxSize().background(Color(0x66000000)), contentAlignment = Alignment.Center) { BrandMark(52.dp) }
+            if (tabs.randomOpen) RandomDeckSheet(onClose = { tabs.randomOpen = false }) { d, format ->
+                tabs.randomOpen = false
+                d.addProperty("format", format)
+                editor = EditorUi().apply { adding = false; mode = "all"; edit = dev.cardstashy.nativeplay.play.DeckEdit.open(d).copy(id = null, dirty = true) } }
+        }
         card?.let { pick ->
             CardSheet(pick, s, CardSheetActions(
                 merchant = { code, _ -> card = null; toast("Merchant comes with the next build"); onTrunkSet(code) },
@@ -513,5 +412,28 @@ fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
                     step = { n, k -> u.edit = u.edit.copy(cards = dev.cardstashy.nativeplay.play.DeckEdit.step(u.edit.cards, n, k, u.edit.format), dirty = true) }) }),
                 onClose = { card = null; cardTab = "overview" }, startTab = cardTab)
         }
+    }
+}
+
+/**
+ * A precon's page slides in over the tabs. Back (the arrow, the system back or an edge swipe) peeks the list under it as
+ * you drag, then slides the page away; the list is still where you left it.
+ */
+@Composable
+internal fun PreconLayer(pc: PreconUi, page: @Composable (OpenPrecon, () -> Unit) -> Unit) {
+    val o = pc.open
+    // The page last shown, so it can slide away after back (a plain holder: composition never writes state).
+    val last = remember { arrayOfNulls<OpenPrecon>(1) }
+    if (o != null) last[0] = o
+    var peek by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    androidx.activity.compose.PredictiveBackHandler(enabled = o != null) { progress ->
+        try { progress.collect { peek = it.progress }; pc.open = null } catch (_: kotlinx.coroutines.CancellationException) { } finally { peek = 0f }
+    }
+    androidx.compose.animation.AnimatedVisibility(o != null,
+        enter = androidx.compose.animation.slideInHorizontally(Site.spring()) { it / 3 } + androidx.compose.animation.fadeIn(),
+        exit = androidx.compose.animation.slideOutHorizontally { it / 2 } + androidx.compose.animation.fadeOut()) {
+        val shown = o ?: last[0] ?: return@AnimatedVisibility
+        Box(Modifier.fillMaxSize().graphicsLayer { val k = peek; translationX = k * size.width * .18f; scaleX = 1f - k * .08f; scaleY = 1f - k * .08f
+            shape = RoundedCornerShape((28 * k).dp); clip = k > 0f }) { page(shown) { pc.open = null } }
     }
 }

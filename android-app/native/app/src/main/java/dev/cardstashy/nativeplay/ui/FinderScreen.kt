@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -61,6 +62,8 @@ class FinderUi {
     var crafting by mutableStateOf(false)
     var armed by mutableStateOf(false)
     val seen = HashSet<String>()
+    /** Where the Meta tab's list was scrolled to, kept while a list's page is open on top. */
+    val list = androidx.compose.foundation.lazy.LazyListState()
 }
 
 private val Ink get() = Site.Text
@@ -72,7 +75,7 @@ private val BASIC_COLOR = mapOf("Plains" to "W", "Island" to "U", "Swamp" to "B"
 
 @Composable
 fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (DeckEdit.Edit, Boolean) -> Unit, onCard: (String) -> Unit,
-                 toast: (String) -> Unit = {}, onPack: (String) -> Unit = {}, nav: @Composable () -> Unit) {
+                 toast: (String) -> Unit = {}, onPack: (String) -> Unit = {}, embedded: Boolean = false, nav: @Composable () -> Unit) {
     val scope = rememberCoroutineScope()
     val trunk = remember(state) { Trunk.cards(state) }
     val owned = remember(trunk) { Finder.ownedByName(trunk) }
@@ -116,7 +119,8 @@ fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (De
         onUse(DeckEdit.Edit(null, l.name.take(80), l.format, merged.map { DeckEdit.Line(it.key, it.value) }, dirty = true), complete)
     }
 
-    ui.open?.let { l ->
+    // Embedded as the Decks page's Meta tab, the list's page opens over the tabs instead (DecksRoute).
+    if (!embedded) ui.open?.let { l ->
         androidx.activity.compose.BackHandler { ui.open = null }
         val row = remember(l, owned, facts, low, seals) { Finder.finderRow(l, owned, ::cardOf, seals) { CraftRarity.rarity(it) } }
         LaunchedEffect(l.key) { CardFacts.wantNames(l.cards.map { it.name }) }
@@ -146,17 +150,18 @@ fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (De
             goals = { if (goals.isNotEmpty()) PackGoals(goals, onPack) }, nav = nav)
         return
     }
-    Box(Modifier.fillMaxSize().background(Site.Bg)) {
-        Backdrop() // #ambient: the shared art (glass on, or Aura)
-        LazyColumn(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Box(Modifier.fillMaxSize().then(if (embedded) Modifier else Modifier.background(Site.Bg))) {
+        if (!embedded) Backdrop() // #ambient: the shared art (glass on, or Aura)
+        LazyColumn(Modifier.fillMaxSize().then(if (embedded) Modifier else Modifier.windowInsetsPadding(WindowInsets.statusBars)), state = if (embedded) ui.list else rememberLazyListState(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = if (embedded) 4.dp else 12.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    PageHeader("Build a deck", "Play", onBack = onBack)
-                    PlayMath.purse(state)?.let { PurseRow(it, level = PlayMath.mastery(state, it.xp)) }
+                    if (!embedded) { PageHeader("Build a deck", "Play", onBack = onBack)
+                        PlayMath.purse(state)?.let { PurseRow(it, level = PlayMath.mastery(state, it.xp)) } }
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Finder.FORMATS.forEach { f -> Chip(f, f == ui.format) { if (f != ui.format) { ui.format = f; ui.limit = 8 } } }
                     }
-                    GhostButton("Start empty") { onUse(DeckEdit.Edit(null, "", "Standard", emptyList()), false) }
+                    if (!embedded) GhostButton("Start empty") { onUse(DeckEdit.Edit(null, "", "Standard", emptyList()), false) }
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Finder.FILTERS.forEach { (k, l) -> FilterChip(k, l, counts[k], k == ui.filter, k == "craftable" && rarityBusy) { ui.filter = k; ui.limit = 8 } }
                     }
@@ -179,7 +184,7 @@ fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (De
             }
             if (archs.size > ui.limit) item { GhostButton("More decks", Modifier.fillMaxWidth()) { ui.limit += 8 } }
         }
-        Box(Modifier.align(Alignment.BottomCenter)) { nav() }
+        if (!embedded) Box(Modifier.align(Alignment.BottomCenter)) { nav() }
     }
 }
 
