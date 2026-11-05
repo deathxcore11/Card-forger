@@ -56,13 +56,13 @@ export default {
 4 Magitek Infantry
 4 Shinra Reinforcements
 3 Reno and Rude
-2 Rufus Shinra
+3 Rufus Shinra
 4 Magitek Armor
 4 Weapons Vendor
 4 Delivery Moogle
 4 Al Bhed Salvagers
 4 Qutrub Forayer
-3 Undercity Dire Rat
+2 Undercity Dire Rat
 12 Plains
 12 Swamp`}},
       scene: [s('stage', 'Midgar. The reactors never sleep.'),
@@ -346,11 +346,11 @@ export default {
 12 Plains
 12 Mountain`}},
       villain: {who: 'weapons', deck: {label: 'tribute', name: 'The Weapons', note: 'Built from cards in this act\'s set only. No tournament list is copied.', colors: 'G', list: `
-1 Sazh's Chocobo
-2 Town Greeter
-2 Diamond Weapon
-2 Ancient Adamantoise
-3 Coliseum Behemoth
+2 Sazh's Chocobo
+4 Town Greeter
+1 Diamond Weapon
+1 Ancient Adamantoise
+2 Coliseum Behemoth
 3 Summon: Titan
 4 Gysahl Greens
 4 Gran Pulse Ochu
