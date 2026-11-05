@@ -135,12 +135,12 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
   }
   // Precons: pay by rarity for each missing card (25/75/500/1500, 250 at least), only for the week's store decks, get those copies in the exact printing,
   // and the list is saved with its printings; basic lands are never charged.
-  wallet = {...wallet, coins: 1150};
+  wallet = {...wallet, coins: 3050};
   const bought = await (await progressRoute(req('precon', {file: 'TST_Precon', format: 'Modern'}), env, {verifyBearer, fetcher})).json();
-  assert.equal(bought.price, 1100, '4 commons at 25 and 2 rares at 500');
+  assert.equal(bought.price, 3000, 'nothing owned: the standard list price');
   assert.equal(bought.granted, 6, 'Bolt capped at 4 copies across main and side, Dragonlord x2; no Mountains');
   const pApply = calls.find(c => c[0] === 'play_apply' && /^precon:/.test(c[1].p_ref));
-  assert.equal(pApply[1].p_delta.coins, -1100);
+  assert.equal(pApply[1].p_delta.coins, -3000);
   assert.ok(pApply[1].p_delta.cards.every(c => c.set === 'tmp' && /cards\.scryfall\.io\/normal/.test(c.image)), 'exact printing for every copy');
   const pSave = calls.find(c => c[0] === 'play_save_deck');
   assert.deepEqual(pSave[1].p_cards.find(c => c.name === 'Mountain'), {name: 'Mountain', qty: 20, set: 'tmp', number: '20'}, 'basic lands keep their printing too');
@@ -148,9 +148,9 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
   assert.equal((await progressRoute(req('precon', {file: 'TST_Precon'}), env, {verifyBearer, fetcher})).status, 409, '50 coins left is short');
   {
     // A Commander precon in the store: singleton pricing (mythic commander 1,500 + rare 500 + common 25), saved as a Commander deck.
-    wallet = {...wallet, coins: 5000}; calls.length = 0;
+    wallet = {...wallet, coins: 5100}; calls.length = 0;
     const cm = await (await progressRoute(req('precon', {file: 'TST_Cmdr'}), env, {verifyBearer, fetcher})).json();
-    assert.equal(cm.price, 2025, 'commander 1,500 + rare 500 + common 25');
+    assert.equal(cm.price, 5000, 'nothing owned: the Commander list price');
     const save = calls.find(c => c[0] === 'play_save_deck');
     assert.equal(save[1].p_format, 'Commander');
     assert.ok(save[1].p_cards.some(c => c.name === 'Big Boss' && c.board === 'commander'), 'the commander is saved with board commander');
