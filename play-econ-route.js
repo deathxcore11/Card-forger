@@ -287,7 +287,7 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if (!d?.mainBoard?.length || (d.commander || []).length) return fail('bad_precon');
       const rows = mtgjsonDeckRows(d), byName = new Map([...(d.mainBoard || []), ...(d.sideBoard || [])].map(c => [c.name, c]));
       const s = await state(), short = deckShortfall(rows, ownedByName(s.cards || []), new Map(rows.map(x => [x.name, x.rarity])), s.config?.maxCopies || 4);
-      const missing = short.missing.reduce((t, m) => t + m.need, 0), price = preconPrice(missing, s.config);
+      const missing = short.missing.reduce((t, m) => t + m.need, 0), price = preconPrice(short.seals, s.config);
       if ((s.wallet?.coins || 0) < price) return fail('short_coins', 409);
       const cards = short.missing.flatMap(m => Array.from({length: m.need}, () => mtgjsonCardDelta(byName.get(m.name)))).filter(c => c.oracle_id);
       const preconRef = 'precon:' + crypto.randomUUID();

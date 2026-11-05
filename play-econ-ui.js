@@ -417,7 +417,7 @@ function preconShelf(snapshot, pc = {}, deckEmblem = null) {
   const s = snapshot.state, owned = ownedByName(s.cards || []);
   if (pc.open) {
     const o = pc.open, rows = o.rows || [], sh = deckShortfall(rows, owned, new Map(rows.map(r => [r.name, r.rarity])));
-    const missing = sh.missing.reduce((t, m) => t + m.need, 0), price = preconPrice(missing, s.config), coins = s.wallet?.coins || 0;
+    const missing = sh.missing.reduce((t, m) => t + m.need, 0), price = preconPrice(sh.seals, s.config), coins = s.wallet?.coins || 0;
     const have = new Map(owned), card = r => { const got = isBasicLand(r.name) ? r.qty : Math.min(r.qty, have.get(r.name) || 0); have.set(r.name, Math.max(0, (have.get(r.name) || 0) - got));
       return `<figure class="pe-precon-card${got < r.qty ? ' is-missing' : ''}"><img src="${esc(scryfallImage(r.id) || cardImageByName(r.name))}" alt="${esc(r.name)}" loading="lazy" decoding="async" referrerpolicy="no-referrer"><figcaption>${r.qty}×${got < r.qty ? ` <span>${r.qty - got} new</span>` : ''}</figcaption></figure>`; };
     const main = rows.filter(r => r.board !== 'side'), side = rows.filter(r => r.board === 'side');
