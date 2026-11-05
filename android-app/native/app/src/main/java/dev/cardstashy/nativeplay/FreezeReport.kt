@@ -125,8 +125,11 @@ object FreezeReport {
     /** The "main" thread's block of an ANR trace, plus the threads it waits on when it names one. */
     internal fun mainThread(trace: String): String {
         val blocks = trace.split(Regex("\n\\s*\n"))
+        // ART names the UI thread "main" and gives it tid=1; some phones (Android 17 on a Galaxy Fold) name it otherwise, so tid=1 counts too.
         val main = blocks.firstOrNull { it.trimStart().startsWith("\"main\"") }
             ?: Regex("(?ms)^\"main\".*?(?=^\"|\\z)").find(trace)?.value
+            ?: blocks.firstOrNull { b -> b.trimStart().startsWith("\"") && Regex("\\btid=1\\b").containsMatchIn(b.lineSequence().first()) }
+            ?: Regex("(?ms)^\"[^\"]*\"[^\n]*\\btid=1\\b.*?(?=^\"|\\z)").find(trace)?.value
             ?: return "main thread not found; threads: " + Regex("(?m)^\"([^\"]+)\".*$").findAll(trace).joinToString(" | ") { it.value.take(90) }.take(3000)
         val waits = Regex("held by (?:thread|tid=)\\s*(\\d+)").findAll(main).map { it.groupValues[1] }.toSet()
         val held = blocks.filter { b -> waits.any { t -> Regex("tid=$t\\b").containsMatchIn(b.lineSequence().firstOrNull() ?: "") } }
@@ -247,7 +250,9 @@ object FreezeReport {
                     if (busy >= 1500L * (samples + 1) && samples < 4) {
                         samples++
                         val st = Looper.getMainLooper().thread.stackTrace.take(45).joinToString("\n") { "    at $it" }
-                        append("== Stall sample $samples: main busy $busy ms ==\n" + header() + "sections: ${sectionLine()}\n" + st + "\n\n")
+                            .ifEmpty { "    (Android gave no stack: the main thread could not be paused to read it)" }
+                        // The stack first and the section counts cut short, so the uploaded part (4,000 characters) always keeps the stack.
+                        append("== Stall sample $samples: main busy $busy ms ==\n" + header() + st + "\nsections: ${sectionLine().take(600)}\n\n")
                     }
                 }
                 if (samples > 0) Thread { try { if (::prefs.isInitialized) upload(file.readText()) } catch (_: Throwable) {} }.start()

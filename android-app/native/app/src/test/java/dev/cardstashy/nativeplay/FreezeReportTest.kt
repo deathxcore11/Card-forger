@@ -17,6 +17,11 @@ class FreezeReportTest {
         val m = FreezeReport.mainThread(t)
         assertTrue(m, m.contains("Foo.bar") && !m.contains("x.Y"))
     }
+    @Test fun uiThreadFoundByTidWhenNotNamedMain() {
+        val t = "DALVIK THREADS (3):\n\"ReferenceQueueDaemon\" daemon prio=5 tid=6 Waiting\n  at x.Y\n\n\"dev.cardstashy.native\" prio=5 tid=1 Waiting\n  at java.util.concurrent.FutureTask.get(FutureTask.java:1)\n  at dev.cardstashy.Foo.bar(Foo.kt:1)\n\n\"Next\" prio=5 tid=9\n  at z\n"
+        val m = FreezeReport.mainThread(t)
+        assertTrue(m, m.contains("Foo.bar") && !m.contains("x.Y") && !m.startsWith("main thread not found"))
+    }
     @Test fun oldFullDumpIsCutToMainThread() {
         val daemons = (1..40).joinToString("") { "\"Daemon$it\" daemon prio=5 tid=${it + 5} Waiting\n  at java.lang.Object.wait(Native method)\n\n" }
         val sec = "== Android froze report (x) ==\nCardStashy 0.3.2 · samsung\nInput dispatching timed out\n----- pid 1 -----\nDALVIK THREADS (45):\n" + daemons +
