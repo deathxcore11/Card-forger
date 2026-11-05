@@ -176,31 +176,28 @@ class ShotTest {
         finally { dev.cardstashy.nativeplay.ui.HomeTest.forceShort = null }
     }
 
-    /** Collection Home preview (Randall 4 Nov): sample collection, real card art, upright, sideways and unfolded. */
+    /**
+     * Collection Home from the site's own Home code (CollectionEngineTest.shotFixture: a sample collection, today's live Card of
+     * the Day, Meta and News): upright, unfolded and sideways, each as the first screen and as the whole page.
+     */
     @Test fun collectionHome() {
         dev.cardstashy.nativeplay.ui.Motion.still = true
-        fun c(n: String) = art("collection/$n.jpg")
-        val d = dev.cardstashy.nativeplay.ui.CollectionHomeData(
-            game = dev.cardstashy.nativeplay.ui.CardGame.MTG, dailyArt = art("cotd.jpg"), dailyName = "Skyshroud Claim", dailySet = "Secret Lair Drop · Rare",
-            amount = "$1,284.50", note = "Estimated value · USD", movement = "↑ +$12.40 · total change since Nov 3, 2026", direction = "up", copies = 2318, decks = 14,
-            shelf = listOf(dev.cardstashy.nativeplay.ui.ShelfDeck("Atraxa Superfriends", "Commander", 100, c("atraxapraetorsvoice"), edited = "Nov 3, 2026"),
-                dev.cardstashy.nativeplay.ui.ShelfDeck("Krenko Goblins", "Commander", 100, c("krenkomobboss")),
-                dev.cardstashy.nativeplay.ui.ShelfDeck("Ragavan Murktide", "Modern", 60, c("ragavannimblepilferer")),
-                dev.cardstashy.nativeplay.ui.ShelfDeck("The Ur-Dragon", "Commander", 100, c("theurdragon"))),
-            metaFormat = "Modern",
-            meta = listOf(dev.cardstashy.nativeplay.ui.MetaDeck("Basking Broodscale", "17% of lists", c("baskingbroodscale")),
-                dev.cardstashy.nativeplay.ui.MetaDeck("Karn · Expedition Map", "8% of lists", c("ugineyeofthestorms")),
-                dev.cardstashy.nativeplay.ui.MetaDeck("Detective's Phoenix", "8% of lists", c("darkmattermanipulator")),
-                dev.cardstashy.nativeplay.ui.MetaDeck("Primeval Titan", "8% of lists", c("primevaltitan"))),
-            news = emptyList())
+        dev.cardstashy.nativeplay.ui.homeArt = ::homeArt
+        val fx = home.resolve("collection-home.json")
+        org.junit.Assume.assumeTrue("run CollectionEngineTest.shotFixture first", fx.exists())
+        val m = dev.cardstashy.nativeplay.ui.CollectionHomeModel.parse(JsonParser.parseString(fx.readText()).asJsonObject)
+        val hints = home.resolve("collection-hints.json").takeIf { it.exists() }?.let { dev.cardstashy.nativeplay.ui.CollectionHomeModel.hints(JsonParser.parseString(it.readText()).asJsonObject) }
         val page = @Composable {
-            dev.cardstashy.nativeplay.ui.CollectionHome(d, top = { TopBarItems(Mode.COLLECTION, null, "Randall", unread = true, onSwitch = {}, onProfile = {}) },
+            dev.cardstashy.nativeplay.ui.CollectionHome(m, hints, top = { tabs -> TopBarItems(Mode.COLLECTION, null, "Randall", unread = true, onSwitch = {}, onProfile = {}, middle = tabs) },
                 nav = { v -> dev.cardstashy.nativeplay.ui.CollectionNav(dev.cardstashy.nativeplay.ui.CollectionTab.HOME, vertical = v, scan = !v) {} })
         }
         shot("collection-home", 390, 844, 1f) { page() }
+        shot("collection-home-page", 390, 2300, 1f) { page() }
         shot("collection-home", 884, 1104, 1f) { page() }
+        shot("collection-home-page", 884, 1700, 1f) { page() }
         dev.cardstashy.nativeplay.ui.HomeTest.forceShort = true
         try { shot("collection-home", 844, 390, 1f) { page() } } finally { dev.cardstashy.nativeplay.ui.HomeTest.forceShort = null }
+        if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
     }
 
     /** A controller on a handheld: the gold focus ring on Quick Play and the A/B hint (Pad connected). */

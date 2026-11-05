@@ -255,10 +255,13 @@ fun heroPainter(art: Any?): Painter? = when (art) {
 
 /** The OTHER mode's emblem (tap switches mode, press = scale) and the profile orb with the unread dot. No bar of its own: it floats on the hero. */
 @Composable
-fun TopBarItems(mode: Mode, avatarUrl: String?, name: String?, unread: Boolean, onSwitch: () -> Unit, onProfile: () -> Unit, modifier: Modifier = Modifier) {
+fun TopBarItems(mode: Mode, avatarUrl: String?, name: String?, unread: Boolean, onSwitch: () -> Unit, onProfile: () -> Unit, modifier: Modifier = Modifier,
+                middle: (@Composable () -> Unit)? = null) {
     Row(modifier.fillMaxWidth().height(56.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         ModePill(mode, onSwitch)
-        Spacer(Modifier.weight(1f))
+        // Collection's game tabs ride between the two when the bar has the room (unfolded, sideways), as on the site.
+        if (middle != null) Box(Modifier.weight(1f).padding(horizontal = 12.dp), contentAlignment = Alignment.Center) { middle() }
+        else Spacer(Modifier.weight(1f))
         Box(Modifier.size(44.dp).clickable(onClick = onProfile).semantics { contentDescription = "Account" }) {
             val p by dev.cardstashy.nativeplay.account.Account.profile.collectAsState()
             ProfileAvatar(p ?: dev.cardstashy.nativeplay.account.Account.Profile(name, avatarUrl), 44.dp)

@@ -7,6 +7,7 @@
 #   app/src/main/assets/cards/       Scryfall images for the two demo decks (normal + art_crop) and the Home tiles
 #   app/src/main/assets/{play,sfx}/  the existing playmat, banners and table sounds from the website
 #   app/src/main/assets/random-build.js  the site's random deck builder for QuickJS (needs npm: scripts/js-tools)
+#   app/src/main/assets/collection-engine.js  the site's Collection Home code for QuickJS (same npm tools)
 #
 #   ENGINE_TGZ  engine build (default: the pods build plus the lesson match setup, forge-engine/rebuild-bridge.sh)
 set -euo pipefail
@@ -36,6 +37,8 @@ node "$HERE/scripts/export-story-deeds.mjs" "$REPO" "$A/story-deeds.json"
 node "$HERE/scripts/export-story-lessons.mjs" "$REPO" "$A/story-lessons.json"
 # The pack opener's template (pack-preview.js): the empty-window frame, its window mask and one art per Magic set.
 cp "$REPO/assets/packs/pack-template.webp" "$REPO/assets/packs/pack-window.png" "$A/play/"
+# Collection Home's game tabs: the site's card-back art behind each game (game-tabs.css).
+mkdir -p "$A/collection" && cp "$REPO"/game-tab-mtg.jpg "$REPO"/game-tab-ygo.png "$REPO"/game-tab-ptcg.jpg "$A/collection/"
 node "$HERE/scripts/export-pack-art.mjs" "$REPO" "$A/pack-art.json"
 # Every Story act's battles and card pool, the fallback when the site's copy can't be reached (or is not published yet).
 mkdir -p "$A/story" && cp "$REPO"/data/story/act-*.json "$REPO"/data/story/pool-*.json "$A/story/"
@@ -46,6 +49,8 @@ node "$HERE/scripts/export-card-data.mjs" "$REPO" "$A/card-data.json"
 # esbuild pinned in scripts/js-tools. Until 5 Nov this step was missing, so no APK carried it and Random always stopped.
 (cd "$HERE/scripts/js-tools" && npm ci --no-audit --no-fund --silent) && mkdir -p "$HERE/build"
 node "$HERE/scripts/export-random-build.mjs" "$REPO" "$HERE/scripts/js-tools/node_modules/.bin/esbuild"
+# Collection Home: the site's own Home code (value, decks, Card of the Day, Meta, News) for QuickJS.
+node "$HERE/scripts/export-collection-engine.mjs" "$REPO"
 # Randall's painted art pieces (each replaces its code-drawn version; a missing piece keeps the code one).
 for f in "$HERE"/art/*.webp; do [ -e "$f" ] && cp "$f" "$A/play/"; done
 # The table playmats (all 128 files): without them the table is a flat black card, so this script now does it too.
