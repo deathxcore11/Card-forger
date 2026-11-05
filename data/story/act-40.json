@@ -359,6 +359,13 @@
        "id": "1e571246-aadc-4d1f-a284-9a529e150fe0"
       },
       {
+       "qty": 4,
+       "name": "Pulsar Squadron Ace",
+       "set": "eoe",
+       "number": "28",
+       "id": "8d989cdc-cbd7-4b71-9589-59618597ac8a"
+      },
+      {
        "qty": 3,
        "name": "Rayblade Trooper",
        "set": "eoe",
@@ -388,24 +395,17 @@
       },
       {
        "qty": 4,
-       "name": "Sunstar Expansionist",
+       "name": "Molecular Modifier",
        "set": "eoe",
-       "number": "41",
-       "id": "93b0e6e5-9fb6-4342-9322-1a4cc09a7a76"
+       "number": "146",
+       "id": "7b80b9c9-a871-4c04-b8be-feb81a900591"
       },
       {
        "qty": 4,
-       "name": "Exosuit Savior",
+       "name": "Terrapact Intimidator",
        "set": "eoe",
-       "number": "16",
-       "id": "826c0455-a6ce-43ad-bd5c-0a5df169da90"
-      },
-      {
-       "qty": 4,
-       "name": "Weftstalker Ardent",
-       "set": "eoe",
-       "number": "169",
-       "id": "cddb48cc-8eb1-47ce-90f0-7aad1e93e2c4"
+       "number": "164",
+       "id": "13fe3358-fd68-4245-a2ad-aa9200cf4655"
       },
       {
        "qty": 4,
@@ -440,14 +440,14 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 4,
+       "qty": 3,
        "name": "Slagdrill Scrapper",
        "set": "eoe",
        "number": "160",
        "id": "155dcf54-8fdb-4715-97dc-4eb5d3d80d78"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Oreplate Pangolin",
        "set": "eoe",
        "number": "150",
@@ -503,11 +503,18 @@
        "id": "13fe3358-fd68-4245-a2ad-aa9200cf4655"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Memorial Team Leader",
        "set": "eoe",
        "number": "144",
        "id": "3ddc240a-62df-4773-98d7-48a9adaf1846"
+      },
+      {
+       "qty": 2,
+       "name": "Remnant Elemental",
+       "set": "eoe",
+       "number": "155",
+       "id": "830d5532-3b24-470e-912f-f0f5df1cb530"
       },
       {
        "qty": 24,
@@ -1963,11 +1970,18 @@
        "id": "a058f1a6-318c-4bba-981e-ace079ada806"
       },
       {
-       "qty": 2,
-       "name": "Pain for All",
+       "qty": 4,
+       "name": "Gravkill",
        "set": "eoe",
-       "number": "151",
-       "id": "d2948913-817b-4715-92d5-ed3cde347be7"
+       "number": "103",
+       "id": "cfa6c57f-a193-48cc-9764-d8348548a111"
+      },
+      {
+       "qty": 3,
+       "name": "Tragic Trajectory",
+       "set": "eoe",
+       "number": "122",
+       "id": "78c8bc60-1378-4028-8ab1-3286e459bffb"
       },
       {
        "qty": 4,
@@ -1991,18 +2005,11 @@
        "id": "cddb48cc-8eb1-47ce-90f0-7aad1e93e2c4"
       },
       {
-       "qty": 4,
+       "qty": 3,
        "name": "Faller's Faithful",
        "set": "eoe",
        "number": "100",
        "id": "cbb1b46f-72e0-4c2f-8012-74529bd29a0d"
-      },
-      {
-       "qty": 4,
-       "name": "Frontline War-Rager",
-       "set": "eoe",
-       "number": "134",
-       "id": "fa232943-818b-4944-be60-2d80c806bf62"
       },
       {
        "qty": 12,

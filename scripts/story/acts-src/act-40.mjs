@@ -45,19 +45,19 @@ export default {
 3 Sami, Ship's Engineer
 2 Tannuk, Steadfast Second
 4 Starfighter Pilot
+4 Pulsar Squadron Ace
 3 Rayblade Trooper
 4 Plasma Bolt
 2 Radiant Strike
 2 Nutrient Block
-4 Sunstar Expansionist
-4 Exosuit Savior
-4 Weftstalker Ardent
+4 Molecular Modifier
+4 Terrapact Intimidator
 4 Kavaron Turbodrone
 12 Mountain
 12 Plains`}},
       villain: {who: 'kav', deck: {label: 'tribute', name: 'The Kav Miners', colors: 'R', list: `
-4 Slagdrill Scrapper
-4 Oreplate Pangolin
+3 Slagdrill Scrapper
+2 Oreplate Pangolin
 4 Kavaron Turbodrone
 1 Bombard
 4 Frontline War-Rager
@@ -65,7 +65,8 @@ export default {
 4 Weftstalker Ardent
 4 Zookeeper Mechan
 4 Terrapact Intimidator
-3 Memorial Team Leader
+4 Memorial Team Leader
+2 Remnant Elemental
 24 Mountain`}},
       scene: [q('sami', 'The hard way it is.'),
         q('stage', "We're a few bones short of a skeleton crew, Sami, but we've got plenty of spine."),
@@ -253,12 +254,12 @@ export default {
 4 Blade of the Swarm
 4 Plasma Bolt
 3 Weapons Manufacturing
-2 Pain for All
+4 Gravkill
+3 Tragic Trajectory
 4 Susurian Voidborn
 4 Gravpack Monoist
 4 Weftstalker Ardent
-4 Faller's Faithful
-4 Frontline War-Rager
+3 Faller's Faithful
 12 Mountain
 12 Swamp`}},
       villain: {who: 'illvoi', deck: {label: 'tribute', name: 'The Illvoi Control', colors: 'UW', list: `

@@ -17,3 +17,6 @@ Tuning runs are 24 games. The final check is a 10-game run, per Randall (3 Nov),
 
 ## Honest note
 10-game finals are noisy (about +/-15 points), and the same decks swung a lot between 24-game runs. Across rounds, b1 ran 17-58%, b6 8-78%, b7 25-42% and b3 71-92%. Battle 7 (The Kav Reckoning) is the one most clearly too hard for the hero side and b1 (Easy) a little hard. To be retuned from real player results.
+
+## Retune after the final check
+b7 (The Kav Reckoning) got more removal and b1 (Salvage Rights) a stronger hero and a lighter villain. Re-run, 24 games, seed 31: b7 46%, b1 50%.
