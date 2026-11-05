@@ -1,0 +1,2772 @@
+{
+ "act": 43,
+ "era": "2026-08-14",
+ "title": "The Hobbit",
+ "years": "2026",
+ "sets": [
+  "hob"
+ ],
+ "landSet": "hob",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "An Omenpath opens in a round green door. Behind it a kettle is boiling, and a great many Dwarves are arriving for tea."
+  },
+  {
+   "who": "stage",
+   "line": "There is a long road ahead, an old map, a stolen ring and a mountain with something asleep inside it."
+  },
+  {
+   "who": "stage",
+   "line": "Recorded: crossings sit outside Magic canon. You are only passing through."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "The Dragon falls out of the sky over the Long Lake, and the Mountain is open again."
+  },
+  {
+   "who": "bard",
+   "line": "I am Bard, slayer of the Dragon!",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The Omenpath folds shut behind a Hobbit who is already thinking about his own front door."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "In this version the Dragon never meets the black arrow. The Lonely Mountain stays his, and Esgaroth burns."
+  },
+  {
+   "who": "smaug",
+   "line": "You think you will get a fair share? If you get off alive, you will be lucky.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The Omenpath holds long enough for you to leave."
+  }
+ ],
+ "vibe": "crossing-hobbit",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Well-Worn Spatula",
+    "set": "hob",
+    "number": "180",
+    "id": "659b687f-4068-496f-81b2-7b606bf07ec1",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/5/659b687f-4068-496f-81b2-7b606bf07ec1.jpg?1785496409",
+    "artist": "Gaboleps",
+    "focus": "50% 30%"
+   }
+  },
+  "bilbo": {
+   "name": "Bilbo Baggins",
+   "title": "Burglar, more or less",
+   "portrait": {
+    "card": "Bilbo, Thief in the Night",
+    "set": "hob",
+    "number": "33",
+    "id": "484c7f83-8339-4ae1-8350-68ce1f7d05a3",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/8/484c7f83-8339-4ae1-8350-68ce1f7d05a3.jpg?1783902786",
+    "artist": "Nia Kovalevski",
+    "focus": "50% 25%"
+   }
+  },
+  "trolls": {
+   "name": "Tom, Bert and William",
+   "title": "Trolls",
+   "portrait": {
+    "card": "Tom, Bert, and William",
+    "set": "hob",
+    "number": "169",
+    "id": "211a9764-3c60-46ba-bb53-e6692640ec8f",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/1/211a9764-3c60-46ba-bb53-e6692640ec8f.jpg?1783902784",
+    "artist": "Leonardo Borazio",
+    "focus": "50% 25%"
+   }
+  },
+  "gandalf": {
+   "name": "Gandalf",
+   "title": "The Grey",
+   "portrait": {
+    "card": "Gandalf, Goblins' Bane // Flameshape",
+    "set": "hob",
+    "number": "96",
+    "id": "9b0d29a1-7da9-4fb3-8536-8ff8d8acae0b",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/b/9b0d29a1-7da9-4fb3-8536-8ff8d8acae0b.jpg?1784376993",
+    "artist": "Francisco Miyara",
+    "focus": "50% 25%"
+   }
+  },
+  "goblins": {
+   "name": "The Great Goblin",
+   "title": "King under the Mountain",
+   "portrait": {
+    "card": "The Great Goblin",
+    "set": "hob",
+    "number": "158",
+    "id": "78d8f53e-537d-4eaa-99e3-cac57fa53d22",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/8/78d8f53e-537d-4eaa-99e3-cac57fa53d22.jpg?1784798171",
+    "artist": "Miklós Ligeti",
+    "focus": "50% 25%"
+   }
+  },
+  "gollum": {
+   "name": "Gollum",
+   "title": "Riddle Master",
+   "portrait": {
+    "card": "Gollum, Riddle Master",
+    "set": "hob",
+    "number": "70",
+    "id": "bbdc7e37-c65a-497a-92b7-a30a6e369c71",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/b/bbdc7e37-c65a-497a-92b7-a30a6e369c71.jpg?1784376959",
+    "artist": "Irvin Rodriguez",
+    "focus": "50% 25%"
+   }
+  },
+  "beorn": {
+   "name": "Beorn",
+   "title": "Skin-changer",
+   "portrait": {
+    "card": "Beorn the Fierce",
+    "set": "hob",
+    "number": "119",
+    "id": "367d5f8b-77ee-47f7-bc71-972d62c280a9",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/6/367d5f8b-77ee-47f7-bc71-972d62c280a9.jpg?1784632151",
+    "artist": "Nia Kovalevski",
+    "focus": "50% 25%"
+   }
+  },
+  "radagast": {
+   "name": "Radagast",
+   "title": "The Brown",
+   "portrait": {
+    "card": "Radagast of Rhosgobel",
+    "set": "hob",
+    "number": "136",
+    "id": "5741bbad-a6e4-45e0-b827-73f48c9975bf",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/7/5741bbad-a6e4-45e0-b827-73f48c9975bf.jpg?1785496313",
+    "artist": "Anna Podedworna",
+    "focus": "50% 25%"
+   }
+  },
+  "thorin": {
+   "name": "Thorin Oakenshield",
+   "title": "Mountain-king",
+   "portrait": {
+    "card": "Thorin, Mountain-king",
+    "set": "hob",
+    "number": "114",
+    "id": "117347af-0dd7-4350-901d-8c8a81387e22",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/1/117347af-0dd7-4350-901d-8c8a81387e22.jpg?1783902784",
+    "artist": "Javier Charro",
+    "focus": "50% 25%"
+   }
+  },
+  "spiders": {
+   "name": "The Spiders",
+   "title": "Of Mirkwood",
+   "portrait": {
+    "card": "Old Fat Spider",
+    "set": "hob",
+    "number": "132",
+    "id": "e0c0f842-40fe-4776-a988-a35216bcfd47",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/0/e0c0f842-40fe-4776-a988-a35216bcfd47.jpg?1785236709",
+    "artist": "Lorenzo Mastroianni",
+    "focus": "50% 25%"
+   }
+  },
+  "dwarves": {
+   "name": "The Dwarves",
+   "title": "Of Erebor",
+   "portrait": {
+    "card": "Dáin Ironfoot",
+    "set": "hob",
+    "number": "91",
+    "id": "7112e460-9160-4535-ad94-93f1f4ac04cf",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/1/7112e460-9160-4535-ad94-93f1f4ac04cf.jpg?1785236701",
+    "artist": "Tomas Duchek",
+    "focus": "50% 25%"
+   }
+  },
+  "elrond": {
+   "name": "Elrond",
+   "title": "Moon-reader",
+   "portrait": {
+    "card": "Elrond, Moon-Reader",
+    "set": "hob",
+    "number": "36",
+    "id": "fbcb310c-be73-46f8-8e65-8632454ccc6e",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/b/fbcb310c-be73-46f8-8e65-8632454ccc6e.jpg?1784376948",
+    "artist": "Christina Kraus",
+    "focus": "50% 25%"
+   }
+  },
+  "thranduil": {
+   "name": "Thranduil",
+   "title": "The Elvenking",
+   "portrait": {
+    "card": "Thranduil, the Elvenking",
+    "set": "hob",
+    "number": "167",
+    "id": "fe2fe8fa-3b99-44c1-bab9-922e5c864952",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/e/fe2fe8fa-3b99-44c1-bab9-922e5c864952.jpg?1784377043",
+    "artist": "Magali Villeneuve",
+    "focus": "50% 25%"
+   }
+  },
+  "bard": {
+   "name": "Bard",
+   "title": "King of Dale",
+   "portrait": {
+    "card": "Bard, King of Dale",
+    "set": "hob",
+    "number": "144",
+    "id": "c05c2aa6-29c7-40f8-872e-91099b9225c4",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/0/c05c2aa6-29c7-40f8-872e-91099b9225c4.jpg?1784377008",
+    "artist": "Xabi Gaztelua",
+    "focus": "50% 25%"
+   }
+  },
+  "smaug": {
+   "name": "Smaug",
+   "title": "The Magnificent",
+   "portrait": {
+    "card": "Smaug the Magnificent",
+    "set": "hob",
+    "number": "110",
+    "id": "6a5d8fad-2ffd-4645-8c49-907999b6cecf",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/a/6a5d8fad-2ffd-4645-8c49-907999b6cecf.jpg?1783902784",
+    "artist": "Francisco Miyara",
+    "focus": "50% 25%"
+   }
+  },
+  "armies": {
+   "name": "The Five Armies",
+   "title": "Under the Mountain",
+   "portrait": {
+    "card": "Dwalin, Weaponmaster",
+    "set": "hob",
+    "number": "154",
+    "id": "196d9287-a37d-4b27-a83b-a5489a54f081",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/9/196d9287-a37d-4b27-a83b-a5489a54f081.jpg?1785496508",
+    "artist": "Marco Teixeira",
+    "focus": "50% 25%"
+   }
+  },
+  "bolg": {
+   "name": "Bolg of the North",
+   "title": "Goblin captain",
+   "portrait": {
+    "card": "Bolg of the North",
+    "set": "hob",
+    "number": "148",
+    "id": "7b2d2a7f-88e0-45a9-8579-a6736bcd66eb",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/b/7b2d2a7f-88e0-45a9-8579-a6736bcd66eb.jpg?1784377021",
+    "artist": "Miklós Ligeti",
+    "focus": "50% 25%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a43b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "An Unexpected Party",
+   "difficulty": "Easy",
+   "teaches": [
+    "Treasure"
+   ],
+   "blurb": "Thirteen Dwarves, one wizard and a night on the road that goes badly wrong.",
+   "rewardSet": "hob",
+   "host": false,
+   "hero": {
+    "who": "bilbo",
+    "deck": {
+     "name": "The Company of Thorin",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Bofur, Reliable Guardian // Concerted Care",
+       "set": "hob",
+       "number": "6",
+       "id": "6b8e6435-7de4-41d5-bc7d-8e24c11897d0"
+      },
+      {
+       "qty": 3,
+       "name": "Belladonna Took",
+       "set": "hob",
+       "number": "4",
+       "id": "88f0c189-c9ed-4ea3-ae62-3d8ac6c7fecf"
+      },
+      {
+       "qty": 3,
+       "name": "Kíli the Resourceful",
+       "set": "hob",
+       "number": "17",
+       "id": "1805532f-6d99-47d0-9529-5f5831a7fdc8"
+      },
+      {
+       "qty": 3,
+       "name": "Lake-town Toymaker",
+       "set": "hob",
+       "number": "19",
+       "id": "67304269-c595-4cf0-8dbf-fcb2e9e01fe2"
+      },
+      {
+       "qty": 3,
+       "name": "Eagle of the Great Shelf",
+       "set": "hob",
+       "number": "11",
+       "id": "3feca644-5f65-4477-bbc8-d505cec6f3a5"
+      },
+      {
+       "qty": 3,
+       "name": "Dáin, Lord of the Iron Hills",
+       "set": "hob",
+       "number": "8",
+       "id": "99d27749-d16c-45e9-accc-6a01351c17f9"
+      },
+      {
+       "qty": 3,
+       "name": "Ori, Keeper of Songs",
+       "set": "hob",
+       "number": "23",
+       "id": "c5727af5-a487-4b16-8278-81c3c928c417"
+      },
+      {
+       "qty": 2,
+       "name": "Moment of Glory",
+       "set": "hob",
+       "number": "21",
+       "id": "0a6a6ff0-b1cd-4b06-bd31-612690094e0e"
+      },
+      {
+       "qty": 1,
+       "name": "An Unexpected Party // At the Door",
+       "set": "hob",
+       "number": "29",
+       "id": "3aa29fe8-1687-486f-b4df-c04977869ab1"
+      },
+      {
+       "qty": 4,
+       "name": "Old Thrush",
+       "set": "hob",
+       "number": "2",
+       "id": "3ad02b56-13ec-46ef-92bd-ae078b8bb517"
+      },
+      {
+       "qty": 4,
+       "name": "Long-Bodied Grey Dog",
+       "set": "hob",
+       "number": "1",
+       "id": "d1a1e520-1fe2-4529-8afb-c187bb80da3c"
+      },
+      {
+       "qty": 4,
+       "name": "Iron Hills Blacksmith",
+       "set": "hob",
+       "number": "16",
+       "id": "370e09c2-36c5-4662-8350-1db798afad3e"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "hob",
+       "number": "189",
+       "id": "7b7c408b-8660-4db5-9a16-5003c11b4ac1"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "trolls",
+    "deck": {
+     "name": "Three Trolls",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Tom, Bert, and William",
+       "set": "hob",
+       "number": "169",
+       "id": "211a9764-3c60-46ba-bb53-e6692640ec8f"
+      },
+      {
+       "qty": 2,
+       "name": "Troll Negotiations",
+       "set": "hob",
+       "number": "138",
+       "id": "ca0f7bf4-b8a2-4ec4-ad7e-b639de9fa76a"
+      },
+      {
+       "qty": 4,
+       "name": "Wood Elves",
+       "set": "hob",
+       "number": "142",
+       "id": "2476e42b-b209-4207-8ed9-cb668f89b218"
+      },
+      {
+       "qty": 4,
+       "name": "Stony-Voiced Goblins",
+       "set": "hob",
+       "number": "85",
+       "id": "6fcc3699-b475-4612-884d-81bd4f21e9c1"
+      },
+      {
+       "qty": 4,
+       "name": "Duskwatch Hunter",
+       "set": "hob",
+       "number": "153",
+       "id": "3685c783-d837-4466-a960-ab3098db64c3"
+      },
+      {
+       "qty": 4,
+       "name": "Mirkwood Pathmaker",
+       "set": "hob",
+       "number": "129",
+       "id": "50fbedc0-bc66-4ffb-87f6-a2df69995091"
+      },
+      {
+       "qty": 4,
+       "name": "Troop of Ponies",
+       "set": "hob",
+       "number": "3",
+       "id": "0b4b1c59-bcec-4779-9e27-0e6f9feb4e11"
+      },
+      {
+       "qty": 4,
+       "name": "Woodland Weavemaster",
+       "set": "hob",
+       "number": "143",
+       "id": "fe2b4bcf-56de-44d3-83af-aeb27f82c25e"
+      },
+      {
+       "qty": 4,
+       "name": "Little Bear",
+       "set": "hob",
+       "number": "128",
+       "id": "8a50858a-33b5-4c45-9c31-5956ae5a33a6"
+      },
+      {
+       "qty": 4,
+       "name": "Rhovanion Rampager",
+       "set": "hob",
+       "number": "82",
+       "id": "5ee45a5e-3650-47b3-8d31-6b1de9e27a14"
+      },
+      {
+       "qty": 1,
+       "name": "Desolation Prowler",
+       "set": "hob",
+       "number": "64",
+       "id": "63c87009-ff1b-44b9-88b1-e26219094c67"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "hob",
+       "number": "191",
+       "id": "4031e5e4-e573-4130-8d20-4a606edef0a0"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "hob",
+       "number": "193",
+       "id": "c3e84b42-5423-4d4d-b8fc-cfbb2c53a4ca"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "0ea58cfe-b37c-49a6-a3be-7e60065b8238",
+      "name": "Tom, Bert, and William",
+      "rarity": "rare",
+      "set": "hob",
+      "id": "211a9764-3c60-46ba-bb53-e6692640ec8f",
+      "image": "https://cards.scryfall.io/normal/front/2/1/211a9764-3c60-46ba-bb53-e6692640ec8f.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "bilbo",
+     "line": "I am an honest burglar, more or less.",
+     "quote": true
+    },
+    {
+     "who": "bilbo",
+     "line": "Treasure tokens turn into any colour of mana once. Save one for the turn you need it."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "trolls",
+     "line": "Suddenly they were fighting like dogs, and calling one another all sorts of perfectly true and applicable names in very loud voices.",
+     "quote": true
+    },
+    {
+     "who": "trolls",
+     "line": "The Trolls are in no hurry. Dinner will keep."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Burglar at your service.",
+     "big": "Onwards!",
+     "low": "The trolls are winning...",
+     "win": "Dawn takes the trolls.",
+     "loss": "Back to Bag End...",
+     "half": "Cash a Treasure when you need the colour."
+    },
+    "villain": {
+     "start": "Mutton, again.",
+     "big": "Squash!",
+     "low": "Dawn is coming...",
+     "win": "Supper.",
+     "loss": "Stone..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a43b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Goblin-town",
+   "difficulty": "Easy",
+   "teaches": [
+    "Amass"
+   ],
+   "blurb": "A grey wizard, a flash of light and a cave full of goblins.",
+   "rewardSet": "hob",
+   "host": false,
+   "hero": {
+    "who": "gandalf",
+    "deck": {
+     "name": "Gandalf and the Company",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Gandalf, Goblins' Bane // Flameshape",
+       "set": "hob",
+       "number": "96",
+       "id": "9b0d29a1-7da9-4fb3-8536-8ff8d8acae0b"
+      },
+      {
+       "qty": 4,
+       "name": "Tidings of War",
+       "set": "hob",
+       "number": "115",
+       "id": "38c16a0a-375e-48cb-9720-dbbc08c603ae"
+      },
+      {
+       "qty": 3,
+       "name": "Dori, Bearer of Friends",
+       "set": "hob",
+       "number": "94",
+       "id": "d2f60ad0-c887-4585-85f8-afcf72fb80d0"
+      },
+      {
+       "qty": 3,
+       "name": "Óin the Brave",
+       "set": "hob",
+       "number": "106",
+       "id": "9984b9ef-e81c-48f4-aa33-0504171a2d3c"
+      },
+      {
+       "qty": 2,
+       "name": "Pinecone Strike",
+       "set": "hob",
+       "number": "107",
+       "id": "ea174cea-40e5-424e-9734-e39aae6c6b17"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin-town Flunkies",
+       "set": "hob",
+       "number": "100",
+       "id": "ccff7382-8609-494c-aeee-cd1436456dd0"
+      },
+      {
+       "qty": 4,
+       "name": "Troop of Ponies",
+       "set": "hob",
+       "number": "3",
+       "id": "0b4b1c59-bcec-4779-9e27-0e6f9feb4e11"
+      },
+      {
+       "qty": 4,
+       "name": "Bothersome Noisemaker",
+       "set": "hob",
+       "number": "89",
+       "id": "cb25b11a-6bf5-4a9a-b60f-d4dcac3816d6"
+      },
+      {
+       "qty": 4,
+       "name": "Snowslope Hunter",
+       "set": "hob",
+       "number": "112",
+       "id": "47666099-ffb2-4d07-a801-70524dba0837"
+      },
+      {
+       "qty": 4,
+       "name": "Gundabad Opportunist",
+       "set": "hob",
+       "number": "101",
+       "id": "bc4a60b8-a5bb-4dbf-8d48-95caf757eac3"
+      },
+      {
+       "qty": 1,
+       "name": "Long-Bodied Grey Dog",
+       "set": "hob",
+       "number": "1",
+       "id": "d1a1e520-1fe2-4529-8afb-c187bb80da3c"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "hob",
+       "number": "192",
+       "id": "c49d378e-9549-4320-b3c6-1aeb216d1e98"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "goblins",
+    "deck": {
+     "name": "Goblin-town",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "The Great Goblin",
+       "set": "hob",
+       "number": "158",
+       "id": "78d8f53e-537d-4eaa-99e3-cac57fa53d22"
+      },
+      {
+       "qty": 3,
+       "name": "Bolg's Company",
+       "set": "hob",
+       "number": "149",
+       "id": "ea3f5644-f7e3-40de-ada5-cea2e9113cfb"
+      },
+      {
+       "qty": 4,
+       "name": "Rage into the Valley",
+       "set": "hob",
+       "number": "79",
+       "id": "8651958c-3b94-47a9-a751-faf8f6236a42"
+      },
+      {
+       "qty": 3,
+       "name": "Goblin Plate Mail",
+       "set": "hob",
+       "number": "157",
+       "id": "cb982607-da37-4894-91a5-cf6307d4d703"
+      },
+      {
+       "qty": 2,
+       "name": "Fearsome Goblin Pair",
+       "set": "hob",
+       "number": "156",
+       "id": "2efe2dc7-3eaa-47f6-b1ae-f974c4a8ae79"
+      },
+      {
+       "qty": 4,
+       "name": "Ravening Warg",
+       "set": "hob",
+       "number": "80",
+       "id": "ea7b5052-b343-466d-879e-2a211657ef0a"
+      },
+      {
+       "qty": 4,
+       "name": "Old Thrush",
+       "set": "hob",
+       "number": "2",
+       "id": "3ad02b56-13ec-46ef-92bd-ae078b8bb517"
+      },
+      {
+       "qty": 4,
+       "name": "Long-Bodied Grey Dog",
+       "set": "hob",
+       "number": "1",
+       "id": "d1a1e520-1fe2-4529-8afb-c187bb80da3c"
+      },
+      {
+       "qty": 4,
+       "name": "Great Fierce Bee",
+       "set": "hob",
+       "number": "73",
+       "id": "9d9ef88f-d208-4788-9553-cd672b3be1fe"
+      },
+      {
+       "qty": 4,
+       "name": "Head of the Hunt",
+       "set": "hob",
+       "number": "75",
+       "id": "3ffe34d4-72f4-4562-a948-8909b9321e59"
+      },
+      {
+       "qty": 1,
+       "name": "Front Porch Sentries",
+       "set": "hob",
+       "number": "67",
+       "id": "07bfc803-e11b-47ab-9f25-0ace7e174200"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "hob",
+       "number": "191",
+       "id": "4031e5e4-e573-4130-8d20-4a606edef0a0"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "hob",
+       "number": "192",
+       "id": "c49d378e-9549-4320-b3c6-1aeb216d1e98"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "83dcfac0-6efd-4e37-9402-15f9889e84e1",
+      "name": "The Great Goblin",
+      "rarity": "rare",
+      "set": "hob",
+      "id": "78d8f53e-537d-4eaa-99e3-cac57fa53d22",
+      "image": "https://cards.scryfall.io/normal/front/7/8/78d8f53e-537d-4eaa-99e3-cac57fa53d22.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "gandalf",
+     "line": "Gandalf thought of most things; and though he could not do everything, he could do a great deal for friends in a tight corner.",
+     "quote": true
+    },
+    {
+     "who": "gandalf",
+     "line": "Amass: grow your Army token or make one first. Kill the Army and all of its counters go with it."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "goblins",
+     "line": "I will prepare something particularly uncomfortable for you, Thorin Oakenshield!",
+     "quote": true
+    },
+    {
+     "who": "goblins",
+     "line": "Clap! Snap! The Goblins have a song for it."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Close your eyes.",
+     "big": "Flash!",
+     "low": "Too many goblins...",
+     "win": "The Great Goblin falls.",
+     "loss": "Captured...",
+     "half": "Spread counters on one Army, or split into two."
+    },
+    "villain": {
+     "start": "Clap, snap.",
+     "big": "Seize them!",
+     "low": "The wizard...",
+     "win": "Caught.",
+     "loss": "Run..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a43b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "rival",
+   "title": "Riddles in the Dark",
+   "difficulty": "Normal",
+   "teaches": [
+    "Recruit"
+   ],
+   "blurb": "A hobbit, a ring in a pocket and a creature who loves riddles and raw fish.",
+   "rewardSet": "hob",
+   "host": false,
+   "hero": {
+    "who": "bilbo",
+    "deck": {
+     "name": "Bilbo and the Riddle-Game",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Elrond, Moon-Reader",
+       "set": "hob",
+       "number": "36",
+       "id": "fbcb310c-be73-46f8-8e65-8632454ccc6e"
+      },
+      {
+       "qty": 3,
+       "name": "Bilbo, Thief in the Night",
+       "set": "hob",
+       "number": "33",
+       "id": "484c7f83-8339-4ae1-8350-68ce1f7d05a3"
+      },
+      {
+       "qty": 3,
+       "name": "Bard's Company",
+       "set": "hob",
+       "number": "146",
+       "id": "d14aa2ff-7bbd-47a6-8e36-481e56302a62"
+      },
+      {
+       "qty": 3,
+       "name": "Lake-town Toymaker",
+       "set": "hob",
+       "number": "19",
+       "id": "67304269-c595-4cf0-8dbf-fcb2e9e01fe2"
+      },
+      {
+       "qty": 3,
+       "name": "Eagle of the Great Shelf",
+       "set": "hob",
+       "number": "11",
+       "id": "3feca644-5f65-4477-bbc8-d505cec6f3a5"
+      },
+      {
+       "qty": 2,
+       "name": "Gandalf, Wandering Wizard",
+       "set": "hob",
+       "number": "41",
+       "id": "1f8403a2-849c-4a59-b0ed-c8803995028d"
+      },
+      {
+       "qty": 3,
+       "name": "Riddles in the Dark",
+       "set": "hob",
+       "number": "53",
+       "id": "a6129286-7437-4ba4-be55-586a22cd67ca"
+      },
+      {
+       "qty": 2,
+       "name": "Sound the Trumpets",
+       "set": "hob",
+       "number": "55",
+       "id": "dd32a1dd-3541-4572-a717-1deabc14b827"
+      },
+      {
+       "qty": 4,
+       "name": "Old Thrush",
+       "set": "hob",
+       "number": "2",
+       "id": "3ad02b56-13ec-46ef-92bd-ae078b8bb517"
+      },
+      {
+       "qty": 4,
+       "name": "Long-Bodied Grey Dog",
+       "set": "hob",
+       "number": "1",
+       "id": "d1a1e520-1fe2-4529-8afb-c187bb80da3c"
+      },
+      {
+       "qty": 4,
+       "name": "Iron Hills Blacksmith",
+       "set": "hob",
+       "number": "16",
+       "id": "370e09c2-36c5-4662-8350-1db798afad3e"
+      },
+      {
+       "qty": 2,
+       "name": "Mirkwood Meditator",
+       "set": "hob",
+       "number": "48",
+       "id": "ad7ed4e6-3fe2-40f1-909b-a03b2a3c941a"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "hob",
+       "number": "190",
+       "id": "c6aa89a8-3584-4906-b9a9-41ef2f021f8e"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "hob",
+       "number": "189",
+       "id": "7b7c408b-8660-4db5-9a16-5003c11b4ac1"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "gollum",
+    "deck": {
+     "name": "Gollum and the Goblins",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Gollum, Silent Slinker // Meager Meal",
+       "set": "hob",
+       "number": "71",
+       "id": "6cfaa182-3fec-4907-8814-b4d29c33cec3"
+      },
+      {
+       "qty": 3,
+       "name": "Gollum the Abandoned",
+       "set": "hob",
+       "number": "72",
+       "id": "50d91ef3-6f5d-4255-8d47-be731b5dad30"
+      },
+      {
+       "qty": 2,
+       "name": "Bilbo's Deadly Slice",
+       "set": "hob",
+       "number": "62",
+       "id": "17892c93-b9b2-4720-933b-998ed0200492"
+      },
+      {
+       "qty": 4,
+       "name": "Stony-Voiced Goblins",
+       "set": "hob",
+       "number": "85",
+       "id": "6fcc3699-b475-4612-884d-81bd4f21e9c1"
+      },
+      {
+       "qty": 4,
+       "name": "Troop of Ponies",
+       "set": "hob",
+       "number": "3",
+       "id": "0b4b1c59-bcec-4779-9e27-0e6f9feb4e11"
+      },
+      {
+       "qty": 4,
+       "name": "Rhovanion Rampager",
+       "set": "hob",
+       "number": "82",
+       "id": "5ee45a5e-3650-47b3-8d31-6b1de9e27a14"
+      },
+      {
+       "qty": 4,
+       "name": "Front Porch Sentries",
+       "set": "hob",
+       "number": "67",
+       "id": "07bfc803-e11b-47ab-9f25-0ace7e174200"
+      },
+      {
+       "qty": 4,
+       "name": "Desolation Prowler",
+       "set": "hob",
+       "number": "64",
+       "id": "63c87009-ff1b-44b9-88b1-e26219094c67"
+      },
+      {
+       "qty": 4,
+       "name": "Head of the Hunt",
+       "set": "hob",
+       "number": "75",
+       "id": "3ffe34d4-72f4-4562-a948-8909b9321e59"
+      },
+      {
+       "qty": 4,
+       "name": "Great Fierce Bee",
+       "set": "hob",
+       "number": "73",
+       "id": "9d9ef88f-d208-4788-9553-cd672b3be1fe"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "hob",
+       "number": "191",
+       "id": "4031e5e4-e573-4130-8d20-4a606edef0a0"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "0523e271-5e0b-4e4b-9eac-86f915d18952",
+      "name": "Head of the Hunt",
+      "rarity": "rare",
+      "set": "hob",
+      "id": "3ffe34d4-72f4-4562-a948-8909b9321e59",
+      "image": "https://cards.scryfall.io/normal/front/3/f/3ffe34d4-72f4-4562-a948-8909b9321e59.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "bilbo",
+     "line": "What have I got in my pocket?",
+     "quote": true
+    },
+    {
+     "who": "bilbo",
+     "line": "Recruit: draw a card, then discard one. If it was a nonland card, you get a Treasure. Loot every turn."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "gollum",
+     "line": "Where iss it? Losst it is, my precious!",
+     "quote": true
+    },
+    {
+     "who": "gollum",
+     "line": "Gollum guesses, and Gollum cheats."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Time!",
+     "big": "A riddle!",
+     "low": "The riddles are running out...",
+     "win": "Out of the dark.",
+     "loss": "Eaten...",
+     "half": "Recruit each turn: loot, then keep the Treasure."
+    },
+    "villain": {
+     "start": "Precious.",
+     "big": "Yesss!",
+     "low": "Where is it...",
+     "win": "Mine.",
+     "loss": "Thief!"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a43b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "rival",
+   "title": "Beorn",
+   "difficulty": "Normal",
+   "teaches": [
+    "Haste"
+   ],
+   "blurb": "The skin-changer does not like visitors. He especially does not like fifteen of them.",
+   "rewardSet": "hob",
+   "host": false,
+   "hero": {
+    "who": "radagast",
+    "deck": {
+     "name": "The Company in the Porch",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Radagast of Rhosgobel",
+       "set": "hob",
+       "number": "136",
+       "id": "5741bbad-a6e4-45e0-b827-73f48c9975bf"
+      },
+      {
+       "qty": 3,
+       "name": "Galion, Elvenking's Butler",
+       "set": "hob",
+       "number": "125",
+       "id": "985bd676-58c4-42c7-a570-1b413e9aa94c"
+      },
+      {
+       "qty": 3,
+       "name": "Dancing from Dark to Dawn",
+       "set": "hob",
+       "number": "123",
+       "id": "550cd0b6-ca61-4db7-9d20-0b68c48066f9"
+      },
+      {
+       "qty": 3,
+       "name": "Eagle of the Great Shelf",
+       "set": "hob",
+       "number": "11",
+       "id": "3feca644-5f65-4477-bbc8-d505cec6f3a5"
+      },
+      {
+       "qty": 2,
+       "name": "Warg Tactics",
+       "set": "hob",
+       "number": "139",
+       "id": "b06d9cee-bb0f-4fe7-ab2a-b55d36461aec"
+      },
+      {
+       "qty": 2,
+       "name": "Quarrel",
+       "set": "hob",
+       "number": "135",
+       "id": "5900a0b4-aa89-4019-94c9-7e9ea3b4792e"
+      },
+      {
+       "qty": 4,
+       "name": "Bejeweled Warg",
+       "set": "hob",
+       "number": "117",
+       "id": "e95eba5c-e0d6-46b4-a0be-8e373b2185ea"
+      },
+      {
+       "qty": 4,
+       "name": "Guardian of the Halls",
+       "set": "hob",
+       "number": "127",
+       "id": "4265caec-8c28-44cd-8e6b-90b5af926d3c"
+      },
+      {
+       "qty": 4,
+       "name": "Attercop",
+       "set": "hob",
+       "number": "116",
+       "id": "81263d5d-e402-4813-9458-161112da27ab"
+      },
+      {
+       "qty": 4,
+       "name": "Old Thrush",
+       "set": "hob",
+       "number": "2",
+       "id": "3ad02b56-13ec-46ef-92bd-ae078b8bb517"
+      },
+      {
+       "qty": 4,
+       "name": "Long-Bodied Grey Dog",
+       "set": "hob",
+       "number": "1",
+       "id": "d1a1e520-1fe2-4529-8afb-c187bb80da3c"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "hob",
+       "number": "193",
+       "id": "c3e84b42-5423-4d4d-b8fc-cfbb2c53a4ca"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "hob",
+       "number": "189",
+       "id": "7b7c408b-8660-4db5-9a16-5003c11b4ac1"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "beorn",
+    "deck": {
+     "name": "Beorn and the Bears",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Beorn the Fierce",
+       "set": "hob",
+       "number": "119",
+       "id": "367d5f8b-77ee-47f7-bc71-972d62c280a9"
+      },
+      {
+       "qty": 3,
+       "name": "Beorn, Reluctant Host // Till and Tend",
+       "set": "hob",
+       "number": "118",
+       "id": "804589b7-3ef9-473d-97cc-c61a2d41f70d"
+      },
+      {
+       "qty": 3,
+       "name": "Gigantic Big Bear",
+       "set": "hob",
+       "number": "126",
+       "id": "7d6ece3d-8e7a-41ad-974f-3c9748de4825"
+      },
+      {
+       "qty": 3,
+       "name": "Old Fat Spider",
+       "set": "hob",
+       "number": "132",
+       "id": "e0c0f842-40fe-4776-a988-a35216bcfd47"
+      },
+      {
+       "qty": 3,
+       "name": "Troll Negotiations",
+       "set": "hob",
+       "number": "138",
+       "id": "ca0f7bf4-b8a2-4ec4-ad7e-b639de9fa76a"
+      },
+      {
+       "qty": 2,
+       "name": "Beorn's Hospitality",
+       "set": "hob",
+       "number": "120",
+       "id": "153ca57e-30f0-4ad7-ae9d-c55cbf0fd4c9"
+      },
+      {
+       "qty": 4,
+       "name": "Bejeweled Warg",
+       "set": "hob",
+       "number": "117",
+       "id": "e95eba5c-e0d6-46b4-a0be-8e373b2185ea"
+      },
+      {
+       "qty": 4,
+       "name": "Guardian of the Halls",
+       "set": "hob",
+       "number": "127",
+       "id": "4265caec-8c28-44cd-8e6b-90b5af926d3c"
+      },
+      {
+       "qty": 4,
+       "name": "Old Thrush",
+       "set": "hob",
+       "number": "2",
+       "id": "3ad02b56-13ec-46ef-92bd-ae078b8bb517"
+      },
+      {
+       "qty": 4,
+       "name": "Attercop",
+       "set": "hob",
+       "number": "116",
+       "id": "81263d5d-e402-4813-9458-161112da27ab"
+      },
+      {
+       "qty": 3,
+       "name": "Ordinary Bear",
+       "set": "hob",
+       "number": "133",
+       "id": "0feb9817-56e1-465a-851c-b2fe202aa8ae"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "hob",
+       "number": "193",
+       "id": "c3e84b42-5423-4d4d-b8fc-cfbb2c53a4ca"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "30ca8e92-5955-46a1-86c1-094a873f518f",
+      "name": "Beorn the Fierce",
+      "rarity": "mythic",
+      "set": "hob",
+      "id": "367d5f8b-77ee-47f7-bc71-972d62c280a9",
+      "image": "https://cards.scryfall.io/normal/front/3/6/367d5f8b-77ee-47f7-bc71-972d62c280a9.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "radagast",
+     "line": "Perhaps you have heard of my good cousin Radagast who lives near the southern borders of Mirkwood?",
+     "quote": true
+    },
+    {
+     "who": "radagast",
+     "line": "Beorn is a big green deck. Trade early, then stop him with removal before he lands the bears."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "beorn",
+     "line": "He never invited people into his house if he could help it. Now he had got fifteen strangers sitting in his porch!",
+     "quote": true
+    },
+    {
+     "who": "beorn",
+     "line": "The bears dance until dawn. The strangers are not invited."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Wait here.",
+     "big": "Eagles!",
+     "low": "The bears are too big...",
+     "win": "Honey-cakes.",
+     "loss": "Out the door...",
+     "half": "Remove the big green creature before it connects."
+    },
+    "villain": {
+     "start": "A bear.",
+     "big": "Grr!",
+     "low": "Fences...",
+     "win": "Mine.",
+     "loss": "Guest..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a43b5",
+   "slot": 5,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "Mirkwood",
+   "difficulty": "Easy",
+   "teaches": [
+    "Sagas"
+   ],
+   "blurb": "Stick to the forest-track. The spiders have been waiting.",
+   "rewardSet": "hob",
+   "host": false,
+   "hero": {
+    "who": "thorin",
+    "deck": {
+     "name": "Thorin's Company",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Thorin, Mountain-king",
+       "set": "hob",
+       "number": "114",
+       "id": "117347af-0dd7-4350-901d-8c8a81387e22"
+      },
+      {
+       "qty": 3,
+       "name": "Glóin the Mighty // Easy Pickings",
+       "set": "hob",
+       "number": "99",
+       "id": "5793b8eb-2fc5-454d-8fa2-20346fef167a"
+      },
+      {
+       "qty": 3,
+       "name": "Balin, Loremaster",
+       "set": "hob",
+       "number": "87",
+       "id": "42d7ca7b-c983-40fd-ad57-59f6972bb375"
+      },
+      {
+       "qty": 3,
+       "name": "Iron Hills Stalwart",
+       "set": "hob",
+       "number": "102",
+       "id": "46daa9ac-0ac7-4df9-b9d2-e03ab5b56c72"
+      },
+      {
+       "qty": 3,
+       "name": "Misty Mountains Raider",
+       "set": "hob",
+       "number": "105",
+       "id": "6dff14cd-b60b-48f4-9d9f-c9019b55df4c"
+      },
+      {
+       "qty": 3,
+       "name": "Gundabad Opportunist",
+       "set": "hob",
+       "number": "101",
+       "id": "bc4a60b8-a5bb-4dbf-8d48-95caf757eac3"
+      },
+      {
+       "qty": 2,
+       "name": "Pinecone Strike",
+       "set": "hob",
+       "number": "107",
+       "id": "ea174cea-40e5-424e-9734-e39aae6c6b17"
+      },
+      {
+       "qty": 4,
+       "name": "Old Thrush",
+       "set": "hob",
+       "number": "2",
+       "id": "3ad02b56-13ec-46ef-92bd-ae078b8bb517"
+      },
+      {
+       "qty": 4,
+       "name": "Long-Bodied Grey Dog",
+       "set": "hob",
+       "number": "1",
+       "id": "d1a1e520-1fe2-4529-8afb-c187bb80da3c"
+      },
+      {
+       "qty": 4,
+       "name": "Bothersome Noisemaker",
+       "set": "hob",
+       "number": "89",
+       "id": "cb25b11a-6bf5-4a9a-b60f-d4dcac3816d6"
+      },
+      {
+       "qty": 4,
+       "name": "Snowslope Hunter",
+       "set": "hob",
+       "number": "112",
+       "id": "47666099-ffb2-4d07-a801-70524dba0837"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "hob",
+       "number": "192",
+       "id": "c49d378e-9549-4320-b3c6-1aeb216d1e98"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "spiders",
+    "deck": {
+     "name": "The Spiders of Mirkwood",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Attercop",
+       "set": "hob",
+       "number": "116",
+       "id": "81263d5d-e402-4813-9458-161112da27ab"
+      },
+      {
+       "qty": 1,
+       "name": "Old Fat Spider",
+       "set": "hob",
+       "number": "132",
+       "id": "e0c0f842-40fe-4776-a988-a35216bcfd47"
+      },
+      {
+       "qty": 2,
+       "name": "Beorn's Hospitality",
+       "set": "hob",
+       "number": "120",
+       "id": "153ca57e-30f0-4ad7-ae9d-c55cbf0fd4c9"
+      },
+      {
+       "qty": 4,
+       "name": "Wood Elves",
+       "set": "hob",
+       "number": "142",
+       "id": "2476e42b-b209-4207-8ed9-cb668f89b218"
+      },
+      {
+       "qty": 4,
+       "name": "Mirkwood Pathmaker",
+       "set": "hob",
+       "number": "129",
+       "id": "50fbedc0-bc66-4ffb-87f6-a2df69995091"
+      },
+      {
+       "qty": 4,
+       "name": "Woodland Weavemaster",
+       "set": "hob",
+       "number": "143",
+       "id": "fe2b4bcf-56de-44d3-83af-aeb27f82c25e"
+      },
+      {
+       "qty": 4,
+       "name": "Troop of Ponies",
+       "set": "hob",
+       "number": "3",
+       "id": "0b4b1c59-bcec-4779-9e27-0e6f9feb4e11"
+      },
+      {
+       "qty": 4,
+       "name": "Little Bear",
+       "set": "hob",
+       "number": "128",
+       "id": "8a50858a-33b5-4c45-9c31-5956ae5a33a6"
+      },
+      {
+       "qty": 4,
+       "name": "Wargling",
+       "set": "hob",
+       "number": "140",
+       "id": "1ccbf823-846f-4f09-9c67-1deebb5d1d92"
+      },
+      {
+       "qty": 4,
+       "name": "Nasty Little Rabbit",
+       "set": "hob",
+       "number": "130",
+       "id": "96bc7d25-2828-478a-8fe5-a1f4ede8c9c0"
+      },
+      {
+       "qty": 3,
+       "name": "Long-Bodied Grey Dog",
+       "set": "hob",
+       "number": "1",
+       "id": "d1a1e520-1fe2-4529-8afb-c187bb80da3c"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "hob",
+       "number": "193",
+       "id": "c3e84b42-5423-4d4d-b8fc-cfbb2c53a4ca"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "8790f842-e842-4bed-adf4-5b3cc5fd68a9",
+      "name": "Old Fat Spider",
+      "rarity": "uncommon",
+      "set": "hob",
+      "id": "e0c0f842-40fe-4776-a988-a35216bcfd47",
+      "image": "https://cards.scryfall.io/normal/front/e/0/e0c0f842-40fe-4776-a988-a35216bcfd47.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "thorin",
+     "line": "To me! O my kinsfolk!",
+     "quote": true
+    },
+    {
+     "who": "thorin",
+     "line": "A Saga adds a counter every turn and does its work in order. Cast it early and let the chapters run."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "spiders",
+     "line": "Soon there came the sound of \"Lazy Lob\" and \"Attercop\" from among the trees away on the right. That upset the spiders greatly.",
+     "quote": true
+    },
+    {
+     "who": "spiders",
+     "line": "Attercop, Attercop! The meat is alive and kicking."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Stay on the path.",
+     "big": "To me!",
+     "low": "The webs are thick...",
+     "win": "Out of the forest.",
+     "loss": "Caught...",
+     "half": "Cast the Saga early, then protect your creatures."
+    },
+    "villain": {
+     "start": "Dinner.",
+     "big": "Wrap them!",
+     "low": "It stings...",
+     "win": "Wrapped.",
+     "loss": "The light..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a43b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "comic",
+   "title": "The Dwarves of Erebor",
+   "difficulty": "Normal",
+   "teaches": [
+    "Trample"
+   ],
+   "blurb": "The Mountain-king has an army, an axe and a very long list of grudges.",
+   "rewardSet": "hob",
+   "host": false,
+   "hero": {
+    "who": "radagast",
+    "deck": {
+     "name": "The Brown Wizard and the Bears",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Radagast of Rhosgobel",
+       "set": "hob",
+       "number": "136",
+       "id": "5741bbad-a6e4-45e0-b827-73f48c9975bf"
+      },
+      {
+       "qty": 2,
+       "name": "Beorn, Reluctant Host // Till and Tend",
+       "set": "hob",
+       "number": "118",
+       "id": "804589b7-3ef9-473d-97cc-c61a2d41f70d"
+      },
+      {
+       "qty": 1,
+       "name": "Gigantic Big Bear",
+       "set": "hob",
+       "number": "126",
+       "id": "7d6ece3d-8e7a-41ad-974f-3c9748de4825"
+      },
+      {
+       "qty": 1,
+       "name": "Old Fat Spider",
+       "set": "hob",
+       "number": "132",
+       "id": "e0c0f842-40fe-4776-a988-a35216bcfd47"
+      },
+      {
+       "qty": 2,
+       "name": "Warg Tactics",
+       "set": "hob",
+       "number": "139",
+       "id": "b06d9cee-bb0f-4fe7-ab2a-b55d36461aec"
+      },
+      {
+       "qty": 4,
+       "name": "Wood Elves",
+       "set": "hob",
+       "number": "142",
+       "id": "2476e42b-b209-4207-8ed9-cb668f89b218"
+      },
+      {
+       "qty": 4,
+       "name": "Mirkwood Pathmaker",
+       "set": "hob",
+       "number": "129",
+       "id": "50fbedc0-bc66-4ffb-87f6-a2df69995091"
+      },
+      {
+       "qty": 4,
+       "name": "Woodland Weavemaster",
+       "set": "hob",
+       "number": "143",
+       "id": "fe2b4bcf-56de-44d3-83af-aeb27f82c25e"
+      },
+      {
+       "qty": 4,
+       "name": "Troop of Ponies",
+       "set": "hob",
+       "number": "3",
+       "id": "0b4b1c59-bcec-4779-9e27-0e6f9feb4e11"
+      },
+      {
+       "qty": 4,
+       "name": "Little Bear",
+       "set": "hob",
+       "number": "128",
+       "id": "8a50858a-33b5-4c45-9c31-5956ae5a33a6"
+      },
+      {
+       "qty": 4,
+       "name": "Wargling",
+       "set": "hob",
+       "number": "140",
+       "id": "1ccbf823-846f-4f09-9c67-1deebb5d1d92"
+      },
+      {
+       "qty": 4,
+       "name": "Long-Bodied Grey Dog",
+       "set": "hob",
+       "number": "1",
+       "id": "d1a1e520-1fe2-4529-8afb-c187bb80da3c"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "hob",
+       "number": "193",
+       "id": "c3e84b42-5423-4d4d-b8fc-cfbb2c53a4ca"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "dwarves",
+    "deck": {
+     "name": "The Dwarves of Erebor",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Thorin, Mountain-king",
+       "set": "hob",
+       "number": "114",
+       "id": "117347af-0dd7-4350-901d-8c8a81387e22"
+      },
+      {
+       "qty": 3,
+       "name": "Glóin the Mighty // Easy Pickings",
+       "set": "hob",
+       "number": "99",
+       "id": "5793b8eb-2fc5-454d-8fa2-20346fef167a"
+      },
+      {
+       "qty": 3,
+       "name": "Dáin Ironfoot",
+       "set": "hob",
+       "number": "91",
+       "id": "7112e460-9160-4535-ad94-93f1f4ac04cf"
+      },
+      {
+       "qty": 3,
+       "name": "Balin, Loremaster",
+       "set": "hob",
+       "number": "87",
+       "id": "42d7ca7b-c983-40fd-ad57-59f6972bb375"
+      },
+      {
+       "qty": 2,
+       "name": "Bombur, Gentle Dreamer",
+       "set": "hob",
+       "number": "88",
+       "id": "63c317e7-432c-4817-8db4-3670a1d84be3"
+      },
+      {
+       "qty": 3,
+       "name": "Pinecone Strike",
+       "set": "hob",
+       "number": "107",
+       "id": "ea174cea-40e5-424e-9734-e39aae6c6b17"
+      },
+      {
+       "qty": 2,
+       "name": "Ragged Short Spear",
+       "set": "hob",
+       "number": "108",
+       "id": "7bf81a8b-52ad-49f5-a3d4-22613cad3a3d"
+      },
+      {
+       "qty": 4,
+       "name": "Old Thrush",
+       "set": "hob",
+       "number": "2",
+       "id": "3ad02b56-13ec-46ef-92bd-ae078b8bb517"
+      },
+      {
+       "qty": 4,
+       "name": "Long-Bodied Grey Dog",
+       "set": "hob",
+       "number": "1",
+       "id": "d1a1e520-1fe2-4529-8afb-c187bb80da3c"
+      },
+      {
+       "qty": 4,
+       "name": "Bothersome Noisemaker",
+       "set": "hob",
+       "number": "89",
+       "id": "cb25b11a-6bf5-4a9a-b60f-d4dcac3816d6"
+      },
+      {
+       "qty": 4,
+       "name": "Snowslope Hunter",
+       "set": "hob",
+       "number": "112",
+       "id": "47666099-ffb2-4d07-a801-70524dba0837"
+      },
+      {
+       "qty": 1,
+       "name": "Troop of Ponies",
+       "set": "hob",
+       "number": "3",
+       "id": "0b4b1c59-bcec-4779-9e27-0e6f9feb4e11"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "hob",
+       "number": "192",
+       "id": "c49d378e-9549-4320-b3c6-1aeb216d1e98"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "9924c189-3c82-431a-b570-7805b2a406f0",
+      "name": "Dáin Ironfoot",
+      "rarity": "rare",
+      "set": "hob",
+      "id": "7112e460-9160-4535-ad94-93f1f4ac04cf",
+      "image": "https://cards.scryfall.io/normal/front/7/1/7112e460-9160-4535-ad94-93f1f4ac04cf.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "radagast",
+     "line": "Merry be the greenwood, while the world is yet young! And merry be all your folk!",
+     "quote": true
+    },
+    {
+     "who": "radagast",
+     "line": "Dwarves hit hard and early. Bigger creatures with trample win the long game."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "dwarves",
+     "line": "Dáin heard Thorin's urgent plea and ordered his smiths to fetch their strongest axes and mattocks.",
+     "quote": true
+    },
+    {
+     "who": "dwarves",
+     "line": "The Iron Hills march: every Dwarf has a score and an axe."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Peace, friends.",
+     "big": "The Brown Wizard!",
+     "low": "The Dwarves are too fast...",
+     "win": "Peace.",
+     "loss": "Overrun...",
+     "half": "Land your big creatures before the Dwarves swarm."
+    },
+    "villain": {
+     "start": "Dáin, Dáin!",
+     "big": "Axes!",
+     "low": "Shields up...",
+     "win": "Erebor.",
+     "loss": "Retreat..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a43b7",
+   "slot": 7,
+   "kind": "Rival",
+   "mood": "rival",
+   "title": "The Elvenking",
+   "difficulty": "Hard",
+   "teaches": [
+    "Playing around counterspells"
+   ],
+   "blurb": "The Wood-Elves are not wicked folk. They do not like to be asked questions in their halls.",
+   "rewardSet": "hob",
+   "host": false,
+   "hero": {
+    "who": "dwarves",
+    "deck": {
+     "name": "The Dwarves of the Lonely Mountain",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Dwalin, Weaponmaster",
+       "set": "hob",
+       "number": "154",
+       "id": "196d9287-a37d-4b27-a83b-a5489a54f081"
+      },
+      {
+       "qty": 3,
+       "name": "Thorin Oakenshield",
+       "set": "hob",
+       "number": "165",
+       "id": "c7e18609-d1ed-4829-be11-f2ce2cfcbc49"
+      },
+      {
+       "qty": 3,
+       "name": "Bifur, Melodic Rider",
+       "set": "hob",
+       "number": "147",
+       "id": "ee88cc80-8fbf-451c-b2b8-09158426c26a"
+      },
+      {
+       "qty": 3,
+       "name": "Dáin's Company",
+       "set": "hob",
+       "number": "152",
+       "id": "36db4405-8589-481f-b627-f26087488337"
+      },
+      {
+       "qty": 3,
+       "name": "Thorin's Last Stand",
+       "set": "hob",
+       "number": "28",
+       "id": "127367b6-9cfe-4516-9bfd-5b951468a25c"
+      },
+      {
+       "qty": 2,
+       "name": "Stone by Sunlight",
+       "set": "hob",
+       "number": "27",
+       "id": "c5752731-253c-4b41-bdd8-94c26d715206"
+      },
+      {
+       "qty": 2,
+       "name": "Orcrist, Goblin-cleaver",
+       "set": "hob",
+       "number": "177",
+       "id": "f54f1c1d-6a22-43e9-a842-0a1ae25b323c"
+      },
+      {
+       "qty": 4,
+       "name": "Long-Bodied Grey Dog",
+       "set": "hob",
+       "number": "1",
+       "id": "d1a1e520-1fe2-4529-8afb-c187bb80da3c"
+      },
+      {
+       "qty": 4,
+       "name": "Iron Hills Blacksmith",
+       "set": "hob",
+       "number": "16",
+       "id": "370e09c2-36c5-4662-8350-1db798afad3e"
+      },
+      {
+       "qty": 4,
+       "name": "Old Thrush",
+       "set": "hob",
+       "number": "2",
+       "id": "3ad02b56-13ec-46ef-92bd-ae078b8bb517"
+      },
+      {
+       "qty": 4,
+       "name": "Dwarven Provisioner",
+       "set": "hob",
+       "number": "9",
+       "id": "1f9a61a1-454e-4d5b-a6dd-1a79fe9dedf3"
+      },
+      {
+       "qty": 1,
+       "name": "Snowslope Hunter",
+       "set": "hob",
+       "number": "112",
+       "id": "47666099-ffb2-4d07-a801-70524dba0837"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "hob",
+       "number": "192",
+       "id": "c49d378e-9549-4320-b3c6-1aeb216d1e98"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "hob",
+       "number": "189",
+       "id": "7b7c408b-8660-4db5-9a16-5003c11b4ac1"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "thranduil",
+    "deck": {
+     "name": "The Elvenking's Halls",
+     "colors": "GU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Thranduil's Company",
+       "set": "hob",
+       "number": "168",
+       "id": "abdb9d4e-e6ca-409b-b589-0cf71724340b"
+      },
+      {
+       "qty": 3,
+       "name": "Thranduil, Sindarin Liege // Silvan Rally",
+       "set": "hob",
+       "number": "166",
+       "id": "481870ee-d1f7-421b-86e1-570ea933bbbc"
+      },
+      {
+       "qty": 3,
+       "name": "Mirkwood Nurturer",
+       "set": "hob",
+       "number": "160",
+       "id": "704b45e4-566e-40f6-a33a-9151018b44e5"
+      },
+      {
+       "qty": 3,
+       "name": "Silvan Reveler",
+       "set": "hob",
+       "number": "163",
+       "id": "c71b74fb-fb0c-4953-b536-7a3f283c6918"
+      },
+      {
+       "qty": 3,
+       "name": "Thranduil's Decree",
+       "set": "hob",
+       "number": "56",
+       "id": "e4ded4c1-0e3e-47c5-8fdc-e7c187f68b12"
+      },
+      {
+       "qty": 3,
+       "name": "Confusticate and Bebother",
+       "set": "hob",
+       "number": "35",
+       "id": "9de48690-e5ae-495a-addf-305f1db7ec21"
+      },
+      {
+       "qty": 2,
+       "name": "Sound the Trumpets",
+       "set": "hob",
+       "number": "55",
+       "id": "dd32a1dd-3541-4572-a717-1deabc14b827"
+      },
+      {
+       "qty": 4,
+       "name": "Bejeweled Warg",
+       "set": "hob",
+       "number": "117",
+       "id": "e95eba5c-e0d6-46b4-a0be-8e373b2185ea"
+      },
+      {
+       "qty": 4,
+       "name": "Guardian of the Halls",
+       "set": "hob",
+       "number": "127",
+       "id": "4265caec-8c28-44cd-8e6b-90b5af926d3c"
+      },
+      {
+       "qty": 4,
+       "name": "Old Thrush",
+       "set": "hob",
+       "number": "2",
+       "id": "3ad02b56-13ec-46ef-92bd-ae078b8bb517"
+      },
+      {
+       "qty": 4,
+       "name": "Attercop",
+       "set": "hob",
+       "number": "116",
+       "id": "81263d5d-e402-4813-9458-161112da27ab"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "hob",
+       "number": "193",
+       "id": "c3e84b42-5423-4d4d-b8fc-cfbb2c53a4ca"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "hob",
+       "number": "190",
+       "id": "c6aa89a8-3584-4906-b9a9-41ef2f021f8e"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "2c195485-83f9-424f-854a-50c4f5b04182",
+      "name": "Thranduil's Company",
+      "rarity": "rare",
+      "set": "hob",
+      "id": "abdb9d4e-e6ca-409b-b589-0cf71724340b",
+      "image": "https://cards.scryfall.io/normal/front/a/b/abdb9d4e-e6ca-409b-b589-0cf71724340b.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "dwarves",
+     "line": "We shall soon, before the break of day, start on our long journey",
+     "quote": true
+    },
+    {
+     "who": "dwarves",
+     "line": "The Elvenking counters your best spell. Bait it with a lesser one first."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "thranduil",
+     "line": "I have a right to know what brings you here, and if you will not tell me now, I will keep you all in prison until you have learned sense and manners!",
+     "quote": true
+    },
+    {
+     "who": "thranduil",
+     "line": "The halls are old, quiet and very patient."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Quietly now.",
+     "big": "Break free!",
+     "low": "The halls are sealed...",
+     "win": "Out through the barrels.",
+     "loss": "Prison...",
+     "half": "Bait the counterspell with a lesser spell."
+    },
+    "villain": {
+     "start": "Silence.",
+     "big": "Seize them!",
+     "low": "Impossible...",
+     "win": "Learn manners.",
+     "loss": "Gone..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a43b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Smaug the Magnificent",
+   "difficulty": "Hard",
+   "teaches": [
+    "Reach"
+   ],
+   "blurb": "The last of the great Dragons sleeps on a bed of gold and listens for burglars.",
+   "rewardSet": "hob",
+   "host": true,
+   "hero": {
+    "who": "bard",
+    "deck": {
+     "name": "Bard and the Black Arrow",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Bard, King of Dale",
+       "set": "hob",
+       "number": "144",
+       "id": "c05c2aa6-29c7-40f8-872e-91099b9225c4"
+      },
+      {
+       "qty": 3,
+       "name": "Bard the Bowman",
+       "set": "hob",
+       "number": "145",
+       "id": "0b84e232-428c-424a-848c-ef95debc6e50"
+      },
+      {
+       "qty": 3,
+       "name": "Bard's Company",
+       "set": "hob",
+       "number": "146",
+       "id": "d14aa2ff-7bbd-47a6-8e36-481e56302a62"
+      },
+      {
+       "qty": 2,
+       "name": "The Lord of the Eagles",
+       "set": "hob",
+       "number": "46",
+       "id": "fa0554fc-9448-4ae2-8712-4f4f7af3c7b4"
+      },
+      {
+       "qty": 3,
+       "name": "The Black Arrow",
+       "set": "hob",
+       "number": "171",
+       "id": "ab181190-d53d-4972-8cd5-8e54b45f2276"
+      },
+      {
+       "qty": 3,
+       "name": "Eagle's Rescue",
+       "set": "hob",
+       "number": "155",
+       "id": "12c8f2cc-ac9d-4cf6-9025-efe366b4e07f"
+      },
+      {
+       "qty": 2,
+       "name": "Settle the Wreckage",
+       "set": "hob",
+       "number": "26",
+       "id": "31a7a5e2-4cb8-48fc-8351-18344b4a7560"
+      },
+      {
+       "qty": 2,
+       "name": "Magnificent End",
+       "set": "hob",
+       "number": "20",
+       "id": "430c8916-1167-400b-9cad-d301f59d5e5d"
+      },
+      {
+       "qty": 4,
+       "name": "Patient Instructor",
+       "set": "hob",
+       "number": "162",
+       "id": "e4800508-8bb9-41bb-8712-b55fba7a80a5"
+      },
+      {
+       "qty": 4,
+       "name": "Long-Bodied Grey Dog",
+       "set": "hob",
+       "number": "1",
+       "id": "d1a1e520-1fe2-4529-8afb-c187bb80da3c"
+      },
+      {
+       "qty": 4,
+       "name": "Dwarven Provisioner",
+       "set": "hob",
+       "number": "9",
+       "id": "1f9a61a1-454e-4d5b-a6dd-1a79fe9dedf3"
+      },
+      {
+       "qty": 3,
+       "name": "Old Thrush",
+       "set": "hob",
+       "number": "2",
+       "id": "3ad02b56-13ec-46ef-92bd-ae078b8bb517"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "hob",
+       "number": "189",
+       "id": "7b7c408b-8660-4db5-9a16-5003c11b4ac1"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "hob",
+       "number": "190",
+       "id": "c6aa89a8-3584-4906-b9a9-41ef2f021f8e"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "smaug",
+    "deck": {
+     "name": "Smaug the Magnificent",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Smaug, Wicked Worm",
+       "set": "hob",
+       "number": "164",
+       "id": "19cc91f0-e724-41ac-b6d8-9a293bd63b42"
+      },
+      {
+       "qty": 3,
+       "name": "Smaug the Magnificent",
+       "set": "hob",
+       "number": "110",
+       "id": "6a5d8fad-2ffd-4645-8c49-907999b6cecf"
+      },
+      {
+       "qty": 3,
+       "name": "Smaug, the Great Calamity // Spew Flame",
+       "set": "hob",
+       "number": "109",
+       "id": "419ca9e5-8413-4378-a4ef-eda5a1024218"
+      },
+      {
+       "qty": 3,
+       "name": "Gundabad Opportunist",
+       "set": "hob",
+       "number": "101",
+       "id": "bc4a60b8-a5bb-4dbf-8d48-95caf757eac3"
+      },
+      {
+       "qty": 3,
+       "name": "Desolation of Smaug",
+       "set": "hob",
+       "number": "93",
+       "id": "2462358b-52c8-49b2-8d97-d65a9188f8f7"
+      },
+      {
+       "qty": 3,
+       "name": "Smaug's Fury",
+       "set": "hob",
+       "number": "111",
+       "id": "a16f203a-785e-4c78-9410-fb9f8a0ffa01"
+      },
+      {
+       "qty": 2,
+       "name": "Gnashing of Teeth",
+       "set": "hob",
+       "number": "69",
+       "id": "5d485d70-c7b9-40a4-9089-5e7f1c2b9213"
+      },
+      {
+       "qty": 4,
+       "name": "Ravening Warg",
+       "set": "hob",
+       "number": "80",
+       "id": "ea7b5052-b343-466d-879e-2a211657ef0a"
+      },
+      {
+       "qty": 4,
+       "name": "Nighthowl Pursuer",
+       "set": "hob",
+       "number": "78",
+       "id": "d3cbe830-7e95-4019-89c4-cfb36bcf00f8"
+      },
+      {
+       "qty": 4,
+       "name": "Old Thrush",
+       "set": "hob",
+       "number": "2",
+       "id": "3ad02b56-13ec-46ef-92bd-ae078b8bb517"
+      },
+      {
+       "qty": 4,
+       "name": "Great Fierce Bee",
+       "set": "hob",
+       "number": "73",
+       "id": "9d9ef88f-d208-4788-9553-cd672b3be1fe"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "hob",
+       "number": "191",
+       "id": "4031e5e4-e573-4130-8d20-4a606edef0a0"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "hob",
+       "number": "192",
+       "id": "c49d378e-9549-4320-b3c6-1aeb216d1e98"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "c53b7602-5e36-4900-896c-844bf6eac22e",
+      "name": "Smaug the Magnificent",
+      "rarity": "mythic",
+      "set": "hob",
+      "id": "6a5d8fad-2ffd-4645-8c49-907999b6cecf",
+      "image": "https://cards.scryfall.io/normal/front/6/a/6a5d8fad-2ffd-4645-8c49-907999b6cecf.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "bard",
+     "line": "No one had dared to face the Dragon for many an age; nor would they have dared now, if it hadn't been for the grim-voiced Bard urging them on.",
+     "quote": true
+    },
+    {
+     "who": "bard",
+     "line": "Smaug is a flyer and burns the board. Keep your best arrow in hand for the right moment."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "smaug",
+     "line": "My armor is like tenfold shields, my teeth are swords, my wings a hurricane, and my breath death!",
+     "quote": true
+    },
+    {
+     "who": "smaug",
+     "line": "You think you will get a fair share? If you get off alive, you will be lucky.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Hold your arrow.",
+     "big": "The black arrow!",
+     "low": "The Dragon is too strong...",
+     "win": "He falls.",
+     "loss": "Esgaroth burns...",
+     "half": "Keep your answer for the Dragon himself."
+    },
+    "villain": {
+     "start": "I am fire.",
+     "big": "Death!",
+     "low": "Impossible...",
+     "win": "Gold.",
+     "loss": "The arrow..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a43b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "The Battle of Five Armies",
+   "difficulty": "Hard",
+   "teaches": [
+    "Amass"
+   ],
+   "blurb": "The Dragon is dead, but the Goblins have been waiting. Bolg of the North is coming.",
+   "rewardSet": "hob",
+   "host": true,
+   "archive": {
+    "deck": "The Goblin Host of Bolg",
+    "when": "Summer 2026",
+    "format": "Story archive, no tournament list.",
+    "what": "A black-red deck of the set's goblin captains and Armies, with Gathering of Darkness at the top.",
+    "why": "It stands for the battle after the Dragon and is not a list anyone won with.",
+    "beat": "Trade early, keep the Army small, and kill Bolg before the horde grows.",
+    "after": "Nothing; this is the optional superboss at the end of the story."
+   },
+   "hero": {
+    "who": "armies",
+    "deck": {
+     "name": "The Dwarves and Men",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Dáin, Lord of the Iron Hills",
+       "set": "hob",
+       "number": "8",
+       "id": "99d27749-d16c-45e9-accc-6a01351c17f9"
+      },
+      {
+       "qty": 3,
+       "name": "Dáin Ironfoot",
+       "set": "hob",
+       "number": "91",
+       "id": "7112e460-9160-4535-ad94-93f1f4ac04cf"
+      },
+      {
+       "qty": 3,
+       "name": "Dwalin, Weaponmaster",
+       "set": "hob",
+       "number": "154",
+       "id": "196d9287-a37d-4b27-a83b-a5489a54f081"
+      },
+      {
+       "qty": 3,
+       "name": "Nori, Teller of Tales",
+       "set": "hob",
+       "number": "161",
+       "id": "b05adb48-980c-49a0-9ce6-7c7f3f20715d"
+      },
+      {
+       "qty": 1,
+       "name": "Stone-Giant of High Pass",
+       "set": "hob",
+       "number": "113",
+       "id": "5f4f4683-ffd2-447a-932b-276f7fa17cca"
+      },
+      {
+       "qty": 3,
+       "name": "Thorin's Last Stand",
+       "set": "hob",
+       "number": "28",
+       "id": "127367b6-9cfe-4516-9bfd-5b951468a25c"
+      },
+      {
+       "qty": 2,
+       "name": "Orcrist, Goblin-cleaver",
+       "set": "hob",
+       "number": "177",
+       "id": "f54f1c1d-6a22-43e9-a842-0a1ae25b323c"
+      },
+      {
+       "qty": 4,
+       "name": "Old Thrush",
+       "set": "hob",
+       "number": "2",
+       "id": "3ad02b56-13ec-46ef-92bd-ae078b8bb517"
+      },
+      {
+       "qty": 4,
+       "name": "Long-Bodied Grey Dog",
+       "set": "hob",
+       "number": "1",
+       "id": "d1a1e520-1fe2-4529-8afb-c187bb80da3c"
+      },
+      {
+       "qty": 4,
+       "name": "Iron Hills Blacksmith",
+       "set": "hob",
+       "number": "16",
+       "id": "370e09c2-36c5-4662-8350-1db798afad3e"
+      },
+      {
+       "qty": 4,
+       "name": "Bothersome Noisemaker",
+       "set": "hob",
+       "number": "89",
+       "id": "cb25b11a-6bf5-4a9a-b60f-d4dcac3816d6"
+      },
+      {
+       "qty": 2,
+       "name": "Dáin's Company",
+       "set": "hob",
+       "number": "152",
+       "id": "36db4405-8589-481f-b627-f26087488337"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "hob",
+       "number": "192",
+       "id": "c49d378e-9549-4320-b3c6-1aeb216d1e98"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "hob",
+       "number": "189",
+       "id": "7b7c408b-8660-4db5-9a16-5003c11b4ac1"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "bolg",
+    "deck": {
+     "name": "The Goblin Host of Bolg",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "note": "Built from cards in this act's set only. No tournament list is copied.",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Bolg of the North",
+       "set": "hob",
+       "number": "148",
+       "id": "7b2d2a7f-88e0-45a9-8579-a6736bcd66eb"
+      },
+      {
+       "qty": 3,
+       "name": "Azog, Moria's Ruin",
+       "set": "hob",
+       "number": "61",
+       "id": "135da718-affc-46ba-be57-c12c23b54dad"
+      },
+      {
+       "qty": 3,
+       "name": "Bolg's Company",
+       "set": "hob",
+       "number": "149",
+       "id": "ea3f5644-f7e3-40de-ada5-cea2e9113cfb"
+      },
+      {
+       "qty": 3,
+       "name": "Great Ugly-Looking Goblin // Clap! Snap!",
+       "set": "hob",
+       "number": "74",
+       "id": "c87f6004-e1cf-42b2-9647-322bc4939339"
+      },
+      {
+       "qty": 3,
+       "name": "Gathering of Darkness",
+       "set": "hob",
+       "number": "68",
+       "id": "2ce066be-e5ad-4b93-8245-1b5018990d03"
+      },
+      {
+       "qty": 4,
+       "name": "Rage into the Valley",
+       "set": "hob",
+       "number": "79",
+       "id": "8651958c-3b94-47a9-a751-faf8f6236a42"
+      },
+      {
+       "qty": 3,
+       "name": "Goblin Plate Mail",
+       "set": "hob",
+       "number": "157",
+       "id": "cb982607-da37-4894-91a5-cf6307d4d703"
+      },
+      {
+       "qty": 2,
+       "name": "Crude Bent Blade",
+       "set": "hob",
+       "number": "63",
+       "id": "fa8fd3c4-bd00-485d-80b1-2b67f5786fce"
+      },
+      {
+       "qty": 4,
+       "name": "Ravening Warg",
+       "set": "hob",
+       "number": "80",
+       "id": "ea7b5052-b343-466d-879e-2a211657ef0a"
+      },
+      {
+       "qty": 4,
+       "name": "Old Thrush",
+       "set": "hob",
+       "number": "2",
+       "id": "3ad02b56-13ec-46ef-92bd-ae078b8bb517"
+      },
+      {
+       "qty": 4,
+       "name": "Great Fierce Bee",
+       "set": "hob",
+       "number": "73",
+       "id": "9d9ef88f-d208-4788-9553-cd672b3be1fe"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "hob",
+       "number": "191",
+       "id": "4031e5e4-e573-4130-8d20-4a606edef0a0"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "hob",
+       "number": "192",
+       "id": "c49d378e-9549-4320-b3c6-1aeb216d1e98"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "85e1556d-c4da-4979-a5db-4ce3842c7797",
+      "name": "Gathering of Darkness",
+      "rarity": "uncommon",
+      "set": "hob",
+      "id": "2ce066be-e5ad-4b93-8245-1b5018990d03",
+      "image": "https://cards.scryfall.io/normal/front/2/c/2ce066be-e5ad-4b93-8245-1b5018990d03.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "armies",
+     "line": "Alas! Bolg of the North is coming!",
+     "quote": true
+    },
+    {
+     "who": "armies",
+     "line": "Race the Army before it grows. Kill Bolg and the horde breaks."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "bolg",
+     "line": "Goblins and wolves returned to the assault and soon forced their foes into a great ring, hemmed on all sides.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: the Eagles arrive, and the Mountain holds. The Omenpath closes."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Stand fast.",
+     "big": "For Erebor!",
+     "low": "The horde is too big...",
+     "win": "The Eagles are coming.",
+     "loss": "Overrun...",
+     "half": "Kill the Army token before it grows."
+    },
+    "villain": {
+     "start": "Crush them.",
+     "big": "The horde!",
+     "low": "Bolg...",
+     "win": "Victory.",
+     "loss": "No..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

@@ -1,0 +1,2751 @@
+{
+ "act": 44,
+ "era": "2026-10-02",
+ "title": "The Echoverse",
+ "years": "2026",
+ "sets": [
+  "ecl",
+  "sos",
+  "fra"
+ ],
+ "landSet": "ecl",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Lorwyn and Shadowmoor have blurred into one eclipsed plane, and a first-year student is lost on it with a campus map."
+  },
+  {
+   "who": "stage",
+   "line": "Past the eclipse lies a university, and past the university a mind that wants to end all suffering by ending the Multiverse as it is."
+  },
+  {
+   "who": "stage",
+   "line": "Recorded: the Echoverse is the newest road. It is still being written."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Tam reaches for something older than the multiverses and asks it to undo what was done."
+  },
+  {
+   "who": "tam",
+   "line": "What are the odds? And what would you like them to be?",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Emrakul, the Exigent Doom answers, and the two multiverses come apart as quietly as they joined."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "In this version the Theorist finishes his proof. Every part of him that objected is gone, and the Multiverse is one revision."
+  },
+  {
+   "who": "theorist",
+   "line": "The Multiverse is a work in progress. There will need to be revisions.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "He thinks he is saving everyone."
+  }
+ ],
+ "vibe": "echoverse",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Evolving Wilds",
+    "set": "ecl",
+    "number": "264",
+    "id": "8c632984-5176-4c37-91df-6577cc294b85",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/c/8c632984-5176-4c37-91df-6577cc294b85.jpg?1783904395",
+    "artist": "Alayna Danner",
+    "focus": "50% 30%"
+   }
+  },
+  "eirdu": {
+   "name": "Eirdu",
+   "title": "Carrier of Dawn",
+   "portrait": {
+    "card": "Eirdu, Carrier of Dawn // Isilu, Carrier of Twilight",
+    "set": "ecl",
+    "number": "13",
+    "id": "b2d9d5ca-7e15-437a-bdfc-5972b42148fe",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/2/b2d9d5ca-7e15-437a-bdfc-5972b42148fe.jpg?1783904521",
+    "artist": "Lucas Graciano",
+    "focus": "50% 25%"
+   }
+  },
+  "shadow": {
+   "name": "The Shadowmoor Gloom",
+   "title": "Eclipsed",
+   "portrait": {
+    "card": "Gloom Ripper",
+    "set": "ecl",
+    "number": "102",
+    "id": "e9ee5d4f-05d1-4e3a-b8d6-f22d0fddedf7",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/9/e9ee5d4f-05d1-4e3a-b8d6-f22d0fddedf7.jpg?1783904462",
+    "artist": "Annie Stegg",
+    "focus": "50% 25%"
+   }
+  },
+  "grove": {
+   "name": "The Wild Kin",
+   "title": "Of the Creakwood",
+   "portrait": {
+    "card": "Bristlebane Battler",
+    "set": "ecl",
+    "number": "168",
+    "id": "c857fa32-1b5d-4139-8809-b4d0df44b472",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/8/c857fa32-1b5d-4139-8809-b4d0df44b472.jpg?1783904434",
+    "artist": "Steve Ellis",
+    "focus": "50% 25%"
+   }
+  },
+  "maralen": {
+   "name": "Maralen",
+   "title": "Fae Ascendant",
+   "portrait": {
+    "card": "Maralen, Fae Ascendant",
+    "set": "ecl",
+    "number": "233",
+    "id": "c50f5408-5b5c-41dc-807e-136233403a09",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/5/c50f5408-5b5c-41dc-807e-136233403a09.jpg?1783904406",
+    "artist": "Steve Prescott",
+    "focus": "50% 25%"
+   }
+  },
+  "ember": {
+   "name": "The Ember Kin",
+   "title": "Of Lorwyn",
+   "portrait": {
+    "card": "Goliath Daydreamer",
+    "set": "ecl",
+    "number": "143",
+    "id": "88e8cd13-2a29-4df6-937c-1bed68fbeafa",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/8/88e8cd13-2a29-4df6-937c-1bed68fbeafa.jpg?1783904444",
+    "artist": "Omar Rayyan",
+    "focus": "50% 25%"
+   }
+  },
+  "oko": {
+   "name": "Oko",
+   "title": "Lorwyn Liege",
+   "portrait": {
+    "card": "Oko, Lorwyn Liege // Oko, Shadowmoor Scion",
+    "set": "ecl",
+    "number": "61",
+    "id": "1dab370a-1067-4d94-be1f-10362d4abf5a",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/d/1dab370a-1067-4d94-be1f-10362d4abf5a.jpg?1783904490",
+    "artist": "Kai Carpenter",
+    "focus": "50% 25%"
+   }
+  },
+  "tam": {
+   "name": "Tam",
+   "title": "Mindful First-Year",
+   "portrait": {
+    "card": "Tam, Mindful First-Year",
+    "set": "ecl",
+    "number": "245",
+    "id": "6cb0f825-b75b-4f2a-803c-08142ca07e76",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/c/6cb0f825-b75b-4f2a-803c-08142ca07e76.jpg?1783904402",
+    "artist": "Zoltan Boros",
+    "focus": "50% 25%"
+   }
+  },
+  "rival": {
+   "name": "The Rival Students",
+   "title": "Prismari Pranksters",
+   "portrait": {
+    "card": "Champion of the Path",
+    "set": "ecl",
+    "number": "130",
+    "id": "e369cd31-3e22-47eb-bf6a-00d823651710",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/3/e369cd31-3e22-47eb-bf6a-00d823651710.jpg?1783904447",
+    "artist": "Tyler Walpole",
+    "focus": "50% 25%"
+   }
+  },
+  "prism": {
+   "name": "The Second-Years",
+   "title": "Spellslingers",
+   "portrait": {
+    "card": "Sanar, Innovative First-Year",
+    "set": "ecl",
+    "number": "241",
+    "id": "11215561-bbcd-4564-a2e4-a1d77d177a1d",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/1/11215561-bbcd-4564-a2e4-a1d77d177a1d.jpg?1783904403",
+    "artist": "Steven Belledin",
+    "focus": "50% 25%"
+   }
+  },
+  "archaic": {
+   "name": "The Archaics",
+   "title": "Of Arcavios",
+   "portrait": {
+    "card": "The Dawning Archaic",
+    "set": "sos",
+    "number": "1",
+    "id": "7a451985-37e1-44d8-839b-dc1e88df5c96",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/a/7a451985-37e1-44d8-839b-dc1e88df5c96.jpg?1783903709",
+    "artist": "Josu Solano",
+    "focus": "50% 25%"
+   }
+  },
+  "lorehold": {
+   "name": "The Lorehold Seniors",
+   "title": "Keepers of History",
+   "portrait": {
+    "card": "Lorehold, the Historian",
+    "set": "sos",
+    "number": "201",
+    "id": "71a6701f-40f1-43ef-bff5-a5907fd67cd6",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/1/71a6701f-40f1-43ef-bff5-a5907fd67cd6.jpg?1783903640",
+    "artist": "Joshua Raphael",
+    "focus": "50% 25%"
+   }
+  },
+  "witherbloom": {
+   "name": "Witherbloom",
+   "title": "The Balancer",
+   "portrait": {
+    "card": "Witherbloom, the Balancer",
+    "set": "sos",
+    "number": "245",
+    "id": "ed7b2361-97c6-49e2-bf0b-4770f4ffe2f0",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/d/ed7b2361-97c6-49e2-bf0b-4770f4ffe2f0.jpg?1783903624",
+    "artist": "Chris Rahn",
+    "focus": "50% 25%"
+   }
+  },
+  "chandra": {
+   "name": "The Rebels",
+   "title": "Against the Theorist",
+   "portrait": {
+    "card": "Vibrance",
+    "set": "ecl",
+    "number": "249",
+    "id": "b9f71c3b-0840-475f-9c17-fdacbc7f3213",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/9/b9f71c3b-0840-475f-9c17-fdacbc7f3213.jpg?1783904400",
+    "artist": "Jakub Kasper",
+    "focus": "50% 25%"
+   }
+  },
+  "uldaros": {
+   "name": "Uldaros Theorix",
+   "title": "Lieutenant",
+   "portrait": {
+    "card": "Uldaros Theorix",
+    "set": "fra",
+    "number": "159",
+    "id": "a7ad622a-42ff-48fa-ae95-12e0a5bd9387",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/7/a7ad622a-42ff-48fa-ae95-12e0a5bd9387.jpg?1788878220",
+    "artist": "Alexander Mokhov",
+    "focus": "50% 25%"
+   }
+  },
+  "allies": {
+   "name": "The Allies",
+   "title": "Of the Echoverse",
+   "portrait": {
+    "card": "Kwia Vigorbloom",
+    "set": "fra",
+    "number": "140",
+    "id": "2d6ff182-a853-4898-895b-072c89324ca7",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/d/2d6ff182-a853-4898-895b-072c89324ca7.jpg?1788878236",
+    "artist": "Ryan Pancoast",
+    "focus": "50% 25%"
+   }
+  },
+  "theorist": {
+   "name": "The Theorist",
+   "title": "Jace Beleren",
+   "portrait": {
+    "card": "The Theorist, Jace Beleren",
+    "set": "fra",
+    "number": "43",
+    "id": "20bb8c55-4b0b-425f-8201-b54fa2fdde86",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/0/20bb8c55-4b0b-425f-8201-b54fa2fdde86.jpg?1788329228",
+    "artist": "Ekaterina Burmak",
+    "focus": "50% 25%"
+   }
+  },
+  "emrakul": {
+   "name": "Emrakul",
+   "title": "The Exigent Doom",
+   "portrait": {
+    "card": "Emrakul, the Exigent Doom",
+    "set": "fra",
+    "number": "1",
+    "id": "c3ff8dd3-88a8-49dc-a59b-e2748680623c",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/3/c3ff8dd3-88a8-49dc-a59b-e2748680623c.jpg?1790829846",
+    "artist": "Cristi Balanescu",
+    "focus": "50% 25%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a44b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "The Eclipse",
+   "difficulty": "Easy",
+   "teaches": [
+    "Blight"
+   ],
+   "blurb": "Lorwyn and Shadowmoor blur together, and the sun people have opinions about it.",
+   "rewardSet": "ecl",
+   "host": false,
+   "hero": {
+    "who": "eirdu",
+    "deck": {
+     "name": "The Children of the Sun",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Eirdu, Carrier of Dawn // Isilu, Carrier of Twilight",
+       "set": "ecl",
+       "number": "13",
+       "id": "b2d9d5ca-7e15-437a-bdfc-5972b42148fe"
+      },
+      {
+       "qty": 3,
+       "name": "Rhys, the Evermore",
+       "set": "ecl",
+       "number": "32",
+       "id": "a7072412-4aa2-40ef-a267-bd717551a42b"
+      },
+      {
+       "qty": 3,
+       "name": "Kinscaer Sentry",
+       "set": "ecl",
+       "number": "22",
+       "id": "333bf101-14e8-4753-99bc-9174f42c4122"
+      },
+      {
+       "qty": 3,
+       "name": "Adept Watershaper",
+       "set": "ecl",
+       "number": "3",
+       "id": "6e53f246-8347-4632-9d5b-4aeb12f7b762"
+      },
+      {
+       "qty": 2,
+       "name": "Champion of the Clachan",
+       "set": "ecl",
+       "number": "9",
+       "id": "46ce3474-381c-433b-acd8-4e628d0048d2"
+      },
+      {
+       "qty": 4,
+       "name": "Flickering Hound",
+       "set": "fra",
+       "number": "7",
+       "id": "686f3a25-305d-4f02-8972-eba7b8e9635f"
+      },
+      {
+       "qty": 4,
+       "name": "Changeling Wayfinder",
+       "set": "ecl",
+       "number": "1",
+       "id": "6c6061aa-a4da-4115-85b6-d0aa22f2386c"
+      },
+      {
+       "qty": 4,
+       "name": "Graft Surgeon",
+       "set": "fra",
+       "number": "10",
+       "id": "32a7a905-11bf-4b66-a28e-1066a0e372b8"
+      },
+      {
+       "qty": 4,
+       "name": "Thoughtweft Imbuer",
+       "set": "ecl",
+       "number": "38",
+       "id": "7e585a6c-2d95-450e-98cb-8794d7d8ecca"
+      },
+      {
+       "qty": 4,
+       "name": "Unflinching Hortimancer",
+       "set": "fra",
+       "number": "23",
+       "id": "63f82985-c9c2-4d0a-ac4f-560166bebd9f"
+      },
+      {
+       "qty": 3,
+       "name": "Mage Tower Referee",
+       "set": "sos",
+       "number": "249",
+       "id": "1ceb704a-97a8-49f9-b799-30f001404144"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "ecl",
+       "number": "269",
+       "id": "3a438199-54f8-4702-81cf-a9d42e7cd9f1"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "shadow",
+    "deck": {
+     "name": "The Shadowmoor Gloom",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Gloom Ripper",
+       "set": "ecl",
+       "number": "102",
+       "id": "e9ee5d4f-05d1-4e3a-b8d6-f22d0fddedf7"
+      },
+      {
+       "qty": 3,
+       "name": "Taster of Wares",
+       "set": "ecl",
+       "number": "121",
+       "id": "bc0b64b6-8984-431c-8a2f-84402b429e2b"
+      },
+      {
+       "qty": 3,
+       "name": "Twilight Diviner",
+       "set": "ecl",
+       "number": "122",
+       "id": "443b6f30-1493-4d48-93d9-a91e22a7ebb3"
+      },
+      {
+       "qty": 4,
+       "name": "Tragedy Feaster",
+       "set": "sos",
+       "number": "102",
+       "id": "b93cbaad-8ed8-4a1d-b95a-20a616dfedc9"
+      },
+      {
+       "qty": 4,
+       "name": "Creakwood Safewright",
+       "set": "ecl",
+       "number": "96",
+       "id": "3bcc24cf-776a-4182-bf77-a611ad90b28f"
+      },
+      {
+       "qty": 4,
+       "name": "Gutsplitter Gang",
+       "set": "ecl",
+       "number": "106",
+       "id": "9ff74349-693d-4373-a194-9796316dd1f1"
+      },
+      {
+       "qty": 4,
+       "name": "Ulna Alley Shopkeep",
+       "set": "sos",
+       "number": "103",
+       "id": "c25e1ae5-f17c-4eee-98f1-5681981af31c"
+      },
+      {
+       "qty": 4,
+       "name": "Scarblade Scout",
+       "set": "ecl",
+       "number": "118",
+       "id": "c2412fea-4591-4345-913f-edc2da9ad975"
+      },
+      {
+       "qty": 4,
+       "name": "Heirloom Auntie",
+       "set": "ecl",
+       "number": "107",
+       "id": "cac251b2-d2cc-45b6-9ca8-678e0eab56ea"
+      },
+      {
+       "qty": 3,
+       "name": "Screeching Soulbreaker",
+       "set": "fra",
+       "number": "65",
+       "id": "738667a1-c184-43ea-829f-49fbb69b6fc0"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "ecl",
+       "number": "271",
+       "id": "1dd4d605-02a2-4183-b191-0bca8dfbf962"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "78e1beca-840d-47b2-8759-cc31454fdf5a",
+      "name": "Gloom Ripper",
+      "rarity": "rare",
+      "set": "ecl",
+      "id": "e9ee5d4f-05d1-4e3a-b8d6-f22d0fddedf7",
+      "image": "https://cards.scryfall.io/normal/front/e/9/e9ee5d4f-05d1-4e3a-b8d6-f22d0fddedf7.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "eirdu",
+     "line": "Adherents of the sun implore others to bask in Eirdu's light and expel darkness from the plane.",
+     "quote": true
+    },
+    {
+     "who": "eirdu",
+     "line": "Blight: put -1/-1 counters on your own creature as a cost. Small creatures are cheap to pay with, big ones are not."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "shadow",
+     "line": "The scratch became a sore, the sore became a wound, the wound became an infection, and the infection became a funeral.",
+     "quote": true
+    },
+    {
+     "who": "shadow",
+     "line": "Shadowmoor creeps in at the edges, and keeps creeping."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Into the light.",
+     "big": "Dawn!",
+     "low": "The gloom is closing in...",
+     "win": "The sun holds.",
+     "loss": "Eclipsed...",
+     "half": "Pay Blight with your smallest creature."
+    },
+    "villain": {
+     "start": "Rot.",
+     "big": "Spread!",
+     "low": "The light...",
+     "win": "The gloom wins.",
+     "loss": "Dawn..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a44b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Maralen's Court",
+   "difficulty": "Easy",
+   "teaches": [
+    "Vivid"
+   ],
+   "blurb": "The Faerie Queen of the eclipsed plane rules from a hall of every colour.",
+   "rewardSet": "ecl",
+   "host": false,
+   "hero": {
+    "who": "grove",
+    "deck": {
+     "name": "The Wild Kin of the Creakwood",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Bristlebane Battler",
+       "set": "ecl",
+       "number": "168",
+       "id": "c857fa32-1b5d-4139-8809-b4d0df44b472"
+      },
+      {
+       "qty": 3,
+       "name": "Champions of the Perfect",
+       "set": "ecl",
+       "number": "171",
+       "id": "4f359211-8be5-4818-b73c-14f24b7ddb21"
+      },
+      {
+       "qty": 3,
+       "name": "Vastlands Scavenger // Bind to Life",
+       "set": "sos",
+       "number": "166",
+       "id": "476b6a4d-cc05-4e98-8a45-a5c6582ec514"
+      },
+      {
+       "qty": 3,
+       "name": "Emeritus of Abundance // Regrowth",
+       "set": "sos",
+       "number": "145",
+       "id": "ac095763-6f4e-4d4e-9c99-414646368f8d"
+      },
+      {
+       "qty": 2,
+       "name": "Hungering Puppetbeast",
+       "set": "fra",
+       "number": "107",
+       "id": "3db2da7a-8088-4117-916b-f9c905d1b45b"
+      },
+      {
+       "qty": 4,
+       "name": "Shopkeeper's Bane",
+       "set": "sos",
+       "number": "159",
+       "id": "97f7fbb9-228c-4a74-975b-38d3b6cecb32"
+      },
+      {
+       "qty": 4,
+       "name": "Crossroads Watcher",
+       "set": "ecl",
+       "number": "173",
+       "id": "6d62fcbb-f1a0-46ce-a4af-2a33bcc3ac8e"
+      },
+      {
+       "qty": 4,
+       "name": "Dawn's Light Archer",
+       "set": "ecl",
+       "number": "174",
+       "id": "76e80656-6bcb-4d99-8bd2-ca5f75f40daf"
+      },
+      {
+       "qty": 4,
+       "name": "Pestbrood Sloth",
+       "set": "sos",
+       "number": "157",
+       "id": "c1251ae6-2f19-4f84-ab02-6a6cc7ce6056"
+      },
+      {
+       "qty": 4,
+       "name": "Sureshot Sower",
+       "set": "fra",
+       "number": "115",
+       "id": "b635389c-e286-4edb-80d1-23dbe4a18857"
+      },
+      {
+       "qty": 2,
+       "name": "Aberrant Manawurm",
+       "set": "sos",
+       "number": "138",
+       "id": "797131cf-d80d-4050-bebd-2ce1d7fae5d0"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "ecl",
+       "number": "273",
+       "id": "b460f5f7-c7c9-400c-8419-23d614f45bf9"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "maralen",
+    "deck": {
+     "name": "Maralen's Court",
+     "colors": "BGU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Maralen, Fae Ascendant",
+       "set": "ecl",
+       "number": "233",
+       "id": "c50f5408-5b5c-41dc-807e-136233403a09"
+      },
+      {
+       "qty": 3,
+       "name": "Glen Elendra Guardian",
+       "set": "ecl",
+       "number": "51",
+       "id": "388d2e4a-0aa5-4b82-a86c-4777ca60161c"
+      },
+      {
+       "qty": 4,
+       "name": "Gloom Ripper",
+       "set": "ecl",
+       "number": "102",
+       "id": "e9ee5d4f-05d1-4e3a-b8d6-f22d0fddedf7"
+      },
+      {
+       "qty": 3,
+       "name": "Loch Mare",
+       "set": "ecl",
+       "number": "57",
+       "id": "ad6c4baf-a803-45e4-81ac-708a41631a28"
+      },
+      {
+       "qty": 3,
+       "name": "Champions of the Perfect",
+       "set": "ecl",
+       "number": "171",
+       "id": "4f359211-8be5-4818-b73c-14f24b7ddb21"
+      },
+      {
+       "qty": 3,
+       "name": "Bristlebane Battler",
+       "set": "ecl",
+       "number": "168",
+       "id": "c857fa32-1b5d-4139-8809-b4d0df44b472"
+      },
+      {
+       "qty": 3,
+       "name": "Tragedy Feaster",
+       "set": "sos",
+       "number": "102",
+       "id": "b93cbaad-8ed8-4a1d-b95a-20a616dfedc9"
+      },
+      {
+       "qty": 3,
+       "name": "Champion of the Weird",
+       "set": "ecl",
+       "number": "95",
+       "id": "e600dd01-65ac-489c-a52a-decbc3a9a4f3"
+      },
+      {
+       "qty": 4,
+       "name": "Taster of Wares",
+       "set": "ecl",
+       "number": "121",
+       "id": "bc0b64b6-8984-431c-8a2f-84402b429e2b"
+      },
+      {
+       "qty": 3,
+       "name": "Twilight Diviner",
+       "set": "ecl",
+       "number": "122",
+       "id": "443b6f30-1493-4d48-93d9-a91e22a7ebb3"
+      },
+      {
+       "qty": 4,
+       "name": "Emeritus of Woe // Demonic Tutor",
+       "set": "sos",
+       "number": "80",
+       "id": "7eb9e83d-515d-4911-a06b-9982200277b2"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "ecl",
+       "number": "271",
+       "id": "1dd4d605-02a2-4183-b191-0bca8dfbf962"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "ecl",
+       "number": "273",
+       "id": "b460f5f7-c7c9-400c-8419-23d614f45bf9"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "ecl",
+       "number": "270",
+       "id": "b0da67fb-1cb2-4105-ab5c-b7c680b8116c"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "114e1d2c-cefc-4e2a-922e-3b2ceed1871d",
+      "name": "Maralen, Fae Ascendant",
+      "rarity": "rare",
+      "set": "ecl",
+      "id": "c50f5408-5b5c-41dc-807e-136233403a09",
+      "image": "https://cards.scryfall.io/normal/front/c/5/c50f5408-5b5c-41dc-807e-136233403a09.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "grove",
+     "line": "Safewrights stationed within the Creakwood do not fear Shadowmoor's encroaching dark. They embrace it.",
+     "quote": true
+    },
+    {
+     "who": "grove",
+     "line": "Vivid: the more colours among your permanents, the bigger the effect. A two-colour board is already better than a one-colour one."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "maralen",
+     "line": "This is *my* domain, and *I* am its Queen.",
+     "quote": true
+    },
+    {
+     "who": "maralen",
+     "line": "Maralen is more forgiving than Oona was, but her rule is no less absolute."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Into the Creakwood.",
+     "big": "Wild!",
+     "low": "The Queen is too clever...",
+     "win": "The court bows.",
+     "loss": "Absolute...",
+     "half": "Add a second colour to your board to light Vivid."
+    },
+    "villain": {
+     "start": "My domain.",
+     "big": "Kneel!",
+     "low": "Impossible...",
+     "win": "My court.",
+     "loss": "Oona..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a44b3",
+   "slot": 3,
+   "kind": "Rival",
+   "mood": "rival",
+   "title": "Oko, Lorwyn Liege",
+   "difficulty": "Normal",
+   "teaches": [
+    "Planeswalkers"
+   ],
+   "blurb": "Oko is back, and this time he has two faces and an entire plane to play with.",
+   "rewardSet": "ecl",
+   "host": false,
+   "hero": {
+    "who": "ember",
+    "deck": {
+     "name": "The Ember Kin",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Pyre Rhymer // Molten Tide",
+       "set": "fra",
+       "number": "91",
+       "id": "2b0ebea0-86de-4da4-9fe8-dacc1e75c161"
+      },
+      {
+       "qty": 3,
+       "name": "Goliath Daydreamer",
+       "set": "ecl",
+       "number": "143",
+       "id": "88e8cd13-2a29-4df6-937c-1bed68fbeafa"
+      },
+      {
+       "qty": 3,
+       "name": "Maelstrom Artisan // Rocket Volley",
+       "set": "sos",
+       "number": "122",
+       "id": "5c88391d-271f-4021-a5d9-158ebc1e6357"
+      },
+      {
+       "qty": 3,
+       "name": "Lavaleaper",
+       "set": "ecl",
+       "number": "150",
+       "id": "82902488-d178-4752-bcfb-dd3050654d23"
+      },
+      {
+       "qty": 3,
+       "name": "Curse-Marred Demon",
+       "set": "fra",
+       "number": "79",
+       "id": "8f827e50-0a08-4bc8-98b1-b26c9af15ef2"
+      },
+      {
+       "qty": 2,
+       "name": "Chandra, Torch of Defiance",
+       "set": "fra",
+       "number": "244",
+       "id": "40cb22c8-cb03-45c9-bb0e-b8cabdcc43cd"
+      },
+      {
+       "qty": 4,
+       "name": "Brambleback Brute",
+       "set": "ecl",
+       "number": "128",
+       "id": "5ebb8365-c6e1-46e8-a242-6aa27b21e68a"
+      },
+      {
+       "qty": 4,
+       "name": "Thunderdrum Soloist",
+       "set": "sos",
+       "number": "134",
+       "id": "590d1d95-ed13-4121-899f-f5a2d8a6617a"
+      },
+      {
+       "qty": 4,
+       "name": "Enraged Flamecaster",
+       "set": "ecl",
+       "number": "135",
+       "id": "104baa2c-75c5-44fc-a3b9-b19efcf3d7c2"
+      },
+      {
+       "qty": 4,
+       "name": "Tackle Artist",
+       "set": "sos",
+       "number": "133",
+       "id": "b87e2474-98c1-4c1a-91ed-340b72d31653"
+      },
+      {
+       "qty": 3,
+       "name": "Champion of the Path",
+       "set": "ecl",
+       "number": "130",
+       "id": "e369cd31-3e22-47eb-bf6a-00d823651710"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "ecl",
+       "number": "272",
+       "id": "295b92bc-d66f-45d8-9bbe-5f5f13e39fd4"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "oko",
+    "deck": {
+     "name": "Oko and the Eclipsed Court",
+     "colors": "GU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Oko, Lorwyn Liege // Oko, Shadowmoor Scion",
+       "set": "ecl",
+       "number": "61",
+       "id": "1dab370a-1067-4d94-be1f-10362d4abf5a"
+      },
+      {
+       "qty": 3,
+       "name": "Loch Mare",
+       "set": "ecl",
+       "number": "57",
+       "id": "ad6c4baf-a803-45e4-81ac-708a41631a28"
+      },
+      {
+       "qty": 3,
+       "name": "Champions of the Shoal",
+       "set": "ecl",
+       "number": "46",
+       "id": "e1acdd9c-4a6d-4373-950c-f5539b54679f"
+      },
+      {
+       "qty": 3,
+       "name": "Carnivorous Cultivator // Enroot",
+       "set": "fra",
+       "number": "100",
+       "id": "79dd5c54-5ea5-47b5-8f9b-50ed57a5ea45"
+      },
+      {
+       "qty": 3,
+       "name": "Hexhaven Invigorator",
+       "set": "fra",
+       "number": "106",
+       "id": "9a446cae-e93c-4574-8ffd-7688f9729a8a"
+      },
+      {
+       "qty": 4,
+       "name": "Topiary Lecturer",
+       "set": "sos",
+       "number": "165",
+       "id": "4f16a1c2-0a80-45e4-b025-3aa0c0b03812"
+      },
+      {
+       "qty": 4,
+       "name": "Chomping Changeling",
+       "set": "ecl",
+       "number": "172",
+       "id": "e187dcc6-19ad-4cf6-94b4-daf07f5144e5"
+      },
+      {
+       "qty": 4,
+       "name": "Glen Elendra Guardian",
+       "set": "ecl",
+       "number": "51",
+       "id": "388d2e4a-0aa5-4b82-a86c-4777ca60161c"
+      },
+      {
+       "qty": 4,
+       "name": "Matterbending Mage",
+       "set": "sos",
+       "number": "59",
+       "id": "460c6afd-cddf-4fea-925f-b27517ff250a"
+      },
+      {
+       "qty": 4,
+       "name": "Mutable Explorer",
+       "set": "ecl",
+       "number": "186",
+       "id": "8f35d95a-caea-4d5e-b98e-55da1ba7c92d"
+      },
+      {
+       "qty": 1,
+       "name": "Paradox Surveyor",
+       "set": "sos",
+       "number": "208",
+       "id": "d7cb1af2-0302-46ff-8303-ae9d07541a01"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "ecl",
+       "number": "273",
+       "id": "b460f5f7-c7c9-400c-8419-23d614f45bf9"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "ecl",
+       "number": "270",
+       "id": "b0da67fb-1cb2-4105-ab5c-b7c680b8116c"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "a0c956dc-d7de-4f11-b76f-7537fbee1731",
+      "name": "Oko, Lorwyn Liege // Oko, Shadowmoor Scion",
+      "rarity": "mythic",
+      "set": "ecl",
+      "id": "1dab370a-1067-4d94-be1f-10362d4abf5a",
+      "image": "https://cards.scryfall.io/normal/front/1/d/1dab370a-1067-4d94-be1f-10362d4abf5a.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "ember",
+     "line": "Elsewhere in Lorwyn, nestled in a faerie ring, the coos of a small giant turned to cries.",
+     "quote": true
+    },
+    {
+     "who": "ember",
+     "line": "Attack Oko himself. A planeswalker dies the same way a player does, from damage."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "oko",
+     "line": "Eclipsed realms are the spaces between Lorwyn's stability and Shadowmoor's chaos",
+     "quote": true
+    },
+    {
+     "who": "oko",
+     "line": "Oko turns your best creature into something small, and then smiles."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Wait for the eclipse.",
+     "big": "Burn him!",
+     "low": "Oko is winning...",
+     "win": "Oko flees.",
+     "loss": "Turned into a Food...",
+     "half": "Attack the planeswalker, not just the player."
+    },
+    "villain": {
+     "start": "Fun, isn't it?",
+     "big": "Transform!",
+     "low": "Not funny...",
+     "win": "Delightful.",
+     "loss": "Rude..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a44b4",
+   "slot": 4,
+   "kind": "Lesson",
+   "mood": "rival",
+   "title": "First-Years",
+   "difficulty": "Normal",
+   "teaches": [
+    "Prepared"
+   ],
+   "blurb": "A student, a campus map and a quiz she is already late for.",
+   "rewardSet": "sos",
+   "host": false,
+   "hero": {
+    "who": "tam",
+    "deck": {
+     "name": "Tam and the First-Years",
+     "colors": "GU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Tam, Mindful First-Year",
+       "set": "ecl",
+       "number": "245",
+       "id": "6cb0f825-b75b-4f2a-803c-08142ca07e76"
+      },
+      {
+       "qty": 3,
+       "name": "Tam, the Possibility",
+       "set": "fra",
+       "number": "276",
+       "id": "6529d399-677e-45a6-ac3e-12a0b10f6c37"
+      },
+      {
+       "qty": 3,
+       "name": "Tam, Observant Sequencer // Deep Sight",
+       "set": "sos",
+       "number": "237",
+       "id": "7120e71b-2976-451b-89a7-a1665dc6fb6b"
+      },
+      {
+       "qty": 3,
+       "name": "Berta, Wise Extrapolator",
+       "set": "sos",
+       "number": "175",
+       "id": "75f89c36-c81d-4580-9a5c-218fed0c5c9a"
+      },
+      {
+       "qty": 3,
+       "name": "Avatar of Burgeoning Echoes",
+       "set": "fra",
+       "number": "122",
+       "id": "5905995b-7a20-4602-a7cc-90aa5089a082"
+      },
+      {
+       "qty": 3,
+       "name": "Geometer's Arthropod",
+       "set": "sos",
+       "number": "191",
+       "id": "ec0f3613-1edc-40e8-8f26-2e5ef13be55e"
+      },
+      {
+       "qty": 4,
+       "name": "Bristlebane Battler",
+       "set": "ecl",
+       "number": "168",
+       "id": "c857fa32-1b5d-4139-8809-b4d0df44b472"
+      },
+      {
+       "qty": 4,
+       "name": "Champions of the Perfect",
+       "set": "ecl",
+       "number": "171",
+       "id": "4f359211-8be5-4818-b73c-14f24b7ddb21"
+      },
+      {
+       "qty": 4,
+       "name": "Glen Elendra Guardian",
+       "set": "ecl",
+       "number": "51",
+       "id": "388d2e4a-0aa5-4b82-a86c-4777ca60161c"
+      },
+      {
+       "qty": 4,
+       "name": "Pestbrood Sloth",
+       "set": "sos",
+       "number": "157",
+       "id": "c1251ae6-2f19-4f84-ab02-6a6cc7ce6056"
+      },
+      {
+       "qty": 2,
+       "name": "Shopkeeper's Bane",
+       "set": "sos",
+       "number": "159",
+       "id": "97f7fbb9-228c-4a74-975b-38d3b6cecb32"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "ecl",
+       "number": "273",
+       "id": "b460f5f7-c7c9-400c-8419-23d614f45bf9"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "ecl",
+       "number": "270",
+       "id": "b0da67fb-1cb2-4105-ab5c-b7c680b8116c"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "rival",
+    "deck": {
+     "name": "The Rival Students",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Champion of the Path",
+       "set": "ecl",
+       "number": "130",
+       "id": "e369cd31-3e22-47eb-bf6a-00d823651710"
+      },
+      {
+       "qty": 3,
+       "name": "Spinerock Tyrant",
+       "set": "ecl",
+       "number": "159",
+       "id": "478bbb7a-4b96-4e04-921e-bdf23185de25"
+      },
+      {
+       "qty": 3,
+       "name": "Pyre Rhymer // Molten Tide",
+       "set": "fra",
+       "number": "91",
+       "id": "2b0ebea0-86de-4da4-9fe8-dacc1e75c161"
+      },
+      {
+       "qty": 3,
+       "name": "Draconic Visitor",
+       "set": "fra",
+       "number": "80",
+       "id": "112f8478-bd89-4a14-9721-8ab750613129"
+      },
+      {
+       "qty": 4,
+       "name": "Changeling Wayfinder",
+       "set": "ecl",
+       "number": "1",
+       "id": "6c6061aa-a4da-4115-85b6-d0aa22f2386c"
+      },
+      {
+       "qty": 4,
+       "name": "Explosive Prodigy",
+       "set": "ecl",
+       "number": "136",
+       "id": "5515ea5e-ce28-4938-a31e-5e48522a5f93"
+      },
+      {
+       "qty": 4,
+       "name": "Chandra's Emberling",
+       "set": "fra",
+       "number": "76",
+       "id": "3a64c5f4-9cfc-4d19-bd99-13d619b1aa9d"
+      },
+      {
+       "qty": 4,
+       "name": "Elder Auntie",
+       "set": "ecl",
+       "number": "133",
+       "id": "84678e98-2258-4ea1-aaf0-8ac4cc2ecf8d"
+      },
+      {
+       "qty": 4,
+       "name": "Mage Tower Referee",
+       "set": "sos",
+       "number": "249",
+       "id": "1ceb704a-97a8-49f9-b799-30f001404144"
+      },
+      {
+       "qty": 4,
+       "name": "Skilled Battlecarver",
+       "set": "fra",
+       "number": "92",
+       "id": "0e44f959-1322-4abd-b6eb-dea992307c0c"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "ecl",
+       "number": "272",
+       "id": "295b92bc-d66f-45d8-9bbe-5f5f13e39fd4"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "b326ccd5-8ad2-441c-9d73-82ee6390dd36",
+      "name": "Champion of the Path",
+      "rarity": "rare",
+      "set": "ecl",
+      "id": "e369cd31-3e22-47eb-bf6a-00d823651710",
+      "image": "https://cards.scryfall.io/normal/front/e/3/e369cd31-3e22-47eb-bf6a-00d823651710.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "tam",
+     "line": "I don't think we're going to make it back in time for Introduction to Prophecy.",
+     "quote": true
+    },
+    {
+     "who": "tam",
+     "line": "Prepared: a prepared creature lets you cast a copy of its spell once. Hold the creature, keep the spell."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "rival",
+     "line": "Strixhaven students have a sense of humor. The spirits of the Blood Age do not.",
+     "quote": true
+    },
+    {
+     "who": "rival",
+     "line": "The rival students are loud, quick and not entirely in control."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "What are the odds?",
+     "big": "Cast it twice!",
+     "low": "The pranksters are loud...",
+     "win": "Passed.",
+     "loss": "Failed the quiz...",
+     "half": "Cast the copy of the spell on a prepared creature."
+    },
+    "villain": {
+     "start": "Prank!",
+     "big": "Boom!",
+     "low": "The professor...",
+     "win": "Detention for you.",
+     "loss": "Hey..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a44b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "Strixhaven",
+   "difficulty": "Easy",
+   "teaches": [
+    "Repartee"
+   ],
+   "blurb": "The archaics remember all of history, and some of them are very upset about it.",
+   "rewardSet": "sos",
+   "host": false,
+   "hero": {
+    "who": "prism",
+    "deck": {
+     "name": "The Prismari Second-Years",
+     "colors": "RU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Sanar, Innovative First-Year",
+       "set": "ecl",
+       "number": "241",
+       "id": "11215561-bbcd-4564-a2e4-a1d77d177a1d"
+      },
+      {
+       "qty": 3,
+       "name": "Frostbite Pyromental",
+       "set": "fra",
+       "number": "135",
+       "id": "7a44581f-8fc4-457d-888a-1e211090ee7e"
+      },
+      {
+       "qty": 3,
+       "name": "Colorstorm Stallion",
+       "set": "sos",
+       "number": "180",
+       "id": "f5b54d46-2caf-4d1b-8be1-dbd9e9dce058"
+      },
+      {
+       "qty": 3,
+       "name": "Skycoach Conductor // All Aboard",
+       "set": "sos",
+       "number": "67",
+       "id": "4ecbca71-9a1d-44c5-b709-d6f565941d5e"
+      },
+      {
+       "qty": 3,
+       "name": "Seasoned Cryomancer",
+       "set": "fra",
+       "number": "38",
+       "id": "51d86875-420d-4e82-b69c-4feeb99c9428"
+      },
+      {
+       "qty": 4,
+       "name": "Glen Elendra Guardian",
+       "set": "ecl",
+       "number": "51",
+       "id": "388d2e4a-0aa5-4b82-a86c-4777ca60161c"
+      },
+      {
+       "qty": 4,
+       "name": "Curse-Marred Demon",
+       "set": "fra",
+       "number": "79",
+       "id": "8f827e50-0a08-4bc8-98b1-b26c9af15ef2"
+      },
+      {
+       "qty": 4,
+       "name": "Brambleback Brute",
+       "set": "ecl",
+       "number": "128",
+       "id": "5ebb8365-c6e1-46e8-a242-6aa27b21e68a"
+      },
+      {
+       "qty": 4,
+       "name": "Molten-Core Maestro",
+       "set": "sos",
+       "number": "125",
+       "id": "326dfe32-3674-4a11-acd8-5ba62371235a"
+      },
+      {
+       "qty": 4,
+       "name": "Champion of the Path",
+       "set": "ecl",
+       "number": "130",
+       "id": "e369cd31-3e22-47eb-bf6a-00d823651710"
+      },
+      {
+       "qty": 1,
+       "name": "Thunderdrum Soloist",
+       "set": "sos",
+       "number": "134",
+       "id": "590d1d95-ed13-4121-899f-f5a2d8a6617a"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "ecl",
+       "number": "272",
+       "id": "295b92bc-d66f-45d8-9bbe-5f5f13e39fd4"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "ecl",
+       "number": "270",
+       "id": "b0da67fb-1cb2-4105-ab5c-b7c680b8116c"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "archaic",
+    "deck": {
+     "name": "The Archaics of Arcavios",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "The Dawning Archaic",
+       "set": "sos",
+       "number": "1",
+       "id": "7a451985-37e1-44d8-839b-dc1e88df5c96"
+      },
+      {
+       "qty": 3,
+       "name": "Wildgrowth Archaic",
+       "set": "sos",
+       "number": "168",
+       "id": "0e6e2188-7203-4d10-a838-27233f283cd5"
+      },
+      {
+       "qty": 3,
+       "name": "Emeritus of Abundance // Regrowth",
+       "set": "sos",
+       "number": "145",
+       "id": "ac095763-6f4e-4d4e-9c99-414646368f8d"
+      },
+      {
+       "qty": 3,
+       "name": "Vastlands Scavenger // Bind to Life",
+       "set": "sos",
+       "number": "166",
+       "id": "476b6a4d-cc05-4e98-8a45-a5c6582ec514"
+      },
+      {
+       "qty": 3,
+       "name": "Slumbering Trudge",
+       "set": "sos",
+       "number": "160",
+       "id": "3a925370-58ac-4181-9acc-db7b0e0abf17"
+      },
+      {
+       "qty": 4,
+       "name": "Moon-Vigil Adherents",
+       "set": "ecl",
+       "number": "184",
+       "id": "60621c37-62e1-4261-ae76-3946b4a0cfa3"
+      },
+      {
+       "qty": 4,
+       "name": "Mutable Explorer",
+       "set": "ecl",
+       "number": "186",
+       "id": "8f35d95a-caea-4d5e-b98e-55da1ba7c92d"
+      },
+      {
+       "qty": 4,
+       "name": "Topiary Lecturer",
+       "set": "sos",
+       "number": "165",
+       "id": "4f16a1c2-0a80-45e4-b025-3aa0c0b03812"
+      },
+      {
+       "qty": 4,
+       "name": "Chomping Changeling",
+       "set": "ecl",
+       "number": "172",
+       "id": "e187dcc6-19ad-4cf6-94b4-daf07f5144e5"
+      },
+      {
+       "qty": 4,
+       "name": "Changeling Wayfinder",
+       "set": "ecl",
+       "number": "1",
+       "id": "6c6061aa-a4da-4115-85b6-d0aa22f2386c"
+      },
+      {
+       "qty": 3,
+       "name": "Simulacrum Shaper",
+       "set": "fra",
+       "number": "113",
+       "id": "7c725702-8696-4e5a-8318-62f5e2616d52"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "ecl",
+       "number": "273",
+       "id": "b460f5f7-c7c9-400c-8419-23d614f45bf9"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "a3e10b9b-9349-4b44-a46c-c825293dbd05",
+      "name": "The Dawning Archaic",
+      "rarity": "mythic",
+      "set": "sos",
+      "id": "7a451985-37e1-44d8-839b-dc1e88df5c96",
+      "image": "https://cards.scryfall.io/normal/front/7/a/7a451985-37e1-44d8-839b-dc1e88df5c96.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "prism",
+     "line": "Life is vivid; the pigments I use should be too.",
+     "quote": true
+    },
+    {
+     "who": "prism",
+     "line": "Repartee: when you cast an instant or sorcery that targets a creature, the creature gets a bonus. Aim spells at your own team."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "archaic",
+     "line": "As the giant shadow loomed, the Forum of Amity fell silent for the first time in its history.",
+     "quote": true
+    },
+    {
+     "who": "archaic",
+     "line": "The archaics experience all of Arcavios history, and they are not forgiving."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Art is a weapon.",
+     "big": "Repartee!",
+     "low": "The archaic is too big...",
+     "win": "The giant calms.",
+     "loss": "Forgotten...",
+     "half": "Target your creatures with spells to light Repartee."
+    },
+    "villain": {
+     "start": "Remember.",
+     "big": "Crush!",
+     "low": "Fading...",
+     "win": "History repeats.",
+     "loss": "No..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a44b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "comic",
+   "title": "Witherbloom",
+   "difficulty": "Normal",
+   "teaches": [
+    "Deathtouch"
+   ],
+   "blurb": "The college of life and death: a swamp, a garden and a very good reputation.",
+   "rewardSet": "sos",
+   "host": false,
+   "hero": {
+    "who": "lorehold",
+    "deck": {
+     "name": "Lorehold, the Historian",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Kirol, Attentive First-Year",
+       "set": "ecl",
+       "number": "231",
+       "id": "c11cb0eb-819e-4905-ad95-e43618d3c81e"
+      },
+      {
+       "qty": 3,
+       "name": "Bre of Clan Stoutarm",
+       "set": "ecl",
+       "number": "207",
+       "id": "013cefb7-a059-45c2-81b0-187f35aac4a2"
+      },
+      {
+       "qty": 3,
+       "name": "Aziza, Mage Tower Captain",
+       "set": "sos",
+       "number": "174",
+       "id": "6261e89a-dbf1-481a-823e-6bb00be57195"
+      },
+      {
+       "qty": 3,
+       "name": "Lorehold, the Historian",
+       "set": "sos",
+       "number": "201",
+       "id": "71a6701f-40f1-43ef-bff5-a5907fd67cd6"
+      },
+      {
+       "qty": 3,
+       "name": "Hardened Academic",
+       "set": "sos",
+       "number": "194",
+       "id": "06c9e8a7-2840-4cff-90af-c6636e598f78"
+      },
+      {
+       "qty": 4,
+       "name": "Sting-Slinger",
+       "set": "ecl",
+       "number": "161",
+       "id": "386c5f73-fb8f-46c8-ad45-56e2c19b7d1f"
+      },
+      {
+       "qty": 4,
+       "name": "Changeling Wayfinder",
+       "set": "ecl",
+       "number": "1",
+       "id": "6c6061aa-a4da-4115-85b6-d0aa22f2386c"
+      },
+      {
+       "qty": 4,
+       "name": "Practiced Scrollsmith",
+       "set": "sos",
+       "number": "210",
+       "id": "40075e3f-58b3-47fd-8fbe-4b301e9ce7a1"
+      },
+      {
+       "qty": 4,
+       "name": "Sizzling Changeling",
+       "set": "ecl",
+       "number": "155",
+       "id": "e58f0722-9ad1-4952-9aee-ea8137c58911"
+      },
+      {
+       "qty": 4,
+       "name": "Elder Auntie",
+       "set": "ecl",
+       "number": "133",
+       "id": "84678e98-2258-4ea1-aaf0-8ac4cc2ecf8d"
+      },
+      {
+       "qty": 1,
+       "name": "Tributary Vaulter",
+       "set": "ecl",
+       "number": "40",
+       "id": "a1db2c83-41d1-4cc6-b9a3-fed504b01127"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "ecl",
+       "number": "272",
+       "id": "295b92bc-d66f-45d8-9bbe-5f5f13e39fd4"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "ecl",
+       "number": "269",
+       "id": "3a438199-54f8-4702-81cf-a9d42e7cd9f1"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "witherbloom",
+    "deck": {
+     "name": "Witherbloom, the Balancer",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "High Perfect Morcant",
+       "set": "ecl",
+       "number": "229",
+       "id": "dfe7b8bf-c150-4be0-aef4-e8bb6f09787a"
+      },
+      {
+       "qty": 2,
+       "name": "Lluwen, Imperfect Naturalist",
+       "set": "ecl",
+       "number": "232",
+       "id": "127a30a6-c25a-448a-a242-dc04f273a854"
+      },
+      {
+       "qty": 2,
+       "name": "Blech, Loafing Pest",
+       "set": "sos",
+       "number": "176",
+       "id": "f588fa50-7cc5-41ba-90df-2d252eb5c785"
+      },
+      {
+       "qty": 2,
+       "name": "Witherbloom, the Balancer",
+       "set": "sos",
+       "number": "245",
+       "id": "ed7b2361-97c6-49e2-bf0b-4770f4ffe2f0"
+      },
+      {
+       "qty": 3,
+       "name": "Emeritus of Woe // Demonic Tutor",
+       "set": "sos",
+       "number": "80",
+       "id": "7eb9e83d-515d-4911-a06b-9982200277b2"
+      },
+      {
+       "qty": 2,
+       "name": "Vraska, the Cutting Glare",
+       "set": "fra",
+       "number": "278",
+       "id": "5c28b012-5efb-488f-a1c1-09e2dddfd6ee"
+      },
+      {
+       "qty": 4,
+       "name": "Bristlebane Battler",
+       "set": "ecl",
+       "number": "168",
+       "id": "c857fa32-1b5d-4139-8809-b4d0df44b472"
+      },
+      {
+       "qty": 4,
+       "name": "Tragedy Feaster",
+       "set": "sos",
+       "number": "102",
+       "id": "b93cbaad-8ed8-4a1d-b95a-20a616dfedc9"
+      },
+      {
+       "qty": 4,
+       "name": "Creakwood Safewright",
+       "set": "ecl",
+       "number": "96",
+       "id": "3bcc24cf-776a-4182-bf77-a611ad90b28f"
+      },
+      {
+       "qty": 4,
+       "name": "Gutsplitter Gang",
+       "set": "ecl",
+       "number": "106",
+       "id": "9ff74349-693d-4373-a194-9796316dd1f1"
+      },
+      {
+       "qty": 4,
+       "name": "Champions of the Perfect",
+       "set": "ecl",
+       "number": "171",
+       "id": "4f359211-8be5-4818-b73c-14f24b7ddb21"
+      },
+      {
+       "qty": 2,
+       "name": "Shopkeeper's Bane",
+       "set": "sos",
+       "number": "159",
+       "id": "97f7fbb9-228c-4a74-975b-38d3b6cecb32"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "ecl",
+       "number": "271",
+       "id": "1dd4d605-02a2-4183-b191-0bca8dfbf962"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "ecl",
+       "number": "273",
+       "id": "b460f5f7-c7c9-400c-8419-23d614f45bf9"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "fbb04a21-e513-4317-aac8-fa6df91c3438",
+      "name": "Witherbloom, the Balancer",
+      "rarity": "mythic",
+      "set": "sos",
+      "id": "ed7b2361-97c6-49e2-bf0b-4770f4ffe2f0",
+      "image": "https://cards.scryfall.io/normal/front/e/d/ed7b2361-97c6-49e2-bf0b-4770f4ffe2f0.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "lorehold",
+     "line": "If you take the time to listen, the archaics will tell you that this world has been torn asunder and remade many times before.",
+     "quote": true
+    },
+    {
+     "who": "lorehold",
+     "line": "Witherbloom has deathtouch and flying. Race it, or remove the big one before it connects."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "witherbloom",
+     "line": "In most colleges, Erren's poisonous skin would have made them a pariah. In Witherbloom, they were one of the most popular students on campus.",
+     "quote": true
+    },
+    {
+     "who": "witherbloom",
+     "line": "Witherbloom balances the books: what lives pays for what dies."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Listen to the past.",
+     "big": "History!",
+     "low": "The Balancer is too good...",
+     "win": "Balance restored.",
+     "loss": "Withered...",
+     "half": "Kill deathtouch creatures before blocking with big ones."
+    },
+    "villain": {
+     "start": "Balance.",
+     "big": "Wither!",
+     "low": "Too much life...",
+     "win": "Even.",
+     "loss": "Unbalanced..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a44b7",
+   "slot": 7,
+   "kind": "Rival",
+   "mood": "rival",
+   "title": "The Theorist's Proof",
+   "difficulty": "Hard",
+   "teaches": [
+    "Empower"
+   ],
+   "blurb": "Jace's lieutenant is checking your work and finding it wanting.",
+   "rewardSet": "fra",
+   "host": false,
+   "hero": {
+    "who": "chandra",
+    "deck": {
+     "name": "The Rebels",
+     "colors": "GR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Aerid Konstrari",
+       "set": "fra",
+       "number": "121",
+       "id": "f17d2792-b075-4c47-ad38-e7a7eaee5f8c"
+      },
+      {
+       "qty": 1,
+       "name": "Vibrance",
+       "set": "ecl",
+       "number": "249",
+       "id": "b9f71c3b-0840-475f-9c17-fdacbc7f3213"
+      },
+      {
+       "qty": 1,
+       "name": "Spinerock Tyrant",
+       "set": "ecl",
+       "number": "159",
+       "id": "478bbb7a-4b96-4e04-921e-bdf23185de25"
+      },
+      {
+       "qty": 2,
+       "name": "Hexhaven Invigorator",
+       "set": "fra",
+       "number": "106",
+       "id": "9a446cae-e93c-4574-8ffd-7688f9729a8a"
+      },
+      {
+       "qty": 2,
+       "name": "Champion of the Path",
+       "set": "ecl",
+       "number": "130",
+       "id": "e369cd31-3e22-47eb-bf6a-00d823651710"
+      },
+      {
+       "qty": 4,
+       "name": "Wildgrowth Archaic",
+       "set": "sos",
+       "number": "168",
+       "id": "0e6e2188-7203-4d10-a838-27233f283cd5"
+      },
+      {
+       "qty": 4,
+       "name": "Moon-Vigil Adherents",
+       "set": "ecl",
+       "number": "184",
+       "id": "60621c37-62e1-4261-ae76-3946b4a0cfa3"
+      },
+      {
+       "qty": 4,
+       "name": "Tenured Tethermage",
+       "set": "fra",
+       "number": "154",
+       "id": "1703306d-6a3d-4ab8-bf58-a9992236ef0f"
+      },
+      {
+       "qty": 4,
+       "name": "Mutable Explorer",
+       "set": "ecl",
+       "number": "186",
+       "id": "8f35d95a-caea-4d5e-b98e-55da1ba7c92d"
+      },
+      {
+       "qty": 4,
+       "name": "Chomping Changeling",
+       "set": "ecl",
+       "number": "172",
+       "id": "e187dcc6-19ad-4cf6-94b4-daf07f5144e5"
+      },
+      {
+       "qty": 4,
+       "name": "Topiary Lecturer",
+       "set": "sos",
+       "number": "165",
+       "id": "4f16a1c2-0a80-45e4-b025-3aa0c0b03812"
+      },
+      {
+       "qty": 4,
+       "name": "Changeling Wayfinder",
+       "set": "ecl",
+       "number": "1",
+       "id": "6c6061aa-a4da-4115-85b6-d0aa22f2386c"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "ecl",
+       "number": "273",
+       "id": "b460f5f7-c7c9-400c-8419-23d614f45bf9"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "ecl",
+       "number": "272",
+       "id": "295b92bc-d66f-45d8-9bbe-5f5f13e39fd4"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "uldaros",
+    "deck": {
+     "name": "Uldaros Theorix's Proof",
+     "colors": "BU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Uldaros Theorix",
+       "set": "fra",
+       "number": "159",
+       "id": "a7ad622a-42ff-48fa-ae95-12e0a5bd9387"
+      },
+      {
+       "qty": 3,
+       "name": "Deceit",
+       "set": "ecl",
+       "number": "212",
+       "id": "bd82c9e4-9871-4e6d-b691-ee00b4b9a3c6"
+      },
+      {
+       "qty": 3,
+       "name": "Null Summoner",
+       "set": "fra",
+       "number": "142",
+       "id": "3afdc75a-1bf5-4f2f-84eb-d82f77a095cd"
+      },
+      {
+       "qty": 3,
+       "name": "Sphinx of False Conclusions",
+       "set": "fra",
+       "number": "40",
+       "id": "08ffbd51-2bd3-4262-8809-09576ce2b6f5"
+      },
+      {
+       "qty": 3,
+       "name": "Emeritus of Ideation // Ancestral Recall",
+       "set": "sos",
+       "number": "45",
+       "id": "75961d36-acf6-425f-9698-0bf52af74f31"
+      },
+      {
+       "qty": 4,
+       "name": "Tragedy Feaster",
+       "set": "sos",
+       "number": "102",
+       "id": "b93cbaad-8ed8-4a1d-b95a-20a616dfedc9"
+      },
+      {
+       "qty": 4,
+       "name": "Creakwood Safewright",
+       "set": "ecl",
+       "number": "96",
+       "id": "3bcc24cf-776a-4182-bf77-a611ad90b28f"
+      },
+      {
+       "qty": 4,
+       "name": "Gutsplitter Gang",
+       "set": "ecl",
+       "number": "106",
+       "id": "9ff74349-693d-4373-a194-9796316dd1f1"
+      },
+      {
+       "qty": 4,
+       "name": "Glen Elendra Guardian",
+       "set": "ecl",
+       "number": "51",
+       "id": "388d2e4a-0aa5-4b82-a86c-4777ca60161c"
+      },
+      {
+       "qty": 4,
+       "name": "Champion of the Weird",
+       "set": "ecl",
+       "number": "95",
+       "id": "e600dd01-65ac-489c-a52a-decbc3a9a4f3"
+      },
+      {
+       "qty": 1,
+       "name": "Scarblade Scout",
+       "set": "ecl",
+       "number": "118",
+       "id": "c2412fea-4591-4345-913f-edc2da9ad975"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "ecl",
+       "number": "271",
+       "id": "1dd4d605-02a2-4183-b191-0bca8dfbf962"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "ecl",
+       "number": "270",
+       "id": "b0da67fb-1cb2-4105-ab5c-b7c680b8116c"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "020d561b-2e5d-439e-9e6a-318d23e73542",
+      "name": "Uldaros Theorix",
+      "rarity": "mythic",
+      "set": "fra",
+      "id": "a7ad622a-42ff-48fa-ae95-12e0a5bd9387",
+      "image": "https://cards.scryfall.io/normal/front/a/7/a7ad622a-42ff-48fa-ae95-12e0a5bd9387.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "chandra",
+     "line": "If we're going to fix things, we should start here. Why does no one question the Theorist?",
+     "quote": true
+    },
+    {
+     "who": "chandra",
+     "line": "Empower puts loyalty counters on a Jace token. The Theorist's deck builds one fast, so be ready to attack it."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "uldaros",
+     "line": "There is no curve. Either you succeeded, or you did not. Either way, this will be informative.",
+     "quote": true
+    },
+    {
+     "who": "uldaros",
+     "line": "Uldaros Theorix copies what he likes from the graveyard and discards the rest."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Question everything.",
+     "big": "Break the proof!",
+     "low": "The proof is airtight...",
+     "win": "Failed review.",
+     "loss": "Corrected...",
+     "half": "Attack the Jace token before it grows."
+    },
+    "villain": {
+     "start": "Informative.",
+     "big": "Revise!",
+     "low": "A flaw...",
+     "win": "Validated.",
+     "loss": "Unsatisfactory..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a44b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "The Theorist",
+   "difficulty": "Hard",
+   "teaches": [
+    "Reach"
+   ],
+   "blurb": "Every part of Jace that objected has been cut away. What is left wants a better Multiverse.",
+   "rewardSet": "fra",
+   "host": true,
+   "hero": {
+    "who": "allies",
+    "deck": {
+     "name": "The Allies of the Echoverse",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Kwia Vigorbloom",
+       "set": "fra",
+       "number": "140",
+       "id": "2d6ff182-a853-4898-895b-072c89324ca7"
+      },
+      {
+       "qty": 3,
+       "name": "Solarium Sentry",
+       "set": "fra",
+       "number": "148",
+       "id": "1ef12dcf-df50-4da6-8c4c-e2937ba9698e"
+      },
+      {
+       "qty": 3,
+       "name": "Figure of Fable",
+       "set": "ecl",
+       "number": "224",
+       "id": "e0ef33dd-5f6d-48fa-8ef6-a8092868d50f"
+      },
+      {
+       "qty": 3,
+       "name": "Champion of the Clachan",
+       "set": "ecl",
+       "number": "9",
+       "id": "46ce3474-381c-433b-acd8-4e628d0048d2"
+      },
+      {
+       "qty": 3,
+       "name": "Adept Watershaper",
+       "set": "ecl",
+       "number": "3",
+       "id": "6e53f246-8347-4632-9d5b-4aeb12f7b762"
+      },
+      {
+       "qty": 2,
+       "name": "Slumbering Walker",
+       "set": "ecl",
+       "number": "35",
+       "id": "81e82915-e734-4754-829f-f5da6a7c550d"
+      },
+      {
+       "qty": 4,
+       "name": "Bristlebane Battler",
+       "set": "ecl",
+       "number": "168",
+       "id": "c857fa32-1b5d-4139-8809-b4d0df44b472"
+      },
+      {
+       "qty": 4,
+       "name": "Encumbered Reejerey",
+       "set": "ecl",
+       "number": "14",
+       "id": "15ff6797-f59c-4333-98ea-5711150fd5b8"
+      },
+      {
+       "qty": 4,
+       "name": "Soaring Stoneglider",
+       "set": "sos",
+       "number": "32",
+       "id": "2fbe446b-60fd-43da-8358-985392293af8"
+      },
+      {
+       "qty": 4,
+       "name": "Champions of the Perfect",
+       "set": "ecl",
+       "number": "171",
+       "id": "4f359211-8be5-4818-b73c-14f24b7ddb21"
+      },
+      {
+       "qty": 3,
+       "name": "Burdened Stoneback",
+       "set": "ecl",
+       "number": "8",
+       "id": "3278b8d0-3d2b-4d3d-bbf1-fd9b714b53ed"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "ecl",
+       "number": "273",
+       "id": "b460f5f7-c7c9-400c-8419-23d614f45bf9"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "ecl",
+       "number": "269",
+       "id": "3a438199-54f8-4702-81cf-a9d42e7cd9f1"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "theorist",
+    "deck": {
+     "name": "The Theorist, Jace Beleren",
+     "colors": "U",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "The Theorist, Jace Beleren",
+       "set": "fra",
+       "number": "43",
+       "id": "20bb8c55-4b0b-425f-8201-b54fa2fdde86"
+      },
+      {
+       "qty": 2,
+       "name": "Jace, Reality Sculptor",
+       "set": "fra",
+       "number": "216",
+       "id": "74087795-0b38-4fd2-9841-147583baca41"
+      },
+      {
+       "qty": 3,
+       "name": "Sphinx of False Conclusions",
+       "set": "fra",
+       "number": "40",
+       "id": "08ffbd51-2bd3-4262-8809-09576ce2b6f5"
+      },
+      {
+       "qty": 3,
+       "name": "Emeritus of Ideation // Ancestral Recall",
+       "set": "sos",
+       "number": "45",
+       "id": "75961d36-acf6-425f-9698-0bf52af74f31"
+      },
+      {
+       "qty": 3,
+       "name": "Skycoach Conductor // All Aboard",
+       "set": "sos",
+       "number": "67",
+       "id": "4ecbca71-9a1d-44c5-b709-d6f565941d5e"
+      },
+      {
+       "qty": 3,
+       "name": "Variable Chaser // Arc of Fortune",
+       "set": "fra",
+       "number": "47",
+       "id": "e3afedb1-bf9d-4e31-9700-433514cc29b1"
+      },
+      {
+       "qty": 4,
+       "name": "Glen Elendra Guardian",
+       "set": "ecl",
+       "number": "51",
+       "id": "388d2e4a-0aa5-4b82-a86c-4777ca60161c"
+      },
+      {
+       "qty": 4,
+       "name": "Champions of the Shoal",
+       "set": "ecl",
+       "number": "46",
+       "id": "e1acdd9c-4a6d-4373-950c-f5539b54679f"
+      },
+      {
+       "qty": 4,
+       "name": "Glamer Gifter",
+       "set": "ecl",
+       "number": "49",
+       "id": "bd764dd4-2395-4138-ac29-260eac1aeaae"
+      },
+      {
+       "qty": 4,
+       "name": "Unwelcome Sprite",
+       "set": "ecl",
+       "number": "81",
+       "id": "902f8d86-fde2-4cdf-88f0-bf63d616f3af"
+      },
+      {
+       "qty": 3,
+       "name": "Glamermite",
+       "set": "ecl",
+       "number": "50",
+       "id": "b8b7c23a-0034-453c-ab44-f6ec0f31d1eb"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "ecl",
+       "number": "270",
+       "id": "b0da67fb-1cb2-4105-ab5c-b7c680b8116c"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "89a6e876-0b00-4671-9652-766fd7ef9bf2",
+      "name": "The Theorist, Jace Beleren",
+      "rarity": "mythic",
+      "set": "fra",
+      "id": "20bb8c55-4b0b-425f-8201-b54fa2fdde86",
+      "image": "https://cards.scryfall.io/normal/front/2/0/20bb8c55-4b0b-425f-8201-b54fa2fdde86.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "allies",
+     "line": "Too many lives have been cut short, too many of their futures untold. I can rewrite them. I can give them a voice.",
+     "quote": true
+    },
+    {
+     "who": "allies",
+     "line": "The Theorist draws extra cards and builds Illusions every turn. Do not let him durdle."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "theorist",
+     "line": "I only wish you could see the necessity of this. Your counterparts all have.",
+     "quote": true
+    },
+    {
+     "who": "theorist",
+     "line": "The Multiverse is a work in progress. There will need to be revisions.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "We will stop this.",
+     "big": "For every future!",
+     "low": "He is rewriting us...",
+     "win": "Revision rejected.",
+     "loss": "Rewritten...",
+     "half": "Pressure the Theorist before his tokens swarm."
+    },
+    "villain": {
+     "start": "Revisions.",
+     "big": "Rewrite!",
+     "low": "A flaw in the proof...",
+     "win": "Necessary.",
+     "loss": "Impossible..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a44b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "The Exigent Doom",
+   "difficulty": "Hard",
+   "teaches": [
+    "Trample"
+   ],
+   "blurb": "Tam calls on something far older than a Theorist, and it answers.",
+   "rewardSet": "fra",
+   "host": true,
+   "archive": {
+    "deck": "Emrakul and the Echoes",
+    "when": "Autumn 2026",
+    "format": "Story archive, no tournament list.",
+    "what": "A green deck of the set's big creatures, with Emrakul, the Exigent Doom as its top end.",
+    "why": "It stands for what Tam calls on after the Theorist, and is not a list anyone won with.",
+    "beat": "Chump the big creatures, keep your life high and win before Emrakul arrives.",
+    "after": "Nothing; this is the optional superboss at the end of the story."
+   },
+   "hero": {
+    "who": "tam",
+    "deck": {
+     "name": "Tam and the Possibility",
+     "colors": "GU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Tam, the Possibility",
+       "set": "fra",
+       "number": "276",
+       "id": "6529d399-677e-45a6-ac3e-12a0b10f6c37"
+      },
+      {
+       "qty": 3,
+       "name": "Tam, Mindful First-Year",
+       "set": "ecl",
+       "number": "245",
+       "id": "6cb0f825-b75b-4f2a-803c-08142ca07e76"
+      },
+      {
+       "qty": 3,
+       "name": "Berta, Wise Extrapolator",
+       "set": "sos",
+       "number": "175",
+       "id": "75f89c36-c81d-4580-9a5c-218fed0c5c9a"
+      },
+      {
+       "qty": 3,
+       "name": "Quandrix, the Proof",
+       "set": "sos",
+       "number": "218",
+       "id": "015afe31-af3c-4c9b-9997-d7c33b915a33"
+      },
+      {
+       "qty": 3,
+       "name": "Wistfulness",
+       "set": "ecl",
+       "number": "252",
+       "id": "db9aa986-ac2a-44bb-a88b-04c5d0d502b2"
+      },
+      {
+       "qty": 3,
+       "name": "Avatar of Burgeoning Echoes",
+       "set": "fra",
+       "number": "122",
+       "id": "5905995b-7a20-4602-a7cc-90aa5089a082"
+      },
+      {
+       "qty": 4,
+       "name": "Bristlebane Battler",
+       "set": "ecl",
+       "number": "168",
+       "id": "c857fa32-1b5d-4139-8809-b4d0df44b472"
+      },
+      {
+       "qty": 4,
+       "name": "Champions of the Perfect",
+       "set": "ecl",
+       "number": "171",
+       "id": "4f359211-8be5-4818-b73c-14f24b7ddb21"
+      },
+      {
+       "qty": 4,
+       "name": "Glen Elendra Guardian",
+       "set": "ecl",
+       "number": "51",
+       "id": "388d2e4a-0aa5-4b82-a86c-4777ca60161c"
+      },
+      {
+       "qty": 4,
+       "name": "Pestbrood Sloth",
+       "set": "sos",
+       "number": "157",
+       "id": "c1251ae6-2f19-4f84-ab02-6a6cc7ce6056"
+      },
+      {
+       "qty": 2,
+       "name": "Paradox Surveyor",
+       "set": "sos",
+       "number": "208",
+       "id": "d7cb1af2-0302-46ff-8303-ae9d07541a01"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "ecl",
+       "number": "273",
+       "id": "b460f5f7-c7c9-400c-8419-23d614f45bf9"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "ecl",
+       "number": "270",
+       "id": "b0da67fb-1cb2-4105-ab5c-b7c680b8116c"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "emrakul",
+    "deck": {
+     "name": "Emrakul and the Echoes",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No tournament list is copied.",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Emrakul, the Exigent Doom",
+       "set": "fra",
+       "number": "1",
+       "id": "c3ff8dd3-88a8-49dc-a59b-e2748680623c"
+      },
+      {
+       "qty": 3,
+       "name": "Aurora Awakener",
+       "set": "ecl",
+       "number": "165",
+       "id": "913977c2-73f9-466b-bd01-827c1736e070"
+      },
+      {
+       "qty": 3,
+       "name": "Hungering Puppetbeast",
+       "set": "fra",
+       "number": "107",
+       "id": "3db2da7a-8088-4117-916b-f9c905d1b45b"
+      },
+      {
+       "qty": 3,
+       "name": "Hexhaven Invigorator",
+       "set": "fra",
+       "number": "106",
+       "id": "9a446cae-e93c-4574-8ffd-7688f9729a8a"
+      },
+      {
+       "qty": 3,
+       "name": "Champions of the Perfect",
+       "set": "ecl",
+       "number": "171",
+       "id": "4f359211-8be5-4818-b73c-14f24b7ddb21"
+      },
+      {
+       "qty": 3,
+       "name": "Bristlebane Battler",
+       "set": "ecl",
+       "number": "168",
+       "id": "c857fa32-1b5d-4139-8809-b4d0df44b472"
+      },
+      {
+       "qty": 4,
+       "name": "Mutable Explorer",
+       "set": "ecl",
+       "number": "186",
+       "id": "8f35d95a-caea-4d5e-b98e-55da1ba7c92d"
+      },
+      {
+       "qty": 4,
+       "name": "Wildgrowth Archaic",
+       "set": "sos",
+       "number": "168",
+       "id": "0e6e2188-7203-4d10-a838-27233f283cd5"
+      },
+      {
+       "qty": 4,
+       "name": "Moon-Vigil Adherents",
+       "set": "ecl",
+       "number": "184",
+       "id": "60621c37-62e1-4261-ae76-3946b4a0cfa3"
+      },
+      {
+       "qty": 4,
+       "name": "Topiary Lecturer",
+       "set": "sos",
+       "number": "165",
+       "id": "4f16a1c2-0a80-45e4-b025-3aa0c0b03812"
+      },
+      {
+       "qty": 3,
+       "name": "Changeling Wayfinder",
+       "set": "ecl",
+       "number": "1",
+       "id": "6c6061aa-a4da-4115-85b6-d0aa22f2386c"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "ecl",
+       "number": "273",
+       "id": "b460f5f7-c7c9-400c-8419-23d614f45bf9"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "4421ab7d-6d9b-4edd-b5a0-53a8ed84da6f",
+      "name": "Emrakul, the Exigent Doom",
+      "rarity": "mythic",
+      "set": "fra",
+      "id": "c3ff8dd3-88a8-49dc-a59b-e2748680623c",
+      "image": "https://cards.scryfall.io/normal/front/c/3/c3ff8dd3-88a8-49dc-a59b-e2748680623c.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "tam",
+     "line": "What are the odds? And what would you like them to be?",
+     "quote": true
+    },
+    {
+     "who": "tam",
+     "line": "Race it. Emrakul needs ten mana, and every turn she is late is a turn you are ahead."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "emrakul",
+     "line": "Emrakul does not speak. The Multiverse does it for her."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: the two multiverses come apart and Tam finds her way back to class, late as ever."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Ask for odds.",
+     "big": "Possibility!",
+     "low": "The Doom is coming...",
+     "win": "Undone.",
+     "loss": "Consumed...",
+     "half": "Win before Emrakul reaches ten mana."
+    },
+    "villain": {
+     "start": "Echo.",
+     "big": "Exigent!",
+     "low": "Not yet...",
+     "win": "It comes.",
+     "loss": "Denied..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

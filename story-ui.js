@@ -291,6 +291,12 @@ export const LESSONS = {
   'Disappear': 'Disappear: if one of your permanents left the battlefield this turn, the creature brings a bonus Ninja token.',
   'Teamwork': 'Teamwork: tap creatures with enough total power as an extra cost and the spell does more. A crowd turns a small spell into a big one.',
   'Power-up': 'Power-up: pay once to put counters on the creature. It costs less the turn it enters.',
+  'Recruit': 'Recruit: draw a card, then discard a card. If you discarded a nonland card, you get a Treasure. It is looting that pays you back.',
+  'Blight': 'Blight: put -1/-1 counters on a creature you control as a cost. Pay with your smallest creature, and let the dying ones go.',
+  'Vivid': 'Vivid: counts the colours among your permanents. The more colours on your board, the bigger the effect.',
+  'Prepared': 'Prepared: a prepared creature lets you cast a copy of its spell once, which then unprepares it. Keep the creature and cast the spell.',
+  'Repartee': 'Repartee: when you cast an instant or sorcery that targets a creature, the creature gains a bonus. Aim helpful spells at your own team.',
+  'Empower': 'Empower: put loyalty counters on a Jace token you control, or make one first. A token left alone only grows, so attack it.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
