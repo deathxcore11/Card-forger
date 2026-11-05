@@ -556,7 +556,8 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
     "Story" to "Act 1's first four battles teach as you play: the Rift whispers a tip and the cards it means glow. Skip lessons turns them off.",
-    "Story" to "Acts 33 to 38 are playable, and early acts are retuned.",
+    "Story" to "Acts 33 to 38 are playable, and early acts are retuned. Act 2's Tetsuo's Court, The Deck and the Elder Dragon's lair have living mats.",
+    "Packs" to "Seven older packs lose the black box behind them, and Khans of Tarkir shows Siege Rhino.",
     "Fix" to "Quick Play no longer freezes while it picks a Commander opponent.",
     "Foil" to "A card that only comes in foil now shows its foil.",
     "3D cards" to "Big cards have depth: the art sits behind the frame and shifts as you tilt. Settings \u203a 3D cards turns it off.",
