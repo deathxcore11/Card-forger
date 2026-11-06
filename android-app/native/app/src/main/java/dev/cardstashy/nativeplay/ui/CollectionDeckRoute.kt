@@ -245,7 +245,11 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
         val data = a.getAsJsonObject("data")?.entrySet().orEmpty()
             .filter { (k, v) -> k != "act" && v.isJsonPrimitive && v.asString.length < 120 && !v.asString.startsWith("{") && !v.asString.startsWith("[") }
         val sel = "[data-act=\"${css(act)}\"]" + data.joinToString("") { (k, v) -> "[data-" + k.replace(Regex("[A-Z]")) { "-" + it.value.lowercase() } + "=\"${css(v.asString)}\"]" }
-        web("$page/" + android.net.Uri.encode(deckTab), sel)
+        // Game Night (tabletop.js openTabletop) is the website's. From the deck's War Chest it keeps the deck's journal; when the
+        // website on this phone does not have the deck (not signed in there, or not synced yet) the Rules page's Tabletop
+        // button (A.tabletop) opens the same table without it, rather than nothing happening (Randall 6 Nov).
+        val table = act == "chestTool" && got("tool") in setOf("gameNight", "share", "spirit", "journal")
+        web("$page/" + android.net.Uri.encode(deckTab), if (table) "$sel\n||\n#rules\n[data-act=\"tabletop\"]" else sel)
     }
     /** A tap or typing in the panel: the site's listeners, then what they start (the rulebook, a source) as it lands. */
     fun panelDo(call: suspend () -> com.google.gson.JsonObject) = scope.launch {

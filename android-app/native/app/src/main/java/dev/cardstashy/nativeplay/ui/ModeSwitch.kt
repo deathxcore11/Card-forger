@@ -121,9 +121,12 @@ fun CollectionScreen(onPlay: () -> Unit, url: String = "https://cardstashy.com/"
                     override fun onPageFinished(view: WebView, loaded: String?) {
                         if (press == null || pressed) return
                         pressed = true
-                        // Several selectors, one per line, press in turn: a tile, then a control in the sheet it opens.
-                        val sels = org.json.JSONArray(press.split("\n").filter { it.isNotBlank() }).toString()
-                        view.evaluateJavascript("(function t(s,i,n){if(i>=s.length)return;var b=document.querySelector(s[i]);if(b&&b.getClientRects().length){b.click();setTimeout(function(){t(s,i+1,0)},120);}else if(n<50){setTimeout(function(){t(s,i,n+1)},200);}})($sels,0,0)", null)
+                        // Several selectors, one per line, press in turn: a tile, then a control in the sheet it opens. After a
+                        // line "||" comes a second way in, tried when the first stalls: its "#..." lines move the page there.
+                        val parts = press.split("\n||\n", limit = 2)
+                        fun arr(t: String) = org.json.JSONArray(t.split("\n").filter { it.isNotBlank() }).toString()
+                        val sels = arr(parts[0]); val alt = parts.getOrNull(1)?.let(::arr) ?: "[]"
+                        view.evaluateJavascript("(function t(s,i,n,a){if(i>=s.length)return;if(s[i].charAt(0)==='#'){location.hash=s[i];setTimeout(function(){t(s,i+1,0,a)},300);return;}var b=document.querySelector(s[i]);if(b&&b.getClientRects().length){b.click();setTimeout(function(){t(s,i+1,0,a)},120);}else if(n<(a.length?20:50)){setTimeout(function(){t(s,i,n+1,a)},200);}else if(a.length){t(a,0,0,[]);}})($sels,0,0,$alt)", null)
                     }
                 }
                 loadUrl(url)
