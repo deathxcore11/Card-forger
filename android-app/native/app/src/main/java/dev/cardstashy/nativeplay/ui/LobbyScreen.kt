@@ -96,6 +96,9 @@ import dev.cardstashy.nativeplay.match.EngineNames
 import dev.cardstashy.nativeplay.match.MetaDecks
 import dev.cardstashy.nativeplay.match.Pick
 import dev.cardstashy.nativeplay.match.QuickOpponent
+import dev.cardstashy.nativeplay.match.QuickPower
+import dev.cardstashy.nativeplay.play.MatchRecord
+import kotlinx.coroutines.joinAll
 import dev.cardstashy.nativeplay.play.CardFacts
 import kotlinx.coroutines.delay
 import androidx.compose.ui.platform.LocalDensity
@@ -134,7 +137,8 @@ data class SeatDeck(val raw: JsonObject, val source: String) {
 class LobbyModel(style: String) {
     var style by mutableStateOf(style)                   // "quick" | "practice"
     var format by mutableStateOf("Commander")             // play-setup.js reset(): Commander
-    var difficulty by mutableStateOf("Medium")
+    /** play-setup.js match.difficulty: the CPU level, saved on this device (savedCpuLevel); Quick Play aims its match at it. */
+    var difficulty: String get() = CpuLevel.level.value; set(v) { CpuLevel.set(v) }
     var player by mutableStateOf<SeatDeck?>(null)
     var opponent by mutableStateOf<SeatDeck?>(null)
     var inspected by mutableStateOf("player")
@@ -188,6 +192,19 @@ class LobbyModel(style: String) {
     fun seat(k: String) = if (k == "player") player else opponent
     fun put(k: String, d: SeatDeck?) { if (k == "player") { player = d; if (quick) { opponent = null; quickMatch = null } } else opponent = d }
     fun configureFormat(f: String) { if (f != format) { player = null; opponent = null; inspected = "player"; quickMatch = null; importTicket++; candidate = null; importBusy = false; importStatus = "idle"; warnings = emptyList(); unresolved = emptyList() }; format = f; error = null; quickError = null }
+}
+
+/** play-setup.js CPU_LEVEL_KEY / savedCpuLevel: the CPU level last chosen, kept on this device (Medium until one is). */
+object CpuLevel {
+    private const val KEY = "cardstashy.practiceCpuLevel"
+    private var prefs: android.content.SharedPreferences? = null
+    val level = mutableStateOf("Medium")
+    fun init(context: android.content.Context) {
+        if (prefs != null) return
+        prefs = context.applicationContext.getSharedPreferences("play-setup", android.content.Context.MODE_PRIVATE)
+        level.value = prefs?.getString(KEY, null)?.takeIf { it in listOf("Easy", "Medium", "Hard") } ?: "Medium"
+    }
+    fun set(v: String) { if (v == level.value) return; level.value = v; runCatching { prefs?.edit()?.putString(KEY, v)?.apply() } }
 }
 
 /** The lobby's sources besides your decks (play-deck-sources.js PLAY_DECK_SOURCES). */
@@ -292,6 +309,26 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     // Sources: precons, meta and community lists for the format, loaded on first open (A.playDeckSource).
     val sources = remember { LobbySources() }
     LaunchedEffect(source, m.format) { if (online && source in setOf("precons", "meta", "community") && sources.entries(source, m.format).isEmpty()) sources.load(context, source, m.format, signedIn) }
+    remember { CpuLevel.init(context); QuickPower.init(context) }
+    // A.playFindOpponent's pool: your decks, every source the lobby has in the format, the tournament lists, and Deck Forge's finished builds.
+    suspend fun quickPool(format: String): List<JsonObject> =
+        workspace.orEmpty().map { it.raw.deepCopy().apply { addProperty("format", it.format) } } +
+            listOf("precons", "community", "meta").flatMap { sources.entries(it, format).map { e -> e.deck } } +
+            MetaDecks.lists(context, format).map { it.deepCopy().apply { addProperty("format", format) } } + RandomBuild.ready(format)
+    // Random means every source: the format's tournament lists and precons too if there are none yet (the site waits 4 s for them).
+    suspend fun quickSources(format: String) {
+        val jobs = listOf(scope.launch { MetaDecks.lists(context, format) }) +
+            (if (sources.entries("precons", format).isEmpty()) listOf(scope.launch { sources.load(context, "precons", format, signedIn) }) else emptyList())
+        withTimeoutOrNull(4000) { jobs.joinAll() }
+    }
+    // Quick Play reads the pool's Power while you choose (the site has it in its catalog already), so Play finds a matched deck at once.
+    LaunchedEffect(m.quick, m.format, m.player, signedIn, workspace) {
+        if (!m.quick || !signedIn || !online) return@LaunchedEffect
+        delay(600)
+        val format = m.format
+        quickSources(format)
+        QuickPower.warm(format, listOfNotNull(m.player?.raw) + quickPool(format).filter { it.get("format")?.takeIf { f -> f.isJsonPrimitive }?.asString == format })
+    }
 
     fun selectDeck(d: TableDecks.Deck) {
         RandomBuild.cancel()
@@ -385,29 +422,31 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
                 m.quickBusy = true; m.quickError = null
                 scope.launch {
                     try {
-                        // Random means every source: fetch the format's tournament lists too if there are none yet (bounded wait).
-                        withTimeoutOrNull(4000) { MetaDecks.lists(context, m.format) }
-                        val format = m.format; val saved = workspace.orEmpty(); val listed = listOf("precons", "community", "meta").flatMap { sources.entries(it, format).map { e -> e.deck } }
+                        val format = m.format; val level = m.difficulty
+                        quickSources(format)
+                        val candidates = quickPool(format)
+                        val streak = MatchRecord.quickStreak(context, session?.userId, format)
                         // The decks are copied and the engine is asked once for every name in every deck, never on the main thread:
                         // right after an update Forge can still be loading, and Commander has hundreds of lists to check (the 0.4.12 freeze).
                         val r = withContext(Dispatchers.Default) {
-                            val candidates = saved.map { it.raw.deepCopy().apply { addProperty("format", it.format) } } + listed +
-                                MetaDecks.lists(context, format).map { it.deepCopy().apply { addProperty("format", format) } }
                             val names = java.util.IdentityHashMap<JsonObject, List<String>>()
                             (listOf(you.raw) + candidates).forEach { d -> names[d] = EngineNames.names(EngineNames.deck(d)).toList() }
                             val unknown = ForgeService.unknownNames(names.values.flatten().toSet()).toSet()
                             val mine = names.getValue(you.raw).filter { it in unknown }
                             if (mine.isNotEmpty()) throw QuickOpponent.NoOpponent(engineMissingText("Your deck", mine.distinct().sorted()))
-                            QuickOpponent.choose(you.raw, candidates, eligible = { d -> forgeCpuDeckComplete(d) && names[d].orEmpty().none { it in unknown } })
+                            // Power reads the lobby hasn't finished get ten seconds; any still out are unrated (the site's random fallback).
+                            val deadline = System.currentTimeMillis() + 10_000
+                            QuickOpponent.choose(you.raw, candidates, eligible = { d -> forgeCpuDeckComplete(d) && names[d].orEmpty().none { it in unknown } },
+                                difficulty = level, streak = streak, rate = { d -> QuickPower.rate(format, d, deadline) })
                         }
                         m.quickMatch = r; m.opponent = SeatDeck(r.deck, "quick")
-                        onStart(Pick.Table(you.raw, you.name, m.format, factName(you.raw), r.deck, "Medium", quick = true))
+                        onStart(Pick.Table(you.raw, you.name, m.format, factName(you.raw), r.deck, "Medium", quick = true, matchup = r.line))
                     } catch (e: QuickOpponent.NoOpponent) { m.quickError = e.message } catch (e: Exception) { m.quickError = e.message ?: "Couldn’t find a CPU deck." }
                     finally { m.quickBusy = false }
                 }
                 return
             }
-            onStart(Pick.Table(you.raw, you.name, m.format, factName(you.raw), m.quickMatch!!.deck, "Medium", quick = true)); return
+            onStart(Pick.Table(you.raw, you.name, m.format, factName(you.raw), m.quickMatch!!.deck, "Medium", quick = true, matchup = m.quickMatch!!.line)); return
         }
         val cpu = m.opponent ?: run { toast("Choose both Practice decks first."); return }
         onStart(Pick.Table(you.raw, you.name, m.format, factName(you.raw), cpu.raw, m.difficulty, quick = false))

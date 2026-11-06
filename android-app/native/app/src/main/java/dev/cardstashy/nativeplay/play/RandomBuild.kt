@@ -14,6 +14,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import app.cash.zipline.QuickJs
+import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -22,6 +23,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -125,6 +127,21 @@ object RandomBuild {
     suspend fun card(format: String, theme: String? = null): JsonObject? = call("card", JsonObject().apply { addProperty("format", format); theme?.takeIf { it.isNotBlank() }?.let { addProperty("theme", it) } })
     /** The card a player typed in Change card (app.js resolve, fuzzy); null if Scryfall has none by that name. */
     suspend fun named(name: String): JsonObject? = call("named", JsonObject().apply { addProperty("name", name) })
+
+    /**
+     * Quick Play's quickContext (random-build-entry.mjs): the format's tournament data, the decks' card data, then each deck's Power and
+     * bracket as the site's capturePracticeDeckContext reads them ({power, bracket} per deck, nulls where the site has none). The answer
+     * arrives on the returned Deferred (null if the bundle failed); a caller that stops waiting leaves it running, so the card data it
+     * loads is there next time.
+     */
+    fun quickContext(format: String, decks: List<JsonObject>): kotlinx.coroutines.Deferred<JsonArray?> = scope.async(thread) {
+        val id = callIds.incrementAndGet(); val d = CompletableDeferred<JsonObject>(); calls[id] = d
+        try {
+            val a = JsonObject().apply { addProperty("format", format); add("decks", JsonArray().apply { decks.forEach { add(it) } }) }
+            eval("RandomBuild.call($id, ${JsonPrimitive("quickContext")}, ${JsonPrimitive(a.toString())})")
+            withTimeoutOrNull(600_000) { d.await() }?.takeIf { it.get("ok")?.asBoolean == true }?.get("value")?.takeIf { it.isJsonArray }?.asJsonArray
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Throwable) { null } finally { calls.remove(id) }
+    }
 
     private val calls = java.util.concurrent.ConcurrentHashMap<Int, CompletableDeferred<JsonObject>>()
     private val callIds = java.util.concurrent.atomic.AtomicInteger()

@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -144,6 +145,8 @@ private fun PlateView(p: Plate, modifier: Modifier) {
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent, 1f to Color(0xEE0A0A0C))))
         Column(Modifier.align(Alignment.BottomStart).padding(14.dp)) {
             Text(p.who, style = Type.Label.copy(color = Palette.Gold)); Text(p.name, style = Type.Title, maxLines = 2)
+            // .forge-intro-power: 12 px, bold, .04em, #f0c27a.
+            if (p.line.isNotEmpty()) Text(p.line, style = Type.Label.copy(color = Color(0xFFF0C27A), fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = .48.sp), modifier = Modifier.padding(top = 2.dp))
         }
     }
 }

@@ -7,6 +7,10 @@ import {formatOf} from 'WEB/formats.js';
 import {createRandomDeckProducer, RANDOM_DECK_FORMATS} from 'WEB/play-opponent-build.js';
 import {createRandomDeckQueue} from 'WEB/play-random-queue.js';
 import {mtgPower, shownPower} from 'WEB/power.js';
+import {capturePracticeDeckContext} from 'WEB/play-deck-context.js';
+import {metaState, loadMeta as loadMetaData} from 'WEB/meta.js';
+import {cardKey as key} from 'WEB/core.js';
+import {loadMtgTags, mtgTagsReady, setMtgTags} from 'WEB/mtg-tags.js';
 
 // app.js:475-484, verbatim.
 const api = createScryfallClient();
@@ -40,6 +44,40 @@ const chosenProducer = ({seedCard, seed, theme, matchMode, easy}) => createRando
 });
 const chosen = a => !!(a.seedCard || a.seed || a.theme || a.matchMode || a.easy);
 
+// app.js resolveNames, verbatim but for saveCatalogSoon (this bundle keeps its catalog in memory): card data 75 names a request.
+async function resolveNames(names, progress = () => {}, refresh = false, current = () => true) {
+  const wanted = [...new Map(names.filter(Boolean).map((n) => [key(n), n])).values()].filter((n) => refresh || !meta(n)),
+    failed = [],
+    matched = new Map(),
+    retried = new Set();
+  for (let i = 0; i < wanted.length; i += 75) {
+    if(!current())return {failed,matched,total:wanted.length,cancelled:true};
+    const chunk = wanted.slice(i, i + 75);
+    progress(`Loading card data ${Math.min(i + 75, wanted.length)}/${wanted.length}…`);
+    try {
+      const r = await api("/cards/collection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifiers: chunk.map((name) => ({ name: name.split(" // ")[0] })) }),
+      });
+      if(!current())return {failed,matched,total:wanted.length,cancelled:true};
+      for (const c of r.data || []) {
+        const aliases = chunk.filter((n) => key(n) === key(c.name) || key(n.split(" // ")[0]) === key(c.name.split(" // ")[0]) || c.card_faces?.some((f) => key(f.name) === key(n)));
+        cacheCard(c, aliases);
+        for (const a of aliases) matched.set(key(a), c.name);
+      }
+      for (const n of chunk) if (!matched.has(key(n))) failed.push(n);
+    } catch (e) {
+      if(!current())return {failed,matched,total:wanted.length,cancelled:true};
+      // A batch the database couldn't be reached for gets one more pass after a cooldown.
+      if (e?.network && !retried.has(i)) { retried.add(i); progress("The card database is busy; trying again…"); await new Promise((r) => setTimeout(r, 4000)); i -= 75; continue; }
+      failed.push(...chunk);
+    }
+  }
+  if(!current())return {failed,matched,total:wanted.length,cancelled:true};
+  return { failed, matched, total: wanted.length };
+}
+
 // Calls whose answer comes later (a card from Scryfall): the app passes an id, and takeDone() hands back each finished one.
 const done = [];
 const calls = {
@@ -47,6 +85,19 @@ const calls = {
   card: a => randomBuildSeed({game: 'mtg', format: a.format, theme: a.theme || '', randomSeed: Math.floor(Math.random() * 1e9)}),
   // Change card: the name the player typed, as app.js resolve finds it.
   named: a => resolve(String(a.name || ''), true),
+  // Quick Play (app.js A.playFindOpponent): the format's tournament data first (bounded wait, as the site waits for it), then each
+  // deck's quickContext, capturePracticeDeckContext(deck).practiceContext: the same Power and bracket the Collection shows. The site
+  // reads them from the catalog it already has; here the decks' card data is loaded first (app.js resolveNames).
+  quickContext: async a => {
+    const fmt = String(a.format || ''), metaKey = 'mtg:' + (fmt === 'Commander' ? 'EDH' : fmt), decks = a.decks || [];
+    await Promise.race([metaState(metaKey).data ? null : loadMetaData(metaKey).catch(() => {}), new Promise(r => setTimeout(r, 4000))]);
+    // Scryfall's role tags (mtg-tags.js), which the site has loaded by the time it rates a deck; QuickJS has no location, so it reads
+    // the same file itself.
+    if (!mtgTagsReady()) await (typeof location !== 'undefined' ? loadMtgTags() : fetch('https://cardstashy.com/mtg-tags.json').then(r => r.ok ? r.json() : null).then(d => { if (d) setMtgTags(d); }).catch(() => {}));
+    const leader = d => [d.commander, ...(d.commanders || [])].map(c => typeof c === 'string' ? c : c?.name);
+    await resolveNames(decks.flatMap(d => [...leader(d), ...[...(d.cards || []), ...(d.side || [])].map(r => typeof r === 'string' ? r : r?.name)]).filter(Boolean));
+    return decks.map(d => { try { const c = capturePracticeDeckContext(d).practiceContext; return {power: c.power.value, bracket: c.bracket?.value ?? null}; } catch (e) { return {power: null, bracket: null, error: String(e && e.message || e)}; } });
+  },
 };
 
 let job = 0, result = null;

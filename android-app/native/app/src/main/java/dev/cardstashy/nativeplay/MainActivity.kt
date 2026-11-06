@@ -466,7 +466,7 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
         val bubbles = remember { (pick as? Pick.Table)?.story?.let { dev.cardstashy.nativeplay.play.StoryBubbles(it.battle, it.seat) } }
-        val controller = remember { MatchController(scope, s.input, (pick as? Pick.Friend)?.let { f -> { dev.cardstashy.nativeplay.match.RemoteSession(f.matchId) } }).apply { onFinished = { st, f, ms -> reportMatch(pick, st, f, ms); (pick as? Pick.Table)?.story?.let { c -> outcome?.let { o -> storyFinished(scope, context, c, st, f, o, bubbles) } } } } }
+        val controller = remember { MatchController(scope, s.input, (pick as? Pick.Friend)?.let { f -> { dev.cardstashy.nativeplay.match.RemoteSession(f.matchId) } }).apply { onFinished = { st, f, ms -> reportMatch(context, pick, st, f, ms, conceded); (pick as? Pick.Table)?.story?.let { c -> outcome?.let { o -> storyFinished(scope, context, c, st, f, o, bubbles) } } } } }
         var versus by remember { mutableStateOf(round == 0) }
         DisposableEffect(Unit) { activity.inGame(true); controller.start(); onDispose { controller.close() } }
         if (round == 0) LaunchedEffect(Unit) {
@@ -553,10 +553,14 @@ private fun online(context: android.content.Context): Boolean = runCatching {
     cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
 }.getOrDefault(true)
 
-private fun reportMatch(pick: Pick, st: dev.cardstashy.nativeplay.engine.MatchState, f: dev.cardstashy.nativeplay.play.MatchFacts, durationMs: Long?) {
+private fun reportMatch(context: android.content.Context, pick: Pick, st: dev.cardstashy.nativeplay.engine.MatchState, f: dev.cardstashy.nativeplay.play.MatchFacts, durationMs: Long?, conceded: Boolean) {
     val outcome = when { st.draw -> "draw"; st.winnerPlayerId == null -> return; st.winnerPlayerId == st.viewer -> "win"; else -> "loss" }
     val table = pick as? Pick.Table
     val me = st.players.firstOrNull { it.id == st.viewer }; val them = st.players.firstOrNull { it.id != st.viewer }
+    // play-match-record.js recordMatch (matchRow): this device's record. Quick Play, Story and friend matches are the site's 'quick'.
+    runCatching { dev.cardstashy.nativeplay.play.MatchRecord.record(context, dev.cardstashy.nativeplay.account.Account.session.value?.userId, outcome, pick.raw,
+        table?.cpu ?: com.google.gson.JsonObject().apply { addProperty("name", "Friend's deck") }, pick.format,
+        if (table == null || table.quick || table.story != null) "quick" else "practice", f.ownFirst, st.turn.takeIf { it > 0 }, me?.life, them?.life, durationMs, conceded && outcome == "loss") }
     // basicColours: the basic lands in your main deck.
     val map = mapOf("plains" to "W", "island" to "U", "swamp" to "B", "mountain" to "R", "forest" to "G")
     val got = (pick.raw.getAsJsonArray("cards") ?: com.google.gson.JsonArray()).mapNotNull { e -> val o = e as? com.google.gson.JsonObject ?: return@mapNotNull null

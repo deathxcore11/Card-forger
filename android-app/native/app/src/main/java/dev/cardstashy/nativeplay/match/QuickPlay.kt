@@ -27,7 +27,9 @@ sealed interface Pick {
     }
     /** A lobby pick (Quick Play or Practice): both decks chosen, the CPU's level, and whether it is Quick Play. */
     data class Table(val you: JsonObject, override val name: String, override val format: String, override val face: String?, val cpu: JsonObject,
-                     val level: String, val quick: Boolean, val story: StoryCtx? = null) : Pick {
+                     val level: String, val quick: Boolean, val story: StoryCtx? = null,
+                     /** Quick Play's power-tier.js matchupLine for the CPU's deck ("" when it was picked at random). */
+                     val matchup: String = "") : Pick {
         override val id get() = you.get("id")?.takeIf { it.isJsonPrimitive }?.asString ?: name; override val raw get() = you
     }
     /** A friend match: the server already started it, so both seats just open it (play-forge-host-client.js attach). The friend's cards arrive as they are played. */
@@ -47,8 +49,8 @@ class StoryCtx(val act: Int, val battle: JsonObject, val cast: JsonObject?, val 
                 *  match setup (stacked draws, no mulligan; you go first) when this engine has it. */
                val lessonBattle: String? = null, val setup: JsonObject? = null)
 
-/** One side of the versus beat. */
-data class Plate(val name: String, val who: String, val face: String?)
+/** One side of the versus beat; [line] is Quick Play's matchup line under the CPU's name (play-forge-pregame.js forge-intro-power). */
+data class Plate(val name: String, val who: String, val face: String?, val line: String = "")
 
 /**
  * Quick Play's setup, the web's flow: your deck in its own format against a random tournament list
@@ -117,7 +119,7 @@ object QuickPlay {
         val faces = listOfNotNull(pick.face, faceOf(cpuDeck))
         Setup.Ready((pick as? Pick.Table)?.let { val lesson = it.story?.setup
             forgeInput(format, you, cpuDeck, it.level, startingPlayer = if (lesson != null) "first" else "random", quick = it.quick, setup = lesson) } ?: quickInput(format, you, cpuDeck),
-            Plate(pick.name, "You", pick.face), Plate(cpuName, "CPU · $format", faceOf(cpuDeck)),
+            Plate(pick.name, "You", pick.face), Plate(cpuName, "CPU · $format", faceOf(cpuDeck), (pick as? Pick.Table)?.takeIf { it.quick }?.matchup ?: ""),
             youRows + cpuRows, faces, CardArt.knowsRows(youRows + cpuRows))
     }
 

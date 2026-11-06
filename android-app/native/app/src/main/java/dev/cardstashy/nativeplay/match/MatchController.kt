@@ -407,7 +407,9 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     fun card(id: Int) = send("card") { addProperty("id", id) }
     fun stackItem(id: Int) = send("stack") { addProperty("id", id) }
     fun player(id: Int) = send("player") { addProperty("id", id) }
-    fun concede() = send("concede", force = true)
+    /** The player conceded this match (play-forge-player-mat.js conceding): a loss that way stays off the Quick Play streak. */
+    @Volatile var conceded = false; private set
+    fun concede() { conceded = true; send("concede", force = true) }
     fun reply(promptId: Int, value: Boolean? = null, indexes: List<Int>? = null, amounts: List<Int>? = null) = send("reply") {
         addProperty("promptId", promptId)
         if (value != null) addProperty("value", value)
