@@ -111,7 +111,7 @@ class CollectionBenchShotTest {
             val base = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(base.density, scale)) {
                 CollectionBench(m, pool, ui, CollectionDeckActions(qty = { n, d -> qtys += n to d }, addCard = { n, _ -> adds += n }, act = { a, _ -> acts += a }),
-                    tab = { it == "cards" }, tabBody = {})
+                    tab = { true }, tabBody = { t -> androidx.compose.material3.Text("TAB BODY $t", color = androidx.compose.ui.graphics.Color.White) })
             }
         }
         if (status > 0 || nav > 0) rule.runOnUiThread {
@@ -141,6 +141,14 @@ class CollectionBenchShotTest {
             assertEquals(listOf("deckReview", "deckPlayCpu"), acts)
             for ((k, v) in listOf("stacks" to "Stacks", "gallery" to "Gallery")) { rule.onAllNodes(hasContentDescription(v)).onFirst().performClick(); settle(); shot("$tag-$k") }
             rule.onAllNodes(hasContentDescription("List")).onFirst().performClick(); settle()
+        }
+        if (tag == "954x860") {
+            // On the unfolded screen a tab opens in the big left pane, where the collection browser sits (Randall 6 Nov).
+            rule.onAllNodesWithText("War Chest").onFirst().performClick(); settle(); shot("$tag-chest")
+            val body = rule.onAllNodesWithText("TAB BODY playtest", substring = true).fetchSemanticsNodes()
+            val title = rule.onAllNodesWithText("Izzet Tempo").fetchSemanticsNodes()
+            assertTrue("the tab shows", body.isNotEmpty())
+            assertTrue("the tab is in the left pane", body[0].boundsInRoot.left < title[0].boundsInRoot.left)
         }
         File(shots, "cbench-$tag.txt").writeText(buildString {
             appendLine("Cut with …: " + found.ellipsized.joinToString(" | ").ifEmpty { "none" })

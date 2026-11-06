@@ -98,9 +98,13 @@ fun CollectionBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: 
     val missing = if (owned?.size == 2) (owned[1] - owned[0]).coerceAtLeast(0) else 0
     val powerStat = m.stats.firstOrNull { it.act == "deckTab" }
     // The deck page's table (Take it to the table) and the hero's other buttons; Copy list and Export are in the ⋯ menu, War Chest is a tab.
+    // Share and War Chest are the hero's buttons (as views.js deckShell has them); Game Night is in the War Chest, Share in the ⋯ menu too,
+    // and "I got cards" goes (Randall 6 Nov 21:42Z: no double-ups). What stays is the page's fill (Find <format> cards) and its swaps.
     val tools = (m.actions.filter { it.shown && !it.primary && it.label.isNotBlank() && it.act != "deckTab" }.map { Tool(it.label, it.act, it.id) } +
         m.table?.actions.orEmpty().filter { (_, a, _) -> a != "deckTab" }.map { (l, a, _) -> Tool(l, a, "") })
-        .filter { it.act !in setOf("deckCopy", "deckExport", "deckPlayCpu") }.distinctBy { it.act }
+        .filter { it.act !in setOf("deckCopy", "deckExport", "deckPlayCpu", "deckShare", "gameNight", "acquire") }.distinctBy { it.act }
+    val heroButtons = m.actions.filter { it.shown && !it.primary && it.label.isNotBlank() && (it.act == "deckTab" || it.act == "deckShare") }.map { b ->
+        BenchMenuItem(b.label) { if (b.act == "deckTab") { if (tab(b.id)) ui.tab = b.id } else act.act(b.act, b.id) } }
     val model = heroModel(m, powerStat).let { h -> BenchModel(
         play = false, modeChip = h.modeChip, formatChip = h.formatChip.ifBlank { "Magic · ${m.format}" }, title = m.title, heroArt = m.art,
         stats = h.stats, power = h.power, tier = PowerTier.powerTier(h.power?.toDoubleOrNull()), roles = m.roles,
@@ -116,7 +120,7 @@ fun CollectionBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: 
     val actions = BenchActions(back = act.back, save = practice?.let { p -> { act.act(p.act, p.id) } }, saveLabel = practice?.label?.ifBlank { null } ?: "Practice",
         step = { n, d -> if (d > 0 && !inList(n)) act.addCard(n) {} else if (inList(n)) act.qty(n, d) },
         craft = { _, _ -> }, open = act.card, more = null, menu = emptyList(), menuOpen = { act.act("deckMenu", "") }, tab = tab, chip = { k -> act.act(k, m.id) },
-        findMore = { q -> act.addCard(q) {} })
+        findMore = { q -> act.addCard(q) {} }, heroActions = heroButtons)
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         DeckBench(model, ui, actions, actionRow = toolRow(tools, m.emblems?.swaps.orEmpty(), { t -> act.act(t.act, t.id) }) { s -> act.swap(s.out, s.into) },
             browserSwitch = null, tabBody = tabBody)
@@ -192,8 +196,9 @@ private fun TcgBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act:
     val missing = cards.sumOf { needOf(it.owned, it.own, it.qty) }
     var issues by remember(m.id) { mutableStateOf(false) }
     // The hero's other buttons (Export, Game Night) and the price panel's tools (Cheapest printings, Buy on TCGplayer, Refresh prices).
+    // Game Night is in the War Chest (the gold button), so it isn't repeated here (Randall 6 Nov 21:42Z).
     val tools = (m.actions.filter { it.shown && !it.primary && it.label.isNotBlank() && it.act != "tDeckTab" }.map { Tool(it.label, it.act, it.id) } +
-        m.panel?.actions.orEmpty().map { (bt, id) -> Tool(bt.label, bt.act, id) }).filter { it.act.isNotBlank() }.distinctBy { it.act }
+        m.panel?.actions.orEmpty().map { (bt, id) -> Tool(bt.label, bt.act, id) }).filter { it.act.isNotBlank() && it.act != "gameNight" }.distinctBy { it.act }
     val model = BenchModel(
         play = false, modeChip = h.modeChip, formatChip = h.formatChip, title = m.title, heroArt = m.art,
         stats = h.stats, power = h.power, tier = PowerTier.powerTier(h.power?.toDoubleOrNull()), roles = m.roles,

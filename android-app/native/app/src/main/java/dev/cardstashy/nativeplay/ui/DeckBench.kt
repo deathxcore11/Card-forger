@@ -168,6 +168,8 @@ class BenchActions(
     val move: ((String) -> Unit)? = null,
     /** [BenchModel.findMore] pressed, with the search as typed. */
     val findMore: (String) -> Unit = {},
+    /** The hero's other buttons beside the gold one (views.js deckShell's actions: War Chest, Share), as ghost buttons under it. */
+    val heroActions: List<BenchMenuItem> = emptyList(),
 )
 
 /** Where the Bench is: tab, deck view, find and filters, the card in the big view. Kept by the caller so Back keeps your place. */
@@ -318,16 +320,15 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
         val lift = { haptic.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate) }
         val bars = if (land) Modifier else Modifier.windowInsetsPadding(WindowInsets.statusBars).windowInsetsPadding(WindowInsets.navigationBars)
         if (split) Row(Modifier.fillMaxSize().then(bars)) {
-            Box(Modifier.weight(1f).fillMaxHeight()) { if (ui.tab == "cards") Browser(m, ui, a, drag, browserSwitch, cols = if (land) 0 else -1, lift, onFilter) else Spacer(Modifier.fillMaxSize()) }
+            // Another tab (War Chest, Power, Rules, Versions) opens in the big side, where the collection was; the deck stays beside it.
+            Box(Modifier.weight(1f).fillMaxHeight()) { if (ui.tab == "cards") Browser(m, ui, a, drag, browserSwitch, cols = if (land) 0 else -1, lift, onFilter) else tabBody(ui.tab) }
             Column(Modifier.fillMaxWidth(if (wide) .37f else .43f).fillMaxHeight().background(Color(0x33000000)).drawBehind {
                 drawLine(B.Line, Offset(0f, 0f), Offset(0f, size.height), 1.dp.toPx()) }) {
                 Hero(m, a, compact = land, ui = ui)
                 // Phone landscape: the four views sit at the end of the icon tabs; wider, under the list in the footer.
                 Tabs(m.tabs, ui, iconsOnly = land, a.tab, trailing = if (land && ui.tab == "cards") ({ ViewSwitch(ui, bare = true) }) else null)
-                if (ui.tab == "cards") {
-                    Dock(m, ui, a, drag, actionRow, split = true, Modifier.weight(1f), lift)
-                    Footer(m, ui, split = true, views = !land)
-                } else Box(Modifier.weight(1f).fillMaxWidth()) { tabBody(ui.tab) }
+                Dock(m, ui, a, drag, actionRow, split = true, Modifier.weight(1f), lift)
+                Footer(m, ui, split = true, views = !land)
             }
         } else Column(Modifier.fillMaxSize().then(bars)) {
             Hero(m, a, compact = false, ui = ui)
@@ -391,6 +392,10 @@ private fun Hero(m: BenchModel, a: BenchActions, compact: Boolean, ui: BenchUi) 
                 Text(m.title, style = cinzel(19f, Color(0xFFFBF3DC)), modifier = Modifier.weight(1f))
                 a.save?.let { SaveButton(m, it, a.saveLabel) }
             }
+            // .ds-actions' other buttons (War Chest, Share): ghost glass beside the gold one's line, under the title.
+            if (a.heroActions.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                for (h in a.heroActions) HeroGhost(h.label, h.onClick)
+            }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FlowRow(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     for (s in m.stats) Text(buildAnnotatedString {
@@ -419,6 +424,16 @@ private fun SaveButton(m: BenchModel, save: () -> Unit, label: String) {
         .background(if (m.canSave) B.GoldBtn else SolidColor(Color(0x33E5C47E))).clickable(enabled = m.canSave && !m.busy, onClick = save)
         .semantics { role = Role.Button }.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
         Text(if (m.busy) "Saving…" else label, style = f(14f, 800, if (m.canSave) B.GoldInk else B.Mute), maxLines = 1, softWrap = false)
+    }
+}
+
+/** A hero's ghost button (.btn.ghost on the deck hero): glass over the art, the gold line round it, 44 tall. */
+@Composable
+private fun HeroGhost(label: String, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(13.dp)
+    Box(Modifier.heightIn(min = 44.dp).clip(shape).background(Color(0x8C08090C)).border(1.dp, Color(0x59E5C47E), shape).clickable(onClick = onClick)
+        .semantics { role = Role.Button }.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+        Text(label, style = f(14f, 700, B.Fg), maxLines = 1, softWrap = false)
     }
 }
 
