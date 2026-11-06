@@ -5,7 +5,7 @@ import {normalizeCommanderTarget} from './commander-evidence.js';
 export const RANDOM_DECK_FORMATS=Object.freeze(['Standard','Commander','Modern','Pioneer','Legacy','Vintage','Pauper','Standard Brawl']);
 // Build one checked random deck without selecting it. The Play deck queue
 // calls this in the background; the builder below calls it on demand.
-export function createRandomDeckProducer({pipeline,pickSeed,random=()=>crypto.getRandomValues(new Uint32Array(1))[0],forgeSeed=null}={}){
+export function createRandomDeckProducer({pipeline,pickSeed,random=()=>crypto.getRandomValues(new Uint32Array(1))[0],forgeSeed=null,comboChance=0.2}={}){
  if(typeof pipeline?.build!=='function'||typeof pipeline?.recheck!=='function'||typeof pickSeed!=='function')throw Error('OPPONENT_BUILDER_REQUIRED');
  const seedCode=forgeSeed||(()=>{const n=random();return Array.from({length:6},(_,i)=>'23456789ABCDEFGHJKLMNPQRSTUVWXYZ'[(Math.floor(n/Math.pow(32,i))+i*7)%32]).join('');});
  return async function produce({format,targetBracket=null,deckStyle='classic',power=null}={},{current=()=>true,onStatus=()=>{}}={}){
@@ -14,11 +14,18 @@ export function createRandomDeckProducer({pipeline,pickSeed,random=()=>crypto.ge
   // Random decks are Casual by default, with Varied picks and a seed (Deck Forge, spec 12).
   const request={game:'mtg',format,targetBracket:bracket,deckStyle,budget:'',budgetBasis:'total',budgetMode:'cap',preferOwned:false,ownedOnly:false,randomSeed:random(),forge:{power:power==='strong'||bracket&&bracket>=3?'strong':'casual',variation:'varied',seed:seedCode()}};
   const seed=await pickSeed(request);if(!current())return null;if(!seed?.name)throw Error('No legal build-around was returned.');
-  const result=await pipeline.build({...request,seed:seed.name,seedCard:seed,seedCards:[seed]},{current,onStatus});
-  if(!current())return null;
+  const run=extra=>pipeline.build({...request,...extra,seed:seed.name,seedCard:seed,seedCards:[seed]},{current,onStatus});
+  // About one random deck in five is built to hold a reviewed, verified mana-loop package
+  // (the same proof the AI builder uses). If that cannot be met for this seed or format,
+  // fall back to the normal synergy build, so a combo is never forced into a bad list.
+  let result=null;
+  if(deckStyle==='classic'&&comboChance>0&&random()%1000<comboChance*1000){
+   try{const tried=await run({requireLoop:'infinite-mana'});if(!current())return null;if(tried?.ok&&tried.plan?.combo?.status==='verified'&&pipeline.recheck(tried))result=tried;}catch(e){if(!current())return null;}
+  }
+  if(!result){result=await run({});if(!current())return null;}
   if(!result?.ok||!pipeline.recheck(result))throw Error(result?.message||'The generated list did not pass its construction checks.');
   if(result.deck?.format!==format||result.request?.format!==format||result.request?.targetBracket!==bracket||result.request?.deckStyle!==deckStyle)throw Error('The generated list changed the requested format, bracket or style.');
-  return structuredClone({...result.deck,name:result.deck.name||seed.name+' · Random deck',practiceBuild:{source:'shared-random-builder',request:result.request,bracket:result.bracket||result.plan?.bracket||null}});
+  return structuredClone({...result.deck,name:result.deck.name||seed.name+' · Random deck',practiceBuild:{source:'shared-random-builder',combo:result.plan?.combo?.status==='verified'?'verified-mana-loop':null,request:result.request,bracket:result.bracket||result.plan?.bracket||null}});
  };
 }
 export function createPracticeOpponentBuilder({pipeline,pickSeed,readScope,onSelect,onChange=()=>{},random=()=>crypto.getRandomValues(new Uint32Array(1))[0],queue=null,produce=null}={}){
