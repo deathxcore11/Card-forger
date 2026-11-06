@@ -10,6 +10,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -365,7 +366,7 @@ fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onBa
                 val scrolled by remember(past) { derivedStateOf { list.firstVisibleItemIndex > 0 || list.firstVisibleItemScrollOffset > past } }
                 val pinTabs by remember { derivedStateOf { list.firstVisibleItemIndex >= 1 } }
                 // A jump the site makes with scrollIntoView (A.buyCompare: the page's printings).
-                LaunchedEffect(m.jump, m.buy == null) { if (m.jump == "printings" && m.buy == null) list.animateScrollToItem(3) }
+                LaunchedEffect(m.jump, m.buy == null) { if (m.jump == "printings" && m.buy == null) { list.scrollToItem(3); CardJump.printings = true } }
                 val buy = m.buy
                 if (buy != null) {
                     BuySheet(buy, act, gutter, screenW, screenH)
@@ -933,7 +934,10 @@ private fun DrawScope.drawIntoCanvasCompat(block: (android.graphics.Canvas) -> U
 /** .card-printing-preview: "Other printings" and Sort & filter, the swipe rail of minis, its notes and foot. */
 @Composable
 private fun Printings(p: CardPrintings, act: CollectionCardActions) {
-    Column(Modifier.padding(top = 18.dp).fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color(0xD9171A1F)).border(1.dp, LineC, RoundedCornerShape(18.dp)).padding(12.dp)) {
+    // A.buyCompare's scrollIntoView(".card-printing-preview"): the page brings its printings into view once.
+    val bring = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
+    LaunchedEffect(CardJump.printings) { if (CardJump.printings) { kotlinx.coroutines.delay(60); runCatching { bring.bringIntoView() }; CardJump.printings = false } }
+    Column(Modifier.bringIntoViewRequester(bring).padding(top = 18.dp).fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color(0xD9171A1F)).border(1.dp, LineC, RoundedCornerShape(18.dp)).padding(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(p.title, style = manrope(14f, 700, Ink, lh = 1.15f, ls = -.28f), modifier = Modifier.weight(1f))
             p.more?.let { b -> Text(b.label, style = sans(13f, 600, GoldC, lh = 1.45f), modifier = Modifier.clickable { act.press(b) }.padding(vertical = 4.dp)) }
@@ -1484,6 +1488,9 @@ private fun BuySheet(b: CardBuySheet, act: CollectionCardActions, gutter: Dp, vw
         item(key = "end") { Spacer(Modifier.navigationBarsPadding().height(22.dp)) }
     }
 }
+
+/** A jump the page owes (A.buyCompare: its printings), taken by the part it names. */
+internal object CardJump { var printings by androidx.compose.runtime.mutableStateOf(false) }
 
 /** .set-icon: the set's symbol (a mask over the rarity's colour: common white-ish, uncommon silver, rare gold, mythic orange). */
 @Composable
