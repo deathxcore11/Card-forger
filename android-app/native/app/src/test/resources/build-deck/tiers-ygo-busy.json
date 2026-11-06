@@ -1,0 +1,99 @@
+{
+ "key": "tbuild|ygo|094ab313-b1e1-4778-aefc-52ceb9c90ae5",
+ "sheet": {
+  "title": "Build decks",
+  "close": 1533,
+  "seed": {
+   "multi": false,
+   "art": "img/ygo/s/46986414.jpg",
+   "strip": [],
+   "label": "Built around",
+   "name": "Dark Magician",
+   "sub": "Archetype: Dark Magician",
+   "random": {
+    "id": 1540,
+    "label": "🎲 Random card",
+    "disabled": true,
+    "icon": null
+   }
+  },
+  "intro": "Builds a deck from the archetype, then adds the hand traps, draw and removal today’s tournament decks play most — your cards first, at each budget, plus a recent tournament list when one plays your card.",
+  "formats": [
+   {
+    "id": 1543,
+    "label": "Advanced (TCG)",
+    "on": true,
+    "disabled": true
+   },
+   {
+    "id": 1544,
+    "label": "Traditional (TCG)",
+    "on": false,
+    "disabled": true
+   },
+   {
+    "id": 1545,
+    "label": "OCG",
+    "on": false,
+    "disabled": true
+   },
+   {
+    "id": 1546,
+    "label": "GOAT",
+    "on": false,
+    "disabled": true
+   },
+   {
+    "id": 1547,
+    "label": "Edison",
+    "on": false,
+    "disabled": true
+   },
+   {
+    "id": 1548,
+    "label": "Master Duel",
+    "on": false,
+    "disabled": true
+   },
+   {
+    "id": 1549,
+    "label": "Speed Duel",
+    "on": false,
+    "disabled": true
+   },
+   {
+    "id": 1550,
+    "label": "Duel Links",
+    "on": false,
+    "disabled": true
+   },
+   {
+    "id": 1551,
+    "label": "Casual",
+    "on": false,
+    "disabled": true
+   }
+  ],
+  "formatsEmpty": "",
+  "budget": {
+   "id": 1553,
+   "label": "Purchase budget $",
+   "value": "",
+   "placeholder": "Blank = unlimited",
+   "disabled": true
+  },
+  "busy": {
+   "title": "Building your decks",
+   "msg": "Loading Dark Magician…",
+   "note": "Finding complete decks that fit your cards and budget, then checking their strength. This can take up to a minute."
+  },
+  "status": null,
+  "evidence": "",
+  "tiers": [],
+  "saveAll": null,
+  "foot": "Built from your cards first, then what today's tournament decks play. A strong start, not a tuned tournament list. Prices are daily estimates.",
+  "openTier": null
+ },
+ "acted": null,
+ "toasts": []
+}

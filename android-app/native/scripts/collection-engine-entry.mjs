@@ -1285,7 +1285,9 @@ let tcgSheetHook = () => {}, tcgCloseHook = () => {};
 const tcgHooks = {download() {}, copyText() {}};
 function tcgReady() {
   if (tcgOn) return; tcgOn = true;
-  Object.assign(tcgCtx, {A: TA, C: TC, I: TI, commit, render() {}, openSheet: (html, ctx) => ctx?.type === 'proven' ? provenSheetOpen(ctx) : tcgSheetHook(html, ctx), closeSheet: () => { provenSheetShut(); tcgCloseHook(); }, refreshSheet() {}, toast: text => { if (text) toasts.push({text: String(text), undo: false}); }, download: (...a) => tcgHooks.download(...a),
+  Object.assign(tcgCtx, {A: TA, C: TC, I: TI, commit, render() {}, openSheet: (html, ctx) => ctx?.type === 'proven' ? provenSheetOpen(ctx) : ctx?.type === 'tbuild' ? tbuildOpen() : tcgSheetHook(html, ctx), closeSheet: () => { provenSheetShut(); tbuildShut(); tcgCloseHook(); },
+    // The Build decks sheet draws again (runTBuild's refresh, A.tTierAlternative) when it is the panel open.
+    refreshSheet() { if (panel?.tbuild) panel.redraw(); else if (!S.ui.tbuild?.busy) tbuildHold(null, false); }, toast: text => { if (text) toasts.push({text: String(text), undo: false}); }, download: (...a) => tcgHooks.download(...a),
     copyText: (...a) => tcgHooks.copyText(...a), busy: () => () => {},
     // The route a handler goes to (A.tSetByName's #set/<id>), for the app to follow.
     go(h) { tcgWent = String(h || ''); }, rerenderKeepingFocus() {}, writeRecord: async () => {}, navigationStamp: () => null, navigationCurrent: () => true,
@@ -2717,6 +2719,16 @@ const writeActs = {
       if (commits > n) made = 'closed';
     } catch (e) { siteText['#acqError'] = String(e?.message || e); }
   },
+  // The Build decks sheet's versions (tcg.js A.tTierSave, A.tTierSaveAll, A.tTierSaveGo, A.tTierCopy, A.tTierBuy), on the sheet's builds
+  // (S.ui.tbuild): saved to the game's decks; Save and see matchups / playtest closes the sheet and opens the new deck on that tab (made
+  // {deck, tab}); Copy deck list copies; Buy copies the missing cards and asks before Mass Entry opens.
+  async tTierSave(d) { tcgFocus(d.game, S.ui.view || 'tdeck'); await siteRun(() => TA.tTierSave({dataset: {i: d.i}}), d); },
+  async tTierSaveAll(d) { tcgFocus(d.game, S.ui.view || 'tdeck'); await siteRun(() => TA.tTierSaveAll({dataset: {}}), d); },
+  async tTierSaveGo(d) { tcgFocus(d.game, S.ui.view || 'tdeck'); tcgWent = '';
+    await siteRun(() => TA.tTierSaveGo({dataset: {i: d.i, to: d.to}}), d);
+    if (tcgWent.startsWith('#tdeck/')) made = JSON.stringify({deck: decodeURIComponent(tcgWent.slice(7)), tab: d.to || ''}); },
+  async tTierCopy(d) { tcgFocus(d.game, S.ui.view || 'tdeck'); await siteRun(() => TA.tTierCopy({dataset: {i: d.i}}), d); },
+  async tTierBuy(d) { tcgFocus(d.game, S.ui.view || 'tdeck'); await siteRun(() => TA.tTierBuy({dataset: {i: d.i}}), d); },
   async tDeckCopyMissing(d) { tcgFocus(d.game, 'tdeck'); S.ui.tdeckId = d.deck; await siteRun(() => TA.tDeckCopyMissing({dataset: {id: d.deck}}), d); },
   // tcg.js A.tOwnSave, the site's own: it reads its form from the page (#tQty, #tCond…), so the form as the app has it stands in for
   // those fields while the handler reads them (before its first await); it closes the sheet when saved (made: "closed").
@@ -3491,6 +3503,7 @@ const keepFields = () => {
 };
 const fieldNow = id => { const f = panelFields.get(id); return f ? panel.doc.querySelectorAll('[' + f.attr + ']').filter(x => x.getAttribute(f.attr) === f.val)[f.nth] || null : null; };
 const panelModel = () => { const reveal = panel.doc.reveals.splice(0); const acted = panel.acted; panel.acted = null; keepFields();
+  if (panel.tbuild) return json({key: panel.key, sheet: buildSheetModel(panel.host.querySelector('#sheetBody') || panel.host), acted, toasts: panel.toasts.splice(0).map(t => t.text)});
   return json({key: panel.key, body: domJson(panel.doc.body, el => icon(svgIn(tree(el.outerHTML))), el => picture(one(tree(el.outerHTML), tagIs('img')))),
     reveal: reveal.length ? reveal[reveal.length - 1] : null, acted, toasts: panel.toasts.splice(0).map(t => t.text)}); };
 // What app.js attaches to a deck tab's body once it is drawn: the Rules tab's rule-learning.js listeners.
@@ -3514,6 +3527,8 @@ const TDECK_ACTS = {
   // after each await, when the tap's panelRun has handed document back, so this panel's document stays in place until it ends.
   tMuRun: t => tcgPanelAsync(() => TA.tMuRun(t)),
   tMetaRefresh: t => tcgPanelAsync(() => TA.tMetaRefresh(t)),
+  // Upgrade lab's Compare budget builds (tcg.js A.tOptimizeDeck): the Build decks sheet over the tab (tbuildOpen).
+  tOptimizeDeck: t => tcgPanelAsync(() => TA.tOptimizeDeck(t)),
 };
 function tcgPanelAsync(f) {
   const p0 = panel, doc = p0.doc;
@@ -4193,6 +4208,97 @@ function warChestOpen(G) {
   chestUnder = panel; panel = null;
   panelOpen('chest|' + G, `<div class="war-chest-dialog" aria-label="The War Chest">${warChestMarkup({resume: chestResume(G)})}</div>`, null, CHEST_ACTS);
   panel.chest = true; panel.redraw = () => {};
+}
+
+// ---- Compare budget builds (tcg.js A.tOptimizeDeck: openBuild with the deck, the Build decks sheet tcgBuildSheet while runTBuild fills
+// it), drawn by the app (TierBuildSheet) from the sheet's markup (buildSheetModel). The sheet is a panel over the deck tab's, as the War
+// Chest's window: its taps reach the site's handlers here, and closing it (tcg.js closeSheet) brings the tab's panel back. What saves,
+// copies or opens a store (tTierSave, tTierSaveAll, tTierSaveGo, tTierCopy, tTierBuy) goes to the app, which runs it as a write.
+let tbuildUnder = null;
+const TBUILD_ACTS = {
+  closeSheet: () => tbuildShut(),
+  tBuildFormat: t => tcgPanelAsync(() => TA.tBuildFormat(t)),
+  'C.tBuildCustom': t => tcgPanelAsync(() => TC.tBuildCustom(t)),
+  // A.tTier, but for its scroll (requestAnimationFrame over the page): the app brings the opened list into view (model openTier).
+  tTier: t => { const B = S.ui.tbuild, i = Number(t.dataset.i); B.openTier = B.openTier === i ? null : i; panel.redraw(); },
+  tTierAlternative: t => { TA.tTierAlternative(t); },
+  // A.tRandomDeck: a random card, then openBuild without a deck: the app's Build a deck on its request (openDeckFlow).
+  tRandomDeck: t => { flowAskPanel = panel; return tcgPanelAsync(() => TA.tRandomDeck(t)); },
+};
+for (const k of ['tTierSave', 'tTierSaveAll', 'tTierSaveGo', 'tTierCopy', 'tTierBuy', 'tCard'])
+  TBUILD_ACTS[k] = t => { panel.acted = {act: k, data: {...t.dataset}}; };
+function tbuildOpen() {
+  if (panel?.tbuild) return;
+  const G = S.ui.tbuild?.game; if (!G) return;
+  tbuildUnder = panel; panel = null;
+  // #sheetBody: runTBuild writes its progress into the overlay's status line there as it goes.
+  panelOpen('tbuild|' + G + '|' + (S.ui.tbuild.baseDeck || S.ui.tbuild.seed || ''), `<div id="sheetBody">${TcgAll.tcgBuildSheet()}</div>`, null, TBUILD_ACTS);
+  panel.tbuild = true;
+  const p = panel;
+  p.redraw = () => { if (!S.ui.tbuild) return; tcgFocus(S.ui.tbuild.game, S.ui.view || 'tdeck'); panelRun(() => { p.host.innerHTML = `<div id="sheetBody">${TcgAll.tcgBuildSheet()}</div>`; }); tbuildHold(p, S.ui.tbuild.busy); };
+  tbuildHold(p, S.ui.tbuild.busy);
+}
+// runTBuild isn't awaited by the handler that starts it (openBuild, A.tBuildFormat), and its status line looks up the page after each
+// await: while it runs, the sheet's document stands in for the page's (as tcgPanelAsync does for a tab's).
+let tbuildHeld = null;
+function tbuildHold(p, on) {
+  if (on) { globalThis.document = p.doc; tbuildHeld = p.doc; }
+  else if (!on && tbuildHeld && globalThis.document === tbuildHeld) { delete globalThis.document; tbuildHeld = null; }
+}
+function tbuildShut() {
+  if (!panel?.tbuild) return;
+  const was = panel; panel = tbuildUnder; tbuildUnder = null;
+  // What the sheet handed the app as it closed goes with the panel under it.
+  if (panel) { panel.acted ||= was.acted; panel.toasts.push(...was.toasts); panel.redraw?.(); }
+}
+// The sheet's markup as the app draws it: tcg.js tcgBuildSheet and views.js buildSheet (tier-card.js tierCardHtml for each version).
+function buildSheetModel(root) {
+  const q = (el, s) => el?.querySelector(s), qa = (el, s) => el ? el.querySelectorAll(s) : [];
+  const words = el => (el?.textContent || '').replace(/\s+/g, ' ').trim();
+  const has = (el, c) => !!el?.classList?.contains(c);
+  const svgOf = el => { const s = q(el, 'svg'); return s ? icon(svgIn(tree(s.outerHTML))) : null; };
+  const btn = el => el ? {id: el._id, label: words(el), disabled: el.disabled, icon: svgOf(el)} : null;
+  const art = el => el ? (el.localName === 'img' ? el.getAttribute('src') : q(el, 'img')?.getAttribute('src')) || '' : '';
+  const seedEl = q(root, '.build-seed'), multi = has(seedEl, 'multi'), info = seedEl && [...seedEl.children].find(x => x.localName === 'div' && !has(x, 'seed-strip'));
+  const smalls = qa(info, 'small');
+  const seed = seedEl ? {multi, art: multi ? '' : art(seedEl.querySelector(':scope > img') || q(seedEl, '.mini-art')), strip: multi ? qa(q(seedEl, '.seed-strip'), 'img').map(i => i.getAttribute('src') || '') : [],
+    label: words(smalls[0]), name: words(q(info, 'b')), sub: words(smalls[1]), random: btn(q(seedEl, 'button'))} : null;
+  const intro = [...root.children].find(x => x.localName === 'p' && has(x, 'muted') && has(x, 'small'));
+  const chips = q(root, '.fmt-chips'), budget = q(root, '.custom-budget'), field = q(budget, 'input');
+  const overlay = q(root, '.build-overlay'), status = [...root.querySelectorAll(':scope > p[role=status]')][0];
+  const evidence = [...root.children].find(x => x.localName === 'p' && has(x, 'evidence'));
+  const tiers = qa(q(root, '.tiers'), 'article.tier').map((a, i) => {
+    const head = q(a, '.tier-head'), chipEls = qa(q(head, '.tier-chips'), '.chip');
+    const stats = qa(q(a, '.tier-stats'), ':scope > span').map(s => ({value: words(q(s, 'b')), text: words(s).slice(words(q(s, 'b')).length).trim(), warn: has(s, 'warn-text'), diff: q(s, '.diff-tag')?.getAttribute('class')?.replace('diff-tag', '').trim() || ''}));
+    const fill = q(q(a, '.bar'), 'span')?.getAttribute('style')?.match(/width:\s*([\d.]+)%/)?.[1];
+    const notes = [...a.children].filter(x => x.localName === 'p').map(p => ({text: words(p), warn: has(p, 'warn-text'), evidence: has(p, 'evidence'), path: has(p, 'draft-path'), explain: has(p, 'budget-explanation')}));
+    const next = q(a, 'details.budget-next');
+    const groups = qa(a, 'details.tier-group').map(gd => ({name: words(q(q(gd, 'summary'), 'span')), count: words(q(q(gd, 'summary'), 'b')),
+      rows: qa(gd, '.tier-row, .upgrade-card-row').map(r => {
+        const open = q(r, '.lot-name') || r, sub = q(r, '.lot-sub');
+        // A Yu-Gi-Oh! / Pokémon version's tile is the deck page's row (tcg.js deckRow's .lot), read as the deck page reads it (tcgDeckRow).
+        const lot = has(r, 'lot') ? one(tree(r.outerHTML), cls('lot')) : null;
+        return {id: open._id, act: open.getAttribute('data-act') || '', card: lot ? tcgDeckRow(lot) : null, name: words(q(r, '.lot-name')) || words(q(r, '.ellip')), art: abs(art(q(r, '.lot-art') || r)),
+          price: words(q(r, '.art-price')), qty: words(q(r, '.tier-qty')), why: words(q(sub, 'small.muted')) || words(q(q(r, '.ellip'), 'small')),
+          own: words(q(r, '.own')) || words([...qa(r, ':scope > span')].pop()), ok: has(q(r, '.own'), 'yes') || has([...qa(r, ':scope > span')].pop(), 'ok-text'),
+          note: words(q(sub, '.purchase-note, .ygo-purchase-note')), data: {...(open.dataset || {})}};
+      })}));
+    const acts = q(a, '.tier-actions'), more = q(acts, 'details.tier-more');
+    const plain = qa(acts, ':scope > button');
+    return {i, on: has(a, 'on'), meta: has(a, 'meta'), title: words(q(head, 'b')), chips: chipEls.map(c => ({text: words(c), ok: has(c, 'ok'), warn: has(c, 'warn')})),
+      stats, owned: fill == null ? null : Number(fill) / 100, notes,
+      next: next ? {summary: words(q(next, 'summary')), lines: qa(next, 'p').map(words), review: btn(q(next, 'button'))} : null, groups,
+      save: btn(plain.find(b => has(b, 'tier-save'))), buy: btn(plain.find(b => (b.getAttribute('data-act') || '').endsWith('ierBuy'))),
+      toggle: btn(plain.find(b => /^t?[tT]ier$/.test(b.getAttribute('data-act') || ''))),
+      more: qa(q(more, '.tier-more-menu'), 'button').map(b => ({id: b._id, label: words(q(b, 'b')), note: words(q(b, 'small')), icon: svgOf(b)}))};
+  });
+  const saveAll = [...root.querySelectorAll(':scope > button.block')][0];
+  return {title: words(q(q(root, '.sheet-head'), 'h2')), close: q(root, '.sheet-head [data-act=closeSheet]')?._id ?? null, seed, intro: words(intro),
+    formats: qa(chips, 'button').map(b => ({id: b._id, label: words(b), on: has(b, 'on'), disabled: b.disabled})), formatsEmpty: words(q(chips, 'span')),
+    budget: field ? {id: field._id, label: words(budget).trim(), value: field.getAttribute('value') || '', placeholder: field.getAttribute('placeholder') || '', disabled: field.disabled} : null,
+    busy: overlay ? {title: words(q(overlay, 'b')), msg: words(q(overlay, '[role=status]')), note: words(q(overlay, 'small'))} : null,
+    status: status ? {text: words(status), warn: has(status, 'warn-text')} : null, evidence: words(evidence),
+    tiers, saveAll: btn(saveAll), foot: words([...root.querySelectorAll(':scope > p.foot')][0]), openTier: S.ui.tbuild?.openTier ?? S.ui.build?.openTier ?? null};
 }
 
 // ---- The tournament deck's sheet (tcg.js provenSheetHtml, c.openProven and its handlers 3918-3992; app.js A.mtgProven 6879), the sheet
@@ -4952,6 +5058,8 @@ globalThis.Collection = {
   reviewSearch(kind, deckId, role) { return json(reviewSearch(kind, deckId, role || '')); },
   // The War Chest window from the Decks head (app.js A.warChest) over the open panel; warChestClose brings that panel back.
   warChest(game) { warChestOpen(game || 'mtg'); return panelModel(); },
+  // The Build decks sheet closed by the app (its ✕ is the site's closeSheet, a tap): the panel under it.
+  tbuildClose() { tbuildShut(); return panel ? panelModel() : '{}'; },
   warChestClose() { if (panel?.chest) { panel = chestUnder; chestUnder = null; panel?.redraw?.(); } return panel ? panelModel() : '{}'; },
   // icons.js decorateGlyphs: the icon each leading glyph wears (↻ Re-analyze, ⚒ Build, 🏆 Meta decks…), for the panel's words.
   glyphs() { return json(Object.fromEntries(Object.entries(LEAD).filter(([, k]) => ICON[k]).map(([g, k]) => [g, icon(svgIn(tree(ICON[k])))]))); },

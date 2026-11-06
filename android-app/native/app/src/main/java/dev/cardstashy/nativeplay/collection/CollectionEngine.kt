@@ -224,6 +224,8 @@ object CollectionEngine {
     /** The War Chest window from the Decks head (app.js A.warChest) as the open panel; [warChestClose] brings back the panel under it. */
     suspend fun warChest(game: String): JsonObject = model("Collection.warChest(${str(game)})")
     suspend fun warChestClose(): JsonObject = model("Collection.warChestClose()")
+    /** The Build decks sheet (Compare budget builds) closed: the panel under it. */
+    suspend fun tbuildClose(): JsonObject = model("Collection.tbuildClose()")
     suspend fun glyphs(): JsonObject = model("Collection.glyphs()")
     /** views.js ideaSheet for idea [i] of the Ideas tab (app.js openIdea: it builds as it opens); read again with [settle] and [IDEA_MODEL]. */
     suspend fun ideaSheet(i: Int): JsonObject = model("Collection.ideaSheet($i)")

@@ -122,7 +122,9 @@ class SiteNode(val tag: String, val id: Int, val attrs: Map<String, String>, val
 }
 
 /** The engine's panel model: [body] the page's body, [reveal] the node the site last focused or scrolled to, [acted] a data-act the app runs, [toasts] what the site toasted. */
-class SitePanelModel(val key: String, val body: SiteNode?, val reveal: Int?, val acted: JsonObject?, val toasts: List<String> = emptyList()) {
+class SitePanelModel(val key: String, val body: SiteNode?, val reveal: Int?, val acted: JsonObject?, val toasts: List<String> = emptyList(),
+                     /** The Build decks sheet's model (buildSheetModel) when the panel is that sheet (key tbuild|…). */
+                     val sheet: JsonObject? = null) {
     /** The tab's own markup (the body's first child). */
     val page: SiteNode? get() = body?.elements?.firstOrNull()
     /** A rule-dex glass (aside.rule-glass) open over it. */
@@ -130,7 +132,8 @@ class SitePanelModel(val key: String, val body: SiteNode?, val reveal: Int?, val
     companion object {
         fun parse(j: JsonObject) = SitePanelModel(j.get("key")?.takeIf { it.isJsonPrimitive }?.asString.orEmpty(), SiteNode.parse(j.get("body")) as? SiteNode,
             j.get("reveal")?.takeIf { it.isJsonPrimitive }?.asInt, j.get("acted")?.takeIf { it.isJsonObject }?.asJsonObject,
-            j.get("toasts")?.takeIf { it.isJsonArray }?.asJsonArray?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }.orEmpty())
+            j.get("toasts")?.takeIf { it.isJsonArray }?.asJsonArray?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }.orEmpty(),
+            j.get("sheet")?.takeIf { it.isJsonObject }?.asJsonObject)
     }
 }
 

@@ -55,4 +55,27 @@ class DecksBuildTest {
         assertEquals("tcg", made.s("format"))
         assertTrue(made.s("createdAt").isNotBlank())
     }
+    /** Upgrade lab's Compare budget builds (tcg.js A.tOptimizeDeck): the Build decks sheet opens over Power, built around the deck's card. */
+    @Test fun yugiohCompareBudgetBuilds() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.restart(); CollectionEngine.initFrom(bundle); DecksIdeasTest.yugioh()
+        val deck = "094ab313-b1e1-4778-aefc-52ceb9c90ae5"
+        val power = CollectionEngine.deckPanel("ygo", deck, "insights")
+        fun nodes(e: com.google.gson.JsonElement?): List<JsonObject> = if (e == null || !e.isJsonObject) emptyList() else e.asJsonObject.let { o -> listOf(o) + (o.getAsJsonArray("k")?.flatMap { nodes(it) } ?: emptyList()) }
+        val button = nodes(power["body"]).first { it.getAsJsonObject("a")?.get("data-act")?.asString == "tOptimizeDeck" }
+        CollectionEngine.panelTap(button["i"].asInt)
+        var m = CollectionEngine.panelRedraw()
+        for (i in 0 until 20) { if (m.s("key").startsWith("tbuild|") && m.getAsJsonObject("sheet")["busy"]?.isJsonNull != false) break
+            CollectionEngine.settle(15_000, CollectionEngine.PANEL_MODEL) { m = it }; m = CollectionEngine.panelRedraw() }
+        assertTrue(m.s("key").startsWith("tbuild|ygo|$deck"))
+        val sheet = m.getAsJsonObject("sheet")
+        assertEquals("Build decks", sheet.s("title"))
+        assertEquals("Dark Magician", sheet.getAsJsonObject("seed").s("name"))
+        val formats = sheet.getAsJsonArray("formats").map { it.asJsonObject }
+        assertTrue(formats.single { it["on"].asBoolean }.s("label") == "Advanced (TCG)")
+        assertEquals("Purchase budget $", sheet.getAsJsonObject("budget").s("label"))
+        // Its ✕ (tcg.js closeSheet): the Power tab again.
+        val back = CollectionEngine.panelTap(sheet["close"].asInt)
+        assertTrue(back.s("key").startsWith("tdeck|ygo|$deck|insights"))
+    }
 }

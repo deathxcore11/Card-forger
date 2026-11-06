@@ -158,7 +158,7 @@ class CollectionDeckModel(val game: CardGame, val id: String, val format: String
                 set?.let { CollSet(it.s("code"), it.s("rarity"), it.b("unknown"), it.s("label"), it.s("title")) },
                 r.objs("mana").map { it.s("src") to it.s("alt") }, emptyList(), "", "", "", false, "", "", "", "", r.i("qty"), false, "", r.o("print"))
         }
-        private fun card(j: JsonObject): DeckCard {
+        internal fun card(j: JsonObject): DeckCard {
             val own = j.o("own"); val c = j.o("chrome"); val set = c?.o("set"); val t = j.o("tchrome"); val ts = t?.o("set"); val f = j.o("tcgFinish"); val row = j.o("row")
             return DeckCard(row(j), j.i("qty"), j.s("zone"), j.s("category"), j.strs("roles"), own?.s("text"), own?.b("yes") ?: false,
                 j.objs("legal").map { it.s("text") to it.b("bad") }, j.s("chip"), j.b("stepper"),
@@ -1534,6 +1534,36 @@ private fun TableFooter(t: DeckTable, act: CollectionDeckActions) {
             for ((label, a, ghost) in t.actions) {
                 val tap = { if (a == "deckTab") act.tab("upgrade") else act.act(a, "") }
                 if (ghost) DeckGhost(label, onClick = tap) else DeckGold(label, onClick = tap)
+            }
+        }
+    }
+}
+
+/**
+ * A Yu-Gi-Oh! / Pokémon version's card on the Build decks sheet (tcg.js tcgBuildSheet's .lot.deck-row.tier-row in .tier-tiles): the deck
+ * page's row (62 × 86 art with its dock and price, 62 | 1fr | auto, 12 apart, 8 padding), its name, .lot-sub and Need N / Owned, and ×qty
+ * in its pill (.tier-qty: 18 / 800, 4 × 10, 10 corners on surface-2 with its line). The art and the name open the card (A.tCard).
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun TierTileCard(c: DeckCard, game: CardGame, qty: String, onOpen: () -> Unit) {
+    val reduced = Motion.still
+    androidx.compose.runtime.CompositionLocalProvider(LocalDeckGame provides game) {
+        Row(Modifier.fillMaxWidth().lotFrame(c.r, reduced).padding(8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(62.dp, 86.dp).clip(RoundedCornerShape(9.dp)).background(Surface2).clickable(onClick = onOpen).semantics { contentDescription = "Open ${c.r.name}" }) {
+                DeckPicture(c, Modifier.fillMaxSize(), RoundedCornerShape(6.dp))
+                DeckDock(c, reduced, Modifier.align(Alignment.BottomStart))
+                ArtPrice(c.price.takeIf { it != "—" }.orEmpty(), Modifier.align(Alignment.TopEnd).padding(5.dp))
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(c.r.name, Modifier.heightIn(min = 24.dp).clickable(onClick = onOpen), style = sans(14f, 700, Ink, lh = 1.25f), maxLines = 3)
+                if (c.pieces.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+                    PieceItems(c.pieces)
+                }
+                c.own?.let { OwnLine(it, c.owned) }
+            }
+            if (qty.isNotBlank()) Box(Modifier.clip(RoundedCornerShape(10.dp)).background(Surface2).border(1.dp, Color(0x1FFFFFFF), RoundedCornerShape(10.dp)).padding(horizontal = 10.dp, vertical = 4.dp)) {
+                Text(qty, style = sans(18f, 800, Ink))
             }
         }
     }

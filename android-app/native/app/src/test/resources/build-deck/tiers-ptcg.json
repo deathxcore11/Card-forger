@@ -1,0 +1,571 @@
+{
+ "key": "tbuild|ptcg|1c5ee49c-a4ba-4506-ae2b-1e0761e20324",
+ "sheet": {
+  "title": "Build decks",
+  "close": 1539,
+  "seed": {
+   "multi": false,
+   "art": "https://assets.tcgdex.net/en/sv/sv08/057/low.webp",
+   "strip": [],
+   "label": "Built around",
+   "name": "Pikachu ex",
+   "sub": "Pokémon · Basic · Lightning",
+   "random": {
+    "id": 1546,
+    "label": "🎲 Random card",
+    "disabled": false,
+    "icon": null
+   }
+  },
+  "intro": "Builds the evolution line, adds the Trainers and support Pokémon today’s top decks play, and the Energy your attacks need — your cards first, at each budget, plus a recent tournament list when one plays your card. Basic Energy uses your actual collection quantities and purchase prices.",
+  "formats": [
+   {
+    "id": 1549,
+    "label": "Standard",
+    "on": true,
+    "disabled": false
+   },
+   {
+    "id": 1550,
+    "label": "Expanded",
+    "on": false,
+    "disabled": false
+   },
+   {
+    "id": 1551,
+    "label": "Unlimited",
+    "on": false,
+    "disabled": false
+   }
+  ],
+  "formatsEmpty": "",
+  "budget": {
+   "id": 1553,
+   "label": "Purchase budget $",
+   "value": "",
+   "placeholder": "Blank = unlimited",
+   "disabled": false
+  },
+  "busy": null,
+  "status": {
+   "text": "No complete checked list fits the available cards and verified purchase budgets. Review the draft shortfalls and card checks below; nothing was saved.",
+   "warn": false
+  },
+  "evidence": "No recent Top 8 list plays Pikachu ex, so Trainers are the format’s most played — check they suit the deck. Compared 7 candidates with Power, legality, engine readiness and your purchase cost. Higher budgets retain the best affordable lower-budget candidate. Printing comparisons for 5 card names were incomplete: prices use the lowest eligible checked option, not a guaranteed cheapest printing across every set.",
+  "tiers": [
+   {
+    "i": 0,
+    "on": false,
+    "meta": false,
+    "title": "Draft — 57 slots open · Your cards only",
+    "chips": [
+     {
+      "text": "Standard",
+      "ok": false,
+      "warn": false
+     },
+     {
+      "text": "1 to fix",
+      "ok": false,
+      "warn": true
+     }
+    ],
+    "stats": [
+     {
+      "value": "$0.00",
+      "text": "to buy",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "—",
+      "text": "power unavailable",
+      "warn": true,
+      "diff": ""
+     },
+     {
+      "value": "Hard to play",
+      "text": "",
+      "warn": false,
+      "diff": "hard"
+     },
+     {
+      "value": "3/60 cards · 57 open",
+      "text": "",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "100%",
+      "text": "owned",
+      "warn": false,
+      "diff": ""
+     }
+    ],
+    "owned": 1,
+    "notes": [
+     {
+      "text": "11 intended Energy copies are still missing. Unaffordable or unpriced Energy cannot be replaced with unrelated Trainers to finish the list.",
+      "warn": true,
+      "evidence": false,
+      "path": false,
+      "explain": false
+     },
+     {
+      "text": "Power is unavailable for this candidate. This is a reviewable budget-fit draft, not a verified strongest list.",
+      "warn": false,
+      "evidence": false,
+      "path": false,
+      "explain": true
+     },
+     {
+      "text": "To finish: add 57 cards you own, or raise the budget.",
+      "warn": false,
+      "evidence": false,
+      "path": true,
+      "explain": false
+     }
+    ],
+    "next": {
+     "summary": "Next assessed improvement · outside budget · $5.19",
+     "lines": [
+      "$5.19 above your $0.00 purchase budget · null power estimate. This option is not included in the within-budget list.",
+      "3× Pikachu ex · 1× Fezandipiti ex · 2× Budew · 3× Boss's Orders · 1× Lillie's Determination"
+     ],
+     "review": {
+      "id": 1582,
+      "label": "Review this version",
+      "disabled": false,
+      "icon": null
+     }
+    },
+    "groups": [],
+    "save": {
+     "id": 1585,
+     "label": "Save draft",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M12 5v14M5 12h14",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "buy": null,
+    "toggle": {
+     "id": 1589,
+     "label": "See all 3",
+     "disabled": false,
+     "icon": null
+    },
+    "more": [
+     {
+      "id": 1597,
+      "label": "Save draft and see matchups",
+      "note": "How it does against the decks winning now",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "m4 4 9.5 9.5M20 4l-9.5 9.5",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "m6.5 14.5 3 3M17.5 14.5l-3 3M4.5 19.5l3-3M19.5 19.5l-3-3",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1604,
+      "label": "Save draft and playtest",
+      "note": "Draw opening hands",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "M5 16H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "rect",
+         "x": 7,
+         "y": 7,
+         "w": 14,
+         "h": 14,
+         "rx": 2,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M11 12h6M11 16h4",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1612,
+      "label": "Copy deck list",
+      "note": "Pokémon TCG Live format",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "rect",
+         "x": 8,
+         "y": 8,
+         "w": 11.5,
+         "h": 12,
+         "rx": 1.8,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M15.5 8V5.8A1.8 1.8 0 0 0 13.7 4H6.3a1.8 1.8 0 0 0-1.8 1.8v8.4A1.8 1.8 0 0 0 6.3 16H8",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     }
+    ]
+   },
+   {
+    "i": 1,
+    "on": false,
+    "meta": false,
+    "title": "Draft — 34 slots open · Budget draft · for budgets of $10.00 and up",
+    "chips": [
+     {
+      "text": "Standard",
+      "ok": false,
+      "warn": false
+     },
+     {
+      "text": "1 to fix",
+      "ok": false,
+      "warn": true
+     }
+    ],
+    "stats": [
+     {
+      "value": "$8.58",
+      "text": "to buy",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "—",
+      "text": "power unavailable",
+      "warn": true,
+      "diff": ""
+     },
+     {
+      "value": "Medium",
+      "text": "",
+      "warn": false,
+      "diff": "medium"
+     },
+     {
+      "value": "26/60 cards · 34 open",
+      "text": "",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "12%",
+      "text": "owned",
+      "warn": false,
+      "diff": ""
+     }
+    ],
+    "owned": 0.115,
+    "notes": [
+     {
+      "text": "11 intended Energy copies are still missing. Unaffordable or unpriced Energy cannot be replaced with unrelated Trainers to finish the list.",
+      "warn": true,
+      "evidence": false,
+      "path": false,
+      "explain": false
+     },
+     {
+      "text": "Power is unavailable for this candidate. This is a reviewable budget-fit draft, not a verified strongest list.",
+      "warn": false,
+      "evidence": false,
+      "path": false,
+      "explain": true
+     },
+     {
+      "text": "To finish: add 34 cards you own, or raise the budget.",
+      "warn": false,
+      "evidence": false,
+      "path": true,
+      "explain": false
+     }
+    ],
+    "next": null,
+    "groups": [],
+    "save": {
+     "id": 1642,
+     "label": "Save draft",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M12 5v14M5 12h14",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "buy": {
+     "id": 1646,
+     "label": "Buy 23 on TCGplayer",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M5.5 8h13l-1 12h-11z",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       },
+       {
+        "t": "path",
+        "d": "M9 10V7a3 3 0 0 1 6 0v3",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "toggle": {
+     "id": 1651,
+     "label": "See all 26",
+     "disabled": false,
+     "icon": null
+    },
+    "more": [
+     {
+      "id": 1659,
+      "label": "Save draft and see matchups",
+      "note": "How it does against the decks winning now",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "m4 4 9.5 9.5M20 4l-9.5 9.5",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "m6.5 14.5 3 3M17.5 14.5l-3 3M4.5 19.5l3-3M19.5 19.5l-3-3",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1666,
+      "label": "Save draft and playtest",
+      "note": "Draw opening hands",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "M5 16H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "rect",
+         "x": 7,
+         "y": 7,
+         "w": 14,
+         "h": 14,
+         "rx": 2,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M11 12h6M11 16h4",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1674,
+      "label": "Copy deck list",
+      "note": "Pokémon TCG Live format",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "rect",
+         "x": 8,
+         "y": 8,
+         "w": 11.5,
+         "h": 12,
+         "rx": 1.8,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M15.5 8V5.8A1.8 1.8 0 0 0 13.7 4H6.3a1.8 1.8 0 0 0-1.8 1.8v8.4A1.8 1.8 0 0 0 6.3 16H8",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     }
+    ]
+   }
+  ],
+  "saveAll": {
+   "id": 1681,
+   "label": "Save all 2 versions",
+   "disabled": false,
+   "icon": null
+  },
+  "foot": "Built from your cards first, then what today's tournament decks play. A strong start, not a tuned tournament list. Prices are daily estimates.",
+  "openTier": null
+ },
+ "acted": null,
+ "toasts": []
+}

@@ -93,6 +93,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
     var review by remember(deckId) { mutableStateOf(false) }
     /** The open tab's body when it is the site's markup (CollectionEngine.deckPanel), as its listeners leave it. */
     var panel by remember(deckId) { mutableStateOf<SitePanelModel?>(null) }
+    /** Upgrade lab's Compare budget builds (tcg.js A.tOptimizeDeck): the Build decks sheet over the page, while the engine's panel is that sheet. */
+    var tbuild by remember(deckId) { mutableStateOf<TierBuildModel?>(null) }
     /** The collection is loaded in the engine (ensureCollection) and the page drawn once: a tab's body can be asked for. */
     var ready by remember(deckId) { mutableStateOf(false) }
     var query by remember(deckId) { mutableStateOf(DeckCache.q) }
@@ -179,6 +181,33 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
     var lifeEnded by remember(deckId) { mutableStateOf(0) }
     fun endLife() { lifeEnded++ }
     fun take(m: SitePanelModel) {
+        // The Build decks sheet (key tbuild|…) over the tab: its model; what its buttons leave to the app (A.tCard, the saves, Random card's
+        // Build a deck) runs here. Any other panel is the tab again (the sheet closed).
+        if (m.key.startsWith("tbuild|")) {
+            m.sheet?.let { tbuild = TierBuildModel(it) }
+            m.toasts.lastOrNull()?.let { CollectionWrites.show(it) }
+            val a = m.acted ?: return
+            val act = a.get("act")?.takeIf { it.isJsonPrimitive }?.asString ?: return
+            val got = { k: String -> a.getAsJsonObject("data")?.get(k)?.takeIf { it.isJsonPrimitive }?.asString.orEmpty() }
+            when (act) {
+                "tTierSave", "tTierSaveAll", "tTierCopy", "tTierBuy" -> write(act, "game" to game.id, "i" to got("i"))
+                // A.tTierSaveGo: saved, the sheet closes, the new deck opens on Matchups (Power here) or Playtest.
+                "tTierSaveGo" -> scope.launch { CollectionWrites.act(context, act, com.google.gson.JsonObject().apply {
+                    addProperty("deck", deckId); addProperty("game", game.id); addProperty("i", got("i")); addProperty("to", got("to")) }) { r ->
+                    val made = r.get("made")?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.startsWith("{") }?.let { com.google.gson.JsonParser.parseString(it).asJsonObject } ?: return@act
+                    val id = made.get("deck")?.asString ?: return@act; val to = made.get("tab")?.asString.orEmpty()
+                    tbuild = null
+                    DeckCache.id = "${game.id}:$id"; DeckCache.model = null; DeckCache.q = ""; DeckCache.bench = null
+                    DeckCache.tab = if (to == "matchups" || to == "upgrade") "insights" else to.ifBlank { "cards" }
+                    onDeck?.invoke(id) ?: web(site + "#tdeck/" + android.net.Uri.encode(id), null)
+                } }
+                // A.tRandomDeck: a random card's Build a deck (openDeckFlow), in place of this sheet.
+                "openDeckFlow" -> { val r = runCatching { com.google.gson.JsonParser.parseString(got("request")).asJsonObject }.getOrNull() ?: return
+                    scope.launch { runCatching { CollectionEngine.tbuildClose() }; tbuild = null; CollectionWrites.building.value = CollectionWrites.BuildOpen(r, "openDeckFlow", web) } }
+            }
+            return
+        }
+        tbuild = null
         panel = m
         // What the site toasts (tcg.js's toast(), e.g. a chest tool's "Nothing to draw"): the app's toast.
         m.toasts.lastOrNull()?.let { CollectionWrites.show(it) }
@@ -361,6 +390,13 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
                 }
                 else -> { review = false; web(page, "[data-act=\"deckReview\"]\n[data-act=\"${css(x.act)}\"]" + (if (x.id.isNotBlank()) "[data-id=\"${css(x.id)}\"]" else "") + (if (x.role.isNotBlank()) "[data-role=\"${css(x.role)}\"]" else "")) }
             } }))
+    }
+    tbuild?.let { t ->
+        androidx.compose.runtime.CompositionLocalProvider(LocalSheetPal provides sheetPal(game), LocalGameGold provides game.gold) {
+            TierBuildSheet(t, game, pageLayer, TierBuildActions(tap = { id -> siteUi.tap(id) }, type = { id, v -> siteUi.type(id, v) },
+                close = { panelDo { CollectionEngine.tbuildClose() } },
+                card = { r -> val c = r.card; tcgOpen(r.data["id"].orEmpty(), r.name, c?.open.orEmpty()) }))
+        }
     }
     cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) { CollectionCardHost(c, onClose = { cards = cards.dropLast(1) }, onOpen = { cards = cards + it }, web = web, onSet = onSet,
         onBack = if (c.back == "review") ({ cards = cards.dropLast(1); review = true }) else null) } }

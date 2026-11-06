@@ -1,0 +1,607 @@
+{
+ "key": "tbuild|ygo|094ab313-b1e1-4778-aefc-52ceb9c90ae5",
+ "sheet": {
+  "title": "Build decks",
+  "close": 1770,
+  "seed": {
+   "multi": false,
+   "art": "img/ygo/s/46986414.jpg",
+   "strip": [],
+   "label": "Built around",
+   "name": "Dark Magician",
+   "sub": "Archetype: Dark Magician",
+   "random": {
+    "id": 1777,
+    "label": "🎲 Random card",
+    "disabled": false,
+    "icon": null
+   }
+  },
+  "intro": "Builds a deck from the archetype, then adds the hand traps, draw and removal today’s tournament decks play most — your cards first, at each budget, plus a recent tournament list when one plays your card.",
+  "formats": [
+   {
+    "id": 1780,
+    "label": "Advanced (TCG)",
+    "on": true,
+    "disabled": false
+   },
+   {
+    "id": 1781,
+    "label": "Traditional (TCG)",
+    "on": false,
+    "disabled": false
+   },
+   {
+    "id": 1782,
+    "label": "OCG",
+    "on": false,
+    "disabled": false
+   },
+   {
+    "id": 1783,
+    "label": "GOAT",
+    "on": false,
+    "disabled": false
+   },
+   {
+    "id": 1784,
+    "label": "Edison",
+    "on": false,
+    "disabled": false
+   },
+   {
+    "id": 1785,
+    "label": "Master Duel",
+    "on": false,
+    "disabled": false
+   },
+   {
+    "id": 1786,
+    "label": "Speed Duel",
+    "on": false,
+    "disabled": false
+   },
+   {
+    "id": 1787,
+    "label": "Duel Links",
+    "on": false,
+    "disabled": false
+   },
+   {
+    "id": 1788,
+    "label": "Casual",
+    "on": false,
+    "disabled": false
+   }
+  ],
+  "formatsEmpty": "",
+  "budget": {
+   "id": 1790,
+   "label": "Purchase budget $",
+   "value": "",
+   "placeholder": "Blank = unlimited",
+   "disabled": false
+  },
+  "busy": null,
+  "status": {
+   "text": "1 complete card-count/rules-checked option · 2 budget versions. Extra Deck summoning needs review. Review any unverified purchase costs before buying.",
+   "warn": false
+  },
+  "evidence": "No recent tournament list plays Dark Magician, so staples are the format’s most played generic cards — check they suit the engine. Compared 8 candidates with Power, legality, engine readiness and your purchase cost. Higher budgets retain the best affordable lower-budget candidate. Purchase estimates use the lowest checked available exact printing/edition references, not a guaranteed cheapest offer. Missing exact quotes remain unpriced. References span conditions and exclude shipping/tax; match condition and seller price before buying.",
+  "tiers": [
+   {
+    "i": 0,
+    "on": false,
+    "meta": false,
+    "title": "Draft — 36 slots open · Your cards only · for budgets $10.00–$100.00",
+    "chips": [
+     {
+      "text": "Advanced (TCG)",
+      "ok": false,
+      "warn": false
+     },
+     {
+      "text": "1 to fix",
+      "ok": false,
+      "warn": true
+     }
+    ],
+    "stats": [
+     {
+      "value": "$0.00",
+      "text": "to buy",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "—",
+      "text": "power unavailable",
+      "warn": true,
+      "diff": ""
+     },
+     {
+      "value": "Hard to play",
+      "text": "",
+      "warn": false,
+      "diff": "hard"
+     },
+     {
+      "value": "4/40 main · 36 open",
+      "text": "",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "0 extra",
+      "text": "",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "100%",
+      "text": "owned",
+      "warn": false,
+      "diff": ""
+     }
+    ],
+    "owned": 1,
+    "notes": [
+     {
+      "text": "Power is unavailable for this candidate. This is a reviewable budget-fit draft, not a verified strongest list.",
+      "warn": false,
+      "evidence": false,
+      "path": false,
+      "explain": true
+     },
+     {
+      "text": "To finish: add 36 cards you own, or raise the budget.",
+      "warn": false,
+      "evidence": false,
+      "path": true,
+      "explain": false
+     }
+    ],
+    "next": null,
+    "groups": [],
+    "save": {
+     "id": 1818,
+     "label": "Save draft",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M12 5v14M5 12h14",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "buy": null,
+    "toggle": {
+     "id": 1822,
+     "label": "See all 4",
+     "disabled": false,
+     "icon": null
+    },
+    "more": [
+     {
+      "id": 1830,
+      "label": "Save draft and see matchups",
+      "note": "How it does against the decks winning now",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "m4 4 9.5 9.5M20 4l-9.5 9.5",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "m6.5 14.5 3 3M17.5 14.5l-3 3M4.5 19.5l3-3M19.5 19.5l-3-3",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1837,
+      "label": "Save draft and playtest",
+      "note": "Draw opening hands",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "M5 16H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "rect",
+         "x": 7,
+         "y": 7,
+         "w": 14,
+         "h": 14,
+         "rx": 2,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M11 12h6M11 16h4",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1845,
+      "label": "Copy deck list",
+      "note": "Paste into any deck site",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "rect",
+         "x": 8,
+         "y": 8,
+         "w": 11.5,
+         "h": 12,
+         "rx": 1.8,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M15.5 8V5.8A1.8 1.8 0 0 0 13.7 4H6.3a1.8 1.8 0 0 0-1.8 1.8v8.4A1.8 1.8 0 0 0 6.3 16H8",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     }
+    ]
+   },
+   {
+    "i": 1,
+    "on": false,
+    "meta": false,
+    "title": "Complete list · Extra Deck summoning needs review · Best version · no budget limit",
+    "chips": [
+     {
+      "text": "Advanced (TCG)",
+      "ok": false,
+      "warn": false
+     },
+     {
+      "text": "Legal",
+      "ok": true,
+      "warn": false
+     }
+    ],
+    "stats": [
+     {
+      "value": "$0.00+",
+      "text": "to buy",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "89",
+      "text": "comp. · engine 86",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "Hard to play",
+      "text": "",
+      "warn": false,
+      "diff": "hard"
+     },
+     {
+      "value": "51 main · within 40–60",
+      "text": "",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "15 extra",
+      "text": "",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "2%",
+      "text": "owned",
+      "warn": false,
+      "diff": ""
+     }
+    ],
+    "owned": 0.015,
+    "notes": [
+     {
+      "text": "Tournament candidate · Winner · San Salvador WCQ Regional",
+      "warn": false,
+      "evidence": true,
+      "path": false,
+      "explain": false
+     },
+     {
+      "text": "80 missing copies have no verified price; purchase total is incomplete.",
+      "warn": true,
+      "evidence": false,
+      "path": false,
+      "explain": false
+     },
+     {
+      "text": "Extra Deck summoning needs review. Dark Magician of Destruction: Material requirements are generic or unparsed; no exact missing-material claim is made. Alternate summoning routes have not been verified. Review its requirements and add or confirm the needed materials or summon effect before relying on it. Master of Chaos: Material requirements are generic or unparsed; no exact missing-material claim is made. Alternate summoning routes have not been verified. Review its requirements and add or confirm the needed materials or summon effect before relying on it. Dark Paladin: Named materials absent from this list: Buster Blader. This alone does not prove the card unusable. Alternate summoning routes have not been verified. Review its requirements and add or confirm the needed materials or summon effect before relying on it. Azamina Mu Rcielago: Material requirements are generic or unparsed; no exact missing-material claim is made. Alternate summoning routes have not been verified. Review its requirements and add or confirm the needed materials or summon effect before relying on it. Guardian Chimera: Material requirements are generic or unparsed; no exact missing-material claim is made. Alternate summoning routes have not been verified. Review its requirements and add or confirm the needed materials or summon effect before relying on it.",
+      "warn": true,
+      "evidence": false,
+      "path": false,
+      "explain": false
+     },
+     {
+      "text": "Known purchase subtotal only: 80 missing copies have no verified price. Total purchase cost is unverified, not free.",
+      "warn": true,
+      "evidence": false,
+      "path": false,
+      "explain": false
+     }
+    ],
+    "next": null,
+    "groups": [],
+    "save": {
+     "id": 1879,
+     "label": "Save list · summoning review",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M12 5v14M5 12h14",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "buy": {
+     "id": 1883,
+     "label": "Buy 65 on TCGplayer",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M5.5 8h13l-1 12h-11z",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       },
+       {
+        "t": "path",
+        "d": "M9 10V7a3 3 0 0 1 6 0v3",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "toggle": {
+     "id": 1888,
+     "label": "See all 66",
+     "disabled": false,
+     "icon": null
+    },
+    "more": [
+     {
+      "id": 1896,
+      "label": "Save and see matchups",
+      "note": "How it does against the decks winning now",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "m4 4 9.5 9.5M20 4l-9.5 9.5",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "m6.5 14.5 3 3M17.5 14.5l-3 3M4.5 19.5l3-3M19.5 19.5l-3-3",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1903,
+      "label": "Save and playtest",
+      "note": "Draw opening hands",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "M5 16H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "rect",
+         "x": 7,
+         "y": 7,
+         "w": 14,
+         "h": 14,
+         "rx": 2,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M11 12h6M11 16h4",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1911,
+      "label": "Copy deck list",
+      "note": "Paste into any deck site",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "rect",
+         "x": 8,
+         "y": 8,
+         "w": 11.5,
+         "h": 12,
+         "rx": 1.8,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M15.5 8V5.8A1.8 1.8 0 0 0 13.7 4H6.3a1.8 1.8 0 0 0-1.8 1.8v8.4A1.8 1.8 0 0 0 6.3 16H8",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     }
+    ]
+   }
+  ],
+  "saveAll": {
+   "id": 1918,
+   "label": "Save all 2 versions",
+   "disabled": false,
+   "icon": null
+  },
+  "foot": "Built from your cards first, then what today's tournament decks play. A strong start, not a tuned tournament list. Prices are daily estimates.",
+  "openTier": null
+ },
+ "acted": null,
+ "toasts": []
+}

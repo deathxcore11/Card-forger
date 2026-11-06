@@ -144,6 +144,8 @@ fun SyncDecideSheet(backdrop: GraphicsLayer?, onClose: () -> Unit) {
  */
 @Composable
 internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> Unit, onBack: (() -> Unit)? = null, eyebrow: String = "",
+                        /** h2.build-heading: the brand mark at rest (34, brand-idle) 10 before the title. */
+                        brand: Boolean = false,
                         foot: (@Composable () -> Unit)? = null,
                         content: @Composable ColumnScope.(vw: androidx.compose.ui.unit.Dp) -> Unit) {
     val still = Motion.still
@@ -267,6 +269,9 @@ internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> U
                         letterSpacing = 1.32.sp, color = MUTED, lineHeightStyle = CSS_LINE), maxLines = 1)
                     // .sheet-head h2 (style.css 3234): a long title wraps (white-space: normal, overflow-wrap: anywhere).
                     Text(title, style = h2)
+                }
+                else if (brand) Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    BrandMark(34.dp); Text(title, style = h2)
                 }
                 else Text(title, Modifier.weight(1f), style = h2, textAlign = if (onBack != null) TextAlign.Center else TextAlign.Start)
                 Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF1F232B)).border(1.dp, Color(0xFF2A2F39), RoundedCornerShape(12.dp))

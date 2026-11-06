@@ -1,0 +1,2786 @@
+{
+ "key": "tbuild|ptcg|1c5ee49c-a4ba-4506-ae2b-1e0761e20324",
+ "sheet": {
+  "title": "Build decks",
+  "close": 1789,
+  "seed": {
+   "multi": false,
+   "art": "https://assets.tcgdex.net/en/sv/sv08/057/low.webp",
+   "strip": [],
+   "label": "Built around",
+   "name": "Pikachu ex",
+   "sub": "Pokémon · Basic · Lightning",
+   "random": {
+    "id": 1796,
+    "label": "🎲 Random card",
+    "disabled": false,
+    "icon": null
+   }
+  },
+  "intro": "Builds the evolution line, adds the Trainers and support Pokémon today’s top decks play, and the Energy your attacks need — your cards first, at each budget, plus a recent tournament list when one plays your card. Basic Energy uses your actual collection quantities and purchase prices.",
+  "formats": [
+   {
+    "id": 1799,
+    "label": "Standard",
+    "on": true,
+    "disabled": false
+   },
+   {
+    "id": 1800,
+    "label": "Expanded",
+    "on": false,
+    "disabled": false
+   },
+   {
+    "id": 1801,
+    "label": "Unlimited",
+    "on": false,
+    "disabled": false
+   }
+  ],
+  "formatsEmpty": "",
+  "budget": {
+   "id": 1803,
+   "label": "Purchase budget $",
+   "value": "",
+   "placeholder": "Blank = unlimited",
+   "disabled": false
+  },
+  "busy": null,
+  "status": {
+   "text": "No complete checked list fits the available cards and verified purchase budgets. Review the draft shortfalls and card checks below; nothing was saved.",
+   "warn": false
+  },
+  "evidence": "No recent Top 8 list plays Pikachu ex, so Trainers are the format’s most played — check they suit the deck. Compared 7 candidates with Power, legality, engine readiness and your purchase cost. Higher budgets retain the best affordable lower-budget candidate. Printing comparisons for 5 card names were incomplete: prices use the lowest eligible checked option, not a guaranteed cheapest printing across every set.",
+  "tiers": [
+   {
+    "i": 0,
+    "on": false,
+    "meta": false,
+    "title": "Draft — 57 slots open · Your cards only",
+    "chips": [
+     {
+      "text": "Standard",
+      "ok": false,
+      "warn": false
+     },
+     {
+      "text": "1 to fix",
+      "ok": false,
+      "warn": true
+     }
+    ],
+    "stats": [
+     {
+      "value": "$0.00",
+      "text": "to buy",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "—",
+      "text": "power unavailable",
+      "warn": true,
+      "diff": ""
+     },
+     {
+      "value": "Hard to play",
+      "text": "",
+      "warn": false,
+      "diff": "hard"
+     },
+     {
+      "value": "3/60 cards · 57 open",
+      "text": "",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "100%",
+      "text": "owned",
+      "warn": false,
+      "diff": ""
+     }
+    ],
+    "owned": 1,
+    "notes": [
+     {
+      "text": "11 intended Energy copies are still missing. Unaffordable or unpriced Energy cannot be replaced with unrelated Trainers to finish the list.",
+      "warn": true,
+      "evidence": false,
+      "path": false,
+      "explain": false
+     },
+     {
+      "text": "Power is unavailable for this candidate. This is a reviewable budget-fit draft, not a verified strongest list.",
+      "warn": false,
+      "evidence": false,
+      "path": false,
+      "explain": true
+     },
+     {
+      "text": "To finish: add 57 cards you own, or raise the budget.",
+      "warn": false,
+      "evidence": false,
+      "path": true,
+      "explain": false
+     }
+    ],
+    "next": {
+     "summary": "Next assessed improvement · outside budget · $5.19",
+     "lines": [
+      "$5.19 above your $0.00 purchase budget · null power estimate. This option is not included in the within-budget list.",
+      "3× Pikachu ex · 1× Fezandipiti ex · 2× Budew · 3× Boss's Orders · 1× Lillie's Determination"
+     ],
+     "review": {
+      "id": 1832,
+      "label": "Review this version",
+      "disabled": false,
+      "icon": null
+     }
+    },
+    "groups": [],
+    "save": {
+     "id": 1835,
+     "label": "Save draft",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M12 5v14M5 12h14",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "buy": null,
+    "toggle": {
+     "id": 1839,
+     "label": "See all 3",
+     "disabled": false,
+     "icon": null
+    },
+    "more": [
+     {
+      "id": 1847,
+      "label": "Save draft and see matchups",
+      "note": "How it does against the decks winning now",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "m4 4 9.5 9.5M20 4l-9.5 9.5",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "m6.5 14.5 3 3M17.5 14.5l-3 3M4.5 19.5l3-3M19.5 19.5l-3-3",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1854,
+      "label": "Save draft and playtest",
+      "note": "Draw opening hands",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "M5 16H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "rect",
+         "x": 7,
+         "y": 7,
+         "w": 14,
+         "h": 14,
+         "rx": 2,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M11 12h6M11 16h4",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1862,
+      "label": "Copy deck list",
+      "note": "Pokémon TCG Live format",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "rect",
+         "x": 8,
+         "y": 8,
+         "w": 11.5,
+         "h": 12,
+         "rx": 1.8,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M15.5 8V5.8A1.8 1.8 0 0 0 13.7 4H6.3a1.8 1.8 0 0 0-1.8 1.8v8.4A1.8 1.8 0 0 0 6.3 16H8",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     }
+    ]
+   },
+   {
+    "i": 1,
+    "on": true,
+    "meta": false,
+    "title": "Draft — 34 slots open · Budget draft · for budgets of $10.00 and up",
+    "chips": [
+     {
+      "text": "Standard",
+      "ok": false,
+      "warn": false
+     },
+     {
+      "text": "1 to fix",
+      "ok": false,
+      "warn": true
+     }
+    ],
+    "stats": [
+     {
+      "value": "$8.58",
+      "text": "to buy",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "—",
+      "text": "power unavailable",
+      "warn": true,
+      "diff": ""
+     },
+     {
+      "value": "Medium",
+      "text": "",
+      "warn": false,
+      "diff": "medium"
+     },
+     {
+      "value": "26/60 cards · 34 open",
+      "text": "",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "12%",
+      "text": "owned",
+      "warn": false,
+      "diff": ""
+     }
+    ],
+    "owned": 0.115,
+    "notes": [
+     {
+      "text": "11 intended Energy copies are still missing. Unaffordable or unpriced Energy cannot be replaced with unrelated Trainers to finish the list.",
+      "warn": true,
+      "evidence": false,
+      "path": false,
+      "explain": false
+     },
+     {
+      "text": "Power is unavailable for this candidate. This is a reviewable budget-fit draft, not a verified strongest list.",
+      "warn": false,
+      "evidence": false,
+      "path": false,
+      "explain": true
+     },
+     {
+      "text": "To finish: add 34 cards you own, or raise the budget.",
+      "warn": false,
+      "evidence": false,
+      "path": true,
+      "explain": false
+     }
+    ],
+    "next": null,
+    "groups": [
+     {
+      "name": "Pokémon",
+      "count": "6",
+      "rows": [
+       {
+        "id": 1912,
+        "act": "tCard",
+        "card": {
+         "id": "Pikachu ex",
+         "name": "Pikachu ex",
+         "wanted": false,
+         "tier": "t1",
+         "tierColor": "#4fd18b",
+         "picture": {
+          "src": "https://assets.tcgdex.net/en/sv/sv08/057/low.webp",
+          "sources": [
+           "https://assets.tcgdex.net/en/sv/sv08/057/low.webp",
+           "https://assets.tcgdex.net/en/sv/sv08/057/high.webp",
+           "https://images.pokemontcg.io/sv8/57_hires.png",
+           "https://cardstashy.com/img/ptcg/s/sv08-057.jpg?v=2"
+          ]
+         },
+         "alt": "Pikachu ex",
+         "fallback": "",
+         "finish": {
+          "key": "holofoil",
+          "effect": "ptcg-full-art",
+          "printingId": "sv08-057",
+          "status": "approximate"
+         },
+         "emblem": null,
+         "set": null,
+         "mana": [],
+         "sub": [],
+         "wantChip": "",
+         "wishId": "",
+         "tag": null,
+         "price": "$4.21",
+         "condition": null,
+         "origin": "",
+         "qty": 0,
+         "edit": false,
+         "got": "",
+         "print": null,
+         "chrome": {
+          "emb": [],
+          "set": null,
+          "imp": null
+         },
+         "wantTag": "",
+         "mark": null,
+         "zone": "main",
+         "category": "Unresolved",
+         "roles": [],
+         "short": false,
+         "own": {
+          "text": "Owned",
+          "yes": true
+         },
+         "legal": [],
+         "chip": "",
+         "stepper": false,
+         "cardId": "sv08-057",
+         "pieces": [
+          {
+           "k": "svg",
+           "icon": {
+            "vb": [
+             0,
+             0,
+             24,
+             24
+            ],
+            "items": [
+             {
+              "t": "circle",
+              "cx": 12,
+              "cy": 12,
+              "r": 11,
+              "fill": "#f2c218",
+              "stroke": "rgba(0,0,0,.25)",
+              "sw": 1,
+              "cap": "butt",
+              "join": "miter"
+             },
+             {
+              "t": "path",
+              "d": "M13.5 3.5 6.8 13.2h4.4L10 20.5l7.2-10.2h-4.4z",
+              "fill": "#3b2c00",
+              "stroke": "none",
+              "sw": 1,
+              "cap": "butt",
+              "join": "miter"
+             }
+            ],
+            "grads": {}
+           },
+           "label": "Lightning Energy",
+           "set": false
+          },
+          {
+           "k": "t",
+           "t": "HP 200",
+           "b": false,
+           "s": false,
+           "tone": "",
+           "set": false,
+           "strong": true
+          },
+          {
+           "k": "set",
+           "title": "Surging Sparks · Double rare",
+           "tone": ""
+          },
+          {
+           "k": "img",
+           "src": "https://cardstashy.com/img/pks/s/surging-sparks.png",
+           "alt": "Surging Sparks",
+           "ink": false,
+           "set": true
+          },
+          {
+           "k": "img",
+           "src": "https://cardstashy.com/img/pks/r/double-rare.png",
+           "alt": "Double rare",
+           "ink": false,
+           "set": true
+          },
+          {
+           "k": "t",
+           "t": "SV08",
+           "b": true,
+           "s": false,
+           "tone": "",
+           "set": true,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": "057",
+           "b": false,
+           "s": true,
+           "tone": "",
+           "set": true,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": " ",
+           "b": false,
+           "s": false,
+           "tone": "",
+           "set": false,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": "Basic Pokémon",
+           "b": false,
+           "s": true,
+           "tone": "",
+           "set": false,
+           "strong": false
+          }
+         ],
+         "tchrome": {
+          "emb": [
+           {
+            "icon": {
+             "vb": [
+              0,
+              0,
+              24,
+              24
+             ],
+             "items": [
+              {
+               "t": "circle",
+               "cx": 12,
+               "cy": 12,
+               "r": 11,
+               "fill": "#f2c218",
+               "stroke": "rgba(0,0,0,.25)",
+               "sw": 1,
+               "cap": "butt",
+               "join": "miter"
+              },
+              {
+               "t": "path",
+               "d": "M13.5 3.5 6.8 13.2h4.4L10 20.5l7.2-10.2h-4.4z",
+               "fill": "#3b2c00",
+               "stroke": "none",
+               "sw": 1,
+               "cap": "butt",
+               "join": "miter"
+              }
+             ],
+             "grads": {}
+            }
+           }
+          ],
+          "set": {
+           "tone": "",
+           "code": "",
+           "rarity": null,
+           "symbol": [
+            "https://cardstashy.com/img/pks/s/surging-sparks.png",
+            "https://pokesymbols.com/images/tcg/sets/symbols/surging-sparks.png"
+           ],
+           "mark": {
+            "src": [
+             "https://cardstashy.com/img/pks/r/double-rare.png",
+             "https://pokesymbols.com/images/tcg/rarities/double-rare.png"
+            ],
+            "ink": false,
+            "alt": "Double rare"
+           },
+           "title": "Surging Sparks #057 · Double rare"
+          },
+          "imp": null
+         },
+         "tcgFinish": {
+          "key": "holofoil",
+          "effect": "ptcg-full-art",
+          "status": "approximate",
+          "stars": 0,
+          "treatment": "ptcg-double-rare",
+          "mask": "card",
+          "clip": "",
+          "frame": "Pokémon · Basic · Lightning"
+         },
+         "move": "",
+         "row": {},
+         "open": {},
+         "tint": [
+          "Lightning"
+         ]
+        },
+        "name": "Pikachu ex",
+        "art": "https://assets.tcgdex.net/en/sv/sv08/057/low.webp",
+        "price": "$4.21",
+        "qty": "×3",
+        "why": "Basic Pokémon",
+        "own": "Owned",
+        "ok": true,
+        "note": "",
+        "data": {
+         "act": "tCard",
+         "id": "sv08-057"
+        }
+       },
+       {
+        "id": 1954,
+        "act": "tCard",
+        "card": {
+         "id": "Budew",
+         "name": "Budew",
+         "wanted": false,
+         "tier": "t0",
+         "tierColor": "#9aa3ad",
+         "picture": {
+          "src": "https://assets.tcgdex.net/en/sv/sv08.5/004/low.webp",
+          "sources": [
+           "https://assets.tcgdex.net/en/sv/sv08.5/004/low.webp",
+           "https://assets.tcgdex.net/en/sv/sv08.5/004/high.webp",
+           "https://images.pokemontcg.io/sv8pt5/4_hires.png",
+           "https://cardstashy.com/img/ptcg/s/sv08.5-004.jpg?v=2"
+          ]
+         },
+         "alt": "Budew",
+         "fallback": "",
+         "finish": {
+          "key": "",
+          "effect": "unknown",
+          "printingId": "sv08.5-004",
+          "status": "unknown"
+         },
+         "emblem": null,
+         "set": null,
+         "mana": [],
+         "sub": [],
+         "wantChip": "",
+         "wishId": "",
+         "tag": null,
+         "price": "$0.20",
+         "condition": null,
+         "origin": "",
+         "qty": 0,
+         "edit": false,
+         "got": "",
+         "print": null,
+         "chrome": {
+          "emb": [],
+          "set": null,
+          "imp": {
+           "vb": [
+            0,
+            0,
+            24,
+            24
+           ],
+           "items": [
+            {
+             "t": "path",
+             "d": "M12 1.8l8.8 5.1v10.2L12 22.2 3.2 17.1V6.9z",
+             "fill": "url(#ig-core)",
+             "stroke": "#0008",
+             "sw": 0.8,
+             "cap": "butt",
+             "join": "miter"
+            },
+            {
+             "t": "path",
+             "d": "M7 15.5h10l1-7-3.5 2.6L12 6.5l-2.5 4.6L6 8.5z",
+             "fill": "#3a2a00",
+             "stroke": "none",
+             "sw": 1,
+             "cap": "butt",
+             "join": "miter"
+            }
+           ],
+           "grads": {
+            "ig-core": {
+             "x1": 0,
+             "y1": 0,
+             "x2": 0,
+             "y2": 1,
+             "stops": [
+              [
+               0,
+               "#ffe9a3"
+              ],
+              [
+               1,
+               "#d6a531"
+              ]
+             ]
+            }
+           }
+          }
+         },
+         "wantTag": "",
+         "mark": null,
+         "zone": "main",
+         "category": "Unresolved",
+         "roles": [],
+         "short": true,
+         "own": {
+          "text": "Need 2",
+          "yes": false
+         },
+         "legal": [],
+         "chip": "",
+         "stepper": false,
+         "cardId": "sv08.5-004",
+         "pieces": [
+          {
+           "k": "svg",
+           "icon": {
+            "vb": [
+             0,
+             0,
+             24,
+             24
+            ],
+            "items": [
+             {
+              "t": "circle",
+              "cx": 12,
+              "cy": 12,
+              "r": 11,
+              "fill": "#3f9d3a",
+              "stroke": "rgba(0,0,0,.25)",
+              "sw": 1,
+              "cap": "butt",
+              "join": "miter"
+             },
+             {
+              "t": "path",
+              "d": "M12 4.5c4.5 2.2 6 6 4.4 10.4-1.2 3-4.2 4.6-7.4 4.1C7.5 13.5 8.6 8 12 4.5z",
+              "fill": "#e6ffd9",
+              "stroke": "none",
+              "sw": 1,
+              "cap": "butt",
+              "join": "miter"
+             },
+             {
+              "t": "path",
+              "d": "M9 19c1.5-4 3-7 5.5-10",
+              "fill": "none",
+              "stroke": "#3f9d3a",
+              "sw": 1.2,
+              "cap": "butt",
+              "join": "miter"
+             }
+            ],
+            "grads": {}
+           },
+           "label": "Grass Energy",
+           "set": false
+          },
+          {
+           "k": "t",
+           "t": "HP 30",
+           "b": false,
+           "s": false,
+           "tone": "",
+           "set": false,
+           "strong": true
+          },
+          {
+           "k": "set",
+           "title": "Prismatic Evolutions · Common",
+           "tone": ""
+          },
+          {
+           "k": "img",
+           "src": "https://cardstashy.com/img/pks/s/prismatic-evolutions.png",
+           "alt": "Prismatic Evolutions",
+           "ink": false,
+           "set": true
+          },
+          {
+           "k": "img",
+           "src": "https://cardstashy.com/img/pks/r/common.png",
+           "alt": "Common",
+           "ink": true,
+           "set": true
+          },
+          {
+           "k": "t",
+           "t": "SV08.5",
+           "b": true,
+           "s": false,
+           "tone": "",
+           "set": true,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": "004",
+           "b": false,
+           "s": true,
+           "tone": "",
+           "set": true,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": " ",
+           "b": false,
+           "s": false,
+           "tone": "",
+           "set": false,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": "Basic Pokémon",
+           "b": false,
+           "s": true,
+           "tone": "",
+           "set": false,
+           "strong": false
+          }
+         ],
+         "tchrome": {
+          "emb": [
+           {
+            "icon": {
+             "vb": [
+              0,
+              0,
+              24,
+              24
+             ],
+             "items": [
+              {
+               "t": "circle",
+               "cx": 12,
+               "cy": 12,
+               "r": 11,
+               "fill": "#3f9d3a",
+               "stroke": "rgba(0,0,0,.25)",
+               "sw": 1,
+               "cap": "butt",
+               "join": "miter"
+              },
+              {
+               "t": "path",
+               "d": "M12 4.5c4.5 2.2 6 6 4.4 10.4-1.2 3-4.2 4.6-7.4 4.1C7.5 13.5 8.6 8 12 4.5z",
+               "fill": "#e6ffd9",
+               "stroke": "none",
+               "sw": 1,
+               "cap": "butt",
+               "join": "miter"
+              },
+              {
+               "t": "path",
+               "d": "M9 19c1.5-4 3-7 5.5-10",
+               "fill": "none",
+               "stroke": "#3f9d3a",
+               "sw": 1.2,
+               "cap": "butt",
+               "join": "miter"
+              }
+             ],
+             "grads": {}
+            }
+           }
+          ],
+          "set": {
+           "tone": "",
+           "code": "",
+           "rarity": null,
+           "symbol": [
+            "https://cardstashy.com/img/pks/s/prismatic-evolutions.png",
+            "https://pokesymbols.com/images/tcg/sets/symbols/prismatic-evolutions.png"
+           ],
+           "mark": {
+            "src": [
+             "https://cardstashy.com/img/pks/r/common.png",
+             "https://pokesymbols.com/images/tcg/rarities/common.png"
+            ],
+            "ink": true,
+            "alt": "Common"
+           },
+           "title": "Prismatic Evolutions #004 · Common"
+          },
+          "imp": {
+           "vb": [
+            0,
+            0,
+            24,
+            24
+           ],
+           "items": [
+            {
+             "t": "path",
+             "d": "M12 1.8l8.8 5.1v10.2L12 22.2 3.2 17.1V6.9z",
+             "fill": "url(#ig-core)",
+             "stroke": "#0008",
+             "sw": 0.8,
+             "cap": "butt",
+             "join": "miter"
+            },
+            {
+             "t": "path",
+             "d": "M7 15.5h10l1-7-3.5 2.6L12 6.5l-2.5 4.6L6 8.5z",
+             "fill": "#3a2a00",
+             "stroke": "none",
+             "sw": 1,
+             "cap": "butt",
+             "join": "miter"
+            }
+           ],
+           "grads": {
+            "ig-core": {
+             "x1": 0,
+             "y1": 0,
+             "x2": 0,
+             "y2": 1,
+             "stops": [
+              [
+               0,
+               "#ffe9a3"
+              ],
+              [
+               1,
+               "#d6a531"
+              ]
+             ]
+            }
+           }
+          }
+         },
+         "tcgFinish": {
+          "key": "",
+          "effect": "unknown",
+          "status": "unknown",
+          "stars": 0,
+          "treatment": "",
+          "mask": "",
+          "clip": "",
+          "frame": "Pokémon · Basic · Grass"
+         },
+         "move": "",
+         "row": {},
+         "open": {},
+         "tint": [
+          "Grass"
+         ]
+        },
+        "name": "Budew",
+        "art": "https://assets.tcgdex.net/en/sv/sv08.5/004/low.webp",
+        "price": "$0.20",
+        "qty": "×2",
+        "why": "Basic Pokémon",
+        "own": "Need 2",
+        "ok": false,
+        "note": "",
+        "data": {
+         "act": "tCard",
+         "id": "sv08.5-004"
+        }
+       },
+       {
+        "id": 1996,
+        "act": "tCard",
+        "card": {
+         "id": "Fezandipiti ex",
+         "name": "Fezandipiti ex",
+         "wanted": false,
+         "tier": "t1",
+         "tierColor": "#4fd18b",
+         "picture": {
+          "src": "https://assets.tcgdex.net/en/me/me02.5/142/low.webp",
+          "sources": [
+           "https://assets.tcgdex.net/en/me/me02.5/142/low.webp",
+           "https://assets.tcgdex.net/en/me/me02.5/142/high.webp",
+           "https://images.pokemontcg.io/me2pt5/142_hires.png",
+           "https://cardstashy.com/img/ptcg/s/me02.5-142.jpg?v=2"
+          ]
+         },
+         "alt": "Fezandipiti ex",
+         "fallback": "",
+         "finish": {
+          "key": "holofoil",
+          "effect": "ptcg-full-art",
+          "printingId": "me02.5-142",
+          "status": "approximate"
+         },
+         "emblem": null,
+         "set": null,
+         "mana": [],
+         "sub": [],
+         "wantChip": "",
+         "wishId": "",
+         "tag": null,
+         "price": "$3.74",
+         "condition": null,
+         "origin": "",
+         "qty": 0,
+         "edit": false,
+         "got": "",
+         "print": null,
+         "chrome": {
+          "emb": [],
+          "set": null,
+          "imp": {
+           "vb": [
+            0,
+            0,
+            24,
+            24
+           ],
+           "items": [
+            {
+             "t": "path",
+             "d": "M12 1.8l8.8 5.1v10.2L12 22.2 3.2 17.1V6.9z",
+             "fill": "url(#ig-core)",
+             "stroke": "#0008",
+             "sw": 0.8,
+             "cap": "butt",
+             "join": "miter"
+            },
+            {
+             "t": "path",
+             "d": "M7 15.5h10l1-7-3.5 2.6L12 6.5l-2.5 4.6L6 8.5z",
+             "fill": "#3a2a00",
+             "stroke": "none",
+             "sw": 1,
+             "cap": "butt",
+             "join": "miter"
+            }
+           ],
+           "grads": {
+            "ig-core": {
+             "x1": 0,
+             "y1": 0,
+             "x2": 0,
+             "y2": 1,
+             "stops": [
+              [
+               0,
+               "#ffe9a3"
+              ],
+              [
+               1,
+               "#d6a531"
+              ]
+             ]
+            }
+           }
+          }
+         },
+         "wantTag": "",
+         "mark": null,
+         "zone": "main",
+         "category": "Unresolved",
+         "roles": [],
+         "short": true,
+         "own": {
+          "text": "Need 1",
+          "yes": false
+         },
+         "legal": [],
+         "chip": "",
+         "stepper": false,
+         "cardId": "me02.5-142",
+         "pieces": [
+          {
+           "k": "svg",
+           "icon": {
+            "vb": [
+             0,
+             0,
+             24,
+             24
+            ],
+            "items": [
+             {
+              "t": "circle",
+              "cx": 12,
+              "cy": 12,
+              "r": 11,
+              "fill": "#2d2a3a",
+              "stroke": "rgba(0,0,0,.25)",
+              "sw": 1,
+              "cap": "butt",
+              "join": "miter"
+             },
+             {
+              "t": "path",
+              "d": "M15 5.5a6.7 6.7 0 1 0 0 13 5.4 5.4 0 0 1 0-13z",
+              "fill": "#d7d2f0",
+              "stroke": "none",
+              "sw": 1,
+              "cap": "butt",
+              "join": "miter"
+             }
+            ],
+            "grads": {}
+           },
+           "label": "Darkness Energy",
+           "set": false
+          },
+          {
+           "k": "t",
+           "t": "HP 210",
+           "b": false,
+           "s": false,
+           "tone": "",
+           "set": false,
+           "strong": true
+          },
+          {
+           "k": "set",
+           "title": "Ascended Heroes · Double rare",
+           "tone": ""
+          },
+          {
+           "k": "img",
+           "src": "https://cardstashy.com/img/pks/s/ascended-heroes.png",
+           "alt": "Ascended Heroes",
+           "ink": false,
+           "set": true
+          },
+          {
+           "k": "img",
+           "src": "https://cardstashy.com/img/pks/r/double-rare.png",
+           "alt": "Double rare",
+           "ink": false,
+           "set": true
+          },
+          {
+           "k": "t",
+           "t": "ME02.5",
+           "b": true,
+           "s": false,
+           "tone": "",
+           "set": true,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": "142",
+           "b": false,
+           "s": true,
+           "tone": "",
+           "set": true,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": " ",
+           "b": false,
+           "s": false,
+           "tone": "",
+           "set": false,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": "Basic Pokémon",
+           "b": false,
+           "s": true,
+           "tone": "",
+           "set": false,
+           "strong": false
+          }
+         ],
+         "tchrome": {
+          "emb": [
+           {
+            "icon": {
+             "vb": [
+              0,
+              0,
+              24,
+              24
+             ],
+             "items": [
+              {
+               "t": "circle",
+               "cx": 12,
+               "cy": 12,
+               "r": 11,
+               "fill": "#2d2a3a",
+               "stroke": "rgba(0,0,0,.25)",
+               "sw": 1,
+               "cap": "butt",
+               "join": "miter"
+              },
+              {
+               "t": "path",
+               "d": "M15 5.5a6.7 6.7 0 1 0 0 13 5.4 5.4 0 0 1 0-13z",
+               "fill": "#d7d2f0",
+               "stroke": "none",
+               "sw": 1,
+               "cap": "butt",
+               "join": "miter"
+              }
+             ],
+             "grads": {}
+            }
+           }
+          ],
+          "set": {
+           "tone": "",
+           "code": "",
+           "rarity": null,
+           "symbol": [
+            "https://cardstashy.com/img/pks/s/ascended-heroes.png",
+            "https://pokesymbols.com/images/tcg/sets/symbols/ascended-heroes.png"
+           ],
+           "mark": {
+            "src": [
+             "https://cardstashy.com/img/pks/r/double-rare.png",
+             "https://pokesymbols.com/images/tcg/rarities/double-rare.png"
+            ],
+            "ink": false,
+            "alt": "Double rare"
+           },
+           "title": "Ascended Heroes #142 · Double rare"
+          },
+          "imp": {
+           "vb": [
+            0,
+            0,
+            24,
+            24
+           ],
+           "items": [
+            {
+             "t": "path",
+             "d": "M12 1.8l8.8 5.1v10.2L12 22.2 3.2 17.1V6.9z",
+             "fill": "url(#ig-core)",
+             "stroke": "#0008",
+             "sw": 0.8,
+             "cap": "butt",
+             "join": "miter"
+            },
+            {
+             "t": "path",
+             "d": "M7 15.5h10l1-7-3.5 2.6L12 6.5l-2.5 4.6L6 8.5z",
+             "fill": "#3a2a00",
+             "stroke": "none",
+             "sw": 1,
+             "cap": "butt",
+             "join": "miter"
+            }
+           ],
+           "grads": {
+            "ig-core": {
+             "x1": 0,
+             "y1": 0,
+             "x2": 0,
+             "y2": 1,
+             "stops": [
+              [
+               0,
+               "#ffe9a3"
+              ],
+              [
+               1,
+               "#d6a531"
+              ]
+             ]
+            }
+           }
+          }
+         },
+         "tcgFinish": {
+          "key": "holofoil",
+          "effect": "ptcg-full-art",
+          "status": "approximate",
+          "stars": 0,
+          "treatment": "ptcg-double-rare",
+          "mask": "card",
+          "clip": "",
+          "frame": "Pokémon · Basic · Darkness"
+         },
+         "move": "",
+         "row": {},
+         "open": {},
+         "tint": [
+          "Darkness"
+         ]
+        },
+        "name": "Fezandipiti ex",
+        "art": "https://assets.tcgdex.net/en/me/me02.5/142/low.webp",
+        "price": "$3.74",
+        "qty": "×1",
+        "why": "Basic Pokémon",
+        "own": "Need 1",
+        "ok": false,
+        "note": "",
+        "data": {
+         "act": "tCard",
+         "id": "me02.5-142"
+        }
+       }
+      ]
+     },
+     {
+      "name": "Trainers",
+      "count": "20",
+      "rows": [
+       {
+        "id": 2038,
+        "act": "tCard",
+        "card": {
+         "id": "Boss's Orders",
+         "name": "Boss's Orders",
+         "wanted": false,
+         "tier": "t0",
+         "tierColor": "#9aa3ad",
+         "picture": {
+          "src": "https://assets.tcgdex.net/en/me/me02.5/183/low.webp",
+          "sources": [
+           "https://assets.tcgdex.net/en/me/me02.5/183/low.webp",
+           "https://assets.tcgdex.net/en/me/me02.5/183/high.webp",
+           "https://images.pokemontcg.io/me2pt5/183_hires.png",
+           "https://cardstashy.com/img/ptcg/s/me02.5-183.jpg?v=2"
+          ]
+         },
+         "alt": "Boss's Orders",
+         "fallback": "",
+         "finish": {
+          "key": "",
+          "effect": "unknown",
+          "printingId": "me02.5-183",
+          "status": "unknown"
+         },
+         "emblem": null,
+         "set": null,
+         "mana": [],
+         "sub": [],
+         "wantChip": "",
+         "wishId": "",
+         "tag": null,
+         "price": "$0.25",
+         "condition": null,
+         "origin": "",
+         "qty": 0,
+         "edit": false,
+         "got": "",
+         "print": null,
+         "chrome": {
+          "emb": [],
+          "set": null,
+          "imp": {
+           "vb": [
+            0,
+            0,
+            24,
+            24
+           ],
+           "items": [
+            {
+             "t": "path",
+             "d": "M12 1.8l8.8 5.1v10.2L12 22.2 3.2 17.1V6.9z",
+             "fill": "url(#ig-core)",
+             "stroke": "#0008",
+             "sw": 0.8,
+             "cap": "butt",
+             "join": "miter"
+            },
+            {
+             "t": "path",
+             "d": "M7 15.5h10l1-7-3.5 2.6L12 6.5l-2.5 4.6L6 8.5z",
+             "fill": "#3a2a00",
+             "stroke": "none",
+             "sw": 1,
+             "cap": "butt",
+             "join": "miter"
+            }
+           ],
+           "grads": {
+            "ig-core": {
+             "x1": 0,
+             "y1": 0,
+             "x2": 0,
+             "y2": 1,
+             "stops": [
+              [
+               0,
+               "#ffe9a3"
+              ],
+              [
+               1,
+               "#d6a531"
+              ]
+             ]
+            }
+           }
+          }
+         },
+         "wantTag": "",
+         "mark": null,
+         "zone": "main",
+         "category": "Unresolved",
+         "roles": [],
+         "short": true,
+         "own": {
+          "text": "Need 4",
+          "yes": false
+         },
+         "legal": [],
+         "chip": "",
+         "stepper": false,
+         "cardId": "me02.5-183",
+         "pieces": [
+          {
+           "k": "set",
+           "title": "Ascended Heroes · Uncommon",
+           "tone": ""
+          },
+          {
+           "k": "img",
+           "src": "https://cardstashy.com/img/pks/s/ascended-heroes.png",
+           "alt": "Ascended Heroes",
+           "ink": false,
+           "set": true
+          },
+          {
+           "k": "img",
+           "src": "https://cardstashy.com/img/pks/r/uncommon.png",
+           "alt": "Uncommon",
+           "ink": true,
+           "set": true
+          },
+          {
+           "k": "t",
+           "t": "ME02.5",
+           "b": true,
+           "s": false,
+           "tone": "",
+           "set": true,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": "183",
+           "b": false,
+           "s": true,
+           "tone": "",
+           "set": true,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": " ",
+           "b": false,
+           "s": false,
+           "tone": "",
+           "set": false,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": "Trainer staple",
+           "b": false,
+           "s": true,
+           "tone": "",
+           "set": false,
+           "strong": false
+          }
+         ],
+         "tchrome": {
+          "emb": [],
+          "set": {
+           "tone": "",
+           "code": "",
+           "rarity": null,
+           "symbol": [
+            "https://cardstashy.com/img/pks/s/ascended-heroes.png",
+            "https://pokesymbols.com/images/tcg/sets/symbols/ascended-heroes.png"
+           ],
+           "mark": {
+            "src": [
+             "https://cardstashy.com/img/pks/r/uncommon.png",
+             "https://pokesymbols.com/images/tcg/rarities/uncommon.png"
+            ],
+            "ink": true,
+            "alt": "Uncommon"
+           },
+           "title": "Ascended Heroes #183 · Uncommon"
+          },
+          "imp": {
+           "vb": [
+            0,
+            0,
+            24,
+            24
+           ],
+           "items": [
+            {
+             "t": "path",
+             "d": "M12 1.8l8.8 5.1v10.2L12 22.2 3.2 17.1V6.9z",
+             "fill": "url(#ig-core)",
+             "stroke": "#0008",
+             "sw": 0.8,
+             "cap": "butt",
+             "join": "miter"
+            },
+            {
+             "t": "path",
+             "d": "M7 15.5h10l1-7-3.5 2.6L12 6.5l-2.5 4.6L6 8.5z",
+             "fill": "#3a2a00",
+             "stroke": "none",
+             "sw": 1,
+             "cap": "butt",
+             "join": "miter"
+            }
+           ],
+           "grads": {
+            "ig-core": {
+             "x1": 0,
+             "y1": 0,
+             "x2": 0,
+             "y2": 1,
+             "stops": [
+              [
+               0,
+               "#ffe9a3"
+              ],
+              [
+               1,
+               "#d6a531"
+              ]
+             ]
+            }
+           }
+          }
+         },
+         "tcgFinish": {
+          "key": "",
+          "effect": "unknown",
+          "status": "unknown",
+          "stars": 0,
+          "treatment": "",
+          "mask": "",
+          "clip": "",
+          "frame": "Trainer · Supporter"
+         },
+         "move": "",
+         "row": {},
+         "open": {},
+         "tint": [
+          "Trainer"
+         ]
+        },
+        "name": "Boss's Orders",
+        "art": "https://assets.tcgdex.net/en/me/me02.5/183/low.webp",
+        "price": "$0.25",
+        "qty": "×4",
+        "why": "Trainer staple",
+        "own": "Need 4",
+        "ok": false,
+        "note": "",
+        "data": {
+         "act": "tCard",
+         "id": "me02.5-183"
+        }
+       },
+       {
+        "id": 2070,
+        "act": "tCard",
+        "card": {
+         "id": "Buddy-Buddy Poffin",
+         "name": "Buddy-Buddy Poffin",
+         "wanted": false,
+         "tier": "t0",
+         "tierColor": "#9aa3ad",
+         "picture": {
+          "src": "https://assets.tcgdex.net/en/sv/sv08.5/101/low.webp",
+          "sources": [
+           "https://assets.tcgdex.net/en/sv/sv08.5/101/low.webp",
+           "https://assets.tcgdex.net/en/sv/sv08.5/101/high.webp",
+           "https://images.pokemontcg.io/sv8pt5/101_hires.png",
+           "https://cardstashy.com/img/ptcg/s/sv08.5-101.jpg?v=2"
+          ]
+         },
+         "alt": "Buddy-Buddy Poffin",
+         "fallback": "",
+         "finish": {
+          "key": "",
+          "effect": "unknown",
+          "printingId": "sv08.5-101",
+          "status": "unknown"
+         },
+         "emblem": null,
+         "set": null,
+         "mana": [],
+         "sub": [],
+         "wantChip": "",
+         "wishId": "",
+         "tag": null,
+         "price": "$0.19",
+         "condition": null,
+         "origin": "",
+         "qty": 0,
+         "edit": false,
+         "got": "",
+         "print": null,
+         "chrome": {
+          "emb": [],
+          "set": null,
+          "imp": {
+           "vb": [
+            0,
+            0,
+            24,
+            24
+           ],
+           "items": [
+            {
+             "t": "path",
+             "d": "M12 1.8l8.8 5.1v10.2L12 22.2 3.2 17.1V6.9z",
+             "fill": "url(#ig-core)",
+             "stroke": "#0008",
+             "sw": 0.8,
+             "cap": "butt",
+             "join": "miter"
+            },
+            {
+             "t": "path",
+             "d": "M7 15.5h10l1-7-3.5 2.6L12 6.5l-2.5 4.6L6 8.5z",
+             "fill": "#3a2a00",
+             "stroke": "none",
+             "sw": 1,
+             "cap": "butt",
+             "join": "miter"
+            }
+           ],
+           "grads": {
+            "ig-core": {
+             "x1": 0,
+             "y1": 0,
+             "x2": 0,
+             "y2": 1,
+             "stops": [
+              [
+               0,
+               "#ffe9a3"
+              ],
+              [
+               1,
+               "#d6a531"
+              ]
+             ]
+            }
+           }
+          }
+         },
+         "wantTag": "",
+         "mark": null,
+         "zone": "main",
+         "category": "Unresolved",
+         "roles": [],
+         "short": true,
+         "own": {
+          "text": "Need 4",
+          "yes": false
+         },
+         "legal": [],
+         "chip": "",
+         "stepper": false,
+         "cardId": "sv08.5-101",
+         "pieces": [
+          {
+           "k": "set",
+           "title": "Prismatic Evolutions · Uncommon",
+           "tone": ""
+          },
+          {
+           "k": "img",
+           "src": "https://cardstashy.com/img/pks/s/prismatic-evolutions.png",
+           "alt": "Prismatic Evolutions",
+           "ink": false,
+           "set": true
+          },
+          {
+           "k": "img",
+           "src": "https://cardstashy.com/img/pks/r/uncommon.png",
+           "alt": "Uncommon",
+           "ink": true,
+           "set": true
+          },
+          {
+           "k": "t",
+           "t": "SV08.5",
+           "b": true,
+           "s": false,
+           "tone": "",
+           "set": true,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": "101",
+           "b": false,
+           "s": true,
+           "tone": "",
+           "set": true,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": " ",
+           "b": false,
+           "s": false,
+           "tone": "",
+           "set": false,
+           "strong": false
+          }
+         ],
+         "tchrome": {
+          "emb": [],
+          "set": {
+           "tone": "",
+           "code": "",
+           "rarity": null,
+           "symbol": [
+            "https://cardstashy.com/img/pks/s/prismatic-evolutions.png",
+            "https://pokesymbols.com/images/tcg/sets/symbols/prismatic-evolutions.png"
+           ],
+           "mark": {
+            "src": [
+             "https://cardstashy.com/img/pks/r/uncommon.png",
+             "https://pokesymbols.com/images/tcg/rarities/uncommon.png"
+            ],
+            "ink": true,
+            "alt": "Uncommon"
+           },
+           "title": "Prismatic Evolutions #101 · Uncommon"
+          },
+          "imp": {
+           "vb": [
+            0,
+            0,
+            24,
+            24
+           ],
+           "items": [
+            {
+             "t": "path",
+             "d": "M12 1.8l8.8 5.1v10.2L12 22.2 3.2 17.1V6.9z",
+             "fill": "url(#ig-core)",
+             "stroke": "#0008",
+             "sw": 0.8,
+             "cap": "butt",
+             "join": "miter"
+            },
+            {
+             "t": "path",
+             "d": "M7 15.5h10l1-7-3.5 2.6L12 6.5l-2.5 4.6L6 8.5z",
+             "fill": "#3a2a00",
+             "stroke": "none",
+             "sw": 1,
+             "cap": "butt",
+             "join": "miter"
+            }
+           ],
+           "grads": {
+            "ig-core": {
+             "x1": 0,
+             "y1": 0,
+             "x2": 0,
+             "y2": 1,
+             "stops": [
+              [
+               0,
+               "#ffe9a3"
+              ],
+              [
+               1,
+               "#d6a531"
+              ]
+             ]
+            }
+           }
+          }
+         },
+         "tcgFinish": {
+          "key": "",
+          "effect": "unknown",
+          "status": "unknown",
+          "stars": 0,
+          "treatment": "",
+          "mask": "",
+          "clip": "",
+          "frame": "Trainer · Item"
+         },
+         "move": "",
+         "row": {},
+         "open": {},
+         "tint": [
+          "Trainer"
+         ]
+        },
+        "name": "Buddy-Buddy Poffin",
+        "art": "https://assets.tcgdex.net/en/sv/sv08.5/101/low.webp",
+        "price": "$0.19",
+        "qty": "×4",
+        "why": "",
+        "own": "Need 4",
+        "ok": false,
+        "note": "",
+        "data": {
+         "act": "tCard",
+         "id": "sv08.5-101"
+        }
+       },
+       {
+        "id": 2101,
+        "act": "tCard",
+        "card": {
+         "id": "Lillie's Determination",
+         "name": "Lillie's Determination",
+         "wanted": false,
+         "tier": "t0",
+         "tierColor": "#9aa3ad",
+         "picture": {
+          "src": "https://assets.tcgdex.net/en/me/me02.5/192/low.webp",
+          "sources": [
+           "https://assets.tcgdex.net/en/me/me02.5/192/low.webp",
+           "https://assets.tcgdex.net/en/me/me02.5/192/high.webp",
+           "https://images.pokemontcg.io/me2pt5/192_hires.png",
+           "https://cardstashy.com/img/ptcg/s/me02.5-192.jpg?v=2"
+          ]
+         },
+         "alt": "Lillie's Determination",
+         "fallback": "",
+         "finish": {
+          "key": "",
+          "effect": "unknown",
+          "printingId": "me02.5-192",
+          "status": "unknown"
+         },
+         "emblem": null,
+         "set": null,
+         "mana": [],
+         "sub": [],
+         "wantChip": "",
+         "wishId": "",
+         "tag": null,
+         "price": "$0.30",
+         "condition": null,
+         "origin": "",
+         "qty": 0,
+         "edit": false,
+         "got": "",
+         "print": null,
+         "chrome": {
+          "emb": [],
+          "set": null,
+          "imp": {
+           "vb": [
+            0,
+            0,
+            24,
+            24
+           ],
+           "items": [
+            {
+             "t": "path",
+             "d": "M12 1.8l8.8 5.1v10.2L12 22.2 3.2 17.1V6.9z",
+             "fill": "url(#ig-core)",
+             "stroke": "#0008",
+             "sw": 0.8,
+             "cap": "butt",
+             "join": "miter"
+            },
+            {
+             "t": "path",
+             "d": "M7 15.5h10l1-7-3.5 2.6L12 6.5l-2.5 4.6L6 8.5z",
+             "fill": "#3a2a00",
+             "stroke": "none",
+             "sw": 1,
+             "cap": "butt",
+             "join": "miter"
+            }
+           ],
+           "grads": {
+            "ig-core": {
+             "x1": 0,
+             "y1": 0,
+             "x2": 0,
+             "y2": 1,
+             "stops": [
+              [
+               0,
+               "#ffe9a3"
+              ],
+              [
+               1,
+               "#d6a531"
+              ]
+             ]
+            }
+           }
+          }
+         },
+         "wantTag": "",
+         "mark": null,
+         "zone": "main",
+         "category": "Unresolved",
+         "roles": [],
+         "short": true,
+         "own": {
+          "text": "Need 4",
+          "yes": false
+         },
+         "legal": [],
+         "chip": "",
+         "stepper": false,
+         "cardId": "me02.5-192",
+         "pieces": [
+          {
+           "k": "set",
+           "title": "Ascended Heroes · Uncommon",
+           "tone": ""
+          },
+          {
+           "k": "img",
+           "src": "https://cardstashy.com/img/pks/s/ascended-heroes.png",
+           "alt": "Ascended Heroes",
+           "ink": false,
+           "set": true
+          },
+          {
+           "k": "img",
+           "src": "https://cardstashy.com/img/pks/r/uncommon.png",
+           "alt": "Uncommon",
+           "ink": true,
+           "set": true
+          },
+          {
+           "k": "t",
+           "t": "ME02.5",
+           "b": true,
+           "s": false,
+           "tone": "",
+           "set": true,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": "192",
+           "b": false,
+           "s": true,
+           "tone": "",
+           "set": true,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": " ",
+           "b": false,
+           "s": false,
+           "tone": "",
+           "set": false,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": "Trainer staple",
+           "b": false,
+           "s": true,
+           "tone": "",
+           "set": false,
+           "strong": false
+          }
+         ],
+         "tchrome": {
+          "emb": [],
+          "set": {
+           "tone": "",
+           "code": "",
+           "rarity": null,
+           "symbol": [
+            "https://cardstashy.com/img/pks/s/ascended-heroes.png",
+            "https://pokesymbols.com/images/tcg/sets/symbols/ascended-heroes.png"
+           ],
+           "mark": {
+            "src": [
+             "https://cardstashy.com/img/pks/r/uncommon.png",
+             "https://pokesymbols.com/images/tcg/rarities/uncommon.png"
+            ],
+            "ink": true,
+            "alt": "Uncommon"
+           },
+           "title": "Ascended Heroes #192 · Uncommon"
+          },
+          "imp": {
+           "vb": [
+            0,
+            0,
+            24,
+            24
+           ],
+           "items": [
+            {
+             "t": "path",
+             "d": "M12 1.8l8.8 5.1v10.2L12 22.2 3.2 17.1V6.9z",
+             "fill": "url(#ig-core)",
+             "stroke": "#0008",
+             "sw": 0.8,
+             "cap": "butt",
+             "join": "miter"
+            },
+            {
+             "t": "path",
+             "d": "M7 15.5h10l1-7-3.5 2.6L12 6.5l-2.5 4.6L6 8.5z",
+             "fill": "#3a2a00",
+             "stroke": "none",
+             "sw": 1,
+             "cap": "butt",
+             "join": "miter"
+            }
+           ],
+           "grads": {
+            "ig-core": {
+             "x1": 0,
+             "y1": 0,
+             "x2": 0,
+             "y2": 1,
+             "stops": [
+              [
+               0,
+               "#ffe9a3"
+              ],
+              [
+               1,
+               "#d6a531"
+              ]
+             ]
+            }
+           }
+          }
+         },
+         "tcgFinish": {
+          "key": "",
+          "effect": "unknown",
+          "status": "unknown",
+          "stars": 0,
+          "treatment": "",
+          "mask": "",
+          "clip": "",
+          "frame": "Trainer · Supporter"
+         },
+         "move": "",
+         "row": {},
+         "open": {},
+         "tint": [
+          "Trainer"
+         ]
+        },
+        "name": "Lillie's Determination",
+        "art": "https://assets.tcgdex.net/en/me/me02.5/192/low.webp",
+        "price": "$0.30",
+        "qty": "×4",
+        "why": "Trainer staple",
+        "own": "Need 4",
+        "ok": false,
+        "note": "",
+        "data": {
+         "act": "tCard",
+         "id": "me02.5-192"
+        }
+       },
+       {
+        "id": 2133,
+        "act": "tCard",
+        "card": {
+         "id": "Night Stretcher",
+         "name": "Night Stretcher",
+         "wanted": false,
+         "tier": "t0",
+         "tierColor": "#9aa3ad",
+         "picture": {
+          "src": "https://assets.tcgdex.net/en/me/me02.5/196/low.webp",
+          "sources": [
+           "https://assets.tcgdex.net/en/me/me02.5/196/low.webp",
+           "https://assets.tcgdex.net/en/me/me02.5/196/high.webp",
+           "https://images.pokemontcg.io/me2pt5/196_hires.png",
+           "https://cardstashy.com/img/ptcg/s/me02.5-196.jpg?v=2"
+          ]
+         },
+         "alt": "Night Stretcher",
+         "fallback": "",
+         "finish": {
+          "key": "",
+          "effect": "unknown",
+          "printingId": "me02.5-196",
+          "status": "unknown"
+         },
+         "emblem": null,
+         "set": null,
+         "mana": [],
+         "sub": [],
+         "wantChip": "",
+         "wishId": "",
+         "tag": null,
+         "price": "$0.18",
+         "condition": null,
+         "origin": "",
+         "qty": 0,
+         "edit": false,
+         "got": "",
+         "print": null,
+         "chrome": {
+          "emb": [],
+          "set": null,
+          "imp": {
+           "vb": [
+            0,
+            0,
+            24,
+            24
+           ],
+           "items": [
+            {
+             "t": "path",
+             "d": "M12 1.8l8.8 5.1v10.2L12 22.2 3.2 17.1V6.9z",
+             "fill": "url(#ig-core)",
+             "stroke": "#0008",
+             "sw": 0.8,
+             "cap": "butt",
+             "join": "miter"
+            },
+            {
+             "t": "path",
+             "d": "M7 15.5h10l1-7-3.5 2.6L12 6.5l-2.5 4.6L6 8.5z",
+             "fill": "#3a2a00",
+             "stroke": "none",
+             "sw": 1,
+             "cap": "butt",
+             "join": "miter"
+            }
+           ],
+           "grads": {
+            "ig-core": {
+             "x1": 0,
+             "y1": 0,
+             "x2": 0,
+             "y2": 1,
+             "stops": [
+              [
+               0,
+               "#ffe9a3"
+              ],
+              [
+               1,
+               "#d6a531"
+              ]
+             ]
+            }
+           }
+          }
+         },
+         "wantTag": "",
+         "mark": null,
+         "zone": "main",
+         "category": "Unresolved",
+         "roles": [],
+         "short": true,
+         "own": {
+          "text": "Need 4",
+          "yes": false
+         },
+         "legal": [],
+         "chip": "",
+         "stepper": false,
+         "cardId": "me02.5-196",
+         "pieces": [
+          {
+           "k": "set",
+           "title": "Ascended Heroes · Common",
+           "tone": ""
+          },
+          {
+           "k": "img",
+           "src": "https://cardstashy.com/img/pks/s/ascended-heroes.png",
+           "alt": "Ascended Heroes",
+           "ink": false,
+           "set": true
+          },
+          {
+           "k": "img",
+           "src": "https://cardstashy.com/img/pks/r/common.png",
+           "alt": "Common",
+           "ink": true,
+           "set": true
+          },
+          {
+           "k": "t",
+           "t": "ME02.5",
+           "b": true,
+           "s": false,
+           "tone": "",
+           "set": true,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": "196",
+           "b": false,
+           "s": true,
+           "tone": "",
+           "set": true,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": " ",
+           "b": false,
+           "s": false,
+           "tone": "",
+           "set": false,
+           "strong": false
+          }
+         ],
+         "tchrome": {
+          "emb": [],
+          "set": {
+           "tone": "",
+           "code": "",
+           "rarity": null,
+           "symbol": [
+            "https://cardstashy.com/img/pks/s/ascended-heroes.png",
+            "https://pokesymbols.com/images/tcg/sets/symbols/ascended-heroes.png"
+           ],
+           "mark": {
+            "src": [
+             "https://cardstashy.com/img/pks/r/common.png",
+             "https://pokesymbols.com/images/tcg/rarities/common.png"
+            ],
+            "ink": true,
+            "alt": "Common"
+           },
+           "title": "Ascended Heroes #196 · Common"
+          },
+          "imp": {
+           "vb": [
+            0,
+            0,
+            24,
+            24
+           ],
+           "items": [
+            {
+             "t": "path",
+             "d": "M12 1.8l8.8 5.1v10.2L12 22.2 3.2 17.1V6.9z",
+             "fill": "url(#ig-core)",
+             "stroke": "#0008",
+             "sw": 0.8,
+             "cap": "butt",
+             "join": "miter"
+            },
+            {
+             "t": "path",
+             "d": "M7 15.5h10l1-7-3.5 2.6L12 6.5l-2.5 4.6L6 8.5z",
+             "fill": "#3a2a00",
+             "stroke": "none",
+             "sw": 1,
+             "cap": "butt",
+             "join": "miter"
+            }
+           ],
+           "grads": {
+            "ig-core": {
+             "x1": 0,
+             "y1": 0,
+             "x2": 0,
+             "y2": 1,
+             "stops": [
+              [
+               0,
+               "#ffe9a3"
+              ],
+              [
+               1,
+               "#d6a531"
+              ]
+             ]
+            }
+           }
+          }
+         },
+         "tcgFinish": {
+          "key": "",
+          "effect": "unknown",
+          "status": "unknown",
+          "stars": 0,
+          "treatment": "",
+          "mask": "",
+          "clip": "",
+          "frame": "Trainer · Item"
+         },
+         "move": "",
+         "row": {},
+         "open": {},
+         "tint": [
+          "Trainer"
+         ]
+        },
+        "name": "Night Stretcher",
+        "art": "https://assets.tcgdex.net/en/me/me02.5/196/low.webp",
+        "price": "$0.18",
+        "qty": "×4",
+        "why": "",
+        "own": "Need 4",
+        "ok": false,
+        "note": "",
+        "data": {
+         "act": "tCard",
+         "id": "me02.5-196"
+        }
+       },
+       {
+        "id": 2164,
+        "act": "tCard",
+        "card": {
+         "id": "Poké Pad",
+         "name": "Poké Pad",
+         "wanted": false,
+         "tier": "t0",
+         "tierColor": "#9aa3ad",
+         "picture": {
+          "src": "https://assets.tcgdex.net/en/me/me03/081/low.webp",
+          "sources": [
+           "https://assets.tcgdex.net/en/me/me03/081/low.webp",
+           "https://assets.tcgdex.net/en/me/me03/081/high.webp",
+           "https://images.pokemontcg.io/me3/81_hires.png",
+           "https://cardstashy.com/img/ptcg/s/me03-081.jpg?v=2"
+          ]
+         },
+         "alt": "Poké Pad",
+         "fallback": "",
+         "finish": {
+          "key": "",
+          "effect": "unknown",
+          "printingId": "me03-081",
+          "status": "unknown"
+         },
+         "emblem": null,
+         "set": null,
+         "mana": [],
+         "sub": [],
+         "wantChip": "",
+         "wishId": "",
+         "tag": null,
+         "price": "$0.19",
+         "condition": null,
+         "origin": "",
+         "qty": 0,
+         "edit": false,
+         "got": "",
+         "print": null,
+         "chrome": {
+          "emb": [],
+          "set": null,
+          "imp": {
+           "vb": [
+            0,
+            0,
+            24,
+            24
+           ],
+           "items": [
+            {
+             "t": "path",
+             "d": "M12 1.8l8.8 5.1v10.2L12 22.2 3.2 17.1V6.9z",
+             "fill": "url(#ig-core)",
+             "stroke": "#0008",
+             "sw": 0.8,
+             "cap": "butt",
+             "join": "miter"
+            },
+            {
+             "t": "path",
+             "d": "M7 15.5h10l1-7-3.5 2.6L12 6.5l-2.5 4.6L6 8.5z",
+             "fill": "#3a2a00",
+             "stroke": "none",
+             "sw": 1,
+             "cap": "butt",
+             "join": "miter"
+            }
+           ],
+           "grads": {
+            "ig-core": {
+             "x1": 0,
+             "y1": 0,
+             "x2": 0,
+             "y2": 1,
+             "stops": [
+              [
+               0,
+               "#ffe9a3"
+              ],
+              [
+               1,
+               "#d6a531"
+              ]
+             ]
+            }
+           }
+          }
+         },
+         "wantTag": "",
+         "mark": null,
+         "zone": "main",
+         "category": "Unresolved",
+         "roles": [],
+         "short": true,
+         "own": {
+          "text": "Need 4",
+          "yes": false
+         },
+         "legal": [],
+         "chip": "",
+         "stepper": false,
+         "cardId": "me03-081",
+         "pieces": [
+          {
+           "k": "set",
+           "title": "Perfect Order · Uncommon",
+           "tone": ""
+          },
+          {
+           "k": "img",
+           "src": "https://cardstashy.com/img/pks/s/perfect-order.png",
+           "alt": "Perfect Order",
+           "ink": false,
+           "set": true
+          },
+          {
+           "k": "img",
+           "src": "https://cardstashy.com/img/pks/r/uncommon.png",
+           "alt": "Uncommon",
+           "ink": true,
+           "set": true
+          },
+          {
+           "k": "t",
+           "t": "ME03",
+           "b": true,
+           "s": false,
+           "tone": "",
+           "set": true,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": "081",
+           "b": false,
+           "s": true,
+           "tone": "",
+           "set": true,
+           "strong": false
+          },
+          {
+           "k": "t",
+           "t": " ",
+           "b": false,
+           "s": false,
+           "tone": "",
+           "set": false,
+           "strong": false
+          }
+         ],
+         "tchrome": {
+          "emb": [],
+          "set": {
+           "tone": "",
+           "code": "",
+           "rarity": null,
+           "symbol": [
+            "https://cardstashy.com/img/pks/s/perfect-order.png",
+            "https://pokesymbols.com/images/tcg/sets/symbols/perfect-order.png"
+           ],
+           "mark": {
+            "src": [
+             "https://cardstashy.com/img/pks/r/uncommon.png",
+             "https://pokesymbols.com/images/tcg/rarities/uncommon.png"
+            ],
+            "ink": true,
+            "alt": "Uncommon"
+           },
+           "title": "Perfect Order #081 · Uncommon"
+          },
+          "imp": {
+           "vb": [
+            0,
+            0,
+            24,
+            24
+           ],
+           "items": [
+            {
+             "t": "path",
+             "d": "M12 1.8l8.8 5.1v10.2L12 22.2 3.2 17.1V6.9z",
+             "fill": "url(#ig-core)",
+             "stroke": "#0008",
+             "sw": 0.8,
+             "cap": "butt",
+             "join": "miter"
+            },
+            {
+             "t": "path",
+             "d": "M7 15.5h10l1-7-3.5 2.6L12 6.5l-2.5 4.6L6 8.5z",
+             "fill": "#3a2a00",
+             "stroke": "none",
+             "sw": 1,
+             "cap": "butt",
+             "join": "miter"
+            }
+           ],
+           "grads": {
+            "ig-core": {
+             "x1": 0,
+             "y1": 0,
+             "x2": 0,
+             "y2": 1,
+             "stops": [
+              [
+               0,
+               "#ffe9a3"
+              ],
+              [
+               1,
+               "#d6a531"
+              ]
+             ]
+            }
+           }
+          }
+         },
+         "tcgFinish": {
+          "key": "",
+          "effect": "unknown",
+          "status": "unknown",
+          "stars": 0,
+          "treatment": "",
+          "mask": "",
+          "clip": "",
+          "frame": "Trainer · Item"
+         },
+         "move": "",
+         "row": {},
+         "open": {},
+         "tint": [
+          "Trainer"
+         ]
+        },
+        "name": "Poké Pad",
+        "art": "https://assets.tcgdex.net/en/me/me03/081/low.webp",
+        "price": "$0.19",
+        "qty": "×4",
+        "why": "",
+        "own": "Need 4",
+        "ok": false,
+        "note": "",
+        "data": {
+         "act": "tCard",
+         "id": "me03-081"
+        }
+       }
+      ]
+     }
+    ],
+    "save": {
+     "id": 2176,
+     "label": "Save draft",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M12 5v14M5 12h14",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "buy": {
+     "id": 2180,
+     "label": "Buy 23 on TCGplayer",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M5.5 8h13l-1 12h-11z",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       },
+       {
+        "t": "path",
+        "d": "M9 10V7a3 3 0 0 1 6 0v3",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "toggle": {
+     "id": 2185,
+     "label": "Hide list",
+     "disabled": false,
+     "icon": null
+    },
+    "more": [
+     {
+      "id": 2193,
+      "label": "Save draft and see matchups",
+      "note": "How it does against the decks winning now",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "m4 4 9.5 9.5M20 4l-9.5 9.5",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "m6.5 14.5 3 3M17.5 14.5l-3 3M4.5 19.5l3-3M19.5 19.5l-3-3",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 2200,
+      "label": "Save draft and playtest",
+      "note": "Draw opening hands",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "M5 16H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "rect",
+         "x": 7,
+         "y": 7,
+         "w": 14,
+         "h": 14,
+         "rx": 2,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M11 12h6M11 16h4",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 2208,
+      "label": "Copy deck list",
+      "note": "Pokémon TCG Live format",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "rect",
+         "x": 8,
+         "y": 8,
+         "w": 11.5,
+         "h": 12,
+         "rx": 1.8,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M15.5 8V5.8A1.8 1.8 0 0 0 13.7 4H6.3a1.8 1.8 0 0 0-1.8 1.8v8.4A1.8 1.8 0 0 0 6.3 16H8",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     }
+    ]
+   }
+  ],
+  "saveAll": {
+   "id": 2215,
+   "label": "Save all 2 versions",
+   "disabled": false,
+   "icon": null
+  },
+  "foot": "Built from your cards first, then what today's tournament decks play. A strong start, not a tuned tournament list. Prices are daily estimates.",
+  "openTier": 1
+ },
+ "acted": null,
+ "toasts": []
+}
