@@ -4284,7 +4284,7 @@ function buildSheetModel(root, mtg = false) {
   const seedEl = q(root, '.build-seed'), multi = has(seedEl, 'multi'), info = seedEl && [...seedEl.children].find(x => x.localName === 'div' && !has(x, 'seed-strip'));
   const smalls = qa(info, 'small');
   const seed = seedEl ? {multi, art: multi ? '' : art(seedEl.querySelector(':scope > img') || q(seedEl, '.mini-art')), strip: multi ? qa(q(seedEl, '.seed-strip'), 'img').map(i => i.getAttribute('src') || '') : [],
-    label: words(smalls[0]), name: words(q(info, 'b')), sub: words(smalls[1]), random: btn(q(seedEl, 'button'))} : null;
+    label: words(smalls[0]), name: words(q(info, 'b')), sub: words(smalls[1]), dots: qa(q(info, '.dots'), 'img').map(i => ({src: i.getAttribute('src') || '', alt: i.getAttribute('alt') || ''})), random: btn(q(seedEl, 'button'))} : null;
   const intro = [...root.children].find(x => x.localName === 'p' && has(x, 'muted') && has(x, 'small'));
   const chips = q(root, '.fmt-chips'), budget = q(root, '.custom-budget'), field = q(budget, 'input');
   const overlay = q(root, '.build-overlay'), status = [...root.querySelectorAll(':scope > p[role=status]')][0];

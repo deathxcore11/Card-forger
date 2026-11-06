@@ -179,6 +179,8 @@ private fun SeedHead(s: JsonObject, narrow: Boolean, act: TierBuildActions) = wi
             Column(Modifier.weight(1f, fill = false)) {
                 Text(s.str("label"), style = cssType(12f, 400, 17f, Site.Muted))
                 Text(s.str("name"), style = cssType(15f, 700, 21f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                val dots = s.getAsJsonArray("dots")?.map { it.asJsonObject.str("src") to it.asJsonObject.str("alt") }.orEmpty()
+                if (dots.isNotEmpty()) Row(Modifier.padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) { dots.forEach { (src, alt) -> Mana(src, alt) } }
                 if (s.str("sub").isNotBlank()) Text(s.str("sub"), style = cssType(12f, 400, 17f, Site.Muted), maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
