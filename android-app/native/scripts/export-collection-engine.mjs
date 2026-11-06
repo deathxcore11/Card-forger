@@ -23,3 +23,18 @@ ${tcg.slice(from, to)}
 const {sha, kb} = bundleWeb({web, esbuild, preludes: WEB_PLATFORM, entry: 'collection-engine-entry.mjs', name: 'collection-engine', banner: 'CardStashy Collection engine bundle',
   out: join(app, 'app/src/main/assets/collection-engine.js')});
 console.log('collection engine bundled from', sha, kb + ' KB');
+
+// The Scanner's engine for the app's WebView (ScanWeb.kt): scancam.js and its scan-* modules as the site runs them, with Chrome's own
+// canvas, images, timers, fetch and storage (scan-web-entry.mjs). The site's text reader goes with it (vendor/tesseract.min.js and
+// vendor/worker.min.js, served to that page as the site serves them; its core and language data load from jsdelivr, as on the site).
+{
+  const {execFileSync} = await import('node:child_process');
+  const tmp = join(app, 'build', 'scan-web-entry.mjs');
+  writeFileSync(tmp, readFileSync(join(app, 'scripts', 'scan-web-entry.mjs'), 'utf8').replaceAll("'WEB/", `'${resolve(web)}/`).replaceAll("'./site-json.mjs'", `'${join(app, 'scripts', 'site-json.mjs')}'`));
+  const out = join(app, 'app/src/main/assets/scan-web.js');
+  execFileSync(esbuild, [tmp, '--bundle', '--format=iife', '--platform=browser', '--target=es2020', '--define:import.meta.url="https://cardstashy.com/"',
+    `--banner:js=/* CardStashy Scanner engine (WebView), web ${sha} */`, `--outfile=${out}`, '--log-level=error']);
+  mkdirSync(join(app, 'app/src/main/assets/vendor'), {recursive: true});
+  for (const f of ['tesseract.min.js', 'worker.min.js', 'TESSERACT-LICENSE.txt']) writeFileSync(join(app, 'app/src/main/assets/vendor', f), readFileSync(join(web, 'vendor', f)));
+  console.log('scanner engine (WebView) bundled', (readFileSync(out).length / 1024).toFixed(0) + ' KB');
+}

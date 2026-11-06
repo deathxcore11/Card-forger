@@ -105,6 +105,7 @@ import {sharePayload, sharePayloadTcg} from 'WEB/share.js';
 import {commanderEligible, isLand, drawHand} from 'WEB/core.js';
 import {currentDeck, priceOf} from 'WEB/store.js';
 import '../scripts/web-bytes.mjs';
+import {VOID, unescape, tree, classes, all, one, cls, tagIs, text, turnedRect, icon, svgIn, sources, SITE, abs, picture} from '../scripts/site-json.mjs';
 import {Document as SiteDocument, Event as SiteEvent, serialize as domJson, byId as domById, tap as domTap, type as domType} from '../scripts/site-dom.mjs';
 
 // The browser storage the site keeps between visits, kept by the app (CollectionEngine.store, the device's preferences): the bundle's
@@ -192,31 +193,6 @@ const coverOf = (d) => {
 
 // The site's Home markup, read back into models: every word, date, link and picture is what the site's own builders
 // put in the page (home-ui.js, tcg.js, community-art.js); the app only lays them out. A small tree reader, no DOM.
-const VOID = new Set(['img', 'br', 'input', 'meta', 'link', 'hr', 'source', 'wbr']);
-const unescape = t => t.replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi, (m, e) => e[0] === '#' ? String.fromCodePoint(e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : Number(e.slice(1))) : {amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' '}[e.toLowerCase()]);
-function tree(html) {
-  const root = {tag: '#root', attrs: {}, kids: []}, stack = [root];
-  const re = /<!--[\s\S]*?-->|<\/([a-zA-Z][\w-]*)\s*>|<([a-zA-Z][\w-]*)((?:\s+[^\s=>\/]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)*)\s*(\/?)>|([^<]+)|</g;
-  let m;
-  while ((m = re.exec(html))) {
-    const top = stack[stack.length - 1];
-    if (m[1]) { const tag = m[1].toLowerCase(); const i = stack.map(n => n.tag).lastIndexOf(tag); if (i > 0) stack.length = i; }
-    else if (m[2]) {
-      const node = {tag: m[2].toLowerCase(), attrs: {}, kids: []}, ar = /([^\s=>\/]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g; let a;
-      while ((a = ar.exec(m[3] || ''))) node.attrs[a[1].toLowerCase()] = unescape(a[2] ?? a[3] ?? a[4] ?? '');
-      top.kids.push(node); if (!m[4] && !VOID.has(node.tag)) stack.push(node);
-    } else if (m[5] !== undefined) top.kids.push({text: unescape(m[5])});
-    else if (m[0] === '<') top.kids.push({text: '<'});
-  }
-  return root;
-}
-const classes = n => (n?.attrs?.class || '').split(/\s+/);
-const all = (n, ok, out = []) => { for (const k of n?.kids || []) { if (k.tag && ok(k)) out.push(k); all(k, ok, out); } return out; };
-const one = (n, ok) => all(n, ok)[0] || null;
-const cls = c => n => classes(n).includes(c);
-const tagIs = t => n => n.tag === t;
-// Visible words only: screen-reader-only copy and hidden nodes are skipped, whitespace runs fold to one space.
-const text = n => { if (!n) return ''; const walk = x => x.text !== undefined ? x.text : x.tag === 'svg' || x.attrs?.hidden !== undefined || classes(x).includes('home-sr-only') ? '' : (x.kids || []).map(walk).join(''); return walk(n).replace(/\s+/g, ' ').trim(); };
 // community-art.js communityArtwork: the picture, what it is, its credit, and the one fallback the site would try.
 function artOf(n) {
   const box = n && (cls('community-art')(n) ? n : one(n, cls('community-art'))); if (!box) return null;
@@ -294,52 +270,8 @@ function loadToday(game) {
   return loadHero(game).catch(() => false).then(() => { const h = heroFor(game); if (!h) return; return dailyDetails(game, h).then(d => { if (d) today.set(h.id + '|' + h.date, d); }, () => {}); });
 }
 
-// An inline site icon (icons.js actionIcon / importance.js emblemIcon), as drawing items the app paints itself: the svg's own
-// shapes, strokes and gradients, with currentColor left for the caller (the button's colour).
-// A rect under transform="rotate(a cx cy)" (war-chest.js's Draw a hand cards) as the path it draws: its corners turned about the
-// centre; its round corners stay circular arcs, which a turn leaves the same.
-function turnedRect(x, y, w, h, r0, transform) {
-  const [deg = 0, cx = 0, cy = 0] = (/rotate\(([^)]*)\)/.exec(transform)?.[1] || '').trim().split(/[\s,]+/).map(Number);
-  const t = deg * Math.PI / 180, cos = Math.cos(t), sin = Math.sin(t), r = Math.min(r0, w / 2, h / 2);
-  const at = (px, py) => { const dx = px - cx, dy = py - cy; return `${+(cx + dx * cos - dy * sin).toFixed(3)} ${+(cy + dx * sin + dy * cos).toFixed(3)}`; };
-  const arc = (px, py) => r ? `A${r} ${r} 0 0 1 ${at(px, py)}` : `L${at(px, py)}`;
-  return `M${at(x + r, y)}L${at(x + w - r, y)}${arc(x + w, y + r)}L${at(x + w, y + h - r)}${arc(x + w - r, y + h)}L${at(x + r, y + h)}${arc(x, y + h - r)}L${at(x, y + r)}${arc(x + r, y)}Z`;
-}
-function icon(svg, css = {}) {
-  if (!svg) return null;
-  const num = v => v === undefined || v === '' ? undefined : Number(v);
-  const grads = {};
-  for (const g of all(svg, tagIs('lineargradient'))) grads[g.attrs.id] = {x1: num(g.attrs.x1) ?? 0, y1: num(g.attrs.y1) ?? 0, x2: num(g.attrs.x2) ?? 1, y2: num(g.attrs.y2) ?? 0,
-    stops: all(g, tagIs('stop')).map(s => [num(String(s.attrs.offset || '0').replace('%', '')) / (String(s.attrs.offset || '').includes('%') ? 100 : 1), s.attrs['stop-color'] || '#000'])};
-  // [css]: what a stylesheet rule sets on this svg (e.g. .wc-open svg strokes an outline), over its own attributes.
-  const base = {fill: css.fill ?? svg.attrs.fill ?? 'currentColor', stroke: css.stroke ?? svg.attrs.stroke ?? 'none', sw: css.sw ?? num(svg.attrs['stroke-width']) ?? 1, cap: css.cap || svg.attrs['stroke-linecap'] || 'butt', join: css.join || svg.attrs['stroke-linejoin'] || 'miter'};
-  const paint = (n, inh) => ({fill: n.attrs.fill ?? inh.fill, stroke: n.attrs.stroke ?? inh.stroke, sw: num(n.attrs['stroke-width']) ?? inh.sw, cap: n.attrs['stroke-linecap'] || inh.cap, join: n.attrs['stroke-linejoin'] || inh.join});
-  const items = [];
-  const walk = (n, inh) => { for (const k of n.kids || []) { if (!k.tag || k.tag === 'defs') continue; const p = paint(k, inh), a = k.attrs;
-    if (k.tag === 'g') walk(k, p);
-    else if (k.tag === 'path') items.push({t: 'path', d: a.d || '', ...p});
-    else if (k.tag === 'rect' && /rotate\(/.test(a.transform || '')) items.push({t: 'path', d: turnedRect(num(a.x) ?? 0, num(a.y) ?? 0, num(a.width) ?? 0, num(a.height) ?? 0, num(a.rx) ?? num(a.ry) ?? 0, a.transform), ...p});
-    else if (k.tag === 'rect') items.push({t: 'rect', x: num(a.x) ?? 0, y: num(a.y) ?? 0, w: num(a.width) ?? 0, h: num(a.height) ?? 0, rx: num(a.rx) ?? num(a.ry) ?? 0, ...p});
-    else if (k.tag === 'circle') items.push({t: 'circle', cx: num(a.cx) ?? 0, cy: num(a.cy) ?? 0, r: num(a.r) ?? 0, ...p});
-    else if (k.tag === 'ellipse') items.push({t: 'ellipse', cx: num(a.cx) ?? 0, cy: num(a.cy) ?? 0, rx: num(a.rx) ?? 0, ry: num(a.ry) ?? 0, ...p});
-    else if (k.tag === 'line') items.push({t: 'path', d: `M${a.x1 || 0} ${a.y1 || 0}L${a.x2 || 0} ${a.y2 || 0}`, ...p});
-    else if (k.tag === 'polyline' || k.tag === 'polygon') { const pts = String(a.points || '').trim().split(/[\s,]+/); let d = ''; for (let i = 0; i + 1 < pts.length; i += 2) d += (i ? 'L' : 'M') + pts[i] + ' ' + pts[i + 1]; items.push({t: 'path', d: d + (k.tag === 'polygon' ? 'Z' : ''), ...p}); }
-  } };
-  walk(svg, base);
-  const vb = String(svg.attrs.viewbox || '0 0 24 24').split(/[\s,]+/).map(Number);
-  // A glyph drawn as text (emblems.js ygoProperty's 魔 / 罠 for a property without its own shape).
-  const texts = all(svg, tagIs('text')).map(x => ({x: num(x.attrs.x) ?? 0, y: num(x.attrs.y) ?? 0, text: text(x), size: num(x.attrs['font-size']) ?? 12, weight: num(x.attrs['font-weight']) ?? 400,
-    fill: x.attrs.fill || base.fill, anchor: x.attrs['text-anchor'] || 'start'}));
-  return {vb, items, grads, ...(texts.length ? {texts} : {})};
-}
-const svgIn = n => n && (n.tag === 'svg' ? n : one(n, tagIs('svg')));
-const sources = img => { try { return JSON.parse(img?.attrs['data-art-sources'] || '[]'); } catch { return []; } };
-const SITE = 'https://cardstashy.com';
 // set-experience.js setAtmosphere: the set's art, then its fallbacks (the img's onerror walks them in order).
 const setArt = img => { try { return JSON.parse(img?.attrs['data-set-art-sources'] || '[]').map(u => abs(u)); } catch { return []; } };
-// The site's own relative addresses (img/ygo/s/…, img/pks/s/…) as the app fetches them.
-const abs = u => !u ? '' : /^(https?:|data:)/.test(u) ? u : SITE + '/' + String(u).replace(/^\/+/, '');
-const picture = img => img ? {src: abs(img.attrs.src || ''), sources: sources(img).map(abs)} : null;
 const selectOf = sel => sel && {name: sel.attrs['data-change'] || '', label: sel.attrs['aria-label'] || '', options: all(sel, tagIs('option')).map(o => ({value: o.attrs.value ?? text(o), label: text(o), on: o.attrs.selected !== undefined}))};
 // Words with their weight, in order (the summary line's <b> runs).
 const runs = n => { const out = []; const walk = (x, bold, muted) => { for (const k of x.kids || []) { if (k.text !== undefined) { const t = k.text.replace(/\s+/g, ' '); if (t) out.push({t, b: bold, m: muted}); } else if (k.tag !== 'svg') walk(k, bold || k.tag === 'b' || k.tag === 'strong', muted || cls('muted')(k)); } }; walk(n, false, false);
@@ -2603,6 +2535,21 @@ const editDeckOf = (id) => (fn, opts = {}) => commit((s) => { const i = s.decks.
 // The site's handlers for the Collection taps that save to the account: app.js's closures line for line (their DOM halves, the
 // button's busy state and the pill's pulse, are the app's), tcg.js's through registerTcg. [d] is the tapped button's dataset.
 const writeActs = {
+  // The Scanner (its WebView engine, ScanWeb.kt) saving a batch: app.js scanCtx.addMany / add, here where the workspace is. [items]
+  // as scancam.js passes them ({cand, qty, finish, condition, lang, location, captureId}); [single]: app.js mtgScanAdd / c.scanAdd.
+  async scanAddMany(d) {
+    scanReady();
+    const g = d.game || 'mtg', items = d.items || [];
+    if (items.length === 1 && items[0].single) return g === 'mtg' ? mtgScanAdd(items[0].cand) : tcgCtx.scanAdd(items[0].cand);
+    return g === 'mtg' ? mtgScanAddMany(items) : tcgCtx.scanAddMany(items, g);
+  },
+  // The scanner's "Add to" chips: app.js scanCtx.rememberLocation.
+  async scanRemember(d) { scanReady(); await scanCtx.rememberLocation(d.game || 'mtg', d.name || '', {createBinder: !!d.createBinder}); },
+  // A review's condition price: app.js scanCtx.requestConditionPrice's fetchConditionValue; [made] its result and the quotes it keeps.
+  async scanCondition(d) {
+    const r = await new Promise(ok => { const p = fetchConditionValue(d.card, d.entry, d.game, x => ok(x), {source: 'review', current: () => true, retry: !!d.retry}); Promise.resolve(p).then(v => ok(v)); });
+    made = JSON.stringify({...(r || {}), quotes: d.card?.conditionQuotes || null});
+  },
   // app.js A.cardWishlist (4770): one toggle for the card page and the hold menu, by the game's identity rule (Magic by name,
   // Pokémon and Yu-Gi-Oh! by card id). Only the wishlist changes. (The site first checks the tap is for the open game: here the
   // page that sent it is the open game's.)
@@ -5524,6 +5471,8 @@ globalThis.Collection = {
         texts: siteText, ...(siteRecovery ? {recovery: siteRecovery} : {})}); siteCopied = null; siteOpened = ''; siteDownload = null; siteRecovery = null; },
       e => { Object.assign(run, {done: true, error: String(e?.message || e), ask: '', toasts, writes: commits - n}); });
   },
+  // The Scanner's WebView engine starts from the workspace (owned counts, saved places, scan preferences): S.state as it is.
+  scanWorkspace() { return json({collection: S.state.collection, settings: S.state.settings, locations: S.state.locations, binders: S.state.binders, tcg: S.state.tcg}); },
   actPoll() { return json(acting ? (acting.done ? acting : {...acting, step: actStep}) : {done: true, writes: 0, toasts: []}); },
   // The account's sign-in for the condition feed (cloud.js access token), set by the app before the add sheet asks.
   auth(token) { conditionToken = token || ''; },

@@ -5,6 +5,9 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- In-app updates: the new APK downloads into the cache and Android's installer asks the player to confirm. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- The Scanner reads cards through the camera (asked for the first time it opens); phones without one still scan photos. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
     <application
         android:enableOnBackInvokedCallback="true"
         android:allowBackup="false"

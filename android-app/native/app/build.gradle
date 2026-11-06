@@ -73,6 +73,10 @@ dependencies {
     implementation 'io.coil-kt.coil3:coil-compose:3.2.0'
     implementation 'io.coil-kt.coil3:coil-network-okhttp:3.2.0'
     implementation 'io.coil-kt.coil3:coil-svg:3.2.0'
+    // Scanner: the phone's camera (CameraX), whose frames go to the site's scanner code.
+    implementation 'androidx.camera:camera-camera2:1.4.2'
+    implementation 'androidx.camera:camera-lifecycle:1.4.2'
+    implementation 'androidx.camera:camera-view:1.4.2'
     implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.31.1' // 3D cards: the on-phone depth model (MODEL-LICENSE.txt)
     // QuickJS for the web's Deck Forge bundle (assets/deck-engine.js): the same builder as the site, never a Kotlin rewrite.
     implementation files('../qjs-libs/zipline-android-1.24.0.aar')

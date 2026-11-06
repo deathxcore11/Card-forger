@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Only the downloaded update is ever shared, and only with Android's installer. -->
+<!-- Only the downloaded update is shared (with Android's installer), and the Scanner's Take photo file (with the camera app). -->
 <paths>
     <cache-path name="updates" path="updates/" />
+    <cache-path name="scan" path="scan/" />
 </paths>

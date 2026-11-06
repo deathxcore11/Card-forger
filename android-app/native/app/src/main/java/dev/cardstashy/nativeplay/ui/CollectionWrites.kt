@@ -95,6 +95,9 @@ internal object CollectionWrites {
         return saved
     }
 
+    /** A tap that may save nothing (the Scanner's condition price): its raw result ({made, error…}); null when it could not run. */
+    suspend fun actRaw(context: Context, kind: String, data: JsonObject): JsonObject? = commitAct(context, kind, data, 30_000)
+
     /** The write itself: under the sync's lock, in the engine holding this device's copy, then that copy written. Null: not run. */
     /** Taps that read the card sources for a while (every card's price, each card's printings). */
     private val LONG_ACTS = setOf("tDeckRefresh", "tDeckCheapest", "tDeckCopyMissing", "refreshPrices", "tRefreshPrices", "tImpColl", "tImpDeck", "impApply", "provenSave", "refreshDeck")

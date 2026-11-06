@@ -91,6 +91,8 @@ private const val NATIVE_PACK = true
 private const val NATIVE_TCG_CARDS = true
 /** Collection's Search tab (all three games), opened from every Collection page's nav and Home's search. */
 private const val NATIVE_SEARCH = true
+/** The Scan tab: the site's scanner in ScanWeb's page, drawn natively, with the phone's camera (CollectionScanRoute). */
+private const val NATIVE_SCAN = false
 
 private sealed interface Screen {
     data object Home : Screen
@@ -114,6 +116,8 @@ private sealed interface Screen {
     data class CollectionRules(val game: String = "mtg") : Screen
     /** The Wiki page (#wiki, #wiki/<topic>) for a game. */
     data class CollectionWiki(val game: String = "mtg", val topic: String = "") : Screen
+    /** The Scan tab (the site's #scan) for a game. */
+    data class CollectionScan(val game: String = "mtg") : Screen
     /** One set's page (the site's #set/<code or id>). */
     data class CollectionSet(val code: String, val game: String = "mtg") : Screen
     /** Play's own collection (the Trunk) with its card view. */
@@ -153,7 +157,7 @@ class MainActivity : ComponentActivity() {
         // The card database starts loading as the app opens, so it is ready before Quick Play is.
         ForgeService.prepare(this)
         Account.init(this); dev.cardstashy.nativeplay.ui.AppSettings.init(this); dev.cardstashy.nativeplay.ui.Aura.init(this); dev.cardstashy.nativeplay.ui.TableEmotes.init(this); dev.cardstashy.nativeplay.ui.MatchMenu.init(this); Thread { dev.cardstashy.nativeplay.ui.BoardIcons.get(applicationContext, "tapped") }.start(); CardArt.init(this); Speed.init(this)
-        dev.cardstashy.nativeplay.play.Progress.init(this); dev.cardstashy.nativeplay.play.SetFacts.init(this); dev.cardstashy.nativeplay.play.CardFacts.init(this); dev.cardstashy.nativeplay.play.DeckEngine.init(this); dev.cardstashy.nativeplay.play.RandomBuild.init(this); dev.cardstashy.nativeplay.play.CraftRarity.init(this)
+        dev.cardstashy.nativeplay.play.Progress.init(this); dev.cardstashy.nativeplay.play.SetFacts.init(this); dev.cardstashy.nativeplay.play.CardFacts.init(this); dev.cardstashy.nativeplay.play.DeckEngine.init(this); dev.cardstashy.nativeplay.play.RandomBuild.init(this); dev.cardstashy.nativeplay.collection.ScanWeb.init(this); dev.cardstashy.nativeplay.play.CraftRarity.init(this)
         dev.cardstashy.nativeplay.play.CardData.warm(this); dev.cardstashy.nativeplay.ui.PackSfx.warm(this)
         // Offline play: when a network comes back, matches finished without signal are sent (the server still decides rewards).
         runCatching { (getSystemService(CONNECTIVITY_SERVICE) as android.net.ConnectivityManager).registerDefaultNetworkCallback(object : android.net.ConnectivityManager.NetworkCallback() {
@@ -181,9 +185,10 @@ class MainActivity : ComponentActivity() {
         Updater.check(this)
         // Deck Forge's WebView (Random deck) lives in this window, out of sight, so its builds run at full speed.
         dev.cardstashy.nativeplay.play.RandomBuild.attach(this)
+        dev.cardstashy.nativeplay.collection.ScanWeb.attach(this)
     }
 
-    override fun onDestroy() { dev.cardstashy.nativeplay.play.RandomBuild.detach(this); super.onDestroy() }
+    override fun onDestroy() { dev.cardstashy.nativeplay.play.RandomBuild.detach(this); dev.cardstashy.nativeplay.collection.ScanWeb.detach(this); super.onDestroy() }
     override fun onResume() { super.onResume(); Updater.resumed(this); dev.cardstashy.nativeplay.collection.WorkspaceSync.kick(this) }
     override fun onStart() { super.onStart(); dev.cardstashy.nativeplay.play.RandomBuild.hidden = false }
     override fun onStop() { super.onStop(); dev.cardstashy.nativeplay.play.RandomBuild.hidden = true }
@@ -291,6 +296,8 @@ private fun App(activity: MainActivity) {
     fun swap(s: Screen) { trail[trail.lastIndex] = s }
     /** Collection's website pages, but for a Decks tab drawn here (Ideas, Meta decks: dev.cardstashy.nativeplay.ui.nativeDecksTab), which opens natively. */
     fun site(url: String, press: String? = null) {
+        // Every Collection page's Scan tab: the native Scanner for the open game.
+        if (NATIVE_SCAN && press == null && url == "https://cardstashy.com/#scan") { go(Screen.CollectionScan(dev.cardstashy.nativeplay.ui.CollectionGame.current.value.id)); return }
         val tab = if (NATIVE_DECKS) dev.cardstashy.nativeplay.ui.nativeDecksTab(url, press) else null
         if (tab != null) { dev.cardstashy.nativeplay.ui.decksOpenOn(tab); go(Screen.CollectionDecks) } else go(Screen.Web(url, press))
     }
@@ -412,6 +419,16 @@ private fun App(activity: MainActivity) {
                 onSets = { if (s.game == "mtg" || NATIVE_TCG_SETS) go(Screen.CollectionSets(s.game)) else go(Screen.Web("https://cardstashy.com/#sets", "[data-act=\"setGame\"][data-game=\"${s.game}\"]")) },
                 web = { url, press -> site(url, press) }, game = s.game, topic = s.topic,
                 onGame = { g -> dev.cardstashy.nativeplay.ui.CollectionGame.set(dev.cardstashy.nativeplay.ui.CardGame.of(g)); swap(Screen.CollectionWiki(g)) })
+        }
+        is Screen.CollectionScan -> {
+            LaunchedEffect(Unit) { activity.inGame(false) }
+            dev.cardstashy.nativeplay.ui.CollectionScanRoute(onPlay = { go(Screen.Home) }, onProfile = { go(Screen.SignIn) }, onHome = { go(Screen.Collection) },
+                onCards = { if (NATIVE_CARDS) go(Screen.CollectionCards) else go(Screen.Web("https://cardstashy.com/#collection", null)) },
+                onDecks = { if (NATIVE_DECKS) go(Screen.CollectionDecks) else go(Screen.Web("https://cardstashy.com/#decks", null)) },
+                onSearch = { go(Screen.CollectionSearch(s.game)) },
+                onSets = { if (s.game == "mtg" || NATIVE_TCG_SETS) go(Screen.CollectionSets(s.game)) else go(Screen.Web("https://cardstashy.com/#sets", "[data-act=\"setGame\"][data-game=\"${s.game}\"]")) },
+                web = { url, press -> site(url, press) }, game = s.game,
+                onGame = { g -> dev.cardstashy.nativeplay.ui.CollectionGame.set(dev.cardstashy.nativeplay.ui.CardGame.of(g)); swap(Screen.CollectionScan(g)) })
         }
         is Screen.CollectionSet -> {
             LaunchedEffect(Unit) { activity.inGame(false) }

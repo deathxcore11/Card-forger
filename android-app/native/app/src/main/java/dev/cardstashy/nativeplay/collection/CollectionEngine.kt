@@ -226,6 +226,8 @@ object CollectionEngine {
     suspend fun scanPage(game: String, state: String, card: String = ""): JsonObject = 
         on { q -> JsonParser.parseString(q.evaluate("Collection.scanPage(${str(game)}, ${str(state)}, ${str(card)})") as String).asJsonObject }
     /** The Wiki page (app.js #wiki[/<topic>[/search]]) for [game] as a panel: home when [topic] is blank, [query] for a search. */
+    /** What the Scanner's page reads from the workspace (collection, settings, locations, binders, tcg): ScanWeb's copy. */
+    suspend fun scanWorkspace(): String = on { q -> q.evaluate("Collection.scanWorkspace()") as String }
     suspend fun wikiPage(game: String, topic: String, query: Boolean): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.wikiPage(${str(game)}, ${str(topic)}, $query)") as String).asJsonObject }
     suspend fun rules(game: String, format: String): JsonObject =
