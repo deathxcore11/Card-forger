@@ -186,6 +186,15 @@ fun SitePanel(m: SitePanelModel, ui: SiteUi, modifier: Modifier = Modifier, padd
     LaunchedEffect(m.reveal) { m.reveal?.let { id -> kotlinx.coroutines.delay(60); runCatching { ui.seen[id]?.bringIntoView() } } }
 }
 
+/** The page's open sheet (index.html <dialog id="sheet">, app.js openSheet) when the panel holds one: its #sheetBody. */
+val SitePanelModel.sheetBody: SiteNode? get() = body?.elements?.firstOrNull { it["id"] == "sheet" && "open" in it.attrs }?.find { it["id"] == "sheetBody" }
+
+/** A sheet's body ([SitePanelModel.sheetBody]) in the page's block flow, 16 in (style.css #sheetBody). */
+@Composable
+fun SiteSheetBody(n: SiteNode, ui: SiteUi, modifier: Modifier = Modifier) {
+    Column(modifier.fillMaxWidth()) { Blocks(n.kids, ui, base().under(n), padded = false) }
+}
+
 /**
  * rule-dex.js showRuleHint's glass (aside.rule-glass), fixed over the page: min(420, the screen less 32) wide, left at the tapped
  * word (16 to 16 from the edges), top 10 under it but kept 16 inside the screen; at most the screen less 32 tall, scrolling inside.
@@ -396,6 +405,7 @@ private fun Element(n: SiteNode, ui: SiteUi, ctx: Ctx) {
         n.has("wc-tool") -> ChestTool(n, ui, mark)
         n.has("hand-card") -> HandCard(n, ui, mark)
         n.has("mini-row") -> MiniRow(n, ui, ctx, mark)
+        n.has("scan-workspace") -> ScanWorkspace(n, ui, mark) { k -> Blocks(listOf(k), ui, inner, padded = false) }
         n.has("wiki-page-head") -> WikiHead(n, ui, ctx, mark)
         n.has("home-search-pill") -> WikiSearchPill(n, ui, mark)
         n.has("home-suggestions") -> WikiSuggestions(n, ui, ctx, mark)
@@ -427,6 +437,17 @@ private fun Element(n: SiteNode, ui: SiteUi, ctx: Ctx) {
                     Text(if (k is SiteNode) k.text() else (k as String).trim(), style = cssType(12.5f, 500, 18.1f, Site.Muted))
                 }
             }
+            // .ss-set (Scanner settings): the box at the top, 12 from its words: the title (b) over its line (small, 12 muted), 2 apart; 12 above and below.
+            else if (n.has("ss-set")) Row(mark.fillMaxWidth().padding(vertical = 12.dp).heightIn(min = 44.dp).clickable { ui.type(box.id, (!on).toString()) }
+                .semantics(mergeDescendants = true) { role = androidx.compose.ui.semantics.Role.Checkbox; stateDescription = if (on) "Checked" else "Not checked" },
+                verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.padding(top = 1.dp)) { CheckSquare(on, gold) }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    n.elements.firstOrNull { it.tag == "span" }?.elements?.forEach { k ->
+                        if (k.tag == "b") Text(k.text(), style = cssType(14f, 700, 20.3f, Site.Text)) else Text(k.text(), style = cssType(12f, 400, 17.4f, Site.Muted))
+                    }
+                }
+            }
             else Row(mark.fillMaxWidth().heightIn(min = 44.dp).clickable { ui.type(box.id, (!on).toString()) }
                 .semantics { role = androidx.compose.ui.semantics.Role.Checkbox; stateDescription = if (on) "Checked" else "Not checked" },
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -436,7 +457,9 @@ private fun Element(n: SiteNode, ui: SiteUi, ctx: Ctx) {
         }
         // A <label> round its field (style.css label: a grid, 4 apart; its words 12.5, 600, muted).
         n.tag == "label" && n.elements.any { it.tag == "select" || it.tag == "input" } -> Column(mark.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            n.kids.filter { isInline(it, false) }.takeIf { l -> l.any { !(it is String && it.isBlank()) } }?.let { Paragraph(it, ui, inner.size(12.5f).color(Site.Muted).weight(600)) }
+            // A hint after the field (<small> in label.field, Scanner settings' Lock set) is under it, not in the label's words.
+            val after = n.elements.lastOrNull { it.tag == "small" }?.takeIf { sm -> n.kids.indexOf(sm) > n.kids.indexOfFirst { it is SiteNode && (it.tag == "select" || it.tag == "input") } }
+            n.kids.filter { isInline(it, false) && it !== after }.takeIf { l -> l.any { !(it is String && it.isBlank()) } }?.let { Paragraph(it, ui, inner.size(12.5f).color(Site.Muted).weight(600)) }
             // style.css 43: a field's font is inherited (font: inherit); under .finder-controls that is the label's 12.5 / 600.
             val finder = ctx.parentHas("finder-controls")
             n.elements.filter { it.tag == "select" || it.tag == "input" }.forEach {
@@ -444,6 +467,35 @@ private fun Element(n: SiteNode, ui: SiteUi, ctx: Ctx) {
                     finder && it.tag == "select" -> SiteSelect(it, ui, style = cssType(12.5f, 600, 18.1f, Site.Text))
                     finder && it.tag == "input" -> SiteInput(it, ui, style = cssType(12.5f, 600, 18.1f, Site.Text))
                     else -> Element(it, ui, inner)
+                }
+            }
+            after?.let { Paragraph(it.kids, ui, inner.size(12f).color(Site.Muted).weight(600)) }
+        }
+        // .sheet-head: the sheet's title (h2, 20 / 800) and its ✕ (a 44 square, corners 12, --surface-2 and the line), 12 10 in.
+        n.has("sheet-head") -> Row(mark.fillMaxWidth().padding(top = 12.dp, bottom = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            n.elements.forEach { k ->
+                if (k.tag == "button") Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Site.Surface2).border(1.dp, Site.Line, RoundedCornerShape(12.dp))
+                    .clickable { ui.tap(k.id) }.semantics { role = Role.Button; k["aria-label"]?.let { contentDescription = it } }, contentAlignment = Alignment.Center) {
+                    Text(k.text(), style = cssType(17f, 400, 20f, Site.Text)) }
+                else Box(Modifier.weight(1f)) { Paragraph(k.kids, ui, inner.size(20f, 1.25f).weight(800), oneLine = true) }
+            }
+        }
+        // .scan-defaults (Scanner settings' batch defaults): a pill (corners 27, 5 in, rgba(10,12,16,.6), a 1 white line at 10 %) of four
+        // buttons, each its caption (11 / 700 caps, tracked .08em, white at 55 %) over its value (15 / 800 white and a ⌄), 44 tall.
+        n.has("scan-defaults") -> Row(mark.fillMaxWidth().clip(RoundedCornerShape(27.dp)).background(Color(0x990A0C10)).border(1.dp, Color(0x1AFFFFFF), RoundedCornerShape(27.dp))
+            .padding(5.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            val buttons = n.elements.flatMap { if (it.has("sd-pair")) it.elements else listOf(it) }.filter { it.tag == "button" }
+            buttons.forEach { b ->
+                Column(Modifier.weight(1f).heightIn(min = 44.dp).clip(RoundedCornerShape(999.dp)).clickable { ui.tap(b.id) }
+                    .semantics(mergeDescendants = true) { role = Role.Button; b["aria-label"]?.let { contentDescription = it } }.padding(horizontal = 6.dp, vertical = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                    b.elements.firstOrNull { it.tag == "small" }?.let { Text(it.text().uppercase(), style = cssType(11f, 700, 12.1f, Color(0x8CFFFFFF), .08f), maxLines = 1) }
+                    b.elements.firstOrNull { it.tag == "span" }?.let { v ->
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(v.text(), style = cssType(15f, 800, 16.5f, Color.White), maxLines = 1)
+                            v.elements.firstOrNull { it.tag == "svg" }?.icon?.let { SiteIcon(it, 14.dp, Color.White.copy(alpha = .7f)) }
+                        }
+                    }
                 }
             }
         }

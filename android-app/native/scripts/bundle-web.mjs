@@ -77,13 +77,23 @@ export function hoistYieldInTryFinally(src, first = 0) {
       while ((v = y.exec(src)) && v.index < b) {
         if (nested.some(([p, q]) => v.index > p && v.index < q)) continue;
         const ls = src.lastIndexOf('\n', v.index) + 1, prefix = src.slice(ls, v.index), prev = src.slice(0, ls).trimEnd().slice(-1);
+        // A property set from a yield (r.cands = yield x, also as an if / else body on the same line) fails to compile too ("unconsistent
+        // stack size"): it becomes { const __yieldN = yield x; r.cands = __yieldN; } in its place.
+        const member = /^(\s*(?:\}\s*)?(?:else\s+)?(?:if \(.*\)\s*)?)([\w$]+(?:\.[\w$]+)+) = $/.exec(prefix);
+        if (member && (';{}'.includes(prev) || /^\s*(?:\}\s*)?(?:else|if)\b/.test(prefix))) {
+          let d = 0, end = -1; for (let q = v.index; q < src.length; q++) { const ch = src[q]; if (ch === '"' || ch === "'" || ch === '`') { q = skipString(q); continue; } if ('([{'.includes(ch)) d++; else if (')]}'.includes(ch)) { if (d === 0) break; d--; } else if (ch === ';' && d === 0) { end = q; break; } }
+          if (end < 0) throw Error('unended property yield at ' + src.slice(ls, ls + 160));
+          edits.push({ls, wrap: true, from: ls + member[1].length, to: end + 1, target: member[2], expr: src.slice(v.index, end).trim()});
+          continue;
+        }
         // A statement's head, also as an if / else / while body on the same line.
         // (also the block hoistYieldInForOf opens: { const __forOfN = yield y; for … })
-        if (/^\s*(?:\}\s*)?(?:\{\s*)?(?:else\s+)?(?:(?:if|while) \(.*\)\s*)?(?:(?:const|let|var) [\w$]+ = |[\w$.]+ = |return )?\(?$/.test(prefix)) continue;
+        if (/^\s*(?:\}\s*)?(?:\{\s*)?(?:else\s+)?(?:(?:if|while) \(.*\)\s*(?:\{\s*)?)?(?:(?:const|let|var) [\w$]+ = |[\w$]+ = |return )?\(?$/.test(prefix)) continue;
         // A whole branch of a declaration's or assignment's conditional (const a = c ? b : yield y): nothing waits on the stack
         // there either, as at a statement's head (only the yield's own value merges with the other branch's).
         const tern = /^(\s*)(?:(?:const|let|var) [\w$]+|[\w$.]+) = (.+) \? (?:(.+) : )?$/.exec(prefix);
-        if (tern && ';{}'.includes(prev) && balanced(tern[2]) && (tern[3] === undefined || balanced(tern[3]))) continue;
+        // (Both branches may be yields: const a = c ? yield b : yield d, the first branch a yield of a complete operand.)
+        if (tern && ';{}'.includes(prev) && balanced(tern[2]) && (tern[3] === undefined || balanced(tern[3]) || /^yield /.test(tern[3]) && balanced(tern[3].slice(6)))) continue;
         // The last of several declarations (const a = x, b = yield y): split off into its own statement, the one shape above.
         const decl = /^(\s*)(const|let|var) /.exec(prefix), tail = /, ([\w$]+) = (?:[\w$.]+\((?:[\w$.]+, )*\(?)?$/.exec(prefix);
         if (decl && tail && ';{}'.includes(prev)) {
@@ -117,6 +127,7 @@ export function hoistYieldInTryFinally(src, first = 0) {
     if (e.ls < last) throw Error('two yields to hoist in one statement at ' + src.slice(e.ls, e.ls + 120));
     if (e.split) { out += src.slice(last, e.from) + `;\n${e.indent}${e.kw}`; last = e.to; continue; }
     const name = '__yield' + (++n);
+    if (e.wrap) { out += src.slice(last, e.from) + `{ const ${name} = ${e.expr}; ${e.target} = ${name}; }`; last = e.to; continue; }
     out += src.slice(last, e.ls) + `${e.indent}const ${name} = ${e.expr};\n` + src.slice(e.ls, e.from) + name;
     last = e.to;
   }

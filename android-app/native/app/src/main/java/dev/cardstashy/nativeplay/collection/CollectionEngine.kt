@@ -222,6 +222,9 @@ object CollectionEngine {
     /** How to play · keywords (A.learnGame: learnSheet) for [game] as a panel. */
     suspend fun learnGame(game: String): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.learnGame(${str(game)})") as String).asJsonObject }
+    /** The Scan page (scancam.js scanView) for [game] with S.ui.scan = [state] (JSON) and, for a review, [card]'s Scryfall card. */
+    suspend fun scanPage(game: String, state: String, card: String = ""): JsonObject = 
+        on { q -> JsonParser.parseString(q.evaluate("Collection.scanPage(${str(game)}, ${str(state)}, ${str(card)})") as String).asJsonObject }
     /** The Wiki page (app.js #wiki[/<topic>[/search]]) for [game] as a panel: home when [topic] is blank, [query] for a search. */
     suspend fun wikiPage(game: String, topic: String, query: Boolean): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.wikiPage(${str(game)}, ${str(topic)}, $query)") as String).asJsonObject }

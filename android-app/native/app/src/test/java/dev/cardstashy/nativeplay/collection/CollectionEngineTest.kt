@@ -765,6 +765,45 @@ class CollectionEngineTest {
         assertTrue(txt(l["body"].asJsonObject).contains("Learn"))
     }
 
+    /** The Scan page (scancam.js scanView): camera off, camera on, a capture's review with its match, Your scans. */
+    @Test fun scanPage() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        fun txt(o: JsonObject): String = (o.getAsJsonArray("k")?.joinToString("") { if (it.isJsonPrimitive) it.asString else txt(it.asJsonObject) }).orEmpty()
+        val out = File(System.getProperty("repoRoot"), "android-app/native/app/build/shot-art/home")
+        val states = listOf(
+            "start" to ("{}" to ""),
+            "camera" to ("""{"camOn":true,"guide":{"msg":"Show one whole card anywhere"}}""" to ""),
+            "photo" to ("""{"mode":"photo"}""" to ""),
+            "review" to ("""{"confirm":{"i":0,"game":"mtg","qty":1,"condition":"Near Mint","lang":"en","finish":"nonfoil"}}""" to "Lightning Bolt"),
+            "grid" to ("""{"panel":"grid"}""" to ""))
+        for ((name, st) in states) {
+            // Each state from a fresh S.ui.scan (the page keeps the last one's otherwise, as the site's does).
+            val fresh = com.google.gson.JsonParser.parseString("""{"mode":"live","camOn":false,"confirm":null,"panel":"","cands":[],"guide":null}""").asJsonObject
+            com.google.gson.JsonParser.parseString(st.first).asJsonObject.entrySet().forEach { (k, v) -> fresh.add(k, v) }
+            var m = CollectionEngine.scanPage("mtg", fresh.toString(), st.second)
+            CollectionEngine.settle(20_000, CollectionEngine.PANEL_MODEL) { if (it.has("key")) m = it }
+            val all = txt(m["body"].asJsonObject)
+            println("SCAN $name ${all.take(400)}")
+            File(out, "scan-$name.json").writeText(m.toString())
+        }
+        // The site's own handlers (registerScanner): Photo switches the page to Take photo / Upload, Camera back; the gear opens
+        // Scanner settings in the page's #sheet, and a setting's change listener saves it.
+        fun nodes(e: com.google.gson.JsonElement?): List<JsonObject> = if (e == null || !e.isJsonObject) emptyList() else e.asJsonObject.let { o -> listOf(o) + (o.getAsJsonArray("k")?.flatMap { nodes(it) } ?: emptyList()) }
+        fun act(m: JsonObject, a: String) = nodes(m["body"]).first { it.getAsJsonObject("a")?.get("data-act")?.asString == a }["i"].asInt
+        var m = CollectionEngine.scanPage("mtg", "{\"mode\":\"live\",\"camOn\":false,\"confirm\":null,\"panel\":\"\"}", "")
+        println("SCAN acts " + nodes(m["body"]).mapNotNull { it.getAsJsonObject("a")?.get("data-act")?.asString })
+        m = CollectionEngine.panelTap(act(m, "scanMode"))
+        assertTrue(txt(m["body"].asJsonObject), txt(m["body"].asJsonObject).contains("Take photo") && txt(m["body"].asJsonObject).contains("Upload"))
+        m = CollectionEngine.panelTap(act(m, "scanMode"))
+        assertTrue(txt(m["body"].asJsonObject).contains("Ready for your next find."))
+        m = CollectionEngine.panelTap(act(m, "scanSettings"))
+        val sheet = nodes(m["body"]).firstOrNull { it.getAsJsonObject("a")?.get("id")?.asString == "sheet" }
+        assertTrue("settings sheet", sheet != null && txt(sheet).contains("Scanner settings") && txt(sheet).contains("Capture automatically"))
+        println("SCAN settings ${txt(sheet!!).take(400)}")
+        File(out, "scan-settings.json").writeText(m.toString())
+    }
+
     /** The Wiki page (#wiki): home with today's article and the glossary, suggestions as you type, a pick and a search going to
      *  the app as routes (wikiRoute), a glossary entry and an article at their routes, for all three games. */
     @Test fun wikiPage() = runBlocking {

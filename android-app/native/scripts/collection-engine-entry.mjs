@@ -26,6 +26,11 @@ import {collection as collectionPage, decks as decksView, deckPage as deckView, 
 import {loadMagicPrintingPage, mergeMagicCards, searchQuery, rankByName, magicFilterError, hasMagicSearchQuery, magicSearchSpec, scryfallSearchPath} from 'WEB/catalog-tools.js';
 import {search as searchView, mtgFilterChips} from 'WEB/views.js';
 import {magicOwnedDetail, magicOwnedContext, magicOwnedCurrent, magicOwnedCard} from 'WEB/magic-owned-detail.js';
+import {scanView, registerScanner} from 'WEB/scancam.js';
+import {addScannedEntry} from 'WEB/collection-stack.js';
+import {createScannerLookup} from 'WEB/scanner-lookup.js';
+import {mtgCollector, nameCandidates, textPhrases} from 'WEB/scan.js';
+import {cloudInfo} from 'WEB/cloud.js';
 import {createMtgWikiPageController, mtgWikiPageMarkup} from 'WEB/mtg-wiki-ui.js';
 import {sharedBinderRows, sharedBinderValue, sharedDeckCopy, showcaseItem, repairOwnShowcase} from 'WEB/community-profile.js';
 import {binderPage, coverImages, binderMatches, binderFavorites, binderCoverState, BINDER_COLORS, MAX_FAVORITES} from 'WEB/binders.js';
@@ -4066,6 +4071,196 @@ function wikiPagePanel(g, topic, query) {
   panel.redraw();
 }
 
+// ---- The Scan page (app.js route #scan: scancam.js scanView with S.ui.scan) as a panel of the site's markup, run by the site's own
+// handlers: registerScanner(scanCtx) with app.js's scanCtx (7329–7486) below. Its A / C / I are this panel's acts; render() draws the
+// panel again and then runs ctx.afterRender, as app.js render() does (setTimeout 0). A sheet it opens (Scanner settings) is in the
+// panel's page (#sheet); the printing picker goes to the app (acted). The camera and the text reader are the app's, not a browser's.
+// Matching for the scanner (Magic). The scanner itself lives in scancam.js and is shared by all games.
+const mtgScanCand = (c, why, exact) => {
+  cacheCard(c);
+  return { id: c.id, name: c.name, image: c.image_uris?.normal || c.card_faces?.[0]?.image_uris?.normal || "", sub: `${c.set_name} · ${c.set.toUpperCase()} #${c.collector_number}`, why, exact, owned: inv(c.name).owned, card: c };
+};
+// Every paper printing of a scanned card, with a small picture for matching the artwork.
+async function mtgScanPrintings(cand) {
+  const oid = cand.card?.oracle_id;
+  if (!oid) return [];
+  const r = await api("/cards/search?" + new URLSearchParams({ q: `oracleid:${oid} game:paper`, unique: "prints", order: "released", dir: "desc" })).catch(() => null);
+  return (r?.data || [])
+    .map((c) => ({ id: c.id, thumb: c.image_uris?.small || c.card_faces?.[0]?.image_uris?.small || "", card: c }))
+    .filter((p) => p.thumb);
+}
+// No readable name: find the card from phrases of its rules or flavour text. A phrase that
+// matches only a few cards is a strong hint; names hinted by several phrases come first.
+async function mtgScanByText(phrases, full = "") {
+  const ps = [...new Set(phrases.map((x) => x.replace(/["’]/g, "").trim()).filter(Boolean))];
+  if (!ps.length) return [];
+  // One search for every phrase at once; each card is then scored by the phrases its own text
+  // contains, rare phrases counting most (a misread phrase simply matches nothing).
+  const r = await api("/cards/search?" + new URLSearchParams({ q: `game:paper (${ps.map((x) => `o:"${x}" or ft:"${x}"`).join(" or ")})`, unique: "cards" })).catch(() => null);
+  if (!r?.data?.length || r.total_cards > 175) return [];
+  const text = (c) => [c.oracle_text, c.flavor_text, ...(c.card_faces || []).flatMap((f) => [f.oracle_text, f.flavor_text])].filter(Boolean).join(" ").toLowerCase().replace(/[’']/g, ""),
+    texts = r.data.map((c) => [c.name, text(c)]),
+    df = Object.fromEntries(ps.map((x) => [x, texts.filter(([, t]) => t.includes(x.toLowerCase())).length])),
+    // A card usually names itself in its text ("Lightning Bolt deals 3 damage"): those first.
+    said = (n) => n.split(" // ").some((f) => f.length > 3 && scanKey(full).includes(scanKey(f)));
+  return texts
+    .map(([n, t]) => [n, ps.reduce((sc, x) => sc + (t.includes(x.toLowerCase()) ? 1 / df[x] : 0), 0)])
+    .filter(([, sc]) => sc > 0)
+    .sort((x, y) => said(y[0]) - said(x[0]) || y[1] - x[1])
+    .map((x) => x[0])
+    .slice(0, 5);
+}
+const scanKey = (x) => String(x || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+async function mtgScanMatch(read, lang, manual = false, prefs = {}, control = null) {
+  const lookup=(key,fn)=>Promise.resolve().then(()=>control?control.run(JSON.stringify(["mtg",...key]),fn):fn()).catch(e=>{if(control&&/^SCAN_/.test(e.code||""))throw e;return null;});
+  const out = [],
+    seen = new Set(),
+    tried = [],
+    push = (c, why, exact) => {
+      if (!c?.name || seen.has(c.id) || out.length >= 3) return;
+      seen.add(c.id);
+      out.push(mtgScanCand(c, why, exact));
+    };
+  let limited=false;
+  try {
+  // The set code + collector number at the bottom identify the exact printing.
+  const at = manual ? null : mtgCollector(`${read.code}\n${read.full}`);
+  if (at) {
+    tried.push(`${at.set.toUpperCase()} #${at.number}`);
+    for (const l of lang.includes("jpn") ? ["ja", ""] : [""]) {
+      const c = await lookup(["printing",at.set,at.number,l],()=>api(`/cards/${encodeURIComponent(at.set)}/${encodeURIComponent(at.number)}${l ? "/" + l : ""}`));
+      if (c?.name) {
+        push(c, `Set ${at.set.toUpperCase()} #${at.number}`, true);
+        break;
+      }
+    }
+  }
+  // Then plausible names from the name strip, one at a time (never the whole noisy string).
+  for (const n of manual ? [read.name] : nameCandidates("mtg", read.name || read.full)) {
+    if (out.length >= 3) break;
+    // A piece of a name already found ("Elves" after Llanowar Elves) would only add noise.
+    if (out.some((o) => key(o.name).includes(key(n)))) continue;
+    tried.push(n);
+    // Lock set: look the name up in that set first.
+    const locked = prefs.lockSet ? await lookup(["name",n,prefs.lockSet],()=>api("/cards/named?" + new URLSearchParams({ fuzzy: n, set: prefs.lockSet }))) : null;
+    let c = locked || (await lookup(["name",n],()=>api("/cards/named?" + new URLSearchParams({ fuzzy: n }))));
+    // Ignore promos: prefer the regular printing of the same card.
+    if (c && prefs.ignorePromos && (c.promo || c.set_type === "promo")) {
+      const r = await lookup(["regular",c.name],()=>api("/cards/search?" + new URLSearchParams({ q: `!"${c.name}" -is:promo -st:promo`, order: "released", dir: "desc" })));
+      if (r?.data?.[0]) c = r.data[0];
+    }
+    // A short fragment ("wel") is not identification: closest-spelling hits need a real word.
+    if (c?.name && (key(c.name) === key(n) || manual || key(n).length >= 5)) push(c, key(c.name) === key(n) ? "Name match" : `Closest name to “${n}”`, false);
+  }
+  }catch(e){if(!control||e.code!=="SCAN_BUDGET"||!out.length)throw e;limited=true;}
+  return { cands: limited?out.map(c=>({...c,exact:false})):out, tried,...(limited?{budgetLimited:true}:{}) };
+}
+async function mtgScanAdd(cand) {
+  const c = cand.card;
+  await commit(
+    (s) => {
+      s.collection.push({ id: uid(), name: c.name, qty: 1, set: c.set.toUpperCase(), setName: c.set_name, collectorNumber: c.collector_number, finish: "nonfoil", language: c.lang || "en", condition: "Near Mint", location: "", reserved: 0, printingId: cand.exact ? c.id : null, oracleId: c.oracle_id, printingVerified: !!cand.exact, nameVerified: true, raw: { acquisition: "Scanned" } });
+    },
+    { undo: `Added 1 × ${c.name}${cand.exact ? ` (${c.set.toUpperCase()} #${c.collector_number})` : ""}.` },
+  );
+}
+// Save a whole scan session at once (one undo), with each row's finish, condition, language and quantity.
+async function mtgScanAddMany(items) {
+  if (!Array.isArray(items) || !items.length || items.some((it) => {
+    const c = it.cand?.card;
+    return !c?.id || !c.name || (it.cand.game && it.cand.game !== "mtg") ||
+      !(it.cand.exact || it.cand.printingConfirmed) || !Number.isInteger(it.qty) || it.qty < 1 || it.qty > 100000 ||
+      !["nonfoil", "foil", "etched"].includes(it.finish) || !c.finishes?.includes(it.finish) ||
+      (it.captureId != null && (typeof it.captureId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,199}$/.test(it.captureId)));
+  })) throw Error("Confirm each card's exact printing and finish before saving this scan batch.");
+  const n = items.reduce((t, x) => t + x.qty, 0);
+  await commit(
+    (s) => {
+      for (const it of items) {
+        const c = it.cand.card, captureId = it.captureId || "";
+        s.printings ||= {};
+        s.printings[c.id] = slim({ ...c, conditionQuotes: c.conditionQuotes || s.printings[c.id]?.conditionQuotes });
+        addScannedEntry(s, "mtg", { id: uid(), scanCaptureId: captureId, name: c.name, qty: it.qty, set: c.set.toUpperCase(), setName: c.set_name, collectorNumber: c.collector_number, finish: it.finish, language: it.lang || c.lang || "en", condition: it.condition || "Near Mint", location: it.location || "", reserved: 0, printingId: c.id, oracleId: c.oracle_id, printingVerified: !!(it.cand.exact || it.cand.printingConfirmed), nameVerified: true, raw: { acquisition: "Scanned" } });
+      }
+    },
+    { undo: `Added ${n} scanned card${n === 1 ? "" : "s"}.` },
+  );
+}
+const mtgScanPrice = (cand, finish, selection = {}) => {
+  const card=cand.card,p=card?.prices||{},v=finish==="foil"?p.usd_foil:finish==="etched"?p.usd_etched:p.usd;
+  return conditionValue(v==null||v===""?null:Number(v),{...selection,printingId:card?.id||"",finish},card?.conditionQuotes||[]).price;
+};
+const SA = {}, SC = {}, SI = {};
+let scanOn = false;
+const scanRender = () => { if (!panel?.scan) return; const mine = panel; panel.redraw(); Promise.resolve().then(() => { if (panel === mine) panelRun(() => scanCtx.afterRender?.()); }); };
+const scanCtx = {
+  A: SA,
+  C: SC,
+  I: SI,
+  // A sheet the scanner opens (Scanner settings): its markup and context go to the app with the panel, which shows it over the page.
+  // index.html's <dialog id="sheet" class="sheet"><div id="sheetBody"> (app.js openSheet), in the panel's page after its body: the
+  // app draws it over the page; its taps and changes reach the scanner's handlers like the page's.
+  openSheet: (html, c = null) => { if (!panel?.scan) return; S.ui.sheetCtx = c; panelRun(() => {
+    let d = panel.doc.getElementById('sheet');
+    if (!d) { d = panel.doc.createElement('dialog'); d.id = 'sheet'; d.className = 'sheet'; d.setAttribute('aria-label', 'Details'); d.innerHTML = '<div id="sheetBody" data-audit-scroll></div>'; panel.doc.body.append(d); }
+    d.setAttribute('open', ''); panel.doc.getElementById('sheetBody').innerHTML = html; }); },
+  closeSheet: () => { S.ui.sheetCtx = null; if (panel?.scan) panelRun(() => panel.doc.getElementById('sheet')?.remove()); },
+  addMany: (g, items) => (g === "mtg" ? mtgScanAddMany(items) : tcgCtx.scanAddMany(items, g)),
+  priceOf: (g, cand, finish, selection = {}) => (g === "mtg" ? mtgScanPrice(cand, finish, selection) : tcgCtx.scanPrice?.(cand, finish, selection) ?? null),
+  requestConditionPrice: (g,cand,finish,selection,done,current,options={}) => {
+    const card=cand.card;
+    if(!card||!finish||cand.localReference||cand.detailsOnly||!(cand.exact||cand.printingConfirmed))return {status:'deferred',reason:'unverified-selection',notice:'Confirm the exact printing before checking its condition price.'};
+    const [printing,rarity]=String(cand.print||'').split('|');
+    const entry=g==='mtg'?{...selection,printingId:card.id,printingVerified:true,finish}:
+      {...selection,cardId:card.id,...(g==='ptcg'?{variant:finish}:{printing:printing||'',rarity:rarity||'',edition:finish,setReleaseId:cand.setReleaseId||'',setReleaseUnverified:!!cand.setReleaseUnverified})};
+    return fetchConditionValue(card,entry,g,done,{source:'review',current,retry:!!options.retry});
+  },
+  // app.js scannerPrintingPicker.open (the printing picker sheet): the app's printing picker, asked for with the config.
+  openPrintingPicker: config => { if (panel?.scan) panel.acted = {act: 'scanPrintingPicker', data: {game: config?.game || '', name: config?.name || config?.card?.name || ''}}; return Promise.resolve(null); },
+  inlinePrinting: true,
+  setOf: (g, cand) => (g === "mtg" ? cand.card?.set || "" : g === "ygo" ? String(cand.print || "").split("|")[0].split("-")[0] : cand.card?.set?.id || ""),
+  numberOf: (g, cand) => (g === "mtg" ? cand.card?.collector_number || "" : g === "ygo" ? String(cand.print || "").split("|")[0] : cand.card?.set?.number || ""),
+  render: () => scanRender(),
+  toast: (m) => { if (m) toasts.push({text: String(m), undo: false}); },
+  game: () => tcgGame() || 'mtg',
+  match: (g, read, lang, manual, status, prefs = {}, control = null) => (g === "mtg" ? mtgScanMatch(read, lang, manual, prefs, control) : tcgCtx.scanMatch(read, lang, manual, status, g, control)),
+  add: (g, c) => (g === "mtg" ? mtgScanAdd(c) : tcgCtx.scanAdd(c)),
+  byText: (g, full) => (g === "mtg" ? mtgScanByText(textPhrases(full, 12), full) : tcgCtx.scanByText?.(g, full) ?? []),
+  printings: (g, cand) => (g === "mtg" ? mtgScanPrintings(cand) : tcgCtx.scanPrintings?.(g, cand) ?? []),
+  candById: async (g, id, why, exact, options = {}) => (g === "mtg" ? api("/cards/" + encodeURIComponent(id), {signal:options.signal}).then((c) => mtgScanCand(c, why, exact)).catch(() => null) : tcgCtx.scanCandById?.(g, id, why, exact, options) ?? null),
+  candOf: async (g, p, why, exact) => (g === "mtg" ? (p.card ? mtgScanCand(p.card, why, exact) : null) : tcgCtx.scanCandById?.(g, p.id, why, exact) ?? null),
+  // A card's page: the app opens it (acted card / tCard).
+  details: (g, c) => { if (panel?.scan) panel.acted = g === "mtg" ? {act: 'card', data: {name: c.name}} : {act: 'tCard', data: {id: c.id, game: g}}; },
+};
+scanCtx.aiAccount=()=>!!cloudInfo().user;
+scanCtx.rememberLocation=(g,name,{createBinder=false}={})=>commit(s=>{rememberLocation(s,g,name,{createBinder});},{rerender:false});
+scanCtx.lookupCandidates=createScannerLookup({requestMagic:api,sources:tcgSources,candById:scanCtx.candById,match:scanCtx.match});
+function scanReady() { if (scanOn) return; scanOn = true; tcgReady(); registerScanner(scanCtx); }
+// [state]: what S.ui.scan holds for the screen shown (camera on, the review of a capture…), for the shots; [card]: a Magic card whose
+// Scryfall card is the review's candidate (mtgScanCand).
+function scanPanel(g, state = {}, card = '') {
+  scanReady();
+  if (g === 'mtg') mtgFocus(); else tcgFocus(g, 'scan');
+  S.ui.view = 'scan';
+  S.ui.scan = {mode: 'live', cands: [], ...(S.ui.scan || {}), ...state};
+  const name = {mtg: 'Magic', ptcg: 'Pokémon', ygo: 'Yu-Gi-Oh!'}[g];
+  panel = null;
+  const acts = {};
+  for (const [k, f] of Object.entries(SA)) acts[k] = (t, e) => f(t, e);
+  for (const [k, f] of Object.entries(SC)) acts['C.' + k] = (t, e) => f(t, e);
+  for (const [k, f] of Object.entries(SI)) acts['I.' + k] = (t, e) => f(t, e);
+  // app.js A.closeSheet: the sheet's ✕.
+  acts.closeSheet = () => scanCtx.closeSheet();
+  panelOpen('scan|' + g, scanView(g, name), null, acts);
+  const mine = panel; mine.scan = g;
+  panel.redraw = () => { if (panel !== mine) return; panelRun(() => { panel.host.innerHTML = scanView(g, name); }); };
+  if (card && g === 'mtg') api('/cards/named?' + new URLSearchParams({exact: card})).then(c => {
+    S.ui.scan.cands = [mtgScanCand(c, 'Set ' + c.set.toUpperCase() + ' #' + c.collector_number, true)];
+    mine.redraw();
+  }).catch(e => toasts.push({text: e.message, undo: false}));
+  Promise.resolve().then(() => { if (panel === mine) panelRun(() => scanCtx.afterRender?.()); });
+}
+
 // ---- Collection › Decks › Ideas (views.js decks() / tcg.js tcgDecks() with S.ui.decksTab = 'ideas'): the tab's body, everything after
 // .random-tools, as a panel of the site's markup run by the site's handlers (app.js's "Ideas, references, precons" block, ported below
 // verbatim with render() being the panel drawn again). The head, tabs and tools are Collection.decks(game, {tab}).
@@ -5494,6 +5689,8 @@ globalThis.Collection = {
   rulesPage(game) { rulesPagePanel(game || 'mtg'); return panelModel(); },
   /** How to play · keywords (A.learnGame: learnSheet) for [game]. */
   learnGame(game) { learnPanel(game || 'mtg'); return panelModel(); },
+  // The Scan page's markup for a screen (scanPanel).
+  scanPage(game, state, card) { scanPanel(game || 'mtg', state ? JSON.parse(state) : {}, card || ''); return panelModel(); },
   // The Wiki page at its route (#wiki, #wiki/<topic>, #wiki/<topic>/search: [query]).
   wikiPage(game, topic, query) { wikiPagePanel(game || 'mtg', topic || '', query === true || query === 'true'); return panelModel(); },
   // A search field's Enter (the form's submit, as the browser sends it).
