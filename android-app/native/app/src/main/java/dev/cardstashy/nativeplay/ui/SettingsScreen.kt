@@ -603,6 +603,10 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Scanner" to "The Scanner is built into the app: your phone\u2019s camera with the website\u2019s card reader. Your scans and Fix card open in the app, where you can swipe through printings, pick the finish, copies and condition, then add them to your collection or a binder.",
+    "Decks" to "Collection Decks open in about a second instead of 8 to 12, and each deck\u2019s page has Practice, War Chest and Share up top like the website, without the doubled buttons.",
+    "Decks" to "Building a Collection deck has Owned and All cards, like Play: add any card, and the ones you don\u2019t own show grey with \u201cTo buy\u201d. In portrait, drag or tap the grip between the deck and the collection to give either more room.",
+    "Decks" to "On an unfolded phone, War Chest, Rules, Power and Versions open in the big side. Game Night and Ask the Judge in the War Chest always open, and Card lookup opens Search.",
     "Wiki" to "The Wiki is in the app for all three games: today\u2019s article, the glossary, suggestions as you type and full wiki articles whose links open other articles. Back steps through what you read.",
     "Rules" to "The Rules page is in the app: the interactive rules, formats and deck limits, live ban lists and the official documents. How to play opens right there.",
     "Friends" to "Settings \u203a Friends opens in the app: friends, requests, blocked accounts and profiles. Shared binders and decks open in the app, and the swords send a challenge.",
