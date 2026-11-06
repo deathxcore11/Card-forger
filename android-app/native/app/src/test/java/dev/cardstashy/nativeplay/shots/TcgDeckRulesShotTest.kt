@@ -125,9 +125,9 @@ class TcgDeckRulesShotTest {
     }
 
     /**
-     * Power (tcg.js tcgPowerPage, which Matchups and Upgrade lab now open): the hero, Ramp, How it works and wins, Matchups and
-     * Upgrades drawn here; Full breakdown opens the old Power panels (deckInsights) in place; Simulate matchups is the site's
-     * A.tMuRun, run here (it shows its progress or its answer in the card, never the website).
+     * Power (tcg.js tcgPowerPage, which Matchups and Upgrade lab now open): power.js's one-page view drawn here; Card odds, roles
+     * and Extra Deck opens the old Power panels (deckInsights) in place; Simulate matchups is the site's A.tMuRun, run here (it
+     * shows its progress or its answer in the card, never the website).
      */
     @Test fun pokemonPower() {
         open(CardGame.PTCG, pikachu, "Pikachu ex", tab = "Power", ready = "Simulate matchups")
@@ -136,9 +136,9 @@ class TcgDeckRulesShotTest {
         // Upgrades asks to load tournament decks until they are here (then Against the meta shows what they say).
         assertTrue(shows("Load tournament decks") || shows("Against the meta", ignoreCase = true))
         assertTrue(webs.isEmpty())
-        tap("FULL BREAKDOWN")
-        rule.waitUntil(20_000) { shows("Finish the deck before rating Power") }
-        rule.onNode(hasText("Finish the deck before rating Power")).performScrollTo(); settle()
+        tap("Card odds, roles and Extra Deck")
+        rule.waitUntil(20_000) { shows("Card by card") }
+        rule.onAllNodes(hasText("Opening hand", substring = false)).onFirst().performScrollTo(); settle()
         shot("ptcg-power-full")
         rule.onNode(hasText("Simulate matchups", substring = false) and hasClickAction()).performScrollTo().performClick()
         rule.waitUntil(120_000) { listOf("Loading tournament results", "Loading ", "No tournament decks to compare", "Couldn", "still loading", "Simulated against").any { shows(it) } }

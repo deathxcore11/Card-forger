@@ -31,8 +31,9 @@ import java.io.File
 
 /**
  * A Yu-Gi-Oh! deck's Power tab after Load tournament decks and Simulate matchups (tcg.js A.tMetaRefresh and A.tMuRun, run in the
- * collection engine against the live tournament feed, 5 Nov 2026), kept as the panel the engine handed the app: Against the meta,
- * and the Matchups card's Strong against / Weak against rows with their win rates.
+ * collection engine against the live tournament feed, 6 Nov 2026, web 4.3.131's one-page Power view), kept as the panel the engine
+ * handed the app: Against the meta with its field, Where it can break, and the Matchups card's Strong against / Weak against rows
+ * with their win rates.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -49,7 +50,7 @@ class TcgPowerMatchupsShotTest {
             }
         }
         rule.waitForIdle()
-        for (t in listOf("Weak against", "Radiant Typhoon", "19%", "Simulated against 8 tournament decks"))
+        for (t in listOf("Weak against", "Radiant Typhoon", "19%", "8 tournament decks, 2,000 games each", "Closest list: Angelechy"))
             assertTrue(t, rule.onAllNodesWithText(t, substring = true, ignoreCase = true).fetchSemanticsNodes().isNotEmpty())
         rule.onAllNodesWithText("Against the meta", ignoreCase = true).fetchSemanticsNodes()
         rule.onNode(hasText("Matchups", substring = false, ignoreCase = true)).performScrollTo(); rule.waitForIdle()
