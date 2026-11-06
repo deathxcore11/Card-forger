@@ -174,6 +174,19 @@ class LobbyModel(style: String) {
     var roomNote by mutableStateOf<String?>(null)
     var inviteText by mutableStateOf("")
     var challenges by mutableStateOf<List<FriendRooms.Challenge>>(emptyList())
+    /** app.js A.playChallenge: the friend a challenge names (community overview person); the room then opens only for them. */
+    var target by mutableStateOf<JsonObject?>(null)
+    /** A room left open when a new challenge replaced it (A.playFriendCancel), cancelled by the lobby. */
+    var staleRoom by mutableStateOf<String?>(null)
+    /** A.playChallenge: the Friends lobby, your own open room cancelled, the friend in the seat. */
+    fun challenge(person: JsonObject) {
+        (room as? Room.Waiting)?.let { staleRoom = it.roomId }
+        style = "social"; inspectOpen = false; formatOpen = false; roomNote = null
+        if (room !is Room.Guest) room = Room.Idle
+        if (format !in FriendRooms.FORMATS) configureFormat(FriendRooms.FORMATS.first())
+        target = person.deepCopy()
+    }
+    val targetName get() = target?.let { t -> listOf("label", "username", "display_name").firstNotNullOfOrNull { k -> t.get(k)?.takeIf { it.isJsonPrimitive }?.asString?.ifBlank { null } } ?: "Friend" }
     /** A deck page's Practice (app.js A.deckPlayCpu): the saved deck to seat as yours once the lobby's decks are in. */
     var pendingDeck by mutableStateOf<String?>(null)
     /** A.deckPlayCpu: Practice, the deck's format when the table plays it, then that deck in your seat (selectDeck(id,'player')). */
@@ -370,6 +383,9 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     fun roomFailure(e: Throwable) { m.room = LobbyModel.Room.Idle; m.roomNote = (e as? FriendRooms.Failure)?.message ?: e.message ?: "The room could not be reached. Try again." }
     fun launch(you: SeatDeck, matchId: String, friendName: String?) { m.room = LobbyModel.Room.Idle; m.roomNote = null; onStart(Pick.Friend(you.raw, you.name, m.format, factName(you.raw), matchId, friendName)) }
     fun cancelRoom() { (m.room as? LobbyModel.Room.Waiting)?.let { r -> scope.launch { runCatching { rooms.cancel(r.roomId) } } }; m.room = LobbyModel.Room.Idle; m.roomNote = null }
+    LaunchedEffect(m.staleRoom) { m.staleRoom?.let { id -> m.staleRoom = null; runCatching { rooms.cancel(id) } } }
+    // app.js playStyle: leaving the Friends lobby forgets a challenge that was never sent.
+    androidx.compose.runtime.DisposableEffect(m) { onDispose { if (m.room !is LobbyModel.Room.Waiting) m.target = null } }
     val friend = remember(m) { FriendActions(
         copy = { inv -> (context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText("Invite link", FriendRooms.link(inv))); toast("Link copied") },
         share = { inv -> context.startActivity(android.content.Intent.createChooser(android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
@@ -393,7 +409,11 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
             val status = d.get("status")?.takeIf { it.isJsonPrimitive }?.asString
             val matchId = d.get("matchId")?.takeIf { it.isJsonPrimitive }?.asString
             if (status == "started" && matchId != null) { m.player?.let { launch(it, matchId, d.getAsJsonObject("opponent")?.get("name")?.takeIf { n -> n.isJsonPrimitive }?.asString) }; break }
-            if (status != null && status != "open") { m.room = LobbyModel.Room.Idle; m.roomNote = FriendRooms.MESSAGES[if (status == "expired") "invite_expired" else "room_closed"]; break }
+            if (status != null && status != "open") { m.room = LobbyModel.Room.Idle
+                // pollFriendRoom: a challenge says who didn't come.
+                m.roomNote = if (m.target != null) { val who = m.targetName
+                    when (status) { "declined" -> "Not this time. $who can't play right now."; "expired" -> "$who didn't answer this time. Try again later."; else -> "This challenge ended." } }
+                    else FriendRooms.MESSAGES[if (status == "expired") "invite_expired" else "room_closed"]; break }
         }
     }
     // Challenges from friends, while this page is open and nothing is under way.
@@ -408,7 +428,7 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
         if (m.social) {
             when (val r = m.room) {
                 is LobbyModel.Room.Idle -> { m.roomNote = null; m.room = LobbyModel.Room.Busy
-                    scope.launch { try { val o = rooms.open(m.format, you.raw, card); m.room = LobbyModel.Room.Waiting(o["roomId"].asString, o["invite"].asString) } catch (e: Exception) { roomFailure(e) } } }
+                    scope.launch { try { val o = rooms.open(m.format, you.raw, card, m.target?.get("id")?.takeIf { it.isJsonPrimitive }?.asString); m.room = LobbyModel.Room.Waiting(o["roomId"].asString, o["invite"].asString) } catch (e: Exception) { roomFailure(e) } } }
                 is LobbyModel.Room.Guest -> { m.roomNote = null; m.room = LobbyModel.Room.Busy
                     scope.launch { try { val o = rooms.join(r.invite, r.format, you.raw, card); launch(you, o["matchId"].asString, o.getAsJsonObject("opponent")?.get("name")?.takeIf { it.isJsonPrimitive }?.asString ?: r.from) } catch (e: Exception) { roomFailure(e) } } }
                 else -> {}
@@ -739,8 +759,9 @@ private fun StartBar(m: LobbyModel, signedIn: Boolean, status: String, friend: F
             }
         }
         val room = m.room
-        val label = if (m.social) (if (!signedIn) "Sign in to play" else if (room is LobbyModel.Room.Busy) "Opening the room…" else if (m.player == null) "Pick your deck" else if (room is LobbyModel.Room.Waiting) "Waiting for your friend…"
-            else if (room is LobbyModel.Room.Guest) "Join room" else "Create room")
+        val label = if (m.social) (if (!signedIn) "Sign in to play" else if (room is LobbyModel.Room.Busy) (if (m.target != null) "Sending…" else "Opening the room…") else if (m.player == null) "Pick your deck"
+            else if (room is LobbyModel.Room.Waiting) (if (m.target != null) "Waiting for ${m.targetName}…" else "Waiting for your friend…")
+            else if (room is LobbyModel.Room.Guest) "Join room" else if (m.target != null) "Send challenge" else "Create room")
             else if (!signedIn) "Sign in to play" else if (m.quickBusy) "Finding a CPU deck…" else if (m.player == null) "Pick your deck" else if (!m.quick && m.opponent == null) "Pick the CPU deck" else "Play vs CPU"
         val ready = if (m.social) (!signedIn || (m.player != null && room is LobbyModel.Room.Idle || m.player != null && room is LobbyModel.Room.Guest)) else (!signedIn || (!m.quickBusy && m.player != null && (m.quick || m.opponent != null)))
         val shape = RoundedCornerShape(10.dp)
@@ -1166,7 +1187,12 @@ private val FriendBlue = Color(0xFF8EC5FF)
 private fun FriendSeat(m: LobbyModel, f: FriendActions) {
     val shape = RoundedCornerShape(bottomStart = 18.dp, bottomEnd = 18.dp)
     val room = m.room
-    val (who, title, detail) = when (room) {
+    val target = m.target.takeIf { room !is LobbyModel.Room.Guest }
+    val (who, title, detail) = if (target != null) when (room) {
+        // play-menu.js friendSeat: a challenge names one friend; their picture and name stand in the seat, and no link is needed.
+        is LobbyModel.Room.Waiting -> Triple("FRIEND", "Waiting for ${m.targetName}", "Your challenge is on its way. It waits five minutes.")
+        else -> Triple("FRIEND", "Challenge ${m.targetName}", "")
+    } else when (room) {
         is LobbyModel.Room.Waiting -> Triple("FRIEND", "Waiting for your friend", "Send them the link. The room opens the match when they join.")
         is LobbyModel.Room.Guest -> Triple("FRIEND’S ROOM", "${room.format} match", room.from?.let { "Challenge from $it" } ?: "Pick your deck, then join.")
         LobbyModel.Room.Busy -> Triple("FRIEND", "Opening the room…", "")
@@ -1176,10 +1202,15 @@ private fun FriendSeat(m: LobbyModel, f: FriendActions) {
         .background(Brush.radialGradient(listOf(Color(0xFF1B2130), Color(0xFF0E1016)), center = Offset(.3f, .5f))).border(1.dp, Color(0x40D6AD64), shape)) {
         if (room is LobbyModel.Room.Guest) Backs(Modifier.align(Alignment.CenterStart).padding(start = 10.dp)) else Slot(Modifier.align(Alignment.CenterStart).padding(horizontal = 40.dp))
         Column(Modifier.align(Alignment.CenterEnd).padding(top = 18.dp, bottom = 18.dp, start = 112.dp, end = 18.dp).fillMaxWidth(), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(who, style = sans(11f, FontWeight.Bold, FriendBlue, 1.76f, 16f), textAlign = TextAlign.End)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (target != null) ProfileAvatar(Community.profile(target), 34.dp)
+                Text(who, style = sans(11f, FontWeight.Bold, FriendBlue, 1.76f, 16f), textAlign = TextAlign.End)
+            }
             Text(title, style = cinzel(21f, line = 23.5f), textAlign = TextAlign.End)
             if (detail.isNotEmpty()) Text(detail, style = sans(13f, color = Color(0xFFD3D9DF)), textAlign = TextAlign.End)
-            if (room is LobbyModel.Room.Waiting) FlowRow(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (room is LobbyModel.Room.Waiting && target != null) Box(Modifier.padding(top = 4.dp).height(44.dp).pill(Color(0xB30C0E13), Color(0x66D6AD64)).clickable { f.cancel() }.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
+                Text("Cancel challenge", style = sans(13.5f, FontWeight.Bold, Color(0xFFF1E9D8))) }
+            else if (room is LobbyModel.Room.Waiting) FlowRow(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf<Pair<String, () -> Unit>>("Copy link" to { f.copy(room.invite) }, "Share" to { f.share(room.invite) }, "Cancel" to { f.cancel() }).forEach { (l, a) ->
                     Box(Modifier.height(44.dp).pill(Color(0xB30C0E13), Color(0x66D6AD64)).clickable(onClick = a).padding(horizontal = 14.dp), contentAlignment = Alignment.Center) { Text(l, style = sans(13.5f, FontWeight.Bold, Color(0xFFF1E9D8))) }
                 }

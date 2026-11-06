@@ -2,6 +2,7 @@ package dev.cardstashy.nativeplay.collection
 
 import android.content.Context
 import app.cash.zipline.QuickJs
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
@@ -140,6 +141,18 @@ object CollectionEngine {
         on { q -> JsonParser.parseString(q.evaluate("Collection.binders(${str(game)})") as String).asJsonObject }
 
     /** app.js showBinder: binder [id]'s page [page] (binders.js binderPage) with the pages either side; {gone} when it no longer exists. */
+    /** Every binder and deck here as a friend would see it (app.js showcaseChoices, each through showcaseItem). */
+    suspend fun showcaseChoices(): JsonArray =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.showcaseChoices()") as String).asJsonArray }
+    /** repairOwnShowcase over the overview's [items]: [{i, item}] for each that changed. */
+    suspend fun showcaseRepair(items: JsonArray): JsonArray =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.showcaseRepair(${str(items.toString())})") as String).asJsonArray }
+    /** A friend's shared binder (app.js showBinder with sharedItem) at page [page]: the binder model, read-only, with its reference [value]. */
+    suspend fun sharedBinder(item: JsonObject, page: Int): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.sharedBinder(${str(item.toString())}, $page)") as String).asJsonObject }
+    /** A friend's shared deck in the proven deck sheet (app.js openSharedShowcase): the sheet's model, as provenModel. */
+    suspend fun sharedDeck(item: JsonObject): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.sharedDeck(${str(item.toString())})") as String).asJsonObject }
     suspend fun binder(game: String, id: String, page: Int): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.binder(${str(game)}, ${str(id)}, $page)") as String).asJsonObject }
 

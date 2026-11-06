@@ -404,7 +404,9 @@ private fun App(activity: MainActivity) {
         Screen.SignIn -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
             // The profile orb and every "Sign in" open the site's Settings: signed out it is the account card (Log in / Create account), signed in the account hub.
-            dev.cardstashy.nativeplay.ui.SettingsScreen(onBack = { back() }, onWeb = { site(it) })
+            dev.cardstashy.nativeplay.ui.SettingsScreen(onBack = { back() }, onWeb = { site(it) },
+                onDeck = { g, id -> go(Screen.CollectionDeck(id, g)) },
+                onChallenge = { p -> lobbies.getOrPut("social") { dev.cardstashy.nativeplay.ui.LobbyModel("social") }.challenge(p); go(Screen.Lobby("social")) })
         }
         is Screen.Lobby -> {
             LaunchedEffect(Unit) { activity.inGame(false) }

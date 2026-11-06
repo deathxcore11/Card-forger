@@ -15,6 +15,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -471,7 +472,7 @@ internal fun BinderSheet(o: CollectionWrites.BinderOpen, backdrop: GraphicsLayer
     var busy by remember(o.id) { mutableStateOf(false) }
     // The page as the site draws it now, and again after any save (a ★, a card changed on its page).
     LaunchedEffect(o.id, written) {
-        val m = CollectionWrites.binderModel(context, o.game, o.binder, page)
+        val m = o.shared?.let { CollectionWrites.sharedBinderModel(context, it, page) } ?: CollectionWrites.binderModel(context, o.game, o.binder, page)
         if (m == null || m.b("gone")) { onClose(); return@LaunchedEffect }
         model = m; page = m.i("page")
     }
@@ -483,7 +484,7 @@ internal fun BinderSheet(o: CollectionWrites.BinderOpen, backdrop: GraphicsLayer
         busy = true
         scope.launch {
             try {
-                val next = CollectionWrites.binderModel(context, o.game, o.binder, old.i("page") + dir) ?: return@launch
+                val next = (o.shared?.let { CollectionWrites.sharedBinderModel(context, it, old.i("page") + dir) } ?: CollectionWrites.binderModel(context, o.game, o.binder, old.i("page") + dir)) ?: return@launch
                 if (next.b("gone")) { onClose(); return@launch }
                 if (next.i("page") == old.i("page")) return@launch
                 if (dragged) { leaf = null; arrived = System.nanoTime() } else leaf = BinderLeaf(old, dir)
@@ -548,6 +549,15 @@ internal fun BinderBody(m: JsonObject, leaf: BinderLeaf? = null, arrived: Long =
             Box(Modifier.padding(top = 6.dp)) { SmallButton(s.s("label"), null, gold = false) { onSet(s.s("code")) } }
         }
         if (m.s("foot").isNotEmpty()) Text(m.s("foot"), Modifier.padding(top = 10.dp, bottom = 6.dp), style = bt(12f, 400, BFaint))
+        // community-profile.js sharedBinderValue (.community-binder-value): 16 in, 16 corners, var(--surface), 12 above and 20 below.
+        m.o("value")?.let { v ->
+            Column(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 20.dp).clip(RoundedCornerShape(16.dp)).background(Site.Surface).then(Modifier.border(1.dp, Site.Line, RoundedCornerShape(16.dp))).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text(v.s("total"), style = bt(24f, 700, Site.Text))
+                Text(v.s("line"), style = bt(14f, 400, Site.Text))
+                Text(v.s("note"), style = bt(12f, 400, BMute))
+            }
+        }
 }
 
 /**

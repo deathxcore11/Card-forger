@@ -26,7 +26,8 @@ import {collection as collectionPage, decks as decksView, deckPage as deckView, 
 import {loadMagicPrintingPage, mergeMagicCards, searchQuery, rankByName, magicFilterError, hasMagicSearchQuery, magicSearchSpec, scryfallSearchPath} from 'WEB/catalog-tools.js';
 import {search as searchView, mtgFilterChips} from 'WEB/views.js';
 import {magicOwnedDetail, magicOwnedContext, magicOwnedCurrent, magicOwnedCard} from 'WEB/magic-owned-detail.js';
-import {binderPage, binderMatches, binderFavorites, binderCoverState, BINDER_COLORS, MAX_FAVORITES} from 'WEB/binders.js';
+import {sharedBinderRows, sharedBinderValue, sharedDeckCopy, showcaseItem, repairOwnShowcase} from 'WEB/community-profile.js';
+import {binderPage, coverImages, binderMatches, binderFavorites, binderCoverState, BINDER_COLORS, MAX_FAVORITES} from 'WEB/binders.js';
 import {selectPreviewFinish, finishAttrs} from 'WEB/finish-preview.js';
 import {selectedFinish, quoteForContext, conditionBuyLink} from 'WEB/pricing-presentation.js';
 import {conditionName, conditionValue, conditionPriceHtml, conditionManualPlaceholder, lastKnownConditionQuote, conditionQuoteTiming} from 'WEB/condition-value.js';
@@ -731,6 +732,21 @@ function binderModel(G, id, page = 0) {
   const allRows = binderRows(b.game), rows = allRows.filter(r => binderMatches(r, b)), pages = Math.max(1, Math.ceil(rows.length / 9));
   const at = Math.max(0, Math.min(pages - 1, Number(page) || 0));
   const t = tree(binderPage(rows, b.title, at, 'next', b, {collectionRows: allRows}));
+  return binderParse(G, t, b.id, b.color || '', at, pages);
+}
+// A friend's shared binder (app.js showBinder with data.sharedItem): binders.js binderPage, read-only, over the item's own cards
+// (community-profile.js sharedBinderRows), its pockets opening A.sharedCard, then sharedBinderValue's reference subtotal.
+let sharedItem = null, sharedPrint = null;
+function sharedBinderModel(item, page = 0) {
+  binderFocus(item.game); sharedItem = item;
+  const rows = sharedBinderRows(item), pages = Math.max(1, Math.ceil(rows.length / 9));
+  const at = Math.max(0, Math.min(pages - 1, Number(page) || 0));
+  const t = tree(binderPage(rows, item.title, at, 'next', {color: item.appearance?.color}, {readOnly: true, cardAttrs: r => `data-act="sharedCard" data-index="${r.index}"`}) + sharedBinderValue(item));
+  const v = one(t, cls('community-binder-value'));
+  return {...binderParse(item.game, t, item.key, item.appearance?.color || '', at, pages), shared: true,
+    value: v && {total: text(one(v, tagIs('strong'))), line: text(one(v, tagIs('span'))), note: text(one(v, tagIs('small')))}};
+}
+function binderParse(G, t, id, color, at, pages) {
   const head = one(t, cls('sheet-head')), tools = one(t, cls('stash-page-tools')), notice = one(t, cls('binder-cover-notice')), opts = one(tools, x => x.attrs['data-act'] === 'editBinder');
   const pocketOf = p => { const btn = one(p, cls('pocket-open')), star = one(p, cls('pocket-star')), img = one(btn, tagIs('img')), im = one(btn, cls('pocket-image')); let finish = null; try { finish = JSON.parse(im?.attrs['data-finish-model'] || 'null'); } catch {}
     const entry = btn?.attrs['data-entry'] || '';
@@ -745,7 +761,7 @@ function binderModel(G, id, page = 0) {
   const under = dir => { const u = one(t, x => cls('stash-under')(x) && x.attrs['data-under'] === String(dir)); return u ? all(u, cls('stash-pocket')).map(p => { const img = one(p, tagIs('img')); return img ? {picture: picture(img)} : {empty: true}; }) : null; };
   const turn = all(one(t, cls('stash-turn-bar')), tagIs('button'));
   const setLink = one(t, x => x.attrs['data-act'] === 'go' && /^#set\//.test(x.attrs['data-to'] || ''));
-  return {game: G, id: b.id, color: b.color || '', page: at, pages, eyebrow: text(one(head, cls('eyebrow'))), title: text(one(head, tagIs('h2'))),
+  return {game: G, id, color, page: at, pages, eyebrow: text(one(head, cls('eyebrow'))), title: text(one(head, tagIs('h2'))),
     options: opts && text(opts), count: text(one(tools, cls('stash-page-count'))),
     notice: notice && {lines: all(notice, cls('foot')).map(text), button: text(one(notice, tagIs('button')))},
     pockets: (pageNode?.kids || []).filter(k => k.tag && cls('stash-pocket')(k)).map(p => cls('empty-pocket')(p) ? {empty: true, mark: text(p)} : pocketOf(p)),
@@ -1050,11 +1066,13 @@ const still = ctx => S.ui.sheetCtx === ctx;
 // app.js A.card (3554-3615): [o] = {name, entry, deck}, as the tapped tile's data-name / data-entry / data-deck.
 function cardOpen(o) {
   const name = String(o.name || ''), entryId = String(o.entry || ''), deckId = o.deck ? String(o.deck) : null, setI = o.setI == null || o.setI === '' ? null : Number(o.setI);
-  const as = JSON.stringify([name, entryId, deckId, setI, o.setFinish || '', o.pack ?? '', o.pack != null ? pack?.stamp : '', !!o.random]);
+  const as = JSON.stringify([name, entryId, deckId, setI, o.setFinish || '', o.pack ?? '', o.pack != null ? pack?.stamp : '', !!o.random, o.shared ? sharedPrint?.id || '' : '']);
   if (sheet && sheet.openedAs === as && S.ui.sheetCtx === sheet) return sheet;
   const ctx = {type: 'card', name, entryId, deckId, random: !!o.random, openedAs: as};
   sheet = S.ui.sheetCtx = ctx;
   buyCtx = null;
+  // A.sharedCard: A.card with the friend's printing (t.printing), as A.sharedCard found it.
+  if (o.shared) { const print = sharedPrint; if (print?.id && key(print.name) === key(name)) { ctx.print = print; ctx.setId = print.set; ctx.priceFinish = selectedFinish('mtg', print, ''); } return ctx; }
   // A set page's tile (data-set-i, data-set-finish): that printing, priced in the finish the page shows (A.card).
   // A pulled card from Open Pack (pack-preview.js onDetails → A.card with t.printing): its own printing, in the finish it came out in.
   if (o.pack != null && o.pack !== '') {
@@ -4703,7 +4721,7 @@ function provenSheetModel() {
   const rowOf = r => {
     const img = one(r, cls('row-thumb')), copy = one(r, cls('deck-compact-copy')), right = (r.kids || []).filter(k => k.tag).at(-1), emb = one(copy, cls('imp-row'));
     return {name: r.attrs['data-deck-name'] || '', qty: Number(r.attrs['data-deck-qty']) || 0, zone: r.attrs['data-deck-zone'] || 'main', category: r.attrs['data-deck-category'] || 'Unresolved',
-      act: r.attrs['data-act'] || '', cardName: r.attrs['data-name'] || '', id: r.attrs['data-id'] || '',
+      act: r.attrs['data-act'] || '', cardName: r.attrs['data-name'] || '', id: r.attrs['data-id'] || '', index: r.attrs['data-index'] ?? '',
       art: img?.tag === 'img' ? picture(img) : null, label: text(one(copy, tagIs('b'))), set: text(one(copy, cls('set-badge'))), setRarity: (classes(one(copy, cls('set-badge')) || {}).find(x => x.startsWith('r-')) || 'r-common').slice(2), rarity: text(one(one(copy, cls('deck-printing')), cls('tag'))),
       tags: (copy?.kids || []).filter(k => k.tag && cls('tag')(k)).map(k => ({text: text(k), ok: cls('ok')(k)})),
       emblem: emb ? {title: emb.attrs.title || '', icon: icon(svgIn(emb))} : null,
@@ -4739,6 +4757,45 @@ function provenSheetModel() {
     extra: all(extra, tagIs('button')).map(b => ({label: text(b), act: b.attrs['data-act'] || '', key: b.attrs['data-key'] || ''})),
     feet: (one(t, cls('ds-page'))?.kids || t.kids || []).filter(k => k.tag === 'p' && cls('foot')(k)).map(p => ({text: text(p), links: linksOf(p)}))};
 }
+// app.js createCommunity's showcaseChoices (4682), verbatim (T = tcg.js): every binder and deck on this device as the snapshot a friend
+// would see, for Choose binders / decks, the preview and repairOwnShowcase.
+function showcaseChoices() {
+  tcgReady(); const T = TcgAll;
+  const result=[];
+  for(const b of S.state.settings.binders||[])result.push({key:'binder:'+b.id,kind:'binder',game:b.game,title:b.title,appearance:{color:b.color,background:b.background,cover:coverImages(binderRows(b.game).filter(r=>binderMatches(r,b)),binderFavorites(b),binderRows(b.game)).map(c=>c.image)},cards:binderRows(b.game).filter(r=>binderMatches(r,b)).map(r=>({id:r.card?.id||r.entry.cardId||r.entry.printingId,name:r.entry.name,qty:r.entry.qty,image:r.image,set:r.card?.set_name||r.card?.set?.name,number:r.card?.collector_number||r.card?.set?.number,version:r.version,referenceUSD:r.card?.prices?.usd??null}))});
+  for(const game of ['mtg','ptcg','ygo'])for(const d of (game==='mtg'?S.state:T.gs(game)).decks){
+   const rows=game==='mtg'?[...(d.cards||[]).map(r=>({...r,zone:'main'})),...(d.side||[]).map(r=>({...r,zone:'side'}))]:['main','extra','side'].flatMap(z=>(d.zones?.[z]||[]).map(r=>({...r,zone:z})));
+   result.push({key:'deck:'+game+':'+d.id,kind:'deck',game,title:d.name,format:d.format,commander:d.commander,deckSchema:1,appearance:d.boxAppearance,cards:rows.map(r=>{const c=game==='mtg'?meta(r.name):T.cardOf(game,r.cardId);return {id:c?.id||r.cardId,name:c?.name||r.name,qty:r.qty,image:cardImage(c)||c?.image,set:c?.set_name||c?.set?.name,number:c?.collector_number||c?.set?.number,zone:r.zone};})});
+  }
+  return result;
+}
+// app.js openSharedShowcase's deck (4696): the shared deck in the proven deck sheet (tcg.js sharedDeckSheet), its Save to my decks an
+// independent copy (community-profile.js sharedDeckCopy) saved to the item's game, then the site's toast.
+function sharedDeckOpen(item) {
+  const G = item.game; sharedItem = item; tcgReady();
+  if (G === 'mtg') mtgFocus(); else tcgFocus(G, 'decks');
+  provenOpened = false;
+  return tcgCtx.openProven({g: item.game, key: item.key, title: item.title, sharedItem: item, rows: item.cards.map((c, i) => ({key: String(i), name: c.name, qty: c.qty, owned: 0, price: c.referenceUSD})), save: async () => {
+    const deck = sharedDeckCopy(item, uid());
+    await commit(state => { (item.game === 'mtg' ? state : state.tcg[item.game]).decks.push(deck); }, {enrich: false});
+    toasts.push({text: 'Saved to My decks. Your copy is ready to edit.', undo: false});
+  }});
+}
+// app.js A.sharedCard (4701): a shared card's page. Magic finds the printing the friend shared (this device's printings or catalog,
+// else the card service); Yu-Gi-Oh! and Pokémon open the card by its id. [made]: {game, id, name} for the page the app opens.
+Object.assign(writeActs, {
+  async sharedCard(d) {
+    const item = sharedItem, c = item?.cards[Number(d.index)];
+    if (!c) return;
+    sharedPrint = null;
+    if (item.game === 'mtg') {
+      let printing = Object.values(S.state.printings || {}).find(p => p.id === c.id) || Object.values(S.catalog || {}).find(p => p.id === c.id);
+      if (!printing && c.id) try { printing = slim(await api('/cards/' + encodeURIComponent(c.id))); } catch { throw Error('This printing could not load. Please try again.'); }
+      sharedPrint = printing || null;
+    }
+    made = JSON.stringify({game: item.game, id: String(c.id || ''), name: c.name || ''});
+  },
+});
 // app.js A.provenSave (tcg.js 3966) as a saving tap: the deck the site opens next (#deck/<id>/cards, #tdeck/<id>) is what the app opens.
 Object.assign(writeActs, {
   async provenSave() {
@@ -5446,6 +5503,14 @@ globalThis.Collection = {
   // Collection › Binders for [game]: the shelf, one binder's page, the editor's fields (binderShelfModel, binderModel, binderEditModel).
   binders(game) { return json(binderShelfModel(game || 'mtg')); },
   binder(game, id, page) { return json(binderModel(game || 'mtg', id, page)); },
+  // Choose binders / decks: showcaseChoices as showcaseItem cleans each (community-profile.js shareResults and the preview).
+  showcaseChoices() { return json(showcaseChoices().map(showcaseItem)); },
+  // createCommunity's refresh: each of your shared items repaired from this device where its cards still match (repairOwnShowcase);
+  // [items] the overview's; the answer lists only the ones that changed, {i, item}, for the app to share again.
+  showcaseRepair(items) { const choices = showcaseChoices(); return json(JSON.parse(items).map((item, i) => { const r = repairOwnShowcase(item, choices); return r !== item ? {i, item: r} : null; }).filter(Boolean)); },
+  // community-profile.js showItem: the item as showcaseItem cleans it, then app.js openSharedShowcase.
+  sharedBinder(item, page) { return json(sharedBinderModel(showcaseItem(JSON.parse(item)), page)); },
+  sharedDeck(item) { provenRun(() => sharedDeckOpen(showcaseItem(JSON.parse(item)))); return Collection.provenModel(); },
   binderEdit(game, id) { return json(binderEditModel(game || 'mtg', id || '')); },
   // Collection › Value for [game] (valuePage).
   value(game) { return json(valuePage(game || 'mtg')); },

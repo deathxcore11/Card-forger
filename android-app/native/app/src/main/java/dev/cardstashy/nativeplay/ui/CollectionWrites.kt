@@ -253,7 +253,9 @@ internal object CollectionWrites {
      */
     data class BinderOpen(val game: String, val binder: String, val page: Int = 0,
                           val card: (act: String, data: JsonObject, name: String, back: BinderOpen) -> Unit = { _, _, _, _ -> },
-                          val set: (String) -> Unit = {}, val id: Long = System.nanoTime())
+                          val set: (String) -> Unit = {}, val id: Long = System.nanoTime(),
+                          /** A friend's shared binder (community-profile.js item): read-only, its pockets open A.sharedCard. */
+                          val shared: JsonObject? = null)
     val binder = MutableStateFlow<BinderOpen?>(null)
     /**
      * app.js binderEditor: New binder ([binder] blank) or Binder settings; [back] is the binder it was opened from (sheet history),
@@ -266,6 +268,20 @@ internal object CollectionWrites {
     data class BinderHoldOpen(val game: String, val binder: String, val hold: JsonObject, val open: (id: String, page: Int) -> Unit, val id: Long = System.nanoTime())
     val binderHold = MutableStateFlow<BinderHoldOpen?>(null)
     /** binders.js binderPage's model for page [page] of binder [id] from this device's collection; {gone} once deleted. Null (with a toast) when it can't open. */
+    /** app.js showcaseChoices: this device's binders and decks as shareable snapshots; null (with a toast) when the collection can't load. */
+    suspend fun showcaseChoices(context: Context): com.google.gson.JsonArray? =
+        withCollection(context) { JsonObject().apply { add("items", CollectionEngine.showcaseChoices()) } }?.getAsJsonArray("items")
+    /** createCommunity's refresh: your shared [items] repaired from this device (repairOwnShowcase), quietly; empty when nothing can be read. */
+    suspend fun showcaseRepair(context: Context, items: com.google.gson.JsonArray): com.google.gson.JsonArray {
+        val s = Account.session.value ?: return com.google.gson.JsonArray()
+        return runCatching { WorkspaceSync.lock.withLock {
+            if (!ensureCollection(context.applicationContext, s.userId, true, Decks.fullRevision.value)) null else CollectionEngine.showcaseRepair(items)
+        } }.getOrNull() ?: com.google.gson.JsonArray()
+    }
+    suspend fun sharedBinderModel(context: Context, item: JsonObject, page: Int): JsonObject? =
+        withCollection(context) { CollectionEngine.sharedBinder(item, page) }
+    suspend fun sharedDeckModel(context: Context, item: JsonObject): JsonObject? =
+        withCollection(context) { CollectionEngine.sharedDeck(item) }
     suspend fun binderModel(context: Context, game: String, id: String, page: Int): JsonObject? =
         withCollection(context) { CollectionEngine.binder(game, id, page) }
     /** app.js binderEditor's fields for binder [id] (blank: a new one). */

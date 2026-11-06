@@ -86,6 +86,8 @@ class MetaDeckRow(val j: JsonObject) {
     val name get() = j.s("name"); val qty get() = j.s("qty").toIntOrNull() ?: 1; val label get() = j.s("label"); val category get() = j.s("category").ifBlank { "Unresolved" }
     /** data-act: Magic's card (data-name), Yu-Gi-Oh! / Pokémon's tCard (data-id), Pokémon's tOtherPrintings (data-name) for a printing not matched. */
     val act get() = j.s("act"); val cardName get() = j.s("cardName"); val id get() = j.s("id")
+    /** A shared deck's row (data-act="sharedCard"): its place in the friend's list. */
+    val index get() = j.s("index")
 }
 
 /**
@@ -116,7 +118,7 @@ class MetaDeckSheetActions(val close: () -> Unit, val card: (sheet: MetaDeckShee
  * Its controls are tcg.js's own handlers in the engine (CollectionEngine.provenDo); its save is A.provenSave through CollectionWrites.
  */
 @Composable
-fun MetaDeckSheet(act: MetaDeckSheetActions, initial: MetaDeckSheetModel? = null, glyphs0: Map<String, SiteSvg>? = null) {
+fun MetaDeckSheet(act: MetaDeckSheetActions, initial: MetaDeckSheetModel? = null, glyphs0: Map<String, SiteSvg>? = null, standalone: Boolean = false) {
     val context = LocalContext.current
     // icons.js decorateGlyphs: ⚒ Build around it wears its icon.
     var glyphs by remember { mutableStateOf(glyphs0 ?: emptyMap()) }
@@ -130,7 +132,8 @@ fun MetaDeckSheet(act: MetaDeckSheetActions, initial: MetaDeckSheetModel? = null
     fun take(j: JsonObject) { val m = MetaDeckSheetModel.parse(j); if (m == null) { if (initial == null && j.has("missing") && !saving.get()) act.close(); return }; model = m; m.toasts.lastOrNull()?.let { CollectionWrites.show(it) } }
     /** A control: the site's handler, then the sheet read again while what it starts (the prices, the matching) runs. */
     fun run(call: suspend () -> JsonObject) { job?.cancel(); job = scope.launch {
-        if (HomeCache.loaded == null) return@launch
+        // [standalone]: opened outside Collection (a friend's shared deck from the community pop-up), the engine already loaded for it.
+        if (HomeCache.loaded == null && !standalone) return@launch
         runCatching { take(call()); CollectionEngine.settle(120_000, CollectionEngine.PROVEN_MODEL) { j -> take(j) } }
     } }
     // The sheet as it opened (the app keeps the deck view, as the idea sheet does), then its loads.
@@ -156,10 +159,10 @@ fun MetaDeckSheet(act: MetaDeckSheetActions, initial: MetaDeckSheetModel? = null
             val ok = try { CollectionWrites.act(context, "provenSave", JsonObject()) { r ->
                 r["made"]?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.startsWith("{") }?.let { JsonParser.parseString(it).asJsonObject }?.let(act.deck) } }
                 finally { saving.set(false) }
-            if (!ok && initial == null) run { CollectionEngine.provenModel() }
+            if (!ok && initial == null || standalone) run { CollectionEngine.provenModel() }
         } },
         open = { href -> runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(href)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) } },
-        card = { r -> model?.let { m -> if (r.act == "card" || (r.act == "tCard" && r.id.isNotBlank())) act.card(m, r) else act.web(m, "row", r) } },
+        card = { r -> model?.let { m -> if (r.act == "card" || r.act == "sharedCard" || (r.act == "tCard" && r.id.isNotBlank())) act.card(m, r) else act.web(m, "row", r) } },
         extra = { a -> model?.let { m -> act.web(m, a, null) } })
     GameAccent(model?.game ?: "mtg") { androidx.compose.runtime.CompositionLocalProvider(LocalSiteGlyphs provides glyphs) {
         BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg).clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null) {}) {
@@ -469,7 +472,7 @@ private fun Pile(rows: List<MetaDeckRow>, step: Dp, ui: MetaUi) {
  */
 @Composable
 fun MetaDeckHost(page: String, close: () -> Unit, deck: (JsonObject) -> Unit, site: (url: String, press: String) -> Unit, web: (url: String, press: String?) -> Unit,
-                 initial: MetaDeckSheetModel? = null) {
+                 initial: MetaDeckSheetModel? = null, standalone: Boolean = false) {
     val scope = rememberCoroutineScope()
     var cards by remember { mutableStateOf(listOf<CardOpen>()) }
     fun q(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
@@ -477,6 +480,15 @@ fun MetaDeckHost(page: String, close: () -> Unit, deck: (JsonObject) -> Unit, si
     val shut = { cards = emptyList(); scope.launch { runCatching { CollectionEngine.provenClose() } }; close() }
     if (cards.isEmpty()) MetaDeckSheet(MetaDeckSheetActions(close = close,
         card = { m, r ->
+            // app.js A.sharedCard: the friend's printing found first (Magic), then the card's page.
+            if (r.act == "sharedCard") { scope.launch {
+                val a = runCatching { CollectionEngine.act("sharedCard", JsonObject().apply { addProperty("index", r.index) }, 30_000) }.getOrNull() ?: return@launch
+                a.get("error")?.takeIf { it.isJsonPrimitive }?.asString?.let { CollectionWrites.show(it); return@launch }
+                val c = a.get("made")?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.startsWith("{") }?.let { com.google.gson.JsonParser.parseString(it).asJsonObject } ?: return@launch
+                fun s(k: String) = c.get(k)?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
+                cards = cards + (if (m.game == "mtg") CardOpen(s("name"), page = page, tile = "", back = "proven", shared = true)
+                    else CardOpen("", page = page, tile = "", game = m.game, id = s("id"), back = "proven"))
+            }; return@MetaDeckSheetActions }
             val tile = opener(m) + "\n#sheet[open] [data-act=\"${q(r.act)}\"]" + (if (r.act == "card") "[data-name=\"${q(r.cardName)}\"]" else "[data-id=\"${q(r.id)}\"]")
             cards = cards + (if (r.act == "card") CardOpen(r.cardName, page = page, tile = tile, back = "proven")
                 else CardOpen("", page = page, tile = tile, game = m.game, id = r.id, back = "proven"))
@@ -495,7 +507,7 @@ fun MetaDeckHost(page: String, close: () -> Unit, deck: (JsonObject) -> Unit, si
             // A Pokémon printing not matched (tOtherPrintings): the sheet on the website, the same press.
             val inner = if (what == "row" && r != null) "[data-act=\"${q(r.act)}\"][data-name=\"${q(r.cardName.ifBlank { r.name })}\"]" else "[data-act=\"${q(what)}\"]"
             site(page, opener(m) + "\n#sheet[open] " + inner)
-        }), initial)
+        }), initial, standalone = standalone)
     cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) {
         CollectionCardHost(c, onClose = shut, onOpen = { cards = cards + it.copy(back = "proven") }, web = web, onBack = { cards = cards.dropLast(1) })
     } }

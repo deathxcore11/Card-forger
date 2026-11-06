@@ -103,9 +103,11 @@ private object S {
 private enum class Tab(val label: String) { ACCOUNT("Profile & account"), APP("Appearance"), INFO("Help") }
 
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onWeb: (String) -> Unit, startTab: String = "account") {
+fun SettingsScreen(onBack: () -> Unit, onWeb: (String) -> Unit, startTab: String = "account", onChallenge: ((com.google.gson.JsonObject) -> Unit)? = null,
+                   onDeck: ((game: String, id: String) -> Unit)? = null) {
     BackHandler(onBack = onBack)
     var tab by rememberSaveable { mutableStateOf(if (startTab == "info") Tab.INFO else if (startTab == "app") Tab.APP else Tab.ACCOUNT) }
+    val community = remember { CommunityLayerState() }
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         Backdrop() // #ambient: the shared art (glass on, or Aura)
         Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).imePadding()) {
@@ -125,13 +127,15 @@ fun SettingsScreen(onBack: () -> Unit, onWeb: (String) -> Unit, startTab: String
                 Column(Modifier.widthIn(max = 760.dp).fillMaxWidth().align(Alignment.CenterHorizontally).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Tabs(tab) { tab = it }
                     when (tab) {
-                        Tab.ACCOUNT -> AccountPane(onWeb, onPick = { ArtPick.open(it) })
+                        Tab.ACCOUNT -> AccountPane(onWeb, onPick = { ArtPick.open(it) }, community)
                         Tab.APP -> AppPane()
                         Tab.INFO -> InfoPane(onWeb)
                     }
                 }
             }
         }
+        // The community pop-up and what it opens (a friend's shared binder or deck, a card's page), over the whole screen.
+        CommunityLayer(community, onHeader = { ArtPick.open("header") }, onChallenge = onChallenge, web = { url, _ -> onWeb(url) }, onDeck = onDeck)
     }
 }
 
@@ -226,8 +230,9 @@ private fun PasswordRules(p: String) = Column(verticalArrangement = Arrangement.
 }
 
 @Composable
-private fun Disclosure(summary: String, danger: Boolean = false, bold: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
+private fun Disclosure(summary: String, danger: Boolean = false, bold: Boolean = false, force: Int = 0, content: @Composable ColumnScope.() -> Unit) {
     var open by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(force) { if (force > 0) open = true }
     Column(Modifier.fillMaxWidth().animateContentSize()) {
         Row(Modifier.clip(RoundedCornerShape(10.dp)).clickable { open = !open }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(if (open) "▾" else "▸", style = S.Small.copy(color = if (danger) Bad else Site.Text)); Spacer(Modifier.width(6.dp))
@@ -259,9 +264,9 @@ fun ProfileAvatar(profile: Account.Profile?, size: Dp, ring: Boolean = true) {
 // ---------------------------------------------------------------- Profile & account
 
 @Composable
-private fun AccountPane(onWeb: (String) -> Unit, onPick: (String) -> Unit) {
+private fun AccountPane(onWeb: (String) -> Unit, onPick: (String) -> Unit, community: CommunityLayerState) {
     val session by Account.session.collectAsState()
-    if (session == null) SignedOut() else SignedIn(onWeb, onPick)
+    if (session == null) SignedOut() else SignedIn(onWeb, onPick, community)
 }
 
 /** views.js signedOutAccount: tabs Log in / Create account, the reset pane, the privacy line and email help. */
@@ -336,7 +341,7 @@ fun SignedOut(onSignedIn: () -> Unit = {}) {
 
 /** views.js accountPanel, signed in: the account hub, Edit profile, the account actions and Delete account. */
 @Composable
-private fun SignedIn(onWeb: (String) -> Unit, onPick: (String) -> Unit) {
+private fun SignedIn(onWeb: (String) -> Unit, onPick: (String) -> Unit, layer: CommunityLayerState) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val session by Account.session.collectAsState()
@@ -346,6 +351,11 @@ private fun SignedIn(onWeb: (String) -> Unit, onPick: (String) -> Unit) {
     var confirmDelete by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf<String?>(null) }
     fun toast(m: String) = Toast.makeText(context, m, Toast.LENGTH_LONG).show()
+    // The community pop-up (community-profile.js): Friends, View profile and Blocked accounts open it here, natively.
+    var community by layer::view
+    val editProfile = layer.editProfile
+    val circle by Community.data.collectAsState()
+    androidx.compose.runtime.LaunchedEffect(session?.userId) { Community.refresh() }
     Panel(padding = 0.dp) {
         // account-hub: the header art (or the avatar's art) as a 96 dp banner fading into the panel, the 72 dp avatar overlapping it.
         Box(Modifier.fillMaxWidth()) {
@@ -366,18 +376,28 @@ private fun SignedIn(onWeb: (String) -> Unit, onPick: (String) -> Unit) {
                     FlowRow(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.Center) {
                         Text("Visible to friends only", style = S.Foot.copy(fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Site.Gold),
                             modifier = Modifier.align(Alignment.CenterVertically).clip(RoundedCornerShape(999.dp)).background(Site.Gold.copy(alpha = .12f)).border(1.dp, Site.Gold.copy(alpha = .3f), RoundedCornerShape(999.dp)).padding(horizontal = 9.dp, vertical = 2.dp))
-                        LinkText("View profile", small = true) { onWeb("https://cardstashy.com/#community") }
+                        LinkText("View profile", small = true) { community = CommunityView.Mine }
                     }
                 }
             }
         }
         // Friends row (account-hub-friends).
         Row(Modifier.padding(horizontal = 20.dp).fillMaxWidth().heightIn(min = 60.dp).clip(RoundedCornerShape(16.dp)).background(Site.Surface2.copy(alpha = .55f))
-            .border(1.dp, Site.Line, RoundedCornerShape(16.dp)).clickable { onWeb("https://cardstashy.com/#community") }.padding(horizontal = 16.dp, vertical = 12.dp),
+            .border(1.dp, Site.Line, RoundedCornerShape(16.dp)).clickable { community = CommunityView.Panel("friends") }.padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(38.dp).clip(RoundedCornerShape(11.dp)).background(Site.Gold.copy(alpha = .14f)), contentAlignment = Alignment.Center) { Icon(SiteIcons.Friends, 20.dp, Site.Gold) }
             Spacer(Modifier.width(14.dp))
-            Column(Modifier.weight(1f)) { Text("Friends", style = S.Btn); Text("Your circle · add by username or email", style = S.Foot.copy(color = Site.Muted)) }
+            // views.js account-hub-friends: "Friends" (+ the waiting count), then "N friends · M requests waiting · add by username or email".
+            val requests = Community.incoming(circle); val friends = circle?.let { Community.friends(it) }
+            Column(Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Friends", style = S.Btn)
+                    if (requests > 0) Text("$requests", style = S.Foot.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Site.Bg),
+                        modifier = Modifier.padding(start = 6.dp).clip(RoundedCornerShape(999.dp)).background(Site.Gold).padding(horizontal = 7.dp, vertical = 1.dp))
+                }
+                Text((friends?.let { "$it friend${if (it == 1) "" else "s"}" } ?: "Your circle") +
+                    (if (requests > 0) " · $requests request${if (requests == 1) "" else "s"} waiting" else "") + " · add by username or email", style = S.Foot.copy(color = Site.Muted))
+            }
             Text("›", style = S.H1.copy(color = Site.Gold, fontSize = 22.sp))
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(Site.Line))
@@ -389,10 +409,10 @@ private fun SignedIn(onWeb: (String) -> Unit, onPick: (String) -> Unit) {
             else SyncLine(sync) { scope.launch { WorkspaceSync.syncNow(context) } }
             if (sync.state == WorkspaceSync.State.ERROR && sync.msg.isNotBlank())
                 Text("${sync.msg} Your cards are still saved on this device.", style = S.Small.copy(color = Bad))
-            Disclosure("Edit profile", bold = true) { EditProfile(profile, onPick) }
+            Disclosure("Edit profile", bold = true, force = editProfile) { EditProfile(profile, onPick) }
             Text("Your collection and decks are private. Saved here first, then synced to your account.", style = S.Foot)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SiteButton("Blocked accounts", ghost = true, small = true) { onWeb("https://cardstashy.com/#community") }
+                SiteButton("Blocked accounts", ghost = true, small = true) { community = CommunityView.Panel("blocks") }
                 SiteButton(if (busy == "reset") "Sending…" else "Reset password", ghost = true, small = true, enabled = busy == null) {
                     busy = "reset"; scope.launch { val e = Account.sendReset(session?.email ?: ""); busy = null; toast(e ?: "Check your email for a password-reset link.") }
                 }

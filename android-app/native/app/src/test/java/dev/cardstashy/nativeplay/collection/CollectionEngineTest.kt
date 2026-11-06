@@ -823,6 +823,40 @@ class CollectionEngineTest {
         assertEquals(wl.size, JsonParser.parseString(CollectionEngine.saved()).asJsonObject.getAsJsonArray("wishlist").size())
     }
 
+    /** Community: showcaseChoices, a friend's shared binder (read-only, its value), a shared deck's sheet and its Save to my decks, a shared card. */
+    @Test fun communityShowcase() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        fourDecks()
+        val choices = CollectionEngine.showcaseChoices().map { it.asJsonObject }
+        val deck = choices.first { it["key"].asString == "deck:mtg:d2" }
+        assertEquals("Izzet Tempo", deck["title"].asString)
+        assertTrue(deck.getAsJsonArray("cards").any { it.asJsonObject["zone"].asString == "side" })
+        // Nothing to repair: a snapshot made now already matches.
+        assertEquals(0, CollectionEngine.showcaseRepair(JsonArray().apply { add(deck) }).size())
+        val binder = JsonParser.parseString("""{"key":"binder:b1","kind":"binder","game":"mtg","title":"Friend's Reds","appearance":{"color":"#aa3344"},
+            "cards":[{"id":"x1","name":"Lightning Bolt","qty":2,"image":"https://cards.scryfall.io/normal/front/a.jpg","referenceUSD":1.5},
+                     {"id":"x2","name":"Goblin Instigator","qty":1,"image":"","referenceUSD":null}]}""").asJsonObject
+        val b = CollectionEngine.sharedBinder(binder, 0)
+        assertEquals(b.toString(), "Friend's Reds", b["title"].asString)
+        assertTrue(b.toString(), b["shared"].asBoolean && b["options"]?.isJsonNull != false)
+        assertEquals("$3.00", b.getAsJsonObject("value")["total"].asString)
+        assertTrue(b.getAsJsonObject("value")["line"].asString.contains("1 unpriced"))
+        val pocket = b.getAsJsonArray("pockets").map { it.asJsonObject }.first { !it.has("empty") }
+        assertEquals("sharedCard", pocket["act"].asString)
+        val m = CollectionEngine.sharedDeck(deck)
+        assertTrue(m.toString(), m["missing"] == null)
+        val before = JsonParser.parseString(CollectionEngine.saved()).asJsonObject.getAsJsonArray("decks").size()
+        val r = CollectionEngine.act("provenSave", JsonObject())
+        assertTrue(r.toString(), r["error"] == null && r["writes"].asInt == 1)
+        assertTrue(r.toString(), r.getAsJsonArray("toasts").any { it.asJsonObject["text"].asString.startsWith("Saved to My decks") })
+        val decks = JsonParser.parseString(CollectionEngine.saved()).asJsonObject.getAsJsonArray("decks")
+        assertEquals(before + 1, decks.size())
+        assertEquals("Izzet Tempo", decks.last().asJsonObject["name"].asString)
+        val c = CollectionEngine.act("sharedCard", JsonObject().apply { addProperty("index", "0") })
+        assertTrue(c.toString(), c["made"].asString.contains("\"name\""))
+    }
+
     private suspend fun fourDecks() {
         val prints = JsonParser.parseString(javaClass.classLoader!!.getResource("collection/printings.json")!!.readText()).asJsonArray.map { it.asJsonObject }
         val lots = JsonArray(); val printings = JsonObject(); val catalog = JsonObject()
