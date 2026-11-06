@@ -86,6 +86,8 @@ class CollectionEngineTest {
         File(out, "collection-hints.json").writeText(CollectionEngine.hints("mtg").toString())
         val urls = mutableSetOf<String>()
         home.getAsJsonObject("hero")?.getAsJsonObject("card")?.get("art")?.asString?.let(urls::add)
+        // Today's pack: its first picture (todayPackMarkup's best source).
+        home.getAsJsonObject("hero")?.getAsJsonObject("card")?.getAsJsonObject("pack")?.getAsJsonArray("sources")?.firstOrNull()?.asJsonObject?.get("src")?.asString?.let(urls::add)
         home.getAsJsonObject("shelf").let { sh -> sh.getAsJsonObject("lead")?.get("art")?.takeIf { it.isJsonPrimitive }?.asString?.let(urls::add); sh.getAsJsonArray("decks").forEach { d -> d.asJsonObject["art"]?.takeIf { it.isJsonPrimitive }?.asString?.let(urls::add) } }
         for (k in listOf("meta", "news")) home.getAsJsonObject(k).getAsJsonArray("slides").forEach { s -> s.asJsonObject.getAsJsonObject("art")?.let { a -> for (f in listOf("src", "fallback")) a[f]?.asString?.takeIf { it.isNotBlank() }?.let(urls::add) } }
         var saved = 0
@@ -674,6 +676,36 @@ class CollectionEngineTest {
         assertEquals(last["name"].asString, c["name"].asString)
         assertTrue(c["notice"]?.isJsonNull != false || c["notice"].asString.isEmpty())
         CollectionEngine.packClose()
+    }
+
+    /** app.js A.homeTodayPack: Home's pack (todayPackMarkup's pictures), today's set, and its first pack holding the Card of the Day; the next one doesn't. */
+    @Test fun todayPack() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        fourDecks()
+        for (g in listOf("mtg", "ptcg", "ygo")) {
+            CollectionEngine.refresh(g, maxMs = 90_000)
+            val card = CollectionEngine.home(g).getAsJsonObject("hero").getAsJsonObject("card")
+            println("TODAY $g ${card["name"]} ${card["set"]} ${card["pack"]}")
+            val pack = card.getAsJsonObject("pack")
+            assertTrue(pack["label"].asString.startsWith("Open today’s "))
+            assertTrue(pack["sources"].asJsonArray.size() > 0 && pack["sources"].asJsonArray.all { it.asJsonObject["src"].asString.startsWith("https://") })
+            val went = CollectionEngine.todayPack(g)
+            println("WENT $g $went")
+            assertTrue(went["name"].asString.isNotBlank())
+            if (g != "mtg") continue
+            CollectionEngine.set(g, went["set"].asString)
+            CollectionEngine.setLoad()
+            CollectionEngine.settle(120_000)
+            CollectionEngine.packOpen(g)
+            CollectionEngine.settle(120_000)
+            val p = CollectionEngine.packModel()
+            val picks = p["picks"].asJsonArray.map { it.asJsonObject }
+            println("TODAY PACK ${picks.map { it["name"].asString }}")
+            assertEquals("", p["error"].asString)
+            assertEquals(card["name"].asString, picks.last()["name"].asString)
+            CollectionEngine.packClose()
+        }
     }
 
     private suspend fun fourDecks() {

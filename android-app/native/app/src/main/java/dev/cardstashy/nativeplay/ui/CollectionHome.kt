@@ -147,7 +147,9 @@ class HomeArt(val src: String, val kind: String, val credit: String, val caption
 /** [crop] "pokemon": the art is the card picture's art window (artwork.js pokemonArtCrop), as Pokémon's hero draws it. */
 class DailyCard(val id: String, val name: String, val date: String, val art: String, val label: String, val set: String, val setCode: String, val rarity: String, val crop: String = "",
                 /** Yu-Gi-Oh!'s set link names its set (data-name) instead of an id. */
-                val setName: String = "", val sources: List<String> = emptyList())
+                val setName: String = "", val sources: List<String> = emptyList(),
+                /** Today's pack (todayPackMarkup): the set's booster to open with this card as its hit; null when the set has none. */
+                val pack: TodayPackArt? = null)
 class HomeValue(val amount: String, val note: String, val copies: String, val decks: String, val movement: String, val direction: String, val explanation: String)
 /** A deck's cover: [art], its fallbacks ([sources], data-art-sources) and [crop] "pokemon" for a Pokémon card's art window (.pk-crop). */
 class ShelfLead(val id: String, val empty: Boolean, val eyebrow: String, val name: String, val line: String, val action: HomeLink?, val to: String, val art: String?,
@@ -179,7 +181,7 @@ class CollectionHomeModel(val game: CardGame, val heroEyebrow: String, val heroT
             val me = j.o("meta") ?: JsonObject(); val nw = j.o("news") ?: JsonObject()
             return CollectionHomeModel(
                 CardGame.of(j.s("game")), hero.s("eyebrow"), hero.s("title"), hero.s("prompt"),
-                hero.o("card")?.let { DailyCard(it.s("id"), it.s("name"), it.s("date"), it.s("art"), it.s("label"), it.s("set"), it.s("setCode"), it.s("rarity"), it.s("crop"), it.s("setName"), it.strs("sources")) },
+                hero.o("card")?.let { DailyCard(it.s("id"), it.s("name"), it.s("date"), it.s("art"), it.s("label"), it.s("set"), it.s("setCode"), it.s("rarity"), it.s("crop"), it.s("setName"), it.strs("sources"), TodayPackArt.of(it.o("pack"))) },
                 HomeValue(v.s("amount"), v.s("note"), v.s("copies"), v.s("decks"), v.s("movement"), v.s("direction"), v.s("explanation")),
                 j.s("example"),
                 HomeShelf(sh.s("title"), link(sh.o("all")), sh.o("lead")?.let { ShelfLead(it.s("id"), it.b("empty"), it.s("eyebrow"), it.s("name"), it.s("line"), link(it.o("action")), it.s("to"), it.s("art").ifBlank { null }, it.strs("sources"), it.s("crop")) },
@@ -212,6 +214,8 @@ class CollectionHomeActions(
     val set: (String) -> Unit = {},
     /** today-set-name data-act="tSetByName": the Yu-Gi-Oh! set it names. */
     val setName: (String) -> Unit = {},
+    /** today-pack data-act="homeTodayPack": today's set, its Open Pack with the Card of the Day as the hit. */
+    val todayPack: (DailyCard) -> Unit = {},
     /** home-meta-open data-act="mtgProven": that Meta deck. */
     val metaDeck: (MetaSlide) -> Unit = {},
 )
@@ -259,7 +263,7 @@ private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (
                 if (!wide) GameTabs(m.game, act.game, compact = true, Modifier.align(Alignment.CenterHorizontally).widthIn(max = 280.dp).padding(bottom = 18.dp))
                 SearchPill(m.prompt, hints, act.search, Modifier.onGloballyPositioned { c -> root?.takeIf { it.isAttached && c.isAttached }?.let { pillTop = it.localPositionOf(c, Offset.Zero).y.roundToInt() } })
                 Spacer(Modifier.height(18.dp))
-                m.daily?.let { Today(it, screen, act) }
+                m.daily?.let { Today(it, m.game, screen, act) }
                 ValueRow(m.value, screen, act)
                 Spacer(Modifier.height(16.dp))
                 if (m.example.isNotEmpty()) { Note(m.example); Spacer(Modifier.height(16.dp)) }
@@ -390,10 +394,14 @@ private fun SearchPill(prompt: String, hints: SearchHints?, onClick: () -> Unit,
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Today(card: DailyCard, screen: Dp, act: CollectionHomeActions) {
+private fun Today(card: DailyCard, game: CardGame, screen: Dp, act: CollectionHomeActions) {
     val wide = screen >= 600.dp
-    Column(Modifier.fillMaxWidth().heightIn(min = if (wide) 190.dp else 160.dp).padding(horizontal = if (wide) 8.dp else 0.dp)
-        .padding(top = if (wide) 26.dp else 22.dp, bottom = if (wide) 24.dp else 22.dp), verticalArrangement = Arrangement.Center) {
+    // .home-today: the pack (.today-pack-slot, centred) then the text, 16 apart (22 wide); no pack, the text alone.
+    Row(Modifier.fillMaxWidth().heightIn(min = if (wide) 190.dp else 160.dp).padding(horizontal = if (wide) 8.dp else 0.dp)
+        .padding(top = if (wide) 26.dp else 22.dp, bottom = if (wide) 24.dp else 22.dp), horizontalArrangement = Arrangement.spacedBy(if (wide) 22.dp else 16.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+    card.pack?.let { TodayPack(it, game, screen) { act.todayPack(card) } }
+    Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
         Column(Modifier.clip(RoundedCornerShape(10.dp)).clickable { act.daily(card) }.semantics { contentDescription = "Explore ${card.name}, Card of the Day" }
             .padding(top = 8.dp, end = 42.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(card.label, style = sans(11f, FontWeight.Bold, HGold, lh = 1.4f, ls = .66f).copy(shadow = Shadow(Color(0x99000000), Offset(0f, 2f), 18f)))
@@ -409,6 +417,7 @@ private fun Today(card: DailyCard, screen: Dp, act: CollectionHomeActions) {
             if (card.rarity.isNotEmpty()) Chip(card.rarity.split(' ').joinToString(" ") { w -> w.replaceFirstChar { it.uppercase() } }, 11f)
         }
     }
+}
 }
 
 /** .today-rarity / .community-pills .chip: gold ink on a dark capsule with a gold hairline. */

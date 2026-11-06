@@ -483,6 +483,16 @@ object CollectionEngine {
     suspend fun tcgCache(): String = on { q -> q.evaluate("Collection.tcgCache()") as String }
 
     /** tcg.js A.tSetByName: the set a Yu-Gi-Oh! set name points to (its id), or "" when none is found in [maxMs]. */
+    /**
+     * Today's pack (app.js A.homeTodayPack, up to the set): today's set and the Card of the Day the next Open Pack in it pulls as its hit.
+     * {game, set (Magic's code, Pokémon's id; Yu-Gi-Oh! names it), name} or {error}.
+     */
+    suspend fun todayPack(game: String, maxMs: Long = 30_000): JsonObject {
+        on { q -> q.evaluate("Collection.todayPack(${str(game)})") }
+        settle(maxMs)
+        return model("Collection.todayWent()")
+    }
+
     suspend fun setByName(game: String, name: String, maxMs: Long = 30_000): String {
         on { q -> q.evaluate("Collection.setByName(${str(game)}, ${str(name)})") }
         settle(maxMs)

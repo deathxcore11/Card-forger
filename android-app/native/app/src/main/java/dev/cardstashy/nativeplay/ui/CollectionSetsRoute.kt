@@ -173,6 +173,7 @@ fun CollectionSetRoute(code: String, onPlay: () -> Unit, onProfile: () -> Unit, 
     /** The Open Pack simulator over the page (app.js A.openSetPack → pack-preview.js openPackPreview); null when closed. */
     var pack by remember(code) { mutableStateOf<PackResult?>(null) }
     var packAsk by remember(code) { mutableIntStateOf(0) }
+    var loaded by remember(code) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val prefs = remember { context.getSharedPreferences("collection", android.content.Context.MODE_PRIVATE) }
     fun show(j: JsonObject) { if (j.size() > 0) CollectionSetModel.parse(j).takeIf { it.game.id == game }?.let { model = it; SetsCache.set = it } }
@@ -188,6 +189,7 @@ fun CollectionSetRoute(code: String, onPlay: () -> Unit, onProfile: () -> Unit, 
         CollectionEngine.settle(60_000, CollectionEngine.SET_MODEL, ::show)
         show(CollectionEngine.setModel())
         failed = null
+        loaded = true
     } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) {
         HomeCache.loaded = null
         if (model == null) failed = e.message?.takeIf { it.isNotBlank() } ?: "This set couldn’t be opened here."
@@ -224,6 +226,13 @@ fun CollectionSetRoute(code: String, onPlay: () -> Unit, onProfile: () -> Unit, 
     val page = if (game == "mtg") SITE + "#set/" + android.net.Uri.encode(code) else SITE + "#sets"
     val lead = if (game == "mtg") emptyList() else listOf("[data-act=\"setGame\"][data-game=\"$game\"]", "[data-act=\"tSet\"][data-id=\"${css(code)}\"]")
     fun site(vararg then: String) = web(page, (lead + then).joinToString("\n").ifBlank { null })
+    // Today's pack from Home (A.homeTodayPack → A.openSetPack): once the set's cards are in, its Open Pack, the first pack holding the Card of the Day.
+    LaunchedEffect(loaded) {
+        if (!loaded || TodayPack.want != "$game|$code") return@LaunchedEffect
+        TodayPack.want = null
+        if (nativePack && (game == "mtg" || nativeTcgCards)) { if (pack == null) { pack = loadingPack(code, model?.title.orEmpty(), CardGame.of(game)); packAsk++ } }
+        else site("[data-act=\"openSetPack\"]")
+    }
     val act = remember(code, game) {
         CollectionSetActions(
             game = { g -> if (g.id != game) onGame(g.id) },

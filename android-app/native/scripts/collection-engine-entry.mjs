@@ -9,7 +9,7 @@ import {normalizeHomeDeckActivity, recordHomeDeckWork} from 'WEB/home-deck-activ
 import {collectionValue, recordValuePoint, withSnapshot} from 'WEB/insights.js';
 import {homeValueCoverage, homeValueModel, homeMetaKey, homeMetaSlides, homeMetaArticle, homeMetaCarousel, homeDeckShelf, homeCommunity, featureArticle} from 'WEB/home-ui.js';
 import {heroFor, loadHero, homeHero, homeToday} from './tcg-daily-hero.mjs';
-import {dailyDetails, todaySetMarkup} from 'WEB/home-today.js';
+import {dailyDetails, todaySetMarkup, todayPackMarkup} from 'WEB/home-today.js';
 import {hintPool, SEARCH_PROMPT} from 'WEB/search-hints.js';
 import {useMyPrices, ensureTcgPrices} from 'WEB/mtg-tcgprice.js';
 import {formatOf, FORMATS, hasCommander, canLead, verifyLeader, sizeLabel} from 'WEB/formats.js';
@@ -46,7 +46,7 @@ import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, 
 import {adjustOwnedLot} from 'WEB/quick-quantity.js';
 import {workspaceSig, isEmptyWorkspace} from 'WEB/cloud.js';
 import {mergeAccountWorkspaces, workspaceContentSig} from 'WEB/sync-merge.js';
-import {packArtUrl, samplePack, packSize, packRarity, packFinishes, packPrice, trustedPackPrice, packRevealHaptic, packFinishLabel, packNeedsHydration, godPackText, collectorText, packRandom, ptcgSetRarities} from 'WEB/pack-preview.js';
+import {packArtUrl, samplePack, packSize, packRarity, packFinishes, packPrice, trustedPackPrice, packRevealHaptic, packFinishLabel, packNeedsHydration, godPackText, collectorText, packRandom, ptcgSetRarities, rollYgoPrinting, packHitFinish} from 'WEB/pack-preview.js';
 import {loadMtgBooster, mtgBoosterCards, drawMtgBooster, mtgGodPackPicks, GOD_PACK_ODDS as MTG_GOD_ODDS} from 'WEB/mtg-boosters.js';
 import {COLLECTOR_ODDS, collectorPicks, PLAY_FORMATS} from 'WEB/play-econ-rules.js';
 import {TIERS, priceTier} from 'WEB/tier.js';
@@ -106,10 +106,12 @@ import {Document as SiteDocument, Event as SiteEvent, serialize as domJson, byId
 // (cardforge-precons-v1, writeRecord: the Meta tab's precon list, kept between visits) the same; the site keeps S.ui.ideas itself
 // for the session only (store.js), so no other Ideas key exists to keep.
 const KEPT_KEYS = new Set(['cardforge-meta-v1', 'cardforge-precons-v1']);
+// app.js A.openSetPack's today's-pack claim (cardstashy-today-pack:<game>:<date>:<id>): the Card of the Day comes once a day.
+const kept = k => KEPT_KEYS.has(k) || k.startsWith('cardstashy-today-pack:');
 const keptDirty = new Set();
 const keptStore = globalThis.localStorage, keptSet = keptStore.setItem, keptRemove = keptStore.removeItem;
-keptStore.setItem = (k, v) => { keptSet(k, v); if (KEPT_KEYS.has(String(k))) keptDirty.add(String(k)); };
-keptStore.removeItem = k => { keptRemove(k); if (KEPT_KEYS.has(String(k))) keptDirty.add(String(k)); };
+keptStore.setItem = (k, v) => { keptSet(k, v); if (kept(String(k))) keptDirty.add(String(k)); };
+keptStore.removeItem = k => { keptRemove(k); if (kept(String(k))) keptDirty.add(String(k)); };
 {
   const pump = globalThis.__host.pump;
   globalThis.__host.pump = now => {
@@ -267,13 +269,18 @@ const today = new Map();
 function hero(game) {
   const h = heroFor(game), hh = tree(homeHero(game)), d = h && today.get(h.id + '|' + h.date);
   const set = d?.set ? tree(todaySetMarkup(game, d.set, {rarity: d.rarity})) : null;
+  // home-today.js todayPackMarkup: the set's real booster pack, its pictures best first (the img's onerror walk); any after the
+  // first is drawn as the generic wrapper (.pack-generic: crimp bands, the art inset). None when the set has no pack.
+  const pk = d?.set ? one(tree(todayPackMarkup(game, d.set, {cardImage: d.image})), cls('today-pack')) : null, pkImg = pk && one(pk, tagIs('img'));
+  let pkSrc = []; try { pkSrc = JSON.parse(pkImg?.attrs['data-sources'] || '[]'); } catch {}
   return {eyebrow: text(one(hh, cls('eyebrow'))), title: text(one(hh, tagIs('h1'))), prompt: one(hh, tagIs('input'))?.attrs.placeholder || '',
     // The hero's picture as homeHero draws it: Yu-Gi-Oh!'s is the site's own crop (img/ygo/a/…) then the direct one; Pokémon's the card's art window.
     card: h ? {id: h.id, name: h.name, date: h.date, art: abs(one(hh, tagIs('img'))?.attrs.src || h.art || ''), artDirect: h.artDirect || '', sources: sources(one(hh, tagIs('img'))).map(abs),
       crop: one(hh, cls('pk-crop')) ? 'pokemon' : '', label: text(one(one(tree(homeToday(game)), cls('hh-credit')), tagIs('span'))),
       set: set ? text(one(set, cls('today-set-name'))) : '', setCode: set ? one(set, cls('today-set-name'))?.attrs['data-code'] || one(set, cls('today-set-name'))?.attrs['data-id'] || '' : '',
       // home-today.js setAction: Yu-Gi-Oh!'s link names its set (A.tSetByName finds it).
-      setName: set ? one(set, cls('today-set-name'))?.attrs['data-name'] || '' : '', rarity: set ? text(one(set, cls('today-rarity'))) : ''} : null};
+      setName: set ? one(set, cls('today-set-name'))?.attrs['data-name'] || '' : '', rarity: set ? text(one(set, cls('today-rarity'))) : '',
+      pack: pk ? {label: pk.attrs['aria-label'] || '', sources: pkSrc.map((u, i) => ({src: u && u !== '#' ? abs(u) : '', generic: i > 0})).filter(x => x.src)} : null} : null};
 }
 function loadToday(game) {
   return loadHero(game).catch(() => false).then(() => { const h = heroFor(game); if (!h) return; return dailyDetails(game, h).then(d => { if (d) today.set(h.id + '|' + h.date, d); }, () => {}); });
@@ -2021,7 +2028,7 @@ const json = v => JSON.stringify(v);
 // Nothing here touches the account: the preview adds nothing to the collection.
 const PACK_FEELS = ['pack-reveal', 'pack-tier-1', 'pack-tier-2', 'pack-tier-3', 'pack-tier-4', 'pack-tier-5'];
 const PACK_RARITY_FEEL = ['pack-reveal', 'pack-reveal', 'pack-tier-2', 'pack-tier-3', 'pack-tier-4'];
-let pack = null;
+let pack = null, packWant = null, todayGo = null;
 const packScreen = G => G === 'mtg' ? S.ui.set : tcgUi(G).set;
 const packRelease = G => G === 'mtg' ? S.ui.set.code : tcgUi(G).set.id;
 async function packStart(P) {
@@ -2035,10 +2042,15 @@ async function packStart(P) {
   let booster = null;
   if (game === 'mtg') { const data = await loadMtgBooster(screen.code); if (!isCurrent()) return false; if (data) { const map = await mtgBoosterCards(data, cards).catch(() => null); if (!isCurrent()) return false; if (map?.size) booster = {data, cards: map}; } }
   // openPackPreview: only a Yu-Gi-Oh! card keeps the release it was listed under (its printing), with the pack's date standing in.
-  if (game !== 'ygo') cards = cards.map(({setContext, ...c}) => c);
+  // app.js A.openSetPack: today's pack guarantees the Card of the Day on its first opening each day; after that it opens with the
+  // set's normal pull rates like any other pack. openPackPreview then strips (or, for Yu-Gi-Oh!, rolls) the hit's printing.
+  const want = P.want, dayKey = want && `cardstashy-today-pack:${game}:${want.date}:${want.id}`; let firstToday = !!want; try { if (dayKey && localStorage.getItem(dayKey)) firstToday = false; } catch {}
+  const found = firstToday && want?.game === game ? cards.find(c => String(c.id) === String(want.id)) || (game === 'mtg' ? cards.find(c => c.name === want.name) || want.card || null : null) : null;
+  let featured = found && want.rarity ? {...found, featuredRarity: want.rarity} : found;
+  if (game !== 'ygo') { cards = cards.map(({setContext, ...c}) => c); if (featured) { const {setContext, ...f} = featured; featured = f; } }
   const inRelease = c => c?.setContext?.releaseId ? {...c, setContext: {...c.setContext, game: 'ygo', cardId: c.id, status: 'resolved', date: c.setContext.date || set?.date || ''}} : c;
-  if (game === 'ygo') cards = cards.map(inRelease);
-  Object.assign(P, {set, cards, booster, release, size: packSize(game, set), complete: game === 'mtg' ? screen.cards.length === set.card_count : screen.contents?.completeness === 'complete'});
+  if (game === 'ygo') { cards = cards.map(inRelease); featured = featured && rollYgoPrinting(inRelease(featured), packRandom, featured.featuredRarity); }
+  Object.assign(P, {featured, dayKey: featured ? dayKey : '', set, cards, booster, release, size: packSize(game, set), complete: game === 'mtg' ? screen.cards.length === set.card_count : screen.contents?.completeness === 'complete'});
   return true;
 }
 // openPackPreview's draw().
@@ -2055,14 +2067,27 @@ function packFill(P) {
   if (!hydrate) return;
   const n = ++P.deal, now = P.picks;
   now.forEach((c, i) => {
-    if (!packNeedsHydration(game, c, false)) return;
+    const hit = !!P.featured && c === P.featured;
+    if (!packNeedsHydration(game, c, hit)) return;
     Promise.resolve().then(() => hydrate(c)).then(full => {
       if (pack !== P || n !== P.deal || !full || String(full.id) !== String(c.id)) return;
-      const {setContext, ...rest} = full; now[i] = {...c, ...rest, name: c.name, rarity: c.rarity || full.rarity, packSlot: c.packSlot}; P.ctxs[i] = packFinishes(game, [now[i]])[0]; P.stamp++;
+      const {setContext, ...rest} = full; now[i] = {...c, ...rest, name: c.name, rarity: c.rarity || full.rarity, packSlot: c.packSlot}; P.ctxs[i] = (hit && packHitFinish(game, now[i])) || packFinishes(game, [now[i]])[0]; P.stamp++;
     }).catch(() => {});
   });
 }
-function packDeal(P) { P.picks = packDraw(P); if (!P.picks.length) throw Error('Load this set’s cards first.'); P.ctxs = packFinishes(P.game, P.picks); P.stamp++; packFill(P); }
+function packDeal(P) {
+  let picks = packDraw(P);
+  // openPackPreview: today's pack — the Card of the Day takes the hit's place (the first pack only; "again" draws as usual).
+  const featured = !P.dealt ? P.featured : null, {game, cards, size, set} = P;
+  if (featured) picks = P.booster ? [...picks.slice(0, -1).filter(c => String(c.id) !== String(featured.id)), featured] : [...samplePack(game, cards.filter(c => String(c.id) !== String(featured.id)), size - 1, packRandom, set).slice(0, size - 1), featured];
+  P.picks = picks; if (!P.picks.length) throw Error('Load this set’s cards first.');
+  P.ctxs = packFinishes(P.game, P.picks);
+  // The featured hit comes out in its foil when it has one.
+  if (featured) { const f = packHitFinish(game, featured); if (f) P.ctxs[picks.length - 1] = f; }
+  P.dealt = true; P.stamp++; packFill(P);
+  // Today's guaranteed pull is claimed only once the pack has actually opened.
+  if (featured && P.dayKey) try { localStorage.setItem(P.dayKey, '1'); } catch {}
+}
 // One pulled card as the reveal reads it: its picture, rarity and finish, its price tier (tierOf: the collection's border colours,
 // unpriced grey) and the size of its flip (feelOf: its trusted price or its rarity, whichever is bigger).
 function packPickModel(P, i) {
@@ -5419,11 +5444,25 @@ globalThis.Collection = {
   // with settle() and reads packModel), packAgain opens a new sealed pack from the same set, packClose drops it.
   packOpen(game) {
     const G = game || 'mtg'; if (G === 'mtg') mtgFocus(); else tcgFocus(G, 'set', S.ui.tsetId);
-    const P = pack = {game: G, busy: true, error: '', deal: 0, stamp: 0};
+    // Today's pack (todayPack): the Card of the Day the Home tap asked for, taken by the next pack opened in its game (A.openSetPack's S.ui.packFeatured).
+    const want = packWant?.game === G ? packWant : null; packWant = null;
+    const P = pack = {game: G, busy: true, error: '', deal: 0, stamp: 0, want};
     packStart(P).then(ok => { if (!ok || pack !== P) return; packDeal(P); P.busy = false; }, e => { if (pack !== P) return; P.busy = false; P.error = e?.message || 'Could not open this preview.'; });
     return json(packModel());
   },
   packModel() { return json(packModel()); },
+  // app.js A.homeTodayPack, up to the set: today's set (its pack's set when the card is from a bonus sheet), and the Card of the Day
+  // the next pack in that set pulls; the app then opens that set's page and its Open Pack. todayWent is {game, set, name} or {error}.
+  todayPack(game) {
+    const h = heroFor(game); todayGo = null; packWant = null;
+    if (!h) { todayGo = {error: 'Today’s set could not load. Try opening the pack again.'}; return; }
+    dailyDetails(game, h).then(d => {
+      const set = d?.set?.pack || d?.set; if (!set) throw Error('Today’s set could not load. Try opening the pack again.');
+      packWant = {game, id: h.id, name: h.name, date: h.date, rarity: d.rarity || '', card: d.set?.pack ? d.card : null};
+      todayGo = {game, set: game === 'mtg' ? set.code : game === 'ptcg' ? set.id : '', name: set.name || ''};
+    }).catch(e => { todayGo = {error: e?.message || 'Could not load today’s pack. Try again.'}; });
+  },
+  todayWent() { return json(todayGo || {}); },
   packAgain() { const P = pack; if (!P || P.busy || !P.cards) return json(packModel()); packDeal(P); return json(packModel()); },
   packClose() { pack = null; },
   setHtml() { return setGame === 'mtg' ? setView() : tcgSetView(); },

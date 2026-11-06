@@ -97,6 +97,9 @@ object CollectionGame {
     fun set(g: CardGame) { current.value = g; prefs?.edit()?.putString("game", g.id)?.apply() }
 }
 
+/** Today's pack on its way from Home to its set's page: "game|set", taken (once) when that page's cards are in. */
+object TodayPack { @Volatile var want: String? = null; @Volatile var busy = false }
+
 @Composable
 fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: String, press: String?) -> Unit, open: (String) -> Unit, onCards: (() -> Unit)? = null, onDecks: (() -> Unit)? = null,
                         onSet: ((String) -> Unit)? = null, onSets: (() -> Unit)? = null,
@@ -155,6 +158,28 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
             set = { code -> val c = if (CollectionGame.current.value == CardGame.MTG) code.lowercase() else code
                 if (c.isNotBlank()) onSet?.invoke(c) ?: web(site + "#set/" + android.net.Uri.encode(c), null) },
             setName = { name -> scope.launch { val id = CollectionEngine.setByName(CollectionGame.current.value.id, name); if (id.isNotBlank()) onSet?.invoke(id) } },
+            // app.js A.homeTodayPack: today's set (Yu-Gi-Oh!'s found by its name), then its Open Pack with the Card of the Day as the hit
+            // (TodayPack.want, which the set's page takes once its cards are in).
+            todayPack = { d -> val g = CollectionGame.current.value
+                if (onSet == null) web(site, "[data-act=\"homeTodayPack\"]") else if (!TodayPack.busy) scope.launch {
+                    TodayPack.busy = true
+                    try {
+                        android.widget.Toast.makeText(context, "Loading the set for today’s pack…", android.widget.Toast.LENGTH_SHORT).show()
+                        val j = CollectionEngine.todayPack(g.id)
+                        val error = j.get("error")?.takeIf { it.isJsonPrimitive }?.asString
+                        val id = when {
+                            error != null || j.size() == 0 -> ""
+                            g == CardGame.YGO -> CollectionEngine.setByName(g.id, j.get("name")?.asString.orEmpty())
+                            g == CardGame.MTG -> j.get("set")?.asString.orEmpty().lowercase()
+                            else -> j.get("set")?.asString.orEmpty()
+                        }
+                        if (id.isBlank() || CollectionGame.current.value != g) {
+                            if (CollectionGame.current.value == g) android.widget.Toast.makeText(context, error ?: "Could not load today’s pack. Try again.", android.widget.Toast.LENGTH_SHORT).show()
+                        } else { TodayPack.want = "${g.id}|$id"; onSet(id) }
+                    } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) {
+                        android.widget.Toast.makeText(context, e.message?.takeIf { it.isNotBlank() } ?: "Could not load today’s pack. Try again.", android.widget.Toast.LENGTH_SHORT).show()
+                    } finally { TodayPack.busy = false }
+                } },
             // The deck's sheet, from the list Home shows (CollectionEngine.provenHome), drawn here (MetaDeckHost).
             metaDeck = { s -> val g = CollectionGame.current.value
                 scope.launch { runCatching {
