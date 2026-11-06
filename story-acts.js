@@ -111,7 +111,7 @@ export const STORY_ACTS = [
     sets: ['woe', 'lci', 'mkm'], landSet: 'woe', packSets: ['woe', 'lci', 'mkm'],
     art: {set: 'mkm', number: '94', name: 'Massacre Girl, Known Killer', crop: 'https://cards.scryfall.io/art_crop/front/c/b/cb1c8800-9d33-485c-b776-042003b9ea92.jpg?1783912894'}},
   {act: 37, age: 'The Gatewatch Years', title: 'The Heist, the Mice and the House', years: '2024',
-    sets: ['otj', 'big', 'blb', 'dsk', 'fdn'], landSet: 'blb', packSets: ['otj', 'big', 'blb', 'dsk', 'fdn'],
+    sets: ['otj', 'big', 'blb', 'dsk', 'fdn'], landSet: 'blb', packSets: ['otj', 'blb', 'dsk', 'fdn'],
     art: {set: 'dsk', number: '120', name: 'Valgavoth, Terror Eater', crop: 'https://cards.scryfall.io/art_crop/front/7/7/7740ff55-67bb-409e-90f7-2c2c8b8c770a.jpg?1783909475'}},
   {act: 38, age: 'The Gatewatch Years', title: 'The Great Race', years: '2025',
     sets: ['dft', 'tdm'], landSet: 'dft', packSets: ['dft', 'tdm'],
