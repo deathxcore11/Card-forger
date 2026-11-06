@@ -98,6 +98,12 @@ import {deckSetupMarkup, deckResultMarkup} from 'WEB/deck-experience.js';
 import * as TcgAll from 'WEB/tcg.js';
 import {setupModel as flowSetupOf, resultModel as flowResultOf, useDocument as flowUseDocument, draw as flowDraw} from '../scripts/deck-flow-models.mjs';
 import {mtgPower, asShown} from 'WEB/power.js';
+// mtg-tags.js loads its tags lazily, and Power is worked out without them until they arrive, then all over again (power.js's
+// signature carries mtgTagsReady()). The engine starts with the same file the site fetches, so each deck's Power is worked out
+// once, and the Power keep's entries from the last visit still match.
+import {setMtgTags} from 'WEB/mtg-tags.js';
+import mtgTagsData from 'WEB/mtg-tags.json';
+setMtgTags(mtgTagsData);
 import {mtgFieldKey, availability as deckAvailability, buildSheet} from 'WEB/views.js';
 import {shareSheet as shareSheetView} from 'WEB/views.js';
 import {preconList as preconListView, deckReviewSheet as deckReviewSheetView} from 'WEB/views.js';
@@ -2534,6 +2540,15 @@ const deckOf = (id) => (id == null ? null : S.state.decks.find((x) => String(x.i
 const editDeckOf = (id) => (fn, opts = {}) => commit((s) => { const i = s.decks.findIndex((x) => x.id === id); if (i < 0) throw Error('This deck is no longer available.'); s.decks[i] = fn(s.decks[i]) || s.decks[i]; }, opts);
 // The site's handlers for the Collection taps that save to the account: app.js's closures line for line (their DOM halves, the
 // button's busy state and the pill's pulse, are the app's), tcg.js's through registerTcg. [d] is the tapped button's dataset.
+// power.js memo's keep between visits (see export-collection-engine.mjs): a deck's Power by a hash of the site's signature for it,
+// the newest POWER_KEEP kept. Values go through JSON as the site's cache would hand them on (plain data).
+const POWER_KEEP = 400;
+const powerKeep = globalThis.__powerKeep = {map: new Map(), dirty: false,
+  hash(s) { let a = 0x811c9dc5, b = 0x01000193 ^ s.length; for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); a = Math.imul(a ^ c, 0x01000193); b = Math.imul(b ^ c, 0x5bd1e995) ^ (b >>> 15); } return (a >>> 0).toString(36) + '.' + (b >>> 0).toString(36) + '.' + s.length.toString(36); },
+  get(h) { const v = this.map.get(h); if (v === undefined) return undefined; this.map.delete(h); this.map.set(h, v); return JSON.parse(JSON.stringify(v)); },
+  // Only a value JSON carries whole (no Infinity / NaN, no gaps in arrays): anything else is worked out again next time.
+  put(h, v) { try { let whole = true; const t = JSON.stringify(v, (k, x) => { if ((typeof x === 'number' && !Number.isFinite(x)) || (Array.isArray(x) && x.includes(undefined))) whole = false; return x; });
+    if (whole && t !== undefined) { this.map.set(h, JSON.parse(t)); this.dirty = true; } } catch {} }};
 const writeActs = {
   // The Scanner (its WebView engine, ScanWeb.kt) saving a batch: app.js scanCtx.addMany / add, here where the workspace is. [items]
   // as scancam.js passes them ({cand, qty, finish, condition, lang, location, captureId}); [single]: app.js mtgScanAdd / c.scanAdd.
@@ -5723,6 +5738,9 @@ globalThis.Collection = {
     return Collection.provenModel();
   },
   catalog() { return json(S.catalog); },
+  // The Power keep (export-collection-engine.mjs): what this device worked out before, and what to save for next time.
+  powerLoad(raw) { try { const o = JSON.parse(raw || '{}'); for (const [k, v] of Object.entries(o)) powerKeep.map.set(k, v); } catch {} powerKeep.dirty = false; },
+  powerSave() { if (!powerKeep.dirty) return ''; powerKeep.dirty = false; return json(Object.fromEntries([...powerKeep.map].slice(-POWER_KEEP))); },
   // search-hints.js hintPool: the names and questions the search field fades through (the player's own cards mixed in).
   hints(game) { return json({prompt: SEARCH_PROMPT, first: 4000, every: 4200, fade: 260, pool: hintPool(game, game === 'mtg' ? S.state.collection.map(e => e.name) : (S.state.tcg?.[game]?.collection || []).map(e => e.name))}); },
   // views.js home() / tcg.js tcgHome(), section by section, as models.

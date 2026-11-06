@@ -67,6 +67,8 @@ internal suspend fun ensureCollection(context: android.content.Context, userId: 
         val catalog = if (HomeCache.warm) CollectionEngine.catalog() else withContext(Dispatchers.IO) { catalogFile(context).takeIf { it.isFile }?.readText() }
         // tcg.js loadCache: the Yu-Gi-Oh! and Pokémon card data kept from the last visit, once for a fresh engine.
         if (!HomeCache.warm) CollectionEngine.tcgCacheLoad(withContext(Dispatchers.IO) { tcgCacheFile(context).takeIf { it.isFile }?.readText() })
+        // Every deck's Power from the last visit (the site's own signature decides what is still current).
+        if (!HomeCache.warm) CollectionEngine.powerLoad(withContext(Dispatchers.IO) { powerFile(context).takeIf { it.isFile }?.readText() })
         CollectionEngine.load(raw ?: "", catalog)
         HomeCache.loaded = key; HomeCache.warm = true
     }
@@ -76,10 +78,12 @@ internal suspend fun ensureCollection(context: android.content.Context, userId: 
 private val loadLock = kotlinx.coroutines.sync.Mutex()
 internal fun catalogFile(context: android.content.Context) = File(context.filesDir, "collection-catalog.json")
 internal fun tcgCacheFile(context: android.content.Context) = File(context.filesDir, "collection-tcg-cache.json")
+internal fun powerFile(context: android.content.Context) = File(context.filesDir, "collection-power.json")
 /** The card names a visit looked up (and the Yu-Gi-Oh! / Pokémon cards it fetched), kept for the next one. */
 internal suspend fun keepCatalog(context: android.content.Context) = withContext(Dispatchers.IO) {
     runCatching { val f = catalogFile(context); val tmp = File(f.path + ".tmp"); tmp.writeText(CollectionEngine.catalog()); tmp.renameTo(f) }
     runCatching { val f = tcgCacheFile(context); val tmp = File(f.path + ".tmp"); tmp.writeText(CollectionEngine.tcgCache()); tmp.renameTo(f) }
+    runCatching { val t = CollectionEngine.powerSave(); if (t.isNotEmpty()) { val f = powerFile(context); val tmp = File(f.path + ".tmp"); tmp.writeText(t); tmp.renameTo(f) } }
 }
 
 /**

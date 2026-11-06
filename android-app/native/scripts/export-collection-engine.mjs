@@ -23,6 +23,40 @@ ${tcg.slice(from, to)}
 const {sha, kb} = bundleWeb({web, esbuild, preludes: WEB_PLATFORM, entry: 'collection-engine-entry.mjs', name: 'collection-engine', banner: 'CardStashy Collection engine bundle',
   out: join(app, 'app/src/main/assets/collection-engine.js')});
 console.log('collection engine bundled from', sha, kb + ' KB');
+// power.js memo keeps each deck's Power for the page's life; the app keeps it between visits too (globalThis.__powerKeep, filled
+// and saved by the entry's powerLoad / powerSave): the Decks page then draws in a moment instead of re-running every deck's
+// shuffles in QuickJS each time the app starts. The key is the site's own signature (the deck, its cards' rules evidence, the
+// meta's date), so a changed deck or card is worked out again exactly as the site does.
+{
+  const f = join(app, 'app/src/main/assets/collection-engine.js'), js = readFileSync(f, 'utf8');
+  const memo = `  var memo = (sig, fn) => {
+    if (cache.has(sig)) return cache.get(sig);
+    if (cache.size > 120) cache.clear();
+    const v = fn();
+    cache.set(sig, v);
+    return v;
+  };`;
+  if (js.split(memo).length !== 2) throw Error('power.js memo changed: update the Power keep in export-collection-engine.mjs');
+  // meta.js stamps fresh tournament data twice (M.at = Date.now(), then writeCache's own Date.now() a few ms later), so the next
+  // visit reads a different date than this one used and every Commander deck's Power signature misses. The page keeps the saved stamp.
+  const stamp = `        M2.at = Date.now();
+        M2.artRefreshAttempted = false;
+        writeCache(g2, data2);`;
+  if (js.split(stamp).length !== 2) throw Error('meta.js loadMeta changed: update the stamp fix in export-collection-engine.mjs');
+  writeFileSync(f, js.replace(stamp, `        M2.at = Date.now();
+        M2.artRefreshAttempted = false;
+        writeCache(g2, data2);
+        M2.at = readCache()[g2]?.at || M2.at;`).replace(memo, `  var memo = (sig, fn) => {
+    if (cache.has(sig)) return cache.get(sig);
+    const keep = globalThis.__powerKeep, h = keep ? keep.hash(sig) : '';
+    if (h) { const k = keep.get(h); if (k !== undefined) { cache.set(sig, k); return k; } }
+    if (cache.size > 120) cache.clear();
+    const v = fn();
+    cache.set(sig, v);
+    if (h) keep.put(h, v);
+    return v;
+  };`));
+}
 
 // The Scanner's engine for the app's WebView (ScanWeb.kt): scancam.js and its scan-* modules as the site runs them, with Chrome's own
 // canvas, images, timers, fetch and storage (scan-web-entry.mjs). The site's text reader goes with it (vendor/tesseract.min.js and

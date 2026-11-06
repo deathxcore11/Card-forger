@@ -228,6 +228,10 @@ object CollectionEngine {
     /** The Wiki page (app.js #wiki[/<topic>[/search]]) for [game] as a panel: home when [topic] is blank, [query] for a search. */
     /** What the Scanner's page reads from the workspace (collection, settings, locations, binders, tcg): ScanWeb's copy. */
     suspend fun scanWorkspace(): String = on { q -> q.evaluate("Collection.scanWorkspace()") as String }
+    /** Each deck's Power as this device worked it out before (the engine's Power keep), for a fresh engine. */
+    suspend fun powerLoad(raw: String?) { on { q -> q.evaluate("Collection.powerLoad(${str(raw ?: "")})") } }
+    /** The Power keep to save, or "" when nothing new was worked out. */
+    suspend fun powerSave(): String = on { q -> q.evaluate("Collection.powerSave()") as String }
     suspend fun wikiPage(game: String, topic: String, query: Boolean): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.wikiPage(${str(game)}, ${str(topic)}, $query)") as String).asJsonObject }
     suspend fun rules(game: String, format: String): JsonObject =
