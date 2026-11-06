@@ -46,7 +46,24 @@ private object DecksCache {
     var tab = "mine"
     /** icons.js's leading glyphs, read once. */
     var glyphs: Map<String, SiteSvg>? = null
+    /** A link to a tab drawn here ([decksOpenOn]) while the Decks page may already be open: (count, tab), which the open page follows. */
+    val asked = kotlinx.coroutines.flow.MutableStateFlow(0 to "")
 }
+
+/**
+ * A website link that names a Decks tab drawn here (#decks/ideas, #decks/inspiration: Settings' Explore deck ideas, Home's All meta
+ * decks, a deck import that saved an idea), with no press but the game's own (A.setGame): that tab, the game chosen; null otherwise.
+ * The Decks page then opens on it ([decksOpenOn]).
+ */
+fun nativeDecksTab(url: String, press: String?): String? {
+    val tab = Regex("^https://cardstashy\\.com/#decks/(ideas|inspiration)$").find(url)?.groupValues?.get(1) ?: return null
+    if (press.isNullOrBlank()) return tab
+    val g = Regex("^\\[data-act=\"setGame\"]\\[data-game=\"(\\w+)\"]$").find(press.trim())?.groupValues?.get(1) ?: return null
+    CollectionGame.set(CardGame.of(g)); return tab
+}
+
+/** The Decks page opens next on [tab] (S.ui.decksTab: "mine", "ideas" or "inspiration"). */
+fun decksOpenOn(tab: String) { DecksCache.tab = tab; DecksCache.asked.value = DecksCache.asked.value.first + 1 to tab }
 
 /**
  * Collection's Decks tab (My decks): the account's decks through the site's own views.js decks() / deckTile, drawn natively.
@@ -54,8 +71,12 @@ private object DecksCache {
  * its Import and New their sheets (DeckImportSheet, NewDeckSheet).
  * Ideas is drawn here from the site's markup and listeners (CollectionEngine.decksPanel, DecksTabBody): Magic's Analyze, Owned commanders
  * only, the strategy filter, Show more and the idea cards, whose deck idea sheet is native (IdeaSheet); Yu-Gi-Oh! and Pokémon's
- * archetype cards open their card pages here, and Import my collection its sheet. Meta decks, War Chest, the other games' head buttons
- * and Ideas' builders (⚒ Use my whole collection, ☑ Pick cards, ⚒ Build, a tournament deck) open the website's page, which does them there.
+ * archetype cards open their card pages here, and Import my collection its sheet. Meta decks (#decks/inspiration) is drawn here the same
+ * way (MetaTabBody): Magic's format chips, reload, the archetypes, the tournament lists, Find a precon and Saved decks; Yu-Gi-Oh! and
+ * Pokémon's format, Refresh and the decks with % owned. A tournament deck (mtgProven / tMetaDeck, here and in Ideas) opens its sheet
+ * here (MetaDeckHost), and its cards their pages over it. War Chest, the other games' head buttons, Create a deck (tNewDeck), Ideas'
+ * builders (⚒ Use my whole collection, ☑ Pick cards, ⚒ Build), the precon list and preview, and Saved decks' Save / Export / Remove
+ * open the website's page, which does them there.
  */
 @Composable
 fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, onCards: () -> Unit, web: (url: String, press: String?) -> Unit,
@@ -110,9 +131,9 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     // The website, for what isn't native yet: on Yu-Gi-Oh! or Pokémon it picks that game first (A.setGame), then presses [sel].
     fun page(url: String, sel: String?) { val g = CollectionGame.current.value
         web(url, if (g == CardGame.MTG) sel else listOfNotNull("[data-act=\"setGame\"][data-game=\"${g.id}\"]", sel).joinToString("\n")) }
-    /** A.decksTab: My decks and Ideas here; Meta decks on the website (its tab, the game chosen first). */
+    /** A.decksTab: My decks, Ideas and Meta decks (#decks/inspiration) here; anything else on the website (its tab, the game chosen first). */
     fun openTab(k: String) {
-        if (k == "mine" || k == "ideas") { tab = k; DecksCache.tab = k }
+        if (k == "mine" || k == "ideas" || k == "inspiration") { tab = k; DecksCache.tab = k }
         else page(site + "#decks/" + android.net.Uri.encode(k), null)
     }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
@@ -125,8 +146,16 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     /** The card pages open over the page, the last on top. */
     var cards by remember { mutableStateOf(listOf<CardOpen>()) }
     fun magicCard(name: String, back: String = "") {
-        cards = cards + CardOpen(name, page = site + "#decks/ideas", tile = "[data-act=\"card\"][data-name=\"${css(name)}\"]", back = back)
+        cards = cards + CardOpen(name, page = site + "#decks/" + android.net.Uri.encode(tab), tile = "[data-act=\"card\"][data-name=\"${css(name)}\"]", back = back)
     }
+    /** The tournament deck's sheet (tcg.js openProven: Meta decks' rows and tiles, Ideas' Tournament decks you're closest to) open over the page. */
+    var proven by remember { mutableStateOf(false) }
+    // A link to #decks/<tab> while this page is open (MainActivity's go() keeps the screen): app.js A.go closes the sheets, then the tab.
+    val asked by DecksCache.asked.collectAsState()
+    var seenAsk by remember { mutableStateOf(asked.first) }
+    LaunchedEffect(asked) { if (asked.first != seenAsk) { seenAsk = asked.first; cards = emptyList(); idea = null
+        if (proven) { proven = false; runCatching { CollectionEngine.provenClose() } }
+        if (tab != asked.second) openTab(asked.second) } }
     /**
      * What the panel's buttons leave to app.js (panel.acted): the idea sheet, the importer and the example collection, the Search tab and the
      * archetype's card are here; Meta decks and the builders open the website's Ideas (the game chosen first) and press the same button.
@@ -140,6 +169,15 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
         val g = CollectionGame.current.value
         when {
             act == "openIdea" && got("i").toIntOrNull() != null -> { idea = got("i").toInt(); return }
+            // app.js A.mtgProven / tcg.js A.tMetaDeck: the deck's sheet, drawn here (MetaDeckHost).
+            act == "proven" -> { proven = true; return }
+            // A deck the Meta tab saved (app.js makeMyVersion, a precon's Save, Build this deck): its page here.
+            // The new deck is kept (this device's copy and the account) before its page opens: leaving this page ends panelDo's scope.
+            act == "go" && got("to").startsWith("#deck/") -> { val id = android.net.Uri.decode(got("to").removePrefix("#deck/").substringBefore('/'))
+                val to = got("to")
+                CollectionWrites.keepThen(context) { deckOpensOn("mtg", id, to.removePrefix("#deck/").substringAfter('/', "cards")); onDeck?.invoke(id, CardGame.MTG) ?: page(site + to, null) }
+                return }
+            act == "card" && got("name").isNotEmpty() && g == CardGame.MTG -> { magicCard(got("name")); return }
             // app.js A.importCollection / tcg.js A.tImportColl: the paste sheet; its import opens Collection's Cards (go("#collection/cards")).
             act == "importCollection" -> { CollectionWrites.importing.value = CollectionWrites.ImportOpen("mtg", one = { CollectionWrites.openAdd(JsonObject()) }, imported = onCards); return }
             act == "tImportColl" -> { CollectionWrites.importing.value = CollectionWrites.ImportOpen(g.id, imported = onCards); return }
@@ -151,7 +189,7 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             act == "go" && got("to").startsWith("#decks/") -> { openTab(got("to").removePrefix("#decks/")); return }
             // tcg.js A.tCard: the archetype's cover card, its page here.
             act == "tCard" && got("id").isNotEmpty() && g != CardGame.MTG -> {
-                cards = cards + CardOpen("", page = site + "#decks/ideas", tile = "[data-act=\"tCard\"][data-id=\"${css(got("id"))}\"]", game = g.id, id = got("id")); return }
+                cards = cards + CardOpen("", page = site + "#decks/" + android.net.Uri.encode(tab), tile = "[data-act=\"tCard\"][data-id=\"${css(got("id"))}\"]", game = g.id, id = got("id")); return }
         }
         val data = a.getAsJsonObject("data")?.entrySet().orEmpty()
             .filter { (k, v) -> k != "act" && v.isJsonPrimitive && v.asString.length < 400 && !v.asString.startsWith("{") && !v.asString.startsWith("[") }
@@ -245,7 +283,10 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     // The page is recorded as it draws, so the idea sheet's glass can blur what is under it.
     val pageLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
     if (m != null) Box(Modifier.fillMaxSize().drawWithContent { pageLayer.record { this@drawWithContent.drawContent() }; drawLayer(pageLayer) }) {
-        CollectionDecks(m, top, act, nav, query, body = if (m.tab == "ideas") ({ gutter, screen -> DecksTabBody(panel, siteUi, glyphs, gutter, screen) }) else null) }
+        CollectionDecks(m, top, act, nav, query, body = when (m.tab) {
+            "ideas" -> ({ gutter, screen -> DecksTabBody(panel, siteUi, glyphs, gutter, screen) })
+            "inspiration" -> ({ gutter, screen -> MetaTabBody(panel, siteUi, glyphs, gutter, screen) })
+            else -> null }) }
     else Column(Modifier.fillMaxSize().background(Site.Bg)) {
         Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { top(null) }
         Column(Modifier.weight(1f).fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -260,6 +301,14 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             card = { n -> idea = null; magicCard(n, back = "idea:$i") },
             deck = { id -> idea = null; onDeck?.invoke(id, CardGame.MTG) ?: page(site + "#deck/" + android.net.Uri.encode(id), null) }))
     } }
+    if (proven) MetaDeckHost(site + "#decks/" + android.net.Uri.encode(tab), close = { proven = false },
+        // A.provenSave: the saved deck's page (Magic's on its Cards tab; Yu-Gi-Oh! / Pokémon's #tdeck/<id>).
+        deck = { d -> proven = false
+            val id = d.get("id")?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
+            val tg = if (d.get("go")?.asString == "tdeck") CardGame.entries.firstOrNull { it.id == d.get("game")?.asString } ?: CollectionGame.current.value else CardGame.MTG
+            if (tg == CardGame.MTG) deckOpensOn("mtg", id, d.get("tab")?.takeIf { it.isJsonPrimitive }?.asString ?: "cards")
+            if (id.isNotBlank()) onDeck?.invoke(id, tg) ?: page(site + (if (tg == CardGame.MTG) "#deck/" else "#tdeck/") + android.net.Uri.encode(id), null) },
+        site = { u, sel -> page(u, sel) }, web = web)
     cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) {
         CollectionCardHost(c, onClose = { cards = cards.dropLast(1) }, onOpen = { cards = cards + it }, web = web,
             onBack = c.back.removePrefix("idea:").toIntOrNull()?.let { i -> { cards = cards.dropLast(1); idea = i } })

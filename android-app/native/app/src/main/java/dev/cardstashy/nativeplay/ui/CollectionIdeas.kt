@@ -68,7 +68,8 @@ fun DecksTabBody(p: SitePanelModel?, ui: SiteUi, glyphs: Map<String, SiteSvg>, g
 }
 
 /** icons.js decorateGlyphs: a label that starts with one of its glyphs and a space wears that icon in its place. */
-private fun lead(label: String, glyphs: Map<String, SiteSvg>): Pair<SiteSvg?, String> {
+private fun lead(label: String, glyphs: Map<String, SiteSvg>): Pair<SiteSvg?, String> = leadGlyph(label, glyphs)
+internal fun leadGlyph(label: String, glyphs: Map<String, SiteSvg>): Pair<SiteSvg?, String> {
     val m = Regex("^\\s*(\\S)\\uFE0F?[ \\u00a0](?=\\S)").find(label) ?: return null to label
     val icon = glyphs[m.groupValues[1]] ?: return null to label
     return icon to label.substring(m.value.length)
@@ -113,7 +114,7 @@ private fun IdeasBlock(n: SiteNode, ui: SiteUi, glyphs: Map<String, SiteSvg>, sc
             Text(n.one { it.tag == "h2" }?.text().orEmpty(), Modifier.weight(1f), style = cssType(19f, 800, 21.85f, Site.Text, -.38f))
             n.one { it.tag == "button" }?.let { b -> IdeaLink(b, ui) }
         }
-        n.cls("list") -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { n.elements.filter { it.cls("meta-row") }.forEach { MetaRow(it, ui) } }
+        n.cls("list") -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { n.elements.filter { it.cls("meta-row") }.forEach { MetaRowCard(it, ui) } }
         n.cls("note") -> Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0x1AF2C66D)).padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(n.kids.filterIsInstance<String>().joinToString("").trim(), Modifier.weight(1f), style = cssType(13.5f, 400, 19.6f, Color(0xFFF6DBA2)))
@@ -296,35 +297,7 @@ private fun CollectionIdea(n: SiteNode, ui: SiteUi, glyphs: Map<String, SiteSvg>
     }
 }
 
-/** tcg.js metaDeckRow: the deck's art, its name, "place · event · n players", the owned bar and "n% owned · $x to finish". */
-@Composable
-private fun MetaRow(n: SiteNode, ui: SiteUi) {
-    val shape = RoundedCornerShape(12.dp)
-    Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).clip(shape).background(Color(0xFF171A20)).border(1.dp, Color(0xFF2A2F39), shape).clickable { ui.tap(n.id) }
-        .semantics { role = Role.Button }.padding(8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-        val art = n.one { it.cls("meta-art") }
-        Box(Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFF1F232B))) {
-            val src = art?.one { it.tag == "img" }?.pic.orEmpty()
-            val raw = if (src.size > 1) firstOf(src) else heroPainter(src.firstOrNull()?.let(homeArt))
-            val pk = art?.one { it.cls("pk-crop") } != null
-            val pnt = if (pk && raw != null) remember(raw) { PkArtCrop(raw) } else raw
-            if (pnt != null) Image(pnt, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        }
-        val main = n.one { it.cls("meta-main") }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            main?.one { it.tag == "b" }?.let { Text(it.text(), style = cssType(15f, 700, 20f, Site.Text), maxLines = 1, overflow = TextOverflow.Ellipsis) }
-            main?.elements?.firstOrNull { it.tag == "small" }?.let { Text(it.text(), style = cssType(12.5f, 400, 17.5f, Site.Muted), maxLines = 1, overflow = TextOverflow.Ellipsis) }
-            main?.one { it.cls("meta-own") }?.let { own ->
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(Modifier.width(64.dp).height(4.dp).clip(RoundedCornerShape(99.dp)).background(Color(0xFF1F232B))) {
-                        Box(Modifier.fillMaxWidth(widthPct(own.one { it.cls("bar") }?.one { it.tag == "span" }).coerceIn(0f, 1f)).fillMaxHeight().clip(RoundedCornerShape(99.dp)).background(LocalGameGold.current))
-                    }
-                    own.one { it.tag == "small" }?.let { Text(it.text(), style = cssType(12.5f, 400, 17.5f, Site.Muted)) }
-                }
-            }
-        }
-    }
-}
+// tcg.js metaDeckRow's rows are MetaRowCard (CollectionMetaDecks.kt, polish.css's .meta-row), as Meta decks draws them.
 
 /** Parsed once: icons.js's leading glyphs (CollectionEngine.glyphs). */
 internal fun glyphMap(j: JsonObject): Map<String, SiteSvg> = j.entrySet().mapNotNull { (k, v) -> v.takeIf { it.isJsonObject }?.let { CollectionCardsModel.svg(it.asJsonObject) }?.let { k to it } }.toMap()

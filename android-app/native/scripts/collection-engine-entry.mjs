@@ -78,7 +78,10 @@ import {customBudget} from 'WEB/ui.js';
 import {cheapestKnown} from 'WEB/mtg-cheap.js';
 import {buyOnTcgplayer, massLines} from 'WEB/buy.js';
 import {metaNeedsRefresh} from 'WEB/meta.js';
-import {metaBrowseKey} from 'WEB/tcg.js';
+import {metaBrowseKey, provenSheetHtml, proven, similarLists} from 'WEB/tcg.js';
+import {homeMetaSnapshot} from 'WEB/home-ui.js';
+import {MTG_META_FORMATS, DEFAULT_MTG_META_FORMAT} from 'WEB/meta.js';
+import {namePrice} from 'WEB/core.js';
 import {mtgPower} from 'WEB/power.js';
 import {mtgFieldKey, availability as deckAvailability} from 'WEB/views.js';
 import {shareSheet as shareSheetView} from 'WEB/views.js';
@@ -91,9 +94,10 @@ import {Document as SiteDocument, Event as SiteEvent, serialize as domJson, byId
 // The browser storage the site keeps between visits, kept by the app (CollectionEngine.store, the device's preferences): the bundle's
 // localStorage lives in memory, so the keys the site reads back on a later visit are handed to the app as they change (each pump's
 // "stored") and put back when the bundle starts (Collection.storeLoad). meta.js's tournament cache (cardforge-meta-v1: 12 hours, the
-// offline copy and Pokémon's one art-schema refresh) is what the Decks page's Ideas and Meta decks read; the site keeps S.ui.ideas
-// itself for the session only (store.js), so no other Ideas key exists to keep.
-const KEPT_KEYS = new Set(['cardforge-meta-v1']);
+// offline copy and Pokémon's one art-schema refresh) is what the Decks page's Ideas and Meta decks read; app.js's precon records
+// (cardforge-precons-v1, writeRecord: the Meta tab's precon list, kept between visits) the same; the site keeps S.ui.ideas itself
+// for the session only (store.js), so no other Ideas key exists to keep.
+const KEPT_KEYS = new Set(['cardforge-meta-v1', 'cardforge-precons-v1']);
 const keptDirty = new Set();
 const keptStore = globalThis.localStorage, keptSet = keptStore.setItem, keptRemove = keptStore.removeItem;
 keptStore.setItem = (k, v) => { keptSet(k, v); if (KEPT_KEYS.has(String(k))) keptDirty.add(String(k)); };
@@ -1276,11 +1280,14 @@ let tcgSheetHook = () => {}, tcgCloseHook = () => {};
 const tcgHooks = {download() {}, copyText() {}};
 function tcgReady() {
   if (tcgOn) return; tcgOn = true;
-  Object.assign(tcgCtx, {A: TA, C: TC, I: TI, commit, render() {}, openSheet: (html, ctx) => tcgSheetHook(html, ctx), closeSheet: () => tcgCloseHook(), refreshSheet() {}, toast: text => { if (text) toasts.push({text: String(text), undo: false}); }, download: (...a) => tcgHooks.download(...a),
+  Object.assign(tcgCtx, {A: TA, C: TC, I: TI, commit, render() {}, openSheet: (html, ctx) => ctx?.type === 'proven' ? provenSheetOpen(ctx) : tcgSheetHook(html, ctx), closeSheet: () => { provenSheetShut(); tcgCloseHook(); }, refreshSheet() {}, toast: text => { if (text) toasts.push({text: String(text), undo: false}); }, download: (...a) => tcgHooks.download(...a),
     copyText: (...a) => tcgHooks.copyText(...a), busy: () => () => {},
     // The route a handler goes to (A.tSetByName's #set/<id>), for the app to follow.
     go(h) { tcgWent = String(h || ''); }, rerenderKeepingFocus() {}, writeRecord: async () => {}, navigationStamp: () => null, navigationCurrent: () => true});
   registerTcg(tcgCtx);
+  // c.openProven loads as the sheet opens; its status lines look up the page after each await (provenRun).
+  const openProven = tcgCtx.openProven;
+  tcgCtx.openProven = spec => provenRun(() => openProven(spec));
 }
 function tcgFocus(G, view, id = '') {
   tcgReady(); const st = S.state.settings ||= {};
@@ -3439,9 +3446,26 @@ function panelOpen(key, html, attach, acts = {}) {
     const t = e.target.closest?.('[data-change]'); if (!t) return;
     const fn = panel.acts['C.' + t.dataset.change]; if (fn) fn(t, e);
   });
+  // app.js's document input: a field's data-input handler (I.<name>), the ones this page has here.
+  doc.addEventListener('input', e => {
+    const t = e.target.closest?.('[data-input]'); if (!t) return;
+    const fn = panel.acts['I.' + t.dataset.input]; if (fn) fn(t, e);
+  });
   panelRun(() => { host.innerHTML = html; attach?.(host); });
 }
-const panelModel = () => { const reveal = panel.doc.reveals.splice(0); const acted = panel.acted; panel.acted = null;
+// A field's id from a model before the panel drew again (each draw gives every node a new id; a letter typed meanwhile carries the old
+// one): its listener (data-input / data-change, its value) and its place among those, so panelType still reaches the same field.
+const panelFields = new Map();
+const keepFields = () => {
+  if (panelFields.size > 4000) panelFields.clear();
+  const seen = {};
+  for (const n of panel.doc.querySelectorAll('[data-input],[data-change]')) {
+    const attr = n.hasAttribute('data-input') ? 'data-input' : 'data-change', val = n.getAttribute(attr), k = attr + '=' + val;
+    panelFields.set(n._id, {attr, val, nth: seen[k] = (seen[k] ?? -1) + 1});
+  }
+};
+const fieldNow = id => { const f = panelFields.get(id); return f ? panel.doc.querySelectorAll('[' + f.attr + ']').filter(x => x.getAttribute(f.attr) === f.val)[f.nth] || null : null; };
+const panelModel = () => { const reveal = panel.doc.reveals.splice(0); const acted = panel.acted; panel.acted = null; keepFields();
   return json({key: panel.key, body: domJson(panel.doc.body, el => icon(svgIn(tree(el.outerHTML))), el => picture(one(tree(el.outerHTML), tagIs('img')))),
     reveal: reveal.length ? reveal[reveal.length - 1] : null, acted, toasts: panel.toasts.splice(0).map(t => t.text)}); };
 // What app.js attaches to a deck tab's body once it is drawn: the Rules tab's rule-learning.js listeners.
@@ -3781,6 +3805,346 @@ const DECKS_ACTS = {
   // tcg.js's Ideas: Tournament decks you're closest to's Try again (A.tMetaRefresh), its own panel kept while it loads.
   tMetaRefresh: t => tcgPanelAsync(() => TA.tMetaRefresh(t)),
 };
+// ---- Collection › Decks › Meta decks (views.js inspirationView for Magic, tcg.js metaView for Yu-Gi-Oh! and Pokémon): the tab's body
+// as a panel (decksPanel with 'inspiration'), run by app.js's / tcg.js's own handlers below, render() being the panel drawn again.
+// A tournament deck opens the sheet the app draws (MetaDeckSheet, Collection.provenModel); what the site leaves to another page or
+// sheet goes to the app (acted): Magic's Save a deck idea, Export, Remove, the precon list and its Preview, a card (card / tCard /
+// tOtherPrintings), Yu-Gi-Oh! / Pokémon's Create a <format> deck (tNewDeck).
+const metaRender = () => { if (panel?.decks === 'mtg' && panel.tab === 'inspiration') panel.redraw(); };
+// app.js mtgMetaFormat / loadMtgMeta (6858-6872), verbatim but for render() and navigationStamp (the panel open is the screen).
+const mtgMetaFormat = () => (S.ui.mtgMeta ||= { format: DEFAULT_MTG_META_FORMAT }).format;
+function loadMtgMeta(force = false) {
+  const screen = panel, key = "mtg:" + mtgMetaFormat(),
+    M = metaState(key);
+  const current = () => panel === screen;
+  if (M.busy || (!force && (M.data || M.error) && (M.data ? Date.now() - M.at < 12 * 3600e3 : true))) return;
+  loadMeta(key, force)
+    .then(async (data) => {
+      if (current()) metaRender();
+      // Card data (prices, art, types) for the lists on screen.
+      const names = [...new Set(data.decks.slice(0, 30).flatMap((d) => [...d.commanders, ...d.main].map((r) => r.name)))];
+      if ((await resolveNames(names)).total && current()) metaRender();
+    })
+    .catch(() => current() && metaRender());
+  setTimeout(() => current() && metaRender(), 0);
+}
+// app.js readRecord / writeRecord for the checked precons ('cardforge-precons-v1'): the site keeps them in IndexedDB; here they are
+// the bundle's kept storage (KEPT_KEYS), which the app keeps on the device.
+const readRecord = async (k) => { try { return JSON.parse(globalThis.localStorage.getItem(k) || 'null'); } catch { return null; } };
+const writeRecord = async (k, v) => { globalThis.localStorage.setItem(k, JSON.stringify(v)); };
+// app.js loadPreconCache (759-775), verbatim but for render().
+const PRECON_RECORD = "cardforge-precons-v1";
+async function loadPreconCache() {
+  const F = S.ui.finder, screen = panel;
+  F.cacheLoaded = true;
+  try {
+    const rec = await readRecord(PRECON_RECORD);
+    if (rec?.decks?.length) {
+      F.precons = rec.decks;
+      if (panel === screen) metaRender();
+      const names = rec.decks.flatMap((d) => d.cards.map((c) => c.name)).filter((n) => !meta(n));
+      if (names.length && (globalThis.navigator?.onLine ?? true)) {
+        await resolveNames(names);
+        if (panel === screen) metaRender();
+      }
+    }
+  } catch {}
+}
+// app.js fetchJSON (6966).
+async function fetchJSON(url) {
+  const ctl = new AbortController(),
+    timer = setTimeout(() => ctl.abort(), 20000);
+  try {
+    const r = await fetch(url, { signal: ctl.signal });
+    if (!r.ok) throw Error("HTTP " + r.status);
+    return await r.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+// What a deck sheet's save or Make my version leaves for the app to open (app.js go("#deck/<id>/cards")).
+const goDeck = (id) => { if (panel) panel.acted = {act: 'go', data: {to: `#deck/${id}/cards`}}; };
+// app.js A.copyRef (6946), verbatim but for go().
+async function copyRef(t) {
+  const r = S.state.references.find((x) => x.id === t.dataset.id),
+    d = withSnapshot({ ...structuredClone(r), id: uid(), name: r.name + " · my version", locked: false, versions: [] }, "From " + (r.source?.author || r.source?.website || "inspiration"));
+  await commit((s) => {
+    s.decks.push(d);
+    s.activeDeck = d.id;
+  });
+  bgSaves++;
+  goDeck(d.id);
+}
+// app.js preconCredit / makeMyVersion (4438-4446), verbatim but for go().
+const preconCredit = (p) => sourceCredit({ url: "https://mtgjson.com/api/v5/decks/" + p.file, author: "Wizards of the Coast", kind: "MTGJSON precon", description: "Preconstructed deck list from MTGJSON." });
+async function makeMyVersion(base, source, label) {
+  const d = withSnapshot({ id: uid(), name: base.name + " · my version", format: base.format || "Commander", commander: base.commander || "", strategy: base.strategy || "Auto", budget: base.budget ?? S.state.settings.budget ?? 25, locked: false, about: base.about || "", source, cards: base.cards.map((c) => ({ name: c.name, qty: c.qty })), versions: [] }, label);
+  await commit((s) => {
+    s.decks.push(d);
+    s.activeDeck = d.id;
+  }, { msg: "Your version is ready. Your collection is unchanged." });
+  bgSaves++;
+  goDeck(d.id);
+}
+// A tap that saves or loads after it returns: what it toasts goes with the panel that started it.
+const panelLater = (f) => { const p = panel; Promise.resolve().then(f).catch(e => { const t = {text: e?.message || String(e), undo: false}; if (panel === p && p) p.toasts.push(t); else toasts.push(t); }); };
+Object.assign(DECKS_ACTS, {
+  // app.js A.mtgMetaFormat / A.mtgMetaReload (6873-6878).
+  mtgMetaFormat: (t) => {
+    S.ui.mtgMeta = { format: t.dataset.id };
+    metaRender();
+    loadMtgMeta();
+  },
+  mtgMetaReload: () => loadMtgMeta(true),
+  // app.js A.mtgProven: the tournament deck's sheet (the app's MetaDeckSheet).
+  mtgProven: (t) => { provenOpened = false; mtgProven(t); if (provenOpened) panel.acted = {act: 'proven', data: {}}; },
+  // tcg.js A.tMetaFormat (3915): its load (c.loadMeta, when the format has a feed) keeps this panel and draws it as it ends.
+  tMetaFormat: (t) => {
+    tcgFocus(panel.decks, 'decks');
+    const was = tcgCtx.loadMeta; let p = null;
+    tcgCtx.loadMeta = (...a) => (p = was(...a));
+    try { TA.tMetaFormat(t); } finally { tcgCtx.loadMeta = was; }
+    if (p) tcgPanelAsync(() => p); else panel.redraw();
+  },
+  tMetaRefresh: t => { tcgFocus(panel.decks, 'decks'); return tcgPanelAsync(() => TA.tMetaRefresh(t)); },
+  // tcg.js A.tMetaDeck (4151): the sheet, as Magic's.
+  tMetaDeck: (t) => { tcgFocus(panel.decks, 'decks'); provenOpened = false; provenRun(() => TA.tMetaDeck(t)); if (provenOpened) panel.acted = {act: 'proven', data: {}}; },
+  // app.js's finder (4349-4372, 4375-4469), verbatim but for render().
+  'C.finderMax': (t) => {
+    S.ui.finder.max = t.value === "" ? "" : String(Math.max(0, Number(t.value) || 0));
+    metaRender();
+  },
+  'C.finderColors': (t) => {
+    S.ui.finder.colors = t.value;
+    metaRender();
+  },
+  'C.finderBasics': (t) => {
+    S.ui.finder.basics = t.checked;
+    metaRender();
+  },
+  'C.finderSort': (t) => {
+    S.ui.finder.sort = t.value;
+    metaRender();
+  },
+  'I.finderSearch': (t) => {
+    S.ui.finder.q = t.value;
+    metaRender();
+  },
+  finderMore: () => {
+    S.ui.finder.limit += 12;
+    metaRender();
+  },
+  // A.finderPrecons (Commander precons; Play's constructed check is not on this page).
+  finderPrecons: () => panelLater(async () => {
+    const F = S.ui.finder,
+      P = S.ui.precon;
+    if (F.busy) return;
+    F.busy = true;
+    F.msg = "Loading the precon list…";
+    metaRender();
+    try {
+      if (!P.index.length) {
+        const j = await fetchJSON("https://mtgjson.com/api/v5/DeckList.json");
+        P.index = (j.data || []).filter((d) => typeof d.fileName === "string" && typeof d.name === "string");
+      }
+      const have = new Set(F.precons.map((p) => p.file)),
+        next = P.index
+          .filter((d) => d.type === "Commander Deck" && !have.has(d.fileName) && /^[A-Za-z0-9_.-]+$/.test(d.fileName))
+          .sort((a, b) => String(b.releaseDate || "").localeCompare(String(a.releaseDate || "")))
+          .slice(0, 10);
+      if (!next.length) F.msg = "You’ve checked every Commander precon.";
+      let i = 0;
+      for (const d of next) {
+        F.msg = `Checking ${++i}/${next.length}: ${d.name}…`;
+        metaRender();
+        try {
+          const p = mtgjsonDeck(await fetchJSON("https://mtgjson.com/api/v5/decks/" + d.fileName.replace(/\.json$/, "") + ".json"));
+          F.precons.push({ file: d.fileName, name: p.name || d.name, commander: p.commander, ...(p.multipleCommanders ? { commanders: p.commanders.map((name) => ({ name, qty: 1 })) } : {}), released: d.releaseDate || "", format: "Commander", cards: p.cards.map((c) => ({ name: c.name, qty: c.qty })) });
+        } catch {}
+      }
+      F.msg = "Loading prices…";
+      metaRender();
+      await resolveNames(F.precons.flatMap((p) => p.cards.map((c) => c.name)));
+      await writeRecord(PRECON_RECORD, { at: new Date().toISOString(), decks: F.precons }).catch(() => {});
+      F.msg = next.length ? `${F.precons.length} precons checked` : F.msg;
+    } catch (e) {
+      F.msg = "Couldn’t reach MTGJSON (" + e.message + ")";
+    } finally {
+      F.busy = false;
+      metaRender();
+    }
+  }),
+  finderBuild: (t) => panelLater(async () => {
+    if (t.dataset.kind === "saved") return copyRef(t);
+    const p = S.ui.finder.precons.find((x) => x.file === t.dataset.id);
+    if (p) await makeMyVersion(p, preconCredit(p), "From precon " + p.name);
+  }),
+  finderSave: (t) => panelLater(async () => {
+    const p = S.ui.finder.precons.find((x) => x.file === t.dataset.id);
+    if (!p) return;
+    await commit((s) => (s.references = [...(s.references || []), { id: uid(), name: p.name, format: "Commander", commander: p.commander, strategy: "Auto", locked: false, source: preconCredit(p), cards: p.cards }]), { msg: "Saved to your decks to watch." });
+    bgSaves++;
+    metaRender();
+  }),
+  copyRef: (t) => panelLater(() => copyRef(t)),
+  // app.js I.refSearch (6850): the saved ideas filtered as typed.
+  'I.refSearch': (t) => {
+    S.ui.q.ref = t.value;
+    metaRender();
+  },
+});
+
+// ---- The tournament deck's sheet (tcg.js provenSheetHtml, c.openProven and its handlers 3918-3992; app.js A.mtgProven 6879), the sheet
+// the app draws (MetaDeckSheet). tcg.js's sheet code reads the page (#sheetBody's status line, its scroll) after its awaits, so while one
+// is open or loading a document stands in (provenRun): an empty one, where those lookups find nothing.
+let provenOpened = false, provenMade = '';
+const provenDoc = new SiteDocument();
+let provenLive = 0;
+const provenDocIn = () => { if (provenLive > 0 && globalThis.document === undefined) globalThis.document = provenDoc; };
+function provenRun(f) {
+  provenLive++; provenDocIn(); Promise.resolve().then(provenDocIn);
+  const done = () => { if (--provenLive === 0 && globalThis.document === provenDoc) delete globalThis.document; };
+  let r;
+  try { r = f(); } catch (e) { done(); throw e; }
+  if (r && typeof r.then === 'function') return Promise.resolve(r).finally(done);
+  done(); return r;
+}
+// tcg.js openSheet / closeSheet for the sheet (registerTcg's ctx): its context is the one open (S.ui.sheetCtx), as the site's openSheet sets it.
+// provenKept: the sheet's context while a card's page opened from it is on top (app.js sheetTrail's snapshot, wireSheetBack's ←).
+let provenKept = null;
+function provenSheetOpen(ctx) { S.ui.sheetCtx = provenKept = ctx; provenOpened = true; }
+function provenSheetShut() { if (S.ui.sheetCtx?.type === 'proven') { S.ui.sheetCtx = null; provenKept = null; } }
+// app.js A.mtgProven (6879-6944), verbatim but for closeSheet and go in save (the deck the app opens next: provenMade).
+function mtgProven(t) {
+  tcgReady();
+  const captured = t.dataset.homeMetaOpen !== undefined ? homeMetaSnapshot(t, "mtg") : null;
+  if (t.dataset.homeMetaOpen !== undefined && !captured) return toasts.push({text: "This Home list has changed. Choose the current visible list.", undo: false});
+  // From a card's Meta tab, the deck may be from another format than the one on Meta decks.
+  if (t.dataset.format && metaState("mtg:" + t.dataset.format).data) (S.ui.mtgMeta ||= {}).format = t.dataset.format;
+  const fmt = captured ? captured.metaKey.slice(4) : t.metaSnapshot?.format || mtgMetaFormat(),
+    data = captured?.data || t.metaSnapshot?.data || metaState("mtg:" + fmt).data,
+    d = captured?.deck || data?.decks.find((x) => x.key === t.dataset.key);
+  if (!d) return;
+  const appFormat = fmt === "EDH" ? "Commander" : fmt,
+    kindOf = (name) => {
+      const tl = meta(name)?.type_line || meta(name)?.card_faces?.[0]?.type_line || "";
+      return /Land/.test(tl) ? "land" : /Creature/.test(tl) ? "creature" : tl ? "spell" : "card";
+    },
+    rowsOf = (deck) => [...deck.commanders.map((r) => ({ ...r, commander: true })), ...deck.main].map((r) => ({ key: key(r.name), name: r.name, qty: r.qty, kind: r.commander ? "commander" : r.land ? "land" : kindOf(r.name), price: namePrice(meta(r.name), (finish) => priceOf(r.name, finish)), owned: inv(r.name).owned, core: r.commander })),
+    all = data.decks.map(rowsOf),
+    seen = new Map();
+  for (const l of all) for (const k of new Set(l.map((r) => r.key))) seen.set(k, (seen.get(k) || 0) + 1);
+  const label = (MTG_META_FORMATS.find((f) => f[0] === fmt) || [fmt, fmt])[1];
+  tcgCtx.openProven({
+    g: "mtg",
+    key: d.key,
+    title: d.name,
+    sub: `${esc(d.place)} · ${esc(d.event)} · ${d.players} players${d.player ? " · " + esc(d.player) : ""}${d.record ? " · " + esc(d.record) : ""}${d.date ? " · " + esc(d.date) : ""}`,
+    evidence: `Tournament-backed · ${esc(label)} · last ${data.days} days · compared with ${data.decks.length} lists from ${data.coverage?.events || 0} events · ${esc(data.source)}`,
+    attribution: `${{ "Magic Online (official decklists)": `Decklist from <a href="https://www.mtgo.com/decklists" target="_blank" rel="noopener">Magic Online</a> (Wizards of the Coast).`, "MTGTop8 (competitive Commander)": `Decklist from <a href="https://www.mtgtop8.com/format?f=cEDH" target="_blank" rel="noopener">MTGTop8</a>; most events are reported through TopDeck.gg.` }[data.source] || `Data provided by <a href="https://topdeck.gg" target="_blank" rel="noopener">TopDeck.gg</a>.`} Prices are Scryfall’s TCGplayer estimates.`,
+    sourceUrl: d.url || d.eventUrl,
+    formatLabel: `Magic · ${label}`,
+    sourceLabel: data.source.startsWith("Magic Online") ? "Magic Online event" : data.source.startsWith("MTGTop8") ? "MTGTop8 event" : "TopDeck.gg event",
+    rowsFn: () => rowsOf(d),
+    // The 15-card sideboard travels with the list (not in Commander, which has none).
+    sideRowsFn: () => (fmt === "EDH" ? [] : (d.side || []).map((r) => ({ key: key(r.name), name: r.name, qty: r.qty, kind: kindOf(r.name), price: namePrice(meta(r.name), (finish) => priceOf(r.name, finish)), owned: Math.max(0, inv(r.name).owned - sumQty([...d.commanders, ...d.main].filter((m) => key(m.name) === key(r.name)))) }))),
+    listsFn: () => data.decks.map(rowsOf),
+    // Format staples played across unrelated decks aren't this deck's engine.
+    generic: (k) => (seen.get(k) || 0) / Math.max(1, data.decks.length) >= 0.3,
+    load: async (status) => {
+      const sim = similarLists(rowsOf(d), data.decks.map(rowsOf));
+      const names = [...new Set([...rowsOf(d), ...sim.flat(), ...(d.side || [])].map((r) => r.name))];
+      const refresh = names.filter((name) => { const c = meta(name); return !c || namePrice(c) === null || !c.checkedAt || Date.now() - new Date(c.checkedAt).getTime() > 86400000; });
+      const result = await resolveNames(refresh, status, true);
+      await ensureTcgPrices(names.map(meta).filter(Boolean), { retry: true });
+      return result;
+    },
+    save: async (rows, labelText) => {
+      // Keep every declared commander (partners, backgrounds); `commander` stays the first for older readers.
+      const commanders = rows.filter((r) => r.kind === "commander").map((r) => ({ name: r.name, qty: r.qty })),
+        commander = commanders[0]?.name || "";
+      const site = data.source.startsWith("MTGTop8") ? "MTGTop8" : data.source.startsWith("Magic Online") ? "Magic Online" : "TopDeck.gg";
+      const deck = withSnapshot({ id: uid(), name: `${d.name} · ${labelText}`.slice(0, 100), format: appFormat, commander, ...(commanders.length > 1 ? { commanders } : {}), strategy: "Auto", budget: S.state.settings.budget ?? 25, locked: false, cards: rows.map((r) => ({ name: r.name, qty: r.qty })), side: fmt === "EDH" ? [] : (d.side || []).map((r) => ({ name: r.name, qty: r.qty })), versions: [], source: sourceCredit({ kind: labelText === "original" ? "Tournament list" : "Adapted tournament list", author: d.player, website: site, url: d.eventUrl || d.url, description: `${d.place} at ${d.event} (${d.players} players).` }) }, labelText === "original" ? `From ${site}` : "Adapted from a tournament list");
+      await commit((s) => {
+        s.decks.push(deck);
+        s.activeDeck = deck.id;
+      }, { msg: `Saved “${deck.name}”.` });
+      provenSheetShut();
+      provenMade = JSON.stringify({go: "deck", id: deck.id, tab: "cards"});
+    },
+    cardAttrs: (r) => `data-act="card" data-name="${esc(r.name)}"`,
+    printingFor: (r) => meta(r.name),
+    imageFor: (r) => cardImage(meta(r.name)),
+    heroFor: (rows) => {
+      if (d.art) return d.art;
+      const c = meta((rows.find((r) => r.kind === "commander") || rows.find((r) => r.kind === "creature") || rows.find((r) => r.kind !== "land") || rows[0])?.name);
+      return c?.image_uris?.art_crop || c?.card_faces?.[0]?.image_uris?.art_crop || (d.cover ? `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(d.cover)}&format=image&version=art_crop` : "");
+    },
+  });
+}
+// tcg.js provenSheetHtml read back in the order the sheet shows it: deckShell's hero and stats (shellOf), its actions (the source is a
+// link), Retry prices, the build overlay or status line, a save's error, Original / Budget / My cards, then the deck viewer's blocks
+// (notes, budget chips, list heads, changes, rows, the sideboard), ⚒ Build around it and the evidence and attribution feet.
+function provenSheetModel() {
+  const spec = proven.spec;
+  if (!spec || S.ui.sheetCtx?.type !== 'proven') return {missing: true};
+  const g = spec.g;
+  const t = tree(provenRun(() => provenSheetHtml())), sh = shellOf(t, g), head = one(t, cls('ds-head'));
+  const tone = n => cls('ok-text')(n) ? 'ok' : cls('warn-text')(n) ? 'warn' : cls('bad-text')(n) ? 'bad' : 'muted';
+  const linksOf = n => { const out = []; const walk = x => { for (const k of x?.kids || []) { if (k.tag === 'a') out.push({text: text(k), href: k.attrs.href || ''}); else if (k.tag) walk(k); } }; walk(n); return out; };
+  const rowOf = r => {
+    const img = one(r, cls('row-thumb')), copy = one(r, cls('deck-compact-copy')), right = (r.kids || []).filter(k => k.tag).at(-1), emb = one(copy, cls('imp-row'));
+    return {name: r.attrs['data-deck-name'] || '', qty: Number(r.attrs['data-deck-qty']) || 0, zone: r.attrs['data-deck-zone'] || 'main', category: r.attrs['data-deck-category'] || 'Unresolved',
+      act: r.attrs['data-act'] || '', cardName: r.attrs['data-name'] || '', id: r.attrs['data-id'] || '',
+      art: img?.tag === 'img' ? picture(img) : null, label: text(one(copy, tagIs('b'))), set: text(one(copy, cls('set-badge'))), setRarity: (classes(one(copy, cls('set-badge')) || {}).find(x => x.startsWith('r-')) || 'r-common').slice(2), rarity: text(one(one(copy, cls('deck-printing')), cls('tag'))),
+      tags: (copy?.kids || []).filter(k => k.tag && cls('tag')(k)).map(k => ({text: text(k), ok: cls('ok')(k)})),
+      emblem: emb ? {title: emb.attrs.title || '', icon: icon(svgIn(emb))} : null,
+      right: right && right !== copy ? {text: text(right), tone: tone(right)} : null};
+  };
+  const blockOf = k => {
+    if (k.attrs['data-deck-list'] !== undefined) return {k: 'rows', rows: all(k, cls('mini-row')).map(rowOf)};
+    if (cls('note')(k)) { const b = (k.kids || []).find(x => x.tag === 'b');
+      return {k: 'note', warn: cls('warn')(k), title: text(b), rest: text({kids: (k.kids || []).filter(x => x !== b && !(x.tag && ['p', 'ul', 'small', 'br'].includes(x.tag)))}),
+        paras: all(k, tagIs('p')).map(text), items: all(k, tagIs('li')).map(text), smalls: (k.kids || []).filter(x => x.tag === 'small').map(s => ({bold: text(one(s, tagIs('b'))), text: text(s)}))}; }
+    if (cls('fmt-chips')(k)) return {k: 'chips', chips: all(k, tagIs('button')).map(b => ({label: text(b), b: b.attrs['data-b'] || '', on: cls('on')(b)}))};
+    if (k.tag === 'p' && cls('list-head')(k)) { const c = one(k, cls('muted')); const all_ = text(k); return {k: 'head', text: c ? all_.slice(0, all_.length - text(c).length).trim() : all_, count: text(c)}; }
+    if (cls('swaps')(k)) return {k: 'swaps', items: all(k, tagIs('li')).map(li => ({out: text(one(li, cls('bad-text'))), into: text(one(li, cls('ok-text'))), open: !one(li, cls('ok-text')), note: text(one(li, tagIs('small')))}))};
+    if (k.tag === 'details' && cls('side-group')(k)) { const sum = one(k, tagIs('summary')), first = one(sum, tagIs('span'));
+      return {k: 'side', open: k.attrs.open !== undefined, title: text({kids: (first?.kids || []).filter(x => x.tag !== 'em')}), count: text(one(first, tagIs('em'))), price: text(one(sum, cls('muted'))),
+        text: text(one(k, tagIs('p'))), rows: all(k, cls('mini-row')).map(rowOf)}; }
+    if (k.tag === 'p') return {k: 'text', text: text(k), tone: tone(k)};
+    return null;
+  };
+  const viewer = one(t, cls('deck-viewer')), toolbar = one(viewer, cls('deck-view-toolbar')), sw = one(toolbar, cls('deck-view-switch'));
+  const overlay = one(head, cls('build-overlay')), status = one(head, x => x.tag === 'p' && x.attrs.role === 'status' && !cls('build-overlay')(x) && cls('warn-text')(x)), alert = one(head, x => x.attrs.role === 'alert');
+  const extra = one(t, cls('sheet-actions'));
+  return {game: g, key: spec.key, mode: proven.mode, busy: !!proven.busy, hero: sh.hero, back: icon(svgIn(tree(ICON.back))),
+    actions: (one(head, cls('ds-actions'))?.kids || []).filter(k => k.tag).map(b => ({label: text(b), act: b.attrs['data-act'] || '', id: b.attrs['data-id'] || '', primary: cls('ds-primary')(b),
+      disabled: b.attrs.disabled !== undefined, href: b.tag === 'a' ? b.attrs.href || '' : ''})),
+    retry: (() => { const r = one(t, cls('ds-retry')); return r ? {label: text(r)} : null; })(),
+    overlay: overlay ? {title: text(one(overlay, tagIs('b'))), msg: text(one(overlay, x => x.attrs.role === 'status')), note: text(one(overlay, tagIs('small')))} : null,
+    status: text(status), alert: text(alert),
+    versions: all(one(head, cls('ds-versions')), tagIs('button')).map(b => ({id: b.attrs['data-id'] || '', label: text(b), on: b.attrs['aria-selected'] === 'true'})),
+    view: viewer?.attrs['data-deck-view'] || 'gallery', viewLabel: text(one(toolbar, tagIs('span'))),
+    views: all(sw, tagIs('button')).map(b => ({mode: b.attrs['data-mode'], label: b.attrs['aria-label'] || b.attrs.title || '', on: b.attrs['aria-checked'] === 'true', icon: icon(svgIn(b))})),
+    blocks: (viewer?.kids || []).filter(k => k.tag && k !== toolbar).map(blockOf).filter(Boolean),
+    extra: all(extra, tagIs('button')).map(b => ({label: text(b), act: b.attrs['data-act'] || '', key: b.attrs['data-key'] || ''})),
+    feet: (one(t, cls('ds-page'))?.kids || t.kids || []).filter(k => k.tag === 'p' && cls('foot')(k)).map(p => ({text: text(p), links: linksOf(p)}))};
+}
+// app.js A.provenSave (tcg.js 3966) as a saving tap: the deck the site opens next (#deck/<id>/cards, #tdeck/<id>) is what the app opens.
+Object.assign(writeActs, {
+  async provenSave() {
+    const spec = proven.spec;
+    if (!spec || S.ui.sheetCtx?.type !== 'proven') return;
+    const G = spec.g;
+    tcgReady();
+    if (G === 'mtg') mtgFocus(); else tcgFocus(G, S.ui.view === 'home' ? 'home' : 'decks');
+    provenMade = ''; tcgWent = '';
+    await provenRun(() => TA.provenSave({dataset: {}}));
+    if (provenMade) { made = provenMade; provenMade = ''; }
+    else if (/^#tdeck\//.test(tcgWent)) made = JSON.stringify({go: 'tdeck', id: decodeURIComponent(tcgWent.slice(7)), game: G});
+  },
+});
 // app.js route()'s side effects for #decks/<tab> (1281-1320): Yu-Gi-Oh! / Pokémon load the tournament meta when it is missing or stale
 // (once per snapshot) and, on Ideas, every collection card still missing its data (T.ensureMany); Magic's Ideas build once a session
 // when there is nothing yet (ui.ideas.ran).
@@ -3804,6 +4168,9 @@ function decksRouteLoads(G, tab) {
     return;
   }
   const ui = S.ui;
+  // app.js route() 1313-1314: Meta decks reads the checked precons once, then the format's tournament results.
+  if (tab === "inspiration" && !ui.finder.cacheLoaded) loadPreconCache();
+  if (tab === "inspiration") loadMtgMeta();
   if (tab === "ideas" && !ui.ideas.cache.length && !ui.ideas.busy && !ui.ideas.ran) {
     ui.ideas.ran = true;
     setTimeout(() => { if (panel?.decks === 'mtg' && panel.tab === 'ideas') buildIdeas(); }, 30);
@@ -4271,7 +4638,7 @@ globalThis.Collection = {
   panelRedraw() { if (panel?.redraw) panel.redraw(); return panel ? panelModel() : '{}'; },
   panelTap(id) { const el = panel && domById(panel.doc.documentElement, Number(id)); if (el) panelRun(() => domTap(el)); return panel ? panelModel() : '{}'; },
   // A checkbox's tick ([value] "true" or "false": app.js's change handlers read its checked, C.ideasOwned) or another field's value.
-  panelType(id, value) { const el = panel && domById(panel.doc.documentElement, Number(id));
+  panelType(id, value) { const el = panel && (domById(panel.doc.documentElement, Number(id)) || fieldNow(Number(id)));
     if (el) panelRun(() => { if (el.localName === 'input' && el.getAttribute('type') === 'checkbox') { el.checked = String(value) === 'true'; el.dispatchEvent(new SiteEvent('change', {bubbles: true})); } else domType(el, value); });
     return panel ? panelModel() : '{}'; },
   // The Decks page's Ideas (or Meta decks) tab body as such a panel (decksPanel), with its route's loads started.
@@ -4296,6 +4663,37 @@ globalThis.Collection = {
     return Collection.ideaModel();
   },
   ideaClose() { if (S.ui.sheetCtx?.type === 'idea') S.ui.sheetCtx = null; ideaSelWords = null; },
+  // The tournament deck's sheet (tcg.js provenSheetHtml) as the app draws it (MetaDeckSheet), read again with settle() while it loads
+  // (PROVEN_MODEL); provenDo runs one of its controls (A.provenMode "mode", A.provenBudget "budget", A.provenRetry "retry", the deck
+  // view "view"); its save is the write provenSave; provenClose is closeSheet.
+  provenModel() { const m = provenSheetModel(); const said = toasts.splice(0).map(t => t.text); return json({...m, toasts: said}); },
+  provenDo(kind, value) {
+    if (!proven.spec || S.ui.sheetCtx?.type !== 'proven') return json({missing: true});
+    toasts = [];
+    const v = String(value ?? ''), G = proven.spec.g;
+    tcgReady(); if (G !== 'mtg') tcgFocus(G, S.ui.view === 'home' ? 'home' : 'decks');
+    const run = f => { try { const r = provenRun(f); if (r?.then) r.catch(e => toasts.push({text: e?.message || String(e), undo: false})); } catch (e) { toasts.push({text: e?.message || String(e), undo: false}); } };
+    if (kind === 'mode') run(() => TA.provenMode({dataset: {id: v}}));
+    else if (kind === 'budget') run(() => TA.provenBudget({dataset: {b: v}}));
+    else if (kind === 'retry') run(() => TA.provenRetry());
+    // deck-viewer.js's view switch (A.deckView): the account's deck view for the sheet's game.
+    else if (kind === 'view') { if (DECK_VIEWS.includes(v)) ((S.state.settings.displayModes ||= {})[G] ||= {}).deck = v; }
+    return Collection.provenModel();
+  },
+  provenClose() { provenSheetShut(); provenKept = null; },
+  // app.js A.sheetHistoryBack from a card's page the sheet opened: the sheet's context again (its snapshot), then its model.
+  provenBack() { if (provenKept && proven.spec && S.ui.sheetCtx?.type !== 'proven') S.ui.sheetCtx = provenKept; return Collection.provenModel(); },
+  // Home's Community Meta decks card (home-meta-open, data-act mtgProven / tMetaDeck): that deck's sheet, from the list Home shows
+  // (homeMetaKey's snapshot, as homeMetaSnapshot captures it on the site).
+  provenHome(game, key) {
+    toasts = []; provenOpened = false;
+    const mk = homeMetaKey(game), data = metaState(mk).data;
+    // app.js A.mtgProven / tcg.js A.tMetaDeck (data-home-meta-open): a list no longer in Home's snapshot is not opened.
+    if (!data || !(data.decks || []).some(d => String(d.key) === String(key))) return json({missing: true, toasts: ['This Home list has changed. Choose the current visible list.']});
+    if (game === 'mtg') { mtgFocus(); mtgProven({dataset: {key: String(key), format: mk.slice(4)}, metaSnapshot: {format: mk.slice(4), data}}); }
+    else { tcgFocus(game, 'home'); provenRun(() => TA.tMetaDeck({dataset: {key: String(key), metaKey: mk}})); }
+    return Collection.provenModel();
+  },
   catalog() { return json(S.catalog); },
   // search-hints.js hintPool: the names and questions the search field fades through (the player's own cards mixed in).
   hints(game) { return json({prompt: SEARCH_PROMPT, first: 4000, every: 4200, fade: 260, pool: hintPool(game, game === 'mtg' ? S.state.collection.map(e => e.name) : (S.state.tcg?.[game]?.collection || []).map(e => e.name))}); },

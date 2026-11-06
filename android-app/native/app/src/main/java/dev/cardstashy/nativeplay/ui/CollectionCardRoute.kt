@@ -29,7 +29,8 @@ data class CardOpen(val name: String, val entry: String = "", val deck: String =
                     val game: String = "mtg", val id: String = "", val setId: String = "", val setVariant: String = "", val printing: String = "", val edition: String = "",
                     /** Opened by Random (data-random): the page offers 🎲 Another. */
                     val random: Boolean = false,
-                    /** Opened from the deck idea sheet ("idea:<i>", app.js A.card's S.ui.sheetBack): the page offers "Back to deck idea". */
+                    /** Opened from the deck idea sheet ("idea:<i>", app.js A.card's S.ui.sheetBack): the page offers "Back to deck idea";
+                     *  "proven": from the proven deck sheet, whose history back (app.js wireSheetBack) returns to it. */
                     val back: String = "")
 
 private fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
@@ -48,7 +49,7 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
                        onRandom: (() -> Unit)? = null,
                        /** The ← (A.sheetBack) of a page opened from the deck idea sheet ([CardOpen.back]): the sheet again. */
                        onBack: (() -> Unit)? = null) {
-    if (open.game != "mtg") return TcgCardHost(open, onClose, onOpen, web, onSet, onRandom)
+    if (open.game != "mtg") return TcgCardHost(open, onClose, onOpen, web, onSet, onRandom, onBack)
     val context = LocalContext.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var model by remember(open) { mutableStateOf<CollectionCardModel?>(null) }
@@ -135,7 +136,7 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
         },
         press = ::press,
     )
-    CollectionCardSheet(m, act, onBack = onBack?.takeIf { open.back.isNotBlank() }, onClose = onClose)
+    CollectionCardSheet(m, act, onBack = onBack?.takeIf { open.back.isNotBlank() }, historyBack = open.back == "proven" && onBack != null, onClose = onClose)
 }
 
 /**
@@ -148,7 +149,8 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
  * and the wiki open the website's card sheet and press the same control.
  */
 @Composable
-private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -> Unit, web: (url: String, press: String?) -> Unit, onSet: ((String) -> Unit)?, onRandom: (() -> Unit)?) {
+private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -> Unit, web: (url: String, press: String?) -> Unit, onSet: ((String) -> Unit)?, onRandom: (() -> Unit)?,
+                        onBack: (() -> Unit)? = null) {
     val context = LocalContext.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var model by remember(open) { mutableStateOf<CollectionCardModel?>(null) }
@@ -224,7 +226,7 @@ private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) 
         },
         press = ::press,
     )
-    CollectionCardSheet(m, act, onClose = onClose)
+    CollectionCardSheet(m, act, onBack = onBack?.takeIf { open.back == "proven" }, historyBack = open.back == "proven" && onBack != null, onClose = onClose)
 }
 
 /** A tapped button's data-* attributes as the site's handler reads them (t.dataset). */

@@ -97,7 +97,7 @@ internal object CollectionWrites {
 
     /** The write itself: under the sync's lock, in the engine holding this device's copy, then that copy written. Null: not run. */
     /** Taps that read the card sources for a while (every card's price, each card's printings). */
-    private val LONG_ACTS = setOf("tDeckRefresh", "tDeckCheapest", "tDeckCopyMissing", "refreshPrices", "tRefreshPrices", "tImpColl", "impApply")
+    private val LONG_ACTS = setOf("tDeckRefresh", "tDeckCheapest", "tDeckCopyMissing", "refreshPrices", "tRefreshPrices", "tImpColl", "impApply", "provenSave")
     /** Taps that check card after card against Scryfall (Verify exact printings, the import's Check names & printings). */
     private val CHECK_ACTS = setOf("verifyAll", "impVerify")
     private suspend fun commitAct(context: Context, kind: String, data: JsonObject, ms: Long = 15_000, onStep: (String) -> Unit = {}): JsonObject? {
@@ -133,6 +133,15 @@ internal object CollectionWrites {
         keepCatalog(app)
         keepBackground(app)
         if (r?.getAsJsonObject("result")?.get("refreshed")?.asInt ?: 0 > 0) _written.value++
+    }
+    /**
+     * A save a panel's tap made just before it opens another page (app.js A.copyRef / makeMyVersion: commit, then go("#deck/<id>")):
+     * kept first, out of the page's scope so leaving the page can't cancel it, then [then] on the main thread, as scopedCommit saves
+     * before go() on the site.
+     */
+    fun keepThen(context: Context, then: () -> Unit) {
+        val app = context.applicationContext
+        bg.launch { runCatching { keepBackground(app) }; withContext(Dispatchers.Main) { then() } }
     }
     /** Saves the engine made outside a tap (condition quotes on lots) go to this device's copy and the account. */
     suspend fun keepBackground(context: Context) {

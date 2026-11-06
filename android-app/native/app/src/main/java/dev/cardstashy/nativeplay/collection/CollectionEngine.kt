@@ -218,6 +218,16 @@ object CollectionEngine {
     /** One idea-sheet control (app.js A.ideaBudget "budget", A.ideaCustomBudget "custom", C.ideaPick "pick" {name, on}, A.ideaSelect "select", the deck view "view"). */
     suspend fun ideaDo(kind: String, value: String = ""): JsonObject = model("Collection.ideaDo(${str(kind)}, ${str(value)})")
     suspend fun ideaClose() { on { q -> q.evaluate("Collection.ideaClose()") } }
+    /** The tournament deck's sheet (tcg.js provenSheetHtml) open now, as a model; read again with [settle] and [PROVEN_MODEL] while it loads. */
+    suspend fun provenModel(): JsonObject = model(PROVEN_MODEL)
+    const val PROVEN_MODEL = "Collection.provenModel()"
+    /** One sheet control (tcg.js A.provenMode "mode", A.provenBudget "budget", A.provenRetry "retry", the deck view "view"). */
+    suspend fun provenDo(kind: String, value: String = ""): JsonObject = model("Collection.provenDo(${str(kind)}, ${str(value)})")
+    suspend fun provenClose() { on { q -> q.evaluate("Collection.provenClose()") } }
+    /** Back from a card's page the sheet opened (app.js A.sheetHistoryBack): the sheet's context again, as a model. */
+    suspend fun provenBack(): JsonObject = model("Collection.provenBack()")
+    /** Home's Community Meta decks card [key] of [game]: its sheet, from the list Home shows ({missing} when that list isn't here). */
+    suspend fun provenHome(game: String, key: String): JsonObject = model("Collection.provenHome(${str(game)}, ${str(key)})")
     /** The open tab drawn again from the account as it is now (after a save made from it). */
     /** What the open tab runs once the player said yes (A.lifeEnd). */
     suspend fun panelDone(kind: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.panelDone(${str(kind)})") as String).asJsonObject }

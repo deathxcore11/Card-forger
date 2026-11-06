@@ -316,14 +316,17 @@ private fun RichText(text: androidx.compose.ui.text.AnnotatedString, style: Text
  * tabs pin under it.
  */
 @Composable
-fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onBack: (() -> Unit)? = null, onClose: () -> Unit) {
+fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onBack: (() -> Unit)? = null,
+                        /** app.js wireSheetBack: a page opened from another sheet (the proven deck sheet) offers its history back. */
+                        historyBack: Boolean = false, onClose: () -> Unit) {
     val y = remember { Animatable(1f) }
     val scope = rememberCoroutineScope()
     // style.css dialog.sheet[open]: rise .22 s ease-out.
     LaunchedEffect(Unit) { if (Motion.still) y.snapTo(0f) else y.animateTo(0f, tween(220, easing = androidx.compose.animation.core.LinearOutSlowInEasing)) }
     fun close() { scope.launch { if (!Motion.still) y.animateTo(1f, tween(200)); onClose() } }
     var zoom by remember { mutableStateOf(false) }
-    BackHandler(enabled = !zoom) { close() }
+    // app.js's Back on the top sheet: with a trail (a page opened from the tournament deck's sheet) A.sheetHistoryBack, else closeSheet.
+    BackHandler(enabled = !zoom) { val b = onBack; if (historyBack && b != null) scope.launch { if (!Motion.still) y.animateTo(1f, tween(200)); b() } else close() }
     FoilFocus.Cover()
     androidx.compose.runtime.CompositionLocalProvider(LocalSheetPal provides sheetPal(m.game)) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -375,7 +378,7 @@ fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onBa
                     }
                     item(key = "end") { Spacer(Modifier.navigationBarsPadding().height(22.dp)) }
                 }
-                SheetHead(m.head?.title.orEmpty(), scrolled, gutter, back = onBack?.takeIf { m.head?.back == true }?.let { b -> { scope.launch { if (!Motion.still) y.animateTo(1f, tween(200)); b() } } }) { close() }
+                SheetHead(m.head?.title.orEmpty(), scrolled, gutter, history = historyBack, back = onBack?.takeIf { m.head?.back == true || historyBack }?.let { b -> { scope.launch { if (!Motion.still) y.animateTo(1f, tween(200)); b() } } }) { close() }
                 if (pinTabs) Box(Modifier.padding(top = if (scrolled) 57.dp else 0.dp).fillMaxWidth().background(Brush.verticalGradient(0f to Color(0xFF111318), .8f to Color(0xF2111318), 1f to Color(0x00111318)))
                     .padding(horizontal = gutter).padding(top = 6.dp, bottom = 8.dp)) { CardTabs(m.tabs, big, act) }
             }
@@ -468,15 +471,19 @@ private fun BleedFit(p: androidx.compose.ui.graphics.painter.Painter, heroH: Dp,
 
 /** .sheet-head.overlay: the close button over the art; past 110 scrolled, the bar with the card's name (style.css 1352-1355). */
 @Composable
-private fun SheetHead(title: String, scrolled: Boolean, gutter: Dp, back: (() -> Unit)? = null, onClose: () -> Unit) {
+private fun SheetHead(title: String, scrolled: Boolean, gutter: Dp, history: Boolean = false, back: (() -> Unit)? = null, onClose: () -> Unit) {
     Row(Modifier.fillMaxWidth().then(if (scrolled) Modifier.background(Color(0xFF171A20)).drawBehind {
         drawRect(LineC, topLeft = Offset(0f, size.height - 1.dp.toPx()), size = Size(size.width, 1.dp.toPx()))
     } else Modifier).padding(horizontal = gutter).padding(top = if (scrolled) 4.dp else 16.dp, bottom = if (scrolled) 8.dp else 0.dp),
         verticalAlignment = Alignment.CenterVertically) {
         // views.js cardSheet: the ← (data-act sheetBack, "Back to deck idea") before the name when the page came from the idea sheet.
         if (back != null) Box(Modifier.padding(end = 8.dp).size(44.dp).clip(RoundedCornerShape(12.dp)).background(if (scrolled) Surface2 else Color(0x8C0A0C10)).border(1.dp, Color(0x2EFFFFFF), RoundedCornerShape(12.dp))
-            .clickable(onClick = back).semantics { contentDescription = "Back to deck idea" }, contentAlignment = Alignment.Center) {
-            Text("←", style = sans(17f, 400, Color.White))
+            .clickable(onClick = back).semantics { contentDescription = if (history) "Back to previous card or deck" else "Back to deck idea" }, contentAlignment = Alignment.Center) {
+            // app.js wireSheetBack's button is ICON.back (icons.js: the chevron M14.5 6 8.5 12l6 6, stroke 1.75).
+            if (history) androidx.compose.foundation.Canvas(Modifier.size(20.dp)) { val u = size.width / 24f
+                drawPath(androidx.compose.ui.graphics.Path().apply { moveTo(14.5f * u, 6f * u); lineTo(8.5f * u, 12f * u); lineTo(14.5f * u, 18f * u) }, Color.White,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(1.75f * u, cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)) }
+            else Text("←", style = sans(17f, 400, Color.White))
         }
         if (scrolled) Text(title, style = manrope(16f, 700, Ink, lh = 1.3f), maxLines = 2, modifier = Modifier.weight(1f))
         else Spacer(Modifier.weight(1f))

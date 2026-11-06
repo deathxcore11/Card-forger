@@ -285,6 +285,11 @@ private fun App(activity: MainActivity) {
     fun back() { if (trail.size > 1) trail.removeAt(trail.lastIndex) }
     /** The open screen becomes [s] (a game tab on the set list): back still goes where it went. */
     fun swap(s: Screen) { trail[trail.lastIndex] = s }
+    /** Collection's website pages, but for a Decks tab drawn here (Ideas, Meta decks: dev.cardstashy.nativeplay.ui.nativeDecksTab), which opens natively. */
+    fun site(url: String, press: String? = null) {
+        val tab = if (NATIVE_DECKS) dev.cardstashy.nativeplay.ui.nativeDecksTab(url, press) else null
+        if (tab != null) { dev.cardstashy.nativeplay.ui.decksOpenOn(tab); go(Screen.CollectionDecks) } else go(Screen.Web(url, press))
+    }
     BackHandler(enabled = trail.size > 1) { back() }
     /** A set badge, the card page's set and Home's sets open the native set page when it is on; null keeps the website's. */
     val setOpen: ((String) -> Unit)? = if (NATIVE_SETS) ({ code -> go(Screen.CollectionSet(code)) }) else null
@@ -334,9 +339,10 @@ private fun App(activity: MainActivity) {
             // Collection Home is native; its other tabs and the pages it opens are still the website's.
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.CollectionHomeRoute(onPlay = { if (trail.size > 1) back() else go(Screen.Home) }, onProfile = { go(Screen.SignIn) },
-                web = { url, press -> go(Screen.Web(url, press)) },
+                web = { url, press -> site(url, press) },
                 open = { url -> if (url.startsWith("https://") || url.startsWith("http://")) runCatching { activity.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))) } },
                 onCards = if (NATIVE_CARDS) ({ go(Screen.CollectionCards) }) else null, onDecks = if (NATIVE_DECKS) ({ go(Screen.CollectionDecks) }) else null,
+                onDeck = if (NATIVE_DECK) ({ id, g -> go(Screen.CollectionDeck(id, g.id)) }) else null,
                 // The open game's sets (tcg.js: the today-set link and #sets follow the game Home shows).
                 onSet = if (NATIVE_SETS) ({ code -> go(Screen.CollectionSet(code, dev.cardstashy.nativeplay.ui.CollectionGame.current.value.id)) }) else null,
                 onSets = if (NATIVE_SETS) ({ go(Screen.CollectionSets(dev.cardstashy.nativeplay.ui.CollectionGame.current.value.id)) }) else null)
@@ -345,14 +351,14 @@ private fun App(activity: MainActivity) {
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.CollectionCardsRoute(onPlay = { go(Screen.Home) }, onProfile = { go(Screen.SignIn) },
                 onHome = { if (trail.getOrNull(trail.size - 2) == Screen.Collection) back() else go(Screen.Collection) },
-                web = { url, press -> go(Screen.Web(url, press)) }, onDecks = if (NATIVE_DECKS) ({ go(Screen.CollectionDecks) }) else null, nativeCard = NATIVE_CARD, onSet = setOpen)
+                web = { url, press -> site(url, press) }, onDecks = if (NATIVE_DECKS) ({ go(Screen.CollectionDecks) }) else null, nativeCard = NATIVE_CARD, onSet = setOpen)
         }
         Screen.CollectionDecks -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.CollectionDecksRoute(onPlay = { go(Screen.Home) }, onProfile = { go(Screen.SignIn) },
                 onHome = { if (trail.getOrNull(trail.size - 2) == Screen.Collection) back() else go(Screen.Collection) },
                 onCards = { if (NATIVE_CARDS) go(Screen.CollectionCards) else go(Screen.Web("https://cardstashy.com/#collection", null)) },
-                web = { url, press -> go(Screen.Web(url, press)) }, onDeck = if (NATIVE_DECK) ({ id, g -> go(Screen.CollectionDeck(id, g.id)) }) else null)
+                web = { url, press -> site(url, press) }, onDeck = if (NATIVE_DECK) ({ id, g -> go(Screen.CollectionDeck(id, g.id)) }) else null)
         }
         is Screen.CollectionDeck -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
@@ -362,7 +368,7 @@ private fun App(activity: MainActivity) {
                 onCards = { if (NATIVE_CARDS) go(Screen.CollectionCards) else go(Screen.Web("https://cardstashy.com/#collection", null)) },
                 // A.deckPlayCpu: the Practice lobby with this deck in your seat.
                 onPractice = { id, format -> lobbies.getOrPut("practice") { dev.cardstashy.nativeplay.ui.LobbyModel("practice") }.practiceWith(id, format); go(Screen.Lobby("practice")) },
-                web = { url, press -> go(Screen.Web(url, press)) }, nativeCard = NATIVE_CARD, onSet = setOpen, onDeck = { id -> go(Screen.CollectionDeck(id)) },
+                web = { url, press -> site(url, press) }, nativeCard = NATIVE_CARD, onSet = setOpen, onDeck = { id -> go(Screen.CollectionDeck(id)) },
                 game = dev.cardstashy.nativeplay.ui.CardGame.of(s.game))
         }
         is Screen.CollectionSets -> {
@@ -370,7 +376,7 @@ private fun App(activity: MainActivity) {
             dev.cardstashy.nativeplay.ui.CollectionSetsRoute(onPlay = { go(Screen.Home) }, onProfile = { go(Screen.SignIn) }, onHome = { go(Screen.Collection) },
                 onCards = { if (NATIVE_CARDS) go(Screen.CollectionCards) else go(Screen.Web("https://cardstashy.com/#collection", null)) },
                 onDecks = { if (NATIVE_DECKS) go(Screen.CollectionDecks) else go(Screen.Web("https://cardstashy.com/#decks", null)) },
-                onSet = { g, code -> go(Screen.CollectionSet(code, g)) }, web = { url, press -> go(Screen.Web(url, press)) },
+                onSet = { g, code -> go(Screen.CollectionSet(code, g)) }, web = { url, press -> site(url, press) },
                 game = s.game, tcg = NATIVE_TCG_SETS, onGame = { g -> dev.cardstashy.nativeplay.ui.CollectionGame.set(dev.cardstashy.nativeplay.ui.CardGame.of(g)); swap(Screen.CollectionSets(g)) })
         }
         is Screen.CollectionSearch -> {
@@ -380,7 +386,7 @@ private fun App(activity: MainActivity) {
                 onCards = { if (NATIVE_CARDS) go(Screen.CollectionCards) else go(Screen.Web("https://cardstashy.com/#collection", null)) },
                 onDecks = { if (NATIVE_DECKS) go(Screen.CollectionDecks) else go(Screen.Web("https://cardstashy.com/#decks", null)) },
                 onSets = { g -> if (g == "mtg" || NATIVE_TCG_SETS) go(Screen.CollectionSets(g)) else go(Screen.Web("https://cardstashy.com/#sets", "[data-act=\"setGame\"][data-game=\"$g\"]")) },
-                onSet = { g, code -> go(Screen.CollectionSet(code, g)) }, web = { url, press -> go(Screen.Web(url, press)) },
+                onSet = { g, code -> go(Screen.CollectionSet(code, g)) }, web = { url, press -> site(url, press) },
                 game = s.game, onGame = { g -> dev.cardstashy.nativeplay.ui.CollectionGame.set(dev.cardstashy.nativeplay.ui.CardGame.of(g)); swap(Screen.CollectionSearch(g)) })
         }
         is Screen.CollectionSet -> {
@@ -390,7 +396,7 @@ private fun App(activity: MainActivity) {
                 onDecks = { if (NATIVE_DECKS) go(Screen.CollectionDecks) else go(Screen.Web("https://cardstashy.com/#decks", null)) },
                 // "‹ All sets" goes back when the list opened this set, as the site's back does.
                 onSets = { if (trail.getOrNull(trail.size - 2) == Screen.CollectionSets(s.game)) back() else go(Screen.CollectionSets(s.game)) },
-                onSet = { code -> go(Screen.CollectionSet(code, s.game)) }, web = { url, press -> go(Screen.Web(url, press)) }, nativeCard = NATIVE_CARD, nativePack = NATIVE_PACK, nativeTcgCards = NATIVE_TCG_CARDS,
+                onSet = { code -> go(Screen.CollectionSet(code, s.game)) }, web = { url, press -> site(url, press) }, nativeCard = NATIVE_CARD, nativePack = NATIVE_PACK, nativeTcgCards = NATIVE_TCG_CARDS,
                 // Another game's tab: its set list here when those are native, else the website's.
                 onGame = { g -> dev.cardstashy.nativeplay.ui.CollectionGame.set(dev.cardstashy.nativeplay.ui.CardGame.of(g)); if (g == "mtg" || NATIVE_TCG_SETS) swap(Screen.CollectionSets(g)) else go(Screen.Web("https://cardstashy.com/#sets", "[data-act=\"setGame\"][data-game=\"$g\"]")) })
         }
@@ -398,7 +404,7 @@ private fun App(activity: MainActivity) {
         Screen.SignIn -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
             // The profile orb and every "Sign in" open the site's Settings: signed out it is the account card (Log in / Create account), signed in the account hub.
-            dev.cardstashy.nativeplay.ui.SettingsScreen(onBack = { back() }, onWeb = { go(Screen.Web(it)) })
+            dev.cardstashy.nativeplay.ui.SettingsScreen(onBack = { back() }, onWeb = { site(it) })
         }
         is Screen.Lobby -> {
             LaunchedEffect(Unit) { activity.inGame(false) }

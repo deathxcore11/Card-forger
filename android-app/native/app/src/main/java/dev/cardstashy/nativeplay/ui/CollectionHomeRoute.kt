@@ -99,7 +99,9 @@ object CollectionGame {
 
 @Composable
 fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: String, press: String?) -> Unit, open: (String) -> Unit, onCards: (() -> Unit)? = null, onDecks: (() -> Unit)? = null,
-                        onSet: ((String) -> Unit)? = null, onSets: (() -> Unit)? = null) {
+                        onSet: ((String) -> Unit)? = null, onSets: (() -> Unit)? = null,
+                        /** A deck's page here (Magic's #deck/<id>, Yu-Gi-Oh! / Pokémon's #tdeck/<id>): a tournament deck saved from its sheet. */
+                        onDeck: ((id: String, game: CardGame) -> Unit)? = null) {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
@@ -110,6 +112,8 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
     var hints by remember { mutableStateOf(HomeCache.hints?.takeIf { HomeCache.hintsGame == game }) }
     // A card page opened from Home (the Card of the Day of Yu-Gi-Oh! or Pokémon), over it.
     var cards by remember { mutableStateOf(listOf<CardOpen>()) }
+    /** A Community Meta deck's sheet (home-ui.js home-meta-open: A.mtgProven / tcg.js A.tMetaDeck) open over Home. */
+    var proven by remember { mutableStateOf(false) }
     // The account copy refreshes on every visit; the saved copy shows meanwhile.
     LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
     var failed by remember { mutableStateOf<String?>(null) }
@@ -151,8 +155,13 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
             set = { code -> val c = if (CollectionGame.current.value == CardGame.MTG) code.lowercase() else code
                 if (c.isNotBlank()) onSet?.invoke(c) ?: web(site + "#set/" + android.net.Uri.encode(c), null) },
             setName = { name -> scope.launch { val id = CollectionEngine.setByName(CollectionGame.current.value.id, name); if (id.isNotBlank()) onSet?.invoke(id) } },
-            // The deck itself opens from the site's own carousel; until that page is native, the Meta decks page.
-            metaDeck = { web(site + "#decks/inspiration", null) },
+            // The deck's sheet, from the list Home shows (CollectionEngine.provenHome), drawn here (MetaDeckHost).
+            metaDeck = { s -> val g = CollectionGame.current.value
+                scope.launch { runCatching {
+                    val j = CollectionEngine.provenHome(g.id, s.key)
+                    j.get("toasts")?.takeIf { it.isJsonArray }?.asJsonArray?.lastOrNull()?.takeIf { it.isJsonPrimitive }?.asString?.let { CollectionWrites.show(it) }
+                    if (MetaDeckSheetModel.parse(j) != null) proven = true
+                } } },
         )
     }
     val top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit = { tabs ->
@@ -182,6 +191,16 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
         }
         nav(false)
     }
+    if (proven) MetaDeckHost(site, close = { proven = false },
+        // A.provenSave: the saved deck's page (Magic's on its Cards tab; Yu-Gi-Oh! / Pokémon's #tdeck/<id>).
+        deck = { d -> proven = false
+            val id = d.get("id")?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
+            val tg = if (d.get("go")?.asString == "tdeck") CardGame.of(d.get("game")?.asString ?: CollectionGame.current.value.id) else CardGame.MTG
+            if (tg == CardGame.MTG) deckOpensOn("mtg", id, d.get("tab")?.takeIf { it.isJsonPrimitive }?.asString ?: "cards")
+            if (id.isNotBlank()) onDeck?.invoke(id, tg) ?: web(site + (if (tg == CardGame.MTG) "#deck/" else "#tdeck/") + android.net.Uri.encode(id), null) },
+        // The website's Home, the game chosen first (tcg.js A.setGame), the deck's card pressed, then [sel] in its sheet.
+        site = { u, sel -> val g = CollectionGame.current.value
+            web(u, if (g == CardGame.MTG) sel else "[data-act=\"setGame\"][data-game=\"${g.id}\"]\n" + sel) }, web = web)
     cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) { CollectionCardHost(c, onClose = { cards = cards.dropLast(1) }, onOpen = { cards = cards + it }, web = web, onSet = onSet) } }
     }
 }

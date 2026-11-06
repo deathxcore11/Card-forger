@@ -67,6 +67,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -341,6 +342,7 @@ private fun margins(n: SiteNode, ctx: Ctx): Pair<Float, Float> = when {
     n.has("btn") && n.has("block") -> 10f to 0f
     // .grid2 10 above and under; .actions 10 above; .log-form and .life-grid 8 above and under.
     n.has("grid2") -> 10f to 10f
+    n.has("finder-controls") -> 10f to 10f
     n.has("actions") -> 10f to 0f
     n.has("log-form") || n.has("life-grid") -> 8f to 8f
     else -> 0f to 0f
@@ -367,10 +369,41 @@ private fun Element(n: SiteNode, ui: SiteUi, ctx: Ctx) {
         n.tag == "button" || n.tag == "a" -> SiteButton(n, ui, ctx, mark)
         n.tag == "input" -> SiteInput(n, ui, mark)
         n.tag == "select" -> SiteSelect(n, ui, mark)
+        // label.check round a checkbox (style.css: a row, 8 apart, 13.5 / 500 in the text colour; the box 18 square in the gold accent),
+        // the whole row its 44 tall tap target; a tap goes to the box's change listener with the box flipped.
+        n.tag == "label" && n.elements.any { it.tag == "input" && it["type"] == "checkbox" } -> {
+            val box = n.elements.first { it.tag == "input" && it["type"] == "checkbox" }
+            val on = (box.value?.let { it == "true" || it == "on" } ?: false) || "checked" in box.attrs
+            val gold = LocalGameGold.current
+            // Under .finder-controls the later rule (style.css 672) makes the label a grid again, 4 apart, 12.5 muted (500 from
+            // label.check): the box (width 100 %, so centred) on its own line, then each of its words' runs on a line of its own.
+            if (ctx.parentHas("finder-controls")) Column(mark.fillMaxWidth().clickable { ui.type(box.id, (!on).toString()) }
+                .semantics(mergeDescendants = true) { role = androidx.compose.ui.semantics.Role.Checkbox; stateDescription = if (on) "Checked" else "Not checked" },
+                verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Box(Modifier.fillMaxWidth().heightIn(min = 44.dp), contentAlignment = Alignment.Center) { CheckSquare(on, gold) }
+                n.kids.filter { isInline(it, false) && !(it is String && it.isBlank()) }.forEach { k ->
+                    Text(if (k is SiteNode) k.text() else (k as String).trim(), style = cssType(12.5f, 500, 18.1f, Site.Muted))
+                }
+            }
+            else Row(mark.fillMaxWidth().heightIn(min = 44.dp).clickable { ui.type(box.id, (!on).toString()) }
+                .semantics { role = androidx.compose.ui.semantics.Role.Checkbox; stateDescription = if (on) "Checked" else "Not checked" },
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CheckSquare(on, gold)
+                Paragraph(n.kids.filter { isInline(it, false) }, ui, inner.size(13.5f).color(Site.Text).weight(500), Modifier.weight(1f))
+            }
+        }
         // A <label> round its field (style.css label: a grid, 4 apart; its words 12.5, 600, muted).
         n.tag == "label" && n.elements.any { it.tag == "select" || it.tag == "input" } -> Column(mark.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             n.kids.filter { isInline(it, false) }.takeIf { l -> l.any { !(it is String && it.isBlank()) } }?.let { Paragraph(it, ui, inner.size(12.5f).color(Site.Muted).weight(600)) }
-            n.elements.filter { it.tag == "select" || it.tag == "input" }.forEach { Element(it, ui, inner) }
+            // style.css 43: a field's font is inherited (font: inherit); under .finder-controls that is the label's 12.5 / 600.
+            val finder = ctx.parentHas("finder-controls")
+            n.elements.filter { it.tag == "select" || it.tag == "input" }.forEach {
+                when {
+                    finder && it.tag == "select" -> SiteSelect(it, ui, style = cssType(12.5f, 600, 18.1f, Site.Text))
+                    finder && it.tag == "input" -> SiteInput(it, ui, style = cssType(12.5f, 600, 18.1f, Site.Text))
+                    else -> Element(it, ui, inner)
+                }
+            }
         }
         // A line with the curve's legend swatches in it (.key, .key.old).
         n.tag == "p" && n.elements.any { it.has("key") } -> KeyLegend(n, textCtx(n, ctx).under(n), mark)
@@ -389,6 +422,17 @@ private fun Element(n: SiteNode, ui: SiteUi, ctx: Ctx) {
             }
         }
         else -> Container(n, ui, ctx, mark)
+    }
+}
+
+/** A checkbox: 18 square, the gold accent with its tick when on, a 1.5 grey line when off. */
+@Composable
+private fun CheckSquare(on: Boolean, gold: Color) {
+    Box(Modifier.size(18.dp).clip(RoundedCornerShape(3.dp)).background(if (on) gold else Color.Transparent)
+        .border(if (on) 0.dp else 1.5.dp, Color(0xFF8A8F98), RoundedCornerShape(3.dp)), contentAlignment = Alignment.Center) {
+        if (on) androidx.compose.foundation.Canvas(Modifier.size(14.dp)) { val u = size.width / 24f
+            drawPath(androidx.compose.ui.graphics.Path().apply { moveTo(5f * u, 12.5f * u); lineTo(9.5f * u, 17f * u); lineTo(19f * u, 7f * u) }, Color(0xFF15120C),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(3f * u, cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)) }
     }
 }
 
@@ -531,6 +575,22 @@ private fun Container(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
                         line.forEach { k -> Column(Modifier.weight(1f)) { if (k.tag == "div") Blocks(k.kids, ui, inner.under(k), padded = false) else Element(k, ui, inner) } }
                         repeat(cols - line.size) { Spacer(Modifier.weight(1f)) }
                     }
+                }
+            }
+        }
+        // .finder-controls (style.css 671-673): three equal columns 8 apart at every width; a .span-all child takes the whole row.
+        n.has("finder-controls") -> Column(mark.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            val lines = ArrayList<List<SiteNode>>(); val run = ArrayList<SiteNode>()
+            for (k in shown.filterIsInstance<SiteNode>()) {
+                if (k.has("span-all")) { if (run.isNotEmpty()) { lines += run.toList(); run.clear() }; lines += listOf(k) }
+                else { run += k; if (run.size == 3) { lines += run.toList(); run.clear() } }
+            }
+            if (run.isNotEmpty()) lines += run.toList()
+            lines.forEach { line ->
+                if (line.size == 1 && line[0].has("span-all")) Element(line[0], ui, inner)
+                else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
+                    line.forEach { k -> Column(Modifier.weight(1f)) { Element(k, ui, inner) } }
+                    repeat(3 - line.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
         }
@@ -816,13 +876,16 @@ private fun Summary(s: SiteNode, ui: SiteUi, ctx: Ctx, blockSmall: Boolean, d: S
  * .pick 13 with 7 / 12 in; .on gold; in .rule-learning at least 40 tall, the step rail's 44 at .76rem, corners 10), .link (gold,
  * 600), .rule-dismiss (the glass's ✕), a plain <a href> (opens outside the app).
  */
+/** icons.js's leading glyphs (decorateGlyphs) for the buttons a panel draws; empty where a host has not read them. */
+internal val LocalSiteGlyphs = androidx.compose.runtime.staticCompositionLocalOf<Map<String, SiteSvg>> { emptyMap() }
+
 @Composable
 private fun SiteButton(n: SiteNode, ui: SiteUi, ctx: Ctx, modifier0: Modifier = Modifier) {
     val disabled = "disabled" in n.attrs
     val href = n["href"].orEmpty()
     var bounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     val tap: () -> Unit = { if (n.tag == "a" && href.startsWith("http")) ui.open(href) else if (!disabled) { ui.anchor.value = bounds; ui.tap(n.id) } }
-    val label = n.text()
+    val (icon, label) = leadGlyph(n.text(), LocalSiteGlyphs.current)
     val rail = ctx.parentHas("learn-step-rail")
     val modifier = modifier0.onGloballyPositioned { bounds = it.boundsInRoot() }
     when {
@@ -833,7 +896,10 @@ private fun SiteButton(n: SiteNode, ui: SiteUi, ctx: Ctx, modifier0: Modifier = 
             Box(modifier.alpha(if (disabled) .45f else 1f).heightIn(min = if (small) 34.dp else 44.dp).clip(shape).background(if (ghost) Site.Surface2 else Site.Gold)
                 .then(if (ghost) Modifier.border(1.dp, Site.Line, shape) else Modifier).clickable(enabled = !disabled) { tap() }
                 .semantics { role = Role.Button; n["aria-label"]?.let { contentDescription = it } }.padding(horizontal = if (small) 12.dp else 16.dp, vertical = 6.dp), contentAlignment = Alignment.Center) {
-                Text(label, style = cssType(if (small) 13.5f else 15f, 700, if (small) 19.6f else 21.75f, ink), textAlign = TextAlign.Center)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (icon != null) SiteIcon(icon, if (small) 15.dp else 17.dp, ink, stroke = 2f)
+                    Text(label, style = cssType(if (small) 13.5f else 15f, 700, if (small) 19.6f else 21.75f, ink), textAlign = TextAlign.Center)
+                }
             }
         }
         n.has("chip") -> {
@@ -854,7 +920,9 @@ private fun SiteButton(n: SiteNode, ui: SiteUi, ctx: Ctx, modifier0: Modifier = 
             val plain = n.tag == "a" && !n.has("link")
             val size = if (plain && ctx.glass) 12f else if (n.has("small")) 13f else ctx.px
             val color = if (plain && ctx.glass) (accent ?: Site.Text) else if (n.has("danger")) Bad else Site.Gold
-            Box(modifier.clip(RoundedCornerShape(4.dp)).clickable(enabled = !disabled) { tap() }.semantics { role = Role.Button; n["aria-label"]?.let { contentDescription = it } }.padding(vertical = if (plain) 0.dp else 4.dp)) {
+            Row(modifier.clip(RoundedCornerShape(4.dp)).clickable(enabled = !disabled) { tap() }.semantics { role = Role.Button; n["aria-label"]?.let { contentDescription = it } }.padding(vertical = if (plain) 0.dp else 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (icon != null) SiteIcon(icon, (size + 2f).dp, color, stroke = 2f)
                 Text(label, style = cssType(size, if (plain) 400 else 600, size * (if (n.has("rule-source-action")) 1.6f else 1.45f), color)
                     .let { if (plain) it.copy(textDecoration = TextDecoration.Underline) else it })
             }
@@ -864,19 +932,21 @@ private fun SiteButton(n: SiteNode, ui: SiteUi, ctx: Ctx, modifier0: Modifier = 
 
 /** input[type=search]: the site's field (44 tall, 11 corners, its line); each letter goes to the site's input listener. */
 @Composable
-private fun SiteInput(n: SiteNode, ui: SiteUi, modifier: Modifier = Modifier) {
-    var text by remember(n.id) { mutableStateOf(n.value ?: n["value"].orEmpty()) }
-    FormInput(text, { text = it; ui.type(n.id, it) }, cssType(15f, 400, 21.75f, Site.Text), n["placeholder"].orEmpty(), modifier, desc = n["aria-label"].orEmpty(),
+private fun SiteInput(n: SiteNode, ui: SiteUi, modifier: Modifier = Modifier, style: TextStyle = cssType(15f, 400, 21.75f, Site.Text)) {
+    // Kept by the field's attributes, not its id: a redraw while typing (C.finderMax, I.finderSearch, I.refSearch draw the panel again)
+    // gives it a new id, and the letters typed since stay (app.js rerenderKeepingFocus keeps the field as it is).
+    var text by remember(n.tag, n.attrs - "value") { mutableStateOf(n.value ?: n["value"].orEmpty()) }
+    FormInput(text, { text = it; ui.type(n.id, it) }, style, n["placeholder"].orEmpty(), modifier, desc = n["aria-label"].orEmpty(),
         keyboard = if (n["type"] == "number") androidx.compose.ui.text.input.KeyboardType.Number else androidx.compose.ui.text.input.KeyboardType.Text)
 }
 
 /** A <select>: glass-select.js's field with the chosen option (wrapping as the site's does); a pick goes to its change listener. */
 @Composable
-private fun SiteSelect(n: SiteNode, ui: SiteUi, modifier: Modifier = Modifier) {
+private fun SiteSelect(n: SiteNode, ui: SiteUi, modifier: Modifier = Modifier, style: TextStyle = cssType(15f, 400, 21.75f, Site.Text)) {
     val opts = n.elements.filter { it.tag == "option" }.map { (it["value"] ?: it.text()) to it.text() }
     var picked by remember(n.id) { mutableStateOf(n.value ?: n.elements.firstOrNull { it.tag == "option" && "selected" in it.attrs }?.let { it["value"] ?: it.text() } ?: opts.firstOrNull()?.first.orEmpty()) }
     Box(modifier.fillMaxWidth()) {
-        FormSelect(opts, picked, cssType(15f, 400, 21.75f, Site.Text), desc = n["aria-label"].orEmpty(), wrap = true) { v -> picked = v; ui.type(n.id, v) }
+        FormSelect(opts, picked, style, desc = n["aria-label"].orEmpty(), wrap = true) { v -> picked = v; ui.type(n.id, v) }
     }
 }
 

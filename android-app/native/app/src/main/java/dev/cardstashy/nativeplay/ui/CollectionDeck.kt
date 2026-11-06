@@ -590,7 +590,9 @@ internal class DsHeroButton(val icon: SiteSvg?, val label: String, val text: Str
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun DsHero(art: String?, artSources: List<String>, artCrop: String, eyebrow: List<DeckEyebrow>, title: String, line: String, stats: List<DeckStat>, owned: Float?,
-                    wide: Boolean, screen: Dp, reduced: Boolean, back: DsHeroButton?, more: DsHeroButton?, onStat: (DeckStat) -> Unit, review: (DeckEyebrow) -> Unit) {
+                    wide: Boolean, screen: Dp, reduced: Boolean, back: DsHeroButton?, more: DsHeroButton?, onStat: (DeckStat) -> Unit, review: (DeckEyebrow) -> Unit,
+                    /** What a stat carries after its word (.ds-stat's more: the sheet's Retry prices link), by the stat's place. */
+                    statMore: @Composable (Int) -> Unit = {}) {
     val shape = RoundedCornerShape(18.dp)
     // --ds-h: clamp(300px, 34vw, 380px); a phone (under 700) 300.
     val h = if (screen < 700.dp) 300.dp else (screen.value * .34f).coerceIn(300f, 380f).dp
@@ -622,7 +624,8 @@ internal fun DsHero(art: String?, artSources: List<String>, artCrop: String, eye
             drawRect(Brush.horizontalGradient(0f to Color(0x66000000), v / size.width to Color.Transparent))
             drawRect(Brush.horizontalGradient((1f - v / size.width) to Color.Transparent, 1f to Color(0x66000000)))
         })
-        Column(Modifier.matchParentSize()) {
+        // The hero grows with what it holds (min-height --ds-h): ← and ⋯ at the top, the name and the stats at the foot.
+        Column(Modifier.fillMaxWidth().heightIn(min = h), verticalArrangement = Arrangement.SpaceBetween) {
             // .ds-nav: ← and ⋯, 44 square, 12 corners.
             Row(Modifier.fillMaxWidth().padding(start = if (wide) 18.dp else 14.dp, end = if (wide) 18.dp else 14.dp, top = if (wide) 14.dp else 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                 if (back != null) Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0x73000000)).border(1.dp, Color(0x2EFFFFFF), RoundedCornerShape(12.dp))
@@ -634,7 +637,8 @@ internal fun DsHero(art: String?, artSources: List<String>, artCrop: String, eye
                     SiteIcon(more.icon, 20.dp, GoldC)
                 }
             }
-            Spacer(Modifier.weight(1f).heightIn(min = 10.dp))
+            Column(Modifier.fillMaxWidth()) {
+            Spacer(Modifier.height(10.dp))
             // .deck-hero-id: the eyebrow (badge, format, colours, review), the Cinzel name, the commander.
             Column(Modifier.padding(horizontal = if (wide) 18.dp else 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
@@ -662,6 +666,7 @@ internal fun DsHero(art: String?, artSources: List<String>, artCrop: String, eye
                         // .ds-stat:last-child { margin-left: auto } from 700.
                         if (screen >= 700.dp && i == stats.lastIndex && i > 0) Spacer(Modifier.weight(1f))
                         HeroStat(s) { onStat(s) }
+                        statMore(i)
                     }
                 }
                 owned?.let { o ->
@@ -670,6 +675,7 @@ internal fun DsHero(art: String?, artSources: List<String>, artCrop: String, eye
                         Box(Modifier.fillMaxWidth(o.coerceIn(0f, 1f)).fillMaxHeight().background(Brush.horizontalGradient(listOf(lerp(Color.White, GoldC, .7f), GoldC))))
                     }
                 }
+            }
             }
         }
         // ::after: a 1 px hairline, gold at the top left and bottom right fading through glass.
