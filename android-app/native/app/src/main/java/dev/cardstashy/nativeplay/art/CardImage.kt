@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -16,6 +18,7 @@ import coil3.compose.AsyncImagePainter
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import dev.cardstashy.nativeplay.match.DemoDecks
+import kotlinx.coroutines.delay
 import dev.cardstashy.nativeplay.ui.AssetImage
 
 /**
@@ -34,15 +37,18 @@ fun CardImage(name: String?, modifier: Modifier = Modifier, crop: Boolean = fals
     val asset = remember(name, crop, v) { if (CardArt.pinned(name)) null else DemoDecks.load(context).image(name, crop) }
     if (asset != null) { AssetImage(asset, modifier, maxWidth = if (crop) 900 else 488, contentScale = contentScale, shape = shape); return }
     val url = remember(name, crop, v) { CardArt.url(name, crop) }
-    if (url == null) { Box(modifier) { fallback() }; return }
-    val request = remember(url, crop) { CardArt.request(context, url, crop) }
-    // A picture that fails to load shows the card's name plate, never an empty face.
+    // No picture on record (its lookup failed while the match loaded): look it up again; the plate shows meanwhile.
+    if (url == null) { LaunchedEffect(name) { CardArt.want(name) }; Box(modifier) { fallback() }; return }
+    // A picture that fails to load shows the card's name plate, never an empty face, and is fetched again a few times, spaced out.
+    var attempt by remember(url) { mutableIntStateOf(0) }
     var failed by remember(url) { mutableStateOf(false) }
+    val request = remember(url, crop, attempt) { CardArt.request(context, url, crop, attempt) }
+    if (failed && attempt < 3) LaunchedEffect(url, attempt) { delay(1500L shl attempt); attempt++ }
     val m = if (shape != null) modifier.clip(shape) else modifier
     Box(m) {
         if (failed) fallback()
         AsyncImage(model = request, contentDescription = null, imageLoader = CardArt.loader, modifier = Modifier.fillMaxSize(), contentScale = contentScale,
-            onState = { failed = it is AsyncImagePainter.State.Error })
+            onState = { when (it) { is AsyncImagePainter.State.Error -> failed = true; is AsyncImagePainter.State.Success -> failed = false; else -> {} } })
     }
 }
 

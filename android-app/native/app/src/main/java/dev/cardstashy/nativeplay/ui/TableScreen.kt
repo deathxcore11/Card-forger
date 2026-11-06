@@ -181,7 +181,6 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
             banner?.let { b -> BannerView(b.text, b.yours, Modifier.align(Alignment.Center)) }
             if (stage == Stage.PLAYING) ClockPill(controller.clock.collectAsState().value, Modifier.align(Alignment.CenterEnd).padding(end = 10.dp).offset(y = (-44).dp))
         }
-        if (stage == Stage.PLAYING || stage == Stage.INTRO) shown?.let { CombatLines(it, anchors) }
         (afk ?: note)?.let { Text(it, style = Type.Label.copy(color = Color(0xFFFFB4A8), fontSize = 14.sp), modifier = Modifier.align(Alignment.TopCenter).padding(top = 96.dp)
             .clip(RoundedCornerShape(999.dp)).background(Color(0xD90C0C0E)).border(1.dp, Palette.Red, RoundedCornerShape(999.dp)).padding(horizontal = 16.dp, vertical = 8.dp)) }
       }
@@ -447,29 +446,6 @@ private fun LifeOrb(life: Int, pickable: Boolean, picked: Boolean, anchor: Strin
                 modifier = Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
         }
         Text("$life", style = Type.Title.copy(fontSize = 22.sp), modifier = Modifier.graphicsLayer { translationY = (drop.value - 1f) * 14.dp.toPx(); alpha = .3f + .7f * drop.value })
-    }
-}
-
-/** Attack lines (attacker to the player it attacks) and block lines (blocker to its attacker): 1.5 dp gold, drawn in after the nudge. */
-@Composable
-private fun CombatLines(st: MatchState, anchors: Anchors) {
-    val field = st.players.flatMap { it.battlefield }
-    val pairs = buildList {
-        field.filter { it.attacking }.forEach { a -> val defender = st.players.firstOrNull { it.id != a.controller } ?: return@forEach; add("c${a.id}" to "orb${defender.id}") }
-        field.filter { it.blocking }.forEach { b -> b.blockingIds.forEach { add("c${b.id}" to "c$it") } }
-    }
-    val grow = remember { Animatable(0f) }
-    LaunchedEffect(pairs) { if (pairs.isEmpty()) grow.snapTo(0f) else { grow.snapTo(0f); delay(150); grow.animateTo(1f, tween(200, easing = FastOutSlowInEasing)) } }
-    if (pairs.isEmpty()) return
-    Canvas(Modifier.fillMaxSize()) {
-        anchors.version.intValue // redraw when an anchor moves
-        for ((from, to) in pairs) {
-            val a = anchors.map[from] ?: continue; val b = anchors.map[to] ?: continue
-            val end = a + (b - a) * grow.value
-            drawLine(Color(0x55000000), a, end, strokeWidth = 4.dp.toPx(), cap = StrokeCap.Round)
-            drawLine(Palette.GoldBright, a, end, strokeWidth = 1.5.dp.toPx(), cap = StrokeCap.Round)
-            if (grow.value >= 1f) drawCircle(Palette.GoldBright, 3.dp.toPx(), b)
-        }
     }
 }
 

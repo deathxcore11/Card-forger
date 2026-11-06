@@ -25,6 +25,9 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -136,6 +139,8 @@ class TableIntents(
     val stop: (String) -> Unit = {}, val mode: (String) -> Unit = {}, val autoPay: (Boolean) -> Unit = {}, val yieldSource: (Int, Boolean) -> Unit = { _, _ -> },
     /** nativeSelect('stack', id): a spell or ability on the stack picked as a target. */
     val stack: (Int) -> Unit = {},
+    /** A short line over the table (the controller's note), e.g. why a creature can't block. */
+    val note: (String) -> Unit = {},
 )
 
 /** The engine phase each light sets a stop on (native-panel.mjs STOP_PHASES). */
@@ -240,6 +245,24 @@ internal fun mayBlock(attacker: Card, blocker: Card): Boolean {
     return !has(attacker, "Flying") || has(blocker, "Flying") || has(blocker, "Reach")
 }
 
+/**
+ * Why a block can't be made, read from the cards themselves (Randall 6 Nov: block mistakes say why, as attacks do). Forge still
+ * judges every block; this only words the refusal. Null when the cards show no reason. [attacker] null: the blocker alone.
+ */
+internal fun blockRefusal(attacker: Card?, blocker: Card): String? {
+    fun has(c: Card, k: String) = c.keywords.any { it.equals(k, true) || it.startsWith("$k ", true) }
+    fun says(c: Card, what: String) = Regex("(?im)^(?:this creature|this card|CARDNAME|${Regex.escape(c.name)}) $what\\.?$").containsMatchIn(c.text.replace('\u2019', '\''))
+        || c.keywords.any { Regex("(?i)^(?:this creature|CARDNAME) $what\\.?$").matches(it.replace('\u2019', '\'')) }
+    return when {
+        blocker.tapped -> "${blocker.name} is tapped, so it can’t block."
+        says(blocker, "can't block") -> "${blocker.name} can’t block."
+        attacker == null -> null
+        says(attacker, "can't be blocked") -> "${attacker.name} can’t be blocked."
+        has(attacker, "Flying") && !has(blocker, "Flying") && !has(blocker, "Reach") -> "${attacker.name} has flying. Only a creature with flying or reach can block it."
+        else -> null
+    }
+}
+
 /** The site's touch layout for a big board (min-width 600, min-height 480). */
 internal fun bigBoard(w: Dp, h: Dp) = w >= 600.dp && h >= 480.dp
 /** Controls keep their CSS px on a big board; a phone scales the 844 × 390 design to fit. */
@@ -313,7 +336,8 @@ fun ForgeBoard(
                     val b = blockPick
                     if (b != null) { blockPick = null; intents.block(b, card.id) } else attackFocus = if (attackFocus == card.id) null else card.id
                 })
-                !myBlocker(card) -> null
+                // Your creature that can't block says why (it is tapped, or it can't block at all).
+                !myBlocker(card) -> if (card.controller == st.viewer && card.zone == "Battlefield" && card.isCreature && !card.attacking) blockRefusal(null, card)?.let { why -> { intents.note(why) } } else null
                 // Your creature already blocking: a tap takes that block back (forge-table.mjs unblock).
                 card.blocking -> ({ (card.blockingIds.firstOrNull() ?: attackersNow.singleOrNull()?.id)?.let { intents.unblock(card.id, it) } ?: intents.card(card.id) })
                 else -> ({
@@ -1200,10 +1224,10 @@ private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) 
     val blocking = st.inputType == "InputBlock" && st.prompt == null
     val colors = mapOf("attack" to Color(0xFFFF6A4A), "block" to Color(0xFF6AAEFF), "target" to Color(0xFFF3D27E))
     val glows = mapOf("attack" to Color(0xAAFF5A3A), "block" to Color(0xAA5A9CFF), "target" to Color(0xAAF3D27E))
-    // The x on your own block line takes that block back (forge-table.mjs unblock).
+    // The x on your own block line takes that block back (forge-table.mjs unblock). Each x is its own small button over the
+    // line: a tap layer over the whole board took every tap during blocks, so no card could be picked (Randall, 6 Nov).
     val hits = remember { mutableStateListOf<Pair<Offset, Rel>>() }
-    Canvas(Modifier.fillMaxSize().onGloballyPositioned { self = it.boundsInRoot().topLeft }
-        .then(if (blocking && live) Modifier.pointerInput(rels) { detectTapGestures { p -> hits.firstOrNull { (at, _) -> (at - p).getDistance() < 18.du.toPx() }?.second?.let { r -> intents.unblock(r.blocker!!, r.attacker!!) } } } else Modifier)) {
+    Canvas(Modifier.fillMaxSize().onGloballyPositioned { self = it.boundsInRoot().topLeft }) {
         anchors.version.intValue
         val k = 1.du.toPx()
         val found = mutableListOf<Pair<Offset, Rel>>()
@@ -1248,6 +1272,13 @@ private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) 
             }
         }
         if (found.map { it.first } != hits.map { it.first }) { hits.clear(); hits.addAll(found) }
+    }
+    if (blocking && live) for ((at, r) in hits) {
+        val density = LocalDensity.current
+        val half = 22.dp
+        Box(Modifier.offset { IntOffset((at.x - with(density) { half.toPx() }).roundToInt(), (at.y - with(density) { half.toPx() }).roundToInt()) }.size(half * 2)
+            .semantics { contentDescription = "Take back this block"; role = Role.Button }
+            .clickable(interactionSource = null, indication = null) { intents.unblock(r.blocker!!, r.attacker!!) })
     }
 }
 

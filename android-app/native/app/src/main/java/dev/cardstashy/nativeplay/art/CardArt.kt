@@ -5,6 +5,7 @@ import coil3.ImageLoader
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.size.Size
@@ -12,7 +13,12 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import dev.cardstashy.nativeplay.account.Http
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -93,7 +99,7 @@ object CardArt {
 
     /** A match is starting: resolve both decks with their pinned printings first, and pin those for the match. */
     suspend fun resolveMatch(rows: List<Pair<String, JsonObject>>) {
-        synchronized(index) { pins.clear() }
+        synchronized(index) { pins.clear(); matchRows.clear(); rows.forEach { (n, r) -> matchRows[n.lowercase()] = r }; tries.clear() }
         resolve(rows)
         var pinnedAny = false
         synchronized(index) { rows.forEach { (n, r) -> pinId(r)?.let { index["#$it"] }?.let { pins[n.lowercase()] = it; pinnedAny = true } } }
@@ -176,13 +182,55 @@ object CardArt {
         if (added) { save(); version.value++ }
     }
 
+    // ---- A picture missing on the table is looked up again (Randall 6 Nov: "art just doesn't load sometimes") ----
+    // A lookup that failed while the match loaded (a slow or dropped Scryfall call) used to leave those cards blank all match.
+    // Each name is asked again a few times, spaced out, in one batched call; the match's own rows keep their printings.
+    private val bg = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val matchRows = HashMap<String, JsonObject>()
+    private val tries = HashMap<String, Int>()
+    private val pending = LinkedHashSet<String>()
+    private var pumping: Job? = null
+    private const val MAX_TRIES = 3
+
+    /** A card on screen has no picture on record: find it again soon (at most [MAX_TRIES] lookups a name). */
+    fun want(name: String) {
+        if (!::indexFile.isInitialized) return
+        val k = name.lowercase()
+        synchronized(index) {
+            if (index.containsKey(k) || pins.containsKey(k) || (tries[k] ?: 0) >= MAX_TRIES) return
+            pending.add(name); if (pumping == null) pumping = bg.launch { pump() }
+        }
+    }
+
+    private suspend fun pump() {
+        var round = 0
+        while (true) {
+            delay(if (round == 0) 400L else 2000L * round)
+            val batch = synchronized(index) {
+                val b = pending.filter { n -> !index.containsKey(n.lowercase()) }; pending.clear()
+                if (b.isEmpty()) pumping = null
+                b.onEach { n -> tries[n.lowercase()] = (tries[n.lowercase()] ?: 0) + 1 }
+            }
+            if (batch.isEmpty()) return
+            resolve(batch.map { n -> n to (synchronized(index) { matchRows[n.lowercase()] } ?: JsonObject().apply { addProperty("name", n) }) })
+            // Still missing (Scryfall did not answer): once more on the next round, up to the limit.
+            synchronized(index) { batch.filter { n -> !index.containsKey(n.lowercase()) && (tries[n.lowercase()] ?: 0) < MAX_TRIES }.forEach { pending.add(it) } }
+            round++
+        }
+    }
+
     private fun names(c: JsonObject): List<String> = buildList {
         c.get("name")?.asString?.let { add(it); if (it.contains(" // ")) addAll(it.split(" // ")) }
         c.getAsJsonArray("card_faces")?.forEach { f -> (f as? JsonObject)?.get("name")?.asString?.let { add(it) } }
     }
 
-    fun request(context: Context, url: String, crop: Boolean = false): ImageRequest =
-        ImageRequest.Builder(context).data(url).size(if (crop) CROP else FACE).build()
+    /** [attempt] above 0 is a retry after a failed load: a new request, so the picture is fetched again (the disk cache key stays the URL). */
+    fun request(context: Context, url: String, crop: Boolean = false, attempt: Int = 0): ImageRequest =
+        ImageRequest.Builder(context).data(url).size(if (crop) CROP else FACE).apply { if (attempt > 0) memoryCacheKeyExtra("try", "$attempt") }.build()
+
+    /** Only onto disk: the download is kept, decoded tiny and never held in memory (a battlefield art crop reads it back at once). */
+    private fun diskOnly(context: Context, url: String): ImageRequest =
+        ImageRequest.Builder(context).data(url).size(Size(8, 8)).memoryCachePolicy(CachePolicy.DISABLED).build()
 
     /** True when every name already has a picture on record (a deck played or warmed before). */
     fun knows(names: Collection<String>) = synchronized(index) { names.all { index.containsKey(it.lowercase()) } }
@@ -190,12 +238,18 @@ object CardArt {
     /**
      * Downloads (or reads from disk) and decodes every face, and the art crops of [crops], at
      * most 12 at a time, so the table shows them at once. Returns how many loaded, or -1 on timeout.
+     * [diskCrops] are only downloaded to disk. [detach]: what is not done by the timeout keeps
+     * downloading after it (a match's own cards), instead of being dropped.
      */
-    suspend fun warm(context: Context, names: Collection<String>, timeoutMs: Long, crops: Collection<String> = emptyList()): Int = withTimeoutOrNull(timeoutMs) {
+    suspend fun warm(context: Context, names: Collection<String>, timeoutMs: Long, crops: Collection<String> = emptyList(),
+                     diskCrops: Collection<String> = emptyList(), detach: Boolean = false): Int {
         val gate = Semaphore(12)
-        val jobs = names.mapNotNull { url(it) }.distinct().map { it to false } + crops.mapNotNull { url(it, crop = true) }.distinct().map { it to true }
-        coroutineScope {
-            jobs.map { (u, crop) -> async(Dispatchers.IO) { gate.withPermit { (loader.execute(request(context, u, crop)) as? SuccessResult) != null } } }.awaitAll().count { it }
-        }
-    } ?: -1
+        val faces = names.mapNotNull { url(it) }.distinct()
+        val jobs = faces.map { request(context, it, false) } + crops.mapNotNull { url(it, crop = true) }.distinct().map { request(context, it, true) } +
+            diskCrops.mapNotNull { url(it, crop = true) }.distinct().filter { it !in faces }.map { diskOnly(context, it) }
+        suspend fun all() = coroutineScope { jobs.map { r -> async(Dispatchers.IO) { gate.withPermit { (loader.execute(r) as? SuccessResult) != null } } }.awaitAll().count { it } }
+        if (!detach) return withTimeoutOrNull(timeoutMs) { all() } ?: -1
+        val job = bg.async { all() }
+        return withTimeoutOrNull(timeoutMs) { job.await() } ?: -1
+    }
 }

@@ -108,10 +108,12 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         val was = me.blockingIds.firstOrNull()
         if (me.blocking && was == attacker) return@launch
         if (me.blocking && was != null) { if (!clickPair(was, blocker) || latest?.card(blocker)?.blocking == true) { say("Block not assigned. Try again."); return@launch }; pairs.remove(blocker) }
-        if (!clickPair(attacker, blocker)) { say("Block not assigned. Try again."); return@launch }
+        // A block Forge refuses says why when the cards show it (flying, tapped, can't block), else the site's line.
+        fun refused() = say(s.card(attacker)?.let { dev.cardstashy.nativeplay.ui.blockRefusal(it, me) } ?: "Block not assigned. Try again.")
+        if (!clickPair(attacker, blocker)) { refused(); return@launch }
         val now = latest ?: return@launch
         if (now.card(blocker)?.blocking == true) { pairs[blocker] = attacker; latest = paired(now); _shown.value?.let { if (it.revision == now.revision) show(latest!!) } }
-        else if (now.inputType == "InputBlock" && now.prompt == null) say("Block not assigned. Try again.")
+        else if (now.inputType == "InputBlock" && now.prompt == null) refused()
     } }
 
     /**
@@ -166,7 +168,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         return true
     }
     val intents by lazy { dev.cardstashy.nativeplay.ui.TableIntents(card = { card(it) }, stack = { stackItem(it) }, player = { player(it) }, ok = { ok() }, cancel = { cancel() }, reply = { id, v, i, a -> reply(id, v, i, a) },
-        stop = { toggleStop(it) }, attackAll = { attackAll(it) }, unblock = { b, a -> unblock(b, a) }, block = { b, a -> block(b, a) }, mode = { setMode(it) }, autoPay = { setAutoPay(it) }, yieldSource = { id, on -> yieldSource(id, on) }) }
+        stop = { toggleStop(it) }, attackAll = { attackAll(it) }, unblock = { b, a -> unblock(b, a) }, block = { b, a -> block(b, a) }, mode = { setMode(it) }, autoPay = { setAutoPay(it) }, yieldSource = { id, on -> yieldSource(id, on) }, note = { say(it) }) }
     val timings = MutableStateFlow<Map<String, Long>>(emptyMap())
 
     /** match-facts.js for this match, and the finished-match hook (play:match-recorded). */

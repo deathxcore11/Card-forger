@@ -127,7 +127,9 @@ object QuickPlay {
     suspend fun warmArt(context: Context, s: Setup.Ready, budgetMs: Long) {
         val t0 = SystemClock.elapsedRealtime()
         CardArt.resolveMatch(s.rows)
-        val loaded = CardArt.warm(context, s.rows.map { it.first }, (budgetMs - (SystemClock.elapsedRealtime() - t0)).coerceAtLeast(300), crops = s.faces)
+        // Every card's face (the hand, the zoom) decoded, and its battlefield art crop on disk; what the budget leaves keeps downloading.
+        val loaded = CardArt.warm(context, s.rows.map { it.first }, (budgetMs - (SystemClock.elapsedRealtime() - t0)).coerceAtLeast(300), crops = s.faces,
+            diskCrops = s.rows.map { it.first }, detach = true)
         Log.i(TAG, "art warm: ${s.rows.size} rows, loaded=$loaded in ${SystemClock.elapsedRealtime() - t0} ms")
     }
 

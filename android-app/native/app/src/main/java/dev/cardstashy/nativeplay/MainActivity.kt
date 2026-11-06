@@ -289,7 +289,7 @@ private fun App(activity: MainActivity) {
         dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> go(Screen.PlayDecks); dev.cardstashy.nativeplay.ui.PlayTab.TROPHIES -> go(Screen.Achievements())
         dev.cardstashy.nativeplay.ui.PlayTab.SHOP -> { if (screen !is Screen.Shop) go(Screen.Shop()) }
     } }
-    androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalShopNav provides { tab -> go(Screen.Shop(tab)) }) {
+    androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalShopNav provides { tab -> go(Screen.Shop(tab)) }, dev.cardstashy.nativeplay.ui.LocalShopSetNav provides { code -> go(Screen.Shop("sets", code)) }) {
     when (val s = screen) {
         Screen.Home -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
@@ -472,7 +472,7 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
         if (round == 0) LaunchedEffect(Unit) {
             // Art and engine load side by side; the beat holds at least 0.9 s so it reads as a beat, not a flicker.
             val minBeat = launch { delay(if ((pick as? Pick.Table)?.story != null) 0 else 900) }
-            QuickPlay.warmArt(context, s, budgetMs = if (s.known) 2000 else 4500)
+            QuickPlay.warmArt(context, s, budgetMs = if (s.known) 3000 else 8000)
             minBeat.join(); versus = false
         }
         LaunchedEffect(Unit) {

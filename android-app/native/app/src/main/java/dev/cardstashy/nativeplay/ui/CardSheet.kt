@@ -108,8 +108,10 @@ import kotlin.math.roundToInt
 
 /** Where the card view sends the player next (the web's playCardGet, playLensSet, playCardPrecon, playCardNewDeck). */
 class CardSheetActions(
-    val merchant: (code: String, name: String) -> Unit = { _, _ -> },
-    val set: (code: String) -> Unit = {},
+    /** Null: the Shop's set page, where the set's pack is sold (LocalShopSetNav). */
+    val merchant: ((code: String, name: String) -> Unit)? = null,
+    /** Null: the Shop's set page (LocalShopSetNav); a host can send it elsewhere. */
+    val set: ((code: String) -> Unit)? = null,
     val precon: (name: String, code: String) -> Unit = { _, _ -> },
     val newDeck: (name: String) -> Unit = {},
     val toast: (String) -> Unit = {},
@@ -430,12 +432,14 @@ private fun SetLine(shown: JsonObject, state: JsonObject?, act: CardSheetActions
     val code = shown.s("set"); if (code.isBlank()) return
     SetFacts.sets.collectAsState().value
     val (have, total) = Trunk.setProgress(state, code)
+    // Every card view links its set (Randall 6 Nov: Summer Magic's row on a deck's card did nothing); no link, no chevron.
+    val go = act.set ?: LocalShopSetNav.current
     Column(Modifier.fillMaxWidth().glass(RoundedCornerShape(14.dp))
-        .clickable { act.set(code) }.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        .then(if (go != null) Modifier.clickable { go(code) } else Modifier).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             RaritySetIcon(code, shown.s("rarity"), 24.dp)
             Column(Modifier.weight(1f)) {
-                Text(shown.s("set_name").ifBlank { code.uppercase() } + "  ›", style = t(15f, FontWeight.Bold))
+                Text(shown.s("set_name").ifBlank { code.uppercase() } + if (go != null) "  ›" else "", style = t(15f, FontWeight.Bold))
                 Text("${code.uppercase()} #${shown.s("collector_number").ifBlank { "?" }} · ${RARITY[shown.s("rarity")] ?: shown.s("rarity")}" +
                     shown.s("released_at").take(4).let { if (it.isNotBlank()) " · $it" else "" }, style = t(12f, color = Site.Muted))
             }
@@ -633,10 +637,13 @@ private fun GetIt(name: String, shown: JsonObject, state: JsonObject?, n: Int, a
             if (st?.canFoil == true) StampButton("Stamp holo", st.holoCost, st, true) { run { Progress.craft(st.id, true); Feel.perform(view, "reward-claim"); act.toast("$name (holo) is in your Trunk.") } }
             else if (holo != null) GhostButton("Make holo · ${holo.cost} ${holo.seal} seals", enabled = holo.afford) { run { Progress.holo(holo.oracle); Feel.perform(view, "reward-claim"); act.toast("$name is now holo. It has its own tile in your Trunk.") } }
         }
-        if (set.isNotBlank()) Block("Packs and precons") {
+        val shopSet = LocalShopSetNav.current
+        val toMerchant = act.merchant ?: shopSet?.let { g -> { code: String, _: String -> g(code) } }
+        val toSet = act.set ?: shopSet
+        if (set.isNotBlank() && (toMerchant != null || toSet != null)) Block("Packs and precons") {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (n < 4) GoldCta("Its pack at the Merchant") { act.merchant(set, name) } else GhostButton("Its pack at the Merchant") { act.merchant(set, name) }
-                GhostButton("See the whole set") { act.set(set) }
+                if (toMerchant != null) { if (n < 4) GoldCta("Its pack at the Merchant") { toMerchant(set, name) } else GhostButton("Its pack at the Merchant") { toMerchant(set, name) } }
+                if (toSet != null) GhostButton("See the whole set") { toSet(set) }
                 if (n < 4) GhostButton("Find it in a precon") { act.precon(name, set) }
             }
         }

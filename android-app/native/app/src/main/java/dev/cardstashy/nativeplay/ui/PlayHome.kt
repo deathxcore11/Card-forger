@@ -367,6 +367,8 @@ private fun Duo(two: Boolean, a: @Composable () -> Unit, b: @Composable () -> Un
 
 /** Where the wallet's badges lead from any screen (Randall 4 Nov): coins to the Shop, seals to the Forge, packs to Your packs. */
 val LocalShopNav = androidx.compose.runtime.staticCompositionLocalOf<(String) -> Unit> { {} }
+/** A set's page in the Shop (where Play's set pages live), for a card view whose host has no set link of its own. */
+val LocalShopSetNav = androidx.compose.runtime.staticCompositionLocalOf<((String) -> Unit)?> { null }
 
 /** The wallet pill with the app's own routes (screens other than Play home and the Shop). */
 @Composable
