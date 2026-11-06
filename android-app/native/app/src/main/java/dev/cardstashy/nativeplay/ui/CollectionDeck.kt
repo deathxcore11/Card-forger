@@ -475,7 +475,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.tcgZones(m: Collectio
 
 /** .section-head h2: the zone in Manrope 19 / 800 (-.02em), its count and rule ("11 · 40–60") muted and small after it. */
 @Composable
-private fun ZoneHead(name: String, count: String) {
+internal fun ZoneHead(name: String, count: String) {
     Text(buildAnnotatedString { append(name); if (count.isNotBlank()) withStyle(SpanStyle(color = Mute, fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.sp)) { append(" " + count) } },
         style = manrope(19f, 800, Ink, lh = 1.15f, ls = -.38f))
 }
@@ -573,7 +573,22 @@ private fun DeckPanelBox(p: DeckPanel, act: CollectionDeckActions) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Hero(m: CollectionDeckModel, act: CollectionDeckActions, wide: Boolean, screen: Dp, reduced: Boolean, review: (DeckEyebrow) -> Unit) {
+private fun Hero(m: CollectionDeckModel, act: CollectionDeckActions, wide: Boolean, screen: Dp, reduced: Boolean, review: (DeckEyebrow) -> Unit) =
+    DsHero(m.art, m.artSources, m.artCrop, m.eyebrow, m.title, m.line, m.stats, m.owned, wide, screen, reduced,
+        back = DsHeroButton(m.glyphs["back"], "Back to decks", onClick = act.back), more = DsHeroButton(m.glyphs["more"], m.menuLabel) { act.act(m.menuAct, m.id) },
+        onStat = { s -> if (s.act == "deckTab") act.tab(s.id) else if (s.act.isNotBlank()) act.act(s.act, s.id) }, review = review)
+
+/** One of the hero's corner buttons: its glyph (the site's icon, or [text] when it draws a character), its name, its tap. */
+internal class DsHeroButton(val icon: SiteSvg?, val label: String, val text: String = "", val onClick: () -> Unit)
+
+/**
+ * deckShell's .ds-hero (deck-shell.js), as a deck's page and Build a deck's result draw it: the art breathing behind its shade, ← and
+ * ⋯ ([more], when the page has a menu), the eyebrow, the Cinzel name and its line, the stats on their glass foot and the owned bar.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun DsHero(art: String?, artSources: List<String>, artCrop: String, eyebrow: List<DeckEyebrow>, title: String, line: String, stats: List<DeckStat>, owned: Float?,
+                    wide: Boolean, screen: Dp, reduced: Boolean, back: DsHeroButton?, more: DsHeroButton?, onStat: (DeckStat) -> Unit, review: (DeckEyebrow) -> Unit) {
     val shape = RoundedCornerShape(18.dp)
     // --ds-h: clamp(300px, 34vw, 380px); a phone (under 700) 300.
     val h = if (screen < 700.dp) 300.dp else (screen.value * .34f).coerceIn(300f, 380f).dp
@@ -585,8 +600,8 @@ private fun Hero(m: CollectionDeckModel, act: CollectionDeckActions, wide: Boole
         .clip(shape).background(Brush.linearGradient(listOf(Color(0xFF252936), Color(0xFF141720)), Offset.Zero, Offset.Infinite))) {
         // .hero-art: cover, 50% 28%.
         // A Yu-Gi-Oh! or Pokémon cover walks its addresses; a Pokémon card shows its art window (pokemonArtCrop: the window covers the hero, centred).
-        val raw = if (m.artSources.size > 1) firstOf(m.artSources) else heroPainter(m.art?.let(homeArt))
-        val pk = m.artCrop == "pokemon"
+        val raw = if (artSources.size > 1) firstOf(artSources) else heroPainter(art?.let(homeArt))
+        val pk = artCrop == "pokemon"
         val p = if (pk && raw != null) remember(raw) { PkArtCrop(raw) } else raw
         // header-breathe: the art eases to 103.5 % and back over 20 s (none with reduced motion). The site clips the art itself, so
         // it pokes a few px past the hero's edge at full scale; here it stays inside the rounded box.
@@ -608,29 +623,29 @@ private fun Hero(m: CollectionDeckModel, act: CollectionDeckActions, wide: Boole
         Column(Modifier.matchParentSize()) {
             // .ds-nav: ← and ⋯, 44 square, 12 corners.
             Row(Modifier.fillMaxWidth().padding(start = if (wide) 18.dp else 14.dp, end = if (wide) 18.dp else 14.dp, top = if (wide) 14.dp else 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0x73000000)).border(1.dp, Color(0x2EFFFFFF), RoundedCornerShape(12.dp))
-                    .clickable(onClick = act.back).semantics { contentDescription = "Back to decks"; role = Role.Button }, contentAlignment = Alignment.Center) {
-                    SiteIcon(m.glyphs["back"], 20.dp, Color.White)
-                }
-                Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xC70B0E15)).border(1.dp, GoldC.copy(alpha = .42f), RoundedCornerShape(12.dp))
-                    .clickable { act.act(m.menuAct, m.id) }.semantics { contentDescription = m.menuLabel; role = Role.Button }.padding(bottom = 4.dp), contentAlignment = Alignment.Center) {
-                    SiteIcon(m.glyphs["more"], 20.dp, GoldC)
+                if (back != null) Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0x73000000)).border(1.dp, Color(0x2EFFFFFF), RoundedCornerShape(12.dp))
+                    .clickable(onClick = back.onClick).semantics { contentDescription = back.label; role = Role.Button }, contentAlignment = Alignment.Center) {
+                    if (back.text.isNotEmpty()) Text(back.text, style = sans(20f, 400, Color.White, lh = 1f)) else SiteIcon(back.icon, 20.dp, Color.White)
+                } else Spacer(Modifier.size(44.dp))
+                if (more != null) Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xC70B0E15)).border(1.dp, GoldC.copy(alpha = .42f), RoundedCornerShape(12.dp))
+                    .clickable(onClick = more.onClick).semantics { contentDescription = more.label; role = Role.Button }.padding(bottom = 4.dp), contentAlignment = Alignment.Center) {
+                    SiteIcon(more.icon, 20.dp, GoldC)
                 }
             }
             Spacer(Modifier.weight(1f).heightIn(min = 10.dp))
             // .deck-hero-id: the eyebrow (badge, format, colours, review), the Cinzel name, the commander.
             Column(Modifier.padding(horizontal = if (wide) 18.dp else 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-                    for (e in m.eyebrow) when (e.kind) {
+                    for (e in eyebrow) when (e.kind) {
                         "review" -> ReviewBadge(e) { review(e) }
                         "dots" -> Row(Modifier.semantics { contentDescription = e.label }, horizontalArrangement = Arrangement.spacedBy(2.dp)) { e.dots.forEach { (src, alt) -> Mana(src, alt) } }
                         else -> HeroChip(e)
                     }
                 }
                 val size = if (wide) (screen.value * .036f).coerceIn(26f, 40f) else 26f
-                Text(m.title, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = size.sp, lineHeight = (size * 1.08f).sp, letterSpacing = (size * .02f).sp,
+                Text(title, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = size.sp, lineHeight = (size * 1.08f).sp, letterSpacing = (size * .02f).sp,
                     color = Color.White, shadow = Shadow(Color(0x99000000), Offset(0f, 2f), 12f)))
-                if (m.line.isNotBlank()) Text(m.line, style = sans(13f, 400, Color(0xFFE0E3EB), lh = 1.4f).copy(shadow = HeroShadow))
+                if (line.isNotBlank()) Text(line, style = sans(13f, 400, Color(0xFFE0E3EB), lh = 1.4f).copy(shadow = HeroShadow))
             }
             Spacer(Modifier.height(10.dp))
             // .ds-foot: the stats on a glass base that fades up into the art, and the owned bar along the bottom edge.
@@ -641,13 +656,13 @@ private fun Hero(m: CollectionDeckModel, act: CollectionDeckActions, wide: Boole
                 FlowRow(Modifier.fillMaxWidth().padding(start = if (wide) 18.dp else 14.dp, end = if (wide) 18.dp else 14.dp, top = if (wide) 12.dp else 10.dp, bottom = if (wide) 14.dp else 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(if (wide) 18.dp else 14.dp), verticalArrangement = Arrangement.spacedBy(if (wide) 6.dp else 4.dp),
                     itemVerticalAlignment = Alignment.CenterVertically) {
-                    m.stats.forEachIndexed { i, s ->
+                    stats.forEachIndexed { i, s ->
                         // .ds-stat:last-child { margin-left: auto } from 700.
-                        if (screen >= 700.dp && i == m.stats.lastIndex && i > 0) Spacer(Modifier.weight(1f))
-                        HeroStat(s) { if (s.act == "deckTab") act.tab(s.id) else if (s.act.isNotBlank()) act.act(s.act, s.id) }
+                        if (screen >= 700.dp && i == stats.lastIndex && i > 0) Spacer(Modifier.weight(1f))
+                        HeroStat(s) { onStat(s) }
                     }
                 }
-                m.owned?.let { o ->
+                owned?.let { o ->
                     Box(Modifier.fillMaxWidth().height(3.dp).background(Color(0x14FFFFFF))) {
                         // linear-gradient(90deg, --gold 70 % into white, --gold).
                         Box(Modifier.fillMaxWidth(o.coerceIn(0f, 1f)).fillMaxHeight().background(Brush.horizontalGradient(listOf(lerp(Color.White, GoldC, .7f), GoldC))))
@@ -758,7 +773,7 @@ private fun Diamond() {
 
 /** .btn.ghost: glass, 11 corners, 15 bold. */
 @Composable
-private fun DeckGhost(label: String, modifier: Modifier = Modifier, minHeight: Dp = 44.dp, pad: Dp = 16.dp, onClick: () -> Unit) {
+internal fun DeckGhost(label: String, modifier: Modifier = Modifier, minHeight: Dp = 44.dp, pad: Dp = 16.dp, onClick: () -> Unit) {
     val shape = RoundedCornerShape(11.dp)
     Box(modifier.heightIn(min = minHeight).clip(shape).background(GlassFill).border(1.dp, GlassLine, shape)
         .drawWithContent { drawContent(); drawRect(Color(0x12FFFFFF), size = Size(size.width, 1.dp.toPx())) }
@@ -769,14 +784,14 @@ private fun DeckGhost(label: String, modifier: Modifier = Modifier, minHeight: D
 
 /** .btn (gold): 44 tall, 11 corners, 15 bold on the gold. */
 @Composable
-private fun DeckGold(label: String, modifier: Modifier = Modifier, minHeight: Dp = 44.dp, pad: Dp = 16.dp, size: Float = 15f, onClick: () -> Unit) {
+internal fun DeckGold(label: String, modifier: Modifier = Modifier, minHeight: Dp = 44.dp, pad: Dp = 16.dp, size: Float = 15f, onClick: () -> Unit) {
     Box(modifier.heightIn(min = minHeight).clip(RoundedCornerShape(11.dp)).background(GoldC).clickable(onClick = onClick).semantics { role = Role.Button }.padding(horizontal = pad),
         contentAlignment = Alignment.Center) { Text(label, maxLines = 1, style = sans(size, 700, BtnInk)) }
 }
 
 /** .note.warn: amber words on an amber wash, 12 corners. */
 @Composable
-private fun NoteWarn(text: String, lines: List<String>, modifier: Modifier = Modifier) {
+internal fun NoteWarn(text: String, lines: List<String>, modifier: Modifier = Modifier) {
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0x1AF2C66D)).then(modifier).padding(horizontal = 12.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(text, style = sans(13.5f, 400, Color(0xFFF6DBA2)))

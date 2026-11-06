@@ -126,21 +126,43 @@ object RandomBuild {
     /** The card a player typed in Change card (app.js resolve, fuzzy); null if Scryfall has none by that name. */
     suspend fun named(name: String): JsonObject? = call("named", JsonObject().apply { addProperty("name", name) })
 
-    private val calls = java.util.concurrent.ConcurrentHashMap<Int, CompletableDeferred<JsonElement?>>()
+    private val calls = java.util.concurrent.ConcurrentHashMap<Int, CompletableDeferred<JsonObject>>()
     private val callIds = java.util.concurrent.atomic.AtomicInteger()
     private suspend fun call(name: String, a: JsonObject): JsonObject? = withContext(thread) {
-        val id = callIds.incrementAndGet(); val d = CompletableDeferred<JsonElement?>(); calls[id] = d
+        val id = callIds.incrementAndGet(); val d = CompletableDeferred<JsonObject>(); calls[id] = d
         try {
             eval("RandomBuild.call($id, ${JsonPrimitive(name)}, ${JsonPrimitive(a.toString())})")
-            withTimeoutOrNull(30_000) { d.await() }?.takeIf { it.isJsonObject }?.asJsonObject
+            withTimeoutOrNull(30_000) { d.await() }?.takeIf { it.get("ok")?.asBoolean == true }?.get("value")?.takeIf { it.isJsonObject }?.asJsonObject
         } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Throwable) { null } finally { calls.remove(id) }
     }
-    /** takeDone()'s finished calls: each answers the call that waits for it. */
+    /** takeDone()'s finished calls ({id, ok, value} or {id, ok: false, error}): each answers the call that waits for it. */
     private fun delivered(json: String?) {
         if (json.isNullOrEmpty()) return
-        runCatching { JsonParser.parseString(json).asJsonArray.forEach { e -> val o = e.asJsonObject
-            calls[o.get("id").asInt]?.complete(if (o.get("ok").asBoolean) o.get("value") else null) } }
+        runCatching { JsonParser.parseString(json).asJsonArray.forEach { e -> val o = e.asJsonObject; calls[o.get("id").asInt]?.complete(o) } }
     }
+
+    // ── Collection's Build a deck (deck-flow-entry.mjs: deck-experience.js's setup and result, on the same pipeline) ──
+    // It runs only in the WebView: a phone without one opens the website's Build a deck instead.
+    /** A flow call's answer: its value, or the site's message when it threw. */
+    class Flow(val value: JsonElement?, val error: String?) {
+        val obj: JsonObject? get() = value?.takeIf { it.isJsonObject }?.asJsonObject
+    }
+    /** DeckFlow.status(): the build's live line (deck-experience.js onStatus), "" when nothing builds. */
+    private val _flowStatus = MutableStateFlow(""); val flowStatus: StateFlow<String> = _flowStatus
+    /** True once the WebView has the bundle (it starts it if needed); false on a phone that can't run it. */
+    suspend fun flowReady(): Boolean = withContext(thread) { webEngine() != null }
+    /** One of deck-flow-entry.mjs's flowCalls ([name], with [a]); a build waits up to [ms]. */
+    suspend fun flow(name: String, a: JsonObject, ms: Long = 300_000): Flow = withContext(thread) {
+        val w = webEngine() ?: return@withContext Flow(null, "Build a deck needs the website on this phone.")
+        val id = callIds.incrementAndGet(); val d = CompletableDeferred<JsonObject>(); calls[id] = d
+        try {
+            evalWeb(w, "RandomBuild.call($id, ${JsonPrimitive(name)}, ${JsonPrimitive(a.toString())})")
+            val o = withTimeoutOrNull(ms) { d.await() } ?: return@withContext Flow(null, "The deck builder took too long. Try again.")
+            if (o.get("ok")?.asBoolean == true) Flow(o.get("value"), null) else Flow(null, o.get("error")?.takeIf { it.isJsonPrimitive }?.asString ?: "The deck builder stopped.")
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Throwable) { Flow(null, e.message ?: "The deck builder stopped.") } finally { calls.remove(id) }
+    }
+    /** A.flowCancelBuild: the build or the card pick in hand stops (its answer comes back {cancelled}). */
+    fun flowCancel() { _flowStatus.value = ""; scope.launch { if (webReady != null) runCatching { withContext(Dispatchers.Main) { web }?.let { evalWeb(it, "DeckFlow.cancel()") } } } }
 
     /** The build in hand, so QuickJS can run it again if the WebView's process dies under it. */
     @Volatile private var lastStart: String? = null
@@ -222,12 +244,14 @@ object RandomBuild {
     @Volatile private var webFailed = false
     private const val PAGE = "<!doctype html><meta charset=\"utf-8\"><script src=\"/__native/random-build-web.js\"></script>" +
         "<script>(function(){var ok=typeof RandomBuild==='object';NativeRandom.ready(ok);if(!ok)return;var last=null;" +
-        "setInterval(function(){var s=RandomBuild.poll();if(s!==last){last=s;NativeRandom.state(s);}var d=RandomBuild.takeDone();if(d)NativeRandom.done(d);},100);})();</script>"
+        "var lf='';setInterval(function(){var s=RandomBuild.poll();if(s!==last){last=s;NativeRandom.state(s);}var d=RandomBuild.takeDone();if(d)NativeRandom.done(d);" +
+        "var f=typeof DeckFlow==='object'?DeckFlow.status():'';if(f!==lf){lf=f;NativeRandom.flow(f);}},100);})();</script>"
 
     private class Bridge(val ready: CompletableDeferred<Boolean>) {
         @JavascriptInterface fun ready(ok: Boolean) { ready.complete(ok) }
         @JavascriptInterface fun state(json: String?) { publish(json) }
         @JavascriptInterface fun done(json: String?) { delivered(json) }
+        @JavascriptInterface fun flow(status: String?) { _flowStatus.value = status ?: "" }
     }
 
     /** The WebView once its page has the bundle, or null when this phone can't run it (QuickJS then, for the rest of the session). */

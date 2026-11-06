@@ -112,6 +112,8 @@ fun CollectionWritesHost(backdrop: androidx.compose.ui.graphics.layer.GraphicsLa
     tAdding?.let { a -> key(a.id) { TcgAddSheet(a, backdrop, onClose = { if (CollectionWrites.tAdding.value === a) CollectionWrites.tAdding.value = null }) } }
     val picking by CollectionWrites.picking.collectAsState()
     picking?.let { pk -> key(pk.id) { DeckPickSheet(pk, backdrop, onBack = { if (CollectionWrites.picking.value === pk) CollectionWrites.picking.value = null }) } }
+    val building by CollectionWrites.building.collectAsState()
+    building?.let { b -> key(b.id) { CollectionBuildDeckSheet(b, backdrop, onClose = { if (CollectionWrites.building.value === b) CollectionWrites.building.value = null }) } }
     val menu by CollectionWrites.menu.collectAsState()
     menu?.let { m -> key(m.id) { DeckMenuSheet(m, backdrop, onClose = { if (CollectionWrites.menu.value === m) CollectionWrites.menu.value = null }) } }
     toast?.let { t -> key(t.id) { SiteToast(t, onUndo = { CollectionWrites.dismiss(t); scope.launch { CollectionWrites.undo(context) } }, onGone = { CollectionWrites.dismiss(t) }) } }

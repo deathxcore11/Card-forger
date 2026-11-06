@@ -1855,6 +1855,15 @@ const writeActs = {
     await commit((s) => { s.decks.push(copy); s.activeDeck = copy.id; }, { msg: "Duplicated." });
     made = copy.id;
   },
+  // app.js deckExperience save (1674): a Build a deck result ([d] {deck, request}, the WebView's flowSaveData) saved as a new deck,
+  // named after its build-around and format, with its first version; the app opens it ([made]).
+  async deckGenerated(d) {
+    const r = d.request || {}, id = uid(), name = (r.seedCard?.name || d.deck?.buildAround || 'My deck') + ' · ' + r.formatName;
+    if (!d.deck || r.game !== 'mtg') throw Error('Your workspace changed. Rebuild this deck.');
+    const deck = withSnapshot({...structuredClone(d.deck), id, name, budget: r.budget, versions: []}, 'Generated');
+    await commit((s) => { s.decks.push(deck); }, { msg: 'Saved to My decks.' });
+    made = id;
+  },
   // app.js A.deckDelete: asked first; the app goes back to the decks.
   async deckDelete(d) {
     const x = deckOf(d.deck); if (!x) return;
@@ -2567,6 +2576,8 @@ globalThis.Collection = {
     return json(addSheetModel(null, d.own ? ownPreset(d.own, !!d.fromCard) : {}));
   },
   // app.js closeSheet: the sheet [id] opened is gone (a newer one is left alone).
+  // What Build a deck reads from the workspace (app.js inv and priceOf: what is owned, the player's own prices), for the WebView.
+  flowWorkspace() { const s = stripCache(S.state); return json({collection: s.collection, decks: s.decks, myPrices: s.myPrices ?? null, priceChoices: s.priceChoices ?? null, settings: s.settings}); },
   // app.js A.deckMenu (6108): the ⋯ menu of deck [id] (deckMenuModel).
   deckMenu(id) { return json(deckMenuModel(id)); },
   // tcg.js A.tDeckMenu: a Yu-Gi-Oh! or Pokémon deck's ⋯ menu.

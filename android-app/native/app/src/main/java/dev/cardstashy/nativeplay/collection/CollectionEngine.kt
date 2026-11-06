@@ -273,6 +273,8 @@ object CollectionEngine {
         var last = ""
         pumpUntil("Collection.pricePoll()", 30_000) { r -> val t = r.toString(); if (t != last) { last = t; paint(r) } }
     }
+    /** What Build a deck reads from the workspace (owned cards, decks, the player's prices and settings), for the WebView's builder. */
+    suspend fun flowWorkspace(): String = on { q -> q.evaluate("Collection.flowWorkspace()") as String }
     /** app.js A.deckMenu: deck [id]'s ⋯ menu as the site draws it ({missing} when the deck is gone). */
     suspend fun deckMenu(id: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.deckMenu(${str(id)})") as String).asJsonObject }
     /** app.js A.deckCopy / A.deckExport: {text, file}. */

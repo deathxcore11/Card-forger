@@ -44,8 +44,8 @@ private object DecksCache {
 
 /**
  * Collection's Decks tab (My decks): the account's decks through the site's own views.js decks() / deckTile, drawn natively.
- * Search asks the site's code again; a deck, Ideas, Meta decks, War Chest, Import, New and the random buttons open the
- * website's page, which does them there.
+ * Search asks the site's code again; Magic's Random Commander and Random deck open Build a deck here (CollectionBuildDeckSheet);
+ * a deck, Ideas, Meta decks, War Chest, Import, New and the other games' random buttons open the website's page, which does them there.
  */
 @Composable
 fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, onCards: () -> Unit, web: (url: String, press: String?) -> Unit,
@@ -96,7 +96,13 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     val act = remember {
         CollectionDecksActions(
             game = { g -> CollectionGame.set(g) },
-            button = { a -> if (a.isNotBlank()) page(decks, "[data-act=\"${css(a)}\"]") },
+            button = { a ->
+                // app.js A.randomDeck / A.randomDeckOptions: Magic's Build a deck runs here (Commander locked for Random Commander); the
+                // other games' (and anything else) open the website.
+                if (a in listOf("randomDeck", "randomDeckOptions") && CollectionGame.current.value == CardGame.MTG)
+                    CollectionWrites.building.value = CollectionWrites.BuildOpen(JsonObject().apply {
+                        addProperty("game", "mtg"); if (a == "randomDeck") { addProperty("format", "Commander"); addProperty("commanderLock", true) } }, a, web)
+                else if (a.isNotBlank()) page(decks, "[data-act=\"${css(a)}\"]") },
             tab = { k -> page(decks, "[data-act=\"decksTab\"][data-id=\"${css(k)}\"]") },
             search = { q -> query = q },
             deck = { d ->

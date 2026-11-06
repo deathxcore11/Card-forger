@@ -88,8 +88,8 @@ const live = me => () => me === current;
 flowCalls.flowWorkspace = a => { workspace(a); return true; };
 // open(): the setup for a request ({commanderLock, format}) and the player's saved preferences.
 flowCalls.flowOpen = a => setupModel(opened(a.request || {}, a.prefs));
-// A request the player edited (read()): its setup again, without building.
-flowCalls.flowSetup = a => setupModel(a.request);
+// A request the player edited (read()): its setup again, without building, with a status line ([error]: its warning style).
+flowCalls.flowSetup = a => setupModel(a.request, a.status || '', !!a.error);
 // A.flowRandom: a new build-around for the request (randomBuildSeed), then the setup around it.
 flowCalls.flowRandom = async a => {
   const me = ++current;
@@ -106,6 +106,8 @@ flowCalls.flowGenerate = async a => {
   status = '';
   return result.ok ? {ok: true, model: resultModel(register(result))} : {ok: false, message: result.message, setup: setupModel(a.request, result.message, true)};
 };
+// A.flowAdjust's first step: customBudget's check of the amount typed, before anything builds (its message when it fails).
+flowCalls.flowBudget = a => { customBudget(a.budget); return true; };
 // A.flowAdjust: Rebuild with budget (customBudget checks the amount), from the previous deck and its estimate.
 flowCalls.flowAdjust = async a => {
   const item = results.get(a.id); if (!item) throw Error('Your account or collection changed. Rebuild before opening this deck.');

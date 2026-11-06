@@ -214,6 +214,36 @@ class CollectionWritesTest {
         deck().let { assertEquals(1, it.size); assertEquals("c1", JsonParser.parseString(CollectionEngine.saved()).asJsonObject["activeDeck"].asString) }
     }
 
+    /**
+     * Build a deck's Save deck (app.js deckExperience save): the result named after its card and format, its first version
+     * "Generated", the budget it was built for, added to My decks with "Saved to My decks."; the workspace the WebView reads.
+     */
+    @Test fun generatedDeckSaves() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        val before = fx("deck-qty-minus.json")["before"].asJsonObject
+        CollectionEngine.load(before, null)
+        val ws = JsonParser.parseString(CollectionEngine.flowWorkspace()).asJsonObject
+        assertEquals(setOf("collection", "decks", "myPrices", "priceChoices", "settings"), ws.keySet())
+        assertEquals(before.getAsJsonArray("decks").size(), ws.getAsJsonArray("decks").size())
+        val n = ws.getAsJsonArray("decks").size()
+        val data = JsonParser.parseString("""{"deck":{"name":"Elder Owyn Lyons","format":"Commander","commander":"Elder Owyn Lyons","buildAround":"Elder Owyn Lyons",
+            "cards":[{"name":"Elder Owyn Lyons","qty":1,"zone":"main"},{"name":"Island","qty":99,"zone":"main"}]},
+            "request":{"game":"mtg","format":"Commander","formatName":"Commander","budget":150,"seedCard":{"name":"Elder Owyn Lyons"}}}""").asJsonObject
+        val r = CollectionEngine.act("deckGenerated", data)
+        assertEquals("Saved to My decks.", r.getAsJsonArray("toasts")[0].asJsonObject["text"].asString)
+        assertEquals(1, r["writes"].asInt)
+        val decks = JsonParser.parseString(CollectionEngine.saved()).asJsonObject.getAsJsonArray("decks").map { it.asJsonObject }
+        assertEquals(n + 1, decks.size)
+        decks.last().let { d ->
+            assertEquals("Elder Owyn Lyons · Commander", d["name"].asString)
+            assertEquals(r["made"].asString, d["id"].asString)
+            assertEquals(150, d["budget"].asInt)
+            assertEquals("Generated", d.getAsJsonArray("versions")[0].asJsonObject["label"].asString)
+            assertEquals(100, d.getAsJsonArray("cards").sumOf { it.asJsonObject["qty"].asInt })
+        }
+    }
+
     /** cloud.js's automatic account-first merge (sync-merge.js), as the site's fixtures resolve it. */
     @Test fun mergeFixtures() = runBlocking {
         assumeTrue(bundle.isFile)

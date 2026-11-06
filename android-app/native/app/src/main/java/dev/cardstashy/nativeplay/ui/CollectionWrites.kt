@@ -170,6 +170,22 @@ internal object CollectionWrites {
             run()
         }
     }
+    /**
+     * Collection › Decks' Random Commander and Random deck (app.js A.randomDeck, A.randomDeckOptions): deck-experience.js's Build a deck
+     * with [request] ({format: Commander, commanderLock} or {}), its first card picked at once. [web] opens the website (a phone whose
+     * WebView can't build: it presses [act] there, or a card control that isn't native).
+     */
+    data class BuildOpen(val request: JsonObject, val act: String, val web: (url: String, press: String?) -> Unit, val id: Long = System.nanoTime())
+    val building = MutableStateFlow<BuildOpen?>(null)
+    /** The workspace Build a deck reads (CollectionEngine.flowWorkspace), from this device's copy; null (with a toast) when it can't. */
+    suspend fun flowWorkspace(context: Context): String? {
+        val s = Account.session.value ?: return null.also { show("Sign in to save cards to your collection.") }
+        return WorkspaceSync.lock.withLock {
+            if (!ensureCollection(context.applicationContext, s.userId, true, Decks.fullRevision.value)) return null.also { show("Your collection is still loading. Try again in a moment.") }
+            CollectionEngine.flowWorkspace()
+        }
+    }
+
     /** app.js download(name, text): the file in Downloads (this app's own folder before Android 10), as the browser saves it. */
     @Volatile internal var download: (Context, String, String) -> Unit = { c, name, text -> saveText(c, name, text) }
     private fun saveText(c: Context, name: String, text: String) {

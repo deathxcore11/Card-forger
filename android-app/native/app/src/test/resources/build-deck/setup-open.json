@@ -1,0 +1,303 @@
+{
+ "request": {
+  "game": "mtg",
+  "format": "Standard",
+  "budget": "",
+  "budgetBasis": "total",
+  "budgetMode": "cap",
+  "preferOwned": true
+ },
+ "title": "Build a deck",
+ "seed": {
+  "name": "",
+  "art": "",
+  "empty": "Which card should your deck use?",
+  "change": "Change card",
+  "label": "Card name",
+  "placeholder": "Exact card name",
+  "value": ""
+ },
+ "image": "",
+ "required": "",
+ "random": "Random card",
+ "format": {
+  "locked": false,
+  "label": "Format",
+  "options": [
+   {
+    "value": "Standard",
+    "label": "Standard",
+    "on": true
+   },
+   {
+    "value": "Pioneer",
+    "label": "Pioneer",
+    "on": false
+   },
+   {
+    "value": "Modern",
+    "label": "Modern",
+    "on": false
+   },
+   {
+    "value": "Legacy",
+    "label": "Legacy",
+    "on": false
+   },
+   {
+    "value": "Vintage",
+    "label": "Vintage",
+    "on": false
+   },
+   {
+    "value": "Pauper",
+    "label": "Pauper",
+    "on": false
+   },
+   {
+    "value": "Premodern",
+    "label": "Premodern",
+    "on": false
+   },
+   {
+    "value": "Old School",
+    "label": "Old School",
+    "on": false
+   },
+   {
+    "value": "Penny Dreadful",
+    "label": "Penny Dreadful",
+    "on": false
+   },
+   {
+    "value": "Commander",
+    "label": "Commander",
+    "on": false
+   },
+   {
+    "value": "Duel Commander",
+    "label": "Duel Commander",
+    "on": false
+   },
+   {
+    "value": "PreDH",
+    "label": "PreDH",
+    "on": false
+   },
+   {
+    "value": "Pauper Commander",
+    "label": "Pauper Commander",
+    "on": false
+   },
+   {
+    "value": "Brawl",
+    "label": "Brawl",
+    "on": false
+   },
+   {
+    "value": "Standard Brawl",
+    "label": "Standard Brawl",
+    "on": false
+   },
+   {
+    "value": "Historic",
+    "label": "Historic",
+    "on": false
+   },
+   {
+    "value": "Timeless",
+    "label": "Timeless",
+    "on": false
+   },
+   {
+    "value": "Alchemy",
+    "label": "Alchemy",
+    "on": false
+   },
+   {
+    "value": "Gladiator",
+    "label": "Gladiator",
+    "on": false
+   },
+   {
+    "value": "60-card casual",
+    "label": "60-card casual",
+    "on": false
+   }
+  ]
+ },
+ "theme": {
+  "title": "Theme optional",
+  "label": "Theme optional",
+  "options": [
+   {
+    "value": "",
+    "label": "No preference",
+    "on": true
+   },
+   {
+    "value": "White",
+    "label": "White",
+    "on": false
+   },
+   {
+    "value": "Blue",
+    "label": "Blue",
+    "on": false
+   },
+   {
+    "value": "Black",
+    "label": "Black",
+    "on": false
+   },
+   {
+    "value": "Red",
+    "label": "Red",
+    "on": false
+   },
+   {
+    "value": "Green",
+    "label": "Green",
+    "on": false
+   },
+   {
+    "value": "Cats",
+    "label": "Cats",
+    "on": false
+   },
+   {
+    "value": "Angels",
+    "label": "Angels",
+    "on": false
+   },
+   {
+    "value": "Humans",
+    "label": "Humans",
+    "on": false
+   },
+   {
+    "value": "Elves",
+    "label": "Elves",
+    "on": false
+   },
+   {
+    "value": "Goblins",
+    "label": "Goblins",
+    "on": false
+   },
+   {
+    "value": "Zombies",
+    "label": "Zombies",
+    "on": false
+   },
+   {
+    "value": "Lifelink",
+    "label": "Lifelink",
+    "on": false
+   },
+   {
+    "value": "Lifegain",
+    "label": "Lifegain",
+    "on": false
+   },
+   {
+    "value": "Tokens",
+    "label": "Tokens",
+    "on": false
+   },
+   {
+    "value": "Artifacts",
+    "label": "Artifacts",
+    "on": false
+   },
+   {
+    "value": "Graveyard",
+    "label": "Graveyard",
+    "on": false
+   }
+  ]
+ },
+ "budget": {
+  "label": "Budget ($)",
+  "value": "",
+  "placeholder": "No price target",
+  "note": ""
+ },
+ "prefs": {
+  "title": "Preferences",
+  "matchMode": {
+   "label": "Match mode",
+   "options": [
+    {
+     "value": "unspecified",
+     "label": "Not specified",
+     "on": true
+    },
+    {
+     "value": "bo1",
+     "label": "Best of one",
+     "on": false
+    },
+    {
+     "value": "bo3",
+     "label": "Best of three",
+     "on": false
+    }
+   ]
+  },
+  "budgetMode": {
+   "label": "Budget rule",
+   "options": [
+    {
+     "value": "cap",
+     "label": "Strict maximum",
+     "on": true
+    },
+    {
+     "value": "target",
+     "label": "Flexible target",
+     "on": false
+    }
+   ]
+  },
+  "budgetBasis": {
+   "label": "Budget covers",
+   "options": [
+    {
+     "value": "total",
+     "label": "Whole deck",
+     "on": true
+    },
+    {
+     "value": "purchase",
+     "label": "Only cards I need to buy",
+     "on": false
+    }
+   ]
+  },
+  "matchLabel": "Match mode",
+  "ruleLabel": "Budget rule",
+  "coversLabel": "Budget covers",
+  "checks": [
+   {
+    "field": "preferOwned",
+    "label": "Use owned cards first",
+    "on": true
+   },
+   {
+    "field": "ownedOnly",
+    "label": "Only cards I own",
+    "on": false
+   },
+   {
+    "field": "easy",
+    "label": "Prefer simpler plans",
+    "on": false
+   }
+  ],
+  "foot": "A strict maximum requires known prices within the cap. Flexible targets allow up to 10% over, capped at $5.00; more expensive alternatives are labelled for review. Tax and shipping are excluded."
+ },
+ "generate": "Generate deck",
+ "status": "",
+ "error": false
+}
