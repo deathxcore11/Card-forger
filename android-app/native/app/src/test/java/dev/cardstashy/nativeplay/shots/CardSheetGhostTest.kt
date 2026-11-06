@@ -9,6 +9,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.click
@@ -62,5 +64,25 @@ class CardSheetGhostTest {
         rule.onRoot().captureRoboImage(File(dir, "ghost-2-guide.png").path)
         rule.onNodeWithText("Get it").performClick(); settle()
         rule.onRoot().captureRoboImage(File(dir, "ghost-3-get.png").path)
+    }
+
+    /** Randall 6 Nov 01:41Z: one nonfoil copy offered "Traditional foil" too. Play's Finish row shows only the finishes of your copies. */
+    @Test fun finishRailOnlyOwned() {
+        val cards = JsonParser.parseString(javaClass.classLoader!!.getResource("abiding-grace.json")!!.readText()).asJsonObject
+        dev.cardstashy.nativeplay.play.CardFacts.seed(listOf(cards))
+        val data = dev.cardstashy.nativeplay.play.CardData.load(RuntimeEnvironment.getApplication())
+        val foil = dev.cardstashy.nativeplay.ui.Foil.look(data, cards, "foil").label
+        val pick = dev.cardstashy.nativeplay.ui.CardPick(cards["name"].asString, cards["oracle_id"].asString, cards["id"].asString, "nonfoil")
+        fun state(c: Int, h: Int) = JsonParser.parseString("""{"wallet":{"coins":0},"packs":[],"config":{},"cards":[{"o":"${cards["oracle_id"].asString}","n":"Abiding Grace","r":"uncommon","c":$c,"h":$h,"s":["mh2"]}]}""").asJsonObject
+        var s by androidx.compose.runtime.mutableStateOf(state(1, 0))
+        rule.setContent { Box(Modifier.background(Site.Bg)) { dev.cardstashy.nativeplay.ui.CardSheet(pick, s, dev.cardstashy.nativeplay.ui.CardSheetActions(), {}) } }
+        settle()
+        rule.onNodeWithText("Nonfoil").assertExists()
+        rule.onNodeWithText(foil).assertDoesNotExist()
+        s = state(2, 1); settle()
+        rule.onNodeWithText("Nonfoil").assertExists()
+        rule.onNodeWithText(foil).assertExists()
+        s = state(1, 1); settle()
+        rule.onNodeWithText(foil).assertExists()
     }
 }

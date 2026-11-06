@@ -194,7 +194,9 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
                 stickyHeader { Tabs(tab) { tab = it } }
                 when (tab) {
                     "overview" -> item {
-                        Overview(name, shown, faces, imgFaces, face, image, finish, data, state, owned, act, { asked = it }, { face = 1 - face }, { rule = it }, { zoom = true }) { tab = "get" }
+                        // Randall 6 Nov 01:41Z: a finish shows only when a copy is in it (or the card was opened in it), so a preview never reads as owned.
+                        val mine = state?.let { Trunk.finishesOwned(it, name, shown.s("oracle_id").ifBlank { null }) + pick.finish }
+                        Overview(name, shown, faces, imgFaces, face, image, finish, data, state, owned, mine, act, { asked = it }, { face = 1 - face }, { rule = it }, { zoom = true }) { tab = "get" }
                     }
                     "guide" -> item { Guide(shown, data) { rule = it } }
                     else -> item { GetIt(name, shown, state, owned, act) }
@@ -391,7 +393,7 @@ private fun Tabs(on: String, pick: (String) -> Unit) = Box(Modifier.fillMaxWidth
 
 @Composable
 private fun Overview(name: String, shown: JsonObject, faces: List<JsonObject>, imgFaces: List<JsonObject>, face: Int, image: String?, finish: String, data: CardData?, state: JsonObject?,
-                     owned: Int, act: CardSheetActions, onFinish: (String) -> Unit, onFlip: () -> Unit, onRule: (CardData.Rule) -> Unit, onZoom: () -> Unit, onGet: () -> Unit) {
+                     owned: Int, mine: Set<String>?, act: CardSheetActions, onFinish: (String) -> Unit, onFlip: () -> Unit, onRule: (CardData.Rule) -> Unit, onZoom: () -> Unit, onGet: () -> Unit) {
     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SetLine(shown, state, act)
         // The card: drag across it to move the light (the phone's tilt moves it too); tap to enlarge.
@@ -408,7 +410,7 @@ private fun Overview(name: String, shown: JsonObject, faces: List<JsonObject>, i
                 .pointerInput(Unit) { detectTapGestures(onLongPress = {}) { onZoom() } }, shape = RoundedCornerShape(16.dp))
         }
         if (imgFaces.size > 1) GhostButton("↻ Flip to ${imgFaces[if (face == 0) 1 else 0].s("name")}", Modifier.fillMaxWidth(), onClick = onFlip)
-        FinishRail(shown, finish, data, onFinish)
+        FinishRail(shown, finish, data, mine, onFinish)
         // card detail "Use as profile photo" (profile-art.js): opens the circle editor on this printing's art; never adds the card anywhere.
         val artCrop = (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("art_crop")?.ifBlank { null }
             ?: shown.getAsJsonObject("image_uris")?.s("art_crop")?.ifBlank { null } ?: faces.firstOrNull()?.getAsJsonObject("image_uris")?.s("art_crop")?.ifBlank { null }
@@ -446,11 +448,16 @@ private fun SetLine(shown: JsonObject, state: JsonObject?, act: CardSheetActions
     }
 }
 
-/** finishPreview: "Finish" and a chip per finish the printing has, nonfoil, foil, etched; foil names its material. */
+/**
+ * finishPreview: "Finish" and a chip per finish the printing has, nonfoil, foil, etched; foil names its material. In Play only the
+ * finishes of your copies ([mine]): a holo copy is the printing's foil, or its etched foil when it has no foil.
+ */
 @Composable
-private fun FinishRail(shown: JsonObject, on: String, data: CardData?, pick: (String) -> Unit) {
+private fun FinishRail(shown: JsonObject, on: String, data: CardData?, mine: Set<String>?, pick: (String) -> Unit) {
     val have = shown.getAsJsonArray("finishes")?.map { it.asString }?.toSet() ?: setOf("nonfoil")
-    val list = FINISH_ORDER.filter { it in have }.ifEmpty { listOf("nonfoil") }
+    val all = FINISH_ORDER.filter { it in have }.ifEmpty { listOf("nonfoil") }
+    val holo = if ("foil" in have) "foil" else "etched"
+    val list = if (mine == null) all else all.filter { it in mine || (it == holo && "foil" in mine) }.ifEmpty { listOf(on) }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Finish", style = t(12f, color = Site.Muted))
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {

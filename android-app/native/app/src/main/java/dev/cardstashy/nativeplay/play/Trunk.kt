@@ -110,6 +110,17 @@ object Trunk {
         return m[name]?.takeIf { it > 0 } ?: m[name.split(" // ")[0]] ?: 0
     }
 
+    /**
+     * The finishes your copies are in (state.cards: c copies, h of them holo): nonfoil while a plain copy is left, foil once one
+     * is holo. Play counts copies per card, never per printing.
+     */
+    fun finishesOwned(state: JsonObject?, name: String, oracle: String?): Set<String> {
+        val list = cards(state)
+        val c = oracle?.let { o -> list.firstOrNull { it.o == o } } ?: list.firstOrNull { it.n == name || it.n.split(" // ")[0] == name } ?: return emptySet()
+        val h = minOf(c.h, c.c)
+        return buildSet { if (c.c - h > 0) add("nonfoil"); if (h > 0) add("foil") }
+    }
+
     private fun basic(name: String) = name in setOf("Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes") || name.startsWith("Snow-Covered ")
     /** stepDeckCard +1 with owned forced to 4 (the card view's Add to deck): null when no more copies fit. */
     fun addOne(rows: List<Pair<String, Int>>, name: String, format: String): List<Pair<String, Int>>? {
