@@ -154,6 +154,57 @@ class CollectionEngineTest {
         assertEquals("compact", CollectionEngine.cardsDo("mtg", "view", "compact")["mode"].asString)
     }
 
+    /**
+     * Collection › Value (views.js collectionValueView) through the engine: the Cards tab's sample collection with three saved
+     * snapshots (the last a known subtotal), so the chart, its change, the composition, the most valuable lots and the trade binder
+     * all show. Writes app/build/shot-art/home/collection-value.json for CollectionValueShotTest.
+     */
+    @Test fun valueModel() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        val prints = JsonParser.parseString(javaClass.classLoader!!.getResource("collection/printings.json")!!.readText()).asJsonArray.map { it.asJsonObject }
+        val lots = JsonArray(); val printings = JsonObject()
+        prints.forEachIndexed { i, c ->
+            printings.add(c["id"].asString, c)
+            lots.add(JsonObject().apply {
+                addProperty("id", "l${i + 1}"); addProperty("name", c["name"].asString); addProperty("qty", if (c["name"].asString == "Lightning Bolt") 4 else 1); addProperty("printingId", c["id"].asString)
+                addProperty("set", c["set"].asString); addProperty("setName", c["set_name"].asString); addProperty("collectorNumber", c["collector_number"].asString)
+                addProperty("finish", if (c["name"].asString.startsWith("Ragavan")) "foil" else "nonfoil"); addProperty("condition", "Near Mint"); addProperty("language", "en")
+                addProperty("location", ""); addProperty("printingVerified", true); addProperty("addedAt", "2026-11-01T12:00:00Z"); add("raw", JsonObject())
+            })
+        }
+        val history = """[{"date":"2026-10-20","total":4100.5,"copies":17,"unpriced":0,"currency":"USD","basis":"exact-owned-v1"},
+            {"date":"2026-10-28","total":4215.25,"copies":17,"unpriced":0,"currency":"USD","basis":"exact-owned-v1"},
+            {"date":"2026-11-04","total":4302.1,"copies":17,"unpriced":0,"currency":"USD","basis":"exact-owned-v1"}]"""
+        val ws = JsonParser.parseString("""{"version":3,"wishlist":[],"notes":[],"collection":$lots,"printings":$printings,"valueHistory":$history,
+            "decks":[{"id":"d1","name":"Burn","format":"modern","cards":[{"name":"Lightning Bolt","qty":4},{"name":"Ragavan, Nimble Pilferer","qty":1}]}]}""").asJsonObject
+        CollectionEngine.load(ws, null)
+        val m = CollectionEngine.value("mtg")
+        val blocks = m.getAsJsonArray("blocks").map { it.asJsonObject }
+        println("VALUE accent=${m["accent"]} " + blocks.map { it["k"].asString })
+        blocks.forEach { println("  $it".take(900)) }
+        assertEquals(listOf("overview", "composition", "alerts", "top", "spare", "foot"), blocks.map { it["k"].asString }.filter { it != "advice" })
+        val ov = blocks.first { it["k"].asString == "overview" }
+        assertTrue(ov["amount"].asString.startsWith("$"))
+        assertEquals("refreshPrices", ov["refresh"].asJsonObject["act"].asString)
+        val chart = ov["chart"].asJsonObject
+        assertEquals(3, chart.getAsJsonArray("points").size())
+        assertEquals(2, chart.getAsJsonArray("lines").size())
+        assertEquals(3, chart.getAsJsonArray("grid").size())
+        assertTrue(chart["change"].asJsonObject["amount"].asString.contains("$"))
+        val top = blocks.first { it["k"].asString == "top" }.getAsJsonArray("lots").map { it.asJsonObject }
+        assertTrue(top.size in 1..12)
+        assertEquals("card", top[0]["act"].asString)
+        assertTrue(top.any { it["print"]?.isJsonObject == true })
+        assertTrue(blocks.first { it["k"].asString == "composition" }.getAsJsonArray("meters").size() > 1)
+        val out = File(System.getProperty("repoRoot"), "android-app/native/app/build/shot-art/home").apply { mkdirs() }
+        File(out, "collection-value.json").writeText(m.toString())
+        // No cards and no history: the site's empty page.
+        CollectionEngine.load(JsonParser.parseString("""{"version":3,"wishlist":[],"notes":[],"collection":[],"decks":[]}""").asJsonObject, null)
+        val none = CollectionEngine.value("mtg")
+        assertEquals("No value to track yet", none["empty"].asJsonObject["title"].asString)
+    }
+
     /** views.js decks() → My decks through the engine: four decks over the sample printings; writes the shot fixture. */
     @Test fun decksModel() = runBlocking {
         assumeTrue(bundle.isFile)

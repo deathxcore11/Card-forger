@@ -3,7 +3,7 @@
 // Nothing is decided here: every number, list and order comes from the site's functions; this file only calls them
 // and hands their models to the app instead of HTML.
 import {S, blank, meta, cacheCard, slim, inv, uid} from 'WEB/store.js';
-import {cardKey, typeText, cardPrice, mergeDeckCard, exportDeckText} from 'WEB/core.js';
+import {cardKey, typeText, cardPrice, mergeDeckCard, exportDeckText, exportDeck} from 'WEB/core.js';
 import {validateWorkspace} from 'WEB/confidence.js';
 import {normalizeHomeDeckActivity, recordHomeDeckWork} from 'WEB/home-deck-activity.js';
 import {collectionValue, recordValuePoint, withSnapshot} from 'WEB/insights.js';
@@ -398,6 +398,87 @@ const tcgCardsAct = {
   // workbench-ui.js A.viewSave for area "collection": the game's own settings.displayModes.
   view: v => { if (['gallery', 'compact', 'symbols'].includes(v)) ((S.state.settings.displayModes ||= {})[tcgGame()] ||= {}).collection = v; },
 };
+
+// ---- Collection › Value (views.js collectionValueView, tcg.js tcgValueView; value-page.js, pricehist.js alertsPanel, importance.js
+// tradeAdviceHtml): the page the site draws, read into blocks in its order. The chart keeps the svg's own numbers (its view box,
+// the grid's y and labels, each line's two ends, each point and gap), so the app draws the site's plot.
+const nums = s => (String(s || '').match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
+const bgColors = s => (String(s || '').match(/#[0-9a-f]{3,8}\b/gi) || []);
+function valueChartModel(n) {
+  if (!n) return null;
+  if (cls('value-chart-empty')(n)) return {empty: true, title: text(one(n, tagIs('h3'))), text: text(one(n, tagIs('p')))};
+  const head = one(n, cls('value-section-head')), svg = one(n, tagIs('svg')), ch = one(n, cls('value-chart-change')), det = one(n, cls('value-history-details'));
+  const grid = all(svg, cls('value-chart-grid')), axis = all(svg, cls('value-chart-axis'));
+  return {title: text(one(head, tagIs('h3'))), count: text(one(head, tagIs('span'))),
+    change: ch && {dir: ['up', 'down', 'flat'].find(d => cls(d)(ch)) || 'flat', amount: text(one(ch, tagIs('strong'))), label: text(one(ch, tagIs('span')))},
+    periods: all(n, cls('value-chart-period')).map(text), range: runs(one(n, cls('value-chart-range')) || {kids: []}),
+    vb: nums(svg?.attrs.viewbox), desc: text(one(svg, tagIs('desc'))),
+    grid: grid.map((g, i) => ({y: Number(g.attrs.y1) || 0, x1: Number(g.attrs.x1) || 0, x2: Number(g.attrs.x2) || 0, label: text(axis[i])})),
+    lines: all(svg, cls('value-chart-line')).map(p => { const [x1, y1, x2, y2] = nums(p.attrs.d); return {x1, y1, x2, y2, partial: p.attrs['data-value-series'] === 'partial'}; }),
+    points: all(svg, cls('value-chart-point')).map(c => ({x: Number(c.attrs.cx), y: Number(c.attrs.cy), r: Number(c.attrs.r) || 4, status: ['partial', 'legacy', 'complete'].find(s => cls(s)(c)) || 'complete', title: text(one(c, tagIs('title')))})),
+    gaps: all(svg, cls('value-chart-gap')).map(p => { const [x, y] = nums(p.attrs.d); return {x: x + 3, y: y + 3, title: text(one(p, tagIs('title')))}; }),
+    dates: all(one(n, cls('value-chart-dates')), tagIs('span')).map(text),
+    legend: all(one(n, cls('value-chart-legend')), tagIs('span')).map(s => { const i = one(s, tagIs('i')); return {kind: (i?.attrs.class || '').trim(), mark: text(i), label: text(s).slice(text(i).length).trim()}; }),
+    note: text(one(n, cls('value-chart-note'))),
+    history: det && {summary: text(one(det, tagIs('summary'))), rows: all(det, tagIs('li')).map(li => ({date: text(one(li, tagIs('time'))), total: text(one(li, tagIs('strong'))), label: text(one(li, tagIs('span')))}))}};
+}
+function valueSourcesModel(n) {
+  if (!n) return null;
+  return {summary: text(one(n, tagIs('summary'))), rows: all(n, x => x.tag === 'div' && x.attrs['data-value-source']).map(d => { const dt = one(d, tagIs('dt')), sm = one(dt, tagIs('small'));
+    return {key: d.attrs['data-value-source'], label: text(dt).slice(0, text(dt).length - text(sm).length).trim(), copies: text(sm), value: text(one(d, tagIs('dd')))}; }), foot: text(one(n, cls('foot')))};
+}
+const miniRows = n => all(n, cls('mini-row')).map(b => ({name: text(one(b, cls('ellip'))), price: text(one(b, tagIs('b'))) || '', note: text(one(b, tagIs('small'))), act: b.attrs['data-act'] || '', data: attrsOf(b)}));
+function valueBlock(n, G) {
+  if (cls('value-overview')(n)) {
+    const main = one(n, cls('value-overview-main')), lab = one(main, cls('value-game-label')), btn = one(n, cls('value-refresh'));
+    return {k: 'overview', label: text(lab), icon: icon(svgIn(lab)), amount: text(one(main, cls('value-amount'))), coverage: text(one(main, cls('value-coverage'))),
+      copies: text((main.kids || []).find(k => k.tag === 'p' && cls('small')(k))), refresh: btn && {label: glyph(text(btn)).label, act: btn.attrs['data-act'] || ''},
+      saved: text(one(n, x => x.attrs?.['data-value-saved-note'] !== undefined)), chart: valueChartModel(one(n, cls('value-chart'))),
+      sources: valueSourcesModel(one(n, cls('value-price-sources'))), sourceNote: text(one(n, cls('value-source-note')))};
+  }
+  if (cls('value-composition')(n)) {
+    const head = one(n, cls('value-section-head'));
+    return {k: 'composition', title: text(one(head, tagIs('h3'))), tag: text(one(head, tagIs('span'))),
+      meters: all(n, cls('value-meter')).map(m => { const dot = one(one(m, cls('value-meter-name')), tagIs('i')), bar = one(one(m, cls('value-meter-track')), tagIs('i'));
+        return {name: text(one(m, cls('value-meter-name'))), colors: bgColors(dot?.attrs.style), total: text((m.kids || []).find(k => k.tag === 'b')), width: widthOf(bar) / 100, copies: text(one(m, tagIs('small')))}; }),
+      empty: text((n.kids || []).find(k => k.tag === 'p' && cls('muted')(k))), note: text(one(n, cls('value-chart-note')))};
+  }
+  if (cls('advice')(n)) {
+    const sum = one(n, tagIs('summary')), groups = []; let head = '';
+    for (const k of n.kids || []) { if (!k.tag) continue; if (cls('list-head')(k)) head = text(k);
+      else if (cls('list')(k)) groups.push({head, rows: all(k, cls('adv-row')).map(b => { const imp = one(b, cls('imp-row')), sp = one(one(b, cls('ellip')), tagIs('span'));
+        return {name: text(one(sp, tagIs('b'))), emblem: imp && {title: imp.attrs.title || '', icon: icon(svgIn(imp))}, note: text(one(b, tagIs('small'))),
+          price: text((b.kids || []).find(x => x.tag === 'span' && cls('small')(x))), act: b.attrs['data-act'] || '', data: attrsOf(b)}; })}); }
+    return {k: 'advice', title: text(one(sum, tagIs('b'))), tag: text(one(sum, tagIs('span'))), groups, foot: text(one(n, cls('foot')))};
+  }
+  if (cls('value-top')(n)) {
+    const head = one(n, cls('value-section-head'));
+    return {k: 'top', title: text(one(head, tagIs('h3'))), tag: text(one(head, tagIs('span'))), empty: text(one(one(n, cls('value-lots')), cls('muted'))),
+      lots: all(n, cls('value-lot')).map(b => { const art = one(b, cls('value-lot-art')), img = one(art, tagIs('img')); let finish = null; try { finish = JSON.parse(art?.attrs['data-finish-model'] || 'null'); } catch {}
+        const print = G === 'mtg' && finish && finish.key && finish.key !== 'nonfoil' && finish.printingId ? S.state.printings?.[finish.printingId] || null : null;
+        return {name: text(one(b, tagIs('strong'))), details: text(one(b, cls('value-lot-details'))), copies: text(one(b, cls('value-lot-copies'))), total: text(one(b, cls('value-lot-total'))),
+          origin: text(one(b, cls('price-origin'))), picture: picture(img), fallback: img ? '' : text(art), aria: b.attrs['aria-label'] || '', act: b.attrs['data-act'] || '', data: attrsOf(b),
+          finish: finish && {key: finish.key || '', effect: finish.effect || art?.attrs['data-finish-effect'] || '', printingId: finish.printingId || ''}, print}; })};
+  }
+  if (n.tag === 'p' && cls('foot')(n)) return {k: 'foot', text: text(n)};
+  if (cls('panel')(n)) {
+    // pricehist.js alertsPanel, or views.js's Trade binder (its heading in a .row with Copy list).
+    const row = (n.kids || []).find(k => k.tag && cls('row')(k)), copy = one(n, x => x.attrs?.['data-act'] === 'copySpare');
+    if (row) return {k: 'spare', title: text(one(row, tagIs('h3'))), line: text(one(row, tagIs('p'))), copy: copy && {label: text(copy), act: 'copySpare'}, rows: miniRows(n),
+      empty: text(one(one(n, cls('list')), cls('muted')))};
+    return {k: 'alerts', title: text(one(n, tagIs('h3'))), rows: miniRows(n), empty: text((n.kids || []).find(k => k.tag === 'p' && cls('muted')(k)))};
+  }
+  return null;
+}
+function valuePage(G) {
+  let html;
+  if (G === 'mtg') { mtgFocus(); S.ui.collTab = 'value'; try { html = collectionPage(); } finally { S.ui.collTab = 'cards'; } }
+  else { tcgFocus(G, 'collection'); const U = tcgUi(G).coll; U.tab = 'value'; try { html = tcgCollection(); } finally { U.tab = 'cards'; } }
+  const t = tree(html), page = one(t, cls('collection-value-page')), empty = one(t, cls('empty'));
+  const kids = page ? page.kids || [] : (t.kids || []).filter(k => k.tag && cls('panel')(k));
+  return {game: G, accent: styleVar(page, 'value-accent'), empty: empty && !page ? {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p'))), mark: text(one(empty, cls('empty-mark')))} : null,
+    blocks: kids.filter(k => k.tag).map(k => valueBlock(k, G)).filter(Boolean)};
+}
 
 // icons.js decorateGlyphs: a label that starts with one of these and a space wears that icon in its place (LEAD, as the site has it).
 const LEAD = { "▲": "warn", "●": "stop", "⚔": "sword", "☠": "poison", "🎲": "random", "⚒": "build", "✧": "ideas", "🏆": "trophy", "⇄": "compare", "♡": "heart", "♥": "heartOn", "＋": "plus", "+": "plus", "↥": "import", "↓": "export", "⟳": "refresh", "↻": "flip", "⧉": "copy", "🔗": "link", "🖨": "print", "📷": "camera", "◈": "pack", "☆": "bookmark", "▦": "collection", "📖": "book", "◷": "history", "🛒": "bag", "⌕": "search", "☑": "pick", "⚠": "warn", "🖌": "brush", "✓": "check", "←": "back", "‹": "back", "▧": "scan" };
@@ -1958,6 +2039,26 @@ const writeActs = {
     await commit((s) => (s.collection = s.collection.filter((x) => x.id !== e.id)), { msg: 'Removed from collection.' });
     addCtx = null;
   },
+  // app.js A.refreshPrices (Collection's ⋯ menu, Value's Refresh prices): every owned card's data read again, then its toast.
+  async refreshPrices() {
+    const say = text => toasts.push({text, undo: false});
+    try {
+      const r = await refreshMagicCollectionPrices(true);
+      if (r.cancelled) return;
+      if (r.offline) return say("You’re offline. Saved prices have been kept.");
+      if (!r.total) return say("No cards to refresh.");
+      if (r.refreshed) say(`Price data refreshed for ${r.refreshed} ${r.refreshed===1?'card':'cards'}.${r.failed?` ${r.failed} ${r.failed===1?'lookup':'lookups'} failed; saved prices were kept.`:''}${r.skipped?` ${r.skipped} cards were not checked.`:''}`);
+      else say("Couldn’t refresh prices. Saved prices have been kept.");
+    } catch { say("Couldn’t finish refreshing prices. Please try again."); }
+  },
+  // tcg.js A.tRefreshPrices: the Yu-Gi-Oh! or Pokémon collection's prices read again (Cards' refresh button, Value's Refresh prices).
+  async tRefreshPrices(d) { tcgFocus(d.game, 'collection'); await siteRun(() => TA.tRefreshPrices({dataset: {}}), d); },
+  // app.js A.copySpare: Value's Trade binder list (owned cards no deck uses), copied.
+  async copySpare() {
+    const v = collectionValue(S.state.collection, S.catalog, S.state.printings, S.state.decks);
+    siteCopied = exportDeck(v.spare.map((x) => ({ name: x.name, qty: x.qty })));
+    toasts.push({text: 'Trade binder list copied.', undo: false});
+  },
 };
 
 /* ---------- Condition prices (app.js 3006-3085) ---------- */
@@ -2727,6 +2828,8 @@ globalThis.Collection = {
   tdeckModel() { if (!tdeckAt) return '{}'; const [g, id] = tdeckAt; return json(tcgDeckPageModel(g, id)); },
   deckDo(game, id, kind, value) { if (game && game !== 'mtg') { if (!tcgDeckAct[kind]) throw Error('unknown deck control ' + kind); tcgFocus(game, 'tdeck'); S.ui.tdeckId = id; tdeckAt = [game, id]; tcgDeckAct[kind](value); return json(tcgDeckPageModel(game, id)); }
     if (!deckAct[kind]) throw Error('unknown deck control ' + kind); mtgFocus(); deckOpen(id); deckAct[kind](value); return json(deckPageModel(game, id)); },
+  // Collection › Value for [game] (valuePage).
+  value(game) { return json(valuePage(game || 'mtg')); },
   cardsDo(game, kind, value) {
     if (game && game !== 'mtg') { if (!tcgCardsAct[kind]) throw Error('unknown Cards control ' + kind); tcgFocus(game, 'collection'); tcgCardsAct[kind](value); return json(tcgCardsPage(game)); }
     if (!cardsAct[kind]) throw Error('unknown Cards control ' + kind); mtgFocus(); cardsAct[kind](value); return json(cardsPage(game)); },

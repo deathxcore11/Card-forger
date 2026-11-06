@@ -39,12 +39,14 @@ private object CardsCache {
     /** Each game's page as last drawn (Magic, Yu-Gi-Oh!, Pokémon). */
     val models = HashMap<CardGame, CollectionCardsModel>()
     val q = HashMap<CardGame, String>()
+    val tab = HashMap<CardGame, String>()
+    val value = HashMap<CardGame, CollectionValueModel>()
 }
 
 /**
  * Collection's Cards tab: the account's collection through the site's own views.js collection(), drawn natively. Sort,
  * direction, filter, search, the view (Gallery, Compact, Symbols) and Show more ask the site's code again; the steppers and a wanted
- * card's × save from here (CollectionWrites); Edit, Got it, Binders, Value, Select and the ⋯ menu still open the website's page.
+ * card's × save from here (CollectionWrites); Value is drawn here (CollectionValue); Binders, Select and the ⋯ menu still open the website's page.
  */
 @Composable
 fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, web: (url: String, press: String?) -> Unit, onDecks: (() -> Unit)? = null, nativeCard: Boolean = false,
@@ -62,6 +64,10 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     /** The card pages open over the list, the last on top (a card opened from a card goes back to it). */
     var cards by remember { mutableStateOf(listOf<CardOpen>()) }
     var failed by remember { mutableStateOf<String?>(null) }
+    // Cards, Binders or Value (views.js collection's segmented collTab; tcg.js tCollTab), and Value's page once read.
+    var tab by remember(game) { mutableStateOf(CardsCache.tab[game] ?: "cards") }
+    var value by remember(game) { mutableStateOf(CardsCache.value[game]) }
+    var refreshing by remember(game) { mutableStateOf(false) }
     LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
     // The view last chosen here (the site keeps it in the account's settings.displayModes; the app keeps it too, as the set page does).
     val prefs = remember { context.getSharedPreferences("collection", android.content.Context.MODE_PRIVATE) }
@@ -97,6 +103,14 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     val written by CollectionWrites.written.collectAsState()
     var seen by remember { mutableStateOf(written) }
     LaunchedEffect(written) { if (written != seen) { seen = written; if (HomeCache.loaded != null) runCatching { paint() } } }
+    // Value: the site's page read again when it opens, after a save, and as the collection's prices arrive (paint's model changes).
+    LaunchedEffect(tab, game, written, model) {
+        CardsCache.tab[game] = tab
+        if (tab != "value" || HomeCache.loaded == null) return@LaunchedEffect
+        val g = game
+        runCatching { withContext(Dispatchers.Default) { CollectionValueModel.parse(CollectionEngine.value(g.id)) } }.getOrNull()
+            ?.let { v -> if (g == CollectionGame.current.value) { value = v; CardsCache.value[g] = v } }
+    }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     LaunchedEffect(query, game) {
         if (query == (CardsCache.q[game] ?: "")) return@LaunchedEffect
@@ -112,7 +126,8 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
         val tcg = game != CardGame.MTG
         CollectionCardsActions(
             game = { g -> CollectionGame.set(g) },
-            tab = { k -> site(if (tcg) "[data-act=\"tCollTab\"][data-id=\"${css(k)}\"]" else "[data-act=\"collTab\"][data-id=\"${css(k)}\"]") },
+            // Cards and Value are drawn here; Binders is still the website's.
+            tab = { k -> if (k == "cards" || k == "value") tab = k else site(if (tcg) "[data-act=\"tCollTab\"][data-id=\"${css(k)}\"]" else "[data-act=\"collTab\"][data-id=\"${css(k)}\"]") },
             view = { mode -> prefs.edit().putString(viewKey, mode).apply(); asked = "view" to mode },
             select = { site("[data-act=\"batchStart\"]") },
             menu = { web(coll, "[data-act=\"collMenu\"]") },
@@ -139,7 +154,8 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             unwish = { r -> scope.launch { if (tcg) CollectionWrites.act(context, "tWish", com.google.gson.JsonObject().apply { addProperty("game", game.id); addProperty("id", r.wishId) })
                 else CollectionWrites.act(context, "wishRemove", com.google.gson.JsonObject().apply { addProperty("id", r.wishId) }) } },
             pick = { name, v -> asked = "filter" to "$name=$v" },
-            refresh = { site("[data-act=\"tRefreshPrices\"]") },
+            // tcg.js A.tRefreshPrices, run here (CollectionWrites): the button reads "Refreshing…" until it ends.
+            refresh = { if (!refreshing) scope.launch { refreshing = true; try { CollectionWrites.act(context, "tRefreshPrices", com.google.gson.JsonObject().apply { addProperty("game", game.id) }) } finally { refreshing = false } } },
             button = { a -> site("[data-act=\"${css(a)}\"]") },
             // A.addCard opens the add sheet here; its "Paste or upload a list" (A.importCollection) is still the website's.
             emptyAct = { a -> if (tcg) { if (a == "go") web(site + "#search", null) else site("[data-act=\"${css(a)}\"]") }
@@ -161,9 +177,29 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             }
         }
     }
+    // Value's taps: Refresh prices (app.js A.refreshPrices / tcg.js A.tRefreshPrices), a card (as the list opens it), Copy list (A.copySpare);
+    // a price alert is the card page's tool, still the website's (A.priceAlert).
+    val valueAct = remember(game) {
+        val tcg = game != CardGame.MTG
+        CollectionValueActions(
+            refresh = { a -> if (!refreshing) scope.launch { refreshing = true
+                try { CollectionWrites.act(context, a, com.google.gson.JsonObject().apply { if (tcg) addProperty("game", game.id) }) } finally { refreshing = false } } },
+            open = { a, d, name -> fun ds(k: String) = d[k]?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
+                when (a) {
+                    "tCard" -> cards = cards + CardOpen(name, entry = ds("entry"), page = coll, tile = "[data-act=\"tCard\"][data-id=\"${css(ds("id"))}\"]", game = game.id, id = ds("id"))
+                    "card" -> { val n = ds("name").ifBlank { name }; val entry = ds("entry")
+                        val tile = if (entry.isBlank()) "[data-act=\"card\"][data-name=\"${css(n)}\"]" else "[data-act=\"card\"][data-entry=\"${css(entry)}\"]"
+                        if (nativeCard) cards = cards + CardOpen(n, entry = entry, page = coll, tile = tile) else web(coll, tile) }
+                    "priceAlert" -> site("[data-act=\"priceAlert\"][data-game=\"${css(ds("game"))}\"][data-id=\"${css(ds("id"))}\"][data-name=\"${css(ds("name"))}\"]")
+                    else -> if (a.isNotBlank()) site("[data-act=\"${css(a)}\"]")
+                } },
+            copySpare = { scope.launch { CollectionWrites.act(context, "copySpare", com.google.gson.JsonObject()) } },
+        )
+    }
     val m = model
     Box(Modifier.fillMaxSize()) {
-    if (m != null) CollectionCards(m, top, act, nav, query)
+    if (m != null) CollectionCards(m, top, act, nav, query, tab,
+        if (tab == "value") ({ gutter, narrow -> collectionValueItems(value, valueAct, gutter, narrow, refreshing) }) else null)
     else Column(Modifier.fillMaxSize().background(Site.Bg)) {
         Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { top(null) }
         Column(Modifier.weight(1f).fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally) {

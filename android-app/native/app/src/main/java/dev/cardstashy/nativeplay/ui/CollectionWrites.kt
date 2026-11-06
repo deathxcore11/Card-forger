@@ -88,7 +88,7 @@ internal object CollectionWrites {
 
     /** The write itself: under the sync's lock, in the engine holding this device's copy, then that copy written. Null: not run. */
     /** Taps that read the card sources for a while (every card's price, each card's printings). */
-    private val LONG_ACTS = setOf("tDeckRefresh", "tDeckCheapest", "tDeckCopyMissing")
+    private val LONG_ACTS = setOf("tDeckRefresh", "tDeckCheapest", "tDeckCopyMissing", "refreshPrices", "tRefreshPrices")
     private suspend fun commitAct(context: Context, kind: String, data: JsonObject, ms: Long = 15_000): JsonObject? {
         val s = Account.session.value ?: run { show("Sign in to save cards to your collection."); return null }
         val app = context.applicationContext

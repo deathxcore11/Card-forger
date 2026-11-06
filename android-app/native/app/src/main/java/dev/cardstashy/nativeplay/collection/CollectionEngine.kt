@@ -110,6 +110,10 @@ object CollectionEngine {
     suspend fun cards(game: String, opts: JsonObject = JsonObject()): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.cards(${str(game)}, ${str(opts.toString())})") as String).asJsonObject }
 
+    /** Collection › Value (views.js collectionValueView, tcg.js tcgValueView) as blocks in the site's order. */
+    suspend fun value(game: String): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.value(${str(game)})") as String).asJsonObject }
+
     /** views.js decks(), My decks, as a model; [opts] = {q} as I.shelfSearch sets it. */
     suspend fun decks(game: String, opts: JsonObject = JsonObject()): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.decks(${str(game)}, ${str(opts.toString())})") as String).asJsonObject }

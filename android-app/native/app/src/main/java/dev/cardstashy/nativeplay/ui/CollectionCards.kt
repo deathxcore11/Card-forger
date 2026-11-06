@@ -343,16 +343,19 @@ internal fun SiteIcon(icon: SiteSvg?, size: Dp, color: Color, modifier: Modifier
 
 @Composable
 fun CollectionCards(m: CollectionCardsModel, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, act: CollectionCardsActions = CollectionCardsActions(),
-                    nav: @Composable (vertical: Boolean) -> Unit = {}, query: String = m.searchValue) {
+                    nav: @Composable (vertical: Boolean) -> Unit = {}, query: String = m.searchValue,
+                    /** The tab shown (cards, binders, value) and, off Cards, what stands in for the list under the tabs. */
+                    tab: String = "cards", body: (androidx.compose.foundation.lazy.LazyListScope.(gutter: Dp, narrow: Boolean) -> Unit)? = null) {
     BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
         val screen = maxWidth
-        if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); CardsPage(m, top, act, Modifier.weight(1f).fillMaxHeight(), screen, query) }
-        else Column(Modifier.fillMaxSize()) { CardsPage(m, top, act, Modifier.weight(1f).fillMaxWidth(), screen, query); nav(false) }
+        if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); CardsPage(m, top, act, Modifier.weight(1f).fillMaxHeight(), screen, query, tab, body) }
+        else Column(Modifier.fillMaxSize()) { CardsPage(m, top, act, Modifier.weight(1f).fillMaxWidth(), screen, query, tab, body); nav(false) }
     }
 }
 
 @Composable
-private fun CardsPage(m: CollectionCardsModel, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, act: CollectionCardsActions, modifier: Modifier, screen: Dp, query: String) {
+private fun CardsPage(m: CollectionCardsModel, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, act: CollectionCardsActions, modifier: Modifier, screen: Dp, query: String,
+                      tab: String = "cards", body: (androidx.compose.foundation.lazy.LazyListScope.(gutter: Dp, narrow: Boolean) -> Unit)? = null) {
     val wide = screen >= 600.dp
     val gutter = if (wide) 22.dp else 16.dp
     val state = rememberLazyListState()
@@ -371,16 +374,18 @@ private fun CardsPage(m: CollectionCardsModel, top: @Composable (tabs: (@Composa
         item(key = "head") {
             Column(Modifier.fillMaxWidth().padding(horizontal = gutter).padding(top = if (wide) 16.dp else 10.dp)) {
                 if (!wide) GameTabs(m.game, act.game, compact = true, Modifier.align(Alignment.CenterHorizontally).widthIn(max = 280.dp).padding(bottom = 12.dp))
-                Hero(m, act, wide)
-                CollTabs(m.tabs, act.tab)
-                if (m.emptyTitle != null) Empty(m, act)
+                Hero(m, act, wide, tab)
+                CollTabs(if (tab == "cards") m.tabs else m.tabs.map { CollTab(it.key, it.label, it.key == tab, it.icon) }, act.tab)
+                if (body != null) Unit
+                else if (m.emptyTitle != null) Empty(m, act)
                 else {
                     if (m.game != CardGame.MTG) ValueLine(m, act) else Summary(m.summary)
                     Tools(m, act, wide, query)
                 }
             }
         }
-        if (m.emptyTitle == null) {
+        if (body != null) body(gutter, screen < 420.dp)
+        else if (m.emptyTitle == null) {
             if (m.rows.isEmpty()) item(key = "none") {
                 Text(m.none.ifBlank { "No cards match." }, Modifier.fillMaxWidth().padding(horizontal = gutter).padding(vertical = 24.dp), style = sans(15f, color = Mute), textAlign = TextAlign.Center)
             }
@@ -496,7 +501,7 @@ private fun PieceImg(p: CollPiece, w: Dp, h: Dp) {
 // ---------------------------------------------------------------- header: banner art, title, view switch, Select, ⋯
 
 @Composable
-private fun Hero(m: CollectionCardsModel, act: CollectionCardsActions, wide: Boolean) {
+private fun Hero(m: CollectionCardsModel, act: CollectionCardsActions, wide: Boolean, tab: String = "cards") {
     val shape = RoundedCornerShape(if (wide) 22.dp else 18.dp)
     // .page-hero: 140 tall on a phone (180, padding 22/26 and 22 corners from 600 dp), a 1 px gold-glass edge and a deep shadow;
     // the art (your own card, cover at 50 % 30 %, scaled 1.02) under the left-to-right and bottom shades (.page-hero-art::after).
@@ -515,18 +520,21 @@ private fun Hero(m: CollectionCardsModel, act: CollectionCardsActions, wide: Boo
         // From 600 dp the title sits at the foot of the banner and the actions at its top right; a phone stacks them.
         if (wide) Box(Modifier.matchParentSize().padding(horizontal = 26.dp, vertical = 22.dp)) {
             title(Modifier.align(Alignment.BottomStart))
-            HeroActions(m, act, wide, Modifier.align(Alignment.TopEnd))
+            HeroActions(m, act, wide, Modifier.align(Alignment.TopEnd), tab)
         } else Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             title(Modifier)
-            HeroActions(m, act, wide, Modifier)
+            HeroActions(m, act, wide, Modifier, tab)
         }
     }
 }
 
 @Composable
-private fun HeroActions(m: CollectionCardsModel, act: CollectionCardsActions, wide: Boolean, modifier: Modifier) {
+private fun HeroActions(m: CollectionCardsModel, act: CollectionCardsActions, wide: Boolean, modifier: Modifier, tab: String = "cards") {
+    // views.js collection(): the view switch and Select are the Cards tab's; ⋯ stays on every tab (tcg.js's Binders and Value heads carry none).
+    val cards = tab == "cards"
+    if (!cards && m.game != CardGame.MTG) return
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (m.views.isNotEmpty()) Row(Modifier.clip(RoundedCornerShape(12.dp)).background(GlassFill).border(1.dp, GlassLine, RoundedCornerShape(12.dp)).padding(3.dp),
+        if (cards && m.views.isNotEmpty()) Row(Modifier.clip(RoundedCornerShape(12.dp)).background(GlassFill).border(1.dp, GlassLine, RoundedCornerShape(12.dp)).padding(3.dp),
             horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             // The app draws the compact list (the site's phone default); Gallery and List open the website for now.
             for (v in m.views) {
@@ -538,7 +546,7 @@ private fun HeroActions(m: CollectionCardsModel, act: CollectionCardsActions, wi
             }
         }
         // .tool-btn: the gold icon, and from 600 dp its word ("Select") beside it.
-        if (m.selectIcon != null) Row(Modifier.heightIn(min = 44.dp).then(if (wide && m.selectText.isNotBlank()) Modifier else Modifier.width(44.dp)).clip(RoundedCornerShape(11.dp))
+        if (cards && m.selectIcon != null) Row(Modifier.heightIn(min = 44.dp).then(if (wide && m.selectText.isNotBlank()) Modifier else Modifier.width(44.dp)).clip(RoundedCornerShape(11.dp))
             .background(GlassFill).border(1.dp, GlassLine, RoundedCornerShape(11.dp)).clickable(onClick = act.select)
             .semantics { contentDescription = m.selectLabel.ifBlank { "Select cards" } }.padding(horizontal = if (wide) 12.dp else 0.dp),
             horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
