@@ -20,7 +20,8 @@ import {mtgMetaKey} from 'WEB/power.js';
 import {loadCommunity, communitySlides} from 'WEB/community-feed.js';
 import {loadPulse} from 'WEB/news-pulse.js';
 import {collection as collectionPage, decks as decksView, deckPage as deckView, cardSheet as cardView, setsPage as setsView, setPage as setView, rowsFor} from 'WEB/views.js';
-import {loadMagicPrintingPage, mergeMagicCards} from 'WEB/catalog-tools.js';
+import {loadMagicPrintingPage, mergeMagicCards, searchQuery, rankByName, magicFilterError, hasMagicSearchQuery, magicSearchSpec, scryfallSearchPath} from 'WEB/catalog-tools.js';
+import {search as searchView, mtgFilterChips} from 'WEB/views.js';
 import {magicOwnedDetail, magicOwnedContext, magicOwnedCurrent, magicOwnedCard} from 'WEB/magic-owned-detail.js';
 import {binderPage, binderMatches, binderFavorites, binderCoverState, BINDER_COLORS, MAX_FAVORITES} from 'WEB/binders.js';
 import {selectPreviewFinish, finishAttrs} from 'WEB/finish-preview.js';
@@ -38,7 +39,7 @@ import {mtgPairQueries, rankPairs, edhPop} from 'WEB/pairing.js';
 import {ICON, actionIcon} from 'WEB/icons.js';
 import {contextAction, contextHeader, deckContextShortcuts} from 'WEB/card-actions.js';
 import {deckBoxMarkup, deckBoxFields, boxAppearance} from 'WEB/deck-box.js';
-import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf, SOURCES as tcgSources, cache as tcgCache, ensureCard as tcgEnsureCard, gs as tcgGs, tcgCardSheet, setContextCard as tcgSetContextCard, currentYgoCatalogue as tcgYgoCatalogue, trackTcgValue, collectionValue as tcgCollectionValue, persistQuoteCache as tcgPersistQuoteCache, entryPrice as tcgEntryPrice, referenceEntryPrice as tcgReferenceEntryPrice, tcgHome, tcgCollection, tcgDecks, tcgDeck, readTcgValueHistory, loadCache as tcgLoadCache, ensureMany as tcgEnsureMany, needsCardRefresh as tcgNeedsRefresh} from 'WEB/tcg.js';
+import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf, SOURCES as tcgSources, cache as tcgCache, ensureCard as tcgEnsureCard, gs as tcgGs, tcgCardSheet, setContextCard as tcgSetContextCard, currentYgoCatalogue as tcgYgoCatalogue, trackTcgValue, tcgSearch as tcgSearchView, savedSearches, setSavedSearches, collectionValue as tcgCollectionValue, persistQuoteCache as tcgPersistQuoteCache, entryPrice as tcgEntryPrice, referenceEntryPrice as tcgReferenceEntryPrice, tcgHome, tcgCollection, tcgDecks, tcgDeck, readTcgValueHistory, loadCache as tcgLoadCache, ensureMany as tcgEnsureMany, needsCardRefresh as tcgNeedsRefresh} from 'WEB/tcg.js';
 import {adjustOwnedLot} from 'WEB/quick-quantity.js';
 import {workspaceSig, isEmptyWorkspace} from 'WEB/cloud.js';
 import {mergeAccountWorkspaces, workspaceContentSig} from 'WEB/sync-merge.js';
@@ -1377,6 +1378,253 @@ function setPageModel(G = 'mtg') {
     mode: (all(view, tagIs('button')).find(b => b.attrs['aria-checked'] === 'true')?.attrs['data-mode']) || 'gallery',
     results: text(one(t, cls('set-results'))), tiles: grid ? all(grid, cls('grid-card')).map(n => G === 'mtg' ? setTileModel(n) : tcgTileModel(n, G)) : [],
     more: more ? text(more) : '', empty: empty && {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p')))}, busy: !!st.busy, loaded: !!st.loaded};
+}
+
+// ---------------------------------------------------------------- Search (the site's #search: views.js search(), tcg.js tcgSearch())
+// app.js's Magic search (6424-6640), verbatim but for the redraw (the app's), A.card (the app opens the card page: searchWent says
+// which) and the screen stamps (the app has one search page). Yu-Gi-Oh! and Pokémon run tcg.js's own handlers (TA / TC / TI).
+let searchGame = 'mtg', searchWent = null;
+function dbInvalidate(clear = true) {
+  const db = S.ui.db;
+  db.generation = (db.generation || 0) + 1;
+  db.abort?.abort();
+  db.abort = null;
+  db.busy = false;
+  if (clear) Object.assign(db, { results: [], total: 0, next: null, note: "", error: "", submitted: null, pages: [] });
+}
+const dbHasQuery = () => hasMagicSearchQuery(S.ui.db.term, S.ui.db.filters);
+const DB = {
+  dbTerm(t) {
+    if (S.ui.db.term === t.value) return;
+    S.ui.db.term = t.value;
+    dbInvalidate();
+  },
+  dbFilter(t) {
+    const f = S.ui.db.filters;
+    f[t.dataset.field] = t.value;
+    if (["format", "color"].includes(t.dataset.field)) delete f.fits;
+    if (dbHasQuery()) return dbSearch();
+    dbInvalidate();
+  },
+  // Color chips toggle: tapping the selected color clears it.
+  dbColorChip(t) {
+    const f = S.ui.db.filters;
+    f.cardColor = f.cardColor === t.dataset.value ? "" : t.dataset.value;
+    if (dbHasQuery()) return dbSearch();
+    dbInvalidate();
+  },
+  dbChip(t) {
+    const f = S.ui.db.filters,
+      k = t.dataset.field;
+    if (k === "fits") {
+      delete f.fits;
+      f.format = "";
+      f.color = "";
+    } else f[k] = "";
+    if (!dbHasQuery()) { dbInvalidate(); return; }
+    return dbSearch();
+  },
+  dbClear() {
+    S.ui.db.filters = { color: "", type: "", format: "", maxPrice: "" };
+    if (S.ui.db.term.trim()) return dbSearch();
+    else dbInvalidate();
+  },
+  dbSave() {
+    const error = magicFilterError(S.ui.db.filters);
+    if (error) { toasts.push({text: error, undo: false}); return; }
+    const db = S.ui.db,
+      chips = mtgFilterChips(db.filters).filter(([k]) => k !== "sort"),
+      label = [db.term.trim() && `“${db.term.trim().slice(0, 24)}”`, ...chips.map(([, l]) => l)].filter(Boolean).join(" · ").slice(0, 60) || "Search",
+      list = savedSearches("mtg").filter((x) => x.label !== label);
+    setSavedSearches("mtg", [{ label, term: db.term, filters: structuredClone(db.filters) }, ...list]);
+    toasts.push({text: "Search saved.", undo: false});
+  },
+  dbSaved(t) {
+    const x = savedSearches("mtg")[Number(t.dataset.i)];
+    if (!x) return;
+    S.ui.db.term = x.term || "";
+    S.ui.db.filters = { color: "", type: "", format: "", maxPrice: "", ...x.filters };
+    return dbSearch();
+  },
+  dbSavedDel(t) {
+    const list = savedSearches("mtg");
+    list.splice(Number(t.dataset.i), 1);
+    setSavedSearches("mtg", list);
+  },
+  dbSearch: () => dbSearch(),
+  dbMore: () => dbSearch(true),
+  async dbRandom() {
+    const db = S.ui.db, generation = db.generation;
+    if (db.randomBusy) return;
+    db.randomBusy = true;
+    try {
+      const card = await api("/cards/random?" + new URLSearchParams({q:"game:paper"}));
+      if (S.ui.db !== db || db.generation !== generation) return;
+      const c = cacheCard(card); saveCatalogSoon();
+      searchWent = {act: 'card', name: c.name, random: '1'};
+    } catch (e) { toasts.push({text: e.message, undo: false}); }
+    finally { db.randomBusy = false; }
+  },
+  dbTry(t) {
+    S.ui.db.term = t.dataset.q;
+    return dbSearch();
+  },
+};
+async function dbSearch(next = false) {
+  const db = S.ui.db;
+  if (next && (db.busy || !db.next || !db.submitted)) return;
+  let spec;
+  if (next) spec = db.submitted;
+  else {
+    dbInvalidate();
+    try { spec = magicSearchSpec(db.term, db.filters); }
+    catch (e) { db.error = e.message; return; }
+    db.submitted = spec;
+  }
+  const generation = db.generation, cursor = next ? db.next : null, abort = new AbortController();
+  db.abort = abort;
+  const current = () => S.ui.db === db && db.generation === generation && db.submitted === spec;
+  db.busy = true;
+  db.error = "";
+  try {
+    let d, note = next ? db.note || "" : "", requestPath;
+    if (next) {
+      requestPath = scryfallSearchPath(cursor);
+      if (db.pages?.includes(requestPath)) throw Error("The card database repeated a page. Search again to refresh the results.");
+      d = await api(requestPath, {signal:abort.signal});
+    } else {
+      const run = term => api("/cards/search?" + new URLSearchParams({ q: searchQuery(term, spec.filters), unique: "cards", order: spec.order, dir: spec.dir }), {signal:abort.signal});
+      try { d = await run(spec.term); }
+      catch (e) {
+        if (!current()) return;
+        // No printing with that set code and number: the words may be a name after all ("2 goblin").
+        if (spec.collector && /didn.t match any cards|no cards found/i.test(e.message)) {
+          d = await run(spec.typed).catch(() => { throw Error(`No card numbered ${spec.collector.number} in set ${spec.collector.set.toUpperCase()}.`); });
+          if (!current()) return;
+          note = `No card numbered ${spec.collector.number} in set ${spec.collector.set.toUpperCase()}, so these are cards named “${spec.typed}”.`;
+        } else {
+        const words = spec.term, none = err => /didn.t match any cards|no cards found/i.test(err?.message || "");
+        if (spec.syntax || !none(e)) throw e;
+        // No card is called that: the words may be an artist's name, then words from the cards' text.
+        d = await run(`a:"${words.replace(/"/g, "")}"`).catch(err => { if (none(err)) return null; throw err; });
+        if (!current()) return;
+        if (d) note = `No card names match “${words}”, so these are cards illustrated by ${words}.`;
+        else {
+          if (!words.includes(" ")) throw e;
+          d = await run(`o:"${words.replace(/"/g, "")}"`);
+          note = `No card names match “${words}”, so these are cards whose text says it.`;
+        }
+        }
+      }
+    }
+    if (!current()) return;
+    if (!Array.isArray(d?.data)) throw Error("The card database returned an incomplete response. Try again.");
+    let continuation = d.has_more ? d.next_page : null;
+    if (d.has_more && !continuation) throw Error("The card database did not return its next page. Try again.");
+    if (continuation) continuation = scryfallSearchPath(continuation);
+    const pages = [...(db.pages || []), ...(requestPath ? [requestPath] : [])];
+    const repeated = continuation && pages.includes(continuation);
+    for (const c of d.data) cacheCard(c);
+    const cards = mergeMagicCards(next ? db.results : [], d.data);
+    db.results = !next && !spec.filters.sort && !note ? rankByName(cards, spec.term) : cards;
+    db.total = Number(d.total_cards) || (next ? db.total : 0) || db.results.length;
+    db.next = repeated ? null : continuation;
+    db.pages = pages;
+    db.note = note;
+    if (repeated) db.error = "The card database repeated a page. Showing the unique cards loaded so far; search again to refresh.";
+  } catch (e) {
+    if (!current()) return;
+    db.error = /didn.t match any cards|no cards found/i.test(e.message) ? "No cards match that search." : e.message;
+    // Failed pagination preserves its cursor and loaded cards for an explicit retry.
+  } finally {
+    if (current()) {
+      db.busy = false;
+      db.abort = null;
+      saveCatalogSoon();
+    }
+  }
+}
+// One control of the search page, the way the site's event delegation hands it over: a press (data-act and its dataset), a select's
+// change or an input's value (data-change / data-input / data-enter, the element's dataset). tcg.js's A.tCard and A.tRandomCard open
+// the card page, which is the app's: searchWent says which card.
+async function searchPress(act, data = {}) {
+  const t = {dataset: data.dataset || {}, value: data.value ?? ''};
+  searchWent = null;
+  if (searchGame === 'mtg') { mtgFocus(); if (!DB[act]) throw Error('unknown search control ' + act); return DB[act](t); }
+  tcgFocus(searchGame, 'search');
+  if (act === 'tRandomCard') {
+    const open = TA.tCard;
+    TA.tCard = async x => { searchWent = {act: 'tCard', ...x.dataset}; };
+    try { return await TA.tRandomCard(); } finally { TA.tCard = open; }
+  }
+  const h = TA[act] || TC[act] || TI[act];
+  if (!h) throw Error('unknown search control ' + act);
+  return h(t);
+}
+// A card of the results (views.js search's grid-card, data-act="card" data-name; tcg.js's tCard tiles as on a set page).
+function searchTileModel(n, i, G) {
+  if (G !== 'mtg') return tcgTileModel(n, G);
+  const m = setTileModel(n), name = n.attrs['data-name'] || '';
+  return {...m, i, print: m.finish?.key && m.finish.key !== 'nonfoil' ? S.ui.db.results.find(c => c.name === name) || null : null};
+}
+// A field of the Filters (details.filters): a select (data-change, with data-field) or an input, under its label's words.
+function searchField(l) {
+  const sel = one(l, tagIs('select')), inp = one(l, tagIs('input')), words = text({kids: (l.kids || []).filter(k => k !== sel && k !== inp)});
+  const base = {label: words, title: l.attrs.title || '', span2: cls('span2')(l)};
+  if (sel) return {...base, kind: 'select', act: sel.attrs['data-change'] || '', field: sel.attrs['data-field'] || '', options: all(sel, tagIs('option')).map(o => ({value: o.attrs.value ?? text(o), label: text(o), on: o.attrs.selected !== undefined}))};
+  if (inp) return {...base, kind: 'input', act: inp.attrs['data-change'] || '', field: inp.attrs['data-field'] || '', value: inp.attrs.value || '', placeholder: inp.attrs.placeholder || '',
+    type: inp.attrs.type || 'text', max: inp.attrs.maxlength || '', caps: inp.attrs.autocapitalize === 'characters'};
+  return null;
+}
+// The page as it reads, top to bottom: each part of the markup a block the app draws in the same order.
+function searchPageModel(G = 'mtg') {
+  const t = tree(G === 'mtg' ? searchView() : tcgSearchView()), blocks = [];
+  let title = '', views = [], mode = 'gallery', tile = 0;
+  for (const n of (t.kids || []).filter(k => k.tag)) {
+    const c = cls;
+    if (c('page-head')(n)) {
+      title = text(one(n, tagIs('h1')));
+      const view = one(n, c('view-switch'));
+      views = view ? all(view, tagIs('button')).map(b => ({mode: b.attrs['data-mode'], label: b.attrs['aria-label'] || b.attrs.title || '', on: b.attrs['aria-checked'] === 'true', icon: icon(svgIn(b))})) : [];
+      mode = views.find(v => v.on)?.mode || 'gallery';
+    } else if (c('searchbar')(n)) {
+      const inp = one(n, tagIs('input')), ask = one(n, c('ask-launch'));
+      blocks.push({kind: 'search', value: inp?.attrs.value || '', placeholder: inp?.attrs.placeholder || '', label: inp?.attrs['aria-label'] || '',
+        input: inp?.attrs['data-input'] || '', enter: inp?.attrs['data-enter'] || '', ask: ask ? {act: ask.attrs['data-act'] || '', label: text(ask), aria: ask.attrs['aria-label'] || ''} : null});
+    } else if (c('search-tools')(n)) blocks.push({kind: 'tools', items: all(n, tagIs('button')).map(press)});
+    else if (c('filter-chips')(n)) {
+      const btns = all(n, tagIs('button'));
+      blocks.push({kind: 'chips', items: btns.filter(c('fchip')).map(b => ({label: text(one(b, c('fchip-label'))), aria: b.attrs['aria-label'] || '', act: b.attrs['data-act'] || '', field: b.attrs['data-field'] || ''})),
+        clear: press(btns.find(b => !c('fchip')(b)))});
+    } else if (c('saved-searches')(n)) blocks.push({kind: 'saved', label: text(one(n, c('muted'))),
+      items: all(n, c('schip')).map(s => { const [run, del] = all(s, tagIs('button')); return {label: text(run), act: run?.attrs['data-act'] || '', i: run?.attrs['data-i'] || '', del: del?.attrs['data-act'] || '', delAria: del?.attrs['aria-label'] || ''}; })});
+    else if (n.tag === 'details' && c('filters')(n)) {
+      const sum = one(n, tagIs('summary')), adv = one(n, x => x.tag === 'details' && c('advanced')(x)), pips = one(n, c('filter-pips'));
+      const outer = all(n, tagIs('label')).filter(l => !adv || !all(adv, tagIs('label')).includes(l));
+      blocks.push({kind: 'filters', label: text(one(sum, x => x.tag === 'span' && !c('label-ico')(x) && !c('filters-chev')(x))), icon: icon(svgIn(one(sum, c('label-ico')) || sum)),
+        count: text({kids: (one(sum, c('filters-count'))?.kids || []).filter(k => k.text !== undefined)}), open: n.attrs.open !== undefined,
+        heading: pips ? text(one(n, c('list-head'))) : '',
+        pips: pips ? all(pips, tagIs('button')).map(b => ({value: b.attrs['data-value'] || '', label: b.attrs['aria-label'] || '', on: b.attrs['aria-pressed'] === 'true', act: b.attrs['data-act'] || ''})) : [],
+        fields: outer.map(searchField).filter(Boolean),
+        advanced: adv ? {label: text(one(adv, tagIs('summary'))), open: adv.attrs.open !== undefined, fields: all(adv, tagIs('label')).map(searchField).filter(Boolean), foot: text(one(adv, c('foot')))} : null});
+    } else if (c('row')(n) && c('between')(n)) {
+      const b = one(n, tagIs('button'));
+      blocks.push({kind: 'count', text: text(one(n, x => (x.tag === 'span' || x.tag === 'p'))), save: press(b)});
+    } else if (c('skeleton-grid')(n)) blocks.push({kind: 'loading', count: all(n, c('skel-card')).length});
+    else if (c('card-grid')(n)) blocks.push({kind: 'tiles', tiles: all(n, c('grid-card')).map(x => searchTileModel(x, tile++, G))});
+    else if (c('hints')(n)) blocks.push({kind: 'hints', label: text(one(n, tagIs('p'))), items: all(n, tagIs('button')).map(b => ({label: text(b), act: b.attrs['data-act'] || '', q: b.attrs['data-q'] || ''}))});
+    else if (c('search-fan')(n)) blocks.push({kind: 'fan', title: text(one(n, tagIs('h2'))), text: text(one(n, tagIs('p'))),
+      cards: all(n, c('search-fan-card')).map(b => { const img = one(b, tagIs('img')); return {act: b.attrs['data-act'] || '', name: b.attrs['data-name'] || '', id: b.attrs['data-id'] || '', aria: b.attrs['aria-label'] || '', i: Number((/--i:\s*(-?[\d.]+)/.exec(b.attrs.style || '') || [])[1] || 0), picture: picture(img), alt: img?.attrs.alt || ''}; })});
+    else if (c('empty')(n)) blocks.push({kind: 'empty', title: text(one(n, tagIs('h3'))), text: text(one(n, tagIs('p')))});
+    else if (n.tag === 'button') blocks.push({kind: 'more', ...press(n)});
+    else if (c('note')(n) || c('foot')(n) || c('muted')(n) || c('small')(n)) {
+      const b = one(n, tagIs('button'));
+      blocks.push({kind: 'note', text: text({kids: (n.kids || []).filter(k => k.tag !== 'button')}), warn: c('warn')(n), note: c('note')(n), foot: c('foot')(n), small: c('small')(n),
+        center: c('center')(n), pad: c('pad')(n), button: press(b)});
+    }
+  }
+  const U = G === 'mtg' ? S.ui.db : tcgUi(G).search;
+  return {game: G, title, views, mode, blocks, busy: !!U.busy, term: G === 'mtg' ? U.term || '' : U.q || ''};
 }
 
 // The sheet's own controls, as app.js handles them; the redraw is the app's.
@@ -3672,6 +3920,27 @@ globalThis.Collection = {
   cardLoad() { const ctx = sheet; if (!ctx) return; (async () => { if (ctx.ownedLoading) await ownedLoad(ctx); if (!ctx.blocked && still(ctx)) { if (!(ctx.print || meta(ctx.name))) await resolveNames([ctx.name], () => {}, false, () => still(ctx)).catch(() => {}); await Promise.all([cardExtras(ctx), cardTabLoads(ctx), loadSetIndex()]); } })(); },
   // A.cardTab starts the tab's lookups (the guide's pairings and rulings, the price history); a finish or printing changes the quote.
   cardDo(kind, value) { if (!cardAct[kind] || !sheet) throw Error('unknown card control ' + kind); cardAct[kind](value); if (['tab', 'finish', 'print'].includes(kind)) cardTabLoads(sheet).catch(() => {}); return json(cardPageModel(sheet)); },
+  // The Search tab (views.js search(), tcg.js tcgSearch()) for [game]: the page as it stands, the search as last left. searchDo hands
+  // one control to the site's own handler ([data] = {dataset, value}); a search runs on (the app pumps it with settle() and reads
+  // searchModel), and searchWent then says which card a press opened (Random), for the app's card page.
+  search(game) {
+    searchGame = game || 'mtg';
+    if (searchGame === 'mtg') mtgFocus(); else tcgFocus(searchGame, 'search');
+    return json(searchPageModel(searchGame));
+  },
+  searchModel() { if (searchGame !== 'mtg') tcgFocus(searchGame, 'search'); return json(searchPageModel(searchGame)); },
+  searchDo(act, dataJson) {
+    const d = dataJson ? JSON.parse(dataJson) : {};
+    if (act === 'viewSave') { const m = d.dataset?.mode; if (['gallery', 'compact', 'symbols'].includes(m)) ((S.state.settings.displayModes ||= {})[searchGame] ||= {}).search = m; }
+    // The handler's own part runs now (the page answers at once); what it then waits on (a lookup) settles in the app's settle().
+    else searchPress(act, d).catch(e => toasts.push({text: e?.message || 'Search failed.', undo: false}));
+    return json(searchPageModel(searchGame));
+  },
+  searchWent() { const w = searchWent; searchWent = null; return json(w); },
+  searchToasts() { const t = toasts.map(x => x.text); toasts = []; return json(t); },
+  // tcg.js's saved searches live in this device's storage (cardforge-saved-searches-v1): the app keeps them between visits.
+  searchSaved() { try { return localStorage.getItem('cardforge-saved-searches-v1') || '{}'; } catch { return '{}'; } },
+  searchSavedSet(raw) { try { localStorage.setItem('cardforge-saved-searches-v1', String(raw || '{}')); } catch {} },
   // views.js setsPage(), every set: [opts] = {q, family, release, year, sort} as the app last left them. setsLoad starts the
   // set list's lookup (app.js loadSetIndex; the app pumps it with settle()); setsDo applies a control (setsAct).
   sets(game, opts) {

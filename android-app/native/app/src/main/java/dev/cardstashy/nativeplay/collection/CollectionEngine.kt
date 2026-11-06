@@ -248,6 +248,22 @@ object CollectionEngine {
 
     /** Starts app.js loadSetIndex (the set list); [settle] with [SETS_MODEL] draws it as it lands. */
     suspend fun setsLoad() = on { q -> q.evaluate("Collection.setsLoad()"); Unit }
+
+    /** The Search tab (views.js search(), tcg.js tcgSearch(); the site's #search) for [game], as a model of its blocks in page order. */
+    suspend fun search(game: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.search(${str(game)})") as String).asJsonObject }
+    /** One search control handed to the site's own handler: [act] is its data-act / data-change / data-input, [data] {dataset, value}. A search
+     *  runs on; pump it with [settle] and read [SEARCH_MODEL]. */
+    suspend fun searchDo(act: String, data: JsonObject = JsonObject()): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.searchDo(${str(act)}, ${str(data.toString())})") as String).asJsonObject }
+    const val SEARCH_MODEL = "Collection.searchModel()"
+    suspend fun searchModel(): JsonObject = on { q -> JsonParser.parseString(q.evaluate(SEARCH_MODEL) as String).asJsonObject }
+    /** The card a press opened (Random: {act: card, name} or {act: tCard, id, game}), once; null when none. */
+    suspend fun searchWent(): JsonObject? = on { q -> JsonParser.parseString(q.evaluate("Collection.searchWent()") as String).takeIf { it.isJsonObject }?.asJsonObject }
+    /** What the search's handlers said (toast), once. */
+    suspend fun searchToasts(): List<String> = on { q -> JsonParser.parseString(q.evaluate("Collection.searchToasts()") as String).asJsonArray.map { it.asString } }
+    /** The saved searches (tcg.js savedSearches' device storage, every game), to keep and to put back. */
+    suspend fun searchSaved(): String = on { q -> q.evaluate("Collection.searchSaved()") as String }
+    suspend fun searchSavedSet(raw: String) = on { q -> q.evaluate("Collection.searchSavedSet(${str(raw)})"); Unit }
     const val SETS_MODEL = "Collection.setsModel()"
     suspend fun setsModel(): JsonObject = on { q -> JsonParser.parseString(q.evaluate(SETS_MODEL) as String).asJsonObject }
 
