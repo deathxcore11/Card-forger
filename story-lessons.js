@@ -27,7 +27,7 @@ export const SAY = {
   sick: 'It is still arriving. Next turn it can fight.',
   attack: 'Attack with what is ready. Whatever blocks takes the blow.',
   block: 'Their steel comes at you. Stand a creature in its way.',
-  flying: 'Wings pass over the ground. Only fliers can stop fliers.',
+  flying: 'Wings pass over the ground. Only fliers, or creatures with reach, can stop fliers.',
   removal: 'A spell can name a target. Spend it on the one that matters.',
   protection: "Protection turns that colour's spells and blows aside.",
   firststrike: 'First strike hits first. The dead strike back no more.',
