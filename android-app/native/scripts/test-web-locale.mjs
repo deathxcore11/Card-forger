@@ -15,6 +15,12 @@ const dateOpts = [undefined, {month: 'short', day: 'numeric', year: 'numeric'}, 
   {month: 'short', year: 'numeric'}, {weekday: 'short', month: 'short', day: 'numeric'}, {year: 'numeric', month: '2-digit', day: '2-digit'}, {weekday: 'long'}];
 for (let i = 0; i < 600; i++) { const d = new Date(Date.UTC(1995, 0, 1) + Math.floor(rnd() * 40 * 365 * 864e5)); for (const o of dateOpts) check(`${d.toISOString()} ${JSON.stringify(o)}`, dateString(d, o), realDate.call(d, 'en-US', o)); }
 for (let i = 0; i < 600; i++) { const d = new Date(Date.UTC(1995, 0, 1) + Math.floor(rnd() * 40 * 365 * 864e5)); check(`${d.toISOString()} toLocaleString`, dateTimeString(d), realDateTime.call(d, 'en-US')); }
+// toLocaleString with options: set-browser.js's and tcg.js's "Nov 1, 9:05 AM", and the other shapes the prelude accepts.
+const DT_OPTS = [{month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}, {month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'},
+  {hour: 'numeric', minute: '2-digit'}, {year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'}, {month: 'numeric', day: 'numeric', hour: 'numeric'},
+  {hour: '2-digit', minute: '2-digit', second: '2-digit'}, {month: 'long', day: 'numeric', year: 'numeric'}, {weekday: 'short', hour: 'numeric', minute: '2-digit'}, {weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'},
+  {month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'UTC'}];
+for (let i = 0; i < 300; i++) { const d = new Date(Date.UTC(1995, 0, 1) + Math.floor(rnd() * 40 * 365 * 864e5)); for (const o of DT_OPTS) check(`${d.toISOString()} toLocaleString ${JSON.stringify(o)}`, dateTimeString(d, o), realDateTime.call(d, 'en-US', o)); }
 for (const s of ['2026-11-04', '2026-01-31']) { const o = {month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'}; check(s, dateString(new Date(s), o), realDate.call(new Date(s), 'en-US', o)); }
 // daily-clock.js: en-CA fields in America/New_York, with the zone's offsets as the app's host gives them (here from ICU, hour by hour).
 const zone = 'America/New_York', rows = [], offAt = ms => { const p = Object.fromEntries(new RealDTF('en-CA', {timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'}).formatToParts(new Date(ms)).map(x => [x.type, x.value])); return Math.round((Date.UTC(+p.year, p.month - 1, +p.day, +p.hour, +p.minute, +p.second) - ms) / 60000); };

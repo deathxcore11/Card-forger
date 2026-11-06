@@ -179,12 +179,31 @@ const intl = typeof globalThis.Intl === 'object' && globalThis.Intl ? globalThis
 globalThis.Intl = Object.assign({}, intl, {NumberFormat, DateTimeFormat, Collator});
 Number.prototype.toLocaleString = function (locales, options) { return new NumberFormat(locales, options).format(this); };
 Date.prototype.toLocaleDateString = function (locales, options) { return dateString(this, options); };
-// Date.prototype.toLocaleString with no options (views.js deckVersions' History): the date, then the 12-hour time with its seconds.
+// Date.prototype.toLocaleString: with no options (views.js deckVersions' History) the date, then the 12-hour time with its seconds;
+// with options (set-browser.js's and tcg.js's "Nov 1, 9:05 AM") the date parts dateString prints, then the asked-for time parts.
+const TIME_KEYS = new Set(['hour', 'minute', 'second']);
 function dateTimeString(date, options) {
-  if (options && Object.keys(options).length) throw new RangeError('Date toLocaleString options are not supported in the app');
+  const o = options || {}, keys = Object.keys(o);
+  for (const k of keys) if (!DATE_KEYS.has(k) && !TIME_KEYS.has(k)) throw new RangeError(`Date toLocaleString option ${k} is not supported in the app`);
   if (!Number.isFinite(date.getTime())) return 'Invalid Date';
-  const h = date.getHours(), two = v => String(v).padStart(2, '0');
-  return `${dateString(date)}, ${h % 12 || 12}:${two(date.getMinutes())}:${two(date.getSeconds())} ${h < 12 ? 'AM' : 'PM'}`;
+  const two = v => String(v).padStart(2, '0');
+  if (!keys.some(k => k !== 'timeZone')) {
+    const h = date.getHours();
+    return `${dateString(date)}, ${h % 12 || 12}:${two(date.getMinutes())}:${two(date.getSeconds())} ${h < 12 ? 'AM' : 'PM'}`;
+  }
+  const dateOpts = Object.fromEntries(keys.filter(k => DATE_KEYS.has(k)).map(k => [k, o[k]])), hasDate = keys.some(k => DATE_KEYS.has(k) && k !== 'timeZone');
+  if (!keys.some(k => TIME_KEYS.has(k))) return dateString(date, dateOpts);
+  if (!o.hour) throw new RangeError('Date toLocaleString minute or second without hour is not supported in the app');
+  for (const k of TIME_KEYS) if (o[k] && o[k] !== 'numeric' && o[k] !== '2-digit') throw new RangeError(`Date toLocaleString ${k}: ${o[k]} is not supported in the app`);
+  if (o.timeZone !== undefined && !/^(UTC|Etc\/UTC|GMT)$/i.test(o.timeZone)) throw new RangeError(`Time zone ${o.timeZone} is not supported in the app`);
+  const utc = o.timeZone !== undefined, h = utc ? date.getUTCHours() : date.getHours(), h12 = h % 12 || 12;
+  const parts = [o.hour === '2-digit' ? two(h12) : String(h12)];
+  if (o.minute) parts.push(two(utc ? date.getUTCMinutes() : date.getMinutes()));
+  if (o.second) parts.push(two(utc ? date.getUTCSeconds() : date.getSeconds()));
+  const time = `${parts.join(':')} ${h < 12 ? 'AM' : 'PM'}`;
+  // ICU joins a lone weekday to the time with a space ("Wed 7:33 PM"), any other date with a comma ("Nov 1, 9:05 AM").
+  const weekdayOnly = !o.year && !o.month && !o.day;
+  return hasDate ? `${dateString(date, dateOpts)}${weekdayOnly ? ' ' : ', '}${time}` : time;
 }
 Date.prototype.toLocaleString = function (locales, options) { return dateTimeString(this, options); };
 export {NumberFormat as __NumberFormat, dateString as __dateString, dateTimeString as __dateTimeString, DateTimeFormat as __DateTimeFormat, Collator as __Collator, localeCompare as __localeCompare};
