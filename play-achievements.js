@@ -29,6 +29,8 @@ export const DEED_TABS = [['glory', 'Glory'], ['journey', 'Journey'], ['duelist'
 // tiers: overrides the default tier names, so easy chains stay bronze and silver and only the hard
 // ones pay mythic seals. honour: Practice deeds; Practice never pays (play-progression.md section 3),
 // so they are earned and shown, never claimed. Ids and steps are permanent: claims are ach:<id>:<step>.
+// Story acts live today. The top Through the Ages tier follows it, so it is always earnable (Act 45 ships ~13 Nov: raise to 45).
+const LIVE_ACTS = 44;
 export const ACHIEVEMENTS = Object.freeze([
   // Glory (World of Warcraft style, Randall 4 Nov): meta-achievements. Each counts other achievements; finishing
   // one pays a Secret Lair card (play-econ-route.js), a rare seal and a title. glory.where picks achievements by
@@ -84,14 +86,15 @@ export const ACHIEVEMENTS = Object.freeze([
   {id: 'modern-wins', tab: 'formats', title: 'Modern Times', lore: 'Modern wins.', art: 'Thoughtseize', source: 'fmt:Modern', steps: [1, 25], tiers: ['bronze', 'silver']},
   {id: 'legacy-wins', tab: 'formats', title: 'Legacy', lore: 'Legacy wins.', art: 'Force of Will', source: 'fmt:Legacy', steps: [1, 25], tiers: ['bronze', 'silver']},
   {id: 'pauper-wins', tab: 'formats', title: 'Prince of Paupers', lore: 'Pauper wins. Commons only, and still enough.', art: 'Delver of Secrets', source: 'fmt:Pauper', steps: [1, 25], tiers: ['bronze', 'silver']},
-  {id: 'old-school-wins', tab: 'formats', title: 'Old School', lore: 'Old School wins, with the cards of 1993 and 1994.', art: 'Juzám Djinn', source: 'fmt:Old School', steps: [1, 25], tiers: ['bronze', 'silver']},
+  // Old School wins are hidden until a real Old School mode exists (Story records descriptive formats, so nothing
+  // could ever count; Legacy wins must not stand in for it). Re-add the old-school-wins row with its mode.
   // Colours: read from the basic lands in the deck you won with.
   {id: 'guild-ties', tab: 'colours', title: 'Guild Ties', lore: 'Win with different two-colour pairs. There are ten.', art: 'Transguild Promenade', source: '#gp', steps: [1, 3, 5, 10]},
   {id: 'mono-master', tab: 'colours', title: 'True to One', lore: 'Win with mono-coloured decks of different colours.', art: "Painter's Servant", source: '#mc', steps: [1, 3, 5]},
   {id: 'shards-wedges', tab: 'colours', title: 'Shards and Wedges', lore: 'Win with different three-colour decks. There are ten.', art: 'Obelisk of Alara', source: '#tc', steps: [1, 5, 10]},
   // Story.
   {id: 'storyteller', tab: 'story', title: 'Storyteller', lore: 'Story battles won, from Dominaria onward.', art: 'Urza, Lord High Artificer', source: 'story_wins', steps: [1, 10, 30, 60]},
-  {id: 'acts-cleared', tab: 'story', title: 'Through the Ages', lore: 'Story acts with all 8 battles won, from Alpha to the newest set.', art: 'Time Spiral', source: 'story_acts', steps: [1, 5, 10, 25, 45]},
+  {id: 'acts-cleared', tab: 'story', title: 'Through the Ages', lore: 'Story acts with all 8 battles won, from Alpha to the newest set.', art: 'Time Spiral', source: 'story_acts', steps: [1, 5, 10, 25, LIVE_ACTS]},
   {id: 'villain-side', tab: 'story', title: 'The Other Side', lore: 'Story battles won from the villain\'s seat.', art: 'Villainous Wealth', source: 'story_villain', steps: [1, 10, 40]},
   {id: 'own-deck', tab: 'story', title: 'Bring Your Own', lore: 'Story battles won with your own Play deck instead of the Story deck.', art: 'Personal Tutor', source: 'story_own', steps: [1, 10, 40]},
   // Multiplayer: friend matches count as played, never as won.
