@@ -603,6 +603,11 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Wiki" to "The Wiki is in the app for all three games: today\u2019s article, the glossary, suggestions as you type and full wiki articles whose links open other articles. Back steps through what you read.",
+    "Rules" to "The Rules page is in the app: the interactive rules, formats and deck limits, live ban lists and the official documents. How to play opens right there.",
+    "Friends" to "Settings \u203a Friends opens in the app: friends, requests, blocked accounts and profiles. Shared binders and decks open in the app, and the swords send a challenge.",
+    "Play" to "Play decks have a Power tab (no prices), and rule words open their explanation in Play and Collection.",
+    "Collection" to "Card pages can switch a copy\u2019s condition, and Open Pack\u2019s Wishlist all saves the whole pack.",
     "Collection" to "Your Cards, Decks, each deck\u2019s page, every card\u2019s page (Overview, Meta, Play guide, Prices) and All sets are built into the app now, laid out like the website.",
     "Collection" to "Open Pack on a Magic set page opens in the app: each pack comes from the set\u2019s real booster sheets, every pull wears its price frame, and Shop list sends the pack to TCGplayer.",
     "Collection" to "Yu-Gi-Oh! and Pok\u00e9mon sets are in the app too: every set by year, then each set\u2019s page with its foils, badges and prices.",
