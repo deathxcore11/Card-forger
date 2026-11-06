@@ -737,6 +737,27 @@ class CollectionEngineTest {
         Unit
     }
 
+    /** A rule word on a card's page (A.ruleHint → rule-dex.js showRuleHint): its glass as a panel, the card in it, ✕ closes it. */
+    @Test fun ruleGlass() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        CollectionEngine.card("mtg", JsonObject().apply { addProperty("name", "Serra Angel") })
+        CollectionEngine.cardLoad(); CollectionEngine.settle(30_000)
+        val g = CollectionEngine.ruleGlass("mtg", "flying")
+        fun nodes(e: com.google.gson.JsonElement?): List<JsonObject> = if (e == null || !e.isJsonObject) emptyList() else e.asJsonObject.let { o -> listOf(o) + (o.getAsJsonArray("k")?.flatMap { nodes(it) } ?: emptyList()) }
+        val all = nodes(g["body"])
+        fun txt(o: JsonObject): String = (o.getAsJsonArray("k")?.joinToString("") { if (it.isJsonPrimitive) it.asString else txt(it.asJsonObject) }).orEmpty()
+        val aside = all.first { it["t"]?.asString == "aside" }
+        println("GLASS ${txt(aside).take(600)}")
+        assertTrue(txt(aside).contains("Flying"))
+        assertTrue(txt(aside).contains("Serra Angel"))
+        File(System.getProperty("repoRoot"), "android-app/native/app/build/shot-art/home/rule-glass-flying.json").writeText(g.toString())
+        val x = all.first { it.getAsJsonObject("a")?.get("class")?.asString?.contains("rule-dismiss") == true }
+        val after = CollectionEngine.panelTap(x["i"].asInt)
+        assertTrue(nodes(after["body"]).none { it["t"]?.asString == "aside" })
+        CollectionEngine.ruleGlassClose(); Unit
+    }
+
     private suspend fun fourDecks() {
         val prints = JsonParser.parseString(javaClass.classLoader!!.getResource("collection/printings.json")!!.readText()).asJsonArray.map { it.asJsonObject }
         val lots = JsonArray(); val printings = JsonObject(); val catalog = JsonObject()

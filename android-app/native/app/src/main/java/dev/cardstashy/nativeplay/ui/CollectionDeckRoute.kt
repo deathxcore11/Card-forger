@@ -181,6 +181,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
     var lifeEnded by remember(deckId) { mutableStateOf(0) }
     fun endLife() { lifeEnded++ }
     fun take(m: SitePanelModel) {
+        // A card page's rule glass (CollectionEngine.ruleGlass) has the panel while it is open; it isn't this page's.
+        if (m.key.startsWith("rulehint|")) return
         // The Build decks sheet (key tbuild|…) over the tab: its model; what its buttons leave to the app (A.tCard, the saves, Random card's
         // Build a deck) runs here. Any other panel is the tab again (the sheet closed).
         if (m.key.startsWith("tbuild|")) {

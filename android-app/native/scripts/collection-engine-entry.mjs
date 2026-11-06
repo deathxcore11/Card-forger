@@ -3540,7 +3540,7 @@ let acting = null;
 // interactiveRules with attachRuleLearning on it, as tcg.js's deck page draws it (format: the deck's), and app.js's click
 // handling over the page (A.ruleHint = rule-dex.js showRuleHint, whose glass opens over it). Taps and typing reach the same
 // listeners; the markup as they leave it goes back to the app. A data-act this page doesn't run here goes to the app (acted).
-let panel = null;
+let panel = null, ruleUnder = null;
 function panelRun(f) {
   const was = {document: globalThis.document, window: globalThis.window};
   globalThis.document = panel.doc; globalThis.window = {innerWidth: 390, innerHeight: 844, document: panel.doc, addEventListener() {}, removeEventListener() {}, dispatchEvent() { return true; }, getComputedStyle: () => ({})};
@@ -5401,6 +5401,18 @@ globalThis.Collection = {
   card(game, opts) { mtgFocus(); const o = JSON.parse(opts); const b = /^idea:(\d+)$/.exec(String(o.back || ''));
     S.ui.sheetBack = b ? {type: 'idea', i: Number(b[1])} : null; const ctx = cardOpen(o); return json(cardPageModel(ctx)); },
   cardModel() { return sheet ? json(cardPageModel(sheet)) : '{}'; },
+  // app.js A.ruleHint (rule-dex.js showRuleHint) from a rule word in a card page's text: the glass over the page, read as a panel
+  // (SiteGlass). It has a panel of its own; whatever panel was open (a deck's tab under the page) comes back when it closes.
+  ruleGlass(game, rule) {
+    const page = game === 'mtg' ? (sheet && (sheet.print || meta(sheet.name)) ? tree(cardView(sheet.print || meta(sheet.name), sheet)) : null) : (tsheet ? tree(tcardHtml()) : null);
+    const raw = one(page, x => x.attrs?.['data-rule-card-context'] !== undefined)?.attrs['data-rule-card-context'] || '';
+    if (!panel?.key?.startsWith('rulehint|')) ruleUnder = panel;
+    panel = null;
+    panelOpen('rulehint|' + game + '|' + rule, `<div${raw ? ` data-rule-card-context="${esc(raw)}"` : ''}><button type="button" class="rule-word" data-act="ruleHint" data-game="${esc(game)}" data-rule="${esc(rule)}">${esc(rule)}</button></div>`);
+    panelRun(() => showRuleHint(panel.host.querySelector('button')));
+    return panelModel();
+  },
+  ruleGlassClose() { if (panel?.key?.startsWith('rulehint|')) { panel = ruleUnder || null; ruleUnder = null; } return panel ? panelModel() : '{}'; },
   cardHtml() { const ctx = sheet, c = ctx && (ctx.print || meta(ctx.name)); return c ? cardView(c, ctx) : ''; },
   tcard(opts) { tcgReady(); const o = JSON.parse(opts); if (o.pack != null && o.pack !== '') { const pick = pack?.picks?.[Number(o.pack)]; if (pick) Object.assign(o, {game: pack.game, id: String(pick.id), setId: String(pack.set?.id ?? '')}); } tcardOpen(o); return json(tcardModel()); },
   tcardLoad() { const sctx = tsheet; if (sctx) tcardLoad(sctx); },

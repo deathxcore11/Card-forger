@@ -226,6 +226,9 @@ object CollectionEngine {
     suspend fun warChestClose(): JsonObject = model("Collection.warChestClose()")
     /** The Build decks sheet (Compare budget builds) closed: the panel under it. */
     suspend fun tbuildClose(): JsonObject = model("Collection.tbuildClose()")
+    /** A rule word on a card's page (A.ruleHint): rule-dex.js's glass, as a panel; [ruleGlassClose] puts back the panel it covered. */
+    suspend fun ruleGlass(game: String, rule: String): JsonObject = model("Collection.ruleGlass(${str(game)}, ${str(rule)})")
+    suspend fun ruleGlassClose(): JsonObject = model("Collection.ruleGlassClose()")
     suspend fun glyphs(): JsonObject = model("Collection.glyphs()")
     /** views.js ideaSheet for idea [i] of the Ideas tab (app.js openIdea: it builds as it opens); read again with [settle] and [IDEA_MODEL]. */
     suspend fun ideaSheet(i: Int): JsonObject = model("Collection.ideaSheet($i)")

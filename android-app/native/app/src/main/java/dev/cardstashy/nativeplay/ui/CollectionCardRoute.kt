@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import com.google.gson.JsonObject
 import dev.cardstashy.nativeplay.collection.CollectionEngine
 import kotlinx.coroutines.Dispatchers
@@ -58,6 +59,9 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
     var model by remember(open) { mutableStateOf<CollectionCardModel?>(null) }
     /** A control waiting for the site's handler (kind to value). */
     var asked by remember(open) { mutableStateOf<Pair<String, String>?>(null) }
+    /** A rule word's glass over the page (A.ruleHint), and the word. */
+    var glass by remember(open) { mutableStateOf<SitePanelModel?>(null) }
+    var ruleKey by remember(open) { mutableStateOf("") }
     LaunchedEffect(open) {
         runCatching {
             val o = JsonObject().apply { addProperty("name", open.name); addProperty("entry", open.entry); addProperty("deck", open.deck); if (open.random) addProperty("random", "1"); if (open.back.isNotBlank()) addProperty("back", open.back); open.setI?.let { addProperty("setI", it); addProperty("setFinish", open.setFinish) }; open.pack?.let { addProperty("pack", it); addProperty("setFinish", open.setFinish) } }
@@ -132,7 +136,7 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
         print = { i -> asked = "print" to i.toString() },
         face = { asked = "face" to "" },
         card = { n -> onOpen(open.copy(name = n, entry = "", setI = null, setFinish = "", pack = null, back = "")) },
-        rule = { key -> site("[data-act=\"ruleHint\"][data-rule=\"${css(key)}\"]") },
+        rule = { key -> scope.launch { runCatching { val g = SitePanelModel.parse(CollectionEngine.ruleGlass("mtg", key)); ruleKey = key; glass = g.takeIf { it.glass != null } } } },
         profile = {
             val s = m.shown
             val img = s?.getAsJsonObject("image_uris") ?: s?.getAsJsonArray("card_faces")?.firstOrNull()?.asJsonObject?.getAsJsonObject("image_uris")
@@ -144,6 +148,7 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
         press = ::press,
     )
     CollectionCardSheet(m, act, onBack = onBack?.takeIf { open.back.isNotBlank() }, historyBack = open.back in setOf("proven", "review") && onBack != null, onClose = onClose)
+    RuleGlassOver(glass, open, ruleKey, web, scope) { glass = it }
 }
 
 /**
@@ -162,6 +167,8 @@ private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) 
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var model by remember(open) { mutableStateOf<CollectionCardModel?>(null) }
     var asked by remember(open) { mutableStateOf<Pair<String, String>?>(null) }
+    var glass by remember(open) { mutableStateOf<SitePanelModel?>(null) }
+    var ruleKey by remember(open) { mutableStateOf("") }
     fun show(j: JsonObject) { if (j.size() > 0 && j.get("missing") == null) model = CollectionCardModel.parse(j) }
     LaunchedEffect(open) {
         runCatching {
@@ -224,7 +231,7 @@ private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) 
         finish = { f -> asked = "finish" to f },
         select = { name, value -> asked = "select" to JsonObject().apply { addProperty("name", name); addProperty("value", value) }.toString() },
         card = { _ -> },
-        rule = { key -> site("[data-act=\"ruleHint\"][data-rule=\"${css(key)}\"]") },
+        rule = { key -> scope.launch { runCatching { val g = SitePanelModel.parse(CollectionEngine.ruleGlass(open.game, key)); ruleKey = key; glass = g.takeIf { it.glass != null } } } },
         profile = {
             // app.js A.cardProfilePhoto: the enlarged card's picture, as the picker's own search makes a card (ProfileArtPicker.kt).
             val o = m.overview
@@ -234,7 +241,31 @@ private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) 
         press = ::press,
     )
     CollectionCardSheet(m, act, onBack = onBack?.takeIf { open.back == "proven" }, historyBack = open.back == "proven" && onBack != null, onClose = onClose)
+    RuleGlassOver(glass, open, ruleKey, web, scope) { glass = it }
 }
 
 /** A tapped button's data-* attributes as the site's handler reads them (t.dataset). */
 internal fun dataset(d: Map<String, String>) = JsonObject().apply { for ((k, v) in d) if (k != "act") addProperty(k, v) }
+
+/**
+ * rule-dex.js's glass for a rule word on a card's page (A.ruleHint), drawn over it (SiteGlass): its ✕, a tap outside, Back and
+ * Read the exact source run here; its Find related cards, Ask and Explore rules (the Search, AI and Rules pages) open the website's
+ * card sheet with the same word and press the same button there.
+ */
+@Composable
+internal fun RuleGlassOver(glass: SitePanelModel?, open: CardOpen, ruleKey: String, web: (url: String, press: String?) -> Unit, scope: kotlinx.coroutines.CoroutineScope,
+                           set: (SitePanelModel?) -> Unit) {
+    val g = glass ?: return
+    val screen = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp
+    fun shut() { scope.launch { runCatching { CollectionEngine.ruleGlassClose() } }; set(null) }
+    fun take(m: SitePanelModel) {
+        val a = m.acted?.get("act")?.takeIf { it.isJsonPrimitive }?.asString
+        if (a != null) { shut()
+            web(open.page, listOf(open.tile, "#sheet[open] [data-act=\"ruleHint\"][data-rule=\"${css(ruleKey)}\"]", ".rule-glass [data-act=\"${css(a)}\"]").joinToString("\n")); return }
+        if (m.glass == null) shut() else set(m)
+    }
+    val ui = remember(g.key, screen) { SiteUi(tap = { id -> scope.launch { runCatching { take(SitePanelModel.parse(CollectionEngine.panelTap(id))) } } },
+        type = { id, v -> scope.launch { runCatching { take(SitePanelModel.parse(CollectionEngine.panelType(id, v))) } } }, open = { href -> web(href, null) }, screen = screen) }
+    androidx.activity.compose.BackHandler { shut() }
+    SiteGlass(g, ui, null) { g.glass?.find { it.has("rule-dismiss") }?.let { ui.tap(it.id) } ?: shut() }
+}

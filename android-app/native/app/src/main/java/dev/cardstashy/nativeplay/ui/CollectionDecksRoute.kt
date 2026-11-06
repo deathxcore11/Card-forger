@@ -192,6 +192,8 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
      * archetype's card are here; Meta decks and the builders open the website's Ideas (the game chosen first) and press the same button.
      */
     fun take(m: SitePanelModel) {
+        // A card page's rule glass (CollectionEngine.ruleGlass) has the panel while it is open; it isn't this page's.
+        if (m.key.startsWith("rulehint|")) return
         // The War Chest window's panel (app.js A.warChest) reads back while it is open: it is the window's, not the tab's.
         if (m.key.startsWith("chest|")) { chestTake(m); return }
         panel = m
