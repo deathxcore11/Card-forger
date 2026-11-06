@@ -57,7 +57,7 @@ class MtgDeckPowerShotTest {
         CollectionGame.init(app); CollectionGame.set(CardGame.MTG)
         webs.clear()
         rule.setContent { CollectionDeckRoute(id, onPlay = {}, onProfile = {}, onBack = {}, onHome = {}, onCards = {}, onPractice = { _, _ -> },
-            web = { u, p -> webs += u to p }, game = CardGame.MTG) }
+            web = { u, p -> webs += u to p }, game = CardGame.MTG, bench = false) }
         rule.waitUntil(60_000) { shows(title, substring = false) }
         settle()
         tap(tab)

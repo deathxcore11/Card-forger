@@ -337,7 +337,7 @@ private fun CraftBar(plan: DeckEdit.Plan, ui: EditorUi, onCraft: () -> Unit) {
 
 /** .fill / .goal: a glass pill in the action row (a gold count when it has one). */
 @Composable
-private fun BenchPill(label: String, enabled: Boolean = true, count: Int? = null, desc: String? = null, onClick: () -> Unit) {
+internal fun BenchPill(label: String, enabled: Boolean = true, count: Int? = null, desc: String? = null, onClick: () -> Unit) {
     Row(Modifier.heightIn(min = 44.dp).alpha(if (enabled) 1f else .6f).clip(RoundedCornerShape(12.dp)).background(Color(0x59000000)).border(1.dp, Color(0x17FFFFFF), RoundedCornerShape(12.dp))
         .clickable(enabled = enabled, onClick = onClick).semantics { role = Role.Button; if (desc != null) contentDescription = desc }.padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {

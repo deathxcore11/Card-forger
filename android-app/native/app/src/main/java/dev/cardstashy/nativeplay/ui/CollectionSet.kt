@@ -540,7 +540,7 @@ internal fun TcgDock(emb: List<TcgEmb>, set: TcgSetBadge?, reduced: Boolean, mod
     val both = emb.isNotEmpty() && set != null
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         if (emb.isNotEmpty()) Row(Modifier.dockPill(true, !both, h).padding(start = 6.dp, end = 5.dp), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
-            for (e in emb) EmbItem(e)
+            for (e in emb) TcgEmbItem(e)
         }
         set?.let { b ->
             Row(Modifier.dockPill(!both, true, h).drawWithContent {
@@ -556,7 +556,7 @@ internal fun TcgDock(emb: List<TcgEmb>, set: TcgSetBadge?, reduced: Boolean, mod
 
 /** One emblem: the orb (13) or the Level star (13) with its number in 11 / 800 white. */
 @Composable
-private fun EmbItem(e: TcgEmb) {
+internal fun TcgEmbItem(e: TcgEmb) {
     if (e.icon == null) { Text(e.text, style = sans(10f, 700, Ink)); return }
     if (e.text.isBlank()) { SiteIcon(e.icon, 13.dp, Ink); return }
     Row(Modifier.semantics { if (e.label.isNotBlank()) contentDescription = e.label }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {

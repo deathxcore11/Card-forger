@@ -100,7 +100,9 @@ class DeckCard(val r: CollRow, val qty: Int, val zone: String, val category: Str
                val cardId: String = "", val price: String = "", val move: String = "", val rowIndex: String? = null, val purchaseIdentity: String? = null,
                val pieces: List<CollPiece> = emptyList(), val tcgEmb: List<TcgEmb> = emptyList(), val tcgSet: TcgSetBadge? = null, val tcgFinish: TcgFinish? = null,
                /** What its A.tCard hands the card page: setVariant (Pokémon's purchase variant), printing and edition (Yu-Gi-Oh!'s). */
-               val open: Map<String, String> = emptyMap())
+               val open: Map<String, String> = emptyMap(),
+               /** Deck Bench: the card's Attribute (Yu-Gi-Oh!) or types (Pokémon), what tints its strip. */
+               val tint: List<String> = emptyList())
 /** A sideboard card (mtgSideboard's .mini-row): its art, "2× Name" and what is still to get. */
 class DeckMini(val name: String, val qty: Int, val category: String, val roles: List<String>, val art: String?, val tier: String, val tierColor: String,
                val label: String, val own: String?, val ok: Boolean)
@@ -170,7 +172,7 @@ class CollectionDeckModel(val game: CardGame, val id: String, val format: String
                     TcgSetBadge(b.s("tone"), b.s("code"), rx?.s("text") ?: "", rx?.s("kind") ?: "", b.strs("symbol"), mark?.strs("src").orEmpty(), mark?.b("ink") ?: false,
                         mark?.s("text") ?: "", mark?.b("gold") ?: false, b.s("title")) },
                 f?.let { TcgFinish(it.s("effect"), it.s("treatment"), it.s("mask"), it.s("clip"), it.get("stars")?.takeIf { x -> x.isJsonPrimitive }?.asFloat ?: 0f, it.s("frame")) },
-                j.o("open")?.entrySet()?.associate { (k, v) -> k to (if (v.isJsonPrimitive) v.asString else "") }.orEmpty())
+                j.o("open")?.entrySet()?.associate { (k, v) -> k to (if (v.isJsonPrimitive) v.asString else "") }.orEmpty(), j.strs("tint"))
         }
         private fun mini(j: JsonObject) = DeckMini(j.s("name"), j.i("qty"), j.s("category"), j.strs("roles"), j.o("picture")?.s("src")?.ifBlank { null }, j.s("tier"), j.s("tierColor"),
             j.s("label"), j.o("own")?.s("text"), j.o("own")?.b("ok") ?: false)
@@ -532,7 +534,7 @@ private fun FoundList(rows: List<DeckFound>, close: String, act: CollectionDeckA
 
 /** details.panel.issues-panel: "Rules review · n to fix" (44 tall); open, what the rules found, one to a line. */
 @Composable
-private fun IssuesPanel(summary: String, items: List<String>, open: Boolean, onToggle: () -> Unit, modifier: Modifier) {
+internal fun IssuesPanel(summary: String, items: List<String>, open: Boolean, onToggle: () -> Unit, modifier: Modifier) {
     val shape = RoundedCornerShape(14.dp)
     Column(modifier.fillMaxWidth().clip(shape).background(Surface46).border(1.dp, GlassLine, shape).padding(14.dp)) {
         Box(Modifier.fillMaxWidth().heightIn(min = 44.dp).clickable(onClick = onToggle).semantics { role = Role.Button; stateDescription = if (open) "Expanded" else "Collapsed" },

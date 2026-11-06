@@ -66,7 +66,7 @@ class TcgDeckRulesShotTest {
         CollectionGame.init(app); CollectionGame.set(g)
         webs.clear()
         rule.setContent { CollectionDeckRoute(id, onPlay = {}, onProfile = {}, onBack = {}, onHome = {}, onCards = {}, onPractice = { _, _ -> },
-            web = { u, p -> webs += u to p }, game = g) }
+            web = { u, p -> webs += u to p }, game = g, bench = false) }
         rule.waitUntil(60_000) { shows(title, substring = false) }
         settle()
         rule.onAllNodes(hasText(tab, substring = false) and hasClickAction()).onFirst().performClick()

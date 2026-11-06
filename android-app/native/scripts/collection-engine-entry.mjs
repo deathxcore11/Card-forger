@@ -48,6 +48,8 @@ import {packTemplateArt, packArtSources} from 'WEB/pack-wrappers.js';
 import {pkCatalogueSymbolSources, pkRarity} from 'WEB/emblems.js';
 import {rarityKind} from 'WEB/rarity-emblem.js';
 import {cardImage, img as imgHtml} from 'WEB/ui.js';
+import {artworkHTML} from 'WEB/artwork.js';
+import {deckCardCategory} from 'WEB/deck-viewer.js';
 import {massEntryUrl} from 'WEB/buy.js';
 import {interactiveRules, attachRuleLearning} from 'WEB/rule-learning.js';
 import {showRuleHint} from 'WEB/rule-dex.js';
@@ -587,7 +589,30 @@ function tcgDeckRow(n) {
     pieces: subPieces({kids: (sub?.kids || []).filter(k => !(k.tag && cls('tag')(k)))}), tchrome: tcgChromeOf(one(art, cls('tile-chrome'))),
     tcgFinish: tcgFinishOf(art, tcgCardOf(tcgGame(), nm?.attrs['data-id'] || '')), move: move ? text(move) : '', row,
     // What its A.tCard hands the card page (purchaseRowAttrs): Pokémon's purchase variant, Yu-Gi-Oh!'s printing and edition.
-    open: Object.fromEntries([['data-set-variant', 'setVariant'], ['data-printing', 'printing'], ['data-edition', 'edition']].filter(([a]) => nm?.attrs[a] !== undefined).map(([a, k]) => [k, nm.attrs[a]]))};
+    open: Object.fromEntries([['data-set-variant', 'setVariant'], ['data-printing', 'printing'], ['data-edition', 'edition']].filter(([a]) => nm?.attrs[a] !== undefined).map(([a, k]) => [k, nm.attrs[a]])),
+    // Deck Bench: what tints the row's strip, the card's own Attribute (Yu-Gi-Oh!) or types (Pokémon).
+    tint: tcgTint(tcgCardOf(tcgGame(), nm?.attrs['data-id'] || ''))};
+}
+const tcgTint = c => !c ? [] : c.game === 'ygo' ? [c.category === 'Monster' ? c.attribute || '' : c.category || ''].filter(Boolean)
+  : (c.types?.length ? c.types : [String(c.name || '').match(/^(?:Basic )?(\w+) Energy$/)?.[1] || c.category || '']).filter(Boolean);
+/**
+ * Deck Bench's browser for a Yu-Gi-Oh! or Pokémon deck: the game's collection, a tile per card (tcg.js gs(G).collection by cardId),
+ * its picture as the site draws it (artwork.js artworkHTML), its type group (deck-viewer.js deckCardCategory), copies owned, and the
+ * format's copy limit for it (SOURCES[G].limit, which addToDeck checks: -1 when there is none, basic Energy).
+ */
+function tcgBenchPool(G, id) {
+  tcgFocus(G, 'tdeck'); S.ui.tdeckId = id; tdeckAt = [G, id];
+  const st = tcgGs(G), d = st.decks.find(x => x.id === id), fs = tcgSources[G].formats, f = fs.find(x => x.id === d?.format) || fs[0];
+  const by = new Map();
+  for (const e of st.collection || []) { if (!(Number(e.qty) > 0)) continue; const k = String(e.cardId), o = by.get(k) || {id: k, name: e.name || '', own: 0}; o.own += Number(e.qty); by.set(k, o); }
+  return [...by.values()].map(o => {
+    const c = tcgCardOf(G, o.id), p = c ? picture(one(tree(artworkHTML(c)), tagIs('img'))) : null, lim = c ? tcgSources[G].limit(c, f) : 3;
+    // addToDeck refuses a printing not legal in the format; the deck rows' own tags (deckCardsTab) say why.
+    const legal = !c || tcgSources[G].legality(c, f) !== 'not_legal';
+    const tag = !legal ? 'Not legal' : lim === 0 ? 'Forbidden' : lim === 1 && G === 'ygo' ? 'Limited' : lim === 2 ? 'Semi-Limited' : '';
+    return {id: o.id, name: c?.name || o.name, image: p?.src || '', sources: p?.sources || [], category: c ? deckCardCategory(c) : 'Unresolved', extra: !!c?.extra,
+      level: Number(c?.level) || 0, basic: !!c?.basicEnergy, limit: Number.isFinite(lim) ? lim : -1, legal, tag, tagBad: !legal || lim === 0, own: o.own, tint: tcgTint(c)};
+  });
 }
 // [tab]: the tab open (A.tDeckTab keeps it in S.ui.tdeckTab); left out, the one open stays. Any other than Cards draws its body
 // as a panel (deckPanel); the page model then carries the hero, actions and tabs.
@@ -2688,6 +2713,16 @@ globalThis.Collection = {
   deck(game, id, opts) { if (game && game !== 'mtg') { tcgFocus(game, 'tdeck'); S.ui.tdeckId = id; const o = opts ? JSON.parse(opts) : {}; if (o.view != null) tcgDeckAct.view(o.view);
     tdeckAt = [game, id]; tcgScreenCards(game, 'tdeck', {id}); return json(tcgDeckPageModel(game, id, o.tab || 'cards')); }
     mtgFocus(); deckOpen(id); const o = opts ? JSON.parse(opts) : {}; for (const k of Object.keys(deckAct)) if (o[k] != null) deckAct[k](o[k]); return json(deckPageModel(game, id, o.tab || 'cards')); },
+  // Deck Bench (the app's deck editor) in Collection: its card browser, the collection's cards by name (cardKey, as the site keys a
+  // card), the copies owned summed over their lots, each with its picture (ui.js cardImage), mana value, type line and colours.
+  benchPool(game, id) {
+    if (game && game !== 'mtg') return json(tcgBenchPool(game, id));
+    mtgFocus(); deckOpen(id);
+    const by = new Map();
+    for (const e of S.state.collection || []) { if (!(Number(e.qty) > 0)) continue; const k = cardKey(e.name), o = by.get(k) || {name: e.name, own: 0}; o.own += Number(e.qty); by.set(k, o); }
+    return json([...by.values()].map(o => { const c = meta(o.name); return c ? {name: c.name, image: cardImage(c) || '', cmc: Number(c.cmc) || 0,
+      type: c.type_line || c.card_faces?.[0]?.type_line || '', colors: c.colors || c.card_faces?.[0]?.colors || [], own: o.own} : null; }).filter(Boolean));
+  },
   // The open Yu-Gi-Oh! or Pokémon deck page again (after settle: a search's results, prices and card data that came in).
   tdeckModel() { if (!tdeckAt) return '{}'; const [g, id] = tdeckAt; return json(tcgDeckPageModel(g, id)); },
   deckDo(game, id, kind, value) { if (game && game !== 'mtg') { if (!tcgDeckAct[kind]) throw Error('unknown deck control ' + kind); tcgFocus(game, 'tdeck'); S.ui.tdeckId = id; tdeckAt = [game, id]; tcgDeckAct[kind](value); return json(tcgDeckPageModel(game, id)); }

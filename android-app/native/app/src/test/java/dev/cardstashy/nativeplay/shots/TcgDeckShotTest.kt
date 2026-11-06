@@ -54,7 +54,7 @@ class TcgDeckShotTest {
 
     private fun deck(g: CardGame, id: String, view: String, title: String, words: List<String>, shot: Boolean = true) {
         setUp(g, view)
-        rule.setContent { CollectionDeckRoute(id, onPlay = {}, onProfile = {}, onBack = {}, onHome = {}, onCards = {}, onPractice = { _, _ -> }, web = { _, _ -> }, game = g) }
+        rule.setContent { CollectionDeckRoute(id, onPlay = {}, onProfile = {}, onBack = {}, onHome = {}, onCards = {}, onPractice = { _, _ -> }, web = { _, _ -> }, game = g, bench = false) }
         rule.waitUntil(60_000) { rule.onAllNodesWithText(title).fetchSemanticsNodes().isNotEmpty() }
         // The page reopens on the tab it was left on (tcg.js S.ui.tdeckTab, kept while the app runs): Cards, as these tests look at it.
         rule.onAllNodes(hasText("Cards", substring = false) and hasClickAction()).fetchSemanticsNodes().firstOrNull()?.let {

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +44,8 @@ private object DeckCache {
     var q = ""
     /** The tab open (tcg.js S.ui.tdeckTab): Cards, or one drawn from the site's own markup (TCG_SITE_TABS). */
     var tab = "cards"
+    /** Deck Bench's place (view, filters, scroll) for this deck, so coming back keeps it. */
+    var bench: BenchUi? = null
 }
 
 /** The Yu-Gi-Oh! and Pokémon deck tabs drawn here from the site's own markup and listeners (SitePanel): Rules, Power (insights,
@@ -66,12 +69,19 @@ private val MTG_SITE_TABS = setOf("rules", "engine")
 @Composable
 fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Unit, onBack: () -> Unit, onHome: () -> Unit, onCards: () -> Unit,
                         onPractice: (id: String, format: String) -> Unit, web: (url: String, press: String?) -> Unit, nativeCard: Boolean = false,
-                        onSet: ((String) -> Unit)? = null, onDeck: ((String) -> Unit)? = null, game: CardGame = CardGame.MTG) {
+                        onSet: ((String) -> Unit)? = null, onDeck: ((String) -> Unit)? = null, game: CardGame = CardGame.MTG,
+                        /** False draws the deck page itself (CollectionDeck), as the page's own tests look at it. */
+                        bench: Boolean = true) {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
     val profile by Account.profile.collectAsState()
-    if (DeckCache.id != game.id + ":" + deckId) { DeckCache.id = game.id + ":" + deckId; DeckCache.model = null; DeckCache.q = ""; DeckCache.tab = "cards" }
+    if (DeckCache.id != game.id + ":" + deckId) { DeckCache.id = game.id + ":" + deckId; DeckCache.model = null; DeckCache.q = ""; DeckCache.tab = "cards"; DeckCache.bench = null }
+    // A deck of yours is edited in Deck Bench (specs/deck-editor-native.md), in all three games.
+    val benched = bench
+    val bench = remember(deckId) { DeckCache.bench ?: BenchUi().also { it.tab = DeckCache.tab; DeckCache.bench = it } }
+    /** The Bench's browser: the collection's cards (CollectionEngine.benchPool). */
+    var pool by remember(deckId) { mutableStateOf<com.google.gson.JsonArray?>(null) }
     var model by remember(deckId) { mutableStateOf(DeckCache.model) }
     var deckTab by remember(deckId) { mutableStateOf(DeckCache.tab) }
     /** The open tab's body when it is the site's markup (CollectionEngine.deckPanel), as its listeners leave it. */
@@ -117,6 +127,7 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
     val written by CollectionWrites.written.collectAsState()
     var seenWrite by remember(deckId) { mutableStateOf(written) }
     LaunchedEffect(written) { if (written != seenWrite) { seenWrite = written; if (HomeCache.loaded != null) runCatching { paint() } } }
+    LaunchedEffect(ready, written) { if (benched && ready && HomeCache.loaded != null) runCatching { CollectionEngine.benchPool(game.id, deckId) }.getOrNull()?.let { pool = it } }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     fun write(kind: String, vararg data: Pair<String, String>, done: (Boolean) -> Unit = {}) = scope.launch {
         done(CollectionWrites.act(context, kind, com.google.gson.JsonObject().apply { addProperty("deck", deckId); data.forEach { (k, v) -> addProperty(k, v) } }))
@@ -195,7 +206,7 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
     }
     // A tab (tcg.js A.tDeckTab): the page again with it open, and its body from the site's markup; the rest open the website's tab.
     LaunchedEffect(deckTab, ready) {
-        DeckCache.tab = deckTab
+        DeckCache.tab = deckTab; bench.tab = deckTab
         if (!ready || HomeCache.loaded == null) return@LaunchedEffect
         runCatching { paint() }
         if (deckTab == "cards") { panel = null; return@LaunchedEffect }
@@ -273,7 +284,15 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
     Box(Modifier.fillMaxSize()) {
     // The page is recorded as it draws, so the rule glass can blur what is under it (backdrop-filter).
     val pageLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
-    if (m != null) Box(Modifier.fillMaxSize().drawWithContent { pageLayer.record { this@drawWithContent.drawContent() }; drawLayer(pageLayer) }) {
+    if (m != null && benched && m.missingTitle == null) Box(Modifier.fillMaxSize().drawWithContent { pageLayer.record { this@drawWithContent.drawContent() }; drawLayer(pageLayer) }) {
+        CollectionBench(m, pool, bench, act,
+            tab = { k0 -> openTab(k0); val k = if (k0 == "matchups" || k0 == "upgrade") (if (tcg) "insights" else "engine") else k0
+                k == "cards" || k in (if (tcg) TCG_SITE_TABS else MTG_SITE_TABS) }) { t ->
+            val p = panel.takeIf { t != "cards" }
+            if (p == null) Text("Opening…", style = Site.Meta.copy(color = Site.Muted), modifier = Modifier.padding(24.dp))
+            else Column(Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(horizontal = 14.dp, vertical = 10.dp)) { SitePanel(p, siteUi) }
+        } }
+    else if (m != null) Box(Modifier.fillMaxSize().drawWithContent { pageLayer.record { this@drawWithContent.drawContent() }; drawLayer(pageLayer) }) {
         CollectionDeck(m, top, act, nav, query, site = panel.takeIf { deckTab != "cards" }, siteUi = siteUi) }
     else Column(Modifier.fillMaxSize().background(Site.Bg)) {
         Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { top(null) }

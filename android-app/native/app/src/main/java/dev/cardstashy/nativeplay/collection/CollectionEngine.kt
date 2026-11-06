@@ -122,6 +122,13 @@ object CollectionEngine {
     suspend fun deck(game: String, id: String, opts: JsonObject = JsonObject()): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.deck(${str(game)}, ${str(id)}, ${str(opts.toString())})") as String).asJsonObject }
 
+    /**
+     * Deck Bench's browser in Collection (Collection.benchPool): the collection's cards by name, each with its picture, mana value,
+     * type line, colours and the copies owned. A var so tests answer it themselves.
+     */
+    var benchPool: suspend (game: String, id: String) -> com.google.gson.JsonArray = { game, id ->
+        on { q -> JsonParser.parseString(q.evaluate("Collection.benchPool(${str(game)}, ${str(id)})") as String).asJsonArray } }
+
     /** One deck-page control as app.js handles it (search, filter, sort, view), then the page again. */
     suspend fun deckDo(game: String, id: String, kind: String, value: String = ""): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.deckDo(${str(game)}, ${str(id)}, ${str(kind)}, ${str(value)})") as String).asJsonObject }

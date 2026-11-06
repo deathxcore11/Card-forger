@@ -205,6 +205,12 @@ class CollectionEngineTest {
         val goblins = CollectionEngine.deck("mtg", "d1", JsonObject().apply { addProperty("view", "gallery") })
         assertEquals("Commander", goblins["groups"].asJsonArray[0].asJsonObject["name"].asString)
         File(out, "collection-deck-commander.json").writeText(goblins.toString())
+        // Deck Bench's browser: the whole Magic collection, one entry a card with its copies (Collection.benchPool).
+        val pool = CollectionEngine.benchPool("mtg", "d2")
+        println("POOL ${pool.size()} ${pool.take(3)}")
+        assertTrue(pool.size() > 0)
+        assertTrue(pool.all { it.asJsonObject["own"].asInt > 0 && it.asJsonObject["name"].asString.isNotBlank() })
+        File(out, "collection-bench-pool.json").writeText(pool.toString())
     }
 
     /** views.js cardSheet through the bundle in the app's own runtime: the page opens from what the catalog has, and its tabs and controls run. */
