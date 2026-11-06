@@ -276,8 +276,9 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
         footLead = buildAnnotatedString { if (plan.missing > 0) { withStyle(SpanStyle(color = Site.Text, fontWeight = FontWeight.Bold)) { append("${plan.missing}") }; append(" to craft") }
             else withStyle(SpanStyle(color = Site.Text, fontWeight = FontWeight.Bold)) { append(if (nums.count > 0) "Ready to play" else "Empty deck") } },
         wallet = wallet, footRight = null, busy = ui.busy, canSave = nums.count > 0,
-        // Play's tabs: Cards and Rules (Randall's card 6 Nov: Power and War Chest read the Collection, and Play never does).
-        tabs = listOf("cards" to "Cards", "rules" to "Rules"),
+        // Play's tabs: Cards, Power and Rules. Power is Play-safe (Randall's card 6 Nov 18:53Z): no Upgrades, no prices. War Chest reads
+        // the Collection, and Play never does.
+        tabs = listOf("cards" to "Cards", "engine" to "Power", "rules" to "Rules"), powerTab = "engine",
     )
     val benchActions = BenchActions(back = onBack, save = actions.save, step = actions.step, craft = actions.craftCopies, open = actions.open, more = actions.hold,
         menu = listOf(BenchMenuItem("Rename deck") { ui.sheet = "rename" }, BenchMenuItem("Change format") { ui.sheet = "format" },
@@ -425,22 +426,24 @@ internal fun PackGoals(goals: List<DeckEdit.Goal>, onPack: (String) -> Unit) = R
  */
 @Composable
 private fun PlayDeckTab(tab: String, e: DeckEdit.Edit) {
-    if (tab != "rules") return
+    if (tab != "rules" && tab != "engine") return
     val context = androidx.compose.ui.platform.LocalContext.current
     val session by dev.cardstashy.nativeplay.account.Account.session.collectAsState()
     val revision by Workspace.fullRevision.collectAsState()
     var panel by remember { mutableStateOf<SitePanelModel?>(null) }
     var failed by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    fun take(m: SitePanelModel) { if (m.key.startsWith("rules|")) panel = m }
+    val want = if (tab == "engine") "playpower|" else "rules|"
+    fun take(m: SitePanelModel) { if (m.key.startsWith(want)) panel = m }
     fun panelDo(call: suspend () -> JsonObject) = scope.launch {
         runCatching { take(SitePanelModel.parse(call())); CollectionEngine.settle(15_000, CollectionEngine.PANEL_MODEL) { j -> if (j.has("key")) take(SitePanelModel.parse(j)) } }
     }
-    LaunchedEffect(e.format, session?.userId, revision) {
-        failed = false
+    val listSig = if (tab == "engine") e.cards.joinToString(";") { "${it.qty} ${it.name}" } else ""
+    LaunchedEffect(tab, e.format, listSig, session?.userId, revision) {
+        failed = false; if (tab == "engine") delay(400)
         val ok = runCatching { ensureCollection(context, session?.userId, session != null, revision) }.getOrDefault(false)
         if (!ok) { failed = true; return@LaunchedEffect }
-        panelDo { CollectionEngine.rules("mtg", e.format) }
+        panelDo { if (tab == "engine") CollectionEngine.playPower(DeckEdit.saveBody(e)) else CollectionEngine.rules("mtg", e.format) }
     }
     val screenW = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp
     val siteUi = remember(screenW) {
@@ -451,7 +454,7 @@ private fun PlayDeckTab(tab: String, e: DeckEdit.Edit) {
     val pageLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
     Box(Modifier.fillMaxSize()) {
         val p = panel
-        if (p == null) Text(if (failed) "The rules couldn’t open. Check your connection and try again." else "Opening the rules…", style = t(14f, color = Site.Muted),
+        if (p == null) Text(if (failed) (if (tab == "engine") "Power couldn’t open. Check your connection and try again." else "The rules couldn’t open. Check your connection and try again.") else if (tab == "engine") "Reading the deck’s Power…" else "Opening the rules…", style = t(14f, color = Site.Muted),
             modifier = Modifier.align(Alignment.Center).padding(24.dp))
         else Box(Modifier.fillMaxSize().drawWithContent { pageLayer.record { this@drawWithContent.drawContent() }; drawLayer(pageLayer) }) {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 10.dp)) { SitePanel(p, siteUi) }

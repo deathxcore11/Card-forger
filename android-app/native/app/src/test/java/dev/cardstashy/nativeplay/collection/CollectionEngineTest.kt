@@ -6,6 +6,7 @@ import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
@@ -781,6 +782,27 @@ class CollectionEngineTest {
             assertEquals(5, m.getAsJsonArray("rows").size())
             out.mkdirs(); File(out, "cond-$game.json").writeText(m.toString()); File(out, "cond-$game-page.json").writeText(page.toString())
         }
+    }
+
+    @Test fun playPower() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        val list = listOf("Monastery Swiftspear" to 4, "Lightning Bolt" to 4, "Play with Fire" to 4, "Kumano Faces Kakkazan" to 4, "Slickshot Show-Off" to 4,
+            "Heartfire Hero" to 4, "Emberheart Challenger" to 4, "Burst Lightning" to 4, "Shock" to 4, "Mountain" to 20, "Ghitu Lavarunner" to 4)
+        val deck = JsonObject().apply { addProperty("name", "Red Deck Wins"); addProperty("format", "Pioneer")
+            add("cards", JsonArray().apply { list.forEach { (n, q) -> add(JsonObject().apply { addProperty("name", n); addProperty("qty", q) }) } }) }
+        var m = CollectionEngine.playPower(deck)
+        CollectionEngine.settle(60_000, CollectionEngine.PANEL_MODEL) { j -> if (j.has("key")) m = j }
+        CollectionEngine.settle(5_000, CollectionEngine.PANEL_MODEL) { j -> if (j.has("key")) m = j }
+        val text = m.toString()
+        println("PLAYPOWER ${text.take(600)}")
+        assertTrue(m["key"].asString.startsWith("playpower|"))
+        assertTrue(text.contains("Deck Power"))
+        assertFalse(text.contains("Upgrades"))
+        assertFalse(text.contains("$"))
+        File(System.getProperty("repoRoot"), "android-app/native/app/build/shot-art/home/play-power.json").writeText(text)
+        val ws = CollectionEngine.saved()
+        assertFalse(ws.contains("play-power"))
     }
 
     private suspend fun fourDecks() {

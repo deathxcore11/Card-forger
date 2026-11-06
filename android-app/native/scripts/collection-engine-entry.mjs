@@ -3907,6 +3907,44 @@ function mtgDeckPanel(id, tab) {
   panel.redraw = () => { mtgFocus(); deckOpen(id); S.ui.deckTab = tab; panelRun(() => { panel.host.innerHTML = body(); attach(panel.host); }); };
 }
 
+// ---- A Play deck's Power tab (Randall's card 6 Nov 18:53Z: "Power tab, Play-safe"): views.js deckPage's Power view (powerHub) for a
+// Play deck, drawn as the Collection draws it but for a deck that never joins the Collection: the deck stands in S.state.decks only
+// while the page is drawn or one of its taps runs (synchronously, so no save can see it), and the Upgrades card is left out, since
+// its swaps read the Collection and its builds carry prices. Play stays price-free.
+const PLAY_POWER_ID = 'play-power';
+let playDeck = null;
+function withPlayDeck(f) {
+  if (!playDeck) return f();
+  const keep = S.state.decks, was = S.ui.deckId;
+  S.state.decks = [...(keep || []).filter(x => x.id !== PLAY_POWER_ID), playDeck]; S.ui.deckId = PLAY_POWER_ID;
+  try { return f(); } finally { S.state.decks = keep; S.ui.deckId = was; }
+}
+function playPowerBody() {
+  return withPlayDeck(() => {
+    mtgFocus(); S.ui.deckTab = 'engine';
+    const box = new SiteDocument().createElement('div'); box.innerHTML = deckView();
+    const body = box.querySelector('.deck-body'); if (!body) return '';
+    for (const card of [...body.querySelectorAll('.pwp-card')]) if (card.querySelector('h3')?.textContent.trim() === 'Upgrades') card.remove();
+    return body.innerHTML;
+  });
+}
+function playPowerPanel(json) {
+  const o = JSON.parse(json), rows = (o.cards || []).filter(r => r?.name && !r.board);
+  const lead = (o.cards || []).find(r => r?.board === 'commander');
+  playDeck = {id: PLAY_POWER_ID, name: o.name || 'Play deck', format: o.format || 'Standard', cards: rows.map(r => ({name: r.name, qty: Number(r.qty) || 1})),
+    ...(lead ? {commander: lead.name} : {}), results: []};
+  const key = 'playpower|' + (o.format || '') + '|' + JSON.stringify(playDeck.cards) + '|' + (lead?.name || '');
+  if (panel?.key === key) return;
+  panel = null;
+  const acts = Object.fromEntries(Object.entries(MDECK_ACTS).map(([k, f]) => [k, (...a) => withPlayDeck(() => f(...a))]));
+  panelOpen(key, playPowerBody(), host => PANEL_ATTACH.engine?.(host), acts);
+  const mine = panel;
+  panel.redraw = () => { if (panel !== mine) return; panelRun(() => { panel.host.innerHTML = playPowerBody(); PANEL_ATTACH.engine?.(panel.host); }); };
+  // Cards the Collection has never seen load first (app.js refreshDeck), then the page is drawn again with them counted.
+  const names = playDeck.cards.map(r => r.name).concat(lead ? [lead.name] : []).filter(n => !meta(n));
+  if (names.length) resolveNames(names, () => {}, false, () => panel === mine).then(() => mine.redraw()).catch(() => {});
+}
+
 // ---- Collection › Decks › Ideas (views.js decks() / tcg.js tcgDecks() with S.ui.decksTab = 'ideas'): the tab's body, everything after
 // .random-tools, as a panel of the site's markup run by the site's handlers (app.js's "Ideas, references, precons" block, ported below
 // verbatim with render() being the panel drawn again). The head, tabs and tools are Collection.decks(game, {tab}).
@@ -5290,6 +5328,8 @@ globalThis.Collection = {
   // The deck page's Rules tab (tcg.js: interactiveRules(g, {format: d.format})), and taps and typing on whatever panel is open.
   rules(game, format) { panelOpen('rules|' + game + '|' + (format || ''), interactiveRules(game, {format: format || ''}), host => attachRuleLearning(host)); return panelModel(); },
   // A Yu-Gi-Oh! or Pokémon deck's tab other than Cards (tcg.js A.tDeckTab): its body as a panel; the page itself comes from deck() with opts.tab.
+  /** A Play deck's Power tab ([deck]: {name, format, cards}), Play-safe (no Upgrades, no prices); read again with panelModel. */
+  playPower(deck) { playPowerPanel(deck); return panelModel(); },
   deckPanel(game, id, tab) { if (game === 'mtg') mtgDeckPanel(id, tab); else tcgDeckPanel(game, id, tab); return panelModel(); },
   panelModel() { return panel ? panelModel() : '{}'; },
   // The open tab drawn again from the account as it is now (a save made from it: Versions' Restore, a logged game).
