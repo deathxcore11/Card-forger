@@ -483,7 +483,16 @@ fun MetaDeckHost(page: String, close: () -> Unit, deck: (JsonObject) -> Unit, si
         },
         deck = deck,
         web = { m, what, r ->
-            // ⚒ Build around it (tMetaBuild), a Pokémon printing not matched (tOtherPrintings): the sheet on the website, the same press.
+            // tcg.js A.tMetaBuild (⚒ Build around it): the deck's signature cards, then Build a deck here on them (app.js openDeckFlow);
+            // the site closes the sheet first.
+            if (what == "tMetaBuild" && m.game != "mtg") { scope.launch {
+                val a = runCatching { CollectionEngine.act("tMetaBuild", JsonObject(), 60_000) }.getOrNull() ?: return@launch
+                a.get("error")?.takeIf { it.isJsonPrimitive }?.asString?.let { CollectionWrites.show(it); return@launch }
+                a.getAsJsonArray("toasts")?.lastOrNull()?.asJsonObject?.get("text")?.asString?.let { CollectionWrites.show(it) }
+                val req = a.get("made")?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.startsWith("{") }?.let { com.google.gson.JsonParser.parseString(it).asJsonObject } ?: return@launch
+                close(); CollectionWrites.building.value = CollectionWrites.BuildOpen(req, "openDeckFlow", web)
+            }; return@MetaDeckSheetActions }
+            // A Pokémon printing not matched (tOtherPrintings): the sheet on the website, the same press.
             val inner = if (what == "row" && r != null) "[data-act=\"${q(r.act)}\"][data-name=\"${q(r.cardName.ifBlank { r.name })}\"]" else "[data-act=\"${q(what)}\"]"
             site(page, opener(m) + "\n#sheet[open] " + inner)
         }), initial)

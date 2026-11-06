@@ -82,6 +82,10 @@ import {metaBrowseKey, provenSheetHtml, proven, similarLists} from 'WEB/tcg.js';
 import {homeMetaSnapshot} from 'WEB/home-ui.js';
 import {MTG_META_FORMATS, DEFAULT_MTG_META_FORMAT} from 'WEB/meta.js';
 import {namePrice} from 'WEB/core.js';
+import {createDeckPipeline} from 'WEB/deck-pipeline.js';
+import {deckSetupMarkup, deckResultMarkup} from 'WEB/deck-experience.js';
+import * as TcgAll from 'WEB/tcg.js';
+import {setupModel as flowSetupOf, resultModel as flowResultOf, useDocument as flowUseDocument, draw as flowDraw} from '../scripts/deck-flow-models.mjs';
 import {mtgPower} from 'WEB/power.js';
 import {mtgFieldKey, availability as deckAvailability} from 'WEB/views.js';
 import {shareSheet as shareSheetView} from 'WEB/views.js';
@@ -1284,7 +1288,9 @@ function tcgReady() {
   Object.assign(tcgCtx, {A: TA, C: TC, I: TI, commit, render() {}, openSheet: (html, ctx) => ctx?.type === 'proven' ? provenSheetOpen(ctx) : tcgSheetHook(html, ctx), closeSheet: () => { provenSheetShut(); tcgCloseHook(); }, refreshSheet() {}, toast: text => { if (text) toasts.push({text: String(text), undo: false}); }, download: (...a) => tcgHooks.download(...a),
     copyText: (...a) => tcgHooks.copyText(...a), busy: () => () => {},
     // The route a handler goes to (A.tSetByName's #set/<id>), for the app to follow.
-    go(h) { tcgWent = String(h || ''); }, rerenderKeepingFocus() {}, writeRecord: async () => {}, navigationStamp: () => null, navigationCurrent: () => true});
+    go(h) { tcgWent = String(h || ''); }, rerenderKeepingFocus() {}, writeRecord: async () => {}, navigationStamp: () => null, navigationCurrent: () => true,
+    // app.js's openDeckFlow (deckExperience.open): the request goes to the app, which opens its Build a deck on it (flowTcgCalls).
+    openDeckFlow: request => flowAskedFor(request)});
   registerTcg(tcgCtx);
   // c.openProven loads as the sheet opens; its status lines look up the page after each await (provenRun).
   const openProven = tcgCtx.openProven;
@@ -2855,12 +2861,30 @@ const writeActs = {
   },
   // app.js deckExperience save (1674): a Build a deck result ([d] {deck, request}, the WebView's flowSaveData) saved as a new deck,
   // named after its build-around and format, with its first version; the app opens it ([made]).
+  // Yu-Gi-Oh! and Pokémon's (the engine's own flowSaveData): {..., format, createdAt} into that game's decks, as app.js save() writes it.
   async deckGenerated(d) {
     const r = d.request || {}, id = uid(), name = (r.seedCard?.name || d.deck?.buildAround || 'My deck') + ' · ' + r.formatName;
-    if (!d.deck || r.game !== 'mtg') throw Error('Your workspace changed. Rebuild this deck.');
-    const deck = withSnapshot({...structuredClone(d.deck), id, name, budget: r.budget, versions: []}, 'Generated');
-    await commit((s) => { s.decks.push(deck); }, { msg: 'Saved to My decks.' });
+    if (!d.deck || !['mtg', 'ygo', 'ptcg'].includes(r.game)) throw Error('Your workspace changed. Rebuild this deck.');
+    const deck = r.game === 'mtg' ? withSnapshot({...structuredClone(d.deck), id, name, budget: r.budget, versions: []}, 'Generated') : {...structuredClone(d.deck), id, name, format: r.format, createdAt: new Date().toISOString()};
+    await commit((s) => { if (r.game === 'mtg') s.decks.push(deck); else { s.tcg ||= {}; s.tcg[r.game] ||= tcgGs(r.game); s.tcg[r.game].decks.push(deck); } }, { msg: 'Saved to My decks.' });
     made = id;
+  },
+  // tcg.js A.tSeedGo (the app's Pick cards sheet, its ticked ids): A.tBuildMulti, whose openDeckFlow request comes back as [made].
+  async tSeedGo(d) {
+    tcgFocus(d.game, 'decks'); flowAskPanel = null; flowAsked = null;
+    await TA.tBuildMulti({dataset: {ids: String(d.ids || '')}});
+    if (flowAsked) made = JSON.stringify(flowAsked);
+  },
+  // tcg.js A.tMetaBuild from the tournament deck sheet: its ⚒ Build around it, in the sheet the site checks it is in; the request as [made].
+  async tMetaBuild(d) {
+    const spec = proven.spec, G = spec?.g;
+    if (!spec?.buildMeta || S.ui.sheetCtx?.type !== 'proven' || G === 'mtg') throw Error('This deck changed. Open it again.');
+    tcgFocus(G, S.ui.view === 'home' ? 'home' : 'decks'); flowAskPanel = null; flowAsked = null;
+    provenDoc.body.innerHTML = `<dialog id="sheet" open><button data-act="tMetaBuild" data-key="${esc(spec.buildMeta.deck.key)}" data-proven-build="${esc(spec.buildMeta.token)}"></button></dialog>`;
+    const t = provenDoc.querySelector('[data-act="tMetaBuild"]');
+    await provenRun(() => TA.tMetaBuild(t));
+    provenDoc.body.innerHTML = '';
+    if (flowAsked) made = JSON.stringify(flowAsked);
   },
   // app.js A.deckDelete: asked first; the app goes back to the decks.
   async deckDelete(d) {
@@ -3805,6 +3829,11 @@ const DECKS_ACTS = {
     toasts.push({text: "Review the card count and warnings before saving this list. Incomplete lists are saved only as drafts.", undo: false}); },
   // tcg.js's Ideas: Tournament decks you're closest to's Try again (A.tMetaRefresh), its own panel kept while it loads.
   tMetaRefresh: t => tcgPanelAsync(() => TA.tMetaRefresh(t)),
+  // tcg.js's Build from my cards: ⚒ Use my whole collection (A.tBuildAuto) and an archetype's ⚒ Build (A.tBuildMulti) end in
+  // openDeckFlow (acted, the app's Build a deck); ☑ Pick cards to build around (A.tPickSeeds) is the app's sheet (Collection.seedPick).
+  tBuildAuto: t => { flowAskPanel = panel; return tcgPanelAsync(() => TA.tBuildAuto(t)); },
+  tBuildMulti: t => { flowAskPanel = panel; return tcgPanelAsync(() => TA.tBuildMulti(t)); },
+  tPickSeeds: () => { panel.acted = {act: 'tPickSeeds', data: {game: panel.decks}}; },
 };
 // ---- Collection › Decks › Meta decks (views.js inspirationView for Magic, tcg.js metaView for Yu-Gi-Oh! and Pokémon): the tab's body
 // as a panel (decksPanel with 'inspiration'), run by app.js's / tcg.js's own handlers below, render() being the panel drawn again.
@@ -4605,6 +4634,91 @@ async function appCopyText(t, msg) {
   toasts.push({text: String(msg), undo: false});
 }
 
+
+// ---- Build a deck for Yu-Gi-Oh! and Pokémon (deck-experience.js, as app.js wires it: createDeckExperience over createDeckPipeline with
+// tcg.js as T). Magic's runs in the WebView (deck-flow-entry.mjs); the other games' run here, where tcg.js and the workspace already
+// are, with the same calls (flowOpen, flowSetup, flowRandom, flowGenerate, flowBudget, flowAdjust, flowSaveData, flowSaved,
+// flowExport) and the same setup and result models (deck-flow-models.mjs). tcg.js's c.openDeckFlow (openBuild, A.tBuild) hands its
+// request to the app (acted openDeckFlow), which opens the native Build a deck on it.
+let flowPipeline = null;
+flowUseDocument(new SiteDocument());
+const flowPipe = () => { tcgReady(); return flowPipeline ||= createDeckPipeline({S, T: TcgAll, api, resolve, cacheCard, meta, priceOf, inv, tcgCtx}); };
+const flowResults = new Map(), flowThemes = {};
+let flowSeq = 0, flowCurrent = 0, flowStatus = '', flowRun = null;
+// Where openDeckFlow's request goes: the panel that was tapped (acted openDeckFlow) or, for a write act, [made].
+let flowAskPanel = null, flowAsked = null;
+function flowAskedFor(request) {
+  flowAsked = request;
+  if (flowAskPanel && panel === flowAskPanel) panel.acted = {act: 'openDeckFlow', data: {request: JSON.stringify(request)}};
+  flowAskPanel = null;
+}
+const flowRegister = result => { const id = 'tdeck-result-' + (++flowSeq); flowResults.set(id, {result, saved: false}); while (flowResults.size > 30) flowResults.delete(flowResults.keys().next().value); return id; };
+const flowSetup = (request, status = '', error = false) => flowSetupOf(request, status, error, deckSetupMarkup, flowPipe().formats, flowThemes[request.game]);
+const flowResult = id => flowResultOf(id, flowResults.get(id), deckResultMarkup);
+// tcg.js runs keyed to the open game (settings.game): the request's.
+const flowGame = r => { const G = r?.game; if (G === 'ygo' || G === 'ptcg') tcgFocus(G, S.ui.view === 'home' ? 'home' : 'decks'); return G; };
+const flowLive = me => () => me === flowCurrent;
+// deck-experience.js open(): the format's default (ygo tcg, ptcg standard), the saved preferences, then the button's request; Yu-Gi-Oh!'s
+// archetypes load into Theme (pipeline.themes), or the site's line when they can't.
+const flowOpened = (request, prefs) => { const game = request.game, formats = flowPipe().formats[game], fallback = formats.find(f => f.id === ({ygo: 'tcg', ptcg: 'standard'}[game])) || formats[0];
+  return {game, format: fallback.id, budget: '', budgetBasis: 'total', budgetMode: 'cap', preferOwned: true, ...(prefs || {}), ...request}; };
+const flowTcgCalls = {
+  flowWorkspace: () => true,
+  async flowOpen(a) {
+    const r = flowOpened(a.request || {}, a.prefs); flowGame(r);
+    if (r.game === 'ygo' && !flowThemes.ygo) { try { flowThemes.ygo = await flowPipe().themes('ygo'); } catch { return flowSetup(r, 'Archetypes could not load. You can still build around your card, or reopen to retry.'); } }
+    return flowSetup(r);
+  },
+  flowSetup: a => { flowGame(a.request); return flowSetup(a.request, a.status || '', !!a.error); },
+  // A.flowRandom (app.js randomBuildSeed: the pipeline's resolveSeed for these games).
+  async flowRandom(a) {
+    const me = ++flowCurrent; flowGame(a.request);
+    const r = {...a.request, seed: '', seedCard: null, seedCards: [], ygoPurchaseSelections: {}, ptcgPurchaseSelections: {}, randomSeed: Math.floor(Math.random() * 1e9)};
+    const card = await flowPipe().resolveSeed(r);
+    if (me !== flowCurrent) return {cancelled: true};
+    return flowSetup({...r, seed: card.name, seedCard: card, seedCards: [card]});
+  },
+  async flowGenerate(a) {
+    const me = ++flowCurrent; flowStatus = 'Finding a coherent plan…'; flowGame(a.request);
+    const result = await flowPipe().build(a.request, {current: flowLive(me), onStatus: m => { if (me === flowCurrent) flowStatus = String(m); }});
+    if (me !== flowCurrent) return {cancelled: true};
+    flowStatus = '';
+    return result.ok ? {ok: true, model: flowResult(flowRegister(result))} : {ok: false, message: result.message, setup: flowSetup(a.request, result.message, true)};
+  },
+  flowBudget: a => { customBudget(a.budget); return true; },
+  async flowAdjust(a) {
+    const item = flowResults.get(a.id); if (!item) throw Error('Your account or collection changed. Rebuild before opening this deck.');
+    const budget = customBudget(a.budget), me = ++flowCurrent; flowStatus = 'Finding cards for your updated budget…'; flowGame(item.result.request);
+    const result = await flowPipe().build({...item.result.request, budget, previousDeck: item.result.deck, previousBudget: item.result.request.budget, previousEstimate: item.result.pricing.estimate},
+      {current: flowLive(me), onStatus: m => { if (me === flowCurrent) flowStatus = String(m); }});
+    if (me !== flowCurrent) return {cancelled: true};
+    flowStatus = '';
+    return result.ok ? {ok: true, model: flowResult(flowRegister(result))} : {ok: false, message: result.message};
+  },
+  flowSaveData(a) {
+    const item = flowResults.get(a.id); if (!item) throw Error('Your account or collection changed. Rebuild before saving.');
+    if (!flowPipe().recheck(item.result)) throw Error('The list no longer passes its checks. Rebuild before saving.');
+    return {deck: item.result.deck, request: item.result.request};
+  },
+  flowSaved: a => { const item = flowResults.get(a.id); if (item) item.saved = true; return item ? flowResult(a.id) : null; },
+  // A.flowExport for these games: "qty name [zone]" lines, Pokémon's with [id · variant].
+  flowExport(a) {
+    const item = flowResults.get(a.id); if (!item) throw Error('This deck is no longer available.'); const r = item.result;
+    return {text: r.rows.map(row => `${row.qty} ${row.name}${row.zone !== 'main' ? ' [' + row.zone + ']' : ''}${r.request.game === 'ptcg' ? ' [' + row.id + (row.selection?.variant ? ' · ' + row.selection.variant : '') + ']' : ''}`).join('\n')};
+  },
+};
+// tcg.js A.tPickSeeds' sheet (tcgPickSheet) as data: the intro, the filter's placeholder, the player's cards (id, name, picture, ×qty)
+// and the empty line; the app keeps the ticks (C.tSeedToggle) and filters by name (I.tSeedQ), then builds with them (A.tSeedGo).
+function seedPickModel(G) {
+  tcgFocus(G, 'decks');
+  const host = flowDraw(TcgAll.tcgPickSheet()), q = sel => host.querySelector(sel);
+  const text = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
+  return {title: text(q('.sheet-head h2')), intro: text(q('p.muted.small')), placeholder: q('input[type=search]')?.getAttribute('placeholder') || '',
+    rows: host.querySelectorAll('.seed-row').map(l => ({id: l.querySelector('input')?.getAttribute('value') || '', name: text(l.querySelector('.ellip')), qty: text(l.querySelector('small')),
+      art: l.querySelector('img')?.getAttribute('src') || '', key: l.dataset.name || ''})),
+    empty: text(q('.seed-list > p')), go: text(q('#seedGo'))};
+}
+
 globalThis.Collection = {
   // What the app kept of the site's browser storage (KEPT_KEYS), put back when the bundle starts.
   storeLoad(keptJson) { const o = keptJson ? JSON.parse(keptJson) : {}; for (const [k, v] of Object.entries(o)) if (KEPT_KEYS.has(k) && typeof v === 'string') keptSet(k, v); },
@@ -4667,6 +4781,19 @@ globalThis.Collection = {
   },
   // app.js closeSheet: the sheet [id] opened is gone (a newer one is left alone).
   // What Build a deck reads from the workspace (app.js inv and priceOf: what is owned, the player's own prices), for the WebView.
+  // Build a deck for Yu-Gi-Oh! and Pokémon (flowTcgCalls): [name] with its JSON args starts; flowPoll() says how it ended
+  // ({done, value} or {done, error}) and the pipeline's live line (status) while it builds.
+  flow(name, aJson) {
+    const f = flowTcgCalls[name], me = {done: false};
+    flowRun = me;
+    if (!f) { me.done = true; me.error = 'Unknown step ' + name; return; }
+    try { Promise.resolve(f(JSON.parse(aJson || '{}'))).then(v => { me.done = true; me.value = v ?? null; }, e => { me.done = true; me.error = e?.message || String(e); }); }
+    catch (e) { me.done = true; me.error = e?.message || String(e); }
+  },
+  flowPoll() { const r = flowRun || {done: true, value: null}; return json(r.done ? r : {done: false, status: flowStatus}); },
+  flowCancel() { flowCurrent++; flowStatus = ''; },
+  // tcg.js A.tPickSeeds: the sheet as data (seedPickModel).
+  seedPick(game) { return json(seedPickModel(game)); },
   flowWorkspace() { const s = stripCache(S.state); return json({collection: s.collection, decks: s.decks, myPrices: s.myPrices ?? null, priceChoices: s.priceChoices ?? null, settings: s.settings}); },
   // app.js A.deckMenu (6108): the ⋯ menu of deck [id] (deckMenuModel).
   deckMenu(id) { return json(deckMenuModel(id)); },

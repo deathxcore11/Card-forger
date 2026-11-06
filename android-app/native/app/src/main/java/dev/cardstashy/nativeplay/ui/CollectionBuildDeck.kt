@@ -89,6 +89,16 @@ internal object WebBuildFlow : BuildFlowEngine {
     override val status: StateFlow<String> get() = RandomBuild.flowStatus
 }
 
+/** Yu-Gi-Oh! and Pokémon: the Collection engine (CollectionEngine.flow), where tcg.js and the workspace already are. */
+internal object EngineBuildFlow : BuildFlowEngine {
+    private val _status = kotlinx.coroutines.flow.MutableStateFlow("")
+    override suspend fun ready() = true
+    override suspend fun call(name: String, a: JsonObject) =
+        dev.cardstashy.nativeplay.collection.CollectionEngine.flow(name, a) { _status.value = it }.also { _status.value = "" }
+    override fun cancel() { _status.value = ""; kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default).launch { runCatching { dev.cardstashy.nativeplay.collection.CollectionEngine.flowCancel() } } }
+    override val status: StateFlow<String> get() = _status
+}
+
 // style.css tokens (dark), as the sheet computes them.
 private val BInk = Color(0xFFEEF0F4)
 private val BMute = Color(0xFF9AA2B1)
@@ -123,6 +133,8 @@ internal fun CollectionBuildDeckSheet(open: CollectionWrites.BuildOpen, backdrop
                                       save: suspend (android.content.Context, JsonObject) -> Boolean = { c, d -> CollectionWrites.act(c, "deckGenerated", d) }) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    /** The request's game: Magic (the WebView) or Yu-Gi-Oh! / Pokémon (the engine). */
+    val game = open.request.get("game")?.takeIf { it.isJsonPrimitive }?.asString ?: "mtg"
     val prefs = remember { context.getSharedPreferences("collection", android.content.Context.MODE_PRIVATE) }
     var setup by remember { mutableStateOf<JsonObject?>(null) }
     var result by remember { mutableStateOf<JsonObject?>(null) }
@@ -259,11 +271,13 @@ internal fun CollectionBuildDeckSheet(open: CollectionWrites.BuildOpen, backdrop
         val m = engine.call("flowOpen", obj("request" to open.request, "prefs" to savedPrefs())).obj
         if (m == null) { CollectionWrites.show("Build a deck couldn’t open here."); onClose(); return@LaunchedEffect }
         showSetup(m)
-        random()
+        // app.js A.randomDeck / A.randomDeckOptions roll a card at once; openDeckFlow (tcg.js's build-around buttons) opens on its cards.
+        if (open.act != "openDeckFlow") random()
     }
     // Closing stops what is building (the site's sequence moves on with the sheet gone).
     androidx.compose.runtime.DisposableEffect(Unit) { onDispose { if (busy != null) engine.cancel() } }
 
+    // deck-experience.js's sheet is gold in every game (Save deck and Generate deck are the site's gold .btn on Yu-Gi-Oh! too).
     CompositionLocalProvider(LocalSheetPal provides sheetPal(CardGame.MTG), LocalGameGold provides CardGame.MTG.gold) {
         Box(Modifier.fillMaxSize()) {
             val res = result
@@ -274,7 +288,8 @@ internal fun CollectionBuildDeckSheet(open: CollectionWrites.BuildOpen, backdrop
                     res != null -> FlowResult(res, vw, saving, rebuildOpen, rebuildText, rebuildStatus,
                         onBack = onClose, onSave = { saveDeck() }, onRebuildToggle = { rebuildOpen = !rebuildOpen }, onRebuildText = { rebuildText = it; rebuildStatus = "" },
                         onRebuild = { rebuild() }, onEdit = { res.o("request")?.let { opened(it) } }, onExport = { export() },
-                        onCard = { name -> cards = cards + CardOpen(name, page = "https://cardstashy.com/#decks", tile = "") })
+                        onCard = { r -> cards = cards + if (game == "mtg") CardOpen(r.name, page = "https://cardstashy.com/#decks", tile = "")
+                            else CardOpen(r.name, page = "https://cardstashy.com/#decks", tile = "", game = game, id = r.id, setVariant = r.setVariant, printing = r.printing, edition = r.edition) })
                     setup != null -> FlowSetup(setup!!, vw, seedText, seedOpen, budgetText, prefsOpen,
                         onSeedOpen = { seedOpen = !seedOpen }, onSeed = { seedText = it }, onRandom = { random() },
                         onAnyFormat = { change { addProperty("commanderLock", false) } },
@@ -428,7 +443,7 @@ private fun CheckRow(label: String, on: Boolean, onChange: (Boolean) -> Unit) {
 @Composable
 private fun FlowResult(m: JsonObject, vw: Dp, saving: Boolean, rebuildOpen: Boolean, rebuildText: String, rebuildStatus: String,
                        onBack: () -> Unit, onSave: () -> Unit, onRebuildToggle: () -> Unit, onRebuildText: (String) -> Unit, onRebuild: () -> Unit,
-                       onEdit: () -> Unit, onExport: () -> Unit, onCard: (String) -> Unit) {
+                       onEdit: () -> Unit, onExport: () -> Unit, onCard: (DeckLine) -> Unit) {
     val h = m.o("hero") ?: JsonObject()
     val reduced = Motion.still
     val eyebrow = buildList {
@@ -494,7 +509,9 @@ private fun Disclosure(d: JsonObject) {
 }
 
 /** One card row (.deck-compact-row) as the model has it. */
-private class DeckLine(val index: Int, val qty: Int, val name: String, val category: String, val thumb: String, val image: String, val pills: List<String>, val price: String)
+internal class DeckLine(val index: Int, val qty: Int, val name: String, val category: String, val thumb: String, val image: String, val pills: List<String>, val price: String,
+    /** Yu-Gi-Oh! / Pokémon (app.js deckExperience card()): the card's id and the printing the row chose (tcg.js A.tCard's dataset). */
+    val id: String = "", val setVariant: String = "", val printing: String = "", val edition: String = "")
 
 /**
  * deckViewer over the result's sections ("Main deck 100", "Sideboard 15"): Stacks (type piles of six), Art grid (the cards with
@@ -502,7 +519,7 @@ private class DeckLine(val index: Int, val qty: Int, val name: String, val categ
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun FlowCards(zones: List<JsonObject>, vw: Dp, onCard: (String) -> Unit) {
+private fun FlowCards(zones: List<JsonObject>, vw: Dp, onCard: (DeckLine) -> Unit) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("collection", android.content.Context.MODE_PRIVATE) }
     var mode by remember { mutableStateOf(prefs.getString("deckView", null)?.takeIf { it in listOf("stacks", "gallery", "symbols", "compact") } ?: "gallery") }
@@ -513,7 +530,7 @@ private fun FlowCards(zones: List<JsonObject>, vw: Dp, onCard: (String) -> Unit)
     }
     val inner = vw - 32.dp
     for (z in zones) {
-        val rows = z.objs("rows").map { r -> DeckLine(r.get("index")?.asInt ?: 0, r.get("qty")?.asInt ?: 1, r.s("name"), r.s("category"), r.s("thumb"), r.s("image"), r.strs("pills"), r.s("price")) }
+        val rows = z.objs("rows").map { r -> DeckLine(r.get("index")?.asInt ?: 0, r.get("qty")?.asInt ?: 1, r.s("name"), r.s("category"), r.s("thumb"), r.s("image"), r.strs("pills"), r.s("price"), r.s("id"), r.s("setVariant"), r.s("printing"), r.s("edition")) }
         // .deck-flow-cards h3: the section and its count (muted), 16 / 700, 18 above.
         Row(Modifier.padding(top = 18.dp, bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(z.s("title"), style = cssType(16f, 700, 22f)); Text(z.s("count"), style = cssType(16f, 700, 22f, BMute))
@@ -525,11 +542,11 @@ private fun FlowCards(zones: List<JsonObject>, vw: Dp, onCard: (String) -> Unit)
                 val cols = maxOf(1, ((inner.value + 14f) / (170f + 14f)).toInt())
                 Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
                     rows.chunked(cols).forEach { line -> Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                        line.forEach { r -> GalleryTile(r, Modifier.weight(1f)) { onCard(r.name) } }; repeat(cols - line.size) { Spacer(Modifier.weight(1f)) } } }
+                        line.forEach { r -> GalleryTile(r, Modifier.weight(1f)) { onCard(r) } }; repeat(cols - line.size) { Spacer(Modifier.weight(1f)) } } }
                 }
             }
-            "symbols" -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) { rows.forEach { r -> NamesRow(r) { onCard(r.name) } } }
-            else -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { rows.forEach { r -> DetailRow(r) { onCard(r.name) } } }
+            "symbols" -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) { rows.forEach { r -> NamesRow(r) { onCard(r) } } }
+            else -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { rows.forEach { r -> DetailRow(r) { onCard(r) } } }
         }
     }
 }
@@ -614,7 +631,7 @@ private fun DetailRow(r: DeckLine, onClick: () -> Unit) {
 /** stackList: the rows by type in piles of six, each card showing a 38 strip (32 at 480 and under) above the next. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun FlowStacks(rows: List<DeckLine>, inner: Dp, onCard: (String) -> Unit) {
+private fun FlowStacks(rows: List<DeckLine>, inner: Dp, onCard: (DeckLine) -> Unit) {
     val order = listOf("Commander", "Creatures", "Planeswalkers", "Battles", "Instants", "Sorceries", "Artifacts", "Enchantments", "Lands")
     val groups = rows.groupBy { it.category.ifBlank { "Other" } }.toList().sortedBy { order.indexOf(it.first).let { i -> if (i < 0) 99 else i } }
     val small = inner <= 448.dp
@@ -638,7 +655,7 @@ private fun FlowStacks(rows: List<DeckLine>, inner: Dp, onCard: (String) -> Unit
                         val cardH = pileW * (88f / 63f)
                         Box(Modifier.width(pileW).height(cardH + step * (pile.size - 1))) {
                             pile.forEachIndexed { i, r ->
-                                Box(Modifier.offset(y = step * i).width(pileW).clickable { onCard(r.name) }.semantics { contentDescription = "${r.qty}× ${r.name}" }) {
+                                Box(Modifier.offset(y = step * i).width(pileW).clickable { onCard(r) }.semantics { contentDescription = "${r.qty}× ${r.name}" }) {
                                     CardPic(r, Modifier.fillMaxWidth()); QtyBadge(r.qty, Modifier.align(Alignment.TopEnd).padding(7.dp))
                                 }
                             }

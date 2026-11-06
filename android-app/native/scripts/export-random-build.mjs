@@ -15,6 +15,8 @@ writeFileSync(entry, readFileSync(join(here, 'random-build-entry.mjs'), 'utf8').
 // The WebView's bundle adds Collection's Build a deck (deck-flow-entry.mjs, which imports the entry above).
 const flowEntry = join(app, 'build', 'deck-flow-entry.mjs');
 writeFileSync(flowEntry, readFileSync(join(here, 'deck-flow-entry.mjs'), 'utf8').replaceAll("'WEB/", `'${resolve(web)}/`));
+// The Build a deck screens as data (shared with the Collection engine), beside the entry that imports it.
+writeFileSync(join(app, 'build', 'deck-flow-models.mjs'), readFileSync(join(here, 'deck-flow-models.mjs'), 'utf8'));
 // deck-experience.js's Theme choices (a module-private constant there), copied into both bundles as DECK_THEMES.
 const themesSrc = /const themes=(\{mtg:\[[^\]]*\],ptcg:\[[^\]]*\],ygo:\[[^\]]*\]\});/.exec(readFileSync(join(resolve(web), 'deck-experience.js'), 'utf8'));
 if (!themesSrc) throw Error('deck-experience.js themes not found: the export needs updating');

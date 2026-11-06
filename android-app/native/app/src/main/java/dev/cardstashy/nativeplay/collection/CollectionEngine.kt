@@ -406,6 +406,21 @@ object CollectionEngine {
         var last = ""
         pumpUntil("Collection.pricePoll()", 30_000) { r -> val t = r.toString(); if (t != last) { last = t; paint(r) } }
     }
+    /**
+     * Build a deck for Yu-Gi-Oh! and Pokémon (the engine's flowTcgCalls: deck-experience.js over the site's pipeline with tcg.js): one
+     * step ([name] with [a]) pumped until it ends; [onStatus] gets the pipeline's live line while it builds. A build waits up to [ms].
+     */
+    suspend fun flow(name: String, a: JsonObject, ms: Long = 300_000, onStatus: (String) -> Unit = {}): dev.cardstashy.nativeplay.play.RandomBuild.Flow {
+        on { q -> q.evaluate("Collection.flow(${str(name)}, ${str(a.toString())})") }
+        var said = ""
+        val r = pumpUntil("Collection.flowPoll()", ms) { p -> p.get("status")?.takeIf { it.isJsonPrimitive }?.asString?.let { if (it != said) { said = it; onStatus(it) } } }
+        if (r.get("done")?.asBoolean != true) { flowCancel(); return dev.cardstashy.nativeplay.play.RandomBuild.Flow(null, "The deck builder took too long. Try again.") }
+        val err = r.get("error")?.takeIf { it.isJsonPrimitive }?.asString
+        return dev.cardstashy.nativeplay.play.RandomBuild.Flow(if (err == null) r.get("value") else null, err)
+    }
+    suspend fun flowCancel() { on { q -> q.evaluate("Collection.flowCancel()"); Unit } }
+    /** tcg.js A.tPickSeeds' sheet as data: {title, intro, placeholder, rows [{id, name, qty, art, key}], empty, go}. */
+    suspend fun seedPick(game: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.seedPick(${str(game)})") as String).asJsonObject }
     /** What Build a deck reads from the workspace (owned cards, decks, the player's prices and settings), for the WebView's builder. */
     suspend fun flowWorkspace(): String = on { q -> q.evaluate("Collection.flowWorkspace()") as String }
     /** app.js A.deckMenu: deck [id]'s ⋯ menu as the site draws it ({missing} when the deck is gone). */
