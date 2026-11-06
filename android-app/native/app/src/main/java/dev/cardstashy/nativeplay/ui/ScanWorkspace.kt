@@ -10,6 +10,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.scale
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -30,6 +34,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate as turn
@@ -75,6 +80,8 @@ internal fun ScanWorkspace(n: SiteNode, ui: SiteUi, mark: Modifier, rest: @Compo
         }
         return
     }
+    // Your scans (.is-grid) and Fix card (.is-fixing): the page and its bar fixed over the nav (.scan-grid-bar), as the site has them.
+    if (n.has("is-grid")) { ScanGridPage(n, ui, mark, rest); return }
     Column(mark.fillMaxWidth()) {
         n.elements.forEach { k ->
             when {
@@ -352,4 +359,296 @@ private fun ScanPile(n: SiteNode, ui: SiteUi) {
 
 /** For the route: the scanner page's markup is live (the camera fills the screen and the page doesn't scroll). */
 fun SitePanelModel.scanLive(): Boolean = page?.find { it.has("scan-workspace") }?.has("is-live") == true
+/** For the route: Your scans or Fix card, whose bar sits over the nav (the page scrolls inside, under the bar). */
+fun SitePanelModel.scanGrid(): Boolean = page?.find { it.has("scan-workspace") }?.has("is-grid") == true
+
+private val Warn = Color(0xFFF2C66D)
+private val Good = Color(0xFF6FD29A)
+private val GoldBar = Brush.verticalGradient(listOf(Color(0xFFF3CD7C), Color(0xFFD9A743)))
+private val Ink = Color(0xFF1B1406)
+
+/** An img of the page: its data: picture (the photo the scanner took) decoded here, else the first of its sources that loads. */
+@Composable
+private fun scanPic(img: SiteNode?): androidx.compose.ui.graphics.painter.Painter? {
+    val src = img?.get("src").orEmpty()
+    if (src.startsWith("data:image")) {
+        val bmp: androidx.compose.ui.graphics.ImageBitmap? = androidx.compose.runtime.remember(src) { runCatching { val b = android.util.Base64.decode(src.substringAfter(','), android.util.Base64.DEFAULT)
+            android.graphics.BitmapFactory.decodeByteArray(b, 0, b.size)?.asImageBitmap() }.getOrNull() }
+        return bmp?.let { androidx.compose.ui.graphics.painter.BitmapPainter(it) }
+    }
+    val list = img?.pic.orEmpty().ifEmpty { listOfNotNull(src.ifBlank { null }) }
+    return if (list.isEmpty()) null else firstOf(list)
+}
+
+/**
+ * Your scans and Fix card (scancam.js batch grid; style.css "Scan grid"): the head (back, the title 22 with its count line 13 muted,
+ * Select), Add to (12.5 / 700 muted, then the destination chips: 44 tall pills, the chosen one gold), the tiles (150 wide or more, 16
+ * down 10 across; 2 across under 380), and the bar fixed over the nav (22 12 in, fading in from the page): its ghost button and the
+ * gold one, 52 tall, corners 16, 16 / 800. Fix card is the same page with its review (.scan-confirm.is-fix-page) in place of the grid.
+ */
+@Composable
+private fun ScanGridPage(n: SiteNode, ui: SiteUi, mark: Modifier, rest: @Composable (SiteNode) -> Unit) {
+    val fix = n.elements.firstOrNull { it.has("is-fix-page") }
+    val bar = (fix ?: n).elements.firstOrNull { it.has("scan-grid-bar") }
+    Box(mark.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(bottom = 96.dp)) {
+            val parts = if (fix != null) fix.elements else n.elements
+            parts.forEach { k ->
+                when {
+                    k === bar -> {}
+                    k.has("scan-grid-head") -> GridHead(k, ui)
+                    k.has("scan-dest") -> DestRow(k, ui)
+                    k.has("scan-grid") -> TileGrid(k, ui)
+                    k.has("scan-confirm-body") -> FixBody(k, ui, rest)
+                    k.hidden -> {}
+                    else -> rest(k)
+                }
+            }
+        }
+        bar?.let { GridBar(it, ui, Modifier.align(Alignment.BottomCenter)) }
+    }
+}
+
+@Composable
+private fun GridHead(n: SiteNode, ui: SiteUi) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        n.elements.forEach { k ->
+            when {
+                k.has("icon") -> { val sh = RoundedCornerShape(12.dp)
+                    Box(Modifier.size(44.dp).clip(sh).background(Site.Surface2).border(1.dp, Site.Line, sh).clickable { ui.tap(k.id) }
+                        .semantics { role = Role.Button; contentDescription = k["aria-label"] ?: "Back" }, contentAlignment = Alignment.Center) {
+                        k.elements.firstOrNull { it.tag == "svg" }?.icon?.let { SiteIcon(it, 20.dp, Site.Text) } ?: Text(k.text(), style = cssType(18f, 700, 20f, Site.Text))
+                    } }
+                k.has("scan-grid-title") -> Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    k.elements.firstOrNull { it.tag == "h1" }?.let { Text(it.text(), style = androidx.compose.ui.text.TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp, lineHeight = 25.3.sp, color = Site.Text)) }
+                    k.elements.firstOrNull { it.tag == "span" }?.let { Text(it.text(), style = cssType(13f, 400, 17f, Site.Muted)) }
+                }
+                k.has("btn") -> { val sh = RoundedCornerShape(12.dp)
+                    Box(Modifier.heightIn(min = 44.dp).clip(sh).background(Site.Surface2).border(1.dp, Site.Line, sh).clickable { ui.tap(k.id) }
+                        .semantics { role = Role.Button }.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
+                        Text(k.text(), style = cssType(14f, 700, 18f, Site.Text), maxLines = 1)
+                    } }
+            }
+        }
+    }
+}
+
+/** A .scan-chip: 44 tall, 9 16 in, a pill in the line on --surface-2, 14 / 700; chosen (aria-checked), gold. */
+@Composable
+private fun ScanChip(k: SiteNode, ui: SiteUi, base: Color = Site.Surface2, dashed: Boolean = false, ink: Color = Site.Text) {
+    val on = k["aria-checked"] == "true" || k["aria-pressed"] == "true" || k.has("is-selected")
+    val off = "disabled" in k.attrs
+    val sh = RoundedCornerShape(999.dp)
+    Row(Modifier.alpha(if (off) .45f else 1f).heightIn(min = 44.dp).clip(sh)
+        .then(if (on) Modifier.background(GoldBar) else Modifier.background(base))
+        .then(if (on) Modifier else if (dashed) Modifier.drawBehind {
+            drawRoundRect(Color(0xFF3A4150), cornerRadius = CornerRadius(size.height / 2), style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx()))))
+        } else Modifier.border(1.dp, Site.Line, sh))
+        .clickable(enabled = !off) { ui.tap(k.id) }.semantics(mergeDescendants = true) { role = Role.Button }.padding(horizontal = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+        val c = if (on) Ink else ink
+        k.elements.firstOrNull { it.tag == "svg" }?.icon?.let { SiteIcon(it, 16.dp, c, stroke = 2.6f) }
+        Text(k.text(), style = cssType(14f, if (on) 800 else 700, 18f, c), maxLines = 1)
+    }
+}
+
+@Composable
+private fun DestRow(n: SiteNode, ui: SiteUi) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        n.elements.firstOrNull { it.has("scan-dest-label") }?.let { Text(it.text(), style = cssType(12.5f, 700, 16f, Site.Muted)) }
+        androidx.compose.foundation.layout.FlowRow(Modifier.weight(1f).padding(vertical = 3.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            n.find { it.has("scan-dest-chips") }?.elements?.forEach { k ->
+                if (k.has("scan-dest-new-chip")) ScanChip(k, ui, Color.Transparent, dashed = true, ink = Site.Gold) else ScanChip(k, ui, Site.Surface)
+            }
+        }
+    }
+}
+
+@Composable
+private fun TileGrid(n: SiteNode, ui: SiteUi) {
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().padding(top = 16.dp)) {
+        val cols = if (maxWidth < 380.dp) 2 else maxOf(1, ((maxWidth + 10.dp) / 160.dp).toInt())
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            n.elements.filter { !it.hidden }.chunked(cols).forEach { line ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    line.forEach { t -> Box(Modifier.weight(1f)) { ScanTile(t, ui, n.has("is-selecting")) } }
+                    repeat(cols - line.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * .scan-tile: the art 5:7, corners 12, on --surface-2 (one to check: a 2 warn line inside; picked: a 3 gold ring), its state top right
+ * 8 in (ready: a 26 green dot with a tick; to check: a warn pill, 11.5 / 800; reading: a 26 gold dot), the name 13.5 / 700, the line
+ * under 12 muted (warn when it needs a look).
+ */
+@Composable
+private fun ScanTile(t: SiteNode, ui: SiteUi, selecting: Boolean) {
+    val art = t.find { it.has("scan-tile-art") }
+    val warn = t.has("is-review") || t.has("is-unresolved"); val picked = t.has("is-selected")
+    val dim = t.has("is-reading") || t.has("is-captured")
+    val sh = RoundedCornerShape(12.dp)
+    Column(Modifier.fillMaxWidth().clip(sh).clickable(enabled = "disabled" !in t.attrs) { ui.tap(t.id) }.semantics(mergeDescendants = true) { role = Role.Button },
+        verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(Modifier.fillMaxWidth().aspectRatio(5f / 7f).then(if (picked) Modifier.border(3.dp, Site.Gold, sh) else Modifier).clip(sh).background(Site.Surface2)
+            .alpha(if (selecting && !picked) .78f else 1f)) {
+            scanPic(art?.find { it.tag == "img" })?.let { androidx.compose.foundation.Image(it, null, Modifier.fillMaxSize().alpha(if (dim) .6f else 1f), contentScale = androidx.compose.ui.layout.ContentScale.Crop) }
+            if (warn) Box(Modifier.fillMaxSize().border(2.dp, Warn, sh))
+            art?.elements?.firstOrNull { it.has("scan-tile-state") }?.let { st ->
+                val m = Modifier.align(Alignment.TopEnd).padding(8.dp)
+                when {
+                    st.has("is-ok") -> Box(m.size(26.dp).clip(CircleShape).background(Good), contentAlignment = Alignment.Center) {
+                        st.elements.firstOrNull { it.tag == "svg" }?.icon?.let { SiteIcon(it, 15.dp, Color(0xFF04150D), stroke = 3f) } }
+                    st.has("is-warn") -> Text(st.text(), m.heightIn(min = 24.dp).clip(RoundedCornerShape(999.dp)).background(Warn).padding(horizontal = 9.dp, vertical = 5.dp),
+                        style = cssType(11.5f, 800, 14f, Ink))
+                    else -> Box(m.size(26.dp).clip(CircleShape).background(Site.Gold), contentAlignment = Alignment.Center) { Text(st.text(), style = cssType(14f, 800, 14f, Ink)) }
+                }
+            }
+        }
+        t.elements.firstOrNull { it.has("scan-tile-name") }?.let { Text(it.text(), style = cssType(13.5f, 700, 16.2f, Site.Text)) }
+        t.elements.firstOrNull { it.has("scan-tile-meta") }?.let { Text(it.text(), style = cssType(12f, 400, 15f, if (it.has("is-warn")) Warn else Site.Muted)) }
+    }
+}
+
+/** .scan-grid-bar: fixed over the nav, 22 12 in, the page fading into it; the ghost button and the gold one (flex), 52 tall, 16 / 800. */
+@Composable
+private fun GridBar(n: SiteNode, ui: SiteUi, modifier: Modifier) {
+    Row(modifier.fillMaxWidth().background(Brush.verticalGradient(0f to Site.Bg.copy(alpha = 0f), .4f to Site.Bg)).padding(top = 22.dp, bottom = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp, if (n.has("scan-fix-bar")) Alignment.CenterHorizontally else Alignment.Start), verticalAlignment = Alignment.CenterVertically) {
+        n.elements.filter { it.tag == "button" && !it.hidden }.forEach { b ->
+            val ghost = b.has("ghost"); val off = "disabled" in b.attrs; val sh = RoundedCornerShape(16.dp)
+            Box((if (ghost) Modifier else Modifier.weight(1f).widthIn(max = 760.dp)).alpha(if (off) .5f else 1f)
+                .then(if (ghost || off) Modifier else Modifier.cssShadow(Color(0x4DE8B95B), 18.dp, 6.dp, 0.dp, 16.dp))
+                .heightIn(min = 52.dp).clip(sh).then(if (ghost) Modifier.background(Site.Surface2).border(1.dp, Site.Line, sh) else Modifier.background(GoldBar))
+                .clickable(enabled = !off) { ui.tap(b.id) }.semantics { role = Role.Button }.padding(horizontal = 18.dp), contentAlignment = Alignment.Center) {
+                Text(b.text(), style = androidx.compose.ui.text.TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, lineHeight = 17.6.sp,
+                    color = if (ghost) Site.Text else Ink), textAlign = TextAlign.Center)
+            }
+        }
+    }
+}
+
+/**
+ * Fix card's body (.scan-confirm.is-fix-page .scan-confirm-body, at most 760 wide): Your photo (a row in the line, its 52 × 72 picture),
+ * the printings to swipe through (printing-picker.css: each slide 76 % wide, the others smaller and faded; the art in a soft glow of the
+ * game colour, then name 21, set 13 muted, number, and the slide's chips or This is my card), the arrows with "1 / 7", then Finish and
+ * copies, the condition (five 44 buttons, the chosen gold), language and price, the value card, and Different card?.
+ */
+@Composable
+private fun FixBody(n: SiteNode, ui: SiteUi, rest: @Composable (SiteNode) -> Unit) {
+    Column(Modifier.fillMaxWidth().widthIn(max = 760.dp)) {
+        n.elements.forEach { k ->
+            when {
+                k.has("scan-fix-photo-row") -> { val sh = RoundedCornerShape(14.dp)
+                    Row(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 2.dp).clip(sh).background(Site.Surface).border(1.dp, Site.Line, sh).padding(horizontal = 10.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(52.dp, 72.dp).clip(RoundedCornerShape(7.dp)).background(Site.Surface2)) {
+                            scanPic(k.find { it.tag == "img" })?.let { androidx.compose.foundation.Image(it, null, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop) }
+                        }
+                        Text(k.find { it.tag == "figcaption" }?.text().orEmpty(), style = cssType(13f, 400, 17.55f, Site.Muted))
+                    } }
+                k.has("scan-inline-printings") -> Printings(k, ui)
+                k.has("scan-finish") -> FinishRow(k, ui)
+                k.has("scan-confirm-conditions") -> Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    k.elements.filter { it.tag == "button" }.forEach { b -> val on = b["aria-pressed"] == "true"; val sh = RoundedCornerShape(12.dp)
+                        Box(Modifier.weight(1f).heightIn(min = 44.dp).clip(sh).then(if (on) Modifier.background(GoldBar) else Modifier.background(Site.Surface).border(1.dp, Site.Line, sh))
+                            .clickable { ui.tap(b.id) }.semantics { role = Role.Button; b["aria-label"]?.let { contentDescription = it } }, contentAlignment = Alignment.Center) {
+                            Text(b.text(), style = cssType(13f, 700, 16f, if (on) Ink else Site.Text), maxLines = 1)
+                        } } }
+                k.has("scan-condition-value") -> { val sh = RoundedCornerShape(16.dp)
+                    Column(Modifier.fillMaxWidth().padding(vertical = 12.dp).clip(sh).background(androidx.compose.ui.graphics.lerp(Color(0xFF151820), Site.Gold, .08f))
+                        .border(1.dp, Site.Gold.copy(alpha = .35f), sh).padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        k.elements.forEach { c -> if (c.tag == "strong") Text(c.text(), style = cssType(20f, 700, 24f, Site.Gold)) else Text(c.text(), style = cssType(12f, 400, 16f, Site.Muted)) }
+                    } }
+                k.has("scan-fix") && !k.has("is-open") -> k.elements.firstOrNull { it.has("scan-fix-toggle") }?.let { t ->
+                    Box(Modifier.fillMaxWidth().heightIn(min = 44.dp).clickable { ui.tap(t.id) }.semantics { role = Role.Button }, contentAlignment = Alignment.Center) {
+                        Text(t.text() + "  ▾", style = cssType(14f, 700, 18f, Site.Muted), textAlign = TextAlign.Center)
+                    } }
+                k.hidden -> {}
+                else -> rest(k)
+            }
+        }
+    }
+}
+
+@Composable
+private fun FinishRow(k: SiteNode, ui: SiteUi) {
+    val sh = RoundedCornerShape(16.dp)
+    Column(Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 6.dp).clip(sh).background(Site.Surface2).border(1.dp, Site.Line, sh).padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        k.elements.firstOrNull { it.has("scan-finish-label") }?.let { Text(it.text().uppercase(), style = cssType(12f, 800, 16f, Site.Muted, track = .48f)) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            androidx.compose.foundation.layout.FlowRow(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                k.find { it.has("scan-chips") }?.elements?.forEach { c -> ScanChip(c, ui) }
+            }
+            k.find { it.has("ss-qty") }?.let { q -> Row(horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
+                q.elements.forEach { e -> if (e.tag == "button") { val s2 = RoundedCornerShape(12.dp)
+                    Box(Modifier.size(44.dp).clip(s2).background(Site.Surface2).border(1.dp, Site.Line, s2).clickable(enabled = "disabled" !in e.attrs) { ui.tap(e.id) }
+                        .semantics { role = Role.Button; e["aria-label"]?.let { contentDescription = it } }, contentAlignment = Alignment.Center) {
+                        Text(e.text(), style = cssType(16f, 800, 18f, Site.Text)) }
+                } else Text(e.text(), Modifier.widthIn(min = 28.dp), style = cssType(16f, 800, 20f, Site.Text), textAlign = TextAlign.Center) }
+            } }
+        }
+    }
+}
+
+/** .printing-carousel in the review: a pager of the slides (swiping or the arrows step the page's own current one, scanBrowseStep). */
+@Composable
+private fun Printings(k: SiteNode, ui: SiteUi) {
+    val car = k.find { it.has("printing-carousel") }
+    val slides = car?.elements?.filter { it.has("printing-slide") }.orEmpty()
+    val cur = slides.indexOfFirst { it.has("is-current") }.coerceAtLeast(0)
+    val nav = k.find { it.has("printing-carousel-nav") }
+    val arrows = nav?.elements?.filter { it.tag == "button" }.orEmpty()
+    if (slides.isNotEmpty()) {
+        val pager = androidx.compose.foundation.pager.rememberPagerState(cur) { slides.size }
+        androidx.compose.runtime.LaunchedEffect(cur) { if (pager.currentPage != cur) pager.animateScrollToPage(cur) }
+        androidx.compose.runtime.LaunchedEffect(pager.settledPage) {
+            val want = pager.settledPage
+            if (want != cur && arrows.size == 2) ui.tap((if (want > cur) arrows[1] else arrows[0]).id)
+        }
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val slideW = maxWidth * .76f
+            androidx.compose.foundation.pager.HorizontalPager(pager, Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 10.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = (maxWidth - slideW) / 2), pageSpacing = 14.dp, verticalAlignment = Alignment.Top) { i ->
+                val sl = slides[i]; val on = i == pager.currentPage
+                Column(Modifier.fillMaxWidth().alpha(if (on) 1f else .5f).scale(if (on) 1f else .93f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    val screen = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
+                    Box(Modifier.fillMaxWidth().height((screen * .32f).coerceIn(190.dp, 330.dp)).clip(RoundedCornerShape(14.dp))
+                        .background(Brush.radialGradient(listOf(GameColor.copy(alpha = .13f), Color.Transparent))), contentAlignment = Alignment.Center) {
+                        scanPic(sl.find { it.tag == "img" })?.let { androidx.compose.foundation.Image(it, null, Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)), contentScale = androidx.compose.ui.layout.ContentScale.Fit) }
+                    }
+                    sl.find { it.has("printing-slide-copy") }?.let { cp ->
+                        Column(Modifier.fillMaxWidth().padding(top = 14.dp), verticalArrangement = Arrangement.spacedBy(7.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            cp.elements.forEach { c ->
+                                when {
+                                    c.tag == "strong" -> Text(c.text(), style = cssType(21f, 800, 25.2f, Site.Text), textAlign = TextAlign.Center)
+                                    c.tag == "b" -> Text(c.text(), style = cssType(13f, 700, 17f, Site.Muted), textAlign = TextAlign.Center)
+                                    c.has("scan-chips") -> androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) { c.elements.forEach { ScanChip(it, ui) } }
+                                    c.tag == "button" -> { val sh = RoundedCornerShape(12.dp); val sel = c.has("is-selected")
+                                        Box(Modifier.fillMaxWidth().heightIn(min = 44.dp).clip(sh).background(if (sel) GoldBar else Brush.verticalGradient(listOf(Site.Gold, Site.Gold)))
+                                            .clickable { ui.tap(c.id) }.semantics { role = Role.Button }.padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
+                                            Text(c.text(), style = cssType(14f, 800, 18f, Ink), textAlign = TextAlign.Center) } }
+                                    c.tag == "span" || c.tag == "small" -> Text(c.text(), style = cssType(13f, 400, 17f, Site.Muted), textAlign = TextAlign.Center)
+                                    else -> {}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    nav?.let { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(22.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
+        it.elements.forEach { e -> if (e.tag == "button") { val sh = RoundedCornerShape(12.dp)
+            Box(Modifier.size(44.dp).clip(sh).background(Site.Surface2).border(1.dp, Site.Line, sh).clickable(enabled = "disabled" !in e.attrs) { ui.tap(e.id) }
+                .semantics { role = Role.Button; contentDescription = e["aria-label"] ?: if (e.text() == "←") "Previous printing" else "Next printing" }, contentAlignment = Alignment.Center) {
+                Text(e.text(), style = cssType(16f, 700, 18f, Site.Text)) }
+        } else Text(e.text(), style = cssType(13f, 400, 17f, Site.Muted)) }
+    } }
+    k.elements.firstOrNull { it.has("scan-browse-status") }?.let { Text(it.text(), Modifier.fillMaxWidth().padding(vertical = 6.dp), style = cssType(12f, 400, 16f, Site.Muted), textAlign = TextAlign.Center) }
+}
 

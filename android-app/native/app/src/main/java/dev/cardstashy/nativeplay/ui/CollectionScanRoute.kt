@@ -157,16 +157,19 @@ fun CollectionScanRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () ->
                         }
                     }
                 }
+                // Your scans / Fix card: the page scrolls under its own bar, which sits over the nav (.scan-grid-bar), so it isn't in the scroll.
+                val grid = panel?.scanGrid() == true
                 val body: @Composable (Modifier) -> Unit = { mod ->
-                    Column(mod.verticalScroll(rememberScrollState())) {
+                    Column(if (grid) mod else mod.verticalScroll(rememberScrollState())) {
                         Box(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)) {
                             TopBarItems(Mode.COLLECTION, profile?.avatarUrl, profile?.name, unread = false, onSwitch = onPlay, onProfile = onProfile,
                                 middle = if (wide) ({ GameTabs(g, { c -> if (c != g) onGame(c.id) }, compact = false, Modifier.widthIn(max = 560.dp)) }) else null)
                         }
-                        Column(Modifier.fillMaxWidth().padding(horizontal = gutter).padding(top = if (wide) 4.dp else 10.dp, bottom = 28.dp)) {
+                        Column(Modifier.fillMaxWidth().then(if (grid) Modifier.weight(1f) else Modifier).padding(horizontal = gutter).padding(top = if (wide) 4.dp else 10.dp, bottom = if (grid) 0.dp else 28.dp)) {
                             if (!wide) GameTabs(g, { c -> if (c != g) onGame(c.id) }, compact = true, Modifier.align(Alignment.CenterHorizontally).widthIn(max = 280.dp).padding(bottom = 12.dp))
                             if (panel == null) Text(if (failed) "The Scanner couldn’t open on this phone. Check your connection and try again." else "Opening the Scanner…",
                                 Modifier.fillMaxWidth().padding(top = 40.dp), style = Site.Meta, textAlign = TextAlign.Center)
+                            else if (grid) Box(Modifier.widthIn(max = 1196.dp).weight(1f).align(Alignment.CenterHorizontally)) { SitePanel(panel, siteUi, Modifier.fillMaxSize(), padded = false) }
                             else Box(Modifier.widthIn(max = 1196.dp).align(Alignment.CenterHorizontally)) { SitePanel(panel, siteUi, padded = false) }
                         }
                     }

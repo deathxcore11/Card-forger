@@ -92,7 +92,7 @@ private const val NATIVE_TCG_CARDS = true
 /** Collection's Search tab (all three games), opened from every Collection page's nav and Home's search. */
 private const val NATIVE_SEARCH = true
 /** The Scan tab: the site's scanner in ScanWeb's page, drawn natively, with the phone's camera (CollectionScanRoute). */
-private const val NATIVE_SCAN = false
+private const val NATIVE_SCAN = true
 
 private sealed interface Screen {
     data object Home : Screen

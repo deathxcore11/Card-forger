@@ -20,6 +20,7 @@ import dev.cardstashy.nativeplay.ui.SitePanel
 import dev.cardstashy.nativeplay.ui.SitePanelModel
 import dev.cardstashy.nativeplay.ui.SiteUi
 import dev.cardstashy.nativeplay.ui.scanLive
+import dev.cardstashy.nativeplay.ui.scanGrid
 import dev.cardstashy.nativeplay.ui.sheetBody
 import dev.cardstashy.nativeplay.ui.SiteSheetBody
 import org.junit.Assert.assertTrue
@@ -51,7 +52,7 @@ class ScanPageShotTest {
                 // As CollectionScanRoute: camera on, the page fills the screen over the nav; off, it scrolls with the page's own 16 edges.
                 val sheet = m.sheetBody
                 if (sheet != null) Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).background(Site.Surface).padding(16.dp)) { SiteSheetBody(sheet, ui) }
-                else if (m.scanLive()) SitePanel(m, ui, Modifier.fillMaxSize(), padded = false)
+                else if (m.scanLive() || m.scanGrid()) Box(Modifier.fillMaxSize().padding(horizontal = if (m.scanGrid()) 16.dp else 0.dp)) { SitePanel(m, ui, Modifier.fillMaxSize(), padded = false) }
                 else Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(vertical = 10.dp)) { SitePanel(m, ui, padded = false) }
             }
         }
@@ -66,4 +67,10 @@ class ScanPageShotTest {
     @Test fun review() = shot("scan-review.json", "scan-review", listOf("Lightning Bolt", "Add to collection"))
     @Test fun settings() = shot("scan-settings.json", "scan-settings", listOf("Scanner settings", "Capture automatically"))
     @Test fun grid() = shot("scan-grid.json", "scan-grid", listOf("Your scans"))
+    // The site's scanner itself in a real browser (scratchpad e2e: camera frames of Murktide Regent read by its text reader), each step's page.
+    @Test fun webLive() = shot("scanweb-live.json", "scanweb-live", listOf("Saved. Hold steady"))
+    @Test fun webGrid() = shot("scanweb-grid.json", "scanweb-grid", listOf("Your scans", "Murktide Regent", "Fix 1"))
+    @Test fun webFix() = shot("scanweb-review.json", "scanweb-fix", listOf("Fix card", "7 matching printings", "1 / 7", "Remove"))
+    @Test fun webFixPicked() = shot("scanweb-review2.json", "scanweb-fix2", listOf("Fix card", "Save"))
+    @Test fun webReady() = shot("scanweb-grid2.json", "scanweb-ready", listOf("Add 1 to Collection"))
 }
