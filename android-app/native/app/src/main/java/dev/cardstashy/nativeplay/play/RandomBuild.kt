@@ -143,6 +143,19 @@ object RandomBuild {
         } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Throwable) { null } finally { calls.remove(id) }
     }
 
+    /**
+     * Deck Bench's read of the deck being edited (random-build-entry.mjs benchContext): quickContext's Power and bracket, and the
+     * stack summary's roles by copies ({power, bracket, roles: [[role, n], …]}); null if the bundle failed. Tests answer it themselves.
+     */
+    var benchEngine: suspend (format: String, deck: JsonObject) -> JsonObject? = { format, deck -> withContext(thread) {
+        val id = callIds.incrementAndGet(); val d = CompletableDeferred<JsonObject>(); calls[id] = d
+        try {
+            val a = JsonObject().apply { addProperty("format", format); add("deck", deck) }
+            eval("RandomBuild.call($id, ${JsonPrimitive("benchContext")}, ${JsonPrimitive(a.toString())})")
+            withTimeoutOrNull(600_000) { d.await() }?.takeIf { it.get("ok")?.asBoolean == true }?.get("value")?.takeIf { it.isJsonObject }?.asJsonObject
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Throwable) { null } finally { calls.remove(id) }
+    } }
+
     private val calls = java.util.concurrent.ConcurrentHashMap<Int, CompletableDeferred<JsonObject>>()
     private val callIds = java.util.concurrent.atomic.AtomicInteger()
     private suspend fun call(name: String, a: JsonObject): JsonObject? = withContext(thread) {

@@ -11,6 +11,7 @@ import {capturePracticeDeckContext} from 'WEB/play-deck-context.js';
 import {metaState, loadMeta as loadMetaData} from 'WEB/meta.js';
 import {cardKey as key} from 'WEB/core.js';
 import {loadMtgTags, mtgTagsReady, setMtgTags} from 'WEB/mtg-tags.js';
+import {engineRoles} from 'WEB/insights.js';
 
 // app.js:475-484, verbatim.
 const api = createScryfallClient();
@@ -97,6 +98,14 @@ const calls = {
     const leader = d => [d.commander, ...(d.commanders || [])].map(c => typeof c === 'string' ? c : c?.name);
     await resolveNames(decks.flatMap(d => [...leader(d), ...[...(d.cards || []), ...(d.side || [])].map(r => typeof r === 'string' ? r : r?.name)]).filter(Boolean));
     return decks.map(d => { try { const c = capturePracticeDeckContext(d).practiceContext; return {power: c.power.value, bracket: c.bracket?.value ?? null}; } catch (e) { return {power: null, bracket: null, error: String(e && e.message || e)}; } });
+  },
+  // Deck Bench (the app's deck editor): quickContext's Power and bracket for the deck being edited, and deck-viewer.js stackSummary's
+  // roles (deck-viewer.js deckCardAttrs: insights.js engineRoles without Land, by copies, main deck only, in the list's order).
+  benchContext: async a => {
+    const [ctx] = await calls.quickContext({format: a.format, decks: [a.deck]});
+    const counts = new Map(), cards = {};
+    for (const r of a.deck.cards || []) { const c = meta(r.name); if (!c) continue; const roles = c.type_line ? engineRoles(c).filter(role => role !== 'Land') : []; cards[r.name] = roles; for (const role of roles) counts.set(role, (counts.get(role) || 0) + (Number(r.qty) || 0)); }
+    return {...ctx, roles: [...counts], cards};
   },
 };
 
