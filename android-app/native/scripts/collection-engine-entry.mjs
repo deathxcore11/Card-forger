@@ -2590,6 +2590,14 @@ const writeActs = {
       if (adding) st.wishlist.push({id: uid(), name, ...(game === 'mtg' ? {finish: 'nonfoil'} : {cardId: id}), qty: 1, addedAt: new Date().toISOString()});
     }, {enrich: false, undo: adding ? 'Added to wishlist.' : 'Removed from wishlist.'});
   },
+  // app.js openSetPack's onWishlist (4538), the pack simulator's Wishlist all: every card of the pack open now joins the open game's
+  // wishlist unless it is there already (Magic by name, Pokémon and Yu-Gi-Oh! by card id). [d.deal]: the pack it was tapped on.
+  async packWishlist(d) {
+    const P = pack; if (!P?.picks?.length || (d.deal != null && Number(d.deal) !== P.deal)) throw Error("Your workspace changed. Please reopen the preview.");
+    const game = P.game, cards = P.picks, isCurrent = () => pack === P && P.picks === cards;
+    const saved = await commit(state => { const st = game === 'mtg' ? state : state.tcg[game]; for (const c of cards) { const exists = st.wishlist.some(w => game === 'mtg' ? key(w.name) === key(c.name) : String(w.cardId) === String(c.id)); if (!exists) st.wishlist.push({id: uid(), name: c.name, ...(game === 'mtg' ? {finish: 'nonfoil'} : {cardId: String(c.id)}), qty: 1, addedAt: new Date().toISOString()}); } return true; }, {enrich: false, guard: () => isCurrent()});
+    if (saved !== true) throw Error("Your workspace changed. Reopen this preview.");
+  },
   // app.js A.cardOwnedQty (4751): ± one copy of a saved version on a card's page.
   async cardOwnedQty(d) {
     const game = d.game, id = d.lot, delta = Number(d.delta);

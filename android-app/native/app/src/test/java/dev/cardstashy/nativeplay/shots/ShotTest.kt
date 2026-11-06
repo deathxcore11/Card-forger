@@ -415,7 +415,7 @@ class ShotTest {
             if (w > 390 && name != "4-done" && name != "1-sealed") continue
             RuntimeEnvironment.setQualifiers("w${w}dp-h${h}dp-xxhdpi")
             captureRoboImage(File(System.getProperty("shotsDir"), "sim-pack-$name-${w}x$h.png").path) {
-                dev.cardstashy.nativeplay.ui.PackOpening(pack, onNext = { null }, onClose = {}, initial = stage, revealedAtStart = rv.first, focusAtStart = rv.second, onInspect = { _, _ -> })
+                dev.cardstashy.nativeplay.ui.PackOpening(pack, onNext = { null }, onClose = {}, initial = stage, revealedAtStart = rv.first, focusAtStart = rv.second, onInspect = { _, _ -> }, onWishlist = { true })
             }
         }
         if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")

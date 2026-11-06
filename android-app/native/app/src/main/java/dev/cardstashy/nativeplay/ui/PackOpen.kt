@@ -288,7 +288,9 @@ private fun Color.rich(): Color { val hsv = FloatArray(3); android.graphics.Colo
 fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose: () -> Unit,
                 initial: PackStage = PackStage.SEALED, revealedAtStart: Set<Int> = emptySet(), focusAtStart: Int = 0, inspectAtStart: Int? = null,
                 /** The simulator's onDetails: a revealed card opens its card page over the pack, which waits underneath. */
-                onInspect: ((Int, Pull) -> Unit)? = null) {
+                onInspect: ((Int, Pull) -> Unit)? = null,
+                /** The simulator's onWishlist (Wishlist all): the pack's cards onto the wishlist; true when saved. */
+                onWishlist: (suspend () -> Boolean)? = null) {
     val context = LocalContext.current
     val view = LocalView.current
     remember { PackSfx.warm(context); 0 }
@@ -313,6 +315,9 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
     var inspecting by remember { mutableStateOf<Pull?>(inspectAtStart?.let { first.pulls.getOrNull(it) }) }
     var backPull by remember { mutableFloatStateOf(0f) }
     var shopAsk by remember { mutableStateOf(false) }
+    // pack-preview.js's wish tool: busy while it saves, "On wishlist" once it has (a new pack resets it).
+    var wished by remember(pack) { mutableStateOf(false) }
+    var wishing by remember(pack) { mutableStateOf(false) }
     // Randall 4 Nov 17:52Z: the pack is on screen the moment it is tapped and gathers power while the server rolls it;
     // a tap while it is still sealed by the wait tears it the instant the cards arrive.
     var tearQueued by remember { mutableStateOf(false) }
@@ -434,6 +439,10 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
                     onFocusTap = { if (focus in revealed) { if (onInspect != null) onInspect(focus, pack.pulls[focus]) else inspecting = pack.pulls[focus] } else reveal(focus) },
                     onHold = { i -> if (i in revealed) { feel("pack-land"); if (onInspect != null) onInspect(i, pack.pulls[i]) else inspecting = pack.pulls[i] } },
                     onShop = { shopAsk = true },
+                    onWish = if (onWishlist == null) null else ({ if (!wishing && !wished) { wishing = true; scope.launch {
+                        val ok = runCatching { onWishlist() }.getOrDefault(false)
+                        wishing = false; if (ok) { wished = true; status = "Saved to your wishlist." } else status = "Could not complete this action. Please try again." } } }),
+                    wished = wished, wishing = wishing,
                     onSwipe = ::swipe,
                     onFlungDone = { flung = null },
                     onRevealAll = {
@@ -669,7 +678,8 @@ private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loadi
 private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus: Int, charging: Int?, moment: Int, momentLevel: Int, flipping: Int, slide: Int,
                   flung: Pair<Pull, Int>?, allOpen: Boolean, tilt: Boolean,
                   onLanded: () -> Unit, onDealt: (Int, Boolean) -> Unit, onShow: (Int, Boolean) -> Unit, onReveal: (Int) -> Unit, onFocusTap: () -> Unit,
-                  onHold: (Int) -> Unit, onSwipe: (Int) -> Unit, onFlungDone: () -> Unit, onRevealAll: () -> Unit, onNext: (() -> Unit)?, busy: Boolean, drift: () -> Offset = { Offset.Zero }, onShop: () -> Unit = {}) = BoxWithConstraints(Modifier.fillMaxSize()) {
+                  onHold: (Int) -> Unit, onSwipe: (Int) -> Unit, onFlungDone: () -> Unit, onRevealAll: () -> Unit, onNext: (() -> Unit)?, busy: Boolean, drift: () -> Offset = { Offset.Zero }, onShop: () -> Unit = {},
+                  onWish: (() -> Unit)? = null, wished: Boolean = false, wishing: Boolean = false) = BoxWithConstraints(Modifier.fillMaxSize()) {
     val n = pack.pulls.size
     val bodyW = maxWidth; val bodyH = maxHeight
     val density = LocalDensity.current
@@ -714,11 +724,11 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
                 onShow = { onShow(it, true) }, onTap = { onShow(it, false); onReveal(it) }, onHold = onHold)
         }
         // Actions: Reveal all until every card is up, then Open the next pack. The simulator (.pack-done .pack-tools) adds its
-        // tools first and its button opens a new sealed pack. Its Wishlist all saves to the account, which the app doesn't do yet (not done).
+        // tools first (Wishlist all, Shop list) and its button opens a new sealed pack.
         Column(Modifier.fillMaxWidth().padding(top = 2.dp).onGloballyPositioned { actionsH = it.size.height }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
             if (!allOpen) PillButton("Reveal all", ghost = true, onClick = onRevealAll)
             else {
-                if (pack.shop != null) PackTools(onShop)
+                if (pack.shop != null) PackTools(onShop, onWish, wished, wishing)
                 if (onNext != null) PillButton(if (busy) "Opening…" else if (pack.shop != null) "Open a new pack" else "Open the next pack", ghost = false, wide = true, onClick = onNext)
             }
         }
@@ -778,10 +788,25 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
 
 /** .pack-done .pack-tools: a glass strip (radius 16, padding 4, #ffffff17 line) holding the pack's tools, each a 19 px glyph over an 11.5 px label. */
 @Composable
-private fun PackTools(onShop: () -> Unit) {
+private fun PackTools(onShop: () -> Unit, onWish: (() -> Unit)? = null, wished: Boolean = false, wishing: Boolean = false) {
     val shape = RoundedCornerShape(16.dp)
     Row(Modifier.widthIn(max = 420.dp).fillMaxWidth().glow(Color.Black, .27f, 0f, .1f, .1f, 12.dp).clip(shape)
         .background(Brush.verticalGradient(listOf(Color(0x0DFFFFFF), Color(0x05FFFFFF)))).border(1.dp, Color(0x17FFFFFF), shape).padding(4.dp)) {
+        if (onWish != null) Column(Modifier.weight(1f).heightIn(min = 50.dp).clip(RoundedCornerShape(12.dp)).clickable(enabled = !wishing && !wished, onClick = onWish)
+            .semantics { contentDescription = if (wished) "On wishlist" else "Wishlist all" }.padding(horizontal = 4.dp, vertical = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically)) {
+            Canvas(Modifier.size(19.dp)) {
+                // <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>, stroke 1.7, opacity .85 (filled once saved).
+                val u = size.width / 24f; val ink = Site.Text.copy(alpha = .85f)
+                val heart = Path().apply { moveTo(12 * u, 20 * u); cubicTo(12 * u, 20 * u, 5 * u, 15.6f * u, 5 * u, 10 * u); cubicTo(5 * u, 7.8f * u, 6.8f * u, 6 * u, 9 * u, 6 * u)
+                    cubicTo(10.2f * u, 6 * u, 11.3f * u, 6.6f * u, 12 * u, 7.4f * u); cubicTo(12.7f * u, 6.6f * u, 13.8f * u, 6 * u, 15 * u, 6 * u); cubicTo(17.2f * u, 6 * u, 19 * u, 7.8f * u, 19 * u, 10 * u)
+                    cubicTo(19 * u, 15.6f * u, 12 * u, 20 * u, 12 * u, 20 * u); close() }
+                if (wished) drawPath(heart, ink)
+                drawPath(heart, ink, style = Stroke(1.7f * u, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+            }
+            Text(if (wishing) "Saving…" else if (wished) "On wishlist" else "Wishlist all", maxLines = 1, overflow = TextOverflow.Ellipsis,
+                style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.SemiBold, fontSize = 11.5.sp, color = Site.Text))
+        }
         Column(Modifier.weight(1f).heightIn(min = 50.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = onShop).padding(horizontal = 4.dp, vertical = 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically)) {
             Canvas(Modifier.size(19.dp)) {

@@ -285,6 +285,8 @@ fun CollectionSetRoute(code: String, onPlay: () -> Unit, onProfile: () -> Unit, 
             androidx.compose.runtime.key(packAsk) {
                 PackOpening(first, onNext = { withContext(Dispatchers.Default) { simPack(CollectionEngine.packAgain()) }.takeIf { it.pulls.isNotEmpty() } },
                     onClose = { pack = null; scope.launch { runCatching { CollectionEngine.packClose() } } },
+                    // pack-preview.js onWishlist (app.js openSetPack): every card of this pack onto the wishlist, saved to the account.
+                    onWishlist = { CollectionWrites.act(context, "packWishlist", com.google.gson.JsonObject()) },
                     // pack-preview.js onDetails: a pulled card opens its card page in the printing and finish that came out of the pack,
                     // as the set page's own tile would when it is one of this set's cards.
                     onInspect = { i, p -> val sim = p.sim ?: return@PackOpening

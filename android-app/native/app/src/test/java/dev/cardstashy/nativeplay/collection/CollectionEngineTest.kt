@@ -805,6 +805,24 @@ class CollectionEngineTest {
         assertFalse(ws.contains("play-power"))
     }
 
+    /** pack-preview.js Wishlist all (app.js onWishlist): each card of the open pack joins the wishlist once; a second tap adds none. */
+    @Test fun packWishlist() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        fourDecks()
+        CollectionEngine.set("mtg", "dsk"); CollectionEngine.setLoad(); CollectionEngine.settle(120_000)
+        CollectionEngine.packOpen("mtg"); CollectionEngine.settle(120_000)
+        val names = CollectionEngine.packModel()["picks"].asJsonArray.map { it.asJsonObject["name"].asString }.toSet()
+        val before = JsonParser.parseString(CollectionEngine.saved()).asJsonObject.getAsJsonArray("wishlist").size()
+        val r = CollectionEngine.act("packWishlist", JsonObject())
+        assertTrue(r.toString(), r["error"] == null && r["writes"].asInt == 1)
+        val wl = JsonParser.parseString(CollectionEngine.saved()).asJsonObject.getAsJsonArray("wishlist").map { it.asJsonObject["name"].asString }
+        assertTrue(names.all { n -> wl.any { it.equals(n, true) } })
+        assertEquals(before + names.size, wl.size)
+        CollectionEngine.act("packWishlist", JsonObject())
+        assertEquals(wl.size, JsonParser.parseString(CollectionEngine.saved()).asJsonObject.getAsJsonArray("wishlist").size())
+    }
+
     private suspend fun fourDecks() {
         val prints = JsonParser.parseString(javaClass.classLoader!!.getResource("collection/printings.json")!!.readText()).asJsonArray.map { it.asJsonObject }
         val lots = JsonArray(); val printings = JsonObject(); val catalog = JsonObject()
