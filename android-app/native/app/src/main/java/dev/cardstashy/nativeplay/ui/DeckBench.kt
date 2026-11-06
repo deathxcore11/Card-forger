@@ -125,7 +125,9 @@ class BenchTile(val name: String, val image: String, val cmc: Double, val land: 
                 /** Yu-Gi-Oh! / Pokémon: the card's id, its type group (deck-viewer.js deckCardCategory) and the format's copy limit (the diamonds). */
                 val key: String = name, val section: String = "", val cap: Int = 4,
                 /** The format's word on it as the deck rows show it (tcg.js: Forbidden, Limited, Semi-Limited, Not legal); [tagBad] = coral. */
-                val tag: String = "", val tagBad: Boolean = false)
+                val tag: String = "", val tagBad: Boolean = false,
+                /** What a [locked] tile says: Play's "Craft"; Collection's All cards, a card not owned yet, "To buy". */
+                val lockWord: String = "Craft")
 class BenchStat(val value: String, val label: String, val warn: Boolean = false)
 class BenchModel(
     val play: Boolean, val modeChip: String, val formatChip: String, val title: String, val heroArt: String?,
@@ -897,7 +899,7 @@ private fun Tile(t: BenchTile, ui: BenchUi, a: BenchActions, drag: Drag, lift: (
                 if (img != null) Image(img, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop,
                     colorFilter = if (t.locked) ColorFilter.colorMatrix(GREY) else null)
             }
-            if (t.locked || t.tag.isNotEmpty()) Text(if (t.locked) "Craft" else t.tag, style = f(11f, 800, if (t.tagBad) B.Coral else B.Gold), maxLines = 1, softWrap = false,
+            if (t.locked || t.tag.isNotEmpty()) Text(if (t.locked) t.lockWord else t.tag, style = f(11f, 800, if (t.tagBad) B.Coral else B.Gold), maxLines = 1, softWrap = false,
                 modifier = Modifier.align(BiasAlignment(0f, .1f)).clip(RoundedCornerShape(99.dp)).background(Color(0xD90A0B0F))
                     .border(1.dp, if (t.tagBad) Color(0x99FF7A6A) else Color(0x80E5C47E), RoundedCornerShape(99.dp)).padding(horizontal = 8.dp, vertical = 3.dp))
             // .tile .add: 44 dp, scaled to .82 from the bottom right corner.
