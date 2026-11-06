@@ -222,6 +222,9 @@ object CollectionEngine {
     /** How to play · keywords (A.learnGame: learnSheet) for [game] as a panel. */
     suspend fun learnGame(game: String): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.learnGame(${str(game)})") as String).asJsonObject }
+    /** The Wiki page (app.js #wiki[/<topic>[/search]]) for [game] as a panel: home when [topic] is blank, [query] for a search. */
+    suspend fun wikiPage(game: String, topic: String, query: Boolean): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.wikiPage(${str(game)}, ${str(topic)}, $query)") as String).asJsonObject }
     suspend fun rules(game: String, format: String): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.rules(${str(game)}, ${str(format)})") as String).asJsonObject }
     /** A Yu-Gi-Oh! or Pokémon deck's [tab] other than Cards (tcg.js A.tDeckTab): tcgDeck's .deck-body as such a panel (the page: [deck] with "tab"). */
@@ -277,6 +280,8 @@ object CollectionEngine {
     suspend fun panelRedraw(): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.panelRedraw()") as String).asJsonObject }
     suspend fun panelTap(id: Int): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.panelTap($id)") as String).asJsonObject }
     suspend fun panelType(id: Int, value: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.panelType($id, ${str(value)})") as String).asJsonObject }
+    /** A field's Enter: its form's submit, as the browser sends it. */
+    suspend fun panelSubmit(id: Int): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.panelSubmit($id)") as String).asJsonObject }
 
     /** views.js cardSheet(), a card's page, as a model; [opts] = {name, entry, deck} as the tapped tile has them. */
     suspend fun card(game: String, opts: JsonObject): JsonObject =

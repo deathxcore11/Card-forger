@@ -26,6 +26,7 @@ import {collection as collectionPage, decks as decksView, deckPage as deckView, 
 import {loadMagicPrintingPage, mergeMagicCards, searchQuery, rankByName, magicFilterError, hasMagicSearchQuery, magicSearchSpec, scryfallSearchPath} from 'WEB/catalog-tools.js';
 import {search as searchView, mtgFilterChips} from 'WEB/views.js';
 import {magicOwnedDetail, magicOwnedContext, magicOwnedCurrent, magicOwnedCard} from 'WEB/magic-owned-detail.js';
+import {createMtgWikiPageController, mtgWikiPageMarkup} from 'WEB/mtg-wiki-ui.js';
 import {sharedBinderRows, sharedBinderValue, sharedDeckCopy, showcaseItem, repairOwnShowcase} from 'WEB/community-profile.js';
 import {binderPage, coverImages, binderMatches, binderFavorites, binderCoverState, BINDER_COLORS, MAX_FAVORITES} from 'WEB/binders.js';
 import {selectPreviewFinish, finishAttrs} from 'WEB/finish-preview.js';
@@ -4032,6 +4033,39 @@ function learnPanel(g) {
   panelOpen(key, learnSheet(g), host => attachRuleLearning(host));
 }
 
+// ---- The Wiki page (app.js route #wiki[/<topic>[/search]]: V.wikiPage(controller.state), the game's createMtgWikiPageController
+// routed before the draw and mounted after it) as a panel of the site's markup. The controller's navigate is app.js go('#wiki/…'):
+// here it goes to the app (acted wikiRoute), which keeps the history and opens the route (wikiPage) as go() would. Its data-acts are
+// app.js A.mtgWikiPick / mtgWikiHome / mtgWikiRetry / mtgWikiDailyRetry / mtgWikiCancel; Ask about this (A.mtgWikiAsk) goes to the
+// app with the words it would ask about. An article's card links (card, wikiCard, wikiCards) and source decks (wikiDeck) go to the app.
+const wikiPages = {};
+function wikiCtrl(g) {
+  const key = 'wiki|' + g;
+  return wikiPages[g] ||= createMtgWikiPageController({game: g, active: () => panel?.key === key, root: () => panel?.key === key ? panel.host : null,
+    navigate: (topic, {query = false} = {}) => { if (panel?.key === key) panel.acted = {act: 'wikiRoute', data: {topic: topic || '', query: query ? 'true' : ''}}; return true; }});
+}
+const WIKI_ACTS = g => ({
+  mtgWikiPick: t => wikiCtrl(g).lookup(t.dataset.wikiTopic),
+  mtgWikiHome: () => wikiCtrl(g).home(),
+  mtgWikiRetry: () => wikiCtrl(g).retry(),
+  mtgWikiDailyRetry: () => wikiCtrl(g).daily(true),
+  mtgWikiCancel: () => wikiCtrl(g).cancelLookup(),
+  mtgWikiAsk: () => { panel.acted = {act: 'mtgWikiAsk', data: {text: panel.doc.querySelector('#wikiQ')?.value.trim() || wikiCtrl(g).state.topic || ''}}; },
+});
+function wikiPagePanel(g, topic, query) {
+  const key = 'wiki|' + g, c = wikiCtrl(g);
+  if (panel?.key !== key) {
+    // app.js render(): a controller not on screen stops its lookups.
+    for (const [k, x] of Object.entries(wikiPages)) if (k !== g) x.cancel();
+    panel = null;
+    panelOpen(key, '', null, WIKI_ACTS(g));
+    const mine = panel;
+    panel.redraw = () => { if (panel !== mine) return; panelRun(() => { panel.host.innerHTML = mtgWikiPageMarkup(c.state); c.mount(); }); };
+  }
+  panelRun(() => c.route(topic || '', {query: !!query}));
+  panel.redraw();
+}
+
 // ---- Collection › Decks › Ideas (views.js decks() / tcg.js tcgDecks() with S.ui.decksTab = 'ideas'): the tab's body, everything after
 // .random-tools, as a panel of the site's markup run by the site's handlers (app.js's "Ideas, references, precons" block, ported below
 // verbatim with render() being the panel drawn again). The head, tabs and tools are Collection.decks(game, {tab}).
@@ -5460,6 +5494,11 @@ globalThis.Collection = {
   rulesPage(game) { rulesPagePanel(game || 'mtg'); return panelModel(); },
   /** How to play · keywords (A.learnGame: learnSheet) for [game]. */
   learnGame(game) { learnPanel(game || 'mtg'); return panelModel(); },
+  // The Wiki page at its route (#wiki, #wiki/<topic>, #wiki/<topic>/search: [query]).
+  wikiPage(game, topic, query) { wikiPagePanel(game || 'mtg', topic || '', query === true || query === 'true'); return panelModel(); },
+  // A search field's Enter (the form's submit, as the browser sends it).
+  panelSubmit(id) { const el = panel && (domById(panel.doc.documentElement, Number(id)) || fieldNow(Number(id))); const form = el?.closest?.('form');
+    if (form) panelRun(() => form.dispatchEvent(new SiteEvent('submit', {bubbles: true, cancelable: true}))); return panel ? panelModel() : '{}'; },
   deckPanel(game, id, tab) { if (game === 'mtg') mtgDeckPanel(id, tab); else tcgDeckPanel(game, id, tab); return panelModel(); },
   panelModel() { return panel ? panelModel() : '{}'; },
   // The open tab drawn again from the account as it is now (a save made from it: Versions' Restore, a logged game).

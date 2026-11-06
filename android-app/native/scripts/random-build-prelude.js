@@ -70,6 +70,8 @@ globalThis.fetch = (url, opts = {}) => new Promise((resolve, reject) => {
 class AbortSignal { constructor() { this.aborted = false; this.reason = undefined; this._l = []; } addEventListener(t, f) { if (t === 'abort') this._l.push(f); } removeEventListener(t, f) { this._l = this._l.filter(x => x !== f); } throwIfAborted() { if (this.aborted) throw this.reason; } }
 class AbortController { constructor() { this.signal = new AbortSignal(); } abort(reason) { const s = this.signal; if (s.aborted) return; s.aborted = true; s.reason = reason ?? Object.assign(new Error('aborted'), {name: 'AbortError'}); s._l.slice().forEach(f => { try { f({type: 'abort'}); } catch {} }); } }
 AbortSignal.timeout = ms => { const c = new AbortController(); setTimeout(() => c.abort(), ms); return c.signal; };
+// AbortSignal.any: one signal that aborts when the first of [signals] does (mtg-wiki-client.js joins its timeout to the caller's).
+AbortSignal.any = signals => { const c = new AbortController(); for (const s of signals) { if (s.aborted) { c.abort(s.reason); break; } s.addEventListener('abort', () => c.abort(s.reason)); } return c.signal; };
 globalThis.AbortController = AbortController; globalThis.AbortSignal = AbortSignal;
 globalThis.DOMException = class DOMException extends Error { constructor(message = '', name = 'Error') { super(message); this.name = name; } };
 

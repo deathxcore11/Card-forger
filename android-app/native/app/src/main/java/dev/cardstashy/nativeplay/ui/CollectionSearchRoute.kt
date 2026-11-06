@@ -66,7 +66,9 @@ private fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
 fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, onCards: () -> Unit, onDecks: () -> Unit, onSets: (String) -> Unit,
                           onSet: (game: String, code: String) -> Unit, web: (url: String, press: String?) -> Unit, game: String = "mtg", onGame: (String) -> Unit = {},
                           /** The Rules page (#rules), native. */
-                          onRules: ((String) -> Unit)? = null) {
+                          onRules: ((String) -> Unit)? = null,
+                          /** The Wiki page (#wiki[/<topic>]), native: the game and the topic (blank: its home). */
+                          onWiki: ((game: String, topic: String) -> Unit)? = null) {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
@@ -170,7 +172,9 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
                 model?.field?.let { f -> if (f.input.isNotBlank()) run(f.input, emptyMap(), name); if (f.enter.isNotBlank()) run(f.enter, emptyMap(), name) } },
             press = { a, data, value -> when {
                 a == "go" -> data["to"].orEmpty().let { to -> if (to == "#sets") onSets(game) else if (to == "#rules" && onRules != null) onRules(game) else web(SITE + to, null) }
-                // Compare, the wiki and Ask (CardStashy AI) are the website's for now: open it there and press the same control.
+                // app.js A.wikiOpen: the Wiki at the button's topic.
+                a in setOf("mtgWikiOpen", "wikiOpen") && onWiki != null -> onWiki(data["game"]?.takeIf { it.isNotBlank() } ?: game, data["topic"]?.takeIf { it.isNotBlank() } ?: data["wikiTopic"].orEmpty())
+                // Compare and Ask (CardStashy AI) are the website's for now: open it there and press the same control.
                 a in setOf("compareOpen", "tCompareOpen", "mtgWikiOpen", "askOpen") -> site("[data-act=\"${css(a)}\"]")
                 a.isNotBlank() -> run(a, data, value)
             } },

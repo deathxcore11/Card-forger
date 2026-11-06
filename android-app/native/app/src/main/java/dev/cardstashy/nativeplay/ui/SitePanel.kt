@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -142,7 +143,9 @@ class SitePanelModel(val key: String, val body: SiteNode?, val reveal: Int?, val
  * the last tapped node sits in the window (its getBoundingClientRect, which rule-dex.js places its glass under); shared by copies.
  */
 class SiteUi(val tap: (Int) -> Unit, val type: (Int, String) -> Unit, val open: (String) -> Unit, val screen: Dp,
-             val anchor: androidx.compose.runtime.MutableState<androidx.compose.ui.geometry.Rect?> = mutableStateOf(null)) {
+             val anchor: androidx.compose.runtime.MutableState<androidx.compose.ui.geometry.Rect?> = mutableStateOf(null),
+             /** A search field's Enter: its form's submit (the Wiki's #wikiQ). Null: Enter only closes the keyboard. */
+             val submit: ((Int) -> Unit)? = null) {
     internal val seen = HashMap<Int, BringIntoViewRequester>()
 }
 
@@ -238,7 +241,7 @@ private val INLINE = setOf("b", "strong", "em", "i", "small", "span", "a", "code
 private fun isInline(k: Any, inText: Boolean): Boolean = when {
     k is String -> true
     k !is SiteNode -> false
-    k.tag == "button" -> inText || k.has("rule-word")
+    k.tag == "button" -> inText || k.has("rule-word") || k.has("wiki-article-link")
     k.tag == "a" -> inText || (!k.has("btn") && !k.has("link"))
     // Spans the site makes blocks: .bar, .power-chip, .role-chips in a table cell are drawn as their own.
     k.has("bar") || k.has("pair") -> false
@@ -290,6 +293,31 @@ private fun Blocks(kids: List<Any>, ui: SiteUi, ctx: Ctx, padded: Boolean, gap: 
 
 /** CSS margins (top, bottom) of an element where the site sets them; [ctx] is its parent's. */
 private fun margins(n: SiteNode, ctx: Ctx): Pair<Float, Float> = when {
+    // The Wiki (style.css .wiki-*, at phone width): its boxes, and the article's flow at 16 / 1.78.
+    n.has("wiki-page-head") -> 4f to 2f
+    n.has("wiki-search-form") -> 16f to 16f
+    n.has("wiki-daily") -> 20f to 20f
+    n.has("wiki-glossary") || n.has("wiki-glossary-browse") -> 18f to 18f
+    n.has("wiki-reader-empty") -> 24f to 24f
+    n.has("wiki-reader-toolbar") -> 16f to 12f
+    n.has("home-result-actions") -> 0f to 0f
+    n.has("actions") && ctx.parent?.attrs?.containsKey("data-wiki-page-content") == true -> 0f to 8f
+    n.tag == "header" && ctx.parentHas("wiki-article") -> 0f to 22f
+    n.has("wiki-article-lead") -> 0f to 24.65f
+    n.has("wiki-article-section") -> 28.8f to 28.8f
+    n.has("wiki-article-figure") -> 20f to 24f
+    n.has("wiki-article-table-wrap") -> 21.6f to 25.6f
+    n.has("wiki-source-credit") -> 28f to 0f
+    n.tag == "h2" && ctx.inside("wiki-article") -> 33f to 14.3f
+    n.tag == "h3" && ctx.inside("wiki-article") -> 28.5f to 11.4f
+    n.tag == "h4" && ctx.inside("wiki-article") -> 21.6f to 8.8f
+    n.tag == "p" && ctx.inside("wiki-article-lead") -> 0f to 18.7f
+    n.tag == "p" && ctx.inside("wiki-article") && !ctx.inside("wiki-source-credit") -> 0f to 17.6f
+    (n.tag == "ul" || n.tag == "ol") && ctx.inside("wiki-article") -> 11.2f to 20f
+    n.tag == "blockquote" && ctx.inside("wiki-article") -> 22.4f to 22.4f
+    n.tag == "h2" && (ctx.inside("wiki-glossary") || ctx.inside("wiki-reader-empty")) -> (if (ctx.inside("wiki-glossary")) 4f else 0f) to (if (ctx.inside("wiki-glossary")) 10f else 12f)
+    n.tag == "p" && ctx.inside("wiki-reader-empty") && !n.has("eyebrow") -> 0f to 14f
+    n.tag == "ul" && ctx.inside("wiki-glossary") -> 8f to 12f
     n.has("panel") -> if (ctx.rules) 0f to 0f else 12f to 12f
     // The old Power page's panels (style.css .pw-*, .scout, .meter, .bar, .curve).
     n.has("bar") -> if (ctx.parentHas("pair")) 3f to 3f else 6f to 6f
@@ -368,6 +396,16 @@ private fun Element(n: SiteNode, ui: SiteUi, ctx: Ctx) {
         n.has("wc-tool") -> ChestTool(n, ui, mark)
         n.has("hand-card") -> HandCard(n, ui, mark)
         n.has("mini-row") -> MiniRow(n, ui, ctx, mark)
+        n.has("wiki-page-head") -> WikiHead(n, ui, ctx, mark)
+        n.has("home-search-pill") -> WikiSearchPill(n, ui, mark)
+        n.has("home-suggestions") -> WikiSuggestions(n, ui, ctx, mark)
+        n.has("home-assistant-action") -> AssistantAction(n, ui, mark)
+        n.has("wiki-daily") -> WikiDaily(n, ui, ctx, mark)
+        n.has("wiki-reader-toolbar") -> WikiToolbar(n, ui, mark)
+        n.has("wiki-article-figure") -> WikiFigure(n, ui, ctx, mark)
+        n.has("wiki-article-table-wrap") -> WikiTable(n, ui, ctx, mark)
+        n.tag == "h2" && ctx.inside("wiki-article") -> Paragraph(n.kids, ui, textCtx(n, ctx).under(n), mark.drawBehind {
+            drawLine(Site.Line, Offset(0f, size.height - .5.dp.toPx()), Offset(size.width, size.height - .5.dp.toPx()), 1.dp.toPx()) }.padding(bottom = 8.8.dp))
         n.has("note-row") -> NoteRow(n, ui, ctx, mark)
         n.has("life-card") -> LifeCard(n, ui, ctx, mark)
         n.tag == "button" || n.tag == "a" -> SiteButton(n, ui, ctx, mark)
@@ -446,8 +484,13 @@ private fun textCtx(n: SiteNode, ctx: Ctx): Ctx {
     fun head(size: Float, w: Int) = c.copy(style = c.style.copy(fontFamily = Site.Manrope, letterSpacing = (-.02).em, fontSize = size.sp, lineHeight = (size * 1.15f).sp, fontWeight = FontWeight(w)), line = 1.15f)
     when (n.tag) {
         // polish.css #content .page-head h1: Cinzel 700, .02em apart.
-        "h1" -> c = if (ctx.parentHas("page-head")) head(26f, 700).let { it.copy(style = it.style.copy(fontFamily = Type.Cinzel, letterSpacing = .02.em)) } else head(26f, 800)
-        "h2" -> c = head(19f, 800)
+        "h1" -> c = if (ctx.inside("wiki-article")) head(28f, 700).let { it.copy(style = it.style.copy(fontFamily = Type.Cinzel, letterSpacing = .02.em, lineHeight = (28f * 1.12f).sp), line = 1.12f) }
+            else if (ctx.inside("page-head")) head(26f, 700).let { it.copy(style = it.style.copy(fontFamily = Type.Cinzel, letterSpacing = .02.em)) } else head(26f, 800)
+        "h2" -> c = when {
+            ctx.inside("wiki-article") -> head(22f, 800).let { it.size(22f, 1.25f) }
+            ctx.inside("wiki-glossary") || ctx.inside("wiki-reader-empty") -> head(24f, 800).let { it.size(24f, 1.25f) }
+            else -> head(19f, 800)
+        }
         "h3" -> c = if (ctx.parentHas("learn-welcome")) head(23.2f, 700).let { it.copy(style = it.style.copy(lineHeight = (23.2f * 1.17f).sp, letterSpacing = (-.025).em)) } else head(15f, 700)
         "h4" -> c = c.weight(700).let { if (ctx.parentHas("rule-check")) it.size(it.px, 1.5f) else it }
     }
@@ -487,6 +530,14 @@ private fun textCtx(n: SiteNode, ctx: Ctx): Ctx {
     if (n.has("warn-text") && !(n.has("pwp-text") && ctx.inside("pwp-card"))) c = c.color(Warn)
     if (n.has("ok-text")) c = c.color(Good)
     if (n.has("bad-text")) c = c.color(Bad)
+    // The Wiki: the article at 16 / 1.78 (its lead 17 / 1.65), h3 19, h4 16; a glossary entry's words 1.65; the empty reader's muted 1.7.
+    if (ctx.inside("wiki-article") && !ctx.inside("wiki-source-credit") && !ctx.inside("wiki-article-table-wrap") && !ctx.inside("wiki-article-figure")) {
+        if (n.tag == "p" || n.tag == "li" || n.tag == "dd" || n.tag == "dt" || n.tag == "blockquote") c = if (ctx.inside("wiki-article-lead")) c.size(17f, 1.65f) else c.size(16f, 1.78f)
+        if (n.tag == "h3") c = c.size(19f, 1.35f)
+        if (n.tag == "h4") c = c.size(16f, 1.4f)
+    }
+    if (n.tag == "p" && !n.has("eyebrow") && !n.has("foot") && ctx.inside("wiki-glossary")) c = c.size(15f, 1.65f)
+    if (n.tag == "p" && !n.has("eyebrow") && ctx.inside("wiki-reader-empty")) c = c.size(15f, 1.7f).color(Site.Muted)
     if (n.tag == "p" && !n.has("eyebrow")) {
         if (ctx.parentHas("learn-turn-body")) c = c.size(16.8f, 1.65f)
         if (ctx.inside("learn-topics") || ctx.inside("learn-topic") || ctx.inside("rule-check")) c = c.size(c.px, 1.65f)
@@ -696,6 +747,18 @@ private fun Container(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
                     pad = PaddingValues(20.dp)
                 }
                 n.has("rule-dex") && ctx.inside("learn-disclosure") -> {}
+                // style.css .wiki-glossary, .wiki-reader-empty: corners 22, the panel's fill and line, 18 in (20 the empty reader).
+                n.has("wiki-glossary") || n.has("wiki-reader-empty") -> { val s = RoundedCornerShape(22.dp); m = m.clip(s).background(Site.Surface).border(1.dp, Site.Line, s)
+                    pad = PaddingValues(if (n.has("wiki-reader-empty")) 20.dp else 18.dp) }
+                // .wiki-article (420 and under): corners 18, 18 in; its header a line under, 18 above it; .wiki-source-credit a line over, 18
+                // under it, 12 / 1.65 muted; a blockquote the link colour's 3 edge on surface-2, 14 / 18 in.
+                n.has("wiki-article") -> { val s = RoundedCornerShape(18.dp); m = m.clip(s).background(Site.Surface).border(1.dp, Site.Line, s); pad = PaddingValues(18.dp) }
+                n.tag == "header" && ctx.parentHas("wiki-article") -> { m = m.drawBehind { drawLine(Site.Line, Offset(0f, size.height - .5.dp.toPx()), Offset(size.width, size.height - .5.dp.toPx()), 1.dp.toPx()) }
+                    pad = PaddingValues(bottom = 18.dp) }
+                n.has("wiki-source-credit") -> { m = m.drawBehind { drawLine(Site.Line, Offset.Zero, Offset(size.width, 0f), 1.dp.toPx()) }; pad = PaddingValues(top = 18.dp); c = c.size(12f, 1.65f).color(Site.Muted) }
+                n.tag == "blockquote" && ctx.inside("wiki-page") -> { val edge = WikiLink
+                    m = m.clip(RoundedCornerShape(topEnd = 12.dp, bottomEnd = 12.dp)).background(Site.Surface2).drawBehind { drawRect(edge, size = Size(3.dp.toPx(), size.height)) }
+                    pad = PaddingValues(start = 21.dp, end = 18.dp, top = 14.dp, bottom = 14.dp) }
                 n.has("panel") -> {
                     // .ai-review-launch: the game colour (16 %) glowing from the top left corner over surface-2, its line 40 % the game colour.
                     // .issues-panel: a 40 % bad line. .pw-caps: a 3 warn left edge.
@@ -790,7 +853,8 @@ private fun Details(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
         n.has("panel") -> {
             val shape = RoundedCornerShape(14.dp)
             m = m.clip(shape).background(Site.Surface).border(1.dp, Site.Line, shape)
-            if (n.has("learn-disclosure")) { pad = if (ui.screen <= 380.dp) PaddingValues(16.dp) else PaddingValues(horizontal = 20.dp, vertical = 18.dp); openGap = 20f; blockSmall = true }
+            if (n.has("wiki-glossary-browse")) { val s = RoundedCornerShape(22.dp); m = mark.fillMaxWidth().clip(s).background(Site.Surface).border(1.dp, Site.Line, s); pad = PaddingValues(18.dp) }
+            else if (n.has("learn-disclosure")) { pad = if (ui.screen <= 380.dp) PaddingValues(16.dp) else PaddingValues(horizontal = 20.dp, vertical = 18.dp); openGap = 20f; blockSmall = true }
             else pad = PaddingValues(14.dp)
         }
         n.has("learn-topic") -> {
@@ -952,8 +1016,10 @@ private fun SiteInput(n: SiteNode, ui: SiteUi, modifier: Modifier = Modifier, st
     // Kept by the field's attributes, not its id: a redraw while typing (C.finderMax, I.finderSearch, I.refSearch draw the panel again)
     // gives it a new id, and the letters typed since stay (app.js rerenderKeepingFocus keeps the field as it is).
     var text by remember(n.tag, n.attrs - "value") { mutableStateOf(n.value ?: n["value"].orEmpty()) }
+    val search = ui.submit != null && (n["type"] == "search" || n["enterkeyhint"] == "search")
     FormInput(text, { text = it; ui.type(n.id, it) }, style, n["placeholder"].orEmpty(), modifier, desc = n["aria-label"].orEmpty(),
-        keyboard = if (n["type"] == "number") androidx.compose.ui.text.input.KeyboardType.Number else androidx.compose.ui.text.input.KeyboardType.Text)
+        keyboard = if (n["type"] == "number") androidx.compose.ui.text.input.KeyboardType.Number else androidx.compose.ui.text.input.KeyboardType.Text,
+        ime = if (search) androidx.compose.ui.text.input.ImeAction.Search else androidx.compose.ui.text.input.ImeAction.Done, onGo = { if (search) ui.submit?.invoke(n.id) })
 }
 
 /** A <select>: glass-select.js's field with the chosen option (wrapping as the site's does); a pick goes to its change listener. */
@@ -1018,6 +1084,8 @@ private fun fold(b: AnnotatedString.Builder, kids: List<Any>, ui: SiteUi, ctx: C
             n.tag == "button" || (n.tag == "a" && n["href"] != null) -> {
                 val href = n["href"].orEmpty()
                 val style = if (n.has("rule-word")) SpanStyle(color = accent ?: Color.Unspecified, textDecoration = TextDecoration.Underline)
+                    // style.css .wiki-article .wiki-article-link and .wiki-page a: --wiki-link, underlined, the words' own size and weight.
+                    else if (n.has("wiki-article-link") || (n.tag == "a" && ctx.inside("wiki-page"))) SpanStyle(color = WikiLink, textDecoration = TextDecoration.Underline)
                     else SpanStyle(color = Site.Gold, fontWeight = FontWeight(600), fontSize = if (n.has("small")) 13.sp else TextUnit.Unspecified)
                 val r = IntArray(2).also { it[0] = b.length }
                 b.withLink(LinkAnnotation.Clickable("n:" + n.id, TextLinkStyles(style)) {
@@ -1875,9 +1943,11 @@ private fun MiniRow(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
     val line = Site.Line
     val inner = ctx.under(n).size(14f)
     val whole = n.tag == "button"
-    Row(mark.fillMaxWidth().then(if (whole) Modifier.clickable { ui.tap(n.id) }.semantics { role = Role.Button } else Modifier).drawBehind {
+    // .wiki-suggestions .mini-row: the topic and its source at either end, 48 tall.
+    val ends = ctx.inside("home-suggestions")
+    Row(mark.fillMaxWidth().then(if (ends) Modifier.heightIn(min = 48.dp) else Modifier).then(if (whole) Modifier.clickable { ui.tap(n.id) }.semantics { role = Role.Button } else Modifier).drawBehind {
         if (!last) drawLine(line, Offset(0f, size.height - .5.dp.toPx()), Offset(size.width, size.height - .5.dp.toPx()), 1.dp.toPx()) }.padding(horizontal = 2.dp, vertical = 9.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        horizontalArrangement = if (ends) Arrangement.SpaceBetween else Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         n.elements.filter { !it.hidden }.forEach { k ->
             when {
                 k.has("ellip") -> Paragraph(k.kids, ui, textCtx(k, inner).under(k), Modifier.weight(1f), oneLine = true)
@@ -2130,5 +2200,208 @@ private fun FlexBetween(modifier: Modifier, gap: Dp, content: @Composable () -> 
         val step = if (ps.size > 1) maxOf(g, spare / (ps.size - 1)) else 0
         var x = 0
         ps.forEachIndexed { i, p -> val at = if (ps.size > 1 && i == ps.size - 1) room - p.width else x; p.place(at, (h - p.height) / 2); x = at + p.width + step }
+    }
+}
+
+// ---------------------------------------------------------------- the Wiki (mtg-wiki-ui.js mtgWikiPageMarkup, style.css / polish.css .wiki-*)
+
+/** --wiki-link: #86bbff, light #165faf. */
+private val WikiLink get() = if (light) Color(0xFF165FAF) else Color(0xFF86BBFF)
+/** The glass (polish.css body.glass) the site's buttons and chips wear: --glass-line, color-mix(#e8b95b 15%, #ffffff0d). */
+private val WikiGlassLine get() = if (light) Site.Line else Color(0x31EEC980)
+
+/** .wiki-page-head: the eyebrow over "Wiki" (Cinzel) on the left, ◈ Sets on the right, 16 apart, tops in line. */
+@Composable
+private fun WikiHead(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
+    val inner = ctx.under(n)
+    Row(mark.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top) {
+        n.elements.forEach { k ->
+            if (k.tag == "div") Column(Modifier.weight(1f)) { Blocks(k.kids, ui, inner.under(k), padded = false) }
+            else Element(k, ui, inner)
+        }
+    }
+}
+
+/**
+ * .home-search-pill round #wikiQ: 76 tall, corners 25, the 120° night gradient, a 1 gold line at 70 %, its shadow 0 10 32 #0004; the
+ * field 16 / 23.2, 22 in from the sides. Its words go to the field's input listener (suggest) as they're typed, Enter to the form's
+ * submit; ✕ (the search field's clear) empties it.
+ */
+@Composable
+private fun WikiSearchPill(n: SiteNode, ui: SiteUi, mark: Modifier) {
+    val f = n.elements.firstOrNull { it.tag == "input" } ?: return
+    var text by remember(f["id"]) { mutableStateOf(f.value ?: f["value"].orEmpty()) }
+    val seen = f.value ?: f["value"].orEmpty()
+    // The page put other words in the box (a pick, Wiki home): they show.
+    LaunchedEffect(seen) { if (seen != text) text = seen }
+    val shape = RoundedCornerShape(25.dp)
+    // The line is the game's accent (Yu-Gi-Oh!'s violet, Pokémon's), as the site's --gold is per game.
+    val gold = LocalGameGold.current
+    val style = cssType(16f, 400, 23.2f, Site.Text)
+    Box(mark.fillMaxWidth().heightIn(min = 76.dp).cssShadow(Color(0x44000000), 32.dp, 10.dp, 0.dp, 25.dp).clip(shape)
+        .background(if (light) androidx.compose.ui.graphics.SolidColor(Site.Surface) else Brush.linearGradient(listOf(Color(0xE81B202D), Color(0xEF131720)), start = Offset.Zero, end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)))
+        .border(1.dp, gold.copy(alpha = .7f), shape), contentAlignment = Alignment.CenterStart) {
+        androidx.compose.foundation.text.BasicTextField(text, { text = it; ui.type(f.id, it) }, Modifier.fillMaxWidth().heightIn(min = 48.dp)
+            .semantics { f["aria-label"]?.let { contentDescription = it } }, singleLine = true, textStyle = style, cursorBrush = androidx.compose.ui.graphics.SolidColor(gold),
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
+            keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { ui.submit?.invoke(f.id) }),
+            decorationBox = { inner ->
+                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(start = 22.dp, end = if (text.isEmpty()) 22.dp else 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.weight(1f)) {
+                        if (text.isEmpty()) Text(f["placeholder"].orEmpty(), style = style.copy(color = Site.Muted), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        inner()
+                    }
+                    if (text.isNotEmpty()) Box(Modifier.size(48.dp).clip(CircleShape).clickable { text = ""; ui.type(f.id, "") }.semantics { role = Role.Button; contentDescription = "Clear" },
+                        contentAlignment = Alignment.Center) { Text("✕", style = cssType(15f, 700, 20f, Site.Text)) }
+                }
+            })
+    }
+}
+
+/** #wikiSuggestions (.home-suggestions): 8 under the box, corners 20, the 160° night gradient, a 1 gold line at 32 %, 8 in. */
+@Composable
+private fun WikiSuggestions(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
+    val shape = RoundedCornerShape(20.dp)
+    Column(mark.fillMaxWidth().padding(top = 8.dp).cssShadow(Color(0xEE000000), 50.dp, 24.dp, (-18).dp, 20.dp).clip(shape)
+        .background(if (light) androidx.compose.ui.graphics.SolidColor(Site.Surface) else Brush.verticalGradient(listOf(Color(0xFF1D1F29), Color(0xFF12141B))))
+        .border(1.dp, LocalGameGold.current.copy(alpha = .32f), shape).padding(8.dp)) {
+        Blocks(n.kids, ui, ctx.under(n), padded = false)
+    }
+}
+
+/** .home-assistant-action (Ask about this · CardStashy AI): 52 tall, corners 14, the violet-night gradient, a gold line at 55 %, the orb. */
+@Composable
+private fun AssistantAction(n: SiteNode, ui: SiteUi, mark: Modifier) {
+    val shape = RoundedCornerShape(14.dp)
+    val words = n.elements.firstOrNull { it.tag == "span" }
+    val small = words?.elements?.firstOrNull { it.tag == "small" }?.text().orEmpty()
+    val main = words?.kids?.filterIsInstance<String>()?.joinToString("")?.trim().orEmpty()
+    Row(mark.padding(top = 6.dp).fillMaxWidth().heightIn(min = 52.dp).clip(shape)
+        .background(if (light) androidx.compose.ui.graphics.SolidColor(Site.Surface2) else Brush.linearGradient(listOf(Color(0xFF2C2638), Color(0xFF1B2232))))
+        .border(1.dp, Site.Gold.copy(alpha = .55f), shape).clickable { ui.tap(n.id) }.semantics(mergeDescendants = true) { role = Role.Button }
+        .padding(horizontal = 14.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        BrandMark(30.dp)
+        Column {
+            Text(main, style = cssType(12f, 400, 17.4f, Site.Text))
+            if (small.isNotEmpty()) Text(small, style = cssType(10f, 400, 14.5f, Site.Gold))
+        }
+    }
+}
+
+/**
+ * section.home-hero.compact.wiki-daily (today's article): 260 tall at least, corners 22, the game's tab art filling it under a shade
+ * (90°, rgba(17,23,34,.93) to .61); its words at the foot, 20 in (72 on the right): the eyebrow 11 / 700 1.76 apart, the title 24 /
+ * 800, the summary 15 / 1.5, then Read article and the wiki's link. ↻ (when the day's article didn't come) a 44 round button at the top
+ * right, 10 in.
+ */
+@Composable
+private fun WikiDaily(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
+    val shape = RoundedCornerShape(22.dp)
+    val art = n.elements.firstOrNull { it.tag == "img" }
+    val body = n.elements.firstOrNull { it.has("hh-body") } ?: return
+    val refresh = body.elements.firstOrNull { it.has("wiki-daily-refresh") }
+    val ink = Color(0xFFF5F7FC)
+    val inner = ctx.under(n).under(body).color(ink)
+    Box(mark.fillMaxWidth().heightIn(min = 260.dp).clip(shape).background(Site.Surface2), contentAlignment = Alignment.BottomStart) {
+        val p = art?.pic?.takeIf { it.isNotEmpty() }?.let { firstOf(it) }
+        if (p != null) androidx.compose.foundation.Image(p, null, Modifier.matchParentSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            alignment = androidx.compose.ui.BiasAlignment(0f, -.4f))
+        Box(Modifier.matchParentSize().background(Brush.horizontalGradient(listOf(Color(0xED111722), Color(0x9C111722)))))
+        Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 72.dp, top = 20.dp, bottom = 20.dp)) {
+            body.elements.filter { !it.hidden && it !== refresh }.forEach { k ->
+                when {
+                    k.has("eyebrow") -> Text(k.text().uppercase(), Modifier.padding(bottom = 4.dp), style = cssType(11f, 700, 16.5f, Color(0xFFD9E1EF), track = 1.76f))
+                    k.tag == "h2" -> Text(k.text(), Modifier.padding(top = 8.dp, bottom = 12.dp), style = cssType(24f, 800, 27.6f, ink).copy(fontFamily = Site.Manrope, letterSpacing = (-.48).sp))
+                    k.has("actions") -> Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        k.elements.forEach { b -> SiteButton(b, ui, inner.under(k)) } }
+                    k.tag == "p" -> Paragraph(k.kids, ui, inner.size(if (k.has("foot")) 12f else 15f, 1.5f), Modifier.padding(vertical = 6.dp))
+                    else -> Element(k, ui, inner)
+                }
+            }
+        }
+        if (refresh != null) Box(Modifier.align(Alignment.TopEnd).padding(10.dp).size(44.dp).clip(CircleShape).background(Color(0xA60C0E13))
+            .clickable { ui.tap(refresh.id) }.semantics { role = Role.Button; contentDescription = refresh["aria-label"].orEmpty() }, contentAlignment = Alignment.Center) {
+            Text(refresh.text(), style = cssType(18f, 700, 22f, Color(0xFFF1E9D8)))
+        }
+    }
+}
+
+/** .wiki-reader-toolbar (420 and under): ← Wiki home and Ask about this sharing the row, 8 apart, each 44 tall, 13 / 700, 10 in. */
+@Composable
+private fun WikiToolbar(n: SiteNode, ui: SiteUi, mark: Modifier) {
+    Row(mark.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        n.elements.filter { !it.hidden }.forEach { b ->
+            val shape = RoundedCornerShape(11.dp)
+            val icon = b.elements.flatMap { listOf(it) + it.elements }.firstOrNull { it.tag == "svg" }?.icon
+            Row(Modifier.weight(1f).fillMaxHeight().heightIn(min = 44.dp).clip(shape).background(Site.Surface2.copy(alpha = .52f)).border(1.dp, WikiGlassLine, shape)
+                .clickable(enabled = "disabled" !in b.attrs) { ui.tap(b.id) }.semantics(mergeDescendants = true) { role = Role.Button }.padding(horizontal = 10.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                if (icon != null) { SiteIcon(icon, 15.dp, Site.Text); Spacer(Modifier.width(6.dp)) }
+                Text(b.text(), style = cssType(13f, 700, 18.85f, Site.Text), textAlign = TextAlign.Center)
+            }
+        }
+    }
+}
+
+/**
+ * figure.wiki-article-figure (680 and under): centred, as wide as its picture up to 320, 7 in, corners 18 on surface-2 with the line;
+ * the picture at most 370 tall, corners 11, whole; "Image unavailable" (13 muted, 180 tall) where it won't load; its caption 12 muted.
+ */
+@Composable
+private fun WikiFigure(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
+    val shape = RoundedCornerShape(18.dp)
+    val img = n.elements.firstOrNull { it.tag == "img" }
+    val fallback = n.elements.firstOrNull { "data-wiki-image-fallback" in it.attrs }
+    val caption = n.elements.firstOrNull { it.tag == "figcaption" }
+    Box(mark.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+        Column(Modifier.widthIn(max = 320.dp).width(androidx.compose.foundation.layout.IntrinsicSize.Max).clip(shape).background(Site.Surface2).border(1.dp, Site.Line, shape).padding(7.dp)) {
+            val p = img?.pic?.takeIf { it.isNotEmpty() }?.let { firstOf(it) }
+            if (p != null) {
+                val ratio = p.intrinsicSize.let { if (it != androidx.compose.ui.geometry.Size.Unspecified && it.width > 0f && it.height > 0f) it.width / it.height else .7f }
+                androidx.compose.foundation.Image(p, img["alt"], Modifier.widthIn(max = 306.dp).heightIn(max = 370.dp).aspectRatio(ratio).clip(RoundedCornerShape(11.dp)),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit)
+            } else Box(Modifier.width(150.dp).heightIn(min = 180.dp).clip(RoundedCornerShape(11.dp)).background(Site.Surface).padding(20.dp), contentAlignment = Alignment.Center) {
+                Text(fallback?.text() ?: "Image unavailable", style = cssType(13f, 400, 18.85f, Site.Muted), textAlign = TextAlign.Center)
+            }
+            if (caption != null) Box(Modifier.padding(start = 4.dp, end = 4.dp, top = 9.dp, bottom = 4.dp)) {
+                Paragraph(caption.kids, ui, ctx.under(n).under(caption).size(12f, 1.55f).color(Site.Muted), fill = false)
+            }
+        }
+    }
+}
+
+/**
+ * .wiki-article-table-wrap: a line round it, corners 14, surface; the table at least 28rem (448) wide, scrolling sideways inside it.
+ * Cells 10 / 12 in, a line under each row but the last; th 700 on surface-2; 14 / 1.6. A colspan cell takes the row.
+ */
+@Composable
+private fun WikiTable(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
+    val shape = RoundedCornerShape(14.dp)
+    val table = n.elements.firstOrNull { it.tag == "table" } ?: return
+    val rows = table.elements.flatMap { if (it.tag == "tr") listOf(it) else it.elements.filter { r -> r.tag == "tr" } }
+    val cols = rows.maxOfOrNull { r -> r.elements.filter { it.tag == "th" || it.tag == "td" }.sumOf { (it["colspan"]?.toIntOrNull() ?: 1) } } ?: 1
+    val inner = ctx.under(n).under(table).size(14f, 1.6f)
+    BoxWithConstraints(mark.fillMaxWidth().clip(shape).background(Site.Surface).border(1.dp, Site.Line, shape)) {
+        val w = maxOf(maxWidth, 448.dp)
+        Column(Modifier.horizontalScroll(rememberScrollState()).width(w)) {
+            table.elements.firstOrNull { it.tag == "caption" }?.let { cap ->
+                Box(Modifier.fillMaxWidth().background(Site.Surface2).padding(horizontal = 14.dp, vertical = 12.dp)) { Paragraph(cap.kids, ui, inner.weight(700)) }
+            }
+            rows.forEachIndexed { i, r ->
+                val line = Site.Line
+                val last = i == rows.lastIndex
+                Row(Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min)) {
+                    r.elements.filter { it.tag == "th" || it.tag == "td" }.forEach { cell ->
+                        val span = (cell["colspan"]?.toIntOrNull() ?: 1).coerceAtLeast(1)
+                        val th = cell.tag == "th"
+                        Box(Modifier.weight(span.toFloat() / cols).fillMaxHeight().then(if (th) Modifier.background(Site.Surface2) else Modifier)
+                            .then(if (!last || th) Modifier.drawBehind { drawLine(line, Offset(0f, size.height - .5.dp.toPx()), Offset(size.width, size.height - .5.dp.toPx()), 1.dp.toPx()) } else Modifier)
+                            .padding(horizontal = 12.dp, vertical = 10.dp)) {
+                            Column { Blocks(cell.kids, ui, if (th) inner.under(cell).weight(700) else inner.under(cell), padded = false) }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

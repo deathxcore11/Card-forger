@@ -79,6 +79,7 @@ export class Element {
     const a = Object.entries(this.attributes).map(([k, v]) => v === '' ? ' ' + k : ` ${k}="${escAttr(v)}"`).join('');
     return VOID.has(this.localName) ? `<${this.localName}${a}>` : `<${this.localName}${a}>${this.innerHTML}</${this.localName}>`;
   }
+  set outerHTML(html) { this.replaceWith(...parse(String(html ?? ''), this.ownerDocument)); }
   _clear() { for (const n of this.childNodes) n.parentNode = null; this.childNodes = []; }
   _add(n, at = this.childNodes.length) { if (n.parentNode) n.parentNode._drop(n); n.parentNode = this; this.childNodes.splice(at, 0, n); return n; }
   _drop(n) { const i = this.childNodes.indexOf(n); if (i >= 0) this.childNodes.splice(i, 1); n.parentNode = null; }

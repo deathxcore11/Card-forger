@@ -765,6 +765,58 @@ class CollectionEngineTest {
         assertTrue(txt(l["body"].asJsonObject).contains("Learn"))
     }
 
+    /** The Wiki page (#wiki): home with today's article and the glossary, suggestions as you type, a pick and a search going to
+     *  the app as routes (wikiRoute), a glossary entry and an article at their routes, for all three games. */
+    @Test fun wikiPage() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        fun nodes(e: com.google.gson.JsonElement?): List<JsonObject> = if (e == null || !e.isJsonObject) emptyList() else e.asJsonObject.let { o -> listOf(o) + (o.getAsJsonArray("k")?.flatMap { nodes(it) } ?: emptyList()) }
+        fun txt(o: JsonObject): String = (o.getAsJsonArray("k")?.joinToString("") { if (it.isJsonPrimitive) it.asString else txt(it.asJsonObject) }).orEmpty()
+        fun attr(o: JsonObject, k: String) = o.getAsJsonObject("a")?.get(k)?.asString
+        val out = File(System.getProperty("repoRoot"), "android-app/native/app/build/shot-art/home")
+        for (g in listOf("mtg", "ygo", "ptcg")) {
+            var m = CollectionEngine.wikiPage(g, "", false)
+            CollectionEngine.settle(30_000, CollectionEngine.PANEL_MODEL) { if (it.has("key")) m = it }
+            assertEquals("wiki|$g", m["key"].asString)
+            val all = txt(m["body"].asJsonObject)
+            assertTrue(all.take(400), all.contains("Wiki") && all.contains("Browse the glossary") && all.contains("Read article"))
+            println("WIKI $g ${all.take(300)}")
+            File(out, "wiki-home-$g.json").writeText(m.toString())
+        }
+        var m = CollectionEngine.wikiPage("mtg", "", false)
+        val field = nodes(m["body"]).first { attr(it, "id") == "wikiQ" }
+        m = CollectionEngine.panelType(field["i"].asInt, "life")
+        CollectionEngine.settle(20_000, CollectionEngine.PANEL_MODEL) { if (it.has("key")) m = it }
+        val picks = nodes(m["body"]).filter { attr(it, "data-wiki-suggestion") != null }
+        assertTrue(m.toString().take(400), picks.any { txt(it).contains("Lifelink") })
+        File(out, "wiki-suggest-mtg.json").writeText(m.toString())
+        // A suggestion is app.js go('#wiki/Lifelink'): the app's route.
+        val tapped = CollectionEngine.panelTap(picks.first { txt(it).contains("Lifelink") }["i"].asInt)
+        assertEquals("wikiRoute", tapped.getAsJsonObject("acted")["act"].asString)
+        assertEquals("Lifelink", tapped.getAsJsonObject("acted").getAsJsonObject("data")["topic"].asString)
+        // Enter in the box: the form's submit, a search route.
+        val f2 = nodes(tapped["body"]).first { attr(it, "id") == "wikiQ" }
+        CollectionEngine.panelType(f2["i"].asInt, "Flash")
+        val sent = CollectionEngine.panelSubmit(f2["i"].asInt)
+        assertEquals("true", sent.getAsJsonObject("acted").getAsJsonObject("data")["query"].asString)
+        // The glossary's entry at its route, with the toolbar.
+        m = CollectionEngine.wikiPage("mtg", "Lifelink", false)
+        CollectionEngine.settle(20_000, CollectionEngine.PANEL_MODEL) { if (it.has("key")) m = it }
+        val entry = txt(m["body"].asJsonObject)
+        assertTrue(entry.take(600), entry.contains("Wiki home") && entry.contains("Lifelink") && entry.contains("Load the full article here"))
+        File(out, "wiki-glossary-mtg.json").writeText(m.toString())
+        // A wiki article at its route (the daily one's topic), loaded from the site's /api/reference/wiki.
+        m = CollectionEngine.wikiPage("mtg", "Bruvac", false)
+        CollectionEngine.settle(30_000, CollectionEngine.PANEL_MODEL) { if (it.has("key")) m = it }
+        val art = txt(m["body"].asJsonObject)
+        println("ARTICLE ${art.take(800)}")
+        assertTrue(art.take(400), !art.contains("Opening article") && !art.contains("couldn’t load"))
+        File(out, "wiki-article-mtg.json").writeText(m.toString())
+        // Home again: the box empty, today's article.
+        m = CollectionEngine.wikiPage("mtg", "", false)
+        assertTrue(txt(m["body"].asJsonObject).contains("Browse the glossary"))
+    }
+
     /** A rule word on a card's page (A.ruleHint → rule-dex.js showRuleHint): its glass as a panel, the card in it, ✕ closes it. */
     @Test fun ruleGlass() = runBlocking {
         assumeTrue(bundle.isFile)
