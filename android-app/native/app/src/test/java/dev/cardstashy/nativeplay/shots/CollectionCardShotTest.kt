@@ -105,6 +105,18 @@ class CollectionCardShotTest {
         if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
     }
 
+    /** views.js buySheet: "Buy this card" from the Cards list's price (a saved copy with its exact printing). */
+    @Test fun buy() {
+        setUp()
+        val page = page("lightning-bolt-buy"); assumeTrue("run CollectionEngineTest.buySheet first", page != null)
+        shot("collection-card-buy", 390, 844) { page!!() }
+        shot("collection-card-buy-page", 390, 2400) { page!!() }
+        shot("collection-card-buy", 884, 1104) { page!!() }
+        dev.cardstashy.nativeplay.ui.HomeTest.forceShort = true
+        try { shot("collection-card-buy", 844, 390) { page!!() } } finally { dev.cardstashy.nativeplay.ui.HomeTest.forceShort = null }
+        if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
+    }
+
     @Test fun metaAndGuide() {
         setUp()
         for (t in listOf("meta", "guide")) {

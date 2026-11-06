@@ -105,10 +105,15 @@ class PkText(val evolvesLabel: String, val evolves: String?, val abilities: List
 class TcgPrint(val press: CardPress?, val thumb: String, val name: String, val tset: TcgSetBadge?, val line: String, val buyLabel: String, val buyHref: String, val buyAria: String,
                val refLabel: String, val quotes: List<Pair<String, String>>, val value: String)
 
+/** views.js buySheet ("Buy this card", the Cards list's price): the card, the version priced (.price-version), its price blocks, actions, foot. */
+class CardBuySheet(val title: String, val back: String, val thumb: String, val name: String, val setIcon: String, val setTitle: String, val setRarity: String, val setName: String,
+              val line: String, val version: List<String>?, val prices: CardPrices?, val actions: List<CardPress>, val foot: String)
+
 class CollectionCardModel(val name: String, val deck: String, val entry: String, val tab: String, val notice: String?, val loading: Boolean, val head: CardHead?, val tabs: List<CollTab>,
                           val emblems: List<CardEmblem>, val set: CardSetSummary?, val price: CardPrice?, val overview: CardOverview?, val meta: List<List<CardBlock>>, val metaFoot: String,
                           val guide: List<CardSection>, val shown: JsonObject?, val busy: Boolean, val glyphs: Map<String, SiteSvg>, val prices: CardPrices? = null,
-                          val game: CardGame = CardGame.MTG, val id: String = "", val setId: String = "", val archetype: CardPress? = null) {
+                          val game: CardGame = CardGame.MTG, val id: String = "", val setId: String = "", val archetype: CardPress? = null,
+                          val buy: CardBuySheet? = null, val jump: String = "", val toast: String = "") {
     companion object {
         private fun JsonObject.s(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asString ?: ""
         private fun JsonObject.b(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asBoolean ?: false
@@ -230,7 +235,11 @@ class CollectionCardModel(val name: String, val deck: String, val entry: String,
                 j.o("guide")?.objs("sections").orEmpty().map { s -> CardSection(s.s("cls"), s.b("panel"), s.b("hero"), blocks(s.objs("blocks"))) },
                 j.o("shown"), j.b("busy"),
                 j.o("glyphs")?.entrySet()?.mapNotNull { (k, v) -> v.takeIf { it.isJsonObject }?.let { k to svg(it.asJsonObject)!! } }?.toMap().orEmpty(),
-                prices(j.o("prices")), CardGame.of(j.s("game")), j.s("id"), j.s("setId"), press(oh?.o("archetype")))
+                prices(j.o("prices")), CardGame.of(j.s("game")), j.s("id"), j.s("setId"), press(oh?.o("archetype")),
+                j.o("buy")?.let { b -> val st = b.o("set"); val v = b.o("version")
+                    CardBuySheet(b.s("title"), b.s("back"), b.s("thumb"), b.s("name"), st?.s("icon").orEmpty(), st?.s("title").orEmpty(), st?.s("rarity").orEmpty(), st?.s("name").orEmpty(),
+                        b.s("line"), v?.let { listOf(it.s("eyebrow"), it.s("title"), it.s("line"), it.s("foot")) }, prices(b.o("prices")), presses(b.objs("actions")), b.s("foot")) },
+                j.s("jump"), j.s("toast"))
         }
     }
 }

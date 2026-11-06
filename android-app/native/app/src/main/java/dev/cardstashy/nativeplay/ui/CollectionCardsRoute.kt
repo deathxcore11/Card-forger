@@ -169,7 +169,9 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
                 else { val tile = if (r.wanted) "[data-act=\"card\"][data-name=\"${css(r.name)}\"]" else "[data-act=\"card\"][data-entry=\"${css(r.id)}\"]"
                     if (nativeCard) cards = cards + CardOpen(r.name, entry = if (r.wanted) "" else r.id, page = coll, tile = tile) else web(coll, tile) } },
             set = { code -> if (code.isNotBlank()) onSet?.invoke(code.lowercase()) ?: web(site + "#set/" + android.net.Uri.encode(code.lowercase()), null) },
-            price = { r -> web(coll, "[data-act=\"buyCard\"][data-lot=\"${css(r.id)}\"]") },
+            // A.buyCard (data-lot): "Buy this card" for that saved copy, over its page.
+            price = { r -> if (!tcg && nativeCard && !r.wanted) cards = cards + CardOpen(r.name, entry = r.id, page = coll, tile = "[data-act=\"buyCard\"][data-lot=\"${css(r.id)}\"]", buy = true)
+                else web(coll, "[data-act=\"buyCard\"][data-lot=\"${css(r.id)}\"]") },
             // app.js A.qty and A.wishRemove (tcg.js A.tEntryQty and A.tWish), saved here (CollectionWrites).
             qty = { r, d -> scope.launch { if (tcg) CollectionWrites.act(context, "tEntryQty", com.google.gson.JsonObject().apply { addProperty("game", game.id); addProperty("id", r.id); addProperty("delta", d.toString()) })
                 else CollectionWrites.act(context, "qty", com.google.gson.JsonObject().apply { addProperty("id", r.id); addProperty("delta", d.toString()) }) } },

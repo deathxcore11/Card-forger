@@ -708,6 +708,35 @@ class CollectionEngineTest {
         }
     }
 
+    /** app.js A.buyCard (data-lot): "Buy this card" for a saved copy with its exact printing, over the copy's page; ← back to the page. */
+    @Test fun buySheet() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        val ws = JsonParser.parseString("""{"version":3,"wishlist":[],"notes":[],"decks":[],"collection":[{"id":"l1","name":"Lightning Bolt","qty":4,"set":"sum","collectorNumber":"162","finish":"nonfoil",
+            "condition":"Near Mint","language":"en","location":"Binder","printingVerified":true,"printingId":"fc8f431d-b7eb-4848-99dd-a5f896248145","raw":{}}]}""").asJsonObject
+        CollectionEngine.load(ws, null)
+        val o = JsonObject().apply { addProperty("name", "Lightning Bolt"); addProperty("entry", "l1") }
+        CollectionEngine.card("mtg", o)
+        CollectionEngine.cardLoad()
+        CollectionEngine.settle(60_000)
+        val m = CollectionEngine.cardDo("buy", "")
+        CollectionEngine.settle(30_000)
+        val b = CollectionEngine.cardModel()
+        val buy = b.getAsJsonObject("buy")
+        println("BUY ${buy.toString().take(1500)}")
+        assertEquals("Buy this card", buy["title"].asString)
+        assertEquals("Lightning Bolt", buy["name"].asString)
+        assertTrue(buy["line"].asString.startsWith("SUM #162"))
+        assertTrue(buy.getAsJsonObject("prices").getAsJsonObject("sellers").getAsJsonArray("rows").size() > 0)
+        assertTrue(buy.getAsJsonArray("actions").any { it.asJsonObject["act"].asString == "buyCompare" })
+        File(System.getProperty("repoRoot"), "android-app/native/app/build/shot-art/home/collection-card-lightning-bolt-buy.json").writeText(b.toString())
+        val back = CollectionEngine.cardDo("buyCompare", "")
+        assertTrue(back["buy"] == null || back["buy"].isJsonNull)
+        assertEquals("printings", back["jump"].asString)
+        assertEquals("overview", back["tab"].asString)
+        Unit
+    }
+
     private suspend fun fourDecks() {
         val prints = JsonParser.parseString(javaClass.classLoader!!.getResource("collection/printings.json")!!.readText()).asJsonArray.map { it.asJsonObject }
         val lots = JsonArray(); val printings = JsonObject(); val catalog = JsonObject()

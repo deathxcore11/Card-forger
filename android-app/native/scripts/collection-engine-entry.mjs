@@ -22,7 +22,7 @@ import {loadMeta, metaState, allCachedMeta} from 'WEB/meta.js';
 import {mtgMetaKey} from 'WEB/power.js';
 import {loadCommunity, communitySlides} from 'WEB/community-feed.js';
 import {loadPulse} from 'WEB/news-pulse.js';
-import {collection as collectionPage, decks as decksView, deckPage as deckView, cardSheet as cardView, setsPage as setsView, setPage as setView, rowsFor} from 'WEB/views.js';
+import {collection as collectionPage, decks as decksView, deckPage as deckView, cardSheet as cardView, buySheet as buyView, setsPage as setsView, setPage as setView, rowsFor} from 'WEB/views.js';
 import {loadMagicPrintingPage, mergeMagicCards, searchQuery, rankByName, magicFilterError, hasMagicSearchQuery, magicSearchSpec, scryfallSearchPath} from 'WEB/catalog-tools.js';
 import {search as searchView, mtgFilterChips} from 'WEB/views.js';
 import {magicOwnedDetail, magicOwnedContext, magicOwnedCurrent, magicOwnedCard} from 'WEB/magic-owned-detail.js';
@@ -1054,6 +1054,7 @@ function cardOpen(o) {
   if (sheet && sheet.openedAs === as && S.ui.sheetCtx === sheet) return sheet;
   const ctx = {type: 'card', name, entryId, deckId, random: !!o.random, openedAs: as};
   sheet = S.ui.sheetCtx = ctx;
+  buyCtx = null;
   // A set page's tile (data-set-i, data-set-finish): that printing, priced in the finish the page shows (A.card).
   // A pulled card from Open Pack (pack-preview.js onDetails → A.card with t.printing): its own printing, in the finish it came out in.
   if (o.pack != null && o.pack !== '') {
@@ -1753,12 +1754,51 @@ const cardAct = {
     ctx.entryId = ''; delete ctx.entry; delete ctx.ownedDetail; delete ctx.condition; delete ctx.language;
     ctx.setVariant = ctx.priceFinish; ctx.face = 0;
   },
-  source: v => { sheet.source = v; },
+  // A.priceSource / A.marketRange act on the open sheet (S.ui.sheetCtx): the price sheet when it stands over the page.
+  source: v => { sheetOn().source = v; },
   // workbench-ui.js A.marketRange and C.marketSource ([v] = {key, source}, the select's data-key and value).
-  range: v => { if (HISTORY_RANGES.some(([r]) => r === v)) sheet.priceRange = v; },
+  range: v => { if (HISTORY_RANGES.some(([r]) => r === v)) sheetOn().priceRange = v; },
+  // The Cards list's price (data-act="buyCard" data-lot): "Buy this card" over the copy's page; its ← (A.buyBack) and
+  // "Compare cheaper printings" (A.buyCompare: the page's Overview, at its printings) go back to the page.
+  buy: () => { buyOpen(); },
+  buyBack: () => { buyShut(); },
+  buyCompare: () => { if (buyOn()) sheet.tab = 'overview'; buyShut(); sheet.jump = 'printings'; },
   historySource: v => { const {key, source} = JSON.parse(v); (S.ui.historySource ||= {})[key] = source; },
   more: () => { const ctx = sheet; const c = ctx.print || meta(ctx.name); if (ctx.printsNext) magicVersions(ctx, true); else if (!c?.full) cardExtras(ctx); else magicVersions(ctx); },
 };
+
+// app.js A.buyCard (5149), its saved-copy branch (the Cards list's price), verbatim but for openSheet: the copy's page (sheet, opened
+// on its entry) is A.buyCard's back; its exact printing is the one the page loaded (A.buyCard fetches it the same way when the device
+// lacks it). The quote it shows is recorded (recordQuote) for this visit, as the page's Prices tab records it.
+let buyCtx = null;
+const buyOn = () => !!buyCtx && buyCtx.back === sheet && S.ui.sheetCtx === buyCtx;
+const sheetOn = () => buyOn() ? buyCtx : sheet;
+function buyOpen() {
+  const back = sheet; buyCtx = null; if (!back?.entryId) return;
+  const owned = magicOwnedDetail(S.state, back.entryId, back.name, back.ownedDetail && back.print?.id === back.ownedDetail.printingId ? back.print : undefined);
+  if (owned.status !== 'ready' || !magicOwnedCurrent(S.state, owned.identity)) { back.toast = owned.reason || 'This saved copy changed. Reopen it from your collection.'; return; }
+  const print = owned.card;
+  const ctx = {type: 'buy', entryId: back.entryId, ownedDetail: back.ownedDetail, name: back.name, deckId: back.deckId, print, finish: selectedFinish('mtg', print, back.priceFinish),
+    condition: back.condition, language: back.language, asOf: print?.checkedAt, back, backScroll: 0};
+  recordQuote(S.state, quoteModel('mtg', print, ctx.finish));
+  buyCtx = S.ui.sheetCtx = ctx;
+}
+// app.js backToCard: the page again (its context is the sheet's).
+function buyShut() { if (buyCtx && S.ui.sheetCtx === buyCtx) S.ui.sheetCtx = buyCtx.back; buyCtx = null; }
+// views.js buySheet read back: its head, the card (picture, set symbol and name, code · number · language · finish), the version
+// it prices (workbench-ui.js priceWorkbench: .price-version), the price blocks the Prices tab reads (pricesModel), the actions and foot.
+function buyModel(ctx) {
+  const t = tree(buyView(ctx)), head = one(t, cls('sheet-head')), card = one(t, cls('buy-card')), id = one(card, cls('buy-id')), sp = all(id, tagIs('span')).filter(x => cls('small')(x));
+  const icon = one(sp[0], cls('set-icon')), v = one(t, cls('price-version'));
+  return {title: text(one(head, tagIs('h2'))), back: one(head, x => x.attrs['data-act'] === 'buyBack')?.attrs['aria-label'] || '',
+    thumb: abs(one(card, cls('buy-thumb'))?.attrs.src || ''), name: text(one(id, tagIs('b'))),
+    set: {icon: urlIn(styleVar(icon, 'icon')), title: icon?.attrs.title || '', rarity: (classes(icon || {attrs: {}}).find(c => c.startsWith('r-')) || '').slice(2), name: text({kids: (sp[0]?.kids || []).filter(k => k !== icon)})},
+    line: text(sp[1]),
+    version: v ? {eyebrow: text(one(v, cls('eyebrow'))), title: text(one(v, tagIs('b'))), line: text(one(v, tagIs('span'))), foot: text(one(v, cls('foot')))} : null,
+    prices: pricesModel(t),
+    actions: all(one(t, x => cls('actions')(x)), tagIs('button')).map(press),
+    foot: text((t.kids || []).filter(k => k.tag === 'p' && cls('foot')(k)).pop())};
+}
 
 // views.js cardSheet() read into a model, block by block as the site draws it.
 const styleVar = (n, v) => ((new RegExp('--' + v + ':\\s*([^;]+)').exec(n?.attrs?.style || '') || [])[1] || '').trim();
@@ -1885,7 +1925,8 @@ function cardPageModel(ctx) {
   if (ctx.blocked || !c) return {name: ctx.name, notice: ctx.ownedNotice || '', loading: !ctx.blocked, deck: ctx.deckId || ''};
   const m = sheetModel(tree(cardView(c, ctx)));
   if (m.overview?.card) m.overview.card.printingsShown = ctx.print?.id || c.id || '';
-  return {game: 'mtg', name: ctx.name, deck: ctx.deckId || '', entry: ctx.entryId || '', ...m,
+  const buy = buyCtx && buyCtx.back === ctx && S.ui.sheetCtx === buyCtx ? buyModel(buyCtx) : null, jump = ctx.jump || '', toast = ctx.toast || ''; delete ctx.jump; delete ctx.toast;
+  return {game: 'mtg', name: ctx.name, deck: ctx.deckId || '', entry: ctx.entryId || '', ...m, buy, jump, toast,
     // The card the picture is drawn from (finish-preview.js reads the same record): the app's foil needs its frame and finishes.
     shown: (({prices, legalities, purchase_uris, related_uris, all_parts, prints_search_uri, rulings_uri, ...rest}) => rest)(ctx.print || c),
     busy: !!(ctx.detailsBusy || ctx.printsBusy || ctx.rulingsBusy || ctx.ownedLoading || S.ui.guide?.['mtg:' + c.name]?.loading),

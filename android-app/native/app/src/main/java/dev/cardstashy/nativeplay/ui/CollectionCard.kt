@@ -364,6 +364,14 @@ fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onBa
                 val past = with(LocalDensity.current) { 110.dp.toPx() }
                 val scrolled by remember(past) { derivedStateOf { list.firstVisibleItemIndex > 0 || list.firstVisibleItemScrollOffset > past } }
                 val pinTabs by remember { derivedStateOf { list.firstVisibleItemIndex >= 1 } }
+                // A jump the site makes with scrollIntoView (A.buyCompare: the page's printings).
+                LaunchedEffect(m.jump, m.buy == null) { if (m.jump == "printings" && m.buy == null) list.animateScrollToItem(3) }
+                val buy = m.buy
+                if (buy != null) {
+                    BuySheet(buy, act, gutter, screenW, screenH)
+                    SheetHead(buy.title, true, gutter, back = { act.press(CardPress("", null, "buyBack", emptyMap(), "", buy.back, "", false, false, false, false, false)) },
+                        backLabel = buy.back.ifBlank { "Back to card details" }, center = true) { close() }
+                } else {
                 LazyColumn(state = list, modifier = Modifier.fillMaxSize()) {
                     item(key = "banner") { m.head?.let { Banner(it, heroH, big, gutter) } }
                     item(key = "tabs") { Box(Modifier.padding(horizontal = gutter).padding(top = 10.dp, bottom = 6.dp).graphicsLayer { alpha = if (pinTabs) 0f else 1f }) { CardTabs(m.tabs, big, act) } }
@@ -381,6 +389,7 @@ fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onBa
                 SheetHead(m.head?.title.orEmpty(), scrolled, gutter, history = historyBack, back = onBack?.takeIf { m.head?.back == true || historyBack }?.let { b -> { scope.launch { if (!Motion.still) y.animateTo(1f, tween(200)); b() } } }) { close() }
                 if (pinTabs) Box(Modifier.padding(top = if (scrolled) 57.dp else 0.dp).fillMaxWidth().background(Brush.verticalGradient(0f to Color(0xFF111318), .8f to Color(0xF2111318), 1f to Color(0x00111318)))
                     .padding(horizontal = gutter).padding(top = 6.dp, bottom = 8.dp)) { CardTabs(m.tabs, big, act) }
+                }
             }
         }
         if (zoom) {
@@ -471,21 +480,24 @@ private fun BleedFit(p: androidx.compose.ui.graphics.painter.Painter, heroH: Dp,
 
 /** .sheet-head.overlay: the close button over the art; past 110 scrolled, the bar with the card's name (style.css 1352-1355). */
 @Composable
-private fun SheetHead(title: String, scrolled: Boolean, gutter: Dp, history: Boolean = false, back: (() -> Unit)? = null, onClose: () -> Unit) {
+private fun SheetHead(title: String, scrolled: Boolean, gutter: Dp, history: Boolean = false, back: (() -> Unit)? = null,
+                      /** A plain .sheet-head (the price sheet's): its ← names where it goes, the title centred between the two buttons. */
+                      backLabel: String = "", center: Boolean = false, onClose: () -> Unit) {
     Row(Modifier.fillMaxWidth().then(if (scrolled) Modifier.background(Color(0xFF171A20)).drawBehind {
         drawRect(LineC, topLeft = Offset(0f, size.height - 1.dp.toPx()), size = Size(size.width, 1.dp.toPx()))
     } else Modifier).padding(horizontal = gutter).padding(top = if (scrolled) 4.dp else 16.dp, bottom = if (scrolled) 8.dp else 0.dp),
         verticalAlignment = Alignment.CenterVertically) {
         // views.js cardSheet: the ← (data-act sheetBack, "Back to deck idea") before the name when the page came from the idea sheet.
         if (back != null) Box(Modifier.padding(end = 8.dp).size(44.dp).clip(RoundedCornerShape(12.dp)).background(if (scrolled) Surface2 else Color(0x8C0A0C10)).border(1.dp, Color(0x2EFFFFFF), RoundedCornerShape(12.dp))
-            .clickable(onClick = back).semantics { contentDescription = if (history) "Back to previous card or deck" else "Back to deck idea" }, contentAlignment = Alignment.Center) {
+            .clickable(onClick = back).semantics { contentDescription = backLabel.ifBlank { if (history) "Back to previous card or deck" else "Back to deck idea" } }, contentAlignment = Alignment.Center) {
             // app.js wireSheetBack's button is ICON.back (icons.js: the chevron M14.5 6 8.5 12l6 6, stroke 1.75).
-            if (history) androidx.compose.foundation.Canvas(Modifier.size(20.dp)) { val u = size.width / 24f
+            if (history || backLabel.isNotBlank()) androidx.compose.foundation.Canvas(Modifier.size(20.dp)) { val u = size.width / 24f
                 drawPath(androidx.compose.ui.graphics.Path().apply { moveTo(14.5f * u, 6f * u); lineTo(8.5f * u, 12f * u); lineTo(14.5f * u, 18f * u) }, Color.White,
                     style = androidx.compose.ui.graphics.drawscope.Stroke(1.75f * u, cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)) }
             else Text("←", style = sans(17f, 400, Color.White))
         }
-        if (scrolled) Text(title, style = manrope(16f, 700, Ink, lh = 1.3f), maxLines = 2, modifier = Modifier.weight(1f))
+        if (scrolled) Text(title, style = manrope(if (center) 18f else 16f, 700, Ink, lh = 1.3f), maxLines = 2, textAlign = if (center) androidx.compose.ui.text.style.TextAlign.Center else null,
+            modifier = Modifier.weight(1f).then(if (center && back == null) Modifier.padding(start = 52.dp) else Modifier))
         else Spacer(Modifier.weight(1f))
         Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(if (scrolled) Surface2 else Color(0x8C0A0C10)).border(1.dp, Color(0x2EFFFFFF), RoundedCornerShape(12.dp))
             .clickable(onClick = onClose).semantics { contentDescription = "Close" }, contentAlignment = Alignment.Center) {
@@ -1426,6 +1438,59 @@ private fun PricesPanel(p: CardPrices, act: CollectionCardActions, gutter: Dp, v
         parts.forEachIndexed { i, (top, bottom, draw) -> Spacer(Modifier.height(if (i == 0) top else maxOf(prev, top))); draw(); prev = bottom }
         Spacer(Modifier.height(prev))
     }
+}
+
+/**
+ * views.js buySheet, "Buy this card" (the Cards list's price): .buy-card (the 64 picture, 6 corners; the name in Manrope 800 17, the set's
+ * symbol and name, code · number · language · finish), the version priced (.price-version: eyebrow, name, its line, the date note, a rule
+ * under it), the price blocks the Prices tab draws, then Compare cheaper printings / ＋ Add to collection and the foot.
+ */
+@Composable
+private fun BuySheet(b: CardBuySheet, act: CollectionCardActions, gutter: Dp, vw: Dp, vh: Dp) {
+    androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxSize().background(SheetBg)) {
+        item(key = "top") { Spacer(Modifier.height(66.dp)) }
+        item(key = "card") {
+            Row(Modifier.padding(horizontal = gutter).padding(top = 4.dp, bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                val p = heroPainter(b.thumb.ifBlank { null }?.let(homeArt))
+                Box(Modifier.width(64.dp).aspectRatio(146f / 204f).clip(RoundedCornerShape(6.dp)).background(Surface2)) { p?.let { Image(it, b.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) } }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(b.name, style = manrope(17f, 800, Ink, lh = 1.25f))
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        if (b.setIcon.isNotBlank()) Box(Modifier.size(14.dp).semantics { contentDescription = b.setTitle }) { SetIconTint(b.setIcon, b.setRarity) }
+                        Text(b.setName, style = sans(13f, 400, Ink, lh = 1.45f))
+                    }
+                    if (b.line.isNotBlank()) Text(b.line, style = sans(13f, 400, Mute, lh = 1.45f))
+                }
+            }
+        }
+        b.version?.let { v -> item(key = "version") {
+            Column(Modifier.padding(horizontal = gutter).fillMaxWidth().drawBehind { drawRect(LineC, Offset(0f, size.height - 1.dp.toPx()), Size(size.width, 1.dp.toPx())) }
+                .padding(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (v[0].isNotBlank()) Text(v[0].uppercase(), style = Eyebrow)
+                if (v[1].isNotBlank()) Text(v[1], style = sans(14.5f, 700, Ink, lh = 1.4f))
+                if (v[2].isNotBlank()) Text(v[2], style = sans(13f, 400, Mute, lh = 1.45f))
+                if (v[3].isNotBlank()) Text(v[3], style = sans(12f, 400, Foot, lh = 1.5f), modifier = Modifier.padding(vertical = 4.dp))
+            }
+        } }
+        // priceWorkbench's order: the saved copy's note (its .market-details) right under the version, then the warning, history and sellers.
+        b.prices?.details?.let { d -> item(key = "saved") { PricesPanel(CardPrices(null, emptyList(), null, null, null, d), act, gutter, vw, vh) } }
+        b.prices?.let { p -> item(key = "prices") { PricesPanel(CardPrices(p.hero, p.copies, p.warning, p.history, p.sellers, null), act, gutter, vw, vh) } }
+        item(key = "actions") {
+            androidx.compose.foundation.layout.FlowRow(Modifier.padding(horizontal = gutter).padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                b.actions.forEach { a -> if (a.ghost) Ghost(a.label, null) { act.press(a) } else Gold(onClick = { act.press(a) }, pad = 16.dp) { Text(a.label.trim(), style = sans(14f, 700, Color(0xFF1A1206))) } }
+            }
+        }
+        if (b.foot.isNotBlank()) item(key = "foot") { Text(b.foot, style = sans(12f, 400, Foot, lh = 1.5f), modifier = Modifier.padding(horizontal = gutter).padding(top = 12.dp)) }
+        item(key = "end") { Spacer(Modifier.navigationBarsPadding().height(22.dp)) }
+    }
+}
+
+/** .set-icon: the set's symbol (a mask over the rarity's colour: common white-ish, uncommon silver, rare gold, mythic orange). */
+@Composable
+private fun SetIconTint(src: String, rarity: String) {
+    val p = heroPainter(homeArt(src)) ?: return
+    val c = when (rarity) { "uncommon" -> Color(0xFFB4C4D1); "rare" -> Color(0xFFD9B45F); "mythic" -> Color(0xFFE5602C); else -> Color(0xFFD7D7D7) }
+    Image(p, null, Modifier.fillMaxSize(), colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(c))
 }
 
 /** .price-fresh: a 28 pill, a 7 dot in its colour (green when fresh, amber when stale, muted when the date is unknown). */

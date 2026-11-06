@@ -32,7 +32,9 @@ data class CardOpen(val name: String, val entry: String = "", val deck: String =
                     /** Opened from the deck idea sheet ("idea:<i>", app.js A.card's S.ui.sheetBack): the page offers "Back to deck idea";
                      *  "proven": from the proven deck sheet, whose history back (app.js wireSheetBack) returns to it; "review": from Magic's Deck
                      *  review sheet, the same. */
-                    val back: String = "")
+                    val back: String = "",
+                    /** The Cards list's price (data-act="buyCard" data-lot = [entry]): "Buy this card" over the copy's page. */
+                    val buy: Boolean = false)
 
 private fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
 
@@ -63,8 +65,11 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
             CollectionEngine.cardLoad()
             CollectionEngine.settle(30_000, CollectionEngine.CARD_MODEL) { j -> if (j.size() > 0) model = CollectionCardModel.parse(j) }
             CollectionEngine.cardModel().takeIf { it.size() > 0 }?.let { model = CollectionCardModel.parse(it) }
+            if (open.buy) asked = "buy" to ""
         }
     }
+    // A notice the site would toast (A.buyCard's "This saved copy changed…").
+    LaunchedEffect(model?.toast) { model?.toast?.takeIf { it.isNotBlank() }?.let { android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_SHORT).show() } }
     // A save made over this page (the add sheet's): the page is read again, so its owned count is the new one.
     val written by CollectionWrites.written.collectAsState()
     var seenWrite by remember(open) { mutableStateOf(written) }
@@ -108,6 +113,7 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
                 CollectionWrites.picking.value = CollectionWrites.DeckPick("mtg", d.getValue("name"), closeAll = onClose, go = { to -> web("https://cardstashy.com/$to", null) })
             // pricing-presentation.js's Add to collection (A.own): the add sheet with this printing, saved here.
             p.act == "own" && !d["name"].isNullOrBlank() -> CollectionWrites.openAdd(JsonObject().apply { addProperty("own", d.getValue("name")); addProperty("fromCard", true) })
+            p.act == "buyBack" || p.act == "buyCompare" -> asked = p.act to ""
             p.act == "magicVersionsMore" -> asked = "more" to ""
             p.act == "flipFace" -> asked = "face" to ""
             p.act == "cardTab" && d["tab"] in setOf("overview", "meta", "guide", "prices") -> asked = "tab" to d.getValue("tab")
