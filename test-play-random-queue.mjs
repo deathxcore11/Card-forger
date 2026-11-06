@@ -60,7 +60,7 @@ console.log('play random queue: instant hand-over, no duplicate builds, refill, 
 {
   const {createRandomDeckProducer, RANDOM_DECK_FORMATS} = await import('./play-opponent-build.js');
   const asked = [];
-  const produce = createRandomDeckProducer({forgeSeed: () => 'ABC234', pickSeed: async r => ({name: 'Seed ' + r.format}),
+  const produce = createRandomDeckProducer({comboChance: 0, forgeSeed: () => 'ABC234', pickSeed: async r => ({name: 'Seed ' + r.format}),
     pipeline: {build: async req => { asked.push(req.format); return {ok: true, deck: {format: req.format, name: 'x', cards: []}, request: req}; }, recheck: () => true}});
   for (const f of ['Standard', 'Commander', 'Modern', 'Pioneer', 'Legacy', 'Vintage', 'Pauper', 'Standard Brawl']) {
     if (!RANDOM_DECK_FORMATS.includes(f)) throw Error('missing random format ' + f);
@@ -70,4 +70,21 @@ console.log('play random queue: instant hand-over, no duplicate builds, refill, 
   let refused = false; try { await produce({format: 'Oathbreaker'}); } catch { refused = true; }
   if (!refused || asked.length !== 8) throw Error('only supported formats build');
   console.log('random decks for every format ok');
+}
+
+// Combo-aware Random (Randall 6 Nov): ~1 in 5 tries a verified mana-loop build, else the normal synergy build.
+{
+ const calls = [];
+ const ok = r => ({ ok: true, deck: { format: r.format, cards: [] }, request: { format: r.format, targetBracket: null, deckStyle: 'classic' }, plan: { combo: { status: r.requireLoop ? 'verified' : 'not-requested' } } });
+ const lucky = createRandomDeckProducer({ pipeline: { build: async r => { calls.push(r.requireLoop || null); return ok(r); }, recheck: () => true }, pickSeed: async () => ({ name: 'Seed' }), random: () => 100 });
+ const deck = await lucky({ format: 'Modern' });
+ assert.deepEqual(calls, ['infinite-mana']); assert.equal(deck.practiceBuild.combo, 'verified-mana-loop');
+ calls.length = 0;
+ const unlucky = createRandomDeckProducer({ pipeline: { build: async r => { calls.push(r.requireLoop || null); if (r.requireLoop) return { ok: false }; return ok(r); }, recheck: () => true }, pickSeed: async () => ({ name: 'Seed' }), random: () => 100 });
+ const plain = await unlucky({ format: 'Modern' });
+ assert.deepEqual(calls, ['infinite-mana', null], 'falls back to the normal build when no verified loop fits'); assert.equal(plain.practiceBuild.combo, null);
+ calls.length = 0;
+ const none = createRandomDeckProducer({ pipeline: { build: async r => { calls.push(r.requireLoop || null); return ok(r); }, recheck: () => true }, pickSeed: async () => ({ name: 'Seed' }), random: () => 12345 });
+ await none({ format: 'Modern' }); assert.deepEqual(calls, [null], 'most decks are plain synergy builds');
+ console.log('combo-aware random ok');
 }
