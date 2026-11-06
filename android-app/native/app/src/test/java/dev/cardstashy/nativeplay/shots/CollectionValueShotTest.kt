@@ -63,6 +63,8 @@ class CollectionValueShotTest {
     /** The real route over the TCG fixture (TcgCollectionShotTest's): the Value tab opens natively, with the site's words. */
     private fun tcgValue(g: CardGame, words: List<String>) {
         dev.cardstashy.nativeplay.ui.Motion.still = true
+        // The lots wear their foils now (FoilMaps loads each picture through the app's image loader).
+        dev.cardstashy.nativeplay.art.CardArt.init(RuntimeEnvironment.getApplication())
         dev.cardstashy.nativeplay.ui.homeArt = { url -> art(url) ?: url }
         val app = RuntimeEnvironment.getApplication()
         val fx = JsonParser.parseString(javaClass.getResource("/tcg-collection/fixture.json")!!.readText()).asJsonObject

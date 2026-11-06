@@ -74,7 +74,11 @@ sealed interface CardFinish {
 /** Measured maps per card picture, made once off the main thread and kept for the session (LRU). */
 object FoilMaps {
     class Ready(val mask: Bitmap, val relief: Bitmap, val glyph: Bitmap?)
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    // A picture that can't be fetched or measured leaves its card plain (the layer waits for maps that never come); it must never
+    // take the app down from a background thread.
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + kotlinx.coroutines.CoroutineExceptionHandler { _, e ->
+        android.util.Log.w("FoilMaps", "foil maps failed: $e")
+    })
     private val gate = Semaphore(2) // phones: two analyses at a time keep scrolling smooth
     private val flows = object : LinkedHashMap<String, MutableStateFlow<Ready?>>(32, .75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, MutableStateFlow<Ready?>>) = size > 48
