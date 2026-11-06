@@ -146,18 +146,11 @@ class PlayDecksTabsShotTest {
         rule.onRoot().performTouchInput { swipeLeft() }; settle(40)
         assertEquals(2, tabs.tab)
         shot("meta")
-        // Random deck: the My decks tile opens Deck Forge's sheet (Standard or Commander, classic or infinite mana).
+        // Random deck: the My decks tile opens Build a deck (PlayBuildDeckShotTest draws it with a card).
         rule.onNodeWithText("My decks").performClick(); settle(20)
         assertEquals(0, tabs.tab)
         rule.onNodeWithText("Random deck").performClick(); settle(10)
-        assertTrue("the tile opens the Deck Forge sheet", rule.onAllNodesWithText("Build random deck").fetchSemanticsNodes().isNotEmpty())
-        shot("random")
-        // All eight of Deck Forge's formats; Commander adds its bracket row, and brackets 3+ build Strong (play-opponent-build.js).
-        dev.cardstashy.nativeplay.play.RandomBuild.FORMATS.forEach { f -> assertTrue("format $f", rule.onAllNodesWithText(f).fetchSemanticsNodes().isNotEmpty()) }
-        rule.onAllNodesWithText("Commander").onLast().performClick(); settle(10)
-        assertTrue("Commander shows the bracket row", rule.onAllNodesWithText("Aim for bracket").fetchSemanticsNodes().isNotEmpty())
-        rule.onAllNodesWithText("4").onLast().performClick(); settle(10)
-        shot("random-commander")
+        assertTrue("the tile opens Build a deck", rule.onAllNodesWithText("Forge this deck").fetchSemanticsNodes().isNotEmpty())
     }
 
     /**

@@ -906,7 +906,8 @@ private fun SourceCard(e: LobbySources.Entry, on: Boolean, signedIn: Boolean, on
 @Composable
 private fun RandomPanel(m: LobbyModel, build: RandomBuild.State, signedIn: Boolean, onBuild: (Int?, String, String?) -> Unit, onSignIn: () -> Unit) {
     val seatLabel = if (m.browseSeat == "player") "you" else "the CPU"
-    var bracket by remember { mutableStateOf<Int?>(null) }; var style by remember { mutableStateOf("classic") }; var power by remember { mutableStateOf("casual") }
+    // No Deck style row: combo requests go to the AI (play-menu.js 0af3630), so random decks are always the classic style.
+    var bracket by remember { mutableStateOf<Int?>(null) }; val style = "classic"; var power by remember { mutableStateOf("casual") }
     // Deck Forge's power (play-opponent-build.js): a Commander bracket of 3 or more always builds strong.
     val strongBracket = m.format == "Commander" && (bracket ?: 0) >= 3
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Site.Surface2.copy(alpha = .6f)).border(1.dp, Line, RoundedCornerShape(16.dp)).padding(18.dp),
@@ -935,11 +936,6 @@ private fun RandomPanel(m: LobbyModel, build: RandomBuild.State, signedIn: Boole
             listOf("casual" to "Casual", "strong" to "Strong").forEach { (k, l) -> val on = if (strongBracket) k == "strong" else power == k
                 Box(Modifier.height(36.dp).pill(if (on) Color(0x33E8B95B) else Site.Surface, if (on) Gold else Line).clickable(enabled = !strongBracket) { power = k }.padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
                     Text(l, style = sans(12.5f, FontWeight.Bold, if (on) Gold else if (strongBracket) Muted else Site.Text)) } }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf("classic" to "Classic strategy", "infinite-mana" to "Infinite mana engine").forEach { (k, l) -> val on = style == k
-                Box(Modifier.height(36.dp).pill(if (on) Color(0x33E8B95B) else Site.Surface, if (on) Gold else Line).clickable { style = k }.padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
-                    Text(l, style = sans(12.5f, FontWeight.Bold, if (on) Gold else Site.Text)) } }
         }
         Box(Modifier.height(46.dp).clip(RoundedCornerShape(10.dp)).background(if (signedIn && !build.busy) GoldPlate else SolidColor(Site.Surface)).clickable(enabled = signedIn && !build.busy) { onBuild(bracket, style, if (strongBracket) "strong" else power) }.padding(horizontal = 20.dp),
             contentAlignment = Alignment.Center) { Text(if (build.busy) "Building deck…" else "Build random deck", style = sans(14f, FontWeight.Bold, if (signedIn && !build.busy) Color(0xFF2A1906) else Muted)) }

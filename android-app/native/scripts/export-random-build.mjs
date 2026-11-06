@@ -12,23 +12,31 @@ const here = dirname(fileURLToPath(import.meta.url)), app = resolve(here, '..');
 mkdirSync(join(app, 'build'), {recursive: true}); // a fresh checkout has no build/ yet
 const entry = join(app, 'build', 'random-build-entry.mjs');
 writeFileSync(entry, readFileSync(join(here, 'random-build-entry.mjs'), 'utf8').replaceAll("'WEB/", `'${resolve(web)}/`));
+// The WebView's bundle adds Collection's Build a deck (deck-flow-entry.mjs, which imports the entry above).
+const flowEntry = join(app, 'build', 'deck-flow-entry.mjs');
+writeFileSync(flowEntry, readFileSync(join(here, 'deck-flow-entry.mjs'), 'utf8').replaceAll("'WEB/", `'${resolve(web)}/`));
+// deck-experience.js's Theme choices (a module-private constant there), copied into both bundles as DECK_THEMES.
+const themesSrc = /const themes=(\{mtg:\[[^\]]*\],ptcg:\[[^\]]*\],ygo:\[[^\]]*\]\});/.exec(readFileSync(join(resolve(web), 'deck-experience.js'), 'utf8'));
+if (!themesSrc) throw Error('deck-experience.js themes not found: the export needs updating');
+const themes = JSON.stringify(Function('return ' + themesSrc[1])());
 const sha = process.env.WEB_SHA || (() => { try { return execFileSync('git', ['-C', web, 'rev-parse', 'HEAD']).toString().trim(); } catch { return 'unknown'; } })();
 const out = join(app, 'build', 'random-build.raw.js');
 execFileSync(esbuild, [entry, '--bundle', '--format=iife', '--platform=neutral', '--target=es2020',
   '--supported:async-await=false', '--supported:async-generator=false', '--supported:for-await=false',
   `--inject:${join(here, 'deck-engine-prelude.js')}`, `--inject:${join(here, 'random-build-prelude.js')}`,
-  '--define:import.meta.url="https://cardstashy.com/"', `--banner:js=/* CardStashy random deck builder bundle, web ${sha} */`, `--outfile=${out}`, '--log-level=error']);
+  '--define:import.meta.url="https://cardstashy.com/"', `--define:DECK_THEMES=${themes}`, `--banner:js=/* CardStashy random deck builder bundle, web ${sha} */`, `--outfile=${out}`, '--log-level=error']);
 let js = readFileSync(out, 'utf8').replace(/(?<![\w$.])(\d+)n\b/g, 'BigInt("$1")');
 js = hoistYieldInForOf(js);
 writeFileSync(join(app, 'app/src/main/assets/random-build.js'), js);
 console.log('random builder bundled from', sha, (js.length / 1024).toFixed(0) + ' KB');
 
 // The same entry for the app's WebView (RandomBuild.kt runs it there first: Chrome's JIT builds a deck several times faster than
-// QuickJS). Native async, the browser's own timers and fetch; only storage comes from random-build-web-prelude.js.
+// QuickJS), with Collection's Build a deck on top. Native async, the browser's own timers and fetch; only storage comes from
+// random-build-web-prelude.js.
 const webOut = join(app, 'app/src/main/assets/random-build-web.js');
-execFileSync(esbuild, [entry, '--bundle', '--format=iife', '--platform=browser', '--target=es2020',
+execFileSync(esbuild, [flowEntry, '--bundle', '--format=iife', '--platform=browser', '--target=es2020',
   `--inject:${join(here, 'random-build-web-prelude.js')}`,
-  '--define:import.meta.url="https://cardstashy.com/"', `--banner:js=/* CardStashy random deck builder bundle (WebView), web ${sha} */`, `--outfile=${webOut}`, '--log-level=error']);
+  '--define:import.meta.url="https://cardstashy.com/"', `--define:DECK_THEMES=${themes}`, `--banner:js=/* CardStashy random deck builder bundle (WebView), web ${sha} */`, `--outfile=${webOut}`, '--log-level=error']);
 console.log('random builder (WebView) bundled', (readFileSync(webOut).length / 1024).toFixed(0) + ' KB');
 
 // This QuickJS's compiler fails ("stack underflow") on a yield inside a for-of head: for (const x of (yield y) || []) …

@@ -14,6 +14,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import app.cash.zipline.QuickJs
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
@@ -95,16 +96,52 @@ object RandomBuild {
      * one it is still building is awaited, else one is built now ({format, targetBracket, deckStyle, power}; power "strong" is
      * Deck Forge's strong build, and Commander brackets 3+ build strong anyway).
      */
-    fun start(format: String, targetBracket: Int? = null, deckStyle: String = "classic", power: String? = null, user: String? = null) {
+    fun start(format: String, targetBracket: Int? = null, deckStyle: String = "classic", power: String? = null, user: String? = null, choice: Choice? = null) {
         val mine = ++ticket
-        _state.value = State(busy = true, status = "Choosing a build-around…")
-        val a = ask(format, targetBracket, deckStyle, power).apply { addProperty("ticket", mine) }
+        _state.value = State(busy = true, status = if (choice?.seedCard != null) "Finding cards for your plan…" else "Choosing a build-around…")
+        val a = ask(format, targetBracket, deckStyle, power).apply { addProperty("ticket", mine); choice?.into(this) }
         val expr = scoped(user) + "RandomBuild.start(" + JsonPrimitive(a.toString()) + ")"
         lastStart = expr
         scope.launch { try { eval(expr) }
             catch (e: kotlinx.coroutines.CancellationException) { throw e }
             catch (e: Throwable) { if (ticket == mine) _state.value = State(error = "The deck builder stopped: ${e.message ?: e.javaClass.simpleName}") } }
     }
+    /**
+     * Build a deck's choices (deck-experience.js): the build-around card (from [card] or [named]) or a name to resolve, and the
+     * optional theme, match mode and "Prefer simpler plans". With any of them the build skips the background queue.
+     */
+    class Choice(val seedCard: JsonObject? = null, val seed: String? = null, val theme: String? = null, val matchMode: String? = null, val easy: Boolean = false) {
+        internal fun into(o: JsonObject) {
+            seedCard?.let { o.add("seedCard", it) }; seed?.takeIf { it.isNotBlank() }?.let { o.addProperty("seed", it) }
+            theme?.takeIf { it.isNotBlank() }?.let { o.addProperty("theme", it) }; matchMode?.takeIf { it != "unspecified" }?.let { o.addProperty("matchMode", it) }
+            if (easy) o.addProperty("easy", true)
+        }
+    }
+    /** deck-experience.js themes.mtg: Build a deck's Theme choices. */
+    suspend fun themes(): List<String> = withContext(thread) {
+        runCatching { JsonParser.parseString(eval("RandomBuild.themes()", pump = false)!!).asJsonArray.map { it.asString } }.getOrDefault(emptyList())
+    }
+    /** A random build-around for [format] (and [theme]), as the site's Random card picks it (app.js randomBuildSeed); null if none came. */
+    suspend fun card(format: String, theme: String? = null): JsonObject? = call("card", JsonObject().apply { addProperty("format", format); theme?.takeIf { it.isNotBlank() }?.let { addProperty("theme", it) } })
+    /** The card a player typed in Change card (app.js resolve, fuzzy); null if Scryfall has none by that name. */
+    suspend fun named(name: String): JsonObject? = call("named", JsonObject().apply { addProperty("name", name) })
+
+    private val calls = java.util.concurrent.ConcurrentHashMap<Int, CompletableDeferred<JsonElement?>>()
+    private val callIds = java.util.concurrent.atomic.AtomicInteger()
+    private suspend fun call(name: String, a: JsonObject): JsonObject? = withContext(thread) {
+        val id = callIds.incrementAndGet(); val d = CompletableDeferred<JsonElement?>(); calls[id] = d
+        try {
+            eval("RandomBuild.call($id, ${JsonPrimitive(name)}, ${JsonPrimitive(a.toString())})")
+            withTimeoutOrNull(30_000) { d.await() }?.takeIf { it.isJsonObject }?.asJsonObject
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Throwable) { null } finally { calls.remove(id) }
+    }
+    /** takeDone()'s finished calls: each answers the call that waits for it. */
+    private fun delivered(json: String?) {
+        if (json.isNullOrEmpty()) return
+        runCatching { JsonParser.parseString(json).asJsonArray.forEach { e -> val o = e.asJsonObject
+            calls[o.get("id").asInt]?.complete(if (o.get("ok").asBoolean) o.get("value") else null) } }
+    }
+
     /** The build in hand, so QuickJS can run it again if the WebView's process dies under it. */
     @Volatile private var lastStart: String? = null
 
@@ -152,8 +189,10 @@ object RandomBuild {
                 val p = JsonParser.parseString(q.evaluate("__host.pump(${System.currentTimeMillis()})") as String).asJsonObject
                 for (r in p.getAsJsonArray("requests")) send(r.asJsonObject)
                 publish(q.evaluate("RandomBuild.poll()") as String?)
+                delivered(q.evaluate("RandomBuild.takeDone()") as String?)
                 val open = p.get("open").asInt; val next = p.get("nextTimer")?.takeIf { it.isJsonPrimitive }?.asLong
                 if (p.get("ran").asInt > 0 || answers.isNotEmpty()) continue
+                if (calls.isNotEmpty() && open == 0 && next == null) { kotlinx.coroutines.withTimeoutOrNull(250) { wake.receive() }; continue }
                 if (open == 0 && next == null) break
                 val wait = if (next != null) (next - System.currentTimeMillis()).coerceAtLeast(0) else 30_000
                 if (wait > 0) kotlinx.coroutines.withTimeoutOrNull(wait) { wake.receive() }
@@ -183,11 +222,12 @@ object RandomBuild {
     @Volatile private var webFailed = false
     private const val PAGE = "<!doctype html><meta charset=\"utf-8\"><script src=\"/__native/random-build-web.js\"></script>" +
         "<script>(function(){var ok=typeof RandomBuild==='object';NativeRandom.ready(ok);if(!ok)return;var last=null;" +
-        "setInterval(function(){var s=RandomBuild.poll();if(s!==last){last=s;NativeRandom.state(s);}},100);})();</script>"
+        "setInterval(function(){var s=RandomBuild.poll();if(s!==last){last=s;NativeRandom.state(s);}var d=RandomBuild.takeDone();if(d)NativeRandom.done(d);},100);})();</script>"
 
     private class Bridge(val ready: CompletableDeferred<Boolean>) {
         @JavascriptInterface fun ready(ok: Boolean) { ready.complete(ok) }
         @JavascriptInterface fun state(json: String?) { publish(json) }
+        @JavascriptInterface fun done(json: String?) { delivered(json) }
     }
 
     /** The WebView once its page has the bundle, or null when this phone can't run it (QuickJS then, for the rest of the session). */

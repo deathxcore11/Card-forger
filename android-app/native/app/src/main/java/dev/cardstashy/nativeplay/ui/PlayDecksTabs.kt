@@ -633,39 +633,8 @@ private fun CraftChip(seal: String, n: Int, armed: Boolean, enabled: Boolean, on
 
 // ---------------------------------------------------------------- Random deck
 
-/** Random deck (Deck Forge, the site's random builder as Quick Play runs it): a format, a bracket for Commander, Casual or Strong, a style. */
+/** Random deck: the website's Build a deck around a build-around card, on Deck Forge (PlayBuildDeckSheet). */
 @Composable
-fun RandomDeckSheet(onClose: () -> Unit, user: String? = null, onDeck: (JsonObject, String) -> Unit) {
-    val build by dev.cardstashy.nativeplay.play.RandomBuild.state.collectAsState()
-    var format by remember { mutableStateOf("Standard") }; var bracket by remember { mutableStateOf<Int?>(null) }; var style by remember { mutableStateOf("classic") }
-    var power by remember { mutableStateOf("casual") }
-    // Deck Forge's power (play-opponent-build.js): a Commander bracket of 3 or more always builds strong.
-    val strongBracket = format == "Commander" && (bracket ?: 0) >= 3
-    var started by remember { mutableStateOf(false) }
-    LaunchedEffect(build.deck, build.busy, started) { val d = build.deck; if (started && !build.busy && d != null) { started = false; onDeck(d.deepCopy(), format) } }
-    androidx.activity.compose.BackHandler { if (build.busy) dev.cardstashy.nativeplay.play.RandomBuild.cancel(); onClose() }
-    Box(Modifier.fillMaxSize().background(Color(0x99000000)).clickable(interactionSource = null, indication = null) { if (!build.busy) onClose() }) {
-        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().clip(RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp)).background(Site.Surface2)
-            .border(1.dp, SoftRim, RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp)).clickable(interactionSource = null, indication = null) {}.padding(20.dp).padding(bottom = 90.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("✦", style = t(28f, color = Color(0xFFF0C66D)))
-            Text("A new game plan", style = t(17f, FontWeight.ExtraBold))
-            Text("Deck Forge builds a $format deck. Look over the full list before you save it; cards you don't have yet show what they cost in seals.", style = t(13.5f, color = Site.Muted), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) { RANDOM_DECK_FORMATS.forEach { f -> ChipOn(f, format == f) { format = f } } }
-            if (format == "Commander") FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-                Text("Aim for bracket", style = t(12.5f, color = Site.Muted)); (listOf<Int?>(null) + (1..5)).forEach { b -> ChipOn(b?.toString() ?: "Any", bracket == b) { bracket = b } } }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-                Text("Power", style = t(12.5f, color = Site.Muted))
-                listOf("casual" to "Casual", "strong" to "Strong").forEach { (k, l) -> ChipOn(l, if (strongBracket) k == "strong" else power == k) { if (!strongBracket) power = k } } }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                listOf("classic" to "Classic strategy", "infinite-mana" to "Infinite mana engine").forEach { (k, l) -> ChipOn(l, style == k) { style = k } } }
-            GoldCta(if (build.busy) "Building deck…" else "Build random deck", Modifier.fillMaxWidth(), enabled = !build.busy) {
-                started = true; dev.cardstashy.nativeplay.play.RandomBuild.start(format, if (format == "Commander") bracket else null, style, if (strongBracket) "strong" else power, user) }
-            if (build.busy) { BrandMark(40.dp); Text(build.status.ifBlank { "Preparing your cards…" }, style = t(13f, color = Site.Muted))
-                GhostButton("Cancel build") { dev.cardstashy.nativeplay.play.RandomBuild.cancel(); started = false } }
-            build.error?.takeIf { started || !build.busy }?.let { Text(it, style = t(12.5f, color = Warn)) }
-        }
-    }
-}
+fun RandomDeckSheet(onClose: () -> Unit, user: String? = null, onDeck: (JsonObject, String) -> Unit) = PlayBuildDeckSheet(onClose, user, onDeck)
 /** The formats Deck Forge builds for (play-opponent-build.js RANDOM_DECK_FORMATS, as the Quick Play picker). */
 val RANDOM_DECK_FORMATS = dev.cardstashy.nativeplay.play.RandomBuild.FORMATS

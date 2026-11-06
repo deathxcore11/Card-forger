@@ -31,9 +31,33 @@ const playRandomQueue = createRandomDeckQueue({produce: playRandomProducer, read
 // A finished deck as the app reads it: the site's Power number with it (power.js shownPower, as the Play deck chip shows).
 const withPower = deck => deck && {...deck, power: shownPower(mtgPower({...deck, id: 'construction'}))};
 
+// Play's Build a deck (Randall 5 Nov: Random deck does what the website's Build a deck does): Deck Forge's producer around the card
+// the player chose (🎲 New card is app.js randomBuildSeed, as the site's flowRandom; Change card resolves a name as app.js resolve), with
+// the site's Build a deck choices (deck-experience.js: theme, match mode, simpler plans) carried into the pipeline's request.
+const chosenProducer = ({seedCard, seed, theme, matchMode, easy}) => createRandomDeckProducer({
+  pipeline: {...deckPipeline, build: (r, o) => deckPipeline.build({...r, ...(theme ? {theme} : {}), ...(matchMode ? {matchMode} : {}), ...(easy ? {easy: true} : {})}, o)},
+  pickSeed: async () => seedCard || await resolve(seed, true),
+});
+const chosen = a => !!(a.seedCard || a.seed || a.theme || a.matchMode || a.easy);
+
+// Calls whose answer comes later (a card from Scryfall): the app passes an id, and takeDone() hands back each finished one.
+const done = [];
+const calls = {
+  // deck-experience.js A.flowRandom: a random build-around for the format (and theme), as app.js randomBuildSeed picks it.
+  card: a => randomBuildSeed({game: 'mtg', format: a.format, theme: a.theme || '', randomSeed: Math.floor(Math.random() * 1e9)}),
+  // Change card: the name the player typed, as app.js resolve finds it.
+  named: a => resolve(String(a.name || ''), true),
+};
+
 let job = 0, result = null;
 globalThis.RandomBuild = {
   formats: () => JSON.stringify(RANDOM_DECK_FORMATS),
+  // deck-experience.js themes.mtg (copied from the site's file at bundle time): Build a deck's Theme choices.
+  themes: () => JSON.stringify(DECK_THEMES.mtg || []),
+  call(id, name, json) {
+    Promise.resolve().then(() => { if (!calls[name]) throw Error('unknown call ' + name); return calls[name](JSON.parse(json || '{}')); }).then(value => { done.push({id, ok: true, value}); }, e => { done.push({id, ok: false, error: String(e && e.message || e)}); });
+  },
+  takeDone() { return done.length ? JSON.stringify(done.splice(0)) : ''; },
   // The account the queued decks belong to; a new one drops them (play-random-queue.js check).
   scope(json) { scope = JSON.parse(json); },
   idle(on) { idle = !!on; },
@@ -47,6 +71,12 @@ globalThis.RandomBuild = {
     const a = JSON.parse(json), ask = {format: a.format, targetBracket: a.targetBracket ?? null, deckStyle: a.deckStyle || 'classic', ...(a.power === 'strong' ? {power: 'strong'} : {})};
     const me = ++job, current = () => me === job, tag = a.ticket ?? null; result = {busy: true, status: 'Choosing a build-around…', deck: null, error: null, ticket: tag};
     (async () => {
+      if (chosen(a)) {
+        const deck = await chosenProducer(a)(ask, {current, onStatus: m => { if (current()) result.status = String(m); }});
+        if (!current()) return;
+        result = {busy: false, status: '', deck: withPower(deck), error: deck ? null : 'cancelled', ticket: tag};
+        return;
+      }
       let deck = playRandomQueue.take(ask);
       if (!deck && playRandomQueue.pending(ask)) { result = {...result, status: 'Finishing your next deck…'}; await playRandomQueue.pending(ask); if (!current()) return; deck = playRandomQueue.take(ask); }
       if (!deck) { deck = await playRandomProducer(ask, {current, onStatus: m => { if (current()) result.status = String(m); }}); if (!current()) return; playRandomQueue.warm([ask]); }
@@ -56,3 +86,5 @@ globalThis.RandomBuild = {
   cancel() { job++; result = {busy: false, status: 'Build cancelled.', deck: null, error: null}; },
   poll() { return JSON.stringify(result); },
 };
+// For the WebView's Build a deck (deck-flow-entry.mjs): the same pipeline and seed picker, and its calls join these.
+export {deckPipeline, randomBuildSeed, calls as flowCalls};
