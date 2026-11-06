@@ -89,6 +89,8 @@ private const val NATIVE_TCG_SETS = true
 private const val NATIVE_PACK = true
 /** Yu-Gi-Oh! and Pokémon card pages and their Open Pack, drawn natively from the site's tcg.js and pack-preview.js. On since Randall's "turn on all" (5 Nov). */
 private const val NATIVE_TCG_CARDS = true
+/** Collection's Search tab (all three games), opened from every Collection page's nav and Home's search. */
+private const val NATIVE_SEARCH = true
 
 private sealed interface Screen {
     data object Home : Screen
@@ -106,6 +108,8 @@ private sealed interface Screen {
     data class CollectionDeck(val id: String, val game: String = "mtg") : Screen
     /** Every set of a game (the site's #sets). */
     data class CollectionSets(val game: String = "mtg") : Screen
+    /** The Search tab for a game (the site's #search). */
+    data class CollectionSearch(val game: String = "mtg") : Screen
     /** One set's page (the site's #set/<code or id>). */
     data class CollectionSet(val code: String, val game: String = "mtg") : Screen
     /** Play's own collection (the Trunk) with its card view. */
@@ -289,7 +293,14 @@ private fun App(activity: MainActivity) {
         dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> go(Screen.PlayDecks); dev.cardstashy.nativeplay.ui.PlayTab.TROPHIES -> go(Screen.Achievements())
         dev.cardstashy.nativeplay.ui.PlayTab.SHOP -> { if (screen !is Screen.Shop) go(Screen.Shop()) }
     } }
-    androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalShopNav provides { tab -> go(Screen.Shop(tab)) }, dev.cardstashy.nativeplay.ui.LocalShopSetNav provides { code -> go(Screen.Shop("sets", code)) }) {
+    // Every Collection page's Search tab: the open game's native Search (back returns there when it opened this page).
+    val searchOpen: (() -> Unit)? = if (NATIVE_SEARCH) ({
+        val g = dev.cardstashy.nativeplay.ui.CollectionGame.current.value.id
+        val prev = trail.getOrNull(trail.size - 2)
+        if (prev is Screen.CollectionSearch) { back(); if (prev.game != g) swap(Screen.CollectionSearch(g)) } else go(Screen.CollectionSearch(g))
+    }) else null
+    androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalShopNav provides { tab -> go(Screen.Shop(tab)) }, dev.cardstashy.nativeplay.ui.LocalShopSetNav provides { code -> go(Screen.Shop("sets", code)) },
+        dev.cardstashy.nativeplay.ui.LocalCollectionSearch provides searchOpen) {
     when (val s = screen) {
         Screen.Home -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
@@ -361,6 +372,16 @@ private fun App(activity: MainActivity) {
                 onDecks = { if (NATIVE_DECKS) go(Screen.CollectionDecks) else go(Screen.Web("https://cardstashy.com/#decks", null)) },
                 onSet = { g, code -> go(Screen.CollectionSet(code, g)) }, web = { url, press -> go(Screen.Web(url, press)) },
                 game = s.game, tcg = NATIVE_TCG_SETS, onGame = { g -> dev.cardstashy.nativeplay.ui.CollectionGame.set(dev.cardstashy.nativeplay.ui.CardGame.of(g)); swap(Screen.CollectionSets(g)) })
+        }
+        is Screen.CollectionSearch -> {
+            LaunchedEffect(Unit) { activity.inGame(false) }
+            dev.cardstashy.nativeplay.ui.CollectionSearchRoute(onPlay = { go(Screen.Home) }, onProfile = { go(Screen.SignIn) },
+                onHome = { if (trail.getOrNull(trail.size - 2) == Screen.Collection) back() else go(Screen.Collection) },
+                onCards = { if (NATIVE_CARDS) go(Screen.CollectionCards) else go(Screen.Web("https://cardstashy.com/#collection", null)) },
+                onDecks = { if (NATIVE_DECKS) go(Screen.CollectionDecks) else go(Screen.Web("https://cardstashy.com/#decks", null)) },
+                onSets = { g -> if (g == "mtg" || NATIVE_TCG_SETS) go(Screen.CollectionSets(g)) else go(Screen.Web("https://cardstashy.com/#sets", "[data-act=\"setGame\"][data-game=\"$g\"]")) },
+                onSet = { g, code -> go(Screen.CollectionSet(code, g)) }, web = { url, press -> go(Screen.Web(url, press)) },
+                game = s.game, onGame = { g -> dev.cardstashy.nativeplay.ui.CollectionGame.set(dev.cardstashy.nativeplay.ui.CardGame.of(g)); swap(Screen.CollectionSearch(g)) })
         }
         is Screen.CollectionSet -> {
             LaunchedEffect(Unit) { activity.inGame(false) }

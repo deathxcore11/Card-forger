@@ -124,11 +124,12 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
         TopBarItems(Mode.COLLECTION, profile?.avatarUrl, profile?.name, unread = false, onSwitch = onPlay, onProfile = onProfile, middle = tabs)
     }
     val nav: @Composable (Boolean) -> Unit = { v ->
+        val searchTab = LocalCollectionSearch.current
         CollectionNav(CollectionTab.DECKS, vertical = v) { t ->
             when (t) {
                 CollectionTab.HOME -> onHome()
                 CollectionTab.CARDS -> onCards()
-                CollectionTab.SEARCH -> web(site + "#search", null)
+                CollectionTab.SEARCH -> searchTab?.invoke() ?: web(site + "#search", null)
                 CollectionTab.DECKS -> {}
                 CollectionTab.SCAN -> web(site + "#scan", null)
             }

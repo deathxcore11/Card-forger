@@ -130,11 +130,12 @@ fun CollectionSetsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () ->
         TopBarItems(Mode.COLLECTION, profile?.avatarUrl, profile?.name, unread = false, onSwitch = onPlay, onProfile = onProfile, middle = tabs)
     }
     val nav: @Composable (Boolean) -> Unit = { v ->
+        val searchTab = LocalCollectionSearch.current
         CollectionNav(CollectionTab.SEARCH, vertical = v) { t ->
             when (t) {
                 CollectionTab.HOME -> onHome()
                 CollectionTab.CARDS -> onCards()
-                CollectionTab.SEARCH -> web(SITE + "#search", null)
+                CollectionTab.SEARCH -> searchTab?.invoke() ?: web(SITE + "#search", null)
                 CollectionTab.DECKS -> onDecks()
                 CollectionTab.SCAN -> web(SITE + "#scan", null)
             }
@@ -256,11 +257,12 @@ fun CollectionSetRoute(code: String, onPlay: () -> Unit, onProfile: () -> Unit, 
         TopBarItems(Mode.COLLECTION, profile?.avatarUrl, profile?.name, unread = false, onSwitch = onPlay, onProfile = onProfile, middle = tabs)
     }
     val nav: @Composable (Boolean) -> Unit = { v ->
+        val searchTab = LocalCollectionSearch.current
         CollectionNav(CollectionTab.SEARCH, vertical = v) { t ->
             when (t) {
                 CollectionTab.HOME -> onHome()
                 CollectionTab.CARDS -> onCards()
-                CollectionTab.SEARCH -> web(SITE + "#search", null)
+                CollectionTab.SEARCH -> searchTab?.invoke() ?: web(SITE + "#search", null)
                 CollectionTab.DECKS -> onDecks()
                 CollectionTab.SCAN -> web(SITE + "#scan", null)
             }

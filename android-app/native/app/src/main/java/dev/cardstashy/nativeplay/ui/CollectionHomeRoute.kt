@@ -136,13 +136,14 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
     } }
     val site = "https://cardstashy.com/"
     val scope = androidx.compose.runtime.rememberCoroutineScope()
-    val act = remember {
+    val searchOpen = LocalCollectionSearch.current
+    val act = remember(searchOpen) {
         CollectionHomeActions(
             // tcg.js A.setGame: the header's game tabs switch Home (and Cards and Decks) to that game.
             game = { g -> CollectionGame.set(g) },
             go = { to -> if (to == "#sets" && onSets != null) onSets() else if (to == "#decks" && onDecks != null) onDecks() else web(site + to, null) },
             open = open,
-            search = { web(site + "#search", null) },
+            search = { searchOpen?.invoke() ?: web(site + "#search", null) },
             // A.homeDailyCard: Magic's opens the website's sheet for now; Yu-Gi-Oh!'s and Pokémon's open the native card page (A.tCard).
             daily = { d -> val g = CollectionGame.current.value
                 if (g == CardGame.MTG) web(site, "[data-act=\"homeDailyCard\"]") else cards = cards + CardOpen(d.name, page = site, tile = "", game = g.id, id = d.id) },
@@ -158,11 +159,12 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
         TopBarItems(Mode.COLLECTION, profile?.avatarUrl, profile?.name, unread = false, onSwitch = onPlay, onProfile = onProfile, middle = tabs)
     }
     val nav: @Composable (Boolean) -> Unit = { v ->
+        val searchTab = LocalCollectionSearch.current
         CollectionNav(CollectionTab.HOME, vertical = v) { t ->
             when (t) {
                 CollectionTab.HOME -> {}
                 CollectionTab.CARDS -> onCards?.invoke() ?: web(site + "#collection", null)
-                CollectionTab.SEARCH -> web(site + "#search", null)
+                CollectionTab.SEARCH -> searchTab?.invoke() ?: web(site + "#search", null)
                 CollectionTab.DECKS -> onDecks?.invoke() ?: web(site + "#decks", null)
                 CollectionTab.SCAN -> web(site + "#scan", null)
             }

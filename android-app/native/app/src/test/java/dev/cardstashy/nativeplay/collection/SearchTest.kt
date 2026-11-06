@@ -42,7 +42,7 @@ class SearchTest {
 
     @Test fun magicSearch() = runBlocking {
         assumeTrue(bundle.isFile)
-        CollectionEngine.initFrom(bundle); workspace()
+        CollectionEngine.initFrom(bundle); CollectionEngine.restart(); workspace()
         val m = CollectionEngine.search("mtg")
         println("SEARCH0 ${m.s("title")} blocks=${blocks(m).map { it.s("kind") }} fan=${block(m, "fan")}".take(1200))
         assertEquals("Search cards", m.s("title"))
@@ -104,13 +104,57 @@ class SearchTest {
         val went = CollectionEngine.searchWent()
         println("SEARCH RANDOM $went")
         assertEquals("card", went!!.s("act")); assertTrue(went.s("name").isNotBlank())
+        // suggest.js: the matching cards as you type (app.js homeLookup), then the recent searches on an empty box.
+        assertEquals(null, CollectionEngine.searchSuggest("mtg", "lightning bol"))
+        CollectionEngine.settle(30_000)
+        val sg = CollectionEngine.searchSuggestModel()!!
+        println("SUGGEST $sg".take(800))
+        assertTrue(sg["items"].asJsonArray.any { it.asJsonObject.s("name") == "Lightning Bolt" })
+        assertTrue(sg["items"].asJsonArray.all { it.asJsonObject.s("art").startsWith("https://") || it.asJsonObject.s("art").isEmpty() })
+        CollectionEngine.searchRemember("mtg", "Lightning Bolt")
+        val recent = CollectionEngine.searchSuggest("mtg", "")!!
+        assertTrue(recent["recent"].asBoolean); assertEquals("Lightning Bolt", recent["items"].asJsonArray[0].asJsonObject.s("name"))
+        assertTrue(CollectionEngine.searchSaved().contains("Lightning Bolt"))
         // The view (workbench-ui.js viewSave, area search).
         assertEquals("compact", CollectionEngine.searchDo("viewSave", data("", "mode" to "compact", "area" to "search")).s("mode"))
     }
 
+    private fun get(url: String): ByteArray = (java.net.URL(url).openConnection() as java.net.HttpURLConnection).run {
+        setRequestProperty("User-Agent", "CardStashyNativeTests/1.0"); connectTimeout = 15_000; readTimeout = 30_000; instanceFollowRedirects = true
+        inputStream.use { it.readBytes() }
+    }
+    private fun sha1(s: String) = java.security.MessageDigest.getInstance("SHA-1").digest(s.toByteArray()).joinToString("") { "%02x".format(it) }
+    /** Every picture a model draws (tiles and the fan), saved under its address's hash for the shot tests. */
+    private fun saveArt(m: JsonObject, out: File) {
+        val urls = mutableSetOf<String>()
+        for (b in blocks(m)) {
+            b.getAsJsonArray("tiles")?.forEach { t -> t.asJsonObject.getAsJsonObject("picture")?.let { p -> p.s("src").takeIf { it.isNotBlank() }?.let(urls::add) } }
+            b.getAsJsonArray("cards")?.forEach { c -> c.asJsonObject.getAsJsonObject("picture")?.let { p -> p.s("src").takeIf { it.isNotBlank() }?.let(urls::add) } }
+        }
+        for (u in urls.take(40)) { val f = File(out, sha1(u) + ".jpg"); if (!f.exists()) runCatching { f.writeBytes(get(u)) }.onFailure { println("ART MISSING $u") }; Thread.sleep(60) }
+    }
+
+    /** CollectionSearchShotTest's pages: Magic empty (with the fan), filters, results; Yu-Gi-Oh! and Pokémon results (app/build/shot-art/home). */
+    @Test fun shotFixture() = runBlocking {
+        assumeTrue(bundle.isFile)
+        val out = File(System.getProperty("repoRoot"), "android-app/native/app/build/shot-art/home").apply { mkdirs() }
+        CollectionEngine.initFrom(bundle); CollectionEngine.restart(); workspace()
+        val empty = CollectionEngine.search("mtg"); File(out, "collection-search-empty.json").writeText(empty.toString()); saveArt(empty, out)
+        CollectionEngine.searchDo("dbTerm", data("t:angel o:flying"))
+        val r = run("dbSearch"); File(out, "collection-search-results.json").writeText(r.toString()); saveArt(r, out)
+        CollectionEngine.searchDo("dbSave"); CollectionEngine.searchToasts()
+        File(out, "collection-search-saved.json").writeText(CollectionEngine.searchModel().toString())
+        for ((g, q) in listOf("ygo" to "Dark Magician", "ptcg" to "Pikachu")) {
+            CollectionEngine.search(g); CollectionEngine.searchDo("tQ", data(q))
+            val t = run("tSearch"); File(out, "collection-search-$g.json").writeText(t.toString()); saveArt(t, out)
+        }
+        CollectionEngine.search("mtg")
+        Unit
+    }
+
     @Test fun tcgSearch() = runBlocking {
         assumeTrue(bundle.isFile)
-        CollectionEngine.initFrom(bundle); workspace()
+        CollectionEngine.initFrom(bundle); CollectionEngine.restart(); workspace()
         for ((g, q) in listOf("ygo" to "Dark Magician", "ptcg" to "Pikachu")) {
             val m = CollectionEngine.search(g)
             println("TSEARCH0 $g blocks=${blocks(m).map { it.s("kind") }} filters=${block(m, "filters")}".take(1200))

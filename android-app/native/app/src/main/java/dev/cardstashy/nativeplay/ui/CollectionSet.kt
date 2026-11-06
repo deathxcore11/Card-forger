@@ -86,7 +86,7 @@ class CollectionSetModel(val code: String, val title: String, val line: String, 
                          /** p.set-coverage-note (what the card list covers) and its button; details.set-coverage-note (how the prices were picked). */
                          val coverage: String? = null, val coverageButton: CardPress? = null, val details: Pair<String, String>? = null) {
     companion object {
-        private fun tcgTile(j: JsonObject): SetTileM {
+        internal fun tcgTile(j: JsonObject): SetTileM {
             val pic = j.o("picture"); val fin = j.o("finish"); val c = j.o("chrome"); val set = c?.o("set"); val badge = j.o("badge"); val mark = set?.o("mark"); val rx = set?.o("rarity")
             val r = CollRow("set:" + j.s("id"), j.s("name"), false, j.s("tier").ifBlank { "tn" }, j.s("tierColor"), pic?.s("src")?.ifBlank { null }, pic?.strs("sources").orEmpty(),
                 j.s("fallback"), fin?.s("key") ?: "", fin?.s("effect") ?: "", "", null, null, emptyList(), emptyList(), "", "", "", false, j.s("price"), "", "", "", 0, false, "")
@@ -98,7 +98,7 @@ class CollectionSetModel(val code: String, val title: String, val line: String, 
                 j.o("open")?.entrySet()?.associate { (k, v) -> k to (if (v.isJsonPrimitive) v.asString else "") }.orEmpty())
         }
 
-        private fun tile(j: JsonObject): SetTileM {
+        internal fun tile(j: JsonObject): SetTileM {
             val pic = j.o("picture"); val fin = j.o("finish"); val c = j.o("chrome"); val set = c?.o("set"); val badge = j.o("badge")
             val r = CollRow("set:" + j.get("i")?.asInt, j.s("name"), false, j.s("tier").ifBlank { "tn" }, j.s("tierColor"), pic?.s("src")?.ifBlank { null }, pic?.strs("sources").orEmpty(),
                 j.s("fallback"), fin?.s("key") ?: "", fin?.s("effect") ?: "", "", null, null, emptyList(), emptyList(), "", "", "", false, j.s("price"), "", "", "", 0, false, "", j.o("print"))
@@ -364,7 +364,7 @@ private fun Toolbar(m: CollectionSetModel, act: CollectionSetActions, wide: Bool
  * with its aura, the emblem dock clipped on its foot, what you own clipped on its top edge; "#1 Name" and the price under it.
  */
 @Composable
-private fun GridCard(t: SetTileM, reduced: Boolean, act: CollectionSetActions, modifier: Modifier) {
+internal fun GridCard(t: SetTileM, reduced: Boolean, act: CollectionSetActions, modifier: Modifier) {
     val tn = t.r.tier == "tn"
     Column(modifier.then(if (t.own) Modifier.drawWithContent {
         drawContent()
@@ -407,7 +407,7 @@ private fun Badge(text: String, other: Boolean, title: String, modifier: Modifie
 /** The Compact and List views: a row in the collection's ring, the art (Compact only), name and price, then the emblem chips; the count at its foot. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ListCard(t: SetTileM, compact: Boolean, reduced: Boolean, act: CollectionSetActions) {
+internal fun ListCard(t: SetTileM, compact: Boolean, reduced: Boolean, act: CollectionSetActions) {
     Box(Modifier.fillMaxWidth().lotFrame(t.r, reduced).clickable { act.card(t) }.semantics { contentDescription = "Open ${t.r.name}" }) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             if (compact) Box(Modifier.size(48.dp, 67.dp).clip(RoundedCornerShape(5.dp)).background(Surface2)) { RowPicture(t.r, Modifier.fillMaxSize(), RoundedCornerShape(5.dp)) }
@@ -636,7 +636,7 @@ private fun TcgPicture(t: SetTileM, game: CardGame, modifier: Modifier, shape: a
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun TcgGridCard(t: SetTileM, game: CardGame, reduced: Boolean, act: CollectionSetActions, modifier: Modifier) {
+internal fun TcgGridCard(t: SetTileM, game: CardGame, reduced: Boolean, act: CollectionSetActions, modifier: Modifier) {
     val tn = t.r.tier == "tn"
     val ygo = game == CardGame.YGO
     Column(modifier.then(if (t.own) Modifier.drawWithContent {

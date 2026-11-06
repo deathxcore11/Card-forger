@@ -14,6 +14,9 @@ import {hintPool, SEARCH_PROMPT} from 'WEB/search-hints.js';
 import {useMyPrices, ensureTcgPrices} from 'WEB/mtg-tcgprice.js';
 import {formatOf, FORMATS, hasCommander, canLead, verifyLeader, sizeLabel} from 'WEB/formats.js';
 import {art, esc, registerSetIcons, usd, options as htmlOptions, safeHref, segmented} from 'WEB/ui.js';
+import {rankHomeCards, homeResultRow} from 'WEB/home-search.js';
+import {recentSearches, rememberSearch} from 'WEB/suggest.js';
+import {privateKey as scopedKey} from 'WEB/account-scope.js';
 import {createScryfallClient} from 'WEB/scryfall-client.js';
 import {loadMeta, metaState, allCachedMeta} from 'WEB/meta.js';
 import {mtgMetaKey} from 'WEB/power.js';
@@ -991,9 +994,9 @@ const still = ctx => S.ui.sheetCtx === ctx;
 // app.js A.card (3554-3615): [o] = {name, entry, deck}, as the tapped tile's data-name / data-entry / data-deck.
 function cardOpen(o) {
   const name = String(o.name || ''), entryId = String(o.entry || ''), deckId = o.deck ? String(o.deck) : null, setI = o.setI == null || o.setI === '' ? null : Number(o.setI);
-  const as = JSON.stringify([name, entryId, deckId, setI, o.setFinish || '', o.pack ?? '', o.pack != null ? pack?.stamp : '']);
+  const as = JSON.stringify([name, entryId, deckId, setI, o.setFinish || '', o.pack ?? '', o.pack != null ? pack?.stamp : '', !!o.random]);
   if (sheet && sheet.openedAs === as && S.ui.sheetCtx === sheet) return sheet;
-  const ctx = {type: 'card', name, entryId, deckId, random: false, openedAs: as};
+  const ctx = {type: 'card', name, entryId, deckId, random: !!o.random, openedAs: as};
   sheet = S.ui.sheetCtx = ctx;
   // A set page's tile (data-set-i, data-set-finish): that printing, priced in the finish the page shows (A.card).
   // A pulled card from Open Pack (pack-preview.js onDetails → A.card with t.printing): its own printing, in the finish it came out in.
@@ -1455,11 +1458,11 @@ const DB = {
   dbMore: () => dbSearch(true),
   async dbRandom() {
     const db = S.ui.db, generation = db.generation;
-    if (db.randomBusy) return;
+    if (db.randomBusy || searchGame !== 'mtg') return;
     db.randomBusy = true;
     try {
       const card = await api("/cards/random?" + new URLSearchParams({q:"game:paper"}));
-      if (S.ui.db !== db || db.generation !== generation) return;
+      if (S.ui.db !== db || db.generation !== generation || searchGame !== 'mtg') return;
       const c = cacheCard(card); saveCatalogSoon();
       searchWent = {act: 'card', name: c.name, random: '1'};
     } catch (e) { toasts.push({text: e.message, undo: false}); }
@@ -1618,13 +1621,49 @@ function searchPageModel(G = 'mtg') {
     else if (c('empty')(n)) blocks.push({kind: 'empty', title: text(one(n, tagIs('h3'))), text: text(one(n, tagIs('p')))});
     else if (n.tag === 'button') blocks.push({kind: 'more', ...press(n)});
     else if (c('note')(n) || c('foot')(n) || c('muted')(n) || c('small')(n)) {
-      const b = one(n, tagIs('button'));
-      blocks.push({kind: 'note', text: text({kids: (n.kids || []).filter(k => k.tag !== 'button')}), warn: c('warn')(n), note: c('note')(n), foot: c('foot')(n), small: c('small')(n),
+      // The words before a button inline in it (e.g. "… Load more, or [show all].") and the words after it, in order.
+      const kids = n.kids || [], bi = kids.findIndex(k => k.tag === 'button'), b = bi < 0 ? one(n, tagIs('button')) : kids[bi];
+      blocks.push({kind: 'note', text: text({kids: bi < 0 ? kids : kids.slice(0, bi)}), after: bi < 0 ? '' : text({kids: kids.slice(bi + 1)}), warn: c('warn')(n), note: c('note')(n), foot: c('foot')(n), small: c('small')(n),
         center: c('center')(n), pad: c('pad')(n), button: press(b)});
     }
   }
   const U = G === 'mtg' ? S.ui.db : tcgUi(G).search;
   return {game: G, title, views, mode, blocks, busy: !!U.busy, term: G === 'mtg' ? U.term || '' : U.q || ''};
+}
+
+// suggest.js on the search box (data-suggest): your recent searches while it is empty, the matching cards as you type,
+// through app.js homeLookup (attachSuggest({lookup: homeLookup})), each row as home-search.js homeResultRow draws it.
+// app.js homeLookup (4619-4636), verbatim but for the scanner's offline catalogue (scan-catalog.js catalogState(g).pack):
+// the app has no scanner yet, so it is idle, as it is on the site until that catalogue is downloaded.
+const homeResultCache = new Map();
+async function homeLookup(g, q) {
+ const k=g+':'+q.toLowerCase();if(homeResultCache.has(k))return homeResultCache.get(k);
+ const cached=g==='mtg'?Object.values(S.catalog):Object.values(tcgCache[g]||{});
+ const local=[...cached];
+ let cards=rankHomeCards(local,q,7,{byName:g==='mtg'}),error=false,corrected=false;
+ if(cards.length<5){try{
+   if(g==='mtg'){
+    let data;try{data=await api('/cards/search?'+new URLSearchParams({q:q+' game:paper',unique:'prints',order:'released'}));}catch(e){if(e.status!==404&&!/404|no cards|not found|zero results|didn.t match/i.test(e.message||''))throw e;data={data:[]};}
+    if(!data.data?.length){try{const c=await api('/cards/named?'+new URLSearchParams({fuzzy:q}));data={data:[c]};corrected=true;}catch(e){if(e.status!==404&&!/404|no cards|not found|zero results|ambiguous|didn.t match/i.test(e.message||''))throw e;}}
+    cards=rankHomeCards([...cards,...(data.data||[])],q,7,{byName:true});
+   }else{
+    let result=await tcgSources[g].search({q,size:7,page:0});
+    if(!result.cards.length&&q.length>=5){result=await tcgSources[g].search({q:q.slice(0,3),size:40,page:0});corrected=true;}
+    cards=rankHomeCards([...cards,...result.cards.map(c=>tcgCardOf(g,c.id)||c)],q);
+   }
+  }catch{error=true;}}
+ const result={cards,error,corrected};if(!error){homeResultCache.set(k,result);if(homeResultCache.size>40)homeResultCache.delete(homeResultCache.keys().next().value);}return result;
+}
+// A suggestion row (homeResultRow's .lot.home-result): the card's art, name, its set line and the price.
+function suggestRow(g, c, i) {
+  const b = one(tree(homeResultRow(g, c, i)), tagIs('button')), im = one(b, tagIs('img'));
+  return {name: c.name, art: im ? abs(im.attrs.src || '') : '', sub: text(one(b, cls('lot-sub'))), price: text(one(b, cls('price')))};
+}
+let suggestOut = null, suggestTicket = 0;
+function suggestStart(g, q) {
+  const my = ++suggestTicket; suggestOut = null;
+  if (!String(q || '').trim()) { suggestOut = {q: '', recent: true, items: recentSearches(g).map(name => ({name}))}; return; }
+  (async () => { let items; try { items = (await homeLookup(g, q)).cards; } catch { items = []; } if (my === suggestTicket) suggestOut = {q, recent: false, items: (items || []).map((c, i) => suggestRow(g, c, i))}; })();
 }
 
 // The sheet's own controls, as app.js handles them; the redraw is the app's.
@@ -2011,14 +2050,14 @@ function packTcgLook(P) {
 let tsheet = null;
 function tcardOpen(o) {
   const G = o.game === 'ptcg' ? 'ptcg' : 'ygo', id = String(o.id || '');
-  const as = JSON.stringify([G, id, o.entry || '', o.setId || '', o.setVariant || '', o.printing || '', o.edition || '', o.deck || '', o.pack ?? '']);
+  const as = JSON.stringify([G, id, o.entry || '', o.setId || '', o.setVariant || '', o.printing || '', o.edition || '', o.deck || '', o.pack ?? '', !!o.random]);
   tcgFocus(G, S.ui.view || 'set', S.ui.tsetId || '');
   if (tsheet && tsheet.openedAs === as && S.ui.sheetCtx === tsheet) return tsheet;
   const lot = o.entry ? tcgGs(G).collection.find(e => e.id === o.entry && String(e.cardId) === id) : null,
     setId = o.setId || (G === 'ygo' ? lot?.setReleaseId : '') || '', setReleaseUnverified = !!(G === 'ygo' && lot?.setReleaseUnverified),
     sctx = {type: 'tcard', game: G, id, setId, setReleaseUnverified, previewBusy: G === 'ptcg', previewMore: null, previewError: '', setVariant: o.setVariant || lot?.variant || '', priceFinish: o.setVariant || lot?.variant || '',
       priceEdition: G === 'ygo' ? (o.printing || (lot?.printing && lot?.rarity ? lot.printing + '::' + lot.rarity : '')) : '', priceYgoEdition: G === 'ygo' ? (o.edition || lot?.edition || '') : '',
-      entryId: lot?.id || '', savedVariant: lot?.variant || '', savedProductId: lot?.productId || '', random: false, deckId: o.deck || null, openedAs: as};
+      entryId: lot?.id || '', savedVariant: lot?.variant || '', savedProductId: lot?.productId || '', random: !!o.random, deckId: o.deck || null, openedAs: as};
   if (G === 'ygo' && o.ygoPurchase === '1' && Object.hasOwn(o, 'edition')) sctx.ygoEditionExplicit = true;
   const sourceMembership = tcgUi(G).set.info?.id === sctx.setId ? tcgUi(G).set.cards.find(card => card.id === id)?.setContext : null;
   if (sourceMembership?.membership === 'set-response' && sourceMembership.game === G && sourceMembership.cardId === id && sourceMembership.releaseId === sctx.setId) sctx.setMembership = {...sourceMembership};
@@ -3924,7 +3963,7 @@ globalThis.Collection = {
   // one control to the site's own handler ([data] = {dataset, value}); a search runs on (the app pumps it with settle() and reads
   // searchModel), and searchWent then says which card a press opened (Random), for the app's card page.
   search(game) {
-    searchGame = game || 'mtg';
+    searchGame = game || 'mtg'; searchWent = null;
     if (searchGame === 'mtg') mtgFocus(); else tcgFocus(searchGame, 'search');
     return json(searchPageModel(searchGame));
   },
@@ -3939,8 +3978,21 @@ globalThis.Collection = {
   searchWent() { const w = searchWent; searchWent = null; return json(w); },
   searchToasts() { const t = toasts.map(x => x.text); toasts = []; return json(t); },
   // tcg.js's saved searches live in this device's storage (cardforge-saved-searches-v1): the app keeps them between visits.
-  searchSaved() { try { return localStorage.getItem('cardforge-saved-searches-v1') || '{}'; } catch { return '{}'; } },
-  searchSavedSet(raw) { try { localStorage.setItem('cardforge-saved-searches-v1', String(raw || '{}')); } catch {} },
+  // suggest.js keeps each game's recent searches (cardstashy-recent-<game>) the same way: both go back and forth as one object.
+  searchSaved() {
+    let saved = '{}'; try { saved = localStorage.getItem('cardforge-saved-searches-v1') || '{}'; } catch {}
+    return JSON.stringify({saved, recent: Object.fromEntries(['mtg', 'ygo', 'ptcg'].map(g => [g, recentSearches(g)]))});
+  },
+  searchSavedSet(raw) {
+    let o = {}; try { o = JSON.parse(raw || '{}') || {}; } catch {}
+    try { localStorage.setItem('cardforge-saved-searches-v1', typeof o.saved === 'string' ? o.saved : '{}'); } catch {}
+    for (const g of ['mtg', 'ygo', 'ptcg']) try { localStorage.setItem(scopedKey(`cardstashy-recent-${g}`), JSON.stringify(Array.isArray(o.recent?.[g]) ? o.recent[g] : [])); } catch {}
+  },
+  // The suggestion list under the box: searchSuggest starts it for what is typed (the app pumps it with settle()), searchSuggestModel
+  // reads it ({q, recent, items}, null while it looks); searchRemember is suggest.js's Enter (and a picked suggestion).
+  searchSuggest(game, q) { suggestStart(game || 'mtg', q); return json(suggestOut); },
+  searchSuggestModel() { return json(suggestOut); },
+  searchRemember(game, q) { rememberSearch(game || 'mtg', q); },
   // views.js setsPage(), every set: [opts] = {q, family, release, year, sort} as the app last left them. setsLoad starts the
   // set list's lookup (app.js loadSetIndex; the app pumps it with settle()); setsDo applies a control (setsAct).
   sets(game, opts) {

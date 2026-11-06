@@ -142,7 +142,8 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             "tExportColl", "tWishCopy" -> scope.launch { CollectionWrites.act(context, a, com.google.gson.JsonObject().apply { addProperty("game", g) }) }
             else -> site("[data-act=\"${css(a)}\"]")
         } }
-    val act = remember(game) {
+    val searchOpen = LocalCollectionSearch.current
+    val act = remember(game, searchOpen) {
         val tcg = game != CardGame.MTG
         CollectionCardsActions(
             game = { g -> CollectionGame.set(g) },
@@ -185,7 +186,7 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             // tcg.js A.tImportColl opens the paste sheet; A.tExportColl and A.tWishCopy run here (CollectionImport, CollectionWrites).
             button = { a -> tcgButton(a) },
             // A.addCard opens the add sheet, A.importCollection the import sheet, both drawn here.
-            emptyAct = { a -> if (tcg) { if (a == "go") web(site + "#search", null) else tcgButton(a) }
+            emptyAct = { a -> if (tcg) { if (a == "go") searchOpen?.invoke() ?: web(site + "#search", null) else tcgButton(a) }
                 else if (a == "addCard") CollectionWrites.openAdd(com.google.gson.JsonObject())
                 else if (a == "importCollection") CollectionWrites.importing.value = CollectionWrites.ImportOpen("mtg", one = { CollectionWrites.openAdd(com.google.gson.JsonObject()) }, imported = { tab = "cards" })
                 else web(coll, "[data-act=\"${css(a)}\"]") },
@@ -195,11 +196,12 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
         TopBarItems(Mode.COLLECTION, profile?.avatarUrl, profile?.name, unread = false, onSwitch = onPlay, onProfile = onProfile, middle = tabs)
     }
     val nav: @Composable (Boolean) -> Unit = { v ->
+        val searchTab = LocalCollectionSearch.current
         CollectionNav(CollectionTab.CARDS, vertical = v) { t ->
             when (t) {
                 CollectionTab.HOME -> onHome()
                 CollectionTab.CARDS -> {}
-                CollectionTab.SEARCH -> web(site + "#search", null)
+                CollectionTab.SEARCH -> searchTab?.invoke() ?: web(site + "#search", null)
                 CollectionTab.DECKS -> onDecks?.invoke() ?: web(site + "#decks", null)
                 CollectionTab.SCAN -> web(site + "#scan", null)
             }

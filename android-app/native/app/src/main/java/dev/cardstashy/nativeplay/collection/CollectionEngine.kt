@@ -38,6 +38,8 @@ object CollectionEngine {
     @Volatile internal var filesDir: File? = null
     /** For tests: the bundle from a file. */
     fun initFrom(file: File) { source = { file.readText() } }
+    /** For tests: a fresh engine (the bundle read again on the next call), so one test's pages don't carry into the next. */
+    suspend fun restart() = withContext(thread) { qjs?.close(); qjs = null; answers.clear() }
 
     private fun js(): QuickJs = qjs ?: QuickJs.create().also { q ->
         q.maxStackSize = 6L shl 20
@@ -264,6 +266,12 @@ object CollectionEngine {
     /** The saved searches (tcg.js savedSearches' device storage, every game), to keep and to put back. */
     suspend fun searchSaved(): String = on { q -> q.evaluate("Collection.searchSaved()") as String }
     suspend fun searchSavedSet(raw: String) = on { q -> q.evaluate("Collection.searchSavedSet(${str(raw)})"); Unit }
+    /** suggest.js under the search box: start it for [text] (empty: the recent searches at once); pump with [settle] on [SUGGEST_MODEL]. */
+    suspend fun searchSuggest(game: String, text: String): JsonObject? = on { q -> JsonParser.parseString(q.evaluate("Collection.searchSuggest(${str(game)}, ${str(text)})") as String).takeIf { it.isJsonObject }?.asJsonObject }
+    const val SUGGEST_MODEL = "Collection.searchSuggestModel()"
+    suspend fun searchSuggestModel(): JsonObject? = on { q -> JsonParser.parseString(q.evaluate(SUGGEST_MODEL) as String).takeIf { it.isJsonObject }?.asJsonObject }
+    /** suggest.js rememberSearch: Enter, or a picked suggestion. */
+    suspend fun searchRemember(game: String, text: String) = on { q -> q.evaluate("Collection.searchRemember(${str(game)}, ${str(text)})"); Unit }
     const val SETS_MODEL = "Collection.setsModel()"
     suspend fun setsModel(): JsonObject = on { q -> JsonParser.parseString(q.evaluate(SETS_MODEL) as String).asJsonObject }
 

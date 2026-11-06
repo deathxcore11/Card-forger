@@ -26,7 +26,9 @@ data class CardOpen(val name: String, val entry: String = "", val deck: String =
                     val pack: Int? = null,
                     /** Yu-Gi-Oh! or Pokémon (tcg.js A.tCard): the game, the card's id and what its tile hands the sheet (the set it was
                      *  opened from, the finish that page prices, Yu-Gi-Oh!'s printing::rarity and edition). */
-                    val game: String = "mtg", val id: String = "", val setId: String = "", val setVariant: String = "", val printing: String = "", val edition: String = "")
+                    val game: String = "mtg", val id: String = "", val setId: String = "", val setVariant: String = "", val printing: String = "", val edition: String = "",
+                    /** Opened by Random (data-random): the page offers 🎲 Another. */
+                    val random: Boolean = false)
 
 private fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
 
@@ -39,8 +41,10 @@ private fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
  * website's card sheet and press the same control there.
  */
 @Composable
-fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -> Unit, web: (url: String, press: String?) -> Unit, onSet: ((String) -> Unit)? = null) {
-    if (open.game != "mtg") return TcgCardHost(open, onClose, onOpen, web, onSet)
+fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -> Unit, web: (url: String, press: String?) -> Unit, onSet: ((String) -> Unit)? = null,
+                       /** 🎲 Another (A.dbRandom / A.tRandomCard) on a random card's page, where the opener draws the next one; null: the website's. */
+                       onRandom: (() -> Unit)? = null) {
+    if (open.game != "mtg") return TcgCardHost(open, onClose, onOpen, web, onSet, onRandom)
     val context = LocalContext.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var model by remember(open) { mutableStateOf<CollectionCardModel?>(null) }
@@ -48,7 +52,7 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
     var asked by remember(open) { mutableStateOf<Pair<String, String>?>(null) }
     LaunchedEffect(open) {
         runCatching {
-            val o = JsonObject().apply { addProperty("name", open.name); addProperty("entry", open.entry); addProperty("deck", open.deck); open.setI?.let { addProperty("setI", it); addProperty("setFinish", open.setFinish) }; open.pack?.let { addProperty("pack", it); addProperty("setFinish", open.setFinish) } }
+            val o = JsonObject().apply { addProperty("name", open.name); addProperty("entry", open.entry); addProperty("deck", open.deck); if (open.random) addProperty("random", "1"); open.setI?.let { addProperty("setI", it); addProperty("setFinish", open.setFinish) }; open.pack?.let { addProperty("pack", it); addProperty("setFinish", open.setFinish) } }
             model = withContext(Dispatchers.Default) { CollectionCardModel.parse(CollectionEngine.card("mtg", o)) }
             CollectionEngine.cardLoad()
             CollectionEngine.settle(30_000, CollectionEngine.CARD_MODEL) { j -> if (j.size() > 0) model = CollectionCardModel.parse(j) }
@@ -83,6 +87,7 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
                 if (uri.host?.endsWith("cardstashy.com") == true) web(p.href, null)
                 else runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri)) }
             }
+            p.act == "dbRandom" && onRandom != null -> onRandom()
             p.act == "card" && !d["name"].isNullOrBlank() -> onOpen(open.copy(name = d.getValue("name"), entry = "", setI = null, setFinish = "", pack = null))
             p.act == "go" && !d["to"].isNullOrBlank() -> web("https://cardstashy.com/" + d.getValue("to"), null)
             p.act == "set" && !d["code"].isNullOrBlank() -> onSet?.invoke(d.getValue("code").lowercase()) ?: web("https://cardstashy.com/#set/" + android.net.Uri.encode(d.getValue("code").lowercase()), null)
@@ -139,7 +144,7 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
  * and the wiki open the website's card sheet and press the same control.
  */
 @Composable
-private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -> Unit, web: (url: String, press: String?) -> Unit, onSet: ((String) -> Unit)?) {
+private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -> Unit, web: (url: String, press: String?) -> Unit, onSet: ((String) -> Unit)?, onRandom: (() -> Unit)?) {
     val context = LocalContext.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var model by remember(open) { mutableStateOf<CollectionCardModel?>(null) }
@@ -148,7 +153,7 @@ private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) 
     LaunchedEffect(open) {
         runCatching {
             val o = JsonObject().apply {
-                addProperty("game", open.game); addProperty("id", open.id); addProperty("entry", open.entry); addProperty("deck", open.deck)
+                addProperty("game", open.game); addProperty("id", open.id); addProperty("entry", open.entry); addProperty("deck", open.deck); if (open.random) addProperty("random", "1")
                 addProperty("setId", open.setId); addProperty("setVariant", open.setVariant); addProperty("printing", open.printing); addProperty("edition", open.edition)
                 open.pack?.let { addProperty("pack", it) }
             }
@@ -184,6 +189,7 @@ private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) 
                     tile = listOfNotNull(open.tile.ifBlank { null }, "#sheet[open] [data-act=\"tCard\"][data-id=\"${css(v("id"))}\"]").joinToString("\n"),
                     game = open.game, id = v("id"), setId = v("set-id"), setVariant = v("set-variant"), printing = v("printing"), edition = v("edition")))
             p.act == "tSet" && v("id").isNotBlank() && onSet != null -> onSet(v("id"))
+            p.act == "tRandomCard" && onRandom != null -> onRandom()
             p.act in CollectionWrites.CARD_ACTS -> scope.launch { if (CollectionWrites.act(context, p.act, dataset(d))) show(CollectionEngine.tcardModel()) }
             // pricing-presentation.js's Add to collection (A.tOwn): the site's add sheet over this page, saved here; the page shows the copies after.
             p.act == "tOwn" && v("id").isNotBlank() -> CollectionWrites.tAdding.value = CollectionWrites.TcgAddOpen(dataset(d).apply { addProperty("game", open.game) },
