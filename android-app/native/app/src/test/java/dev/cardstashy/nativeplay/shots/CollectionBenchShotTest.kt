@@ -141,6 +141,13 @@ class CollectionBenchShotTest {
             assertEquals(listOf("deckReview", "deckPlayCpu"), acts)
             for ((k, v) in listOf("stacks" to "Stacks", "gallery" to "Gallery")) { rule.onAllNodes(hasContentDescription(v)).onFirst().performClick(); settle(); shot("$tag-$k") }
             rule.onAllNodes(hasContentDescription("List")).onFirst().performClick(); settle()
+            // The grip between deck and collection: dragged up the collection grows; a tap steps through the sizes.
+            val before = ui.split
+            rule.onNode(hasContentDescription("Resize deck and collection")).performTouchInput { down(center); moveBy(androidx.compose.ui.geometry.Offset(0f, -120f)); moveBy(androidx.compose.ui.geometry.Offset(0f, -120f)); up() }; settle()
+            assertTrue("dragging the grip up folds the deck", ui.split < before - .05f); shot("$tag-grip")
+            rule.onAllNodes(hasContentDescription("Deck folded") or hasContentDescription("Resize deck and collection")).onFirst().performClick(); settle()
+            rule.onAllNodes(hasContentDescription("Collection folded") or hasContentDescription("Resize deck and collection")).onFirst().performClick(); settle()
+            ui.split = dev.cardstashy.nativeplay.ui.SPLIT_EVEN; settle()
         }
         if (tag == "954x860") {
             // On the unfolded screen a tab opens in the big left pane, where the collection browser sits (Randall 6 Nov).

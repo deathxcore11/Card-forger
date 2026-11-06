@@ -10,6 +10,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.snap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -185,7 +186,12 @@ class BenchUi {
     var popAt by mutableLongStateOf(0L)
     val deckGrid = LazyGridState()
     val tileGrid = LazyGridState()
+    /** Portrait: how much of the room the deck takes; the grip between deck and collection moves it (Randall 6 Nov 21:43Z). */
+    var split by mutableFloatStateOf(SPLIT_EVEN)
 }
+const val SPLIT_EVEN = .40f
+const val SPLIT_MIN = .12f
+const val SPLIT_MAX = .80f
 
 // ---------------------------------------------------------------- the look (template.html :root)
 
@@ -338,11 +344,14 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
                     val room = maxHeight
                     // Focus while dragging (Randall 6 Nov 01:04Z): the panel a dragged card crosses into grows.
                     val zone = drag.zone
-                    val target = if (drag.name != null && drag.from == "coll" && zone == "deck") .66f else if (drag.name != null && drag.from == "deck" && zone == "coll") .18f else .40f
-                    val share by animateFloatAsState(target, tween(if (Motion.still) 0 else 280, easing = FOCUS_EASE), label = "focus")
+                    // The grip sets the resting share; a card dragged across still opens the side it heads for.
+                    var gripping by remember { mutableStateOf(false) }
+                    val target = if (drag.name != null && drag.from == "coll" && zone == "deck") maxOf(.66f, ui.split) else if (drag.name != null && drag.from == "deck" && zone == "coll") minOf(.18f, ui.split) else ui.split
+                    val share by animateFloatAsState(target, if (gripping || Motion.still) snap() else tween(280, easing = FOCUS_EASE), label = "focus")
                     Column(Modifier.fillMaxSize()) {
                         Dock(m, ui, a, drag, actionRow, split = false, Modifier.height(room * share), lift)
-                        Box(Modifier.weight(1f).fillMaxWidth().padding(top = 6.dp)) { Browser(m, ui, a, drag, browserSwitch, cols = 3, lift, onFilter) }
+                        SplitGrip(ui, room, onGrip = { gripping = it })
+                        Box(Modifier.weight(1f).fillMaxWidth()) { Browser(m, ui, a, drag, browserSwitch, cols = 3, lift, onFilter) }
                     }
                 }
                 Footer(m, ui, split = false, views = false)
@@ -358,6 +367,40 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
             }
         }
         ui.peek?.let { Peek(m, ui, a, it, split) }
+    }
+}
+
+/**
+ * Portrait: the grip between the deck and the collection. Drag it to give one more room; a tap steps through deck small,
+ * even, collection small. Sizes stay while the page is open.
+ */
+@Composable
+private fun SplitGrip(ui: BenchUi, room: androidx.compose.ui.unit.Dp, onGrip: (Boolean) -> Unit) {
+    val d = LocalDensity.current
+    val roomPx = with(d) { room.toPx() }
+    val label = when { ui.split <= SPLIT_MIN + .02f -> "Deck folded"; ui.split >= SPLIT_MAX - .02f -> "Collection folded"; else -> "Resize deck and collection" }
+    Box(Modifier.fillMaxWidth().height(22.dp)
+        .semantics { contentDescription = label; role = Role.Button }
+        .pointerInput(roomPx) {
+            awaitEachGesture {
+                val down = awaitFirstDown()
+                var moved = false; var total = 0f
+                onGrip(true)
+                while (true) {
+                    val e = awaitPointerEvent()
+                    val ch = e.changes.firstOrNull { it.id == down.id } ?: break
+                    if (!ch.pressed) break
+                    val dy = ch.position.y - ch.previousPosition.y
+                    total += dy
+                    if (!moved && kotlin.math.abs(total) > 6.dp.toPx()) moved = true
+                    if (moved && roomPx > 0f) { ui.split = (ui.split + dy / roomPx).coerceIn(SPLIT_MIN, SPLIT_MAX); ch.consume() }
+                }
+                onGrip(false)
+                // A tap: even, then deck small, then collection small, then even again.
+                if (!moved) ui.split = when { ui.split < SPLIT_EVEN - .05f -> SPLIT_MAX; ui.split > SPLIT_EVEN + .05f -> SPLIT_EVEN; else -> SPLIT_MIN }
+            }
+        }, contentAlignment = Alignment.Center) {
+        Box(Modifier.size(44.dp, 5.dp).clip(RoundedCornerShape(3.dp)).background(B.Line.copy(alpha = .9f)))
     }
 }
 
