@@ -78,6 +78,7 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
                         /** False draws the deck page itself (CollectionDeck), as the page's own tests look at it. */
                         bench: Boolean = true) {
     val context = LocalContext.current
+    val searchTab = LocalCollectionSearch.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
     val profile by Account.profile.collectAsState()
@@ -247,9 +248,13 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
         val sel = "[data-act=\"${css(act)}\"]" + data.joinToString("") { (k, v) -> "[data-" + k.replace(Regex("[A-Z]")) { "-" + it.value.lowercase() } + "=\"${css(v.asString)}\"]" }
         // Game Night (tabletop.js openTabletop) is the website's. From the deck's War Chest it keeps the deck's journal; when the
         // website on this phone does not have the deck (not signed in there, or not synced yet) the Rules page's Tabletop
-        // button (A.tabletop) opens the same table without it, rather than nothing happening (Randall 6 Nov).
+        // button (A.tabletop) opens the same table without it, rather than nothing happening (Randall 6 Nov). Ask the Judge the same
+        // way: the Rules page's Ask about rules (A.askRules).
+        // Card lookup (app.js chestTool: go('#search')): the app's own Search.
+        if (act == "chestTool" && got("tool") == "lookup") { searchTab?.let { it(); return } }
         val table = act == "chestTool" && got("tool") in setOf("gameNight", "share", "spirit", "journal")
-        web("$page/" + android.net.Uri.encode(deckTab), if (table) "$sel\n||\n#rules\n[data-act=\"tabletop\"]" else sel)
+        val judge = act == "chestTool" && got("tool") == "judge"
+        web("$page/" + android.net.Uri.encode(deckTab), if (table) "$sel\n||\n#rules\n[data-act=\"tabletop\"]" else if (judge) "$sel\n||\n#rules\n[data-act=\"askRules\"]" else sel)
     }
     /** A tap or typing in the panel: the site's listeners, then what they start (the rulebook, a source) as it lands. */
     fun panelDo(call: suspend () -> com.google.gson.JsonObject) = scope.launch {

@@ -179,7 +179,10 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
         chestClose()
         // Card lookup: go("#search"), the Search tab here. Game Night, Share table, Table Spirit and Ask the Judge: the website's War Chest, the same tool.
         if (tool == "lookup") searchTab?.invoke() ?: web(site + "#search", null)
-        else page(decks, "[data-act=\"warChest\"]\n.war-chest-dialog [data-tool=\"${css(tool)}\"]")
+        // The website's Decks has no War Chest button while it has no decks of its own (not signed in there): the table tools then
+        // open from its Rules page's Tabletop button (A.tabletop), the same Game Night.
+        else page(decks, "[data-act=\"warChest\"]\n.war-chest-dialog [data-tool=\"${css(tool)}\"]" +
+            (if (tool in setOf("gameNight", "share", "spirit")) "\n||\n#rules\n[data-act=\"tabletop\"]" else if (tool == "judge") "\n||\n#rules\n[data-act=\"askRules\"]" else ""))
     }
     fun chestOpen() = scope.launch {
         if (HomeCache.loaded == null) { page(decks, "[data-act=\"warChest\"]"); return@launch }
