@@ -142,7 +142,8 @@ fun SyncDecideSheet(backdrop: GraphicsLayer?, onClose: () -> Unit) {
  * the screen's width.
  */
 @Composable
-internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> Unit, onBack: (() -> Unit)? = null, content: @Composable ColumnScope.(vw: androidx.compose.ui.unit.Dp) -> Unit) {
+internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> Unit, onBack: (() -> Unit)? = null, eyebrow: String = "",
+                        content: @Composable ColumnScope.(vw: androidx.compose.ui.unit.Dp) -> Unit) {
     val still = Motion.still
     val fade = remember { Animatable(if (still) 1f else 0f) }
     val y = remember { Animatable(if (still) 0f else 46f) }; val k = remember { Animatable(if (still) 1f else .985f) }; val a = remember { Animatable(if (still) 1f else .2f) }
@@ -243,8 +244,15 @@ internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> U
                         drawPath(androidx.compose.ui.graphics.Path().apply { moveTo(14.5f * u, 6f * u); lineTo(8.5f * u, 12f * u); lineTo(14.5f * u, 18f * u) }, INK,
                             style = Stroke(1.75f * u, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)) }
                 }
-                Text(title, Modifier.weight(1f), style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 19.sp,
-                    lineHeight = 21.85.sp, letterSpacing = (-.38).sp, color = INK, lineHeightStyle = CSS_LINE), textAlign = if (onBack != null) TextAlign.Center else TextAlign.Start,
+                val h2 = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 19.sp,
+                    lineHeight = 21.85.sp, letterSpacing = (-.38).sp, color = INK, lineHeightStyle = CSS_LINE)
+                // <div><p class="eyebrow">…</p><h2>…</h2></div> (a binder's head): the 11 / 700 tracked eyebrow, 4, then the title.
+                if (eyebrow.isNotEmpty()) Column(Modifier.weight(1f)) {
+                    Text(eyebrow, Modifier.padding(bottom = 4.dp), style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Bold, fontSize = 11.sp, lineHeight = 15.95.sp,
+                        letterSpacing = 1.32.sp, color = MUTED, lineHeightStyle = CSS_LINE), maxLines = 1)
+                    Text(title, style = h2, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                }
+                else Text(title, Modifier.weight(1f), style = h2, textAlign = if (onBack != null) TextAlign.Center else TextAlign.Start,
                     maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF1F232B)).border(1.dp, Color(0xFF2A2F39), RoundedCornerShape(12.dp))
                     .clickable(onClick = onClose).semantics { contentDescription = "Close" }, contentAlignment = Alignment.Center) {

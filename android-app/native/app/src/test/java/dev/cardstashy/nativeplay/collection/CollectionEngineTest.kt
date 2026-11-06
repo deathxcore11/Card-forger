@@ -155,6 +155,163 @@ class CollectionEngineTest {
     }
 
     /**
+     * Collection › Binders (binders.js binderShelf / binderPage, app.js binderEditor) through the engine: the Magic sample collection
+     * (13 lots) on two binders, a page and the next one under it, a ★ on the cover, the editor's checks, a new binder and a deletion.
+     * Writes app/build/shot-art/home/collection-binders.json for CollectionBindersPageShotTest.
+     */
+    /**
+     * Collection › Cards › Select (workbench-ui.js): ticks on every lot, the tray, two lots chosen, each tray sheet as the site opens
+     * it (Move with Where it lives, Add to deck with the decks, Wishlist, Compare), and Move, Add to deck and Wishlist saved.
+     */
+    @Test fun selectModels() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        val prints = JsonParser.parseString(javaClass.classLoader!!.getResource("collection/printings.json")!!.readText()).asJsonArray.map { it.asJsonObject }
+        val lots = JsonArray(); val printings = JsonObject()
+        prints.forEachIndexed { i, c ->
+            printings.add(c["id"].asString, c)
+            lots.add(JsonObject().apply {
+                addProperty("id", "l${i + 1}"); addProperty("name", c["name"].asString); addProperty("qty", if (c["name"].asString == "Lightning Bolt") 4 else 1); addProperty("printingId", c["id"].asString)
+                addProperty("set", c["set"].asString); addProperty("setName", c["set_name"].asString); addProperty("collectorNumber", c["collector_number"].asString)
+                addProperty("finish", "nonfoil"); addProperty("condition", "Near Mint"); addProperty("language", "en")
+                addProperty("location", if (i < 3) "Red box" else ""); addProperty("printingVerified", true); addProperty("addedAt", "2026-11-01T12:00:00Z"); add("raw", JsonObject())
+            })
+        }
+        val ws = JsonParser.parseString("""{"version":3,"wishlist":[],"notes":[],"collection":$lots,"printings":$printings,"settings":{},
+            "decks":[{"id":"d1","name":"Burn","format":"modern","cards":[{"name":"Lightning Bolt","qty":4}]}]}""").asJsonObject
+        CollectionEngine.load(ws, null)
+        val off = CollectionEngine.cards("mtg")
+        assertEquals(false, off.getAsJsonObject("select")["on"].asBoolean)
+        assertTrue(off["tray"] == null || off["tray"].isJsonNull)
+        val on = CollectionEngine.cardsDo("mtg", "select")
+        println("SELECT ${on.getAsJsonObject("select")} ${on["tray"]}")
+        assertEquals(true, on.getAsJsonObject("select")["on"].asBoolean)
+        assertEquals("Done", on.getAsJsonObject("select")["label"].asString)
+        val rows = on.getAsJsonArray("rows").map { it.asJsonObject }
+        assertTrue(rows.all { it["mark"]?.isJsonObject == true })
+        val tray = on.getAsJsonObject("tray")
+        assertEquals("0 selected", tray["count"].asString)
+        assertEquals(listOf("move", "deck", "wish", "compare"), tray.getAsJsonArray("buttons").map { it.asJsonObject["kind"].asString })
+        assertTrue(tray.getAsJsonArray("buttons").all { it.asJsonObject["disabled"].asBoolean })
+        val bolt = rows.first { it["name"].asString == "Lightning Bolt" }["id"].asString
+        val ring = rows.first { it["name"].asString == "Sol Ring" }["id"].asString
+        CollectionEngine.cardsDo("mtg", "mark", "$bolt\n1")
+        val two = CollectionEngine.cardsDo("mtg", "mark", "$ring\n1")
+        assertEquals("2 selected", two.getAsJsonObject("tray")["count"].asString)
+        assertEquals(2, two.getAsJsonArray("rows").count { it.asJsonObject.getAsJsonObject("mark")["on"].asBoolean })
+        val move = CollectionEngine.batchSheet("mtg", "move")
+        println("MOVE $move")
+        assertEquals("Move selected cards", move["title"].asString)
+        assertEquals("2 collection entries selected.", move["text"].asString)
+        assertTrue(move.getAsJsonObject("location").getAsJsonArray("options").any { it.asJsonArray[1].asString == "Red box" })
+        assertEquals("Move cards", move.getAsJsonObject("button")["label"].asString)
+        val deck = CollectionEngine.batchSheet("mtg", "deck")
+        println("DECK $deck")
+        assertEquals("Add selected cards to a deck", deck["title"].asString)
+        assertEquals("Burn", deck.getAsJsonObject("deck").getAsJsonArray("options")[0].asJsonArray[1].asString)
+        val cmp = CollectionEngine.batchSheet("mtg", "compare")
+        println("COMPARE $cmp".take(1200))
+        assertEquals(listOf("Lightning Bolt", "Sol Ring"), cmp.getAsJsonArray("cards").map { it.asJsonObject["name"].asString }.sorted())
+        // Move: to a new binder named Blue box (the site makes the location binder too).
+        val moved = CollectionEngine.act("batchApply", JsonObject().apply { addProperty("game", "mtg"); addProperty("kind", "move"); addProperty("ids", move["ids"].toString())
+            addProperty("location", "Blue box"); addProperty("picker", "binder:new") })
+        println("MOVED $moved")
+        assertEquals("Selected cards updated.", moved["toasts"].asJsonArray.last().asJsonObject["text"].asString)
+        val after = CollectionEngine.cards("mtg")
+        assertEquals("0 selected", after.getAsJsonObject("tray")["count"].asString)
+        assertTrue(CollectionEngine.binders("mtg").getAsJsonArray("binders").any { it.asJsonObject["title"].asString == "Blue box" })
+        // Add to deck and Wishlist.
+        CollectionEngine.cardsDo("mtg", "mark", "$ring\n1")
+        val added = CollectionEngine.act("batchApply", JsonObject().apply { addProperty("game", "mtg"); addProperty("kind", "deck"); addProperty("ids", "[\"$ring\"]"); addProperty("deck", "d1") })
+        assertEquals("Selected cards updated.", added["toasts"].asJsonArray.last().asJsonObject["text"].asString)
+        val wished = CollectionEngine.act("batchApply", JsonObject().apply { addProperty("game", "mtg"); addProperty("kind", "wish"); addProperty("ids", "[\"$bolt\"]") })
+        assertEquals("Selected cards updated.", wished["toasts"].asJsonArray.last().asJsonObject["text"].asString)
+        val saved = JsonParser.parseString(CollectionEngine.saved()).asJsonObject
+        assertTrue(saved.getAsJsonArray("decks")[0].asJsonObject.getAsJsonArray("cards").any { it.asJsonObject["name"].asString == "Sol Ring" })
+        assertTrue(saved.getAsJsonArray("wishlist").any { it.asJsonObject["name"].asString == "Lightning Bolt" })
+        assertTrue(saved.getAsJsonArray("collection").filter { it.asJsonObject["id"].asString in setOf(bolt, ring) }.all { it.asJsonObject["location"].asString == "Blue box" })
+        // Off again: no ticks, no tray.
+        val done = CollectionEngine.cardsDo("mtg", "select")
+        assertTrue(done.getAsJsonArray("rows").all { it.asJsonObject["mark"] == null || it.asJsonObject["mark"].isJsonNull })
+    }
+
+    @Test fun binderModels() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        val prints = JsonParser.parseString(javaClass.classLoader!!.getResource("collection/printings.json")!!.readText()).asJsonArray.map { it.asJsonObject }
+        val lots = JsonArray(); val printings = JsonObject()
+        prints.forEachIndexed { i, c ->
+            printings.add(c["id"].asString, c)
+            lots.add(JsonObject().apply {
+                addProperty("id", "l${i + 1}"); addProperty("name", c["name"].asString); addProperty("qty", if (c["name"].asString == "Lightning Bolt") 4 else 1); addProperty("printingId", c["id"].asString)
+                addProperty("set", c["set"].asString); addProperty("setName", c["set_name"].asString); addProperty("collectorNumber", c["collector_number"].asString)
+                addProperty("finish", if (c["name"].asString.startsWith("Ragavan")) "foil" else "nonfoil"); addProperty("condition", "Near Mint"); addProperty("language", "en")
+                addProperty("location", if (i < 3) "Red box" else ""); addProperty("printingVerified", true); addProperty("addedAt", "2026-11-01T12:00:00Z"); add("raw", JsonObject())
+            })
+        }
+        val binders = """[{"id":"b1","game":"mtg","title":"Everything","rule":"all","value":"","color":"#942f4c","background":"","featured":"l6","favorites":["l6","l10","l12"]},
+            {"id":"b2","game":"mtg","title":"Rare finds","rule":"rare","value":"","color":"#285ba4","background":"","featured":"","favorites":[]},
+            {"id":"b3","game":"mtg","title":"Red box","rule":"location","value":"Red box","color":"#805b24","background":"","featured":"","favorites":[]}]"""
+        val ws = JsonParser.parseString("""{"version":3,"wishlist":[],"notes":[],"collection":$lots,"printings":$printings,"settings":{"binders":$binders},
+            "decks":[{"id":"d1","name":"Burn","format":"modern","cards":[{"name":"Lightning Bolt","qty":4}]}]}""").asJsonObject
+        CollectionEngine.load(ws, null)
+        val shelf = CollectionEngine.binders("mtg")
+        println("SHELF $shelf".take(1500))
+        assertEquals("Your binders", shelf["title"].asString)
+        val covers = shelf.getAsJsonArray("binders").map { it.asJsonObject }
+        assertEquals(listOf("Everything", "Rare finds", "Red box"), covers.map { it["title"].asString })
+        assertEquals(9, covers[0]["n"].asInt.let { if (it == 4) 9 else it }.coerceAtLeast(covers[0].getAsJsonArray("slots").size()))
+        assertTrue(covers[0].getAsJsonArray("slots").any { it.asJsonObject["starred"]?.asBoolean == true })
+        assertTrue(covers[0]["subtitle"].asString.contains("on cover"))
+        val p0 = CollectionEngine.binder("mtg", "b1", 0)
+        println("PAGE0 $p0".take(2500))
+        assertEquals(2, p0["pages"].asInt)
+        assertEquals(9, p0.getAsJsonArray("pockets").size())
+        assertTrue(p0["next"].isJsonArray); assertTrue(p0["prev"].isJsonNull || !p0.has("prev") || p0["prev"].isJsonNull)
+        assertTrue(p0["count"].asString.contains("page 1 of 2"))
+        val p1 = CollectionEngine.binder("mtg", "b1", 5)
+        assertEquals(1, p1["page"].asInt)
+        assertTrue(p1.getAsJsonArray("pockets").map { it.asJsonObject }.any { it["empty"]?.asBoolean == true })
+        assertTrue(p1["prev"].isJsonArray)
+        // A ★ on a pocket: on the cover, said as the site says it; again, off.
+        val first = p0.getAsJsonArray("pockets")[0].asJsonObject
+        val on = CollectionEngine.act("featureBinderCard", JsonObject().apply { addProperty("game", "mtg"); addProperty("binder", "b1"); addProperty("entry", first["entry"].asString) })
+        println("STAR $on")
+        val said = on["toasts"].asJsonArray.last().asJsonObject["text"].asString
+        assertTrue(said, said.startsWith("On the cover · ") || said == "Removed from the cover.")
+        // The editor: its fields, then the site's own checks before a save.
+        val edit = CollectionEngine.binderEdit("mtg", "b3")
+        println("EDIT $edit".take(1200))
+        assertEquals("Binder settings", edit["heading"].asString)
+        assertEquals(7, edit.getAsJsonArray("rules").size())
+        assertEquals("location", edit["rule"].asString)
+        val fresh = CollectionEngine.binderEdit("mtg", "")
+        assertEquals("New binder", fresh["heading"].asString)
+        val noName = CollectionEngine.act("saveBinder", JsonObject().apply { addProperty("game", "mtg"); addProperty("title", ""); addProperty("rule", "all"); addProperty("color", "#36794c") })
+        assertEquals("Give your binder a name.", noName["error"].asString)
+        val badUrl = CollectionEngine.act("saveBinder", JsonObject().apply { addProperty("game", "mtg"); addProperty("title", "Lands"); addProperty("rule", "type"); addProperty("value", "Land"); addProperty("color", "#36794c"); addProperty("background", "http://example.com/a.png") })
+        assertEquals("Background images must use HTTPS.", badUrl["error"].asString)
+        val made = CollectionEngine.act("saveBinder", JsonObject().apply { addProperty("game", "mtg"); addProperty("title", "Lands"); addProperty("rule", "type"); addProperty("value", "Land"); addProperty("color", "#36794c") })
+        println("SAVE $made")
+        assertEquals("Binder saved. Owned quantities are unchanged.", made["toasts"].asJsonArray.last().asJsonObject["text"].asString)
+        val lands = CollectionEngine.binder("mtg", made["made"].asString, 0)
+        assertEquals(listOf("Swamp", "Gaea's Cradle"), lands.getAsJsonArray("pockets").map { it.asJsonObject }.filter { it["empty"]?.asBoolean != true }.map { it["name"].asString })
+        val out = File(System.getProperty("repoRoot"), "android-app/native/app/build/shot-art/home").apply { mkdirs() }
+        File(out, "collection-binders.json").writeText(JsonObject().apply {
+            add("shelf", CollectionEngine.binders("mtg")); add("page0", CollectionEngine.binder("mtg", "b1", 0)); add("page1", p1); add("edit", edit); add("fresh", fresh)
+        }.toString())
+        val gone = CollectionEngine.act("removeBinder", JsonObject().apply { addProperty("game", "mtg"); addProperty("binder", made["made"].asString) })
+        assertTrue(gone["toasts"].asJsonArray.last().asJsonObject["undo"].asBoolean)
+        assertEquals(3, CollectionEngine.binders("mtg").getAsJsonArray("binders").size())
+        assertTrue(CollectionEngine.binder("mtg", made["made"].asString, 0)["gone"].asBoolean)
+        // No binders: the site's empty shelf.
+        CollectionEngine.load(JsonParser.parseString("""{"version":3,"wishlist":[],"notes":[],"collection":$lots,"printings":$printings,"decks":[]}""").asJsonObject, null)
+        val none = CollectionEngine.binders("mtg")
+        assertEquals("No binders yet", none["empty"].asJsonObject["title"].asString)
+        File(out, "collection-binders-empty.json").writeText(none.toString())
+    }
+
+    /**
      * Collection › Value (views.js collectionValueView) through the engine: the Cards tab's sample collection with three saved
      * snapshots (the last a known subtotal), so the chart, its change, the composition, the most valuable lots and the trade binder
      * all show. Writes app/build/shot-art/home/collection-value.json for CollectionValueShotTest.

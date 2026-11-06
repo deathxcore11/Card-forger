@@ -21,14 +21,16 @@ import {loadCommunity, communitySlides} from 'WEB/community-feed.js';
 import {loadPulse} from 'WEB/news-pulse.js';
 import {collection as collectionPage, decks as decksView, deckPage as deckView, cardSheet as cardView, setsPage as setsView, setPage as setView, rowsFor} from 'WEB/views.js';
 import {loadMagicPrintingPage, mergeMagicCards} from 'WEB/catalog-tools.js';
-import {magicOwnedDetail, magicOwnedContext, magicOwnedCurrent} from 'WEB/magic-owned-detail.js';
+import {magicOwnedDetail, magicOwnedContext, magicOwnedCurrent, magicOwnedCard} from 'WEB/magic-owned-detail.js';
+import {binderPage, binderMatches, binderFavorites, binderCoverState, BINDER_COLORS, MAX_FAVORITES} from 'WEB/binders.js';
 import {selectPreviewFinish, finishAttrs} from 'WEB/finish-preview.js';
 import {selectedFinish, quoteForContext, conditionBuyLink} from 'WEB/pricing-presentation.js';
 import {conditionName, conditionValue, conditionPriceHtml, conditionManualPlaceholder} from 'WEB/condition-value.js';
 import {configureConditionAuth, clearConditionAttempts, forgetConditionAttempt, loadConditionQuotes, applyConditionQuotes, conditionRequest, conditionQuoteEntry, CONDITION_IDENTITY} from 'WEB/condition-feed.js';
 import {createConditionRefreshScheduler, changedConditionLots, conditionLotIdentity} from 'WEB/condition-refresh-scheduler.js';
 import {locationPicker, rememberLocation} from 'WEB/collection-locations.js';
-import {quoteModel, recordQuote, HISTORY_RANGES, modeFor} from 'WEB/workbench-ui.js';
+import {quoteModel, recordQuote, HISTORY_RANGES, modeFor, selectionState, registerWorkbench} from 'WEB/workbench-ui.js';
+import {setHistoryRefresh} from 'WEB/shared-history.js';
 import {loadSharedHistory} from 'WEB/shared-history.js';
 import {playedAlongside} from 'WEB/guide.js';
 import {mtgPairQueries, rankPairs, edhPop} from 'WEB/pairing.js';
@@ -310,7 +312,58 @@ function lotRow(n) {
     qty: step ? Number(text(one(step, tagIs('b')))) || 0 : 0, edit: !!one(n, x => x.attrs['data-act'] === 'editLot' && cls('link')(x)), got: text(one(n, cls('want-got'))),
     // The copy's printing when it shows a finish: the app draws that foil from it (finish-preview.js reads the same record).
     print: finish && finish.key && finish.key !== 'nonfoil' && finish.printingId ? S.state.printings?.[finish.printingId] || null : null,
-    chrome: lotChrome(n), wantTag: text(one(art, cls('want-tag')))};
+    chrome: lotChrome(n), wantTag: text(one(art, cls('want-tag'))),
+    // workbench-ui.js selectionMark: while Select is on, the lot's tick (checked when it is chosen).
+    mark: (() => { const i = one(n, x => x.tag === 'input' && x.attrs['data-change'] === 'batchToggle'); return i ? {on: i.attrs.checked !== undefined, aria: i.attrs['aria-label'] || ''} : null; })()};
+}
+// workbench-ui.js selectionTray: "n selected", Move / Add to deck / Wishlist / Compare (disabled with none chosen) and Clear.
+const trayModel = t => t && {count: text(one(t, tagIs('b'))), aria: t.attrs['aria-label'] || '',
+  buttons: all(t, x => x.tag === 'button' && x.attrs['data-act'] === 'batchAction').map(b => ({kind: b.attrs['data-kind'] || '', label: text(b), disabled: b.attrs.disabled !== undefined})),
+  clear: text(one(t, x => x.attrs['data-act'] === 'batchClear'))};
+// workbench-ui.js registerWorkbench: the site's Select handlers (A.batchStart, C.batchToggle, A.batchClear, A.batchAction, A.batchApply)
+// with app.js's getCard / zoneFor / ownKey. The app has no DOM: its sheet is read from the html A.batchAction opens, its fields
+// come back with the tap (siteRun's querySelector), and the redraw is the app's. History refresh stays the engine's (none).
+const WA = {}, WC = {};
+let workbenchOn = false, batchGame = '', batchSheetOut = null;
+function workbenchReady() {
+  if (workbenchOn) return; workbenchOn = true;
+  registerWorkbench({A: WA, C: WC, commit, render() {}, openSheet: (html, ctx) => { batchSheetOut = {html, ctx}; }, closeSheet() {}, refreshSheet() {},
+    toast: text => { if (text) toasts.push({text: String(text), undo: false}); },
+    getGame: () => batchGame || 'mtg',
+    getCard: (g, e) => { if (g === 'mtg') return (e.printingVerified && S.state.printings?.[e.printingId]) || meta(e.name); const c = tcgCardOf(g, e.cardId); return c && (!c.game || c.game === g) ? c : null; },
+    links: (g, c) => g === 'mtg' ? Object.entries(c.purchase_uris || {}).map(([name, url]) => [name, url]) : tcgSources[g].buy(c),
+    zoneFor: (g, c) => tcgSources[g].zoneFor(c), ownKey: (g, c) => tcgSources[g].ownKey(c)});
+  setHistoryRefresh(() => {});
+}
+// The Cards tab's Select (a page control: the list is read again after it): on and off, one lot's tick (v = "id\n1" or "id\n0"), Clear.
+const batchActs = G => ({
+  select: () => { workbenchReady(); WA.batchStart({dataset: {game: G}}); },
+  mark: v => { workbenchReady(); const at = String(v).lastIndexOf('\n'); WC.batchToggle({dataset: {game: G, id: String(v).slice(0, at)}, checked: String(v).slice(at + 1) === '1'}); },
+  clear: () => { workbenchReady(); WA.batchClear({dataset: {game: G}}); },
+});
+// A.batchAction's sheet for the tray's [kind], read back: Move (locationPicker), Add to deck (the decks), Wishlist, or Compare (each
+// chosen card's picture, type, rules text, facts and where it lives); or the site's toast when it refuses (more than four to compare).
+function batchSheetModel(G, kind) {
+  workbenchReady(); batchGame = G; batchSheetOut = null; const kept = toasts; toasts = [];
+  try { WA.batchAction({dataset: {game: G, kind}}); } finally { batchGame = ''; }
+  const out = batchSheetOut; batchSheetOut = null;
+  const said = toasts; toasts = kept;
+  if (!out) return {toast: said.map(t => t.text).join(' ')};
+  const t = tree(out.html), head = one(t, cls('sheet-head')), ctx = out.ctx || {};
+  if (ctx.type === 'batch-compare') return {kind: 'compare', title: text(one(head, tagIs('h2'))),
+    cards: all(one(t, cls('batch-compare')), tagIs('article')).map(a => { const ps = all(a, x => x.tag === 'p' && x.kids !== undefined && !cls('small')(x));
+      const img = one(a, tagIs('img'));
+      // img[data-tier]: a 2 outline inside the picture in its price tier's colour (t0 #8b939c), 6 corners; t3 to t5 glow.
+      return {picture: picture(img), tier: img?.attrs['data-tier'] || '', tierColor: ((/--tier:\s*([^;]+)/.exec(img?.attrs.style || '') || [])[1] || '').trim(),
+        name: text(one(a, tagIs('h3'))), type: text(ps[0]), text: text(ps[1]),
+        facts: all(one(a, cls('compare-facts')), tagIs('div')).map(f => [text(one(f, tagIs('dt'))), text(one(f, tagIs('dd')))]), where: text(one(a, x => x.tag === 'p' && cls('small')(x)))}; })};
+  const deck = one(t, x => x.tag === 'select' && x.attrs.id === 'batchDeck'), go = one(t, x => x.attrs['data-act'] === 'batchApply');
+  const picker = one(t, cls('location-picker'));
+  return {kind: ctx.kind, title: text(one(head, tagIs('h2'))), ids: ctx.ids || [], text: text(one(t, x => x.tag === 'p' && !cls('foot')(x) && !cls('location-hint')(x) && x !== one(picker, tagIs('p')))),
+    location: picker ? locationModelOf(picker) : null,
+    deck: deck && {label: (one(t, x => x.tag === 'label' && one(x, y => y === deck))?.kids || []).filter(k => k.text !== undefined).map(k => k.text).join('').trim(), options: all(deck, tagIs('option')).map(o => [o.attrs.value ?? '', text(o)]),
+      selected: (all(deck, tagIs('option')).find(o => o.attrs.selected !== undefined) || all(deck, tagIs('option'))[0])?.attrs.value ?? ''},
+    none: text(one(t, x => x.tag === 'p' && /Create a deck first/.test(text(x)))), button: {label: text(go), disabled: go?.attrs.disabled !== undefined}};
 }
 // app.js's handlers for the Cards tab's controls (C.collSort, C.collDirection, C.collFilter, I.collSearch, A.collMore), verbatim
 // but for the redraw, which is the app's.
@@ -322,6 +375,7 @@ const cardsAct = {
   more: () => { S.ui.collLimit += 200; },
   // workbench-ui.js A.viewSave for area "collection": the account's settings.displayModes (the app keeps the choice too).
   view: v => { if (['gallery', 'compact', 'symbols'].includes(v)) ((S.state.settings.displayModes ||= {}).mtg ||= {}).collection = v; },
+  ...batchActs('mtg'),
 };
 function cardsPage(game, o = {}) {
   const ui = S.ui;
@@ -333,7 +387,8 @@ function cardsPage(game, o = {}) {
   const tools = one(t, cls('coll-tools')), search = one(tools, x => x.tag === 'input'), list = one(t, cls('display-list')), more = one(t, x => x.attrs['data-act'] === 'collMore');
   return {game, mode: modeFor(game, 'collection'), title: text(one(head, tagIs('h1'))), banner: picture(one(head, cls('page-hero-img'))), bannerCard: head?.attrs['data-banner-card'] || '',
     views: view ? all(view, tagIs('button')).map(b => ({mode: b.attrs['data-mode'], label: b.attrs['aria-label'] || b.attrs.title || '', on: b.attrs['aria-checked'] === 'true', icon: icon(svgIn(b))})) : [],
-    select: batch && {label: text(batch), aria: batch.attrs['aria-label'] || '', icon: icon(svgIn(batch))}, menu: menu && {label: text(menu), aria: menu.attrs['aria-label'] || ''},
+    select: batch && {label: text(batch), aria: batch.attrs['aria-label'] || '', icon: icon(svgIn(batch)), on: cls('on')(batch)}, menu: menu && {label: text(menu), aria: menu.attrs['aria-label'] || ''},
+    tray: trayModel(one(t, cls('batch-tray'))),
     tabs: all(seg, tagIs('button')).map(b => ({key: b.attrs['data-id'], label: text(b), on: b.attrs['aria-selected'] === 'true', icon: icon(svgIn(b))})),
     empty: empty && {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p'))), mark: text(one(empty, cls('empty-mark'))), actions: all(empty, tagIs('button')).map(b => ({label: text(b), act: b.attrs['data-act'] || '', ghost: cls('ghost')(b)}))},
     summary: runs(one(t, cls('summary-line')) || {kids: []}),
@@ -375,7 +430,8 @@ function tcgCardsPage(G, o = {}) {
   const sum = one(t, cls('coll-summary')), refresh = one(sum, x => x.attrs['data-act'] === 'tRefreshPrices');
   return {game: G, mode: modeFor(G, 'collection'), title: text(one(head, tagIs('h1'))), banner: picture(one(head, cls('page-hero-img'))), bannerCard: head?.attrs['data-banner-card'] || '',
     views: view ? all(view, tagIs('button')).map(b => ({mode: b.attrs['data-mode'], label: b.attrs['aria-label'] || b.attrs.title || '', on: b.attrs['aria-checked'] === 'true', icon: icon(svgIn(b))})) : [],
-    select: batch && {label: text(batch), aria: batch.attrs['aria-label'] || '', icon: icon(svgIn(batch))}, menu: null,
+    select: batch && {label: text(batch), aria: batch.attrs['aria-label'] || '', icon: icon(svgIn(batch)), on: cls('on')(batch)}, menu: null,
+    tray: trayModel(one(t, cls('batch-tray'))),
     tabs: all(seg, tagIs('button')).map(b => ({key: b.attrs['data-id'], label: text(b), on: b.attrs['aria-selected'] === 'true', icon: icon(svgIn(b))})),
     empty: empty && {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p'))), mark: text(one(empty, cls('empty-mark'))), actions: all(empty, tagIs('button')).map(b => ({label: text(b), act: b.attrs['data-act'] || '', ghost: cls('ghost')(b)}))},
     // .coll-summary: the collection's value (its button opens Value), copies and wishlist, then the refresh button.
@@ -397,6 +453,7 @@ const tcgCardsAct = {
     if (change === 'tCollSet') TC.tCollSet({value}); else if (change === 'tCollKind') TC.tCollKind({value, dataset: {field}}); else throw Error('unknown filter ' + name); },
   // workbench-ui.js A.viewSave for area "collection": the game's own settings.displayModes.
   view: v => { if (['gallery', 'compact', 'symbols'].includes(v)) ((S.state.settings.displayModes ||= {})[tcgGame()] ||= {}).collection = v; },
+  select: () => batchActs(tcgGame()).select(), mark: v => batchActs(tcgGame()).mark(v), clear: () => batchActs(tcgGame()).clear(),
 };
 
 // ---- Collection › Value (views.js collectionValueView, tcg.js tcgValueView; value-page.js, pricehist.js alertsPanel, importance.js
@@ -478,6 +535,81 @@ function valuePage(G) {
   const kids = page ? page.kids || [] : (t.kids || []).filter(k => k.tag && cls('panel')(k));
   return {game: G, accent: styleVar(page, 'value-accent'), empty: empty && !page ? {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p'))), mark: text(one(empty, cls('empty-mark')))} : null,
     blocks: kids.filter(k => k.tag).map(k => valueBlock(k, G)).filter(Boolean)};
+}
+
+// ---- Collection › Binders (binders.js binderShelf / binderPage, app.js binderRows, showBinder, binderEditor). A binder is a
+// saved filter over the collection (settings.binders); its pages are the matching lots, nine to a page.
+// app.js binderRows, verbatim but for the game's card lookup (tcg.js cardOf).
+function binderRows(game, location = null) {
+  const collection = game === 'mtg' ? S.state.collection : tcgGs(game).collection;
+  return collection.filter(entry => location === null || String(entry.location || '').trim() === location).map(entry => {
+    const c = game === 'mtg' ? magicOwnedCard(entry, S.state.printings?.[entry.printingId]) : tcgCardOf(game, entry.cardId);
+    const variant = c?.variants?.find(v => v.key === entry.variant);
+    return {entry, card: c, game, owned: true, image: game === 'mtg' ? cardImage(c) : variant?.image || c?.image || '', version: variant?.label || entry.variantLabel || [entry.set || c?.set?.id, entry.finish, entry.edition].filter(Boolean).join(' · ')};
+  });
+}
+const binderById = id => (S.state.settings.binders || []).find(b => b.id === id);
+function binderFocus(G) { if (G === 'mtg') mtgFocus(); else tcgFocus(G, 'collection'); }
+// The shelf as views.js collection() / tcg.js tcgCollection() draw it with the Binders tab open.
+function binderShelfModel(G) {
+  let html;
+  if (G === 'mtg') { mtgFocus(); S.ui.collTab = 'binders'; try { html = collectionPage(); } finally { S.ui.collTab = 'cards'; } }
+  else { tcgFocus(G, 'collection'); const U = tcgUi(G).coll; U.tab = 'binders'; try { html = tcgCollection(); } finally { U.tab = 'cards'; } }
+  const t = tree(html), shelf = one(t, cls('binder-shelf')), head = one(shelf, cls('row')), empty = one(shelf, cls('binder-empty-state')), add = one(head, x => x.attrs['data-act'] === 'newBinder');
+  return {game: G, eyebrow: text(one(head, cls('eyebrow'))), title: text(one(head, tagIs('h2'))), add: add && glyph(text(add)),
+    line: text((shelf?.kids || []).find(k => k.tag === 'p' && cls('muted')(k))),
+    empty: empty && {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p'))), button: text(one(empty, tagIs('button')))},
+    // app.js tileMenu: holding a binder offers Open binder and Edit cover and cards (actionIcon binder / brush).
+    hold: {title: 'Binder', items: [['openBinder', 'binder', 'Open binder'], ['editBinder', 'brush', 'Edit cover and cards']].map(([act, ic, label]) => ({act, label, icon: icon(svgIn(tree(ICON[ic] || '')))}))},
+    binders: all(shelf, cls('stash-binder')).map(b => { const win = one(b, cls('stash-window')), bg = one(b, cls('stash-custom-background')), lab = one(b, cls('stash-binder-label'));
+      return {id: b.attrs['data-binder'] || '', color: styleVar(b, 'binder'), background: bg?.attrs.src || '', cover: text(one(b, cls('stash-cover-title'))),
+        n: Number((classes(win).find(c => /^w\d$/.test(c)) || 'w1').slice(1)),
+        slots: all(win, cls('stash-slot')).map(s => { const img = one(s, tagIs('img')); return cls('only')(s) ? {empty: true, only: true} : cls('empty')(s) || !img ? {empty: true} : {starred: cls('starred')(s), picture: picture(img)}; }),
+        title: text(one(lab, tagIs('b'))), subtitle: text(one(lab, tagIs('small'))), hint: text(one(lab, cls('stash-open-hint')))}; })};
+}
+// app.js showBinder (the account's own binders): its rows, the page clamped, binderPage read into pockets; the pages either side
+// (.stash-under) come with it, so the page being dragged shows the real next one underneath.
+function binderModel(G, id, page = 0) {
+  binderFocus(G);
+  const b = binderById(id);
+  if (!b || b.game !== G) return {gone: true};
+  const allRows = binderRows(b.game), rows = allRows.filter(r => binderMatches(r, b)), pages = Math.max(1, Math.ceil(rows.length / 9));
+  const at = Math.max(0, Math.min(pages - 1, Number(page) || 0));
+  const t = tree(binderPage(rows, b.title, at, 'next', b, {collectionRows: allRows}));
+  const head = one(t, cls('sheet-head')), tools = one(t, cls('stash-page-tools')), notice = one(t, cls('binder-cover-notice')), opts = one(tools, x => x.attrs['data-act'] === 'editBinder');
+  const pocketOf = p => { const btn = one(p, cls('pocket-open')), star = one(p, cls('pocket-star')), img = one(btn, tagIs('img')), im = one(btn, cls('pocket-image')); let finish = null; try { finish = JSON.parse(im?.attrs['data-finish-model'] || 'null'); } catch {}
+    const entry = btn?.attrs['data-entry'] || '';
+    return {entry, name: text(one(btn, tagIs('b'))), version: text(one(btn, tagIs('small'))), qty: text(one(btn, cls('pocket-qty'))), aria: btn?.attrs['aria-label'] || '',
+      act: btn?.attrs['data-act'] || '', data: attrsOf(btn), picture: picture(img), fallback: img ? '' : text(im), starred: cls('starred')(p),
+      star: star && {on: cls('on')(star), aria: star.attrs['aria-label'] || ''},
+      finish: finish && {key: finish.key || '', effect: finish.effect || im?.attrs['data-finish-effect'] || '', printingId: finish.printingId || ''},
+      print: G === 'mtg' && finish && finish.key && finish.key !== 'nonfoil' && finish.printingId ? S.state.printings?.[finish.printingId] || null : null}; };
+  const pageNode = one(t, cls('stash-pocket-page'));
+  const under = dir => { const u = one(t, x => cls('stash-under')(x) && x.attrs['data-under'] === String(dir)); return u ? all(u, cls('stash-pocket')).map(p => { const img = one(p, tagIs('img')); return img ? {picture: picture(img)} : {empty: true}; }) : null; };
+  const turn = all(one(t, cls('stash-turn-bar')), tagIs('button'));
+  const setLink = one(t, x => x.attrs['data-act'] === 'go' && /^#set\//.test(x.attrs['data-to'] || ''));
+  return {game: G, id: b.id, color: b.color || '', page: at, pages, eyebrow: text(one(head, cls('eyebrow'))), title: text(one(head, tagIs('h2'))),
+    options: opts && text(opts), count: text(one(tools, cls('stash-page-count'))),
+    notice: notice && {lines: all(notice, cls('foot')).map(text), button: text(one(notice, tagIs('button')))},
+    pockets: (pageNode?.kids || []).filter(k => k.tag && cls('stash-pocket')(k)).map(p => cls('empty-pocket')(p) ? {empty: true, mark: text(p)} : pocketOf(p)),
+    next: under(1), prev: under(-1),
+    back: turn[0] && {label: text(turn[0]), off: turn[0].attrs.disabled !== undefined, aria: turn[0].attrs['aria-label'] || ''},
+    forward: turn[1] && {label: text(turn[1]), off: turn[1].attrs.disabled !== undefined, aria: turn[1].attrs['aria-label'] || ''},
+    dots: all(one(t, cls('stash-dots')), tagIs('i')).length,
+    none: text(one(t, x => x.tag === 'p' && cls('center')(x))), set: setLink && {label: text(setLink), code: decodeURIComponent((setLink.attrs['data-to'] || '').slice(5))},
+    foot: text((t.kids || []).filter(k => k.tag === 'p' && cls('foot')(k)).at(-1))};
+}
+// app.js binderEditor and C.binderRule: the sheet's fields (a new binder, or one to change) and the caption and hint each rule shows.
+const BINDER_HINTS = {location: ['Location name (optional)', 'Leave blank to use the binder name. Assign cards here using Where it lives.'], set: ['Set code', 'Use the exact set code: Pokémon base1, Magic FDN, or Yu-Gi-Oh! LOB.'], type: ['Card type', 'Examples: Land, Creature, Trainer or Spell.'], color: ['Color / energy / attribute', 'Examples: Fire, Water, W, U, B, R, G or DARK.'], rarity: ['Rarity', 'Use the exact rarity name shown on your cards.']};
+const BINDER_RULES = [['all', 'All my cards'], ['set', 'A specific set'], ['rare', 'Rare cards and above'], ['rarity', 'An exact rarity'], ['type', 'Card type'], ['color', 'Color / energy / attribute'], ['location', 'Cards placed in this binder']];
+function binderEditModel(G, id) {
+  binderFocus(G);
+  const b = id ? binderById(id) : null;
+  return {game: b?.game || G, id: b?.id || '', heading: b ? 'Binder settings' : 'New binder', title: b?.title || '', rule: b?.rule || 'location', value: b?.value || '',
+    color: b?.color || BINDER_COLORS[(S.state.settings.binders || []).length % BINDER_COLORS.length], colors: BINDER_COLORS,
+    background: b?.background?.startsWith('https:') ? b.background : '', uploaded: !!b?.background?.startsWith('data:'), bgData: b?.background?.startsWith('data:') ? b.background : '',
+    rules: BINDER_RULES.map(([value, label]) => ({value, label})), hints: Object.fromEntries(Object.entries(BINDER_HINTS).map(([k, [caption, hint]]) => [k, {caption, hint}])),
+    noValue: ['all', 'rare'], placeholder: 'Fire Pokémon, rare finds, land library…', valuePlaceholder: 'e.g. base1, Rare, Fire, Land, W, LIGHT', fallbackCaption: 'Filter value'};
 }
 
 // icons.js decorateGlyphs: a label that starts with one of these and a space wears that icon in its place (LEAD, as the site has it).
@@ -2053,6 +2185,65 @@ const writeActs = {
   },
   // tcg.js A.tRefreshPrices: the Yu-Gi-Oh! or Pokémon collection's prices read again (Cards' refresh button, Value's Refresh prices).
   async tRefreshPrices(d) { tcgFocus(d.game, 'collection'); await siteRun(() => TA.tRefreshPrices({dataset: {}}), d); },
+  // workbench-ui.js A.batchApply: the chosen lots moved (where they live, a new binder made for them), copied into a deck's draft,
+  // or wished for, as the sheet that opened them said ([ids], [kind]); the sheet's fields come back as the site reads them.
+  async batchApply(d) {
+    workbenchReady(); if (d.game && d.game !== 'mtg') tcgFocus(d.game, 'collection'); else mtgFocus();
+    const ctx = {type: 'batch-action', game: d.game || 'mtg', kind: d.kind, ids: JSON.parse(d.ids || '[]')}, prev = S.ui.sheetCtx;
+    selectionState(ctx.game); S.ui.sheetCtx = ctx; batchGame = ctx.game;
+    try { await siteRun(() => WA.batchApply(), d, {'#batchLocation': d.location ?? '', '#batchDeck': d.deck ?? '', '#batchLocationPicker': d.picker ?? ''}); }
+    finally { batchGame = ''; if (S.ui.sheetCtx === ctx) S.ui.sheetCtx = prev; }
+  },
+  // app.js A.saveBinder: the editor's fields checked as the site checks them, then the binder saved (a location binder remembers
+  // its place). [d]: game, binder (its id when changing one), title, rule, value, color, background (an HTTPS link), bgData (an upload).
+  async saveBinder(d) {
+    const game = d.game, rule = String(d.rule || 'location'), title = String(d.title || '').trim(), raw = String(d.value || '').trim();
+    const value = rule === 'set' ? (game === 'ygo' ? raw.toUpperCase() : raw.toLowerCase()) : raw || (rule === 'location' ? title : '');
+    const color = String(d.color || ''), background = String(d.bgData || '') || String(d.background || '').trim();
+    if (!title) throw Error('Give your binder a name.');
+    if (!['all', 'rare'].includes(rule) && !value) throw Error('Enter the set, rarity, type, color or location to match.');
+    if (!/^#[0-9a-f]{6}$/i.test(color)) throw Error('Choose a valid cover color.');
+    if (background && !background.startsWith('data:')) { let url; try { url = new URL(background); } catch { throw Error('Use a valid HTTPS image URL.'); } if (url.protocol !== 'https:') throw Error('Background images must use HTTPS.'); }
+    if (background.startsWith('data:') && (!/^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/=]+$/i.test(background) || background.length > 350000)) throw Error('Choose a smaller JPEG, PNG or WebP cover image.');
+    const old = binderById(d.binder), b = {id: old?.id || uid(), game, title, rule, value, color, background, featured: old?.featured || '', favorites: binderFavorites(old)};
+    await commit(st => { st.settings.binders ||= []; if (b.rule === 'location') rememberLocation(st, game, b.value); const at = st.settings.binders.findIndex(x => x.id === b.id); if (at < 0) st.settings.binders.push(b); else st.settings.binders[at] = b; });
+    made = b.id;
+    toasts.push({text: 'Binder saved. Owned quantities are unchanged.', undo: false});
+  },
+  // app.js A.removeBinder: gone from the shelf (Undo brings it back); the cards stay.
+  async removeBinder(d) {
+    const b = binderById(d.binder); if (!b || b.game !== d.game) return;
+    await commit(st => { st.settings.binders = (st.settings.binders || []).filter(x => x.id !== b.id); }, {observeValue: false, undo: `Deleted binder “${b.title}”. Your cards stay in the collection.`});
+  },
+  // app.js A.featureBinderCard: a pocket's ★ puts its card on the clear cover (up to nine) or takes it off, checked again as it saves.
+  async featureBinderCard(d) {
+    const b = binderById(d.binder); if (!b || b.game !== d.game) return;
+    const allRows = binderRows(b.game), rows = allRows.filter(r => binderMatches(r, b)), id = d.entry; if (!rows.some(r => r.entry.id === id)) return;
+    const remove = binderCoverState(b, rows, allRows).favorites.includes(id);
+    let plan, refused = '';
+    const saved = await commit(st => { const target = st.settings.binders.find(x => x.id === b.id); target.favorites = plan.next; target.featured = target.favorites[0] || ''; return true; }, {observeValue: false, guard: st => {
+      const target = st.settings.binders?.find(x => x.id === b.id && x.game === b.game); if (!target) return false;
+      const all = binderRows(target.game), matched = all.filter(r => binderMatches(r, target)); if (!matched.some(r => r.entry.id === id)) return false;
+      const {favorites, unavailable, references} = binderCoverState(target, matched, all), on = favorites.includes(id);
+      if (remove !== on) return false;
+      if (!remove && references.length >= MAX_FAVORITES) { refused = unavailable.length ? `All ${MAX_FAVORITES} saved cover slots are used, including ${unavailable.length} unavailable. Unstar a card or remove unavailable cover selections first.` : `A cover shows up to ${MAX_FAVORITES} cards. Unstar one first.`; return false; }
+      plan = {next: remove ? references.filter(x => x !== id) : [...references, id], count: favorites.length + (remove ? -1 : 1)}; return true;
+    }});
+    const said = refused || (saved ? (remove ? 'Removed from the cover.' : `On the cover · ${plan.count}/${MAX_FAVORITES}`) : '');
+    if (said) toasts.push({text: said, undo: false});
+  },
+  // app.js A.clearUnavailableBinderFavorites: only the cover choices whose cards are gone are dropped.
+  async clearUnavailableBinderFavorites(d) {
+    const b = binderById(d.binder); if (!b || b.game !== d.game) return;
+    const allRows = binderRows(b.game), rows = allRows.filter(r => binderMatches(r, b)), {unavailable} = binderCoverState(b, rows, allRows);
+    if (!unavailable.length) return;
+    let remove;
+    await commit(st => { const target = st.settings.binders.find(x => x.id === b.id); target.favorites = binderFavorites(target).filter(id => !remove.includes(id)); target.featured = target.favorites[0] || ''; return true; },
+      {observeValue: false, undo: 'Removed unavailable cover selections. Your collection is unchanged.', guard: st => {
+        const target = st.settings.binders?.find(x => x.id === b.id && x.game === b.game); if (!target) return false;
+        const all = binderRows(target.game), still = binderCoverState(target, all.filter(r => binderMatches(r, target)), all).unavailable;
+        remove = unavailable.filter(id => still.includes(id)); return remove.length > 0; }});
+  },
   // app.js A.copySpare: Value's Trade binder list (owned cards no deck uses), copied.
   async copySpare() {
     const v = collectionValue(S.state.collection, S.catalog, S.state.printings, S.state.decks);
@@ -2152,8 +2343,9 @@ const ADD_FINISHES = [['nonfoil', 'Nonfoil'], ['foil', 'Foil'], ['etched', 'Etch
 const ADD_CONDITIONS = ['Near Mint', 'Lightly Played', 'Moderately Played', 'Heavily Played', 'Damaged'].map(x => [x, x]);
 const ADD_LANGUAGES = [['en', 'English'], ['ja', 'Japanese'], ['de', 'German'], ['fr', 'French'], ['es', 'Spanish'], ['it', 'Italian'], ['pt', 'Portuguese'], ['ru', 'Russian'], ['ko', 'Korean'], ['zhs', 'Chinese (S)'], ['zht', 'Chinese (T)']];
 // collection-locations.js locationPicker, read back: its label, choices, the one chosen, the name box and its hint.
-function locationModel(state, game, value) {
-  const t = tree(locationPicker(state, game, 'addLocation', value)), sel = one(t, tagIs('select')), input = one(t, tagIs('input'));
+function locationModel(state, game, value) { return locationModelOf(tree(locationPicker(state, game, 'addLocation', value))); }
+function locationModelOf(t) {
+  const sel = one(t, tagIs('select')), input = one(t, tagIs('input'));
   const opts = all(sel, tagIs('option'));
   return {label: text(one(t, tagIs('label'))), options: opts.map(o => [o.attrs.value ?? '', text(o)]), selected: (opts.find(o => o.attrs.selected !== undefined) || opts[0])?.attrs.value ?? '',
     input: input?.attrs.value || '', placeholder: input?.attrs.placeholder || '', hint: text(one(t, cls('location-hint')))};
@@ -2828,8 +3020,14 @@ globalThis.Collection = {
   tdeckModel() { if (!tdeckAt) return '{}'; const [g, id] = tdeckAt; return json(tcgDeckPageModel(g, id)); },
   deckDo(game, id, kind, value) { if (game && game !== 'mtg') { if (!tcgDeckAct[kind]) throw Error('unknown deck control ' + kind); tcgFocus(game, 'tdeck'); S.ui.tdeckId = id; tdeckAt = [game, id]; tcgDeckAct[kind](value); return json(tcgDeckPageModel(game, id)); }
     if (!deckAct[kind]) throw Error('unknown deck control ' + kind); mtgFocus(); deckOpen(id); deckAct[kind](value); return json(deckPageModel(game, id)); },
+  // Collection › Binders for [game]: the shelf, one binder's page, the editor's fields (binderShelfModel, binderModel, binderEditModel).
+  binders(game) { return json(binderShelfModel(game || 'mtg')); },
+  binder(game, id, page) { return json(binderModel(game || 'mtg', id, page)); },
+  binderEdit(game, id) { return json(binderEditModel(game || 'mtg', id || '')); },
   // Collection › Value for [game] (valuePage).
   value(game) { return json(valuePage(game || 'mtg')); },
+  // The Select tray's sheet for [kind] (batchSheetModel); its button saves through act('batchApply').
+  batchSheet(game, kind) { if (game && game !== 'mtg') tcgFocus(game, 'collection'); else mtgFocus(); return json(batchSheetModel(game || 'mtg', kind)); },
   cardsDo(game, kind, value) {
     if (game && game !== 'mtg') { if (!tcgCardsAct[kind]) throw Error('unknown Cards control ' + kind); tcgFocus(game, 'collection'); tcgCardsAct[kind](value); return json(tcgCardsPage(game)); }
     if (!cardsAct[kind]) throw Error('unknown Cards control ' + kind); mtgFocus(); cardsAct[kind](value); return json(cardsPage(game)); },

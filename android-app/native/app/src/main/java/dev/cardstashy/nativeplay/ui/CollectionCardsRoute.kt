@@ -41,12 +41,14 @@ private object CardsCache {
     val q = HashMap<CardGame, String>()
     val tab = HashMap<CardGame, String>()
     val value = HashMap<CardGame, CollectionValueModel>()
+    val binders = HashMap<CardGame, com.google.gson.JsonObject>()
 }
 
 /**
  * Collection's Cards tab: the account's collection through the site's own views.js collection(), drawn natively. Sort,
  * direction, filter, search, the view (Gallery, Compact, Symbols) and Show more ask the site's code again; the steppers and a wanted
- * card's × save from here (CollectionWrites); Value is drawn here (CollectionValue); Binders, Select and the ⋯ menu still open the website's page.
+ * card's × save from here (CollectionWrites); Value and Binders are drawn here (CollectionValue, CollectionBinders); Select and the ⋯ menu still
+ * open the website's page.
  */
 @Composable
 fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, web: (url: String, press: String?) -> Unit, onDecks: (() -> Unit)? = null, nativeCard: Boolean = false,
@@ -68,6 +70,9 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     var tab by remember(game) { mutableStateOf(CardsCache.tab[game] ?: "cards") }
     var value by remember(game) { mutableStateOf(CardsCache.value[game]) }
     var refreshing by remember(game) { mutableStateOf(false) }
+    var shelf by remember(game) { mutableStateOf(CardsCache.binders[game]) }
+    /** A binder whose pocket opened a card: it opens again, at its page, once that card page closes (app.js sheet history). */
+    var parked by remember { mutableStateOf<CollectionWrites.BinderOpen?>(null) }
     LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
     // The view last chosen here (the site keeps it in the account's settings.displayModes; the app keeps it too, as the set page does).
     val prefs = remember { context.getSharedPreferences("collection", android.content.Context.MODE_PRIVATE) }
@@ -106,6 +111,13 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     // Value: the site's page read again when it opens, after a save, and as the collection's prices arrive (paint's model changes).
     LaunchedEffect(tab, game, written, model) {
         CardsCache.tab[game] = tab
+        // Binders: the shelf as binders.js draws it, read again after a save.
+        if (tab == "binders" && HomeCache.loaded != null) {
+            val g = game
+            runCatching { withContext(Dispatchers.Default) { CollectionEngine.binders(g.id) } }.getOrNull()
+                ?.let { b -> if (g == CollectionGame.current.value) { shelf = b; CardsCache.binders[g] = b } }
+            return@LaunchedEffect
+        }
         if (tab != "value" || HomeCache.loaded == null) return@LaunchedEffect
         val g = game
         runCatching { withContext(Dispatchers.Default) { CollectionValueModel.parse(CollectionEngine.value(g.id)) } }.getOrNull()
@@ -126,8 +138,8 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
         val tcg = game != CardGame.MTG
         CollectionCardsActions(
             game = { g -> CollectionGame.set(g) },
-            // Cards and Value are drawn here; Binders is still the website's.
-            tab = { k -> if (k == "cards" || k == "value") tab = k else site(if (tcg) "[data-act=\"tCollTab\"][data-id=\"${css(k)}\"]" else "[data-act=\"collTab\"][data-id=\"${css(k)}\"]") },
+            // Cards, Binders and Value are drawn here.
+            tab = { k -> if (k == "cards" || k == "value" || k == "binders") tab = k else site(if (tcg) "[data-act=\"tCollTab\"][data-id=\"${css(k)}\"]" else "[data-act=\"collTab\"][data-id=\"${css(k)}\"]") },
             view = { mode -> prefs.edit().putString(viewKey, mode).apply(); asked = "view" to mode },
             select = { site("[data-act=\"batchStart\"]") },
             menu = { web(coll, "[data-act=\"collMenu\"]") },
@@ -196,10 +208,38 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             copySpare = { scope.launch { CollectionWrites.act(context, "copySpare", com.google.gson.JsonObject()) } },
         )
     }
+    // Binders' taps: a binder opens over the page (app.js showBinder), its pocket's card over that (the binder comes back after), the set
+    // checklist link; ＋ New binder and Binder options open the editor; holding a binder, tileMenu.
+    val openBinder: (String, Int) -> Unit = remember(game) { { id, p ->
+        val tcg = game != CardGame.MTG
+        CollectionWrites.binder.value = CollectionWrites.BinderOpen(game.id, id, p,
+            card = { a, d, name, back ->
+                fun ds(k: String) = d[k]?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
+                parked = back
+                if (tcg || a == "tCard") cards = cards + CardOpen(name, entry = ds("entry"), page = coll, tile = "[data-act=\"tCard\"][data-id=\"${css(ds("id"))}\"]", game = game.id, id = ds("id"))
+                else { val n = ds("name").ifBlank { name }; val entry = ds("entry")
+                    val tile = if (entry.isBlank()) "[data-act=\"card\"][data-name=\"${css(n)}\"]" else "[data-act=\"card\"][data-entry=\"${css(entry)}\"]"
+                    if (nativeCard) cards = cards + CardOpen(n, entry = entry, page = coll, tile = tile) else { parked = null; web(coll, tile) } }
+            },
+            set = { code -> if (code.isNotBlank()) onSet?.invoke(code.lowercase()) ?: web(site + "#set/" + android.net.Uri.encode(code.lowercase()), null) })
+    } }
+    val shelfAct = remember(game) {
+        BinderShelfActions(
+            add = { CollectionWrites.binderEditing.value = CollectionWrites.BinderEditOpen(game.id, "", open = openBinder) },
+            open = { id -> openBinder(id, 0) },
+            hold = { id -> CardsCache.binders[game]?.get("hold")?.takeIf { it.isJsonObject }?.asJsonObject?.let { h ->
+                CollectionWrites.binderHold.value = CollectionWrites.BinderHoldOpen(game.id, id, h, openBinder) } },
+        )
+    }
+    LaunchedEffect(cards.isEmpty()) { if (cards.isEmpty()) parked?.let { b -> parked = null; CollectionWrites.binder.value = b.copy(id = System.nanoTime()) } }
     val m = model
     Box(Modifier.fillMaxSize()) {
     if (m != null) CollectionCards(m, top, act, nav, query, tab,
-        if (tab == "value") ({ gutter, narrow -> collectionValueItems(value, valueAct, gutter, narrow, refreshing) }) else null)
+        when (tab) {
+            "value" -> ({ gutter, narrow -> collectionValueItems(value, valueAct, gutter, narrow, refreshing) })
+            "binders" -> ({ gutter, _ -> binderShelfItems(shelf, shelfAct, gutter) })
+            else -> null
+        })
     else Column(Modifier.fillMaxSize().background(Site.Bg)) {
         Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { top(null) }
         Column(Modifier.weight(1f).fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally) {

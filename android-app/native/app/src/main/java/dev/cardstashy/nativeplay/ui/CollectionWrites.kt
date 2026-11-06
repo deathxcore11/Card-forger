@@ -212,6 +212,31 @@ internal object CollectionWrites {
     }
     fun tAddClosed(ctx: Int) { bg.launch { CollectionEngine.tAddClose(ctx) } }
 
+    /**
+     * An open binder (app.js showBinder): its game, id and page, and what a pocket's card (data-act card / tCard and its dataset)
+     * and the set checklist link do on the page that opened it. [card] gets the binder back, to reopen when that card page closes.
+     */
+    data class BinderOpen(val game: String, val binder: String, val page: Int = 0,
+                          val card: (act: String, data: JsonObject, name: String, back: BinderOpen) -> Unit = { _, _, _, _ -> },
+                          val set: (String) -> Unit = {}, val id: Long = System.nanoTime())
+    val binder = MutableStateFlow<BinderOpen?>(null)
+    /**
+     * app.js binderEditor: New binder ([binder] blank) or Binder settings; [back] is the binder it was opened from (sheet history),
+     * [open] shows a binder at a page (a changed binder opens again once saved).
+     */
+    data class BinderEditOpen(val game: String, val binder: String, val back: BinderOpen? = null, val open: (id: String, page: Int) -> Unit = { _, _ -> },
+                              val id: Long = System.nanoTime())
+    val binderEditing = MutableStateFlow<BinderEditOpen?>(null)
+    /** app.js tileMenu on a held binder: Open binder and Edit cover and cards; [hold] is the engine's {title, items}, [open] shows a binder. */
+    data class BinderHoldOpen(val game: String, val binder: String, val hold: JsonObject, val open: (id: String, page: Int) -> Unit, val id: Long = System.nanoTime())
+    val binderHold = MutableStateFlow<BinderHoldOpen?>(null)
+    /** binders.js binderPage's model for page [page] of binder [id] from this device's collection; {gone} once deleted. Null (with a toast) when it can't open. */
+    suspend fun binderModel(context: Context, game: String, id: String, page: Int): JsonObject? =
+        withCollection(context) { CollectionEngine.binder(game, id, page) }
+    /** app.js binderEditor's fields for binder [id] (blank: a new one). */
+    suspend fun binderEditModel(context: Context, game: String, id: String): JsonObject? =
+        withCollection(context) { CollectionEngine.binderEdit(game, id) }
+
     /** app.js closeSheet for the add sheet whose model said [ctx]. */
     fun addClosed(ctx: Int) { bg.launch { CollectionEngine.addClose(ctx) } }
 

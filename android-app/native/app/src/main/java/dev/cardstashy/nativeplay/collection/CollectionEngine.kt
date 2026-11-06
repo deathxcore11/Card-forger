@@ -114,11 +114,27 @@ object CollectionEngine {
     suspend fun value(game: String): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.value(${str(game)})") as String).asJsonObject }
 
+    /** Collection › Binders (binders.js binderShelf): the game's shelf as views.js / tcg.js draw it with the Binders tab open. */
+    suspend fun binders(game: String): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.binders(${str(game)})") as String).asJsonObject }
+
+    /** app.js showBinder: binder [id]'s page [page] (binders.js binderPage) with the pages either side; {gone} when it no longer exists. */
+    suspend fun binder(game: String, id: String, page: Int): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.binder(${str(game)}, ${str(id)}, $page)") as String).asJsonObject }
+
+    /** app.js binderEditor: the New binder / Binder settings sheet's fields ([id] blank for a new one). */
+    suspend fun binderEdit(game: String, id: String): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.binderEdit(${str(game)}, ${str(id)})") as String).asJsonObject }
+
     /** views.js decks(), My decks, as a model; [opts] = {q} as I.shelfSearch sets it. */
     suspend fun decks(game: String, opts: JsonObject = JsonObject()): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.decks(${str(game)}, ${str(opts.toString())})") as String).asJsonObject }
 
     /** One Cards-tab control as app.js handles it (sort, direction, filter, search, more), then the page again. */
+    /** The Select tray's sheet (workbench-ui.js A.batchAction) for [kind]: move, deck, wish or compare; or {toast} when the site refuses. */
+    suspend fun batchSheet(game: String, kind: String): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.batchSheet(${str(game)}, ${str(kind)})") as String).asJsonObject }
+
     suspend fun cardsDo(game: String, kind: String, value: String = ""): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.cardsDo(${str(game)}, ${str(kind)}, ${str(value)})") as String).asJsonObject }
 

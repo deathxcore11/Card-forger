@@ -116,6 +116,12 @@ fun CollectionWritesHost(backdrop: androidx.compose.ui.graphics.layer.GraphicsLa
     building?.let { b -> key(b.id) { CollectionBuildDeckSheet(b, backdrop, onClose = { if (CollectionWrites.building.value === b) CollectionWrites.building.value = null }) } }
     val menu by CollectionWrites.menu.collectAsState()
     menu?.let { m -> key(m.id) { DeckMenuSheet(m, backdrop, onClose = { if (CollectionWrites.menu.value === m) CollectionWrites.menu.value = null }) } }
+    val binderOpen by CollectionWrites.binder.collectAsState()
+    binderOpen?.let { b -> key(b.id) { BinderSheet(b, backdrop, onClose = { if (CollectionWrites.binder.value === b) CollectionWrites.binder.value = null }) } }
+    val binderEditing by CollectionWrites.binderEditing.collectAsState()
+    binderEditing?.let { e -> key(e.id) { BinderEditSheet(e, backdrop, onClose = { if (CollectionWrites.binderEditing.value === e) CollectionWrites.binderEditing.value = null }) } }
+    val binderHold by CollectionWrites.binderHold.collectAsState()
+    binderHold?.let { h -> key(h.id) { BinderHoldSheet(h, backdrop, onClose = { if (CollectionWrites.binderHold.value === h) CollectionWrites.binderHold.value = null }) } }
     toast?.let { t -> key(t.id) { SiteToast(t, onUndo = { CollectionWrites.dismiss(t); scope.launch { CollectionWrites.undo(context) } }, onGone = { CollectionWrites.dismiss(t) }) } }
     ask?.let { a -> key(a) { AskDialog(a.question, backdrop, site = a.site, onAnswer = { yes -> CollectionWrites.answer(yes, context, scope) }) } }
     val asking by CollectionWrites.askingText.collectAsState()

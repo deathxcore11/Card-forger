@@ -419,7 +419,7 @@ private fun Check(on: Boolean, modifier: Modifier) {
 
 /** input[type=color] on the glass field: Chrome's swatch (2 / 4 in from the field's padding, a 1 grey edge) in the colour. */
 @Composable
-private fun ColorField(color: String, desc: String, onPick: () -> Unit) {
+internal fun ColorField(color: String, desc: String, onPick: () -> Unit) {
     val c = cssColor(color, Color(0xFF7664A0)) ?: Color(0xFF7664A0)
     Box(Modifier.fillMaxWidth().heightIn(min = 44.dp).siteGlassField(11.dp).clip(RoundedCornerShape(11.dp)).clickable(onClick = onPick)
         .semantics { contentDescription = desc; stateDescription = color; role = Role.Button }.padding(horizontal = 15.dp, vertical = 14.dp)) {
@@ -514,7 +514,7 @@ private fun ContextMenuFrame(backdrop: GraphicsLayer?, onClose: () -> Unit, cont
  * and value bars, Cancel and Set), here in the app's dialog card. [onDone]: the colour as #rrggbb, or null.
  */
 @Composable
-private fun ColorPickerDialog(color: String, backdrop: GraphicsLayer?, onDone: (String?) -> Unit) {
+internal fun ColorPickerDialog(color: String, backdrop: GraphicsLayer?, onDone: (String?) -> Unit) {
     val start = cssColor(color, Color(0xFF7664A0)) ?: Color(0xFF7664A0)
     val hsv = remember { FloatArray(3).also { android.graphics.Color.colorToHSV(android.graphics.Color.rgb((start.red * 255).toInt(), (start.green * 255).toInt(), (start.blue * 255).toInt()), it) } }
     var h by remember { mutableStateOf(hsv[0]) }; var s by remember { mutableStateOf(hsv[1]) }; var v by remember { mutableStateOf(hsv[2]) }
