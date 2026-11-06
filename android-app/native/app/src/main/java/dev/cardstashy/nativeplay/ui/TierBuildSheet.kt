@@ -328,7 +328,7 @@ private fun GhostIcon(b: TierBuildModel.Btn, onClick: () -> Unit) {
 @Composable
 private fun TierTile(r: TierBuildModel.TileRow, game: CardGame, act: TierBuildActions) {
     val c = r.card
-    if (c != null) { TierTileCard(c, game, r.qty) { act.card(r) }; return }
+    if (c != null) { TierTileCard(c, game, r.qty, r.why) { act.card(r) }; return }
     Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).clip(RoundedCornerShape(10.dp)).clickable { act.card(r) }.padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(52.dp, 38.dp).clip(RoundedCornerShape(6.dp)).background(Site.Surface2)) {

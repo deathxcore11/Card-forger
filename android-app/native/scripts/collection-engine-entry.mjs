@@ -68,8 +68,11 @@ import {podSpeed, newGame, proxyList, proxySheetHTML} from 'WEB/extras.js';
 import {formatUpgrades, applyFormatSwap} from 'WEB/format-upgrades.js';
 import {upgradeSuggestions, sourceCredit, mtgjsonDeck, collectionIdeas} from 'WEB/strategy.js';
 import {applySwapsToCards, cardSig} from 'WEB/insights.js';
-import {comparePower} from 'WEB/deck-optimizer.js';
-import {themeQueries} from 'WEB/builder.js';
+import {comparePower, bestBudgetDecks, purchaseCost, refineCandidates, towardDeck, spendUp, cardQuality, budgetNotes, variantsFrom, difficultyOf} from 'WEB/deck-optimizer.js';
+import {playRate} from 'WEB/importance.js';
+import {forgeOptions, newForgeSeed} from 'WEB/deck-forge.js';
+import {refreshCheapest} from 'WEB/mtg-cheap.js';
+import {themeQueries, buildTiers, BUDGET_TIERS, upgradePool, copyLimit, fitFor} from 'WEB/builder.js';
 import {findCheapestPrinting} from 'WEB/mtg-cheap.js';
 import {commanderTheme, completionPlan} from 'WEB/planner.js';
 import {ideaSheet as ideaSheetView} from 'WEB/views.js';
@@ -86,8 +89,8 @@ import {createDeckPipeline} from 'WEB/deck-pipeline.js';
 import {deckSetupMarkup, deckResultMarkup} from 'WEB/deck-experience.js';
 import * as TcgAll from 'WEB/tcg.js';
 import {setupModel as flowSetupOf, resultModel as flowResultOf, useDocument as flowUseDocument, draw as flowDraw} from '../scripts/deck-flow-models.mjs';
-import {mtgPower} from 'WEB/power.js';
-import {mtgFieldKey, availability as deckAvailability} from 'WEB/views.js';
+import {mtgPower, asShown} from 'WEB/power.js';
+import {mtgFieldKey, availability as deckAvailability, buildSheet} from 'WEB/views.js';
 import {shareSheet as shareSheetView} from 'WEB/views.js';
 import {preconList as preconListView, deckReviewSheet as deckReviewSheetView} from 'WEB/views.js';
 import {sharePayload, sharePayloadTcg} from 'WEB/share.js';
@@ -2722,6 +2725,23 @@ const writeActs = {
   // The Build decks sheet's versions (tcg.js A.tTierSave, A.tTierSaveAll, A.tTierSaveGo, A.tTierCopy, A.tTierBuy), on the sheet's builds
   // (S.ui.tbuild): saved to the game's decks; Save and see matchups / playtest closes the sheet and opens the new deck on that tab (made
   // {deck, tab}); Copy deck list copies; Buy copies the missing cards and asks before Mass Entry opens.
+  // views.js buildSheet's versions for Magic (app.js A.tierSave, A.tierSaveAll, A.tierSaveGo, A.tierCopy, A.tierBuy 4074-4139), verbatim but
+  // for go (made {deck, tab}) and closeSheet (the sheet's panel).
+  async tierSave(d) { mtgFocus(); const B = S.ui.build, tier = B.results[B.format]?.[Number(d.i)]; if (!tier) return;
+    await resolveNames(tier.cards.map(r=>r.name)); const dk = generatedDeck(tier, B.seed);
+    await commit((s) => s.decks.push(dk), { msg: `Saved “${dk.name}”. Find it in My decks.` }); },
+  async tierSaveGo(d) { mtgFocus(); const B = S.ui.build, tier = B.results[B.format]?.[Number(d.i)]; if (!tier) return;
+    await resolveNames(tier.cards.map(r=>r.name)); const dk = generatedDeck(tier, B.seed);
+    await commit((s) => s.decks.push(dk), { msg: `Saved “${dk.name}”.` });
+    tbuildShut(); made = JSON.stringify({deck: dk.id, tab: d.to || ''}); },
+  async tierCopy(d) { mtgFocus(); await siteRun(async () => { const B = S.ui.build, tier = B.results[B.format]?.[Number(d.i)];
+    if (tier) await tcgHooks.copyText(exportDeckText({ cards: tier.cards, side: tier.side || [] }), "Deck list copied."); }, d); },
+  async tierBuy(d) { mtgFocus(); await siteRun(async () => { const B = S.ui.build, tier = B.results[B.format]?.[Number(d.i)]; if (!tier) return;
+    const rows = tier.cards.map((r) => ({ qty: r.qty - Math.min(r.qty, tier.preparedByAsk ? tier.availableCopies?.[key(r.name)] ?? 0 : B.avail?.(r.name) ?? 0), name: r.name })).filter((r) => r.qty > 0);
+    if (!(await buyMtg(rows))) toasts.push({text: "You own every card in this version.", undo: false}); }, d); },
+  async tierSaveAll(d) { mtgFocus(); const B = S.ui.build, tiers = B.results[B.format] || [];
+    const ds = tiers.map((t) => generatedDeck(t, B.seed));
+    await commit((s) => s.decks.push(...ds), { msg: `Saved ${ds.length} decks to My decks.` }); },
   async tTierSave(d) { tcgFocus(d.game, S.ui.view || 'tdeck'); await siteRun(() => TA.tTierSave({dataset: {i: d.i}}), d); },
   async tTierSaveAll(d) { tcgFocus(d.game, S.ui.view || 'tdeck'); await siteRun(() => TA.tTierSaveAll({dataset: {}}), d); },
   async tTierSaveGo(d) { tcgFocus(d.game, S.ui.view || 'tdeck'); tcgWent = '';
@@ -3503,7 +3523,7 @@ const keepFields = () => {
 };
 const fieldNow = id => { const f = panelFields.get(id); return f ? panel.doc.querySelectorAll('[' + f.attr + ']').filter(x => x.getAttribute(f.attr) === f.val)[f.nth] || null : null; };
 const panelModel = () => { const reveal = panel.doc.reveals.splice(0); const acted = panel.acted; panel.acted = null; keepFields();
-  if (panel.tbuild) return json({key: panel.key, sheet: buildSheetModel(panel.host.querySelector('#sheetBody') || panel.host), acted, toasts: panel.toasts.splice(0).map(t => t.text)});
+  if (panel.tbuild) return json({key: panel.key, sheet: buildSheetModel(panel.host.querySelector('#sheetBody') || panel.host, panel.mbuild), acted, toasts: panel.toasts.splice(0).map(t => t.text)});
   return json({key: panel.key, body: domJson(panel.doc.body, el => icon(svgIn(tree(el.outerHTML))), el => picture(one(tree(el.outerHTML), tagIs('img')))),
     reveal: reveal.length ? reveal[reveal.length - 1] : null, acted, toasts: panel.toasts.splice(0).map(t => t.text)}); };
 // What app.js attaches to a deck tab's body once it is drawn: the Rules tab's rule-learning.js listeners.
@@ -3685,6 +3705,8 @@ async function loadCandidates(d, cap, progress) {
 const mtgLibrary = (d) => d.cards.filter((c) => !hasCommander(d) || key(c.name) !== key(d.commander));
 const MDECK_ACTS = {
   ...TDECK_ACTS,
+  // Upgrade lab's Compare budget builds (app.js A.optimizeMtgDeck): the Build decks sheet over the tab (mbuildOpen).
+  optimizeMtgDeck: () => tcgPanelAsync(() => optimizeMtgDeck()),
   // Versions (app.js C.verA / C.verB 7214): the two lists compared.
   'C.verA': t => { S.ui.versions.a = t.value; panel.redraw(); },
   'C.verB': t => { S.ui.versions.b = t.value; panel.redraw(); },
@@ -4252,7 +4274,7 @@ function tbuildShut() {
   if (panel) { panel.acted ||= was.acted; panel.toasts.push(...was.toasts); panel.redraw?.(); }
 }
 // The sheet's markup as the app draws it: tcg.js tcgBuildSheet and views.js buildSheet (tier-card.js tierCardHtml for each version).
-function buildSheetModel(root) {
+function buildSheetModel(root, mtg = false) {
   const q = (el, s) => el?.querySelector(s), qa = (el, s) => el ? el.querySelectorAll(s) : [];
   const words = el => (el?.textContent || '').replace(/\s+/g, ' ').trim();
   const has = (el, c) => !!el?.classList?.contains(c);
@@ -4278,7 +4300,7 @@ function buildSheetModel(root) {
         const open = q(r, '.lot-name') || r, sub = q(r, '.lot-sub');
         // A Yu-Gi-Oh! / Pokémon version's tile is the deck page's row (tcg.js deckRow's .lot), read as the deck page reads it (tcgDeckRow).
         const lot = has(r, 'lot') ? one(tree(r.outerHTML), cls('lot')) : null;
-        return {id: open._id, act: open.getAttribute('data-act') || '', card: lot ? tcgDeckRow(lot) : null, name: words(q(r, '.lot-name')) || words(q(r, '.ellip')), art: abs(art(q(r, '.lot-art') || r)),
+        return {id: open._id, act: open.getAttribute('data-act') || '', card: lot ? (mtg ? deckRowModel(lot) : tcgDeckRow(lot)) : null, name: words(q(r, '.lot-name')) || words(q(r, '.ellip')), art: abs(art(q(r, '.lot-art') || r)),
           price: words(q(r, '.art-price')), qty: words(q(r, '.tier-qty')), why: words(q(sub, 'small.muted')) || words(q(q(r, '.ellip'), 'small')),
           own: words(q(r, '.own')) || words([...qa(r, ':scope > span')].pop()), ok: has(q(r, '.own'), 'yes') || has([...qa(r, ':scope > span')].pop(), 'ok-text'),
           note: words(q(sub, '.purchase-note, .ygo-purchase-note')), data: {...(open.dataset || {})}};
@@ -4289,7 +4311,7 @@ function buildSheetModel(root) {
       stats, owned: fill == null ? null : Number(fill) / 100, notes,
       next: next ? {summary: words(q(next, 'summary')), lines: qa(next, 'p').map(words), review: btn(q(next, 'button'))} : null, groups,
       save: btn(plain.find(b => has(b, 'tier-save'))), buy: btn(plain.find(b => (b.getAttribute('data-act') || '').endsWith('ierBuy'))),
-      toggle: btn(plain.find(b => /^t?[tT]ier$/.test(b.getAttribute('data-act') || ''))),
+      toggle: btn(plain.find(b => /^(tTier|tierToggle)$/.test(b.getAttribute('data-act') || ''))),
       more: qa(q(more, '.tier-more-menu'), 'button').map(b => ({id: b._id, label: words(q(b, 'b')), note: words(q(b, 'small')), icon: svgOf(b)}))};
   });
   const saveAll = [...root.querySelectorAll(':scope > button.block')][0];
@@ -4298,7 +4320,130 @@ function buildSheetModel(root) {
     budget: field ? {id: field._id, label: words(budget).trim(), value: field.getAttribute('value') || '', placeholder: field.getAttribute('placeholder') || '', disabled: field.disabled} : null,
     busy: overlay ? {title: words(q(overlay, 'b')), msg: words(q(overlay, '[role=status]')), note: words(q(overlay, 'small'))} : null,
     status: status ? {text: words(status), warn: has(status, 'warn-text')} : null, evidence: words(evidence),
-    tiers, saveAll: btn(saveAll), foot: words([...root.querySelectorAll(':scope > p.foot')][0]), openTier: S.ui.tbuild?.openTier ?? S.ui.build?.openTier ?? null};
+    tiers, saveAll: btn(saveAll), foot: words([...root.querySelectorAll(':scope > p.foot')][0]), openTier: (mtg ? S.ui.build?.openTier : S.ui.tbuild?.openTier) ?? null};
+}
+
+// ---- Magic's Compare budget builds (app.js A.optimizeMtgDeck 3977: S.ui.build on the deck, openSheet(V.buildSheet(), {type: "build"}),
+// runBuild 3802-3943), the same sheet as Yu-Gi-Oh! and Pokémon's here: a panel over the Power tab's that the app draws (TierBuildSheet).
+// runBuild, tierList, buildMsg, A.buildRandom, A.tierToggle, A.tierAlternative, A.buildFormat and C.buildCustom are app.js's, verbatim but
+// for refreshSheet (the sheet's panel drawn again) and $ (document.querySelector over the sheet's document while it builds).
+const $ = s => globalThis.document?.querySelector(s) ?? null;
+function mtgRefreshSheet() { if (panel?.mbuild) panel.redraw(); else if (!S.ui.build?.busy) tbuildHold(null, false); }
+const tierList = () => [...new Set([...BUDGET_TIERS, ...(S.ui.build.custom !== "" && Number.isFinite(Number(S.ui.build.custom)) ? [Math.max(0, Number(S.ui.build.custom))] : [])])].sort((a, b) => a - b);
+const buildMsg = (m) => {
+  S.ui.build.msg = m;
+  const el = $("#sheetBody [role=status]");
+  if (el) el.textContent = m;
+};
+async function runBuild() {
+  const refreshSheet = mtgRefreshSheet;
+  const B = S.ui.build,
+    f = formatOf(B.format),
+    seed = meta(B.seed);
+  if (!seed || B.busy) return;
+  B.busy = true;
+  B.error = false;
+  B.openTier = null;
+  refreshSheet();
+  try {
+    if(f.id==="paupercommander"){await verifyLeader(seed,f,api);if(!canLead(seed,f))throw Error(`${seed.name} is not a verified Pauper Commander leader.`);saveCatalogSoon();}
+    const colors = seed.color_identity?.length ? seed.color_identity : ["C"];
+    await loadFormatPool(f, colors, seed, buildMsg);
+    buildMsg("Building versions…");
+    B.avail = deckAvailability();
+    let candidates=buildTiers({format:f.name,seeds:[seed],catalog:S.catalog,available:B.avail,price:c=>priceOf(c.name),...(B.forgeFor===seed.name?forgeOptions(B.forge):{})},tierList());
+    const baseline=B.baseDeck?deckOf(B.baseDeck):null;if(baseline && formatOf(baseline).name===f.name)candidates.push({...baseline,total:sumQty(baseline.cards),size:f.size,warnings:[]});
+    const mk=mtgMetaKey({format:f.name}),data=mk?await loadMeta(mk).catch(()=>metaState(mk).data):null;
+    const matching=(data?.decks || []).filter(d=>[...(d.commanders||[]),...(d.main||[])].some(r=>key(r.name)===key(seed.name))).slice(0,4);
+    for(const d of matching){
+      const commanders=(d.commanders||[]).map(r=>typeof r==='string'?{name:r,qty:1}:r);
+      if(f.commander && !commanders.some(r=>key(r.name)===key(seed.name)))continue;
+      const cards=aggregateCards([...commanders,...(d.main||[])]);await resolveNames(cards.map(r=>r.name));
+      candidates.push({proven:d.key,source:sourceCredit({kind:'Tournament list',url:d.url,description:d.event}),label:d.event || d.name,format:f.name,commander:commanders[0]?.name || '',cards,total:sumQty(cards),size:f.size,warnings:[]});
+    }
+    const cost=d=>purchaseCost(d.cards,{key:r=>key(r.name),owned:r=>B.avail(r.name),price:r=>priceOf(r.name)});
+    const evaluate=d=>mtgPower({...d,id:'builder:mtg'}),targets=[...candidates.filter(d=>d.proven),...candidates.slice(-1)],protectedKeys=new Set([seed.name]);
+    candidates=await refineCandidates(candidates,{evaluate,cost,status:buildMsg,rounds:2,maxNeighbors:12,
+      accept:d=>!evaluate(d).readiness?.provisional,
+      neighbors:d=>targets.flatMap(target=>towardDeck(d,target,{protectedKeys,zoneOf:r=>/\bLand\b/.test(meta(r.name)?.type_line || '')?'land':'spell'}))});
+    let tiers=bestBudgetDecks(candidates,tierList(),{evaluate,cost});
+    if(data?.decks?.length){
+      const freq=new Map();for(const d of data.decks)for(const r of [...(d.main||[]),...(d.side||[])])if(!/^(?:Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest|Wastes)$/i.test(r.name))freq.set(r.name,(freq.get(r.name)||0)+1);
+      const names=[...freq].sort((a,b)=>b[1]-a[1]).slice(0,120).map(([n])=>n).filter(n=>!meta(n));
+      if(names.length){buildMsg(`Loading ${names.length} tournament cards to compare…`);await resolveNames(names).catch(()=>{});}
+    }
+    const pool=upgradePool(f.name,S.catalog,colors),isLandName=n=>/\bLand\b/.test(meta(n)?.type_line || ''),
+      fit=fitFor([seed],f.size),quality=c=>cardQuality(playRate('mtg',c),priceOf(c.name),fit(c))+(f.commander && c.edhrec_rank?Math.max(0,4-Math.log10(c.edhrec_rank)):0),
+      mrows=d=>d.cards.map(r=>({key:key(r.name),zone:isLandName(r.name)?'land':'spell',qty:r.qty,card:meta(r.name) || {name:r.name}})),
+      mswap=(d,w,c,n)=>{const cards=structuredClone(d.cards),out=cards.find(r=>key(r.name)===w.key);if(!out || out.qty<n)throw Error('swap');out.qty-=n;const hit=cards.find(r=>key(r.name)===key(c.name));if(hit)hit.qty+=n;else cards.push({name:c.name,qty:n,why:'Upgrade for this budget'});return {...d,cards:cards.filter(r=>r.qty>0),proven:null,label:d.label};};
+    const budgets=tierList();
+    for(const [i,t] of tiers.entries()){
+      if(!t || !budgets[i])continue;
+      buildMsg(`Spending toward ${budgets[i]===Infinity?'the best version':'$'+budgets[i]}…`);
+      const protect=r=>r.zone==='land' || r.key===key(seed.name) || (!!t.commander && r.key===key(t.commander)) || playRate('mtg',r.card)>=25;
+      const up=await spendUp(t,budgets[i],{pool,quality,rows:mrows,swap:mswap,cost,evaluate,protect,maxCopies:c=>copyLimit(c,f.name),tolerance:0,status:buildMsg});
+      if(up.swaps.length)tiers[i]={...t,...up.deck,cost:up.cost,assessment:up.power,power:up.power.score,upgrades:up.swaps};
+    }
+    tiers=variantsFrom(budgetNotes(tiers.map(t=>t&&asShown(t)),budgets),budgets,d=>difficultyOf(d.cards.map(r=>{const c=meta(r.name);return {qty:r.qty,text:!c || /\bLand\b/.test(c.type_line || '')?null:c.oracle_text || (c.card_faces || []).map(x=>x.oracle_text || '').join(' ')};})));
+    B.results[f.name]=tiers.filter(Boolean).map((winner,i)=>{const d=winner;return {...d,owned:d.cards.reduce((n,r)=>n+Math.min(r.qty,B.avail(r.name)),0)};});
+    B.msg = `${B.results[f.name].length} budget versions · compared ${candidates.length} decks using Power, legality and purchase cost. Prices are known eligible quotes from checked printings, not a complete market search.`;
+  } catch (e) {
+    B.msg = e.message;
+    B.error = true;
+  } finally {
+    B.busy = false;
+    refreshSheet();
+  }
+  const names = [...new Set((B.results[f.name] || []).flatMap((t) => t.cards.map((r) => r.name)))].sort((a, b) => (priceOf(b) ?? 0) - (priceOf(a) ?? 0));
+  if (names.length) refreshCheapest(names, { api, key, limit: 40, format: f.legality, reference: meta }).then((n) => n && panel?.mbuild && refreshSheet()).catch(() => {});
+}
+// app.js A.optimizeMtgDeck (3977), verbatim but for openSheet (the sheet's panel, mbuildOpen).
+async function optimizeMtgDeck() {
+  const d=currentDeck();if(!d)return;await resolveNames(d.cards.map(r=>r.name));
+  const seed=d.commander || [...d.cards].filter(r=>!isLand(meta(r.name))).sort((a,b)=>b.qty-a.qty)[0]?.name;if(!seed)return;
+  Object.assign(S.ui.build,{seed,baseDeck:d.id,results:{},format:formatOf(d).name,openTier:null,msg:''});mbuildOpen();runBuild();
+}
+// app.js A.buildRandom (4031), without its Home pick (onPick): the sheet is open, so a random card in the format starts a build.
+async function buildRandom(t) {
+  const B = S.ui.build,
+    f = formatOf(t.dataset.format || B.format || "Standard"),
+    lead = f.id==="paupercommander"?" is:paupercommander":f.commander === "planeswalker" ? " t:planeswalker" : f.commander ? " is:commander" : "",
+    theme = String(t.dataset.theme || "").replace(/[^\p{L}\p{N} '-]/gu, "").slice(0,80),
+    q = `${f.id==="paupercommander"?"game:paper":f.legality ? "f:" + f.legality : "game:paper"} -t:land -t:basic${lead}${theme ? ` (t:"${theme}" or o:"${theme}")` : ""}`;
+  if (B.busy) return toasts.push({text: "Your current Magic build is still running. Try again when it finishes.", undo: false});
+  const c = cacheCard(await api("/cards/random?" + new URLSearchParams({ q })));
+  if(f.id==="paupercommander"){c.pdhCommander=true;c.pdhCommanderCheckedAt=new Date().toISOString();saveCatalogSoon();}
+  if (B.busy) return toasts.push({text: "Your current Magic build is still running. Try again when it finishes.", undo: false});
+  Object.assign(B, { baseDeck:null,seed:c.name,results:{},format:f.name,openTier:null,forge:{power:'casual',variation:'varied',seed:newForgeSeed()},forgeFor:c.name });
+  return runBuild();
+}
+const MBUILD_ACTS = {
+  closeSheet: () => tbuildShut(),
+  // A.buildFormat / C.buildCustom (3985-3996).
+  buildFormat: t => { const B = S.ui.build; B.format = t.dataset.format; B.openTier = null; if (B.results[B.format]) mtgRefreshSheet(); else return tcgPanelAsync(() => runBuild()); },
+  'C.buildCustom': t => { const B = S.ui.build; if (B.busy) return; B.custom = t.value === "" ? "" : String(Math.max(0, Math.min(100000, Number(t.value) || 0))); B.results = {}; return tcgPanelAsync(() => runBuild()); },
+  buildRandom: t => tcgPanelAsync(() => buildRandom(t)),
+  // A.tierToggle (4064): the app brings the opened list into view (model openTier).
+  tierToggle: t => { const B = S.ui.build, i = Number(t.dataset.i); B.openTier = B.openTier === i ? null : i; mtgRefreshSheet(); },
+  // A.tierAlternative (3982).
+  tierAlternative: t => { const B=S.ui.build,n=B.results[B.format]?.[Number(t.dataset.i)]?.nextUpgrade;if(!n)return;
+    B.results[B.format].push({...n,owned:n.cards.reduce((sum,r)=>sum+Math.min(r.qty,B.avail(r.name)),0),nextUpgrade:null,explanation:'Outside the original budget. Review the actual purchase total before saving.',warnings:[...(n.warnings || [])]});
+    B.openTier=B.results[B.format].length-1;mtgRefreshSheet(); },
+};
+for (const k of ['tierSave', 'tierSaveAll', 'tierSaveGo', 'tierCopy', 'tierBuy', 'card'])
+  MBUILD_ACTS[k] = t => { panel.acted = {act: k, data: {...t.dataset}}; };
+function mbuildOpen() {
+  if (panel?.tbuild) return;
+  tbuildUnder = panel; panel = null;
+  const body = () => `<div id="sheetBody">${buildSheet()}</div>`;
+  panelOpen('tbuild|mtg|' + (S.ui.build.baseDeck || S.ui.build.seed || ''), body(), null, MBUILD_ACTS);
+  const p = panel; p.tbuild = true; p.mbuild = true;
+  p.redraw = () => { mtgFocus(); panelRun(() => { p.host.innerHTML = body(); }); tbuildHold(p, S.ui.build.busy); };
+  tbuildHold(p, S.ui.build.busy);
+}
+// app.js generatedDeck (4071), verbatim.
+function generatedDeck(t, seedName) {
+  return withSnapshot({ id: uid(), name: `${t.unverifiedConstraints?.length?"Draft · ":""}${seedName.split(",")[0]} · ${t.format} · ${t.budget===Infinity?"unlimited":t.budget ? "$" + t.budget : "my cards"}`, format: t.format, commander: t.commander, goal:t.goal || "strongest", requestedStyle:t.requestedStyle || "", goalVerified:t.goalVerified === true, unverifiedConstraints:[...(t.unverifiedConstraints||[])], requiredCards:[...(t.requiredCards||[])], excludedCards:[...(t.excludedCards||[])], requestedColors:[...(t.requestedColors||[])], strategy: "Auto", budget: t.budget===Infinity?null:t.budget, locked: false, cards: t.cards.map((r) => ({ name: r.name, qty: r.qty })), versions: [], source: t.source || sourceCredit({ kind: "Generated", description: `Generated by CardStashy around ${seedName} with ${t.budget===Infinity?"an unlimited":`a $${t.budget}`} budget.${t.unverifiedConstraints?.length?" Unverified draft: infinite combos were not checked; the player explicitly allowed this uncertainty.":""}` }) }, "Generated");
 }
 
 // ---- The tournament deck's sheet (tcg.js provenSheetHtml, c.openProven and its handlers 3918-3992; app.js A.mtgProven 6879), the sheet

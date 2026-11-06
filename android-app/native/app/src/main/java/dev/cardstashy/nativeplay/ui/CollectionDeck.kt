@@ -1546,7 +1546,7 @@ private fun TableFooter(t: DeckTable, act: CollectionDeckActions) {
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun TierTileCard(c: DeckCard, game: CardGame, qty: String, onOpen: () -> Unit) {
+internal fun TierTileCard(c: DeckCard, game: CardGame, qty: String, why: String = "", onOpen: () -> Unit) {
     val reduced = Motion.still
     androidx.compose.runtime.CompositionLocalProvider(LocalDeckGame provides game) {
         Row(Modifier.fillMaxWidth().lotFrame(c.r, reduced).padding(8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -1557,8 +1557,11 @@ internal fun TierTileCard(c: DeckCard, game: CardGame, qty: String, onOpen: () -
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(c.r.name, Modifier.heightIn(min = 24.dp).clickable(onClick = onOpen), style = sans(14f, 700, Ink, lh = 1.25f), maxLines = 3)
-                if (c.pieces.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+                if (c.pieces.isNotEmpty() || c.r.mana.isNotEmpty() || why.isNotBlank()) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+                    // Magic's .lot-sub: the mana cost, then why the card is in this version (small, muted).
+                    if (c.r.mana.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) { c.r.mana.forEach { (src, alt) -> Mana(src, alt) } }
                     PieceItems(c.pieces)
+                    if (c.pieces.isEmpty() && why.isNotBlank()) Text(why, style = sans(12f, 400, Mute, lh = 1.35f))
                 }
                 c.own?.let { OwnLine(it, c.owned) }
             }

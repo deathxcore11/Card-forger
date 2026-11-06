@@ -47,7 +47,7 @@ class CollectionTierBuildShotTest {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         val j = JsonParser.parseString(javaClass.classLoader!!.getResource("build-deck/tiers-$game${if (state.isEmpty()) "" else "-$state"}.json")!!.readText()).asJsonObject
         val m = TierBuildModel(j.getAsJsonObject("sheet"))
-        val g = if (game == "ygo") CardGame.YGO else CardGame.PTCG
+        val g = when (game) { "ygo" -> CardGame.YGO; "ptcg" -> CardGame.PTCG; else -> CardGame.MTG }
         val taps = mutableListOf<Int>()
         rule.setContent {
             val d = LocalDensity.current
@@ -62,14 +62,14 @@ class CollectionTierBuildShotTest {
             else -> {
                 assertTrue("seed", seen(m.seed!!.get("name").asString))
                 assertTrue("versions", m.tiers.all { t -> seen(t.title.take(20)) } || m.tiers.isNotEmpty() && seen(m.tiers[0].title.take(20)))
-                if (state == "open") assertTrue("open list", seen(if (game == "ygo") "MONSTERS" else "POKÉMON") && seen("Hide list"))
+                if (state == "open") assertTrue("open list", seen(when (game) { "ygo" -> "MONSTERS"; "ptcg" -> "POKÉMON"; else -> "CREATURES" }) && seen("Hide list"))
             }
         }
         val tag = "$game${if (state.isEmpty()) "" else "-$state"}-${w}x$h-${(font * 100).toInt()}"
         rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "collection-tier-build-$tag.png").path)
         // The open version's list: its first group and tiles, then its actions and the ⋯ menu.
         if (state == "open") {
-            rule.onAllNodesWithText(if (game == "ygo") "MONSTERS" else "POKÉMON")[0].performScrollTo(); settle(10)
+            rule.onAllNodesWithText(when (game) { "ygo" -> "MONSTERS"; "ptcg" -> "POKÉMON"; else -> "CREATURES" })[0].performScrollTo(); settle(10)
             rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "collection-tier-build-$tag-list.png").path)
             rule.onAllNodesWithText("Hide list")[0].performScrollTo(); settle(6)
             rule.onAllNodesWithContentDescription("More for this version")[m.tiers.indexOfFirst { it.groups.isNotEmpty() }].performClick(); settle(10)
@@ -86,5 +86,9 @@ class CollectionTierBuildShotTest {
     @Config(sdk = [35], qualifiers = "w360dp-h780dp-xxhdpi") @Test fun ptcgOpen360big() = run("ptcg", "open", 360, 780, 1.3f)
     @Config(sdk = [35], qualifiers = "w954dp-h860dp-xxhdpi") @Test fun ygoOpen954() = run("ygo", "open", 954, 860, 1f)
     @Config(sdk = [35], qualifiers = "w1024dp-h768dp-xhdpi") @Test fun ptcg1024() = run("ptcg", "", 1024, 768, 1f)
+    @Config(sdk = [35], qualifiers = "w390dp-h844dp-xxhdpi") @Test fun mtgOpen390() = run("mtg", "open", 390, 844, 1f)
+    @Config(sdk = [35], qualifiers = "w360dp-h780dp-xxhdpi") @Test fun mtg360big() = run("mtg", "", 360, 780, 1.3f)
+    @Config(sdk = [35], qualifiers = "w954dp-h860dp-xxhdpi") @Test fun mtgOpen954() = run("mtg", "open", 954, 860, 1f)
+    @Config(sdk = [35], qualifiers = "w844dp-h390dp-xxhdpi") @Test fun mtg844() = run("mtg", "", 844, 390, 1f)
     @Config(sdk = [35], qualifiers = "w844dp-h390dp-xxhdpi") @Test fun ygo844() = run("ygo", "", 844, 390, 1f)
 }

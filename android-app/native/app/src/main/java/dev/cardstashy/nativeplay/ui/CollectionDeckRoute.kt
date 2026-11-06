@@ -190,16 +190,16 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
             val act = a.get("act")?.takeIf { it.isJsonPrimitive }?.asString ?: return
             val got = { k: String -> a.getAsJsonObject("data")?.get(k)?.takeIf { it.isJsonPrimitive }?.asString.orEmpty() }
             when (act) {
-                "tTierSave", "tTierSaveAll", "tTierCopy", "tTierBuy" -> write(act, "game" to game.id, "i" to got("i"))
-                // A.tTierSaveGo: saved, the sheet closes, the new deck opens on Matchups (Power here) or Playtest.
-                "tTierSaveGo" -> scope.launch { CollectionWrites.act(context, act, com.google.gson.JsonObject().apply {
+                "tTierSave", "tTierSaveAll", "tTierCopy", "tTierBuy", "tierSave", "tierSaveAll", "tierCopy", "tierBuy" -> write(act, "game" to game.id, "i" to got("i"))
+                // A.tTierSaveGo / A.tierSaveGo: saved, the sheet closes, the new deck opens on Matchups (Power here) or Playtest.
+                "tTierSaveGo", "tierSaveGo" -> scope.launch { CollectionWrites.act(context, act, com.google.gson.JsonObject().apply {
                     addProperty("deck", deckId); addProperty("game", game.id); addProperty("i", got("i")); addProperty("to", got("to")) }) { r ->
                     val made = r.get("made")?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.startsWith("{") }?.let { com.google.gson.JsonParser.parseString(it).asJsonObject } ?: return@act
                     val id = made.get("deck")?.asString ?: return@act; val to = made.get("tab")?.asString.orEmpty()
                     tbuild = null
                     DeckCache.id = "${game.id}:$id"; DeckCache.model = null; DeckCache.q = ""; DeckCache.bench = null
-                    DeckCache.tab = if (to == "matchups" || to == "upgrade") "insights" else to.ifBlank { "cards" }
-                    onDeck?.invoke(id) ?: web(site + "#tdeck/" + android.net.Uri.encode(id), null)
+                    DeckCache.tab = if (to == "matchups" || to == "upgrade") (if (tcg) "insights" else "engine") else to.ifBlank { "cards" }
+                    onDeck?.invoke(id) ?: web(site + (if (tcg) "#tdeck/" else "#deck/") + android.net.Uri.encode(id), null)
                 } }
                 // A.tRandomDeck: a random card's Build a deck (openDeckFlow), in place of this sheet.
                 "openDeckFlow" -> { val r = runCatching { com.google.gson.JsonParser.parseString(got("request")).asJsonObject }.getOrNull() ?: return
@@ -395,7 +395,11 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
         androidx.compose.runtime.CompositionLocalProvider(LocalSheetPal provides sheetPal(game), LocalGameGold provides game.gold) {
             TierBuildSheet(t, game, pageLayer, TierBuildActions(tap = { id -> siteUi.tap(id) }, type = { id, v -> siteUi.type(id, v) },
                 close = { panelDo { CollectionEngine.tbuildClose() } },
-                card = { r -> val c = r.card; tcgOpen(r.data["id"].orEmpty(), r.name, c?.open.orEmpty()) }))
+                card = { r -> val c = r.card
+                    // A Magic version's card (A.card, data-name): its page over the deck; a Yu-Gi-Oh! / Pokémon one's (A.tCard) as the deck's rows open.
+                    if (!tcg) { val n = r.data["name"].orEmpty().ifBlank { r.name }; val tile = "[data-act=\"card\"][data-name=\"${css(n)}\"]"
+                        if (n.isNotBlank()) { if (nativeCard) cards = cards + CardOpen(n, deck = deckId, page = page, tile = tile) else web(page, tile) } }
+                    else tcgOpen(r.data["id"].orEmpty(), r.name, c?.open.orEmpty()) }))
         }
     }
     cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) { CollectionCardHost(c, onClose = { cards = cards.dropLast(1) }, onOpen = { cards = cards + it }, web = web, onSet = onSet,

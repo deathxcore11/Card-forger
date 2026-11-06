@@ -1,0 +1,1628 @@
+{
+ "key": "tbuild|mtg|d1",
+ "sheet": {
+  "title": "Build decks",
+  "close": 1448,
+  "seed": {
+   "multi": false,
+   "art": "https://cards.scryfall.io/art_crop/front/f/c/fc8f431d-b7eb-4848-99dd-a5f896248145.jpg?1783947984",
+   "strip": [],
+   "label": "Built around",
+   "name": "Lightning Bolt",
+   "sub": "",
+   "random": {
+    "id": 1456,
+    "label": "🎲 Random card",
+    "disabled": false,
+    "icon": null
+   }
+  },
+  "intro": "Pick a format for a complete, legal deck at each budget, using your cards first. Basic lands are included; missing copies count toward the purchase estimate.",
+  "formats": [
+   {
+    "id": 1459,
+    "label": "Modern",
+    "on": true,
+    "disabled": false
+   },
+   {
+    "id": 1460,
+    "label": "Legacy",
+    "on": false,
+    "disabled": false
+   },
+   {
+    "id": 1461,
+    "label": "Vintage",
+    "on": false,
+    "disabled": false
+   },
+   {
+    "id": 1462,
+    "label": "Pauper",
+    "on": false,
+    "disabled": false
+   },
+   {
+    "id": 1463,
+    "label": "Premodern",
+    "on": false,
+    "disabled": false
+   },
+   {
+    "id": 1464,
+    "label": "Old School",
+    "on": false,
+    "disabled": false
+   },
+   {
+    "id": 1465,
+    "label": "Timeless",
+    "on": false,
+    "disabled": false
+   },
+   {
+    "id": 1466,
+    "label": "Gladiator",
+    "on": false,
+    "disabled": false
+   },
+   {
+    "id": 1467,
+    "label": "60-card casual",
+    "on": false,
+    "disabled": false
+   }
+  ],
+  "formatsEmpty": "",
+  "budget": {
+   "id": 1469,
+   "label": "Purchase budget $",
+   "value": "",
+   "placeholder": "Blank = unlimited",
+   "disabled": false
+  },
+  "busy": null,
+  "status": {
+   "text": "6 budget versions · compared 56 decks using Power, legality and purchase cost. Prices are known eligible quotes from checked printings, not a complete market search.",
+   "warn": false
+  },
+  "evidence": "",
+  "tiers": [
+   {
+    "i": 0,
+    "on": false,
+    "meta": false,
+    "title": "Draft — 56 slots open · Your cards only",
+    "chips": [
+     {
+      "text": "Modern",
+      "ok": false,
+      "warn": false
+     },
+     {
+      "text": "Incomplete",
+      "ok": false,
+      "warn": true
+     }
+    ],
+    "stats": [
+     {
+      "value": "$0.00",
+      "text": "to buy",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "—",
+      "text": "power unavailable",
+      "warn": true,
+      "diff": ""
+     },
+     {
+      "value": "Easy to play",
+      "text": "",
+      "warn": false,
+      "diff": "easy"
+     },
+     {
+      "value": "4/60 cards",
+      "text": "",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "100%",
+      "text": "owned",
+      "warn": false,
+      "diff": ""
+     }
+    ],
+    "owned": 1,
+    "notes": [
+     {
+      "text": "21 Mountain copies could not be added within the verified purchase budget.",
+      "warn": true,
+      "evidence": false,
+      "path": false,
+      "explain": false
+     },
+     {
+      "text": "The strongest version found costs $493.82 (97 power). The upgrades past this budget are expensive cards; see the No-limit version for them.",
+      "warn": false,
+      "evidence": false,
+      "path": false,
+      "explain": true
+     },
+     {
+      "text": "To finish: the “Starter · up to $10.00” version fills every slot for $9.78.",
+      "warn": false,
+      "evidence": false,
+      "path": true,
+      "explain": false
+     }
+    ],
+    "next": {
+     "summary": "Next assessed improvement · outside budget · $9.78",
+     "lines": [
+      "$9.78 above your $0.00 purchase budget · 57 power estimate. This option is not included in the within-budget list.",
+      "4× Lightning Bolt · 4× Cathartic Pyre · 4× Into the Fire · 4× Humble Defector · 4× Subira, Tulzidi Caravanner · 4× Pyrite Spellbomb · 4× Dragon Mantle · 2× Magmatic Insight · 4× Tormenting Voice · 2× Wild Guess · 20× Mountain · 4× Detective's Phoenix"
+     ],
+     "review": {
+      "id": 1497,
+      "label": "Review this version",
+      "disabled": false,
+      "icon": null
+     }
+    },
+    "groups": [],
+    "save": {
+     "id": 1500,
+     "label": "Save draft",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M12 5v14M5 12h14",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "buy": null,
+    "toggle": {
+     "id": 1504,
+     "label": "See all 4",
+     "disabled": false,
+     "icon": null
+    },
+    "more": [
+     {
+      "id": 1512,
+      "label": "Save draft and see matchups",
+      "note": "How it does against the decks winning now",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "m4 4 9.5 9.5M20 4l-9.5 9.5",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "m6.5 14.5 3 3M17.5 14.5l-3 3M4.5 19.5l3-3M19.5 19.5l-3-3",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1519,
+      "label": "Save draft and playtest",
+      "note": "Draw opening hands",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "M5 16H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "rect",
+         "x": 7,
+         "y": 7,
+         "w": 14,
+         "h": 14,
+         "rx": 2,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M11 12h6M11 16h4",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1527,
+      "label": "Copy deck list",
+      "note": "Arena / MTGO text",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "rect",
+         "x": 8,
+         "y": 8,
+         "w": 11.5,
+         "h": 12,
+         "rx": 1.8,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M15.5 8V5.8A1.8 1.8 0 0 0 13.7 4H6.3a1.8 1.8 0 0 0-1.8 1.8v8.4A1.8 1.8 0 0 0 6.3 16H8",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     }
+    ]
+   },
+   {
+    "i": 1,
+    "on": false,
+    "meta": false,
+    "title": "Starter · up to $10.00",
+    "chips": [
+     {
+      "text": "Modern",
+      "ok": false,
+      "warn": false
+     },
+     {
+      "text": "Legal",
+      "ok": true,
+      "warn": false
+     }
+    ],
+    "stats": [
+     {
+      "value": "$9.78",
+      "text": "to buy",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "57",
+      "text": "power",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "Medium",
+      "text": "",
+      "warn": false,
+      "diff": "medium"
+     },
+     {
+      "value": "60/60 cards",
+      "text": "",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "7%",
+      "text": "owned",
+      "warn": false,
+      "diff": ""
+     }
+    ],
+    "owned": 0.067,
+    "notes": [
+     {
+      "text": "The strongest version found costs $493.82 (97 power vs 57). The upgrades past this budget are expensive cards; see the No-limit version for them.",
+      "warn": false,
+      "evidence": false,
+      "path": false,
+      "explain": true
+     }
+    ],
+    "next": {
+     "summary": "Within $10 above your budget · $11.94",
+     "lines": [
+      "$1.94 above your $10.00 purchase budget · 58 power estimate. This option is not included in the within-budget list.",
+      "4× Lightning Bolt · 4× Cathartic Pyre · 4× The Celestus · 4× Humble Defector · 4× Subira, Tulzidi Caravanner · 4× Pyrite Spellbomb · 4× Dragon Mantle · 2× Magmatic Insight · 4× Tormenting Voice · 2× Wild Guess · 20× Mountain · 4× Detective's Phoenix"
+     ],
+     "review": {
+      "id": 1558,
+      "label": "Review this version",
+      "disabled": false,
+      "icon": null
+     }
+    },
+    "groups": [],
+    "save": {
+     "id": 1560,
+     "label": "Save as deck",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M12 5v14M5 12h14",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "buy": {
+     "id": 1564,
+     "label": "Buy 56 on TCGplayer",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M5.5 8h13l-1 12h-11z",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       },
+       {
+        "t": "path",
+        "d": "M9 10V7a3 3 0 0 1 6 0v3",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "toggle": {
+     "id": 1569,
+     "label": "See all 60",
+     "disabled": false,
+     "icon": null
+    },
+    "more": [
+     {
+      "id": 1577,
+      "label": "Save and see matchups",
+      "note": "How it does against the decks winning now",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "m4 4 9.5 9.5M20 4l-9.5 9.5",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "m6.5 14.5 3 3M17.5 14.5l-3 3M4.5 19.5l3-3M19.5 19.5l-3-3",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1584,
+      "label": "Save and playtest",
+      "note": "Draw opening hands",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "M5 16H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "rect",
+         "x": 7,
+         "y": 7,
+         "w": 14,
+         "h": 14,
+         "rx": 2,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M11 12h6M11 16h4",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1592,
+      "label": "Copy deck list",
+      "note": "Arena / MTGO text",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "rect",
+         "x": 8,
+         "y": 8,
+         "w": 11.5,
+         "h": 12,
+         "rx": 1.8,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M15.5 8V5.8A1.8 1.8 0 0 0 13.7 4H6.3a1.8 1.8 0 0 0-1.8 1.8v8.4A1.8 1.8 0 0 0 6.3 16H8",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     }
+    ]
+   },
+   {
+    "i": 2,
+    "on": false,
+    "meta": false,
+    "title": "Upgraded · up to $25.00",
+    "chips": [
+     {
+      "text": "Modern",
+      "ok": false,
+      "warn": false
+     },
+     {
+      "text": "Legal",
+      "ok": true,
+      "warn": false
+     }
+    ],
+    "stats": [
+     {
+      "value": "$23.07",
+      "text": "to buy",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "71",
+      "text": "power",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "Medium",
+      "text": "",
+      "warn": false,
+      "diff": "medium"
+     },
+     {
+      "value": "60/60 cards",
+      "text": "",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "7%",
+      "text": "owned",
+      "warn": false,
+      "diff": ""
+     }
+    ],
+    "owned": 0.067,
+    "notes": [
+     {
+      "text": "The strongest version found costs $493.82 (97 power vs 71). The upgrades past this budget are expensive cards; see the No-limit version for them.",
+      "warn": false,
+      "evidence": false,
+      "path": false,
+      "explain": true
+     }
+    ],
+    "next": {
+     "summary": "Within $10 above your budget · $27.72",
+     "lines": [
+      "$2.72 above your $25.00 purchase budget · 71 power estimate. This option is not included in the within-budget list.",
+      "4× Lightning Bolt · 3× Staff of Compleation · 4× Into the Fire · 4× Conspiracy Theorist · 4× Howling Golem · 4× Irreverent Gremlin · 4× Quicksmith Genius · 2× Spider-Gwen, Free Spirit · 4× Filigree Familiar · 4× Humble Defector · 22× Mountain · 1× Troll of Khazad-dûm"
+     ],
+     "review": {
+      "id": 1623,
+      "label": "Review this version",
+      "disabled": false,
+      "icon": null
+     }
+    },
+    "groups": [],
+    "save": {
+     "id": 1625,
+     "label": "Save as deck",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M12 5v14M5 12h14",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "buy": {
+     "id": 1629,
+     "label": "Buy 56 on TCGplayer",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M5.5 8h13l-1 12h-11z",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       },
+       {
+        "t": "path",
+        "d": "M9 10V7a3 3 0 0 1 6 0v3",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "toggle": {
+     "id": 1634,
+     "label": "See all 60",
+     "disabled": false,
+     "icon": null
+    },
+    "more": [
+     {
+      "id": 1642,
+      "label": "Save and see matchups",
+      "note": "How it does against the decks winning now",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "m4 4 9.5 9.5M20 4l-9.5 9.5",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "m6.5 14.5 3 3M17.5 14.5l-3 3M4.5 19.5l3-3M19.5 19.5l-3-3",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1649,
+      "label": "Save and playtest",
+      "note": "Draw opening hands",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "M5 16H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "rect",
+         "x": 7,
+         "y": 7,
+         "w": 14,
+         "h": 14,
+         "rx": 2,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M11 12h6M11 16h4",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1657,
+      "label": "Copy deck list",
+      "note": "Arena / MTGO text",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "rect",
+         "x": 8,
+         "y": 8,
+         "w": 11.5,
+         "h": 12,
+         "rx": 1.8,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M15.5 8V5.8A1.8 1.8 0 0 0 13.7 4H6.3a1.8 1.8 0 0 0-1.8 1.8v8.4A1.8 1.8 0 0 0 6.3 16H8",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     }
+    ]
+   },
+   {
+    "i": 3,
+    "on": false,
+    "meta": false,
+    "title": "Strong · up to $50.00",
+    "chips": [
+     {
+      "text": "Modern",
+      "ok": false,
+      "warn": false
+     },
+     {
+      "text": "Legal",
+      "ok": true,
+      "warn": false
+     }
+    ],
+    "stats": [
+     {
+      "value": "$39.00",
+      "text": "to buy",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "75",
+      "text": "power",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "Medium",
+      "text": "",
+      "warn": false,
+      "diff": "medium"
+     },
+     {
+      "value": "60/60 cards",
+      "text": "",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "7%",
+      "text": "owned",
+      "warn": false,
+      "diff": ""
+     }
+    ],
+    "owned": 0.067,
+    "notes": [
+     {
+      "text": "Uses $39.00 of $50.00. No stronger cards for this plan fit the rest without weakening it; the difference stays in your pocket. The strongest version found costs $493.82 (97 power vs 75). The upgrades past this budget are expensive cards; see the No-limit version for them.",
+      "warn": false,
+      "evidence": false,
+      "path": false,
+      "explain": true
+     }
+    ],
+    "next": {
+     "summary": "Within $10 above your budget · $51.54",
+     "lines": [
+      "$1.54 above your $50.00 purchase budget · 76 power estimate. This option is not included in the within-budget list.",
+      "4× Lightning Bolt · 2× Staff of Compleation · 4× Into the Fire · 4× Conspiracy Theorist · 4× Howling Golem · 4× Irreverent Gremlin · 4× Quicksmith Genius · 4× Razorkin Needlehead · 4× Spider-Gwen, Free Spirit · 3× Zenith Chronicler · 21× Mountain · 2× Troll of Khazad-dûm"
+     ],
+     "review": {
+      "id": 1688,
+      "label": "Review this version",
+      "disabled": false,
+      "icon": null
+     }
+    },
+    "groups": [],
+    "save": {
+     "id": 1690,
+     "label": "Save as deck",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M12 5v14M5 12h14",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "buy": {
+     "id": 1694,
+     "label": "Buy 56 on TCGplayer",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M5.5 8h13l-1 12h-11z",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       },
+       {
+        "t": "path",
+        "d": "M9 10V7a3 3 0 0 1 6 0v3",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "toggle": {
+     "id": 1699,
+     "label": "See all 60",
+     "disabled": false,
+     "icon": null
+    },
+    "more": [
+     {
+      "id": 1707,
+      "label": "Save and see matchups",
+      "note": "How it does against the decks winning now",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "m4 4 9.5 9.5M20 4l-9.5 9.5",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "m6.5 14.5 3 3M17.5 14.5l-3 3M4.5 19.5l3-3M19.5 19.5l-3-3",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1714,
+      "label": "Save and playtest",
+      "note": "Draw opening hands",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "M5 16H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "rect",
+         "x": 7,
+         "y": 7,
+         "w": 14,
+         "h": 14,
+         "rx": 2,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M11 12h6M11 16h4",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1722,
+      "label": "Copy deck list",
+      "note": "Arena / MTGO text",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "rect",
+         "x": 8,
+         "y": 8,
+         "w": 11.5,
+         "h": 12,
+         "rx": 1.8,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M15.5 8V5.8A1.8 1.8 0 0 0 13.7 4H6.3a1.8 1.8 0 0 0-1.8 1.8v8.4A1.8 1.8 0 0 0 6.3 16H8",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     }
+    ]
+   },
+   {
+    "i": 4,
+    "on": false,
+    "meta": false,
+    "title": "Stronger · up to $100.00",
+    "chips": [
+     {
+      "text": "Modern",
+      "ok": false,
+      "warn": false
+     },
+     {
+      "text": "Legal",
+      "ok": true,
+      "warn": false
+     }
+    ],
+    "stats": [
+     {
+      "value": "$59.96",
+      "text": "to buy",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "77",
+      "text": "power",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "Medium",
+      "text": "",
+      "warn": false,
+      "diff": "medium"
+     },
+     {
+      "value": "60/60 cards",
+      "text": "",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "7%",
+      "text": "owned",
+      "warn": false,
+      "diff": ""
+     }
+    ],
+    "owned": 0.067,
+    "notes": [
+     {
+      "text": "Uses $59.96 of $100.00. No stronger cards for this plan fit the rest without weakening it; the difference stays in your pocket. The strongest version found costs $493.82 (97 power vs 77). The upgrades past this budget are expensive cards; see the No-limit version for them.",
+      "warn": false,
+      "evidence": false,
+      "path": false,
+      "explain": true
+     }
+    ],
+    "next": null,
+    "groups": [],
+    "save": {
+     "id": 1750,
+     "label": "Save as deck",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M12 5v14M5 12h14",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "buy": {
+     "id": 1754,
+     "label": "Buy 56 on TCGplayer",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M5.5 8h13l-1 12h-11z",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       },
+       {
+        "t": "path",
+        "d": "M9 10V7a3 3 0 0 1 6 0v3",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "toggle": {
+     "id": 1759,
+     "label": "See all 60",
+     "disabled": false,
+     "icon": null
+    },
+    "more": [
+     {
+      "id": 1767,
+      "label": "Save and see matchups",
+      "note": "How it does against the decks winning now",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "m4 4 9.5 9.5M20 4l-9.5 9.5",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "m6.5 14.5 3 3M17.5 14.5l-3 3M4.5 19.5l3-3M19.5 19.5l-3-3",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1774,
+      "label": "Save and playtest",
+      "note": "Draw opening hands",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "M5 16H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "rect",
+         "x": 7,
+         "y": 7,
+         "w": 14,
+         "h": 14,
+         "rx": 2,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M11 12h6M11 16h4",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1782,
+      "label": "Copy deck list",
+      "note": "Arena / MTGO text",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "rect",
+         "x": 8,
+         "y": 8,
+         "w": 11.5,
+         "h": 12,
+         "rx": 1.8,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M15.5 8V5.8A1.8 1.8 0 0 0 13.7 4H6.3a1.8 1.8 0 0 0-1.8 1.8v8.4A1.8 1.8 0 0 0 6.3 16H8",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     }
+    ]
+   },
+   {
+    "i": 5,
+    "on": false,
+    "meta": false,
+    "title": "Best version · no budget limit",
+    "chips": [
+     {
+      "text": "Modern",
+      "ok": false,
+      "warn": false
+     },
+     {
+      "text": "Legal",
+      "ok": true,
+      "warn": false
+     }
+    ],
+    "stats": [
+     {
+      "value": "$493.82+",
+      "text": "to buy",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "97",
+      "text": "comp. · engine 80",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "Medium",
+      "text": "",
+      "warn": false,
+      "diff": "medium"
+     },
+     {
+      "value": "60/60 cards",
+      "text": "",
+      "warn": false,
+      "diff": ""
+     },
+     {
+      "value": "7%",
+      "text": "owned",
+      "warn": false,
+      "diff": ""
+     }
+    ],
+    "owned": 0.067,
+    "notes": [
+     {
+      "text": "Tournament candidate · Modern Challenge 32",
+      "warn": false,
+      "evidence": true,
+      "path": false,
+      "explain": false
+     },
+     {
+      "text": "2 missing copies have no verified price; purchase total is incomplete.",
+      "warn": true,
+      "evidence": false,
+      "path": false,
+      "explain": false
+     }
+    ],
+    "next": null,
+    "groups": [],
+    "save": {
+     "id": 1812,
+     "label": "Save as deck",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M12 5v14M5 12h14",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "buy": {
+     "id": 1816,
+     "label": "Buy 56 on TCGplayer",
+     "disabled": false,
+     "icon": {
+      "vb": [
+       0,
+       0,
+       24,
+       24
+      ],
+      "items": [
+       {
+        "t": "path",
+        "d": "M5.5 8h13l-1 12h-11z",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       },
+       {
+        "t": "path",
+        "d": "M9 10V7a3 3 0 0 1 6 0v3",
+        "fill": "none",
+        "stroke": "currentColor",
+        "sw": 1.75,
+        "cap": "round",
+        "join": "round"
+       }
+      ],
+      "grads": {}
+     }
+    },
+    "toggle": {
+     "id": 1821,
+     "label": "See all 60",
+     "disabled": false,
+     "icon": null
+    },
+    "more": [
+     {
+      "id": 1829,
+      "label": "Save and see matchups",
+      "note": "How it does against the decks winning now",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "m4 4 9.5 9.5M20 4l-9.5 9.5",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "m6.5 14.5 3 3M17.5 14.5l-3 3M4.5 19.5l3-3M19.5 19.5l-3-3",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1836,
+      "label": "Save and playtest",
+      "note": "Draw opening hands",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "path",
+         "d": "M5 16H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "rect",
+         "x": 7,
+         "y": 7,
+         "w": 14,
+         "h": 14,
+         "rx": 2,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M11 12h6M11 16h4",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     },
+     {
+      "id": 1844,
+      "label": "Copy deck list",
+      "note": "Arena / MTGO text",
+      "icon": {
+       "vb": [
+        0,
+        0,
+        24,
+        24
+       ],
+       "items": [
+        {
+         "t": "rect",
+         "x": 8,
+         "y": 8,
+         "w": 11.5,
+         "h": 12,
+         "rx": 1.8,
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        },
+        {
+         "t": "path",
+         "d": "M15.5 8V5.8A1.8 1.8 0 0 0 13.7 4H6.3a1.8 1.8 0 0 0-1.8 1.8v8.4A1.8 1.8 0 0 0 6.3 16H8",
+         "fill": "none",
+         "stroke": "currentColor",
+         "sw": 1.75,
+         "cap": "round",
+         "join": "round"
+        }
+       ],
+       "grads": {}
+      }
+     }
+    ]
+   }
+  ],
+  "saveAll": {
+   "id": 1851,
+   "label": "Save all 6 versions",
+   "disabled": false,
+   "icon": null
+  },
+  "foot": "Built from your cards first, then what today's tournament decks play. A strong start, not a tuned tournament list. Prices are daily estimates.",
+  "openTier": null
+ },
+ "acted": null,
+ "toasts": []
+}
