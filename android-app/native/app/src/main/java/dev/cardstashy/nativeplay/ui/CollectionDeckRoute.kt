@@ -38,6 +38,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** The deck page drawn last, so coming back to the same deck paints at once. */
+/** The next page of Magic deck [deckId] (of [game]) opens on [tab] (app.js go(`#deck/<id>/<tab>`); Matchups and Upgrade lab are Power). */
+internal fun deckOpensOn(game: String, deckId: String, tab: String) {
+    DeckCache.id = "$game:$deckId"; DeckCache.model = null; DeckCache.q = ""; DeckCache.bench = null
+    DeckCache.tab = if (tab == "upgrade" || tab == "matchups") "engine" else tab.ifBlank { "cards" }
+}
 private object DeckCache {
     var id: String? = null
     var model: CollectionDeckModel? = null
@@ -249,6 +254,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
             act = { a, id ->
                 when {
                     a == "deckPlayCpu" -> onPractice(deckId, model?.format.orEmpty())
+                    // A.acquire ("I got cards"): acquireSheet("missing"), the copies the deck is missing.
+                    a == "acquire" && !tcg -> CollectionWrites.acquiring.value = CollectionWrites.AcquireOpen(deckId, "missing")
                     a == "deckShare" || a == "tShare" -> share()
                     // tcg.js A.tDeckTab (War Chest, Power): that tab, here when it is drawn here (openTab), else the website's.
                     a == "tDeckTab" -> openTab(id)
@@ -265,7 +272,7 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
                     a == "deckMenu" && onDeck != null -> CollectionWrites.menu.value = CollectionWrites.DeckMenuOpen(deckId,
                         tab = { k -> openTab(k) },
                         web = { x, sc -> web(page, "[data-act=\"deckMenu\"]\n[data-act=\"${css(x)}\"]" + (if (sc.isNotEmpty()) "[data-scope=\"${css(sc)}\"]" else "")) },
-                        openDeck = onDeck, deleted = onBack, share = ::share)
+                        openDeck = onDeck, deleted = onBack, share = ::share, site = { u -> webAt(u, null) })
                     a.isBlank() -> {}
                     id.isNotBlank() -> web(page, "[data-act=\"${css(a)}\"][data-id=\"${css(id)}\"]")
                     else -> web(page, "[data-act=\"${css(a)}\"]")

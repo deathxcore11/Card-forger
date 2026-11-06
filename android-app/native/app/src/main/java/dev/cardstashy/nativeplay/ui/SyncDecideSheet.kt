@@ -250,10 +250,10 @@ internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> U
                 if (eyebrow.isNotEmpty()) Column(Modifier.weight(1f)) {
                     Text(eyebrow, Modifier.padding(bottom = 4.dp), style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Bold, fontSize = 11.sp, lineHeight = 15.95.sp,
                         letterSpacing = 1.32.sp, color = MUTED, lineHeightStyle = CSS_LINE), maxLines = 1)
-                    Text(title, style = h2, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    // .sheet-head h2 (style.css 3234): a long title wraps (white-space: normal, overflow-wrap: anywhere).
+                    Text(title, style = h2)
                 }
-                else Text(title, Modifier.weight(1f), style = h2, textAlign = if (onBack != null) TextAlign.Center else TextAlign.Start,
-                    maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                else Text(title, Modifier.weight(1f), style = h2, textAlign = if (onBack != null) TextAlign.Center else TextAlign.Start)
                 Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF1F232B)).border(1.dp, Color(0xFF2A2F39), RoundedCornerShape(12.dp))
                     .clickable(onClick = onClose).semantics { contentDescription = "Close" }, contentAlignment = Alignment.Center) {
                     // ICON.close: m6.5 6.5 11 11 M17.5 6.5l-11 11, stroke 1.75 on a 24 grid.

@@ -166,7 +166,8 @@ internal object CollectionWrites {
      * duplicate and a deletion do there.
      */
     data class DeckMenuOpen(val deck: String, val tab: (String) -> Unit, val web: (act: String, scope: String) -> Unit, val openDeck: (String) -> Unit,
-                            val deleted: () -> Unit, val id: Long = System.nanoTime(), val game: String = "mtg", val share: () -> Unit = {})
+                            val deleted: () -> Unit, val id: Long = System.nanoTime(), val game: String = "mtg", val share: () -> Unit = {},
+                            val site: (String) -> Unit = {})
     val menu = MutableStateFlow<DeckMenuOpen?>(null)
     /** The menu's model from this device's collection (CollectionEngine.deckMenu). Null (with a toast) when it can't open. */
     suspend fun deckMenuModel(context: Context, deck: String, game: String = "mtg"): JsonObject? =
@@ -174,6 +175,12 @@ internal object CollectionWrites {
     /** core.js exportDeckText for the deck and app.js's file name for it: {text, file}; a Yu-Gi-Oh! or Pokémon deck's {text, export, file}. */
     suspend fun deckText(context: Context, deck: String, game: String = "mtg"): JsonObject? =
         withCollection(context) { if (game == "mtg") CollectionEngine.deckText(deck) else CollectionEngine.tdeckText(game, deck) }
+    /** app.js A.proxies' page (CollectionEngine.proxies). */
+    suspend fun proxiesModel(context: Context, deck: String, scope: String): JsonObject? = withCollection(context) { CollectionEngine.proxies(deck, scope) }
+    /** app.js acquireSheet's model (CollectionEngine.acquire). */
+    suspend fun acquireModel(context: Context, deck: String, mode: String): JsonObject? = withCollection(context) { CollectionEngine.acquire(deck, mode) }
+    /** app.js A.deckToPlay's list for Play (CollectionEngine.deckPlay). */
+    suspend fun deckPlay(context: Context, deck: String): JsonObject? = withCollection(context) { CollectionEngine.deckPlay(deck) }
     private suspend fun withCollection(context: Context, run: suspend () -> JsonObject): JsonObject? {
         val s = Account.session.value ?: return null.also { show("Sign in to save cards to your collection.") }
         return WorkspaceSync.lock.withLock {
@@ -285,6 +292,33 @@ internal object CollectionWrites {
     /** One of the import sheet's own taps, in the engine holding this device's copy (it writes nothing). */
     suspend fun importDo(context: Context, run: suspend () -> JsonObject): JsonObject? = withCollection(context) { run() }
 
+    /** The website, for the pages that open there (CollectionWrites' links). */
+    const val SITE = "https://cardstashy.com/"
+    /** app.js A.newDeck's sheet ([commander] prefilled); [openDeck] opens the new deck's page on a tab (go(`#deck/<id>/<tab>`)). */
+    data class NewDeckOpen(val commander: String = "", val openDeck: (id: String, tab: String) -> Unit, val id: Long = System.nanoTime())
+    val newDeck = MutableStateFlow<NewDeckOpen?>(null)
+    suspend fun newDeckModel(context: Context, commander: String): JsonObject? = withCollection(context) { CollectionEngine.newDeck(commander) }
+    /**
+     * app.js deckImportSheet([preset]) for [deck] (the ⋯ menu's Re-import; null from the Decks page). [openDeck] opens a deck's page on a
+     * tab; [web] opens a page of the website (an Idea's Ideas tab).
+     */
+    data class DeckImportOpen(val preset: JsonObject = JsonObject(), val deck: String? = null, val openDeck: (id: String, tab: String) -> Unit,
+                              val web: (String) -> Unit, val id: Long = System.nanoTime())
+    val deckImport = MutableStateFlow<DeckImportOpen?>(null)
+    suspend fun deckImportModel(context: Context, preset: JsonObject, deck: String?): JsonObject? = withCollection(context) { CollectionEngine.deckImport(preset, deck) }
+    /** app.js acquireSheet for a deck: A.acquire's "Cards I got" ([mode] missing) or A.deckBought's whole deck (purchase). */
+    data class AcquireOpen(val deck: String, val mode: String, val id: Long = System.nanoTime())
+    val acquiring = MutableStateFlow<AcquireOpen?>(null)
+    /** app.js A.proxies' page, opened as the site opens it in a new window: the sheet's html and its title. */
+    data class ProxyOpen(val html: String, val title: String, val file: String, val id: Long = System.nanoTime())
+    val proxySheet = MutableStateFlow<ProxyOpen?>(null)
+    /** app.js A.proxies for deck [deck]: the page opens, or the site's toast when there's nothing to print. */
+    suspend fun proxies(context: Context, deck: String, scope: String) {
+        val m = proxiesModel(context, deck, scope) ?: return
+        m["toast"]?.takeIf { it.isJsonPrimitive }?.asString?.let { show(it); return }
+        val html = m["html"]?.takeIf { it.isJsonPrimitive }?.asString ?: return
+        proxySheet.value = ProxyOpen(html, m["title"]?.asString.orEmpty(), m["file"]?.asString.orEmpty())
+    }
     /** A deck's share sheet (views.js shareSheet; tcg.js A.tShare for the other games). [preview]: opens the link (the shared deck's page). */
     data class ShareOpen(val deck: String, val game: String = "mtg", val preview: (String) -> Unit = {}, val id: Long = System.nanoTime())
     val share = MutableStateFlow<ShareOpen?>(null)

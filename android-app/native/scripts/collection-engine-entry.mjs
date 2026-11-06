@@ -3,8 +3,8 @@
 // Nothing is decided here: every number, list and order comes from the site's functions; this file only calls them
 // and hands their models to the app instead of HTML.
 import {S, blank, meta, cacheCard, slim, inv, uid} from 'WEB/store.js';
-import {cardKey, typeText, cardPrice, mergeDeckCard, exportDeckText, exportDeck, sumQty} from 'WEB/core.js';
-import {validateWorkspace, parseImport, previewImport, printingState, exportCollectionCSV, importErrorsCSV, applyImport} from 'WEB/confidence.js';
+import {cardKey, typeText, cardPrice, mergeDeckCard, exportDeckText, exportDeck, sumQty, aggregateCards, physicalRequirements} from 'WEB/core.js';
+import {validateWorkspace, parseImport, previewImport, printingState, exportCollectionCSV, importErrorsCSV, applyImport, deckRowsFromImport} from 'WEB/confidence.js';
 import {normalizeHomeDeckActivity, recordHomeDeckWork} from 'WEB/home-deck-activity.js';
 import {collectionValue, recordValuePoint, withSnapshot} from 'WEB/insights.js';
 import {homeValueCoverage, homeValueModel, homeMetaKey, homeMetaSlides, homeMetaArticle, homeMetaCarousel, homeDeckShelf, homeCommunity, featureArticle} from 'WEB/home-ui.js';
@@ -12,7 +12,7 @@ import {heroFor, loadHero, homeHero, homeToday} from './tcg-daily-hero.mjs';
 import {dailyDetails, todaySetMarkup} from 'WEB/home-today.js';
 import {hintPool, SEARCH_PROMPT} from 'WEB/search-hints.js';
 import {useMyPrices, ensureTcgPrices} from 'WEB/mtg-tcgprice.js';
-import {formatOf, FORMATS, hasCommander} from 'WEB/formats.js';
+import {formatOf, FORMATS, hasCommander, canLead, verifyLeader, sizeLabel} from 'WEB/formats.js';
 import {art, esc, registerSetIcons, usd, options as htmlOptions, safeHref, segmented} from 'WEB/ui.js';
 import {createScryfallClient} from 'WEB/scryfall-client.js';
 import {loadMeta, metaState, allCachedMeta} from 'WEB/meta.js';
@@ -29,6 +29,7 @@ import {conditionName, conditionValue, conditionPriceHtml, conditionManualPlaceh
 import {configureConditionAuth, clearConditionAttempts, forgetConditionAttempt, loadConditionQuotes, applyConditionQuotes, conditionRequest, conditionQuoteEntry, CONDITION_IDENTITY} from 'WEB/condition-feed.js';
 import {createConditionRefreshScheduler, changedConditionLots, conditionLotIdentity} from 'WEB/condition-refresh-scheduler.js';
 import {locationPicker, rememberLocation} from 'WEB/collection-locations.js';
+import {acquireMissing, parseDeckImport} from 'WEB/deck-flow.js';
 import {quoteModel, recordQuote, HISTORY_RANGES, modeFor, selectionState, registerWorkbench} from 'WEB/workbench-ui.js';
 import {setHistoryRefresh} from 'WEB/shared-history.js';
 import {loadSharedHistory} from 'WEB/shared-history.js';
@@ -43,7 +44,7 @@ import {workspaceSig, isEmptyWorkspace} from 'WEB/cloud.js';
 import {mergeAccountWorkspaces, workspaceContentSig} from 'WEB/sync-merge.js';
 import {packArtUrl, samplePack, packSize, packRarity, packFinishes, packPrice, trustedPackPrice, packRevealHaptic, packFinishLabel, packNeedsHydration, godPackText, collectorText, packRandom, ptcgSetRarities} from 'WEB/pack-preview.js';
 import {loadMtgBooster, mtgBoosterCards, drawMtgBooster, mtgGodPackPicks, GOD_PACK_ODDS as MTG_GOD_ODDS} from 'WEB/mtg-boosters.js';
-import {COLLECTOR_ODDS, collectorPicks} from 'WEB/play-econ-rules.js';
+import {COLLECTOR_ODDS, collectorPicks, PLAY_FORMATS} from 'WEB/play-econ-rules.js';
 import {TIERS, priceTier} from 'WEB/tier.js';
 import {packEligible, setImageUrl, setArtworkSources} from 'WEB/set-experience.js';
 import {packTemplateArt, packArtSources} from 'WEB/pack-wrappers.js';
@@ -59,9 +60,9 @@ import {rollDice} from 'WEB/war-chest.js';
 import {profileOf, simulateMatchup, podProfile, calibratePods} from 'WEB/matchup.js';
 import {fieldStore, calibrateField} from 'WEB/matchups-ui.js';
 import {mtgConstructedPower} from 'WEB/deckpower.js';
-import {podSpeed, newGame} from 'WEB/extras.js';
+import {podSpeed, newGame, proxyList, proxySheetHTML} from 'WEB/extras.js';
 import {formatUpgrades, applyFormatSwap} from 'WEB/format-upgrades.js';
-import {upgradeSuggestions} from 'WEB/strategy.js';
+import {upgradeSuggestions, sourceCredit, mtgjsonDeck} from 'WEB/strategy.js';
 import {applySwapsToCards, cardSig} from 'WEB/insights.js';
 import {comparePower} from 'WEB/deck-optimizer.js';
 import {themeQueries} from 'WEB/builder.js';
@@ -1931,6 +1932,119 @@ function formatSelect(id, current) {
   const groups = [...new Set(FORMATS.map((f) => f.group))];
   return `<select id="${id}" data-format-select>${groups.map((g) => `<optgroup label="${g}">${FORMATS.filter((f) => f.group === g).map((f) => `<option value="${esc(f.name)}" ${formatOf(current).name === f.name ? "selected" : ""}>${esc(f.name)}</option>`).join("")}</optgroup>`).join("")}</select>`;
 }
+// ---------------------------------------------------------------- New deck (app.js A.newDeck 5885) and Import a deck (deckImportSheet 5943)
+// app.js formatInfo (5868), verbatim.
+const formatInfo = (name) => {
+  const f = formatOf(name);
+  return `${esc(sizeLabel(f))}${f.commander ? " · led by " + (f.commander === "planeswalker" ? "a planeswalker" : f.commander === "creature" ? "a creature" : "a legendary creature") : ""} · ${f.life} life${f.legality ? " · banned list checked" : ""}${f.note ? " · " + esc(f.note) : ""}`;
+};
+// A formatSelect read back: its optgroups ({group, options [[value, label]]}) and the one chosen.
+function formatsOf(sel) {
+  const opts = all(sel, tagIs('option'));
+  return {groups: all(sel, tagIs('optgroup')).map(g => ({group: g.attrs.label || '', options: all(g, tagIs('option')).map(o => [o.attrs.value ?? text(o), text(o)])})),
+    selected: (opts.find(o => o.attrs.selected !== undefined) || opts[0])?.attrs.value ?? ''};
+}
+// What app.js's change listener on [data-format-select] (5871) does for each format: the commander row shown when the format has
+// a commander, its label "Oathbreaker" for a planeswalker one, and New deck's line under the format (#ndFormatInfo).
+const formatRows = () => Object.fromEntries(FORMATS.map(f => [f.name, {commander: !!f.commander, label: f.commander === "planeswalker" ? "Oathbreaker" : "Commander", info: text(tree(`<p>${formatInfo(f.name)}</p>`))}]));
+// A label's words without its field's.
+const labelWords = (l) => text({kids: (l?.kids || []).filter(k => k.text !== undefined)});
+// app.js A.newDeck's sheet, verbatim.
+function newDeckHtml(commander = "") {
+  return `<div class="sheet-head"><h2>New deck</h2><button class="icon" data-act="closeSheet">✕</button></div>
+    <div class="grid2">
+      <label class="span2">Format${formatSelect("ndFormat", "Commander")}</label>
+      <p class="span2 muted small" id="ndFormatInfo">${formatInfo("Commander")}</p>
+      <label class="span2" id="ndCommanderRow">Commander<input id="ndCommander" value="${esc(commander)}" placeholder="e.g. Giada, Font of Hope" autocomplete="off"></label>
+      <label class="span2">Deck name<input id="ndName" maxlength="100" placeholder="Optional"></label>
+      <label>Budget $<input id="ndBudget" type="number" min="0" value="${S.state.settings.budget || 25}"></label>
+    </div>
+    <p id="ndError" class="error" role="alert"></p>
+    <button class="btn block" data-act="newDeckSave">Create deck</button>
+    <p class="muted small">Commander formats: single commander only (partners and backgrounds aren’t supported yet).</p>`;
+}
+function newDeckModel(commander) {
+  const t = tree(newDeckHtml(commander)), byId = id => one(t, n => n.attrs?.id === id), labels = all(one(t, cls('grid2')), tagIs('label'));
+  const fmt = formatsOf(byId('ndFormat')), field = (l) => { const i = one(l, tagIs('input')); return {label: labelWords(l), value: i?.attrs.value || '', placeholder: i?.attrs.placeholder || '', max: Number(i?.attrs.maxlength || 0)}; };
+  return {title: text(one(t, tagIs('h2'))), formatLabel: labelWords(labels[0]), formats: fmt.groups, format: fmt.selected, info: text(byId('ndFormatInfo')),
+    commander: field(labels[1]), name: field(labels[2]), budget: field(labels[3]), save: text(one(t, cls('btn'))), busy: "Checking…",
+    foot: text(all(t, x => x.tag === 'p' && cls('muted')(x)).at(-1)), rows: formatRows()};
+}
+// app.js deckImportSheet's sheet, verbatim but for currentDeck(): the deck it was opened for ([deck]).
+function deckImportHtml(preset = {}, deck = null) {
+  const options = htmlOptions;
+  return `<div class="sheet-head"><h2>${preset.destination === "library" ? "Save a deck idea" : "Import a deck"}</h2><button class="icon" data-act="closeSheet">✕</button></div>
+    <p class="muted small">Paste a list (Moxfield, Archidekt, ManaBox: Export → Text) or upload .txt / .csv / MTGJSON .json. Importing never changes your collection.</p>
+    <textarea id="dImpText" rows="7" data-input="dImpText" placeholder="Commander&#10;1 Giada, Font of Hope&#10;&#10;Deck&#10;1 Sol Ring&#10;30 Plains">${esc(preset.text || "")}</textarea>
+    <label class="btn ghost file">Upload a file<input type="file" accept=".txt,.csv,.json,.dek" data-change="dImpFile" hidden></label>
+    <div class="grid2">
+      <label>Deck name<input id="dImpName" maxlength="100" value="${esc(preset.name || "Imported deck")}"></label>
+      <label>Format${formatSelect("dImpFormat", preset.format || "Commander")}</label>
+      <label id="dImpCommanderRow">Commander<input id="dImpCommander" value="${esc(preset.commander || "")}" placeholder="Read from the list"></label>
+      <label>Save as<select id="dImpDest">${options([["new", "New deck"], ...(deck ? [["replace", "Replace " + deck.name.slice(0, 24)]] : []), ["library", "Idea (inspiration)"]], preset.destination || "new")}</select></label>
+    </div>
+    <details class="more" ${preset.url ? "open" : ""}><summary>Credit the creator (optional)</summary><div class="grid2"><label class="span2">Original link<input id="dImpURL" type="url" value="${esc(preset.url || "")}" placeholder="https://moxfield.com/decks/…"></label><label>Author<input id="dImpAuthor" maxlength="100" value="${esc(preset.author || "")}"></label><label>Kind<select id="dImpKind">${options(["User export", "Community deck", "Purchased precon", "MTGJSON precon"].map((x) => [x, x]), preset.kind || "User export")}</select></label><label class="span2">Notes<textarea id="dImpDesc" rows="2" maxlength="3000">${esc(preset.description || "")}</textarea></label></div></details>
+    <p id="dImpStatus" class="muted small" role="status"></p>
+    <div class="actions"><button class="btn ghost" data-act="dImpPreview" id="dImpPreviewBtn">Preview & match</button><button class="btn" data-act="dImpSave" id="dImpSave" disabled>Save deck</button></div>
+    <div id="dImpResults"></div>`;
+}
+// The import in progress (app.js dImp, dImpBusy) and the deck the sheet replaces (its currentDeck() when it opened).
+let dImp = null, dImpBusy = false, dImpDeck = null;
+function deckImportModel(preset = {}, deckId = null) {
+  if (deckId != null) S.ui.deckId = deckId;
+  dImp = null; dImpDeck = currentDeck()?.id ?? null;
+  const t = tree(deckImportHtml(preset, deckOf(dImpDeck))), byId = id => one(t, n => n.attrs?.id === id), grids = all(t, cls('grid2'));
+  const labels = all(grids[0], tagIs('label')), credit = all(grids[1], tagIs('label')), area = byId('dImpText'), fmt = formatsOf(byId('dImpFormat'));
+  const input = (l) => { const i = one(l, x => x.tag === 'input' || x.tag === 'textarea'); return {label: labelWords(l), value: i?.tag === 'textarea' ? text({kids: i.kids}) : i?.attrs.value || '', placeholder: i?.attrs.placeholder || '', max: Number(i?.attrs.maxlength || 0)}; };
+  const select = (l) => { const sel = one(l, tagIs('select')); return {label: labelWords(l), options: all(sel, tagIs('option')).map(o => [o.attrs.value ?? text(o), text(o)]), selected: formatsOf(sel).selected}; };
+  const acts = all(one(t, cls('actions')), tagIs('button'));
+  return {title: text(one(t, tagIs('h2'))), intro: text(one(t, x => x.tag === 'p' && cls('muted')(x))), text: (area.kids || []).map(k => k.text ?? '').join(''),
+    placeholder: area.attrs.placeholder || '', rows: Number(area.attrs.rows || 7), upload: labelWords(one(t, cls('file'))), accept: one(one(t, cls('file')), tagIs('input'))?.attrs.accept || '',
+    name: input(labels[0]), formatLabel: labelWords(labels[1]), formats: fmt.groups, format: fmt.selected, commander: input(labels[2]),
+    dest: {label: labelWords(labels[3]), options: all(byId('dImpDest'), tagIs('option')).map(o => [o.attrs.value ?? '', text(o)]), selected: formatsOf(byId('dImpDest')).selected},
+    credit: {summary: text(one(t, tagIs('summary'))), open: one(t, cls('more'))?.attrs.open !== undefined, url: input(credit[0]), author: input(credit[1]), kind: select(credit[2]), notes: {...input(credit[3]), rows: Number(byId('dImpDesc')?.attrs.rows || 2)}},
+    preview: text(acts[0]), previewBusy: "Loading…", save: text(acts[1]), saving: "Saving…", rowsOf: formatRows()};
+}
+// app.js dImpCandidate (5974), verbatim but for the fields: [f] is the form as typed ({name, format, commander, dest, url, author, desc, kind}).
+function dImpCandidate(f) {
+  const format = f.format;
+  return {
+    id: f.dest === "replace" ? deckOf(dImpDeck)?.id : "preview",
+    name: String(f.name || '').trim() || "Imported deck",
+    format,
+    commander: hasCommander(format) ? String(f.commander || '').trim() : "",
+    strategy: "Auto",
+    budget: S.state.settings.budget || 25,
+    locked: false,
+    source: sourceCredit({ url: f.url || '', author: f.author || '', description: f.desc || '', kind: f.kind || 'User export' }),
+    cards: deckRowsFromImport(dImp.cards.map((c) => ({ name: meta(c.name)?.name || c.name, qty: c.qty }))),
+    // Commander has no sideboard; every other format keeps the imported one.
+    side: hasCommander(format) ? [] : (dImp.side || []).map((c) => ({ name: meta(c.name)?.name || c.name, qty: c.qty })),
+  };
+}
+// app.js drawDeckImport (5995): #dImpResults as the site writes it, read back ({kpis [[value, label]], notes [{text, warn}], rows
+// [{text, need, missing}]}), or the candidate's error for #dImpStatus.
+function drawDeckImport(f) {
+  if (!dImp) return {results: null};
+  let d;
+  try { d = dImpCandidate(f); } catch (e) { return {status: e.message, results: null}; }
+  const rows = rowsFor(d),
+    t = rows.reduce((a, r) => ({ copies: a.copies + r.qty, covered: a.covered + r.covered, missing: a.missing + r.missing, gap: a.gap + (r.price ?? 0) * r.missing }), { copies: 0, covered: 0, missing: 0, gap: 0 }),
+    unresolved = rows.filter((r) => !meta(r.name));
+  const html = `<div class="kpis small"><div class="kpi"><b>${t.copies}</b><span>cards</span></div><div class="kpi"><b>${t.covered}</b><span>you own</span></div><div class="kpi"><b>${usd(t.gap, 0)}</b><span>to finish</span></div></div>
+  ${dImp.side?.length ? `<p class="muted small">${hasCommander(d.format) ? `${sumQty(dImp.side)} sideboard cards left out (Commander has no sideboard).` : `+ ${sumQty(dImp.side)}-card sideboard, saved with the deck.`}</p>` : ""}
+  ${dImp.excluded ? `<p class="muted small">${dImp.excluded} maybeboard cards left out.</p>` : ""}
+  ${dImp.errors.length ? `<div class="note warn">${dImp.errors.length} lines skipped: ${dImp.errors.slice(0, 3).map((e) => esc("line " + e.line)).join(", ")}</div>` : ""}
+  ${unresolved.length ? `<div class="note warn">Not recognized: ${unresolved.slice(0, 8).map((r) => esc(r.name)).join(", ")}${unresolved.length > 8 ? "…" : ""}. You can save anyway and fix them later.</div>` : ""}
+  <div class="list compact">${rows
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((r) => `<div class="mini-row"><span class="ellip">${r.qty > 1 ? r.qty + "× " : ""}${esc(r.name)}</span><span class="small ${r.missing ? "warn-text" : "ok-text"}">${r.missing ? "need " + r.missing : "owned"}</span></div>`)
+    .join("")}</div>`;
+  const tr = tree(html);
+  return {results: {kpis: all(tr, cls('kpi')).map(k => [text(one(k, tagIs('b'))), text(one(k, tagIs('span')))]),
+    notes: all(tr, x => (x.tag === 'p' && cls('muted')(x)) || cls('note')(x)).map(n => ({text: text(n), warn: cls('warn')(n)})),
+    rows: all(tr, cls('mini-row')).map(r => { const sp = all(r, tagIs('span')); return {text: text(sp[0]), need: text(sp[1]), missing: cls('warn-text')(sp[1] || {attrs: {}})}; })}};
+}
 // A.deckMenu's sheet, verbatim but for options (ui.js options, imported as htmlOptions here).
 function deckMenuHtml(d) {
   const options = htmlOptions;
@@ -2120,6 +2234,151 @@ const writeActs = {
   // asks before Mass Entry opens; a Yu-Gi-Oh! exact-printing list asks first whether to keep its checklist).
   async tDeckRefresh(d) { tcgFocus(d.game, 'tdeck'); S.ui.tdeckId = d.deck; await siteRun(() => TA.tDeckRefresh({dataset: {id: d.deck}}), d); },
   async tDeckCheapest(d) { tcgFocus(d.game, 'tdeck'); S.ui.tdeckId = d.deck; await siteRun(() => TA.tDeckCheapest({dataset: {id: d.deck}}), d); },
+  // app.js A.newDeckSave (5902): [d] {format, commander, name, budget} as typed; busy "Checking…" while the commander is looked up
+  // and checked. Saved, the deck opens (made: {id, tab}) with the site's toast; an error goes under the form (#ndError, siteText).
+  async newDeckSave(d) {
+    siteText = {};
+    const format = String(d.format || ''), cn = String(d.commander || '').trim();
+    try {
+      let c = null;
+      const fm = formatOf(format);
+      if (fm.commander) {
+        if (!cn) throw Error(fm.commander === "planeswalker" ? "Enter your Oathbreaker (a planeswalker)." : "Enter a commander.");
+        c = await resolve(cn, true);
+        await verifyLeader(c,fm,api);
+        if (!canLead(c, fm)) throw Error(`${c.name} can’t lead a ${fm.name} deck.`);
+      }
+      const deck = {
+        id: uid(),
+        name: String(d.name || '').trim() || (c ? c.name.split(",")[0] + " deck" : "New deck"),
+        format,
+        commander: c?.name || "",
+        strategy: "Auto",
+        budget: Math.max(0, Number(d.budget) || 0),
+        locked: false,
+        cards: c ? [{ name: c.name, qty: 1 }] : [],
+        versions: [],
+      };
+      await commit((s) => {
+        s.decks.push(deck);
+        s.activeDeck = deck.id;
+      });
+      made = JSON.stringify({id: deck.id, tab: c && format === "Commander" ? "upgrade" : "cards"});
+      toasts.push({text: c && format === "Commander" ? "Deck created. Fill the open slots from your collection here." : `${formatOf(format).name} deck created.`, undo: false});
+    } catch (e) { siteText['#ndError'] = String(e?.message || e); }
+  },
+  // app.js A.dImpPreview (6020): the list read (MTGJSON or text), its names looked up, the form's name, commander and format filled as
+  // the site fills them. Saves nothing: made is {form, status, results, ready} for the sheet; progress comes as the act's step.
+  async dImpPreview(f) {
+    siteText = {};
+    if (dImpBusy) return;
+    const form = {...f}, raw = String(form.text ?? '');
+    let status = '';
+    try {
+      dImp = /^\s*\{/.test(raw) ? mtgjsonDeck(JSON.parse(raw)) : parseDeckImport(raw);
+      if (dImp.multipleCommanders) throw Error("This deck has two commanders; pairs aren’t supported yet.");
+      if (dImp.cards.length > 1000) throw Error("That’s more than 1000 different cards — use collection import instead.");
+      if (dImp.name && form.name === "Imported deck") form.name = dImp.name;
+      if (!form.commander && dImp.commander) form.commander = dImp.commander;
+      // A list without a commander that's around 60 cards isn't a Commander deck; let the user pick the exact format.
+      if (!dImp.commander && form.format === "Commander" && sumQty(dImp.cards) <= 80) {
+        form.format = sumQty(dImp.cards) <= 45 ? "Limited (40-card)" : "60-card casual";
+        status = "No commander found — set to " + form.format + ". Pick Standard, Modern or another format above to check legality.";
+      }
+      dImpBusy = true;
+      const r = await resolveNames([...dImp.cards, ...(dImp.side || [])].map((c) => c.name), (m) => { actStep = status = String(m); });
+      // A list without a commander section: guess a legendary creature if there's exactly one.
+      if (!form.commander && hasCommander(form.format)) {
+        const legends = dImp.cards.filter((c) => canLead(meta(c.name), formatOf(form.format)));
+        if (legends.length === 1) form.commander = meta(legends[0].name).name;
+      }
+      status = r.failed.length ? `${r.failed.length} names weren’t found.` : "Matched against your collection.";
+    } catch (e) {
+      dImp = null;
+      status = String(e?.message || e);
+    } finally {
+      dImpBusy = false;
+    }
+    const drawn = drawDeckImport(form);
+    made = JSON.stringify({form, status: drawn.status ?? status, results: drawn.results, ready: !!dImp});
+  },
+  // app.js A.dImpSave (6051): [f] the form. Saved, made is where the site goes next ({go: "deck", id, tab} or {go: "inspiration"});
+  // Replace asks first; an error goes in #dImpStatus (siteText).
+  async dImpSave(f) {
+    siteText = {};
+    if (!dImp || dImpBusy) return;
+    try {
+      const d = dImpCandidate(f),
+        dest = f.dest;
+      if (d.name === "Imported deck" && d.commander) d.name = d.commander.split(",")[0] + " deck";
+      if (d.commander) {
+        const c = await resolve(d.commander, true);
+        await verifyLeader(c,formatOf(d),api);
+        if (!canLead(c, formatOf(d))) throw Error(`${c.name} can’t lead a ${formatOf(d).name} deck.`);
+        d.commander = c.name;
+        if (!d.cards.some((x) => key(x.name) === key(c.name))) d.cards.unshift({ name: c.name, qty: 1 });
+      }
+      if (dest === "library") {
+        d.id = uid();
+        await commit((s) => (s.references = [...(s.references || []), d]), { msg: "Saved to Inspiration. No cards added to your collection." });
+        made = JSON.stringify({go: "inspiration"});
+        return;
+      }
+      if (dest === "replace") {
+        const old = deckOf(dImpDeck);
+        if (!old) throw Error('This deck is no longer available.');
+        if (!ask(`Replace the cards in ${old.name}? The old list is kept in Versions.`, f.confirmed)) return;
+        await commit((s) => {
+          const i = s.decks.findIndex((x) => x.id === old.id);
+          const snap = withSnapshot(s.decks[i], "Before re-import");
+          // The imported list replaces every zone, including an empty sideboard. This importer
+          // reads one commander, so an earlier partner pairing must not survive the replacement.
+          const { commanders, ...rest } = snap;
+          void commanders;
+          s.decks[i] = withSnapshot({ ...rest, name: d.name, format: d.format, commander: d.commander, source: d.source, cards: d.cards, side: d.side }, "Re-imported");
+        });
+        made = JSON.stringify({go: "deck", id: old.id, tab: "versions"});
+        return;
+      }
+      d.id = uid();
+      const deck = withSnapshot(d, "Imported");
+      await commit((s) => {
+        s.decks.push(deck);
+        s.activeDeck = deck.id;
+      }, { msg: "Deck imported. Your collection is unchanged." });
+      made = JSON.stringify({go: "deck", id: deck.id, tab: "cards"});
+    } catch (e) { siteText['#dImpStatus'] = String(e?.message || e); }
+  },
+  // app.js A.acqConfirm (6383), the acquire sheet's Add to collection: [d] {deck, mode, picked [{name, qty}] (the ticked rows),
+  // location (#acqLoc), picker (#acqLocPicker), finish, cond}. Its error goes under the sheet's list (#acqError, siteText); saved, the
+  // app closes the sheet (made "closed").
+  async acqConfirm(d) {
+    siteText = {};
+    const deck = deckOf(d.deck); if (!deck) throw Error('This deck is no longer available.');
+    try {
+      const picked = (d.picked || []).map((p) => ({ name: String(p.name), qty: Number(p.qty), location: String(d.location ?? '').trim() }));
+      if (!picked.length) throw Error("Tick the cards you have.");
+      const extra = { finish: d.finish || "nonfoil", condition: d.cond || "Near Mint", language: "en" };
+      const n = commits;
+      await commit(
+        (s) => {
+          for(const p of picked)p.location=rememberLocation(s,"mtg",p.location,{createBinder:d.picker === "binder:new"});
+          if (d.mode === "purchase") {
+            for (const p of picked) {
+              if (!Number.isInteger(p.qty) || p.qty < 1) throw Error("Check the quantity for " + p.name);
+              s.collection.push({ id: uid(), name: p.name, qty: p.qty, set: "", collectorNumber: "", printingId: null, printingVerified: false, nameVerified: !!meta(p.name), reserved: 0, location: p.location, raw: { acquisition: "Bought as a deck", deckId: deck.id }, ...extra });
+            }
+          } else {
+            const before = new Set(s.collection.map((e) => e.id));
+            s.collection = acquireMissing(deck, s.collection, s.decks, S.catalog, picked, uid).map((e) => (before.has(e.id) ? e : { ...e, ...extra }));
+          }
+          s.example = false;
+        },
+        { msg: `${sumQty(picked)} cards added to your collection.` },
+      );
+      if (commits > n) made = 'closed';
+    } catch (e) { siteText['#acqError'] = String(e?.message || e); }
+  },
   async tDeckCopyMissing(d) { tcgFocus(d.game, 'tdeck'); S.ui.tdeckId = d.deck; await siteRun(() => TA.tDeckCopyMissing({dataset: {id: d.deck}}), d); },
   // tcg.js A.tOwnSave, the site's own: it reads its form from the page (#tQty, #tCond…), so the form as the app has it stands in for
   // those fields while the handler reads them (before its first await); it closes the sheet when saved (made: "closed").
@@ -3198,6 +3457,48 @@ globalThis.Collection = {
     const d = tcgGs(game).decks.find(x => String(x.id) === String(id)); if (!d) return '{}';
     const listText = (d) => ["main", "extra", "side"].flatMap((z) => ((d.zones[z] || []).length ? [z === "main" ? "Main" : z === "extra" ? "Extra" : "Side", ...d.zones[z].map((r) => `${r.qty} ${r.name}`), ""] : [])).join("\n");
     return json({text: listText(d), export: tcgSources[game].exportText(d, (x) => tcgCardOf(game, x)), file: d.name.replace(/[^a-z0-9]+/gi, "_") + "." + tcgSources[game].exportExt});
+  },
+  // app.js A.newDeck's sheet ([commander]: data-commander, prefilled).
+  newDeck(commander) { return json(newDeckModel(commander || '')); },
+  // app.js deckImportSheet: [preset] (A.importReference: {destination: "library", kind: "Community deck"}), [deck] the deck the ⋯ menu's
+  // Re-import is for (else the site's currentDeck()).
+  deckImport(presetJson, deck) { return json(deckImportModel(JSON.parse(presetJson || '{}'), deck || null)); },
+  // app.js I.dImpText: typing in the list clears the preview (Save deck waits for Preview & match again).
+  deckImportText() { dImp = null; return '{}'; },
+  // The change listener's drawDeckImport (6104): the format, commander or destination changed ([f] the form).
+  deckImportDraw(formJson) { return json(drawDeckImport(JSON.parse(formJson || '{}'))); },
+  // app.js A.proxies (7305): deck [id]'s playtest proxy sheet (extras.js proxySheetHTML), every card for [scope] "all" (but basics),
+  // else the copies it is missing; the page the site opens in a new window ({html, title, file}), or the toast when there's none.
+  proxies(id, scope) {
+    const d = deckOf(id); if (!d) return '{}';
+    const all = scope === "all",
+      rows = all ? aggregateCards(d.cards) : rowsFor(d).filter((r) => r.missing).map((r) => ({ name: r.name, qty: r.missing })),
+      cards = proxyList(rows, S.catalog);
+    if (!cards.length) return json({toast: all ? "No non-basic cards to print." : "Nothing missing — no proxies needed."});
+    const title = `${d.name} — ${all ? "deck" : "missing cards"} proxies`;
+    return json({html: proxySheetHTML(title, cards), title, file: (String(d.name).replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "") || "deck") + "_proxies.html"});
+  },
+  // app.js acquireSheet(mode) (6365): A.acquire's "Cards I got" ([mode] "missing": the copies the deck is missing, none ticked) and
+  // A.deckBought's "Add the whole deck to my collection" ("purchase": every card of the deck and its side, all ticked), with its
+  // where-to-store picker (#acqLoc, the deck's name offered for a bought deck), finish and condition.
+  acquire(id, mode) {
+    const d = deckOf(id); if (!d) return json({missing: true});
+    const purchase = mode === "purchase",
+      rows = purchase ? physicalRequirements(d).map((r) => ({ name: r.name, qty: r.qty, max: r.qty })) : rowsFor(d).filter((r) => r.missing).map((r) => ({ name: r.name, qty: r.missing, max: r.missing }));
+    return json({mode: purchase ? "purchase" : "missing", title: purchase ? "Add the whole deck to my collection" : "Cards I got",
+      intro: purchase ? "For a precon or deck you bought: every card below is added as new copies, on top of what you already own." : "Tick the cards you now physically have. They’ll be added to your collection and the shopping gap updates.",
+      location: locationModelOf(tree(locationPicker(S.state, "mtg", "acqLoc", purchase ? "Deck: " + d.name : null, "Store them in"))),
+      finishes: [["nonfoil", "Nonfoil"], ["foil", "Foil"], ["etched", "Etched"]], finish: "nonfoil",
+      conditions: ["Near Mint", "Lightly Played", "Moderately Played"].map((x) => [x, x]), condition: "Near Mint",
+      all: "Select all", none: "Select none", rows: rows.map((r) => ({...r, on: purchase})), save: "Add to collection", saving: "Saving…"});
+  },
+  // app.js A.deckToPlay (6238)'s list for playEcon.saveDeck: the deck's format if Play plays it (else Commander for a Commander-like
+  // one, else Standard), the commander first, each other row at least one copy, a sideboard row marked. The app sends it (Progress.saveDeck).
+  deckPlay(id) {
+    const d = deckOf(id); if (!d) return '{}';
+    const fmt=PLAY_FORMATS.includes(d.format)?d.format:/commander|edh/i.test(d.format||'')?'Commander':'Standard';
+    const cards=[...(d.commander?[{name:d.commander,qty:1}]:[]),...(d.cards||[]).filter(r=>r.name&&r.name!==d.commander).map(r=>({name:r.name,qty:Math.max(1,r.qty|0),...(r.zone==='side'||r.board==='side'?{board:'side'}:{})}))];
+    return json({name:(d.name||'Deck').slice(0,80),format:fmt,cards});
   },
   // app.js A.deckCopy / A.deckExport: the decklist as the site writes it (core.js exportDeckText) and the file it saves (fileSafe).
   deckText(id) { const d = deckOf(id); return json(d ? {text: exportDeckText(d), file: `CardStashy_${String(d.name).replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "") || "deck"}.txt`} : {}); },

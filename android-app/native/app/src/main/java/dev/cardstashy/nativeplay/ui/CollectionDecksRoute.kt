@@ -44,8 +44,9 @@ private object DecksCache {
 
 /**
  * Collection's Decks tab (My decks): the account's decks through the site's own views.js decks() / deckTile, drawn natively.
- * Search asks the site's code again; Magic's Random Commander and Random deck open Build a deck here (CollectionBuildDeckSheet);
- * a deck, Ideas, Meta decks, War Chest, Import, New and the other games' random buttons open the website's page, which does them there.
+ * Search asks the site's code again; Magic's Random Commander and Random deck open Build a deck here (CollectionBuildDeckSheet),
+ * its Import and New their sheets (DeckImportSheet, NewDeckSheet); Ideas, Meta decks, War Chest and the other games' buttons open the
+ * website's page, which does them there.
  */
 @Composable
 fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, onCards: () -> Unit, web: (url: String, press: String?) -> Unit,
@@ -99,7 +100,12 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             button = { a ->
                 // app.js A.randomDeck / A.randomDeckOptions: Magic's Build a deck runs here (Commander locked for Random Commander); the
                 // other games' (and anything else) open the website.
-                if (a in listOf("randomDeck", "randomDeckOptions") && CollectionGame.current.value == CardGame.MTG)
+                // app.js A.newDeck / A.importDeck on Magic's Decks: the sheets here; the new or imported deck's page opens on the site's tab.
+                val mtg = CollectionGame.current.value == CardGame.MTG
+                val open = { id: String, tab: String -> deckOpensOn("mtg", id, tab); onDeck?.invoke(id, CardGame.MTG) ?: page(site + "#deck/" + android.net.Uri.encode(id), null) }
+                if (mtg && a == "newDeck") CollectionWrites.newDeck.value = CollectionWrites.NewDeckOpen(openDeck = open)
+                else if (mtg && a == "importDeck") CollectionWrites.deckImport.value = CollectionWrites.DeckImportOpen(openDeck = open, web = { u -> page(u, null) })
+                else if (a in listOf("randomDeck", "randomDeckOptions") && mtg)
                     CollectionWrites.building.value = CollectionWrites.BuildOpen(JsonObject().apply {
                         addProperty("game", "mtg"); if (a == "randomDeck") { addProperty("format", "Commander"); addProperty("commanderLock", true) } }, a, web)
                 else if (a.isNotBlank()) page(decks, "[data-act=\"${css(a)}\"]") },

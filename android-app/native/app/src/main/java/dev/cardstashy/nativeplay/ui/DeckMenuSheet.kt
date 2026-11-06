@@ -121,8 +121,9 @@ private fun JsonObject?.chosen() = this?.objs("options")?.let { o -> (o.firstOrN
  * (CollectionEngine.deckMenu). The deck box, kind, name and meta with the close; the four section shortcuts; Edit deck (name,
  * format, budget, focus, the deck box's colour and cover, Save changes); Share and export; Save a version, Duplicate, Refresh;
  * More deck tools (Assembled, then the playtest printing, the bought cards and the re-import); Delete; the list's source. The
- * saves are the site's handlers (CollectionWrites); Share opens the share sheet (CollectionShare); Copy to Play and the three
- * tools open the website's menu, which does them there.
+ * saves are the site's handlers (CollectionWrites); Share opens the share sheet (CollectionShare); Copy to Play sends the list to
+ * Play (Progress.saveDeck); Print playtest proxies opens the proxy page (ProxySheet) and Add deck to collection the acquire sheet
+ * (AcquireSheet), Re-import the import sheet (DeckImportSheet).
  */
 @Composable
 internal fun DeckMenuSheet(o: CollectionWrites.DeckMenuOpen, backdrop: GraphicsLayer?, onClose: () -> Unit) {
@@ -209,6 +210,28 @@ internal fun DeckMenuSheet(o: CollectionWrites.DeckMenuOpen, backdrop: GraphicsL
             "tDeckDelete" -> save("tDeckDelete", data()) { onClose(); o.deleted() }
             // A.deckShare / tcg.js A.tShare: the share sheet (CollectionShare).
             "deckShare", "tShare" -> { onClose(); o.share() }
+            // A.proxies (data-scope "all"): the proxy sheet opens over the menu, as the site's new window does.
+            "proxies" -> scope.launch { CollectionWrites.proxies(context, o.deck, a.s("scope").ifBlank { "all" }) }
+            // A.importDeck (Re-import / replace list): deckImportSheet in the menu's place, offering to replace this deck.
+            "importDeck" -> { onClose(); CollectionWrites.deckImport.value = CollectionWrites.DeckImportOpen(deck = o.deck,
+                openDeck = { id, tab -> if (id == o.deck) o.tab(tab) else { deckOpensOn("mtg", id, tab); o.openDeck(id) } }, web = o.site) }
+            // A.deckBought: acquireSheet("purchase") in the menu's place.
+            "deckBought" -> { onClose(); CollectionWrites.acquiring.value = CollectionWrites.AcquireOpen(o.deck, "purchase") }
+            // A.deckToPlay: signed in, the list goes to Play as a Play deck (playEcon.saveDeck); then closeSheet and its toast, or the error's words.
+            "deckToPlay" -> {
+                if (dev.cardstashy.nativeplay.account.Account.session.value?.userId == null) { CollectionWrites.show("Sign in to use Play."); return }
+                if (busy) return
+                busy = true
+                scope.launch {
+                    try {
+                        val body = CollectionWrites.deckPlay(context, o.deck)?.takeIf { it.has("cards") } ?: return@launch
+                        dev.cardstashy.nativeplay.play.Progress.saveDeck(body)
+                        onClose(); CollectionWrites.show("Copied to your Play decks.")
+                    } catch (e: kotlinx.coroutines.CancellationException) { throw e
+                    } catch (e: Exception) { CollectionWrites.show(e.message?.takeIf { it.isNotBlank() } ?: "Could not copy to Play.")
+                    } finally { busy = false }
+                }
+            }
             else -> { onClose(); o.web(act, a.s("scope")) }
         }
     }

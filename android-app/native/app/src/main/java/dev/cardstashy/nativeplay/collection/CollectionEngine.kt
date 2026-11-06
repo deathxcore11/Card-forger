@@ -335,6 +335,21 @@ object CollectionEngine {
     suspend fun deckMenu(id: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.deckMenu(${str(id)})") as String).asJsonObject }
     /** app.js A.deckCopy / A.deckExport: {text, file}. */
     suspend fun deckText(id: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.deckText(${str(id)})") as String).asJsonObject }
+    /** app.js A.newDeck's sheet ([commander] prefilled): {title, formats, format, info, commander, name, budget, save, foot, rows (each format's commander row and line)}. */
+    suspend fun newDeck(commander: String = ""): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.newDeck(${str(commander)})") as String).asJsonObject }
+    /** app.js deckImportSheet([preset]) for [deck] (the ⋯ menu's Re-import; null from the Decks page): the sheet's fields, read back. */
+    suspend fun deckImport(preset: JsonObject = JsonObject(), deck: String? = null): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.deckImport(${str(preset.toString())}, ${deck?.let(::str) ?: "null"})") as String).asJsonObject }
+    /** app.js I.dImpText: the list was typed in, so the preview is gone. */
+    suspend fun deckImportText() { on { q -> q.evaluate("Collection.deckImportText()") } }
+    /** app.js drawDeckImport for [form] (a format, commander or destination change): {results} or {status} (the list's error). */
+    suspend fun deckImportDraw(form: JsonObject): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.deckImportDraw(${str(form.toString())})") as String).asJsonObject }
+    /** app.js A.proxies: deck [id]'s proxy sheet ({html, title, file}) for [scope] "all" or "missing", or {toast} when there's nothing to print. */
+    suspend fun proxies(id: String, scope: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.proxies(${str(id)}, ${str(scope)})") as String).asJsonObject }
+    /** app.js acquireSheet: "Cards I got" ([mode] missing) or "Add the whole deck to my collection" (purchase), or {missing} when the deck is gone. */
+    suspend fun acquire(id: String, mode: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.acquire(${str(id)}, ${str(mode)})") as String).asJsonObject }
+    /** app.js A.deckToPlay's Play deck for [id]: {name, format, cards [{name, qty, board?}]}, or {} when the deck is gone. */
+    suspend fun deckPlay(id: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.deckPlay(${str(id)})") as String).asJsonObject }
     /** tcg.js A.tDeckMenu's sheet for a Yu-Gi-Oh! or Pokémon deck, read as deckMenu reads the Magic one. */
     suspend fun tdeckMenu(game: String, id: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.tdeckMenu(${str(game)}, ${str(id)})") as String).asJsonObject }
     /** tcg.js A.tDeckCopy's list and A.tDeckExport's file: {text, export, file}. */

@@ -172,7 +172,7 @@ internal fun GhostBtn(label: String, enabled: Boolean = true, small: Boolean = f
 
 /** Chrome's checkbox at 18 (accent-color: the game's gold): #3b3b3b in a #858585 edge, or the gold with its tick in #3b3b3b. */
 @Composable
-private fun Check(on: Boolean, modifier: Modifier = Modifier) {
+internal fun ChromeCheck(on: Boolean, modifier: Modifier = Modifier) {
     val gold = Accent
     Box(modifier.size(18.dp).drawBehind {
         val u = 1.dp.toPx(); val r = CornerRadius(2.dp.toPx())
@@ -324,7 +324,7 @@ private fun Draft(d: JsonObject, busy: Boolean, onErrors: () -> Unit, onVerify: 
             .padding(horizontal = 2.dp, vertical = 9.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalArrangement = Arrangement.spacedBy(10.dp),
             itemVerticalAlignment = Alignment.CenterVertically) {
             Row(Modifier.weight(1f, fill = false), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Check(on, Modifier.padding(start = 4.dp, top = 3.dp, end = 3.dp, bottom = 3.dp))
+                ChromeCheck(on, Modifier.padding(start = 4.dp, top = 3.dp, end = 3.dp, bottom = 3.dp))
                 Text(buildAnnotatedString {
                     append(r.s("line"))
                     if (r.s("meta").isNotBlank()) { append(" "); withStyle(SpanStyle(color = IMute, fontSize = androidx.compose.ui.unit.TextUnit(13f, androidx.compose.ui.unit.TextUnitType.Sp))) { append(r.s("meta")) } }
