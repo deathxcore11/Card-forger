@@ -216,6 +216,12 @@ object CollectionEngine {
      * interactiveRules for [game] and the deck's [format]). The model is the page's nodes as those scripts leave them; [panelTap] and
      * [panelType] reach their listeners; what they start (the rulebook, a source) lands through [settle] with "Collection.panelModel()".
      */
+    /** The Rules page (rules.js rulesPage) for [game] as a panel; read again with panelModel. */
+    suspend fun rulesPage(game: String): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.rulesPage(${str(game)})") as String).asJsonObject }
+    /** How to play · keywords (A.learnGame: learnSheet) for [game] as a panel. */
+    suspend fun learnGame(game: String): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.learnGame(${str(game)})") as String).asJsonObject }
     suspend fun rules(game: String, format: String): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.rules(${str(game)}, ${str(format)})") as String).asJsonObject }
     /** A Yu-Gi-Oh! or Pokémon deck's [tab] other than Cards (tcg.js A.tDeckTab): tcgDeck's .deck-body as such a panel (the page: [deck] with "tab"). */

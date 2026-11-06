@@ -64,7 +64,9 @@ private fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
  */
 @Composable
 fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, onCards: () -> Unit, onDecks: () -> Unit, onSets: (String) -> Unit,
-                          onSet: (game: String, code: String) -> Unit, web: (url: String, press: String?) -> Unit, game: String = "mtg", onGame: (String) -> Unit = {}) {
+                          onSet: (game: String, code: String) -> Unit, web: (url: String, press: String?) -> Unit, game: String = "mtg", onGame: (String) -> Unit = {},
+                          /** The Rules page (#rules), native. */
+                          onRules: ((String) -> Unit)? = null) {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
@@ -167,7 +169,7 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
                 scope.launch { turn.withLock { CollectionEngine.searchRemember(game, name) } }
                 model?.field?.let { f -> if (f.input.isNotBlank()) run(f.input, emptyMap(), name); if (f.enter.isNotBlank()) run(f.enter, emptyMap(), name) } },
             press = { a, data, value -> when {
-                a == "go" -> data["to"].orEmpty().let { to -> if (to == "#sets") onSets(game) else web(SITE + to, null) }
+                a == "go" -> data["to"].orEmpty().let { to -> if (to == "#sets") onSets(game) else if (to == "#rules" && onRules != null) onRules(game) else web(SITE + to, null) }
                 // Compare, the wiki and Ask (CardStashy AI) are the website's for now: open it there and press the same control.
                 a in setOf("compareOpen", "tCompareOpen", "mtgWikiOpen", "askOpen") -> site("[data-act=\"${css(a)}\"]")
                 a.isNotBlank() -> run(a, data, value)

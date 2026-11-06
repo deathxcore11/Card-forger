@@ -60,6 +60,7 @@ import {artworkHTML} from 'WEB/artwork.js';
 import {deckCardCategory} from 'WEB/deck-viewer.js';
 import {massEntryUrl} from 'WEB/buy.js';
 import {interactiveRules, attachRuleLearning} from 'WEB/rule-learning.js';
+import {rulesPage, learnSheet} from 'WEB/rules.js';
 import {showRuleHint} from 'WEB/rule-dex.js';
 import {rollDice, warChestMarkup, chestResume} from 'WEB/war-chest.js';
 import {profileOf, simulateMatchup, podProfile, calibratePods} from 'WEB/matchup.js';
@@ -3971,6 +3972,66 @@ function playPowerPanel(json) {
   if (names.length) resolveNames(names, () => {}, false, () => panel === mine).then(() => mine.redraw()).catch(() => {});
 }
 
+// ---- The Rules page (app.js route #rules: rulesPage with S.ui.rules[g]) as a panel of the site's markup, its interactive rules attached
+// (attachRuleLearning) and A.rulesList ported verbatim (render() is the page drawn again; T = tcg.js). How to play · keywords
+// (A.learnGame: learnSheet) is a panel of its own; Tabletop, Ask a Judge, a banned card's page and the official documents go to the app.
+function rulesBody(g) { const R = ((S.ui.rules ||= {})[g] ||= {list: '', busy: false, error: '', data: {}}); return rulesPage(g, R); }
+const RULES_ACTS = {
+  async rulesList(t) {
+    const mine = panel, render = () => mine.redraw();
+    const T = TcgAll;
+    const g = T.game(),
+      R = (S.ui.rules[g] ||= { list: "", busy: false, error: "", data: {} }),
+      id = t.dataset.id;
+    R.list = id;
+    if (R.data[id] || R.busy) return render();
+    R.busy = true;
+    R.error = "";
+    render();
+    try {
+      if (g === "ygo") {
+        const cards = await T.SOURCES.ygo.banlist(id),
+          word = { banned: "Forbidden", limited: "Limited", semi: "Semi-Limited" };
+        for (const c of cards) T.cache.ygo[c.id] = c;
+        R.data[id] = cards.filter((c) => c.ban?.[id]).map((c) => ({ id: c.id, name: c.name, status: word[c.ban[id]], image: c.image }));
+      } else {
+        const rows = [];
+        let path = "/cards/search?" + new URLSearchParams({ q: `banned:${id} or restricted:${id}`, unique: "cards", order: "name" });
+        for (let page = 0; path && page < 5; page++) {
+          const d = await api(path).catch((e) => (/didn’t match|No cards/i.test(e.message) ? { data: [] } : Promise.reject(e)));
+          for (const c of d.data || []) {
+            cacheCard(c);
+            rows.push({ name: c.name, status: c.legalities?.[id] === "restricted" ? "Restricted" : "Banned", image: c.image_uris?.art_crop || c.card_faces?.[0]?.image_uris?.art_crop || "" });
+          }
+          path = d.has_more && d.next_page ? new URL(d.next_page).pathname + new URL(d.next_page).search : null;
+        }
+        R.data[id] = rows;
+      }
+    } catch (e) {
+      R.error = "Couldn’t load the list: " + e.message;
+    } finally {
+      R.busy = false;
+      if (panel === mine) render();
+    }
+  },
+};
+function rulesPagePanel(g) {
+  if (g === 'mtg') mtgFocus(); else tcgFocus(g, 'rules');
+  const key = 'rulespage|' + g;
+  if (panel?.key === key) return;
+  panel = null;
+  panelOpen(key, rulesBody(g), host => attachRuleLearning(host), RULES_ACTS);
+  const mine = panel;
+  panel.redraw = () => { if (panel !== mine) return; if (g === 'mtg') mtgFocus(); else tcgFocus(g, 'rules'); panelRun(() => { panel.host.innerHTML = rulesBody(g); attachRuleLearning(panel.host); }); };
+}
+// A.learnGame: learnSheet (Learn <game>, the interactive rules, Formats & official rules) as a panel.
+function learnPanel(g) {
+  const key = 'learn|' + g;
+  if (panel?.key === key) return;
+  panel = null;
+  panelOpen(key, learnSheet(g), host => attachRuleLearning(host));
+}
+
 // ---- Collection › Decks › Ideas (views.js decks() / tcg.js tcgDecks() with S.ui.decksTab = 'ideas'): the tab's body, everything after
 // .random-tools, as a panel of the site's markup run by the site's handlers (app.js's "Ideas, references, precons" block, ported below
 // verbatim with render() being the panel drawn again). The head, tabs and tools are Collection.decks(game, {tab}).
@@ -5395,6 +5456,10 @@ globalThis.Collection = {
   // A Yu-Gi-Oh! or Pokémon deck's tab other than Cards (tcg.js A.tDeckTab): its body as a panel; the page itself comes from deck() with opts.tab.
   /** A Play deck's Power tab ([deck]: {name, format, cards}), Play-safe (no Upgrades, no prices); read again with panelModel. */
   playPower(deck) { playPowerPanel(deck); return panelModel(); },
+  /** The Rules page for [game] (#rules); read again with panelModel. */
+  rulesPage(game) { rulesPagePanel(game || 'mtg'); return panelModel(); },
+  /** How to play · keywords (A.learnGame: learnSheet) for [game]. */
+  learnGame(game) { learnPanel(game || 'mtg'); return panelModel(); },
   deckPanel(game, id, tab) { if (game === 'mtg') mtgDeckPanel(id, tab); else tcgDeckPanel(game, id, tab); return panelModel(); },
   panelModel() { return panel ? panelModel() : '{}'; },
   // The open tab drawn again from the account as it is now (a save made from it: Versions' Restore, a logged game).

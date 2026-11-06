@@ -364,6 +364,7 @@ private fun Element(n: SiteNode, ui: SiteUi, ctx: Ctx) {
         n.has("ask-orb") -> Box(mark.size(48.dp)) { BrandMark(48.dp) }
         n.tag == "details" -> Details(n, ui, ctx, mark)
         n.tag == "img" -> SitePic(n, mark)
+        n.has("ban-grid") -> BanGrid(n, ui, mark)
         n.has("wc-tool") -> ChestTool(n, ui, mark)
         n.has("hand-card") -> HandCard(n, ui, mark)
         n.has("mini-row") -> MiniRow(n, ui, ctx, mark)
@@ -444,7 +445,8 @@ private fun textCtx(n: SiteNode, ctx: Ctx): Ctx {
     var c = ctx
     fun head(size: Float, w: Int) = c.copy(style = c.style.copy(fontFamily = Site.Manrope, letterSpacing = (-.02).em, fontSize = size.sp, lineHeight = (size * 1.15f).sp, fontWeight = FontWeight(w)), line = 1.15f)
     when (n.tag) {
-        "h1" -> c = head(26f, 800)
+        // polish.css #content .page-head h1: Cinzel 700, .02em apart.
+        "h1" -> c = if (ctx.parentHas("page-head")) head(26f, 700).let { it.copy(style = it.style.copy(fontFamily = Type.Cinzel, letterSpacing = .02.em)) } else head(26f, 800)
         "h2" -> c = head(19f, 800)
         "h3" -> c = if (ctx.parentHas("learn-welcome")) head(23.2f, 700).let { it.copy(style = it.style.copy(lineHeight = (23.2f * 1.17f).sp, letterSpacing = (-.025).em)) } else head(15f, 700)
         "h4" -> c = c.weight(700).let { if (ctx.parentHas("rule-check")) it.size(it.px, 1.5f) else it }
@@ -629,9 +631,12 @@ private fun Container(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
                 }
             }
         }
-        n.has("row") || n.has("learn-book-filters") || n.has("learn-keywords") || n.has("rule-source-footer") || n.has("chips") || n.has("actions") -> {
-            val gap = when { n.has("learn-book-filters") || n.has("chips") -> 6.dp; n.has("rule-source-footer") -> 12.dp; else -> 8.dp }
-            val box = if (n.has("rule-source-footer")) mark.fillMaxWidth().drawBehind { drawLine(Site.Line, Offset.Zero, Offset(size.width, 0f), 1.dp.toPx()) }.padding(top = 20.dp) else mark.fillMaxWidth()
+        n.has("row") || n.has("learn-book-filters") || n.has("learn-keywords") || n.has("rule-source-footer") || n.has("chips") || n.has("actions")
+            || n.has("head-actions") || n.has("src-row") || n.has("page-head") -> {
+            // .page-head: flex, wrapping, 10 apart, 4 above and 2 under; .head-actions 8 apart; .src-row 6 apart, 4 above and 12 under.
+            val gap = when { n.has("learn-book-filters") || n.has("chips") || n.has("src-row") -> 6.dp; n.has("rule-source-footer") -> 12.dp; n.has("page-head") -> 10.dp; else -> 8.dp }
+            val box = if (n.has("src-row")) mark.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp) else if (n.has("page-head")) mark.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp)
+                else if (n.has("rule-source-footer")) mark.fillMaxWidth().drawBehind { drawLine(Site.Line, Offset.Zero, Offset(size.width, 0f), 1.dp.toPx()) }.padding(top = 20.dp) else mark.fillMaxWidth()
             if (n.has("between") && !n.has("wrap")) FlexBetween(box, gap) {
                 shown.forEach { k ->
                     // Each item its own content's width, shrinking in proportion to it when they don't fit (flex-shrink), and a
@@ -837,6 +842,12 @@ private fun Details(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
                 }
                 Spacer(Modifier.width(7.dp))
                 Summary(summary, ui, sum.under(summary), blockSmall, n)
+            } else if (n.has("rules-supplement")) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // details.panel > summary is a flex row (8 apart, centred): the b (1rem) and its small (.8rem, muted, 400, 5 above).
+                summary.elements.forEach { k -> when (k.tag) {
+                    "b" -> Text(k.text(), Modifier.weight(1f), style = sum.style.copy(fontSize = 16.sp, lineHeight = 22.4.sp, fontWeight = FontWeight.Bold))
+                    "small" -> Text(k.text(), Modifier.weight(1f).padding(top = 5.dp), style = sum.style.copy(fontSize = 12.8.sp, lineHeight = 17.9.sp, fontWeight = FontWeight.Normal, color = Site.Muted))
+                } }
             } else if (n.has("panel") && !n.has("learn-disclosure") && summary.elements.any { it.has("chip") }) PanelSummary(summary, ui, sum.under(summary))
             else Summary(summary, ui, sum.under(summary), blockSmall, n)
         }
@@ -1190,6 +1201,37 @@ private fun HandCard(n: SiteNode, ui: SiteUi, mark: Modifier) {
 }
 
 /** img.card-img: 488 : 680, corners 4.75 % / 3.5 %, surface-2 under it while it loads; the first of its sources that loads. */
+/**
+ * rules.js banlistView's .ban-grid: columns of at least 150 (auto-fill), 6 apart; each .ban-item a 44 / 1fr grid 8 apart, 6 in, corners 10,
+ * the line round it on surface: the art crop (44 × 32, corners 4, removed when it fails) and the name (13, one line, cut with …).
+ */
+@Composable
+private fun BanGrid(n: SiteNode, ui: SiteUi, mark: Modifier) {
+    BoxWithConstraints(mark.fillMaxWidth()) {
+        val cols = maxOf(1, ((maxWidth + 6.dp) / 156.dp).toInt())
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            n.elements.filter { !it.hidden }.chunked(cols).forEach { line ->
+                Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    line.forEach { b ->
+                        val shape = RoundedCornerShape(10.dp)
+                        Row(Modifier.weight(1f).fillMaxHeight().heightIn(min = 44.dp).clip(shape).background(Site.Surface).border(1.dp, Site.Line, shape)
+                            .clickable { ui.tap(b.id) }.semantics { role = Role.Button }.padding(6.dp), verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            val pic = b.find { it.tag == "img" }?.pic.orEmpty().let { if (it.isEmpty()) null else firstOf(it) }
+                            Box(Modifier.size(44.dp, 32.dp).clip(RoundedCornerShape(4.dp))) {
+                                if (pic != null) androidx.compose.foundation.Image(pic, null, Modifier.matchParentSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+                            }
+                            Text(b.find { it.tag == "span" }?.text().orEmpty(), Modifier.weight(1f), style = cssType(13f, 400, 18.85f, Site.Text), maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        }
+                    }
+                    repeat(cols - line.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun SitePic(n: SiteNode, mark: Modifier) {
     val sources = n.pic.orEmpty()

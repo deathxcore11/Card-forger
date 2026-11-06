@@ -110,6 +110,8 @@ private sealed interface Screen {
     data class CollectionSets(val game: String = "mtg") : Screen
     /** The Search tab for a game (the site's #search). */
     data class CollectionSearch(val game: String = "mtg") : Screen
+    /** The Rules page (#rules) for a game. */
+    data class CollectionRules(val game: String = "mtg") : Screen
     /** One set's page (the site's #set/<code or id>). */
     data class CollectionSet(val code: String, val game: String = "mtg") : Screen
     /** Play's own collection (the Trunk) with its card view. */
@@ -387,7 +389,16 @@ private fun App(activity: MainActivity) {
                 onDecks = { if (NATIVE_DECKS) go(Screen.CollectionDecks) else go(Screen.Web("https://cardstashy.com/#decks", null)) },
                 onSets = { g -> if (g == "mtg" || NATIVE_TCG_SETS) go(Screen.CollectionSets(g)) else go(Screen.Web("https://cardstashy.com/#sets", "[data-act=\"setGame\"][data-game=\"$g\"]")) },
                 onSet = { g, code -> go(Screen.CollectionSet(code, g)) }, web = { url, press -> site(url, press) },
-                game = s.game, onGame = { g -> dev.cardstashy.nativeplay.ui.CollectionGame.set(dev.cardstashy.nativeplay.ui.CardGame.of(g)); swap(Screen.CollectionSearch(g)) })
+                game = s.game, onGame = { g -> dev.cardstashy.nativeplay.ui.CollectionGame.set(dev.cardstashy.nativeplay.ui.CardGame.of(g)); swap(Screen.CollectionSearch(g)) },
+                onRules = { g -> go(Screen.CollectionRules(g)) })
+        }
+        is Screen.CollectionRules -> {
+            LaunchedEffect(Unit) { activity.inGame(false) }
+            dev.cardstashy.nativeplay.ui.CollectionRulesRoute(onPlay = { go(Screen.Home) }, onProfile = { go(Screen.SignIn) }, onHome = { go(Screen.Collection) },
+                onCards = { if (NATIVE_CARDS) go(Screen.CollectionCards) else go(Screen.Web("https://cardstashy.com/#collection", null)) },
+                onDecks = { if (NATIVE_DECKS) go(Screen.CollectionDecks) else go(Screen.Web("https://cardstashy.com/#decks", null)) },
+                onSearch = { go(Screen.CollectionSearch(s.game)) }, web = { url, press -> site(url, press) }, game = s.game,
+                onGame = { g -> dev.cardstashy.nativeplay.ui.CollectionGame.set(dev.cardstashy.nativeplay.ui.CardGame.of(g)); swap(Screen.CollectionRules(g)) })
         }
         is Screen.CollectionSet -> {
             LaunchedEffect(Unit) { activity.inGame(false) }

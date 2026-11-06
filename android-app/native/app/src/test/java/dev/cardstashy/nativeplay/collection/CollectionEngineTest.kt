@@ -738,6 +738,33 @@ class CollectionEngineTest {
         Unit
     }
 
+    /** The Rules page (rules.js rulesPage) for each game, Load the current list (A.rulesList, live), and How to play · keywords (learnSheet). */
+    @Test fun rulesPage() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        fun nodes(e: com.google.gson.JsonElement?): List<JsonObject> = if (e == null || !e.isJsonObject) emptyList() else e.asJsonObject.let { o -> listOf(o) + (o.getAsJsonArray("k")?.flatMap { nodes(it) } ?: emptyList()) }
+        fun txt(o: JsonObject): String = (o.getAsJsonArray("k")?.joinToString("") { if (it.isJsonPrimitive) it.asString else txt(it.asJsonObject) }).orEmpty()
+        for ((g, head) in listOf("mtg" to "Magic rules", "ygo" to "Yu-Gi-Oh! rules", "ptcg" to "Pokémon rules")) {
+            val m = CollectionEngine.rulesPage(g)
+            assertEquals("rulespage|$g", m["key"].asString)
+            val all = txt(m["body"].asJsonObject)
+            assertTrue(all.take(300), all.contains(head) && all.contains("Official documents") && all.contains("Ask a Judge"))
+            File(System.getProperty("repoRoot"), "android-app/native/app/build/shot-art/home/rules-page-$g.json").writeText(m.toString())
+        }
+        // Magic: Load the current list for Standard.
+        val m = CollectionEngine.rulesPage("mtg")
+        val load = nodes(m["body"]).first { it.getAsJsonObject("a")?.get("data-act")?.asString == "rulesList" && txt(it).contains("Load the current list") }
+        var last = CollectionEngine.panelTap(load["i"].asInt)
+        CollectionEngine.settle(60_000, CollectionEngine.PANEL_MODEL) { last = it }
+        // The list drawn in place of Load the current list: banlistView's groups (p.list-head, div.ban-grid of the cards).
+        val grid = nodes(last["body"]).filter { it.getAsJsonObject("a")?.get("class")?.asString == "ban-grid" }
+        assertTrue(last.toString().take(300), grid.isNotEmpty() && grid.sumOf { g -> g.getAsJsonArray("k")?.size() ?: 0 } > 0)
+        File(System.getProperty("repoRoot"), "android-app/native/app/build/shot-art/home/rules-page-mtg-list.json").writeText(last.toString())
+        val l = CollectionEngine.learnGame("ygo")
+        assertEquals("learn|ygo", l["key"].asString)
+        assertTrue(txt(l["body"].asJsonObject).contains("Learn"))
+    }
+
     /** A rule word on a card's page (A.ruleHint → rule-dex.js showRuleHint): its glass as a panel, the card in it, ✕ closes it. */
     @Test fun ruleGlass() = runBlocking {
         assumeTrue(bundle.isFile)
