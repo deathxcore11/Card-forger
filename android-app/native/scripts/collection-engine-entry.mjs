@@ -60,7 +60,7 @@ import {deckCardCategory} from 'WEB/deck-viewer.js';
 import {massEntryUrl} from 'WEB/buy.js';
 import {interactiveRules, attachRuleLearning} from 'WEB/rule-learning.js';
 import {showRuleHint} from 'WEB/rule-dex.js';
-import {rollDice} from 'WEB/war-chest.js';
+import {rollDice, warChestMarkup, chestResume} from 'WEB/war-chest.js';
 import {profileOf, simulateMatchup, podProfile, calibratePods} from 'WEB/matchup.js';
 import {fieldStore, calibrateField} from 'WEB/matchups-ui.js';
 import {mtgConstructedPower} from 'WEB/deckpower.js';
@@ -85,6 +85,7 @@ import {namePrice} from 'WEB/core.js';
 import {mtgPower} from 'WEB/power.js';
 import {mtgFieldKey, availability as deckAvailability} from 'WEB/views.js';
 import {shareSheet as shareSheetView} from 'WEB/views.js';
+import {preconList as preconListView, deckReviewSheet as deckReviewSheetView} from 'WEB/views.js';
 import {sharePayload, sharePayloadTcg} from 'WEB/share.js';
 import {commanderEligible, isLand, drawHand} from 'WEB/core.js';
 import {currentDeck, priceOf} from 'WEB/store.js';
@@ -3993,6 +3994,177 @@ Object.assign(DECKS_ACTS, {
     metaRender();
   },
 });
+// Magic's Saved decks and Precons (app.js A.loadPrecons 6976, I.preconSearch 6993, A.previewPrecon 6997), verbatim but for render() (the
+// panel drawn again), $("#preconList") (the panel's) and deckImportSheet: Preview hands the app the sheet's preset (acted previewPrecon),
+// whose own Preview & match then runs as A.dImpPreview does. Save a deck idea (importReference), Export (exportRef) and Remove
+// (deleteRef, asked first) go to the app (acted): the import sheet, and writeActs.exportRef / writeActs.deleteRef.
+Object.assign(DECKS_ACTS, {
+  loadPrecons: () => panelLater(async () => {
+    const P = S.ui.precon;
+    P.busy = true;
+    P.msg = "Loading…";
+    metaRender();
+    try {
+      const j = await fetchJSON("https://mtgjson.com/api/v5/DeckList.json");
+      P.index = (j.data || []).filter((d) => typeof d.fileName === "string" && typeof d.name === "string");
+      P.msg = `${P.index.length} products. Search by the name on the box.`;
+    } catch (e) {
+      P.msg = "Couldn’t reach MTGJSON (" + e.message + "). You can still upload a precon’s .json or text list with “Save a deck idea”.";
+    } finally {
+      P.busy = false;
+      metaRender();
+    }
+  }),
+  'I.preconSearch': (t) => {
+    S.ui.q.precon = t.value;
+    const box = panel.doc.querySelector("#preconList");
+    if (box) panelRun(() => { box.innerHTML = preconListView(); });
+  },
+  previewPrecon: (t) => {
+    const f = t.dataset.file, p0 = panel;
+    if (!/^[A-Za-z0-9_.-]+$/.test(f)) return void p0.toasts.push({text: "Invalid product.", undo: false});
+    p0.toasts.push({text: "Loading decklist…", undo: false});
+    panelLater(async () => {
+      const url = "https://mtgjson.com/api/v5/decks/" + f.replace(/\.json$/, "") + ".json",
+        payload = await fetchJSON(url),
+        p = mtgjsonDeck(payload);
+      // The site opens the sheet whatever happened meanwhile: the panel showing now takes it (the tab's under the War Chest, given on close).
+      const to = panel === p0 ? p0 : panel?.chest ? chestUnder : panel || p0;
+      if (to) to.acted = {act: 'previewPrecon', data: {preset: JSON.stringify({ text: JSON.stringify(payload), name: p.name, commander: p.commander, format: p.commander ? "Commander" : "60-card casual", url, author: "Wizards of the Coast", kind: "MTGJSON precon", destination: "library", description: "Preconstructed deck list from MTGJSON." })}};
+    });
+  },
+});
+// app.js fileSafe (1030), verbatim.
+const fileSafe = (s) => String(s).replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "") || "deck";
+// app.js A.exportRef / A.deleteRef (6956-6964), verbatim but for download() (the app saves the file) and ask() (the app asks first).
+Object.assign(writeActs, {
+  async exportRef(d) {
+    const r = S.state.references.find((x) => x.id === d.id);
+    siteDownload = {name: `CardStashy_${fileSafe(r.name)}.txt`, text: exportDeckText(r) + "\n", type: 'text/plain'};
+  },
+  async deleteRef(d) {
+    if (!ask("Remove this saved idea?", d.confirmed)) return;
+    await commit((s) => (s.references = s.references.filter((x) => x.id !== d.id)));
+  },
+});
+
+// ---- Yu-Gi-Oh! and Pokémon's Import a deck and New deck (tcg.js A.tImport / A.tNewDeck: tcgImportSheet("deck"), tcgNewDeckSheet), read
+// from the site's own sheets; their buttons are the site's A.tImpDeck and A.tNewDeckSave (writeActs below), every field they read
+// from the page handed in.
+function tcgSheetTree(G, run) {
+  tcgFocus(G, 'decks'); let html = ''; const was = tcgSheetHook; tcgSheetHook = h => { html = String(h || ''); };
+  try { run(); } finally { tcgSheetHook = was; }
+  return tree(html);
+}
+const selectOptions = (sel) => { const opts = all(sel, tagIs('option'));
+  return {options: opts.map(o => [o.attrs.value ?? '', text(o)]), selected: (opts.find(o => o.attrs.selected !== undefined) || opts[0])?.attrs.value ?? ''}; };
+function tcgDeckImportSheetModel(G) {
+  const t = tcgSheetTree(G, () => TA.tImport({dataset: {}}));
+  const area = one(t, tagIs('textarea')), file = one(t, cls('file')), labels = all(one(t, cls('grid2')), tagIs('label'));
+  const name = one(labels[0], tagIs('input')), fmt = one(labels[1], tagIs('select'));
+  return {title: text(one(one(t, cls('sheet-head')), tagIs('h2'))), close: one(one(t, cls('sheet-head')), tagIs('button'))?.attrs['aria-label'] || 'Close',
+    hint: text(one(t, x => x.tag === 'p' && cls('muted')(x) && x.attrs.id !== 'tImpStatus')),
+    placeholder: unent(area?.attrs.placeholder), rows: Number(area?.attrs.rows) || 9,
+    upload: labelWords(file), accept: one(file, tagIs('input'))?.attrs.accept || '',
+    name: {label: labelWords(labels[0]), value: unent(name?.attrs.value), max: Number(name?.attrs.maxlength) || 100},
+    format: {label: labelWords(labels[1]), ...selectOptions(fmt)},
+    button: text(one(t, x => x.attrs['data-act'] === 'tImpDeck'))};
+}
+function tcgNewDeckSheetModel(G, format) {
+  const t = tcgSheetTree(G, () => TA.tNewDeck({dataset: format ? {format: String(format)} : {}}));
+  const labels = all(one(t, cls('grid2')), tagIs('label')), name = one(labels[0], tagIs('input')), fmt = one(labels[1], tagIs('select'));
+  return {title: text(one(one(t, cls('sheet-head')), tagIs('h2'))), close: one(one(t, cls('sheet-head')), tagIs('button'))?.attrs['aria-label'] || 'Close',
+    name: {label: labelWords(labels[0]), placeholder: name?.attrs.placeholder || '', max: Number(name?.attrs.maxlength) || 100},
+    format: {label: labelWords(labels[1]), ...selectOptions(fmt)},
+    button: text(one(t, x => x.attrs['data-act'] === 'tNewDeckSave'))};
+}
+// The run of A.tImpDeck / A.tNewDeckSave: S.ui.sheetCtx their sheet's (importGuard checks it), closeSheet seen, go("#tdeck/<id>") kept
+// for the app ({go: "tdeck", id, game}); the import's words land in #tImpStatus (texts).
+async function tcgDeckSheetRun(d, type, fn, vals) {
+  tcgFocus(d.game, 'decks'); tcgWent = '';
+  const prev = S.ui.sheetCtx, ctx = {type}, was = tcgCloseHook;
+  S.ui.sheetCtx = ctx; tcgCloseHook = () => {};
+  try { await siteRun(fn, d, vals); }
+  finally { tcgCloseHook = was; if (S.ui.sheetCtx === ctx) S.ui.sheetCtx = prev; }
+  if (/^#tdeck\//.test(tcgWent)) made = JSON.stringify({go: 'tdeck', id: decodeURIComponent(tcgWent.slice(7)), game: d.game});
+}
+Object.assign(writeActs, {
+  // tcg.js A.tImpDeck: [d] {game, text (#tImpText), name (#tImpName), format (#tImpFormat)}.
+  async tImpDeck(d) { await tcgDeckSheetRun(d, 'timport', () => TA.tImpDeck({dataset: {}}), {'#tImpText': d.text ?? '', '#tImpName': d.name ?? '', '#tImpFormat': d.format ?? '', '#tImpStatus': ''}); },
+  // tcg.js A.tNewDeckSave: [d] {game, name (#tDeckName), format (#tDeckFormat)}.
+  async tNewDeckSave(d) { await tcgDeckSheetRun(d, 'tnew', () => TA.tNewDeckSave({dataset: {}}), {'#tDeckName': d.name ?? '', '#tDeckFormat': d.format ?? ''}); },
+});
+
+// ---- Magic's Deck review sheet (app.js A.deckReview 5261: openSheet(V.deckReviewSheet(d), {type: "review", deckId})), read from the
+// site's own markup: its intro (● / ▲ in their colours), the items (level, title, chip, detail, the cards, the action) or the empty
+// state, and the foot. Its actions: card, deckTab, refreshDeck (writeActs) and the Search ones (reviewSearch).
+function deckReviewModel(id) {
+  const d = deckOf(id); if (!d) return {missing: true};
+  mtgFocus(); S.ui.deckId = d.id; S.ui.sheetCtx = {type: "review", deckId: d.id};
+  const t = tree(deckReviewSheetView(d)), head = one(t, cls('sheet-head'));
+  const intro = one(t, x => x.tag === 'p' && cls('muted')(x) && !cls('foot')(x));
+  const parts = n => (n?.kids || []).map(k => k.text !== undefined ? {text: k.text} : {text: text(k), tone: cls('bad-text')(k) ? 'bad' : cls('warn-text')(k) ? 'warn' : ''}).filter(x => x.text);
+  const items = all(t, cls('review-item')).map(n => {
+    const main = one(n, cls('review-main')), row = one(main, cls('row')), ps = (main?.kids || []).filter(k => k.tag === 'p');
+    const cards = ps.find(p => !cls('muted')(p)), btn = (main?.kids || []).find(k => k.tag === 'button');
+    return {level: cls('bad')(n) ? 'bad' : 'warn', title: text(one(row, tagIs('b'))), chip: text(one(row, cls('chip'))), detail: text(ps.find(p => cls('muted')(p))),
+      cards: all(cards, tagIs('button')).map(b => b.attrs['data-name'] || text(b)),
+      more: cards ? text({kids: (cards.kids || []).filter(k => k.text !== undefined)}).replace(/^[,\s]+/, '').replace(/^(?:,\s*)+/, '').trim().replace(/^.*?(\+\d+ more)$/, '$1') : '',
+      action: btn ? {act: btn.attrs['data-act'] || '', id: btn.attrs['data-id'] || '', role: btn.attrs['data-role'] || '', label: text(btn)} : null};
+  });
+  const emptyBox = one(t, cls('empty'));
+  return {deck: d.id, title: text(one(head, tagIs('h2'))), close: one(head, tagIs('button'))?.attrs['aria-label'] || 'Close',
+    intro: intro ? parts(intro) : [], items,
+    empty: emptyBox ? {mark: text(one(emptyBox, cls('empty-mark'))), title: text(one(emptyBox, tagIs('h3'))), text: text(one(emptyBox, tagIs('p')))} : null,
+    foot: text(one(t, cls('foot')))};
+}
+// app.js A.findRole (6340) and A.formatSearch (3749) for the review's deck, verbatim but for currentDeck() (the sheet's deck), closeSheet
+// and go("#search") (the app closes the sheet and opens its Search tab): the search they leave ({term, filters}), findRole's started.
+function reviewSearch(kind, deckId, role) {
+  const d = deckOf(deckId); if (!d) return {missing: true};
+  mtgFocus(); searchGame = 'mtg'; S.ui.deckId = d.id;
+  if (kind === 'formatSearch') {
+    const f = formatOf(d);
+    S.ui.db.filters = { color: "", type: "", format: f.legality || "", maxPrice: "" };
+    dbInvalidate();
+  } else {
+    const comm = meta(d.commander),
+      ci = (comm?.color_identity || []).join("").toLowerCase() || "c",
+      theme = comm ? commanderTheme(comm) : null,
+      q = {
+        Ramp: '(o:"add {" or o:"search your library for a basic land" or o:"treasure token") -t:land',
+        Draw: '(o:"draw a card" or o:"draw two" or o:"draws a card") -t:land',
+        Removal: '(o:"destroy target" or o:"exile target" or o:"counter target")',
+        Wipe: '(o:"destroy all" or o:"exile all" or o:"each creature")',
+        Protection: "(o:hexproof or o:indestructible or o:\"phase out\") -t:land",
+        Synergy: theme?.tribe ? "(t:" + theme.tribe + " or o:" + theme.tribe + ")" : "o:token",
+      }[role];
+    S.ui.db.term = `${q} id<=${ci}`;
+    S.ui.db.filters = { color: "", type: "", format: "commander", maxPrice: "" };
+    S.ui.sheetCtx = null;
+    dbSearch().catch(e => toasts.push({text: e?.message || 'Search failed.', undo: false}));
+  }
+  return {term: S.ui.db.term, filters: S.ui.db.filters};
+}
+
+// ---- The War Chest from the Decks head (app.js A.warChest 3920: war-chest.js openWarChest, its own window over the page), drawn by the
+// app as such a window over a panel of warChestMarkup({resume: chestResume(game)}): Dice & coin writes its roll in the chest (the
+// window's click listener); every other tool closes the window and goes to the app (acted chestTool: app.js chestTool). The tab's
+// panel under it comes back as it was when the window closes (warChestClose).
+let chestUnder = null;
+const CHEST_ACTS = {
+  chestTool: t => {
+    const tool = t.dataset.tool;
+    if (tool === 'dice') { const n = panel.doc.querySelector('[data-chest-result]'); if (n) n.textContent = rollDice(); return; }
+    panel.acted = {act: 'chestTool', data: {tool}};
+  },
+};
+function warChestOpen(G) {
+  if (panel?.chest) panel = chestUnder;
+  chestUnder = panel; panel = null;
+  panelOpen('chest|' + G, `<div class="war-chest-dialog" aria-label="The War Chest">${warChestMarkup({resume: chestResume(G)})}</div>`, null, CHEST_ACTS);
+  panel.chest = true; panel.redraw = () => {};
+}
 
 // ---- The tournament deck's sheet (tcg.js provenSheetHtml, c.openProven and its handlers 3918-3992; app.js A.mtgProven 6879), the sheet
 // the app draws (MetaDeckSheet). tcg.js's sheet code reads the page (#sheetBody's status line, its scroll) after its awaits, so while one
@@ -4643,6 +4815,17 @@ globalThis.Collection = {
     return panel ? panelModel() : '{}'; },
   // The Decks page's Ideas (or Meta decks) tab body as such a panel (decksPanel), with its route's loads started.
   decksPanel(game, tab) { decksPanel(game || 'mtg', tab === 'inspiration' ? 'inspiration' : 'ideas'); return panelModel(); },
+  // Yu-Gi-Oh! / Pokémon's Import a deck (tcg.js A.tImport) and New deck (A.tNewDeck, [format]: the button's data-format) sheets; their
+  // buttons run through act('tImpDeck') / act('tNewDeckSave').
+  tDeckImportSheet(game) { return json(tcgDeckImportSheetModel(game)); },
+  tNewDeckSheet(game, format) { return json(tcgNewDeckSheetModel(game, format || '')); },
+  // Magic's Deck review sheet for deck [id] (app.js A.deckReview), read again after each save (app.js refreshSheet).
+  deckReview(id) { return json(deckReviewModel(id)); },
+  // The review's Find {role} cards (A.findRole, [role]) and Find {format} cards (A.formatSearch): the search they leave for the Search tab.
+  reviewSearch(kind, deckId, role) { return json(reviewSearch(kind, deckId, role || '')); },
+  // The War Chest window from the Decks head (app.js A.warChest) over the open panel; warChestClose brings that panel back.
+  warChest(game) { warChestOpen(game || 'mtg'); return panelModel(); },
+  warChestClose() { if (panel?.chest) { panel = chestUnder; chestUnder = null; panel?.redraw?.(); } return panel ? panelModel() : '{}'; },
   // icons.js decorateGlyphs: the icon each leading glyph wears (↻ Re-analyze, ⚒ Build, 🏆 Meta decks…), for the panel's words.
   glyphs() { return json(Object.fromEntries(Object.entries(LEAD).filter(([, k]) => ICON[k]).map(([g, k]) => [g, icon(svgIn(tree(ICON[k])))]))); },
   // The deck idea sheet for idea [i] of the Ideas tab (app.js openIdea: it builds at the remembered budget as it opens); IDEA_MODEL
@@ -4756,6 +4939,9 @@ globalThis.Collection = {
   },
   importErrors() { return json(impDraft ? {name: "CardStashy_Import_Errors.csv", text: importErrorsCSV(impDraft.errors), type: "text/csv"} : null); },
   importClose() { impDraft = null; impBusy = false; impError = ''; },
+  // app.js closeSheet over tcg.js's Import a deck / New deck while A.tImpDeck runs: S.ui.sheetCtx null, so its importGuard's active()
+  // fails and nothing is saved (the site's own check before mutate).
+  tDeckSheetClose() { if (S.ui.sheetCtx?.type === 'timport' || S.ui.sheetCtx?.type === 'tnew') S.ui.sheetCtx = null; },
   // Yu-Gi-Oh! and Pokémon's Paste a list (tcg.js tcgImportSheet "coll"); Import runs through act('tImpColl').
   tImportSheet(game) { return json(tcgImportSheetModel(game)); },
   // The Select tray's sheet for [kind] (batchSheetModel); its button saves through act('batchApply').

@@ -72,11 +72,11 @@ private fun formatOptions(groups: List<JsonObject>): Pair<List<Pair<String, Stri
     groups.flatMap { g -> g.pairs("options") } to groups.flatMap { g -> g.pairs("options").mapIndexed { i, _ -> if (i == 0) g.s("group") else "" } }
 
 /** One cell of a [Grid]: [wide] spans both columns. */
-private fun cell(wide: Boolean, c: @Composable (Modifier) -> Unit): Pair<Boolean, @Composable (Modifier) -> Unit> = wide to c
+internal fun formCell(wide: Boolean, c: @Composable (Modifier) -> Unit): Pair<Boolean, @Composable (Modifier) -> Unit> = wide to c
 
 /** .grid2 in a sheet: two columns 10 apart, one column up to 480 wide; [wide] spans both (.span2). */
 @Composable
-private fun Grid(one: Boolean, cells: List<Pair<Boolean, @Composable (Modifier) -> Unit>>) {
+internal fun FormGrid(one: Boolean, cells: List<Pair<Boolean, @Composable (Modifier) -> Unit>>) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         var i = 0
         while (i < cells.size) {
@@ -129,15 +129,15 @@ internal fun NewDeckSheet(o: CollectionWrites.NewDeckOpen, backdrop: GraphicsLay
         val one = vw <= 480.dp
         val (opts, heads) = formatOptions(m.objs("formats"))
         Spacer(Modifier.height(10.dp))
-        Grid(one, listOfNotNull(
-            cell(true) { md -> FormLabeled(m.s("formatLabel"), md) { FormSelect(opts, format, SHEET_IN_LABEL, desc = m.s("formatLabel"), groups = heads) { format = it } } },
+        FormGrid(one, listOfNotNull(
+            formCell(true) { md -> FormLabeled(m.s("formatLabel"), md) { FormSelect(opts, format, SHEET_IN_LABEL, desc = m.s("formatLabel"), groups = heads) { format = it } } },
             // p.span2.muted.small#ndFormatInfo.
-            cell(true) { md -> Text(row?.s("info").orEmpty(), md, style = cssType(13f, 400, 18.85f, NMute)) },
-            cell(true) { md -> FormLabeled(row?.s("label") ?: cm.s("label"), md) {
+            formCell(true) { md -> Text(row?.s("info").orEmpty(), md, style = cssType(13f, 400, 18.85f, NMute)) },
+            formCell(true) { md -> FormLabeled(row?.s("label") ?: cm.s("label"), md) {
                 FormInput(commander, { commander = it }, SHEET_IN_LABEL, cm.s("placeholder"), desc = row?.s("label") ?: cm.s("label"))
             } }.takeIf { row?.b("commander") != false },
-            cell(true) { md -> FormLabeled(nm.s("label"), md) { FormInput(name, { if (it.length <= (nm.n("max").takeIf { x -> x > 0 } ?: 100)) name = it }, SHEET_IN_LABEL, nm.s("placeholder"), desc = nm.s("label")) } },
-            cell(false) { md -> FormLabeled(bm.s("label"), md) { FormInput(budget, { v -> budget = v.filter { it.isDigit() || it == '.' } }, SHEET_IN_LABEL, desc = bm.s("label"), keyboard = KeyboardType.Number) } },
+            formCell(true) { md -> FormLabeled(nm.s("label"), md) { FormInput(name, { if (it.length <= (nm.n("max").takeIf { x -> x > 0 } ?: 100)) name = it }, SHEET_IN_LABEL, nm.s("placeholder"), desc = nm.s("label")) } },
+            formCell(false) { md -> FormLabeled(bm.s("label"), md) { FormInput(budget, { v -> budget = v.filter { it.isDigit() || it == '.' } }, SHEET_IN_LABEL, desc = bm.s("label"), keyboard = KeyboardType.Number) } },
         ))
         Spacer(Modifier.height(10.dp))
         // #ndError (.error: 13 bad, 4 above and under; empty, not there), .btn.block, then the muted words.
@@ -157,9 +157,10 @@ internal fun NewDeckSheet(o: CollectionWrites.NewDeckOpen, backdrop: GraphicsLay
  * opens on the tab the site goes to (an Idea opens the website's Ideas).
  */
 @Composable
-internal fun DeckImportSheet(o: CollectionWrites.DeckImportOpen, backdrop: GraphicsLayer?, onClose: () -> Unit) {
+internal fun DeckImportSheet(o: CollectionWrites.DeckImportOpen, backdrop: GraphicsLayer?, onClose: () -> Unit, initial: JsonObject? = null) {
     val context = LocalContext.current
-    val model by produceState<JsonObject?>(null, o.id) {
+    val model by produceState(initial, o.id) {
+        if (initial != null) return@produceState
         val m = CollectionWrites.deckImportModel(context, o.preset, o.deck)
         if (m == null) { onClose(); return@produceState }
         value = m
@@ -251,6 +252,8 @@ private fun DeckImportForm(m: JsonObject, o: CollectionWrites.DeckImportOpen, ba
         }
     }
     LaunchedEffect(commander) { if (ready) { delay(300); redraw() } }
+    // A.previewPrecon: await A.dImpPreview() once the sheet is open.
+    LaunchedEffect(Unit) { if (o.preview) preview() }
 
     SiteSheet(m.s("title"), backdrop, onClose) { vw ->
         val one = vw <= 480.dp
@@ -262,25 +265,25 @@ private fun DeckImportForm(m: JsonObject, o: CollectionWrites.DeckImportOpen, ba
         GhostBtn(m.s("upload")) { runCatching { pick.launch(arrayOf("text/*", "application/json", "text/csv", "text/comma-separated-values", "application/octet-stream")) } }
         Spacer(Modifier.height(10.dp))
         val (opts, heads) = formatOptions(m.objs("formats"))
-        Grid(one, listOfNotNull(
-            cell(false) { md -> FormLabeled(nm.s("label"), md) { FormInput(name, { if (it.length <= (nm.n("max").takeIf { x -> x > 0 } ?: 100)) name = it }, SHEET_IN_LABEL, desc = nm.s("label")) } },
-            cell(false) { md -> FormLabeled(m.s("formatLabel"), md) { FormSelect(opts, format, SHEET_IN_LABEL, desc = m.s("formatLabel"), groups = heads) { format = it; redraw() } } },
-            cell(false) { md -> FormLabeled(row?.s("label") ?: cm.s("label"), md) {
+        FormGrid(one, listOfNotNull(
+            formCell(false) { md -> FormLabeled(nm.s("label"), md) { FormInput(name, { if (it.length <= (nm.n("max").takeIf { x -> x > 0 } ?: 100)) name = it }, SHEET_IN_LABEL, desc = nm.s("label")) } },
+            formCell(false) { md -> FormLabeled(m.s("formatLabel"), md) { FormSelect(opts, format, SHEET_IN_LABEL, desc = m.s("formatLabel"), groups = heads) { format = it; redraw() } } },
+            formCell(false) { md -> FormLabeled(row?.s("label") ?: cm.s("label"), md) {
                 FormInput(commander, { commander = it }, SHEET_IN_LABEL, cm.s("placeholder"), desc = row?.s("label") ?: cm.s("label"))
             } }.takeIf { row?.b("commander") != false },
-            cell(false) { md -> FormLabeled(dm.s("label"), md) { FormSelect(dm.pairs("options"), dest, SHEET_IN_LABEL, desc = dm.s("label")) { dest = it; redraw() } } },
+            formCell(false) { md -> FormLabeled(dm.s("label"), md) { FormSelect(dm.pairs("options"), dest, SHEET_IN_LABEL, desc = dm.s("label")) { dest = it; redraw() } } },
         ))
         Spacer(Modifier.height(10.dp))
         FormMore(credit.s("summary"), creditOpen, { creditOpen = !creditOpen }) {
             Spacer(Modifier.height(10.dp))
             val u = credit.o("url") ?: JsonObject(); val a = credit.o("author") ?: JsonObject(); val k = credit.o("kind") ?: JsonObject(); val n = credit.o("notes") ?: JsonObject()
-            Grid(one, listOf(
-                cell(true) { md -> FormLabeled(u.s("label"), md) { FormInput(url, { url = it }, SHEET_IN_LABEL, u.s("placeholder"), desc = u.s("label"), keyboard = KeyboardType.Uri) } },
-                cell(false) { md -> FormLabeled(a.s("label"), md) { FormInput(author, { if (it.length <= 100) author = it }, SHEET_IN_LABEL, desc = a.s("label")) } },
-                cell(false) { md -> FormLabeled(k.s("label"), md) {
+            FormGrid(one, listOf(
+                formCell(true) { md -> FormLabeled(u.s("label"), md) { FormInput(url, { url = it }, SHEET_IN_LABEL, u.s("placeholder"), desc = u.s("label"), keyboard = KeyboardType.Uri) } },
+                formCell(false) { md -> FormLabeled(a.s("label"), md) { FormInput(author, { if (it.length <= 100) author = it }, SHEET_IN_LABEL, desc = a.s("label")) } },
+                formCell(false) { md -> FormLabeled(k.s("label"), md) {
                     FormSelect(k.pairs("options"), kind, SHEET_IN_LABEL, desc = k.s("label")) { kind = it }
                 } },
-                cell(true) { md -> FormLabeled(n.s("label"), md) { FormArea(notes, { if (it.length <= 3000) notes = it }, "", n.n("rows").coerceAtLeast(2), n.s("label"), weight = 600) } },
+                formCell(true) { md -> FormLabeled(n.s("label"), md) { FormArea(notes, { if (it.length <= 3000) notes = it }, "", n.n("rows").coerceAtLeast(2), n.s("label"), weight = 600) } },
             ))
         }
         // #dImpStatus (p.muted.small, a live line), then .actions: Preview & match (ghost) and Save deck (gold, off until previewed).

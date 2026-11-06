@@ -97,7 +97,7 @@ internal object CollectionWrites {
 
     /** The write itself: under the sync's lock, in the engine holding this device's copy, then that copy written. Null: not run. */
     /** Taps that read the card sources for a while (every card's price, each card's printings). */
-    private val LONG_ACTS = setOf("tDeckRefresh", "tDeckCheapest", "tDeckCopyMissing", "refreshPrices", "tRefreshPrices", "tImpColl", "impApply", "provenSave")
+    private val LONG_ACTS = setOf("tDeckRefresh", "tDeckCheapest", "tDeckCopyMissing", "refreshPrices", "tRefreshPrices", "tImpColl", "tImpDeck", "impApply", "provenSave", "refreshDeck")
     /** Taps that check card after card against Scryfall (Verify exact printings, the import's Check names & printings). */
     private val CHECK_ACTS = setOf("verifyAll", "impVerify")
     private suspend fun commitAct(context: Context, kind: String, data: JsonObject, ms: Long = 15_000, onStep: (String) -> Unit = {}): JsonObject? {
@@ -244,6 +244,8 @@ internal object CollectionWrites {
         return withCollection(context) { CollectionEngine.auth(token); CollectionEngine.tAddOpen(req) }
     }
     fun tAddClosed(ctx: Int) { bg.launch { CollectionEngine.tAddClose(ctx) } }
+    /** Import a deck / New deck closed while its run is going: closeSheet in the engine, so the run saves nothing. */
+    fun tDeckSheetClosed() { bg.launch { runCatching { CollectionEngine.tDeckSheetClose() } } }
 
     /**
      * An open binder (app.js showBinder): its game, id and page, and what a pocket's card (data-act card / tCard and its dataset)
@@ -312,9 +314,24 @@ internal object CollectionWrites {
      * tab; [web] opens a page of the website (an Idea's Ideas tab).
      */
     data class DeckImportOpen(val preset: JsonObject = JsonObject(), val deck: String? = null, val openDeck: (id: String, tab: String) -> Unit,
-                              val web: (String) -> Unit, val id: Long = System.nanoTime())
+                              val web: (String) -> Unit, val id: Long = System.nanoTime(),
+                              /** app.js A.previewPrecon: the sheet runs Preview & match (A.dImpPreview) as it opens. */
+                              val preview: Boolean = false)
     val deckImport = MutableStateFlow<DeckImportOpen?>(null)
     suspend fun deckImportModel(context: Context, preset: JsonObject, deck: String?): JsonObject? = withCollection(context) { CollectionEngine.deckImport(preset, deck) }
+    /**
+     * Yu-Gi-Oh! / Pokémon's Import a deck (tcg.js A.tImport) or New deck (A.tNewDeck, [format]: Meta decks' Create a … deck's data-format)
+     * for [game]; [openDeck] opens the saved deck's page (go("#tdeck/<id>")).
+     */
+    data class TcgDeckOpen(val game: String, val format: String = "", val openDeck: (id: String) -> Unit, val id: Long = System.nanoTime())
+    val tDeckImport = MutableStateFlow<TcgDeckOpen?>(null)
+    val tNewDeck = MutableStateFlow<TcgDeckOpen?>(null)
+    suspend fun tDeckImportModel(context: Context, game: String): JsonObject? = withCollection(context) { CollectionEngine.tDeckImportSheet(game) }
+    suspend fun tNewDeckModel(context: Context, game: String, format: String): JsonObject? = withCollection(context) { CollectionEngine.tNewDeckSheet(game, format) }
+    /** Magic's Deck review sheet (views.js deckReviewSheet) for [deck]; null (with a toast) when it can't open. */
+    suspend fun reviewModel(context: Context, deck: String): JsonObject? = withCollection(context) { CollectionEngine.deckReview(deck) }
+    /** The review's Find {role} cards / Find {format} cards: the search left in the engine for the Search tab. */
+    suspend fun reviewSearch(context: Context, kind: String, deck: String, role: String): JsonObject? = withCollection(context) { CollectionEngine.reviewSearch(kind, deck, role) }
     /** app.js acquireSheet for a deck: A.acquire's "Cards I got" ([mode] missing) or A.deckBought's whole deck (purchase). */
     data class AcquireOpen(val deck: String, val mode: String, val id: Long = System.nanoTime())
     val acquiring = MutableStateFlow<AcquireOpen?>(null)

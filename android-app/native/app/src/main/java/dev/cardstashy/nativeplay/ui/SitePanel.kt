@@ -446,6 +446,8 @@ private fun textCtx(n: SiteNode, ctx: Ctx): Ctx {
         "h3" -> c = if (ctx.parentHas("learn-welcome")) head(23.2f, 700).let { it.copy(style = it.style.copy(lineHeight = (23.2f * 1.17f).sp, letterSpacing = (-.025).em)) } else head(15f, 700)
         "h4" -> c = c.weight(700).let { if (ctx.parentHas("rule-check")) it.size(it.px, 1.5f) else it }
     }
+    // .link (style.css 123): gold, 600, also on a span.link inside a row.
+    if (n.tag == "span" && n.has("link")) c = c.color(Site.Gold).weight(600)
     // .eyebrow: 11, 700, .12em apart, uppercase, muted.
     if (n.has("eyebrow")) c = c.copy(style = c.style.copy(fontSize = 11.sp, lineHeight = (11 * c.line).sp, letterSpacing = 1.32.sp, color = Site.Muted, fontWeight = FontWeight(700)), upper = true)
     // .eyebrow.up good, .eyebrow.down bad (Versions' In and Out).
@@ -1043,7 +1045,9 @@ private val ChestNight = Color(0xFF07090F)
 private fun WarChest(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
     val shape = RoundedCornerShape(24.dp)
     val c = ctx.color(ChestCream)
-    Column(mark.fillMaxWidth().clip(shape).drawBehind { chestLid() }.border(1.dp, Color(0x47E8CE87), shape).padding(horizontal = 18.dp, vertical = 24.dp),
+    Column(mark.fillMaxWidth().clip(shape).drawBehind { chestLid() }.border(1.dp, Color(0x47E8CE87), shape)
+        // style.css 5707: .war-chest-dialog .war-chest { padding-top: 64px } leaves room for the dialog's ✕.
+        .padding(start = 18.dp, end = 18.dp, top = if (ctx.inside("war-chest-dialog")) 64.dp else 24.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)) {
         n.elements.filter { !it.hidden && !(it.has("wc-result") && it.text().isEmpty()) }.forEach { k ->
             when {
@@ -1119,7 +1123,7 @@ private fun ChestTools(n: SiteNode, ui: SiteUi) {
 private fun ChestTool(n: SiteNode, ui: SiteUi, mark: Modifier) {
     val orb = n.elements.firstOrNull { it.has("wc-orb") }
     val hero = n.has("wc-hero")
-    Column(mark.fillMaxWidth().heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).clickable { ui.tap(n.id) }
+    Column(mark.fillMaxWidth().heightIn(min = 44.dp).clickable { ui.tap(n.id) }
         .semantics { role = Role.Button }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Box(Modifier.size(64.dp).drawBehind { chestOrb(hero) }, contentAlignment = Alignment.Center) {
             orb?.find { it.tag == "svg" }?.icon?.let { SiteIcon(outline(it), 30.dp, ChestGold) }
@@ -1835,7 +1839,7 @@ private fun MiniRow(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
                 k.has("row") -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     k.elements.filter { !it.hidden }.forEach { b -> SiteButton(b, ui, inner.under(k)) } }
                 // .mini-row > span:last-child: its own width, never shrinking.
-                else -> Paragraph(listOf(k), ui, inner, fill = false, oneLine = true)
+                else -> Paragraph(listOf(k), ui, if (k.tag == "span" && k.has("link")) inner.color(Site.Gold).weight(600) else inner, fill = false, oneLine = true)
             }
         }
     }

@@ -25,6 +25,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.platform.LocalContext
 import com.google.gson.JsonObject
 import dev.cardstashy.nativeplay.account.Account
@@ -41,7 +43,15 @@ import kotlinx.coroutines.withContext
 val LocalCollectionSearch = androidx.compose.runtime.staticCompositionLocalOf<(() -> Unit)?> { null }
 
 /** Each game's last search page, so coming back paints at once. */
-private object SearchCache { val models = mutableMapOf<String, CollectionSearchModel>() }
+private object SearchCache { val models = mutableMapOf<String, CollectionSearchModel>(); @Volatile var asked = false
+    /** The deck whose Deck review sheet stays open over Search (app.js A.formatSearch has no closeSheet). */
+    @Volatile var review: String? = null }
+
+/**
+ * A search left in the engine by another page (Magic's Deck review: app.js A.findRole, A.formatSearch, which set S.ui.db and go("#search")):
+ * the Search tab opens on its words and filters, and pumps the search it started until it lands.
+ */
+fun searchAsked(review: String? = null) { SearchCache.models.remove("mtg"); SearchCache.asked = true; SearchCache.review = review }
 
 private const val SITE = "https://cardstashy.com/"
 private fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
@@ -66,6 +76,8 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
     var focused by remember(game) { mutableStateOf(false) }
     var suggest by remember(game) { mutableStateOf<SearchSuggest?>(null) }
     val scope = rememberCoroutineScope()
+    /** Magic's Deck review sheet left open over Search (A.formatSearch: go("#search") with the sheet still up), by its deck. */
+    var review by remember { mutableStateOf(SearchCache.review.also { SearchCache.review = null }) }
     /** One control at a time, in the order pressed (a search runs on while the next waits). */
     val turn = remember { Mutex() }
     val prefs = remember { context.getSharedPreferences("collection", android.content.Context.MODE_PRIVATE) }
@@ -83,6 +95,7 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
             prefs.getString("searchView:$game", null)?.let { v -> if (model?.mode != v) show(CollectionEngine.searchDo("viewSave", JsonObject().apply {
                 add("dataset", JsonObject().apply { addProperty("mode", v); addProperty("area", "search") }) })) }
             show(CollectionEngine.searchModel())
+            if (SearchCache.asked && game == "mtg") { SearchCache.asked = false; CollectionEngine.settle(60_000, CollectionEngine.SEARCH_MODEL, ::show); show(CollectionEngine.searchModel()) }
             // The box takes the engine's words only on the first paint (a reload of the account's copy never changes them).
             if (first) query = model?.field?.value ?: query
         }
@@ -187,12 +200,36 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
         }
     }
     val m = model
+    val pageLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
     Box(Modifier.fillMaxSize()) {
-        if (m != null) CollectionSearch(m, top, act, nav, query, suggest)
-        else SearchWaiting(top, nav, failed)
+        Box(Modifier.fillMaxSize().drawWithContent { pageLayer.record { this@drawWithContent.drawContent() }; drawLayer(pageLayer) }) {
+            if (m != null) CollectionSearch(m, top, act, nav, query, suggest)
+            else SearchWaiting(top, nav, failed)
+        }
+        review?.takeIf { game == "mtg" }?.let { deck ->
+            val deckPage = SITE + "#deck/" + android.net.Uri.encode(deck)
+            DeckReviewHost(deck, pageLayer, DeckReviewActions(close = { review = null },
+                // A.card (data-deck): the card's page in the deck's context, its ← back to the review (the sheet history).
+                card = { n -> review = null; cards = cards + CardOpen(n, deck = deck, page = deckPage, tile = "[data-act=\"deckReview\"]\n[data-act=\"card\"][data-name=\"${css(n)}\"]", back = "review") },
+                act = { x -> when (x.act) {
+                    // A.refreshDeck: "Refreshing…", then the site's toast; the sheet reads the deck again.
+                    "refreshDeck" -> scope.launch { CollectionWrites.act(context, "refreshDeck", JsonObject().apply { addProperty("deck", deck) }) }
+                    // A.formatSearch (the sheet stays) / A.findRole (closeSheet): the search they set, on this tab.
+                    "findRole", "formatSearch" -> scope.launch {
+                        if (CollectionWrites.reviewSearch(context, x.act, deck, x.role) == null) return@launch
+                        if (x.act == "findRole") review = null
+                        turn.withLock { runCatching {
+                            show(CollectionEngine.searchModel()); CollectionEngine.settle(60_000, CollectionEngine.SEARCH_MODEL, ::show); show(CollectionEngine.searchModel()) } }
+                        model?.field?.value?.let { query = it }
+                    }
+                    // Anything else (A.deckTab among them: the deck's own tab): the website's deck page, its review pressed, then the button.
+                    else -> { review = null; web(deckPage, "[data-act=\"deckReview\"]\n[data-act=\"${css(x.act)}\"]" + (if (x.id.isNotBlank()) "[data-id=\"${css(x.id)}\"]" else "") + (if (x.role.isNotBlank()) "[data-role=\"${css(x.role)}\"]" else "")) }
+                } }))
+        }
         cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) {
             CollectionCardHost(c, onClose = { cards = cards.dropLast(1) }, onOpen = { cards = cards + it }, web = web, onSet = { s -> onSet(c.game, s) },
-                onRandom = { run(if (game == "mtg") "dbRandom" else "tRandomCard", emptyMap(), "") })
+                onRandom = { run(if (game == "mtg") "dbRandom" else "tRandomCard", emptyMap(), "") },
+                onBack = if (c.back == "review") ({ cards = cards.dropLast(1); review = c.deck }) else null)
         } }
     }
 }

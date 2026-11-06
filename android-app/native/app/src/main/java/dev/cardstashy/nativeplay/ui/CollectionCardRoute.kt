@@ -30,7 +30,8 @@ data class CardOpen(val name: String, val entry: String = "", val deck: String =
                     /** Opened by Random (data-random): the page offers 🎲 Another. */
                     val random: Boolean = false,
                     /** Opened from the deck idea sheet ("idea:<i>", app.js A.card's S.ui.sheetBack): the page offers "Back to deck idea";
-                     *  "proven": from the proven deck sheet, whose history back (app.js wireSheetBack) returns to it. */
+                     *  "proven": from the proven deck sheet, whose history back (app.js wireSheetBack) returns to it; "review": from Magic's Deck
+                     *  review sheet, the same. */
                     val back: String = "")
 
 private fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
@@ -136,7 +137,7 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
         },
         press = ::press,
     )
-    CollectionCardSheet(m, act, onBack = onBack?.takeIf { open.back.isNotBlank() }, historyBack = open.back == "proven" && onBack != null, onClose = onClose)
+    CollectionCardSheet(m, act, onBack = onBack?.takeIf { open.back.isNotBlank() }, historyBack = open.back in setOf("proven", "review") && onBack != null, onClose = onClose)
 }
 
 /**

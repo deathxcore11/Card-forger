@@ -89,6 +89,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
     var pool by remember(deckId) { mutableStateOf<com.google.gson.JsonArray?>(null) }
     var model by remember(deckId) { mutableStateOf(DeckCache.model) }
     var deckTab by remember(deckId) { mutableStateOf(DeckCache.tab) }
+    /** Magic's Deck review sheet (app.js A.deckReview) open over the page. */
+    var review by remember(deckId) { mutableStateOf(false) }
     /** The open tab's body when it is the site's markup (CollectionEngine.deckPanel), as its listeners leave it. */
     var panel by remember(deckId) { mutableStateOf<SitePanelModel?>(null) }
     /** The collection is loaded in the engine (ensureCollection) and the page drawn once: a tab's body can be asked for. */
@@ -253,6 +255,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
             back = onBack,
             act = { a, id ->
                 when {
+                    // app.js A.deckReview: the Deck review sheet here (DeckReviewHost).
+                    a == "deckReview" && !tcg -> review = true
                     a == "deckPlayCpu" -> onPractice(deckId, model?.format.orEmpty())
                     // A.acquire ("I got cards"): acquireSheet("missing"), the copies the deck is missing.
                     a == "acquire" && !tcg -> CollectionWrites.acquiring.value = CollectionWrites.AcquireOpen(deckId, "missing")
@@ -339,6 +343,26 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
     }
     // rule-dex.js showRuleHint's glass over the page; a tap outside it closes it (its ✕, as its own outside listener does).
     panel?.takeIf { deckTab != "cards" }?.let { p -> SiteGlass(p, siteUi, pageLayer) { p.glass?.find { it.has("rule-dismiss") }?.let { siteUi.tap(it.id) } } }
-    cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) { CollectionCardHost(c, onClose = { cards = cards.dropLast(1) }, onOpen = { cards = cards + it }, web = web, onSet = onSet) } }
+    if (review) {
+        val searchOpen = LocalCollectionSearch.current
+        DeckReviewHost(deckId, pageLayer, DeckReviewActions(close = { review = false },
+            // A.card (data-deck): the card's page in this deck's context, its ← back to the review (the sheet history).
+            card = { n -> review = false; cards = cards + CardOpen(n, deck = deckId, page = page, tile = "[data-act=\"deckReview\"]\n[data-act=\"card\"][data-name=\"${css(n)}\"]", back = "review") },
+            act = { x -> when (x.act) {
+                // A.deckTab: the sheet closes, the tab opens (Upgrade and Matchups are Power).
+                "deckTab" -> { review = false; openTab(x.id) }
+                // A.refreshDeck: "Refreshing…", then the site's toast; the sheet reads the deck again.
+                "refreshDeck" -> write("refreshDeck")
+                // A.findRole (closeSheet) / A.formatSearch (no closeSheet: the review stays open over Search): the search they set, on the Search tab here.
+                "findRole", "formatSearch" -> scope.launch {
+                    if (CollectionWrites.reviewSearch(context, x.act, deckId, x.role) == null) return@launch
+                    if (searchOpen != null) { review = false; searchAsked(deckId.takeIf { x.act == "formatSearch" }); searchOpen() }
+                    else { review = false; web(site + "#search", null) }
+                }
+                else -> { review = false; web(page, "[data-act=\"deckReview\"]\n[data-act=\"${css(x.act)}\"]" + (if (x.id.isNotBlank()) "[data-id=\"${css(x.id)}\"]" else "") + (if (x.role.isNotBlank()) "[data-role=\"${css(x.role)}\"]" else "")) }
+            } }))
+    }
+    cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) { CollectionCardHost(c, onClose = { cards = cards.dropLast(1) }, onOpen = { cards = cards + it }, web = web, onSet = onSet,
+        onBack = if (c.back == "review") ({ cards = cards.dropLast(1); review = true }) else null) } }
     }
 }

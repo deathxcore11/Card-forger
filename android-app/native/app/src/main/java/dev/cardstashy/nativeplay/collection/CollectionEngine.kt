@@ -175,6 +175,8 @@ object CollectionEngine {
     /** A.impErrors' file (the skipped lines), or null. */
     suspend fun importErrors(): JsonObject = model("Collection.importErrors()")
     suspend fun importClose() { on { q -> q.evaluate("Collection.importClose()") } }
+    /** app.js closeSheet over Import a deck / New deck (Yu-Gi-Oh!, Pokémon) while it runs: the run's importGuard stops it unsaved. */
+    suspend fun tDeckSheetClose() { on { q -> q.evaluate("Collection.tDeckSheetClose()") } }
     /** Yu-Gi-Oh! or Pokémon Paste a list (tcg.js tcgImportSheet "coll"): {title, hint, placeholder, rows, button}. */
     suspend fun tImportSheet(game: String): JsonObject = model("Collection.tImportSheet(${str(game)})")
 
@@ -211,6 +213,17 @@ object CollectionEngine {
      *  panel, run by app.js's / tcg.js's own handlers; its route's loads (the ideas auto-build, the tournament meta, card data) start too. */
     suspend fun decksPanel(game: String, tab: String): JsonObject = model("Collection.decksPanel(${str(game)}, ${str(tab)})")
     /** icons.js decorateGlyphs: each leading glyph's icon ({"↻": svg, …}). */
+    /** Yu-Gi-Oh! / Pokémon's Import a deck sheet (tcg.js tcgImportSheet "deck"); Import runs through act("tImpDeck"). */
+    suspend fun tDeckImportSheet(game: String): JsonObject = model("Collection.tDeckImportSheet(${str(game)})")
+    /** Yu-Gi-Oh! / Pokémon's New deck sheet (tcg.js tcgNewDeckSheet), [format] preselected (Meta decks' Create a … deck); Create deck runs through act("tNewDeckSave"). */
+    suspend fun tNewDeckSheet(game: String, format: String = ""): JsonObject = model("Collection.tNewDeckSheet(${str(game)}, ${str(format)})")
+    /** Magic's Deck review sheet for deck [id] (views.js deckReviewSheet). */
+    suspend fun deckReview(id: String): JsonObject = model("Collection.deckReview(${str(id)})")
+    /** The review's Find {role} cards / Find {format} cards ([kind] findRole / formatSearch): the search left for the Search tab ({term, filters}). */
+    suspend fun reviewSearch(kind: String, deck: String, role: String = ""): JsonObject = model("Collection.reviewSearch(${str(kind)}, ${str(deck)}, ${str(role)})")
+    /** The War Chest window from the Decks head (app.js A.warChest) as the open panel; [warChestClose] brings back the panel under it. */
+    suspend fun warChest(game: String): JsonObject = model("Collection.warChest(${str(game)})")
+    suspend fun warChestClose(): JsonObject = model("Collection.warChestClose()")
     suspend fun glyphs(): JsonObject = model("Collection.glyphs()")
     /** views.js ideaSheet for idea [i] of the Ideas tab (app.js openIdea: it builds as it opens); read again with [settle] and [IDEA_MODEL]. */
     suspend fun ideaSheet(i: Int): JsonObject = model("Collection.ideaSheet($i)")
@@ -478,11 +491,16 @@ object CollectionEngine {
         val dir = filesDir ?: return null
         return java.io.File(dir, "rulebooks/" + m.groupValues[1])
     }
+    /** Tests: a URL's answer (status, body) without the network; null sends it as usual; status 0 holds it until [releaseForTest]. */
+    @Volatile internal var answerForTest: ((String) -> Pair<Int, String>?)? = null
+    private val heldForTest = ConcurrentLinkedQueue<JsonObject>()
+    internal fun releaseForTest() { while (true) send(heldForTest.poll() ?: break) }
     private fun send(r: JsonObject) {
         val id = r.get("id").asInt
         val raw = r.get("url").asString
         // The site's own routes are relative ("api/meta/mtg?…", "/api/…"): they resolve against the site.
         val url = if (raw.startsWith("http")) raw else "https://cardstashy.com/" + raw.removePrefix("/")
+        answerForTest?.invoke(url)?.let { (code, text) -> if (code == 0) heldForTest.add(r) else answers.add(Triple(id, code, "{}" to text)); return }
         val method = r.get("method")?.asString ?: "GET"
         val body = r.get("body")?.takeIf { it.isJsonPrimitive }?.asString
         CoroutineScope(Dispatchers.IO).launch {

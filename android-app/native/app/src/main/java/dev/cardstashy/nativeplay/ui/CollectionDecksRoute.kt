@@ -156,11 +156,42 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     LaunchedEffect(asked) { if (asked.first != seenAsk) { seenAsk = asked.first; cards = emptyList(); idea = null
         if (proven) { proven = false; runCatching { CollectionEngine.provenClose() } }
         if (tab != asked.second) openTab(asked.second) } }
+    /** A Magic deck the sheets saved: its page here on the site's tab (go(`#deck/<id>/<tab>`)). */
+    val mtgDeckOpen = { id: String, t: String -> deckOpensOn("mtg", id, t); onDeck?.invoke(id, CardGame.MTG) ?: page(site + "#deck/" + android.net.Uri.encode(id), null) }
+    /** A Yu-Gi-Oh! / Pokémon deck the sheets saved: its page here (go("#tdeck/<id>")). */
+    fun tcgDeckOpen(g: CardGame): (String) -> Unit = { id -> onDeck?.invoke(id, g) ?: page(site + "#tdeck/" + android.net.Uri.encode(id), null) }
+    /** The War Chest window (app.js A.warChest: war-chest.js openWarChest) over the page, as its panel draws it. */
+    var chest by remember { mutableStateOf<SitePanelModel?>(null) }
+    /** take (below): the tab's panel as it comes back from under the window, with what it left to the app meanwhile (a precon's Preview). */
+    var takeBack: (SitePanelModel) -> Unit = { panel = it }
+    fun chestClose() {
+        chest = null
+        scope.launch { if (HomeCache.loaded == null) return@launch
+            runCatching { val back = CollectionEngine.warChestClose(); if (tab != "mine" && back.has("key")) takeBack(SitePanelModel.parse(back)) } }
+    }
+    /** The window's model; a tool it leaves to app.js chestTool closes the window first (openWarChest's click listener) and runs there. */
+    fun chestTake(m: SitePanelModel) {
+        chest = m
+        m.toasts.lastOrNull()?.let { CollectionWrites.show(it) }
+        val tool = m.acted?.getAsJsonObject("data")?.get("tool")?.takeIf { it.isJsonPrimitive }?.asString ?: return
+        chestClose()
+        // Card lookup: go("#search"), the Search tab here. Game Night, Share table, Table Spirit and Ask the Judge: the website's War Chest, the same tool.
+        if (tool == "lookup") searchTab?.invoke() ?: web(site + "#search", null)
+        else page(decks, "[data-act=\"warChest\"]\n.war-chest-dialog [data-tool=\"${css(tool)}\"]")
+    }
+    fun chestOpen() = scope.launch {
+        if (HomeCache.loaded == null) { page(decks, "[data-act=\"warChest\"]"); return@launch }
+        runCatching { chestTake(SitePanelModel.parse(CollectionEngine.warChest(CollectionGame.current.value.id))) }
+    }
+    // A.dImpSave with the library destination: closeSheet(); go("#decks/inspiration"), the Meta tab, which is drawn here.
+    val inspirationHere: (String) -> Unit = { u -> if (u.endsWith("#decks/inspiration")) openTab("inspiration") else page(u, null) }
     /**
      * What the panel's buttons leave to app.js (panel.acted): the idea sheet, the importer and the example collection, the Search tab and the
      * archetype's card are here; Meta decks and the builders open the website's Ideas (the game chosen first) and press the same button.
      */
     fun take(m: SitePanelModel) {
+        // The War Chest window's panel (app.js A.warChest) reads back while it is open: it is the window's, not the tab's.
+        if (m.key.startsWith("chest|")) { chestTake(m); return }
         panel = m
         m.toasts.lastOrNull()?.let { CollectionWrites.show(it) }
         val a = m.acted ?: return
@@ -185,6 +216,16 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             act == "loadExample" -> { scope.launch { CollectionWrites.act(context, "loadExample", JsonObject()) { r ->
                 if (r["made"]?.takeIf { it.isJsonPrimitive }?.asString?.contains("collection") == true) onCards() } }; return }
             act == "decksTab" -> { openTab(got("id")); return }
+            // tcg.js metaView's Create a <format> deck (A.tNewDeck with data-format): the New deck sheet here.
+            act == "tNewDeck" && g != CardGame.MTG -> { CollectionWrites.tNewDeck.value = CollectionWrites.TcgDeckOpen(g.id, got("format"), openDeck = tcgDeckOpen(g)); return }
+            // app.js A.importReference: Import a deck as "Save a deck idea" (deckImportSheet, the library destination).
+            act == "importReference" && g == CardGame.MTG -> { CollectionWrites.deckImport.value = CollectionWrites.DeckImportOpen(
+                JsonObject().apply { addProperty("destination", "library"); addProperty("kind", "Community deck") }, openDeck = mtgDeckOpen, web = inspirationHere); return }
+            // app.js A.previewPrecon: the precon's list in that sheet (the library destination, credited), previewed as it opens.
+            act == "previewPrecon" -> { val preset = runCatching { com.google.gson.JsonParser.parseString(got("preset")).asJsonObject }.getOrNull() ?: return
+                CollectionWrites.deckImport.value = CollectionWrites.DeckImportOpen(preset, openDeck = mtgDeckOpen, web = inspirationHere, preview = true); return }
+            // app.js A.exportRef (the file, saved to Downloads) and A.deleteRef (asked first): the site's own handlers (CollectionWrites).
+            act in setOf("exportRef", "deleteRef") && g == CardGame.MTG -> { scope.launch { CollectionWrites.act(context, act, JsonObject().apply { addProperty("id", got("id")) }) }; return }
             act == "go" && got("to") == "#search" -> { searchTab?.invoke() ?: web(site + "#search", null); return }
             act == "go" && got("to").startsWith("#decks/") -> { openTab(got("to").removePrefix("#decks/")); return }
             // tcg.js A.tCard: the archetype's cover card, its page here.
@@ -196,6 +237,7 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
         val sel = "[data-act=\"${css(act)}\"]" + data.joinToString("") { (k, v) -> "[data-" + k.replace(Regex("[A-Z]")) { "-" + it.value.lowercase() } + "=\"${css(v.asString)}\"]" }
         page(site + "#decks/" + android.net.Uri.encode(tab), sel)
     }
+    takeBack = ::take
     /** A tap or a change in the panel: the site's listeners, then what they start (Analyze, the meta) as it lands; its saves kept. */
     fun panelDo(call: suspend () -> JsonObject) = scope.launch {
         if (HomeCache.loaded == null) return@launch
@@ -224,14 +266,22 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             open = { href -> runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(href)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) } },
             screen = screenW)
     }
-    fun button(a: String) {
+    val chestUi = remember(screenW) {
+        SiteUi(tap = { id -> scope.launch { runCatching { chestTake(SitePanelModel.parse(CollectionEngine.panelTap(id))) } } }, type = { _, _ -> }, open = { }, screen = screenW)
+    }
+    fun button(a: String, format: String = "") {
                 // app.js A.randomDeck / A.randomDeckOptions: Magic's Build a deck runs here (Commander locked for Random Commander); the
                 // other games' (and anything else) open the website.
                 // app.js A.newDeck / A.importDeck on Magic's Decks: the sheets here; the new or imported deck's page opens on the site's tab.
                 val mtg = CollectionGame.current.value == CardGame.MTG
                 val open = { id: String, tab: String -> deckOpensOn("mtg", id, tab); onDeck?.invoke(id, CardGame.MTG) ?: page(site + "#deck/" + android.net.Uri.encode(id), null) }
                 if (mtg && a == "newDeck") CollectionWrites.newDeck.value = CollectionWrites.NewDeckOpen(openDeck = open)
-                else if (mtg && a == "importDeck") CollectionWrites.deckImport.value = CollectionWrites.DeckImportOpen(openDeck = open, web = { u -> page(u, null) })
+                else if (mtg && a == "importDeck") CollectionWrites.deckImport.value = CollectionWrites.DeckImportOpen(openDeck = open, web = inspirationHere)
+                // tcg.js A.tImport / A.tNewDeck on Yu-Gi-Oh! and Pokémon's Decks: their sheets here; the saved deck's page opens.
+                else if (!mtg && a == "tImport") CollectionWrites.tDeckImport.value = CollectionWrites.TcgDeckOpen(CollectionGame.current.value.id, openDeck = tcgDeckOpen(CollectionGame.current.value))
+                else if (!mtg && a == "tNewDeck") CollectionWrites.tNewDeck.value = CollectionWrites.TcgDeckOpen(CollectionGame.current.value.id, format, openDeck = tcgDeckOpen(CollectionGame.current.value))
+                // app.js A.warChest (every game): its window here.
+                else if (a == "warChest") chestOpen()
                 else if (a in listOf("randomDeck", "randomDeckOptions") && mtg)
                     CollectionWrites.building.value = CollectionWrites.BuildOpen(JsonObject().apply {
                         addProperty("game", "mtg"); if (a == "randomDeck") { addProperty("format", "Commander"); addProperty("commanderLock", true) } }, a, web)
@@ -257,6 +307,7 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
                 when {
                     b.act == "decksTab" && b.id.isNotBlank() -> openTab(b.id)
                     mtg && b.act in setOf("newDeck", "importDeck", "randomDeck", "randomDeckOptions") -> button(b.act)
+                    b.act in setOf("warChest") || (!mtg && b.act in setOf("tImport", "tNewDeck")) -> button(b.act, b.format)
                     b.act.isNotBlank() -> page(site + "#decks/" + android.net.Uri.encode(DecksCache.tab), "[data-act=\"${css(b.act)}\"]" +
                         listOf("id" to b.id, "format" to b.format, "deck" to b.deck, "home" to b.home, "to" to b.to).filter { it.second.isNotBlank() }
                             .joinToString("") { (k, v) -> "[data-$k=\"${css(v)}\"]" })
@@ -309,6 +360,7 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             if (tg == CardGame.MTG) deckOpensOn("mtg", id, d.get("tab")?.takeIf { it.isJsonPrimitive }?.asString ?: "cards")
             if (id.isNotBlank()) onDeck?.invoke(id, tg) ?: page(site + (if (tg == CardGame.MTG) "#deck/" else "#tdeck/") + android.net.Uri.encode(id), null) },
         site = { u, sel -> page(u, sel) }, web = web)
+    chest?.let { c -> WarChestWindow(c, chestUi, pageLayer, onClose = { chestClose() }) }
     cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) {
         CollectionCardHost(c, onClose = { cards = cards.dropLast(1) }, onOpen = { cards = cards + it }, web = web,
             onBack = c.back.removePrefix("idea:").toIntOrNull()?.let { i -> { cards = cards.dropLast(1); idea = i } })

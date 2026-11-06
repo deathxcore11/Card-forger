@@ -132,6 +132,10 @@ fun CollectionWritesHost(backdrop: androidx.compose.ui.graphics.layer.GraphicsLa
     newDeck?.let { o -> key(o.id) { GameAccent("mtg") { NewDeckSheet(o, backdrop, onClose = { if (CollectionWrites.newDeck.value === o) CollectionWrites.newDeck.value = null }) } } }
     val deckImport by CollectionWrites.deckImport.collectAsState()
     deckImport?.let { o -> key(o.id) { GameAccent("mtg") { DeckImportSheet(o, backdrop, onClose = { if (CollectionWrites.deckImport.value === o) CollectionWrites.deckImport.value = null }) } } }
+    val tDeckImport by CollectionWrites.tDeckImport.collectAsState()
+    tDeckImport?.let { o -> key(o.id) { GameAccent(o.game) { TcgDeckImportSheet(o, backdrop, onClose = { if (CollectionWrites.tDeckImport.value === o) CollectionWrites.tDeckImport.value = null }) } } }
+    val tNewDeck by CollectionWrites.tNewDeck.collectAsState()
+    tNewDeck?.let { o -> key(o.id) { GameAccent(o.game) { TcgNewDeckSheet(o, backdrop, onClose = { if (CollectionWrites.tNewDeck.value === o) CollectionWrites.tNewDeck.value = null }) } } }
     val acquiring by CollectionWrites.acquiring.collectAsState()
     acquiring?.let { o -> key(o.id) { GameAccent("mtg") { AcquireSheet(o, backdrop, onClose = { if (CollectionWrites.acquiring.value === o) CollectionWrites.acquiring.value = null }) } } }
     val proxying by CollectionWrites.proxySheet.collectAsState()

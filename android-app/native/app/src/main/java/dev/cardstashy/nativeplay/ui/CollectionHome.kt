@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -843,7 +844,11 @@ fun CollectionNav(active: CollectionTab?, vertical: Boolean = false, scan: Boole
             Box(Modifier.size(56.dp, 30.dp).clip(RoundedCornerShape(15.dp)).background(if (on) gold.copy(alpha = .2f) else Color.Transparent), contentAlignment = Alignment.Center) {
                 Icon(icons.getValue(t), 22.dp, if (on) gold else Site.Muted)
             }
-            Text(t.label, style = Site.Label.copy(color = if (on) Site.Text else Site.Muted, fontSize = if (vertical) 11.sp else Site.Label.fontSize), maxLines = 1)
+            // style.css 1490: .bottom-nav button { font-size: 11px; letter-spacing: .01em } in a minmax(0,1fr) cell whose
+            // overflow stays visible, so a long label at large text ("Collection" at 360 wide, 130 %) spills past its cell
+            // rather than being cut to "Collectio".
+            Text(t.label, Modifier.wrapContentWidth(unbounded = true), style = Site.Label.copy(color = if (on) Site.Text else Site.Muted, fontSize = 11.sp, letterSpacing = .01.em),
+                maxLines = 1, softWrap = false)
         }
     }
     if (vertical) Column(Modifier.fillMaxHeight().width(76.dp).background(Site.Bg).windowInsetsPadding(WindowInsets.statusBars).padding(vertical = 6.dp)) {
