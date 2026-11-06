@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-achievements-43137-v509";
+const CACHE = "cardforge-shell-apk0437-43138-v510";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
