@@ -140,12 +140,12 @@ internal fun CollMenuSheet(o: CollectionWrites.MenuOpen, backdrop: GraphicsLayer
 
 // ---------------------------------------------------------------- the import sheets
 
-/** A <textarea> on the glass field: [rows] lines of 13.5 / 19.575 (9 / 12 in), at least 120 tall; Chrome's grey placeholder. */
+/** A <textarea> on the glass field ([weight]: in a label it takes the label's 600): [rows] lines of 13.5 / 19.575 (9 / 12 in), at least 120 tall; Chrome's grey placeholder. */
 @Composable
-private fun FormArea(value: String, onValue: (String) -> Unit, placeholder: String, rows: Int, desc: String, modifier: Modifier = Modifier) {
+internal fun FormArea(value: String, onValue: (String) -> Unit, placeholder: String, rows: Int, desc: String, modifier: Modifier = Modifier, weight: Int = 400) {
     var focused by remember { mutableStateOf(false) }
     val ring = Accent
-    val style = cssType(13.5f, 400, 19.575f, IInk)
+    val style = cssType(13.5f, weight, 19.575f, IInk)
     val h = maxOf(120f, rows * 19.575f + 20f).dp
     BasicTextField(value, onValue, modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused }
         .drawBehind { if (focused) { val o = 3.dp.toPx(); drawRoundRect(ring, Offset(-o, -o), Size(size.width + o * 2, size.height + o * 2), CornerRadius(11.dp.toPx() + o), style = Stroke(2.dp.toPx())) } }
@@ -160,7 +160,7 @@ private fun FormArea(value: String, onValue: (String) -> Unit, placeholder: Stri
 
 /** .btn.ghost: the glass button (15 / 700, 16 in, 44 tall, 11 corners); [small]: .btn.small (13.5, 12 in, 34 tall in a 44 touch area). */
 @Composable
-private fun GhostBtn(label: String, enabled: Boolean = true, small: Boolean = false, fs: Float = if (small) 13.5f else 15f, onClick: () -> Unit) {
+internal fun GhostBtn(label: String, enabled: Boolean = true, small: Boolean = false, fs: Float = if (small) 13.5f else 15f, onClick: () -> Unit) {
     Box(Modifier.heightIn(min = 44.dp).alpha(if (enabled) 1f else .45f).clickable(enabled = enabled, onClick = onClick).semantics { role = Role.Button },
         contentAlignment = Alignment.Center) {
         Box(Modifier.heightIn(min = if (small) 34.dp else 44.dp).clip(RoundedCornerShape(11.dp)).siteGlassField(11.dp)

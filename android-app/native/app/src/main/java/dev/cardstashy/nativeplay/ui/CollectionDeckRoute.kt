@@ -52,7 +52,7 @@ private object DeckCache {
  *  which Matchups and Upgrade lab now open: tcg.js tcgPowerPage) and War Chest; the others open the website's tab. */
 private val TCG_SITE_TABS = setOf("rules", "insights", "playtest")
 /** A Magic deck's tabs drawn here (views.js deckPage): Rules, and Power, which Matchups and Upgrade lab now open (powerHub). */
-private val MTG_SITE_TABS = setOf("rules", "engine")
+private val MTG_SITE_TABS = setOf("rules", "engine", "versions", "playtest")
 
 /**
  * A deck's page (views.js deckPage, its Cards tab; for Yu-Gi-Oh! and Pokémon tcg.js tcgDeck) through the site's own code, drawn natively. Search, the type chips,
@@ -169,6 +169,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
      * The panel as the site's scripts leave it; a data-act they leave to app.js that runs elsewhere (Ask a Judge, the game's guide,
      * a rule's card search) opens the website's tab and presses the same button there.
      */
+    var lifeEnded by remember(deckId) { mutableStateOf(0) }
+    fun endLife() { lifeEnded++ }
     fun take(m: SitePanelModel) {
         panel = m
         // What the site toasts (tcg.js's toast(), e.g. a chest tool's "Nothing to draw"): the app's toast.
@@ -183,6 +185,24 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
             act == "tDeckTab" && got("id").isNotEmpty() -> { openTab(got("id")); return }
             // A card Power names by name only (tcg.js A.tDeckFindName): the Cards tab, searching for it.
             act == "tDeckFindName" && tcg && got("name").isNotEmpty() -> { deckTab = "cards"; asked = "find" to got("name"); return }
+            // A Magic card in the panel (Versions' differences, the sample hand): its page here (app.js A.card).
+            act == "card" && !tcg && got("name").isNotEmpty() -> {
+                val n = got("name"); val tile = "[data-act=\"card\"][data-name=\"${css(n)}\"]"
+                if (nativeCard) cards = cards + CardOpen(n, deck = deckId, page = page, tile = tile) else web("$page/" + android.net.Uri.encode(deckTab), tile)
+                return
+            }
+            // Versions' Restore and Delete, a logged game and its delete (app.js A.restoreVer, A.deleteVer, A.logGame, A.deleteNote):
+            // saved here, asked first where the site asks; the tab is drawn again from the saved account.
+            !tcg && act in setOf("restoreVer", "deleteVer", "deleteNote") -> { write(act, "id" to got("id")); return }
+            !tcg && act == "lifeLog" -> { write(act, "result" to got("result")); return }
+            // A.lifeEnd: asked first, then the tracker closes (nothing is saved).
+            !tcg && act == "lifeEnd" -> { CollectionWrites.confirm(got("question")) { endLife() }; return }
+            !tcg && act == "logGame" -> { write(act, "result" to got("result"), "turn" to got("turn"), "note" to got("note")); return }
+            // A.snapshot: a name for the version first (Cancel saves nothing).
+            !tcg && act == "snapshot" -> { scope.launch {
+                val label = CollectionWrites.askText("Name this version", got("version")) ?: return@launch
+                write("snapshot", "label" to label)
+            }; return }
         }
         val data = a.getAsJsonObject("data")?.entrySet().orEmpty()
             .filter { (k, v) -> k != "act" && v.isJsonPrimitive && v.asString.length < 120 && !v.asString.startsWith("{") && !v.asString.startsWith("[") }
@@ -198,6 +218,10 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
             CollectionEngine.settle(120_000, CollectionEngine.PANEL_MODEL) { j -> if (j.has("key")) take(SitePanelModel.parse(j)) }
         }
     }
+    LaunchedEffect(lifeEnded) { if (lifeEnded > 0) panelDo { CollectionEngine.panelDone("lifeEnd") } }
+    // A save while a drawn tab is open (its own Restore or Log, a card page's, an Undo): the tab again, as app.js render() draws it.
+    var panelSeen by remember(deckId) { mutableStateOf(written) }
+    LaunchedEffect(written) { if (written != panelSeen) { panelSeen = written; if (deckTab != "cards" && panel != null) panelDo { CollectionEngine.panelRedraw() } } }
     val screenW = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp
     val siteUi = remember(deckId, screenW) {
         SiteUi(tap = { id -> panelDo { CollectionEngine.panelTap(id) } }, type = { id, v -> panelDo { CollectionEngine.panelType(id, v) } },
@@ -215,6 +239,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
             CollectionEngine.settle(15_000, CollectionEngine.PANEL_MODEL) { j -> if (j.has("key")) take(SitePanelModel.parse(j)) }
         }
     }
+    // A.deckShare / tcg.js A.tShare: the share sheet; its Preview opens the link (the shared deck's page on the website).
+    fun share() { CollectionWrites.share.value = CollectionWrites.ShareOpen(deckId, game.id, preview = { l -> webAt(l, null) }) }
     val act = remember(game, deckId) {
         CollectionDeckActions(
             // The header's game tabs: that game's decks (tcg.js A.setGame), the native Decks tab.
@@ -223,6 +249,7 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
             act = { a, id ->
                 when {
                     a == "deckPlayCpu" -> onPractice(deckId, model?.format.orEmpty())
+                    a == "deckShare" || a == "tShare" -> share()
                     // tcg.js A.tDeckTab (War Chest, Power): that tab, here when it is drawn here (openTab), else the website's.
                     a == "tDeckTab" -> openTab(id)
                     // A.deckMenu: the menu here (DeckMenuSheet); what it still leaves to the website opens the site's menu and taps it.
@@ -230,7 +257,7 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
                     a == "tDeckMenu" && onDeck != null -> CollectionWrites.menu.value = CollectionWrites.DeckMenuOpen(deckId,
                         tab = { k -> openTab(k) },
                         web = { x, _ -> web(page, "[data-act=\"tDeckMenu\"]\n[data-act=\"${css(x)}\"]") },
-                        openDeck = onDeck, deleted = onBack, game = game.id)
+                        openDeck = onDeck, deleted = onBack, game = game.id, share = ::share)
                     // tcg.js A.tDeckExport (the hero's and the price panel's): the game's file, saved to Downloads.
                     a == "tDeckExport" && tcg -> { scope.launch { exportTcgDeck(context, deckId, game.id) }; Unit }
                     // The price panel: tcg.js A.tDeckRefresh, A.tDeckCheapest and A.tDeckCopyMissing, the site's own (CollectionWrites).
@@ -238,7 +265,7 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
                     a == "deckMenu" && onDeck != null -> CollectionWrites.menu.value = CollectionWrites.DeckMenuOpen(deckId,
                         tab = { k -> openTab(k) },
                         web = { x, sc -> web(page, "[data-act=\"deckMenu\"]\n[data-act=\"${css(x)}\"]" + (if (sc.isNotEmpty()) "[data-scope=\"${css(sc)}\"]" else "")) },
-                        openDeck = onDeck, deleted = onBack)
+                        openDeck = onDeck, deleted = onBack, share = ::share)
                     a.isBlank() -> {}
                     id.isNotBlank() -> web(page, "[data-act=\"${css(a)}\"][data-id=\"${css(id)}\"]")
                     else -> web(page, "[data-act=\"${css(a)}\"]")

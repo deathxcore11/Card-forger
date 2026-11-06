@@ -186,6 +186,10 @@ object CollectionEngine {
     suspend fun deckPanel(game: String, id: String, tab: String): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.deckPanel(${str(game)}, ${str(id)}, ${str(tab)})") as String).asJsonObject }
     const val PANEL_MODEL = "Collection.panelModel()"
+    /** The open tab drawn again from the account as it is now (after a save made from it). */
+    /** What the open tab runs once the player said yes (A.lifeEnd). */
+    suspend fun panelDone(kind: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.panelDone(${str(kind)})") as String).asJsonObject }
+    suspend fun panelRedraw(): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.panelRedraw()") as String).asJsonObject }
     suspend fun panelTap(id: Int): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.panelTap($id)") as String).asJsonObject }
     suspend fun panelType(id: Int, value: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.panelType($id, ${str(value)})") as String).asJsonObject }
 

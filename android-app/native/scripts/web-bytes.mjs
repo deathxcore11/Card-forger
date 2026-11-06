@@ -51,3 +51,17 @@ if (!cr.subtle) cr.subtle = {digest: (alg, data) => Promise.resolve().then(() =>
   const u = data instanceof Uint8Array ? data : ArrayBuffer.isView(data) ? new Uint8Array(data.buffer, data.byteOffset, data.byteLength) : new Uint8Array(data);
   return sha256(u).buffer;
 })};
+// btoa (HTML's forgiving base64 of a byte string), as share.js toB64url uses it to write a share link.
+if (typeof globalThis.btoa === 'undefined') {
+  const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  globalThis.btoa = (s) => {
+    s = String(s); let out = '';
+    for (let i = 0; i < s.length; i += 3) {
+      const n = s.length - i, a = s.charCodeAt(i), b = n > 1 ? s.charCodeAt(i + 1) : 0, c = n > 2 ? s.charCodeAt(i + 2) : 0;
+      if (a > 255 || b > 255 || c > 255) throw Error('The string to be encoded contains characters outside of the Latin1 range.');
+      const v = a << 16 | b << 8 | c;
+      out += B64[v >> 18 & 63] + B64[v >> 12 & 63] + (n > 1 ? B64[v >> 6 & 63] : '=') + (n > 2 ? B64[v & 63] : '=');
+    }
+    return out;
+  };
+}

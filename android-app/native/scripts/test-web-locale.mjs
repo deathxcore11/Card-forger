@@ -1,8 +1,8 @@
 // Checks scripts/web-locale-prelude.js (the QuickJS bundles' en-US formatting) against Node's ICU.
 // node scripts/test-web-locale.mjs
-const RealNF = Intl.NumberFormat, realDate = Date.prototype.toLocaleDateString;
+const RealNF = Intl.NumberFormat, realDate = Date.prototype.toLocaleDateString, realDateTime = Date.prototype.toLocaleString;
 const RealDTF = Intl.DateTimeFormat, realCompare = String.prototype.localeCompare;
-const {__NumberFormat: NF, __dateString: dateString, __DateTimeFormat: DTF, __localeCompare: localeCompare} = await import('./web-locale-prelude.js');
+const {__NumberFormat: NF, __dateString: dateString, __dateTimeString: dateTimeString, __DateTimeFormat: DTF, __localeCompare: localeCompare} = await import('./web-locale-prelude.js');
 let bad = 0, n = 0;
 const check = (label, got, want) => { n++; if (got !== want && bad++ < 25) console.log('MISMATCH', label, JSON.stringify(got), 'want', JSON.stringify(want)); };
 const options = [undefined, {}, {minimumFractionDigits: 2, maximumFractionDigits: 2}, {minimumFractionDigits: 0, maximumFractionDigits: 0}, {maximumFractionDigits: 1},
@@ -14,6 +14,7 @@ for (const o of options) { const a = new NF('en-US', o), b = new RealNF('en-US',
 const dateOpts = [undefined, {month: 'short', day: 'numeric', year: 'numeric'}, {month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'}, {month: 'long', day: 'numeric'},
   {month: 'short', year: 'numeric'}, {weekday: 'short', month: 'short', day: 'numeric'}, {year: 'numeric', month: '2-digit', day: '2-digit'}, {weekday: 'long'}];
 for (let i = 0; i < 600; i++) { const d = new Date(Date.UTC(1995, 0, 1) + Math.floor(rnd() * 40 * 365 * 864e5)); for (const o of dateOpts) check(`${d.toISOString()} ${JSON.stringify(o)}`, dateString(d, o), realDate.call(d, 'en-US', o)); }
+for (let i = 0; i < 600; i++) { const d = new Date(Date.UTC(1995, 0, 1) + Math.floor(rnd() * 40 * 365 * 864e5)); check(`${d.toISOString()} toLocaleString`, dateTimeString(d), realDateTime.call(d, 'en-US')); }
 for (const s of ['2026-11-04', '2026-01-31']) { const o = {month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'}; check(s, dateString(new Date(s), o), realDate.call(new Date(s), 'en-US', o)); }
 // daily-clock.js: en-CA fields in America/New_York, with the zone's offsets as the app's host gives them (here from ICU, hour by hour).
 const zone = 'America/New_York', rows = [], offAt = ms => { const p = Object.fromEntries(new RealDTF('en-CA', {timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'}).formatToParts(new Date(ms)).map(x => [x.type, x.value])); return Math.round((Date.UTC(+p.year, p.month - 1, +p.day, +p.hour, +p.minute, +p.second) - ms) / 60000); };

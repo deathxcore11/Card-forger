@@ -163,6 +163,107 @@ class CollectionWritesTest {
         assertEquals("This deck is no longer available.", gone["error"].asString); assertEquals(0, gone["writes"].asInt)
     }
 
+    /** Versions' Restore and ✕ (asked first) and the War Chest's game log (app.js A.restoreVer, A.deleteVer, A.logGame, A.deleteNote). */
+    @Test fun deckVersionsAndLog() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        val before = fx("deck-qty-minus.json")["before"].asJsonObject.deepCopy().apply {
+            add("decks", JsonParser.parseString("""[{"id":"m1","name":"Burn","format":"Modern","cards":[{"name":"Lightning Bolt","qty":4},{"name":"Mountain","qty":20}],
+                "versions":[{"id":"v1","label":"Version 1","date":"2026-11-01T12:00:00Z","cards":[{"name":"Lightning Bolt","qty":1}],"side":[]}]}]"""))
+            add("notes", JsonParser.parseString("[]"))
+        }
+        CollectionEngine.load(before, null)
+        suspend fun saved() = JsonParser.parseString(CollectionEngine.saved()).asJsonObject
+        suspend fun deck() = saved().getAsJsonArray("decks")[0].asJsonObject
+        val restore = JsonObject().apply { addProperty("deck", "m1"); addProperty("id", "v1") }
+        val asked = CollectionEngine.act("restoreVer", restore)
+        assertEquals("Restore “Version 1”? Your current list is saved as a version first.", asked["ask"].asString); assertEquals(0, asked["writes"].asInt)
+        val yes = CollectionEngine.act("restoreVer", restore.deepCopy().apply { addProperty("confirmed", true) })
+        assertEquals(1, yes["writes"].asInt); assertEquals("Version restored.", yes.getAsJsonArray("toasts")[0].asJsonObject["text"].asString)
+        assertEquals("""[{"name":"Lightning Bolt","qty":1}]""", deck().getAsJsonArray("cards").toString())
+        val kept = deck().getAsJsonArray("versions").map { it.asJsonObject }
+        assertEquals(listOf("Version 1", "Before restoring Version 1"), kept.map { it["label"].asString })
+        assertEquals("""[{"name":"Lightning Bolt","qty":4},{"name":"Mountain","qty":20}]""", kept[1].getAsJsonArray("cards").toString())
+        val del = JsonObject().apply { addProperty("deck", "m1"); addProperty("id", "v1") }
+        assertEquals("Delete this saved version?", CollectionEngine.act("deleteVer", del)["ask"].asString)
+        assertEquals(1, CollectionEngine.act("deleteVer", del.deepCopy().apply { addProperty("confirmed", true) })["writes"].asInt)
+        assertEquals(listOf("Before restoring Version 1"), deck().getAsJsonArray("versions").map { it.asJsonObject["label"].asString })
+        // The game log: the form's result, turn and note (trimmed), tagged with the list's signature.
+        val log = CollectionEngine.act("logGame", JsonObject().apply { addProperty("deck", "m1"); addProperty("result", "Loss"); addProperty("turn", "5"); addProperty("note", "  Stalled on two lands ") })
+        assertEquals("Game saved.", log.getAsJsonArray("toasts")[0].asJsonObject["text"].asString)
+        val note = saved().getAsJsonArray("notes")[0].asJsonObject
+        assertEquals("Loss", note["result"].asString); assertEquals(5, note["turn"].asInt); assertEquals("Stalled on two lands", note["note"].asString); assertEquals("m1", note["deckId"].asString)
+        assertTrue(note["date"].asString, Regex("""\d{1,2}/\d{1,2}/\d{4}""").matches(note["date"].asString))
+        // No turn: null, as the site keeps it.
+        CollectionEngine.act("logGame", JsonObject().apply { addProperty("deck", "m1"); addProperty("result", "Learning"); addProperty("turn", ""); addProperty("note", "") })
+        assertTrue(saved().getAsJsonArray("notes")[1].asJsonObject["turn"].isJsonNull)
+        assertEquals(1, CollectionEngine.act("deleteNote", JsonObject().apply { addProperty("id", note["id"].asString) })["writes"].asInt)
+        assertEquals(listOf("Learning"), saved().getAsJsonArray("notes").map { it.asJsonObject["result"].asString })
+    }
+
+    /**
+     * A deck's share sheet and link: Magic's (views.js shareSheet, app.js A.shareMake: the creator and note saved first) and a
+     * Yu-Gi-Oh! deck's (tcg.js A.tShare). The link's payload is share.js's; shareCode deflates it as the browser does, and it reads back.
+     */
+    @Test fun shareLinks() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        val fx = JsonParser.parseString(javaClass.getResource("/tcg-collection/fixture.json")!!.readText()).asJsonObject["workspace"].asJsonObject.deepCopy().apply {
+            add("decks", JsonParser.parseString("""[{"id":"m1","name":"Burn","format":"Modern","budget":40,"cards":[{"name":"Lightning Bolt","qty":4},{"name":"Mountain","qty":20}]}]"""))
+        }
+        CollectionEngine.load(fx, null)
+        fun inflate(code: String): String {
+            assertTrue(code, code.startsWith("z."))
+            val inf = java.util.zip.Inflater(true); inf.setInput(java.util.Base64.getUrlDecoder().decode(code.drop(2)))
+            val out = java.io.ByteArrayOutputStream(); val buf = ByteArray(4096)
+            while (!inf.finished()) { val n = inf.inflate(buf); if (n == 0 && inf.needsInput()) break; out.write(buf, 0, n) }
+            return out.toString(Charsets.UTF_8.name())
+        }
+        suspend fun open(deck: String, game: String, link: String = ""): JsonObject {
+            val r = CollectionEngine.act("shareOpen", JsonObject().apply { addProperty("deck", deck); addProperty("game", game); addProperty("link", link) })
+            assertTrue(r.toString(), r["error"] == null); assertEquals(0, r["writes"].asInt)
+            return JsonParser.parseString(r["made"].asString).asJsonObject
+        }
+        val first = open("m1", "mtg")
+        val sheet = first["sheet"].asJsonObject
+        assertEquals("Share this deck", sheet["title"].asString)
+        assertEquals("Create link", sheet["make"].asString)
+        assertEquals("", sheet["link"].asString)
+        assertEquals(listOf("shareAuthor", "shareAbout"), sheet["fields"].asJsonArray.map { it.asJsonObject["id"].asString })
+        assertEquals(listOf("Shown as creator", "About this deck"), sheet["fields"].asJsonArray.map { it.asJsonObject["label"].asString })
+        assertEquals("(optional)", sheet["fields"].asJsonArray[1].asJsonObject["small"].asString)
+        assertEquals("What’s shared:", sheet["note"].asJsonArray[0].asJsonObject["t"].asString)
+        // Create link: the creator and the note saved as typed (trimmed), then they travel in the link.
+        val made = CollectionEngine.act("shareMake", JsonObject().apply { addProperty("deck", "m1"); addProperty("author", "  Randall "); addProperty("about", "Fast burn.\nKeep 2 lands.") })
+        assertEquals(1, made["writes"].asInt)
+        val saved = JsonParser.parseString(CollectionEngine.saved()).asJsonObject
+        assertEquals("Randall", saved.getAsJsonObject("settings")["authorName"].asString)
+        assertEquals("Fast burn.\nKeep 2 lands.", saved.getAsJsonArray("decks")[0].asJsonObject["about"].asString)
+        val payload = open("m1", "mtg")["payload"].asString
+        // share.js clean(): control characters (the note's line break) travel as spaces.
+        assertEquals("""{"v":1,"n":"Burn","c":"","f":"Modern","s":"","b":40,"a":"Randall","d":"Fast burn. Keep 2 lands.","l":[["Lightning Bolt",4],["Mountain",20]]}""", payload)
+        val link = dev.cardstashy.nativeplay.ui.CollectionWrites.SHARE_BASE + dev.cardstashy.nativeplay.ui.CollectionWrites.shareCode(payload)
+        assertEquals(payload, inflate(link.substringAfter("#shared/")))
+        val shown = open("m1", "mtg", link)["sheet"].asJsonObject
+        assertEquals("Update link", shown["make"].asString); assertEquals(link, shown["link"].asString)
+        assertEquals(listOf("shareCopy" to "Copy link", "shareNative" to "Share…", "preview" to "Preview"), shown["actions"].asJsonArray.map { it.asJsonObject["act"].asString to it.asJsonObject["label"].asString })
+        assertEquals("${link.length} characters. The link holds the list itself, so changes you make later need a new link.", shown["foot"].asString)
+        assertEquals("Randall", shown["fields"].asJsonArray[0].asJsonObject["value"].asString)
+        assertEquals("Fast burn.\nKeep 2 lands.", shown["fields"].asJsonArray[1].asJsonObject["value"].asString)
+        // A Yu-Gi-Oh! deck: tcg.js A.tShare's sheet, the deck by card id per zone.
+        val ygoId = fx.getAsJsonObject("tcg").getAsJsonObject("ygo").getAsJsonArray("decks")[0].asJsonObject["id"].asString
+        val y = open(ygoId, "ygo")
+        val yp = JsonParser.parseString(y["payload"].asString).asJsonObject
+        assertEquals(2, yp["v"].asInt); assertEquals("ygo", yp["g"].asString); assertEquals("Dark Magician", yp["n"].asString); assertEquals("Randall", yp["a"].asString)
+        val ylink = dev.cardstashy.nativeplay.ui.CollectionWrites.SHARE_BASE + dev.cardstashy.nativeplay.ui.CollectionWrites.shareCode(y["payload"].asString)
+        val ys = open(ygoId, "ygo", ylink)["sheet"].asJsonObject
+        assertEquals("Share this deck", ys["title"].asString); assertEquals("", ys["make"].asString); assertEquals(ylink, ys["link"].asString)
+        assertEquals("Anyone with the link sees the full list with card art, and how much of it they own. Your collection is never included.", ys["intro"].asString)
+        assertEquals(listOf("tShareCopy", "tShareNative", "preview"), ys["actions"].asJsonArray.map { it.asJsonObject["act"].asString })
+        assertEquals("Link copied.", ys["copied"].asString)
+        assertEquals(y["payload"].asString, inflate(ylink.substringAfter("#shared/")))
+    }
+
     /** app.js A.deckMenu's sheet and its saving actions: Edit deck, Assembled, Save a version, Duplicate, Delete (asked first). */
     @Test fun deckMenu() = runBlocking {
         assumeTrue(bundle.isFile)

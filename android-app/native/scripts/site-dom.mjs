@@ -50,7 +50,12 @@ export class Element {
   get open() { return this._flag('open'); } set open(v) { this._setFlag('open', v); }
   get disabled() { return this._flag('disabled'); } set disabled(v) { this._setFlag('disabled', v); }
   get checked() { return this._flag('checked'); } set checked(v) { this._setFlag('checked', v); }
-  get value() { return this._value ?? this.getAttribute('value') ?? (this.localName === 'textarea' || this.localName === 'select' ? this.textContent : ''); }
+  // A select's value is its chosen option's (the one marked selected, else the first); an option's its value or its words.
+  get value() {
+    if (this._value !== undefined) return this._value;
+    if (this.localName === 'select') { const os = this.querySelectorAll('option'); const o = os.find(x => x.hasAttribute('selected')) || os[0]; return o ? o.value : ''; }
+    return this.getAttribute('value') ?? (this.localName === 'textarea' || this.localName === 'option' ? this.textContent : '');
+  }
   set value(v) { this._value = String(v); }
   get id() { return this.getAttribute('id') || ''; } set id(v) { this.setAttribute('id', v); }
   get className() { return this.getAttribute('class') || ''; } set className(v) { this.setAttribute('class', v); }

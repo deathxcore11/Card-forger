@@ -40,6 +40,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -337,6 +339,10 @@ private fun margins(n: SiteNode, ctx: Ctx): Pair<Float, Float> = when {
     n.has("rules-ask-intro") -> 0f to 14f
     n.tag == "ul" || n.tag == "ol" -> 15f to 15f
     n.has("btn") && n.has("block") -> 10f to 0f
+    // .grid2 10 above and under; .actions 10 above; .log-form and .life-grid 8 above and under.
+    n.has("grid2") -> 10f to 10f
+    n.has("actions") -> 10f to 0f
+    n.has("log-form") || n.has("life-grid") -> 8f to 8f
     else -> 0f to 0f
 }
 
@@ -356,8 +362,18 @@ private fun Element(n: SiteNode, ui: SiteUi, ctx: Ctx) {
         n.has("wc-tool") -> ChestTool(n, ui, mark)
         n.has("hand-card") -> HandCard(n, ui, mark)
         n.has("mini-row") -> MiniRow(n, ui, ctx, mark)
+        n.has("note-row") -> NoteRow(n, ui, ctx, mark)
+        n.has("life-card") -> LifeCard(n, ui, ctx, mark)
         n.tag == "button" || n.tag == "a" -> SiteButton(n, ui, ctx, mark)
         n.tag == "input" -> SiteInput(n, ui, mark)
+        n.tag == "select" -> SiteSelect(n, ui, mark)
+        // A <label> round its field (style.css label: a grid, 4 apart; its words 12.5, 600, muted).
+        n.tag == "label" && n.elements.any { it.tag == "select" || it.tag == "input" } -> Column(mark.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            n.kids.filter { isInline(it, false) }.takeIf { l -> l.any { !(it is String && it.isBlank()) } }?.let { Paragraph(it, ui, inner.size(12.5f).color(Site.Muted).weight(600)) }
+            n.elements.filter { it.tag == "select" || it.tag == "input" }.forEach { Element(it, ui, inner) }
+        }
+        // A line with the curve's legend swatches in it (.key, .key.old).
+        n.tag == "p" && n.elements.any { it.has("key") } -> KeyLegend(n, textCtx(n, ctx).under(n), mark)
         n.tag == "label" && n.has("learn-search") -> Column(mark.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             n.kids.filter { isInline(it, false) }.takeIf { l -> l.any { !(it is String && it.isBlank()) } }?.let { Paragraph(it, ui, inner.size(13.6f).color(Site.Muted)) }
             n.elements.filter { it.tag == "input" }.forEach { SiteInput(it, ui) }
@@ -388,6 +404,9 @@ private fun textCtx(n: SiteNode, ctx: Ctx): Ctx {
     }
     // .eyebrow: 11, 700, .12em apart, uppercase, muted.
     if (n.has("eyebrow")) c = c.copy(style = c.style.copy(fontSize = 11.sp, lineHeight = (11 * c.line).sp, letterSpacing = 1.32.sp, color = Site.Muted, fontWeight = FontWeight(700)), upper = true)
+    // .eyebrow.up good, .eyebrow.down bad (Versions' In and Out).
+    if (n.has("eyebrow") && n.has("up")) c = c.color(Good)
+    if (n.has("eyebrow") && n.has("down")) c = c.color(Bad)
     // .pwp-card h3: .7rem, .16em apart, upper case, gold, 700. .pwp-card small and .pwp-text: .76rem muted. .pwp-eyebrow: .64rem,
     // .16em, upper case, gold, 700. .pwp-tier: 700 1.5rem (see pwpDisplay). .pwp-plan .88rem muted; .pwp-foot .7rem muted.
     // .pwp-match b .95rem. .pwp-pc h4: .68rem, .12em, upper case, good under Strong against (.pwp-pro), bad under Weak against.
@@ -502,6 +521,21 @@ private fun Container(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
         n.has("meter") && n.has("two") -> MeterTwo(n, ui, inner, mark)
         n.has("meta-match") -> Column(mark.fillMaxWidth()) { Blocks(n.kids, ui, inner, padded = true, gap = 6f) }
         n.has("list") && n.has("compact") -> Column(mark.fillMaxWidth()) { shown.filterIsInstance<SiteNode>().forEach { Element(it, ui, inner) } }
+        // .grid2: two columns, 10 apart. .diff: two columns, 14 apart (one at 520 and under).
+        n.has("grid2") || n.has("diff") -> {
+            val cols = if (n.has("diff") && ui.screen <= 520.dp) 1 else 2
+            val gap = if (n.has("diff")) 14.dp else 10.dp
+            Column(mark.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(gap)) {
+                shown.filterIsInstance<SiteNode>().chunked(cols).forEach { line ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(gap)) {
+                        line.forEach { k -> Column(Modifier.weight(1f)) { if (k.tag == "div") Blocks(k.kids, ui, inner.under(k), padded = false) else Element(k, ui, inner) } }
+                        repeat(cols - line.size) { Spacer(Modifier.weight(1f)) }
+                    }
+                }
+            }
+        }
+        n.has("log-form") -> LogForm(n, ui, inner, mark)
+        n.has("life-grid") -> LifeGrid(n, ui, inner, mark)
         // .hand: cards in columns at least 96 wide (120 from 600), 6 apart.
         n.has("hand") -> BoxWithConstraints(mark.fillMaxWidth()) {
             val min = if (ui.screen >= 600.dp) 120.dp else 96.dp
@@ -539,6 +573,8 @@ private fun Container(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
                     // heading keeps its margins (a flex item's don't collapse): .panel .row h3's 8 under it.
                     when {
                         k is SiteNode && (k.tag == "button" || k.tag == "a" || k.tag == "input") -> Element(k, ui, inner)
+                        // A span.chip (the game log's 1W · 0L): its pill.
+                        k is SiteNode && k.tag == "span" && k.has("chip") -> SiteChip(k)
                         // .pw-sim b: 1.05rem, tabular, in the check's colour.
                         k is SiteNode && k.tag == "b" && ctx.parentHas("pw-sim") -> Text(k.text(), style = cssType(16.8f, 700, 24.4f, simInk(ctx.parent!!)).copy(fontFeatureSettings = "tnum"))
                         k is SiteNode && k.tag.length == 2 && k.tag[0] == 'h' -> margins(k, inner).let { (t, b) -> Box(Modifier.padding(top = t.dp, bottom = b.dp)) { Element(k, ui, inner) } }
@@ -550,6 +586,7 @@ private fun Container(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
                 shown.forEach { k ->
                     when {
                         k is SiteNode && k.tag == "p" -> Box(Modifier.fillMaxWidth()) { Paragraph(k.kids, ui, textCtx(k, inner).under(k)) }
+                        k is SiteNode && k.tag == "span" && k.has("chip") -> SiteChip(k)
                         k is SiteNode && !isInline(k, false) -> Element(k, ui, inner)
                         k is SiteNode && k.tag == "a" -> SiteButton(k, ui, inner)
                         else -> Box { Paragraph(listOf(k), ui, inner) }
@@ -795,7 +832,7 @@ private fun SiteButton(n: SiteNode, ui: SiteUi, ctx: Ctx, modifier0: Modifier = 
             val ink = if (n.has("danger")) Bad else if (ghost) Site.Text else Site.GoldInk
             Box(modifier.alpha(if (disabled) .45f else 1f).heightIn(min = if (small) 34.dp else 44.dp).clip(shape).background(if (ghost) Site.Surface2 else Site.Gold)
                 .then(if (ghost) Modifier.border(1.dp, Site.Line, shape) else Modifier).clickable(enabled = !disabled) { tap() }
-                .semantics { role = Role.Button }.padding(horizontal = if (small) 12.dp else 16.dp, vertical = 6.dp), contentAlignment = Alignment.Center) {
+                .semantics { role = Role.Button; n["aria-label"]?.let { contentDescription = it } }.padding(horizontal = if (small) 12.dp else 16.dp, vertical = 6.dp), contentAlignment = Alignment.Center) {
                 Text(label, style = cssType(if (small) 13.5f else 15f, 700, if (small) 19.6f else 21.75f, ink), textAlign = TextAlign.Center)
             }
         }
@@ -804,7 +841,7 @@ private fun SiteButton(n: SiteNode, ui: SiteUi, ctx: Ctx, modifier0: Modifier = 
             val shape = RoundedCornerShape(if (rail) 10.dp else 999.dp)
             val size = when { rail || ctx.parentHas("learn-book-filters") -> 12.16f; n.has("pick") -> 13f; else -> 12f }
             Box(modifier.heightIn(min = if (rail) 44.dp else if (ctx.rules) 40.dp else 0.dp).clip(shape).background(if (on) Site.Gold else Site.Surface2)
-                .border(1.dp, if (on) Site.Gold else Site.Line, shape).clickable(enabled = !disabled) { tap() }.semantics { role = Role.Button }
+                .border(1.dp, if (on) Site.Gold else Site.Line, shape).clickable(enabled = !disabled) { tap() }.semantics { role = Role.Button; n["aria-label"]?.let { contentDescription = it } }
                 .padding(horizontal = if (rail) 10.dp else if (n.has("pick")) 12.dp else 9.dp, vertical = if (rail) 8.dp else if (n.has("pick")) 7.dp else 3.dp),
                 contentAlignment = Alignment.CenterStart) {
                 Text(label, style = cssType(size, 700, size * 1.45f, if (on) Site.GoldInk else Site.Text))
@@ -816,8 +853,8 @@ private fun SiteButton(n: SiteNode, ui: SiteUi, ctx: Ctx, modifier0: Modifier = 
             // .link: gold words, 600 (.small 13); .rule-source-action wraps at 1.6. A plain <a>: the link colour, underlined (the glass's 12, --accent).
             val plain = n.tag == "a" && !n.has("link")
             val size = if (plain && ctx.glass) 12f else if (n.has("small")) 13f else ctx.px
-            val color = if (plain && ctx.glass) (accent ?: Site.Text) else Site.Gold
-            Box(modifier.clip(RoundedCornerShape(4.dp)).clickable(enabled = !disabled) { tap() }.semantics { role = Role.Button }.padding(vertical = if (plain) 0.dp else 4.dp)) {
+            val color = if (plain && ctx.glass) (accent ?: Site.Text) else if (n.has("danger")) Bad else Site.Gold
+            Box(modifier.clip(RoundedCornerShape(4.dp)).clickable(enabled = !disabled) { tap() }.semantics { role = Role.Button; n["aria-label"]?.let { contentDescription = it } }.padding(vertical = if (plain) 0.dp else 4.dp)) {
                 Text(label, style = cssType(size, if (plain) 400 else 600, size * (if (n.has("rule-source-action")) 1.6f else 1.45f), color)
                     .let { if (plain) it.copy(textDecoration = TextDecoration.Underline) else it })
             }
@@ -829,7 +866,18 @@ private fun SiteButton(n: SiteNode, ui: SiteUi, ctx: Ctx, modifier0: Modifier = 
 @Composable
 private fun SiteInput(n: SiteNode, ui: SiteUi, modifier: Modifier = Modifier) {
     var text by remember(n.id) { mutableStateOf(n.value ?: n["value"].orEmpty()) }
-    FormInput(text, { text = it; ui.type(n.id, it) }, cssType(15f, 400, 21.75f, Site.Text), n["placeholder"].orEmpty(), modifier, desc = n["aria-label"].orEmpty())
+    FormInput(text, { text = it; ui.type(n.id, it) }, cssType(15f, 400, 21.75f, Site.Text), n["placeholder"].orEmpty(), modifier, desc = n["aria-label"].orEmpty(),
+        keyboard = if (n["type"] == "number") androidx.compose.ui.text.input.KeyboardType.Number else androidx.compose.ui.text.input.KeyboardType.Text)
+}
+
+/** A <select>: glass-select.js's field with the chosen option (wrapping as the site's does); a pick goes to its change listener. */
+@Composable
+private fun SiteSelect(n: SiteNode, ui: SiteUi, modifier: Modifier = Modifier) {
+    val opts = n.elements.filter { it.tag == "option" }.map { (it["value"] ?: it.text()) to it.text() }
+    var picked by remember(n.id) { mutableStateOf(n.value ?: n.elements.firstOrNull { it.tag == "option" && "selected" in it.attrs }?.let { it["value"] ?: it.text() } ?: opts.firstOrNull()?.first.orEmpty()) }
+    Box(modifier.fillMaxWidth()) {
+        FormSelect(opts, picked, cssType(15f, 400, 21.75f, Site.Text), desc = n["aria-label"].orEmpty(), wrap = true) { v -> picked = v; ui.type(n.id, v) }
+    }
 }
 
 // ---------------------------------------------------------------- words
@@ -840,13 +888,14 @@ private fun SiteInput(n: SiteNode, ui: SiteUi, modifier: Modifier = Modifier) {
  * single spaces as HTML folds it, except in pre-wrap text (.rule-source-text).
  */
 @Composable
-private fun Paragraph(kids: List<Any>, ui: SiteUi, ctx: Ctx, modifier: Modifier = Modifier, center: Boolean = false, fill: Boolean = true) {
+private fun Paragraph(kids: List<Any>, ui: SiteUi, ctx: Ctx, modifier: Modifier = Modifier, center: Boolean = false, fill: Boolean = true, oneLine: Boolean = false) {
     val spot = remember { LinkSpot() }
     val s = remember(kids, ctx) { buildAnnotatedString { fold(this, kids, ui, ctx, spot) } }
     val shown = if (ctx.pre) s else s.trimEnd()
     if (shown.text.isBlank()) return
     Text(shown, (if (fill) modifier.fillMaxWidth() else modifier).onGloballyPositioned { spot.coords = it }, style = ctx.style, textAlign = if (center) TextAlign.Center else TextAlign.Start,
-        onTextLayout = { spot.layout = it })
+        onTextLayout = { spot.layout = it }, maxLines = if (oneLine) 1 else Int.MAX_VALUE,
+        overflow = if (oneLine) androidx.compose.ui.text.style.TextOverflow.Ellipsis else androidx.compose.ui.text.style.TextOverflow.Clip, softWrap = !oneLine)
 }
 /** Where a paragraph's words sit, so a tapped link's box (its getBoundingClientRect) is known. */
 private class LinkSpot {
@@ -1697,19 +1746,177 @@ private fun MeterTwo(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
     }
 }
 
-/** button.mini-row: its words (one line, cut with …) and its figure apart, 10 between; 9 / 2 in, a line under all but the last; 14. */
+/**
+ * .mini-row: its words (.ellip: one line, cut with … as the site cuts it) and its figure or its links apart, 10 between; 9 / 2 in,
+ * a line under all but the last; 14. A button row opens as a whole; a div row's .row of links (Restore, ✕) each tap on their own, 8 apart.
+ */
 @Composable
 private fun MiniRow(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
     val last = ctx.parent?.elements?.lastOrNull { !it.hidden } === n
     val line = Site.Line
-    Row(mark.fillMaxWidth().clickable { ui.tap(n.id) }.semantics { role = Role.Button }.drawBehind {
+    val inner = ctx.under(n).size(14f)
+    val whole = n.tag == "button"
+    Row(mark.fillMaxWidth().then(if (whole) Modifier.clickable { ui.tap(n.id) }.semantics { role = Role.Button } else Modifier).drawBehind {
         if (!last) drawLine(line, Offset(0f, size.height - .5.dp.toPx()), Offset(size.width, size.height - .5.dp.toPx()), 1.dp.toPx()) }.padding(horizontal = 2.dp, vertical = 9.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         n.elements.filter { !it.hidden }.forEach { k ->
-            if (k.has("ellip")) Text(k.text(), Modifier.weight(1f), style = cssType(14f, 400, 20.3f, Site.Text), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            else Text(k.text(), style = cssType(if (k.has("small")) 13f else 14f, 400, 18.85f, Site.Text), maxLines = 1)
+            when {
+                k.has("ellip") -> Paragraph(k.kids, ui, textCtx(k, inner).under(k), Modifier.weight(1f), oneLine = true)
+                k.has("row") -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    k.elements.filter { !it.hidden }.forEach { b -> SiteButton(b, ui, inner.under(k)) } }
+                // .mini-row > span:last-child: its own width, never shrinking.
+                else -> Paragraph(listOf(k), ui, inner, fill = false, oneLine = true)
+            }
         }
     }
+}
+
+/** .note-row: a game's result chip, its date and note (one line, cut with …, 13) and its ✕, 8 apart; 8 / 0 in, a line above. */
+@Composable
+private fun NoteRow(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
+    val line = Site.Line
+    val inner = ctx.under(n)
+    Row(mark.fillMaxWidth().drawBehind { drawLine(line, Offset.Zero, Offset(size.width, 0f), 1.dp.toPx()) }.padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        n.elements.filter { !it.hidden }.forEach { k ->
+            when {
+                k.has("chip") && k.tag == "span" -> SiteChip(k)
+                k.has("ellip") -> Paragraph(k.kids, ui, textCtx(k, inner).under(k), Modifier.weight(1f), oneLine = true)
+                else -> Element(k, ui, inner)
+            }
+        }
+    }
+}
+
+/** A line with the curve's legend in it: each .key a 10 square (corners 3; gold, .old #5b6170), 8 before it (not .old) and 2 after, on the words' middle. */
+@Composable
+private fun KeyLegend(n: SiteNode, ctx: Ctx, mark: Modifier) {
+    val gold = Site.Gold
+    Row(mark.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        var lead = true
+        n.kids.forEach { k ->
+            if (k is SiteNode && k.has("key")) {
+                Box(Modifier.padding(start = if (k.has("old")) 0.dp else 8.dp, end = 2.dp).size(10.dp).clip(RoundedCornerShape(3.dp)).background(if (k.has("old")) Color(0xFF5B6170) else gold))
+                lead = false
+            } else {
+                val t = (if (k is SiteNode) k.text() else k as String).replace(Regex("\\s+"), " ").let { if (lead) it.trimStart() else it }
+                if (t.isNotEmpty()) Text(t, style = ctx.style)
+            }
+        }
+    }
+}
+
+/** .log-form: a grid of 1fr and 74, 8 apart: the result and the turn, then the note and Save each across the whole row. */
+@Composable
+private fun LogForm(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
+    val items = n.elements.filter { !it.hidden }
+    val wide = { k: SiteNode -> (k.tag == "input" && k["id"] == "logNote") || k.has("btn") }
+    Column(mark.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        var i = 0
+        while (i < items.size) {
+            val k = items[i]
+            if (wide(k)) { if (k.tag == "button") SiteButton(k, ui, ctx, Modifier.fillMaxWidth()) else Element(k, ui, ctx); i++; continue }
+            val next = items.getOrNull(i + 1)?.takeIf { !wide(it) }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) { Element(k, ui, ctx) }
+                Box(Modifier.width(74.dp)) { next?.let { Element(it, ui, ctx) } }
+            }
+            i += if (next != null) 2 else 1
+        }
+    }
+}
+
+/** .life-grid: two columns, 8 apart (three for 3 and 6 players from 900); with 3 or 5 players the first takes the whole row. */
+@Composable
+private fun LifeGrid(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
+    val cards = n.elements.filter { !it.hidden }
+    val three = ui.screen >= 900.dp && (n.has("n3") || n.has("n6"))
+    val cols = if (three) 3 else 2
+    val lead = !three && (n.has("n3") || n.has("n5"))
+    val lines = (if (lead) listOf(cards.take(1)) else emptyList()) + cards.drop(if (lead) 1 else 0).chunked(cols)
+    Column(mark.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        lines.forEachIndexed { i, line ->
+            if (lead && i == 0) Element(line[0], ui, ctx)
+            else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                line.forEach { Box(Modifier.weight(1f)) { Element(it, ui, ctx) } }
+                repeat(cols - line.size) { Spacer(Modifier.weight(1f)) }
+            }
+        }
+    }
+}
+
+/**
+ * .life-card: surface-2, corners 14, its line (gold at 55 % for .me), 10 / 6 in, centred (.out at 50 %, its Out chip 8 from the top
+ * right): the player's name (an input with no box, 700 muted, 44 tall), the life (800 40 Manrope over its four steps, 3 apart),
+ * then ⚔ and ☠ with their steps (13 muted, spaced around).
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun LifeCard(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
+    val shape = RoundedCornerShape(14.dp)
+    val name = n.elements.firstOrNull { it.has("life-name") }
+    val main = n.elements.firstOrNull { it.has("life-main") }
+    val sub = n.elements.firstOrNull { it.has("life-sub") }
+    val out = n.elements.firstOrNull { it.has("life-out") }
+    Box(mark.fillMaxWidth().alpha(if (n.has("out")) .5f else 1f).clip(shape).background(Site.Surface2).border(1.dp, if (n.has("me")) Color(0x8CE8B95B) else Site.Line, shape)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            name?.let { LifeName(it, ui) }
+            main?.let { m ->
+                Column(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    m.elements.firstOrNull { it.has("life-total") }?.let {
+                        Text(it.text(), Modifier.padding(top = 2.dp, bottom = 6.dp), style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight(800), fontSize = 40.sp,
+                            lineHeight = 40.sp, color = Site.Text, fontFeatureSettings = "tnum", textAlign = TextAlign.Center))
+                    }
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        m.elements.filter { it.tag == "button" }.forEach { LifeStep(it, ui, 32.dp, 36.dp, 15f) }
+                    }
+                }
+            }
+            sub?.let { su ->
+                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    su.elements.filter { it.tag == "span" }.forEach { sp ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            sp.kids.forEach { k ->
+                                when {
+                                    k is String -> k.trim().takeIf { it.isNotEmpty() }?.let { Text(it + "\uFE0E", style = cssType(13f, 400, 18.85f, Site.Muted)) }
+                                    k is SiteNode && k.tag == "button" -> LifeStep(k, ui, 28.dp, 28.dp, 13f)
+                                    k is SiteNode && k.tag == "b" -> Text(k.text(), Modifier.widthIn(min = 16.dp), style = cssType(13f, 700, 18.85f, if (k.has("warn-text")) Warn else Site.Text)
+                                        .copy(fontFeatureSettings = "tnum"), textAlign = TextAlign.Center)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        out?.let { Box(Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 8.dp)) { SiteChip(it) } }
+    }
+}
+
+/** .life-card button: at least [w] wide, [h] tall, corners 10, its line, on surface, 700 (gold under the finger). */
+@Composable
+private fun LifeStep(n: SiteNode, ui: SiteUi, w: Dp, h: Dp, size: Float) {
+    val shape = RoundedCornerShape(10.dp)
+    val press = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val down by press.collectIsPressedAsState()
+    Box(Modifier.widthIn(min = w).height(h).clip(shape).background(if (down) Site.Gold else Site.Surface).border(1.dp, Site.Line, shape)
+        .clickable(press, null) { ui.tap(n.id) }.semantics { role = Role.Button; contentDescription = n["aria-label"].orEmpty() }.padding(horizontal = 4.dp),
+        contentAlignment = Alignment.Center) {
+        Text(n.text(), style = cssType(size, 700, size * 1.15f, if (down) Site.GoldInk else Site.Text), maxLines = 1)
+    }
+}
+
+/** input.life-name: the player's name, centred, 700, muted, no box (surface while typing in it), 2 in, 44 tall; each letter to C.lifeName. */
+@Composable
+private fun LifeName(n: SiteNode, ui: SiteUi) {
+    var text by remember(n.id) { mutableStateOf(n.value ?: n["value"].orEmpty()) }
+    var focused by remember { mutableStateOf(false) }
+    androidx.compose.foundation.text.BasicTextField(text, { v -> val t = v.take(24); text = t; ui.type(n.id, t) },
+        Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused }.semantics { contentDescription = n["aria-label"].orEmpty() },
+        singleLine = true, textStyle = cssType(15f, 700, 21.75f, if (focused) Site.Text else Site.Muted).copy(textAlign = TextAlign.Center),
+        cursorBrush = androidx.compose.ui.graphics.SolidColor(Site.Gold),
+        decorationBox = { inner -> Box(Modifier.fillMaxWidth().heightIn(min = 44.dp).clip(RoundedCornerShape(6.dp)).background(if (focused) Site.Surface else Color.Transparent)
+            .padding(2.dp), contentAlignment = Alignment.Center) { inner() } })
 }
 
 /**
@@ -1723,12 +1930,20 @@ private fun MetricsTable(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
     val rows = n.find { it.tag == "tbody" }?.elements?.filter { it.tag == "tr" && !it.hidden }.orEmpty()
     val th = cssType(11f, 700, 15.95f, Site.Muted, track = .88f)
     val td = cssType(13.5f, 400, 19.6f, Site.Text)
+    // A figure cell's look: .up good 700, .down bad 700, .muted muted, its <b> bold.
+    fun cell(c: SiteNode): TextStyle = when {
+        c.has("up") -> td.copy(color = Good, fontWeight = FontWeight.Bold)
+        c.has("down") -> td.copy(color = Bad, fontWeight = FontWeight.Bold)
+        c.has("muted") -> td.copy(color = Site.Muted)
+        c.elements.any { it.tag == "b" || it.tag == "strong" } -> td.copy(fontWeight = FontWeight.Bold)
+        else -> td
+    }
     val measure = androidx.compose.ui.text.rememberTextMeasurer()
     val density = androidx.compose.ui.platform.LocalDensity.current
     val cols = maxOf(head.size, rows.maxOfOrNull { r -> r.elements.count { it.tag == "td" } } ?: 0)
     // An auto table: each figure column as wide as its widest cell, the first takes the rest.
     val widths = (1 until cols).map { i ->
-        val texts = listOf(head.getOrNull(i)?.text()?.uppercase() to th) + rows.map { r -> r.elements.filter { it.tag == "td" }.getOrNull(i)?.text() to td }
+        val texts = listOf(head.getOrNull(i)?.text()?.uppercase() to th) + rows.map { r -> r.elements.filter { it.tag == "td" }.getOrNull(i).let { c -> c?.text() to (c?.let { cell(it) } ?: td) } }
         with(density) { (texts.maxOf { (t, st) -> if (t == null) 0 else measure.measure(t, st, maxLines = 1).size.width }.toDp() + 8.dp) }
     }
     val line = Site.Line
@@ -1743,8 +1958,7 @@ private fun MetricsTable(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
             Row(Modifier.fillMaxWidth().drawBehind { drawLine(line, Offset.Zero, Offset(size.width, 0f), 1.dp.toPx()) }, verticalAlignment = Alignment.CenterVertically) {
                 r.elements.filter { it.tag == "td" }.forEachIndexed { i, c ->
                     val m = (if (i == 0) Modifier.weight(1f) else Modifier.width(widths.getOrElse(i - 1) { 48.dp })).padding(horizontal = 4.dp, vertical = 8.dp)
-                    if (c.has("num")) Text(c.text(), m, style = td.let { if (c.has("up")) it.copy(color = Good, fontWeight = FontWeight.Bold) else if (c.has("down")) it.copy(color = Bad, fontWeight = FontWeight.Bold) else it },
-                        textAlign = TextAlign.End, maxLines = 1)
+                    if (c.has("num")) Text(c.text(), m, style = cell(c), textAlign = TextAlign.End, maxLines = 1, softWrap = false)
                     else Column(m) {
                         c.elements.filter { it.tag == "button" || it.tag == "a" }.forEach { b ->
                             Text(b.text(), Modifier.clickable { ui.tap(b.id) }.semantics { role = Role.Button }, style = cssType(13.5f, 600, 19.6f, Site.Gold)) }

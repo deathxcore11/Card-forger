@@ -166,7 +166,7 @@ internal object CollectionWrites {
      * duplicate and a deletion do there.
      */
     data class DeckMenuOpen(val deck: String, val tab: (String) -> Unit, val web: (act: String, scope: String) -> Unit, val openDeck: (String) -> Unit,
-                            val deleted: () -> Unit, val id: Long = System.nanoTime(), val game: String = "mtg")
+                            val deleted: () -> Unit, val id: Long = System.nanoTime(), val game: String = "mtg", val share: () -> Unit = {})
     val menu = MutableStateFlow<DeckMenuOpen?>(null)
     /** The menu's model from this device's collection (CollectionEngine.deckMenu). Null (with a toast) when it can't open. */
     suspend fun deckMenuModel(context: Context, deck: String, game: String = "mtg"): JsonObject? =
@@ -284,6 +284,27 @@ internal object CollectionWrites {
         withCollection(context) { if (game == "mtg") CollectionEngine.importSheet() else CollectionEngine.tImportSheet(game) }
     /** One of the import sheet's own taps, in the engine holding this device's copy (it writes nothing). */
     suspend fun importDo(context: Context, run: suspend () -> JsonObject): JsonObject? = withCollection(context) { run() }
+
+    /** A deck's share sheet (views.js shareSheet; tcg.js A.tShare for the other games). [preview]: opens the link (the shared deck's page). */
+    data class ShareOpen(val deck: String, val game: String = "mtg", val preview: (String) -> Unit = {}, val id: Long = System.nanoTime())
+    val share = MutableStateFlow<ShareOpen?>(null)
+    /** The share sheet's {payload, sheet} (writeActs.shareOpen, which saves nothing), the sheet showing [link]. Null (with a toast) when it can't open. */
+    suspend fun shareModel(context: Context, deck: String, game: String, link: String = ""): JsonObject? {
+        val r = withCollection(context) { CollectionEngine.act("shareOpen", JsonObject().apply { addProperty("deck", deck); addProperty("game", game); addProperty("link", link) }) } ?: return null
+        r["error"]?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }?.let { show(it); return null }
+        return r["made"]?.takeIf { it.isJsonPrimitive }?.asString?.let { runCatching { com.google.gson.JsonParser.parseString(it).asJsonObject }.getOrNull() }
+    }
+    /** location.origin + location.pathname + "#shared/" on the site: where a share link opens. */
+    const val SHARE_BASE = "https://cardstashy.com/#shared/"
+    /** share.js encodeShare as the browser makes it (CompressionStream "deflate-raw"): the payload's UTF-8 deflated, base64url without padding, after "z.". */
+    fun shareCode(payload: String): String {
+        val def = java.util.zip.Deflater(java.util.zip.Deflater.DEFAULT_COMPRESSION, true)
+        def.setInput(payload.toByteArray(Charsets.UTF_8)); def.finish()
+        val out = java.io.ByteArrayOutputStream(); val buf = ByteArray(8192)
+        while (!def.finished()) out.write(buf, 0, def.deflate(buf))
+        def.end()
+        return "z." + java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(out.toByteArray())
+    }
 
     /** app.js closeSheet for the add sheet whose model said [ctx]. */
     fun addClosed(ctx: Int) { bg.launch { CollectionEngine.addClose(ctx) } }

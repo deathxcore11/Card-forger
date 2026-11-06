@@ -128,6 +128,8 @@ fun CollectionWritesHost(backdrop: androidx.compose.ui.graphics.layer.GraphicsLa
     collMenu?.let { m -> key(m.id) { GameAccent("mtg") { CollMenuSheet(m, backdrop, onClose = { if (CollectionWrites.collMenu.value === m) CollectionWrites.collMenu.value = null }) } } }
     val importing by CollectionWrites.importing.collectAsState()
     importing?.let { i -> key(i.id) { GameAccent(i.game) { ImportSheet(i, backdrop, onClose = { if (CollectionWrites.importing.value === i) CollectionWrites.importing.value = null }) } } }
+    val sharing by CollectionWrites.share.collectAsState()
+    sharing?.let { o -> key(o.id) { GameAccent(o.game) { ShareSheet(o, backdrop, onClose = { if (CollectionWrites.share.value === o) CollectionWrites.share.value = null }) } } }
     toast?.let { t -> key(t.id) { SiteToast(t, onUndo = { CollectionWrites.dismiss(t); scope.launch { CollectionWrites.undo(context) } }, onGone = { CollectionWrites.dismiss(t) }) } }
     ask?.let { a -> key(a) { AskDialog(a.question, backdrop, site = a.site, onAnswer = { yes -> CollectionWrites.answer(yes, context, scope) }) } }
     val asking by CollectionWrites.askingText.collectAsState()

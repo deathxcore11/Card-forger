@@ -179,4 +179,12 @@ const intl = typeof globalThis.Intl === 'object' && globalThis.Intl ? globalThis
 globalThis.Intl = Object.assign({}, intl, {NumberFormat, DateTimeFormat, Collator});
 Number.prototype.toLocaleString = function (locales, options) { return new NumberFormat(locales, options).format(this); };
 Date.prototype.toLocaleDateString = function (locales, options) { return dateString(this, options); };
-export {NumberFormat as __NumberFormat, dateString as __dateString, DateTimeFormat as __DateTimeFormat, Collator as __Collator, localeCompare as __localeCompare};
+// Date.prototype.toLocaleString with no options (views.js deckVersions' History): the date, then the 12-hour time with its seconds.
+function dateTimeString(date, options) {
+  if (options && Object.keys(options).length) throw new RangeError('Date toLocaleString options are not supported in the app');
+  if (!Number.isFinite(date.getTime())) return 'Invalid Date';
+  const h = date.getHours(), two = v => String(v).padStart(2, '0');
+  return `${dateString(date)}, ${h % 12 || 12}:${two(date.getMinutes())}:${two(date.getSeconds())} ${h < 12 ? 'AM' : 'PM'}`;
+}
+Date.prototype.toLocaleString = function (locales, options) { return dateTimeString(this, options); };
+export {NumberFormat as __NumberFormat, dateString as __dateString, dateTimeString as __dateTimeString, DateTimeFormat as __DateTimeFormat, Collator as __Collator, localeCompare as __localeCompare};

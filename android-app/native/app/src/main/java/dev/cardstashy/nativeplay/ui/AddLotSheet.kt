@@ -345,13 +345,14 @@ internal fun FormInput(value: String, onValue: (String) -> Unit, style: TextStyl
 /** A <select> as glass-select.js draws it: the chosen option on the glass field and the arrow; a tap opens the list. */
 @Composable
 internal fun FormSelect(options: List<Pair<String, String>>, selected: String, style: TextStyle, minH: Dp = 44.dp, desc: String = "", groups: List<String> = emptyList(),
-                        onPick: (String) -> Unit) {
+                        wrap: Boolean = false, onPick: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Box {
         Row(Modifier.fillMaxWidth().heightIn(min = minH).siteGlassField(11.dp).clip(RoundedCornerShape(11.dp)).clickable { open = true }
             .semantics { if (desc.isNotEmpty()) contentDescription = desc; stateDescription = options.firstOrNull { it.first == selected }?.second.orEmpty() }
             .padding(horizontal = 13.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(options.firstOrNull { it.first == selected }?.second.orEmpty(), Modifier.weight(1f), style = style, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(options.firstOrNull { it.first == selected }?.second.orEmpty(), Modifier.weight(1f), style = style, maxLines = if (wrap) Int.MAX_VALUE else 1,
+                overflow = if (wrap) TextOverflow.Clip else TextOverflow.Ellipsis)
             Box(Modifier.size((style.fontSize.value * .6f).dp, (style.fontSize.value * .52f).dp).drawBehind {
                 drawPath(androidx.compose.ui.graphics.Path().apply { moveTo(0f, 0f); lineTo(size.width, 0f); lineTo(size.width / 2, size.height); close() }, Color(0xFFB4BAC6))
             })

@@ -121,8 +121,8 @@ private fun JsonObject?.chosen() = this?.objs("options")?.let { o -> (o.firstOrN
  * (CollectionEngine.deckMenu). The deck box, kind, name and meta with the close; the four section shortcuts; Edit deck (name,
  * format, budget, focus, the deck box's colour and cover, Save changes); Share and export; Save a version, Duplicate, Refresh;
  * More deck tools (Assembled, then the playtest printing, the bought cards and the re-import); Delete; the list's source. The
- * saves are the site's handlers (CollectionWrites); Share, Copy to Play and the three tools open the website's menu, which
- * does them there.
+ * saves are the site's handlers (CollectionWrites); Share opens the share sheet (CollectionShare); Copy to Play and the three
+ * tools open the website's menu, which does them there.
  */
 @Composable
 internal fun DeckMenuSheet(o: CollectionWrites.DeckMenuOpen, backdrop: GraphicsLayer?, onClose: () -> Unit) {
@@ -207,6 +207,8 @@ internal fun DeckMenuSheet(o: CollectionWrites.DeckMenuOpen, backdrop: GraphicsL
             "tDeckDup" -> save("tDeckDup", data()) { r -> r.s("made").takeIf { it.isNotEmpty() }?.let { id -> onClose(); o.openDeck(id) } }
             // tcg.js A.tDeckDelete: asked first; then the decks.
             "tDeckDelete" -> save("tDeckDelete", data()) { onClose(); o.deleted() }
+            // A.deckShare / tcg.js A.tShare: the share sheet (CollectionShare).
+            "deckShare", "tShare" -> { onClose(); o.share() }
             else -> { onClose(); o.web(act, a.s("scope")) }
         }
     }

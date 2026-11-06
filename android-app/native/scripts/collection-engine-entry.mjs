@@ -59,17 +59,19 @@ import {rollDice} from 'WEB/war-chest.js';
 import {profileOf, simulateMatchup, podProfile, calibratePods} from 'WEB/matchup.js';
 import {fieldStore, calibrateField} from 'WEB/matchups-ui.js';
 import {mtgConstructedPower} from 'WEB/deckpower.js';
-import {podSpeed} from 'WEB/extras.js';
+import {podSpeed, newGame} from 'WEB/extras.js';
 import {formatUpgrades, applyFormatSwap} from 'WEB/format-upgrades.js';
 import {upgradeSuggestions} from 'WEB/strategy.js';
-import {applySwapsToCards} from 'WEB/insights.js';
+import {applySwapsToCards, cardSig} from 'WEB/insights.js';
 import {comparePower} from 'WEB/deck-optimizer.js';
 import {themeQueries} from 'WEB/builder.js';
 import {findCheapestPrinting} from 'WEB/mtg-cheap.js';
 import {commanderTheme} from 'WEB/planner.js';
 import {mtgPower} from 'WEB/power.js';
 import {mtgFieldKey, availability as deckAvailability} from 'WEB/views.js';
-import {commanderEligible, isLand} from 'WEB/core.js';
+import {shareSheet as shareSheetView} from 'WEB/views.js';
+import {sharePayload, sharePayloadTcg} from 'WEB/share.js';
+import {commanderEligible, isLand, drawHand} from 'WEB/core.js';
 import {currentDeck, priceOf} from 'WEB/store.js';
 import '../scripts/web-bytes.mjs';
 import {Document as SiteDocument, serialize as domJson, byId as domById, tap as domTap, type as domType} from '../scripts/site-dom.mjs';
@@ -441,6 +443,27 @@ function tcgImportSheetModel(G) {
   const t = tree(html), area = one(t, tagIs('textarea'));
   return {title: text(one(one(t, cls('sheet-head')), tagIs('h2'))), hint: text(one(t, x => x.tag === 'p' && cls('muted')(x) && x.attrs.id !== 'tImpStatus')),
     placeholder: unent(area?.attrs.placeholder), rows: Number(area?.attrs.rows) || 9, button: text(one(t, x => x.attrs['data-act'] === 'tImpColl'))};
+}
+// A deck's share sheet as data (views.js shareSheet for Magic, tcg.js A.tShare's for the other games): its title, the words under
+// it, the creator and note fields (Magic), the note on what is and isn't shared, the Create / Update link button, and once there is a
+// link: the link (the app's: share.js encodeShare's "z." as the browser makes it), its buttons and the foot. [copied] and [native]:
+// what app.js A.shareCopy / A.shareNative (tcg.js A.tShareCopy / A.tShareNative) say and share.
+function shareModel(html, link, game, name) {
+  const t = tree(html), direct = l => (l?.kids || []).filter(k => k.text !== undefined).map(k => k.text).join('').trim();
+  const raw = n => unent((n?.kids || []).map(k => k.text ?? '').join(''));
+  const fields = all(t, x => x.tag === 'label' && cls('field')(x)).map(l => {
+    const f = one(l, x => x.tag === 'input' || x.tag === 'textarea');
+    return {label: direct(l), small: text(one(l, tagIs('span'))), id: f?.attrs.id || '', value: f?.tag === 'textarea' ? raw(f) : unent(f?.attrs.value),
+      placeholder: unent(f?.attrs.placeholder), max: Number(f?.attrs.maxlength) || 0, rows: Number(f?.attrs.rows) || 0};
+  });
+  const note = one(t, cls('note')), box = one(t, cls('share-link')), parts = [];
+  for (const k of note?.kids || []) { if (k.text !== undefined) parts.push({t: unent(k.text)}); else if (k.tag === 'br') parts.push({br: true}); else parts.push({t: text(k), b: k.tag === 'b'}); }
+  const mtg = game === 'mtg';
+  return {title: text(one(one(t, cls('sheet-head')), tagIs('h2'))), intro: text(one(t, x => x.tag === 'p' && cls('muted')(x))), fields, note: parts,
+    make: text(one(t, x => x.attrs['data-act'] === 'shareMake')), link: box ? link : '',
+    actions: box ? all(one(box, cls('actions')), x => x.tag === 'button' || x.tag === 'a').map(b => ({act: b.attrs['data-act'] || (b.tag === 'a' ? 'preview' : ''), label: text(b), ghost: cls('ghost')(b)})) : [],
+    foot: text(one(box, cls('foot'))), copied: mtg ? "Link copied — paste it anywhere." : "Link copied.",
+    native: mtg ? {title: name || "CardStashy deck", text: "Check out my deck on CardStashy"} : {title: name || "Deck", text: ""}};
 }
 // app.js's handlers for the Cards tab's controls (C.collSort, C.collDirection, C.collFilter, I.collSearch, A.collMore), verbatim
 // but for the redraw, which is the app's.
@@ -2167,6 +2190,65 @@ const writeActs = {
     await edit((y) => withSnapshot(y, d.label || "Snapshot"));
     toasts.push({text: (deckOf(d.deck)?.versions || []).length > before ? "Version saved." : "No changes since the last version.", undo: false});
   },
+  // app.js A.restoreVer (7222): asked first; the current list saved as a version, then the version's lists.
+  async restoreVer(d) {
+    const x = deckOf(d.deck), edit = editDeckOf(x?.id), v = (x?.versions || []).find((y) => y.id === d.id);
+    if (!v || !ask(`Restore “${v.label}”? Your current list is saved as a version first.`, d.confirmed)) return;
+    await edit((y) => ({ ...withSnapshot(y, "Before restoring " + v.label), cards: structuredClone(v.cards), side: structuredClone(v.side || []) }), { msg: "Version restored." });
+  },
+  // app.js A.deleteVer (7229).
+  async deleteVer(d) {
+    const x = deckOf(d.deck), edit = editDeckOf(x?.id);
+    if (!ask("Delete this saved version?", d.confirmed)) return;
+    await edit((y) => ({ ...y, versions: (y.versions || []).filter((v) => v.id !== d.id) }));
+  },
+  // app.js A.logGame (7254): the War Chest's Log a game, its result, turn and note as the panel had them.
+  async logGame(d) {
+    const x = deckOf(d.deck); if (!x) return;
+    const note = { id: uid(), deckId: x.id, sig: cardSig(x.cards), date: new Date().toLocaleDateString(), author: "", table: "", result: String(d.result ?? ''), turn: Number(d.turn) || null, note: String(d.note ?? '').trim().slice(0, 1000) };
+    await commit((s) => s.notes.push(note), { msg: "Game saved." });
+  },
+  // app.js A.lifeLog (7292): the life tracker's game, logged against the open deck; the tracker closes.
+  async lifeLog(d) {
+    const x = deckOf(d.deck), g = S.ui.life;
+    if (!x || !g) return;
+    const opp = g.players.slice(1).map((p) => p.name).join(", ");
+    S.ui.life = null;
+    await commit((s) => {
+      s.notes.push({ id: uid(), deckId: x.id, sig: cardSig(x.cards), date: new Date().toLocaleDateString(), author: "", table: opp, result: String(d.result ?? ''), turn: g.turn, note: `${g.players.length}-player game vs ${opp}`.slice(0, 1000) });
+    }, { msg: "Game saved to the log." });
+  },
+  // app.js A.deleteNote (7323).
+  async deleteNote(d) { await commit((s) => (s.notes = s.notes.filter((n) => n.id !== d.id))); },
+  // app.js A.shareMake (4490): the creator name and the deck's note saved as typed (no redraw, no lookups); then the app asks
+  // shareOpen for the payload, makes the link and asks again for the sheet that shows it.
+  async shareMake(d) {
+    mtgFocus();
+    const author = String(d.author ?? '').trim().slice(0, 60), about = String(d.about ?? '').trim().slice(0, 1500);
+    await commit((s) => { s.settings.authorName = author; const x = s.decks.find((y) => y.id === d.deck); if (x) x.about = about; });
+  },
+  // A.deckShare / tcg.js A.tShare: the share sheet ([made]: {payload, sheet}), the payload share.js's for the deck as saved (Magic's
+  // with the creator and note A.shareMake kept; the other games' with the account's creator name and the deck's note, as A.tShare
+  // passes them). Android's browser has navigator.share, so the sheet has its Share… button.
+  async shareOpen(d) {
+    const game = d.game || 'mtg', link = String(d.link || ''), nav = globalThis.navigator;
+    const put = (k, v) => Object.defineProperty(globalThis, k, {value: v, writable: true, configurable: true});
+    let html = '', payload = null, name = '';
+    put('navigator', {...(nav || {}), share: async () => {}});
+    try {
+      if (game === 'mtg') {
+        mtgFocus(); const x = deckOf(d.deck); if (!x) throw Error('This deck is no longer available.');
+        name = x.name; payload = sharePayload(x, {author: S.state.settings.authorName || '', about: x.about || ''}); html = shareSheetView(x, link);
+      } else {
+        tcgFocus(game, 'tdeck'); S.ui.tdeckId = d.deck;
+        const x = (S.state.tcg?.[game]?.decks || []).find((y) => y.id === d.deck); if (!x) throw Error('This deck is no longer available.');
+        name = x.name; payload = sharePayloadTcg(game, x, {author: S.state.settings.authorName || '', about: x.about || ''});
+        const was = tcgSheetHook; tcgSheetHook = h => { html = String(h || ''); };
+        try { await TA.tShare({dataset: {id: d.deck}}); } finally { tcgSheetHook = was; }
+      }
+    } finally { if (nav === undefined) delete globalThis.navigator; else put('navigator', nav); }
+    made = JSON.stringify({payload: JSON.stringify(payload), sheet: shareModel(html, link, game, name)});
+  },
   // app.js A.deckDup: the copy, made the active deck; the app opens it ([made]).
   async deckDup(d) {
     const x = deckOf(d.deck); if (!x) return;
@@ -2763,6 +2845,11 @@ function panelOpen(key, html, attach, acts = {}) {
     if (fn) fn(t, e); else panel.acted = {act: t.dataset.act, data: {...t.dataset}};
     if (was === toasts) panel.toasts.push(...toasts.splice(n0));
   });
+  // app.js's document change: a control's data-change handler (C.<name>), the ones this page has here.
+  doc.addEventListener('change', e => {
+    const t = e.target.closest?.('[data-change]'); if (!t) return;
+    const fn = panel.acts['C.' + t.dataset.change]; if (fn) fn(t, e);
+  });
   panelRun(() => { host.innerHTML = html; attach?.(host); });
 }
 const panelModel = () => { const reveal = panel.doc.reveals.splice(0); const acted = panel.acted; panel.acted = null;
@@ -2941,8 +3028,37 @@ async function loadCandidates(d, cap, progress) {
   }
   return { loaded, failed, basics };
 }
+// app.js library (7237): what a hand is drawn from (the commander stays out).
+const mtgLibrary = (d) => d.cards.filter((c) => !hasCommander(d) || key(c.name) !== key(d.commander));
 const MDECK_ACTS = {
   ...TDECK_ACTS,
+  // Versions (app.js C.verA / C.verB 7214): the two lists compared.
+  'C.verA': t => { S.ui.versions.a = t.value; panel.redraw(); },
+  'C.verB': t => { S.ui.versions.b = t.value; panel.redraw(); },
+  // War Chest's Draw a hand (app.js A.draw7, A.mull, A.drawOne 7238-7253), verbatim but for render().
+  draw7: () => { const d = currentDeck(); S.ui.hand = { ...drawHand(mtgLibrary(d)), deckId: d.id, mulls: 0 }; panel.redraw(); },
+  mull: () => { const d = currentDeck(), m = (S.ui.hand?.mulls || 0) + 1; S.ui.hand = { ...drawHand(mtgLibrary(d)), deckId: d.id, mulls: m }; panel.redraw(); },
+  drawOne: () => { const h = S.ui.hand; if (h?.library.length) h.hand.push(h.library.shift()); panel.redraw(); },
+  // The life tracker (app.js A.lifeStart, A.lifeTurn, A.lifeAdj 7262-7280), verbatim but for render().
+  lifeStart: t => { S.ui.life = newGame(Number(t.dataset.n) || 4, formatOf(currentDeck()).life); panel.redraw(); },
+  lifeTurn: t => { const g = S.ui.life; if (g) g.turn = Math.max(1, g.turn + Number(t.dataset.delta)); panel.redraw(); },
+  lifeAdj: t => {
+    const pl = S.ui.life?.players[Number(t.dataset.i)]; if (!pl) return;
+    const field = t.dataset.field, delta = Number(t.dataset.delta), before = pl[field];
+    pl[field] = field === "life" ? before + delta : Math.max(0, before + delta);
+    if (field === "cmd") pl.life -= pl.cmd - before;
+    panel.redraw();
+  },
+  // Saves go to the app's writes (restoreVer, deleteVer, deleteNote, logGame; snapshot asks for a name there first).
+  // app.js C.lifeName (7282): a player's name as typed (24 at most, kept when cleared).
+  'C.lifeName': t => { const pl = S.ui.life?.players[Number(t.dataset.i)]; if (pl) pl.name = t.value.trim().slice(0, 24) || pl.name; },
+  // app.js A.lifeEnd (7286): asked first (the app asks, then panelDone('lifeEnd')).
+  lifeEnd: () => { panel.acted = {act: 'lifeEnd', data: {question: "End this game without logging it?"}}; },
+  // app.js chestTool's goldfish for Magic: the deck's Power tab (A.deckTab engine).
+  chestTool: t => { if (t.dataset.tool === 'goldfish') { panel.acted = {act: 'tDeckTab', data: {id: 'engine'}}; return; } TDECK_ACTS.chestTool(t); },
+  snapshot: () => { panel.acted = {act: 'snapshot', data: {version: "Version " + ((currentDeck()?.versions || []).length + 1)}}; },
+  logGame: () => { const v = q => panel.doc.querySelector(q)?.value ?? '';
+    panel.acted = {act: 'logGame', data: {result: v('#logResult'), turn: v('#logTurn'), note: v('#logNote')}}; },
   muRun: () => { mtgMuRun(); },
   // app.js A.suggestFormatUpgrades (4141-4149), verbatim but for render().
   suggestFormatUpgrades: () => { (async () => {
@@ -3161,6 +3277,10 @@ globalThis.Collection = {
   // A Yu-Gi-Oh! or Pokémon deck's tab other than Cards (tcg.js A.tDeckTab): its body as a panel; the page itself comes from deck() with opts.tab.
   deckPanel(game, id, tab) { if (game === 'mtg') mtgDeckPanel(id, tab); else tcgDeckPanel(game, id, tab); return panelModel(); },
   panelModel() { return panel ? panelModel() : '{}'; },
+  // The open tab drawn again from the account as it is now (a save made from it: Versions' Restore, a logged game).
+  // What the app runs on the open tab once the player said yes (app.js A.lifeEnd after its ask).
+  panelDone(kind) { if (kind === 'lifeEnd') { S.ui.life = null; panel?.redraw?.(); } return panel ? panelModel() : '{}'; },
+  panelRedraw() { if (panel?.redraw) panel.redraw(); return panel ? panelModel() : '{}'; },
   panelTap(id) { const el = panel && domById(panel.doc.documentElement, Number(id)); if (el) panelRun(() => domTap(el)); return panel ? panelModel() : '{}'; },
   panelType(id, value) { const el = panel && domById(panel.doc.documentElement, Number(id)); if (el) panelRun(() => domType(el, value)); return panel ? panelModel() : '{}'; },
   catalog() { return json(S.catalog); },
