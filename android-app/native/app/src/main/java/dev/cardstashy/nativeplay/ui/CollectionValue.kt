@@ -69,7 +69,7 @@ import androidx.compose.ui.text.drawText
  */
 class CollectionValueModel(val game: CardGame, val accent: Color, val empty: JsonObject?, val blocks: List<JsonObject>) {
     companion object {
-        fun parse(j: JsonObject) = CollectionValueModel(CardGame.of(j.s("game")), cssColor(j.s("accent"), GoldV) ?: GoldV, j.o("empty"), j.objs("blocks"))
+        fun parse(j: JsonObject) = CollectionValueModel(CardGame.of(j.s("game")), cssColor(j.s("accent"), MagicGold) ?: MagicGold, j.o("empty"), j.objs("blocks"))
     }
 }
 
@@ -89,7 +89,9 @@ private fun JsonObject.strs(k: String) = get(k)?.takeIf { it.isJsonArray }?.asJs
 private fun JsonObject.floats(k: String) = get(k)?.takeIf { it.isJsonArray }?.asJsonArray?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asFloat }.orEmpty()
 
 // style.css tokens (dark) and body.glass, as the Cards tab draws them.
-private val GoldV = Color(0xFFE8B95B)
+private val MagicGold = Color(0xFFE8B95B)
+/** --gold: the open game's accent (body[data-game]). */
+private val GoldV: Color @Composable @androidx.compose.runtime.ReadOnlyComposable get() = LocalGameGold.current
 private val InkV = Color(0xFFEEF0F4)
 private val MuteV = Color(0xFF9AA2B1)
 private val FaintV = Color(0xFF8B93A3)

@@ -144,8 +144,9 @@ private val BInk = Color(0xFFEEF0F4)
 private val BMute = Color(0xFF9AA2B1)
 private val BFaint = Color(0xFF8B93A3)
 private val BLine = Color(0xFF2A2F39)
-private val BGold = Color(0xFFE8B95B)
-private val BGoldInk = Color(0xFF1B1406)
+/** --gold and a .btn's ink on it: the open game's accent (body[data-game]). */
+private val BGold: Color @Composable @androidx.compose.runtime.ReadOnlyComposable get() = LocalGameGold.current
+private val BGoldInk: Color @Composable @androidx.compose.runtime.ReadOnlyComposable get() = LocalSheetPal.current.ink
 private val BBad = Color(0xFFF08A7E)
 private val BStar = Color(0xFFFFD76A)
 
@@ -952,7 +953,7 @@ internal fun BinderEditForm(m: JsonObject, e: CollectionWrites.BinderEditOpen, b
                 Modifier.padding(top = 18.dp), style = bt(12f, 400, BFaint))
         }
         Spacer(Modifier.height(16.dp))
-        FormGold("Save binder", enabled = !busy, modifier = Modifier.fillMaxWidth()) { save() }
+        FormGold("Save binder", enabled = !busy, modifier = Modifier.fillMaxWidth(), pal = LocalSheetPal.current) { save() }
         if (m.s("id").isNotEmpty()) {
             // button.link.danger: Delete binder (15 / 600); Undo brings it back. Then the foot.
             Box(Modifier.heightIn(min = 44.dp).clickable {

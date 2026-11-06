@@ -71,15 +71,24 @@ internal object CollectionWrites {
      * [data] the button's dataset. True when something was saved; [after] then gets the result (its `made`), here or once a
      * question before it is answered yes.
      */
-    suspend fun act(context: Context, kind: String, data: JsonObject, after: ((JsonObject) -> Unit)? = null): Boolean {
+    suspend fun act(context: Context, kind: String, data: JsonObject, after: ((JsonObject) -> Unit)? = null): Boolean = actSaying(context, kind, data, {}, after)
+    /** [act] for a tap whose handler says how it is going ([onStep]: "Checking 2/9…", a status line it writes). */
+    suspend fun actSaying(context: Context, kind: String, data: JsonObject, onStep: (String) -> Unit, after: ((JsonObject) -> Unit)? = null): Boolean {
         pendingAsk = Ask("", kind, data, after = after)
-        val r = commitAct(context, kind, data, if (kind in LONG_ACTS) 120_000 else 15_000) ?: return false
+        val r = commitAct(context, kind, data, when (kind) { in CHECK_ACTS -> 600_000; in LONG_ACTS -> 120_000; else -> 15_000 }, onStep) ?: return false
+        // The words the handler left on the page last (tcg.js's #tImpStatus: "Paste a list first.", what wasn't found).
+        r["texts"]?.takeIf { it.isJsonObject }?.asJsonObject?.entrySet()?.lastOrNull()?.value?.takeIf { it.isJsonPrimitive }?.asString?.let(onStep)
         // What a site handler gave the browser (siteRun): the list it copied goes on the clipboard, the page it opened opens.
         r["copied"]?.takeIf { it.isJsonPrimitive }?.asString?.let { t ->
             val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
             cm.setPrimaryClip(android.content.ClipData.newPlainText("CardStashy", t)) }
         r["opened"]?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.startsWith("https://") }?.let { u ->
             runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(u)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) } }
+        // A file it downloaded (tcg.js A.tExportColl): saved to Downloads, as the browser saves it.
+        r["downloaded"]?.takeIf { it.isJsonObject }?.asJsonObject?.let { f -> saveFile(context, f) }
+        // The recovery copy a whole-collection replacement keeps first (app.js commit's recovery: RECOVERY in this device's storage).
+        r["recovery"]?.takeIf { it.isJsonPrimitive }?.asString?.let { t -> Account.session.value?.userId?.let { u ->
+            runCatching { withContext(Dispatchers.IO) { java.io.File(Decks.deviceFile(context.applicationContext, u).parentFile, "recovery-$u.json").writeText(t) } } } }
         val saved = done(r)
         if (kind == "addDelete" && saved) adding.value = null
         if (saved) { settleLater(context); after?.invoke(r) }
@@ -88,13 +97,15 @@ internal object CollectionWrites {
 
     /** The write itself: under the sync's lock, in the engine holding this device's copy, then that copy written. Null: not run. */
     /** Taps that read the card sources for a while (every card's price, each card's printings). */
-    private val LONG_ACTS = setOf("tDeckRefresh", "tDeckCheapest", "tDeckCopyMissing", "refreshPrices", "tRefreshPrices")
-    private suspend fun commitAct(context: Context, kind: String, data: JsonObject, ms: Long = 15_000): JsonObject? {
+    private val LONG_ACTS = setOf("tDeckRefresh", "tDeckCheapest", "tDeckCopyMissing", "refreshPrices", "tRefreshPrices", "tImpColl", "impApply")
+    /** Taps that check card after card against Scryfall (Verify exact printings, the import's Check names & printings). */
+    private val CHECK_ACTS = setOf("verifyAll", "impVerify")
+    private suspend fun commitAct(context: Context, kind: String, data: JsonObject, ms: Long = 15_000, onStep: (String) -> Unit = {}): JsonObject? {
         val s = Account.session.value ?: run { show("Sign in to save cards to your collection."); return null }
         val app = context.applicationContext
         return WorkspaceSync.lock.withLock {
             if (!ensureCollection(app, s.userId, true, Decks.fullRevision.value)) return null.also { show("Your collection is still loading. Try again in a moment.") }
-            val r = CollectionEngine.act(kind, data, ms)
+            val r = CollectionEngine.act(kind, data, ms, onStep)
             if ((r["writes"]?.asInt ?: 0) > 0 || CollectionEngine.bg() > 0) { val text = CollectionEngine.saved(); withContext(Dispatchers.IO) { WorkspaceSync.wroteLocally(app, s.userId, text) } }
             r
         }
@@ -188,12 +199,18 @@ internal object CollectionWrites {
 
     /** app.js download(name, text): the file in Downloads (this app's own folder before Android 10), as the browser saves it. */
     @Volatile internal var download: (Context, String, String) -> Unit = { c, name, text -> saveText(c, name, text) }
+    /** A file the site downloads ({name, text}): saved to Downloads, the toast saying where (as a deck's export does). */
+    suspend fun saveFile(context: Context, f: JsonObject) {
+        val name = f.get("name")?.asString ?: return; val text = f.get("text")?.asString ?: return
+        runCatching { withContext(Dispatchers.IO) { download(context.applicationContext, name, text) } }
+            .onSuccess { show("Saved $name to Downloads.") }.onFailure { show("Couldn’t save $name.") }
+    }
     private fun saveText(c: Context, name: String, text: String) {
         val bytes = text.toByteArray()
         if (android.os.Build.VERSION.SDK_INT >= 29) {
             val r = c.contentResolver
             val v = android.content.ContentValues().apply {
-                put(android.provider.MediaStore.Downloads.DISPLAY_NAME, name); put(android.provider.MediaStore.Downloads.MIME_TYPE, "text/plain")
+                put(android.provider.MediaStore.Downloads.DISPLAY_NAME, name); put(android.provider.MediaStore.Downloads.MIME_TYPE, if (name.endsWith(".csv", true)) "text/csv" else "text/plain")
                 put(android.provider.MediaStore.Downloads.IS_PENDING, 1)
             }
             val uri = r.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, v) ?: error("Couldn’t save the file.")
@@ -236,6 +253,37 @@ internal object CollectionWrites {
     /** app.js binderEditor's fields for binder [id] (blank: a new one). */
     suspend fun binderEditModel(context: Context, game: String, id: String): JsonObject? =
         withCollection(context) { CollectionEngine.binderEdit(game, id) }
+
+    /**
+     * workbench-ui.js A.batchAction: the Select tray's Move, Add to deck, Wishlist or Compare sheet for [game], as the engine read it
+     * (CollectionEngine.batchSheet); its button saves through act("batchApply").
+     */
+    data class BatchOpen(val game: String, val model: JsonObject, val id: Long = System.nanoTime())
+    val batch = MutableStateFlow<BatchOpen?>(null)
+    /** Opens the tray's [kind] sheet, or shows the site's toast in its place (Compare with more than four). */
+    suspend fun openBatch(context: Context, game: String, kind: String) {
+        val m = withCollection(context) { CollectionEngine.batchSheet(game, kind) } ?: return
+        m.get("toast")?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }?.let { show(it); return }
+        if (m.get("kind")?.isJsonPrimitive == true) batch.value = BatchOpen(game, m)
+    }
+
+    /** Magic Collection's ⋯ (app.js A.collMenu) over the Cards page; [lookups] runs the card lookups again (after Retry). */
+    data class MenuOpen(val lookups: () -> Unit = {}, val id: Long = System.nanoTime())
+    val collMenu = MutableStateFlow<MenuOpen?>(null)
+    suspend fun collMenuModel(context: Context): JsonObject? = withCollection(context) { CollectionEngine.collMenu() }
+    /** app.js A.exportCSV: the collection as a ManaBox-style CSV, saved to Downloads. */
+    suspend fun exportCSV(context: Context) { withCollection(context) { CollectionEngine.exportCSV() }?.let { saveFile(context, it) } }
+    /**
+     * The list import: Magic's "Import cards you own" (app.js importCollectionSheet) or Yu-Gi-Oh! / Pokémon's "Paste cards you own"
+     * (tcg.js tcgImportSheet "coll"), by [game]. [one] is the Magic sheet's One card (the add sheet); [imported] runs once it saved
+     * (go("#collection/cards")).
+     */
+    data class ImportOpen(val game: String = "mtg", val one: (() -> Unit)? = null, val imported: () -> Unit = {}, val id: Long = System.nanoTime())
+    val importing = MutableStateFlow<ImportOpen?>(null)
+    suspend fun importSheet(context: Context, game: String): JsonObject? =
+        withCollection(context) { if (game == "mtg") CollectionEngine.importSheet() else CollectionEngine.tImportSheet(game) }
+    /** One of the import sheet's own taps, in the engine holding this device's copy (it writes nothing). */
+    suspend fun importDo(context: Context, run: suspend () -> JsonObject): JsonObject? = withCollection(context) { run() }
 
     /** app.js closeSheet for the add sheet whose model said [ctx]. */
     fun addClosed(ctx: Int) { bg.launch { CollectionEngine.addClose(ctx) } }

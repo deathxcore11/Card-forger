@@ -3,8 +3,8 @@
 // Nothing is decided here: every number, list and order comes from the site's functions; this file only calls them
 // and hands their models to the app instead of HTML.
 import {S, blank, meta, cacheCard, slim, inv, uid} from 'WEB/store.js';
-import {cardKey, typeText, cardPrice, mergeDeckCard, exportDeckText, exportDeck} from 'WEB/core.js';
-import {validateWorkspace} from 'WEB/confidence.js';
+import {cardKey, typeText, cardPrice, mergeDeckCard, exportDeckText, exportDeck, sumQty} from 'WEB/core.js';
+import {validateWorkspace, parseImport, previewImport, printingState, exportCollectionCSV, importErrorsCSV, applyImport} from 'WEB/confidence.js';
 import {normalizeHomeDeckActivity, recordHomeDeckWork} from 'WEB/home-deck-activity.js';
 import {collectionValue, recordValuePoint, withSnapshot} from 'WEB/insights.js';
 import {homeValueCoverage, homeValueModel, homeMetaKey, homeMetaSlides, homeMetaArticle, homeMetaCarousel, homeDeckShelf, homeCommunity, featureArticle} from 'WEB/home-ui.js';
@@ -13,7 +13,7 @@ import {dailyDetails, todaySetMarkup} from 'WEB/home-today.js';
 import {hintPool, SEARCH_PROMPT} from 'WEB/search-hints.js';
 import {useMyPrices, ensureTcgPrices} from 'WEB/mtg-tcgprice.js';
 import {formatOf, FORMATS, hasCommander} from 'WEB/formats.js';
-import {art, esc, registerSetIcons, usd, options as htmlOptions, safeHref} from 'WEB/ui.js';
+import {art, esc, registerSetIcons, usd, options as htmlOptions, safeHref, segmented} from 'WEB/ui.js';
 import {createScryfallClient} from 'WEB/scryfall-client.js';
 import {loadMeta, metaState, allCachedMeta} from 'WEB/meta.js';
 import {mtgMetaKey} from 'WEB/power.js';
@@ -364,6 +364,83 @@ function batchSheetModel(G, kind) {
     deck: deck && {label: (one(t, x => x.tag === 'label' && one(x, y => y === deck))?.kids || []).filter(k => k.text !== undefined).map(k => k.text).join('').trim(), options: all(deck, tagIs('option')).map(o => [o.attrs.value ?? '', text(o)]),
       selected: (all(deck, tagIs('option')).find(o => o.attrs.selected !== undefined) || all(deck, tagIs('option'))[0])?.attrs.value ?? ''},
     none: text(one(t, x => x.tag === 'p' && /Create a deck first/.test(text(x)))), button: {label: text(go), disabled: go?.attrs.disabled !== undefined}};
+}
+// app.js A.collMenu (Magic Collection's ⋯), verbatim: its title, its buttons ([act, words]) and the line it writes progress into.
+const COLL_MENU_HTML = `<div class="sheet-head"><h2>Collection</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="menu-list">
+    <button data-act="importCollection">↥ Import a list or CSV</button>
+    <button data-act="exportCSV">↓ Export CSV (ManaBox-style)</button>
+    <button data-act="retryLookups">⟳ Retry cards that weren’t found</button>
+    <button data-act="refreshPrices">$ Refresh all prices</button>
+    <button data-act="verifyAll">✓ Verify exact printings</button>
+  </div><p class="muted small" id="collMenuMsg"></p>`;
+function collMenuModel() {
+  const t = tree(COLL_MENU_HTML);
+  return {title: text(one(one(t, cls('sheet-head')), tagIs('h2'))), items: all(one(t, cls('menu-list')), tagIs('button')).map(b => ({act: b.attrs['data-act'], ...glyph(text(b))}))};
+}
+// app.js verifyLot (5544): the printing checked (verifyPhysical, verifiedLot); a bare name is looked up instead; what went wrong is the review.
+async function verifyLot(e) {
+  try {
+    return { ...verifiedLot(e, await verifyPhysical(e)), review: "Exact printing verified", candidates: [] };
+  } catch (error) {
+    if (!e.printingId && !e.set && !e.setName && !e.collectorNumber && e.name) {
+      try {
+        const c = await resolve(e.name, true);
+        return { ...e, name: c.name, nameVerified: true, printingVerified: false, review: "Name verified · printing unspecified" };
+      } catch {}
+    }
+    return { ...e, review: error.message, printingVerified: false };
+  }
+}
+// app.js importCollectionSheet (5698), verbatim: the sheet's words and fields, read by the app; impDraft as app.js keeps it.
+let impDraft = null, impBusy = false, impError = '';
+function importCollectionHtml() {
+  return `<div class="sheet-head"><h2>Import cards you own</h2><button class="icon" data-act="closeSheet">✕</button></div>
+    ${segmented("addMode", "list", [["one", "One card"], ["list", "Paste or upload a list"]])}
+    <p class="muted small">Paste “4 Lightning Bolt” lines, or upload a ManaBox / Moxfield / Deckbox CSV. You’ll review everything before it’s saved.</p>
+    <textarea id="impText" rows="6" data-input="impText" placeholder="1 Sol Ring&#10;4 Lightning Bolt (2X2) 117&#10;— or a CSV with Name, Quantity, Set code…"></textarea>
+    <label class="btn ghost file">Choose .txt / .csv<input type="file" accept=".txt,.csv" data-change="impFile" hidden></label>
+    <div class="grid2"><label>Source name<input id="impSource" value="My collection import" maxlength="100"></label><label>How to apply<select id="impMode">${htmlOptions([["append", "Add to my collection"], ["replace-source", "Replace earlier import with this name"], ["replace-all", "Replace entire collection"]], "append")}</select></label></div>
+    <p id="impError" class="error" role="alert"></p>
+    <div class="actions"><button class="btn ghost" data-act="impPreview">Preview</button><button class="btn" data-act="impApply" id="impApply" disabled>Import</button></div>
+    <div id="impPreview"></div>`;
+}
+const unent = v => String(v ?? '').replace(/&#10;/g, '\n').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+function importSheetModel() {
+  impDraft = null; impBusy = false; impError = '';
+  const t = tree(importCollectionHtml()), seg = one(t, cls('seg')), area = one(t, tagIs('textarea')), file = one(t, cls('file'));
+  const labels = all(one(t, cls('grid2')), tagIs('label')), mode = one(t, x => x.tag === 'select' && x.attrs.id === 'impMode'), acts = all(one(t, cls('actions')), tagIs('button'));
+  const direct = l => (l?.kids || []).filter(k => k.text !== undefined).map(k => k.text).join('').trim();
+  return {title: text(one(one(t, cls('sheet-head')), tagIs('h2'))),
+    seg: all(seg, tagIs('button')).map(b => ({id: b.attrs['data-id'] || '', label: text(b), on: cls('on')(b) || b.attrs['aria-selected'] === 'true'})),
+    hint: text(one(t, x => x.tag === 'p' && cls('muted')(x))), placeholder: unent(area?.attrs.placeholder), file: direct(file),
+    accept: one(file, tagIs('input'))?.attrs.accept || '',
+    source: {label: direct(labels[0]), value: unent(one(labels[0], tagIs('input'))?.attrs.value), max: Number(one(labels[0], tagIs('input'))?.attrs.maxlength) || 100},
+    mode: {label: direct(labels[1]), options: all(mode, tagIs('option')).map(o => [o.attrs.value ?? '', text(o)]), selected: (all(mode, tagIs('option')).find(o => o.attrs.selected !== undefined) || all(mode, tagIs('option'))[0])?.attrs.value ?? ''},
+    preview: text(acts[0]), apply: text(acts[1]), ...importModel()};
+}
+// app.js drawImport, as data: the summary line (copies, rows, lines skipped with their download, the source), the two warnings, Check
+// names & printings, the first 400 rows (a tick, "qty× name", set, number and finish, the review, Pick printing when several match)
+// and how many more; Import's words and whether it can be pressed. [error]: #impError.
+function importModel() {
+  if (!impDraft) return {draft: null, error: impError, applyLabel: 'Import', applyDisabled: true};
+  const sel = impDraft.lots.filter((e) => e.include !== false);
+  return {error: impError, applyLabel: `Import ${sumQty(sel)} cards`, applyDisabled: impBusy || !sel.length || sel.some((e) => !e.name),
+    draft: {total: impDraft.total, rows: impDraft.lots.length, skipped: impDraft.errors.length ? `${impDraft.errors.length} lines skipped` : '', source: impDraft.source,
+      repeated: impDraft.repeated ? "You imported this exact file before. Importing again adds these cards a second time. Use “Replace earlier import” if they’re the same physical cards." : '',
+      overlapping: impDraft.overlappingLots ? `${impDraft.overlappingLots} rows match cards already in your collection — they may be the same physical cards.` : '',
+      verify: impBusy ? "Checking…" : "Check names & printings", verifyDisabled: impBusy,
+      lots: impDraft.lots.slice(0, 400).map((e, i) => ({i, include: e.include !== false, line: `${e.qty}× ${e.name || "Unknown"}`,
+        meta: [e.set || "", e.collectorNumber || "", e.finish !== "nonfoil" ? e.finish || '' : ""].join(' ').replace(/\s+$/, ''), review: e.review || '',
+        candidates: e.candidates?.length ? [["", "Pick printing"], ...e.candidates.map((c, j) => [String(j), `${c.set.toUpperCase()} #${c.collector_number}`])] : []})),
+      more: impDraft.lots.length > 400 ? `…and ${impDraft.lots.length - 400} more rows.` : ''}};
+}
+// tcg.js tcgImportSheet("coll") (Paste a list), read from the site's own sheet: title, the game's hint, the box's example, Import.
+function tcgImportSheetModel(G) {
+  tcgFocus(G, 'collection'); let html = ''; const was = tcgSheetHook; tcgSheetHook = h => { html = String(h || ''); };
+  try { TA.tImportColl({dataset: {}}); } finally { tcgSheetHook = was; }
+  const t = tree(html), area = one(t, tagIs('textarea'));
+  return {title: text(one(one(t, cls('sheet-head')), tagIs('h2'))), hint: text(one(t, x => x.tag === 'p' && cls('muted')(x) && x.attrs.id !== 'tImpStatus')),
+    placeholder: unent(area?.attrs.placeholder), rows: Number(area?.attrs.rows) || 9, button: text(one(t, x => x.attrs['data-act'] === 'tImpColl'))};
 }
 // app.js's handlers for the Cards tab's controls (C.collSort, C.collDirection, C.collFilter, I.collSearch, A.collMore), verbatim
 // but for the redraw, which is the app's.
@@ -1124,10 +1201,12 @@ let tcgWent = '', tdeckAt = null;
 let tcgOn = false, tcgPrev, setsGame = 'mtg', setGame = 'mtg';
 // tcg.js takes openSheet / closeSheet once (registerTcg), so they forward: the Add to collection sheet listens while it opens and saves.
 let tcgSheetHook = () => {}, tcgCloseHook = () => {};
+// tcg.js takes download and copyText from its context once (registerTcg), so they reach through here: siteRun puts its stand-ins in.
+const tcgHooks = {download() {}, copyText() {}};
 function tcgReady() {
   if (tcgOn) return; tcgOn = true;
-  Object.assign(tcgCtx, {A: TA, C: TC, I: TI, commit, render() {}, openSheet: (html, ctx) => tcgSheetHook(html, ctx), closeSheet: () => tcgCloseHook(), refreshSheet() {}, toast: text => { if (text) toasts.push({text: String(text), undo: false}); }, download() {},
-    copyText() {}, busy: () => () => {},
+  Object.assign(tcgCtx, {A: TA, C: TC, I: TI, commit, render() {}, openSheet: (html, ctx) => tcgSheetHook(html, ctx), closeSheet: () => tcgCloseHook(), refreshSheet() {}, toast: text => { if (text) toasts.push({text: String(text), undo: false}); }, download: (...a) => tcgHooks.download(...a),
+    copyText: (...a) => tcgHooks.copyText(...a), busy: () => () => {},
     // The route a handler goes to (A.tSetByName's #set/<id>), for the app to follow.
     go(h) { tcgWent = String(h || ''); }, rerenderKeepingFocus() {}, writeRecord: async () => {}, navigationStamp: () => null, navigationCurrent: () => true});
   registerTcg(tcgCtx);
@@ -1906,7 +1985,7 @@ function menuModelOf(t, d, ids) {
 // - buy.js copyPlain (the clipboard), tcg.js copyText, window.open (Mass Entry): kept for the app, which copies and opens them.
 // - document.querySelector for a form's fields ([vals]).
 const SITE_ASKED = {siteAsked: true};
-let siteAsk = null, siteYes = [], siteCopied = null, siteOpened = '';
+let siteAsk = null, siteYes = [], siteCopied = null, siteOpened = '', siteDownload = null, siteText = {}, actStep = '', siteRecovery = null;
 function siteDialogs() {
   const el = () => { const ls = {}; return {value: '', ls, addEventListener(t, f) { (ls[t] ||= []).push(f); }, focus() {}, select() {}, setAttribute() {}, classList: {add() {}}, close() {}, remove() {}}; };
   return {body: {append() {}}, createElement() {
@@ -1924,18 +2003,20 @@ function siteDialogs() {
 }
 async function siteRun(fn, d = {}, vals = {}) {
   if (!d.confirmed) siteYes = []; else if (siteAsk) siteYes.push(siteAsk.question);
-  siteAsk = null; siteCopied = null; siteOpened = '';
-  const was = {document: globalThis.document, navigator: globalThis.navigator, window: globalThis.window, copy: tcgCtx.copyText};
+  siteAsk = null; siteCopied = null; siteOpened = ''; siteDownload = null; siteText = {};
+  const was = {document: globalThis.document, navigator: globalThis.navigator, window: globalThis.window, copy: tcgHooks.copyText, download: tcgHooks.download};
   const put = (k, v) => Object.defineProperty(globalThis, k, {value: v, writable: true, configurable: true});
-  put('document', {...siteDialogs(), querySelector: q => vals[q] == null ? null : {value: String(vals[q])}});
+  // A field the handler reads ([vals]), or one it writes words into (a status line: [vals] gives it as null-free ''), kept in siteText.
+  put('document', {...siteDialogs(), querySelector: q => vals[q] == null ? null : {value: String(vals[q]), set textContent(t) { siteText[q] = String(t ?? ''); actStep = siteText[q]; }, get textContent() { return siteText[q] ?? ''; }}});
   put('navigator', {...(was.navigator || {}), clipboard: {writeText: async t => { siteCopied = String(t); }}});
   put('window', Object.assign(Object.create(was.window || null), {open: u => { siteOpened = String(u || ''); }}));
-  tcgCtx.copyText = async (t, msg) => { siteCopied = String(t); if (msg) toasts.push({text: String(msg), undo: false}); return true; };
+  tcgHooks.copyText = async (t, msg) => { siteCopied = String(t); if (msg) toasts.push({text: String(msg), undo: false}); return true; };
+  tcgHooks.download = (name, text, type) => { siteDownload = {name: String(name), text: String(text), type: String(type || 'text/plain')}; };
   // The stand-ins stay while the handler runs: its questions can come after an await (buy.js asks once the list is copied).
   try { await fn(); } catch (e) { if (e !== SITE_ASKED) throw e; }
   finally {
     for (const k of ['document', 'navigator', 'window']) { if (was[k] === undefined) delete globalThis[k]; else put(k, was[k]); }
-    tcgCtx.copyText = was.copy;
+    tcgHooks.copyText = was.copy; tcgHooks.download = was.download;
   }
   if (siteAsk) asked = siteAsk.question;
 }
@@ -2244,6 +2325,92 @@ const writeActs = {
         const all = binderRows(target.game), still = binderCoverState(target, all.filter(r => binderMatches(r, target)), all).unavailable;
         remove = unavailable.filter(id => still.includes(id)); return remove.length > 0; }});
   },
+  // app.js A.retryLookups (Collection's ⋯ menu): the cards whose lookup failed are looked up again (the app runs the lookups after).
+  async retryLookups() {
+    await commit((s) => s.collection.forEach((e) => delete e.lookupFailed), { msg: "Looking cards up again…" });
+  },
+  // app.js A.verifyAll (Collection's ⋯ menu): each lot with a printing id, or a set and collector number, checked against Scryfall
+  // (verifyLot), "Checking i/n…" said as it goes (#collMenuMsg), then saved.
+  async verifyAll() {
+    const list = S.state.collection.filter((e) => !e.printingVerified && (e.printingId || ((e.set || e.setName) && e.collectorNumber)));
+    if (!list.length) return toasts.push({text: "No records have set + collector number to verify. Edit a card to add them.", undo: false});
+    const updated = new Map();
+    for (let i = 0; i < list.length; i++) {
+      actStep = `Checking ${i + 1}/${list.length}…`;
+      updated.set(list[i].id, await verifyLot(list[i]));
+    }
+    await commit((s) => {
+      s.collection = s.collection.map((e) => updated.get(e.id) || e);
+      s.printings = { ...s.printings, ...(S.pendingPrintings || {}) };
+    }, { msg: "Verification saved." });
+    S.pendingPrintings = null;
+  },
+  // app.js A.impVerify: the import's names and printings checked (its progress in #impError), the rows marked with what was found.
+  async impVerify() {
+    if (!impDraft || impBusy) return;
+    impBusy = true;
+    try {
+      const names = impDraft.lots.filter((e) => e.include !== false && !e.printingId && !(e.set && e.collectorNumber)).map((e) => e.name);
+      const r = await resolveNames(names, (m) => (actStep = impError = String(m)));
+      for (let i = 0; i < impDraft.lots.length; i++) {
+        const e = impDraft.lots[i];
+        if (e.include === false) continue;
+        if (e.printingId || (e.set && e.collectorNumber)) {
+          const checked = await verifyLot(e);
+          impDraft.lots[i] = checked;
+        } else if (r.matched.has(key(e.name))) impDraft.lots[i] = { ...e, name: r.matched.get(key(e.name)), nameVerified: true, review: "Name verified" };
+        else if (meta(e.name)) impDraft.lots[i] = { ...e, nameVerified: true, review: "Name verified" };
+        else impDraft.lots[i] = { ...e, review: "Name not found" };
+      }
+    } finally {
+      impBusy = false;
+      impError = "";
+    }
+  },
+  // app.js A.impApply: the reviewed rows saved ([d] mode: append, replace-source or replace-all, which asks first and keeps a recovery
+  // copy; source: the import's name), the import remembered; then the sheet closes and Collection › Cards opens (made: "imported").
+  async impApply(d) {
+    if (!impDraft || impBusy) return;
+    const draft = impDraft, attemptId = draft.attemptId, rows = draft.lots.filter((e) => e.include !== false),
+      mode = String(d.mode || 'append'), sourceKey = String(d.source || '').trim();
+    const applied = (s) => !!attemptId && (s.importHistory || []).some((h) => h.attemptId === attemptId);
+    impBusy = true; impError = '';
+    try {
+      if (!sourceKey) throw Error("Give this import a source name.");
+      if (mode === "replace-all" && !ask("Replace your whole collection? A recovery copy is kept, but export a backup first.", d.confirmed)) return;
+      if (applied(S.state)) { made = 'imported'; return; }
+      if (mode === "replace-all") siteRecovery = JSON.stringify(stripCache(S.state));
+      await commit((s) => {
+        const lots = rows.map((e) => {
+          const { candidates, review, rawRows, include, ...lot } = e;
+          void candidates, void review, void rawRows, void include;
+          return lot;
+        });
+        s.collection = applyImport(s.collection, { ...draft, lots }, mode, sourceKey, uid);
+        s.importHistory = [...(s.importHistory || []), { id: uid(), attemptId, hash: draft.hash, sourceKey, mode, date: new Date().toISOString(), qty: sumQty(rows) }].slice(-200);
+        s.printings = { ...s.printings, ...(S.pendingPrintings || {}) };
+        s.example = false;
+      }, { msg: `${sumQty(rows)} cards imported.`, guard: (s) => !applied(s) });
+      S.pendingPrintings = null;
+      made = 'imported';
+    } catch (e) {
+      impError = e.message;
+    } finally {
+      impBusy = false;
+    }
+  },
+  // tcg.js A.tImpColl (Paste a list): the lines matched exactly, the cards added; its words go to #tImpStatus (texts) and it closes
+  // the sheet once saved (made: "closed").
+  async tImpColl(d) {
+    tcgFocus(d.game, 'collection'); const prev = S.ui.sheetCtx, ctx = {type: 'timport'}, was = tcgCloseHook; let closed = false;
+    S.ui.sheetCtx = ctx; tcgCloseHook = () => { closed = true; };
+    try { await siteRun(() => TA.tImpColl({dataset: {}}), d, {'#tImpText': d.text ?? '', '#tImpStatus': ''}); if (closed) made = 'closed'; }
+    finally { tcgCloseHook = was; if (S.ui.sheetCtx === ctx) S.ui.sheetCtx = prev; }
+  },
+  // tcg.js A.tExportColl: the Yu-Gi-Oh! or Pokémon collection as a CSV, saved as the site downloads it (downloaded).
+  async tExportColl(d) { tcgFocus(d.game, 'collection'); await siteRun(() => TA.tExportColl({dataset: {}}), d); },
+  // tcg.js A.tWishCopy: the wishlist copied as "qty name" lines.
+  async tWishCopy(d) { tcgFocus(d.game, 'collection'); await siteRun(() => TA.tWishCopy({dataset: {}}), d); },
   // app.js A.copySpare: Value's Trade binder list (owned cards no deck uses), copied.
   async copySpare() {
     const v = collectionValue(S.state.collection, S.catalog, S.state.printings, S.state.decks);
@@ -2845,6 +3012,9 @@ globalThis.Collection = {
     // No account copy (signed out, or a row never set up): app.js starts from store.js blank().
     const ws = workspaceJson ? JSON.parse(workspaceJson) : null;
     S.state = ws && Object.keys(ws).length ? normalize(ws) : blank();
+    // A Yu-Gi-Oh! or Pokémon page borrowed the old copy's settings.game (tcgFocus): this copy's own choice is the one to keep; the
+    // next such page borrows it again.
+    tcgPrev = undefined;
     S.catalog = catalogJson ? JSON.parse(catalogJson) : {};
     // cloud.js reconciled: the account's copy is here, so value observations may be recorded (app.js valueHistoryReady).
     valueHistoryReady = !!ws; lastUndo = null;
@@ -2878,13 +3048,14 @@ globalThis.Collection = {
   // pumped its chain: {done, error, ask (a question to put to the player first), toasts [{text, undo}], writes (commits made)}.
   act(kind, dataJson) {
     if (!writeActs[kind]) throw Error('unknown write ' + kind);
-    const run = acting = {done: false}; toasts = []; asked = ''; made = ''; const n = commits;
+    const run = acting = {done: false}; toasts = []; asked = ''; made = ''; actStep = ''; siteRecovery = null; const n = commits;
     Promise.resolve().then(() => writeActs[kind](JSON.parse(dataJson || '{}'))).then(
       () => { Object.assign(run, {done: true, ask: asked, toasts, writes: commits - n, made, ...(asked && siteAsk?.question === asked ? {asking: siteAsk} : {}),
-        ...(siteCopied != null ? {copied: siteCopied} : {}), ...(siteOpened ? {opened: siteOpened} : {})}); siteCopied = null; siteOpened = ''; },
+        ...(siteCopied != null ? {copied: siteCopied} : {}), ...(siteOpened ? {opened: siteOpened} : {}), ...(siteDownload ? {downloaded: siteDownload} : {}),
+        texts: siteText, ...(siteRecovery ? {recovery: siteRecovery} : {})}); siteCopied = null; siteOpened = ''; siteDownload = null; siteRecovery = null; },
       e => { Object.assign(run, {done: true, error: String(e?.message || e), ask: '', toasts, writes: commits - n}); });
   },
-  actPoll() { return json(acting || {done: true, writes: 0, toasts: []}); },
+  actPoll() { return json(acting ? (acting.done ? acting : {...acting, step: actStep}) : {done: true, writes: 0, toasts: []}); },
   // The account's sign-in for the condition feed (cloud.js access token), set by the app before the add sheet asks.
   auth(token) { conditionToken = token || ''; },
   // The add sheet (app.js addSheet): [o] {entry: lot id} to edit, {own: name, fromCard} for Got it, or {} for an empty one.
@@ -3026,6 +3197,36 @@ globalThis.Collection = {
   binderEdit(game, id) { return json(binderEditModel(game || 'mtg', id || '')); },
   // Collection › Value for [game] (valuePage).
   value(game) { return json(valuePage(game || 'mtg')); },
+  // Magic Collection's ⋯ menu (app.js A.collMenu) and what its buttons give the app: Export CSV's file (A.exportCSV's download).
+  collMenu() { return json(collMenuModel()); },
+  exportCSV() { return json({name: "CardStashy_Collection.csv", text: exportCollectionCSV(S.state.collection), type: "text/csv"}); },
+  // The import sheet (app.js importCollectionSheet) and its taps: the text changed (I.impText), Preview ([hash]: the text's SHA-256,
+  // A.impPreview's digest, worked out by the app), a row's tick (C.impUse), a printing picked (C.impPrinting), the skipped lines' file
+  // (A.impErrors); Check names & printings and Import run through act (impVerify, impApply) and importModel reads the sheet after.
+  importSheet() { return json(importSheetModel()); },
+  importModel() { return json(importModel()); },
+  importText() { if (!impBusy) { impDraft = null; impError = ''; } return json(importModel()); },
+  importPreview(raw, hash) {
+    impError = '';
+    try {
+      const parsed = parseImport(String(raw ?? ''));
+      impDraft = previewImport(parsed, S.state.collection, String(hash), S.state.importHistory || []);
+      impDraft.attemptId = uid();
+      for (const e of impDraft.lots) { e.include = true; e.review = printingState(e); }
+    } catch (e) { impError = e.message; }
+    return json(importModel());
+  },
+  importUse(i, on) { if (impDraft?.lots[Number(i)]) impDraft.lots[Number(i)].include = !!on; return json(importModel()); },
+  importPrinting(i, j) {
+    const say = []; if (j === '' || !impDraft) return json({...importModel(), toast: ''});
+    const n = Number(i), e = impDraft.lots[n];
+    try { impDraft.lots[n] = { ...verifiedLot(e, e.candidates[Number(j)]), candidates: [], review: "Printing selected" }; } catch (x) { say.push(x.message); }
+    return json({...importModel(), toast: say.join(' ')});
+  },
+  importErrors() { return json(impDraft ? {name: "CardStashy_Import_Errors.csv", text: importErrorsCSV(impDraft.errors), type: "text/csv"} : null); },
+  importClose() { impDraft = null; impBusy = false; impError = ''; },
+  // Yu-Gi-Oh! and Pokémon's Paste a list (tcg.js tcgImportSheet "coll"); Import runs through act('tImpColl').
+  tImportSheet(game) { return json(tcgImportSheetModel(game)); },
   // The Select tray's sheet for [kind] (batchSheetModel); its button saves through act('batchApply').
   batchSheet(game, kind) { if (game && game !== 'mtg') tcgFocus(game, 'collection'); else mtgFocus(); return json(batchSheetModel(game || 'mtg', kind)); },
   cardsDo(game, kind, value) {

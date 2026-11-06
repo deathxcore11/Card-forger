@@ -403,4 +403,85 @@ class CollectionWritesTest {
         val h = painted!!.getAsJsonArray("blocks").map { it.asJsonObject }.first { it["k"].asString == "hero" }
         assertEquals("$2.50", h["amount"].asString); assertEquals("Custom", h["kind"].asString); assertEquals(true, h["custom"].asBoolean)
     }
+
+    /** app.js importCollectionSheet / drawImport / A.impApply, against what the site showed for the same paste (a Playwright probe). */
+    @Test fun importListPreviewAndApply() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        val add = fx("add-card-mtg.json")
+        CollectionEngine.load(add["before"].asJsonObject.deepCopy().apply { add("collection", JsonArray()) }, null)
+        val menu = CollectionEngine.collMenu()
+        println("MENU $menu")
+        assertEquals("Collection", menu["title"].asString)
+        assertEquals(listOf("importCollection", "exportCSV", "retryLookups", "refreshPrices", "verifyAll"), menu.getAsJsonArray("items").map { it.asJsonObject["act"].asString })
+        assertEquals(listOf("Import a list or CSV", "Export CSV (ManaBox-style)", "Retry cards that weren’t found", "$ Refresh all prices", "Verify exact printings"),
+            menu.getAsJsonArray("items").map { it.asJsonObject["label"].asString })
+        val sheet = CollectionEngine.importSheet()
+        println("SHEET $sheet")
+        assertEquals("Import cards you own", sheet["title"].asString)
+        assertEquals("Paste “4 Lightning Bolt” lines, or upload a ManaBox / Moxfield / Deckbox CSV. You’ll review everything before it’s saved.", sheet["hint"].asString)
+        assertEquals("My collection import", sheet.getAsJsonObject("source")["value"].asString)
+        assertEquals("append", sheet.getAsJsonObject("mode")["selected"].asString)
+        assertEquals(listOf("Add to my collection", "Replace earlier import with this name", "Replace entire collection"),
+            sheet.getAsJsonObject("mode").getAsJsonArray("options").map { it.asJsonArray[1].asString })
+        val raw = "4 Lightning Bolt\n1 Sol Ring (CMM) 400\n2 Counterspell\nbad line ,,,\n"
+        val p = CollectionEngine.importPreview(raw, "h1")
+        println("PREVIEW $p")
+        assertEquals("Import 7 cards", p["applyLabel"].asString)
+        val d = p.getAsJsonObject("draft")
+        assertEquals(7, d["total"].asInt); assertEquals(3, d["rows"].asInt); assertEquals("1 lines skipped", d["skipped"].asString); assertEquals("text", d["source"].asString)
+        val lots = d.getAsJsonArray("lots").map { it.asJsonObject }
+        assertEquals(listOf("4× Lightning Bolt", "1× Sol Ring", "2× Counterspell"), lots.map { it["line"].asString })
+        assertEquals(listOf("Printing unspecified", "Printing needs verification", "Printing unspecified"), lots.map { it["review"].asString })
+        assertEquals("Import 6 cards", CollectionEngine.importUse(1, false)["applyLabel"].asString)
+        CollectionEngine.importUse(1, true)
+        val r = CollectionEngine.act("impApply", JsonObject().apply { addProperty("mode", "append"); addProperty("source", "My collection import") })
+        println("APPLY $r")
+        assertEquals("imported", r["made"].asString)
+        assertEquals("7 cards imported.", r.getAsJsonArray("toasts")[0].asJsonObject["text"].asString)
+        val coll = JsonParser.parseString(CollectionEngine.saved()).asJsonObject.getAsJsonArray("collection").map { it.asJsonObject }
+        assertEquals(mapOf("Lightning Bolt" to 4, "Sol Ring" to 1, "Counterspell" to 2), coll.associate { it["name"].asString to it["qty"].asInt })
+        val sol = coll.first { it["name"].asString == "Sol Ring" }
+        assertEquals("cmm", sol["set"].asString.lowercase()); assertEquals("400", sol["collectorNumber"].asString)
+        // The same attempt again is not added twice (applied: its attemptId is in importHistory).
+        CollectionEngine.act("impApply", JsonObject().apply { addProperty("mode", "append"); addProperty("source", "My collection import") })
+        assertEquals(3, JsonParser.parseString(CollectionEngine.saved()).asJsonObject.getAsJsonArray("collection").size())
+        // Replace entire collection asks first.
+        CollectionEngine.importPreview("1 Island\n", "h2")
+        val q = CollectionEngine.act("impApply", JsonObject().apply { addProperty("mode", "replace-all"); addProperty("source", "Other") })
+        assertEquals("Replace your whole collection? A recovery copy is kept, but export a backup first.", q["ask"].asString); assertEquals(0, q["writes"].asInt)
+        CollectionEngine.importClose()
+    }
+
+    /** tcg.js A.tImpColl, A.tExportColl and A.tWishCopy (the Yu-Gi-Oh! / Pokémon Cards page's buttons), the site's own handlers. */
+    @Test fun tcgListButtons() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        val before = fx("qty-plus.json")["before"].asJsonObject.deepCopy().apply {
+            getAsJsonObject("settings").addProperty("game", "mtg")
+            getAsJsonObject("tcg").getAsJsonObject("ygo").add("collection", JsonParser.parseString("""[{"id":"y1","cardId":"89631139","name":"Blue-Eyes White Dragon","qty":2,"printing":"LOB-001","condition":"Near Mint","language":"en","location":""}]"""))
+            getAsJsonObject("tcg").getAsJsonObject("ygo").add("wishlist", JsonParser.parseString("""[{"id":"w9","cardId":"46986414","name":"Dark Magician","qty":3}]"""))
+        }
+        CollectionEngine.load(before, null)
+        val sheet = CollectionEngine.tImportSheet("ygo")
+        println("TSHEET $sheet")
+        assertEquals(9, sheet["rows"].asInt); assertTrue(sheet["button"].asString.isNotBlank())
+        val empty = CollectionEngine.act("tImpColl", JsonObject().apply { addProperty("game", "ygo"); addProperty("text", "") })
+        println("TIMP $empty")
+        assertEquals("Paste a list first.", empty.getAsJsonObject("texts")["#tImpStatus"].asString)
+        assertEquals(0, empty["writes"].asInt); assertTrue(empty["made"]?.asString != "closed")
+        val csv = CollectionEngine.act("tExportColl", JsonObject().apply { addProperty("game", "ygo") })
+        println("TCSV $csv")
+        val file = csv.getAsJsonObject("downloaded")
+        assertTrue(file["name"].asString, file["name"].asString.matches(Regex("CardStashy_\\w+_collection\\.csv")))
+        val lines = file["text"].asString.trimEnd().lines()
+        assertEquals("\"Quantity\",\"Name\",\"Set\",\"Printing\",\"Rarity/Version\",\"Edition\",\"Condition\",\"Price USD\"", lines[0])
+        assertTrue(lines[1], lines[1].startsWith("\"2\",\"Blue-Eyes White Dragon\","))
+        val copy = CollectionEngine.act("tWishCopy", JsonObject().apply { addProperty("game", "ygo") })
+        println("TCOPY $copy")
+        assertEquals("3 Dark Magician", copy["copied"].asString)
+        assertEquals("Wishlist copied.", copy.getAsJsonArray("toasts")[0].asJsonObject["text"].asString)
+        // Nothing the buttons ran changed the account.
+        assertEquals(2, JsonParser.parseString(CollectionEngine.saved()).asJsonObject.getAsJsonObject("tcg").getAsJsonObject("ygo").getAsJsonArray("collection")[0].asJsonObject["qty"].asInt)
+    }
 }

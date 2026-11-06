@@ -117,11 +117,17 @@ fun CollectionWritesHost(backdrop: androidx.compose.ui.graphics.layer.GraphicsLa
     val menu by CollectionWrites.menu.collectAsState()
     menu?.let { m -> key(m.id) { DeckMenuSheet(m, backdrop, onClose = { if (CollectionWrites.menu.value === m) CollectionWrites.menu.value = null }) } }
     val binderOpen by CollectionWrites.binder.collectAsState()
-    binderOpen?.let { b -> key(b.id) { BinderSheet(b, backdrop, onClose = { if (CollectionWrites.binder.value === b) CollectionWrites.binder.value = null }) } }
+    binderOpen?.let { b -> key(b.id) { GameAccent(b.game) { BinderSheet(b, backdrop, onClose = { if (CollectionWrites.binder.value === b) CollectionWrites.binder.value = null }) } } }
     val binderEditing by CollectionWrites.binderEditing.collectAsState()
-    binderEditing?.let { e -> key(e.id) { BinderEditSheet(e, backdrop, onClose = { if (CollectionWrites.binderEditing.value === e) CollectionWrites.binderEditing.value = null }) } }
+    binderEditing?.let { e -> key(e.id) { GameAccent(e.game) { BinderEditSheet(e, backdrop, onClose = { if (CollectionWrites.binderEditing.value === e) CollectionWrites.binderEditing.value = null }) } } }
     val binderHold by CollectionWrites.binderHold.collectAsState()
-    binderHold?.let { h -> key(h.id) { BinderHoldSheet(h, backdrop, onClose = { if (CollectionWrites.binderHold.value === h) CollectionWrites.binderHold.value = null }) } }
+    binderHold?.let { h -> key(h.id) { GameAccent(h.game) { BinderHoldSheet(h, backdrop, onClose = { if (CollectionWrites.binderHold.value === h) CollectionWrites.binderHold.value = null }) } } }
+    val batch by CollectionWrites.batch.collectAsState()
+    batch?.let { b -> key(b.id) { GameAccent(b.game) { BatchSheet(b, backdrop, onClose = { if (CollectionWrites.batch.value === b) CollectionWrites.batch.value = null }) } } }
+    val collMenu by CollectionWrites.collMenu.collectAsState()
+    collMenu?.let { m -> key(m.id) { GameAccent("mtg") { CollMenuSheet(m, backdrop, onClose = { if (CollectionWrites.collMenu.value === m) CollectionWrites.collMenu.value = null }) } } }
+    val importing by CollectionWrites.importing.collectAsState()
+    importing?.let { i -> key(i.id) { GameAccent(i.game) { ImportSheet(i, backdrop, onClose = { if (CollectionWrites.importing.value === i) CollectionWrites.importing.value = null }) } } }
     toast?.let { t -> key(t.id) { SiteToast(t, onUndo = { CollectionWrites.dismiss(t); scope.launch { CollectionWrites.undo(context) } }, onGone = { CollectionWrites.dismiss(t) }) } }
     ask?.let { a -> key(a) { AskDialog(a.question, backdrop, site = a.site, onAnswer = { yes -> CollectionWrites.answer(yes, context, scope) }) } }
     val asking by CollectionWrites.askingText.collectAsState()
@@ -258,4 +264,11 @@ private fun AskDialog(question: String, backdrop: androidx.compose.ui.graphics.l
             }
         }
     }
+}
+
+/** body[data-game] for a sheet over a Yu-Gi-Oh! or Pokémon page: its --gold and its buttons' ink are that game's. */
+@Composable
+internal fun GameAccent(game: String, content: @Composable () -> Unit) {
+    val g = CardGame.of(game)
+    androidx.compose.runtime.CompositionLocalProvider(LocalGameGold provides g.gold, LocalSheetPal provides sheetPal(g), content = content)
 }

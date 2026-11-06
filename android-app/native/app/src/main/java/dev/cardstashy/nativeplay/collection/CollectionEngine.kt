@@ -134,6 +134,28 @@ object CollectionEngine {
     /** The Select tray's sheet (workbench-ui.js A.batchAction) for [kind]: move, deck, wish or compare; or {toast} when the site refuses. */
     suspend fun batchSheet(game: String, kind: String): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.batchSheet(${str(game)}, ${str(kind)})") as String).asJsonObject }
+    private suspend fun model(js: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate(js) as String).let { if (it.isJsonObject) it.asJsonObject else JsonObject() } }
+    /** Magic Collection's ⋯ menu (app.js A.collMenu): {title, items [{act, icon, label}]}. */
+    suspend fun collMenu(): JsonObject = model("Collection.collMenu()")
+    /** app.js A.exportCSV's file: {name, text, type}. */
+    suspend fun exportCSV(): JsonObject = model("Collection.exportCSV()")
+    /** app.js importCollectionSheet's fields and its first (empty) state. */
+    suspend fun importSheet(): JsonObject = model("Collection.importSheet()")
+    /** The import sheet as it stands (drawImport's data and #impError). */
+    suspend fun importModel(): JsonObject = model("Collection.importModel()")
+    /** I.impText: the text changed, the preview gone. */
+    suspend fun importText(): JsonObject = model("Collection.importText()")
+    /** A.impPreview for [raw], whose SHA-256 (hex) is [hash]. */
+    suspend fun importPreview(raw: String, hash: String): JsonObject = model("Collection.importPreview(${str(raw)}, ${str(hash)})")
+    /** C.impUse: row [i] ticked or not. */
+    suspend fun importUse(i: Int, on: Boolean): JsonObject = model("Collection.importUse($i, $on)")
+    /** C.impPrinting: row [i]'s printing [j] (an index into its candidates); {toast} when it doesn't fit. */
+    suspend fun importPrinting(i: Int, j: String): JsonObject = model("Collection.importPrinting($i, ${str(j)})")
+    /** A.impErrors' file (the skipped lines), or null. */
+    suspend fun importErrors(): JsonObject = model("Collection.importErrors()")
+    suspend fun importClose() { on { q -> q.evaluate("Collection.importClose()") } }
+    /** Yu-Gi-Oh! or Pokémon Paste a list (tcg.js tcgImportSheet "coll"): {title, hint, placeholder, rows, button}. */
+    suspend fun tImportSheet(game: String): JsonObject = model("Collection.tImportSheet(${str(game)})")
 
     suspend fun cardsDo(game: String, kind: String, value: String = ""): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.cardsDo(${str(game)}, ${str(kind)}, ${str(value)})") as String).asJsonObject }
@@ -261,12 +283,15 @@ object CollectionEngine {
      * tEntryQty, tWish) with the tapped button's dataset, run through app.js's commit; returns once its chain has finished:
      * {done, error, ask (a question to put to the player, then tap again with confirmed), toasts [{text, undo}], writes}.
      */
-    suspend fun act(kind: String, data: JsonObject, ms: Long = 15_000): JsonObject {
+    suspend fun act(kind: String, data: JsonObject, ms: Long = 15_000, onStep: (String) -> Unit = {}): JsonObject {
         on { q -> q.evaluate("Collection.act(${str(kind)}, ${str(data.toString())})") }
         val until = System.currentTimeMillis() + ms
+        var said = ""
         while (true) {
             val (p, r) = turn { q, _, _ -> JsonParser.parseString(q.evaluate("Collection.actPoll()") as String).asJsonObject }
             if (r.get("done")?.asBoolean == true) return r
+            // What the handler is saying as it goes (a status line it writes, "Checking 2/9…").
+            r.get("step")?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it != said }?.let { said = it; onStep(it) }
             if (System.currentTimeMillis() > until) return r.apply { addProperty("done", true); addProperty("error", "That took too long. Try again.") }
             if (p.get("ran").asInt == 0) delay(10)
         }

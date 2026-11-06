@@ -203,7 +203,7 @@ private fun AddLotForm(m: JsonObject, open: CollectionWrites.AddOpen, backdrop: 
         val one = vw <= 480.dp
         if (!editing) {
             Spacer(Modifier.height(12.dp))
-            Seg { open.onList?.invoke(); onClose() }
+            Seg { (open.onList ?: { CollectionWrites.importing.value = CollectionWrites.ImportOpen("mtg", one = { CollectionWrites.openAdd(JsonObject()) }) }).invoke(); onClose() }
             Spacer(Modifier.height(12.dp))
         } else Spacer(Modifier.height(10.dp))
         // .searchbar: the name and Look up, 8 apart.
@@ -266,14 +266,22 @@ private fun AddLotForm(m: JsonObject, open: CollectionWrites.AddOpen, backdrop: 
 
 /** ui.js segmented("addMode"): One card (the gold glide) and Paste or upload a list. */
 @Composable
-private fun Seg(onList: () -> Unit) {
+private fun Seg(onList: () -> Unit) = AddModeSeg("one") { if (it == "list") onList() }
+
+/**
+ * ui.js segmented("addMode", [current]): One card and Paste or upload a list, the chosen one on the gold glide; a tap on either is
+ * A.addMode (the other sheet, or this one again).
+ */
+@Composable
+internal fun AddModeSeg(current: String, items: List<Pair<String, String>> = listOf("one" to "One card", "list" to "Paste or upload a list"), onPick: (String) -> Unit) {
     val pal = LocalSheetPal.current
     Row(Modifier.fillMaxWidth().siteGlassField(999.dp).padding(5.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-        listOf("one" to "One card", "list" to "Paste or upload a list").forEach { (k, label) ->
-            val on = k == "one"
+        items.forEach { (k, label) ->
+            val on = k == current
             Box(Modifier.weight(1f).heightIn(min = 44.dp).then(if (on) Modifier.siteGoldGlide(pal) else Modifier).clip(RoundedCornerShape(999.dp))
-                .clickable { if (!on) onList() }.semantics { role = Role.Tab; selected = on }.padding(horizontal = 6.dp, vertical = 8.dp), contentAlignment = Alignment.Center) {
-                Text(label, style = cssType(13.5f, 650, 19.575f, if (on) pal.ink else AMute, -.135f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                .clickable { onPick(k) }.semantics { role = Role.Tab; selected = on }.padding(horizontal = 6.dp, vertical = 8.dp), contentAlignment = Alignment.Center) {
+                // The site lets a long label wrap (big text on a phone: "Paste or upload a list" on two lines), centred.
+                Text(label, style = cssType(13.5f, 650, 19.575f, if (on) pal.ink else AMute, -.135f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
         }
     }
@@ -318,12 +326,13 @@ internal fun FormLabeled(label: String, modifier: Modifier, field: @Composable (
 @Composable
 internal fun FormInput(value: String, onValue: (String) -> Unit, style: TextStyle, placeholder: String = "", modifier: Modifier = Modifier, minH: Dp = 44.dp,
                   desc: String = "", keyboard: KeyboardType = KeyboardType.Text, ime: ImeAction = ImeAction.Done, focus: FocusRequester? = null, onGo: () -> Unit = {}) {
-    // style.css :focus-visible: a 2 gold ring, 2 outside the field, while it has the caret.
+    // style.css :focus-visible: a 2 gold ring (the game's accent), 2 outside the field, while it has the caret.
     var focused by remember { mutableStateOf(false) }
+    val ring = LocalGameGold.current.takeIf { it != CardGame.MTG.gold } ?: Site.Gold
     BasicTextField(value, onValue, modifier.fillMaxWidth().then(if (focus != null) Modifier.focusRequester(focus) else Modifier).onFocusChanged { focused = it.isFocused }
-        .drawBehind { if (focused) { val o = 3.dp.toPx(); drawRoundRect(Site.Gold, Offset(-o, -o), Size(size.width + o * 2, size.height + o * 2), CornerRadius(11.dp.toPx() + o), style = Stroke(2.dp.toPx())) } }
+        .drawBehind { if (focused) { val o = 3.dp.toPx(); drawRoundRect(ring, Offset(-o, -o), Size(size.width + o * 2, size.height + o * 2), CornerRadius(11.dp.toPx() + o), style = Stroke(2.dp.toPx())) } }
         .semantics { if (desc.isNotEmpty()) contentDescription = desc }, singleLine = true, textStyle = style,
-        cursorBrush = SolidColor(Site.Gold), keyboardOptions = KeyboardOptions(keyboardType = keyboard, imeAction = ime),
+        cursorBrush = SolidColor(ring), keyboardOptions = KeyboardOptions(keyboardType = keyboard, imeAction = ime),
         keyboardActions = KeyboardActions(onSearch = { onGo() }, onDone = { onGo() }, onGo = { onGo() }),
         decorationBox = { inner ->
             Box(Modifier.fillMaxWidth().heightIn(min = minH).siteGlassField(11.dp).padding(horizontal = 13.dp, vertical = 10.dp), contentAlignment = Alignment.CenterStart) {
@@ -353,7 +362,7 @@ internal fun FormSelect(options: List<Pair<String, String>>, selected: String, s
                 groups.getOrNull(i)?.takeIf { it.isNotEmpty() }?.let { g ->
                     Text(g.uppercase(), Modifier.padding(start = 10.dp, end = 10.dp, top = if (i == 0) 4.dp else 10.dp, bottom = 6.dp), style = cssType(10.5f, 800, 14f, Color(0x80FFFFFF), 1.05f))
                 }
-                DropdownMenuItem(text = { Text(l, style = cssType(14f, if (v == selected) 700 else 400, 20f, if (v == selected) Site.Gold else AInk)) },
+                DropdownMenuItem(text = { Text(l, style = cssType(14f, if (v == selected) 700 else 400, 20f, if (v == selected) (LocalGameGold.current.takeIf { it != CardGame.MTG.gold } ?: Site.Gold) else AInk)) },
                     onClick = { open = false; if (v != selected) onPick(v) })
             }
         }

@@ -275,7 +275,14 @@ private val Ink = Color(0xFFEEF0F4)
 private val Mute = Color(0xFF9AA2B1)
 private val LineC = Color(0xFF2A2F39)
 private val Surface2 = Color(0xFF1F232B)
-private val GoldC = Color(0xFFE8B95B)
+/** --gold: the open game's accent (body[data-game]: Magic's gold, Yu-Gi-Oh!'s violet, Pokémon's coral). */
+private val GoldC: Color @Composable @androidx.compose.runtime.ReadOnlyComposable get() = LocalGameGold.current
+/** A .btn's ink on that accent (style.css body[data-game] --gold-ink); [mtg] is the shade this page used on Magic's gold. */
+@Composable @androidx.compose.runtime.ReadOnlyComposable
+private fun accentInk(mtg: Color) = when (LocalGameGold.current) { CardGame.YGO.gold -> Color(0xFF150A2C); CardGame.PTCG.gold -> Color(0xFF2A0D09); else -> mtg }
+/** color-mix(in srgb, var(--gold) [p], [base]). */
+@Composable @androidx.compose.runtime.ReadOnlyComposable
+private fun goldMix(p: Float, base: Color) = androidx.compose.ui.graphics.lerp(base, LocalGameGold.current, p)
 private val FoilInk = Color(0xFF9FD7F0)
 
 private fun sans(size: Float, weight: Int = 400, color: Color = Ink, lh: Float = 1.45f, ls: Float = 0f) =
@@ -374,8 +381,11 @@ fun CollectionCards(m: CollectionCardsModel, top: @Composable (tabs: (@Composabl
                     tab: String = "cards", body: (androidx.compose.foundation.lazy.LazyListScope.(gutter: Dp, narrow: Boolean) -> Unit)? = null) {
     BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
         val screen = maxWidth
-        if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); CardsPage(m, top, act, Modifier.weight(1f).fillMaxHeight(), screen, query, tab, body) }
-        else Column(Modifier.fillMaxSize()) { CardsPage(m, top, act, Modifier.weight(1f).fillMaxWidth(), screen, query, tab, body); nav(false) }
+        // body[data-game]: the page's --gold is the open game's accent.
+        androidx.compose.runtime.CompositionLocalProvider(LocalGameGold provides m.game.gold) {
+            if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); CardsPage(m, top, act, Modifier.weight(1f).fillMaxHeight(), screen, query, tab, body) }
+            else Column(Modifier.fillMaxSize()) { CardsPage(m, top, act, Modifier.weight(1f).fillMaxWidth(), screen, query, tab, body); nav(false) }
+        }
     }
 }
 
@@ -579,7 +589,7 @@ private fun HeroActions(m: CollectionCardsModel, act: CollectionCardsActions, wi
             // workbench-ui.js viewControl: the account's view for this game (modeFor) is the one lit.
             for (v in m.views) {
                 val on = v.mode == m.mode
-                Box(Modifier.size(44.dp).clip(RoundedCornerShape(9.dp)).then(if (on) Modifier.background(Color(0xFF433E34)).border(1.dp, GoldC.copy(alpha = .35f), RoundedCornerShape(9.dp)) else Modifier)
+                Box(Modifier.size(44.dp).clip(RoundedCornerShape(9.dp)).then(if (on) Modifier.background(goldMix(.18f, Color(0xFF1F232B))).border(1.dp, GoldC.copy(alpha = .35f), RoundedCornerShape(9.dp)) else Modifier)
                     .clickable { if (!on) act.view(v.mode) }.semantics { contentDescription = v.label; role = Role.RadioButton }, contentAlignment = Alignment.Center) {
                     SiteIcon(v.icon, 20.dp, if (on) GoldC else Mute)
                 }
@@ -588,7 +598,7 @@ private fun HeroActions(m: CollectionCardsModel, act: CollectionCardsActions, wi
         // .tool-btn: the gold icon, and from 600 dp its word ("Select") beside it.
         // .tool-btn.on (Select is on, "Done"): gold 12 % into the surface, its edge gold at 50 %.
         if (cards && m.selectIcon != null) Row(Modifier.heightIn(min = 44.dp).then(if (wide && m.selectText.isNotBlank()) Modifier else Modifier.width(44.dp)).clip(RoundedCornerShape(11.dp))
-            .background(if (m.selectOn) Color(0xFF302D27) else GlassFill).border(1.dp, if (m.selectOn) GoldC.copy(alpha = .5f) else GlassLine, RoundedCornerShape(11.dp))
+            .background(if (m.selectOn) goldMix(.12f, Color(0xFF171A20)) else GlassFill).border(1.dp, if (m.selectOn) GoldC.copy(alpha = .5f) else GlassLine, RoundedCornerShape(11.dp))
             .clickable(onClick = act.select).semantics { selected = m.selectOn }
             .semantics { contentDescription = m.selectLabel.ifBlank { "Select cards" } }.padding(horizontal = if (wide) 12.dp else 0.dp),
             horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
@@ -613,14 +623,15 @@ internal fun CollTabs(tabs: List<CollTab>, onTab: (String) -> Unit) {
     Row(Modifier.fillMaxWidth().padding(vertical = 12.dp).drawBehind {
         drawLine(GlassLine, Offset(0f, size.height - .5f), Offset(size.width, size.height - .5f), 1.dp.toPx())
     }.padding(horizontal = 2.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        val gold = GoldC
         for (t in tabs) {
             val on = t.on
             Row(Modifier.weight(1f).heightIn(min = 44.dp).drawBehind {
                 if (on) {
                     // .glide: a gold glow from the bottom edge and a 2 px gold line fading out at both ends.
-                    drawRect(Brush.radialGradient(listOf(GoldC.copy(alpha = .24f), Color.Transparent), Offset(size.width / 2, size.height), size.width * .6f * .7f),
+                    drawRect(Brush.radialGradient(listOf(gold.copy(alpha = .24f), Color.Transparent), Offset(size.width / 2, size.height), size.width * .6f * .7f),
                         topLeft = Offset.Zero, size = size)
-                    drawRect(Brush.horizontalGradient(.18f to Color.Transparent, .5f to GoldC, .82f to Color.Transparent), Offset(0f, size.height - 2.dp.toPx()), Size(size.width, 2.dp.toPx()))
+                    drawRect(Brush.horizontalGradient(.18f to Color.Transparent, .5f to gold, .82f to Color.Transparent), Offset(0f, size.height - 2.dp.toPx()), Size(size.width, 2.dp.toPx()))
                 }
             }.clickable { if (!on) onTab(t.key) }.semantics { role = Role.Tab }.padding(horizontal = 6.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
@@ -796,7 +807,8 @@ internal fun Modifier.lotFrame(r: CollRow, reduced: Boolean): Modifier {
 
 /**
  * One .lot in the compact view. A phone: art (52 × 73, top) | name, sub, and under them price + condition on the left and the
- * stepper + Edit on the right; 9 / 11 in from the edge. From 600 dp the grid is 58 × 80 art | info | an 88 wide side column
+ * stepper + Edit on the right; 9 / 11 in from the edge. From 600 dp the grid is 58 × 80 art | info | an 88 wide side column (wider
+ * when big text needs it for the price and its condition badge, which the site lets spill over the name instead)
  * (value top right, the stepper, Edit) with 7 around, everything centred on the row.
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -808,7 +820,7 @@ private fun LotRow(r: CollRow, act: CollectionCardsActions, wide: Boolean, reduc
     if (wide) Row(modifier.lotFrame(r, reduced).padding(7.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         LotArt(r, Modifier, 58.dp, 80.dp) { act.open(r) }
         Info(r, act, wide, Modifier.weight(1f))
-        Column(Modifier.width(88.dp), verticalArrangement = Arrangement.spacedBy(6.dp), horizontalAlignment = Alignment.End) {
+        Column(Modifier.widthIn(min = 88.dp), verticalArrangement = Arrangement.spacedBy(6.dp), horizontalAlignment = Alignment.End) {
             value(4.dp)
             Stepper(r.qty, glyphs, { act.qty(r, -1) }, { act.qty(r, 1) })
             edit(Modifier)
@@ -834,9 +846,10 @@ private fun LotRow(r: CollRow, act: CollectionCardsActions, wide: Boolean, reduc
 private fun LotValue(r: CollRow, act: CollectionCardsActions, price: TextStyle, gap: Dp) {
     Row(horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.CenterVertically) {
         Text(r.price, Modifier.clickable { act.price(r) }.padding(vertical = 4.dp), style = price)
-        if (r.condition.isNotBlank()) Box(Modifier.heightIn(min = 24.dp).clip(RoundedCornerShape(999.dp)).background(Surface2).border(1.dp, LineC, RoundedCornerShape(999.dp))
+        // .condition-badge (polish.css; a touch screen's 38 × 26 at least): flex none, so it never wraps or shrinks.
+        if (r.condition.isNotBlank()) Box(Modifier.widthIn(min = 38.dp).heightIn(min = 26.dp).clip(RoundedCornerShape(999.dp)).background(Surface2).border(1.dp, LineC, RoundedCornerShape(999.dp))
             .semantics { contentDescription = r.conditionInfo }.padding(horizontal = 8.dp, vertical = 2.dp), contentAlignment = Alignment.Center) {
-            Text(r.condition, style = sans(11.5f, 750, Mute, lh = 1f, ls = .345f))
+            Text(r.condition, style = sans(11.5f, 750, Mute, lh = 1f, ls = .345f), maxLines = 1, softWrap = false)
         }
         if (r.origin.isNotBlank()) Text(r.origin, style = sans(11f, 700, GoldC))
     }
@@ -868,8 +881,8 @@ private fun WantedRow(r: CollRow, act: CollectionCardsActions, wide: Boolean, re
             if (r.got.isNotBlank()) Row(Modifier.heightIn(min = 32.dp).clip(RoundedCornerShape(11.dp)).background(GoldC).clickable { act.got(r) }.padding(horizontal = 11.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 val lead = r.got.trimStart().firstOrNull()?.let { it == '＋' || it == '+' } == true
-                if (lead) SiteIcon(glyphs["plus"], 16.dp, Color(0xFF1A1408), stroke = 2f)
-                Text(if (lead) r.got.trimStart().drop(1).trim() else r.got, style = sans(13.5f, 700, Color(0xFF1A1408)))
+                if (lead) SiteIcon(glyphs["plus"], 16.dp, accentInk(Color(0xFF1A1408)), stroke = 2f)
+                Text(if (lead) r.got.trimStart().drop(1).trim() else r.got, style = sans(13.5f, 700, accentInk(Color(0xFF1A1408))))
             }
             Box(Modifier.size(32.dp).clip(CircleShape).border(1.dp, LineC, CircleShape).clickable { act.unwish(r) }.semantics { contentDescription = "Remove ${r.name} from wishlist" }, contentAlignment = Alignment.Center) {
                 Text("×", style = sans(18f, 400, Mute, lh = 1f))
@@ -1028,7 +1041,7 @@ private fun Empty(m: CollectionCardsModel, act: CollectionCardsActions) {
                 val shape = RoundedCornerShape(11.dp)
                 Box(Modifier.heightIn(min = 44.dp).clip(shape).then(if (i == 0) Modifier.background(GoldC) else Modifier.background(GlassFill).border(1.dp, GlassLine, shape))
                     .clickable { act.emptyAct(a) }.padding(horizontal = 16.dp, vertical = 10.dp), contentAlignment = Alignment.Center) {
-                    Text(label, style = sans(14f, 700, if (i == 0) Color(0xFF1A1408) else Ink))
+                    Text(label, style = sans(14f, 700, if (i == 0) accentInk(Color(0xFF1A1408)) else Ink))
                 }
             }
         }
@@ -1063,7 +1076,7 @@ private fun GalleryLot(r: CollRow, act: CollectionCardsActions, wide: Boolean, r
     val tier = tierColor(r.tierColor)
     val on = r.mark == true
     // Select: the ring round the tile, and the tick over the picture's corner (16 up and left of it, on its dark plate).
-    Box(modifier.selectRing(r.mark)) {
+    Box(modifier.selectRing(r.mark, GoldC)) {
     Column(Modifier.fillMaxWidth().selectTap(r, act), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         TierFrame(r.tier, reduced, Modifier.fillMaxWidth().clickable { act.open(r) }.semantics { contentDescription = if (r.mark != null) r.name else "Open ${r.name}" }, blur = 18f) { framed ->
             Box(Modifier.fillMaxSize().padding(if (framed) 3.75.dp else 0.dp)) { RowPicture(r, Modifier.fillMaxSize(), RoundedCornerShape(percent = 4)) }
@@ -1181,8 +1194,8 @@ private fun WantActions(r: CollRow, act: CollectionCardsActions, glyphs: Map<Str
         if (r.got.isNotBlank()) Row(Modifier.heightIn(min = got).clip(RoundedCornerShape(11.dp)).background(GoldC).clickable { act.got(r) }.padding(horizontal = gotPad),
             horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             val lead = r.got.trimStart().firstOrNull()?.let { it == '＋' || it == '+' } == true
-            if (lead) SiteIcon(glyphs["plus"], (gotSize * 1.2f).dp, Color(0xFF1B1406), stroke = 2f)
-            Text(if (lead) r.got.trimStart().drop(1).trim() else r.got, style = sans(gotSize, 700, Color(0xFF1B1406)))
+            if (lead) SiteIcon(glyphs["plus"], (gotSize * 1.2f).dp, accentInk(Color(0xFF1B1406)), stroke = 2f)
+            Text(if (lead) r.got.trimStart().drop(1).trim() else r.got, style = sans(gotSize, 700, accentInk(Color(0xFF1B1406))))
         }
         Box(Modifier.size(x).clip(CircleShape).border(1.dp, LineC, CircleShape).clickable { act.unwish(r) }.semantics { contentDescription = "Remove ${r.name} from wishlist" }, contentAlignment = Alignment.Center) {
             Text("×", style = sans(xSize, 400, Mute, lh = 1f))
@@ -1217,7 +1230,7 @@ private fun SymbolLot(r: CollRow, act: CollectionCardsActions, wide: Boolean, re
     }
     else if (wide) Row(frame, horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         Info(r, act, wide, Modifier.weight(1f), nameSize = 16f)
-        Column(Modifier.width(88.dp), verticalArrangement = Arrangement.spacedBy(6.dp), horizontalAlignment = Alignment.End) {
+        Column(Modifier.widthIn(min = 88.dp), verticalArrangement = Arrangement.spacedBy(6.dp), horizontalAlignment = Alignment.End) {
             LotValue(r, act, sans(13f, 700, mixed(tier)), 4.dp)
             Stepper(r.qty, glyphs, { act.qty(r, -1) }, { act.qty(r, 1) })
             LotEdit(r, act, Modifier)
@@ -1238,13 +1251,13 @@ private fun SymbolLot(r: CollRow, act: CollectionCardsActions, wide: Boolean, re
 // ---------------------------------------------------------------- Select (workbench-ui.js)
 
 /** .batch-selected .lot-info: gold at 9 % behind the chosen lot's name, 8 corners. */
-private val SelectTint = Color(0x17E8B95B)
+private val SelectTint: Color @Composable @androidx.compose.runtime.ReadOnlyComposable get() = LocalGameGold.current.copy(alpha = .09f)
 
 /** .lot:has(.batch-mark input:checked): a 3 gold outline 2 outside the lot, its corners following the lot's 12. */
-private fun Modifier.selectRing(on: Boolean?): Modifier = if (on != true) this else drawWithContent {
+private fun Modifier.selectRing(on: Boolean?, gold: Color): Modifier = if (on != true) this else drawWithContent {
     drawContent()
     val o = 3.5.dp.toPx()
-    drawRoundRect(GoldC, Offset(-o, -o), Size(size.width + o * 2, size.height + o * 2), CornerRadius(12.dp.toPx() + o), style = Stroke(3.dp.toPx()))
+    drawRoundRect(gold, Offset(-o, -o), Size(size.width + o * 2, size.height + o * 2), CornerRadius(12.dp.toPx() + o), style = Stroke(3.dp.toPx()))
 }
 
 /** While Select is on, a tap on the lot that isn't one of its own controls turns its tick over (app.js attachCardGestures onSelect). */
@@ -1259,10 +1272,11 @@ private fun Modifier.selectTap(r: CollRow, act: CollectionCardsActions): Modifie
  */
 @Composable
 private fun BatchMark(on: Boolean, modifier: Modifier = Modifier) {
+    val gold = GoldC
     Box(modifier.clearAndSetSemantics { }.padding(start = 10.dp, top = 9.dp, bottom = 9.dp, end = 9.dp).size(23.dp).drawBehind {
         val u = 1.dp.toPx(); val r = CornerRadius(2.5f * u)
         if (on) {
-            drawRoundRect(GoldC, cornerRadius = r)
+            drawRoundRect(gold, cornerRadius = r)
             val tick = Path().apply { moveTo(size.width * .2f, size.height * .53f); lineTo(size.width * .41f, size.height * .74f); lineTo(size.width * .8f, size.height * .3f) }
             drawPath(tick, Color(0xFF3B3B3B), style = Stroke(2.6f * u, cap = StrokeCap.Butt, join = StrokeJoin.Miter))
         } else {
@@ -1283,7 +1297,7 @@ private fun SelectLot(r: CollRow, act: CollectionCardsActions, wide: Boolean, re
                       symbols: Boolean, stacked: Boolean) {
     val on = r.mark == true
     val tier = tierColor(r.tierColor)
-    val frame = modifier.selectRing(r.mark).lotFrame(r, reduced).selectTap(r, act)
+    val frame = modifier.selectRing(r.mark, GoldC).lotFrame(r, reduced).selectTap(r, act)
         .padding(if (symbols) PaddingValues(horizontal = 9.dp, vertical = 11.dp) else PaddingValues(7.dp))
     val lead = @Composable {
         if (symbols) BatchMark(on)
@@ -1304,7 +1318,7 @@ private fun SelectLot(r: CollRow, act: CollectionCardsActions, wide: Boolean, re
         }
     } else Row(frame, horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         lead(); info(Modifier.weight(1f))
-        Column(Modifier.width(88.dp), verticalArrangement = Arrangement.spacedBy(6.dp), horizontalAlignment = Alignment.End) {
+        Column(Modifier.widthIn(min = 88.dp), verticalArrangement = Arrangement.spacedBy(6.dp), horizontalAlignment = Alignment.End) {
             LotValue(r, act, sans(13f, 700, mixed(tier)), 4.dp); step(); LotEdit(r, act, Modifier)
         }
     }

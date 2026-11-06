@@ -73,6 +73,8 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     var shelf by remember(game) { mutableStateOf(CardsCache.binders[game]) }
     /** A binder whose pocket opened a card: it opens again, at its page, once that card page closes (app.js sheet history). */
     var parked by remember { mutableStateOf<CollectionWrites.BinderOpen?>(null) }
+    /** The ⋯ menu's Retry lookups (app.js A.retryLookups): the names the catalog lacks are looked up again. */
+    var lookups by remember { mutableStateOf(0) }
     LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
     // The view last chosen here (the site keeps it in the account's settings.displayModes; the app keeps it too, as the set page does).
     val prefs = remember { context.getSharedPreferences("collection", android.content.Context.MODE_PRIVATE) }
@@ -87,7 +89,7 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     }
     // The account's copy, then the names the catalog lacks (prices and pictures fill in as they arrive); for Yu-Gi-Oh! and Pokémon the
     // shown cards' data (app.js route's tcgEnsureMany), kept for the next visit.
-    LaunchedEffect(session?.userId, revision, game) { try {
+    LaunchedEffect(session?.userId, revision, game, lookups) { try {
         if (!ensureCollection(context, session?.userId, session != null, revision)) return@LaunchedEffect
         paint()
         coroutineScope {
@@ -134,6 +136,12 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
     // The website, for what isn't native yet: on Yu-Gi-Oh! or Pokémon it picks that game first (A.setGame), then presses [sel].
     fun site(sel: String) { val g = CollectionGame.current.value; web(coll, if (g == CardGame.MTG) sel else "[data-act=\"setGame\"][data-game=\"${g.id}\"]\n$sel") }
+    fun tcgButton(a: String) { val g = CollectionGame.current.value.id
+        when (a) {
+            "tImportColl" -> CollectionWrites.importing.value = CollectionWrites.ImportOpen(g, imported = { tab = "cards" })
+            "tExportColl", "tWishCopy" -> scope.launch { CollectionWrites.act(context, a, com.google.gson.JsonObject().apply { addProperty("game", g) }) }
+            else -> site("[data-act=\"${css(a)}\"]")
+        } }
     val act = remember(game) {
         val tcg = game != CardGame.MTG
         CollectionCardsActions(
@@ -141,8 +149,14 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             // Cards, Binders and Value are drawn here.
             tab = { k -> if (k == "cards" || k == "value" || k == "binders") tab = k else site(if (tcg) "[data-act=\"tCollTab\"][data-id=\"${css(k)}\"]" else "[data-act=\"collTab\"][data-id=\"${css(k)}\"]") },
             view = { mode -> prefs.edit().putString(viewKey, mode).apply(); asked = "view" to mode },
-            select = { site("[data-act=\"batchStart\"]") },
-            menu = { web(coll, "[data-act=\"collMenu\"]") },
+            // Select (workbench-ui.js): A.batchStart, a lot's tick (C.batchToggle) and the tray's Clear (A.batchClear) run in the engine and the
+            // page is read again; the tray's Move / Add to deck / Wishlist / Compare open their sheet here (CollectionSelect).
+            select = { asked = "select" to "" },
+            mark = { r, on -> scope.launch { if (HomeCache.loaded != null) runCatching { paint("mark" to "${r.id}\n${if (on) 1 else 0}") } } },
+            clear = { asked = "clear" to "" },
+            batch = { kind -> scope.launch { CollectionWrites.openBatch(context, game.id, kind) } },
+            // app.js A.collMenu: the ⋯ sheet (Import a list or CSV, Export CSV, Retry lookups, Verify printings), drawn here (CollectionImport).
+            menu = { CollectionWrites.collMenu.value = CollectionWrites.MenuOpen(lookups = { lookups++ }) },
             sort = { v -> asked = "sort" to v },
             direction = { v -> asked = "direction" to v },
             filter = { v -> asked = "filter" to v },
@@ -168,10 +182,12 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             pick = { name, v -> asked = "filter" to "$name=$v" },
             // tcg.js A.tRefreshPrices, run here (CollectionWrites): the button reads "Refreshing…" until it ends.
             refresh = { if (!refreshing) scope.launch { refreshing = true; try { CollectionWrites.act(context, "tRefreshPrices", com.google.gson.JsonObject().apply { addProperty("game", game.id) }) } finally { refreshing = false } } },
-            button = { a -> site("[data-act=\"${css(a)}\"]") },
-            // A.addCard opens the add sheet here; its "Paste or upload a list" (A.importCollection) is still the website's.
-            emptyAct = { a -> if (tcg) { if (a == "go") web(site + "#search", null) else site("[data-act=\"${css(a)}\"]") }
-                else if (a == "addCard") CollectionWrites.openAdd(com.google.gson.JsonObject()) { web(coll, "[data-act=\"importCollection\"]") }
+            // tcg.js A.tImportColl opens the paste sheet; A.tExportColl and A.tWishCopy run here (CollectionImport, CollectionWrites).
+            button = { a -> tcgButton(a) },
+            // A.addCard opens the add sheet, A.importCollection the import sheet, both drawn here.
+            emptyAct = { a -> if (tcg) { if (a == "go") web(site + "#search", null) else tcgButton(a) }
+                else if (a == "addCard") CollectionWrites.openAdd(com.google.gson.JsonObject())
+                else if (a == "importCollection") CollectionWrites.importing.value = CollectionWrites.ImportOpen("mtg", one = { CollectionWrites.openAdd(com.google.gson.JsonObject()) }, imported = { tab = "cards" })
                 else web(coll, "[data-act=\"${css(a)}\"]") },
         )
     }
