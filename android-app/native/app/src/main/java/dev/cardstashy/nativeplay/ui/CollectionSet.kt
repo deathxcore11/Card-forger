@@ -66,7 +66,15 @@ class TcgEmb(val icon: SiteSvg?, val text: String, val label: String)
 class TcgSetBadge(val tone: String, val code: String, val rarity: String, val rarityKind: String, val symbol: List<String>, val mark: List<String>, val markInk: Boolean,
                   val markText: String, val markGold: Boolean, val title: String)
 /** finish-preview.js's model for a Yu-Gi-Oh! or Pokémon tile: the recipe ([effect] / [treatment]), its masks, the Level-star foil, the frame. */
-class TcgFinish(val effect: String, val treatment: String, val mask: String, val clip: String, val stars: Float, val frame: String)
+class TcgFinish(val effect: String, val treatment: String, val mask: String, val clip: String, val stars: Float, val frame: String) {
+    companion object {
+        /** The engine's tcgFinishOf shape ({effect, treatment, mask, clip, stars, frame}); null when the site gave no model. */
+        fun of(f: JsonObject?): TcgFinish? = f?.let { o ->
+            fun str(k: String) = o.get(k)?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
+            TcgFinish(str("effect"), str("treatment"), str("mask"), str("clip"), o.get("stars")?.takeIf { it.isJsonPrimitive }?.asFloat ?: 0f, str("frame"))
+        }
+    }
+}
 class SetPack(val label: String, val sub: String, val disabled: Boolean, val act: String)
 
 class CollectionSetModel(val code: String, val title: String, val line: String, val back: CardPress?, val atmosphere: List<String>, val icon: String, val progress: SetProgress?,
@@ -579,13 +587,35 @@ private fun SetBadgeParts(b: TcgSetBadge, reduced: Boolean, code: Float, rx: Flo
 
 /** finish-preview.js's model as the app's foil layer (foil/FoilLayer.kt): Yu-Gi-Oh!'s recipe on its frame, Pokémon's treatment in its masks. */
 internal fun tcgFinishOf(context: android.content.Context, game: CardGame, f: TcgFinish, art: String): dev.cardstashy.nativeplay.foil.CardFinish? =
+    tcgFinishOf({ runCatching { dev.cardstashy.nativeplay.foil.PtcgFoil.Masks.load(context) }.getOrNull() }, game, f, art)
+
+/** The same with Pokémon's measured masks handed in ([masks] is only asked for a Pokémon finish). */
+internal fun tcgFinishOf(masks: () -> dev.cardstashy.nativeplay.foil.PtcgFoil.Masks?, game: CardGame, f: TcgFinish, art: String): dev.cardstashy.nativeplay.foil.CardFinish? =
     if (game == CardGame.YGO) f.effect.takeIf { it in dev.cardstashy.nativeplay.foil.YgoFoil.RECIPES }?.let {
         dev.cardstashy.nativeplay.foil.CardFinish.Ygo(it, art, dev.cardstashy.nativeplay.foil.YgoFoil.layoutOf(f.frame), f.stars) }
     else f.treatment.takeIf { it in dev.cardstashy.nativeplay.foil.PtcgFoil.RECIPES && f.mask.isNotBlank() }?.let { tr ->
-        val masks = runCatching { dev.cardstashy.nativeplay.foil.PtcgFoil.Masks.load(context) }.getOrNull()
-        if (masks?.shape(f.mask) == null) null
-        else dev.cardstashy.nativeplay.foil.CardFinish.Ptcg(tr, f.mask, art, f.clip.takeIf { c -> c.isNotBlank() && masks.shape(c) != null }, f.clip.isNotBlank())
+        val m = masks()
+        if (m?.shape(f.mask) == null) null
+        else dev.cardstashy.nativeplay.foil.CardFinish.Ptcg(tr, f.mask, art, f.clip.takeIf { c -> c.isNotBlank() && m.shape(c) != null }, f.clip.isNotBlank())
     }
+
+/** The same, its game read off the model: the site's Yu-Gi-Oh! effects are all "ygo-…" (Pokémon's are "ptcg-…", and carry a treatment). */
+internal fun tcgFinishOf(context: android.content.Context, f: TcgFinish, art: String): dev.cardstashy.nativeplay.foil.CardFinish? =
+    tcgFinishOf(context, if (f.effect.startsWith("ygo")) CardGame.YGO else CardGame.PTCG, f, art)
+
+/**
+ * A Yu-Gi-Oh! or Pokémon copy's picture in a list (Cards, Value, a binder pocket) wearing the finish the site gives its lot
+ * (finishAttrs on .lot-art / .value-lot-art / .pocket-image): the copy's variant or rarity, shimmering on its own as Magic's do.
+ * Drawn like CardPicture (the card's own aspect, contained), so the foil stays glued to the card.
+ */
+@Composable
+internal fun TcgLotPicture(url: String, f: TcgFinish, seed: String, modifier: Modifier, shape: androidx.compose.ui.graphics.Shape) {
+    val context = LocalContext.current
+    val finish = remember(f, url) { tcgFinishOf(context, f, url) }
+    val tilt = if (finish != null) rememberFoilTilt(live = true, phase = (seed.hashCode() and 0xff) / 255f, tile = true) else null
+    val p = heroPainter(homeArt(url))
+    if (p != null) CardFace(p, null, tilt, modifier, shape, finish = finish) else Box(modifier.clip(shape).background(Color(0xFF1F232B)))
+}
 
 /** A Yu-Gi-Oh! / Pokémon card's picture with its foil (finish-preview.js → foil/FoilLayer.kt), walking its picture's addresses. */
 @Composable

@@ -540,7 +540,9 @@ function tcgCardsPage(G, o = {}) {
     search: search && {value: search.attrs.value || '', placeholder: search.attrs.placeholder || '', label: search.attrs['aria-label'] || ''},
     filter: null, filters: all(one(tools, cls('filter-pills')), tagIs('select')).map(tcgSelectOf),
     rows: list ? all(list, x => cls('lot')(x) && x.tag === 'div').map(n => { const r = lotRow(n), nm = one(n, cls('lot-name')), x = one(n, cls('want-x'));
-      return {...r, cardId: nm?.attrs['data-id'] || '', wishId: x?.attrs['data-id'] || r.wishId, sub: [], pieces: subPieces(one(n, cls('lot-sub')))}; }) : [], none: '',
+      // The lot's foil as finish-preview.js gives it (tcg.js's .lot-art data-finish-model): the copy's variant or rarity, drawn by the app's foil layer.
+      return {...r, cardId: nm?.attrs['data-id'] || '', wishId: x?.attrs['data-id'] || r.wishId, sub: [], pieces: subPieces(one(n, cls('lot-sub'))),
+        tcgFinish: tcgFinishOf(one(n, cls('lot-art')), tcgCardOf(G, nm?.attrs['data-id'] || ''))}; }) : [], none: '',
     more: more ? {label: text(more), count: Number((/·\s*(\d+)\s+remaining/.exec(text(more)) || [])[1]) || 0} : null,
     actions: all(one(t, x => cls('actions')(x) && cls('wrap')(x)), tagIs('button')).map(button),
     glyphs: Object.fromEntries(["minus", "plus", "more", "heart"].map(k => [k, icon(svgIn(tree(ICON[k])))]))};
@@ -615,7 +617,9 @@ function valueBlock(n, G) {
         const print = G === 'mtg' && finish && finish.key && finish.key !== 'nonfoil' && finish.printingId ? S.state.printings?.[finish.printingId] || null : null;
         return {name: text(one(b, tagIs('strong'))), details: text(one(b, cls('value-lot-details'))), copies: text(one(b, cls('value-lot-copies'))), total: text(one(b, cls('value-lot-total'))),
           origin: text(one(b, cls('price-origin'))), picture: picture(img), fallback: img ? '' : text(art), aria: b.attrs['aria-label'] || '', act: b.attrs['data-act'] || '', data: attrsOf(b),
-          finish: finish && {key: finish.key || '', effect: finish.effect || art?.attrs['data-finish-effect'] || '', printingId: finish.printingId || ''}, print}; })};
+          finish: finish && {key: finish.key || '', effect: finish.effect || art?.attrs['data-finish-effect'] || '', printingId: finish.printingId || ''}, print,
+          // Yu-Gi-Oh! and Pokémon: value-page.js's finishAttrs on the lot's card (its id is the model's printingId).
+          ...(G !== 'mtg' && finish ? {tcgFinish: tcgFinishOf(art, tcgCardOf(G, finish.printingId || ''))} : {})}; })};
   }
   if (n.tag === 'p' && cls('foot')(n)) return {k: 'foot', text: text(n)};
   if (cls('panel')(n)) {
@@ -683,7 +687,9 @@ function binderModel(G, id, page = 0) {
       act: btn?.attrs['data-act'] || '', data: attrsOf(btn), picture: picture(img), fallback: img ? '' : text(im), starred: cls('starred')(p),
       star: star && {on: cls('on')(star), aria: star.attrs['aria-label'] || ''},
       finish: finish && {key: finish.key || '', effect: finish.effect || im?.attrs['data-finish-effect'] || '', printingId: finish.printingId || ''},
-      print: G === 'mtg' && finish && finish.key && finish.key !== 'nonfoil' && finish.printingId ? S.state.printings?.[finish.printingId] || null : null}; };
+      print: G === 'mtg' && finish && finish.key && finish.key !== 'nonfoil' && finish.printingId ? S.state.printings?.[finish.printingId] || null : null,
+      // Yu-Gi-Oh! and Pokémon: binders.js's finishAttrs on the pocket's card (its id is the model's printingId).
+      ...(G !== 'mtg' && finish ? {tcgFinish: tcgFinishOf(im, tcgCardOf(G, finish.printingId || ''))} : {})}; };
   const pageNode = one(t, cls('stash-pocket-page'));
   const under = dir => { const u = one(t, x => cls('stash-under')(x) && x.attrs['data-under'] === String(dir)); return u ? all(u, cls('stash-pocket')).map(p => { const img = one(p, tagIs('img')); return img ? {picture: picture(img)} : {empty: true}; }) : null; };
   const turn = all(one(t, cls('stash-turn-bar')), tagIs('button'));

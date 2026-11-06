@@ -143,7 +143,9 @@ class CollRow(val id: String, val name: String, val wanted: Boolean, val tier: S
               /** A Yu-Gi-Oh! or Pokémon lot: its card's id (A.tCard) and its .lot-sub as pieces. */
               val cardId: String = "", val pieces: List<CollPiece> = emptyList(),
               /** workbench-ui.js selectionMark: null when Select is off; else whether this lot is ticked. */
-              val mark: Boolean? = null)
+              val mark: Boolean? = null,
+              /** A Yu-Gi-Oh! or Pokémon lot's finish (tcg.js .lot-art data-finish-model): what its foil is drawn from. */
+              val tcgFinish: TcgFinish? = null)
 /** workbench-ui.js selectionTray: "n selected", the four actions (disabled with none ticked) and Clear. */
 class CollTray(val count: String, val buttons: List<CollTrayButton>, val clear: String)
 class CollTrayButton(val kind: String, val label: String, val disabled: Boolean)
@@ -213,7 +215,7 @@ class CollectionCardsModel(val game: CardGame, val title: String, val banner: St
                                 cs?.s("rarity") ?: "common", cs?.s("title") ?: "", svg(c.o("imp"))) }, r.s("wantTag"), r.s("cardId"),
                         r.objs("pieces").map { x -> CollPiece(x.s("k"), x.s("t"), x.b("b"), x.b("s"), x.b("strong"), x.s("tone"), x.b("set"), svg(x.o("icon")),
                             x.s("src"), x.s("alt").ifBlank { x.s("label") }, x.b("ink"), x.s("title")) },
-                        mark = r.o("mark")?.b("on"))
+                        mark = r.o("mark")?.b("on"), tcgFinish = TcgFinish.of(r.o("tcgFinish")))
                 }, j.s("none"), more?.s("label"), more?.get("count")?.asInt ?: 0,
                 j.o("glyphs")?.entrySet()?.mapNotNull { (k, v) -> svg(v.takeIf { it.isJsonObject }?.asJsonObject)?.let { k to it } }?.toMap().orEmpty(),
                 j.o("select")?.s("label") ?: "", j.s("mode").ifBlank { "compact" },
@@ -948,6 +950,8 @@ internal fun LotArt(r: CollRow, modifier: Modifier, w: Dp, h: Dp, grey: Boolean 
                 })
             if (heart != null) Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 3.dp).clip(RoundedCornerShape(99.dp)).background(Color(0xD10A0A10))
                 .border(1.dp, Color(0x55FF8FA3), RoundedCornerShape(99.dp)).padding(3.dp)) { SiteIcon(heart, 12.dp, Color(0xFFFF8FA3), filled = true) }
+        } else if (r.art != null && r.tcgFinish != null) {
+            TcgLotPicture(r.art, r.tcgFinish, r.id, Modifier.fillMaxSize(), RoundedCornerShape(6.dp))
         } else if (r.art != null) {
             // finish-preview.js on the thumbnail: a copy in a finish wears it, shimmering on its own (no tilt in a list).
             val context = LocalContext.current

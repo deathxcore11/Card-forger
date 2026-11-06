@@ -1120,6 +1120,7 @@ private fun DeckPicture(c: DeckCard, modifier: Modifier, shape: androidx.compose
 @Composable
 internal fun RowPicture(r: CollRow, modifier: Modifier, shape: androidx.compose.ui.graphics.Shape) {
     if (r.art == null) { Box(modifier.clip(shape).background(Surface2), contentAlignment = Alignment.Center) { Text(r.fallback.ifBlank { "◇" }, style = sans(10f, 400, Mute)) }; return }
+    r.tcgFinish?.let { f -> TcgLotPicture(r.art, f, r.name, modifier, shape); return }
     val context = LocalContext.current
     val data = if (r.print != null) CardData.ready.collectAsState().value.also { if (it == null) CardData.warm(context) } else null
     val finish = Foil.finishFor(r.print, r.finishKey.ifBlank { "nonfoil" })

@@ -789,7 +789,9 @@ private fun Pocket(p: JsonObject, game: String, modifier: Modifier, interactive:
             .semantics(mergeDescendants = true) { contentDescription = p.s("aria"); role = Role.Button } else Modifier)) {
             Box(Modifier.fillMaxWidth().aspectRatio(5f / 7f).clip(RoundedCornerShape(2.dp)).background(Color(0xFF101319)), contentAlignment = Alignment.Center) {
                 val url = p.o("picture")?.s("src")?.ifBlank { null }
-                if (url != null) {
+                val tf = TcgFinish.of(p.o("tcgFinish"))
+                if (url != null && tf != null) TcgLotPicture(url, tf, p.s("entry"), Modifier.fillMaxSize(), RoundedCornerShape(2.dp))
+                else if (url != null) {
                     val print = p.o("print"); val fin = p.o("finish")
                     val context = LocalContext.current
                     val data = if (print != null) CardData.ready.collectAsState().value.also { if (it == null) CardData.warm(context) } else null

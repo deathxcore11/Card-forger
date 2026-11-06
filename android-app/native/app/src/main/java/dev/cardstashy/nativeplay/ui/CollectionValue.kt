@@ -436,7 +436,9 @@ private fun LotThumb(l: JsonObject, game: CardGame, w: Dp, h: Dp) {
     val pic = l.o("picture")
     val url = pic?.s("src")?.ifBlank { null }
     Box(Modifier.size(w, h).clip(RoundedCornerShape(4.dp)).background(Surface2V), contentAlignment = Alignment.Center) {
-        if (url != null) {
+        val tf = TcgFinish.of(l.o("tcgFinish"))
+        if (url != null && tf != null) TcgLotPicture(url, tf, l.s("name"), Modifier.fillMaxSize(), RoundedCornerShape(4.dp))
+        else if (url != null) {
             val print = l.o("print"); val fin = l.o("finish")
             val context = LocalContext.current
             val data = if (print != null) CardData.ready.collectAsState().value.also { if (it == null) CardData.warm(context) } else null
