@@ -316,7 +316,7 @@ private fun RichText(text: androidx.compose.ui.text.AnnotatedString, style: Text
  * tabs pin under it.
  */
 @Composable
-fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onClose: () -> Unit) {
+fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onBack: (() -> Unit)? = null, onClose: () -> Unit) {
     val y = remember { Animatable(1f) }
     val scope = rememberCoroutineScope()
     // style.css dialog.sheet[open]: rise .22 s ease-out.
@@ -375,7 +375,7 @@ fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onCl
                     }
                     item(key = "end") { Spacer(Modifier.navigationBarsPadding().height(22.dp)) }
                 }
-                SheetHead(m.head?.title.orEmpty(), scrolled, gutter) { close() }
+                SheetHead(m.head?.title.orEmpty(), scrolled, gutter, back = onBack?.takeIf { m.head?.back == true }?.let { b -> { scope.launch { if (!Motion.still) y.animateTo(1f, tween(200)); b() } } }) { close() }
                 if (pinTabs) Box(Modifier.padding(top = if (scrolled) 57.dp else 0.dp).fillMaxWidth().background(Brush.verticalGradient(0f to Color(0xFF111318), .8f to Color(0xF2111318), 1f to Color(0x00111318)))
                     .padding(horizontal = gutter).padding(top = 6.dp, bottom = 8.dp)) { CardTabs(m.tabs, big, act) }
             }
@@ -468,11 +468,16 @@ private fun BleedFit(p: androidx.compose.ui.graphics.painter.Painter, heroH: Dp,
 
 /** .sheet-head.overlay: the close button over the art; past 110 scrolled, the bar with the card's name (style.css 1352-1355). */
 @Composable
-private fun SheetHead(title: String, scrolled: Boolean, gutter: Dp, onClose: () -> Unit) {
+private fun SheetHead(title: String, scrolled: Boolean, gutter: Dp, back: (() -> Unit)? = null, onClose: () -> Unit) {
     Row(Modifier.fillMaxWidth().then(if (scrolled) Modifier.background(Color(0xFF171A20)).drawBehind {
         drawRect(LineC, topLeft = Offset(0f, size.height - 1.dp.toPx()), size = Size(size.width, 1.dp.toPx()))
     } else Modifier).padding(horizontal = gutter).padding(top = if (scrolled) 4.dp else 16.dp, bottom = if (scrolled) 8.dp else 0.dp),
         verticalAlignment = Alignment.CenterVertically) {
+        // views.js cardSheet: the ← (data-act sheetBack, "Back to deck idea") before the name when the page came from the idea sheet.
+        if (back != null) Box(Modifier.padding(end = 8.dp).size(44.dp).clip(RoundedCornerShape(12.dp)).background(if (scrolled) Surface2 else Color(0x8C0A0C10)).border(1.dp, Color(0x2EFFFFFF), RoundedCornerShape(12.dp))
+            .clickable(onClick = back).semantics { contentDescription = "Back to deck idea" }, contentAlignment = Alignment.Center) {
+            Text("←", style = sans(17f, 400, Color.White))
+        }
         if (scrolled) Text(title, style = manrope(16f, 700, Ink, lh = 1.3f), maxLines = 2, modifier = Modifier.weight(1f))
         else Spacer(Modifier.weight(1f))
         Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(if (scrolled) Surface2 else Color(0x8C0A0C10)).border(1.dp, Color(0x2EFFFFFF), RoundedCornerShape(12.dp))

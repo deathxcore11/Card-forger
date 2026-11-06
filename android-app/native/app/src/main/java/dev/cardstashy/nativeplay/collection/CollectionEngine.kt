@@ -33,7 +33,24 @@ object CollectionEngine {
     private val answers = ConcurrentLinkedQueue<Triple<Int, Int, Pair<String, String>>>()
     private val client by lazy { OkHttpClient.Builder().callTimeout(20, TimeUnit.SECONDS).build() }
 
-    fun init(context: Context) { val app = context.applicationContext; filesDir = app.filesDir; source = { app.assets.open("collection-engine.js").bufferedReader().readText() } }
+    fun init(context: Context) { val app = context.applicationContext; filesDir = app.filesDir; source = { app.assets.open("collection-engine.js").bufferedReader().readText() }
+        store = PrefsStore(app.getSharedPreferences("collection-engine-storage", Context.MODE_PRIVATE)) }
+
+    /**
+     * The site's browser storage the bundle keeps between visits (its KEPT_KEYS: meta.js's tournament cache), here on the device:
+     * handed back when the bundle starts and written as each pump reports a change. Tests keep it in memory ([MemoryStore]).
+     */
+    interface Store { fun load(): Map<String, String>; fun save(key: String, value: String?) }
+    class MemoryStore : Store {
+        val kept = java.util.concurrent.ConcurrentHashMap<String, String>()
+        override fun load(): Map<String, String> = HashMap(kept)
+        override fun save(key: String, value: String?) { if (value == null) kept.remove(key) else kept[key] = value }
+    }
+    private class PrefsStore(val prefs: android.content.SharedPreferences) : Store {
+        override fun load(): Map<String, String> = prefs.all.mapNotNull { (k, v) -> (v as? String)?.let { k to it } }.toMap()
+        override fun save(key: String, value: String?) { prefs.edit().apply { if (value == null) remove(key) else putString(key, value) }.apply() }
+    }
+    @Volatile var store: Store = MemoryStore()
     /** This device's files (rulebooks kept for offline use); unset in tests run from a file. */
     @Volatile internal var filesDir: File? = null
     /** For tests: the bundle from a file. */
@@ -48,6 +65,7 @@ object CollectionEngine {
         q.evaluate("globalThis.__tz=${zoneTable(listOf("America/New_York"))}")
         q.evaluate(source(), "collection-engine.js")
         q.evaluate("__host.seed(${java.security.SecureRandom().nextInt()})")
+        runCatching { q.evaluate("Collection.storeLoad(${str(JsonObject().apply { store.load().forEach { (k, v) -> addProperty(k, v) } }.toString())})") }
         qjs = q
     }
 
@@ -76,6 +94,7 @@ object CollectionEngine {
         while (true) { val a = answers.poll() ?: break; landed = true; q.evaluate("__host.answer(${a.first}, ${a.second}, ${str(a.third.first)}, ${str(a.third.second)})") }
         val p = JsonParser.parseString(q.evaluate("__host.pump(${System.currentTimeMillis()})") as String).asJsonObject
         for (x in p.getAsJsonArray("requests")) send(x.asJsonObject)
+        p.getAsJsonObject("stored")?.entrySet()?.forEach { (k, v) -> runCatching { store.save(k, v.takeIf { it.isJsonPrimitive }?.asString) } }
         p to after(q, p, landed)
     }
     private fun str(v: String) = JsonPrimitive(v).toString()
@@ -188,6 +207,17 @@ object CollectionEngine {
     suspend fun deckPanel(game: String, id: String, tab: String): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.deckPanel(${str(game)}, ${str(id)}, ${str(tab)})") as String).asJsonObject }
     const val PANEL_MODEL = "Collection.panelModel()"
+    /** The Decks page's Ideas (or Meta decks) tab body (views.js decks() / tcg.js tcgDecks() with that tab, after .random-tools) as such a
+     *  panel, run by app.js's / tcg.js's own handlers; its route's loads (the ideas auto-build, the tournament meta, card data) start too. */
+    suspend fun decksPanel(game: String, tab: String): JsonObject = model("Collection.decksPanel(${str(game)}, ${str(tab)})")
+    /** icons.js decorateGlyphs: each leading glyph's icon ({"↻": svg, …}). */
+    suspend fun glyphs(): JsonObject = model("Collection.glyphs()")
+    /** views.js ideaSheet for idea [i] of the Ideas tab (app.js openIdea: it builds as it opens); read again with [settle] and [IDEA_MODEL]. */
+    suspend fun ideaSheet(i: Int): JsonObject = model("Collection.ideaSheet($i)")
+    const val IDEA_MODEL = "Collection.ideaModel()"
+    /** One idea-sheet control (app.js A.ideaBudget "budget", A.ideaCustomBudget "custom", C.ideaPick "pick" {name, on}, A.ideaSelect "select", the deck view "view"). */
+    suspend fun ideaDo(kind: String, value: String = ""): JsonObject = model("Collection.ideaDo(${str(kind)}, ${str(value)})")
+    suspend fun ideaClose() { on { q -> q.evaluate("Collection.ideaClose()") } }
     /** The open tab drawn again from the account as it is now (after a save made from it). */
     /** What the open tab runs once the player said yes (A.lifeEnd). */
     suspend fun panelDone(kind: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.panelDone(${str(kind)})") as String).asJsonObject }

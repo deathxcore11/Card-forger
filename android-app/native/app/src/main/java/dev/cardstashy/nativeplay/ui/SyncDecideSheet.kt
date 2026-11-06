@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -143,6 +144,7 @@ fun SyncDecideSheet(backdrop: GraphicsLayer?, onClose: () -> Unit) {
  */
 @Composable
 internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> Unit, onBack: (() -> Unit)? = null, eyebrow: String = "",
+                        foot: (@Composable () -> Unit)? = null,
                         content: @Composable ColumnScope.(vw: androidx.compose.ui.unit.Dp) -> Unit) {
     val still = Motion.still
     val fade = remember { Animatable(if (still) 1f else 0f) }
@@ -163,6 +165,8 @@ internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> U
     val glass = backdrop != null && android.os.Build.VERSION.SDK_INT >= 31; val bg = Site.Bg
     val scroll = rememberScrollState()
     var headH by remember { mutableIntStateOf(0) }
+    var footH by remember { mutableIntStateOf(0) }
+    val pin = remember { SheetPin() }
     BoxWithConstraints(Modifier.fillMaxSize()
         .drawBehind {
             // body.glass dialog.sheet::backdrop { background: rgba(4, 5, 8, .45); backdrop-filter: blur(3px) }, fading in.
@@ -221,9 +225,20 @@ internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> U
                     clipRect(top = maxOf(0f, 9.dp.toPx() - scroll.value) + headH) { drawLayer(body) }
                 } else Modifier)
                 .verticalScroll(scroll).padding(top = 9.dp + with(density) { headH.toDp() })
-                .padding(start = gutter, end = gutter, bottom = 23.dp + navBottom)) { content(vw) }
+                // With a sticky foot (.idea-actions), the body ends where the foot begins (its margin-top 10 above it).
+                .padding(start = gutter, end = gutter, bottom = if (foot != null) 10.dp + with(density) { footH.toDp() } else 23.dp + navBottom)) {
+                androidx.compose.runtime.CompositionLocalProvider(LocalSheetPin provides pin) { content(vw) } }
+            // What the body pins under the head once it scrolls past (position: sticky; top; .sel-bar), on var(--bg).
+            pin.content?.let { pinned -> Box(Modifier.align(Alignment.TopStart).fillMaxWidth()
+                .offset { androidx.compose.ui.unit.IntOffset(0, headH + maxOf(0, 9.dp.roundToPx() - scroll.value)) }
+                .background(bg).padding(start = gutter, end = gutter)) { pinned() } }
+            // A sticky foot (position: sticky; bottom; .idea-actions): pinned to the sheet's bottom, var(--bg), a line over it, the
+            // navigation bar's inset under it.
+            if (foot != null) Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().onSizeChanged { footH = it.height }.background(bg)
+                .drawBehind { drawRect(Site.Line, size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }
+                .padding(start = gutter, end = gutter, top = 10.dp, bottom = 10.dp + navBottom)) { foot() }
             // .sheet-head (glass): sticky, rgba(18, 20, 26, .8), a .06 white rule under it; h2 Manrope 19/800; the 44 close.
-            Row(Modifier.fillMaxWidth().onSizeChanged { headH = it.height }
+            Row(Modifier.fillMaxWidth().onSizeChanged { headH = it.height }.onGloballyPositioned { pin.headBottom = it.boundsInRoot().bottom }
                 .graphicsLayer { translationY = maxOf(0f, 9.dp.toPx() - scroll.value) }
                 .then(if (glass) Modifier.drawBehind {
                     if (body.size.width > 0) {
@@ -307,3 +322,10 @@ private fun drawIntoShadow(scope: androidx.compose.ui.graphics.drawscope.DrawSco
         maskFilter = android.graphics.BlurMaskFilter(blur / 2f, android.graphics.BlurMaskFilter.Blur.NORMAL)
     })
 }
+
+/** A sheet's sticky-top slot: the head's bottom (in the root), and what is pinned under it while its own place is scrolled past. */
+internal class SheetPin {
+    var headBottom by androidx.compose.runtime.mutableFloatStateOf(0f)
+    var content by androidx.compose.runtime.mutableStateOf<(@Composable () -> Unit)?>(null)
+}
+internal val LocalSheetPin = androidx.compose.runtime.staticCompositionLocalOf<SheetPin?> { null }

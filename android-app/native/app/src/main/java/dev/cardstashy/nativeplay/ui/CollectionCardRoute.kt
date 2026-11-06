@@ -28,7 +28,9 @@ data class CardOpen(val name: String, val entry: String = "", val deck: String =
                      *  opened from, the finish that page prices, Yu-Gi-Oh!'s printing::rarity and edition). */
                     val game: String = "mtg", val id: String = "", val setId: String = "", val setVariant: String = "", val printing: String = "", val edition: String = "",
                     /** Opened by Random (data-random): the page offers 🎲 Another. */
-                    val random: Boolean = false)
+                    val random: Boolean = false,
+                    /** Opened from the deck idea sheet ("idea:<i>", app.js A.card's S.ui.sheetBack): the page offers "Back to deck idea". */
+                    val back: String = "")
 
 private fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
 
@@ -43,7 +45,9 @@ private fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
 @Composable
 fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -> Unit, web: (url: String, press: String?) -> Unit, onSet: ((String) -> Unit)? = null,
                        /** 🎲 Another (A.dbRandom / A.tRandomCard) on a random card's page, where the opener draws the next one; null: the website's. */
-                       onRandom: (() -> Unit)? = null) {
+                       onRandom: (() -> Unit)? = null,
+                       /** The ← (A.sheetBack) of a page opened from the deck idea sheet ([CardOpen.back]): the sheet again. */
+                       onBack: (() -> Unit)? = null) {
     if (open.game != "mtg") return TcgCardHost(open, onClose, onOpen, web, onSet, onRandom)
     val context = LocalContext.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
@@ -52,7 +56,7 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
     var asked by remember(open) { mutableStateOf<Pair<String, String>?>(null) }
     LaunchedEffect(open) {
         runCatching {
-            val o = JsonObject().apply { addProperty("name", open.name); addProperty("entry", open.entry); addProperty("deck", open.deck); if (open.random) addProperty("random", "1"); open.setI?.let { addProperty("setI", it); addProperty("setFinish", open.setFinish) }; open.pack?.let { addProperty("pack", it); addProperty("setFinish", open.setFinish) } }
+            val o = JsonObject().apply { addProperty("name", open.name); addProperty("entry", open.entry); addProperty("deck", open.deck); if (open.random) addProperty("random", "1"); if (open.back.isNotBlank()) addProperty("back", open.back); open.setI?.let { addProperty("setI", it); addProperty("setFinish", open.setFinish) }; open.pack?.let { addProperty("pack", it); addProperty("setFinish", open.setFinish) } }
             model = withContext(Dispatchers.Default) { CollectionCardModel.parse(CollectionEngine.card("mtg", o)) }
             CollectionEngine.cardLoad()
             CollectionEngine.settle(30_000, CollectionEngine.CARD_MODEL) { j -> if (j.size() > 0) model = CollectionCardModel.parse(j) }
@@ -88,7 +92,7 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
                 else runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri)) }
             }
             p.act == "dbRandom" && onRandom != null -> onRandom()
-            p.act == "card" && !d["name"].isNullOrBlank() -> onOpen(open.copy(name = d.getValue("name"), entry = "", setI = null, setFinish = "", pack = null))
+            p.act == "card" && !d["name"].isNullOrBlank() -> onOpen(open.copy(name = d.getValue("name"), entry = "", setI = null, setFinish = "", pack = null, back = ""))
             p.act == "go" && !d["to"].isNullOrBlank() -> web("https://cardstashy.com/" + d.getValue("to"), null)
             p.act == "set" && !d["code"].isNullOrBlank() -> onSet?.invoke(d.getValue("code").lowercase()) ?: web("https://cardstashy.com/#set/" + android.net.Uri.encode(d.getValue("code").lowercase()), null)
             // The heart and the owned − / ＋ save here: the site's handler, then the page again (CollectionWrites).
@@ -119,7 +123,7 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
         finish = { f -> asked = "finish" to f },
         print = { i -> asked = "print" to i.toString() },
         face = { asked = "face" to "" },
-        card = { n -> onOpen(open.copy(name = n, entry = "", setI = null, setFinish = "", pack = null)) },
+        card = { n -> onOpen(open.copy(name = n, entry = "", setI = null, setFinish = "", pack = null, back = "")) },
         rule = { key -> site("[data-act=\"ruleHint\"][data-rule=\"${css(key)}\"]") },
         profile = {
             val s = m.shown
@@ -131,7 +135,7 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
         },
         press = ::press,
     )
-    CollectionCardSheet(m, act, onClose)
+    CollectionCardSheet(m, act, onBack = onBack?.takeIf { open.back.isNotBlank() }, onClose = onClose)
 }
 
 /**
@@ -220,7 +224,7 @@ private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) 
         },
         press = ::press,
     )
-    CollectionCardSheet(m, act, onClose)
+    CollectionCardSheet(m, act, onClose = onClose)
 }
 
 /** A tapped button's data-* attributes as the site's handler reads them (t.dataset). */

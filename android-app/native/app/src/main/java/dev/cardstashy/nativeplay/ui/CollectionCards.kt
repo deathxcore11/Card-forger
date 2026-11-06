@@ -638,7 +638,8 @@ internal fun CollTabs(tabs: List<CollTab>, onTab: (String) -> Unit) {
             }.clickable { if (!on) onTab(t.key) }.semantics { role = Role.Tab }.padding(horizontal = 6.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
                 SiteIcon(t.icon, 16.dp, if (on) Ink else Mute.copy(alpha = .75f))
-                Text(t.label, maxLines = 1, style = sans(13.5f, if (on) 750 else 650, if (on) Ink else Mute, ls = -.135f))
+                // A label too long for its share (130% text) wraps under itself rather than being cut.
+                Text(t.label, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center, style = sans(13.5f, if (on) 750 else 650, if (on) Ink else Mute, ls = -.135f))
             }
         }
     }

@@ -66,12 +66,19 @@ import {fieldStore, calibrateField} from 'WEB/matchups-ui.js';
 import {mtgConstructedPower} from 'WEB/deckpower.js';
 import {podSpeed, newGame, proxyList, proxySheetHTML} from 'WEB/extras.js';
 import {formatUpgrades, applyFormatSwap} from 'WEB/format-upgrades.js';
-import {upgradeSuggestions, sourceCredit, mtgjsonDeck} from 'WEB/strategy.js';
+import {upgradeSuggestions, sourceCredit, mtgjsonDeck, collectionIdeas} from 'WEB/strategy.js';
 import {applySwapsToCards, cardSig} from 'WEB/insights.js';
 import {comparePower} from 'WEB/deck-optimizer.js';
 import {themeQueries} from 'WEB/builder.js';
 import {findCheapestPrinting} from 'WEB/mtg-cheap.js';
-import {commanderTheme} from 'WEB/planner.js';
+import {commanderTheme, completionPlan} from 'WEB/planner.js';
+import {ideaSheet as ideaSheetView} from 'WEB/views.js';
+import {inventory} from 'WEB/core.js';
+import {customBudget} from 'WEB/ui.js';
+import {cheapestKnown} from 'WEB/mtg-cheap.js';
+import {buyOnTcgplayer, massLines} from 'WEB/buy.js';
+import {metaNeedsRefresh} from 'WEB/meta.js';
+import {metaBrowseKey} from 'WEB/tcg.js';
 import {mtgPower} from 'WEB/power.js';
 import {mtgFieldKey, availability as deckAvailability} from 'WEB/views.js';
 import {shareSheet as shareSheetView} from 'WEB/views.js';
@@ -79,7 +86,27 @@ import {sharePayload, sharePayloadTcg} from 'WEB/share.js';
 import {commanderEligible, isLand, drawHand} from 'WEB/core.js';
 import {currentDeck, priceOf} from 'WEB/store.js';
 import '../scripts/web-bytes.mjs';
-import {Document as SiteDocument, serialize as domJson, byId as domById, tap as domTap, type as domType} from '../scripts/site-dom.mjs';
+import {Document as SiteDocument, Event as SiteEvent, serialize as domJson, byId as domById, tap as domTap, type as domType} from '../scripts/site-dom.mjs';
+
+// The browser storage the site keeps between visits, kept by the app (CollectionEngine.store, the device's preferences): the bundle's
+// localStorage lives in memory, so the keys the site reads back on a later visit are handed to the app as they change (each pump's
+// "stored") and put back when the bundle starts (Collection.storeLoad). meta.js's tournament cache (cardforge-meta-v1: 12 hours, the
+// offline copy and Pokémon's one art-schema refresh) is what the Decks page's Ideas and Meta decks read; the site keeps S.ui.ideas
+// itself for the session only (store.js), so no other Ideas key exists to keep.
+const KEPT_KEYS = new Set(['cardforge-meta-v1']);
+const keptDirty = new Set();
+const keptStore = globalThis.localStorage, keptSet = keptStore.setItem, keptRemove = keptStore.removeItem;
+keptStore.setItem = (k, v) => { keptSet(k, v); if (KEPT_KEYS.has(String(k))) keptDirty.add(String(k)); };
+keptStore.removeItem = k => { keptRemove(k); if (KEPT_KEYS.has(String(k))) keptDirty.add(String(k)); };
+{
+  const pump = globalThis.__host.pump;
+  globalThis.__host.pump = now => {
+    const out = pump(now);
+    if (!keptDirty.size) return out;
+    const stored = {}; for (const k of keptDirty) stored[k] = keptStore.getItem(k); keptDirty.clear();
+    return out.slice(0, -1) + ',"stored":' + JSON.stringify(stored) + '}';
+  };
+}
 
 // app.js:193-198, verbatim.
 const stripCache = (s) => {
@@ -728,7 +755,10 @@ const LEAD = { "▲": "warn", "●": "stop", "⚔": "sword", "☠": "poison", "�
 const glyph = s => { const m = /^(\s*)(\S)\uFE0F?[ \u00a0](?=\S)/u.exec(s); return m && LEAD[m[2]] && ICON[LEAD[m[2]]] ? {icon: icon(svgIn(tree(ICON[LEAD[m[2]]]))), label: s.slice(m[0].length)} : {icon: null, label: s}; };
 // style.css .wc-open svg: an outline, 1.8 wide, round ends.
 const WC_SVG = {fill: 'none', stroke: 'currentColor', sw: 1.8, cap: 'round', join: 'round'};
-const button = b => { const g = glyph(text(b)); return {label: g.label, act: b.attrs['data-act'] || '', ghost: cls('ghost')(b), chest: cls('wc-open')(b), aria: b.attrs['aria-label'] || '', icon: icon(svgIn(b), cls('wc-open')(b) ? WC_SVG : {}) || g.icon}; };
+// Its data-id (decksTab's tab), data-format (Create a <format> deck), data-deck and data-home (Random deck from the Decks page) go
+// with it, as the site's handler reads them off the button.
+const button = b => { const g = glyph(text(b)); return {label: g.label, act: b.attrs['data-act'] || '', ghost: cls('ghost')(b), chest: cls('wc-open')(b), aria: b.attrs['aria-label'] || '', icon: icon(svgIn(b), cls('wc-open')(b) ? WC_SVG : {}) || g.icon,
+  id: b.attrs['data-id'] || '', format: b.attrs['data-format'] || '', deck: b.attrs['data-deck'] || '', home: b.attrs['data-home'] || '', to: b.attrs['data-to'] || ''}; };
 const widthOf = n => Number((/width:\s*([\d.]+)%/.exec(n?.attrs?.style || '') || [])[1]) || 0;
 
 // views.js deckTile: cover art, format chip and its emblem, the deck box (power.js / deck-box.js), colour identity, name, size line,
@@ -752,15 +782,20 @@ function deckTileModel(n) {
 // views.js decks(), My decks: the page head, its tabs and tools, and every deck as deckTile draws it. [o] = {q} as I.shelfSearch sets it.
 function decksPage(game, o = {}) {
   const ui = S.ui;
-  ui.decksTab = 'mine'; if (o.q !== undefined) ui.q.shelf = String(o.q);
-  const t = tree(decksView()), head = one(t, cls('page-head')), empty = one(t, cls('empty')), search = one(one(t, cls('toolbar')), tagIs('input')), list = one(t, x => x.attrs.id === 'shelfList');
+  // [o.tab]: the head, tabs and tools as the site draws them with that tab open (Ideas and Meta decks keep the head's buttons); the
+  // tab is put back to My decks after, so nothing else reads it.
+  const tab = ['ideas', 'inspiration'].includes(o.tab) ? o.tab : 'mine';
+  ui.decksTab = tab; if (o.q !== undefined) ui.q.shelf = String(o.q);
+  let html; try { html = decksView(); } finally { ui.decksTab = 'mine'; }
+  const mine = tab === 'mine';
+  const t = tree(html), head = one(t, cls('page-head')), empty = one(t, cls('empty')), search = one(one(t, cls('toolbar')), tagIs('input')), list = one(t, x => x.attrs.id === 'shelfList');
   return {game, title: text(one(head, tagIs('h1'))), actions: all(one(head, cls('head-actions')), tagIs('button')).map(button),
     tabs: all(one(t, cls('seg')), tagIs('button')).map(b => ({key: b.attrs['data-id'], label: text(b), on: b.attrs['aria-selected'] === 'true', icon: icon(svgIn(b))})),
     tools: all(one(t, cls('random-tools')), tagIs('button')).map(button),
     search: search && {value: search.attrs.value || '', placeholder: search.attrs.placeholder || '', label: search.attrs['aria-label'] || ''},
-    tiles: all(t, x => cls('deck-tile')(x)).map(deckTileModel),
-    none: list ? text(one(list, x => x.tag === 'p')) : '',
-    empty: empty && {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p'))), mark: text(one(empty, cls('empty-mark'))), actions: all(empty, tagIs('button')).map(button)}};
+    tiles: mine ? all(t, x => cls('deck-tile')(x)).map(deckTileModel) : [],
+    none: list ? text(one(list, x => x.tag === 'p')) : '', tab,
+    empty: mine && empty && {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p'))), mark: text(one(empty, cls('empty-mark'))), actions: all(empty, tagIs('button')).map(button)}};
 }
 
 
@@ -779,14 +814,16 @@ function tcgDeckTileModel(n) {
     stats, bar: widthOf(one(one(body, cls('bar')), tagIs('span'))) / 100};
 }
 // tcg.js tcgDecks(), My decks of a Yu-Gi-Oh! or Pokémon collection, in decksPage's model.
-function tcgDecksPage(G) {
-  tcgFocus(G, 'decks'); S.ui.decksTab = 'mine';
-  const t = tree(tcgDecks()), head = one(t, cls('page-head')), empty = one(t, cls('empty'));
+function tcgDecksPage(G, o = {}) {
+  const tab = ['ideas', 'inspiration'].includes(o.tab) ? o.tab : 'mine', mine = tab === 'mine';
+  tcgFocus(G, 'decks'); S.ui.decksTab = tab;
+  let html; try { html = tcgDecks(); } finally { S.ui.decksTab = 'mine'; }
+  const t = tree(html), head = one(t, cls('page-head')), empty = one(t, cls('empty'));
   return {game: G, title: text(one(head, tagIs('h1'))), actions: all(one(head, cls('row')), tagIs('button')).map(button),
     tabs: all(one(t, cls('seg')), tagIs('button')).map(b => ({key: b.attrs['data-id'], label: text(b), on: b.attrs['aria-selected'] === 'true', icon: icon(svgIn(b))})),
     tools: all(one(t, cls('random-tools')), tagIs('button')).map(button), search: null,
-    tiles: all(t, x => cls('deck-tile')(x)).map(tcgDeckTileModel), none: '',
-    empty: empty && {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p'))), mark: text(one(empty, cls('empty-mark'))), actions: all(empty, tagIs('button')).map(button)}};
+    tiles: mine ? all(t, x => cls('deck-tile')(x)).map(tcgDeckTileModel) : [], none: '', tab,
+    empty: mine && empty && {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p'))), mark: text(one(empty, cls('empty-mark'))), actions: all(empty, tagIs('button')).map(button)}};
 }
 
 // views.js deckPage(), the Cards tab: deckShell's hero (deck-viewer.js), the actions under it, the deck tabs, the card toolbar,
@@ -3674,7 +3711,364 @@ function mtgDeckPanel(id, tab) {
   panel.redraw = () => { mtgFocus(); deckOpen(id); S.ui.deckTab = tab; panelRun(() => { panel.host.innerHTML = body(); attach(panel.host); }); };
 }
 
+// ---- Collection › Decks › Ideas (views.js decks() / tcg.js tcgDecks() with S.ui.decksTab = 'ideas'): the tab's body, everything after
+// .random-tools, as a panel of the site's markup run by the site's handlers (app.js's "Ideas, references, precons" block, ported below
+// verbatim with render() being the panel drawn again). The head, tabs and tools are Collection.decks(game, {tab}).
+// What the site leaves to a sheet or another page goes to the app (acted): openIdea / saveIdea (the idea sheet, Collection.ideaSheet),
+// importCollection, loadExample (writeActs.loadExample), go, decksTab, and Yu-Gi-Oh! / Pokémon's tCard, tImportColl, tBuildAuto,
+// tPickSeeds, tBuildMulti and tMetaDeck.
+const $ideas = sel => (panel?.decks === 'mtg' ? panel.doc.querySelector(sel) : null);
+const ideasRender = () => { if (panel?.decks === 'mtg' && panel.tab === 'ideas') panel.redraw(); };
+// app.js buildIdeas (6649), verbatim but for render().
+function buildIdeas() {
+  const I2 = S.ui.ideas;
+  try {
+    I2.cache = collectionIdeas(S.state.collection, S.state.decks, S.catalog, { includeUnowned: !I2.ownedOnly });
+    if (!I2.cache.length && S.state.collection.length)
+      I2.msg = S.state.collection.some((e) => !meta(e.name)) ? "Some cards have no card data yet — tap Analyze to load them." : "No legendary creatures in your collection yet. Untick “Owned commanders only” to include ones you’ve looked up.";
+  } catch (e) {
+    I2.msg = e.message;
+  }
+  ideasRender();
+}
+const IA = {};
+// app.js A.analyze (6660), verbatim but for render() and $(): the status line is the panel's #ideasMsg. The names it corrects are
+// saved as the site's commit saves them (the app writes them to the device and the account once the tap settles: bgSaves).
+IA.analyze = async () => {
+  const I2 = S.ui.ideas;
+  if (I2.busy) return;
+  I2.busy = true;
+  ideasRender();
+  try {
+    const r = await resolveNames(S.state.collection.map((e) => e.name), (m) => {
+      I2.msg = m;
+      const el = $ideas("#ideasMsg") || $ideas(".muted.small[role=status]");
+      if (el) el.textContent = m;
+    });
+    await commit((s) => {
+      for (const e of s.collection) if (r.matched.has(key(e.name))) Object.assign(e, { name: r.matched.get(key(e.name)), nameVerified: true });
+    }, { rerender: false });
+    bgSaves++;
+    I2.msg = `${new Set(S.state.collection.map((e) => key(e.name))).size - r.failed.length} card names have data${r.failed.length ? ` · ${r.failed.length} not found` : ""}.`;
+    I2.busy = false;
+    buildIdeas();
+  } finally {
+    I2.busy = false;
+    ideasRender();
+  }
+};
+const DECKS_ACTS = {
+  // app.js's dispatcher toasts a failed A.analyze; it lands after the click, so it goes to the panel that started it (when still open).
+  analyze: () => { const p = panel; IA.analyze().catch(e => { const t = {text: e?.message || String(e), undo: false}; if (panel === p && p) p.toasts.push(t); else toasts.push(t); }); },
+  // app.js C.ideasOwned, C.ideaFilter, A.ideasMore (6683-6694).
+  'C.ideasOwned': (t) => {
+    S.ui.ideas.ownedOnly = t.checked;
+    buildIdeas();
+  },
+  'C.ideaFilter': (t) => {
+    S.ui.ideas.filter = t.value;
+    ideasRender();
+  },
+  ideasMore: () => {
+    S.ui.ideas.limit += 12;
+    ideasRender();
+  },
+  // app.js A.openIdea and A.saveIdea (6710, 6846): the selection starts empty and the sheet opens (the app's IdeaSheet); Save as deck
+  // says what to check first.
+  openIdea: t => { S.ui.ideas.sel = new Set(); panel.acted = {act: 'openIdea', data: {i: String(Number(t.dataset.i))}}; },
+  saveIdea: t => { S.ui.ideas.sel = new Set(); panel.acted = {act: 'openIdea', data: {i: String(Number(t.dataset.i))}};
+    toasts.push({text: "Review the card count and warnings before saving this list. Incomplete lists are saved only as drafts.", undo: false}); },
+  // tcg.js's Ideas: Tournament decks you're closest to's Try again (A.tMetaRefresh), its own panel kept while it loads.
+  tMetaRefresh: t => tcgPanelAsync(() => TA.tMetaRefresh(t)),
+};
+// app.js route()'s side effects for #decks/<tab> (1281-1320): Yu-Gi-Oh! / Pokémon load the tournament meta when it is missing or stale
+// (once per snapshot) and, on Ideas, every collection card still missing its data (T.ensureMany); Magic's Ideas build once a session
+// when there is nothing yet (ui.ideas.ran).
+const decksAutoLoaded = new Set();
+function decksRouteLoads(G, tab) {
+  if (G !== 'mtg') {
+    const metaKey = tab === 'inspiration' ? metaBrowseKey(G) : G, MS = metaState(metaKey);
+    if (!MS.busy && metaNeedsRefresh(metaKey) && !decksAutoLoaded.has('meta' + metaKey + MS.at)) {
+      decksAutoLoaded.add('meta' + metaKey + MS.at);
+      setTimeout(() => { const p0 = panel; Promise.resolve(tcgCtx.loadMeta?.(G, false, metaKey)).catch(() => {}).finally(() => { if (panel === p0) panel?.redraw?.(); }); if (panel === p0) panel?.redraw?.(); }, 0);
+    }
+    if (tab === 'ideas') {
+      const ids = tcgGs(G).collection.map((e) => e.cardId), missing = ids.filter(id => tcgNeedsRefresh(G, tcgCardOf(G, id)));
+      const k = G + 'decks' + Math.floor(Date.now() / 3600000) + ':' + [...new Set(missing)].sort().join(',');
+      if (missing.length && !decksAutoLoaded.has(k)) {
+        decksAutoLoaded.add(k);
+        const p0 = panel;
+        tcgEnsureMany(G, missing, () => {}).then(() => { if (panel === p0) panel.redraw(); }, () => {});
+      }
+    }
+    return;
+  }
+  const ui = S.ui;
+  if (tab === "ideas" && !ui.ideas.cache.length && !ui.ideas.busy && !ui.ideas.ran) {
+    ui.ideas.ran = true;
+    setTimeout(() => { if (panel?.decks === 'mtg' && panel.tab === 'ideas') buildIdeas(); }, 30);
+  }
+}
+// The Decks page with [tab] open, cut after .random-tools: the panel, drawn afresh each time the tab opens (A.decksTab routes there).
+function decksPanel(G, tab) {
+  const mtg = !G || G === 'mtg';
+  const body = () => {
+    let html;
+    if (mtg) { mtgFocus(); S.ui.decksTab = tab; try { html = decksView(); } finally { S.ui.decksTab = 'mine'; } }
+    else { tcgFocus(G, 'decks'); S.ui.decksTab = tab; try { html = tcgDecks(); } finally { S.ui.decksTab = 'mine'; } }
+    const box = new SiteDocument().createElement('div'); box.innerHTML = html;
+    const kids = [...box.children], at = kids.findIndex(k => k.classList?.contains?.('random-tools') || String(k.getAttribute?.('class') || '').split(/\s+/).includes('random-tools'));
+    return kids.slice(at + 1).map(k => k.outerHTML).join('');
+  };
+  panel = null;
+  panelOpen(['decks', mtg ? 'mtg' : G, tab].join('|'), body(), null, DECKS_ACTS);
+  panel.decks = mtg ? 'mtg' : G; panel.tab = tab;
+  panel.redraw = () => { panelRun(() => { panel.host.innerHTML = body(); }); };
+  decksRouteLoads(mtg ? 'mtg' : G, tab);
+}
+
+// ---- The deck idea sheet (views.js ideaSheet, app.js openIdea and its handlers 6697-6850), the sheet the app draws (IdeaSheet).
+// app.js ideaDeck / openIdea, verbatim but for openSheet: the sheet is drawn from ideaSheetModel() whenever the app reads it.
+function ideaDeck() {
+  const I2 = S.ui.ideas;
+  return I2.open?.custom || I2.cache[I2.open?.i]?.deck;
+}
+function openIdea(i) {
+  const I2 = S.ui.ideas;
+  // The sheet drawn again: #ideaSelCount is the markup's own words once more (C.ideaPick's text lasts until the next render).
+  ideaSelWords = null;
+  if (I2.open?.i !== i) I2.open = { i, budget: I2.defaultBudget ?? Infinity, custom: null, diagnostics: null, busy: false, initialized: false, msg: "Loading a complete proposed deck, including lands…" };
+  I2.sel = I2.sel && I2.open.i === i ? I2.sel : new Set();
+  S.ui.sheetCtx = { type: "idea", i };
+  if (!I2.open.initialized) {
+    I2.open.initialized = true;
+    Promise.resolve().then(() => { if (S.ui.sheetCtx?.type === "idea" && I2.open?.i === i) IA.ideaBudget({dataset:{v:String(I2.open.budget)}}).catch(e => toasts.push({text: e?.message || String(e), undo: false})); });
+  }
+}
+// app.js A.ideaCustomBudget (6720): [raw] is #ideaCustomBudget's value.
+IA.ideaCustomBudget = async (raw) => {
+ const value=String(raw).trim() ? customBudget(raw) : Infinity;
+ S.ui.ideas.defaultBudget=value;
+ await IA.ideaBudget({dataset:{v:String(value)}});
+};
+// app.js A.ideaBudget (6728), verbatim but for toast() and the sheet drawn again (the app reads the model as it changes).
+IA.ideaBudget = async (t) => {
+  const I2 = S.ui.ideas,
+    o = I2.open,
+    idea = I2.cache[o.i],
+    budget = Number(t.dataset.v);
+  if (o.busy) return;
+  if ((budget !== Infinity && !Number.isFinite(budget)) || budget < 0 || (budget !== Infinity && budget > 100000)) return void toasts.push({text: "Choose a purchase budget from $0 to $100,000, or No cap.", undo: false});
+  o.budget = budget;
+  I2.defaultBudget = budget;
+  o.diagnostics = null;
+  o.error = "";
+  I2.sel = new Set();
+  if (!budget) {
+    o.custom = null;
+    return openIdea(o.i);
+  }
+  o.busy = true;
+  o.custom = null;
+  o.msg = "Finding cards to buy…";
+  openIdea(o.i);
+  try {
+    const base = { ...idea.deck, budget, id: "idea-preview", cards: [{ name: idea.commander.name, qty: 1 }] };
+    const loaded = await loadCandidates(base, budget, (m) => {
+      o.msg = m;
+    });
+    const plan = completionPlan(base, S.state.collection, S.state.decks, S.catalog, { budget, landTarget: 36, preferOwned: true, simple: false, price: c => priceOf(c.name) });
+    o.diagnostics = { ...plan.diagnostics, candidateLoads: loaded, warnings: plan.warnings.filter(w => !/heuristic|measured win rates/i.test(w)) };
+    if (loaded.failed) o.diagnostics.warnings.push(`${loaded.failed} card-data lookups failed. Retry data before assuming the budget is the problem.`);
+    o.custom = { ...idea.deck, budget: budget === Infinity ? null : budget, budgetBasis: "purchase", cards: plan.deck.cards, buildDiagnostics: o.diagnostics };
+    o.msg = `${plan.open ? "Incomplete draft" : "Complete 100-card list"}: ${plan.cost == null ? "purchase cost unverified" : `${usd(plan.cost)} for new copies currently listed`}${plan.open ? `; ${plan.open} slots still open` : ""}. Purchase budget: ${budget === Infinity ? "no cap" : usd(budget)}.`;
+  } catch (e) {
+    o.error = e.message || "The deck could not be built.";
+    o.msg = `Build failed: ${o.error} No completed list is available to save.`;
+  } finally {
+    o.busy = false;
+    saveCatalogSoon();
+    if (S.ui.sheetCtx?.type === "idea" && S.ui.ideas.open === o) openIdea(o.i);
+  }
+};
+// app.js C.ideaPick and A.ideaSelect (6770-6783).
+IA.ideaPick = (t) => {
+  const sel = S.ui.ideas.sel;
+  if (t.checked) sel.add(t.dataset.name);
+  else sel.delete(t.dataset.name);
+  ideaSelWords = sel.size ? `${sel.size} selected` : "Nothing selected";
+};
+IA.ideaSelect = (t) => {
+  const d = ideaDeck(),
+    rows = rowsFor({ ...d, id: "idea-preview" });
+  S.ui.ideas.sel = new Set(t.dataset.mode === "missing" ? rows.filter((r) => r.missing).map((r) => r.name) : t.dataset.mode === "all" ? rows.map((r) => r.name) : []);
+  openIdea(S.ui.ideas.open.i);
+};
+// What C.ideaPick wrote into #ideaSelCount until the sheet is drawn again ("Nothing selected" at none).
+let ideaSelWords = null;
+const ideaPicked = () => {
+  const d = ideaDeck(),
+    sel = S.ui.ideas.sel;
+  return aggregateCards(d.cards).filter((c) => sel.has(c.name));
+};
+// views.js ideaSheet's markup, read back in the order the sheet shows it.
+function ideaSheetModel() {
+  const I2 = S.ui.ideas, o = I2.open, idea = o && I2.cache[o.i];
+  if (!idea || S.ui.sheetCtx?.type !== 'idea') return {missing: true};
+  const t = tree(ideaSheetView(idea, ideaDeck(), o, I2.sel || new Set()));
+  const words = n => text(n);
+  const btn = b => b && {...press(b), disabled: b.attrs.disabled !== undefined};
+  const blocks = [];
+  for (const k of t.kids || []) {
+    if (!k.tag) continue;
+    if (cls('sheet-head')(k)) continue;
+    if (cls('idea-hero')(k)) blocks.push({k: 'hero', art: picture(one(k, tagIs('img'))), plan: words(one(k, cls('chip')))});
+    else if (cls('impact')(k)) blocks.push({k: 'impact', tiles: all(k, cls('imp')).map(x => ({label: words(one(x, tagIs('small'))), value: words(one(x, tagIs('b')))}))});
+    else if (k.tag === 'p' && cls('eyebrow')(k)) blocks.push({k: 'eyebrow', text: words(k)});
+    else if (k.tag === 'p' && cls('warn-text')(k)) blocks.push({k: 'warn', text: words(k)});
+    else if (k.tag === 'p' && cls('foot')(k)) blocks.push({k: 'foot', text: words(k)});
+    else if (k.tag === 'p' && k.attrs.id === 'ideaMsg') blocks.push({k: 'status', text: words(k)});
+    else if (k.tag === 'button') blocks.push({k: 'save', ...btn(k)});
+    else if (cls('note')(k)) blocks.push({k: 'note', text: words(k)});
+    else if (cls('chips')(k)) blocks.push({k: 'chips', chips: all(k, tagIs('button')).map(b => ({...btn(b), v: b.attrs['data-v'] || ''}))});
+    else if (cls('custom-budget-row')(k)) { const l = one(k, tagIs('label')), i = one(k, tagIs('input'));
+      blocks.push({k: 'custom', label: labelWords(l), value: i?.attrs.value || '', placeholder: i?.attrs.placeholder || '', disabled: i?.attrs.disabled !== undefined, button: btn(one(k, tagIs('button')))}); }
+    else if (cls('build-overlay')(k)) blocks.push({k: 'overlay', title: words(one(k, tagIs('b'))), msg: words(one(k, x => x.attrs.role === 'status')), note: words(one(k, tagIs('small')))});
+    else if (cls('sel-bar')(k)) blocks.push({k: 'selbar', count: ideaSelWords ?? words(one(k, x => x.attrs.id === 'ideaSelCount')), buttons: all(k, tagIs('button')).map(b => ({...btn(b), mode: b.attrs['data-mode'] || ''}))});
+    else if (cls('deck-viewer')(k)) {
+      const view = one(k, cls('deck-view-switch'));
+      blocks.push({k: 'cards', view: k.attrs['data-deck-view'] || 'gallery', viewLabel: words(one(one(k, cls('deck-view-toolbar')), tagIs('span'))),
+        views: view ? all(view, tagIs('button')).map(b => ({mode: b.attrs['data-mode'], label: b.attrs['aria-label'] || b.attrs.title || '', on: b.attrs['aria-checked'] === 'true', icon: icon(svgIn(b))})) : [],
+        groups: all(k, x => x.tag === 'details' && cls('group')(x)).map(g => { const sum = one(g, tagIs('summary')), first = one(sum, tagIs('span')), em = one(first, tagIs('em'));
+          const head = words(first);
+          return {name: head.slice(0, head.length - words(em).length).trim(), count: words(em), price: words(one(sum, cls('muted'))),
+            rows: all(g, cls('pick-row')).map(r => { const box = one(r, tagIs('input')), main = one(r, cls('pick-main')), copy = one(main, cls('deck-compact-copy')), st = one(copy, tagIs('small')), side = one(r, cls('pick-side'));
+              return {name: box?.attrs['data-name'] || '', label: words(one(copy, tagIs('b'))), picked: box?.attrs.checked !== undefined, aria: box?.attrs['aria-label'] || '',
+                art: picture(one(main, tagIs('img'))), set: words(one(copy, cls('set-badge'))), rarity: words(one(copy, cls('tag'))),
+                status: words(st), short: cls('short')(r), mana: all(one(side, cls('mana')), tagIs('img')).map(i => ({src: i.attrs.src || '', alt: i.attrs.alt || ''})),
+                price: words(one(side, tagIs('b')))}; })};
+        })});
+    }
+    else if (cls('inline-pick')(k)) { const sel = one(k, tagIs('select')); blocks.push({k: 'deckpick', label: sel?.attrs['aria-label'] || '', options: optionsOf(sel), button: btn(one(k, tagIs('button')))}); }
+    else if (cls('idea-actions')(k)) blocks.push({k: 'actions', buttons: all(k, tagIs('button')).map(btn)});
+  }
+  const head = one(t, cls('sheet-head'));
+  return {i: o.i, title: words(one(head, tagIs('h2'))), close: one(head, tagIs('button'))?.attrs['aria-label'] || 'Close', busy: !!o.busy, error: o.error || '', blocks};
+}
+// app.js's writes from the idea sheet and the Ideas tab (6789-6845, 7607), verbatim but for toast(), $() (the app sends the fields:
+// [d.deck] #ideaDeckPick), closeSheet and go (made: the deck to open, or the page).
+Object.assign(writeActs, {
+  async ideaSaveAll(d) {
+    if(S.ui.ideas.open?.busy)return void toasts.push({text: "Wait for the deck preview.", undo: false});
+    if(S.ui.ideas.open?.error)return void toasts.push({text: "The build failed. Retry before saving a draft.", undo: false});
+    const idea = S.ui.ideas.cache[S.ui.ideas.open.i],
+      preview = structuredClone(ideaDeck()), count = sumQty(preview.cards), incomplete = count !== 100, needsReview = !!mtgPower(preview).readiness?.provisional,
+      deck = withSnapshot({ ...preview, id: uid(), name: idea.commander.name.split(",")[0] + " · " + idea.plan, versions: [] }, incomplete ? "Started incomplete draft from a deck idea" : needsReview ? "Started draft needing deck checks" : "Started from a deck idea");
+    await commit((s) => {
+      s.decks.push(deck);
+      s.activeDeck = deck.id;
+    }, { msg: incomplete ? `Saved incomplete draft (${count}/100 cards).` : needsReview ? "Saved draft (100/100 cards; deck checks need review)." : "Saved complete 100-card list as a new deck." });
+    if (S.ui.sheetCtx?.type === 'idea') S.ui.sheetCtx = null;
+    made = JSON.stringify({go: "deck", id: deck.id, tab: "cards"});
+  },
+  async ideaToDeck(d) {
+    const picked = ideaPicked(),
+      id = d.deck,
+      dk = deckOf(id);
+    if (!picked.length) return void toasts.push({text: "Tick some cards first.", undo: false});
+    if (!dk) return void toasts.push({text: "Pick a deck.", undo: false});
+    await commit((s) => {
+      const i = s.decks.findIndex((x) => x.id === id);
+      let deck = withSnapshot(s.decks[i], "Before adding from an idea");
+      for (const c of picked) if (!deck.cards.some((x) => key(x.name) === key(c.name))) deck = mergeDeckCard(deck, c.name, c.qty);
+      s.decks[i] = deck;
+    }, { msg: `${picked.length} cards added to ${dk.name}.` });
+  },
+  async ideaWish() {
+    const picked = ideaPicked();
+    if (!picked.length) return void toasts.push({text: "Tick some cards first.", undo: false});
+    await commit((s) => {
+      for (const c of picked) {
+        const own = inventory(s.collection, c.name, s.decks).available;
+        if (!s.wishlist.some((w) => key(w.name) === key(c.name))) s.wishlist.push({ id: uid(), name: c.name, qty: own + c.qty, finish: "nonfoil" });
+      }
+    }, { msg: `${picked.length} cards added to your wishlist.` });
+  },
+  async ideaOwn(d) {
+    const picked = ideaPicked();
+    if (!picked.length) return void toasts.push({text: "Tick the cards you own.", undo: false});
+    if (!ask(`Add ${sumQty(picked)} cards to your collection as cards you own?`, d.confirmed)) return;
+    await commit((s) => {
+      for (const c of picked) s.collection.push({ id: uid(), name: c.name, qty: c.qty, set: "", collectorNumber: "", finish: "nonfoil", language: "en", condition: "Near Mint", location: "", reserved: 0, printingId: null, printingVerified: false, nameVerified: !!meta(c.name), raw: { acquisition: "Added from deck idea" } });
+    }, { msg: `${sumQty(picked)} cards added to your collection.` });
+  },
+  // app.js A.ideaBuy (6838) and buyMtg (4084): the shopping list copied, then TCGplayer's Mass Entry (buy.js asks first).
+  async ideaBuy(d) {
+    await siteRun(async () => {
+      const dk = ideaDeck(),
+        rows = rowsFor({ ...dk, id: "idea-preview" }),
+        sel = S.ui.ideas.sel,
+        list = rows.filter((r) => r.missing && (!sel.size || sel.has(r.name))).map((r) => ({ name: r.name, qty: r.missing }));
+      if (!list.length) return void toasts.push({text: "You already own everything selected.", undo: false});
+      await buyMtg(list);
+    }, d, {});
+  },
+  // app.js A.loadExample (7607): asks before replacing anything, then the example collection replaces every game's workspace (the old
+  // one kept as the recovery copy, app.js replaceWorkspace) and Collection opens (made).
+  async loadExample(d) {
+    const hasData = [S.state, ...Object.values(S.state.tcg || {})].some((game) => ["collection", "decks", "wishlist", "references", "notes"].some((field) => game[field]?.length));
+    if (hasData && !ask("Replace all collections, decks, wishlists and notes across every game with example data? Your current workspace becomes the recovery copy.", d.confirmed)) return;
+    const names = ["Krenko, Mob Boss", "Goblin Instigator", "Sol Ring", "Arcane Signet", "Talrand, Sky Summoner", "Counterspell", "Mountain", "Island"];
+    const st = blank();
+    st.example = true;
+    st.collection = names.filter((n) => meta(n)).map((n) => ({ id: uid(), name: n, qty: ["Mountain", "Island"].includes(n) ? 12 : 1, set: "", collectorNumber: "", finish: "nonfoil", condition: "Near Mint", language: "en", location: "Example", reserved: 0, printingVerified: false, raw: {} }));
+    await queueWorkspaceWrite(async () => {
+      siteRecovery = JSON.stringify(stripCache(S.state));
+      const valid = normalize(structuredClone(st));
+      if (tcgPrev !== undefined) valid.settings.game = S.state.settings?.game;
+      S.state = valid; conditionWorkspaceRevision++; lastUndo = null; commits++;
+      useMyPrices(S.state.myPrices);
+    });
+    made = JSON.stringify({go: "collection"});
+  },
+});
+// app.js buyMtg (4084), verbatim but for toast(); copyText is app.js copyText (the clipboard, siteRun's).
+async function buyMtg(items) {
+  const rows = [];
+  for (const r of aggregateCards(items).filter(r => r.qty > 0)) {
+    const choice = S.state.priceChoices?.[key(r.name)], c = meta(r.name);
+    if (choice) {
+      let chosen = choice.set && choice.cn ? { id: choice.id, name: r.name, set: choice.set, set_name: choice.setName, collector_number: choice.cn } : S.state.printings?.[choice.id] || (c?.id === choice.id ? c : null);
+      if (!chosen && choice.id) {
+        try { chosen = await api("/cards/" + encodeURIComponent(choice.id)); } catch {}
+      }
+      if (!chosen?.set || !chosen.collector_number || key(chosen.name) !== key(r.name) || chosen.id !== choice.id) {
+        toasts.push({text: `The selected printing for ${r.name} needs verification. Choose it again before creating its shopping list; no other printing was substituted.`, undo: false});
+        return true;
+      }
+      rows.push({ qty: r.qty, name: r.name.split(" // ")[0], set: chosen.set_name, code: chosen.set, num: chosen.collector_number, finish: choice.finish || "nonfoil" });
+    } else {
+      const low = cheapestKnown(key(r.name)), priced = low?.usd != null && low.set && (cardPrice(c) === null || low.usd <= cardPrice(c));
+      rows.push({ qty: r.qty, name: r.name.split(" // ")[0], set: priced ? low.setName : c?.set_name, code: priced ? low.set : c?.set, num: priced ? low.cn : c?.collector_number, finish: "nonfoil" });
+    }
+  }
+  // This app's Mass Entry serializer cannot transmit foil/etched finishes.
+  // Preserve the requested finish in a checklist instead of silently losing it.
+  if (rows.some(r => r.finish !== "nonfoil")) {
+    await appCopyText(rows.map(r => `${r.qty} ${r.name}${r.code ? ` [${r.code.toUpperCase()}]${r.num ? " " + r.num : ""}` : ""} · ${r.finish}`).join("\n"), "Exact printing/finish checklist copied. Match these finishes at the seller; no cart was opened or purchase made.");
+    return true;
+  }
+  return buyOnTcgplayer("mtg", await massLines("mtg", rows));
+}
+// app.js copyText (1021): siteRun's clipboard always takes it, so the download fallback never runs here.
+async function appCopyText(t, msg) {
+  await navigator.clipboard.writeText(t);
+  toasts.push({text: String(msg), undo: false});
+}
+
 globalThis.Collection = {
+  // What the app kept of the site's browser storage (KEPT_KEYS), put back when the bundle starts.
+  storeLoad(keptJson) { const o = keptJson ? JSON.parse(keptJson) : {}; for (const [k, v] of Object.entries(o)) if (KEPT_KEYS.has(k) && typeof v === 'string') keptSet(k, v); },
   // The account's workspace row data (cloud.js), normalized as app.js loads it; [catalogJson] is the app's saved catalog.
   load(workspaceJson, catalogJson) {
     // No account copy (signed out, or a row never set up): app.js starts from store.js blank().
@@ -3876,7 +4270,32 @@ globalThis.Collection = {
   panelDone(kind) { if (kind === 'lifeEnd') { S.ui.life = null; panel?.redraw?.(); } return panel ? panelModel() : '{}'; },
   panelRedraw() { if (panel?.redraw) panel.redraw(); return panel ? panelModel() : '{}'; },
   panelTap(id) { const el = panel && domById(panel.doc.documentElement, Number(id)); if (el) panelRun(() => domTap(el)); return panel ? panelModel() : '{}'; },
-  panelType(id, value) { const el = panel && domById(panel.doc.documentElement, Number(id)); if (el) panelRun(() => domType(el, value)); return panel ? panelModel() : '{}'; },
+  // A checkbox's tick ([value] "true" or "false": app.js's change handlers read its checked, C.ideasOwned) or another field's value.
+  panelType(id, value) { const el = panel && domById(panel.doc.documentElement, Number(id));
+    if (el) panelRun(() => { if (el.localName === 'input' && el.getAttribute('type') === 'checkbox') { el.checked = String(value) === 'true'; el.dispatchEvent(new SiteEvent('change', {bubbles: true})); } else domType(el, value); });
+    return panel ? panelModel() : '{}'; },
+  // The Decks page's Ideas (or Meta decks) tab body as such a panel (decksPanel), with its route's loads started.
+  decksPanel(game, tab) { decksPanel(game || 'mtg', tab === 'inspiration' ? 'inspiration' : 'ideas'); return panelModel(); },
+  // icons.js decorateGlyphs: the icon each leading glyph wears (↻ Re-analyze, ⚒ Build, 🏆 Meta decks…), for the panel's words.
+  glyphs() { return json(Object.fromEntries(Object.entries(LEAD).filter(([, k]) => ICON[k]).map(([g, k]) => [g, icon(svgIn(tree(ICON[k])))]))); },
+  // The deck idea sheet for idea [i] of the Ideas tab (app.js openIdea: it builds at the remembered budget as it opens); IDEA_MODEL
+  // reads it again as the build goes; ideaDo runs one of its controls; ideaClose is closeSheet.
+  ideaSheet(i) { mtgFocus(); ideaSelWords = null; const n = Number(i); if (!S.ui.ideas.cache[n]) return json({missing: true}); openIdea(n); return json(ideaSheetModel()); },
+  ideaModel() { const m = ideaSheetModel(); const said = toasts.splice(0).map(t => t.text); return json({...m, toasts: said}); },
+  ideaDo(kind, value) {
+    mtgFocus(); toasts = [];
+    const o = S.ui.ideas.open; if (!o || S.ui.sheetCtx?.type !== 'idea') return json({missing: true});
+    const v = String(value ?? '');
+    const run = f => { try { const r = f(); if (r?.then) r.catch(e => toasts.push({text: e?.message || String(e), undo: false})); } catch (e) { toasts.push({text: e?.message || String(e), undo: false}); } };
+    if (kind === 'budget') { ideaSelWords = null; run(() => IA.ideaBudget({dataset: {v}})); }
+    else if (kind === 'custom') { ideaSelWords = null; run(() => IA.ideaCustomBudget(v)); }
+    else if (kind === 'pick') { const {name, on} = JSON.parse(v); IA.ideaPick({checked: !!on, dataset: {name: String(name)}}); }
+    else if (kind === 'select') { ideaSelWords = null; IA.ideaSelect({dataset: {mode: v}}); }
+    // deck-viewer.js's view switch (A.deckView): the account's Magic deck view.
+    else if (kind === 'view') { if (DECK_VIEWS.includes(v)) ((S.state.settings.displayModes ||= {}).mtg ||= {}).deck = v; }
+    return Collection.ideaModel();
+  },
+  ideaClose() { if (S.ui.sheetCtx?.type === 'idea') S.ui.sheetCtx = null; ideaSelWords = null; },
   catalog() { return json(S.catalog); },
   // search-hints.js hintPool: the names and questions the search field fades through (the player's own cards mixed in).
   hints(game) { return json({prompt: SEARCH_PROMPT, first: 4000, every: 4200, fade: 260, pool: hintPool(game, game === 'mtg' ? S.state.collection.map(e => e.name) : (S.state.tcg?.[game]?.collection || []).map(e => e.name))}); },
@@ -3885,7 +4304,7 @@ globalThis.Collection = {
   cards(game, optsJson) { const o = optsJson ? JSON.parse(optsJson) : {}; if (game && game !== 'mtg') { const m = tcgCardsPage(game, o); tcgScreenCards(game, 'cards', {ids: m.rows.map(r => r.cardId).filter(Boolean)}); return json(m); } mtgFocus(); return json(cardsPage(game, o)); },
   // One of the page's controls, as the site handles it (cardsAct), then the page again.
   // views.js decks(), My decks; [optsJson] = {q} (I.shelfSearch).
-  decks(game, optsJson) { if (game && game !== 'mtg') { const m = tcgDecksPage(game); tcgScreenCards(game, 'decks'); return json(m); } mtgFocus(); return json(decksPage(game, optsJson ? JSON.parse(optsJson) : {})); },
+  decks(game, optsJson) { const o = optsJson ? JSON.parse(optsJson) : {}; if (game && game !== 'mtg') { const m = tcgDecksPage(game, o); tcgScreenCards(game, 'decks'); return json(m); } mtgFocus(); return json(decksPage(game, o)); },
   // views.js deckPage(), the Cards tab of deck [id]; deckDo applies one of its controls as the site's handler does (deckAct), then draws it again.
   // [opts] = {search, filter, sort, view}: the controls as the app last left them, applied before the page draws.
   deck(game, id, opts) { if (game && game !== 'mtg') { tcgFocus(game, 'tdeck'); S.ui.tdeckId = id; const o = opts ? JSON.parse(opts) : {}; if (o.view != null) tcgDeckAct.view(o.view);
@@ -3948,7 +4367,9 @@ globalThis.Collection = {
     if (!cardsAct[kind]) throw Error('unknown Cards control ' + kind); mtgFocus(); cardsAct[kind](value); return json(cardsPage(game)); },
   // views.js cardSheet(): a card's page; [opts] = {name, entry, deck} as the tapped tile has them. cardLoad starts its lookups
   // (the app pumps them with settle()); cardDo applies one of its controls (cardAct).
-  card(game, opts) { mtgFocus(); const ctx = cardOpen(JSON.parse(opts)); return json(cardPageModel(ctx)); },
+  // [opts.back] "idea:<i>": opened from the deck idea sheet (app.js A.card's S.ui.sheetBack): the page offers "Back to deck idea".
+  card(game, opts) { mtgFocus(); const o = JSON.parse(opts); const b = /^idea:(\d+)$/.exec(String(o.back || ''));
+    S.ui.sheetBack = b ? {type: 'idea', i: Number(b[1])} : null; const ctx = cardOpen(o); return json(cardPageModel(ctx)); },
   cardModel() { return sheet ? json(cardPageModel(sheet)) : '{}'; },
   cardHtml() { const ctx = sheet, c = ctx && (ctx.print || meta(ctx.name)); return c ? cardView(c, ctx) : ''; },
   tcard(opts) { tcgReady(); const o = JSON.parse(opts); if (o.pack != null && o.pack !== '') { const pick = pack?.picks?.[Number(o.pack)]; if (pick) Object.assign(o, {game: pack.game, id: String(pick.id), setId: String(pack.set?.id ?? '')}); } tcardOpen(o); return json(tcardModel()); },

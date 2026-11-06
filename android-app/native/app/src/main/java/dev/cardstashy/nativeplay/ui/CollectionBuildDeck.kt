@@ -296,6 +296,10 @@ internal fun CollectionBuildDeckSheet(open: CollectionWrites.BuildOpen, backdrop
 
 // ---------------------------------------------------------------- build-overlay.js buildOverlay
 
+/** build-overlay.js's pop-up for a build another page runs (the Ideas tab's Reading your collection, the idea sheet's Building this deck). */
+@Composable
+internal fun BuildOverlayPop(title: String, msg: String, note: String, modifier: Modifier = Modifier) = BuildPop(BuildBusy(title, note, msg, {}, true), msg, modifier, null)
+
 /** .build-pop: the brand mark at work, the title, the live line in the accent, the note, Cancel build. */
 @Composable
 private fun BuildPop(b: BuildBusy, live: String, modifier: Modifier, onCancel: (() -> Unit)?) {

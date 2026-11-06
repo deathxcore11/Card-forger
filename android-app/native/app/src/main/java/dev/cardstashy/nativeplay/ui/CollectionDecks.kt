@@ -69,7 +69,9 @@ import com.google.gson.JsonObject
 // ---------------------------------------------------------------- the model (CollectionEngine.decks, views.js decks() → My decks)
 
 /** A site button as the engine read it: its words, its data-act, ghost or gold, War Chest's own gold outline, its icon. */
-class SiteButton(val label: String, val act: String, val ghost: Boolean, val chest: Boolean, val aria: String, val icon: SiteSvg?)
+class SiteButton(val label: String, val act: String, val ghost: Boolean, val chest: Boolean, val aria: String, val icon: SiteSvg?,
+                 /** What the site's handler reads off the button: data-id (decksTab's tab), data-format, data-deck, data-home, data-to. */
+                 val id: String = "", val format: String = "", val deck: String = "", val home: String = "", val to: String = "")
 
 /** views.js deckTile. */
 class DeckTileModel(val id: String, val to: String, val cover: String?, val tier: String, val tierColor: String, val format: String, val formatIcon: SiteSvg?,
@@ -83,13 +85,16 @@ class DeckTileModel(val id: String, val to: String, val cover: String?, val tier
 
 class CollectionDecksModel(val game: CardGame, val title: String, val actions: List<SiteButton>, val tabs: List<CollTab>, val tools: List<SiteButton>,
                            val searchValue: String?, val searchPlaceholder: String, val tiles: List<DeckTileModel>, val none: String,
-                           val emptyTitle: String?, val emptyText: String, val emptyActions: List<SiteButton>) {
+                           val emptyTitle: String?, val emptyText: String, val emptyActions: List<SiteButton>,
+                           /** The tab the page was drawn with (decksTab: mine, ideas, inspiration). */
+                           val tab: String = "mine") {
     companion object {
         private fun JsonObject.s(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asString ?: ""
         private fun JsonObject.b(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asBoolean ?: false
         private fun JsonObject.o(k: String) = get(k)?.takeIf { it.isJsonObject }?.asJsonObject
         private fun JsonObject.objs(k: String) = get(k)?.takeIf { it.isJsonArray }?.asJsonArray?.mapNotNull { it.takeIf(JsonElement::isJsonObject)?.asJsonObject }.orEmpty()
-        private fun button(j: JsonObject) = SiteButton(j.s("label"), j.s("act"), j.b("ghost"), j.b("chest"), j.s("aria"), CollectionCardsModel.svg(j.o("icon")))
+        private fun button(j: JsonObject) = SiteButton(j.s("label"), j.s("act"), j.b("ghost"), j.b("chest"), j.s("aria"), CollectionCardsModel.svg(j.o("icon")),
+            j.s("id"), j.s("format"), j.s("deck"), j.s("home"), j.s("to"))
 
         fun parse(j: JsonObject): CollectionDecksModel {
             val e = j.o("empty"); val search = j.o("search")
@@ -105,7 +110,7 @@ class CollectionDecksModel(val game: CardGame, val title: String, val actions: L
                         t.s("owned"), t.s("ownedText"), t.s("find"), t.s("findText"), t.get("bar")?.takeIf { it.isJsonPrimitive }?.asFloat ?: 0f,
                         t.get("sources")?.takeIf { it.isJsonArray }?.asJsonArray?.map { it.asString }.orEmpty(), t.s("crop"),
                         t.o("check")?.let { it.s("text") to it.s("tone") }, t.objs("stats").map { it.s("value") to it.s("label") })
-                }, j.s("none"), e?.s("title"), e?.s("text") ?: "", e?.objs("actions")?.map(::button).orEmpty())
+                }, j.s("none"), e?.s("title"), e?.s("text") ?: "", e?.objs("actions")?.map(::button).orEmpty(), j.s("tab").ifBlank { "mine" })
         }
     }
 }
@@ -120,6 +125,8 @@ class CollectionDecksActions(
     val search: (String) -> Unit = {},
     /** A deck tile: data-act="go" data-to="#deck/<id>". */
     val deck: (DeckTileModel) -> Unit = {},
+    /** A button with what it carries (its data-id, data-format, data-home…): decksTab opens its tab, the rest go to [button]. */
+    val press: (SiteButton) -> Unit = { b -> if (b.act == "decksTab" && b.id.isNotBlank()) tab(b.id) else button(b.act) },
 )
 
 // ---------------------------------------------------------------- site colours (style.css tokens as the live page computes them)
@@ -139,16 +146,19 @@ private fun sans(size: Float, weight: Int = 400, color: Color = Ink, lh: Float =
 
 @Composable
 fun CollectionDecks(m: CollectionDecksModel, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, act: CollectionDecksActions = CollectionDecksActions(),
-                    nav: @Composable (vertical: Boolean) -> Unit = {}, query: String = m.searchValue ?: "") {
+                    nav: @Composable (vertical: Boolean) -> Unit = {}, query: String = m.searchValue ?: "",
+                    /** The open tab's body when it isn't My decks (Ideas: the site's markup drawn by DecksTabBody). */
+                    body: (@Composable (gutter: Dp, screen: Dp) -> Unit)? = null) {
     BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
         val screen = maxWidth
-        if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); DecksPage(m, top, act, Modifier.weight(1f).fillMaxHeight(), screen, query) }
-        else Column(Modifier.fillMaxSize()) { DecksPage(m, top, act, Modifier.weight(1f).fillMaxWidth(), screen, query); nav(false) }
+        if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); DecksPage(m, top, act, Modifier.weight(1f).fillMaxHeight(), screen, query, body) }
+        else Column(Modifier.fillMaxSize()) { DecksPage(m, top, act, Modifier.weight(1f).fillMaxWidth(), screen, query, body); nav(false) }
     }
 }
 
 @Composable
-private fun DecksPage(m: CollectionDecksModel, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, act: CollectionDecksActions, modifier: Modifier, screen: Dp, query: String) {
+private fun DecksPage(m: CollectionDecksModel, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, act: CollectionDecksActions, modifier: Modifier, screen: Dp, query: String,
+                      body: (@Composable (gutter: Dp, screen: Dp) -> Unit)?) {
     val wide = screen >= 600.dp
     val gutter = if (wide) 22.dp else 16.dp
     // .deck-grid: one column, two from 640, three from 1000; 12 apart.
@@ -165,10 +175,11 @@ private fun DecksPage(m: CollectionDecksModel, top: @Composable (tabs: (@Composa
                 Head(m, act, wide)
                 if (m.tabs.isNotEmpty()) Box(Modifier.padding(top = 12.dp)) { CollTabs(m.tabs, act.tab) }
                 if (m.tools.isNotEmpty()) RandomTools(m.tools, act, wide)
-                m.searchValue?.let { DeckSearch(query, m.searchPlaceholder, act.search) }
+                m.searchValue?.takeIf { m.tab == "mine" }?.let { DeckSearch(query, m.searchPlaceholder, act.search) }
             }
         }
-        if (m.emptyTitle != null) item(key = "empty") { DecksEmpty(m, act, gutter) }
+        if (m.tab != "mine") item(key = "tab-" + m.tab) { body?.invoke(gutter, screen) ?: Text("Opening…", Modifier.padding(horizontal = gutter, vertical = 8.dp), style = sans(15f, color = Mute)) }
+        else if (m.emptyTitle != null) item(key = "empty") { DecksEmpty(m, act, gutter) }
         else if (m.tiles.isEmpty()) item(key = "none") {
             Text(m.none.ifBlank { "No decks match." }, Modifier.fillMaxWidth().padding(horizontal = gutter).padding(vertical = 8.dp), style = sans(15f, color = Mute))
         }
@@ -183,13 +194,15 @@ private fun DecksPage(m: CollectionDecksModel, top: @Composable (tabs: (@Composa
 
 // ---------------------------------------------------------------- Decks, War Chest, Import, New
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun Head(m: CollectionDecksModel, act: CollectionDecksActions, wide: Boolean) {
     val title = @Composable { mod: Modifier ->
         Text(m.title, mod, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 26.sp, lineHeight = 29.9.sp, letterSpacing = .52.sp, color = Ink))
     }
-    val actions = @Composable { Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) { m.actions.forEach { HeadButton(it, wide) { act.button(it.act) } } } }
+    // .page-head .actions wrap (flex-wrap) when the words are large: no button squeezes its label.
+    val actions = @Composable { androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
+        itemVerticalAlignment = Alignment.CenterVertically) { m.actions.forEach { HeadButton(it, wide) { act.press(it) } } } }
     // .page-head: a phone stacks the title over its buttons (12 apart); from 600 dp they share one line.
     if (wide) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { title(Modifier.weight(1f)); actions() }
     else Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { title(Modifier); if (m.actions.isNotEmpty()) actions() }
@@ -198,7 +211,18 @@ private fun Head(m: CollectionDecksModel, act: CollectionDecksActions, wide: Boo
 /** .head-actions .btn: glass ghosts (War Chest in its own gold outline) and the gold Import plate in Cinzel. */
 @Composable
 private fun HeadButton(b: SiteButton, wide: Boolean, onClick: () -> Unit) {
+    if (!b.ghost && b.act != "importDeck") {
+        // A plain .btn.small (tcg.js tcgDecks' ↥ Import): the game's accent, its ink, sans 13.5 / 700; 44 tall here.
+        val shape = RoundedCornerShape(11.dp)
+        Row(Modifier.heightIn(min = 44.dp).clip(shape).background(LocalGameGold.current).clickable(onClick = onClick).semantics { role = Role.Button }
+            .padding(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            SiteIcon(b.icon, 16.dp, Site.GoldInk, stroke = 2f)
+            Text(b.label, style = sans(13.5f, 700, Site.GoldInk, lh = 1.35f))
+        }
+        return
+    }
     if (!b.ghost) {
+        // polish.css: .page-head .btn[data-act="importDeck"]:not(.ghost), Magic's gilded plate.
         // linear-gradient(#f8e2a8, #e9bf6c 44%, #c08a3a 56%, #ddb064); inset 0 1px #fff6d6, inset 0 -2px #8a5c1f66, ring 1px #5a3b12, glow 0 10 26 #c99a4b3d.
         val shape = RoundedCornerShape(10.dp)
         Row(Modifier.heightIn(min = 44.dp)
@@ -229,17 +253,17 @@ private fun HeadButton(b: SiteButton, wide: Boolean, onClick: () -> Unit) {
     }
 }
 
-/** .random-tools: 🎲 Random Commander, 🎲 Random deck; 34 tall glass, sharing a phone's width, 16 above and below. */
+/** .random-tools: 🎲 Random Commander, 🎲 Random deck; glass (44 tall here), sharing a phone's width (flex: 1), a long label wrapping inside its button. */
 @Composable
 private fun RandomTools(tools: List<SiteButton>, act: CollectionDecksActions, wide: Boolean) {
     Row(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 4.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         for (b in tools) {
             val shape = RoundedCornerShape(11.dp)
-            Row(Modifier.then(if (wide) Modifier else Modifier.weight(1f)).height(34.dp).clip(shape).background(GlassFill).border(1.dp, GlassLine, shape)
-                .clickable { act.button(b.act) }.semantics { contentDescription = b.aria.ifBlank { b.label }; role = Role.Button }.padding(horizontal = 12.dp),
+            Row(Modifier.then(if (wide) Modifier else Modifier.weight(1f)).heightIn(min = 44.dp).clip(shape).background(GlassFill).border(1.dp, GlassLine, shape)
+                .clickable { act.press(b) }.semantics { contentDescription = b.aria.ifBlank { b.label }; role = Role.Button }.padding(horizontal = 12.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
                 SiteIcon(b.icon, 18.dp, Ink)
-                Text(b.label, maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(if (wide) 13.5f else 12f, 700, Ink))
+                Text(b.label, style = sans(if (wide) 13.5f else 12f, 700, Ink), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
         }
     }
@@ -414,7 +438,7 @@ private fun DecksEmpty(m: CollectionDecksModel, act: CollectionDecksActions, gut
             m.emptyActions.forEach { b ->
                 val shape = RoundedCornerShape(11.dp)
                 Box(Modifier.heightIn(min = 44.dp).clip(shape).then(if (!b.ghost) Modifier.background(Color(0xFFE8B95B)) else Modifier.background(GlassFill).border(1.dp, GlassLine, shape))
-                    .clickable { act.button(b.act) }.padding(horizontal = 16.dp, vertical = 10.dp), contentAlignment = Alignment.Center) {
+                    .clickable { act.press(b) }.padding(horizontal = 16.dp, vertical = 10.dp), contentAlignment = Alignment.Center) {
                     Text(b.label, style = sans(14f, 700, if (!b.ghost) Color(0xFF1A1408) else Ink))
                 }
             }
