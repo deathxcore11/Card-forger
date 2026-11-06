@@ -229,6 +229,10 @@ object CollectionEngine {
     /** A rule word on a card's page (A.ruleHint): rule-dex.js's glass, as a panel; [ruleGlassClose] puts back the panel it covered. */
     suspend fun ruleGlass(game: String, rule: String): JsonObject = model("Collection.ruleGlass(${str(game)}, ${str(rule)})")
     suspend fun ruleGlassClose(): JsonObject = model("Collection.ruleGlassClose()")
+    /** The card page's condition switch: each condition's price for the printing shown (the site's condition lookup); read again with [settle] and [COND_MODEL]. */
+    suspend fun conditions(game: String, retry: Boolean = false): JsonObject = model("Collection.conditions(${str(game)}, $retry)")
+    const val COND_MODEL = "Collection.condModel()"
+    suspend fun condModel(): JsonObject = model(COND_MODEL)
     suspend fun glyphs(): JsonObject = model("Collection.glyphs()")
     /** views.js ideaSheet for idea [i] of the Ideas tab (app.js openIdea: it builds as it opens); read again with [settle] and [IDEA_MODEL]. */
     suspend fun ideaSheet(i: Int): JsonObject = model("Collection.ideaSheet($i)")

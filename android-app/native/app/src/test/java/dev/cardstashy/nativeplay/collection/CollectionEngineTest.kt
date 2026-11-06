@@ -758,6 +758,31 @@ class CollectionEngineTest {
         CollectionEngine.ruleGlassClose(); Unit
     }
 
+    @Test fun conditionSwitch() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        val out = File(System.getProperty("repoRoot"), "android-app/native/app/build/shot-art/home")
+        for ((game, o) in listOf("mtg" to JsonObject().apply { addProperty("name", "Lightning Bolt") },
+                                 "ygo" to JsonObject().apply { addProperty("game", "ygo"); addProperty("id", "46986414") },
+                                 "ptcg" to JsonObject().apply { addProperty("game", "ptcg"); addProperty("id", "base1-4") })) {
+            if (game == "mtg") { CollectionEngine.card(game, o); CollectionEngine.cardLoad() } else { CollectionEngine.tcard(o); CollectionEngine.tcardLoad() }
+            CollectionEngine.settle(60_000)
+            if (game == "ptcg") { CollectionEngine.conditions(game); assertEquals("pick", CollectionEngine.condModel()["status"].asString) }
+            if (game == "ygo") CollectionEngine.tcardDo("select", """{"name":"historyEdition","value":"CT13-EN003::Ultra Rare"}""")
+            if (game == "ptcg") CollectionEngine.tcardDo("finish", "holofoil")
+            if (game == "mtg") CollectionEngine.cardDo("tab", "prices") else CollectionEngine.tcardDo("tab", "prices")
+            CollectionEngine.settle(30_000)
+            val page = if (game == "mtg") CollectionEngine.cardModel() else CollectionEngine.tcardModel()
+            CollectionEngine.conditions(game)
+            var m = JsonObject()
+            val until = System.currentTimeMillis() + 60_000
+            do { CollectionEngine.settle(5_000); m = CollectionEngine.condModel() } while (m["busy"]?.asBoolean == true && System.currentTimeMillis() < until)
+            println("COND $game ${m.toString().take(1400)}")
+            assertEquals(5, m.getAsJsonArray("rows").size())
+            out.mkdirs(); File(out, "cond-$game.json").writeText(m.toString()); File(out, "cond-$game-page.json").writeText(page.toString())
+        }
+    }
+
     private suspend fun fourDecks() {
         val prints = JsonParser.parseString(javaClass.classLoader!!.getResource("collection/printings.json")!!.readText()).asJsonArray.map { it.asJsonObject }
         val lots = JsonArray(); val printings = JsonObject(); val catalog = JsonObject()

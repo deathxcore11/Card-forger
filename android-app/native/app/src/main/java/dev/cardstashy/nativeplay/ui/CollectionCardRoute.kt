@@ -128,6 +128,8 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
     }
     val m = model ?: return
     val act = CollectionCardActions(
+        conditions = { retry -> CollectionEngine.conditions("mtg", retry); var c = CollectionEngine.condModel(); val until = System.currentTimeMillis() + 45_000
+            while (c["busy"]?.asBoolean == true && System.currentTimeMillis() < until) { CollectionEngine.settle(4_000); c = CollectionEngine.condModel() }; c },
         tab = { k -> if (k in setOf("overview", "meta", "guide", "prices")) asked = "tab" to k else site("[data-act=\"cardTab\"][data-tab=\"${css(k)}\"]") },
         range = { r -> asked = "range" to r },
         source = { src -> asked = "source" to src },
@@ -225,6 +227,8 @@ private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) 
     }
     val m = model ?: return
     val act = CollectionCardActions(
+        conditions = { retry -> CollectionEngine.conditions(open.game, retry); var c = CollectionEngine.condModel(); val until = System.currentTimeMillis() + 45_000
+            while (c["busy"]?.asBoolean == true && System.currentTimeMillis() < until) { CollectionEngine.settle(4_000); c = CollectionEngine.condModel() }; c },
         tab = { k -> asked = "tab" to k },
         range = { r -> asked = "range" to r },
         historySource = { key, src -> asked = "historySource" to JsonObject().apply { addProperty("key", key); addProperty("source", src) }.toString() },

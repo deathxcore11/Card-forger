@@ -105,6 +105,24 @@ class CollectionCardShotTest {
         if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
     }
 
+    /** The condition switch on each game's Prices tab (CollectionEngineTest.conditionSwitch: Lightning Bolt, Dark Magician's CT13
+     *  Ultra Rare, Base Set Charizard's Holofoil), live condition prices; the second Pokémon shot opens on Lightly Played. */
+    @Test fun conditionSwitch() {
+        setUp()
+        for (g in listOf("mtg", "ygo", "ptcg")) {
+            val fp = home.resolve("cond-$g-page.json"); val fc = home.resolve("cond-$g.json"); assumeTrue("run CollectionEngineTest.conditionSwitch first", fp.exists() && fc.exists())
+            val m = CollectionCardModel.parse(JsonParser.parseString(fp.readText()).asJsonObject)
+            for (start in listOf("", "Lightly Played").take(if (g == "ptcg") 2 else 1)) {
+                val c = JsonParser.parseString(fc.readText()).asJsonObject.apply { if (start.isNotBlank()) addProperty("start", start) }
+                val act = CollectionCardActions(conditions = { c })
+                val name = "collection-card-cond-$g" + if (start.isNotBlank()) "-lp" else ""
+                shot(name, 390, 2000) { CollectionCardSheet(m, act) {} }
+                if (start.isBlank()) { shot(name, 884, 1104) { CollectionCardSheet(m, act) {} }; shot(name, 360, 1500) { CollectionCardSheet(m, act) {} } }
+            }
+        }
+        if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
+    }
+
     /** views.js buySheet: "Buy this card" from the Cards list's price (a saved copy with its exact printing). */
     @Test fun buy() {
         setUp()

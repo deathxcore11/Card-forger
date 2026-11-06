@@ -77,6 +77,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.animation.togetherWith
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.Shape
@@ -134,6 +135,8 @@ class CollectionCardActions(
     val press: (CardPress) -> Unit = {},
     /** A picker's change (Yu-Gi-Oh!'s Edition, Printing & rarity): its data-change and the value picked. */
     val select: (name: String, value: String) -> Unit = { _, _ -> },
+    /** The condition switch's lookup (Collection.conditions, read until it settles; [retry]: ask the feed again); null hides the switch. */
+    val conditions: (suspend (retry: Boolean) -> com.google.gson.JsonObject?)? = null,
 )
 
 private val Ink = Color(0xFFEEF0F4)
@@ -1432,6 +1435,10 @@ private fun PricesPanel(p: CardPrices, act: CollectionCardActions, gutter: Dp, v
     // Each piece with its CSS margins (top, bottom); siblings' margins collapse to the larger.
     val parts = ArrayList<Triple<Dp, Dp, @Composable () -> Unit>>()
     p.hero?.let { h -> parts += Triple(6.dp, 12.dp) { PriceHero(h, vw > 420.dp, act) } }
+    if (act.conditions != null && p.hero != null) p.hero.let { h ->
+        val key = listOf(h.eyebrow, h.value, h.id, h.rarity) + h.pickers.map { pk -> pk.options.firstOrNull { it.on }?.value.orEmpty() }
+        parts += Triple(0.dp, 12.dp) { ConditionSwitch(key.joinToString("|"), act) }
+    }
     p.copies.forEach { c -> parts += Triple(0.dp, 12.dp) { PriceCopy(c) } }
     p.warning?.let { w -> parts += Triple(12.dp, 12.dp) { QuoteWarning(w) } }
     p.history?.let { h -> parts += Triple(20.dp, 24.dp) { History(h, act, vw, vh, ::go) } }
@@ -1831,5 +1838,80 @@ private fun MarketDetails(d: CardMarket, act: CollectionCardActions, go: (CardPr
             prev = 6.dp
         }
         Spacer(Modifier.height(prev))
+    }
+}
+
+
+// ---------------------------------------------------------------- the condition switch (Randall, 6 Nov 18:38Z / 18:48Z)
+
+/** One condition's price for the printing shown (condition-value.js conditionValue over the site's condition lookup). */
+class CondRow(val code: String, val name: String, val price: String, val kind: String, val old: String, val source: String, val whenText: String, val buy: Pair<String, String>?)
+class CondModel(val status: String, val notice: String, val start: String, val busy: Boolean, val rows: List<CondRow>) {
+    companion object {
+        private fun com.google.gson.JsonObject.s(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
+        fun parse(j: com.google.gson.JsonObject) = CondModel(j.s("status"), j.s("notice"), j.s("start"), j.get("busy")?.takeIf { it.isJsonPrimitive }?.asBoolean ?: false,
+            j.getAsJsonArray("rows")?.map { it.asJsonObject }?.map { r -> CondRow(r.s("code"), r.s("name"), r.s("price"), r.s("kind"), r.s("old"), r.s("source"), r.s("when"),
+                r.get("buy")?.takeIf { it.isJsonObject }?.asJsonObject?.let { b -> b.s("href") to b.s("label") }) } ?: emptyList())
+    }
+}
+
+/**
+ * NM / LP / MP / HP / DMG over the printing the Prices tab shows: each chip carries its own price, so the ladder reads at a glance, and the
+ * one picked fills the card under it (price, where it came from and when, the TCGplayer link for that condition). Near Mint with no quote
+ * shows the reference price, as the site values a lot; a condition with no quote says so. It is a market reference, never a sold price.
+ */
+@Composable
+private fun ConditionSwitch(key: String, act: CollectionCardActions) {
+    val load = act.conditions ?: return
+    var model by remember(key) { mutableStateOf<CondModel?>(null) }
+    var pick by remember(key) { mutableStateOf<String?>(null) }
+    var tick by remember(key) { mutableStateOf(0) }
+    LaunchedEffect(key, tick) { runCatching { load(tick > 0)?.let { model = CondModel.parse(it) } } }
+    val m = model
+    val on = pick ?: m?.rows?.firstOrNull { it.name == m.start }?.code ?: "NM"
+    val row = m?.rows?.firstOrNull { it.code == on }
+    val uri = LocalUriHandler.current
+    val gold = GoldC; val ink = BtnInk
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("CONDITION", style = Eyebrow)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            for (code in listOf("NM", "LP", "MP", "HP", "DMG")) {
+                val r = m?.rows?.firstOrNull { it.code == code }; val sel = code == on
+                Column(Modifier.weight(1f).heightIn(min = 52.dp).clip(RoundedCornerShape(14.dp))
+                    .background(if (sel) gold else Surface2).border(1.dp, if (sel) gold else LineC, RoundedCornerShape(14.dp))
+                    .clickable { pick = code }.semantics { contentDescription = (r?.name ?: code) + ", " + (r?.price?.ifBlank { null } ?: "no quote") }
+                    .padding(horizontal = 2.dp, vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                    Text(code, style = sans(14f, 800, if (sel) ink else Ink, lh = 1.2f), maxLines = 1)
+                    Text(when { m == null || (m.busy && r?.price.isNullOrBlank()) -> "…"; r?.price.isNullOrBlank() -> "—"; else -> r!!.price },
+                        style = sans(11f, 600, if (sel) ink.copy(alpha = .8f) else Mute, lh = 1.2f).copy(fontFeatureSettings = Tnum), maxLines = 1, softWrap = false)
+                }
+            }
+        }
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Brush.linearGradient(listOf(gold.copy(alpha = .16f), Surface)))
+            .border(1.dp, gold.copy(alpha = .33f), RoundedCornerShape(16.dp)).padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                androidx.compose.animation.AnimatedContent(row?.price.orEmpty() to on, Modifier.weight(1f), label = "condPrice",
+                    transitionSpec = { (androidx.compose.animation.fadeIn(tween(160)) togetherWith androidx.compose.animation.fadeOut(tween(120))) }) { (price, _) ->
+                    Text(price.ifBlank { if (m == null || m.busy) "…" else "—" }, style = sans(32f, 800, Ink, lh = 1.15f, ls = -.64f).copy(fontFeatureSettings = Tnum))
+                }
+                Text("$on · " + (if (row?.kind == "reference") "Reference" else "Market"), style = sans(12f, 700, gold, lh = 1.3f),
+                    modifier = Modifier.clip(RoundedCornerShape(999.dp)).border(1.dp, gold.copy(alpha = .45f), RoundedCornerShape(999.dp)).padding(horizontal = 10.dp, vertical = 3.dp))
+            }
+            val line = when {
+                m == null || (m.busy && row?.price.isNullOrBlank()) -> "Checking ${row?.name ?: "this condition"}…"
+                row == null -> ""
+                row.price.isNotBlank() && row.kind == "reference" -> "Reference price · no Near Mint quote returned"
+                row.price.isNotBlank() -> listOf(row.source, "market reference", row.whenText).filter { it.isNotBlank() }.joinToString(" · ")
+                row.old.isNotBlank() -> "No current quote for ${row.name} · last known ${row.old}"
+                else -> "No quote for ${row.name} yet"
+            }
+            if (line.isNotBlank()) Text(line, style = sans(12f, 400, Mute, lh = 1.45f))
+            Text("Not a sold price. Seller asking prices and shipping may differ.", style = sans(12f, 400, Foot, lh = 1.45f))
+        }
+        m?.notice?.takeIf { it.isNotBlank() }?.let { Status(it) }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            row?.buy?.let { (href, label) -> Ghost(label, null, Modifier.weight(1f, fill = false)) { runCatching { uri.openUri(href) } } }
+            if (m != null && !m.busy && m.status in setOf("unavailable", "rate_limited", "deferred")) Ghost("Check again", null) { tick++ }
+        }
     }
 }

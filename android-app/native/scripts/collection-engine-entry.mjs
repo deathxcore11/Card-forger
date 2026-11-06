@@ -29,7 +29,7 @@ import {magicOwnedDetail, magicOwnedContext, magicOwnedCurrent, magicOwnedCard} 
 import {binderPage, binderMatches, binderFavorites, binderCoverState, BINDER_COLORS, MAX_FAVORITES} from 'WEB/binders.js';
 import {selectPreviewFinish, finishAttrs} from 'WEB/finish-preview.js';
 import {selectedFinish, quoteForContext, conditionBuyLink} from 'WEB/pricing-presentation.js';
-import {conditionName, conditionValue, conditionPriceHtml, conditionManualPlaceholder} from 'WEB/condition-value.js';
+import {conditionName, conditionValue, conditionPriceHtml, conditionManualPlaceholder, lastKnownConditionQuote, conditionQuoteTiming} from 'WEB/condition-value.js';
 import {configureConditionAuth, clearConditionAttempts, forgetConditionAttempt, loadConditionQuotes, applyConditionQuotes, conditionRequest, conditionQuoteEntry, CONDITION_IDENTITY} from 'WEB/condition-feed.js';
 import {createConditionRefreshScheduler, changedConditionLots, conditionLotIdentity} from 'WEB/condition-refresh-scheduler.js';
 import {locationPicker, rememberLocation} from 'WEB/collection-locations.js';
@@ -3381,6 +3381,50 @@ function conditionPreview(f, retry, run) {
 }
 let priceRun = null, lookupRun = null, setsIndex = null;
 
+/* ---------- The card page's condition switch (Randall 6 Nov): the printing the Prices tab shows, in each condition ----------
+ * The same lookup as the add sheet (app.js refreshConditionPrice + fetchConditionValue over the site's /api/prices/conditions): one
+ * request answers every condition, conditionValue reads each, and Near Mint without a quote falls back to the reference price, as the
+ * site values a lot. A condition with no quote says so (never a made-up discount). */
+const COND_CODES = [['NM', 'Near Mint'], ['LP', 'Lightly Played'], ['MP', 'Moderately Played'], ['HP', 'Heavily Played'], ['DMG', 'Damaged']];
+let condRun = null;
+function condSelection(game) {
+  if (game === 'mtg') {
+    // The buy sheet prices the saved copy (its printing, finish, condition and language); the card page, the printing it shows.
+    const b = buyOn() ? buyCtx : null, ctx = b || sheet; if (!ctx) return null;
+    const card = ctx.print || meta(ctx.name); if (!card || card.brief) return null;
+    const lot = b || ctx.entry || null, finish = b ? b.finish : selectedFinish('mtg', card, ctx.priceFinish) || 'nonfoil';
+    const entry = {name: card.name, printingId: card.id, printingVerified: true, set: card.set, number: card.collector_number, finish, language: lot?.language || 'en'};
+    return {card, entry, start: lot?.condition, reference: cardPrice(card, finish)};
+  }
+  const ctx = tsheet; if (!ctx || ctx.game !== game) return null;
+  const card = contextTcgCard(game, ctx.id, ctx); if (!card || card.brief) return null;
+  const [printing, rarity] = game === 'ygo' ? String(ctx.priceEdition || '').split('::') : ['', ''];
+  const lot = ctx.entryId ? tcgGs(game).collection.find(e => e.id === ctx.entryId) : null;
+  let entry = {cardId: card.id, ...(ctx.setId ? {setReleaseId: ctx.setId} : {}), language: lot?.language || 'en', variant: game === 'ptcg' ? (selectedFinish('ptcg', card, ctx.priceFinish) || '') : '',
+    printing: printing || '', rarity: rarity || '', edition: game === 'ygo' ? (ctx.priceYgoEdition || '') : ''};
+  entry = conditionQuoteEntry(card, entry);
+  let reference = tcgReferenceEntryPrice(card, entry);
+  if (reference == null && game === 'ygo') { const m = (card.sets || []).filter(p => p.code === printing && p.rarity === rarity); if (m.length === 1) reference = m[0].price ?? null; }
+  // The lookup prices one exact version: a Yu-Gi-Oh! printing and rarity, a Pokémon variant (not the market reference).
+  const need = game === 'ygo' && (!entry.printing || !entry.rarity) ? 'Choose a printing above to see its price in each condition.'
+    : game === 'ptcg' && (!entry.variant || entry.variant === 'reference') ? 'Choose a version above (such as Holofoil) to see its price in each condition.' : '';
+  return {card, entry, start: lot?.condition, reference, need};
+}
+function condModel() {
+  const r = condRun; if (!r) return {};
+  const sel = r.sel, quotes = sel ? [...(sel.card.conditionQuotes || [])] : [];
+  const rows = COND_CODES.map(([code, name]) => {
+    const entry = sel ? {...sel.entry, condition: name} : null, v = sel ? conditionValue(name === 'Near Mint' ? sel.reference : null, entry, quotes) : {price: null, kind: 'unpriced-condition'};
+    const old = sel && v.price == null ? lastKnownConditionQuote(entry, quotes) : null, q = v.quote || old;
+    const buy = sel ? conditionBuyLink(r.game, sel.card, entry) : null;
+    return {code, name, price: v.price == null ? '' : usd(v.price), kind: v.kind, old: old ? usd(old.price) : '',
+      source: q?.source || (v.kind === 'reference' ? 'Reference price' : ''), when: q ? conditionQuoteTiming(q) : '', type: q?.priceType || '',
+      // condition-value.js conditionPriceHtml's link: only a direct product link, with the condition chosen.
+      buy: buy?.direct && buy.url ? {href: buy.url, label: 'Find this condition on TCGplayer'} : null};
+  });
+  return {game: r.game, entry: sel?.entry || null, done: r.done, status: r.status || '', notice: r.notice || '', start: r.start, busy: !r.done, rows};
+}
+
 /* ---------- A Yu-Gi-Oh! or Pokémon card's Add to collection (tcg.js A.tOwn 2479, tcgAddSheet, A.tOwnSave 2733; app.js refreshConditionPrice) ---------- */
 let taddCtx = null, taddPrev = null;
 // tcg.js tcgAddSheet, read back: the card, each field as the site fills it (in its order), its note, where it lives, the custom value, the button.
@@ -5412,6 +5456,18 @@ globalThis.Collection = {
     panelRun(() => showRuleHint(panel.host.querySelector('button')));
     return panelModel();
   },
+  /** The card page's condition switch: starts the condition lookup for the printing shown ([retry]: ask the feed again). Read with condModel. */
+  conditions(game, retry) {
+    const sel = condSelection(game), wait = !sel || !!sel.need, run = condRun = {game, sel, done: wait, status: !sel ? 'unpriced' : sel.need ? 'pick' : 'loading',
+      notice: !sel ? 'Open an exact printing to see condition prices.' : sel.need || '',
+      start: conditionName(sel?.start) };
+    if (!wait) Promise.resolve(fetchConditionValue(sel.card, {...sel.entry, condition: run.start}, game, null, {source: 'search', retry: !!retry, current: () => condRun === run}))
+      .then(res => { if (condRun !== run) return; run.status = res?.status || 'unavailable'; run.notice = res?.notice || (res?.reason === 'offline' ? 'You are offline. Saved prices are still shown.' : ''); })
+      .catch(() => { if (condRun === run) run.status = 'unavailable'; })
+      .finally(() => { if (condRun === run) run.done = true; });
+    return json(condModel());
+  },
+  condModel() { return json(condModel()); },
   ruleGlassClose() { if (panel?.key?.startsWith('rulehint|')) { panel = ruleUnder || null; ruleUnder = null; } return panel ? panelModel() : '{}'; },
   cardHtml() { const ctx = sheet, c = ctx && (ctx.print || meta(ctx.name)); return c ? cardView(c, ctx) : ''; },
   tcard(opts) { tcgReady(); const o = JSON.parse(opts); if (o.pack != null && o.pack !== '') { const pick = pack?.picks?.[Number(o.pack)]; if (pick) Object.assign(o, {game: pack.game, id: String(pick.id), setId: String(pack.set?.id ?? '')}); } tcardOpen(o); return json(tcardModel()); },
