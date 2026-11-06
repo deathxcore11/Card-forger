@@ -72,7 +72,11 @@ async function fetchMtgo(format, days) {
   const slugs = mtgoEventSlugs(await idx.text(), format, { days });
   if (!slugs.length) throw Error("No recent Magic Online events for " + format);
   const pages = await Promise.all(slugs.map((x) => fetch("https://www.mtgo.com/decklist/" + x.slug, { headers: UA }).then((r) => (r.ok ? r.text() : "")).then(parseMtgoEvent).catch(() => null)));
-  return { ...normalizeMtgo(pages.filter(Boolean), { format, days }), fetchedAt: new Date().toISOString() };
+  const data = normalizeMtgo(pages.filter(Boolean), { format, days });
+  // An empty month is an outage (events listed before their lists are published), never a result:
+  // throwing keeps the last good lists and stops an empty reply being cached for 12 hours.
+  if (!data.decks.length) throw Error("Magic Online listed no decks yet for " + format);
+  return { ...data, fetchedAt: new Date().toISOString() };
 }
 // MTGTop8 serves Latin-1 HTML. A reply that is not a page (an error or a bot check) is an
 // outage, so the last good lists stay instead of an empty month.
@@ -167,7 +171,11 @@ async function mtgMeta(env, format, days, ctx, { force = false } = {}) {
   const cache = caches.default;
   if (!force) {
     const hit = await cache.match(mtgKey(format, days));
-    if (hit) return hit.json();
+    // Empty entries cached by an earlier outage are skipped so they refetch.
+    if (hit) {
+      const cached = await hit.json();
+      if (cached?.decks?.length) return cached;
+    }
   }
   try {
     const data = await fetchMtg(env, format, days);
@@ -178,7 +186,8 @@ async function mtgMeta(env, format, days, ctx, { force = false } = {}) {
     return data;
   } catch (e) {
     const old = await cache.match(mtgKey(format, days, "good"));
-    if (old) return { ...(await old.json()), stale: true, staleReason: e.message };
+    const oldData = old ? await old.json() : null;
+    if (oldData?.decks?.length) return { ...oldData, stale: true, staleReason: e.message };
     throw e;
   }
 }
