@@ -23,6 +23,8 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -32,6 +34,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.lang.ref.WeakReference
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * The Scanner's engine: the site's own scanner (scancam.js with app.js's scanCtx, bundled by scripts/export-collection-engine.mjs
@@ -59,10 +62,27 @@ object ScanWeb {
     private const val PAGE = "<!doctype html><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width\">" +
         "<body></body><script src=\"/__native/scan-web.js\"></script>"
 
+    // The page pushes its whole markup up to every 30 ms while scanning: only the newest is parsed, off the main thread, at most
+    // every 120 ms, and a push the same as the last is dropped.
+    private val pushes = Channel<String>(Channel.CONFLATED)
+    @Volatile private var lastPush: String? = null
+    init {
+        CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
+            for (j in pushes) {
+                if (j == lastPush) continue
+                lastPush = j
+                val m = runCatching { SitePanelModel.parse(JsonParser.parseString(j).asJsonObject) }.getOrNull() ?: continue
+                withContext(Dispatchers.Main) { _model.value = m }
+                delay(120)
+            }
+        }
+    }
+    // A camera frame waiting in the page: newer ones are dropped until it has been handed over.
+    private val framing = AtomicBoolean(false)
+
     private class Bridge {
         @JavascriptInterface fun ready() { scope.launch { ready?.complete(true) } }
-        @JavascriptInterface fun model(json: String?) { val j = json ?: return
-            scope.launch { runCatching { _model.value = SitePanelModel.parse(JsonParser.parseString(j).asJsonObject) } } }
+        @JavascriptInterface fun model(json: String?) { val j = json ?: return; pushes.trySend(j) }
         @JavascriptInterface fun toast(text: String?) { if (!text.isNullOrBlank()) scope.launch { CollectionWrites.show(text) } }
         @JavascriptInterface fun acted(json: String?) { val j = json ?: return; scope.launch { runCatching { _acted.tryEmit(JsonParser.parseString(j).asJsonObject) } } }
         @JavascriptInterface fun torch(on: Boolean) { scope.launch { torch(on) } }
@@ -100,7 +120,10 @@ object ScanWeb {
         reply(id, true, made?.takeIf { it.isNotEmpty() } ?: "true")
     }
     /** The page's copy of the workspace after a save (what's owned, binders), as the site's page reads S.state. */
-    private suspend fun refresh() { runCatching { CollectionEngine.scanWorkspace() }.getOrNull()?.let { run("ScanWeb.workspace(${JsonPrimitive(it)})") } }
+    private suspend fun refresh() {
+        val expr = runCatching { CollectionEngine.scanWorkspace() }.getOrNull()?.let { withContext(Dispatchers.Default) { "ScanWeb.workspace(${JsonPrimitive(it)})" } } ?: return
+        withContext(Dispatchers.Main) { run(expr) }
+    }
     private fun reply(id: Int, ok: Boolean, json: String) = run("ScanWeb.answer($id, $ok, ${JsonPrimitive(json)})")
 
     /** The page with the bundle, made once; false when this phone's WebView can't run it. */
@@ -135,7 +158,7 @@ object ScanWeb {
                 }
                 override fun shouldOverrideUrlLoading(view: WebView, req: WebResourceRequest) = true
                 override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
-                    if (web === view) { (view.parent as? ViewGroup)?.removeView(view); view.destroy(); web = null; ready = null; _model.value = null }
+                    if (web === view) { (view.parent as? ViewGroup)?.removeView(view); view.destroy(); web = null; ready = null; _model.value = null; lastPush = null; framing.set(false) }
                     return true
                 }
             }
@@ -146,7 +169,7 @@ object ScanWeb {
             web = null; done.complete(false)
         }
     }
-    private fun drop() { web?.let { (it.parent as? ViewGroup)?.removeView(it); it.destroy() }; web = null; ready = null }
+    private fun drop() { web?.let { (it.parent as? ViewGroup)?.removeView(it); it.destroy() }; web = null; ready = null; lastPush = null; framing.set(false) }
 
     private fun run(expr: String) { web?.evaluateJavascript(expr, null) }
     private suspend fun eval(w: WebView, expr: String): String? = withTimeoutOrNull(15_000) {
@@ -160,25 +183,41 @@ object ScanWeb {
      */
     suspend fun open(game: String, workspace: String?, user: String?, token: String?, camera: Boolean, flash: Boolean, w: Int, h: Int): Boolean = withContext(Dispatchers.Main) {
         val v = page() ?: return@withContext false
-        val o = JsonObject().apply {
-            addProperty("game", game); workspace?.let { runCatching { add("state", JsonParser.parseString(it)) } }
-            addProperty("user", user.orEmpty()); addProperty("token", token.orEmpty()); addProperty("camera", camera); addProperty("torch", flash)
-            add("preview", JsonObject().apply { addProperty("w", w); addProperty("h", h) })
+        // The workspace is the whole collection: it is parsed and escaped off the main thread, and so is the page's answer.
+        val expr = withContext(Dispatchers.Default) {
+            val o = JsonObject().apply {
+                addProperty("game", game); workspace?.let { runCatching { add("state", JsonParser.parseString(it)) } }
+                addProperty("user", user.orEmpty()); addProperty("token", token.orEmpty()); addProperty("camera", camera); addProperty("torch", flash)
+                add("preview", JsonObject().apply { addProperty("w", w); addProperty("h", h) })
+            }
+            "ScanWeb.open(${JsonPrimitive(o.toString())})"
         }
-        val m = eval(v, "ScanWeb.open(${JsonPrimitive(o.toString())})") ?: return@withContext false
-        runCatching { JsonParser.parseString(m).asString }.getOrNull()?.let { j -> _model.value = SitePanelModel.parse(JsonParser.parseString(j).asJsonObject) }
+        val m = eval(v, expr) ?: return@withContext false
+        withContext(Dispatchers.Default) {
+            runCatching { JsonParser.parseString(m).takeIf { it.isJsonPrimitive }?.asString }.getOrNull()?.let { j ->
+                runCatching { SitePanelModel.parse(JsonParser.parseString(j).asJsonObject) }.getOrNull()?.let { j to it } }
+        }?.let { (j, p) -> lastPush = j; _model.value = p }
         true
     }
     fun tap(id: Int) = run("ScanWeb.tap($id)")
     fun type(id: Int, value: String) = run("ScanWeb.type($id, ${JsonPrimitive(value)})")
-    /** Photos for a file input: [files] (name, MIME type, bytes). */
+    /** Photos for a file input: [files] (name, MIME type, bytes). Encoded on the caller's thread (full-size photos), handed over on main. */
     fun files(id: Int, files: List<Triple<String, String, ByteArray>>) {
         val a = com.google.gson.JsonArray()
         files.forEach { (n, t, b) -> a.add(JsonObject().apply { addProperty("name", n); addProperty("type", t); addProperty("b64", android.util.Base64.encodeToString(b, android.util.Base64.NO_WRAP)) }) }
-        run("ScanWeb.files($id, ${JsonPrimitive(a.toString())})")
+        val expr = "ScanWeb.files($id, ${JsonPrimitive(a.toString())})"
+        scope.launch { run(expr) }
     }
-    /** One camera frame (JPEG): the page paints the newest when it is free. */
-    fun frame(jpeg: ByteArray) { val b = android.util.Base64.encodeToString(jpeg, android.util.Base64.NO_WRAP); scope.launch { run("ScanWeb.frame(\"$b\")") } }
+    /**
+     * One camera frame ([jpeg], made and encoded on the caller's thread): the page paints the newest when it is free. False, and
+     * [jpeg] not made, while the last frame is still on its way in.
+     */
+    fun frame(jpeg: () -> ByteArray): Boolean {
+        if (!framing.compareAndSet(false, true)) return false
+        val expr = try { "ScanWeb.frame(\"${android.util.Base64.encodeToString(jpeg(), android.util.Base64.NO_WRAP)}\")" } catch (e: Throwable) { framing.set(false); throw e }
+        scope.launch { val w = web; if (w == null) framing.set(false) else w.evaluateJavascript(expr) { framing.set(false) } }
+        return true
+    }
     /** The sheet's ✕ or a tap outside it: scanCtx.closeSheet. */
     fun closeSheet() = run("ScanWeb.closeSheet()")
     fun preview(w: Int, h: Int) = run("ScanWeb.preview($w, $h)")

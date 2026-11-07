@@ -346,7 +346,8 @@ private fun App(activity: MainActivity) {
         }
         is Screen.Shop -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
-            dev.cardstashy.nativeplay.ui.ShopRoute(onBack = { back() }, startTab = s.tab, startSet = s.set, nav = { dev.cardstashy.nativeplay.ui.PlayNav(dev.cardstashy.nativeplay.ui.PlayTab.SHOP, { t -> tabTo(t) }) })
+            // Each Shop entry on the trail is its own page: a card's set link pushes Shop(set) and it opens, back returns.
+            androidx.compose.runtime.key(trail.size, s) { dev.cardstashy.nativeplay.ui.ShopRoute(onBack = { back() }, startTab = s.tab, startSet = s.set, nav = { dev.cardstashy.nativeplay.ui.PlayNav(dev.cardstashy.nativeplay.ui.PlayTab.SHOP, { t -> tabTo(t) }) }) }
         }
         Screen.Collection -> {
             // Collection Home is native; its other tabs and the pages it opens are still the website's.

@@ -98,6 +98,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dev.cardstashy.nativeplay.play.PlayMath
 import dev.cardstashy.nativeplay.play.PlayRules
@@ -222,7 +223,7 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
                     if (g >= 1) item("today") { Duo(duo, { Probe("today") { Today(d, act) } }, { Probe("deeds") { Deeds(d, act) } }) }
                     if (g >= 2) item("packs") { Duo(duo, { Probe("packs") { Packs(s, act) } }, { Probe("forge") { Forge(s, act) } }) }
                     if (g >= 3) item("decks") { Duo(duo, { Probe("decks") { Decks(s, wide, act) } }, { Probe("collection") { Collection(s, act) } }) }
-                    if (g >= 4 && (s.getAsJsonArray("shop")?.size() ?: 0) > 0) item("shop") { Probe("shop") { Merchant(s, act) } }
+                    if (g >= 4 && ((s.get("shop") as? JsonArray)?.size() ?: 0) > 0) item("shop") { Probe("shop") { Merchant(s, act) } }
                 }
                 // The site's sticky glass top bar.
                 Box(Modifier.fillMaxWidth().background(if (AppSettings.theme == "light") Color(0xF0F6F9FD) else Color(0xD90C0E13)).drawBehind { // light: settings-theme.css .topbar
@@ -856,7 +857,7 @@ private fun Quests(d: PlayHomeData, act: PlayHomeActions) {
     val s = d.state
     val q = remember(d.rules, s, d.day, d.user) { PlayMath.quests(d.rules, s, d.day, d.user) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        q.daily.forEach { r -> QuestRow(r, PlayMath.questReward(r.quest, s.getAsJsonObject("config"))) { act.claim("daily", r.quest.id) } }
+        q.daily.forEach { r -> QuestRow(r, PlayMath.questReward(r.quest, s.get("config") as? JsonObject)) { act.claim("daily", r.quest.id) } }
     }
     Text("This week: ${q.weekly.count { it.done }} of ${q.weekly.size} weekly quests done", style = TextStyle(fontFamily = P.Sans, fontSize = 14.sp, color = P.Muted), modifier = Modifier.padding(top = 10.dp))
 }
@@ -864,7 +865,7 @@ private fun Quests(d: PlayHomeData, act: PlayHomeActions) {
 /** Test D2: the same 7-day calendar without IntrinsicSize or FlowRow: every cell one fixed height, rewards in rows of [perRow]. */
 @Composable
 private fun PlainCalendar(d: PlayHomeData) {
-    val stamp = d.state.getAsJsonObject("login")?.get("stamp").int() ?: 0
+    val stamp = (d.state.get("login") as? JsonObject)?.get("stamp").int() ?: 0
     fun items(r: PlayRules.Reward) = buildList<@Composable () -> Unit> {
         if (r.coins > 0) add { Icon(SiteIcons.Coin, 16.dp); Num(r.coins, 13) }
         r.seals.filter { it.value > 0 }.forEach { (k, v) -> add { Icon(SiteIcons.Seals.getValue(k), 16.dp); Num(v, 13) } }
@@ -896,7 +897,7 @@ private fun PlainCalendar(d: PlayHomeData) {
 /** The 7-day log-in calendar as shipped (equal-height cells via IntrinsicSize.Max, rewards in a FlowRow). */
 @Composable
 private fun Calendar(d: PlayHomeData) {
-    val stamp = d.state.getAsJsonObject("login")?.get("stamp").int() ?: 0
+    val stamp = (d.state.get("login") as? JsonObject)?.get("stamp").int() ?: 0
     run {
         Row(Modifier.fillMaxWidth().padding(vertical = 8.dp).height(androidx.compose.foundation.layout.IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             d.rules.loginWeek.forEachIndexed { i, r ->
@@ -999,9 +1000,9 @@ private fun Deeds(d: PlayHomeData, act: PlayHomeActions) {
 
 @Composable
 private fun Packs(s: JsonObject, act: PlayHomeActions) {
-    val groups = remember(s) { s.getAsJsonArray("packs")?.mapNotNull { it as? JsonObject }?.groupBy { it.get("set").str() ?: "" } ?: emptyMap() }
-    val names = remember(s) { buildMap { s.getAsJsonArray("shop")?.forEach { o -> (o as? JsonObject)?.let { put(it["code"].str() ?: "", it["name"].str() ?: "") } }
-        s.getAsJsonObject("rewardSet")?.let { put(it["code"].str() ?: "", it["name"].str() ?: "") } } }
+    val groups = remember(s) { (s.get("packs") as? JsonArray)?.mapNotNull { it as? JsonObject }?.groupBy { it.get("set").str() ?: "" } ?: emptyMap() }
+    val names = remember(s) { buildMap { (s.get("shop") as? JsonArray)?.forEach { o -> (o as? JsonObject)?.let { put(it["code"].str() ?: "", it["name"].str() ?: "") } }
+        (s.get("rewardSet") as? JsonObject)?.let { put(it["code"].str() ?: "", it["name"].str() ?: "") } } }
     Shelf("Your packs", "All packs", { act.view("packs") }) {
         if (groups.isEmpty()) Text("Every pack is open. Story battles, Planeswalk bosses and the Merchant give more.", style = TextStyle(fontFamily = P.Sans, fontSize = 15.sp, lineHeight = 22.sp, color = P.PageFaint), modifier = Modifier.padding(top = 8.dp))
         else PackGrid(groups.entries.take(6).toList()) { (code, list) ->
@@ -1029,9 +1030,9 @@ private val FORGE_FROM = mapOf("u" to "c", "r" to "u", "m" to "r")
 
 @Composable
 internal fun Forge(s: JsonObject, act: PlayHomeActions) {
-    val w = s.getAsJsonObject("wallet") ?: JsonObject()
+    val w = s.get("wallet") as? JsonObject ?: JsonObject()
     fun have(k: String) = w.get("seal_$k").int() ?: 0
-    fun ratio(to: String) = s.getAsJsonObject("config")?.getAsJsonObject("forge")?.get(to)?.takeIf { it.isJsonPrimitive }?.asInt ?: 3
+    fun ratio(to: String) = ((s.get("config") as? JsonObject)?.get("forge") as? JsonObject)?.get(to)?.takeIf { it.isJsonPrimitive }?.asInt ?: 3
     val shape = RoundedCornerShape(22.dp)
     Box(Modifier.fillMaxWidth().testShadow(24.dp, shape).clip(shape).background(Brush.verticalGradient(listOf(Color(0xFF1B1611), Color(0xFF120E0B), Color(0xFF2A1A10)))).border(1.dp, Color(0x55D6AD64), shape)) {
         Art("https://api.scryfall.com/cards/named?format=image&version=art_crop&exact=Great+Furnace", Modifier.matchParentSize().let { it }, Alignment.Center)
@@ -1084,12 +1085,12 @@ private fun deckSize(format: String) = when (format.lowercase()) { "commander", 
 
 @Composable
 private fun Decks(s: JsonObject, wide: Boolean, act: PlayHomeActions) {
-    val decks = s.getAsJsonArray("decks")?.mapNotNull { it as? JsonObject } ?: emptyList()
+    val decks = (s.get("decks") as? JsonArray)?.mapNotNull { it as? JsonObject } ?: emptyList()
     Shelf("Your decks", "All decks", { act.view("decks") }) {
         val tiles = buildList<@Composable (Modifier) -> Unit> {
             add { m -> DeckTile(BUILD_ART, "Build a deck", "From the cards you own", m, cinzel = true) { act.view("finder") } }
             decks.take(3).forEach { d ->
-                val cards = d.getAsJsonArray("cards")?.mapNotNull { it as? JsonObject } ?: emptyList()
+                val cards = (d.get("cards") as? JsonArray)?.mapNotNull { it as? JsonObject } ?: emptyList()
                 val count = cards.sumOf { it.get("qty").int() ?: 0 }
                 val lead = cards.firstOrNull { (it.get("name").str() ?: "") !in BASICS }?.get("name").str()
                 val fmt = d.get("format").str()?.ifBlank { null } ?: "Standard"
@@ -1121,11 +1122,11 @@ private fun DeckTile(art: String?, name: String, meta: String, modifier: Modifie
 private fun Collection(s: JsonObject, act: PlayHomeActions) {
     val facts: Map<String, SetFacts.Set> = SetFacts.sets.collectAsState().value
     val owned = produceState(emptyMap<String, Int>(), s) { value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { LinkedHashMap<String, Int>().also { owned ->
-        s.getAsJsonArray("cards")?.forEach { c -> (c as? JsonObject)?.getAsJsonArray("s")?.forEach { it.str()?.let { k -> owned[k] = (owned[k] ?: 0) + 1 } } }
-        s.getAsJsonObject("rewardSet")?.get("code").str()?.let { owned.putIfAbsent(it, 0) } } } }.value
+        (s.get("cards") as? JsonArray)?.forEach { c -> ((c as? JsonObject)?.get("s") as? JsonArray)?.forEach { it.str()?.let { k -> owned[k] = (owned[k] ?: 0) + 1 } } }
+        (s.get("rewardSet") as? JsonObject)?.get("code").str()?.let { owned.putIfAbsent(it, 0) } } } }.value
     val rows = owned.map { (code, have) -> val f = facts[code]; Triple(code, f, have) }
         .sortedWith(compareByDescending<Triple<String, SetFacts.Set?, Int>> { it.second?.released ?: "" }.thenBy { it.second?.name ?: it.first }).take(4)
-    val total = s.getAsJsonArray("cards")?.size() ?: 0
+    val total = (s.get("cards") as? JsonArray)?.size() ?: 0
     Shelf("Your collection", "${"%,d".format(total)} cards", { act.view("collection") }) {
         if (rows.isEmpty()) Text("Open a pack and your first set starts filling in.", style = TextStyle(fontFamily = P.Sans, fontSize = 15.sp, color = P.PageFaint))
         Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1162,9 +1163,9 @@ private fun Collection(s: JsonObject, act: PlayHomeActions) {
 
 @Composable
 private fun Merchant(s: JsonObject, act: PlayHomeActions) {
-    val price = s.getAsJsonObject("config")?.get("packPrice").int() ?: 500
-    val coins = s.getAsJsonObject("wallet")?.get("coins").int() ?: 0
-    val shop = s.getAsJsonArray("shop")!!.mapNotNull { it as? JsonObject }.take(12)
+    val price = (s.get("config") as? JsonObject)?.get("packPrice").int() ?: 500
+    val coins = (s.get("wallet") as? JsonObject)?.get("coins").int() ?: 0
+    val shop = (s.get("shop") as? JsonArray)!!.mapNotNull { it as? JsonObject }.take(12)
     Shelf("Merchant", "Every set", { act.view("shop") }) {
         PackGrid(shop) { o ->
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -1197,7 +1198,7 @@ private fun Dashboard(d: PlayHomeData, act: PlayHomeActions, purse: PlayMath.Pur
         }
         LazyColumn(Modifier.width(248.dp).fillMaxHeight(), contentPadding = PaddingValues(top = top, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             item("me") { LevelCard(level) }
-            item("featured") { s.getAsJsonArray("shop")?.firstOrNull()?.obj()?.let { FeaturedPack(s, it, act) } }
+            item("featured") { (s.get("shop") as? JsonArray)?.firstOrNull()?.obj()?.let { FeaturedPack(s, it, act) } }
             item("collection") { Probe("collection") { Collection(s, act) } }
         }
     }
@@ -1270,8 +1271,8 @@ private fun LevelCard(level: PlayMath.Level) {
 /** The Merchant's newest set, as one pack you can buy from the side column. */
 @Composable
 private fun FeaturedPack(s: JsonObject, o: JsonObject, act: PlayHomeActions) {
-    val price = s.getAsJsonObject("config")?.get("packPrice").int() ?: 500
-    val coins = s.getAsJsonObject("wallet")?.get("coins").int() ?: 0
+    val price = (s.get("config") as? JsonObject)?.get("packPrice").int() ?: 500
+    val coins = (s.get("wallet") as? JsonObject)?.get("coins").int() ?: 0
     val code = o["code"].str() ?: return
     Column(Modifier.fillMaxWidth().dashGlass().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("FEATURED PACK", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = .16.em, color = P.GoldSoft))

@@ -108,11 +108,18 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
     val prefs = remember { context.getSharedPreferences("collection", android.content.Context.MODE_PRIVATE) }
     // The site keeps each game's deck view (settings.displayModes[game].deck); the app keeps them here.
     val viewPref = if (game == CardGame.MTG) "deckView" else "deckView-" + game.id
+    /** The engine's text of the page last painted, so a paint of the same page is skipped. */
+    val painted = remember(deckId) { java.util.concurrent.atomic.AtomicReference<String?>(null) }
     suspend fun paint() {
         // The search as typed and the view last chosen (the site keeps the view in the account's settings; the app keeps it here).
         val o = com.google.gson.JsonObject().apply { addProperty("search", DeckCache.q); prefs.getString(viewPref, null)?.let { addProperty("view", it) }; addProperty("tab", deckTab) }
-        val m = withContext(Dispatchers.Default) { CollectionDeckModel.parse(CollectionEngine.deck(game.id, deckId, o)) }
-        model = m; DeckCache.model = m
+        // The page as the engine drew it: unchanged (the 1.2 s repaint mostly is), the model and the Bench stay as they are.
+        // The text is kept only once its model is on screen: a paint cancelled on the way back would otherwise leave it skipped.
+        val (m, raw) = withContext(Dispatchers.Default) {
+            val j = CollectionEngine.deck(game.id, deckId, o); val raw = j.toString()
+            if (raw == painted.get() && model != null) null else CollectionDeckModel.parse(j) to raw
+        } ?: return
+        model = m; DeckCache.model = m; painted.set(raw)
     }
     LaunchedEffect(deckId, session?.userId, revision) { try {
         if (!ensureCollection(context, session?.userId, session != null, revision)) return@LaunchedEffect
@@ -146,10 +153,10 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
         val (kind, value) = asked ?: return@LaunchedEffect
         if (HomeCache.loaded != null) runCatching {
             val m = withContext(Dispatchers.Default) { CollectionDeckModel.parse(CollectionEngine.deckDo(game.id, deckId, kind, value)) }
-            model = m; DeckCache.model = m
+            model = m; DeckCache.model = m; painted.set(null)
             // A.tDeckFind: the results land when the card source answers; the page draws again as they come in.
             if (m.find?.busy == true) CollectionEngine.settle(15_000, "Collection.tdeckModel()") { j ->
-                if (j.has("id")) CollectionDeckModel.parse(j).let { n -> model = n; DeckCache.model = n }
+                if (j.has("id")) CollectionDeckModel.parse(j).let { n -> model = n; DeckCache.model = n; painted.set(null) }
             }
         }
         asked = null

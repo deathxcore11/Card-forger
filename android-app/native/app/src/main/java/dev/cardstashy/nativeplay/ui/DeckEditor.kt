@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dev.cardstashy.nativeplay.play.CardFacts
 import dev.cardstashy.nativeplay.play.DeckEdit
@@ -105,7 +106,7 @@ private fun named(name: String, version: String) = "https://api.scryfall.com/car
 private val POOL_TYPES = mapOf("Creatures" to "t:creature", "Spells" to "-t:creature -t:land", "Lands" to "t:land")
 private fun JsonObject?.str(k: String) = this?.get(k)?.takeIf { it.isJsonPrimitive }?.asString ?: ""
 /** A card's colours (the front face's for double-faced cards), for the strip's wash and the colour filters. */
-private fun colorsOf(card: JsonObject?): List<String> = (card?.getAsJsonArray("colors") ?: card?.getAsJsonArray("card_faces")?.firstOrNull()?.asJsonObject?.getAsJsonArray("colors"))
+private fun colorsOf(card: JsonObject?): List<String> = (card?.get("colors") as? JsonArray ?: ((card?.get("card_faces") as? JsonArray)?.firstOrNull() as? JsonObject)?.get("colors") as? JsonArray)
     ?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString } ?: emptyList()
 
 @Composable
@@ -129,7 +130,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
         CardFacts.wantNames(e.cards.map { it.name }.filter { byName[it] == null && !Decks.isBasicLand(it) })
     }
     val rarityOf = { n: String -> fact(n)?.card?.get("rarity")?.asString ?: byName[n]?.r ?: "" }
-    val plan = DeckEdit.craftPlan(e.cards, owned, rarityOf, state.getAsJsonObject("wallet"))
+    val plan = DeckEdit.craftPlan(e.cards, owned, rarityOf, state.get("wallet") as? JsonObject)
     val planOf = plan.rows.associateBy { it.name }
     val nums = DeckEdit.numbers(e) { fact(it) }
     val sets by SetFacts.sets.collectAsState()
@@ -189,7 +190,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
     val read = ui.read?.second
     val power = read?.get("power")?.takeIf { it.isJsonPrimitive }?.asDouble
     val bracket = read?.get("bracket")?.takeIf { it.isJsonPrimitive }?.asInt
-    val cardRoles = read?.getAsJsonObject("cards")
+    val cardRoles = read?.get("cards") as? JsonObject
 
     val actions = Actions(
         save = {
@@ -202,7 +203,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
                 if (!ui.armed) { ui.armed = true; scope.launch { delay(5000); ui.armed = false } }
                 else { ui.armed = false; ui.crafting = true
                     scope.launch {
-                        val p = DeckEdit.craftPlan(ui.edit.cards, owned, rarityOf, state.getAsJsonObject("wallet")); var made = 0
+                        val p = DeckEdit.craftPlan(ui.edit.cards, owned, rarityOf, state.get("wallet") as? JsonObject); var made = 0
                         try { for (r in p.rows) { val id = idOf(r.name); if (id.isNotEmpty() && r.now > 0) made += craftCopies(id, r.now) } } finally { ui.crafting = false }
                         toast(if (made > 0) "$made card${if (made > 1) "s" else ""} crafted.${if (made < p.missing) " Open packs or forge seals for the rest." else ""}" else "Not enough seals for these cards yet.")
                     } }
@@ -258,15 +259,16 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
     val groups = DeckEdit.groups(e.cards) { fact(it) }.map { (g, rows) -> BenchGroup(g, rows.map { l -> val fx = fact(l.name); val pr = planOf[l.name]; val card = fx?.card
         BenchRow(l.name, l.qty, pr?.miss ?: 0, pr?.seal ?: "", fx?.a?.ifBlank { null } ?: named(l.name, "art_crop"), byName[l.name]?.pimage ?: fx?.i?.ifBlank { null } ?: named(l.name, "normal"),
             fx?.mc ?: "", colorsOf(card), card.str("set"), card.str("collector_number"), card.str("rarity"),
-            cardRoles?.getAsJsonArray(l.name)?.mapNotNull { it.takeIf { r -> r.isJsonPrimitive }?.asString } ?: emptyList()) }) }
+            (cardRoles?.get(l.name) as? JsonArray)?.mapNotNull { it.takeIf { r -> r.isJsonPrimitive }?.asString } ?: emptyList()) }) }
     fun keep(name: String, colors: List<String>, group: String): Boolean {
         if (b.find.isNotBlank() && !name.contains(b.find.trim(), ignoreCase = true)) return false
         if (b.colors.isNotEmpty() && colors.none { it in b.colors }) return false
         return when (b.type) { "Creatures" -> group == "Creatures"; "Lands" -> group == "Lands"; "Spells" -> group != "Creatures" && group != "Lands"; else -> true }
     }
     fun poolTile(c: JsonObject): BenchTile { val n = c.str("name"); val have = owned[n] ?: owned[n.split(" // ")[0]] ?: 0
-        return BenchTile(n, c.getAsJsonObject("image_uris")?.str("normal")?.ifBlank { null } ?: c.getAsJsonArray("card_faces")?.firstOrNull()?.asJsonObject?.getAsJsonObject("image_uris")?.str("normal")?.ifBlank { null } ?: named(n, "normal"),
-            c.get("cmc")?.takeIf { it.isJsonPrimitive }?.asDouble ?: 0.0, Trunk.group(c.str("type_line").ifBlank { c.getAsJsonArray("card_faces")?.firstOrNull()?.asJsonObject.str("type_line") }) == "Lands",
+        val face = (c.get("card_faces") as? JsonArray)?.firstOrNull() as? JsonObject
+        return BenchTile(n, (c.get("image_uris") as? JsonObject)?.str("normal")?.ifBlank { null } ?: (face?.get("image_uris") as? JsonObject)?.str("normal")?.ifBlank { null } ?: named(n, "normal"),
+            c.get("cmc")?.takeIf { it.isJsonPrimitive }?.asDouble ?: 0.0, Trunk.group(c.str("type_line").ifBlank { face.str("type_line") }) == "Lands",
             Decks.isBasicLand(n), countIn(n), have, DeckEdit.room(e.cards, n, e.format), have == 0) }
     val tiles: List<BenchTile> = if (ui.mode == "all") ui.pool.map(::poolTile)
     else trunk.mapNotNull { c -> val fx = facts[c.o]; val g = Trunk.group(fx?.t ?: ""); val basic = Decks.isBasicLand(c.n); val q = countIn(c.n)
@@ -279,7 +281,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
         heroArt = Workspace.playDeckCovers.collectAsState().value.let { Workspace.pickedCover(e.id) } ?: fact(e.cards.firstOrNull { !Decks.isBasicLand(it.name) }?.name ?: "")?.a,
         stats = listOf(BenchStat("${nums.count}/${nums.size}", "cards", warn = !nums.ok), BenchStat("${nums.count - plan.missing}/${nums.count}", "unlocked")),
         power = power?.let { "${it.roundToInt()}" }, tier = if (e.format == "Commander" && bracket != null) PowerTier.bracketLabel(bracket) else PowerTier.powerTier(power),
-        roles = read?.getAsJsonArray("roles")?.mapNotNull { (it as? com.google.gson.JsonArray)?.let { r -> r[0].asString to r[1].asInt } } ?: emptyList(),
+        roles = (read?.get("roles") as? JsonArray)?.mapNotNull { (it as? JsonArray)?.takeIf { r -> r.size() >= 2 && r[0].isJsonPrimitive && r[1].isJsonPrimitive }?.let { r -> r[0].asString to r[1].asInt } } ?: emptyList(),
         groups = groups, basics = BASICS.map { it to named(it, "art_crop") }, browserTitle = "Trunk", tiles = tiles,
         browserNote = if (ui.mode == "all") (if (ui.poolBusy) "Looking through every card…" else if (ui.poolError.isNotEmpty()) ui.poolError else null)
             else if (trunk.isEmpty()) "No cards yet. Open packs, or look through All cards and craft them with seals." else null,

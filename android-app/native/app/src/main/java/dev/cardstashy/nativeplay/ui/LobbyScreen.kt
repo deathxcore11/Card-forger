@@ -324,10 +324,12 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     LaunchedEffect(source, m.format) { if (online && source in setOf("precons", "meta", "community") && sources.entries(source, m.format).isEmpty()) sources.load(context, source, m.format, signedIn) }
     remember { CpuLevel.init(context); QuickPower.init(context) }
     // A.playFindOpponent's pool: your decks, every source the lobby has in the format, the tournament lists, and Deck Forge's finished builds.
-    suspend fun quickPool(format: String): List<JsonObject> =
+    // Off the main thread: every deck in it is copied.
+    suspend fun quickPool(format: String): List<JsonObject> = withContext(Dispatchers.Default) {
         workspace.orEmpty().map { it.raw.deepCopy().apply { addProperty("format", it.format) } } +
             listOf("precons", "community", "meta").flatMap { sources.entries(it, format).map { e -> e.deck } } +
             MetaDecks.lists(context, format).map { it.deepCopy().apply { addProperty("format", format) } } + RandomBuild.ready(format)
+    }
     // Random means every source: the format's tournament lists and precons too if there are none yet (the site waits 4 s for them).
     suspend fun quickSources(format: String) {
         val jobs = listOf(scope.launch { MetaDecks.lists(context, format) }) +
@@ -340,7 +342,9 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
         delay(600)
         val format = m.format
         quickSources(format)
-        QuickPower.warm(format, listOfNotNull(m.player?.raw) + quickPool(format).filter { it.get("format")?.takeIf { f -> f.isJsonPrimitive }?.asString == format })
+        val pool = listOfNotNull(m.player?.raw) + quickPool(format).filter { it.get("format")?.takeIf { f -> f.isJsonPrimitive }?.asString == format }
+        // Each deck is serialized and hashed for its key: not on the main thread.
+        withContext(Dispatchers.Default) { QuickPower.warm(format, pool) }
     }
 
     fun selectDeck(d: TableDecks.Deck) {
@@ -897,11 +901,13 @@ class LobbySources {
             when (source) {
                 "meta" -> {
                     val decks = MetaDecks.lists(context, format)
-                    lists[key] = decks.mapNotNull { d -> val k = d.get("key")?.asString ?: d.get("id")?.asString ?: d.get("name")?.asString ?: return@mapNotNull null
+                    // The copies and the status line (it reads the meta file again) are made off the main thread.
+                    val (rows, line) = withContext(Dispatchers.Default) { decks.mapNotNull { d -> val k = d.get("key")?.asString ?: d.get("id")?.asString ?: d.get("name")?.asString ?: return@mapNotNull null
                         Entry("meta:$k", "meta", listOf(d.get("place"), d.get("event"), d.get("date")).mapNotNull { it?.takeIf { e -> e.isJsonPrimitive }?.asString }.filter { it.isNotBlank() }
                             .plus(if (format == "Commander") listOf("Competitive Commander") else emptyList()).joinToString(" · "),
-                            d.deepCopy().apply { addProperty("id", "play-meta:$k"); addProperty("format", format) }) }
-                    statuses[key] = Status(message = MetaDecks.sourceLine(context, format))
+                            d.deepCopy().apply { addProperty("id", "play-meta:$k"); addProperty("format", format) }) } to MetaDecks.sourceLine(context, format) }
+                    lists[key] = rows
+                    statuses[key] = Status(message = line)
                 }
                 "precons" -> {
                 dev.cardstashy.nativeplay.play.LobbyPrecons.loadMore(format)

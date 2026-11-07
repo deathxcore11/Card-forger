@@ -50,19 +50,25 @@ object Pad {
     private fun isPad(d: InputDevice?) = d != null && !d.isVirtual &&
         (d.sources and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD || d.sources and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK)
 
-    fun scan() { _connected.value = InputDevice.getDeviceIds().any { isPad(InputDevice.getDevice(it)) } }
+    fun scan() { val on = runCatching { InputDevice.getDeviceIds().any { isPad(InputDevice.getDevice(it)) } }.getOrDefault(false); if (_connected.value != on) _connected.value = on }
 
     /** A pad key or stick arrived: it is here, whatever the device list said. */
     fun used() { if (!_connected.value) _connected.value = true }
 
     fun watch(context: Context) {
         val im = context.getSystemService(InputManager::class.java) ?: return
-        scan()
+        // Off the main thread, and once per burst: a Fold waking or folding sends a run of device changes (0.4.40's stall report caught
+        // main inside scan() on a resume), each scan asking the system about every input device.
+        val ht = android.os.HandlerThread("pad-watch", android.os.Process.THREAD_PRIORITY_BACKGROUND).apply { start() }
+        val h = android.os.Handler(ht.looper)
+        val again = Runnable { scan() }
+        fun soon() { h.removeCallbacks(again); h.postDelayed(again, 250) }
+        h.post(again)
         im.registerInputDeviceListener(object : InputManager.InputDeviceListener {
-            override fun onInputDeviceAdded(id: Int) = scan()
-            override fun onInputDeviceRemoved(id: Int) = scan()
-            override fun onInputDeviceChanged(id: Int) = scan()
-        }, null)
+            override fun onInputDeviceAdded(id: Int) = soon()
+            override fun onInputDeviceRemoved(id: Int) = soon()
+            override fun onInputDeviceChanged(id: Int) = soon()
+        }, h)
     }
 }
 

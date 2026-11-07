@@ -71,6 +71,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.gson.JsonElement
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dev.cardstashy.nativeplay.account.Http
 import dev.cardstashy.nativeplay.play.Progress
@@ -100,8 +101,8 @@ private val bold = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.
 private val h2: TextStyle get() = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = if (AppSettings.theme == "light") Site.Text else Color(0xFFF3E3BD))
 /** isCollectorPack (play-econ-rules.js): the source ends in "collector". */
 private fun collector(p: JsonObject) = Regex("(?:^|:)collector$").containsMatchIn(p.get("source").s() ?: "")
-private fun price(s: JsonObject) = s.getAsJsonObject("config")?.get("packPrice").i().takeIf { it > 0 } ?: 500
-private fun coins(s: JsonObject) = s.getAsJsonObject("wallet")?.get("coins").i()
+private fun price(s: JsonObject) = (s.get("config") as? JsonObject)?.get("packPrice").i().takeIf { it > 0 } ?: 500
+private fun coins(s: JsonObject) = (s.get("wallet") as? JsonObject)?.get("coins").i()
 private fun scryfallImage(id: String, size: String = "normal") =
     if (Regex("^[0-9a-f-]{36}$").matches(id)) "https://cards.scryfall.io/$size/front/${id[0]}/${id[1]}/$id.jpg" else ""
 
@@ -126,7 +127,7 @@ fun ShopRoute(onBack: () -> Unit, nav: @Composable () -> Unit, startTab: String 
     fun setName(code: String) = Trunk.allSets(s).firstOrNull { it.code == code }?.name ?: SetFacts.set(code)?.name ?: code.uppercase()
     var why: String? = null
     suspend fun openOne(id: String): PackResult? = runCatching { Progress.open(id) }.onFailure { why = it.message }.getOrNull()?.let { out ->
-        runCatching { packResult(out, setName(out.getAsJsonObject("pack")?.get("set").s() ?: "")) }.onFailure { why = "Your pack opened. Find the cards in Trunk." }.getOrNull() }
+        runCatching { packResult(out, setName((out.get("pack") as? JsonObject)?.get("set").s() ?: "")) }.onFailure { why = "Your pack opened. Find the cards in Trunk." }.getOrNull() }
     fun act(label: String, done: String? = null, block: suspend () -> Unit) {
         if (busy.isNotEmpty()) return
         scope.launch { runCatching { block() }.onSuccess { done?.let(toast); Feel.perform(view, "success") }.onFailure { toast(it.message ?: "Try again in a moment.") }; Progress.refreshDeeds() }
@@ -135,7 +136,7 @@ fun ShopRoute(onBack: () -> Unit, nav: @Composable () -> Unit, startTab: String 
     // The pack is on screen the instant it is tapped and gathers power while the server rolls it.
     val openPack = { id: String ->
         if (busy.isEmpty() && opener == null) {
-            val code = s.getAsJsonArray("packs")?.firstNotNullOfOrNull { (it as? JsonObject)?.takeIf { o -> o["id"].s() == id }?.get("set").s() } ?: ""
+            val code = (s.get("packs") as? JsonArray)?.firstNotNullOfOrNull { (it as? JsonObject)?.takeIf { o -> o["id"].s() == id }?.get("set").s() } ?: ""
             opener = loadingPack(code, setName(code))
             scope.launch { val r = openOne(id); if (opener?.note == LOADING) { opener = r; if (r == null) toast(why ?: "That pack didn't open. Try again in a moment.") } }
         }; Unit }
@@ -178,10 +179,10 @@ fun ShopRoute(onBack: () -> Unit, nav: @Composable () -> Unit, startTab: String 
             val close = { opener = null; scope.launch { Progress.refresh(); Progress.refreshDeeds() }; Unit }
             BackHandler(onBack = close)
             PackOpening(first, onNext = {
-                val left = Progress.state.value?.getAsJsonArray("packs")?.mapNotNull { it as? JsonObject }.orEmpty()
+                val left = (Progress.state.value?.get("packs") as? JsonArray)?.mapNotNull { it as? JsonObject }.orEmpty()
                 val nx = left.firstOrNull { it["set"].s() == first.set } ?: left.firstOrNull()
                 nx?.get("id").s()?.let { openOne(it) }
-            }, onClose = close)
+            }, onClose = close, onSet = { c -> open = null; set = c })
         }
     }
 }
@@ -277,7 +278,7 @@ private fun leftOf(ends: String?): String {
 /** secretLairOfferPrice: coins by rarity (config.secretLair.offerCoins can retune them), the sale taken off in tens. First is the price before the sale. */
 private fun slPrice(c: JsonObject, config: JsonObject?): Pair<Int, Int> {
     val r = c.get("r").s() ?: ""
-    val custom = config?.getAsJsonObject("secretLair")?.getAsJsonObject("offerCoins")?.get(r)?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.asInt
+    val custom = ((config?.get("secretLair") as? JsonObject)?.get("offerCoins") as? JsonObject)?.get(r)?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.asInt
     val base = custom ?: mapOf("common" to 200, "uncommon" to 200, "rare" to 300, "mythic" to 500)[r] ?: 300
     val off = c.get("off").i()
     return base to if (off > 0) maxOf(10, Math.round(base * (100 - off) / 1000.0).toInt() * 10) else base
@@ -323,7 +324,7 @@ private fun SecretLairShowcase(s: JsonObject, store: JsonObject, busy: Boolean, 
         LazyRow(state = row, flingBehavior = androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior(row), contentPadding = PaddingValues(horizontal = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             items(offers, key = { it.get("id").s() ?: it.toString() }) { c ->
-                val (was, price) = slPrice(c, s.getAsJsonObject("config"))
+                val (was, price) = slPrice(c, s.get("config") as? JsonObject)
                 SlCard(c, was, price, owned = c.get("id").s() in have, canPay = !busy && coins >= price, onBuy = { onBuy(c) },
                     onOpen = { onCard(CardPick(c.get("n").s() ?: "", c.get("o").s() ?: "", c.get("id").s(), "nonfoil")) })
             }
@@ -612,7 +613,7 @@ private fun SealPress(s: JsonObject, busy: Boolean, onStamp: (String, String) ->
         card?.let { c ->
             val key = mapOf("common" to "c", "uncommon" to "u", "rare" to "r", "mythic" to "m")[c.get("rarity").s()] ?: "r"
             val have = s.objs("cards").firstOrNull { it.get("o").s() == c.get("oracle_id").s() }?.get("c").i()
-            val seals = s.getAsJsonObject("wallet")?.get("seal_$key").i()
+            val seals = (s.get("wallet") as? JsonObject)?.get("seal_$key").i()
             val img = (c.get("image_uris") as? JsonObject)?.get("normal").s() ?: (c.objs("card_faces").firstOrNull()?.get("image_uris") as? JsonObject)?.get("normal").s()
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
                 CardPicture(img, null, null, Modifier.width(110.dp).aspectRatio(.716f).clickable { onCard(CardPick(c.get("name").s() ?: "", c.get("oracle_id").s() ?: "", c.get("id").s(), "nonfoil")) })

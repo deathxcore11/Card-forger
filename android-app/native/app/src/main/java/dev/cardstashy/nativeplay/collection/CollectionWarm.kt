@@ -21,6 +21,8 @@ object CollectionWarm {
     @Volatile private var started = false
     /** A Collection screen asked for the engine: the warm-up gives its thread back at normal priority and stops after its step. */
     @Volatile var wanted = false
+    /** The warm-up is over (or had nothing to do): the random builder's WebView starts after it, not on top of it. */
+    val done = kotlinx.coroutines.CompletableDeferred<Unit>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun start(context: Context, afterMs: Long = 1800) {
@@ -28,9 +30,11 @@ object CollectionWarm {
         started = true
         val app = context.applicationContext
         scope.launch {
-            delay(afterMs)
-            runCatching { warm(app) }
-            runCatching { CollectionEngine.nice(false) }
+            try {
+                delay(afterMs)
+                runCatching { warm(app) }
+                runCatching { CollectionEngine.nice(false) }
+            } finally { done.complete(Unit) }
         }
     }
 

@@ -150,7 +150,8 @@ internal object CollectionWrites {
     suspend fun keepBackground(context: Context) {
         val s = Account.session.value ?: return
         WorkspaceSync.lock.withLock {
-            if (CollectionEngine.bg() > 0) { val text = CollectionEngine.saved(); WorkspaceSync.wroteLocally(context.applicationContext, s.userId, text); _written.value++ }
+            // The file write off Main: refreshMagicPrices runs this from the page.
+            if (CollectionEngine.bg() > 0) { val text = CollectionEngine.saved(); withContext(Dispatchers.IO) { WorkspaceSync.wroteLocally(context.applicationContext, s.userId, text) }; _written.value++ }
         }
     }
 

@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dev.cardstashy.nativeplay.account.Account
 import dev.cardstashy.nativeplay.play.PlayMath
@@ -58,8 +59,8 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
             // The Story card's packs first: they are the first thing on the page.
             val now = PlayMath.storyHome(refs ?: emptyList(), rules.acts.size).act
             rules.acts.firstOrNull { it.act == now }?.packs?.forEach { add(it.first) }
-            s.getAsJsonArray("packs")?.forEach { (it as? JsonObject)?.get("set")?.asString?.let(::add) }
-            s.getAsJsonArray("shop")?.take(12)?.forEach { (it as? JsonObject)?.get("code")?.asString?.let(::add) }
+            (s.get("packs") as? JsonArray)?.forEach { (it as? JsonObject)?.get("set")?.takeIf { e -> e.isJsonPrimitive }?.asString?.let(::add) }
+            (s.get("shop") as? JsonArray)?.take(12)?.forEach { (it as? JsonObject)?.get("code")?.takeIf { e -> e.isJsonPrimitive }?.asString?.let(::add) }
             rules.acts.forEach { a -> a.sets.forEach { add(it.first) } }
         }.distinct() }
         SetFacts.ensure(codes)
@@ -79,13 +80,18 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
     }
     val tz = java.util.TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 60000
     val story = PlayMath.storyHome(refs ?: emptyList(), rules.acts.size)
-    fun setName(code: String) = s.getAsJsonArray("shop")?.firstNotNullOfOrNull { (it as? JsonObject)?.takeIf { o -> o["code"]?.asString == code }?.get("name")?.asString }
+    fun setName(code: String) = (s.get("shop") as? JsonArray)?.firstNotNullOfOrNull { (it as? JsonObject)?.takeIf { o -> o["code"]?.asString == code }?.get("name")?.asString }
         ?: SetFacts.set(code)?.name ?: code.uppercase()
     // Opening: the server rolls the pack, then the opener plays it (app.js playEconOpen).
     var why: String? = null
     suspend fun openOne(id: String): PackResult? = runCatching { Progress.open(id) }.onFailure { why = it.message }.getOrNull()?.let { out ->
-        runCatching { packResult(out, setName(out.getAsJsonObject("pack")?.get("set")?.asString ?: "")) }.onFailure { why = "Your pack opened. Find the cards in Trunk." }.getOrNull() }
-    fun run(block: suspend () -> Unit) { scope.launch { block(); Progress.refresh(); Progress.refreshDeeds() } }
+        runCatching { packResult(out, setName((out.get("pack") as? JsonObject)?.get("set")?.asString ?: "")) }.onFailure { why = "Your pack opened. Find the cards in Trunk." }.getOrNull() }
+    // Progress rethrows a refused claim or buy; say why, as the Shop does, instead of letting it end the app.
+    fun run(block: suspend () -> Unit) { scope.launch {
+        try { block() } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+        catch (e: Exception) { android.widget.Toast.makeText(context, e.message ?: "Try again in a moment.", android.widget.Toast.LENGTH_LONG).show() }
+        runCatching { Progress.refresh(); Progress.refreshDeeds() }
+    } }
     val act = PlayHomeActions(
         mode = { when (it) { "quick", "practice", "social" -> onLobby(it); "planeswalk" -> onWeb("https://cardstashy.com/planeswalk.html"); else -> onWeb(SITE_PLAY) } },
         story = { onStory() },
@@ -96,7 +102,7 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
         openPack = { id ->
             // The pack is on screen the instant it is tapped and gathers power while the server rolls it.
             if (opener == null) {
-                val code = s.getAsJsonArray("packs")?.firstNotNullOfOrNull { (it as? JsonObject)?.takeIf { o -> o["id"]?.asString == id }?.get("set")?.asString } ?: ""
+                val code = (s.get("packs") as? JsonArray)?.firstNotNullOfOrNull { (it as? JsonObject)?.takeIf { o -> o["id"]?.asString == id }?.get("set")?.asString } ?: ""
                 opener = loadingPack(code, setName(code))
                 scope.launch { val r = openOne(id); if (opener?.note == LOADING) { opener = r; if (r == null) android.widget.Toast.makeText(context, why ?: "That pack didn't open. Try again in a moment.", android.widget.Toast.LENGTH_LONG).show() } }
             } },
@@ -117,7 +123,7 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
         val close = { opener = null; scope.launch { Progress.refresh(); Progress.refreshDeeds() }; Unit }
         androidx.activity.compose.BackHandler(onBack = close)
         PackOpening(first, onNext = {
-            val left = Progress.state.value?.getAsJsonArray("packs")?.mapNotNull { it as? JsonObject }.orEmpty()
+            val left = (Progress.state.value?.get("packs") as? JsonArray)?.mapNotNull { it as? JsonObject }.orEmpty()
             val nx = left.firstOrNull { it["set"]?.asString == first.set } ?: left.firstOrNull()
             nx?.get("id")?.asString?.let { openOne(it) }
         }, onClose = close)

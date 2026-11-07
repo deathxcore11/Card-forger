@@ -24,7 +24,10 @@ import kotlinx.coroutines.withContext
  * Collection engine (Collection.shelvesStart / shelfStart).
  */
 object MagicSets {
-    class Row(val code: String, val name: String, val released: String, val count: Int)
+    class Row(val code: String, val name: String, val released: String, val count: Int) {
+        /** Its shelf's date, made once (the shelves are drawn again on every recomposition). */
+        val date = shelfDate(released)
+    }
     /** Scryfall's sets a deck builds from, newest first: paper core, expansion, masters, draft and Commander sets that are out. */
     val list = MutableStateFlow<List<Row>?>(null)
     /** The last try at the list failed (offline): the shelves say so, and the next start() tries again. */
@@ -50,9 +53,10 @@ object MagicSets {
     }
 }
 
+private val SHELF_DATE = java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", java.util.Locale.UK)
 /** "2 Oct 2026", a set's release date as the shelves show it. */
 internal fun shelfDate(iso: String): String = runCatching {
-    java.time.LocalDate.parse(iso.take(10)).format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", java.util.Locale.UK))
+    java.time.LocalDate.parse(iso.take(10)).format(SHELF_DATE)
 }.getOrDefault(iso)
 
 const val FIT_SHELF = "fit"
@@ -79,7 +83,23 @@ class MagicShelves(private val scope: CoroutineScope) {
         if (base != this.base) { this.base = base; for (k in cards.keys.toList()) if (k != FIT_SHELF) cards.remove(k); more.clear(); errors.clear(); gen++ }
         if (fitQuery != fit) { fit = fitQuery; cards.remove(FIT_SHELF); errors.remove(FIT_SHELF); gen++ }
     }
-    fun start() { if (sets == null) scope.launch { setsFailed = false; MagicSets.ensure(); sets = MagicSets.list.value; setsFailed = sets == null && MagicSets.failed.value } }
+    private var starting = false; private var failedAt = 0L
+    /**
+     * Asks for the list of sets. "Every set" keeps its note while it asks again (clearing it first took the shelf away and back, and
+     * each return asked again), and after a failure it asks no sooner than 5 s on.
+     */
+    fun start() {
+        if (sets != null || starting) return
+        starting = true
+        scope.launch {
+            try {
+                val wait = failedAt + 5_000 - System.currentTimeMillis(); if (wait > 0) kotlinx.coroutines.delay(wait)
+                MagicSets.ensure(); sets = MagicSets.list.value
+                setsFailed = sets == null && MagicSets.failed.value
+                if (setsFailed) failedAt = System.currentTimeMillis()
+            } finally { starting = false }
+        }
+    }
     /** The shelf's cards, while it is on screen: suspends until they're in (or failed), cancelled when it scrolls away. */
     suspend fun load(key: String) {
         if (cards.containsKey(key)) return
@@ -105,8 +125,8 @@ class MagicShelves(private val scope: CoroutineScope) {
      */
     fun shelves(tile: (JsonObject) -> BenchTile, inDeck: (String) -> Boolean, fitTitle: String, fitMeta: String, stamp: Any?): List<BenchShelf> {
         fun tiles(key: String, got: List<JsonObject>, fit: Boolean): Made = made[key]?.takeIf { it.from === got && it.stamp == stamp } ?: run {
-            val use = if (fit) got.filter { !inDeck(it.get("name")?.asString.orEmpty()) }.take(20) else got
-            Made(got, stamp, use.map(tile), if (fit) use.associate { c -> c.get("name")?.asString.orEmpty() to roleWord(c) } else emptyMap()).also { made[key] = it }
+            val use = if (fit) got.filter { !inDeck(it.nameOf()) }.take(20) else got
+            Made(got, stamp, use.map(tile), if (fit) use.associate { c -> c.nameOf() to roleWord(c) } else emptyMap()).also { made[key] = it }
         }
         val out = ArrayList<BenchShelf>()
         if (fit.isNotEmpty()) {
@@ -117,7 +137,7 @@ class MagicShelves(private val scope: CoroutineScope) {
         if (sets == null && setsFailed) out += BenchShelf(SETS_SHELF, "Every set", tiles = emptyList(), note = "The list of sets couldn't load. Check your connection, then scroll back to try again.")
         for (s in sets.orEmpty()) {
             val got = cards[s.code]
-            out += BenchShelf(s.code, s.name, s.code.uppercase(), shelfDate(s.released), tiles = if (errors[s.code] != null) emptyList() else got?.let { tiles(s.code, it, false).tiles }, note = errors[s.code].orEmpty(),
+            out += BenchShelf(s.code, s.name, s.code.uppercase(), s.date, tiles = if (errors[s.code] != null) emptyList() else got?.let { tiles(s.code, it, false).tiles }, note = errors[s.code].orEmpty(),
                 count = if (more[s.code] == true) (got?.size ?: 0) + 1 else 0)
         }
         return out
@@ -128,8 +148,10 @@ class MagicShelves(private val scope: CoroutineScope) {
      */
     val ready get() = fit.isNotEmpty()
 
+    private fun JsonObject.nameOf() = get("name")?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
     private fun roleWord(c: JsonObject): String {
-        val t = c.get("type_line")?.asString ?: c.getAsJsonArray("card_faces")?.firstOrNull()?.asJsonObject?.get("type_line")?.asString.orEmpty()
+        fun line(o: JsonObject?) = o?.get("type_line")?.takeIf { it.isJsonPrimitive }?.asString
+        val t = line(c) ?: line((c.get("card_faces") as? com.google.gson.JsonArray)?.firstOrNull() as? JsonObject).orEmpty()
         return listOf("Creature", "Planeswalker", "Battle", "Instant", "Sorcery", "Artifact", "Enchantment", "Land").firstOrNull { it in t } ?: t.substringBefore(" —")
     }
 }

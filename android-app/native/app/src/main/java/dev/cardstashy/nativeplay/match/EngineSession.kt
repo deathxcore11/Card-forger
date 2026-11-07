@@ -6,6 +6,10 @@ import com.google.gson.JsonParser
 import dev.cardstashy.nativeplay.account.Account
 import dev.cardstashy.nativeplay.account.Http
 import dev.cardstashy.nativeplay.engine.ForgeService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.util.UUID
 
@@ -68,5 +72,6 @@ class RemoteSession(private val matchId: String, private val token: suspend () -
     }
 
     /** Leave the match: the host ends the table (its one-match-per-account limit frees up). */
-    override fun close() { runCatching { http("DELETE", base, auth(), null) } }
+    // Called from the table on the main thread: the token read and the request go to the network threads, and finish even if the table goes.
+    override fun close() { CoroutineScope(Dispatchers.IO + NonCancellable).launch { runCatching { http("DELETE", base, auth(), null) } } }
 }

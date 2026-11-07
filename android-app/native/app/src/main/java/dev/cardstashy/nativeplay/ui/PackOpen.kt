@@ -290,8 +290,11 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
                 /** The simulator's onDetails: a revealed card opens its card page over the pack, which waits underneath. */
                 onInspect: ((Int, Pull) -> Unit)? = null,
                 /** The simulator's onWishlist (Wishlist all): the pack's cards onto the wishlist; true when saved. */
-                onWishlist: (suspend () -> Boolean)? = null) {
+                onWishlist: (suspend () -> Boolean)? = null,
+                /** A set link on a revealed card's page: the pack closes, then the set opens (the host's own set page, else the Shop's). */
+                onSet: ((String) -> Unit)? = null) {
     val context = LocalContext.current
+    val shopSet = LocalShopSetNav.current
     val view = LocalView.current
     remember { PackSfx.warm(context); 0 }
     val scope = rememberCoroutineScope()
@@ -470,7 +473,10 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
         inspecting?.let { p ->
             val playState by dev.cardstashy.nativeplay.play.Progress.state.collectAsState()
             CardSheet(CardPick(p.name, "", p.id.ifBlank { null }, if (p.foil) "foil" else "nonfoil"), playState,
-                CardSheetActions(toast = { m -> android.widget.Toast.makeText(context, m, android.widget.Toast.LENGTH_SHORT).show() }), onClose = { inspecting = null })
+                CardSheetActions(toast = { m -> android.widget.Toast.makeText(context, m, android.widget.Toast.LENGTH_SHORT).show() },
+                    // Randall 7 Nov: the set row and "Its pack at the Merchant" did nothing from a pack (the Shop's set page was under the pack).
+                    set = { c -> inspecting = null; onClose(); (onSet ?: shopSet)?.invoke(c) }, merchant = { c, _ -> inspecting = null; onClose(); (onSet ?: shopSet)?.invoke(c) }),
+                onClose = { inspecting = null })
         }
     }
     }

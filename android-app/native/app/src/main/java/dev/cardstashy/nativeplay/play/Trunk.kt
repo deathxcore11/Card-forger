@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay.play
 
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 
 /**
@@ -12,9 +13,9 @@ object Trunk {
     data class Card(val o: String, val n: String, val r: String, val c: Int, val h: Int, val s: List<String>, val pid: String?, val pset: String?,
                     val pimage: String?, val pnumber: String?, val a: String, val holo: Boolean = false)
 
-    fun cards(state: JsonObject?): List<Card> = state?.getAsJsonArray("cards")?.mapNotNull { e -> val o = e as? JsonObject ?: return@mapNotNull null
-        val p = o.getAsJsonObject("p")
-        Card(o.s("o"), o.s("n"), o.s("r"), o.i("c"), o.i("h"), o.getAsJsonArray("s")?.mapNotNull { it.takeIf { x -> x.isJsonPrimitive }?.asString } ?: emptyList(),
+    fun cards(state: JsonObject?): List<Card> = (state?.get("cards") as? JsonArray)?.mapNotNull { e -> val o = e as? JsonObject ?: return@mapNotNull null
+        val p = o.get("p") as? JsonObject
+        Card(o.s("o"), o.s("n"), o.s("r"), o.i("c"), o.i("h"), (o.get("s") as? JsonArray)?.mapNotNull { it.takeIf { x -> x.isJsonPrimitive }?.asString } ?: emptyList(),
             p?.s("id")?.ifBlank { null }, p?.s("set")?.ifBlank { null }, p?.s("image")?.ifBlank { null }, p?.s("number")?.ifBlank { null }, o.s("a"))
     } ?: emptyList()
 
@@ -75,7 +76,7 @@ object Trunk {
     fun setRows(state: JsonObject?): List<SetRow> {
         val owned = LinkedHashMap<String, Int>()
         for (c in cards(state)) for (code in c.s) owned[code] = (owned[code] ?: 0) + 1
-        val reward = state?.getAsJsonObject("rewardSet")
+        val reward = state?.get("rewardSet") as? JsonObject
         reward?.s("code")?.takeIf { it.isNotBlank() }?.let { owned.putIfAbsent(it, 0) }
         return owned.map { (code, have) -> val f = SetFacts.set(code)
             SetRow(code, f?.name?.ifBlank { null } ?: reward?.takeIf { it.s("code") == code }?.s("name")?.ifBlank { null } ?: code.uppercase(), SetFacts.icon(code), f?.released ?: "", f?.total, have) }
@@ -85,7 +86,7 @@ object Trunk {
     /** allPlaySets: the Merchant's sets plus every set you own cards from. */
     fun allSets(state: JsonObject?): List<SetRow> {
         val own = setRows(state).associateBy { it.code }; val out = LinkedHashMap<String, SetRow>()
-        state?.getAsJsonArray("shop")?.forEach { e -> val x = e as? JsonObject ?: return@forEach; val code = x.s("code"); val f = SetFacts.set(code)
+        (state?.get("shop") as? JsonArray)?.forEach { e -> val x = e as? JsonObject ?: return@forEach; val code = x.s("code"); val f = SetFacts.set(code)
             out[code] = SetRow(code, x.s("name"), SetFacts.icon(code), x.s("released").ifBlank { f?.released ?: "" }, f?.total ?: x.get("count")?.takeIf { it.isJsonPrimitive }?.asInt,
                 own[code]?.owned ?: 0, x.s("format").ifBlank { "eternal" }) }
         for ((code, o) in own) if (code !in out) out[code] = o
@@ -130,15 +131,15 @@ object Trunk {
         return if (rows.any { it.first == name }) rows.map { if (it.first == name) it.first to it.second + 1 else it } else rows + (name to 1)
     }
 
-    private fun wallet(state: JsonObject?, key: String) = state?.getAsJsonObject("wallet")?.i("seal_$key") ?: 0
-    private fun holoSeals(state: JsonObject?) = state?.getAsJsonObject("config")?.get("holoSeals")?.takeIf { it.isJsonPrimitive }?.asInt ?: 2
+    private fun wallet(state: JsonObject?, key: String) = (state?.get("wallet") as? JsonObject)?.i("seal_$key") ?: 0
+    private fun holoSeals(state: JsonObject?) = (state?.get("config") as? JsonObject)?.get("holoSeals")?.takeIf { it.isJsonPrimitive }?.asInt ?: 2
 
     data class Stamp(val id: String, val have: Int, val seals: Int, val rarity: String, val key: String, val holoCost: Int, val canFoil: Boolean, val sold: Boolean)
     fun stamp(state: JsonObject?, card: JsonObject?): Stamp? {
         val id = card.s("id"); val o = card.s("oracle_id"); if (id.isBlank() || o.isBlank()) return null
         val key = SEAL[card.s("rarity")] ?: return null
         val have = cards(state).firstOrNull { it.o == o }?.c ?: 0
-        val sold = state?.getAsJsonArray("shop")?.any { (it as? JsonObject)?.s("code") == card.s("set") } == true || state?.getAsJsonObject("rewardSet")?.s("code") == card.s("set")
+        val sold = (state?.get("shop") as? JsonArray)?.any { (it as? JsonObject)?.s("code") == card.s("set") } == true || (state?.get("rewardSet") as? JsonObject)?.s("code") == card.s("set")
         return Stamp(id, have, wallet(state, key), SEAL_NAME.getValue(key), key, 1 + maxOf(1, holoSeals(state)),
             card?.getAsJsonArray("finishes")?.any { it.asString == "foil" } == true, sold)
     }
@@ -161,7 +162,7 @@ object Trunk {
     /** lens.setProgress: distinct cards owned whose sets include the code, of the set's total. */
     fun setProgress(state: JsonObject?, code: String): Pair<Int, Int?> = cards(state).count { code in it.s } to SetFacts.set(code)?.total
 
-    fun decks(state: JsonObject?): List<JsonObject> = state?.getAsJsonArray("decks")?.mapNotNull { it as? JsonObject } ?: emptyList()
+    fun decks(state: JsonObject?): List<JsonObject> = (state?.get("decks") as? JsonArray)?.mapNotNull { it as? JsonObject } ?: emptyList()
 
     private fun JsonObject?.s(k: String) = this?.get(k)?.takeIf { it.isJsonPrimitive }?.asString ?: ""
     private fun JsonObject.i(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asDouble?.toInt() ?: 0

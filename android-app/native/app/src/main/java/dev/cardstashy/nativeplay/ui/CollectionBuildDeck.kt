@@ -267,7 +267,8 @@ internal fun CollectionBuildDeckSheet(open: CollectionWrites.BuildOpen, backdrop
     LaunchedEffect(open.id) {
         if (!engine.ready()) { onClose(); open.web("https://cardstashy.com/#decks", "[data-act=\"${open.act}\"]"); return@LaunchedEffect }
         val ws = workspace(context) ?: run { onClose(); return@LaunchedEffect }
-        engine.call("flowWorkspace", runCatching { JsonParser.parseString(ws).asJsonObject }.getOrDefault(JsonObject()))
+        // The whole workspace is parsed off the main thread.
+        engine.call("flowWorkspace", kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { runCatching { JsonParser.parseString(ws).asJsonObject }.getOrDefault(JsonObject()) })
         val m = engine.call("flowOpen", obj("request" to open.request, "prefs" to savedPrefs())).obj
         if (m == null) { CollectionWrites.show("Build a deck couldn’t open here."); onClose(); return@LaunchedEffect }
         showSetup(m)
@@ -276,6 +277,8 @@ internal fun CollectionBuildDeckSheet(open: CollectionWrites.BuildOpen, backdrop
     }
     // Closing stops what is building (the site's sequence moves on with the sheet gone).
     androidx.compose.runtime.DisposableEffect(Unit) { onDispose { if (busy != null) engine.cancel() } }
+    // The background random builds share this page's WebView renderer: they wait while it is open.
+    androidx.compose.runtime.DisposableEffect(Unit) { RandomBuild.foreground = true; onDispose { RandomBuild.foreground = false } }
 
     // deck-experience.js's sheet is gold in every game (Save deck and Generate deck are the site's gold .btn on Yu-Gi-Oh! too).
     CompositionLocalProvider(LocalSheetPal provides sheetPal(CardGame.MTG), LocalGameGold provides CardGame.MTG.gold) {

@@ -98,27 +98,27 @@ object Progress {
         _error.value = null
         try {
             var s = call("state")
-            if (s.getAsJsonObject("wallet")?.get("starter_at")?.takeIf { !it.isJsonNull } == null) {
+            if ((s.get("wallet") as? JsonObject)?.get("starter_at")?.takeIf { !it.isJsonNull } == null) {
                 val shop = s.get("shop")
                 s = call("starter", JsonObject()).apply { shop?.let { add("shop", it) } }
             }
             s.add("login", _state.value?.get("login") ?: com.google.gson.JsonNull.INSTANCE)
             set(s)
             if (waiting() > 0) deedsScope.launch { flushQueue() } // back online: matches played offline go up now
-        } catch (e: Failure) { _error.value = e }
+        } catch (e: Failure) { _error.value = e } catch (_: Exception) {} // a malformed answer keeps the last state
     }
 
     suspend fun refreshStory() {
-        try { _story.value = call("story").getAsJsonArray("refs")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString } } catch (_: Failure) {}
+        try { _story.value = (call("story").get("refs") as? JsonArray)?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString } } catch (_: Exception) {}
     }
 
     /** A won Story battle (story-client.js claim): the server pays each side once and returns the ledger refs and what it paid. */
     suspend fun claimStory(battle: String, seat: String, deck: String): JsonObject? = try {
         val out = call("story", JsonObject().apply { addProperty("battle", battle); addProperty("seat", seat); addProperty("deck", deck) })
-        out.getAsJsonArray("refs")?.let { a -> _story.value = a.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString } }
-        out.getAsJsonObject("state")?.let { st -> runCatching { refresh() } }
+        (out.get("refs") as? JsonArray)?.let { a -> _story.value = a.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString } }
+        (out.get("state") as? JsonObject)?.let { st -> runCatching { refresh() } }
         out
-    } catch (e: Failure) { JsonObject().apply { addProperty("error", e.message) } }
+    } catch (e: Exception) { JsonObject().apply { addProperty("error", e.message) } }
 
     /** play-econ-client reportDeeds: the Story deeds a won battle earned; the server re-checks and pays each once. Returns the ids it counted. */
     suspend fun reportDeeds(battle: String, deeds: List<String>): List<String> {
@@ -126,21 +126,21 @@ object Progress {
         return try {
             val out = call("deeds", JsonObject().apply { addProperty("battle", battle); add("deeds", com.google.gson.JsonArray().apply { deeds.forEach { add(it) } }) })
             runCatching { refreshDeeds() }   // the in-app pop-up fires from the achievements it returns
-            out.getAsJsonArray("counted")?.map { it.asString } ?: emptyList()
+            (out.get("counted") as? JsonArray)?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString } ?: emptyList()
         } catch (_: Failure) { emptyList() }
     }
 
     /** The day's log-in stamp; {day, stamp, reward, monthReward, fresh} or null. Quiet on failure, like the web. */
     suspend fun login(): JsonObject? = try {
         val out = call("login", JsonObject().apply { addProperty("tz", tz) })
-        val login = out.getAsJsonObject("login")
+        val login = out.get("login") as? JsonObject
         if (login != null) {
-            val base = out.getAsJsonObject("state")?.let { keep(it) } ?: _state.value?.deepCopy() ?: JsonObject()
+            val base = (out.get("state") as? JsonObject)?.let { keep(it) } ?: _state.value?.deepCopy() ?: JsonObject()
             out.get("counters")?.let { base.add("counters", it) }
             base.add("login", login); set(base)
         }
         login
-    } catch (_: Failure) { null }
+    } catch (_: Exception) { null }
 
     /**
      * The app.js 'play:match-recorded' listener and play-econ-client reportMatch: one finished match to /api/progress/match
@@ -202,7 +202,7 @@ object Progress {
         _busy.value = label; _error.value = null
         try {
             val out = call(path, body, timeoutMs)
-            out.getAsJsonObject("state")?.let { set(keep(it, extra(out))) }
+            (out.get("state") as? JsonObject)?.let { set(keep(it, extra(out))) }
             return out
         } catch (e: Failure) { _error.value = e; throw e } finally { _busy.value = "" }
     }
@@ -287,13 +287,13 @@ object PlayMath {
     private fun JsonObject.int(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asDouble?.toInt() ?: 0
 
     fun purse(state: JsonObject?): Purse? {
-        val w = state?.getAsJsonObject("wallet") ?: return null
+        val w = state?.get("wallet") as? JsonObject ?: return null
         return Purse(w.int("coins"), mapOf("c" to w.int("seal_c"), "u" to w.int("seal_u"), "r" to w.int("seal_r"), "m" to w.int("seal_m")),
-            state.getAsJsonArray("packs")?.size() ?: 0, w.int("xp"))
+            (state.get("packs") as? JsonArray)?.size() ?: 0, w.int("xp"))
     }
 
     fun mastery(state: JsonObject?, xp: Int): Level {
-        val per = state?.getAsJsonObject("config")?.getAsJsonObject("mastery")?.int("xpPerLevel")?.takeIf { it > 0 } ?: 1000
+        val per = ((state?.get("config") as? JsonObject)?.get("mastery") as? JsonObject)?.int("xpPerLevel")?.takeIf { it > 0 } ?: 1000
         val x = maxOf(0, xp)
         return Level(1 + x / per, x % per, per)
     }
@@ -322,8 +322,8 @@ object PlayMath {
         return listOf(rules.dailyEasy[(h % rules.dailyEasy.size).toInt()], rules.dailyHard[((h ushr 8) % rules.dailyHard.size).toInt()], rules.firstMatch)
     }
 
-    private fun counters(state: JsonObject?) = state?.getAsJsonObject("counters") ?: JsonObject()
-    private fun claimed(state: JsonObject?) = state?.getAsJsonArray("claimed")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }?.toSet() ?: emptySet()
+    private fun counters(state: JsonObject?) = state?.get("counters") as? JsonObject ?: JsonObject()
+    private fun claimed(state: JsonObject?) = (state?.get("claimed") as? JsonArray)?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }?.toSet() ?: emptySet()
 
     fun quests(rules: PlayRules, state: JsonObject?, day: String, user: String = ""): Quests {
         val c = counters(state); val got = claimed(state); val week = playWeek(day)
@@ -341,13 +341,13 @@ object PlayMath {
     fun tierNames(n: Int) = TIERS[n] ?: TIERS.getValue(5)
 
     fun sourceValue(source: String, state: JsonObject?): Int {
-        val cards = state?.getAsJsonArray("cards")?.mapNotNull { it as? JsonObject } ?: emptyList()
+        val cards = (state?.get("cards") as? JsonArray)?.mapNotNull { it as? JsonObject } ?: emptyList()
         val c = counters(state)
         return when {
             source == "cards" -> cards.sumOf { it.int("c") }
             source == "playsets" -> cards.count { it.int("c") >= 4 }
-            source == "mythics" -> cards.count { it.get("r")?.asString == "mythic" && it.int("c") > 0 }
-            source == "packs" -> state?.getAsJsonObject("wallet")?.int("packs_opened") ?: 0
+            source == "mythics" -> cards.count { it.get("r")?.takeIf { e -> e.isJsonPrimitive }?.asString == "mythic" && it.int("c") > 0 }
+            source == "packs" -> (state?.get("wallet") as? JsonObject)?.int("packs_opened") ?: 0
             source == "fmt" -> c.entrySet().count { it.key.startsWith("fmt:") && (it.value.takeIf { v -> v.isJsonPrimitive }?.asDouble ?: 0.0) > 0 }
             else -> c.get(source)?.takeIf { it.isJsonPrimitive }?.asDouble?.toInt() ?: 0
         }
@@ -365,8 +365,8 @@ object PlayMath {
 
     /** questReward: the reward a quest pays, from the server's config with the web's defaults. */
     fun questReward(q: PlayRules.Quest, config: JsonObject?): PlayRules.Reward {
-        val d = config?.getAsJsonObject("daily"); val w = config?.getAsJsonObject("weekly")
-        fun JsonObject?.n(a: String, k: String, def: Int) = this?.getAsJsonObject(a)?.get(k)?.takeIf { it.isJsonPrimitive }?.asInt ?: def
+        val d = config?.get("daily") as? JsonObject; val w = config?.get("weekly") as? JsonObject
+        fun JsonObject?.n(a: String, k: String, def: Int) = (this?.get(a) as? JsonObject)?.get(k)?.takeIf { it.isJsonPrimitive }?.asInt ?: def
         fun JsonObject?.m(k: String, def: Int) = this?.get(k)?.takeIf { it.isJsonPrimitive }?.asInt ?: def
         return when (q.level) {
             "first" -> PlayRules.Reward(coins = d.n("firstMatch", "coins", 100))

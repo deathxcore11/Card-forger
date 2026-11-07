@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -372,9 +373,16 @@ private val Ink = Color(0xFF1B1406)
 private fun scanPic(img: SiteNode?): androidx.compose.ui.graphics.painter.Painter? {
     val src = img?.get("src").orEmpty()
     if (src.startsWith("data:image")) {
-        val bmp: androidx.compose.ui.graphics.ImageBitmap? = androidx.compose.runtime.remember(src) { runCatching { val b = android.util.Base64.decode(src.substringAfter(','), android.util.Base64.DEFAULT)
-            android.graphics.BitmapFactory.decodeByteArray(b, 0, b.size)?.asImageBitmap() }.getOrNull() }
-        return bmp?.let { androidx.compose.ui.graphics.painter.BitmapPainter(it) }
+        // Decoded off the main thread, at no more than twice what a tile or the review shows (long side 1024 or more).
+        val bmp by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, src) {
+            value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { runCatching {
+                val b = android.util.Base64.decode(src.substringAfter(','), android.util.Base64.DEFAULT)
+                val o = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                android.graphics.BitmapFactory.decodeByteArray(b, 0, b.size, o)
+                var k = 1; while (maxOf(o.outWidth, o.outHeight) / (k * 2) >= 1024) k *= 2
+                android.graphics.BitmapFactory.decodeByteArray(b, 0, b.size, android.graphics.BitmapFactory.Options().apply { inSampleSize = k })?.asImageBitmap() }.getOrNull() }
+        }
+        return bmp?.let { androidx.compose.runtime.remember(it) { androidx.compose.ui.graphics.painter.BitmapPainter(it) } }
     }
     val list = img?.pic.orEmpty().ifEmpty { listOfNotNull(src.ifBlank { null }) }
     return if (list.isEmpty()) null else firstOf(list)
@@ -472,7 +480,7 @@ private fun TileGrid(n: SiteNode, ui: SiteUi) {
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             n.elements.filter { !it.hidden }.chunked(cols).forEach { line ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    line.forEach { t -> Box(Modifier.weight(1f)) { ScanTile(t, ui, n.has("is-selecting")) } }
+                    line.forEach { t -> androidx.compose.runtime.key(t.id) { Box(Modifier.weight(1f)) { ScanTile(t, ui, n.has("is-selecting")) } } }
                     repeat(cols - line.size) { Spacer(Modifier.weight(1f)) }
                 }
             }

@@ -139,7 +139,9 @@ class BenchStat(val value: String, val label: String, val warn: Boolean = false)
 class BenchShelf(val key: String, val title: String, val code: String = "", val meta: String = "", val gold: Boolean = false,
                  val tiles: List<BenchTile>? = null, val note: String = "", val count: Int = 0,
                  /** Under a "For this deck" card: why it is there ("In 42% of top decks", "Instant"). */
-                 val why: Map<String, String> = emptyMap())
+                 val why: Map<String, String> = emptyMap(),
+                 /** Still filling: its tiles so far show, and its ask stays on while it is on screen. */
+                 val loading: Boolean = false)
 class BenchModel(
     val play: Boolean, val modeChip: String, val formatChip: String, val title: String, val heroArt: String?,
     val stats: List<BenchStat>, val power: String?, val tier: String, val roles: List<Pair<String, Int>>,
@@ -894,7 +896,7 @@ private fun Shelves(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, lif
         items(shown.size, key = { "sh:" + shown[it].key }) { i -> val s = shown[i]
             // Waiting, or failed (its note says scroll back to try again): asks once it has stayed on screen a moment, so a fling past
             // a dozen shelves asks for none of them; leaving the screen cancels the ask.
-            if (s.tiles == null || s.note.isNotEmpty()) LaunchedEffect(s.key, m.shelvesGen) { kotlinx.coroutines.delay(160); a.shelf(s.key) }
+            if (s.tiles == null || s.loading || s.note.isNotEmpty()) LaunchedEffect(s.key, m.shelvesGen) { kotlinx.coroutines.delay(160); a.shelf(s.key) }
             Shelf(s, m.cardBack, ui, a, drag, lift)
         }
     }

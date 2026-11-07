@@ -152,11 +152,11 @@ object PreconStore {
         }
     }
     fun summaryOf(payload: JsonObject): Summary? {
-        val d = payload.getAsJsonObject("data") ?: payload
-        if (d.getAsJsonArray("mainBoard") == null) return null
+        val d = payload.get("data") as? JsonObject ?: payload
+        if (d.get("mainBoard") !is JsonArray) return null
         val colors = HashSet<String>()
-        for (k in listOf("commander", "mainBoard")) d.getAsJsonArray(k)?.forEach { e -> val c = e as? JsonObject ?: return@forEach
-            BASIC_COLOR[c.s("name")]?.let { colors.add(it) }; c.getAsJsonArray("colorIdentity")?.forEach { x -> if (x.isJsonPrimitive && x.asString != "C") colors.add(x.asString) } }
+        for (k in listOf("commander", "mainBoard")) (d.get(k) as? JsonArray)?.forEach { e -> val c = e as? JsonObject ?: return@forEach
+            BASIC_COLOR[c.s("name")]?.let { colors.add(it) }; (c.get("colorIdentity") as? JsonArray)?.forEach { x -> if (x.isJsonPrimitive && x.asString != "C") colors.add(x.asString) } }
         return Summary(Decks.preconFace(d), "WUBRG".map { it.toString() }.filter { it in colors }, Decks.preconFormatsAny(payload) ?: emptyList(),
             Decks.preconRows(d).map { Decks.Row(it.name, it.qty, it.board, rarity = it.rarity) })
     }
@@ -166,9 +166,9 @@ object PreconStore {
             val o = runCatching { file()?.takeIf { it.exists() }?.readText()?.let { com.google.gson.JsonParser.parseString(it).asJsonObject } }.getOrNull() ?: return@launch
             val got = HashMap<String, Summary>()
             for ((k, v) in o.entrySet()) { val x = v as? JsonObject ?: continue
-                val face = x.getAsJsonArray("f")?.takeIf { it.size() == 2 }?.let { it[0].asString to it[1].asString }
-                val rows = x.getAsJsonArray("r")?.mapNotNull { r -> (r as? JsonArray)?.takeIf { it.size() >= 3 }?.let { Decks.Row(it[0].asString, it[1].asInt, it.get(3)?.takeIf { b -> b.isJsonPrimitive }?.asString, rarity = it[2].asString) } } ?: continue
-                got[k] = Summary(face, x.s("c").map { it.toString() }, x.getAsJsonArray("fm")?.map { it.asString } ?: emptyList(), rows) }
+                val face = (x.get("f") as? JsonArray)?.takeIf { it.size() == 2 }?.let { it[0].asString to it[1].asString }
+                val rows = (x.get("r") as? JsonArray)?.mapNotNull { r -> (r as? JsonArray)?.takeIf { it.size() >= 3 }?.let { Decks.Row(it[0].asString, it[1].asInt, it.get(3)?.takeIf { b -> b.isJsonPrimitive }?.asString, rarity = it[2].asString) } } ?: continue
+                got[k] = Summary(face, x.s("c").map { it.toString() }, (x.get("fm") as? JsonArray)?.map { it.asString } ?: emptyList(), rows) }
             withContext(Dispatchers.Main) { got.forEach { (k, v) -> summaries.putIfAbsent(k, v) } }
         }
     }
@@ -200,7 +200,7 @@ data class PreconNeed(val sh: Decks.Shortfall, val short: Map<String, Int>, val 
 }
 /** state.preconStore.files: this week's five store precons (play-precon-formats weeklyPrecons, from the server). */
 fun weeklyPrecons(state: JsonObject?): Set<String> =
-    (state?.get("preconStore") as? JsonObject)?.getAsJsonArray("files")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }?.toSet().orEmpty()
+    ((state?.get("preconStore") as? JsonObject)?.get("files") as? JsonArray)?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }?.toSet().orEmpty()
 /**
  * This week's store precons by format: /state preconStore.formats (play-precon-formats.js weeklyPreconsByFormat, PR #130:
  * four each of Standard, Pioneer, Modern and Legacy), in the server's order. Empty from a server that only sends files.
@@ -218,10 +218,10 @@ fun preconPrerelease(state: JsonObject?): PreconPrerelease? = ((state?.get("prec
 fun isWeeklyPrecon(state: JsonObject?, file: String) = file.removeSuffix(".json") in weeklyPrecons(state)
 /** [type] and [released]: the precon's MTGJSON deck type and release date (its DeckList entry's), which set its class and list price (Decks.preconQuote). */
 fun preconNeed(rows: List<Decks.Row>, owned: Map<String, Int>, state: JsonObject, file: String = "", type: String = "", released: String = ""): PreconNeed {
-    val config = state.getAsJsonObject("config")
+    val config = state.get("config") as? JsonObject
     val quote = Decks.preconQuote(rows, owned, type, config, if (type.equals(Decks.COMMANDER_PRECON_TYPE, true)) 1 else Decks.preconCopies(rows).let { c -> if (c == 1) 1 else config?.get("maxCopies")?.takeIf { it.isJsonPrimitive }?.asInt ?: 4 }, released)
     val sh = quote.short
-    val wallet = state.getAsJsonObject("wallet")
+    val wallet = state.get("wallet") as? JsonObject
     val short = SEAL_KEYS.associateWith { k -> maxOf(0, (sh.seals[k] ?: 0) - (wallet?.get("seal_$k")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0)) }
     val want = rows.filter { !Decks.isBasicLand(it.name) }.sumOf { maxOf(1, it.qty) }
     return PreconNeed(sh, short, quote.price, if (want > 0) (want - sh.total).coerceAtLeast(0).toDouble() / want else 1.0,
@@ -440,8 +440,8 @@ fun PreconPage(state: JsonObject, o: OpenPrecon, owned: Map<String, Int>, pc: Pr
     val scope = rememberCoroutineScope()
     val need = remember(o, owned, state) { preconNeed(o.rows, owned, state, o.file, o.product, o.released) }
     val sh = need.sh
-    val coins = state.getAsJsonObject("wallet")?.get("coins")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0
-    val have = remember(state) { SEAL_KEYS.associateWith { k -> state.getAsJsonObject("wallet")?.get("seal_$k")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0 } }
+    val coins = (state.get("wallet") as? JsonObject)?.get("coins")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0
+    val have = remember(state) { SEAL_KEYS.associateWith { k -> (state.get("wallet") as? JsonObject)?.get("seal_$k")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0 } }
     var busy by remember { mutableStateOf(false) }
     var armed by remember { mutableStateOf("") }
     LaunchedEffect(armed) { if (armed.isNotEmpty()) { delay(5000); armed = "" } }
@@ -451,7 +451,7 @@ fun PreconPage(state: JsonObject, o: OpenPrecon, owned: Map<String, Int>, pc: Pr
     var meta by remember(metaFormat) { mutableStateOf(metaFormat?.let { MetaLists.cached(it) }) }
     LaunchedEffect(metaFormat) { if (metaFormat != null && meta == null) meta = MetaLists.load(metaFormat) }
     val metaCount = remember(meta) { HashMap<String, Int>().also { m -> meta.orEmpty().forEach { l -> l.cards.map { it.name }.toSet().forEach { n -> m[n] = (m[n] ?: 0) + 1 } } } }
-    val decks = state.getAsJsonArray("decks")?.mapNotNull { it as? JsonObject } ?: emptyList()
+    val decks = (state.get("decks") as? JsonArray)?.mapNotNull { it as? JsonObject } ?: emptyList()
     val deckUse = remember(decks) { HashMap<String, MutableList<String>>().also { m -> decks.forEach { d -> Decks.rows(d).map { it.name }.toSet().forEach { n -> m.getOrPut(n) { ArrayList() }.add(d.s("name").ifBlank { "Untitled deck" }) } } } }
     val shared = remember(sh, metaCount, deckUse) { sh.missing.filter { (metaCount[it.name] ?: 0) > 0 || deckUse[it.name] != null }
         .sortedByDescending { (metaCount[it.name] ?: 0) + 2 * (deckUse[it.name]?.size ?: 0) } }

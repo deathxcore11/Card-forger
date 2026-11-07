@@ -78,7 +78,10 @@ object RandomBuild {
     /** Not while a match is on the table or the app is out of sight (app.js playRandomQueue idle()): queued builds wait. */
     @Volatile var paused = false; set(v) { if (field != v) { field = v; idleChanged() } }
     @Volatile var hidden = false; set(v) { if (field != v) { field = v; idleChanged() } }
-    private fun idleChanged() { scope.launch { if (webReady != null || qjs != null) runCatching { eval("RandomBuild.idle(${!paused && !hidden})") } } }
+    /** The Scanner or Build a deck is open: they share the WebView's renderer, so queued builds wait for them too. */
+    @Volatile var foreground = false; set(v) { if (field != v) { field = v; idleChanged() } }
+    private fun idleExpr() = "RandomBuild.idle(${!paused && !hidden && !foreground})"
+    private fun idleChanged() { scope.launch { if (webReady != null || qjs != null) runCatching { eval(idleExpr()) } } }
     private var pump: kotlinx.coroutines.Job? = null
     private val wake = kotlinx.coroutines.channels.Channel<Unit>(kotlinx.coroutines.channels.Channel.CONFLATED)
 
@@ -210,8 +213,8 @@ object RandomBuild {
     /** The queue builds a deck for each (format, power) in the background (play-random-queue.js warm). */
     internal fun enqueue(asks: List<Pair<String, String?>>, user: String?) {
         val a = com.google.gson.JsonArray().apply { asks.forEach { (f, p) -> add(ask(f, null, "classic", p)) } }
-        // The WebView's first start costs the main thread a moment, so not while Home is still drawing.
-        scope.launch { if (app != null && webReady == null) delay(2_000); runCatching { eval(scoped(user) + "RandomBuild.warm(" + JsonPrimitive(a.toString()) + ")") } }
+        // The WebView's first start costs the main thread a moment, so not while Home is still drawing or Collection is warming.
+        scope.launch { if (app != null && webReady == null) { delay(2_000); withTimeoutOrNull(20_000) { dev.cardstashy.nativeplay.collection.CollectionWarm.done.await() } }; runCatching { eval(scoped(user) + "RandomBuild.warm(" + JsonPrimitive(a.toString()) + ")") } }
     }
 
     /** Decks the queue has ready for [format] (play-random-queue.js peek), with their Power. */
@@ -237,7 +240,7 @@ object RandomBuild {
             val q = js()
             while (true) {
                 while (true) { val a = answers.poll() ?: break; q.evaluate("__host.answer(${a.first}, ${a.second}, ${JsonPrimitive(a.third.first)}, ${JsonPrimitive(a.third.second)})") }
-                q.evaluate("RandomBuild.idle(${!paused && !hidden})")
+                q.evaluate(idleExpr())
                 val p = JsonParser.parseString(q.evaluate("__host.pump(${System.currentTimeMillis()})") as String).asJsonObject
                 for (r in p.getAsJsonArray("requests")) send(r.asJsonObject)
                 publish(q.evaluate("RandomBuild.poll()") as String?)
@@ -290,11 +293,18 @@ object RandomBuild {
         if (webFailed) return null
         val r = webReady ?: CompletableDeferred<Boolean>().also { d ->
             webReady = d
-            withContext(Dispatchers.Main) { createWeb(a, d) }
-            if (withTimeoutOrNull(20_000) { d.await() } == true) withContext(Dispatchers.Main) { web }?.let { evalWeb(it, "RandomBuild.idle(${!paused && !hidden})") }
+            onMainIdle { createWeb(a, d) }
+            if (withTimeoutOrNull(20_000) { d.await() } == true) withContext(Dispatchers.Main) { web }?.let { evalWeb(it, idleExpr()) }
         }
         if (withTimeoutOrNull(20_000) { r.await() } != true) { dropWeb("the page did not load"); return null }
         return withContext(Dispatchers.Main) { web } ?: run { webFailed = true; null }
+    }
+
+    // The WebView is made when the main thread has nothing else queued, so its first start doesn't land on a frame.
+    private suspend fun onMainIdle(f: () -> Unit) = suspendCancellableCoroutine<Unit> { c ->
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            android.os.Looper.myQueue().addIdleHandler { if (c.isActive) c.resumeWith(runCatching(f)); false }
+        }
     }
 
     @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")

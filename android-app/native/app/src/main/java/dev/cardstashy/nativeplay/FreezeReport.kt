@@ -255,9 +255,14 @@ object FreezeReport {
                 val sent = SystemClock.uptimeMillis()
                 main.post { answered.set(true) }
                 var samples = 0
+                var tick = sent; var paused = false
                 while (!answered.get()) {
                     Thread.sleep(50)
-                    val busy = SystemClock.uptimeMillis() - sent
+                    // The watchdog itself slept far past its 50 ms: Android froze the whole app in the background (the cached-app
+                    // freezer), so main didn't stall; it was paused with everything else (0.4.40: "main busy 181703 ms" on a resume).
+                    val now = SystemClock.uptimeMillis(); if (now - tick > 1000) paused = true; tick = now
+                    if (paused) continue
+                    val busy = now - sent
                     if (busy >= 1500L * (samples + 1) && samples < 4) {
                         samples++
                         val st = Looper.getMainLooper().thread.stackTrace.take(45).joinToString("\n") { "    at $it" }

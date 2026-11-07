@@ -86,7 +86,7 @@ fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (De
     val factByName = remember(facts) { facts.values.flatMap { f -> val n = f.card.get("name")?.asString ?: ""; listOf(n to f.card, n.split(" // ")[0] to f.card) }.toMap() }
     val ownedFact = remember(trunk, facts) { trunk.mapNotNull { c -> facts[c.o]?.card?.let { f -> (f.get("name")?.asString ?: "") to f } }.toMap() }
     fun cardOf(n: String): JsonObject? = factByName[n] ?: ownedFact[n] ?: ownedFact[n.split(" // ")[0]]
-    val seals = state.getAsJsonObject("wallet").let { w -> listOf("c", "u", "r", "m").associateWith { k -> w?.get("seal_$k")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0 } }
+    val seals = (state.get("wallet") as? JsonObject).let { w -> listOf("c", "u", "r", "m").associateWith { k -> w?.get("seal_$k")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0 } }
 
     // loadFinder: card facts for the Trunk, the format's meta lists, the Trunk build, then cheapest rarities in the background.
     LaunchedEffect(ui.format, trunk) {
@@ -130,7 +130,7 @@ fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (De
         val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
         val sets by dev.cardstashy.nativeplay.play.SetFacts.sets.collectAsState()
         val goals = remember(row, sets) {
-            val plan = DeckEdit.craftPlan(l.cards.groupBy { it.name }.map { (n, r) -> DeckEdit.Line(n, r.sumOf { maxOf(1, it.qty) }) }, owned, rarityOf, state.getAsJsonObject("wallet"))
+            val plan = DeckEdit.craftPlan(l.cards.groupBy { it.name }.map { (n, r) -> DeckEdit.Line(n, r.sumOf { maxOf(1, it.qty) }) }, owned, rarityOf, state.get("wallet") as? JsonObject)
             DeckEdit.packGoals(plan) { n -> cardOf(n)?.let { c -> val code = c.get("set")?.asString ?: ""; code to (sets[code]?.name ?: c.get("set_name")?.asString ?: code.uppercase()) } }
         }
         val actions = listOfNotNull(

@@ -40,6 +40,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +59,8 @@ import dev.cardstashy.nativeplay.collection.ScanWeb
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.concurrent.Executors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 private const val SITE = "https://cardstashy.com/"
 
@@ -72,6 +75,8 @@ private const val SITE = "https://cardstashy.com/"
 fun CollectionScanRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, onCards: () -> Unit, onDecks: () -> Unit, onSearch: () -> Unit,
                         onSets: () -> Unit, web: (url: String, press: String?) -> Unit, game: String = "mtg", onGame: (String) -> Unit = {}) {
     val context = LocalContext.current
+    // The scanner shares the page engine with background deck builds: they wait while it is open.
+    DisposableEffect(Unit) { dev.cardstashy.nativeplay.play.RandomBuild.foreground = true; onDispose { dev.cardstashy.nativeplay.play.RandomBuild.foreground = false } }
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
     val profile by Account.profile.collectAsState()
@@ -117,15 +122,17 @@ fun CollectionScanRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () ->
     // Photo: the gallery (input without capture) or the camera app (capture="environment"), its picture handed to the input.
     var picking by remember { mutableStateOf<Int?>(null) }
     var shotFile by remember { mutableStateOf<File?>(null) }
-    fun hand(id: Int, uris: List<android.net.Uri>) {
+    // Full-size photos are read and encoded off the main thread; ScanWeb hands them to the page on main.
+    val io = rememberCoroutineScope()
+    fun hand(id: Int, uris: List<android.net.Uri>) { io.launch(Dispatchers.IO) {
         val files = uris.mapNotNull { u -> runCatching { context.contentResolver.openInputStream(u)?.use { it.readBytes() } }.getOrNull()?.let { b ->
             Triple(u.lastPathSegment?.substringAfterLast('/')?.takeIf { it.contains('.') } ?: "photo.jpg", context.contentResolver.getType(u) ?: "image/jpeg", b) } }
         if (files.isNotEmpty()) ScanWeb.files(id, files)
-    }
+    } }
     val gallery = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris -> picking?.let { hand(it, uris) }; picking = null }
     val takePhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
         val f = shotFile; val id = picking; picking = null
-        if (ok && f != null && id != null) ScanWeb.files(id, listOf(Triple("photo.jpg", "image/jpeg", f.readBytes())))
+        if (ok && f != null && id != null) io.launch(Dispatchers.IO) { runCatching { f.readBytes() }.getOrNull()?.let { ScanWeb.files(id, listOf(Triple("photo.jpg", "image/jpeg", it))) } }
     }
     val pick: (SiteNode) -> Unit = { input ->
         picking = input.id
@@ -228,7 +235,8 @@ private fun ScanCamera(modifier: Modifier) {
                 analysis.setAnalyzer(exec) { img ->
                     try {
                         val now = System.currentTimeMillis()
-                        if (now - last >= 150) { last = now; ScanWeb.frame(jpeg(img.toBitmap(), img.imageInfo.rotationDegrees)) }
+                        // A frame still on its way to the page: this one is skipped without being made.
+                        if (now - last >= 150 && ScanWeb.frame { jpeg(img.toBitmap(), img.imageInfo.rotationDegrees) }) last = now
                     } catch (_: Throwable) {} finally { img.close() }
                 }
                 runCatching {
