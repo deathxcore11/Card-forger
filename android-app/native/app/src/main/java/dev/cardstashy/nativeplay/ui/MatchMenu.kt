@@ -35,6 +35,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -115,21 +120,28 @@ private const val LANDS_ICON = "M3 20l6-10 4 6 3-4 5 8z"
 /** .forge-menu-panel: under the menu button (top: 100% + 8px, left 0), min-width 220, padding 8, gap 4, radius 16, #11141bf2, #ffffff1a hairline. */
 @Composable
 internal fun MenuPanel(menu: MatchMenu, stackCount: Int, d: Du, x: Dp, y: Dp) = with(d) {
-    // A tap anywhere else closes the menu.
-    Box(Modifier.fillMaxSize().zIndex(39f).clickable(remember { MutableInteractionSource() }, null) { menu.open = false })
+    // A tap anywhere else closes the menu. It is no stop for the controller's ring (B and Start close the menu there).
+    Box(Modifier.fillMaxSize().zIndex(39f).focusProperties { canFocus = false }.clickable(remember { MutableInteractionSource() }, null) { menu.open = false })
     val pop = remember { Animatable(0f) }
     LaunchedEffect(Unit) { pop.animateTo(1f, tween(if (Motion.still) 0 else 180)) }
-    Column(Modifier.offset(x = x, y = y).zIndex(40f).graphicsLayer { alpha = pop.value; translationY = (1 - pop.value) * -6 * u * density }
+    // A controller: the ring starts on the first row; B and Start close the menu (B would otherwise leave the match). A phone with no pad is as it was.
+    val padOn = Pad.connected.collectAsState().value
+    val first = remember { FocusRequester() }
+    LaunchedEffect(Unit) { if (Pad.connected.value) runCatching { first.requestFocus() } }
+    androidx.activity.compose.BackHandler(padOn) { menu.open = false }
+    PadScreen(PadActs(b = "Close", start = PadAct("Close") { menu.open = false }, opaque = true))
+    Column(Modifier.padLayer().offset(x = x, y = y).zIndex(40f).onFocusChanged { if (it.hasFocus) TablePad.held = true }.graphicsLayer { alpha = pop.value; translationY = (1 - pop.value) * -6 * u * density }
         .widthIn(min = 220.du).clip(RoundedCornerShape(16.du)).background(Color(0xF211141B)).border(1.dp, Color(0x1AFFFFFF), RoundedCornerShape(16.du))
         .padding(8.du), verticalArrangement = Arrangement.spacedBy(4.du)) {
-        @Composable fun item(label: String, on: Boolean = false, icon: String? = null, onClick: () -> Unit) =
+        @Composable fun item(label: String, on: Boolean = false, icon: String? = null, focus: FocusRequester? = null, onClick: () -> Unit) =
             Row(Modifier.widthIn(min = 204.du).heightIn(min = 42.du).clip(RoundedCornerShape(10.du)).background(if (on) Color(0x1AE8B95B) else Color.Transparent)
+                .then(if (focus != null) Modifier.focusRequester(focus) else Modifier)
                 .clickable(onClick = onClick).padding(horizontal = 12.du), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.du)) {
                 if (icon != null) StrokeIcon(icon, Color(0xFFE9D4A4), 17.du, stroke = 1.8f)
                 Text(label, style = sans(sp(13.5f), FontWeight.SemiBold, if (on) Color(0xFFF4D78F) else Color(0xFFEEF0F3)))
             }
-        if (menu.deck.isNotEmpty()) item("Deck tracker", menu.tracker != null, TRACKER_ICON) { menu.showTracker(if (menu.tracker != null) null else "deck") }
-        item("History & stack" + if (stackCount > 0) " · $stackCount" else "", menu.history) { menu.history = !menu.history }
+        if (menu.deck.isNotEmpty()) item("Deck tracker", menu.tracker != null, TRACKER_ICON, focus = first) { menu.showTracker(if (menu.tracker != null) null else "deck") }
+        item("History & stack" + if (stackCount > 0) " · $stackCount" else "", menu.history, focus = if (menu.deck.isEmpty()) first else null) { menu.history = !menu.history }
         item("Concede") { menu.open = false; menu.onConcede() }
         item("Return to Play setup") { menu.open = false; menu.onLeave() }
     }
@@ -155,6 +167,8 @@ internal fun DeckTracker(st: MatchState, menu: MatchMenu, H: Dp, d: Du, x: Dp, t
 
     val pop = remember { Animatable(0f) }
     LaunchedEffect(Unit) { pop.animateTo(1f, tween(if (Motion.still) 0 else 180)) }
+    // A controller's LB / RB: the tracker's own Library and Opponent tabs.
+    PadScreen(PadActs(tabs = { dir -> menu.showTracker(if (dir < 0) "deck" else "opponent") }))
     val maxH = maxOf(160.du, H - 98.du - top)
     val shape = RoundedCornerShape(16.du)
     Column(Modifier.offset(x = x, y = top).zIndex(25f).graphicsLayer { alpha = pop.value; translationY = (1 - pop.value) * -6 * u * density; val s = .98f + .02f * pop.value; scaleX = s; scaleY = s }

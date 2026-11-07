@@ -139,6 +139,8 @@ private fun AcquireForm(m: JsonObject, o: CollectionWrites.AcquireOpen, backdrop
     }
 
     SiteSheet(m.s("title"), backdrop, onClose) { vw ->
+        // A controller: X is the sheet's gold save.
+        PadScreen(remember(m, saving) { PadActs(x = if (saving) null else PadAct(m.s("save")) { save() }) })
         val one = vw <= 480.dp
         // p.muted.small: 13 muted, 6 above and under.
         Text(m.s("intro"), Modifier.padding(vertical = 6.dp), style = cssType(13f, 400, 18.85f, QMute))
@@ -208,6 +210,8 @@ internal fun ProxySheet(o: CollectionWrites.ProxyOpen, onClose: () -> Unit) {
     val context = LocalContext.current
     Dialog(onClose, DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         BackHandler(onBack = onClose)
+        // A controller: the window over the app takes the pad (B closes it); X/Y/shoulders reach a Dialog's own window only if MainActivity hands them on.
+        PadScreen(remember { PadActs(b = "Close", opaque = true) })
         Column(Modifier.fillMaxSize().background(Color.White)) {
             // The new window's own bar: ✕ and the page's title.
             Row(Modifier.fillMaxWidth().background(Color(0xFF111111)).statusBarsPadding().heightIn(min = 52.dp).padding(horizontal = 4.dp),

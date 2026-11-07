@@ -389,6 +389,12 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     // The page is recorded as it draws, so the idea sheet's glass can blur what is under it.
     val pageLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
     if (m != null) Box(Modifier.fillMaxSize().drawWithContent { pageLayer.record { this@drawWithContent.drawContent() }; drawLayer(pageLayer) }) {
+        // Controller (PadPrompts): LB/RB step through My decks, Ideas and Meta decks (the tabs drawn here; openTab sends the rest to the
+        // website), X is the head's gold button (Import / New deck, as the page has it).
+        val here = setOf("mine", "ideas", "inspiration")
+        val main = m.actions.firstOrNull { !it.ghost && it.label.isNotBlank() }
+        PadScreen(PadActs(x = main?.let { b -> PadAct(b.label) { act.press(b) } },
+            tabs = if (m.tabs.size > 1) ({ d -> padTab(m.tabs.map { it.key }, m.tab, d) { it in here }?.let { openTab(it) } }) else null))
         CollectionDecks(m, top, act, nav, query, body = when (m.tab) {
             "ideas" -> ({ gutter, screen -> DecksTabBody(panel, siteUi, glyphs, gutter, screen) })
             "inspiration" -> ({ gutter, screen -> MetaTabBody(panel, siteUi, glyphs, gutter, screen) })

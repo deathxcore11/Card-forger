@@ -65,6 +65,8 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     var asked by remember { mutableStateOf<Pair<String, String>?>(null) }
     /** The card pages open over the list, the last on top (a card opened from a card goes back to it). */
     var cards by remember { mutableStateOf(listOf<CardOpen>()) }
+    /** A controller's Y on a lot: that card shown big over the list (CardZoom), until B. */
+    var peeking by remember { mutableStateOf<CollRow?>(null) }
     var failed by remember { mutableStateOf<String?>(null) }
     // Cards, Binders or Value (views.js collection's segmented collTab; tcg.js tCollTab), and Value's page once read.
     var tab by remember(game) { mutableStateOf(CardsCache.tab[game] ?: "cards") }
@@ -156,6 +158,7 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             mark = { r, on -> scope.launch { if (HomeCache.loaded != null) runCatching { paint("mark" to "${r.id}\n${if (on) 1 else 0}") } } },
             clear = { asked = "clear" to "" },
             batch = { kind -> scope.launch { CollectionWrites.openBatch(context, game.id, kind) } },
+            peek = { r -> peeking = r },
             // app.js A.collMenu: the ⋯ sheet (Import a list or CSV, Export CSV, Retry lookups, Verify printings), drawn here (CollectionImport).
             menu = { CollectionWrites.collMenu.value = CollectionWrites.MenuOpen(lookups = { lookups++ }) },
             sort = { v -> asked = "sort" to v },
@@ -267,6 +270,13 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             Text(failed ?: "Your cards and profile will appear here.", style = Site.Meta.copy(color = Site.Muted), textAlign = TextAlign.Center)
         }
         nav(false)
+    }
+    peeking?.let { r -> val art = r.art.orEmpty()
+        // The lot's own picture and finish, as its tile wears them (LotArt).
+        val data = if (r.print != null) dev.cardstashy.nativeplay.play.CardData.ready.collectAsState().value else null
+        val look = data?.let { Foil.look(it, r.print, Foil.finishFor(r.print, r.finishKey.ifBlank { "nonfoil" })) }
+        val worn = remember(r) { r.tcgFinish?.let { tcgFinishOf(context, game, it, art) } }
+        androidx.compose.runtime.key(r) { CardZoom(art, null, null, look, finish = worn) { peeking = null } }
     }
     cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) { CollectionCardHost(c, onClose = { cards = cards.dropLast(1) }, onOpen = { cards = cards + it }, web = web, onSet = onSet) } }
     }

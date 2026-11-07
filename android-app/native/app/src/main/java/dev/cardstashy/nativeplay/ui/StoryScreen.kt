@@ -143,6 +143,8 @@ private fun Cta(text: String, modifier: Modifier = Modifier) =
 fun StoryRoad(acts: List<PlayRules.Act>, age: String, p: StoryLogic.Progress, onBack: () -> Unit, onAct: (Int) -> Unit, purse: @Composable () -> Unit = {}) {
     val now = StoryLogic.currentAct(p, acts.size)
     val shown = acts.filter { it.act <= now + 1 }
+    // Controller: X = the act you are in, with its cover's own words (Begin / Continue).
+    PadScreen(PadActs(x = if (acts.any { it.act == now }) PadAct(if (StoryLogic.actWon(p, now) > 0) "Continue" else "Begin") { onAct(now) } else null))
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
     // Sideways phone or handheld: the header on one line and the act covers in a row that scrolls across.
@@ -222,6 +224,10 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
     val counters = StoryLogic.counters(dev.cardstashy.nativeplay.play.Progress.state.collectAsState().value)
     val open = battles.filter { b -> if (b["secret"]?.asBoolean == true) StoryLogic.secretOpen(p, a.act, counters) else b["slot"].asInt <= now + 1 }
     val tease = StoryLogic.secretTease(battles.any { it["secret"]?.asBoolean == true }, p, a.act, counters)
+    // Controller: X = the battle you are on (its row's Duel / Replay).
+    val current = open.firstOrNull { (it["secret"] as? com.google.gson.JsonPrimitive)?.asBoolean != true && (it["slot"] as? com.google.gson.JsonPrimitive)?.asInt == now }
+    val currentId = (current?.get("id") as? com.google.gson.JsonPrimitive)?.asString
+    PadScreen(PadActs(x = currentId?.let { id -> PadAct(if (StoryLogic.battleCleared(p, id)) "Replay" else "Duel") { onBattle(id) } }))
     val banner = @Composable { m: Modifier ->
             val shape = RoundedCornerShape(24.dp)
             Box(m.clip(shape).border(1.dp, Color(0x38D6AD64), shape)) {

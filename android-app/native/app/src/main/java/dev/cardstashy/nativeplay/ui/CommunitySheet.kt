@@ -42,6 +42,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
@@ -173,6 +174,13 @@ internal fun CommunitySheet(start: CommunityView, onClose: () -> Unit, onEditPro
     var choices by remember { mutableStateOf<List<JsonObject>?>(null) }
     suspend fun loadChoices(): List<JsonObject> = choices ?: (CollectionWrites.showcaseChoices(context)?.mapNotNull { it as? JsonObject }.orEmpty()).also { choices = it }
     BackHandler { back() }
+    // A controller: the pop-up owns the pad (B is back(), above); LB/RB step Friends / Requests / Add friend, or Binders / Decks while choosing.
+    PadScreen(remember { PadActs(opaque = true, tabs = { d -> when (val v = view) {
+        is CommunityView.Panel -> if (v.kind != "blocks") { val ks = listOf("friends", "requests", "add"); val i = (ks.indexOf(v.kind) + d).coerceIn(0, ks.lastIndex)
+            if (ks[i] != v.kind) { view = CommunityView.Panel(ks[i]); message = "" } }
+        is CommunityView.Choose -> { val ks = listOf("binder", "deck"); val i = (ks.indexOf(v.kind) + d).coerceIn(0, ks.lastIndex); if (ks[i] != v.kind) view = CommunityView.Choose(ks[i]) }
+        else -> {}
+    }; Unit }) })
     // createCommunity's mutate: the change, the overview again, then the list it came from (or close), and its toast.
     fun mutate(action: String, payload: JsonObject) {
         if (working) return; working = true; message = "Saving…"
@@ -200,11 +208,12 @@ internal fun CommunitySheet(start: CommunityView, onClose: () -> Unit, onEditPro
         is CommunityView.Item -> if (v.sharing) "Preview before sharing" else v.item.let { with(Community) { it.s("title") } }.ifBlank { "Shared item" }
         is CommunityView.Choose -> "Choose what friends see"
     }
-    Box(Modifier.fillMaxSize().background(Color(0xB8060910)).clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null) { onClose() }.statusBarsPadding().navigationBarsPadding(),
+    // The scrim and the card's tap-catcher are touch-only: the d-pad skips them.
+    Box(Modifier.fillMaxSize().background(Color(0xB8060910)).focusProperties { canFocus = false }.clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null) { onClose() }.statusBarsPadding().navigationBarsPadding(),
         contentAlignment = Alignment.Center) {
         val shape = RoundedCornerShape(26.dp)
         Column(Modifier.widthIn(max = 900.dp).fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp).clip(shape).background(Site.Surface).border(1.dp, Site.Line, shape)
-            .clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null) {}) {
+            .focusProperties { canFocus = false }.clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null) {}) {
             Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 10.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(title, style = Site.CardTitle, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Box(Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onClose).semantics { contentDescription = "Close" }, contentAlignment = Alignment.Center) {

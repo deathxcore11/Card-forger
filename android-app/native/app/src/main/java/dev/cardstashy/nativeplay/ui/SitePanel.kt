@@ -43,6 +43,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -212,6 +213,8 @@ fun SiteGlass(m: SitePanelModel, ui: SiteUi, backdrop: androidx.compose.ui.graph
     LaunchedEffect(g.id) { rise.animateTo(1f, androidx.compose.animation.core.tween(180, easing = androidx.compose.animation.core.LinearOutSlowInEasing)) }
     val shape = RoundedCornerShape(20.dp)
     val lightNow = light
+    // A controller: the glass is a popover over the page; the page's buttons under it lend it nothing.
+    PadScreen(remember { PadActs(opaque = true) })
     androidx.compose.ui.layout.Layout(content = {
         Column(Modifier
             .graphicsLayer { alpha = rise.value; val s = .98f + .02f * rise.value; scaleX = s; scaleY = s; translationY = (1f - rise.value) * 6.dp.toPx() }
@@ -227,12 +230,13 @@ fun SiteGlass(m: SitePanelModel, ui: SiteUi, backdrop: androidx.compose.ui.graph
             }
             .background(if (lightNow) Brush.linearGradient(listOf(Color.White, lerp(Site.Surface, Site.Gold, .04f))) else androidx.compose.ui.graphics.SolidColor(Color(0xF0161923)))
             .then(if (lightNow) Modifier.border(1.dp, Site.Line, shape) else Modifier)
-            .clickable(remember { MutableInteractionSource() }, null) {}
+            // The glass's tap-catcher and the tap-outside behind it are touch-only: the d-pad skips them.
+            .focusProperties { canFocus = false }.clickable(remember { MutableInteractionSource() }, null) {}
             .verticalScroll(rememberScrollState()).padding(20.dp)) {
             Blocks(g.kids, ui, base().under(g), padded = true)
         }
     }, modifier = Modifier.fillMaxSize().onGloballyPositioned { origin = it.positionInRoot() }
-        .clickable(remember { MutableInteractionSource() }, null) { onOutside() }) { ms, c ->
+        .focusProperties { canFocus = false }.clickable(remember { MutableInteractionSource() }, null) { onOutside() }) { ms, c ->
         val w = c.maxWidth; val h = c.maxHeight; val edge = 16.dp.roundToPx()
         val width = minOf(420.dp.roundToPx(), w - 2 * edge)
         val p = ms[0].measure(androidx.compose.ui.unit.Constraints(minWidth = width, maxWidth = width, maxHeight = (h - 2 * edge).coerceAtLeast(0)))
@@ -2141,7 +2145,7 @@ private fun LifeStep(n: SiteNode, ui: SiteUi, w: Dp, h: Dp, size: Float) {
     val press = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     val down by press.collectIsPressedAsState()
     Box(Modifier.widthIn(min = w).height(h).clip(shape).background(if (down) Site.Gold else Site.Surface).border(1.dp, Site.Line, shape)
-        .clickable(press, null) { ui.tap(n.id) }.semantics { role = Role.Button; contentDescription = n["aria-label"].orEmpty() }.padding(horizontal = 4.dp),
+        .clickable(press, PadFocus.Ring) { ui.tap(n.id) }.semantics { role = Role.Button; contentDescription = n["aria-label"].orEmpty() }.padding(horizontal = 4.dp),
         contentAlignment = Alignment.Center) {
         Text(n.text(), style = cssType(size, 700, size * 1.15f, if (down) Site.GoldInk else Site.Text), maxLines = 1)
     }

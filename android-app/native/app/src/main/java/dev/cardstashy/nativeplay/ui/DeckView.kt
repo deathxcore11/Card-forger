@@ -75,6 +75,8 @@ fun DeckView(row: Finder.Row, title: String, cardOf: (String) -> JsonObject?, on
     val entries = remember(groups) { groups.flatMap { it.second } }
     val mode = DeckViewPref.mode
     val sub = listOf(if (title != row.name) row.name else "", if (row.source == "Meta") "" else row.source, row.detail).filter { it.isNotEmpty() }.joinToString(" · ")
+    // Controller: X is the deck's gold action (Build it), while it can be pressed.
+    actions.firstOrNull()?.takeIf { it.enabled }?.let { g -> PadScreen(PadActs(x = PadAct(g.label, g.onClick))) }
     BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
         Backdrop() // #ambient: the shared art (glass on, or Aura)
         val wide = maxWidth >= 600.dp

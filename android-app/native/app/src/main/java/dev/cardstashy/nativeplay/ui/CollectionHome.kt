@@ -845,6 +845,13 @@ fun CollectionNav(active: CollectionTab?, vertical: Boolean = false, scan: Boole
     val icons = mapOf(CollectionTab.HOME to SiteIcons.House, CollectionTab.CARDS to SiteIcons.CardStack, CollectionTab.SEARCH to SiteIcons.Search,
         CollectionTab.DECKS to SiteIcons.Decks, CollectionTab.SCAN to SiteIcons.Scan)
     val tabs = CollectionTab.entries.filter { it != CollectionTab.SCAN || scan }
+    // The controller's LB / RB step along these tabs (the same onSelect a tap runs), stopping at either end. A page with no tab lit
+    // (Rules) starts from the first or the last.
+    val onSelectNow by androidx.compose.runtime.rememberUpdatedState(onSelect)
+    PadScreen(remember(active, tabs) { PadActs(tabs = { d ->
+        val i = tabs.indexOf(active); val j = if (i < 0) (if (d > 0) 0 else tabs.lastIndex) else i + d
+        tabs.getOrNull(j)?.let { onSelectNow(it) }
+    }, nav = true) })
     @Composable fun item(t: CollectionTab, modifier: Modifier) {
         val on = t == active
         Column(modifier.clickable { onSelect(t) }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically)) {

@@ -31,6 +31,12 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.indication
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -378,6 +384,13 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
         show(nx); slide = if (step > 0) slide.coerceAtLeast(0) + 1 else slide.coerceAtMost(0) - 1
     }
 
+    fun revealAll() {
+        if (charging != null) return
+        var best = -1; var at = -1
+        pack.pulls.forEachIndexed { j, p -> if (j !in revealed) { if (p.level > best) { best = p.level; at = j }; reveal(j, silent = true) } }
+        if (at >= 0) { focus = at; feel(FEELS[best]); PackSfx.play(REVEAL_SOUND[best]); momentLevel = best; moment++; flipping++ } else focus = n / 2
+    }
+
     fun next() {
         val ask = onNext ?: return
         if (busy) return
@@ -391,6 +404,14 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
         }
     }
 
+    // Controller: the pack owns the pad (opaque). X = the button under the cards (Reveal all, then Open the next pack); B closes.
+    val dealt = stage == PackStage.DEALING || stage == PackStage.DEALT
+    PadScreen(remember(dealt, allOpen, busy, pack, onNext != null) { PadActs(b = "Close", opaque = true, x = when {
+        !dealt -> null
+        !allOpen -> PadAct("Reveal all") { revealAll() }
+        onNext != null -> PadAct(if (busy) "Opening…" else if (pack.shop != null) "Open a new pack" else "Open the next pack") { next() }
+        else -> null }) })
+
     // Back closes the topmost layer: the card being inspected first, then the pack. The predictive gesture
     // shrinks the pack under the finger, so the Play home shows through before it lets go.
     BackHandler(enabled = inspecting != null) { inspecting = null }
@@ -401,7 +422,8 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
     androidx.compose.runtime.CompositionLocalProvider(LocalPackResult provides pack, LocalPackGold provides pack.look?.let { pack.game.gold }) {
     val gold = packGold()
     Box(Modifier.fillMaxSize().graphicsLayer { val k = 1f - .1f * backPull; scaleX = k; scaleY = k; alpha = 1f - .35f * backPull; shape = RoundedCornerShape((26 * backPull).dp); clip = backPull > 0f }
-        .background(Color(0xE605060B)).clickable(remember { MutableInteractionSource() }, null) {}) {
+        // The backdrop only swallows taps; the controller's focus skips it.
+        .background(Color(0xE605060B)).focusProperties { canFocus = false }.clickable(remember { MutableInteractionSource() }, null) {}) {
         // .pack-dialog on a phone: width 100 % - 20 px, max-height 100dvh - 16 px, radius 20, border var(--line),
         // radial-gradient(120% 70% at 50% 0%, gold 9 % into the background, background 60 %), padding 14 12 16.
         val panel = RoundedCornerShape(20.dp)
@@ -448,12 +470,7 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
                     wished = wished, wishing = wishing,
                     onSwipe = ::swipe,
                     onFlungDone = { flung = null },
-                    onRevealAll = {
-                        if (charging != null) return@Dealt
-                        var best = -1; var at = -1
-                        pack.pulls.forEachIndexed { j, p -> if (j !in revealed) { if (p.level > best) { best = p.level; at = j }; reveal(j, silent = true) } }
-                        if (at >= 0) { focus = at; feel(FEELS[best]); PackSfx.play(REVEAL_SOUND[best]); momentLevel = best; moment++; flipping++ } else focus = n / 2
-                    },
+                    onRevealAll = ::revealAll,
                     onNext = if (onNext != null) ::next else null, busy = busy, drift = { drift.value })
             }
             Text(status, Modifier.fillMaxWidth().heightIn(min = 16.dp).padding(top = 2.dp), style = TextStyle(fontFamily = Site.Body.fontFamily, fontSize = 11.5.sp, lineHeight = 17.sp, color = gold, textAlign = TextAlign.Center))
@@ -480,6 +497,26 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
         }
     }
     }
+}
+
+/**
+ * Controller for a gesture-only control (drag, tap, long press in pointerInput): a focus stop with the gold ring, A (d-pad centre
+ * or Enter) runs [onA], and d-pad left/right runs [step] when given. Touch is untouched: this adds no pointer handling.
+ */
+@Composable
+private fun Modifier.packPad(acts: PadActs, onA: () -> Unit, step: ((Int) -> Unit)? = null): Modifier {
+    val source = remember { MutableInteractionSource() }
+    val a = androidx.compose.runtime.rememberUpdatedState(onA); val st = androidx.compose.runtime.rememberUpdatedState(step)
+    return onKeyEvent { e ->
+        val k = e.nativeKeyEvent.keyCode
+        val s = st.value
+        when {
+            k == android.view.KeyEvent.KEYCODE_DPAD_CENTER || k == android.view.KeyEvent.KEYCODE_ENTER || k == android.view.KeyEvent.KEYCODE_NUMPAD_ENTER -> { if (e.type == KeyEventType.KeyUp) a.value(); true }
+            s != null && (k == android.view.KeyEvent.KEYCODE_DPAD_LEFT || k == android.view.KeyEvent.KEYCODE_DPAD_RIGHT) -> {
+                if (e.type == KeyEventType.KeyDown) s(if (k == android.view.KeyEvent.KEYCODE_DPAD_LEFT) -1 else 1); true }
+            else -> false
+        }
+    }.indication(source, dev.cardstashy.nativeplay.ui.PadFocus.Ring).padActs(acts).focusable(interactionSource = source)
 }
 
 @Composable
@@ -922,6 +959,8 @@ private fun Focus(pack: PackResult, focus: Int, open: Boolean, charging: Boolean
                     detectHorizontalDragGestures(onDragEnd = { val d = drag; drag = 0f; if (abs(d) > 40.dp.toPx()) onSwipe(if (d < 0) 1 else -1) }, onDragCancel = { drag = 0f }) { _, dx -> drag += dx }
                 }
                 .pointerInput(focus, open) { detectTapGestures(onTap = { onTap() }, onLongPress = { onHold() }) }
+                // Controller: A taps the card (reveal, then its page), Y inspects a revealed card, d-pad left/right swipes.
+                .packPad(PadActs(a = if (open) "Open card" else "Reveal", y = if (open) PadAct("Inspect", onHold) else null), onTap, onSwipe)
                 .semantics { contentDescription = if (open) "${p.name}. Open card" else "Card ${focus + 1}, face down. Reveal" }
                 .graphicsLayer {
                     cameraDistance = 14f * density
@@ -1129,7 +1168,10 @@ private fun Hand(pack: PackResult, revealed: List<Int>, focus: Int, handW: Dp, h
         fun under(x: Float): Int = with(density) { ((x - handW.toPx() / 2) / max(1f, span.toPx()) * (n - 1)).roundToInt().coerceIn(0, max(0, n - 1)) }
         Box(Modifier.fillMaxSize()
             .pointerInput(n) { detectHorizontalDragGestures { ch, _ -> onShow(under(ch.position.x)) } }
-            .pointerInput(n) { detectTapGestures(onTap = { onTap(under(it.x)) }, onLongPress = { onHold(under(it.x)) }) }) {
+            .pointerInput(n) { detectTapGestures(onTap = { onTap(under(it.x)) }, onLongPress = { onHold(under(it.x)) }) }
+            // Controller: the hand is one stop; d-pad left/right moves along it, A turns the card in focus, Y inspects it once up.
+            .packPad(PadActs(a = if (focus in revealed) null else "Reveal", y = if (focus in revealed) PadAct("Inspect") { onHold(focus) } else null), { onTap(focus) },
+                { d -> if (focus + d in 0 until n) onShow(focus + d) })) {
             pack.pulls.forEachIndexed { i, p ->
                 val d = i - focus
                 val edge = (d < 0 && i == 0) || (d > 0 && i == n - 1)

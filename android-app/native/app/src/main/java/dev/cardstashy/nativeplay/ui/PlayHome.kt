@@ -235,6 +235,8 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
                 }
             }
             if (!dash) nav()
+            // Controller: X = Quick Play's Play. Sideways the nav bar is hidden, so RB goes on to Trunk as its next tab would (Home is the first).
+            PadScreen(PadActs(x = PadAct("Quick Play") { act.mode("quick") }, tabs = if (dash) ({ k: Int -> if (k > 0) act.view("collection") }) else null))
         }
     }
 }
@@ -1006,7 +1008,7 @@ private fun Packs(s: JsonObject, act: PlayHomeActions) {
     Shelf("Your packs", "All packs", { act.view("packs") }) {
         if (groups.isEmpty()) Text("Every pack is open. Story battles, Planeswalk bosses and the Merchant give more.", style = TextStyle(fontFamily = P.Sans, fontSize = 15.sp, lineHeight = 22.sp, color = P.PageFaint), modifier = Modifier.padding(top = 8.dp))
         else PackGrid(groups.entries.take(6).toList()) { (code, list) ->
-            Box(Modifier.clickable { act.openPack(list.first()["id"].str() ?: "") }) {
+            Box(Modifier.padActs(PadActs(a = "Open")).clickable { act.openPack(list.first()["id"].str() ?: "") }) {
                 Booster(code, names[code])
                 Box(Modifier.align(Alignment.TopEnd).offset(6.dp, (-6).dp).size(28.dp).clip(CircleShape).background(P.Gold), contentAlignment = Alignment.Center) { Num(list.size, 13).let { } ; Text("${list.size}", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp, color = P.CtaInk)) }
             }
@@ -1317,6 +1319,8 @@ fun SignedOutHome(rules: PlayRules, top: @Composable () -> Unit, onQuickPlay: ()
                 drawLine(Brush.horizontalGradient(listOf(Color.Transparent, Color(0x80D6AD64), Color.Transparent)), Offset(0f, size.height), Offset(size.width, size.height), 1.dp.toPx())
             }.statusBarsPadding()) { top() }
         }
+        // Controller: X = Quick Play, the one mode that runs before sign-in.
+        PadScreen(PadActs(x = PadAct("Quick Play", onQuickPlay)))
     }
 }
 

@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.LinearEasing
@@ -139,11 +140,13 @@ fun PlayBuildDeckSheet(onClose: () -> Unit, user: String? = null, onDeck: (JsonO
             RandomBuild.Choice(seedCard = c, seed = if (c == null) name else null, theme = theme, matchMode = matchMode, easy = easy))
     }
 
-    Box(Modifier.fillMaxSize().background(Color(0xB3000000)).clickable(interactionSource = null, indication = null) { if (!build.busy) onClose() }) {
+    // Controller: the sheet owns the pad; B closes (as the back above does). Its scrim and body only catch taps, so focus skips them.
+    PadScreen(PadActs(b = "Close", opaque = true))
+    Box(Modifier.fillMaxSize().background(Color(0xB3000000)).focusProperties { canFocus = false }.clickable(interactionSource = null, indication = null) { if (!build.busy) onClose() }) {
         val sheet = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp)
         Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 22.dp).fillMaxSize().clip(sheet).background(BdSheet)
             .border(1.dp, Brush.verticalGradient(listOf(Color(0x66E9C27A), Color(0x14E9C27A), Color(0x05FFFFFF))), sheet)
-            .clickable(interactionSource = null, indication = null) {}) {
+            .focusProperties { canFocus = false }.clickable(interactionSource = null, indication = null) {}) {
             AnimatedContent(started && build.busy, transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(160)) }, label = "forge") { forging ->
                 if (forging) Forging(card, build.status, reduced) { RandomBuild.cancel(); started = false }
                 else Column(Modifier.fillMaxSize()) {

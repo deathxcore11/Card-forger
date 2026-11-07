@@ -160,6 +160,9 @@ fun AchievementsRoute(onBack: () -> Unit, startTab: String? = null, nav: @Compos
         if (d == null) { Text("Opening your Hall of Deeds…", style = Site.Body, modifier = Modifier.align(Alignment.Center)); return@Box }
         val rows = remember(d) { d.arr("achievements") }
         val tabs = remember(d) { d.arr("tabs").map { (it.get("id").str() ?: "") to (it.get("label").str() ?: "") }.filter { it.first.isNotEmpty() } }
+        // A controller: LB/RB step through the deed tabs, as a tap on one does, stopping at the ends.
+        PadScreen(remember(tabs) { PadActs(tabs = if (tabs.size < 2) null else { dd ->
+            val i = tabs.indexOfFirst { it.first == tab }.coerceAtLeast(0); tab = tabs[(i + dd).coerceIn(0, tabs.lastIndex)].first }) })
         val totals = d.get("totals") as? JsonObject
         val earned = totals?.get("earned").int(); val total = totals?.get("total").int(); val ready = totals?.get("ready").int()
         val quests = d.get("quests") as? JsonObject

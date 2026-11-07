@@ -108,6 +108,8 @@ fun SettingsScreen(onBack: () -> Unit, onWeb: (String) -> Unit, startTab: String
     BackHandler(onBack = onBack)
     var tab by rememberSaveable { mutableStateOf(if (startTab == "info") Tab.INFO else if (startTab == "app") Tab.APP else Tab.ACCOUNT) }
     val community = remember { CommunityLayerState() }
+    // Controller: LB/RB step the tab row (Profile & account, Appearance, Help); a full-screen layer, so nothing under it lends buttons.
+    PadScreen(remember { PadActs(tabs = { d -> tab = Tab.entries[(tab.ordinal + d).coerceIn(0, Tab.entries.size - 1)] }, opaque = true) })
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         Backdrop() // #ambient: the shared art (glass on, or Aura)
         Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).imePadding()) {
@@ -603,6 +605,8 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Controllers" to "On a handheld or with a controller connected, a small bar in the corner shows what each button does for whatever the gold ring is on. X is the screen\u2019s main action (in a match it follows the table\u2019s button), Y looks closer and hold Y tilts the card, LB/RB switch tabs, LT/RT page, Start opens the menu. Phones without a controller look the same.",
+    "Collection" to "Tapping the Card of the Day opens its card page in the app instead of the website.",
     "Foil" to "Magic foils look more like the real card: no milky wash, black ink stays black, Fracture shards read as glass and the rainbow sits on the foil, not over the art. Silver foils like Elesh Norn\u2019s keep their deep silver.",
     "Fixes" to "Settings \u203a Friends opens again for every account. Fewer freezes and stutters, the set row on a card from a pack opens its set, and Collection opens at once with the pages you last saw.",
     "Scanner" to "The Scanner is built into the app: your phone\u2019s camera with the website\u2019s card reader. Your scans and Fix card open in the app, where you can swipe through printings, pick the finish, copies and condition, then add them to your collection or a binder.",

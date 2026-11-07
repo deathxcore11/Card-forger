@@ -278,7 +278,9 @@ private fun BinderTile(b: JsonObject, game: String, narrow: Boolean, a: BinderSh
     val id = b.s("id")
     val press = remember { MutableInteractionSource() }
     val pressed by press.collectIsPressedAsState()
-    Column(modifier.clip(RoundedCornerShape(10.dp))
+    // The controller: A opens it; Start is what holding it does (tileMenu's Binder actions).
+    val pad = remember(id, a) { PadActs(a = "Open", start = PadAct("Binder actions") { a.hold(id) }) }
+    Column(modifier.clip(RoundedCornerShape(10.dp)).padActs(pad)
         .combinedClickable(press, LocalIndication.current, onLongClickLabel = "Binder actions", onLongClick = { a.hold(id) }, onClick = { a.open(id) })
         .testTag("binder:$id")
         .padding(horizontal = 10.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -494,6 +496,8 @@ internal fun BinderSheet(o: CollectionWrites.BinderOpen, backdrop: GraphicsLayer
     }
     SiteSheet(m?.s("title").orEmpty(), backdrop, onClose, eyebrow = m?.s("eyebrow").orEmpty().ifBlank { "CARDSTASHY BINDER" }) { _ ->
         if (m == null) return@SiteSheet
+        // The controller: LT / RT turn the page as Back and Next do; B closes the sheet.
+        PadScreen(remember(o.id) { PadActs(page = { d -> turn(d, false) }, b = "Close", opaque = true) })
         BinderBody(m, leaf, arrived, onLeafDone = { leaf = null }, onTurn = { d, dragged -> turn(d, dragged) },
             onOptions = {
                 onClose(); CollectionWrites.binderEditing.value = CollectionWrites.BinderEditOpen(o.game, o.binder, back = o.copy(page = page),

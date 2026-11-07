@@ -125,6 +125,8 @@ fun ProfileArtPicker(kind: String, start: ArtPick.Card? = null, onClose: () -> U
     val saved = if (header) profile?.header else profile?.avatar
     var game by remember { mutableStateOf(saved?.game ?: start?.game ?: "mtg") }
     var draft by remember { mutableStateOf<Account.Art?>(start?.let { Account.Art(it.game, it.id, it.name, it.image, 1.0, 1.0, .5, .4) } ?: saved) }
+    // Controller: a modal over the screen; B closes it as its ✕ does. LB/RB walk the game row while searching.
+    PadScreen(PadActs(b = "Close", tabs = if (draft == null) ({ d: Int -> game = GAMES[(GAMES.indexOfFirst { it.first == game } + d).coerceIn(0, GAMES.size - 1)].first }) else null, opaque = true))
     Box(Modifier.fillMaxSize().background(Color(0xE6000000)).clickable(enabled = false) {}) {
         Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).imePadding().padding(12.dp)
             .widthIn(max = 640.dp).align(Alignment.Center).clip(RoundedCornerShape(22.dp)).background(Site.Surface).border(1.dp, Site.Line, RoundedCornerShape(22.dp)).padding(18.dp),
@@ -218,6 +220,16 @@ private fun Crop(start: Account.Art, header: Boolean, onBack: () -> Unit, onSave
     fun set(zoom: Double = art.zoom, x: Double = art.x, y: Double = art.y) {
         val f = fitArt(art.ratio, zoom, x, y, frame); art = art.copy(zoom = zoom.coerceIn(1.0, 4.0), x = f.x.toDouble(), y = f.y.toDouble())
     }
+    fun save() {
+        saving = true; status = if (header) "Saving header…" else "Saving photo…"
+        scope.launch {
+            val ok = Account.saveArt(if (header) "header" else "avatar", art)
+            saving = false
+            if (ok) onSaved() else status = if (header) "Couldn’t save your header. Try again." else "Couldn’t save your photo. Try again."
+        }
+    }
+    // Controller: X = the Save button, while it can save.
+    PadScreen(remember(ready, saving, header) { PadActs(x = if (ready && !saving) PadAct(if (header) "Save header" else "Save photo") { save() } else null) })
     Text("← Choose another card", style = T.Body.copy(color = Site.Gold, fontWeight = FontWeight.Bold), modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(enabled = !saving, onClick = onBack).padding(vertical = 4.dp))
     Text(art.name, style = T.Head.copy(fontSize = 17.sp))
     Text(if (header) "Drag the artwork inside the frame. Pinch or use the slider to zoom. Your avatar stays as it is."
@@ -250,14 +262,7 @@ private fun Crop(start: Account.Art, header: Boolean, onBack: () -> Unit, onSave
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (!header) { Box(Modifier.size(44.dp).clip(CircleShape).border(1.5.dp, Site.Gold.copy(alpha = .7f), CircleShape)) { if (ready) ArtFrame(art, 1f, Modifier.fillMaxSize(), CircleShape) }
             Spacer(Modifier.width(10.dp)); Text("Your profile preview", style = T.Small, modifier = Modifier.weight(1f)) } else Spacer(Modifier.weight(1f))
-        SiteButton(if (saving) "Saving…" else if (header) "Save header" else "Save photo", enabled = ready && !saving) {
-            saving = true; status = if (header) "Saving header…" else "Saving photo…"
-            scope.launch {
-                val ok = Account.saveArt(if (header) "header" else "avatar", art)
-                saving = false
-                if (ok) onSaved() else status = if (header) "Couldn’t save your header. Try again." else "Couldn’t save your photo. Try again."
-            }
-        }
+        SiteButton(if (saving) "Saving…" else if (header) "Save header" else "Save photo", enabled = ready && !saving) { save() }
     }
     if (status.isNotEmpty()) Text(status, style = T.Small)
 }

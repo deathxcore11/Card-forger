@@ -31,6 +31,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.indication
+import androidx.compose.ui.composed
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.zIndex
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -195,6 +206,8 @@ class BenchActions(
     /** A shelf (BenchShelf.key) came on screen before its cards: load them. */
     /** A shelf on screen asks for its cards: suspends until they are in (or failed); cancelled when the shelf leaves the screen. */
     val shelf: suspend (String) -> Unit = {},
+    /** A tab the Bench draws itself (Collection's Versions and the like open the website): the controller's LB/RB step only through these. */
+    val drawn: (String) -> Boolean = { true },
 )
 
 /** Where the Bench is: tab, deck view, find and filters, the card in the big view. Kept by the caller so Back keeps your place. */
@@ -215,7 +228,51 @@ class BenchUi {
     /** All cards' shelves: where the list is, and the cards that already flipped over (they stay face up when you come back). */
     val shelfList = androidx.compose.foundation.lazy.LazyListState()
     val flipped = HashSet<String>()
+    /** Play's ⋯ dropdown is open (here so the controller's Start opens it too). */
+    var menu by mutableStateOf(false)
 }
+
+/** LB/RB: the tab [d] steps from [on] in [keys], skipping those [here] says open elsewhere; null at either end. */
+internal fun padTab(keys: List<String>, on: String, d: Int, here: (String) -> Boolean): String? {
+    var i = keys.indexOf(on).coerceAtLeast(0)
+    while (true) { i += d; val k = keys.getOrNull(i) ?: return null; if (k != on && here(k)) return k }
+}
+
+/**
+ * Controller only: a card that takes touch through [benchCard] (no clickable) is still a d-pad stop with the gold ring (PadFocus.Ring),
+ * and A (d-pad centre) does [onA]. Touch never focuses it, so a phone sees nothing new and its taps, holds and drags are as before.
+ */
+private fun Modifier.padTap(acts: PadActs, onA: () -> Unit): Modifier = composed {
+    val src = remember { MutableInteractionSource() }
+    val a by rememberUpdatedState(onA)
+    onKeyEvent { e ->
+        val k = e.nativeKeyEvent.keyCode
+        if (k == android.view.KeyEvent.KEYCODE_DPAD_CENTER || k == android.view.KeyEvent.KEYCODE_ENTER || k == android.view.KeyEvent.KEYCODE_NUMPAD_ENTER || k == android.view.KeyEvent.KEYCODE_BUTTON_A) {
+            if (e.type == KeyEventType.KeyUp) a(); true
+        } else false
+    }.indication(src, PadFocus.Ring).padActs(acts).focusable(interactionSource = src)
+}
+
+/**
+ * Controller on a deck row or a browser card (preview "Contextual controls on a handheld"): A adds one, X takes one out, Y its card page —
+ * the big view's own − / + and its card. Where no copy can go in, A opens the big view, as a tap does. Returns the acts and A's action.
+ */
+@Composable
+private fun cardPad(m: BenchModel, key: String, ref: String, name: String, qty: Int, ui: BenchUi, a: BenchActions, known: Int? = null): Pair<PadActs, () -> Unit> {
+    // The big view's room (Peek): the browser tile's, else unlimited for a basic, else four a card.
+    val room = known ?: remember(m.tiles, m.basics, ref, name, qty) { val tile = m.tiles.firstOrNull { it.key == ref }
+        tile?.room ?: if (tile?.basic == true || m.basics.any { it.first == name }) Int.MAX_VALUE else (4 - qty) }
+    fun step(d: Int) { a.step(key, d); ui.pop = key; ui.popAt = System.nanoTime() }
+    val acts = PadActs(a = if (room > 0) "Add one" else null, x = if (qty > 0) PadAct("Take one out") { step(-1) } else null, y = PadAct("Card page") { a.open(key) })
+    val onA: () -> Unit = { if (room > 0) step(1) else ui.peek = key }
+    return acts to onA
+}
+
+/** A deck row's controller stop ([cardPad]); a sideboard row (fixed) only opens its card, as its tap does. */
+@Composable
+private fun Modifier.rowPad(m: BenchModel, r: BenchRow, ui: BenchUi, a: BenchActions): Modifier =
+    if (r.fixed) padTap(PadActs(a = "Open")) { a.open(r.key) }
+    else cardPad(m, r.key, r.ref, r.name, r.qty, ui, a).let { (acts, onA) -> padTap(acts, onA) }
 const val SPLIT_EVEN = .40f
 const val SPLIT_MIN = .12f
 const val SPLIT_MAX = .80f
@@ -328,6 +385,13 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
         if (from == "coll" && zone == "deck") { a.step(name, 1); pop(name) } else if (from == "deck" && zone == "coll") { a.step(name, -1); pop(name) }
     }
     androidx.activity.compose.BackHandler(enabled = ui.peek != null) { ui.peek = null }
+    // Controller (PadPrompts): X the gold button (Save; Collection's Practice / War Chest), LB/RB the deck's tabs, LT/RT a page of the
+    // list or grid under the ring (six d-pad steps, as the bar says), Start the ⋯ menu.
+    val focus = LocalFocusManager.current
+    PadScreen(PadActs(x = a.save?.takeIf { m.canSave && !m.busy }?.let { PadAct(a.saveLabel, it) },
+        tabs = if (m.tabs.size > 1) ({ d -> padTab(m.tabs.map { it.first }, ui.tab, d, a.drawn)?.let { k -> ui.peek = null; if (a.tab?.invoke(k) != false) ui.tab = k } }) else null,
+        page = { d -> repeat(6) { focus.moveFocus(if (d > 0) FocusDirection.Down else FocusDirection.Up) } },
+        start = PadAct("Menu") { val o = a.menuOpen; if (o == null) ui.menu = true; o?.invoke() }))
     BoxWithConstraints(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(Color(0xFF1B1F2B), B.Bg), radius = 1400f, center = Offset(540f, 0f)))
         .onGloballyPositioned { drag.origin = it.positionInRoot() }
         .pointerInput(Unit) {
@@ -407,6 +471,8 @@ private fun SplitGrip(ui: BenchUi, room: androidx.compose.ui.unit.Dp, onGrip: (B
     val roomPx = with(d) { room.toPx() }
     val label = when { ui.split <= SPLIT_MIN + .02f -> "Deck folded"; ui.split >= SPLIT_MAX - .02f -> "Collection folded"; else -> "Resize deck and collection" }
     Box(Modifier.fillMaxWidth().height(22.dp)
+        // Controller: A steps the split as a tap does (below).
+        .padTap(PadActs()) { ui.split = when { ui.split < SPLIT_EVEN - .05f -> SPLIT_MAX; ui.split > SPLIT_EVEN + .05f -> SPLIT_EVEN; else -> SPLIT_MIN } }
         .semantics { contentDescription = label; role = Role.Button }
         .pointerInput(roomPx) {
             awaitEachGesture {
@@ -456,7 +522,7 @@ private fun Hero(m: BenchModel, a: BenchActions, compact: Boolean, ui: BenchUi) 
                 } else Text(m.title, style = cinzel(16f, Color(0xFFFBF3DC)), modifier = Modifier.weight(1f))
                 // Phone landscape: Save beside the menu, so the numbers below keep one line.
                 if (compact && a.save != null) SaveButton(m, a.save, a.saveLabel)
-                MenuButton(a.menu, a.menuOpen)
+                MenuButton(a.menu, a.menuOpen, ui)
             }
             if (!compact) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(m.title, style = cinzel(19f, Color(0xFFFBF3DC)), modifier = Modifier.weight(1f))
@@ -528,13 +594,12 @@ private fun PowerBadge(m: BenchModel, open: (() -> Unit)? = null) = Row(Modifier
 
 /** ⋯: the deck's menu (Play: Rename, Change format, Copy list, Copy to My decks; Collection: its own sheet). */
 @Composable
-private fun MenuButton(items: List<BenchMenuItem>, sheet: (() -> Unit)?) {
-    var open by remember { mutableStateOf(false) }
+private fun MenuButton(items: List<BenchMenuItem>, sheet: (() -> Unit)?, ui: BenchUi) {
     Box {
-        Square("⋯", "Deck menu") { if (sheet != null) sheet() else open = true }
-        DropdownMenu(open, { open = false }, containerColor = Color(0xF714161D), shape = RoundedCornerShape(16.dp),
+        Square("⋯", "Deck menu") { if (sheet != null) sheet() else ui.menu = true }
+        DropdownMenu(ui.menu, { ui.menu = false }, containerColor = Color(0xF714161D), shape = RoundedCornerShape(16.dp),
             border = androidx.compose.foundation.BorderStroke(1.dp, B.Gold2), modifier = Modifier.widthIn(min = 220.dp)) {
-            for (it in items) DropdownMenuItem({ Text(it.label, style = f(13f, 700)) }, { open = false; it.onClick() }, modifier = Modifier.heightIn(min = 44.dp))
+            for (it in items) DropdownMenuItem({ Text(it.label, style = f(13f, 700)) }, { ui.menu = false; it.onClick() }, modifier = Modifier.heightIn(min = 44.dp))
         }
     }
 }
@@ -630,7 +695,7 @@ private fun DeckBody(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, ac
                     // .pile .card + .card: each card 20 % of the pile's width under the one before.
                     val step = pw * .2f
                     Box(Modifier.width(pw).height(pw * 88f / 63f + step * (g.rows.size - 1).coerceAtLeast(0))) {
-                        g.rows.forEachIndexed { i, r -> Box(Modifier.offset(y = step * i).zIndex(i.toFloat())) { DeckCard(r, ui, a, drag, pw, lift) } }
+                        g.rows.forEachIndexed { i, r -> Box(Modifier.offset(y = step * i).zIndex(i.toFloat())) { DeckCard(m, r, ui, a, drag, pw, lift) } }
                     }
                 }
             }
@@ -648,7 +713,7 @@ private fun DeckBody(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, ac
             item(key = "g:" + g.name, span = { GridItemSpan(maxLineSpan) }) { GroupHead(g.name, g.rows.sumOf { it.qty }) }
             itemsIndexed(g.rows, key = { i, r -> "r:${g.name}:$i:${r.key}" }) { _, r ->
                 when (ui.view) {
-                    "gallery" -> BoxWithConstraints { DeckCard(r, ui, a, drag, maxWidth, lift) }
+                    "gallery" -> BoxWithConstraints { DeckCard(m, r, ui, a, drag, maxWidth, lift) }
                     "detail" -> DetailRow(m, r, ui, a, drag, lift)
                     else -> Strip(m, r, ui, a, drag, lift)
                 }
@@ -686,7 +751,7 @@ private fun Strip(m: BenchModel, r: BenchRow, ui: BenchUi, a: BenchActions, drag
     val dragging = !r.fixed && drag.name == r.key && drag.from == "deck"
     Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).scale(popScale(ui, r.key)).alpha(if (dragging) .35f else 1f).clip(shape).background(Color(0xFF141720))
         .border(1.dp, if (r.short > 0) Color(0x80FF7A6A) else t.edge, shape)
-        .benchCard(drag, r.key, r.image, "deck", lift, lifts = !r.fixed) { if (r.fixed) a.open(r.key) else ui.peek = r.key }.semantics { contentDescription = "${r.qty} ${r.name}" }, verticalAlignment = Alignment.CenterVertically) {
+        .benchCard(drag, r.key, r.image, "deck", lift, lifts = !r.fixed) { if (r.fixed) a.open(r.key) else ui.peek = r.key }.rowPad(m, r, ui, a).semantics { contentDescription = "${r.qty} ${r.name}" }, verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.weight(1f).heightIn(min = 44.dp)) {
             if (art != null) Image(art, null, Modifier.matchParentSize().alpha(.95f), contentScale = StripCrop, alignment = BiasAlignment(.24f, -.66f))
             Box(Modifier.matchParentSize().background(Brush.horizontalGradient(0f to t.a, .52f to t.b, 1f to Color(0x4D0E1016)))
@@ -743,11 +808,11 @@ private fun FitName(name: String, modifier: Modifier) = BoxWithConstraints(modif
 
 /** A deck card as a picture (Stacks, Gallery): the card and its "4×". */
 @Composable
-private fun DeckCard(r: BenchRow, ui: BenchUi, a: BenchActions, drag: Drag, width: Dp, lift: () -> Unit) {
+private fun DeckCard(m: BenchModel, r: BenchRow, ui: BenchUi, a: BenchActions, drag: Drag, width: Dp, lift: () -> Unit) {
     val img = heroPainter(r.image.let(homeArt))
     val dragging = !r.fixed && drag.name == r.key && drag.from == "deck"
     Box(Modifier.width(width).aspectRatio(63f / 88f).scale(popScale(ui, r.key)).alpha(if (dragging) .35f else 1f).shadow(7.dp, CARD, spotColor = Color(0xBB000000)).clip(CARD).background(B.Panel)
-        .benchCard(drag, r.key, r.image, "deck", lift, lifts = !r.fixed) { if (r.fixed) a.open(r.key) else ui.peek = r.key }.semantics { contentDescription = "${r.qty} ${r.name}" }) {
+        .benchCard(drag, r.key, r.image, "deck", lift, lifts = !r.fixed) { if (r.fixed) a.open(r.key) else ui.peek = r.key }.rowPad(m, r, ui, a).semantics { contentDescription = "${r.qty} ${r.name}" }) {
         if (img != null) Image(img, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         if (r.short > 0) Box(Modifier.fillMaxSize().background(Color(0x66000000)))
         Text("${r.qty}×", style = f(11f, 800, Color.White, line = 15.4f), modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).clip(RoundedCornerShape(7.dp))
@@ -761,7 +826,7 @@ private fun DetailRow(m: BenchModel, r: BenchRow, ui: BenchUi, a: BenchActions, 
     val img = heroPainter(r.image.let(homeArt))
     val dragging = !r.fixed && drag.name == r.key && drag.from == "deck"
     Row(Modifier.fillMaxWidth().scale(popScale(ui, r.key)).alpha(if (dragging) .35f else 1f).clip(RoundedCornerShape(12.dp)).background(Color(0xFF161A24))
-        .border(1.dp, B.Line, RoundedCornerShape(12.dp)).benchCard(drag, r.key, r.image, "deck", lift, lifts = !r.fixed) { if (r.fixed) a.open(r.key) else ui.peek = r.key }.padding(5.dp),
+        .border(1.dp, B.Line, RoundedCornerShape(12.dp)).benchCard(drag, r.key, r.image, "deck", lift, lifts = !r.fixed) { if (r.fixed) a.open(r.key) else ui.peek = r.key }.rowPad(m, r, ui, a).padding(5.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
         Box(Modifier.width(40.dp).aspectRatio(63f / 88f).clip(RoundedCornerShape(4.dp)).background(B.Panel)) { if (img != null) Image(img, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -860,7 +925,7 @@ private fun Browser(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, swi
                 }
                 for (s in secs) {
                     item(key = "s:" + s.label, span = { GridItemSpan(maxLineSpan) }) { SectionHead(s.label) }
-                    itemsIndexed(s.tiles, key = { i, t -> "t:${s.label}:$i:${t.key}" }) { _, t -> Tile(t, ui, a, drag, lift) }
+                    itemsIndexed(s.tiles, key = { i, t -> "t:${s.label}:$i:${t.key}" }) { _, t -> Tile(m, t, ui, a, drag, lift) }
                 }
                 // The deck page's own add by name, for a card the collection doesn't have (app.js deckAdd; tcg.js A.tDeckFind).
                 if (m.findMore != null && ui.find.isNotBlank()) item(key = "findMore", span = { GridItemSpan(maxLineSpan) }) {
@@ -897,13 +962,13 @@ private fun Shelves(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, lif
             // Waiting, or failed (its note says scroll back to try again): asks once it has stayed on screen a moment, so a fling past
             // a dozen shelves asks for none of them; leaving the screen cancels the ask.
             if (s.tiles == null || s.loading || s.note.isNotEmpty()) LaunchedEffect(s.key, m.shelvesGen) { kotlinx.coroutines.delay(160); a.shelf(s.key) }
-            Shelf(s, m.cardBack, ui, a, drag, lift)
+            Shelf(m, s, m.cardBack, ui, a, drag, lift)
         }
     }
 }
 
 @Composable
-private fun Shelf(s: BenchShelf, back: String, ui: BenchUi, a: BenchActions, drag: Drag, lift: () -> Unit) {
+private fun Shelf(m: BenchModel, s: BenchShelf, back: String, ui: BenchUi, a: BenchActions, drag: Drag, lift: () -> Unit) {
     val shape = RoundedCornerShape(14.dp)
     val none = s.tiles != null && s.tiles.isEmpty() && s.note.isEmpty()
     Column(Modifier.fillMaxWidth().padding(horizontal = if (s.gold) 6.dp else 0.dp).then(if (s.gold) Modifier.clip(shape)
@@ -928,7 +993,7 @@ private fun Shelf(s: BenchShelf, back: String, ui: BenchUi, a: BenchActions, dra
                 items(n, key = { i -> s.tiles?.getOrNull(i)?.let { "t:${it.key}:$i" } ?: "b:$i" }) { i ->
                     val t = s.tiles?.getOrNull(i)
                     Column(Modifier.width(SHELF_TILE)) {
-                        FlipIn(if (t == null) null else s.key + "|" + t.key, i, back, ui) { if (t != null) Tile(t, ui, a, drag, lift) }
+                        FlipIn(if (t == null) null else s.key + "|" + t.key, i, back, ui) { if (t != null) Tile(m, t, ui, a, drag, lift) }
                         val why = t?.let { s.why[it.key] }
                         if (why != null) Text(why, style = f(11f, 700, B.Gold, line = 13f), maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                             textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 3.dp))
@@ -1031,7 +1096,7 @@ private fun SectionHead(label: String) = Row(Modifier.fillMaxWidth().padding(sta
  * craft or buy, dim = not owned; basics say how many are in), the card, and the gold + at its corner (off at the copy cap).
  */
 @Composable
-private fun Tile(t: BenchTile, ui: BenchUi, a: BenchActions, drag: Drag, lift: () -> Unit) {
+private fun Tile(m: BenchModel, t: BenchTile, ui: BenchUi, a: BenchActions, drag: Drag, lift: () -> Unit) {
     val img = heroPainter(t.image.let(homeArt))
     val dragging = drag.name == t.key && drag.from == "coll"
     Column(Modifier.fillMaxWidth().scale(popScale(ui, t.key)).alpha(if (dragging) .35f else 1f)) {
@@ -1042,7 +1107,8 @@ private fun Tile(t: BenchTile, ui: BenchUi, a: BenchActions, drag: Drag, lift: (
         Spacer(Modifier.height(3.dp))
         Box(Modifier.fillMaxWidth().aspectRatio(63f / 88f)) {
             Box(Modifier.fillMaxSize().shadow(8.dp, CARD, spotColor = Color.Black).clip(CARD).background(B.Panel)
-                .benchCard(drag, t.key, t.image, "coll", lift) { ui.peek = t.key }.semantics { contentDescription = t.name }) {
+                .benchCard(drag, t.key, t.image, "coll", lift) { ui.peek = t.key }.then(cardPad(m, t.key, t.key, t.name, t.inDeck, ui, a, known = t.room).let { (acts, onA) -> Modifier.padTap(acts, onA) })
+                .semantics { contentDescription = t.name }) {
                 if (img != null) Image(img, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop,
                     colorFilter = if (t.locked) ColorFilter.colorMatrix(GREY) else null)
             }
@@ -1139,12 +1205,18 @@ private fun Peek(m: BenchModel, ui: BenchUi, a: BenchActions, key: String, split
     val basic = tile?.basic == true || m.basics.any { it.first == name }
     val room = tile?.room ?: if (basic) Int.MAX_VALUE else (4 - qty)
     val img = heroPainter(image.let(homeArt))
-    Box(Modifier.fillMaxSize().background(Color(0xB8050609)).clickable(remember { MutableInteractionSource() }, null) { ui.peek = null }) {
+    // Controller: B closes the big view (the Bench's BackHandler); the Bench's tabs and Save stay out of it while it is up. Opened by a
+    // tap while a pad is here, the ring moves onto the card so the d-pad starts inside it.
+    PadScreen(PadActs(b = "Close", opaque = true))
+    val first = remember { FocusRequester() }
+    LaunchedEffect(key) { if (Pad.connected.value) runCatching { first.requestFocus() } }
+    // The scrim is no stop for the d-pad (a tap outside still closes it).
+    Box(Modifier.fillMaxSize().padLayer().background(Color(0xB8050609)).focusProperties { canFocus = false }.clickable(remember { MutableInteractionSource() }, null) { ui.peek = null }) {
         Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars).padding(start = 20.dp, end = 20.dp, top = 40.dp, bottom = 30.dp),
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically)) {
             BoxWithConstraints(Modifier.weight(1f, fill = false), contentAlignment = Alignment.Center) {
                 val w = if (split) minOf(maxHeight * .9f * 63f / 88f, maxWidth) else minOf(260.dp, maxWidth * .62f, maxHeight * 63f / 88f)
-                Box(Modifier.width(w).aspectRatio(63f / 88f).shadow(30.dp, CARD, spotColor = Color.Black).clip(CARD).background(B.Panel).clickable { ui.peek = null; a.open(key) }
+                Box(Modifier.width(w).aspectRatio(63f / 88f).shadow(30.dp, CARD, spotColor = Color.Black).clip(CARD).background(B.Panel).focusRequester(first).padActs(PadActs(a = "Card page")).clickable { ui.peek = null; a.open(key) }
                     .semantics { contentDescription = "$name, open the card" }) {
                     if (img != null) Image(img, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                 }

@@ -12,6 +12,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.indication
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -138,6 +146,9 @@ internal fun DeckMenuSheet(o: CollectionWrites.DeckMenuOpen, backdrop: GraphicsL
         value = m
     }
     val m = model ?: return
+    // Controller: opened while a pad is here, the ring starts on the first shortcut, inside the sheet rather than on the page under it.
+    val first = remember { FocusRequester() }
+    LaunchedEffect(Unit) { if (Pad.connected.value) runCatching { first.requestFocus() } }
     val edit = m.o("edit") ?: JsonObject()
     val box = edit.o("box") ?: JsonObject()
     val tools = m.o("tools")
@@ -239,9 +250,9 @@ internal fun DeckMenuSheet(o: CollectionWrites.DeckMenuOpen, backdrop: GraphicsL
         Head(m.o("head") ?: JsonObject(), phone, onClose)
         // .context-shortcuts: four across, 8 apart; 16 under them.
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            m.objs("shortcuts").forEach { a ->
+            m.objs("shortcuts").forEachIndexed { i, a ->
                 val shape = RoundedCornerShape(15.dp)
-                Column(Modifier.weight(1f).heightIn(min = 74.dp).clip(shape).background(MFill).border(1.dp, MRule, shape).clickable { press(a) }
+                Column(Modifier.weight(1f).heightIn(min = 74.dp).clip(shape).background(MFill).border(1.dp, MRule, shape).then(if (i == 0) Modifier.focusRequester(first) else Modifier).clickable { press(a) }
                     .semantics { role = Role.Button }.padding(horizontal = 3.dp, vertical = 11.dp),
                     verticalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally) {
                     SiteIcon(a.svg("icon"), 22.dp, Site.Gold)
@@ -471,6 +482,8 @@ private fun ContextMenuFrame(backdrop: GraphicsLayer?, onClose: () -> Unit, cont
         a.animateTo(1f, keyframes { durationMillis = 420; .2f at 0 using e; 1f at 252 using e })
     }
     BackHandler(onBack = onClose)
+    // Controller: B closes the menu; the page under it lends no buttons while it is up.
+    PadScreen(PadActs(b = "Close", opaque = true))
     val dim = rememberGraphicsLayer(); val frost = rememberGraphicsLayer()
     val sheetBox = remember { arrayOf(Rect.Zero) }
     val glass = backdrop != null && android.os.Build.VERSION.SDK_INT >= 31
@@ -546,6 +559,10 @@ internal fun ColorPickerDialog(color: String, backdrop: GraphicsLayer?, onDone: 
     fun hex(hh: Float, ss: Float, vv: Float) = "#%06x".format(android.graphics.Color.HSVToColor(floatArrayOf(hh, ss, vv)) and 0xFFFFFF)
     val now = Color(android.graphics.Color.HSVToColor(floatArrayOf(h, s, v)))
     BackHandler { onDone(null) }
+    // Controller: B cancels (the BackHandler); the ring starts on the first suggestion. The scrim and the card's tap-catcher are no d-pad stops.
+    PadScreen(PadActs(b = "Cancel", opaque = true))
+    val first = remember { FocusRequester() }
+    LaunchedEffect(Unit) { if (Pad.connected.value) runCatching { first.requestFocus() } }
     val blur = rememberGraphicsLayer()
     BoxWithConstraints(Modifier.fillMaxSize()
         .drawBehind {
@@ -556,19 +573,19 @@ internal fun ColorPickerDialog(color: String, backdrop: GraphicsLayer?, onDone: 
             }
             drawRect(Color(0x8C06080C))
         }
-        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onDone(null) }) {
+        .focusProperties { canFocus = false }.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onDone(null) }) {
         val phone = maxWidth <= 520.dp
         val bottom = if (phone) 16.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() else 0.dp
         val shape = RoundedCornerShape(20.dp)
         Column(Modifier.align(if (phone) Alignment.BottomCenter else Alignment.Center).padding(bottom = bottom).width(minOf(420.dp, maxWidth - 32.dp))
             .clip(shape).background(Site.Surface2.copy(alpha = .92f)).border(1.dp, Site.Line, shape)
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
+            .focusProperties { canFocus = false }.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
             .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text("Select color", style = cssType(16f, 600, 23.2f))
             // Chrome's suggestions: red, cyan, blue, green, magenta, yellow, black, white.
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                listOf(0xFFFF0000, 0xFF00FFFF, 0xFF0000FF, 0xFF00FF00, 0xFFFF00FF, 0xFFFFFF00, 0xFF000000, 0xFFFFFFFF).forEach { c ->
-                    Box(Modifier.size(32.dp).clip(CircleShape).background(Color(c)).border(1.dp, Color(0x55FFFFFF), CircleShape).clickable {
+                listOf(0xFFFF0000, 0xFF00FFFF, 0xFF0000FF, 0xFF00FF00, 0xFFFF00FF, 0xFFFFFF00, 0xFF000000, 0xFFFFFFFF).forEachIndexed { i, c ->
+                    Box(Modifier.size(32.dp).clip(CircleShape).background(Color(c)).border(1.dp, Color(0x55FFFFFF), CircleShape).then(if (i == 0) Modifier.focusRequester(first) else Modifier).clickable {
                         val f = FloatArray(3); android.graphics.Color.colorToHSV(c.toInt(), f); h = f[0]; s = f[1]; v = f[2]
                     })
                 }
@@ -593,9 +610,14 @@ internal fun ColorPickerDialog(color: String, backdrop: GraphicsLayer?, onDone: 
 /** One of the picker's bars: its name, the track in its colours, and the thumb; a tap or a drag sets it (0 to 1). */
 @Composable
 private fun Bar(label: String, at: Float, track: Brush, onAt: (Float) -> Unit) {
+    // Controller: the bar is a d-pad stop with the gold ring; left and right move it a twentieth, as a tap there would set it.
+    val src = remember { MutableInteractionSource() }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(label, style = cssType(12f, 600, 17.4f, MMute))
         Box(Modifier.fillMaxWidth().height(28.dp).semantics { contentDescription = label; stateDescription = "${(at * 100).toInt()} %" }
+            .onKeyEvent { e -> val d = when (e.nativeKeyEvent.keyCode) { android.view.KeyEvent.KEYCODE_DPAD_LEFT -> -.05f; android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> .05f; else -> 0f }
+                if (d == 0f) false else { if (e.type == KeyEventType.KeyDown) onAt((at + d).coerceIn(0f, 1f)); true } }
+            .indication(src, PadFocus.Ring).focusable(interactionSource = src)
             .pointerInput(Unit) { detectTapGestures { p -> onAt((p.x / size.width).coerceIn(0f, 1f)) } }
             .pointerInput(Unit) { detectDragGestures { c, _ -> onAt((c.position.x / size.width).coerceIn(0f, 1f)) } }
             .drawBehind {

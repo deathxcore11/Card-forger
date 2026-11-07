@@ -10,7 +10,9 @@ import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.indication
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -30,6 +32,11 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
@@ -177,3 +184,36 @@ fun Modifier.cardLean(lean: CardLean, foil: Boolean, shape: androidx.compose.ui.
 }
 
 
+
+/**
+ * Hold Y on a controller (PadActs.yHold): the card leans as if a finger slowly circled it, the same lean and light a finger
+ * gives (so the foil follows as it does for touch), and lets go to rest when Y comes up. Nothing changes for touch or the sensor.
+ */
+fun CardLean.padHold(scope: kotlinx.coroutines.CoroutineScope): (Boolean) -> Unit {
+    var job: kotlinx.coroutines.Job? = null
+    return { held ->
+        job?.cancel(); job = null
+        if (held) job = scope.launch {
+            catchDone = true; pressed = true
+            var t0 = -1L
+            try {
+                while (true) androidx.compose.runtime.withFrameMillis { t ->
+                    if (t0 < 0) t0 = t
+                    // One slow turn every 2.4 s, starting from the top-right corner; the finger's own ±8° at 38 % out from the middle.
+                    val a = (t - t0) / 2400.0 * 2 * Math.PI - Math.PI / 4
+                    val x = .5f + .38f * Math.cos(a).toFloat(); val y = .5f + .38f * Math.sin(a).toFloat()
+                    tx = (x - .5f) * 16f; ty = (.5f - y) * 16f; mx = x; my = y
+                }
+            } finally { pressed = false }
+        }
+    }
+}
+
+/** A controller can reach a card picture that only takes pointer taps: it holds the d-pad's focus (the gold ring, no press dim) and A runs [onTap]. Touch is untouched. */
+internal fun Modifier.padCardTap(source: androidx.compose.foundation.interaction.MutableInteractionSource, acts: PadActs, onTap: () -> Unit): Modifier =
+    indication(source, PadFocus.Ring).padActs(acts)
+        .onKeyEvent { e ->
+            val ok = e.key == Key.DirectionCenter || e.key == Key.Enter || e.key == Key.NumPadEnter
+            if (!ok) false else { if (e.type == KeyEventType.KeyUp) onTap(); true }
+        }
+        .focusable(interactionSource = source)

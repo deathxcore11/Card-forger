@@ -471,6 +471,11 @@ enum class PlayTab(val label: String) { HOME("Home"), TRUNK("Trunk"), DECKS("Dec
 fun PlayNav(active: PlayTab?, onSelect: (PlayTab) -> Unit, modifier: Modifier = Modifier) {
     val weights = listOf(1.2f, 1f, 1f, 1f, 1.1f)
     val icons = listOf(SiteIcons.House, SiteIcons.Trunk, SiteIcons.Decks, SiteIcons.Bag, SiteIcons.Trophy)
+    // Controller: LB/RB step through these tabs, the same as tapping them. A screen's own tabs (Decks' My decks/Precons/Meta)
+    // call PadScreen after composing the nav, so theirs win while that screen is shown.
+    val select = androidx.compose.runtime.rememberUpdatedState(onSelect)
+    if (active != null) PadScreen(remember(active) { PadActs(tabs = { d ->
+        val to = (active.ordinal + d).coerceIn(0, PlayTab.entries.size - 1); if (to != active.ordinal) select.value(PlayTab.entries[to]) }, nav = true) })
     BoxWithConstraints(modifier.fillMaxWidth().background(if (AppSettings.theme == "light") Color(0xF0F6F9FD) else Color(0xF00C0E13)).drawBehind { // light: settings-theme.css .bottom-nav rgba(246,249,253,.94)
         drawLine(Site.Line, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx())
     }.navigationBarsPadding()) {

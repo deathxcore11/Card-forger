@@ -76,7 +76,39 @@ internal fun ShareSheet(o: CollectionWrites.ShareOpen, backdrop: GraphicsLayer?,
     val m = sheet ?: return
     val pal = LocalSheetPal.current
     val link = m.s("link")
+    fun make() {
+        if (busy) return
+        busy = true
+        scope.launch {
+            try {
+                val saved = CollectionWrites.act(context, "shareMake", JsonObject().apply { addProperty("deck", o.deck); addProperty("author", author); addProperty("about", about) })
+                if (saved) withLink()?.let(::adopt)
+            } finally { busy = false }
+        }
+    }
+    fun press(a: JsonObject) {
+        when (a.s("act")) {
+            "shareCopy", "tShareCopy" -> {
+                val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                cm.setPrimaryClip(android.content.ClipData.newPlainText("Share link", link))
+                CollectionWrites.show(m.s("copied"))
+            }
+            "shareNative", "tShareNative" -> {
+                val n = m.o("native") ?: JsonObject()
+                val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
+                    .putExtra(android.content.Intent.EXTRA_SUBJECT, n.s("title"))
+                    .putExtra(android.content.Intent.EXTRA_TEXT, listOf(n.s("text"), link).filter { it.isNotEmpty() }.joinToString(" "))
+                runCatching { context.startActivity(android.content.Intent.createChooser(send, null).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
+            }
+            "preview" -> o.preview(link)
+        }
+    }
+    // Controller: X = the sheet's gold button: make the link, or once it's made, the first gold action (Copy link and the like). A modal sheet.
+    val main = if (m.s("make").isNotEmpty()) (if (busy) null else PadAct(m.s("make")) { make() })
+        else if (link.isNotEmpty()) m.objs("actions").firstOrNull { !it.b("ghost") }?.let { a -> PadAct(a.s("label")) { press(a) } } else null
     SiteSheet(m.s("title"), backdrop, onClose) { _ ->
+        // Inside the sheet, so it sits above SiteSheet's own (opaque) layer.
+        PadScreen(PadActs(x = main))
         // p.muted.small: 13 muted, 6 above and under.
         Text(m.s("intro"), Modifier.padding(vertical = 6.dp), style = cssType(13f, 400, 18.85f, Site.Muted))
         // label.field: 8 above and under, a grid 4 apart: its words (12.5 / 600 muted), "(optional)" (a muted small, its own row),
@@ -110,16 +142,7 @@ internal fun ShareSheet(o: CollectionWrites.ShareOpen, backdrop: GraphicsLayer?,
         // .btn.block: the whole width, 10 above.
         if (m.s("make").isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
-            FormGold(if (busy) m.s("make") else m.s("make"), enabled = !busy, modifier = Modifier.fillMaxWidth(), pal = pal) {
-                if (busy) return@FormGold
-                busy = true
-                scope.launch {
-                    try {
-                        val saved = CollectionWrites.act(context, "shareMake", JsonObject().apply { addProperty("deck", o.deck); addProperty("author", author); addProperty("about", about) })
-                        if (saved) withLink()?.let(::adopt)
-                    } finally { busy = false }
-                }
-            }
+            FormGold(if (busy) m.s("make") else m.s("make"), enabled = !busy, modifier = Modifier.fillMaxWidth(), pal = pal) { make() }
         }
         if (link.isNotEmpty()) {
             // .share-link: 12 above, a grid 8 apart: the link (12, read only), the buttons (.actions: 10 more above, 8 apart, wrapping),
@@ -134,24 +157,7 @@ internal fun ShareSheet(o: CollectionWrites.ShareOpen, backdrop: GraphicsLayer?,
             Spacer(Modifier.height(18.dp))
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 m.objs("actions").forEach { a ->
-                    val go = {
-                        when (a.s("act")) {
-                            "shareCopy", "tShareCopy" -> {
-                                val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                cm.setPrimaryClip(android.content.ClipData.newPlainText("Share link", link))
-                                CollectionWrites.show(m.s("copied"))
-                            }
-                            "shareNative", "tShareNative" -> {
-                                val n = m.o("native") ?: JsonObject()
-                                val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
-                                    .putExtra(android.content.Intent.EXTRA_SUBJECT, n.s("title"))
-                                    .putExtra(android.content.Intent.EXTRA_TEXT, listOf(n.s("text"), link).filter { it.isNotEmpty() }.joinToString(" "))
-                                runCatching { context.startActivity(android.content.Intent.createChooser(send, null).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
-                            }
-                            "preview" -> o.preview(link)
-                        }
-                        Unit
-                    }
+                    val go = { press(a) }
                     if (a.b("ghost")) GhostBtn(a.s("label")) { go() } else FormGold(a.s("label"), pal = pal) { go() }
                 }
             }

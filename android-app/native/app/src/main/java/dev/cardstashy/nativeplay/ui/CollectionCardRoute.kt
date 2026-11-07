@@ -276,4 +276,6 @@ internal fun RuleGlassOver(glass: SitePanelModel?, open: CardOpen, ruleKey: Stri
         type = { id, v -> scope.launch { runCatching { take(SitePanelModel.parse(CollectionEngine.panelType(id, v))) } } }, open = { href -> web(href, null) }, screen = screen) }
     androidx.activity.compose.BackHandler { shut() }
     SiteGlass(g, ui, null) { g.glass?.find { it.has("rule-dismiss") }?.let { ui.tap(it.id) } ?: shut() }
+    // After SiteGlass, so this one is innermost: here B (the BackHandler above) closes the rule's glass.
+    PadScreen(remember { PadActs(b = "Close", opaque = true) })
 }

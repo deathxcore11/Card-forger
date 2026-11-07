@@ -613,6 +613,8 @@ private fun Printings(k: SiteNode, ui: SiteUi) {
     val arrows = nav?.elements?.filter { it.tag == "button" }.orEmpty()
     if (slides.isNotEmpty()) {
         val pager = androidx.compose.foundation.pager.rememberPagerState(cur) { slides.size }
+        // Controller: LT/RT = the carousel's own ← / → (scanBrowseStep), as the arrows under it.
+        if (arrows.size == 2) PadScreen(PadActs(page = { d -> arrows[if (d < 0) 0 else 1].takeIf { "disabled" !in it.attrs }?.let { ui.tap(it.id) } }, pageLabel = "Printing"))
         androidx.compose.runtime.LaunchedEffect(cur) { if (pager.currentPage != cur) pager.animateScrollToPage(cur) }
         androidx.compose.runtime.LaunchedEffect(pager.settledPage) {
             val want = pager.settledPage

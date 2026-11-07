@@ -157,10 +157,12 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
     LaunchedEffect(Unit) { if (Motion.still) y.snapTo(0f) else y.animateTo(0f, tween(320, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
     fun close() { scope.launch { if (!Motion.still) y.animateTo(1f, tween(220)); onClose() } }
     BackHandler(enabled = rule == null && !zoom) { close() }
+    // A controller: B closes the sheet (the BackHandler above), LB/RB step through Overview, Play guide and Get it.
+    PadScreen(remember(pick) { PadActs(b = "Close", opaque = true, tabs = { d -> val i = CardSheetTabs.indexOfFirst { it.first == tab }.coerceAtLeast(0); tab = CardSheetTabs[(i + d).coerceIn(0, CardSheetTabs.lastIndex)].first }) })
     // The grid under the sheet holds its foil still: only this card moves.
     FoilFocus.Cover()
 
-    BoxWithConstraints(Modifier.fillMaxSize()) {
+    BoxWithConstraints(Modifier.fillMaxSize().padLayer()) {
         val h = constraints.maxHeight.toFloat()
         var zoomed: (@Composable () -> Unit)? = null
         Box(Modifier.fillMaxSize().graphicsLayer { alpha = 1f - y.value }.background(Color(0x99000000))
@@ -388,8 +390,9 @@ private fun Header(name: String, type: String, cost: String, owned: Int, art: St
 
 @Composable
 private fun Tabs(on: String, pick: (String) -> Unit) = Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-    Segmented(listOf("overview" to "Overview", "guide" to "Play guide", "get" to "Get it"), on, glass = true, pick = pick)
+    Segmented(CardSheetTabs, on, glass = true, pick = pick)
 }
+private val CardSheetTabs = listOf("overview" to "Overview", "guide" to "Play guide", "get" to "Get it")
 
 // ---------------------------------------------------------------- Overview
 
@@ -405,11 +408,17 @@ private fun Overview(name: String, shown: JsonObject, faces: List<JsonObject>, i
         val touch = remember(lean) { androidx.compose.runtime.derivedStateOf { lean.light } }
         val shines = look?.takeIf { it.shines }
         val tilt = rememberFoilTilt(live = look?.recipe != null, touch = touch)
+        // A controller: Y enlarges the card (its tap), holding Y leans it under the light as a finger does; on the card itself A enlarges it.
+        val zoomNow by androidx.compose.runtime.rememberUpdatedState(onZoom)
+        val padScope = rememberCoroutineScope()
+        PadScreen(remember(lean) { PadActs(y = PadAct("Enlarge") { zoomNow() }, yHold = lean.padHold(padScope)) })
+        val padSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+        val padPic = remember { PadActs(a = "Enlarge") }
         BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             val w = minOf(maxWidth, 340.dp)
             CardPicture(image, shines, tilt, Modifier.size(w, w * 88f / 63f).cardLean(lean, foil = shines != null, shape = RoundedCornerShape(16.dp))
                 // Site: a tap opens the zoom; a hold does nothing and the release after it opens nothing (card-actions.js press.held).
-                .pointerInput(Unit) { detectTapGestures(onLongPress = {}) { onZoom() } }, shape = RoundedCornerShape(16.dp))
+                .pointerInput(Unit) { detectTapGestures(onLongPress = {}) { onZoom() } }.padCardTap(padSource, padPic) { zoomNow() }, shape = RoundedCornerShape(16.dp))
         }
         if (imgFaces.size > 1) GhostButton("↻ Flip to ${imgFaces[if (face == 0) 1 else 0].s("name")}", Modifier.fillMaxWidth(), onClick = onFlip)
         FinishRail(shown, finish, data, mine, onFinish)
@@ -724,6 +733,7 @@ private fun Guide(shown: JsonObject, data: CardData?, onRule: (CardData.Rule) ->
 @Composable
 private fun RuleCard(r: CardData.Rule, onClose: () -> Unit) {
     BackHandler(onBack = onClose)
+    PadScreen(remember { PadActs(b = "Close", opaque = true) })
     Box(Modifier.fillMaxSize().background(Color(0x66000000)).pointerInput(Unit) { detectTapGestures { onClose() } }, contentAlignment = Alignment.BottomCenter) {
         Column(Modifier.widthIn(max = 560.dp).fillMaxWidth().padding(12.dp).navigationBarsPadding().clip(RoundedCornerShape(20.dp)).background(Color(0xF21A1E26))
             .border(1.dp, Color(0x33E8B95B), RoundedCornerShape(20.dp)).pointerInput(Unit) { detectTapGestures { } }.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {

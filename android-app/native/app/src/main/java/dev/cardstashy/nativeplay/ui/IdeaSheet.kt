@@ -130,6 +130,9 @@ fun IdeaSheet(i: Int, backdrop: GraphicsLayer?, act: IdeaSheetActions, initial: 
     val actions = m?.blocks?.firstOrNull { it.k == "actions" }
     SiteSheet(m?.title.orEmpty(), backdrop, onClose = { scope.launch { runCatching { CollectionEngine.ideaClose() } }; act.close() },
         foot = actions?.let { a -> { IdeaActions(a.j, ui) } }) { vw ->
+        // A controller: X is the foot's gold button (Save as deck) while it is live.
+        val padMain = actions?.j?.objs("buttons")?.firstOrNull()?.takeIf { !it.b("disabled") }
+        PadScreen(remember(padMain) { PadActs(x = padMain?.let { b -> PadAct(b.s("label")) { ui.press(b.s("act"), "") } }) })
         if (m == null) { Text("Opening…", style = cssType(15f, 400, 21.75f, Site.Muted)); return@SiteSheet }
         IdeaBody(m, vw, ui)
     }

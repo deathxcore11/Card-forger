@@ -11,6 +11,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -252,7 +253,8 @@ private val GoldPlate = Brush.verticalGradient(0f to Color(0xFFF8E2A8), .44f to 
 private val Picked = Brush.linearGradient(listOf(Color(0x25E3C37C), Color(0x0AC4A85C)))
 
 private fun Modifier.pill(fill: Color, edge: Color, shape: RoundedCornerShape = RoundedCornerShape(999.dp)) = clip(shape).background(fill).border(1.dp, edge, shape)
-private fun Modifier.tap(onClick: () -> Unit) = clickable(MutableInteractionSource(), dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onClick)
+// Only the sheets' scrims and bodies use this (tap outside closes, a tap inside is swallowed): the controller's focus skips them, B closes.
+private fun Modifier.tap(onClick: () -> Unit) = focusProperties { canFocus = false }.clickable(MutableInteractionSource(), dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onClick)
 
 /** The site's colour filter on a deck missing Trunk cards: grayscale(1) brightness(.7), opacity .6. */
 private val Greyed = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f); timesAssign(ColorMatrix(floatArrayOf(.7f, 0f, 0f, 0f, 0f, 0f, .7f, 0f, 0f, 0f, 0f, 0f, .7f, 0f, 0f, 0f, 0f, 0f, 1f, 0f))) })
@@ -477,6 +479,9 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     }
 
     var cardPick by remember { mutableStateOf<CardPick?>(null) }
+    // Controller: LB/RB step through the deck sources (Mine, Precons, Community, Meta, Random) like their tabs; Quick Play has none.
+    PadScreen(PadActs(tabs = if (m.quick) null else ({ d: Int -> val i = (SOURCES.indexOfFirst { it.first == m.source }.coerceAtLeast(0) + d).coerceIn(0, SOURCES.size - 1)
+        if (SOURCES[i].first != m.source) { m.source = SOURCES[i].first; m.query = "" } })))
     BackHandler(cardPick == null && (m.inspectOpen || m.formatOpen)) { m.inspectOpen = false; m.formatOpen = false }
     BackHandler(m.social && m.room is LobbyModel.Room.Waiting) { cancelRoom() }
     val grid = rememberLazyGridState()
@@ -640,6 +645,7 @@ private fun Head(m: LobbyModel, onBack: () -> Unit, onFriends: () -> Unit) {
 
 @Composable
 private fun FormatSheet(m: LobbyModel) {
+    PadScreen(PadActs(b = "Close", opaque = true))
     Box(Modifier.fillMaxSize().background(Color(0x99000000)).tap { m.formatOpen = false }, contentAlignment = Alignment.BottomCenter) {
         Column(Modifier.fillMaxWidth().widthIn(max = 560.dp).clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).background(Site.Surface).border(1.dp, Line, RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
             .tap { }.windowInsetsPadding(WindowInsets.safeDrawing).padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -769,6 +775,8 @@ private fun StartBar(m: LobbyModel, signedIn: Boolean, status: String, friend: F
             else if (!signedIn) "Sign in to play" else if (m.quickBusy) "Finding a CPU deck…" else if (m.player == null) "Pick your deck" else if (!m.quick && m.opponent == null) "Pick the CPU deck" else "Play vs CPU"
         val ready = if (m.social) (!signedIn || (m.player != null && room is LobbyModel.Room.Idle || m.player != null && room is LobbyModel.Room.Guest)) else (!signedIn || (!m.quickBusy && m.player != null && (m.quick || m.opponent != null)))
         val shape = RoundedCornerShape(10.dp)
+        // Controller: X = this Play button, in its own words, while it can be pressed.
+        PadScreen(PadActs(x = if (ready) PadAct(label, onStart) else null))
         // .cs-plate:disabled — the dark plate at opacity .6 under saturate(.4) (#d6ad64 reads #bfaf92).
         Box(Modifier.fillMaxWidth().height(50.dp).then(if (ready) Modifier else Modifier.alpha(.6f)).clip(shape)
             .background(if (ready) GoldPlate else Brush.verticalGradient(listOf(Color(0xFF1B1A16), Color(0xFF121113))))
@@ -1122,6 +1130,7 @@ private fun Notices(items: List<String>, title: String) {
 private fun Inspector(m: LobbyModel, onRemove: () -> Unit, onSave: (JsonObject) -> Unit, onOpenSaved: (String) -> Unit, onCard: (String) -> Unit) {
     val deck = m.seat(m.inspected)
     val seatName = if (m.inspected == "player") "Your deck" else "CPU deck"
+    PadScreen(PadActs(b = "Close", opaque = true))
     Box(Modifier.fillMaxSize().background(Color(0x99000000)).tap { m.inspectOpen = false }, contentAlignment = Alignment.BottomCenter) {
         Column(Modifier.fillMaxWidth().widthIn(max = 640.dp).fillMaxHeight().clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).background(Site.Surface)
             .border(1.dp, Line, RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).tap { }.windowInsetsPadding(WindowInsets.safeDrawing)) {

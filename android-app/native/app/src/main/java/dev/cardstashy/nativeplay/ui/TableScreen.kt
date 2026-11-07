@@ -73,6 +73,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -154,8 +157,19 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     // A line from the table itself ("Block not assigned. Try again."), the site's localError.
     val note by controller.note.collectAsState()
     val anchors = remember { Anchors() }
+    // The match owns the controller while it is on: the screens under it lend no buttons (ForgeBoard sets X and Start).
+    PadScreen(PadActs(opaque = true))
+    // A controller's B on the bare table opens the match menu (Concede, Return to Play setup are in it) instead of doing nothing.
+    // Only with a pad and nothing else up; a phone keeps its back exactly as it was. Overlays' own B handlers come later and win.
+    val padOn by Pad.connected.collectAsState()
+    val bareTable = padOn && stage == Stage.PLAYING && inspect == null && !menu && !matchMenu.open && !matchMenu.history &&
+        shown?.prompt == null && !TableEmotes.menuOpen
+    androidx.activity.compose.BackHandler(bareTable) { matchMenu.open = true }
+    if (bareTable) PadScreen(PadActs(b = "Menu"))
     // Any touch of the table says you are here (the clock's missed-turn count clears); the touch still reaches the table.
-    Box(Modifier.fillMaxSize().background(Palette.Night).pointerInput(Unit) { awaitPointerEventScope { while (true) { val e = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial); if (e.type == androidx.compose.ui.input.pointer.PointerEventType.Press) controller.poke() } } }) {
+    // A controller's key press says the same (seen first, never consumed).
+    Box(Modifier.fillMaxSize().background(Palette.Night).pointerInput(Unit) { awaitPointerEventScope { while (true) { val e = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial); if (e.type == androidx.compose.ui.input.pointer.PointerEventType.Press) controller.poke() } } }
+        .onPreviewKeyEvent { if (Pad.connected.value && it.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) controller.poke(); false }) {
       CompositionLocalProvider(LocalAnchors provides anchors, LocalTableCue provides cue) {
         if (mat != null) PlaymatScene(mat, Modifier.fillMaxSize()) else PlaymatScene(Modifier.fillMaxSize()) // a Story battle's own act mat, else play-playmats.js: this match's mat (nextPlaymat), its own shade, the table root see-through
         BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
@@ -216,6 +230,8 @@ internal fun Mulligan(st: MatchState, live: Boolean, clock: MatchController.Cloc
     // Cue map: the coin lands as the pill comes in (QP-010 you / QP-011 CPU), Keep QP-013, Mulligan QP-014, a card to the bottom QP-015.
     val cue = LocalTableCue.current
     LaunchedEffect(youFirst) { cue?.invoke(if (youFirst) "QP-010" else "QP-011", .8f, 1f) }
+    // A controller's X is the gold Keep (its words and its tap) while it is yours to press.
+    PadScreen(PadActs(x = if (yours && st.buttons.okEnabled) PadAct(st.buttons.ok ?: "Keep") { if (!choosing) cue?.invoke("QP-013", 1f, 1f); onOk() } else null))
     BoxWithConstraints(Modifier.fillMaxSize().background(Color(0x59000000))) {
         val W = maxWidth; val H = maxHeight
         val d = Du(chromeU(W, H))
@@ -765,6 +781,10 @@ private fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRema
     val draw = st.draw || st.winnerPlayerId == null
     val rise = remember { Animatable(0f) }
     LaunchedEffect(Unit) { delay(300); audio.play(if (draw) "QP-019" else if (won) "QP-017" else "QP-018"); rise.animateTo(1f, tween(400, easing = FastOutSlowInEasing)) }
+    // A controller: X is Rematch (the gold button), and the ring starts on it; the board under the result lends nothing.
+    PadScreen(PadActs(x = PadAct("Rematch") { onRematch() }, opaque = true))
+    val rematchFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { if (Pad.connected.value) runCatching { rematchFocus.requestFocus() } }
     Box(Modifier.fillMaxSize().background(Color(0xAA000000).copy(alpha = .67f * rise.value)), contentAlignment = Alignment.Center) {
         Column(Modifier.graphicsLayer { alpha = rise.value; translationY = (1f - rise.value) * 40.dp.toPx() }.width(380.dp).glass(16.dp).padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(Modifier.fillMaxWidth().aspectRatio(5f), contentAlignment = Alignment.Center) {
@@ -775,7 +795,7 @@ private fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRema
             if (note != null) Text(note, style = Type.Body.copy(color = Palette.Gold, fontSize = 13.sp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 GoldButton("Home", true, Modifier.width(150.dp), primary = false, onClick = onHome)
-                GoldButton("Rematch", true, Modifier.width(150.dp), onClick = onRematch)
+                GoldButton("Rematch", true, Modifier.width(150.dp).focusRequester(rematchFocus), onClick = onRematch)
             }
         }
     }
@@ -783,6 +803,7 @@ private fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRema
 
 @Composable
 private fun Failed(reason: String, onHome: () -> Unit) {
+    PadScreen(PadActs(x = PadAct("Home") { onHome() }, opaque = true))
     Box(Modifier.fillMaxSize().background(Color(0xCC000000)), contentAlignment = Alignment.Center) {
         Column(Modifier.width(420.dp).glass().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("The match stopped", style = Type.Title)

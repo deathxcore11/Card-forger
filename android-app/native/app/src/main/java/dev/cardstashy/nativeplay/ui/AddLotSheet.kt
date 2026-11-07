@@ -200,6 +200,9 @@ private fun AddLotForm(m: JsonObject, open: CollectionWrites.AddOpen, backdrop: 
     fun changed() { value = ""; price() }
 
     SiteSheet(m.str("title"), backdrop, onClose) { vw ->
+        // A controller: X is the sheet's gold save, while it can save.
+        val padSave = canSave && !saving
+        PadScreen(remember(padSave, m) { PadActs(x = if (padSave) PadAct(m.str("save")) { save(false) } else null) })
         val one = vw <= 480.dp
         if (!editing) {
             Spacer(Modifier.height(12.dp))
@@ -275,6 +278,10 @@ private fun Seg(onList: () -> Unit) = AddModeSeg("one") { if (it == "list") onLi
 @Composable
 internal fun AddModeSeg(current: String, items: List<Pair<String, String>> = listOf("one" to "One card", "list" to "Paste or upload a list"), onPick: (String) -> Unit) {
     val pal = LocalSheetPal.current
+    // A controller: LB/RB pick the other mode, as a tap on it does.
+    val pickNow by androidx.compose.runtime.rememberUpdatedState(onPick)
+    PadScreen(remember(current, items) { PadActs(tabs = { d -> val i = items.indexOfFirst { it.first == current }
+        items.getOrNull((i + d).coerceIn(0, items.lastIndex))?.first?.takeIf { it != current }?.let { pickNow(it) } }) })
     Row(Modifier.fillMaxWidth().siteGlassField(999.dp).padding(5.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         items.forEach { (k, label) ->
             val on = k == current
@@ -524,6 +531,8 @@ private fun TcgAddForm(m: JsonObject, open: CollectionWrites.TcgAddOpen, backdro
 
     // Opened from the card page (app.js sheet history): back returns to it, ✕ closes both.
     SiteSheet(m.str("title"), backdrop, onClose = { onClose(); open.closeAll() }, onBack = onClose) { vw ->
+        // A controller: X is the sheet's gold save.
+        PadScreen(remember(m) { PadActs(x = PadAct(m.str("save")) { save() }) })
         val one = vw <= 480.dp
         // .build-seed: the card's picture (56 square, 10 corners, cover), its name and type line 10 over and 8 down; 4 above, and the
         // grid's 10 below. The live phone page draws the row 66 tall (56 when wide).

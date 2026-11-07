@@ -44,6 +44,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -165,7 +166,8 @@ fun MetaDeckSheet(act: MetaDeckSheetActions, initial: MetaDeckSheetModel? = null
         card = { r -> model?.let { m -> if (r.act == "card" || r.act == "sharedCard" || (r.act == "tCard" && r.id.isNotBlank())) act.card(m, r) else act.web(m, "row", r) } },
         extra = { a -> model?.let { m -> act.web(m, a, null) } })
     GameAccent(model?.game ?: "mtg") { androidx.compose.runtime.CompositionLocalProvider(LocalSiteGlyphs provides glyphs) {
-        BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg).clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null) {}) {
+        // The tap-catcher is touch-only: the d-pad skips it.
+        BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg).focusProperties { canFocus = false }.clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null) {}) {
             val vw = maxWidth
             // #sheetBody: max(--gutter, (100% − 1196) / 2) at the sides; 10 under the status bar; 28 at the foot.
             val gutter = maxOf(if (vw >= 600.dp) 22.dp else 16.dp, (vw - 1196.dp) / 2)
@@ -195,6 +197,17 @@ private fun MetaSheetBody(m: MetaDeckSheetModel, inner: Dp, vw: Dp, ui: MetaUi, 
     val stats = h.objs("stats").map { DeckStat(it.s("value"), it.s("label"), it.b("warn"), it.b("button"), it.s("act"), it.s("id")) }
     val retry = j.o("retry")
     val gold = LocalGameGold.current
+    // A controller: the sheet owns the pad; X is its gold button (Save…, or the mode it offers) while it is live, LB/RB step the versions.
+    val padGlyphs = LocalSiteGlyphs.current
+    PadScreen(remember(j) {
+        val main = j.objs("actions").firstOrNull { it.b("primary") && !it.b("disabled") && (it.s("href").isNotBlank() || it.s("act") == "provenSave" || it.s("act") == "provenMode") }
+        val versions = j.objs("versions")
+        PadActs(opaque = true,
+            x = main?.let { a -> PadAct(leadGlyph(a.s("label"), padGlyphs).second.trim()) { when {
+                a.s("href").isNotBlank() -> ui.open(a.s("href")); a.s("act") == "provenSave" -> ui.save(); else -> ui.mode(a.s("id")) } } },
+            tabs = if (versions.size < 2) null else { d -> val i = versions.indexOfFirst { it.b("on") }
+                versions.getOrNull((i + d).coerceIn(0, versions.lastIndex))?.takeIf { !it.b("on") }?.let { ui.mode(it.s("id")) } })
+    })
     DsHero(h.o("art")?.s("src")?.ifBlank { null }, h.o("art")?.strs("sources").orEmpty(), h.o("art")?.s("crop").orEmpty(),
         h.objs("eyebrow").map { DeckEyebrow(it.s("kind"), it.s("label"), it.s("title"), it.b("badge"), it.s("level"), null, emptyList(), "") },
         h.s("title"), h.s("line"), stats, h.get("owned")?.takeIf { it.isJsonPrimitive }?.asFloat, wide, vw, Motion.still,

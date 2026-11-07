@@ -147,6 +147,9 @@ fun CollectionScanRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () ->
     val live = panel?.scanLive() == true
     // The camera's back stops it (scancam's ✕), as leaving the live scanner does on the site.
     BackHandler(live && cards.isEmpty()) { panel?.page?.find { it["data-act"] == "scanStop" }?.let { ScanWeb.tap(it.id) } }
+    // Controller: X = the live camera's shutter (scancam's "Capture card now", data-act scanCapture), while it shows.
+    val shutter = if (live) panel?.page?.find { it.has("scan-shutter") && !it.hidden } else null
+    if (shutter != null) PadScreen(remember(shutter.id) { PadActs(x = PadAct("Capture") { ScanWeb.tap(shutter.id) }) })
     val sheet = panel?.sheetBody
     val g = CardGame.of(game)
     CompositionLocalProvider(LocalScanHost provides host) {

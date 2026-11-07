@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -24,6 +25,8 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
@@ -73,6 +76,8 @@ fun HandFan(
     onReorder: ((List<Int>) -> Unit)? = null,
     /** forge-table.mjs data-forge-blocked: why a card can't be played, shown on it while lifted ("Not enough mana"). */
     blockedOf: (Card) -> String? = { null },
+    /** A controller: where the ring goes when A plays the last card in the hand (the table's gold button). */
+    padEmpty: (() -> Unit)? = null,
 ) {
     val cardH = cardW * 1.4f
     val haptic = LocalHapticFeedback.current
@@ -87,6 +92,9 @@ fun HandFan(
     val tapCb by rememberUpdatedState(onTap); val playCb by rememberUpdatedState(onPlay)
     val holdCb by rememberUpdatedState(onHold); val canPlayCb by rememberUpdatedState(canPlay)
     val dealCb by rememberUpdatedState(onDeal); val reorderCb by rememberUpdatedState(onReorder)
+    val padEmptyCb by rememberUpdatedState(padEmpty)
+    // Each hand card's FocusRequester, so the controller's ring can step to the neighbour of a card A just played.
+    val padFocusers = remember { HashMap<Int, FocusRequester>() }
     // Sideways drag (Randall 3 Nov, approved): the card lifts and follows the finger; its neighbours slide to open a gap.
     var moving by remember { mutableStateOf<Int?>(null) }      // card id being moved sideways
     var moveTo by remember { mutableStateOf(0) }               // the slot it would drop into
@@ -117,6 +125,27 @@ fun HandFan(
         // Arriving cards (a deal, a draw) come in one per 70 ms along the arc from the library side.
         val arriving = if (shownOnce || dealIn) slots.filter { it.id !in seen }.map { it.id } else emptyList()
         if (!shownOnce && !dealIn) slots.forEach { seen.add(it.id) }
+        // A on a hand card (a controller): a card you can play goes as a slide up past the line does (the same arc and play);
+        // any other card does what a tap does.
+        fun padPress(card: Card) {
+            if (canPlayCb(card)) {
+                val was = leaving
+                leaving = card.id; dragging = null; focus = null
+                playCb(card)
+                // The ring steps to the card that closes into its slot (the next one, else the one before), or off the hand when it was the last.
+                if (Pad.connected.value) {
+                    val inHand = current.filter { it.id != was }
+                    val at = inHand.indexOfFirst { it.id == card.id }
+                    val rest = inHand.filter { it.id != card.id }
+                    val next = rest.getOrNull(at.coerceAtMost(rest.size - 1))?.let { padFocusers[it.id] }
+                    if (next != null) runCatching { next.requestFocus() } else padEmptyCb?.invoke()
+                }
+                scope.launch {
+                    drag.snapTo(Offset.Zero); flight.snapTo(0f); flight.animateTo(1f, tween(380, easing = FastOutSlowInEasing))
+                    delay(1100); if (leaving == card.id) leaving = null
+                }
+            } else tapCb(card)
+        }
 
         Box(Modifier.fillMaxWidth().height(cardH + 8.dp).pointerInput(n, pxStart, pxStep) {
             val slop = viewConfiguration.touchSlop
@@ -223,6 +252,14 @@ fun HandFan(
                     val ar = rememberSpring(rest[2], if (newIndex >= 0) 20f else null, delayMs)
                     val asc = rememberSpring(if (isLift) popScale else 1f, null, 0L)
                     val isDrag = dragging == card.id
+                    // A controller: the ring on the card; it stands up and pops as under a finger. A casts what can be cast, Y opens it.
+                    val padSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                    val padFocus = remember { FocusRequester() }
+                    DisposableEffect(card.id) { padFocusers[card.id] = padFocus; onDispose { if (padFocusers[card.id] === padFocus) padFocusers.remove(card.id) } }
+                    val padCast = canPlayCb(card)
+                    val padHere = remember(card.id, padCast, card.isLand) {
+                        PadActs(a = if (padCast) (if (card.isLand) "Play land" else "Cast") else null, y = PadAct("Inspect") { current.firstOrNull { it.id == card.id }?.let(holdCb) })
+                    }
                     Box(Modifier.zIndex(if (isDrag || isLeaving || card.id == moving) 3f else if (isLift) 2f else 0f).graphicsLayer {
                         transformOrigin = TransformOrigin(.5f, 1f)
                         val f = if (isLeaving) flight.value else 0f
@@ -232,7 +269,8 @@ fun HandFan(
                         val sc = if (isLeaving) 1f + .15f * sin(f * PI.toFloat()) + (asc - 1f) * (1f - f) else asc
                         scaleX = sc; scaleY = sc
                         alpha = if (isLeaving) 1f - f * f else 1f
-                    }) {
+                    }.onFocusChanged { if (it.isFocused) focus = card.id else if (focus == card.id && dragging == null) focus = null }
+                        .padActs(padHere).matchPadTap(padSource, padFocus) { current.firstOrNull { it.id == card.id }?.let { padPress(it) } }) {
                         CardFace(card, cardW, cardH, mark = markOf(card))
                         // .play-match-card[data-forge-blocked]::after: bottom 8, #140d0be8, #ff9a7a77 hairline, #ffd4c6 700 11px.
                         if (isLift) blockedOf(card)?.let { why ->

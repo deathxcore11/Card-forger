@@ -129,6 +129,8 @@ fun StoryDuelPage(
     val loanLead = mine.obj("deck")?.cards()?.firstOrNull { !basic.matches(it.first) }
     val loanArt = mine.obj("deck")?.getAsJsonArray("cards")?.map { it.asJsonObject }?.firstOrNull { c -> !basic.matches(c.str("name").orEmpty()) }?.str("id")?.takeIf { it.length == 36 }
         ?.let { "https://cards.scryfall.io/art_crop/front/${it[0]}/${it[1]}/$it.jpg" }
+    // A controller's X is the gold Duel (Replay once won) at the foot of the page: the same seat and deck as its tap.
+    PadScreen(PadActs(x = PadAct(if (villainOpen) "Replay" else "Duel") { onPlay(seat, ui.deck.takeIf { it != "loaner" }) }))
     LazyColumn(Modifier.fillMaxSize().background(Site.Bg), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = top + 12.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item("head") { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { PageHeader(b.str("title")!!, "Act $act · " + (if (slot == 8) "Boss" else b.str("kind")), onBack = onBack); purse() } }
         item("stage") {

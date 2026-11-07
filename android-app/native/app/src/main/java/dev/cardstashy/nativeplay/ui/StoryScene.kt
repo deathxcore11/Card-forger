@@ -5,6 +5,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.indication
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -82,10 +88,14 @@ fun StoryScene(lines: List<JsonObject>, cast: JsonObject?, leftWho: String, righ
     val fade by animateFloatAsState(if (closing) 0f else 1f, tween(if (still) 0 else 260), label = "scene") { if (closing && it == 0f) onDone() }
     LaunchedEffect(lines.isEmpty()) { if (lines.isEmpty()) onDone() }
     if (lines.isEmpty()) return
+    // Controller: the scene owns the pad over the match; X (or A on the speech box) goes on, as a tap anywhere does.
+    PadScreen(PadActs(x = PadAct("Next") { next() }, opaque = true))
+    val speech = remember { MutableInteractionSource() }
     // A third speaker stands with whoever they sit nearest: the right (villain) side if it is the villain's line.
     val right = who != null && !stage && who == rightWho
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(); val bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    BoxWithConstraints(Modifier.fillMaxSize().alpha(fade).background(Color(0xFF0B0C10)).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { next() }) {
+    // The tap-anywhere layer stays a touch target only; the controller's stop is the speech box below (no full-screen ring).
+    BoxWithConstraints(Modifier.fillMaxSize().padLayer().alpha(fade).background(Color(0xFF0B0C10)).focusProperties { canFocus = false }.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { next() }) {
         val (bgUrl, bgAlign) = face(rightWho).let { if (it.first != null) it else face(leftWho) }
         StoryPic(bgUrl, Modifier.fillMaxSize().blur(26.dp).graphicsLayer { alpha = .5f }, BiasAlignment(0f, -.4f))
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0xA00B0C10), 1f to Color(0xE60B0C10))))
@@ -106,7 +116,10 @@ fun StoryScene(lines: List<JsonObject>, cast: JsonObject?, leftWho: String, righ
         Talker(rightWho, Alignment.BottomEnd, right)
         // The speech box: speaker name in Cinzel gold, the line typing in.
         Column(Modifier.align(Alignment.BottomCenter).padding(start = 16.dp, end = 16.dp, bottom = bottom + 22.dp).widthIn(max = 560.dp).fillMaxWidth().heightIn(min = 120.dp)
-            .clip(RoundedCornerShape(18.dp)).border(1.dp, Color(0x66D6AD64), RoundedCornerShape(18.dp)).background(Brush.verticalGradient(listOf(Color(0xEB16171C), Color(0xF20D0E12)))).padding(horizontal = 22.dp, vertical = 18.dp)) {
+            .clip(RoundedCornerShape(18.dp)).border(1.dp, Color(0x66D6AD64), RoundedCornerShape(18.dp)).background(Brush.verticalGradient(listOf(Color(0xEB16171C), Color(0xF20D0E12))))
+            .onKeyEvent { e -> val k = e.nativeKeyEvent.keyCode
+                if (k == android.view.KeyEvent.KEYCODE_DPAD_CENTER || k == android.view.KeyEvent.KEYCODE_ENTER || k == android.view.KeyEvent.KEYCODE_NUMPAD_ENTER) { if (e.type == KeyEventType.KeyUp) next(); true } else false }
+            .indication(speech, PadFocus.Ring).padActs(PadActs(a = "Next")).focusable(interactionSource = speech).padding(horizontal = 22.dp, vertical = 18.dp)) {
             Text(if (stage) "" else (person(who)?.get("name")?.asString ?: who.orEmpty()), style = storyCinzel(15f, Color(0xFFE8B95B)), textAlign = if (right) TextAlign.End else TextAlign.Start, modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp))
             val whisper = l?.get("whisper")?.asBoolean == true || l?.get("offstage")?.asBoolean == true
             Text(full.take(shown), style = storyText(17f, FontWeight.Medium, if (stage) Color(0xFFD8D2C2) else if (whisper) Color(0xFFC9CDD4) else Color(0xFFF4EFE2)).copy(fontStyle = if (stage || whisper) FontStyle.Italic else FontStyle.Normal),

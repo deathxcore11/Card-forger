@@ -253,6 +253,9 @@ private fun HeadButton(b: SiteButton, wide: Boolean, onClick: () -> Unit) {
     }
 }
 
+/** Controller on a deck tile: A opens the deck. */
+private val OPEN_DECK = PadActs(a = "Open")
+
 /** .random-tools: 🎲 Random Commander, 🎲 Random deck; glass (44 tall here), sharing a phone's width (flex: 1), a long label wrapping inside its button. */
 @Composable
 private fun RandomTools(tools: List<SiteButton>, act: CollectionDecksActions, wide: Boolean) {
@@ -296,7 +299,7 @@ private fun DeckTile(d: DeckTileModel, wide: Boolean, modifier: Modifier, onClic
     val tier = cssColor(d.tierColor, Color.Transparent)?.takeIf { d.tier.isNotBlank() && d.tier != "tn" }?.let { if (d.tier == "t0") Color(0xFF8B939C) else it }
     // (The img's own tier glow sits outside it, so the tile's overflow: hidden clips it away; only the outline shows.)
     Box(modifier.heightIn(min = 260.dp)
-        .clip(shape).background(Surface2).border(1.dp, LineC, shape).clickable(onClick = onClick).semantics { contentDescription = d.name; role = Role.Button }) {
+        .clip(shape).background(Surface2).border(1.dp, LineC, shape).padActs(OPEN_DECK).clickable(onClick = onClick).semantics { contentDescription = d.name; role = Role.Button }) {
         // .tile-art img (cover, centred) and its tier outline (2 px, offset -2, 6 corners; the tile's own corners clip it).
         Box(Modifier.matchParentSize().padding(1.dp)) {
             // A Yu-Gi-Oh! or Pokémon cover walks its fallbacks (ygoCropArt, pokemonArtCrop); a Pokémon card shows its art window.

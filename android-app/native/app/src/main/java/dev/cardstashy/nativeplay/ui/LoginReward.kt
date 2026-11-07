@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.ui.focus.focusProperties
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -81,8 +82,10 @@ fun LoginRewardPopup(login: JsonObject, onDone: () -> Unit) {
         }
     }
     BackHandler { claim() }
+    // Controller: X claims, and so does B (back claims here). The backdrop only swallows taps, so focus skips it.
+    PadScreen(PadActs(x = PadAct("Claim") { claim() }, b = "Claim", opaque = true))
     Box(Modifier.fillMaxSize().graphicsLayer { alpha = enter.value.coerceIn(0f, 1f) }.background(Color(0xCC07080B))
-        .clickable(remember { MutableInteractionSource() }, null) {}, contentAlignment = Alignment.Center) {
+        .focusProperties { canFocus = false }.clickable(remember { MutableInteractionSource() }, null) {}, contentAlignment = Alignment.Center) {
         val shape = RoundedCornerShape(26.dp)
         Column(Modifier.padding(24.dp).widthIn(max = 380.dp).fillMaxWidth()
             .graphicsLayer { val k = .86f + .14f * enter.value; scaleX = k; scaleY = k }

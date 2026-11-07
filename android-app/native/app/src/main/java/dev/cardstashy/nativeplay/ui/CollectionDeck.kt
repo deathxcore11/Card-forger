@@ -243,6 +243,8 @@ class CollectionDeckActions(
 /** A card's tap and its − / ＋: Magic's by name (A.card, A.deckQty), a Yu-Gi-Oh! or Pokémon row's by its card (A.tCard, A.tDeckQty). */
 private fun CollectionDeckActions.open(c: DeckCard) = if (c.cardId.isNotBlank()) tcgRow(c) else card(c.r.name)
 private fun CollectionDeckActions.step(c: DeckCard, d: Int) = if (c.cardId.isNotBlank()) tcgQty(c, d) else qty(c.r.name, d)
+/** Controller on a deck card (PadPrompts): A opens it, X is its stepper's + ("Add one") where it has one. */
+private fun CollectionDeckActions.pad(c: DeckCard) = PadActs(a = "Open", x = if (c.stepper) PadAct("Add one") { step(c, 1) } else null)
 /** The deck's game, for a Yu-Gi-Oh! or Pokémon picture's foil (finish-preview.js's recipe is the game's). */
 private val LocalDeckGame = androidx.compose.runtime.staticCompositionLocalOf { CardGame.MTG }
 
@@ -1257,7 +1259,7 @@ private fun DrawScope.drawBand(tier: String, p: Float) {
 @Composable
 private fun GalleryCard(c: DeckCard, small: Boolean, reduced: Boolean, glyphs: Map<String, SiteSvg>, act: CollectionDeckActions, modifier: Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        FramedArt(c, reduced, Modifier.fillMaxWidth().clickable { act.open(c) }.semantics { contentDescription = "Open ${c.r.name}" })
+        FramedArt(c, reduced, Modifier.fillMaxWidth().padActs(act.pad(c)).clickable { act.open(c) }.semantics { contentDescription = "Open ${c.r.name}" })
         Column(Modifier.padding(horizontal = 3.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Box(Modifier.heightIn(min = 44.dp), contentAlignment = Alignment.CenterStart) { NameWithBadge(c, sans(13f, 600, Ink, lh = 1.3f), 1, act) }
             c.own?.let { OwnLine(it, c.owned) }
@@ -1275,7 +1277,7 @@ private fun CompactCard(c: DeckCard, small: Boolean, reduced: Boolean, glyphs: M
     // The row's padding sits inside a 1 transparent border; the art is centred on the text (align-items: center).
     Row(Modifier.fillMaxWidth().lotFrame(c.r, reduced).padding(if (small) 7.dp else 9.dp), horizontalArrangement = Arrangement.spacedBy(if (small) 7.dp else 10.dp)) {
         val w = if (small) 48.dp else 58.dp; val h = if (small) 67.dp else 81.dp
-        Box(Modifier.align(Alignment.CenterVertically).size(w, h).clip(RoundedCornerShape(9.dp)).background(Surface2).clickable { act.open(c) }.semantics { contentDescription = "Open ${c.r.name}" }) {
+        Box(Modifier.align(Alignment.CenterVertically).size(w, h).clip(RoundedCornerShape(9.dp)).background(Surface2).padActs(act.pad(c)).clickable { act.open(c) }.semantics { contentDescription = "Open ${c.r.name}" }) {
             DeckPicture(c, Modifier.fillMaxSize(), RoundedCornerShape(6.dp))
             DeckDock(c, reduced, Modifier.align(Alignment.BottomStart))
         }
@@ -1297,7 +1299,7 @@ private fun CompactCard(c: DeckCard, small: Boolean, reduced: Boolean, glyphs: M
 private fun NameCard(c: DeckCard, reduced: Boolean, glyphs: Map<String, SiteSvg>, act: CollectionDeckActions) {
     // 10 padding inside a 1 border; the name and the stepper centred on each other.
     Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).lotFrame(c.r, reduced).padding(11.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(c.r.name, Modifier.weight(1f).clickable { act.open(c) }, style = sans(16f, 700, Ink, lh = 1.25f))
+        Text(c.r.name, Modifier.weight(1f).padActs(act.pad(c)).clickable { act.open(c) }, style = sans(16f, 700, Ink, lh = 1.25f))
         Side(c, glyphs, act)
     }
 }
@@ -1350,7 +1352,7 @@ private fun Pile(pile: List<Int>, width: Dp, small: Boolean, foot: Dp, card: @Co
 private fun StackCard(c: DeckCard, glyphs: Map<String, SiteSvg>, last: Boolean, small: Boolean, act: CollectionDeckActions, modifier: Modifier) {
     Box(modifier) {
         Box(Modifier.fillMaxWidth().aspectRatio(63f / 88f).drawBehind { outerShadow(Color(0xBB000000), 16f, 7f, -10f, 8f) }
-            .clip(RoundedCornerShape(percent = 4)).background(Surface46).clickable { act.open(c) }.semantics { contentDescription = "${c.qty}× ${c.r.name}" }) {
+            .clip(RoundedCornerShape(percent = 4)).background(Surface46).padActs(act.pad(c)).clickable { act.open(c) }.semantics { contentDescription = "${c.qty}× ${c.r.name}" }) {
             DeckPicture(c, Modifier.fillMaxSize(), RoundedCornerShape(percent = 4))
             TierOutline(c.r.tier, c.r.tierColor)
             DeckDock(c, Playmats.reduced(LocalContext.current), Modifier.align(Alignment.BottomStart))

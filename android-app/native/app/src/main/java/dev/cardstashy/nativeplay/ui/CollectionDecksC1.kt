@@ -333,6 +333,8 @@ fun DeckReviewHost(deck: String, backdrop: GraphicsLayer?, act: DeckReviewAction
 @Composable
 fun WarChestWindow(panel: SitePanelModel, ui: SiteUi, backdrop: GraphicsLayer?, scroll: androidx.compose.foundation.ScrollState = rememberScrollState(), onClose: () -> Unit) {
     BackHandler { onClose() }
+    // Controller: B closes the window; the page under it lends no buttons.
+    PadScreen(PadActs(b = "Close", opaque = true))
     val dim = androidx.compose.ui.graphics.rememberGraphicsLayer()
     BoxWithConstraints(Modifier.fillMaxSize()
         .drawBehind {

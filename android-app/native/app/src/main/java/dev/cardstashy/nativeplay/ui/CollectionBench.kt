@@ -3,6 +3,7 @@ package dev.cardstashy.nativeplay.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
@@ -79,8 +80,10 @@ private class Tool(val label: String, val act: String, val id: String)
  * steppers do, so the gold button is the page's own first action (Practice; War Chest for Yu-Gi-Oh! and Pokémon) instead of Save.
  */
 @Composable
-fun CollectionBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: CollectionDeckActions, tab: (String) -> Boolean, tabBody: @Composable (String) -> Unit) {
-    if (m.game != CardGame.MTG) { TcgBench(m, pool, ui, act, tab, tabBody); return }
+fun CollectionBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: CollectionDeckActions, tab: (String) -> Boolean,
+                    /** A tab the Bench draws here (the controller's LB/RB step only through these; the rest open the website). */
+                    drawn: (String) -> Boolean = { true }, tabBody: @Composable (String) -> Unit) {
+    if (m.game != CardGame.MTG) { TcgBench(m, pool, ui, act, tab, drawn, tabBody); return }
     val inDeck = remember(m) { HashMap<String, Int>().apply { m.groups.forEach { g -> g.cards.forEach { c -> merge(c.r.name, c.qty, Int::plus); merge(c.r.name.split(" // ")[0], c.qty, Int::plus) } } } }
     val names = remember(m) { m.groups.flatMap { g -> g.cards.map { it.r.name } }.toSet() }
     fun countIn(n: String) = inDeck[n] ?: inDeck[n.split(" // ")[0]] ?: 0
@@ -184,7 +187,7 @@ fun CollectionBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: 
     val practice = m.actions.firstOrNull { it.act == "deckPlayCpu" }
     val actions = BenchActions(back = act.back, save = practice?.let { p -> { act.act(p.act, p.id) } }, saveLabel = practice?.label?.ifBlank { null } ?: "Practice",
         step = { n, d -> if (d > 0 && !inList(n)) act.addCard(n) {} else if (inList(n)) act.qty(n, d) },
-        craft = { _, _ -> }, open = act.card, more = null, menu = emptyList(), menuOpen = { act.act("deckMenu", "") }, tab = tab, chip = { k -> act.act(k, m.id) },
+        craft = { _, _ -> }, open = act.card, more = null, menu = emptyList(), menuOpen = { act.act("deckMenu", "") }, tab = tab, drawn = drawn, chip = { k -> act.act(k, m.id) },
         findMore = { q -> act.addCard(q) {} }, heroActions = heroButtons, shelf = { k -> shelves.load(k) })
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         DeckBench(model, ui, actions, actionRow = toolRow(tools, m.emblems?.swaps.orEmpty(), { t -> act.act(t.act, t.id) }) { s -> act.swap(s.out, s.into) },
@@ -221,7 +224,7 @@ private fun toolRow(tools: List<Tool>, swaps: List<DeckSwap>, tap: (Tool) -> Uni
  * the page's Find (A.tDeckFind), its results shown first in the browser; "n to fix" opens the page's Rules review.
  */
 @Composable
-private fun TcgBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: CollectionDeckActions, tab: (String) -> Boolean, tabBody: @Composable (String) -> Unit) {
+private fun TcgBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: CollectionDeckActions, tab: (String) -> Boolean, drawn: (String) -> Boolean, tabBody: @Composable (String) -> Unit) {
     val ygo = m.game == CardGame.YGO
     val order = if (ygo) listOf("Monsters", "Spells", "Traps") else listOf("Pokémon", "Trainers", "Energy")
     val cards = remember(m) { m.groups.flatMap { it.cards } }
@@ -356,7 +359,7 @@ private fun TcgBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act:
             if (r != null) act.tcgQty(r, d) else if (d > 0 && !k.startsWith("side:")) act.foundAdd(k)
         },
         craft = { _, _ -> }, open = { k -> rows(k).firstOrNull()?.let(act.tcgRow) ?: act.tcgCard(k.removePrefix("side:")) }, more = null, menu = emptyList(),
-        menuOpen = { act.act(m.menuAct, "") }, tab = tab,
+        menuOpen = { act.act(m.menuAct, "") }, tab = tab, drawn = drawn,
         chip = { k -> if (k == "tIssues") { if (m.issues != null) issues = true } else act.act(k, m.id) },
         move = { k -> rows(k).lastOrNull()?.let(act.tcgMove) }, findMore = { q -> act.find(q) }, shelf = { k -> loadShelf(k) })
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
@@ -364,7 +367,8 @@ private fun TcgBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act:
             browserSwitch = { BenchSwitch(listOf("mine" to "Owned", "all" to "All cards"), mode) { mode = it } }, tabBody = tabBody)
         // tcg.js A.tIssues: the page's Rules review, open, over the Bench; a tap outside or on its summary closes it.
         if (issues) m.issues?.let { (sum, items) ->
-            Box(Modifier.fillMaxSize().background(Color(0xB8050609)).clickable(remember { MutableInteractionSource() }, null) { issues = false }, contentAlignment = Alignment.Center) {
+            // The scrim is no stop for the d-pad (a tap outside still closes it); the panel's summary is its focusable close.
+            Box(Modifier.fillMaxSize().background(Color(0xB8050609)).focusProperties { canFocus = false }.clickable(remember { MutableInteractionSource() }, null) { issues = false }, contentAlignment = Alignment.Center) {
                 IssuesPanel(sum, items, true, { issues = false }, Modifier.padding(20.dp).widthIn(max = 520.dp).fillMaxWidth()
                     .background(Color(0xFA14161D), RoundedCornerShape(14.dp)).border(1.dp, Color(0x33E5C47E), RoundedCornerShape(14.dp)))
             }

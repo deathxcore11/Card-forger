@@ -35,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -72,8 +73,11 @@ fun UpdatePrompt(ui: UpdateUi, onUpdate: () -> Unit, onAllow: () -> Unit, onInst
     val enter = remember { Animatable(if (Motion.still) 1f else 0f) }
     LaunchedEffect(Unit) { enter.animateTo(1f, spring(dampingRatio = .72f, stiffness = Spring.StiffnessMediumLow)) }
     BackHandler { if (ui is UpdateUi.Downloading) onCancel() else onLater() }
+    // Controller: X = the card's gold button; B = what back does here (its Later / Not now / Cancel).
+    PadScreen(PadActs(x = when (ui) { is UpdateUi.Offer -> PadAct("Update", onUpdate); is UpdateUi.Allow -> PadAct("Open settings", onAllow); is UpdateUi.Ready -> PadAct("Install", onInstall)
+        is UpdateUi.Failed -> PadAct("Try again", onRetry); is UpdateUi.Downloading -> null }, b = when (ui) { is UpdateUi.Downloading -> "Cancel"; is UpdateUi.Allow -> "Not now"; else -> "Later" }, opaque = true))
     BoxWithConstraints(Modifier.fillMaxSize().graphicsLayer { alpha = enter.value.coerceIn(0f, 1f) }.background(Color(0xCC07080B))
-        .clickable(remember { MutableInteractionSource() }, null) {}.windowInsetsPadding(WindowInsets.safeDrawing), contentAlignment = Alignment.Center) {
+        .focusProperties { canFocus = false }.clickable(remember { MutableInteractionSource() }, null) {}.windowInsetsPadding(WindowInsets.safeDrawing), contentAlignment = Alignment.Center) {
         // Held sideways (handhelds, a folded phone on its side) the card tightens up so it fits without scrolling.
         val short = maxHeight < 480.dp
         val gap = if (short) 10.dp else 16.dp

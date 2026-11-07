@@ -161,6 +161,9 @@ internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> U
         a.animateTo(1f, keyframes { durationMillis = 420; .2f at 0 using e; 1f at 252 using e })
     }
     BackHandler { (onBack ?: onClose)() }
+    // A controller: B closes the sheet (or goes back to the sheet it came from); the screen under it lends nothing. A sheet's own
+    // buttons (tabs, its main action) are set by a PadScreen inside [content], which is composed after this one and so wins.
+    PadScreen(remember(onBack != null, foot != null) { PadActs(b = if (onBack != null) null else "Close", opaque = true, lift = if (foot != null) 72.dp else 0.dp) })
     val dim = androidx.compose.ui.graphics.rememberGraphicsLayer(); val frost = androidx.compose.ui.graphics.rememberGraphicsLayer()
     val body = androidx.compose.ui.graphics.rememberGraphicsLayer(); val headBlur = androidx.compose.ui.graphics.rememberGraphicsLayer()
     val sheetBox = remember { arrayOf(androidx.compose.ui.geometry.Rect.Zero) }
@@ -169,7 +172,7 @@ internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> U
     var headH by remember { mutableIntStateOf(0) }
     var footH by remember { mutableIntStateOf(0) }
     val pin = remember { SheetPin() }
-    BoxWithConstraints(Modifier.fillMaxSize()
+    BoxWithConstraints(Modifier.fillMaxSize().padLayer()
         .drawBehind {
             // body.glass dialog.sheet::backdrop { background: rgba(4, 5, 8, .45); backdrop-filter: blur(3px) }, fading in.
             if (backdrop != null && backdrop.size.width > 0) {

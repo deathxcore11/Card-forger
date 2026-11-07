@@ -42,11 +42,15 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -117,12 +121,18 @@ class DockReplies(
 @Composable
 fun DecisionDock(st: MatchState, live: Boolean, intents: TableIntents, onInspect: (Card) -> Unit, u: Float, modifier: Modifier = Modifier, replies: DockReplies = DockReplies()) {
     BackOutStep(st, live, intents)
+    // A controller: once the question is answered the ring goes back to where it was on the table (only if the dock took it).
+    LaunchedEffect(st.prompt == null) { if (st.prompt == null && DockFocus.took) { DockFocus.took = false; TablePad.restore() } }
+    // The dock owns the pad while it asks (the table's Start and X wait); each kind adds its own X, the gold answer. Always composed,
+    // so its place among the layers stays put (an open card drawn over the table stays above it).
+    PadScreen(PadActs(opaque = st.prompt != null && st.failure == null && !st.finished))
     val p = st.prompt ?: return
     if (st.failure != null || st.finished) return
     val d = DockU(u)
+    val pad = remember(p.id) { DockFocus() }
     BoxWithConstraints(modifier.fillMaxSize()) {
         val W = maxWidth; val H = maxHeight
-        val ctx = DockCtx(st, p, live, intents, replies, onInspect, d, W, H)
+        val ctx = DockCtx(st, p, live, intents, replies, onInspect, d, W, H, pad)
         // Draft: s.nativeDraft for this revision and prompt (forge-session.mjs selectPrompt / clearPrompt).
         val draft = remember(st.revision, p.id, p.method) { mutableStateListOf<Int>() }
         val zone = zoneSearch(st)
@@ -141,8 +151,24 @@ fun DecisionDock(st: MatchState, live: Boolean, intents: TableIntents, onInspect
             p.method in OPTION_METHODS -> SideDock(ctx) { ChoiceList(ctx, draft) }                                   // :384-395
             else -> SideDock(ctx) { Diagnostic("Unsupported native dialog: ${p.method}. No reply sent.", d) }        // :397
         }
+        // A controller: the ring goes into the dock as the question opens (its first choice, or its gold answer), once laid out.
+        // Tried again if the choice could not take it yet (busy); never pulled back while the ring is already in the dock.
+        LaunchedEffect(p.id, ctx.busy) { if (Pad.connected.value && !pad.inside && !(TablePad.held && !DockFocus.took)) { withFrameNanos { }; runCatching { pad.first.requestFocus() } } }
     }
 }
+
+/** The controller's way into one decision: [first] is the choice the ring starts on; [inside] while the ring is anywhere in the dock. */
+private class DockFocus {
+    val first = FocusRequester()
+    var inside by mutableStateOf(false)
+    companion object { /** The dock took the ring from the table (TablePad.held), so it hands it back when the question ends. */ var took = false }
+}
+
+/** On the dock's own box: notes the ring in it, and that the table should get it back afterwards. */
+private fun Modifier.dockFocus(ctx: DockCtx): Modifier = onFocusChanged { ctx.pad.inside = it.hasFocus; if (it.hasFocus && Pad.connected.value) { TablePad.held = true; DockFocus.took = true } }
+
+/** The ring's first stop in the dock. */
+private fun Modifier.padFirst(ctx: DockCtx): Modifier = focusRequester(ctx.pad.first)
 
 // ---- Logic (native-panel.mjs helpers) ----
 
@@ -323,7 +349,7 @@ private class DockU(val u: Float) {
 }
 
 private class DockCtx(val st: MatchState, val p: Prompt, val live: Boolean, val intents: TableIntents, val replies: DockReplies,
-                      val onInspect: (Card) -> Unit, val d: DockU, val W: Dp, val H: Dp) {
+                      val onInspect: (Card) -> Unit, val d: DockU, val W: Dp, val H: Dp, val pad: DockFocus) {
     val busy get() = !live || st.busy
     val hu get() = H.value / d.u
 }
@@ -382,7 +408,7 @@ private fun DockButton(text: String, enabled: Boolean, d: DockU, modifier: Modif
 @Composable
 private fun SideDock(ctx: DockCtx, content: @Composable () -> Unit) = with(ctx.d) {
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.align(Alignment.BottomEnd).padding(end = 8.du, bottom = 8.du).width(168.du).heightIn(max = ctx.H - 16.du).verticalScroll(rememberScrollState()),
+        Column(Modifier.align(Alignment.BottomEnd).dockFocus(ctx).padding(end = 8.du, bottom = 8.du).width(168.du).heightIn(max = ctx.H - 16.du).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(5.du), horizontalAlignment = Alignment.Start) { content() }
     }
 }
@@ -416,17 +442,21 @@ private fun CostLabel(label: String, d: DockU) = with(d) {
 private fun OptionalCosts(ctx: DockCtx, draft: MutableList<Int>) = with(ctx.d) {
     val p = ctx.p
     val answer = { pick: List<Int> -> ctx.intents.reply(p.id, null, pick, null) }
+    // A controller's X: the several-costs Cast (its words, its tap, while it can be pressed); one cost is two plain choices, no X.
+    val castOn = !ctx.busy && draft.size >= p.min && draft.size <= p.max
+    val castLabel = if (draft.isNotEmpty()) "Cast" else "Cast without extras"
+    PadScreen(PadActs(x = if (p.options.size != 1 && castOn) PadAct(castLabel) { answer(draft.toList()) } else null))
     FlowRow {
         if (p.options.size == 1) {
             // One cost: answer in one tap (Arena's "Kicker" / "Cast without").
             val o = p.options[0]
-            DockButton("", !ctx.busy, this@with, content = { CostLabel(o.label, this@with) }) { answer(listOf(o.index)) }
+            DockButton("", !ctx.busy, this@with, Modifier.padFirst(ctx), content = { CostLabel(o.label, this@with) }) { answer(listOf(o.index)) }
             DockButton("Cast without ${costName(o.label).lowercase()}", !ctx.busy, this@with) { answer(emptyList()) }
         } else {
             // Several: toggle, then cast.
-            for (o in p.options) DockButton("", !ctx.busy, this@with, look = if (o.index in draft) Look.PRESSED else Look.PLAIN,
-                modifier = Modifier.semantics { selected = o.index in draft }, content = { CostLabel(o.label, this@with) }) { select(p, draft, o.index) }
-            DockButton(if (draft.isNotEmpty()) "Cast" else "Cast without extras", !ctx.busy && draft.size >= p.min && draft.size <= p.max, this@with) { answer(draft.toList()) }
+            p.options.forEachIndexed { i, o -> DockButton("", !ctx.busy, this@with, look = if (o.index in draft) Look.PRESSED else Look.PLAIN,
+                modifier = (if (i == 0) Modifier.padFirst(ctx) else Modifier).semantics { selected = o.index in draft }, content = { CostLabel(o.label, this@with) }) { select(p, draft, o.index) } }
+            DockButton(castLabel, castOn, this@with) { answer(draft.toList()) }
         }
     }
 }
@@ -445,7 +475,8 @@ private fun ConfirmChoice(ctx: DockCtx) = with(ctx.d) {
         }
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.du)) {
-        DockButton(p.options.getOrNull(0)?.label ?: "Confirm", !ctx.busy, this@with, Modifier.weight(1f)) { ctx.intents.reply(p.id, true, null, null) }
+        // Two equal answers, no gold one: the ring starts on the first, and X stays unset.
+        DockButton(p.options.getOrNull(0)?.label ?: "Confirm", !ctx.busy, this@with, Modifier.weight(1f).padFirst(ctx)) { ctx.intents.reply(p.id, true, null, null) }
         DockButton(p.options.getOrNull(1)?.label ?: "Decline", !ctx.busy, this@with, Modifier.weight(1f)) { ctx.intents.reply(p.id, false, null, null) }
     }
 }
@@ -464,7 +495,7 @@ private fun InputDialog(ctx: DockCtx) = with(ctx.d) {
         Spacer(Modifier.height(6.du))
         if (p.options.isNotEmpty()) {
             // <select>: "Select an offered value", then each option.
-            Box(field.tap(!ctx.busy) { open = true }.padding(start = 8.du, end = 12.du, top = 8.du, bottom = 8.du), contentAlignment = Alignment.CenterStart) {
+            Box(field.padFirst(ctx).tap(!ctx.busy) { open = true }.padding(start = 8.du, end = 12.du, top = 8.du, bottom = 8.du), contentAlignment = Alignment.CenterStart) {
                 // <select>: 14 px semibold, the arrow 10 px in from the right edge.
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.du)) {
                     Text(p.options.firstOrNull { it.valueText == value && value.isNotEmpty() }?.label ?: "Select an offered value", style = ts(14f, 18.2f, FontWeight.SemiBold), modifier = Modifier.weight(1f))
@@ -482,7 +513,10 @@ private fun InputDialog(ctx: DockCtx) = with(ctx.d) {
         }
     }
     // required: nothing is sent while the value is empty (form.reportValidity()).
-    DockButton("Confirm", !ctx.busy, this) { if (value.isNotBlank() && (!p.numeric || value.trim().toIntOrNull() != null)) ctx.replies.text?.invoke(p.id, value) }
+    val confirm: () -> Unit = { if (value.isNotBlank() && (!p.numeric || value.trim().toIntOrNull() != null)) ctx.replies.text?.invoke(p.id, value) }
+    // A controller's X is Confirm; a typed value starts the ring on Confirm, not the field (no keyboard thrown up unasked).
+    PadScreen(PadActs(x = if (!ctx.busy) PadAct("Confirm") { confirm() } else null))
+    DockButton("Confirm", !ctx.busy, this, if (p.options.isEmpty()) Modifier.padFirst(ctx) else Modifier) { confirm() }
 }
 
 // ---- A reveal (native-panel.mjs:354-359) ----
@@ -499,9 +533,10 @@ private fun Reveal(ctx: DockCtx) = with(ctx.d) {
         for (o in p.options) Pop { Text(plainText(o.label), style = ts(17f, 21.25f, FontWeight.Bold, Color(0xFFF2D18E), Spectral)) }
     }
     val shape = RoundedCornerShape(999.dp)
+    PadScreen(PadActs(x = if (!ctx.busy) PadAct("OK") { ctx.intents.reply(p.id, null, emptyList(), null) } else null))
     Box(Modifier.boxShadow(Color(0x3DC99A4B), 22.du, 8.du, radius = 24.du).height(48.du).clip(shape)
         .background(Brush.verticalGradient(listOf(Color(0xFFF2D18E), Color(0xFFC99A4B)))).border(1.dp, Color(0xFFF6DFA8), shape)
-        .tap(!ctx.busy) { ctx.intents.reply(p.id, null, emptyList(), null) }.padding(horizontal = 22.du), contentAlignment = Alignment.Center) {
+        .padFirst(ctx).tap(!ctx.busy) { ctx.intents.reply(p.id, null, emptyList(), null) }.padding(horizontal = 22.du), contentAlignment = Alignment.Center) {
         Text("OK", style = ts(16f, 19.2f, FontWeight.Bold, Color(0xFF1B1408)))
     }
 }
@@ -519,15 +554,18 @@ private fun Pop(content: @Composable () -> Unit) {
 @Composable
 private fun ChoiceList(ctx: DockCtx, draft: MutableList<Int>) = with(ctx.d) {
     val p = ctx.p
+    val confirmLabel = if (draft.isEmpty() && p.min == 0) (if (p.cancelable) "Cancel" else "Choose none") else "Confirm choice"
+    val confirmOn = !ctx.busy && draft.size >= p.min && draft.size <= p.max
+    PadScreen(PadActs(x = if (confirmOn) PadAct(confirmLabel) { ctx.intents.reply(p.id, null, draft.toList(), null) } else null))
     DockLine("Choose ${if (p.min == p.max) "${p.min}" else "${p.min}–${p.max}"} option${if (p.max == 1) "" else "s"}.", this)
+    val firstOn = p.options.firstOrNull { it.described }?.index
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.du)) {
-        for (o in p.options) DockButton(o.label, !ctx.busy && o.described, this@with, Modifier.fillMaxWidth().semantics { selected = o.index in draft },
+        for (o in p.options) DockButton(o.label, !ctx.busy && o.described, this@with, Modifier.fillMaxWidth().then(if (o.index == firstOn) Modifier.padFirst(ctx) else Modifier).semantics { selected = o.index in draft },
             look = if (o.index in draft) Look.PRESSED else Look.PLAIN, align = TextAlign.Start) { select(p, draft, o.index) }
     }
     if (p.options.any { !it.described }) Diagnostic("Some native options have no safe presentation. Those options remain disabled.", this)
     DockLine(if (draft.isNotEmpty()) "Selected: ${draft.joinToString(" · ") { i -> p.options.firstOrNull { it.index == i }?.label ?: "" }}" else "Nothing selected", this, Color(0xFFDFC58E))
-    DockButton(if (draft.isEmpty() && p.min == 0) (if (p.cancelable) "Cancel" else "Choose none") else "Confirm choice",
-        !ctx.busy && draft.size >= p.min && draft.size <= p.max, this) { ctx.intents.reply(p.id, null, draft.toList(), null) }
+    DockButton(confirmLabel, confirmOn, this, if (firstOn == null) Modifier.padFirst(ctx) else Modifier) { ctx.intents.reply(p.id, null, draft.toList(), null) }
     DockButton("Clear selection", !ctx.busy, this) { draft.clear() }
     if (modeBackOutOffered(p, ctx.st)) DockButton("Cancel", !ctx.busy, this) {
         BackOut.until = System.currentTimeMillis() + 8000; BackOut.key = "${ctx.st.revision}:${p.id}"
@@ -547,7 +585,7 @@ private fun CardDialog(ctx: DockCtx, title: String, content: @Composable ColumnS
         // box-shadow: 0 0 0 100vmax #05060ab8 dims the table; it takes no taps.
         Box(Modifier.fillMaxSize().graphicsLayer { alpha = a.value }.background(Color(0xB805060A)))
         val shape = RoundedCornerShape(20.du)
-        Column(Modifier.align(Alignment.Center).width(minOf(760.du, ctx.W - 16.du)).heightIn(max = ctx.H - 16.du)
+        Column(Modifier.align(Alignment.Center).dockFocus(ctx).width(minOf(760.du, ctx.W - 16.du)).heightIn(max = ctx.H - 16.du)
             .graphicsLayer { alpha = a.value; translationY = (1 - a.value) * -6.du.toPx(); val s = .98f + .02f * a.value; scaleX = s; scaleY = s }
             .boxShadow(Color(0xDD000000), 70.du, 30.du, radius = 20.du)
             .clip(shape).background(Color(0xF60D1016)).border(1.dp, Color(0x44D6AD64), shape)
@@ -605,11 +643,12 @@ private fun OrderDialog(ctx: DockCtx, draft: MutableList<Int>) = with(ctx.d) {
             val artW = (ctx.hu * .17f).coerceIn(56f, 84f)
             FlowRow(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 12.du, end = 12.du, top = 10.du),
                 horizontalArrangement = Arrangement.spacedBy(14.du, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(14.du)) {
+                val firstOn = p.options.firstOrNull { it.described }?.index
                 for (o in p.options) {
                     val at = draft.indexOf(o.index)
                     val source = sourceOf(o, st)
                     val text = cleanLabel(o.label)
-                    Box(Modifier.width(cardW).semantics { selected = at >= 0; contentDescription = "${if (at >= 0) "${at + 1}: " else ""}${source?.let { it.name + " · " } ?: ""}$text" }
+                    Box(Modifier.width(cardW).then(if (o.index == firstOn) Modifier.padFirst(ctx) else Modifier).semantics { selected = at >= 0; contentDescription = "${if (at >= 0) "${at + 1}: " else ""}${source?.let { it.name + " · " } ?: ""}$text" }
                         .tap(!ctx.busy && o.described) { select(p, draft, o.index) }) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.du)) {
                             val artMod = Modifier.width(artW.du).height((artW * 680f / 488f).du)
@@ -641,13 +680,15 @@ private fun OrderDialog(ctx: DockCtx, draft: MutableList<Int>) = with(ctx.d) {
         val send = { indexes: List<Int> -> ctx.replies.order?.invoke(p.id, indexes, keep) ?: ctx.intents.reply(p.id, null, indexes, null) }
         // Like Arena's auto-order: keep the order they came in (the ones already tapped stay first) and go on.
         val fillable = minOf(p.max, p.options.count { it.described }) >= p.min
+        val doneOn = !ctx.busy && draft.size >= p.min && draft.size <= p.max
+        PadScreen(PadActs(x = if (doneOn) PadAct("Done") { send(draft.toList()) } else null))
         Row(horizontalArrangement = Arrangement.spacedBy(10.du)) {
             DockButton("Reset", !ctx.busy && draft.isNotEmpty(), this@with, radius = 23f, height = 46f, padH = 22f) { draft.clear() }
             DockButton("Auto order", !ctx.busy && fillable, this@with, radius = 23f, height = 46f, padH = 22f) {
                 val picked = draft.toMutableList(); for (o in p.options) if (o.index !in picked && picked.size < p.max && o.described) picked += o.index
                 send(picked)
             }
-            DockButton("Done", !ctx.busy && draft.size >= p.min && draft.size <= p.max, this@with, Modifier.widthIn(min = 160.du), look = Look.GOLD,
+            DockButton("Done", doneOn, this@with, Modifier.widthIn(min = 160.du), look = Look.GOLD,
                 radius = 23f, height = 46f, size = 16f, weight = FontWeight.Bold) { send(draft.toList()) }
         }
     }
@@ -708,11 +749,14 @@ private fun AssignDialog(ctx: DockCtx) = with(ctx.d) {
             }
         }
         Spacer(Modifier.height(14.du))
+        // A controller's X is the gold Done, and the ring starts on it (the split comes filled in, usually ready to send).
+        val doneOn = !ctx.busy && amountsLegal(p, amounts)
+        PadScreen(PadActs(x = if (doneOn) PadAct("Done") { ctx.intents.reply(p.id, null, null, amounts.toList()) } else null))
         Row(horizontalArrangement = Arrangement.spacedBy(10.du)) {
             DockButton("Reset", !ctx.busy, this@with, radius = 23f, height = 46f, padH = 22f) { amounts.clear(); amounts.addAll(amountsDefault(p) ?: emptyList()) }
             val skip = ctx.replies.skipAmounts
             if (spec.combat && spec.maySkip && skip != null) DockButton("As though unblocked", !ctx.busy, this@with, radius = 23f, height = 46f, padH = 22f) { skip(p.id) }
-            DockButton("Done", !ctx.busy && amountsLegal(p, amounts), this@with, Modifier.widthIn(min = 160.du), look = Look.GOLD,
+            DockButton("Done", doneOn, this@with, Modifier.widthIn(min = 160.du).padFirst(ctx), look = Look.GOLD,
                 radius = 23f, height = 46f, size = 16f, weight = FontWeight.Bold) { ctx.intents.reply(p.id, null, null, amounts.toList()) }
         }
     }
@@ -736,7 +780,7 @@ private fun ZoneSearchDialog(ctx: DockCtx, z: ZoneSearch, draft: MutableList<Int
     Box(Modifier.fillMaxSize().background(Color(0xB8060912)).pointerInput(Unit) { detectTapGestures { } }) {
         val shape = RoundedCornerShape(18.du)
         val pad = (ctx.W.value / ctx.d.u * .03f).coerceIn(12f, 28f)
-        Column(Modifier.align(Alignment.Center).padding(horizontal = pad.du).widthIn(max = 760.du).fillMaxWidth().heightIn(max = ctx.H - 32.du)
+        Column(Modifier.align(Alignment.Center).dockFocus(ctx).padding(horizontal = pad.du).widthIn(max = 760.du).fillMaxWidth().heightIn(max = ctx.H - 32.du)
             .boxShadow(Color(0xBB000000), 90.du, 26.du, radius = 18.du).clip(shape)
             .background(Brush.linearGradient(listOf(Color(0xF5202630), Color(0xFC10151E)), Offset.Zero, Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)))
             .border(1.dp, Color(0x8AD6AD64), shape).verticalScroll(rememberScrollState()).padding(horizontal = 16.du, vertical = 8.du),
@@ -745,13 +789,16 @@ private fun ZoneSearchDialog(ctx: DockCtx, z: ZoneSearch, draft: MutableList<Int
             if (lines.size > 1) Text(lines.drop(1).joinToString("\n") { MatchState.tidy(cpuName(it)) }, style = ts(13f, 19.5f, color = Color(0xFFF4EDDD)))
             Text("Choose from the ${z.choices.size} card${if (z.choices.size == 1) "" else "s"} offered by this effect.", style = ts(13f, 19.5f, color = Color(0xFFAEBACA)))
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 4.du, vertical = 6.du), horizontalArrangement = Arrangement.spacedBy(15.du)) {
-                for (c in z.choices) SearchCard(ctx, c, c.index in draft) { select(p, draft, c.index) }
+                val firstOn = z.choices.firstOrNull { it.visible }?.index
+                for (c in z.choices) SearchCard(ctx, c, c.index in draft, if (c.index == firstOn) Modifier.padFirst(ctx) else Modifier) { select(p, draft, c.index) }
             }
             Text(if (draft.isNotEmpty()) "${draft.size} selected" else "No card selected", style = ts(13f, 19.5f, color = Color(0xFFE9D5AA)), modifier = Modifier.heightIn(min = 20.du))
             if (st.busy) Text("One moment…", style = ts(13f, 19.5f, color = Color(0xFFAEBACA)))
-            // Actions: a 17 % gold rule above, right-aligned, 8 apart.
+            // Actions: a 17 % gold rule above, right-aligned, 8 apart. A controller's X is the gold Confirm while it can be pressed.
+            val confirmOn = !ctx.busy && draft.size >= p.min && draft.size <= p.max
+            PadScreen(PadActs(x = if (confirmOn) PadAct("Confirm selection") { ctx.intents.reply(p.id, null, draft.toList(), null) } else null))
             Row(Modifier.fillMaxWidth().drawBehind { drawRect(Color(0x2CD6AD64), size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }.padding(top = 12.du), horizontalArrangement = Arrangement.spacedBy(8.du, Alignment.End)) {
-                DockButton("Confirm selection", !ctx.busy && draft.size >= p.min && draft.size <= p.max, this@with, Modifier.widthIn(min = 112.du), look = Look.SEARCH_GOLD,
+                DockButton("Confirm selection", confirmOn, this@with, Modifier.widthIn(min = 112.du), look = Look.SEARCH_GOLD,
                     weight = FontWeight.Bold, disabledAlpha = .42f) { ctx.intents.reply(p.id, null, draft.toList(), null) }
                 if (p.min == 0) DockButton(if (p.cancelable) "Cancel" else "Choose none", !ctx.busy, this@with, Modifier.widthIn(min = 112.du), disabledAlpha = .42f) {
                     ctx.intents.reply(p.id, null, emptyList(), null)
@@ -764,7 +811,7 @@ private fun ZoneSearchDialog(ctx: DockCtx, z: ZoneSearch, draft: MutableList<Int
 
 /** .forge-zone-search-card at a phone (84 × 124, 2 px edge, 11 px corners; picture 112 high; name and zone at the foot). */
 @Composable
-private fun SearchCard(ctx: DockCtx, c: SearchChoice, chosen: Boolean, onPick: () -> Unit) = with(ctx.d) {
+private fun SearchCard(ctx: DockCtx, c: SearchChoice, chosen: Boolean, modifier: Modifier = Modifier, onPick: () -> Unit) = with(ctx.d) {
     val shape = RoundedCornerShape(11.du)
     val art = c.artName
     Box(Modifier.offset(y = if (chosen) (-5).du else 0.dp).width(84.du).height(124.du)
@@ -773,7 +820,7 @@ private fun SearchCard(ctx: DockCtx, c: SearchChoice, chosen: Boolean, onPick: (
         .then(if (art == null) Modifier.background(Brush.radialGradient(listOf(Color(0xFF3A4B4C), Color(0xFF111924)))) else Modifier.background(Color(0xFF111924)))
         .border(2.du, if (chosen) Color(0xFFF4CD6B) else Color(0x44B1BFD2), shape)
         .semantics { selected = chosen; contentDescription = "${c.name} · ${c.zone}${if (chosen) " · selected" else ""}" }
-        .tap(!ctx.busy && c.visible, onPick).padding(2.du)) {
+        .then(modifier).tap(!ctx.busy && c.visible, onPick).padding(2.du)) {
         if (art != null) CardImage(art, Modifier.fillMaxWidth().height(112.du).align(Alignment.TopCenter), contentScale = ContentScale.Crop)
         Column(Modifier.align(Alignment.BottomStart).fillMaxWidth()) {
             Text(c.name, style = ts(if (art == null) 16f else 12f, 15f, FontWeight.Bold, Color(0xFFF6F0E3)), maxLines = 1, overflow = TextOverflow.Ellipsis,

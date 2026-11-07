@@ -7,6 +7,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -378,9 +379,11 @@ internal fun BenchSwitch(options: List<Pair<String, String>>, on: String, pick: 
 @Composable
 private fun EditSheet(title: String, onClose: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     androidx.activity.compose.BackHandler(onBack = onClose)
-    Box(Modifier.fillMaxSize().background(Color(0xB8050609)).clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null, onClick = onClose), contentAlignment = Alignment.Center) {
+    // Controller: B closes the sheet; the Bench under it lends no buttons. The scrim and the sheet's tap-catcher are no d-pad stops.
+    PadScreen(PadActs(b = "Close", opaque = true))
+    Box(Modifier.fillMaxSize().background(Color(0xB8050609)).focusProperties { canFocus = false }.clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null, onClick = onClose), contentAlignment = Alignment.Center) {
         Column(Modifier.padding(24.dp).widthIn(max = 420.dp).fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color(0xF714161D)).border(1.dp, Color(0xFFB8924A), RoundedCornerShape(18.dp))
-            .clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null) {}.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            .focusProperties { canFocus = false }.clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null) {}.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(title, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFFE5C47E)))
             content()
         }

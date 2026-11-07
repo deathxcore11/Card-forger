@@ -34,6 +34,16 @@ internal fun DeckPickSheet(p: CollectionWrites.DeckPick, backdrop: GraphicsLayer
     val decks = m.getAsJsonArray("decks")?.mapNotNull { e -> e.takeIf { it.isJsonArray }?.asJsonArray?.let { it[0].asString to it[1].asString } }.orEmpty()
     var selected by remember(m) { mutableStateOf(m.get("selected")?.asString.orEmpty()) }
     var busy by remember { mutableStateOf(false) }
+    // One save per tap (the site's button doesn't dim while it saves).
+    fun add() {
+        if (busy) return
+        busy = true
+        scope.launch {
+            val saved = CollectionWrites.act(context, "addToDeck", JsonObject().apply { addProperty("deck", selected); addProperty("name", p.name) })
+            busy = false
+            if (saved) onBack()
+        }
+    }
     SiteSheet("Add to deck", backdrop, onClose = { onBack(); p.closeAll() }, onBack = onBack) { _ ->
         // <p>: margin 6 0, in the sheet's own 15 / 400.
         Text(p.name, Modifier.padding(vertical = 6.dp), style = SHEET_PLAIN)
@@ -41,20 +51,13 @@ internal fun DeckPickSheet(p: CollectionWrites.DeckPick, backdrop: GraphicsLayer
             FormLabeled("Deck", Modifier.fillMaxWidth()) { FormSelect(decks, selected, SHEET_IN_LABEL, desc = "Deck") { selected = it } }
             // .btn.block: margin-top 10, the sheet's width.
             Spacer(Modifier.height(10.dp))
-            // One save per tap (the site's button doesn't dim while it saves).
-            FormGold("Add to deck", modifier = Modifier.fillMaxWidth()) {
-                if (busy) return@FormGold
-                busy = true
-                scope.launch {
-                    val saved = CollectionWrites.act(context, "addToDeck", JsonObject().apply { addProperty("deck", selected); addProperty("name", p.name) })
-                    busy = false
-                    if (saved) onBack()
-                }
-            }
+            FormGold("Add to deck", modifier = Modifier.fillMaxWidth()) { add() }
         } else {
             // p.muted: its 6 above meets the name's 6 below (the margins collapse).
             Text("Create a deck first to add this card.", Modifier.padding(bottom = 6.dp), style = SHEET_PLAIN.copy(color = Color(0xFF9AA2B1)))
             FormGold("Open Decks") { onBack(); p.closeAll(); p.go("#decks") }
         }
     }
+    // Controller: X = the sheet's gold button (Add to deck, or Open Decks with none). After SiteSheet, so it sits above the sheet's own entry.
+    PadScreen(PadActs(x = if (decks.isNotEmpty()) PadAct("Add to deck") { add() } else PadAct("Open Decks") { onBack(); p.closeAll(); p.go("#decks") }))
 }

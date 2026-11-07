@@ -49,6 +49,11 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.indication
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
@@ -84,6 +89,8 @@ val LocalAnchors = staticCompositionLocalOf<Anchors?> { null }
 fun CardFace(
     card: Card, w: Dp, h: Dp, mark: Mark = Mark.NONE, modifier: Modifier = Modifier,
     count: Int = 1, onTap: (() -> Unit)? = null, onHold: (() -> Unit)? = null, nudge: Dp = 0.dp,
+    /** The controller's prompts while the gold ring is on this card (PadPrompts); null: Y runs [onHold] as "Inspect". */
+    pad: PadActs? = null,
 ) {
     val decks = DemoDecks.load(LocalContext.current)
     val shape = RoundedCornerShape(w * .06f)
@@ -144,9 +151,19 @@ fun CardFace(
     // Read when the tap lands, so a redraw (a fresh lambda) never restarts the gesture and drops the tap.
     val tapNow by androidx.compose.runtime.rememberUpdatedState(onTap)
     val holdNow by androidx.compose.runtime.rememberUpdatedState(onHold)
+    // A controller reaches a card that takes a tap or a hold: it can hold the d-pad's focus (the gold ring, no press dim) and A (d-pad
+    // centre) runs the same tap. Touch is untouched: the gestures stay on pointerInput, and a touch never focuses it.
+    val padSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val padActs = pad ?: remember(onHold != null) { if (onHold != null) PadActs(y = PadAct("Inspect") { holdNow?.invoke() }) else PadActs() }
     Box(modifier.size(w, h).then(glow).then(if (anchors != null && card.zone == "Battlefield") Modifier.onGloballyPositioned { anchors.put("c${card.id}", it.boundsInRoot().center) } else Modifier).graphicsLayer { rotationZ = turn; translationY = lift * density }
         .then(lessonGlow)
-        .then(if (onTap == null && onHold == null) Modifier else Modifier.pointerInput(card.id, onTap != null, onHold != null) { detectTapGestures(onTap = { tapNow?.invoke() }, onLongPress = { holdNow?.invoke() }) })) {
+        .then(if (onTap == null && onHold == null) Modifier else Modifier.pointerInput(card.id, onTap != null, onHold != null) { detectTapGestures(onTap = { tapNow?.invoke() }, onLongPress = { holdNow?.invoke() }) }
+            .indication(padSource, PadFocus.Ring).padActs(padActs)
+            .onKeyEvent { e ->
+                val ok = e.key == androidx.compose.ui.input.key.Key.DirectionCenter || e.key == androidx.compose.ui.input.key.Key.Enter || e.key == androidx.compose.ui.input.key.Key.NumPadEnter
+                if (!ok || tapNow == null) false else { if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyUp) tapNow?.invoke(); true }
+            }
+            .focusable(interactionSource = padSource))) {
         Box(Modifier.fillMaxSize().clip(shape).background(Color(0xFF15151A))) {
             if (card.hidden) CardBack(Modifier.fillMaxSize())
             else CardImage(card.name, Modifier.fillMaxSize()) { TokenFace(card) }

@@ -331,9 +331,14 @@ fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onBa
     var zoom by remember { mutableStateOf(false) }
     // app.js's Back on the top sheet: with a trail (a page opened from the tournament deck's sheet) A.sheetHistoryBack, else closeSheet.
     BackHandler(enabled = !zoom) { val b = onBack; if (historyBack && b != null) scope.launch { if (!Motion.still) y.animateTo(1f, tween(200)); b() } else close() }
+    // A controller: B closes the page (the BackHandler above), LB/RB step through the page's own tabs (the price sheet has none).
+    val tabsNow = if (m.buy == null) m.tabs else emptyList()
+    val padAct by androidx.compose.runtime.rememberUpdatedState(act)
+    PadScreen(remember(tabsNow) { PadActs(b = "Close", opaque = true, tabs = if (tabsNow.size < 2) null else { d ->
+        val i = tabsNow.indexOfFirst { it.on }; tabsNow.getOrNull((i + d).coerceIn(0, tabsNow.lastIndex))?.takeIf { !it.on }?.let { padAct.tab(it.key) } }) })
     FoilFocus.Cover()
     androidx.compose.runtime.CompositionLocalProvider(LocalSheetPal provides sheetPal(m.game)) {
-    BoxWithConstraints(Modifier.fillMaxSize()) {
+    BoxWithConstraints(Modifier.fillMaxSize().padLayer()) {
         val screenW = maxWidth; val screenH = maxHeight
         val landscape = screenW > screenH
         val big = screenW >= 700.dp
@@ -790,6 +795,12 @@ private fun ArtStack(m: CollectionCardModel, o: CardOverview, act: CollectionCar
         val touch = remember(lean) { derivedStateOf { lean.light } }
         val shines = look?.takeIf { it.shines }
         val tilt = rememberFoilTilt(live = look?.recipe != null || worn != null, touch = touch)
+        // A controller: Y enlarges the card (its tap), holding Y leans it under the light as a finger does; on the card itself A enlarges it.
+        val zoomNow by androidx.compose.runtime.rememberUpdatedState(onZoom)
+        val padScope = rememberCoroutineScope()
+        PadScreen(remember(lean) { PadActs(y = PadAct("Enlarge") { zoomNow() }, yHold = lean.padHold(padScope)) })
+        val padSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+        val padPic = remember { PadActs(a = "Enlarge") }
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             // --frame-w: clamp(6px, 2.4vw, 10px); the card inside at 6 corners.
             val frameW = (androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp * .024f).coerceIn(6.dp, 10.dp)
@@ -797,7 +808,7 @@ private fun ArtStack(m: CollectionCardModel, o: CardOverview, act: CollectionCar
             val w = maxWidth; val cardH = (w - frameW * 2) * (if (m.game == CardGame.YGO) 86f / 59f else 88f / 63f) + frameW * 2
             TierFrame(o.tier, w, cardH, frameW) {
                 val mod = Modifier.fillMaxSize().cardLean(lean, foil = shines != null || worn != null, shape = RoundedCornerShape(6.dp))
-                    .pointerInput(Unit) { detectTapGestures(onLongPress = {}) { onZoom() } }.semantics { contentDescription = "Enlarge ${m.name}" }
+                    .pointerInput(Unit) { detectTapGestures(onLongPress = {}) { onZoom() } }.padCardTap(padSource, padPic) { zoomNow() }.semantics { contentDescription = "Enlarge ${m.name}" }
                 if (!tcg) CardPicture(o.image, shines, tilt, mod, shape = RoundedCornerShape(6.dp))
                 else firstOf(o.sources.ifEmpty { listOf(o.image) }).let { p -> if (p != null) CardFace(p, null, tilt, mod, RoundedCornerShape(6.dp), finish = worn)
                     else Box(mod.clip(RoundedCornerShape(6.dp)).background(Surface2)) }

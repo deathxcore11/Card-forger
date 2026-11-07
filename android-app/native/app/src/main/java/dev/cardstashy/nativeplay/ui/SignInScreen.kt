@@ -74,6 +74,8 @@ fun SignInScreen(onDone: () -> Unit, onBack: () -> Unit) {
         focusedTextColor = Palette.Ink, unfocusedTextColor = Palette.Ink, focusedBorderColor = Palette.Gold, unfocusedBorderColor = Palette.Hairline,
         focusedLabelColor = Palette.Gold, unfocusedLabelColor = Palette.InkSoft, cursorColor = Palette.Gold,
     )
+    // Controller: X signs in, as the gold button does (only while it can).
+    PadScreen(PadActs(x = if (canSend) PadAct("Sign in") { send() } else null, opaque = true))
     Backdrop("play/playmat-charcoal-table.webp", dim = .55f) {
         Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).imePadding().padding(16.dp)) {
             Box(Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onBack), contentAlignment = Alignment.Center) { Text("‹", style = Type.Title.copy(fontSize = 28.sp)) }

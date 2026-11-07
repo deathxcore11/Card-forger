@@ -121,6 +121,15 @@ fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, finish: d
     }
     fun load(i: Int) { view = i; s = 1f; tx = 0f; ty = 0f; light = null }
 
+    // A controller: B closes, LB/RB step through the views (Effects, Plain card, Art), holding Y moves the light slowly round the card
+    // as a finger on it does (the same light), back to rest when Y comes up.
+    var padSweep by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    PadScreen(remember(views) { PadActs(b = "Close", opaque = true, tabs = if (views.size < 2) null else { d -> val i = (view + d).coerceIn(0, views.lastIndex); if (i != view) load(i) },
+        yHold = if (Motion.still) null else { held -> padSweep?.cancel(); padSweep = null
+            if (held && !Motion.still) padSweep = scope.launch { var t0 = -1L
+                try { while (true) androidx.compose.runtime.withFrameMillis { t -> if (t0 < 0) t0 = t; val a = (t - t0) / 2400.0 * 2 * Math.PI - Math.PI / 4
+                    light = Offset(.5f + .38f * Math.cos(a).toFloat(), .5f + .38f * Math.sin(a).toFloat()) } } finally { light = null } } }) })
+
     // The phone's tilt (attachZoomMotion): origin = the first reading; tiltCoordinates clamps Δ/18° and turns with the screen.
     val sensorThere = remember { (LocalContextHolder.sensor(hostView.context)) }
     var gyro by remember { mutableStateOf<Offset?>(null) }
@@ -168,7 +177,7 @@ fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, finish: d
         else -> ""
     }
 
-    BoxWithConstraints(Modifier.fillMaxSize().background(Color(4, 5, 8).copy(alpha = .985f * fade))) {
+    BoxWithConstraints(Modifier.fillMaxSize().padLayer().background(Color(4, 5, 8).copy(alpha = .985f * fade))) {
         val phone = maxWidth <= 600.dp; val screenW = maxWidth
         val stageTop = if (phone) 66.dp else 0.dp; val stageBottom = if (phone) 160.dp else 0.dp
         // .zoom-img: max-width min(94vw, 680px); max-height 100dvh − 150px (− 240px on phones). Art crops are 626×457.

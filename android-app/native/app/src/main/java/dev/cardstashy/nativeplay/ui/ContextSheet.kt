@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -53,10 +54,12 @@ fun ContextSheet(kind: String, name: String, meta: String?, art: String?, groups
     BackHandler(onBack = onClose)
     val view = LocalView.current
     androidx.compose.runtime.LaunchedEffect(Unit) { Feel.perform(view, "tap") }
-    Box(Modifier.fillMaxSize().background(Color(0xB3000000)).clickable(remember { MutableInteractionSource() }, null, onClick = onClose), contentAlignment = Alignment.Center) {
+    PadScreen(remember { PadActs(b = "Close", opaque = true) })
+    // The scrim and the card's tap-catcher are touch-only: the d-pad skips them (no ring, nothing to press).
+    Box(Modifier.fillMaxSize().background(Color(0xB3000000)).focusProperties { canFocus = false }.clickable(remember { MutableInteractionSource() }, null, onClick = onClose), contentAlignment = Alignment.Center) {
         Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).padding(16.dp).widthIn(max = 460.dp).fillMaxWidth()
             .clip(RoundedCornerShape(24.dp)).background(Site.Surface).border(1.dp, Site.Line, RoundedCornerShape(24.dp))
-            .clickable(remember { MutableInteractionSource() }, null) {}.verticalScroll(rememberScrollState()).padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            .focusProperties { canFocus = false }.clickable(remember { MutableInteractionSource() }, null) {}.verticalScroll(rememberScrollState()).padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (art != null) heroPainter(homeArt(art))?.let { p -> androidx.compose.foundation.Image(p, null, contentScale = ContentScale.Crop,
                     modifier = Modifier.size(44.dp, 60.dp).clip(RoundedCornerShape(6.dp))) }

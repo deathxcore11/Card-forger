@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -303,7 +304,7 @@ internal fun CollectionBuildDeckSheet(open: CollectionWrites.BuildOpen, backdrop
             }
             // A rebuild's overlay covers the page (build-overlay: fixed, dimmed and blurred).
             busy?.takeIf { !it.inSheet }?.let { b ->
-                Box(Modifier.fillMaxSize().background(Color(0x9E06080C)).clickable(enabled = true, onClick = {}).padding(24.dp), contentAlignment = Alignment.Center) {
+                Box(Modifier.fillMaxSize().background(Color(0x9E06080C)).focusProperties { canFocus = false }.clickable(enabled = true, onClick = {}).padding(24.dp), contentAlignment = Alignment.Center) {
                     BuildPop(b, live, Modifier) { cancel() }
                 }
             }
@@ -344,6 +345,8 @@ private fun FlowSetup(m: JsonObject, vw: Dp, seedText: String, seedOpen: Boolean
                       onField: (String, String) -> Unit, onCheck: (String, Boolean) -> Unit, onBudget: (String) -> Unit, onPrefs: () -> Unit, onGenerate: () -> Unit) {
     val seed = m.o("seed") ?: JsonObject()
     val small = vw <= 600.dp
+    // Controller: X is the sheet's gold Generate deck.
+    m.s("generate").takeIf { it.isNotBlank() }?.let { g -> PadScreen(PadActs(x = PadAct(g, onGenerate))) }
     Column(Modifier.fillMaxWidth()) {
         // details.deck-seed-picker: the card (or "Which card should your deck use?") and Change card; open, the Card name field.
         Column(Modifier.fillMaxWidth().padding(vertical = if (small) 6.dp else 12.dp)) {
@@ -473,6 +476,8 @@ private fun FlowResult(m: JsonObject, vw: Dp, saving: Boolean, rebuildOpen: Bool
         // .ds-actions: Save deck (gold), Rebuild (ghost; open, the budget form on its own line below).
         val save = m.o("save") ?: JsonObject()
         val rb = m.o("rebuild") ?: JsonObject()
+        // Controller: X is the gold Save deck while it can save.
+        if (!save.b("disabled") && !saving && save.s("label").isNotBlank()) PadScreen(PadActs(x = PadAct(save.s("label"), onSave)))
         Row(Modifier.fillMaxWidth().padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             val off = save.b("disabled") || saving
             Box(Modifier.weight(1f).alpha(if (off) .55f else 1f)) {

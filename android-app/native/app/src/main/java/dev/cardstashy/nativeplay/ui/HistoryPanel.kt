@@ -28,6 +28,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.gestures.animateScrollBy
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -218,10 +222,15 @@ private fun cssText(family: FontFamily, px: TextUnit, line: TextUnit, color: Col
 @Composable
 fun HistoryPanel(st: MatchState, story: Story, onInspect: (Card) -> Unit, onClose: () -> Unit, u: Float) {
     LaunchedEffect(st) { story.take(st) }
+    // A controller: B closes the panel (as Close inspector does) instead of leaving the match, and LT / RT scroll it a page
+    // (its lines take no focus). A phone with no pad keeps its back as it was.
+    val scope = rememberCoroutineScope()
+    androidx.activity.compose.BackHandler(Pad.connected.collectAsState().value) { onClose() }
+    PadScreen(PadActs(b = "Close", page = { dir -> scope.launch { story.scroll.animateScrollBy(dir * story.scroll.viewportSize * .85f) } }, pageLabel = "Scroll", opaque = true))
     fun du(px: Float): Dp = (px * u).dp
     fun sp(px: Float): TextUnit = (px * u).sp
     val sans = Type.Sans
-    BoxWithConstraints(Modifier.fillMaxSize()) {
+    BoxWithConstraints(Modifier.fillMaxSize().padLayer()) {
         val maxH = (maxHeight - du(8f * 2 + 230f)).coerceAtLeast(0.dp)
         val shape = RoundedCornerShape(du(16f))
         val density = LocalDensity.current

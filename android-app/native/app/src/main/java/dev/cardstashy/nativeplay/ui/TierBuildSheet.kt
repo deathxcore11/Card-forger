@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -120,6 +121,7 @@ private val GlassFill = Color(0x851F232B)
 @Composable
 internal fun TierBuildSheet(m: TierBuildModel, game: CardGame, backdrop: GraphicsLayer?, act: TierBuildActions) {
     val accent = LocalSheetPal.current.gold; val ink = LocalSheetPal.current.ink
+    PadScreen(PadActs(b = "Close", opaque = true))
     Box(Modifier.fillMaxSize()) {
         SiteSheet(m.title, backdrop, onClose = act.close, brand = true) { vw ->
             val narrow = vw < 540.dp
@@ -155,7 +157,8 @@ internal fun TierBuildSheet(m: TierBuildModel, game: CardGame, backdrop: Graphic
         }
         // build-overlay.js: fixed over the page while the versions build.
         m.busy?.let { b -> with(TierBuildModel) {
-            Box(Modifier.fillMaxSize().background(Color(0x9E06080C)).clickable(enabled = true, onClick = {}).padding(24.dp), contentAlignment = Alignment.Center) {
+            // Blocks taps while the versions build; not a controller stop.
+            Box(Modifier.fillMaxSize().background(Color(0x9E06080C)).focusProperties { canFocus = false }.clickable(enabled = true, onClick = {}).padding(24.dp), contentAlignment = Alignment.Center) {
                 BuildOverlayPop(b.str("title"), b.str("msg"), b.str("note"))
             }
         } }

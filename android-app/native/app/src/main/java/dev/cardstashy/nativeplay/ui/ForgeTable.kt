@@ -28,6 +28,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import kotlin.math.roundToInt
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.indication
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -435,8 +441,12 @@ fun ForgeBoard(
 
             // Menu and the phase track, top left.
             val menuX = if (large) 12.dp else 8.du; val menuY = if (large) 12.dp else 34.du
+            val menuFocus = remember { FocusRequester() }
             Box(Modifier.offset(x = menuX, y = menuY).size(44.du).clip(CircleShape).background(Color(0x6612141A)).border(1.dp, Color(0x24FFFFFF), CircleShape)
+                .focusRequester(menuFocus).onFocusChanged { if (it.isFocused) TablePad.last = menuFocus }
                 .clickable { if (menu != null) menu.open = !menu.open else onMenu() }, contentAlignment = Alignment.Center) { MenuGlyph(d) }
+            // The controller's ring comes back to where it was once the menu closes (it went into the menu's first row).
+            LaunchedEffect(menu?.open) { if (menu?.open == false) TablePad.restore() }
             // The menu carries the stack size as a badge (summary[data-count]::after: 18 px gold pill at -4, -4).
             if (st.stack.isNotEmpty()) Box(Modifier.offset(x = menuX + (44 - 18 + 4).du, y = menuY - 4.du).heightIn(min = 18.du).widthIn(min = 18.du).clip(RoundedCornerShape(9.du)).background(Color(0xFFE8B95B)).padding(horizontal = 5.du),
                 contentAlignment = Alignment.Center) { Text("${st.stack.size}", style = sans(sp(11f), FontWeight.ExtraBold, Color(0xFF1B1406))) }
@@ -450,6 +460,8 @@ fun ForgeBoard(
             // The hand: 66 px cards on a phone; on a big board they grow with the screen (site: 109 px at 840 tall, 104 at 800).
             val handW = if (large) (H.value * .13f).coerceIn(66f, 120f).dp else 66.du
             val handAnchors = LocalAnchors.current
+            // A controller: when A plays the last hand card, the ring goes to the gold button (else the menu button), so it isn't lost.
+            val goldFocus = remember { FocusRequester() }
             Box(Modifier.offset(x = centreX + 44.du - handW / 66f * 222f, y = H - handW / 66f * 67f).width(handW / 66f * 444f).height(handW / 66f * 120f)
                 .then(if (handAnchors != null) Modifier.onGloballyPositioned { handAnchors.putRect("hand", it.boundsInRoot()) } else Modifier)) {
                 HandFan(hand, handW, Modifier.fillMaxWidth(), raised = selectedHand, angleDeg = 1.2f,
@@ -467,10 +479,13 @@ fun ForgeBoard(
                         }
                     },
                     onPlay = { card -> onSelectHand(null); intents.card(card.id) },
-                    onHold = onInspect, onReorder = { ids -> onHandOrder(ids) })
+                    onHold = onInspect, onReorder = { ids -> onHandOrder(ids) },
+                    padEmpty = { runCatching { goldFocus.requestFocus() }.onFailure { runCatching { menuFocus.requestFocus() } } })
             }
 
             // The buttons, bottom right: the gold step and the quiet second one above it (right edges 8 du in, as the site's dock).
+            // A controller's X is the gold one: its words and its tap, only while it can be pressed.
+            var padX: PadAct? = null
             if (st.prompt == null && st.waitingOnMe) {
                 val selected = selectedHand?.takeIf { it !in blocked }?.let { st.card(it) }
                 val ok = if (selected != null) (if (selected.isLand) "Play land" else "Cast") else okLabel(st)
@@ -489,24 +504,32 @@ fun ForgeBoard(
                 val attackM = if (large) Modifier else Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 44.du)
                 val rowM = Modifier.align(Alignment.TopEnd).offset(x = (-12).dp, y = H - 180.dp)
                 @Composable fun pair(content: @Composable () -> Unit) = if (large) Row(rowM, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) { content() } else content()
+                padX = when {
+                    attackAll -> if (live && okOn) PadAct(ok) { intents.ok() } else null
+                    oneTarget(st) || onePick(st) -> if (live && st.selection.min == 0 && st.buttons.okEnabled) PadAct("No target") { intents.ok() } else null
+                    short && second != null -> if (live) PadAct(second) { intents.cancel() } else null
+                    else -> if (live && (selected != null || okOn)) PadAct(ok) { if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok() } else null
+                }
                 pair {
                     if (attackAll) {
-                        GoldPill(ok, live && okOn, upperM, d) { intents.ok() }
+                        GoldPill(ok, live && okOn, upperM.focusRequester(goldFocus), d) { intents.ok() }
                         GlassPill("Attack all", live, attackM, d, tone = Color(0xFFFFD9CF), edge = Color(0x88FF8A6A)) { intents.attackAll(offered.map { it.id }) }
                     } else if (oneTarget(st) || onePick(st)) {
                         second?.let { GlassPill(it, live, upperM, d) { intents.cancel() } }
-                        if (st.selection.min == 0 && st.buttons.okEnabled) GoldPill("No target", live, lowerM, d) { intents.ok() }
+                        if (st.selection.min == 0 && st.buttons.okEnabled) GoldPill("No target", live, lowerM.focusRequester(goldFocus), d) { intents.ok() }
                     } else if (short && second != null) {
                         if (st.buttons.okEnabled) GlassPill(ok, live, upperM, d) { intents.ok() }
-                        GoldPill(second, live, lowerM, d) { intents.cancel() }
+                        GoldPill(second, live, lowerM.focusRequester(goldFocus), d) { intents.cancel() }
                     } else {
                         second?.let { GlassPill(it, live, upperM, d) { intents.cancel() } }
-                        GoldPill(ok, live && (selected != null || okOn), lowerM, d) {
+                        GoldPill(ok, live && (selected != null || okOn), lowerM.focusRequester(goldFocus), d) {
                             if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok()
                         }
                     }
                 }
             }
+            // The table's controller buttons: X the gold button, Start the menu (the same toggle as its button). A hand card or permanent adds its own A and Y.
+            PadScreen(PadActs(x = padX, start = PadAct("Menu") { if (menu != null) menu.open = !menu.open else onMenu() }))
             if (live) askLine(st)?.let { AskLine(it, W, H, d) }
             // The line between the halves turns into the combat line while you declare (gold attacking, blue blocking).
             CombatLine(st, mid, W, d)
@@ -615,6 +638,19 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
     val drag = LocalBlockDrag.current
     val draggable = drag != null && card.id in drag.blockers
     val place = remember { arrayOfNulls<androidx.compose.ui.layout.LayoutCoordinates>(1) }
+    // A controller: the ring on the top card of a pile; A does what a tap does, Y opens it as a long press does.
+    val padSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val padFocus = remember { FocusRequester() }
+    val cardNow by androidx.compose.runtime.rememberUpdatedState(card)
+    val padA = when {
+        onTap == null -> "Inspect"
+        mark == Mark.TARGET -> "Target"
+        mark == Mark.DISCARD -> "Discard"
+        draggable -> "Block"
+        LocalAttackInput.current && mineSide && card.isCreature && !card.attacking -> "Attack"
+        else -> null
+    }
+    val padHere = remember(card.id, padA) { PadActs(a = padA, y = PadAct("Inspect") { inspect(cardNow) }) }
     Box(modifier.size(w, h)
         .graphicsLayer { rotationZ = turn; val s = if (card.tapped) .94f else 1f; scaleX = s; scaleY = s; translationY = if (card.attacking) (if (mineSide) -12f else 12f) * u * density else 0f }
         .onGloballyPositioned { place[0] = it; anchors?.putRect("c${card.id}", it.boundsInRoot()) }
@@ -633,6 +669,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
             val ringW = (role?.second ?: 1.5f).du.toPx()
             drawRoundRect(ring, topLeft = Offset(-ringW, -ringW), size = Size(size.width + 2 * ringW, size.height + 2 * ringW), cornerRadius = CornerRadius(r + ringW))
         }
+        .then(if (pileTop) Modifier.padActs(padHere).matchPadTap(padSource, padFocus) { tap?.invoke() ?: inspect(card) } else Modifier)
         .clip(shape).background(Color(0xFF141418))
         .pointerInput(card.id) { detectTapGestures(onTap = { tap?.invoke() ?: inspect(card) }, onLongPress = { inspect(card) }) }
         .then(if (draggable && drag != null) Modifier.pointerInput(card.id, drag) { blockDragGestures(card.id, drag, anchors, 22.dp.toPx()) { p -> place[0]?.takeIf { it.isAttached }?.localToRoot(p) } } else Modifier)) {
@@ -989,6 +1026,31 @@ private fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier, 
     }
 }
 
+// ---- Controller (PadPrompts): the gold ring and A for things that answer touch with their own gestures ----
+
+/** Where the controller's ring was on the table (a hand card, a permanent, the menu button), so closing an open card or the menu puts it back. */
+internal object TablePad {
+    var last: FocusRequester? = null
+    /** The ring went into an overlay (the open card, the menu); closing it hands focus back to [last]. */
+    var held = false
+    fun restore() { if (held) { held = false; last?.let { runCatching { it.requestFocus() } } } }
+}
+
+/**
+ * Controller reach for something whose touch is its own pointerInput gestures: the gold ring on pad focus, and A
+ * (d-pad centre / Enter) does what a tap does. Touch is untouched: a finger never focuses it, and nothing draws without focus.
+ */
+internal fun Modifier.matchPadTap(source: androidx.compose.foundation.interaction.MutableInteractionSource, requester: FocusRequester? = null, onTap: () -> Unit): Modifier =
+    (if (requester != null) focusRequester(requester).onFocusChanged { if (it.isFocused) TablePad.last = requester } else this)
+        .onKeyEvent { e ->
+            val k = e.nativeKeyEvent.keyCode
+            if (k == android.view.KeyEvent.KEYCODE_DPAD_CENTER || k == android.view.KeyEvent.KEYCODE_ENTER || k == android.view.KeyEvent.KEYCODE_NUMPAD_ENTER) {
+                if (e.nativeKeyEvent.action == android.view.KeyEvent.ACTION_UP && !e.nativeKeyEvent.isCanceled) onTap()
+                true
+            } else false
+        }
+        .indication(source, PadFocus.Ring).focusable(interactionSource = source)
+
 // ---- Buttons (.forge-native-actions on the seat) ----
 
 @Composable
@@ -1046,7 +1108,8 @@ private fun Emblem(on: Boolean, enabled: Boolean, label: String, d: Du, onClick:
         .background(if (on) Brush.radialGradient(listOf(Color(0xFF4A3C1F), Color(0xFF1B160C)), center = Offset.Unspecified) else Brush.linearGradient(listOf(Color(0xCC0F1117), Color(0xCC0F1117))))
         .border(1.dp, if (on) Gold else Color(0x2AFFFFFF), CircleShape)
         .semantics { contentDescription = label; role = Role.Button; stateDescription = if (on) "On" else "Off" }
-        .clickable(enabled = enabled, interactionSource = press, indication = null) { if (AppSettings.haptics) hf.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove); onClick() },
+        // It draws its own press (a scale); PadFocus.Ring adds only the controller's focus ring.
+        .clickable(enabled = enabled, interactionSource = press, indication = PadFocus.Ring) { if (AppSettings.haptics) hf.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove); onClick() },
         contentAlignment = Alignment.Center) { icon(if (on) Color(0xFFF4D78F) else Color(0xFF8D95A5)) }
 }
 
@@ -1107,9 +1170,12 @@ private fun EmoteLayer(W: Dp, H: Dp, d: Du) = with(d) {
     if (TableEmotes.menuOpen) {
         // A tap anywhere else closes it.
         Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { TableEmotes.menuOpen = false } })
+        // A controller's B closes it too (as that tap does) instead of leaving the match; a phone with no pad keeps its back as it was.
+        androidx.activity.compose.BackHandler(Pad.connected.collectAsState().value) { TableEmotes.menuOpen = false }
+        PadScreen(PadActs(b = "Close", opaque = true))
         var mh by remember { mutableStateOf(0) }
         val hDp = with(density) { mh.toDp() }
-        Column(Modifier.offset(x = 117.du, y = (H - 93.du - hDp - 8.du).coerceAtLeast(8.du)).widthIn(min = 150.du).onSizeChanged { mh = it.height }
+        Column(Modifier.padLayer().offset(x = 117.du, y = (H - 93.du - hDp - 8.du).coerceAtLeast(8.du)).widthIn(min = 150.du).onSizeChanged { mh = it.height }
             .drawBehind { drawRoundRect(Color(0xBB000000), topLeft = Offset(0f, 14.du.toPx()), size = size, cornerRadius = CornerRadius(14.du.toPx())) }
             .clip(RoundedCornerShape(14.du)).background(Color(0xF0101319)).border(1.dp, Color(0x44D6AD64), RoundedCornerShape(14.du)).padding(6.du)
             .width(IntrinsicSize.Max), verticalArrangement = Arrangement.spacedBy(4.du)) {
@@ -1278,7 +1344,7 @@ private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) 
         val half = 22.dp
         Box(Modifier.offset { IntOffset((at.x - with(density) { half.toPx() }).roundToInt(), (at.y - with(density) { half.toPx() }).roundToInt()) }.size(half * 2)
             .semantics { contentDescription = "Take back this block"; role = Role.Button }
-            .clickable(interactionSource = null, indication = null) { intents.unblock(r.blocker!!, r.attacker!!) })
+            .clickable(interactionSource = null, indication = PadFocus.Ring) { intents.unblock(r.blocker!!, r.attacker!!) })
     }
 }
 

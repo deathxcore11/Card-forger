@@ -84,9 +84,12 @@ internal fun SeedPickSheet(game: String, backdrop: GraphicsLayer?, onClose: () -
     val n = picked.size
     // C.tSeedToggle: the button's words as the ticks change.
     val label = if (n > 0) "⚒ Build with $n card${if (n == 1) "" else "s"}" else m.go
+    // Controller: X = the foot's Build with N cards (once a card is ticked); a modal sheet.
     SiteSheet(m.title, backdrop, onClose, foot = {
         FormGold(label, enabled = n > 0 && !busy, modifier = Modifier.fillMaxWidth(), pal = LocalSheetPal.current) { go() }
     }) { _ ->
+        // Inside the sheet, so it sits above SiteSheet's own (opaque) layer.
+        PadScreen(PadActs(x = if (n > 0 && !busy) PadAct(label) { go() } else null, lift = 72.dp))
         Text(m.intro, style = cssType(13f, 400, 19.5f, Site.Muted))
         Spacer(Modifier.height(10.dp))
         FormInput(q, { q = it }, cssType(14f, 400, 20f), m.placeholder, desc = m.placeholder)

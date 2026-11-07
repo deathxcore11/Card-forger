@@ -150,6 +150,8 @@ fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit,
             } }
         }
         Box(Modifier.align(Alignment.BottomCenter)) { nav() }
+        // Controller: LB/RB move between My decks, Precons and Meta like the tab bar. After nav(), so these win over the Play tabs.
+        PadScreen(PadActs(tabs = { d -> val to = (pager.currentPage + d).coerceIn(0, 2); if (to != pager.currentPage) scope.launch { pager.animateScrollToPage(to) } }))
     }
     // Hold a Play deck: its Play actions (deckMenu's layout; the Collection's share, prices and proxies stay there).
     holding?.let { d ->
@@ -194,9 +196,10 @@ private fun Panel(title: String, sub: String?, content: @Composable () -> Unit) 
 // ---------------------------------------------------------------- deck tiles (.deck-tile, 190 dp)
 
 @Composable
-private fun TileFrame(art: String?, modifier: Modifier, artAlpha: Float = 1f, onHold: (() -> Unit)? = null, onClick: () -> Unit, content: @Composable BoxScope.() -> Unit) {
+private fun TileFrame(art: String?, modifier: Modifier, artAlpha: Float = 1f, onHold: (() -> Unit)? = null, onClick: () -> Unit, pad: PadActs? = null, content: @Composable BoxScope.() -> Unit) {
     val p = heroPainter(art?.let(homeArt))
-    Box(modifier.height(190.dp).softTile().combinedClickable(onLongClick = onHold, onClick = onClick)) {
+    // Controller: Start opens the same menu the long press does.
+    Box(modifier.height(190.dp).softTile().then(if (pad != null) Modifier.padActs(pad) else Modifier).combinedClickable(onLongClick = onHold, onClick = onClick)) {
         if (p != null) Image(p, null, Modifier.fillMaxSize().alpha(artAlpha), contentScale = ContentScale.Crop)
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x40000000), .3f to Color.Transparent, .72f to Color(0xEB08090C), 1f to Color(0xEB08090C))))
         content()
@@ -239,7 +242,7 @@ private fun PlayDeckTile(d: JsonObject, owned: Map<String, Int>, modifier: Modif
     val n = Decks.tile(d, owned); val name = d.s("name").ifBlank { "Untitled deck" }
     val e = emblemOf(Decks.rows(d), d.s("format"), nameFact)
     Workspace.playDeckCovers.collectAsState().value
-    TileFrame(Workspace.pickedCover(d.s("id").ifBlank { null }) ?: Decks.cover(d), modifier, onHold = onHold, onClick = onOpen) {
+    TileFrame(Workspace.pickedCover(d.s("id").ifBlank { null }) ?: Decks.cover(d), modifier, onHold = onHold, onClick = onOpen, pad = PadActs(a = "Open", start = PadAct("Menu", onHold))) {
         EmblemPlate(d.s("format").ifBlank { "Casual" }, e, Modifier.padding(start = 10.dp, top = 10.dp, end = 62.dp))
         Box(Modifier.align(Alignment.TopEnd).padding(10.dp).size(44.dp).softPill(CircleShape)
             .clickable(onClick = onDelete), contentAlignment = Alignment.Center) { Text("✕", style = t(16f, FontWeight.Bold, Color(0xFFF6EEDB))) }

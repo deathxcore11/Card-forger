@@ -209,6 +209,9 @@ private fun Storefront(s: JsonObject, busy: Boolean, start: String, weekly: Set<
     fun rowOf(k: String) = 2 + aisles.indexOfFirst { it.first == k }.coerceAtLeast(0)
     LaunchedEffect(start) { if (start == "forge") list.scrollToItem(rowOf("forge")) }
     val at by remember(aisles) { androidx.compose.runtime.derivedStateOf { aisles.getOrNull(list.firstVisibleItemIndex - 2)?.first ?: aisles.first().first } }
+    // A controller: LB/RB go to the aisle before or after the one in view, as a tap on the aisle bar does, stopping at the ends.
+    PadScreen(remember(aisles) { PadActs(tabs = { d -> val i = aisles.indexOfFirst { it.first == at }.coerceAtLeast(0)
+        aisles.getOrNull((i + d).coerceIn(0, aisles.lastIndex))?.first?.let { k -> scope.launch { list.animateScrollToItem(rowOf(k)) } } }, tabsLabel = "Aisles") })
     LazyColumn(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars), state = list,
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(22.dp)) {
         item(key = "head") {
@@ -349,7 +352,7 @@ private fun SlCard(c: JsonObject, was: Int, price: Int, owned: Boolean, canPay: 
         Box(Modifier.fillMaxWidth().aspectRatio(.716f)
             .drawBehind { drawOval(Brush.radialGradient(listOf(Color(0x667A4DD8), Color.Transparent)), topLeft = androidx.compose.ui.geometry.Offset(-size.width * .1f, size.height * .82f),
                 size = androidx.compose.ui.geometry.Size(size.width * 1.2f, size.height * .3f)) }
-            .clickable(onClick = onOpen).semantics { contentDescription = "Open ${c.get("n").s() ?: "card"}" }) {
+            .padActs(PadActs(a = "Open", x = if (!owned && canPay) PadAct("Buy", onBuy) else null)).clickable(onClick = onOpen).semantics { contentDescription = "Open ${c.get("n").s() ?: "card"}" }) {
             CardPicture(scryfallImage(c.get("id").s() ?: ""), null, null, Modifier.fillMaxSize(), RoundedCornerShape(9.dp), ContentScale.Crop)
             if (off > 0 && !owned) Text("$off% off", style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 11.5.sp, color = Color.White),
                 modifier = Modifier.padding(6.dp).clip(RoundedCornerShape(8.dp)).background(Brush.horizontalGradient(listOf(Color(0xFFE5484D), Color(0xFFFF7A59)))).padding(horizontal = 7.dp, vertical = 3.dp))
@@ -411,7 +414,7 @@ private fun FeaturedPack(code: String, name: String, released: String, row: Trun
         .background(Brush.linearGradient(listOf(Color(0xFF2A2114), Color(0xFF15120D), Color(0xFF0E0F13))))
         .drawBehind { drawCircle(Brush.radialGradient(listOf(Color(0x40F6D58F), Color.Transparent), center = androidx.compose.ui.geometry.Offset(size.width * .2f, size.height * .5f), radius = size.height),
             radius = size.height, center = androidx.compose.ui.geometry.Offset(size.width * .2f, size.height * .5f)) }
-        .border(1.dp, Brush.verticalGradient(listOf(Color(0x99E8B95B), Color(0x33E8B95B))), shape).clickable(onClick = onOpen).padding(16.dp),
+        .border(1.dp, Brush.verticalGradient(listOf(Color(0x99E8B95B), Color(0x33E8B95B))), shape).padActs(PadActs(a = "Open", x = if (canBuy) PadAct("Buy", onBuy) else null)).clickable(onClick = onOpen).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         Booster(code, name, Modifier.width(118.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -435,7 +438,7 @@ private fun ShelfPack(code: String, name: String, row: Trunk.SetRow?, price: Int
             drawRect(Brush.verticalGradient(listOf(Color(0x00000000), Color(0x55000000)), startY = y + 9.dp.toPx(), endY = y + 22.dp.toPx()), androidx.compose.ui.geometry.Offset(x0, y + 9.dp.toPx()), androidx.compose.ui.geometry.Size(w, 13.dp.toPx()))
             drawRect(Brush.verticalGradient(listOf(Color(0xFF5A4126), Color(0xFF2E2014)), startY = y, endY = y + 9.dp.toPx()), androidx.compose.ui.geometry.Offset(x0, y), androidx.compose.ui.geometry.Size(w, 9.dp.toPx()))
             drawRect(Color(0xB3E8B95B), androidx.compose.ui.geometry.Offset(x0, y), androidx.compose.ui.geometry.Size(w, 1.dp.toPx()))
-        }.padding(bottom = 3.dp).clickable(onClick = onOpen)) {
+        }.padding(bottom = 3.dp).padActs(PadActs(a = "Open", x = if (canBuy) PadAct("Buy", onBuy) else null)).clickable(onClick = onOpen)) {
             Booster(code, name, Modifier.fillMaxWidth().padding(horizontal = 6.dp))
         }
         Spacer(Modifier.height(6.dp))
@@ -558,7 +561,7 @@ private fun PacksPage(s: JsonObject, busy: Boolean, onBack: () -> Unit, onOpen: 
         }
         items(groups, key = { it.first }) { (key, list) ->
             val code = list.first().get("set").s() ?: ""
-            Box(Modifier.clickable(enabled = !busy) { onOpen(list.first().get("id").s() ?: "") }) {
+            Box(Modifier.padActs(PadActs(a = "Open")).clickable(enabled = !busy) { onOpen(list.first().get("id").s() ?: "") }) {
                 // Collector packs (every card holo): the band says Collector booster and a rainbow sheen runs across (boosterMarkup collector).
                 Booster(code, null, collector = key.startsWith("*"))
                 Box(Modifier.align(Alignment.TopEnd).offset(6.dp, (-6).dp).size(30.dp).clip(CircleShape).background(Site.Gold), contentAlignment = Alignment.Center) {
@@ -574,7 +577,7 @@ private fun ShopSetRow(r: Trunk.SetRow, waiting: Int, price: Int, canBuy: Boolea
     val pct = r.total?.takeIf { it > 0 }?.let { r.owned.toFloat() / it } ?: 0f
     val shape = RoundedCornerShape(18.dp)
     Row(Modifier.fillMaxWidth().clip(shape).background(if (AppSettings.theme == "light") Color(0x94FFFFFF) else Color(0x0DFFFFFF)).border(1.dp, if (r.owned > 0 || waiting > 0) Color(0x40D6AD64) else if (AppSettings.theme == "light") Site.GlassLine else Color(0x14FFFFFF), shape)
-        .clickable(onClick = onClick).padding(start = 10.dp, end = 12.dp, top = 10.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        .padActs(PadActs(a = "Open", x = if (sold && canBuy) PadAct("Buy", onBuy) else null)).clickable(onClick = onClick).padding(start = 10.dp, end = 12.dp, top = 10.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         Booster(r.code, r.name, Modifier.width(62.dp), mini = true)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Text(r.name, style = bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -751,7 +754,7 @@ private fun SetLens(s: JsonObject, code: String, busy: Boolean, onBack: () -> Un
             }
             items(shown, key = { it.id }) { c ->
                 val n = owned[c.oracle] ?: 0
-                Column(Modifier.clickable { onCard(CardPick(c.name, c.oracle, c.id, "nonfoil")) }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(Modifier.padActs(PadActs(a = "Open")).clickable { onCard(CardPick(c.name, c.oracle, c.id, "nonfoil")) }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Box {
                         coil3.compose.AsyncImage(c.image, c.name, imageLoader = dev.cardstashy.nativeplay.art.CardArt.loader, contentScale = ContentScale.Crop,
                             colorFilter = if (n == 0) gray else null, alpha = if (n == 0) .72f else 1f,

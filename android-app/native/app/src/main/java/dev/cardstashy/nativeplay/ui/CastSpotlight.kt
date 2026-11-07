@@ -30,10 +30,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -139,7 +143,7 @@ fun CastSpotlight(s: Spotlight, modifier: Modifier = Modifier, onTap: () -> Unit
         // Clear of the CPU's library and graveyard piles at the right edge.
         Row(Modifier.align(Alignment.TopEnd).padding(end = 128.dp * u, top = top).graphicsLayer {
                 alpha = enter.value; translationX = (1f - enter.value) * 40.dp.toPx(); val k = .94f + .06f * enter.value; scaleX = k; scaleY = k }
-            .clickable(remember { MutableInteractionSource() }, null, onClick = onTap)
+            .clickable(remember { MutableInteractionSource() }, PadFocus.Ring, onClick = onTap) // no press look of its own; the ring is the controller's only
             .semantics { contentDescription = "${s.actor} ${s.verb.lowercase()} ${s.card.name}" },
             horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
             val dens = androidx.compose.ui.platform.LocalDensity.current
@@ -254,7 +258,18 @@ fun CardInspect(card: Card, viewer: Int?, onClose: () -> Unit) {
     val s = remember(card) { Spotlight(card, if (yours) "You" else "CPU", where, emptyList(), 0, yours, note = state) }
     val enter = remember(card) { Animatable(if (Motion.still) 1f else 0f) }
     LaunchedEffect(card) { enter.animateTo(1f, tween(200, easing = FastOutSlowInEasing)) }
-    BoxWithConstraints(Modifier.fillMaxSize().background(Color(0xB3000000)).clickable(remember { MutableInteractionSource() }, null, onClick = onClose)
+    // A controller: the open card takes the focus (A closes it, as a tap anywhere does), B closes it instead of leaving the match,
+    // and closing hands the ring back to the card it was on. A phone with no pad keeps its back and taps as they were.
+    val padOn = Pad.connected.collectAsState().value
+    val padFocus = remember { FocusRequester() }
+    val close = { TablePad.restore(); onClose() }
+    LaunchedEffect(Unit) { if (Pad.connected.value) runCatching { padFocus.requestFocus() } }
+    androidx.activity.compose.BackHandler(padOn) { close() }
+    PadScreen(PadActs(b = "Close", opaque = true))
+    val padHere = remember { PadActs(a = "Close") }
+    // The whole dimmed page is the target, so it carries no ring of its own; the prompt bar says what A does.
+    BoxWithConstraints(Modifier.fillMaxSize().background(Color(0xB3000000)).padActs(padHere).focusRequester(padFocus).onFocusChanged { if (it.isFocused) TablePad.held = true }
+        .clickable(remember { MutableInteractionSource() }, null, onClick = close)
         .windowInsetsPadding(WindowInsets.safeDrawing).padding(16.dp)) {
         val cardH = maxHeight * .92f; val cardW = cardH * .716f
         val k = (maxHeight / 560.dp).coerceIn(.64f, 1f)

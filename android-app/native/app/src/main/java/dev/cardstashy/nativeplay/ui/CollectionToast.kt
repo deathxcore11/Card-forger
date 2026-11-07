@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.semantics.contentDescription
@@ -217,6 +218,8 @@ private fun AskDialog(question: String, backdrop: androidx.compose.ui.graphics.l
     val view = LocalView.current
     LaunchedEffect(Unit) { Feel.perform(view, "tap"); launch { fade.animateTo(1f, tween(200)) }; pop.animateTo(1f, tween(320, easing = CubicBezierEasing(.2f, 1.3f, .35f, 1f))) }
     BackHandler { answer(false) }
+    // Controller: X answers yes (the gold button), B is its Cancel; a modal, so nothing under it lends buttons.
+    PadScreen(PadActs(x = PadAct(okLabel) { if (danger) Feel.perform(view, "warn"); answer(true) }, b = cancelLabel, opaque = true))
     val blurLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
     BoxWithConstraints(Modifier.fillMaxSize()
         .graphicsLayer { alpha = fade.value }
@@ -229,7 +232,7 @@ private fun AskDialog(question: String, backdrop: androidx.compose.ui.graphics.l
             }
             drawRect(Color(0x8C06080C))
         }
-        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { answer(false) }
+        .focusProperties { canFocus = false }.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { answer(false) }
         .imePadding()) {
         val phone = maxWidth <= 520.dp
         val bottom = if (phone) 16.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() else 0.dp
@@ -240,7 +243,7 @@ private fun AskDialog(question: String, backdrop: androidx.compose.ui.graphics.l
             .cssShadow(Color(0xBF000000), 60.dp, 24.dp, (-18).dp, 20.dp)
             .clip(shape).background(Site.Surface2.copy(alpha = .92f)).border(1.dp, Site.Line, shape)
             .drawBehind { drawLine(Color(0x0DFFFFFF), Offset(20.dp.toPx(), .5f), Offset(size.width - 20.dp.toPx(), .5f), 1f) }
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
+            .focusProperties { canFocus = false }.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
             .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 16.dp)) {
             // .cf-dialog-title (17 / 700) over the words, which then read as .cf-dialog-msg.sub (14, muted).
             if (!site?.title.isNullOrBlank()) {

@@ -174,6 +174,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
         val k = if (k0 == "matchups" || k0 == "upgrade") (if (tcg) "insights" else "engine") else k0
         if (k == "cards" || (tcg && k in TCG_SITE_TABS) || (!tcg && k in MTG_SITE_TABS)) deckTab = k else web("$page/" + android.net.Uri.encode(k), null)
     }
+    /** A tab openTab draws here rather than sending to the website's (the controller's LB/RB step only through these). */
+    fun drawnHere(k0: String): Boolean { val k = if (k0 == "matchups" || k0 == "upgrade") (if (tcg) "insights" else "engine") else k0; return k == "cards" || k in (if (tcg) TCG_SITE_TABS else MTG_SITE_TABS) }
     fun tcgWrite(kind: String, c: DeckCard?, vararg data: Pair<String, String>) = write(kind, "game" to game.id, *data,
         *(if (c == null) emptyArray() else listOfNotNull("zone" to c.zone, "id" to c.cardId, c.rowIndex?.let { "rowIndex" to it }, c.purchaseIdentity?.let { "purchaseIdentity" to it }).toTypedArray()))
     fun tcgOpen(id: String, name: String = "", open: Map<String, String> = emptyMap()) {
@@ -373,12 +375,20 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
     if (m != null && benched && m.missingTitle == null) Box(Modifier.fillMaxSize().drawWithContent { pageLayer.record { this@drawWithContent.drawContent() }; drawLayer(pageLayer) }) {
         CollectionBench(m, pool, bench, act,
             tab = { k0 -> openTab(k0); val k = if (k0 == "matchups" || k0 == "upgrade") (if (tcg) "insights" else "engine") else k0
-                k == "cards" || k in (if (tcg) TCG_SITE_TABS else MTG_SITE_TABS) }) { t ->
+                k == "cards" || k in (if (tcg) TCG_SITE_TABS else MTG_SITE_TABS) }, drawn = ::drawnHere) { t ->
             val p = panel.takeIf { t != "cards" }
             if (p == null) Text("Opening…", style = Site.Meta.copy(color = Site.Muted), modifier = Modifier.padding(24.dp))
             else Column(Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(horizontal = 14.dp, vertical = 10.dp)) { SitePanel(p, siteUi) }
         } }
     else if (m != null) Box(Modifier.fillMaxSize().drawWithContent { pageLayer.record { this@drawWithContent.drawContent() }; drawLayer(pageLayer) }) {
+        // Controller (PadPrompts): LB/RB step through the deck's tabs drawn here (never out to the website), X is the page's gold
+        // action (Practice), Start its ⋯ menu. Nothing changes on a phone without one.
+        if (m.missingTitle == null) {
+            val main = m.actions.firstOrNull { it.shown && it.primary && it.label.isNotBlank() }
+            PadScreen(PadActs(x = main?.let { p -> PadAct(p.label) { if (p.act == "deckTab") act.tab(p.id) else act.act(p.act, p.id) } },
+                tabs = if (m.tabs.size > 1) ({ d -> padTab(m.tabs.map { it.key }, m.tabs.firstOrNull { it.on }?.key ?: deckTab, d, ::drawnHere)?.let { openTab(it) } }) else null,
+                start = PadAct("Menu") { act.act(m.menuAct, m.id) }))
+        }
         CollectionDeck(m, top, act, nav, query, site = panel.takeIf { deckTab != "cards" }, siteUi = siteUi) }
     else Column(Modifier.fillMaxSize().background(Site.Bg)) {
         Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { top(null) }

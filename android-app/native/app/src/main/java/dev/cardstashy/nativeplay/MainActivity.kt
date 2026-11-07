@@ -5,7 +5,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
-import dev.cardstashy.nativeplay.ui.PadHintHost
+import dev.cardstashy.nativeplay.ui.padRoot
+import dev.cardstashy.nativeplay.ui.PadPromptBar
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.activity.enableEdgeToEdge
@@ -173,7 +174,7 @@ class MainActivity : ComponentActivity() {
             // The app is recorded into a layer as it draws, so the toast pill can blur what is under it (backdrop-filter).
             val page = androidx.compose.ui.graphics.rememberGraphicsLayer()
             androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
-                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().drawWithContent { page.record { this@drawWithContent.drawContent() }; drawLayer(page) }) {
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().padRoot().drawWithContent { page.record { this@drawWithContent.drawContent() }; drawLayer(page) }) {
                     androidx.compose.runtime.CompositionLocalProvider(androidx.compose.foundation.LocalIndication provides dev.cardstashy.nativeplay.ui.PadFocus) {
                         App(this@MainActivity); dev.cardstashy.nativeplay.ui.ProfileArtPickerHost()
                     }
@@ -181,7 +182,7 @@ class MainActivity : ComponentActivity() {
                 dev.cardstashy.nativeplay.ui.AchievementToastHost(page)
                 dev.cardstashy.nativeplay.ui.CollectionWritesHost(page)
                 UpdateHost(this@MainActivity)
-                PadHintHost()
+                PadPromptBar()
             }
         }
         Updater.check(this)
@@ -195,6 +196,8 @@ class MainActivity : ComponentActivity() {
     override fun onStart() { super.onStart(); dev.cardstashy.nativeplay.play.RandomBuild.hidden = false }
     override fun onStop() { super.onStop(); dev.cardstashy.nativeplay.play.RandomBuild.hidden = true }
 
+    override fun onWindowFocusChanged(hasFocus: Boolean) { super.onWindowFocusChanged(hasFocus); dev.cardstashy.nativeplay.ui.PadPrompts.windowFocused = hasFocus }
+
     override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean { FreezeReport.touched(ev); return super.dispatchTouchEvent(ev) }
 
     /**
@@ -204,6 +207,12 @@ class MainActivity : ComponentActivity() {
      */
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
         if (event.isFromSource(android.view.InputDevice.SOURCE_GAMEPAD)) dev.cardstashy.nativeplay.ui.Pad.used()
+        if (event.action == android.view.KeyEvent.ACTION_DOWN && (event.isFromSource(android.view.InputDevice.SOURCE_GAMEPAD) || event.isFromSource(android.view.InputDevice.SOURCE_DPAD)))
+            dev.cardstashy.nativeplay.ui.PadPrompts.lastPress = android.os.SystemClock.uptimeMillis()
+        // X, Y, the shoulders, the triggers and Start do what the prompt bar says for the focused thing and the screen.
+        if (dev.cardstashy.nativeplay.ui.PadPrompts.key(event) { dir -> val now = android.os.SystemClock.uptimeMillis()
+                super.dispatchKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_DOWN, dir, 0))
+                super.dispatchKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_UP, dir, 0)) }) return true
         when (event.keyCode) {
             android.view.KeyEvent.KEYCODE_BUTTON_A ->
                 return super.dispatchKeyEvent(android.view.KeyEvent(event.downTime, event.eventTime, event.action, android.view.KeyEvent.KEYCODE_DPAD_CENTER, event.repeatCount, event.metaState, event.deviceId, event.scanCode, event.flags, event.source))
