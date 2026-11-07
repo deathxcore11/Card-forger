@@ -336,11 +336,14 @@ export function deckBuilderMarkup(snapshot, ui = {}) {
     return `<li class="pe-build-row${miss ? ' pe-build-row--missing' : ''}${ui.justCrafted?.has(c.name) ? ' pe-build-row--crafted' : ''}" data-drag-card="${esc(c.name)}"><button class="pe-build-open" data-act="card" data-name="${esc(c.name)}" data-play-card="1"${byName.get(c.name) ? ` data-oracle="${esc(byName.get(c.name).o)}"` : ''} aria-label="Open ${esc(c.name)}${miss ? `, ${have} of ${c.qty} owned` : ''}"><span class="pe-build-thumb" style="background-image:url(${esc(factOf(c.name)?.a || cardImageByName(c.name, 'art_crop'))})" aria-hidden="true"></span><span class="pe-build-name">${esc(c.name)}</span>${factOf(c.name)?.mc ? `<span class="pe-build-cost">${esc(factOf(c.name).mc.replace(/[{}]/g, ''))}</span>` : ''}</button>${miss ? craftMenu(c.name, miss, planOf.get(c.name).seal, ui.craftId?.(c.name) || slim?.id) : ''}<span class="pe-step"><button data-act="playEconStep" data-econ-card="${esc(c.name)}" data-econ-step="-1" aria-label="Remove one ${esc(c.name)}">−</button><b>${c.qty}</b><button data-act="playEconStep" data-econ-card="${esc(c.name)}" data-econ-step="1" ${room(c.name) < 1 ? 'disabled' : ''} aria-label="Add one ${esc(c.name)}">+</button></span></li>`; };
   const mode = ui.pool?.mode === 'all' ? 'all' : 'mine';
   const minePool = filterPlayCards(ownedCards.slice().sort((a, b) => a.n.localeCompare(b.n)), facts, {query: ui.cardQuery, rarity: ui.rarity, color: ui.color, type: ui.type, set: ui.set});
-  const tiles = mode === 'all' ? (ui.pool?.cards || []).map(c => ({name: c.name, image: c.image_uris?.normal || c.card_faces?.[0]?.image_uris?.normal || cardImageByName(c.name), rarity: c.rarity, have: owned.get(c.name) || owned.get(c.name.split(' // ')[0]) || 0, oracle: ''}))
+  const poolTile = c => ({name: c.name, image: c.image_uris?.normal || c.card_faces?.[0]?.image_uris?.normal || cardImageByName(c.name), rarity: c.rarity, have: owned.get(c.name) || owned.get(c.name.split(' // ')[0]) || 0, oracle: '', type: c.type_line || c.card_faces?.[0]?.type_line || ''});
+  // All cards with nothing typed: shelves (app.js ensureShelves), "For this deck" first, then a set a shelf, newest first.
+  const shelfMode = mode === 'all' && !String(ui.cardQuery || '').trim();
+  const tiles = mode === 'all' ? (shelfMode ? [] : (ui.pool?.cards || []).map(poolTile))
     : minePool.map(c => ({name: c.n, image: cardImage(c, facts), rarity: c.r, have: c.c | 0, oracle: c.o}));
   const tile = c => { const r = room(c.name), seal = RARITY_KEY[c.rarity] || 'c', missing = !c.have;
     return `<div class="pe-pool-card${missing ? ' pe-pool-card--missing' : ''}" data-rarity="${esc(c.rarity || '')}" data-drag-card="${esc(c.name)}"><button class="pe-pool-open" data-act="card" data-name="${esc(c.name)}" data-play-card="1"${c.oracle ? ` data-oracle="${esc(c.oracle)}"` : ''} aria-label="Open ${esc(c.name)}, ${c.have ? Math.min(c.have, 4) + ' of 4 owned' : 'not owned yet'}"><img src="${esc(c.image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" draggable="false"></button><span class="pe-left">${missing ? sealIcon(seal, 'pe-left-seal') : Math.min(c.have, 4)}</span><button class="pe-pool-add" data-act="playEconStep" data-econ-card="${esc(c.name)}" data-econ-step="1" ${r < 1 ? 'disabled' : ''} aria-label="Add ${esc(c.name)} to the deck">+</button></div>`; };
-  const poolBody = mode === 'all' && ui.pool?.busy && !tiles.length ? '<div class="pe-grid pe-grid--pool" aria-busy="true">' + '<span class="pe-pool-skeleton" aria-hidden="true"></span>'.repeat(8) + '</div>'
+  const poolBody = shelfMode ? shelvesMarkup(ui.shelves, edit, poolTile, tile, name => deck.some(c => c.name === name)) : mode === 'all' && ui.pool?.busy && !tiles.length ? '<div class="pe-grid pe-grid--pool" aria-busy="true">' + '<span class="pe-pool-skeleton" aria-hidden="true"></span>'.repeat(8) + '</div>'
     : tiles.length ? `<div class="pe-grid pe-grid--pool">${tiles.slice(0, 300).map(tile).join('')}</div>`
     : `<div class="pe-empty"><h2>${mode === 'all' ? (ui.pool?.error ? 'Cards could not load' : 'No cards match') : ownedCards.length ? 'No cards match' : 'No cards yet'}</h2><p>${mode === 'all' ? esc(ui.pool?.error || 'Try another name, colour or type.') : ownedCards.length ? 'Try another name, colour or type, or look through all cards.' : 'Open packs, or look through all cards and craft them with seals.'}</p></div>`;
   const basics = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest'];
@@ -365,13 +368,48 @@ export function deckBuilderMarkup(snapshot, ui = {}) {
       <section class="pe-build-pool" aria-label="Card pool">
         ${segmented('playEconPool', mode, [['mine', 'Your cards', 'cardStack'], ['all', 'All cards', 'search']])}
         ${filterBar(ui, {sets: mode === 'mine' ? playSetRows(state, facts) : []})}
-        <p class="pe-count" role="status">${mode === 'all' ? (ui.pool?.busy ? 'Looking through every card…' : `${n(tiles.length)}${ui.pool?.more ? '+' : ''} ${esc(edit.format || 'Standard')} cards`) : `${n(minePool.length)} of ${n(ownedCards.length)} cards`}</p>
+        <p class="pe-count" role="status">${shelfMode ? 'A set at a time, newest first' : mode === 'all' ? (ui.pool?.busy ? 'Looking through every card…' : `${n(tiles.length)}${ui.pool?.more ? '+' : ''} ${esc(edit.format || 'Standard')} cards`) : `${n(minePool.length)} of ${n(ownedCards.length)} cards`}</p>
         ${poolBody}
-        ${mode === 'all' && ui.pool?.more && !ui.pool?.busy ? '<button class="btn ghost pe-pool-more" data-act="playEconPoolMore">More cards</button>' : ''}
+        ${mode === 'all' && !shelfMode && ui.pool?.more && !ui.pool?.busy ? '<button class="btn ghost pe-pool-more" data-act="playEconPoolMore">More cards</button>' : ''}
       </section>
     </div>
     ${statusLine(snapshot)}</section>`;
 }
+// All cards, shelf by shelf: each shelf waits as card backs (data-shelf-pending, app.js observeShelves loads it when it scrolls into
+// view), then its cards turn over one after another. A shelf that just arrived keeps its turn going across redraws (the delay counts
+// from when it landed), so a redraw never restarts it. A set with no cards for this deck stays as one line (so the shelves under it
+// don't slide up and load on their own), and a set shelf shows its first 24 cards with the rest a tap away.
+const SHELF_ROLES = ['Creature', 'Planeswalker', 'Battle', 'Instant', 'Sorcery', 'Artifact', 'Enchantment', 'Land'];
+const SHELF_FIRST = 24;
+const shelfDate = iso => { const d = new Date(iso + 'T00:00:00Z'); return isNaN(d) ? iso : d.toLocaleDateString('en-GB', {day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC'}); };
+let shelfCtx = null;
+function oneShelf(c, key) {
+  const {sh, poolTile, tile, inDeck} = c;
+  const set = key === 'fit' ? null : sh.sets?.find(s => s.code === key);
+  const title = key === 'fit' ? 'For this deck' : set?.name || key, code = set ? set.code.toUpperCase() : '', meta = key === 'fit' ? 'Most played in your colours' : set ? shelfDate(set.released) : '', gold = key === 'fit';
+  const got = sh.cards[key], all = got ? (key === 'fit' ? got.list.filter(x => !inDeck(x.name)).slice(0, 20) : got.list) : null;
+  const label = `${esc(title)}${code ? ', ' + esc(code) : ''}`;
+  if (got && !all.length && !got.error) return `<section class="pe-dshelf pe-dshelf--none" data-shelf="${esc(key)}" aria-label="${label}"><header class="pe-dshelf-head"><b>${esc(title)}</b>${code ? `<span class="pe-dshelf-code">${esc(code)}</span>` : ''}<span class="pe-dshelf-meta">No cards here for this deck</span></header></section>`;
+  const open = key === 'fit' || sh.open?.has(key), list = all && !open ? all.slice(0, SHELF_FIRST) : all;
+  const age = got ? Date.now() - got.at : 0, count = all ? `${all.length}${got.more ? '+' : ''} card${all.length === 1 && !got.more ? '' : 's'}` : '';
+  const backs = n => Array.from({length: n}, () => '<div class="pe-dshelf-cell"><div class="pe-flip"><div class="pe-flip-back" aria-hidden="true"></div></div></div>').join('');
+  const cells = list ? list.map((x, i) => { const t = poolTile(x), wait = (i < 8 ? i * 60 : 0) - age, up = wait < -600;
+    const why = key === 'fit' ? `<span class="pe-dshelf-why">${esc(SHELF_ROLES.find(r => t.type.includes(r)) || t.type.split(' —')[0])}</span>` : '';
+    return `<div class="pe-dshelf-cell${up ? ' is-up' : ''}"><div class="pe-flip"${up ? '' : ` style="animation-delay:${wait}ms"`}><div class="pe-flip-face">${tile(t)}</div><div class="pe-flip-back" aria-hidden="true"></div></div>${why}</div>`; }).join('')
+      + (list.length < all.length ? `<div class="pe-dshelf-cell"><button class="pe-dshelf-all" data-act="playShelfAll" data-shelf="${esc(key)}">All ${n(all.length)}${got.more ? '+' : ''} cards in ${esc(code)}</button></div>` : '') : backs(6);
+  return `<section class="pe-dshelf${gold ? ' pe-dshelf--fit' : ''}" data-shelf="${esc(key)}"${got?.error ? ` data-shelf-pending="${esc(key)}"` : list ? '' : ` data-shelf-pending="${esc(key)}" aria-busy="true"`} aria-label="${label}">
+      <header class="pe-dshelf-head"><b>${esc(title)}</b>${code ? `<span class="pe-dshelf-code">${esc(code)}</span>` : ''}<span class="pe-dshelf-meta">${esc([meta, count].filter(Boolean).join(' · '))}</span></header>
+      ${got?.error ? `<p class="pe-dshelf-note">${esc(got.error)}</p>` : `<div class="pe-dshelf-row" data-shelf-row="${esc(key)}">${cells}</div>`}</section>`;
+}
+export function shelvesMarkup(sh, edit, poolTile, tile, inDeck) {
+  shelfCtx = {sh, poolTile, tile, inDeck};
+  const sets = sh?.sets ? sh.sets.map(s => oneShelf(shelfCtx, s.code)).join('')
+    : sh?.setsError ? `<section class="pe-dshelf" data-shelf="sets" data-shelf-pending="sets"><p class="pe-dshelf-note">The list of sets couldn’t load. Check your connection; it tries again as you scroll back here.</p></section>`
+    : '<p class="pe-dshelf-note" aria-busy="true">Looking through every set…</p>';
+  return `<div class="pe-shelves">${sh ? oneShelf(shelfCtx, 'fit') : ''}${sets}</div>`;
+}
+/** One shelf again, as the last draw made it (app.js puts it in place of the old one when its cards land, not the whole menu). */
+export function shelfMarkup(sh, key) { return shelfCtx && shelfCtx.sh === sh ? oneShelf(shelfCtx, key) : null; }
 // Pack goals: the sets your missing cards come from, most missing first. Each opens that set's
 // Play page (its cards, greyed where missing, and Buy a pack); Story acts and quests drop them too.
 export function packGoals(plan, slimOf, facts) {

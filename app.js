@@ -171,13 +171,13 @@ import {createAchievementToasts,doneSteps,newlyEarned} from "./play-achievement-
 import {createPresence,presenceShared,rememberPresence} from "./play-presence.js";
 import {matchCounters,questRows,playDay,achievementRows,achievementTitles} from "./play-achievements.js";
 import {saveTitle,wornTitle} from "./play-titles.js";
-import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead,craftPlan,packGoals,setPlayStyles,setPlayDeckCovers} from "./play-econ-ui.js";
+import {econScreenMarkup,shelfMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead,craftPlan,packGoals,setPlayStyles,setPlayDeckCovers} from "./play-econ-ui.js";
 setPlayDeckCovers(()=>S.state?.settings?.playDeckCovers);
 import {rewardFlight} from "./reward-flight.js";
 import {createNameFacts,createCraftRarity,clusterArchetypes,finderArchetypes,rankFinderLists,finderRow,trunkDeck,finderMarkup,finderDeckMarkup,FINDER_FORMATS,FINDER_SORTS,FINDER_FILTERS} from "./play-deck-finder.js";
 import {createCardFacts,slimCard} from "./play-econ-cards.js";
 import {deckEmblem} from "./play-deck-emblem.js";
-import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows,preconFace,PLAY_FORMATS,deckRules,copyCap} from "./play-econ-rules.js";
+import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows,preconFace,PLAY_FORMATS,deckRules,copyCap,isBasicLand} from "./play-econ-rules.js";
 import {STORY_ACTS} from "./story-acts.js";
 import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
 import {createLessonCoach,isLessonBattle,lessonsOff,lessonSetup,STACK_HOST_LIVE,STACK_LOCAL_LIVE} from "./story-lessons.js";
@@ -1935,7 +1935,54 @@ const billRarity=n=>craftRarity.rarity(n)||finderFacts.get(n)?.rarity||(playEcon
 // Arena-style builder: cards not in the Trunk get their facts by name (rarity, art, the id that
 // crafting stamps); "All cards" looks through every card legal in the deck's format (no prices).
 function builderWants(snap){const owned=ownedByName(snap.state?.cards||[]),names=(econUi.edit?.cards||[]).map(c=>c.name).filter(n=>!owned.get(n));if(names.length){finderFacts.want(names);craftRarity.want(names);}
- if(econUi.pool?.mode==='all'){const k=poolKey();if(k!==econUi.pool.key&&!econUi.pool.timer)econUi.pool.timer=setTimeout(()=>{econUi.pool.timer=0;loadPool();},econUi.pool.key?350:0);}}
+ if(econUi.pool?.mode==='all'){if(!(econUi.cardQuery||'').trim()){ensureShelves();requestAnimationFrame(observeShelves);return;}const k=poolKey();if(k!==econUi.pool.key&&!econUi.pool.timer)econUi.pool.timer=setTimeout(()=>{econUi.pool.timer=0;loadPool();},econUi.pool.key?350:0);}}
+// All cards, shelf by shelf (Randall 6 Nov 23:46Z: only a set at a time, only when All is picked; deck-first shelves 23:47Z): with
+// nothing typed, "For this deck" (Fill empty slots' own search, the format's most played cards, in the deck's colours) and then a
+// shelf per set, newest first, each one Scryfall search (the pool's, with e:<set>) made only when the shelf scrolls into view.
+const SHELF_KINDS=new Set(['core','expansion','masters','draft_innovation','commander']);
+let shelfSetList=null,shelfSetLoad=null,shelfIO=null,shelfBusy=0;const shelfQueue=[];
+function shelfSets(){if(shelfSetList)return Promise.resolve(shelfSetList);return shelfSetLoad||=fetch('https://api.scryfall.com/sets',{headers:{Accept:'application/json'}}).then(r=>r.ok?r.json():Promise.reject(Error()))
+ .then(b=>{const today=new Date().toISOString().slice(0,10);shelfSetList=(b.data||[]).filter(x=>SHELF_KINDS.has(x.set_type)&&!x.digital&&!x.parent_set_code&&x.released_at&&x.released_at<=today&&x.card_count>0)
+  .sort((a,c)=>c.released_at.localeCompare(a.released_at)).map(x=>({code:x.code,name:x.name,released:x.released_at}));return shelfSetList;}).catch(()=>{shelfSetLoad=null;return null;});}
+function shelfQueries(){const saved={cardQuery:econUi.cardQuery,color:econUi.color,type:econUi.type,rarity:econUi.rarity};econUi.cardQuery='';const base=poolQuery();Object.assign(econUi,{color:'',type:'',rarity:''});
+ const id=new Set();let known=0;
+ for(const c of econUi.edit?.cards||[]){if(isBasicLand(c.name))continue;const f=finderFacts.get(c.name)||econFacts.card((playEcon.snapshot().state?.cards||[]).find(x=>x.n===c.name)?.o)?.card;if(!f?.color_identity)continue;known++;f.color_identity.forEach(k=>id.add(k));}
+ const fit=poolQuery()+' -t:land'+(known?' id<='+(['W','U','B','R','G'].filter(k=>id.has(k)).join('').toLowerCase()||'c'):'');Object.assign(econUi,saved);return {base,fit};}
+// The set shelves follow the pool's search (format, colour, type) and "For this deck" its own (the deck's colours): adding a card in a
+// new colour starts only that shelf over.
+function ensureShelves(){const {base,fit}=shelfQueries();let Sh=econUi.shelves;
+ if(!Sh||Sh.base!==base){const keep=Sh&&Sh.fit===fit?Sh.cards.fit:null;Sh=econUi.shelves={base,fit,sets:Sh?.sets||shelfSetList,setsError:false,cards:keep?{fit:keep}:{},asked:new Set(keep?['fit']:[]),open:new Set()};}
+ else if(Sh.fit!==fit){Sh.fit=fit;delete Sh.cards.fit;Sh.asked.delete('fit');}
+ if(!Sh.sets&&!Sh.setsError)shelfSetsFor(Sh);}
+function shelfSetsFor(Sh){shelfSets().then(list=>{if(econUi.shelves!==Sh)return;if(list)Sh.sets=list;else Sh.setsError=true;refreshPlayMenu();});}
+function observeShelves(){if(!('IntersectionObserver' in globalThis))return document.querySelectorAll('[data-shelf-pending]').forEach(el=>loadShelf(el.dataset.shelfPending));
+ shelfIO||=new IntersectionObserver(es=>es.forEach(e=>{const k=e.target.dataset.shelfPending,Sh=econUi.shelves;
+  // A shelf that failed (or the list of sets) asks again only once it has left the view and come back.
+  if(k==='sets'?Sh?.setsError:Sh?.cards[k]?.error){if(!e.isIntersecting)e.target.dataset.away='1';else if(e.target.dataset.away){shelfIO.unobserve(e.target);loadShelf(k);}return;}
+  if(e.isIntersecting){shelfIO.unobserve(e.target);loadShelf(k);}}),{rootMargin:'120px 0px'});
+ shelfIO.disconnect();document.querySelectorAll('[data-shelf-pending]').forEach(el=>shelfIO.observe(el));}
+function loadShelf(k){const Sh=econUi.shelves;if(!Sh||!k)return;
+ // The list of sets failed: scrolling back to its note asks for it again.
+ if(k==='sets'){if(Sh.setsError){Sh.setsError=false;shelfSetsFor(Sh);}return;}
+ // A shelf that failed asks again when it comes back into view.
+ if(Sh.cards[k]?.error){delete Sh.cards[k];Sh.asked.delete(k);}
+ if(Sh.asked.has(k))return;Sh.asked.add(k);shelfQueue.push([Sh,k]);pumpShelves();}
+// Two searches at a time and a tenth of a second apart at least (Scryfall asks for under ten a second); a shelf scrolled past before
+// its turn comes is skipped (asked again if it comes back into view).
+let shelfLastAt=0;
+function shelfOnScreen(k){const el=document.querySelector(`[data-shelf="${CSS.escape(k)}"]`);if(!el)return false;const r=el.getBoundingClientRect();return r.bottom>-240&&r.top<innerHeight+240;}
+function pumpShelves(){while(shelfBusy<2&&shelfQueue.length){const [Sh,k]=shelfQueue[0];if(econUi.shelves!==Sh){shelfQueue.shift();continue;}
+ if(!shelfOnScreen(k)){shelfQueue.shift();Sh.asked.delete(k);shelfIO?.observe(document.querySelector(`[data-shelf="${CSS.escape(k)}"]`)||document.body);continue;}
+ const wait=shelfLastAt+110-Date.now();if(wait>0){setTimeout(pumpShelves,wait);return;}shelfQueue.shift();shelfLastAt=Date.now();shelfBusy++;
+ const q=k==='fit'?Sh.fit:Sh.base+' e:'+k,was=k==='fit'?Sh.fit:Sh.base;
+ fetch(`https://api.scryfall.com/cards/search?${new URLSearchParams({q,order:'edhrec',unique:'cards'})}`,{headers:{Accept:'application/json'}}).then(async r=>{const body=await r.json().catch(()=>null);
+  if(r.status===404||body?.code==='not_found')return {list:[],more:false};if(!r.ok||!body)throw Error();const list=(body.data||[]).map(slimCard);list.forEach(c=>finderFacts.put(c));return {list,more:!!body.has_more};})
+  .then(v=>{if((k==='fit'?Sh.fit:Sh.base)===was)Sh.cards[k]={...v,at:Date.now()};else Sh.asked.delete(k);},()=>{Sh.cards[k]={list:[],error:'This shelf couldn’t load. Check your connection, then scroll back to try again.',at:Date.now()};})
+  .finally(()=>{shelfBusy--;if(econUi.shelves===Sh)patchShelf(Sh,k);pumpShelves();});}}
+// Only the shelf that landed is drawn again (the rest of the menu, and the shelves already turned over, stay as they are).
+function patchShelf(Sh,k){const el=document.querySelector(`[data-shelf="${CSS.escape(k)}"]`),html=el&&shelfMarkup(Sh,k);if(html==null)return refreshPlayMenu();
+ const left=el.querySelector('[data-shelf-row]')?.scrollLeft||0;el.outerHTML=html;const row=document.querySelector(`[data-shelf-row="${CSS.escape(k)}"]`);if(row)row.scrollLeft=left;observeShelves();}
+A.playShelfAll=t=>{const Sh=econUi.shelves,k=t?.dataset?.shelf;if(!Sh||!k)return;Sh.open.add(k);patchShelf(Sh,k);};
 const POOL_COLORS={W:'w',U:'u',B:'b',R:'r',G:'g',C:'c'};
 const POOL_TYPES={Creatures:'creature',Planeswalkers:'planeswalker',Instants:'instant',Sorceries:'sorcery',Artifacts:'artifact',Enchantments:'enchantment',Battles:'battle',Lands:'land'};
 function poolQuery(){const f=(econUi.edit?.format||'Standard').toLowerCase(),q=[`legal:${f}`,'game:paper'];const name=(econUi.cardQuery||'').trim().replace(/["\\]/g,'');if(name)q.push(`name:"${name}"`);
@@ -1975,7 +2022,9 @@ A.playCraftAll=async()=>{const e=econUi.edit;if(!e||econUi.crafting)return;if(!e
 (()=>{let drag=null;const zone=()=>document.querySelector('[data-drop-deck]');
  addEventListener('pointerdown',e=>{const el=e.target.closest?.('.pe-pool-card[data-drag-card]');if(!el||e.button>0||e.target.closest('.pe-pool-add'))return;drag={el,name:el.dataset.dragCard,x:e.clientX,y:e.clientY,id:e.pointerId,ghost:null};},{passive:true});
  addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
-  if(!drag.ghost){if(Math.hypot(dx,dy)<10)return;if(e.pointerType==='touch'&&Math.abs(dy)>Math.abs(dx)*1.2){drag=null;return;}const img=drag.el.querySelector('img');const g=document.createElement('img');g.src=img?.src||'';g.className='pe-drag-ghost';g.alt='';document.body.append(g);drag.ghost=g;drag.el.classList.add('pe-dragging');}
+  if(!drag.ghost){if(Math.hypot(dx,dy)<10)return;if(e.pointerType==='touch'&&Math.abs(dy)>Math.abs(dx)*1.2){drag=null;return;}
+   // A shelf's row scrolls sideways under a finger: a sideways swipe there is the row's, not a drag.
+   if(e.pointerType==='touch'&&drag.el.closest('[data-shelf-row]')&&Math.abs(dx)>=Math.abs(dy)){drag=null;return;}const img=drag.el.querySelector('img');const g=document.createElement('img');g.src=img?.src||'';g.className='pe-drag-ghost';g.alt='';document.body.append(g);drag.ghost=g;drag.el.classList.add('pe-dragging');}
   drag.ghost.style.transform=`translate(${e.clientX-45}px,${e.clientY-63}px) rotate(${Math.max(-8,Math.min(8,dx/30))}deg)`;const z=zone(),r=z?.getBoundingClientRect();z?.classList.toggle('pe-drop-on',!!r&&e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom);});
  const end=e=>{if(!drag||e.pointerId!==drag.id)return;const d=drag;drag=null;if(!d.ghost)return;d.ghost.remove();d.el.classList.remove('pe-dragging');const z=zone();const on=z?.classList.contains('pe-drop-on');z?.classList.remove('pe-drop-on');
   const swallow=ev=>{ev.stopPropagation();ev.preventDefault();};addEventListener('click',swallow,{capture:true,once:true});setTimeout(()=>removeEventListener('click',swallow,{capture:true}),0);
@@ -2606,10 +2655,12 @@ function renderPlayPage() {
   return playMenuMarkup(state,{lockedDecks:locked,econ:playEcon.snapshot(),story:storyHomeProgress(),friendRoom:friendRoomView(),challengeCount:challenges.length,canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,econFacts,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent),cpu3:state.podDecks?.cpu3?V.deckArtwork(state.podDecks.cpu3):'',cpu4:state.podDecks?.cpu4?V.deckArtwork(state.podDecks.cpu4):''}});
 }
 const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
-  const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]);
+  const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]),rows=[...document.querySelectorAll('[data-shelf-row]')].map(n=>[n.dataset.shelfRow,n.scrollLeft]);
   const importOpen=document.getElementById('playImportDisclosure')?.open;
   render();
   for(const [key,top]of scrolls){const node=document.querySelector(`[data-play-scroll="${key}"]`);if(node)node.scrollTop=top;}
+  // A shelf you were swiping keeps its place when another shelf lands and the builder redraws.
+  for(const [key,left]of rows){const node=document.querySelector(`[data-shelf-row="${CSS.escape(key)}"]`);if(node)node.scrollLeft=left;}
   const disclosure=document.getElementById('playImportDisclosure');if(disclosure&&importOpen!==undefined)disclosure.open=importOpen;
   if(disclosure)document.querySelector('.play-paste-pill')?.setAttribute('aria-expanded',String(disclosure.open));
 }};
