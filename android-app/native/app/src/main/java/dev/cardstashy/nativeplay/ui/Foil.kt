@@ -111,16 +111,21 @@ float3 foil(float pat,float tint,float2 uv,float3 L,float3 V,float3 N,float spot
 // light an ink lets through is capped by the ink itself, so a dark or mid print never blows out to white; under a metal sheet's broad
 // highlight (gold, silver) a dark ink passes at most a few times itself, per channel, so a navy sky glows navy and never goes milky.
 // Off the band the metal faces the dark room and coloured ink sits a little deeper; black ink takes no colour and stays black.
-// Pale neutral paint and paper are the metal itself: the rainbow on the band and, off it, at most a light silver below the print
-// (deeper only where the recipe's foil is the paper itself, [silver]). [q]: a metal sheet (gold, silver) is lit broadly, so its
-// band starts higher.
+// Pale neutral paint and paper are the metal itself: the rainbow on the band and, off it, at most a light silver below the print,
+// except where the recipe's foil is the paper itself ([silver]): there it is the deep silver of the bare metal, well below the
+// print. [q]: a metal sheet (gold, silver) is lit broadly, so its band starts higher.
 float3 overInk(float3 base,float3 F,float cover,float silver,float q){float y=dot(base,float3(.2126,.7152,.0722));float mx=max(base.r,max(base.g,base.b));float3 T=mix(base,base/max(mx,.04),.32*smoothstep(.004,.04,mx));
  float f=dot(F,float3(.3333));float3 chroma=F-f,Fb=max(F-q,0.);
  float3 lift=base*min(f-q-.02,0.)*6.+(T+.03)*Fb*(5.+24.*Fb)+chroma*T*smoothstep(.02,.4,y)*1.8;float3 cap=min(float3(max(.92-y,.02)),base*(q>.3?5.:60.)+.015);
  float3 up=max(lift,0.);float3 fl=base*mix(.93,.8,silver);
  float3 ink=max(base+up*cap/(cap+up)+min(lift,0.),mix(base*.72,fl,smoothstep(.18,.4,y)));
  float3 paper=max(F*1.3+base*mix(.5,.25,silver)*exp(-f*4.)+chroma*.9,fl);
- float3 lit=mix(max(shoulder(ink),base*.72),max(shoulder(paper),fl),smoothstep(.25,.7,y)*(1.-smoothstep(.12,.35,length(base-y))));return mix(base,lit,clamp(cover,0.,1.));}
+ float neutral=1.-smoothstep(.12,.35,length(base-y));
+ float3 lit=mix(max(shoulder(ink),base*.72),max(shoulder(paper),fl),smoothstep(.25,.7,y)*neutral);
+ // [silver] (the foil is the paper itself: step-and-compleat, scroll): pale print is a deep silver blade, the metal through the
+ // paper (T*F), allowed well below the scan so it reads as silver and never as white paper with a sheen. Ink keeps its cap.
+ if(silver>.5)lit=mix(max(shoulder(ink),base*.72),shoulder(T*F*1.35),smoothstep(.25,.7,y)*neutral);
+ return mix(base,lit,clamp(cover,0.,1.));}
 float shootingStar(float2 uv){float2 c=float2(u_text.x+.035,u_text.w-.03),d=(uv-c)*float2(1.,u_aspect);
  float star=max(0.,1.-(abs(d.x)+abs(d.y))*95.)+max(0.,1.-length(d)*140.);
  float2 t=d;float arc=.004*sin(clamp(t.x*40.,0.,PI));float tail=step(0.,t.x)*step(t.x,.05)*smoothstep(.0022,0.,abs(t.y+arc))*(1.-t.x*20.);
