@@ -129,7 +129,9 @@ object FoilMaps {
      *  foil ([facetText] its frame's text box) its shards too, cut once here and kept with the maps. */
     fun mtg(context: android.content.Context, image: String, facetText: FloatArray? = null): StateFlow<Ready?> = synchronized(flows) {
         val key = "mtg|$image" + (facetText?.let { "|facet|" + it.joinToString(",") } ?: "")
-        flows[key] ?: MutableStateFlow<Ready?>(null).also { fl ->
+        // A facet card shown again whose figure was never measured (swiped past before it settled) asks for it again.
+        flows[key]?.also { fl -> if (fl.value?.facet != null && figures[image] == null) DepthLayers.facetFigure(context, image) { fl.subscriptionCount.value > 0 } } ?:
+        MutableStateFlow<Ready?>(null).also { fl ->
             flows[key] = fl
             scope.launch {
                 gate.withPermit {
@@ -139,10 +141,15 @@ object FoilMaps {
                     val bmp = Bitmap.createScaledBitmap(if (src.config == Bitmap.Config.ARGB_8888) src else src.copy(Bitmap.Config.ARGB_8888, false), w, h, true)
                     val px = IntArray(w * h); bmp.getPixels(px, 0, w, 0, 0, w, h)
                     val m = MtgFoil.analyze(px, w, h, facetText)
-                    val facet = m.facet?.let { f -> synchronized(flows) { figures[image] }?.let { matte(f, it, w, h, facetText!!) } ?: f }
-                    // Facet foil's matte figure comes from the depth cut, measured with the analysis even when 3D is off (once per card).
-                    if (m.facet != null) DepthLayers.facetFigure(context, image)
+                    val had = synchronized(flows) { figures[image] }
+                    val facet = m.facet?.let { f -> had?.let { matte(f, it, w, h, facetText!!) } ?: f }
                     fl.value = Ready(rgba(m.mask, w, h), rgba(m.relief, w, h), null, rgba(m.stroke, w, h), facet?.let { rgba(it, w, h) })
+                    if (m.facet != null) {
+                        // A figure that landed while these maps were made is laid in now (figure() found no maps to put it in).
+                        synchronized(flows) { figures[image] }?.takeIf { it !== had }?.let { figure(image, it.first, it.second, it.third) }
+                        // Facet foil's matte figure comes from the depth cut, measured with the analysis even when 3D is off, while the card is shown.
+                        if (had == null) DepthLayers.facetFigure(context, image) { fl.subscriptionCount.value > 0 }
+                    }
                 }
             }
         }

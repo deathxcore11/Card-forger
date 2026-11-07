@@ -151,7 +151,8 @@ object DepthLayers {
         val hw = min(cw, MAX_WIDTH); val hh = (ch.toFloat() * hw / cw).roundToInt()
         val hiBmp = if (hw == cw) crop else Bitmap.createScaledBitmap(crop, hw, hh, true)
         val hi = IntArray(hw * hh).also { hiBmp.getPixels(it, 0, hw, 0, 0, hw, hh) }
-        val cut = read(file, hw, hh) ?: measuring.withLock {
+        val cut = read(file, hw, hh) ?: measuring.withLock { read(file, hw, hh) ?: run {
+            // Another ask for this card may have measured it while this one waited: read again before running the model.
             // Swiping fast through a pager queues cards; the ones nobody is still looking at wait until they open again.
             if (!wanted()) return null
             val d = DepthModel.run(context, crop) ?: return null
@@ -161,7 +162,7 @@ object DepthLayers {
             val dl = DepthMatte.resize(d, DepthModel.SIZE, DepthModel.SIZE, lw, lh)
             (if (open) DepthMatte.cutFull(lo, dl, lw, lh, hi, hw, hh) else DepthMatte.cut(lo, dl, lw, lh, hi, hw, hh))
                 .also { Log.i("DepthLayers", "$image ${it.gate}"); write(file, it) }
-        }
+        } }
         return Measured(hi, hw, hh, cut)
     }
 
@@ -171,13 +172,17 @@ object DepthLayers {
      * the same depth cut the figure layer uses (and its file on disk, so it runs once per card), handed to FoilMaps. A cut the gate turns
      * down gives no figure, and the creature wears the faint background sheet.
      */
-    fun facetFigure(context: Context, image: String) {
+    fun facetFigure(context: Context, image: String, wanted: () -> Boolean) {
+        // [figured] holds the cards being measured now; the cut on disk keeps a later ask from running the model again.
         synchronized(figured) { if (!figured.add(image)) return }
         scope.launch {
-            runCatching {
-                val m = measure(context.applicationContext, image, floatArrayOf(0f, 0f, 1f, 1f), true) { true } ?: return@runCatching
+            try {
+                // Like the figure layer: a card not measured yet waits until it has settled in view, and nobody still looking stops it.
+                delay(Depth.SETTLE_MS); if (!wanted()) return@launch
+                val m = measure(context.applicationContext, image, floatArrayOf(0f, 0f, 1f, 1f), true, wanted) ?: return@launch
                 m.cut.figure?.let { FoilMaps.figure(image, it, m.hw, m.hh) }
-            }.onFailure { Log.w("DepthLayers", "no facet figure for $image", it); synchronized(figured) { figured.remove(image) } }
+            } catch (e: Exception) { if (e is kotlinx.coroutines.CancellationException) throw e; Log.w("DepthLayers", "no facet figure for $image", e) }
+            finally { synchronized(figured) { figured.remove(image) } }
         }
     }
 
