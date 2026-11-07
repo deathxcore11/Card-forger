@@ -27,6 +27,10 @@ object MtgFoil {
         return W to (W.toFloat() * h / w).roundToInt()
     }
 
+    /** Most a drawn line turns the grating (stroke strength's ceiling): enough for the rainbow to run along the lines, never a full
+     *  snap to them, so where lines change direction the rainbow bends instead of ringing. */
+    const val STEER = .7f
+
     /** Facet foil's pattern number (MTG_PATTERN.facet in the site prototype of 7 Nov). */
     const val FACET = 21f
 
@@ -75,16 +79,23 @@ object MtgFoil {
         // Steering needs real line evidence: drawn lines close by (the edge measure) and local contrast. A smooth shaded area (a halo, a
         // sky) has a coherent gradient too, but no lines; there the gate closes and fades, so it keeps the plain sweep of the sheet.
         val lum2 = FloatArray(N) { lum[it] * lum[it] }
+        // Drawn lines come in fields (hatching, speed lines, lettering): many edges close together. A lone edge, the outline of a
+        // painted figure against its sky, is not one, so the window is wide (11 px) and asks for edges over a good share of it; else
+        // the rainbow would trace a glowing outline round the figure.
         val mu = YgoFoil.boxBlur(lum, W, H, 2, 1); val mu2 = YgoFoil.boxBlur(lum2, W, H, 2, 1)
         for (k in 0 until N) lum2[k] = ss(.05f, .22f, edge[k])
-        val lines = YgoFoil.boxBlur(lum2, W, H, 2, 1)
-        for (k in 0 until N) lum2[k] = ss(.025f, .07f, kotlin.math.sqrt(max(0f, mu2[k] - mu[k] * mu[k]))) * ss(.08f, .3f, lines[k])
+        val lines = YgoFoil.boxBlur(lum2, W, H, max(2, (5 * W / 244f).roundToInt()), 1)
+        for (k in 0 until N) lum2[k] = ss(.025f, .07f, kotlin.math.sqrt(max(0f, mu2[k] - mu[k] * mu[k]))) * ss(.3f, .55f, lines[k])
         val gate = YgoFoil.boxBlur(lum2, W, H, 1, 1)
         for (k in 0 until N) {
             val a = sxx[k] - syy[k]; val b = 2 * sxy[k]; val m = hypot(a, b); val coh = m / (sxx[k] + syy[k] + 1e-6f)
             lum2[k] = ss(.15f, .7f, coh) * min(1f, m * 400) * gate[k]
         }
-        val strength = YgoFoil.boxBlur(lum2, W, H, 1, 1)
+        // Steering turns the grating, and the rainbow is very sensitive to that turn: a gate that opens within a pixel or two draws a
+        // ring of rainbow round every island of line evidence. So the strength is spread wide (three passes, about 9 px at 244 px) and
+        // capped below a full turn: it rises and falls over many pixels, and the turn is always gradual, with no edge to trace.
+        val strength = YgoFoil.boxBlur(lum2, W, H, max(1, (3 * W / 244f).roundToInt()), 3)
+        for (k in 0 until N) strength[k] = STEER * ss(0f, .6f, strength[k])
         val goldS = YgoFoil.boxBlur(gold, W, H, 1, 1); val neonS = YgoFoil.boxBlur(neon, W, H, 1, 1); val paperS = YgoFoil.boxBlur(paper, W, H, 1, 1)
         val cut = facetText?.let { facets(argb, W, H, it) }
         val mask = ByteArray(N * 4); val relief = ByteArray(N * 4); val stroke = ByteArray(N * 4)
@@ -99,39 +110,45 @@ object MtgFoil {
     }
 
     /** Facet foil's cut. [facet] RGBA: R the shard's tilt seed (one hashed value per piece, kept whole, never blurred, and carried a
-     *  couple of pixels past the piece so filtering never mixes in another value), G the matte figure (0 here; [withFigure] fills it),
+     *  couple of pixels past the piece so filtering never mixes in another value), G the matte figure (the [figurePrior] stand-in here; [withFigure] lays in the measured one),
      *  B the shard: its depth inside the piece, 0 at the outline rising to 1 halfway in, so flash and sheen fade softly to the outline;
      *  A 255. [edge] the printed cut edges next to a shard (0..1), [shard] the shard pieces as a 0/1 mask and [pieces] how many. */
     class Facets(val facet: ByteArray, val edge: FloatArray, val shard: FloatArray, val pieces: Int)
 
-    /** Share of a piece's outline that must run along a printed neon line: a printed shard is drawn with one, a pale patch of art
-     *  (teeth, a highlight, sky) is not, so it stays art instead of flashing as glass. */
+    /** Share of a piece's outline that must run along a printed outline (a thin line of colour, or the card's edge): a printed shard
+     *  is drawn with one, a pale patch of art (teeth, a highlight, sky) is not, so it stays art instead of flashing as glass. */
     const val OUTLINED = .12f
 
     /**
      * Finds the printed glass shards once per card (never per pixel per frame). A shard's face is pale, low-saturation glass (sat < .3,
-     * lum > .35, blue at least red) outside the text box and the name bar; its printed outline is a saturated neon line. Faces are split
-     * into real connected pieces by those lines (4-connected; the lines and boxes are walls), crumbs (a letter, a highlight) are let go,
-     * and each piece then takes in its own darker blue facets, grown a few pixels, never across a line or into a box, so a shard
-     * flashes in one piece. Pieces whose outline barely touches a printed line are not glass and are let go too. Each piece's tilt
+     * lum > .35, blue at least red); a piece starts outside the text box and the name bar; its printed outline is a saturated neon line.
+     * Faces are split into real connected pieces by those lines (4-connected; the lines are walls), crumbs (a letter, a highlight) are
+     * let go, and each piece then takes in its own darker blue facets, grown a few pixels over the art and as far as its glass goes over
+     * the boxes, never across a line, so a shard flashes in one piece, right across the box edge. Pieces that never run along a
+     * printed line are not glass and are let go too. Each piece's tilt
      * seed is hashed from where it starts, so the same card always cuts the same way. Sizes are set at the analysis width of a normal
      * scan (244 px) and scale with [W]. [text] is the frame's text box in card space. No per-pixel allocation: flat int buffers only.
      */
     fun facets(argb: IntArray, W: Int, H: Int, text: FloatArray): Facets {
         val N = W * H; val s = W / 244f
-        val line = BooleanArray(N); val wall = BooleanArray(N); val seed = BooleanArray(N); val grow = BooleanArray(N)
+        val line = BooleanArray(N); val ink = FloatArray(N); val wall = BooleanArray(N); val box = BooleanArray(N); val seed = BooleanArray(N); val grow = BooleanArray(N)
         for (k in 0 until N) {
             val p = argb[k]; val u = (k % W + .5f) / W; val v = (k / W + .5f) / H
             val r = (p shr 16 and 255) / 255f; val g = (p shr 8 and 255) / 255f; val b = (p and 255) / 255f
             val mx = max(r, max(g, b)); val mn = min(r, min(g, b)); val sat = if (mx > 0f) (mx - mn) / mx else 0f
             val lum = .2126f * r + .7152f * g + .0722f * b
             val across = u >= text[0] && u <= text[2]
-            val boxed = across && (v >= text[1] && v <= text[3] || v >= .035f && v <= .105f)
+            // The boxes: the text box with the type line just above it, and the name bar.
+            val boxed = across && (v >= text[1] - .065f && v <= text[3] || v >= .035f && v <= .105f)
             line[k] = sat > .55f && mx > .6f
-            wall[k] = boxed || line[k]
+            ink[k] = if (sat > .35f && mx > .3f) 1f else 0f
+            wall[k] = line[k]
             if (wall[k]) continue
-            seed[k] = sat < .3f && lum > .35f && b >= r
-            grow[k] = seed[k] || (b - r > .04f && b > .12f) || (sat < .3f && lum > .3f && b >= r - .01f)
+            box[k] = boxed
+            // The glass runs on over the text box and the name bar, darker there: over a box a shard is its blue glass only, never the
+            // box's dark ink or its white letters (pale too), and it follows that glass as far as it goes.
+            seed[k] = if (boxed) b - r > .08f && b - g > .04f && b > .26f else sat < .3f && lum > .35f && b >= r
+            grow[k] = if (boxed) b - r > .04f && b > .12f && b >= g - .02f else seed[k] || (b - r > .04f && b > .12f) || (sat < .3f && lum > .3f && b >= r - .01f)
         }
         val label = IntArray(N); val queue = IntArray(N); var starts = IntArray(64); var count = 0
         val minArea = max(8, (40 * s * s).roundToInt())
@@ -154,14 +171,16 @@ object MtgFoil {
         var front = 0
         for (k in 0 until N) if (label[k] > 0) queue[front++] = k
         val ring = IntArray(N)
-        repeat(max(1, (10 * s).roundToInt())) {
+        // Over the art a piece grows a few pixels (its darker facets); over a box it follows its glass as far as it goes, so a shard
+        // that crosses the text box top carries on into it in one piece instead of stopping at a straight line.
+        val artRings = max(1, (10 * s).roundToInt()); val boxRings = max(artRings, (70 * s).roundToInt())
+        for (r in 0 until boxRings) {
+            if (front == 0) break
             var next = 0
             for (f in 0 until front) {
                 val k = queue[f]; val x = k % W; val id = label[k]
-                if (x > 0 && grow[k - 1] && label[k - 1] == 0) { label[k - 1] = id; ring[next++] = k - 1 }
-                if (x < W - 1 && grow[k + 1] && label[k + 1] == 0) { label[k + 1] = id; ring[next++] = k + 1 }
-                if (k >= W && grow[k - W] && label[k - W] == 0) { label[k - W] = id; ring[next++] = k - W }
-                if (k < N - W && grow[k + W] && label[k + W] == 0) { label[k + W] = id; ring[next++] = k + W }
+                fun join(n: Int) { if (grow[n] && label[n] == 0 && (r < artRings || box[n])) { label[n] = id; ring[next++] = n } }
+                if (x > 0) join(k - 1); if (x < W - 1) join(k + 1); if (k >= W) join(k - W); if (k < N - W) join(k + W)
             }
             System.arraycopy(ring, 0, queue, 0, next); front = next
         }
@@ -178,19 +197,51 @@ object MtgFoil {
             }
             for (k in 0 until N) if (ring[k] > 0) label[k] = ring[k]
         }
-        // A piece is glass only when its outline runs along a printed line for a fair share of its length.
+        // Pieces that touch with no printed line between them are one shard (pale and darker glass seeded apart, then grown together):
+        // they join, so a shard never shows a seam inside its glass. Contacts are counted per pair (flat long keys, sorted), and a few
+        // pixels of contact are needed, so two shards meeting at a corner where the outline breaks stay apart.
+        run {
+            var pairs = LongArray(1024); var np = 0
+            fun touch(a: Int, b: Int) {
+                if (a <= 0 || b <= 0 || a == b) return
+                if (np == pairs.size) pairs = pairs.copyOf(np * 2)
+                pairs[np++] = min(a, b).toLong() shl 32 or max(a, b).toLong()
+            }
+            for (k in 0 until N) { if (k % W < W - 1) touch(label[k], label[k + 1]); if (k < N - W) touch(label[k], label[k + W]) }
+            java.util.Arrays.sort(pairs, 0, np)
+            val parent = IntArray(count + 1) { it }
+            fun find(i: Int): Int { var r = i; while (parent[r] != r) r = parent[r]; var j = i; while (parent[j] != r) { val n = parent[j]; parent[j] = r; j = n }; return r }
+            val need = max(3, (4 * s).roundToInt())
+            var i = 0
+            while (i < np) {
+                var j = i; while (j < np && pairs[j] == pairs[i]) j++
+                if (j - i >= need) { val a = find((pairs[i] shr 32).toInt()); val b = find((pairs[i] and 0xffffffffL).toInt()); if (a != b) parent[max(a, b)] = min(a, b) }
+                i = j
+            }
+            for (k in 0 until N) if (label[k] > 0) label[k] = find(label[k])
+        }
+        // A piece is glass only when its outline runs along a printed line for a fair share of its length. A printed outline is a thin
+        // line of colour: the bright neon ones, and over the dark boxes dimmer ones; thin means little of that colour around it, so a
+        // pale patch inside coloured art (a field of colour, not a line) does not count as outlined. The card's own edge cuts a shard too.
+        val dense = YgoFoil.boxBlur(ink, W, H, max(1, (2 * s).roundToInt()), 1)
         val near = FloatArray(N) { if (line[it]) 1f else 0f }
-        val reachLine = YgoFoil.boxBlur(near, W, H, max(1, (2 * s).roundToInt()), 1)
-        val rim = IntArray(count + 1); val drawn = IntArray(count + 1)
+        for (k in 0 until N) ink[k] = if (line[k] || ink[k] > 0f && dense[k] < .5f) 1f else 0f
+        val along = max(1, (2 * s).roundToInt())
+        val reachLine = YgoFoil.boxBlur(near, W, H, along, 1); val reachThin = YgoFoil.boxBlur(ink, W, H, along, 1)
+        val rim = IntArray(count + 1); val drawn = IntArray(count + 1); val neonRun = IntArray(count + 1)
         for (k in 0 until N) {
             val id = label[k]; if (id <= 0) continue
             val x = k % W
-            val edgeOf = (x > 0 && label[k - 1] != id) || (x < W - 1 && label[k + 1] != id) || (k >= W && label[k - W] != id) || (k < N - W && label[k + W] != id)
+            if (x == 0 || x == W - 1 || k < W || k >= N - W) { rim[id]++; drawn[id]++; continue }
+            val edgeOf = label[k - 1] != id || label[k + 1] != id || label[k - W] != id || label[k + W] != id
             if (!edgeOf) continue
-            rim[id]++; if (reachLine[k] > 1e-3f) drawn[id]++
+            rim[id]++; if (reachThin[k] > 1e-3f) drawn[id]++; if (reachLine[k] > 1e-3f) neonRun[id]++
         }
         val keep = BooleanArray(count + 1); var pieces = 0
-        for (id in 1..count) if (rim[id] > 0 && drawn[id] >= OUTLINED * rim[id]) { keep[id] = true; pieces++ }
+        // A piece's rim also runs round the darker facets inside it, so a real shard can have a long rim and a modest share on a line:
+        // a fair run of bright neon outline (a few pixels) is enough too. Pale art has neither.
+        val run = max(4, (6 * s).roundToInt())
+        for (id in 1..count) if (rim[id] > 0 && (drawn[id] >= OUTLINED * rim[id] || neonRun[id] >= run)) { keep[id] = true; pieces++ }
         for (k in 0 until N) if (label[k] > 0 && !keep[label[k]]) label[k] = 0
         // Depth inside each piece (chamfer distance to its outline), so the shard fades to its outline; out of the card counts as inside.
         val INF = 1e6f; val dist = FloatArray(N)
@@ -236,11 +287,13 @@ object MtgFoil {
             val id = label[k]
             if (id > 0) { shard[k] = 1f; depth[k] = min(1f, dist[k] / max(ramp0, .5f * deepest[id])) }
         }
-        // A one-pixel soften so the outline is smooth when the map is drawn at card size; it stays within a pixel of the piece.
-        val soft = YgoFoil.boxBlur(depth, W, H, 1, 1)
+        // A soften (two passes of one pixel) so the outline is a smooth curve, not a staircase, when the 244 px map is drawn at card
+        // size; it stays within the two pixels the seed is carried past the piece.
+        val soft = YgoFoil.boxBlur(depth, W, H, 1, 2)
         val facet = ByteArray(N * 4)
         for (k in 0 until N) {
-            facet[k * 4] = if (seedPx[k] > 0) q(seedOf[seedPx[k]]) else 0; facet[k * 4 + 1] = 0
+            val u = (k % W + .5f) / W; val v = (k / W + .5f) / H
+            facet[k * 4] = if (seedPx[k] > 0) q(seedOf[seedPx[k]]) else 0; facet[k * 4 + 1] = q(figurePrior(u, v) * (1f - if (seedPx[k] > 0) soft[k] else 0f))
             facet[k * 4 + 2] = q(if (seedPx[k] > 0) soft[k] else 0f); facet[k * 4 + 3] = -1
         }
         // Cut edges: the printed neon outline within a few pixels of a shard, not every saturated ink on the card.
@@ -248,6 +301,14 @@ object MtgFoil {
         for (k in 0 until N) near[k] = if (line[k] && reach[k] > 1e-3f) 1f else 0f
         val rimEdge = YgoFoil.boxBlur(near, W, H, 1, 1)
         return Facets(facet, FloatArray(N) { max(near[it] * .85f, min(1f, rimEdge[it] * 1.6f)) }, shard, pieces)
+    }
+
+    /** Where the matte figure probably is until the depth cut says (zone 3): a full art's creature sits in the middle of the card, so
+     *  the background sheet is kept faint there (a gloss, no rainbow band across the figure) and a little stronger toward the edges,
+     *  as one smooth falloff with no edge of its own. [withFigure] replaces it with the measured figure. */
+    fun figurePrior(u: Float, v: Float): Float {
+        val dx = (u - .5f) / .42f; val dy = (v - .42f) / .36f
+        return .45f + .4f * (1f - ss(.5f, 1.05f, kotlin.math.sqrt(dx * dx + dy * dy)))
     }
 
     /** The matte figure (zone 3: the creature printed without foil) into a facet map's G, from a 0..1 matte at the map's size; under

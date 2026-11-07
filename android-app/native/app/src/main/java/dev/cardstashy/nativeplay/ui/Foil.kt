@@ -104,12 +104,15 @@ float3 foil(float pat,float tint,float2 uv,float3 L,float3 V,float3 N,float spot
 }
 // Ink on metal: printed ink filters the foil under it. Coloured and light inks pass the metal and glow in their own hue, never darker
 // than the print (the band is light the metal adds: a hot core where the rainbow is, Fb squared); black ink absorbs it and stays black.
-// Pale neutral paint and paper are the metal itself: silver off the band, the rainbow on it.
-float3 overInk(float3 base,float3 F,float cover){float y=dot(base,float3(.2126,.7152,.0722));float3 T=mix(base,base/max(max(base.r,max(base.g,base.b)),.04),.32);
+// The light an ink lets through is capped by the ink itself (a dark ink lifts a little, a light ink more), so the band never blows a
+// dark or mid print out to white. Pale neutral paint and paper are the metal itself: the rainbow on the band, and off it never darker
+// than the print.
+float3 overInk(float3 base,float3 F,float cover,float silver){float y=dot(base,float3(.2126,.7152,.0722));float3 T=mix(base,base/max(max(base.r,max(base.g,base.b)),.04),.32);
  float f=dot(F,float3(.3333));float3 chroma=F-f,Fb=max(F-.16,0.);
- float3 ink=max(base*(1.+.8*max(f-.16,0.))+T*Fb*(1.8+10.*Fb)+chroma*T*smoothstep(.02,.4,y)*1.6,base);
- float3 paper=F*1.3+base*.12*exp(-f*4.)+chroma*.9;
- float3 lit=mix(max(shoulder(ink),base),shoulder(max(paper,0.)),smoothstep(.25,.7,y)*(1.-smoothstep(.12,.35,length(base-y))));return mix(base,lit,clamp(cover,0.,1.));}
+ float3 lift=max(base*max(f-.16,0.)+T*Fb*(2.4+12.*Fb)+chroma*T*smoothstep(.02,.4,y)*1.8,0.);float cap=max(.85-y,.02);
+ float3 ink=base+lift*cap/(cap+lift);
+ float3 floor=base*mix(.8,.4,smoothstep(.5,.85,y)*silver);float3 paper=max(F*1.3+base*mix(.5,.25,silver)*exp(-f*4.)+chroma*.9,floor);
+ float3 lit=mix(max(shoulder(ink),base),max(shoulder(paper),floor),smoothstep(.25,.7,y)*(1.-smoothstep(.12,.35,length(base-y))));return mix(base,lit,clamp(cover,0.,1.));}
 float shootingStar(float2 uv){float2 c=float2(u_text.x+.035,u_text.w-.03),d=(uv-c)*float2(1.,u_aspect);
  float star=max(0.,1.-(abs(d.x)+abs(d.y))*95.)+max(0.,1.-length(d)*140.);
  float2 t=d;float arc=.004*sin(clamp(t.x*40.,0.,PI));float tail=step(0.,t.x)*step(t.x,.05)*smoothstep(.0022,0.,abs(t.y+arc))*(1.-t.x*20.);
@@ -135,11 +138,11 @@ half4 main(float2 fc){
  float3 outC=base;
  // The measured stroke (MtgFoil stroke map) for the steered patterns once the maps land: traditional, textured, raised.
  float3 gs=float3(0.);
- if(u_maps>.5&&(pat<1.5||pat>16.5&&pat<17.5||pat>4.5&&pat<5.5)){half4 st=u_stroke.eval(mp);gs=float3(float(st.r)*2.-1.,float(st.g)*2.-1.,clamp(float(st.b)*1.6,0.,1.)*(1.-.6*text));}
+ if(u_maps>.5&&(pat<1.5||pat>16.5&&pat<17.5||pat>4.5&&pat<5.5)){half4 st=u_stroke.eval(mp);gs=float3(float(st.r)*2.-1.,float(st.g)*2.-1.,float(st.b)*(1.-.6*text));}
  float3 F=foil(pat,tint,uv,L,V,N,spot,grad,float(rl.r)*u_maps,gs);
  if(u_on>.5){
   if(u_r2.x>.5){float t=320.+260.*float(rl.r)*u_maps+120.*hash(floor(uv*u_px/3.));float3 f=film(dot(N,V),t);F=f*(.15+spot*(1.4*pow(max(dot(N,H),0.),16.)+.5));}
-  float keep=u_r2.w;outC=overInk(base,F,cov*.92*(1.-keep));
+  float keep=u_r2.w;outC=overInk(base,F,cov*.92*(1.-keep),step(3.5,mode)*step(mode,4.5));
   // Raised relief: glossy rims where the embossed height turns toward the light.
   if(rel>0.){float rim=pow(max(dot(N,H),0.),24.)*(.35+.65*spot)*clamp(length(grad)*30.,0.,1.);outC+=(1.-outC)*float3(1.,.97,.92)*rim*rel*cov*.8;}
   // Facet foil: each printed glass shard (cut once per card, MtgFoil.facets) is a flat mirror with its own fixed tilt; it flashes
@@ -147,9 +150,11 @@ half4 main(float2 fc){
   // The flash and sheen fade to nothing at the shard's outline (B is its depth inside the piece) and are screened over the print, so a
   // shard brightens with its own glass showing through and never washes out to flat white.
   if(pat>20.5&&u_maps>.5){float shard=float(fm.b);
-   if(shard>.004){float sd=float(fm.r);float2 j=float2(sd,fract(sd*7.31+.17));float3 fn=normalize(float3((j-.5)*1.1,1.));float nh=max(dot(fn,H),0.);
+   // The tilt seed is read at its texel's centre: filtering two pieces' seeds together would give the pixels between them random
+   // tilts, a dotted line of flashes along the seam.
+   if(shard>.004){float sd=float(u_facet.eval(floor(mp)+.5).r);float2 j=float2(sd,fract(sd*7.31+.17));float3 fn=normalize(float3((j-.5)*1.1,1.));float nh=max(dot(fn,H),0.);
     float flash=pow(nh,22.)*shard,sheen=pow(nh,8.)*(.4+.6*shard);float3 fc=grating(L,V,normalize(float2(cos(j.x*PI),sin(j.x*PI))),1100.+j.y*900.);
-    float3 add=fc*(.35+.5*spot)*sheen+float3(.86,.93,1.)*flash*(.3+.45*spot);
+    float3 add=(fc*(.2+.3*spot)+float3(.2,.22,.26)*length(fc))*sheen+float3(.86,.93,1.)*flash*(.3+.45*spot);
     outC=mix(outC,base+(1.-base)*min(add,float3(.72)),smoothstep(0.,.35,shard));}
    float edge=float(rl.b);
    if(edge>.004){half4 st=u_stroke.eval(mp);float2 sd=float2(st.rg)*2.-1.;float th=.5*atan(sd.y,sd.x);
