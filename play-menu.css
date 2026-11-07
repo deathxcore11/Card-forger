@@ -1615,3 +1615,32 @@ body.practice-table-open .ach-toast{top:calc(env(safe-area-inset-top,0px) + 12px
 .play-deck-choice.has-record .play-deck-lock{bottom:calc(8px + 2.9em)}
 .pd-key{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;vertical-align:middle;font:700 11px/1.4 'DM Sans',system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;background:#d6ad6426;color:#f3dfb4}
 .st-secret-tease{margin:12px 0 0;padding:12px 14px;border-radius:14px;border:1px dashed #d6ad6455;color:var(--muted);font-size:13px;line-height:1.45}
+
+/* All cards, shelf by shelf (app.js ensureShelves / play-econ-ui.js shelvesMarkup): "For this deck", then a shelf per set, newest
+   first. A shelf waits as card backs until it scrolls into view; its cards then turn over one after another, once. */
+.pe-shelves{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pe-shelf{padding:10px 0 4px;min-width:0}
+.pe-shelf--fit{border:1px solid rgba(229,196,126,.35);border-radius:14px;background:linear-gradient(180deg,rgba(229,196,126,.14),rgba(229,196,126,.03));padding:10px 0 6px}
+.pe-shelf-head{display:flex;align-items:baseline;gap:8px;padding:0 12px 6px;min-width:0}
+.pe-shelf-head b{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
+.pe-shelf--fit .pe-shelf-head b{color:var(--gold,#e5c47e)}
+.pe-shelf-code{font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--muted,#a49c8b);border:1px solid rgba(255,255,255,.14);border-radius:6px;padding:1px 6px}
+.pe-shelf-meta{margin-left:auto;font-size:11px;color:var(--muted,#a49c8b);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pe-shelf-note{margin:6px 12px;font-size:12px;color:var(--muted,#a49c8b)}
+.pe-shelf-row{display:flex;gap:8px;overflow-x:auto;padding:2px 12px 8px;scroll-snap-type:x proximity;scrollbar-width:none}
+.pe-shelf-row::-webkit-scrollbar{display:none}
+.pe-shelf-cell{flex:0 0 104px;width:104px;scroll-snap-align:start;perspective:700px;min-width:0}
+.pe-shelf-cell .pe-flip{position:relative;transform-style:preserve-3d;aspect-ratio:63/88}
+.pe-shelf-cell .pe-flip-face,.pe-shelf-cell .pe-flip-back{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.pe-shelf-cell .pe-flip-face .pe-pool-card{height:100%}
+.pe-shelf-cell .pe-flip-face img{width:100%;height:100%;object-fit:cover;border-radius:4.75%/3.5%}
+.pe-flip-back{transform:rotateY(180deg);border-radius:4.75%/3.5%;border:4px solid #1a120b;box-shadow:0 4px 12px rgba(0,0,0,.5);overflow:hidden;
+  background:radial-gradient(ellipse 23% 25% at 50% 50%,#e09a4a,#c9752f 55%,#8a4518 96%,transparent 100%) no-repeat,radial-gradient(ellipse 34% 36% at 50% 50%,#5a2c12 96%,transparent 100%) no-repeat,radial-gradient(ellipse at 50% 50%,#6b4a2b,#2e1d10)}
+.pe-shelf-cell:not(:has(.pe-flip-face)) .pe-flip-back{transform:none}
+.pe-shelf-cell:not(:has(.pe-flip-face)) .pe-flip-back::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.14) 50%,transparent 70%);background-size:220% 100%;animation:peShelfWait 1.3s linear infinite}
+.pe-shelf-cell .pe-flip:has(.pe-flip-face){animation:peShelfTurn .52s cubic-bezier(.2,.8,.2,1) both}
+.pe-shelf-cell.is-up .pe-flip{animation:none;transform:none}
+.pe-shelf-why{display:block;margin-top:4px;font-size:11px;font-weight:700;color:var(--gold,#e5c47e);text-align:center;line-height:1.2}
+@keyframes peShelfTurn{from{transform:rotateY(180deg)}to{transform:rotateY(0)}}
+@keyframes peShelfWait{from{background-position:130% 0}to{background-position:-90% 0}}
+@media (prefers-reduced-motion:reduce){.pe-shelf-cell .pe-flip:has(.pe-flip-face){animation:none}.pe-shelf-cell:not(:has(.pe-flip-face)) .pe-flip-back::after{animation:none}}

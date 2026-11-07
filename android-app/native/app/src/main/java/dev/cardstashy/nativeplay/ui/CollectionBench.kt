@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -29,6 +30,7 @@ import com.google.gson.JsonArray
 import kotlinx.coroutines.launch
 import com.google.gson.JsonObject
 import dev.cardstashy.nativeplay.play.Decks
+import dev.cardstashy.nativeplay.collection.CollectionEngine
 import dev.cardstashy.nativeplay.match.PowerTier
 import dev.cardstashy.nativeplay.play.Trunk
 
@@ -109,12 +111,12 @@ fun CollectionBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: 
     var allMore by remember { mutableStateOf(false) }; var allPage by remember { mutableStateOf(1) }; var allKey by remember { mutableStateOf("") }
     val ownBy = remember(pool) { HashMap<String, Int>().apply { pool?.forEach { e -> (e as? JsonObject)?.let { o -> val n = o.get("name")?.asString ?: return@let
         val k = o.get("own")?.asInt ?: 0; merge(n, k, Int::plus); if (" // " in n) merge(n.split(" // ")[0], k, Int::plus) } } } }
-    fun allQuery(): String {
+    fun allQuery(find: String = b.find, colors: Set<String> = b.colors, type: String = b.type): String {
         val q = mutableListOf("game:paper")
         m.format.lowercase().takeIf { it in SCRYFALL_FORMATS }?.let { q += "legal:$it" }
-        b.find.trim().replace(Regex("[\"\\\\]"), "").takeIf { it.isNotEmpty() }?.let { q += "name:\"$it\"" }
-        if (b.colors.isNotEmpty()) q += b.colors.joinToString(" or ", "(", ")") { "c:" + it.lowercase() }
-        ALL_TYPES[b.type]?.let { q += it }
+        find.trim().replace(Regex("[\"\\\\]"), "").takeIf { it.isNotEmpty() }?.let { q += "name:\"$it\"" }
+        if (colors.isNotEmpty()) q += colors.joinToString(" or ", "(", ")") { "c:" + it.lowercase() }
+        ALL_TYPES[type]?.let { q += it }
         return q.joinToString(" ")
     }
     fun loadAll(more: Boolean = false) {
@@ -130,15 +132,22 @@ fun CollectionBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: 
             allBusy = false
         }
     }
-    LaunchedEffect(mode, b.find, b.colors, b.type, m.format) { if (mode == "all") { if (allKey.isNotEmpty()) kotlinx.coroutines.delay(350); loadAll() } }
+    // All cards with nothing typed is shelves (AllShelves.kt, as Play's); a search looks through every card, a page at a time.
+    LaunchedEffect(mode, b.find, b.colors, b.type, m.format) { if (mode == "all" && b.find.isNotBlank()) { if (allKey.isNotEmpty()) kotlinx.coroutines.delay(350); loadAll() } }
+    val shelves = remember(m.id) { MagicShelves(scope) }
+    val facts by dev.cardstashy.nativeplay.play.CardFacts.cards.collectAsState()
+    val shelfBase = allQuery("")
+    val shelfFit = allQuery("", emptySet(), "All") + " -t:land" + (remember(facts, names) { deckIdentity(names.filterNot(Decks::isBasicLand)) }?.let { " id<=$it" } ?: "")
+    LaunchedEffect(mode, shelfBase, shelfFit) { if (mode == "all") { shelves.use(shelfBase, shelfFit); shelves.start() } }
     LaunchedEffect(mode) { if (mode == "all") androidx.compose.runtime.snapshotFlow { ui.tileGrid.layoutInfo.let { it.visibleItemsInfo.lastOrNull()?.index to it.totalItemsCount } }
         .collect { (last, total) -> if (last != null && total > 0 && last >= total - 6 && allMore && !allBusy) loadAll(true) } }
     fun str(o: JsonObject?, k: String) = o?.get(k)?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
-    val allTiles = if (mode != "all") emptyList() else all.map { c -> val n = str(c, "name"); val have = ownBy[n] ?: ownBy[n.split(" // ")[0]] ?: 0
+    fun allTile(c: JsonObject): BenchTile { val n = str(c, "name"); val have = ownBy[n] ?: ownBy[n.split(" // ")[0]] ?: 0
         val face = c.getAsJsonArray("card_faces")?.firstOrNull() as? JsonObject
         val img = str(c.getAsJsonObject("image_uris"), "normal").ifBlank { str(face?.getAsJsonObject("image_uris"), "normal") }.ifBlank { namedArt(n).replace("art_crop", "normal") }
-        BenchTile(n, img, c.get("cmc")?.takeIf { it.isJsonPrimitive }?.asDouble ?: 0.0, Trunk.group(str(c, "type_line").ifBlank { str(face, "type_line") }) == "Lands",
+        return BenchTile(n, img, c.get("cmc")?.takeIf { it.isJsonPrimitive }?.asDouble ?: 0.0, Trunk.group(str(c, "type_line").ifBlank { str(face, "type_line") }) == "Lands",
             Decks.isBasicLand(n), countIn(n), have, Int.MAX_VALUE, have == 0, lockWord = "To buy") }
+    val allTiles = if (mode != "all") emptyList() else all.map(::allTile)
     // The hero's "owned" (covered/copies) gives the copies still to get; its Power stat is the badge.
     val owned = m.stats.firstOrNull { it.label == "owned" }?.value?.split('/')?.mapNotNull { it.trim().toIntOrNull() }
     val missing = if (owned?.size == 2) (owned[1] - owned[0]).coerceAtLeast(0) else 0
@@ -161,13 +170,14 @@ fun CollectionBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: 
         tabs = m.tabs.map { it.key to it.label }, powerLabel = h.powerLabel, powerTab = h.powerTab,
         chips = m.eyebrow.filter { it.kind == "review" && it.label.isNotBlank() }.map { BenchChip(it.label, it.level == "bad" || it.level == "warn", it.act.ifBlank { "deckReview" }) },
         findMore = m.addLabel.ifBlank { null }, listNote = m.commanderNote?.ifBlank { null },
+        shelves = if (mode != "all") null else if (shelves.ready) shelves.shelves(::allTile, { n -> countIn(n) > 0 }, "For this deck", "Most played in your colours") else emptyList(),
     ) }
     // The page's Practice (A.deckPlayCpu) where Play has Save: each change here already saves.
     val practice = m.actions.firstOrNull { it.act == "deckPlayCpu" }
     val actions = BenchActions(back = act.back, save = practice?.let { p -> { act.act(p.act, p.id) } }, saveLabel = practice?.label?.ifBlank { null } ?: "Practice",
         step = { n, d -> if (d > 0 && !inList(n)) act.addCard(n) {} else if (inList(n)) act.qty(n, d) },
         craft = { _, _ -> }, open = act.card, more = null, menu = emptyList(), menuOpen = { act.act("deckMenu", "") }, tab = tab, chip = { k -> act.act(k, m.id) },
-        findMore = { q -> act.addCard(q) {} }, heroActions = heroButtons)
+        findMore = { q -> act.addCard(q) {} }, heroActions = heroButtons, shelf = shelves::load)
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         DeckBench(model, ui, actions, actionRow = toolRow(tools, m.emblems?.swaps.orEmpty(), { t -> act.act(t.act, t.id) }) { s -> act.swap(s.out, s.into) },
             browserSwitch = { BenchSwitch(listOf("mine" to "Owned", "all" to "All cards"), mode) { mode = it } }, tabBody = tabBody)
@@ -225,17 +235,21 @@ private fun TcgBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act:
     val foundLabel = "“" + (m.find?.value?.ifBlank { null } ?: find) + "”"
     val found = m.found.orEmpty().map { f -> val q = inDeck[f.id] ?: 0
         BenchTile(f.name, f.art.firstOrNull().orEmpty(), 0.0, false, false, q, owned[f.id] ?: 0, (defaultCap - q).coerceAtLeast(0), false, key = f.id, section = foundLabel, cap = defaultCap) }
-    val tiles = pool?.mapNotNull { e -> val o = e as? JsonObject ?: return@mapNotNull null
-        val id = o.get("id")?.asString ?: return@mapNotNull null; val n = o.get("name")?.asString.orEmpty()
+    // One browser tile from the engine's (tcgBenchPool / tcgTileOf); [buy]: All cards, where a card not owned is grey, "To buy".
+    fun tileOf(o: JsonObject, buy: Boolean = false): BenchTile? {
+        val id = o.get("id")?.asString ?: return null; val n = o.get("name")?.asString.orEmpty()
         val sect = o.get("category")?.asString.orEmpty()
-        if (find.isNotEmpty() && !n.contains(find, ignoreCase = true)) return@mapNotNull null
-        if (ui.type != "All" && sect != ui.type) return@mapNotNull null
-        val lim = o.get("limit")?.asInt ?: defaultCap; val q = inDeck[id] ?: 0; val legal = o.get("legal")?.asBoolean != false
+        // A set shelf's Pokémon cards come brief (no type yet: "Unresolved"), so the type chips leave them in.
+        if (ui.type != "All" && sect != ui.type && sect != "Unresolved") return null
+        val lim = o.get("limit")?.asInt ?: defaultCap; val q = inDeck[id] ?: 0; val legal = o.get("legal")?.asBoolean != false; val have = owned[id] ?: o.get("own")?.asInt ?: 0
         // tcg.js addToDeck: not legal in the format, or past its limit, and the + is off; the tag says why, as the deck rows do.
-        BenchTile(n, o.getAsJsonArray("sources")?.firstOrNull()?.asString?.ifBlank { null } ?: o.get("image")?.asString.orEmpty(), 0.0, false, lim < 0, q,
-            o.get("own")?.asInt ?: 0, if (!legal) 0 else if (lim < 0) Int.MAX_VALUE else (lim - q).coerceAtLeast(0), false, key = id, section = sect,
-            cap = if (lim < 0) 4 else lim.coerceIn(0, 4), tag = o.get("tag")?.asString.orEmpty(), tagBad = o.get("tagBad")?.asBoolean == true)
-    }.orEmpty()
+        return BenchTile(n, o.getAsJsonArray("sources")?.firstOrNull()?.asString?.ifBlank { null } ?: o.get("image")?.asString.orEmpty(), 0.0, false, lim < 0, q,
+            have, if (!legal) 0 else if (lim < 0) Int.MAX_VALUE else (lim - q).coerceAtLeast(0), buy && have == 0 && lim >= 0, key = id, section = sect,
+            cap = if (lim < 0) 4 else lim.coerceIn(0, 4), tag = o.get("tag")?.asString.orEmpty(), tagBad = o.get("tagBad")?.asBoolean == true, lockWord = "To buy")
+    }
+    val tiles = pool?.mapNotNull { e -> val o = e as? JsonObject ?: return@mapNotNull null
+        if (find.isNotEmpty() && !o.get("name")?.asString.orEmpty().contains(find, ignoreCase = true)) return@mapNotNull null
+        tileOf(o) }.orEmpty()
     // Clearing the search closes the page's results (A.tDeckAddClose).
     LaunchedEffect(find.isEmpty()) { if (find.isEmpty() && m.found != null) act.findClose() }
     // All cards (Randall 6 Nov 21:43Z): the page's own card search (tcg.js's deck Find, every card of the game) as you type, in place
@@ -244,6 +258,35 @@ private fun TcgBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act:
     LaunchedEffect(mode, find) { if (mode == "all" && find.length >= 2 && find != m.find?.value) { kotlinx.coroutines.delay(450); act.find(find) } }
     val allTiles = if (mode != "all") emptyList() else m.found.orEmpty().map { f -> val q = inDeck[f.id] ?: 0; val have = owned[f.id] ?: 0
         BenchTile(f.name, f.art.firstOrNull().orEmpty(), 0.0, false, false, q, have, (defaultCap - q).coerceAtLeast(0), have == 0, key = f.id, cap = defaultCap, lockWord = "To buy") }
+    // All cards with nothing typed: shelves (the engine's shelvesStart), "For this deck" first, then each set newest first, a set's
+    // cards loaded only when its shelf comes on screen.
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val game = m.game.id
+    var shelfList by remember(m.id) { mutableStateOf<JsonObject?>(null) }
+    val shelfCards = remember(m.id) { androidx.compose.runtime.mutableStateMapOf<String, JsonObject>() }
+    LaunchedEffect(mode, m.id) { if (mode == "all" && shelfList == null) runCatching {
+        shelfList = CollectionEngine.shelvesStart(game, m.id)
+        CollectionEngine.settle(60_000, CollectionEngine.shelvesJs(game, m.id)) { shelfList = it }
+        shelfList = CollectionEngine.shelvesModel(game, m.id)
+    } }
+    fun loadShelf(key: String) { if (key == FIT_SHELF || key in shelfCards) return; shelfCards[key] = JsonObject()
+        scope.launch { runCatching {
+            shelfCards[key] = CollectionEngine.shelfStart(game, m.id, key)
+            CollectionEngine.settle(45_000, CollectionEngine.shelfJs(game, m.id, key)) { shelfCards[key] = it }
+            shelfCards[key] = CollectionEngine.shelfModel(game, m.id, key)
+        }.onFailure { shelfCards.remove(key) } } }
+    fun objs(o: JsonObject?, k: String) = o?.get(k)?.takeIf { it.isJsonArray }?.asJsonArray?.mapNotNull { it as? JsonObject }
+    val shelves: List<BenchShelf>? = if (mode != "all") null else shelfList?.let { l ->
+        val fit = l.getAsJsonObject("fit")
+        val fitTiles = objs(fit, "tiles")?.filter { (inDeck[it.get("id")?.asString] ?: 0) == 0 }
+        listOfNotNull(fit?.let { f -> BenchShelf(FIT_SHELF, "For this deck", meta = "Tournament staples you don't play", gold = true,
+            tiles = if (f.get("busy")?.asBoolean == true) null else fitTiles?.mapNotNull { tileOf(it, true) }.orEmpty(), note = f.get("error")?.asString.orEmpty(),
+            why = fitTiles.orEmpty().associate { it.get("id").asString to it.get("why")?.asString.orEmpty() }) }) +
+            objs(l, "sets").orEmpty().map { s -> val id = s.get("id").asString; val got = shelfCards[id]
+                BenchShelf(id, s.get("name")?.asString.orEmpty(), s.get("code")?.asString.orEmpty(), shelfDate(s.get("date")?.asString.orEmpty()),
+                    tiles = got?.let { g -> if (g.get("busy")?.asBoolean != false && !g.has("tiles")) null else objs(g, "tiles")?.mapNotNull { tileOf(it, true) } ?: if (g.get("busy")?.asBoolean == true) null else emptyList() },
+                    note = got?.get("error")?.asString.orEmpty()) }
+    }
     val powerStat = m.stats.firstOrNull { it.act == "tDeckTab" }
     val h = heroModel(m, powerStat)
     val missing = cards.sumOf { needOf(it.owned, it.own, it.qty) }
@@ -256,13 +299,14 @@ private fun TcgBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act:
         play = false, modeChip = h.modeChip, formatChip = h.formatChip, title = m.title, heroArt = m.art,
         stats = h.stats, power = h.power, tier = PowerTier.powerTier(h.power?.toDoubleOrNull()), roles = m.roles,
         groups = groups, basics = emptyList(), browserTitle = if (mode == "all") "All cards" else "Collection", tiles = if (mode == "all") allTiles else found + tiles,
-        browserNote = if (mode == "all") (if (m.find?.busy == true) "Looking through every card…" else if (find.length < 2) "Type a card's name to look through every card." else if (allTiles.isEmpty() && m.found != null) "No cards found." else null)
+        browserNote = if (mode == "all") (if (m.find?.busy == true) "Looking through every card…" else if (find.length < 2) (shelfList?.get("error")?.asString?.ifBlank { null } ?: "Looking through every set…") else if (allTiles.isEmpty() && m.found != null) "No cards found." else null)
             else if (pool == null) "Opening your collection…" else if (pool.size() == 0 && found.isEmpty()) "No cards in your collection yet." else null,
         footLead = missingLine(missing), wallet = null, footRight = "${cards.map { it.cardId }.distinct().size} unique", busy = m.find?.busy == true, canSave = true,
         tabs = m.tabs.map { it.key to it.label }, powerLabel = h.powerLabel, powerTab = h.powerTab,
         chips = m.eyebrow.filter { it.kind == "review" && it.label.isNotBlank() }.map { BenchChip(it.label, it.level == "bad" || it.level == "warn", it.act.ifBlank { "tIssues" }) },
         colorFilter = false, types = listOf("All") + order, sectionOrder = listOf(foundLabel) + order,
         findMore = m.find?.button?.ifBlank { null }?.takeIf { m.find?.busy != true }, listNote = m.formatNote.ifBlank { null }, basicWord = "Basic Energy",
+        shelves = shelves?.let { if (find.isEmpty()) it else null } ?: if (mode == "all" && find.isEmpty()) emptyList() else null, cardBack = game,
     )
     val primary = m.actions.firstOrNull { it.shown && it.primary }
     fun rows(key: String) = cards.filter { keyOf(it) == key }
@@ -274,7 +318,7 @@ private fun TcgBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act:
         craft = { _, _ -> }, open = { k -> rows(k).firstOrNull()?.let(act.tcgRow) ?: act.tcgCard(k.removePrefix("side:")) }, more = null, menu = emptyList(),
         menuOpen = { act.act(m.menuAct, "") }, tab = tab,
         chip = { k -> if (k == "tIssues") { if (m.issues != null) issues = true } else act.act(k, m.id) },
-        move = { k -> rows(k).lastOrNull()?.let(act.tcgMove) }, findMore = { q -> act.find(q) })
+        move = { k -> rows(k).lastOrNull()?.let(act.tcgMove) }, findMore = { q -> act.find(q) }, shelf = ::loadShelf)
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         DeckBench(model, ui, actions, actionRow = toolRow(tools, m.emblems?.swaps.orEmpty(), { t -> act.act(t.act, t.id) }) { s -> act.tcgSwap(s.outKey, s.inKey) },
             browserSwitch = { BenchSwitch(listOf("mine" to "Owned", "all" to "All cards"), mode) { mode = it } }, tabBody = tabBody)

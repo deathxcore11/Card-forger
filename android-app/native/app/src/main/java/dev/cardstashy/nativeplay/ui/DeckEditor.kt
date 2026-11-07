@@ -163,7 +163,14 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
             ui.poolBusy = false
         }
     }
-    LaunchedEffect(ui.mode, b.find, b.colors, b.type, ui.edit.format) { if (ui.mode == "all") { if (ui.poolKey.isNotEmpty()) delay(350); loadPool() } }
+    // All cards with nothing typed is shelves (below); a search looks through every card, a page at a time.
+    LaunchedEffect(ui.mode, b.find, b.colors, b.type, ui.edit.format) { if (ui.mode == "all" && b.find.isNotBlank()) { if (ui.poolKey.isNotEmpty()) delay(350); loadPool() } }
+    // ---- All cards, shelf by shelf (AllShelves.kt): "For this deck" is Fill empty slots' own search (A.playFillSlots: the format's
+    // most played cards, no lands) in the deck's colours, then a shelf per set with the pool's search, each loaded when it shows.
+    val shelves = remember(ui) { MagicShelves(scope) }
+    val shelfBase = poolQuery("", b.colors, b.type)
+    val shelfFit = poolQuery("", emptySet(), "All") + " -t:land" + (remember(facts, e.cards) { deckIdentity(e.cards.map { it.name }.filterNot(Decks::isBasicLand)) }?.let { " id<=$it" } ?: "")
+    LaunchedEffect(ui.mode, shelfBase, shelfFit) { if (ui.mode == "all") { shelves.use(shelfBase, shelfFit); shelves.start() } }
     // All cards: the next page comes in as the grid nears its end.
     LaunchedEffect(ui.mode) { if (ui.mode == "all") snapshotFlow { b.tileGrid.layoutInfo.let { it.visibleItemsInfo.lastOrNull()?.index to it.totalItemsCount } }
         .collect { (last, total) -> if (last != null && total > 0 && last >= total - 6 && ui.poolMore && !ui.poolBusy) loadPool(true) } }
@@ -255,10 +262,11 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
         if (b.colors.isNotEmpty() && colors.none { it in b.colors }) return false
         return when (b.type) { "Creatures" -> group == "Creatures"; "Lands" -> group == "Lands"; "Spells" -> group != "Creatures" && group != "Lands"; else -> true }
     }
-    val tiles: List<BenchTile> = if (ui.mode == "all") ui.pool.map { c -> val n = c.str("name"); val have = owned[n] ?: owned[n.split(" // ")[0]] ?: 0
-        BenchTile(n, c.getAsJsonObject("image_uris")?.str("normal")?.ifBlank { null } ?: c.getAsJsonArray("card_faces")?.firstOrNull()?.asJsonObject?.getAsJsonObject("image_uris")?.str("normal")?.ifBlank { null } ?: named(n, "normal"),
+    fun poolTile(c: JsonObject): BenchTile { val n = c.str("name"); val have = owned[n] ?: owned[n.split(" // ")[0]] ?: 0
+        return BenchTile(n, c.getAsJsonObject("image_uris")?.str("normal")?.ifBlank { null } ?: c.getAsJsonArray("card_faces")?.firstOrNull()?.asJsonObject?.getAsJsonObject("image_uris")?.str("normal")?.ifBlank { null } ?: named(n, "normal"),
             c.get("cmc")?.takeIf { it.isJsonPrimitive }?.asDouble ?: 0.0, Trunk.group(c.str("type_line").ifBlank { c.getAsJsonArray("card_faces")?.firstOrNull()?.asJsonObject.str("type_line") }) == "Lands",
             Decks.isBasicLand(n), countIn(n), have, DeckEdit.room(e.cards, n, e.format), have == 0) }
+    val tiles: List<BenchTile> = if (ui.mode == "all") ui.pool.map(::poolTile)
     else trunk.mapNotNull { c -> val fx = facts[c.o]; val g = Trunk.group(fx?.t ?: ""); val basic = Decks.isBasicLand(c.n); val q = countIn(c.n)
         if (basic && q == 0) return@mapNotNull null
         if (!keep(c.n, colorsOf(fx?.card), g)) return@mapNotNull null
@@ -279,10 +287,11 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
         // Play's tabs: Cards, Power and Rules. Power is Play-safe (Randall's card 6 Nov 18:53Z): no Upgrades, no prices. War Chest reads
         // the Collection, and Play never does.
         tabs = listOf("cards" to "Cards", "engine" to "Power", "rules" to "Rules"), powerTab = "engine",
+        shelves = if (ui.mode != "all") null else if (shelves.ready) shelves.shelves(::poolTile, { n -> countIn(n) > 0 }, "For this deck", "Most played in your colours") else emptyList(),
     )
     val benchActions = BenchActions(back = onBack, save = actions.save, step = actions.step, craft = actions.craftCopies, open = actions.open, more = actions.hold,
         menu = listOf(BenchMenuItem("Rename deck") { ui.sheet = "rename" }, BenchMenuItem("Change format") { ui.sheet = "format" },
-            BenchMenuItem("Copy list", actions.copy), BenchMenuItem("Copy to My decks", toApp)))
+            BenchMenuItem("Copy list", actions.copy), BenchMenuItem("Copy to My decks", toApp)), shelf = shelves::load)
 
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         DeckBench(model, b, benchActions,

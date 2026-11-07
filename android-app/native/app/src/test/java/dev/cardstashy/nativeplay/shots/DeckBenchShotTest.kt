@@ -118,7 +118,7 @@ class DeckBenchShotTest {
         walk(root)
     }
 
-    private fun run(tag: String, status: Int, nav: Int, scale: Float, gestures: Boolean) {
+    private fun run(tag: String, status: Int, nav: Int, scale: Float, gestures: Boolean, shelves: Boolean = false) {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         dev.cardstashy.nativeplay.ui.Foil.testFallback = true
         dev.cardstashy.nativeplay.ui.homeArt = { url -> get(url)?.let { android.graphics.BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() } ?: url }
@@ -164,6 +164,20 @@ class DeckBenchShotTest {
         shot(tag)
         assertTrue("the engine's read reached the hero", rule.onAllNodesWithText("58").fetchSemanticsNodes().isNotEmpty())
 
+        if (shelves) {
+            // All cards, shelf by shelf (AllShelves.kt): "For this deck" and the newest sets from Scryfall, each loaded as it shows.
+            rule.runOnUiThread { ui.mode = "all" }; settle(90)
+            shot("$tag-all"); audit(found)
+            assertTrue("For this deck shelf", rule.onAllNodesWithText("For this deck").fetchSemanticsNodes().isNotEmpty())
+            rule.onNode(hasContentDescription("Cards to add, a shelf at a time")).performScrollToIndex(3); settle(60)
+            shot("$tag-all-sets"); audit(found)
+            File(shots, "bench-$tag-all.txt").writeText(buildString {
+                appendLine("Cut with …: " + found.ellipsized.joinToString(" | ").ifEmpty { "none" })
+                appendLine("Under 11 sp: " + found.small.joinToString(" | ").ifEmpty { "none" })
+                appendLine("Targets under 44 dp: " + found.tight.joinToString(" | ").ifEmpty { "none" })
+            })
+            return
+        }
         // The list's Lands, where the three Island rows sit (this stopped the old editor), then back to the top.
         val list = rule.onNode(hasScrollToIndexAction() and hasContentDescription("Deck list"))
         list.performScrollToNode(hasText("LANDS", substring = true))
@@ -218,6 +232,12 @@ class DeckBenchShotTest {
     }
 
     @Test fun phone() = run("390x844", 24, 24, 1f, gestures = true)
+    @Test fun phoneShelves() = run("390x844", 24, 24, 1f, gestures = false, shelves = true)
+    @Test fun phoneShelvesBigText() = run("390x844-130", 24, 24, 1.3f, gestures = false, shelves = true)
+    @Config(qualifiers = "w954dp-h860dp-xxhdpi")
+    @Test fun unfoldedShelves() = run("954x860", 24, 24, 1f, gestures = false, shelves = true)
+    @Config(qualifiers = "w844dp-h390dp-xxhdpi")
+    @Test fun landscapeShelves() = run("844x390", 0, 0, 1f, gestures = false, shelves = true)
     @Test fun phoneBigText() = run("390x844-130", 24, 24, 1.3f, gestures = false)
     @Config(qualifiers = "w360dp-h780dp-xxhdpi")
     @Test fun small() = run("360x780", 24, 48, 1f, gestures = false)

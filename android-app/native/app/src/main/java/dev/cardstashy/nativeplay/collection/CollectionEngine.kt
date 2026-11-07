@@ -337,6 +337,20 @@ object CollectionEngine {
     const val TCARD_MODEL = "Collection.tcardModel()"
     suspend fun tcardModel(): JsonObject = on { q -> JsonParser.parseString(q.evaluate(TCARD_MODEL) as String).asJsonObject }
 
+    /**
+     * All cards, shelf by shelf, for a Yu-Gi-Oh! or Pokémon deck (collection-engine-entry.mjs shelvesStart): the set list newest first and
+     * "For this deck" (the format's tournament staples the list doesn't play); pump with [settle] and read [shelvesJs]. [shelfStart] loads one
+     * set's cards as tiles, read again with [shelfJs].
+     */
+    suspend fun shelvesStart(game: String, id: String): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.shelvesStart(${str(game)}, ${str(id)})") as String).asJsonObject }
+    fun shelvesJs(game: String, id: String) = "Collection.shelvesModel(${str(game)}, ${str(id)})"
+    suspend fun shelfStart(game: String, id: String, set: String): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.shelfStart(${str(game)}, ${str(id)}, ${str(set)})") as String).asJsonObject }
+    fun shelfJs(game: String, id: String, set: String) = "Collection.shelfModel(${str(game)}, ${str(id)}, ${str(set)})"
+    suspend fun shelvesModel(game: String, id: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate(shelvesJs(game, id)) as String).asJsonObject }
+    suspend fun shelfModel(game: String, id: String, set: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate(shelfJs(game, id, set)) as String).asJsonObject }
+
     /** views.js setsPage(), every set by year, as a model; [opts] = {q, family, release, year, sort}, the site's own filter values. */
     suspend fun sets(game: String, opts: JsonObject = JsonObject()): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.sets(${str(game)}, ${str(opts.toString())})") as String).asJsonObject }

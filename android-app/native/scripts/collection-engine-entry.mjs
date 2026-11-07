@@ -946,14 +946,77 @@ function tcgBenchPool(G, id) {
   const st = tcgGs(G), d = st.decks.find(x => x.id === id), fs = tcgSources[G].formats, f = fs.find(x => x.id === d?.format) || fs[0];
   const by = new Map();
   for (const e of st.collection || []) { if (!(Number(e.qty) > 0)) continue; const k = String(e.cardId), o = by.get(k) || {id: k, name: e.name || '', own: 0}; o.own += Number(e.qty); by.set(k, o); }
-  return [...by.values()].map(o => {
-    const c = tcgCardOf(G, o.id), p = c ? picture(one(tree(artworkHTML(c)), tagIs('img'))) : null, lim = c ? tcgSources[G].limit(c, f) : 3;
+  return [...by.values()].map(o => tcgTileOf(G, tcgCardOf(G, o.id), f, o));
+}
+// One browser tile for card [c] (or [o]'s id and name while the card is not known): picture, type group, the format's limit and word.
+function tcgTileOf(G, c, f, o = {}) {
+    const p = c ? picture(one(tree(artworkHTML(c)), tagIs('img'))) : null, lim = c ? tcgSources[G].limit(c, f) : 3;
     // addToDeck refuses a printing not legal in the format; the deck rows' own tags (deckCardsTab) say why.
     const legal = !c || tcgSources[G].legality(c, f) !== 'not_legal';
     const tag = !legal ? 'Not legal' : lim === 0 ? 'Forbidden' : lim === 1 && G === 'ygo' ? 'Limited' : lim === 2 ? 'Semi-Limited' : '';
-    return {id: o.id, name: c?.name || o.name, image: p?.src || '', sources: p?.sources || [], category: c ? deckCardCategory(c) : 'Unresolved', extra: !!c?.extra,
-      level: Number(c?.level) || 0, basic: !!c?.basicEnergy, limit: Number.isFinite(lim) ? lim : -1, legal, tag, tagBad: !legal || lim === 0, own: o.own, tint: tcgTint(c)};
-  });
+    return {id: String(c?.id ?? o.id), name: c?.name || o.name || '', image: p?.src || c?.image || '', sources: p?.sources || [], category: c ? deckCardCategory(c) : 'Unresolved', extra: !!c?.extra,
+      level: Number(c?.level) || 0, basic: !!c?.basicEnergy, limit: Number.isFinite(lim) ? lim : -1, legal, tag, tagBad: !legal || lim === 0, own: o.own || 0, tint: tcgTint(c)};
+}
+
+// ---------------------------------------------------------------- All cards, shelf by shelf (Randall 6-7 Nov: "only when you pick All")
+// The Bench's All cards for a Yu-Gi-Oh! or Pokémon deck, a shelf at a time so thousands of cards never load at once: first "For this
+// deck", the format's tournament staples the list doesn't play (tcg.js deckUpgradeTab's rule: Yu-Gi-Oh! cards in 20 %+ of top decks,
+// Pokémon Trainers in 30 %+, from meta.js), then each set newest first (tcg.js loadSets), its cards only when the app asks for that shelf
+// (SOURCES[G].setCards, as the set page loads them). The app pumps the lookups with settle() and reads shelvesModel / shelfModel.
+const shelfWork = new Map();
+const shelfDeck = (G, id) => { const st = tcgGs(G), d = st.decks.find(x => x.id === id), fs = tcgSources[G].formats; return {d, f: fs.find(x => x.id === d?.format) || fs[0]}; };
+const shelfOwned = G => { const m = new Map(); for (const e of tcgGs(G).collection || []) if (Number(e.qty) > 0) m.set(String(e.cardId), (m.get(String(e.cardId)) || 0) + Number(e.qty)); return m; };
+function shelvesStart(G, id) {
+  tcgCtx.loadSets(G).catch(() => {});
+  const {d} = shelfDeck(G, id);
+  // power.js judges against these fields only: Pokémon data is Standard, Yu-Gi-Oh! data is TCG Advanced.
+  const formatOk = G === 'ptcg' ? (d?.format || 'standard') === 'standard' : (d?.format || 'tcg') === 'tcg';
+  const k = 'fit|' + G + '|' + id;
+  if (!formatOk || shelfWork.get(k)?.busy) return;
+  const w = {busy: true, error: '', rows: null}; shelfWork.set(k, w);
+  (async () => {
+    const data = await loadMeta(G).catch(() => metaState(G).data);
+    const inDeck = new Set([...(d?.zones?.main || []), ...(d?.zones?.extra || [])].flatMap(r => [String(r.cardId), String(tcgCardOf(G, r.cardId)?.name || r.name || '').toLowerCase()]));
+    const top = (data?.top || []).filter(x => G === 'ygo' ? x.pct >= 20 : x.kind === 'Trainer' && x.pct >= 30)
+      .filter(x => !inDeck.has(String(x.id || '')) && !inDeck.has(String(x.name).toLowerCase())).slice(0, 16);
+    const rows = [];
+    if (G === 'ygo') { const want = top.map(x => String(x.id)).filter(i => i && !tcgCardOf(G, i)); if (want.length) await tcgEnsureMany(G, want).catch(() => {});
+      for (const x of top) { const c = tcgCardOf(G, String(x.id)); if (c) rows.push({c, why: `${Math.round(x.pct)}% of top decks`}); } }
+    else for (const x of top) {
+      // tcg.js's Upgrade lab finds a Pokémon staple by name among the printings it knows; one not known yet is looked up the same way.
+      let c = Object.values(tcgCache.ptcg).find(v => v.name?.toLowerCase() === x.name.toLowerCase() && !v.brief);
+      if (!c) c = await tcgSources.ptcg.byName(x.name).catch(() => null);
+      if (c) rows.push({c, why: `${Math.round(x.pct)}% of top decks`});
+    }
+    w.rows = rows;
+  })().catch(e => { w.error = e?.message || 'Tournament decks could not load.'; }).finally(() => { w.busy = false; });
+}
+function shelvesModel(G, id) {
+  const {f} = shelfDeck(G, id), U = tcgUi(G).sets, own = shelfOwned(G), today = new Date().toISOString().slice(0, 10), fit = shelfWork.get('fit|' + G + '|' + id);
+  const sets = (U.list || []).filter(s => s?.id && s.date && String(s.date).slice(0, 10) <= today && !(Number(s.count) > 0 && Number(s.count) < 10))
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+    .map(s => ({id: String(s.id), name: s.name || '', code: String(s.code || s.id).toUpperCase(), date: String(s.date).slice(0, 10), count: Number(s.count) || 0}));
+  return {busy: !!U.busy, error: U.error || '', sets,
+    fit: fit ? {busy: !!fit.busy, error: fit.error, tiles: (fit.rows || []).map(({c, why}) => ({...tcgTileOf(G, c, f, {own: own.get(String(c.id)) || 0}), why})).filter(t => t.legal)} : null};
+}
+function shelfStart(G, id, setId) {
+  const k = 'set|' + G + '|' + setId, have = shelfWork.get(k);
+  if (have && (have.busy || have.cards)) return;
+  const w = {busy: true, error: '', cards: null}; shelfWork.set(k, w);
+  (async () => {
+    if (!tcgUi(G).sets.list.length) await tcgCtx.loadSets(G);
+    const info = tcgUi(G).sets.list.find(s => String(s.id) === String(setId));
+    if (!info) throw Error('This set could not be found.');
+    const cards = await tcgSources[G].setCards(info);
+    // Each card once (a set lists reprints and rarities as rows), as the set page keeps them in tcg.js's card cache.
+    const seen = new Set(); w.cards = [];
+    for (const c of cards) { if (!c?.id || c.pocket || seen.has(String(c.id))) continue; seen.add(String(c.id)); if (!tcgCardOf(G, c.id) || (tcgCardOf(G, c.id).brief && !c.brief)) tcgCache[G][c.id] = c; w.cards.push(String(c.id)); }
+  })().catch(e => { w.error = e?.message || 'This set could not load.'; }).finally(() => { w.busy = false; });
+}
+function shelfModel(G, id, setId) {
+  const w = shelfWork.get('set|' + G + '|' + setId); if (!w) return {busy: false, error: '', tiles: null};
+  const {f} = shelfDeck(G, id), own = shelfOwned(G);
+  return {busy: !!w.busy, error: w.error, tiles: w.cards ? w.cards.map(i => tcgTileOf(G, tcgCardOf(G, i), f, {id: i, own: own.get(i) || 0})).filter(t => t.legal || !t.name) : null};
 }
 // [tab]: the tab open (A.tDeckTab keeps it in S.ui.tdeckTab); left out, the one open stays. Any other than Cards draws its body
 // as a panel (deckPanel); the page model then carries the hero, actions and tabs.
@@ -5764,6 +5827,11 @@ globalThis.Collection = {
     return json([...by.values()].map(o => { const c = meta(o.name); return c ? {name: c.name, image: cardImage(c) || '', cmc: Number(c.cmc) || 0,
       type: c.type_line || c.card_faces?.[0]?.type_line || '', colors: c.colors || c.card_faces?.[0]?.colors || [], own: o.own} : null; }).filter(Boolean));
   },
+  // All cards, shelf by shelf, for a Yu-Gi-Oh! or Pokémon deck (shelvesStart above): the set list and "For this deck", then one set's cards.
+  shelvesStart(game, id) { shelvesStart(game, id); return json(shelvesModel(game, id)); },
+  shelvesModel(game, id) { return json(shelvesModel(game, id)); },
+  shelfStart(game, id, setId) { shelfStart(game, id, setId); return json(shelfModel(game, id, setId)); },
+  shelfModel(game, id, setId) { return json(shelfModel(game, id, setId)); },
   // The open Yu-Gi-Oh! or Pokémon deck page again (after settle: a search's results, prices and card data that came in).
   tdeckModel() { if (!tdeckAt) return '{}'; const [g, id] = tdeckAt; return json(tcgDeckPageModel(g, id)); },
   deckDo(game, id, kind, value) { if (game && game !== 'mtg') { if (!tcgDeckAct[kind]) throw Error('unknown deck control ' + kind); tcgFocus(game, 'tdeck'); S.ui.tdeckId = id; tdeckAt = [game, id]; tcgDeckAct[kind](value); return json(tcgDeckPageModel(game, id)); }

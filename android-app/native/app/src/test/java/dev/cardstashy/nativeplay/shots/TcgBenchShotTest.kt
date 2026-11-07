@@ -91,7 +91,7 @@ class TcgBenchShotTest {
     private val pikachu = "1c5ee49c-a4ba-4506-ae2b-1e0761e20324"
     private val magician = "094ab313-b1e1-4778-aefc-52ceb9c90ae5"
 
-    private fun run(g: CardGame, tag: String, status: Int, nav: Int, scale: Float, steps: Boolean) {
+    private fun run(g: CardGame, tag: String, status: Int, nav: Int, scale: Float, steps: Boolean, shelves: Boolean = false) {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         dev.cardstashy.nativeplay.ui.Foil.testFallback = true
         dev.cardstashy.nativeplay.ui.homeArt = { url -> get(url)?.let { android.graphics.BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() } ?: url }
@@ -126,6 +126,20 @@ class TcgBenchShotTest {
         val found = Found()
         audit(found)
         shot("${g.id}-$tag")
+        if (shelves) {
+            // All cards, shelf by shelf (the engine's shelvesStart): the format's staples first, then the newest sets, each as it shows.
+            rule.onAllNodesWithText("All cards").onFirst().performClick()
+            rule.waitUntil(90_000) { rule.onAllNodesWithText("For this deck").fetchSemanticsNodes().isNotEmpty() }
+            settle(80); shot("${g.id}-$tag-all"); audit(found)
+            rule.onNode(hasContentDescription("Cards to add, a shelf at a time")).performScrollToIndex(2); settle(60)
+            shot("${g.id}-$tag-all-sets"); audit(found)
+            File(shots, "tbench-${g.id}-$tag-all.txt").writeText(buildString {
+                appendLine("Cut with …: " + found.ellipsized.joinToString(" | ").ifEmpty { "none" })
+                appendLine("Under 11 sp: " + found.small.joinToString(" | ").ifEmpty { "none" })
+                appendLine("Targets under 44 dp: " + found.tight.joinToString(" | ").ifEmpty { "none" })
+            })
+            return
+        }
         val groups = if (g == CardGame.YGO) listOf("MONSTERS", "SPELLS") else listOf("POKÉMON", "TRAINERS", "ENERGY")
         // Each type group is in the deck list (scrolled to: the list composes what is on screen).
         for (w in groups) rule.onNode(hasScrollToIndexAction() and hasContentDescription("Deck list")).performScrollToNode(hasText(w, substring = true))
@@ -175,6 +189,10 @@ class TcgBenchShotTest {
     }
 
     @Test fun yugiohPhone() = run(CardGame.YGO, "390x844", 48, 34, 1f, steps = true)
+    @Test fun yugiohShelves() = run(CardGame.YGO, "390x844", 48, 34, 1f, steps = false, shelves = true)
+    @Test fun pokemonShelves() = run(CardGame.PTCG, "390x844", 48, 34, 1f, steps = false, shelves = true)
+    @org.robolectric.annotation.Config(qualifiers = "w954dp-h860dp-xxhdpi")
+    @Test fun pokemonShelvesUnfolded() = run(CardGame.PTCG, "954x860", 48, 34, 1f, steps = false, shelves = true)
     @Test fun pokemonPhone() = run(CardGame.PTCG, "390x844", 48, 34, 1f, steps = true)
     @Test fun yugiohBigText() = run(CardGame.YGO, "390x844-130", 48, 34, 1.3f, steps = false)
     @Config(qualifiers = "w360dp-h780dp-xxhdpi")

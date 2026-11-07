@@ -129,6 +129,15 @@ class BenchTile(val name: String, val image: String, val cmc: Double, val land: 
                 /** What a [locked] tile says: Play's "Craft"; Collection's All cards, a card not owned yet, "To buy". */
                 val lockWord: String = "Craft")
 class BenchStat(val value: String, val label: String, val warn: Boolean = false)
+/**
+ * One shelf of All cards (Randall 6-7 Nov: deck-first shelves, a set at a time, "only when you pick All"): "For this deck" ([gold]) or a
+ * set, newest first. [tiles] null = not loaded yet: the Bench asks for it (BenchActions.shelf) when the shelf comes on screen, and its
+ * card backs flip over as the cards arrive. A loaded shelf with no cards (none legal in the format, or none for the filters) is left out.
+ */
+class BenchShelf(val key: String, val title: String, val code: String = "", val meta: String = "", val gold: Boolean = false,
+                 val tiles: List<BenchTile>? = null, val note: String = "", val count: Int = 0,
+                 /** Under a "For this deck" card: why it is there ("In 42% of top decks", "Instant"). */
+                 val why: Map<String, String> = emptyMap())
 class BenchModel(
     val play: Boolean, val modeChip: String, val formatChip: String, val title: String, val heroArt: String?,
     val stats: List<BenchStat>, val power: String?, val tier: String, val roles: List<Pair<String, Int>>,
@@ -149,6 +158,10 @@ class BenchModel(
     val listNote: String? = null,
     /** The big view's words for a free card (a basic land; Pokémon's basic Energy). */
     val basicWord: String = "Basic land",
+    /** All cards as shelves (null: the grid). Shown while nothing is typed in Find; a search is the whole game's, as before. */
+    val shelves: List<BenchShelf>? = null,
+    /** Whose card back the shelves flip from: mtg, ygo or ptcg. */
+    val cardBack: String = "mtg",
 )
 class BenchMenuItem(val label: String, val onClick: () -> Unit)
 class BenchActions(
@@ -173,6 +186,8 @@ class BenchActions(
     val findMore: (String) -> Unit = {},
     /** The hero's other buttons beside the gold one (views.js deckShell's actions: War Chest, Share), as ghost buttons under it. */
     val heroActions: List<BenchMenuItem> = emptyList(),
+    /** A shelf (BenchShelf.key) came on screen before its cards: load them. */
+    val shelf: (String) -> Unit = {},
 )
 
 /** Where the Bench is: tab, deck view, find and filters, the card in the big view. Kept by the caller so Back keeps your place. */
@@ -190,6 +205,9 @@ class BenchUi {
     val tileGrid = LazyGridState()
     /** Portrait: how much of the room the deck takes; the grip between deck and collection moves it (Randall 6 Nov 21:43Z). */
     var split by mutableFloatStateOf(SPLIT_EVEN)
+    /** All cards' shelves: where the list is, and the cards that already flipped over (they stay face up when you come back). */
+    val shelfList = androidx.compose.foundation.lazy.LazyListState()
+    val flipped = HashSet<String>()
 }
 const val SPLIT_EVEN = .40f
 const val SPLIT_MIN = .12f
@@ -793,7 +811,7 @@ private fun Browser(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, swi
         Row(Modifier.fillMaxWidth().graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
             .drawWithFade().horizontalScroll(rememberScrollState()).padding(start = 10.dp, end = 26.dp, top = if (cols == 3) 0.dp else 6.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(buildAnnotatedString { append(m.browserTitle); withStyle(SpanStyle(fontFamily = Site.Manrope, fontSize = 11.sp, color = B.Mute)) { append("  ${m.tiles.size}") } },
+            Text(buildAnnotatedString { append(m.browserTitle); if (m.shelves == null || ui.find.isNotBlank()) withStyle(SpanStyle(fontFamily = Site.Manrope, fontSize = 11.sp, color = B.Mute)) { append("  ${m.tiles.size}") } },
                 style = cinzel(15f, B.Gold, track = .03f), maxLines = 1, softWrap = false, modifier = Modifier.padding(start = 2.dp, end = 4.dp))
             switch?.invoke()
             FindBox(ui, onFilter)
@@ -816,7 +834,11 @@ private fun Browser(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, swi
                 }
             }
         }
-        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(top = 2.dp).onGloballyPositioned { drag.grid = it.boundsInRoot().translate(-drag.origin) }) {
+        if (m.shelves != null && ui.find.isBlank()) Box(Modifier.weight(1f).fillMaxWidth().padding(top = 2.dp).onGloballyPositioned { drag.grid = it.boundsInRoot().translate(-drag.origin) }) {
+            Shelves(m, ui, a, drag, lift)
+            if (remove) Box(Modifier.fillMaxSize().padding(horizontal = 6.dp, vertical = 2.dp).clip(RoundedCornerShape(14.dp)).background(Color(0x14FF7A6A)).drawBehind {
+                drawRoundRect(B.Coral, style = Stroke(2.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx()))), cornerRadius = CornerRadius(14.dp.toPx())) })
+        } else BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(top = 2.dp).onGloballyPositioned { drag.grid = it.boundsInRoot().translate(-drag.origin) }) {
             val n = if (cols > 0) cols else if (cols == 0) maxOf(3, ((maxWidth.value - 48) / 96).toInt()) else maxOf(4, ((maxWidth.value - 48) / 104).toInt())
             val secs = remember(m.tiles, m.sectionOrder) { sections(m.tiles, m.sectionOrder) }
             // Each section's first item in the grid, for the letter rail.
@@ -852,6 +874,116 @@ private fun Browser(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, swi
     }
 }
 private val COLOR_NAME = mapOf("W" to "white", "U" to "blue", "B" to "black", "R" to "red", "G" to "green")
+
+// ---------------------------------------------------------------- All cards, shelf by shelf
+
+/** The shelves, one under another; each asks for its cards when it comes on screen, so only what you scroll to ever loads. */
+@Composable
+private fun Shelves(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, lift: () -> Unit) {
+    val shown = m.shelves.orEmpty().filter { it.tiles == null || it.tiles.isNotEmpty() || it.note.isNotEmpty() }
+    androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxSize().semantics { contentDescription = "Cards to add, a shelf at a time" }, ui.shelfList,
+        contentPadding = PaddingValues(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (shown.isEmpty()) item(key = "none") {
+            Text(m.browserNote ?: "Looking through every card…", style = f(12f, 600, B.Mute), modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp))
+        }
+        items(shown.size, key = { "sh:" + shown[it].key }) { i -> val s = shown[i]
+            if (s.tiles == null) LaunchedEffect(s.key) { a.shelf(s.key) }
+            Shelf(s, m.cardBack, ui, a, drag, lift)
+        }
+    }
+}
+
+@Composable
+private fun Shelf(s: BenchShelf, back: String, ui: BenchUi, a: BenchActions, drag: Drag, lift: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    Column(Modifier.fillMaxWidth().padding(horizontal = if (s.gold) 6.dp else 0.dp).then(if (s.gold) Modifier.clip(shape)
+        .background(Brush.verticalGradient(listOf(Color(0x24E5C47E), Color(0x08E5C47E)))).border(1.dp, Color(0x59E5C47E), shape) else Modifier)
+        .padding(top = 8.dp, bottom = 4.dp).semantics(mergeDescendants = false) { contentDescription = s.title + if (s.code.isNotEmpty()) ", ${s.code}" else "" }) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // The name keeps its room (up to most of the row); the date and count give way first.
+            Text(s.title, style = f(13f, 800, if (s.gold) B.Gold else B.Fg), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false,
+                modifier = Modifier.widthIn(max = 230.dp))
+            if (s.code.isNotEmpty()) Text(s.code, style = f(11f, 800, B.Mute, track = .06f), maxLines = 1, softWrap = false,
+                modifier = Modifier.border(1.dp, Color(0x24FFFFFF), RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 1.dp))
+            val right = listOfNotNull(s.meta.ifBlank { null }, s.tiles?.takeIf { it.isNotEmpty() }?.let { if (s.count > it.size) "${it.size}+ cards" else "${it.size} card${if (it.size == 1) "" else "s"}" })
+            Text(right.joinToString(" · "), style = f(11f, 600, B.Mute), maxLines = 1, softWrap = false, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                textAlign = TextAlign.End, modifier = Modifier.weight(1f))
+        }
+        if (s.note.isNotEmpty() && s.tiles.isNullOrEmpty()) Text(s.note, style = f(12f, 600, B.Mute), modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+        else {
+            val n = s.tiles?.size ?: 6
+            androidx.compose.foundation.lazy.LazyRow(Modifier.fillMaxWidth().padding(top = 6.dp), contentPadding = PaddingValues(horizontal = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(n, key = { i -> s.tiles?.getOrNull(i)?.let { "t:${it.key}:$i" } ?: "b:$i" }) { i ->
+                    val t = s.tiles?.getOrNull(i)
+                    Column(Modifier.width(SHELF_TILE)) {
+                        FlipIn(if (t == null) null else s.key + "|" + t.key, i, back, ui) { if (t != null) Tile(t, ui, a, drag, lift) }
+                        val why = t?.let { s.why[it.key] }
+                        if (why != null) Text(why, style = f(11f, 700, B.Gold, line = 13f), maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 3.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+private val SHELF_TILE = 96.dp
+
+/**
+ * A card back that turns over into [content] the first time it shows ([key] null: still waiting, the back shimmers). Each card turns a
+ * moment after the one before it; a card that already turned stays face up (BenchUi.flipped).
+ */
+@Composable
+private fun FlipIn(key: String?, i: Int, back: String, ui: BenchUi, content: @Composable () -> Unit) {
+    val turn = remember(key) { androidx.compose.animation.core.Animatable(if (key != null && key in ui.flipped) 0f else 180f) }
+    if (key != null) LaunchedEffect(key) {
+        if (turn.value > 0f) { kotlinx.coroutines.delay(if (i < 8) 60L * i else 0L); turn.animateTo(0f, tween(520, easing = FOCUS_EASE)) }
+        ui.flipped += key
+    }
+    val d = LocalDensity.current.density
+    Box(Modifier.fillMaxWidth().graphicsLayer { rotationY = turn.value; cameraDistance = 14f * d }) {
+        if (turn.value <= 90f && key != null) content()
+        else Column(Modifier.fillMaxWidth().graphicsLayer { rotationY = 180f }) {
+            Spacer(Modifier.height(15.dp))
+            CardBack(back, key == null)
+        }
+    }
+}
+
+/** The game's card back, drawn: Magic's brown oval, Yu-Gi-Oh!'s dark swirl with its gold eye, Pokémon's blue with the ball. */
+@Composable
+private fun CardBack(game: String, waiting: Boolean) {
+    val shine = if (waiting) androidx.compose.animation.core.rememberInfiniteTransition(label = "back").animateFloat(-1f, 2f,
+        androidx.compose.animation.core.infiniteRepeatable(tween(1300, easing = androidx.compose.animation.core.LinearEasing)), label = "shine") else null
+    Box(Modifier.fillMaxWidth().aspectRatio(63f / 88f).shadow(8.dp, CARD, spotColor = Color.Black).clip(CARD).drawBehind {
+        val w = size.width; val h = size.height
+        when (game) {
+            "ygo" -> {
+                drawRect(Brush.sweepGradient(listOf(Color(0xFF3A1D0E), Color(0xFF7A4A1C), Color(0xFF3A1D0E), Color(0xFF5B3214), Color(0xFF3A1D0E)), center))
+                drawCircle(Brush.radialGradient(listOf(Color(0xFFF0C870), Color(0xFF8A4A14), Color.Transparent), center, w * .3f), w * .3f, center)
+                drawRect(Color(0xFF120A05), style = Stroke(w * .04f))
+            }
+            "ptcg" -> {
+                drawRect(Brush.verticalGradient(listOf(Color(0xFF2C5AB8), Color(0xFF183A86))))
+                val r = w * .24f
+                drawArc(Color(0xFFD8352D), 180f, 180f, true, Offset(center.x - r, center.y - r), androidx.compose.ui.geometry.Size(r * 2, r * 2))
+                drawArc(Color(0xFFF4F1EA), 0f, 180f, true, Offset(center.x - r, center.y - r), androidx.compose.ui.geometry.Size(r * 2, r * 2))
+                drawRect(Color(0xFF222222), Offset(center.x - r, center.y - r * .1f), androidx.compose.ui.geometry.Size(r * 2, r * .2f))
+                drawCircle(Color(0xFF222222), r, center, style = Stroke(r * .14f))
+                drawCircle(Color(0xFFF4F1EA), r * .26f, center); drawCircle(Color(0xFF222222), r * .26f, center, style = Stroke(r * .1f))
+                drawRect(Color(0xFFE9E4D0), style = Stroke(w * .05f))
+            }
+            else -> {
+                drawRect(Brush.radialGradient(listOf(Color(0xFF6B4A2B), Color(0xFF2E1D10)), center, h * .7f))
+                drawOval(Color(0xFF5A2C12), Offset(w * .16f, h * .14f), androidx.compose.ui.geometry.Size(w * .68f, h * .72f))
+                drawOval(Brush.radialGradient(listOf(Color(0xFFE09A4A), Color(0xFFC9752F), Color(0xFF8A4518)), center, w * .3f), Offset(w * .27f, h * .25f), androidx.compose.ui.geometry.Size(w * .46f, h * .5f))
+                drawRect(Color(0xFF1A120B), style = Stroke(w * .05f))
+            }
+        }
+        shine?.let { p -> val x = p.value * w
+            drawRect(Brush.linearGradient(listOf(Color.Transparent, Color(0x2EFFFFFF), Color.Transparent), Offset(x - w * .4f, 0f), Offset(x + w * .4f, h))) }
+    })
+}
 
 /** The tools row fades to nothing at its right edge (mask-image 90 %). */
 private fun Modifier.drawWithFade() = this.drawWithContent {

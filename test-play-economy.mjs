@@ -264,6 +264,16 @@ for (const f of ['storage.js', 'cloud.js', 'store.js', 'binders.js', 'sync-merge
   assert.ok(/disabled aria-label="Add Llanowar Elves to the deck"/.test(builder), 'a card at its format limit cannot be added');
   assert.ok(/aria-label="Add Shock to the deck"/.test(builder) && !/disabled aria-label="Add Shock to the deck"/.test(builder), 'a card with room can be added');
   assert.ok(builder.includes('data-act="card" data-name="Shock" data-play-card="1"'), 'tapping a pool card opens its card view');
+  // All cards with nothing typed: shelves, "For this deck" first, each set waiting as card backs until it scrolls into view.
+  const elves = {name: 'Elves', format: 'Standard', cards: [{name: 'Llanowar Elves', qty: 4}]};
+  const shelfCard = (name, type) => ({name, type_line: type, rarity: 'common', image_uris: {normal: 'https://cards.scryfall.io/normal/front/x.jpg'}});
+  const shelved = deckBuilderMarkup(snap, {facts, edit: elves, pool: {mode: 'all', cards: []}, shelves: {sets: [{code: 'fdn', name: 'Foundations', released: '2024-11-15'}, {code: 'dsk', name: 'Duskmourn', released: '2024-09-27'}],
+    cards: {fit: {list: [shelfCard('Llanowar Elves', 'Creature — Elf Druid'), shelfCard('Giant Growth', 'Instant')], more: false, at: Date.now()}, fdn: {list: [], more: false, at: Date.now()}}}});
+  assert.ok(shelved.includes('For this deck') && shelved.includes('Add Giant Growth to the deck') && shelved.includes('pe-shelf-why">Instant'), 'the deck shelf shows what each card is');
+  assert.ok(!shelved.slice(shelved.indexOf('pe-shelves')).includes('aria-label="Open Llanowar Elves'), 'a card already in the deck is left off its shelf');
+  assert.ok(!shelved.includes('Foundations') && shelved.includes('data-shelf-pending="dsk"'), 'an empty set shelf is left out; one not loaded waits for view');
+  const searched = deckBuilderMarkup(snap, {facts, edit: elves, cardQuery: 'giant', pool: {mode: 'all', cards: [shelfCard('Giant Growth', 'Instant')]}, shelves: {sets: [], cards: {}}});
+  assert.ok(!searched.includes('pe-shelves') && searched.includes('Add Giant Growth to the deck'), 'a typed search is the whole game, as before');
   // Arena style: a card you don't own can go in greyed, with its seal and a Craft menu.
   const planned = deckBuilderMarkup({state: {...snap.state, wallet: {seal_c: 1}}}, {facts, nameFact: n => n === 'Duress' ? {id: '11111111-1111-1111-1111-111111111111', name: 'Duress', rarity: 'common', type_line: 'Sorcery', cmc: 1} : null, edit: {name: 'Mix', format: 'Standard', cards: [{name: 'Duress', qty: 3}, {name: 'Swamp', qty: 20}]}});
   assert.ok(planned.includes('pe-build-row--missing') && planned.includes('data-act="playCraftCopies"') && planned.includes('data-act="playCraftAll"'));

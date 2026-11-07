@@ -177,7 +177,7 @@ import {rewardFlight} from "./reward-flight.js";
 import {createNameFacts,createCraftRarity,clusterArchetypes,finderArchetypes,rankFinderLists,finderRow,trunkDeck,finderMarkup,finderDeckMarkup,FINDER_FORMATS,FINDER_SORTS,FINDER_FILTERS} from "./play-deck-finder.js";
 import {createCardFacts,slimCard} from "./play-econ-cards.js";
 import {deckEmblem} from "./play-deck-emblem.js";
-import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows,preconFace,PLAY_FORMATS,deckRules,copyCap} from "./play-econ-rules.js";
+import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows,preconFace,PLAY_FORMATS,deckRules,copyCap,isBasicLand} from "./play-econ-rules.js";
 import {STORY_ACTS} from "./story-acts.js";
 import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
 import {createLessonCoach,isLessonBattle,lessonsOff,lessonSetup,STACK_HOST_LIVE,STACK_LOCAL_LIVE} from "./story-lessons.js";
@@ -1935,7 +1935,33 @@ const billRarity=n=>craftRarity.rarity(n)||finderFacts.get(n)?.rarity||(playEcon
 // Arena-style builder: cards not in the Trunk get their facts by name (rarity, art, the id that
 // crafting stamps); "All cards" looks through every card legal in the deck's format (no prices).
 function builderWants(snap){const owned=ownedByName(snap.state?.cards||[]),names=(econUi.edit?.cards||[]).map(c=>c.name).filter(n=>!owned.get(n));if(names.length){finderFacts.want(names);craftRarity.want(names);}
- if(econUi.pool?.mode==='all'){const k=poolKey();if(k!==econUi.pool.key&&!econUi.pool.timer)econUi.pool.timer=setTimeout(()=>{econUi.pool.timer=0;loadPool();},econUi.pool.key?350:0);}}
+ if(econUi.pool?.mode==='all'){if(!(econUi.cardQuery||'').trim()){ensureShelves();requestAnimationFrame(observeShelves);return;}const k=poolKey();if(k!==econUi.pool.key&&!econUi.pool.timer)econUi.pool.timer=setTimeout(()=>{econUi.pool.timer=0;loadPool();},econUi.pool.key?350:0);}}
+// All cards, shelf by shelf (Randall 6 Nov 23:46Z: only a set at a time, only when All is picked; deck-first shelves 23:47Z): with
+// nothing typed, "For this deck" (Fill empty slots' own search, the format's most played cards, in the deck's colours) and then a
+// shelf per set, newest first, each one Scryfall search (the pool's, with e:<set>) made only when the shelf scrolls into view.
+const SHELF_KINDS=new Set(['core','expansion','masters','draft_innovation','commander']);
+let shelfSetList=null,shelfSetLoad=null,shelfIO=null,shelfBusy=0;const shelfQueue=[];
+function shelfSets(){if(shelfSetList)return Promise.resolve(shelfSetList);return shelfSetLoad||=fetch('https://api.scryfall.com/sets',{headers:{Accept:'application/json'}}).then(r=>r.ok?r.json():Promise.reject(Error()))
+ .then(b=>{const today=new Date().toISOString().slice(0,10);shelfSetList=(b.data||[]).filter(x=>SHELF_KINDS.has(x.set_type)&&!x.digital&&!x.parent_set_code&&x.released_at&&x.released_at<=today&&x.card_count>0)
+  .sort((a,c)=>c.released_at.localeCompare(a.released_at)).map(x=>({code:x.code,name:x.name,released:x.released_at}));return shelfSetList;}).catch(()=>{shelfSetLoad=null;return null;});}
+function shelfQueries(){const saved={cardQuery:econUi.cardQuery,color:econUi.color,type:econUi.type,rarity:econUi.rarity};econUi.cardQuery='';const base=poolQuery();Object.assign(econUi,{color:'',type:'',rarity:''});
+ const id=new Set();let known=0;
+ for(const c of econUi.edit?.cards||[]){if(isBasicLand(c.name))continue;const f=finderFacts.get(c.name)||econFacts.card((playEcon.snapshot().state?.cards||[]).find(x=>x.n===c.name)?.o)?.card;if(!f?.color_identity)continue;known++;f.color_identity.forEach(k=>id.add(k));}
+ const fit=poolQuery()+' -t:land'+(known?' id<='+(['W','U','B','R','G'].filter(k=>id.has(k)).join('').toLowerCase()||'c'):'');Object.assign(econUi,saved);return {base,fit};}
+function ensureShelves(){const {base,fit}=shelfQueries(),key=base+'|'+fit;let Sh=econUi.shelves;
+ if(!Sh||Sh.key!==key)Sh=econUi.shelves={key,base,fit,sets:Sh?.sets||null,cards:{},asked:new Set(),flipped:Sh?.flipped||new Set()};
+ if(!Sh.sets)shelfSets().then(list=>{if(list&&econUi.shelves){econUi.shelves.sets=list;refreshPlayMenu();}});}
+function observeShelves(){if(!('IntersectionObserver' in globalThis))return document.querySelectorAll('[data-shelf-pending]').forEach(el=>loadShelf(el.dataset.shelfPending));
+ shelfIO||=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){shelfIO.unobserve(e.target);loadShelf(e.target.dataset.shelfPending);}}),{rootMargin:'120px 0px'});
+ shelfIO.disconnect();document.querySelectorAll('[data-shelf-pending]').forEach(el=>shelfIO.observe(el));}
+function loadShelf(k){const Sh=econUi.shelves;if(!Sh||!k||Sh.asked.has(k))return;Sh.asked.add(k);shelfQueue.push([Sh,k]);pumpShelves();}
+// Two searches at a time (Scryfall asks for under ten a second; a fast scroll should not queue dozens at once).
+function pumpShelves(){while(shelfBusy<2&&shelfQueue.length){const [Sh,k]=shelfQueue.shift();if(econUi.shelves!==Sh)continue;shelfBusy++;
+ const q=k==='fit'?Sh.fit:Sh.base+' e:'+k;
+ fetch(`https://api.scryfall.com/cards/search?${new URLSearchParams({q,order:'edhrec',unique:'cards'})}`,{headers:{Accept:'application/json'}}).then(async r=>{const body=await r.json().catch(()=>null);
+  if(r.status===404||body?.code==='not_found')return {list:[],more:false};if(!r.ok||!body)throw Error();const list=(body.data||[]).map(slimCard);list.forEach(c=>finderFacts.put(c));return {list,more:!!body.has_more};})
+  .then(v=>{Sh.cards[k]={...v,at:Date.now()};},()=>{Sh.cards[k]={list:[],error:'This shelf couldn’t load. Check your connection.',at:Date.now()};})
+  .finally(()=>{shelfBusy--;if(econUi.shelves===Sh)refreshPlayMenu();pumpShelves();});}}
 const POOL_COLORS={W:'w',U:'u',B:'b',R:'r',G:'g',C:'c'};
 const POOL_TYPES={Creatures:'creature',Planeswalkers:'planeswalker',Instants:'instant',Sorceries:'sorcery',Artifacts:'artifact',Enchantments:'enchantment',Battles:'battle',Lands:'land'};
 function poolQuery(){const f=(econUi.edit?.format||'Standard').toLowerCase(),q=[`legal:${f}`,'game:paper'];const name=(econUi.cardQuery||'').trim().replace(/["\\]/g,'');if(name)q.push(`name:"${name}"`);
@@ -2606,10 +2632,12 @@ function renderPlayPage() {
   return playMenuMarkup(state,{lockedDecks:locked,econ:playEcon.snapshot(),story:storyHomeProgress(),friendRoom:friendRoomView(),challengeCount:challenges.length,canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,econFacts,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent),cpu3:state.podDecks?.cpu3?V.deckArtwork(state.podDecks.cpu3):'',cpu4:state.podDecks?.cpu4?V.deckArtwork(state.podDecks.cpu4):''}});
 }
 const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
-  const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]);
+  const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]),rows=[...document.querySelectorAll('[data-shelf-row]')].map(n=>[n.dataset.shelfRow,n.scrollLeft]);
   const importOpen=document.getElementById('playImportDisclosure')?.open;
   render();
   for(const [key,top]of scrolls){const node=document.querySelector(`[data-play-scroll="${key}"]`);if(node)node.scrollTop=top;}
+  // A shelf you were swiping keeps its place when another shelf lands and the builder redraws.
+  for(const [key,left]of rows){const node=document.querySelector(`[data-shelf-row="${CSS.escape(key)}"]`);if(node)node.scrollLeft=left;}
   const disclosure=document.getElementById('playImportDisclosure');if(disclosure&&importOpen!==undefined)disclosure.open=importOpen;
   if(disclosure)document.querySelector('.play-paste-pill')?.setAttribute('aria-expanded',String(disclosure.open));
 }};
