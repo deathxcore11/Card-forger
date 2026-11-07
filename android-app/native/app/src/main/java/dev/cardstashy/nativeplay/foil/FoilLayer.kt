@@ -140,6 +140,8 @@ object FoilMaps {
                     val px = IntArray(w * h); bmp.getPixels(px, 0, w, 0, 0, w, h)
                     val m = MtgFoil.analyze(px, w, h, facetText)
                     val facet = m.facet?.let { f -> synchronized(flows) { figures[image] }?.let { matte(f, it, w, h, facetText!!) } ?: f }
+                    // Facet foil's matte figure comes from the depth cut, measured with the analysis even when 3D is off (once per card).
+                    if (m.facet != null) DepthLayers.facetFigure(context, image)
                     fl.value = Ready(rgba(m.mask, w, h), rgba(m.relief, w, h), null, rgba(m.stroke, w, h), facet?.let { rgba(it, w, h) })
                 }
             }
@@ -147,8 +149,9 @@ object FoilMaps {
     }
 
     /** Facet foil's matte figure (spec zone 3), as DepthLayers measured it: [figure] over the whole card at [w] x [h]. Kept per picture, and
-     *  laid into the facet map's G once (a new map, swapped in), so the foil sheet stays off the creature; nothing changes per frame. Only
-     *  a cut that passed the depth gate gets here; without one the figure simply wears the background sheet. */
+     *  laid into the facet map's G once (a new map, swapped in), so the foil sheet stays off the creature; nothing changes per frame. It is
+     *  measured with the maps (DepthLayers.facetFigure), 3D on or off. Only a cut that passed the depth gate gets here; without one the
+     *  figure simply wears the faint background sheet. */
     fun figure(image: String, figure: FloatArray, w: Int, h: Int) {
         val ready = synchronized(flows) {
             figures[image] = Triple(figure, w, h)
@@ -168,15 +171,7 @@ object FoilMaps {
     private val figures = object : LinkedHashMap<String, Triple<FloatArray, Int, Int>>(8, .75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Triple<FloatArray, Int, Int>>) = size > 6
     }
-    /** The figure scaled to the map, off the text box and the name bar (those are frame, not art). */
-    private fun matte(facet: ByteArray, fig: Triple<FloatArray, Int, Int>, w: Int, h: Int, text: FloatArray): ByteArray {
-        val m = DepthMatte.resize(fig.first, fig.second, fig.third, w, h)
-        for (k in m.indices) {
-            val u = (k % w + .5f) / w; val v = (k / w + .5f) / h
-            if (u >= text[0] && u <= text[2] && (v >= text[1] && v <= text[3] || v >= .035f && v <= .105f)) m[k] = 0f
-        }
-        return MtgFoil.withFigure(facet, m)
-    }
+    private fun matte(facet: ByteArray, fig: Triple<FloatArray, Int, Int>, w: Int, h: Int, text: FloatArray) = MtgFoil.figureMatte(facet, fig.first, fig.second, fig.third, w, h, text)
 
     /** A measured map as a shader input: clamped at the edges, bilinear like the site's textures. */
     fun input(b: Bitmap): Shader = BitmapShader(b, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply { filterMode = BitmapShader.FILTER_MODE_LINEAR }

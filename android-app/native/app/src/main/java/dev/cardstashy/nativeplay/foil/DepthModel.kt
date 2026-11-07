@@ -134,24 +134,27 @@ object DepthLayers {
 
     private val measuring = Mutex()
 
-    private suspend fun make(context: Context, key: String, image: String, win: FloatArray, open: Boolean, facetText: FloatArray?, f: MutableStateFlow<Ready?>) {
+    /** The art crop at layer size and its depth cut, read from disk or measured once (the model, one card at a time). Null when the
+     *  picture cannot be had, or when [wanted] says nobody is waiting for it any more (a pager swiped past). */
+    private class Measured(val hi: IntArray, val hw: Int, val hh: Int, val cut: DepthMatte.Cut)
+    private suspend fun measure(context: Context, image: String, win: FloatArray, open: Boolean, wanted: () -> Boolean): Measured? {
         val dir = File(context.filesDir, "depth").apply { mkdirs() }
         // The depth cut on disk is the same with or without shards (they are cut from the picture below, in a blink), so it keeps its name.
-        val file = File(dir, sha("$VERSION|${key.substringBefore("|facet|")}") + ".bin")
+        val file = File(dir, sha("$VERSION|${key(image, win, open, null)}") + ".bin")
         val req = ImageRequest.Builder(context).data(image).allowHardware(false).build()
-        val src = (CardArt.loader.execute(req) as? SuccessResult)?.image?.toBitmap() ?: return
+        val src = (CardArt.loader.execute(req) as? SuccessResult)?.image?.toBitmap() ?: return null
         val card = if (src.config == Bitmap.Config.ARGB_8888) src else src.copy(Bitmap.Config.ARGB_8888, false)
         val x0 = (win[0] * card.width).roundToInt().coerceIn(0, card.width - 1); val y0 = (win[1] * card.height).roundToInt().coerceIn(0, card.height - 1)
         val cw = (win[2] * card.width).roundToInt().coerceAtMost(card.width) - x0; val ch = (win[3] * card.height).roundToInt().coerceAtMost(card.height) - y0
-        if (cw < 16 || ch < 16) return
+        if (cw < 16 || ch < 16) return null
         val crop = Bitmap.createBitmap(card, x0, y0, cw, ch)
         val hw = min(cw, MAX_WIDTH); val hh = (ch.toFloat() * hw / cw).roundToInt()
         val hiBmp = if (hw == cw) crop else Bitmap.createScaledBitmap(crop, hw, hh, true)
         val hi = IntArray(hw * hh).also { hiBmp.getPixels(it, 0, hw, 0, 0, hw, hh) }
         val cut = read(file, hw, hh) ?: measuring.withLock {
             // Swiping fast through a pager queues cards; the ones nobody is still looking at wait until they open again.
-            if (f.subscriptionCount.value == 0) { forget(key); return }
-            val d = DepthModel.run(context, crop) ?: return
+            if (!wanted()) return null
+            val d = DepthModel.run(context, crop) ?: return null
             val lw = min(cw, DepthMatte.CUT_WIDTH); val lh = (ch.toFloat() * lw / cw).roundToInt()
             val loBmp = Bitmap.createScaledBitmap(crop, lw, lh, true)
             val lo = IntArray(lw * lh).also { loBmp.getPixels(it, 0, lw, 0, 0, lw, lh) }
@@ -159,6 +162,28 @@ object DepthLayers {
             (if (open) DepthMatte.cutFull(lo, dl, lw, lh, hi, hw, hh) else DepthMatte.cut(lo, dl, lw, lh, hi, hw, hh))
                 .also { Log.i("DepthLayers", "$image ${it.gate}"); write(file, it) }
         }
+        return Measured(hi, hw, hh, cut)
+    }
+
+    private val figured = HashSet<String>()
+    /**
+     * Facet foil's matte figure (spec zone 3) for the foil maps, measured with the analysis whether or not the card is ever shown in 3D:
+     * the same depth cut the figure layer uses (and its file on disk, so it runs once per card), handed to FoilMaps. A cut the gate turns
+     * down gives no figure, and the creature wears the faint background sheet.
+     */
+    fun facetFigure(context: Context, image: String) {
+        synchronized(figured) { if (!figured.add(image)) return }
+        scope.launch {
+            runCatching {
+                val m = measure(context.applicationContext, image, floatArrayOf(0f, 0f, 1f, 1f), true) { true } ?: return@runCatching
+                m.cut.figure?.let { FoilMaps.figure(image, it, m.hw, m.hh) }
+            }.onFailure { Log.w("DepthLayers", "no facet figure for $image", it); synchronized(figured) { figured.remove(image) } }
+        }
+    }
+
+    private suspend fun make(context: Context, key: String, image: String, win: FloatArray, open: Boolean, facetText: FloatArray?, f: MutableStateFlow<Ready?>) {
+        val m = measure(context, image, win, open) { f.subscriptionCount.value > 0 } ?: run { if (f.subscriptionCount.value == 0) forget(key); return }
+        val hi = m.hi; val hw = m.hw; val hh = m.hh; val cut = m.cut
         // The gate said no: a framed card keeps the window-only depth, a full art stays flat (facet shards alone never make a figure).
         val cutFigure = cut.figure ?: return
         // Facet foil (full arts): the figure is the matte part of the print (spec zone 3), so the foil learns it here; and the printed

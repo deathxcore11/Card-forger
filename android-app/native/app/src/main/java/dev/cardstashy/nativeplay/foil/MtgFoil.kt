@@ -110,7 +110,7 @@ object MtgFoil {
     }
 
     /** Facet foil's cut. [facet] RGBA: R the shard's tilt seed (one hashed value per piece, kept whole, never blurred, and carried a
-     *  couple of pixels past the piece so filtering never mixes in another value), G the matte figure (the [figurePrior] stand-in here; [withFigure] lays in the measured one),
+     *  couple of pixels past the piece so filtering never mixes in another value), G the matte figure (0 here: it is measured from the card's depth cut, which [figureMatte] lays in),
      *  B the shard: its depth inside the piece, 0 at the outline rising to 1 halfway in, so flash and sheen fade softly to the outline;
      *  A 255. [edge] the printed cut edges next to a shard (0..1), [shard] the shard pieces as a 0/1 mask and [pieces] how many. */
     class Facets(val facet: ByteArray, val edge: FloatArray, val shard: FloatArray, val pieces: Int)
@@ -179,8 +179,11 @@ object MtgFoil {
             var next = 0
             for (f in 0 until front) {
                 val k = queue[f]; val x = k % W; val id = label[k]
-                fun join(n: Int) { if (grow[n] && label[n] == 0 && (r < artRings || box[n])) { label[n] = id; ring[next++] = n } }
-                if (x > 0) join(k - 1); if (x < W - 1) join(k + 1); if (k >= W) join(k - W); if (k < N - W) join(k + W)
+                // The four neighbours, written out (no local function: it would capture and allocate per pixel).
+                for (dir in 0 until 4) {
+                    val n = when (dir) { 0 -> if (x > 0) k - 1 else -1; 1 -> if (x < W - 1) k + 1 else -1; 2 -> if (k >= W) k - W else -1; else -> if (k < N - W) k + W else -1 }
+                    if (n >= 0 && grow[n] && label[n] == 0 && (r < artRings || box[n])) { label[n] = id; ring[next++] = n }
+                }
             }
             System.arraycopy(ring, 0, queue, 0, next); front = next
         }
@@ -192,8 +195,10 @@ object MtgFoil {
                 val x = k % W
                 val a = if (x > 0) label[k - 1] else 0; val b = if (x < W - 1) label[k + 1] else 0
                 val c = if (k >= W) label[k - W] else 0; val d = if (k < N - W) label[k + W] else 0
-                fun held(id: Int) = id > 0 && (if (a == id) 1 else 0) + (if (b == id) 1 else 0) + (if (c == id) 1 else 0) + (if (d == id) 1 else 0) >= 3
-                ring[k] = if (held(a)) a else if (held(b)) b else 0
+                // Held on three sides: by a's piece or by b's (any three of four include a or b).
+                val byA = a > 0 && 1 + (if (b == a) 1 else 0) + (if (c == a) 1 else 0) + (if (d == a) 1 else 0) >= 3
+                val byB = b > 0 && (if (a == b) 1 else 0) + 1 + (if (c == b) 1 else 0) + (if (d == b) 1 else 0) >= 3
+                ring[k] = if (byA) a else if (byB) b else 0
             }
             for (k in 0 until N) if (ring[k] > 0) label[k] = ring[k]
         }
@@ -202,12 +207,12 @@ object MtgFoil {
         // pixels of contact are needed, so two shards meeting at a corner where the outline breaks stay apart.
         run {
             var pairs = LongArray(1024); var np = 0
-            fun touch(a: Int, b: Int) {
-                if (a <= 0 || b <= 0 || a == b) return
+            for (k in 0 until N) for (dir in 0 until 2) {
+                val a = label[k]; val b = if (dir == 0) (if (k % W < W - 1) label[k + 1] else 0) else (if (k < N - W) label[k + W] else 0)
+                if (a <= 0 || b <= 0 || a == b) continue
                 if (np == pairs.size) pairs = pairs.copyOf(np * 2)
                 pairs[np++] = min(a, b).toLong() shl 32 or max(a, b).toLong()
             }
-            for (k in 0 until N) { if (k % W < W - 1) touch(label[k], label[k + 1]); if (k < N - W) touch(label[k], label[k + W]) }
             java.util.Arrays.sort(pairs, 0, np)
             val parent = IntArray(count + 1) { it }
             fun find(i: Int): Int { var r = i; while (parent[r] != r) r = parent[r]; var j = i; while (parent[j] != r) { val n = parent[j]; parent[j] = r; j = n }; return r }
@@ -292,8 +297,7 @@ object MtgFoil {
         val soft = YgoFoil.boxBlur(depth, W, H, 1, 2)
         val facet = ByteArray(N * 4)
         for (k in 0 until N) {
-            val u = (k % W + .5f) / W; val v = (k / W + .5f) / H
-            facet[k * 4] = if (seedPx[k] > 0) q(seedOf[seedPx[k]]) else 0; facet[k * 4 + 1] = q(figurePrior(u, v) * (1f - if (seedPx[k] > 0) soft[k] else 0f))
+            facet[k * 4] = if (seedPx[k] > 0) q(seedOf[seedPx[k]]) else 0; facet[k * 4 + 1] = 0
             facet[k * 4 + 2] = q(if (seedPx[k] > 0) soft[k] else 0f); facet[k * 4 + 3] = -1
         }
         // Cut edges: the printed neon outline within a few pixels of a shard, not every saturated ink on the card.
@@ -303,20 +307,23 @@ object MtgFoil {
         return Facets(facet, FloatArray(N) { max(near[it] * .85f, min(1f, rimEdge[it] * 1.6f)) }, shard, pieces)
     }
 
-    /** Where the matte figure probably is until the depth cut says (zone 3): a full art's creature sits in the middle of the card, so
-     *  the background sheet is kept faint there (a gloss, no rainbow band across the figure) and a little stronger toward the edges,
-     *  as one smooth falloff with no edge of its own. [withFigure] replaces it with the measured figure. */
-    fun figurePrior(u: Float, v: Float): Float {
-        val dx = (u - .5f) / .42f; val dy = (v - .42f) / .36f
-        return .45f + .4f * (1f - ss(.5f, 1.05f, kotlin.math.sqrt(dx * dx + dy * dy)))
-    }
-
     /** The matte figure (zone 3: the creature printed without foil) into a facet map's G, from a 0..1 matte at the map's size; under
      *  the shards it is 0 (the shard draws there). Returns a new map; the cut itself is untouched. */
     fun withFigure(facet: ByteArray, figure: FloatArray): ByteArray {
         val o = facet.copyOf()
         for (k in figure.indices) o[k * 4 + 1] = q(figure[k] * (1f - (facet[k * 4 + 2].toInt() and 255) / 255f))
         return o
+    }
+
+    /** The depth cut's figure ([fig], [fw] x [fh] over the whole card) laid into a facet map of [w] x [h]: scaled to the map and kept off
+     *  the text box, the footer under it and the name bar (those are frame, not art). */
+    fun figureMatte(facet: ByteArray, fig: FloatArray, fw: Int, fh: Int, w: Int, h: Int, text: FloatArray): ByteArray {
+        val m = DepthMatte.resize(fig, fw, fh, w, h)
+        for (k in m.indices) {
+            val u = (k % w + .5f) / w; val v = (k / w + .5f) / h
+            if (v >= text[3] || u >= text[0] && u <= text[2] && (v >= text[1] || v >= .035f && v <= .105f)) m[k] = 0f
+        }
+        return withFigure(facet, m)
     }
 
     /** The shader's hash() (Foil.AGSL), so a shard's seed is spread like the prototype's hashed facet ids. */

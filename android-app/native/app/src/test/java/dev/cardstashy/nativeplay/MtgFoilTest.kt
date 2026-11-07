@@ -131,11 +131,13 @@ class MtgFoilTest {
         assertTrue(seed(30, 70) != seed(200, 130))                                                             // the next shard tilts its own way
         assertEquals(255, shard(24, 240)); assertEquals(seed(24, 165), seed(24, 240))                          // C runs on into the text box, one piece
         assertEquals(0, shard(100, 250)); assertEquals(0, shard(152, 172)); assertEquals(0, shard(10, 10)); assertEquals(0, shard(175, 200))
-        // Until the depth cut, G is the soft stand-in for the figure (faint sheet mid-card), and nothing under a shard.
-        assertEquals((MtgFoil.figurePrior(175.5f / W, 200.5f / H) * 255).roundToInt(), f.facet[(200 * W + 175) * 4 + 1].toInt() and 255)
-        assertEquals(0, f.facet[(100 * W + 45) * 4 + 1].toInt())
+        // G holds no guess: the figure comes only from the card's depth cut, laid in off the shards and off the boxes.
+        for (k in 0 until W * H) assertEquals(0, f.facet[k * 4 + 1].toInt())
         val fig = MtgFoil.withFigure(f.facet, FloatArray(W * H) { 1f })
         assertEquals(255, fig[(200 * W + 175) * 4 + 1].toInt() and 255); assertEquals(0, fig[(100 * W + 70) * 4 + 1].toInt()) // matte off the shards
+        val laid = MtgFoil.figureMatte(f.facet, FloatArray(4 * W * 4 * H) { 1f }, 4 * W, 4 * H, W, H, text)
+        assertEquals(255, laid[(160 * W + 100) * 4 + 1].toInt() and 255)        // the art, at the map's size
+        assertEquals(0, laid[(250 * W + 100) * 4 + 1].toInt()); assertEquals(0, laid[(20 * W + 100) * 4 + 1].toInt()) // text box, name bar: frame
         assertTrue(f.edge[100 * W + 121] > .8f)                                // the outline between the shards is a cut edge
         assertEquals(0f, f.edge[250 * W + 121], 0f)                            // ink far from a shard is not
         // Same card in, same cut out (cached once, never re-cut per frame).
