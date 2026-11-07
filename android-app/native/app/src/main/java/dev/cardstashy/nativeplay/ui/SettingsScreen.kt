@@ -605,6 +605,8 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Controllers" to "The left stick moves a soft cursor that slows over cards and buttons and carries the gold ring with it; A presses what it\u2019s on. The right stick scrolls, and the d-pad steps the ring as before (now on handhelds whose d-pad wasn\u2019t read, like the AYN Portal).",
+    "Packs" to "On wide handheld screens the opened card fills the left half, with the pack\u2019s cards and buttons beside it.",
     "Controllers" to "On a handheld or with a controller connected, a small bar in the corner shows what each button does for whatever the gold ring is on. X is the screen\u2019s main action (in a match it follows the table\u2019s button), Y looks closer and hold Y tilts the card, LB/RB switch tabs, LT/RT page, Start opens the menu. Phones without a controller look the same.",
     "Collection" to "Tapping the Card of the Day opens its card page in the app instead of the website.",
     "Foil" to "Magic foils look more like the real card: no milky wash, black ink stays black, Fracture shards read as glass and the rainbow sits on the foil, not over the art. Silver foils like Elesh Norn\u2019s keep their deep silver.",

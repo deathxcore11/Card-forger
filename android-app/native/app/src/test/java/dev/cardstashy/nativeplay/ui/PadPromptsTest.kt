@@ -84,6 +84,7 @@ class PadPromptsTest {
     }
 
     @Test fun barShowsOnlyWithAController() {
+        Pad.forget()
         rule.setContent { Box(Modifier.fillMaxSize()) { PadScreen(PadActs(x = PadAct("Pass") { })); PadPromptBar() } }
         rule.onNodeWithContentDescription("Controller", substring = true).assertDoesNotExist()
         Pad.used()

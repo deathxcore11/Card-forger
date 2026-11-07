@@ -52,6 +52,9 @@ object Pad {
 
     fun scan() { val on = runCatching { InputDevice.getDeviceIds().any { isPad(InputDevice.getDevice(it)) } }.getOrDefault(false); if (_connected.value != on) _connected.value = on }
 
+    /** For tests: as if no controller had ever been seen. */
+    internal fun forget() { _connected.value = false }
+
     /** A pad key or stick arrived: it is here, whatever the device list said. */
     fun used() { if (!_connected.value) _connected.value = true }
 

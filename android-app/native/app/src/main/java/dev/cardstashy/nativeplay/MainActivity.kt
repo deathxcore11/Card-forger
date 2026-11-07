@@ -7,6 +7,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import dev.cardstashy.nativeplay.ui.padRoot
 import dev.cardstashy.nativeplay.ui.PadPromptBar
+import dev.cardstashy.nativeplay.ui.PadCursorLayer
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.activity.enableEdgeToEdge
@@ -166,7 +167,7 @@ class MainActivity : ComponentActivity() {
                 // Collection saves made without signal go to the account now (cloud.js: the online event starts a sync).
                 dev.cardstashy.nativeplay.collection.WorkspaceSync.kick(applicationContext) }
         }) }
-        dev.cardstashy.nativeplay.ui.Pad.watch(this)
+        dev.cardstashy.nativeplay.ui.Pad.watch(this); dev.cardstashy.nativeplay.ui.PadCursor.attach(window.decorView)
         dev.cardstashy.nativeplay.ui.CollectionWrites.init()
         // Collection's engine starts a moment after the first frame (not while Play's Home is drawing), so Collection opens at once.
         window.decorView.post { dev.cardstashy.nativeplay.collection.CollectionWarm.start(this) }
@@ -183,6 +184,7 @@ class MainActivity : ComponentActivity() {
                 dev.cardstashy.nativeplay.ui.CollectionWritesHost(page)
                 UpdateHost(this@MainActivity)
                 PadPromptBar()
+                PadCursorLayer()
             }
         }
         Updater.check(this)
@@ -214,6 +216,17 @@ class MainActivity : ComponentActivity() {
                 super.dispatchKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_DOWN, dir, 0))
                 super.dispatchKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_UP, dir, 0)) }) return true
         when (event.keyCode) {
+            android.view.KeyEvent.KEYCODE_DPAD_UP, android.view.KeyEvent.KEYCODE_DPAD_DOWN, android.view.KeyEvent.KEYCODE_DPAD_LEFT, android.view.KeyEvent.KEYCODE_DPAD_RIGHT ->
+                if (event.action == android.view.KeyEvent.ACTION_DOWN) dev.cardstashy.nativeplay.ui.PadCursor.dpad()
+        }
+        when (event.keyCode) {
+            android.view.KeyEvent.KEYCODE_BUTTON_A -> {
+                // The stick cursor over something the ring can't rest on: A presses it there.
+                if (event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0 && dev.cardstashy.nativeplay.ui.PadCursor.pressA()) { aTaken = true; return true }
+                if (aTaken) { if (event.action == android.view.KeyEvent.ACTION_UP) aTaken = false; return true }
+            }
+        }
+        when (event.keyCode) {
             android.view.KeyEvent.KEYCODE_BUTTON_A ->
                 return super.dispatchKeyEvent(android.view.KeyEvent(event.downTime, event.eventTime, event.action, android.view.KeyEvent.KEYCODE_DPAD_CENTER, event.repeatCount, event.metaState, event.deviceId, event.scanCode, event.flags, event.source))
             android.view.KeyEvent.KEYCODE_BUTTON_B -> {
@@ -224,20 +237,26 @@ class MainActivity : ComponentActivity() {
         return super.dispatchKeyEvent(event)
     }
 
-    private var stickDir = 0
+    private var hatDir = 0
+    private var aTaken = false
     override fun dispatchGenericMotionEvent(ev: android.view.MotionEvent): Boolean {
         if (ev.isFromSource(android.view.InputDevice.SOURCE_JOYSTICK) && ev.action == android.view.MotionEvent.ACTION_MOVE) {
             dev.cardstashy.nativeplay.ui.Pad.used()
-            val x = ev.getAxisValue(android.view.MotionEvent.AXIS_X); val y = ev.getAxisValue(android.view.MotionEvent.AXIS_Y)
-            val dir = when { y < -.6f -> android.view.KeyEvent.KEYCODE_DPAD_UP; y > .6f -> android.view.KeyEvent.KEYCODE_DPAD_DOWN
-                x < -.6f -> android.view.KeyEvent.KEYCODE_DPAD_LEFT; x > .6f -> android.view.KeyEvent.KEYCODE_DPAD_RIGHT; else -> 0 }
-            // One step per push: the stick must come back to centre before it moves focus again.
-            if (dir != stickDir) {
-                stickDir = dir
+            // The d-pad on many handhelds (the AYN Portal among them) arrives as a hat, not keys: one ring step per press. Taking the
+            // event here stops the system turning it into keys itself, so the hat has to be read here (0.4.44 missed it: no d-pad).
+            val hx = ev.getAxisValue(android.view.MotionEvent.AXIS_HAT_X); val hy = ev.getAxisValue(android.view.MotionEvent.AXIS_HAT_Y)
+            val dir = when { hy < -.5f -> android.view.KeyEvent.KEYCODE_DPAD_UP; hy > .5f -> android.view.KeyEvent.KEYCODE_DPAD_DOWN
+                hx < -.5f -> android.view.KeyEvent.KEYCODE_DPAD_LEFT; hx > .5f -> android.view.KeyEvent.KEYCODE_DPAD_RIGHT; else -> 0 }
+            if (dir != hatDir) {
+                hatDir = dir
                 if (dir != 0) { val now = android.os.SystemClock.uptimeMillis()
-                    super.dispatchKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_DOWN, dir, 0))
-                    super.dispatchKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_UP, dir, 0)) }
+                    dev.cardstashy.nativeplay.ui.PadCursor.dpad(); dev.cardstashy.nativeplay.ui.PadPrompts.lastPress = now
+                    super.dispatchKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_DOWN, dir, 0, 0, ev.deviceId, 0, 0, android.view.InputDevice.SOURCE_DPAD))
+                    super.dispatchKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_UP, dir, 0, 0, ev.deviceId, 0, 0, android.view.InputDevice.SOURCE_DPAD)) }
             }
+            // Left stick: the cursor. Right stick: scroll what is under it.
+            dev.cardstashy.nativeplay.ui.PadCursor.left(ev.getAxisValue(android.view.MotionEvent.AXIS_X), ev.getAxisValue(android.view.MotionEvent.AXIS_Y))
+            dev.cardstashy.nativeplay.ui.PadCursor.right(ev.getAxisValue(android.view.MotionEvent.AXIS_Z), ev.getAxisValue(android.view.MotionEvent.AXIS_RZ))
             return true
         }
         return super.dispatchGenericMotionEvent(ev)
