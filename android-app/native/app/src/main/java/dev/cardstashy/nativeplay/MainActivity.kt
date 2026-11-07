@@ -217,7 +217,11 @@ class MainActivity : ComponentActivity() {
                 super.dispatchKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_UP, dir, 0)) }) return true
         when (event.keyCode) {
             android.view.KeyEvent.KEYCODE_DPAD_UP, android.view.KeyEvent.KEYCODE_DPAD_DOWN, android.view.KeyEvent.KEYCODE_DPAD_LEFT, android.view.KeyEvent.KEYCODE_DPAD_RIGHT ->
-                if (event.action == android.view.KeyEvent.ACTION_DOWN) dev.cardstashy.nativeplay.ui.PadCursor.dpad()
+                if (event.action == android.view.KeyEvent.ACTION_DOWN) { dev.cardstashy.nativeplay.ui.PadCursor.dpad()
+                    // Nothing has the ring yet: the first press puts it on the screen instead of going nowhere.
+                    val pad = event.isFromSource(android.view.InputDevice.SOURCE_GAMEPAD) || event.isFromSource(android.view.InputDevice.SOURCE_JOYSTICK) || event.source == android.view.InputDevice.SOURCE_DPAD
+                    if (if (pad) dev.cardstashy.nativeplay.ui.PadPrompts.navigate(event.keyCode) else dev.cardstashy.nativeplay.ui.PadPrompts.enter(event.keyCode)) { dpadEntered = event.keyCode; return true } }
+                else if (event.action == android.view.KeyEvent.ACTION_UP && dpadEntered == event.keyCode) { dpadEntered = 0; return true }
         }
         when (event.keyCode) {
             android.view.KeyEvent.KEYCODE_BUTTON_A -> {
@@ -239,6 +243,7 @@ class MainActivity : ComponentActivity() {
 
     private var hatDir = 0
     private var aTaken = false
+    private var dpadEntered = 0
     override fun dispatchGenericMotionEvent(ev: android.view.MotionEvent): Boolean {
         if (ev.isFromSource(android.view.InputDevice.SOURCE_JOYSTICK) && ev.action == android.view.MotionEvent.ACTION_MOVE) {
             dev.cardstashy.nativeplay.ui.Pad.used()

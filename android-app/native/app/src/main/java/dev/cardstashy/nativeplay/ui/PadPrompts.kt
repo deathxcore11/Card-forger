@@ -107,6 +107,41 @@ object PadPrompts {
     private var focusLayers: Set<Any> = emptySet()
     internal var windowFocused by mutableStateOf(true)
 
+    internal var focusManager: androidx.compose.ui.focus.FocusManager? = null
+    internal var inputModes: androidx.compose.ui.input.InputModeManager? = null
+
+    /**
+     * A d-pad press with nothing focused: put the ring on the screen's first stop in that direction. Compose only moves focus
+     * that exists, so without this the first press did nothing (Randall on the AYN Portal, 7 Nov). True when the ring landed.
+     */
+    fun enter(keyCode: Int): Boolean {
+        if (anyFocus) return false
+        val fm = focusManager ?: return false
+        inputModes?.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard)
+        val dir = when (keyCode) {
+            KeyEvent.KEYCODE_DPAD_UP -> androidx.compose.ui.focus.FocusDirection.Up; KeyEvent.KEYCODE_DPAD_DOWN -> androidx.compose.ui.focus.FocusDirection.Down
+            KeyEvent.KEYCODE_DPAD_LEFT -> androidx.compose.ui.focus.FocusDirection.Left; KeyEvent.KEYCODE_DPAD_RIGHT -> androidx.compose.ui.focus.FocusDirection.Right
+            else -> return false
+        }
+        return fm.moveFocus(dir) || fm.moveFocus(androidx.compose.ui.focus.FocusDirection.Next)
+    }
+
+    /**
+     * A controller's d-pad: into the screen when nothing has the ring; up and down always move the ring (a text field would
+     * otherwise keep them for its caret and trap it). Left and right go on to the focused thing (sliders, the pack's hand).
+     */
+    fun navigate(keyCode: Int): Boolean {
+        if (enter(keyCode)) return true
+        val fm = focusManager ?: return false
+        return when (keyCode) {
+            // Nothing straight above or below (a glass top bar over a list that runs under it, a side rail's last tab): the next
+            // stop in reading order instead, so the ring never sticks.
+            KeyEvent.KEYCODE_DPAD_UP -> { fm.moveFocus(androidx.compose.ui.focus.FocusDirection.Up) || fm.moveFocus(androidx.compose.ui.focus.FocusDirection.Previous); true }
+            KeyEvent.KEYCODE_DPAD_DOWN -> { fm.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) || fm.moveFocus(androidx.compose.ui.focus.FocusDirection.Next); true }
+            else -> false
+        }
+    }
+
     internal fun focus(owner: Any, acts: PadActs) { if (focusOwner !== owner) focusLayers = screens.mapTo(HashSet()) { it.first }; focusOwner = owner; focused = acts }
     internal fun blur(owner: Any) { if (focusOwner === owner) { focusOwner = null; focused = null } }
 
@@ -237,8 +272,14 @@ fun PadScreen(acts: PadActs) {
     LaunchedEffect(acts) { val i = PadPrompts.screens.indexOfFirst { it.first === owner }; if (i >= 0) PadPrompts.screens[i] = owner to acts }
 }
 
-/** On the app's root: does anything have the controller's focus? */
-fun Modifier.padRoot(): Modifier = onFocusChanged { PadPrompts.anyFocus = it.hasFocus }
+/** On the app's root: does anything have the controller's focus? It also keeps the focus manager for [PadPrompts.enter]. */
+@Composable
+fun Modifier.padRoot(): Modifier {
+    val fm = androidx.compose.ui.platform.LocalFocusManager.current
+    val modes = androidx.compose.ui.platform.LocalInputModeManager.current
+    DisposableEffect(fm) { PadPrompts.focusManager = fm; PadPrompts.inputModes = modes; onDispose { if (PadPrompts.focusManager === fm) PadPrompts.focusManager = null } }
+    return onFocusChanged { PadPrompts.anyFocus = it.hasFocus }
+}
 
 /**
  * The prompt bar: a small glass pill, bottom right, with only the buttons that do something on whatever the gold ring is on.
@@ -261,7 +302,7 @@ fun BoxScope.PadPromptBar() {
     AnimatedVisibility(on && items.isNotEmpty(), Modifier.align(Alignment.BottomEnd).windowInsetsPadding(WindowInsets.navigationBars).padding(end = 16.dp, bottom = 16.dp + lift),
         enter = fadeIn(), exit = fadeOut()) {
         val shape = RoundedCornerShape(999.dp)
-        Row(Modifier.alpha(k).clip(shape).background(Color(0xD9101217)).border(1.dp, Color(0x40D6AD64), shape).padding(horizontal = 12.dp, vertical = 7.dp)
+        Row(Modifier.alpha(k).clip(shape).background(Color(0xF2101217)).border(1.dp, Color(0x40D6AD64), shape).padding(horizontal = 12.dp, vertical = 7.dp)
             .semantics { contentDescription = "Controller: " + items.joinToString(", ") { "${it.first} ${it.second}" } },
             horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
             items.forEach { (b, l) -> PadKey(b, l) }
