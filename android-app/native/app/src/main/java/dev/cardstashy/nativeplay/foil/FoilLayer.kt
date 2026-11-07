@@ -73,7 +73,8 @@ sealed interface CardFinish {
 
 /** Measured maps per card picture, made once off the main thread and kept for the session (LRU). */
 object FoilMaps {
-    class Ready(val mask: Bitmap, val relief: Bitmap, val glyph: Bitmap?)
+    /** [stroke] and [facet]: Magic only (MtgFoil.Maps), the drawn lines' direction and the facet shards; null for the other games. */
+    class Ready(val mask: Bitmap, val relief: Bitmap, val glyph: Bitmap?, val stroke: Bitmap? = null, val facet: Bitmap? = null)
     // A picture that can't be fetched or measured leaves its card plain (the layer waits for maps that never come); it must never
     // take the app down from a background thread.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + kotlinx.coroutines.CoroutineExceptionHandler { _, e ->
@@ -124,10 +125,13 @@ object FoilMaps {
         }
     }
 
-    /** Magic: the printing's inks (MtgFoil.analyze) at the site's analysis size, half the scan's width. */
-    fun mtg(context: android.content.Context, image: String): StateFlow<Ready?> = synchronized(flows) {
-        val key = "mtg|$image"
-        flows[key] ?: MutableStateFlow<Ready?>(null).also { fl ->
+    /** Magic: the printing's inks and drawn lines (MtgFoil.analyze) at the site's analysis size, half the scan's width; for a facet
+     *  foil ([facetText] its frame's text box) its shards too, cut once here and kept with the maps. */
+    fun mtg(context: android.content.Context, image: String, facetText: FloatArray? = null): StateFlow<Ready?> = synchronized(flows) {
+        val key = "mtg|$image" + (facetText?.let { "|facet|" + it.joinToString(",") } ?: "")
+        // A facet card shown again whose figure was never measured (swiped past before it settled) asks for it again.
+        flows[key]?.also { fl -> if (fl.value?.facet != null && figures[image] == null) DepthLayers.facetFigure(context, image) { fl.subscriptionCount.value > 0 } } ?:
+        MutableStateFlow<Ready?>(null).also { fl ->
             flows[key] = fl
             scope.launch {
                 gate.withPermit {
@@ -136,12 +140,45 @@ object FoilMaps {
                     val (w, h) = MtgFoil.analysisSize(src.width, src.height)
                     val bmp = Bitmap.createScaledBitmap(if (src.config == Bitmap.Config.ARGB_8888) src else src.copy(Bitmap.Config.ARGB_8888, false), w, h, true)
                     val px = IntArray(w * h); bmp.getPixels(px, 0, w, 0, 0, w, h)
-                    val m = MtgFoil.analyze(px, w, h)
-                    fl.value = Ready(rgba(m.mask, w, h), rgba(m.relief, w, h), null)
+                    val m = MtgFoil.analyze(px, w, h, facetText)
+                    val had = synchronized(flows) { figures[image] }
+                    val facet = m.facet?.let { f -> had?.let { matte(f, it, w, h, facetText!!) } ?: f }
+                    fl.value = Ready(rgba(m.mask, w, h), rgba(m.relief, w, h), null, rgba(m.stroke, w, h), facet?.let { rgba(it, w, h) })
+                    if (m.facet != null) {
+                        // A figure that landed while these maps were made is laid in now (figure() found no maps to put it in).
+                        synchronized(flows) { figures[image] }?.takeIf { it !== had }?.let { figure(image, it.first, it.second, it.third) }
+                        // Facet foil's matte figure comes from the depth cut, measured with the analysis even when 3D is off, while the card is shown.
+                        if (had == null) DepthLayers.facetFigure(context, image) { fl.subscriptionCount.value > 0 }
+                    }
                 }
             }
         }
     }
+
+    /** Facet foil's matte figure (spec zone 3), as DepthLayers measured it: [figure] over the whole card at [w] x [h]. Kept per picture, and
+     *  laid into the facet map's G once (a new map, swapped in), so the foil sheet stays off the creature; nothing changes per frame. It is
+     *  measured with the maps (DepthLayers.facetFigure), 3D on or off. Only a cut that passed the depth gate gets here; without one the
+     *  figure simply wears the faint background sheet. */
+    fun figure(image: String, figure: FloatArray, w: Int, h: Int) {
+        val ready = synchronized(flows) {
+            figures[image] = Triple(figure, w, h)
+            flows.entries.filter { it.key.startsWith("mtg|$image|facet|") }.map { it.key to it.value }
+        }
+        for ((key, fl) in ready) scope.launch {
+            val r = fl.value ?: return@launch // still measuring: the analysis lays the figure in when it lands
+            val f = r.facet ?: return@launch
+            val text = key.substringAfter("|facet|").split(",").map { it.toFloat() }.toFloatArray()
+            val fw = f.width; val fh = f.height
+            val px = IntArray(fw * fh).also { f.getPixels(it, 0, fw, 0, 0, fw, fh) }
+            val bytes = ByteArray(fw * fh * 4)
+            for (i in px.indices) { val p = px[i]; bytes[i * 4] = (p shr 16).toByte(); bytes[i * 4 + 1] = (p shr 8).toByte(); bytes[i * 4 + 2] = p.toByte(); bytes[i * 4 + 3] = -1 }
+            fl.value = Ready(r.mask, r.relief, r.glyph, r.stroke, rgba(matte(bytes, Triple(figure, w, h), fw, fh, text), fw, fh))
+        }
+    }
+    private val figures = object : LinkedHashMap<String, Triple<FloatArray, Int, Int>>(8, .75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Triple<FloatArray, Int, Int>>) = size > 6
+    }
+    private fun matte(facet: ByteArray, fig: Triple<FloatArray, Int, Int>, w: Int, h: Int, text: FloatArray) = MtgFoil.figureMatte(facet, fig.first, fig.second, fig.third, w, h, text)
 
     /** A measured map as a shader input: clamped at the edges, bilinear like the site's textures. */
     fun input(b: Bitmap): Shader = BitmapShader(b, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply { filterMode = BitmapShader.FILTER_MODE_LINEAR }

@@ -169,11 +169,12 @@ fun Modifier.depth(finish: CardFinish?, tilt: State<Offset>?): Modifier =
         val me = remember { Any() }
         DisposableEffect(me) { onDispose { DepthFocus.remove(me) } }
         val live by remember { derivedStateOf { DepthFocus.live(me) } }
+        val facetText = (finish as? CardFinish.Magic)?.look?.facetText
         val layers by produceState<DepthLayers.Ready?>(null, live, image, win) {
             if (!live || image == null) return@produceState
             // A card not measured yet waits until it has settled in view, so opening or swiping past it never starts the model.
-            if (!DepthLayers.known(image, win, open)) delay(Depth.SETTLE_MS)
-            DepthLayers.layers(context.applicationContext, image, win, open).collect { value = it }
+            if (!DepthLayers.known(image, win, open, facetText)) delay(Depth.SETTLE_MS)
+            DepthLayers.layers(context.applicationContext, image, win, open, facetText).collect { value = it }
         }
         val blank = remember { FoilMaps.blank }
         val ease = remember { Animatable(0f) }
