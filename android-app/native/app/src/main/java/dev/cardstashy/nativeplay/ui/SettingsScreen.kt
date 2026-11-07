@@ -603,6 +603,8 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Foil" to "Magic foils look more like the real card: no milky wash, black ink stays black, Fracture shards read as glass and the rainbow sits on the foil, not over the art. Silver foils like Elesh Norn\u2019s keep their deep silver.",
+    "Fixes" to "Settings \u203a Friends opens again for every account. Fewer freezes and stutters, the set row on a card from a pack opens its set, and Collection opens at once with the pages you last saw.",
     "Scanner" to "The Scanner is built into the app: your phone\u2019s camera with the website\u2019s card reader. Your scans and Fix card open in the app, where you can swipe through printings, pick the finish, copies and condition, then add them to your collection or a binder.",
     "Decks" to "Collection Decks open in about a second instead of 8 to 12, and each deck\u2019s page has Practice, War Chest and Share up top like the website, without the doubled buttons.",
     "Decks" to "Building a Collection deck has Owned and All cards, like Play: add any card, and the ones you don\u2019t own show grey with \u201cTo buy\u201d. In portrait, drag or tap the grip between the deck and the collection to give either more room.",
