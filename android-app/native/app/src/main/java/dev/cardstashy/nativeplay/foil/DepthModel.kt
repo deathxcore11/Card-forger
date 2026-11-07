@@ -22,6 +22,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -158,20 +159,29 @@ object DepthLayers {
             (if (open) DepthMatte.cutFull(lo, dl, lw, lh, hi, hw, hh) else DepthMatte.cut(lo, dl, lw, lh, hi, hw, hh))
                 .also { Log.i("DepthLayers", "$image ${it.gate}"); write(file, it) }
         }
-        // Facet foil: the printed glass shards are rigid plates at the glass over the art (with the figure when the gate passed it, alone
-        // when it did not), so the art slides behind them and they read raised; each shard stays one flat piece, never warped.
-        val shard = facetText?.let { t -> MtgFoil.facets(hi, hw, hh, t).takeIf { it.pieces > 0 }?.let { YgoFoil.boxBlur(it.shard, hw, hh, 1, 1) } }
-        val cutFigure = cut.figure
-        val figure = when {
-            shard == null -> cutFigure
-            cutFigure == null -> shard
-            else -> FloatArray(hw * hh) { max(cutFigure[it], shard[it]) }
-        } ?: return // the gate said no: a framed card keeps the window-only depth, a full art stays flat
+        // The gate said no: a framed card keeps the window-only depth, a full art stays flat (facet shards alone never make a figure).
+        val cutFigure = cut.figure ?: return
+        // Facet foil (full arts): the figure is the matte part of the print (spec zone 3), so the foil learns it here; and the printed
+        // glass shards join it at the glass as rigid plates, so the art slides behind them and they read raised, never warped. The
+        // shards are the ones the foil maps cut (FoilMaps.mtg, MtgFoil.facets), scaled up: one cut, so glass and shading always agree.
+        val shard = facetText?.let { t -> FoilMaps.figure(image, cutFigure, hw, hh); shards(context, image, t, hw, hh) }
+        val figure = if (shard == null) cutFigure else FloatArray(hw * hh) { max(cutFigure[it], shard[it]) }
         val pad = if (open) kotlin.math.ceil(1.6f * Depth.K * hw).toInt() + 3 else 0
         val l = if (open) DepthMatte.layersFull(hi, figure, hw, hh, pad, cut.gate) else DepthMatte.layers(hi, figure, hw, hh, cut.gate)
         val fig = IntArray(l.w * l.h) { i -> (255 shl 24) or (q(l.figure[i]) shl 16) or (q(l.shadow[i]) shl 8) or (if (l.hide[i]) 255 else 0) }
         val box = if (open) floatArrayOf(-pad.toFloat() / hw, -pad.toFloat() / hh, 1 + pad.toFloat() / hw, 1 + pad.toFloat() / hh) else win
         f.value = Ready(Bitmap.createBitmap(l.plate, l.w, l.h, Bitmap.Config.ARGB_8888), Bitmap.createBitmap(fig, l.w, l.h, Bitmap.Config.ARGB_8888), box)
+    }
+
+    /** The facet map's shards (its B, the depth inside each piece) at [w] x [h] over the whole card; null with no shards or no maps. */
+    private suspend fun shards(context: Context, image: String, text: FloatArray, w: Int, h: Int): FloatArray? {
+        val maps = kotlinx.coroutines.withTimeoutOrNull(8000) { FoilMaps.mtg(context, image, text).first { it != null } } ?: return null
+        val f = maps.facet ?: return null
+        val fw = f.width; val fh = f.height
+        val px = IntArray(fw * fh).also { f.getPixels(it, 0, fw, 0, 0, fw, fh) }
+        var any = false
+        val b = FloatArray(fw * fh) { val v = min(1f, (px[it] and 255) / 255f * 3f); if (v > 0f) any = true; v }
+        return if (any) DepthMatte.resize(b, fw, fh, w, h) else null
     }
 
     private fun forget(key: String) = synchronized(flows) { flows.remove(key) }

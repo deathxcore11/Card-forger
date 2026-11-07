@@ -53,8 +53,23 @@ class FoilTest {
 
     @Test(expected = IllegalArgumentException::class) fun brokenShaderIsRefused() { android.graphics.RuntimeShader("half4 main(float2 p){ return nope; }") }
 
+    /** Every AGSL shader compiles: with RuntimeShader where this runtime really compiles (a broken one throws), and with Skia's own
+     *  compiler off the phone (scripts/check-agsl.mjs, CanvasKit) whenever node and canvaskit-wasm are here (CANVASKIT_DIR). With
+     *  neither, the test is skipped, never passed. */
     @Test fun shaderCompiles() {
-        try { android.graphics.RuntimeShader(dev.cardstashy.nativeplay.ui.Foil.AGSL); android.graphics.RuntimeShader(dev.cardstashy.nativeplay.foil.Depth.AGSL) }
-        catch (e: UnsupportedOperationException) { println("RuntimeShader not available here: ${e.message}") }
+        val all = mapOf("Foil" to dev.cardstashy.nativeplay.ui.Foil.AGSL, "Depth" to dev.cardstashy.nativeplay.foil.Depth.AGSL,
+            "YgoFoil" to dev.cardstashy.nativeplay.foil.YgoFoil.AGSL, "PtcgFoil" to dev.cardstashy.nativeplay.foil.PtcgFoil.AGSL)
+        val real = runCatching { android.graphics.RuntimeShader("half4 main(float2 p){return half4(1.);}") }.isSuccess &&
+            runCatching { android.graphics.RuntimeShader("half4 main(float2 p){return nope;}") }.isFailure
+        if (real) for ((name, agsl) in all) {
+            try { android.graphics.RuntimeShader(agsl) } catch (e: IllegalArgumentException) { throw AssertionError("$name AGSL does not compile: ${e.message}", e) }
+        }
+        val script = java.io.File("../scripts/check-agsl.mjs").takeIf { it.isFile } ?: java.io.File("scripts/check-agsl.mjs")
+        val node = runCatching {
+            val p = ProcessBuilder("node", script.path, "src/main/java".takeIf { java.io.File(it).isDirectory } ?: "app/src/main/java").redirectErrorStream(true).start()
+            val out = p.inputStream.bufferedReader().readText(); out to p.waitFor()
+        }.getOrNull()?.takeIf { it.second != 2 }
+        org.junit.Assume.assumeTrue("no shader compiler here (RuntimeShader stubbed, no node + canvaskit-wasm)", real || node != null)
+        if (node != null) assertEquals(node.first, 0, node.second)
     }
 }

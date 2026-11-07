@@ -38,8 +38,8 @@ object MtgFoil {
     fun needsMaps(cover: Float, relief: Float, film: Float, pat: Float) = cover > 1.5f || relief > 0f || film > .5f || steered(pat) || abs(pat - FACET) < .5f
 
     /** mask: R gold ink, G fluorescent ink, B bare paper-white, A 255. relief: R smoothed height, G drawn lines, B facet cut edge (0 off
-     *  facet foil), A 255. stroke: R/G stroke direction (cos 2θ, sin 2θ as .5 + .5 v), B stroke strength, A 255.
-     *  facet (facet foil only): R/G the shard's hashed tilt seed, B shard, A 255. */
+     *  facet foil), A 255. stroke: R/G stroke direction (cos 2θ, sin 2θ as .5 + .5 v), B stroke strength (the site's
+     *  coherence x magnitude, gated by line evidence), A 255. facet (facet foil only): see [Facets]. */
     class Maps(val w: Int, val h: Int, val mask: ByteArray, val relief: ByteArray, val stroke: ByteArray, val facet: ByteArray? = null)
 
     private fun ss(a: Float, b: Float, x: Float): Float { val t = ((x - a) / (b - a)).coerceIn(0f, 1f); return t * t * (3 - 2 * t) }
@@ -72,30 +72,50 @@ object MtgFoil {
         val edge = YgoFoil.boxBlur(edge0, W, H, 1, 1)
         // Structure tensor (the site's analyzer): the drawn line's direction as a doubled angle, so a line and its reverse agree.
         val sxx = YgoFoil.boxBlur(jxx, W, H, 3); val syy = YgoFoil.boxBlur(jyy, W, H, 3); val sxy = YgoFoil.boxBlur(jxy, W, H, 3)
+        // Steering needs real line evidence: drawn lines close by (the edge measure) and local contrast. A smooth shaded area (a halo, a
+        // sky) has a coherent gradient too, but no lines; there the gate closes and fades, so it keeps the plain sweep of the sheet.
+        val lum2 = FloatArray(N) { lum[it] * lum[it] }
+        val mu = YgoFoil.boxBlur(lum, W, H, 2, 1); val mu2 = YgoFoil.boxBlur(lum2, W, H, 2, 1)
+        for (k in 0 until N) lum2[k] = ss(.05f, .22f, edge[k])
+        val lines = YgoFoil.boxBlur(lum2, W, H, 2, 1)
+        for (k in 0 until N) lum2[k] = ss(.025f, .07f, kotlin.math.sqrt(max(0f, mu2[k] - mu[k] * mu[k]))) * ss(.08f, .3f, lines[k])
+        val gate = YgoFoil.boxBlur(lum2, W, H, 1, 1)
+        for (k in 0 until N) {
+            val a = sxx[k] - syy[k]; val b = 2 * sxy[k]; val m = hypot(a, b); val coh = m / (sxx[k] + syy[k] + 1e-6f)
+            lum2[k] = ss(.15f, .7f, coh) * min(1f, m * 400) * gate[k]
+        }
+        val strength = YgoFoil.boxBlur(lum2, W, H, 1, 1)
         val goldS = YgoFoil.boxBlur(gold, W, H, 1, 1); val neonS = YgoFoil.boxBlur(neon, W, H, 1, 1); val paperS = YgoFoil.boxBlur(paper, W, H, 1, 1)
         val cut = facetText?.let { facets(argb, W, H, it) }
         val mask = ByteArray(N * 4); val relief = ByteArray(N * 4); val stroke = ByteArray(N * 4)
         for (k in 0 until N) {
             mask[k * 4] = q(goldS[k]); mask[k * 4 + 1] = q(neonS[k]); mask[k * 4 + 2] = q(paperS[k]); mask[k * 4 + 3] = -1
             relief[k * 4] = q(height[k]); relief[k * 4 + 1] = q(ss(.05f, .22f, edge[k])); relief[k * 4 + 2] = if (cut != null) q(cut.edge[k]) else 0; relief[k * 4 + 3] = -1
-            val a = sxx[k] - syy[k]; val b = 2 * sxy[k]; val m = hypot(a, b); val coh = m / (sxx[k] + syy[k] + 1e-6f)
+            val a = sxx[k] - syy[k]; val b = 2 * sxy[k]; val m = hypot(a, b)
             stroke[k * 4] = q(a / (m + 1e-9f) * .5f + .5f); stroke[k * 4 + 1] = q(b / (m + 1e-9f) * .5f + .5f)
-            stroke[k * 4 + 2] = q(ss(.15f, .7f, coh) * min(1f, m * 400)); stroke[k * 4 + 3] = -1
+            stroke[k * 4 + 2] = q(strength[k]); stroke[k * 4 + 3] = -1
         }
         return Maps(W, H, mask, relief, stroke, cut?.facet)
     }
 
-    /** Facet foil's cut: [facet] RGBA (R/G the shard's tilt seed, B shard, A 255), [edge] the printed cut edges next to a shard (0..1),
-     *  [shard] the shard pieces as a 0/1 mask and [pieces] how many there are. */
+    /** Facet foil's cut. [facet] RGBA: R the shard's tilt seed (one hashed value per piece, kept whole, never blurred, and carried a
+     *  couple of pixels past the piece so filtering never mixes in another value), G the matte figure (0 here; [withFigure] fills it),
+     *  B the shard: its depth inside the piece, 0 at the outline rising to 1 halfway in, so flash and sheen fade softly to the outline;
+     *  A 255. [edge] the printed cut edges next to a shard (0..1), [shard] the shard pieces as a 0/1 mask and [pieces] how many. */
     class Facets(val facet: ByteArray, val edge: FloatArray, val shard: FloatArray, val pieces: Int)
+
+    /** Share of a piece's outline that must run along a printed neon line: a printed shard is drawn with one, a pale patch of art
+     *  (teeth, a highlight, sky) is not, so it stays art instead of flashing as glass. */
+    const val OUTLINED = .12f
 
     /**
      * Finds the printed glass shards once per card (never per pixel per frame). A shard's face is pale, low-saturation glass (sat < .3,
      * lum > .35, blue at least red) outside the text box and the name bar; its printed outline is a saturated neon line. Faces are split
      * into real connected pieces by those lines (4-connected; the lines and boxes are walls), crumbs (a letter, a highlight) are let go,
      * and each piece then takes in its own darker blue facets, grown a few pixels, never across a line or into a box, so a shard
-     * flashes in one piece. Each piece's tilt seed is hashed from where it starts, so the same card always cuts the same way.
-     * Sizes are set at the analysis width of a normal scan (244 px) and scale with [W]. [text] is the frame's text box in card space.
+     * flashes in one piece. Pieces whose outline barely touches a printed line are not glass and are let go too. Each piece's tilt
+     * seed is hashed from where it starts, so the same card always cuts the same way. Sizes are set at the analysis width of a normal
+     * scan (244 px) and scale with [W]. [text] is the frame's text box in card space. No per-pixel allocation: flat int buffers only.
      */
     fun facets(argb: IntArray, W: Int, H: Int, text: FloatArray): Facets {
         val N = W * H; val s = W / 244f
@@ -113,11 +133,11 @@ object MtgFoil {
             seed[k] = sat < .3f && lum > .35f && b >= r
             grow[k] = seed[k] || (b - r > .04f && b > .12f) || (sat < .3f && lum > .3f && b >= r - .01f)
         }
-        val label = IntArray(N); val queue = IntArray(N); val starts = ArrayList<Int>(); var pieces = 0
+        val label = IntArray(N); val queue = IntArray(N); var starts = IntArray(64); var count = 0
         val minArea = max(8, (40 * s * s).roundToInt())
         for (k0 in 0 until N) {
             if (!seed[k0] || label[k0] != 0) continue
-            val id = starts.size + 1; var head = 0; var tail = 0; queue[tail++] = k0; label[k0] = id
+            val id = count + 1; var head = 0; var tail = 0; queue[tail++] = k0; label[k0] = id
             while (head < tail) {
                 val k = queue[head++]; val x = k % W
                 if (x > 0 && seed[k - 1] && label[k - 1] == 0) { label[k - 1] = id; queue[tail++] = k - 1 }
@@ -125,51 +145,117 @@ object MtgFoil {
                 if (k >= W && seed[k - W] && label[k - W] == 0) { label[k - W] = id; queue[tail++] = k - W }
                 if (k < N - W && seed[k + W] && label[k + W] == 0) { label[k + W] = id; queue[tail++] = k + W }
             }
-            starts.add(k0)
-            if (tail < minArea) for (i in 0 until tail) label[queue[i]] = -1 else pieces++
+            if (count == starts.size) starts = starts.copyOf(count * 2)
+            starts[count++] = k0
+            if (tail < minArea) for (i in 0 until tail) label[queue[i]] = -1
         }
-        // Darker facets join their shard one ring of pixels at a time (all shards grow together, so none steals another's).
-        var front = (0 until N).filter { label[it] > 0 }.toIntArray()
+        // Darker facets join their shard one ring of pixels at a time (all shards grow together, so none steals another's). The front
+        // and the next ring share one buffer: the front at the start, the next ring written from the end.
+        var front = 0
+        for (k in 0 until N) if (label[k] > 0) queue[front++] = k
+        val ring = IntArray(N)
         repeat(max(1, (10 * s).roundToInt())) {
-            val next = ArrayList<Int>()
-            for (k in front) {
-                val x = k % W; val id = label[k]
-                if (x > 0 && grow[k - 1] && label[k - 1] == 0) { label[k - 1] = id; next.add(k - 1) }
-                if (x < W - 1 && grow[k + 1] && label[k + 1] == 0) { label[k + 1] = id; next.add(k + 1) }
-                if (k >= W && grow[k - W] && label[k - W] == 0) { label[k - W] = id; next.add(k - W) }
-                if (k < N - W && grow[k + W] && label[k + W] == 0) { label[k + W] = id; next.add(k + W) }
+            var next = 0
+            for (f in 0 until front) {
+                val k = queue[f]; val x = k % W; val id = label[k]
+                if (x > 0 && grow[k - 1] && label[k - 1] == 0) { label[k - 1] = id; ring[next++] = k - 1 }
+                if (x < W - 1 && grow[k + 1] && label[k + 1] == 0) { label[k + 1] = id; ring[next++] = k + 1 }
+                if (k >= W && grow[k - W] && label[k - W] == 0) { label[k - W] = id; ring[next++] = k - W }
+                if (k < N - W && grow[k + W] && label[k + W] == 0) { label[k + W] = id; ring[next++] = k + W }
             }
-            front = next.toIntArray()
+            System.arraycopy(ring, 0, queue, 0, next); front = next
         }
         // Pinholes (a speck of print the rules missed) close: a free pixel held on three sides by one shard joins it.
         repeat(2) {
-            val fill = IntArray(N)
+            for (k in 0 until N) ring[k] = 0
             for (k in 0 until N) {
                 if (label[k] > 0 || wall[k]) continue
                 val x = k % W
-                val n = intArrayOf(if (x > 0) label[k - 1] else 0, if (x < W - 1) label[k + 1] else 0, if (k >= W) label[k - W] else 0, if (k < N - W) label[k + W] else 0)
-                n.firstOrNull { id -> id > 0 && n.count { it == id } >= 3 }?.let { fill[k] = it }
+                val a = if (x > 0) label[k - 1] else 0; val b = if (x < W - 1) label[k + 1] else 0
+                val c = if (k >= W) label[k - W] else 0; val d = if (k < N - W) label[k + W] else 0
+                fun held(id: Int) = id > 0 && (if (a == id) 1 else 0) + (if (b == id) 1 else 0) + (if (c == id) 1 else 0) + (if (d == id) 1 else 0) >= 3
+                ring[k] = if (held(a)) a else if (held(b)) b else 0
             }
-            for (k in 0 until N) if (fill[k] > 0) label[k] = fill[k]
+            for (k in 0 until N) if (ring[k] > 0) label[k] = ring[k]
         }
-        val shard = FloatArray(N); val jx = FloatArray(N); val jy = FloatArray(N)
+        // A piece is glass only when its outline runs along a printed line for a fair share of its length.
+        val near = FloatArray(N) { if (line[it]) 1f else 0f }
+        val reachLine = YgoFoil.boxBlur(near, W, H, max(1, (2 * s).roundToInt()), 1)
+        val rim = IntArray(count + 1); val drawn = IntArray(count + 1)
+        for (k in 0 until N) {
+            val id = label[k]; if (id <= 0) continue
+            val x = k % W
+            val edgeOf = (x > 0 && label[k - 1] != id) || (x < W - 1 && label[k + 1] != id) || (k >= W && label[k - W] != id) || (k < N - W && label[k + W] != id)
+            if (!edgeOf) continue
+            rim[id]++; if (reachLine[k] > 1e-3f) drawn[id]++
+        }
+        val keep = BooleanArray(count + 1); var pieces = 0
+        for (id in 1..count) if (rim[id] > 0 && drawn[id] >= OUTLINED * rim[id]) { keep[id] = true; pieces++ }
+        for (k in 0 until N) if (label[k] > 0 && !keep[label[k]]) label[k] = 0
+        // Depth inside each piece (chamfer distance to its outline), so the shard fades to its outline; out of the card counts as inside.
+        val INF = 1e6f; val dist = FloatArray(N)
         for (k in 0 until N) {
             val id = label[k]
-            if (id > 0) {
-                val k0 = starts[id - 1]; val sx = (k0 % W).toFloat() / W * 97f; val sy = (k0 / W).toFloat() / H * 97f
-                shard[k] = 1f; jx[k] = hash(sx, sy); jy[k] = hash(sx + 17.31f, sy + 17.31f)
+            dist[k] = if (id <= 0) 0f else {
+                val x = k % W
+                if ((x > 0 && label[k - 1] != id) || (x < W - 1 && label[k + 1] != id) || (k >= W && label[k - W] != id) || (k < N - W && label[k + W] != id)) 1f else INF
             }
         }
-        // Soft rims, so a shard's outline is smooth when the map is drawn at card size. The seed is stored multiplied by the shard
-        // (premultiplied), so the shader reads it back exactly as seed = RG / B even where the map is filtered across the rim.
-        val soft = YgoFoil.boxBlur(shard, W, H, 1, 1); val sjx = YgoFoil.boxBlur(jx, W, H, 1, 1); val sjy = YgoFoil.boxBlur(jy, W, H, 1, 1)
+        val D = 1.4142f
+        for (y in 0 until H) for (x in 0 until W) {
+            val k = y * W + x; if (dist[k] <= 1f) continue
+            var d = dist[k]
+            if (x > 0) d = min(d, dist[k - 1] + 1)
+            if (y > 0) { d = min(d, dist[k - W] + 1); if (x > 0) d = min(d, dist[k - W - 1] + D); if (x < W - 1) d = min(d, dist[k - W + 1] + D) }
+            dist[k] = d
+        }
+        for (y in H - 1 downTo 0) for (x in W - 1 downTo 0) {
+            val k = y * W + x; if (dist[k] <= 1f) continue
+            var d = dist[k]
+            if (x < W - 1) d = min(d, dist[k + 1] + 1)
+            if (y < H - 1) { d = min(d, dist[k + W] + 1); if (x < W - 1) d = min(d, dist[k + W + 1] + D); if (x > 0) d = min(d, dist[k + W - 1] + D) }
+            dist[k] = d
+        }
+        val deepest = FloatArray(count + 1)
+        for (k in 0 until N) { val id = label[k]; if (id > 0 && dist[k] < INF) deepest[id] = max(deepest[id], dist[k]) }
+        val ramp0 = 2.5f * s
+        val shard = FloatArray(N); val depth = FloatArray(N); val seedOf = FloatArray(count + 1)
+        for (id in 1..count) if (keep[id]) { val k0 = starts[id - 1]; seedOf[id] = hash((k0 % W).toFloat() / W * 97f, (k0 / W).toFloat() / H * 97f) }
+        // The seed per pixel: the piece's own, then carried two pixels out into free pixels (never over another piece).
+        val seedPx = IntArray(N) { if (label[it] > 0) label[it] else 0 }
+        repeat(2) {
+            for (k in 0 until N) ring[k] = seedPx[k]
+            for (k in 0 until N) {
+                if (ring[k] != 0) continue
+                val x = k % W
+                seedPx[k] = if (x > 0 && ring[k - 1] != 0) ring[k - 1] else if (x < W - 1 && ring[k + 1] != 0) ring[k + 1]
+                    else if (k >= W && ring[k - W] != 0) ring[k - W] else if (k < N - W && ring[k + W] != 0) ring[k + W] else 0
+            }
+        }
+        for (k in 0 until N) {
+            val id = label[k]
+            if (id > 0) { shard[k] = 1f; depth[k] = min(1f, dist[k] / max(ramp0, .5f * deepest[id])) }
+        }
+        // A one-pixel soften so the outline is smooth when the map is drawn at card size; it stays within a pixel of the piece.
+        val soft = YgoFoil.boxBlur(depth, W, H, 1, 1)
         val facet = ByteArray(N * 4)
-        for (k in 0 until N) { facet[k * 4] = q(sjx[k]); facet[k * 4 + 1] = q(sjy[k]); facet[k * 4 + 2] = q(soft[k]); facet[k * 4 + 3] = -1 }
+        for (k in 0 until N) {
+            facet[k * 4] = if (seedPx[k] > 0) q(seedOf[seedPx[k]]) else 0; facet[k * 4 + 1] = 0
+            facet[k * 4 + 2] = q(if (seedPx[k] > 0) soft[k] else 0f); facet[k * 4 + 3] = -1
+        }
         // Cut edges: the printed neon outline within a few pixels of a shard, not every saturated ink on the card.
         val reach = YgoFoil.boxBlur(shard, W, H, max(1, (3 * s).roundToInt()), 1)
-        val edge0 = FloatArray(N) { if (line[it] && reach[it] > 1e-3f) 1f else 0f }
-        val rim = YgoFoil.boxBlur(edge0, W, H, 1, 1)
-        return Facets(facet, FloatArray(N) { max(edge0[it] * .85f, min(1f, rim[it] * 1.6f)) }, shard, pieces)
+        for (k in 0 until N) near[k] = if (line[k] && reach[k] > 1e-3f) 1f else 0f
+        val rimEdge = YgoFoil.boxBlur(near, W, H, 1, 1)
+        return Facets(facet, FloatArray(N) { max(near[it] * .85f, min(1f, rimEdge[it] * 1.6f)) }, shard, pieces)
+    }
+
+    /** The matte figure (zone 3: the creature printed without foil) into a facet map's G, from a 0..1 matte at the map's size; under
+     *  the shards it is 0 (the shard draws there). Returns a new map; the cut itself is untouched. */
+    fun withFigure(facet: ByteArray, figure: FloatArray): ByteArray {
+        val o = facet.copyOf()
+        for (k in figure.indices) o[k * 4 + 1] = q(figure[k] * (1f - (facet[k * 4 + 2].toInt() and 255) / 255f))
+        return o
     }
 
     /** The shader's hash() (Foil.AGSL), so a shard's seed is spread like the prototype's hashed facet ids. */

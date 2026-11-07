@@ -90,9 +90,11 @@ float3 foil(float pat,float tint,float2 uv,float3 L,float3 V,float3 N,float spot
   float top=abs(length(c-float2(-.02,-.13))-.075)-.022,bot=abs(length(c-float2(0.,.07))-.12)-.026,tail=max(abs(dot(c-float2(.05,.03),normalize(float2(.62,.78))))-.024,length(c-float2(.05,.03))-.2);
   float amp_=1.-smoothstep(0.,.012,min(min(top,bot),tail));glint=amp_*(.35+pow(max(dot(N,H),0.),12.)*1.4);lines=1.-.3*amp_;}
  else if(pat<20.5){g=float2(0.,1.);d=1400.;lines=.55+.45*sin(px.y*1.2);mirror=.35;amp=.75;}
- else{d=1900.;amp=.5;mirror=.25;}
+ else{d=1900.;amp=.32;mirror=.2;} // facet: the finer, quieter sheet behind the shards, so they pop off it
  // Line art steers the grating: grooves follow the drawn line, so the rainbow streaks run along it (traditional, raised, textured).
- if(gs.z>0.){float2 sd=gs.xy;if(dot(sd,sd)>1e-3){float th=.5*atan(sd.y,sd.x);float2 gd=float2(cos(th),sin(th));g=normalize(mix(g,gd*sign(dot(gd,g)+1e-4),gs.z));}}
+ // Blended as doubled angles (a line and its reverse agree), so the turn is smooth everywhere, with no seam where a line crosses the sheet.
+ if(gs.z>0.){float2 sd=gs.xy;float sl=dot(sd,sd);if(sl>1e-3){float2 m2=mix(float2(g.x*g.x-g.y*g.y,2.*g.x*g.y),sd*inversesqrt(sl),gs.z);
+  if(dot(m2,m2)>1e-6){float th=.5*atan(m2.y,m2.x);g=float2(cos(th),sin(th));}}}
  float3 dif=grating(L,V,g,d)*amp;
  if(pat>9.5&&pat<10.5)dif=grating(L,V,normalize(float2(.86,.5)),1450.)*.8+grating(L,V,normalize(float2(-.5,.86)),1650.)*.8;
  if(spec<0.)spec=pow(max(dot(N,H),0.),ex);
@@ -100,11 +102,14 @@ float3 foil(float pat,float tint,float2 uv,float3 L,float3 V,float3 N,float spot
  float3 col=tint<.5?dif*1.9:tint<1.5?metal*(.5*spot+.9*length(dif))*1.3:metal*(.6*spot+.5*length(dif))*1.3+dif*.25;
  return (float3(.18)*metal+spot*(mirror*spec*metal+col)*(.7+.3*lines)+glint*metal)*seam;
 }
-// Ink on metal: printed ink filters the foil under it. Light inks pass the metal and glow (never darker than the print), dark ink
-// absorbs it and stays black; the rainbow is carried by how much light the ink lets through.
+// Ink on metal: printed ink filters the foil under it. Coloured and light inks pass the metal and glow in their own hue, never darker
+// than the print (the band is light the metal adds: a hot core where the rainbow is, Fb squared); black ink absorbs it and stays black.
+// Pale neutral paint and paper are the metal itself: silver off the band, the rainbow on it.
 float3 overInk(float3 base,float3 F,float cover){float y=dot(base,float3(.2126,.7152,.0722));float3 T=mix(base,base/max(max(base.r,max(base.g,base.b)),.04),.32);
- float f=dot(F,float3(.3333));float3 chroma=F-f;float3 ink=base*(.96+f*.8)+chroma*T*smoothstep(.02,.4,y)*3.2;float3 paper=F*1.3+base*.5*exp(-f*4.);
- float3 lit=mix(ink,paper,smoothstep(.5,.92,y)*(1.-smoothstep(.12,.35,length(base-y))));return mix(base,shoulder(max(lit,0.)),clamp(cover,0.,1.));}
+ float f=dot(F,float3(.3333));float3 chroma=F-f,Fb=max(F-.16,0.);
+ float3 ink=max(base*(1.+.8*max(f-.16,0.))+T*Fb*(1.8+10.*Fb)+chroma*T*smoothstep(.02,.4,y)*1.6,base);
+ float3 paper=F*1.3+base*.12*exp(-f*4.)+chroma*.9;
+ float3 lit=mix(max(shoulder(ink),base),shoulder(max(paper,0.)),smoothstep(.25,.7,y)*(1.-smoothstep(.12,.35,length(base-y))));return mix(base,lit,clamp(cover,0.,1.));}
 float shootingStar(float2 uv){float2 c=float2(u_text.x+.035,u_text.w-.03),d=(uv-c)*float2(1.,u_aspect);
  float star=max(0.,1.-(abs(d.x)+abs(d.y))*95.)+max(0.,1.-length(d)*140.);
  float2 t=d;float arc=.004*sin(clamp(t.x*40.,0.,PI));float tail=step(0.,t.x)*step(t.x,.05)*smoothstep(.0022,0.,abs(t.y+arc))*(1.-t.x*20.);
@@ -123,6 +128,9 @@ half4 main(float2 fc){
  float cov=1.;
  if(mode>.5&&mode<1.5)cov=1.-art;else if(mode>1.5&&mode<2.5)cov=mix(1.,float(mk.r),u_maps);else if(mode>3.5&&mode<4.5)cov=mix(1.,float(mk.b),u_maps);else if(mode>4.5)cov=mix(1.,float(rl.g),u_maps);
  if(mode>1.5&&(mode<2.5||mode>3.5))cov*=1.-text;
+ // Facet foil (MtgFoil.facets): R the shard's tilt seed, G the matte figure (printed without foil), B the shard, soft to its outline.
+ // The finer sheet behind the shards stays off the text box and the figure.
+ half4 fm=half4(0.);if(pat>20.5){if(u_maps>.5)fm=u_facet.eval(mp);cov*=(1.-text)*(1.-float(fm.g));}
  float patterned=step(4.5,pat)*(1.-step(6.5,pat)*step(pat,7.5))*(1.-step(16.5,pat));cov*=1.-.45*text*patterned;
  float3 outC=base;
  // The measured stroke (MtgFoil stroke map) for the steered patterns once the maps land: traditional, textured, raised.
@@ -136,10 +144,13 @@ half4 main(float2 fc){
   if(rel>0.){float rim=pow(max(dot(N,H),0.),24.)*(.35+.65*spot)*clamp(length(grad)*30.,0.,1.);outC+=(1.-outC)*float3(1.,.97,.92)*rim*rel*cov*.8;}
   // Facet foil: each printed glass shard (cut once per card, MtgFoil.facets) is a flat mirror with its own fixed tilt; it flashes
   // in one piece, cool silver-blue, and its printed neon outline is a cut edge that throws the rainbow along the line.
-  if(pat>20.5&&u_maps>.5){half4 fm=u_facet.eval(mp);float shard=float(fm.b);
-   if(shard>.03){float2 j=float2(fm.rg)/shard;float3 fn=normalize(float3((j-.5)*1.1,1.));float nh=max(dot(fn,H),0.);
-    float flash=pow(nh,22.),sheen=pow(nh,8.);float3 fc=grating(L,V,normalize(float2(cos(j.x*PI),sin(j.x*PI))),1100.+j.y*900.);
-    float3 face=base*.7+fc*(.45+.8*spot)*sheen+float3(.86,.93,1.)*flash*(.45+.8*spot);outC=mix(outC,shoulder(face),shard);}
+  // The flash and sheen fade to nothing at the shard's outline (B is its depth inside the piece) and are screened over the print, so a
+  // shard brightens with its own glass showing through and never washes out to flat white.
+  if(pat>20.5&&u_maps>.5){float shard=float(fm.b);
+   if(shard>.004){float sd=float(fm.r);float2 j=float2(sd,fract(sd*7.31+.17));float3 fn=normalize(float3((j-.5)*1.1,1.));float nh=max(dot(fn,H),0.);
+    float flash=pow(nh,22.)*shard,sheen=pow(nh,8.)*(.4+.6*shard);float3 fc=grating(L,V,normalize(float2(cos(j.x*PI),sin(j.x*PI))),1100.+j.y*900.);
+    float3 add=fc*(.35+.5*spot)*sheen+float3(.86,.93,1.)*flash*(.3+.45*spot);
+    outC=mix(outC,base+(1.-base)*min(add,float3(.72)),smoothstep(0.,.35,shard));}
    float edge=float(rl.b);
    if(edge>.004){half4 st=u_stroke.eval(mp);float2 sd=float2(st.rg)*2.-1.;float th=.5*atan(sd.y,sd.x);
     float3 ge=grating(L,V,float2(cos(th),sin(th)),1300.)*1.2*(.45+.8*spot);outC=mix(outC,shoulder(outC+ge),edge);}}

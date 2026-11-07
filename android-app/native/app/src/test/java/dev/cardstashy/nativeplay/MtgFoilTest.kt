@@ -55,21 +55,38 @@ class MtgFoilTest {
             val W = inp.readInt(); val H = inp.readInt(); val N = W * H
             val site = ByteArray(N * 3).also { inp.readFully(it) }
             val m = MtgFoil.analyze(inputs.getValue(name), W, H)
-            val off = IntArray(3); var strong = 0
+            val off = IntArray(2); var strong = 0; var kept = 0; var ours = 0L; var theirs = 0L
             for (k in 0 until N) {
                 // The direction only counts where there is a line (in flat paper it is rounding noise and the shader ignores it).
                 val line = (site[k * 3 + 2].toInt() and 255) > 12
-                for (c in 0 until 3) if ((c == 2 || line) && abs((m.stroke[k * 4 + c].toInt() and 255) - (site[k * 3 + c].toInt() and 255)) > 2) off[c]++
-                if ((site[k * 3 + 2].toInt() and 255) > 128) strong++
+                for (c in 0 until 2) if (line && abs((m.stroke[k * 4 + c].toInt() and 255) - (site[k * 3 + c].toInt() and 255)) > 2) off[c]++
+                val b = m.stroke[k * 4 + 2].toInt() and 255; val sb = site[k * 3 + 2].toInt() and 255
+                ours += b; theirs += sb
+                if (sb > 128) { strong++; if (b * 2 >= sb) kept++ }
                 assertEquals(-1, m.stroke[k * 4 + 3].toInt()); assertEquals(0, m.relief[k * 4 + 2].toInt()) // no facet edges off facet foil
             }
             assertTrue("$name has drawn lines to follow ($strong strong pixels)", strong > N / 50)
             off.forEachIndexed { c, n -> assertTrue("$name stroke channel $c: $n of $N pixels differ by more than 2", n < N / 500) }
+            // Strength is the site's, gated by line evidence: the drawn lines keep it, smooth shading loses it, never the other way.
+            assertTrue("$name keeps its strong strokes ($kept of $strong)", kept > strong * .45)
+            assertTrue("$name strength only ever gated down ($ours vs the site's $theirs)", ours <= theirs)
         }
     }
 
+    /** Line evidence gates the steering: a smooth shaded gradient (a halo blade) has a coherent direction but no lines, so it keeps
+     *  the plain sweep; a field of drawn lines steers. */
+    @Test fun smoothShadingIsNotSteered() {
+        val W = 244; val H = 340
+        val px = IntArray(W * H) { k -> val x = k % W; val y = k / W
+            val v = if (y < 170) (60 + x * 150 / W) else if ((x / 3) % 2 == 0) 20 else 230  // top: a smooth ramp; bottom: hard vertical lines
+            (255 shl 24) or (v shl 16) or (v shl 8) or v }
+        val m = MtgFoil.analyze(px, W, H)
+        fun b(x: Int, y: Int) = m.stroke[(y * W + x) * 4 + 2].toInt() and 255
+        assertEquals(0, b(120, 80)); assertTrue("lines steer: ${b(120, 260)}", b(120, 260) > 128)
+    }
+
     /** Facet foil: shards are cut once, as real connected pieces split by their printed outline; each piece is one facet with one
-     *  tilt, its outline is a cut edge, and nothing is cut in the text box. */
+     *  tilt, its outline is a cut edge, nothing is cut in the text box, and pale art with no printed outline is not glass. */
     @Test fun facetShardsAreConnectedPieces() {
         val W = 244; val H = 340
         val glass = 0xFFB4BCCC.toInt(); val dark = 0xFF1C2238.toInt(); val neon = 0xFFF2E61A.toInt(); val art = 0xFF6A5A30.toInt()
@@ -80,15 +97,21 @@ class MtgFoilTest {
         rect(120, 55, 122, 145, neon)                                         // the printed outline between them
         rect(40, 230, 200, 280, glass)                                        // pale paint inside the text box: not a shard
         rect(150, 170, 154, 174, glass)                                       // a crumb: too small to be a shard
+        rect(150, 185, 200, 215, glass)                                       // pale art with no outline (teeth, a highlight): not glass
         val text = floatArrayOf(.07f, .62f, .93f, .92f)
         val f = MtgFoil.facets(px, W, H, text)
         assertEquals(2, f.pieces)
-        fun seed(x: Int, y: Int) = (f.facet[(y * W + x) * 4].toInt() and 255) to (f.facet[(y * W + x) * 4 + 1].toInt() and 255)
+        fun seed(x: Int, y: Int) = f.facet[(y * W + x) * 4].toInt() and 255
         fun shard(x: Int, y: Int) = f.facet[(y * W + x) * 4 + 2].toInt() and 255
-        assertEquals(255, shard(30, 70)); assertEquals(255, shard(200, 130)); assertEquals(255, shard(70, 100)) // the dark facet joins its shard
+        assertEquals(255, shard(45, 100)); assertEquals(255, shard(171, 100)); assertEquals(255, shard(70, 100)) // deep inside; the dark facet joins
+        assertTrue(shard(21, 100) in 1..120)                                                                     // soft toward the outline
         assertEquals(seed(30, 70), seed(110, 130)); assertEquals(seed(30, 70), seed(70, 100))                  // one piece, one tilt
+        assertEquals(seed(30, 70), seed(19, 100))                                                              // carried past the rim, unblurred
         assertTrue(seed(30, 70) != seed(200, 130))                                                             // the next shard tilts its own way
-        assertEquals(0, shard(100, 250)); assertEquals(0, shard(152, 172)); assertEquals(0, shard(10, 10))
+        assertEquals(0, shard(100, 250)); assertEquals(0, shard(152, 172)); assertEquals(0, shard(10, 10)); assertEquals(0, shard(175, 200))
+        for (k in 0 until W * H) assertEquals(0, f.facet[k * 4 + 1].toInt())                                  // no figure until the depth cut
+        val fig = MtgFoil.withFigure(f.facet, FloatArray(W * H) { 1f })
+        assertEquals(255, fig[(200 * W + 175) * 4 + 1].toInt() and 255); assertEquals(0, fig[(100 * W + 70) * 4 + 1].toInt()) // matte off the shards
         assertTrue(f.edge[100 * W + 121] > .8f)                                // the outline between the shards is a cut edge
         assertEquals(0f, f.edge[250 * W + 121], 0f)                            // ink far from a shard is not
         // Same card in, same cut out (cached once, never re-cut per frame).
