@@ -37,7 +37,7 @@ object Foil {
     // Comments trimmed; the structure and every constant follow mtg-foil.js. pow(x, 2.) is written x*x
     // (AGSL leaves pow undefined for negative bases), and texture reads become u_card.eval.
     const val AGSL = """
-uniform shader u_card;uniform shader u_mask;uniform shader u_relief;
+uniform shader u_card;uniform shader u_mask;uniform shader u_relief;uniform shader u_stroke;uniform shader u_facet;
 uniform float2 u_size;uniform float2 u_px;uniform float2 u_tilt;uniform float u_aspect;uniform float u_on;uniform float2 u_map;uniform float u_maps;
 uniform float4 u_art;uniform float4 u_text;uniform float4 u_r1;uniform float4 u_r2;
 const float PI=3.14159265;
@@ -54,7 +54,8 @@ float3 shoulder(float3 x){float3 e=max(x-.82,0.);return min(x,.82)+.18*e/(e+.18)
 float3 voro(float2 q){float2 n=floor(q),f=fract(q);float d1=8.,d2=8.;float2 id=n;
  for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){float2 o=float2(float(x),float(y)),h=hash2(n+o),r=o+h-f;float d=dot(r,r);if(d<d1){d2=d1;d1=d;id=n+o;}else if(d<d2)d2=d;}
  return float3(id,sqrt(d2)-sqrt(d1));}
-float3 foil(float pat,float tint,float2 uv,float3 L,float3 V,float3 N,float spot,float2 grad,float height){
+// gs: the drawn line under this pixel, its direction as (cos 2t, sin 2t) in xy and its strength in z (0 off the steered patterns).
+float3 foil(float pat,float tint,float2 uv,float3 L,float3 V,float3 N,float spot,float2 grad,float height,float3 gs){
  float3 H=normalize(L+V);float2 q=float2(uv.x,uv.y*u_aspect),px=uv*u_px;float2 g=normalize(float2(.86,.5));
  float d=1550.,lines=0.,glint=0.,mirror=.35,ex=14.,amp=.7,seam=1.;float spec=-1.;
  if(pat<1.5){}
@@ -88,7 +89,10 @@ float3 foil(float pat,float tint,float2 uv,float3 L,float3 V,float3 N,float spot
  else if(pat<19.5){float2 c=(uv-float2(.5,.4))*float2(1.,u_aspect);
   float top=abs(length(c-float2(-.02,-.13))-.075)-.022,bot=abs(length(c-float2(0.,.07))-.12)-.026,tail=max(abs(dot(c-float2(.05,.03),normalize(float2(.62,.78))))-.024,length(c-float2(.05,.03))-.2);
   float amp_=1.-smoothstep(0.,.012,min(min(top,bot),tail));glint=amp_*(.35+pow(max(dot(N,H),0.),12.)*1.4);lines=1.-.3*amp_;}
- else{g=float2(0.,1.);d=1400.;lines=.55+.45*sin(px.y*1.2);mirror=.35;amp=.75;}
+ else if(pat<20.5){g=float2(0.,1.);d=1400.;lines=.55+.45*sin(px.y*1.2);mirror=.35;amp=.75;}
+ else{d=1900.;amp=.5;mirror=.25;}
+ // Line art steers the grating: grooves follow the drawn line, so the rainbow streaks run along it (traditional, raised, textured).
+ if(gs.z>0.){float2 sd=gs.xy;if(dot(sd,sd)>1e-3){float th=.5*atan(sd.y,sd.x);float2 gd=float2(cos(th),sin(th));g=normalize(mix(g,gd*sign(dot(gd,g)+1e-4),gs.z));}}
  float3 dif=grating(L,V,g,d)*amp;
  if(pat>9.5&&pat<10.5)dif=grating(L,V,normalize(float2(.86,.5)),1450.)*.8+grating(L,V,normalize(float2(-.5,.86)),1650.)*.8;
  if(spec<0.)spec=pow(max(dot(N,H),0.),ex);
@@ -96,7 +100,11 @@ float3 foil(float pat,float tint,float2 uv,float3 L,float3 V,float3 N,float spot
  float3 col=tint<.5?dif*1.9:tint<1.5?metal*(.5*spot+.9*length(dif))*1.3:metal*(.6*spot+.5*length(dif))*1.3+dif*.25;
  return (float3(.18)*metal+spot*(mirror*spec*metal+col)*(.7+.3*lines)+glint*metal)*seam;
 }
-float3 overInk(float3 base,float3 F,float cover){float3 T=mix(base,base/max(max(base.r,max(base.g,base.b)),.04),.32);return mix(base,shoulder(T*F*1.35),clamp(cover,0.,1.));}
+// Ink on metal: printed ink filters the foil under it. Light inks pass the metal and glow (never darker than the print), dark ink
+// absorbs it and stays black; the rainbow is carried by how much light the ink lets through.
+float3 overInk(float3 base,float3 F,float cover){float y=dot(base,float3(.2126,.7152,.0722));float3 T=mix(base,base/max(max(base.r,max(base.g,base.b)),.04),.32);
+ float f=dot(F,float3(.3333));float3 chroma=F-f;float3 ink=base*(.96+f*.8)+chroma*T*smoothstep(.02,.4,y)*3.2;float3 paper=F*1.3+base*.5*exp(-f*4.);
+ float3 lit=mix(ink,paper,smoothstep(.5,.92,y)*(1.-smoothstep(.12,.35,length(base-y))));return mix(base,shoulder(max(lit,0.)),clamp(cover,0.,1.));}
 float shootingStar(float2 uv){float2 c=float2(u_text.x+.035,u_text.w-.03),d=(uv-c)*float2(1.,u_aspect);
  float star=max(0.,1.-(abs(d.x)+abs(d.y))*95.)+max(0.,1.-length(d)*140.);
  float2 t=d;float arc=.004*sin(clamp(t.x*40.,0.,PI));float tail=step(0.,t.x)*step(t.x,.05)*smoothstep(.0022,0.,abs(t.y+arc))*(1.-t.x*20.);
@@ -117,12 +125,24 @@ half4 main(float2 fc){
  if(mode>1.5&&(mode<2.5||mode>3.5))cov*=1.-text;
  float patterned=step(4.5,pat)*(1.-step(6.5,pat)*step(pat,7.5))*(1.-step(16.5,pat));cov*=1.-.45*text*patterned;
  float3 outC=base;
- float3 F=foil(pat,tint,uv,L,V,N,spot,grad,float(rl.r)*u_maps);
+ // The measured stroke (MtgFoil stroke map) for the steered patterns once the maps land: traditional, textured, raised.
+ float3 gs=float3(0.);
+ if(u_maps>.5&&(pat<1.5||pat>16.5&&pat<17.5||pat>4.5&&pat<5.5)){half4 st=u_stroke.eval(mp);gs=float3(float(st.r)*2.-1.,float(st.g)*2.-1.,clamp(float(st.b)*1.6,0.,1.)*(1.-.6*text));}
+ float3 F=foil(pat,tint,uv,L,V,N,spot,grad,float(rl.r)*u_maps,gs);
  if(u_on>.5){
   if(u_r2.x>.5){float t=320.+260.*float(rl.r)*u_maps+120.*hash(floor(uv*u_px/3.));float3 f=film(dot(N,V),t);F=f*(.15+spot*(1.4*pow(max(dot(N,H),0.),16.)+.5));}
   float keep=u_r2.w;outC=overInk(base,F,cov*.92*(1.-keep));
   // Raised relief: glossy rims where the embossed height turns toward the light.
   if(rel>0.){float rim=pow(max(dot(N,H),0.),24.)*(.35+.65*spot)*clamp(length(grad)*30.,0.,1.);outC+=(1.-outC)*float3(1.,.97,.92)*rim*rel*cov*.8;}
+  // Facet foil: each printed glass shard (cut once per card, MtgFoil.facets) is a flat mirror with its own fixed tilt; it flashes
+  // in one piece, cool silver-blue, and its printed neon outline is a cut edge that throws the rainbow along the line.
+  if(pat>20.5&&u_maps>.5){half4 fm=u_facet.eval(mp);float shard=float(fm.b);
+   if(shard>.03){float2 j=float2(fm.rg)/shard;float3 fn=normalize(float3((j-.5)*1.1,1.));float nh=max(dot(fn,H),0.);
+    float flash=pow(nh,22.),sheen=pow(nh,8.);float3 fc=grating(L,V,normalize(float2(cos(j.x*PI),sin(j.x*PI))),1100.+j.y*900.);
+    float3 face=base*.7+fc*(.45+.8*spot)*sheen+float3(.86,.93,1.)*flash*(.45+.8*spot);outC=mix(outC,shoulder(face),shard);}
+   float edge=float(rl.b);
+   if(edge>.004){half4 st=u_stroke.eval(mp);float2 sd=float2(st.rg)*2.-1.;float th=.5*atan(sd.y,sd.x);
+    float3 ge=grating(L,V,float2(cos(th),sin(th)),1300.)*1.2*(.45+.8*spot);outC=mix(outC,shoulder(outC+ge),edge);}}
   if(u_r2.y>0.){float2 sq2=float2(uv.x,uv.y*u_aspect)*70.,sc=floor(sq2);float2 j=hash2(sc);float on=step(1.-.22*u_r2.y,j.x);
    float pt=1.-smoothstep(.0,.1+.12*j.y,length(fract(sq2)-.2-.6*hash2(sc*1.3)));
    float tw=pow(max(dot(normalize(float3((hash2(sc+5.)-.5)*.6,1.)),H),0.),30.);outC+=on*pt*(.25+tw*3.)*cov*(.4+.6*spot)*float3(1.,.97,.9);}
@@ -140,6 +160,8 @@ half4 main(float2 fc){
         val shines get() = recipe != null || stamp
         /** The printing's scan to measure inks from, when this recipe reads them (gilded, neon, textured, raised, oil slick...). */
         val measure: String? get() = image?.takeIf { recipe != null && dev.cardstashy.nativeplay.foil.MtgFoil.needsMaps(recipe.cover, recipe.relief, recipe.film, recipe.pat) }
+        /** Facet foil: its shards are cut with the maps, outside this frame's text box. */
+        val facetText: FloatArray? get() = frame.text.takeIf { recipe != null && kotlin.math.abs(recipe.pat - dev.cardstashy.nativeplay.foil.MtgFoil.FACET) < .5f }
     }
 
     /** The finish a printing is shown in: the one asked for when the printing comes in it, else the one it does come in, so a
@@ -175,8 +197,12 @@ fun Modifier.foil(look: Foil.Look, tilt: State<Offset>): Modifier = if (!look.sh
         // The printing's own inks, measured once off the main thread (MtgFoil); the foil draws at once and narrows to them when they land.
         val context = LocalContext.current
         val measured = look.measure
-        val maps by remember(measured) { if (measured != null) dev.cardstashy.nativeplay.foil.FoilMaps.mtg(context.applicationContext, measured) else kotlinx.coroutines.flow.MutableStateFlow(null) }.collectAsState()
+        val facetText = look.facetText
+        val maps by remember(measured, facetText) { if (measured != null) dev.cardstashy.nativeplay.foil.FoilMaps.mtg(context.applicationContext, measured, facetText) else kotlinx.coroutines.flow.MutableStateFlow(null) }.collectAsState()
         val inputs = remember(maps) { maps?.let { dev.cardstashy.nativeplay.foil.FoilMaps.input(it.mask) to dev.cardstashy.nativeplay.foil.FoilMaps.input(it.relief) } ?: dev.cardstashy.nativeplay.foil.FoilMaps.blank }
+        // Drawn-line direction and facet shards (stand-ins until they land, or for a recipe that has none; the shader skips them then).
+        val extra = remember(maps) { maps?.let { m -> (m.stroke?.let(dev.cardstashy.nativeplay.foil.FoilMaps::input) ?: dev.cardstashy.nativeplay.foil.FoilMaps.blank.first) to
+            (m.facet?.let(dev.cardstashy.nativeplay.foil.FoilMaps::input) ?: dev.cardstashy.nativeplay.foil.FoilMaps.blank.second) } ?: dev.cardstashy.nativeplay.foil.FoilMaps.blank }
         if (shader != null) return@composed this.graphicsLayer {
             val t by tilt
             val w = size.width; val h = size.height
@@ -189,6 +215,7 @@ fun Modifier.foil(look: Foil.Look, tilt: State<Offset>): Modifier = if (!look.sh
                 shader.setFloatUniform("u_r2", r?.film ?: 0f, r?.sparkle ?: 0f, (r?.stamp?.takeIf { it > 0f }) ?: if (look.stamp) 2f else 0f, r?.keep ?: 0f)
                 val m = maps
                 shader.setInputShader("u_mask", inputs.first); shader.setInputShader("u_relief", inputs.second)
+                shader.setInputShader("u_stroke", extra.first); shader.setInputShader("u_facet", extra.second)
                 shader.setFloatUniform("u_map", (m?.mask?.width ?: 1).toFloat(), (m?.mask?.height ?: 1).toFloat()); shader.setFloatUniform("u_maps", if (m != null) 1f else 0f)
                 renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "u_card").asComposeRenderEffect()
             }

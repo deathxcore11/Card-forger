@@ -37,9 +37,71 @@ class MtgFoilTest {
         }
     }
 
+    /** The drawn lines' direction and strength (the site's relief G/B/A, our stroke map RGB) match the site's analyzer: the grating
+     *  follows the same lines on both. Fixture: the site's relief.png G/B/A for two of the cards above (mtg-golden). */
+    @Test fun strokesMeasureLikeTheSite() {
+        val inputs = HashMap<String, IntArray>()
+        DataInputStream(GZIPInputStream(javaClass.getResourceAsStream("/foil/mtg-golden.bin.gz")!!)).use { inp ->
+            repeat(inp.readInt()) {
+                val name = ByteArray(inp.readInt()).also { inp.readFully(it) }.decodeToString()
+                val N = inp.readInt() * inp.readInt()
+                val rgb = ByteArray(N * 3).also { inp.readFully(it) }; inp.skipNBytes(N * 5L)
+                inputs[name] = IntArray(N) { i -> (255 shl 24) or ((rgb[i * 3].toInt() and 255) shl 16) or ((rgb[i * 3 + 1].toInt() and 255) shl 8) or (rgb[i * 3 + 2].toInt() and 255) }
+            }
+        }
+        val inp = DataInputStream(GZIPInputStream(javaClass.getResourceAsStream("/foil/mtg-golden-stroke.bin.gz")!!))
+        repeat(inp.readInt()) {
+            val name = ByteArray(inp.readInt()).also { inp.readFully(it) }.decodeToString()
+            val W = inp.readInt(); val H = inp.readInt(); val N = W * H
+            val site = ByteArray(N * 3).also { inp.readFully(it) }
+            val m = MtgFoil.analyze(inputs.getValue(name), W, H)
+            val off = IntArray(3); var strong = 0
+            for (k in 0 until N) {
+                // The direction only counts where there is a line (in flat paper it is rounding noise and the shader ignores it).
+                val line = (site[k * 3 + 2].toInt() and 255) > 12
+                for (c in 0 until 3) if ((c == 2 || line) && abs((m.stroke[k * 4 + c].toInt() and 255) - (site[k * 3 + c].toInt() and 255)) > 2) off[c]++
+                if ((site[k * 3 + 2].toInt() and 255) > 128) strong++
+                assertEquals(-1, m.stroke[k * 4 + 3].toInt()); assertEquals(0, m.relief[k * 4 + 2].toInt()) // no facet edges off facet foil
+            }
+            assertTrue("$name has drawn lines to follow ($strong strong pixels)", strong > N / 50)
+            off.forEachIndexed { c, n -> assertTrue("$name stroke channel $c: $n of $N pixels differ by more than 2", n < N / 500) }
+        }
+    }
+
+    /** Facet foil: shards are cut once, as real connected pieces split by their printed outline; each piece is one facet with one
+     *  tilt, its outline is a cut edge, and nothing is cut in the text box. */
+    @Test fun facetShardsAreConnectedPieces() {
+        val W = 244; val H = 340
+        val glass = 0xFFB4BCCC.toInt(); val dark = 0xFF1C2238.toInt(); val neon = 0xFFF2E61A.toInt(); val art = 0xFF6A5A30.toInt()
+        val px = IntArray(W * H) { art }
+        fun rect(x0: Int, y0: Int, x1: Int, y1: Int, c: Int) { for (y in y0 until y1) for (x in x0 until x1) px[y * W + x] = c }
+        rect(20, 60, 120, 140, glass); rect(60, 90, 80, 110, dark)           // shard A, a dark facet inside it
+        rect(122, 60, 220, 140, glass)                                        // shard B, touching A but for the outline
+        rect(120, 55, 122, 145, neon)                                         // the printed outline between them
+        rect(40, 230, 200, 280, glass)                                        // pale paint inside the text box: not a shard
+        rect(150, 170, 154, 174, glass)                                       // a crumb: too small to be a shard
+        val text = floatArrayOf(.07f, .62f, .93f, .92f)
+        val f = MtgFoil.facets(px, W, H, text)
+        assertEquals(2, f.pieces)
+        fun seed(x: Int, y: Int) = (f.facet[(y * W + x) * 4].toInt() and 255) to (f.facet[(y * W + x) * 4 + 1].toInt() and 255)
+        fun shard(x: Int, y: Int) = f.facet[(y * W + x) * 4 + 2].toInt() and 255
+        assertEquals(255, shard(30, 70)); assertEquals(255, shard(200, 130)); assertEquals(255, shard(70, 100)) // the dark facet joins its shard
+        assertEquals(seed(30, 70), seed(110, 130)); assertEquals(seed(30, 70), seed(70, 100))                  // one piece, one tilt
+        assertTrue(seed(30, 70) != seed(200, 130))                                                             // the next shard tilts its own way
+        assertEquals(0, shard(100, 250)); assertEquals(0, shard(152, 172)); assertEquals(0, shard(10, 10))
+        assertTrue(f.edge[100 * W + 121] > .8f)                                // the outline between the shards is a cut edge
+        assertEquals(0f, f.edge[250 * W + 121], 0f)                            // ink far from a shard is not
+        // Same card in, same cut out (cached once, never re-cut per frame).
+        assertTrue(MtgFoil.facets(px, W, H, text).facet.contentEquals(f.facet))
+        val maps = MtgFoil.analyze(px, W, H, text)
+        assertTrue(maps.facet!!.contentEquals(f.facet)); assertEquals(null, MtgFoil.analyze(px, W, H).facet)
+    }
+
     @Test fun onlyInkSelectiveRecipesMeasure() {
-        assertTrue(!MtgFoil.needsMaps(cover = 0f, relief = 0f, film = 0f, pat = 1f))   // traditional
+        assertTrue(MtgFoil.needsMaps(cover = 0f, relief = 0f, film = 0f, pat = 1f))    // traditional: its grating follows the drawn lines
+        assertTrue(MtgFoil.needsMaps(cover = 0f, relief = 0f, film = 0f, pat = 21f))   // facet: the shards
         assertTrue(!MtgFoil.needsMaps(cover = 1f, relief = 0f, film = 0f, pat = 4f))   // etched frame
+        assertTrue(!MtgFoil.needsMaps(cover = 0f, relief = 0f, film = 0f, pat = 11f))  // fracture: a fixed pattern
         assertTrue(MtgFoil.needsMaps(cover = 2f, relief = 0f, film = 0f, pat = 18f))   // gilded: gold ink
         assertTrue(MtgFoil.needsMaps(cover = 0f, relief = .3f, film = 0f, pat = 5f))   // textured
         assertTrue(MtgFoil.needsMaps(cover = 0f, relief = 0f, film = 1f, pat = 1f))    // oil slick film

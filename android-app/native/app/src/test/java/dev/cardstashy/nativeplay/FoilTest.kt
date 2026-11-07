@@ -32,6 +32,19 @@ class FoilTest {
         }
     }
 
+    /** Facet foil (app first, 7 Nov): facetfoil is its own material now, not traditional foil under the "Facet foil" name. */
+    @Test fun facetFoilIsModelled() {
+        val card = JsonParser.parseString("""{"set":"fra","frame":"2015","rarity":"mythic","border_color":"borderless","promo_types":["facetfoil"]}""").asJsonObject
+        val p = data.profile(card, "foil")
+        assertEquals("mtg-facet", p.treatment); assertEquals("family", p.status); assertEquals("", p.name)
+        val r = data.recipes.getValue("mtg-facet")
+        assertEquals(21f, r.pat); assertEquals(0f, r.cover); assertEquals("Facet foil", r.label)
+        assertEquals("", data.profile(card, "nonfoil").treatment)
+        // every other unmodelled material still draws as before
+        val cosmic = JsonParser.parseString("""{"set":"fra","frame":"2015","promo_types":["cosmicfoil"]}""").asJsonObject
+        assertEquals("mtg-traditional", data.profile(cosmic, "foil").treatment); assertEquals("Cosmic foil", data.profile(cosmic, "foil").name)
+    }
+
     @Test fun ruleWords() {
         assertEquals("Flying", data.rule("flying")!!.label)
         val hits = data.ruleRegex.findAll("Flying, trample\nWhen this enters, scry 2.").map { it.value.lowercase() }.toList()

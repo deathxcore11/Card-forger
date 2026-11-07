@@ -112,16 +112,20 @@ object DepthLayers {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, MutableStateFlow<Ready?>>) = size > 6
     }
 
-    /** True when this card's layers are already in memory (no wait, no model). */
-    fun known(image: String, win: FloatArray, open: Boolean): Boolean = synchronized(flows) { flows["$image|${win.joinToString(",")}|$open"]?.value != null }
+    private fun key(image: String, win: FloatArray, open: Boolean, facetText: FloatArray?) =
+        "$image|${win.joinToString(",")}|$open" + (facetText?.let { "|facet|" + it.joinToString(",") } ?: "")
 
-    /** [open] for a full art: no window, the whole card is cut and the card's own edge is the only clip. */
-    fun layers(context: Context, image: String, win: FloatArray, open: Boolean): StateFlow<Ready?> = synchronized(flows) {
-        val key = "$image|${win.joinToString(",")}|$open"
+    /** True when this card's layers are already in memory (no wait, no model). */
+    fun known(image: String, win: FloatArray, open: Boolean, facetText: FloatArray? = null): Boolean = synchronized(flows) { flows[key(image, win, open, facetText)]?.value != null }
+
+    /** [open] for a full art: no window, the whole card is cut and the card's own edge is the only clip. [facetText]: a facet foil's
+     *  text box; on a full art its glass shards (MtgFoil.facets) then stay at the glass with the figure, rigid, while the art slides behind. */
+    fun layers(context: Context, image: String, win: FloatArray, open: Boolean, facetText: FloatArray? = null): StateFlow<Ready?> = synchronized(flows) {
+        val key = key(image, win, open, facetText)
         flows[key] ?: MutableStateFlow<Ready?>(null).also { f ->
             flows[key] = f
             scope.launch {
-                runCatching { make(context.applicationContext, key, image, win, open, f) }
+                runCatching { make(context.applicationContext, key, image, win, open, facetText?.takeIf { open }, f) }
                     .onFailure { Log.w("DepthLayers", "no figure layer for $image", it) }
             }
         }
@@ -129,9 +133,10 @@ object DepthLayers {
 
     private val measuring = Mutex()
 
-    private suspend fun make(context: Context, key: String, image: String, win: FloatArray, open: Boolean, f: MutableStateFlow<Ready?>) {
+    private suspend fun make(context: Context, key: String, image: String, win: FloatArray, open: Boolean, facetText: FloatArray?, f: MutableStateFlow<Ready?>) {
         val dir = File(context.filesDir, "depth").apply { mkdirs() }
-        val file = File(dir, sha("$VERSION|$key") + ".bin")
+        // The depth cut on disk is the same with or without shards (they are cut from the picture below, in a blink), so it keeps its name.
+        val file = File(dir, sha("$VERSION|${key.substringBefore("|facet|")}") + ".bin")
         val req = ImageRequest.Builder(context).data(image).allowHardware(false).build()
         val src = (CardArt.loader.execute(req) as? SuccessResult)?.image?.toBitmap() ?: return
         val card = if (src.config == Bitmap.Config.ARGB_8888) src else src.copy(Bitmap.Config.ARGB_8888, false)
@@ -153,7 +158,15 @@ object DepthLayers {
             (if (open) DepthMatte.cutFull(lo, dl, lw, lh, hi, hw, hh) else DepthMatte.cut(lo, dl, lw, lh, hi, hw, hh))
                 .also { Log.i("DepthLayers", "$image ${it.gate}"); write(file, it) }
         }
-        val figure = cut.figure ?: return // the gate said no: a framed card keeps the window-only depth, a full art stays flat
+        // Facet foil: the printed glass shards are rigid plates at the glass over the art (with the figure when the gate passed it, alone
+        // when it did not), so the art slides behind them and they read raised; each shard stays one flat piece, never warped.
+        val shard = facetText?.let { t -> MtgFoil.facets(hi, hw, hh, t).takeIf { it.pieces > 0 }?.let { YgoFoil.boxBlur(it.shard, hw, hh, 1, 1) } }
+        val cutFigure = cut.figure
+        val figure = when {
+            shard == null -> cutFigure
+            cutFigure == null -> shard
+            else -> FloatArray(hw * hh) { max(cutFigure[it], shard[it]) }
+        } ?: return // the gate said no: a framed card keeps the window-only depth, a full art stays flat
         val pad = if (open) kotlin.math.ceil(1.6f * Depth.K * hw).toInt() + 3 else 0
         val l = if (open) DepthMatte.layersFull(hi, figure, hw, hh, pad, cut.gate) else DepthMatte.layers(hi, figure, hw, hh, cut.gate)
         val fig = IntArray(l.w * l.h) { i -> (255 shl 24) or (q(l.figure[i]) shl 16) or (q(l.shadow[i]) shl 8) or (if (l.hide[i]) 255 else 0) }

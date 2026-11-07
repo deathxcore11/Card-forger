@@ -20,9 +20,10 @@ class CardData(json: JsonObject) {
         k to Rule(k, o.s("label"), o.s("definition"), o.s("tip"), o.s("title"), o.s("example"), o.s("detail")) }
     val recipes: Map<String, Recipe> = json.getAsJsonObject("recipes").entrySet().associate { (k, v) -> val o = v.asJsonObject
         k to Recipe(k, o.s("label"), o.s("era"), o.f("pat"), o.f("tint"), o.f("cover"), o.f("relief"), o.f("film"), o.f("sparkle"), o.f("stamp"), o.f("keep"), o.s("note")) }
+        .let { if ("mtg-facet" in it) it else it + ("mtg-facet" to FACET) }
     val frames: Map<String, Frame> = json.getAsJsonObject("frames").entrySet().associate { (k, v) -> val o = v.asJsonObject
         k to Frame(o.getAsJsonArray("art").map { it.asFloat }.toFloatArray(), o.getAsJsonArray("text").map { it.asFloat }.toFloatArray()) }
-    private val unmodelled: Map<String, Pair<String, String>> = json.getAsJsonObject("unmodelled").entrySet().associate { (k, v) -> val o = v.asJsonObject; k to (o.s("name") to o.s("as")) }
+    private val unmodelled: Map<String, Pair<String, String>> = json.getAsJsonObject("unmodelled").entrySet().associate { (k, v) -> val o = v.asJsonObject; k to (o.s("name") to o.s("as")) } - "facetfoil"
 
     /** Rule words, longest first, for ruleText's one regex. */
     val ruleWords: List<String> = rules.keys.sortedByDescending { it.length }
@@ -48,10 +49,14 @@ class CardData(json: JsonObject) {
         // mtg-foil-recipes.js PROMO, most specific first.
         private val PROMO = listOf("oilslick" to "mtg-oilslick", "stepandcompleat" to "mtg-compleat", "gilded" to "mtg-gilded", "neonink" to "mtg-neon",
             "textured" to "mtg-textured", "surgefoil" to "mtg-surge", "galaxyfoil" to "mtg-galaxy", "halofoil" to "mtg-halo", "confettifoil" to "mtg-confetti",
-            "doublerainbow" to "mtg-doublerainbow", "fracturefoil" to "mtg-fracture", "rainbowfoil" to "mtg-rainbow", "ripplefoil" to "mtg-ripple",
+            "doublerainbow" to "mtg-doublerainbow", "fracturefoil" to "mtg-fracture", "facetfoil" to "mtg-facet", "rainbowfoil" to "mtg-rainbow", "ripplefoil" to "mtg-ripple",
             "manafoil" to "mtg-mana", "dragonscalefoil" to "mtg-dragonscale", "invisibleink" to "mtg-invisible", "silverfoil" to "mtg-silver",
             "firstplacefoil" to "mtg-firstplace", "raisedfoil" to "mtg-raised", "embossed" to "mtg-embossed", "ampersand" to "mtg-ampersand",
             "silverscreen" to "mtg-silverscreen", "vaultboy" to "mtg-vaultboy")
+        /** Facet foil (FRA borderless shards), app first (7 Nov): the site's prototype row, here until the site's recipe table
+         *  carries it (then the site's own row wins). Shards and their cut edges come from MtgFoil.facets. */
+        private val FACET = Recipe("mtg-facet", "Facet foil", "2025–today", dev.cardstashy.nativeplay.foil.MtgFoil.FACET, 0f, 0f, 0f, 0f, 0f, 0f, 0f,
+            "Shattered-glass shards printed on the art are cut facets: each shard is its own flat mirror that flashes on its own, with bright cut edges.")
         private val PDS = setOf("h09", "pd2", "pd3")
         private val SET_MATERIAL = mapOf("dbl" to "mtg-silverscreen")
         private val NOT_MATERIAL = setOf("foil", "serialized", "scroll", "poster", "boosterfun", "universesbeyond")

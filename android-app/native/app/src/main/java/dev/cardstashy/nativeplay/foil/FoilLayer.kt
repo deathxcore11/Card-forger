@@ -73,7 +73,8 @@ sealed interface CardFinish {
 
 /** Measured maps per card picture, made once off the main thread and kept for the session (LRU). */
 object FoilMaps {
-    class Ready(val mask: Bitmap, val relief: Bitmap, val glyph: Bitmap?)
+    /** [stroke] and [facet]: Magic only (MtgFoil.Maps), the drawn lines' direction and the facet shards; null for the other games. */
+    class Ready(val mask: Bitmap, val relief: Bitmap, val glyph: Bitmap?, val stroke: Bitmap? = null, val facet: Bitmap? = null)
     // A picture that can't be fetched or measured leaves its card plain (the layer waits for maps that never come); it must never
     // take the app down from a background thread.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + kotlinx.coroutines.CoroutineExceptionHandler { _, e ->
@@ -124,9 +125,10 @@ object FoilMaps {
         }
     }
 
-    /** Magic: the printing's inks (MtgFoil.analyze) at the site's analysis size, half the scan's width. */
-    fun mtg(context: android.content.Context, image: String): StateFlow<Ready?> = synchronized(flows) {
-        val key = "mtg|$image"
+    /** Magic: the printing's inks and drawn lines (MtgFoil.analyze) at the site's analysis size, half the scan's width; for a facet
+     *  foil ([facetText] its frame's text box) its shards too, cut once here and kept with the maps. */
+    fun mtg(context: android.content.Context, image: String, facetText: FloatArray? = null): StateFlow<Ready?> = synchronized(flows) {
+        val key = "mtg|$image" + (facetText?.let { "|facet|" + it.joinToString(",") } ?: "")
         flows[key] ?: MutableStateFlow<Ready?>(null).also { fl ->
             flows[key] = fl
             scope.launch {
@@ -136,8 +138,8 @@ object FoilMaps {
                     val (w, h) = MtgFoil.analysisSize(src.width, src.height)
                     val bmp = Bitmap.createScaledBitmap(if (src.config == Bitmap.Config.ARGB_8888) src else src.copy(Bitmap.Config.ARGB_8888, false), w, h, true)
                     val px = IntArray(w * h); bmp.getPixels(px, 0, w, 0, 0, w, h)
-                    val m = MtgFoil.analyze(px, w, h)
-                    fl.value = Ready(rgba(m.mask, w, h), rgba(m.relief, w, h), null)
+                    val m = MtgFoil.analyze(px, w, h, facetText)
+                    fl.value = Ready(rgba(m.mask, w, h), rgba(m.relief, w, h), null, rgba(m.stroke, w, h), m.facet?.let { rgba(it, w, h) })
                 }
             }
         }
