@@ -237,6 +237,8 @@ object ScanWeb {
         if (w.parent === g) return
         (w.parent as? ViewGroup)?.removeView(w)
         webCtx?.setBaseContext(g.context)
+        // Never a key target: an unseen 1-px WebView holding the window's focus ate a handheld's d-pad (AYN Portal, 7 Nov).
+        w.isFocusable = false; w.isFocusableInTouchMode = false
         g.addView(w, 0, FrameLayout.LayoutParams(1, 1))
     }
 }

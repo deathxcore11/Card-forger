@@ -104,6 +104,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -726,7 +728,10 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
     val n = pack.pulls.size
     val bodyW = maxWidth; val bodyH = maxHeight
     val density = LocalDensity.current
-    val handW = minOf(maxWidth * .19f, 112.dp, maxHeight * .14f)
+    // A wide, short screen (a handheld like the AYN Portal, a phone on its side): the big card takes the full height on the left,
+    // the hand and the buttons sit beside it, instead of stacking all three and leaving the card a thumbnail (Randall 7 Nov).
+    val side = maxWidth > maxHeight * 1.45f && maxHeight < 560.dp
+    val handW = if (side) minOf(maxWidth * .52f * .19f, 112.dp, maxHeight * .24f) else minOf(maxWidth * .19f, 112.dp, maxHeight * .14f)
     val handH = handW * (88f / 63f) * 1.22f + 16.dp
     // The deal: each card leaves the pack in turn (gap ms apart, a 640 ms flight); a tap anywhere lands them all.
     val gap = min(85, 1100 / max(1, n)); val fly = 640
@@ -752,20 +757,23 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
     val t = deal.value * total
     fun cardT(i: Int) = if (stage == PackStage.DEALT) 1f else ((t - i * gap) / fly).coerceIn(0f, 1f)
     var handOrigin by remember { mutableStateOf(Offset.Zero) }
+    var handSpanW by remember { mutableStateOf(0.dp) }
+    var bodyRoot by remember { mutableStateOf(Offset.Zero) }
     var actionsH by remember { mutableIntStateOf(0) }
-    Column(Modifier.fillMaxSize().pointerInput(stage) {
+    val skip = Modifier.pointerInput(stage) {
         // A tap during the deal skips it, as in Arena: every card lands at once and the big card comes up.
         if (stage == PackStage.DEALING) awaitEachGesture { awaitFirstDown(pass = PointerEventPass.Initial); scope.launch { deal.snapTo(1f); onLanded(); rise.snapTo(1f) } }
-    }) {
-        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-            Focus(pack, focus, focus in revealed, charging == focus, moment, momentLevel, flipping, slide, flung, tilt, rise.value, stage == PackStage.DEALING && deal.value < 1f,
-                onTap = onFocusTap, onHold = { onHold(focus) }, onSwipe = onSwipe, onFlungDone = onFlungDone)
-        }
+    }
+    @Composable fun big(m: Modifier) = Box(m, contentAlignment = Alignment.Center) {
+        Focus(pack, focus, focus in revealed, charging == focus, moment, momentLevel, flipping, slide, flung, tilt, rise.value, stage == PackStage.DEALING && deal.value < 1f,
+            onTap = onFocusTap, onHold = { onHold(focus) }, onSwipe = onSwipe, onFlungDone = onFlungDone)
+    }
+    @Composable fun hand() = Box(Modifier.onGloballyPositioned { handOrigin = it.positionInRoot() - bodyRoot; handSpanW = with(density) { it.size.width.toDp() } }) {
         // The hand: cards overlap left to right so each name corner shows; the one in focus rises.
-        Box(Modifier.onGloballyPositioned { handOrigin = it.positionInParent() }) {
-            Hand(pack, revealed, focus, handW, handH, landed = { i -> cardT(i) >= 1f }, bestGlow = { i -> i in best && i in landedAt && stage == PackStage.DEALING },
-                onShow = { onShow(it, true) }, onTap = { onShow(it, false); onReveal(it) }, onHold = onHold)
-        }
+        Hand(pack, revealed, focus, handW, handH, landed = { i -> cardT(i) >= 1f }, bestGlow = { i -> i in best && i in landedAt && stage == PackStage.DEALING },
+            onShow = { onShow(it, true) }, onTap = { onShow(it, false); onReveal(it) }, onHold = onHold)
+    }
+    @Composable fun actions() =
         // Actions: Reveal all until every card is up, then Open the next pack. The simulator (.pack-done .pack-tools) adds its
         // tools first (Wishlist all, Shop list) and its button opens a new sealed pack.
         Column(Modifier.fillMaxWidth().padding(top = 2.dp).onGloballyPositioned { actionsH = it.size.height }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -775,6 +783,13 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
                 if (onNext != null) PillButton(if (busy) "Opening…" else if (pack.shop != null) "Open a new pack" else "Open the next pack", ghost = false, wide = true, onClick = onNext)
             }
         }
+    if (side) Row(Modifier.fillMaxSize().onGloballyPositioned { bodyRoot = it.positionInRoot() }.then(skip), verticalAlignment = Alignment.CenterVertically) {
+        big(Modifier.weight(.48f).fillMaxHeight())
+        Column(Modifier.weight(.52f).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically)) { hand(); actions() }
+    } else Column(Modifier.fillMaxSize().onGloballyPositioned { bodyRoot = it.positionInRoot() }.then(skip)) {
+        big(Modifier.weight(1f).fillMaxWidth())
+        hand()
+        actions()
     }
     // The flight, above everything: the torn pack (cards under it until they clear its top), then the cards.
     if (stage == PackStage.DEALING && deal.value < 1f) with(density) {
@@ -803,14 +818,15 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
             }
         }
         val cardH = handW * (88f / 63f)
-        val span = bodyW - 12.dp - handW
+        val rowW = if (handSpanW > 0.dp) handSpanW else bodyW
+        val span = rowW - 12.dp - handW
         val mid = (n - 1) / 2f
         val k = min(1.6f, pw.value * .78f / handW.value)
         for (i in 0 until n) {
             val ft = cardT(i)
             if (ft <= 0f || ft >= 1f) continue
             val e = flyEase.transform(ft)
-            val slotX = 6.dp + (if (n <= 1) (bodyW - 12.dp - handW) / 2 else span * (i.toFloat() / (n - 1)))
+            val slotX = handOrigin.x.toDp() + 6.dp + (if (n <= 1) (rowW - 12.dp - handW) / 2 else span * (i.toFloat() / (n - 1)))
             val slotY = handOrigin.y.toDp() + handH - 4.dp - cardH
             val cx = slotX + handW / 2; val cy = slotY + cardH / 2
             val ox = (packLeft + pw / 2 - cx).toPx()
