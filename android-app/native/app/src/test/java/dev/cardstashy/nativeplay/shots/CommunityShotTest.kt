@@ -54,6 +54,20 @@ class CommunityShotTest {
         rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "$name.png").path)
     }
 
+    /** The server's overview as it really comes (community_action: 'avatar', a.avatar from a left join): null for a friend with no profile
+     *  art. Reading it as an object stopped the pop-up from drawing and the screen from answering (Randall 7 Nov). */
+    @Test fun friendsWithNullArt() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        Community.data.value = JsonParser.parseString(overview.replace("\"relationship\":\"accepted\"}", "\"avatar\":null,\"avatar_url\":null,\"relationship\":\"accepted\"}")
+            .replace("\"items\":[", "\"art\":{\"avatar\":null,\"header\":null},\"items\":[")).asJsonObject
+        val view = androidx.compose.runtime.mutableStateOf<CommunityView>(CommunityView.Panel("friends"))
+        rule.setContent { Box(Modifier.fillMaxSize().background(Site.Bg)) { androidx.compose.runtime.key(view.value) {
+            CommunitySheet(view.value, onClose = {}, onEditProfile = {}, onHeader = {}, onChallenge = {}, toast = {}, onOpenItem = {}) } } }
+        rule.waitForIdle()
+        assertTrue(rule.onAllNodesWithText("mira", substring = true).fetchSemanticsNodes().isNotEmpty())
+        view.value = CommunityView.Mine; rule.waitForIdle()
+        assertTrue(rule.onAllNodesWithText("Red Rares", substring = true).fetchSemanticsNodes().isNotEmpty())
+    }
     @Test fun friends() = shot("community-friends", CommunityView.Panel("friends"), listOf("mira", "jonah", "Quick Play · Commander", "Requests"))
     @Test fun requests() = shot("community-requests", CommunityView.Panel("requests"), listOf("tess", "Accept"))
     @Test fun mine() = shot("community-mine", CommunityView.Mine, listOf("Accepted friends only", "Choose binders", "Red Rares", "Update shared copy", "Izzet Tempo"))

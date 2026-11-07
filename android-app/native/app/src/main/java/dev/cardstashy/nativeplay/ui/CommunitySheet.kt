@@ -92,8 +92,8 @@ internal object Community {
             if (who != Account.session.value?.userId) return
             if (live != null) next.add("presence", live.get("presence")?.takeIf { it.isJsonObject } ?: live)
             // Your shared snapshots repaired where their cards still match this device's, each shared again before it shows.
-            next.getAsJsonArray("items")?.takeIf { it.size() > 0 }?.let { items -> repair?.invoke(items)?.forEach { r ->
-                val o = r as? JsonObject ?: return@forEach; val i = o.get("i")?.asInt ?: return@forEach; val item = o.getAsJsonObject("item") ?: return@forEach
+            next.ja("items")?.takeIf { it.size() > 0 }?.let { items -> repair?.invoke(items)?.forEach { r ->
+                val o = r as? JsonObject ?: return@forEach; val i = o.get("i")?.takeIf { it.isJsonPrimitive }?.asInt ?: return@forEach; val item = o.jo("item") ?: return@forEach
                 Account.community("share", JsonObject().apply { add("item", item) })
                 if (who != Account.session.value?.userId) return
                 items.set(i, item)
@@ -105,7 +105,7 @@ internal object Community {
     suspend fun presence() { val live = runCatching { Account.presence("friends") }.getOrNull() ?: return; val d = data.value ?: return
         data.value = d.deepCopy().apply { add("presence", live.get("presence")?.takeIf { it.isJsonObject } ?: live) } }
 
-    fun people(d: JsonObject?) = d?.getAsJsonArray("people")?.mapNotNull { it as? JsonObject }.orEmpty()
+    fun people(d: JsonObject?) = d?.ja("people")?.mapNotNull { it as? JsonObject }.orEmpty()
     /** incomingRequestCount. */
     fun incoming(d: JsonObject?) = people(d).count { it.s("relationship") == "pending" && it.b("incoming") }
     fun friends(d: JsonObject?) = people(d).count { it.s("relationship") == "accepted" }
@@ -115,7 +115,7 @@ internal object Community {
     /** label: username, else display name, else Collector. */
     fun label(p: JsonObject) = p.s("username").ifBlank { p.s("display_name") }.ifBlank { "Collector" }
     fun profile(p: JsonObject) = Account.Profile(p.s("display_name").ifBlank { null }, p.s("avatar_url").takeIf { it.startsWith("https://") },
-        p.s("username").ifBlank { null }, p.s("bio").ifBlank { null }, Account.Art.from(p.getAsJsonObject("avatar")), Account.Art.from(p.getAsJsonObject("header")))
+        p.s("username").ifBlank { null }, p.s("bio").ifBlank { null }, Account.Art.from(p.jo("avatar")), Account.Art.from(p.jo("header")))
 
     /** play-presence.js presenceLine: what a friend is doing, or when they were last seen. */
     data class Live(val online: Boolean, val inMatch: Boolean, val text: String)
@@ -224,10 +224,10 @@ internal fun CommunitySheet(start: CommunityView, onClose: () -> Unit, onEditPro
                     is CommunityView.Person -> PersonView(v, onBack = { back() }, onAct = { a -> mutate(a, JsonObject().apply { addProperty("target", v.id) }) },
                         onItem = { onOpenItem?.invoke(it) ?: run { view = CommunityView.Item(it, v) } })
                     CommunityView.Mine -> {
-                        val me = (mine ?: Account.Profile(null, null)).let { p -> p.copy(avatar = Account.Art.from(data?.getAsJsonObject("art")?.getAsJsonObject("avatar")) ?: p.avatar,
-                            header = Account.Art.from(data?.getAsJsonObject("art")?.getAsJsonObject("header")) ?: p.header) }
+                        val me = (mine ?: Account.Profile(null, null)).let { p -> p.copy(avatar = Account.Art.from(data?.jo("art")?.jo("avatar")) ?: p.avatar,
+                            header = Account.Art.from(data?.jo("art")?.jo("header")) ?: p.header) }
                         if (error.isNotBlank()) message = error
-                        ProfileCard(me, data?.getAsJsonArray("items"), owner = true, onEdit = { onClose(); onEditProfile() }, onHeader = onHeader,
+                        ProfileCard(me, data?.ja("items"), owner = true, onEdit = { onClose(); onEditProfile() }, onHeader = onHeader,
                             onItem = { onOpenItem?.invoke(it) ?: run { view = CommunityView.Item(it, CommunityView.Mine) } }, owner2 = ownerActs)
                     }
                     is CommunityView.Item -> {
@@ -290,16 +290,16 @@ private fun PanelRows(kind: String, data: JsonObject?, busy: Boolean, error: Str
     if (error.isNotBlank() && data == null) { Text(error, style = Site.Body); Spacer(Modifier.height(10.dp)); SiteButton("Retry", ghost = true, onClick = onRetry); return }
     if (data == null) { Text("Loading your friends…", style = Site.Meta); return }
     if (error.isNotBlank()) Text("Showing previously loaded information. $error", style = Site.Meta.copy(color = Color(0xFFF2C66D)), modifier = Modifier.padding(bottom = 8.dp))
-    val people = if (kind == "blocks") data.getAsJsonArray("blocked")?.mapNotNull { it as? JsonObject }.orEmpty()
+    val people = if (kind == "blocks") data.ja("blocked")?.mapNotNull { it as? JsonObject }.orEmpty()
         else people(data).filter { it.s("relationship") == (if (kind == "requests") "pending" else "accepted") }
     if (people.isEmpty()) { Text(when (kind) { "requests" -> "No friend requests."; "blocks" -> "No blocked accounts."; else -> "No friends yet. Add someone by their exact username or email." },
         style = Site.Meta, modifier = Modifier.padding(vertical = 8.dp)); return }
-    val presence = data.getAsJsonObject("presence")
+    val presence = data.jo("presence")
     for (p in people) {
         val id = p.s("id")
         when (kind) {
             "friends" -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                PersonPill(p, presenceLine(presence?.getAsJsonObject(id)), Modifier.weight(1f).clickable { onPerson(id) })
+                PersonPill(p, presenceLine(presence?.jo(id)), Modifier.weight(1f).clickable { onPerson(id) })
                 if (onChallenge != null) Swords(label(p)) { onChallenge(p) }
             }
             "blocks" -> PersonPill(p) { SiteButton("Unblock", ghost = true, small = true) { onAct("unblock", id) } }
@@ -352,7 +352,7 @@ private fun AddFriend(data: JsonObject?, working: Boolean, onMessage: (String) -
         val t = q.trim(); if (t.length < 3 || searching) return
         searching = true; onMessage("Searching…")
         scope.launch {
-            try { val r = Account.community("lookup", JsonObject().apply { addProperty("query", t) }); found = r.getAsJsonObject("person"); none = found == null; onMessage("") }
+            try { val r = Account.community("lookup", JsonObject().apply { addProperty("query", t) }); found = r.jo("person"); none = found == null; onMessage("") }
             catch (e: Exception) { onMessage(e.message ?: "Could not search right now.") } finally { searching = false }
         }
     }
@@ -383,7 +383,7 @@ private fun PersonView(v: CommunityView.Person, onBack: () -> Unit, onAct: (Stri
         err.isNotBlank() -> Text(err, style = Site.Body)
         person == null -> Text("Loading profile…", style = Site.Meta)
         else -> {
-            ProfileCard(Community.profile(person), person.getAsJsonArray("items"), owner = false, onItem = onItem)
+            ProfileCard(Community.profile(person), person.ja("items"), owner = false, onItem = onItem)
             Row(Modifier.padding(top = 20.dp), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                 Text("Remove friend", style = Site.Button.copy(fontSize = 14.sp, color = Site.Gold), modifier = Modifier.heightIn(min = 44.dp).clickable { onAct("remove") }.padding(vertical = 12.dp))
                 Text("Block", style = Site.Button.copy(fontSize = 14.sp, color = Color(0xFFF08A7E)), modifier = Modifier.heightIn(min = 44.dp).clickable { onAct("block") }.padding(vertical = 12.dp))
@@ -518,15 +518,15 @@ private fun ChooseShare(kind: String, choices: List<JsonObject>?, onLoad: () -> 
 /** games.js GAMES[g].name, for the picker's search. */
 private val GAME_NAME = mapOf("mtg" to "Magic: The Gathering", "ptcg" to "Pokémon TCG", "ygo" to "Yu-Gi-Oh!")
 private val GAME_SHORT = mapOf("mtg" to "Magic", "ptcg" to "Pokémon", "ygo" to "Yu-Gi-Oh!")
-private fun JsonObject.cards() = getAsJsonArray("cards")?.mapNotNull { it as? JsonObject }.orEmpty()
+private fun JsonObject.cards() = ja("cards")?.mapNotNull { it as? JsonObject }.orEmpty()
 private fun JsonObject.count() = cards().sumOf { c -> c.get("qty")?.takeIf { it.isJsonPrimitive }?.asInt ?: 1 }
 
 /** itemTile: the binder's cover or the deck's tile (its first cover picture, the shade, the format chip, the name and "Game · N cards"). */
 @Composable
 private fun ShowcaseTile(item: JsonObject, onClick: () -> Unit) = with(Community) {
-    val cover = item.getAsJsonObject("appearance")?.getAsJsonArray("cover")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }.orEmpty()
+    val cover = item.jo("appearance")?.ja("cover")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }.orEmpty()
     val image = cover.firstOrNull() ?: item.cards().firstNotNullOfOrNull { it.s("image").ifBlank { null } }
-    val color = item.getAsJsonObject("appearance")?.s("color")?.takeIf { Regex("^#[0-9a-fA-F]{6}$").matches(it) }?.let { Color(android.graphics.Color.parseColor(it)) } ?: Color(0xFF7664A0)
+    val color = item.jo("appearance")?.s("color")?.takeIf { Regex("^#[0-9a-fA-F]{6}$").matches(it) }?.let { Color(android.graphics.Color.parseColor(it)) } ?: Color(0xFF7664A0)
     val shape = RoundedCornerShape(16.dp)
     Box(Modifier.fillMaxWidth().height(if (item.s("kind") == "binder") 200.dp else 180.dp).clip(shape).background(Brush.verticalGradient(listOf(color.copy(alpha = .55f), Site.Surface2)))
         .border(1.dp, Site.GlassLine, shape).clickable(onClick = onClick).semantics { contentDescription = "Open ${item.s("title")}" }) {
@@ -635,3 +635,8 @@ internal fun CommunityLayer(s: CommunityLayerState, onHeader: () -> Unit, onChal
     } }
     LaunchedEffect(s.cards.isEmpty()) { if (s.cards.isEmpty()) s.parked?.let { b -> s.parked = null; CollectionWrites.binder.value = b.copy(id = System.nanoTime()) } }
 }
+
+/** Server JSON read safely: a field the server sends as null (a friend never seen online, a player with no avatar) is null here, never a
+ *  crash in the pop-up's drawing (Randall 7 Nov: Friends showed nothing and the screen stopped answering). */
+internal fun JsonObject.jo(k: String): JsonObject? = get(k) as? JsonObject
+internal fun JsonObject.ja(k: String): com.google.gson.JsonArray? = get(k) as? com.google.gson.JsonArray
