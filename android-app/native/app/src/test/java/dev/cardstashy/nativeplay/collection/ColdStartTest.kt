@@ -116,6 +116,23 @@ class ColdStartTest {
         } finally { CollectionEngine.answerForTest = null; CollectionEngine.releaseForTest(); CollectionEngine.restart() }
     }
 
+    /** Collection Home's Card of the Day opens its own page in the app, in the printing Home shows (app.js A.homeDailyCard). */
+    @Test fun dailyCardOpensItsPrinting() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.store = CollectionEngine.MemoryStore()
+        CollectionEngine.initFrom(bundle); CollectionEngine.restart()
+        try {
+            CollectionEngine.load(ws, null); CollectionEngine.refresh("mtg", maxMs = 90_000)
+            val card = CollectionEngine.home("mtg").getAsJsonObject("hero").get("card") as? JsonObject
+            assumeTrue("Card of the Day reachable", card != null)
+            val a = CollectionEngine.act("homeDailyCard", JsonObject(), 30_000)
+            assertNull(a.get("error"))
+            val m = CollectionEngine.card("mtg", JsonObject().apply { addProperty("name", card!!["name"].asString); addProperty("daily", "1") })
+            println("DAILY ${card!!["id"].asString} ${m.toString().take(300)}")
+            assertTrue(m.toString().contains(card["id"].asString))
+        } finally { CollectionEngine.restart() }
+    }
+
     /** My decks' Power is worked out once: after the keep is saved and the engine restarted, the page is drawn from it. */
     @Test fun decksFromThePowerKeep() = runBlocking {
         assumeTrue(bundle.isFile)

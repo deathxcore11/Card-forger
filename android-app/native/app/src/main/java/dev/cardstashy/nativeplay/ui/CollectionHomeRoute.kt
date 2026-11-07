@@ -205,7 +205,12 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
             search = { searchOpen?.invoke() ?: web(site + "#search", null) },
             // A.homeDailyCard: Magic's opens the website's sheet for now; Yu-Gi-Oh!'s and Pokémon's open the native card page (A.tCard).
             daily = { d -> val g = CollectionGame.current.value
-                if (g == CardGame.MTG) web(site, "[data-act=\"homeDailyCard\"]") else cards = cards + CardOpen(d.name, page = site, tile = "", game = g.id, id = d.id) },
+                // app.js A.homeDailyCard: Magic's opens in the printing Home shows (Randall 7 Nov: it opened the website).
+                if (g == CardGame.MTG) scope.launch {
+                    val a = runCatching { CollectionEngine.act("homeDailyCard", com.google.gson.JsonObject(), 30_000) }.getOrNull() ?: return@launch
+                    a.get("error")?.takeIf { it.isJsonPrimitive }?.asString?.let { android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show(); return@launch }
+                    if (CollectionGame.current.value == g) cards = cards + CardOpen(d.name, page = site, tile = "", daily = true)
+                } else cards = cards + CardOpen(d.name, page = site, tile = "", game = g.id, id = d.id) },
             // Magic's set codes are lower case; a Pokémon set's id is kept as it is.
             set = { code -> val c = if (CollectionGame.current.value == CardGame.MTG) code.lowercase() else code
                 if (c.isNotBlank()) onSet?.invoke(c) ?: web(site + "#set/" + android.net.Uri.encode(c), null) },

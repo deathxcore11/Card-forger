@@ -37,7 +37,9 @@ data class CardOpen(val name: String, val entry: String = "", val deck: String =
                     /** The Cards list's price (data-act="buyCard" data-lot = [entry]): "Buy this card" over the copy's page. */
                     val buy: Boolean = false,
                     /** A friend's shared card (app.js A.sharedCard): Magic opens the printing they shared, found first by sharedCard. */
-                    val shared: Boolean = false)
+                    val shared: Boolean = false,
+                    /** Collection Home's Card of the Day (app.js A.homeDailyCard): Magic opens the printing Home shows, found first by homeDailyCard. */
+                    val daily: Boolean = false)
 
 private fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
 
@@ -66,7 +68,7 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
     var ruleKey by remember(open) { mutableStateOf("") }
     LaunchedEffect(open) {
         runCatching {
-            val o = JsonObject().apply { addProperty("name", open.name); addProperty("entry", open.entry); addProperty("deck", open.deck); if (open.random) addProperty("random", "1"); if (open.shared) addProperty("shared", "1"); if (open.back.isNotBlank()) addProperty("back", open.back); open.setI?.let { addProperty("setI", it); addProperty("setFinish", open.setFinish) }; open.pack?.let { addProperty("pack", it); addProperty("setFinish", open.setFinish) } }
+            val o = JsonObject().apply { addProperty("name", open.name); addProperty("entry", open.entry); addProperty("deck", open.deck); if (open.random) addProperty("random", "1"); if (open.shared) addProperty("shared", "1"); if (open.daily) addProperty("daily", "1"); if (open.back.isNotBlank()) addProperty("back", open.back); open.setI?.let { addProperty("setI", it); addProperty("setFinish", open.setFinish) }; open.pack?.let { addProperty("pack", it); addProperty("setFinish", open.setFinish) } }
             model = withContext(Dispatchers.Default) { CollectionCardModel.parse(CollectionEngine.card("mtg", o)) }
             CollectionEngine.cardLoad()
             CollectionEngine.settle(30_000, CollectionEngine.CARD_MODEL) { j -> if (j.size() > 0) model = CollectionCardModel.parse(j) }

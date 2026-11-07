@@ -683,7 +683,7 @@ function binderModel(G, id, page = 0) {
 }
 // A friend's shared binder (app.js showBinder with data.sharedItem): binders.js binderPage, read-only, over the item's own cards
 // (community-profile.js sharedBinderRows), its pockets opening A.sharedCard, then sharedBinderValue's reference subtotal.
-let sharedItem = null, sharedPrint = null;
+let sharedItem = null, sharedPrint = null, dailyPrint = null;
 function sharedBinderModel(item, page = 0) {
   binderFocus(item.game); sharedItem = item;
   const rows = sharedBinderRows(item), pages = Math.max(1, Math.ceil(rows.length / 9));
@@ -1086,13 +1086,15 @@ const still = ctx => S.ui.sheetCtx === ctx;
 // app.js A.card (3554-3615): [o] = {name, entry, deck}, as the tapped tile's data-name / data-entry / data-deck.
 function cardOpen(o) {
   const name = String(o.name || ''), entryId = String(o.entry || ''), deckId = o.deck ? String(o.deck) : null, setI = o.setI == null || o.setI === '' ? null : Number(o.setI);
-  const as = JSON.stringify([name, entryId, deckId, setI, o.setFinish || '', o.pack ?? '', o.pack != null ? pack?.stamp : '', !!o.random, o.shared ? sharedPrint?.id || '' : '']);
+  const as = JSON.stringify([name, entryId, deckId, setI, o.setFinish || '', o.pack ?? '', o.pack != null ? pack?.stamp : '', !!o.random, o.shared ? sharedPrint?.id || '' : '', o.daily ? dailyPrint?.id || '' : '']);
   if (sheet && sheet.openedAs === as && S.ui.sheetCtx === sheet) return sheet;
   const ctx = {type: 'card', name, entryId, deckId, random: !!o.random, openedAs: as};
   sheet = S.ui.sheetCtx = ctx;
   buyCtx = null;
   // A.sharedCard: A.card with the friend's printing (t.printing), as A.sharedCard found it.
   if (o.shared) { const print = sharedPrint; if (print?.id && key(print.name) === key(name)) { ctx.print = print; ctx.setId = print.set; ctx.priceFinish = selectedFinish('mtg', print, ''); } return ctx; }
+  // A.homeDailyCard: A.card with the Card of the Day's printing (t.printing), as homeDailyCard found it.
+  if (o.daily) { const print = dailyPrint; if (print?.id && key(print.name) === key(name)) { ctx.print = print; ctx.setId = print.set; ctx.priceFinish = selectedFinish('mtg', print, ''); } return ctx; }
   // A set page's tile (data-set-i, data-set-finish): that printing, priced in the finish the page shows (A.card).
   // A pulled card from Open Pack (pack-preview.js onDetails → A.card with t.printing): its own printing, in the finish it came out in.
   if (o.pack != null && o.pack !== '') {
@@ -5121,6 +5123,22 @@ Object.assign(writeActs, {
       sharedPrint = printing || null;
     }
     made = JSON.stringify({game: item.game, id: String(c.id || ''), name: c.name || ''});
+  },
+});
+// app.js A.homeDailyCard (Magic): the Card of the Day opens in the exact printing Home shows, its printing kept with the hero or, for an
+// older kept hero with only its art, loaded by its proved id. [made]: {game, id, name} for the page the app opens.
+Object.assign(writeActs, {
+  async homeDailyCard() {
+    const h = heroFor('mtg');
+    dailyPrint = null;
+    if (!h) return;
+    if (h.printing) dailyPrint = h.printing;
+    else {
+      const print = await api('/cards/' + encodeURIComponent(h.id));
+      if (print.id !== h.id || key(print.name) !== key(h.name) || typeof print.set !== 'string') throw Error('The card source returned a different printing. Please try again.');
+      dailyPrint = slim({...print, full: true});
+    }
+    made = JSON.stringify({game: 'mtg', id: String(h.id || ''), name: h.name || ''});
   },
 });
 // app.js A.provenSave (tcg.js 3966) as a saving tap: the deck the site opens next (#deck/<id>/cards, #tdeck/<id>) is what the app opens.
