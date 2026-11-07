@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 
@@ -26,6 +27,8 @@ object MagicSets {
     class Row(val code: String, val name: String, val released: String, val count: Int)
     /** Scryfall's sets a deck builds from, newest first: paper core, expansion, masters, draft and Commander sets that are out. */
     val list = MutableStateFlow<List<Row>?>(null)
+    /** The last try at the list failed (offline): the shelves say so, and the next start() tries again. */
+    val failed = MutableStateFlow(false)
     private var busy = false
     private val KINDS = setOf("core", "expansion", "masters", "draft_innovation", "commander")
 
@@ -42,6 +45,7 @@ object MagicSets {
                 val n = o.get("card_count")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0; if (n == 0) return@mapNotNull null
                 Row(s("code"), s("name"), at, n) }?.sortedByDescending { it.released }
             if (rows != null) list.value = rows
+            failed.value = rows == null
         } finally { busy = false }
     }
 }
@@ -53,61 +57,84 @@ internal fun shelfDate(iso: String): String = runCatching {
 
 const val FIT_SHELF = "fit"
 
-/** One deck's Magic shelves: the cards each one loaded for the search they were loaded for. */
+/**
+ * One deck's Magic shelves: the cards each one loaded for the search it was loaded for. The set shelves follow the pool's search
+ * ([use]'s base: format, colours, type) and "For this deck" its own (the deck's colours), so adding a card in a new colour starts only
+ * that shelf over. A shelf loads while it is on screen ([load] is cancelled when it leaves), two at a time and never closer than
+ * Scryfall's tenth of a second apart.
+ */
 class MagicShelves(private val scope: CoroutineScope) {
     private var base = ""; private var fit = ""
     private val cards = mutableStateMapOf<String, List<JsonObject>>()
     private val more = mutableStateMapOf<String, Boolean>()
     private val errors = mutableStateMapOf<String, String>()
-    private val asked = HashSet<String>()
-    // Two searches at a time: Scryfall asks for no more than ten a second, and a fast fling should not queue dozens.
     private val gate = Semaphore(2)
-    var sets by mutableStateOf<List<MagicSets.Row>?>(null)
+    private val pace = kotlinx.coroutines.sync.Mutex(); private var lastAt = 0L
+    var sets by mutableStateOf(MagicSets.list.value)
+    var setsFailed by mutableStateOf(false)
+    /** Bumped when the shelves start over: the shelves on screen ask again (BenchModel.shelvesGen). */
+    var gen by mutableStateOf(0)
 
-    /** The pool's search without a name ([base]: format, colours, type) and "For this deck"'s ([fitQuery]); new ones start the shelves over. */
     fun use(base: String, fitQuery: String) {
-        if (base == this.base && fitQuery == fit) return
-        this.base = base; fit = fitQuery; cards.clear(); more.clear(); errors.clear(); asked.clear()
+        if (base != this.base) { this.base = base; for (k in cards.keys.toList()) if (k != FIT_SHELF) cards.remove(k); more.clear(); errors.clear(); gen++ }
+        if (fitQuery != fit) { fit = fitQuery; cards.remove(FIT_SHELF); errors.remove(FIT_SHELF); gen++ }
     }
-    fun start() { scope.launch { MagicSets.ensure(); sets = MagicSets.list.value } }
-    fun load(key: String) {
-        if (!asked.add(key)) return
-        val q = if (key == FIT_SHELF) fit else "$base e:$key"; val was = base to fit
-        scope.launch {
-            gate.withPermit {
-                val r = CardFacts.search(q, "edhrec", 1)
-                if (was != base to fit) return@withPermit
-                if (r == null) { errors[key] = "This shelf couldn't load. Check your connection, then scroll back to try again."; asked.remove(key) }
-                else { errors.remove(key); cards[key] = r.first; more[key] = r.second }
-            }
+    fun start() { if (sets == null) scope.launch { setsFailed = false; MagicSets.ensure(); sets = MagicSets.list.value; setsFailed = sets == null && MagicSets.failed.value } }
+    /** The shelf's cards, while it is on screen: suspends until they're in (or failed), cancelled when it scrolls away. */
+    suspend fun load(key: String) {
+        if (cards.containsKey(key)) return
+        if (key != FIT_SHELF && sets == null) { start(); return }
+        errors.remove(key)
+        val q = if (key == FIT_SHELF) fit else "$base e:$key"; val was = if (key == FIT_SHELF) fit else base
+        gate.withPermit {
+            if (cards.containsKey(key)) return
+            pace.withLock { val wait = lastAt + 110 - System.currentTimeMillis(); if (wait > 0) kotlinx.coroutines.delay(wait); lastAt = System.currentTimeMillis() }
+            val r = CardFacts.search(q, "edhrec", 1)
+            if (was != (if (key == FIT_SHELF) fit else base)) return
+            if (r == null) errors[key] = "This shelf couldn't load. Check your connection, then scroll back to try again."
+            else { cards[key] = r.first; more[key] = r.second }
         }
     }
 
+    private class Made(val from: List<JsonObject>, val stamp: Any?, val tiles: List<BenchTile>, val why: Map<String, String>)
+    private val made = HashMap<String, Made>()
     /**
      * The shelves as the Bench draws them. [tile] makes a browser tile of a Scryfall card (the pool's own tiles); [inDeck] leaves the
-     * deck's own cards out of "For this deck", which says what each card is.
+     * deck's own cards out of "For this deck", which says what each card is. A shelf's tiles are made again only when its cards or
+     * [stamp] (the deck's rows: what is in it, how many) change, so a shelf landing doesn't rebuild the others.
      */
-    fun shelves(tile: (JsonObject) -> BenchTile, inDeck: (String) -> Boolean, fitTitle: String, fitMeta: String): List<BenchShelf> {
+    fun shelves(tile: (JsonObject) -> BenchTile, inDeck: (String) -> Boolean, fitTitle: String, fitMeta: String, stamp: Any?): List<BenchShelf> {
+        fun tiles(key: String, got: List<JsonObject>, fit: Boolean): Made = made[key]?.takeIf { it.from === got && it.stamp == stamp } ?: run {
+            val use = if (fit) got.filter { !inDeck(it.get("name")?.asString.orEmpty()) }.take(20) else got
+            Made(got, stamp, use.map(tile), if (fit) use.associate { c -> c.get("name")?.asString.orEmpty() to roleWord(c) } else emptyMap()).also { made[key] = it }
+        }
         val out = ArrayList<BenchShelf>()
         if (fit.isNotEmpty()) {
-            val got = cards[FIT_SHELF]?.filter { !inDeck(it.get("name")?.asString.orEmpty()) }?.take(20)
-            out += BenchShelf(FIT_SHELF, fitTitle, meta = fitMeta, gold = true, tiles = if (errors[FIT_SHELF] != null) emptyList() else got?.map(tile), note = errors[FIT_SHELF].orEmpty(),
-                why = got.orEmpty().associate { c -> val n = c.get("name")?.asString.orEmpty(); n to roleWord(c) })
+            val m = cards[FIT_SHELF]?.let { tiles(FIT_SHELF, it, true) }
+            out += BenchShelf(FIT_SHELF, fitTitle, meta = fitMeta, gold = true, tiles = if (errors[FIT_SHELF] != null) emptyList() else m?.tiles, note = errors[FIT_SHELF].orEmpty(),
+                why = m?.why.orEmpty())
         }
+        if (sets == null && setsFailed) out += BenchShelf(SETS_SHELF, "Every set", tiles = emptyList(), note = "The list of sets couldn't load. Check your connection, then scroll back to try again.")
         for (s in sets.orEmpty()) {
             val got = cards[s.code]
-            out += BenchShelf(s.code, s.name, s.code.uppercase(), shelfDate(s.released), tiles = if (errors[s.code] != null) emptyList() else got?.map(tile), note = errors[s.code].orEmpty(),
+            out += BenchShelf(s.code, s.name, s.code.uppercase(), shelfDate(s.released), tiles = if (errors[s.code] != null) emptyList() else got?.let { tiles(s.code, it, false).tiles }, note = errors[s.code].orEmpty(),
                 count = if (more[s.code] == true) (got?.size ?: 0) + 1 else 0)
         }
         return out
     }
-    val ready get() = sets != null
+    /**
+     * Ready once [use] has set the searches: "For this deck" then shows (before the list of sets, which follows). Never before, or the
+     * list would first draw the sets alone and keep its place on them when "For this deck" arrives above.
+     */
+    val ready get() = fit.isNotEmpty()
 
     private fun roleWord(c: JsonObject): String {
         val t = c.get("type_line")?.asString ?: c.getAsJsonArray("card_faces")?.firstOrNull()?.asJsonObject?.get("type_line")?.asString.orEmpty()
         return listOf("Creature", "Planeswalker", "Battle", "Instant", "Sorcery", "Artifact", "Enchantment", "Land").firstOrNull { it in t } ?: t.substringBefore(" —")
     }
 }
+/** The stand-in shelf when the list of sets couldn't load: asking it again tries the list again. */
+const val SETS_SHELF = "sets"
 
 /** A deck's colour identity for Scryfall's id<= (the cards' own, as the facts know them), or null when none is known yet. */
 internal fun deckIdentity(names: Collection<String>): String? {

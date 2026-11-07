@@ -107,7 +107,7 @@ class MtgDeckTabsShotTest {
         }
         ws.add("notes", JsonParser.parseString("""[{"id":"n1","deckId":"d5","sig":"x","date":"11/2/2026","author":"","table":"","result":"Win","turn":6,"note":"Curved out"}]"""))
         Account.setForTest(Account.Session("t", "r", Long.MAX_VALUE, "u", "randall@example.com"), null)
-        dev.cardstashy.nativeplay.ui.HomeCache.loaded = null; dev.cardstashy.nativeplay.ui.HomeCache.warm = false; dev.cardstashy.nativeplay.ui.HomeCache.model = null
+        dev.cardstashy.nativeplay.ui.HomeCache.loaded = null; dev.cardstashy.nativeplay.ui.HomeCache.warm = false; dev.cardstashy.nativeplay.ui.HomeCache.models.clear()
         Decks.deviceFile(app, "u").apply { parentFile?.mkdirs() }.writeText(ws.toString())
         dev.cardstashy.nativeplay.ui.catalogFile(app).writeText(fx["catalog"].toString())
         CollectionGame.init(app); CollectionGame.set(CardGame.MTG)

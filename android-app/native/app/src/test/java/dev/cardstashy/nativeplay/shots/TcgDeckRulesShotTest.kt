@@ -56,7 +56,7 @@ class TcgDeckRulesShotTest {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         val fx = JsonParser.parseString(javaClass.getResource("/tcg-collection/fixture.json")!!.readText()).asJsonObject
         Account.setForTest(Account.Session("t", "r", Long.MAX_VALUE, "u", "randall@example.com"), null)
-        dev.cardstashy.nativeplay.ui.HomeCache.loaded = null; dev.cardstashy.nativeplay.ui.HomeCache.warm = false; dev.cardstashy.nativeplay.ui.HomeCache.model = null
+        dev.cardstashy.nativeplay.ui.HomeCache.loaded = null; dev.cardstashy.nativeplay.ui.HomeCache.warm = false; dev.cardstashy.nativeplay.ui.HomeCache.models.clear()
         Decks.deviceFile(app, "u").apply { parentFile?.mkdirs() }.writeText(fx["workspace"].toString())
         dev.cardstashy.nativeplay.ui.catalogFile(app).writeText("{}")
         dev.cardstashy.nativeplay.ui.tcgCacheFile(app).writeText(fx["cache"].toString())

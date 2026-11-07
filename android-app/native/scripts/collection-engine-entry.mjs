@@ -120,7 +120,9 @@ import {Document as SiteDocument, Event as SiteEvent, serialize as domJson, byId
 // offline copy and Pokémon's one art-schema refresh) is what the Decks page's Ideas and Meta decks read; app.js's precon records
 // (cardforge-precons-v1, writeRecord: the Meta tab's precon list, kept between visits) the same; the site keeps S.ui.ideas itself
 // for the session only (store.js), so no other Ideas key exists to keep.
-const KEPT_KEYS = new Set(['cardforge-meta-v1', 'cardforge-precons-v1']);
+// Home's header and rails paint from what the site keeps too (tcg.js HERO_KEY: today's Card of the Day per game; news-pulse.js and
+// community-feed.js their last feed), so a launch shows them at once instead of after the network.
+const KEPT_KEYS = new Set(['cardforge-meta-v1', 'cardforge-precons-v1', 'cardforge-hero-v2', 'cardforge-pulse-v2', 'cardforge-community-v3']);
 // app.js A.openSetPack's today's-pack claim (cardstashy-today-pack:<game>:<date>:<id>): the Card of the Day comes once a day.
 const kept = k => KEPT_KEYS.has(k) || k.startsWith('cardstashy-today-pack:');
 const keptDirty = new Set();
@@ -983,9 +985,11 @@ function shelvesStart(G, id) {
     if (G === 'ygo') { const want = top.map(x => String(x.id)).filter(i => i && !tcgCardOf(G, i)); if (want.length) await tcgEnsureMany(G, want).catch(() => {});
       for (const x of top) { const c = tcgCardOf(G, String(x.id)); if (c) rows.push({c, why: `${Math.round(x.pct)}% of top decks`}); } }
     else for (const x of top) {
-      // tcg.js's Upgrade lab finds a Pokémon staple by name among the printings it knows; one not known yet is looked up the same way.
-      let c = Object.values(tcgCache.ptcg).find(v => v.name?.toLowerCase() === x.name.toLowerCase() && !v.brief);
-      if (!c) c = await tcgSources.ptcg.byName(x.name).catch(() => null);
+      // tcg.js deckUpgradeTab's cardFor: a Pokémon staple's printing the cache knows that is legal in the deck's format; one not known
+      // yet is looked up by name and kept only when legal.
+      const {f} = shelfDeck(G, id);
+      let c = Object.values(tcgCache.ptcg).find(v => v.name?.toLowerCase() === x.name.toLowerCase() && !v.pocket && tcgSources.ptcg.legality(v, f) === 'legal');
+      if (!c) { c = await tcgSources.ptcg.byName(x.name).catch(() => null); if (c && (c.pocket || tcgSources.ptcg.legality(c, f) !== 'legal')) c = null; }
       if (c) rows.push({c, why: `${Math.round(x.pct)}% of top decks`});
     }
     w.rows = rows;
@@ -1010,13 +1014,21 @@ function shelfStart(G, id, setId) {
     const cards = await tcgSources[G].setCards(info);
     // Each card once (a set lists reprints and rarities as rows), as the set page keeps them in tcg.js's card cache.
     const seen = new Set(); w.cards = [];
-    for (const c of cards) { if (!c?.id || c.pocket || seen.has(String(c.id))) continue; seen.add(String(c.id)); if (!tcgCardOf(G, c.id) || (tcgCardOf(G, c.id).brief && !c.brief)) tcgCache[G][c.id] = c; w.cards.push(String(c.id)); }
+    // Kept as the card itself, not the set's view of it (setContext: the set page's own price and printing), as the set page keeps it.
+    for (const c of cards) { if (!c?.id || c.pocket || seen.has(String(c.id))) continue; seen.add(String(c.id));
+      const {setContext, ...card} = c; if (!tcgCardOf(G, c.id) || (tcgCardOf(G, c.id).brief && !card.brief)) tcgCache[G][c.id] = card; w.cards.push(String(c.id)); }
+    // tcg.js tcgSearch: a Pokémon format that checks card text (legal sets, no Rule Box) can't judge a brief card, so its details are
+    // fetched (ensureMany, as the search's hydrateSearch does) and the shelf shows each card once they are in.
+    const {f} = shelfDeck(G, id);
+    if (shelfNeedsDetails(G, f)) { const want = w.cards.filter(i => tcgCardOf(G, i)?.brief); if (want.length) await tcgEnsureMany(G, want, () => {}).catch(() => {}); }
   })().catch(e => { w.error = e?.message || 'This set could not load.'; }).finally(() => { w.busy = false; });
 }
+const shelfNeedsDetails = (G, f) => G === 'ptcg' && !!(f && (f.legal || f.noRuleBox));
 function shelfModel(G, id, setId) {
   const w = shelfWork.get('set|' + G + '|' + setId); if (!w) return {busy: false, error: '', tiles: null};
-  const {f} = shelfDeck(G, id), own = shelfOwned(G);
-  return {busy: !!w.busy, error: w.error, tiles: w.cards ? w.cards.map(i => tcgTileOf(G, tcgCardOf(G, i), f, {id: i, own: own.get(i) || 0})).filter(t => t.legal || !t.name) : null};
+  const {f} = shelfDeck(G, id), own = shelfOwned(G), details = shelfNeedsDetails(G, f);
+  return {busy: !!w.busy, error: w.error, tiles: w.cards ? w.cards.filter(i => !details || !tcgCardOf(G, i)?.brief)
+    .map(i => tcgTileOf(G, tcgCardOf(G, i), f, {id: i, own: own.get(i) || 0})).filter(t => t.legal || !t.name) : null};
 }
 // [tab]: the tab open (A.tDeckTab keeps it in S.ui.tdeckTab); left out, the one open stays. Any other than Cards draws its body
 // as a panel (deckPanel); the page model then carries the hero, actions and tabs.
@@ -2095,7 +2107,7 @@ const json = v => JSON.stringify(v);
 // Nothing here touches the account: the preview adds nothing to the collection.
 const PACK_FEELS = ['pack-reveal', 'pack-tier-1', 'pack-tier-2', 'pack-tier-3', 'pack-tier-4', 'pack-tier-5'];
 const PACK_RARITY_FEEL = ['pack-reveal', 'pack-reveal', 'pack-tier-2', 'pack-tier-3', 'pack-tier-4'];
-let pack = null, packWant = null, todayGo = null;
+let pack = null, packWant = null, todayGo = null, setDone = true, todayLoad = true;
 const packScreen = G => G === 'mtg' ? S.ui.set : tcgUi(G).set;
 const packRelease = G => G === 'mtg' ? S.ui.set.code : tcgUi(G).set.id;
 async function packStart(P) {
@@ -5500,7 +5512,7 @@ function seedPickModel(G) {
 
 globalThis.Collection = {
   // What the app kept of the site's browser storage (KEPT_KEYS), put back when the bundle starts.
-  storeLoad(keptJson) { const o = keptJson ? JSON.parse(keptJson) : {}; for (const [k, v] of Object.entries(o)) if (KEPT_KEYS.has(k) && typeof v === 'string') keptSet(k, v); },
+  storeLoad(keptJson) { const o = keptJson ? JSON.parse(keptJson) : {}; for (const [k, v] of Object.entries(o)) if (kept(k) && typeof v === 'string') keptSet(k, v); },
   // The account's workspace row data (cloud.js), normalized as app.js loads it; [catalogJson] is the app's saved catalog.
   load(workspaceJson, catalogJson) {
     // No account copy (signed out, or a row never set up): app.js starts from store.js blank().
@@ -5530,6 +5542,9 @@ globalThis.Collection = {
   // The feeds Home shows (tcg.js loadHero + home-today.js dailyDetails, meta.js loadMeta, community-feed.js loadCommunity, news-pulse.js loadPulse).
   // [deckId]: the open deck page also fetches its own format's tournament decks (app.js route: Deck Power and the emblems
   // compare against them), when they are missing or older than 12 hours.
+  // Only the Card of the Day and today's set (the launch warm-up): todayDone() says when they're in.
+  today(game) { todayLoad = false; loadToday(game).finally(() => { todayLoad = true; }); },
+  todayDone() { return json({done: todayLoad}); },
   feeds(game, deckId) {
     if (game && game !== 'mtg') tcgScreenCards(game, 'home');
     loadToday(game);
@@ -5705,7 +5720,8 @@ globalThis.Collection = {
   tcgCache() { return json(tcgCache); },
   // tcg.js A.tSetByName (the Card of the Day's Yu-Gi-Oh! set): the set list if it is not here yet, then the set it names; the app pumps
   // it and reads setWent() for the #set/<id> it went to.
-  setByName(game, name) { tcgFocus(game, 'home'); tcgWent = ''; Promise.resolve(TA.tSetByName({dataset: {name}})).catch(() => {}); },
+  setByName(game, name) { tcgFocus(game, 'home'); tcgWent = ''; setDone = false; Promise.resolve(TA.tSetByName({dataset: {name}})).catch(() => {}).finally(() => { setDone = true; }); },
+  setPoll() { return json({done: setDone || !!tcgWent}); },
   setWent() { const m = /^#set\/(.+)$/.exec(tcgWent); return m ? decodeURIComponent(m[1]) : ''; },
   // The deck page's Rules tab (tcg.js: interactiveRules(g, {format: d.format})), and taps and typing on whatever panel is open.
   rules(game, format) { panelOpen('rules|' + game + '|' + (format || ''), interactiveRules(game, {format: format || ''}), host => attachRuleLearning(host)); return panelModel(); },
@@ -6012,15 +6028,19 @@ globalThis.Collection = {
   // app.js A.homeTodayPack, up to the set: today's set (its pack's set when the card is from a bonus sheet), and the Card of the Day
   // the next pack in that set pulls; the app then opens that set's page and its Open Pack. todayWent is {game, set, name} or {error}.
   todayPack(game) {
-    const h = heroFor(game); todayGo = null; packWant = null;
+    todayGo = null; packWant = null;
+    // Home's refresh loads the Card of the Day (tcg.js loadHero); a tap before it has (a launch painted from what was kept) loads it first.
+    const h0 = heroFor(game);
+    (h0 ? Promise.resolve(h0) : loadHero(game).catch(() => false).then(() => heroFor(game))).then(h => {
     if (!h) { todayGo = {error: 'Today’s set could not load. Try opening the pack again.'}; return; }
-    dailyDetails(game, h).then(d => {
+    return dailyDetails(game, h).then(d => {
       const set = d?.set?.pack || d?.set; if (!set) throw Error('Today’s set could not load. Try opening the pack again.');
       packWant = {game, id: h.id, name: h.name, date: h.date, rarity: d.rarity || '', card: d.set?.pack ? d.card : null};
       todayGo = {game, set: game === 'mtg' ? set.code : game === 'ptcg' ? set.id : '', name: set.name || ''};
-    }).catch(e => { todayGo = {error: e?.message || 'Could not load today’s pack. Try again.'}; });
+    }); }).catch(e => { todayGo = {error: e?.message || 'Could not load today’s pack. Try again.'}; });
   },
   todayWent() { return json(todayGo || {}); },
+  todayPoll() { return json({done: !!todayGo}); },
   packAgain() { const P = pack; if (!P || P.busy || !P.cards) return json(packModel()); packDeal(P); return json(packModel()); },
   packClose() { pack = null; },
   setHtml() { return setGame === 'mtg' ? setView() : tcgSetView(); },

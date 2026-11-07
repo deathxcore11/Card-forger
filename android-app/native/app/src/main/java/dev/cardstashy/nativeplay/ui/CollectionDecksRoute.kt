@@ -1,6 +1,7 @@
 package dev.cardstashy.nativeplay.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,8 +40,10 @@ import kotlinx.coroutines.withContext
 
 /** What the Decks tab showed last, so coming back paints at once. */
 private object DecksCache {
-    /** Each game's page as last drawn, by the tab it was drawn with ("mtg|ideas"). */
-    val models = HashMap<String, CollectionDecksModel>()
+    /** Each account's pages as last drawn, by game and the tab drawn with ("<user>|mtg|ideas"). */
+    val models = java.util.concurrent.ConcurrentHashMap<String, CollectionDecksModel>()
+    /** The engine's text of each, as drawn: the next paint is compared with it. */
+    val raw = java.util.concurrent.ConcurrentHashMap<String, String>()
     var q = ""
     /** The tab open (S.ui.decksTab): My decks or Ideas here. A game switch keeps it (app.js gameSwitchRoute keeps the route's tab). */
     var tab = "mine"
@@ -60,6 +63,16 @@ fun nativeDecksTab(url: String, press: String?): String? {
     if (press.isNullOrBlank()) return tab
     val g = Regex("^\\[data-act=\"setGame\"]\\[data-game=\"(\\w+)\"]$").find(press.trim())?.groupValues?.get(1) ?: return null
     CollectionGame.set(CardGame.of(g)); return tab
+}
+
+internal fun decksCacheClear() { DecksCache.models.clear(); DecksCache.raw.clear() }
+/** My decks drawn by the launch warm-up (no search typed): shown at once on the first open, and kept for the next launch. */
+internal suspend fun warmDecks(user: String, game: String) {
+    val k = "$user|$game|mine"
+    if (DecksCache.q.isNotBlank() || DecksCache.models[k] != null) return
+    val raw = CollectionEngine.decksRaw(game, JsonObject().apply { addProperty("q", ""); addProperty("tab", "mine") })
+    val m = withContext(Dispatchers.Default) { CollectionDecksModel.parse(com.google.gson.JsonParser.parseString(raw).asJsonObject) }
+    if (DecksCache.models.putIfAbsent(k, m) == null) { DecksCache.raw[k] = raw; withContext(Dispatchers.IO) { LastSeen.write(user, LastSeen.decksName(game, "mine"), raw) } }
 }
 
 /** The Decks page opens next on [tab] (S.ui.decksTab: "mine", "ideas" or "inspiration"). */
@@ -92,32 +105,58 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     // The pages drawn here, by game and tab: one state for the route's life, so a paint started before a tab or game switch (the
     // refresh's repaint) lands under its own key, never in a state the screen no longer reads.
     val painted = remember { androidx.compose.runtime.mutableStateMapOf<String, CollectionDecksModel>() }
-    val model = painted[game.id + "|" + tab] ?: DecksCache.models[game.id + "|" + tab]
+    remember { LastSeen.init(context) }
+    val pageKey = "${session?.userId}|${game.id}|$tab"
+    val model = painted[pageKey] ?: DecksCache.models[pageKey]
     var query by remember { mutableStateOf(DecksCache.q) }
     var failed by remember { mutableStateOf<String?>(null) }
+    var retry by remember { mutableStateOf(0) }
     LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
-    suspend fun paint() {
-        val t = tab
-        val o = JsonObject().apply { addProperty("q", DecksCache.q); addProperty("tab", t) }
-        val g = game
-        val m = withContext(Dispatchers.Default) { CollectionDecksModel.parse(CollectionEngine.decks(g.id, o)) }
-        painted[g.id + "|" + t] = m; DecksCache.models[g.id + "|" + t] = m
+    // Nothing drawn yet this run: the page as the last launch drew it (this account, game and tab), until the engine's paint lands.
+    LaunchedEffect(pageKey) {
+        if (model != null || DecksCache.q.isNotBlank()) return@LaunchedEffect
+        val u = session?.userId; val g = game.id; val t = tab
+        val j = withContext(Dispatchers.IO) { LastSeen.read(u, LastSeen.decksName(g, t)) } ?: return@LaunchedEffect
+        val m = withContext(Dispatchers.Default) { runCatching { CollectionDecksModel.parse(j) }.getOrNull() } ?: return@LaunchedEffect
+        if (painted[pageKey] == null && DecksCache.models[pageKey] == null) painted[pageKey] = m
+    }
+    /** What the last paint drew ("<user>|<game>|<tab>|<query>|<revision>"): the tab's own effect doesn't draw it again. */
+    val lastPaint = remember { arrayOf("") }
+    val writers = remember { HashMap<String, LastSeenWriter>() }
+    suspend fun paint(final: Boolean = false) {
+        val t = tab; val g = game; val u = session?.userId; val q = DecksCache.q
+        val k = "$u|${g.id}|$t"
+        val o = JsonObject().apply { addProperty("q", q); addProperty("tab", t) }
+        val raw = CollectionEngine.decksRaw(g.id, o)
+        lastPaint[0] = "$k|$q|${Decks.fullRevision.value}"
+        val keep = if (q.isBlank()) writers.getOrPut(k) { LastSeenWriter(u, LastSeen.decksName(g.id, t)) } else null
+        if (raw == DecksCache.raw[k] && painted[k] != null) { if (final) keep?.keep(raw, true); return }
+        val m = withContext(Dispatchers.Default) { CollectionDecksModel.parse(com.google.gson.JsonParser.parseString(raw).asJsonObject) }
+        painted[k] = m; DecksCache.models[k] = m; DecksCache.raw[k] = raw
+        keep?.keep(raw, final)
     }
     // The account's copy, then the names the catalog lacks (art and power fill in as they arrive).
     /** The collection is in the engine and the page drawn once: the open tab's body can be asked for. */
     var ready by remember { mutableStateOf(false) }
-    LaunchedEffect(session?.userId, revision, game) { try {
-        if (!ensureCollection(context, session?.userId, session != null, revision)) return@LaunchedEffect
+    LaunchedEffect(session?.userId, revision, game, retry) { try {
+        if (!ensureCollection(context, session?.userId, session != null, revision)) {
+            // Signed in, and this device has never had the account's copy: read it now, and say so if it can't be (never an endless wait).
+            if (model == null) try { Decks.load(context, rethrow = true)
+                if (withContext(Dispatchers.IO) { Decks.fullCopy(context) } == null) failed = "Your decks couldn’t be read from your account. Tap to try again."
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) { failed = "Your decks couldn’t be read from your account. Check your connection, then tap to try again." }
+            return@LaunchedEffect
+        }
+        failed = null
         paint(); ready = true
         coroutineScope {
             val repaint = launch { while (true) { delay(1200); paint() } }
-            try { CollectionEngine.refresh(game.id) } finally { repaint.cancel(); withContext(kotlinx.coroutines.NonCancellable) { keepCatalog(context) } }
+            // After the last paint, so the Power it worked out is kept for the next launch too.
+            try { CollectionEngine.refresh(game.id); repaint.cancel(); paint(final = true) } finally { repaint.cancel(); withContext(kotlinx.coroutines.NonCancellable) { keepCatalog(context) } }
         }
-        paint()
         failed = null
     } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) {
         HomeCache.loaded = null
-        if (painted[game.id + "|" + tab] == null && DecksCache.models[game.id + "|" + tab] == null) failed = e.message?.takeIf { it.isNotBlank() } ?: "Your decks couldn’t be opened here."
+        if (painted[pageKey] == null && DecksCache.models[pageKey] == null) failed = e.message?.takeIf { it.isNotBlank() } ?: "Your decks couldn’t be opened here."
     } }
     // Typing waits a beat before it searches (I.shelfSearch).
     LaunchedEffect(query) {
@@ -262,7 +301,7 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     // The tab's body when it opens (and for another game): the site's markup with its route's loads started (app.js route()).
     LaunchedEffect(tab, game, ready) {
         if (!ready || HomeCache.loaded == null) return@LaunchedEffect
-        runCatching { paint() }
+        if (lastPaint[0] != "${session?.userId}|${game.id}|$tab|${DecksCache.q}|${Decks.fullRevision.value}") runCatching { paint() }
         if (tab == "mine") { panel = null; return@LaunchedEffect }
         if (DecksCache.glyphs == null) runCatching { glyphMap(CollectionEngine.glyphs()) }.getOrNull()?.let { DecksCache.glyphs = it; glyphs = it }
         panelDo { CollectionEngine.decksPanel(game.id, tab) }
@@ -358,7 +397,8 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
         Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { top(null) }
         Column(Modifier.weight(1f).fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(if (failed != null) "Your saved data is protected" else "Opening your account…", style = Site.CardTitle.copy(fontWeight = FontWeight.ExtraBold, fontSize = 18.sp), textAlign = TextAlign.Center)
-            Text(failed ?: "Your decks will appear here.", style = Site.Meta.copy(color = Site.Muted), textAlign = TextAlign.Center)
+            Text(failed ?: "Your decks will appear here.", style = Site.Meta.copy(color = Site.Muted), textAlign = TextAlign.Center,
+                modifier = if (failed != null) Modifier.clickable { failed = null; retry++ }.padding(12.dp) else Modifier)
         }
         nav(false)
     }

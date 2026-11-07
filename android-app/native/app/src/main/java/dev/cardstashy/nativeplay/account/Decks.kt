@@ -146,7 +146,9 @@ object Decks {
         "Your decks changed on another device. Reload and try again."
     }
 
-    fun clear() { _decks.value = null; _error.value = null; _references.value = emptyList(); _covers.value = emptyMap() }
+    fun clear() { _decks.value = null; _error.value = null; _references.value = emptyList(); _covers.value = emptyMap()
+        // The Collection pages drawn for this account (this run and kept on the device) go with it.
+        dev.cardstashy.nativeplay.ui.CollectionCaches.clear() }
     internal fun setForTest(list: List<UserDeck>?) { _decks.value = list }
     internal fun setCoversForTest(map: Map<String, JsonObject>) { _covers.value = map }
     /** play-econ-ui.js pickedCover: the picked art crop for a Play deck, if it is an https image. */

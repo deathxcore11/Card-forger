@@ -169,7 +169,9 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
     // most played cards, no lands) in the deck's colours, then a shelf per set with the pool's search, each loaded when it shows.
     val shelves = remember(ui) { MagicShelves(scope) }
     val shelfBase = poolQuery("", b.colors, b.type)
-    val shelfFit = poolQuery("", emptySet(), "All") + " -t:land" + (remember(facts, e.cards) { deckIdentity(e.cards.map { it.name }.filterNot(Decks::isBasicLand)) }?.let { " id<=$it" } ?: "")
+    // The deck's colours, worked out off the main thread (the facts map grows with every shelf that lands).
+    val identity by androidx.compose.runtime.produceState<String?>(null, facts, e.cards) { value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { deckIdentity(e.cards.map { it.name }.filterNot(Decks::isBasicLand)) } }
+    val shelfFit = poolQuery("", emptySet(), "All") + " -t:land" + (identity?.let { " id<=$it" } ?: "")
     LaunchedEffect(ui.mode, shelfBase, shelfFit) { if (ui.mode == "all") { shelves.use(shelfBase, shelfFit); shelves.start() } }
     // All cards: the next page comes in as the grid nears its end.
     LaunchedEffect(ui.mode) { if (ui.mode == "all") snapshotFlow { b.tileGrid.layoutInfo.let { it.visibleItemsInfo.lastOrNull()?.index to it.totalItemsCount } }
@@ -287,11 +289,12 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
         // Play's tabs: Cards, Power and Rules. Power is Play-safe (Randall's card 6 Nov 18:53Z): no Upgrades, no prices. War Chest reads
         // the Collection, and Play never does.
         tabs = listOf("cards" to "Cards", "engine" to "Power", "rules" to "Rules"), powerTab = "engine",
-        shelves = if (ui.mode != "all") null else if (shelves.ready) shelves.shelves(::poolTile, { n -> countIn(n) > 0 }, "For this deck", "Most played in your colours") else emptyList(),
+        shelves = if (ui.mode != "all") null else if (shelves.ready) shelves.shelves(::poolTile, { n -> countIn(n) > 0 }, "For this deck", "Most played in your colours", stamp = e.cards) else emptyList(),
+        shelvesGen = shelves.gen,
     )
     val benchActions = BenchActions(back = onBack, save = actions.save, step = actions.step, craft = actions.craftCopies, open = actions.open, more = actions.hold,
         menu = listOf(BenchMenuItem("Rename deck") { ui.sheet = "rename" }, BenchMenuItem("Change format") { ui.sheet = "format" },
-            BenchMenuItem("Copy list", actions.copy), BenchMenuItem("Copy to My decks", toApp)), shelf = shelves::load)
+            BenchMenuItem("Copy list", actions.copy), BenchMenuItem("Copy to My decks", toApp)), shelf = { k -> shelves.load(k) })
 
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         DeckBench(model, b, benchActions,

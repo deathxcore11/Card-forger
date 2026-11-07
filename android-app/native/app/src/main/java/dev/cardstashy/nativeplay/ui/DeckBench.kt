@@ -46,6 +46,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
@@ -162,6 +164,8 @@ class BenchModel(
     val shelves: List<BenchShelf>? = null,
     /** Whose card back the shelves flip from: mtg, ygo or ptcg. */
     val cardBack: String = "mtg",
+    /** Bumped each time the shelves start over (a filter, or the deck's colours): every shelf on screen asks again. */
+    val shelvesGen: Int = 0,
 )
 class BenchMenuItem(val label: String, val onClick: () -> Unit)
 class BenchActions(
@@ -187,7 +191,8 @@ class BenchActions(
     /** The hero's other buttons beside the gold one (views.js deckShell's actions: War Chest, Share), as ghost buttons under it. */
     val heroActions: List<BenchMenuItem> = emptyList(),
     /** A shelf (BenchShelf.key) came on screen before its cards: load them. */
-    val shelf: (String) -> Unit = {},
+    /** A shelf on screen asks for its cards: suspends until they are in (or failed); cancelled when the shelf leaves the screen. */
+    val shelf: suspend (String) -> Unit = {},
 )
 
 /** Where the Bench is: tab, deck view, find and filters, the card in the big view. Kept by the caller so Back keeps your place. */
@@ -880,14 +885,16 @@ private val COLOR_NAME = mapOf("W" to "white", "U" to "blue", "B" to "black", "R
 /** The shelves, one under another; each asks for its cards when it comes on screen, so only what you scroll to ever loads. */
 @Composable
 private fun Shelves(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, lift: () -> Unit) {
-    val shown = m.shelves.orEmpty().filter { it.tiles == null || it.tiles.isNotEmpty() || it.note.isNotEmpty() }
+    // A set with no cards for this deck stays as one line, so the shelves under it don't slide up into view and load on their own.
+    val shown = m.shelves.orEmpty()
+    // Until the shelves are known the list isn't drawn at all, so its kept scroll place (BenchUi.shelfList) isn't lost to an empty list.
+    if (shown.isEmpty()) { Text(m.browserNote ?: "Looking through every card…", style = f(12f, 600, B.Mute), modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)); return }
     androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxSize().semantics { contentDescription = "Cards to add, a shelf at a time" }, ui.shelfList,
         contentPadding = PaddingValues(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (shown.isEmpty()) item(key = "none") {
-            Text(m.browserNote ?: "Looking through every card…", style = f(12f, 600, B.Mute), modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp))
-        }
         items(shown.size, key = { "sh:" + shown[it].key }) { i -> val s = shown[i]
-            if (s.tiles == null) LaunchedEffect(s.key) { a.shelf(s.key) }
+            // Waiting, or failed (its note says scroll back to try again): asks once it has stayed on screen a moment, so a fling past
+            // a dozen shelves asks for none of them; leaving the screen cancels the ask.
+            if (s.tiles == null || s.note.isNotEmpty()) LaunchedEffect(s.key, m.shelvesGen) { kotlinx.coroutines.delay(160); a.shelf(s.key) }
             Shelf(s, m.cardBack, ui, a, drag, lift)
         }
     }
@@ -896,20 +903,22 @@ private fun Shelves(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, lif
 @Composable
 private fun Shelf(s: BenchShelf, back: String, ui: BenchUi, a: BenchActions, drag: Drag, lift: () -> Unit) {
     val shape = RoundedCornerShape(14.dp)
+    val none = s.tiles != null && s.tiles.isEmpty() && s.note.isEmpty()
     Column(Modifier.fillMaxWidth().padding(horizontal = if (s.gold) 6.dp else 0.dp).then(if (s.gold) Modifier.clip(shape)
         .background(Brush.verticalGradient(listOf(Color(0x24E5C47E), Color(0x08E5C47E)))).border(1.dp, Color(0x59E5C47E), shape) else Modifier)
-        .padding(top = 8.dp, bottom = 4.dp).semantics(mergeDescendants = false) { contentDescription = s.title + if (s.code.isNotEmpty()) ", ${s.code}" else "" }) {
+        .padding(top = if (none) 4.dp else 8.dp, bottom = 4.dp).semantics(mergeDescendants = false) { contentDescription = s.title + if (s.code.isNotEmpty()) ", ${s.code}" else "" }) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             // The name keeps its room (up to most of the row); the date and count give way first.
-            Text(s.title, style = f(13f, 800, if (s.gold) B.Gold else B.Fg), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false,
+            Text(s.title, style = f(13f, if (none) 600 else 800, if (none) B.Mute else if (s.gold) B.Gold else B.Fg), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false,
                 modifier = Modifier.widthIn(max = 230.dp))
             if (s.code.isNotEmpty()) Text(s.code, style = f(11f, 800, B.Mute, track = .06f), maxLines = 1, softWrap = false,
                 modifier = Modifier.border(1.dp, Color(0x24FFFFFF), RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 1.dp))
-            val right = listOfNotNull(s.meta.ifBlank { null }, s.tiles?.takeIf { it.isNotEmpty() }?.let { if (s.count > it.size) "${it.size}+ cards" else "${it.size} card${if (it.size == 1) "" else "s"}" })
+            val right = if (none) listOf("No cards here for this deck") else listOfNotNull(s.meta.ifBlank { null }, s.tiles?.takeIf { it.isNotEmpty() }?.let { if (s.count > it.size) "${it.size}+ cards" else "${it.size} card${if (it.size == 1) "" else "s"}" })
             Text(right.joinToString(" · "), style = f(11f, 600, B.Mute), maxLines = 1, softWrap = false, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 textAlign = TextAlign.End, modifier = Modifier.weight(1f))
         }
-        if (s.note.isNotEmpty() && s.tiles.isNullOrEmpty()) Text(s.note, style = f(12f, 600, B.Mute), modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+        if (none) Unit
+        else if (s.note.isNotEmpty() && s.tiles.isNullOrEmpty()) Text(s.note, style = f(12f, 600, B.Mute), modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
         else {
             val n = s.tiles?.size ?: 6
             androidx.compose.foundation.lazy.LazyRow(Modifier.fillMaxWidth().padding(top = 6.dp), contentPadding = PaddingValues(horizontal = 10.dp),
@@ -955,33 +964,37 @@ private fun FlipIn(key: String?, i: Int, back: String, ui: BenchUi, content: @Co
 private fun CardBack(game: String, waiting: Boolean) {
     val shine = if (waiting) androidx.compose.animation.core.rememberInfiniteTransition(label = "back").animateFloat(-1f, 2f,
         androidx.compose.animation.core.infiniteRepeatable(tween(1300, easing = androidx.compose.animation.core.LinearEasing)), label = "shine") else null
-    Box(Modifier.fillMaxWidth().aspectRatio(63f / 88f).shadow(8.dp, CARD, spotColor = Color.Black).clip(CARD).drawBehind {
-        val w = size.width; val h = size.height
-        when (game) {
-            "ygo" -> {
-                drawRect(Brush.sweepGradient(listOf(Color(0xFF3A1D0E), Color(0xFF7A4A1C), Color(0xFF3A1D0E), Color(0xFF5B3214), Color(0xFF3A1D0E)), center))
-                drawCircle(Brush.radialGradient(listOf(Color(0xFFF0C870), Color(0xFF8A4A14), Color.Transparent), center, w * .3f), w * .3f, center)
-                drawRect(Color(0xFF120A05), style = Stroke(w * .04f))
+    // The back's brushes are made once for its size; only the shine moves (a fixed brush slid across, read at draw time).
+    Box(Modifier.fillMaxWidth().aspectRatio(63f / 88f).shadow(8.dp, CARD, spotColor = Color.Black).clip(CARD).drawWithCache {
+        val w = size.width; val h = size.height; val c = Offset(w / 2f, h / 2f)
+        val sweep = Brush.sweepGradient(listOf(Color(0xFF3A1D0E), Color(0xFF7A4A1C), Color(0xFF3A1D0E), Color(0xFF5B3214), Color(0xFF3A1D0E)), c)
+        val eye = Brush.radialGradient(listOf(Color(0xFFF0C870), Color(0xFF8A4A14), Color.Transparent), c, w * .3f)
+        val blue = Brush.verticalGradient(listOf(Color(0xFF2C5AB8), Color(0xFF183A86)))
+        val brown = Brush.radialGradient(listOf(Color(0xFF6B4A2B), Color(0xFF2E1D10)), c, h * .7f)
+        val oval = Brush.radialGradient(listOf(Color(0xFFE09A4A), Color(0xFFC9752F), Color(0xFF8A4518)), c, w * .3f)
+        val gleam = Brush.linearGradient(listOf(Color.Transparent, Color(0x2EFFFFFF), Color.Transparent), Offset(-w * .4f, 0f), Offset(w * .4f, h))
+        onDrawBehind {
+            when (game) {
+                "ygo" -> { drawRect(sweep); drawCircle(eye, w * .3f, c); drawRect(Color(0xFF120A05), style = Stroke(w * .04f)) }
+                "ptcg" -> {
+                    drawRect(blue)
+                    val r = w * .24f
+                    drawArc(Color(0xFFD8352D), 180f, 180f, true, Offset(c.x - r, c.y - r), androidx.compose.ui.geometry.Size(r * 2, r * 2))
+                    drawArc(Color(0xFFF4F1EA), 0f, 180f, true, Offset(c.x - r, c.y - r), androidx.compose.ui.geometry.Size(r * 2, r * 2))
+                    drawRect(Color(0xFF222222), Offset(c.x - r, c.y - r * .1f), androidx.compose.ui.geometry.Size(r * 2, r * .2f))
+                    drawCircle(Color(0xFF222222), r, c, style = Stroke(r * .14f))
+                    drawCircle(Color(0xFFF4F1EA), r * .26f, c); drawCircle(Color(0xFF222222), r * .26f, c, style = Stroke(r * .1f))
+                    drawRect(Color(0xFFE9E4D0), style = Stroke(w * .05f))
+                }
+                else -> {
+                    drawRect(brown)
+                    drawOval(Color(0xFF5A2C12), Offset(w * .16f, h * .14f), androidx.compose.ui.geometry.Size(w * .68f, h * .72f))
+                    drawOval(oval, Offset(w * .27f, h * .25f), androidx.compose.ui.geometry.Size(w * .46f, h * .5f))
+                    drawRect(Color(0xFF1A120B), style = Stroke(w * .05f))
+                }
             }
-            "ptcg" -> {
-                drawRect(Brush.verticalGradient(listOf(Color(0xFF2C5AB8), Color(0xFF183A86))))
-                val r = w * .24f
-                drawArc(Color(0xFFD8352D), 180f, 180f, true, Offset(center.x - r, center.y - r), androidx.compose.ui.geometry.Size(r * 2, r * 2))
-                drawArc(Color(0xFFF4F1EA), 0f, 180f, true, Offset(center.x - r, center.y - r), androidx.compose.ui.geometry.Size(r * 2, r * 2))
-                drawRect(Color(0xFF222222), Offset(center.x - r, center.y - r * .1f), androidx.compose.ui.geometry.Size(r * 2, r * .2f))
-                drawCircle(Color(0xFF222222), r, center, style = Stroke(r * .14f))
-                drawCircle(Color(0xFFF4F1EA), r * .26f, center); drawCircle(Color(0xFF222222), r * .26f, center, style = Stroke(r * .1f))
-                drawRect(Color(0xFFE9E4D0), style = Stroke(w * .05f))
-            }
-            else -> {
-                drawRect(Brush.radialGradient(listOf(Color(0xFF6B4A2B), Color(0xFF2E1D10)), center, h * .7f))
-                drawOval(Color(0xFF5A2C12), Offset(w * .16f, h * .14f), androidx.compose.ui.geometry.Size(w * .68f, h * .72f))
-                drawOval(Brush.radialGradient(listOf(Color(0xFFE09A4A), Color(0xFFC9752F), Color(0xFF8A4518)), center, w * .3f), Offset(w * .27f, h * .25f), androidx.compose.ui.geometry.Size(w * .46f, h * .5f))
-                drawRect(Color(0xFF1A120B), style = Stroke(w * .05f))
-            }
+            shine?.let { p -> translate(left = p.value * w) { drawRect(gleam, Offset(-w * .4f, 0f), androidx.compose.ui.geometry.Size(w * .8f, h)) } }
         }
-        shine?.let { p -> val x = p.value * w
-            drawRect(Brush.linearGradient(listOf(Color.Transparent, Color(0x2EFFFFFF), Color.Transparent), Offset(x - w * .4f, 0f), Offset(x + w * .4f, h))) }
     })
 }
 

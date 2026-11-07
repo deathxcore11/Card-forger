@@ -35,7 +35,7 @@ object CollectionEngine {
     private val client by lazy { OkHttpClient.Builder().callTimeout(20, TimeUnit.SECONDS).build() }
 
     fun init(context: Context) { val app = context.applicationContext; filesDir = app.filesDir; source = { app.assets.open("collection-engine.js").bufferedReader().readText() }
-        store = PrefsStore(app.getSharedPreferences("collection-engine-storage", Context.MODE_PRIVATE)) }
+        if (store !is FileStore) store = FileStore(File(app.filesDir, "collection-store"), app.getSharedPreferences("collection-engine-storage", Context.MODE_PRIVATE)) }
 
     /**
      * The site's browser storage the bundle keeps between visits (its KEPT_KEYS: meta.js's tournament cache), here on the device:
@@ -47,9 +47,35 @@ object CollectionEngine {
         override fun load(): Map<String, String> = HashMap(kept)
         override fun save(key: String, value: String?) { if (value == null) kept.remove(key) else kept[key] = value }
     }
-    private class PrefsStore(val prefs: android.content.SharedPreferences) : Store {
-        override fun load(): Map<String, String> = prefs.all.mapNotNull { (k, v) -> (v as? String)?.let { k to it } }.toMap()
-        override fun save(key: String, value: String?) { prefs.edit().apply { if (value == null) remove(key) else putString(key, value) }.apply() }
+    /**
+     * One file per key (written to a .tmp file, then renamed, off the engine's thread), so a change to one key never rewrites the others: the
+     * tournament cache alone is megabytes, and a preferences file rewritten on every change would hold the screen as the app goes to the
+     * background. The old preferences file is moved over once. Day keys (today's pack claim) older than two days are dropped as it loads.
+     */
+    internal class FileStore(private val dir: File, private val legacy: android.content.SharedPreferences? = null) : Store {
+        private val io = java.util.concurrent.Executors.newSingleThreadExecutor { r -> Thread(r, "collection-store").apply { isDaemon = true } }
+        private fun name(k: String) = java.net.URLEncoder.encode(k, "UTF-8").replace("*", "%2A")
+        private fun key(n: String) = java.net.URLDecoder.decode(n, "UTF-8")
+        override fun load(): Map<String, String> {
+            dir.mkdirs()
+            legacy?.let { p -> val all = p.all; if (all.isNotEmpty()) { all.forEach { (k, v) -> if (v is String) write(k, v) }; p.edit().clear().commit() } }
+            val old = java.time.LocalDate.now(java.time.ZoneId.of("America/New_York")).minusDays(2).toString()
+            val out = HashMap<String, String>()
+            for (f in dir.listFiles().orEmpty()) {
+                if (!f.isFile || f.name.endsWith(".tmp")) continue
+                val k = runCatching { key(f.name) }.getOrNull() ?: continue
+                val day = Regex("^cardstashy-today-pack:[^:]+:(\\d{4}-\\d{2}-\\d{2})").find(k)?.groupValues?.get(1)
+                if (day != null && day < old) { f.delete(); continue }
+                runCatching { out[k] = f.readText() }
+            }
+            return out
+        }
+        private fun write(k: String, v: String?) {
+            val f = File(dir, name(k))
+            if (v == null) { f.delete(); return }
+            runCatching { dir.mkdirs(); val tmp = File(f.path + ".tmp"); tmp.writeText(v); if (!tmp.renameTo(f)) { f.delete(); tmp.renameTo(f) } }
+        }
+        override fun save(key: String, value: String?) { io.execute { write(key, value) } }
     }
     @Volatile var store: Store = MemoryStore()
     /** This device's files (rulebooks kept for offline use); unset in tests run from a file. */
@@ -85,6 +111,10 @@ object CollectionEngine {
     }.toString()
 
     private suspend fun <T> on(block: (QuickJs) -> T): T = withContext(thread) { block(js()) }
+    /** Starts the bundle (QuickJS and the 4.5 MB bundle evaluated), so the first Collection screen doesn't wait for it. [init] first. */
+    suspend fun warm() { on { } }
+    /** The engine's thread at a lower priority while the app warms it up at launch, and back to normal for anything a screen asks. */
+    suspend fun nice(on: Boolean) = withContext(thread) { runCatching { android.os.Process.setThreadPriority(if (on) 5 else android.os.Process.THREAD_PRIORITY_DEFAULT) }; Unit }
     /**
      * One turn of the bundle: the answers that came in, its jobs and due timers run, and the fetches it asked for sent. A cancelled
      * caller can't cut it short (a fetch the bundle asked for that nobody sent would leave its promise open for good). [after]
@@ -126,7 +156,9 @@ object CollectionEngine {
     }
 
     /** views.js home() / tcg.js tcgHome() as a model: value at a glance, your decks, Top Meta and News. */
-    suspend fun home(game: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.home(${str(game)})") as String).asJsonObject }
+    suspend fun home(game: String): JsonObject = JsonParser.parseString(homeRaw(game)).asJsonObject
+    /** The same as the bundle's own text (saved as it is for the next launch, and compared with the last paint without parsing it). */
+    suspend fun homeRaw(game: String): String = on { q -> q.evaluate("Collection.home(${str(game)})") as String }
 
     /** views.js collection(): the Cards tab as a model; [opts] = {sort, direction, filter, q, limit}, the site's own control values. */
     suspend fun cards(game: String, opts: JsonObject = JsonObject()): JsonObject =
@@ -161,8 +193,9 @@ object CollectionEngine {
         on { q -> JsonParser.parseString(q.evaluate("Collection.binderEdit(${str(game)}, ${str(id)})") as String).asJsonObject }
 
     /** views.js decks(), My decks, as a model; [opts] = {q} as I.shelfSearch sets it. */
-    suspend fun decks(game: String, opts: JsonObject = JsonObject()): JsonObject =
-        on { q -> JsonParser.parseString(q.evaluate("Collection.decks(${str(game)}, ${str(opts.toString())})") as String).asJsonObject }
+    suspend fun decks(game: String, opts: JsonObject = JsonObject()): JsonObject = JsonParser.parseString(decksRaw(game, opts)).asJsonObject
+    suspend fun decksRaw(game: String, opts: JsonObject = JsonObject()): String =
+        on { q -> q.evaluate("Collection.decks(${str(game)}, ${str(opts.toString())})") as String }
 
     /** One Cards-tab control as app.js handles it (sort, direction, filter, search, more), then the page again. */
     /** The Select tray's sheet (workbench-ui.js A.batchAction) for [kind]: move, deck, wish or compare; or {toast} when the site refuses. */
@@ -545,13 +578,17 @@ object CollectionEngine {
      */
     suspend fun todayPack(game: String, maxMs: Long = 30_000): JsonObject {
         on { q -> q.evaluate("Collection.todayPack(${str(game)})") }
-        settle(maxMs)
+        // Only its own lookups (the Card of the Day, then its set): Home's refresh can keep fetching beside it.
+        pumpUntil("Collection.todayPoll()", maxMs)
         return model("Collection.todayWent()")
     }
 
+    /** The launch warm-up: only today's Card of the Day and its set (tcg.js loadHero, home-today.js dailyDetails), no other feed. */
+    suspend fun today(game: String, maxMs: Long = 20_000) { on { q -> q.evaluate("Collection.today(${str(game)})") }; pumpUntil("Collection.todayDone()", maxMs) }
+
     suspend fun setByName(game: String, name: String, maxMs: Long = 30_000): String {
         on { q -> q.evaluate("Collection.setByName(${str(game)}, ${str(name)})") }
-        settle(maxMs)
+        pumpUntil("Collection.setPoll()", maxMs)
         return on { q -> q.evaluate("Collection.setWent()") as String }
     }
 

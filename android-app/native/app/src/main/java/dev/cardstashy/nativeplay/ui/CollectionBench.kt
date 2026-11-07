@@ -28,6 +28,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.google.gson.JsonArray
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withPermit
 import com.google.gson.JsonObject
 import dev.cardstashy.nativeplay.play.Decks
 import dev.cardstashy.nativeplay.collection.CollectionEngine
@@ -137,7 +138,9 @@ fun CollectionBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: 
     val shelves = remember(m.id) { MagicShelves(scope) }
     val facts by dev.cardstashy.nativeplay.play.CardFacts.cards.collectAsState()
     val shelfBase = allQuery("")
-    val shelfFit = allQuery("", emptySet(), "All") + " -t:land" + (remember(facts, names) { deckIdentity(names.filterNot(Decks::isBasicLand)) }?.let { " id<=$it" } ?: "")
+    // The deck's colours, worked out off the main thread (the facts map grows with every shelf that lands).
+    val identity by androidx.compose.runtime.produceState<String?>(null, facts, names) { value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { deckIdentity(names.filterNot(Decks::isBasicLand)) } }
+    val shelfFit = allQuery("", emptySet(), "All") + " -t:land" + (identity?.let { " id<=$it" } ?: "")
     LaunchedEffect(mode, shelfBase, shelfFit) { if (mode == "all") { shelves.use(shelfBase, shelfFit); shelves.start() } }
     LaunchedEffect(mode) { if (mode == "all") androidx.compose.runtime.snapshotFlow { ui.tileGrid.layoutInfo.let { it.visibleItemsInfo.lastOrNull()?.index to it.totalItemsCount } }
         .collect { (last, total) -> if (last != null && total > 0 && last >= total - 6 && allMore && !allBusy) loadAll(true) } }
@@ -170,14 +173,15 @@ fun CollectionBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: 
         tabs = m.tabs.map { it.key to it.label }, powerLabel = h.powerLabel, powerTab = h.powerTab,
         chips = m.eyebrow.filter { it.kind == "review" && it.label.isNotBlank() }.map { BenchChip(it.label, it.level == "bad" || it.level == "warn", it.act.ifBlank { "deckReview" }) },
         findMore = m.addLabel.ifBlank { null }, listNote = m.commanderNote?.ifBlank { null },
-        shelves = if (mode != "all") null else if (shelves.ready) shelves.shelves(::allTile, { n -> countIn(n) > 0 }, "For this deck", "Most played in your colours") else emptyList(),
+        shelves = if (mode != "all") null else if (shelves.ready) shelves.shelves(::allTile, { n -> countIn(n) > 0 }, "For this deck", "Most played in your colours", stamp = m.groups to ownBy) else emptyList(),
+        shelvesGen = shelves.gen,
     ) }
     // The page's Practice (A.deckPlayCpu) where Play has Save: each change here already saves.
     val practice = m.actions.firstOrNull { it.act == "deckPlayCpu" }
     val actions = BenchActions(back = act.back, save = practice?.let { p -> { act.act(p.act, p.id) } }, saveLabel = practice?.label?.ifBlank { null } ?: "Practice",
         step = { n, d -> if (d > 0 && !inList(n)) act.addCard(n) {} else if (inList(n)) act.qty(n, d) },
         craft = { _, _ -> }, open = act.card, more = null, menu = emptyList(), menuOpen = { act.act("deckMenu", "") }, tab = tab, chip = { k -> act.act(k, m.id) },
-        findMore = { q -> act.addCard(q) {} }, heroActions = heroButtons, shelf = shelves::load)
+        findMore = { q -> act.addCard(q) {} }, heroActions = heroButtons, shelf = { k -> shelves.load(k) })
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         DeckBench(model, ui, actions, actionRow = toolRow(tools, m.emblems?.swaps.orEmpty(), { t -> act.act(t.act, t.id) }) { s -> act.swap(s.out, s.into) },
             browserSwitch = { BenchSwitch(listOf("mine" to "Owned", "all" to "All cards"), mode) { mode = it } }, tabBody = tabBody)
@@ -236,11 +240,11 @@ private fun TcgBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act:
     val found = m.found.orEmpty().map { f -> val q = inDeck[f.id] ?: 0
         BenchTile(f.name, f.art.firstOrNull().orEmpty(), 0.0, false, false, q, owned[f.id] ?: 0, (defaultCap - q).coerceAtLeast(0), false, key = f.id, section = foundLabel, cap = defaultCap) }
     // One browser tile from the engine's (tcgBenchPool / tcgTileOf); [buy]: All cards, where a card not owned is grey, "To buy".
-    fun tileOf(o: JsonObject, buy: Boolean = false): BenchTile? {
+    fun tileOf(o: JsonObject, buy: Boolean = false, shelf: Boolean = false): BenchTile? {
         val id = o.get("id")?.asString ?: return null; val n = o.get("name")?.asString.orEmpty()
         val sect = o.get("category")?.asString.orEmpty()
         // A set shelf's Pokémon cards come brief (no type yet: "Unresolved"), so the type chips leave them in.
-        if (ui.type != "All" && sect != ui.type && sect != "Unresolved") return null
+        if (ui.type != "All" && sect != ui.type && !(shelf && sect == "Unresolved")) return null
         val lim = o.get("limit")?.asInt ?: defaultCap; val q = inDeck[id] ?: 0; val legal = o.get("legal")?.asBoolean != false; val have = owned[id] ?: o.get("own")?.asInt ?: 0
         // tcg.js addToDeck: not legal in the format, or past its limit, and the + is off; the tag says why, as the deck rows do.
         return BenchTile(n, o.getAsJsonArray("sources")?.firstOrNull()?.asString?.ifBlank { null } ?: o.get("image")?.asString.orEmpty(), 0.0, false, lim < 0, q,
@@ -262,29 +266,54 @@ private fun TcgBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act:
     // cards loaded only when its shelf comes on screen.
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val game = m.game.id
-    var shelfList by remember(m.id) { mutableStateOf<JsonObject?>(null) }
-    val shelfCards = remember(m.id) { androidx.compose.runtime.mutableStateMapOf<String, JsonObject>() }
-    LaunchedEffect(mode, m.id) { if (mode == "all" && shelfList == null) runCatching {
+    // The shelves follow the deck's format (its staples and what is legal): a format change starts them over.
+    var shelfList by remember(m.id, m.format) { mutableStateOf<JsonObject?>(null) }
+    val shelfCards = remember(m.id, m.format) { androidx.compose.runtime.mutableStateMapOf<String, JsonObject>() }
+    var shelvesGen by remember(m.id) { mutableStateOf(0) }
+    LaunchedEffect(m.format) { shelvesGen++ }
+    suspend fun loadList() {
         shelfList = CollectionEngine.shelvesStart(game, m.id)
         CollectionEngine.settle(60_000, CollectionEngine.shelvesJs(game, m.id)) { shelfList = it }
         shelfList = CollectionEngine.shelvesModel(game, m.id)
-    } }
-    fun loadShelf(key: String) { if (key == FIT_SHELF || key in shelfCards) return; shelfCards[key] = JsonObject()
-        scope.launch { runCatching {
-            shelfCards[key] = CollectionEngine.shelfStart(game, m.id, key)
-            CollectionEngine.settle(45_000, CollectionEngine.shelfJs(game, m.id, key)) { shelfCards[key] = it }
-            shelfCards[key] = CollectionEngine.shelfModel(game, m.id, key)
-        }.onFailure { shelfCards.remove(key) } } }
+    }
+    LaunchedEffect(mode, m.id, m.format) { if (mode == "all" && shelfList == null) runCatching { loadList() } }
+    // Two set shelves at a time (YGOPRODeck and the Pokémon TCG API each ask for a gentle pace).
+    val shelfGate = remember { kotlinx.coroutines.sync.Semaphore(2) }
+    fun done(j: JsonObject?) = j != null && j.get("busy")?.asBoolean == false && (j.get("error")?.asString).isNullOrEmpty()
+    /** A shelf on screen: its cards (suspends; cancelled when it scrolls away, and asked again when it comes back). */
+    suspend fun loadShelf(key: String) {
+        if (key == FIT_SHELF) { if (shelfList?.getAsJsonObject("fit")?.get("error")?.asString.isNullOrEmpty()) return; runCatching { loadList() }; return }
+        if (done(shelfCards[key])) return
+        shelfCards.remove(key)
+        try {
+            shelfGate.withPermit {
+                if (done(shelfCards[key])) return
+                shelfCards[key] = CollectionEngine.shelfStart(game, m.id, key)
+                // Drawn again only when more of its cards are in, not on every turn of the engine.
+                CollectionEngine.settle(45_000, CollectionEngine.shelfJs(game, m.id, key)) { j ->
+                    if (j.getAsJsonArray("tiles")?.size() != shelfCards[key]?.getAsJsonArray("tiles")?.size()) shelfCards[key] = j }
+                shelfCards[key] = CollectionEngine.shelfModel(game, m.id, key)
+            }
+        } catch (e: kotlinx.coroutines.CancellationException) { if (!done(shelfCards[key])) shelfCards.remove(key); throw e
+        } catch (e: Exception) { shelfCards[key] = JsonObject().apply { addProperty("busy", false); addProperty("error", "This shelf couldn't load. Check your connection, then scroll back to try again.") } }
+    }
+    /** Each shelf's tiles, made again only when its cards or the deck change (a shelf landing doesn't rebuild the others). */
+    val shelfTiles = remember(m.id) { HashMap<String, Triple<JsonObject, Any, List<BenchTile>>>() }
+    fun tilesOf(key: String, g: JsonObject, list: List<JsonObject>): List<BenchTile> {
+        val stamp = Triple(inDeck, owned, ui.type)
+        shelfTiles[key]?.takeIf { it.first === g && it.second == stamp }?.let { return it.third }
+        return list.mapNotNull { tileOf(it, true, shelf = true) }.also { shelfTiles[key] = Triple(g, stamp, it) }
+    }
     fun objs(o: JsonObject?, k: String) = o?.get(k)?.takeIf { it.isJsonArray }?.asJsonArray?.mapNotNull { it as? JsonObject }
     val shelves: List<BenchShelf>? = if (mode != "all") null else shelfList?.let { l ->
         val fit = l.getAsJsonObject("fit")
         val fitTiles = objs(fit, "tiles")?.filter { (inDeck[it.get("id")?.asString] ?: 0) == 0 }
         listOfNotNull(fit?.let { f -> BenchShelf(FIT_SHELF, "For this deck", meta = "Tournament staples you don't play", gold = true,
-            tiles = if (f.get("busy")?.asBoolean == true) null else fitTiles?.mapNotNull { tileOf(it, true) }.orEmpty(), note = f.get("error")?.asString.orEmpty(),
+            tiles = if (f.get("busy")?.asBoolean == true) null else if (!f.get("error")?.asString.isNullOrEmpty()) emptyList() else tilesOf(FIT_SHELF, f, fitTiles.orEmpty()), note = f.get("error")?.asString.orEmpty(),
             why = fitTiles.orEmpty().associate { it.get("id").asString to it.get("why")?.asString.orEmpty() }) }) +
             objs(l, "sets").orEmpty().map { s -> val id = s.get("id").asString; val got = shelfCards[id]
                 BenchShelf(id, s.get("name")?.asString.orEmpty(), s.get("code")?.asString.orEmpty(), shelfDate(s.get("date")?.asString.orEmpty()),
-                    tiles = got?.let { g -> if (g.get("busy")?.asBoolean != false && !g.has("tiles")) null else objs(g, "tiles")?.mapNotNull { tileOf(it, true) } ?: if (g.get("busy")?.asBoolean == true) null else emptyList() },
+                    tiles = got?.let { g -> if (!g.get("error")?.asString.isNullOrEmpty()) emptyList() else if (g.get("busy")?.asBoolean != false && !g.has("tiles")) null else objs(g, "tiles")?.let { tilesOf(id, g, it) } ?: if (g.get("busy")?.asBoolean == true) null else emptyList() },
                     note = got?.get("error")?.asString.orEmpty()) }
     }
     val powerStat = m.stats.firstOrNull { it.act == "tDeckTab" }
@@ -306,7 +335,7 @@ private fun TcgBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act:
         chips = m.eyebrow.filter { it.kind == "review" && it.label.isNotBlank() }.map { BenchChip(it.label, it.level == "bad" || it.level == "warn", it.act.ifBlank { "tIssues" }) },
         colorFilter = false, types = listOf("All") + order, sectionOrder = listOf(foundLabel) + order,
         findMore = m.find?.button?.ifBlank { null }?.takeIf { m.find?.busy != true }, listNote = m.formatNote.ifBlank { null }, basicWord = "Basic Energy",
-        shelves = shelves?.let { if (find.isEmpty()) it else null } ?: if (mode == "all" && find.isEmpty()) emptyList() else null, cardBack = game,
+        shelves = shelves?.let { if (find.isEmpty()) it else null } ?: if (mode == "all" && find.isEmpty()) emptyList() else null, cardBack = game, shelvesGen = shelvesGen,
     )
     val primary = m.actions.firstOrNull { it.shown && it.primary }
     fun rows(key: String) = cards.filter { keyOf(it) == key }
@@ -318,7 +347,7 @@ private fun TcgBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act:
         craft = { _, _ -> }, open = { k -> rows(k).firstOrNull()?.let(act.tcgRow) ?: act.tcgCard(k.removePrefix("side:")) }, more = null, menu = emptyList(),
         menuOpen = { act.act(m.menuAct, "") }, tab = tab,
         chip = { k -> if (k == "tIssues") { if (m.issues != null) issues = true } else act.act(k, m.id) },
-        move = { k -> rows(k).lastOrNull()?.let(act.tcgMove) }, findMore = { q -> act.find(q) }, shelf = ::loadShelf)
+        move = { k -> rows(k).lastOrNull()?.let(act.tcgMove) }, findMore = { q -> act.find(q) }, shelf = { k -> loadShelf(k) })
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         DeckBench(model, ui, actions, actionRow = toolRow(tools, m.emblems?.swaps.orEmpty(), { t -> act.act(t.act, t.id) }) { s -> act.tcgSwap(s.outKey, s.inKey) },
             browserSwitch = { BenchSwitch(listOf("mine" to "Owned", "all" to "All cards"), mode) { mode = it } }, tabBody = tabBody)

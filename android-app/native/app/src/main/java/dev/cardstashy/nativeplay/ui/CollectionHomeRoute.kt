@@ -1,6 +1,7 @@
 package dev.cardstashy.nativeplay.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,7 +39,10 @@ import java.io.File
 
 /** What Home showed last, so coming back paints at once while the feeds refresh. */
 internal object HomeCache {
-    var model: CollectionHomeModel? = null
+    /** Each account's Home by game ("<user>|mtg"), as last drawn this run. */
+    val models = java.util.concurrent.ConcurrentHashMap<String, CollectionHomeModel>()
+    /** The engine's text of each, as drawn (the next paint is compared with it, and its Card of the Day's set kept while today's loads). */
+    val raw = java.util.concurrent.ConcurrentHashMap<String, String>()
     var hints: SearchHints? = null
     /** account id + workspace revision the engine holds. */
     var loaded: String? = null
@@ -57,12 +61,18 @@ internal object HomeCache {
  * Puts this device's copy of the account's workspace into the engine (once per account and revision; Home and the Cards tab
  * share it). False while signed in but the account's copy has never been read here: show nothing rather than an empty collection.
  */
-internal suspend fun ensureCollection(context: android.content.Context, userId: String?, signedIn: Boolean, revision: Long): Boolean = loadLock.withLock {
+internal suspend fun ensureCollection(context: android.content.Context, userId: String?, signedIn: Boolean, revision: Long, warming: Boolean = false): Boolean {
+    // A screen wants the engine: the launch warm-up (if still running) steps aside and the engine's thread is back at normal priority.
+    if (!warming && !dev.cardstashy.nativeplay.collection.CollectionWarm.wanted) { dev.cardstashy.nativeplay.collection.CollectionWarm.wanted = true; CollectionEngine.nice(false) }
+    return ensureLoaded(context, userId, signedIn, revision)
+}
+private suspend fun ensureLoaded(context: android.content.Context, userId: String?, signedIn: Boolean, revision: Long): Boolean = loadLock.withLock {
     CollectionEngine.init(context)
+    val key = "$userId|$revision"
+    if (HomeCache.loaded == key) return@withLock true
     val raw = withContext(Dispatchers.IO) { Decks.fullCopy(context) }
     if (signedIn && raw == null) return false
-    val key = "$userId|$revision"
-    if (HomeCache.loaded != key) {
+    run {
         // Deck covers come from the catalog: starting a reload from less than the engine already knows would blank them.
         val catalog = if (HomeCache.warm) CollectionEngine.catalog() else withContext(Dispatchers.IO) { catalogFile(context).takeIf { it.isFile }?.readText() }
         // tcg.js loadCache: the Yu-Gi-Oh! and Pokémon card data kept from the last visit, once for a fresh engine.
@@ -80,6 +90,17 @@ internal fun catalogFile(context: android.content.Context) = File(context.filesD
 internal fun tcgCacheFile(context: android.content.Context) = File(context.filesDir, "collection-tcg-cache.json")
 internal fun powerFile(context: android.content.Context) = File(context.filesDir, "collection-power.json")
 /** The card names a visit looked up (and the Yu-Gi-Oh! / Pokémon cards it fetched), kept for the next one. */
+/** Keeps [raw] (a page the engine drew) for the next launch, at most every 5 s ([now]: the last one, always). */
+internal class LastSeenWriter(private val user: String?, private val name: String) {
+    private var at = 0L; private var last = 0
+    suspend fun keep(raw: String, now: Boolean = false) {
+        val h = raw.hashCode(); if (h == last) return
+        val t = System.currentTimeMillis(); if (!now && t - at < 5000) return
+        at = t; last = h
+        withContext(Dispatchers.IO) { LastSeen.write(user, name, raw) }
+    }
+}
+
 internal suspend fun keepCatalog(context: android.content.Context) = withContext(Dispatchers.IO) {
     runCatching { val f = catalogFile(context); val tmp = File(f.path + ".tmp"); tmp.writeText(CollectionEngine.catalog()); tmp.renameTo(f) }
     runCatching { val f = tcgCacheFile(context); val tmp = File(f.path + ".tmp"); tmp.writeText(CollectionEngine.tcgCache()); tmp.renameTo(f) }
@@ -115,7 +136,18 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
     val profile by Account.profile.collectAsState()
     remember { CollectionGame.init(context) }
     val game by CollectionGame.current.collectAsState()
-    var model by remember { mutableStateOf(HomeCache.model) }
+    remember { LastSeen.init(context) }
+    val user = session?.userId
+    val homeKey = "$user|${game.id}"
+    // Home as drawn this run (by account and game), else as kept from the last launch (read below), until the engine's paint lands.
+    val shown = remember { androidx.compose.runtime.mutableStateMapOf<String, CollectionHomeModel>() }
+    val model = shown[homeKey] ?: HomeCache.models[homeKey]
+    LaunchedEffect(homeKey) {
+        if (model != null) return@LaunchedEffect
+        val j = withContext(Dispatchers.IO) { LastSeen.read(user, LastSeen.homeName(game.id)) } ?: return@LaunchedEffect
+        val m = withContext(Dispatchers.Default) { runCatching { CollectionHomeModel.parse(j) }.getOrNull() } ?: return@LaunchedEffect
+        if (shown[homeKey] == null && HomeCache.models[homeKey] == null) { shown[homeKey] = m; HomeCache.raw.putIfAbsent(homeKey, j.toString()) }
+    }
     var hints by remember { mutableStateOf(HomeCache.hints?.takeIf { HomeCache.hintsGame == game }) }
     // A card page opened from Home (the Card of the Day of Yu-Gi-Oh! or Pokémon), over it.
     var cards by remember { mutableStateOf(listOf<CardOpen>()) }
@@ -124,26 +156,42 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
     // The account copy refreshes on every visit; the saved copy shows meanwhile.
     LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
     var failed by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(session?.userId, revision, game) { try {
-        if (!ensureCollection(context, session?.userId, session != null, revision)) return@LaunchedEffect
-        suspend fun paint() {
-            val m = withContext(Dispatchers.Default) { CollectionHomeModel.parse(CollectionEngine.home(game.id)) }
-            model = m; HomeCache.model = m
+    var retry by remember { mutableStateOf(0) }
+    LaunchedEffect(session?.userId, revision, game, retry) { try {
+        // The account, game and page this effect draws for, fixed as it starts (a paint that ends after a switch is kept under its own).
+        val u = session?.userId; val g = game; val k = "$u|${g.id}"; val keep = LastSeenWriter(u, LastSeen.homeName(g.id))
+        if (!ensureCollection(context, u, session != null, revision)) {
+            // Signed in, and this device has never had the account's copy: read it now, and say so if it can't be (never an endless wait).
+            if (model == null) try { Decks.load(context, rethrow = true)
+                if (withContext(Dispatchers.IO) { Decks.fullCopy(context) } == null) failed = "Your collection couldn’t be read from your account. Tap to try again."
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) { failed = "Your collection couldn’t be read from your account. Check your connection, then tap to try again." }
+            return@LaunchedEffect
+        }
+        failed = null
+        suspend fun paint(final: Boolean = false) {
+            val raw = CollectionEngine.homeRaw(g.id)
+            if (raw == HomeCache.raw[k] && (shown[k] != null || HomeCache.models[k] != null)) { if (final) keep.keep(raw, true); return }
+            val m = withContext(Dispatchers.Default) {
+                val j = com.google.gson.JsonParser.parseString(raw).asJsonObject
+                keepHeroDetails(j, HomeCache.raw[k]?.let { runCatching { com.google.gson.JsonParser.parseString(it).asJsonObject }.getOrNull() })
+                CollectionHomeModel.parse(j)
+            }
+            HomeCache.raw[k] = raw; shown[k] = m; HomeCache.models[k] = m
+            keep.keep(raw, final)
         }
         paint()
         if (hints == null || HomeCache.hintsGame != game) withContext(Dispatchers.Default) { CollectionHomeModel.hints(CollectionEngine.hints(game.id)) }.also { hints = it; HomeCache.hints = it; HomeCache.hintsGame = game }
         // Card names the catalog lacks, the Card of the Day, Meta and News: repaint as they arrive.
         coroutineScope {
             val repaint = launch { while (true) { delay(1200); paint() } }
-            // Whatever names this visit looked up are kept, even when it is cut short.
-            try { CollectionEngine.refresh(game.id) } finally { repaint.cancel(); withContext(kotlinx.coroutines.NonCancellable) { keepCatalog(context) } }
+            // Whatever names this visit looked up are kept, even when it is cut short (after the last paint, so its Power is kept too).
+            try { CollectionEngine.refresh(g.id); repaint.cancel(); paint(final = true) } finally { repaint.cancel(); withContext(kotlinx.coroutines.NonCancellable) { keepCatalog(context) } }
         }
-        paint()
         failed = null
     } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) {
         // The site's guard for a workspace it can't open: say so and leave the account copy untouched.
         HomeCache.loaded = null
-        if (model == null) failed = e.message?.takeIf { it.isNotBlank() } ?: "Your collection couldn’t be opened here."
+        if (shown[homeKey] == null && HomeCache.models[homeKey] == null) failed = e.message?.takeIf { it.isNotBlank() } ?: "Your collection couldn’t be opened here."
     } }
     val site = "https://cardstashy.com/"
     val scope = androidx.compose.runtime.rememberCoroutineScope()
@@ -216,7 +264,8 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
         // app.js's account-opening card, while the account's copy arrives.
         Column(Modifier.weight(1f).fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(if (failed != null) "Your saved data is protected" else "Opening your account…", style = Site.CardTitle.copy(fontWeight = FontWeight.ExtraBold, fontSize = 18.sp), textAlign = TextAlign.Center)
-            Text(failed ?: "Your cards and profile will appear here.", style = Site.Meta.copy(color = Site.Muted), textAlign = TextAlign.Center)
+            Text(failed ?: "Your cards and profile will appear here.", style = Site.Meta.copy(color = Site.Muted), textAlign = TextAlign.Center,
+                modifier = if (failed != null) Modifier.clickable { failed = null; retry++ }.padding(12.dp) else Modifier)
         }
         nav(false)
     }

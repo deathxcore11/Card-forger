@@ -269,9 +269,18 @@ for (const f of ['storage.js', 'cloud.js', 'store.js', 'binders.js', 'sync-merge
   const shelfCard = (name, type) => ({name, type_line: type, rarity: 'common', image_uris: {normal: 'https://cards.scryfall.io/normal/front/x.jpg'}});
   const shelved = deckBuilderMarkup(snap, {facts, edit: elves, pool: {mode: 'all', cards: []}, shelves: {sets: [{code: 'fdn', name: 'Foundations', released: '2024-11-15'}, {code: 'dsk', name: 'Duskmourn', released: '2024-09-27'}],
     cards: {fit: {list: [shelfCard('Llanowar Elves', 'Creature — Elf Druid'), shelfCard('Giant Growth', 'Instant')], more: false, at: Date.now()}, fdn: {list: [], more: false, at: Date.now()}}}});
-  assert.ok(shelved.includes('For this deck') && shelved.includes('Add Giant Growth to the deck') && shelved.includes('pe-shelf-why">Instant'), 'the deck shelf shows what each card is');
+  assert.ok(shelved.includes('For this deck') && shelved.includes('Add Giant Growth to the deck') && shelved.includes('pe-dshelf-why">Instant'), 'the deck shelf shows what each card is');
   assert.ok(!shelved.slice(shelved.indexOf('pe-shelves')).includes('aria-label="Open Llanowar Elves'), 'a card already in the deck is left off its shelf');
-  assert.ok(!shelved.includes('Foundations') && shelved.includes('data-shelf-pending="dsk"'), 'an empty set shelf is left out; one not loaded waits for view');
+  assert.ok(/pe-dshelf--none[^>]*aria-label="Foundations, FDN"/.test(shelved) && shelved.includes('No cards here for this deck') && shelved.includes('data-shelf-pending="dsk"'), 'an empty set shelf is one line; one not loaded waits for view');
+  // A big set shows its first 24 cards, the rest a tap away; the shelf alone can be drawn again when its cards land.
+  const many = Array.from({length: 30}, (_, i) => shelfCard('Card ' + i, 'Creature'));
+  const big = deckBuilderMarkup(snap, {facts, edit: elves, pool: {mode: 'all', cards: []}, shelves: {sets: [{code: 'dsk', name: 'Duskmourn', released: '2024-09-27'}], open: new Set(), cards: {dsk: {list: many, more: true, at: Date.now()}}}});
+  assert.ok(big.includes('Add Card 23 to the deck') && !big.includes('Add Card 24 to the deck') && big.includes('data-act="playShelfAll" data-shelf="dsk"') && big.includes('All 30+ cards in DSK'));
+  // Before the list of sets is in, "For this deck" shows on its own; a failed list says so and asks again from view.
+  const early = deckBuilderMarkup(snap, {facts, edit: elves, pool: {mode: 'all', cards: []}, shelves: {sets: null, cards: {}}});
+  assert.ok(early.includes('data-shelf-pending="fit"') && early.includes('Looking through every set'));
+  const failedSets = deckBuilderMarkup(snap, {facts, edit: elves, pool: {mode: 'all', cards: []}, shelves: {sets: null, setsError: true, cards: {}}});
+  assert.ok(failedSets.includes('data-shelf-pending="sets"') && failedSets.includes('couldn’t load'));
   const searched = deckBuilderMarkup(snap, {facts, edit: elves, cardQuery: 'giant', pool: {mode: 'all', cards: [shelfCard('Giant Growth', 'Instant')]}, shelves: {sets: [], cards: {}}});
   assert.ok(!searched.includes('pe-shelves') && searched.includes('Add Giant Growth to the deck'), 'a typed search is the whole game, as before');
   // Arena style: a card you don't own can go in greyed, with its seal and a Craft menu.

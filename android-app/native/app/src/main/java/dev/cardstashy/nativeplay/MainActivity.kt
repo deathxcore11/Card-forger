@@ -167,6 +167,8 @@ class MainActivity : ComponentActivity() {
         }) }
         dev.cardstashy.nativeplay.ui.Pad.watch(this)
         dev.cardstashy.nativeplay.ui.CollectionWrites.init()
+        // Collection's engine starts a moment after the first frame (not while Play's Home is drawing), so Collection opens at once.
+        window.decorView.post { dev.cardstashy.nativeplay.collection.CollectionWarm.start(this) }
         setContent {
             // The app is recorded into a layer as it draws, so the toast pill can blur what is under it (backdrop-filter).
             val page = androidx.compose.ui.graphics.rememberGraphicsLayer()
