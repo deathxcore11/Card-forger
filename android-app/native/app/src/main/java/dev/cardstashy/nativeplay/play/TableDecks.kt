@@ -82,5 +82,5 @@ object TableDecks {
 
     const val LOCKED_TOAST = "Some of its cards aren't in your Trunk yet. Practice can use it."
     const val QUICK_NEEDS = "Quick Play needs a deck with every card in your Trunk."
-    const val QUICK_INTRO = "Quick Play needs every card of a deck in your Trunk. Greyed decks are missing some; Practice can use any deck."
+    const val QUICK_INTRO = "Quick Play deals the decks whose cards are all in your Trunk. Open packs and craft to unlock more; Practice can use any deck."
 }

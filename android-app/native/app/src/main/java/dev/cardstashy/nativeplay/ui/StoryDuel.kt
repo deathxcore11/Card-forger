@@ -115,7 +115,8 @@ fun StoryDuelPage(
         else person(side)?.obj("portrait").let { it?.str("crop") to storyFocus(it?.str("focus")) }
     val rw = b.obj("reward"); val set = b.str("rewardSet") ?: ""
     val mineDone = if (seat == "villain") "villain" in rec else "loaner" in rec
-    val ownPick = ui.deck != "loaner"
+    // Story gives you its deck (Randall 8 Nov: "just have the deck that the game is wanting to give you"); your own decks come back later.
+    val ownPick = false
     val collector = if (slot >= 8 && seat == "hero" && !villainOpen) " + a Collector pack" else ""
     val prize: Pair<String, String> = when {
         ownPick -> "Your deck" to (if (collector.isNotEmpty()) "XP$collector" else "XP only")
@@ -130,7 +131,7 @@ fun StoryDuelPage(
     val loanArt = mine.obj("deck")?.getAsJsonArray("cards")?.map { it.asJsonObject }?.firstOrNull { c -> !basic.matches(c.str("name").orEmpty()) }?.str("id")?.takeIf { it.length == 36 }
         ?.let { "https://cards.scryfall.io/art_crop/front/${it[0]}/${it[1]}/$it.jpg" }
     // A controller's X is the gold Duel (Replay once won) at the foot of the page: the same seat and deck as its tap.
-    PadScreen(PadActs(x = PadAct(if (villainOpen) "Replay" else "Duel") { onPlay(seat, ui.deck.takeIf { it != "loaner" }) }))
+    PadScreen(PadActs(x = PadAct(if (villainOpen) "Replay" else "Duel") { onPlay(seat, null) }))
     LazyColumn(Modifier.fillMaxSize().background(Site.Bg), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = top + 12.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item("head") { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { PageHeader(b.str("title")!!, "Act $act · " + (if (slot == 8) "Boss" else b.str("kind")), onBack = onBack); purse() } }
         item("stage") {
@@ -167,10 +168,8 @@ fun StoryDuelPage(
         }
         item("decks") {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                DeckOpt(mine.obj("deck")?.str("name").orEmpty(), "Story deck · ${mine.obj("deck")?.cards()?.sumOf { it.second } ?: 0} cards", loanArt, ui.deck == "loaner", true, "", ui.deck == "loaner" && ui.listOpen) {
-                    onUi(if (ui.deck == "loaner") StoryDuelUi("loaner", seat, !ui.listOpen, ui.listSide) else StoryDuelUi("loaner", seat, false, "mine")) }
-                ownDecks.forEach { d -> DeckOpt(d.name, "Your deck · ${d.count} cards", d.art, ui.deck == d.id, d.fit.ok, d.fit.reason, ui.deck == d.id && ui.listOpen) {
-                    onUi(if (ui.deck == d.id) StoryDuelUi(d.id, seat, !ui.listOpen, ui.listSide) else StoryDuelUi(d.id, seat, false, "mine")) } }
+                DeckOpt(mine.obj("deck")?.str("name").orEmpty(), "Story deck · ${mine.obj("deck")?.cards()?.sumOf { it.second } ?: 0} cards", loanArt, true, true, "", ui.listOpen) {
+                    onUi(StoryDuelUi("loaner", seat, !ui.listOpen, ui.listSide)) }
             }
         }
         item("bar") {
@@ -182,12 +181,12 @@ fun StoryDuelPage(
                     Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Bottom) {
                         Text(prize.first.uppercase(), style = storyText(11f, FontWeight.ExtraBold, Site.Gold, 1.6f)); Text(prize.second, style = storyText(14f, FontWeight.Medium, Site.Text)) }
                 }
-                GoldCta(if (villainOpen) "Replay" else "Duel", Modifier.fillMaxWidth()) { onPlay(seat, ui.deck.takeIf { it != "loaner" }) }
+                GoldCta(if (villainOpen) "Replay" else "Duel", Modifier.fillMaxWidth()) { onPlay(seat, null) }
             }
         }
         if (ui.listOpen) {
             val theirsList = villainOpen && ui.listSide == "theirs"
-            val deck = if (theirsList) theirs.obj("deck") else if (ui.deck == "loaner") mine.obj("deck") else null
+            val deck = if (theirsList) theirs.obj("deck") else mine.obj("deck")
             item("list") {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     if (villainOpen) Seg(listOf("mine" to "Your deck", "theirs" to "Their deck"), ui.listSide) { onUi(StoryDuelUi(ui.deck, seat, true, it)) }
