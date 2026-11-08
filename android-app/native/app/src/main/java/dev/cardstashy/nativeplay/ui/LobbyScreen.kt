@@ -317,9 +317,7 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     val quickOnly = m.quick
     val source = if (quickOnly) "yours" else m.source
     val inFormat = decks.filter { it.format == m.format }
-    // Quick Play deals only the decks you can play now (Randall 8 Nov: "just have the deck that the game is wanting to give you"); the
-    // greyed ones missing Trunk cards are left out.
-    val visible = inFormat.filter { d -> !(quickOnly && d.id in locked) && listOf(d.name, d.commander).any { it.lowercase().contains(m.query.lowercase().trim()) } }
+    val visible = inFormat.filter { d -> listOf(d.name, d.commander).any { it.lowercase().contains(m.query.lowercase().trim()) } }
     val browserSelected = m.seat(m.browseSeat)
     fun chosen(d: TableDecks.Deck) = browserSelected?.source == "saved" && browserSelected.id == d.id
 
