@@ -80,7 +80,7 @@ class MagicShelves(private val scope: CoroutineScope) {
     var gen by mutableStateOf(0)
 
     fun use(base: String, fitQuery: String) {
-        if (base != this.base) { this.base = base; for (k in cards.keys.toList()) if (k != FIT_SHELF) cards.remove(k); more.clear(); errors.clear(); gen++ }
+        if (base != this.base) { this.base = base; for (k in cards.keys.toList()) if (k != FIT_SHELF) cards.remove(k); more.clear(); errors.clear(); pages.clear(); gen++ }
         if (fitQuery != fit) { fit = fitQuery; cards.remove(FIT_SHELF); errors.remove(FIT_SHELF); gen++ }
     }
     private var starting = false; private var failedAt = 0L
@@ -114,6 +114,26 @@ class MagicShelves(private val scope: CoroutineScope) {
             if (r == null) errors[key] = "This shelf couldn't load. Check your connection, then scroll back to try again."
             else { cards[key] = r.first; more[key] = r.second }
         }
+    }
+
+    private val pages = HashMap<String, Int>()
+    private val paging = HashSet<String>()
+    /**
+     * A set opened full (Randall 8 Nov: tap a set's name for the whole set): its next page of cards (Scryfall's 175 a page), added to
+     * the shelf's. Asked as the grid's end comes on screen; one page at a time per set.
+     */
+    suspend fun more(key: String) {
+        if (key == FIT_SHELF || more[key] != true || !paging.add(key)) return
+        try {
+            val have = cards[key] ?: return
+            val page = (pages[key] ?: 1) + 1; val was = base
+            gate.withPermit {
+                pace.withLock { val wait = lastAt + 110 - System.currentTimeMillis(); if (wait > 0) kotlinx.coroutines.delay(wait); lastAt = System.currentTimeMillis() }
+                val r = CardFacts.search("$base e:$key", "edhrec", page) ?: return
+                if (was != base || cards[key] !== have) return
+                cards[key] = have + r.first; more[key] = r.second; pages[key] = page
+            }
+        } finally { paging.remove(key) }
     }
 
     private class Made(val from: List<JsonObject>, val stamp: Any?, val tiles: List<BenchTile>, val why: Map<String, String>)

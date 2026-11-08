@@ -473,6 +473,10 @@ class ShotTest {
             captureRoboImage(File(System.getProperty("shotsDir"), "trunk-cards-${w}x$h.png").path) {
                 dev.cardstashy.nativeplay.ui.TrunkScreen(trunkState, {}, {}, {}) { PlayNav(PlayTab.TRUNK, {}) }
             }
+            // The Sets side of the Cards | Sets switch (Randall 8 Nov): Keep collecting rings, then every set by year.
+            captureRoboImage(File(System.getProperty("shotsDir"), "trunk-sets-${w}x$h.png").path) {
+                dev.cardstashy.nativeplay.ui.TrunkScreen(trunkState, {}, {}, {}, startSet = "") { PlayNav(PlayTab.TRUNK, {}) }
+            }
         }
         dev.cardstashy.nativeplay.ui.HomeTest.forceShort = null
         home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))

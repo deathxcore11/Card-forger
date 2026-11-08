@@ -297,7 +297,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
     )
     val benchActions = BenchActions(back = onBack, save = actions.save, step = actions.step, craft = actions.craftCopies, open = actions.open, more = actions.hold,
         menu = listOf(BenchMenuItem("Rename deck") { ui.sheet = "rename" }, BenchMenuItem("Change format") { ui.sheet = "format" },
-            BenchMenuItem("Copy list", actions.copy), BenchMenuItem("Copy to My decks", toApp)), shelf = { k -> shelves.load(k) })
+            BenchMenuItem("Copy list", actions.copy), BenchMenuItem("Copy to My decks", toApp)), shelf = { k -> shelves.load(k) }, shelfMore = { k -> shelves.more(k) })
 
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         DeckBench(model, b, benchActions,

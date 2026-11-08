@@ -188,7 +188,7 @@ fun CollectionBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: 
     val actions = BenchActions(back = act.back, save = practice?.let { p -> { act.act(p.act, p.id) } }, saveLabel = practice?.label?.ifBlank { null } ?: "Practice",
         step = { n, d -> if (d > 0 && !inList(n)) act.addCard(n) {} else if (inList(n)) act.qty(n, d) },
         craft = { _, _ -> }, open = act.card, more = null, menu = emptyList(), menuOpen = { act.act("deckMenu", "") }, tab = tab, drawn = drawn, chip = { k -> act.act(k, m.id) },
-        findMore = { q -> act.addCard(q) {} }, heroActions = heroButtons, shelf = { k -> shelves.load(k) })
+        findMore = { q -> act.addCard(q) {} }, heroActions = heroButtons, shelf = { k -> shelves.load(k) }, shelfMore = { k -> shelves.more(k) })
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         DeckBench(model, ui, actions, actionRow = toolRow(tools, m.emblems?.swaps.orEmpty(), { t -> act.act(t.act, t.id) }) { s -> act.swap(s.out, s.into) },
             browserSwitch = { BenchSwitch(listOf("mine" to "Owned", "all" to "All cards"), mode) { mode = it } }, tabBody = tabBody)

@@ -265,6 +265,8 @@ private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (
                 Spacer(Modifier.height(18.dp))
                 m.daily?.let { Today(it, m.game, screen, act) }
                 ValueRow(m.value, screen, act)
+                Spacer(Modifier.height(12.dp))
+                SetsLink(act)
                 Spacer(Modifier.height(16.dp))
                 if (m.example.isNotEmpty()) { Note(m.example); Spacer(Modifier.height(16.dp)) }
                 Shelf(m.shelf, m.game, screen, act)
@@ -450,6 +452,21 @@ private fun ValueRow(v: HomeValue, screen: Dp, act: CollectionHomeActions) {
             Count(v.copies, "cards", roomy, screen) { act.go("#collection") }
             Count(v.decks, "decks", roomy, screen) { act.go("#decks") }
         }
+    }
+}
+
+/** Sets' front door (Randall 8 Nov: "I can't find a way" to look at sets): every set, your progress in each; the site has it under Search. */
+@Composable
+private fun SetsLink(act: CollectionHomeActions) {
+    val shape = RoundedCornerShape(16.dp)
+    Row(Modifier.fillMaxWidth().clip(shape).background(Color(0x0DFFFFFF)).border(1.dp, Color(0x40D6AD64), shape).clickable(onClickLabel = "Open every set") { act.go("#sets") }
+        .padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Icon(SiteIcons.Pack, 22.dp)
+        Column(Modifier.weight(1f)) {
+            Text("Sets", style = manrope(15f, FontWeight.Bold, Site.Text))
+            Text("Every set, what you own and what's missing", style = sans(12f, color = Site.Muted))
+        }
+        Text("›", style = sans(22f, color = HGold))
     }
 }
 

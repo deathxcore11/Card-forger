@@ -11,6 +11,10 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onRoot
@@ -19,6 +23,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.click
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
@@ -171,6 +176,17 @@ class DeckBenchShotTest {
             assertTrue("For this deck shelf", rule.onAllNodesWithText("For this deck").fetchSemanticsNodes().isNotEmpty())
             rule.onNode(hasContentDescription("Cards to add, a shelf at a time")).performScrollToIndex(3); settle(60)
             shot("$tag-all-sets"); audit(found)
+            // The Set button's glass dropdown (Randall 8 Nov), then one set opened full, then back to every shelf.
+            rule.onNode(hasContentDescription("Pick a set")).performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle(10)
+            shot("$tag-set-pick"); audit(found)
+            rule.onAllNodes(hasClickAction() and hasText("Every set")).fetchSemanticsNodes().let { assertTrue("Every set option", it.isNotEmpty()) }
+            rule.onNode(hasContentDescription("Find a set")).performTextInput("Edge")
+            settle(4)
+            rule.onAllNodes(hasClickAction() and hasText("Edge of Eternities")).onLast().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); settle(80)
+            shot("$tag-set-full"); audit(found)
+            assertTrue("the set opened full", rule.onAllNodes(hasContentDescription("Edge of Eternities, every card")).fetchSemanticsNodes().isNotEmpty())
+            rule.activity.onBackPressedDispatcher.let { b -> rule.runOnUiThread { b.onBackPressed() } }; settle(20)
+            assertTrue("back to the shelves", rule.onAllNodes(hasContentDescription("Cards to add, a shelf at a time")).fetchSemanticsNodes().isNotEmpty())
             File(shots, "bench-$tag-all.txt").writeText(buildString {
                 appendLine("Cut with …: " + found.ellipsized.joinToString(" | ").ifEmpty { "none" })
                 appendLine("Under 11 sp: " + found.small.joinToString(" | ").ifEmpty { "none" })

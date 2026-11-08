@@ -22,6 +22,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.width
@@ -108,7 +116,8 @@ fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Uni
                     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         // head('Collection', snapshot): the purse sits under the title, as on every Play screen.
                         PlayHead("Collection", "Play", onBack) { dev.cardstashy.nativeplay.play.PlayMath.purse(state)?.let { PurseRow(it, level = dev.cardstashy.nativeplay.play.PlayMath.mastery(state, it.xp)) } }
-                        // Sets moved to the Shop (Randall 3 Nov 20:00Z): the Trunk is your cards only.
+                        // Sets moved to the Shop (Randall 3 Nov 20:00Z), and came back as a switch here (8 Nov: "I can't find a way" to look at sets).
+                        BenchSwitch(listOf("cards" to "Cards", "sets" to "Sets"), tab) { tab = it }
                     }
                 }
                 if (tab == "cards") {
@@ -274,11 +283,40 @@ private fun SetsTab(state: JsonObject, query: String, format: String, onQuery: (
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SearchField(query, "Search every set by name or code", onQuery)
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) { Trunk.SET_FORMATS.forEach { (k, l) -> Chip(l, format == k) { onFormat(k) } } }
+        // Keep collecting: the sets you've started and not finished, newest first, each with its completion ring.
+        val going = if (q.isEmpty() && format.isEmpty()) all.filter { it.owned > 0 && (it.total == null || it.owned < it.total) }.take(12) else emptyList()
+        if (going.isNotEmpty()) {
+            Text("Keep collecting", style = Site.Eyebrow)
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) { going.forEach { x -> RingTile(x) { onSet(x.code) } } }
+        }
         Text("${"%,d".format(list.size)} of ${"%,d".format(all.size)} sets · ${"%,d".format(all.count { it.owned > 0 })} started", style = small)
         if (list.isEmpty()) Empty("No sets match", "Try another format or name.")
         list.groupBy { it.released.take(4).ifBlank { "Other" } }.forEach { (year, rows) ->
             Text(year, style = Site.Eyebrow, modifier = Modifier.padding(top = 8.dp))
             rows.forEach { x -> SetTile(x) { onSet(x.code) } }
+        }
+    }
+}
+
+/** A started set as a glass card: its symbol large behind, a gold ring with how much of it you own, its name and count. */
+@Composable
+private fun RingTile(x: Trunk.SetRow, onClick: () -> Unit) {
+    val pct = x.total?.takeIf { it > 0 }?.let { (x.owned.toFloat() / it).coerceIn(0f, 1f) } ?: 0f
+    val shape = RoundedCornerShape(16.dp)
+    Box(Modifier.size(150.dp, 118.dp).clip(shape).background(Brush.linearGradient(listOf(Color(0x1FD6AD64), Color(0x0AFFFFFF)))).border(1.dp, Color(0x40D6AD64), shape)
+        .padActs(PadActs(a = "Open")).clickable(onClick = onClick).semantics { contentDescription = "${x.name}, ${(pct * 100).toInt()} percent" }) {
+        SetIcon(x.code, Modifier.size(78.dp).align(Alignment.CenterStart).offset(x = (-10).dp).alpha(.14f), Color.White)
+        Box(Modifier.align(Alignment.TopEnd).padding(8.dp).size(44.dp), contentAlignment = Alignment.Center) {
+            androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                val w = 4.dp.toPx(); val r = Size(size.width - w, size.height - w); val o = Offset(w / 2, w / 2)
+                drawArc(Color(0xFF2A2730), 0f, 360f, false, o, r, style = Stroke(w))
+                if (pct > 0f) drawArc(Brush.sweepGradient(listOf(Color(0xFFC99C4F), Color(0xFFF2D48F), Color(0xFFC99C4F))), -90f, 360f * pct, false, o, r, style = Stroke(w, cap = StrokeCap.Round))
+            }
+            Text("${(pct * 100).toInt()}%", style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, color = Ink))
+        }
+        Column(Modifier.align(Alignment.BottomStart).padding(10.dp)) {
+            Text(x.name, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp, color = Ink), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text("${"%,d".format(x.owned)} / ${x.total?.let { "%,d".format(it) } ?: "?"}", style = small.copy(fontSize = 11.sp))
         }
     }
 }

@@ -605,6 +605,9 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Sets" to "Sets are easy to find: Play\u2019s Trunk has a Cards | Sets switch with a Keep collecting row of the sets you\u2019ve started, each with a gold completion ring, and Collection Home has a Sets link. A set opens with every card, owned or missing.",
+    "Decks" to "In a deck\u2019s All cards, tap a set\u2019s name to open the whole set as a grid and tap it again (or Back) for every shelf. The new Set button opens a glass list of every set, by year, with a search.",
+    "Controllers" to "The first d-pad press always lands the ring on the screen, and up and down no longer get stuck on a search box or the top bar.",
     "Controllers" to "The left stick moves a soft cursor that slows over cards and buttons and carries the gold ring with it; A presses what it\u2019s on. The right stick scrolls, and the d-pad steps the ring as before (now on handhelds whose d-pad wasn\u2019t read, like the AYN Portal).",
     "Packs" to "On wide handheld screens the opened card fills the left half, with the pack\u2019s cards and buttons beside it.",
     "Controllers" to "On a handheld or with a controller connected, a small bar in the corner shows what each button does for whatever the gold ring is on. X is the screen\u2019s main action (in a match it follows the table\u2019s button), Y looks closer and hold Y tilts the card, LB/RB switch tabs, LT/RT page, Start opens the menu. Phones without a controller look the same.",

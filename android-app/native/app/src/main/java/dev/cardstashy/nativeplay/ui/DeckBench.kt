@@ -84,6 +84,8 @@ import androidx.compose.ui.layout.ScaleFactor
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
@@ -206,6 +208,8 @@ class BenchActions(
     /** A shelf (BenchShelf.key) came on screen before its cards: load them. */
     /** A shelf on screen asks for its cards: suspends until they are in (or failed); cancelled when the shelf leaves the screen. */
     val shelf: suspend (String) -> Unit = {},
+    /** A set opened full asks for its next cards as its grid's end comes on screen (Magic's next Scryfall page; the others have them all). */
+    val shelfMore: suspend (String) -> Unit = {},
     /** A tab the Bench draws itself (Collection's Versions and the like open the website): the controller's LB/RB step only through these. */
     val drawn: (String) -> Boolean = { true },
 )
@@ -228,6 +232,11 @@ class BenchUi {
     /** All cards' shelves: where the list is, and the cards that already flipped over (they stay face up when you come back). */
     val shelfList = androidx.compose.foundation.lazy.LazyListState()
     val flipped = HashSet<String>()
+    /** A set opened full (its shelf's key; Randall 8 Nov: tap a set's name for the whole set, tap again for every shelf), and the Set dropdown. */
+    var openSet by mutableStateOf<String?>(null)
+    var setPick by mutableStateOf(false)
+    val setGrid = LazyGridState()
+    internal var setGridFor: String? = null
     /** Play's ⋯ dropdown is open (here so the controller's Start opens it too). */
     var menu by mutableStateOf(false)
 }
@@ -886,6 +895,17 @@ private fun Browser(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, swi
             Text(buildAnnotatedString { append(m.browserTitle); if (m.shelves == null || ui.find.isNotBlank()) withStyle(SpanStyle(fontFamily = Site.Manrope, fontSize = 11.sp, color = B.Mute)) { append("  ${m.tiles.size}") } },
                 style = cinzel(15f, B.Gold, track = .03f), maxLines = 1, softWrap = false, modifier = Modifier.padding(start = 2.dp, end = 4.dp))
             switch?.invoke()
+            // Set (before Find, so it shows without scrolling the row): a glass dropdown of every set to open one full (Randall 8 Nov).
+            if (m.shelves != null && ui.find.isBlank() && m.shelves.count { it.code.isNotEmpty() } > 1) {
+                val open = m.shelves.firstOrNull { it.key == ui.openSet }
+                val on = open != null || ui.setPick
+                Row(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).background(if (on) Color(0x1AE5C47E) else Color(0x0DFFFFFF))
+                    .border(1.dp, if (on) Color(0x99E5C47E) else Color(0x66E5C47E), RoundedCornerShape(12.dp)).clickable { ui.setPick = !ui.setPick }
+                    .semantics { role = Role.Button; contentDescription = if (open != null) "Set: ${open.title}. Pick a set" else "Pick a set" }.padding(horizontal = 11.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text(open?.code?.ifBlank { null } ?: "Set", style = f(12f, 700, if (on) B.Gold else B.Fg), maxLines = 1, softWrap = false)
+                    Text(if (ui.setPick) "▴" else "▾", style = f(11f, 700, B.Gold))
+                }
             FindBox(ui, onFilter)
             if (m.colorFilter) Row {
                 for (k in listOf("W", "U", "B", "R", "G")) {
@@ -905,9 +925,11 @@ private fun Browser(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, swi
                     Text(t, style = f(12f, 700, if (on) B.Gold else B.Mute), maxLines = 1, softWrap = false)
                 }
             }
+            }
         }
         if (m.shelves != null && ui.find.isBlank()) Box(Modifier.weight(1f).fillMaxWidth().padding(top = 2.dp).onGloballyPositioned { drag.grid = it.boundsInRoot().translate(-drag.origin) }) {
             Shelves(m, ui, a, drag, lift)
+            if (ui.setPick) SetPicker(m.shelves, ui)
             if (remove) Box(Modifier.fillMaxSize().padding(horizontal = 6.dp, vertical = 2.dp).clip(RoundedCornerShape(14.dp)).background(Color(0x14FF7A6A)).drawBehind {
                 drawRoundRect(B.Coral, style = Stroke(2.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx()))), cornerRadius = CornerRadius(14.dp.toPx())) })
         } else BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(top = 2.dp).onGloballyPositioned { drag.grid = it.boundsInRoot().translate(-drag.origin) }) {
@@ -956,6 +978,8 @@ private fun Shelves(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, lif
     val shown = m.shelves.orEmpty()
     // Until the shelves are known the list isn't drawn at all, so its kept scroll place (BenchUi.shelfList) isn't lost to an empty list.
     if (shown.isEmpty()) { Text(m.browserNote ?: "Looking through every card…", style = f(12f, 600, B.Mute), modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)); return }
+    val open = ui.openSet?.let { k -> shown.firstOrNull { it.key == k } }
+    if (open != null) { SetFull(m, open, ui, a, drag, lift); return }
     androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxSize().semantics { contentDescription = "Cards to add, a shelf at a time" }, ui.shelfList,
         contentPadding = PaddingValues(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         items(shown.size, key = { "sh:" + shown[it].key }) { i -> val s = shown[i]
@@ -974,16 +998,7 @@ private fun Shelf(m: BenchModel, s: BenchShelf, back: String, ui: BenchUi, a: Be
     Column(Modifier.fillMaxWidth().padding(horizontal = if (s.gold) 6.dp else 0.dp).then(if (s.gold) Modifier.clip(shape)
         .background(Brush.verticalGradient(listOf(Color(0x24E5C47E), Color(0x08E5C47E)))).border(1.dp, Color(0x59E5C47E), shape) else Modifier)
         .padding(top = if (none) 4.dp else 8.dp, bottom = 4.dp).semantics(mergeDescendants = false) { contentDescription = s.title + if (s.code.isNotEmpty()) ", ${s.code}" else "" }) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // The name keeps its room (up to most of the row); the date and count give way first.
-            Text(s.title, style = f(13f, if (none) 600 else 800, if (none) B.Mute else if (s.gold) B.Gold else B.Fg), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false,
-                modifier = Modifier.widthIn(max = 230.dp))
-            if (s.code.isNotEmpty()) Text(s.code, style = f(11f, 800, B.Mute, track = .06f), maxLines = 1, softWrap = false,
-                modifier = Modifier.border(1.dp, Color(0x24FFFFFF), RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 1.dp))
-            val right = if (none) listOf("No cards here for this deck") else listOfNotNull(s.meta.ifBlank { null }, s.tiles?.takeIf { it.isNotEmpty() }?.let { if (s.count > it.size) "${it.size}+ cards" else "${it.size} card${if (it.size == 1) "" else "s"}" })
-            Text(right.joinToString(" · "), style = f(11f, 600, B.Mute), maxLines = 1, softWrap = false, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                textAlign = TextAlign.End, modifier = Modifier.weight(1f))
-        }
+        ShelfHead(s, none, open = false) { ui.openSet = s.key }
         if (none) Unit
         else if (s.note.isNotEmpty() && s.tiles.isNullOrEmpty()) Text(s.note, style = f(12f, 600, B.Mute), modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
         else {
@@ -1004,6 +1019,102 @@ private fun Shelf(m: BenchModel, s: BenchShelf, back: String, ui: BenchUi, a: Be
     }
 }
 private val SHELF_TILE = 96.dp
+
+/**
+ * A shelf's heading: its name, code, date and count. A set's name opens it full (a gold › after it), and in the full view
+ * closes it again (a ‹ before it).
+ */
+@Composable
+private fun ShelfHead(s: BenchShelf, none: Boolean, open: Boolean, onClick: () -> Unit) {
+    val opens = s.code.isNotEmpty() && !none
+    Row(Modifier.fillMaxWidth().then(if (opens) Modifier.clip(RoundedCornerShape(8.dp)).padActs(PadActs(a = if (open) "Every set" else "Open set"))
+        .clickable(onClickLabel = if (open) "Back to every set" else "Open the whole set", onClick = onClick) else Modifier)
+        .padding(horizontal = 12.dp, vertical = if (opens) 4.dp else 0.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (open) Text("‹", style = f(18f, 700, B.Gold, line = 18f))
+        // The name keeps its room (up to most of the row); the date and count give way first.
+        Text(s.title, style = f(if (open) 15f else 13f, if (none) 600 else 800, if (none) B.Mute else if (s.gold) B.Gold else B.Fg), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false,
+            modifier = Modifier.widthIn(max = 230.dp))
+        if (s.code.isNotEmpty()) Text(s.code, style = f(11f, 800, B.Mute, track = .06f), maxLines = 1, softWrap = false,
+            modifier = Modifier.border(1.dp, Color(0x24FFFFFF), RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 1.dp))
+        if (opens && !open) Text("›", style = f(16f, 700, B.Gold, line = 16f))
+        val right = if (none) listOf("No cards here for this deck") else listOfNotNull(s.meta.ifBlank { null }, s.tiles?.takeIf { it.isNotEmpty() }?.let { if (s.count > it.size) "${it.size}+ cards" else "${it.size} card${if (it.size == 1) "" else "s"}" })
+        Text(right.joinToString(" · "), style = f(11f, 600, B.Mute), maxLines = 1, softWrap = false, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            textAlign = TextAlign.End, modifier = Modifier.weight(1f))
+    }
+}
+
+/** One set, full: its heading (tap, or Back, for every shelf again) and every card in a grid; Magic's next page loads near the end. */
+@Composable
+private fun SetFull(m: BenchModel, s: BenchShelf, ui: BenchUi, a: BenchActions, drag: Drag, lift: () -> Unit) {
+    androidx.activity.compose.BackHandler(enabled = ui.peek == null) { ui.openSet = null }
+    PadScreen(PadActs(b = "Every set"))
+    if (s.tiles == null || s.loading || s.note.isNotEmpty()) LaunchedEffect(s.key, m.shelvesGen) { a.shelf(s.key) }
+    val tiles = s.tiles.orEmpty()
+    LaunchedEffect(s.key) { if (ui.setGridFor != s.key) { ui.setGridFor = s.key; ui.setGrid.scrollToItem(0) } }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val n = maxOf(3, ((maxWidth.value - 20) / 104).toInt())
+        LazyVerticalGrid(GridCells.Fixed(n), Modifier.fillMaxSize().semantics { contentDescription = "${s.title}, every card" }, ui.setGrid,
+            PaddingValues(start = 10.dp, end = 10.dp, top = 6.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            item(key = "head", span = { GridItemSpan(maxLineSpan) }) { ShelfHead(s, false, open = true) { ui.openSet = null } }
+            val note = if (s.note.isNotEmpty() && tiles.isEmpty()) s.note else if (s.tiles == null) "Opening the set…" else if (tiles.isEmpty()) "No cards here for this deck" else null
+            if (note != null) item(key = "note", span = { GridItemSpan(maxLineSpan) }) { Text(note, style = f(12f, 600, B.Mute), modifier = Modifier.padding(horizontal = 2.dp, vertical = 8.dp)) }
+            itemsIndexed(tiles, key = { i, t -> "f:${t.key}:$i" }) { _, t -> Tile(m, t, ui, a, drag, lift) }
+            if (s.count > tiles.size && tiles.isNotEmpty()) item(key = "more", span = { GridItemSpan(maxLineSpan) }) {
+                LaunchedEffect(tiles.size) { a.shelfMore(s.key) }
+                Text("More of the set…", style = f(12f, 600, B.Mute), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp))
+            }
+        }
+    }
+}
+
+/** The Set dropdown: glass over the shelves, a search, every set by year newest first; one opens full, "Every set" goes back to the shelves. */
+@Composable
+private fun SetPicker(shelves: List<BenchShelf>, ui: BenchUi) {
+    var q by remember { mutableStateOf("") }
+    androidx.activity.compose.BackHandler { ui.setPick = false }
+    PadScreen(PadActs(b = "Close", opaque = true))
+    val sets = shelves.filter { it.code.isNotEmpty() }
+    val t = q.trim()
+    val shown = if (t.isEmpty()) sets else sets.filter { it.title.contains(t, true) || it.code.equals(t, true) }
+    val shape = RoundedCornerShape(16.dp)
+    // A tap outside the glass closes it (the panel's own bounds, so its rows and search keep their taps).
+    var panel by remember { mutableStateOf(Rect.Zero) }
+    Box(Modifier.fillMaxSize().background(Color(0x66000000)).pointerInput(Unit) {
+        awaitEachGesture { val d = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial); if (!panel.contains(d.position)) ui.setPick = false } }) {
+        Column(Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 10.dp, start = 10.dp).widthIn(max = 320.dp).fillMaxWidth().fillMaxHeight(.94f)
+            .shadow(24.dp, shape, spotColor = Color.Black).clip(shape).background(Brush.verticalGradient(listOf(Color(0xF22A2530), Color(0xF21C1920))))
+            .border(1.dp, Color(0x66E5C47E), shape).onGloballyPositioned { c -> panel = Rect(c.positionInParent(), c.size.toSize()) }
+            .padLayer().padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            BasicTextField(q, { q = it.take(40) }, singleLine = true, textStyle = f(13f, 600), cursorBrush = SolidColor(B.Gold),
+                modifier = Modifier.fillMaxWidth().height(42.dp).clip(RoundedCornerShape(10.dp)).background(Color(0x0FFFFFFF)).border(1.dp, B.Line, RoundedCornerShape(10.dp))
+                    .semantics { contentDescription = "Find a set" },
+                decorationBox = { field -> Box(Modifier.fillMaxSize().padding(horizontal = 10.dp), contentAlignment = Alignment.CenterStart) {
+                    if (q.isEmpty()) Text("Find a set…", style = f(13f, 600, B.Mute), maxLines = 1, softWrap = false)
+                    field()
+                } })
+            androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxWidth().weight(1f, fill = false)) {
+                item(key = "all") { SetOption("Every set", "", ui.openSet == null, gold = true) { ui.openSet = null; ui.setPick = false } }
+                if (shown.isEmpty()) item(key = "none") { Text("No set by that name.", style = f(12f, 600, B.Mute), modifier = Modifier.padding(10.dp)) }
+                var year = ""
+                for (s in shown) {
+                    val y = s.meta.takeLast(4).takeIf { it.all(Char::isDigit) }.orEmpty()
+                    if (y != year && y.isNotEmpty()) { year = y; item(key = "y$y") { Text(y, style = f(11f, 800, B.Gold, track = .1f), modifier = Modifier.padding(start = 8.dp, top = 10.dp, bottom = 2.dp)) } }
+                    item(key = "s:" + s.key) { SetOption(s.title, s.code, ui.openSet == s.key) { ui.openSet = s.key; ui.setPick = false } }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SetOption(title: String, code: String, on: Boolean, gold: Boolean = false, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).clip(RoundedCornerShape(10.dp)).background(if (on) Color(0x24E5C47E) else Color.Transparent)
+        .clickable(onClick = onClick).semantics { selected = on }.padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(title, style = f(13f, if (gold) 800 else 600, if (gold || on) B.Gold else B.Fg), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false, modifier = Modifier.weight(1f))
+        if (code.isNotEmpty()) Text(code, style = f(11f, 800, B.Mute, track = .06f), maxLines = 1, softWrap = false,
+            modifier = Modifier.border(1.dp, Color(0x24FFFFFF), RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 1.dp))
+    }
+}
 
 /**
  * A card back that turns over into [content] the first time it shows ([key] null: still waiting, the back shimmers). Each card turns a

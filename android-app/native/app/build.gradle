@@ -34,7 +34,7 @@ android {
     kotlin { jvmToolchain(21) }
     kotlinOptions { jvmTarget = '17' }
     buildFeatures { compose true }
-    testOptions { unitTests.returnDefaultValues = true; unitTests.includeAndroidResources = true; unitTests.all { it.systemProperty 'roborazzi.test.record', 'true'; it.systemProperty 'shotsDir', rootProject.file('shots').absolutePath; it.systemProperty 'engineRoot', System.getenv('ENGINE_ROOT') ?: ''; it.systemProperty 'repoRoot', rootProject.projectDir.parentFile.parentFile.absolutePath; it.maxHeapSize = '2g'; it.testLogging { showStandardStreams = true } } }
+    testOptions { unitTests.returnDefaultValues = true; unitTests.includeAndroidResources = true; unitTests.all { it.systemProperty 'roborazzi.test.record', 'true'; it.systemProperty 'shotsDir', rootProject.file('shots').absolutePath; it.systemProperty 'engineRoot', System.getenv('ENGINE_ROOT') ?: ''; it.systemProperty 'repoRoot', rootProject.projectDir.parentFile.parentFile.absolutePath; it.maxHeapSize = '3g'; it.forkEvery = 20; it.testLogging { showStandardStreams = true } } }
     androidResources { noCompress += ['zip', 'ogg', 'jpg', 'webp'] }
     packaging.resources.excludes += ['META-INF/LICENSE*', 'META-INF/NOTICE*', 'META-INF/DEPENDENCIES', 'META-INF/*.kotlin_module', 'META-INF/versions/**', 'module-info.class']
     packaging.resources.merges += ['META-INF/services/**']
