@@ -616,6 +616,7 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Dual screen" to "Pack opening: the card on the top screen is now as tall as the screen, with its name and rarity beside it. With a controller the ring starts on the sealed pack, so A tears it open, and it can no longer press things behind the pack.",
     "Controllers" to "On two-screen handhelds LB and RB in a match now jump the ring between your hand, your board and your opponent’s board, landing on the card you were last on there. D-pad left and right still walk your hand.",
     "Dual screen" to "A card you open from a pack or from your hand in a match now opens on the bottom screen, so the top stays on the game; Back closes it. When a pack is dealt, its cards drop down into the spread one after another. Slide a card up off your bottom-screen hand to cast it.",
     "Dual screen" to "The Story has its own bottom screen: on the road and on an act it shows the act (its line, era, battles won, stars and the boosters it gives), and with the ring on a battle it shows the villain, the prize booster, what they play and what it teaches; A duels. The purse sits in the case\u2019s plaque. Play \u203a Decks shows the deck under the ring as its box (how much is in your Trunk, cards left to stamp, what it leans on, your record), and otherwise your decks on a shelf; X builds a deck and Y rolls a random one.",

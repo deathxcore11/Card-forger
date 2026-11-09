@@ -32,6 +32,7 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.indication
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.focus.focusProperties
@@ -436,8 +437,8 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
     }
     val cardFocus = remember { androidx.compose.ui.focus.FocusRequester() }
     val padOn by Pad.connected.collectAsState()
-    LaunchedEffect(stage == PackStage.DEALT, pack, padOn) {
-        if (stage == PackStage.DEALT && padOn) { androidx.compose.runtime.withFrameNanos { }; runCatching { cardFocus.requestFocus() } }
+    LaunchedEffect(stage == PackStage.DEALT, stage == PackStage.SEALED, pack, padOn) {
+        if ((stage == PackStage.DEALT || stage == PackStage.SEALED) && padOn) { androidx.compose.runtime.withFrameNanos { }; androidx.compose.runtime.withFrameNanos { }; runCatching { cardFocus.requestFocus() } }
     }
     DisposableEffect(dealt, inspecting == null) {
         PadCursor.sideStep = if (dealt && inspecting == null) ({ d -> swipe(d) }) else null
@@ -455,7 +456,9 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
     val gold = packGold()
     Box(Modifier.fillMaxSize().graphicsLayer { val k = 1f - .1f * backPull; scaleX = k; scaleY = k; alpha = 1f - .35f * backPull; shape = RoundedCornerShape((26 * backPull).dp); clip = backPull > 0f }
         // The backdrop only swallows taps; the controller's focus skips it.
-        .background(Color(0xE605060B)).focusProperties { canFocus = false }.clickable(remember { MutableInteractionSource() }, null) {}) {
+        .background(Color(0xE605060B)).focusProperties { canFocus = false }.clickable(remember { MutableInteractionSource() }, null) {}
+        // The ring never leaves the pack for the screen behind it.
+        .trapFocus().focusGroup()) {
         // .pack-dialog on a phone: width 100 % - 20 px, max-height 100dvh - 16 px, radius 20, border var(--line),
         // radial-gradient(120% 70% at 50% 0%, gold 9 % into the background, background 60 %), padding 14 12 16.
         val panel = RoundedCornerShape(20.dp)
@@ -714,6 +717,8 @@ private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loadi
         if (loading && !Motion.still) rotationZ = (if (eager) 1.6f else .7f) * kotlin.math.sin(power * 6.283f * 3f)
     }.glow(Color(0xFFE8B95B), if (loading) .25f + .4f * power * (if (eager) 1.4f else 1f) else 0f, .08f + .05f * power, .06f + .04f * power, .08f, 36.dp)
         .glow(Color.Black, .6f, .02f, .03f, .04f, 30.dp)
+        // A controller's ring starts on the pack, so A tears it (not whatever sits behind the pack).
+        .then(LocalPackCardFocus.current?.let { Modifier.focusRequester(it) } ?: Modifier)
         .clickable(remember { MutableInteractionSource() }, dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onTear).semantics { contentDescription = "Open the ${pack.name} pack" }) {
         // The set's art under Randall's template when the set has one (its painted wrapper until the art is in), else the wrapper.
         val tpl = TemplatePack(pack.set, pack.name, { drift?.value ?: Offset.Zero }, Modifier.fillMaxSize(), brand = pack.shop != null, override = pack.look?.template?.let { PackTemplate.Art("", it.art, it.x, it.y) }) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true, brand = pack.shop != null, template = false) }
@@ -822,9 +827,10 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
     // Two screens (Randall 9 Nov: "why both? Have the bottom be the horizontal spread and top card heavy"): once the cards have landed,
     // the hand and its buttons live on the bottom screen as the spread, and the big card takes the whole top. The deal still flies into
     // the hand here first, so the cards visibly leave for the bottom.
-    if (DualScreen.active && stage == PackStage.DEALT) Column(Modifier.fillMaxSize().onGloballyPositioned { bodyRoot = it.positionInRoot() }, horizontalAlignment = Alignment.CenterHorizontally) {
-        big(Modifier.weight(1f).fillMaxWidth())
-        if (allOpen && pack.shop != null) PackTools(onShop, onWish, wished, wishing)
+    if (DualScreen.active && stage == PackStage.DEALT) Box(Modifier.fillMaxSize().onGloballyPositioned { bodyRoot = it.positionInRoot() }) {
+        big(Modifier.fillMaxSize())
+        // The simulator's tools sit in a corner so the card keeps the whole height.
+        if (allOpen && pack.shop != null) Box(Modifier.align(Alignment.BottomStart).padding(start = 4.dp, bottom = 4.dp).width(200.dp)) { PackTools(onShop, onWish, wished, wishing) }
     } else
     if (side) Row(Modifier.fillMaxSize().onGloballyPositioned { bodyRoot = it.positionInRoot() }.then(skip), verticalAlignment = Alignment.CenterVertically) {
         big(Modifier.weight(.48f).fillMaxHeight())
@@ -939,8 +945,10 @@ private fun PillButton(label: String, ghost: Boolean, wide: Boolean = false, onC
 private fun Focus(pack: PackResult, focus: Int, open: Boolean, charging: Boolean, moment: Int, momentLevel: Int, flipping: Int, slide: Int, flung: Pair<Pull, Int>?,
                   tiltOn: Boolean, rise: Float, awaiting: Boolean, onTap: () -> Unit, onHold: () -> Unit, onSwipe: (Int) -> Unit, onFlungDone: () -> Unit) = BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
     val p = pack.pulls.getOrNull(focus) ?: return@BoxWithConstraints
-    val meta = 52.dp
-    val cardW = minOf(400.dp, maxWidth - 32.dp, (maxHeight - meta - 18.dp) * (63f / 88f))
+    // Two screens: the top is all card (Randall 9 Nov, "card is too small"), so the name and rarity sit beside it, not under it.
+    val dual = DualScreen.active
+    val meta = if (dual) 0.dp else 52.dp
+    val cardW = if (dual) minOf(maxWidth * .6f, (maxHeight - 8.dp) * (63f / 88f)) else minOf(400.dp, maxWidth - 32.dp, (maxHeight - meta - 18.dp) * (63f / 88f))
     val cardH = cardW * (88f / 63f)
     // The flip: 0 = back up, 180 = face up; the card lifts and leans as it turns (flipLift), and settles.
     val flip by animateFloatAsState(if (open) 180f else 0f, if (Motion.still) tween(0) else tween(700, easing = ease), label = "flip")
@@ -1058,12 +1066,17 @@ private fun Focus(pack: PackResult, focus: Int, open: Boolean, charging: Boolean
             if (embers.value < 1f && L >= 2) Embers(cardW, cardH, L, embers.value, moment)
         }
         // Name and rarity pill once face up.
-        Column(Modifier.heightIn(min = meta - 6.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        if (!dual) Column(Modifier.heightIn(min = meta - 6.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
             if (open) {
                 Text(p.name, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Site.Text), textAlign = TextAlign.Center)
                 RarityPill(p.rarity, p.sim?.finishLabel ?: if (p.foil) "Foil" else "", p.sim?.rx?.takeIf { pack.look != null }, pack.game)
             }
         }
+    }
+    if (dual && open) Column(Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = 8.dp).widthIn(max = (maxWidth - cardW) / 2 - 16.dp),
+        horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(p.name, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Site.Text), textAlign = TextAlign.End)
+        RarityPill(p.rarity, p.sim?.finishLabel ?: if (p.foil) "Foil" else "", p.sim?.rx?.takeIf { pack.look != null }, pack.game)
     }
 }
 
@@ -1415,3 +1428,7 @@ private fun PackSpread(pack: PackResult, revealed: List<Int>, focus: Int, onShow
         }
     }
 }
+
+/** The ring never leaves this layer for the screen behind it. */
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+private fun Modifier.trapFocus(): Modifier = focusProperties { exit = { androidx.compose.ui.focus.FocusRequester.Cancel } }
