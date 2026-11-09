@@ -183,6 +183,7 @@ class MainActivity : ComponentActivity() {
                 dev.cardstashy.nativeplay.ui.AchievementToastHost(page)
                 dev.cardstashy.nativeplay.ui.CollectionWritesHost(page)
                 UpdateHost(this@MainActivity)
+                dev.cardstashy.nativeplay.ui.TopScreenHost()
                 PadPromptBar()
                 PadCursorLayer()
             }

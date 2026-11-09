@@ -86,6 +86,8 @@ object DualScreen {
 
     internal class Slot { var content by mutableStateOf<(@Composable () -> Unit)?>(null) }
     internal val slots = mutableStateListOf<Slot>()
+    /** Views the bottom screen puts up on the top screen (a card page's Enlarge): the newest shows, over the app. */
+    internal val tops = mutableStateListOf<Slot>()
 
     private var prefs: android.content.SharedPreferences? = null
     private var window: BottomWindow? = null
@@ -243,3 +245,38 @@ private fun BottomPadBar() {
 fun Modifier.dualFocus(card: FocusCard): Modifier = if (!DualScreen.active) this else this
     .onFocusChanged { if (it.isFocused) DualScreen.focus = card }
     .pointerInput(card) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false, pass = androidx.compose.ui.input.pointer.PointerEventPass.Initial); if (!PadCursor.dragging) DualScreen.focus = card } }
+
+/**
+ * Two screens, Collection (Randall 9 Nov, "No pop-up, bottom is the page"): the card page lives on the bottom screen and follows the
+ * ring on the top grid. A tile the ring rests on for a moment opens its page below; a quick sweep over the grid opens nothing.
+ */
+object DualFollow {
+    private val main = android.os.Handler(android.os.Looper.getMainLooper())
+    private var pending: Runnable? = null
+    fun request(run: () -> Unit) {
+        pending?.let(main::removeCallbacks)
+        val r = Runnable { pending = null; run() }
+        pending = r; main.postDelayed(r, 320)
+    }
+}
+
+/** On two screens the ring resting on this tile opens its card page on the bottom screen ([DualFollow]). */
+fun Modifier.followCard(open: () -> Unit): Modifier = if (!DualScreen.active) this else onFocusChanged { if (it.isFocused) DualFollow.request(open) }
+
+/**
+ * Opening a card page: on one screen it stacks over the last (back returns to it); on two screens the bottom holds one page,
+ * the newest, so the routes' `cards + open` swaps the page instead of piling pages up under the ring.
+ */
+internal operator fun List<CardOpen>.plus(open: CardOpen): List<CardOpen> = if (DualScreen.active) listOf(open) else toMutableList().apply { add(open) }
+
+/** From the bottom screen, a view drawn over the top screen while it is composed (the card page's Y: the card big up top). */
+@Composable
+fun TopScreen(content: @Composable () -> Unit) {
+    val slot = remember { DualScreen.Slot() }
+    slot.content = content
+    DisposableEffect(slot) { DualScreen.tops += slot; onDispose { DualScreen.tops -= slot } }
+}
+
+/** On the app's root, over everything: the newest [TopScreen] view. */
+@Composable
+fun TopScreenHost() { DualScreen.tops.lastOrNull()?.content?.invoke() }

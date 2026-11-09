@@ -57,6 +57,14 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
                        onRandom: (() -> Unit)? = null,
                        /** The ← (A.sheetBack) of a page opened from the deck idea sheet ([CardOpen.back]): the sheet again. */
                        onBack: (() -> Unit)? = null) {
+    // Two screens: the page is the bottom screen (it follows the ring on the top grid); the top keeps the grid.
+    if (DualScreen.active) { BottomScreen { CardHostBody(open, onClose, onOpen, web, onSet, onRandom, onBack) }; return }
+    CardHostBody(open, onClose, onOpen, web, onSet, onRandom, onBack)
+}
+
+@Composable
+private fun CardHostBody(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -> Unit, web: (url: String, press: String?) -> Unit, onSet: ((String) -> Unit)?,
+                         onRandom: (() -> Unit)?, onBack: (() -> Unit)?) {
     if (open.game != "mtg") return TcgCardHost(open, onClose, onOpen, web, onSet, onRandom, onBack)
     val context = LocalContext.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()

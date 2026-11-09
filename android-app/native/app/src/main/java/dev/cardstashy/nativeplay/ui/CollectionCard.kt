@@ -407,7 +407,9 @@ fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onBa
             val look = if (m.game != CardGame.MTG) null else data?.let { Foil.look(it, m.shown, Foil.finishFor(m.shown, o?.finishKey ?: "nonfoil")) }
             val ctx = androidx.compose.ui.platform.LocalContext.current
             val tcg = remember(o?.tcgFinish, o?.image) { o?.tcgFinish?.let { tcgFinishOf(ctx, m.game, it, o.image) } }
-            if (o != null) CardZoom(o.zoomSrc.ifBlank { o.image }, o.zoomHi.ifBlank { null }, o.zoomArt.ifBlank { null }, look, finish = tcg) { zoom = false }
+            // Two screens: the page is on the bottom, so Y puts the card big on the top screen (its foil follows the gyro as ever).
+            if (o != null) { val z = @Composable { CardZoom(o.zoomSrc.ifBlank { o.image }, o.zoomHi.ifBlank { null }, o.zoomArt.ifBlank { null }, look, finish = tcg) { zoom = false } }
+                if (DualScreen.active) TopScreen(z) else z() }
         }
     }
     }

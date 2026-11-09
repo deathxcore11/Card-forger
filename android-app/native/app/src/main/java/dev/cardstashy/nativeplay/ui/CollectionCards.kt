@@ -284,13 +284,8 @@ private fun CollectionCardsActions.pad(r: CollRow): PadActs {
 @Composable
 private fun Modifier.lotPad(r: CollRow, act: CollectionCardsActions): Modifier {
     val acts = remember(r, act) { act.pad(r) }
-    if (!DualScreen.active) return padActs(acts)
-    val focus = remember(r, act) {
-        val buttons = if (r.wanted) listOfNotNull(r.got.takeIf { it.isNotBlank() }?.let { PadAct("Got it") { act.got(r) } }, PadAct("Remove from wishlist") { act.unwish(r) })
-            else listOf(PadAct("Got one") { act.qty(r, 1) }, PadAct("Open") { act.card(r) })
-        FocusCard(r.name, r.art, owned = if (r.wanted) "On your wishlist" else "You have ${r.qty}", price = r.price.ifBlank { null }, actions = buttons)
-    }
-    return dualFocus(focus).padActs(acts)
+    // Two screens: the lot's whole card page follows the ring onto the bottom screen.
+    return followCard { act.card(r) }.padActs(acts)
 }
 
 // ---------------------------------------------------------------- site colours (style.css tokens as the live page computes them)
