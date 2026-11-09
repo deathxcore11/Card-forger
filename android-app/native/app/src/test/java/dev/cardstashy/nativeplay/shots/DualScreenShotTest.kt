@@ -122,6 +122,25 @@ class DualScreenShotTest {
         }
     }
 
+    @Test fun deckBottoms() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        val root = File(System.getProperty("shotsDir")!!).parentFile
+        val dirs = listOf("home", "pack", "story", "decks").map { root.resolve("app/build/shot-art/$it") }
+        val missed = File(root, "app/build/shot-art/decks-missed.txt").apply { parentFile.mkdirs(); writeText("") }
+        dev.cardstashy.nativeplay.ui.homeArt = { u -> val h = java.security.MessageDigest.getInstance("SHA-1").digest(u.toByteArray()).joinToString("") { "%02x".format(it) } + ".jpg"
+            dirs.map { it.resolve(h) }.firstOrNull { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } ?: u.also { missed.appendText("$h $it\n") } }
+        val st = com.google.gson.JsonParser.parseString((File("/mnt/project-files/design/native/parity/fixtures/progress-state.json").takeIf { it.exists() } ?: root.resolve("app/build/shot-art/home/progress-state.json")).readText()).asJsonObject
+        val decks = st.getAsJsonArray("decks").mapNotNull { it as? com.google.gson.JsonObject }
+        val owned = dev.cardstashy.nativeplay.play.Decks.ownedByName(st)
+        val bg = Brush.verticalGradient(listOf(Color(0xFF15171D), Color(0xFF0B0C10)))
+        for ((size, q) in listOf("thor-1240x1080" to "w620dp-h540dp-xhdpi", "duo-1280x960" to "w640dp-h480dp-xhdpi")) {
+            RuntimeEnvironment.setQualifiers(q)
+            captureRoboImage(shot("bottom-decks-$size")) { Box(Modifier.fillMaxSize().background(bg)) { dev.cardstashy.nativeplay.ui.DecksShelfCase(decks, owned, {}, {}) } }
+            captureRoboImage(shot("bottom-decks-deck-$size")) { Box(Modifier.fillMaxSize().background(bg)) {
+                dev.cardstashy.nativeplay.ui.DeckBoxCase(decks.first(), owned, emptyList(), listOf(dev.cardstashy.nativeplay.ui.CaseButton("A", "Open deck", gold = true) {}, dev.cardstashy.nativeplay.ui.CaseButton(null, "Menu") {})) } }
+        }
+    }
+
     @Test fun topScreen() {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         CardImageTest.art = { name, crop -> art.resolve(key(name, crop) + ".jpg").takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } }

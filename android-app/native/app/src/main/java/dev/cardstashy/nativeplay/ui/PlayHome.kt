@@ -1417,21 +1417,36 @@ private fun QuickCase(rows: List<JsonObject>, act: PlayHomeActions, wallet: @Com
 
 /** A deck tile's case: its lead card large, the cards it leans on and how it has done. */
 @Composable
-private fun DeckCase(deck: JsonObject, history: List<JsonObject>, act: PlayHomeActions, wallet: @Composable () -> Unit) {
-    val cards = (deck.get("cards") as? JsonArray)?.mapNotNull { it as? JsonObject } ?: emptyList()
+private fun DeckCase(deck: JsonObject, history: List<JsonObject>, act: PlayHomeActions, wallet: @Composable () -> Unit) =
+    DeckBoxCase(deck, null, history, listOf(CaseButton("A", "Open deck", gold = true) { act.deck(deck["id"].str() ?: "") }), wallet)
+
+/**
+ * A deck's box in the case: its lead card, how full it is, how much of it is in your Trunk and how many cards still need stamping
+ * (when [owned] is known), your record with it, the cards it leans on and who you last played. Shared by Play Home and Decks.
+ */
+@Composable
+internal fun DeckBoxCase(deck: JsonObject, owned: Map<String, Int>?, history: List<JsonObject>, buttons: List<CaseButton>, wallet: @Composable () -> Unit = {}) {
+    val cards = (deck.get("cards") as? JsonArray)?.mapNotNull { it as? JsonObject }?.filter { it.get("board").str() != "side" } ?: emptyList()
     val count = cards.sumOf { it.get("qty").int() ?: 0 }
     val fmt = deck.get("format").str()?.ifBlank { null } ?: "Standard"
     val lead = cards.firstOrNull { (it.get("name").str() ?: "") !in BASICS }?.get("name").str()
+    val cover = dev.cardstashy.nativeplay.account.Decks.pickedCover(deck.get("id").str()) ?: dev.cardstashy.nativeplay.play.Decks.cover(deck).ifBlank { null } ?: lead?.let(::cropUrl)
     val key = dev.cardstashy.nativeplay.play.MatchRecord.deckRecordKey(deck)
     val mine = history.filter { it.getAsJsonObject("deck")?.get("key").str() == key }
     val w = mine.count { it["outcome"].str() == "win" }; val l = mine.count { it["outcome"].str() == "loss" }
     val top = cards.filter { (it.get("name").str() ?: "") !in BASICS }.sortedByDescending { it.get("qty").int() ?: 0 }.take(6)
-    ShowcaseCase("Deck · $fmt", deck.get("name").str()?.ifBlank { null } ?: "Untitled deck", trailing = wallet, heroWeight = .34f,
-        buttons = listOf(CaseButton("A", "Open deck", gold = true) { act.deck(deck["id"].str() ?: "") }),
-        hero = { Art(lead?.let(::cropUrl), Modifier.matchParentSize(), BiasAlignment(0f, -.3f)) }) {
+    val tile = owned?.let { dev.cardstashy.nativeplay.play.Decks.tile(deck, it) }
+    ShowcaseCase("Deck · $fmt", deck.get("name").str()?.ifBlank { null } ?: "Untitled deck", trailing = wallet, heroWeight = .34f, buttons = buttons,
+        hero = { Art(cover, Modifier.matchParentSize(), BiasAlignment(0f, -.3f)) }) {
         Row(horizontalArrangement = Arrangement.spacedBy(26.dp)) {
-            CaseFact("Cards", "$count / ${deckSize(fmt)}")
+            CaseFact("Cards", "$count / ${tile?.size ?: deckSize(fmt)}")
+            if (tile != null) CaseFact("In your Trunk", "${Math.round(tile.share * 100)}%")
             if (mine.isNotEmpty()) CaseFact("Record", "$w–$l")
+        }
+        if (tile != null) {
+            Bar(tile.share.toFloat())
+            Text(if (tile.missing > 0) "${tile.missing} card${if (tile.missing == 1) "" else "s"} to stamp with seals" else "Every card is in your Trunk. Ready to play.",
+                style = TextStyle(fontFamily = P.Sans, fontSize = 14.sp, color = P.Muted))
         }
         if (top.isNotEmpty()) {
             CaseLabel("It leans on")

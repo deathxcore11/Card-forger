@@ -112,6 +112,18 @@ fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit,
     LaunchedEffect(decks) { dev.cardstashy.nativeplay.play.CardFacts.wantNames(decks.flatMap { Decks.rows(it).map { r -> r.name } }) }
     val pager = androidx.compose.foundation.pager.rememberPagerState(initialPage = tabs.tab) { 3 }
     LaunchedEffect(pager.currentPage) { tabs.tab = pager.currentPage }
+    // Bottom screen (wave 2): the deck under the ring as its box; otherwise your decks at a glance with Build and Random.
+    val lens = rememberLens()
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val user = dev.cardstashy.nativeplay.account.Account.session.collectAsState().value?.userId
+    val history = remember(user) { runCatching { dev.cardstashy.nativeplay.play.MatchRecord.history(ctx, user) }.getOrDefault(emptyList()) }
+    BottomScreen {
+        val d = lens.key?.removePrefix("deck:")?.let { id -> decks.firstOrNull { it.s("id") == id } }
+        ShowcaseLens(d) { d ->
+            if (d != null) DeckBoxCase(d, owned, history, listOf(CaseButton("A", "Open deck", gold = true) { onDeck(d.s("id")) }, CaseButton(null, "Menu") { holding = d }))
+            else DecksShelfCase(decks, owned, onFinder) { tabs.randomOpen = true }
+        }
+    }
     fun loadIndex() { if (precon.index != null || precon.busy) return; precon.busy = true; precon.error = ""
         scope.launch { val j = fetchJson("https://mtgjson.com/api/v5/DeckList.json", dayCache = true); if (j != null) { precon.commander = Decks.commanderPreconIndex(j); precon.index = Decks.preconIndex(j) } else precon.error = "Could not load the precon list right now."; precon.busy = false } }
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
@@ -124,7 +136,8 @@ fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit,
             }
             androidx.compose.foundation.pager.HorizontalPager(pager, Modifier.fillMaxWidth().weight(1f), key = { it }) { page -> when (page) {
                 0 -> Column(Modifier.fillMaxSize().verticalScroll(tabs.mine).padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // With a bottom screen up, Build and Random live there (X and Y).
+                    if (!DualScreen.active) Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         DeckActionTile("Build a deck", "From your Trunk, with meta ideas", DECKS_ART, Modifier.weight(1f), onClick = onFinder)
                         DeckActionTile("Random deck", "Deck Forge builds one for you", null, Modifier.weight(1f), sparkle = true) { tabs.randomOpen = true }
                     }
@@ -132,7 +145,7 @@ fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit,
                         val cols = when { maxWidth >= 1000.dp -> 3; maxWidth >= 640.dp -> 2; else -> 1 }
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             decks.chunked(cols).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                row.forEach { d -> PlayDeckTile(d, owned, Modifier.weight(1f), nameFact, { onDeck(d.s("id")) }, onHold = { holding = d }) { deleting = d } }
+                                row.forEach { d -> PlayDeckTile(d, owned, Modifier.weight(1f).dualLens(lens, "deck:" + d.s("id")), nameFact, { onDeck(d.s("id")) }, onHold = { holding = d }) { deleting = d } }
                                 repeat(cols - row.size) { Spacer(Modifier.weight(1f)) } } }
                         }
                     }
@@ -151,7 +164,8 @@ fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit,
         }
         Box(Modifier.align(Alignment.BottomCenter)) { nav() }
         // Controller: LB/RB move between My decks, Precons and Meta like the tab bar. After nav(), so these win over the Play tabs.
-        PadScreen(PadActs(tabs = { d -> val to = (pager.currentPage + d).coerceIn(0, 2); if (to != pager.currentPage) scope.launch { pager.animateScrollToPage(to) } }))
+        PadScreen(PadActs(x = if (DualScreen.active) PadAct("Build a deck", onFinder) else null, y = if (DualScreen.active) PadAct("Random deck") { tabs.randomOpen = true } else null,
+            tabs = { d -> val to = (pager.currentPage + d).coerceIn(0, 2); if (to != pager.currentPage) scope.launch { pager.animateScrollToPage(to) } }))
     }
     // Hold a Play deck: its Play actions (deckMenu's layout; the Collection's share, prices and proxies stay there).
     holding?.let { d ->
@@ -255,6 +269,38 @@ private fun PlayDeckTile(d: JsonObject, owned: Map<String, Int>, modifier: Modif
             }
             ProgressBar(n.share.toFloat(), Modifier.padding(top = 4.dp))
         }
+    }
+}
+
+/** Decks' default case: how many Play decks you have, how many are ready, the best record, and Build / Random (X / Y on the top). */
+@Composable
+internal fun DecksShelfCase(decks: List<JsonObject>, owned: Map<String, Int>, onBuild: () -> Unit, onRandom: () -> Unit) {
+    val ready = decks.count { Decks.tile(it, owned).missing == 0 }
+    ShowcaseCase("Play · Decks", if (decks.isEmpty()) "No decks yet" else "Your ${decks.size} deck${if (decks.size == 1) "" else "s"}", heroWeight = .36f,
+        buttons = listOf(CaseButton("X", "Build a deck", gold = true, run = onBuild), CaseButton("Y", "Random deck", run = onRandom)),
+        hero = { DeckShelfHero(decks) }) {
+        Row(horizontalArrangement = Arrangement.spacedBy(26.dp)) {
+            CaseFact("Decks", "${decks.size}")
+            CaseFact("Ready to play", "$ready")
+            if (decks.size > ready) CaseFact("Need stamps", "${decks.size - ready}")
+        }
+        Text(if (decks.isEmpty()) "Build one from your Trunk with meta ideas, or let the Deck Forge roll one for you." else "Move the ring onto a deck to see its box here.",
+            style = t(15f, color = Site.Muted))
+    }
+}
+
+/** Up to three deck covers fanned like boxes on a shelf, or the Build art when there are none. */
+@Composable
+private fun ShelfArt(url: String?, modifier: Modifier) { val p = heroPainter(url?.let(homeArt)); Box(modifier.background(Color(0xFF15171D))) { if (p != null) Image(p, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop) } }
+
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.DeckShelfHero(decks: List<JsonObject>) {
+    val covers = decks.take(3).map { Workspace.pickedCover(it.s("id").ifBlank { null }) ?: Decks.cover(it) }
+    if (covers.isEmpty()) { ShelfArt(DECKS_ART, Modifier.matchParentSize()); return }
+    covers.forEachIndexed { i, c ->
+        val n = covers.size; val off = (i - (n - 1) / 2f)
+        Box(Modifier.align(Alignment.Center).fillMaxWidth(.62f).aspectRatio(.72f).graphicsLayer { translationX = off * 46.dp.toPx(); rotationZ = off * 7f; translationY = kotlin.math.abs(off) * 10.dp.toPx() }
+            .clip(RoundedCornerShape(14.dp)).border(1.dp, Color(0x55D6AD64), RoundedCornerShape(14.dp))) { ShelfArt(c, Modifier.matchParentSize()) }
     }
 }
 
