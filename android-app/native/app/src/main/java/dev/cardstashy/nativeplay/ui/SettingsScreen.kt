@@ -616,6 +616,7 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Dual screen" to "The Shop’s bottom screen follows the ring onto cards: in a set’s page the card under the ring shows big with how many you have and what crafting it takes (the set’s pack case shows otherwise, so the top no longer repeats it), and a Secret Lair card shows its art, price and what buying it leaves you; X buys it.",
     "Dual screen" to "Collection has no card pop-up on two screens: the bottom screen is the card’s whole page and follows the ring on the top grid (Cards, Search and set pages). LB/RB step through its tabs, and Y puts the card big on the top screen with its foil following the gyro.",
     "Dual screen" to "Pack opening: the card on the top screen is now as tall as the screen, with its name and rarity beside it. With a controller the ring starts on the sealed pack, so A tears it open, and it can no longer press things behind the pack.",
     "Controllers" to "On two-screen handhelds LB and RB in a match now jump the ring between your hand, your board and your opponent’s board, landing on the card you were last on there. D-pad left and right still walk your hand.",
