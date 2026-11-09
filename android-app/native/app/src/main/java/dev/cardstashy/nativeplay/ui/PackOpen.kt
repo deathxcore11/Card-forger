@@ -41,6 +41,8 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -424,6 +426,14 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
         tabs = if (dealt) { d -> swipe(d) } else null, tabsLabel = "Cards",
         page = if (dealt && !allOpen) { d -> nextHidden(d) } else if (dealt) { d -> swipe(if (d < 0) -focus else n - 1 - focus) } else null,
         pageLabel = if (allOpen) "Ends" else "Face down") })
+    // The bottom screen of a handheld: the pack as a binder page, every card in its pocket (face down until turned), the one in
+    // focus ringed in gold; a tap on a pocket brings that card up top. Reveal all / the next pack sit under it.
+    BottomScreen {
+        androidx.compose.runtime.CompositionLocalProvider(LocalPackResult provides pack, LocalPackGold provides pack.look?.let { pack.game.gold }) {
+            PackBinderCase(pack, revealed, focus, dealt, allOpen, busy, onShow = { i -> if (dealt) { val d = i - focus; if (d != 0) { show(i); slide = if (d > 0) slide.coerceAtLeast(0) + 1 else slide.coerceAtMost(0) - 1 } } },
+                onRevealAll = ::revealAll, onNext = if (onNext != null) ::next else null)
+        }
+    }
     val cardFocus = remember { androidx.compose.ui.focus.FocusRequester() }
     val padOn by Pad.connected.collectAsState()
     LaunchedEffect(stage == PackStage.DEALT, pack, padOn) {
@@ -1321,5 +1331,42 @@ private fun TcgRarityPill(rarity: String, finish: String, rx: PackRx, game: Card
             if (shine != null) withStyle(androidx.compose.ui.text.SpanStyle(brush = shine)) { append(label) } else append(label)
         }
         Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = .03.em, color = ink))
+    }
+}
+
+
+/** The pack's binder page on a handheld's bottom screen: one pocket per card, face down until turned, the card in focus ringed. */
+@Composable
+internal fun PackBinderCase(pack: PackResult, revealed: List<Int>, focus: Int, dealt: Boolean, allOpen: Boolean, busy: Boolean,
+                           onShow: (Int) -> Unit, onRevealAll: () -> Unit, onNext: (() -> Unit)?) {
+    val n = pack.pulls.size
+    val buttons = when {
+        !dealt -> emptyList()
+        !allOpen -> listOf(CaseButton("X", "Reveal all", gold = true, run = onRevealAll))
+        onNext != null -> listOf(CaseButton("X", if (busy) "Opening\u2026" else "Open the next pack", gold = true, enabled = !busy, run = onNext))
+        else -> emptyList()
+    }
+    ShowcaseCase(if (!dealt) "Pack · Sealed" else "Pack · ${revealed.size} of $n turned", pack.name, buttons = buttons, scroll = false) {
+        if (!dealt) { Text("Tear it open on the top screen. Its cards land here, one pocket each.", style = TextStyle(fontFamily = Type.Sans, fontSize = 15.sp, lineHeight = 21.sp, color = Color(0xFFE4DFD3))); return@ShowcaseCase }
+        BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            // The layout that makes the cards biggest in the space there is (rows of cols pockets, each 63:88).
+            val gap = 8.dp
+            val (cols, w) = (1..max(1, n)).map { c -> val rows = (n + c - 1) / c
+                c to minOf((maxWidth - gap * (c - 1)) / c, ((maxHeight - gap * (rows - 1)) / rows) * (63f / 88f)) }.maxByOrNull { it.second.value } ?: (1 to maxWidth)
+            Column(verticalArrangement = Arrangement.spacedBy(gap)) {
+                pack.pulls.indices.chunked(cols).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                        row.forEach { i ->
+                            val on = i == focus
+                            val shape = RoundedCornerShape(6.dp)
+                            Box(Modifier.width(w).aspectRatio(63f / 88f).clip(shape).background(Color(0x22FFFFFF))
+                                .border(if (on) 2.dp else 1.dp, if (on) Color(0xFFF3D494) else Color(0x33D6AD64), shape).clickable { onShow(i) }) {
+                                if (i in revealed) PullFace(pack.pulls[i], Modifier.fillMaxSize().padding(2.dp)) else MagicBack(Modifier.fillMaxSize().padding(2.dp).alpha(.85f))
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

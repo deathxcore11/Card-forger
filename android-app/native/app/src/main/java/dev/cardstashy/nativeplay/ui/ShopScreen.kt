@@ -148,6 +148,8 @@ fun ShopRoute(onBack: () -> Unit, nav: @Composable () -> Unit, startTab: String 
     val needs = remember(s, owned) { HashMap<String, PreconNeed>() }
     fun needOf(e: Decks.PreconEntry): PreconNeed? = PreconStore.summaries[e.fileName]?.let { x -> needs.getOrPut(e.fileName) { preconNeed(x.rows, owned, s, e.fileName, e.type, e.releaseDate) } }
     val calm = open == null && opener == null && precon.open == null
+    val lens = rememberLens()
+    BottomScreen { ShopBottom(s, set ?: lens.key?.removePrefix("pack:"), busy.isNotEmpty(), onBuy = buy, onOpen = openPack, onSet = if (set == null) ({ c -> set = c }) else null, onPage = { page = it; set = null }) }
 
     BackHandler(enabled = set != null && calm) { set = null }
     BackHandler(enabled = set == null && page != "shop" && calm) { page = "shop" }
@@ -159,9 +161,9 @@ fun ShopRoute(onBack: () -> Unit, nav: @Composable () -> Unit, startTab: String 
         Box(Modifier.fillMaxSize().then(if (opener != null) Modifier.blur(16.dp) else Modifier)) {
         when {
             code != null -> SetLens(s, code, busy.isNotEmpty(), onBack = { set = null }, onBuy = { buy(code) }, onOpen = openPack, onCard = { open = it })
-            page == "packs" -> PacksPage(s, busy.isNotEmpty(), onBack = { page = "shop" }, onOpen = openPack)
-            page == "sets" -> EverySet(s, busy.isNotEmpty(), onBack = { page = "shop" }, onSet = { set = it }, onBuy = buy)
-            else -> Storefront(s, busy.isNotEmpty(), startTab, weekly, storePrecons, ::needOf, onBack = onBack, onPage = { page = it }, onSet = { set = it }, onBuy = buy, actions = actions,
+            page == "packs" -> PacksPage(s, busy.isNotEmpty(), onBack = { page = "shop" }, onOpen = openPack, lens = lens)
+            page == "sets" -> EverySet(s, busy.isNotEmpty(), onBack = { page = "shop" }, onSet = { set = it }, onBuy = buy, lens = lens)
+            else -> Storefront(s, busy.isNotEmpty(), startTab, weekly, storePrecons, ::needOf, onBack = onBack, onPage = { page = it }, onSet = { set = it }, onBuy = buy, actions = actions, lens = lens,
                 onSecretLair = { c -> act("sloffer", "${c.get("n").s() ?: "The card"} is yours, in its Secret Lair art.") {
                     Progress.secretLairCard(c.get("id").s() ?: "", (s.get("secretLairStore") as? JsonObject)?.get("week").s()) } },
                 onStamp = { id, name -> act("craft", "$name added to your Play collection.") { Progress.craft(id) } }, onCard = { open = it },
@@ -199,7 +201,7 @@ fun ShopRoute(onBack: () -> Unit, nav: @Composable () -> Unit, startTab: String 
 @Composable
 private fun Storefront(s: JsonObject, busy: Boolean, start: String, weekly: Set<String>, precons: List<Decks.PreconEntry>?, needOf: (Decks.PreconEntry) -> PreconNeed?,
                        onBack: () -> Unit, onPage: (String) -> Unit, onSet: (String) -> Unit, onBuy: (String) -> Unit, actions: PlayHomeActions,
-                       onSecretLair: (JsonObject) -> Unit, onStamp: (String, String) -> Unit, onCard: (CardPick) -> Unit, onPrecon: (Decks.PreconEntry) -> Unit) {
+                       onSecretLair: (JsonObject) -> Unit, onStamp: (String, String) -> Unit, onCard: (CardPick) -> Unit, onPrecon: (Decks.PreconEntry) -> Unit, lens: LensHost? = null) {
     val list = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val store = s.get("secretLairStore") as? JsonObject
@@ -216,14 +218,14 @@ private fun Storefront(s: JsonObject, busy: Boolean, start: String, weekly: Set<
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(22.dp)) {
         item(key = "head") {
             Box(Modifier.padding(top = 12.dp)) {
-                PlayHead("Shop", "Play", onBack) { dev.cardstashy.nativeplay.play.PlayMath.purse(s)?.let { p ->
+                PlayHead("Shop", "Play", onBack) { if (!DualScreen.active) dev.cardstashy.nativeplay.play.PlayMath.purse(s)?.let { p ->
                     PurseRow(p, { scope.launch { list.animateScrollToItem(rowOf("packs")) } }, { scope.launch { list.animateScrollToItem(rowOf("forge")) } }, { onPage("packs") },
                         level = dev.cardstashy.nativeplay.play.PlayMath.mastery(s, p.xp)) } }
             }
         }
         stickyHeader(key = "aisles") { AisleBar(aisles, at, onAisle = { k -> scope.launch { list.animateScrollToItem(rowOf(k)) } }) }
-        if (store != null && offers.isNotEmpty()) item(key = "sl") { SecretLairShowcase(s, store, busy, onSecretLair, onCard, onBrowse = { onSet("sld") }) }
-        item(key = "packs") { PacksAisle(s, busy, onBuy, onSet, onAll = { onPage("sets") }) }
+        if (store != null && offers.isNotEmpty()) item(key = "sl") { Box(lens?.let { Modifier.dualLens(it, null) } ?: Modifier) { SecretLairShowcase(s, store, busy, onSecretLair, onCard, onBrowse = { onSet("sld") }) } }
+        item(key = "packs") { PacksAisle(s, busy, onBuy, onSet, onAll = { onPage("sets") }, lens) }
         if (weekly.isNotEmpty()) item(key = "precons") { PreconAisle(precons, remember(s) { weeklyPreconFormats(s) }, remember(s) { preconPrerelease(s) }, needOf, onPrecon) }
         item(key = "forge") { Column(verticalArrangement = Arrangement.spacedBy(14.dp)) { Forge(s, actions); SealPress(s, busy, onStamp, onCard) } }
     }
@@ -375,7 +377,8 @@ private fun SlCard(c: JsonObject, was: Int, price: Int, owned: Boolean, canPay: 
  * shelf with its price, then the way into every set, every year.
  */
 @Composable
-private fun PacksAisle(s: JsonObject, busy: Boolean, onBuy: (String) -> Unit, onSet: (String) -> Unit, onAll: () -> Unit) {
+private fun PacksAisle(s: JsonObject, busy: Boolean, onBuy: (String) -> Unit, onSet: (String) -> Unit, onAll: () -> Unit, lens: LensHost? = null) {
+    fun Modifier.lensOn(code: String?) = lens?.let { dualLens(it, code?.let { c -> "pack:$c" }) } ?: this
     val price = price(s); val canBuy = coins(s) >= price && !busy
     val reward = s.get("rewardSet") as? JsonObject
     val rows = remember(s) { Trunk.allSets(s).associateBy { it.code } }
@@ -383,16 +386,16 @@ private fun PacksAisle(s: JsonObject, busy: Boolean, onBuy: (String) -> Unit, on
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         AisleHead("Packs", "${"%,d".format(price)} coins a pack")
         reward?.let { r -> val code = r.get("code").s() ?: ""
-            FeaturedPack(code, r.get("name").s() ?: rows[code]?.name ?: code.uppercase(), r.get("released").s() ?: rows[code]?.released ?: "", rows[code], price, canBuy, onBuy = { onBuy(code) }, onOpen = { onSet(code) }) }
+            Box(Modifier.lensOn(code)) { FeaturedPack(code, r.get("name").s() ?: rows[code]?.name ?: code.uppercase(), r.get("released").s() ?: rows[code]?.released ?: "", rows[code], price, canBuy, onBuy = { onBuy(code) }, onOpen = { onSet(code) }) } }
         if (shelf.isNotEmpty()) {
             Text("On the shelf this week", style = Site.Eyebrow)
             LazyRow(Modifier.bleed(16.dp), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 items(shelf, key = { it.get("code").s() ?: "" }) { x -> val code = x.get("code").s() ?: ""
-                    ShelfPack(code, x.get("name").s() ?: code.uppercase(), rows[code], price, canBuy, onBuy = { onBuy(code) }, onOpen = { onSet(code) }) }
+                    Box(Modifier.lensOn(code)) { ShelfPack(code, x.get("name").s() ?: code.uppercase(), rows[code], price, canBuy, onBuy = { onBuy(code) }, onOpen = { onSet(code) }) } }
             }
         }
         val shape = RoundedCornerShape(18.dp)
-        Row(Modifier.fillMaxWidth().clip(shape).background(if (AppSettings.theme == "light") Color(0x94FFFFFF) else Color(0x0DFFFFFF))
+        Row(Modifier.fillMaxWidth().lensOn(null).clip(shape).background(if (AppSettings.theme == "light") Color(0x94FFFFFF) else Color(0x0DFFFFFF))
             .border(1.dp, if (AppSettings.theme == "light") Site.GlassLine else Color(0x40D6AD64), shape).clickable(onClick = onAll).padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Icon(SiteIcons.Pack, 22.dp)
@@ -507,7 +510,7 @@ private fun PrereleaseNote(pre: PreconPrerelease) {
 
 /** Every set, every year (the Trunk's old Sets list): search, one row of shelf filters, then each year's sets with progress and Buy. */
 @Composable
-private fun EverySet(s: JsonObject, busy: Boolean, onBack: () -> Unit, onSet: (String) -> Unit, onBuy: (String) -> Unit) {
+private fun EverySet(s: JsonObject, busy: Boolean, onBack: () -> Unit, onSet: (String) -> Unit, onBuy: (String) -> Unit, lens: LensHost? = null) {
     var query by rememberSaveable { mutableStateOf("") }
     var filter by rememberSaveable { mutableStateOf("") }
     val packs = s.objs("packs")
@@ -529,7 +532,8 @@ private fun EverySet(s: JsonObject, busy: Boolean, onBack: () -> Unit, onSet: (S
         rows.groupBy { it.released.take(4).ifBlank { "Other" } }.forEach { (year, list) ->
             item(key = "y$year") { YearPlate(year) }
             items(list, key = { it.code }) { r ->
-                ShopSetRow(r, waiting[r.code] ?: 0, price(s), coins(s) >= price(s) && !busy, sold = r.code in sold, onClick = { onSet(r.code) }, onBuy = { onBuy(r.code) })
+                Box(lens?.let { Modifier.dualLens(it, "pack:${r.code}") } ?: Modifier) {
+                    ShopSetRow(r, waiting[r.code] ?: 0, price(s), coins(s) >= price(s) && !busy, sold = r.code in sold, onClick = { onSet(r.code) }, onBuy = { onBuy(r.code) }) }
             }
         }
     }
@@ -545,7 +549,7 @@ private fun YearPlate(year: String) = Row(Modifier.fillMaxWidth().padding(top = 
 
 /** Your packs (packsMarkup): one tile per set, Collector packs on their own tile in front of the set's ordinary packs. */
 @Composable
-private fun PacksPage(s: JsonObject, busy: Boolean, onBack: () -> Unit, onOpen: (String) -> Unit) {
+private fun PacksPage(s: JsonObject, busy: Boolean, onBack: () -> Unit, onOpen: (String) -> Unit, lens: LensHost? = null) {
     val packs = s.objs("packs")
     val groups = packs.sortedByDescending { collector(it) }.groupBy { (if (collector(it)) "*" else "") + (it.get("set").s() ?: "") }.toList()
     LazyVerticalGrid(GridCells.Adaptive(150.dp), Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 120.dp),
@@ -561,7 +565,7 @@ private fun PacksPage(s: JsonObject, busy: Boolean, onBack: () -> Unit, onOpen: 
         }
         items(groups, key = { it.first }) { (key, list) ->
             val code = list.first().get("set").s() ?: ""
-            Box(Modifier.padActs(PadActs(a = "Open")).clickable(enabled = !busy) { onOpen(list.first().get("id").s() ?: "") }) {
+            Box((lens?.let { Modifier.dualLens(it, "pack:$code") } ?: Modifier).padActs(PadActs(a = "Open")).clickable(enabled = !busy) { onOpen(list.first().get("id").s() ?: "") }) {
                 // Collector packs (every card holo): the band says Collector booster and a rainbow sheen runs across (boosterMarkup collector).
                 Booster(code, null, collector = key.startsWith("*"))
                 Box(Modifier.align(Alignment.TopEnd).offset(6.dp, (-6).dp).size(30.dp).clip(CircleShape).background(Site.Gold), contentAlignment = Alignment.Center) {
@@ -698,6 +702,8 @@ private fun SetLens(s: JsonObject, code: String, busy: Boolean, onBack: () -> Un
     LaunchedEffect(code) { dev.cardstashy.nativeplay.art.ThumbStore.ensureSet(code) }
     val waiting = s.objs("packs").filter { it.get("set").s() == code }
     val sold = s.objs("shop").any { it.get("code").s() == code } || (s.get("rewardSet") as? JsonObject)?.get("code").s() == code
+    // A controller: X buys this set's pack from anywhere on the page.
+    PadScreen(remember(sold, busy, code) { PadActs(x = if (sold && !busy) PadAct("Buy a pack") { onBuy() } else null) })
     var query by rememberSaveable(code) { mutableStateOf("") }
     var filter by rememberSaveable(code) { mutableStateOf("all") }
     var rarity by rememberSaveable(code) { mutableStateOf("") }
@@ -767,5 +773,62 @@ private fun SetLens(s: JsonObject, code: String, busy: Boolean, onBack: () -> Un
                 }
             }
         }
+    }
+}
+
+// ---------------------------------------------------------------- the bottom screen (dual-screen handhelds)
+
+/**
+ * The Shop's showcase case on a handheld's bottom screen (plan "The Showcase", wave 2). It follows the ring: on a pack or a
+ * set it shows your progress in that set, the price, what buying it leaves you, packs of it already waiting, and Buy (X) /
+ * Open (A); otherwise the store's own case. The purse rides in the plaque (the top screen's head drops it).
+ */
+@Composable
+internal fun ShopBottom(s: JsonObject, code: String?, busy: Boolean, onBuy: (String) -> Unit, onOpen: (String) -> Unit, onSet: ((String) -> Unit)?, onPage: (String) -> Unit) {
+    val purse = dev.cardstashy.nativeplay.play.PlayMath.purse(s)
+    val wallet: (@Composable () -> Unit)? = purse?.let { p -> { PurseRow(p, { }, { }, { onPage("packs") }) } }
+    ShowcaseLens(code) { c -> if (c != null) ShopPackCase(s, c, busy, wallet, onBuy, onOpen, onSet) else ShopStoreCase(s, wallet, onPage) }
+}
+
+@Composable
+private fun ShopPackCase(s: JsonObject, code: String, busy: Boolean, wallet: (@Composable () -> Unit)?, onBuy: (String) -> Unit, onOpen: (String) -> Unit, onSet: ((String) -> Unit)?) {
+    val row = remember(s, code) { Trunk.allSets(s).firstOrNull { it.code == code } }
+    val name = row?.name?.takeIf { it != code.uppercase() } ?: SetFacts.set(code)?.name ?: code.uppercase()
+    val waiting = s.objs("packs").filter { it.get("set").s() == code }
+    val sold = s.objs("shop").any { it.get("code").s() == code } || (s.get("rewardSet") as? JsonObject)?.get("code").s() == code
+    val price = price(s); val coins = coins(s)
+    val buttons = buildList {
+        if (waiting.isNotEmpty()) add(CaseButton("A", if (waiting.size == 1) "Open your pack" else "Open a pack", gold = true, enabled = !busy, weight = 1.3f) { onOpen(waiting.first().get("id").s() ?: "") })
+        if (sold) add(CaseButton("X", "Buy · %,d".format(price), gold = waiting.isEmpty(), enabled = !busy && coins >= price) { onBuy(code) })
+        if (onSet != null) add(CaseButton(if (waiting.isEmpty()) "A" else null, "The set") { onSet(code) })
+    }
+    ShowcaseCase(listOfNotNull("Pack", code.uppercase(), row?.released?.take(4)?.ifBlank { null }).joinToString(" · "), name, trailing = wallet, heroWeight = .3f, buttons = buttons,
+        hero = { if (sold || waiting.isNotEmpty()) Booster(code, name, Modifier.align(Alignment.Center).padding(14.dp).fillMaxWidth()) }) {
+        val total = row?.total
+        if (total != null && total > 0) {
+            val pct = row.owned.toFloat() / total
+            CaseFact("Your collection", "${"%,d".format(row.owned)} of ${"%,d".format(total)} cards · ${(pct * 100).toInt()}%")
+            ProgressBar(pct)
+        } else if (row != null && row.owned > 0) CaseFact("Your collection", "${"%,d".format(row.owned)} cards owned")
+        if (sold) Row(horizontalArrangement = Arrangement.spacedBy(26.dp)) {
+            CaseFact("Price", "%,d coins".format(price))
+            CaseFact(if (coins >= price) "After buying" else "You need", if (coins >= price) "%,d left".format(coins - price) else "%,d more".format(price - coins))
+        } else CaseFact("At the Merchant", "Not on the shelf this week")
+        if (waiting.isNotEmpty()) CaseFact("Waiting to open", if (waiting.size == 1) "1 pack of this set" else "${waiting.size} packs of this set")
+    }
+}
+
+@Composable
+private fun ShopStoreCase(s: JsonObject, wallet: (@Composable () -> Unit)?, onPage: (String) -> Unit) {
+    val reward = s.get("rewardSet") as? JsonObject
+    val store = s.get("secretLairStore") as? JsonObject
+    val waiting = s.objs("packs").size
+    ShowcaseCase("Shop · Coins only", "The Merchant", trailing = wallet, heroWeight = .3f,
+        buttons = listOf(CaseButton(null, if (waiting > 0) "Your packs · $waiting" else "Your packs", gold = waiting > 0) { onPage("packs") }, CaseButton(null, "Every set") { onPage("sets") }),
+        hero = reward?.get("code").s()?.let { c -> { Booster(c, reward?.get("name").s(), Modifier.align(Alignment.Center).padding(14.dp).fillMaxWidth()) } }) {
+        reward?.get("name").s()?.let { CaseFact("Featured this week", it) }
+        CaseFact("A pack", "%,d coins".format(price(s)))
+        if (store != null && store.objs("offers").isNotEmpty()) CaseFact("Secret Lair week", "Ends in ${leftOf(store.get("ends").s())}")
+        CaseFact("Waiting to open", if (waiting == 0) "Every pack is open" else if (waiting == 1) "1 pack" else "$waiting packs")
     }
 }

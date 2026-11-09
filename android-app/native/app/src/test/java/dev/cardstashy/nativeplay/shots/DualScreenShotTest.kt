@@ -80,6 +80,27 @@ class DualScreenShotTest {
         }
     }
 
+    /** Wave 2: the Shop's cases (the store, a pack in focus) and the pack's binder page while it opens. */
+    @Test fun shopAndPackBottoms() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        val home = File(System.getProperty("shotsDir")!!).parentFile.resolve("app/build/shot-art/home")
+        val st = com.google.gson.JsonParser.parseString((File("/mnt/project-files/design/native/parity/fixtures/progress-state.json").takeIf { it.exists() } ?: home.resolve("progress-state.json")).readText()).asJsonObject
+        val out = com.google.gson.JsonParser.parseString(javaClass.classLoader!!.getResource("pack-open-fra.json")!!.readText()).asJsonObject
+        val pack = dev.cardstashy.nativeplay.ui.packResult(out, "Reality Fracture")
+        kotlinx.coroutines.runBlocking { dev.cardstashy.nativeplay.ui.AssetImages.load(RuntimeEnvironment.getApplication(), "play/mtg-back.webp", maxWidth = 400) }
+        val packArt = File(System.getProperty("shotsDir")!!).parentFile.resolve("app/build/shot-art/pack")
+        dev.cardstashy.nativeplay.ui.homeArt = { u -> packArt.resolve(java.security.MessageDigest.getInstance("SHA-1").digest(u.toByteArray()).joinToString("") { "%02x".format(it) } + ".jpg")
+            .takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } ?: u }
+        val bg = Brush.verticalGradient(listOf(Color(0xFF15171D), Color(0xFF0B0C10)))
+        for ((size, q) in listOf("thor-1240x1080" to "w620dp-h540dp-xhdpi", "duo-1280x960" to "w640dp-h480dp-xhdpi")) {
+            RuntimeEnvironment.setQualifiers(q)
+            captureRoboImage(shot("bottom-shop-$size")) { Box(Modifier.fillMaxSize().background(bg)) { dev.cardstashy.nativeplay.ui.ShopBottom(st, null, false, {}, {}, {}, {}) } }
+            captureRoboImage(shot("bottom-shop-pack-$size")) { Box(Modifier.fillMaxSize().background(bg)) { dev.cardstashy.nativeplay.ui.ShopBottom(st, "dsk", false, {}, {}, {}, {}) } }
+            captureRoboImage(shot("bottom-pack-$size")) { Box(Modifier.fillMaxSize().background(bg)) {
+                dev.cardstashy.nativeplay.ui.PackBinderCase(pack, listOf(0, 1, 2, 3, 4, 5), 5, dealt = true, allOpen = false, busy = false, onShow = {}, onRevealAll = {}, onNext = null) } }
+        }
+    }
+
     @Test fun topScreen() {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         CardImageTest.art = { name, crop -> art.resolve(key(name, crop) + ".jpg").takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } }

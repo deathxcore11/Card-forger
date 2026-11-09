@@ -79,7 +79,7 @@ fun <K> ShowcaseLens(key: K, content: @Composable (K) -> Unit) = Crossfade(key, 
 
 @Composable
 fun ShowcaseCase(eyebrow: String, title: String, trailing: (@Composable () -> Unit)? = null, buttons: List<CaseButton> = emptyList(),
-                 heroWeight: Float = .42f, hero: (@Composable BoxScope.() -> Unit)? = null, facts: @Composable ColumnScope.() -> Unit) {
+                 heroWeight: Float = .42f, scroll: Boolean = true, hero: (@Composable BoxScope.() -> Unit)? = null, facts: @Composable ColumnScope.() -> Unit) {
     val frame = RoundedCornerShape(24.dp)
     Box(Modifier.fillMaxSize().padding(10.dp).clip(frame)
         .background(Brush.verticalGradient(listOf(Color(0xE61A1D25), Color(0xF00C0E13))))
@@ -91,7 +91,7 @@ fun ShowcaseCase(eyebrow: String, title: String, trailing: (@Composable () -> Un
                     val shape = RoundedCornerShape(16.dp)
                     Box(Modifier.weight(heroWeight).fillMaxHeight().clip(shape).background(Color(0xFF101218)).border(1.dp, Gold.copy(alpha = .3f), shape), content = hero)
                 }
-                Column(Modifier.weight(if (hero != null) 1f - heroWeight else 1f).fillMaxHeight().verticalScroll(rememberScrollState()),
+                Column(Modifier.weight(if (hero != null) 1f - heroWeight else 1f).fillMaxHeight().let { if (scroll) it.verticalScroll(rememberScrollState()) else it },
                     verticalArrangement = Arrangement.spacedBy(10.dp), content = facts)
             }
             if (buttons.isNotEmpty()) Row(Modifier.fillMaxWidth().height(54.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
