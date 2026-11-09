@@ -161,6 +161,22 @@ class DualScreenShotTest {
         }
     }
 
+    @Test fun deedBottoms() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        dev.cardstashy.nativeplay.art.CardArt.init(RuntimeEnvironment.getApplication())
+        val d = com.google.gson.JsonParser.parseString(javaClass.classLoader!!.getResource("deeds-payload.json")!!.readText()).asJsonObject
+        val rows = d.getAsJsonArray("achievements").mapNotNull { it as? com.google.gson.JsonObject }
+        val tot = d.getAsJsonObject("totals")
+        val state = com.google.gson.JsonParser.parseString("""{"wallet":{"coins":12450,"xp":2300,"seal_c":3,"seal_u":15,"seal_r":7,"seal_m":2},"packs":[{"id":"a","set":"fdn"}],"config":{},"counters":{}}""").asJsonObject
+        val deed = rows.firstOrNull { it.getAsJsonArray("steps").size() > 2 && !it.get("hidden").asBoolean } ?: rows.first()
+        val bg = Brush.verticalGradient(listOf(Color(0xFF15171D), Color(0xFF0B0C10)))
+        for ((size, q) in listOf("thor-1240x1080" to "w620dp-h540dp-xhdpi", "duo-1280x960" to "w640dp-h480dp-xhdpi")) {
+            RuntimeEnvironment.setQualifiers(q)
+            captureRoboImage(shot("bottom-deeds-$size")) { Box(Modifier.fillMaxSize().background(bg)) { dev.cardstashy.nativeplay.ui.HallCase(state, rows, tot.get("earned").asInt, tot.get("total").asInt, tot.get("ready")?.asInt ?: 0) } }
+            captureRoboImage(shot("bottom-deed-$size")) { Box(Modifier.fillMaxSize().background(bg)) { dev.cardstashy.nativeplay.ui.DeedCase(deed, false) {} } }
+        }
+    }
+
     @Test fun topScreen() {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         CardImageTest.art = { name, crop -> art.resolve(key(name, crop) + ".jpg").takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } }

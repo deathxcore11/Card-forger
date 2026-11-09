@@ -167,11 +167,20 @@ fun AchievementsRoute(onBack: () -> Unit, startTab: String? = null, nav: @Compos
         val earned = totals?.get("earned").int(); val total = totals?.get("total").int(); val ready = totals?.get("ready").int()
         val quests = d.get("quests") as? JsonObject
         val shown = rows.filter { it.get("tab").str() == tab }
+        // Bottom screen (wave 2): the deed under the ring, every step of it; otherwise the Hall of Deeds with the purse and the nearest deeds.
+        val lens = rememberLens()
+        BottomScreen {
+            val r = lens.key?.removePrefix("deed:")?.let { id -> rows.firstOrNull { it.get("id").str() == id } }
+            ShowcaseLens(r) { r ->
+                if (r != null) DeedCase(r, busy) { step -> claim("ach", r.get("id").str() ?: "", step, (r.arr("steps").getOrNull(step)?.get("reward") as? JsonObject)) }
+                else HallCase(state, rows, earned, total, ready)
+            }
+        }
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = top + 12.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             item("head") {
-                PlayHead("Achievements", "Play", onBack) { PlayMath.purse(state)?.let { PurseRow(it, level = PlayMath.mastery(state, it.xp)) } }
+                PlayHead("Achievements", "Play", onBack) { if (!DualScreen.active) PlayMath.purse(state)?.let { PurseRow(it, level = PlayMath.mastery(state, it.xp)) } }
             }
-            item("sum") {
+            if (!DualScreen.active) item("sum") {
                 Section("Hall of Deeds") {
                     Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("%,d".format(earned), style = cinzel.copy(fontSize = 28.sp)); Text("/ %,d earned".format(total), style = t(16f, FontWeight.SemiBold, if (light) Site.Muted else Color(0xFFB9BFC9)), modifier = Modifier.padding(bottom = 3.dp))
@@ -221,7 +230,7 @@ fun AchievementsRoute(onBack: () -> Unit, startTab: String? = null, nav: @Compos
                     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         shown.chunked(cols).forEach { line ->
                             Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                                line.forEach { r -> DeedCard(r, busy, Modifier.weight(1f)) { step -> claim("ach", r.get("id").str() ?: "", step, (r.arr("steps").getOrNull(step)?.get("reward") as? JsonObject)) } }
+                                line.forEach { r -> DeedCard(r, busy, Modifier.weight(1f).dualLens(lens, "deed:" + (r.get("id").str() ?: ""))) { step -> claim("ach", r.get("id").str() ?: "", step, (r.arr("steps").getOrNull(step)?.get("reward") as? JsonObject)) } }
                                 repeat(cols - line.size) { Spacer(Modifier.weight(1f)) }
                             }
                         }
@@ -288,7 +297,9 @@ private fun DeedCard(r: JsonObject, busy: Boolean, modifier: Modifier, onClaim: 
     val readyStep = if (honour) -1 else steps.indexOfFirst { it.get("done").bool() && !it.get("claimed").bool() }
     val shape = RoundedCornerShape(18.dp)
     val edge = when { readyStep >= 0 -> Gold; complete -> Color(0x99D6AD64); else -> Color(0x29D6AD64) }
-    Column(modifier.clip(shape).background(if (light) Site.Surface else Color(0xFF121318)).border(1.dp, edge, shape)) {
+    // The whole card takes the ring (the d-pad walks every deed, not only the claimable ones); A claims a ready step.
+    Column(modifier.clip(shape).background(if (light) Site.Surface else Color(0xFF121318)).border(1.dp, edge, shape)
+        .padActs(PadActs(a = if (readyStep >= 0 && !busy) "Claim" else null)).clickable { if (readyStep >= 0 && !busy) onClaim(readyStep) }) {
         if (hidden && earnedSteps == 0) {
             Box(Modifier.fillMaxWidth().aspectRatio(16f / 7f).background(Brush.radialGradient(listOf(Color(0xFF3A2A14), Color(0xFF120D08)))))
             Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -325,6 +336,66 @@ private fun DeedCard(r: JsonObject, busy: Boolean, modifier: Modifier, onClaim: 
                 else RewardIcons(step?.get("reward") as? JsonObject)
                 if (readyStep >= 0) GoldCta("Claim", enabled = !busy) { onClaim(readyStep) }
                 else if (complete && !honour) Text("EARNED", style = t(12f, FontWeight.Bold, Gold).copy(letterSpacing = .7.sp))
+            }
+        }
+    }
+}
+
+private fun tierWord(t: String?) = when (t) { "bronze" -> "Bronze"; "silver" -> "Silver"; "gold" -> "Gold"; "mythic" -> "Mythic"; else -> null }
+
+/** A deed in the case: its art and lore, then every step (what it needs, what it gives, done or claimed), and A Claim when one is ready. */
+@Composable
+internal fun DeedCase(r: JsonObject, busy: Boolean, onClaim: (Int) -> Unit) {
+    val steps = r.arr("steps")
+    val hidden = r.get("hidden").bool() && r.get("earned").int() == 0
+    val honour = r.get("honour").bool()
+    val readyStep = if (honour) -1 else steps.indexOfFirst { it.get("done").bool() && !it.get("claimed").bool() }
+    val value = r.get("value").int(); val hours = r.get("unit").str() == "h"
+    fun amount(n: Int) = if (hours) "${n / 60} h" else "%,d".format(n)
+    val art = (r.get("art") as? JsonObject)?.get("url").str()
+    ShowcaseCase(if (r.get("key").bool()) "Deed · Key" else "Deed", if (hidden) "Hidden" else r.get("title").str() ?: "", heroWeight = .36f,
+        buttons = if (readyStep >= 0) listOf(CaseButton("A", "Claim", gold = true, enabled = !busy) { onClaim(readyStep) }) else emptyList(),
+        hero = { if (art != null && !hidden) coil3.compose.AsyncImage(art, null, imageLoader = dev.cardstashy.nativeplay.art.CardArt.loader, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+            else Box(Modifier.matchParentSize().background(Brush.radialGradient(listOf(Color(0xFF3A2A14), Color(0xFF120D08))))) }) {
+        Text((if (hidden) r.get("riddle").str() else r.get("lore").str()) ?: "", style = t(15f, color = Color(0xFFEDE7DA), line = 21f))
+        if (!hidden) {
+            CaseLabel(if (honour) "Honour only" else "Steps")
+            steps.forEachIndexed { i, st ->
+                val need = st.get("need").int(); val done = st.get("done").bool(); val claimed = st.get("claimed").bool()
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text((tierWord(st.get("tier").str()) ?: "Step ${i + 1}") + " · " + amount(need), style = t(15f, FontWeight.SemiBold, if (done) Gold else Color(0xFFE4DFD3)), modifier = Modifier.weight(1f))
+                        Text(when { claimed -> "Claimed"; done && !honour -> "Ready"; done -> "Done"; else -> "${amount(minOf(value, need))} / ${amount(need)}" },
+                            style = t(13f, FontWeight.Bold, if (done && !claimed) Gold else Site.Muted), maxLines = 1)
+                    }
+                    if (!honour) Text(rewardWords(st.get("reward") as? JsonObject), style = t(13f, color = Site.Muted), maxLines = 2)
+                }
+            }
+        }
+    }
+}
+
+/** The Achievements default case: the Hall of Deeds count, the purse, and the three deeds you are closest to. */
+@Composable
+internal fun HallCase(state: JsonObject?, rows: List<JsonObject>, earned: Int, total: Int, ready: Int) {
+    val near = rows.filter { !it.get("complete").bool() && !(it.get("hidden").bool() && it.get("earned").int() == 0) }.mapNotNull { r ->
+        val st = r.arr("steps").firstOrNull { !it.get("done").bool() } ?: return@mapNotNull null
+        val need = st.get("need").int().coerceAtLeast(1); Triple(r, st, r.get("value").int().toFloat() / need) }.sortedByDescending { it.third }.take(3)
+    ShowcaseCase("Play · Hall of Deeds", "%,d of %,d earned".format(earned, total),
+        trailing = { state?.let { s -> PlayMath.purse(s)?.let { PurseRow(it, level = PlayMath.mastery(s, it.xp)) } } }, buttons = emptyList()) {
+        Bar(if (total > 0) earned.toFloat() / total else 0f)
+        Text(if (ready > 0) "$ready ready to claim. Look for the gold edge." else "Every count comes from real matches, log-ins, packs, the Merchant and your Trunk. Practice deeds are for honour only.",
+            style = t(15f, color = Site.Muted))
+        if (near.isNotEmpty()) {
+            CaseLabel("Closest to earning")
+            near.forEach { (r, st, f) ->
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(r.get("title").str() ?: "", style = t(15f, FontWeight.SemiBold, Color(0xFFEDE7DA)), maxLines = 1, modifier = Modifier.weight(1f))
+                        Text("${(f * 100).toInt().coerceAtMost(99)}%", style = t(14f, FontWeight.Bold, Gold))
+                    }
+                    Bar(f.coerceIn(0f, 1f), thin = true)
+                }
             }
         }
     }
