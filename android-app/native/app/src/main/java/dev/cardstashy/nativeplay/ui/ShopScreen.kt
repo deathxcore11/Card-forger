@@ -861,16 +861,12 @@ private fun SlOfferCase(s: JsonObject, c: JsonObject, busy: Boolean, onBuy: () -
             CaseFact(if (coins >= price) "After buying" else "You need", if (coins >= price) "%,d left".format(coins - price) else "%,d more".format(price - coins))
         }
         CaseFact("In your Trunk", if (have) "You have this card in another art" else "Not yet")
-        CaseFact("Coins only", "Secret Lair art is never crafted with seals.")
     }
 }
 
-/** A card of the set under the ring, on the bottom screen: the card, how many you have, and what a craft with seals takes. */
+/** A card of the set under the ring, on the bottom screen: the card, how many you have, and its rarity (coins only here: crafting lives on its own page). */
 @Composable
 private fun ShopCardCase(s: JsonObject, c: LensCard, have: Int, wallet: (@Composable () -> Unit)?, onOpen: () -> Unit) {
-    val seal = mapOf("common" to "c", "uncommon" to "u", "rare" to "r", "mythic" to "m", "special" to "r", "bonus" to "m")[c.rarity]
-    val sealName = mapOf("c" to "common", "u" to "uncommon", "r" to "rare", "m" to "mythic")[seal]
-    val seals = seal?.let { (s.get("wallet") as? JsonObject)?.get("seal_$it").i() } ?: 0
     ShowcaseCase(listOfNotNull("#${c.number}", c.rarity.replaceFirstChar { it.uppercase() }.ifBlank { null }).joinToString(" · "), c.name, trailing = wallet, heroWeight = .42f,
         buttons = listOf(CaseButton("A", "Open card", gold = true, run = onOpen)),
         hero = {
@@ -879,7 +875,8 @@ private fun ShopCardCase(s: JsonObject, c: LensCard, have: Int, wallet: (@Compos
         }) {
         CaseFact("In your Trunk", if (have > 0) "$have of 4" else "Not yet")
         ProgressBar(have / 4f)
-        if (have < 4 && sealName != null) CaseFact("Craft with seals", "1 $sealName seal a copy · you have $seals")
+        // The Shop is coins only (Randall 5 Nov): no seal crafting here; the card's own page (A) has it.
+
     }
 }
 
