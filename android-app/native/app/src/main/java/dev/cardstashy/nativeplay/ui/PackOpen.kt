@@ -521,11 +521,14 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
         // pack-preview.js inspect(): a revealed card opens the Play card view over the pack (onDetails); closing it brings the pack back.
         inspecting?.let { p ->
             val playState by dev.cardstashy.nativeplay.play.Progress.state.collectAsState()
-            CardSheet(CardPick(p.name, "", p.id.ifBlank { null }, if (p.foil) "foil" else "nonfoil"), playState,
+            // Two screens: the card's page opens on the bottom screen and the big card stays on top (Randall 9 Nov: the page
+            // covered the stage). B still closes it.
+            val sheet = @Composable { CardSheet(CardPick(p.name, "", p.id.ifBlank { null }, if (p.foil) "foil" else "nonfoil"), playState,
                 CardSheetActions(toast = { m -> android.widget.Toast.makeText(context, m, android.widget.Toast.LENGTH_SHORT).show() },
                     // Randall 7 Nov: the set row and "Its pack at the Merchant" did nothing from a pack (the Shop's set page was under the pack).
                     set = { c -> inspecting = null; onClose(); (onSet ?: shopSet)?.invoke(c) }, merchant = { c, _ -> inspecting = null; onClose(); (onSet ?: shopSet)?.invoke(c) }),
-                onClose = { inspecting = null })
+                onClose = { inspecting = null }) }
+            if (DualScreen.active) BottomScreen { sheet() } else sheet()
         }
     }
     }
@@ -1381,6 +1384,12 @@ private fun PackSpread(pack: PackResult, revealed: List<Int>, focus: Int, onShow
     val stepPx = with(density) { step.toPx() }.coerceAtLeast(1f)
     var drag by remember { mutableFloatStateOf(0f) }
     val at by androidx.compose.runtime.rememberUpdatedState(focus)
+    // The cards drop in from the top screen one after another, as if they fell through the hinge into the spread.
+    val gapMs = 70; val fallMs = 460
+    val drop = remember(pack) { androidx.compose.animation.core.Animatable(if (Motion.still) 1f else 0f) }
+    LaunchedEffect(pack) { if (drop.value < 1f) drop.animateTo(1f, tween((n - 1) * gapMs + fallMs, easing = LinearEasing)) }
+    val dropT = drop.value * ((n - 1) * gapMs + fallMs)
+    val fallPx = with(density) { (maxHeight + 40.dp).toPx() }
     Box(Modifier.fillMaxSize().pointerInput(n, stepPx) {
         detectHorizontalDragGestures(onDragEnd = { drag = 0f }, onDragCancel = { drag = 0f }) { ch, dx ->
             ch.consume(); drag += dx
@@ -1391,10 +1400,13 @@ private fun PackSpread(pack: PackResult, revealed: List<Int>, focus: Int, onShow
         pack.pulls.forEachIndexed { i, p ->
             val on = i == focus
             val up by androidx.compose.animation.core.animateFloatAsState(if (on) 1f else 0f, label = "lift")
+            val f = ((dropT - i * gapMs) / fallMs).coerceIn(0f, 1f)
+            val fall = 1f - androidx.compose.animation.core.FastOutSlowInEasing.transform(f)
             val shape = RoundedCornerShape(7.dp)
             Box(Modifier.offset(x = x0 + step * i, y = y0 + lift * (1f - up)).width(w).aspectRatio(63f / 88f)
                 .zIndex(if (on) n + 1f else if (i < focus) i.toFloat() else (n - i).toFloat())
-                .graphicsLayer { scaleX = 1f + .06f * up; scaleY = 1f + .06f * up; shadowElevation = 10.dp.toPx() * up; this.shape = shape; clip = true }
+                .graphicsLayer { scaleX = 1f + .06f * up; scaleY = 1f + .06f * up; shadowElevation = 10.dp.toPx() * up; this.shape = shape; clip = true
+                    translationY = -fall * fallPx; rotationZ = fall * (if (i % 2 == 0) -8f else 8f); alpha = if (f <= 0f) 0f else 1f }
                 .border(if (on) 2.dp else 1.dp, if (on) Color(0xFFF3D494) else Color(0x40D6AD64), shape)
                 .clickable { onShow(i) }
                 .semantics { contentDescription = if (i in revealed) "${p.name}, turned" else "Card ${i + 1}, face down" }) {

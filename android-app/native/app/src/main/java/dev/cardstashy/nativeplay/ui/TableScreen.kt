@@ -198,7 +198,8 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
         (afk ?: note)?.let { Text(it, style = Type.Label.copy(color = Color(0xFFFFB4A8), fontSize = 14.sp), modifier = Modifier.align(Alignment.TopCenter).padding(top = 96.dp)
             .clip(RoundedCornerShape(999.dp)).background(Color(0xD90C0C0E)).border(1.dp, Palette.Red, RoundedCornerShape(999.dp)).padding(horizontal = 16.dp, vertical = 8.dp)) }
       }
-        inspect?.let { c -> CardInspect(c, shown?.viewer) { inspect = null } }
+        // Two screens: a card you look at opens on the bottom screen, so the table stays in full view on top (B closes it).
+        inspect?.let { c -> if (DualScreen.active) BottomScreen { CardInspect(c, shown?.viewer) { inspect = null } } else CardInspect(c, shown?.viewer) { inspect = null } }
         if (menu) Menu(onConcede = { menu = false; controller.concede() }, onLeave = { menu = false; onHome() }, onClose = { menu = false })
         if (stage == Stage.FINISHED) shown?.let { Result(it, audio, onHome, onRematch, resultNote) }
         if (stage == Stage.FAILED) Failed(failure ?: "The match stopped.", onHome)

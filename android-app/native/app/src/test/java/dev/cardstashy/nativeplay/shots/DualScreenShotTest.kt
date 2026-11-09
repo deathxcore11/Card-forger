@@ -70,6 +70,9 @@ class DualScreenShotTest {
                     MatchBottom(crowded, crowded.me.hand, null, PadAct("Resolve") {}, { w -> HandFan(crowded.me.hand, w, Modifier.fillMaxWidth()) }, {})
                 }
             }
+            captureRoboImage(shot("bottom-inspect-$size")) {
+                Box(Modifier.fillMaxSize().background(bg)) { dev.cardstashy.nativeplay.ui.CardInspect(hand.getOrNull(1) ?: hand.first(), main.viewer) {} }
+            }
             val c = hand.first()
             captureRoboImage(shot("bottom-collection-$size")) {
                 Box(Modifier.fillMaxSize().background(bg)) {

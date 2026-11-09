@@ -2,6 +2,7 @@ package dev.cardstashy.nativeplay.ui
 
 import android.app.Activity
 import android.app.Presentation
+import androidx.activity.setViewTreeOnBackPressedDispatcherOwner
 import android.content.Context
 import android.hardware.display.DisplayManager
 import android.os.Bundle
@@ -152,6 +153,8 @@ object DualScreen {
                 (owner as? LifecycleOwner)?.let { v.setViewTreeLifecycleOwner(it) }
                 (owner as? SavedStateRegistryOwner)?.let { v.setViewTreeSavedStateRegistryOwner(it) }
                 (owner as? ViewModelStoreOwner)?.let { v.setViewTreeViewModelStoreOwner(it) }
+                // Sheets drawn down here (a card's page) close with the app's own back (B), so they share its dispatcher.
+                (owner as? androidx.activity.OnBackPressedDispatcherOwner)?.let { v.setViewTreeOnBackPressedDispatcherOwner(it) }
             }
             setContentView(view)
         }
