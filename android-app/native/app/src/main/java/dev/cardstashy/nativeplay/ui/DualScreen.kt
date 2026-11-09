@@ -239,4 +239,4 @@ private fun BottomPadBar() {
 /** The ring, the stick cursor or a finger landing on this card makes it the card both screens know about ([DualScreen.focus]). */
 fun Modifier.dualFocus(card: FocusCard): Modifier = if (!DualScreen.active) this else this
     .onFocusChanged { if (it.isFocused) DualScreen.focus = card }
-    .pointerInput(card) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false, pass = androidx.compose.ui.input.pointer.PointerEventPass.Initial); DualScreen.focus = card } }
+    .pointerInput(card) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false, pass = androidx.compose.ui.input.pointer.PointerEventPass.Initial); if (!PadCursor.dragging) DualScreen.focus = card } }

@@ -53,38 +53,84 @@ object PadCursor {
 
     /** The left stick's position (-1..1 each way). */
     fun left(x: Float, y: Float) { lx = x; ly = y; if (hypot(x, y) > DEAD) { if (!shown) appear(); kick() } }
-    /** The right stick's position: scrolls what is under the cursor. */
+    /**
+     * The right stick scrolls like a console's (Randall 9 Nov: "a real controller going up and down pages that call for it"):
+     * analog speed (a nudge creeps, the rim races), one axis at a time, easing in. It drives the scroller the way a finger does
+     * (a drag the screen can't tell from a real one), so it moves exactly as far as asked each frame, coasts when let go with
+     * the phone's own fling, and stretches at the ends. Up/down moves the page the ring is on; sideways the shelf it is on.
+     * When it comes to rest, the ring comes along if it was scrolled out of sight.
+     */
     fun right(x: Float, y: Float) {
-        val was = hypot(rx, ry) > DEAD; val now = hypot(x, y) > DEAD
-        if (now && !was) { pushStart = SystemClock.uptimeMillis(); lastScrolled = null; peak = 0f; peakX = 0f; peakY = 0f }
-        if (now && hypot(x, y) > peak) { peak = hypot(x, y); peakX = x; peakY = y }
         rx = x; ry = y
-        if (now) kick() else if (was) release()
+        if (hypot(x, y) > DEAD || drag != null) kick()
     }
 
-    // The right stick's last push: a quick flick to the rim turns a page; a slow scroll settles on the nearest card or row edge.
-    private var pushStart = 0L; private var peak = 0f; private var peakX = 0f; private var peakY = 0f
-    private var lastScrolled: Int? = null
-    private const val FLICK_MS = 230L
+    /** True while the stick is dragging a scroller, so touch-only reactions (the bottom screen's lens) ignore it. */
+    var dragging = false; private set
+    private class Drag(val down: Long, var x: Float, var y: Float, val horizontal: Boolean, val scroller: Int)
+    private var drag: Drag? = null
+    private var speed = 0f
+    private var axisX = false
+    private val main = android.os.Handler(android.os.Looper.getMainLooper())
 
-    private fun release() {
-        val id = lastScrolled ?: return
-        val node = nodes()?.firstOrNull { it.id == id } ?: return
-        val scrollBy = node.config.getOrNull(SemanticsActions.ScrollBy)?.action ?: return
-        val b = node.boundsInWindow
-        val axisX = abs(peakX) > abs(peakY)
-        if (SystemClock.uptimeMillis() - pushStart <= FLICK_MS && peak > .8f) {
-            // A flick: one page that way (sideways on a shelf, up or down in a list), keeping a sliver of the last page in view.
-            val sign = if (axisX) Math.signum(peakX) else Math.signum(peakY)
-            if (axisX) scrollBy(sign * b.width * .85f, 0f) else scrollBy(0f, sign * b.height * .85f)
-            return
-        }
-        // Snap: the child whose leading edge is nearest the scroller's leading edge comes to rest exactly there.
-        val edges = node.children.map { it.boundsInWindow }.filter { it.width > 0f && it.height > 0f }
-            .map { if (axisX) it.left - b.left else it.top - b.top }
-        val half = (if (axisX) b.width else b.height) * .4f
-        val d = edges.filter { abs(it) < half }.minByOrNull { abs(it) } ?: return
-        if (abs(d) > 1f) { if (axisX) scrollBy(d, 0f) else scrollBy(0f, d) }
+    private fun touch(action: Int, d: Drag) {
+        val v = root ?: return
+        val ev = android.view.MotionEvent.obtain(d.down, SystemClock.uptimeMillis(), action, d.x, d.y, 0)
+        ev.source = android.view.InputDevice.SOURCE_TOUCHSCREEN
+        runCatching { v.dispatchTouchEvent(ev) }
+        ev.recycle()
+    }
+
+    private fun lift() {
+        val d = drag ?: return
+        touch(android.view.MotionEvent.ACTION_UP, d)
+        drag = null; dragging = false; speed = 0f
+        val id = d.scroller
+        main.removeCallbacksAndMessages(SETTLE)
+        main.postAtTime({ settle(id) }, SETTLE, SystemClock.uptimeMillis() + 900)
+    }
+    private val SETTLE = Any()
+
+    /** The scroller this push moves: the smallest one around the ring (or the cursor) that can still move that way, else the page. */
+    private fun pickScroller(all: List<SemanticsNode>, horizontal: Boolean, dir: Float): SemanticsNode? {
+        val range = if (horizontal) SemanticsProperties.HorizontalScrollAxisRange else SemanticsProperties.VerticalScrollAxisRange
+        val list = all.filter { (it.config.getOrNull(range)?.maxValue?.invoke() ?: 0f) > 0f }
+        fun can(n: SemanticsNode): Boolean { val r = n.config.getOrNull(range) ?: return false; val v = r.value(); val m = r.maxValue()
+            val d = if (r.reverseScrolling) -dir else dir; return if (d > 0) v < m - .5f else v > .5f }
+        val view = root
+        val anchor = pos?.takeIf { shown }
+            ?: all.firstOrNull { it.config.getOrNull(SemanticsProperties.Focused) == true }?.boundsInWindow?.center
+            ?: view?.let { Offset(it.width / 2f, it.height / 2f) } ?: return null
+        val around = list.filter { it.boundsInWindow.contains(anchor) }
+        return around.filter(::can).minByOrNull { it.boundsInWindow.width * it.boundsInWindow.height }
+            ?: list.filter(::can).maxByOrNull { it.boundsInWindow.width * it.boundsInWindow.height }
+    }
+
+    /** Where the finger goes down: inside the scroller, clear of any smaller scroller on the same axis inside it. */
+    private fun grip(all: List<SemanticsNode>, s: SemanticsNode, horizontal: Boolean): Offset {
+        val range = if (horizontal) SemanticsProperties.HorizontalScrollAxisRange else SemanticsProperties.VerticalScrollAxisRange
+        val b = s.boundsInWindow
+        val inner = all.filter { it.id != s.id && it.config.getOrNull(range) != null && b.contains(it.boundsInWindow.center) &&
+            it.boundsInWindow.width * it.boundsInWindow.height < b.width * b.height }
+        val tries = listOf(.5f to .5f, .5f to .25f, .5f to .75f, .2f to .5f, .8f to .5f, .15f to .15f, .85f to .85f, .5f to .08f, .5f to .92f)
+        return tries.map { (fx, fy) -> Offset(b.left + b.width * fx, b.top + b.height * fy) }.firstOrNull { p -> inner.none { it.boundsInWindow.contains(p) } } ?: b.center
+    }
+
+    /** The glide ended: if the ring was scrolled out of sight, it comes to the nearest thing it can rest on inside the scroller. */
+    private fun settle(id: Int) {
+        if (shown || drag != null) return
+        val all = nodes() ?: return
+        val box = all.firstOrNull { it.id == id }?.boundsInWindow ?: return
+        fun inside(b: Rect) = b.top >= box.top - 1 && b.bottom <= box.bottom + 1 && b.left >= box.left - 1 && b.right <= box.right + 1
+        val focused = all.firstOrNull { it.config.getOrNull(SemanticsProperties.Focused) == true }
+        val fb = focused?.boundsInWindow
+        if (fb != null && inside(fb)) return
+        val view = root ?: return
+        val max = view.width.toFloat() * view.height * .5f
+        val near = fb?.center ?: box.center
+        all.filter { n -> n.config.getOrNull(SemanticsActions.RequestFocus) != null && n.boundsInWindow.let { b -> b.width > 0f && b.width * b.height < max && inside(b) } }
+            .minByOrNull { val c = it.boundsInWindow.center; if (axisX) abs(c.x - box.center.x) + abs(c.y - near.y) * .5f else abs(c.y - box.center.y) + abs(c.x - near.x) * .5f }
+            ?.config?.getOrNull(SemanticsActions.RequestFocus)?.action?.invoke()
     }
 
     /** The d-pad moved the ring: the cursor steps aside until the stick moves again. */
@@ -134,11 +180,11 @@ object PadCursor {
     /** One frame of movement; false once both sticks are at rest. */
     internal fun step(dt: Float): Boolean {
         val l = hypot(lx, ly); val r = hypot(rx, ry)
-        if (l <= DEAD && r <= DEAD) return false
+        if (l <= DEAD && r <= DEAD && drag == null) return false
         val view = root ?: return false
         val density = view.resources.displayMetrics.density
         if (l > DEAD && shown) move(dt, density, view)
-        if (r > DEAD) scroll(dt, density)
+        if (r > DEAD || drag != null) scroll(dt, density)
         return true
     }
 
@@ -178,18 +224,34 @@ object PadCursor {
     }
 
     private fun scroll(dt: Float, density: Float) {
-        val p = pos ?: root?.let { Offset(it.width / 2f, it.height / 2f) } ?: return
-        val l = hypot(rx, ry); val k = ((l - DEAD) / (1 - DEAD)).coerceIn(0f, 1f)
-        val speed = 1800f * density * k * k * dt
-        val dx = rx / l * speed; val dy = ry / l * speed
-        // The smallest scrollable under the cursor that can move this way; else the biggest one on screen.
-        val all = nodes()?.filter { it.config.getOrNull(SemanticsActions.ScrollBy) != null } ?: return
-        val pick = all.filter { it.boundsInWindow.contains(p) }.minByOrNull { it.boundsInWindow.width * it.boundsInWindow.height }
-            ?: all.maxByOrNull { it.boundsInWindow.width * it.boundsInWindow.height } ?: return
-        val axisX = abs(dx) > abs(dy)
-        pick.config.getOrNull(SemanticsActions.ScrollBy)?.action?.invoke(if (axisX) dx else 0f, if (axisX) 0f else dy)
-        lastScrolled = pick.id
-        if (frame++ % 6 == 0) aim()
+        val r = hypot(rx, ry)
+        if (r <= DEAD) { lift(); return }
+        val horizontal = abs(rx) > abs(ry) * 1.15f
+        if (drag != null && horizontal != drag!!.horizontal) lift()
+        axisX = horizontal
+        // Gentle near the centre, quick at the rim: about 2,600 dp a second fully pushed, easing in.
+        val k = ((r - DEAD) / (1 - DEAD)).coerceIn(0f, 1f)
+        val target = 2600f * density * k * k * (.35f + .65f * k)
+        speed += (target - speed) * (dt * 12f).coerceAtMost(1f)
+        val dir = Math.signum(if (horizontal) rx else ry)
+        var d = drag
+        if (d == null) {
+            val all = nodes()?.filter { it.config.getOrNull(SemanticsActions.ScrollBy) != null } ?: return
+            val s = pickScroller(all, horizontal, dir) ?: return
+            val p = grip(all, s, horizontal)
+            main.removeCallbacksAndMessages(SETTLE)
+            d = Drag(SystemClock.uptimeMillis(), p.x, p.y, horizontal, s.id); drag = d; dragging = true
+            touch(android.view.MotionEvent.ACTION_DOWN, d)
+            // Past the touch slop at once, so the scroller takes the drag and nothing under the finger counts it as a tap.
+            val slop = android.view.ViewConfiguration.get(root!!.context).scaledTouchSlop + 2f
+            if (horizontal) d.x -= dir * slop else d.y -= dir * slop
+            touch(android.view.MotionEvent.ACTION_MOVE, d)
+        }
+        // The finger moves against the stick: pushing down shows what is below.
+        val step = speed * dt * dir
+        if (horizontal) d.x -= step else d.y -= step
+        touch(android.view.MotionEvent.ACTION_MOVE, d)
+        if (shown && frame++ % 6 == 0) aim()
     }
 
     private fun nodes(): List<SemanticsNode>? {

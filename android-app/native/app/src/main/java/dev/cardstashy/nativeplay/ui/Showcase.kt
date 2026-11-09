@@ -63,7 +63,7 @@ class LensHost {
 /** The ring (on this or anything inside it) or a finger landing here points the page's bottom case at [key]. */
 fun Modifier.dualLens(host: LensHost, key: String?): Modifier = if (!DualScreen.active) this else this
     .onFocusChanged { if (it.hasFocus) host.key = key }
-    .pointerInput(host, key) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial); host.key = key } }
+    .pointerInput(host, key) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial); if (!PadCursor.dragging) host.key = key } }
 
 /** A case's touch button: the pad key it shares (A, X, Y) and what it does. */
 class CaseButton(val key: String?, val label: String, val gold: Boolean = false, val enabled: Boolean = true, val weight: Float = 1f, val run: () -> Unit)
