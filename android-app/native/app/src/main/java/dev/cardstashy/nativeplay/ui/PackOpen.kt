@@ -531,7 +531,7 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
                     // Randall 7 Nov: the set row and "Its pack at the Merchant" did nothing from a pack (the Shop's set page was under the pack).
                     set = { c -> inspecting = null; onClose(); (onSet ?: shopSet)?.invoke(c) }, merchant = { c, _ -> inspecting = null; onClose(); (onSet ?: shopSet)?.invoke(c) }),
                 onClose = { inspecting = null }) }
-            if (DualScreen.active) BottomScreen { sheet() } else sheet()
+            sheet()
         }
     }
     }

@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -138,16 +139,30 @@ private fun JsonObject?.s(k: String) = this?.get(k)?.takeIf { it.isJsonPrimitive
  */
 @Composable
 fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose: () -> Unit, startTab: String = "overview") {
+    // Two screens (Randall 9 Nov, approved): this same sheet as one tall strip across both screens (see CollectionCardSheet).
+    val part = LocalSpanPart.current
+    if (DualScreen.active && part == null) {
+        val span = remember(pick) { SheetSpan().also { it.tab.value = startTab; it.asked.value = pick.finish } }
+        TopScreen { androidx.compose.runtime.CompositionLocalProvider(LocalSpanPart provides (0 to span)) { CardSheet(pick, state, act, onClose, startTab) } }
+        BottomScreen { androidx.compose.runtime.CompositionLocalProvider(LocalSpanPart provides (1 to span)) { CardSheet(pick, state, act, onClose, startTab) } }
+        return
+    }
+    val span = part?.second; val slice = part?.first
     val context = LocalContext.current
     val data = CardData.ready.collectAsState().value.also { if (it == null) CardData.warm(context) }
     val prints by CardFacts.prints.collectAsState()
     val facts by CardFacts.cards.collectAsState()
     LaunchedEffect(pick) { pick.printId?.let { CardFacts.wantPrint(it) } ?: CardFacts.want(listOf(pick.oracle to null)) }
     val shown: JsonObject? = pick.printId?.let { prints[it] } ?: facts[pick.oracle]?.card
-    var tab by remember(pick) { mutableStateOf(startTab) }
-    var asked by remember(pick) { mutableStateOf(pick.finish) }
+    // On two screens both slices share the tab, the finish and the face, so the strip reads as one page.
+    val ownTab = remember(pick) { mutableStateOf(startTab) }; val ownAsked = remember(pick) { mutableStateOf(pick.finish) }; val ownFace = remember(pick) { mutableStateOf(0) }
+    val tabState: androidx.compose.runtime.MutableState<String> = span?.tab ?: ownTab
+    val askedState: androidx.compose.runtime.MutableState<String> = span?.asked ?: ownAsked
+    val faceState: androidx.compose.runtime.MutableState<Int> = span?.face ?: ownFace
+    var tab by tabState
+    var asked by askedState
     val finish = Foil.finishFor(shown, asked)
-    var face by remember(pick) { mutableStateOf(0) }
+    var face by faceState
     var rule by remember { mutableStateOf<CardData.Rule?>(null) }
     var zoom by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -165,12 +180,15 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
     BoxWithConstraints(Modifier.fillMaxSize().padLayer()) {
         val h = constraints.maxHeight.toFloat()
         var zoomed: (@Composable () -> Unit)? = null
-        Box(Modifier.fillMaxSize().graphicsLayer { alpha = 1f - y.value }.background(Color(0x99000000))
+        if (span == null) Box(Modifier.fillMaxSize().graphicsLayer { alpha = 1f - y.value }.background(Color(0x99000000))
             .pointerInput(Unit) { detectTapGestures { close() } })
-        Column(Modifier.align(Alignment.BottomCenter).widthIn(max = 720.dp).fillMaxWidth().fillMaxHeight(.94f)
-            .offset { IntOffset(0, (y.value * h).roundToInt()) }
-            .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).background(Color(0xFF12151B))
-            .border(1.dp, Color(0x17FFFFFF), RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))) {
+        else { if (slice == 1) { span.w = maxWidth; span.botH = maxHeight } else span.topH = maxHeight
+            Box(Modifier.fillMaxSize().background(Color(0xFF0B0C10))) }
+        val sheetShape = if (span != null) RoundedCornerShape(0.dp) else RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
+        Column((if (span != null) Modifier.align(Alignment.TopCenter).width(if (span.w > 0.dp) span.w else maxWidth * .62f).fillMaxHeight()
+            else Modifier.align(Alignment.BottomCenter).widthIn(max = 720.dp).fillMaxWidth().fillMaxHeight(.94f).offset { IntOffset(0, (y.value * h).roundToInt()) })
+            .clip(sheetShape).background(Color(0xFF12151B))
+            .border(1.dp, Color(0x17FFFFFF), sheetShape)) {
             if (shown == null) { Loading(pick.name) { close() }; return@Column }
             val name = shown.s("name").ifBlank { pick.name }
             val faces = shown.getAsJsonArray("card_faces")?.mapNotNull { it as? JsonObject }?.takeIf { it.isNotEmpty() } ?: listOf(shown)
@@ -189,7 +207,24 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
             Box(Modifier.fillMaxSize()) {
             GlassBackdrop(heroArt, frost)
             androidx.compose.runtime.CompositionLocalProvider(LocalFrost provides frost) {
-            LazyColumn(state = list, modifier = Modifier.fillMaxSize()) {
+            if (span != null && slice != null) SpanStrip(span, slice) {
+                run {
+                    Header(name, f.s("type_line").ifBlank { shown.s("type_line") }, f.s("mana_cost").ifBlank { shown.s("mana_cost") }, owned, heroArt, { list.firstVisibleItemScrollOffset },
+                        onDrag = { dy -> scope.launch { y.snapTo((y.value + dy / h).coerceAtLeast(0f)) } },
+                        onDragEnd = { scope.launch { if (y.value > .18f) close() else y.animateTo(0f, tween(200)) } }, onClose = { close() })
+                }
+                Tabs(tab) { tab = it }
+                when (tab) {
+                    "overview" -> run {
+                        // Randall 6 Nov 01:41Z: a finish shows only when a copy is in it (or the card was opened in it), so a preview never reads as owned.
+                        val mine = state?.let { Trunk.finishesOwned(it, name, shown.s("oracle_id").ifBlank { null }) + pick.finish }
+                        Overview(name, shown, faces, imgFaces, face, image, finish, data, state, owned, mine, act, { asked = it }, { face = 1 - face }, { rule = it }, { zoom = true }) { tab = "get" }
+                    }
+                    "guide" -> Guide(shown, data) { rule = it }
+                    else -> GetIt(name, shown, state, owned, act)
+                }
+                Spacer(Modifier.navigationBarsPadding().height(40.dp))
+            } else             LazyColumn(state = list, modifier = Modifier.fillMaxSize()) {
                 item {
                     Header(name, f.s("type_line").ifBlank { shown.s("type_line") }, f.s("mana_cost").ifBlank { shown.s("mana_cost") }, owned, heroArt, { list.firstVisibleItemScrollOffset },
                         onDrag = { dy -> scope.launch { y.snapTo((y.value + dy / h).coerceAtLeast(0f)) } },
@@ -217,7 +252,8 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
         }
         // Over the whole screen, not inside the sheet's column: there the list took all the height, so the enlarged
         // card was pushed below the sheet and stayed half drawn over every tab (Randall 3 Nov 20:51Z).
-        zoomed?.invoke()
+        // Two screens: the enlarged card takes the top screen.
+        if (span != null) zoomed?.let { z -> TopScreen(z) } else zoomed?.invoke()
         rule?.let { RuleCard(it) { rule = null } }
     }
 }

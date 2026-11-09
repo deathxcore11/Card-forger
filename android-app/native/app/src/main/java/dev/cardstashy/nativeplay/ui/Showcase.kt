@@ -7,6 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -66,6 +67,23 @@ fun Modifier.dualLens(host: LensHost, key: String?): Modifier = if (!DualScreen.
     .pointerInput(host, key) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial); if (!PadCursor.dragging) host.key = key } }
 
 /** A case's touch button: the pad key it shares (A, X, Y) and what it does. */
+/** The bottom screen's quick look at the card under the ring (Randall 9 Nov): like Play's Trunk case, with what fits the mode. */
+class QuickLook(val key: String, val eyebrow: String, val name: String, val image: String?, val type: String? = null, val text: String? = null,
+                val facts: List<Pair<String, String>> = emptyList(), val buttons: List<CaseButton> = emptyList())
+
+@Composable
+internal fun QuickLookCase(q: QuickLook) {
+    ShowcaseCase(q.eyebrow, q.name, heroWeight = .4f, buttons = q.buttons, hero = {
+        val img = heroPainter(q.image?.let(homeArt))
+        if (img != null) androidx.compose.foundation.Image(img, q.name, Modifier.align(Alignment.Center).padding(10.dp).fillMaxHeight().then(Modifier.aspectRatio(63f / 88f, matchHeightConstraintsFirst = true))
+            .clip(RoundedCornerShape(10.dp)), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+    }) {
+        q.type?.takeIf { it.isNotBlank() }?.let { Text(it, style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Gold)) }
+        q.text?.takeIf { it.isNotBlank() }?.let { Text(it, style = TextStyle(fontFamily = Type.Sans, fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFFE4DFD3)), maxLines = 7, overflow = TextOverflow.Ellipsis) }
+        q.facts.chunked(3).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) { row.forEach { (l, v) -> CaseFact(l, v) } } }
+    }
+}
+
 class CaseButton(val key: String?, val label: String, val gold: Boolean = false, val enabled: Boolean = true, val weight: Float = 1f, val run: () -> Unit)
 
 private val Gold = Color(0xFFD6AD64)
@@ -81,6 +99,10 @@ fun <K> ShowcaseLens(key: K, content: @Composable (K) -> Unit) = Crossfade(key, 
 fun ShowcaseCase(eyebrow: String, title: String, trailing: (@Composable () -> Unit)? = null, buttons: List<CaseButton> = emptyList(),
                  heroWeight: Float = .42f, scroll: Boolean = true, hero: (@Composable BoxScope.() -> Unit)? = null, facts: @Composable ColumnScope.() -> Unit) {
     val frame = RoundedCornerShape(24.dp)
+    // A key printed on one of the case's buttons is not repeated in the hint bar under it (Randall 9 Nov: no prompt shown twice).
+    val keys = buttons.mapNotNull { it.key?.takeIf { _ -> it.enabled } }.toSet()
+    val owner = androidx.compose.runtime.remember { Any() }
+    androidx.compose.runtime.DisposableEffect(owner, keys) { DualScreen.shownKeys[owner] = keys; onDispose { DualScreen.shownKeys.remove(owner) } }
     Box(Modifier.fillMaxSize().padding(10.dp).clip(frame)
         .background(Brush.verticalGradient(listOf(Color(0xE61A1D25), Color(0xF00C0E13))))
         .border(1.dp, Brush.linearGradient(listOf(Gold.copy(alpha = .55f), Gold.copy(alpha = .12f), Gold.copy(alpha = .45f))), frame)) {

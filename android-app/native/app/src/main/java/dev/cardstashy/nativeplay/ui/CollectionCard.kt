@@ -107,6 +107,13 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -323,6 +330,16 @@ private fun RichText(text: androidx.compose.ui.text.AnnotatedString, style: Text
 fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onBack: (() -> Unit)? = null,
                         /** app.js wireSheetBack: a page opened from another sheet (the proven deck sheet) offers its history back. */
                         historyBack: Boolean = false, onClose: () -> Unit) {
+    // Two screens (Randall 9 Nov, approved): the same page, unchanged, as one tall strip across both screens. Each screen draws
+    // its slice of it (the top from the strip's top, the bottom carrying on below), scrolled as one by finger, stick or d-pad.
+    val part = LocalSpanPart.current
+    if (DualScreen.active && part == null) {
+        val span = remember { SheetSpan() }
+        TopScreen { androidx.compose.runtime.CompositionLocalProvider(LocalSpanPart provides (0 to span)) { CollectionCardSheet(m, act, onBack, historyBack, onClose) } }
+        BottomScreen { androidx.compose.runtime.CompositionLocalProvider(LocalSpanPart provides (1 to span)) { CollectionCardSheet(m, act, onBack, historyBack, onClose) } }
+        return
+    }
+    val span = part?.second; val slice = part?.first
     val y = remember { Animatable(1f) }
     val scope = rememberCoroutineScope()
     // style.css dialog.sheet[open]: rise .22 s ease-out.
@@ -344,18 +361,21 @@ fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onBa
         val big = screenW >= 700.dp
         val h = constraints.maxHeight.toFloat()
         // ::backdrop rgba(0,0,0,.6); a tap outside closes.
-        Box(Modifier.fillMaxSize().graphicsLayer { alpha = 1f - y.value }.background(Color(0x99000000)).pointerInput(Unit) { detectTapGestures { close() } })
+        if (span == null) Box(Modifier.fillMaxSize().graphicsLayer { alpha = 1f - y.value }.background(Color(0x99000000)).pointerInput(Unit) { detectTapGestures { close() } })
+        else { if (slice == 1) { span.w = screenW; span.botH = screenH } else span.topH = screenH
+            Box(Modifier.fillMaxSize().background(Color(0xFF0B0C10))) }
         // The card sheet: a phone's bottom sheet 8 % from the top; from 700 wide a centred 780 card 4 % from each end.
-        val sheetW = if (big) minOf(780.dp, screenW - 104.dp) else screenW
-        val top = if (big) screenH * .04f else screenH * .08f
-        val shape = if (big) RoundedCornerShape(22.dp) else RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
-        Box(Modifier.align(if (big) Alignment.TopCenter else Alignment.BottomCenter).padding(top = top, bottom = if (big) screenH * .04f else 0.dp)
+        val sheetW = if (span != null) (if (span.w > 0.dp) span.w else screenW * .62f) else if (big) minOf(780.dp, screenW - 104.dp) else screenW
+        val top = if (span != null) 0.dp else if (big) screenH * .04f else screenH * .08f
+        val shape = if (span != null) RoundedCornerShape(0.dp) else if (big) RoundedCornerShape(22.dp) else RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
+        Box(Modifier.align(if (big || span != null) Alignment.TopCenter else Alignment.BottomCenter).padding(top = top, bottom = if (big && span == null) screenH * .04f else 0.dp)
             .width(sheetW).fillMaxHeight().offset { IntOffset(0, (y.value * h).roundToInt()) }
             .clip(shape).background(SheetBg).border(1.dp, Color(0x31EDC87F), shape)) {
             val gutter = if (big) 22.dp else 16.dp
             // --hero-h (polish.css 692-700): 74vw from 240 to 340; from 700 wide 38 % of the height (340-460) upright,
             // 46 % (300-420) sideways; a short sideways screen 48 % (170-220).
             val heroH = when {
+                span != null -> 220.dp
                 landscape && screenH <= 500.dp -> (screenH * .48f).coerceIn(170.dp, 220.dp)
                 big && landscape -> (screenH * .46f).coerceIn(300.dp, 420.dp)
                 big -> (screenH * .38f).coerceIn(340.dp, 460.dp)
@@ -371,8 +391,8 @@ fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onBa
                 val list = rememberLazyListState()
                 // Past 110 scrolled (app.js scrollTop > 110) the head becomes the bar with the card's name.
                 val past = with(LocalDensity.current) { 110.dp.toPx() }
-                val scrolled by remember(past) { derivedStateOf { list.firstVisibleItemIndex > 0 || list.firstVisibleItemScrollOffset > past } }
-                val pinTabs by remember { derivedStateOf { list.firstVisibleItemIndex >= 1 } }
+                val scrolled by remember(past, span) { derivedStateOf { if (span != null) span.y > 110f else list.firstVisibleItemIndex > 0 || list.firstVisibleItemScrollOffset > past } }
+                val pinTabs by remember(span) { derivedStateOf { if (span != null) span.y > heroH.value else list.firstVisibleItemIndex >= 1 } }
                 // A jump the site makes with scrollIntoView (A.buyCompare: the page's printings).
                 LaunchedEffect(m.jump, m.buy == null) { if (m.jump == "printings" && m.buy == null) { list.scrollToItem(3); CardJump.printings = true } }
                 val buy = m.buy
@@ -381,22 +401,28 @@ fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onBa
                     SheetHead(buy.title, true, gutter, back = { act.press(CardPress("", null, "buyBack", emptyMap(), "", buy.back, "", false, false, false, false, false)) },
                         backLabel = buy.back.ifBlank { "Back to card details" }, center = true) { close() }
                 } else {
-                LazyColumn(state = list, modifier = Modifier.fillMaxSize()) {
-                    item(key = "banner") { m.head?.let { Banner(it, heroH, big, gutter) } }
-                    item(key = "tabs") { Box(Modifier.padding(horizontal = gutter).padding(top = 10.dp, bottom = 6.dp).graphicsLayer { alpha = if (pinTabs) 0f else 1f }) { CardTabs(m.tabs, big, act) } }
+                // The page's rows, the same whether they sit in the phone's list or in the two-screen strip.
+                val rows: List<Pair<String, @Composable () -> Unit>> = buildList {
+                    add("banner" to @Composable { m.head?.let { Banner(it, heroH, big, gutter) } })
+                    add("tabs" to @Composable { Box(Modifier.padding(horizontal = gutter).padding(top = 10.dp, bottom = 6.dp).graphicsLayer { alpha = if (pinTabs) 0f else 1f }) { CardTabs(m.tabs, big, act) } })
                     when (m.tab) {
-                        "meta" -> item(key = "meta") { MetaPanel(m, act, gutter) }
-                        "guide" -> item(key = "guide") { GuidePanel(m, act, gutter) }
-                        "prices" -> item(key = "prices") { m.prices?.let { PricesPanel(it, act, gutter, screenW, screenH) } }
+                        "meta" -> add("meta" to @Composable { MetaPanel(m, act, gutter) })
+                        "guide" -> add("guide" to @Composable { GuidePanel(m, act, gutter) })
+                        "prices" -> add("prices" to @Composable { m.prices?.let { PricesPanel(it, act, gutter, screenW, screenH) } })
                         else -> {
-                            item(key = "head") { OverviewHead(m, act, big, gutter) }
-                            item(key = "overview") { m.overview?.let { Overview(m, it, act, sheetW - gutter * 2 > 600.dp, gutter) { zoom = true } } }
+                            add("head" to @Composable { OverviewHead(m, act, big, gutter) })
+                            add("overview" to @Composable { m.overview?.let { Overview(m, it, act, sheetW - gutter * 2 > 600.dp, gutter) { zoom = true } } })
                         }
                     }
-                    item(key = "end") { Spacer(Modifier.navigationBarsPadding().height(22.dp)) }
+                    add("end" to @Composable { Spacer(Modifier.navigationBarsPadding().height(22.dp)) })
                 }
-                SheetHead(m.head?.title.orEmpty(), scrolled, gutter, history = historyBack, back = onBack?.takeIf { m.head?.back == true || historyBack }?.let { b -> { scope.launch { if (!Motion.still) y.animateTo(1f, tween(200)); b() } } }) { close() }
-                if (pinTabs) Box(Modifier.padding(top = if (scrolled) 57.dp else 0.dp).fillMaxWidth().background(Brush.verticalGradient(0f to Color(0xFF111318), .8f to Color(0xF2111318), 1f to Color(0x00111318)))
+                if (span != null && slice != null) SpanStrip(span, slice) { rows.forEach { (k, r) -> androidx.compose.runtime.key(k) { r() } } }
+                else LazyColumn(state = list, modifier = Modifier.fillMaxSize()) {
+                    rows.forEach { (k, r) -> item(key = k) { r() } }
+                }
+                // The top bar and the pinned tabs ride on the top screen only.
+                if (slice != 1) SheetHead(m.head?.title.orEmpty(), scrolled, gutter, history = historyBack, back = onBack?.takeIf { m.head?.back == true || historyBack }?.let { b -> { scope.launch { if (!Motion.still) y.animateTo(1f, tween(200)); b() } } }) { close() }
+                if (pinTabs && slice != 1) Box(Modifier.padding(top = if (scrolled) 57.dp else 0.dp).fillMaxWidth().background(Brush.verticalGradient(0f to Color(0xFF111318), .8f to Color(0xF2111318), 1f to Color(0x00111318)))
                     .padding(horizontal = gutter).padding(top = 6.dp, bottom = 8.dp)) { CardTabs(m.tabs, big, act) }
                 }
             }
@@ -1926,5 +1952,50 @@ private fun ConditionSwitch(key: String, act: CollectionCardActions) {
             row?.buy?.let { (href, label) -> Ghost(label, null, Modifier.weight(1f, fill = false)) { runCatching { uri.openUri(href) } } }
             if (m != null && !m.busy && m.status in setOf("unavailable", "rate_limited", "deferred")) Ghost("Check again", null) { tick++ }
         }
+    }
+}
+
+/** The two-screen strip's shared scroll (dp from the page's top), and each screen's size, so each draws its own slice. */
+internal class SheetSpan {
+    var y by androidx.compose.runtime.mutableFloatStateOf(0f)
+    var contentH by androidx.compose.runtime.mutableFloatStateOf(0f)
+    var w by mutableStateOf(0.dp)
+    var topH by mutableStateOf(0.dp)
+    var botH by mutableStateOf(0.dp)
+    /** The Play sheet's own state, shared by both slices. */
+    val tab = mutableStateOf("overview"); val asked = mutableStateOf(""); val face = mutableStateOf(0)
+    fun by(d: Float): Float { val max = (contentH - topH.value - botH.value).coerceAtLeast(0f); val was = y; y = (y + d).coerceIn(0f, max); return y - was }
+}
+
+/** Which slice of the strip this composition draws (0 the top screen, 1 the bottom) and the strip; null on one screen. */
+internal val LocalSpanPart = androidx.compose.runtime.staticCompositionLocalOf<Pair<Int, SheetSpan>?> { null }
+
+/**
+ * One screen's slice of the strip: the page laid out at its full height, moved up by the shared scroll (and, on the bottom
+ * screen, by the top screen's height, so it carries on where the top leaves off). A drag on either screen scrolls both; on the top
+ * screen the d-pad's up and down scroll it too (the right stick drags as a finger does).
+ */
+@Composable
+internal fun SpanStrip(span: SheetSpan, slice: Int, content: @Composable () -> Unit) {
+    val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
+    val state = androidx.compose.foundation.gestures.rememberScrollableState { px -> with(density) { -span.by(-px / density.density).dp.toPx() } }
+    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    if (slice == 0) LaunchedEffect(Unit) { androidx.compose.runtime.withFrameNanos { }; runCatching { focus.requestFocus() } }
+    Box(Modifier.fillMaxSize().clipToBounds()
+        .scrollable(state, androidx.compose.foundation.gestures.Orientation.Vertical)
+        .then(if (slice == 0) Modifier.focusRequester(focus).onPreviewKeyEvent { e ->
+            val k = e.nativeKeyEvent.keyCode
+            if (k != android.view.KeyEvent.KEYCODE_DPAD_UP && k != android.view.KeyEvent.KEYCODE_DPAD_DOWN) return@onPreviewKeyEvent false
+            if (e.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) scope.launch {
+                val to = 120f * (if (k == android.view.KeyEvent.KEYCODE_DPAD_DOWN) 1 else -1)
+                var last = 0f
+                androidx.compose.animation.core.animate(0f, to, animationSpec = tween(160)) { v, _ -> span.by(v - last); last = v }
+            }
+            true
+        }.focusable() else Modifier)) {
+        Column(Modifier.fillMaxWidth().wrapContentHeight(Alignment.Top, unbounded = true)
+            .onSizeChanged { with(density) { span.contentH = it.height.toDp().value } }
+            .offset { IntOffset(0, -with(density) { (span.y + if (slice == 1) span.topH.value else 0f).dp.roundToPx() }) }) { content() }
     }
 }

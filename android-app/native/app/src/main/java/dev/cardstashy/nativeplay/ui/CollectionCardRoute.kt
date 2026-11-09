@@ -57,8 +57,7 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
                        onRandom: (() -> Unit)? = null,
                        /** The ← (A.sheetBack) of a page opened from the deck idea sheet ([CardOpen.back]): the sheet again. */
                        onBack: (() -> Unit)? = null) {
-    // Two screens: the page is the bottom screen (it follows the ring on the top grid); the top keeps the grid.
-    if (DualScreen.active) { BottomScreen { CardHostBody(open, onClose, onOpen, web, onSet, onRandom, onBack) }; return }
+    // Two screens: the page itself spreads over both screens (CollectionCardSheet's strip).
     CardHostBody(open, onClose, onOpen, web, onSet, onRandom, onBack)
 }
 

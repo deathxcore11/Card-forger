@@ -298,6 +298,17 @@ object PadCursor {
         return if (dir > 0) v >= m - .5f else v <= .5f
     }
 
+    /** Select: a long press on the middle of what the ring is on, so its hold-down quick menu opens as it does under a finger. */
+    fun holdFocused() {
+        val all = nodes() ?: return
+        val f = all.lastOrNull { it.config.getOrNull(SemanticsProperties.Focused) == true } ?: return
+        val b = f.boundsInRoot; if (b.width <= 0f || b.height <= 0f) return
+        val d = Drag(SystemClock.uptimeMillis(), b.center.x, b.center.y, horizontal = false, scroller = -1)
+        touch(android.view.MotionEvent.ACTION_DOWN, d)
+        val hold = android.view.ViewConfiguration.getLongPressTimeout().toLong() + 120
+        main.postDelayed({ touch(android.view.MotionEvent.ACTION_UP, d) }, hold)
+    }
+
     private fun nodes(): List<SemanticsNode>? {
         val owner = findRoot(root ?: return null)?.semanticsOwner ?: return null
         val out = ArrayList<SemanticsNode>(512)

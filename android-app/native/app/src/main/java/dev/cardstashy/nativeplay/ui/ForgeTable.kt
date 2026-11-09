@@ -570,8 +570,10 @@ fun ForgeBoard(
                     val i = hand.indexOfFirst { it.id == selectedHand }
                     val next = if (i < 0) (if (step > 0) 0 else hand.lastIndex) else (i + step).coerceIn(0, hand.lastIndex)
                     onSelectHand(hand[next].id) }), tabsLabel = if (dual) "Zone" else "Hand",
-                page = if (!live) null else ({ step: Int -> if (step > 0) padGold?.run?.invoke() else if (st.buttons.cancelEnabled) intents.cancel() }),
-                pageLabel = if (st.buttons.cancelEnabled) "Cancel / Pass" else "Pass"))
+                // RT (Randall 9 Nov): between your hand and the field; X is already the gold button (pass). LT cancels.
+                page = if (dual) ({ step: Int -> if (step > 0) TableZones.handOrField() else if (live && st.buttons.cancelEnabled) intents.cancel() })
+                    else if (!live) null else ({ step: Int -> if (step > 0) padGold?.run?.invoke() else if (st.buttons.cancelEnabled) intents.cancel() }),
+                pageLabel = if (dual) (if (live && st.buttons.cancelEnabled) "Cancel · Hand/Field" else "Hand / Field") else if (st.buttons.cancelEnabled) "Cancel / Pass" else "Pass"))
             if (dual) { val goldAct = padX; BottomScreen { MatchBottom(st, hand, selectedHand?.let { id -> hand.firstOrNull { it.id == id } }, goldAct, fan, onInspect) } }
             if (live) askLine(st)?.let { AskLine(it, W, H, d) }
             // The line between the halves turns into the combat line while you declare (gold attacking, blue blocking).
@@ -1087,6 +1089,11 @@ internal object TableZones {
     var lastMine: Int? = null; var lastTheirs: Int? = null
     /** 0 hand, 1 yours, 2 theirs: where the ring is now. */
     var at = 0
+    /** RT: from the hand to your board, from anywhere else back to the hand. */
+    fun handOrField() {
+        val r = if (at == 0) (lastMine?.let { mine[it] } ?: mine.values.firstOrNull()) else hand
+        if (r != null && runCatching { r.requestFocus() }.isSuccess) at = if (at == 0) 1 else 0
+    }
     fun jump(step: Int) {
         val order = listOf(0, 1, 2)
         var z = at

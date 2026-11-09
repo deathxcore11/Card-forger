@@ -377,7 +377,7 @@ internal fun GridCard(t: SetTileM, reduced: Boolean, act: CollectionSetActions, 
         val w = 2.dp.toPx(); drawRect(Color(0x8C6FD29A), topLeft = Offset(w / 2, w / 2), size = Size(size.width - w, size.height - w), style = Stroke(w))
     } else Modifier)) {
         Box {
-            TierFrame(t.r.tier, reduced, Modifier.fillMaxWidth().followCard { act.card(t) }.padActs(OpenPad).clickable { act.card(t) }.semantics { contentDescription = "Open ${t.r.name}" },
+            TierFrame(t.r.tier, reduced, Modifier.fillMaxWidth().quickLook { setQuick(t, act) }.padActs(OpenPad).clickable { act.card(t) }.semantics { contentDescription = "Open ${t.r.name}" },
                 fw = if (tn) 5.dp else 7.5.dp, corner = if (tn) null else 12.dp, blur = 18f, plain = tn) { framed ->
                 val fw = if (!framed) 0.dp else if (tn) 5.dp else 7.5.dp
                 Box(Modifier.fillMaxSize().padding(fw)) {
@@ -414,7 +414,7 @@ private fun Badge(text: String, other: Boolean, title: String, modifier: Modifie
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ListCard(t: SetTileM, compact: Boolean, reduced: Boolean, act: CollectionSetActions) {
-    Box(Modifier.fillMaxWidth().lotFrame(t.r, reduced).followCard { act.card(t) }.padActs(OpenPad).clickable { act.card(t) }.semantics { contentDescription = "Open ${t.r.name}" }) {
+    Box(Modifier.fillMaxWidth().lotFrame(t.r, reduced).quickLook { setQuick(t, act) }.padActs(OpenPad).clickable { act.card(t) }.semantics { contentDescription = "Open ${t.r.name}" }) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             if (compact) Box(Modifier.size(48.dp, 67.dp).clip(RoundedCornerShape(5.dp)).background(Surface2)) { RowPicture(t.r, Modifier.fillMaxSize(), RoundedCornerShape(5.dp)) }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -650,7 +650,7 @@ internal fun TcgGridCard(t: SetTileM, game: CardGame, reduced: Boolean, act: Col
         val w = 2.dp.toPx(); drawRect(Color(0x8C6FD29A), topLeft = Offset(w / 2, w / 2), size = Size(size.width - w, size.height - w), style = Stroke(w))
     } else Modifier)) {
         Box {
-            TierFrame(t.r.tier, reduced, Modifier.fillMaxWidth().followCard { act.card(t) }.padActs(OpenPad).clickable { act.card(t) }.semantics { contentDescription = "Open ${t.r.name}" },
+            TierFrame(t.r.tier, reduced, Modifier.fillMaxWidth().quickLook { setQuick(t, act) }.padActs(OpenPad).clickable { act.card(t) }.semantics { contentDescription = "Open ${t.r.name}" },
                 fw = if (tn) 5.dp else 7.5.dp, corner = if (tn) null else 12.dp, blur = 18f, plain = tn, ratio = if (ygo) 59f / 86f else 63f / 88f) { framed ->
                 val fw = if (!framed) 0.dp else if (tn) 5.dp else 7.5.dp
                 Box(Modifier.fillMaxSize().padding(fw)) {
@@ -675,3 +675,12 @@ internal fun TcgGridCard(t: SetTileM, game: CardGame, reduced: Boolean, act: Col
     }
 }
 
+
+/** A set page's card, quick look on the bottom screen: the card, whether you own it, its rarity, number and price. */
+internal fun setQuick(t: SetTileM, act: CollectionSetActions): QuickLook {
+    val facts = listOfNotNull("You have" to (if (t.own) "Yes" else "Not yet"),
+        t.rarity.takeIf { it.isNotBlank() }?.let { "Rarity" to it.replaceFirstChar { c -> c.uppercase() } },
+        t.price.takeIf { it.isNotBlank() }?.let { "Price" to (it + if (t.priceNote.isNotBlank()) " · " + t.priceNote else "") },
+        t.setTitle.takeIf { it.isNotBlank() }?.let { "Set" to (it + if (t.label.isNotBlank()) " · " + t.label else "") })
+    return QuickLook("set:" + t.r.id + ":" + t.i, "Collection · Card", t.r.name, t.r.art, facts = facts, buttons = listOf(CaseButton("A", "Open card", gold = true) { act.card(t) }))
+}

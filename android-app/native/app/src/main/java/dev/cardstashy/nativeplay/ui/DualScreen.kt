@@ -88,6 +88,10 @@ object DualScreen {
     internal val slots = mutableStateListOf<Slot>()
     /** Views the bottom screen puts up on the top screen (a card page's Enlarge): the newest shows, over the app. */
     internal val tops = mutableStateListOf<Slot>()
+    /** Keys a bottom case already prints on its buttons; the hint bar leaves them out. */
+    internal val shownKeys = androidx.compose.runtime.mutableStateMapOf<Any, Set<String>>()
+    /** The card under the ring's quick look (Collection and Play grids); shown when no screen has its own bottom view. */
+    var quick by mutableStateOf<QuickLook?>(null)
 
     private var prefs: android.content.SharedPreferences? = null
     private var window: BottomWindow? = null
@@ -187,7 +191,8 @@ internal fun BottomRoot() {
         Column(Modifier.fillMaxSize()) {
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 val view = DualScreen.slots.lastOrNull()?.content
-                if (view != null) view() else FocusedCardView(DualScreen.focus)
+                val q = DualScreen.quick
+                if (view != null) view() else if (q != null) QuickLookCase(q) else FocusedCardView(DualScreen.focus)
             }
             BottomPadBar()
         }
@@ -233,7 +238,8 @@ fun FocusedCardView(card: FocusCard?, extra: (@Composable () -> Unit)? = null) {
 private fun BottomPadBar() {
     val pad by Pad.connected.collectAsState()
     if (!pad) return
-    val items = PadPrompts.prompts(PadPrompts.current())
+    val shown = DualScreen.shownKeys.values.flatten().toSet()
+    val items = PadPrompts.prompts(PadPrompts.current()).filter { it.first !in shown }
     if (items.isEmpty()) return
     Row(Modifier.fillMaxWidth().height(44.dp).background(Color(0xF2101217)).border(1.dp, Color(0x30D6AD64)).padding(horizontal = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.End), verticalAlignment = Alignment.CenterVertically) {
@@ -280,3 +286,8 @@ fun TopScreen(content: @Composable () -> Unit) {
 /** On the app's root, over everything: the newest [TopScreen] view. */
 @Composable
 fun TopScreenHost() { DualScreen.tops.lastOrNull()?.content?.invoke() }
+
+/** On two screens, the ring on this card puts its [QuickLook] on the bottom; leaving it takes the look away. */
+fun Modifier.quickLook(make: () -> QuickLook): Modifier = if (!DualScreen.active) this else onFocusChanged { f ->
+    if (f.hasFocus) DualScreen.quick = make() else { val q = DualScreen.quick; if (q != null && q.key == make().key) DualScreen.quick = null }
+}

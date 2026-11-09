@@ -204,7 +204,7 @@ object PadPrompts {
         val code = event.keyCode
         val ours = code == KeyEvent.KEYCODE_BUTTON_X || code == KeyEvent.KEYCODE_BUTTON_Y || code == KeyEvent.KEYCODE_BUTTON_L1 ||
             code == KeyEvent.KEYCODE_BUTTON_R1 || code == KeyEvent.KEYCODE_BUTTON_L2 || code == KeyEvent.KEYCODE_BUTTON_R2 ||
-            code == KeyEvent.KEYCODE_BUTTON_START || code == KeyEvent.KEYCODE_MENU
+            code == KeyEvent.KEYCODE_BUTTON_START || code == KeyEvent.KEYCODE_MENU || code == KeyEvent.KEYCODE_BUTTON_SELECT
         if (!ours) return false
         val down = event.action == KeyEvent.ACTION_DOWN
         if (down) lastPress = SystemClock.uptimeMillis()
@@ -231,6 +231,8 @@ object PadPrompts {
             KeyEvent.KEYCODE_BUTTON_L2 -> acts.page?.invoke(-1) ?: repeat(6) { dpad(KeyEvent.KEYCODE_DPAD_UP) }
             KeyEvent.KEYCODE_BUTTON_R2 -> acts.page?.invoke(1) ?: repeat(6) { dpad(KeyEvent.KEYCODE_DPAD_DOWN) }
             KeyEvent.KEYCODE_BUTTON_START, KeyEvent.KEYCODE_MENU -> if (event.repeatCount == 0) acts.start?.run?.invoke()
+            // Select (Randall 9 Nov): the quick menu a long press opens, on whatever the ring is on, everywhere.
+            KeyEvent.KEYCODE_BUTTON_SELECT -> if (event.repeatCount == 0) PadCursor.holdFocused()
         }
         return true
     }

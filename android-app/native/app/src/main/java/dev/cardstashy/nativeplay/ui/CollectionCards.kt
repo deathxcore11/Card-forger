@@ -284,8 +284,8 @@ private fun CollectionCardsActions.pad(r: CollRow): PadActs {
 @Composable
 private fun Modifier.lotPad(r: CollRow, act: CollectionCardsActions): Modifier {
     val acts = remember(r, act) { act.pad(r) }
-    // Two screens: the lot's whole card page follows the ring onto the bottom screen.
-    return followCard { act.card(r) }.padActs(acts)
+    // Two screens: the lot's quick look follows the ring onto the bottom screen (A opens the card across both screens).
+    return quickLook { collQuick(r, act) }.padActs(acts)
 }
 
 // ---------------------------------------------------------------- site colours (style.css tokens as the live page computes them)
@@ -1376,4 +1376,20 @@ private fun SelectTray(t: CollTray, act: CollectionCardsActions, modifier: Modif
             Text(t.clear, Modifier.padding(vertical = 4.dp), style = sans(13f, 600, GoldC))
         }
     }
+}
+
+/** A lot's quick look on the bottom screen: the card, its type and words (Magic), what you have, its price and set. */
+internal fun collQuick(r: CollRow, act: CollectionCardsActions): QuickLook {
+    fun JsonObject.str(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asString
+    val face = r.print?.getAsJsonArray("card_faces")?.firstOrNull() as? JsonObject
+    val type = r.print?.str("type_line") ?: face?.str("type_line")
+    val text = r.print?.str("oracle_text") ?: face?.str("oracle_text")
+    val facts = listOfNotNull(
+        (if (r.wanted) "Wishlist" else "You have") to (if (r.wanted) "Wanted" else r.qty.toString()),
+        r.set?.rarity?.takeIf { it.isNotBlank() }?.let { "Rarity" to it.replaceFirstChar { c -> c.uppercase() } },
+        r.price.takeIf { it.isNotBlank() }?.let { "Price" to it },
+        r.set?.title?.takeIf { it.isNotBlank() }?.let { "Set" to (it + if (r.set.label.isNotBlank()) " · " + r.set.label else "") })
+    val buttons = listOfNotNull(CaseButton("A", "Open card", gold = true) { act.card(r) },
+        if (r.wanted) r.got.takeIf { it.isNotBlank() }?.let { CaseButton("X", "Got it") { act.got(r) } } else CaseButton("X", "Got one") { act.qty(r, 1) })
+    return QuickLook("lot:" + r.id, "Collection · Card", r.name, r.art, type, text, facts, buttons)
 }
