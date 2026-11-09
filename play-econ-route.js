@@ -130,12 +130,26 @@ export async function shopSets(env, request, fetcher = fetch) {
   return {reward: rewardSet({standardSets: facts?.standardSets || [], boosterIndex: boosterIndex || {}, scryfallSets: sets}), shop};
 }
 
+// Looks cards up on Scryfall: the batch endpoint with one retry on 429, then a single GET for every
+// identifier the batch missed (the batch lookup fails from the live Worker; single GETs do not).
 async function scryfallCollection(identifiers, fetcher) {
-  const out = [];
+  const sf = scryfallFetch(fetcher), out = [], wait = ms => new Promise(r => setTimeout(r, ms));
   for (let i = 0; i < identifiers.length; i += 75) {
-    const r = await fetcher('https://api.scryfall.com/cards/collection', {method: 'POST', headers: {'Content-Type': 'application/json', Accept: 'application/json', 'User-Agent': 'CardStashy/1.0'}, body: JSON.stringify({identifiers: identifiers.slice(i, i + 75)})}).catch(() => null);
-    const body = r?.ok ? await r.json().catch(() => null) : null;
-    out.push(...(body?.data || []));
+    const chunk = identifiers.slice(i, i + 75), init = {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({identifiers: chunk})};
+    let r = await sf('https://api.scryfall.com/cards/collection', init).catch(() => null);
+    if (r?.status === 429) { await wait(400); r = await sf('https://api.scryfall.com/cards/collection', init).catch(() => null); }
+    const body = r?.ok ? await r.json().catch(() => null) : null, got = body?.data || [];
+    out.push(...got);
+    if (got.length >= chunk.length || chunk.length > 12) continue;
+    const have = new Set(got.flatMap(c => [c.id, c.set + ':' + c.collector_number, String(c.name).toLowerCase()]));
+    for (const id of chunk) {
+      if (have.has(id.id) || (id.set && have.has(id.set + ':' + id.collector_number)) || (id.name && have.has(id.name.toLowerCase()))) continue;
+      const url = id.id ? 'https://api.scryfall.com/cards/' + id.id : id.set ? `https://api.scryfall.com/cards/${id.set}/${encodeURIComponent(id.collector_number)}` : 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(id.name);
+      let c = await sf(url).catch(() => null);
+      if (c?.status === 429) { await wait(400); c = await sf(url).catch(() => null); }
+      const card = c?.ok ? await c.json().catch(() => null) : null;
+      if (card?.id) out.push(card);
+    }
   }
   return out;
 }
