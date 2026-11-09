@@ -287,6 +287,21 @@ private fun SetsPage(m: CollectionSetsModel, top: @Composable (tabs: (@Composabl
     val cols = if (screen >= 700.dp) 2 else 1
     val gap = when { screen >= 1000.dp -> 16.dp; screen >= 700.dp -> 12.dp; else -> 10.dp }
     val sectionGap = when { screen >= 1000.dp -> 40.dp; screen >= 700.dp -> 32.dp; else -> 26.dp }
+    // Two screens: the bottom follows the ring onto a set (its mark big, count and your progress; A opens it).
+    val lens = rememberLens()
+    BottomScreen {
+        ShowcaseLens(lens.key) { k ->
+            val r = k?.let { code -> m.sections.firstNotNullOfOrNull { sec -> sec.rows.firstOrNull { it.code == code } } }
+            if (r != null) SetCase(r) { act.set(r.code) }
+            else ShowcaseCase(m.eyebrow, m.title, hero = null) {
+                val rows = m.sections.flatMap { it.rows }
+                CaseFact("Sets shown", "%,d".format(rows.size), big = true)
+                val started = rows.count { (it.progress?.fill ?: 0f) > 0f }
+                if (started > 0) CaseFact("Sets you've started", "%,d".format(started))
+                CaseFact("Move the ring onto a set", "Its count and your progress show here. A opens it.")
+            }
+        }
+    }
     LazyColumn(modifier, contentPadding = PaddingValues(bottom = 28.dp)) {
         item(key = "top") {
             Box(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)) {
@@ -313,7 +328,7 @@ private fun SetsPage(m: CollectionSetsModel, top: @Composable (tabs: (@Composabl
             val lines = s.rows.chunked(cols)
             for ((li, line) in lines.withIndex()) item(key = "r:" + s.year + ":" + line.joinToString("|") { it.code }) {
                 Row(Modifier.padding(horizontal = gutter).padding(bottom = if (li == lines.lastIndex) 0.dp else gap).height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(gap)) {
-                    for (r in line) SetTile(r, screen, Modifier.weight(1f).fillMaxHeight()) { act.set(r.code) }
+                    for (r in line) SetTile(r, screen, Modifier.weight(1f).fillMaxHeight().dualLens(lens, r.code)) { act.set(r.code) }
                     repeat(cols - line.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
@@ -425,6 +440,23 @@ private fun SetTile(r: SetRowM, screen: Dp, modifier: Modifier, onClick: () -> U
                 }
             }
             r.progress?.let { TileProgress(it, tiny) }
+        }
+    }
+}
+
+/** A set under the ring, on the bottom screen: its mark big over its art, the card count and your progress in it. */
+@Composable
+private fun SetCase(r: SetRowM, onOpen: () -> Unit) {
+    ShowcaseCase(listOf(r.mark, r.detail).filter { it.isNotBlank() }.joinToString(" · "), r.name, heroWeight = .36f,
+        buttons = listOf(CaseButton("A", "Open set", gold = true, run = onOpen)),
+        hero = {
+            SetAtmosphere(r.atmosphere, .9f, .5f, Modifier.matchParentSize())
+            Box(Modifier.align(Alignment.Center)) { SetMedia(r, 120.dp, 120.dp, false) }
+        }) {
+        if (r.count.isNotBlank()) CaseFact(r.units.joinToString(" ").ifBlank { "Cards" }, r.count, big = !r.unknown)
+        r.progress?.let { p ->
+            CaseFact(p.label.ifBlank { "Your progress" }, listOf(p.pct, p.caption).filter { it.isNotBlank() }.joinToString(" · ").ifBlank { "Not started" })
+            p.fill?.let { SetProgressBar(it, Modifier.fillMaxWidth()) }
         }
     }
 }

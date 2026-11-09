@@ -163,6 +163,20 @@ private fun DecksPage(m: CollectionDecksModel, top: @Composable (tabs: (@Composa
     val gutter = if (wide) 22.dp else 16.dp
     // .deck-grid: one column, two from 640, three from 1000; 12 apart.
     val cols = if (screen >= 1000.dp) 3 else if (screen >= 640.dp) 2 else 1
+    // Two screens: the bottom follows the ring onto a deck (its box big, format, power, how much you own, what's left to find).
+    val lens = rememberLens()
+    if (m.tab == "mine") BottomScreen {
+        ShowcaseLens(lens.key) { k ->
+            val d = k?.let { id -> m.tiles.firstOrNull { it.id == id } }
+            if (d != null) CollDeckCase(d) { act.deck(d) }
+            else ShowcaseCase(m.game.name.lowercase().replaceFirstChar { it.uppercase() }.let { if (it == "Mtg") "Magic" else it }, m.title, hero = null) {
+                CaseFact("Decks", "%,d".format(m.tiles.size), big = true)
+                val ready = m.tiles.count { it.bar >= .999f }
+                if (m.tiles.isNotEmpty()) CaseFact("Fully owned", "%,d of %,d".format(ready, m.tiles.size))
+                CaseFact("Move the ring onto a deck", "Its box, power and what you still need show here. A opens it.")
+            }
+        }
+    }
     LazyColumn(modifier, contentPadding = PaddingValues(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item(key = "top") {
             Box(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)) {
@@ -185,7 +199,7 @@ private fun DecksPage(m: CollectionDecksModel, top: @Composable (tabs: (@Composa
         }
         else items(m.tiles.chunked(cols), key = { line -> line.joinToString("|") { it.id } }) { line ->
             Row(Modifier.padding(horizontal = gutter).height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                for (d in line) DeckTile(d, wide, Modifier.weight(1f).fillMaxHeight()) { act.deck(d) }
+                for (d in line) DeckTile(d, wide, Modifier.weight(1f).fillMaxHeight().dualLens(lens, d.id)) { act.deck(d) }
                 repeat(cols - line.size) { Spacer(Modifier.weight(1f)) }
             }
         }
@@ -383,6 +397,25 @@ private fun TileBody(d: DeckTileModel) {
         Box(Modifier.padding(top = 6.dp).fillMaxWidth().height(4.dp).clip(RoundedCornerShape(99.dp)).background(Surface2)) {
             Box(Modifier.fillMaxWidth(d.bar.coerceIn(0f, 1f)).fillMaxHeight().clip(RoundedCornerShape(99.dp))
                 .background(Brush.horizontalGradient(listOf(Color(0xFFC08A3A), Color(0xFFE8B95B)))))
+        }
+    }
+}
+
+/** A deck under the ring, on the bottom screen: its box, format, power and how much of it you own. */
+@Composable
+private fun CollDeckCase(d: DeckTileModel, onOpen: () -> Unit) {
+    ShowcaseCase(listOf(d.format, d.tier).filter { it.isNotBlank() }.joinToString(" · ").ifBlank { "Deck" }, d.name, heroWeight = .4f,
+        buttons = listOf(CaseButton("A", "Open deck", gold = true, run = onOpen)),
+        hero = { SiteDeckBox(d.boxCards, d.boxColor, true, Modifier.align(Alignment.Center), androidx.compose.ui.unit.DpSize(150.dp, 164.dp)) }) {
+        if (d.line.isNotBlank()) Text(d.line, style = sans(14f, 400, Color(0xFFE4DFD3)))
+        if (d.power.isNotBlank()) CaseFact(d.powerLabel.ifBlank { "Power" }, d.power + if (d.powerTitle.isNotBlank()) " · " + d.powerTitle else "")
+        if (d.stats.isNotEmpty()) d.stats.forEach { (v, l) -> CaseFact(l, v) }
+        else {
+            if (d.owned.isNotBlank()) CaseFact(d.ownedText.ifBlank { "Owned" }, d.owned)
+            if (d.find.isNotBlank()) CaseFact(d.findText.ifBlank { "To find" }, d.find) else if (d.findText.isNotBlank()) CaseFact("To find", d.findText)
+        }
+        Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(99.dp)).background(Surface2)) {
+            Box(Modifier.fillMaxWidth(d.bar.coerceIn(0f, 1f)).fillMaxHeight().clip(RoundedCornerShape(99.dp)).background(Brush.horizontalGradient(listOf(Color(0xFFC08A3A), Color(0xFFE8B95B)))))
         }
     }
 }

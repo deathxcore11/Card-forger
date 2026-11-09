@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -371,6 +372,35 @@ fun PreconsTab(state: JsonObject, pc: PreconUi, owned: Map<String, Int>, onOpen:
 @Composable
 private fun ChipOn(label: String, on: Boolean, count: Int? = null, onClick: () -> Unit) = ShelfChip(label, on, count, onClick = onClick)
 
+/** Two screens: the precon tile under the ring, which the bottom screen (Play › Decks, the Shop) shows before its own case. */
+object DualPrecon {
+    class At(val e: Decks.PreconEntry, val need: PreconNeed?, val shop: Boolean, val open: () -> Unit)
+    var at by androidx.compose.runtime.mutableStateOf<At?>(null)
+}
+
+/** The precon under the ring, on the bottom screen: its face, formats, how much of it is in your Trunk and what finishing it takes. */
+@Composable
+internal fun PreconCase(a: DualPrecon.At) {
+    val e = a.e; val need = a.need
+    val s = PreconStore.summaries[e.fileName]
+    val face = heroPainter(s?.face?.second?.let { Decks.scryfallImage(it) }?.ifBlank { null }?.let(homeArt))
+    ShowcaseCase(listOf(e.type, e.releaseDate.take(4)).filter { it.isNotBlank() }.joinToString(" · "), e.name, heroWeight = .38f,
+        buttons = listOf(CaseButton("A", "Open precon", gold = true, run = a.open)),
+        hero = { if (face != null) Image(face, null, Modifier.align(Alignment.Center).padding(10.dp).fillMaxHeight().aspectRatio(.716f).clip(RoundedCornerShape(10.dp)), contentScale = ContentScale.Crop) }) {
+        if (s != null) CaseFact("Formats", s.formats.take(4).joinToString(" · ").ifEmpty { "Casual" })
+        if (need != null) {
+            CaseFact("In your Trunk", "${(need.share * 100).toInt()}%")
+            ProgressBar(need.share.toFloat().coerceIn(0f, 1f))
+            when {
+                need.sh.complete -> CaseFact("Ready", "Every card is in your Trunk")
+                a.shop -> CaseFact("To buy it", "${need.total} card${if (need.total == 1) "" else "s"} to add · %,d coins".format(need.price))
+                else -> { CaseFact("To finish it", "${need.total} card${if (need.total == 1) "" else "s"} to add with seals" + if (need.inStore) ", or %,d coins".format(need.price) else "")
+                    SealCosts(need.sh.seals, need.short, 18.dp) }
+            }
+        } else CaseFact("Checking the list", "One moment…")
+    }
+}
+
 /**
  * A precon tile: its face, set emblem, pips, product and year (" · In the store" for this week's five), formats, how much
  * of it the Trunk holds, and what's left in seals, or coins for a store precon.
@@ -381,7 +411,10 @@ fun PreconTile(e: Decks.PreconEntry, need: PreconNeed?, modifier: Modifier, week
     LaunchedEffect(e.fileName) { if (s == null) PreconStore.want(listOf(e.fileName)) }
     val code = e.code.lowercase()
     val p = heroPainter(s?.face?.second?.let { Decks.scryfallImage(it).replace("/normal/", "/art_crop/") }?.ifBlank { null }?.let(homeArt))
-    Box(modifier.height(206.dp).softTile().clickable(onClick = onClick).semantics { contentDescription = "${e.name}, ${e.type}, ${e.releaseDate.take(4)}" }) {
+    val openNow by androidx.compose.runtime.rememberUpdatedState(onClick)
+    Box(modifier.height(206.dp).then(if (!DualScreen.active) Modifier else Modifier.onFocusChanged { f ->
+            if (f.hasFocus) DualPrecon.at = DualPrecon.At(e, need, shop) { openNow() } else if (DualPrecon.at?.e?.fileName == e.fileName) DualPrecon.at = null })
+        .softTile().clickable(onClick = onClick).semantics { contentDescription = "${e.name}, ${e.type}, ${e.releaseDate.take(4)}" }) {
         if (p != null) Image(p, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         else Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFF1B1F29), Color(0xFF0F1117)))))
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x55000000), .3f to Color(0x10000000), .62f to Color(0xE608090C), 1f to Color(0xF508090C))))

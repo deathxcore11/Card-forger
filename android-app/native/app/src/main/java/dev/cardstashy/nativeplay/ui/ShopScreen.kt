@@ -153,6 +153,7 @@ fun ShopRoute(onBack: () -> Unit, nav: @Composable () -> Unit, startTab: String 
     val calm = open == null && opener == null && precon.open == null
     val lens = rememberLens()
     BottomScreen {
+        if (set == null) DualPrecon.at?.let { return@BottomScreen PreconCase(it) }
         val k = lens.key
         val offer = k?.takeIf { set == null && it.startsWith("sl:") }?.removePrefix("sl:")?.let { id -> (s.get("secretLairStore") as? JsonObject)?.objs("offers")?.firstOrNull { it.get("id").s() == id } }
         if (offer != null) SlOfferCase(s, offer, busy.isNotEmpty(), onBuy = { buySl(offer) })

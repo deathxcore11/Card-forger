@@ -118,6 +118,7 @@ fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit,
     val user = dev.cardstashy.nativeplay.account.Account.session.collectAsState().value?.userId
     val history = remember(user) { runCatching { dev.cardstashy.nativeplay.play.MatchRecord.history(ctx, user) }.getOrDefault(emptyList()) }
     BottomScreen {
+        DualPrecon.at?.let { return@BottomScreen PreconCase(it) }
         val d = lens.key?.removePrefix("deck:")?.let { id -> decks.firstOrNull { it.s("id") == id } }
         ShowcaseLens(d) { d ->
             if (d != null) DeckBoxCase(d, owned, history, listOf(CaseButton("A", "Open deck", gold = true) { onDeck(d.s("id")) }, CaseButton(null, "Menu") { holding = d }))
