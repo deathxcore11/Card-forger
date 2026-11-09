@@ -60,9 +60,7 @@ internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: 
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             ZoneChip("Hand ${hand.size}", shown == "hand") { zone = "hand" }
             if (stackUp) ZoneChip("Stack ${st.stack.size}", shown == "stack") { zone = "stack" }
-            Box(Modifier.weight(1f))
-            val me = st.me; val them = st.players.firstOrNull { !it.isViewer }
-            Text("You ${me.life}" + (them?.let { "  ·  ${it.name.ifBlank { "Opponent" }} ${it.life}" } ?: ""), style = small(12f, Site.Muted), maxLines = 1)
+            // Life totals and the gold button stay on the top screen only (each fact in one place, Randall's rule).
         }
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             val h = maxHeight
@@ -79,7 +77,6 @@ internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: 
                     Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         if (c != null) CardWords(c) else Text("Lift a card to read it here.", style = small(13f, Site.Muted))
                     }
-                    gold?.run?.let { GoldButton(gold.label, it) }
                 }
             }
         }
