@@ -496,9 +496,12 @@ fun ForgeBoard(
                     fun step(dx: Int) { val i = hand.indexOfFirst { it.id == selectedHand }
                         onSelectHand(hand[if (i < 0) (if (dx > 0) 0 else hand.lastIndex) else (i + dx).coerceIn(0, hand.lastIndex)].id) }
                     var chipOn by remember { mutableStateOf(false) }
+                    val chipFocus = remember { FocusRequester() }
+                    androidx.compose.runtime.DisposableEffect(chipFocus) { TableZones.hand = chipFocus; onDispose { if (TableZones.hand === chipFocus) TableZones.hand = null } }
                     val shape = RoundedCornerShape(999.dp)
                     Row(Modifier.align(Alignment.TopCenter).padding(top = handW / 66f * 30f)
-                        .onFocusChanged { chipOn = it.isFocused; if (it.isFocused && selectedHand == null) onSelectHand(hand.first().id) }
+                        .focusRequester(chipFocus)
+                        .onFocusChanged { chipOn = it.isFocused; if (it.isFocused) { TableZones.at = 0; if (selectedHand == null) onSelectHand(hand.first().id) } }
                         .onKeyEvent { e -> if (e.nativeKeyEvent.action != android.view.KeyEvent.ACTION_DOWN) return@onKeyEvent false
                             when (e.nativeKeyEvent.keyCode) { android.view.KeyEvent.KEYCODE_DPAD_LEFT -> { step(-1); true }; android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> { step(1); true }; else -> false } }
                         .padActs(PadActs(a = lifted?.let { if (playable(it)) (if (it.isLand) "Play land" else "Cast") else "Open" }, y = lifted?.let { c -> PadAct("Open") { onInspect(c) } }))
@@ -562,10 +565,11 @@ fun ForgeBoard(
             // (pass, resolve, confirm), LT the quiet one (cancel) — specs/dual-screen-native.md's match map.
             val padGold = padX
             PadScreen(PadActs(x = padX, start = PadAct("Menu") { if (menu != null) menu.open = !menu.open else onMenu() },
-                tabs = if (hand.isEmpty()) null else ({ step: Int ->
+                // On two screens d-pad left/right on the hand chip already walks the hand, so the shoulders jump between zones instead.
+                tabs = if (dual) ({ step: Int -> TableZones.jump(step) }) else if (hand.isEmpty()) null else ({ step: Int ->
                     val i = hand.indexOfFirst { it.id == selectedHand }
                     val next = if (i < 0) (if (step > 0) 0 else hand.lastIndex) else (i + step).coerceIn(0, hand.lastIndex)
-                    onSelectHand(hand[next].id) }), tabsLabel = "Hand",
+                    onSelectHand(hand[next].id) }), tabsLabel = if (dual) "Zone" else "Hand",
                 page = if (!live) null else ({ step: Int -> if (step > 0) padGold?.run?.invoke() else if (st.buttons.cancelEnabled) intents.cancel() }),
                 pageLabel = if (st.buttons.cancelEnabled) "Cancel / Pass" else "Pass"))
             if (dual) { val goldAct = padX; BottomScreen { MatchBottom(st, hand, selectedHand?.let { id -> hand.firstOrNull { it.id == id } }, goldAct, fan, onInspect) } }
@@ -690,6 +694,11 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         else -> null
     }
     val padHere = remember(card.id, padA) { PadActs(a = padA, y = PadAct("Inspect") { inspect(cardNow) }) }
+    if (pileTop) androidx.compose.runtime.DisposableEffect(card.id, mineSide) {
+        val zone = if (mineSide) TableZones.mine else TableZones.theirs
+        zone[card.id] = padFocus
+        onDispose { if (zone[card.id] === padFocus) zone.remove(card.id) }
+    }
     Box(modifier.size(w, h)
         .graphicsLayer { rotationZ = turn; val s = if (card.tapped) .94f else 1f; scaleX = s; scaleY = s; translationY = if (card.attacking) (if (mineSide) -12f else 12f) * u * density else 0f }
         .onGloballyPositioned { place[0] = it; anchors?.putRect("c${card.id}", it.boundsInRoot()) }
@@ -708,7 +717,8 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
             val ringW = (role?.second ?: 1.5f).du.toPx()
             drawRoundRect(ring, topLeft = Offset(-ringW, -ringW), size = Size(size.width + 2 * ringW, size.height + 2 * ringW), cornerRadius = CornerRadius(r + ringW))
         }
-        .then(if (pileTop) Modifier.padActs(padHere).matchPadTap(padSource, padFocus) { tap?.invoke() ?: inspect(card) } else Modifier)
+        .then(if (pileTop) Modifier.onFocusChanged { if (it.isFocused) { if (mineSide) { TableZones.lastMine = card.id; TableZones.at = 1 } else { TableZones.lastTheirs = card.id; TableZones.at = 2 } } }
+            .padActs(padHere).matchPadTap(padSource, padFocus) { tap?.invoke() ?: inspect(card) } else Modifier)
         .clip(shape).background(Color(0xFF141418))
         .pointerInput(card.id) { detectTapGestures(onTap = { tap?.invoke() ?: inspect(card) }, onLongPress = { inspect(card) }) }
         .then(if (draggable && drag != null) Modifier.pointerInput(card.id, drag) { blockDragGestures(card.id, drag, anchors, 22.dp.toPx()) { p -> place[0]?.takeIf { it.isAttached }?.localToRoot(p) } } else Modifier)) {
@@ -1066,6 +1076,31 @@ private fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier, 
 }
 
 // ---- Controller (PadPrompts): the gold ring and A for things that answer touch with their own gestures ----
+
+/**
+ * The table's zones for the shoulders on a dual screen (specs/dual-screen-native.md's match map): LB/RB jump the ring
+ * Hand → Your board → Opponent's board and round again, landing on the card it was last on in that zone, else the zone's first.
+ */
+internal object TableZones {
+    var hand: FocusRequester? = null
+    val mine = LinkedHashMap<Int, FocusRequester>(); val theirs = LinkedHashMap<Int, FocusRequester>()
+    var lastMine: Int? = null; var lastTheirs: Int? = null
+    /** 0 hand, 1 yours, 2 theirs: where the ring is now. */
+    var at = 0
+    fun jump(step: Int) {
+        val order = listOf(0, 1, 2)
+        var z = at
+        repeat(3) {
+            z = order[(order.indexOf(z) + step + 3) % 3]
+            val r = when (z) {
+                0 -> hand
+                1 -> (lastMine?.let { mine[it] } ?: mine.values.firstOrNull())
+                else -> (lastTheirs?.let { theirs[it] } ?: theirs.values.firstOrNull())
+            }
+            if (r != null && runCatching { r.requestFocus() }.isSuccess) { at = z; return }
+        }
+    }
+}
 
 /** Where the controller's ring was on the table (a hand card, a permanent, the menu button), so closing an open card or the menu puts it back. */
 internal object TablePad {
