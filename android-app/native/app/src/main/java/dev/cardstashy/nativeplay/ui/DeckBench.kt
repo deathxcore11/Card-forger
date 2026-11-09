@@ -397,6 +397,7 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
     // Controller (PadPrompts): X the gold button (Save; Collection's Practice / War Chest), LB/RB the deck's tabs, LT/RT a page of the
     // list or grid under the ring (six d-pad steps, as the bar says), Start the ⋯ menu.
     val focus = LocalFocusManager.current
+    BottomScreen { BenchBottom(m) }
     PadScreen(PadActs(x = a.save?.takeIf { m.canSave && !m.busy }?.let { PadAct(a.saveLabel, it) },
         tabs = if (m.tabs.size > 1) ({ d -> padTab(m.tabs.map { it.first }, ui.tab, d, a.drawn)?.let { k -> ui.peek = null; if (a.tab?.invoke(k) != false) ui.tab = k } }) else null,
         page = { d -> repeat(6) { focus.moveFocus(if (d > 0) FocusDirection.Down else FocusDirection.Up) } },
@@ -1218,6 +1219,7 @@ private fun Tile(m: BenchModel, t: BenchTile, ui: BenchUi, a: BenchActions, drag
         Spacer(Modifier.height(3.dp))
         Box(Modifier.fillMaxWidth().aspectRatio(63f / 88f)) {
             Box(Modifier.fillMaxSize().shadow(8.dp, CARD, spotColor = Color.Black).clip(CARD).background(B.Panel)
+                .dualFocus(FocusCard(t.name, t.image, owned = if (t.inDeck > 0) "${t.inDeck} in the deck" else null))
                 .benchCard(drag, t.key, t.image, "coll", lift) { ui.peek = t.key }.then(cardPad(m, t.key, t.key, t.name, t.inDeck, ui, a, known = t.room).let { (acts, onA) -> Modifier.padTap(acts, onA) })
                 .semantics { contentDescription = t.name }) {
                 if (img != null) Image(img, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop,
@@ -1367,3 +1369,51 @@ private fun StepDot(label: String, desc: String, enabled: Boolean, onClick: () -
 @Composable
 private fun EmbRow(emb: List<TcgEmb>) = Row(Modifier.clip(RoundedCornerShape(99.dp)).background(Color(0x8C000000)).padding(horizontal = 6.dp, vertical = 3.dp),
     horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) { for (e in emb) TcgEmbItem(e) }
+
+
+/**
+ * Deck building on a dual-screen handheld's bottom screen (specs/dual-screen-native.md, screen 5): the deck's name, count, curve and
+ * Power on the left, its list by type on the right. The card the ring is on in the pool lights its row gold ("2 → 3"), or shows as
+ * a new row when it isn't in the deck yet.
+ */
+@Composable
+private fun BenchBottom(m: BenchModel) {
+    val on = DualScreen.focus?.name
+    Row(Modifier.fillMaxSize().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(m.title, style = cinzel(17f, B.Gold), maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(m.formatChip, style = f(12f, 700, B.Mute))
+            m.stats.take(3).forEach { st -> Text(buildAnnotatedString { withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = if (st.warn) B.Coral else B.Fg)) { append(st.value) }; append("  " + st.label) }, style = f(13f, 600, B.Mute)) }
+            m.power?.let { p -> Text(buildAnnotatedString { withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = B.Gold)) { append(p) }; append("  power" + if (m.tier.isNotBlank()) " · ${m.tier}" else "") }, style = f(13f, 600, B.Mute)) }
+            // The mana curve from the list's own costs (Magic): 0 to 6+, the bar the ring's card would add to glows.
+            val curve = IntArray(7); var any = false
+            val onCost = m.groups.flatMap { it.rows }.firstOrNull { it.name == on }?.cost
+            for (g in m.groups) for (r in g.rows) { if (r.cost.isBlank()) continue; any = true; curve[manaValue(r.cost).coerceAtMost(6)] += r.qty }
+            if (any) {
+                val top = maxOf(1, curve.max()); val lit = onCost?.let { manaValue(it).coerceAtMost(6) }
+                Row(Modifier.fillMaxWidth().weight(1f, fill = false).heightIn(max = 90.dp).height(70.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Bottom) {
+                    curve.forEachIndexed { i, n -> Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(Modifier.fillMaxWidth().height((52f * n / top).coerceAtLeast(2f).dp).clip(RoundedCornerShape(3.dp)).background(if (i == lit) B.Gold else Color(0x66E5C47E)))
+                        Text(if (i == 6) "6+" else "$i", style = f(11f, 700, if (i == lit) B.Gold else B.Mute))
+                    } }
+                }
+            }
+        }
+        androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1.2f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            val inDeck = m.groups.any { g -> g.rows.any { it.name == on } }
+            if (on != null && !inDeck) item(key = "new") { BottomRow("0 → 1", on, true) }
+            for (g in m.groups) {
+                item(key = "g:" + g.name) { Text("${g.name.uppercase()}  ${g.rows.sumOf { it.qty }}", style = f(11f, 800, B.Gold, track = .1f), modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)) }
+                items(g.rows.size, key = { "r:${g.name}:" + g.rows[it].key }) { i -> val r = g.rows[i]; val lit = r.name == on
+                    BottomRow(if (lit) "${r.qty} → ${r.qty + 1}" else "${r.qty}", r.name, lit) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BottomRow(qty: String, name: String, lit: Boolean) = Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(if (lit) Color(0x29E5C47E) else Color.Transparent)
+    .padding(horizontal = 6.dp, vertical = 3.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+    Text(qty, style = f(12f, 800, if (lit) B.Gold else B.Mute), modifier = Modifier.widthIn(min = 22.dp))
+    Text(name, style = f(13f, if (lit) 800 else 600, if (lit) B.Gold else B.Fg), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+}

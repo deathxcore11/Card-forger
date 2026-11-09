@@ -3,6 +3,7 @@ package dev.cardstashy.nativeplay.ui
 import androidx.compose.ui.layout.onPlaced
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -184,6 +185,8 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
     val s = d.state
     val purse = PlayMath.purse(s) ?: return
     val level = PlayMath.mastery(s, purse.xp)
+    val lens = rememberLens()
+    BottomScreen { PlayHomeBottom(d, act, lens, purse, level) }
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         if (!HomeTest.noPictures) { if (AppSettings.glass || AppSettings.theme == "aura") Ambient(d.ambient); LaunchedEffect(d.ambient) { Aura.remember(d.ambient) } }
         Column(Modifier.fillMaxSize()) {
@@ -193,7 +196,7 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
                 // Held sideways (a phone or a handheld): the game dashboard.
                 val short = HomeTest.forceShort ?: (wide && maxHeight < 500.dp)
                 androidx.compose.runtime.SideEffect { dash = short }
-                if (short) Dashboard(d, act, purse, level, 64.dp + statusTop(), maxHeight) else
+                if (short) Dashboard(d, act, purse, level, 64.dp + statusTop(), maxHeight, lens) else
                 LazyColumn(Modifier.fillMaxSize().testTag("playHome"), contentPadding = PaddingValues(top = (if (short) 64.dp else 72.dp) + statusTop(), bottom = 28.dp, start = 16.dp, end = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(if (short) 18.dp else 26.dp)) {
                     if (short) item("head") {
@@ -231,7 +234,7 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
                 }.statusBarsPadding()) {
                     top()
                     // The dashboard's purse rides in the bar between the brand and the avatar.
-                    if (dash) Box(Modifier.align(Alignment.Center).padding(start = 248.dp, end = 64.dp).widthIn(max = 560.dp).fillMaxWidth()) { PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("forge") }, onPacks = { act.view("packs") }) }
+                    if (dash && !DualScreen.active) Box(Modifier.align(Alignment.Center).padding(start = 248.dp, end = 64.dp).widthIn(max = 560.dp).fillMaxWidth()) { PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("forge") }, onPacks = { act.view("packs") }) }
                 }
             }
             if (!dash) nav()
@@ -455,7 +458,7 @@ fun GoldPlate(label: String, modifier: Modifier = Modifier, onClick: () -> Unit)
 // ---------------------------------------------------------------- mode cards (pl-modes)
 
 @Composable
-private fun Modes(wide: Boolean, act: PlayHomeActions, row: Dp? = null) {
+private fun Modes(wide: Boolean, act: PlayHomeActions, row: Dp? = null, lens: LensHost? = null) {
     val modes = listOf(
         Triple("social", "Multiplayer", "Your deck against a friend's.") to "Invite",
         Triple("quick", "Quick Play", "Your deck against a matched CPU.") to "Play",
@@ -464,7 +467,7 @@ private fun Modes(wide: Boolean, act: PlayHomeActions, row: Dp? = null) {
     val rows = if (row != null) listOf(modes) else if (wide) modes.chunked(2) else modes.map { listOf(it) }
     Column(verticalArrangement = Arrangement.spacedBy(if (wide) 18.dp else 12.dp)) {
         rows.forEach { r -> Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-            r.forEach { (m, cta) -> ModeCard(m.first, m.second, m.third, cta, wide, Modifier.weight(1f), row) { act.mode(m.first) } }
+            r.forEach { (m, cta) -> ModeCard(m.first, m.second, m.third, cta, wide, Modifier.weight(1f).let { if (lens != null) it.dualLens(lens, if (m.first == "quick") "quick" else null) else it }, row) { act.mode(m.first) } }
         } }
     }
 }
@@ -1086,18 +1089,18 @@ private val BASICS = setOf("Plains", "Island", "Swamp", "Mountain", "Forest", "W
 private fun deckSize(format: String) = when (format.lowercase()) { "commander", "edh" -> 100; "brawl" -> 60; "standard brawl" -> 60; else -> 60 }
 
 @Composable
-private fun Decks(s: JsonObject, wide: Boolean, act: PlayHomeActions) {
+private fun Decks(s: JsonObject, wide: Boolean, act: PlayHomeActions, lens: LensHost? = null) {
     val decks = (s.get("decks") as? JsonArray)?.mapNotNull { it as? JsonObject } ?: emptyList()
     Shelf("Your decks", "All decks", { act.view("decks") }) {
         val tiles = buildList<@Composable (Modifier) -> Unit> {
-            add { m -> DeckTile(BUILD_ART, "Build a deck", "From the cards you own", m, cinzel = true) { act.view("finder") } }
+            add { m -> DeckTile(BUILD_ART, "Build a deck", "From the cards you own", lens?.let { m.dualLens(it, null) } ?: m, cinzel = true) { act.view("finder") } }
             decks.take(3).forEach { d ->
                 val cards = (d.get("cards") as? JsonArray)?.mapNotNull { it as? JsonObject } ?: emptyList()
                 val count = cards.sumOf { it.get("qty").int() ?: 0 }
                 val lead = cards.firstOrNull { (it.get("name").str() ?: "") !in BASICS }?.get("name").str()
                 val fmt = d.get("format").str()?.ifBlank { null } ?: "Standard"
                 add { m -> DeckTile(lead?.let { "https://api.scryfall.com/cards/named?format=image&version=art_crop&exact=" + java.net.URLEncoder.encode(it, "UTF-8") },
-                    d.get("name").str()?.ifBlank { null } ?: "Untitled deck", "$fmt · $count/${deckSize(fmt)} cards", m) { act.deck(d["id"].str() ?: "") } }
+                    d.get("name").str()?.ifBlank { null } ?: "Untitled deck", "$fmt · $count/${deckSize(fmt)} cards", lens?.let { m.dualLens(it, "deck:" + (d["id"].str() ?: "")) } ?: m) { act.deck(d["id"].str() ?: "") } }
             }
         }
         Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -1186,23 +1189,217 @@ private fun Merchant(s: JsonObject, act: PlayHomeActions) {
  * glass side column with the mastery level, the Trunk and a featured pack on the right. Same data and actions as the tall page.
  */
 @Composable
-private fun Dashboard(d: PlayHomeData, act: PlayHomeActions, purse: PlayMath.Purse, level: PlayMath.Level, top: Dp, height: Dp) {
+private fun Dashboard(d: PlayHomeData, act: PlayHomeActions, purse: PlayMath.Purse, level: PlayMath.Level, top: Dp, height: Dp, lens: LensHost) {
     val s = d.state
     Row(Modifier.fillMaxSize().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         LazyColumn(Modifier.weight(1f).fillMaxHeight().testTag("playHome"), contentPadding = PaddingValues(top = top, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            item("story") { Probe("story") { StoryBanner(d, act) } }
-            item("modes") { Probe("modes") { Modes(true, act, (height - top - 160.dp).coerceIn(150.dp, 220.dp)) } }
-            item("tiles") { QuickTiles(act) }
-            item("today") { Probe("today") { Today(d, act) } }
-            item("deeds") { Probe("deeds") { Deeds(d, act) } }
-            item("packs") { Duo(false, { Probe("packs") { Packs(s, act) } }, { Probe("forge") { Forge(s, act) } }) }
-            item("decks") { Probe("decks") { Decks(s, true, act) } }
+            item("story") { Probe("story") { Box(Modifier.dualLens(lens, "story")) { StoryBanner(d, act) } } }
+            item("modes") { Probe("modes") { Modes(true, act, (height - top - 160.dp).coerceIn(150.dp, 220.dp), lens) } }
+            item("tiles") { Box(Modifier.dualLens(lens, null)) { QuickTiles(act) } }
+            // With a bottom screen up, today's quests, deeds and packs live there (PlayHomeBottom), not twice.
+            if (!DualScreen.active) {
+                item("today") { Probe("today") { Today(d, act) } }
+                item("deeds") { Probe("deeds") { Deeds(d, act) } }
+                item("packs") { Duo(false, { Probe("packs") { Packs(s, act) } }, { Probe("forge") { Forge(s, act) } }) }
+            }
+            item("decks") { Probe("decks") { Decks(s, true, act, lens) } }
         }
         LazyColumn(Modifier.width(248.dp).fillMaxHeight(), contentPadding = PaddingValues(top = top, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            item("me") { LevelCard(level) }
-            item("featured") { (s.get("shop") as? JsonArray)?.firstOrNull()?.obj()?.let { FeaturedPack(s, it, act) } }
-            item("collection") { Probe("collection") { Collection(s, act) } }
+            // The mastery level lives in the bottom screen's den while it is up.
+            if (!DualScreen.active) item("me") { LevelCard(level) }
+            item("featured") { (s.get("shop") as? JsonArray)?.firstOrNull()?.obj()?.let { o -> Box(Modifier.dualLens(lens, "shop:" + (o["code"].str() ?: ""))) { FeaturedPack(s, o, act) } } }
+            item("collection") { Probe("collection") { Box(Modifier.dualLens(lens, null)) { Collection(s, act) } } }
         }
+    }
+}
+
+/**
+ * Play Home's bottom screen: one showcase case that follows the ring (plan "The Showcase", Randall 9 Nov). By default the den
+ * (your mastery, today's quests, deeds, packs and seals, which leave the top screen); on the Story banner the next battle;
+ * on Quick Play your last results; on a deck its box; on the Merchant's pack what buying it leaves you. The purse rides in the plaque.
+ */
+@Composable
+private fun PlayHomeBottom(d: PlayHomeData, act: PlayHomeActions, lens: LensHost, purse: PlayMath.Purse, level: PlayMath.Level) {
+    val s = d.state
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val wallet = @Composable { PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("forge") }, onPacks = { act.view("packs") }) }
+    val actData by produceState(StoryActs.cached(d.story.act), d.story.act) { value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { StoryActs.load(ctx, d.story.act) } }
+    val history = remember(d.user) { runCatching { dev.cardstashy.nativeplay.play.MatchRecord.history(ctx, d.user.ifBlank { null }) }.getOrDefault(emptyList()) }
+    ShowcaseLens(lens.key) { k ->
+        val deck = k?.removePrefix("deck:")?.takeIf { k.startsWith("deck:") }?.let { id -> (s.get("decks") as? JsonArray)?.mapNotNull { it as? JsonObject }?.firstOrNull { it["id"].str() == id } }
+        val offer = k?.removePrefix("shop:")?.takeIf { k.startsWith("shop:") }?.let { c -> (s.get("shop") as? JsonArray)?.mapNotNull { it as? JsonObject }?.firstOrNull { it["code"].str() == c } }
+        val quick = history.filter { it["playStyle"].str() == "quick" }
+        when {
+            k == "story" -> ActCase(d, act, actData, wallet)
+            k == "quick" && quick.isNotEmpty() -> QuickCase(quick, act, wallet)
+            deck != null -> DeckCase(deck, history, act, wallet)
+            offer != null -> OfferCase(s, offer, act, wallet)
+            else -> DenCase(d, act, level, wallet)
+        }
+    }
+}
+
+/** The story acts' battle files from the app's own copy (the same files the Story page reads), parsed once each. */
+internal object StoryActs {
+    private val acts = java.util.concurrent.ConcurrentHashMap<Int, JsonObject>()
+    fun cached(n: Int): JsonObject? = acts[n]
+    fun load(ctx: android.content.Context, n: Int): JsonObject? = acts[n] ?: runCatching {
+        com.google.gson.JsonParser.parseString(ctx.assets.open("story/act-$n.json").use { String(it.readBytes()) }) as? JsonObject }.getOrNull()?.also { acts[n] = it }
+}
+
+private fun cropUrl(name: String) = "https://api.scryfall.com/cards/named?format=image&version=art_crop&exact=" + java.net.URLEncoder.encode(name, "UTF-8")
+
+/** The den: the act's art with its epigraph; your mastery, today's quests, deeds, packs waiting and your seals. */
+@Composable
+private fun DenCase(d: PlayHomeData, act: PlayHomeActions, level: PlayMath.Level, wallet: @Composable () -> Unit) {
+    val s = d.state
+    val a = d.rules.acts.firstOrNull { it.act == d.story.act } ?: d.rules.acts.first()
+    val groups = remember(s) { (s.get("packs") as? JsonArray)?.mapNotNull { it as? JsonObject }?.groupBy { it.get("set").str() ?: "" }?.filterKeys { it.isNotEmpty() } ?: emptyMap() }
+    val w = s.get("wallet") as? JsonObject ?: JsonObject()
+    ShowcaseCase("Your den · Mastery", "Level ${level.level}", trailing = wallet, heroWeight = .36f,
+        buttons = listOf(CaseButton(null, "Quests") { act.view("quests") }, CaseButton(null, "Achievements") { act.view("deeds") }, CaseButton(null, "The Forge") { act.view("forge") }),
+        hero = {
+            Art(a.art, Modifier.matchParentSize(), BiasAlignment(0f, -.3f))
+            Box(Modifier.matchParentSize().background(Brush.verticalGradient(.35f to Color.Transparent, 1f to Color(0xF2090B10))))
+            Column(Modifier.align(Alignment.BottomStart).padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("ACT ${a.act}", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = .16.em, color = P.GoldSoft))
+                if (a.line.isNotBlank()) Text(a.line, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, lineHeight = 20.sp, color = Color(0xFFFBF3DF), shadow = P.shadow), maxLines = 6, overflow = TextOverflow.Ellipsis)
+            }
+        }) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Bar(level.into.toFloat() / level.need.coerceAtLeast(1))
+            Text("%,d / %,d XP to level %d".format(level.into, level.need, level.level + 1), style = TextStyle(fontFamily = P.Sans, fontSize = 14.sp, color = P.Muted))
+        }
+        CaseLabel("Today")
+        Quests(d, act)
+        if (groups.isNotEmpty()) {
+            CaseLabel("Packs waiting")
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState())) {
+                groups.entries.take(8).forEach { (code, list) ->
+                    Box(Modifier.width(64.dp).clickable { act.openPack(list.first()["id"].str() ?: "") }) {
+                        Booster(code, null, Modifier.fillMaxWidth(), mini = true)
+                        Box(Modifier.align(Alignment.TopEnd).offset(6.dp, (-6).dp).size(24.dp).clip(CircleShape).background(P.Gold), contentAlignment = Alignment.Center) {
+                            Text("${list.size}", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp, color = P.CtaInk)) }
+                    }
+                }
+            }
+        }
+        CaseLabel("Seals")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            for (k2 in listOf("c", "u", "r", "m")) Row(Modifier.clip(RoundedCornerShape(12.dp)).background(Color(0x66000000)).border(1.dp, Color(0x14FFFFFF), RoundedCornerShape(12.dp))
+                .padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Icon(SiteIcons.Seals.getValue(k2), 20.dp); Num(w.get("seal_$k2").int() ?: 0, 15)
+            }
+        }
+    }
+}
+
+/** The Story banner's case: the next battle (villain, what they play, what it teaches, the prize booster). Act cleared: the act's line. */
+@Composable
+private fun ActCase(d: PlayHomeData, act: PlayHomeActions, data: JsonObject?, wallet: @Composable () -> Unit) {
+    val a = d.rules.acts.firstOrNull { it.act == d.story.act } ?: d.rules.acts.first()
+    val battles = data?.getAsJsonArray("battles")?.mapNotNull { it as? JsonObject }?.filter { it["secret"]?.takeIf { e -> e.isJsonPrimitive }?.asBoolean != true }?.sortedBy { it["slot"].int() ?: 99 }.orEmpty()
+    val next = if (d.story.done) null else battles.getOrNull(d.story.won)
+    val cta = if (d.story.done) "Replay" else if (d.story.won > 0) "Continue" else "Begin"
+    val buttons = listOf(CaseButton("A", cta, gold = true) { act.story() })
+    if (next == null) {
+        ShowcaseCase("Story · Act ${a.act}", if (d.story.done) "Act cleared" else a.name, trailing = wallet, buttons = buttons,
+            hero = { Art(a.art, Modifier.matchParentSize(), BiasAlignment(0f, -.3f)) }) {
+            if (a.line.isNotBlank()) Text(a.line, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, lineHeight = 24.sp, color = Color(0xFFFBF3DF)))
+            CaseFact("Era", a.years)
+        }
+        return
+    }
+    val villain = next.getAsJsonObject("villain")
+    val who = villain?.get("who").str()
+    val face = who?.let { data?.getAsJsonObject("cast")?.getAsJsonObject(it) }
+    val reward = next["rewardSet"].str()
+    ShowcaseCase("Act ${a.act} · Battle ${d.story.won + 1} of ${a.battles}", next["title"].str() ?: "", trailing = wallet, buttons = buttons, heroWeight = .36f,
+        hero = {
+            Art(face?.getAsJsonObject("portrait")?.get("crop").str(), Modifier.matchParentSize(), BiasAlignment(0f, -.3f))
+            Box(Modifier.matchParentSize().background(Brush.verticalGradient(.45f to Color.Transparent, 1f to Color(0xF2090B10))))
+            Column(Modifier.align(Alignment.BottomStart).padding(14.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(face?.get("name").str() ?: "", style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFFFBF3DF), shadow = P.shadow))
+                face?.get("title").str()?.let { Text(it, style = TextStyle(fontFamily = P.Sans, fontSize = 13.sp, color = P.GoldSoft)) }
+            }
+            // The prize they guard: the booster this battle gives, leaning in the portrait's corner.
+            if (reward != null) Column(Modifier.align(Alignment.TopEnd).padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Booster(reward, null, Modifier.width(46.dp).rotate(6f), mini = true)
+            }
+        }) {
+        next["blurb"].str()?.let { Text(it, style = TextStyle(fontFamily = P.Sans, fontSize = 15.sp, lineHeight = 21.sp, color = Color(0xFFEDE7DA))) }
+        Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
+            villain?.getAsJsonObject("deck")?.get("name").str()?.let { CaseFact("They play", it) }
+            next["difficulty"].str()?.let { CaseFact("Difficulty", it) }
+        }
+        val teaches = next.getAsJsonArray("teaches")?.mapNotNull { it.str() }.orEmpty()
+        if (teaches.isNotEmpty()) CaseFact("You'll learn", teaches.joinToString(" · "))
+        if (reward != null) CaseFact("Prize", "A ${a.packs.firstOrNull { it.first == reward }?.second ?: reward.uppercase()} booster")
+    }
+}
+
+/** Quick Play's case: your last five results there, newest first. Only shown once there is a history. */
+@Composable
+private fun QuickCase(rows: List<JsonObject>, act: PlayHomeActions, wallet: @Composable () -> Unit) {
+    val last = rows.takeLast(5).reversed()
+    val wins = rows.count { it["outcome"].str() == "win" }; val losses = rows.count { it["outcome"].str() == "loss" }
+    ShowcaseCase("Quick Play · $wins–$losses", "Your last ${last.size} matches", trailing = wallet, buttons = listOf(CaseButton("A", "Play", gold = true) { act.mode("quick") })) {
+        last.forEach { r ->
+            val o = r["outcome"].str() ?: ""
+            Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0x12FFFFFF)).padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.size(30.dp).clip(CircleShape).background(when (o) { "win" -> P.Gold; "loss" -> Color(0xFF6B3A36); else -> Color(0xFF3A3D46) }), contentAlignment = Alignment.Center) {
+                    Text(o.take(1).uppercase(), style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = if (o == "win") P.CtaInk else P.Ink)) }
+                Column(Modifier.weight(1f)) {
+                    Text((r.getAsJsonObject("deck")?.get("name").str() ?: "").ifBlank { "Your deck" }, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = P.Ink), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    val opp = r.getAsJsonObject("opponent")?.get("name").str()?.ifBlank { null }
+                    val turns = r["turns"].int()?.takeIf { it > 0 }
+                    Text(listOfNotNull(opp?.let { "vs $it" }, turns?.let { "$it turns" }).joinToString(" · "), style = TextStyle(fontFamily = P.Sans, fontSize = 13.sp, color = P.Muted), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
+}
+
+/** A deck tile's case: its lead card large, the cards it leans on and how it has done. */
+@Composable
+private fun DeckCase(deck: JsonObject, history: List<JsonObject>, act: PlayHomeActions, wallet: @Composable () -> Unit) {
+    val cards = (deck.get("cards") as? JsonArray)?.mapNotNull { it as? JsonObject } ?: emptyList()
+    val count = cards.sumOf { it.get("qty").int() ?: 0 }
+    val fmt = deck.get("format").str()?.ifBlank { null } ?: "Standard"
+    val lead = cards.firstOrNull { (it.get("name").str() ?: "") !in BASICS }?.get("name").str()
+    val key = dev.cardstashy.nativeplay.play.MatchRecord.deckRecordKey(deck)
+    val mine = history.filter { it.getAsJsonObject("deck")?.get("key").str() == key }
+    val w = mine.count { it["outcome"].str() == "win" }; val l = mine.count { it["outcome"].str() == "loss" }
+    val top = cards.filter { (it.get("name").str() ?: "") !in BASICS }.sortedByDescending { it.get("qty").int() ?: 0 }.take(6)
+    ShowcaseCase("Deck · $fmt", deck.get("name").str()?.ifBlank { null } ?: "Untitled deck", trailing = wallet, heroWeight = .34f,
+        buttons = listOf(CaseButton("A", "Open deck", gold = true) { act.deck(deck["id"].str() ?: "") }),
+        hero = { Art(lead?.let(::cropUrl), Modifier.matchParentSize(), BiasAlignment(0f, -.3f)) }) {
+        Row(horizontalArrangement = Arrangement.spacedBy(26.dp)) {
+            CaseFact("Cards", "$count / ${deckSize(fmt)}")
+            if (mine.isNotEmpty()) CaseFact("Record", "$w–$l")
+        }
+        if (top.isNotEmpty()) {
+            CaseLabel("It leans on")
+            top.forEach { c -> Text("${c.get("qty").int() ?: 1}×  ${c.get("name").str()}", style = TextStyle(fontFamily = P.Sans, fontSize = 15.sp, color = Color(0xFFE4DFD3)), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+        }
+        mine.lastOrNull()?.getAsJsonObject("opponent")?.get("name").str()?.ifBlank { null }?.let { CaseFact("Last played against", it) }
+    }
+}
+
+/** The Merchant's pack: what it costs, what you'd have left and how many of it already wait to be opened. */
+@Composable
+private fun OfferCase(s: JsonObject, o: JsonObject, act: PlayHomeActions, wallet: @Composable () -> Unit) {
+    val price = (s.get("config") as? JsonObject)?.get("packPrice").int() ?: 500
+    val coins = (s.get("wallet") as? JsonObject)?.get("coins").int() ?: 0
+    val code = o["code"].str() ?: return
+    val waiting = (s.get("packs") as? JsonArray)?.count { (it as? JsonObject)?.get("set").str() == code } ?: 0
+    ShowcaseCase("Pack · The Merchant", o["name"].str() ?: code.uppercase(), trailing = wallet, heroWeight = .3f,
+        buttons = listOf(CaseButton("X", "Buy · %,d".format(price), gold = true, enabled = coins >= price) { act.buy(code) }, CaseButton(null, "The Shop") { act.view("shop") }),
+        hero = { Booster(code, o["name"].str() ?: "", Modifier.align(Alignment.Center).padding(14.dp).fillMaxWidth()) }) {
+        CaseFact("Price", "%,d coins".format(price), big = true)
+        CaseFact(if (coins >= price) "After buying" else "You need", if (coins >= price) "%,d coins left".format(coins - price) else "%,d more coins".format(price - coins))
+        if (waiting > 0) CaseFact("Already waiting", if (waiting == 1) "1 of these is unopened" else "$waiting of these are unopened")
     }
 }
 

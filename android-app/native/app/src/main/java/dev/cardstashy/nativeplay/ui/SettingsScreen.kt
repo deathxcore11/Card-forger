@@ -479,6 +479,7 @@ private fun EditProfile(profile: Account.Profile?, onPick: (String) -> Unit) {
 private fun AppPane() {
     ThemeCard()
     GridCard()
+    DualCard()
     CardArtCard()
     Panel {
         CardHeading("DISPLAY & FEEDBACK", "Glass, motion & feel")
@@ -577,6 +578,16 @@ private fun GridCard() = Panel {
     Check("Pinch to resize card grids", AppSettings.gridPinch, "Spread two fingers for larger cards; pinch for smaller cards. Only card grids use this gesture when enabled. Turn it off to use browser pinch zoom there.") { AppSettings.applyGridPinch(it) }
 }
 
+/** Dual screen (Randall 8 Nov): on a handheld with a second built-in screen, the bottom screen shows the hand, the stack, the card the ring is on. */
+@Composable
+private fun DualCard() = Panel {
+    CardHeading("SCREENS", "Dual screen")
+    val p = DualScreen.detected
+    Check("Dual screen", DualScreen.active || (p == null && DualScreen.choice == true),
+        if (p != null) "Second screen found: ${p.name.ifBlank { "built-in" }}, ${p.width}×${p.height} at ${p.hz.toInt()} Hz. Off keeps everything on one screen."
+        else "No second screen found on this device. On a dual-screen handheld (AYN Thor, Retroid Pocket Duo) the bottom screen shows your hand, the stack and the card the ring is on.") { DualScreen.set(it) }
+}
+
 /** grid-settings.js's three-way pill (Small / Medium / Large), shared with Table effects. */
 @Composable
 private fun Segmented(options: List<String>, selected: String, onPick: (String) -> Unit) =
@@ -605,7 +616,10 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
-    "Play" to "Single player deals you its decks: Story battles always use the story\u2019s deck, and Quick Play lists only the decks whose cards are all in your Trunk.",
+    "Dual screen" to "On two-screen handhelds like the AYN Thor and Retroid Pocket Duo, the app finds the second screen by itself and uses it: your hand and the card you lift in a match (and the stack, with Respond and Resolve, whenever something is on it), the deck you\u2019re given before a Story battle or Quick Play match, the deck list while you build, and the card the ring is on in Collection with its price and Got one. On both Homes the bottom screen is a showcase case that follows the gold ring: in Play your den (level, purse, quests, packs and seals), the next Story battle, a deck\u2019s box or what the Merchant\u2019s pack leaves you; in Collection your collection\u2019s value, or the Card of the Day\u2019s set and today\u2019s pack. Settings \u203a Dual screen turns it off or back on.",
+    "Controllers" to "Shoulders and triggers now follow the screen: in a match LB/RB step through your hand, RT passes and LT cancels; Quick Play LB/RB pick the format and X finds a match; Practice LT/RT set the CPU level; in Story LB/RB pick the battle and LT/RT the act.",
+    "Controllers" to "The right stick feels like a game: a quick flick turns a page (sideways on a shelf), and a slow scroll settles neatly on the nearest card or row.",
+    "Play" to "Story battles always use the deck the story gives you.",
     "Sets" to "Sets are easy to find: Play\u2019s Trunk has a Cards | Sets switch with a Keep collecting row of the sets you\u2019ve started, each with a gold completion ring, and Collection Home has a Sets link. A set opens with every card, owned or missing.",
     "Decks" to "In a deck\u2019s All cards, tap a set\u2019s name to open the whole set as a grid and tap it again (or Back) for every shelf. The new Set button opens a glass list of every set, by year, with a search.",
     "Controllers" to "The first d-pad press always lands the ring on the screen, and up and down no longer get stuck on a search box or the top bar.",

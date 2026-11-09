@@ -280,6 +280,19 @@ private fun CollectionCardsActions.pad(r: CollRow): PadActs {
     return PadActs(a = if (m == null) "Open" else if (m) "Unselect" else "Select", y = y, x = x)
 }
 
+/** A lot's controller acts, and on a dual-screen handheld the card the bottom screen shows (its price and count: Collection keeps prices). */
+@Composable
+private fun Modifier.lotPad(r: CollRow, act: CollectionCardsActions): Modifier {
+    val acts = remember(r, act) { act.pad(r) }
+    if (!DualScreen.active) return padActs(acts)
+    val focus = remember(r, act) {
+        val buttons = if (r.wanted) listOfNotNull(r.got.takeIf { it.isNotBlank() }?.let { PadAct("Got it") { act.got(r) } }, PadAct("Remove from wishlist") { act.unwish(r) })
+            else listOf(PadAct("Got one") { act.qty(r, 1) }, PadAct("Open") { act.card(r) })
+        FocusCard(r.name, r.art, owned = if (r.wanted) "On your wishlist" else "You have ${r.qty}", price = r.price.ifBlank { null }, actions = buttons)
+    }
+    return dualFocus(focus).padActs(acts)
+}
+
 // ---------------------------------------------------------------- site colours (style.css tokens as the live page computes them)
 
 private val GlassLine = Color(0x31EDC980)            // color(srgb .93 .787 .501 / .193)
@@ -837,7 +850,7 @@ private fun LotRow(r: CollRow, act: CollectionCardsActions, wide: Boolean, reduc
     val value = @Composable { gap: Dp -> LotValue(r, act, sans(13f, 700, mixed(tier)), gap) }
     val edit = @Composable { mod: Modifier -> LotEdit(r, act, mod, if (wide) 0.dp else 4.dp) }
     if (wide) Row(modifier.lotFrame(r, reduced).padding(7.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-        LotArt(r, Modifier.padActs(remember(r, act) { act.pad(r) }), 58.dp, 80.dp) { act.open(r) }
+        LotArt(r, Modifier.lotPad(r, act), 58.dp, 80.dp) { act.open(r) }
         Info(r, act, wide, Modifier.weight(1f))
         Column(Modifier.widthIn(min = 88.dp), verticalArrangement = Arrangement.spacedBy(6.dp), horizontalAlignment = Alignment.End) {
             value(4.dp)
@@ -845,7 +858,7 @@ private fun LotRow(r: CollRow, act: CollectionCardsActions, wide: Boolean, reduc
             edit(Modifier)
         }
     } else Row(modifier.lotFrame(r, reduced).padding(horizontal = 11.dp, vertical = 9.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        LotArt(r, Modifier.padActs(remember(r, act) { act.pad(r) }), 52.dp, 73.dp) { act.open(r) }
+        LotArt(r, Modifier.lotPad(r, act), 52.dp, 73.dp) { act.open(r) }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Info(r, act, wide, Modifier)
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
@@ -910,11 +923,11 @@ private fun WantedRow(r: CollRow, act: CollectionCardsActions, wide: Boolean, re
     }
     val price = @Composable { Text(r.price, style = sans(13f, 700, Mute)) }
     if (wide) Row(modifier.lotFrame(r, reduced).padding(7.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-        LotArt(r, Modifier.padActs(remember(r, act) { act.pad(r) }), 58.dp, 80.dp, grey = true, heart = glyphs["heart"]) { act.open(r) }
+        LotArt(r, Modifier.lotPad(r, act), 58.dp, 80.dp, grey = true, heart = glyphs["heart"]) { act.open(r) }
         WantInfo(r, act, wide, Modifier.weight(1f))
         Column(verticalArrangement = Arrangement.spacedBy(6.dp), horizontalAlignment = Alignment.End) { price(); actions() }
     } else Row(modifier.lotFrame(r, reduced).padding(horizontal = 11.dp, vertical = 9.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        LotArt(r, Modifier.padActs(remember(r, act) { act.pad(r) }), 52.dp, 73.dp, grey = true, heart = glyphs["heart"]) { act.open(r) }
+        LotArt(r, Modifier.lotPad(r, act), 52.dp, 73.dp, grey = true, heart = glyphs["heart"]) { act.open(r) }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             WantInfo(r, act, wide, Modifier)
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
@@ -930,7 +943,7 @@ private fun WantedRow(r: CollRow, act: CollectionCardsActions, wide: Boolean, re
 @Composable
 private fun WantInfo(r: CollRow, act: CollectionCardsActions, wide: Boolean, modifier: Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(if (wide) 2.dp else 1.dp)) {
-        Text(r.name, Modifier.padActs(remember(r, act) { act.pad(r) }).clickable { act.open(r) }, maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(if (wide) 16f else 15f, 700, Ink.copy(alpha = .72f), lh = 1.25f))
+        Text(r.name, Modifier.lotPad(r, act).clickable { act.open(r) }, maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(if (wide) 16f else 15f, 700, Ink.copy(alpha = .72f), lh = 1.25f))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
             // .want-chip: rose on a rose wash, 11 px bold.
             if (r.wantChip.isNotBlank()) Box(Modifier.clip(RoundedCornerShape(99.dp)).background(Color(0x1FFF7896)).padding(horizontal = 8.dp, vertical = 1.dp)) {
@@ -984,7 +997,7 @@ internal fun LotArt(r: CollRow, modifier: Modifier, w: Dp, h: Dp, grey: Boolean 
 /** .lot-name: one line, cut with an ellipsis; the importance emblem and the set badge follow it. */
 @Composable
 private fun NameLine(r: CollRow, act: CollectionCardsActions, wide: Boolean, size: Float = if (wide) 16f else 15f) {
-    Row(Modifier.padActs(remember(r, act) { act.pad(r) }).clickable { act.open(r) }, verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.lotPad(r, act).clickable { act.open(r) }, verticalAlignment = Alignment.CenterVertically) {
         Text(r.name, Modifier.weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(size, 700, Ink, lh = 1.25f))
         if (r.emblem != null) SiteIcon(r.emblem, 16.dp, Ink, Modifier.padding(start = 4.dp).semantics { contentDescription = r.emblemTitle })
         r.set?.let { s -> Box(Modifier.padding(start = 5.dp)) { LotSetBadge(s, wide) { if (!s.unknown) act.set(s.code) } } }
@@ -1099,7 +1112,7 @@ private fun GalleryLot(r: CollRow, act: CollectionCardsActions, wide: Boolean, r
     // Select: the ring round the tile, and the tick over the picture's corner (16 up and left of it, on its dark plate).
     Box(modifier.selectRing(r.mark, GoldC)) {
     Column(Modifier.fillMaxWidth().selectTap(r, act), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        TierFrame(r.tier, reduced, Modifier.fillMaxWidth().padActs(remember(r, act) { act.pad(r) }).clickable { act.open(r) }.semantics { contentDescription = if (r.mark != null) r.name else "Open ${r.name}" }, blur = 18f) { framed ->
+        TierFrame(r.tier, reduced, Modifier.fillMaxWidth().lotPad(r, act).clickable { act.open(r) }.semantics { contentDescription = if (r.mark != null) r.name else "Open ${r.name}" }, blur = 18f) { framed ->
             Box(Modifier.fillMaxSize().padding(if (framed) 3.75.dp else 0.dp)) { RowPicture(r, Modifier.fillMaxSize(), RoundedCornerShape(percent = 4)) }
             r.chrome?.let { c -> TileDock(c.emb, c.set, c.rarity, c.title, c.imp, Modifier.align(Alignment.BottomStart).padding(start = 4.dp, end = 4.dp, bottom = 2.dp)) }
         }
@@ -1129,7 +1142,7 @@ private fun GalleryName(r: CollRow, act: CollectionCardsActions, wide: Boolean, 
         Text(r.name + " …", maxLines = 1, softWrap = false, style = style)
         Text(r.name, maxLines = 1, overflow = TextOverflow.Ellipsis, style = style)
         r.set?.let { s -> LotSetBadge(s, wide) { if (!s.unknown) act.set(s.code) } }
-    }, modifier.fillMaxWidth().padActs(remember(r, act) { act.pad(r) }).clickable { act.open(r) }) { ms, c ->
+    }, modifier.fillMaxWidth().lotPad(r, act).clickable { act.open(r) }) { ms, c ->
         val w = c.maxWidth
         val full = ms[0].measure(androidx.compose.ui.unit.Constraints())
         val badge = ms.getOrNull(3)?.measure(androidx.compose.ui.unit.Constraints())
@@ -1163,7 +1176,7 @@ private fun GalleryWanted(r: CollRow, act: CollectionCardsActions, wide: Boolean
                 drawRoundRect(Color(0x47FFFFFF), topLeft = Offset(-o - px / 2, -o - px / 2), size = Size(size.width + 2 * o + px, size.height + 2 * o + px),
                     cornerRadius = CornerRadius(size.width * .046f + o, size.height * .033f + o), style = Stroke(px, pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(3 * px, 3 * px))))
             }
-            .clip(RoundedCornerShape(percent = 4)).background(Surface2).padActs(remember(r, act) { act.pad(r) }).clickable { act.open(r) }.semantics { contentDescription = "Open ${r.name} (on your wishlist, not owned)" }) {
+            .clip(RoundedCornerShape(percent = 4)).background(Surface2).lotPad(r, act).clickable { act.open(r) }.semantics { contentDescription = "Open ${r.name} (on your wishlist, not owned)" }) {
             if (r.art != null) heroPainter(homeArt(r.art))?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, colorFilter = Greyed, alpha = .8f) }
             else Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("◇", style = sans(18f, 400, Mute)); Text("Art unavailable", style = sans(11f, 400, Mute))
@@ -1236,7 +1249,7 @@ private fun SymbolLot(r: CollRow, act: CollectionCardsActions, wide: Boolean, re
     val tier = tierColor(r.tierColor)
     if (r.wanted) Row(frame, horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(r.name, Modifier.padActs(remember(r, act) { act.pad(r) }).clickable { act.open(r) }, maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(16f, 700, Ink.copy(alpha = .72f), lh = 1.25f))
+            Text(r.name, Modifier.lotPad(r, act).clickable { act.open(r) }, maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(16f, 700, Ink.copy(alpha = .72f), lh = 1.25f))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
                 if (r.wantChip.isNotBlank()) WantChip(r.wantChip, 14.85f)
                 if (r.pieces.isNotEmpty()) PieceItems(r.pieces)
@@ -1323,7 +1336,7 @@ private fun SelectLot(r: CollRow, act: CollectionCardsActions, wide: Boolean, re
     val lead = @Composable {
         if (symbols) BatchMark(on)
         else Box(Modifier.width(30.dp)) { BatchMark(on, Modifier.wrapContentWidth(Alignment.Start, unbounded = true)) }
-        if (!symbols) LotArt(r, Modifier.padActs(remember(r, act) { act.pad(r) }), 58.dp, 80.dp) { act.open(r) }
+        if (!symbols) LotArt(r, Modifier.lotPad(r, act), 58.dp, 80.dp) { act.open(r) }
     }
     val info = @Composable { mod: Modifier -> Info(r, act, wide, mod.then(if (on) Modifier.background(SelectTint, RoundedCornerShape(8.dp)) else Modifier), nameSize = 16f) }
     val step = @Composable { Stepper(r.qty, glyphs, { act.qty(r, -1) }, { act.qty(r, 1) }) }

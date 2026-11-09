@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -132,6 +133,27 @@ fun StoryDuelPage(
         ?.let { "https://cards.scryfall.io/art_crop/front/${it[0]}/${it[1]}/$it.jpg" }
     // A controller's X is the gold Duel (Replay once won) at the foot of the page: the same seat and deck as its tap.
     PadScreen(PadActs(x = PadAct(if (villainOpen) "Replay" else "Duel") { onPlay(seat, null) }))
+    // Dual screen (specs/dual-screen-native.md, screen 3): the deck the story gives you on the left, who you face and the prize on the right.
+    BottomScreen {
+        val deckObj = mine.obj("deck")
+        val cards = deckObj?.cards().orEmpty()
+        Row(Modifier.fillMaxSize().padding(14.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(Modifier.weight(1.2f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("YOUR DECK", style = storyText(11f, FontWeight.ExtraBold, Site.Gold, 1.6f))
+                Text(deckObj?.str("name").orEmpty(), style = storyCinzel(18f, Color(0xFFF3E7C9)))
+                Text("Story deck · ${cards.sumOf { it.second }} cards", style = storyText(13f, FontWeight.Medium, Site.Muted))
+                cards.filter { !basic.matches(it.first) }.take(5).forEach { (n, q) -> Text("${q}×  $n", style = storyText(13.5f, FontWeight.SemiBold, Site.Text)) }
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("OPPONENT", style = storyText(11f, FontWeight.ExtraBold, Site.Gold, 1.6f))
+                Text(person(other)?.str("name").orEmpty(), style = storyCinzel(17f, Color(0xFFF3E7C9)))
+                theirs.obj("deck")?.str("name")?.let { Text(it, style = storyText(13f, FontWeight.Medium, Site.Muted)) }
+                Spacer(Modifier.weight(1f))
+                Text(prize.first.uppercase(), style = storyText(11f, FontWeight.ExtraBold, Site.Gold, 1.6f))
+                Text(prize.second, style = storyText(13.5f, FontWeight.Medium, Site.Text))
+            }
+        }
+    }
     LazyColumn(Modifier.fillMaxSize().background(Site.Bg), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = top + 12.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item("head") { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { PageHeader(b.str("title")!!, "Act $act · " + (if (slot == 8) "Boss" else b.str("kind")), onBack = onBack); purse() } }
         item("stage") {

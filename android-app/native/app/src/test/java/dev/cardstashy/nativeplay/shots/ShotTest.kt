@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import dev.cardstashy.nativeplay.ui.cardLean
 import androidx.compose.foundation.background
 import androidx.compose.ui.unit.dp
+import dev.cardstashy.nativeplay.ui.padRoot
+import dev.cardstashy.nativeplay.ui.PadPromptBar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -198,6 +200,53 @@ class ShotTest {
         dev.cardstashy.nativeplay.ui.HomeTest.forceShort = true
         try { shot("collection-home", 844, 390, 1f) { page() } } finally { dev.cardstashy.nativeplay.ui.HomeTest.forceShort = null }
         if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
+    }
+
+    /**
+     * Dual-screen handhelds (Randall 9 Nov): Play Home and Collection Home on the top screen (1920 × 1080) with a controller in hand,
+     * with the bottom screen off (prompt bar on top) and on (prompt bar and the bottom view below), and the bottom screen itself at
+     * the AYN Thor's 1240 × 1080 and the Retroid Pocket Duo's 1280 × 960.
+     */
+    @Test fun handheldHomes() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        dev.cardstashy.nativeplay.ui.homeArt = ::homeArt
+        home.resolve("facts.json").takeIf { it.exists() }?.let { f ->
+            dev.cardstashy.nativeplay.play.SetFacts.seed(JsonParser.parseString(f.readText()).asJsonObject.entrySet().associate { (k, v) -> val o = v.asJsonObject
+                k to dev.cardstashy.nativeplay.play.SetFacts.Set(o["name"].asString, o["icon"].asString, o["released"].asString, o["total"]?.asInt, o["art"].asString) })
+        }
+        val fx = home.resolve("collection-home.json")
+        val coll = fx.takeIf { it.exists() }?.let { dev.cardstashy.nativeplay.ui.CollectionHomeModel.parse(JsonParser.parseString(it.readText()).asJsonObject) }
+        val hints = home.resolve("collection-hints.json").takeIf { it.exists() }?.let { dev.cardstashy.nativeplay.ui.CollectionHomeModel.hints(JsonParser.parseString(it.readText()).asJsonObject) }
+        val pages = listOfNotNull("play" to @Composable { Home() }, coll?.let { m -> "collection" to @Composable {
+            dev.cardstashy.nativeplay.ui.CollectionHome(m, hints, top = { tabs -> TopBarItems(Mode.COLLECTION, null, "Randall", unread = true, onSwitch = {}, onProfile = {}, middle = tabs) },
+                nav = { v -> dev.cardstashy.nativeplay.ui.CollectionNav(dev.cardstashy.nativeplay.ui.CollectionTab.HOME, vertical = v, scan = !v) {} }) } })
+        kotlinx.coroutines.runBlocking { for (m in Mode.entries) AssetImages.load(RuntimeEnvironment.getApplication(), m.asset, maxWidth = 256)
+            AssetImages.load(RuntimeEnvironment.getApplication(), "play/avatar-default.webp", maxWidth = 256) }
+        dev.cardstashy.nativeplay.ui.Pad.used()
+        dev.cardstashy.nativeplay.ui.HomeTest.forceShort = true
+        dev.cardstashy.nativeplay.ui.StoryActs.load(RuntimeEnvironment.getApplication(), 1)
+        try {
+            for ((name, page) in pages) for (dual in listOf(false, true)) {
+                dev.cardstashy.nativeplay.ui.DualScreen.pretend(if (dual) dev.cardstashy.nativeplay.ui.DualScreen.Panel(2, "Built-in Screen", 1240, 1080, 60f) else null)
+                RuntimeEnvironment.setQualifiers("w960dp-h540dp-land-xhdpi")
+                captureRoboImage(File(System.getProperty("shotsDir"), "handheld/$name-home-top-1920x1080-dual-${if (dual) "on" else "off"}.png").path) {
+                    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().padRoot()) { page(); PadPromptBar() }
+                }
+                val lenses = if (name == "play") listOf(null, "story", "deck:11111111-1111-4111-8111-111111111111", "shop:dsk") else listOf(null, "daily")
+                if (dual) for (lens in lenses) for ((size, q) in listOf("thor-1240x1080" to "w620dp-h540dp-xhdpi", "duo-1280x960" to "w640dp-h480dp-xhdpi")) {
+                    RuntimeEnvironment.setQualifiers(q)
+                    dev.cardstashy.nativeplay.ui.LensHost.preset = lens
+                    val tag = lens?.substringBefore(':')?.let { "-$it" } ?: ""
+                    captureRoboImage(File(System.getProperty("shotsDir"), "handheld/$name-home-bottom$tag-$size.png").path) {
+                        androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().padRoot()) {
+                            // The top screen's prompts feed the bottom bar; draw the page off to the side so its screen acts register.
+                            androidx.compose.foundation.layout.Box(Modifier.size(1.dp)) { page() }
+                            dev.cardstashy.nativeplay.ui.BottomRoot()
+                        }
+                    }
+                }
+            }
+        } finally { dev.cardstashy.nativeplay.ui.LensHost.preset = null; dev.cardstashy.nativeplay.ui.HomeTest.forceShort = null; dev.cardstashy.nativeplay.ui.DualScreen.pretend(null); dev.cardstashy.nativeplay.ui.Pad.forget() }
     }
 
     /** A controller on a handheld: the gold focus ring on Quick Play and the A/B hint (Pad connected). */

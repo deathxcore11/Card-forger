@@ -291,7 +291,8 @@ fun BoxScope.PadPromptBar() {
     val pad by Pad.connected.collectAsState()
     // Nothing at all on a phone; and hidden while a dialog window has the keys (they never reach the app's window).
     val on = pad && PadPrompts.windowFocused
-    if (!pad) return
+    // With the bottom screen up the bar sits at its foot instead (DualScreen.BottomRoot).
+    if (!pad || DualScreen.active) return
     val acts = PadPrompts.current()
     val items = PadPrompts.prompts(acts)
     var idle by remember { mutableStateOf(false) }
@@ -310,10 +311,10 @@ fun BoxScope.PadPromptBar() {
     }
 }
 
-private val KeyA = Color(0xFF5FBF6A); private val KeyB = Color(0xFFE0645A); private val KeyX = Color(0xFF5B8DE0); private val KeyY = Color(0xFFE6C04A)
+internal val KeyA = Color(0xFF5FBF6A); internal val KeyB = Color(0xFFE0645A); internal val KeyX = Color(0xFF5B8DE0); internal val KeyY = Color(0xFFE6C04A)
 
 @Composable
-private fun PadKey(button: String, label: String) = Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+internal fun PadKey(button: String, label: String) = Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
     val round = button.length == 1
     val c = when (button) { "A" -> KeyA; "B" -> KeyB; "X" -> KeyX; "Y" -> KeyY; else -> Color(0xFFECE6D8) }
     val shape = if (round) CircleShape else RoundedCornerShape(5.dp)

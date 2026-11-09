@@ -480,8 +480,15 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
 
     var cardPick by remember { mutableStateOf<CardPick?>(null) }
     // Controller: LB/RB step through the deck sources (Mine, Precons, Community, Meta, Random) like their tabs; Quick Play has none.
-    PadScreen(PadActs(tabs = if (m.quick) null else ({ d: Int -> val i = (SOURCES.indexOfFirst { it.first == m.source }.coerceAtLeast(0) + d).coerceIn(0, SOURCES.size - 1)
-        if (SOURCES[i].first != m.source) { m.source = SOURCES[i].first; m.query = "" } })))
+    // Quick Play (specs/dual-screen-native.md): LB/RB step the format, X finds the match once your deck is in. Practice: LT/RT the CPU level.
+    PadScreen(PadActs(tabs = if (m.quick) ({ d: Int -> val i = (LIVE_FORMATS.indexOf(m.format).coerceAtLeast(0) + d).coerceIn(0, LIVE_FORMATS.size - 1); m.configureFormat(LIVE_FORMATS[i]) })
+        else ({ d: Int -> val i = (SOURCES.indexOfFirst { it.first == m.source }.coerceAtLeast(0) + d).coerceIn(0, SOURCES.size - 1)
+        if (SOURCES[i].first != m.source) { m.source = SOURCES[i].first; m.query = "" } }), tabsLabel = if (m.quick) "Format" else "Tabs",
+        page = if (m.quick || m.social) null else ({ d: Int -> val lv = listOf("Easy", "Medium", "Hard"); val i = (lv.indexOf(m.difficulty).coerceAtLeast(0) + d).coerceIn(0, 2); m.difficulty = lv[i]; m.quickMatch = null }),
+        pageLabel = "CPU level",
+        x = if (m.quick && m.player != null && !m.quickBusy) PadAct("Find match") { start() } else null))
+    // Dual screen: your deck on the left, the CPU on the right.
+    if (!m.social) BottomScreen { LobbyBottom(m) }
     BackHandler(cardPick == null && (m.inspectOpen || m.formatOpen)) { m.inspectOpen = false; m.formatOpen = false }
     BackHandler(m.social && m.room is LobbyModel.Room.Waiting) { cancelRoom() }
     val grid = rememberLazyGridState()
@@ -1253,6 +1260,33 @@ private fun FriendInvite(m: LobbyModel, f: FriendActions) {
                     decorationBox = { inner -> if (m.inviteText.isEmpty()) Text("Paste a friend’s invite link", style = sans(14f, color = Muted)); inner() })
             }
             Box(Modifier.height(44.dp).pill(Color(0x33E8B95B), Color(0x99D6AD64)).clickable(onClick = f.useInvite).padding(horizontal = 16.dp), contentAlignment = Alignment.Center) { Text("Join", style = sans(14f, FontWeight.Bold, Gold)) }
+        }
+    }
+}
+
+
+/** Quick Play and Practice on a dual-screen handheld's bottom screen: your deck (its name, count, key cards) and the CPU's side. */
+@Composable
+private fun LobbyBottom(m: LobbyModel) {
+    fun keyCards(d: SeatDeck?) = d?.raw?.getAsJsonArray("cards")?.mapNotNull { it as? JsonObject }?.mapNotNull { c -> c.get("name")?.takeIf { it.isJsonPrimitive }?.asString?.let { n -> n to (c.get("qty")?.takeIf { q -> q.isJsonPrimitive }?.asDouble?.toInt() ?: 1) } }
+        ?.filter { (n, _) -> n !in setOf("Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes") }?.sortedByDescending { it.second }?.take(5).orEmpty()
+    Row(Modifier.fillMaxSize().padding(14.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(Modifier.weight(1.2f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("YOUR DECK · ${m.format.uppercase()}", style = sans(11f, FontWeight.ExtraBold, Gold))
+            val p = m.player
+            if (p == null) Text("Pick your deck on the top screen.", style = sans(14f, color = Muted))
+            else {
+                Text(p.name, style = sans(17f, FontWeight.ExtraBold, Color(0xFFF3E7C9)), maxLines = 2)
+                Text("${p.count} cards" + if (p.commander.isNotBlank()) " · ${p.commander}" else "", style = sans(13f, color = Muted))
+                keyCards(p).forEach { (n, q) -> Text("${q}×  $n", style = sans(13.5f, color = Site.Text), maxLines = 1) }
+            }
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(if (m.quick) "CPU · MATCHED" else "CPU DECK · ${m.difficulty.uppercase()}", style = sans(11f, FontWeight.ExtraBold, Gold))
+            val o = m.opponent
+            if (o != null) { Text(o.name, style = sans(16f, FontWeight.ExtraBold, Color(0xFFF3E7C9)), maxLines = 2); Text("${o.count} cards", style = sans(13f, color = Muted)) }
+            else Text(if (m.quick) "Any ${m.format} deck, drawn when you press Play." else "Pick the CPU deck on the top screen.", style = sans(13.5f, color = Muted))
+            m.quickMatch?.line?.let { Text(it, style = sans(13f, color = Site.Text)) }
         }
     }
 }

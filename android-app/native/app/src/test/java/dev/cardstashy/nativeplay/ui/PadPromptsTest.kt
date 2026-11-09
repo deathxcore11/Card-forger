@@ -127,6 +127,36 @@ class PadPromptsTest {
         assertTrue("the ring moved into the sheet", inSheet.contains(true))
         assertEquals("B" to "Close", PadPrompts.prompts().last())
     }
+
+    /** The match on a handheld (dual-screen spec): LB/RB step the hand, RT passes (the gold button), LT cancels, X stays gold. */
+    @Test fun matchMapStepsHandPassesAndCancels() {
+        val did = mutableListOf<String>()
+        rule.setContent {
+            Box(Modifier.fillMaxSize().padRoot()) {
+                PadScreen(PadActs(x = PadAct("Pass") { did += "gold" }, tabs = { did += "hand$it" }, tabsLabel = "Hand",
+                    page = { if (it > 0) did += "pass" else did += "cancel" }, pageLabel = "Cancel / Pass"))
+            }
+        }
+        rule.waitForIdle()
+        assertEquals(listOf("X" to "Pass", "LB RB" to "Hand", "LT RT" to "Cancel / Pass"), PadPrompts.prompts().filter { it.first != "B" })
+        press(KeyEvent.KEYCODE_BUTTON_R1); press(KeyEvent.KEYCODE_BUTTON_L1); press(KeyEvent.KEYCODE_BUTTON_R2); press(KeyEvent.KEYCODE_BUTTON_L2); press(KeyEvent.KEYCODE_BUTTON_X)
+        assertEquals(listOf("hand1", "hand-1", "pass", "cancel", "gold"), did)
+    }
+
+    /** An outer screen's shoulders (Story's battle / act) stay while the page inside it sets only X. */
+    @Test fun outerShouldersMergeWithInnerX() {
+        val did = mutableListOf<String>()
+        rule.setContent {
+            Box(Modifier.fillMaxSize().padRoot()) {
+                PadScreen(PadActs(tabs = { did += "battle$it" }, tabsLabel = "Battle", page = { did += "act$it" }, pageLabel = "Act"))
+                PadScreen(PadActs(x = PadAct("Duel") { did += "duel" }))
+            }
+        }
+        rule.waitForIdle()
+        assertEquals(listOf("X" to "Duel", "LB RB" to "Battle", "LT RT" to "Act"), PadPrompts.prompts().filter { it.first != "B" })
+        press(KeyEvent.KEYCODE_BUTTON_X); press(KeyEvent.KEYCODE_BUTTON_R1); press(KeyEvent.KEYCODE_BUTTON_L2)
+        assertEquals(listOf("duel", "battle1", "act-1"), did)
+    }
 }
 
 private fun Modifier.androidx_onFocus(f: (Boolean) -> Unit) = this.then(androidx.compose.ui.Modifier.onFocusChangedCompat(f))

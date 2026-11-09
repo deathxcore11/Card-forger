@@ -324,6 +324,15 @@ fun StoryRoute(startAct: Int? = null, onBack: () -> Unit, onDuel: (dev.cardstash
                 ?: runCatching { com.google.gson.JsonParser.parseString(ctx.assets.open("story/act-$open.json").use { String(it.readBytes()) }) as? JsonObject }.getOrNull()
         }
     }
+    // Controller: LB/RB step through the battles you can fight in this act, LT/RT step between the acts you have reached.
+    val lastAct = StoryLogic.currentAct(p, rules.acts.size).coerceAtMost(rules.acts.maxOf { it.act })
+    val fightable = data?.getAsJsonArray("battles")?.mapNotNull { it as? JsonObject }
+        ?.filter { it["secret"]?.asBoolean != true && (it["slot"]?.asInt ?: 99) <= StoryLogic.currentBattle(p, open) }?.sortedBy { it["slot"].asInt }?.map { it["id"].asString }.orEmpty()
+    PadScreen(PadActs(
+        tabs = if (battle != null && fightable.size > 1) { d -> val i = fightable.indexOf(battle); val n = fightable.getOrNull(if (i < 0) 0 else (i + d).coerceIn(0, fightable.lastIndex)); if (n != null && n != battle) { battle = n; duel = StoryDuelUi() } } else null,
+        tabsLabel = "Battle",
+        page = if (lastAct > 1 || open > 1) { d -> val n = (open + d).coerceIn(1, lastAct); if (n != open && rules.acts.any { it.act == n }) { act = n; battle = null; duel = StoryDuelUi() } } else null,
+        pageLabel = "Act"))
     val b = battle?.let { id -> data?.getAsJsonArray("battles")?.map { it.asJsonObject }?.firstOrNull { it["id"].asString == id } }
     if (b == null) { StoryActPage(meta, data, p, { act = null }, { battle = it; duel = StoryDuelUi() }, purse); return }
     // The act's card pool gates your own decks (story-client.js loadActPool); null while it loads.

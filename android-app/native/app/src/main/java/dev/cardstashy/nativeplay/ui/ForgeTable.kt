@@ -462,9 +462,9 @@ fun ForgeBoard(
             val handAnchors = LocalAnchors.current
             // A controller: when A plays the last hand card, the ring goes to the gold button (else the menu button), so it isn't lost.
             val goldFocus = remember { FocusRequester() }
-            Box(Modifier.offset(x = centreX + 44.du - handW / 66f * 222f, y = H - handW / 66f * 67f).width(handW / 66f * 444f).height(handW / 66f * 120f)
-                .then(if (handAnchors != null) Modifier.onGloballyPositioned { handAnchors.putRect("hand", it.boundsInRoot()) } else Modifier)) {
-                HandFan(hand, handW, Modifier.fillMaxWidth(), raised = selectedHand, angleDeg = 1.2f,
+            // The fan itself, at any card width: on the table, or on a dual-screen handheld's bottom screen (MatchBottom).
+            val fan: @Composable (Dp) -> Unit = { fanW ->
+                HandFan(hand, fanW, Modifier.fillMaxWidth(), raised = selectedHand, angleDeg = 1.2f,
                     markOf = ::markOf,
                     canPlay = { card -> live && card.id in st.selection.actionable && card.id !in blocked && card.id !in quiet },
                     blockedOf = { card -> if (live) blocked[card.id] else null },
@@ -481,6 +481,16 @@ fun ForgeBoard(
                     onPlay = { card -> onSelectHand(null); intents.card(card.id) },
                     onHold = onInspect, onReorder = { ids -> onHandOrder(ids) },
                     padEmpty = { runCatching { goldFocus.requestFocus() }.onFailure { runCatching { menuFocus.requestFocus() } } })
+            }
+            val dual = DualScreen.active
+            Box(Modifier.offset(x = centreX + 44.du - handW / 66f * 222f, y = H - handW / 66f * 67f).width(handW / 66f * 444f).height(handW / 66f * 120f)
+                .then(if (handAnchors != null) Modifier.onGloballyPositioned { handAnchors.putRect("hand", it.boundsInRoot()) } else Modifier)) {
+                // With the bottom screen up the hand lives there; the table keeps a small count where the fan was.
+                if (!dual) fan(handW)
+                else if (hand.isNotEmpty()) Box(Modifier.align(Alignment.TopCenter).padding(top = handW / 66f * 30f).clip(RoundedCornerShape(999.dp)).background(Color(0xCC101216))
+                    .border(1.dp, Color(0x40D6AD64), RoundedCornerShape(999.dp)).padding(horizontal = 12.du, vertical = 5.du)) {
+                    Text("Hand ${hand.size} · bottom screen", style = sans(sp(12f), FontWeight.Bold, Color(0xFFE8C36F)))
+                }
             }
 
             // The buttons, bottom right: the gold step and the quiet second one above it (right edges 8 du in, as the site's dock).
@@ -529,7 +539,17 @@ fun ForgeBoard(
                 }
             }
             // The table's controller buttons: X the gold button, Start the menu (the same toggle as its button). A hand card or permanent adds its own A and Y.
-            PadScreen(PadActs(x = padX, start = PadAct("Menu") { if (menu != null) menu.open = !menu.open else onMenu() }))
+            // LB/RB step through your hand (lifting each card: on a dual screen's bottom, or the table's own fan); RT is the gold button
+            // (pass, resolve, confirm), LT the quiet one (cancel) — specs/dual-screen-native.md's match map.
+            val padGold = padX
+            PadScreen(PadActs(x = padX, start = PadAct("Menu") { if (menu != null) menu.open = !menu.open else onMenu() },
+                tabs = if (hand.isEmpty()) null else ({ step: Int ->
+                    val i = hand.indexOfFirst { it.id == selectedHand }
+                    val next = if (i < 0) (if (step > 0) 0 else hand.lastIndex) else (i + step).coerceIn(0, hand.lastIndex)
+                    onSelectHand(hand[next].id) }), tabsLabel = "Hand",
+                page = if (!live) null else ({ step: Int -> if (step > 0) padGold?.run?.invoke() else if (st.buttons.cancelEnabled) intents.cancel() }),
+                pageLabel = if (st.buttons.cancelEnabled) "Cancel / Pass" else "Pass"))
+            if (dual) { val goldAct = padX; BottomScreen { MatchBottom(st, hand, selectedHand?.let { id -> hand.firstOrNull { it.id == id } }, goldAct, fan, onInspect) } }
             if (live) askLine(st)?.let { AskLine(it, W, H, d) }
             // The line between the halves turns into the combat line while you declare (gold attacking, blue blocking).
             CombatLine(st, mid, W, d)

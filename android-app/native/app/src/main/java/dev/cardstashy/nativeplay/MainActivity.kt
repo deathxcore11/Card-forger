@@ -167,7 +167,7 @@ class MainActivity : ComponentActivity() {
                 // Collection saves made without signal go to the account now (cloud.js: the online event starts a sync).
                 dev.cardstashy.nativeplay.collection.WorkspaceSync.kick(applicationContext) }
         }) }
-        dev.cardstashy.nativeplay.ui.Pad.watch(this); dev.cardstashy.nativeplay.ui.PadCursor.attach(window.decorView)
+        dev.cardstashy.nativeplay.ui.Pad.watch(this); dev.cardstashy.nativeplay.ui.PadCursor.attach(window.decorView); dev.cardstashy.nativeplay.ui.DualScreen.init(this)
         dev.cardstashy.nativeplay.ui.CollectionWrites.init()
         // Collection's engine starts a moment after the first frame (not while Play's Home is drawing), so Collection opens at once.
         window.decorView.post { dev.cardstashy.nativeplay.collection.CollectionWarm.start(this) }
@@ -195,8 +195,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() { dev.cardstashy.nativeplay.play.RandomBuild.detach(this); dev.cardstashy.nativeplay.collection.ScanWeb.detach(this); super.onDestroy() }
     override fun onResume() { super.onResume(); Updater.resumed(this); dev.cardstashy.nativeplay.collection.WorkspaceSync.kick(this) }
-    override fun onStart() { super.onStart(); dev.cardstashy.nativeplay.play.RandomBuild.hidden = false }
-    override fun onStop() { super.onStop(); dev.cardstashy.nativeplay.play.RandomBuild.hidden = true }
+    override fun onStart() { super.onStart(); dev.cardstashy.nativeplay.play.RandomBuild.hidden = false; dev.cardstashy.nativeplay.ui.DualScreen.attach(this) }
+    override fun onStop() { super.onStop(); dev.cardstashy.nativeplay.play.RandomBuild.hidden = true; dev.cardstashy.nativeplay.ui.DualScreen.detach(this) }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) { super.onWindowFocusChanged(hasFocus); dev.cardstashy.nativeplay.ui.PadPrompts.windowFocused = hasFocus }
 

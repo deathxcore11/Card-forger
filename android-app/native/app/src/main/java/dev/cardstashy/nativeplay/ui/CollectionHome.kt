@@ -14,6 +14,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -231,19 +232,82 @@ fun CollectionHome(m: CollectionHomeModel, hints: SearchHints?, top: @Composable
                    act: CollectionHomeActions = CollectionHomeActions(), nav: @Composable (vertical: Boolean) -> Unit = {}) =
     // body[data-game]: the open game's --gold (Yu-Gi-Oh!'s violet, Pokémon's coral) on every gold word of the page.
     androidx.compose.runtime.CompositionLocalProvider(LocalGameGold provides m.game.gold) {
+    val lens = rememberLens()
+    BottomScreen { androidx.compose.runtime.CompositionLocalProvider(LocalGameGold provides m.game.gold) { CollectionHomeBottom(m, act, lens) } }
     BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
         // Sideways (handhelds, a phone on its side): the nav stands up as a rail so the short height goes to the page.
         val screen = maxWidth
-        if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); Page(m, hints, top, act, Modifier.weight(1f).fillMaxHeight(), screen) }
-        else Column(Modifier.fillMaxSize()) { Page(m, hints, top, act, Modifier.weight(1f).fillMaxWidth(), screen); nav(false) }
+        if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); Page(m, hints, top, act, Modifier.weight(1f).fillMaxHeight(), screen, lens) }
+        else Column(Modifier.fillMaxSize()) { Page(m, hints, top, act, Modifier.weight(1f).fillMaxWidth(), screen, lens); nav(false) }
     }
     }
+
+/**
+ * Collection Home's bottom screen (plan "The Showcase"): the value case by default (what your collection is worth, how it moved
+ * and why, which leave the top screen), and with the ring on the Card of the Day, its set and today's pack.
+ */
+@Composable
+private fun CollectionHomeBottom(m: CollectionHomeModel, act: CollectionHomeActions, lens: LensHost) {
+    ShowcaseLens(lens.key) { k ->
+        val c = m.daily
+        if (k == "daily" && c != null) DailyCase(c, act) else ValueCase(m, act)
+    }
+}
+
+@Composable
+private fun ValueCase(m: CollectionHomeModel, act: CollectionHomeActions) {
+    val v = m.value
+    val gold = HGold
+    ShowcaseCase("Collection · ${m.game.label}", "Your collection", heroWeight = .46f,
+        buttons = listOf(CaseButton("A", "See the value", gold = true) { act.go("#collection/value") }, CaseButton(null, "Cards") { act.go("#collection") }, CaseButton(null, "Decks") { act.go("#decks") }),
+        hero = {
+            Box(Modifier.matchParentSize().background(Brush.radialGradient(listOf(gold.copy(alpha = .22f), Color.Transparent))))
+            Column(Modifier.align(Alignment.CenterStart).padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("WORTH TODAY", style = sans(11f, FontWeight.Bold, gold, ls = 1.6f))
+                Text(v.amount, style = manrope(40f, FontWeight.ExtraBold, Site.Text, lh = 1.1f, ls = -.04f).copy(fontFeatureSettings = "tnum"), maxLines = 1)
+                if (v.movement.isNotEmpty()) Text(v.movement,
+                    style = sans(15f, FontWeight.SemiBold, when (v.direction) { "up" -> Color(0xFF7FD69A); "down" -> Color(0xFFF08A7E); else -> Site.Muted }, lh = 1.4f))
+                if (v.note.isNotBlank()) Text(v.note, style = sans(13f, color = Site.Muted, lh = 1.4f))
+            }
+        }) {
+        Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
+            if (v.copies.isNotBlank()) CaseFact("Cards", v.copies, big = true)
+            if (v.decks.isNotBlank()) CaseFact("Decks", v.decks, big = true)
+        }
+        if (v.explanation.isNotBlank()) CaseFact("How it's counted", v.explanation)
+    }
+}
+
+@Composable
+private fun DailyCase(c: DailyCard, act: CollectionHomeActions) {
+    val pack = c.pack?.sources?.let { s -> s.firstOrNull { !it.second } ?: s.firstOrNull() }?.first
+    val setTitle = c.set.ifBlank { c.setName }.ifBlank { "Card of the Day" }
+    val buttons = buildList {
+        if (c.pack != null) add(CaseButton("A", c.pack.label.takeIf { it.isNotBlank() && it.length <= 18 } ?: "Open today’s pack", gold = true, weight = 1.6f) { act.todayPack(c) })
+        add(CaseButton(if (c.pack == null) "A" else null, "Open the card", gold = c.pack == null) { act.daily(c) })
+        if (c.setCode.isNotBlank() || c.setName.isNotBlank()) add(CaseButton(null, "The set") { if (c.setCode.isEmpty()) act.setName(c.setName) else act.set(c.setCode) })
+    }
+    ShowcaseCase(c.label.ifBlank { "Card of the Day" }, setTitle, buttons = buttons, heroWeight = .3f,
+        hero = if (pack == null) null else ({
+            val img = heroPainter(homeArt(pack))
+            if (img != null) Image(img, null, Modifier.align(Alignment.Center).padding(18.dp).fillMaxHeight().aspectRatio(400f / 734f, matchHeightConstraintsFirst = true)
+                .graphicsLayer { rotationZ = -3f }.shadow(14.dp, RoundedCornerShape(6.dp)).clip(RoundedCornerShape(6.dp)), contentScale = ContentScale.Crop)
+        })) {
+        Text("Today's card comes from this set. Its pack has it as the guaranteed hit.".takeIf { c.pack != null } ?: "Today's card comes from this set.",
+            style = sans(15f, color = Color(0xFFE4DFD3), lh = 1.45f))
+        Row(horizontalArrangement = Arrangement.spacedBy(26.dp)) {
+            if (c.setCode.isNotBlank()) CaseFact("Set code", c.setCode.uppercase())
+            if (c.rarity.isNotBlank()) CaseFact("Rarity", c.rarity.split(' ').joinToString(" ") { w -> w.replaceFirstChar { it.uppercase() } })
+        }
+        if (c.date.isNotBlank()) CaseFact("Card of the Day for", runCatching { java.time.LocalDate.parse(c.date).format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy", java.util.Locale.US)) }.getOrDefault(c.date))
+    }
+}
 
 /** --gold on Home: Magic's (with its light theme), or the open game's own. */
 private val HGold: Color @Composable @androidx.compose.runtime.ReadOnlyComposable get() = LocalGameGold.current.takeIf { it != Color(0xFFE8B95B) } ?: Site.Gold
 
 @Composable
-private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, act: CollectionHomeActions, modifier: Modifier, screen: Dp) {
+private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, act: CollectionHomeActions, modifier: Modifier, screen: Dp, lens: LensHost) {
     // The site's breakpoints are the window's width: --gutter 16 / 22 from 600, the Home columns from 600, 700, 760 and 900.
     val wide = screen >= 600.dp
     val gutter = if (wide) 22.dp else 16.dp
@@ -261,15 +325,15 @@ private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (
             }
             Column(Modifier.fillMaxWidth().padding(horizontal = gutter).padding(top = if (wide) 22.dp else 10.dp, bottom = 28.dp)) {
                 if (!wide) GameTabs(m.game, act.game, compact = true, Modifier.align(Alignment.CenterHorizontally).widthIn(max = 280.dp).padding(bottom = 18.dp))
-                SearchPill(m.prompt, hints, act.search, Modifier.onGloballyPositioned { c -> root?.takeIf { it.isAttached && c.isAttached }?.let { pillTop = it.localPositionOf(c, Offset.Zero).y.roundToInt() } })
+                SearchPill(m.prompt, hints, act.search, Modifier.dualLens(lens, null).onGloballyPositioned { c -> root?.takeIf { it.isAttached && c.isAttached }?.let { pillTop = it.localPositionOf(c, Offset.Zero).y.roundToInt() } })
                 Spacer(Modifier.height(18.dp))
-                m.daily?.let { Today(it, m.game, screen, act) }
-                ValueRow(m.value, screen, act)
-                Spacer(Modifier.height(12.dp))
+                m.daily?.let { Box(Modifier.dualLens(lens, "daily")) { Today(it, m.game, screen, act) } }
+                // With a bottom screen up, the value lives in its case there (not twice).
+                if (!DualScreen.active) { ValueRow(m.value, screen, act); Spacer(Modifier.height(12.dp)) }
                 SetsLink(act)
                 Spacer(Modifier.height(16.dp))
                 if (m.example.isNotEmpty()) { Note(m.example); Spacer(Modifier.height(16.dp)) }
-                Shelf(m.shelf, m.game, screen, act)
+                Box(Modifier.dualLens(lens, null)) { Shelf(m.shelf, m.game, screen, act) }
                 Spacer(Modifier.height(24.dp))
                 MetaCarousel(m.meta, m.game, screen, act)
                 Spacer(Modifier.height(22.dp))

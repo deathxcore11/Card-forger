@@ -54,7 +54,38 @@ object PadCursor {
     /** The left stick's position (-1..1 each way). */
     fun left(x: Float, y: Float) { lx = x; ly = y; if (hypot(x, y) > DEAD) { if (!shown) appear(); kick() } }
     /** The right stick's position: scrolls what is under the cursor. */
-    fun right(x: Float, y: Float) { rx = x; ry = y; if (hypot(x, y) > DEAD) kick() }
+    fun right(x: Float, y: Float) {
+        val was = hypot(rx, ry) > DEAD; val now = hypot(x, y) > DEAD
+        if (now && !was) { pushStart = SystemClock.uptimeMillis(); lastScrolled = null; peak = 0f; peakX = 0f; peakY = 0f }
+        if (now && hypot(x, y) > peak) { peak = hypot(x, y); peakX = x; peakY = y }
+        rx = x; ry = y
+        if (now) kick() else if (was) release()
+    }
+
+    // The right stick's last push: a quick flick to the rim turns a page; a slow scroll settles on the nearest card or row edge.
+    private var pushStart = 0L; private var peak = 0f; private var peakX = 0f; private var peakY = 0f
+    private var lastScrolled: Int? = null
+    private const val FLICK_MS = 230L
+
+    private fun release() {
+        val id = lastScrolled ?: return
+        val node = nodes()?.firstOrNull { it.id == id } ?: return
+        val scrollBy = node.config.getOrNull(SemanticsActions.ScrollBy)?.action ?: return
+        val b = node.boundsInWindow
+        val axisX = abs(peakX) > abs(peakY)
+        if (SystemClock.uptimeMillis() - pushStart <= FLICK_MS && peak > .8f) {
+            // A flick: one page that way (sideways on a shelf, up or down in a list), keeping a sliver of the last page in view.
+            val sign = if (axisX) Math.signum(peakX) else Math.signum(peakY)
+            if (axisX) scrollBy(sign * b.width * .85f, 0f) else scrollBy(0f, sign * b.height * .85f)
+            return
+        }
+        // Snap: the child whose leading edge is nearest the scroller's leading edge comes to rest exactly there.
+        val edges = node.children.map { it.boundsInWindow }.filter { it.width > 0f && it.height > 0f }
+            .map { if (axisX) it.left - b.left else it.top - b.top }
+        val half = (if (axisX) b.width else b.height) * .4f
+        val d = edges.filter { abs(it) < half }.minByOrNull { abs(it) } ?: return
+        if (abs(d) > 1f) { if (axisX) scrollBy(d, 0f) else scrollBy(0f, d) }
+    }
 
     /** The d-pad moved the ring: the cursor steps aside until the stick moves again. */
     fun dpad() { if (shown) shown = false }
@@ -157,6 +188,7 @@ object PadCursor {
             ?: all.maxByOrNull { it.boundsInWindow.width * it.boundsInWindow.height } ?: return
         val axisX = abs(dx) > abs(dy)
         pick.config.getOrNull(SemanticsActions.ScrollBy)?.action?.invoke(if (axisX) dx else 0f, if (axisX) 0f else dy)
+        lastScrolled = pick.id
         if (frame++ % 6 == 0) aim()
     }
 
