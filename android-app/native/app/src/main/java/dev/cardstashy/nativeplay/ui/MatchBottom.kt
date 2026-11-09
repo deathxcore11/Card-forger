@@ -65,18 +65,22 @@ internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: 
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             val h = maxHeight
             if (shown == "stack") StackView(st, gold, onInspect) { zone = "hand" }
-            else Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                // The fan: as tall as the room lets a lifted card rise.
-                val cardW = ((h.value - 16f) / 1.4f / 1.25f).coerceIn(56f, 120f).dp
-                Box(Modifier.weight(1.25f).fillMaxHeight(), contentAlignment = Alignment.Center) {
-                    if (hand.isEmpty()) Text("Your hand is empty.", style = small(13f, Site.Muted), modifier = Modifier.align(Alignment.Center))
-                    else Box(Modifier.fillMaxWidth().padding(bottom = 6.dp)) { fan(cardW) }
+            else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // The lifted card's words across the top, the fan across the whole width below (Randall 9 Nov: "the fan can fit the bottom
+                // screen better and knows how to scale when the hand is increasing, nothing jumpy, very natural").
+                val c = lifted ?: hand.firstOrNull()
+                Column(Modifier.fillMaxWidth().heightIn(max = h * .34f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (c != null) CardWords(c) else Text("Your hand is empty.", style = small(13f, Site.Muted))
                 }
-                Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val c = lifted ?: hand.firstOrNull()
-                    Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        if (c != null) CardWords(c) else Text("Lift a card to read it here.", style = small(13f, Site.Muted))
-                    }
+                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
+                    // As big as the room allows: the height (leaving space for the lift), then the width shared by the cards with a
+                    // generous overlap. The size eases as cards come and go, so the fan breathes instead of jumping.
+                    val n = hand.size.coerceAtLeast(1)
+                    val byH = (maxHeight - 20.dp) / 1.4f
+                    val byW = maxWidth / (1f + (n - 1) * .46f)
+                    val target = minOf(byH, byW, 190.dp).coerceAtLeast(56.dp)
+                    val cardW by androidx.compose.animation.core.animateDpAsState(target, androidx.compose.animation.core.spring(dampingRatio = .9f, stiffness = 220f), label = "fan")
+                    if (hand.isNotEmpty()) Box(Modifier.fillMaxWidth().padding(bottom = 4.dp)) { fan(cardW) }
                 }
             }
         }

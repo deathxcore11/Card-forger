@@ -487,9 +487,28 @@ fun ForgeBoard(
                 .then(if (handAnchors != null) Modifier.onGloballyPositioned { handAnchors.putRect("hand", it.boundsInRoot()) } else Modifier)) {
                 // With the bottom screen up the hand lives there; the table keeps a small count where the fan was.
                 if (!dual) fan(handW)
-                else if (hand.isNotEmpty()) Box(Modifier.align(Alignment.TopCenter).padding(top = handW / 66f * 30f).clip(RoundedCornerShape(999.dp)).background(Color(0xCC101216))
-                    .border(1.dp, Color(0x40D6AD64), RoundedCornerShape(999.dp)).padding(horizontal = 12.du, vertical = 5.du)) {
-                    Text("Hand ${hand.size} · bottom screen", style = sans(sp(12f), FontWeight.Bold, Color(0xFFE8C36F)))
+                else if (hand.isNotEmpty()) {
+                    // The hand's handle on the table: the d-pad lands here, left and right walk the hand on the bottom screen (the lifted
+                    // card follows), A plays the lifted card when it can be played (else opens it), Y opens it (Randall 9 Nov: "d-pad should
+                    // work better on the hand on the bottom screen").
+                    val lifted = hand.firstOrNull { it.id == selectedHand }
+                    val playable = { c: Card -> live && c.id in st.selection.actionable && c.id !in blocked }
+                    fun step(dx: Int) { val i = hand.indexOfFirst { it.id == selectedHand }
+                        onSelectHand(hand[if (i < 0) (if (dx > 0) 0 else hand.lastIndex) else (i + dx).coerceIn(0, hand.lastIndex)].id) }
+                    var chipOn by remember { mutableStateOf(false) }
+                    val shape = RoundedCornerShape(999.dp)
+                    Row(Modifier.align(Alignment.TopCenter).padding(top = handW / 66f * 30f)
+                        .onFocusChanged { chipOn = it.isFocused; if (it.isFocused && selectedHand == null) onSelectHand(hand.first().id) }
+                        .onKeyEvent { e -> if (e.nativeKeyEvent.action != android.view.KeyEvent.ACTION_DOWN) return@onKeyEvent false
+                            when (e.nativeKeyEvent.keyCode) { android.view.KeyEvent.KEYCODE_DPAD_LEFT -> { step(-1); true }; android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> { step(1); true }; else -> false } }
+                        .padActs(PadActs(a = lifted?.let { if (playable(it)) (if (it.isLand) "Play land" else "Cast") else "Open" }, y = lifted?.let { c -> PadAct("Open") { onInspect(c) } }))
+                        .clip(shape).background(if (chipOn) Color(0x33E8C36F) else Color(0xCC101216)).border(if (chipOn) 2.dp else 1.dp, if (chipOn) Color(0xFFF3D494) else Color(0x40D6AD64), shape)
+                        .clickable { val c = lifted ?: return@clickable onSelectHand(hand.first().id); if (playable(c)) { onSelectHand(null); intents.card(c.id) } else onInspect(c) }
+                        .padding(horizontal = 12.du, vertical = 5.du), verticalAlignment = Alignment.CenterVertically) {
+                        Text(if (chipOn) "\u25C0  " else "", style = sans(sp(11f), FontWeight.Bold, Color(0xFFE8C36F)))
+                        Text(lifted?.let { "${it.name} · ${hand.indexOf(it) + 1} of ${hand.size}" } ?: "Hand ${hand.size} · bottom screen", style = sans(sp(12f), FontWeight.Bold, Color(0xFFE8C36F)), maxLines = 1)
+                        Text(if (chipOn) "  \u25B6" else "", style = sans(sp(11f), FontWeight.Bold, Color(0xFFE8C36F)))
+                    }
                 }
             }
 

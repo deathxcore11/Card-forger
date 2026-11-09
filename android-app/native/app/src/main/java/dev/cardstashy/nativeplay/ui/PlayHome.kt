@@ -1256,16 +1256,17 @@ private fun DenCase(d: PlayHomeData, act: PlayHomeActions, level: PlayMath.Level
     val a = d.rules.acts.firstOrNull { it.act == d.story.act } ?: d.rules.acts.first()
     val groups = remember(s) { (s.get("packs") as? JsonArray)?.mapNotNull { it as? JsonObject }?.groupBy { it.get("set").str() ?: "" }?.filterKeys { it.isNotEmpty() } ?: emptyMap() }
     val w = s.get("wallet") as? JsonObject ?: JsonObject()
-    ShowcaseCase("Your den · Mastery", "Level ${level.level}", trailing = wallet, heroWeight = .36f,
-        buttons = listOf(CaseButton(null, "Quests") { act.view("quests") }, CaseButton(null, "Achievements") { act.view("deeds") }, CaseButton(null, "The Forge") { act.view("forge") }),
-        hero = {
-            Art(a.art, Modifier.matchParentSize(), BiasAlignment(0f, -.3f))
-            Box(Modifier.matchParentSize().background(Brush.verticalGradient(.35f to Color.Transparent, 1f to Color(0xF2090B10))))
-            Column(Modifier.align(Alignment.BottomStart).padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("ACT ${a.act}", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = .16.em, color = P.GoldSoft))
-                if (a.line.isNotBlank()) Text(a.line, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, lineHeight = 20.sp, color = Color(0xFFFBF3DF), shadow = P.shadow), maxLines = 6, overflow = TextOverflow.Ellipsis)
-            }
-        }) {
+    // The act's art and line live on the top screen's Story banner, so the den shows only you: no picture repeated across the gap
+    // (Randall 9 Nov: "very redundant, we have a dual screen, it must know and adjust"). Quests sit under Achievements, so one button
+    // opens both; the first button is a smart Continue that picks up what you were doing.
+    val waiting = groups.values.sumOf { it.size }
+    val cont = when {
+        waiting > 0 -> CaseButton(null, "Open your packs · $waiting", gold = true, weight = 1.5f) { act.view("packs") }
+        !d.story.done -> CaseButton(null, (if (d.story.won > 0) "Continue Act " else "Begin Act ") + a.act, gold = true, weight = 1.5f) { act.story() }
+        else -> CaseButton(null, "Quick Play", gold = true, weight = 1.5f) { act.mode("quick") }
+    }
+    ShowcaseCase("Your den · Mastery", "Level ${level.level}", trailing = wallet,
+        buttons = listOf(cont, CaseButton(null, "Achievements") { act.view("deeds") }, CaseButton(null, "The Forge") { act.view("forge") })) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Bar(level.into.toFloat() / level.need.coerceAtLeast(1))
             Text("%,d / %,d XP to level %d".format(level.into, level.need, level.level + 1), style = TextStyle(fontFamily = P.Sans, fontSize = 14.sp, color = P.Muted))
