@@ -447,7 +447,7 @@ private fun Overview(name: String, shown: JsonObject, faces: List<JsonObject>, i
         // A controller: Y enlarges the card (its tap), holding Y leans it under the light as a finger does; on the card itself A enlarges it.
         val zoomNow by androidx.compose.runtime.rememberUpdatedState(onZoom)
         val padScope = rememberCoroutineScope()
-        PadScreen(remember(lean) { PadActs(y = PadAct("Enlarge") { zoomNow() }, yHold = lean.padHold(padScope)) })
+        PadScreen(remember(lean) { PadActs(y = PadAct("Inspect") { zoomNow() }, yHold = lean.padHold(padScope)) })
         val padSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
         val padPic = remember { PadActs(a = "Enlarge") }
         BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {

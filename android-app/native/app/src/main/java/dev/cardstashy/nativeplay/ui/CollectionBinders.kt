@@ -278,8 +278,8 @@ private fun BinderTile(b: JsonObject, game: String, narrow: Boolean, a: BinderSh
     val id = b.s("id")
     val press = remember { MutableInteractionSource() }
     val pressed by press.collectIsPressedAsState()
-    // The controller: A opens it; Start is what holding it does (tileMenu's Binder actions).
-    val pad = remember(id, a) { PadActs(a = "Open", start = PadAct("Binder actions") { a.hold(id) }) }
+    // The controller: A opens it; Select is what holding it does (tileMenu's Binder actions).
+    val pad = remember(id, a) { PadActs(a = "Open", menu = PadAct("Menu") { a.hold(id) }) }
     Column(modifier.clip(RoundedCornerShape(10.dp)).padActs(pad)
         .combinedClickable(press, LocalIndication.current, onLongClickLabel = "Binder actions", onLongClick = { a.hold(id) }, onClick = { a.open(id) })
         .testTag("binder:$id")

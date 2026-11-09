@@ -257,7 +257,7 @@ private fun PlayDeckTile(d: JsonObject, owned: Map<String, Int>, modifier: Modif
     val n = Decks.tile(d, owned); val name = d.s("name").ifBlank { "Untitled deck" }
     val e = emblemOf(Decks.rows(d), d.s("format"), nameFact)
     Workspace.playDeckCovers.collectAsState().value
-    TileFrame(Workspace.pickedCover(d.s("id").ifBlank { null }) ?: Decks.cover(d), modifier, onHold = onHold, onClick = onOpen, pad = PadActs(a = "Open", start = PadAct("Menu", onHold))) {
+    TileFrame(Workspace.pickedCover(d.s("id").ifBlank { null }) ?: Decks.cover(d), modifier, onHold = onHold, onClick = onOpen, pad = PadActs(a = "Open", menu = PadAct("Menu", onHold))) {
         EmblemPlate(d.s("format").ifBlank { "Casual" }, e, Modifier.padding(start = 10.dp, top = 10.dp, end = 62.dp))
         Box(Modifier.align(Alignment.TopEnd).padding(10.dp).size(44.dp).softPill(CircleShape)
             .clickable(onClick = onDelete), contentAlignment = Alignment.Center) { Text("✕", style = t(16f, FontWeight.Bold, Color(0xFFF6EEDB))) }

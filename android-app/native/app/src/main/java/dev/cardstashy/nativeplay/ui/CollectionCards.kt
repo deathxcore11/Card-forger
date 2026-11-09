@@ -276,7 +276,7 @@ private fun CollectionCardsActions.pad(r: CollRow): PadActs {
     val m = r.mark
     val x = if (r.wanted) r.got.takeIf { it.isNotBlank() }?.let { g -> PadAct(g.trimStart().removePrefix("＋").removePrefix("+").trim()) { got(r) } }
         else PadAct("Add a copy") { qty(r, 1) }
-    val y = peek?.takeIf { !r.art.isNullOrBlank() }?.let { p -> PadAct("Peek") { p(r) } }
+    val y = peek?.takeIf { !r.art.isNullOrBlank() }?.let { p -> PadAct("Inspect") { p(r) } }
     return PadActs(a = if (m == null) "Open" else if (m) "Unselect" else "Select", y = y, x = x)
 }
 

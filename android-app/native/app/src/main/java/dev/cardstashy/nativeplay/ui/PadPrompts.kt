@@ -84,6 +84,9 @@ class PadActs(
     val page: ((Int) -> Unit)? = null,
     val pageLabel: String = "Page",
     val start: PadAct? = null,
+    /** Select (Randall 9 Nov, console convention): the quick menu a long press opens on the thing under the ring. Only the focused
+     *  item's counts. [PadAct.run] null = Select long-presses the item itself (PadCursor.holdFocused). */
+    val menu: PadAct? = null,
     /** How far up the bar moves so a sheet's own bottom-right buttons stay clear. */
     val lift: Dp = 0.dp,
     /** A whole layer that owns the pad (a match, a sheet): the screens under it lend nothing. */
@@ -166,11 +169,12 @@ object PadPrompts {
             x = pick { it.x }, b = pick { it.b },
             tabs = tabsFrom?.tabs, tabsLabel = tabsFrom?.tabsLabel ?: "Tabs",
             page = pageFrom?.page, pageLabel = pageFrom?.pageLabel ?: "Page",
-            start = pick { it.start }, lift = s.firstOrNull()?.lift ?: 0.dp,
+            start = pick { it.start }, menu = f?.menu, lift = s.firstOrNull()?.lift ?: 0.dp,
         )
     }
 
-    /** At most four, in the same order every time: A, Y, X, then B or the shoulders. */
+    /** At most four, in the same order every time: A, Y, X, then B, the shoulders, Select. Never the same words twice (Randall 9 Nov:
+     *  no redundant prompts), so a B that does what X does ("Claim") is left off. */
     fun prompts(acts: PadActs = current()): List<Pair<String, String>> {
         val out = ArrayList<Pair<String, String>>()
         acts.a?.let { out += "A" to it }
@@ -180,10 +184,11 @@ object PadPrompts {
             acts.b?.let { add("B" to it) }
             acts.tabs?.let { add("LB RB" to acts.tabsLabel) }
             acts.page?.let { add("LT RT" to acts.pageLabel) }
+            acts.menu?.let { add("Select" to it.label) }
             acts.start?.let { add("Start" to it.label) }
             if (acts.b == null) add("B" to "Back")
         }
-        for (t in tail) { if (out.size >= 4) break; out += t }
+        for (t in tail) { if (out.size >= 4) break; if (out.none { it.second == t.second }) out += t }
         return out
     }
 
@@ -232,7 +237,7 @@ object PadPrompts {
             KeyEvent.KEYCODE_BUTTON_R2 -> acts.page?.invoke(1) ?: repeat(6) { dpad(KeyEvent.KEYCODE_DPAD_DOWN) }
             KeyEvent.KEYCODE_BUTTON_START, KeyEvent.KEYCODE_MENU -> if (event.repeatCount == 0) acts.start?.run?.invoke()
             // Select (Randall 9 Nov): the quick menu a long press opens, on whatever the ring is on, everywhere.
-            KeyEvent.KEYCODE_BUTTON_SELECT -> if (event.repeatCount == 0) PadCursor.holdFocused()
+            KeyEvent.KEYCODE_BUTTON_SELECT -> if (event.repeatCount == 0) acts.menu?.run?.invoke() ?: PadCursor.holdFocused()
         }
         return true
     }
