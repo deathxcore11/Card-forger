@@ -35,6 +35,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.indication
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.foundation.layout.Arrangement
@@ -408,11 +409,30 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
 
     // Controller: the pack owns the pad (opaque). X = the button under the cards (Reveal all, then Open the next pack); B closes.
     val dealt = stage == PackStage.DEALING || stage == PackStage.DEALT
+    // Sifting (Randall 9 Nov: "use my D-pad or whatever to go left and right of the cards… or use my finger"): d-pad left/right
+    // on the card or the hand, LB/RB from anywhere, the right stick sideways (held, it keeps flicking), LT/RT to the next face-down card.
+    fun nextHidden(d: Int) {
+        var j = focus + d
+        while (j in 0 until n && j in revealed) j += d
+        if (j in 0 until n) { show(j); slide = if (d > 0) slide.coerceAtLeast(0) + 1 else slide.coerceAtMost(0) - 1 } else swipe(if (d < 0) -focus else n - 1 - focus)
+    }
     PadScreen(remember(dealt, allOpen, busy, pack, onNext != null) { PadActs(b = "Close", opaque = true, x = when {
         !dealt -> null
         !allOpen -> PadAct("Reveal all") { revealAll() }
         onNext != null -> PadAct(if (busy) "Opening…" else if (pack.shop != null) "Open a new pack" else "Open the next pack") { next() }
-        else -> null }) })
+        else -> null },
+        tabs = if (dealt) { d -> swipe(d) } else null, tabsLabel = "Cards",
+        page = if (dealt && !allOpen) { d -> nextHidden(d) } else if (dealt) { d -> swipe(if (d < 0) -focus else n - 1 - focus) } else null,
+        pageLabel = if (allOpen) "Ends" else "Face down") })
+    val cardFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+    val padOn by Pad.connected.collectAsState()
+    LaunchedEffect(stage == PackStage.DEALT, pack, padOn) {
+        if (stage == PackStage.DEALT && padOn) { androidx.compose.runtime.withFrameNanos { }; runCatching { cardFocus.requestFocus() } }
+    }
+    DisposableEffect(dealt, inspecting == null) {
+        PadCursor.sideStep = if (dealt && inspecting == null) ({ d -> swipe(d) }) else null
+        onDispose { PadCursor.sideStep = null }
+    }
 
     // Back closes the topmost layer: the card being inspected first, then the pack. The predictive gesture
     // shrinks the pack under the finger, so the Play home shows through before it lets go.
@@ -421,7 +441,7 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
         try { progress.collect { backPull = it.progress }; Feel.cancel(context); onClose() } catch (e: CancellationException) { backPull = 0f; throw e }
     }
 
-    androidx.compose.runtime.CompositionLocalProvider(LocalPackResult provides pack, LocalPackGold provides pack.look?.let { pack.game.gold }) {
+    androidx.compose.runtime.CompositionLocalProvider(LocalPackResult provides pack, LocalPackGold provides pack.look?.let { pack.game.gold }, LocalPackCardFocus provides cardFocus) {
     val gold = packGold()
     Box(Modifier.fillMaxSize().graphicsLayer { val k = 1f - .1f * backPull; scaleX = k; scaleY = k; alpha = 1f - .35f * backPull; shape = RoundedCornerShape((26 * backPull).dp); clip = backPull > 0f }
         // The backdrop only swallows taps; the controller's focus skips it.
@@ -505,6 +525,9 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
  * Controller for a gesture-only control (drag, tap, long press in pointerInput): a focus stop with the gold ring, A (d-pad centre
  * or Enter) runs [onA], and d-pad left/right runs [step] when given. Touch is untouched: this adds no pointer handling.
  */
+/** The big card's focus stop, so a controller's ring lands on it the moment the cards are dealt (d-pad sifts from there). */
+private val LocalPackCardFocus = androidx.compose.runtime.staticCompositionLocalOf<androidx.compose.ui.focus.FocusRequester?> { null }
+
 @Composable
 private fun Modifier.packPad(acts: PadActs, onA: () -> Unit, step: ((Int) -> Unit)? = null): Modifier {
     val source = remember { MutableInteractionSource() }
@@ -976,6 +999,7 @@ private fun Focus(pack: PackResult, focus: Int, open: Boolean, charging: Boolean
                 }
                 .pointerInput(focus, open) { detectTapGestures(onTap = { onTap() }, onLongPress = { onHold() }) }
                 // Controller: A taps the card (reveal, then its page), Y inspects a revealed card, d-pad left/right swipes.
+                .let { m -> LocalPackCardFocus.current?.let { m.focusRequester(it) } ?: m }
                 .packPad(PadActs(a = if (open) "Open card" else "Reveal", y = if (open) PadAct("Inspect", onHold) else null), onTap, onSwipe)
                 .semantics { contentDescription = if (open) "${p.name}. Open card" else "Card ${focus + 1}, face down. Reveal" }
                 .graphicsLayer {

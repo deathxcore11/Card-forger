@@ -65,6 +65,13 @@ object PadCursor {
         if (hypot(x, y) > DEAD || drag != null) kick()
     }
 
+    /**
+     * A screen that pages sideways instead of scrolling (the pack's cards): the right stick pushed left or right steps it once,
+     * then keeps stepping while held, quicker the further it is pushed.
+     */
+    var sideStep: ((Int) -> Unit)? = null
+    private var stepAt = 0L
+
     /** True while the stick is dragging a scroller, so touch-only reactions (the bottom screen's lens) ignore it. */
     var dragging = false; private set
     private class Drag(val down: Long, var x: Float, var y: Float, val horizontal: Boolean, val scroller: Int)
@@ -225,7 +232,17 @@ object PadCursor {
 
     private fun scroll(dt: Float, density: Float) {
         val r = hypot(rx, ry)
-        if (r <= DEAD) { lift(); return }
+        if (r <= DEAD) { lift(); stepAt = 0L; return }
+        sideStep?.let { st ->
+            if (abs(rx) > .5f && abs(rx) > abs(ry)) {
+                val now = SystemClock.uptimeMillis()
+                if (stepAt == 0L || now >= stepAt) {
+                    st(if (rx > 0) 1 else -1)
+                    stepAt = now + if (stepAt == 0L) 380L else (320 - 200 * ((abs(rx) - .5f) / .5f).coerceIn(0f, 1f)).toLong()
+                }
+            } else stepAt = 0L
+            return
+        }
         val horizontal = abs(rx) > abs(ry) * 1.15f
         if (drag != null && horizontal != drag!!.horizontal) lift()
         axisX = horizontal
