@@ -88,17 +88,17 @@ class PadCursorTest {
         PadCursor.right(0f, 1f); timedFrames(300)
         val fast = scroll.value - slow
         assertTrue("full push scrolls faster: $fast vs $slow", fast > slow * 3)
-        // Let go: it coasts a little further (the phone's own fling), then stops.
+        // Let go: it eases to a stop within a few frames (no fling), then stays put.
         val atRelease = scroll.value
-        PadCursor.right(0f, 0f); timedFrames(16)
+        PadCursor.right(0f, 0f); timedFrames(800)
         rule.mainClock.advanceTimeBy(1500); rule.waitForIdle()
         val rest = scroll.value
-        assertTrue("glided after release: $atRelease -> $rest", rest > atRelease)
+        assertTrue("eased to a stop, no fling: $atRelease -> $rest", rest >= atRelease && rest - atRelease < 400)
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(1000)); rule.waitForIdle()
         assertEquals("came to rest", rest, scroll.value)
         assertTrue("ring came into view: $focused", focused.isNotEmpty() && focused.last() > 0)
         // Push back up past the top: it stops at 0.
-        PadCursor.right(0f, -1f); timedFrames(3000); PadCursor.right(0f, 0f); timedFrames(16)
+        PadCursor.right(0f, -1f); timedFrames(3000); PadCursor.right(0f, 0f); timedFrames(800)
         rule.mainClock.advanceTimeBy(1500); rule.waitForIdle()
         assertEquals(0, scroll.value)
     }

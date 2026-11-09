@@ -505,7 +505,7 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
                     onRevealAll = ::revealAll,
                     onNext = if (onNext != null) ::next else null, busy = busy, drift = { drift.value })
             }
-            Text(status, Modifier.fillMaxWidth().heightIn(min = 16.dp).padding(top = 2.dp), style = TextStyle(fontFamily = Site.Body.fontFamily, fontSize = 11.5.sp, lineHeight = 17.sp, color = gold, textAlign = TextAlign.Center))
+            if (!DualScreen.active) Text(status, Modifier.fillMaxWidth().heightIn(min = 16.dp).padding(top = 2.dp), style = TextStyle(fontFamily = Site.Body.fontFamily, fontSize = 11.5.sp, lineHeight = 17.sp, color = gold, textAlign = TextAlign.Center))
         }
         // buy.js buyOnTcgplayer: the pack's list goes to the clipboard, then the ask: Open TCGplayer (Mass Entry) or Done.
         if (shopAsk) pack.shop?.let { sh ->
@@ -816,6 +816,13 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
                 if (onNext != null) PillButton(if (busy) "Opening…" else if (pack.shop != null) "Open a new pack" else "Open the next pack", ghost = false, wide = true, onClick = onNext)
             }
         }
+    // Two screens (Randall 9 Nov: "why both? Have the bottom be the horizontal spread and top card heavy"): once the cards have landed,
+    // the hand and its buttons live on the bottom screen as the spread, and the big card takes the whole top. The deal still flies into
+    // the hand here first, so the cards visibly leave for the bottom.
+    if (DualScreen.active && stage == PackStage.DEALT) Column(Modifier.fillMaxSize().onGloballyPositioned { bodyRoot = it.positionInRoot() }, horizontalAlignment = Alignment.CenterHorizontally) {
+        big(Modifier.weight(1f).fillMaxWidth())
+        if (allOpen && pack.shop != null) PackTools(onShop, onWish, wished, wishing)
+    } else
     if (side) Row(Modifier.fillMaxSize().onGloballyPositioned { bodyRoot = it.positionInRoot() }.then(skip), verticalAlignment = Alignment.CenterVertically) {
         big(Modifier.weight(.48f).fillMaxHeight())
         Column(Modifier.weight(.52f).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically)) { hand(); actions() }
@@ -1335,7 +1342,7 @@ private fun TcgRarityPill(rarity: String, finish: String, rx: PackRx, game: Card
 }
 
 
-/** The pack's binder page on a handheld's bottom screen: one pocket per card, face down until turned, the card in focus ringed. */
+/** The pack on a handheld's bottom screen: its cards in one horizontal spread, face down until turned, the card on top lifted and ringed. */
 @Composable
 internal fun PackBinderCase(pack: PackResult, revealed: List<Int>, focus: Int, dealt: Boolean, allOpen: Boolean, busy: Boolean,
                            onShow: (Int) -> Unit, onRevealAll: () -> Unit, onNext: (() -> Unit)?) {
@@ -1347,25 +1354,51 @@ internal fun PackBinderCase(pack: PackResult, revealed: List<Int>, focus: Int, d
         else -> emptyList()
     }
     ShowcaseCase(if (!dealt) "Pack · Sealed" else "Pack · ${revealed.size} of $n turned", pack.name, buttons = buttons, scroll = false) {
-        if (!dealt) { Text("Tear it open on the top screen. Its cards land here, one pocket each.", style = TextStyle(fontFamily = Type.Sans, fontSize = 15.sp, lineHeight = 21.sp, color = Color(0xFFE4DFD3))); return@ShowcaseCase }
-        BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            // The layout that makes the cards biggest in the space there is (rows of cols pockets, each 63:88).
-            val gap = 8.dp
-            val (cols, w) = (1..max(1, n)).map { c -> val rows = (n + c - 1) / c
-                c to minOf((maxWidth - gap * (c - 1)) / c, ((maxHeight - gap * (rows - 1)) / rows) * (63f / 88f)) }.maxByOrNull { it.second.value } ?: (1 to maxWidth)
-            Column(verticalArrangement = Arrangement.spacedBy(gap)) {
-                pack.pulls.indices.chunked(cols).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
-                        row.forEach { i ->
-                            val on = i == focus
-                            val shape = RoundedCornerShape(6.dp)
-                            Box(Modifier.width(w).aspectRatio(63f / 88f).clip(shape).background(Color(0x22FFFFFF))
-                                .border(if (on) 2.dp else 1.dp, if (on) Color(0xFFF3D494) else Color(0x33D6AD64), shape).clickable { onShow(i) }) {
-                                if (i in revealed) PullFace(pack.pulls[i], Modifier.fillMaxSize().padding(2.dp)) else MagicBack(Modifier.fillMaxSize().padding(2.dp).alpha(.85f))
-                            }
-                        }
-                    }
-                }
+        if (!dealt) { Text("Tear it open on the top screen. Its cards land here in a spread.", style = TextStyle(fontFamily = Type.Sans, fontSize = 15.sp, lineHeight = 21.sp, color = Color(0xFFE4DFD3))); return@ShowcaseCase }
+        PackSpread(pack, revealed, focus, onShow)
+    }
+}
+
+/**
+ * The spread: every card of the pack in one row across the bottom screen, as big as the height allows, overlapping only when they
+ * must. The card on top lifts out of the row with a gold ring. Tap a card to bring it up; drag sideways to sift through them.
+ */
+@Composable
+private fun PackSpread(pack: PackResult, revealed: List<Int>, focus: Int, onShow: (Int) -> Unit) = BoxWithConstraints(Modifier.fillMaxSize()) {
+    val n = pack.pulls.size
+    if (n == 0) return@BoxWithConstraints
+    val density = LocalDensity.current
+    val lift = 18.dp
+    val h = (maxHeight - lift - 6.dp).coerceAtLeast(40.dp)
+    val w0 = h * (63f / 88f)
+    val gap = 8.dp
+    // Side by side when they fit; otherwise as wide as possible, each step showing a slice of the card under it.
+    val w = if (w0 * n + gap * (n - 1) <= maxWidth) w0 else minOf(w0, maxWidth * .42f)
+    val step = if (w * n + gap * (n - 1) <= maxWidth) w + gap else if (n > 1) (maxWidth - w) / (n - 1) else 0.dp
+    val span = step * (n - 1) + w
+    val x0 = (maxWidth - span) / 2
+    val y0 = (maxHeight - lift - w * (88f / 63f)) / 2
+    val stepPx = with(density) { step.toPx() }.coerceAtLeast(1f)
+    var drag by remember { mutableFloatStateOf(0f) }
+    val at by androidx.compose.runtime.rememberUpdatedState(focus)
+    Box(Modifier.fillMaxSize().pointerInput(n, stepPx) {
+        detectHorizontalDragGestures(onDragEnd = { drag = 0f }, onDragCancel = { drag = 0f }) { ch, dx ->
+            ch.consume(); drag += dx
+            val moves = (drag / maxOf(stepPx, 24f)).toInt()
+            if (moves != 0) { drag -= moves * maxOf(stepPx, 24f); onShow((at + moves).coerceIn(0, n - 1)) }
+        }
+    }) {
+        pack.pulls.forEachIndexed { i, p ->
+            val on = i == focus
+            val up by androidx.compose.animation.core.animateFloatAsState(if (on) 1f else 0f, label = "lift")
+            val shape = RoundedCornerShape(7.dp)
+            Box(Modifier.offset(x = x0 + step * i, y = y0 + lift * (1f - up)).width(w).aspectRatio(63f / 88f)
+                .zIndex(if (on) n + 1f else if (i < focus) i.toFloat() else (n - i).toFloat())
+                .graphicsLayer { scaleX = 1f + .06f * up; scaleY = 1f + .06f * up; shadowElevation = 10.dp.toPx() * up; this.shape = shape; clip = true }
+                .border(if (on) 2.dp else 1.dp, if (on) Color(0xFFF3D494) else Color(0x40D6AD64), shape)
+                .clickable { onShow(i) }
+                .semantics { contentDescription = if (i in revealed) "${p.name}, turned" else "Card ${i + 1}, face down" }) {
+                if (i in revealed) PullFace(p, Modifier.fillMaxSize()) else MagicBack(Modifier.fillMaxSize())
             }
         }
     }

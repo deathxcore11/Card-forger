@@ -256,8 +256,10 @@ class MainActivity : ComponentActivity() {
                 hatDir = dir
                 if (dir != 0) { val now = android.os.SystemClock.uptimeMillis()
                     dev.cardstashy.nativeplay.ui.PadCursor.dpad(); dev.cardstashy.nativeplay.ui.PadPrompts.lastPress = now
-                    super.dispatchKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_DOWN, dir, 0, 0, ev.deviceId, 0, 0, android.view.InputDevice.SOURCE_DPAD))
-                    super.dispatchKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_UP, dir, 0, 0, ev.deviceId, 0, 0, android.view.InputDevice.SOURCE_DPAD)) }
+                    // Through the app's own key handling (not straight to the views), so a hat press with nothing ringed still puts
+                    // the ring on the screen (Randall 9 Nov: the d-pad could not reach Your packs after the bottom screen opened it).
+                    dispatchKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_DOWN, dir, 0, 0, ev.deviceId, 0, 0, android.view.InputDevice.SOURCE_DPAD))
+                    dispatchKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_UP, dir, 0, 0, ev.deviceId, 0, 0, android.view.InputDevice.SOURCE_DPAD)) }
             }
             // Left stick: the cursor. Right stick: scroll what is under it.
             dev.cardstashy.nativeplay.ui.PadCursor.left(ev.getAxisValue(android.view.MotionEvent.AXIS_X), ev.getAxisValue(android.view.MotionEvent.AXIS_Y))

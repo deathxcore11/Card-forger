@@ -2,6 +2,8 @@
 
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,6 +21,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -104,6 +107,22 @@ fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Uni
     val matched = remember(all, facts, filter, sort, sets) { Trunk.sort(Trunk.filter(all, { facts[it] }, filter), { facts[it] }, sort, sets) }
     val shown = remember(matched) { Trunk.holoSplit(matched).take(300) }
     val data = CardData.ready.collectAsState().value.also { if (it == null) CardData.warm(context) }
+    // Bottom screen (wave 2): the card under the ring in its case; otherwise the binder plaque with the purse and Keep collecting.
+    val lens = rememberLens()
+    BottomScreen {
+        val k = lens.key?.removePrefix("card:")
+        val holo = k?.endsWith(":h") == true
+        val c = k?.removeSuffix(":h")?.let { o -> all.firstOrNull { it.o == o } }
+        ShowcaseLens(c?.let { it to holo }) { pick ->
+            if (pick != null) {
+                val (card, h) = pick
+                val print = card.pid?.let { prints[it] } ?: facts[card.o]?.card
+                val cp = CardPick(card.n, card.o, card.pid ?: print?.get("id")?.asString, if (h) "foil" else "nonfoil")
+                TrunkCardCase(state, card, h, print, facts[card.o], data, onOpen = { onCard(cp) },
+                    onMenu = { onHold(CardHold(cp, trunkImage(card, print, facts[card.o]), print?.get("set")?.asString ?: card.pset ?: card.s.firstOrNull() ?: "", h)) })
+            } else TrunkBinderCase(state, all, matched.size, sets)
+        }
+    }
 
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         Backdrop() // #ambient: the shared art (glass on, or Aura)
@@ -115,7 +134,7 @@ fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Uni
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         // head('Collection', snapshot): the purse sits under the title, as on every Play screen.
-                        PlayHead("Collection", "Play", onBack) { dev.cardstashy.nativeplay.play.PlayMath.purse(state)?.let { PurseRow(it, level = dev.cardstashy.nativeplay.play.PlayMath.mastery(state, it.xp)) } }
+                        PlayHead("Collection", "Play", onBack) { if (!DualScreen.active) dev.cardstashy.nativeplay.play.PlayMath.purse(state)?.let { PurseRow(it, level = dev.cardstashy.nativeplay.play.PlayMath.mastery(state, it.xp)) } }
                         // Sets moved to the Shop (Randall 3 Nov 20:00Z), and came back as a switch here (8 Nov: "I can't find a way" to look at sets).
                         BenchSwitch(listOf("cards" to "Cards", "sets" to "Sets"), tab) { tab = it }
                     }
@@ -125,14 +144,14 @@ fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Uni
                         FilterBar(filter, sort, sets, { filter = it }) { sort = it; prefs.edit().putString("trunkSort", it).apply() }
                     }
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        Text("${"%,d".format(matched.size)} of ${"%,d".format(all.size)} cards", style = small)
+                        if (!DualScreen.active) Text("${"%,d".format(matched.size)} of ${"%,d".format(all.size)} cards", style = small)
                     }
                     if (shown.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
                         Empty(if (all.isNotEmpty()) "No cards match" else "Your binder is empty", if (all.isNotEmpty()) "Try another name, colour or type." else "Open a pack to start your Play collection.")
                     }
                     items(shown, key = { it.o + if (it.holo) ":h" else "" }) { c ->
                         val print = c.pid?.let { prints[it] } ?: facts[c.o]?.card
-                        Tile(c, print, facts[c.o], data, onHold = { img, set -> onHold(CardHold(CardPick(c.n, c.o, c.pid ?: print?.get("id")?.asString, if (c.holo) "foil" else "nonfoil"), img, set, c.holo)) }) { onCard(CardPick(c.n, c.o, c.pid ?: print?.get("id")?.asString, if (c.holo) "foil" else "nonfoil")) }
+                        Box(Modifier.dualLens(lens, "card:" + c.o + if (c.holo) ":h" else "")) { Tile(c, print, facts[c.o], data, onHold = { img, set -> onHold(CardHold(CardPick(c.n, c.o, c.pid ?: print?.get("id")?.asString, if (c.holo) "foil" else "nonfoil"), img, set, c.holo)) }) { onCard(CardPick(c.n, c.o, c.pid ?: print?.get("id")?.asString, if (c.holo) "foil" else "nonfoil")) } }
                     }
                 } else {
                     item(span = { GridItemSpan(maxLineSpan) }) { SetsTab(state, setQuery, setFormat, { setQuery = it }, { setFormat = it }, onSet) }
@@ -140,6 +159,85 @@ fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Uni
             }
         }
         Box(Modifier.align(Alignment.BottomCenter)) { nav() }
+    }
+}
+
+internal fun trunkImage(c: Trunk.Card, print: JsonObject?, fact: CardFacts.Fact?): String =
+    print?.let { p -> p.getAsJsonObject("image_uris")?.get("normal")?.asString ?: p.getAsJsonArray("card_faces")?.firstOrNull()?.asJsonObject?.getAsJsonObject("image_uris")?.get("normal")?.asString }
+        ?: c.pimage ?: fact?.i ?: "https://api.scryfall.com/cards/named?format=image&version=normal&exact=" + java.net.URLEncoder.encode(c.n, "UTF-8")
+
+private fun JsonObject.str(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asString
+
+/** A Trunk card in the case: the card with its foil, type and rules text, copies and holo copies, the sets you own it in, and what seals buy. */
+@Composable
+internal fun TrunkCardCase(state: JsonObject, c: Trunk.Card, holo: Boolean, print: JsonObject?, fact: CardFacts.Fact?, data: CardData?, onOpen: () -> Unit, onMenu: () -> Unit) {
+    val rarity = print?.str("rarity") ?: c.r
+    val finish = Foil.finishFor(print, if (holo) "foil" else "nonfoil")
+    val look = data?.let { Foil.look(it, print, finish) }
+    val tilt = rememberFoilTilt(live = finish != "nonfoil", phase = (c.o.hashCode() and 0xff) / 255f, tile = false)
+    val face = print?.getAsJsonArray("card_faces")?.firstOrNull() as? JsonObject
+    val type = print?.str("type_line") ?: face?.str("type_line")
+    val text = print?.str("oracle_text") ?: face?.str("oracle_text")
+    val stamp = Trunk.stamp(state, print)
+    val up = Trunk.holo(state, c.n, print)
+    ShowcaseCase(if (holo) "Trunk · Holo copy" else "Trunk · Card", c.n, heroWeight = .36f,
+        buttons = listOf(CaseButton("A", "Open card", gold = true, run = onOpen), CaseButton(null, "Menu", run = onMenu)),
+        hero = { CardPicture(trunkImage(c, print, fact), look?.takeIf { it.shines }, tilt, Modifier.align(Alignment.Center).fillMaxHeight().aspectRatio(63f / 88f), shape = CardCorner) }) {
+        type?.let { Text(it, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = Color(0xFFEDE7DA))) }
+        text?.takeIf { it.isNotBlank() }?.let { Text(it, style = TextStyle(fontFamily = Site.Manrope, fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFFC9CED6)), maxLines = 6, overflow = TextOverflow.Ellipsis) }
+        Row(horizontalArrangement = Arrangement.spacedBy(26.dp), verticalAlignment = Alignment.Bottom) {
+            CaseFact("Copies", "${c.c}")
+            CaseFact("Holo copies", "${minOf(c.h, c.c)}")
+            CaseFact("Rarity", rarity.replaceFirstChar { it.uppercase() })
+        }
+        if (c.s.isNotEmpty()) {
+            CaseLabel("Owned in")
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) { c.s.take(10).forEach { SetBadge(it, rarity) } }
+        }
+        val seals = buildList {
+            if (stamp != null && c.c < 4) add("Stamp a copy" to "1 ${stamp.rarity} seal · you have ${stamp.seals}")
+            if (up != null && up.can) add("Make one holo" to "${up.cost} ${up.seal} seal${if (up.cost == 1) "" else "s"}" + if (up.afford) "" else " · not enough yet")
+        }
+        if (seals.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(26.dp)) { seals.forEach { (l, v) -> CaseFact(l, v) } }
+    }
+}
+
+/** The Trunk's default case: the binder plaque (how many cards, copies, holo copies, sets started), the purse, and the sets closest to done. */
+@Composable
+internal fun TrunkBinderCase(state: JsonObject, all: List<Trunk.Card>, matched: Int, sets: List<Trunk.SetRow>) {
+    val copies = all.sumOf { it.c }; val holos = all.sumOf { minOf(it.h, it.c) }
+    val started = sets.filter { it.owned > 0 }
+    val near = started.filter { (it.total ?: 0) > it.owned }.sortedByDescending { it.owned.toFloat() / (it.total ?: 1) }.take(3)
+    ShowcaseCase("Play · Your Trunk", if (matched == all.size) "${"%,d".format(all.size)} cards" else "${"%,d".format(matched)} of ${"%,d".format(all.size)} cards",
+        trailing = { dev.cardstashy.nativeplay.play.PlayMath.purse(state)?.let { PurseRow(it, level = dev.cardstashy.nativeplay.play.PlayMath.mastery(state, it.xp)) } },
+        buttons = emptyList(), heroWeight = .4f, hero = if (all.isEmpty()) null else ({
+            // Your proudest cards on the binder's cover: holo copies first, then the rarest.
+            val rank = mapOf("mythic" to 4, "special" to 4, "bonus" to 4, "rare" to 3, "uncommon" to 2)
+            val pride = all.sortedWith(compareByDescending<Trunk.Card> { minOf(it.h, it.c) > 0 }.thenByDescending { rank[it.r] ?: 1 }.thenByDescending { it.c }).take(3)
+            pride.forEachIndexed { i, c ->
+                val off = i - (pride.size - 1) / 2f
+                Box(Modifier.align(Alignment.Center).fillMaxWidth(.52f).aspectRatio(63f / 88f).graphicsLayer { translationX = off * 40.dp.toPx(); rotationZ = off * 6f; translationY = kotlin.math.abs(off) * 10.dp.toPx() }
+                    .zIndex(if (off == 0f) 3f else 1f)) { CardPicture(trunkImage(c, null, null), null, null, Modifier.fillMaxSize(), shape = CardCorner) }
+            }
+        })) {
+        Row(horizontalArrangement = Arrangement.spacedBy(26.dp)) {
+            CaseFact("Copies", "%,d".format(copies))
+            CaseFact("Holo copies", "%,d".format(holos))
+            CaseFact("Sets started", "${started.size}")
+        }
+        if (near.isNotEmpty()) {
+            CaseLabel("Keep collecting")
+            near.forEach { x ->
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(x.name, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = Color(0xFFEDE7DA)), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                        Text("${x.owned} / ${x.total}", style = TextStyle(fontFamily = Site.Manrope, fontSize = 14.sp, color = Site.Muted))
+                    }
+                    ProgressBar(x.owned.toFloat() / (x.total ?: 1))
+                }
+            }
+        }
+        Text("Move the ring onto a card to see it here.", style = TextStyle(fontFamily = Site.Manrope, fontSize = 14.sp, color = Site.Muted))
     }
 }
 
@@ -239,8 +337,7 @@ private fun Tile(c: Trunk.Card, print: JsonObject?, fact: CardFacts.Fact?, data:
     val rarity = print?.get("rarity")?.asString ?: c.r
     val set = print?.get("set")?.asString ?: c.pset ?: c.s.firstOrNull() ?: ""
     val number = print?.get("collector_number")?.asString ?: c.pnumber ?: ""
-    val image = print?.let { p -> p.getAsJsonObject("image_uris")?.get("normal")?.asString ?: p.getAsJsonArray("card_faces")?.firstOrNull()?.asJsonObject?.getAsJsonObject("image_uris")?.get("normal")?.asString }
-        ?: c.pimage ?: fact?.i ?: "https://api.scryfall.com/cards/named?format=image&version=normal&exact=" + java.net.URLEncoder.encode(c.n, "UTF-8")
+    val image = trunkImage(c, print, fact)
     // A printing that only comes in foil shows its foil whichever copy this is.
     val finish = Foil.finishFor(print, if (c.holo) "foil" else "nonfoil")
     val look = data?.let { Foil.look(it, print, finish) }

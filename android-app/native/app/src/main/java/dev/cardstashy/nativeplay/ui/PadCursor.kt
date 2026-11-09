@@ -74,7 +74,7 @@ object PadCursor {
 
     /** True while the stick is dragging a scroller, so touch-only reactions (the bottom screen's lens) ignore it. */
     var dragging = false; private set
-    private class Drag(val down: Long, var x: Float, var y: Float, val horizontal: Boolean, val scroller: Int)
+    private class Drag(val down: Long, var x: Float, var y: Float, val horizontal: Boolean, val scroller: Int, var dir: Float = 0f, var hold: Int = 0, var frames: Int = 0, var stuck: Boolean = false)
     private var drag: Drag? = null
     private var speed = 0f
     private var axisX = false
@@ -230,10 +230,15 @@ object PadCursor {
         } else targetBounds = t?.boundsInWindow
     }
 
+    /**
+     * The right stick as a smooth scroll wheel (Randall 9 Nov: "needs to be a smooth scroll, think of gaming or webpage"): the page
+     * moves at a speed set by how far the stick is pushed, starts at once, and when the stick is let go it eases to a stop in a
+     * blink and stays there. No fling, no coast, no jump. At the end of a page it simply stops instead of stretching.
+     */
     private fun scroll(dt: Float, density: Float) {
         val r = hypot(rx, ry)
-        if (r <= DEAD) { lift(); stepAt = 0L; return }
         sideStep?.let { st ->
+            if (r <= DEAD) { stepAt = 0L; lift(); return }
             if (abs(rx) > .5f && abs(rx) > abs(ry)) {
                 val now = SystemClock.uptimeMillis()
                 if (stepAt == 0L || now >= stepAt) {
@@ -243,32 +248,54 @@ object PadCursor {
             } else stepAt = 0L
             return
         }
-        val horizontal = abs(rx) > abs(ry) * 1.15f
-        if (drag != null && horizontal != drag!!.horizontal) lift()
-        axisX = horizontal
-        // Gentle near the centre, quick at the rim: about 2,600 dp a second fully pushed, easing in.
-        val k = ((r - DEAD) / (1 - DEAD)).coerceIn(0f, 1f)
-        val target = 2600f * density * k * k * (.35f + .65f * k)
-        speed += (target - speed) * (dt * 12f).coerceAtMost(1f)
-        val dir = Math.signum(if (horizontal) rx else ry)
         var d = drag
+        if (r <= DEAD) {
+            // Let go: ease out over about a tenth of a second, then hold still a few frames so the page reads no speed, then lift.
+            if (d == null) return
+            speed *= kotlin.math.exp(-dt / .07f)
+            if (speed < 24f * density) { speed = 0f; if (++d.hold >= 4) { lift(); return } }
+            push(d, dt)
+            return
+        }
+        val horizontal = abs(rx) > abs(ry) * 1.15f
+        val dir = Math.signum(if (horizontal) rx else ry)
+        // Changing axis or reversing: put the finger down afresh (the old drag stops dead, it never flings).
+        if (d != null && (horizontal != d.horizontal || (d.dir != 0f && dir != d.dir))) { speed = 0f; lift(); d = null }
+        axisX = horizontal
+        // Speed follows the push closely: a nudge reads slowly, the rim runs about 2,400 dp a second. It answers within a few frames.
+        val k = ((r - DEAD) / (1 - DEAD)).coerceIn(0f, 1f)
+        val target = 2400f * density * (.08f + .92f * k * k)
+        speed += (target - speed) * (dt * 22f).coerceAtMost(1f)
         if (d == null) {
             val all = nodes()?.filter { it.config.getOrNull(SemanticsActions.ScrollBy) != null } ?: return
             val s = pickScroller(all, horizontal, dir) ?: return
             val p = grip(all, s, horizontal)
             main.removeCallbacksAndMessages(SETTLE)
-            d = Drag(SystemClock.uptimeMillis(), p.x, p.y, horizontal, s.id); drag = d; dragging = true
+            d = Drag(SystemClock.uptimeMillis(), p.x, p.y, horizontal, s.id, dir); drag = d; dragging = true
             touch(android.view.MotionEvent.ACTION_DOWN, d)
             // Past the touch slop at once, so the scroller takes the drag and nothing under the finger counts it as a tap.
             val slop = android.view.ViewConfiguration.get(root!!.context).scaledTouchSlop + 2f
             if (horizontal) d.x -= dir * slop else d.y -= dir * slop
             touch(android.view.MotionEvent.ACTION_MOVE, d)
         }
-        // The finger moves against the stick: pushing down shows what is below.
-        val step = speed * dt * dir
-        if (horizontal) d.x -= step else d.y -= step
-        touch(android.view.MotionEvent.ACTION_MOVE, d)
+        d.dir = dir; d.hold = 0
+        push(d, dt)
         if (shown && frame++ % 6 == 0) aim()
+    }
+
+    /** Move the finger one frame's worth (against the stick: pushing down shows what is below), unless the page is at its end. */
+    private fun push(d: Drag, dt: Float) {
+        if (d.frames++ % 3 == 0) d.stuck = atEnd(d)
+        if (!d.stuck && speed > 0f) { val step = speed * dt * d.dir; if (d.horizontal) d.x -= step else d.y -= step }
+        touch(android.view.MotionEvent.ACTION_MOVE, d)
+    }
+
+    /** The scroller under the stick has reached its end in the direction pushed. */
+    private fun atEnd(d: Drag): Boolean {
+        val range = if (d.horizontal) SemanticsProperties.HorizontalScrollAxisRange else SemanticsProperties.VerticalScrollAxisRange
+        val r = nodes()?.firstOrNull { it.id == d.scroller }?.config?.getOrNull(range) ?: return false
+        val v = r.value(); val m = r.maxValue(); val dir = if (r.reverseScrolling) -d.dir else d.dir
+        return if (dir > 0) v >= m - .5f else v <= .5f
     }
 
     private fun nodes(): List<SemanticsNode>? {

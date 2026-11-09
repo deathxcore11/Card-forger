@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.ui.focus.focusRequester
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -552,6 +553,11 @@ private fun YearPlate(year: String) = Row(Modifier.fillMaxWidth().padding(top = 
 private fun PacksPage(s: JsonObject, busy: Boolean, onBack: () -> Unit, onOpen: (String) -> Unit, lens: LensHost? = null) {
     val packs = s.objs("packs")
     val groups = packs.sortedByDescending { collector(it) }.groupBy { (if (collector(it)) "*" else "") + (it.get("set").s() ?: "") }.toList()
+    // With a controller in hand the ring starts on the first pack, so the d-pad walks the packs at once (Randall 9 Nov:
+    // opened from the bottom screen's Your packs, the d-pad couldn't reach them).
+    val first = remember { androidx.compose.ui.focus.FocusRequester() }
+    val padOn by dev.cardstashy.nativeplay.ui.Pad.connected.collectAsState()
+    LaunchedEffect(padOn, groups.isNotEmpty()) { if (padOn && groups.isNotEmpty()) { androidx.compose.runtime.withFrameNanos { }; androidx.compose.runtime.withFrameNanos { }; runCatching { first.requestFocus() } } }
     LazyVerticalGrid(GridCells.Adaptive(150.dp), Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 120.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item(span = { GridItemSpan(maxLineSpan) }) { PageHeader("Your packs", "Shop", onBack = onBack) {
@@ -565,7 +571,7 @@ private fun PacksPage(s: JsonObject, busy: Boolean, onBack: () -> Unit, onOpen: 
         }
         items(groups, key = { it.first }) { (key, list) ->
             val code = list.first().get("set").s() ?: ""
-            Box((lens?.let { Modifier.dualLens(it, "pack:$code") } ?: Modifier).padActs(PadActs(a = "Open")).clickable(enabled = !busy) { onOpen(list.first().get("id").s() ?: "") }) {
+            Box((if (key == groups.first().first) Modifier.focusRequester(first) else Modifier).then(lens?.let { Modifier.dualLens(it, "pack:$code") } ?: Modifier).padActs(PadActs(a = "Open")).clickable(enabled = !busy) { onOpen(list.first().get("id").s() ?: "") }) {
                 // Collector packs (every card holo): the band says Collector booster and a rainbow sheen runs across (boosterMarkup collector).
                 Booster(code, null, collector = key.startsWith("*"))
                 Box(Modifier.align(Alignment.TopEnd).offset(6.dp, (-6).dp).size(30.dp).clip(CircleShape).background(Site.Gold), contentAlignment = Alignment.Center) {
