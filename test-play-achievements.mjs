@@ -153,13 +153,15 @@ assert.ok(achievementRows({state: {wallet: {packs_opened: 12}}}).find(r => r.id 
   assert.equal((await post('claim', {kind: 'ach', id: 'first-spark', step: 0}))[0], 409, 'paid once');
   // The day's one free quest swap: easy or hard, never twice a day, never a done quest.
   const day = playDay(0), before = questRows({counters, claimed: [], day}).daily;
-  assert.ok(before.find(q => q.level === 'easy').canSwap && !before.find(q => q.level === 'first').canSwap, 'easy and hard can swap, the first-match quest cannot');
+  // The quest list is date-seeded: the match above can already finish the easy or hard one, so swap whichever is still open.
+  const lv = before.find(q => q.level === 'hard').canSwap ? 'hard' : 'easy', other = lv === 'hard' ? 'easy' : 'hard';
+  assert.ok(before.find(q => q.level === lv).canSwap && !before.find(q => q.level === 'first').canSwap, 'an open easy or hard quest can swap, the first-match quest cannot');
   assert.equal((await post('reroll', {level: 'first', tz: 0}))[0], 400);
-  const [r1, sw] = await post('reroll', {level: 'hard', tz: 0});
+  const [r1, sw] = await post('reroll', {level: lv, tz: 0});
   assert.equal(r1, 200);
   const after = questRows({counters: sw.counters, claimed: [], day}).daily;
-  assert.notEqual(after.find(q => q.level === 'hard').id, before.find(q => q.level === 'hard').id, 'a different quest');
-  assert.equal(after.find(q => q.level === 'easy').id, before.find(q => q.level === 'easy').id, 'the other one stays');
+  assert.notEqual(after.find(q => q.level === lv).id, before.find(q => q.level === lv).id, 'a different quest');
+  assert.equal(after.find(q => q.level === other).id, before.find(q => q.level === other).id, 'the other one stays');
   assert.ok(after.every(q => !q.canSwap), 'one swap a day');
   assert.equal((await post('reroll', {level: 'easy', tz: 0}))[0], 409, 'no second swap today');
 }
