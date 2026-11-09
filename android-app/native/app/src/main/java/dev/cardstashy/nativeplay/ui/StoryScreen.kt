@@ -140,9 +140,18 @@ private fun Cta(text: String, modifier: Modifier = Modifier) =
 
 /** The road: the age you're in as act covers. Cleared covers, the current one as the hero, one blurred tease, nothing after. */
 @Composable
-fun StoryRoad(acts: List<PlayRules.Act>, age: String, p: StoryLogic.Progress, onBack: () -> Unit, onAct: (Int) -> Unit, purse: @Composable () -> Unit = {}) {
+fun StoryRoad(acts: List<PlayRules.Act>, age: String, p: StoryLogic.Progress, onBack: () -> Unit, onAct: (Int) -> Unit, purse: @Composable () -> Unit = {}, wallet: @Composable () -> Unit = purse) {
     val now = StoryLogic.currentAct(p, acts.size)
     val shown = acts.filter { it.act <= now + 1 }
+    // Bottom screen: the act under the ring (teased acts stay hidden), else the one you are in.
+    val lens = rememberLens()
+    BottomScreen {
+        val n = lens.key?.removePrefix("act:")?.toIntOrNull()?.takeIf { it <= now } ?: now.coerceAtMost(acts.size)
+        acts.firstOrNull { it.act == n }?.let { a ->
+            val cta = CaseButton("A", if (a.act < now || StoryLogic.actCleared(p, a.act)) "Open" else if (StoryLogic.actWon(p, a.act) > 0) "Continue" else "Begin", gold = true) { onAct(a.act) }
+            StoryBottom(a, null, p, null, a.act == now, cta, null, wallet)
+        }
+    }
     // Controller: X = the act you are in, with its cover's own words (Begin / Continue).
     PadScreen(PadActs(x = if (acts.any { it.act == now }) PadAct(if (StoryLogic.actWon(p, now) > 0) "Continue" else "Begin") { onAct(now) } else null))
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -160,7 +169,7 @@ fun StoryRoad(acts: List<PlayRules.Act>, age: String, p: StoryLogic.Progress, on
             shown.forEach { a ->
                 item("act${a.act}") {
                     val won = StoryLogic.actWon(p, a.act); val done = StoryLogic.actCleared(p, a.act); val here = a.act == now; val tease = a.act > now
-                    Cover(a, won, done, here, tease, StoryLogic.actStars(p, a.act), Modifier.fillMaxHeight().aspectRatio(1.05f)) { onAct(a.act) }
+                    Cover(a, won, done, here, tease, StoryLogic.actStars(p, a.act), Modifier.fillMaxHeight().aspectRatio(1.05f).dualLens(lens, "act:${a.act}")) { onAct(a.act) }
                 }
             }
             if (now > acts.size) item("book") { Box(Modifier.fillMaxHeight().aspectRatio(1.4f)) { Book() } }
@@ -172,7 +181,7 @@ fun StoryRoad(acts: List<PlayRules.Act>, age: String, p: StoryLogic.Progress, on
         shown.forEach { a ->
             item("act${a.act}") {
                 val won = StoryLogic.actWon(p, a.act); val done = StoryLogic.actCleared(p, a.act); val here = a.act == now; val tease = a.act > now
-                Cover(a, won, done, here, tease, StoryLogic.actStars(p, a.act)) { onAct(a.act) }
+                Cover(a, won, done, here, tease, StoryLogic.actStars(p, a.act), Modifier.fillMaxWidth().heightIn(min = 300.dp).aspectRatio(1.05f).dualLens(lens, "act:${a.act}")) { onAct(a.act) }
             }
         }
         if (now > acts.size) item("book") { Book() }
@@ -215,7 +224,7 @@ private fun Book() {
 
 /** One act: its banner and the battles reached so far (cleared, the current one, then one tease; the secret row only when open). */
 @Composable
-fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, onBack: () -> Unit, onBattle: (String) -> Unit, purse: @Composable () -> Unit = {}) {
+fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, onBack: () -> Unit, onBattle: (String) -> Unit, purse: @Composable () -> Unit = {}, wallet: @Composable () -> Unit = purse) {
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val now = StoryLogic.currentBattle(p, a.act)
     val battles = data?.getAsJsonArray("battles")?.map { it.asJsonObject }.orEmpty()
@@ -228,6 +237,13 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
     val current = open.firstOrNull { (it["secret"] as? com.google.gson.JsonPrimitive)?.asBoolean != true && (it["slot"] as? com.google.gson.JsonPrimitive)?.asInt == now }
     val currentId = (current?.get("id") as? com.google.gson.JsonPrimitive)?.asString
     PadScreen(PadActs(x = currentId?.let { id -> PadAct(if (StoryLogic.battleCleared(p, id)) "Replay" else "Duel") { onBattle(id) } }))
+    // Bottom screen: the act by default, the battle under the ring (a teased one stays hidden).
+    val lens = rememberLens()
+    val shownIds = open.filter { b -> b["secret"]?.asBoolean == true || b["slot"].asInt <= now }.map { "battle:" + it["id"].asString }.toSet()
+    BottomScreen {
+        val cta = currentId?.let { id -> CaseButton("A", if (StoryLogic.battleCleared(p, id)) "Replay" else "Duel", gold = true) { onBattle(id) } }
+        StoryBottom(a, data, p, lens.key?.takeIf { it in shownIds }, true, cta, onBattle, wallet)
+    }
     val banner = @Composable { m: Modifier ->
             val shape = RoundedCornerShape(24.dp)
             Box(m.clip(shape).border(1.dp, Color(0x38D6AD64), shape)) {
@@ -249,7 +265,7 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
         LazyColumn(Modifier.weight(.58f).fillMaxHeight(), contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item("purse") { purse() }
             if (data == null) item("loading") { Text("Opening the act…", style = Site.Body, modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp)) }
-            open.forEach { b -> item(b["id"].asString) { BattleRow(b, cast, p, now) { onBattle(b["id"].asString) } } }
+            open.forEach { b -> item(b["id"].asString) { Box(Modifier.dualLens(lens, "battle:" + b["id"].asString)) { BattleRow(b, cast, p, now) { onBattle(b["id"].asString) } } } }
             tease?.let { item("tease") { SecretTease(it) } }
         }
     } else
@@ -258,7 +274,7 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
         item("banner") { banner(Modifier.fillMaxWidth().heightIn(min = 170.dp)) }
         if (data == null) item("loading") { Text("Opening the act…", style = Site.Body, modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp)) }
         open.forEach { b ->
-            item(b["id"].asString) { BattleRow(b, cast, p, now) { onBattle(b["id"].asString) } }
+            item(b["id"].asString) { Box(Modifier.dualLens(lens, "battle:" + b["id"].asString)) { BattleRow(b, cast, p, now) { onBattle(b["id"].asString) } } }
         }
         tease?.let { item("tease") { SecretTease(it) } }
     }
@@ -311,10 +327,12 @@ fun StoryRoute(startAct: Int? = null, onBack: () -> Unit, onDuel: (dev.cardstash
     var duel by remember { mutableStateOf(StoryDuelUi()) }
     LaunchedEffect(Unit) { Progress.refreshStory() }
     val p = remember(refs) { StoryLogic.fromRefs(refs ?: emptyList()) }
-    val purse: @Composable () -> Unit = { PlayMath.purse(state)?.let { PurseRow(it, level = PlayMath.mastery(state, it.xp)) } }
+    val wallet: @Composable () -> Unit = { PlayMath.purse(state)?.let { PurseRow(it, level = PlayMath.mastery(state, it.xp)) } }
+    // With a bottom screen up the purse moves into its case's plaque.
+    val purse: @Composable () -> Unit = { if (!DualScreen.active) wallet() }
     val open = act
     BackHandler { if (battle != null) { battle = null; duel = StoryDuelUi() } else if (open != null) act = null else onBack() }
-    if (open == null) { StoryRoad(rules.acts, rules.ages[1] ?: "", p, onBack, { act = it }, purse); return }
+    if (open == null) { StoryRoad(rules.acts, rules.ages[1] ?: "", p, onBack, { act = it }, purse, wallet); return }
     val meta = rules.acts.first { it.act == open }
     val ctx = LocalContext.current
     // The site's copy first (fixes land without an APK), else the copy shipped in the app (offline, or an act the site has not published yet).
@@ -334,7 +352,7 @@ fun StoryRoute(startAct: Int? = null, onBack: () -> Unit, onDuel: (dev.cardstash
         page = if (lastAct > 1 || open > 1) { d -> val n = (open + d).coerceIn(1, lastAct); if (n != open && rules.acts.any { it.act == n }) { act = n; battle = null; duel = StoryDuelUi() } } else null,
         pageLabel = "Act"))
     val b = battle?.let { id -> data?.getAsJsonArray("battles")?.map { it.asJsonObject }?.firstOrNull { it["id"].asString == id } }
-    if (b == null) { StoryActPage(meta, data, p, { act = null }, { battle = it; duel = StoryDuelUi() }, purse); return }
+    if (b == null) { StoryActPage(meta, data, p, { act = null }, { battle = it; duel = StoryDuelUi() }, purse, wallet); return }
     // The act's card pool gates your own decks (story-client.js loadActPool); null while it loads.
     val pool by androidx.compose.runtime.produceState<Set<String>?>(null, open) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching {

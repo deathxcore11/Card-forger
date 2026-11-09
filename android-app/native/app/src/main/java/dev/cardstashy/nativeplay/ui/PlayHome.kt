@@ -1310,11 +1310,17 @@ private fun ActCase(d: PlayHomeData, act: PlayHomeActions, data: JsonObject?, wa
         }
         return
     }
+    BattleCase(a, next, data, "Act ${a.act} · Battle ${d.story.won + 1} of ${a.battles}", buttons, wallet)
+}
+
+/** One battle in a case: the villain's portrait with the prize booster in its corner, the blurb, what they play, what it teaches. */
+@Composable
+private fun BattleCase(a: PlayRules.Act, next: JsonObject, data: JsonObject?, eyebrow: String, buttons: List<CaseButton>, wallet: @Composable () -> Unit) {
     val villain = next.getAsJsonObject("villain")
     val who = villain?.get("who").str()
     val face = who?.let { data?.getAsJsonObject("cast")?.getAsJsonObject(it) }
     val reward = next["rewardSet"].str()
-    ShowcaseCase("Act ${a.act} · Battle ${d.story.won + 1} of ${a.battles}", next["title"].str() ?: "", trailing = wallet, buttons = buttons, heroWeight = .36f,
+    ShowcaseCase(eyebrow, next["title"].str() ?: "", trailing = wallet, buttons = buttons, heroWeight = .36f,
         hero = {
             Art(face?.getAsJsonObject("portrait")?.get("crop").str(), Modifier.matchParentSize(), BiasAlignment(0f, -.3f))
             Box(Modifier.matchParentSize().background(Brush.verticalGradient(.45f to Color.Transparent, 1f to Color(0xF2090B10))))
@@ -1335,6 +1341,54 @@ private fun ActCase(d: PlayHomeData, act: PlayHomeActions, data: JsonObject?, wa
         val teaches = next.getAsJsonArray("teaches")?.mapNotNull { it.str() }.orEmpty()
         if (teaches.isNotEmpty()) CaseFact("You'll learn", teaches.joinToString(" · "))
         if (reward != null) CaseFact("Prize", "A ${a.packs.firstOrNull { it.first == reward }?.second ?: reward.uppercase()} booster")
+    }
+}
+
+/**
+ * The Story pages' bottom screen (wave 2). On the road: the act under the ring (its line, era, battles won, stars, the era's boosters).
+ * On an act: that act by default, and the battle under the ring. A = the battle you are on (or the act you are in). The purse rides in the plaque.
+ */
+@Composable
+internal fun StoryBottom(a: PlayRules.Act, data: JsonObject?, p: dev.cardstashy.nativeplay.play.StoryLogic.Progress, lensKey: String?, here: Boolean,
+                         cta: CaseButton?, onBattle: ((String) -> Unit)?, wallet: @Composable () -> Unit) {
+    val L = dev.cardstashy.nativeplay.play.StoryLogic
+    val battle = lensKey?.removePrefix("battle:")?.takeIf { lensKey.startsWith("battle:") }?.let { id -> data?.getAsJsonArray("battles")?.mapNotNull { it as? JsonObject }?.firstOrNull { it["id"].str() == id } }
+    if (battle != null && onBattle != null) {
+        val id = battle["id"].str() ?: ""
+        val slot = battle["slot"].int() ?: 0
+        val secret = battle["secret"]?.takeIf { it.isJsonPrimitive }?.asBoolean == true
+        val done = L.battleCleared(p, id)
+        val ahead = !secret && slot > L.currentBattle(p, a.act)
+        val eyebrow = "Act ${a.act} · " + when { secret -> "Secret battle"; slot >= 8 -> "The boss"; else -> "Battle $slot of ${a.battles}" }
+        val buttons = if (ahead) emptyList() else listOf(CaseButton("A", if (done) "Replay" else "Duel", gold = true) { onBattle(id) })
+        BattleCase(a, battle, data, eyebrow, buttons, wallet)
+        return
+    }
+    val won = L.actWon(p, a.act); val stars = L.actStars(p, a.act)
+    ShowcaseCase("Story · Act ${a.act}", a.name, trailing = wallet, buttons = listOfNotNull(cta), heroWeight = .4f,
+        hero = {
+            Art(a.art, Modifier.matchParentSize(), BiasAlignment(0f, -.3f))
+            Box(Modifier.matchParentSize().background(Brush.verticalGradient(.4f to Color.Transparent, 1f to Color(0xF2090B10))))
+            if (a.line.isNotBlank()) Text(a.line, Modifier.align(Alignment.BottomStart).padding(14.dp),
+                style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, lineHeight = 20.sp, color = Color(0xFFFBF3DF), shadow = P.shadow), maxLines = 6, overflow = TextOverflow.Ellipsis)
+        }) {
+        Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
+            CaseFact("Era", a.years)
+            CaseFact("Battles won", "$won of ${a.battles}")
+            CaseFact("Stars", "$stars of ${a.battles * 5}")
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) { Bar(won.toFloat() / a.battles.coerceAtLeast(1)) }
+        if (a.packs.isNotEmpty()) {
+            CaseLabel(if (here) "Boosters this act gives" else "The era's boosters")
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState())) {
+                a.packs.take(6).forEach { (code, name) ->
+                    Column(Modifier.width(70.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Booster(code, null, Modifier.fillMaxWidth(), mini = true)
+                        Text(name, style = TextStyle(fontFamily = P.Sans, fontSize = 11.sp, color = P.Muted), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            }
+        }
     }
 }
 
