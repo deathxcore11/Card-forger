@@ -234,6 +234,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                     val prev = latest
                     if (st.revision != lastRev || prev == null || prev.busy != st.busy || prev.inputType != st.inputType || prev.prompt?.id != st.prompt?.id) {
                         if (st.revision != lastRev) revisionAt = SystemClock.elapsedRealtime()
+                        TableLog.board("read", st, latest?.revision)
                         lastRev = st.revision; latest = st; queue.incrementAndGet(); snapshots.trySend(st)
                     }
                     if (st.status == "failed" || st.finished) { if (st.finished) break }
@@ -269,6 +270,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         stack = st.stack.filter { it.source?.id !in hidden })
 
     private fun show(st: MatchState) {
+        if (_shown.value?.revision != st.revision) TableLog.board("show", st, latest?.revision)
         _shown.value = st
         val l = latest
         _live.value = l != null && st.revision == l.revision && st.waitingOnMe && !_sending.value
@@ -375,6 +377,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             // The director (specs/match-director-native.md): every new event becomes a step; the controller is the only clock and
             // waits on the held ones (a CPU think, the turn banner, a CPU action's caption), one at a time.
             val steps = Director.plan(st, fresh, if (remote == null) thinkClock else null).filter { it.held }
+            TableLog.line("plan rev=${st.revision} fresh=${fresh.size} [${fresh.joinToString(",") { it.type }}] steps=${steps.size} shown=${_shown.value?.revision} queue=${queue.get()}")
             if (steps.isEmpty()) { show(st) } else {
                 // The board advances one CPU action at a time: a CPU card that a step is about to
                 // announce stays off the table (and off the stack) until that step starts.
@@ -386,6 +389,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                 steps.forEachIndexed { i, step ->
                     val waiting = latest?.waitingOnMe == true
                     val ms = Director.lengthOf(step, waiting, steps.drop(i).sumOf { it.ms })
+                    TableLog.line("step ${i + 1}/${steps.size} ${step.kind} ${step.cardName ?: step.beat?.title ?: step.banner?.text ?: ""} ${ms}ms cpu=${step.cpu} hidden=${hidden.size}")
                     when {
                         step.kind == Director.Kind.THINK -> think(ms, st.cpu.handCount)
                         step.banner != null -> { _banner.value = step.banner; hold(ms); _banner.value = null }
@@ -492,6 +496,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                         r = session?.call("POST", "/action", body.toString())
                     }
                 }
+                TableLog.line("send ${body} prompt=${st.prompt?.id} input=${st.inputType} auto=$autoAnswering -> ${r?.status()}")
                 if (r != null && r.status() != 202) Log.i(TAG, "action $op -> ${r.status()} ${r.body()}")
             } catch (t: Throwable) { Log.w(TAG, "action", t) }
             // Wait for Forge to move on (a newer revision or a finished command), never forever.
@@ -555,6 +560,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     private inline fun free(kind: String, l: MatchState, fix: () -> Unit) {
         val what = describe(l, _shown.value)
         Log.w(TAG, "stuck ($kind), freeing: $what")
+        TableLog.line("stuck ($kind) freed: " + what.replace('\n', ' '))
         freed++
         fix()
         dev.cardstashy.nativeplay.FreezeReport.matchStuck(kind, what)

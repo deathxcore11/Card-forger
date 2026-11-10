@@ -31,6 +31,7 @@ object FreezeReport {
         val app = context.applicationContext
         file = File(app.filesDir, "freeze-report.txt")
         version = try { app.packageManager.getPackageInfo(app.packageName, 0).versionName ?: "?" } catch (_: Throwable) { "?" }
+        dev.cardstashy.nativeplay.match.TableLog.on = Regex("-test\\d").containsMatchIn(version)
         Thread({
             prefs = app.getSharedPreferences("freeze", Context.MODE_PRIVATE)
             try { readExitTraces(app) } catch (_: Throwable) {}
@@ -49,6 +50,8 @@ object FreezeReport {
 
     @Synchronized private fun append(section: String) {
         try {
+            // Test builds: each section also goes to logcat (tag FreezeReport), the heading and the first frames, for adb.
+            if (dev.cardstashy.nativeplay.match.TableLog.on) android.util.Log.w("FreezeReport", section.lineSequence().take(40).joinToString("\n"))
             val old = if (file.isFile) file.readText() else ""
             file.writeText((old + section).takeLast(60_000))
         } catch (_: Throwable) {}
