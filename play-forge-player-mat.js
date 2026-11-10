@@ -7,7 +7,7 @@ import {createForgeHostClient,exactForgeInput,forgeAccountKey} from './play-forg
 import {createForgePresentationSession} from './experiments/forge-proof/forge-session.mjs';
 import {mountForgeTable} from './experiments/forge-proof/forge-table.mjs';
 import {nativePromptUnanswerable} from './experiments/forge-proof/native-panel.mjs';
-import {mountForgeMatchIntro,forgeStartingPlayer} from './play-forge-pregame.js';
+import {mountForgeMatchIntro,forgeStartingPlayer,preloadDeckBackdrops} from './play-forge-pregame.js';
 import {deckChronicles,deckRecord,recordLine,recordMatch} from './play-match-record.js';
 import {chronicleBlock} from './play-chronicle-ui.js';
 import {createMatchFacts} from './match-facts.js';
@@ -279,12 +279,18 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   try{
    matchup=structuredClone(setup);playedFrom=ownFirst=lastSurface=null;conceding=recorded=false;facts=createMatchFacts();matchPolicy=forgeCpuPolicy(forgeMatchDifficulty(setup));
    if(!current()||setup.profile?.ownerId!==readAccount()?.user?.id)throw Object.assign(Error('ACCOUNT_CHANGED'),{code:'ACCOUNT_CHANGED'});
+   // The matchup appears only once both decks' cover art is fetched and decoded (at most 4 s in all);
+   // a deck whose art is not there by then shows a drawn card frame and fills in when it arrives.
+   const quick=previewArtwork?(async()=>{const started=now();let t;
+    await Promise.race([Promise.resolve().then(()=>previewArtwork(setup,{isCurrent:current})).catch(()=>{}),new Promise(r=>{t=setTimeout(r,4000);})]);clearTimeout(t);
+    if(previewLookup&&current())await preloadDeckBackdrops([setup.selected,setup.opponent,...(setup.extraOpponents||[]).map(o=>o?.deck)].filter(Boolean),previewLookup,{timeoutMs:Math.max(0,4000-(now()-started))});})():Promise.resolve();
+   await quick;
+   if(!current())throw Object.assign(Error('ACCOUNT_CHANGED'),{code:'ACCOUNT_CHANGED'});
    intro=mountIntro({root,setup,lookup:previewLookup||lookup,onCancel:requestExit,wait,isCurrent:current});watchScreen();
    // Card art is needed only once the table opens, so it loads while the server starts
    // the match instead of before it. The matchup waits briefly so cached deck art shows.
    // Art is read only once its preparation has finished; before that the lookup refuses.
    // The matchup panels get each deck's commander art first, from a small request, before the whole-deck preparation.
-   const quick=previewArtwork?Promise.resolve().then(()=>previewArtwork(setup,{isCurrent:current})).then(()=>{try{if(current())intro?.refreshArtwork();}catch{/* placeholder stays */}},()=>{}):Promise.resolve();
    const preparing=quick.then(()=>prepareArtwork(setup,{isCurrent:current}));preparing.then(()=>{artReady=true;try{if(current())intro?.refreshArtwork();}catch{/* the matchup keeps its placeholder */}},()=>{});
    // The table is requested as soon as the starting player is known: Quick Play knows at
    // once, so the host starts while the matchup shows; Practice asks first.
