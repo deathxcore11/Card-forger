@@ -31,3 +31,14 @@ const t0 = Date.now();
 await preloadDeckBackdrops([{commander: 'C', cards: []}], n => look(n), {timeoutMs: 50, makeImage: () => ({})});
 assert.ok(Date.now() - t0 < 500, 'never waits past the cap');
 console.log('play forge backdrop preload ok');
+// A precon's row carries its exact printing: the quick look shows that printing, never the newest one by name.
+{
+  const old = {id: 'old-ring', name: 'Sol Ring', image_uris: {art_crop: 'https://x/original'}}, newest = {id: 'trc-ring', name: 'Sol Ring', image_uris: {art_crop: 'https://x/trek'}};
+  const a = createForgeArtworkPreparation({isCurrent: () => true, fetchPrinting: async id => id === 'old-ring' ? old : null, lookup: (n, id) => id ? null : newest, resolveNames: async () => {}});
+  const s = {selected: {cards: [{name: 'Sol Ring', qty: 1, printingId: 'old-ring'}]}, opponent: {cards: [{name: 'Sol Ring', qty: 1}]}};
+  await a.preview(s);
+  assert.equal(a.previewLookup('Sol Ring', 'old-ring').image_uris.art_crop, 'https://x/original', 'the precon printing shows');
+  assert.equal(a.previewLookup('Sol Ring', 'missing-id'), null, 'a printing never falls back to another one');
+  assert.equal(a.previewLookup('Sol Ring', null).image_uris.art_crop, 'https://x/trek', 'a row with no printing takes the by-name art');
+  console.log('play forge exact precon printing ok');
+}
