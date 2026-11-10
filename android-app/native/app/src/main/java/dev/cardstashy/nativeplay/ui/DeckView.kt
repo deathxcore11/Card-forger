@@ -146,7 +146,7 @@ private fun DeckCardCase(e: Entry, gold: DeckAction?, onOpen: () -> Unit) {
     QuickLookCase(QuickLook("deck:" + e.name, "Deck · Card", e.name, e.image, e.card?.s("type_line") ?: face?.s("type_line"), e.card?.s("oracle_text") ?: face?.s("oracle_text"),
         facts = listOfNotNull("In this deck" to "${e.qty}", if (e.basic) null else "In your Trunk" to "${e.have} of ${e.qty}",
             if (e.missing) "To finish" to "$need $seal seal${if (need == 1) "" else "s"}" else null),
-        buttons = listOfNotNull(CaseButton("A", "Open card", gold = true, run = onOpen), gold?.let { g -> CaseButton("X", g.label, run = g.onClick) })))
+        buttons = listOfNotNull(CaseButton("A", "Open card", gold = gold == null, run = onOpen), gold?.let { g -> CaseButton("X", g.label, gold = true, run = g.onClick) })))
 }
 
 /** The deck page's default case: the mana curve, the colours, and the cards still to craft. The name, owned count and seals stay on the top screen. */

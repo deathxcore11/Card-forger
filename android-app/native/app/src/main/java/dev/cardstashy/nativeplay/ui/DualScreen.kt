@@ -215,7 +215,9 @@ fun FocusedCardView(card: FocusCard?, extra: (@Composable () -> Unit)? = null) {
     }
     // The same case as Play's Trunk card and Collection's lots (family T2); only the facts differ. Money shows on the Collection side alone.
     // A case button always prints its key: A opens, X is the main action (the tile binds the same two).
-    val buttons = card.actions.filter { it.run != null }.take(2).mapIndexed { i, a -> CaseButton(if (i == 0) "A" else "X", a.label, gold = i == 0) { a.run?.invoke() } }
+    // One gold button per case: X (the main action) when there is one, else A.
+    val acts = card.actions.filter { it.run != null }.take(2)
+    val buttons = acts.mapIndexed { i, a -> CaseButton(if (i == 0) "A" else "X", a.label, gold = i == acts.lastIndex) { a.run?.invoke() } }
     val facts = listOfNotNull(card.owned?.takeIf { it.isNotBlank() }?.let { "Yours" to it }, card.price?.takeIf { it.isNotBlank() }?.let { "Price" to it })
     QuickLookCase(QuickLook("focus:" + card.name, if (card.price.isNullOrBlank()) "Card" else "Collection · Card", card.name, card.image, card.type, card.text, facts, buttons,
         extra = extra?.let { e -> { e() } }))

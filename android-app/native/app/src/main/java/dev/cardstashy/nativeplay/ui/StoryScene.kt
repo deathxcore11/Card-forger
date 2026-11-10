@@ -99,15 +99,22 @@ fun StoryScene(lines: List<JsonObject>, cast: JsonObject?, leftWho: String, righ
     BottomScreen {
         ShowcaseCase("Story", title.ifBlank { "The scene" }, scroll = false,
             buttons = listOf(CaseButton("A", "Next", gold = true) { next() }, CaseButton("X", "Skip") { close() })) {
-            lines.take(i + 1).takeLast(6).forEachIndexed { k, said -> val w = said.get("who")?.asString
+            // The last six lines, newest last; a speaker's lines in a row sit under their name once.
+            val start = maxOf(0, i - 5)
+            val shownLines = lines.subList(start, i + 1)
+            var k = 0
+            while (k < shownLines.size) {
+                val w = shownLines[k].get("who")?.asString
+                var end = k; while (end + 1 < shownLines.size && shownLines[end + 1].get("who")?.asString == w) end++
                 val sp = w == "stage" || w == "narrator"
-                val words = said.get("line")?.asString.orEmpty()
-                val last = k == minOf(i, 5)
+                val from = k; val to = end
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     if (!sp) Text(person(w)?.get("name")?.asString ?: w.orEmpty(), style = storyCinzel(14f, Rule.Color.Gold))
-                    Text(if (last) full.take(shown) else words, style = storyText(16f, FontWeight.Medium, if (last) Rule.Color.Text else CaseMuted)
-                        .copy(fontStyle = if (sp) FontStyle.Italic else FontStyle.Normal), maxLines = 4, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    for (j in from..to) { val last = start + j == i
+                        Text(if (last) full.take(shown) else shownLines[j].get("line")?.asString.orEmpty(), style = storyText(16f, FontWeight.Medium, if (last) Rule.Color.Text else CaseMuted)
+                            .copy(fontStyle = if (sp) FontStyle.Italic else FontStyle.Normal), maxLines = 4, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) }
                 }
+                k = end + 1
             }
         }
     }

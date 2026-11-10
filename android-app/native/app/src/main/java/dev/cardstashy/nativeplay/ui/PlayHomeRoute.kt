@@ -121,7 +121,7 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
         act = act,
         nav = { PlayNav(PlayTab.HOME, { t -> when (t) { PlayTab.HOME -> {}; PlayTab.TRUNK -> onTrunk(); PlayTab.DECKS -> onDecks(); PlayTab.TROPHIES -> onAchievements(null); PlayTab.SHOP -> onShop("sets", null) } }) })
     }
-    daily?.let { LoginRewardPopup(it) { daily = null } }
+    daily?.let { LoginRewardPopup(it, rules.loginWeek) { daily = null } }
     opener?.let { first ->
         val close = { opener = null; scope.launch { Progress.refresh(); Progress.refreshDeeds() }; Unit }
         androidx.activity.compose.BackHandler(onBack = close)

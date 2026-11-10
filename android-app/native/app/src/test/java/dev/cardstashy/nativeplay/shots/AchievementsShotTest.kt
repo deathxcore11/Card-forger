@@ -103,8 +103,9 @@ class LoginRewardShotTest {
         try {
             org.robolectric.RuntimeEnvironment.setQualifiers("w960dp-h1080dp-xhdpi")
             val login = JsonParser.parseString("""{"day":"2026-11-03","stamp":4,"month":4,"reward":{"coins":300,"packs":1},"monthReward":null,"fresh":true}""").asJsonObject
+            val week = dev.cardstashy.nativeplay.play.PlayRules(JsonParser.parseString(javaClass.classLoader!!.getResource("play-rules.json")!!.readText()).asJsonObject).loginWeek
             rule.setContent { androidx.compose.foundation.layout.Column(Modifier.background(androidx.compose.ui.graphics.Color(0xFF0C0E13))) {
-                androidx.compose.foundation.layout.Box(Modifier.width(960.dp).height(540.dp).testTag("top")) { dev.cardstashy.nativeplay.ui.LoginRewardPopup(login) {} }
+                androidx.compose.foundation.layout.Box(Modifier.width(960.dp).height(540.dp).testTag("top")) { dev.cardstashy.nativeplay.ui.LoginRewardPopup(login, week) {} }
                 androidx.compose.foundation.layout.Box(Modifier.width(620.dp).height(540.dp).testTag("bottom")) { dev.cardstashy.nativeplay.ui.BottomRoot() } } }
             repeat(10) { rule.mainClock.advanceTimeBy(100); rule.waitForIdle() }
             rule.onNodeWithTag("top").captureRoboImage(File(System.getProperty("shotsDir"), "w3/login-reward-top-1920x1080.png").path)

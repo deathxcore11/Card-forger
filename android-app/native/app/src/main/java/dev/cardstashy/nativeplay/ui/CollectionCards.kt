@@ -1390,7 +1390,8 @@ internal fun collQuick(r: CollRow, act: CollectionCardsActions, look: Foil.Look?
         r.set?.rarity?.takeIf { it.isNotBlank() }?.let { "Rarity" to it.replaceFirstChar { c -> c.uppercase() } },
         r.price.takeIf { it.isNotBlank() }?.let { "Price" to it },
         r.set?.title?.takeIf { it.isNotBlank() }?.let { "Set" to (it + if (r.set.label.isNotBlank()) " · " + r.set.label else "") })
-    val buttons = listOfNotNull(CaseButton("A", "Open card", gold = true) { act.card(r) },
-        if (r.wanted) r.got.takeIf { it.isNotBlank() }?.let { CaseButton("X", "Got it") { act.got(r) } } else CaseButton("X", "Got one") { act.qty(r, 1) })
+    // One gold button per case: X, the main action; A Open is gold only when it is the case's one action.
+    val main = if (r.wanted) r.got.takeIf { it.isNotBlank() }?.let { CaseButton("X", "Got it", gold = true) { act.got(r) } } else CaseButton("X", "Got one", gold = true) { act.qty(r, 1) }
+    val buttons = listOfNotNull(CaseButton("A", "Open card", gold = main == null) { act.card(r) }, main)
     return QuickLook("lot:" + r.id, "Collection · Card", r.name, r.art, type, text, facts, buttons, look = look, tiltPhase = (r.id.hashCode() and 0xff) / 255f)
 }

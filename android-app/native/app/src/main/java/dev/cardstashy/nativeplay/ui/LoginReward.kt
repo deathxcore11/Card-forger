@@ -12,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,7 +66,7 @@ private fun pieces(r: JsonObject?): List<Piece> = buildList {
 }
 
 @Composable
-fun LoginRewardPopup(login: JsonObject, onDone: () -> Unit) {
+fun LoginRewardPopup(login: JsonObject, week: List<dev.cardstashy.nativeplay.play.PlayRules.Reward> = emptyList(), onDone: () -> Unit) {
     val view = LocalView.current
     val scope = rememberCoroutineScope()
     val stamp = login.get("stamp").n().coerceIn(1, 7)
@@ -86,23 +87,33 @@ fun LoginRewardPopup(login: JsonObject, onDone: () -> Unit) {
     BackHandler { claim() }
     // Controller: X claims, and so does B (back claims here). The backdrop only swallows taps, so focus skips it.
     PadScreen(PadActs(x = PadAct("Claim") { claim() }, b = "Claim", opaque = true))
-    // Bottom screen (W3): the reward stays on top; the week's streak moves to the bottom as seven day tiles.
+    // Bottom screen (W3): the reward stays on top; the week moves to the bottom as seven day tiles, each with what that day pays
+    // (the rules' log-in week, LOGIN_WEEK on the site).
     BottomScreen {
         ShowcaseCase("Daily log-in", "Day $stamp of 7", scroll = false) {
             Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 for (i in 1..7) {
                     val today = i == stamp; val past = i < stamp
                     val tile = RoundedCornerShape(Rule.Radius.Panel)
+                    val pays = week.getOrNull(i - 1)?.let { r -> buildList {
+                        if (r.coins > 0) add(Piece(SiteIcons.Coin, r.coins, "coins"))
+                        r.seals.forEach { (k, n) -> if (n > 0) SiteIcons.Seals[k]?.let { add(Piece(it, n, k)) } }
+                        if (r.packs > 0) add(Piece(SiteIcons.Pack, r.packs, "packs")) } } ?: emptyList()
                     Column(Modifier.weight(1f).fillMaxHeight().clip(tile).background(if (today) Rule.Color.GoldEdge else if (past) Rule.Color.Glass else Color.Transparent)
-                        .border(1.dp, if (today) Rule.Color.CtaTop else Rule.Color.Edge, tile), horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically)) {
+                        .border(1.dp, if (today) Rule.Color.CtaTop else Rule.Color.Edge, tile).padding(vertical = 14.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("DAY", style = Rule.Type.sans(11, FontWeight.Bold, Rule.Color.Muted))
                         Text("$i", style = Rule.Type.cinzel(34, if (today) Rule.Color.CtaTop else if (past) Rule.Color.Text else Rule.Color.Muted))
+                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically)) {
+                            pays.forEach { p -> Column(Modifier.alpha(if (past) .45f else 1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(p.icon, 28.dp); Text("%,d".format(p.count), style = Rule.Type.sans(14, FontWeight.ExtraBold, Rule.Color.Text)) } }
+                        }
                         Text(if (past) "✓" else if (today) "Today" else " ", style = Rule.Type.sans(12, FontWeight.Bold, Rule.Color.Gold))
                     }
                 }
             }
-            Text(if (stamp >= 7) "The week is complete." else "Come back tomorrow for day ${stamp + 1}.", style = Rule.Type.S15.copy(color = CaseMuted))
+            Text(if (leaving) (if (stamp >= 7) "The week is complete." else "Come back tomorrow for day ${stamp + 1}.")
+                else "Today: " + all.joinToString(", ") { "%,d ${it.label}".format(it.count) } + ".", style = Rule.Type.S15.copy(color = CaseMuted))
         }
     }
     Box(Modifier.fillMaxSize().graphicsLayer { alpha = enter.value.coerceIn(0f, 1f) }.background(Color(0xCC07080B))

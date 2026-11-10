@@ -161,21 +161,25 @@ fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (De
             if (pair != null) { val (a, row) = pair
                 FinderDeckCase(row, a.name.ifEmpty { row.name }, onOpen = { ui.open = row.list }) { use(row.list, row.complete) } }
             else ShowcaseCase("Build a deck · ${ui.format}", if (ui.busy) "Counting decks" else "${"%,d".format(counts["all"] ?: 0)} decks") {
-                Row(horizontalArrangement = Arrangement.spacedBy(26.dp)) {
+                val inTrunk = counts["trunk"] ?: 0; val craft = counts["craftable"] ?: 0
+                // Counts first when there is something to count; when both are 0 the purse and the missing cards lead, and the zeros
+                // become one quiet line.
+                if (inTrunk > 0 || craft > 0 || rarityBusy) Row(horizontalArrangement = Arrangement.spacedBy(26.dp)) {
                     // The filter chips' own words and counts.
-                    CaseFact("In Trunk", "${counts["trunk"] ?: 0}")
-                    CaseFact("Craftable now", if (rarityBusy) "Counting" else "${counts["craftable"] ?: 0}")
+                    CaseFact("In Trunk", "$inTrunk")
+                    CaseFact("Craftable now", if (rarityBusy) "Counting" else "$craft")
                 }
                 PlayMath.purse(state)?.let { CaseLabel("Your purse"); PurseRow(it) }
                 // The cards the decks shown above are most often missing: what a seal is best spent on in this format.
-                val wanted = rows.flatMap { it.second.shortfall.missing }.groupBy { it.name }.map { (n, l) -> Triple(n, l.size, l.first()) }
-                    .sortedWith(compareByDescending<Triple<String, Int, dev.cardstashy.nativeplay.play.Decks.Missing>> { it.second }.thenBy { it.first }).take(6)
+                val wanted = rows.flatMap { it.second.shortfall.missing }.groupBy { it.name }.map { (n, l) -> n to l.size }
+                    .sortedWith(compareByDescending<Pair<String, Int>> { it.second }.thenBy { it.first }).take(6)
                 if (wanted.isNotEmpty()) {
                     CaseLabel("Missing most often")
-                    wanted.forEach { (n, k, _) -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    wanted.forEach { (n, k) -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(n, style = Rule.Type.S15, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                         Text("in $k deck${if (k == 1) "" else "s"}", style = Rule.Type.sans(14, FontWeight.SemiBold, Rule.Color.Muted)) } }
                 }
+                if (inTrunk == 0 && craft == 0 && !rarityBusy && !ui.busy) Text("Nothing here is in your Trunk or craftable yet.", style = Rule.Type.S14.copy(color = CaseMuted))
             }
         }
     }
