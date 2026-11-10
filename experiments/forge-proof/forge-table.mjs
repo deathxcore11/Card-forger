@@ -170,7 +170,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   renderPlayerPortrait(own){return practicePlayerPortrait(doc,own,profile);},
   renderMatchBackdrop(){const box=doc.createElement('div');for(const c of session.snapshot().status?.surface.cards.filter(c=>c.commander)||[]){const url=resolvePracticeArtwork(c)?.artImageUrl;if(url){const img=doc.createElement('img');img.src=url;img.alt='';img.referrerPolicy='no-referrer';box.append(img);}}return box.childNodes.length?box:null;}
  });
- const panelPresentation={...presentation,symbolText,...(presentation.hosted?{controlsOnSeat:true,shortNext:true}:{})};
+ // A card dropped on the table already says "play this": the one-answer question that follows it ("Play land"
+ // in Full Control) is answered by the drop instead of asking again (Randall 10 Nov: drag and drop felt bad).
+ let droppedCard=null;
+ const panelPresentation={...presentation,symbolText,droppedCard:()=>droppedCard&&Date.now()-droppedCard.at<6000?droppedCard.id:null,...(presentation.hosted?{controlsOnSeat:true,shortNext:true}:{})};
  const fail=e=>{if(e?.message==='MATCH_NOT_READY'&&playbackBusy){playback.flush();return;}localError=e.message||String(e);panelKey='';enhance();};
  let manualPay=null; // the spell being cast with "Pick lands" (see restoreAutoPay)
  const act=fn=>{try{const p=fn();if(p?.catch)p.catch(fail);}catch(e){fail(e);}};
@@ -821,7 +824,14 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const raisedDock=()=>!!win.matchMedia?.('(hover:none) and (pointer:coarse) and (min-width:600px) and (min-height:480px)').matches;
  // A side that changes size after the fit (fonts landing, a chip appearing, 130% text) fits again.
  let boardSizes=null;const boardSeen=new Map(),boardKey=a=>a.dataset.seat||a.className,boardSize=a=>`${a.offsetWidth}x${a.offsetHeight}`;
- function fitBoard(){
+ // Measure the board as it rests, not mid-flight: a card landing or nudged by an animation stretches its row's
+ // scroll box (transforms count as overflow), so the fitter folded a lane into "+N" for a frame or two and then
+ // unfolded it once the animation ended. That was the table flicker in Randall's 10 Nov video. Running
+ // animations are moved to their end for the measuring and put back before anything paints.
+ function fitBoard(){const anims=root.getAnimations?.({subtree:true})||[],saved=[];
+  for(const a of anims){try{const end=a.effect?.getComputedTiming?.().endTime;if(a.playState!=='running'&&a.playState!=='paused')continue;if(!Number.isFinite(end))continue;saved.push([a,a.currentTime,a.playState]);a.currentTime=end;}catch{}}
+  try{return fitBoardNow();}finally{for(const [a,t,ps] of saved){try{a.currentTime=t;if(ps==='running'&&a.playState!=='running')a.play();}catch{}}}}
+ function fitBoardNow(){
   boardFrame=0;if(closed||!presentation.hosted)return;
   // A redraw replaces the sides, and a newly observed box always reports its size once; only a size this
   // fit has not seen yet fits again (each fit is a full layout pass, so a redraw must not cost three).
@@ -1636,7 +1646,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const up=e=>{if(pressAt?.id===e.pointerId){clearTimeout(pressTimer);pressAt=null;if(pressShown){pressShown=false;if(peekPinned)hidePeek();suppressUntil=Date.now()+350;}}
   if(!drag||drag.pointerId!==e.pointerId)return;if(drag.swipe){suppressUntil=Date.now()+350;for(const el of root.querySelectorAll('[data-forge-swiped]'))el.removeAttribute('data-forge-swiped');cancel();return;}const pending=drag,target=doc.elementFromPoint(e.clientX,e.clientY)?.closest('[data-placement-zone=battlefield],.forge-native-panel'),handTop=root.querySelector('.play-match-hand-area')?.getBoundingClientRect().top,fromHand=!!pending.source.closest('.play-match-hand'),overHand=!!doc.elementFromPoint(e.clientX,e.clientY)?.closest('.play-match-hand-area'),aboveHand=presentation.hosted&&fromHand&&handTop!==undefined&&e.clientY<handTop&&!overHand;if(pending.active)suppressUntil=Date.now()+300;const combatTarget=pending.active?dropTargetAt(e.clientX,e.clientY):null;// A quick upward flick plays a playable card even when it is let go short of the play line.
   const flick=presentation.hosted&&fromHand&&pending.active&&!pending.rubber&&(pending.vy||0)>.55&&pending.y-e.clientY>=36;
-  const plays=pending.active&&!combatTarget&&(presentation.hosted&&fromHand?pending.source.dataset.forgeRole==='playable'&&(playDropAt(e.clientX,e.clientY)||flick):target&&root.contains(target)||aboveHand);if(plays&&ghost){lastDrop={instance:String(pending.id),rect:ghost.getBoundingClientRect(),at:Date.now()};holdDrop(pending);}cancel(pending.active&&!plays&&!combatTarget);if(plays||combatTarget)haptic('tap');if(combatTarget){act(()=>dropCombat(pending.combat,pending.id,combatTarget));return;}if(plays){const now=session.snapshot().status?.revision,go=()=>act(()=>session.nativeSelect('card',pending.id,now===pending.revision||session.snapshot().status?.surface.cards.some(c=>c.id===pending.id)?now:pending.revision));const plan=tapPlan(pending.id),warn=plan?.warning;if(warn)confirmCostly(warn,e.clientX,e.clientY,go,plan.amount,plan.lands,()=>payByHand(pending.id));else go();}};
+  const plays=pending.active&&!combatTarget&&(presentation.hosted&&fromHand?pending.source.dataset.forgeRole==='playable'&&(playDropAt(e.clientX,e.clientY)||flick):target&&root.contains(target)||aboveHand);if(plays)droppedCard={id:pending.id,at:Date.now()};if(plays&&ghost){lastDrop={instance:String(pending.id),rect:ghost.getBoundingClientRect(),at:Date.now()};holdDrop(pending);}cancel(pending.active&&!plays&&!combatTarget);if(plays||combatTarget)haptic('tap');if(combatTarget){act(()=>dropCombat(pending.combat,pending.id,combatTarget));return;}if(plays){const now=session.snapshot().status?.revision,go=()=>act(()=>session.nativeSelect('card',pending.id,now===pending.revision||session.snapshot().status?.surface.cards.some(c=>c.id===pending.id)?now:pending.revision));const plan=tapPlan(pending.id),warn=plan?.warning;if(warn)confirmCostly(warn,e.clientX,e.clientY,go,plan.amount,plan.lands,()=>payByHand(pending.id));else go();}};
  // A press that the browser takes over (a scroll, a system gesture) ends the preview and its click guard.
  // A long press's 60 s click guard ends with that press even when a redraw, scroll or
  // resize already closed its preview; otherwise the table would ignore taps for a minute.

@@ -2633,3 +2633,17 @@ body:has(dialog.play-match-exit[data-answer-first]) .play-match-table[data-forge
 @media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-card.forge-refused{animation:none;transition:none}:where(body.practice-table-open) .forge-short-line{animation:none}}
 /* The stack label ("Your ability · Next") wraps rather than cutting to "YOUR ABI…" (seen live 4.3.165). */
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-native-panel .forge-stack-head .forge-stack-kind{white-space:normal!important;text-overflow:clip!important;overflow:visible!important;min-width:0;max-width:none!important}
+/* The four corner glows were four full-table layers, each breathing on an endless animation, blended over the felt.
+   With the rest of the table that ran past what a phone or a big screen keeps in GPU memory, and whole areas of the
+   table went blank for a frame (Randall's 10 Nov video). They are now four backgrounds on one element with no
+   animation; the turn lamp still swaps sides over 1.2 s through two registered numbers. */
+@property --amb-top{syntax:'<number>';inherits:false;initial-value:.34}
+@property --amb-bot{syntax:'<number>';inherits:false;initial-value:.34}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-ambient>i{display:none!important;animation:none!important}
+:where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-main>.forge-ambient{--amb-top:.34;--amb-bot:.34;transition:--amb-top 1.2s ease,--amb-bot 1.2s ease;background:
+ radial-gradient(circle 45vmax at 0 -2vmax,color-mix(in srgb,var(--amb-cpu-1,#e8b95b) calc(var(--amb-top)*100%),transparent) 0%,transparent 62%),
+ radial-gradient(circle 45vmax at 100% -2vmax,color-mix(in srgb,var(--amb-cpu-2,#e8b95b) calc(var(--amb-top)*100%),transparent) 0%,transparent 62%),
+ radial-gradient(circle 45vmax at 0 calc(100% + 2vmax),color-mix(in srgb,var(--amb-you-1,#e8b95b) calc(var(--amb-bot)*100%),transparent) 0%,transparent 62%),
+ radial-gradient(circle 45vmax at 100% calc(100% + 2vmax),color-mix(in srgb,var(--amb-you-2,#e8b95b) calc(var(--amb-bot)*100%),transparent) 0%,transparent 62%)}
+:where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-main>.forge-ambient[data-turn=cpu]{--amb-top:.62;--amb-bot:.16}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-main>.forge-ambient{transition:none}}
