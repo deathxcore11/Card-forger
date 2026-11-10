@@ -476,7 +476,7 @@ fun PlayNav(active: PlayTab?, onSelect: (PlayTab) -> Unit, modifier: Modifier = 
     val select = androidx.compose.runtime.rememberUpdatedState(onSelect)
     if (active != null) PadScreen(remember(active) { PadActs(tabs = { d ->
         val to = (active.ordinal + d).coerceIn(0, PlayTab.entries.size - 1); if (to != active.ordinal) select.value(PlayTab.entries[to]) }, nav = true) })
-    BoxWithConstraints(modifier.fillMaxWidth().background(if (AppSettings.theme == "light") Color(0xF0F6F9FD) else Color(0xF00C0E13)).drawBehind { // light: settings-theme.css .bottom-nav rgba(246,249,253,.94)
+    BoxWithConstraints(modifier.fillMaxWidth().background(if (AppSettings.theme == "light") Color(0xFFF6F9FD) else Color(0xFF0C0E13)).drawBehind { // light: settings-theme.css .bottom-nav rgba(246,249,253,.94)
         drawLine(Site.Line, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx())
     }.navigationBarsPadding()) {
         val inner = minOf(maxWidth, 640.dp)
