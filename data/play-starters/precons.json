@@ -1,24 +1,7 @@
 {
  "baked": "2026-11-10",
  "source": "Official decklists via github.com/taw/magic-preconstructed-decks",
- "swaps": {
-  "Summon: Kujata": "Inferno Titan",
-  "Papalymo Totolymo": "Archmage of Runes",
-  "Afterlife from the Loam": "Dread Return",
-  "Ever-Watching Threshold": "Glorious Anthem",
-  "Laboratory Drudge": "Gravedigger",
-  "Scourge of Nel Toth": "Gurmag Angler",
-  "Havengul Lich": "Nightveil Specter",
-  "Grimoire of the Dead": "Mind Stone",
-  "Dredge the Mire": "Raise Dead",
-  "Scythe Specter": "Dread Shade",
-  "Titan Hunter": "Ogre Slumlord",
-  "Kazuul, Tyrant of the Cliffs": "Hill Giant",
-  "Hate Mirage": "Lightning Bolt",
-  "Sarkhan, the Dragonspeaker": "Chandra, Torch of Defiance",
-  "Curse of Bounty": "Rampant Growth",
-  "Voice of Many": "Serra Angel"
- },
+ "swaps": {},
  "decks": [
   {
    "key": "fin-ub",
@@ -866,11 +849,10 @@
      "number": "54"
     },
     {
-     "name": "Inferno Titan",
-     "was": "Summon: Kujata",
+     "name": "Summon: Kujata",
      "qty": 1,
-     "set": "hoc",
-     "number": "198"
+     "set": "fic",
+     "number": "61"
     },
     {
      "name": "Ultimate Magic: Meteor",
@@ -1557,11 +1539,10 @@
      "number": "88"
     },
     {
-     "name": "Archmage of Runes",
-     "was": "Papalymo Totolymo",
+     "name": "Papalymo Totolymo",
      "qty": 1,
-     "set": "fdn",
-     "number": "30"
+     "set": "fic",
+     "number": "90"
     },
     {
      "name": "Urianger Augurelt",
@@ -2032,11 +2013,10 @@
      "number": "20"
     },
     {
-     "name": "Dread Return",
-     "was": "Afterlife from the Loam",
+     "name": "Afterlife from the Loam",
      "qty": 1,
-     "set": "cmm",
-     "number": "153"
+     "set": "tdc",
+     "number": "25"
     },
     {
      "name": "Teval's Judgment",
@@ -3689,11 +3669,10 @@
      "number": "47"
     },
     {
-     "name": "Glorious Anthem",
-     "was": "Ever-Watching Threshold",
+     "name": "Ever-Watching Threshold",
      "qty": 1,
-     "set": "m21",
-     "number": "21"
+     "set": "scd",
+     "number": "50"
     },
     {
      "name": "Faerie Formation",
@@ -4056,11 +4035,10 @@
      "number": "53"
     },
     {
-     "name": "Gravedigger",
-     "was": "Laboratory Drudge",
+     "name": "Laboratory Drudge",
      "qty": 1,
-     "set": "j25",
-     "number": "452"
+     "set": "scd",
+     "number": "56"
     },
     {
      "name": "Army of the Damned",
@@ -4147,11 +4125,10 @@
      "number": "98"
     },
     {
-     "name": "Gurmag Angler",
-     "was": "Scourge of Nel Toth",
+     "name": "Scourge of Nel Toth",
      "qty": 1,
-     "set": "uma",
-     "number": "102"
+     "set": "scd",
+     "number": "104"
     },
     {
      "name": "Unbreathing Horde",
@@ -4172,11 +4149,10 @@
      "number": "227"
     },
     {
-     "name": "Nightveil Specter",
-     "was": "Havengul Lich",
+     "name": "Havengul Lich",
      "qty": 1,
-     "set": "gtc",
-     "number": "222"
+     "set": "scd",
+     "number": "231"
     },
     {
      "name": "Undermine",
@@ -4191,11 +4167,10 @@
      "number": "256"
     },
     {
-     "name": "Mind Stone",
-     "was": "Grimoire of the Dead",
+     "name": "Grimoire of the Dead",
      "qty": 1,
-     "set": "trc",
-     "number": "497"
+     "set": "scd",
+     "number": "265"
     },
     {
      "name": "Choked Estuary",
@@ -4510,11 +4485,10 @@
      "number": "75"
     },
     {
-     "name": "Raise Dead",
-     "was": "Dredge the Mire",
+     "name": "Dredge the Mire",
      "qty": 1,
-     "set": "w17",
-     "number": "18"
+     "set": "scd",
+     "number": "76"
     },
     {
      "name": "Ob Nixilis Reignited",
@@ -4547,11 +4521,10 @@
      "number": "103"
     },
     {
-     "name": "Dread Shade",
-     "was": "Scythe Specter",
+     "name": "Scythe Specter",
      "qty": 1,
-     "set": "dom",
-     "number": "88"
+     "set": "scd",
+     "number": "105"
     },
     {
      "name": "Sepulchral Primordial",
@@ -4566,11 +4539,10 @@
      "number": "108"
     },
     {
-     "name": "Ogre Slumlord",
-     "was": "Titan Hunter",
+     "name": "Titan Hunter",
      "qty": 1,
-     "set": "otc",
-     "number": "145"
+     "set": "scd",
+     "number": "112"
     },
     {
      "name": "Blasphemous Act",
@@ -4615,11 +4587,10 @@
      "number": "144"
     },
     {
-     "name": "Hill Giant",
-     "was": "Kazuul, Tyrant of the Cliffs",
+     "name": "Kazuul, Tyrant of the Cliffs",
      "qty": 1,
-     "set": "10e",
-     "number": "212"
+     "set": "scd",
+     "number": "148"
     },
     {
      "name": "Magmatic Force",
@@ -4772,11 +4743,10 @@
      "number": "145"
     },
     {
-     "name": "Lightning Bolt",
-     "was": "Hate Mirage",
+     "name": "Hate Mirage",
      "qty": 1,
-     "set": "msc",
-     "number": "806"
+     "set": "scd",
+     "number": "146"
     },
     {
      "name": "Mana Geyser",
@@ -5025,11 +4995,10 @@
      "number": "155"
     },
     {
-     "name": "Chandra, Torch of Defiance",
-     "was": "Sarkhan, the Dragonspeaker",
+     "name": "Sarkhan, the Dragonspeaker",
      "qty": 1,
-     "set": "fra",
-     "number": "244"
+     "set": "scd",
+     "number": "156"
     },
     {
      "name": "Scourge of Valkas",
@@ -5608,11 +5577,10 @@
      "number": "171"
     },
     {
-     "name": "Rampant Growth",
-     "was": "Curse of Bounty",
+     "name": "Curse of Bounty",
      "qty": 1,
-     "set": "trc",
-     "number": "468"
+     "set": "scd",
+     "number": "178"
     },
     {
      "name": "Eternal Witness",
@@ -5717,11 +5685,10 @@
      "number": "212"
     },
     {
-     "name": "Serra Angel",
-     "was": "Voice of Many",
+     "name": "Voice of Many",
      "qty": 1,
-     "set": "fdn",
-     "number": "740"
+     "set": "scd",
+     "number": "215"
     },
     {
      "name": "Maja, Bretagard Protector",
