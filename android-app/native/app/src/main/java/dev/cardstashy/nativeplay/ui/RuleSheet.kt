@@ -50,7 +50,12 @@ private val sheets = mutableStateListOf<SheetEntry>()
 
 /** On the app's root, over the pages and under the prompt bar. */
 @Composable
-fun RuleSheetHost() { sheets.forEach { e -> key(e) { e.content() } } }
+fun RuleSheetHost() {
+    DisposableEffect(Unit) { hosts.intValue++; onDispose { hosts.intValue-- } }
+    sheets.forEach { e -> key(e) { e.content() } }
+}
+/** How many hosts are up. With none (a screen drawn on its own, as the picture tests do) a sheet draws where it is called. */
+private val hosts = androidx.compose.runtime.mutableIntStateOf(0)
 
 /** Shows [content] in the root host for as long as this call stays in the composition. */
 @Composable
@@ -58,6 +63,7 @@ private fun Portal(content: @Composable () -> Unit) {
     val now = rememberUpdatedState(content)
     val entry = remember { SheetEntry().also { it.content = { now.value() } } }
     DisposableEffect(entry) { sheets.add(entry); onDispose { sheets.remove(entry) } }
+    if (hosts.intValue == 0) content()
 }
 
 /** The panel itself: scrim, glass, grabber, title. A tap outside or B closes. */

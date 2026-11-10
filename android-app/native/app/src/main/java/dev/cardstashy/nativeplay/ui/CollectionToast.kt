@@ -199,8 +199,8 @@ private fun SiteToast(t: CollectionWrites.Toast, onUndo: () -> Unit, onGone: () 
 }
 
 /**
- * dialog.js ask(): style.css .cf-dialog over a blurred backdrop, docked 16 px above the bottom on a phone (max-width 520 px:
- * margin auto auto 16px, buttons share the row) and centred at 420 px wide otherwise. A removal's button is red and named for it.
+ * dialog.js ask() and askText() on the one sheet (rulebook R4): the question is the title (or the site's own title over it),
+ * a removal's button is the danger one and named for it, a text question carries its field. X answers, B cancels.
  */
 @Composable
 private fun AskDialog(question: String, backdrop: androidx.compose.ui.graphics.layer.GraphicsLayer?, input: String? = null, onText: (String?) -> Unit = {},
@@ -208,81 +208,26 @@ private fun AskDialog(question: String, backdrop: androidx.compose.ui.graphics.l
     val verb = Regex("^(Delete|Remove|Replace|Clear|Sign out|Start empty|Switch|End|Restore)\\b", RegexOption.IGNORE_CASE).find(question)?.groupValues?.get(1)
     // A question a site handler asked (dialog.js open's own title, buttons and danger) keeps them as the site set them.
     val danger = site?.danger ?: (verb != null && !Regex("^(Restore|Switch)$", RegexOption.IGNORE_CASE).matches(verb))
-    // askText: the field (its words selected, the caret in it), and Save; finish() hands back the words trimmed, or null.
     val okLabel = site?.ok?.ifBlank { null } ?: if (input != null) "Save" else verb?.replaceFirstChar { it.uppercase() } ?: "OK"
     val cancelLabel = site?.cancel?.ifBlank { null } ?: "Cancel"
     var field by remember { androidx.compose.runtime.mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(input.orEmpty(), androidx.compose.ui.text.TextRange(0, input.orEmpty().length))) }
     val answer: (Boolean) -> Unit = { yes -> if (input != null) onText(if (yes) field.text.trim() else null) else onAnswer(yes) }
-    val still = Motion.still
-    val fade = remember { Animatable(if (still) 1f else 0f) }; val pop = remember { Animatable(if (still) 1f else 0f) }
     val view = LocalView.current
-    LaunchedEffect(Unit) { Feel.perform(view, "tap"); launch { fade.animateTo(1f, tween(200)) }; pop.animateTo(1f, tween(320, easing = CubicBezierEasing(.2f, 1.3f, .35f, 1f))) }
-    BackHandler { answer(false) }
-    // Controller: X answers yes (the gold button), B is its Cancel; a modal, so nothing under it lends buttons.
-    PadScreen(PadActs(x = PadAct(okLabel) { if (danger) Feel.perform(view, "warn"); answer(true) }, b = cancelLabel, opaque = true))
-    val blurLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
-    BoxWithConstraints(Modifier.fillMaxSize()
-        .graphicsLayer { alpha = fade.value }
-        .drawBehind {
-            // ::backdrop { background: rgba(6, 8, 12, .55); backdrop-filter: blur(6px) }
-            if (backdrop != null && backdrop.size.width > 0) {
-                blurLayer.renderEffect = androidx.compose.ui.graphics.BlurEffect(6.dp.toPx(), 6.dp.toPx(), androidx.compose.ui.graphics.TileMode.Clamp)
-                blurLayer.record(backdrop.size) { drawLayer(backdrop) }
-                drawLayer(blurLayer)
-            }
-            drawRect(Color(0x8C06080C))
-        }
-        .focusProperties { canFocus = false }.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { answer(false) }
-        .imePadding()) {
-        val phone = maxWidth <= 520.dp
-        val bottom = if (phone) 16.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() else 0.dp
-        val shape = RoundedCornerShape(20.dp)
-        Column(Modifier.align(if (phone) Alignment.BottomCenter else Alignment.Center).padding(bottom = bottom)
-            .width(minOf(420.dp, maxWidth - 32.dp))
-            .graphicsLayer { val s = .94f + .06f * pop.value; scaleX = s; scaleY = s; translationY = (1f - pop.value) * 10.dp.toPx() }
-            .cssShadow(Color(0xBF000000), 60.dp, 24.dp, (-18).dp, 20.dp)
-            .clip(shape).background(Site.Surface2.copy(alpha = .92f)).border(1.dp, Site.Line, shape)
-            .drawBehind { drawLine(Color(0x0DFFFFFF), Offset(20.dp.toPx(), .5f), Offset(size.width - 20.dp.toPx(), .5f), 1f) }
-            .focusProperties { canFocus = false }.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
-            .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 16.dp)) {
-            // .cf-dialog-title (17 / 700) over the words, which then read as .cf-dialog-msg.sub (14, muted).
-            if (!site?.title.isNullOrBlank()) {
-                Text(site!!.title, Modifier.padding(bottom = 6.dp), style = cssType(17f, 700, 23.8f))
-                Text(question, Modifier.padding(bottom = 16.dp), style = cssType(14f, 400, 20.3f, Color(0xFF9AA2B1)))
-            } else Text(question, Modifier.padding(bottom = 16.dp), style = cssType(16f, 600, 23.2f))
-            if (input != null) androidx.compose.runtime.CompositionLocalProvider(androidx.compose.foundation.text.selection.LocalTextSelectionColors provides
-                androidx.compose.foundation.text.selection.TextSelectionColors(Site.Gold, Color(0xFF053AA6))) {
-                // .cf-dialog-input: the glass field, 12 / 14 in, 12 corners, 16 px words, 80 at most; :focus { outline: 2px solid
-                // var(--game-color) (Magic's #f08a5d); outline-offset: 1px }. Enter saves (the form's submit).
-                val focus = remember { androidx.compose.ui.focus.FocusRequester() }
-                var focused by remember { androidx.compose.runtime.mutableStateOf(false) }
-                LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-                androidx.compose.foundation.text.BasicTextField(field, { v -> field = if (v.text.length <= 80) v else v.copy(text = v.text.take(80)) },
-                    Modifier.fillMaxWidth().padding(bottom = 16.dp).focusRequester(focus).onFocusChanged { focused = it.isFocused }
-                        .drawBehind { if (focused) { val o = 2.dp.toPx(); drawRoundRect(Color(0xFFF08A5D), Offset(-o, -o), androidx.compose.ui.geometry.Size(size.width + o * 2, size.height + o * 2),
-                            androidx.compose.ui.geometry.CornerRadius(13.dp.toPx()), style = Stroke(2.dp.toPx())) } }
-                        .semantics { contentDescription = question },
-                    singleLine = true, textStyle = cssType(16f, 400, 23.2f), cursorBrush = androidx.compose.ui.graphics.SolidColor(TEXT),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
-                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { answer(true) }),
-                    decorationBox = { inner -> Box(Modifier.fillMaxWidth().defaultMinSize(minHeight = 44.dp).siteGlassField(12.dp).padding(horizontal = 15.dp, vertical = 13.dp)) { inner() } })
-            }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End)) {
-                val btn = if (phone) Modifier.weight(1f) else Modifier.width(96.dp)
-                val r = RoundedCornerShape(11.dp)
-                // .btn.ghost: the glass button (--glass-fill, --glass-line, --glass-hi).
-                Box(btn.defaultMinSize(minWidth = 96.dp, minHeight = 44.dp).clip(r).background(Color(0x851F232B)).border(1.dp, Color(0x31EDC980), r)
-                    .drawBehind { drawLine(Color(0x12FFFFFF), Offset(11.dp.toPx(), 1.5f), Offset(size.width - 11.dp.toPx(), 1.5f), 1f) }
-                    .clickable { answer(false) }.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
-                    Text(cancelLabel, style = type(15f, 700, 21.75f), textAlign = TextAlign.Center, maxLines = 2)
-                }
-                Box(btn.defaultMinSize(minWidth = 96.dp, minHeight = 44.dp).clip(r).background(if (danger) Color(0xFFF08A7E) else Site.Gold)
-                    .clickable { if (danger) Feel.perform(view, "warn"); answer(true) }.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
-                    Text(okLabel, style = type(15f, 700, 21.75f, if (danger) Color(0xFF1A0806) else Site.GoldInk), textAlign = TextAlign.Center)
-                }
-            }
-        }
-    }
+    LaunchedEffect(Unit) { Feel.perform(view, "tap") }
+    val titled = !site?.title.isNullOrBlank()
+    RuleConfirm(if (titled) question else "", okLabel, onAction = { if (danger) Feel.perform(view, "warn"); answer(true) }, onCancel = { answer(false) },
+        title = if (titled) site!!.title else question, danger = danger, cancel = cancelLabel,
+        body = if (input == null) null else ({
+            // askText: the field with its words selected; Enter saves; 80 characters at most.
+            val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+            LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+            androidx.compose.foundation.text.BasicTextField(field, { v -> field = if (v.text.length <= 80) v else v.copy(text = v.text.take(80)) },
+                Modifier.fillMaxWidth().focusRequester(focus).semantics { contentDescription = question },
+                singleLine = true, textStyle = Rule.Type.S16, cursorBrush = androidx.compose.ui.graphics.SolidColor(Rule.Color.Text),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { answer(true) }),
+                decorationBox = { inner -> Box(Modifier.fillMaxWidth().defaultMinSize(minHeight = 44.dp).siteGlassField(12.dp).padding(horizontal = 15.dp, vertical = 13.dp)) { inner() } })
+        }))
 }
 
 /** body[data-game] for a sheet over a Yu-Gi-Oh! or Pokémon page: its --gold and its buttons' ink are that game's. */
