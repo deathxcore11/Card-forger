@@ -65,6 +65,20 @@ object Glow {
     }
 
     /**
+     * W7/W8: the cards that make the table wait on you at a priority pass: exactly the ones that glow (playable or usable) and that
+     * Forge does not call unavailable. An id Forge lists that is not one of your cards is no reason to stop.
+     */
+    fun stopsFor(st: MatchState, sc: ShortCasts = ShortCasts()): List<Int> {
+        val blocked = runCatching { sc.blocked(st) }.getOrDefault(emptyMap())
+        val quiet = runCatching { sc.quiet(st, blocked) }.getOrDefault(emptySet())
+        val mine = st.me.hand + st.me.battlefield + st.me.graveyard + st.me.exile + st.me.command
+        return st.selection.actionable.filter { id ->
+            val c = mine.firstOrNull { it.id == id } ?: return@filter false
+            st.selection.affordability[id] != "unavailable" && usable(c, st, true, blocked, quiet) != Mark.NONE
+        }
+    }
+
+    /**
      * The board's light for [card] (ForgeBoard's markOf, pure so it can be checked per fixture): forge-table.mjs role(), chosen,
      * then a target, then a choice (discard while a discard asks), then [usable]. [blockPick] is the creature picked to block with,
      * [aimed] true when the block in hand may meet this attacker; [selectedHand] the lifted hand card.

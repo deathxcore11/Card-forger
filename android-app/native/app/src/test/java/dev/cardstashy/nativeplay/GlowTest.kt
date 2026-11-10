@@ -217,4 +217,19 @@ class GlowTest {
         assertEquals(listOf("cardstashy-0.4.24.apk", "stray.tmp"), Updater.spent(d, "0.4.24-native-test").map { it.name }.sorted())
         d.deleteRecursively()
     }
+    /** W7/W8 (live 0.4.56: "Respond to …?" with two lands and no instant): the table waits only for what glows. */
+    @Test fun theTableStopsOnlyForWhatGlows() {
+        val forest = card(40, "Battlefield", "Forest", "Basic Land — Forest", "", "({T}: Add {G}.)")
+        val plains = card(41, "Battlefield", "Plains", "Basic Land — Plains", "", "({T}: Add {W}.)")
+        // Forge lists the mana abilities and an id that is none of your cards: no stop.
+        val idle = state("""{"kind":"card","id":40},{"kind":"card","id":41},{"kind":"card","id":999}""", emptyList(), listOf(forest, plains))
+        assertEquals(emptyList<Int>(), Glow.stopsFor(idle))
+        // An instant you can pay for: stop, for it alone.
+        val giant = card(50, "Hand", "Giant Growth", "Instant", "{G}", "Target creature gets +3/+3 until end of turn.")
+        val answer = state("""{"kind":"card","id":40},{"kind":"card","id":50,"affordability":"available"}""", listOf(giant), listOf(forest, plains))
+        assertEquals(listOf(50), Glow.stopsFor(answer))
+        // Forge says it can't be paid: no stop.
+        val broke = state("""{"kind":"card","id":50,"affordability":"unavailable"}""", listOf(giant), listOf(forest, plains))
+        assertEquals(emptyList<Int>(), Glow.stopsFor(broke))
+    }
 }

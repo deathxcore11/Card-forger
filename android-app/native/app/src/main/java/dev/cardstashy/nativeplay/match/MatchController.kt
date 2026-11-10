@@ -638,7 +638,8 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             return
         }
         val d = decide(st)
-        TableLog.line("decide ${st.phase} turn ${st.turn} input=${st.inputType} -> ${d.op ?: "wait"} (${d.why})")
+        // Always in the log (public builds too): why the table waited or passed, so a device run can quote it.
+        Log.i(TableLog.TAG, "decide ${st.phase} turn ${st.turn} input=${st.inputType} stack=${st.stack.size} -> ${d.op ?: "wait"} (${d.why})")
         val op = d.op ?: return
         autoJob = scope.launch(Dispatchers.Main) {
             delay(d.delayMs)
@@ -683,13 +684,15 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         if (ownTop) return Decision("ok", "your own spell or ability on top", 200)
         // Smart auto-pass (director spec 6a): Forge sometimes lists a card you plainly can't pay for as actionable ("unknown"
         // affordability, a {1}{R} creature with one land out). Those don't count, nor do mana abilities.
-        val no: Set<Int> = runCatching { shortCasts.blocked(st).keys }.getOrDefault(emptySet())
-        val mine = st.me.hand + st.me.battlefield + st.me.graveyard + st.me.exile
-        val real = st.selection.actionable.filter { id ->
-            val c = mine.firstOrNull { it.id == id }
-            id !in no && st.selection.affordability[id] != "unavailable" && !(c != null && c in st.me.battlefield && manaOnly(c))
-        }
+        // W7/W8 (seen again on live 0.4.56: "Respond to …?" with two lands and no instant): the table stops only for what glows
+        // (glow-rules.md), so the stop and the light can never disagree. An id Forge lists that is not one of your cards (none
+        // found in hand, field, graveyard, exile or the command zone) is no reason to stop; it used to count.
+        val blocked = runCatching { shortCasts.blocked(st) }.getOrDefault(emptyMap())
+        val mine = st.me.hand + st.me.battlefield + st.me.graveyard + st.me.exile + st.me.command
+        val real = dev.cardstashy.nativeplay.ui.Glow.stopsFor(st, shortCasts)
         val cards = real.take(6).joinToString(",") { id -> mine.firstOrNull { it.id == id }?.let { "${it.name}:${st.selection.affordability[id] ?: "?"}" } ?: "$id" }
+        val dropped = (st.selection.actionable - real.toSet()).take(6).joinToString(",") { id -> mine.firstOrNull { it.id == id }?.let { "${it.name}:${blocked[id] ?: st.selection.affordability[id] ?: "quiet"}" } ?: "$id:not yours" }
+        if (dropped.isNotEmpty()) Log.i(TableLog.TAG, "decide dropped $dropped")
         if (real.isNotEmpty()) return Decision(null, "${if (st.stack.isNotEmpty()) "respond" else "play"} stop yes, cards=$cards")
         // Your turn, nothing to play and nothing that can attack: straight to the end of the turn in one beat ("End turn").
         val yourTurn = st.activePlayer == st.viewer
