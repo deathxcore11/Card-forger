@@ -4648,8 +4648,8 @@
     },
     {
       "path": "deploy/forge-host/src/app-route.mjs",
-      "bytes": 1177,
-      "sha256": "439eee09590e01e394819ba759f194f76a82cca52914dacfc79ac0b26de942ae"
+      "bytes": 1189,
+      "sha256": "dbc5617a1e986a22724877568c7a3d0e953d7ccf06fa808ef16f6a7415eb190c"
     },
     {
       "path": "desktop-play.js",
