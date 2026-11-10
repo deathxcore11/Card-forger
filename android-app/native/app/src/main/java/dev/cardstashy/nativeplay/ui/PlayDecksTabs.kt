@@ -574,7 +574,7 @@ fun PreconPage(state: JsonObject, o: OpenPrecon, owned: Map<String, Int>, pc: Pr
                 Row(verticalAlignment = Alignment.CenterVertically) { Text("Craft these first", style = cinzel(16f), modifier = Modifier.weight(1f))
                     Text(if (metaCount.isNotEmpty()) "Shared with meta decks" else "Shared with your decks", style = t(12f, color = Site.Muted)) }
                 shared.take(4).forEach { m -> val metaN = metaCount[m.name] ?: 0; val mine = deckUse[m.name].orEmpty()
-                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0x0AFFFFFF)).border(1.dp, Color(0x0FFFFFFF), RoundedCornerShape(14.dp)).clickable { onCard(m.name) }.padding(8.dp),
+                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0x0AFFFFFF)).border(1.dp, Color(0x0FFFFFFF), RoundedCornerShape(14.dp)).padActs(PadActs(a = "Open", y = PlayInspect.act(Decks.scryfallImage(idOf[m.name] ?: "")))).clickable { onCard(m.name) }.padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         CardPicture(Decks.scryfallImage(idOf[m.name] ?: ""), null, null, Modifier.width(44.dp).aspectRatio(63f / 88f), RoundedCornerShape(4.dp))
                         Column(Modifier.weight(1f)) { Text(m.name, style = t(14f, FontWeight.Bold), maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -626,8 +626,9 @@ private fun androidx.compose.foundation.lazy.LazyListScope.preconCardRows(rows: 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             row.forEach { (r, got) -> Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Box {
-                    CardPicture(Decks.scryfallImage(r.id).ifBlank { "https://api.scryfall.com/cards/named?format=image&version=normal&exact=" + java.net.URLEncoder.encode(r.name, "UTF-8") }, null, null,
-                        Modifier.fillMaxWidth().aspectRatio(63f / 88f).alpha(if (got < r.qty) .55f else 1f).clickable { onCard(r.name) }, RoundedCornerShape(6.dp))
+                    val pic = Decks.scryfallImage(r.id).ifBlank { "https://api.scryfall.com/cards/named?format=image&version=normal&exact=" + java.net.URLEncoder.encode(r.name, "UTF-8") }
+                    CardPicture(pic, null, null,
+                        Modifier.fillMaxWidth().aspectRatio(63f / 88f).alpha(if (got < r.qty) .55f else 1f).padActs(PadActs(a = "Open", y = PlayInspect.act(pic))).clickable { onCard(r.name) }, RoundedCornerShape(6.dp))
                     val m = metaCount[r.name] ?: 0; val d = deckUse[r.name]?.size ?: 0
                     if (!Decks.isBasicLand(r.name) && (m > 0 || d > 0)) Text(if (m > 0) "$m meta" else "$d deck${if (d == 1) "" else "s"}", style = t(10.5f, FontWeight.ExtraBold, Color(0xFFF0C66D)),
                         modifier = Modifier.align(Alignment.TopEnd).padding(5.dp).clip(RoundedCornerShape(999.dp)).background(Color(0xD90C0E13)).border(1.dp, Color(0x99F0C66D), RoundedCornerShape(999.dp)).padding(horizontal = 6.dp, vertical = 1.dp))

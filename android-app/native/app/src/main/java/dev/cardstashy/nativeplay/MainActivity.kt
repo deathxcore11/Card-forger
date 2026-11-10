@@ -184,6 +184,7 @@ class MainActivity : ComponentActivity() {
                 dev.cardstashy.nativeplay.ui.CollectionWritesHost(page)
                 UpdateHost(this@MainActivity)
                 dev.cardstashy.nativeplay.ui.TopScreenHost()
+                dev.cardstashy.nativeplay.ui.PlayInspectHost()
                 PadPromptBar()
                 PadCursorLayer()
             }

@@ -346,7 +346,7 @@ private fun Tile(c: Trunk.Card, print: JsonObject?, fact: CardFacts.Fact?, data:
     // .pe-lot in the Trunk: no plate; the art (corners 4.6 % / 3.3 %, a 1.5 px #9aa3ad ring at 70 %, a soft drop shadow),
     // then the name (DM Sans 600 15 px) with its set badge, then Holo and the copy pips. The mana and set line is hidden (.lot-sub display none).
     // Controller: Start opens the card's actions, the same sheet the long press does.
-    Column(Modifier.padActs(PadActs(a = "Open", menu = PadAct("Menu") { onHold(image, set) })).combinedClickable(onLongClick = { onHold(image, set) }, onClick = onClick), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.padActs(PadActs(a = "Open", y = PlayInspect.act(image, look?.takeIf { it.shines }), menu = PadAct("Menu") { onHold(image, set) })).combinedClickable(onLongClick = { onHold(image, set) }, onClick = onClick), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         CardPicture(image, look?.takeIf { it.shines }, tilt, Modifier.fillMaxWidth().aspectRatio(63f / 88f)
             .drawBehind {
                 // box-shadow 0 10px 24px -14px #000c: a soft shadow tucked under the bottom edge.

@@ -344,3 +344,17 @@ private fun ZoomBtn(label: String, small: Boolean = false, enabled: Boolean = tr
 private object LocalContextHolder {
     fun sensor(c: Context) = (c.getSystemService(Context.SENSOR_SERVICE) as? SensorManager)?.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR) != null
 }
+
+/**
+ * Y Inspect on a Play card tile (Play and Collection family, T1): the card big in the same CardZoom a Collection lot's Y opens,
+ * with that tile's own picture and foil look. One at a time, drawn over the app by [PlayInspectHost].
+ */
+object PlayInspect {
+    class Shown(val src: String, val look: Foil.Look?)
+    var shown by mutableStateOf<Shown?>(null)
+    fun act(src: String?, look: Foil.Look? = null): PadAct? = src?.takeIf { it.isNotBlank() }?.let { PadAct("Inspect") { shown = Shown(it, look) } }
+}
+
+/** On the app's root, over everything. */
+@Composable
+fun PlayInspectHost() { PlayInspect.shown?.let { z -> androidx.compose.runtime.key(z) { CardZoom(z.src, null, null, z.look) { PlayInspect.shown = null } } } }

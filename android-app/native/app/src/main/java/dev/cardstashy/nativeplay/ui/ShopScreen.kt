@@ -364,7 +364,7 @@ private fun SlCard(c: JsonObject, was: Int, price: Int, owned: Boolean, canPay: 
         Box(Modifier.fillMaxWidth().aspectRatio(.716f)
             .drawBehind { drawOval(Brush.radialGradient(listOf(Color(0x667A4DD8), Color.Transparent)), topLeft = androidx.compose.ui.geometry.Offset(-size.width * .1f, size.height * .82f),
                 size = androidx.compose.ui.geometry.Size(size.width * 1.2f, size.height * .3f)) }
-            .padActs(PadActs(a = "Open", x = if (!owned && canPay) PadAct("Buy", onBuy) else null)).clickable(onClick = onOpen).semantics { contentDescription = "Open ${c.get("n").s() ?: "card"}" }) {
+            .padActs(PadActs(a = "Open", y = PlayInspect.act(scryfallImage(c.get("id").s() ?: "")), x = if (!owned && canPay) PadAct("Buy", onBuy) else null)).clickable(onClick = onOpen).semantics { contentDescription = "Open ${c.get("n").s() ?: "card"}" }) {
             CardPicture(scryfallImage(c.get("id").s() ?: ""), null, null, Modifier.fillMaxSize(), RoundedCornerShape(9.dp), ContentScale.Crop)
             if (off > 0 && !owned) Text("$off% off", style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 11.5.sp, color = Color.White),
                 modifier = Modifier.padding(6.dp).clip(RoundedCornerShape(8.dp)).background(Brush.horizontalGradient(listOf(Color(0xFFE5484D), Color(0xFFFF7A59)))).padding(horizontal = 7.dp, vertical = 3.dp))
@@ -788,7 +788,7 @@ private fun SetLens(s: JsonObject, code: String, busy: Boolean, onBack: () -> Un
             }
             items(shown, key = { it.id }) { c ->
                 val n = owned[c.oracle] ?: 0
-                Column(Modifier.dualLens(lens, "card:" + c.id).padActs(PadActs(a = "Open")).clickable { onCard(CardPick(c.name, c.oracle, c.id, "nonfoil")) }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(Modifier.dualLens(lens, "card:" + c.id).padActs(PadActs(a = "Open", y = PlayInspect.act(c.image))).clickable { onCard(CardPick(c.name, c.oracle, c.id, "nonfoil")) }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Box {
                         coil3.compose.AsyncImage(c.image, c.name, imageLoader = dev.cardstashy.nativeplay.art.CardArt.loader, contentScale = ContentScale.Crop,
                             colorFilter = if (n == 0) gray else null, alpha = if (n == 0) .72f else 1f,

@@ -286,7 +286,7 @@ private val missingGray = androidx.compose.ui.graphics.ColorFilter.colorMatrix(a
 @Composable
 private fun CardTile(e: Entry, modifier: Modifier, showRoles: Boolean = false, onClick: () -> Unit) {
     val p = heroPainter(e.image.let(homeArt))
-    Box(modifier.aspectRatio(63f / 88f).clip(RoundedCornerShape(11.dp)).background(Color(0xFF111318)).clickable(onClick = onClick)) {
+    Box(modifier.aspectRatio(63f / 88f).clip(RoundedCornerShape(11.dp)).background(Color(0xFF111318)).padActs(PadActs(a = "Open", y = PlayInspect.act(e.image))).clickable(onClick = onClick)) {
         if (p != null) Image(p, e.name, Modifier.fillMaxSize().alpha(if (e.missing) .72f else 1f), contentScale = ContentScale.Crop,
             colorFilter = if (e.missing) missingGray else null)
         else Text(e.name, style = t(13f, FontWeight.Bold), modifier = Modifier.padding(10.dp))
