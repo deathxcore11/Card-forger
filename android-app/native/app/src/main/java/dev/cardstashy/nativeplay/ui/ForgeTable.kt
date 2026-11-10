@@ -428,6 +428,8 @@ fun ForgeBoard(
             if (!pod) ThinkDots(Modifier.offset(x = W - 132.du - lx - 34.du, y = 26.du + lx + 20.du), d)
             Crest(me.command.firstOrNull(), Modifier.offset(x = 10.du + lx, y = H - 86.du - ly), d, onInspect)
             Medallion(me, mine = true, live && me.id in st.selection.players, me.id in st.selection.chosenPlayers, Modifier.offset(x = ax, y = ay), d) { intents.player(me.id) }
+            // Table additions 6: while you declare blocks, what gets through, above your seat. Gone the moment blocks are confirmed.
+            if (blockingNow) damageThrough(st)?.let { t -> ThroughChip(t, me.life, Modifier.offset(x = ax, y = ay - 50.du), d) }
             // A phone's hand starts close to the seat: when the full tool row would reach it, chat drops to the second row
             // beside the mana, so the tray still never touches the hand.
             val tools = (if (st.controlMode in setOf("smart", "full")) 2 + (if (st.autoPay != null) 1 else 0) else 0) + 1
@@ -661,6 +663,42 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
             }
             x += widths[i] + gap
         }
+    }
+}
+
+/** What gets through your blocks right now: the sum of power of unblocked attackers aimed at you; [atLeast] when the exact number can't be known. */
+internal data class Through(val n: Int, val atLeast: Boolean)
+
+/**
+ * Table additions 6 (ruling of 2 Nov: never predict what Forge has not stated). N is only the power of attackers aimed at you with no
+ * blocker. Trample, double strike, anything attached to an attacker, an unknown power or unknown keywords make it "At least N";
+ * when that leaves nothing certain (at least 0) the chip hides. In a pod only attacks aimed at you count.
+ */
+internal fun damageThrough(st: MatchState): Through? {
+    val all = st.players.flatMap { it.battlefield }
+    val atMe = all.filter { it.attacking && it.controller != st.viewer && (it.attackTarget == null || (it.attackTarget.kind == "player" && it.attackTarget.id == st.viewer)) }
+    if (atMe.isEmpty()) return null
+    val blocked = all.filter { it.blocking }.flatMap { it.blockingIds }.toSet()
+    val open = atMe.filter { it.id !in blocked }
+    val n = open.sumOf { (it.power ?: 0).coerceAtLeast(0) }
+    fun unsure(c: Card) = !c.keywordsKnown || c.power == null || c.attachments.isNotEmpty() ||
+        c.keywords.any { k -> k.equals("Trample", true) || k.equals("Double Strike", true) || k.startsWith("Trample", true) }
+    val atLeast = open.any(::unsure) || atMe.any { it.id in blocked && it.keywords.any { k -> k.startsWith("Trample", true) } }
+    if (atLeast && n == 0) return null
+    return Through(n, atLeast)
+}
+
+/** The glass chip: "N damage gets through" and "Your life: 20 → X", red border while N > 0; green "Your life stays at X" at 0. */
+@Composable
+private fun ThroughChip(t: Through, life: Int, modifier: Modifier, d: Du) = with(d) {
+    val hurt = t.n > 0
+    val edge = if (hurt) Color(0xFFFF6A4A) else Color(0xFF7BE08A)
+    val head = when { !hurt -> "No damage gets through"; t.atLeast -> "At least ${t.n} damage gets through"; else -> "${t.n} damage gets through" }
+    val sub = when { !hurt -> "Your life stays at $life"; t.atLeast -> "Your life: $life → ${life - t.n} or less"; else -> "Your life: $life → ${life - t.n}" }
+    Column(modifier.zIndex(30f).clip(RoundedCornerShape(10.du)).background(Color(0xE60C0D12)).border(1.dp, edge, RoundedCornerShape(10.du))
+        .padding(horizontal = 10.du, vertical = 5.du)) {
+        Text(head, style = sans(sp(11.5f), FontWeight.Bold, Color(0xFFF6EEDB)).copy(fontFeatureSettings = "tnum"), maxLines = 1)
+        Text(sub, style = sans(sp(10.5f), FontWeight.SemiBold, edge).copy(fontFeatureSettings = "tnum"), maxLines = 1)
     }
 }
 
