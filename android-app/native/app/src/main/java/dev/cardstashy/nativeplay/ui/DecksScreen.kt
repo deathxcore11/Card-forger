@@ -283,8 +283,8 @@ internal fun DecksShelfCase(decks: List<JsonObject>, owned: Map<String, Int>, on
             CaseFact("Ready to play", "$ready")
             if (decks.size > ready) CaseFact("Need stamps", "${decks.size - ready}")
         }
-        Text(if (decks.isEmpty()) "Build one from your Trunk with meta ideas, or let the Deck Forge roll one for you." else "Move the ring onto a deck to see its box here.",
-            style = t(15f, color = Site.Muted))
+        // At rest the case says what you have, never an instruction (U13).
+        if (decks.isEmpty()) Text("Build one from your Trunk with meta ideas, or let the Deck Forge roll one for you.", style = t(15f, color = Site.Muted))
     }
 }
 

@@ -33,12 +33,28 @@ object TurnClock {
         if (s == null || !isPlayerDecision(s)) return null
         val input = s.inputType.orEmpty()
         s.prompt?.let { return Window("prompt:${it.id}:${s.revision}", Kind.PROMPT, PROMPT_MS) }
+        // The cleanup discard is one window for the whole step (it keeps its time while you pick card after card).
+        if (discardCount(s) != null) return Window("discard:${s.turn}", Kind.PROMPT, PROMPT_MS)
         if (input == "InputPassPriority") {
             if (s.activePlayer == s.viewer) return Window("turn:${s.turn}", Kind.TURN, TURN_MS)
             return Window("response:${s.revision}", Kind.RESPONSE, PROMPT_MS)
         }
         return Window("$input:${s.revision}", Kind.PROMPT, PROMPT_MS)
     }
+
+    /**
+     * The cleanup discard (U1, Thor 10 Nov): Forge asks it with no prompt, as a card selection (an anonymous
+     * InputSelectCardsFromList, so the bridge reports no input name) whose message says "Select N card(s) to discard to bring
+     * your hand down to the maximum of 7 cards". How many cards are still to go, or null when no discard is asked.
+     */
+    fun discardCount(s: MatchState?): Int? {
+        if (s == null || s.prompt != null || s.selection.cards.isEmpty() || !Regex("\\bdiscard\\b", RegexOption.IGNORE_CASE).containsMatchIn(s.message)) return null
+        val asked = Regex("select (\\d+) cards?", RegexOption.IGNORE_CASE).find(s.message)?.groupValues?.get(1)?.toIntOrNull()
+            ?: s.selection.max.takeIf { it > 0 } ?: 1
+        return maxOf(1, asked - s.selection.chosenCards.size)
+    }
+    /** "bring your hand down to the maximum of 7 cards": the hand size the discard brings you to (7 when Forge does not say). */
+    fun discardTo(s: MatchState): Int = Regex("maximum of (\\d+)", RegexOption.IGNORE_CASE).find(s.message)?.groupValues?.get(1)?.toIntOrNull() ?: 7
 
     /** rivalTurn: a friend's turn, for the line only; nothing here ever acts. */
     fun rivalTurn(s: MatchState?): Window? {
@@ -54,9 +70,18 @@ object TurnClock {
         object Ok : Answer
         /** The prompt cannot be answered (Prompt.deadEnd): leave the match as no result instead of retrying a reply the bridge refuses. */
         object Leave : Answer
+        /** A friend match's cleanup discard ran out: discard [id] (the newest card in your hand) and say which. */
+        data class Discard(val id: Int, val name: String) : Answer
     }
     fun answer(w: Window, s: MatchState): Answer {
         s.prompt?.let { p -> return if (p.deadEnd) Answer.Leave else Answer.Prompt(p.id, p.options.take(maxOf(0, p.min)).map { it.index }) }
+        if (discardCount(s) != null) {
+            // The simplest fair rule: the newest card in your hand (the one drawn last) that Forge lets you discard.
+            val me = s.players.firstOrNull { it.id == s.viewer }
+            val pick = me?.hand?.lastOrNull { it.id in s.selection.cards && it.id !in s.selection.chosenCards }
+                ?: s.selection.cards.firstOrNull { it !in s.selection.chosenCards }?.let { id -> me?.hand?.firstOrNull { it.id == id } }
+            if (pick != null) return Answer.Discard(pick.id, pick.name)
+        }
         val input = s.inputType.orEmpty(); val b = s.buttons
         if (input == "InputSelectTargets" || input.startsWith("InputPayMana")) return if (b.cancelEnabled) Answer.Cancel else Answer.Ok
         if (w.kind == Kind.TURN && b.cancelEnabled && Regex("end turn", RegexOption.IGNORE_CASE).containsMatchIn(b.cancel.orEmpty())) return Answer.Cancel
@@ -72,6 +97,8 @@ object TurnClock {
         private val onChange: (Shown?) -> Unit = {},
         private val onStrike: (Int, Int?) -> Unit = { _, _ -> },
         private val friend: Boolean = false,
+        /** Against the CPU a cleanup discard is never made for you: when its time runs out the clock holds and this says so. */
+        private val onNag: () -> Unit = {},
         private val now: () -> Long,
         /** A friend match host that sends its own clock: (present, the window with the time it arrived). The host acts, never this phone. */
         private val host: () -> Pair<Boolean, Pair<dev.cardstashy.nativeplay.engine.Afk, Long>?> = { false to null },
@@ -98,6 +125,9 @@ object TurnClock {
         private fun expire(w: Window, s: MatchState) {
             val c = cur!!
             if (c.w.kind == Kind.RIVAL) { c.left = 0; c.since = null; return }
+            // Against the CPU nothing is waiting on you but the game: a discard is your choice, so the clock holds and asks again
+            // (no missed turn). With a friend the standing rule holds: the time runs out, a card goes, and it counts as missed.
+            if (!friend && w.id.startsWith("discard:")) { c.left = INF; c.since = null; runCatching(onNag); return }
             val turn = s.turn
             if (turn != lastStrikeTurn) { lastStrikeTurn = turn; strikes++; runCatching { onStrike(strikes, if (friend) STRIKE_LIMIT else null) } }
             c.attempts++

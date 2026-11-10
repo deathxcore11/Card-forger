@@ -245,7 +245,7 @@ private fun AnnotatedString.Builder.symbols(s: String, inline: HashMap<String, I
  * The kicker says whose it is and where; the intent line says its state on the table. Tap anywhere to close.
  */
 @Composable
-fun CardInspect(card: Card, viewer: Int?, onClose: () -> Unit) {
+fun CardInspect(card: Card, viewer: Int?, start: PadAct? = null, onClose: () -> Unit) {
     val yours = viewer == null || card.controller == viewer
     val where = when (card.zone) { "Battlefield" -> "On the battlefield"; "Hand" -> "In hand"; "Graveyard" -> "In the graveyard"; "Exile" -> "In exile"; "Stack" -> "On the stack"; "Command" -> "In the command zone"; else -> card.zone }
     val state = buildList {
@@ -265,7 +265,7 @@ fun CardInspect(card: Card, viewer: Int?, onClose: () -> Unit) {
     val close = { TablePad.restore(); onClose() }
     LaunchedEffect(Unit) { if (Pad.connected.value) runCatching { padFocus.requestFocus() } }
     androidx.activity.compose.BackHandler(padOn) { close() }
-    PadScreen(PadActs(b = "Close", opaque = true))
+    PadScreen(PadActs(b = "Close", start = start, opaque = true))
     val padHere = remember { PadActs(a = "Close") }
     // The whole dimmed page is the target, so it carries no ring of its own; the prompt bar says what A does.
     BoxWithConstraints(Modifier.fillMaxSize().background(Color(0xB3000000)).padActs(padHere).focusRequester(padFocus).onFocusChanged { if (it.isFocused) TablePad.held = true }

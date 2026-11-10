@@ -516,7 +516,7 @@ fun ForgeBoard(
                     val shape = RoundedCornerShape(999.dp)
                     Row(Modifier.align(Alignment.TopCenter).padding(top = handW / 66f * 30f)
                         .focusRequester(chipFocus)
-                        .onFocusChanged { chipOn = it.isFocused; if (it.isFocused) { TableZones.at = 0; if (selectedHand == null) onSelectHand(hand.first().id) } }
+                        .onFocusChanged { chipOn = it.isFocused; if (it.isFocused) { TableZones.at = 0; TablePad.last = chipFocus; if (selectedHand == null) onSelectHand(hand.first().id) } }
                         .onKeyEvent { e -> if (e.nativeKeyEvent.action != android.view.KeyEvent.ACTION_DOWN) return@onKeyEvent false
                             when (e.nativeKeyEvent.keyCode) { android.view.KeyEvent.KEYCODE_DPAD_LEFT -> { step(-1); true }; android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> { step(1); true }; else -> false } }
                         .padActs(PadActs(a = lifted?.let { if (playable(it)) (if (it.isLand) "Play land" else "Cast") else "Inspect" }, y = lifted?.let { c -> PadAct("Inspect") { onInspect(c) } }))
@@ -534,8 +534,11 @@ fun ForgeBoard(
             // A controller's X is the gold one: its words and its tap, only while it can be pressed.
             var padX: PadAct? = null
             if (st.prompt == null && st.waitingOnMe) {
-                val selected = selectedHand?.takeIf { it !in blocked }?.let { st.card(it) }
-                val ok = if (selected != null) (if (selected.isLand) "Play land" else "Cast") else okLabel(st)
+                // The cleanup discard (U1): a lifted card goes, so its button says Discard, never Play or Cast.
+                val discardingNow = dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) != null
+                // A lift the hand chip keeps on two screens may not be playable now (U8): the gold button offers it only when it is.
+                val selected = selectedHand?.takeIf { it !in blocked && (it in st.selection.actionable || (discardingNow && it in st.selection.cards)) }?.let { st.card(it) }
+                val ok = if (selected != null) (if (discardingNow) "Discard" else if (selected.isLand) "Play land" else "Cast") else okLabel(st)
                 val second = if (selected != null) null else cancelLabel(st)
                 // A declaration Forge would refuse (a must-attack creature left out) is not offered as a live button.
                 val mustLeft = st.inputType == "InputAttack" && st.me.battlefield.any { Affordability.owesAttack(it) }
@@ -549,6 +552,8 @@ fun ForgeBoard(
                 val upperM = if (large) Modifier else Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 94.du)
                 val lowerM = if (large) Modifier else Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 52.du)
                 val attackM = if (large) Modifier else Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 44.du)
+                // Undo's own spot, one slot above the quiet one: never where End turn or the gold step was (U6).
+                val undoM = if (large) Modifier else Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 136.du)
                 val rowM = Modifier.align(Alignment.TopEnd).offset(x = (-12).dp, y = H - 180.dp)
                 @Composable fun pair(content: @Composable () -> Unit) = if (large) Row(rowM, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) { content() } else content()
                 padX = when {
@@ -568,7 +573,13 @@ fun ForgeBoard(
                         if (st.buttons.okEnabled) GlassPill(ok, live, upperM, d) { intents.ok() }
                         GoldPill(second, live, lowerM.focusRequester(goldFocus), d) { intents.cancel() }
                     } else {
-                        second?.let { GlassPill(it, live, upperM, d) { intents.cancel() } }
+                        // Forge turns its cancel from End turn into "Undo" once a land or a mana tap can be taken back
+                        // (InputPassPriority.showMessage), and then cancel undoes. Drawn in End turn's place, a tap meant for End turn
+                        // took the land back (U6), so Undo stands in its own spot and ignores taps for its first 400 ms.
+                        val undo = second?.startsWith("Undo", ignoreCase = true) == true
+                        val shownAt = remember(second) { android.os.SystemClock.uptimeMillis() }
+                        second?.let { GlassPill(it, live, if (undo) undoM else upperM, d) {
+                            if (!undo || android.os.SystemClock.uptimeMillis() - shownAt >= 400) intents.cancel() } }
                         GoldPill(ok, live && (selected != null || okOn), lowerM.focusRequester(goldFocus), d) {
                             if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok()
                         }
@@ -599,7 +610,9 @@ fun ForgeBoard(
             // Arrows: attackers to what they attack, blockers to their attacker, your spell to its targets, the top of the stack to its own.
             Arrows(st, live, intents, d)
             if (blockingNow) DragLine(blockDrag, d)
-            OwnCast(st, d)
+            // On a big board the menu and the CPU's piles own the top-left corner (U5, Thor 960 × 540: CASTING drew over both);
+            // there it sits under the piles instead.
+            OwnCast(st, d, if (large) mid - 120.dp + 70.dp else null)
             overlay?.invoke(W)
             // The order dialog, a damage split and the zone picker sit over the table; the CPU's line waits under them.
             val covered = live && st.prompt?.let { p -> p.method == "order" || p.method.startsWith("assign") || p.options.any { it.zone in setOf("Library", "Graveyard", "Exile") } } == true
@@ -1146,12 +1159,16 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
             // Face down for the first half of the turn-over.
             if (flyFrom != null && fly.value < .5f) Box(Modifier.matchParentSize().clip(RoundedCornerShape(6.du))) { CardBack(Modifier.fillMaxSize()) }
         }
-        // native-panel.mjs withYield: an ability on top offers Forge's own yield (pass on it every time it is on top, until end of turn).
-        if (top.ability) {
-            val on = top.yielded
-            val lock = st.prompt != null || st.inputType == "InputLockUI"
-            // Above the top card, clear of the battlefield rows (reviewer follow-up to B6).
-            Box(Modifier.offset(x = 44.du, y = 34.du - 26.du).width(104.du).wrapContentWidth(Alignment.CenterHorizontally, unbounded = true)) {
+        // Above the top card, clear of the battlefield rows (reviewer follow-up to B6): whose it is (U5: a CPU spell said nothing
+        // on the Thor) and, for an ability only, Forge's own yield (native-panel.mjs withYield; the bridge refuses a yield on a
+        // spell: stack_item_not_offered).
+        val yours = top.controller == st.viewer
+        Row(Modifier.offset(x = 44.du, y = 34.du - 26.du).width(104.du).wrapContentWidth(Alignment.CenterHorizontally, unbounded = true),
+            horizontalArrangement = Arrangement.spacedBy(6.du), verticalAlignment = Alignment.CenterVertically) {
+            Text("${if (yours) "Your" else "CPU's"} ${if (top.ability) "ability" else "spell"}", style = sans(sp(11f), FontWeight.Bold, if (yours) Gold else CpuRed), maxLines = 1)
+            if (top.ability) {
+                val on = top.yielded
+                val lock = st.prompt != null || st.inputType == "InputLockUI"
                 Box(Modifier.clip(RoundedCornerShape(999.dp))
                     .background(if (on) Brush.verticalGradient(listOf(Color(0xFFF6DC9A), Color(0xFFD9A64A))) else Brush.verticalGradient(listOf(Color(0x0DFFFFFF), Color(0x0DFFFFFF))))
                     .semantics { contentDescription = if (on) "Stop yielding to this ability" else "Pass on this ability every time it is on top, until end of turn. Targets and choices still stop."; role = Role.Button; stateDescription = if (on) "On" else "Off" }
@@ -1581,11 +1598,11 @@ private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) 
 
 /** .forge-own-cast on a phone (max-height 520): the card you are casting, top left, while you pick its targets or pay. */
 @Composable
-private fun OwnCast(st: MatchState, d: Du) = with(d) {
+private fun OwnCast(st: MatchState, d: Du, top: Dp? = null) = with(d) {
     val c = pendingCast(st) ?: return@with
     val anchors = LocalAnchors.current
     val name = c.name.ifEmpty { Regex("targets? for ([^\n]+)", RegexOption.IGNORE_CASE).find(st.message)?.groupValues?.get(1)?.trim() ?: "" }
-    Column(Modifier.offset(x = 8.du, y = 58.du).width(76.du)
+    Column(Modifier.offset(x = 8.du, y = top ?: 58.du).width(76.du)
         .drawBehind { drawRoundRect(Color(0x55F0C27A), topLeft = Offset(-6.du.toPx(), -6.du.toPx()), size = Size(size.width + 12.du.toPx(), size.height + 12.du.toPx()), cornerRadius = CornerRadius(18.du.toPx())) }
         .clip(RoundedCornerShape(12.du)).background(Color(0xF5111622)).border(1.dp, Color(0xAAF0C27A), RoundedCornerShape(12.du)).padding(4.du),
         verticalArrangement = Arrangement.spacedBy(3.du)) {
@@ -1641,7 +1658,13 @@ internal fun askLine(st: MatchState): String? {
     }
     // A payment your mana can't finish says so above the hand; Cancel is the way out.
     Affordability.paying(st)?.takeIf { it.short }?.let { return "Not enough mana" + (it.name?.let { n -> " for $n" } ?: "") }
-    if (discard) return null
+    // The cleanup discard (U1): Forge asks it with no prompt and no input name, so this line is the only place that says so.
+    if (discard) {
+        val n = dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) ?: 1
+        val to = dev.cardstashy.nativeplay.match.TurnClock.discardTo(st)
+        val verb = if (Pad.connected.value) "choose" else "tap"
+        return "Discard down to $to: $verb ${if (n == 1) "1 card" else "$n cards"}"
+    }
     val top = st.stack.firstOrNull()
     val cpuTop = top != null && top.controller != st.viewer
     val topName = (top?.source?.name ?: top?.text?.split(Regex("\\s+[\\u2014-]\\s+"))?.firstOrNull() ?: "").replace(Regex("\\s*\\(\\d+\\)"), "").trim()

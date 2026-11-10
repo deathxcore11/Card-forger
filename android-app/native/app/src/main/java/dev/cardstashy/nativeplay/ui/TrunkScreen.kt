@@ -230,7 +230,6 @@ internal fun TrunkBinderCase(state: JsonObject, all: List<Trunk.Card>, matched: 
                 }
             }
         }
-        Text("Move the ring onto a card to see it here.", style = TextStyle(fontFamily = Site.Manrope, fontSize = 14.sp, color = Site.Muted))
     }
 }
 

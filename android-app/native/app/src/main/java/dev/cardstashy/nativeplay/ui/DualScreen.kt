@@ -207,8 +207,8 @@ fun FocusedCardView(card: FocusCard?, extra: (@Composable () -> Unit)? = null) {
     if (card == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // At rest: the mark alone, never an instruction (U13).
                 BrandMark(56.dp)
-                Text("Move the ring onto a card to see it here.", style = TextStyle(fontFamily = Site.Manrope, fontSize = 13.sp, color = Site.Muted))
             }
         }
         return

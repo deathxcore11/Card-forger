@@ -599,10 +599,19 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
         var versus by remember { mutableStateOf(round == 0) }
         DisposableEffect(Unit) { activity.inGame(true); controller.start(); onDispose { controller.close() } }
         if (round == 0) LaunchedEffect(Unit) {
-            // Art and engine load side by side; the beat holds at least 0.9 s so it reads as a beat, not a flicker.
-            val minBeat = launch { delay(if ((pick as? Pick.Table)?.story != null) 0 else 900) }
+            // Art and engine load side by side. The beat has been on screen since the pick (t0), so its 0.9 s counts from there,
+            // not from now (U2); the CPU's plate still gets 0.4 s before the table opens.
+            val minBeat = launch { delay(if ((pick as? Pick.Table)?.story != null) 0 else maxOf(400L, 900L - (SystemClock.elapsedRealtime() - t0))) }
             QuickPlay.gateArt(context, s, controller.firstHand)
             minBeat.join(); versus = false
+        }
+        // Pick to table, one line per phase from the same start as the Speed line, so a slow run shows which step took the time (U2).
+        if (round == 0) LaunchedEffect(Unit) {
+            fun at() = SystemClock.elapsedRealtime() - t0
+            android.util.Log.i("Speed", "setup done at ${at()} ms")
+            launch { controller.firstHand.first { it != null }; android.util.Log.i("Speed", "opening hand dealt at ${at()} ms") }
+            launch { androidx.compose.runtime.snapshotFlow { versus }.first { !it }; android.util.Log.i("Speed", "versus beat ends at ${at()} ms") }
+            launch { controller.stage.first { it == dev.cardstashy.nativeplay.match.Stage.TOSS }; android.util.Log.i("Speed", "toss ready (Forge asked for the keep) at ${at()} ms") }
         }
         LaunchedEffect(Unit) {
             controller.shown.first { it != null }

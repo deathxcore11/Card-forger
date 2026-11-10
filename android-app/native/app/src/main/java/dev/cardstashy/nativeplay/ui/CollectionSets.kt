@@ -296,7 +296,8 @@ private fun SetsPage(m: CollectionSetsModel, top: @Composable (tabs: (@Composabl
                 CaseFact("Sets shown", "%,d".format(rows.size), big = true)
                 val started = rows.count { (it.progress?.fill ?: 0f) > 0f }
                 if (started > 0) CaseFact("Sets you've started", "%,d".format(started))
-                CaseFact("Move the ring onto a set", "Its count and your progress show here. A opens it.")
+                // At rest (U13): the set you're furthest along in, never an instruction.
+                rows.filter { (it.progress?.fill ?: 0f) in 0.0001f..0.999f }.maxByOrNull { it.progress?.fill ?: 0f }?.let { CaseFact("Furthest along", "${it.name} · ${it.progress?.pct}") }
             }
         }
     }

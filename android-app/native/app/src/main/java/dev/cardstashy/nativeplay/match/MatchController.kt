@@ -229,7 +229,8 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                     if (playedFrom == null && st.turn > 0) playedFrom = SystemClock.elapsedRealtime()
                     dev.cardstashy.nativeplay.play.Presence.matchTurn = st.turn
                     if (st.finished && !recorded) { recorded = true; runCatching { onFinished?.invoke(st, facts, playedFrom?.let { SystemClock.elapsedRealtime() - it }) } }
-                    if (firstState < 0) { firstState = SystemClock.elapsedRealtime() - t0; timings.value = mapOf("startMs" to started, "firstStateMs" to firstState) }
+                    if (firstState < 0) { firstState = SystemClock.elapsedRealtime() - t0; timings.value = mapOf("startMs" to started, "firstStateMs" to firstState)
+                        Log.i("Speed", "engine started in $started ms, first state read at $firstState ms (from controller.start)") }
                     if (remote != null && st.revision >= hostRev) { hostRev = st.revision
                         hostClock = st.hasAfk to st.afk?.let { it to SystemClock.elapsedRealtime() } }
                     // A repeat revision still counts when Forge finished working without a new one.
@@ -288,6 +289,9 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     /** "One more missed turn and you concede." for 7 s, friend matches only. */
     private val _afkNote = MutableStateFlow<String?>(null); val afkNote: StateFlow<String?> = _afkNote
     private var autoAnswering = false
+    private var noteJob: Job? = null
+    /** A line under the clock for 7 s (the same place as the missed-turn warning). */
+    private fun note(text: String) { noteJob?.cancel(); noteJob = scope.launch { _afkNote.value = text; delay(7000); _afkNote.value = null } }
     /** A card pop-up, the menu or a held card: the clock holds while any is open. */
     private val holds = HashSet<String>()
     fun hold(reason: String, on: Boolean) { if (on) holds.add(reason) else holds.remove(reason) }
@@ -303,6 +307,8 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                     is TurnClock.Answer.Prompt -> reply(a.id, indexes = a.indexes)
                     TurnClock.Answer.Cancel -> cancel()
                     TurnClock.Answer.Ok -> ok()
+                    // A friend match only (against the CPU the discard waits for you): say plainly which card went.
+                    is TurnClock.Answer.Discard -> { card(a.id); note("Time ran out. Discarded ${a.name}.") }
                 }
             } finally { autoAnswering = false }
             done(true)
@@ -312,6 +318,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             _clock.value = c?.let { Clock(now + it.remaining, it.total, if (it.paused) it.remaining else null, it.own) } },
         onStrike = { n, limit -> if (limit != null && n == limit - 1) scope.launch { _afkNote.value = "One more missed turn and you concede."; delay(7000); _afkNote.value = null } },
         friend = remote != null,
+        onNag = { note("Time's up. Choose a card to discard.") },
         now = { SystemClock.elapsedRealtime() },
         host = { hostClock },
     )
@@ -584,6 +591,9 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     /** A look at cards that asks nothing of you ("Looking at cards in …", a reveal). */
     private fun isReveal(st: MatchState): Boolean {
         val p = st.prompt ?: return false
+        // A search ("Select a card from your library", chooseSingleEntityForEffect, min 0 because you may find nothing) is a
+        // choice even when the card's text says "reveal it": it is never answered for you.
+        if (p.method.endsWith("ForEffect") || p.message.startsWith("Select", true)) return false
         return p.min == 0 && (p.method.contains("reveal", true) || p.message.startsWith("Looking at cards", true) || p.message.contains(" reveals", true))
     }
     private fun known(st: MatchState, id: Int) = st.players.any { pl -> (pl.hand + pl.battlefield + pl.graveyard + pl.exile).any { it.id == id } } || st.stack.any { it.source?.id == id }

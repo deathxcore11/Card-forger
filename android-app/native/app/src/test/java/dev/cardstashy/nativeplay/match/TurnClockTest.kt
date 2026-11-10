@@ -133,4 +133,27 @@ class TurnClockTest {
         repeat(((TurnClock.PROMPT_MS + 20_000) / 250).toInt()) { t += 250; timer.tick() }
         assertEquals(1, leaves); assertEquals(0, replies)
     }
+
+    /** U1 (Thor 10 Nov): the cleanup discard has no prompt and no input name. Against the CPU the clock holds and asks; with a
+     *  friend it discards the newest card and counts the miss. */
+    @Test fun cleanupDiscard() {
+        val hand = base.me.hand
+        require(hand.isNotEmpty())
+        val msg = "Cleanup Phase\nSelect 1 card(s) to discard to bring your hand down to the maximum of 7 cards."
+        val d = snap(input = "").copy(message = msg, phase = "CLEANUP", selection = base.selection.copy(cards = hand.map { it.id }.toSet(), chosenCards = emptySet(), actionable = emptySet(), min = 1, max = 1))
+        assertEquals(1, TurnClock.discardCount(d)); assertEquals(7, TurnClock.discardTo(d))
+        assertEquals("discard:5", TurnClock.waitingOn(d)!!.id)
+        assertEquals(TurnClock.Answer.Discard(hand.last().id, hand.last().name), TurnClock.answer(TurnClock.waitingOn(d)!!, d))
+        assertEquals("Discard down to 7: tap 1 card", dev.cardstashy.nativeplay.ui.askLine(d))
+        // Against the CPU: nothing is discarded for you, no missed turn, one nag.
+        var nags = 0; var acts = 0; var t = 1000L
+        val cpu = TurnClock.Timer(snapshot = { d }, act = { _, _, done -> acts++; done(true) }, onNag = { nags++ }, now = { t })
+        repeat(((TurnClock.PROMPT_MS + 5000) / 250).toInt()) { t += 250; cpu.tick() }
+        assertEquals(0, acts); assertEquals(1, nags); assertEquals(0, cpu.strikes())
+        // With a friend: the clock acts (the controller discards the newest card) and the miss counts.
+        val r = Rig(d, friend = true); r.run(TurnClock.PROMPT_MS + 500)
+        assertEquals(1, r.acts.size); assertEquals(1, r.strikes.size)
+        // Not a discard: an ordinary choose-cards input is untouched.
+        assertNull(TurnClock.discardCount(d.copy(message = "Select 1 creature to sacrifice.")))
+    }
 }

@@ -10,6 +10,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -77,11 +78,13 @@ class MatchMenu(input: String?, val onConcede: () -> Unit, val onLeave: () -> Un
     /** The match told in plain words (HistoryPanel's Story), kept for the whole match. */
     val story = Story()
     /** "deck" or "opponent" while the tracker shows (cardstashy.tracker), else null. */
-    var tracker by mutableStateOf(saved())
+    // On two screens the tracker is a bottom case you open when you want it: never brought back open from an earlier match (U7).
+    var tracker by mutableStateOf(if (DualScreen.active) null else saved())
         private set
 
     fun showTracker(side: String?) {
         tracker = side
+        if (DualScreen.active) return
         try { prefs?.edit()?.putString(KEY, side ?: "")?.apply() } catch (_: Exception) {}
     }
 
@@ -139,7 +142,8 @@ internal fun MenuPanel(menu: MatchMenu, stackCount: Int, d: Du, x: Dp, y: Dp) = 
     var ringAt by remember { mutableIntStateOf(-1) }
     data class Item(val label: String, val on: Boolean, val danger: Boolean, val run: () -> Unit)
     val items = buildList {
-        if (menu.deck.isNotEmpty()) add(Item("Deck tracker", menu.tracker != null, false) { menu.showTracker(if (menu.tracker != null) null else "deck") })
+        // On two screens the tracker takes the bottom screen, so the menu steps aside for it (U7).
+        if (menu.deck.isNotEmpty()) add(Item("Deck tracker", menu.tracker != null, false) { menu.showTracker(if (menu.tracker != null) null else "deck"); if (menu.tracker != null) menu.open = false })
         add(Item("History & stack" + if (stackCount > 0) " · $stackCount" else "", menu.history, false) { menu.history = !menu.history })
         add(Item("Concede", false, true) { menu.open = false; menu.ask = "concede" })
         add(Item("Return to Play setup", false, false) { menu.open = false; menu.ask = "leave" })
@@ -173,7 +177,7 @@ internal fun MenuPanel(menu: MatchMenu, stackCount: Int, d: Du, x: Dp, y: Dp) = 
                 Text(label, style = sans(sp(13.5f), FontWeight.SemiBold, if (on) Color(0xFFF4D78F) else Color(0xFFEEF0F3)))
             }
         }
-        if (menu.deck.isNotEmpty()) item("Deck tracker", menu.tracker != null, TRACKER_ICON, focus = first) { menu.showTracker(if (menu.tracker != null) null else "deck") }
+        if (menu.deck.isNotEmpty()) item("Deck tracker", menu.tracker != null, TRACKER_ICON, focus = first) { menu.showTracker(if (menu.tracker != null) null else "deck"); if (dual && menu.tracker != null) menu.open = false }
         item("History & stack" + if (stackCount > 0) " · $stackCount" else "", menu.history, focus = if (menu.deck.isEmpty()) first else null) { menu.history = !menu.history }
         item("Concede") { menu.open = false; menu.ask = "concede" }
         item("Return to Play setup") { menu.open = false; menu.ask = "leave" }
@@ -201,13 +205,13 @@ internal fun DeckTracker(st: MatchState, menu: MatchMenu, H: Dp, d: Du, x: Dp, t
     val pop = remember { Animatable(0f) }
     LaunchedEffect(Unit) { pop.animateTo(1f, tween(if (Motion.still) 0 else 180)) }
     // A controller's LB / RB: the tracker's own Library and Opponent tabs.
-    PadScreen(PadActs(tabs = { dir -> menu.showTracker(if (dir < 0) "deck" else "opponent") }))
+    // B (and a phone's back) closes the tracker (U7: there was no way out but the ×).
+    androidx.activity.compose.BackHandler { menu.showTracker(null) }
+    PadScreen(PadActs(b = "Close", tabs = { dir -> menu.showTracker(if (dir < 0) "deck" else "opponent") }))
     val maxH = maxOf(160.du, H - 98.du - top)
     val shape = RoundedCornerShape(16.du)
-    Column(Modifier.offset(x = x, y = top).zIndex(25f).graphicsLayer { alpha = pop.value; translationY = (1 - pop.value) * -6 * u * density; val s = .98f + .02f * pop.value; scaleX = s; scaleY = s }
-        .width(210.du).heightIn(max = maxH).clip(shape)
-        .background(Color(0xEE0F1218)).background(Brush.linearGradient(listOf(Color(0x12FFFFFF), Color(0x02FFFFFF), Color.Transparent)))
-        .border(1.dp, Color(0x1FFFFFFF), shape)) {
+    val dual = DualScreen.active
+    val body: @Composable ColumnScope.() -> Unit = {
         // header: tabs and a close (padding 6 6 6 8, gap 6), a #ffffff12 rule under it.
         Row(Modifier.fillMaxWidth().padding(start = 8.du, end = 6.du, top = 6.du, bottom = 6.du), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.du)) {
             Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(2.du)) {
@@ -253,6 +257,13 @@ internal fun DeckTracker(st: MatchState, menu: MatchMenu, H: Dp, d: Du, x: Dp, t
         } else if (seen.isEmpty()) Text("Nothing shown yet.", style = sans(sp(12.5f), FontWeight.Medium, Color(0xFF9AA2B1)), modifier = Modifier.padding(horizontal = 12.du, vertical = 14.du))
         else Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(4.du)) { seen.values.forEach { (v, n) -> row(v.name, v.cost, n, "") } }
     }
+    // Two screens (U7): the tracker is a case on the bottom screen, so the top keeps the menu button, the piles and the table clear.
+    if (dual) BottomScreen {
+        ShowcaseCase("Match", "Deck tracker", scroll = false) { Column(Modifier.fillMaxWidth().weight(1f, fill = false), content = body) }
+    } else Column(Modifier.offset(x = x, y = top).zIndex(25f).graphicsLayer { alpha = pop.value; translationY = (1 - pop.value) * -6 * u * density; val s = .98f + .02f * pop.value; scaleX = s; scaleY = s }
+        .width(210.du).heightIn(max = maxH).clip(shape)
+        .background(Color(0xEE0F1218)).background(Brush.linearGradient(listOf(Color(0x12FFFFFF), Color(0x02FFFFFF), Color.Transparent)))
+        .border(1.dp, Color(0x1FFFFFFF), shape), content = body)
 }
 
 /** The confirm behind Concede and Return to Play setup: one sheet, Cancel and the action; X does it, B cancels. */

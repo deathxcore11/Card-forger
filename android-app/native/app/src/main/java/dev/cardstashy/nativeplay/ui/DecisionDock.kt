@@ -150,7 +150,8 @@ fun DecisionDock(st: MatchState, live: Boolean, intents: TableIntents, onInspect
             p.method == "showInputDialog" -> SideDock(ctx) { InputDialog(ctx) }                                      // :346-353
             p.acknowledgeOnly && p.method == "getChoices" -> SideDock(ctx) { Reveal(ctx) }                           // :354-359
             p.method in OPTION_METHODS && hostedOrder -> OrderDialog(ctx, draft)                                     // :363-382
-            p.method in OPTION_METHODS -> SideDock(ctx) { ChoiceList(ctx, draft) }                                   // :384-395
+            // U4: the choice reads as the search picker does (framed, the card's name on top, Forge's question under it).
+            p.method in OPTION_METHODS -> TitledDock(ctx, choiceTitle(p, st).ifEmpty { "Your choice" }) { ChoiceList(ctx, draft) }  // :384-395
             else -> SideDock(ctx) { DeadEnd(ctx) }        // :397
         }
         // A controller: the ring goes into the dock as the question opens (its first choice, or its gold answer), once laid out.
@@ -415,6 +416,37 @@ private fun SideDock(ctx: DockCtx, content: @Composable () -> Unit) = with(ctx.d
     }
 }
 
+/** The search picker's frame (gradient, gold hairline, deep shadow), shared by the search dialog and the titled dock. */
+private fun Modifier.dockFrame(d: DockU, shape: androidx.compose.ui.graphics.Shape, blur: Float, spread: Float): Modifier = with(d) {
+    this@dockFrame.boxShadow(Color(0xBB000000), blur.du, spread.du, radius = 18.du).clip(shape)
+        .background(Brush.linearGradient(listOf(Color(0xF5202630), Color(0xFC10151E)), Offset.Zero, Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)))
+        .border(1.dp, Color(0x8AD6AD64), shape)
+}
+
+/** The dock's column in the search picker's frame (fix list B2/B3, U4): the card's name in Cinzel on top, then the question. */
+@Composable
+private fun TitledDock(ctx: DockCtx, title: String, content: @Composable () -> Unit) = with(ctx.d) {
+    val shape = RoundedCornerShape(18.du)
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.align(Alignment.BottomEnd).dockFocus(ctx).padding(end = 8.du, bottom = 8.du).width(196.du).heightIn(max = ctx.H - 16.du)
+            .dockFrame(this@with, shape, 40f, 14f).verticalScroll(rememberScrollState()).padding(horizontal = 12.du, vertical = 10.du),
+            verticalArrangement = Arrangement.spacedBy(5.du), horizontalAlignment = Alignment.Start) {
+            Text(title, style = ts(14f, 16.1f, FontWeight.Bold, TITLE_INK, Type.Cinzel, .28f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            content()
+        }
+    }
+}
+private val TITLE_INK = Color(0xFFF5EBD3)
+
+/** A choice's title is a name, never a rules sentence (fix list B3): the one card all its options belong to (Rugged Prairie's
+ *  mana abilities), else the spell being paid for, else the one resolving. */
+internal fun choiceTitle(p: Prompt, st: MatchState): String {
+    val ids = p.options.mapNotNull { it.cardId ?: it.rawCardId }.distinct()
+    if (p.options.size > 1) ids.singleOrNull()?.let { st.card(it) }?.takeIf { !it.hidden && it.name.isNotEmpty() }?.let { return it.name }
+    p.options.map { it.cardName }.distinct().singleOrNull()?.takeIf { !it.isNullOrEmpty() && p.options.size > 1 }?.let { return it }
+    return pendingCast(st)?.name?.takeIf { it.isNotEmpty() } ?: searchSource(st)
+}
+
 /** E3c: a prompt nothing can answer. The plain line, and against the CPU the way out at once (X): the match ends as no result. */
 @Composable
 private fun DeadEnd(ctx: DockCtx) {
@@ -565,10 +597,12 @@ private fun Pop(content: @Composable () -> Unit) {
 @Composable
 private fun ChoiceList(ctx: DockCtx, draft: MutableList<Int>) = with(ctx.d) {
     val p = ctx.p
-    val confirmLabel = if (draft.isEmpty() && p.min == 0) (if (p.cancelable) "Cancel" else "Choose none") else "Confirm choice"
+    val confirmLabel = if (draft.isEmpty() && p.min == 0) (if (p.cancelable) "Cancel" else "Choose none") else "Confirm"
     val confirmOn = !ctx.busy && draft.size >= p.min && draft.size <= p.max
     PadScreen(PadActs(x = if (confirmOn) PadAct(confirmLabel) { ctx.intents.reply(p.id, null, draft.toList(), null) } else null))
-    DockLine("Choose ${if (p.min == p.max) "${p.min}" else "${p.min}–${p.max}"} option${if (p.max == 1) "" else "s"}.", this)
+    // Forge's own question is the line (fix list B2); a count only when Forge said nothing.
+    val ask = plainText(p.rawMessage.ifEmpty { p.message }.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() } ?: "")
+    DockLine(MatchState.tidy(cpuName(ask.ifEmpty { if (p.max == 1) "Choose one" else "Choose up to ${p.max}" })), this)
     val firstOn = p.options.firstOrNull { it.described }?.index
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.du)) {
         for (o in p.options) DockButton(o.label, !ctx.busy && o.described, this@with, Modifier.fillMaxWidth().then(if (o.index == firstOn) Modifier.padFirst(ctx) else Modifier).semantics { selected = o.index in draft },
@@ -576,7 +610,7 @@ private fun ChoiceList(ctx: DockCtx, draft: MutableList<Int>) = with(ctx.d) {
     }
     if (p.options.any { !it.described }) Diagnostic("Some native options have no safe presentation. Those options remain disabled.", this)
     DockLine(if (draft.isNotEmpty()) "Selected: ${draft.joinToString(" · ") { i -> p.options.firstOrNull { it.index == i }?.label ?: "" }}" else "Nothing selected", this, Color(0xFFDFC58E))
-    DockButton(confirmLabel, confirmOn, this, if (firstOn == null) Modifier.padFirst(ctx) else Modifier) { ctx.intents.reply(p.id, null, draft.toList(), null) }
+    DockButton(confirmLabel, confirmOn, this, if (firstOn == null) Modifier.padFirst(ctx) else Modifier, look = if (draft.isNotEmpty() || p.min > 0) Look.SEARCH_GOLD else Look.PLAIN, weight = FontWeight.Bold) { ctx.intents.reply(p.id, null, draft.toList(), null) }
     DockButton("Clear selection", !ctx.busy, this) { draft.clear() }
     if (modeBackOutOffered(p, ctx.st)) DockButton("Cancel", !ctx.busy, this) {
         BackOut.until = System.currentTimeMillis() + 8000; BackOut.key = "${ctx.st.revision}:${p.id}"
@@ -799,11 +833,9 @@ private fun ZoneSearchDialog(ctx: DockCtx, z: ZoneSearch, draft: MutableList<Int
         val shape = RoundedCornerShape(18.du)
         val pad = (ctx.W.value / ctx.d.u * .03f).coerceIn(12f, 28f)
         Column(Modifier.align(Alignment.Center).dockFocus(ctx).padding(horizontal = pad.du).widthIn(max = 760.du).fillMaxWidth().heightIn(max = ctx.H - 32.du)
-            .boxShadow(Color(0xBB000000), 90.du, 26.du, radius = 18.du).clip(shape)
-            .background(Brush.linearGradient(listOf(Color(0xF5202630), Color(0xFC10151E)), Offset.Zero, Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)))
-            .border(1.dp, Color(0x8AD6AD64), shape).verticalScroll(rememberScrollState()).padding(horizontal = 16.du, vertical = 8.du),
+            .dockFrame(this@with, shape, 90f, 26f).verticalScroll(rememberScrollState()).padding(horizontal = 16.du, vertical = 8.du),
             verticalArrangement = Arrangement.spacedBy(4.du)) {
-            Text(heading, style = ts(14f, 16.1f, FontWeight.Bold, Color(0xFFF5EBD3), Type.Cinzel, .28f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(heading, style = ts(14f, 16.1f, FontWeight.Bold, TITLE_INK, Type.Cinzel, .28f), maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (body.isNotEmpty()) Text(body.joinToString("\n") { MatchState.tidy(cpuName(it)) }, style = ts(13f, 19.5f, color = Color(0xFFF4EDDD)))
             // One zone for every tile: say it once here, not under each name (reviewer follow-up to B3).
             val oneZone = z.choices.mapNotNull { it.zone }.distinct().singleOrNull()?.takeIf { z.choices.all { c -> c.zone == it } }

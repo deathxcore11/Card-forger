@@ -289,6 +289,8 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     val scope = rememberCoroutineScope()
     val session by Account.session.collectAsState()
     val state by Progress.state.collectAsState()
+    // A match is about to start: the engine's card load stops yielding to the screen (U2).
+    LaunchedEffect(Unit) { ForgeService.hurry() }
     // Art spec 12.5: a seat's deck starts loading its pictures the moment it is chosen, yours first, then the CPU's.
     val warmYou = model.player?.raw; val warmCpu = model.opponent?.raw
     LaunchedEffect(warmYou, warmCpu, online) {

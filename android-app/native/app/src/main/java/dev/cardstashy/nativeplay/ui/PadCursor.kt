@@ -148,9 +148,13 @@ object PadCursor {
      * swallow A; otherwise A goes on as d-pad centre to whatever has the ring (which the cursor already moved onto its target).
      */
     fun pressA(): Boolean {
-        if (!shown) return false
-        val t = target ?: return false
-        if (t.config.getOrNull(SemanticsProperties.Focused) == true) return false
+        // Only while the cursor can be seen: once it fades, or the ring moves on by LB/RB, RT or a restore, A belongs to the ring
+        // (U8: A on the hand chip opened a field card the faded cursor was still over).
+        if (!shown || SystemClock.uptimeMillis() - lastMove > 3500) return false
+        val id = target?.id ?: return false
+        // Read it fresh: the one kept from aim() was taken before the ring moved onto it, so it never read as focused.
+        val t = nodes()?.firstOrNull { it.id == id } ?: return false
+        if (t.config.getOrNull(SemanticsProperties.Focused) == true || t.config.getOrNull(SemanticsActions.RequestFocus) != null) return false
         val click = t.config.getOrNull(SemanticsActions.OnClick)?.action ?: return false
         lastMove = SystemClock.uptimeMillis()
         click(); return true

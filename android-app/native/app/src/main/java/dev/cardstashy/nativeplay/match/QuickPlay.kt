@@ -101,7 +101,10 @@ object QuickPlay {
             return@withContext Setup.Ready("", Plate(pick.name, "You", pick.face), Plate(pick.friendName ?: "Friend", "Friend · ${pick.format}", null), youRows, listOfNotNull(pick.face), CardArt.knows(youRows.map { it.first }))
         }
         // The engine is usually ready long before a deck is picked; this only waits on a cold start.
+        val tWait = SystemClock.elapsedRealtime()
         val status = ForgeService.status.first { it is ForgeService.Status.Ready || it is ForgeService.Status.Failed }
+        // A cold engine (cards still loading) is the usual hidden cost between the pick and the table (U2): say how long it held.
+        Log.i(TAG, "engine ready wait ${SystemClock.elapsedRealtime() - tWait} ms")
         if (status is ForgeService.Status.Failed) return@withContext Setup.Failed("The engine couldn’t start: ${status.reason}")
         val you = pick.raw
         val unknown = ForgeService.unknownNames(EngineNames.names(EngineNames.deck(you)))

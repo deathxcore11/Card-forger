@@ -176,7 +176,8 @@ private fun DecksPage(m: CollectionDecksModel, top: @Composable (tabs: (@Composa
                 CaseFact("Decks", "%,d".format(m.tiles.size), big = true)
                 val ready = m.tiles.count { it.bar >= .999f }
                 if (m.tiles.isNotEmpty()) CaseFact("Fully owned", "%,d of %,d".format(ready, m.tiles.size))
-                CaseFact("Move the ring onto a deck", "Its box, power and what you still need show here. A opens it.")
+                // At rest (U13): the deck you're closest to finishing, never an instruction.
+                m.tiles.filter { it.bar < .999f }.maxByOrNull { it.bar }?.let { CaseFact("Closest to complete", it.name) }
             }
         }
     }

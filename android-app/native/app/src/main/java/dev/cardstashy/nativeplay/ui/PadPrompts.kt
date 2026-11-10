@@ -218,6 +218,8 @@ object PadPrompts {
         if (!ours) return false
         val down = event.action == KeyEvent.ACTION_DOWN
         if (down) lastPress = SystemClock.uptimeMillis()
+        // The shoulders and triggers move the ring (zones, hand/field): the stick cursor steps aside, as it does for the d-pad (U8).
+        if (down && (code == KeyEvent.KEYCODE_BUTTON_L1 || code == KeyEvent.KEYCODE_BUTTON_R1 || code == KeyEvent.KEYCODE_BUTTON_L2 || code == KeyEvent.KEYCODE_BUTTON_R2)) PadCursor.dpad()
         val acts = current()
         if (code == KeyEvent.KEYCODE_BUTTON_Y) {
             if (down && event.repeatCount == 0) {

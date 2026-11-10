@@ -150,7 +150,14 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     var selectedHand by remember { mutableStateOf<Int?>(null) }
     var menu by remember { mutableStateOf(false) }
     val matchMenu = remember { MatchMenu(controller.input, onConcede = { controller.concede() }, onLeave = onHome) }
-    LaunchedEffect(shown?.revision) { if (shown?.selection?.actionable?.contains(selectedHand) != true) selectedHand = null }
+    // Two screens: the hand chip walks every card (A plays it, or opens it when it can't be played), so the lift stays while the
+    // card is in your hand (U8). One screen: a lift that can no longer be played drops, as before, unless it is a card to discard.
+    LaunchedEffect(shown?.revision) {
+        val s = shown
+        val keep = if (DualScreen.active) s?.me?.hand?.any { it.id == selectedHand } == true
+            else s?.selection?.actionable?.contains(selectedHand) == true || (dev.cardstashy.nativeplay.match.TurnClock.discardCount(s) != null && s?.selection?.cards?.contains(selectedHand) == true)
+        if (!keep) selectedHand = null
+    }
 
     LaunchedEffect(inspect != null) { controller.hold("inspect", inspect != null) }
     LaunchedEffect(menu) { controller.hold("menu", menu) }
@@ -203,7 +210,9 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
             .clip(RoundedCornerShape(999.dp)).background(Color(0xD90C0C0E)).border(1.dp, Palette.Red, RoundedCornerShape(999.dp)).padding(horizontal = 16.dp, vertical = 8.dp)) }
       }
         // Two screens: a card you look at opens on the bottom screen, so the table stays in full view on top (B closes it).
-        inspect?.let { c -> if (DualScreen.active) BottomScreen { CardInspect(c, shown?.viewer) { inspect = null } } else CardInspect(c, shown?.viewer) { inspect = null } }
+        // Start still opens the match menu from an open inspect (U8: on two screens the ring can't come down to it).
+        val inspectStart = PadAct("Menu") { inspect = null; matchMenu.open = true }
+        inspect?.let { c -> if (DualScreen.active) BottomScreen { CardInspect(c, shown?.viewer, inspectStart) { inspect = null } } else CardInspect(c, shown?.viewer, inspectStart) { inspect = null } }
         if (menu) Menu(onConcede = { menu = false; matchMenu.ask = "concede" }, onLeave = { menu = false; matchMenu.ask = "leave" }, onClose = { menu = false })
         MatchLeaveConfirm(matchMenu)
         if (stage == Stage.FINISHED) shown?.let { Result(it, audio, onHome, onRematch, resultNote) }

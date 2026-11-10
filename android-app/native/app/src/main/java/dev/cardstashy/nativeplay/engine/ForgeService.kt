@@ -52,6 +52,17 @@ object ForgeService {
     val matchSetup: Boolean by lazy { runCatching { Class.forName("cardstashy.forge.NativeMatchSetup", false, ForgeService::class.java.classLoader) }.isSuccess }
 
     @Volatile private var loading: Future<*>? = null
+    /** The engine thread's id while it loads cards at background priority (0 when not loading). */
+    @Volatile private var loaderTid = 0
+
+    /**
+     * The player is choosing a match (U2, Thor 10 Nov: ~3.4 s from the pick to the engine on a cold start): the card load stops
+     * yielding to the screen and runs at normal priority, so it is done, or nearly, by the time a deck is picked.
+     */
+    fun hurry() {
+        val t = loaderTid
+        if (t != 0) runCatching { android.os.Process.setThreadPriority(t, android.os.Process.THREAD_PRIORITY_DEFAULT); Log.i(TAG, "card load hurried (lobby open)") }
+    }
     @Volatile private var rulesValidUntil: String? = null
     @Volatile private var rulesVersion: String? = null
     private val rulesLock = Any()
@@ -69,6 +80,7 @@ object ForgeService {
         loading = engine.submit {
             // Loading 30,000 cards must never compete with the screen: background priority until it is done.
             android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
+            loaderTid = android.os.Process.myTid()
             try {
                 _status.value = Status.Loading("Unpacking the engine")
                 val t0 = System.currentTimeMillis()
@@ -91,7 +103,7 @@ object ForgeService {
             } catch (t: Throwable) {
                 Log.e(TAG, "engine load failed", t)
                 _status.value = Status.Failed(t.javaClass.simpleName + ": " + t.message)
-            } finally { android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_DEFAULT) }
+            } finally { loaderTid = 0; android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_DEFAULT) }
         }
     }
 
