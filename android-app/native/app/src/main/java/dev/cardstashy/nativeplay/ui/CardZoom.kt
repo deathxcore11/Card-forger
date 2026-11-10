@@ -76,7 +76,9 @@ fun scryfallHi(url: String?): String = (url ?: "").replace(Regex("/(small|normal
 private class View(val label: String, val src: String, val hi: String?, val effects: Boolean, val art: Boolean)
 
 @Composable
-fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, finish: dev.cardstashy.nativeplay.foil.CardFinish? = null, onClose: () -> Unit) {
+fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, finish: dev.cardstashy.nativeplay.foil.CardFinish? = null,
+             /** Two screens: the Art view is the Gallery (specs/thor-gallery-native.md), the painting up top and its museum label below. */
+             gallery: Gallery? = null, onClose: () -> Unit) {
     BackHandler(onBack = onClose)
     val views = remember(src, hi, art) {
         val h = (hi?.ifBlank { null } ?: if (src.contains("scryfall.io")) scryfallHi(src) else null)?.takeIf { it != src }
@@ -175,6 +177,19 @@ fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, finish: d
         hiP != null && !hiReady && hiState !is AsyncImagePainter.State.Error -> "Loading high resolution…"
         shownSize != null && shownSize.isSpecified -> "${shownSize.width.toInt()}×${shownSize.height.toInt()}"
         else -> ""
+    }
+
+    // The Gallery: on two screens the Art view is a museum wall up top and the piece's label on the bottom. B closes, LB/RB still
+    // switch views, LT/RT walk the wall when it holds more than one piece. Single-screen devices keep the plain art view.
+    if (DualScreen.active && v.art && gallery != null && gallery.pieces.isNotEmpty()) {
+        var piece by remember(gallery) { mutableIntStateOf(gallery.start.coerceIn(0, gallery.pieces.lastIndex)) }
+        val walk = gallery.pieces.size > 1
+        PadScreen(PadActs(b = "Back", opaque = true, tabs = { d -> val i = (view + d).coerceIn(0, views.lastIndex); if (i != view) load(i) }, tabsLabel = "View",
+            page = if (walk) { d -> piece = (piece + d).coerceIn(0, gallery.pieces.lastIndex) } else null, pageLabel = "Walk",
+            x = gallery.pieces[piece].open?.let { open -> PadAct("Card page") { open() } }))
+        Box(Modifier.fillMaxSize().padLayer()) { GalleryWall(gallery, piece) }
+        BottomScreen { GalleryLabel(gallery, piece) { piece = it } }
+        return
     }
 
     BoxWithConstraints(Modifier.fillMaxSize().padLayer().background(Color(4, 5, 8).copy(alpha = .985f * fade))) {

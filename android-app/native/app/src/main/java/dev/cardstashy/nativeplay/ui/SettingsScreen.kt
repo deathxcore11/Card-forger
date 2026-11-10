@@ -616,6 +616,7 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Gallery" to "On two screens, a card page’s Art view is now a gallery: the painting alone on a museum wall on the top screen, framed under one soft light, and its label on the bottom screen with the title, artist, set, year, number and flavour text from the card’s own record.",
     "Controllers" to "No two button hints ever say the same words. In a Story scene A is Next and X is Skip (B skips too); a card you can only look at shows one Inspect, not two; on dual screens the hint bar no longer repeats what a button on the case already says.",
     "Art" to "A deck starts loading its pictures the moment you choose it in the lobby, and the CPU deck the moment it is chosen, on any connection, so the Preparing the table wait is shorter. A token now waits a moment (up to 0.4 s) for its picture before it appears.",
     "Precons" to "Free precon decks show each card in the printing from its own decklist (the deck, the match, the versus screen and the preload), not the newest reprint.",

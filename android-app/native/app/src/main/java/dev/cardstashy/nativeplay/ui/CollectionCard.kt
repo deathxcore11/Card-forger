@@ -434,7 +434,9 @@ fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onBa
             val ctx = androidx.compose.ui.platform.LocalContext.current
             val tcg = remember(o?.tcgFinish, o?.image) { o?.tcgFinish?.let { tcgFinishOf(ctx, m.game, it, o.image) } }
             // Two screens: the page is on the bottom, so Y puts the card big on the top screen (its foil follows the gyro as ever).
-            if (o != null) { val z = @Composable { CardZoom(o.zoomSrc.ifBlank { o.image }, o.zoomHi.ifBlank { null }, o.zoomArt.ifBlank { null }, look, finish = tcg) { zoom = false } }
+            if (o != null) { val z = @Composable { CardZoom(o.zoomSrc.ifBlank { o.image }, o.zoomHi.ifBlank { null }, o.zoomArt.ifBlank { null }, look, finish = tcg,
+                    gallery = o.zoomArt.takeIf { it.isNotBlank() && DualScreen.active }?.let { a -> val f = o.faces.firstOrNull()
+                        Gallery(listOf(galleryPiece(a, f?.name?.ifBlank { null } ?: m.name, f?.artist, f?.flavor, m.shown))) }) { zoom = false } }
                 if (DualScreen.active) TopScreen(z) else z() }
         }
     }

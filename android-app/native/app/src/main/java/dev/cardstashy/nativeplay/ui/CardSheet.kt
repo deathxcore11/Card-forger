@@ -248,7 +248,9 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
             val hi = (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("png")?.ifBlank { null }
                 ?: shown.getAsJsonObject("image_uris")?.s("png")?.ifBlank { null }
             val look = data?.let { Foil.look(it, shown, finish) }
-            zoomed = if (zoom && image != null) ({ CardZoom(image, hi, heroArt, look) { zoom = false } }) else null
+            zoomed = if (zoom && image != null) ({ CardZoom(image, hi, heroArt, look,
+                gallery = heroArt?.takeIf { it.isNotBlank() && DualScreen.active }?.let { a -> Gallery(listOf(galleryPiece(a, f.s("name").ifBlank { name },
+                    f.s("artist").ifBlank { shown.s("artist") }, f.s("flavor_text").ifBlank { shown.s("flavor_text") }, shown))) }) { zoom = false } }) else null
         }
         // Over the whole screen, not inside the sheet's column: there the list took all the height, so the enlarged
         // card was pushed below the sheet and stayed half drawn over every tab (Randall 3 Nov 20:51Z).
