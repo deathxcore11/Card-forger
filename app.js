@@ -2177,7 +2177,7 @@ A.playFriendCreate=async()=>{
 };
 A.playFriendCancel=async()=>{
  const room=friendRoom;stopFriendPoll();if(!room?.roomId)return;friendRoom=room.target?{seat:'host',target:room.target}:null;refreshPlayMenu();
- try{await (await rooms()).cancel(room.roomId);}catch{/* it expires by itself */}
+ try{await (await rooms()).cancel(room.roomId);}catch{if(room.lobby)toast('Couldn’t tell your friend you left. The lobby closes by itself in a few minutes.');/* it expires by itself */}
 };
 // The link is built here, at once, so the copy still counts as the player's own click.
 const inviteLink=()=>friendRoom?.invite?'https://cardstashy.com/#play/join/'+friendRoom.invite:null;
