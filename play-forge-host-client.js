@@ -100,6 +100,13 @@ export const ROOM_MESSAGES=Object.freeze({
  player_busy:'One of you is still in another match. Finish it, then try again.',
  global_match_capacity:'Every table is busy right now. Try again in a minute.',
  invalid_match_input:'This deck does not fit the room\'s format.',
+ invalid_room:'This challenge could not be sent. Check the format and try again.',
+ room_rate_limit:'Too many invites in a short time. Wait a minute and try again.',
+ room_not_ready:'Your friend has not accepted yet.',
+ deck_required:'Pick a deck first.',
+ authentication_required:'Sign in again to play with friends.',
+ trial_not_authorized:'Friend matches are not open to this account yet.',
+ play_not_authorized:'Friend matches are not open to this account yet.',
 });
 export const friendInviteLink=invite=>'https://cardstashy.com/#play/join/'+invite;
 export const friendInviteFromHash=hash=>{const m=/^#play\/join\/([A-Za-z0-9_-]{43})$/.exec(hash||'');return m?m[1]:null;};
@@ -130,7 +137,7 @@ export function createFriendRooms({getAccessToken,fetchImpl=globalThis.fetch}={}
   if(typeof token!=='string'||!token||token.length>8192||!/^[-A-Za-z0-9._]+$/.test(token))throw fail('AUTHENTICATION_REQUIRED');
   const r=await fetchImpl(API_PREFIX+path,{method,body:body===undefined?undefined:JSON.stringify(body),headers:{Accept:'application/json',Authorization:'Bearer '+token,...(body===undefined?{}:{'Content-Type':'application/json'})},credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',cache:'no-store'});
   const data=r.status===204?null:await r.json().catch(()=>null);
-  if(!r.ok){const code=typeof data?.error==='string'&&/^[a-z0-9_]{1,100}$/.test(data.error)?data.error:'room_request_rejected';throw Object.assign(fail(code),{status:r.status,message:ROOM_MESSAGES[code]||'The room could not be reached. Try again.'});}
+  if(!r.ok){const code=typeof data?.error==='string'&&/^[a-z0-9_]{1,100}$/.test(data.error)?data.error:'room_request_rejected';throw Object.assign(fail(code),{status:r.status,message:ROOM_MESSAGES[code]||'The room could not be reached. Try again.'+(code==='room_request_rejected'?'':' ('+code+')')+(r.status?' ['+r.status+']':'')});}
   return data;
  }
  const room=id=>{if(!UUID.test(id||''))throw fail('FRIEND_ROOM_INVALID');return '/api/play/rooms/'+id;};
