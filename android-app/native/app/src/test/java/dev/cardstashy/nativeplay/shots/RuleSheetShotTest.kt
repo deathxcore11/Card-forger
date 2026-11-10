@@ -29,10 +29,10 @@ class RuleSheetShotTest {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         RuntimeEnvironment.setQualifiers("w390dp-h844dp-xxhdpi")
         captureRoboImage(shot("rulesheet-confirm-390")) { Box(Modifier.fillMaxSize().background(Site.Bg)) {
-            RuleConfirm("Sign out? Your account’s cards and profile will be hidden. They’ll be here when you sign back in.", "Sign out", onAction = {}, onCancel = {}); RuleSheetHost() } }
+            RuleConfirm("Your account’s cards and profile will be hidden. They’ll be here when you sign back in.", "Sign out", title = "Sign out?", onAction = {}, onCancel = {}); RuleSheetHost() } }
         captureRoboImage(shot("rulesheet-danger-390")) { Box(Modifier.fillMaxSize().background(Site.Bg)) {
-            RuleConfirm("Delete this Play deck?", "OK", onAction = {}, onCancel = {}, danger = true); RuleSheetHost() } }
+            RuleConfirm("", "Delete", title = "Delete this Play deck?", onAction = {}, onCancel = {}, danger = true); RuleSheetHost() } }
         captureRoboImage(shot("rulesheet-menu-390")) { Box(Modifier.fillMaxSize().background(Site.Bg)) {
-            RuleMenu(null, dev.cardstashy.nativeplay.play.Trunk.SORTS.mapIndexed { i, (_, l) -> RuleRow(l, on = i == 0) {} }) {}; RuleSheetHost() } }
+            RuleMenu("Sort", dev.cardstashy.nativeplay.play.Trunk.SORTS.mapIndexed { i, (_, l) -> RuleRow(l, on = i == 0) {} }) {}; RuleSheetHost() } }
     }
 }

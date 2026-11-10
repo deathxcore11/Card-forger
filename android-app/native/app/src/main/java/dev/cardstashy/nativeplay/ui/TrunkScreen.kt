@@ -278,7 +278,7 @@ fun Select(label: String, options: List<Pair<String, String>>, on: String, modif
             Text(options.firstOrNull { it.first == on }?.second ?: label, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Ink), maxLines = 1)
             Text("▾", style = small)
         }
-        if (open) RuleMenu(null, options.map { (k, l) -> RuleRow(l, on = k == on) { pick(k) } }) { open = false }
+        if (open) RuleMenu(label.takeIf { it.isNotBlank() && options.none { o -> o.second == it } }, options.map { (k, l) -> RuleRow(l, on = k == on) { pick(k) } }) { open = false }
     }
 }
 

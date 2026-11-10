@@ -428,7 +428,7 @@ private fun SignedIn(onWeb: (String) -> Unit, onPick: (String) -> Unit, layer: C
             }
         }
     }
-    if (confirmOut) RuleConfirm("Sign out? Your account’s cards and profile will be hidden. They’ll be here when you sign back in.", "Sign out", onCancel = { confirmOut = false },
+    if (confirmOut) RuleConfirm("Your account’s cards and profile will be hidden. They’ll be here when you sign back in.", "Sign out", title = "Sign out?", onCancel = { confirmOut = false },
         onAction = { confirmOut = false; scope.launch { Account.signOut(); Decks.clear(); dev.cardstashy.nativeplay.play.Progress.clear(); toast("Signed out. Your account data is saved.") } })
     if (confirmDelete) {
         var typed by remember { mutableStateOf("") }

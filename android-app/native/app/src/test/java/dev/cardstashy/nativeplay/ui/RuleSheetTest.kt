@@ -32,10 +32,10 @@ class RuleSheetTest {
 
     @Test fun confirmSaysItsButtonsAndXRunsTheAction() {
         val did = mutableListOf<String>(); var open by mutableStateOf(true)
-        rule.setContent { Box(Modifier.fillMaxSize().padRoot()) { if (open) RuleConfirm("Delete this Play deck?", "OK", onAction = { did += "ok"; open = false }, onCancel = { did += "cancel"; open = false }, danger = true); RuleSheetHost() } }
+        rule.setContent { Box(Modifier.fillMaxSize().padRoot()) { if (open) RuleConfirm("", "Delete", title = "Delete this Play deck?", onAction = { did += "ok"; open = false }, onCancel = { did += "cancel"; open = false }, danger = true); RuleSheetHost() } }
         rule.waitForIdle()
         rule.onNodeWithText("Delete this Play deck?").assertExists()
-        assertTrue(("B" to "Cancel") in PadPrompts.prompts()); assertTrue(("X" to "OK") in PadPrompts.prompts())
+        assertTrue(("B" to "Cancel") in PadPrompts.prompts()); assertTrue(("X" to "Delete") in PadPrompts.prompts())
         press(KeyEvent.KEYCODE_BUTTON_X); rule.waitForIdle()
         assertEquals(listOf("ok"), did)
         rule.onNodeWithText("Delete this Play deck?").assertDoesNotExist()
@@ -43,7 +43,7 @@ class RuleSheetTest {
 
     @Test fun bCancels() {
         val did = mutableListOf<String>(); var open by mutableStateOf(true)
-        rule.setContent { Box(Modifier.fillMaxSize().padRoot()) { if (open) RuleConfirm("Sign out?", "Sign out", onAction = { did += "ok"; open = false }, onCancel = { did += "cancel"; open = false }); RuleSheetHost() } }
+        rule.setContent { Box(Modifier.fillMaxSize().padRoot()) { if (open) RuleConfirm("", "Sign out", title = "Sign out?", onAction = { did += "ok"; open = false }, onCancel = { did += "cancel"; open = false }); RuleSheetHost() } }
         rule.waitForIdle()
         // B is always the system back (PadActs.b only names it).
         rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }; shadowOf(Looper.getMainLooper()).idle(); rule.waitForIdle()

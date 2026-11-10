@@ -66,9 +66,11 @@ fun RuleSheet(title: String?, onClose: () -> Unit, pad: PadActs = PadActs(b = "C
     BackHandler(onBack = onClose)
     PadScreen(pad)
     val shape = RoundedCornerShape(Rule.Radius.Sheet)
-    Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = .7f)).focusProperties { canFocus = false }
+    // A phone: the sheet sits on the bottom edge, above the nav bar. A wide screen or the Thor's top screen: centred.
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = .7f)).focusProperties { canFocus = false }
         .clickable(remember { MutableInteractionSource() }, null, onClick = onClose).padLayer(), contentAlignment = Alignment.Center) {
-        Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).padding(16.dp).widthIn(max = 460.dp).fillMaxWidth().testTag("ruleSheet")
+        val low = !DualScreen.active && maxWidth < 600.dp
+        Column(Modifier.align(if (low) Alignment.BottomCenter else Alignment.Center).windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 16.dp, vertical = if (low) 8.dp else 16.dp).widthIn(max = 460.dp).fillMaxWidth().testTag("ruleSheet")
             .clip(shape).background(Rule.Color.Surface).border(1.dp, Rule.Color.Edge, shape)
             .focusProperties { canFocus = false }.clickable(remember { MutableInteractionSource() }, null) {}
             .verticalScroll(rememberScrollState()).padding(start = 18.dp, end = 18.dp, top = 10.dp, bottom = 18.dp),
@@ -93,17 +95,18 @@ fun RuleMenu(title: String?, rows: List<RuleRow>, onClose: () -> Unit) = RuleShe
             r.group?.takeIf { it.isNotEmpty() }?.let { Text(it.uppercase(), Modifier.padding(start = 6.dp, top = 10.dp, bottom = 2.dp), style = Rule.Type.sans(11, androidx.compose.ui.text.font.FontWeight.Bold, Rule.Color.Muted)) }
             Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(Rule.Radius.Tag)).clickable(enabled = r.enabled) { onClose(); r.onClick() }.padding(horizontal = 6.dp),
                 verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.padding(vertical = 6.dp)) {
+                Column(Modifier.weight(1f).padding(vertical = 6.dp)) {
                     Text(r.label, style = Rule.Type.MenuRow.copy(color = if (!r.enabled) Rule.Color.Muted else if (r.danger) Rule.Color.Coral else if (r.on) Rule.Color.Gold else Rule.Color.Text))
                     r.hint?.takeIf { it.isNotBlank() }?.let { Text(it, style = Rule.Type.S12.copy(color = Rule.Color.Muted)) }
                 }
+                if (r.on) Text("✓", style = Rule.Type.sans(16, androidx.compose.ui.text.font.FontWeight.Bold, Rule.Color.Gold))
             }
         }
     }
 }
 
 /**
- * The sheet as a Confirm: the words, an optional [body] (a field to type in), then Ghost [cancel] and the Gold (or Danger)
+ * The sheet as a Confirm: the question as its [title], the rest of the words as [text] (may be blank), an optional [body] (a field to type in), then Ghost [cancel] and the Gold (or Danger)
  * [action]. B and a tap outside cancel; X is the action.
  */
 @Composable
@@ -111,7 +114,7 @@ fun RuleConfirm(text: String, action: String, onAction: () -> Unit, onCancel: ()
                 body: (@Composable ColumnScope.() -> Unit)? = null) {
     val run = rememberUpdatedState(onAction)
     RuleSheet(title, onCancel, pad = remember(action) { PadActs(b = cancel, x = PadAct(action) { run.value() }, opaque = true) }) {
-        Text(text, style = Rule.Type.S15.copy(lineHeight = androidx.compose.ui.unit.TextUnit(22f, androidx.compose.ui.unit.TextUnitType.Sp)))
+        if (text.isNotBlank()) Text(text, style = Rule.Type.S15.copy(lineHeight = androidx.compose.ui.unit.TextUnit(22f, androidx.compose.ui.unit.TextUnitType.Sp)))
         body?.invoke(this)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End)) {
             GhostButton(cancel, onClick = onCancel)

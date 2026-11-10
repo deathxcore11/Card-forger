@@ -184,7 +184,7 @@ fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit,
             listOf(ContextAction(SiteIcons.Close, "Delete deck", danger = true) { close(); deleting = d })), close)
     }
     deleting?.let { d ->
-        RuleConfirm("Delete this Play deck?", "OK", onCancel = { deleting = null }, danger = true,
+        RuleConfirm("", "Delete", title = "Delete this Play deck?", onCancel = { deleting = null }, danger = true,
             onAction = { deleting = null; scope.launch { runCatching { Progress.saveDeck(JsonObject().apply { addProperty("id", d.s("id")); addProperty("delete", true) }) } } })
     }
 }
