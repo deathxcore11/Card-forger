@@ -202,7 +202,15 @@ class Battlefield {
                 Fx.LUNGE -> if (it.toKey?.startsWith("orb") == true) { val f = LUNGE_HIT + HIT_STOP.toFloat() / it.dur; once(1, f, "CMB-023", 1f); once(2, f, "CMB-010", .8f) }
                     else once(1, LUNGE_HIT, "CMB-022", 1f)
                 // Lower for bigger numbers.
-                Fx.DAMAGE -> { val n = it.label.filter(Char::isDigit).toIntOrNull() ?: 1; once(1, 0f, "CMB-006", .6f, (1.04f - .04f * n).coerceIn(.75f, 1f)) }
+                Fx.DAMAGE -> { val n = it.label.filter(Char::isDigit).toIntOrNull() ?: 1; once(1, 0f, "CMB-006", .6f, (1.04f - .04f * n).coerceIn(.75f, 1f))
+                    // Director step 3: a spell or ability's damage sounds its streak on the frame the number lands (combat has the clash).
+                    if (it.side == 0) once(2, 0f, "CMB-018", .8f) }
+                // A life loss outside a clash (a burn to the face) on the frame the orb takes it.
+                Fx.LIFE -> if (it.level == 3 && items.none { l -> l.kind == Fx.LUNGE && l.toKey == it.toKey }) once(1, 0f, "CMB-018", if (it.power >= .8f) 1f else .8f)
+                // Counters: on the pop.
+                Fx.COUNTER -> once(1, 0f, "CARD-027", .7f)
+                // A death: on the white flash after the 260 ms shake; a non-creature to the graveyard softer.
+                Fx.DEATH -> if (it.toKey != null || it.ghost?.token == true) once(1, .38f, if (it.ghost?.isCreature == true) "CMB-009" else "CARD-018", 1f)
                 else -> {}
             }
         }

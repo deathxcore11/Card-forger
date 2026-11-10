@@ -65,14 +65,15 @@ class TableAudio(context: Context) {
         if (field.any { it.attacking && was[it.id]?.attacking == false }) play("CMB-002")
         val combat = b.phase?.contains("DAMAGE") == true || a.phase?.contains("DAMAGE") == true
         if (!fxCues && field.any { it.blockingIds.size > (was[it.id]?.blockingIds?.size ?: 0) }) play("CMB-003")
-        if (!(fxCues && combat) && field.any { it.damage > (was[it.id]?.damage ?: 0) }) play("CMB-004")
+        // Damage, life loss to a burn, deaths and counters sound on their own frames on the board (director step 3) when effects run.
+        if (!fxCues && field.any { it.damage > (was[it.id]?.damage ?: 0) }) play("CMB-004")
         for (p in b.players) { val q = a.players.firstOrNull { it.id == p.id } ?: continue
-            if (p.life < q.life) { if (!(fxCues && combat)) play(if (combat) "CMB-005" else "CMB-018", if (q.life - p.life >= 5) 1f else .8f) } else if (p.life > q.life) play("CMB-007") }
+            if (p.life < q.life) { if (!fxCues) play(if (combat) "CMB-005" else "CMB-018", if (q.life - p.life >= 5) 1f else .8f) } else if (p.life > q.life) play("CMB-007") }
         val now = HashMap<Int, dev.cardstashy.nativeplay.engine.Card>()
         for (p in b.players) for (c in p.hand + p.battlefield + p.graveyard + p.exile) now[c.id] = c
         val left = a.players.flatMap { it.battlefield }.filter { now[it.id]?.zone != "Battlefield" }
-        if (left.any { it.isCreature && (now[it.id] == null || now[it.id]?.zone == "Graveyard") }) play("CMB-009")
-        else if (left.any { now[it.id]?.zone == "Graveyard" }) play("CARD-018")
+        if (!fxCues) { if (left.any { it.isCreature && (now[it.id] == null || now[it.id]?.zone == "Graveyard") }) play("CMB-009")
+        else if (left.any { now[it.id]?.zone == "Graveyard" }) play("CARD-018") }
         if (left.any { now[it.id]?.zone == "Exile" }) play("CARD-019")
         if (left.any { now[it.id]?.zone == "Hand" }) play("CARD-020")
         if (!lowSeen && b.players.any { it.life in 1..5 }) { lowSeen = true; play("CMB-019") }
