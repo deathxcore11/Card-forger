@@ -127,7 +127,8 @@ object CardArt {
 
     /** A match is starting: resolve both decks with their pinned printings first, and pin those for the match. */
     suspend fun resolveMatch(rows: List<Pair<String, JsonObject>>) {
-        TableFacts.clear(); clearAhead(); synchronized(index) { pins.clear(); matchRows.clear(); rows.forEach { (n, r) -> matchRows[n.lowercase()] = r }; tries.clear() }
+        TableFacts.clear(); clearAhead(); synchronized(index) { pins.clear(); matchRows.clear(); rows.forEach { (n, r) -> matchRows[n.lowercase()] = r }; tries.clear()
+            deckNames.clear(); shownAs.clear(); askedName.clear(); rows.forEach { (n, _) -> deckNames.putIfAbsent(n.lowercase(), n) } }
         resolve(rows)
         // Names already in the index carry no rarity from before 0.4.56: fill them in the background (never holds the table).
         val unrated = synchronized(index) { rows.map { it.first }.filter { rarity(it) == null } }
@@ -162,6 +163,48 @@ object CardArt {
      * Scryfall does not know, so it showed a name plate all match). Set by the app; called on the IO thread only.
      */
     @Volatile var oracleOf: ((String) -> String?)? = null
+
+    // ---- One name for a card on every surface (live 0.4.57, fault list 7, 11): the opening hand and the log said "Wonderweave
+    // Aerialist" over a blank face, the table and the bottom said "Skyward Spider". Forge's flavor name now reads as the deck's row. ----
+    private val deckNames = HashMap<String, String>()
+    private val shownAs = HashMap<String, Pair<String, Regex>>()
+    private val askedName = HashSet<String>()
+
+    /**
+     * The name a card shows: the deck row's name when Forge plays it under a flavor name, else [name]. A face-up name no deck row
+     * has is asked of the engine once a match (blocks up to 2 s, the poll thread only); the answer also takes the row's picture.
+     */
+    fun shown(name: String): String {
+        val k = name.lowercase()
+        synchronized(index) {
+            if (name.isBlank() || deckNames.isEmpty() || k in deckNames) return name
+            shownAs[k]?.let { return it.first }
+            if (!askedName.add(k)) return name
+        }
+        val o = runCatching { oracleOf?.invoke(name) }.getOrNull() ?: return name
+        val d = synchronized(index) {
+            val d = deckNames[o.lowercase()] ?: return name
+            shownAs[k] = d to Regex("(?<!\\w)" + Regex.escape(name) + "(?!\\w)", RegexOption.IGNORE_CASE)
+            index[d.lowercase()]?.let { index[k] = it }
+            pins[d.lowercase()]?.let { pins[k] = it }
+            d
+        }
+        version.value++
+        return d
+    }
+
+    /** [text] with every flavor name already met this match read as its deck row's name (prompts, the stack, the log). */
+    fun shownIn(text: String): String {
+        val m = synchronized(index) { if (shownAs.isEmpty()) return text; shownAs.values.toList() }
+        return m.fold(text) { t, (d, re) -> re.replace(t, Regex.escapeReplacement(d)) }
+    }
+
+    /** Unit tests: a match's deck rows and their pictures without the network. */
+    internal fun seedForTest(rows: List<Pair<String, JsonObject>>, art: Map<String, Pair<String, String?>>) = synchronized(index) {
+        pins.clear(); matchRows.clear(); deckNames.clear(); shownAs.clear(); askedName.clear()
+        rows.forEach { (n, r) -> matchRows[n.lowercase()] = r; deckNames[n.lowercase()] = n }
+        index.putAll(art)
+    }
 
     /** The Scryfall identifier for a deck row: its exact printing when the row names one, else its name. */
     fun identifier(row: JsonObject, engineName: String): JsonObject = JsonObject().apply {

@@ -152,6 +152,15 @@ data class MatchState(
     val waitingOnMe get() = status == "running" && !busy && (prompt != null || (inputType != null && inputType != "InputLockUI"))
 
     companion object {
+        /**
+         * Live 0.4.57 (fault list 7, 11): Forge plays some cards under a flavor name ("Wonderweave Aerialist" for the deck's
+         * Skyward Spider), so the opening hand, the log and the casting panel said one name and the table another. Every name
+         * Forge sends goes through these: [shownName] for a face-up card (it may ask the engine once), [shownIn] for any line.
+         * Set by the app to CardArt.shown / CardArt.shownIn; as sent until then.
+         */
+        @Volatile var shownName: (String) -> String = { it }
+        @Volatile var shownIn: (String) -> String = { it }
+
         fun parse(json: String): MatchState? {
             val o = JsonParser.parseString(json).asJsonObject
             val status = o.str("status") ?: return null
@@ -183,7 +192,9 @@ data class MatchState(
                 errors = init?.arr("errors")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString } ?: emptyList(),
                 viewer = viewer, turn = o.int("turn") ?: 0, phase = o.str("phase"), activePlayer = o.int("activePlayer"), priorityPlayer = o.int("priorityPlayer"),
                 players = players,
-                stack = o.arr("stack").map { e -> val s = e.asJsonObject; StackItem(s.int("id") ?: 0, tidy((s.str("text") ?: "").replace(Regex("\\s*\\[Phase: [^\\]]*\\]"), "").trim()), s.obj("source")?.let { parseCard(it) }, s.int("activatingPlayer") ?: -1, s.bool("ability") == true, s.bool("yielded") == true, refsOf(s, "targets")) },
+                // The source first, so a flavor name it brings is known when its text is read.
+                stack = o.arr("stack").map { e -> val s = e.asJsonObject; val src = s.obj("source")?.let { parseCard(it) }
+                    StackItem(s.int("id") ?: 0, tidy((s.str("text") ?: "").replace(Regex("\\s*\\[Phase: [^\\]]*\\]"), "").trim()), src, s.int("activatingPlayer") ?: -1, s.bool("ability") == true, s.bool("yielded") == true, refsOf(s, "targets")) },
                 buttons = Buttons(b?.str("ok"), b?.str("cancel"), b?.bool("okEnabled") == true, b?.bool("cancelEnabled") == true),
                 inputType = o.str("inputType"), selection = selection, prompt = o.obj("prompt")?.let { parsePrompt(it) }?.let { p -> p.copy(message = tidy(p.message), options = p.options.map { it.copy(label = tidy(it.label)) }) },
                 busy = o.bool("busy") == true, message = tidy(o.str("message") ?: ""),
@@ -191,7 +202,7 @@ data class MatchState(
                 winnerPlayerId = o.int("winnerPlayerId"), draw = o.bool("draw") == true,
                 priorityStop = pv?.str("stop"), hasPriorityView = pv != null, lastActionError = o.str("lastActionError"), controlMode = o.str("controlMode"),
                 payment = o.obj("payment")?.let { pm -> val fc = pm.obj("forCard")?.takeIf { it.str("kind") == "card" }
-                    Payment(pm.get("remaining")?.takeIf { it.isJsonPrimitive }?.asString, fc?.int("id"), fc?.str("name"), pm.obj("costNow")?.get("mana")?.takeIf { it.isJsonPrimitive }?.asString) },
+                    Payment(pm.get("remaining")?.takeIf { it.isJsonPrimitive }?.asString, fc?.int("id"), fc?.str("name")?.let(shownIn), pm.obj("costNow")?.get("mana")?.takeIf { it.isJsonPrimitive }?.asString) },
                 hasAfk = o.has("afk"), afk = o.obj("afk")?.let { a -> Afk(a.bool("own") == true, a.str("reason") ?: "turn", a.get("total")?.takeIf { it.isJsonPrimitive }?.asLong ?: 90_000,
                     a.get("remainingMs")?.takeIf { it.isJsonPrimitive }?.asLong ?: 0, a.int("strikes") ?: 0, a.int("strikeLimit") ?: 3) },
                 firstPlayerId = o.obj("pregame")?.int("firstPlayerId"), startSelection = o.obj("pregame")?.str("selection"),
@@ -201,8 +212,8 @@ data class MatchState(
 
         /**
          * Forge's lines with plain seat names: both seats reach Forge named "You" and "CPU" (quickInput),
-         * so only Forge's own "Forge AI" label and the grammar around the two names need fixing. Card
-         * names are never touched (a deck may share a card's name).
+         * so only Forge's own "Forge AI" label and the grammar around the two names need fixing. A card
+         * name is only ever read as its deck row's name ([shownIn]); a seat is never renamed by a card.
          */
         fun tidy(text: String): String = text
             .replace(Regex("Forge AI(\\s*[—–-]\\s*CPU)?"), "CPU")
@@ -210,6 +221,7 @@ data class MatchState(
             .replace(Regex("\\bCardStashy(\\s*[—–-]\\s*You)?\\b"), "You")
             .replace(Regex("(?<![Tt]he )\\bCPU's"), "the CPU's")
             .replace(Regex("\\bin You's\\b"), "in your").replace(Regex("\\bYou's\\b"), "Your").replace(Regex("\\bYou is\\b"), "You are")
+            .let(shownIn)
 
         /** Z1: a seat is You or CPU (CPU 2, CPU 3 in a pod), never the engine's "CardStashy" or "Forge AI". */
         fun seatName(raw: String): String = when {
@@ -235,7 +247,9 @@ data class MatchState(
 
         fun parseCard(c: JsonObject) = Card(
             id = c.int("id") ?: 0, zone = c.str("zone") ?: "", owner = c.int("owner") ?: -1, controller = c.int("controller") ?: -1,
-            hidden = c.bool("hidden") != false, name = c.str("name") ?: "", type = c.str("type") ?: "", manaCost = c.str("manaCost")?.takeIf { it != "no cost" } ?: "",
+            hidden = c.bool("hidden") != false,
+            // A token is never a deck row: its name stays as Forge sends it.
+            name = (c.str("name") ?: "").let { if (c.bool("hidden") == false && c.bool("token") != true) shownName(it) else shownIn(it) }, type = c.str("type") ?: "", manaCost = c.str("manaCost")?.takeIf { it != "no cost" } ?: "",
             text = tidy((c.str("text") ?: "").replace("\r", "")), power = c.int("power"), toughness = c.int("toughness"),
             tapped = c.bool("tapped") == true, attacking = c.bool("attacking") == true, blocking = c.bool("blocking") == true,
             damage = c.int("damage") ?: 0, summoningSick = c.bool("summoningSick") == true, token = c.bool("token") == true,
@@ -267,7 +281,7 @@ data class MatchState(
                 cancelable = p.bool("cancelable") == true, numeric = p.bool("numeric") == true,
                 assignFree = assign?.bool("freeDivision") == true, assignAtLeastOne = assign?.bool("atLeastOne") == true, assignLabel = assign?.str("label") ?: "",
                 hasLethal = assign?.get("lethal")?.isJsonArray == true, hasMaxima = assign?.get("maxima")?.isJsonArray == true,
-                supportedExact = p.bool("supported") == true, rawMessage = p.str("message") ?: "",
+                supportedExact = p.bool("supported") == true, rawMessage = shownIn(p.str("message") ?: ""),
             )
         }
 
@@ -278,7 +292,7 @@ data class MatchState(
             val described = v != null && !v.isJsonNull && (v.isJsonPrimitive || (o != null && o.bool("hidden") != true && c?.bool("hidden") != true && (o.str("name") != null || o.str("description") != null || o.str("text") != null)))
             val visible = o != null && o.bool("hidden") != true && c?.bool("hidden") != true
             return PromptOption(index, label(v), cardId(v), kind = o?.str("kind"), zone = c?.str("zone") ?: o?.str("zone"), described = described,
-                rawCardId = c?.int("id"), cardZone = c?.str("zone"), cardName = if (visible) c?.str("name") ?: o?.str("name") else null,
+                rawCardId = c?.int("id"), cardZone = c?.str("zone"), cardName = if (visible) (c?.str("name") ?: o?.str("name"))?.let(shownIn) else null,
                 playerId = if (o?.str("kind") == "player") o.int("id") else null, valueText = v?.takeIf { it.isJsonPrimitive }?.asString)
         }
 
@@ -296,7 +310,7 @@ data class MatchState(
             return if (c.bool("hidden") == false && c.str("name") != null) c.int("id") else null
         }
 
-        private fun ref(e: JsonElement?): Ref? = e?.takeIf { it.isJsonObject }?.asJsonObject?.let { Ref(it.str("kind") ?: "", it.int("id") ?: -1, it.str("name")) }
+        private fun ref(e: JsonElement?): Ref? = e?.takeIf { it.isJsonObject }?.asJsonObject?.let { Ref(it.str("kind") ?: "", it.int("id") ?: -1, it.str("name")?.let(shownIn)) }
 
         private fun parseEvent(e: JsonObject) = GameEvent(
             seq = e.get("seq")?.asLong ?: 0, type = e.str("type") ?: "", turn = e.int("turn") ?: 0, phase = e.str("phase"), player = e.int("player"),
@@ -315,7 +329,7 @@ data class MatchState(
 
 private fun JsonObject.str(k: String): String? = get(k)?.takeIf { it.isJsonPrimitive }?.asString
 private fun JsonObject.int(k: String): Int? = get(k)?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.asInt
-internal fun refsOf(o: JsonObject, k: String): List<Ref> = o.get(k)?.takeIf { it.isJsonArray }?.asJsonArray?.mapNotNull { e -> e.takeIf { it.isJsonObject }?.asJsonObject?.let { r -> val kind = r.get("kind")?.takeIf { it.isJsonPrimitive }?.asString; val id = r.get("id")?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.asInt; if (kind != null && id != null) Ref(kind, id, r.get("name")?.takeIf { it.isJsonPrimitive }?.asString) else null } } ?: emptyList()
+internal fun refsOf(o: JsonObject, k: String): List<Ref> = o.get(k)?.takeIf { it.isJsonArray }?.asJsonArray?.mapNotNull { e -> e.takeIf { it.isJsonObject }?.asJsonObject?.let { r -> val kind = r.get("kind")?.takeIf { it.isJsonPrimitive }?.asString; val id = r.get("id")?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.asInt; if (kind != null && id != null) Ref(kind, id, r.get("name")?.takeIf { it.isJsonPrimitive }?.asString?.let(MatchState.shownIn)) else null } } ?: emptyList()
 private fun JsonObject.bool(k: String): Boolean? = get(k)?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isBoolean }?.asBoolean
 private fun JsonObject.obj(k: String): JsonObject? = get(k)?.takeIf { it.isJsonObject }?.asJsonObject
 private fun JsonObject.arr(k: String): JsonArray = get(k)?.takeIf { it.isJsonArray }?.asJsonArray ?: JsonArray()
