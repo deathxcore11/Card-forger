@@ -4448,8 +4448,9 @@ A.finderPrecons = async (format) => {
       F.msg = `Checking ${++i}/${next.length}: ${d.name}…`;
       render();
       try {
-        const p = mtgjsonDeck(await fetchJSON("https://mtgjson.com/api/v5/decks/" + d.fileName.replace(/\.json$/, "") + ".json"));
-        F.precons.push({ file: d.fileName, name: p.name || d.name, commander: p.commander, ...(p.multipleCommanders ? { commanders: p.commanders.map((name) => ({ name, qty: 1 })) } : {}), released: d.releaseDate || "", format: "Commander", cards: p.cards.map((c) => ({ name: c.name, qty: c.qty })) });
+        const raw = await fetchJSON("https://mtgjson.com/api/v5/decks/" + d.fileName.replace(/\.json$/, "") + ".json"), p = mtgjsonDeck(raw), ids = new Map();
+        for (const c of [...((raw?.data || raw)?.commander || []), ...((raw?.data || raw)?.mainBoard || [])]) if (c?.identifiers?.scryfallId && !ids.has(key(c.name))) ids.set(key(c.name), c.identifiers.scryfallId);
+        F.precons.push({ file: d.fileName, name: p.name || d.name, commander: p.commander, ...(p.multipleCommanders ? { commanders: p.commanders.map((name) => ({ name, qty: 1 })) } : {}), released: d.releaseDate || "", format: "Commander", cards: p.cards.map((c) => ({ name: c.name, qty: c.qty, ...(ids.get(key(c.name)) ? { printingId: ids.get(key(c.name)) } : {}) })) });
       } catch {}
     }
     F.msg = "Loading prices…";
