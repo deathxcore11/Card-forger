@@ -19,9 +19,19 @@ const PICKS = [
   // Marvel's two beginner Tier 1 picks (Randall 4 Nov 02:10Z) replace Animated Army and Abzan Armor.
   {key: 'msc-wakanda', file: 'cmd/msc/Wakanda Forever.txt', name: 'Wakanda Forever', product: 'Marvel Super Heroes Commander', format: 'Commander', face: "T'Challa, the Black Panther", plan: 'Ramp into big artifacts'},
   {key: 'msc-avengers', file: 'cmd/msc/Avengers Assemble.txt', name: 'Avengers Assemble', product: 'Marvel Super Heroes Commander', format: 'Commander', face: 'Captain America, Team Leader', plan: 'Go wide with heroes'},
+  // The 2022 Starter Commander Decks (Randall 10 Nov 00:16Z, "could we get these 5 for all players too").
+  {key: 'scd-first-flight', file: 'cmd/scd/First Flight.txt', name: 'First Flight', product: 'Starter Commander Decks', format: 'Commander', face: 'Isperia, Supreme Judge', plan: 'Flyers and counterspells'},
+  {key: 'scd-grave-danger', file: 'cmd/scd/Grave Danger.txt', name: 'Grave Danger', product: 'Starter Commander Decks', format: 'Commander', face: 'Gisa and Geralf', plan: 'Zombies and the graveyard'},
+  {key: 'scd-chaos-incarnate', file: 'cmd/scd/Chaos Incarnate.txt', name: 'Chaos Incarnate', product: 'Starter Commander Decks', format: 'Commander', face: 'Kardur, Doomscourge', plan: 'Goad and make them fight'},
+  {key: 'scd-draconic-destruction', file: 'cmd/scd/Draconic Destruction.txt', name: 'Draconic Destruction', product: 'Starter Commander Decks', format: 'Commander', face: 'Atarka, World Render', plan: 'Dragons and double strike'},
+  {key: 'scd-token-triumph', file: 'cmd/scd/Token Triumph.txt', name: 'Token Triumph', product: 'Starter Commander Decks', format: 'Commander', face: 'Emmara, Soul of the Accord', plan: 'Tokens and go wide'},
 ];
 // Same colours and job, with rules in the web engine (play-card-support.js).
-const SWAPS = {'Summon: Kujata': 'Inferno Titan', 'Papalymo Totolymo': 'Archmage of Runes', 'Afterlife from the Loam': 'Dread Return'};
+const SWAPS = {'Summon: Kujata': 'Inferno Titan', 'Papalymo Totolymo': 'Archmage of Runes', 'Afterlife from the Loam': 'Dread Return',
+  // Starter Commander Decks (10 Nov): 13 cards the web engine has no rules for yet.
+  'Ever-Watching Threshold': 'Glorious Anthem', 'Laboratory Drudge': 'Gravedigger', 'Scourge of Nel Toth': 'Gurmag Angler', 'Havengul Lich': 'Nightveil Specter',
+  'Grimoire of the Dead': 'Mind Stone', 'Dredge the Mire': 'Raise Dead', 'Scythe Specter': 'Dread Shade', 'Titan Hunter': 'Ogre Slumlord', 'Kazuul, Tyrant of the Cliffs': 'Hill Giant',
+  'Hate Mirage': 'Lightning Bolt', 'Sarkhan, the Dragonspeaker': 'Chandra, Torch of Defiance', 'Curse of Bounty': 'Rampant Growth', 'Voice of Many': 'Serra Angel'};
 
 const root = process.argv[2], out = process.argv[3] || new URL('../data/play-starters/precons.json', import.meta.url).pathname;
 if (!root) throw Error('Pass the data folder of a magic-preconstructed-decks clone.');

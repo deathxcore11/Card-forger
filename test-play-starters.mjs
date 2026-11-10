@@ -10,7 +10,7 @@ import {progressRoute, STARTER_TOP_UP, STARTER_REF, STARTER_COMMANDER_CARDS} fro
 
 const data = JSON.parse(readFileSync(new URL('./data/play-starters/precons.json', import.meta.url), 'utf8'));
 assert.equal(data.decks.filter(d => d.format === 'Standard').length, 5, 'five 60-card decks');
-assert.equal(data.decks.filter(d => d.format === 'Commander').length, 5, 'five Commander decks');
+assert.equal(data.decks.filter(d => d.format === 'Commander').length, 10, 'ten Commander decks (five from the 2022 Starter Commander Decks)');
 for (const d of data.decks) {
   assert.equal(d.rows.reduce((n, r) => n + r.qty, 0), d.format === 'Commander' ? 100 : 60, d.name);
   const commander = d.rows.find(r => r.commander)?.name || '';

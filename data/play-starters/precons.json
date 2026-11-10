@@ -1,10 +1,23 @@
 {
- "baked": "2026-11-04",
+ "baked": "2026-11-10",
  "source": "Official decklists via github.com/taw/magic-preconstructed-decks",
  "swaps": {
   "Summon: Kujata": "Inferno Titan",
   "Papalymo Totolymo": "Archmage of Runes",
-  "Afterlife from the Loam": "Dread Return"
+  "Afterlife from the Loam": "Dread Return",
+  "Ever-Watching Threshold": "Glorious Anthem",
+  "Laboratory Drudge": "Gravedigger",
+  "Scourge of Nel Toth": "Gurmag Angler",
+  "Havengul Lich": "Nightveil Specter",
+  "Grimoire of the Dead": "Mind Stone",
+  "Dredge the Mire": "Raise Dead",
+  "Scythe Specter": "Dread Shade",
+  "Titan Hunter": "Ogre Slumlord",
+  "Kazuul, Tyrant of the Cliffs": "Hill Giant",
+  "Hate Mirage": "Lightning Bolt",
+  "Sarkhan, the Dragonspeaker": "Chandra, Torch of Defiance",
+  "Curse of Bounty": "Rampant Growth",
+  "Voice of Many": "Serra Angel"
  },
  "decks": [
   {
@@ -2941,6 +2954,1540 @@
      "qty": 2,
      "set": "msh",
      "number": "294"
+    }
+   ]
+  },
+  {
+   "key": "scd-first-flight",
+   "name": "First Flight",
+   "product": "Starter Commander Decks",
+   "format": "Commander",
+   "face": "Isperia, Supreme Judge",
+   "plan": "Flyers and counterspells",
+   "released": "2022-12-02",
+   "rows": [
+    {
+     "name": "Isperia, Supreme Judge",
+     "qty": 1,
+     "commander": true,
+     "set": "scd",
+     "number": "4"
+    },
+    {
+     "name": "Archon of Redemption",
+     "qty": 1
+    },
+    {
+     "name": "Cartographer's Hawk",
+     "qty": 1
+    },
+    {
+     "name": "Cleansing Nova",
+     "qty": 1
+    },
+    {
+     "name": "Emeria Angel",
+     "qty": 1
+    },
+    {
+     "name": "Gideon Jura",
+     "qty": 1
+    },
+    {
+     "name": "Hanged Executioner",
+     "qty": 1
+    },
+    {
+     "name": "Remorseful Cleric",
+     "qty": 1
+    },
+    {
+     "name": "Sephara, Sky's Blade",
+     "qty": 1
+    },
+    {
+     "name": "Steel-Plume Marshal",
+     "qty": 1
+    },
+    {
+     "name": "Storm Herd",
+     "qty": 1
+    },
+    {
+     "name": "True Conviction",
+     "qty": 1
+    },
+    {
+     "name": "Angler Turtle",
+     "qty": 1
+    },
+    {
+     "name": "Bident of Thassa",
+     "qty": 1
+    },
+    {
+     "name": "Diluvian Primordial",
+     "qty": 1
+    },
+    {
+     "name": "Glorious Anthem",
+     "qty": 1
+    },
+    {
+     "name": "Faerie Formation",
+     "qty": 1
+    },
+    {
+     "name": "Gravitational Shift",
+     "qty": 1
+    },
+    {
+     "name": "Inspired Sphinx",
+     "qty": 1
+    },
+    {
+     "name": "Sharding Sphinx",
+     "qty": 1
+    },
+    {
+     "name": "Sphinx of Enlightenment",
+     "qty": 1
+    },
+    {
+     "name": "Windreader Sphinx",
+     "qty": 1
+    },
+    {
+     "name": "Absorb",
+     "qty": 1
+    },
+    {
+     "name": "Skycat Sovereign",
+     "qty": 1
+    },
+    {
+     "name": "Sphinx's Revelation",
+     "qty": 1
+    },
+    {
+     "name": "Time Wipe",
+     "qty": 1
+    },
+    {
+     "name": "Moorland Haunt",
+     "qty": 1
+    },
+    {
+     "name": "Port Town",
+     "qty": 1
+    },
+    {
+     "name": "Prairie Stream",
+     "qty": 1
+    },
+    {
+     "name": "Temple of Enlightenment",
+     "qty": 1
+    },
+    {
+     "name": "Aven Gagglemaster",
+     "qty": 1
+    },
+    {
+     "name": "Banishing Light",
+     "qty": 1
+    },
+    {
+     "name": "Condemn",
+     "qty": 1
+    },
+    {
+     "name": "Crush Contraband",
+     "qty": 1
+    },
+    {
+     "name": "Disenchant",
+     "qty": 1
+    },
+    {
+     "name": "Generous Gift",
+     "qty": 1
+    },
+    {
+     "name": "Kangee's Lieutenant",
+     "qty": 1
+    },
+    {
+     "name": "Rally of Wings",
+     "qty": 1
+    },
+    {
+     "name": "Soul Snare",
+     "qty": 1
+    },
+    {
+     "name": "Swords to Plowshares",
+     "qty": 1
+    },
+    {
+     "name": "Vow of Duty",
+     "qty": 1
+    },
+    {
+     "name": "Aetherize",
+     "qty": 1
+    },
+    {
+     "name": "Counterspell",
+     "qty": 1
+    },
+    {
+     "name": "Favorable Winds",
+     "qty": 1
+    },
+    {
+     "name": "Negate",
+     "qty": 1
+    },
+    {
+     "name": "Tide Skimmer",
+     "qty": 1
+    },
+    {
+     "name": "Warden of Evos Isle",
+     "qty": 1
+    },
+    {
+     "name": "Winged Words",
+     "qty": 1
+    },
+    {
+     "name": "Cloudblazer",
+     "qty": 1
+    },
+    {
+     "name": "Empyrean Eagle",
+     "qty": 1
+    },
+    {
+     "name": "Jubilant Skybonder",
+     "qty": 1
+    },
+    {
+     "name": "Kangee, Sky Warden",
+     "qty": 1
+    },
+    {
+     "name": "Migratory Route",
+     "qty": 1
+    },
+    {
+     "name": "Staggering Insight",
+     "qty": 1
+    },
+    {
+     "name": "Thunderclap Wyvern",
+     "qty": 1
+    },
+    {
+     "name": "Arcane Signet",
+     "qty": 1
+    },
+    {
+     "name": "Azorius Signet",
+     "qty": 1
+    },
+    {
+     "name": "Commander's Sphere",
+     "qty": 1
+    },
+    {
+     "name": "Hedron Archive",
+     "qty": 1
+    },
+    {
+     "name": "Pilgrim's Eye",
+     "qty": 1
+    },
+    {
+     "name": "Sky Diamond",
+     "qty": 1
+    },
+    {
+     "name": "Skyscanner",
+     "qty": 1
+    },
+    {
+     "name": "Sol Ring",
+     "qty": 1
+    },
+    {
+     "name": "Talisman of Progress",
+     "qty": 1
+    },
+    {
+     "name": "Thought Vessel",
+     "qty": 1
+    },
+    {
+     "name": "Coastal Tower",
+     "qty": 1
+    },
+    {
+     "name": "Command Tower",
+     "qty": 1
+    },
+    {
+     "name": "Meandering River",
+     "qty": 1
+    },
+    {
+     "name": "Sejiri Refuge",
+     "qty": 1
+    },
+    {
+     "name": "Tranquil Cove",
+     "qty": 1
+    },
+    {
+     "name": "Plains",
+     "qty": 15,
+     "set": "scd",
+     "number": "*"
+    },
+    {
+     "name": "Island",
+     "qty": 15,
+     "set": "scd",
+     "number": "*"
+    }
+   ]
+  },
+  {
+   "key": "scd-grave-danger",
+   "name": "Grave Danger",
+   "product": "Starter Commander Decks",
+   "format": "Commander",
+   "face": "Gisa and Geralf",
+   "plan": "Zombies and the graveyard",
+   "released": "2022-12-02",
+   "rows": [
+    {
+     "name": "Gisa and Geralf",
+     "qty": 1,
+     "commander": true,
+     "set": "scd",
+     "number": "3"
+    },
+    {
+     "name": "Geralf's Mindcrusher",
+     "qty": 1
+    },
+    {
+     "name": "Gravedigger",
+     "qty": 1
+    },
+    {
+     "name": "Army of the Damned",
+     "qty": 1
+    },
+    {
+     "name": "Cemetery Reaper",
+     "qty": 1
+    },
+    {
+     "name": "Champion of the Perished",
+     "qty": 1
+    },
+    {
+     "name": "Crippling Fear",
+     "qty": 1
+    },
+    {
+     "name": "Gravespawn Sovereign",
+     "qty": 1
+    },
+    {
+     "name": "Josu Vess, Lich Knight",
+     "qty": 1
+    },
+    {
+     "name": "Liliana, Untouched by Death",
+     "qty": 1
+    },
+    {
+     "name": "Liliana's Mastery",
+     "qty": 1
+    },
+    {
+     "name": "Liliana's Standard Bearer",
+     "qty": 1
+    },
+    {
+     "name": "Midnight Reaper",
+     "qty": 1
+    },
+    {
+     "name": "Necromantic Selection",
+     "qty": 1
+    },
+    {
+     "name": "Necrotic Hex",
+     "qty": 1
+    },
+    {
+     "name": "Open the Graves",
+     "qty": 1
+    },
+    {
+     "name": "Overseer of the Damned",
+     "qty": 1
+    },
+    {
+     "name": "Gurmag Angler",
+     "qty": 1
+    },
+    {
+     "name": "Unbreathing Horde",
+     "qty": 1
+    },
+    {
+     "name": "Zombie Apocalypse",
+     "qty": 1
+    },
+    {
+     "name": "Enter the God-Eternals",
+     "qty": 1
+    },
+    {
+     "name": "Nightveil Specter",
+     "qty": 1
+    },
+    {
+     "name": "Undermine",
+     "qty": 1
+    },
+    {
+     "name": "Vela the Night-Clad",
+     "qty": 1
+    },
+    {
+     "name": "Mind Stone",
+     "qty": 1
+    },
+    {
+     "name": "Choked Estuary",
+     "qty": 1
+    },
+    {
+     "name": "Sunken Hollow",
+     "qty": 1
+    },
+    {
+     "name": "Temple of Deceit",
+     "qty": 1
+    },
+    {
+     "name": "Deep Analysis",
+     "qty": 1
+    },
+    {
+     "name": "Distant Melody",
+     "qty": 1
+    },
+    {
+     "name": "Eternal Skylord",
+     "qty": 1
+    },
+    {
+     "name": "Lazotep Plating",
+     "qty": 1
+    },
+    {
+     "name": "Sinister Sabotage",
+     "qty": 1
+    },
+    {
+     "name": "Cruel Revival",
+     "qty": 1
+    },
+    {
+     "name": "Curse of Disturbance",
+     "qty": 1
+    },
+    {
+     "name": "Feed the Swarm",
+     "qty": 1
+    },
+    {
+     "name": "Fleshbag Marauder",
+     "qty": 1
+    },
+    {
+     "name": "Gray Merchant of Asphodel",
+     "qty": 1
+    },
+    {
+     "name": "Lazotep Reaver",
+     "qty": 1
+    },
+    {
+     "name": "Liliana's Devotee",
+     "qty": 1
+    },
+    {
+     "name": "Lord of the Accursed",
+     "qty": 1
+    },
+    {
+     "name": "Lotleth Giant",
+     "qty": 1
+    },
+    {
+     "name": "Loyal Subordinate",
+     "qty": 1
+    },
+    {
+     "name": "Mire Triton",
+     "qty": 1
+    },
+    {
+     "name": "Murder",
+     "qty": 1
+    },
+    {
+     "name": "Spark Reaper",
+     "qty": 1
+    },
+    {
+     "name": "Syphon Flesh",
+     "qty": 1
+    },
+    {
+     "name": "Undead Augur",
+     "qty": 1
+    },
+    {
+     "name": "Vampiric Rites",
+     "qty": 1
+    },
+    {
+     "name": "Vengeful Dead",
+     "qty": 1
+    },
+    {
+     "name": "Victimize",
+     "qty": 1
+    },
+    {
+     "name": "Vizier of the Scorpion",
+     "qty": 1
+    },
+    {
+     "name": "Withered Wretch",
+     "qty": 1
+    },
+    {
+     "name": "Diregraf Captain",
+     "qty": 1
+    },
+    {
+     "name": "Gleaming Overseer",
+     "qty": 1
+    },
+    {
+     "name": "Pilfered Plans",
+     "qty": 1
+    },
+    {
+     "name": "Arcane Signet",
+     "qty": 1
+    },
+    {
+     "name": "Commander's Sphere",
+     "qty": 1
+    },
+    {
+     "name": "Dimir Signet",
+     "qty": 1
+    },
+    {
+     "name": "Heraldic Banner",
+     "qty": 1
+    },
+    {
+     "name": "Sol Ring",
+     "qty": 1
+    },
+    {
+     "name": "Talisman of Dominance",
+     "qty": 1
+    },
+    {
+     "name": "Unstable Obelisk",
+     "qty": 1
+    },
+    {
+     "name": "Wayfarer's Bauble",
+     "qty": 1
+    },
+    {
+     "name": "Command Tower",
+     "qty": 1
+    },
+    {
+     "name": "Dismal Backwater",
+     "qty": 1
+    },
+    {
+     "name": "Jwar Isle Refuge",
+     "qty": 1
+    },
+    {
+     "name": "Salt Marsh",
+     "qty": 1
+    },
+    {
+     "name": "Submerged Boneyard",
+     "qty": 1
+    },
+    {
+     "name": "Island",
+     "qty": 13,
+     "set": "scd",
+     "number": "*"
+    },
+    {
+     "name": "Swamp",
+     "qty": 18,
+     "set": "scd",
+     "number": "*"
+    }
+   ]
+  },
+  {
+   "key": "scd-chaos-incarnate",
+   "name": "Chaos Incarnate",
+   "product": "Starter Commander Decks",
+   "format": "Commander",
+   "face": "Kardur, Doomscourge",
+   "plan": "Goad and make them fight",
+   "released": "2022-12-02",
+   "rows": [
+    {
+     "name": "Kardur, Doomscourge",
+     "qty": 1,
+     "commander": true,
+     "set": "scd",
+     "number": "5"
+    },
+    {
+     "name": "Archfiend of Depravity",
+     "qty": 1
+    },
+    {
+     "name": "Bloodgift Demon",
+     "qty": 1
+    },
+    {
+     "name": "Deadly Tempest",
+     "qty": 1
+    },
+    {
+     "name": "Raise Dead",
+     "qty": 1
+    },
+    {
+     "name": "Ob Nixilis Reignited",
+     "qty": 1
+    },
+    {
+     "name": "Profane Command",
+     "qty": 1
+    },
+    {
+     "name": "Rakshasa Debaser",
+     "qty": 1
+    },
+    {
+     "name": "Reign of the Pit",
+     "qty": 1
+    },
+    {
+     "name": "Sangromancer",
+     "qty": 1
+    },
+    {
+     "name": "Dread Shade",
+     "qty": 1
+    },
+    {
+     "name": "Sepulchral Primordial",
+     "qty": 1
+    },
+    {
+     "name": "Soul Shatter",
+     "qty": 1
+    },
+    {
+     "name": "Ogre Slumlord",
+     "qty": 1
+    },
+    {
+     "name": "Blasphemous Act",
+     "qty": 1
+    },
+    {
+     "name": "Brash Taunter",
+     "qty": 1
+    },
+    {
+     "name": "Chaos Warp",
+     "qty": 1
+    },
+    {
+     "name": "Combustible Gearhulk",
+     "qty": 1
+    },
+    {
+     "name": "Dictate of the Twin Gods",
+     "qty": 1
+    },
+    {
+     "name": "Fiery Confluence",
+     "qty": 1
+    },
+    {
+     "name": "Geode Rager",
+     "qty": 1
+    },
+    {
+     "name": "Hill Giant",
+     "qty": 1
+    },
+    {
+     "name": "Magmatic Force",
+     "qty": 1
+    },
+    {
+     "name": "Sunbird's Invocation",
+     "qty": 1
+    },
+    {
+     "name": "Tectonic Giant",
+     "qty": 1
+    },
+    {
+     "name": "Wild Ricochet",
+     "qty": 1
+    },
+    {
+     "name": "Wildfire Devils",
+     "qty": 1
+    },
+    {
+     "name": "Kaervek the Merciless",
+     "qty": 1
+    },
+    {
+     "name": "Spiteful Visions",
+     "qty": 1
+    },
+    {
+     "name": "Stormfist Crusader",
+     "qty": 1
+    },
+    {
+     "name": "Theater of Horrors",
+     "qty": 1
+    },
+    {
+     "name": "Coveted Jewel",
+     "qty": 1
+    },
+    {
+     "name": "Solemn Simulacrum",
+     "qty": 1
+    },
+    {
+     "name": "Foreboding Ruins",
+     "qty": 1
+    },
+    {
+     "name": "Smoldering Marsh",
+     "qty": 1
+    },
+    {
+     "name": "Stensia Bloodhall",
+     "qty": 1
+    },
+    {
+     "name": "Temple of Malice",
+     "qty": 1
+    },
+    {
+     "name": "Ambition's Cost",
+     "qty": 1
+    },
+    {
+     "name": "Feed the Swarm",
+     "qty": 1
+    },
+    {
+     "name": "Indulgent Tormentor",
+     "qty": 1
+    },
+    {
+     "name": "Read the Bones",
+     "qty": 1
+    },
+    {
+     "name": "Sign in Blood",
+     "qty": 1
+    },
+    {
+     "name": "Syphon Mind",
+     "qty": 1
+    },
+    {
+     "name": "Vampire Nighthawk",
+     "qty": 1
+    },
+    {
+     "name": "Abrade",
+     "qty": 1
+    },
+    {
+     "name": "Explosion of Riches",
+     "qty": 1
+    },
+    {
+     "name": "Guttersnipe",
+     "qty": 1
+    },
+    {
+     "name": "Lightning Bolt",
+     "qty": 1
+    },
+    {
+     "name": "Mana Geyser",
+     "qty": 1
+    },
+    {
+     "name": "Thermo-Alchemist",
+     "qty": 1
+    },
+    {
+     "name": "Breath of Malfegor",
+     "qty": 1
+    },
+    {
+     "name": "Rakdos Charm",
+     "qty": 1
+    },
+    {
+     "name": "Terminate",
+     "qty": 1
+    },
+    {
+     "name": "Unlicensed Disintegration",
+     "qty": 1
+    },
+    {
+     "name": "Arcane Signet",
+     "qty": 1
+    },
+    {
+     "name": "Burnished Hart",
+     "qty": 1
+    },
+    {
+     "name": "Commander's Sphere",
+     "qty": 1
+    },
+    {
+     "name": "Lightning Greaves",
+     "qty": 1
+    },
+    {
+     "name": "Nihil Spellbomb",
+     "qty": 1
+    },
+    {
+     "name": "Rakdos Signet",
+     "qty": 1
+    },
+    {
+     "name": "Sol Ring",
+     "qty": 1
+    },
+    {
+     "name": "Talisman of Indulgence",
+     "qty": 1
+    },
+    {
+     "name": "Wayfarer's Bauble",
+     "qty": 1
+    },
+    {
+     "name": "Worn Powerstone",
+     "qty": 1
+    },
+    {
+     "name": "Akoum Refuge",
+     "qty": 1
+    },
+    {
+     "name": "Bloodfell Caves",
+     "qty": 1
+    },
+    {
+     "name": "Cinder Barrens",
+     "qty": 1
+    },
+    {
+     "name": "Command Tower",
+     "qty": 1
+    },
+    {
+     "name": "Molten Slagheap",
+     "qty": 1
+    },
+    {
+     "name": "Myriad Landscape",
+     "qty": 1
+    },
+    {
+     "name": "Urborg Volcano",
+     "qty": 1
+    },
+    {
+     "name": "Swamp",
+     "qty": 15,
+     "set": "scd",
+     "number": "*"
+    },
+    {
+     "name": "Mountain",
+     "qty": 14,
+     "set": "scd",
+     "number": "*"
+    }
+   ]
+  },
+  {
+   "key": "scd-draconic-destruction",
+   "name": "Draconic Destruction",
+   "product": "Starter Commander Decks",
+   "format": "Commander",
+   "face": "Atarka, World Render",
+   "plan": "Dragons and double strike",
+   "released": "2022-12-02",
+   "rows": [
+    {
+     "name": "Atarka, World Render",
+     "qty": 1,
+     "commander": true,
+     "set": "scd",
+     "number": "1"
+    },
+    {
+     "name": "Akoum Hellkite",
+     "qty": 1
+    },
+    {
+     "name": "Chain Reaction",
+     "qty": 1
+    },
+    {
+     "name": "Crucible of Fire",
+     "qty": 1
+    },
+    {
+     "name": "Demanding Dragon",
+     "qty": 1
+    },
+    {
+     "name": "Dragonkin Berserker",
+     "qty": 1
+    },
+    {
+     "name": "Dragonmaster Outcast",
+     "qty": 1
+    },
+    {
+     "name": "Drakuseth, Maw of Flames",
+     "qty": 1
+    },
+    {
+     "name": "Dream Pillager",
+     "qty": 1
+    },
+    {
+     "name": "Flameblast Dragon",
+     "qty": 1
+    },
+    {
+     "name": "Hoard-Smelter Dragon",
+     "qty": 1
+    },
+    {
+     "name": "Magmaquake",
+     "qty": 1
+    },
+    {
+     "name": "Mordant Dragon",
+     "qty": 1
+    },
+    {
+     "name": "Runehorn Hellkite",
+     "qty": 1
+    },
+    {
+     "name": "Chandra, Torch of Defiance",
+     "qty": 1
+    },
+    {
+     "name": "Scourge of Valkas",
+     "qty": 1
+    },
+    {
+     "name": "Spit Flame",
+     "qty": 1
+    },
+    {
+     "name": "Sweltering Suns",
+     "qty": 1
+    },
+    {
+     "name": "Thunderbreak Regent",
+     "qty": 1
+    },
+    {
+     "name": "Thundermaw Hellkite",
+     "qty": 1
+    },
+    {
+     "name": "Tyrant's Familiar",
+     "qty": 1
+    },
+    {
+     "name": "Verix Bladewing",
+     "qty": 1
+    },
+    {
+     "name": "Foe-Razer Regent",
+     "qty": 1
+    },
+    {
+     "name": "Frontier Siege",
+     "qty": 1
+    },
+    {
+     "name": "Hunter's Prowess",
+     "qty": 1
+    },
+    {
+     "name": "Primal Might",
+     "qty": 1
+    },
+    {
+     "name": "Shamanic Revelation",
+     "qty": 1
+    },
+    {
+     "name": "Clan Defiance",
+     "qty": 1
+    },
+    {
+     "name": "Harbinger of the Hunt",
+     "qty": 1
+    },
+    {
+     "name": "Dragon's Hoard",
+     "qty": 1
+    },
+    {
+     "name": "Steel Hellkite",
+     "qty": 1
+    },
+    {
+     "name": "Cinder Glade",
+     "qty": 1
+    },
+    {
+     "name": "Game Trail",
+     "qty": 1
+    },
+    {
+     "name": "Haven of the Spirit Dragon",
+     "qty": 1
+    },
+    {
+     "name": "Temple of Abandon",
+     "qty": 1
+    },
+    {
+     "name": "Dragon Mage",
+     "qty": 1
+    },
+    {
+     "name": "Dragon Tempest",
+     "qty": 1
+    },
+    {
+     "name": "Dragonlord's Servant",
+     "qty": 1
+    },
+    {
+     "name": "Dragonspeaker Shaman",
+     "qty": 1
+    },
+    {
+     "name": "Furnace Whelp",
+     "qty": 1
+    },
+    {
+     "name": "Provoke the Trolls",
+     "qty": 1
+    },
+    {
+     "name": "Rapacious Dragon",
+     "qty": 1
+    },
+    {
+     "name": "Unleash Fury",
+     "qty": 1
+    },
+    {
+     "name": "Vandalblast",
+     "qty": 1
+    },
+    {
+     "name": "Beast Within",
+     "qty": 1
+    },
+    {
+     "name": "Blossoming Defense",
+     "qty": 1
+    },
+    {
+     "name": "Cultivate",
+     "qty": 1
+    },
+    {
+     "name": "Drumhunter",
+     "qty": 1
+    },
+    {
+     "name": "Elemental Bond",
+     "qty": 1
+    },
+    {
+     "name": "Garruk's Uprising",
+     "qty": 1
+    },
+    {
+     "name": "Harmonize",
+     "qty": 1
+    },
+    {
+     "name": "Hunter's Insight",
+     "qty": 1
+    },
+    {
+     "name": "Loaming Shaman",
+     "qty": 1
+    },
+    {
+     "name": "Return to Nature",
+     "qty": 1
+    },
+    {
+     "name": "Sakura-Tribe Elder",
+     "qty": 1
+    },
+    {
+     "name": "Draconic Disciple",
+     "qty": 1
+    },
+    {
+     "name": "Fires of Yavimaya",
+     "qty": 1
+    },
+    {
+     "name": "Savage Ventmaw",
+     "qty": 1
+    },
+    {
+     "name": "Arcane Signet",
+     "qty": 1
+    },
+    {
+     "name": "Atarka Monument",
+     "qty": 1
+    },
+    {
+     "name": "Commander's Sphere",
+     "qty": 1
+    },
+    {
+     "name": "Sol Ring",
+     "qty": 1
+    },
+    {
+     "name": "Swiftfoot Boots",
+     "qty": 1
+    },
+    {
+     "name": "Talisman of Impulse",
+     "qty": 1
+    },
+    {
+     "name": "Command Tower",
+     "qty": 1
+    },
+    {
+     "name": "Kazandu Refuge",
+     "qty": 1
+    },
+    {
+     "name": "Path of Ancestry",
+     "qty": 1
+    },
+    {
+     "name": "Rugged Highlands",
+     "qty": 1
+    },
+    {
+     "name": "Shivan Oasis",
+     "qty": 1
+    },
+    {
+     "name": "Timber Gorge",
+     "qty": 1
+    },
+    {
+     "name": "Mountain",
+     "qty": 18,
+     "set": "scd",
+     "number": "*"
+    },
+    {
+     "name": "Forest",
+     "qty": 12,
+     "set": "scd",
+     "number": "*"
+    }
+   ]
+  },
+  {
+   "key": "scd-token-triumph",
+   "name": "Token Triumph",
+   "product": "Starter Commander Decks",
+   "format": "Commander",
+   "face": "Emmara, Soul of the Accord",
+   "plan": "Tokens and go wide",
+   "released": "2022-12-02",
+   "rows": [
+    {
+     "name": "Emmara, Soul of the Accord",
+     "qty": 1,
+     "commander": true,
+     "set": "scd",
+     "number": "2"
+    },
+    {
+     "name": "Ajani, Caller of the Pride",
+     "qty": 1
+    },
+    {
+     "name": "Citywide Bust",
+     "qty": 1
+    },
+    {
+     "name": "Commander's Insignia",
+     "qty": 1
+    },
+    {
+     "name": "Dawn of Hope",
+     "qty": 1
+    },
+    {
+     "name": "Dictate of Heliod",
+     "qty": 1
+    },
+    {
+     "name": "Felidar Retreat",
+     "qty": 1
+    },
+    {
+     "name": "Hour of Reckoning",
+     "qty": 1
+    },
+    {
+     "name": "Mentor of the Meek",
+     "qty": 1
+    },
+    {
+     "name": "White Sun's Zenith",
+     "qty": 1
+    },
+    {
+     "name": "Champion of Lambholt",
+     "qty": 1
+    },
+    {
+     "name": "Citanul Hierophants",
+     "qty": 1
+    },
+    {
+     "name": "Collective Unconscious",
+     "qty": 1
+    },
+    {
+     "name": "Harvest Season",
+     "qty": 1
+    },
+    {
+     "name": "Hornet Nest",
+     "qty": 1
+    },
+    {
+     "name": "Hornet Queen",
+     "qty": 1
+    },
+    {
+     "name": "Rishkar, Peema Renegade",
+     "qty": 1
+    },
+    {
+     "name": "Scavenging Ooze",
+     "qty": 1
+    },
+    {
+     "name": "Thunderfoot Baloth",
+     "qty": 1
+    },
+    {
+     "name": "Verdant Force",
+     "qty": 1
+    },
+    {
+     "name": "Aura Mutation",
+     "qty": 1
+    },
+    {
+     "name": "Camaraderie",
+     "qty": 1
+    },
+    {
+     "name": "Collective Blessing",
+     "qty": 1
+    },
+    {
+     "name": "Dauntless Escort",
+     "qty": 1
+    },
+    {
+     "name": "March of the Multitudes",
+     "qty": 1
+    },
+    {
+     "name": "Trostani Discordant",
+     "qty": 1
+    },
+    {
+     "name": "Idol of Oblivion",
+     "qty": 1
+    },
+    {
+     "name": "Slate of Ancestry",
+     "qty": 1
+    },
+    {
+     "name": "Canopy Vista",
+     "qty": 1
+    },
+    {
+     "name": "Fortified Village",
+     "qty": 1
+    },
+    {
+     "name": "Temple of Plenty",
+     "qty": 1
+    },
+    {
+     "name": "Conclave Tribunal",
+     "qty": 1
+    },
+    {
+     "name": "Devouring Light",
+     "qty": 1
+    },
+    {
+     "name": "Path to Exile",
+     "qty": 1
+    },
+    {
+     "name": "Rootborn Defenses",
+     "qty": 1
+    },
+    {
+     "name": "Valor in Akros",
+     "qty": 1
+    },
+    {
+     "name": "Avacyn's Pilgrim",
+     "qty": 1
+    },
+    {
+     "name": "Rampant Growth",
+     "qty": 1
+    },
+    {
+     "name": "Eternal Witness",
+     "qty": 1
+    },
+    {
+     "name": "Farhaven Elf",
+     "qty": 1
+    },
+    {
+     "name": "Great Oak Guardian",
+     "qty": 1
+    },
+    {
+     "name": "Harmonize",
+     "qty": 1
+    },
+    {
+     "name": "Jade Mage",
+     "qty": 1
+    },
+    {
+     "name": "Jaspera Sentinel",
+     "qty": 1
+    },
+    {
+     "name": "Karametra's Favor",
+     "qty": 1
+    },
+    {
+     "name": "Leafkin Druid",
+     "qty": 1
+    },
+    {
+     "name": "Loyal Guardian",
+     "qty": 1
+    },
+    {
+     "name": "Nissa's Expedition",
+     "qty": 1
+    },
+    {
+     "name": "Nullmage Shepherd",
+     "qty": 1
+    },
+    {
+     "name": "Overrun",
+     "qty": 1
+    },
+    {
+     "name": "Overwhelming Instinct",
+     "qty": 1
+    },
+    {
+     "name": "Presence of Gond",
+     "qty": 1
+    },
+    {
+     "name": "Reclamation Sage",
+     "qty": 1
+    },
+    {
+     "name": "Scatter the Seeds",
+     "qty": 1
+    },
+    {
+     "name": "Sporemound",
+     "qty": 1
+    },
+    {
+     "name": "Serra Angel",
+     "qty": 1
+    },
+    {
+     "name": "Maja, Bretagard Protector",
+     "qty": 1
+    },
+    {
+     "name": "Selesnya Evangel",
+     "qty": 1
+    },
+    {
+     "name": "Selesnya Guildmage",
+     "qty": 1
+    },
+    {
+     "name": "Sylvan Reclamation",
+     "qty": 1
+    },
+    {
+     "name": "Arcane Signet",
+     "qty": 1
+    },
+    {
+     "name": "Commander's Sphere",
+     "qty": 1
+    },
+    {
+     "name": "Sol Ring",
+     "qty": 1
+    },
+    {
+     "name": "Talisman of Unity",
+     "qty": 1
+    },
+    {
+     "name": "Blossoming Sands",
+     "qty": 1
+    },
+    {
+     "name": "Command Tower",
+     "qty": 1
+    },
+    {
+     "name": "Elfhame Palace",
+     "qty": 1
+    },
+    {
+     "name": "Graypelt Refuge",
+     "qty": 1
+    },
+    {
+     "name": "Holdout Settlement",
+     "qty": 1
+    },
+    {
+     "name": "Tranquil Expanse",
+     "qty": 1
+    },
+    {
+     "name": "Vitu-Ghazi, the City-Tree",
+     "qty": 1
+    },
+    {
+     "name": "Forest",
+     "qty": 15,
+     "set": "scd",
+     "number": "*"
+    },
+    {
+     "name": "Plains",
+     "qty": 14,
+     "set": "scd",
+     "number": "*"
     }
    ]
   }
