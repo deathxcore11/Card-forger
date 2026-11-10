@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-table-flicker-43170-v542";
+const CACHE = "cardforge-shell-native-0456-43171-v543";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
