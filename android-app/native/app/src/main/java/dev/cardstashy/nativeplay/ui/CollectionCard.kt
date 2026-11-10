@@ -2054,8 +2054,6 @@ private fun DualCollectionCard(m: CollectionCardModel, act: CollectionCardAction
     val main = m.price?.add?.takeIf { !it.disabled } ?: o?.main?.firstOrNull { !it.disabled && it.label.isNotBlank() }
     val xAct = main?.let { p -> PadAct("Add a copy") { act.press(p) } }
     val yAct = (o?.zoomArt?.takeIf { it.isNotBlank() } ?: m.head?.art?.takeIf { it.isNotBlank() })?.let { PadAct("Art view") { zoom = "art" } }
-    val aAct = if (o?.flip != null) PadAct("Flip") { act.face() } else null
-    PadScreen(remember(xAct?.label, yAct?.label, aAct?.label) { PadActs(b = "Close", opaque = true, x = xAct, y = yAct) })
     FoilFocus.Cover()
     val scroll = rememberScrollState()
     val data = dev.cardstashy.nativeplay.play.CardData.ready.collectAsStateValue()
@@ -2070,6 +2068,9 @@ private fun DualCollectionCard(m: CollectionCardModel, act: CollectionCardAction
     val tilt = rememberFoilTilt(live = true)
     val guide = remember(m.guide) { m.guide.flatMap { flatBlocks(it.blocks) } }
     val rulings = guide.firstOrNull { it.kind == "rulings" }?.items.orEmpty().filter { it.runs.isNotEmpty() }
+    // Y3: A flips a two-faced card; on any other card it opens the rulings (the bottom tiles take no pad focus).
+    val aAct = if (o?.flip != null) PadAct("Flip") { act.face() } else if (rulings.isNotEmpty()) PadAct("Rulings") { rulingsOpen = true } else null
+    PadScreen(remember(xAct?.label, yAct?.label, aAct?.label) { PadActs(b = "Close", opaque = true, x = xAct, y = yAct) })
     val ratio = if (m.game == CardGame.YGO) 59f / 86f else CARD_RATIO
     val art = m.head?.art?.ifBlank { null }
 
@@ -2090,7 +2091,7 @@ private fun DualCollectionCard(m: CollectionCardModel, act: CollectionCardAction
                         listOf(m.set?.name.orEmpty(), rarity).filter { it.isNotBlank() }.joinToString(" · ").takeIf { it.isNotBlank() }?.let {
                             Text(it.uppercase(), style = Rule.Type.sans(12, FontWeight.Bold, Rule.Color.Gold).copy(letterSpacing = 1.4.sp)) }
                         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(h.title, style = Rule.Type.cinzel(24), modifier = Modifier.weight(1f, fill = false))
+                            WallName(h.title, Modifier.weight(1f, fill = false))
                             if (h.emblems.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { h.emblems.forEach { TitleEmblem(it) } }
                             else if (h.mana.isNotEmpty()) Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) { h.mana.forEach { Sym(it.src, it.alt, 20.dp) } }
                             else ManaCost(m.shown.str("mana_cost"), 20.dp, Modifier.padding(top = 4.dp))
@@ -2125,9 +2126,14 @@ private fun DualCollectionCard(m: CollectionCardModel, act: CollectionCardAction
                     // The page's own guide (Works with, Watch out and the rest), as bullets; the short form drops its prose.
                     val body = if (compact) guide.filter { it.kind != "text" } else guide
                     val shownKinds = setOf("title", "head", "eyebrow", "text", "list", "steps", "roles")
-                    if (body.any { it.kind in setOf("list", "steps", "roles", "text") }) DualSectionBox("Play guide") {
-                        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                            body.filter { it.kind in shownKinds }.forEach { b -> when (b.kind) {
+                    // Y2: a heading with nothing under it before the next heading ("Works with" with no cards) is left out.
+                    val heads = setOf("title", "head", "eyebrow")
+                    val kept = body.filter { it.kind in shownKinds && (it.kind !in heads || it.text.isNotBlank()) && (it.kind == "text" || it.kind in heads || it.items.isNotEmpty()) }
+                    val filled = kept.filterIndexed { i, b -> b.kind !in heads || kept.getOrNull(i + 1)?.let { it.kind !in heads } == true }
+                    if (filled.any { it.kind in setOf("list", "steps", "roles", "text") }) DualSectionBox("Play guide") {
+                        // Clear of the gesture bar at the foot of the page.
+                        Column(Modifier.padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            filled.forEach { b -> when (b.kind) {
                                 "title", "head", "eyebrow" -> if (b.text.isNotBlank()) Text(b.text, style = sans(size.toFloat(), 700, Ink))
                                 "text" -> Rich(b.runs, sans(size.toFloat(), 400, if (b.muted) Mute else Ink, lh = 1.4f), act.rule)
                                 "roles" -> FormatPills(b.items.map { it.label })

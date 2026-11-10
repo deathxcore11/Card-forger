@@ -78,6 +78,10 @@ fun HandFan(
     blockedOf: (Card) -> String? = { null },
     /** A controller: where the ring goes when A plays the last card in the hand (the table's gold button). */
     padEmpty: (() -> Unit)? = null,
+    /** Two screens: A on a card that is not the lifted one only lifts it ([onTap]); A on the lifted card plays it. */
+    padLift: Boolean = false,
+    /** A's words on a card that cannot be played (a card to discard: "Pick", "Discard"). */
+    padA: (Card) -> String? = { null },
 ) {
     val cardH = cardW * 1.4f
     val haptic = LocalHapticFeedback.current
@@ -128,6 +132,7 @@ fun HandFan(
         // A on a hand card (a controller): a card you can play goes as a slide up past the line does (the same arc and play);
         // any other card does what a tap does.
         fun padPress(card: Card) {
+            if (padLift && card.id != raised && canPlayCb(card)) { tapCb(card); return }
             if (canPlayCb(card)) {
                 val was = leaving
                 leaving = card.id; dragging = null; focus = null
@@ -257,8 +262,9 @@ fun HandFan(
                     val padFocus = remember { FocusRequester() }
                     DisposableEffect(card.id) { padFocusers[card.id] = padFocus; onDispose { if (padFocusers[card.id] === padFocus) padFocusers.remove(card.id) } }
                     val padCast = canPlayCb(card)
-                    val padHere = remember(card.id, padCast, card.isLand) {
-                        PadActs(a = if (padCast) (if (card.isLand) "Play land" else "Cast") else null, y = PadAct("Inspect") { current.firstOrNull { it.id == card.id }?.let(holdCb) })
+                    val padWord = if (!padCast) padA(card) else if (padLift && card.id != raised) "Lift" else if (card.isLand) "Play land" else "Cast"
+                    val padHere = remember(card.id, padWord) {
+                        PadActs(a = padWord, y = PadAct("Inspect") { current.firstOrNull { it.id == card.id }?.let(holdCb) })
                     }
                     Box(Modifier.zIndex(if (isDrag || isLeaving || card.id == moving) 3f else if (isLift) 2f else 0f).graphicsLayer {
                         transformOrigin = TransformOrigin(.5f, 1f)

@@ -31,6 +31,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.indication
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
@@ -103,6 +105,30 @@ internal fun FitFirst(count: Int, modifier: Modifier = Modifier, centre: Boolean
         val w = maxOf(ps.maxOfOrNull { it.width } ?: 0, c.minWidth)
         val h = maxOf(ps.maxOfOrNull { it.height } ?: 0, c.minHeight).coerceAtMost(c.maxHeight)
         layout(w, h) { ps.forEach { it.place(0, if (centre) (h - it.height) / 2 else 0) } }
+    }
+}
+
+/**
+ * A card's name in Cinzel on the wall: it wraps at spaces only and steps the size down (24, 22, 20, 18, 16) until no line breaks inside a word
+ * ("Boggart Cursecrafter" stays whole on its own line, never "Cursecrafte / r"). A single word wider than the column at the smallest step still wraps.
+ */
+@Composable
+internal fun WallName(name: String, modifier: Modifier = Modifier) {
+    val steps = remember { listOf(24, 22, 20, 18, 16) }
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    BoxWithConstraints(modifier) {
+        val maxPx = constraints.maxWidth
+        // Measured, not guessed: the biggest step at which no line ends inside a word (the smallest when none does).
+        val size = remember(name, maxPx) {
+            steps.firstOrNull { st ->
+                val r = measurer.measure(name, Rule.Type.cinzel(st), constraints = Constraints(maxWidth = maxPx))
+                (0 until r.lineCount - 1).none { l ->
+                    val end = r.getLineEnd(l, visibleEnd = false)
+                    end in 1 until name.length && !name[end - 1].isWhitespace() && !name[end].isWhitespace()
+                }
+            } ?: steps.last()
+        }
+        Text(name, style = Rule.Type.cinzel(size))
     }
 }
 
@@ -217,8 +243,10 @@ internal fun SymText(s: String, style: androidx.compose.ui.text.TextStyle, modif
 @Composable
 internal fun DualSetBody(icon: (@Composable () -> Unit)?, title: String, line: String?, count: String, pct: String?, fill: Float?, caption: String? = null, lineContent: (@Composable () -> Unit)? = null) =
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val compact = maxHeight < 84.dp
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
+        val compact = maxHeight < 84.dp; val tall = maxHeight >= 120.dp
+        // Y2: a coverage caption needs room, so the gaps close up and the caption ends in "…" rather than being cut off by the tile.
+        val gap = if (caption.isNullOrBlank()) 10.dp else 6.dp
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(gap, Alignment.CenterVertically)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (icon != null && !compact) icon()
                 Column(Modifier.weight(1f)) {
@@ -232,7 +260,8 @@ internal fun DualSetBody(icon: (@Composable () -> Unit)?, title: String, line: S
                     if (!pct.isNullOrBlank()) Text(pct, style = Rule.Type.sans(if (compact) 13 else 16, FontWeight.Bold, Rule.Color.Text), maxLines = 1)
                 }
                 if (fill != null) ProgressBar(fill.coerceIn(0f, 1f))
-                if (!caption.isNullOrBlank() && !compact) Text(caption, style = Rule.Type.S12.copy(color = Rule.Color.Muted))
+                if (!caption.isNullOrBlank() && !compact) Text(caption, style = Rule.Type.S12.copy(color = Rule.Color.Muted), maxLines = if (tall) 2 else 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             }
         }
     }

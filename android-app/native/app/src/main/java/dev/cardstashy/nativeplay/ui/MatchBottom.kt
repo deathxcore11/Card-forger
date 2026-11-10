@@ -70,9 +70,11 @@ internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: 
             else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 // The lifted card's words across the top, the fan across the whole width below (Randall 9 Nov: "the fan can fit the bottom
                 // screen better and knows how to scale when the hand is increasing, nothing jumpy, very natural").
-                val c = lifted ?: hand.firstOrNull()
+                // W12: while a discard asks and nothing is picked, no card's words stand in as if it were chosen.
+                val discardAsk = dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) != null
+                val c = lifted ?: hand.firstOrNull().takeIf { !discardAsk }
                 Column(Modifier.fillMaxWidth().heightIn(max = h * .34f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    if (c != null) CardWords(c) else Text("Your hand is empty.", style = small(13f, Site.Muted))
+                    if (c != null) CardWords(c) else Text(if (discardAsk && hand.isNotEmpty()) "Choose a card to discard." else "Your hand is empty.", style = small(13f, Site.Muted))
                 }
                 BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
                     // As big as the room allows: the height (leaving space for the lift), then the width shared by the cards with a
@@ -115,8 +117,9 @@ private fun StackView(st: MatchState, gold: PadAct?, onInspect: (Card) -> Unit, 
                     .border(1.dp, if (top) Color(0x99E8B95B) else Color(0x1FFFFFFF), shape)
                     .then(if (s.source != null) Modifier.clickable { onInspect(s.source) } else Modifier).padding(10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(s.source?.name ?: if (s.ability) "Ability" else "Spell", style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = if (top) 16.sp else 13.sp, color = Site.Text),
-                        maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(s.text, style = small(if (top) 13f else 12f, Color(0xFFE4E7EA)), maxLines = if (top) 6 else 2, overflow = TextOverflow.Ellipsis)
+                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    // X13: the words wrap to as many lines as the row can have (the list scrolls), never one line with an ellipsis.
+                    Text(s.text, style = small(if (top) 13f else 12f, Color(0xFFE4E7EA)), maxLines = if (top) 10 else 6, overflow = TextOverflow.Ellipsis)
                     val who = if (s.controller == st.viewer) "Yours" else "Opponent's"
                     val targets = s.targets.mapNotNull { r -> r.name ?: (if (r.kind == "player") st.players.firstOrNull { it.id == r.id }?.let { if (it.isViewer) "you" else it.name } else st.card(r.id)?.name) }
                     Text(who + if (targets.isNotEmpty()) " · targets ${targets.joinToString(", ")}" else "", style = small(11.5f, if (targets.isNotEmpty() && top) Color(0xFFFF8A74) else Site.Muted))

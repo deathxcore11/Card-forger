@@ -191,6 +191,10 @@ internal fun okLabel(st: MatchState): String {
         else -> raw
     }
 }
+/** W10: your main phase 1, an empty stack, and none of your creatures can attack (all tapped or summoning sick): Forge's cancel is End turn. */
+internal fun noAttackersLeft(st: MatchState): Boolean = st.inputType == "InputPassPriority" && st.phase == "MAIN1" && st.activePlayer == st.viewer && st.stack.isEmpty() &&
+    st.buttons.cancelEnabled && st.buttons.cancel?.trim().equals("end turn", true) &&
+    st.me.battlefield.none { it.isCreature && !it.tapped && !(it.summoningSick && it.keywords.none { k -> Regex("haste", RegexOption.IGNORE_CASE).containsMatchIn(k) }) }
 internal fun cancelLabel(st: MatchState): String? {
     val raw = st.buttons.cancel?.takeIf { st.buttons.cancelEnabled } ?: return null
     return if (st.inputType == "InputPassPriority" && raw.equals("end turn", true)) "End turn" else raw
@@ -310,6 +314,12 @@ fun ForgeBoard(
             val cpu = remember(st, picks) { podFocus.of(st, null) }
             // forge-table.mjs role(): chosen, then a target, then a choice (discard while a discard asks), then playable.
             val discarding = st.prompt == null && st.selection.cards.isNotEmpty() && Regex("\\bdiscard\\b", RegexOption.IGNORE_CASE).containsMatchIn(st.message)
+            // W12: the cleanup discard never lifts a card by itself; selectedHand is the card he picked (A or a tap), and only that is discarded.
+            val discardAsk = dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) != null
+            // The d-pad's walk along the hand while a discard asks: it shows a card's words and name but picks nothing.
+            var discardWalk by remember { mutableStateOf<Int?>(null) }
+            // W12: a card lifted before cleanup never carries into the discard; he picks again.
+            LaunchedEffect(discardAsk) { if (!discardAsk) discardWalk = null else onSelectHand(null) }
             // forge-table.mjs: a card you can't pay for leaves the playable set and says why ("Not enough mana").
             val shortCasts = remember { ShortCasts() }
             val blocked = remember(st) { shortCasts.blocked(st) }
@@ -330,6 +340,7 @@ fun ForgeBoard(
             fun markOf(card: Card): Mark = when {
                 !live -> Mark.NONE
                 blockingNow && card.id == blockPick -> Mark.PICKED
+                discardAsk && card.id == selectedHand && card.id in st.selection.cards -> Mark.PICKED
                 blockingNow && card.attacking && card.controller != st.viewer && (card.id == attackFocus || card.id == blockDrag.over ||
                     (blockPick ?: blockDrag.from)?.let { b -> st.card(b)?.let { mayBlock(card, it) } } == true) -> Mark.TARGET
                 card.id in blocked -> Mark.NONE
@@ -483,9 +494,14 @@ fun ForgeBoard(
                     markOf = ::markOf,
                     canPlay = { card -> live && card.id in st.selection.actionable && card.id !in blocked && card.id !in quiet },
                     blockedOf = { card -> if (live) blocked[card.id] else null },
+                    // Two screens: a controller's A on a fan card lifts it, A again plays or casts it (W11); the hint says which.
+                    padLift = DualScreen.active,
+                    padA = { card -> if (live && discardAsk && card.id in st.selection.cards) (if (card.id == selectedHand) "Discard" else "Pick") else null },
                     onTap = { card ->
                         val playable = live && card.id in st.selection.actionable && card.id !in blocked
                         when {
+                            // The discard asks for a pick first (W12): the tap lifts and marks the card, the same card again discards it.
+                            live && discardAsk && card.id in st.selection.cards -> if (selectedHand == card.id) { onSelectHand(null); intents.card(card.id) } else onSelectHand(card.id)
                             live && card.id in st.selection.cards -> intents.card(card.id)
                             live && card.id in blocked -> if (selectedHand == card.id) onInspect(card) else onSelectHand(card.id)
                             playable && selectedHand == card.id -> onInspect(card)
@@ -506,25 +522,48 @@ fun ForgeBoard(
                     // The hand's handle on the table: the d-pad lands here, left and right walk the hand on the bottom screen (the lifted
                     // card follows), A plays the lifted card when it can be played (else opens it), Y opens it (Randall 9 Nov: "d-pad should
                     // work better on the hand on the bottom screen").
-                    val lifted = hand.firstOrNull { it.id == selectedHand }
+                    val picked = hand.firstOrNull { it.id == selectedHand }
+                    // While a discard asks, the chip shows the card the d-pad rests on; only A or a tap picks it (W12).
+                    val lifted = if (discardAsk) picked ?: hand.firstOrNull { it.id == discardWalk } else picked
                     val playable = { c: Card -> live && c.id in st.selection.actionable && c.id !in blocked }
-                    fun step(dx: Int) { val i = hand.indexOfFirst { it.id == selectedHand }
+                    fun step(dx: Int) {
+                        if (discardAsk) { val i = hand.indexOfFirst { it.id == (discardWalk ?: selectedHand) }
+                            discardWalk = hand[if (i < 0) (if (dx > 0) 0 else hand.lastIndex) else (i + dx).coerceIn(0, hand.lastIndex)].id; return }
+                        val i = hand.indexOfFirst { it.id == selectedHand }
                         onSelectHand(hand[if (i < 0) (if (dx > 0) 0 else hand.lastIndex) else (i + dx).coerceIn(0, hand.lastIndex)].id) }
+                    // A on the chip: the walked card is picked for discard, the same card again goes; otherwise it plays what is lifted, or opens it.
+                    val chipA = {
+                        val c = lifted
+                        // W11: what A met on the hand chip, so a Thor run shows why a press cast or only lifted (logcat -s PadA).
+                        android.util.Log.i("PadA", "chip lifted=${c?.name} sel=$selectedHand discard=$discardAsk live=$live actionable=${c?.let { it.id in st.selection.actionable }} blocked=${c?.let { blocked[it.id] }} prompt=${st.prompt != null} input=${st.inputType}")
+                        if (discardAsk && live) {
+                            val pick = c ?: hand.first()
+                            if (pick.id in st.selection.cards) { if (pick.id == selectedHand) { onSelectHand(null); intents.card(pick.id) } else onSelectHand(pick.id) } else onInspect(pick)
+                        } else if (c == null) onSelectHand(hand.first().id)
+                        else if (playable(c)) { onSelectHand(null); TablePad.castAt = android.os.SystemClock.uptimeMillis(); intents.card(c.id) } else onInspect(c)
+                    }
                     var chipOn by remember { mutableStateOf(false) }
                     val chipFocus = remember { FocusRequester() }
                     androidx.compose.runtime.DisposableEffect(chipFocus) { TableZones.hand = chipFocus; onDispose { if (TableZones.hand === chipFocus) TableZones.hand = null } }
+                    // W11/Y5: with a controller the ring starts on the hand chip when your turn to act comes and nothing has it, so the first
+                    // d-pad press or A is on your hand (not the command zone or a field card).
+                    LaunchedEffect(live) {
+                        if (!live || !Pad.connected.value || PadPrompts.anyFocus || TablePad.held) return@LaunchedEffect
+                        androidx.compose.runtime.withFrameNanos { }
+                        if (runCatching { chipFocus.requestFocus() }.isSuccess) { TableZones.at = 0; android.util.Log.i("PadA", "ring starts on the hand chip") }
+                    }
                     val shape = RoundedCornerShape(999.dp)
                     Row(Modifier.align(Alignment.TopCenter).padding(top = handW / 66f * 30f)
                         .focusRequester(chipFocus)
-                        .onFocusChanged { chipOn = it.isFocused; if (it.isFocused) { TableZones.at = 0; TablePad.last = chipFocus; if (selectedHand == null) onSelectHand(hand.first().id) } }
+                        .onFocusChanged { chipOn = it.isFocused; if (it.isFocused) { TableZones.at = 0; TablePad.last = chipFocus; if (selectedHand == null && !discardAsk) onSelectHand(hand.first().id) } }
                         .onKeyEvent { e -> if (e.nativeKeyEvent.action != android.view.KeyEvent.ACTION_DOWN) return@onKeyEvent false
                             when (e.nativeKeyEvent.keyCode) { android.view.KeyEvent.KEYCODE_DPAD_LEFT -> { step(-1); true }; android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> { step(1); true }; else -> false } }
-                        .padActs(PadActs(a = lifted?.let { if (playable(it)) (if (it.isLand) "Play land" else "Cast") else "Inspect" }, y = lifted?.let { c -> PadAct("Inspect") { onInspect(c) } }))
+                        .padActs(PadActs(a = if (discardAsk && live) (if (lifted != null && lifted.id == selectedHand) "Discard" else "Pick") else lifted?.let { if (playable(it)) (if (it.isLand) "Play land" else "Cast") else "Inspect" }, y = lifted?.let { c -> PadAct("Inspect") { onInspect(c) } }))
                         .clip(shape).background(if (chipOn) Color(0x33E8C36F) else Color(0xCC101216)).border(if (chipOn) 2.dp else 1.dp, if (chipOn) Color(0xFFF3D494) else Color(0x40D6AD64), shape)
-                        .clickable { val c = lifted ?: return@clickable onSelectHand(hand.first().id); if (playable(c)) { onSelectHand(null); intents.card(c.id) } else onInspect(c) }
+                        .clickable { chipA() }
                         .padding(horizontal = 12.du, vertical = 5.du), verticalAlignment = Alignment.CenterVertically) {
                         Text(if (chipOn) "\u25C0  " else "", style = sans(sp(11f), FontWeight.Bold, Color(0xFFE8C36F)))
-                        Text(lifted?.let { "${it.name} · ${hand.indexOf(it) + 1} of ${hand.size}" } ?: "Hand ${hand.size} · bottom screen", style = sans(sp(12f), FontWeight.Bold, Color(0xFFE8C36F)), maxLines = 1)
+                        Text(lifted?.let { "${if (discardAsk && it.id == selectedHand) "Discard " else ""}${it.name} · ${hand.indexOf(it) + 1} of ${hand.size}" } ?: (if (discardAsk) "Hand ${hand.size} · pick a card" else "Hand ${hand.size} · bottom screen"), style = sans(sp(12f), FontWeight.Bold, Color(0xFFE8C36F)), maxLines = 1)
                         Text(if (chipOn) "  \u25B6" else "", style = sans(sp(11f), FontWeight.Bold, Color(0xFFE8C36F)))
                     }
                 }
@@ -538,8 +577,14 @@ fun ForgeBoard(
                 val discardingNow = dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) != null
                 // A lift the hand chip keeps on two screens may not be playable now (U8): the gold button offers it only when it is.
                 val selected = selectedHand?.takeIf { it !in blocked && (it in st.selection.actionable || (discardingNow && it in st.selection.cards)) }?.let { st.card(it) }
-                val ok = if (selected != null) (if (discardingNow) "Discard" else if (selected.isLand) "Play land" else "Cast") else okLabel(st)
-                val second = if (selected != null) null else cancelLabel(st)
+                // W12: the gold button names the card he picked; with none picked it only asks for one and does nothing.
+                val pickedDiscard = discardingNow && selected != null
+                // W10: your main phase 1, nothing on the stack and no creature able to attack: the step that follows is the end of the turn.
+                val endTurnGold = selected == null && !discardingNow && noAttackersLeft(st)
+                val ok = if (selected != null) (if (discardingNow) "Discard ${selected.name}" else if (selected.isLand) "Play land" else "Cast")
+                    else if (discardingNow) "Choose a card to discard" else if (endTurnGold) "End turn" else okLabel(st)
+                // End turn takes the gold spot (it presses Forge's cancel); the quiet one keeps the way on to combat.
+                val second = if (selected != null) null else if (endTurnGold) okLabel(st) else cancelLabel(st)
                 // A declaration Forge would refuse (a must-attack creature left out) is not offered as a live button.
                 val mustLeft = st.inputType == "InputAttack" && st.me.battlefield.any { Affordability.owesAttack(it) }
                 val okOn = st.buttons.okEnabled && !mustLeft
@@ -556,12 +601,14 @@ fun ForgeBoard(
                 val undoM = if (large) Modifier else Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 136.du)
                 // A short big board (Thor 960 × 540) puts H - 180 across your piles (mid + 60 to the foot of their counts, V12): there the
                 // row drops just under them; a tall board keeps the site's H - 180. Undo shares End turn's place here with its 400 ms guard.
-                val rowM = Modifier.align(Alignment.TopEnd).offset(x = (-12).dp, y = maxOf(H - 180.dp, mid + 60.dp + 70.dp))
+                val rowM = Modifier.align(Alignment.TopEnd).offset(x = (-12).dp, y = maxOf(H - 180.dp, mid + 60.dp + 78.dp))   // Y7: 8 more so Undo never meets the library count
                 @Composable fun pair(content: @Composable () -> Unit) = if (large) Row(rowM, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) { content() } else content()
                 padX = when {
                     attackAll -> if (live && okOn) PadAct(ok) { intents.ok() } else null
                     oneTarget(st) || onePick(st) -> if (live && st.selection.min == 0 && st.buttons.okEnabled) PadAct("No target") { intents.ok() } else null
                     short && second != null -> if (live) PadAct(second) { intents.cancel() } else null
+                    endTurnGold -> if (live) PadAct(ok) { intents.cancel() } else null
+                    discardingNow && selected == null -> null
                     else -> if (live && (selected != null || okOn)) PadAct(ok) { if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok() } else null
                 }
                 pair {
@@ -574,6 +621,9 @@ fun ForgeBoard(
                     } else if (short && second != null) {
                         if (st.buttons.okEnabled) GlassPill(ok, live, upperM, d) { intents.ok() }
                         GoldPill(second, live, lowerM.focusRequester(goldFocus), d, padKey = padX != null) { intents.cancel() }
+                    } else if (endTurnGold) {
+                        GlassPill(second ?: "To combat", live && okOn, upperM, d) { intents.ok() }
+                        GoldPill(ok, live, lowerM.focusRequester(goldFocus), d, padKey = padX != null) { intents.cancel() }
                     } else {
                         // Forge turns its cancel from End turn into "Undo" once a land or a mana tap can be taken back
                         // (InputPassPriority.showMessage), and then cancel undoes. Drawn in End turn's place, a tap meant for End turn
@@ -582,7 +632,7 @@ fun ForgeBoard(
                         val shownAt = remember(second) { android.os.SystemClock.uptimeMillis() }
                         second?.let { GlassPill(it, live, if (undo) undoM else upperM, d) {
                             if (!undo || android.os.SystemClock.uptimeMillis() - shownAt >= 400) intents.cancel() } }
-                        GoldPill(ok, live && (selected != null || okOn), lowerM.focusRequester(goldFocus), d, padKey = padX != null) {
+                        GoldPill(ok, live && (selected != null || (okOn && !discardingNow)), lowerM.focusRequester(goldFocus), d, padKey = padX != null) {
                             if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok()
                         }
                     }
@@ -617,6 +667,19 @@ fun ForgeBoard(
                 }
             }
             TableZones.ask = padAsk
+            // W11 (Randall: a pad-only cast, the Arena feel): a spell cast with A pays itself when Forge can pay it automatically and
+            // auto-pay is not switched off; the ring only goes to a land when the mana has to be picked by hand.
+            val autoPaid = remember { longArrayOf(-1L) }
+            LaunchedEffect(st.revision) {
+                val paying = live && st.prompt == null && st.inputType?.startsWith("InputPayMana") == true
+                if (!paying || autoPaid[0] == st.revision) return@LaunchedEffect
+                if (android.os.SystemClock.uptimeMillis() - TablePad.castAt > 8000 || st.autoPay == false) return@LaunchedEffect
+                if (st.buttons.okEnabled && st.buttons.ok.equals("auto", true)) {
+                    autoPaid[0] = st.revision; TablePad.castAt = 0L
+                    android.util.Log.i("PadA", "pad cast pays automatically (revision ${st.revision})")
+                    intents.ok()
+                }
+            }
             val padAsking = live && st.prompt == null && (st.inputType == "InputSelectTargets" || st.inputType?.startsWith("InputPayMana") == true)
             val padJumped = remember { booleanArrayOf(false) }
             LaunchedEffect(padAsking, st.inputType) {
@@ -625,7 +688,7 @@ fun ForgeBoard(
                 if (padAsking) padAsk()?.let { r -> if (runCatching { r.requestFocus() }.isSuccess) { TableZones.at = 1; padJumped[0] = true } }
                 else if (padJumped[0]) { padJumped[0] = false; TableZones.hand?.let { r -> if (runCatching { r.requestFocus() }.isSuccess) TableZones.at = 0 } }
             }
-            if (dual) { val goldAct = padX; BottomScreen { MatchBottom(st, hand, selectedHand?.let { id -> hand.firstOrNull { it.id == id } }, goldAct, fan, onInspect, afk) } }
+            if (dual) { val goldAct = padX; BottomScreen { MatchBottom(st, hand, (selectedHand ?: discardWalk.takeIf { discardAsk })?.let { id -> hand.firstOrNull { it.id == id } }, goldAct, fan, onInspect, afk) } }
             // With the bottom screen up the hand chip sits where the line would be: the line goes just above the chip, high enough
             // that its 10 du drop shadow (AskLine) clears the chip too (U3).
             if (live) askLine(st)?.let { AskLine(it, W, H, d, bottom = if (dual && hand.isNotEmpty()) H - handW / 66f * 37f - 16.du else null) }
@@ -1250,13 +1313,15 @@ private fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier, 
             .clickable(enabled = target || src != null) { if (target) pick!!(s.id) else src?.let(onInspect) }) {
             if (!ability && src != null) CardImage(src.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             else Column(Modifier.fillMaxSize().padding(4.du)) {
-                Text((name ?: "Ability"), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(9.5f), color = Color(0xFFF3E7C6)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text((name ?: "Ability"), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(9.5f), color = Color(0xFFF3E7C6)), maxLines = 2, overflow = TextOverflow.Ellipsis)
                 // The source's art when there is a source card; no empty frame without one.
                 if (src != null) Box(Modifier.padding(top = 3.du).fillMaxWidth().height(52.du).clip(RoundedCornerShape(3.du))) { CardImage(src.name, Modifier.fillMaxSize(), crop = true) }
                 Text(if (s.text.contains("Whenever") || s.text.contains("When ") || s.text.contains("At the beginning")) "Triggered ability" else "Activated ability",
                     style = sans(sp(9f), FontWeight.SemiBold, Color(0xFFD8C9A6)).copy(fontStyle = FontStyle.Italic), modifier = Modifier.padding(top = 3.du))
                 Box(Modifier.padding(top = 3.du).fillMaxWidth().height(1.dp).background(rim.copy(alpha = .5f)))
-                Text(s.text.substringAfter(" — ", s.text), style = sans(sp(8.5f), FontWeight.Normal, Color(0xFFEEE6D4)), modifier = Modifier.padding(top = 3.du), maxLines = 5, overflow = TextOverflow.Ellipsis)
+                // X13: the ability's words wrap over as many lines as the card has room for, stepping the size down before cutting ("shares a cr…").
+                androidx.compose.foundation.text.BasicText(s.text.substringAfter(" — ", s.text), style = sans(sp(8.5f), FontWeight.Normal, Color(0xFFEEE6D4)), modifier = Modifier.weight(1f).padding(top = 3.du),
+                    overflow = TextOverflow.Ellipsis, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = sp(6.5f), maxFontSize = sp(8.5f), stepSize = sp(.25f)))
             }
         }
         if (n > 1) Box(Modifier.align(Alignment.TopEnd).offset(6.du, (-8).du).clip(RoundedCornerShape(999.dp)).background(Brush.radialGradient(listOf(Color(0xFFFFF2C6), Color(0xFFD9B463), Color(0xFFA9822F))))
@@ -1309,6 +1374,8 @@ internal object TablePad {
     var last: FocusRequester? = null
     /** The ring went into an overlay (the open card, the menu); closing it hands focus back to [last]. */
     var held = false
+    /** When A on the hand chip last cast a spell (W11): its mana is paid automatically when Forge can. */
+    var castAt = 0L
     fun restore() { if (held) { held = false; last?.let { runCatching { it.requestFocus() } } } }
 }
 

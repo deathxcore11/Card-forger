@@ -517,9 +517,12 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
         if (SOURCES[i].first != m.source) { m.source = SOURCES[i].first; m.query = "" } }), tabsLabel = if (m.quick) "Format" else "Tabs",
         page = if (m.quick || m.social) null else ({ d: Int -> val lv = listOf("Easy", "Medium", "Hard"); val i = (lv.indexOf(m.difficulty).coerceAtLeast(0) + d).coerceIn(0, 2); m.difficulty = lv[i]; m.quickMatch = null }),
         pageLabel = "CPU level",
-        x = if (m.quick && m.player != null && !m.quickBusy) PadAct("Find match") { start() } else null))
-    // Dual screen: your deck on the left, the CPU on the right.
-    if (!m.social) BottomScreen { LobbyBottom(m) }
+        x = if (m.quick && m.player != null && !m.quickBusy) PadAct("Find match") { start() }
+            // Y8: a waiting room's link goes out with X (copy) and Y (share); B leaves the room.
+            else (m.room as? LobbyModel.Room.Waiting)?.takeIf { m.social && m.target == null }?.let { r -> PadAct("Copy link") { friend.copy(r.invite) } },
+        y = (m.room as? LobbyModel.Room.Waiting)?.takeIf { m.social && m.target == null }?.let { r -> PadAct("Share") { friend.share(r.invite) } }))
+    // Dual screen: your deck on the left, the CPU on the right; with a friend, the room and its link.
+    if (!m.social) BottomScreen { LobbyBottom(m) } else BottomScreen { FriendBottom(m, friend) }
     BackHandler(cardPick == null && (m.inspectOpen || m.formatOpen)) { m.inspectOpen = false; m.formatOpen = false }
     BackHandler(m.social && m.room is LobbyModel.Room.Waiting) { cancelRoom() }
     val grid = rememberLazyGridState()
@@ -1263,6 +1266,9 @@ private fun FriendSeat(m: LobbyModel, f: FriendActions) {
             }
             Text(title, style = cinzel(21f, line = 23.5f), textAlign = TextAlign.End)
             if (detail.isNotEmpty()) Text(detail, style = sans(13f, color = Color(0xFFD3D9DF)), textAlign = TextAlign.End)
+            // Y8: the link itself, readable and selectable, not only behind Copy and Share.
+            if (room is LobbyModel.Room.Waiting && target == null) androidx.compose.foundation.text.selection.SelectionContainer {
+                Text(FriendRooms.link(room.invite), style = sans(12f, FontWeight.SemiBold, FriendBlue), textAlign = TextAlign.End, maxLines = 2) }
             if (room is LobbyModel.Room.Waiting && target != null) Box(Modifier.padding(top = 4.dp).height(44.dp).pill(Color(0xB30C0E13), Color(0x66D6AD64)).clickable { f.cancel() }.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
                 Text("Cancel challenge", style = sans(13.5f, FontWeight.Bold, Color(0xFFF1E9D8))) }
             else if (room is LobbyModel.Room.Waiting) FlowRow(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1271,6 +1277,36 @@ private fun FriendSeat(m: LobbyModel, f: FriendActions) {
                 }
             }
             if (room is LobbyModel.Room.Guest) Box(Modifier.height(44.dp).pill(Color(0xB30C0E13), Color(0x33FFFFFF)).clickable { f.cancel(); m.room = LobbyModel.Room.Idle }.padding(horizontal = 12.dp), contentAlignment = Alignment.Center) { Text("Leave room", style = sans(13.5f, FontWeight.Bold, Color(0xFFF1E9D8))) }
+        }
+    }
+}
+
+/**
+ * Y8, the Thor's bottom screen in Friends: the room as it stands. Waiting: the invite link in full with Copy link (X), Share (Y)
+ * and Leave room (B too). A friend's room: its format and Leave room. No room yet: your deck and how a room starts.
+ */
+@Composable
+private fun FriendBottom(m: LobbyModel, f: FriendActions) {
+    val room = m.room
+    when {
+        room is LobbyModel.Room.Waiting && m.target == null -> ShowcaseCase("FRIEND ROOM · ${m.format.uppercase()}", "Waiting for your friend",
+            buttons = listOf(CaseButton("X", "Copy link", gold = true) { f.copy(room.invite) }, CaseButton("Y", "Share") { f.share(room.invite) }, CaseButton("B", "Leave room") { f.cancel() })) {
+            Text("Send them this link. The match opens when they join.", style = sans(14f, color = Site.Text))
+            androidx.compose.foundation.text.selection.SelectionContainer {
+                Text(FriendRooms.link(room.invite), style = sans(15f, FontWeight.Bold, FriendBlue)) }
+            m.player?.let { Text("Your deck: ${it.name}", style = sans(13f, color = Muted)) }
+        }
+        room is LobbyModel.Room.Waiting -> ShowcaseCase("CHALLENGE · ${m.format.uppercase()}", "Waiting for ${m.targetName}",
+            buttons = listOf(CaseButton("B", "Cancel challenge") { f.cancel() })) {
+            Text("Your challenge is on its way. It waits five minutes.", style = sans(14f, color = Site.Text))
+        }
+        room is LobbyModel.Room.Guest -> ShowcaseCase("FRIEND’S ROOM", "${room.format} match",
+            buttons = listOf(CaseButton(null, "Leave room") { f.cancel(); m.room = LobbyModel.Room.Idle })) {
+            Text(room.from?.let { "Challenge from $it" } ?: "Pick your deck, then join.", style = sans(14f, color = Site.Text))
+        }
+        else -> ShowcaseCase("FRIENDS · ${m.format.uppercase()}", m.player?.name ?: "Pick your deck") {
+            Text("Create a room and send the link, or paste one you were sent.", style = sans(14f, color = Site.Text))
+            m.player?.let { Text("${it.count} cards" + if (it.commander.isNotBlank()) " · ${it.commander}" else "", style = sans(13f, color = Muted)) }
         }
     }
 }

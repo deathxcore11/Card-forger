@@ -58,7 +58,7 @@ fun CardFrame(name: String?, card: Card?, modifier: Modifier = Modifier, crop: B
                     modifier = Modifier.fillMaxWidth().clip(box).background(Color(0xCC101114)).padding(horizontal = pad, vertical = pad * .4f))
             }
             Box(Modifier.weight(1f).fillMaxWidth().clip(box).background(Color(0xE6EDE6D3)).padding(pad)) {
-                Text(card?.text.orEmpty(), style = TextStyle(fontFamily = androidx.compose.ui.text.font.FontFamily.Serif, fontSize = fs(.06f), lineHeight = fs(.072f), color = Color(0xFF1B1A17)), overflow = TextOverflow.Ellipsis)
+                SymText(card?.text.orEmpty(), TextStyle(fontFamily = androidx.compose.ui.text.font.FontFamily.Serif, fontSize = fs(.06f), lineHeight = fs(.072f), color = Color(0xFF1B1A17)))
                 if (card?.power != null && card.isCreature) Text("${card.power}/${card.toughness}", style = TextStyle(fontSize = fs(.08f), fontWeight = FontWeight.ExtraBold, color = Color(0xFF1B1A17)),
                     modifier = Modifier.align(Alignment.BottomEnd))
             }

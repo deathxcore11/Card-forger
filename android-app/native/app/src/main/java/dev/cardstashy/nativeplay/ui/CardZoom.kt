@@ -186,7 +186,8 @@ fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, finish: d
     if (DualScreen.active && v.art && gallery != null && gallery.pieces.isNotEmpty()) {
         var piece by remember(gallery) { mutableIntStateOf(gallery.start.coerceIn(0, gallery.pieces.lastIndex)) }
         val walk = gallery.pieces.size > 1
-        PadScreen(PadActs(b = "Back", opaque = true, tabs = { d -> val i = (view + d).coerceIn(0, views.lastIndex); if (i != view) load(i) }, tabsLabel = "View",
+        // One view only on the wall (the three-view Art view is deferred), so no LB/RB "View" hint here.
+        PadScreen(PadActs(b = "Back", opaque = true,
             page = if (walk) { d -> piece = (piece + d).coerceIn(0, gallery.pieces.lastIndex) } else null, pageLabel = "Walk",
             x = gallery.pieces[piece].open?.let { open -> PadAct("Card page") { open() } }))
         Box(Modifier.fillMaxSize().padLayer()) { GalleryWall(gallery, piece) }

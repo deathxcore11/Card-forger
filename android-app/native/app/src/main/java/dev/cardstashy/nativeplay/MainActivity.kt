@@ -233,13 +233,15 @@ class MainActivity : ComponentActivity() {
         when (event.keyCode) {
             android.view.KeyEvent.KEYCODE_BUTTON_A -> {
                 // The stick cursor over something the ring can't rest on: A presses it there.
-                if (event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0 && dev.cardstashy.nativeplay.ui.PadCursor.pressA()) { aTaken = true; return true }
+                if (event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0 && dev.cardstashy.nativeplay.ui.PadCursor.pressA()) { android.util.Log.i("PadA", "stick cursor took A"); aTaken = true; return true }
                 if (aTaken) { if (event.action == android.view.KeyEvent.ACTION_UP) aTaken = false; return true }
             }
         }
         when (event.keyCode) {
-            android.view.KeyEvent.KEYCODE_BUTTON_A ->
+            android.view.KeyEvent.KEYCODE_BUTTON_A -> {
+                if (event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0) android.util.Log.i("PadA", "A to the ring: ${dev.cardstashy.nativeplay.ui.PadPrompts.current().a}")
                 return super.dispatchKeyEvent(android.view.KeyEvent(event.downTime, event.eventTime, event.action, android.view.KeyEvent.KEYCODE_DPAD_CENTER, event.repeatCount, event.metaState, event.deviceId, event.scanCode, event.flags, event.source))
+            }
             android.view.KeyEvent.KEYCODE_BUTTON_B -> {
                 if (event.action == android.view.KeyEvent.ACTION_UP && !event.isCanceled) onBackPressedDispatcher.onBackPressed()
                 return true

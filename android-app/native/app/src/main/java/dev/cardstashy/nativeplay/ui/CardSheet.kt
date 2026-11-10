@@ -871,9 +871,10 @@ private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActi
     val heroArt = shown?.let { sh -> (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("art_crop")?.ifBlank { null }
         ?: sh.getAsJsonObject("image_uris")?.s("art_crop")?.ifBlank { null } ?: faces.firstOrNull()?.getAsJsonObject("image_uris")?.s("art_crop") }
     val yAct: PadAct? = heroArt?.takeIf { it.isNotBlank() }?.let { PadAct("Art view") { zoom = "art" } }
-    val aAct: PadAct? = if (flip != null) PadAct("Flip", flip) else null
-    PadScreen(remember(pick, xAct?.label, yAct?.label, aAct?.label) { PadActs(b = "Close", opaque = true, x = xAct, y = yAct) })
     val rulings = rulingsOf(shown)?.filter { it.first.isNotBlank() }.orEmpty()
+    // Y3: A flips a two-faced card; on any other card it opens the rulings (the bottom tiles take no pad focus).
+    val aAct: PadAct? = if (flip != null) PadAct("Flip", flip) else if (rulings.isNotEmpty()) PadAct("Rulings") { rulingsOpen = true } else null
+    PadScreen(remember(pick, xAct?.label, yAct?.label, aAct?.label) { PadActs(b = "Close", opaque = true, x = xAct, y = yAct) })
 
     // The tilt drives only the card and its foil; the bleeds and tiles never move.
     val image = shown?.let { (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("normal")?.ifBlank { null }
@@ -897,7 +898,7 @@ private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActi
                         Text(listOf(shown.s("set_name").ifBlank { shown.s("set").uppercase() }, RARITY[shown.s("rarity")] ?: shown.s("rarity")).filter { it.isNotBlank() }.joinToString(" · ").uppercase(),
                             style = Rule.Type.sans(12, FontWeight.Bold, Rule.Color.Gold).copy(letterSpacing = 1.4.sp))
                         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(name, style = Rule.Type.cinzel(24), modifier = Modifier.weight(1f, fill = false))
+                            WallName(name, Modifier.weight(1f, fill = false))
                             ManaCost(f.s("mana_cost").ifBlank { shown.s("mana_cost") }, 20.dp, Modifier.padding(top = 4.dp))
                         }
                         Text(f.s("type_line").ifBlank { shown.s("type_line") }, style = Rule.Type.S14.copy(color = Rule.Color.Muted))
