@@ -132,7 +132,7 @@ internal fun GalleryWall(g: Gallery, index: Int) {
             val cone = Path().apply { moveTo(top.x - size.width * .03f, 0f); lineTo(top.x + size.width * .03f, 0f); lineTo(size.width * .78f, size.height * .87f); lineTo(size.width * .22f, size.height * .87f); close() }
             drawPath(cone, Brush.verticalGradient(listOf(Color(0xFFFFE9C4).copy(alpha = .10f * breath), Color(0xFFFFE9C4).copy(alpha = .02f * breath), Color.Transparent), startY = 0f, endY = size.height * .87f))
         }
-        Text("GALLERY · PIECE ${index + 1} OF ${g.pieces.size}", style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, letterSpacing = .18.em, color = Color(0x99E8D9BC)),
+        Text(if (g.pieces.size > 1) "GALLERY · PIECE ${index + 1} OF ${g.pieces.size}" else "GALLERY", style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, letterSpacing = .18.em, color = Color(0x99E8D9BC)),
             modifier = Modifier.padding(start = 28.dp, top = 22.dp))
     }
 }
@@ -151,7 +151,7 @@ internal fun GalleryLabel(g: Gallery, index: Int, onWalkTo: (Int) -> Unit) {
     Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF1B1712), Color(0xFF0E0C0A)))).verticalScroll(rememberScrollState())
         .padding(horizontal = 56.dp, vertical = 44.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Box(Modifier.width(56.dp).height(2.dp).background(Brass))
-        Text(p.title, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 38.sp, lineHeight = 44.sp, letterSpacing = .02.em, color = Color(0xFFF6EEDB)))
+        Text(p.title, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 34.sp, lineHeight = 40.sp, letterSpacing = .02.em, color = Color(0xFFF6EEDB)))
         p.artist?.takeIf { it.isNotBlank() }?.let { Text(it, style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, color = Site.Gold)) }
         p.line.takeIf { it.isNotBlank() }?.let { Text(it, style = TextStyle(fontFamily = Type.Sans, fontSize = 15.sp, color = Color(0xB3E8D9BC)).copy(fontFeatureSettings = "tnum")) }
         p.flavour?.takeIf { it.isNotBlank() }?.let {
