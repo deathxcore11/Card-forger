@@ -26,14 +26,13 @@ export function battlefieldGroups(cards){
  for(const card of cards){const types=card.known===true?card.types||[]:[];groups[types.includes('Creature')?0:types.includes('Land')||card.known===true&&manaRock(card)?1:2].cards.push(card);}
  return groups.filter(group=>group.cards.length);
 }
-// Visually stacks permanents whose every visible detail matches, in first-seen order (the app's tidy board, table additions 2).
-// Each card keeps its own element and engine identity. Only a plain permanent piles: no counters, damage, attachments, attack
-// or block. Lands and tokens pile from 2, any other permanent only at 3 or more; a card that differs from the rest stands alone.
-const plainPermanent=c=>c.known===true&&!(c.damage>0)&&!Object.values(c.counters||{}).some(v=>(Number(v?.count??v)||0)>0)&&!c.attacking&&!c.blocking&&!(c.attachments||[]).length&&(c.attachedTo===null||c.attachedTo===undefined)&&!c.attackTarget&&!(c.blockingIds||[]).length;
+// Visually stacks permanents whose every visible detail matches, in first-seen order.
+// Each card keeps its own element and engine identity; a change of state splits it out, and so
+// does anything attached to it, being attached, or a different attack target or blocked attacker.
 export function battlefieldPiles(cards){
  const piles=new Map();
- for(const c of cards){const key=plainPermanent(c)?JSON.stringify([c.name,c.controller,c.isToken,c.tapped,c.power,c.toughness,c.summoningSick,c.keywords||[],c.type,c.text,c.face,c.printing?.playArtwork?.card?.id||null]):'solo:'+c.id;if(!piles.has(key))piles.set(key,[]);piles.get(key).push(c);}
- return [...piles.values()].flatMap(pile=>{const c=pile[0],min=plainPermanent(c)&&(c.isToken||c.types?.includes('Land')||/\bLand\b/.test(c.type||''))?2:3;return pile.length>=min?[pile]:pile.map(x=>[x]);});
+ for(const c of cards){const key=c.known===true?JSON.stringify([c.name,c.controller,c.isToken,c.tapped,c.power,c.toughness,c.damage,c.counters||{},c.attacking,c.blocking,c.summoningSick,c.keywords||[],c.type,c.text,c.face,c.printing?.playArtwork?.card?.id||null,c.attachedTo??null,c.attachments||[],c.attackTarget||null,c.blockingIds||[]]):'face-down:'+c.id;if(!piles.has(key))piles.set(key,[]);piles.get(key).push(c);}
+ return [...piles.values()];
 }
 // Equipment and Auras sit tucked under the permanent they are attached to when both are in the
 // same battlefield list. Returns the cards still laid out on their own, and host id -> attachments.

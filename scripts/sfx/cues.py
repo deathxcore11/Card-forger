@@ -571,39 +571,6 @@ def _():
                     (inst(CHOIR, [(.4, 1.3, p, 42) for p in (66, 69, 74)]), 0, .4), (inst(GLOCK, [(.42 + i * .08, .6, p, 54) for i, p in enumerate((93, 90, 86, 81))]), 0, .3),
                     (inst(TIMP, [(.38, 1.0, 38, 62)]), 0, .3), (sparkle(8, .9, 3500, 9000), .45, .2)), .4, 1.9, 5000)
 
-# Per-colour cast sounds (CARD-008 "tinted by color", sound bible palette: W bright bell, U water-drop glass,
-# B low hollow wood, R ember crackle, G woody marimba, C dull glass). One shared card-whip so they read as a family.
-# Append to scripts/sfx/cues.py above the QUIET line. IDs: CAST-W/U/B/R/G/C/M.
-def cast_base(f1=4500, g=1.0): return mix((paper(.04, 3500), 0, .5 * g), (cast_whoosh(.42, f1), 0, .6 * g))
-
-@cue('CAST-W')
-def _(): return verb(mix((cast_base(5500), 0, .6), (bell(mf(84), .7), .08, .42), (shimmer(79, 98, .3, CELESTA, 64), .08, .6),
-                         (chord(TUBULAR, [84], .1, .8, 60), 0, .3), (inst(OOHS, [(.05, .6, 79, 45), (.05, .6, 86, 45)]), 0, .3),
-                         (sparkle(6, .3, 5000, 10000), .12, .35)), .3, 1.5, 5000)
-@cue('CAST-U')
-def _(): return verb(mix((cast_base(3000), 0, .55), *[(st(drip(700 + i * 260, 1900 + i * 500, .1), -.5 + i * .25), .04 + i * .055, .5) for i in range(5)],
-                         (glass(mf(88), .5), .28, .3), (shimmer(74, 93, .32, VIBES, 58), .06, .55),
-                         (whoosh(.5, 2500, 500, 2, .3, 'white', .4, -.4), .1, .25)), .35, 1.8, 3500)
-@cue('CAST-B')
-def _(): return verb(mix((lp(cast_base(2200), 4000), 0, .55), (wood(190, .3), .05, .8), (wood(142, .35), .16, .6), (thump(95, 38, .6, .12, .1), .05, .7),
-                         (inst(CHOIR, [(.03, .8, 41, 60), (.03, .8, 48, 55), (.03, .8, 51, 50)]), 0, .55), (rev(whisper(.45)), 0, .3),
-                         (shimmer(60, 75, .3, KALIMBA, 50, False), .1, .3)), .35, 1.9, 1800)
-@cue('CAST-R')
-def _(): return verb(mix((cast_base(7000), 0, .7), (crackle(.55, 170, 2200, 10000, .3), .03, .6), (burst(.3, 250, 5000, .09, 'pink'), .06, .7),
-                         (thump(170, 60, .25, .04, .4), .07, .6), (inst(TAIKO, [(.07, .4, 50, 100)]), 0, .5),
-                         (gliss(DULCIMER, 67, 86, .22, 75, (0, 3, 5, 7, 10)), .04, .4), (sparkle(5, .25, 3000, 7000), .15, .2)), .2, 1.0, 4500)
-@cue('CAST-G')
-def _(): return verb(mix((cast_base(3500), 0, .5), (gliss(MARIMBA, 55, 79, .3, 84, (0, 2, 4, 7, 9)), .04, .8), (wood(330, .2), .05, .6),
-                         (thump(130, 65, .3, .05, .2), .05, .5), (inst(PANFLUTE, [(.12, .5, 79, 55)]), 0, .3),
-                         (burst(.35, 1500, 7000, .12, 'pink', .05), .08, .25), (shimmer(79, 91, .2, KALIMBA, 55), .22, .4)), .25, 1.3, 3500)
-@cue('CAST-C')
-def _(): return verb(mix((cast_base(4000), 0, .6), (lp(glass(mf(79), .5), 3500), .07, .6), (metal(900, .5, .5), .07, .35),
-                         (tick(1300, .3), .03, .4), (tick(1700, .3), .11, .35), (tick(2100, .3), .18, .3),
-                         (shimmer(72, 84, .25, MUSICBOX, 50), .1, .35)), .22, 1.1, 3000)
-@cue('CAST-M')
-def _(): return verb(mix((cast_base(5500), 0, .6), (gliss(HARP, 60, 91, .35, 78, (0, 2, 4, 7, 9)), .03, .7),
-                         (chord(CELESTA, [84, 88, 91, 95], .28, .7, 70, .02), 0, .5), (chord(TUBULAR, [72, 79], .3, .9, 60), 0, .3),
-                         (sparkle(8, .35), .2, .4), (inst(SLOWSTR, [(.05, .7, 60, 50), (.05, .7, 67, 50)]), 0, .3)), .3, 1.5, 4500)
 QUIET = {'PACK-003': -8, 'PACK-004': -6, 'PACK-005': -8, 'PACK-006': -6, 'PACK-007': -6, 'PACK-008': -5, 'PACK-009': -4, 'PACK-011': -8, 'COL-005': -5, 'PACK-014': -6, 'PACK-015': -6, 'PACK-016': -5, 'PACK-017': -4, 'PACK-018': -3, 'PACK-019': -6, 'PACK-020': -9, 'RWD-001': -6, 'RWD-002': -12, 'RWD-003': -10, 'RWD-004': -10, 'RWD-005': -12, 'RWD-006': -4}
 # Lengths for cues the brief does not list (seconds).
 LENGTH = {'PACK-014': .8, 'PACK-015': 1.1, 'PACK-016': 1.6, 'PACK-017': 2.3, 'PACK-018': 3.0, 'PACK-019': .7, 'PACK-020': .8, 'RWD-001': 1.1, 'RWD-002': .35, 'RWD-003': .5, 'RWD-004': .55, 'RWD-005': .6, 'RWD-006': 2.2}

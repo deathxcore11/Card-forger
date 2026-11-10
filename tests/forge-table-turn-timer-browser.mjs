@@ -27,9 +27,7 @@ try{
   await page.mouse.click(2,2);
   await page.clock.runFor(5000);
   await page.clock.runFor(45000);s=await state();
-  assert.equal(s.warn,'true','the last seconds warn');
-  {const f=await page.evaluate(()=>({n:document.querySelector('.forge-fuse b')?.textContent||null,w:parseFloat(document.querySelector('.forge-fuse-burn')?.style.width||'NaN'),ring:!!document.querySelector('.forge-turn-ring'),count:!!document.querySelector('.forge-turn-count'),hot:document.querySelector('.forge-fuse')?.dataset.hot||null}));
-   assert.ok(f.n&&Number(f.n)<=10,`the rope shows the seconds (${f.n})`);assert.equal(f.hot,'true','coral in the last 10 s');assert.ok(f.w>=0&&f.w<=260/3+1,`the fuse is a third or less of the way (${f.w}px)`);assert.equal(f.ring||f.count,false,'one countdown: no ring or number beside the button while the rope burns');}
+  assert.equal(s.warn,'true','the last seconds warn');assert.ok(s.count&&Number(s.count)<=10,`a number shows beside the button (${s.count})`);
   assert.equal(await page.evaluate(()=>!!document.querySelector('.forge-rope:not([hidden])')),false,'the old idle fuse stays off while the turn clock runs');
   if(shots)await page.screenshot({path:`${shots}/timer-real-${viewport.width}.png`});
   await page.clock.runFor(12000);s=await state();
@@ -51,10 +49,8 @@ try{
   await feed(36000);await page.clock.runFor(600);let s=await read();
   assert.equal(s.timer,'own');assert.ok(s.left>.35&&s.left<.42,`the ring starts from the host's 36 s of 90 (${s.left})`);
   await page.clock.runFor(20000);s=await read();assert.ok(s.left>.14&&s.left<.2,`it counts down from there (${s.left})`);
-  assert.equal(await page.evaluate(()=>!!document.querySelector('.forge-fuse')),true,'inside the last 30 s the rope burns on the divider');
   await feed(7000,{strikes:2});await page.clock.runFor(600);s=await read();
-  assert.equal(s.warn,'true','the host last 10 s warn');
-  {const n=await page.evaluate(()=>document.querySelector('.forge-fuse b')?.textContent||null);assert.ok(n&&Number(n)<=7,`the rope follows the host (${n})`);}
+  assert.equal(s.warn,'true','the host last 10 s warn');assert.ok(s.count&&Number(s.count)<=7,`the count follows the host (${s.count})`);
   assert.ok(await page.evaluate(()=>!!document.querySelector('.forge-afk-note')),'a second strike shows the concede warning');
   if(shots)await page.screenshot({path:`${shots}/timer-host-${viewport.width}.png`});
   await page.clock.runFor(30000);s=await read();assert.deepEqual(s.calls,[],'the host answers; the table does not');
