@@ -2066,7 +2066,7 @@ private fun DualCollectionCard(m: CollectionCardModel, act: CollectionCardAction
     val look = if (tcg) null else data?.let { Foil.look(it, m.shown, finish) }
     val worn = remember(o?.tcgFinish, o?.image) { o?.tcgFinish?.let { tcgFinishOf(ctx, m.game, it, o.image) } }
     val shines = look?.takeIf { it.shines }
-    // One tilt value for both screens: the card's foil light, and the art bleeds' parallax.
+    // The tilt drives only the card and its foil; the bleeds and tiles never move.
     val tilt = rememberFoilTilt(live = true)
     val guide = remember(m.guide) { m.guide.flatMap { flatBlocks(it.blocks) } }
     val rulings = guide.firstOrNull { it.kind == "rulings" }?.items.orEmpty().filter { it.runs.isNotEmpty() }

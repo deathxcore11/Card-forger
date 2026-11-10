@@ -875,7 +875,7 @@ private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActi
     PadScreen(remember(pick, xAct?.label, yAct?.label, aAct?.label) { PadActs(b = "Close", opaque = true, x = xAct, y = yAct) })
     val rulings = rulingsOf(shown)?.filter { it.first.isNotBlank() }.orEmpty()
 
-    // One tilt value for both screens: the card's foil light, and the art bleeds' parallax.
+    // The tilt drives only the card and its foil; the bleeds and tiles never move.
     val image = shown?.let { (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("normal")?.ifBlank { null }
         ?: it.getAsJsonObject("image_uris")?.s("normal")?.ifBlank { null } ?: faces.firstOrNull()?.getAsJsonObject("image_uris")?.s("normal") }
     val look = if (shown != null) data?.let { Foil.look(it, shown, finish) } else null

@@ -58,7 +58,7 @@ import androidx.compose.ui.unit.sp
  * "Card on the wall" (specs/thor-card-popup-dual.md, Revision 2): the card page on the Thor's two screens, shared by Play's card sheet
  * and the Collection card page. The top is three columns over a dark bleed of the card's own art (left: its facts, middle: the whole
  * card, right: rules text and guide); the bottom is a glass bleed of the same art under sections of frosted tiles and one row of case
- * buttons. Both screens take their parallax from the one tilt value the card's foil uses (Motion.still turns the parallax off).
+ * buttons. Tilt moves only the card and its foil (Randall 10 Nov 17:22Z); the art bleeds and the tiles stay perfectly still.
  */
 internal object DualPage {
     /** The one grid: the gap between columns, tiles and sections, and the margin round each screen. */
@@ -106,20 +106,6 @@ internal fun FitFirst(count: Int, modifier: Modifier = Modifier, centre: Boolean
     }
 }
 
-/** Parallax: the layer shifts opposite to the tilt by [frac] of its size, grown a little so its edge never shows; off with reduce-motion. */
-internal fun Modifier.parallax(tilt: State<Offset>?, frac: Float): Modifier = graphicsLayer {
-    if (tilt == null || Motion.still || frac == 0f) return@graphicsLayer
-    val t = tilt.value
-    translationX = -t.x * frac * size.width; translationY = -t.y * frac * size.height
-    val s = 1f + frac * 2.4f; scaleX = s; scaleY = s
-}
-
-/** Tiles counter-shift by a hair, with the tilt, so the glass floats over the art. */
-internal fun Modifier.counterShift(tilt: State<Offset>?, frac: Float): Modifier = graphicsLayer {
-    if (tilt == null || Motion.still) return@graphicsLayer
-    val t = tilt.value; translationX = t.x * frac * size.width; translationY = t.y * frac * size.height
-}
-
 /** A format the card plays in: a glass pill. */
 @Composable
 internal fun FormatPill(label: String) = Text(label, style = Rule.Type.sans(12, FontWeight.Bold, Rule.Color.Text), maxLines = 1,
@@ -141,7 +127,7 @@ internal fun DualTop(art: String?, tilt: State<Offset>?, scroll: ScrollState, ca
     val g = DualPage.Gutter
     Box(Modifier.fillMaxSize().background(Rule.Color.Bg)) {
         val p = heroPainter(art?.let(homeArt))
-        if (p != null) Box(Modifier.fillMaxSize().parallax(tilt, .02f)) {
+        if (p != null) Box(Modifier.fillMaxSize()) {
             Image(p, null, Modifier.fillMaxSize().blur(36.dp), contentScale = ContentScale.Crop, colorFilter = tone(1.3f, .5f))
         }
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = .35f), Color.Black.copy(alpha = .6f)))))
@@ -285,10 +271,10 @@ internal fun DualBottom(art: String?, tilt: State<Offset>?, sections: List<DualS
     val frostLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
     val frost = remember(frostLayer) { Frost(frostLayer) }
     Box(Modifier.fillMaxSize().background(Rule.Color.Bg)) {
-        Box(Modifier.fillMaxSize().parallax(tilt, .04f)) { GlassBackdrop(art, frost) }
+        Box(Modifier.fillMaxSize()) { GlassBackdrop(art, frost) }
         androidx.compose.runtime.CompositionLocalProvider(LocalFrost provides frost) {
             Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = g, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(g)) {
-                Column(Modifier.weight(1f).fillMaxWidth().counterShift(tilt, .004f), verticalArrangement = Arrangement.spacedBy(g)) {
+                Column(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(g)) {
                     sections.filter { it.tiles.isNotEmpty() }.forEach { s ->
                         // One grid: every section shares the height evenly, every tile in a row takes one of the same equal columns (a lone tile spans both).
                         Column(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
