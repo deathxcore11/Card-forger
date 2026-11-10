@@ -97,3 +97,11 @@ test('a lobby challenge sends no deck; accept takes the seat; ready sends the de
  assert.equal(calls[2].path,'/api/play/rooms/'+ROOM+'/ready');assert.equal(calls[2].body.ready,true);assert.equal(calls[2].body.deck.cards.length,2);
  await rooms.ready(ROOM,{ready:false});assert.deepEqual(calls[3].body,{ready:false});
 });
+
+test('the site worker passes the lobby ready route through to the host, and still nothing else under rooms',async()=>{
+ const {proxyForgePlayRequest}=await import('./deploy/forge-host/src/app-route.mjs');
+ const env={FORGE_HOST:{fetch:async()=>new Response(null,{status:204})}};
+ for(const p of ['/api/play/rooms','/api/play/rooms/join','/api/play/rooms/'+ROOM,'/api/play/rooms/'+ROOM+'/ready'])
+  assert.equal((await proxyForgePlayRequest(new Request('https://cardstashy.com'+p,{method:'POST'}),env)).status,204,p);
+ assert.equal(proxyForgePlayRequest(new Request('https://cardstashy.com/api/play/rooms/'+ROOM+'/ready/x',{method:'POST'}),env),null);
+});

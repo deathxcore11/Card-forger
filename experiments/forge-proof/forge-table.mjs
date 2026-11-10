@@ -83,7 +83,7 @@ function keywordHint(name,reference){
 // The other player in a duel: "CPU", or a friend by their name.
 const rivalOf=surface=>surface?.players?.length===2&&surface.players.find(p=>p.seat!==surface.seat)?.label||'CPU';
 export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName:'You'},format='Commander',title='CardStashy · Local Forge proof',presentation={}}){
- const authority=session;let displayed=authority.snapshot(),playbackBusy=false,activeBeat=null;
+ const authority=session;let displayed=authority.snapshot(),playbackBusy=false,activeBeat=null,autoPayHold=null;
  session=createPlaybackSession(authority,{displayed:()=>displayed,busy:()=>playbackBusy});
  const doc=root.ownerDocument,win=doc.defaultView,hooks=practiceArtworkHooks();let handFocusRect=null,handDownAt=null,handTap=null,handLiftTimer=0,handFocus=null,handFocusId=null,handPointer=null,handSifted=false,localError='',panelKey='',drag=null,ghost=null,ghostFrame=0,suppressUntil=0,closed=false,nativeValueDraft=null,openingFocused=false;
  // The table redraws by building new card elements, which would cut a glide, a landing or a strike off
@@ -288,7 +288,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
     emblems.replaceChildren(
      make('mode-smart','Smart','Smart: passes empty response windows. Targets and required choices stay yours.','<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',n.controlMode==='smart',()=>switchMode('smart')),
      make('mode-full','Full Control','Full Control: stop at every response window.','<path d="M8 13V5a1.5 1.5 0 0 1 3 0v6M11 11V4a1.5 1.5 0 0 1 3 0v7M14 11V5.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-1a5 5 0 0 1-4.3-2.4L4 15a1.5 1.5 0 0 1 2.5-1.7L8 15"/>',n.controlMode==='full',()=>switchMode('full')),
-     ...(autoPay?[make('auto-pay',n.autoPay?'Auto-pay mana: on':'Auto-pay mana: off','Auto-pay: pay mana costs automatically. Turn off to tap each source yourself.','<circle cx="12" cy="12" r="8"/><path d="M12 7v10M9.5 9.5h3.75a1.75 1.75 0 0 1 0 3.5h-2.5a1.75 1.75 0 0 0 0 3.5H14.5"/>',n.autoPay,()=>session.setAutoPay(!n.autoPay))]:[]));
+     ...(autoPay?[make('auto-pay',(autoPayHold??n.autoPay)?'Auto-pay mana: on':'Auto-pay mana: off','Auto-pay: pay mana costs automatically. Turn off to tap each source yourself.','<circle cx="12" cy="12" r="8"/><path d="M12 7v10M9.5 9.5h3.75a1.75 1.75 0 0 1 0 3.5h-2.5a1.75 1.75 0 0 0 0 3.5H14.5"/>',autoPayHold??n.autoPay,()=>{const v=!(autoPayHold??n.autoPay);autoPayHold=null;return session.setAutoPay(v);})]:[]));
    }
    // The CPU has no profile picture; its commander's art becomes its portrait. A friend shows their own.
    const cpuBadge=root.querySelector('.play-match-seat[data-seat=cpu] .play-match-profile-badge');
@@ -1050,7 +1050,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  }
  // Smart or Full Control decides only where the game stops; auto-pay keeps the player's own setting
  // (the engine resets it to the mode's default on a switch, so it is put back right after).
- async function switchMode(mode){const keep=session.snapshot().native?.autoPay;await session.setControlMode(mode);
+ // Forge resets Auto-pay when the mode changes; the button keeps showing the player's setting while it is put back (seen live 4.3.165).
+ async function switchMode(mode){const keep=session.snapshot().native?.autoPay;if(typeof keep==='boolean')autoPayHold=keep;try{await switchModeKeep(mode,keep);}finally{autoPayHold=null;}}
+ async function switchModeKeep(mode,keep){await session.setControlMode(mode);
   // The put-back waits for a moment Forge accepts it (no open question, not locked): giving up on a busy
   // moment left Auto-pay flipped off by a switch to Full Control (seen live 10 Nov).
   if(typeof keep==='boolean'&&typeof session.setAutoPay==='function'){const until=Date.now()+15000,ready=x=>x?.controlMode===mode&&typeof x.autoPay==='boolean'&&!x.prompt&&x.inputType!=='InputLockUI'&&!session.snapshot().busy;
