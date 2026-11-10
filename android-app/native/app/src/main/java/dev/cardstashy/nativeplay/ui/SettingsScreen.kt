@@ -643,6 +643,11 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Controllers" to "On the match table the ring always comes back to your hand: A picks a card up, A again plays or casts it, and its mana pays itself when it can. X presses the gold button, which shows its X.",
+    "Match table" to "The table only waits when you have a real move; otherwise it moves on at its normal pace. The turn and discard clocks count down, and a card you look at on the bottom screen no longer stops them.",
+    "Match table" to "Seats are You and CPU everywhere, never the engine's names. A cleanup discard starts with nothing picked.",
+    "Two screens" to "The card page is Card on the wall: the whole card on top, its tiles below, and tilt moves only the card and its foil. A opens rulings (or flips a two-faced card), Y opens the Art view.",
+    "Friends" to "Creating a room works again, and the room shows its invite link with Copy, Share and Leave room.",
     "Play" to "Fixes from the Trunk: the search and filters no longer slide under the clock, flavour text shows emphasis as upright words instead of raw asterisks, card names no longer show through the bottom tabs, and the rarity chips stay on one row. Every Play card tile has Y Inspect, and holding a Collection deck (or Select) opens its menu.",
     "Gallery" to "On two screens, a card page’s Art view is now a gallery: the painting alone on a museum wall on the top screen, framed under one soft light, and its label on the bottom screen with the title, artist, set, year, number and flavour text from the card’s own record.",
     "Controllers" to "No two button hints ever say the same words. In a Story scene A is Next and X is Skip (B skips too); a card you can only look at shows one Inspect, not two; on dual screens the hint bar no longer repeats what a button on the case already says.",
