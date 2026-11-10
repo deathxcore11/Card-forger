@@ -364,7 +364,8 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
                     CollectionWrites.menu.value = CollectionWrites.DeckMenuOpen(id,
                         tab = { k -> deckOpensOn(g.id, id, k); onDeck(id, g) },
                         web = { x, sc -> page(url, "[data-act=\"" + (if (tcg) "tDeckMenu" else "deckMenu") + "\"]\n[data-act=\"" + x.replace("\"", "") + "\"]" + (if (sc.isNotEmpty()) "[data-scope=\"" + sc.replace("\"", "") + "\"]" else "")) },
-                        openDeck = { other -> onDeck(other, g) }, deleted = {}, game = g.id,
+                        // A delete from the tile menu: the list is painted again at once, so the tile goes without waiting for the next sync.
+                        openDeck = { other -> onDeck(other, g) }, deleted = { retry++ }, game = g.id,
                         share = { CollectionWrites.share.value = CollectionWrites.ShareOpen(id, g.id, preview = { l -> page(l, null) }) },
                         site = { u -> page(u, null) })
                 }
