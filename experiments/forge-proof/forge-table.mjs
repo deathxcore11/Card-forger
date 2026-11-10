@@ -774,7 +774,18 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // The spotlight's photo starts loading when the story is queued, not when its beat opens.
  const preloaded=new Set();
  function preloadBeatArt(beats){void loadKeywordReference();for(const b of beats){if(!b.card||b.kind==='land')continue;const url=resolvePracticeArtwork(b.card)?.imageUrl;if(!url||preloaded.has(url))continue;if(preloaded.size>200)preloaded.clear();preloaded.add(url);const img=new win.Image();img.referrerPolicy='no-referrer';img.decoding='async';img.src=url;}}
- function clearPlaybackBeat(){activeBeat=null;castShow.dataset.open='false';delete doc.body.dataset.forgeSpotlight;root.querySelector('.forge-playback-status')?.remove();queueArrows();updateActivity();}
+ // The CPU thinks before it acts: three dots by its portrait and a card back in its hand lifts, holds and settles (one card,
+ // and a second 60 % of the time). Pace holds with reduced motion; only the lift is dropped.
+ function thinkShow(on,beat,ms){
+  root.querySelector('.forge-think')?.remove();if(!on||!presentation.hosted||root.dataset.stage!=='match')return;
+  const seat=root.querySelector(`.play-match-seat[data-seat=cpu][data-player-seat="${beat?.card?.controller}"]`)||root.querySelector('.play-match-seat[data-seat=cpu]');
+  if(seat){const d=doc.createElement('span');d.className='forge-think';d.setAttribute('aria-hidden','true');d.innerHTML='<i></i><i></i><i></i>';seat.append(d);}
+  if(reducedMotion())return;
+  const backs=[...root.querySelectorAll('.play-match-opponent-hand > *')];if(!backs.length)return;
+  const lift=el=>anim(el,[{transform:'none'},{transform:'translateY(14px)',offset:.22},{transform:'translateY(14px)',offset:.78},{transform:'none'}],{duration:Math.max(300,ms),easing:'ease-in-out'});
+  const first=Math.floor(Math.random()*backs.length);lift(backs[first]);if(backs.length>1&&Math.random()<.6)lift(backs[(first+1+Math.floor(Math.random()*(backs.length-1)))%backs.length]);
+ }
+ function clearPlaybackBeat(){root.querySelector('.forge-think')?.remove();activeBeat=null;castShow.dataset.open='false';delete doc.body.dataset.forgeSpotlight;root.querySelector('.forge-playback-status')?.remove();queueArrows();updateActivity();}
  let activityKey='';
  // Like Snap and Master Duel, CPU turns can play at Normal or Fast; the choice stays on this device.
  const SPEED_KEY='cardstashy-cpu-speed';let cpuSpeed='normal';try{if(win.localStorage?.getItem(SPEED_KEY)==='fast')cpuSpeed='fast';}catch{/* blocked storage keeps Normal */}
@@ -1245,7 +1256,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(idleKey===key)return;idleKey=key;clearTimeout(idleTimer);
   idleTimer=setTimeout(()=>{idleTimer=0;const now=session.snapshot();if(closed||!idleReady(now)||now.native.revision!==n.revision)return;chainTurn=n.turn;act(()=>session.nativeButton('ok',n.revision));},passBeat(n));
  }
- playback=new CpuActionPlaybackQueue({present:presentBoard,beat:showPlaybackBeat,clear:clearPlaybackBeat,preload:preloadBeatArt,reducedMotion,speed:()=>cpuSpeed==='fast'?.5:1});
+ playback=new CpuActionPlaybackQueue({present:presentBoard,beat:showPlaybackBeat,clear:clearPlaybackBeat,preload:preloadBeatArt,think:thinkShow,reducedMotion,speed:()=>cpuSpeed==='fast'?.5:1});
  // A tap skips held playback. Playback over a decision never holds the board, so a tap there
  // only clears the spotlight and goes on to whatever was tapped.
  // Hotfix (2 Nov): a tap moves on to the CPU's next action instead of jumping past its whole turn, so
