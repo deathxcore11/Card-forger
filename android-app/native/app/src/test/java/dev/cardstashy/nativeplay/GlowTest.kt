@@ -108,7 +108,10 @@ class GlowTest {
         assertEquals("Not enough mana", Glow.costOf(st, 30)); assertEquals("Costs a sacrifice", Glow.costOf(st, 31))
         assertEquals("Costs life", Glow.costOf(st, 34)); assertEquals(null, Glow.costOf(st, 32))
         val sc = ShortCasts(); val bl = sc.blocked(st); val q = sc.quiet(st, bl)
-        // Dark (rule 7), but Forge would pay: a deliberate cast still goes. No plan at all: not castable.
+        // Rule 7 (corrected 10 Nov): a cost in life or a sacrifice is a legal cast, so it stays lit (and asks first: costly);
+        // no plan at all stays dark.
+        assertEquals(Mark.PLAYABLE, Glow.usable(st.card(31)!!, st, true, bl, q)); assertEquals(Mark.PLAYABLE, Glow.usable(st.card(34)!!, st, true, bl, q))
+        assertEquals(Mark.NONE, Glow.usable(st.card(30)!!, st, true, bl, q)); assertEquals(Mark.PLAYABLE, Glow.usable(st.card(32)!!, st, true, bl, q))
         assertTrue(Glow.costly(st, true, st.card(31)!!, bl, q)); assertTrue(Glow.costly(st, true, st.card(34)!!, bl, q))
         assertFalse(Glow.costly(st, true, st.card(30)!!, bl, q)); assertFalse(Glow.costly(st, true, st.card(32)!!, bl, q))
         assertFalse(Glow.costly(st, false, st.card(31)!!, bl, q))
@@ -151,11 +154,11 @@ class GlowTest {
         val bolt = { id: Int -> card(id, "Hand", "Lightning Bolt", "Instant", "{R}", "Lightning Bolt deals 3 damage to any target.") }
         // provenUnaffordable: Cid with one tapped land.
         assertEquals(Mark.NONE, Glow.usableMarks(state("""{"kind":"card","id":10}""", listOf(cid), listOf(this.ridge)), true)[10])
-        // The bridge's pay plan: an empty tapPreview, or a payment that costs life or a sacrifice.
+        // The bridge's pay plan: an empty tapPreview is dark; a payment that costs life or a sacrifice is legal, so it stays lit.
         val st = state("""{"kind":"card","id":30,"tapPreview":[]},{"kind":"card","id":31,"tapPreview":[20],"tapWarning":"sacrifice","tapWarningAmount":1},
             {"kind":"card","id":32,"tapPreview":[20]},{"kind":"card","id":33}""", listOf(bolt(30), bolt(31), bolt(32), bolt(33)), listOf(ridge))
         val m = Glow.usableMarks(st, true)
-        assertEquals(Mark.NONE, m[30]); assertEquals(Mark.NONE, m[31]); assertEquals(Mark.PLAYABLE, m[32]); assertEquals(Mark.PLAYABLE, m[33])
+        assertEquals(Mark.NONE, m[30]); assertEquals(Mark.PLAYABLE, m[31]); assertEquals(Mark.PLAYABLE, m[32]); assertEquals(Mark.PLAYABLE, m[33])
     }
 
     @Test fun paymentLightsOnlyWhatTheBridgePlanned() {

@@ -344,12 +344,13 @@ fun ForgeBoard(
             fun markOf(card: Card): Mark = Glow.mark(card, st, live, blocked, quiet, selectedHand, blockPick,
                 aimed = blockingNow && card.attacking && card.controller != st.viewer && (card.id == attackFocus || card.id == blockDrag.over ||
                     (blockPick ?: blockDrag.from)?.let { b -> st.card(b)?.let { mayBlock(card, it) } } == true))
-            // Rule 7 / I4: a hand card the bridge's pay plan dims says why when lifted. One that only costs life or a sacrifice
-            // stays castable on purpose: lifted (its cost shown), the gold button, A or a slide up casts it.
+            // Rule 7 / I4: a hand card the bridge's pay plan dims says why when lifted. One that costs life or a sacrifice stays lit
+            // and shows that cost when lifted; the gold button, A or a slide up then casts it.
             fun costly(card: Card) = Glow.costly(st, live, card, blocked, quiet)
             fun dimWhy(card: Card): String? = if (!live) null else blocked[card.id]
-                ?: card.id.takeIf { card.zone == "Hand" && card.id in st.selection.actionable && !Glow.asking(st) && Glow.planSaysNo(st, it) }?.let { Glow.costOf(st, it) }
-            fun castable(card: Card) = markOf(card) == Mark.PLAYABLE || (card.id == selectedHand && costly(card))
+                ?: card.id.takeIf { card.zone == "Hand" && card.id in st.selection.actionable && !Glow.asking(st) && (Glow.planSaysNo(st, it) || costly(card)) }?.let { Glow.costOf(st, it) }
+            // A costly card is lit but asks first: a drag or A from rest lifts it (its cost shows), the next one casts.
+            fun castable(card: Card) = markOf(card) == Mark.PLAYABLE && (!costly(card) || card.id == selectedHand)
             // The hand card being dragged or under the finger or the controller's ring (HandFan reports it): its payment sources light.
             var carried by remember { mutableStateOf<Int?>(null) }
             // A card lifted by a tap is carried too, from the first frame. On two screens a lift outlives the ring (TableScreen keeps it),

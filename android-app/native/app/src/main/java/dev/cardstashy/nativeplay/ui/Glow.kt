@@ -28,8 +28,11 @@ object Glow {
         return acts.all { Regex("\\badd\\b", RegexOption.IGNORE_CASE).containsMatchIn(it.substringAfter(":")) }
     }
 
-    /** Rule 7: the bridge's own pay plan says no (an empty tapPreview, or a tapWarning: auto-pay would cost life or a sacrifice). */
-    fun planSaysNo(st: MatchState, id: Int): Boolean = st.selection.tapPlans[id]?.let { it.sources?.isEmpty() == true || it.warning != null } == true
+    /**
+     * Rule 7: the bridge's own pay plan says no (an empty tapPreview). A tapWarning (auto-pay would cost life or a sacrifice) is a
+     * legal cast, so the card stays lit; its cost shows when lifted and the cast waits for that lift (glow-rules.md rule 7, 10 Nov).
+     */
+    fun planSaysNo(st: MatchState, id: Int): Boolean = st.selection.tapPlans[id]?.let { it.sources?.isEmpty() == true } == true
 
     /**
      * Rule 7 and I4: why a card the bridge's plan turned dark is dark, said on the card when it is lifted. A tapWarning is not a
@@ -40,10 +43,9 @@ object Glow {
         when (p.warning) { "life" -> "Costs life"; "sacrifice" -> "Costs a sacrifice"; else -> if (p.sources?.isEmpty() == true) "Not enough mana" else null }
     }
 
-    /** A card the plan dims only for its cost (life, a sacrifice): Forge would still pay for it, so a deliberate cast goes through. */
+    /** A lit card whose payment costs life or a sacrifice: it casts only once lifted, with its cost showing (the web's confirmCostly). */
     fun costly(st: MatchState, live: Boolean, card: Card, blocked: Map<Int, String>, quiet: Set<Int>): Boolean =
-        st.selection.tapPlans[card.id]?.warning != null && card.id !in blocked && card.id !in quiet &&
-            usable(card, st.copy(selection = st.selection.copy(tapPlans = st.selection.tapPlans - card.id)), live, blocked, quiet) == Mark.PLAYABLE
+        st.selection.tapPlans[card.id]?.warning != null && usable(card, st, live, blocked, quiet) == Mark.PLAYABLE
 
     /**
      * The "you can do this" light Forge's actionable list earns, after the proofs that take it away: [Mark.PLAYABLE] for a card
