@@ -215,7 +215,10 @@ export class AdmissionService {
   // and starts the match. DELETE /rooms/<id> lets the host cancel before it starts.
   // Decks never leave the server: the other player sees only that a seat is filled.
   async room(request, path, user, access) {
-    if (await limited(this.storage, 'attempt:room:' + user.id, [[60_000, 20], [3_600_000, 200]], this.now())) return error('room_rate_limit', 429);
+    // Reads (the room and challenge polls every few seconds) have their own generous limit; only changes count toward the small one.
+    if (request.method === 'GET'
+      ? await limited(this.storage, 'attempt:room-read:' + user.id, [[60_000, 90], [3_600_000, 3000]], this.now())
+      : await limited(this.storage, 'attempt:room:' + user.id, [[60_000, 20], [3_600_000, 200]], this.now())) return error('room_rate_limit', 429);
     await scheduleNoLater(this.storage, this.now() + 60_000);
     // GET /rooms: the challenges waiting for this player, each with the invite that opens it.
     if (path === ROOMS_PATH && request.method === 'GET') return json({ challenges: await this.challengesFor(user.id) });
