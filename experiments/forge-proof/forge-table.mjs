@@ -15,6 +15,7 @@ import {haptic} from '../../feel.js';
 import {createTableAudio} from '../../play-table-audio.js';
 import {damageThrough,throughText} from './damage-through.mjs';
 import {entranceLevel,ENTER} from './entrances.mjs';
+const COMMANDER_CENTRE=false;
 import {createTableEmotes} from './table-emotes.mjs';
 // Outline icons from the CardStashy UI packet (24-unit grid, currentColor).
 const ZONE_ICONS={Library:'M6 3h14v16H6zM3 6v16h14M10 7h6M10 11h6',Graveyard:'M6 20V9a6 6 0 0 1 12 0v11M3 20h18M9 10h6M12 7v7',Exile:'m12 2 10 10-10 10L2 12zM8 12h14M17 7l5 5-5 5',Command:'M3 6l5 5 4-8 4 8 5-5-2 14H5zM5 16h14'};
@@ -588,7 +589,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   w.style.visibility='hidden';fx.append(ghost);
   ghost.querySelector('img')?.addEventListener('error',()=>{ghost.innerHTML=`<span>${esc(c.name)}</span>`;},{once:true});
   const line=doc.createElement('div');line.className='forge-enter-name';line.innerHTML=`<small>${own?'Your commander':'Their commander'}</small><b>${esc(c.name)}</b>`;
-  const ends=()=>{w.style.visibility='';ghost.remove();dim.remove();line.remove();};
+  const ends=()=>{clearTimeout(guard);w.style.visibility='';ghost.remove();dim.remove();line.remove();};
+  // Nothing about this may outlive its own length: if any animation never finishes (a hidden tab, a redraw), everything is put back.
+  const guard=setTimeout(()=>{w.style.visibility='';ghost.remove();dim.remove();line.remove();},T.dim+T.fly+T.hold+T.slam+T.stop+1500);
   const slam=()=>{
    const a=ghost.animate([{transform:`translate(${dx}px,${dy}px) scale(${sc})`},{transform:'translate(0,0) scale(1)'}],{duration:T.slam,easing:'cubic-bezier(.5,0,.9,.5)',fill:'forwards'});
    a.finished.then(()=>{w.style.visibility='';const {cx,cy}=centreOf(w);
@@ -621,7 +624,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   let rings=0;for(const c of b.cards){if(!onField(c)||was.get(c.id)?.zone==='Battlefield'||rings>=6)continue;const el=cardEl(c.id);if(!el)continue;rings++;const land=c.known&&c.types?.includes('Land');
    // The card itself drops onto the table from your side (or the CPU's) and settles, then the ring.
    const w=el.closest('.play-match-card-wrap'),own=c.controller===b.seat;
-   const lvl=c.known&&!c.isToken&&!land?entranceLevel({card:c,prev:was.get(c.id),rarity:resolvePracticeArtwork(c)?.card?.rarity,seen:bigSeen}):0;
+   // The centre commander entrance is held back on the web (4.3.161 hot fix: a card froze mid-table on Randall's Commander match); the
+   // commander takes the short rare drop instead. The app owns the full version.
+   const lvl0=c.known&&!c.isToken&&!land?entranceLevel({card:c,prev:was.get(c.id),rarity:resolvePracticeArtwork(c)?.card?.rarity,seen:bigSeen}):0,lvl=lvl0===2&&!COMMANDER_CENTRE?1:lvl0;
    if(w&&lvl>0&&rings<=3&&(!before?.has(String(c.id))||lvl===2)){if(c.commander)bigSeen.add(c.id);if(lvl===2)enterLevel2(c,el,w,own,!!next.native?.prompt);else enterLevel1(c,el,w,own);continue;}
    if(w&&rings<=3&&!before?.has(String(c.id)))anim(w,[{transform:`translateY(${own?34:-34}px) scale(1.22)`,opacity:.35},{transform:'translateY(0) scale(.96)',opacity:1,offset:.62},{transform:'none',opacity:1}],{duration:land?380:520,easing:'cubic-bezier(.2,.75,.25,1)'});
    setTimeout(()=>{if(el.isConnected)pulse(el,land?'land':c.known&&c.types?.includes('Creature')?'creature':'permanent',land?sourceTint(c):null);},land?300:420);}
