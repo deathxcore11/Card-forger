@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -125,6 +126,8 @@ class CollectionDecksActions(
     val search: (String) -> Unit = {},
     /** A deck tile: data-act="go" data-to="#deck/<id>". */
     val deck: (DeckTileModel) -> Unit = {},
+    /** Holding a deck tile, or Select on it (app.js attachTileHolds, tileMenu): the deck's own menu (A.deckMenu / A.tDeckMenu). Null = none here. */
+    val menu: ((DeckTileModel) -> Unit)? = null,
     /** A button with what it carries (its data-id, data-format, data-home…): decksTab opens its tab, the rest go to [button]. */
     val press: (SiteButton) -> Unit = { b -> if (b.act == "decksTab" && b.id.isNotBlank()) tab(b.id) else button(b.act) },
 )
@@ -199,7 +202,7 @@ private fun DecksPage(m: CollectionDecksModel, top: @Composable (tabs: (@Composa
         }
         else items(m.tiles.chunked(cols), key = { line -> line.joinToString("|") { it.id } }) { line ->
             Row(Modifier.padding(horizontal = gutter).height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                for (d in line) DeckTile(d, wide, Modifier.weight(1f).fillMaxHeight().dualLens(lens, d.id)) { act.deck(d) }
+                for (d in line) DeckTile(d, wide, Modifier.weight(1f).fillMaxHeight().dualLens(lens, d.id), onHold = act.menu?.let { m -> { m(d) } }) { act.deck(d) }
                 repeat(cols - line.size) { Spacer(Modifier.weight(1f)) }
             }
         }
@@ -308,12 +311,13 @@ private fun DeckSearch(value: String, placeholder: String, onChange: (String) ->
  * right; at the foot the Cinzel name, its size line, power, owned share, what is left to find, and the owned bar.
  */
 @Composable
-private fun DeckTile(d: DeckTileModel, wide: Boolean, modifier: Modifier, onClick: () -> Unit) {
+private fun DeckTile(d: DeckTileModel, wide: Boolean, modifier: Modifier, onHold: (() -> Unit)? = null, onClick: () -> Unit) {
     val shape = RoundedCornerShape(16.dp)
     val tier = cssColor(d.tierColor, Color.Transparent)?.takeIf { d.tier.isNotBlank() && d.tier != "tn" }?.let { if (d.tier == "t0") Color(0xFF8B939C) else it }
     // (The img's own tier glow sits outside it, so the tile's overflow: hidden clips it away; only the outline shows.)
     Box(modifier.heightIn(min = 260.dp)
-        .clip(shape).background(Surface2).border(1.dp, LineC, shape).padActs(OPEN_DECK).clickable(onClick = onClick).semantics { contentDescription = d.name; role = Role.Button }) {
+        .clip(shape).background(Surface2).border(1.dp, LineC, shape).padActs(if (onHold != null) PadActs(a = "Open", menu = PadAct("Menu", onHold)) else OPEN_DECK)
+        .then(if (onHold != null) Modifier.combinedClickable(onLongClick = onHold, onClick = onClick) else Modifier.clickable(onClick = onClick)).semantics { contentDescription = d.name; role = Role.Button }) {
         // .tile-art img (cover, centred) and its tier outline (2 px, offset -2, 6 corners; the tile's own corners clip it).
         Box(Modifier.matchParentSize().padding(1.dp)) {
             // A Yu-Gi-Oh! or Pokémon cover walks its fallbacks (ygoCropArt, pokemonArtCrop); a Pokémon card shows its art window.

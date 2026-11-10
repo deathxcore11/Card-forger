@@ -354,6 +354,21 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
                 val g = if (hit?.get(1) == "t") CollectionGame.current.value else CardGame.MTG
                 if (onDeck != null && id != null) onDeck(id, g) else page(site + d.to.ifBlank { "#decks" }, null)
             },
+            // app.js tileMenu: a held deck tile opens that deck's menu (A.deckMenu / A.tDeckMenu), the same DeckMenuSheet its page opens.
+            menu = if (onDeck == null) null else { d ->
+                val hit = Regex("^#(t?)deck/([^/]+)").find(d.to)?.groupValues
+                val id = hit?.get(2)?.let(android.net.Uri::decode)
+                if (id != null) {
+                    val tcg = hit[1] == "t"; val g = if (tcg) CollectionGame.current.value else CardGame.MTG
+                    val url = site + d.to
+                    CollectionWrites.menu.value = CollectionWrites.DeckMenuOpen(id,
+                        tab = { k -> deckOpensOn(g.id, id, k); onDeck(id, g) },
+                        web = { x, sc -> page(url, "[data-act=\"" + (if (tcg) "tDeckMenu" else "deckMenu") + "\"]\n[data-act=\"" + x.replace("\"", "") + "\"]" + (if (sc.isNotEmpty()) "[data-scope=\"" + sc.replace("\"", "") + "\"]" else "")) },
+                        openDeck = { other -> onDeck(other, g) }, deleted = {}, game = g.id,
+                        share = { CollectionWrites.share.value = CollectionWrites.ShareOpen(id, g.id, preview = { l -> page(l, null) }) },
+                        site = { u -> page(u, null) })
+                }
+            },
             press = { b ->
                 // A button and what it carries: decksTab opens its tab (data-id); Yu-Gi-Oh! / Pokémon's head buttons with a data-format or
                 // data-home (tNewDeck, Random deck) press the same on the website.
