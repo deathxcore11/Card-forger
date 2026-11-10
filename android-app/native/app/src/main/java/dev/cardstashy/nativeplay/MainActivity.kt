@@ -581,7 +581,7 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
         if (round == 0) LaunchedEffect(Unit) {
             // Art and engine load side by side; the beat holds at least 0.9 s so it reads as a beat, not a flicker.
             val minBeat = launch { delay(if ((pick as? Pick.Table)?.story != null) 0 else 900) }
-            QuickPlay.warmArt(context, s, budgetMs = if (s.known) 3000 else 8000)
+            QuickPlay.gateArt(context, s)
             minBeat.join(); versus = false
         }
         LaunchedEffect(Unit) {
@@ -597,7 +597,7 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
         // The Story scene over the table holds the clock and the first turn.
         LaunchedEffect(holdForScene) { controller.setScene(holdForScene) }
         BackHandler { /* the table's menu has Leave; Back never drops a match by accident */ }
-        if (versus || holdForScene) VersusScreen(s.you, s.cpu, intro = false) else Box {
+        if (versus || holdForScene) VersusScreen(s.you, s.cpu, intro = false, preparing = versus) else Box {
           androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalLessonGlow provides (lessons?.glow ?: emptySet())) {
           TableScreen(controller, onHome = onHome, onRematch = { round++ }, resultNote = outcome?.note, cpuPlate = s.cpu,
             mat = (pick as? Pick.Table)?.story?.let { c -> remember { dev.cardstashy.nativeplay.ui.StoryMats.forBattle(context, c.act, c.battle.get("slot")?.takeIf { it.isJsonPrimitive }?.asInt, c.battle.get("kind")?.takeIf { it.isJsonPrimitive }?.asString) } },

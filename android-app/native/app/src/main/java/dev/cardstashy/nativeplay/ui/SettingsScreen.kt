@@ -616,6 +616,8 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Match feel" to "The CPU now thinks before it acts, like a person: dots by its portrait and a card lifting in its hand, longer for a removal spell than a land. Its actions are no longer cut short when the decision comes back to you. With nothing playable and nothing to attack with, your turn ends by itself instead of stopping on To combat.",
+    "Art" to "The matchup screen now waits (with a Preparing the table bar) until both decks’ pictures are in, up to 20 s, instead of opening the table after 3–8 s with art still loading. The versus plates appear once their art is ready.",
     "Match table" to "No card is ever a blank panel: each one looks up the engine’s own printing of it, and a picture that still won’t load shows the card’s frame in its colours with its name, cost, type, rules text and P/T (hand, battlefield, inspector, crests).",
     "Quick Play" to "A Commander CPU no longer gets cEDH tournament lists (it couldn’t play them: mulligans to four, a Workshop and nothing to cast) unless your own deck is Bracket 4 or higher; the ten free Commander precons are always in its pool. Precon cards load their exact printing’s art, and a failed art lookup is asked again.",
     "Controllers" to "One button map everywhere, like a console game: A opens, B goes back, X is the screen’s main action, Y inspects (the card big), Select opens the quick menu on decks, Trunk sets and binders (it was Start), LB/RB tabs. The hint bar never shows the same words twice.",

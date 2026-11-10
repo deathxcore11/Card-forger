@@ -124,6 +124,17 @@ object QuickPlay {
     }
 
     /** Finds and decodes both decks' pictures; returns when done or when [budgetMs] runs out (the table then fills in as they land). */
+    /**
+     * The art gate (director spec 12, Randall 10 Nov "the art still comes in late"): the table opens when every card of both decks
+     * has its face decoded and its crop on disk, not after a fixed 3 or 8 s. 20 s is a safety cap with a connection (what misses
+     * it draws its CardFrame and keeps loading); with no connection at all it passes at once on what the cache has.
+     */
+    suspend fun gateArt(context: Context, s: Setup.Ready) {
+        val online = runCatching { val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
+            cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true }.getOrDefault(true)
+        warmArt(context, s, if (online) 20_000 else 800)
+    }
+
     suspend fun warmArt(context: Context, s: Setup.Ready, budgetMs: Long) {
         val t0 = SystemClock.elapsedRealtime()
         CardArt.resolveMatch(s.rows)

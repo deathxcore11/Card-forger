@@ -244,6 +244,13 @@ object CardArt {
     private fun diskOnly(context: Context, url: String): ImageRequest =
         ImageRequest.Builder(context).data(url).size(Size(8, 8)).memoryCachePolicy(CachePolicy.DISABLED).build()
 
+    /** Proof counter (spec 12): a card drawn on screen with no picture on record. Logged by name; 0 is the goal on a cold cache. */
+    val artMissAtShow = java.util.concurrent.atomic.AtomicInteger(0)
+    fun missAtShow(name: String) { android.util.Log.i("CardArt", "artMissAtShow #${artMissAtShow.incrementAndGet()}: $name") }
+
+    /** How far the match's art gate has got (0..1), for the matchup screen's "Preparing the table" bar. */
+    val warmProgress = kotlinx.coroutines.flow.MutableStateFlow(0f)
+
     /** True when every name already has a picture on record (a deck played or warmed before). */
     fun knows(names: Collection<String>) = synchronized(index) { names.all { index.containsKey(it.lowercase()) } }
 
@@ -257,9 +264,13 @@ object CardArt {
                      diskCrops: Collection<String> = emptyList(), detach: Boolean = false): Int {
         val gate = Semaphore(12)
         val faces = names.mapNotNull { url(it) }.distinct()
-        val jobs = faces.map { request(context, it, false) } + crops.mapNotNull { url(it, crop = true) }.distinct().map { request(context, it, true) } +
+        // The versus plates' covers first (high priority, spec 12a), then every face, then every battlefield crop onto disk.
+        val jobs = crops.mapNotNull { url(it, crop = true) }.distinct().map { request(context, it, true) } + faces.map { request(context, it, false) } +
             diskCrops.mapNotNull { url(it, crop = true) }.distinct().filter { it !in faces }.map { diskOnly(context, it) }
-        suspend fun all() = coroutineScope { jobs.map { r -> async(Dispatchers.IO) { gate.withPermit { (loader.execute(r) as? SuccessResult) != null } } }.awaitAll().count { it } }
+        val done = java.util.concurrent.atomic.AtomicInteger(0)
+        warmProgress.value = if (jobs.isEmpty()) 1f else 0f
+        suspend fun all() = coroutineScope { jobs.map { r -> async(Dispatchers.IO) { gate.withPermit { ((loader.execute(r) as? SuccessResult) != null).also {
+            warmProgress.value = done.incrementAndGet().toFloat() / jobs.size } } } }.awaitAll().count { it } }
         if (!detach) return withTimeoutOrNull(timeoutMs) { all() } ?: -1
         val job = bg.async { all() }
         return withTimeoutOrNull(timeoutMs) { job.await() } ?: -1

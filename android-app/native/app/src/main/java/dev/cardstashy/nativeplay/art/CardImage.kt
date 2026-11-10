@@ -40,7 +40,7 @@ fun CardImage(name: String?, modifier: Modifier = Modifier, crop: Boolean = fals
     if (asset != null) { AssetImage(asset, modifier, maxWidth = if (crop) 900 else 488, contentScale = contentScale, shape = shape); return }
     val url = remember(name, crop, v) { CardArt.url(name, crop) }
     // No picture on record (its lookup failed while the match loaded): look it up again; the plate shows meanwhile.
-    if (url == null) { LaunchedEffect(name) { CardArt.want(name) }; Box(modifier) { fallback() }; return }
+    if (url == null) { LaunchedEffect(name) { CardArt.missAtShow(name); CardArt.want(name) }; Box(modifier) { fallback() }; return }
     // A picture that fails to load shows the card's name plate, never an empty face, and is fetched again a few times, spaced out.
     var attempt by remember(url) { mutableIntStateOf(0) }
     var failed by remember(url) { mutableStateOf(false) }

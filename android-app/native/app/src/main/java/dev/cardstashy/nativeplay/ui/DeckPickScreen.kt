@@ -1,5 +1,11 @@
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -117,7 +123,7 @@ private fun DeckTile(name: String, line: String, face: String?, onClick: () -> U
 
 /** The versus beat: your deck against the CPU's while the engine opens the match and both decks' pictures load. */
 @Composable
-fun VersusScreen(you: Plate, cpu: Plate?, intro: Boolean = true) {
+fun VersusScreen(you: Plate, cpu: Plate?, intro: Boolean = true, preparing: Boolean = false) {
     // intro = false when the beat is already on screen (the CPU's plate arrives into it).
     val a = remember { Animatable(if (intro) 0f else 1f) }
     LaunchedEffect(Unit) { a.animateTo(1f, tween(700)) }
@@ -134,13 +140,38 @@ fun VersusScreen(you: Plate, cpu: Plate?, intro: Boolean = true) {
                 Text("Finding an opponent…", style = Type.Label.copy(color = Palette.InkSoft))
             }
         }
+        // The art gate (spec 12): a thin gold bar while both decks' pictures load; the table opens when they're in.
+        if (preparing) {
+            val p by dev.cardstashy.nativeplay.art.CardArt.warmProgress.collectAsState()
+            val shown by androidx.compose.animation.core.animateFloatAsState(p, tween(240), label = "gate")
+            Column(Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing).padding(bottom = 22.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Preparing the table", style = Type.Label.copy(color = Palette.InkSoft))
+                Box(Modifier.width(220.dp).height(3.dp).clip(RoundedCornerShape(2.dp)).background(Color(0x33FFFFFF))) {
+                    Box(Modifier.fillMaxWidth(shown).fillMaxHeight().background(Brush.horizontalGradient(listOf(Palette.GoldDeep, Palette.GoldBright))))
+                }
+            }
+        }
     }
 }
 
 @Composable
 private fun PlateView(p: Plate, modifier: Modifier) {
     val shape = RoundedCornerShape(16.dp)
-    Box(modifier.aspectRatio(1.35f).clip(shape).border(1.5.dp, Palette.Gold, shape).background(Palette.PanelBottom)) {
+    // Spec 12a: no plate until its cover is decoded (looked up first if it has to be), 4 s at most; then it fades in, never empty.
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var ready by remember(p.face) { mutableStateOf(p.face == null) }
+    LaunchedEffect(p.face) {
+        val face = p.face ?: return@LaunchedEffect
+        kotlinx.coroutines.withTimeoutOrNull(4000) {
+            var url = dev.cardstashy.nativeplay.art.CardArt.url(face, crop = true)
+            if (url == null) { dev.cardstashy.nativeplay.art.CardArt.resolve(listOf(face to com.google.gson.JsonObject().apply { addProperty("name", face) })); url = dev.cardstashy.nativeplay.art.CardArt.url(face, crop = true) }
+            if (url != null) dev.cardstashy.nativeplay.art.CardArt.loader.execute(dev.cardstashy.nativeplay.art.CardArt.request(context, url, true))
+        }
+        ready = true
+    }
+    val show by androidx.compose.animation.core.animateFloatAsState(if (ready) 1f else 0f, tween(260), label = "plate")
+    Box(modifier.aspectRatio(1.35f).graphicsLayer { alpha = show }.clip(shape).border(1.5.dp, Palette.Gold, shape).background(Palette.PanelBottom)) {
         CardImage(p.face, Modifier.fillMaxSize(), crop = true)
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent, 1f to Color(0xEE0A0A0C))))
         Column(Modifier.align(Alignment.BottomStart).padding(14.dp)) {
