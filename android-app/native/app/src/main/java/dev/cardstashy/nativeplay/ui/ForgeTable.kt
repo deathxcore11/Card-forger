@@ -502,7 +502,9 @@ fun ForgeBoard(
             val tools = (if (st.controlMode in setOf("smart", "full")) 2 + (if (st.autoPay != null) 1 else 0) else 0) + 1
             val handLeftAt = centreX + 44.du - (if (large) (H.value * .13f).coerceIn(66f, 120f).dp else 66.du) / 66f * 222f
             val chatInRow = x0 + 42.du * tools - 8.du + 8.du <= handLeftAt
-            Row(Modifier.offset(x = x0, y = ay - 4.du), horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
+            // The tray's right end, from the same pitch (34 du tools, 8 du gaps), for the ask line's left limit (AskLine).
+            val trayRight = x0 + 42.du * (if (chatInRow) tools else tools - 1) - 8.du
+            Row(Modifier.offset(x = x0, y = ay - 4.du).anchorRect("tools"), horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
                 ControlEmblems(st, intents, Modifier, d)
                 if (chatInRow) EmoteButton(Modifier, d)
             }
@@ -853,7 +855,8 @@ fun ForgeBoard(
                 ask = askAll, carried = carried?.let { id -> hand.firstOrNull { it.id == id } }, live = live) } }
             // With the bottom screen up the hand chip sits where the line would be: the line goes just above the chip, high enough
             // that its 10 du drop shadow (AskLine) clears the chip too (U3).
-            askText?.let { AskLine(it, W, H, d, bottom = if (dual && hand.isNotEmpty()) H - handW / 66f * 37f - 16.du else null, goldInset = goldInset) { r -> askRight = r } }
+            askText?.let { val askBottom = if (dual && hand.isNotEmpty()) H - handW / 66f * 37f - 16.du else null
+                AskLine(it, W, H, d, bottom = askBottom, goldInset = goldInset, leftLimit = if (askBottom != null) trayRight + 12.du else null) { r -> askRight = r } }
             // The line between the halves turns into the combat line while you declare (gold attacking, blue blocking).
             CombatLine(st, mid, W, d)
             // Arrivals, casts, hits, deaths and numbers over the cards, under the threads.
@@ -2113,13 +2116,17 @@ internal fun onePick(st: MatchState): Boolean = st.prompt == null && st.inputTyp
  * (Thor run 10 Nov: "Respond to Sol Ring?" drawn over the hand label).
  */
 @Composable
-private fun AskLine(text: String, W: Dp, H: Dp, d: Du, bottom: Dp? = null, goldInset: Dp = 0.dp, onRight: (Dp) -> Unit = {}) = with(d) {
+private fun AskLine(text: String, W: Dp, H: Dp, d: Du, bottom: Dp? = null, goldInset: Dp = 0.dp, leftLimit: Dp? = null, onRight: (Dp) -> Unit = {}) = with(d) {
     val density = LocalDensity.current
     val anchors = LocalAnchors.current
     // Thor 0.4.56 (Sheltered by Ghosts: "Choose target nonland permanent an opponent contr…"): on two screens the hand fan is on the
     // bottom screen, so the line need not keep the fan's 444 du clear. It is centred 15 du right of the middle and its right end
     // stays 12 du short of the gold button at its 138 du minimum; a line that still does not fit takes a second line upward.
-    val maxW = if (bottom == null) W - 444.du else maxOf(W - 444.du, W - 330.du - goldInset * 2)
+    // Live 0.4.57 on the Thor (fault list 5): the centred two-line pill came down over your seat's tool row and hid the Full
+    // Control hand. With [leftLimit] (the tray's right end plus 12 du) it is never wider than keeps its left end there; the
+    // text takes its second line instead. The line does not move up, so the table keeps its space.
+    val wide = if (bottom == null) W - 444.du else maxOf(W - 444.du, W - 330.du - goldInset * 2)
+    val maxW = leftLimit?.let { minOf(wide, ((30.du + W / 2 - it) * 2).coerceAtLeast(0.dp)) } ?: wide
     val place = if (bottom == null) Modifier.offset(x = 30.du, y = H - 64.du)
         else Modifier.offset(x = 30.du).layout { m, c -> val p = m.measure(c.copy(minHeight = 0)); layout(p.width, p.height) { p.place(0, bottom.roundToPx() - p.height) } }
     Box(Modifier.fillMaxWidth().then(place).wrapContentHeight(unbounded = true, align = Alignment.Bottom), contentAlignment = Alignment.BottomCenter) {
