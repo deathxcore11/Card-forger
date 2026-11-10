@@ -213,6 +213,12 @@ private const val ORDER = "WUBRG"
 private val BASIC = mapOf("Plains" to 'W', "Island" to 'U', "Swamp" to 'B', "Mountain" to 'R', "Forest" to 'G')
 
 /** surfaceColors(): a land by what it makes, anything else by its cost. Null: no idea (a crest colour). */
+/**
+ * The colour pip on a back-row tile: lands only. Thor 0.4.56 (finding F): the back row also holds non-creature permanents (a white
+ * saga), and each wore a land's W pip over the start of its name.
+ */
+internal fun landPip(card: Card, rowIsLand: Boolean): Char? = if (rowIsLand && card.isLand) cardColors(card)?.firstOrNull() else null
+
 internal fun cardColors(c: Card): List<Char>? {
     if (c.isLand) {
         val made = BASIC.filterKeys { Regex("\\b$it\\b").containsMatchIn(c.type) }.values +
@@ -601,8 +607,13 @@ fun ForgeBoard(
                         // W11: what A met on the hand chip, so a Thor run shows why a press cast or only lifted (logcat -s PadA).
                         android.util.Log.i("PadA", "chip lifted=${c?.name} sel=$selectedHand discard=$discardAsk live=$live actionable=${c?.let { it.id in st.selection.actionable }} blocked=${c?.let { blocked[it.id] }} prompt=${st.prompt != null} input=${st.inputType}")
                         if (discardAsk && live) {
-                            val pick = c ?: hand.first()
-                            if (pick.id in st.selection.cards) { if (pick.id == selectedHand) { onSelectHand(null); intents.card(pick.id) } else onSelectHand(pick.id) } else onInspect(pick)
+                            when (val step = discardChipStep(c, selectedHand, hand, st.selection.cards)) {
+                                is DiscardStep.Walk -> { discardWalk = step.id }
+                                is DiscardStep.Pick -> onSelectHand(step.id)
+                                is DiscardStep.Discard -> { onSelectHand(null); intents.card(step.id) }
+                                is DiscardStep.Inspect -> hand.firstOrNull { it.id == step.id }?.let(onInspect)
+                                null -> {}
+                            }
                         } else if (c == null) onSelectHand(hand.first().id)
                         else if (playable(c)) { onSelectHand(null); if (chipOn && !c.isLand) { TablePad.castAt = android.os.SystemClock.uptimeMillis(); TablePad.castId = c.id }; intents.card(c.id) } else onInspect(c)
                     }
@@ -798,7 +809,7 @@ fun ForgeBoard(
             if (dual) { val goldAct = padX; BottomScreen { MatchBottom(st, hand, (selectedHand ?: discardWalk.takeIf { discardAsk })?.let { id -> hand.firstOrNull { it.id == id } }, goldAct, fan, onInspect, afk) } }
             // With the bottom screen up the hand chip sits where the line would be: the line goes just above the chip, high enough
             // that its 10 du drop shadow (AskLine) clears the chip too (U3).
-            askText?.let { AskLine(it, W, H, d, bottom = if (dual && hand.isNotEmpty()) H - handW / 66f * 37f - 16.du else null) { r -> askRight = r } }
+            askText?.let { AskLine(it, W, H, d, bottom = if (dual && hand.isNotEmpty()) H - handW / 66f * 37f - 16.du else null, goldInset = goldInset) { r -> askRight = r } }
             // The line between the halves turns into the combat line while you declare (gold attacking, blue blocking).
             CombatLine(st, mid, W, d)
             // Arrivals, casts, hits, deaths and numbers over the cards, under the threads.
@@ -1049,7 +1060,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
             Text(card.name, maxLines = 1, overflow = TextOverflow.Ellipsis, style = TextStyle(fontFamily = Spectral, fontWeight = FontWeight.Bold, fontSize = (piece.value * .083f).coerceIn(11f, 13f).sp,
                 color = Color(0xFFF6EFDF), lineHeight = (nh.value * 1f).sp, shadow = androidx.compose.ui.graphics.Shadow(Color.Black, Offset(0f, 1f), 2f)))
         }
-        if (land) cardColors(card)?.firstOrNull()?.let { c ->
+        landPip(card, land)?.let { c ->
             Box(Modifier.align(Alignment.BottomStart).offset(x = 4.du, y = (-3).du).size(10.du).clip(CircleShape).background(LAND_DOT.getValue(c)).border(1.dp, Color(0xAAFFFFFF), CircleShape),
                 contentAlignment = Alignment.Center) { Text("$c", style = sans(sp(7f), FontWeight.Bold, if (c == 'W') Color(0xFF111111) else Color.White)) }
         }
@@ -1923,6 +1934,28 @@ private fun OwnCast(st: MatchState, d: Du, top: Dp? = null) = with(d) {
 }
 
 
+/** What A on the hand chip does while a discard asks. */
+internal sealed interface DiscardStep {
+    val id: Int
+    /** The d-pad rests on the card (its words show on the chip); nothing is chosen. */
+    data class Walk(override val id: Int) : DiscardStep
+    data class Pick(override val id: Int) : DiscardStep
+    data class Discard(override val id: Int) : DiscardStep
+    data class Inspect(override val id: Int) : DiscardStep
+}
+
+/**
+ * A on the hand chip during a discard (W12). [lifted] is the picked card, else the one the d-pad rests on. Thor 0.4.56 (finding D):
+ * A with nothing walked used to pick the first card at once (the only Plains, lands sort first), so a card stood chosen that the
+ * player never chose. Now it only rests on the first card; A on a walked card picks it, A again discards it.
+ */
+internal fun discardChipStep(lifted: Card?, selected: Int?, hand: List<Card>, pickable: Set<Int>): DiscardStep? = when {
+    lifted == null -> hand.firstOrNull()?.let { DiscardStep.Walk(it.id) }
+    lifted.id !in pickable -> DiscardStep.Inspect(lifted.id)
+    lifted.id == selected -> DiscardStep.Discard(lifted.id)
+    else -> DiscardStep.Pick(lifted.id)
+}
+
 /** native-panel.mjs: the one line that says what the table is asking (the .forge-ask-line above your hand), or null. */
 internal fun askLine(st: MatchState): String? {
     if (st.prompt != null) return null
@@ -1994,13 +2027,18 @@ internal fun onePick(st: MatchState): Boolean = st.prompt == null && st.inputTyp
  * (Thor run 10 Nov: "Respond to Sol Ring?" drawn over the hand label).
  */
 @Composable
-private fun AskLine(text: String, W: Dp, H: Dp, d: Du, bottom: Dp? = null, onRight: (Dp) -> Unit = {}) = with(d) {
+private fun AskLine(text: String, W: Dp, H: Dp, d: Du, bottom: Dp? = null, goldInset: Dp = 0.dp, onRight: (Dp) -> Unit = {}) = with(d) {
     val density = LocalDensity.current
+    val anchors = LocalAnchors.current
+    // Thor 0.4.56 (Sheltered by Ghosts: "Choose target nonland permanent an opponent contr…"): on two screens the hand fan is on the
+    // bottom screen, so the line need not keep the fan's 444 du clear. It is centred 15 du right of the middle and its right end
+    // stays 12 du short of the gold button at its 138 du minimum; a line that still does not fit takes a second line upward.
+    val maxW = if (bottom == null) W - 444.du else maxOf(W - 444.du, W - 330.du - goldInset * 2)
     val place = if (bottom == null) Modifier.offset(x = 30.du, y = H - 64.du)
         else Modifier.offset(x = 30.du).layout { m, c -> val p = m.measure(c.copy(minHeight = 0)); layout(p.width, p.height) { p.place(0, bottom.roundToPx() - p.height) } }
     Box(Modifier.fillMaxWidth().then(place).wrapContentHeight(unbounded = true, align = Alignment.Bottom), contentAlignment = Alignment.BottomCenter) {
         // Its right end on the board (it is centred in a box that starts 30 du in), for the gold button (BB8).
-        Box(Modifier.widthIn(max = W - 444.du).anchorRect("askline").onGloballyPositioned { c -> onRight(30.du + with(density) { c.boundsInParent().right.toDp() }) }.drawBehind {
+        Box(Modifier.widthIn(max = maxW).anchorRect("askline").onGloballyPositioned { c -> onRight(30.du + with(density) { c.boundsInParent().right.toDp() }) }.drawBehind {
             drawIntoCanvas { c ->
                 val p = Paint().asFrameworkPaint().apply { isAntiAlias = true; color = Color(0x40F2D18E).toArgb(); maskFilter = android.graphics.BlurMaskFilter(11.du.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL) }
                 c.nativeCanvas.drawRoundRect(0f, 0f, size.width, size.height, size.height / 2, size.height / 2, p)
@@ -2009,7 +2047,8 @@ private fun AskLine(text: String, W: Dp, H: Dp, d: Du, bottom: Dp? = null, onRig
         }.clip(RoundedCornerShape(999.dp)).background(Color(0xF010131B))
             .background(Brush.linearGradient(listOf(Color(0x14FFFFFF), Color(0x03FFFFFF), Color.Transparent)))
             .border(1.dp, Color(0xAAF2D18E), RoundedCornerShape(999.dp)).padding(horizontal = 16.du, vertical = 8.du)) {
-            Text(text, style = sans(sp(14f), FontWeight.Bold, Color(0xFFFBF3DF)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(text, style = sans(sp(14f), FontWeight.Bold, Color(0xFFFBF3DF)), maxLines = if (bottom == null) 1 else 2, overflow = TextOverflow.Ellipsis,
+                onTextLayout = { if (it.hasVisualOverflow) anchors?.putRect("askline.cut", androidx.compose.ui.geometry.Rect.Zero) })
         }
     }
 }

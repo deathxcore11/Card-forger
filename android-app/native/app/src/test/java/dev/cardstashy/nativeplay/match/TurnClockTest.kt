@@ -147,8 +147,14 @@ class TurnClockTest {
         assertEquals("Discard down to 7: tap 1 card", dev.cardstashy.nativeplay.ui.askLine(d))
         // Against the CPU: nothing is discarded for you, no missed turn, one nag.
         var nags = 0; var acts = 0; var t = 1000L
-        val cpu = TurnClock.Timer(snapshot = { d }, act = { _, _, done -> acts++; done(true) }, onNag = { nags++ }, now = { t })
-        repeat(((TurnClock.PROMPT_MS + 5000) / 250).toInt()) { t += 250; cpu.tick() }
+        val shown = mutableListOf<TurnClock.Shown?>()
+        val cpu = TurnClock.Timer(snapshot = { d }, act = { _, _, done -> acts++; done(true) }, onNag = { nags++ }, onChange = { shown += it }, now = { t })
+        // Thor 0.4.56 (finding D): two shots 8 s apart both read 30. The discard window counts down while it is open ...
+        repeat((8000 / 250)) { t += 250; cpu.tick() }
+        shown.last()!!.let { assertTrue("8 s in: ${it.remaining} ms left", it.remaining in 21_000L..23_000L); assertEquals(false, it.paused) }
+        repeat(((TurnClock.PROMPT_MS + 5000 - 8000) / 250).toInt()) { t += 250; cpu.tick() }
+        // ... and once it ran out against the CPU it reads 0, held: never its full 30 s again.
+        shown.last()!!.let { assertEquals(0L, it.remaining); assertEquals(true, it.paused) }
         assertEquals(0, acts); assertEquals(1, nags); assertEquals(0, cpu.strikes())
         // With a friend: the clock acts (the controller discards the newest card) and the miss counts.
         val r = Rig(d, friend = true); r.run(TurnClock.PROMPT_MS + 500)

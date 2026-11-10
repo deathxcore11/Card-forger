@@ -180,4 +180,22 @@ class Bb0457ShotTest {
             for (k in listOf("askline", "handchip", "hand", "quiet", "gold")) a.rects[k]?.let { apart("Turn count / $k at ${size.tag}", count, it) }
         }
     }
+
+    /**
+     * Thor 0.4.56 (finding C): Sheltered by Ghosts' second prompt read "Choose target nonland permanent an opponent contr…". On
+     * two screens (the Thor's top screen about 640 × 360 dp, and the sizes above) the whole ask shows, off the gold button and the
+     * hand chip.
+     */
+    @Test fun cAskLineWhole() {
+        Pad.used()
+        val t = state("targets")
+        val st = t.copy(message = "Select targets for Sheltered by Ghosts\nChoose target nonland permanent an opponent controls.")
+        for (size in listOf(Size("640x360-dual", 640, 360, true)) + sizes.filter { it.dual }) {
+            val a = board("c-askline", st, size, clock = null)
+            val line = a.rects["askline"] ?: error("no ask line at ${size.tag}")
+            assertTrue("ask line cut at ${size.tag}", a.rects["askline.cut"] == null)
+            inside("Ask line", line, size)
+            for (k in listOf("gold", "handchip", "phasetrack")) a.rects[k]?.let { apart("Ask line / $k at ${size.tag}", line, it) }
+        }
+    }
 }

@@ -705,7 +705,9 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             }
             return
         }
-        val d = decide(st)
+        // Finding B: decide on Forge's state, not on a replayed board (a resolved trigger held on the stack read as "your own on top").
+        val forge = AutoPass.basis(st, latest) ?: run { Log.i(TableLog.TAG, "decide: board mid-replay (stack ${st.stack.map { it.id }}), waits for Forge's own state"); return }
+        val d = decide(forge)
         // Always in the log (public builds too): why the table waited or passed, so a device run can quote it.
         Log.i(TableLog.TAG, "decide ${st.phase} turn ${st.turn} input=${st.inputType} stack=${st.stack.size} -> ${d.op ?: "wait"} (${d.why})")
         val op = d.op ?: return

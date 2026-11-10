@@ -147,12 +147,17 @@ class ShortCasts {
      * usable ability as actionable, mana or not; its own pay check (HumanActionAffordability, per card as "affordability")
      * says "available" only when the cost can really be paid now. A card Forge checked and could not prove stays dark here,
      * but it can still be tapped and tried (X spells, odd alternative costs). Lands that only tap for mana stay dark too.
-     * When the check ran out of time (no answer for a card), the "Not enough mana" reader above decides as before.
+     * When the check ran out of time (no answer for a card), the "Not enough mana" reader above decides as before. A card the
+     * check could not prove but whose payment Forge's auto-pay planned (a non-empty tapPreview) is not quieted.
      */
     fun quiet(st: MatchState, blocked: Map<Int, String>): Set<Int> {
         if (st.prompt != null) return emptySet()
         return st.selection.actionable.filterTo(HashSet()) { id ->
-            id !in blocked && st.selection.affordability[id].let { it != null && it != "available" } && (st.card(id) ?: st.players.flatMap { it.command }.firstOrNull { it.id == id })?.controller == st.viewer
+            id !in blocked && st.selection.affordability[id].let { it != null && it != "available" } &&
+                // Thor 0.4.56 (Shardmage's Rescue, flash {W}, during the CPU's turn): Forge's check ran out of time ("unknown") but
+                // Forge's own auto-pay planned the sources for it (tapPreview): that is Forge saying it can be paid, so it stays lit.
+                // Forge's own "unavailable" always stays dark: a plan beside it may be partial, and stopsFor never stops for it.
+                (st.selection.affordability[id] == "unavailable" || st.selection.tapPlans[id]?.sources.isNullOrEmpty()) && (st.card(id) ?: st.players.flatMap { it.command }.firstOrNull { it.id == id })?.controller == st.viewer
         }
     }
 }

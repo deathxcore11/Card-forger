@@ -232,4 +232,27 @@ class GlowTest {
         val broke = state("""{"kind":"card","id":50,"affordability":"unavailable"}""", listOf(giant), listOf(forest, plains))
         assertEquals(emptyList<Int>(), Glow.stopsFor(broke))
     }
+
+    /** Thor 0.4.56: Shardmage's Rescue (flash {W}) was castable on the CPU's turn and lit nothing. Forge rated it "unknown" (its
+     *  check ran out of time) but its auto-pay planned the Plains: it glows and the table stops for it. No plan: dark, no stop. */
+    @Test fun anUnknownCardForgePlannedToPayGlowsAndStops() {
+        val plains = card(41, "Battlefield", "Plains", "Basic Land — Plains", "", "({T}: Add {W}.)")
+        val bear = card(42, "Battlefield", "Savannah Lions", "Creature — Cat", "{W}", "")
+        val rescue = card(50, "Hand", "Shardmage's Rescue", "Enchantment — Aura", "{W}", "Flash\\nEnchant creature you control")
+        fun respond(row: String) = MatchState.parse("""{"status":"running","viewer":1,"turn":7,"activePlayer":2,"priorityPlayer":1,
+            "players":[{"id":1,"isViewer":true,"zones":{"Hand":{"count":1,"cards":[$rescue]},"Battlefield":{"cards":[$plains,$bear]}},"mana":{}},
+                       {"id":2,"zones":{}}],
+            "stack":[{"id":900,"text":"CPU spell","activatingPlayer":2,"ability":false}],
+            "buttons":{"okEnabled":true},"inputType":"InputPassPriority","selection":{"actionable":[$row]}}""")!!
+        val planned = respond("""{"kind":"card","id":50,"affordability":"unknown","tapPreview":[41]}""")
+        assertEquals(listOf(50), Glow.stopsFor(planned))
+        assertEquals(Mark.PLAYABLE, Glow.usableMarks(planned, true)[50])
+        val noPlan = respond("""{"kind":"card","id":50,"affordability":"unknown","tapPreview":[]}""")
+        assertEquals(emptyList<Int>(), Glow.stopsFor(noPlan))
+        assertEquals(Mark.NONE, Glow.usableMarks(noPlan, true)[50])
+        // Forge's own "unavailable" stays dark even beside a (possibly partial) plan, so the glow agrees with stopsFor.
+        val refused = respond("""{"kind":"card","id":50,"affordability":"unavailable","tapPreview":[41]}""")
+        assertEquals(emptyList<Int>(), Glow.stopsFor(refused))
+        assertEquals(Mark.NONE, Glow.usableMarks(refused, true)[50])
+    }
 }
