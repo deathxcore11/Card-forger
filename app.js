@@ -2407,7 +2407,7 @@ A.playStartCandidate=async()=>{
    if(!current()||!playerMatRoot)return;
    const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
     resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
-    lookup:(name,id)=>id?S.state.printings?.[id]||storyPrints.get(id)||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id)),fetchPrintings:fetchPrintingsBatch});
+    lookup:(name,id)=>id?S.state.printings?.[id]||storyPrints.get(id)||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id)),fetchPrintings:ids=>api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:ids.map(id=>({id}))})}).then(r=>r?.data||[])});
    playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readGoals:resultGoals,readSetup:()=>playSetup.snapshot(),getAccessToken:cloudAccessToken,createClient:localClient,
     prepareArtwork:cards.prepare,previewArtwork:cards.preview,previewLookup:cards.previewLookup,lookup:cards.lookup,resolveLate:(()=>{const late=new Set();let t=0;return name=>{late.add(name);clearTimeout(t);t=setTimeout(()=>{const names=[...late];late.clear();if(current())void resolveNames(names,()=>{},false,current);},250);};})(),onClose:closePlayerMat,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();},
     // A finished match frees its engine after cleanup; warm the next one for a rematch.
@@ -2445,7 +2445,7 @@ A.playFriendLaunch=async matchId=>{
   if(!current()||!playerMatRoot)return;
   const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
    resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
-   lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id)),fetchPrintings:fetchPrintingsBatch});
+   lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id)),fetchPrintings:ids=>api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:ids.map(id=>({id}))})}).then(r=>r?.data||[])});
   playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readGoals:resultGoals,readSetup:()=>setup,getAccessToken:cloudAccessToken,
    prepareArtwork:cards.prepare,previewArtwork:cards.preview,previewLookup:cards.previewLookup,lookup:cards.lookup,resolveLate:name=>{late.add(name);clearTimeout(lateTimer);lateTimer=setTimeout(()=>{const names=[...late];late.clear();if(current())void resolveNames(names,()=>{},false,current);},250);},
    onClose:()=>{friendRoom=null;closePlayerMat();},onHome:()=>{friendRoom=null;closePlayerMat();go('#home');}});
@@ -2481,7 +2481,6 @@ A.storyListSide=t=>{storyUi.listSide=t.dataset.storyList==='theirs'?'theirs':'mi
 // Story decklists show the exact era printing of every card, basics included: the rows carry
 // Scryfall ids, fetched once and swapped into the catalog only while the list renders.
 const storyPrints=new Map(),storyPrintAsk=new Set();
-const fetchPrintingsBatch=async ids=>(await api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:ids.map(id=>({id}))})}))?.data||[];
 const storyPrintJobs=new Set();
 // Resolves once every id asked for so far is in storyPrints (or failed), so a match never starts on a half-loaded set of pins.
 async function storyWantPrints(ids){const want=ids.filter(id=>id&&!storyPrints.has(id)&&!storyPrintAsk.has(id));if(!want.length){await Promise.allSettled([...storyPrintJobs]);return;}want.forEach(id=>storyPrintAsk.add(id));
@@ -2540,7 +2539,7 @@ A.storyPlay=async({skipScene=false}={})=>{
   const coach=seat==='hero'?createLessonCoach({root,battle:lessonRun?b:{id:null},playerSide:seat}):null;
   const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
    resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
-   lookup:(name,id)=>id?S.state.printings?.[id]||storyPrints.get(id)||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id)),fetchPrintings:fetchPrintingsBatch});
+   lookup:(name,id)=>id?S.state.printings?.[id]||storyPrints.get(id)||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id)),fetchPrintings:ids=>api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:ids.map(id=>({id}))})}).then(r=>r?.data||[])});
   // Story pins every card to its era printing (data/story/act-N.json ids): load them in bulk before the table asks for art.
   const pinIds=[...new Set([b.hero,b.villain].flatMap(s=>s.deck.cards.map(r=>r.id)).filter(Boolean))],prepareCards=cards.prepare;cards.prepare=async(...a)=>{await storyWantPrints(pinIds);return prepareCards(...a);};
   let paid=false,rec=null;
