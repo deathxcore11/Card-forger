@@ -200,17 +200,20 @@ class Bb0457ShotTest {
     }
 
     /**
-     * Live 0.4.57 on the Thor (fault list 5): the two-line target ask came down over your seat's tool row (Smart, Full Control,
-     * Auto-pay) and hid the hand. With all three tools up, the line stays right of the tray, whole, at the Thor's sizes; a
-     * longer ask on the big board too.
+     * Live 0.4.57 on the Thor (fault list 5): the two-line ask came down over your seat's tool row (Smart, Full Control,
+     * Auto-pay) and hid the hand. On two screens a target ask is now asked below (MatchBottom), so the line left on top is
+     * "Respond to X?"; with all three tools up and a long name it stays right of the tray, whole, at the Thor's sizes.
      */
     @Test fun askLineClearsSeatTray() {
         Pad.used()
         val t = state("targets").copy(controlMode = "smart", autoPay = true)
-        val sheltered = t.copy(message = "Select targets for Sheltered by Ghosts\nChoose target nonland permanent an opponent controls.")
-        val long = t.copy(message = "Select targets for Sheltered by Ghosts\nChoose target creature or planeswalker an opponent controls with power four.")
-        for ((st, size) in listOf(sheltered to Size("640x360-dual", 640, 360, true), sheltered to Size("731x411-dual", 731, 411, true),
-            long to Size("960x540-dual", 960, 540, true))) {
+        // The CPU's spell on the stack while you hold priority: the top's line reads "Respond to <name>?" (askLine).
+        fun respond(name: String) = t.copy(inputType = "InputPassPriority", message = "", priorityPlayer = t.viewer,
+            stack = t.stack.take(1).map { it.copy(text = "$name — Counter target spell.", source = it.source?.copy(name = name)) })
+        val long = respond("Sorin, Grim Nemesis of the Ancient Vampire Court")
+        val longer = respond("Sorin, Grim Nemesis of the Ancient Vampire Court and Its Heirs")
+        for ((st, size) in listOf(long to Size("640x360-dual", 640, 360, true), long to Size("731x411-dual", 731, 411, true),
+            longer to Size("960x540-dual", 960, 540, true))) {
             val a = board("askline-tray", st, size, clock = null)
             val line = a.rects["askline"] ?: error("no ask line at ${size.tag}")
             val tools = a.rects["tools"] ?: error("no seat tray at ${size.tag}")
