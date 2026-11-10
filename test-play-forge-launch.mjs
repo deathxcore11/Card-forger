@@ -178,3 +178,10 @@ test('startup progress from the host keeps only step names and bounded milliseco
  assert.equal(startupProgress({step:'<script>'}),null);assert.equal(startupProgress(null),null);
  assert.deepEqual(startupProgress({step:'start',warm:'yes'}),{warm:false,step:'start',ms:{}});
 });
+test('a card both decks run in different printings still shows art (blank Mountain in the hand)',()=>{
+ const mk=(id,set)=>({id,name:'Mountain',set,type_line:'Basic Land — Mountain',finishes:['nonfoil'],image_uris:{normal:'https://cards.scryfall.io/normal/front/m/'+id+'.jpg'}});
+ const a=mk('a0000000-0000-4000-8000-000000000001','scd'),b=mk('b0000000-0000-4000-8000-000000000002','fic');
+ const deck=(n,c)=>({id:n,name:n,format:'Commander',commander:'Mountain',cards:[{name:'Mountain',qty:9,printingId:c.id}],side:[]});
+ const art=capturedForgeArtwork({selected:deck('Mine',a),opponent:deck('CPU',b)},(name,id)=>id===a.id?a:id===b.id?b:null);
+ assert.equal(art('Mountain',{name:'Mountain'})?.card.id,a.id,'own deck printing, not a blank frame');
+});
