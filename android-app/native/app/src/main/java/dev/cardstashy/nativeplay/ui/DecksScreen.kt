@@ -150,7 +150,7 @@ fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit,
                                 repeat(cols - row.size) { Spacer(Modifier.weight(1f)) } } }
                         }
                     }
-                    if (decks.isEmpty()) Text("No Play decks yet. Build one, roll a random one, or pick a precon.", style = t(14f, color = Site.Muted))
+                    if (decks.isEmpty()) StateEmpty("No Play decks yet. Build one, roll a random one, or pick a precon.")
                     Panel("Paste a list", null) { ImportPanel(check, owned, { check = it }) { c -> scope.launch { check = checkList(c) } } ; SaveRow(check, { check = it }) { c ->
                         scope.launch { runCatching { Progress.saveDeck(JsonObject().apply { addProperty("name", c.name.ifBlank { "Play deck" }); addProperty("format", c.format); add("cards", rowsJson(c.rows!!)) }) }
                             .onSuccess { check = Check(); toast("Saved to your Play decks.") }.onFailure { toast(it.message ?: "Could not save the deck.") } } } }
@@ -418,7 +418,7 @@ fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
     val context = androidx.compose.ui.platform.LocalContext.current
     preconCacheDir = context.cacheDir; PreconStore.dir = context.cacheDir
     LaunchedEffect(Unit) { dev.cardstashy.nativeplay.play.Progress.loadCached(); dev.cardstashy.nativeplay.play.Progress.refresh() }
-    val s = state ?: run { Box(Modifier.fillMaxSize().background(Site.Bg), contentAlignment = Alignment.Center) { Text("Opening your decks…", style = Site.Body) }; return }
+    val s = state ?: run { Box(Modifier.fillMaxSize().background(Site.Bg), contentAlignment = Alignment.Center) { StateLoading("Opening your decks…") }; return }
     val toast = { m: String -> android.widget.Toast.makeText(context, m, android.widget.Toast.LENGTH_SHORT).show() }
     val scope = rememberCoroutineScope()
     var editor by remember { mutableStateOf<EditorUi?>(null) }

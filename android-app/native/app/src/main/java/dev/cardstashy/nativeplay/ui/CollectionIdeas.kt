@@ -62,7 +62,7 @@ import com.google.gson.JsonObject
 fun DecksTabBody(p: SitePanelModel?, ui: SiteUi, glyphs: Map<String, SiteSvg>, gutter: Dp, screen: Dp) {
     val page = p?.page
     Column(Modifier.fillMaxWidth().padding(horizontal = gutter).padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        if (page == null) { Text("Opening…", style = cssType(15f, 400, 21.75f, Site.Muted)); return@Column }
+        if (page == null) { StateLoading("Opening…"); return@Column }
         for (n in page.elements) if (!n.hidden) IdeasBlock(n, ui, glyphs, screen)
     }
 }

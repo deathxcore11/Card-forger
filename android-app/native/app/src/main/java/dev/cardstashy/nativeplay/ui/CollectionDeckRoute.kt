@@ -377,7 +377,7 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
             tab = { k0 -> openTab(k0); val k = if (k0 == "matchups" || k0 == "upgrade") (if (tcg) "insights" else "engine") else k0
                 k == "cards" || k in (if (tcg) TCG_SITE_TABS else MTG_SITE_TABS) }, drawn = ::drawnHere) { t ->
             val p = panel.takeIf { t != "cards" }
-            if (p == null) Text("Opening…", style = Site.Meta.copy(color = Site.Muted), modifier = Modifier.padding(24.dp))
+            if (p == null) StateLoading("Opening…", Modifier.padding(24.dp))
             else Column(Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(horizontal = 14.dp, vertical = 10.dp)) { SitePanel(p, siteUi) }
         } }
     else if (m != null) Box(Modifier.fillMaxSize().drawWithContent { pageLayer.record { this@drawWithContent.drawContent() }; drawLayer(pageLayer) }) {

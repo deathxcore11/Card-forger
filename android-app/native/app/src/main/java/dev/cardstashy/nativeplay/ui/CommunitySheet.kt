@@ -295,9 +295,9 @@ private fun Divider() = Box(Modifier.fillMaxWidth().height(1.dp).background(Site
 @Composable
 private fun PanelRows(kind: String, data: JsonObject?, busy: Boolean, error: String, onRetry: () -> Unit, onPerson: (String) -> Unit,
                       onChallenge: ((JsonObject) -> Unit)?, onAct: (String, String) -> Unit) = with(Community) {
-    if (busy && data == null) { Text("Loading your friends…", style = Site.Meta); return }
+    if (busy && data == null) { StateLoading("Loading your friends…"); return }
     if (error.isNotBlank() && data == null) { Text(error, style = Site.Body); Spacer(Modifier.height(10.dp)); SiteButton("Retry", ghost = true, onClick = onRetry); return }
-    if (data == null) { Text("Loading your friends…", style = Site.Meta); return }
+    if (data == null) { StateLoading("Loading your friends…"); return }
     if (error.isNotBlank()) Text("Showing previously loaded information. $error", style = Site.Meta.copy(color = Color(0xFFF2C66D)), modifier = Modifier.padding(bottom = 8.dp))
     val people = if (kind == "blocks") data.ja("blocked")?.mapNotNull { it as? JsonObject }.orEmpty()
         else people(data).filter { it.s("relationship") == (if (kind == "requests") "pending" else "accepted") }
@@ -377,7 +377,7 @@ private fun AddFriend(data: JsonObject?, working: Boolean, onMessage: (String) -
         SiteButton(if (searching) "Searching…" else "Search", enabled = q.trim().length >= 3 && !searching && !working) { search() }
     }
     found?.let { p -> PersonPill(p) { RelationshipControls(p, onPerson, onAct) } }
-    if (none) Text("No account found. Check the exact username or email.", style = Site.Meta)
+    if (none) StateEmpty("No account found. Check the exact username or email.")
 }
 
 /** showPerson: "← Back to friends", their profile, then Remove friend and Block. */
@@ -390,7 +390,7 @@ private fun PersonView(v: CommunityView.Person, onBack: () -> Unit, onAct: (Stri
     val person = p
     when {
         err.isNotBlank() -> Text(err, style = Site.Body)
-        person == null -> Text("Loading profile…", style = Site.Meta)
+        person == null -> StateLoading("Loading profile…")
         else -> {
             ProfileCard(Community.profile(person), person.ja("items"), owner = false, onItem = onItem)
             Row(Modifier.padding(top = 20.dp), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
@@ -508,7 +508,7 @@ private fun ChooseShare(kind: String, choices: List<JsonObject>?, onLoad: () -> 
             cursorBrush = androidx.compose.ui.graphics.SolidColor(Site.Gold), modifier = Modifier.fillMaxWidth(),
             decorationBox = { inner -> if (query.isEmpty()) Text("Name or game…", style = Site.Body.copy(color = Site.Muted)); inner() })
     }
-    if (choices == null) { Text("Loading your binders and decks…", style = Site.Meta); return@with }
+    if (choices == null) { StateLoading("Loading your binders and decks…"); return@with }
     val q = query.lowercase()
     val shown = choices.filter { it.s("kind") == kind && "${it.s("title")} ${GAME_NAME[it.s("game")] ?: ""}".lowercase().contains(q) }
     if (shown.isEmpty()) { Text("No matching ${if (kind == "binder") "binders" else "decks"}. Create and edit them in Collection or Decks, then choose what to share here.", style = Site.Meta.copy(fontSize = 13.sp)); return@with }

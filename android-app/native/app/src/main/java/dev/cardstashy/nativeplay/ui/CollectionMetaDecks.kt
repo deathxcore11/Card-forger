@@ -74,7 +74,7 @@ import androidx.compose.ui.unit.sp
 fun MetaTabBody(p: SitePanelModel?, ui: SiteUi, glyphs: Map<String, SiteSvg>, gutter: Dp, screen: Dp) {
     val page = p?.page
     androidx.compose.runtime.CompositionLocalProvider(LocalSiteGlyphs provides glyphs) { Column(Modifier.fillMaxWidth().padding(horizontal = gutter).padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        if (page == null) { Text("Opening…", style = cssType(15f, 400, 21.75f, Site.Muted)); return@Column }
+        if (page == null) { StateLoading("Opening…"); return@Column }
         // Runs of the other blocks share one flow (their margins meet as the site's do).
         val rest = ArrayList<SiteNode>()
         @Composable fun flush() { if (rest.isNotEmpty()) { SiteNodes(rest.toList(), ui); rest.clear() } }

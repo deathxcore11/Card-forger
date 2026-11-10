@@ -157,7 +157,7 @@ fun AchievementsRoute(onBack: () -> Unit, startTab: String? = null, nav: @Compos
         Backdrop() // #ambient: the shared art (glass on, or Aura)
         val d = deeds
         val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-        if (d == null) { Text("Opening your Hall of Deeds…", style = Site.Body, modifier = Modifier.align(Alignment.Center)); return@Box }
+        if (d == null) { StateLoading("Opening your Hall of Deeds…", Modifier.align(Alignment.Center)); return@Box }
         val rows = remember(d) { d.arr("achievements") }
         val tabs = remember(d) { d.arr("tabs").map { (it.get("id").str() ?: "") to (it.get("label").str() ?: "") }.filter { it.first.isNotEmpty() } }
         // A controller: LB/RB step through the deed tabs, as a tap on one does, stopping at the ends.

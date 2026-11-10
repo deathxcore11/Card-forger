@@ -750,8 +750,8 @@ private fun Guide(shown: JsonObject, data: CardData?, onRule: (CardData.Rule) ->
                         modifier = Modifier.clip(RoundedCornerShape(999.dp)).background(Site.Surface2).border(1.dp, Site.Line, RoundedCornerShape(999.dp)).padding(horizontal = 10.dp, vertical = 4.dp)) }
             }
             when {
-                rulings == null -> Text("Loading official rulings…", style = t(13f, color = Site.Muted))
-                rulings!!.isEmpty() -> Text("No official rulings for this card.", style = t(13f, color = Site.Muted))
+                rulings == null -> StateLoading("Loading official rulings…")
+                rulings!!.isEmpty() -> StateEmpty("No official rulings for this card.")
                 else -> rulings!!.forEach { (c, src) -> Column { RuleLine(c, null) {}; Text(src, style = t(12f, color = Site.Muted)) } }
             }
         }

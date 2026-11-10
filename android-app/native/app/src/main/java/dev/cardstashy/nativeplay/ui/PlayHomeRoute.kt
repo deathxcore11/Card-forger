@@ -78,7 +78,7 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
     val openedAt = androidx.compose.runtime.remember { android.os.SystemClock.elapsedRealtime() }
     if (s != null) LaunchedEffect(Unit) { androidx.compose.runtime.withFrameNanos { }; val ms = android.os.SystemClock.elapsedRealtime() - openedAt; if (HomeStart.ms == null) HomeStart.ms = ms; android.util.Log.i("CardStashy", "home first frame $ms ms") }
     if (s == null) {
-        Box(Modifier.fillMaxSize().playBackdrop(), contentAlignment = Alignment.Center) { Text("Opening your binder…", style = Type.Body) }
+        Box(Modifier.fillMaxSize().playBackdrop(), contentAlignment = Alignment.Center) { StateLoading("Opening your binder…") }
         return
     }
     val tz = java.util.TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 60000
