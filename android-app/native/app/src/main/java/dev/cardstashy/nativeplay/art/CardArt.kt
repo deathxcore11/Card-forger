@@ -57,6 +57,9 @@ object CardArt {
     private lateinit var indexFile: File
     // Forge-spelled name (lower case) -> [full card image URL, art crop URL].
     private val index = HashMap<String, Pair<String, String?>>()
+    /** Each card's rarity as Scryfall gave it with its art (table additions 3: entrances by importance). */
+    private val rarities = HashMap<String, String>()
+    fun rarity(name: String): String? = synchronized(index) { rarities[name.lowercase()] }
     /** Bumped when new names resolve, so the table redraws a card that just got its picture. */
     val version = MutableStateFlow(0)
 
@@ -169,6 +172,7 @@ object CardArt {
                             ?: want.get("collector_number")?.asString?.let { it == c.get("collector_number")?.asString && want.get("set")?.asString == c.get("set")?.asString }
                             ?: names(c).any { it.equals(name, true) }
                     } ?: cards.firstOrNull { c -> names(c).any { it.equals(name, true) } }
+                    card?.get("rarity")?.asString?.let { rarities[name.lowercase()] = it }
                     val img = card?.let { images(it) } ?: return@forEachIndexed
                     // A pinned printing is kept by its id; the shared name entry stays whatever it was.
                     val pin = want.get("id")?.asString?.lowercase()?.takeIf { it.equals(card.get("id")?.asString, true) }

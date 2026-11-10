@@ -107,6 +107,10 @@ internal class FxItem(
     val side: Int = 0,
     /** A staged pair's cards (the attacker and its blockers), which stay lit while the rest of the board dims. */
     val ids: Set<Int> = emptySet(),
+    /** Table additions 3, an arrival's importance: 0 ordinary, 1 rare or mythic (hold and drop), 2 a commander from the command zone. */
+    val entrance: Int = 0,
+    /** A level 2 entrance's name and its "Your commander" / "Their commander" line. */
+    val title: String = "",
 ) {
     var t0 = 0L; var dur = baseMs; var p0 = 0f
     /** 0..1 through the effect, or -1 while it waits for its turn. */
@@ -143,6 +147,13 @@ class Battlefield {
         } else items.firstOrNull { it.kind == Fx.LIFE && it.level == 3 && it.p(t) in 0f..1f }?.let { h ->
             val p = h.p(t); if (p <= .5f) { val q = p / .5f; val amp = 20f * h.power * (1f - q) * (1f - q); dx = amp * sin(q * 52f); dy = amp * .7f * cos(q * 43f) }
         }
+        // Entrances: 4 dp for 200 ms at a level 1 drop; 12 dp for 340 ms after a level 2 slam's 110 ms hit-stop.
+        if (hit == null) items.firstOrNull { it.kind == Fx.ARRIVE && it.entrance > 0 && it.p(t) in 0f..1f }?.let { e ->
+            val ms = (t - e.t0).toFloat()
+            val (start, span, amp0) = if (e.entrance == 1) Triple(650f, 200f, 4f) else Triple(E2_SLAM + 150f + 110f, 340f, 12f)
+            val q = (ms - start) / span
+            if (q in 0f..1f) { val amp = amp0 * (1f - q) * (1f - q); dx = amp * sin(q * 46f); dy = amp * .7f * cos(q * 39f) }
+        }
         with(scope) { translationX = dx * density; translationY = dy * density; scaleX = zoom; scaleY = zoom }
     }
     /** Haptics at each beat's contact: light on a block, medium on a clash, heavy on a face hit. Set by FxDriver. */
@@ -160,6 +171,8 @@ class Battlefield {
             val kind = when {
                 it.kind == Fx.BLOCK && it.p(ms) >= .1f -> "light"
                 it.kind == Fx.LUNGE && it.p(ms) >= LUNGE_HIT -> if (it.toKey?.startsWith("orb") == true) "heavy" else "medium"
+                it.kind == Fx.ARRIVE && it.entrance == 1 && it.p(ms) * it.dur >= 650f -> "light"
+                it.kind == Fx.ARRIVE && it.entrance == 2 && it.p(ms) * it.dur >= E2_SLAM + 150f -> "heavy"
                 else -> null
             } ?: continue
             felt += it; feel(kind)
@@ -209,7 +222,54 @@ class Battlefield {
         byCard.clear()
         for (it in items) it.card?.let { id -> byCard.getOrPut(id) { mutableListOf() } += it }
         stages = items.filter { it.kind == Fx.STAGE }
+        spots = items.filter { it.kind == Fx.ARRIVE && it.entrance == 2 }
         rev.intValue++
+    }
+
+    private var spots: List<FxItem> = emptyList()
+
+    /** A level 2 entrance: every other card on the table dims to 26 % (250 ms in, back out after the slam). */
+    private fun GraphicsLayerScope.spotDim(id: Int) {
+        val t = now.longValue
+        val on = spots.firstOrNull { t >= it.t0 && !it.done(t) } ?: return
+        if (id == on.card) return
+        val ms = (t - on.t0).toFloat()
+        val k = minOf(smooth(0f, 250f, ms), 1f - smooth(E2_SLAM + 150f + 110f, E2_SLAM + 150f + 360f, ms))
+        alpha = minOf(alpha, 1f - .74f * k)
+    }
+
+    /** The arriving card's own motion for a level 1 or 2 entrance (table additions 3). Times are the spec's, in ms from the start. */
+    private fun entranceMove(scope: GraphicsLayerScope, it: FxItem, p: Float, slot: Rect?, src: Offset?) = with(scope) {
+        val ms = p * it.dur
+        if (slot == null) { alpha = smooth(0f, 120f, ms); return@with }
+        if (it.entrance == 1) {
+            // Travel 380 ms to 46 dp above the slot, hold 140 ms, drop 130 ms ease-in.
+            val above = Offset(slot.center.x, slot.center.y - 46.dp.toPx())
+            val from = src ?: above
+            val at = when {
+                ms < 380f -> { val e = 1f - (1f - ms / 380f).let { x -> x * x * x }; lerpO(from, above, e) }
+                ms < 520f -> above
+                ms < 650f -> { val q = (ms - 520f) / 130f; lerpO(above, slot.center, q * q) }
+                else -> slot.center
+            }
+            translationX = at.x - slot.center.x; translationY = at.y - slot.center.y
+            val s = if (ms < 380f) .72f + .28f * (ms / 380f) else if (ms < 650f) 1.04f else 1f
+            scaleX = s; scaleY = s
+            alpha = if (src == null) smooth(0f, 120f, ms) else (ms / 54f).coerceIn(0f, 1f)
+        } else {
+            // Fly to the table's centre at 2.3x (520 ms), hold to 1570 ms, slam to the slot in 150 ms ease-in.
+            val centre = stageCentre ?: slot.center
+            val from = src ?: slot.center
+            val (at, s) = when {
+                ms < 520f -> { val e = 1f - (1f - ms / 520f).let { x -> x * x * x }; lerpO(from, centre, e) to (.8f + 1.5f * e) }
+                ms < E2_SLAM -> centre to 2.3f
+                ms < E2_SLAM + 150f -> { val q = (ms - E2_SLAM) / 150f; lerpO(centre, slot.center, q * q) to (2.3f - 1.3f * q * q) }
+                else -> slot.center to 1f
+            }
+            translationX = at.x - slot.center.x; translationY = at.y - slot.center.y
+            scaleX = s; scaleY = s
+            alpha = smooth(0f, 90f, ms)
+        }
     }
 
     /** Staged combat: a card outside the pair playing now sits at half light (faded in and out over 150 ms). */
@@ -263,6 +323,25 @@ class Battlefield {
         reindex()
     }
 
+    /** Commanders that have had their level 2 entrance this match (a recast uses level 1). */
+    private val commandersShown = HashSet<String>()
+    /** The table's centre in root coordinates, where a level 2 entrance holds. Set by FxLayer. */
+    internal var stageCentre: Offset? = null
+
+    /**
+     * Table additions 3: level 2 for a commander entering from the command zone (once per commander per match; with a prompt
+     * waiting it drops to its floor, the slam without the centre hold, which is level 1), level 1 for a rare or mythic
+     * (rarity from the card facts the app already has), level 0 for everything else. Effects set to Minimal: always 0.
+     */
+    internal fun entranceLevel(c: Card, fromZone: Boolean, waiting: Boolean): Int {
+        if (low || c.token) return 0
+        if (c.commander && fromZone) {
+            if (!waiting && commandersShown.add(c.name)) return 2
+            return 1
+        }
+        return when (dev.cardstashy.nativeplay.art.CardArt.rarity(c.name)) { "rare", "mythic", "special", "bonus" -> 1; else -> 0 }
+    }
+
     private fun diff(a: MatchState, b: MatchState, anchors: Anchors): List<List<FxItem>> {
         val viewer = b.viewer
         val bfA = a.players.flatMap { it.battlefield }.associateBy { it.id }
@@ -314,8 +393,16 @@ class Battlefield {
             val fromHand = id in handA
             val key = when { fromStack -> null; fromHand -> "hand"; c.controller != viewer && !c.token -> "cpuhand"; else -> null }
             val tone = cardColors(c)?.firstOrNull()?.let { MANA_GLOW[it] } ?: Color(0xFFE8D7A8)
-            arrivals += FxItem(Fx.ARRIVE, if (fromStack && c.isCreature) 2 else 1, 450, card = id, mine = c.controller == viewer,
-                from = if (fromStack) stackRect else null, fromKey = key, tone = tone, land = c.isLand)
+            val fromCommand = a.players.any { p -> p.command.any { it.id == id } }
+            val lvl = entranceLevel(c, fromStack || fromCommand, waiting = b.waitingOnMe)
+            val mine = c.controller == viewer
+            arrivals += when (lvl) {
+                2 -> FxItem(Fx.ARRIVE, 2, ENTRANCE2_MS, card = id, mine = mine, from = if (fromStack) stackRect else null, fromKey = key, tone = tone,
+                    entrance = 2, title = c.name + "\n" + (if (mine) "Your commander" else "Their commander"))
+                1 -> FxItem(Fx.ARRIVE, 2, ENTRANCE1_MS, card = id, mine = mine, from = if (fromStack) stackRect else null, fromKey = key, tone = tone, land = c.isLand, entrance = 1)
+                else -> FxItem(Fx.ARRIVE, if (fromStack && c.isCreature) 2 else 1, 450, card = id, mine = mine,
+                    from = if (fromStack) stackRect else null, fromKey = key, tone = tone, land = c.isLand)
+            }
         }
 
         // Combat: a new attacker leans in; a new blocker sends a pulse down its thread to the attacker.
@@ -428,6 +515,7 @@ class Battlefield {
     internal fun move(scope: GraphicsLayerScope, id: Int, anchors: Anchors?) {
         rev.intValue
         if (stages.isNotEmpty()) scope.dim(id)
+        if (spots.isNotEmpty()) scope.spotDim(id)
         val list = byCard[id] ?: return
         if (reduced) return
         val t = now.longValue
@@ -438,6 +526,7 @@ class Battlefield {
                 when (it.kind) {
                     Fx.ARRIVE -> {
                         if (p < 0f) { alpha = 0f; continue }
+                        if (it.entrance > 0) { entranceMove(this, it, p, anchors?.rects?.get("c$id"), it.from?.center ?: it.fromKey?.let { k -> anchors?.rects?.get(k)?.center }); continue }
                         val slot = anchors?.rects?.get("c$id")
                         val src = it.from?.center ?: it.fromKey?.let { k -> anchors?.rects?.get(k)?.center }
                         val travel = (p / .7f).coerceAtMost(1f)
@@ -641,7 +730,7 @@ internal fun FxLayer(force: Boolean = false) {
     var self by remember { mutableStateOf(Offset.Zero) }
     val tm = rememberTextMeasurer()
     val density = LocalDensity.current
-    Box(Modifier.fillMaxSize().onGloballyPositioned { self = it.boundsInRoot().topLeft }) {
+    Box(Modifier.fillMaxSize().onGloballyPositioned { val b = it.boundsInRoot(); self = b.topLeft; fx.stageCentre = b.center }) {
         // Dying cards: the last picture of the card, breaking into holo bands as it drifts to its graveyard.
         for (it in fx.items) if (it.kind == Fx.DEATH && it.ghost != null && it.from != null) key(it) { Ghost(it, fx, anchors, self, density) }
         Canvas(Modifier.fillMaxSize()) {
@@ -666,7 +755,7 @@ internal fun FxLayer(force: Boolean = false) {
                     Fx.DRAW -> drawDraw(it, p, rect(it.fromKey), rect(it.toKey) ?: Rect(size.width / 2 - 20f, size.height - 60f, size.width / 2 + 20f, size.height))
                     Fx.CAST -> drawCast(it, p, rect(it.fromKey) ?: (if (it.mine) Rect(size.width / 2, size.height - 40f, size.width / 2, size.height) else Rect(size.width / 2, 0f, size.width / 2, 20f)), rect(it.toKey))
                     Fx.RESOLVE -> drawResolve(it, p, it.from?.translate(-self.x, -self.y), rect(it.toKey))
-                    Fx.ARRIVE -> rect("c${it.card}")?.let { r -> drawArrive(it, p, r) }
+                    Fx.ARRIVE -> rect("c${it.card}")?.let { r -> if (it.entrance > 0) drawEntrance(tm, it, p, r, fx.stageCentre?.let { c -> c - self }) else drawArrive(it, p, r) }
                     Fx.TOKEN -> rect("c${it.card}")?.let { r -> drawToken(p, r) }
                     Fx.ATTACK -> rect("c${it.card}")?.let { r -> glowRing(r, Color(0xFFFFD98A), .9f * smooth(0f, .5f, p) * (1f - smooth(.8f, 1f, p)), 17.dp.toPx()) }
                     Fx.LUNGE -> drawLunge(it, p, rect("c${it.card}"), rect(it.toKey), fx.low)
@@ -836,6 +925,51 @@ private fun DrawScope.drawArrive(it: FxItem, p: Float, r: Rect) {
     }
     glowRing(r, it.tone, (if (it.land) .9f else .55f) * sin(PI.toFloat() * q), (if (it.land) 10f else 7f) * density)
     if (it.land) drawCircle(Brush.radialGradient(listOf(it.tone.copy(alpha = .35f * sin(PI.toFloat() * q)), Color.Transparent), center = r.center, radius = r.maxDimension), radius = r.maxDimension, center = r.center)
+}
+
+internal const val ENTRANCE1_MS = 1070L
+internal const val ENTRANCE2_MS = 2330L
+/** When a level 2 entrance's slam starts (ms): 520 fly + 1050 hold. */
+internal const val E2_SLAM = 1570f
+
+/** Level 1 and 2 entrances' light (table additions 3): gold rings and flash at the landing, the sweep and the name for level 2. */
+private fun DrawScope.drawEntrance(tm: androidx.compose.ui.text.TextMeasurer, it: FxItem, p: Float, r: Rect, centre: Offset?) {
+    val ms = p * it.dur
+    val gold = Color(0xFFF3D27E)
+    fun ring(at: Float, radiusPx: Float, len: Float = 520f) {
+        val q = (ms - at) / len; if (q !in 0f..1f) return
+        drawCircle(gold.copy(alpha = .9f * (1f - q)), radius = radiusPx / 2f * (.35f + .65f * q) * density, center = r.center, style = Stroke((4f - 3f * q) * density))
+    }
+    fun flash(at: Float, radiusPx: Float, len: Float) {
+        val q = (ms - at) / len; if (q !in 0f..1f) return
+        val rad = radiusPx / 2f * density * (.6f + .4f * q)
+        drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = .85f * (1f - q)), gold.copy(alpha = .45f * (1f - q)), Color.Transparent), center = r.center, radius = rad), radius = rad, center = r.center)
+    }
+    if (it.entrance == 1) {
+        ring(650f, 250f); ring(740f, 160f); flash(650f, 280f, 280f)
+        return
+    }
+    val c = centre ?: r.center
+    // While it holds at the centre: a light sweep across the card (800 ms) and the name in Cinzel gold with its line.
+    if (ms in 520f..E2_SLAM) {
+        val w = r.width * 2.3f; val h = r.height * 2.3f
+        val card = Rect(c.x - w / 2, c.y - h / 2, c.x + w / 2, c.y + h / 2)
+        val q = ((ms - 520f) / 800f).coerceIn(0f, 1f)
+        if (q < 1f) clipPath(Path().apply { addRoundRect(RoundRect(card, CornerRadius(14f * density))) }) {
+            val x = card.left - card.width * .6f + card.width * 2.2f * q
+            drawRect(Brush.linearGradient(listOf(Color.Transparent, Color.White.copy(alpha = .5f), Color.Transparent), Offset(x - card.width * .3f, card.top), Offset(x + card.width * .3f, card.bottom)), card.topLeft, card.size)
+        }
+        val a = smooth(520f, 940f, ms) * (1f - smooth(E2_SLAM - 120f, E2_SLAM, ms))
+        val (name, line) = it.title.split("\n").let { s -> s[0] to s.getOrElse(1) { "" } }
+        val big = tm.measure(name, TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 26.sp, color = gold.copy(alpha = a)))
+        val small = tm.measure(line, TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, letterSpacing = 1.2.sp, color = Color(0xFFF6EEDB).copy(alpha = a)))
+        val y0 = (card.bottom + 12f * density).coerceAtMost(size.height - big.size.height - small.size.height - 8f * density)
+        drawText(big, topLeft = Offset(c.x - big.size.width / 2f, y0))
+        drawText(small, topLeft = Offset(c.x - small.size.width / 2f, y0 + big.size.height))
+    }
+    // The slam: three rings (460/300/200 px) and a 460 px flash after the 110 ms hit-stop.
+    val land = E2_SLAM + 150f + 110f
+    ring(land, 460f, 600f); ring(land + 90f, 300f, 560f); ring(land + 180f, 200f, 500f); flash(land, 460f, 380f)
 }
 
 private fun DrawScope.drawToken(p: Float, r: Rect) {

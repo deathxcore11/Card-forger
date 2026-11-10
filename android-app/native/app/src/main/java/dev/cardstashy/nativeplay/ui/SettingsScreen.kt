@@ -616,6 +616,7 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Match feel" to "Big cards make a big entrance: a rare or mythic hangs above its spot, then drops with gold rings and a small shake. A commander arriving from the command zone the first time takes the whole table: the board dims, it flies to the centre with its name in gold, then slams down into place. The usual arrival stays for everything else.",
     "Match table" to "A tidier board: identical permanents share one pile with a small ×N badge on its corner (lands and tokens from two, other cards from three). A card that differs, tapped, damaged, with counters or in combat, steps out of its pile and stands alone.",
     "Match table" to "The rope: in the last 30 s of your turn or a decision, the clock becomes a gold fuse burning along the middle of the table with the seconds beside it, coral for the last ten. It stands still while the clock is held and fades the moment you act.",
     "Match sounds" to "Each spell now sounds like its colour when it is cast: white, blue, black, red, green, colourless and multicolour each have their own cast sound.",
