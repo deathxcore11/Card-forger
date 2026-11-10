@@ -6,6 +6,12 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.platform.testTag
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.performClick
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.google.gson.JsonParser
@@ -41,6 +47,30 @@ class StorySceneShotTest {
         // Two taps on: the first spoken line, by the archers (the typewriter is instant in minimal motion).
         repeat(2) { rule.onRoot().performClick(); rule.waitForIdle() }
         rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "story-scene-villain.png").path)
+    }
+
+    /** W3: the scene on the Thor's two screens. The top keeps the portraits and the line; the bottom keeps the lines spoken so far. */
+    @Test fun sceneDual() {
+        StoryTest.art = { url -> art.resolve(java.security.MessageDigest.getInstance("SHA-1").digest(url.toByteArray()).joinToString("") { "%02x".format(it) } + ".jpg").takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } }
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        dev.cardstashy.nativeplay.ui.DualScreen.pretend(dev.cardstashy.nativeplay.ui.DualScreen.Panel(2, "Built-in Screen", 1240, 1080, 60f))
+        try {
+            org.robolectric.RuntimeEnvironment.setQualifiers("w960dp-h1080dp-xhdpi")
+            val data = JsonParser.parseString(javaClass.classLoader!!.getResource("story/act-1.json")!!.readText()).asJsonObject
+            val b = data.getAsJsonArray("battles")[0].asJsonObject
+            val lines = data.getAsJsonArray("intro").map { it.asJsonObject } + b.getAsJsonArray("scene").map { it.asJsonObject }
+            rule.setContent {
+                androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.fillMaxSize()) {
+                    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxWidth().height(540.dp).testTag("top")) {
+                        StoryScene(lines, data.getAsJsonObject("cast"), b.getAsJsonObject("hero")["who"].asString, b.getAsJsonObject("villain")["who"].asString, null, b["title"].asString) {} }
+                    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.width(620.dp).height(540.dp).testTag("bottom")) { dev.cardstashy.nativeplay.ui.BottomRoot() }
+                }
+            }
+            rule.waitForIdle()
+            repeat(3) { rule.onNodeWithTag("top").performClick(); rule.waitForIdle() }
+            rule.onNodeWithTag("top").captureRoboImage(File(System.getProperty("shotsDir"), "w3/story-scene-top-1920x1080.png").path)
+            rule.onNodeWithTag("bottom").captureRoboImage(File(System.getProperty("shotsDir"), "w3/story-scene-bottom-1240x1080.png").path)
+        } finally { dev.cardstashy.nativeplay.ui.DualScreen.pretend(null) }
     }
 
     /** A cue bubble over the real table: the archers speak from the top, as the web docks them. */

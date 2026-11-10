@@ -15,6 +15,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -93,6 +94,23 @@ fun StoryScene(lines: List<JsonObject>, cast: JsonObject?, leftWho: String, righ
     // (Randall 10 Nov: two prompts both said "Next"). B skips as well, instead of reaching the match menu under the scene.
     PadScreen(PadActs(x = PadAct("Skip") { close() }, b = "Skip", opaque = true))
     androidx.activity.compose.BackHandler(Pad.connected.collectAsState().value) { close() }
+    // Bottom screen (W3): the lines already spoken, newest last, so the thread is never lost; Next and Skip with their keys.
+    // The top keeps the portraits and the line, and gives its Skip pill to the bottom.
+    BottomScreen {
+        ShowcaseCase("Story", title.ifBlank { "The scene" }, scroll = false,
+            buttons = listOf(CaseButton("A", "Next", gold = true) { next() }, CaseButton("X", "Skip") { close() })) {
+            lines.take(i + 1).takeLast(6).forEachIndexed { k, said -> val w = said.get("who")?.asString
+                val sp = w == "stage" || w == "narrator"
+                val words = said.get("line")?.asString.orEmpty()
+                val last = k == minOf(i, 5)
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    if (!sp) Text(person(w)?.get("name")?.asString ?: w.orEmpty(), style = storyCinzel(14f, Rule.Color.Gold))
+                    Text(if (last) full.take(shown) else words, style = storyText(16f, FontWeight.Medium, if (last) Rule.Color.Text else CaseMuted)
+                        .copy(fontStyle = if (sp) FontStyle.Italic else FontStyle.Normal), maxLines = 4, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
     val speech = remember { MutableInteractionSource() }
     // A third speaker stands with whoever they sit nearest: the right (villain) side if it is the villain's line.
     val right = who != null && !stage && who == rightWho
@@ -129,7 +147,7 @@ fun StoryScene(lines: List<JsonObject>, cast: JsonObject?, leftWho: String, righ
                 textAlign = if (stage) TextAlign.Center else TextAlign.Start, modifier = Modifier.fillMaxWidth())
             if (done) Text("▾", style = storyText(14f, FontWeight.Bold, Color(0xFFE8B95B)), modifier = Modifier.align(Alignment.End))
         }
-        Box(Modifier.align(Alignment.TopEnd).padding(top = top + 14.dp, end = 14.dp).heightIn(min = 44.dp).width(76.dp).clip(RoundedCornerShape(999.dp)).border(1.dp, Color(0x2EFFFFFF), RoundedCornerShape(999.dp)).background(Color(0xB3101218))
+        if (!DualScreen.active) Box(Modifier.align(Alignment.TopEnd).padding(top = top + 14.dp, end = 14.dp).heightIn(min = 44.dp).width(76.dp).clip(RoundedCornerShape(999.dp)).border(1.dp, Color(0x2EFFFFFF), RoundedCornerShape(999.dp)).background(Color(0xB3101218))
             .clickable { close() }, contentAlignment = Alignment.Center) { Text("Skip", style = storyText(14f, FontWeight.Bold, Color(0xFFE9E4D6))) }
     }
 }
