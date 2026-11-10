@@ -82,3 +82,26 @@ test('a challenge names one friend; the list keeps only well-formed challenges; 
  const list=await rooms.challenges();assert.equal(list.length,1);assert.equal(list[0].fromId,FRIEND);
  assert.equal(await rooms.decline(ROOM),null);assert.equal(calls.at(-1).method,'DELETE');
 });
+
+test('a lobby challenge sends no deck; accept takes the seat; ready sends the deck and the flag',async()=>{
+ const calls=[];
+ const rooms=createFriendRooms({getAccessToken:async()=>'fixture.account.token',fetchImpl:async(path,init)=>{
+  calls.push({path,method:init.method,body:init.body&&JSON.parse(init.body)});
+  return Response.json({roomId:ROOM,format:'Commander',status:'open',lobby:true,invite:INVITE,you:{hasDeck:false,ready:false},them:{joined:true}},{status:200});
+ }});
+ await rooms.open('Commander',null,null,GUEST,true);
+ assert.deepEqual(calls[0].body,{format:'Commander',lobby:true,to:GUEST});
+ await assert.rejects(rooms.open('Commander',null,null,null,true),/FRIEND_INVALID/);
+ await rooms.accept(INVITE);assert.deepEqual(calls[1].body,{invite:INVITE,accept:true});
+ await rooms.ready(ROOM,{deck,ready:true,format:'Commander'});
+ assert.equal(calls[2].path,'/api/play/rooms/'+ROOM+'/ready');assert.equal(calls[2].body.ready,true);assert.equal(calls[2].body.deck.cards.length,2);
+ await rooms.ready(ROOM,{ready:false});assert.deepEqual(calls[3].body,{ready:false});
+});
+
+test('the site worker passes the lobby ready route through to the host, and still nothing else under rooms',async()=>{
+ const {proxyForgePlayRequest}=await import('./deploy/forge-host/src/app-route.mjs');
+ const env={FORGE_HOST:{fetch:async()=>new Response(null,{status:204})}};
+ for(const p of ['/api/play/rooms','/api/play/rooms/join','/api/play/rooms/'+ROOM,'/api/play/rooms/'+ROOM+'/ready'])
+  assert.equal((await proxyForgePlayRequest(new Request('https://cardstashy.com'+p,{method:'POST'}),env)).status,204,p);
+ assert.equal(proxyForgePlayRequest(new Request('https://cardstashy.com/api/play/rooms/'+ROOM+'/ready/x',{method:'POST'}),env),null);
+});

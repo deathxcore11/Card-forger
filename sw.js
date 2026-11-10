@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-notice-fade-43164-v536";
+const CACHE = "cardforge-shell-lobby-ready-43167-v539";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",

@@ -2153,29 +2153,31 @@ const friendRoomView=()=>{
 };
 const setFriendRoom=patch=>{friendRoom=patch&&{...(friendRoom||{}),...patch};refreshPlayMenu();};
 const stopFriendPoll=()=>{clearTimeout(friendPoll);friendPoll=null;};
-const friendError=e=>e?.message&&!/^[A-Z_]+$/.test(e.message)?e.message:'The room could not be reached. Try again.';
+const friendError=e=>e?.message&&!/^[A-Z_]+$/.test(e.message)?e.message:'The room could not be reached. Try again.'+(/^[A-Z_]{3,60}$/.test(e?.message||'')?' ('+e.message+')':'');
 function pollFriendRoom(){
  stopFriendPoll();
  friendPoll=setTimeout(async()=>{
-  const room=friendRoom;if(!room?.roomId||room.seat!=='host'||room.status!=='open')return;
+  const room=friendRoom;if(!room?.roomId||room.status!=='open'||(room.seat!=='host'&&!room.lobby))return;
   try{const next=await (await rooms()).read(room.roomId);if(friendRoom?.roomId!==room.roomId)return;
    if(next.status==='started'&&next.matchId){setFriendRoom({status:'started',opponent:next.opponent||null});return A.playFriendLaunch(next.matchId);}
-   if(next.status!=='open'){const who=room.target?.name||'Your friend';setFriendRoom({status:null,roomId:null,error:room.target?(next.status==='declined'?`Not this time. ${who} can't play right now.`:next.status==='expired'?`${who} didn't answer this time. Try again later.`:'This challenge ended.'):next.status==='expired'?'Your invite expired. Make a new one.':'This room closed.'});return;}
+   if(next.status==='open'&&next.lobby)setFriendRoom({you:next.you,them:next.them,opponent:next.opponent||room.opponent||null});
+   if(next.status!=='open'){const who=room.target?.name||room.opponent?.name||'Your friend';if(room.lobby){setFriendRoom({status:null,roomId:null,lobby:false,you:null,them:null,error:next.status==='expired'?'This lobby timed out.':`${who} left the lobby.`});return;}setFriendRoom({status:null,roomId:null,error:room.target?(next.status==='declined'?`Not this time. ${who} can't play right now.`:next.status==='expired'?`${who} didn't answer this time. Try again later.`:'This challenge ended.'):next.status==='expired'?'Your invite expired. Make a new one.':'This room closed.'});return;}
   }catch{/* a missed look is retried */}
   pollFriendRoom();
  },2000);
 }
 A.playFriendCreate=async()=>{
- const state=playSetup.snapshot();if(!state.selected||friendRoom?.busy)return;
- if(await playUpdates.beforeMatch())return;
+ const state=playSetup.snapshot(),lobby=!!friendRoom?.target;if((!lobby&&!state.selected)||friendRoom?.busy)return;
+ // A challenge goes out at once with no deck: both players pick one in the lobby and ready up.
+ if(!lobby&&await playUpdates.beforeMatch())return;
  setFriendRoom({seat:'host',busy:true,error:null});
- try{const room=await (await rooms()).open(state.match.format,state.selected,await myFriendCard(),friendRoom?.target?.id||null);
-  setFriendRoom({seat:'host',busy:false,roomId:room.roomId,invite:room.invite,status:'open',copied:false});pollFriendRoom();
+ try{const room=await (await rooms()).open(state.match.format,lobby?null:state.selected,await myFriendCard(),friendRoom?.target?.id||null,lobby);
+  setFriendRoom({seat:'host',busy:false,roomId:room.roomId,invite:room.invite,status:'open',lobby:room.lobby===true,you:room.you,them:room.them,copied:false});pollFriendRoom();
  }catch(e){setFriendRoom({busy:false,error:friendError(e)});}
 };
 A.playFriendCancel=async()=>{
  const room=friendRoom;stopFriendPoll();if(!room?.roomId)return;friendRoom=room.target?{seat:'host',target:room.target}:null;refreshPlayMenu();
- try{await (await rooms()).cancel(room.roomId);}catch{/* it expires by itself */}
+ try{await (await rooms()).cancel(room.roomId);}catch{if(room.lobby)toast('Couldn’t tell your friend you left. The lobby closes by itself in a few minutes.');/* it expires by itself */}
 };
 // The link is built here, at once, so the copy still counts as the player's own click.
 const inviteLink=()=>friendRoom?.invite?'https://cardstashy.com/#play/join/'+friendRoom.invite:null;
@@ -2205,6 +2207,7 @@ async function showFriendInvite(invite){
   if(FRIEND_FORMATS.includes(room.format)&&playSetup.snapshot().match.format!==room.format)playSetup.configure({format:room.format});
   playSetup.configure({mode:'friends'});if(room.status!=='open')forgetFriendInvite();
   if(room.status==='started'&&room.matchId){friendRoom={seat:'guest',roomId:room.roomId,status:'started',invite,opponent:room.opponent||null};refreshPlayMenu();return A.playFriendLaunch(room.matchId);}
+  if(room.lobby&&room.status==='open'){const joined=await (await rooms()).accept(invite,await myFriendCard());forgetFriendInvite();friendRoom={seat:'guest',lobby:true,roomId:room.roomId,status:'open',invite,opponent:joined.opponent||room.opponent||null,you:joined.you,them:joined.them};refreshPlayMenu();pollFriendRoom();return;}
   friendRoom={seat:'guest',roomId:room.roomId,status:room.status,invite,opponent:room.opponent||null,error:room.status==='open'?null:room.status==='started'?'This match is already full.':'This invite has ended. Ask your friend for a new one.'};
  }catch(e){playSetup.configure({mode:'friends'});friendRoom={seat:'host',error:friendError(e)};forgetFriendInvite();}
  refreshPlayMenu();
@@ -2226,9 +2229,9 @@ A.playChallenge=async person=>{
 let challenges=[],challengeTimer=0,challengeFriends={at:0,owner:null,people:new Map()},letter=null;
 const answeredChallenges=new Set();
 // Only accepted friends can reach you; their names and pictures come from your own friends list.
-async function friendPeople(){
+async function friendPeople(force=false){
  const owner=cloudInfo().user?.id;
- if(challengeFriends.owner===owner&&Date.now()-challengeFriends.at<300000)return challengeFriends.people;
+ if(!force&&challengeFriends.owner===owner&&Date.now()-challengeFriends.at<300000)return challengeFriends.people;
  const overview=await communityRequest('overview');
  challengeFriends={at:Date.now(),owner,people:new Map((overview?.people||[]).filter(p=>p.relationship==='accepted').map(p=>[p.id,p]))};
  return challengeFriends.people;
@@ -2239,7 +2242,9 @@ async function checkChallenges(){
  const owner=cloudInfo().user?.id;
  if(owner&&!accountLocked&&FORGE_PLAY_TEST_ENABLED&&document.visibilityState!=='hidden'&&!inMatch()){
   try{
-   const [list,people]=await Promise.all([(await rooms()).challenges(),friendPeople()]);
+   let [list,people]=await Promise.all([(await rooms()).challenges(),friendPeople()]);
+   // A sender missing from the cached friends list is usually a friend accepted since: look again once, not after five minutes.
+   if(list.some(c=>!people.has(c.fromId)&&!answeredChallenges.has(c.roomId)))people=await friendPeople(true);
    if(cloudInfo().user?.id===owner){
     const next=list.filter(c=>people.has(c.fromId)&&!answeredChallenges.has(c.roomId)).map(c=>({...c,friend:people.get(c.fromId)}));
     const changed=next.map(c=>c.roomId).join()!==challenges.map(c=>c.roomId).join();challenges=next;
@@ -2278,6 +2283,19 @@ async function declineChallenge(c){
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void checkChallenges();});
 setTimeout(checkChallenges,4000);
+const deckKey=d=>d?String(d.id||d.name||''):'';
+// Lobby: choose your deck and tap Ready (tap again to undo). The match starts when both are ready.
+A.playFriendReady=async()=>{
+ const state=playSetup.snapshot(),room=friendRoom;if(!room?.lobby||!room.roomId||room.busy||room.status!=='open')return;
+ const key=deckKey(state.selected),undo=!!room.you?.ready&&room.readyKey===key;
+ if(!undo&&!state.selected)return;
+ if(!undo&&await playUpdates.beforeMatch())return;
+ setFriendRoom({busy:true,error:null});
+ try{const next=await (await rooms()).ready(room.roomId,undo?{ready:false}:{deck:state.selected,ready:true,format:state.match.format});
+  setFriendRoom({busy:false,you:next.you||room.you,them:next.them||room.them,readyKey:undo?null:key});
+  if(next.matchId){setFriendRoom({status:'started'});await A.playFriendLaunch(next.matchId);}
+ }catch(e){setFriendRoom({busy:false,error:friendError(e)});}
+};
 A.playFriendJoin=async()=>{
  const state=playSetup.snapshot(),room=friendRoom;if(!state.selected||room?.seat!=='guest'||room.busy)return;
  if(await playUpdates.beforeMatch())return; // the invite waits in this tab and reopens
