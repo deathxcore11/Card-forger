@@ -138,6 +138,16 @@ object ForgeService {
         }).get()
     }
 
+    /**
+     * The card behind a name Forge shows: a Universes Within / Omenpaths flavor name ("Wonderweave Aerialist") gives its own name
+     * ("Skyward Spider"); null when it already is the card's name or the engine is not ready. Blocks on the engine thread: never Main.
+     */
+    fun oracleName(shown: String): String? {
+        if (status.value !is Status.Ready) return null
+        return runCatching { engine.submit(Callable { forge.StaticData.instance().commonCards.getUniqueByName(shown)?.name }).get(2, java.util.concurrent.TimeUnit.SECONDS) }
+            .getOrNull()?.takeIf { !it.equals(shown, true) }
+    }
+
     fun close(session: LocalEngine.Session?) {
         if (session == null) return
         engine.submit { try { session.close() } catch (t: Throwable) { Log.w(TAG, "close", t) } }

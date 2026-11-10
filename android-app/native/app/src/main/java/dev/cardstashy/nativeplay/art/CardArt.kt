@@ -154,8 +154,14 @@ object CardArt {
     private fun str(o: JsonObject, vararg keys: String) = keys.firstNotNullOfOrNull { k -> o.get(k)?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() } }
     private val UUID = Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", RegexOption.IGNORE_CASE)
 
-    /** Scryfall finds a split or double-faced card by its front face ("Wear", not "Wear // Tear"). */
-    private fun lookupName(name: String) = name.substringBefore(" // ").trim()
+    /** Scryfall finds a split or double-faced card by its front face ("Wear", not "Wear // Tear"), and a token without Forge's " Token" ("Spider"). */
+    private fun lookupName(name: String) = name.substringBefore(" // ").trim().removeSuffix(" Token")
+
+    /**
+     * The card behind a name Forge shows (Randall 10 Nov: Skyward Spider played as its Omenpaths name "Wonderweave Aerialist", which
+     * Scryfall does not know, so it showed a name plate all match). Set by the app; called on the IO thread only.
+     */
+    @Volatile var oracleOf: ((String) -> String?)? = null
 
     /** The Scryfall identifier for a deck row: its exact printing when the row names one, else its name. */
     fun identifier(row: JsonObject, engineName: String): JsonObject = JsonObject().apply {
@@ -164,7 +170,7 @@ object CardArt {
         when {
             id != null -> addProperty("id", id)
             set != null && num != null -> { addProperty("set", set); addProperty("collector_number", num) }
-            else -> addProperty("name", lookupName(engineName))
+            else -> addProperty("name", str(row, "oracleName") ?: lookupName(engineName))
         }
     }
 
@@ -204,8 +210,8 @@ object CardArt {
                     val card = cards.firstOrNull { c ->
                         want.get("id")?.asString?.let { it.equals(c.get("id")?.asString, true) }
                             ?: want.get("collector_number")?.asString?.let { it == c.get("collector_number")?.asString && want.get("set")?.asString == c.get("set")?.asString }
-                            ?: names(c).any { it.equals(name, true) }
-                    } ?: cards.firstOrNull { c -> names(c).any { it.equals(name, true) } }
+                            ?: names(c).any { it.equals(name, true) || it.equals(want.get("name")?.asString, true) }
+                    } ?: cards.firstOrNull { c -> names(c).any { it.equals(name, true) || it.equals(want.get("name")?.asString, true) } }
                     card?.get("rarity")?.asString?.let { rarities[name.lowercase()] = it }
                     card?.get("type_line")?.asString?.let { t -> types[name.lowercase()] = t }
                     val img = card?.let { images(it) } ?: return@forEachIndexed
@@ -221,10 +227,15 @@ object CardArt {
         // A printing that Scryfall could not match by id or number falls back to its name once.
         val still = missing.filter { (n, _) -> url(n) == null }
         if (still.isNotEmpty()) for (chunk in still.chunked(75)) {
-            val body = JsonObject().apply { add("identifiers", JsonArray().apply { chunk.forEach { (n, _) -> add(JsonObject().apply { addProperty("name", lookupName(n)) }) } }) }.toString()
+            val asked = chunk.map { (n, r) -> n to (str(r, "oracleName") ?: lookupName(n)) }
+            val body = JsonObject().apply { add("identifiers", JsonArray().apply { asked.forEach { (_, q) -> add(JsonObject().apply { addProperty("name", q) }) } }) }.toString()
             val cards = try { Http.call("POST", "https://api.scryfall.com/cards/collection", mapOf("User-Agent" to UA), body, timeoutMs = 10000)?.asJsonObject?.getAsJsonArray("data") } catch (_: Exception) { null } ?: continue
             synchronized(index) {
-                cards.mapNotNull { it as? JsonObject }.forEach { c -> images(c)?.let { img -> names(c).forEach { n -> index.putIfAbsent(n.lowercase(), img) }; added = true } }
+                cards.mapNotNull { it as? JsonObject }.forEach { c -> images(c)?.let { img ->
+                    names(c).forEach { n -> index.putIfAbsent(n.lowercase(), img) }
+                    // Kept under the name the table asks for too ("Spider Token", a flavor name), or url() never finds it.
+                    asked.filter { (_, q) -> names(c).any { it.equals(q, true) } }.forEach { (n, _) -> index.putIfAbsent(n.lowercase(), img) }
+                    added = true } }
             }
         }
         if (added) { save(); version.value++ }
@@ -266,7 +277,16 @@ object CardArt {
                 b.onEach { n -> tries[n.lowercase()] = (tries[n.lowercase()] ?: 0) + 1 }
             }
             if (batch.isEmpty()) return
-            resolve(batch.map { n -> n to (synchronized(index) { matchRows[n.lowercase()] } ?: JsonObject().apply { addProperty("name", n) }) })
+            // A flavor name takes its card's picture already on record (the deck's own printing), else is asked by its card's name.
+            val oracle = oracleOf
+            val rows = batch.mapNotNull { n ->
+                val o = runCatching { oracle?.invoke(n) }.getOrNull()
+                synchronized(index) {
+                    if (o != null) (index[o.lowercase()])?.let { index[n.lowercase()] = it; version.value++; return@mapNotNull null }
+                    n to (matchRows[n.lowercase()] ?: o?.let { matchRows[it.lowercase()] } ?: JsonObject().apply { addProperty("name", n); if (o != null) addProperty("oracleName", o) })
+                }
+            }
+            if (rows.isNotEmpty()) resolve(rows)
             // Still missing (Scryfall did not answer): once more on the next round, up to the limit.
             synchronized(index) { batch.filter { n -> !index.containsKey(n.lowercase()) && (tries[n.lowercase()] ?: 0) < MAX_TRIES }.forEach { pending.add(it) } }
             round++
