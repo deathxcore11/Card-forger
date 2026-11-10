@@ -616,6 +616,7 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Match table" to "A tidier board: identical permanents share one pile with a small ×N badge on its corner (lands and tokens from two, other cards from three). A card that differs, tapped, damaged, with counters or in combat, steps out of its pile and stands alone.",
     "Match table" to "The rope: in the last 30 s of your turn or a decision, the clock becomes a gold fuse burning along the middle of the table with the seconds beside it, coral for the last ten. It stands still while the clock is held and fades the moment you act.",
     "Match sounds" to "Each spell now sounds like its colour when it is cast: white, blue, black, red, green, colourless and multicolour each have their own cast sound.",
     "Match feel" to "A CPU spell is now the card itself: it leaves the CPU’s hand, turns face up and lands on the stack, where it stays with its arrow until it resolves (no pop-up box). Every spell on the stack keeps its arrows, and its target wears a red rim (hostile) or green (friendly).",

@@ -626,21 +626,22 @@ internal fun orderedHand(hand: List<Card>, order: List<Int>): List<Card> {
 // ---- Battlefield ----
 
 /**
- * One row of permanents, centred on [cx] with its middle at [cy]. Lands and untouched identical permanents pile (×N, 9 du
+ * One row of permanents, centred on [cx] with its middle at [cy]. Identical permanents pile ([pilesOf], ×N, 9 right and 6 up
  * apart); everything else stands alone 10 du apart. A row wider than [room] shrinks to fit (the site's zone scale).
  */
 @Composable
 private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: Dp, cy: Dp, room: Dp, d: Du, markOf: (Card) -> Mark, tapOf: (Card) -> (() -> Unit)?, onInspect: (Card) -> Unit, mine: Boolean = false, lookup: (Int) -> Card? = { null }, piece: Dp? = null) = with(d) {
     if (cards.isEmpty()) return@with
-    val piles = cards.withIndex().groupBy { (i, it) -> if (markOf(it) == Mark.NONE && tapOf(it) == null && it.counters.isEmpty() && it.damage == 0 && !it.attacking && !it.blocking) "${if (i < split) "l" else "o"}|${it.name}|${it.tapped}" else "id${it.id}" }.values.map { g -> g.map { it.value } }
+    val piles = pilesOf(cards, split, markOf, tapOf)
     // The second lane (site: +22 px between lanes) starts at the first pile past the lands.
     val laneAt = piles.indexOfFirst { p -> cards.indexOf(p.first()) >= split }.takeIf { split in 1 until cards.size } ?: -1
     // A big board: creatures piece·1.18 × piece·.9, other permanents piece·.98 × piece·.68; a pile overlaps by piece·.8 (·.6); lanes 22 apart.
     val laneGap = if (piece != null) 22.dp else 12.du
     val w = if (piece != null) (if (land) piece * .98f else piece * 1.18f) else if (land) 42.du else 50.du
     val h = if (piece != null) (if (land) piece * .68f else piece * .9f) else if (land) 29.du else 38.du
-    val step = if (piece != null) (if (land) w - piece * .6f else w - piece * .8f) else 9.du; val gap = if (piece != null) 12.dp else 10.du
-    val widths = piles.map { w + step * (it.size - 1) }
+    // Table additions 2: a pile's cards sit 9 px right and 6 px up of the one under them, at most 4 edges showing.
+    val step = if (piece != null) 9.dp else 9.du; val rise = if (piece != null) 6.dp else 6.du; val gap = if (piece != null) 12.dp else 10.du
+    val widths = piles.map { w + step * (minOf(it.size, PILE_EDGES) - 1) }
     val total = widths.fold(0.dp) { a, b -> a + b } + gap * (piles.size - 1) + if (laneAt > 0) laneGap else 0.dp
     val k = if (total > room) room / total else 1f
     Box(Modifier.offset(x = cx - total * k / 2, y = cy - h * k / 2).graphicsLayer { scaleX = k; scaleY = k; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f) }) {
@@ -648,15 +649,37 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
         piles.forEachIndexed { i, pile ->
             if (i == laneAt && i > 0) x += laneGap
             val px = x
-            key(pile.first().id) {
-                pile.forEachIndexed { j, card ->
-                    Tile(card, w, h, land, markOf(card), mine, lookup, tapOf(card), onInspect, Modifier.offset(x = px + step * j).zIndex(j.toFloat()), d,
+            pile.forEachIndexed { j, card ->
+                key(card.id) {
+                    // Cards below the four showing edges hide under the bottom one; a card joining or leaving a pile re-lays out in 260 ms.
+                    val e = maxOf(0, j - (pile.size - PILE_EDGES))
+                    val ax by androidx.compose.animation.core.animateDpAsState(px + step * e, tween(260, easing = FastOutSlowInEasing), label = "px")
+                    val ay by androidx.compose.animation.core.animateDpAsState(-rise * e, tween(260, easing = FastOutSlowInEasing), label = "py")
+                    Tile(card, w, h, land, markOf(card), mine, lookup, tapOf(card), onInspect, Modifier.offset(x = ax, y = ay).zIndex(j.toFloat()), d,
                         count = if (j == pile.lastIndex && pile.size > 1) pile.size else 1, piece = piece, pileTop = j == pile.lastIndex)
                 }
             }
             x += widths[i] + gap
         }
     }
+}
+
+/** At most this many card edges show in a pile. */
+internal const val PILE_EDGES = 4
+
+/**
+ * Table additions 2 (tidy board): identical permanents share a pile only when everything the player can see is the same: name, tapped,
+ * summoning sick, controller, lane, and how the table marks it. Counters, damage, attachments, combat or a pick/target ring make a card
+ * stand alone. Lands and tokens pile from 2; other permanents only at 3 or more.
+ */
+internal fun pilesOf(cards: List<Card>, split: Int, markOf: (Card) -> Mark, tapOf: (Card) -> (() -> Unit)?): List<List<Card>> {
+    val alone = setOf(Mark.PICKED, Mark.TARGET, Mark.DISCARD, Mark.PICKABLE)
+    val groups = cards.withIndex().groupBy { (i, it) ->
+        val m = markOf(it)
+        if (m in alone || it.counters.isNotEmpty() || it.damage != 0 || it.attacking || it.blocking || it.attachments.isNotEmpty() || it.attachedTo != null) "id${it.id}"
+        else "${if (i < split) "l" else "o"}|${it.name}|${it.tapped}|${it.summoningSick}|${it.controller}|${it.token}|$m|${tapOf(it) != null}"
+    }.values.map { g -> g.map { it.value } }
+    return groups.flatMap { g -> if (g.size == 2 && !g[0].isLand && !g[0].token) g.map { listOf(it) } else listOf(g) }
 }
 
 /** A permanent (.play-match-card on the battlefield): the art crop in a #141418 tile with a 1.5 du ring in its frame colour. */
@@ -775,14 +798,16 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
                 contentAlignment = Alignment.Center) { Text("$n", style = sans(sp(11f), FontWeight.ExtraBold, Color.White)) }
         }
     }
-    // .play-match-pile-count: on the card's left edge (left -10px), hanging under the pile (bottom -12px, translate -50%); a tapped pile centres it
-    // (left 50%, translate -50% 0). It takes a tap and passes it to the top card.
+    // Table additions 2: "×N" on the pile's top-right corner, a dark pill with a 1 px gold border and a gold tabular number.
+    // It takes a tap and passes it to the top card.
     if (count > 1) {
-        val bh = 19.du
-        Box(modifier.offset(x = if (card.tapped) w / 2 - 15.du else (-10).du, y = if (card.tapped) h + 12.du - bh else h + 12.du - bh * 1.5f).zIndex(20f).height(bh).widthIn(min = 30.du)
-            .clip(RoundedCornerShape(999.dp)).background(Brush.radialGradient(listOf(Color(0xFFFFF2C6), Color(0xFFD9B463), Color(0xFFA9822F)))).border(2.dp, Color(0xFFFFF3CF), RoundedCornerShape(999.dp))
+        val bh = 18.du
+        Box(modifier.offset(x = w - 22.du, y = -bh / 2).zIndex(20f).height(bh).widthIn(min = 28.du)
+            .clip(RoundedCornerShape(999.dp)).background(Color(0xEB0C0D12)).border(1.dp, Palette.Gold, RoundedCornerShape(999.dp))
             .pointerInput(card.id) { detectTapGestures(onTap = { tap?.invoke() ?: inspect(card) }) }
-            .padding(horizontal = 4.du), contentAlignment = Alignment.Center) { Text("×$count", style = sans(sp(11f), FontWeight.ExtraBold, Color(0xFF2A1D05))) }
+            .padding(horizontal = 5.du), contentAlignment = Alignment.Center) {
+            Text("×$count", style = sans(sp(11f), FontWeight.ExtraBold, Palette.Gold).copy(fontFeatureSettings = "tnum"))
+        }
     }
 }
 
