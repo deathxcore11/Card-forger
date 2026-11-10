@@ -139,16 +139,21 @@ export function createFriendRooms({getAccessToken,fetchImpl=globalThis.fetch}={}
   // {roomId, format, status:'open', expiresAt, seat:'host', invite}
   // player: what the other person sees of you, {name, image, crop} (see friendPlayerCard).
   // to: a friend's account id makes it a challenge only that friend sees, for five minutes.
-  async open(format,deck,player,to){if(!FRIEND_FORMATS.includes(format))throw fail('FRIEND_FORMAT_UNSUPPORTED');if(to!=null&&!UUID.test(to))throw fail('FRIEND_INVALID');const body={format,deck:friendDeck(format,deck),...(to?{to}:{})};return withPlayer(b=>call('/api/play/rooms',{body:b}),body,player,'invalid_room');},
+  // lobby: true sends the challenge with no deck; each player then picks one and readies (see ready).
+  async open(format,deck,player,to,lobby=false){if(!FRIEND_FORMATS.includes(format))throw fail('FRIEND_FORMAT_UNSUPPORTED');if(to!=null&&!UUID.test(to))throw fail('FRIEND_INVALID');if(lobby&&!to)throw fail('FRIEND_INVALID');const body={format,...(lobby?{lobby:true}:{deck:friendDeck(format,deck)}),...(to?{to}:{})};return withPlayer(b=>call('/api/play/rooms',{body:b}),body,player,'invalid_room');},
   // The room an invite opens, before choosing a deck: {roomId, format, status, seat:'guest'}.
   async peek(code){return call('/api/play/rooms/join',{body:{invite:invite(code)}});},
   // Take the second seat; the answer names the match both players then open (attach).
   async join(code,format,deck,player){if(!FRIEND_FORMATS.includes(format))throw fail('FRIEND_FORMAT_UNSUPPORTED');const body={invite:invite(code),deck:friendDeck(format,deck)};return withPlayer(b=>call('/api/play/rooms/join',{body:b}),body,player,'invalid_invite');},
+  // A lobby challenge: take the second seat without a deck. {roomId, status:'open', lobby:true, you, them, opponent}
+  async accept(code,player){const body={invite:invite(code),accept:true};return withPlayer(b=>call('/api/play/rooms/join',{body:b}),body,player,'invalid_invite');},
+  // Choose or change your deck (clears your ready) and/or set ready. When both are ready the answer holds matchId.
+  async ready(id,{deck,ready,format}={}){if(deck&&!FRIEND_FORMATS.includes(format))throw fail('FRIEND_FORMAT_UNSUPPORTED');const body={...(deck?{deck:friendDeck(format,deck)}:{}),...(ready===undefined?{}:{ready:!!ready})};return call(room(id)+'/ready',{body});},
   // The host waits here: status 'started' brings matchId.
   async read(id){return call(room(id),{method:'GET'});},
   async cancel(id){return call(room(id),{method:'DELETE'});},
   // Challenges waiting for you: [{roomId, invite, format, expiresAt, fromId, from:{name,image,crop}}].
-  async challenges(){const data=await call('/api/play/rooms',{method:'GET'});return Array.isArray(data?.challenges)?data.challenges.filter(c=>UUID.test(c?.roomId||'')&&INVITE.test(c?.invite||'')&&UUID.test(c?.fromId||'')&&FRIEND_FORMATS.includes(c?.format)):[];},
+  async challenges(){const data=await call('/api/play/rooms',{method:'GET'});return Array.isArray(data?.challenges)?data.challenges.filter(c=>UUID.test(c?.roomId||'')&&INVITE.test(c?.invite||'')&&UUID.test(c?.fromId||'')&&FRIEND_FORMATS.includes(c?.format)).map(c=>({...c,lobby:c.lobby===true})):[];},
   // "Not now": the challenge ends quietly; the friend sees that you can't play right now.
   async decline(id){return call(room(id),{method:'DELETE'});},
  };

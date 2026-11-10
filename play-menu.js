@@ -61,12 +61,14 @@ export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(),
   // The friend's seat: empty until an invite is out, then waiting with the link to send.
   // A challenge names one friend: their picture and name stand in the seat, and no link is needed.
   const friendSeat=()=>{
-   const waiting=!guest&&room.status==='open',joined=room.status==='started',target=!guest&&room.target,them=guest?room.opponent:target;
+   const lobby=!!room.lobby&&!!room.roomId,lobbyJoined=lobby&&(guest||!!room.them?.joined);
+   const waiting=!guest&&room.status==='open',joined=room.status==='started'||lobbyJoined,target=!guest&&room.target,them=guest?room.opponent:(lobbyJoined&&room.opponent)||target;
    const name=them?.name?esc(them.name):'';
-   const title=guest?(name?`${name} challenges you`:esc(match.format)+' match'):joined?(name?`${name} joined`:'Your friend joined'):target?(waiting?`Waiting for ${name}`:`Challenge ${name}`):waiting?'Waiting for your friend':'Invite a friend';
+   const title=lobby?(lobbyJoined?(name||'Your friend'):`Waiting for ${name||'your friend'}`):guest?(name?`${name} challenges you`:esc(match.format)+' match'):joined?(name?`${name} joined`:'Your friend joined'):target?(waiting?`Waiting for ${name}`:`Challenge ${name}`):waiting?'Waiting for your friend':'Invite a friend';
    const who=guest?(name?esc(match.format)+' · friend match':"Friend's room"):target?'Friend':'Friend';
    const face=them?.avatarHtml?`<span class="pl-seat-avatar">${them.avatarHtml}</span>`:'';
-   const actions=waiting&&target?'<p class="pl-challenge-note">Your challenge is on its way. It waits five minutes.</p>':waiting?`<div class="pl-invite" role="group" aria-label="Send the invite">${room.link?`<input id="playInviteLink" class="pl-invite-link" readonly value="${esc(room.link)}" aria-label="Invite link">`:''}<button class="pl-invite-btn${room.copied?' is-copied':''}" data-act="playFriendCopy">${room.copied?'Link copied ✓':'Copy link'}</button>${canShare?'<button class="pl-invite-btn" data-act="playFriendShare">Share</button>':''}</div>`:'';
+   const lobbyNote=lobbyJoined?(room.them?.ready?'Ready ✓':room.them?.hasDeck?'Deck chosen':'Choosing a deck…'):'They have five minutes to accept.';
+   const actions=lobby?`<p class="pl-challenge-note">${lobbyNote}</p>`:waiting&&target?'<p class="pl-challenge-note">Your challenge is on its way. It waits five minutes.</p>':waiting?`<div class="pl-invite" role="group" aria-label="Send the invite">${room.link?`<input id="playInviteLink" class="pl-invite-link" readonly value="${esc(room.link)}" aria-label="Invite link">`:''}<button class="pl-invite-btn${room.copied?' is-copied':''}" data-act="playFriendCopy">${room.copied?'Link copied ✓':'Copy link'}</button>${canShare?'<button class="pl-invite-btn" data-act="playFriendShare">Share</button>':''}</div>`:'';
    return `<article class="pl-seat pl-seat--cpu pl-seat--friend${guest||joined?' pl-seat--set':' pl-seat--empty'}${waiting?' pl-seam':''}" data-seat="opponent">${guest||joined?'<span class="pl-backs" aria-hidden="true"><i></i><i></i><i></i></span>':'<span class="pl-slot" aria-hidden="true"><i></i></span>'}<div class="pl-seat-copy"><span class="pl-seat-who">${face}${who}</span><h2>${title}</h2>${actions}</div></article>`;};
   // Formats the engine plays now are choices; the rest wait for the next engine update.
   const live=friends?(room.roomId?[match.format]:FRIEND_FORMATS):native?['Standard','Commander','Modern','Pioneer','Legacy','Vintage','Pauper','Standard Brawl']:['Standard','Commander'];
@@ -77,8 +79,12 @@ export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(),
   // Friends: the host makes an invite (then may cancel it); the guest joins with their deck.
   const friendStart=()=>{
    const busy=room.busy,open=room.status==='open'&&!guest,ready=!!state.selected&&!ownIssue&&matchReleaseReady;
+   if(room.lobby&&room.roomId&&room.status==='open'){
+    const joined=guest||!!room.them?.joined,key=state.selected?String(state.selected.id||state.selected.name||''):'',mine=!!room.you?.ready&&room.readyKey===key;
+    const label=!joined?'Waiting to accept…':!state.selected?'Pick your deck':mine?'Ready ✓ · tap to undo':'Ready';
+    return `<button class="btn cs-plate pl-start${mine?' pl-start--ghost':''}" data-act="playFriendReady" ${joined&&!busy&&(mine||ready)?'':'disabled'} aria-describedby="playMatchStatus"><span class="cs-plate-label">${label}</span></button><button class="btn cs-plate pl-start pl-start--ghost" data-act="playFriendCancel"><span class="cs-plate-label">Leave</span></button>`;}
    const [act,label,enabled]=guest?['playFriendJoin',busy?'Joining…':state.selected?(room.opponent?'Accept':'Join match'):'Pick your deck',ready&&!busy&&room.status==='open']
-    :open?['playFriendCancel',room.target?'Cancel challenge':'Cancel invite',!busy]:room.status==='started'?['playFriendCancel','Starting…',false]:['playFriendCreate',busy?(room.target?'Sending…':'Making invite…'):state.selected?(room.target?'Send challenge':'Create invite'):'Pick your deck',ready&&!busy];
+    :open?['playFriendCancel',room.target?'Cancel challenge':'Cancel invite',!busy]:room.status==='started'?['playFriendCancel','Starting…',false]:['playFriendCreate',busy?(room.target?'Sending…':'Making invite…'):room.target?'Send challenge':state.selected?'Create invite':'Pick your deck',(room.target?!busy:ready&&!busy)];
    return `<button class="btn cs-plate pl-start${open?' pl-start--ghost':''}" data-act="${act}" ${enabled?'':'disabled'} aria-describedby="playMatchStatus"><span class="cs-plate-label">${label}</span></button>`;};
   const start=signedIn&&friends?friendStart():signedIn?`<button class="btn cs-plate pl-start" data-act="playStartCandidate" ${canStart?'':'disabled'} aria-describedby="playMatchStatus"><span class="cs-plate-label">${startLabel}</span></button>`:'<button class="btn cs-plate pl-start" data-act="menu"><span class="cs-plate-label">Sign in to play</span></button>';
   // Quick Play always meets the Normal CPU; Practice picks the level.
