@@ -349,7 +349,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
    const artwork=capturedForgeArtwork(setup,lookup,resolveLate);
    if(!forgeStartingPlayer(state.snapshot))throw Object.assign(Error('STARTING_PLAYER_UNCONFIRMED'),{code:'STARTING_PLAYER_UNCONFIRMED'});
-   session=createForgePresentationSession({lookupArtwork:artwork,rivalName:setup.friend?.name||null,pollMs,allowControlMode:true,transportStatus:()=>client.status(),request:async(path,body)=>{
+   session=createForgePresentationSession({lookupArtwork:artwork,rivalName:setup.friend?.name||null,selfName:String(setup.profile?.displayName||setup.profile?.username||'').trim().slice(0,40)||null,pollMs,allowControlMode:true,transportStatus:()=>client.status(),request:async(path,body)=>{
     if(body)return client.submit(body);
     try{const next=await client.read();if(next.status==='finished'){await lethalBlow();finish(next.result,next.viewerId);return null;}if(next.status!=='running')throw Error('HOST_SESSION_NOT_RUNNING');return next.snapshot;}
     catch(e){if(e.status===410||e.status===401||e.code==='ACCOUNT_CHANGED')stopped(e);throw e;}
