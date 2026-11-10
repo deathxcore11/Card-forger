@@ -31,6 +31,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -88,8 +89,10 @@ fun StoryScene(lines: List<JsonObject>, cast: JsonObject?, leftWho: String, righ
     val fade by animateFloatAsState(if (closing) 0f else 1f, tween(if (still) 0 else 260), label = "scene") { if (closing && it == 0f) onDone() }
     LaunchedEffect(lines.isEmpty()) { if (lines.isEmpty()) onDone() }
     if (lines.isEmpty()) return
-    // Controller: the scene owns the pad over the match; X (or A on the speech box) goes on, as a tap anywhere does.
-    PadScreen(PadActs(x = PadAct("Next") { next() }, opaque = true))
+    // Controller: the scene owns the pad over the match. A on the speech box goes on, as a tap anywhere does; X is the Skip button
+    // (Randall 10 Nov: two prompts both said "Next"). B skips as well, instead of reaching the match menu under the scene.
+    PadScreen(PadActs(x = PadAct("Skip") { close() }, b = "Skip", opaque = true))
+    androidx.activity.compose.BackHandler(Pad.connected.collectAsState().value) { close() }
     val speech = remember { MutableInteractionSource() }
     // A third speaker stands with whoever they sit nearest: the right (villain) side if it is the villain's line.
     val right = who != null && !stage && who == rightWho

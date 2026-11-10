@@ -173,13 +173,14 @@ object PadPrompts {
         )
     }
 
-    /** At most four, in the same order every time: A, Y, X, then B, the shoulders, Select. Never the same words twice (Randall 9 Nov:
-     *  no redundant prompts), so a B that does what X does ("Claim") is left off. */
+    /** At most four, in the same order every time: A, Y, X, then B, the shoulders, Select. Never the same words twice on any two
+     *  buttons (Randall 9 Nov: no redundant prompts; 10 Nov: "2 buttons that say next"), so a Y that does what A does ("Inspect")
+     *  or a B that does what X does ("Claim") is left off. The button still works; only its repeated words go. */
     fun prompts(acts: PadActs = current()): List<Pair<String, String>> {
         val out = ArrayList<Pair<String, String>>()
         acts.a?.let { out += "A" to it }
-        acts.y?.let { out += "Y" to it.label }
-        acts.x?.let { out += "X" to it.label }
+        acts.y?.let { y -> if (out.none { it.second.equals(y.label, true) }) out += "Y" to y.label }
+        acts.x?.let { x -> if (out.none { it.second.equals(x.label, true) }) out += "X" to x.label }
         val tail = buildList {
             acts.b?.let { add("B" to it) }
             acts.tabs?.let { add("LB RB" to acts.tabsLabel) }
@@ -188,7 +189,7 @@ object PadPrompts {
             acts.start?.let { add("Start" to it.label) }
             if (acts.b == null) add("B" to "Back")
         }
-        for (t in tail) { if (out.size >= 4) break; if (out.none { it.second == t.second }) out += t }
+        for (t in tail) { if (out.size >= 4) break; if (out.none { it.second.equals(t.second, true) }) out += t }
         return out
     }
 

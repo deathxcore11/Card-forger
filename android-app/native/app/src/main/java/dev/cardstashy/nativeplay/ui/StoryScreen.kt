@@ -241,7 +241,7 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
     val lens = rememberLens()
     val shownIds = open.filter { b -> b["secret"]?.asBoolean == true || b["slot"].asInt <= now }.map { "battle:" + it["id"].asString }.toSet()
     BottomScreen {
-        val cta = currentId?.let { id -> CaseButton("A", if (StoryLogic.battleCleared(p, id)) "Replay" else "Duel", gold = true) { onBattle(id) } }
+        val cta = currentId?.let { id -> CaseButton("X", if (StoryLogic.battleCleared(p, id)) "Replay" else "Duel", gold = true) { onBattle(id) } }
         StoryBottom(a, data, p, lens.key?.takeIf { it in shownIds }, true, cta, onBattle, wallet)
     }
     val banner = @Composable { m: Modifier ->

@@ -56,6 +56,14 @@ class PadPromptsTest {
         assertEquals(listOf(1, -1), tabs)
     }
 
+    /** Randall 10 Nov ("2 buttons that say next when one should say skip"): no two buttons ever carry the same words. */
+    @Test fun noTwoButtonsSayTheSameWords() {
+        assertEquals(listOf("A" to "Inspect", "B" to "Back"), PadPrompts.prompts(PadActs(a = "Inspect", y = PadAct("Inspect") { })))
+        assertEquals(listOf("A" to "Next", "X" to "Skip"), PadPrompts.prompts(PadActs(a = "Next", x = PadAct("Skip") { }, b = "Skip")))
+        assertEquals(listOf("A" to "Cast", "Y" to "Inspect", "X" to "To combat", "B" to "Back"),
+            PadPrompts.prompts(PadActs(a = "Cast", y = PadAct("Inspect") { }, x = PadAct("To combat") { })))
+    }
+
     @Test fun nothingFocusedNoActsMeansOnlyBack() {
         rule.setContent { Box(Modifier.fillMaxSize().padRoot()) }
         rule.waitForIdle()

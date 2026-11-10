@@ -103,6 +103,9 @@ fun ShowcaseCase(eyebrow: String, title: String, trailing: (@Composable () -> Un
     val keys = buttons.mapNotNull { it.key?.takeIf { _ -> it.enabled } }.toSet()
     val owner = androidx.compose.runtime.remember { Any() }
     androidx.compose.runtime.DisposableEffect(owner, keys) { DualScreen.shownKeys[owner] = keys; onDispose { DualScreen.shownKeys.remove(owner) } }
+    // Nor are a case button's words, whatever key the bar would put beside them ("A Continue" on the case, "X Continue" under it).
+    val labels = buttons.filter { it.enabled }.map { it.label.lowercase() }.toSet()
+    androidx.compose.runtime.DisposableEffect(owner, labels) { DualScreen.shownLabels[owner] = labels; onDispose { DualScreen.shownLabels.remove(owner) } }
     Box(Modifier.fillMaxSize().padding(10.dp).clip(frame)
         .background(Brush.verticalGradient(listOf(Color(0xE61A1D25), Color(0xF00C0E13))))
         .border(1.dp, Brush.linearGradient(listOf(Gold.copy(alpha = .55f), Gold.copy(alpha = .12f), Gold.copy(alpha = .45f))), frame)) {
