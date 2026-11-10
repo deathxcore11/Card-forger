@@ -17,7 +17,7 @@
   "scripts/compose-next-context.py": "f2d69ab5996e5ae8f73cf6b1dd8470b5a46fa8a5f01839af43da0b08fa9b8dee",
   "scripts/create-release-policy.mjs": "ed49937d148d7488287712759f8f3669ff956b545493c6687f8845760fb659d5",
   "scripts/docker-proof-client.py": "73dc6366ec4b9a6cefe713dc317775cb56bb551ee7fd1ef2c375bdfafbe3dca2",
-  "src/app-route.mjs": "439eee09590e01e394819ba759f194f76a82cca52914dacfc79ac0b26de942ae",
+  "src/app-route.mjs": "dbc5617a1e986a22724877568c7a3d0e953d7ccf06fa808ef16f6a7415eb190c",
   "src/auth.mjs": "354d8d771974dce87bcb22ed7fb0f26d245d88acc98023a77d4eec6a2d876c58",
   "src/native-adapter-next.mjs": "679e10f68526fa2fac403d7a33aefd2adcd2d461c7a634cd6d857b431015a34b",
   "src/native-adapter.mjs": "d6a386e681d549796efb80847e7b66270b66473cc892ff4101b9596d21093777",

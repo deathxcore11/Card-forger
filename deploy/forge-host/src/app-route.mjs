@@ -2,7 +2,7 @@
 // inventory gate; leave every non-game route unchanged. It grants no new origin
 // or account authority: host re-verifies the existing Supabase bearer itself.
 // rooms: friend matches (open a room, join with an invite, read or cancel a room).
-const route = /^\/api\/play\/(?:warm$|matches(?:\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:\/actions)?)?$|rooms(?:\/join|\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})?$)/i;
+const route = /^\/api\/play\/(?:warm$|matches(?:\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:\/actions)?)?$|rooms(?:\/join|\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:\/ready)?)?$)/i;
 export function proxyForgePlayRequest(request, env) {
   if (!route.test(new URL(request.url).pathname)) return null;
   if (!env.FORGE_HOST) return new Response(JSON.stringify({ error: 'forge_host_unavailable' }), {

@@ -111,7 +111,7 @@
     {
       "path": "composition-contract.json",
       "bytes": 5606,
-      "sha256": "604f0d750b648602659d7650a93afc7ff5c2ca596e5ab786c7ec1890f0c5f6be"
+      "sha256": "1180b7060fee8b1bd902295a2636b856c59a200075b96cb8c3e86f69a6380750"
     },
     {
       "path": "evidence/ci-40318684639/artifact/image-summary.json",
@@ -371,7 +371,7 @@
     {
       "path": "fixture-server.mjs",
       "bytes": 12720,
-      "sha256": "8ee2b4939527c15bfb4d6a7c8eb13f399db0844b982b32f5aed2740c2b80aed6"
+      "sha256": "adf43050b80cf4d7dd3626b288064e58df48b7d6f8393f3ee99e13663de3a30c"
     },
     {
       "path": "fixture-storage.mjs",
@@ -431,7 +431,7 @@
     {
       "path": "image-stages/MANIFEST.json",
       "bytes": 5201,
-      "sha256": "7f8d5499d7f4f3fca6073f258c33bb6dd50d364d417aa432a5a5e1d96ab7caa5"
+      "sha256": "10bdc447a29e3c73227182348fb756fd45c068d4b2dbba74db776f6a7bca46bf"
     },
     {
       "path": "image-stages/README.md",
@@ -441,7 +441,7 @@
     {
       "path": "image-stages/SHA256SUMS",
       "bytes": 1550,
-      "sha256": "c6b4ef52037a43b8ed7b7dc4a6f7cfefd566b3c6a9c9acbcf72ef4d7fe52a82d"
+      "sha256": "b4d9ebbe9928c4af6d0e9d5d4cfcfe16e5a5397a1fb95a0c615930a8bdde0098"
     },
     {
       "path": "image-stages/build-and-probe.mjs",
@@ -481,7 +481,7 @@
     {
       "path": "image-stages/pins.mjs",
       "bytes": 1210,
-      "sha256": "dbd139b2a6388442a2c1ebc5c9c3a317e71b7cf67df40558028588a18986a79d"
+      "sha256": "bfa6e524d335a252374f7a19c4547b4ae040af86cbd717d13538651678efd180"
     },
     {
       "path": "image-stages/probe-image.mjs",
@@ -531,7 +531,7 @@
     {
       "path": "local-oci/MANIFEST.json",
       "bytes": 2491,
-      "sha256": "3800b45a27e72e799330a0cc24e20826e100e9d684bba5c8087088d4ac38ddbb"
+      "sha256": "78400bebf41d1b392affc29c113978d11e1b3ea62c0f2d2fe8fcacbe4633a2b0"
     },
     {
       "path": "local-oci/README.md",
@@ -576,7 +576,7 @@
     {
       "path": "local-oci/reviewed-host.mjs",
       "bytes": 2132,
-      "sha256": "385d506169edf1b44a28912b8e0ab03bea73e2f290e67150edf73092b16246e3"
+      "sha256": "55552f95d6fa189129bbd202a3f70f5177073908156b5fbb3974856a4e774856"
     },
     {
       "path": "local-oci/schema.json",
