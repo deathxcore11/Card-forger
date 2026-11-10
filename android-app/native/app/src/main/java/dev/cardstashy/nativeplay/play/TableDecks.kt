@@ -1,6 +1,8 @@
 package dev.cardstashy.nativeplay.play
 
 import com.google.gson.JsonArray
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import com.google.gson.JsonObject
 import dev.cardstashy.nativeplay.account.UserDeck
 
@@ -42,9 +44,25 @@ object TableDecks {
             dev.cardstashy.nativeplay.account.Http.call("GET", "https://cardstashy.com/data/play-starters/precons.json", mapOf("Accept" to "application/json"), null, 20_000) as? JsonObject } }.getOrNull()
         if (body == null) { freeAsked = false; return }
         free.value = freeFrom(body)
+        // The real cards go back in once the engine says it knows them (a card it doesn't know would refuse the match, so that one
+        // keeps its stand-in). Off the caller's scope, so leaving the picker early doesn't strand the stand-ins.
+        val swapped = body.getAsJsonObject("swaps")?.keySet()?.toSet().orEmpty()
+        if (swapped.isNotEmpty()) kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            val st = dev.cardstashy.nativeplay.engine.ForgeService.status.first { it is dev.cardstashy.nativeplay.engine.ForgeService.Status.Ready || it is dev.cardstashy.nativeplay.engine.ForgeService.Status.Failed }
+            if (st !is dev.cardstashy.nativeplay.engine.ForgeService.Status.Ready) return@launch
+            val known = swapped - runCatching { dev.cardstashy.nativeplay.engine.ForgeService.unknownNames(swapped).toSet() }.getOrElse { return@launch }
+            if (known.isNotEmpty()) free.value = freeFrom(body, known)
+        }
     }
-    fun freeFrom(body: JsonObject): List<Deck> = (body.getAsJsonArray("decks") ?: JsonArray()).mapNotNull { it as? JsonObject }.filter { it.s("format") == "Commander" }.map { d ->
-        val rows = d.getAsJsonArray("rows")?.mapNotNull { it as? JsonObject } ?: emptyList()
+    /** [known]: real names (keys of the bake's swaps) the engine knows; their stand-ins are swapped back. */
+    fun freeFrom(body: JsonObject, known: Set<String> = emptySet()): List<Deck> {
+    // The web bake swaps cards its engine has no rules for (swaps: real name -> stand-in; a swapped row carries no set). Forge plays
+    // every card, so native puts the real card back. Every free Commander precon in the file shows (10 from 10 Nov), no count.
+    val real = body.getAsJsonObject("swaps")?.entrySet()?.mapNotNull { (k, v) -> if (k !in known) null else v.takeIf { it.isJsonPrimitive }?.asString?.let { it to k } }?.toMap().orEmpty()
+    return (body.getAsJsonArray("decks") ?: JsonArray()).mapNotNull { it as? JsonObject }.filter { it.s("format") == "Commander" }.map { d ->
+        val rows = (d.getAsJsonArray("rows")?.mapNotNull { it as? JsonObject } ?: emptyList()).map { r ->
+            val back = real[r.s("name")]?.takeIf { !r.has("set") }
+            if (back == null) r else r.deepCopy().apply { addProperty("name", back) } }
         val commander = rows.firstOrNull { it.get("commander")?.takeIf { p -> p.isJsonPrimitive }?.asBoolean == true }.s("name")
         val raw = JsonObject().apply {
             addProperty("id", "free:" + d.s("key")); addProperty("name", d.s("name")); addProperty("format", "Commander"); addProperty("commander", commander)
@@ -52,6 +70,7 @@ object TableDecks {
             add("side", JsonArray()); addProperty("free", true)
         }
         Deck("free:" + d.s("key"), d.s("name"), "Commander", commander, raw, false, true)
+    }
     }
 
     fun list(state: JsonObject?, workspace: List<UserDeck>, typeOf: (String) -> String, freeDecks: List<Deck> = free.value.orEmpty()): List<Deck> {
