@@ -4,6 +4,9 @@ import android.graphics.BitmapFactory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.alpha
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -120,6 +123,34 @@ class TableShotTest {
                 }
             }
         }
+        // W3: on two screens the match menu opens on the bottom; the table stays whole on top.
+        try {
+            dev.cardstashy.nativeplay.ui.DualScreen.pretend(dev.cardstashy.nativeplay.ui.DualScreen.Panel(2, "Built-in Screen", 1240, 1080, 60f))
+            dev.cardstashy.nativeplay.ui.Pad.used()
+            val st = state("crowded")
+            val menu = dev.cardstashy.nativeplay.ui.MatchMenu(input, {}, {}).apply { this.open = true }
+            val board = @androidx.compose.runtime.Composable {
+                val anchors = remember { Anchors() }
+                CompositionLocalProvider(LocalAnchors provides anchors) {
+                    Box(Modifier.fillMaxSize().background(Palette.Night)) {
+                        PlaymatScene(Modifier.fillMaxSize())
+                        ForgeBoard(st, live = true, intents = TableIntents(), selectedHand = null, onSelectHand = {}, onInspect = {}, onMenu = {},
+                            handOrder = emptyList(), onHandOrder = {}, menu = menu)
+                    }
+                }
+            }
+            RuntimeEnvironment.setQualifiers("w960dp-h540dp-land-xhdpi")
+            captureRoboImage(File(System.getProperty("shotsDir"), "w3/match-menu-top-1920x1080.png").path) { board() }
+            RuntimeEnvironment.setQualifiers("w620dp-h540dp-xhdpi")
+            val app = RuntimeEnvironment.getApplication()
+            org.robolectric.Shadows.shadowOf(app.packageManager).addActivityIfNotPresent(android.content.ComponentName(app, androidx.activity.ComponentActivity::class.java))
+            androidx.test.core.app.ActivityScenario.launch(androidx.activity.ComponentActivity::class.java).use { sc ->
+                sc.onActivity { a -> a.setContentView(androidx.compose.ui.platform.ComposeView(a).apply { setContent {
+                    Box(Modifier.fillMaxSize()) { Box(Modifier.size(960.dp, 540.dp).alpha(0f)) { board() }; Box(Modifier.fillMaxSize().background(Palette.Night)) { dev.cardstashy.nativeplay.ui.BottomRoot() } } } }) }
+                repeat(8) { org.robolectric.shadows.ShadowLooper.idleMainLooper(50, java.util.concurrent.TimeUnit.MILLISECONDS) }
+                sc.onActivity { a -> a.findViewById<android.view.View>(android.R.id.content).captureRoboImage(File(System.getProperty("shotsDir"), "w3/match-menu-bottom-1240x1080.png").path) }
+            }
+        } finally { dev.cardstashy.nativeplay.ui.DualScreen.pretend(null); dev.cardstashy.nativeplay.ui.Pad.forget() }
         art.mkdirs(); art.resolve("missing.txt").writeText(missing.joinToString("\n"))
         CardImageTest.art = null
     }

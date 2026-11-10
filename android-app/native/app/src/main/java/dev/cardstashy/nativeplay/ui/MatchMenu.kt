@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -130,16 +131,46 @@ internal fun MenuPanel(menu: MatchMenu, stackCount: Int, d: Du, x: Dp, y: Dp) = 
     LaunchedEffect(Unit) { if (Pad.connected.value) runCatching { first.requestFocus() } }
     androidx.activity.compose.BackHandler(padOn) { menu.open = false }
     PadScreen(PadActs(b = "Close", start = PadAct("Close") { menu.open = false }, opaque = true))
-    Column(Modifier.padLayer().offset(x = x, y = y).zIndex(40f).onFocusChanged { if (it.hasFocus) TablePad.held = true }.graphicsLayer { alpha = pop.value; translationY = (1 - pop.value) * -6 * u * density }
+    // Two screens (W3): the menu opens on the bottom so the table stays in view. The rows stay on top as the ring's stops, unseen,
+    // and the bottom lights the row the ring is on; a finger uses the bottom's rows.
+    val dual = DualScreen.active
+    var ringAt by remember { mutableIntStateOf(-1) }
+    data class Item(val label: String, val on: Boolean, val danger: Boolean, val run: () -> Unit)
+    val items = buildList {
+        if (menu.deck.isNotEmpty()) add(Item("Deck tracker", menu.tracker != null, false) { menu.showTracker(if (menu.tracker != null) null else "deck") })
+        add(Item("History & stack" + if (stackCount > 0) " · $stackCount" else "", menu.history, false) { menu.history = !menu.history })
+        add(Item("Concede", false, true) { menu.open = false; menu.onConcede() })
+        add(Item("Return to Play setup", false, false) { menu.open = false; menu.onLeave() })
+    }
+    if (dual) BottomScreen {
+        ShowcaseCase("Match", "Menu", scroll = false) {
+            items.forEachIndexed { i, it ->
+                val shape = RoundedCornerShape(Rule.Radius.Panel)
+                Row(Modifier.fillMaxWidth().heightIn(min = 72.dp).clip(shape).background(if (it.on) Rule.Color.GoldEdge.copy(alpha = .25f) else Rule.Color.Glass)
+                    .border(if (i == ringAt) 2.dp else 1.dp, if (i == ringAt) Rule.Color.CtaTop else Rule.Color.Edge, shape).clickable(onClick = it.run).padding(horizontal = 22.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text(it.label, style = Rule.Type.sans(20, FontWeight.Bold, if (it.danger) Rule.Color.Coral else if (it.on) Rule.Color.Gold else Rule.Color.Text), modifier = Modifier.weight(1f))
+                    if (it.on) Text("✓", style = Rule.Type.sans(20, FontWeight.Bold, Rule.Color.Gold))
+                }
+            }
+        }
+    }
+    // With no controller the bottom rows are the only ones (nothing unseen to tap on the table).
+    if (dual && !padOn) return@with
+    Column(Modifier.padLayer().offset(x = x, y = y).zIndex(40f).graphicsLayer { if (dual) alpha = 0f }.onFocusChanged { if (it.hasFocus) TablePad.held = true }.graphicsLayer { alpha = pop.value; translationY = (1 - pop.value) * -6 * u * density }
         .widthIn(min = 220.du).clip(RoundedCornerShape(16.du)).background(Color(0xF211141B)).border(1.dp, Color(0x1AFFFFFF), RoundedCornerShape(16.du))
         .padding(8.du), verticalArrangement = Arrangement.spacedBy(4.du)) {
-        @Composable fun item(label: String, on: Boolean = false, icon: String? = null, focus: FocusRequester? = null, onClick: () -> Unit) =
+        var n = 0
+        @Composable fun item(label: String, on: Boolean = false, icon: String? = null, focus: FocusRequester? = null, onClick: () -> Unit) {
+            val idx = n++
             Row(Modifier.widthIn(min = 204.du).heightIn(min = 42.du).clip(RoundedCornerShape(10.du)).background(if (on) Color(0x1AE8B95B) else Color.Transparent)
+                .onFocusChanged { f -> if (f.isFocused) ringAt = idx else if (ringAt == idx) ringAt = -1 }
                 .then(if (focus != null) Modifier.focusRequester(focus) else Modifier)
                 .clickable(onClick = onClick).padding(horizontal = 12.du), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.du)) {
                 if (icon != null) StrokeIcon(icon, Color(0xFFE9D4A4), 17.du, stroke = 1.8f)
                 Text(label, style = sans(sp(13.5f), FontWeight.SemiBold, if (on) Color(0xFFF4D78F) else Color(0xFFEEF0F3)))
             }
+        }
         if (menu.deck.isNotEmpty()) item("Deck tracker", menu.tracker != null, TRACKER_ICON, focus = first) { menu.showTracker(if (menu.tracker != null) null else "deck") }
         item("History & stack" + if (stackCount > 0) " · $stackCount" else "", menu.history, focus = if (menu.deck.isEmpty()) first else null) { menu.history = !menu.history }
         item("Concede") { menu.open = false; menu.onConcede() }
