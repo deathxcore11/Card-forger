@@ -285,6 +285,7 @@ public final class ForgeHttpBridge implements IRemote {
         }
         for(Player p:game.getPlayers())p.updateOpponentsForView();
         new Thread(()-> {
+            matchThread=Thread.currentThread();
             try {
                 match.startGame(game);
                 if(concessionRequested)awaitConcession();
@@ -642,7 +643,7 @@ public final class ForgeHttpBridge implements IRemote {
                     &&controller.getInputProxy().getInput() instanceof forge.gamemodes.match.input.InputPayMana
                     &&!nativePaymentPending())busy=false;
             }
-            case updateButtons -> { buttons=obj("ok",a[1],"cancel",a[2],"okEnabled",a[3],"cancelEnabled",a[4]); busy=false; }
+            case updateButtons -> { buttons=obj("ok",a[1],"cancel",a[2],"okEnabled",a[3],"cancelEnabled",a[4]); buttonsInput=controller==null?null:controller.getInputProxy().getInput(); busy=false; }
             case setSelection -> { selection=(Selection)a[0]; busy=false; }
             case awaitNextInput -> { busy=true; recheckBusy(); }
             case flashIncorrectAction -> { busy=false; }
@@ -671,6 +672,17 @@ public final class ForgeHttpBridge implements IRemote {
     final AtomicLong guiTraffic=new AtomicLong();
     final AtomicBoolean busyWatch=new AtomicBoolean();
     volatile long busyReleases;
+    // The thread running the match. The watchdog only releases busy while it is parked in Forge's
+    // awaitInput: an unchanged prompt alone was not enough (after a choice was answered, Forge was
+    // still checking state-based actions under the old prompt, and an early action raced it).
+    volatile Thread matchThread;
+    boolean forgeAwaitsInput(){
+        Thread t=matchThread;
+        if(t==null||t.getState()!=Thread.State.WAITING)return false;
+        for(StackTraceElement f:t.getStackTrace())
+            if(f.getMethodName().equals("awaitInput")&&f.getClassName().equals("forge.gui.interfaces.IGuiGame"))return true;
+        return false;
+    }
     void recheckBusy(){
         if(!busyWatch.compareAndSet(false,true))return;
         BUSY_RECHECK.schedule(new Runnable(){
@@ -683,7 +695,8 @@ public final class ForgeHttpBridge implements IRemote {
                         if(!busy||c==null||failure!=null||finished||concessionRequested){busyWatch.set(false);return;}
                         var in=c.getInputProxy().getInput();long now=guiTraffic.get();
                         boolean waiting=!commandInFlight&&pending==null&&in!=null
-                            &&!(in instanceof forge.gamemodes.match.input.InputLockUI)&&!nativePaymentPending();
+                            &&!(in instanceof forge.gamemodes.match.input.InputLockUI)&&!nativePaymentPending()
+                            &&forgeAwaitsInput();
                         quiet=waiting&&in==last&&now==traffic?quiet+1:0;
                         last=in;traffic=now;
                         if(quiet>=2){busy=false;released=true;busyReleases++;busyWatch.set(false);}
@@ -694,6 +707,10 @@ public final class ForgeHttpBridge implements IRemote {
             }
         },BUSY_SETTLE_MS,TimeUnit.MILLISECONDS);
     }
+    // The input the current buttons were sent for. Smart's Auto press must use this payment's own
+    // enabled Auto: a press on the previous prompt's buttons ran Forge's Auto before the payment
+    // was ready, on a game thread beside the one setting it up, and corrupted the mana pool.
+    volatile forge.gamemodes.match.input.Input buttonsInput;
     void clearSmartIntent(){smartIntentOrigin=null;smartIntentAbility=null;}
     // Trustworthy glow. selection.actionable is what can be finished now (the human
     // overlay proves the cost can be paid), so only those cards glow. A card with an
@@ -875,7 +892,8 @@ public final class ForgeHttpBridge implements IRemote {
         }
         if(!autoPay()||smartIntentOrigin==null||pending!=null||commandInFlight
             ||!(input instanceof forge.gamemodes.match.input.InputPayManaOfCostPayment)
-            ||input==autoPayAttemptInput||!Boolean.TRUE.equals(buttons.get("okEnabled")))return;
+            ||input==autoPayAttemptInput||input!=buttonsInput||nativePaymentPending()
+            ||!Boolean.TRUE.equals(buttons.get("okEnabled")))return;
         final SpellAbility paid=controller.getPlayer().getPaidForSA();
         // Copies/alternate costs and nested or resolving effects deliberately remain manual.
         boolean alreadyOnStack=false;
