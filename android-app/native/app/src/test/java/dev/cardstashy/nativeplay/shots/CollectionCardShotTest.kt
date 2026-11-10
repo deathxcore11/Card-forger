@@ -1,5 +1,7 @@
 package dev.cardstashy.nativeplay.shots
 
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -91,6 +93,25 @@ class CollectionCardShotTest {
         try { shot("collection-card-overview", 844, 390) { page!!() } } finally { dev.cardstashy.nativeplay.ui.HomeTest.forceShort = null }
         page("delver-of-secrets")?.let { p -> shot("collection-card-flip", 390, 844) { p() } }
         if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
+    }
+
+    /** Two screens (specs/thor-card-popup-dual.md): the card page across the Thor's top (1920 × 1080) and the whole card on its bottom (1240 × 1080). */
+    @Test fun overviewDual() {
+        setUp()
+        val fx = home.resolve("collection-card-lightning-bolt.json"); assumeTrue("write the card fixtures first", fx.exists())
+        val m = CollectionCardModel.parse(JsonParser.parseString(fx.readText()).asJsonObject)
+        dev.cardstashy.nativeplay.ui.Pad.used()
+        try {
+            dev.cardstashy.nativeplay.ui.DualScreen.pretend(dev.cardstashy.nativeplay.ui.DualScreen.Panel(2, "Built-in Screen", 1240, 1080, 60f))
+            RuntimeEnvironment.setQualifiers("w960dp-h540dp-land-xhdpi")
+            captureRoboImage(File(System.getProperty("shotsDir"), "w3/collection-card-top-1920x1080.png").path) {
+                Box(Modifier.fillMaxSize()) { Box(Modifier.size(1.dp)) { CollectionCardSheet(m, CollectionCardActions()) {} }; dev.cardstashy.nativeplay.ui.TopScreenHost() }
+            }
+            RuntimeEnvironment.setQualifiers("w620dp-h540dp-xhdpi")
+            captureRoboImage(File(System.getProperty("shotsDir"), "w3/collection-card-bottom-1240x1080.png").path) {
+                Box(Modifier.fillMaxSize()) { Box(Modifier.size(1.dp)) { CollectionCardSheet(m, CollectionCardActions()) {} }; dev.cardstashy.nativeplay.ui.BottomRoot() }
+            }
+        } finally { dev.cardstashy.nativeplay.ui.DualScreen.pretend(null); dev.cardstashy.nativeplay.ui.Pad.forget() }
     }
 
     @Test fun prices() {

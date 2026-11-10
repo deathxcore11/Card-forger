@@ -1,5 +1,11 @@
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -333,6 +339,9 @@ fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onBa
     // Two screens (Randall 9 Nov, approved): the same page, unchanged, as one tall strip across both screens. Each screen draws
     // its slice of it (the top from the strip's top, the bottom carrying on below), scrolled as one by finger, stick or d-pad.
     val part = LocalSpanPart.current
+    // Two screens (specs/thor-card-popup-dual.md, approved 10 Nov 14:48Z): the page across the top screen's full width, the whole
+    // card on the bottom. The buy sheet keeps the strip.
+    if (DualScreen.active && part == null && m.buy == null) { DualCollectionCard(m, act, onBack, historyBack, onClose); return }
     if (DualScreen.active && part == null) {
         val span = remember { SheetSpan() }
         TopScreen { androidx.compose.runtime.CompositionLocalProvider(LocalSpanPart provides (0 to span)) { CollectionCardSheet(m, act, onBack, historyBack, onClose) } }
@@ -785,10 +794,14 @@ private fun PriceSummary(p: CardPrice, glyphs: Map<String, SiteSvg>, big: Boolea
 
 /** .cs-card: the card and its finishes and printings; beside it (over 600 wide) or under it, the rules text and what you do with it. */
 @Composable
-private fun Overview(m: CollectionCardModel, o: CardOverview, act: CollectionCardActions, two: Boolean, gutter: Dp, onZoom: () -> Unit) {
+private fun Overview(m: CollectionCardModel, o: CardOverview, act: CollectionCardActions, two: Boolean, gutter: Dp, dual: Boolean = false, onZoom: () -> Unit) {
     Column(Modifier.padding(horizontal = gutter).padding(top = 6.dp, bottom = 12.dp)) {
         if (o.pickers.isNotEmpty()) Pickers(o.pickers, act, Modifier.padding(bottom = 12.dp), o.pickersFoot)
-        if (two) Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
+        // Two screens: the bottom screen is the card, so the top keeps the finishes, printings and facts beside each other, no picture.
+        if (dual) Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
+            Box(Modifier.weight(.45f)) { ArtStack(m, o, act, onZoom, dual = true) }
+            Box(Modifier.weight(.55f)) { Side(m, o, act, 14.dp) }
+        } else if (two) Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
             Box(Modifier.weight(.45f)) { ArtStack(m, o, act, onZoom) }
             Box(Modifier.weight(.55f)) { Side(m, o, act, 14.dp) }
         } else Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -812,7 +825,7 @@ private fun Pickers(pickers: List<TcgPicker>, act: CollectionCardActions, modifi
 
 /** .cd-art-stack: the card in its tier frame and finish (tap to enlarge), the flip, the finish chips, profile photo, other printings. */
 @Composable
-private fun ArtStack(m: CollectionCardModel, o: CardOverview, act: CollectionCardActions, onZoom: () -> Unit) {
+private fun ArtStack(m: CollectionCardModel, o: CardOverview, act: CollectionCardActions, onZoom: () -> Unit, dual: Boolean = false) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         val data = dev.cardstashy.nativeplay.play.CardData.ready.collectAsStateValue()
         val ctx = androidx.compose.ui.platform.LocalContext.current
@@ -828,9 +841,10 @@ private fun ArtStack(m: CollectionCardModel, o: CardOverview, act: CollectionCar
         // A controller: Y enlarges the card (its tap), holding Y leans it under the light as a finger does; on the card itself A enlarges it.
         val zoomNow by androidx.compose.runtime.rememberUpdatedState(onZoom)
         val padScope = rememberCoroutineScope()
-        PadScreen(remember(lean) { PadActs(y = PadAct("Inspect") { zoomNow() }, yHold = lean.padHold(padScope)) })
+        if (!dual) PadScreen(remember(lean) { PadActs(y = PadAct("Inspect") { zoomNow() }, yHold = lean.padHold(padScope)) })
         val padSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
         val padPic = remember { PadActs(a = "Inspect") }
+        if (!dual) run {
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             // --frame-w: clamp(6px, 2.4vw, 10px); the card inside at 6 corners.
             val frameW = (androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp * .024f).coerceIn(6.dp, 10.dp)
@@ -845,6 +859,7 @@ private fun ArtStack(m: CollectionCardModel, o: CardOverview, act: CollectionCar
             }
         }
         o.flip?.let { f -> Ghost(f.label, f.icon, Modifier.fillMaxWidth(), fs = 13.5f) { act.face() } }
+        }
         if (o.finishes.isNotEmpty()) Column(Modifier.padding(vertical = 10.dp)) {
             Text(o.finishLabel, style = sans(13f, 400, Mute, lh = 1.45f))
             Row(Modifier.padding(top = 5.6.dp).horizontalScroll(rememberScrollState()).padding(start = 1.6.dp, end = 1.6.dp, top = 2.4.dp, bottom = 5.6.dp),
@@ -1996,5 +2011,123 @@ internal fun SpanStrip(span: SheetSpan, slice: Int, content: @Composable () -> U
         Column(Modifier.fillMaxWidth().wrapContentHeight(Alignment.Top, unbounded = true)
             .onSizeChanged { with(density) { span.contentH = it.height.toDp().value } }
             .offset { IntOffset(0, -with(density) { (span.y + if (slice == 1) span.topH.value else 0f).dp.roundToPx() }) }) { content() }
+    }
+}
+
+
+/**
+ * The Collection card page on two screens (specs/thor-card-popup-dual.md; the look is locked, placement only). Top, full width:
+ * the art down the left 44 %, the title, tabs and the tab in the right column, scrolling on its own. Bottom: the whole card,
+ * fitted (WHOLE CARD, NEVER CUT), You have and Price, X the main action, Y Art view, A flip (or zoom). B closes; LB/RB tabs.
+ */
+@Composable
+private fun DualCollectionCard(m: CollectionCardModel, act: CollectionCardActions, onBack: (() -> Unit)?, historyBack: Boolean, onClose: () -> Unit) {
+    var zoom by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    BackHandler(enabled = zoom == null) { val b = onBack; if (historyBack && b != null) b() else onClose() }
+    val o = m.overview
+    val main = m.price?.add?.takeIf { !it.disabled } ?: o?.main?.firstOrNull { !it.disabled && it.label.isNotBlank() }
+    val xAct = main?.let { p -> PadAct(p.label.ifBlank { "Add to collection" }) { act.press(p) } }
+    val yAct = o?.zoomArt?.takeIf { it.isNotBlank() }?.let { PadAct("Art view") { zoom = "art" } }
+    val aAct = if (o?.flip != null) PadAct(o.flip.label.ifBlank { "Flip" }) { act.face() } else PadAct("Zoom") { zoom = "card" }
+    val tabsNow = m.tabs
+    val padAct by androidx.compose.runtime.rememberUpdatedState(act)
+    PadScreen(remember(tabsNow, xAct?.label, yAct?.label, aAct.label) { PadActs(b = "Close", opaque = true, x = xAct, y = yAct, tabs = if (tabsNow.size < 2) null else { d ->
+        val i = tabsNow.indexOfFirst { it.on }; tabsNow.getOrNull((i + d).coerceIn(0, tabsNow.lastIndex))?.takeIf { !it.on }?.let { padAct.tab(it.key) } }) })
+    FoilFocus.Cover()
+    val scroll = rememberScrollState()
+
+    TopScreen { androidx.compose.runtime.CompositionLocalProvider(LocalSheetPal provides sheetPal(m.game)) {
+        Box(Modifier.fillMaxSize().background(SheetBg)) {
+            Row(Modifier.fillMaxSize()) {
+                val h = m.head
+                Box(Modifier.fillMaxHeight().weight(.44f)) {
+                    val p0 = heroPainter(h?.art?.ifBlank { null }?.let(homeArt))
+                    val pk = h?.crop == "pokemon"
+                    val p = if (pk && p0 != null) remember(p0) { PkArtCrop(p0) } else p0
+                    if (p != null) Image(p, null, Modifier.fillMaxSize().graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+                        .drawWithContent { drawContent(); drawRect(Brush.horizontalGradient(0f to Color.Black, .72f to Color.Black, 1f to Color.Transparent), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn) },
+                        contentScale = ContentScale.Crop)
+                }
+                Column(Modifier.weight(.56f).fillMaxHeight().windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.safeDrawing.only(
+                    androidx.compose.foundation.layout.WindowInsetsSides.End + androidx.compose.foundation.layout.WindowInsetsSides.Vertical))) {
+                    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+                    var self by remember { mutableStateOf(false) }
+                    LaunchedEffect(Unit) { androidx.compose.runtime.withFrameNanos { }; runCatching { focus.requestFocus() } }
+                    Column(Modifier.weight(1f).fillMaxWidth().focusRequester(focus).onFocusChanged { self = it.isFocused }
+                        .onPreviewKeyEvent { e ->
+                            val k = e.nativeKeyEvent.keyCode; val down = e.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN
+                            when {
+                                k == android.view.KeyEvent.KEYCODE_DPAD_UP || k == android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+                                    if (down) scope.launch { scroll.animateScrollBy(if (k == android.view.KeyEvent.KEYCODE_DPAD_DOWN) 260f else -260f) }; true }
+                                self && (k == android.view.KeyEvent.KEYCODE_BUTTON_A || k == android.view.KeyEvent.KEYCODE_DPAD_CENTER) -> { if (down && e.nativeKeyEvent.repeatCount == 0) aAct.run?.invoke(); true }
+                                else -> false
+                            }
+                        }.focusable().verticalScroll(scroll).padding(top = 22.dp, end = 8.dp)) {
+                        if (h != null) Row(Modifier.padding(horizontal = 18.dp), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Column(Modifier.weight(1f)) {
+                                Text(h.title, style = manrope(28f, 800, Rule.Color.Text, lh = 1.12f, ls = -.56f))
+                                Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    if (h.type.isNotBlank()) Text(h.type, style = sans(14f, 600, Rule.Color.Muted, lh = 1.45f))
+                                    h.owned?.let { Text(it, style = sans(11f, 600, Rule.Color.Text, lh = 1.4f), modifier = Modifier.padding(start = 8.dp)
+                                        .clip(Rule.Radius.Pill).background(Rule.Color.Glass).border(1.dp, Rule.Color.Edge, Rule.Radius.Pill)
+                                        .padding(horizontal = 8.dp, vertical = 3.dp).semantics { contentDescription = h.ownedAria }) }
+                                }
+                            }
+                            if (h.emblems.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) { h.emblems.forEach { TitleEmblem(it) } }
+                            else Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) { h.mana.forEach { Sym(it.src, it.alt, 22.dp) } }
+                        }
+                        Box(Modifier.padding(horizontal = 18.dp).padding(top = 14.dp, bottom = 6.dp)) { CardTabs(m.tabs, true, act) }
+                        val gutter = 18.dp
+                        when (m.tab) {
+                            "meta" -> MetaPanel(m, act, gutter)
+                            "guide" -> GuidePanel(m, act, gutter)
+                            "prices" -> BoxWithConstraints { m.prices?.let { PricesPanel(it, act, gutter, maxWidth, 540.dp) } }
+                            else -> { OverviewHead(m, act, true, gutter); m.overview?.let { Overview(m, it, act, true, gutter, dual = true) { zoom = "card" } } }
+                        }
+                        Spacer(Modifier.height(16.dp))
+                    }
+                }
+            }
+        }
+    } }
+
+    BottomScreen {
+        val ov = m.overview ?: return@BottomScreen
+        val data = dev.cardstashy.nativeplay.play.CardData.ready.collectAsStateValue()
+        val ctx = androidx.compose.ui.platform.LocalContext.current
+        val tcg = m.game != CardGame.MTG
+        val finish = Foil.finishFor(m.shown, ov.finishKey.ifBlank { "nonfoil" })
+        val look = if (tcg) null else data?.let { Foil.look(it, m.shown, finish) }
+        val worn = remember(ov.tcgFinish, ov.image) { ov.tcgFinish?.let { tcgFinishOf(ctx, m.game, it, ov.image) } }
+        val shines = look?.takeIf { it.shines }
+        val tilt = rememberFoilTilt(live = look?.recipe != null || worn != null)
+        val buttons = listOfNotNull(
+            xAct?.let { CaseButton("X", it.label, gold = true) { it.run?.invoke() } },
+            yAct?.let { CaseButton("Y", it.label) { it.run?.invoke() } },
+            CaseButton("A", aAct.label) { aAct.run?.invoke() })
+        ShowcaseCase("This card", m.head?.title ?: m.name, buttons = buttons, heroWeight = .5f, scroll = false, hero = {
+            FittedCard(Modifier.fillMaxSize(), margin = 12.dp, ratio = if (m.game == CardGame.YGO) 59f / 86f else CARD_RATIO) { mod ->
+                if (!tcg) CardPicture(ov.image, shines, tilt, mod, shape = CardCorner)
+                else firstOf(ov.sources.ifEmpty { listOf(ov.image) }).let { p -> if (p != null) CardFace(p, null, tilt, mod, CardCorner, finish = worn) else Box(mod.clip(CardCorner).background(Surface2)) }
+            }
+        }) {
+            Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
+                m.head?.owned?.takeIf { it.isNotBlank() }?.let { CaseFact("You have", it) }
+                m.price?.ref?.value?.takeIf { it.isNotBlank() }?.let { CaseFact("Price", it) }
+            }
+        }
+    }
+
+    if (zoom != null && o != null) {
+        val data = dev.cardstashy.nativeplay.play.CardData.ready.collectAsStateValue()
+        val look = if (m.game != CardGame.MTG) null else data?.let { Foil.look(it, m.shown, Foil.finishFor(m.shown, o.finishKey.ifBlank { "nonfoil" })) }
+        val ctx = androidx.compose.ui.platform.LocalContext.current
+        val tcg = remember(o.tcgFinish, o.image) { o.tcgFinish?.let { tcgFinishOf(ctx, m.game, it, o.image) } }
+        TopScreen {
+            CardZoom(o.zoomSrc.ifBlank { o.image }, o.zoomHi.ifBlank { null }, o.zoomArt.ifBlank { null }, look, finish = tcg,
+                gallery = o.zoomArt.takeIf { it.isNotBlank() }?.let { a -> val f = o.faces.firstOrNull()
+                    Gallery(listOf(galleryPiece(a, f?.name?.ifBlank { null } ?: m.name, f?.artist, f?.flavor, m.shown))) }, startArt = zoom == "art") { zoom = null }
+        }
     }
 }
