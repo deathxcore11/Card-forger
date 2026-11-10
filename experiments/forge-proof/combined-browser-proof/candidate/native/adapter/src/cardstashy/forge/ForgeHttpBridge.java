@@ -625,6 +625,7 @@ public final class ForgeHttpBridge implements IRemote {
     }
     @Override public void send(NetEvent event) {
         if(!(event instanceof GuiGameEvent e)) return;
+        guiTraffic.incrementAndGet();
         Object[] a=e.getObjects();
         if(e.getMethod()==ProtocolMethod.setGameView||e.getMethod()==ProtocolMethod.applyDelta)refreshBoard();
         // Forge skips a selection equal to the last one (often none), so the prompt's
@@ -633,7 +634,14 @@ public final class ForgeHttpBridge implements IRemote {
         else if(e.getMethod()==ProtocolMethod.updateButtons||e.getMethod()==ProtocolMethod.showPromptMessage)noteBlocked(selection);
         if(e.getMethod()==ProtocolMethod.setSelection||e.getMethod()==ProtocolMethod.updateButtons||e.getMethod()==ProtocolMethod.showPromptMessage)noteMustAttack();
         synchronized(lock){ switch(e.getMethod()) {
-            case showPromptMessage -> message=(String)a[1];
+            case showPromptMessage -> {
+                message=(String)a[1];
+                // A payment's prompt text is the last thing Forge sends once a tapped source has paid
+                // (its buttons and marks are often unchanged, so they are not sent): it is waiting again.
+                if(!commandInFlight&&pending==null&&controller!=null
+                    &&controller.getInputProxy().getInput() instanceof forge.gamemodes.match.input.InputPayMana
+                    &&!nativePaymentPending())busy=false;
+            }
             case updateButtons -> { buttons=obj("ok",a[1],"cancel",a[2],"okEnabled",a[3],"cancelEnabled",a[4]); busy=false; }
             case setSelection -> { selection=(Selection)a[0]; busy=false; }
             case awaitNextInput -> { busy=true; recheckBusy(); }
@@ -651,22 +659,40 @@ public final class ForgeHttpBridge implements IRemote {
         if(e.getMethod()==ProtocolMethod.setSelection || e.getMethod()==ProtocolMethod.updateButtons || e.getMethod()==ProtocolMethod.showPromptMessage || e.getMethod()==ProtocolMethod.flashIncorrectAction || e.getMethod()==ProtocolMethod.message || e.getMethod()==ProtocolMethod.showErrorDialog) publish();
         }
     }
-    // Forge's lock-UI timer can send awaitNextInput after the next priority prompt is already
-    // showing, and nothing clears busy for that prompt, so the table reads "Resolving" while
-    // Forge waits on the player. If the same live input is still up shortly after, it was stale.
+    // Busy must never outlive Forge's own work. Forge sends no update when a prompt's buttons and
+    // marks are unchanged (a payment after a mana choice, after Auto could not finish, or after a
+    // late awaitNextInput from its lock-UI timer), so nothing cleared busy while Forge's game thread
+    // waited on the player, and every action was refused with native_engine_busy: the match froze.
+    // While busy is set, look again every BUSY_SETTLE_MS. Once the same live input has stayed up
+    // with no command, dialog, mana payment or Forge GUI traffic for two looks in a row, Forge is
+    // waiting on the player, so busy is cleared and the prompt is published.
     static final ScheduledExecutorService BUSY_RECHECK=Executors.newSingleThreadScheduledExecutor(r->{Thread t=new Thread(r,"cardstashy-busy-recheck");t.setDaemon(true);return t;});
+    static final long BUSY_SETTLE_MS=Long.getLong("cardstashy.busySettleMs",250L);
+    final AtomicLong guiTraffic=new AtomicLong();
+    final AtomicBoolean busyWatch=new AtomicBoolean();
+    volatile long busyReleases;
     void recheckBusy(){
-        PlayerControllerHuman c=controller;if(c==null)return;
-        forge.gamemodes.match.input.Input in=c.getInputProxy().getInput();
-        if(in==null||in instanceof forge.gamemodes.match.input.InputLockUI)return;
-        BUSY_RECHECK.schedule(()->{
-            boolean changed=false;
-            synchronized(lock){
-                if(busy&&!commandInFlight&&pending==null&&failure==null&&!finished&&!concessionRequested
-                    &&c.getInputProxy().getInput()==in){busy=false;changed=true;}
+        if(!busyWatch.compareAndSet(false,true))return;
+        BUSY_RECHECK.schedule(new Runnable(){
+            forge.gamemodes.match.input.Input last;long traffic=-1;int quiet;
+            @Override public void run(){
+                boolean released=false;
+                try{
+                    synchronized(lock){
+                        PlayerControllerHuman c=controller;
+                        if(!busy||c==null||failure!=null||finished||concessionRequested){busyWatch.set(false);return;}
+                        var in=c.getInputProxy().getInput();long now=guiTraffic.get();
+                        boolean waiting=!commandInFlight&&pending==null&&in!=null
+                            &&!(in instanceof forge.gamemodes.match.input.InputLockUI)&&!nativePaymentPending();
+                        quiet=waiting&&in==last&&now==traffic?quiet+1:0;
+                        last=in;traffic=now;
+                        if(quiet>=2){busy=false;released=true;busyReleases++;busyWatch.set(false);}
+                    }
+                }catch(RuntimeException ex){busyWatch.set(false);return;}
+                if(released){System.out.println("NATIVE_BUSY_RELEASED "+busyReleases);publish();}
+                else BUSY_RECHECK.schedule(this,BUSY_SETTLE_MS,TimeUnit.MILLISECONDS);
             }
-            if(changed)publish();
-        },300,TimeUnit.MILLISECONDS);
+        },BUSY_SETTLE_MS,TimeUnit.MILLISECONDS);
     }
     void clearSmartIntent(){smartIntentOrigin=null;smartIntentAbility=null;}
     // Trustworthy glow. selection.actionable is what can be finished now (the human
@@ -879,6 +905,7 @@ public final class ForgeHttpBridge implements IRemote {
     }}
     @Override public Object sendAndWait(IdentifiableNetEvent event) {
         GuiGameEvent e=(GuiGameEvent)event;
+        guiTraffic.incrementAndGet();
         if(concessionRequested){
             // Native onPlayerLost can reveal face-down cards: this is display-only, no choice.
             if(Thread.currentThread()==concessionThread){
@@ -1005,7 +1032,7 @@ public final class ForgeHttpBridge implements IRemote {
         if(value instanceof CardView c) return card(c);
         if(value instanceof forge.item.PaperCard pc)return obj("kind","paperCard","name",pc.getName(),"setCode",pc.getEdition());
         if(value instanceof PlayerView p)return obj("kind","player","id",p.getId(),"name",p.getName());
-        if(value instanceof SpellAbilityView sa)return obj("kind","ability","id",sa.getId(),"description",sa.getDescription(),"card",card(sa.getHostCard()));
+        if(value instanceof SpellAbilityView sa)return obj("kind","ability","id",sa.getId(),"description",sa.getDescription(),"card",sa.getHostCard()==null?null:card(sa.getHostCard()));
         if(value instanceof forge.game.replacement.ReplacementEffectView re)return obj("kind","replacementEffect","id",re.getId(),"description",re.getDescription());
         if(value instanceof String || value instanceof Number || value instanceof Boolean || value instanceof Enum<?>)return String.valueOf(value);
         // Kicker, Buyback, Entwine and other optional costs (Forge asks with many(), so an order
@@ -1179,6 +1206,7 @@ public final class ForgeHttpBridge implements IRemote {
     SpellAbility costNowFor;Map<String,Object> costNow;
     void publish() { synchronized(lock) {
         if(failure!=null){publishFailure();return;}
+        if(busy)recheckBusy();
         if(board.isEmpty())return;
         publishedInput=controller.getInputProxy().getInput();
         String input=publishedInput==null?null:publishedInput.getClass().getSimpleName();
@@ -1456,6 +1484,11 @@ public final class ForgeHttpBridge implements IRemote {
                         commandInFlight=false;
                         // Only native stable prompt callbacks or an explicit false selection result release busy.
                         // The same Input identity can enqueue a later native confirmation, so identity alone is not enough.
+                        // A payment is the exception: its own work holds isPaymentPending from the click (on this thread)
+                        // until its prompt is shown again, so a click that started nothing (an already tapped land)
+                        // leaves the same payment waiting on the player.
+                        if(failure==null&&pending==null&&capturedInput instanceof forge.gamemodes.match.input.InputPayMana
+                            &&capturedInput==controller.getInputProxy().getInput()&&!nativePaymentPending())busy=false;
                         maybeNativeAutoPay();
                         publish();
                     }}
