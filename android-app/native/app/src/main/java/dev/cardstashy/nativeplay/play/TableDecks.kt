@@ -65,13 +65,15 @@ object TableDecks {
             // The row names its real card ("was", bake from 10 Nov) or, in older files, a swapped row has no set of its own.
             val was = r.s("was").takeIf { it.isNotBlank() }
             val back = if (was != null) was.takeIf { it in known } else real[r.s("name")]?.takeIf { !r.has("set") }
-            if (back == null) r else r.deepCopy().apply { addProperty("name", back); remove("set"); remove("number") } }
+            if (back == null) r else r.deepCopy().apply { addProperty("name", back); remove("set"); remove("number"); remove("id") } }
         val commander = rows.firstOrNull { it.get("commander")?.takeIf { p -> p.isJsonPrimitive }?.asBoolean == true }.s("name")
         val raw = JsonObject().apply {
             addProperty("id", "free:" + d.s("key")); addProperty("name", d.s("name")); addProperty("format", "Commander"); addProperty("commander", commander)
             add("cards", JsonArray().apply { rows.forEach { r -> add(JsonObject().apply { addProperty("name", r.s("name")); addProperty("qty", r.get("qty")?.asInt ?: 1)
                 // Its exact printing (every row has one from web 4.3.152), so the hand and table find its art (CardArt.identifier).
-                r.s("set").takeIf { it.isNotBlank() }?.let { addProperty("set", it) }; r.s("number").takeIf { it.isNotBlank() }?.let { addProperty("collectorNumber", it) } }) } })
+                r.s("set").takeIf { it.isNotBlank() }?.let { addProperty("set", it) }; r.s("number").takeIf { it.isNotBlank() }?.let { addProperty("collectorNumber", it) }
+                // The decklist's own printing (precons.json "id", an exact Scryfall printing id): pins deck views, the match, VS and the preload.
+                r.s("id").takeIf { it.isNotBlank() }?.let { addProperty("printingId", it) } }) } })
             add("side", JsonArray()); addProperty("free", true)
         }
         Deck("free:" + d.s("key"), d.s("name"), "Commander", commander, raw, false, true)
