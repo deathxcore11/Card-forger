@@ -26,6 +26,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.gson.JsonObject
@@ -151,6 +152,33 @@ fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (De
             goals = { if (goals.isNotEmpty()) PackGoals(goals, onPack) }, nav = nav)
         return
     }
+    // Bottom screen (W3): the deck row under the ring in a deck case; with none, how many decks this format has and how many you can
+    // build or craft. Inside the Decks tabs the tab's own case stays until the ring lands on a row.
+    val lens = rememberLens()
+    if (!embedded || lens.key != null) BottomScreen {
+        val on = lens.key?.removePrefix("deck:")?.let { k -> rows.firstOrNull { it.second.key == k } }
+        ShowcaseLens(on) { pair ->
+            if (pair != null) { val (a, row) = pair
+                FinderDeckCase(row, a.name.ifEmpty { row.name }, onOpen = { ui.open = row.list }) { use(row.list, row.complete) } }
+            else ShowcaseCase("Build a deck · ${ui.format}", if (ui.busy) "Counting decks" else "${"%,d".format(counts["all"] ?: 0)} decks") {
+                Row(horizontalArrangement = Arrangement.spacedBy(26.dp)) {
+                    // The filter chips' own words and counts.
+                    CaseFact("In Trunk", "${counts["trunk"] ?: 0}")
+                    CaseFact("Craftable now", if (rarityBusy) "Counting" else "${counts["craftable"] ?: 0}")
+                }
+                PlayMath.purse(state)?.let { CaseLabel("Your purse"); PurseRow(it) }
+                // The cards the decks shown above are most often missing: what a seal is best spent on in this format.
+                val wanted = rows.flatMap { it.second.shortfall.missing }.groupBy { it.name }.map { (n, l) -> Triple(n, l.size, l.first()) }
+                    .sortedWith(compareByDescending<Triple<String, Int, dev.cardstashy.nativeplay.play.Decks.Missing>> { it.second }.thenBy { it.first }).take(6)
+                if (wanted.isNotEmpty()) {
+                    CaseLabel("Missing most often")
+                    wanted.forEach { (n, k, _) -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(n, style = Rule.Type.S15, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                        Text("in $k deck${if (k == 1) "" else "s"}", style = Rule.Type.sans(14, FontWeight.SemiBold, Rule.Color.Muted)) } }
+                }
+            }
+        }
+    }
     Box(Modifier.fillMaxSize().then(if (embedded) Modifier else Modifier.background(Site.Bg))) {
         if (!embedded) Backdrop() // #ambient: the shared art (glass on, or Aura)
         LazyColumn(Modifier.fillMaxSize().then(if (embedded) Modifier else Modifier.windowInsetsPadding(WindowInsets.statusBars)), state = if (embedded) ui.list else rememberLazyListState(),
@@ -186,7 +214,8 @@ fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (De
             }
             itemsIndexed(rows, key = { _, x -> x.second.key }) { i, (a, row) ->
                 val enter = remember { ui.seen.add(row.key) }
-                FinderRow(row, a, i, enter, onOpen = { ui.open = row.list }, onUse = { use(row.list, row.complete) }) { v -> use(v.list, v.s.complete) }
+                Box(Modifier.dualLens(lens, "deck:" + row.key)) {
+                    FinderRow(row, a, i, enter, onOpen = { ui.open = row.list }, onUse = { use(row.list, row.complete) }) { v -> use(v.list, v.s.complete) } }
             }
             if (archs.size > ui.limit) item { GhostButton("More decks", Modifier.fillMaxWidth()) { ui.limit += 8 } }
         }
@@ -246,8 +275,10 @@ private fun FinderRow(row: Finder.Row, arch: Finder.Archetype, index: Int, enter
                 }
             }
             Status(row.status, row.shortfall.seals, row.short, row.open)
-            GoldCta(if (row.complete) "Use deck" else "Build it", Modifier.fillMaxWidth(), onClick = onUse)
-            GhostButton("See the cards", Modifier.fillMaxWidth(), onClick = onOpen)
+            // X uses the deck and Y shows its cards wherever the ring is in the row (the bottom case prints the same keys).
+            val acts = remember(row.key, row.complete) { PadActs(x = PadAct(if (row.complete) "Use deck" else "Build it", onUse), y = PadAct("See the cards", onOpen)) }
+            GoldCta(if (row.complete) "Use deck" else "Build it", Modifier.fillMaxWidth().padActs(acts), onClick = onUse)
+            GhostButton("See the cards", Modifier.fillMaxWidth().padActs(acts), onClick = onOpen)
             if (arch.variants.isNotEmpty()) {
                 var more by remember { mutableStateOf(false) }
                 Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { more = !more }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -255,6 +286,25 @@ private fun FinderRow(row: Finder.Row, arch: Finder.Archetype, index: Int, enter
                 }
                 if (more) arch.variants.take(12).forEach { v -> VariantRow(v) { onVariant(v) } }
             }
+        }
+    }
+}
+
+/** A Finder deck on the bottom screen: its art, how much of it you own, the seals to finish it, and the cards it leans on. */
+@Composable
+private fun FinderDeckCase(row: Finder.Row, title: String, onOpen: () -> Unit, onUse: () -> Unit) {
+    val lean = row.groups.flatMap { it.cards }.filter { !it.basic }.sortedByDescending { it.qty }.take(6)
+    ShowcaseCase("Deck · ${row.format}", title, heroWeight = .34f,
+        buttons = listOf(CaseButton("X", if (row.complete) "Use deck" else "Build it", gold = true, run = onUse), CaseButton("Y", "See the cards", run = onOpen)),
+        hero = if (row.cover.isEmpty()) null else ({ Art(row.cover, Modifier.matchParentSize(), androidx.compose.ui.BiasAlignment(0f, -.3f)) })) {
+        Row(horizontalArrangement = Arrangement.spacedBy(26.dp)) { CaseFact("Owned", "${row.cardsHave} / ${row.size}") }
+        Status(row.status, row.shortfall.seals, row.short, row.open)
+        if (lean.isNotEmpty()) {
+            CaseLabel("It leans on")
+            lean.forEach { c -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("${c.have}/${c.qty}", style = Rule.Type.sans(14, FontWeight.ExtraBold, if (c.have < c.qty) Rule.Color.Muted else Rule.Color.Text))
+                Text(c.name, style = Rule.Type.S15, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                if (c.have < c.qty) SealMini(c.seal, 16.dp) } }
         }
     }
 }

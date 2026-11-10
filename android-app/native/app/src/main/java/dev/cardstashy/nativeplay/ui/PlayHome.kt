@@ -171,7 +171,7 @@ const val FORGE_ART_NAME = "Great Furnace"
 var homeArt: (String) -> Any? = { it }
 
 @Composable
-private fun Art(url: String?, modifier: Modifier, align: Alignment = Alignment.Center, scale: ContentScale = ContentScale.Crop, filter: ColorFilter = artFilter) {
+internal fun Art(url: String?, modifier: Modifier, align: Alignment = Alignment.Center, scale: ContentScale = ContentScale.Crop, filter: ColorFilter = artFilter) {
     if (HomeTest.noPictures) { Box(modifier.background(Color(0xFF121318))); return }
     val p: Painter? = heroPainter(url?.let(homeArt))
     if (p != null) androidx.compose.foundation.Image(p, null, modifier, alignment = align, contentScale = scale, colorFilter = filter)

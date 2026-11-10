@@ -679,6 +679,38 @@ class ShotTest {
         } finally { dev.cardstashy.nativeplay.ui.LensHost.preset = null; dev.cardstashy.nativeplay.ui.DualScreen.pretend(null); dev.cardstashy.nativeplay.ui.Pad.forget() }
     }
 
+    /** W3: the deck Finder on the Thor's two screens: top, then the bottom with no row under the ring and with one. */
+    @Test fun finderDual() {
+        trunkSetup()
+        val art = File(System.getProperty("shotsDir")!!).parentFile.resolve("app/build/shot-art")
+        dev.cardstashy.nativeplay.play.CardFacts.seed(JsonParser.parseString(art.resolve("finder-cards.json").readText()).asJsonArray.map { it.asJsonObject })
+        dev.cardstashy.nativeplay.play.MetaLists.seed("Modern", JsonParser.parseString(art.resolve("meta-Modern.json").readText()).asJsonObject)
+        dev.cardstashy.nativeplay.play.DeckEngine.initFrom(File("../deck-engine/deck-engine.js"))
+        val trunk = dev.cardstashy.nativeplay.play.Trunk.cards(trunkState)
+        val lists = kotlinx.coroutines.runBlocking { listOfNotNull(dev.cardstashy.nativeplay.play.DeckEngine.forgeTrunk("Modern", trunk, dev.cardstashy.nativeplay.play.CardFacts.cards.value)) +
+            dev.cardstashy.nativeplay.play.MetaLists.load("Modern")!! }
+        val key = lists.first().key // the Trunk's own build, always among the rows shown
+        dev.cardstashy.nativeplay.ui.Pad.used()
+        val page = @Composable { val ui = dev.cardstashy.nativeplay.ui.FinderUi().apply { format = "Modern"; this.lists = lists; loadedFor = "Modern" }
+            dev.cardstashy.nativeplay.ui.FinderScreen(trunkState, ui, {}, { _, _ -> }, {}) { PlayNav(PlayTab.DECKS, {}) } }
+        try {
+            dev.cardstashy.nativeplay.ui.DualScreen.pretend(dev.cardstashy.nativeplay.ui.DualScreen.Panel(2, "Built-in Screen", 1240, 1080, 60f))
+            RuntimeEnvironment.setQualifiers("w960dp-h540dp-land-xhdpi")
+            captureRoboImage(File(System.getProperty("shotsDir"), "w3/play-finder-top-1920x1080.png").path) {
+                androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().padRoot()) { page(); PadPromptBar() } }
+            RuntimeEnvironment.setQualifiers("w620dp-h540dp-xhdpi")
+            for ((tag, lens) in listOf("summary" to null, "deck" to "deck:$key")) {
+                dev.cardstashy.nativeplay.ui.LensHost.preset = lens
+                settled(File(System.getProperty("shotsDir"), "w3/play-finder-bottom-$tag-1240x1080.png").path) {
+                    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().padRoot()) {
+                        androidx.compose.foundation.layout.Box(Modifier.size(1.dp)) { page() }
+                        dev.cardstashy.nativeplay.ui.BottomRoot()
+                    }
+                }
+            }
+        } finally { dev.cardstashy.nativeplay.ui.LensHost.preset = null; dev.cardstashy.nativeplay.ui.DualScreen.pretend(null); dev.cardstashy.nativeplay.ui.Pad.forget() }
+    }
+
     @Test fun cardSheet() {
         trunkSetup(); dev.cardstashy.nativeplay.play.CardData.load(RuntimeEnvironment.getApplication())
         fun pick(name: String, finish: String) = trunkCards.first { it["name"].asString == name }.let { dev.cardstashy.nativeplay.ui.CardPick(name, it["oracle_id"]?.asString ?: "", it["id"].asString, finish) }
