@@ -155,6 +155,7 @@ class MainActivity : ComponentActivity() {
         // First, so a stall anywhere in start-up is caught too (the 0.3.2 freeze hit 2 s after launch).
         // Silent: a stall or crash report uploads itself; nothing shows on screen (test strip and frame watch off since 0.3.8).
         FreezeReport.init(this); dev.cardstashy.nativeplay.ui.HomeTest.init(this)
+        TestHooks.read(intent)
         enableEdgeToEdge()
         fastestRefresh()
         // The card database starts loading as the app opens, so it is ready before Quick Play is.
@@ -198,6 +199,8 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() { dev.cardstashy.nativeplay.play.RandomBuild.detach(this); dev.cardstashy.nativeplay.collection.ScanWeb.detach(this); super.onDestroy() }
+    override fun onNewIntent(intent: android.content.Intent) { super.onNewIntent(intent); setIntent(intent); TestHooks.read(intent) }
+
     override fun onResume() { super.onResume(); Updater.resumed(this); dev.cardstashy.nativeplay.collection.WorkspaceSync.kick(this) }
     override fun onStart() { super.onStart(); dev.cardstashy.nativeplay.play.RandomBuild.hidden = false; dev.cardstashy.nativeplay.ui.DualScreen.attach(this) }
     override fun onStop() { super.onStop(); dev.cardstashy.nativeplay.play.RandomBuild.hidden = true; dev.cardstashy.nativeplay.ui.DualScreen.detach(this) }
@@ -343,6 +346,18 @@ private fun App(activity: MainActivity) {
         if (tab != null) { dev.cardstashy.nativeplay.ui.decksOpenOn(tab); go(Screen.CollectionDecks) } else go(Screen.Web(url, press))
     }
     BackHandler(enabled = trail.size > 1) { back() }
+    // Test builds: adb opens a screen or starts a match (TestHooks).
+    val testAsk by TestHooks.ask.collectAsState()
+    LaunchedEffect(testAsk) {
+        val a = testAsk ?: return@LaunchedEffect
+        TestHooks.ask.value = null
+        when (a.open) {
+            "home" -> go(Screen.Home); "decks" -> go(Screen.PlayDecks); "finder" -> { TestHooks.finder.value = true; if (screen != Screen.PlayDecks) go(Screen.PlayDecks) }
+            "trunk" -> go(Screen.Trunk); "shop" -> go(Screen.Shop()); "achievements" -> go(Screen.Achievements()); "story" -> go(Screen.Story())
+            "settings" -> go(Screen.SignIn); "collection" -> go(Screen.Collection); "quick" -> go(Screen.Lobby("quick")); "practice" -> go(Screen.Lobby("practice"))
+        }
+        if (a.match != null) TestHooks.pick(a)?.let { p -> TestHooks.nextSeed = a.seed; go(Screen.Home); go(Screen.Match(p)) }
+    }
     /** A set badge, the card page's set and Home's sets open the native set page when it is on; null keeps the website's. */
     val setOpen: ((String) -> Unit)? = if (NATIVE_SETS) ({ code -> go(Screen.CollectionSet(code)) }) else null
     fun tabTo(t: dev.cardstashy.nativeplay.ui.PlayTab) { when (t) {

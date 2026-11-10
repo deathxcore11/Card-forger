@@ -99,7 +99,10 @@ object ForgeService {
     fun start(inputJson: String): LocalEngine.Session {
         loading?.get()
         (status.value as? Status.Failed)?.let { throw IllegalStateException(it.reason) }
-        return engine.submit(Callable { LocalEngine.start(inputJson, SecureRandom().nextLong() and Long.MAX_VALUE) }).get()
+        // Test builds: an adb hook can name the seed; every test-build match logs the seed it ran on (TableStep).
+        val seed = dev.cardstashy.nativeplay.TestHooks.nextSeed?.also { dev.cardstashy.nativeplay.TestHooks.nextSeed = null } ?: (SecureRandom().nextLong() and Long.MAX_VALUE)
+        dev.cardstashy.nativeplay.match.TableLog.line("engine seed $seed")
+        return engine.submit(Callable { LocalEngine.start(inputJson, seed) }).get()
     }
 
     /** Names the loaded card database does not know (Forge would refuse the match). Engine thread, after loading. */

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -589,7 +590,8 @@ fun ForgeBoard(
                     else if (!live) null else ({ step: Int -> if (step > 0) padGold?.run?.invoke() else if (st.buttons.cancelEnabled) intents.cancel() }),
                 pageLabel = if (dual) (if (live && st.buttons.cancelEnabled) "Cancel · Hand/Field" else "Hand / Field") else if (st.buttons.cancelEnabled) "Cancel / Pass" else "Pass"))
             if (dual) { val goldAct = padX; BottomScreen { MatchBottom(st, hand, selectedHand?.let { id -> hand.firstOrNull { it.id == id } }, goldAct, fan, onInspect) } }
-            if (live) askLine(st)?.let { AskLine(it, W, H, d) }
+            // With the bottom screen up the hand chip sits where the line would be: the line goes just above the chip.
+            if (live) askLine(st)?.let { AskLine(it, W, H, d, bottom = if (dual && hand.isNotEmpty()) H - handW / 66f * 37f - 6.du else null) }
             // The line between the halves turns into the combat line while you declare (gold attacking, blue blocking).
             CombatLine(st, mid, W, d)
             // Arrivals, casts, hits, deaths and numbers over the cards, under the threads.
@@ -1656,10 +1658,16 @@ internal fun oneTarget(st: MatchState): Boolean = st.prompt == null && st.inputT
 internal fun onePick(st: MatchState): Boolean = st.prompt == null && st.inputType == "InputSelectCardsFromList" && st.selection.min == 1 && st.selection.max == 1 &&
     st.selection.cards.isNotEmpty() && st.selection.chosenCards.isEmpty()
 
-/** .forge-ask-line on a phone: centred 30 du right of the middle, its bottom 4 du above your hand. */
+/**
+ * .forge-ask-line on a phone: centred 30 du right of the middle, its bottom 4 du above your hand. With the bottom screen up
+ * ([bottom] given) its bottom sits at that line instead, above the hand chip, so the question and "Hand N" never overlap
+ * (Thor run 10 Nov: "Respond to Sol Ring?" drawn over the hand label).
+ */
 @Composable
-private fun AskLine(text: String, W: Dp, H: Dp, d: Du) = with(d) {
-    Box(Modifier.fillMaxWidth().offset(x = 30.du, y = H - 64.du).wrapContentHeight(unbounded = true, align = Alignment.Bottom), contentAlignment = Alignment.BottomCenter) {
+private fun AskLine(text: String, W: Dp, H: Dp, d: Du, bottom: Dp? = null) = with(d) {
+    val place = if (bottom == null) Modifier.offset(x = 30.du, y = H - 64.du)
+        else Modifier.offset(x = 30.du).layout { m, c -> val p = m.measure(c.copy(minHeight = 0)); layout(p.width, p.height) { p.place(0, bottom.roundToPx() - p.height) } }
+    Box(Modifier.fillMaxWidth().then(place).wrapContentHeight(unbounded = true, align = Alignment.Bottom), contentAlignment = Alignment.BottomCenter) {
         Box(Modifier.widthIn(max = W - 444.du).drawBehind {
             drawIntoCanvas { c ->
                 val p = Paint().asFrameworkPaint().apply { isAntiAlias = true; color = Color(0x40F2D18E).toArgb(); maskFilter = android.graphics.BlurMaskFilter(11.du.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL) }

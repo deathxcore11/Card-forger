@@ -423,6 +423,9 @@ fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
     val scope = rememberCoroutineScope()
     var editor by remember { mutableStateOf<EditorUi?>(null) }
     var finder by remember { mutableStateOf<FinderUi?>(null) }
+    // Test builds: adb can open the Finder (TestHooks, --es open finder).
+    val testFinder by dev.cardstashy.nativeplay.TestHooks.finder.collectAsState()
+    LaunchedEffect(testFinder) { if (testFinder) { dev.cardstashy.nativeplay.TestHooks.finder.value = false; finder = finder ?: FinderUi() } }
     var card by remember { mutableStateOf<CardPick?>(null) }
     var cardTab by remember { mutableStateOf("overview") }
     val tabs = remember { DecksTabs() }
