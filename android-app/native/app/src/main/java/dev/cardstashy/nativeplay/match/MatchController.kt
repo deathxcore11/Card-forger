@@ -254,6 +254,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                     else if (st.revision != lastRev || prev == null || prev.busy != st.busy || prev.inputType != st.inputType || prev.prompt?.id != st.prompt?.id) {
                         if (st.revision != lastRev) revisionAt = SystemClock.elapsedRealtime()
                         TableLog.board("read", st, latest?.revision)
+                        TableLog.raw(st, body)
                         if (_firstHand.value == null) runCatching { st.me.hand.map { it.name }.filter { it.isNotBlank() } }.getOrNull()?.takeIf { it.isNotEmpty() }?.let { _firstHand.value = it }
                         lastRev = st.revision; latest = st; queue.incrementAndGet(); snapshots.trySend(st)
                     }

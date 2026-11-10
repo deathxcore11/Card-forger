@@ -35,4 +35,17 @@ object TableLog {
                 "destinationIndexes=${it.destinationIndexes} sourceIndexes=${it.sourceIndexes} remaining=${it.remainingMin}..${it.remainingMax} supported=${it.supportedExact} cancelable=${it.cancelable} ack=${it.acknowledgeOnly} " +
                 "options=" + it.options.joinToString(";", "[", "]") { o -> "${o.index}:${o.label.take(40)}|kind=${o.kind}|zone=${o.zone}|card=${o.cardId}" } } ?: "prompt=null"))
     }
+
+    /**
+     * The whole snapshot a decision came in, in logcat-sized pieces ("raw rev=N k/n ..."), for decisions the table cannot read yet:
+     * a scry arrives as a plain InputConfirm ("Top" / "Bottom") and only the raw board can say whether the scried card is in it.
+     */
+    fun raw(st: MatchState, body: String?) {
+        if (!on || body == null) return
+        val input = st.inputType ?: return
+        if (st.prompt == null && !input.startsWith("InputConfirm")) return
+        if (input == "InputConfirmMulligan") return
+        val parts = body.chunked(3500)
+        parts.forEachIndexed { i, part -> line("raw rev=${st.revision} ${i + 1}/${parts.size} $part") }
+    }
 }
