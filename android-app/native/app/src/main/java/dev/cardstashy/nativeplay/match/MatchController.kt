@@ -43,6 +43,8 @@ enum class Stage { STARTING, TOSS, MULLIGAN, INTRO, PLAYING, FINISHED, FAILED }
  * 0.25 s apart. A decision for you waits with no timer. Skipping or delaying never changes the game:
  * the queue only decides when a snapshot is shown, and every action goes against Forge's latest revision.
  */
+const val NO_RESULT = "This match hit a choice the app cannot play yet. It will not count."
+
 class MatchController(private val scope: CoroutineScope, val input: String, private val remote: (() -> EngineSession)? = null) {
     companion object {
         const val LAND_MS = 900L; const val ACTION_MS = 2400L; const val AFFECTS_MS = 3600L
@@ -285,12 +287,14 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     private val holds = HashSet<String>()
     fun hold(reason: String, on: Boolean) { if (on) holds.add(reason) else holds.remove(reason) }
     private val timer = TurnClock.Timer(
-        snapshot = { latest?.takeIf { _stage.value == Stage.PLAYING || _stage.value == Stage.MULLIGAN } },
+        snapshot = { latest?.takeIf { (_stage.value == Stage.PLAYING || _stage.value == Stage.MULLIGAN) && _noResult.value == null } },
         paused = { paused.value || scene.value || holds.isNotEmpty() || _beat.value != null || _think.value != null || _sending.value || _shown.value?.revision != latest?.revision },
         act = { w, st, done ->
             autoAnswering = true
             try {
                 when (val a = TurnClock.answer(w, st)) {
+                    // A dead-end prompt: against the CPU the match ends as no result; with a friend the old reply still goes out (the host decides).
+                    TurnClock.Answer.Leave -> if (remote == null) leaveNoResult() else st.prompt?.let { p -> reply(p.id, indexes = p.options.take(maxOf(0, p.min)).map { it.index }) }
                     is TurnClock.Answer.Prompt -> reply(a.id, indexes = a.indexes)
                     TurnClock.Answer.Cancel -> cancel()
                     TurnClock.Answer.Ok -> ok()
@@ -438,6 +442,22 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     /** The player conceded this match (play-forge-player-mat.js conceding): a loss that way stays off the Quick Play streak. */
     @Volatile var conceded = false; private set
     fun concede() { conceded = true; send("concede", force = true) }
+
+    /**
+     * E3c: the match met a choice the app cannot play (Prompt.deadEnd). Against the CPU it ends here as no result: nothing is
+     * recorded (no win, no loss, no reward, no streak change), the report goes out by itself, and the table shows [noResult]
+     * with the way back. A friend match is left as it is: only the host can end it.
+     */
+    private val _noResult = MutableStateFlow<String?>(null)
+    val noResult: StateFlow<String?> = _noResult
+    val canLeaveNoResult: Boolean get() = remote == null
+    fun leaveNoResult() {
+        if (remote != null || _noResult.value != null) return
+        recorded = true
+        val p = latest?.prompt
+        runCatching { dev.cardstashy.nativeplay.FreezeReport.matchStuck("dead-end prompt", "method ${p?.method} supported ${p?.supportedExact} ordered ${p?.ordered} options ${p?.options?.map { it.kind ?: "plain" }?.distinct()} message ${p?.rawMessage?.take(200)}") }
+        _noResult.value = NO_RESULT
+    }
     fun reply(promptId: Int, value: Boolean? = null, indexes: List<Int>? = null, amounts: List<Int>? = null) = send("reply") {
         addProperty("promptId", promptId)
         if (value != null) addProperty("value", value)
@@ -451,7 +471,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         addProperty("promptId", promptId); add("indexes", JsonArray().apply { indexes.forEach { add(it) } }); addProperty("remember", remember)
     }
     fun replySkip(promptId: Int) = send("reply") { addProperty("promptId", promptId); addProperty("skip", true) }
-    val dockReplies by lazy { dev.cardstashy.nativeplay.ui.DockReplies(text = { id, v -> replyText(id, v) }, order = { id, i, r -> replyOrder(id, i, r) }, skipAmounts = { replySkip(it) }) }
+    val dockReplies by lazy { dev.cardstashy.nativeplay.ui.DockReplies(leave = if (remote == null) ({ leaveNoResult() }) else null, text = { id, v -> replyText(id, v) }, order = { id, i, r -> replyOrder(id, i, r) }, skipAmounts = { replySkip(it) }) }
 
     private fun send(op: String, force: Boolean = false, fill: JsonObject.() -> Unit = {}) {
         val st = latest ?: return

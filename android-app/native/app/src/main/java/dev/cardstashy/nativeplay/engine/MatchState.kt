@@ -81,6 +81,8 @@ data class Prompt(
     /** Forge's message before tidy() (the dock's cpuName works on Forge's own words). */
     val rawMessage: String = "",
 ) {
+    /** A prompt this app cannot answer at all (E3c): the bridge did not adapt it, or an order came without its order data. No reply exists; nothing is invented. */
+    val deadEnd: Boolean get() = !supportedExact || (method == "order" && !ordered)
     /** Forge's damage split done the plain way: lethal to each blocker in order, the rest to the
      *  defender (trample) or the last blocker; a generic split fills each target up to its maximum. */
     fun autoAssign(): List<Int> {

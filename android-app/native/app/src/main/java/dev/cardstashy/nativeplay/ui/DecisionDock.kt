@@ -112,6 +112,8 @@ class DockReplies(
     val order: ((promptId: Int, indexes: List<Int>, remember: Boolean) -> Unit)? = null,
     /** replyAmounts(null): "As though unblocked" (skip: true). Unwired: the button is not offered. */
     val skipAmounts: ((promptId: Int) -> Unit)? = null,
+    /** E3c: leave a match stuck on a prompt nothing can answer, as no result. Unwired (a friend match): the line shows alone. */
+    val leave: (() -> Unit)? = null,
 )
 
 /**
@@ -141,7 +143,7 @@ fun DecisionDock(st: MatchState, live: Boolean, intents: TableIntents, onInspect
         val optionalCosts = p.supportedExact && p.method in setOf("order", "getChoices") && p.options.isNotEmpty() && p.options.all { it.kind == "optionalCost" }
         when {
             zone != null -> ZoneSearchDialog(ctx, zone, draft)                                                       // :257-307
-            !p.supportedExact || (p.method == "order" && !p.ordered) -> SideDock(ctx) { Diagnostic("This choice is not playable in the app yet.", d) }  // :309
+            !p.supportedExact || (p.method == "order" && !p.ordered) -> SideDock(ctx) { DeadEnd(ctx) }  // :309
             optionalCosts -> SideDock(ctx) { OptionalCosts(ctx, draft) }                                             // :310-326
             p.method in AMOUNT_METHODS && amountSpec(p) != null -> AssignDialog(ctx)                                 // :318-341
             p.method in setOf("confirm", "showConfirmDialog") -> SideDock(ctx) { ConfirmChoice(ctx) }                // :342-346
@@ -149,7 +151,7 @@ fun DecisionDock(st: MatchState, live: Boolean, intents: TableIntents, onInspect
             p.acknowledgeOnly && p.method == "getChoices" -> SideDock(ctx) { Reveal(ctx) }                           // :354-359
             p.method in OPTION_METHODS && hostedOrder -> OrderDialog(ctx, draft)                                     // :363-382
             p.method in OPTION_METHODS -> SideDock(ctx) { ChoiceList(ctx, draft) }                                   // :384-395
-            else -> SideDock(ctx) { Diagnostic("This choice is not playable in the app yet.", d) }        // :397
+            else -> SideDock(ctx) { DeadEnd(ctx) }        // :397
         }
         // A controller: the ring goes into the dock as the question opens (its first choice, or its gold answer), once laid out.
         // Tried again if the choice could not take it yet (busy); never pulled back while the ring is already in the dock.
@@ -414,6 +416,17 @@ private fun SideDock(ctx: DockCtx, content: @Composable () -> Unit) = with(ctx.d
 }
 
 /** .forge-diagnostic (play-forge-table.css:161). */
+/** E3c: a prompt nothing can answer. The plain line, and against the CPU the way out at once (X): the match ends as no result. */
+@Composable
+private fun DeadEnd(ctx: DockCtx) {
+    val leave = ctx.replies.leave
+    Diagnostic(if (leave != null) dev.cardstashy.nativeplay.match.NO_RESULT else "This choice is not playable in the app yet.", ctx.d)
+    if (leave != null) {
+        PadScreen(remember(leave) { PadActs(x = PadAct("Leave match") { leave() }, opaque = true) })
+        GoldCta("Leave match", Modifier.fillMaxWidth(), onClick = leave)
+    }
+}
+
 @Composable
 private fun Diagnostic(text: String, d: DockU) = with(d) {
     Text(text, style = ts(12f, 16.8f, color = Color(0xFFFFD3B8)), modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(7.du))

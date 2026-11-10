@@ -118,4 +118,19 @@ class TurnClockTest {
         // A host without a clock: the local clock runs as before.
         val local = Rig(snap(), friend = true); local.run(TurnClock.TURN_MS + 500); assertEquals(1, local.acts.size)
     }
+
+    /** E3c: a prompt nothing can answer is never replied to; the clock asks to leave, once, and does not loop. */
+    @Test fun deadEndPromptLeavesAndNeverRetriesAReply() {
+        val p = dev.cardstashy.nativeplay.engine.Prompt(id = 7, method = "manipulateCardList", message = "", min = 1, max = 1, options = emptyList(), supported = false, ordered = false,
+            destinationIndexes = emptyList(), assignAmount = null, assignMaxima = emptyList(), maySkip = false, assignLethal = emptyList(), defenderIndex = null, supportedExact = false)
+        val dead = snap().copy(prompt = p)
+        assertEquals(true, p.deadEnd)
+        assertEquals(TurnClock.Answer.Leave, TurnClock.answer(TurnClock.waitingOn(dead)!!, dead))
+        // The controller stops handing the clock a board once it has left (snapshot null), so one expiry is one Leave and nothing after.
+        var left = false; var leaves = 0; var replies = 0; var t = 1000L
+        val timer = TurnClock.Timer(snapshot = { if (left) null else dead }, act = { w, x, done ->
+            when (TurnClock.answer(w, x)) { TurnClock.Answer.Leave -> { leaves++; left = true }; else -> replies++ }; done(true) }, now = { t })
+        repeat(((TurnClock.PROMPT_MS + 20_000) / 250).toInt()) { t += 250; timer.tick() }
+        assertEquals(1, leaves); assertEquals(0, replies)
+    }
 }

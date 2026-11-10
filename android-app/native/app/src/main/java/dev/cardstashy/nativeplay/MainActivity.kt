@@ -599,7 +599,10 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
         // The Story scene over the table holds the clock and the first turn.
         LaunchedEffect(holdForScene) { controller.setScene(holdForScene) }
         BackHandler { /* the table's menu has Leave; Back never drops a match by accident */ }
-        if (versus || holdForScene) VersusScreen(s.you, s.cpu, intro = false, preparing = versus) else Box {
+        // E3c: a choice the app cannot play ended this match as no result; nothing was recorded.
+        val noResult by controller.noResult.collectAsState()
+        if (noResult != null) { LaunchedEffect(Unit) { activity.inGame(false) }; NoResult(noResult!!, onHome) }
+        else if (versus || holdForScene) VersusScreen(s.you, s.cpu, intro = false, preparing = versus) else Box {
           androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalLessonGlow provides (lessons?.glow ?: emptySet())) {
           TableScreen(controller, onHome = onHome, onRematch = { round++ }, resultNote = outcome?.note, cpuPlate = s.cpu,
             mat = (pick as? Pick.Table)?.story?.let { c -> remember { dev.cardstashy.nativeplay.ui.StoryMats.forBattle(context, c.act, c.battle.get("slot")?.takeIf { it.isJsonPrimitive }?.asInt, c.battle.get("kind")?.takeIf { it.isJsonPrimitive }?.asString) } },
@@ -681,6 +684,19 @@ private fun reportMatch(context: android.content.Context, pick: Pick, st: dev.ca
         dev.cardstashy.nativeplay.play.Progress.reportMatch(mode = if (table == null || table.quick) "quick" else "practice", outcome = outcome, format = pick.format,
             turns = st.turn.takeIf { it > 0 }, life = me?.life, opponentLife = them?.life, onPlay = f.ownFirst, durationMs = durationMs,
             colors = "WUBRG".filter { it.toString() in got }, seats = st.players.size.takeIf { it > 0 }, difficulty = table?.level ?: "Medium", facts = facts)
+    }
+}
+
+/** The no-result end (E3c): the one line and the way back. X or the button leaves. */
+@Composable
+private fun NoResult(text: String, onBack: () -> Unit) {
+    dev.cardstashy.nativeplay.ui.PadScreen(remember(onBack) { dev.cardstashy.nativeplay.ui.PadActs(x = dev.cardstashy.nativeplay.ui.PadAct("Leave match", onBack), opaque = true) })
+    BackHandler(onBack = onBack)
+    Box(Modifier.fillMaxSize().background(dev.cardstashy.nativeplay.ui.Site.Bg).windowInsetsPadding(WindowInsets.safeDrawing).padding(16.dp), contentAlignment = Alignment.Center) {
+        Column(Modifier.widthIn(max = 460.dp), verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(text, style = dev.cardstashy.nativeplay.ui.Rule.Type.S16, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            dev.cardstashy.nativeplay.ui.GoldCta("Leave match", onClick = onBack)
+        }
     }
 }
 

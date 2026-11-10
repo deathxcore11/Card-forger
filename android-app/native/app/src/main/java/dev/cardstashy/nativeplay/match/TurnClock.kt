@@ -52,9 +52,11 @@ object TurnClock {
         data class Prompt(val id: Int, val indexes: List<Int>) : Answer
         object Cancel : Answer
         object Ok : Answer
+        /** The prompt cannot be answered (Prompt.deadEnd): leave the match as no result instead of retrying a reply the bridge refuses. */
+        object Leave : Answer
     }
     fun answer(w: Window, s: MatchState): Answer {
-        s.prompt?.let { p -> return Answer.Prompt(p.id, p.options.take(maxOf(0, p.min)).map { it.index }) }
+        s.prompt?.let { p -> return if (p.deadEnd) Answer.Leave else Answer.Prompt(p.id, p.options.take(maxOf(0, p.min)).map { it.index }) }
         val input = s.inputType.orEmpty(); val b = s.buttons
         if (input == "InputSelectTargets" || input.startsWith("InputPayMana")) return if (b.cancelEnabled) Answer.Cancel else Answer.Ok
         if (w.kind == Kind.TURN && b.cancelEnabled && Regex("end turn", RegexOption.IGNORE_CASE).containsMatchIn(b.cancel.orEmpty())) return Answer.Cancel
