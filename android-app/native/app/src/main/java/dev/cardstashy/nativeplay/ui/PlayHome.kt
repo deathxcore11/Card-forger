@@ -784,8 +784,10 @@ fun SetIcon(code: String, modifier: Modifier, tint: Color = Color(0xFFE9C878)) {
 
 @Composable
 private fun Shelf(title: String, link: String?, onLink: () -> Unit, content: @Composable ColumnScope.() -> Unit) = Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(title, style = P.h2, modifier = Modifier.weight(1f))
+    // A heading never breaks inside a word (fix list C1): at large text the link drops under it instead.
+    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+    androidx.compose.foundation.layout.FlowRow(Modifier.fillMaxWidth().heightIn(min = 44.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalArrangement = Arrangement.Center) {
+        Text(title, style = P.h2, maxLines = 1, softWrap = false, modifier = Modifier.align(Alignment.CenterVertically))
         if (link != null) Box(Modifier.heightIn(min = 44.dp).clickable(onClick = onLink).padding(horizontal = 6.dp), contentAlignment = Alignment.Center) { Text(link, style = P.link, maxLines = 1) }
     }
     content()

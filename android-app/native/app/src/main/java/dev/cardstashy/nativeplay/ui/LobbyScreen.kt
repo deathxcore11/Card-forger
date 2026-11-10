@@ -569,6 +569,8 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
                 Box(Modifier.matchParentSize().drawBehind {
                     val h = 28.dp.toPx(); val ext = 20.dp.toPx()
                     drawRect(Brush.verticalGradient(listOf(Color.Transparent, Site.Bg.copy(alpha = .92f)), startY = -h + 1f, endY = 1f), Offset(-ext, -h + 1f), Size(size.width + 2 * ext, h))
+                    // Solid ground from the bar down (fix list C4): no deck rows show through or under the pinned bar.
+                    drawRect(Site.Bg, Offset(-ext, 0f), Size(size.width + 2 * ext, size.height + 120.dp.toPx()))
                 })
                 Box(Modifier.onGloballyPositioned { barAt.value = it.positionInRoot() }.clip(RoundedCornerShape(18.dp)).drawBehind {
                     if (pageLayer.size.width > 0) {
@@ -774,7 +776,7 @@ private fun Backs(modifier: Modifier) {
 
 @Composable
 private fun StartBar(m: LobbyModel, signedIn: Boolean, status: String, friend: FriendActions, onStart: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(if (lightMode) Color(0xB3F3F5F8) else Color(0xB30F1115)).padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Rule.Color.Bar).padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (status.isNotEmpty()) Text(status, style = sans(13f, color = SoftInk), modifier = Modifier.padding(horizontal = 4.dp))
         if (m.social) FriendInvite(m, friend)
         if (!m.quick && !m.social) Row(Modifier.fillMaxWidth().height(54.dp).pill(TabsFill, Line).padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -832,10 +834,11 @@ private fun LibraryHead(m: LobbyModel, source: String, signedIn: Boolean, onOpen
                 Text("Open Decks", style = sans(13.5f, FontWeight.Bold, Site.Text)) }
         }
         if (m.quick) Text(TableDecks.QUICK_INTRO, style = sans(13f, color = Muted, line = 19.5f))
-        else Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(TabsFill).border(1.dp, Line, RoundedCornerShape(14.dp)).padding(3.dp)) {
+        else TabsRow(SOURCES.size, Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(TabsFill).border(1.dp, Line, RoundedCornerShape(14.dp)).padding(3.dp)) { tab ->
             SOURCES.forEach { (k, label) -> val on = source == k
-                Box(Modifier.weight(1f).height(44.dp).clip(RoundedCornerShape(10.dp)).then(if (on) Modifier.background(Picked).border(1.dp, Color(0x66D8B76C), RoundedCornerShape(10.dp)) else Modifier)
-                    .clickable { m.source = k; m.query = "" }, contentAlignment = Alignment.Center) { Text(if (k == "yours") "Mine" else label, style = sans(11.5f, color = if (on) Site.Text else Muted)) }
+                Box(tab.height(44.dp).clip(RoundedCornerShape(10.dp)).then(if (on) Modifier.background(Picked).border(1.dp, Color(0x66D8B76C), RoundedCornerShape(10.dp)) else Modifier)
+                    .clickable { m.source = k; m.query = "" }.padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
+                    Text(if (k == "yours") "Mine" else label, style = sans(13f, color = if (on) Site.Text else Muted), maxLines = 1, softWrap = false) }
             }
         }
         if (source != "random") Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1098,8 +1101,7 @@ private fun PasteImport(m: LobbyModel, onPreview: () -> Unit, onUse: () -> Unit,
             if (m.importReady) Box(Modifier.height(44.dp).clip(RoundedCornerShape(11.dp)).background(Site.Surface2).border(1.dp, Line, RoundedCornerShape(11.dp)).clickable(onClick = onUse).padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
                 Text("Use this list", style = sans(15f, FontWeight.Bold)) }
         }
-        Text("Pasted lists stay here until you save a copy in Decks.", style = sans(13f, color = Muted, line = 18.85f), modifier = Modifier.padding(top = 6.dp))
-        val status = when { m.importBusy -> "Matching card names…"; m.importStatus == "selected" -> "List selected. Review it in Your deck."; m.importReady -> "Review the entries, then choose Use this list."; else -> null }
+        val status = when { m.importBusy -> "Matching card names…"; m.importStatus == "selected" -> "List selected. Review it in Your deck."; else -> null }
         m.error?.let { Text(it, style = sans(13.5f, color = WarnText, line = 19.575f), modifier = Modifier.padding(top = 6.dp).fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(WarnFill).padding(horizontal = 12.dp, vertical = 10.dp)) }
         status?.let { Text(it, style = sans(15f, color = Muted, line = 21.75f), modifier = Modifier.padding(top = 6.dp)) }
         Notices(m.warnings, "Import notes"); Notices(m.unresolved, "Unmatched cards")

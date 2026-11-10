@@ -1694,6 +1694,13 @@ private fun PwpChain(n: SiteNode, mark: Modifier) {
         val longest = heads.maxOfOrNull { it.maxIntrinsicWidth(inf) } ?: 0; val least = heads.maxOfOrNull { it.minIntrinsicWidth(inf) } ?: 0
         val second = words.maxOfOrNull { it.minIntrinsicWidth(inf) } ?: 0
         val a = maxOf(least, minOf(longest, room - g - second)).coerceIn(0, room); val b = (room - g - a).coerceAtLeast(0)
+        // When the names leave the sentence less than 45 % of the row it reads one word per line (fix list C3): stack them,
+        // names first, then the sentence at full width. The site's grid has the same squeeze (noted for the web port).
+        if (b < room * .45f) {
+            val all = ms.map { it.measure(androidx.compose.ui.unit.Constraints(maxWidth = room)) }
+            var top = 0; val at = all.mapIndexed { i, pl -> top.also { top += pl.height + if (i % 2 == 0) 2.dp.roundToPx() else rg } }
+            return@Layout layout(room, (top - rg).coerceAtLeast(0)) { all.forEachIndexed { i, pl -> pl.place(0, at[i]) } }
+        }
         val hp = heads.map { it.measure(androidx.compose.ui.unit.Constraints(maxWidth = a)) }; val wp = words.map { it.measure(androidx.compose.ui.unit.Constraints(maxWidth = b)) }
         val ys = IntArray(hp.size * 2); var y = 0
         hp.indices.forEach { i ->
