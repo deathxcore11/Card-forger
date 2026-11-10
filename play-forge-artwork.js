@@ -6,7 +6,7 @@ const changed = () => Object.assign(Error('ACCOUNT_CHANGED'), { code: 'ACCOUNT_C
 
 export function createForgeArtworkPreparation({ resolveNames, lookup, fetchPrinting, selectionKey = key, isCurrent, timeoutMs = 20000 } = {}) {
   if ([resolveNames, lookup, fetchPrinting, isCurrent].some(f => typeof f !== 'function')) throw Error('FORGE_ARTWORK_READERS_REQUIRED');
-  let frozen = new Map(), prepared = false, checkLaunch = () => true, generation = 0;
+  let frozen = new Map(), early = new Map(), prepared = false, checkLaunch = () => true, generation = 0;
   const current = () => { if (!isCurrent() || !checkLaunch()) { frozen.clear(); prepared = false; throw changed(); } };
   const identity = (name, id) => JSON.stringify([key(name), id || null]);
   return {
@@ -54,9 +54,30 @@ export function createForgeArtworkPreparation({ resolveNames, lookup, fetchPrint
       current(); prepared = true;
       return { requested: requests.size, available: frozen.size, missing: requests.size - frozen.size };
     },
+    // The matchup screen's quick look: each deck's commander and first few cards, fetched before the
+    // whole-deck preparation so the panels show art at once. Never throws; null until it has a card.
+    async preview(setup, { isCurrent: launchCurrent = () => true } = {}) {
+      const mine = ++generation; checkLaunch = launchCurrent; current(); early = new Map();
+      const names = new Set();
+      for (const deck of [setup.selected, setup.opponent]) {
+        for (const n of [deck?.commander, ...(deck?.commanders || []).map(r => typeof r === 'string' ? r : r?.name)]) if (typeof n === 'string' && n) names.add(n);
+        for (const r of (deck?.cards || []).filter(r => r?.name && !r.printingId && !/^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/.test(r.name)).slice(0, 6)) names.add(r.name);
+      }
+      const live = () => mine === generation && isCurrent() && launchCurrent();
+      try { await resolveNames([...names], { isCurrent: live }); } catch { /* optional artwork */ }
+      if (!live()) return;
+      for (const name of names) { const card = lookup(name, null); if (card?.id && matches(card, name)) early.set(identity(name, null), structuredClone(card)); }
+    },
+    previewLookup(name, id) {
+      if (prepared) { const card = frozen.get(identity(name, id)); if (card) return structuredClone(card); }
+      const card = id ? null : early.get(identity(name, null)); return card ? structuredClone(card) : null;
+    },
     lookup(name, id) {
       current(); if (!prepared) throw Error('FORGE_ARTWORK_NOT_PREPARED');
-      const card = frozen.get(identity(name, id)); return card ? structuredClone(card) : null;
+      let card = frozen.get(identity(name, id));
+      // A card whose art missed the preparation (slow provider) is picked up here once the catalogue has it.
+      if (!card && !id) { const late = lookup(name, null); if (late?.id && matches(late, name)) { frozen.set(identity(name, id), structuredClone(late)); card = late; } }
+      return card ? structuredClone(card) : null;
     },
   };
 }

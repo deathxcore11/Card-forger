@@ -2407,7 +2407,7 @@ A.playStartCandidate=async()=>{
     resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
     lookup:(name,id)=>id?S.state.printings?.[id]||storyPrints.get(id)||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
    playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readGoals:resultGoals,readSetup:()=>playSetup.snapshot(),getAccessToken:cloudAccessToken,createClient:localClient,
-    prepareArtwork:cards.prepare,lookup:cards.lookup,onClose:closePlayerMat,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();},
+    prepareArtwork:cards.prepare,previewArtwork:cards.preview,previewLookup:cards.previewLookup,lookup:cards.lookup,resolveLate:(()=>{const late=new Set();let t=0;return name=>{late.add(name);clearTimeout(t);t=setTimeout(()=>{const names=[...late];late.clear();if(current())void resolveNames(names,()=>{},false,current);},250);};})(),onClose:closePlayerMat,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();},
     // A finished match frees its engine after cleanup; warm the next one for a rematch.
     onFinished:()=>setTimeout(()=>warmForgeEngine(playSetup.snapshot(),{afterMatch:true}),4000)});
    try{await playerMatHost.start();}catch{/* The match screen presents the error and recovery action. */}return;
@@ -2445,7 +2445,7 @@ A.playFriendLaunch=async matchId=>{
    resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
    lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
   playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readGoals:resultGoals,readSetup:()=>setup,getAccessToken:cloudAccessToken,
-   prepareArtwork:cards.prepare,lookup:cards.lookup,resolveLate:name=>{late.add(name);clearTimeout(lateTimer);lateTimer=setTimeout(()=>{const names=[...late];late.clear();if(current())void resolveNames(names,()=>{},false,current);},250);},
+   prepareArtwork:cards.prepare,previewArtwork:cards.preview,previewLookup:cards.previewLookup,lookup:cards.lookup,resolveLate:name=>{late.add(name);clearTimeout(lateTimer);lateTimer=setTimeout(()=>{const names=[...late];late.clear();if(current())void resolveNames(names,()=>{},false,current);},250);},
    onClose:()=>{friendRoom=null;closePlayerMat();},onHome:()=>{friendRoom=null;closePlayerMat();go('#home');}});
   try{await playerMatHost.start();}catch{/* The match screen presents the error and recovery action. */}
  }finally{playStarting=false;}
@@ -2555,7 +2555,7 @@ A.storyPlay=async({skipScene=false}={})=>{
    if(ending?.length)setTimeout(()=>void playScene({lines:ending,cast:data.cast,leftWho:b.hero.who,rightWho:b.villain.who,avatarUrl:storyAvatar(),title:b.slot===8?'Act '+data.act+' finale':b.title}),2600);};
   const back=()=>{removeEventListener('play:match-recorded',onRec);bubbles?.destroy();bubbles=null;coach?.destroy();closePlayerMat();playView='storyAct';refreshPlayMenu();scrollTo({top:0});};
   playerMatHost=createForgePlayerMat({root,readAccount:readPlayAccount,readGoals:resultGoals,readSetup:()=>setup,getAccessToken:cloudAccessToken,createClient:localClient,
-   prepareArtwork:cards.prepare,lookup:cards.lookup,onClose:back,onHome:back,onRematch:()=>{back();void A.storyPlay({skipScene:true});},
+   prepareArtwork:cards.prepare,previewArtwork:cards.preview,previewLookup:cards.previewLookup,lookup:cards.lookup,resolveLate:(()=>{const late=new Set();let t=0;return name=>{late.add(name);clearTimeout(t);t=setTimeout(()=>{const names=[...late];late.clear();if(current())void resolveNames(names,()=>{},false,current);},250);};})(),onClose:back,onHome:back,onRematch:()=>{back();void A.storyPlay({skipScene:true});},
    onChange:state=>{bubbles?.update(state);coach?.update(state);if(state?.phase==='finished'&&state.outcome)void finished(state.outcome);},
    onFinished:()=>{}});
   try{await playerMatHost.start();}catch{/* The match screen presents the error and recovery action. */}

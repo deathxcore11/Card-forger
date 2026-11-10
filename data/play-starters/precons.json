@@ -867,6 +867,7 @@
     },
     {
      "name": "Inferno Titan",
+     "was": "Summon: Kujata",
      "qty": 1,
      "set": "hoc",
      "number": "198"
@@ -1557,6 +1558,7 @@
     },
     {
      "name": "Archmage of Runes",
+     "was": "Papalymo Totolymo",
      "qty": 1,
      "set": "fdn",
      "number": "30"
@@ -2031,6 +2033,7 @@
     },
     {
      "name": "Dread Return",
+     "was": "Afterlife from the Loam",
      "qty": 1,
      "set": "cmm",
      "number": "153"
@@ -3687,6 +3690,7 @@
     },
     {
      "name": "Glorious Anthem",
+     "was": "Ever-Watching Threshold",
      "qty": 1,
      "set": "m21",
      "number": "21"
@@ -4053,6 +4057,7 @@
     },
     {
      "name": "Gravedigger",
+     "was": "Laboratory Drudge",
      "qty": 1,
      "set": "j25",
      "number": "452"
@@ -4143,6 +4148,7 @@
     },
     {
      "name": "Gurmag Angler",
+     "was": "Scourge of Nel Toth",
      "qty": 1,
      "set": "uma",
      "number": "102"
@@ -4167,6 +4173,7 @@
     },
     {
      "name": "Nightveil Specter",
+     "was": "Havengul Lich",
      "qty": 1,
      "set": "gtc",
      "number": "222"
@@ -4185,6 +4192,7 @@
     },
     {
      "name": "Mind Stone",
+     "was": "Grimoire of the Dead",
      "qty": 1,
      "set": "trc",
      "number": "497"
@@ -4503,6 +4511,7 @@
     },
     {
      "name": "Raise Dead",
+     "was": "Dredge the Mire",
      "qty": 1,
      "set": "w17",
      "number": "18"
@@ -4539,6 +4548,7 @@
     },
     {
      "name": "Dread Shade",
+     "was": "Scythe Specter",
      "qty": 1,
      "set": "dom",
      "number": "88"
@@ -4557,6 +4567,7 @@
     },
     {
      "name": "Ogre Slumlord",
+     "was": "Titan Hunter",
      "qty": 1,
      "set": "otc",
      "number": "145"
@@ -4605,6 +4616,7 @@
     },
     {
      "name": "Hill Giant",
+     "was": "Kazuul, Tyrant of the Cliffs",
      "qty": 1,
      "set": "10e",
      "number": "212"
@@ -4761,6 +4773,7 @@
     },
     {
      "name": "Lightning Bolt",
+     "was": "Hate Mirage",
      "qty": 1,
      "set": "msc",
      "number": "806"
@@ -5013,6 +5026,7 @@
     },
     {
      "name": "Chandra, Torch of Defiance",
+     "was": "Sarkhan, the Dragonspeaker",
      "qty": 1,
      "set": "fra",
      "number": "244"
@@ -5595,6 +5609,7 @@
     },
     {
      "name": "Rampant Growth",
+     "was": "Curse of Bounty",
      "qty": 1,
      "set": "trc",
      "number": "468"
@@ -5703,6 +5718,7 @@
     },
     {
      "name": "Serra Angel",
+     "was": "Voice of Many",
      "qty": 1,
      "set": "fdn",
      "number": "740"

@@ -38,7 +38,7 @@ export function capturedForgeArtwork(setup,lookup,resolveLate=null){
  const rows=[setup.selected,setup.opponent].flatMap(deck=>{const d=capturePracticeArtwork(deck,lookup);return [...d.cards,...(d.side||[])];});
  const seen=new Map(),asked=new Set();
  const late=name=>{
-  if(!resolveLate||!name||rows.some(r=>r.name===name))return null;
+  if(!resolveLate||!name||rows.some(r=>r.name===name&&r.playArtwork))return null;
   if(seen.has(name))return seen.get(name);
   const row=capturePracticeArtwork({cards:[{name,qty:1}]},lookup).cards[0];
   if(row?.playArtwork){seen.set(name,row.playArtwork);return row.playArtwork;}
@@ -90,7 +90,7 @@ export function forgeMatchError(error){
  })[code]||'The game could not open this match. Review any card or format details below, then return to setup.';
 }
 
-export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,lookup,prepareArtwork=async()=>{},onChange=()=>{},onClose=()=>{},onHome=null,onRematch=null,onFinished=()=>{},readGoals=null,createClient=createForgeHostClient,resolveLate=null,mountTable=mountForgeTable,mountIntro=mountForgeMatchIntro,pollMs=500,startupPollMs=250,wait=ms=>new Promise(r=>setTimeout(r,ms)),now=()=>Date.now()}={}){
+export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,lookup,prepareArtwork=async()=>{},previewArtwork=null,previewLookup=null,onChange=()=>{},onClose=()=>{},onHome=null,onRematch=null,onFinished=()=>{},readGoals=null,createClient=createForgeHostClient,resolveLate=null,mountTable=mountForgeTable,mountIntro=mountForgeMatchIntro,pollMs=500,startupPollMs=250,wait=ms=>new Promise(r=>setTimeout(r,ms)),now=()=>Date.now()}={}){
  if(!root||[readAccount,readSetup,getAccessToken,lookup].some(f=>typeof f!=='function'))throw Error('FORGE_PLAYER_MAT_READERS_REQUIRED');
  const doc=root.ownerDocument,view=doc.defaultView;
  let facts=null,generation=0,opening=false,startupMs=null,client=null,session=null,table=null,last=null,warning=false,viewer=null,matchup=null,matchPolicy=null,matchAccount=null,intro=null,exitDialog=null,exitConfirm=null,exitSubmitting=false,disposed=false,playedFrom=null,ownFirst=null,lastSurface=null,conceding=false,recorded=false;
@@ -279,11 +279,13 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   try{
    matchup=structuredClone(setup);playedFrom=ownFirst=lastSurface=null;conceding=recorded=false;facts=createMatchFacts();matchPolicy=forgeCpuPolicy(forgeMatchDifficulty(setup));
    if(!current()||setup.profile?.ownerId!==readAccount()?.user?.id)throw Object.assign(Error('ACCOUNT_CHANGED'),{code:'ACCOUNT_CHANGED'});
-   intro=mountIntro({root,setup,lookup,onCancel:requestExit,wait,isCurrent:current});watchScreen();
+   intro=mountIntro({root,setup,lookup:previewLookup||lookup,onCancel:requestExit,wait,isCurrent:current});watchScreen();
    // Card art is needed only once the table opens, so it loads while the server starts
    // the match instead of before it. The matchup waits briefly so cached deck art shows.
    // Art is read only once its preparation has finished; before that the lookup refuses.
-   const preparing=Promise.resolve().then(()=>prepareArtwork(setup,{isCurrent:current}));preparing.then(()=>{artReady=true;try{if(current())intro?.refreshArtwork();}catch{/* the matchup keeps its placeholder */}},()=>{});
+   // The matchup panels get each deck's commander art first, from a small request, before the whole-deck preparation.
+   const quick=previewArtwork?Promise.resolve().then(()=>previewArtwork(setup,{isCurrent:current})).then(()=>{try{if(current())intro?.refreshArtwork();}catch{/* placeholder stays */}},()=>{}):Promise.resolve();
+   const preparing=quick.then(()=>prepareArtwork(setup,{isCurrent:current}));preparing.then(()=>{artReady=true;try{if(current())intro?.refreshArtwork();}catch{/* the matchup keeps its placeholder */}},()=>{});
    // The table is requested as soon as the starting player is known: Quick Play knows at
    // once, so the host starts while the matchup shows; Practice asks first.
    let input,created=null;
@@ -335,7 +337,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    try{await preparing;}catch(e){await client.close().catch(()=>{});throw e;}
    stopTicker();
    if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
-   const artwork=capturedForgeArtwork(setup,lookup,setup.friendMatch?resolveLate:null);
+   const artwork=capturedForgeArtwork(setup,lookup,resolveLate);
    if(!forgeStartingPlayer(state.snapshot))throw Object.assign(Error('STARTING_PLAYER_UNCONFIRMED'),{code:'STARTING_PLAYER_UNCONFIRMED'});
    session=createForgePresentationSession({lookupArtwork:artwork,rivalName:setup.friend?.name||null,pollMs,allowControlMode:true,transportStatus:()=>client.status(),request:async(path,body)=>{
     if(body)return client.submit(body);

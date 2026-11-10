@@ -12,6 +12,7 @@ const data = JSON.parse(readFileSync(new URL('./data/play-starters/precons.json'
 assert.equal(data.decks.filter(d => d.format === 'Standard').length, 5, 'five 60-card decks');
 assert.equal(data.decks.filter(d => d.format === 'Commander').length, 10, 'ten Commander decks (five from the 2022 Starter Commander Decks)');
 for (const d of data.decks) {
+  for (const r of d.rows) if (r.was) assert.ok(Object.entries(data.swaps).some(([real, stand]) => real === r.was && stand === r.name), d.name + ': ' + r.name + ' was must name the real card it stands in for');
   for (const r of d.rows) assert.ok(r.set && /^[0-9A-Za-z★†-]+$/.test(r.number || ''), d.name + ': ' + r.name + ' needs a set and collector number (the deck view finds art by them)');
   assert.equal(d.rows.reduce((n, r) => n + r.qty, 0), d.format === 'Commander' ? 100 : 60, d.name);
   const commander = d.rows.find(r => r.commander)?.name || '';
