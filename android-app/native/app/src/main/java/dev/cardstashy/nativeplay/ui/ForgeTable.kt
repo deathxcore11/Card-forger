@@ -408,7 +408,10 @@ fun ForgeBoard(
             }
 
             // Piles: yours right of your back row, the CPU's left of its back row.
-            Piles(me, mine = true, Modifier.offset(x = W - 120.du, y = if (large) mid + 60.dp else mid + 46.du * stretch), d, onInspect)
+            // While the side dock asks (it sits bottom right, 168 du wide), your piles slide left of it so their cards and counts stay in view.
+            val docked = live && st.failure == null && !st.finished && st.prompt?.let { p -> p.method != "order" && !p.method.startsWith("assign") && p.options.none { it.zone in setOf("Library", "Graveyard", "Exile") } } == true
+            val pilesX by androidx.compose.animation.core.animateDpAsState(if (docked) W - 262.du else W - 120.du, tween(if (Motion.still) 0 else 220), label = "pilesX")
+            Piles(me, mine = true, Modifier.offset(x = pilesX, y = if (large) mid + 60.dp else mid + 46.du * stretch), d, onInspect)
             if (!pod) Piles(cpu, mine = false, Modifier.offset(x = 44.du, y = if (large) mid - 120.dp else mid - 104.du * stretch), d, onInspect)
 
             // The CPU's hand, tucked off the top edge: the lower half of each back.

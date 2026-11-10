@@ -415,7 +415,6 @@ private fun SideDock(ctx: DockCtx, content: @Composable () -> Unit) = with(ctx.d
     }
 }
 
-/** .forge-diagnostic (play-forge-table.css:161). */
 /** E3c: a prompt nothing can answer. The plain line, and against the CPU the way out at once (X): the match ends as no result. */
 @Composable
 private fun DeadEnd(ctx: DockCtx) {
@@ -427,6 +426,7 @@ private fun DeadEnd(ctx: DockCtx) {
     }
 }
 
+/** .forge-diagnostic (play-forge-table.css:161). */
 @Composable
 private fun Diagnostic(text: String, d: DockU) = with(d) {
     Text(text, style = ts(12f, 16.8f, color = Color(0xFFFFD3B8)), modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(7.du))
@@ -504,14 +504,14 @@ private fun InputDialog(ctx: DockCtx) = with(ctx.d) {
     val field = Modifier.fillMaxWidth().heightIn(min = 44.du).clip(RoundedCornerShape(6.du)).background(Color(0x851F232B))
         .border(1.dp, Color(0x31EDC980), RoundedCornerShape(6.du))
     Column {
-        Text("Value requested by Forge", style = ts(12.5f, 17.5f, FontWeight.SemiBold, Color(0xFF9AA2B1)))
+        Text(p.message.ifBlank { if (p.options.isNotEmpty()) "Choose one" else if (p.numeric) "Choose a number" else "" }, style = ts(12.5f, 17.5f, FontWeight.SemiBold, Color(0xFF9AA2B1)))
         Spacer(Modifier.height(6.du))
         if (p.options.isNotEmpty()) {
             // <select>: "Select an offered value", then each option.
             Box(field.padFirst(ctx).tap(!ctx.busy) { open = true }.padding(start = 8.du, end = 12.du, top = 8.du, bottom = 8.du), contentAlignment = Alignment.CenterStart) {
                 // <select>: 14 px semibold, the arrow 10 px in from the right edge.
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.du)) {
-                    Text(p.options.firstOrNull { it.valueText == value && value.isNotEmpty() }?.label ?: "Select an offered value", style = ts(14f, 18.2f, FontWeight.SemiBold), modifier = Modifier.weight(1f))
+                    Text(p.options.firstOrNull { it.valueText == value && value.isNotEmpty() }?.label ?: "Choose one", style = ts(14f, 18.2f, FontWeight.SemiBold), modifier = Modifier.weight(1f))
                     Text("\u25BC", style = ts(9f, 12f, color = Color(0xFFEDF0E8)))
                 }
                 if (open) RuleMenu(null, p.options.map { o -> RuleRow(o.label, on = value.isNotEmpty() && o.valueText == value) { value = o.valueText ?: o.label } }) { open = false }
@@ -645,7 +645,7 @@ private fun OrderDialog(ctx: DockCtx, draft: MutableList<Int>) = with(ctx.d) {
         // "Leave 0 in the source" only says every one must be ordered, which the Done button already shows.
         val rest = if ((p.remainingMax ?: 0) > 0 && p.min < p.options.size) orderRemainder(p) else ""
         val top = p.topLabel
-        Text("Tap them in order. 1 ${if (top != null && Regex("resolve", RegexOption.IGNORE_CASE).containsMatchIn(top)) "resolves first" else "is ${(top ?: "first").lowercase()}"}.$rest",
+        Text("${if (Pad.connected.value) "Choose" else "Tap"} them in order. 1 ${if (top != null && Regex("resolve", RegexOption.IGNORE_CASE).containsMatchIn(top)) "resolves first" else "is ${(top ?: "first").lowercase()}"}.$rest",
             style = ts(14f, 19.6f, color = Color(0xFFCFD4DC)).copy(textAlign = TextAlign.Center))
         Spacer(Modifier.height(6.du))
         BoxWithConstraints(Modifier.fillMaxWidth().weight(1f, fill = false)) {
