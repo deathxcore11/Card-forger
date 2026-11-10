@@ -383,6 +383,8 @@ fun ForgeBoard(
             Box(Modifier.offset(y = mid).fillMaxWidth().height(1.dp).background(Brush.horizontalGradient(listOf(Color.Transparent, Color(0x998A7BD8), Color(0x998A7BD8), Color.Transparent))))
             // The mat's ambient light: turn warmth, the priority edge light and combat grain, under every card.
             FxMat(st, mid)
+            // The rope: the last 30 s of your window burn on the divider (centred, over the line).
+            Rope(LocalMatchClock.current, Modifier.offset(y = mid - 7.dp).fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally))
 
             // CPU half: lands at the back, creatures at the front; yours mirrored.
             // A creature Forge says must attack this combat wears a tag until it is in the attack.

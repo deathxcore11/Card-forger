@@ -70,6 +70,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -186,9 +187,11 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
                     // table-emotes.mjs mount(): the CPU's hello once the match is on; everything goes with the table.
                     LaunchedEffect(Unit) { TableEmotes.start(this) }
                     DisposableEffect(Unit) { onDispose { TableEmotes.destroy() } }
+                    CompositionLocalProvider(LocalMatchClock provides controller.clock.collectAsState().value) {
                     ForgeBoard(st, live && beat == null, controller.intents, selectedHand, { selectedHand = it }, { inspect = it }, { menu = true },
                         handOrder, { handOrder = it }, menu = matchMenu) {
                         TableSide(st, controller, beat, live, lastBeat) { inspect = it }
+                    }
                     }
                 }
             }
@@ -824,13 +827,70 @@ private fun FitCard(modifier: Modifier, inner: Modifier = Modifier, content: @Co
     }
 }
 
+/** The clock a match screen is showing; ForgeBoard reads it to lay the rope on the divider. */
+internal val LocalMatchClock = androidx.compose.runtime.compositionLocalOf<MatchController.Clock?> { null }
+
+/** The rope takes over from the ring for the last 30 s of your window. */
+internal const val ROPE_MS = 30_000L
+
+/** Milliseconds left on a clock, ticking each frame (each second under Minimal motion); a held clock stands still. */
+@Composable
+internal fun clockLeft(c: MatchController.Clock): Long {
+    var left by remember(c) { mutableStateOf(c.frozenLeft ?: (c.endsAt - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0)) }
+    if (c.frozenLeft == null) LaunchedEffect(c) { while (true) { left = (c.endsAt - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0); if (Motion.still) delay(1000) else androidx.compose.runtime.withFrameMillis { }; if (left <= 0) break } }
+    return left
+}
+
+/**
+ * The rope (table additions 5): in the last 30 s of your window a gold braided fuse lies on the divider and burns from the right,
+ * a spark flickering at the burning end, the seconds beside it. Last 10 s: coral (TT-007 ticks come from the clock cue map).
+ * Held clock = no burn, no flicker. Any action ends the window and the rope fades out in 300 ms.
+ */
+@Composable
+internal fun Rope(c: MatchController.Clock?, modifier: Modifier) {
+    var last by remember { mutableStateOf<MatchController.Clock?>(null) }
+    val on = c != null && c.own && clockLeft(c) <= ROPE_MS
+    if (on) last = c
+    AnimatedVisibility(on, modifier, enter = fadeIn(tween(200)), exit = fadeOut(tween(300))) {
+        val k = last ?: return@AnimatedVisibility
+        val left = clockLeft(k)
+        val held = k.frozenLeft != null
+        val warn = left <= dev.cardstashy.nativeplay.match.TurnClock.WARN_MS
+        val fill = if (warn) Color(0xFFFF6B5A) else Color(0xFFE9C46A)
+        val dark = if (warn) Color(0xFF9E3A2E) else Color(0xFF8A6A2A)
+        val frac = (left.toFloat() / minOf(ROPE_MS, k.totalMs)).coerceIn(0f, 1f)
+        val flick = if (held || Motion.still) 1f else androidx.compose.animation.core.rememberInfiniteTransition(label = "spark")
+            .animateFloat(.7f, 1.15f, androidx.compose.animation.core.infiniteRepeatable(tween(90, easing = LinearEasing), androidx.compose.animation.core.RepeatMode.Reverse), label = "f").value
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            androidx.compose.foundation.Canvas(Modifier.width(260.dp).height(14.dp)) {
+                val h = 8.dp.toPx(); val y = (size.height - h) / 2; val w = size.width * frac
+                // The track: the only line drawn on this stretch of the divider.
+                drawRoundRect(Color(0xCC0C0E13), androidx.compose.ui.geometry.Offset(0f, y), androidx.compose.ui.geometry.Size(size.width, h), androidx.compose.ui.geometry.CornerRadius(h / 2))
+                if (w > 0f) {
+                    drawRoundRect(fill, androidx.compose.ui.geometry.Offset(0f, y), androidx.compose.ui.geometry.Size(w, h), androidx.compose.ui.geometry.CornerRadius(h / 2))
+                    // The braid: slanted darker strands every 6 dp across the fill.
+                    clipRect(0f, y, w, y + h) {
+                        val step = 6.dp.toPx(); var x = -h
+                        while (x < w) { drawLine(dark, androidx.compose.ui.geometry.Offset(x, y + h), androidx.compose.ui.geometry.Offset(x + h, y), 1.4f.dp.toPx()); x += step }
+                    }
+                    // The spark at the burning end.
+                    val r = 5.dp.toPx() * flick
+                    drawCircle(Brush.radialGradient(listOf(Color(0xFFFFF4D0), fill.copy(alpha = .8f), Color.Transparent), androidx.compose.ui.geometry.Offset(w, size.height / 2), r * 2.2f), r * 2.2f, androidx.compose.ui.geometry.Offset(w, size.height / 2))
+                }
+            }
+            Text(((left + 999) / 1000).toString(), style = Type.Label.copy(color = fill, fontSize = 14.sp), modifier = Modifier.padding(start = 8.dp).widthIn(min = 20.dp))
+        }
+    }
+}
+
 /** The turn clock: a ring that empties over the decision's time, the seconds inside, gold turning red and pulsing for the last ten. Minimal motion counts whole seconds only. */
 @Composable
 internal fun ClockPill(c: MatchController.Clock?, modifier: Modifier) {
     if (c == null || !c.own) return
-    var left by remember(c) { mutableStateOf(c.frozenLeft ?: (c.endsAt - android.os.SystemClock.elapsedRealtime())) }
     // Held (the CPU is playing, a pop-up is open): the ring stands still at what was left.
-    if (c.frozenLeft == null) LaunchedEffect(c) { while (true) { left = (c.endsAt - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0); if (Motion.still) delay(1000) else androidx.compose.runtime.withFrameMillis { }; if (left <= 0) break } }
+    val left = clockLeft(c)
+    // The last 30 s belong to the rope on the divider (table additions 5): the number is not shown twice.
+    if (left <= ROPE_MS) return
     val warn = left <= dev.cardstashy.nativeplay.match.TurnClock.WARN_MS
     val pulse = androidx.compose.animation.core.rememberInfiniteTransition(label = "clock").animateFloat(1f, 1.1f, androidx.compose.animation.core.infiniteRepeatable(tween(450), androidx.compose.animation.core.RepeatMode.Reverse), label = "p").value
     val ring = if (warn) Color(0xFFFF6B5A) else Palette.Gold
