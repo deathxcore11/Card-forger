@@ -392,18 +392,22 @@ fun ForgeBoard(
             androidx.compose.runtime.CompositionLocalProvider(LocalAttackInput provides (live && st.inputType == "InputAttack"),
                 LocalAttackNumbers provides (if (blockingNow && attackersNow.size > 1) attackersNow.withIndex().associate { (i, c) -> c.id to i + 1 } else emptyMap()),
                 LocalBlockDrag provides (if (blockingNow) blockDrag else null)) {
+                // The stack keeps its own lane (fix list B6): while anything is on it the rows end left of the fan (it starts 214 du
+                // from the right edge) instead of running under it; they shrink to fit as they do on a crowded board.
+                val lane by androidx.compose.animation.core.animateDpAsState(if (st.stack.isNotEmpty()) 132.du else 0.dp, tween(if (Motion.still) 0 else 220), label = "stackLane")
+                val rowX = centreX - lane / 2
                 if (piece != null) {
                     // Rows on a big board: the CPU's creatures end 34 above the divider, its other lane 32 above them; yours start 26 below, the other lane 19 under.
-                    val ch = piece * .9f; val oh = piece * .68f; val room = W - 192.dp
-                    PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, centreX, mid - 34.dp - ch - 32.dp - oh / 2, room, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = piece)
-                    PermanentRow(others(cpu.battlefield), false, 0, centreX, mid - 34.dp - ch / 2, room, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = piece)
-                    PermanentRow(others(me.battlefield), false, 0, centreX, mid + 26.dp + ch / 2, room, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = piece)
-                    PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, centreX, mid + 26.dp + ch + 19.dp + oh / 2, room, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = piece)
+                    val ch = piece * .9f; val oh = piece * .68f; val room = W - 192.dp - lane
+                    PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, rowX, mid - 34.dp - ch - 32.dp - oh / 2, room, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = piece)
+                    PermanentRow(others(cpu.battlefield), false, 0, rowX, mid - 34.dp - ch / 2, room, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = piece)
+                    PermanentRow(others(me.battlefield), false, 0, rowX, mid + 26.dp + ch / 2, room, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = piece)
+                    PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, rowX, mid + 26.dp + ch + 19.dp + oh / 2, room, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = piece)
                 } else {
-                    PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, centreX, mid - 77.5f.du * stretch, W - 180.du, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) })
-                    PermanentRow(others(cpu.battlefield), false, 0, centreX, mid - 34.du * stretch, W - 180.du, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) })
-                    PermanentRow(others(me.battlefield), false, 0, centreX, mid + 27.du * stretch, W - 180.du, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) })
-                    PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, centreX, mid + 71.5f.du * stretch, W - 300.du, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) })
+                    PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, rowX, mid - 77.5f.du * stretch, W - 180.du - lane, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) })
+                    PermanentRow(others(cpu.battlefield), false, 0, rowX, mid - 34.du * stretch, W - 180.du - lane, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) })
+                    PermanentRow(others(me.battlefield), false, 0, rowX, mid + 27.du * stretch, W - 180.du - lane, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) })
+                    PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, rowX, mid + 71.5f.du * stretch, minOf(W - 300.du, W - 180.du - lane), d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) })
                 }
             }
 

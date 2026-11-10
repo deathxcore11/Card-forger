@@ -265,7 +265,9 @@ fun HistoryPanel(st: MatchState, story: Story, onInspect: (Card) -> Unit, onClos
                     }
                     val surface = StorySurface.of(st)
                     stack.forEachIndexed { i, entry ->
-                        val name = surface.cards[entry.source?.id]?.takeIf { StorySurface.known(it) }?.name ?: "Ability or spell"
+                        // The source Forge names for the entry (fix list B7): the card on the table, else the entry's own copy of it.
+                        val src = (surface.cards[entry.source?.id]?.takeIf { StorySurface.known(it) } ?: entry.source?.takeIf { StorySurface.known(it) })?.name
+                        val name = if (src == null) "Ability or spell" else if (entry.ability) "$src ability" else src
                         // p: 13px / 1.55, #c6d7dc, 8px apart (margins collapse; the heading's 10px wins above the first).
                         Text(name, Modifier.padding(top = if (i == 0) 0.dp else du(8f)), style = cssText(sans, sp(13f), sp(20.15f), Soft))
                     }

@@ -787,7 +787,14 @@ private fun ZoneSearchDialog(ctx: DockCtx, z: ZoneSearch, draft: MutableList<Int
         lines.addAll(0, listOf(source, ask).filter { it.isNotEmpty() })
         if (lines.isEmpty()) lines += "Choose from ${z.zones.joinToString(" / ")}"
     } else if (ask.isNotEmpty() && lines.none { Regex("\\b(up to\\s+)?\\d+\\b|\\b(a|an|one|two|three)\\s+cards?\\b", RegexOption.IGNORE_CASE).containsMatchIn(it) }) lines += ask
-    val heading = MatchState.tidy(cpuName(lines.firstOrNull() ?: "Choose from ${z.zones.joinToString(" / ")}"))
+    // The title is a name, never a rules sentence (fix list B3): the card doing the search, else where it looks. A long first
+    // line moves down into the body, where it wraps.
+    val first = lines.firstOrNull()
+    val named = first != null && (first == source || first.length <= 32)
+    // Forge often leads the sentence with the card itself ("Many Partings - Search your library…"): that name is the title.
+    val led = if (named || first == null) null else Regex("^(.{2,40}?) [\u2013\u2014-] (.+)$").find(first)
+    val heading = MatchState.tidy(cpuName(if (named) first!! else led?.groupValues?.get(1) ?: source.ifEmpty { "Choose from ${z.zones.joinToString(" / ")}" }))
+    val body = if (named) lines.drop(1) else if (led != null) listOf(led.groupValues[2]) + lines.drop(1) else lines
     Box(Modifier.fillMaxSize().background(Color(0xB8060912)).pointerInput(Unit) { detectTapGestures { } }) {
         val shape = RoundedCornerShape(18.du)
         val pad = (ctx.W.value / ctx.d.u * .03f).coerceIn(12f, 28f)
@@ -797,7 +804,7 @@ private fun ZoneSearchDialog(ctx: DockCtx, z: ZoneSearch, draft: MutableList<Int
             .border(1.dp, Color(0x8AD6AD64), shape).verticalScroll(rememberScrollState()).padding(horizontal = 16.du, vertical = 8.du),
             verticalArrangement = Arrangement.spacedBy(4.du)) {
             Text(heading, style = ts(14f, 16.1f, FontWeight.Bold, Color(0xFFF5EBD3), Type.Cinzel, .28f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (lines.size > 1) Text(lines.drop(1).joinToString("\n") { MatchState.tidy(cpuName(it)) }, style = ts(13f, 19.5f, color = Color(0xFFF4EDDD)))
+            if (body.isNotEmpty()) Text(body.joinToString("\n") { MatchState.tidy(cpuName(it)) }, style = ts(13f, 19.5f, color = Color(0xFFF4EDDD)))
             Text("Choose from the ${z.choices.size} card${if (z.choices.size == 1) "" else "s"} offered by this effect.", style = ts(13f, 19.5f, color = Color(0xFFAEBACA)))
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 4.du, vertical = 6.du), horizontalArrangement = Arrangement.spacedBy(15.du)) {
                 val firstOn = z.choices.firstOrNull { it.visible }?.index
@@ -820,21 +827,22 @@ private fun ZoneSearchDialog(ctx: DockCtx, z: ZoneSearch, draft: MutableList<Int
     }
 }
 
-/** .forge-zone-search-card at a phone (84 × 124, 2 px edge, 11 px corners; picture 112 high; name and zone at the foot). */
+/** .forge-zone-search-card (2 px edge, 11 px corners; the picture; name and zone at the foot). */
 @Composable
 private fun SearchCard(ctx: DockCtx, c: SearchChoice, chosen: Boolean, modifier: Modifier = Modifier, onPick: () -> Unit) = with(ctx.d) {
     val shape = RoundedCornerShape(11.du)
     val art = c.artName
-    Box(Modifier.offset(y = if (chosen) (-5).du else 0.dp).width(84.du).height(124.du)
+    // Wider than the site's 84 × 124 so a name gets two lines (fix list B4).
+    Box(Modifier.offset(y = if (chosen) (-5).du else 0.dp).width(104.du).height(150.du)
         .then(if (chosen) Modifier.boxShadow(Color(0x38E5B84B), 24.du, 7.du, radius = 11.du).boxShadow(Color(0x44F4CD6B), 0.dp, spread = 2.du, radius = 11.du) else Modifier.boxShadow(Color(0x77000000), 14.du, 5.du, radius = 11.du))
         .clip(shape)
         .then(if (art == null) Modifier.background(Brush.radialGradient(listOf(Color(0xFF3A4B4C), Color(0xFF111924)))) else Modifier.background(Color(0xFF111924)))
         .border(2.du, if (chosen) Color(0xFFF4CD6B) else Color(0x44B1BFD2), shape)
         .semantics { selected = chosen; contentDescription = "${c.name} · ${c.zone}${if (chosen) " · selected" else ""}" }
         .then(modifier).tap(!ctx.busy && c.visible, onPick).padding(2.du)) {
-        if (art != null) CardImage(art, Modifier.fillMaxWidth().height(112.du).align(Alignment.TopCenter), contentScale = ContentScale.Crop)
+        if (art != null) CardImage(art, Modifier.fillMaxWidth().height(138.du).align(Alignment.TopCenter), contentScale = ContentScale.Crop)
         Column(Modifier.align(Alignment.BottomStart).fillMaxWidth()) {
-            Text(c.name, style = ts(if (art == null) 16f else 12f, 15f, FontWeight.Bold, Color(0xFFF6F0E3)), maxLines = 1, overflow = TextOverflow.Ellipsis,
+            Text(c.name, style = ts(if (art == null) 16f else 12f, 15f, FontWeight.Bold, Color(0xFFF6F0E3)), maxLines = 2, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth().background(Brush.verticalGradient(0f to Color.Transparent, .3f to Color(0xF50C121D)))
                     .padding(start = 7.du, end = 7.du, top = if (art == null) 72.du else 24.du, bottom = 5.du))
             Text(if (chosen) "Selected" else c.zone ?: "", style = ts(11f, 14.3f, if (chosen) FontWeight.Bold else FontWeight.Normal, if (chosen) Color(0xFFF4CD6B) else Color(0xFFACBDD2)),
