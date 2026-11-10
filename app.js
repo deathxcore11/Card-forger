@@ -2226,9 +2226,9 @@ A.playChallenge=async person=>{
 let challenges=[],challengeTimer=0,challengeFriends={at:0,owner:null,people:new Map()},letter=null;
 const answeredChallenges=new Set();
 // Only accepted friends can reach you; their names and pictures come from your own friends list.
-async function friendPeople(){
+async function friendPeople(force=false){
  const owner=cloudInfo().user?.id;
- if(challengeFriends.owner===owner&&Date.now()-challengeFriends.at<300000)return challengeFriends.people;
+ if(!force&&challengeFriends.owner===owner&&Date.now()-challengeFriends.at<300000)return challengeFriends.people;
  const overview=await communityRequest('overview');
  challengeFriends={at:Date.now(),owner,people:new Map((overview?.people||[]).filter(p=>p.relationship==='accepted').map(p=>[p.id,p]))};
  return challengeFriends.people;
@@ -2239,7 +2239,9 @@ async function checkChallenges(){
  const owner=cloudInfo().user?.id;
  if(owner&&!accountLocked&&FORGE_PLAY_TEST_ENABLED&&document.visibilityState!=='hidden'&&!inMatch()){
   try{
-   const [list,people]=await Promise.all([(await rooms()).challenges(),friendPeople()]);
+   let [list,people]=await Promise.all([(await rooms()).challenges(),friendPeople()]);
+   // A sender missing from the cached friends list is usually a friend accepted since: look again once, not after five minutes.
+   if(list.some(c=>!people.has(c.fromId)&&!answeredChallenges.has(c.roomId)))people=await friendPeople(true);
    if(cloudInfo().user?.id===owner){
     const next=list.filter(c=>people.has(c.fromId)&&!answeredChallenges.has(c.roomId)).map(c=>({...c,friend:people.get(c.fromId)}));
     const changed=next.map(c=>c.roomId).join()!==challenges.map(c=>c.roomId).join();challenges=next;
