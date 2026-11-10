@@ -119,7 +119,7 @@ object TurnClock {
             val s = if (c != null && c.left != INF) ((left() + 999) / 1000).toInt() else 0
             val key = if (c != null) "${c.w.kind}|$s|${if (c.since == null) "p" else "r"}" else ""
             if (key == shown) return; shown = key
-            onChange(c?.let { Shown(it.w.kind, it.w.kind != Kind.RIVAL, it.w.total, if (it.left == INF) it.w.total else left(), s,
+            onChange(c?.let { Shown(it.w.kind, it.w.kind != Kind.RIVAL, it.w.total, if (it.left == INF) 0 else left(), s,
                 it.w.kind != Kind.RIVAL && it.left != INF && left() <= WARN_MS, it.since == null) })
         }
         private fun expire(w: Window, s: MatchState) {
@@ -170,6 +170,7 @@ object TurnClock {
             val discard = c.w.id.startsWith("discard:")
             val p = paused(); val busy = s.busy && !discard
             val hold = p || acting || busy || c.left == INF
+            if (hold && c.since == null && c0?.w?.id != w.id) runCatching { TableLog.line("clock opened held ${c.w.id}: paused=$p acting=$acting busy=${s.busy} inf=${c.left == INF}") }
             if (hold && c.left != INF && c.since != null) runCatching { TableLog.line("clock held ${c.w.id}: paused=$p acting=$acting busy=${s.busy}") }
             if (hold && c.since != null) { c.left -= now() - c.since!!; c.since = null }
             else if (!hold && c.since == null) c.since = now()

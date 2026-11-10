@@ -913,7 +913,8 @@ internal fun Rope(c: MatchController.Clock?, modifier: Modifier) {
                     drawCircle(Brush.radialGradient(listOf(Color(0xFFFFF4D0), fill.copy(alpha = .8f), Color.Transparent), androidx.compose.ui.geometry.Offset(w, size.height / 2), r * 2.2f), r * 2.2f, androidx.compose.ui.geometry.Offset(w, size.height / 2))
                 }
             }
-            Text(((left + 999) / 1000).toString(), style = Type.Label.copy(color = fill, fontSize = 14.sp), modifier = Modifier.padding(start = 8.dp).widthIn(min = 20.dp))
+            // An expired window that waits on you (a CPU-match discard) says so instead of standing at a number.
+            Text(if (held && left <= 0) "Time's up" else ((left + 999) / 1000).toString(), style = Type.Label.copy(color = fill, fontSize = 14.sp), modifier = Modifier.padding(start = 8.dp).widthIn(min = 20.dp))
         }
     }
 }
