@@ -45,7 +45,27 @@ class RemoteSession(private val matchId: String, private val token: suspend () -
             method == "POST" && path == "/action" -> act(body ?: "{}")
             else -> Reply(404, "{\"error\":\"not_found\"}")
         }
-    } catch (f: Http.Failure) { Reply(f.status, f.body.ifBlank { "{\"error\":\"http_${f.status}\"}" }) }
+    } catch (f: Http.Failure) {
+        // The host ended this seat's table (the other player left, the match expired or was interrupted): 410 match_<status>. Without a
+        // board the table polled forever; it now gets the last board marked failed with the host's reason, never a guessed winner.
+        val prev = last
+        if (method == "GET" && path == "/state" && f.status == 410 && prev != null && prev.get("status")?.asString.let { it == "finished" || it == "failed" })
+            Reply(200, prev.toString())
+        else if (method == "GET" && path == "/state" && f.status == 410 && prev != null)
+            Reply(200, terminal(prev, "failed").apply { addProperty("failure", "host_" + (runCatching { JsonParser.parseString(f.body).asJsonObject.get("error")?.asString }.getOrNull() ?: "match_ended")) }.toString())
+        else Reply(f.status, f.body.ifBlank { "{\"error\":\"http_${f.status}\"}" })
+    }
+
+    /**
+     * The last board as a terminal one. Its revision moves on by one: the table queues a board only when the revision (or the input)
+     * changes, so a finish carried on the old revision was never shown (live 0.4.57: the winner stayed on the attack screen).
+     */
+    private fun terminal(prev: JsonObject, status: String): JsonObject = prev.deepCopy().apply {
+        addProperty("status", status)
+        val rev = get("revision")?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.asLong ?: 0L
+        addProperty("revision", rev + 1)
+        last = this
+    }
 
     private fun state(): Reply {
         val d = http("GET", base, auth(), null)?.asJsonObject ?: return Reply(502, "{}")
@@ -54,7 +74,7 @@ class RemoteSession(private val matchId: String, private val token: suspend () -
             "running" -> { val s = d.getAsJsonObject("snapshot"); last = s; Reply(200, s.toString()) }
             "finished" -> {
                 val r = d.getAsJsonObject("result")
-                val s = (last ?: JsonObject()).deepCopy().apply {
+                val s = (last?.takeIf { it.get("status")?.asString != "finished" }?.let { terminal(it, "finished") } ?: last?.deepCopy() ?: JsonObject()).apply {
                     addProperty("status", "finished")
                     r?.get("winnerPlayerId")?.takeIf { it.isJsonPrimitive }?.let { add("winnerPlayerId", it) }
                     addProperty("draw", r?.get("draw")?.asBoolean == true)

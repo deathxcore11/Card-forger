@@ -98,6 +98,23 @@ class FriendRoomsTest {
         assertEquals("g1", wrapped["generation"].asString); assertEquals("ok", wrapped.getAsJsonObject("action")["op"].asString); assertTrue(wrapped["commandId"].asString.length > 20)
         phase = "done"
         val fin = JsonParser.parseString(s.call("GET", "/state", null).body()).asJsonObject
-        assertEquals("finished", fin["status"].asString); assertEquals(1, fin["winnerPlayerId"].asInt); assertEquals(4, fin["revision"].asInt)
+        assertEquals("finished", fin["status"].asString); assertEquals(1, fin["winnerPlayerId"].asInt)
+        // Live 0.4.57: the finish rode on the old revision, so the table never queued it and the winner stayed on the attack screen.
+        assertEquals(5, fin["revision"].asInt)
+        // Asked again, the finish stays the same board (no new revision each poll).
+        assertEquals(5, JsonParser.parseString(s.call("GET", "/state", null).body()).asJsonObject["revision"].asInt)
+    }
+
+    @Test fun aTableTheHostEndedComesBackAsAFailedBoardOnce() {
+        var gone = false
+        val s = RemoteSession("m1", { "tok" }, "https://x.test", { m, _, _, _ ->
+            if (m == "GET" && gone) throw Http.Failure(410, """{"error":"match_closed"}""")
+            JsonParser.parseString("""{"status":"running","generation":"g1","snapshot":{"status":"running","revision":7}}""")
+        })
+        assertEquals(7, JsonParser.parseString(s.call("GET", "/state", null).body()).asJsonObject["revision"].asInt)
+        gone = true
+        val end = JsonParser.parseString(s.call("GET", "/state", null).body()).asJsonObject
+        assertEquals("failed", end["status"].asString); assertEquals(8, end["revision"].asInt); assertEquals("host_match_closed", end["failure"].asString)
+        assertEquals(8, JsonParser.parseString(s.call("GET", "/state", null).body()).asJsonObject["revision"].asInt)
     }
 }
