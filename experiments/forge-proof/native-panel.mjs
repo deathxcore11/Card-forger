@@ -400,7 +400,8 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
     const only=options[0],cards=s.status?.surface?.cards||[],cardId=optionCardId(only.value),m=/\[[^\]]*?:\s*([^\]]+?)\s*\((\d+)\)\]/.exec(rawOptionText(only.value));
     const source=(cardId!==null?cards.find(c=>c.id===cardId):null)||(m?cards.find(c=>c.id===Number(m[2]))||cards.find(c=>c.known&&c.name===m[1]):null);
     const take=()=>{session.selectPrompt(only.index);return session.confirmPrompt();},key=`${n.revision}:${p.id}`;
-    if((p.min??0)>=1){if(singleAnswer.key!==key&&!s.busy){singleAnswer.key=key;setTimeout(()=>{if(session.snapshot().native?.prompt?.id===p.id)run(take)();},0);}panel.append(node('p',optionLabel(only.value),'forge-single-answer'));}
+    const dropped=presentation.droppedCard?.(),byDrop=dropped!=null&&(source?.id===dropped||cardId===dropped);
+    if((p.min??0)>=1||byDrop){if(singleAnswer.key!==key&&!s.busy){singleAnswer.key=key;setTimeout(()=>{if(session.snapshot().native?.prompt?.id===p.id)run(take)();},0);}panel.append(node('p',optionLabel(only.value),'forge-single-answer'));}
     else{if(source?.known)panel.append(node('h3',source.name,'forge-single-title'));
      const row=node('div',undefined,'forge-native-confirm');row.append(button(optionLabel(only.value),take,s.busy,'single-answer'),button('Back',()=>session.confirmPrompt(),s.busy,'single-back'));panel.append(row);}
    }else{

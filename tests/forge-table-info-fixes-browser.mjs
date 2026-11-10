@@ -48,5 +48,14 @@ try{
  // Must-take single answer goes by itself.
  await page.evaluate(()=>{window.calls=[];window.push(window.fixture.native.revision+10,{prompt:{id:'must',supported:true,method:'getChoices',min:1,max:1,message:'Choose',options:[{index:0,value:'Add {G}'}]}});});await page.clock.runFor(300);
  assert.deepEqual(await page.evaluate(()=>window.calls.map(c=>c[0])),['selectPrompt','confirmPrompt'],'a forced single answer is taken without asking');
+ // A drop already says "play this": the Full Control one-answer question that follows it answers itself.
+ const land=await page.evaluate(()=>{window.push(window.fixture.native.revision+11,{prompt:null,notification:{}});const n=window.fixture.native,you=n.players.find(p=>p.id===n.viewer);const c=you.zones.Hand.cards.find(c=>/^(Forest|Mountain|Island|Swamp|Plains)$/.test(c.name));return c?{id:c.id,name:c.name}:null;});
+ await page.clock.runFor(600);
+ const at=await page.evaluate(id=>{const r=document.querySelector(`.play-match-hand .play-match-card[data-instance="${id}"]`)?.getBoundingClientRect();return r?{x:r.left+r.width/2,y:r.top+r.height/2}:null;},land.id);
+ await page.evaluate(()=>{window.calls=[];});
+ await page.mouse.move(at.x,at.y);await page.mouse.down();for(let i=1;i<=12;i++){await page.mouse.move(at.x-160*i/12,at.y-300*i/12);await page.clock.runFor(16);}await page.mouse.up();await page.clock.runFor(100);
+ assert.deepEqual(await page.evaluate(()=>window.calls.map(c=>c[0])),['nativeSelect'],'the drop plays the card');
+ await page.evaluate(id=>{window.calls=[];window.push(window.fixture.native.revision+12,{prompt:{id:'drop-land',supported:true,method:'getAbilityToPlay',min:0,max:1,cancelable:true,message:'Choose ability',options:[{index:0,value:{kind:'ability',description:'Play land',card:{id,name:'Forest',hidden:false}}}]}});},land.id);await page.clock.runFor(300);
+ assert.deepEqual(await page.evaluate(()=>window.calls.map(c=>c[0])),['selectPrompt','confirmPrompt'],'after a drop the one-answer question is not asked again');
  console.log('forge table info fixes: ok');
 }finally{await browser.close();server.close();}
