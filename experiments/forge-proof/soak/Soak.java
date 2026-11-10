@@ -26,7 +26,7 @@ public class Soak {
       JsonObject w=new JsonObject(); w.add("input",in);
       long t0=System.currentTimeMillis();
       LocalEngine.Session s=LocalEngine.start(w.toString(),seed0+hi);
-      int rev=-1, turn=0, actions=0, rejected=0, sameRev=0; long lastChange=t0, lastAct=0; String outcome="cap"; String stallInfo="";
+      int rev=-1, turn=0, actions=0, turnActions=0, loopTurn=-1, rejected=0, sameRev=0; long lastChange=t0, lastAct=0; String outcome="cap"; String stallInfo="";
       Map<String,Integer> ev=new TreeMap<>(); int lastSeq=0; Set<String> errs=new LinkedHashSet<>(); long maxCpuWait=0, waitStart=t0; 
       List<long[]> cpuBursts=new ArrayList<>(); int maxEventsPerRev=0;
       while(true){
@@ -51,6 +51,10 @@ public class Soak {
         boolean mine=!busy&&(p!=null||(it!=null&&!it.equals("InputLockUI")));
         if(!mine){ if(now-lastChange>25000){ outcome="STALL"; String probe=""; try{ JsonObject pb=new JsonObject(); pb.addProperty("revision",r); pb.addProperty("op","ok"); var pr=s.call("POST","/action",pb.toString()); Thread.sleep(3000); JsonObject st2=JsonParser.parseString(s.call("GET","/state",null).body()).getAsJsonObject(); probe=" PROBE ok-> "+pr.status()+" "+pr.body()+" then rev "+st2.get("revision")+" busy "+st2.get("busy")+" input "+st2.get("inputType"); }catch(Exception e){probe=" PROBE err "+e;} System.out.println("STALLPROBE "+probe); StringBuilder sb=new StringBuilder(); for(var te:Thread.getAllStackTraces().entrySet()){ String n=te.getKey().getName(); if(n.contains("main")||n.contains("Reference")||n.contains("Signal")||n.contains("Finalizer")||n.contains("Common-Cleaner")) continue; sb.append("\nTHREAD "+n+" "+te.getKey().getState()); int k=0; for(var fr:te.getValue()){ if(k++>14)break; sb.append("\n   "+fr);} } try{ Files.writeString(Paths.get("stall-"+(seed0+hi)+"-"+System.currentTimeMillis()+".txt"), st.toString()+"\n"+sb);}catch(Exception e){} stallInfo="turn "+turn+" phase "+st.get("phase")+" input "+it+" busy "+busy+" prio "+st.get("priorityPlayer")+" msg "+st.get("message"); break;} continue; }
         if(now-lastAct<5) continue;
+        // The bot repeating an answer Forge keeps refusing (for example OK on blocks that break a
+        // blocking requirement) is the bot's limit, not an engine stall: stop the match there.
+        if(turn!=loopTurn){loopTurn=turn;turnActions=0;}
+        if(++turnActions>2000){ outcome="BOT_LOOP"; stallInfo="turn "+turn+" input "+it+" msg "+st.get("message")+" notification "+st.get("notification"); break; }
         if(sameRev>40){ outcome="STUCK_DECISION"; stallInfo="turn "+turn+" input "+it+" msg "+st.get("message")+" prompt "+(p==null?"":p.toString().substring(0,Math.min(600,p.toString().length()))); break; }
         JsonObject body=new JsonObject(); body.addProperty("revision",r);
         if(p!=null){

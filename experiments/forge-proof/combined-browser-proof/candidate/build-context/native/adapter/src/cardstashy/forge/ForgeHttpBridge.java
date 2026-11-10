@@ -1032,7 +1032,7 @@ public final class ForgeHttpBridge implements IRemote {
         if(value instanceof CardView c) return card(c);
         if(value instanceof forge.item.PaperCard pc)return obj("kind","paperCard","name",pc.getName(),"setCode",pc.getEdition());
         if(value instanceof PlayerView p)return obj("kind","player","id",p.getId(),"name",p.getName());
-        if(value instanceof SpellAbilityView sa)return obj("kind","ability","id",sa.getId(),"description",sa.getDescription(),"card",card(sa.getHostCard()));
+        if(value instanceof SpellAbilityView sa)return obj("kind","ability","id",sa.getId(),"description",sa.getDescription(),"card",sa.getHostCard()==null?null:card(sa.getHostCard()));
         if(value instanceof forge.game.replacement.ReplacementEffectView re)return obj("kind","replacementEffect","id",re.getId(),"description",re.getDescription());
         if(value instanceof String || value instanceof Number || value instanceof Boolean || value instanceof Enum<?>)return String.valueOf(value);
         // Kicker, Buyback, Entwine and other optional costs (Forge asks with many(), so an order
