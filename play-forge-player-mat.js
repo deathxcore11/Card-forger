@@ -7,7 +7,7 @@ import {createForgeHostClient,exactForgeInput,forgeAccountKey} from './play-forg
 import {createForgePresentationSession} from './experiments/forge-proof/forge-session.mjs';
 import {mountForgeTable} from './experiments/forge-proof/forge-table.mjs';
 import {nativePromptUnanswerable} from './experiments/forge-proof/native-panel.mjs';
-import {mountForgeMatchIntro,forgeStartingPlayer,preloadDeckBackdrops} from './play-forge-pregame.js';
+import {mountForgeMatchIntro,forgeStartingPlayer,preloadDeckBackdrops,mountForgeArtLoading} from './play-forge-pregame.js';
 import {deckChronicles,deckRecord,recordLine,recordMatch} from './play-match-record.js';
 import {chronicleBlock} from './play-chronicle-ui.js';
 import {createMatchFacts} from './match-facts.js';
@@ -279,11 +279,13 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   try{
    matchup=structuredClone(setup);playedFrom=ownFirst=lastSurface=null;conceding=recorded=false;facts=createMatchFacts();matchPolicy=forgeCpuPolicy(forgeMatchDifficulty(setup));
    if(!current()||setup.profile?.ownerId!==readAccount()?.user?.id)throw Object.assign(Error('ACCOUNT_CHANGED'),{code:'ACCOUNT_CHANGED'});
-   // The matchup appears only once both decks' cover art is fetched and decoded (at most 4 s in all);
-   // a deck whose art is not there by then shows a drawn card frame and fills in when it arrives.
-   const quick=previewArtwork?(async()=>{const started=now();let t;
-    await Promise.race([Promise.resolve().then(()=>previewArtwork(setup,{isCurrent:current})).catch(()=>{}),new Promise(r=>{t=setTimeout(r,4000);})]);clearTimeout(t);
-    if(previewLookup&&current())await preloadDeckBackdrops([setup.selected,setup.opponent,...(setup.extraOpponents||[]).map(o=>o?.deck)].filter(Boolean),previewLookup,{timeoutMs:Math.max(0,4000-(now()-started))});})():Promise.resolve();
+   // A real loading screen holds until both decks' cover art is fetched and decoded (as the app does, at most
+   // 20 s); a deck whose art never comes shows a drawn card frame and fills in if it arrives later.
+   const quick=previewArtwork?(async()=>{const started=now(),loading=mountForgeArtLoading(root);let t;
+    await Promise.race([Promise.resolve().then(()=>previewArtwork(setup,{isCurrent:current})).catch(()=>{}),new Promise(r=>{t=setTimeout(r,20000);})]);clearTimeout(t);
+    loading.progress(.35);
+    if(previewLookup&&current())await preloadDeckBackdrops([setup.selected,setup.opponent,...(setup.extraOpponents||[]).map(o=>o?.deck)].filter(Boolean),previewLookup,{timeoutMs:Math.max(0,20000-(now()-started)),onProgress:(done,total)=>loading.progress(.35+.65*(total?done/total:1))});
+    loading.progress(1);})():Promise.resolve();
    await quick;
    if(!current())throw Object.assign(Error('ACCOUNT_CHANGED'),{code:'ACCOUNT_CHANGED'});
    intro=mountIntro({root,setup,lookup:previewLookup||lookup,onCancel:requestExit,wait,isCurrent:current});watchScreen();
