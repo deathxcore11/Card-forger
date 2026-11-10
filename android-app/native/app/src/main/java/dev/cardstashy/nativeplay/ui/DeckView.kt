@@ -81,8 +81,9 @@ fun DeckView(row: Finder.Row, title: String, cardOf: (String) -> JsonObject?, on
         Backdrop() // #ambient: the shared art (glass on, or Aura)
         val wide = maxWidth >= 600.dp
         val inner = maxWidth - 32.dp
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            item { Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { Hero(row, title, sub, wide, onBack) } }
+        // The status-bar inset sits on the list, so rows never scroll under the clock.
+        LazyColumn(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            item { Hero(row, title, sub, wide, onBack) }
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     // The hero already lists the seals; the pill only names the state.
