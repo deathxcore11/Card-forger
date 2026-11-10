@@ -26,4 +26,13 @@ class FreePreconsTest {
         assertEquals(listOf("Lightning Bolt", "Lightning Bolt", "Serra Angel", "Kardur, Doomscourge"), names(emptySet()))
         assertEquals(listOf("Hate Mirage", "Lightning Bolt", "Serra Angel", "Kardur, Doomscourge"), names(setOf("Hate Mirage")))
     }
+
+    /** From 10 Nov every row has a print, so a swapped row says what it stands in for ("was"). */
+    @Test fun wasMarker() {
+        val body = JsonParser.parseString("""{"swaps":{"Hate Mirage":"Lightning Bolt"},"decks":[{"key":"x","name":"X","format":"Commander",
+            "rows":[{"name":"Lightning Bolt","qty":1,"set":"msc","number":"806","was":"Hate Mirage"},{"name":"Lightning Bolt","qty":1,"set":"m10","number":"146"},{"name":"K","qty":1,"commander":true}]}]}""").asJsonObject
+        val names = { k: Set<String> -> TableDecks.freeFrom(body, k)[0].raw.getAsJsonArray("cards").map { it.asJsonObject.get("name").asString } }
+        assertEquals(listOf("Lightning Bolt", "Lightning Bolt", "K"), names(emptySet()))
+        assertEquals(listOf("Hate Mirage", "Lightning Bolt", "K"), names(setOf("Hate Mirage")))
+    }
 }

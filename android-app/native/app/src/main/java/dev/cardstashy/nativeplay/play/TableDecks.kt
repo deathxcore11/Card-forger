@@ -46,7 +46,8 @@ object TableDecks {
         free.value = freeFrom(body)
         // The real cards go back in once the engine says it knows them (a card it doesn't know would refuse the match, so that one
         // keeps its stand-in). Off the caller's scope, so leaving the picker early doesn't strand the stand-ins.
-        val swapped = body.getAsJsonObject("swaps")?.keySet()?.toSet().orEmpty()
+        val swapped = body.getAsJsonObject("swaps")?.keySet()?.toSet().orEmpty() +
+            (body.getAsJsonArray("decks") ?: JsonArray()).flatMap { d -> (d as? JsonObject)?.getAsJsonArray("rows")?.mapNotNull { (it as? JsonObject)?.s("was")?.takeIf { w -> w.isNotBlank() } }.orEmpty() }
         if (swapped.isNotEmpty()) kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
             val st = dev.cardstashy.nativeplay.engine.ForgeService.status.first { it is dev.cardstashy.nativeplay.engine.ForgeService.Status.Ready || it is dev.cardstashy.nativeplay.engine.ForgeService.Status.Failed }
             if (st !is dev.cardstashy.nativeplay.engine.ForgeService.Status.Ready) return@launch
@@ -61,8 +62,10 @@ object TableDecks {
     val real = body.getAsJsonObject("swaps")?.entrySet()?.mapNotNull { (k, v) -> if (k !in known) null else v.takeIf { it.isJsonPrimitive }?.asString?.let { it to k } }?.toMap().orEmpty()
     return (body.getAsJsonArray("decks") ?: JsonArray()).mapNotNull { it as? JsonObject }.filter { it.s("format") == "Commander" }.map { d ->
         val rows = (d.getAsJsonArray("rows")?.mapNotNull { it as? JsonObject } ?: emptyList()).map { r ->
-            val back = real[r.s("name")]?.takeIf { !r.has("set") }
-            if (back == null) r else r.deepCopy().apply { addProperty("name", back) } }
+            // The row names its real card ("was", bake from 10 Nov) or, in older files, a swapped row has no set of its own.
+            val was = r.s("was").takeIf { it.isNotBlank() }
+            val back = if (was != null) was.takeIf { it in known } else real[r.s("name")]?.takeIf { !r.has("set") }
+            if (back == null) r else r.deepCopy().apply { addProperty("name", back); remove("set"); remove("number") } }
         val commander = rows.firstOrNull { it.get("commander")?.takeIf { p -> p.isJsonPrimitive }?.asBoolean == true }.s("name")
         val raw = JsonObject().apply {
             addProperty("id", "free:" + d.s("key")); addProperty("name", d.s("name")); addProperty("format", "Commander"); addProperty("commander", commander)
