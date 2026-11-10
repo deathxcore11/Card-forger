@@ -20,6 +20,11 @@ class TableAudio(context: Context) {
         }
     }
 
+    private fun castCue(cost: String): String {
+        val colours = Regex("[WUBRG]").findAll(cost.replace(Regex("\\{[^}]*\\d[^}]*\\}"), "")).map { it.value }.toSet()
+        return when (colours.size) { 0 -> "CAST-C"; 1 -> "CAST-" + colours.first(); else -> "CAST-M" }
+    }
+
     /** Silent while the app is in the background; any sound still ringing stops at once. */
     var muted = false
         set(on) { field = on; if (on) pool.autoPause() else pool.autoResume() }
@@ -49,7 +54,11 @@ class TableAudio(context: Context) {
         if (field.any { it.tapped && it.isLand && was[it.id]?.zone == "Battlefield" && was[it.id]?.tapped == false && !it.attacking }) play("CARD-006", .7f)
         val old = a.stack.map { it.id }.toSet()
         val fresh = b.stack.filter { it.id !in old }
-        if (fresh.isNotEmpty()) play(if (fresh.any { s -> s.source?.let { was[it.id]?.zone == "Hand" } == true }) "CARD-008" else "CARD-014")
+        // A spell cast from hand sounds its colour (Randall 10 Nov, "like before but better"): one colour its own cue, two or more
+        // CAST-M, none CAST-C; CARD-008 when the cue isn't there. Triggers and abilities keep CARD-014.
+        val cast = fresh.firstOrNull { s -> s.source?.let { was[it.id]?.zone == "Hand" } == true }?.source
+        if (cast != null) { val cue = castCue(cast.manaCost); play(if (ids.containsKey(cue)) cue else "CARD-008") }
+        else if (fresh.isNotEmpty()) play("CARD-014")
         val arrived = field.filter { was[it.id]?.zone != "Battlefield" }
         if (arrived.any { it.isLand }) play("CARD-005")
         if (arrived.any { !it.isLand && !was.containsKey(it.id) }) play("CARD-025") else if (arrived.any { !it.isLand }) play("CARD-010")
