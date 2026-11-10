@@ -45,7 +45,14 @@ data class Selection(
     val affordability: Map<Int, String> = emptyMap(),
     /** Stack items Forge offers as targets (selection.targets of kind stack), and the players among the targets. */
     val stackTargets: Set<Int> = emptySet(), val targetPlayers: Set<Int> = emptySet(),
+    /** selection.actionable[].tapPreview / tapWarning: what Forge's auto-pay would tap for each card, when the bridge has planned it. */
+    val tapPlans: Map<Int, TapPlan> = emptyMap(),
 )
+/**
+ * One card's pay plan from the bridge (ForgeHttpBridge.tapPlan, filled in a beat after the snapshot without a new revision).
+ * [sources] is null when the row had no tapPreview array; [warning] is "life" or "sacrifice" when auto-pay would cost more than a tap.
+ */
+data class TapPlan(val sources: List<Int>?, val warning: String?)
 /** n.payment while Forge asks for mana: what is still owed, the card it is for, and the real cost for the chosen target. */
 data class Payment(val remaining: String?, val forCard: Int?, val forName: String?, val costNow: String?)
 data class PromptOption(
@@ -155,6 +162,11 @@ data class MatchState(
                 blocked = sel?.arr("blocked")?.mapNotNull { e -> val x = e.asJsonObject; x.int("id")?.let { it to (x.str("reason") ?: "") } }?.toMap() ?: emptyMap(),
                 min = sel?.int("min") ?: 0, max = sel?.int("max") ?: 0, targetCards = refs("targets", "card"),
                 stackTargets = refs("targets", "stack"), targetPlayers = refs("targets", "player"),
+                tapPlans = sel?.arr("actionable")?.mapNotNull { e -> val x = e.takeIf { it.isJsonObject }?.asJsonObject?.takeIf { it.str("kind") == "card" } ?: return@mapNotNull null
+                    val id = x.int("id") ?: return@mapNotNull null
+                    val prev = x.get("tapPreview")?.takeIf { it.isJsonArray }?.asJsonArray?.mapNotNull { v -> v.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.asInt }
+                    val warn = x.str("tapWarning")?.takeIf { it == "life" || it == "sacrifice" }
+                    if (prev == null && warn == null) null else id to TapPlan(prev, warn) }?.toMap() ?: emptyMap(),
                 affordability = sel?.arr("actionable")?.mapNotNull { e -> e.asJsonObject.takeIf { it.str("kind") == "card" }?.let { x -> val id = x.int("id"); val a = x.str("affordability"); if (id != null && a != null) id to a else null } }?.toMap() ?: emptyMap(),
             )
             val b = o.obj("buttons")

@@ -82,6 +82,8 @@ fun HandFan(
     padLift: Boolean = false,
     /** A's words on a card that cannot be played (a card to discard: "Pick", "Discard"). */
     padA: (Card) -> String? = { null },
+    /** glow-rules.md: the card being carried now (dragged, under the finger or under the controller's ring), null when none. */
+    onCarry: ((Int?) -> Unit)? = null,
 ) {
     val cardH = cardW * 1.4f
     val haptic = LocalHapticFeedback.current
@@ -90,6 +92,7 @@ fun HandFan(
     var focus by remember { mutableStateOf<Int?>(null) }        // card id under the finger
     var dragging by remember { mutableStateOf<Int?>(null) }     // card id under the finger, moving up
     var leaving by remember { mutableStateOf<Int?>(null) }      // card id flying out after a play
+    var putBack by remember { mutableStateOf<Int?>(null) }      // card id springing back into the hand after a drag let go
     val drag = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
     val flight = remember { Animatable(0f) }
     val current by rememberUpdatedState(cards)
@@ -106,6 +109,12 @@ fun HandFan(
     val seen = remember { HashSet<Int>() }
     var shownOnce by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { shownOnce = true }
+    // The carried card (dragged, under the finger, under the controller's ring): dropped, cast (it leaves) or put back, and it is
+    // no longer carried. A lift by a tap ([raised]) is the caller's to count: it knows when that lift is still live.
+    val carryCb by rememberUpdatedState(onCarry)
+    val carriedNow = (dragging?.takeIf { it != putBack } ?: focus)?.takeIf { id -> id != leaving && cards.any { it.id == id } }
+    LaunchedEffect(carriedNow) { carryCb?.invoke(carriedNow) }
+    DisposableEffect(Unit) { onDispose { carryCb?.invoke(null) } }
     val popScale = pop ?: maxOf(1.5f, minOf(2.2f, 110f / cardW.value))
     val rise = 18.dp
 
@@ -192,7 +201,7 @@ fun HandFan(
                     }
                     val card = hand.getOrNull(idx)
                     if (card != null && d.y < -slop * 1.5f && abs(d.y) > abs(d.x) * 1.2f) {
-                        stretching = !canPlayCb(card); scope.launch { drag.snapTo(Offset.Zero) }; dragging = card.id; anchor = ch.position; continue
+                        stretching = !canPlayCb(card); scope.launch { drag.snapTo(Offset.Zero) }; dragging = card.id; putBack = null; anchor = ch.position; continue
                     }
                     if (reorderCb != null && card != null && (moving != null || abs(d.x) > slop * 1.5f && abs(d.x) > abs(d.y))) {
                         if (moving == null) { moving = card.id; moveTo = idx; focus = null; haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
@@ -219,7 +228,8 @@ fun HandFan(
                         delay(1100); if (leaving == card.id) { leaving = null; drag.snapTo(Offset.Zero) }
                     }
                 } else if (lifted != null) {
-                    scope.launch { drag.animateTo(Offset.Zero, spring(.8f, 600f)); if (dragging == lifted) dragging = null }
+                    putBack = lifted
+                    scope.launch { drag.animateTo(Offset.Zero, spring(.8f, 600f)); if (dragging == lifted) dragging = null; if (putBack == lifted) putBack = null }
                     focus = null
                 } else {
                     if (!swept) hand.getOrNull(idx)?.let(tapCb)

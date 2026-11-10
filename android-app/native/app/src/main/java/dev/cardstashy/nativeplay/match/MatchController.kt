@@ -19,6 +19,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -235,7 +236,15 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                         hostClock = st.hasAfk to st.afk?.let { it to SystemClock.elapsedRealtime() } }
                     // A repeat revision still counts when Forge finished working without a new one.
                     val prev = latest
-                    if (st.revision != lastRev || prev == null || prev.busy != st.busy || prev.inputType != st.inputType || prev.prompt?.id != st.prompt?.id) {
+                    // The bridge plans each card's taps a beat later and writes them into the same revision (planTapsLater):
+                    // carry the plan into what is shown without replaying the snapshot.
+                    if (st.revision == lastRev && prev != null && prev.revision == st.revision && prev.selection.tapPlans != st.selection.tapPlans &&
+                        prev.busy == st.busy && prev.inputType == st.inputType && prev.prompt?.id == st.prompt?.id) {
+                        val plans = st.selection.tapPlans
+                        latest = prev.copy(selection = prev.selection.copy(tapPlans = plans))
+                        _shown.update { s -> if (s != null && s.revision == st.revision) s.copy(selection = s.selection.copy(tapPlans = plans)) else s }
+                    }
+                    else if (st.revision != lastRev || prev == null || prev.busy != st.busy || prev.inputType != st.inputType || prev.prompt?.id != st.prompt?.id) {
                         if (st.revision != lastRev) revisionAt = SystemClock.elapsedRealtime()
                         TableLog.board("read", st, latest?.revision)
                         if (_firstHand.value == null) runCatching { st.me.hand.map { it.name }.filter { it.isNotBlank() } }.getOrNull()?.takeIf { it.isNotEmpty() }?.let { _firstHand.value = it }
@@ -273,10 +282,14 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         players = st.players.map { p -> p.copy(battlefield = p.battlefield.filter { it.id !in hidden }) },
         stack = st.stack.filter { it.source?.id !in hidden })
 
-    private fun show(st: MatchState) {
+    private fun show(shown: MatchState) {
+        // The bridge's tap plans arrive a beat after their revision (the poller writes them into latest): a queued or masked copy of
+        // that revision takes them from latest, so the payment light is never put back dark by a replay.
+        val l = latest
+        val st = if (l != null && l.revision == shown.revision && l.selection.tapPlans != shown.selection.tapPlans)
+            shown.copy(selection = shown.selection.copy(tapPlans = l.selection.tapPlans)) else shown
         if (_shown.value?.revision != st.revision) TableLog.board("show", st, latest?.revision)
         _shown.value = st
-        val l = latest
         _live.value = l != null && st.revision == l.revision && st.waitingOnMe && !_sending.value
         if (_live.value) scheduleAutoPass(st)
         startTicker()
@@ -636,11 +649,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     private class Decision(val op: String?, val why: String, val delayMs: Long = 0)
 
     /** A permanent whose only abilities make mana (a land, a mana rock): tapping it is never a reason to stop for you (W7, W8). */
-    private fun manaOnly(c: dev.cardstashy.nativeplay.engine.Card): Boolean {
-        val acts = c.text.lines().map { it.replace(Regex("\\([^)]*\\)"), "").trim() }.filter { it.contains(":") }
-        if (acts.isEmpty()) return c.isLand
-        return acts.all { Regex("\\badd\\b", RegexOption.IGNORE_CASE).containsMatchIn(it.substringAfter(":")) }
-    }
+    private fun manaOnly(c: dev.cardstashy.nativeplay.engine.Card): Boolean = dev.cardstashy.nativeplay.ui.Glow.manaOnly(c)
 
     /**
      * W1, W7, W8: the one place that decides whether the table waits on you. It waits only while Forge offers you a real choice you

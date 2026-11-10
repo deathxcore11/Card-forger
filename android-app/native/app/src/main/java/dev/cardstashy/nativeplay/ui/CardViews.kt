@@ -65,8 +65,8 @@ import androidx.compose.ui.unit.sp
 import dev.cardstashy.nativeplay.engine.Card
 import dev.cardstashy.nativeplay.match.DemoDecks
 
-/** forge-table.mjs roles: playable, choice (PICKABLE), chosen (PICKED), target, discard. */
-enum class Mark { NONE, PLAYABLE, PICKABLE, PICKED, TARGET, DISCARD }
+/** forge-table.mjs roles: playable, choice (PICKABLE), chosen (PICKED), target, discard; USABLE: a permanent's ability you can activate (glow-rules.md). */
+enum class Mark { NONE, PLAYABLE, USABLE, PICKABLE, PICKED, TARGET, DISCARD }
 
 /** Where each card and life orb sits on screen (root coordinates), for the attack and block lines. */
 class Anchors {

@@ -53,6 +53,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -226,6 +227,9 @@ internal fun frameTone(colors: List<Char>?): Pair<Color, Color> = when {
 
 private val Gold = Color(0xFFE8B95B)
 private val Ice = Color(0xFF5CC8FF)
+/** glow-rules.md: the usable ring (dashed) and the payment light (soft fill). */
+private val UsableViolet = Color(0xFFB79CFF)
+private val PayGold = Color(0xFFFFD98A)
 private val Ember = Color(0xFFFF9A7A)
 private val Sky = Color(0xFF8FDCFF)
 private val CpuRed = Color(0xFFE0533F)
@@ -313,7 +317,6 @@ fun ForgeBoard(
             val pod = st.players.size > 2
             val cpu = remember(st, picks) { podFocus.of(st, null) }
             // forge-table.mjs role(): chosen, then a target, then a choice (discard while a discard asks), then playable.
-            val discarding = st.prompt == null && st.selection.cards.isNotEmpty() && Regex("\\bdiscard\\b", RegexOption.IGNORE_CASE).containsMatchIn(st.message)
             // W12: the cleanup discard never lifts a card by itself; selectedHand is the card he picked (A or a tap), and only that is discarded.
             val discardAsk = dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) != null
             // The d-pad's walk along the hand while a discard asks: it shows a card's words and name but picks nothing.
@@ -337,19 +340,24 @@ fun ForgeBoard(
             blockDrag.blockers = if (blockingNow) me.battlefield.filter { myBlocker(it) && !it.blocking }.map { it.id }.toSet() else emptySet()
             blockDrag.attackers = attackersNow.map { it.id }
             blockDrag.drop = { b, a -> blockPick = null; attackFocus = null; intents.block(b, a) }
-            fun markOf(card: Card): Mark = when {
-                !live -> Mark.NONE
-                blockingNow && card.id == blockPick -> Mark.PICKED
-                discardAsk && card.id == selectedHand && card.id in st.selection.cards -> Mark.PICKED
-                blockingNow && card.attacking && card.controller != st.viewer && (card.id == attackFocus || card.id == blockDrag.over ||
-                    (blockPick ?: blockDrag.from)?.let { b -> st.card(b)?.let { mayBlock(card, it) } } == true) -> Mark.TARGET
-                card.id in blocked -> Mark.NONE
-                card.id in st.selection.chosenCards -> Mark.PICKED
-                card.id in st.selection.targetCards -> Mark.TARGET
-                card.id in st.selection.cards -> if (discarding) Mark.DISCARD else Mark.PICKABLE
-                card.id in st.selection.actionable -> if (card.id in quiet) Mark.NONE else Mark.PLAYABLE
-                else -> Mark.NONE
-            }
+            // glow-rules.md: the one light each card wears (Glow.mark: chosen, target, pick, then playable / usable / nothing).
+            fun markOf(card: Card): Mark = Glow.mark(card, st, live, blocked, quiet, selectedHand, blockPick,
+                aimed = blockingNow && card.attacking && card.controller != st.viewer && (card.id == attackFocus || card.id == blockDrag.over ||
+                    (blockPick ?: blockDrag.from)?.let { b -> st.card(b)?.let { mayBlock(card, it) } } == true))
+            // Rule 7 / I4: a hand card the bridge's pay plan dims says why when lifted. One that only costs life or a sacrifice
+            // stays castable on purpose: lifted (its cost shown), the gold button, A or a slide up casts it.
+            fun costly(card: Card) = Glow.costly(st, live, card, blocked, quiet)
+            fun dimWhy(card: Card): String? = if (!live) null else blocked[card.id]
+                ?: card.id.takeIf { card.zone == "Hand" && card.id in st.selection.actionable && !Glow.asking(st) && Glow.planSaysNo(st, it) }?.let { Glow.costOf(st, it) }
+            fun castable(card: Card) = markOf(card) == Mark.PLAYABLE || (card.id == selectedHand && costly(card))
+            // The hand card being dragged or under the finger or the controller's ring (HandFan reports it): its payment sources light.
+            var carried by remember { mutableStateOf<Int?>(null) }
+            // A card lifted by a tap is carried too, from the first frame. On two screens a lift outlives the ring (TableScreen keeps it),
+            // so there it counts only while it is fresh or the hand chip holds the ring; the ring leaving the hand puts it down.
+            var liftLive by remember { mutableStateOf(true) }
+            LaunchedEffect(selectedHand) { liftLive = selectedHand != null }
+            val carriedId = (carried ?: selectedHand?.takeIf { liftLive })?.takeIf { id -> me.hand.any { it.id == id } }
+            val payLight = carriedId?.let { id -> me.hand.firstOrNull { it.id == id } }?.let { Glow.payment(st, live, it, blocked, quiet) } ?: emptySet()
             fun blockTap(card: Card): (() -> Unit)? = when {
                 card.attacking && card.controller != st.viewer -> ({
                     val b = blockPick
@@ -402,6 +410,7 @@ fun ForgeBoard(
             // CPU half: lands at the back, creatures at the front; yours mirrored.
             // A creature Forge says must attack this combat wears a tag until it is in the attack.
             androidx.compose.runtime.CompositionLocalProvider(LocalAttackInput provides (live && st.inputType == "InputAttack"),
+                LocalPayLight provides payLight, LocalHandCarry provides payLight.isNotEmpty(), LocalPayInput provides (live && Glow.paying(st)),
                 LocalAttackNumbers provides (if (blockingNow && attackersNow.size > 1) attackersNow.withIndex().associate { (i, c) -> c.id to i + 1 } else emptyMap()),
                 LocalBlockDrag provides (if (blockingNow) blockDrag else null)) {
                 // The stack keeps its own lane (fix list B6): while anything is on it the rows end left of the fan (it starts 214 du
@@ -428,7 +437,8 @@ fun ForgeBoard(
             // While the side dock asks (it sits bottom right, 168 du wide), your piles slide left of it so their cards and counts stay in view.
             val docked = live && st.failure == null && !st.finished && st.prompt?.let { p -> p.method != "order" && !p.method.startsWith("assign") && p.options.none { it.zone in setOf("Library", "Graveyard", "Exile") } } == true
             val pilesX by androidx.compose.animation.core.animateDpAsState(if (docked || st.stack.isNotEmpty()) W - 262.du else W - 120.du, tween(if (Motion.still) 0 else 220), label = "pilesX")
-            Piles(me, mine = true, Modifier.offset(x = pilesX, y = if (large) mid + 60.dp else mid + 46.du * stretch), d, onInspect)
+            Piles(me, mine = true, Modifier.offset(x = pilesX, y = if (large) mid + 60.dp else mid + 46.du * stretch), d, onInspect,
+                playable = { markOf(it) == Mark.PLAYABLE }) { intents.card(it.id) }
             if (!pod) Piles(cpu, mine = false, Modifier.offset(x = 44.du, y = if (large) mid - 120.dp else mid - 104.du * stretch), d, onInspect)
 
             // The CPU's hand, tucked off the top edge: the lower half of each back.
@@ -447,7 +457,9 @@ fun ForgeBoard(
             if (!pod) Crest(cpu.command.firstOrNull(), Modifier.offset(x = W - 68.du - lx, y = 16.du + lx), d, onInspect)
             if (!pod) Medallion(cpu, mine = false, live && cpu.id in st.selection.players, cpu.id in st.selection.chosenPlayers, Modifier.offset(x = W - 132.du - lx, y = 26.du + lx), d) { intents.player(cpu.id) }
             if (!pod) ThinkDots(Modifier.offset(x = W - 132.du - lx - 34.du, y = 26.du + lx + 20.du), d)
-            Crest(me.command.firstOrNull(), Modifier.offset(x = 10.du + lx, y = H - 86.du - ly), d, onInspect)
+            // Rule 2: your commander wears the playable ring while Forge offers it and you can pay; a tap casts it (long press opens it).
+            Crest(me.command.firstOrNull(), Modifier.offset(x = 10.du + lx, y = H - 86.du - ly), d, onInspect,
+                playable = me.command.firstOrNull()?.let { markOf(it) == Mark.PLAYABLE } == true) { intents.card(it.id) }
             Medallion(me, mine = true, live && me.id in st.selection.players, me.id in st.selection.chosenPlayers, Modifier.offset(x = ax, y = ay), d) { intents.player(me.id) }
             // Table additions 6: while you declare blocks, what gets through, above your seat. Gone the moment blocks are confirmed.
             if (blockingNow) damageThrough(st)?.let { t -> ThroughChip(t, me.life, Modifier.offset(x = ax, y = ay - 50.du), d) }
@@ -492,18 +504,20 @@ fun ForgeBoard(
             val fan: @Composable (Dp) -> Unit = { fanW ->
                 HandFan(hand, fanW, Modifier.fillMaxWidth(), raised = selectedHand, angleDeg = 1.2f,
                     markOf = ::markOf,
-                    canPlay = { card -> live && card.id in st.selection.actionable && card.id !in blocked && card.id !in quiet },
-                    blockedOf = { card -> if (live) blocked[card.id] else null },
+                    canPlay = { card -> castable(card) },
+                    onCarry = { carried = it },
+                    blockedOf = { card -> dimWhy(card) },
                     // Two screens: a controller's A on a fan card lifts it, A again plays or casts it (W11); the hint says which.
                     padLift = DualScreen.active,
                     padA = { card -> if (live && discardAsk && card.id in st.selection.cards) (if (card.id == selectedHand) "Discard" else "Pick") else null },
                     onTap = { card ->
-                        val playable = live && card.id in st.selection.actionable && card.id !in blocked
+                        val playable = markOf(card) == Mark.PLAYABLE
                         when {
                             // The discard asks for a pick first (W12): the tap lifts and marks the card, the same card again discards it.
                             live && discardAsk && card.id in st.selection.cards -> if (selectedHand == card.id) { onSelectHand(null); intents.card(card.id) } else onSelectHand(card.id)
                             live && card.id in st.selection.cards -> intents.card(card.id)
-                            live && card.id in blocked -> if (selectedHand == card.id) onInspect(card) else onSelectHand(card.id)
+                            // A dark card says why on itself (I4): the tap lifts it with its reason, again opens it.
+                            dimWhy(card) != null -> if (selectedHand == card.id) onInspect(card) else onSelectHand(card.id)
                             playable && selectedHand == card.id -> onInspect(card)
                             playable -> onSelectHand(card.id)
                             else -> onInspect(card)
@@ -525,7 +539,7 @@ fun ForgeBoard(
                     val picked = hand.firstOrNull { it.id == selectedHand }
                     // While a discard asks, the chip shows the card the d-pad rests on; only A or a tap picks it (W12).
                     val lifted = if (discardAsk) picked ?: hand.firstOrNull { it.id == discardWalk } else picked
-                    val playable = { c: Card -> live && c.id in st.selection.actionable && c.id !in blocked }
+                    val playable = { c: Card -> castable(c) }
                     fun step(dx: Int) {
                         if (discardAsk) { val i = hand.indexOfFirst { it.id == (discardWalk ?: selectedHand) }
                             discardWalk = hand[if (i < 0) (if (dx > 0) 0 else hand.lastIndex) else (i + dx).coerceIn(0, hand.lastIndex)].id; return }
@@ -565,7 +579,7 @@ fun ForgeBoard(
                     val shape = RoundedCornerShape(999.dp)
                     Row(Modifier.align(Alignment.TopCenter).padding(top = handW / 66f * 30f)
                         .focusRequester(chipFocus)
-                        .onFocusChanged { chipOn = it.isFocused; if (it.isFocused) { TableZones.at = 0; TablePad.last = chipFocus; if (selectedHand == null && !discardAsk && !TablePad.autoRing) onSelectHand(hand.first().id); TablePad.autoRing = false } }
+                        .onFocusChanged { if (chipOn != it.isFocused) liftLive = it.isFocused && selectedHand != null; chipOn = it.isFocused; if (it.isFocused) { TableZones.at = 0; TablePad.last = chipFocus; if (selectedHand == null && !discardAsk && !TablePad.autoRing) onSelectHand(hand.first().id); TablePad.autoRing = false } }
                         .onKeyEvent { e -> if (e.nativeKeyEvent.action != android.view.KeyEvent.ACTION_DOWN) return@onKeyEvent false
                             when (e.nativeKeyEvent.keyCode) { android.view.KeyEvent.KEYCODE_DPAD_LEFT -> { step(-1); true }; android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> { step(1); true }; else -> false } }
                         .padActs(PadActs(a = if (discardAsk && live) (if (lifted != null && lifted.id == selectedHand) "Discard" else "Pick") else lifted?.let { if (playable(it)) (if (it.isLand) "Play land" else "Cast") else "Inspect" }, y = lifted?.let { c -> PadAct("Inspect") { onInspect(c) } }))
@@ -586,7 +600,7 @@ fun ForgeBoard(
                 // The cleanup discard (U1): a lifted card goes, so its button says Discard, never Play or Cast.
                 val discardingNow = dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) != null
                 // A lift the hand chip keeps on two screens may not be playable now (U8): the gold button offers it only when it is.
-                val selected = selectedHand?.takeIf { it !in blocked && (it in st.selection.actionable || (discardingNow && it in st.selection.cards)) }?.let { st.card(it) }
+                val selected = selectedHand?.let { st.card(it) }?.takeIf { c -> if (discardingNow) c.id in st.selection.cards && c.id !in blocked else castable(c) }
                 // W12: the gold button names the card he picked; with none picked it only asks for one and does nothing.
                 val pickedDiscard = discardingNow && selected != null
                 // W10: your main phase 1, nothing on the stack and no creature able to attack: the step that follows is the end of the turn.
@@ -847,7 +861,8 @@ internal fun pilesOf(cards: List<Card>, split: Int, markOf: (Card) -> Mark, tapO
     val alone = setOf(Mark.PICKED, Mark.TARGET, Mark.DISCARD, Mark.PICKABLE)
     val groups = cards.withIndex().groupBy { (i, it) ->
         val m = markOf(it)
-        if (m in alone || it.counters.isNotEmpty() || it.damage != 0 || it.attacking || it.blocking || it.attachments.isNotEmpty() || it.attachedTo != null) "id${it.id}"
+        // A land Forge offers to pay with (or pick) still piles with its twins: the row keeps its shape while mana is asked for.
+        if ((m in alone && !(m == Mark.PICKABLE && it.isLand)) || it.counters.isNotEmpty() || it.damage != 0 || it.attacking || it.blocking || it.attachments.isNotEmpty() || it.attachedTo != null) "id${it.id}"
         else "${if (i < split) "l" else "o"}|${it.name}|${it.tapped}|${it.summoningSick}|${it.controller}|${it.token}|$m|${tapOf(it) != null}"
     }.values.map { g -> g.map { it.value } }
     return groups.flatMap { g -> if (g.size == 2 && !g[0].isLand && !g[0].token) g.map { listOf(it) } else listOf(g) }
@@ -869,6 +884,9 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         else -> null
     }
     val ring = role?.first ?: lerp(a, Color.White, .15f)
+    // glow-rules.md: the usable ring (violet, dashed, 7 dp outside) steps back while a hand card is carried; the payment light shows then.
+    val usableRing = mark == Mark.USABLE && !LocalHandCarry.current
+    val paid = card.id in LocalPayLight.current
     // Tap: 180 ms (Living Battlefield page 9).
     val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tween(180, easing = FastOutSlowInEasing), label = "tap")
     val anchors = LocalAnchors.current
@@ -891,8 +909,10 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         draggable -> "Block"
         LocalAttackInput.current && mineSide && card.isCreature && !card.attacking -> "Attack"
         // V4: a land pays (while Forge asks for mana, or floats it), anything else of yours with a lit ability activates it.
-        mark == Mark.PLAYABLE && mineSide -> if (card.isLand) "Tap for mana" else "Activate"
+        mark == Mark.USABLE && mineSide -> "Activate"
+        mark == Mark.PICKABLE && mineSide && LocalPayInput.current -> "Tap for mana"
         mark == Mark.PICKABLE -> "Choose"
+        mark == Mark.NONE && mineSide && Glow.manaOnly(card) -> "Tap for mana"
         else -> null
     }
     val padHere = remember(card.id, padA) { PadActs(a = padA, y = PadAct("Inspect") { inspect(cardNow) }) }
@@ -916,8 +936,19 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
                 val spread = 4.du.toPx(); val p = Paint().asFrameworkPaint().apply { isAntiAlias = true; color = role.third.toArgb(); maskFilter = android.graphics.BlurMaskFilter(10.du.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL) }
                 c.nativeCanvas.drawRoundRect(-spread, -spread, size.width + spread, size.height + spread, r + spread, r + spread, p)
             }
+            // The payment light: a wide soft mana-gold glow round the whole card (#ffd98a), under its thin edge.
+            if (paid) drawIntoCanvas { c ->
+                val spread = 6.du.toPx(); val p = Paint().asFrameworkPaint().apply { isAntiAlias = true; color = PayGold.copy(alpha = .8f).toArgb(); maskFilter = android.graphics.BlurMaskFilter(16.du.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL) }
+                c.nativeCanvas.drawRoundRect(-spread, -spread, size.width + spread, size.height + spread, r + spread, r + spread, p)
+            }
             val ringW = (role?.second ?: 1.5f).du.toPx()
-            drawRoundRect(ring, topLeft = Offset(-ringW, -ringW), size = Size(size.width + 2 * ringW, size.height + 2 * ringW), cornerRadius = CornerRadius(r + ringW))
+            drawRoundRect(if (paid && role == null) PayGold else ring, topLeft = Offset(-ringW, -ringW), size = Size(size.width + 2 * ringW, size.height + 2 * ringW), cornerRadius = CornerRadius(r + ringW))
+            // The usable ring: dashed violet (#b79cff), 7 dp outside the card, apart in shape from the solid ice ring.
+            if (usableRing) {
+                val o = 7.dp.toPx(); val sw = 2.dp.toPx()
+                drawRoundRect(UsableViolet, topLeft = Offset(-o, -o), size = Size(size.width + 2 * o, size.height + 2 * o), cornerRadius = CornerRadius(r + o),
+                    style = Stroke(sw, pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))))
+            }
         }
         .then(if (pileTop) Modifier.onFocusChanged { if (it.isFocused) { if (mineSide) { TableZones.lastMine = card.id; TableZones.at = 1 } else { TableZones.lastTheirs = card.id; TableZones.at = 2 } } }
             .padActs(padHere).matchPadTap(padSource, padFocus) { tap?.invoke() ?: inspect(card) } else Modifier)
@@ -931,6 +962,8 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         }
         // A card under the top of its pile: art at brightness .78, no name.
         if (!pileTop) Box(Modifier.fillMaxSize().background(Color(0x38000000)))
+        // The payment light over the whole card: a soft mana-gold wash.
+        if (paid) Box(Modifier.fillMaxSize().background(PayGold.copy(alpha = .22f)))
         if (nh != null && piece != null && pileTop) Box(Modifier.fillMaxWidth().height(nh + 10.dp).background(Brush.verticalGradient(0f to Color(0xF007070B), .55f to Color(0xB807070B), 1f to Color(0x0007070B)))
             .padding(start = 7.dp, end = 7.dp, top = 3.dp)) {
             Text(card.name, maxLines = 1, overflow = TextOverflow.Ellipsis, style = TextStyle(fontFamily = Spectral, fontWeight = FontWeight.Bold, fontSize = (piece.value * .083f).coerceIn(11f, 13f).sp,
@@ -942,7 +975,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         }
         // P/T: clamp(15, piece·.16, 23) in the creature lane, clamp(11, piece·.12, 17) elsewhere, on a big board.
         val statPx = piece?.let { if (land) (it.value * .12f).coerceIn(11f, 17f) else (it.value * .16f).coerceIn(15f, 23f) } ?: (h.value / u * .26f).coerceIn(9f, 18f)
-        TileLayer(card, mark == Mark.PLAYABLE, lookup, d, h, if (card.isCreature && card.power != null) (if (piece != null) statPx / u else statPx) else 0f, top = nh?.let { it + 6.dp })
+        TileLayer(card, mark == Mark.PLAYABLE || mark == Mark.USABLE, lookup, d, h, if (card.isCreature && card.power != null) (if (piece != null) statPx / u else statPx) else 0f, top = nh?.let { it + 6.dp })
         // .play-current-stats: right 6px, bottom 2px, 1px 7px, #d6ad64c0 hairline, radius 7, #111114f2, white 700; the toughness reads #ff8f84 while damage is marked
         // (forge-table.mjs data-damaged; Forge's toughness already counts counters, damage is not subtracted).
         if (card.isCreature && card.power != null) {
@@ -1023,21 +1056,27 @@ private fun DragLine(drag: BlockDrag, d: Du) = with(d) {
 // ---- Piles (approved: real card piles, a count printed under each) ----
 
 @Composable
-private fun Piles(p: Player, mine: Boolean, modifier: Modifier, d: Du, onInspect: (Card) -> Unit) = with(d) {
+private fun Piles(p: Player, mine: Boolean, modifier: Modifier, d: Du, onInspect: (Card) -> Unit, playable: (Card) -> Boolean = { false }, onCast: (Card) -> Unit = {}) = with(d) {
     // Yours: graveyard then library; the CPU's mirrored (library then graveyard).
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(8.du)) {
         @Composable fun lib() = Pile(p.libraryCount, null, d, "lib${p.id}") {}
-        @Composable fun grave() = Pile(p.graveyard.size, p.graveyard.lastOrNull(), d, "grave${p.id}") { p.graveyard.lastOrNull()?.let(onInspect) }
+        // Rule 2: the graveyard's top card wears the playable ring when Forge offers it from there (flashback and the like); a tap
+        // casts it, a long press opens it. A castable card under the top is not drawn yet (glow-rules open item).
+        val top = p.graveyard.lastOrNull(); val lit = top != null && playable(top)
+        @Composable fun grave() = Pile(p.graveyard.size, top, d, "grave${p.id}", lit = lit, onHold = { top?.let(onInspect) }) { top?.let { if (lit) onCast(it) else onInspect(it) } }
         if (mine) { grave(); lib() } else { lib(); grave() }
     }
 }
 
 @Composable
-private fun Pile(count: Int, top: Card?, d: Du, anchor: String? = null, onTap: () -> Unit) = with(d) {
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+private fun Pile(count: Int, top: Card?, d: Du, anchor: String? = null, lit: Boolean = false, onHold: (() -> Unit)? = null, onTap: () -> Unit) = with(d) {
     val anchors = LocalAnchors.current
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(Modifier.size(33.du, 46.du).then(if (anchors != null && anchor != null) Modifier.onGloballyPositioned { anchors.putRect(anchor, it.boundsInRoot()) } else Modifier)
-            .clickable(enabled = top != null, onClick = onTap)) {
+            // The playable ring (ice, solid), as on a hand card.
+            .then(if (lit) Modifier.border(2.dp, Ice, RoundedCornerShape(3.du)) else Modifier)
+            .combinedClickable(enabled = top != null, onLongClick = onHold, onClick = onTap)) {
             // A little depth under the top card: up to three edges.
             val depth = minOf(3, (count - 1).coerceAtLeast(0))
             for (i in depth downTo 1) Box(Modifier.offset(x = (i * 1.5f).du, y = (i * 1.5f).du).fillMaxSize().clip(RoundedCornerShape(3.du)).background(Color(0xFF15182A)).border(1.dp, Color(0x55C9A75A), RoundedCornerShape(3.du)))
@@ -1144,7 +1183,8 @@ internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Bool
 
 /** .play-command-zone.forge-crest: the commander's art on a shield, beside its owner's portrait. */
 @Composable
-private fun Crest(c: Card?, modifier: Modifier, d: Du, onInspect: (Card) -> Unit) = with(d) {
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+private fun Crest(c: Card?, modifier: Modifier, d: Du, onInspect: (Card) -> Unit, playable: Boolean = false, onCast: (Card) -> Unit = {}) = with(d) {
     if (c == null) return@with
     val shield = GenericShape { s, _ ->
         val r = s.width * .09f
@@ -1153,9 +1193,11 @@ private fun Crest(c: Card?, modifier: Modifier, d: Du, onInspect: (Card) -> Unit
         quadraticTo(0f, s.height * .86f, 0f, s.height * .6f); lineTo(0f, r); quadraticTo(0f, 0f, r, 0f); close()
     }
     Box(modifier.size(58.du, 70.du), contentAlignment = Alignment.Center) {
-        Box(Modifier.size(46.du, 60.du).drawBehind { drawCircle(Gold.copy(alpha = .18f), radius = size.width * .7f) }
+        Box(Modifier.size(46.du, 60.du).drawBehind { drawCircle((if (playable) Ice else Gold).copy(alpha = .18f), radius = size.width * .7f) }
+            // The playable ring (ice, solid) round the shield while the commander can be cast now.
+            .then(if (playable) Modifier.border(2.dp, Ice, shield).padding(2.dp) else Modifier)
             .clip(shield).background(Brush.verticalGradient(listOf(Color(0xFFF2CF7E), Color(0xFF8A6526)))).padding(2.du).clip(shield)
-            .clickable { onInspect(c) }) { CardImage(c.name, Modifier.fillMaxSize(), crop = true) }
+            .combinedClickable(onLongClick = { onInspect(c) }) { if (playable) onCast(c) else onInspect(c) }) { CardImage(c.name, Modifier.fillMaxSize(), crop = true) }
     }
 }
 
