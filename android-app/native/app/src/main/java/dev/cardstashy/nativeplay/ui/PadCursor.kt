@@ -23,6 +23,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.semantics.semantics
 import kotlin.math.abs
 import kotlin.math.hypot
 
@@ -212,18 +213,25 @@ object PadCursor {
         if (frame++ % 2 == 0) aim()
     }
 
-    /** What is under the cursor: the smallest thing that can be pressed or take the ring (never a whole-screen scrim). */
+    /**
+     * What is under the cursor: the smallest thing that can be pressed or take the ring (never a whole-screen scrim). An open
+     * card view, sheet or overlay ([padCover]) hides everything drawn before it, so the cursor never picks a card behind it
+     * (Randall 10 Nov on 0.4.56: "in a card view ... it may pick another card that the cursor is hovering over in the background").
+     */
     private fun aim() {
         val p = pos ?: return; val view = root ?: return
         val max = view.width.toFloat() * view.height * .5f
         var best: SemanticsNode? = null; var bestArea = Float.MAX_VALUE
-        nodes()?.forEach { n ->
+        val all = nodes() ?: return
+        val top = all.indexOfLast { it.config.getOrNull(PadCover) == true && it.boundsInWindow.contains(p) }
+        all.forEachIndexed { i, n ->
+            if (i <= top) return@forEachIndexed
             val c = n.config
-            if (c.getOrNull(SemanticsActions.OnClick) == null && c.getOrNull(SemanticsActions.RequestFocus) == null) return@forEach
+            if (c.getOrNull(SemanticsActions.OnClick) == null && c.getOrNull(SemanticsActions.RequestFocus) == null) return@forEachIndexed
             val b = n.boundsInWindow
-            if (!b.contains(p)) return@forEach
+            if (!b.contains(p)) return@forEachIndexed
             val area = b.width * b.height
-            if (area <= 0f || area > max) return@forEach
+            if (area <= 0f || area > max) return@forEachIndexed
             if (area < bestArea) { best = n; bestArea = area }
         }
         val t = best
@@ -344,3 +352,7 @@ fun BoxScope.PadCursorLayer() {
         drawCircle(Color.White, r * .48f, p, alpha = a)
     }
 }
+
+/** Marks an overlay (card view, sheet, scrim) that covers what is drawn before it: the stick cursor only aims at what is above it. */
+internal val PadCover = androidx.compose.ui.semantics.SemanticsPropertyKey<Boolean>("PadCover")
+internal fun Modifier.padCover(): Modifier = semantics { this[PadCover] = true }

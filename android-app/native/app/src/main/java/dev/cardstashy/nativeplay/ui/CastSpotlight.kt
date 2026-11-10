@@ -261,7 +261,7 @@ fun CardInspect(card: Card, viewer: Int?, start: PadAct? = null,
     if (!beside) PadScreen(PadActs(b = "Close", start = start, opaque = true))
     val padHere = remember { PadActs(a = "Close") }
     // The whole dimmed page is the target, so it carries no ring of its own; the prompt bar says what A does.
-    BoxWithConstraints(Modifier.fillMaxSize().background(Color(0xB3000000)).then(if (beside) Modifier else Modifier.padActs(padHere).focusRequester(padFocus).onFocusChanged { if (it.isFocused) TablePad.held = true })
+    BoxWithConstraints(Modifier.fillMaxSize().padCover().background(Color(0xB3000000)).then(if (beside) Modifier else Modifier.padActs(padHere).focusRequester(padFocus).onFocusChanged { if (it.isFocused) TablePad.held = true })
         .clickable(remember { MutableInteractionSource() }, null, onClick = close)
         .windowInsetsPadding(WindowInsets.safeDrawing).padding(16.dp)) {
         val cardH = maxHeight * .92f; val cardW = cardH * .716f

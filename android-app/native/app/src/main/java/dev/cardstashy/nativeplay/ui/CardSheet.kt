@@ -186,7 +186,7 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
     BoxWithConstraints(Modifier.fillMaxSize().padLayer()) {
         val h = constraints.maxHeight.toFloat()
         var zoomed: (@Composable () -> Unit)? = null
-        if (span == null) Box(Modifier.fillMaxSize().graphicsLayer { alpha = 1f - y.value }.background(Color(0x99000000))
+        if (span == null) Box(Modifier.fillMaxSize().padCover().graphicsLayer { alpha = 1f - y.value }.background(Color(0x99000000))
             .pointerInput(Unit) { detectTapGestures { close() } })
         else { if (slice == 1) { span.w = maxWidth; span.botH = maxHeight } else span.topH = maxHeight
             Box(Modifier.fillMaxSize().background(Color(0xFF0B0C10))) }
@@ -779,7 +779,7 @@ private fun Guide(shown: JsonObject, data: CardData?, onRule: (CardData.Rule) ->
 private fun RuleCard(r: CardData.Rule, onClose: () -> Unit) {
     BackHandler(onBack = onClose)
     PadScreen(remember { PadActs(b = "Close", opaque = true) })
-    Box(Modifier.fillMaxSize().background(Color(0x66000000)).pointerInput(Unit) { detectTapGestures { onClose() } }, contentAlignment = Alignment.BottomCenter) {
+    Box(Modifier.fillMaxSize().padCover().background(Color(0x66000000)).pointerInput(Unit) { detectTapGestures { onClose() } }, contentAlignment = Alignment.BottomCenter) {
         Column(Modifier.widthIn(max = 560.dp).fillMaxWidth().padding(12.dp).navigationBarsPadding().clip(RoundedCornerShape(20.dp)).background(Color(0xF21A1E26))
             .border(1.dp, Color(0x33E8B95B), RoundedCornerShape(20.dp)).pointerInput(Unit) { detectTapGestures { } }.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("RULE DEX", style = Site.Eyebrow.copy(fontSize = 11.sp, color = Site.Gold))
@@ -1027,7 +1027,7 @@ private fun SetTileBody(shown: JsonObject, state: JsonObject?) {
 /** Over the bottom board: pick the deck the card goes into. */
 @Composable
 private fun DeckPicker(decks: List<JsonObject>, owned: Int, pick: (JsonObject) -> Unit) {
-    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .5f)).pointerInput(Unit) { detectTapGestures { } }, contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().padCover().background(Color.Black.copy(alpha = .5f)).pointerInput(Unit) { detectTapGestures { } }, contentAlignment = Alignment.Center) {
         Column(Modifier.padding(DualPage.Gutter).fillMaxWidth().glass(Rule.Radius.shape(Rule.Radius.Sheet)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("ADD TO DECK", style = Rule.Type.sans(11, FontWeight.Bold, Rule.Color.Gold).copy(letterSpacing = 1.6.sp))
             Column(Modifier.heightIn(max = 300.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -1042,7 +1042,7 @@ private fun DeckPicker(decks: List<JsonObject>, owned: Int, pick: (JsonObject) -
 @Composable
 private fun RulingsPage(name: String, rulings: List<Pair<String, String>>, onClose: () -> Unit) {
     val list = rememberScrollState()
-    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .6f)).pointerInput(Unit) { detectTapGestures { onClose() } }, contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().padCover().background(Color.Black.copy(alpha = .6f)).pointerInput(Unit) { detectTapGestures { onClose() } }, contentAlignment = Alignment.Center) {
         Column(Modifier.fillMaxHeight(.9f).widthIn(max = 640.dp).fillMaxWidth().glass(Rule.Radius.shape(Rule.Radius.Sheet)).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("RULINGS · ${name.uppercase()}", style = Rule.Type.sans(11, FontWeight.Bold, Rule.Color.Gold).copy(letterSpacing = 1.6.sp))
             Column(Modifier.weight(1f).padScrollPanel(list, onClose).verticalScroll(list), verticalArrangement = Arrangement.spacedBy(10.dp)) {

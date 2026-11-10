@@ -68,6 +68,33 @@ class PadCursorTest {
         assertEquals(false, PadCursor.shown)
     }
 
+    /** Randall 10 Nov on 0.4.56: with a card view open, the cursor picked a card behind it. An overlay ([padCover]) hides what is under it. */
+    @Test fun anOpenCardViewHidesTheCardsBehindIt() {
+        val focused = mutableListOf<String>()
+        rule.setContent {
+            Box(Modifier.fillMaxSize()) {
+                Box(Modifier.size(200.dp).onFocusChanged { if (it.isFocused) focused += "behind" }.clickable { })
+                // The card view: a full-screen cover with its own button bottom right.
+                Box(Modifier.fillMaxSize().padCover()) {
+                    Box(Modifier.size(120.dp).align(androidx.compose.ui.Alignment.BottomEnd).onFocusChanged { if (it.isFocused) focused += "view" }.clickable { })
+                }
+            }
+        }
+        rule.waitForIdle()
+        PadCursor.manual = true
+        rule.runOnUiThread { PadCursor.attach(rule.activity.window.decorView) }
+        val d = rule.activity.resources.displayMetrics.density
+        // Over the card behind the view: nothing is aimed at.
+        PadCursor.shown = false; PadCursor.pos = androidx.compose.ui.geometry.Offset(100 * d, 100 * d)
+        PadCursor.left(.2f, 0f); frames(48); PadCursor.left(0f, 0f); frames(32); rule.waitForIdle()
+        assertEquals(emptyList<String>(), focused)
+        // Over the view's own button: that one.
+        PadCursor.pos = androidx.compose.ui.geometry.Offset(740 * d, 390 * d)
+        PadCursor.left(.2f, 0f); frames(48); PadCursor.left(0f, 0f); frames(32); rule.waitForIdle()
+        assertEquals(listOf("view"), focused)
+        PadCursor.dpad()
+    }
+
     /** The right stick scrolls the page like a console: analog speed, a glide when let go, a stop at the end, the ring kept in view. */
     @Test fun rightStickScrollsGlidesAndBringsTheRing() {
         val scroll = androidx.compose.foundation.ScrollState(0)

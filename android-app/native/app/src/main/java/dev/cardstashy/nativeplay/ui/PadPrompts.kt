@@ -359,8 +359,8 @@ internal fun PadKey(button: String, label: String) = Row(horizontalArrangement =
 @Composable
 fun Modifier.padLayer(): Modifier {
     val pad by Pad.connected.collectAsState()
-    if (!pad) return this
+    if (!pad) return this.padCover()
     val req = remember { androidx.compose.ui.focus.FocusRequester() }
     LaunchedEffect(Unit) { androidx.compose.runtime.withFrameNanos { }; runCatching { req.requestFocus() } }
-    return this.focusRequester(req).focusProperties { onExit = { cancelFocusChange() } }.focusGroup()
+    return this.padCover().focusRequester(req).focusProperties { onExit = { cancelFocusChange() } }.focusGroup()
 }
