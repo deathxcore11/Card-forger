@@ -96,6 +96,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
@@ -476,7 +477,7 @@ fun ForgeBoard(
             // Library and graveyard stay the calm-v2 card piles with their counts, so the dock carries no count pill.
             val ax = 80.du + lx; val ay = H - 78.du - ly; val x0 = ax + 52.du + 14.du
             if (!pod) Crest(cpu.command.firstOrNull(), Modifier.offset(x = W - 68.du - lx, y = 16.du + lx), d, onInspect)
-            if (!pod) Medallion(cpu, mine = false, live && cpu.id in st.selection.players, cpu.id in st.selection.chosenPlayers, Modifier.offset(x = W - 132.du - lx, y = 26.du + lx), d,
+            if (!pod) Medallion(cpu, mine = false, live && cpu.id in st.selection.players, cpu.id in st.selection.chosenPlayers, Modifier.offset(x = W - 132.du - lx, y = 26.du + lx).anchorRect("cpuseat"), d,
                 onOpen = commanderOf(cpu)?.let { c -> { onInspect(c) } }) { intents.player(cpu.id) }
             if (!pod) ThinkDots(Modifier.offset(x = W - 132.du - lx - 34.du, y = 26.du + lx + 20.du), d)
             // Rule 2: your commander wears the playable ring while Forge offers it and you can pay; a tap casts it (long press opens it).
@@ -515,7 +516,7 @@ fun ForgeBoard(
             // The menu carries the stack size as a badge (summary[data-count]::after: 18 px gold pill at -4, -4).
             if (st.stack.isNotEmpty()) Box(Modifier.offset(x = menuX + (44 - 18 + 4).du, y = menuY - 4.du).heightIn(min = 18.du).widthIn(min = 18.du).clip(RoundedCornerShape(9.du)).background(Color(0xFFE8B95B)).padding(horizontal = 5.du),
                 contentAlignment = Alignment.Center) { Text("${st.stack.size}", style = sans(sp(11f), FontWeight.ExtraBold, Color(0xFF1B1406))) }
-            PhaseTrack(st, stopLights(st), intents.stop, Modifier.offset(x = if (large) 80.dp else 74.du, y = if (pod) 58.du else if (large) 20.dp else 42.du), d)
+            PhaseTrack(st, stopLights(st), intents.stop, Modifier.offset(x = if (large) 80.dp else 74.du, y = if (pod) 58.du else if (large) 20.dp else 42.du).anchorRect("phasetrack"), d)
 
             // The stack, fanned on the right over its portal, with the arc to its source.
             if (st.stack.isNotEmpty()) {
@@ -1059,10 +1060,15 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         // (forge-table.mjs data-damaged; Forge's toughness already counts counters, damage is not subtracted).
         if (card.isCreature && card.power != null) {
             val fs = if (piece != null) statPx.sp else sp(statPx)
-            Row(Modifier.align(Alignment.BottomEnd).offset(x = (-6).du, y = (-2).du).clip(RoundedCornerShape(7.du)).background(Color(0xF2111114)).border(1.dp, Color(0xC0D6AD64), RoundedCornerShape(7.du))
+            // A TRIGGER SHOWS ITSELF: while a result that changed this card's power/toughness lands (1.2 s), the plate ticks green (up)
+            // or coral (down). Then it is white again: the steady colour waits for base P/T from the bridge.
+            val tick = LocalTrigger.current?.takeIf { it.phase == dev.cardstashy.nativeplay.match.TriggerMoment.Phase.RESULT }?.result?.pt?.firstOrNull { it.cardId == card.id }
+            val tone = tick?.let { if (it.up) TRIG_GREEN else TRIG_CORAL }
+            Row(Modifier.align(Alignment.BottomEnd).offset(x = (-6).du, y = (-2).du).clip(RoundedCornerShape(7.du)).background(tone?.copy(alpha = .28f)?.compositeOver(Color(0xF2111114)) ?: Color(0xF2111114))
+                .border(if (tone != null) 1.5.dp else 1.dp, tone ?: Color(0xC0D6AD64), RoundedCornerShape(7.du))
                 .padding(horizontal = 7.du, vertical = 1.du)) {
-                Text("${card.power} / ", style = sans(fs, FontWeight.Bold, Color.White))
-                Text("${card.toughness ?: 0}", style = sans(fs, FontWeight.Bold, if (card.damage > 0) Color(0xFFFF8F84) else Color.White))
+                Text("${card.power} / ", style = sans(fs, FontWeight.Bold, tone ?: Color.White))
+                Text("${card.toughness ?: 0}", style = sans(fs, FontWeight.Bold, tone ?: if (card.damage > 0) Color(0xFFFF8F84) else Color.White))
             }
         }
     }
@@ -1412,7 +1418,7 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
         val yours = top.controller == st.viewer
         Row(Modifier.offset(x = 44.du, y = 34.du + 145.du + 8.du).widthIn(max = labelMax).anchorRect("stacklabel"),
             horizontalArrangement = Arrangement.spacedBy(6.du), verticalAlignment = Alignment.CenterVertically) {
-            Text("${if (yours) "Your" else "CPU's"} ${if (top.ability) "ability" else "spell"}", style = sans(sp(11f), FontWeight.Bold, if (yours) Gold else CpuRed), maxLines = 1,
+            Text("${if (yours) "Your" else "CPU's"} ${if (top.trigger) "trigger" else if (top.ability) "ability" else "spell"}", style = sans(sp(11f), FontWeight.Bold, if (yours) Gold else CpuRed), maxLines = 1,
                 overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
             if (folded) Box(Modifier.anchorRect("stackmore").clip(RoundedCornerShape(999.dp)).background(if (listOpen) Color(0x33E8C36F) else Color(0x0DFFFFFF))
                 .border(1.dp, Color(0x55E8C36F), RoundedCornerShape(999.dp))
@@ -1466,8 +1472,10 @@ private fun StackArc(st: MatchState, d: Du) = with(d) {
         val a = anchors.map["stacktop"] ?: return@Canvas; val b = anchors.map["c$srcId"] ?: return@Canvas
         val from = a - self; val to = b - self
         val path = Path().apply { moveTo(from.x, from.y); quadraticTo((from.x + to.x) / 2, minOf(from.y, to.y) - 60.du.toPx(), to.x, to.y) }
-        drawPath(path, Gold.copy(alpha = .9f), style = Stroke(2.5f.du.toPx(), cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(1f, 9.du.toPx()), -dash.value * 10.du.toPx())))
-        drawCircle(Brush.radialGradient(listOf(Gold.copy(alpha = .55f), Color.Transparent), center = to, radius = 34.du.toPx()), radius = 34.du.toPx(), center = to)
+        // glow-rules "who is doing what to whom": the arc and the source's rim in the caster's colour (gold you, coral CPU).
+        val tone = if (top.controller == st.viewer) Gold else CpuRed
+        drawPath(path, tone.copy(alpha = .9f), style = Stroke(2.5f.du.toPx(), cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(1f, 9.du.toPx()), -dash.value * 10.du.toPx())))
+        drawCircle(Brush.radialGradient(listOf(tone.copy(alpha = .55f), Color.Transparent), center = to, radius = 34.du.toPx()), radius = 34.du.toPx(), center = to)
         drawCircle(Color(0xFFFFE9B0), radius = 4.du.toPx(), center = to)
     }
 }
@@ -1494,7 +1502,9 @@ private fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier, 
                 Text((name ?: "Ability"), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(9.5f), color = Color(0xFFF3E7C6)), maxLines = if (small) 1 else 2, overflow = TextOverflow.Ellipsis)
                 // The source's art when there is a source card; no empty frame without one.
                 if (src != null) Box(Modifier.padding(top = 3.du).fillMaxWidth().height(52.du).clip(RoundedCornerShape(3.du))) { CardImage(src.name, Modifier.fillMaxSize(), crop = true) }
-                Text(if (s.text.contains("Whenever") || s.text.contains("When ") || s.text.contains("At the beginning")) "Triggered ability" else "Activated ability",
+                // A TRIGGER SHOWS ITSELF: an item Forge put up as a trigger says "Trigger" in the caster's colour (gold you, coral CPU).
+                if (s.trigger) Text("Trigger", style = sans(sp(9.5f), FontWeight.Bold, if (mine) Gold else CpuRed).copy(fontStyle = FontStyle.Italic), modifier = Modifier.padding(top = 3.du))
+                else Text(if (s.text.contains("Whenever") || s.text.contains("When ") || s.text.contains("At the beginning")) "Triggered ability" else "Activated ability",
                     style = sans(sp(9f), FontWeight.SemiBold, Color(0xFFD8C9A6)).copy(fontStyle = FontStyle.Italic), modifier = Modifier.padding(top = 3.du))
                 Box(Modifier.padding(top = 3.du).fillMaxWidth().height(1.dp).background(rim.copy(alpha = .5f)))
                 // X13: the ability's words wrap over as many lines as the card has room for, stepping the size down before cutting ("shares a cr…").

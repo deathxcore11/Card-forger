@@ -34,7 +34,9 @@ data class Player(
 )
 data class CommanderDamage(val from: Int, val commander: String, val damage: Int)
 
-data class StackItem(val id: Int, val text: String, val source: Card?, val controller: Int, val ability: Boolean = false, val yielded: Boolean = false, val targets: List<Ref> = emptyList())
+data class StackItem(val id: Int, val text: String, val source: Card?, val controller: Int, val ability: Boolean = false, val yielded: Boolean = false, val targets: List<Ref> = emptyList(),
+    /** Forge put this item on the stack as a triggered ability (a "trigger" event named its stackId); set by the controller, not the snapshot. */
+    val trigger: Boolean = false)
 data class Buttons(val ok: String?, val cancel: String?, val okEnabled: Boolean, val cancelEnabled: Boolean)
 data class Selection(
     val cards: Set<Int>, val players: Set<Int>, val chosenCards: Set<Int>, val chosenPlayers: Set<Int>,
@@ -113,7 +115,10 @@ data class GameEvent(
     val from: String?, val to: String?, val amount: Int?, val lifeFrom: Int?, val lifeTo: Int?, val cause: String?,
     /** events.items[].number (a turn event's turn), fizzled (left the stack with no legal targets), token (a token was created). */
     val number: Int? = null, val fizzled: Boolean = false, val token: Boolean = false,
-
+    /** cast/trigger/ability: the stack item's id. counters: Forge's counter type (P1P1, M1M1, ...), with from/to the old and new count. */
+    val stackId: Int? = null, val counter: String? = null,
+    /** zone: the card whose spell or ability was resolving when Forge moved it (zone.by); damage: combat damage. */
+    val by: Ref? = null, val combat: Boolean = false,
 )
 
 /** The host's turn window as sent: whose it is, why, its length, the time left when the host wrote it, and the strikes. */
@@ -303,6 +308,7 @@ data class MatchState(
             lifeFrom = if (e.str("type") == "life") e.int("from") else null, lifeTo = if (e.str("type") == "life") e.int("to") else null,
             cause = e.str("cause"),
             number = e.int("number"), fizzled = e.bool("fizzled") == true, token = e.bool("token") == true,
+            stackId = e.int("stackId"), counter = e.str("counter"), by = ref(e.get("by")), combat = e.bool("combat") == true,
         )
     }
 }

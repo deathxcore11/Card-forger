@@ -91,7 +91,11 @@ private const val HIT_STOP = 110L
 
 internal enum class Fx { DRAW, CAST, RESOLVE, ARRIVE, TOKEN, ATTACK, LUNGE, BLOCK, DAMAGE, LIFE, DEATH, COUNTER,
     /** One attacker's moment in staged combat: the board dims but for [FxItem.ids], a gold line and the pair's glass tag. */
-    STAGE }
+    STAGE,
+    /** A TRIGGER SHOWS ITSELF, beat 1: the card that triggered lifts 1.12x (18 dp) and one ring (260 dp) goes out in the caster's colour. */
+    TRIG_SOURCE,
+    /** Beat 3 on one changed card: a streak from the source, a flash, the change rising ("+1/+1"), the counter chip's pop, the trail line. */
+    TRIG_LAND }
 
 internal class FxItem(
     val kind: Fx, val level: Int, val baseMs: Long,
@@ -109,8 +113,10 @@ internal class FxItem(
     val ids: Set<Int> = emptySet(),
     /** Table additions 3, an arrival's importance: 0 ordinary, 1 rare or mythic (hold and drop), 2 a commander from the command zone. */
     val entrance: Int = 0,
-    /** A level 2 entrance's name and its "Your commander" / "Their commander" line. */
+    /** A level 2 entrance's name and its "Your commander" / "Their commander" line; a trigger landing's counter chip ("+1"). */
     val title: String = "",
+    /** A trigger landing: the caster's colour (its streak) and the one trail line it carries. */
+    val caster: Color = Color.White, val note: String = "",
 ) {
     var t0 = 0L; var dur = baseMs; var p0 = 0f
     /** 0..1 through the effect, or -1 while it waits for its turn. */
@@ -291,6 +297,54 @@ class Battlefield {
         alpha = 1f - .5f * fade
     }
 
+    private var lastMoment = 0L
+    /** Cards a trigger's result lands on (and its tokens), until when: the snapshot diff leaves their counter and token effects to it. */
+    private val claimed = HashMap<Int, Long>()
+
+    /**
+     * A TRIGGER SHOWS ITSELF (sTrig, approved 10 Nov): the controller's beat [m] becomes effects. SOURCE: the card lifts and rings in
+     * the caster's colour (coral CPU, gold you). RESULT: on each card the result changed, a streak from the source, a flash, the
+     * change rising, the counter chip's 320 ms pop and the trail line; its tokens arrive from the source. Each beat once (its key).
+     */
+    fun trigger(m: dev.cardstashy.nativeplay.match.TriggerMoment?, st: MatchState, anchors: Anchors?, force: Boolean = false) {
+        if (m == null || (m.key == lastMoment && !force)) return
+        lastMoment = m.key
+        if ((Motion.still && !force) || anchors == null) return
+        val t = now.longValue
+        val caster = if (m.yours) TRIG_GOLD else TRIG_CORAL
+        fun add(it: FxItem) { it.dur = it.baseMs; it.t0 = t + it.delay; items += it }
+        when (m.phase) {
+            dev.cardstashy.nativeplay.match.TriggerMoment.Phase.SOURCE -> m.sourceId?.let { id ->
+                add(FxItem(Fx.TRIG_SOURCE, 2, TRIG_SOURCE_MS, card = id, mine = st.me.battlefield.any { it.id == id }, tone = caster))
+            }
+            dev.cardstashy.nativeplay.match.TriggerMoment.Phase.STACK -> {}
+            dev.cardstashy.nativeplay.match.TriggerMoment.Phase.RESULT -> {
+                val r = m.result ?: return
+                val from = r.sourceId?.let { "c$it" }?.takeIf { anchors.rects.containsKey(it) } ?: "stackcard"
+                val until = t + 3000
+                r.changed.forEachIndexed { i, id ->
+                    val (label, chip, up) = landing(r, id)
+                    add(FxItem(Fx.TRIG_LAND, 2, TRIG_LAND_MS, card = id, fromKey = from, toKey = "c$id", tone = if (up) TRIG_GREEN else TRIG_CORAL, label = label,
+                        title = chip ?: "", caster = caster, note = if (i == 0) m.line.orEmpty() else "", delay = i * 120L))
+                    claimed[id] = until
+                }
+                // Tokens arrive with a level 0 entrance from the source's position.
+                r.tokens.forEachIndexed { i, tok ->
+                    add(FxItem(Fx.ARRIVE, 1, 450, card = tok.id, mine = st.me.battlefield.any { it.id == tok.id }, fromKey = from, tone = caster, delay = i * 90L))
+                    claimed[tok.id] = until
+                }
+                // Damage or life from it: the streak runs to the card or the player it hit (the number itself comes with the board).
+                val hit = r.damage.map { (ref, _) -> if (ref.kind == "player") "orb${ref.id}" else "c${ref.id}" } + r.life.map { "orb${it.player}" }
+                hit.distinct().forEachIndexed { i, key -> add(FxItem(Fx.TRIG_LAND, 2, TRIG_LAND_MS, fromKey = from, toKey = key, tone = caster, caster = caster,
+                    note = if (r.changed.isEmpty() && i == 0) m.line.orEmpty() else "", delay = i * 120L)) }
+                if (r.changed.isEmpty() && r.tokens.isNotEmpty() && hit.isEmpty() && m.line != null) r.tokens.firstOrNull()?.let { tok ->
+                    add(FxItem(Fx.TRIG_LAND, 1, TRIG_LAND_MS, fromKey = from, toKey = "c${tok.id}", tone = caster, caster = caster, note = m.line)) }
+                items.removeAll { (it.kind == Fx.COUNTER || it.kind == Fx.TOKEN) && it.card != null && it.card in claimed }
+            }
+        }
+        reindex()
+    }
+
     /** Reads the new snapshot against the last one and queues what changed. */
     fun take(st: MatchState, anchors: Anchors?) {
         val before = prev
@@ -352,6 +406,9 @@ class Battlefield {
 
     private fun diff(a: MatchState, b: MatchState, anchors: Anchors): List<List<FxItem>> {
         val viewer = b.viewer
+        val tNow = now.longValue
+        claimed.values.removeAll { it < tNow }
+        val claimedNow = claimed.keys.toSet()
         val bfA = a.players.flatMap { it.battlefield }.associateBy { it.id }
         val bfB = b.players.flatMap { it.battlefield }.associateBy { it.id }
         val handA = a.me.hand.map { it.id }.toSet()
@@ -396,6 +453,7 @@ class Battlefield {
 
         // Arrivals: travel on an arc to the real slot, land with a 2 % squash and a light sweep (450 ms); tokens form from light (400 ms).
         for ((id, c) in bfB) if (id !in bfA) {
+            if (c.token && id in claimedNow) continue
             if (c.token && id !in stackSrcA) { arrivals += FxItem(Fx.TOKEN, 1, 400, card = id, mine = c.controller == viewer,
                 delay = runCatching { dev.cardstashy.nativeplay.art.CardArt.holdFor(c.name) }.getOrDefault(0L)); continue }
             val fromStack = id in stackSrcA
@@ -471,7 +529,7 @@ class Battlefield {
             if (c.damage > o.damage) hits += FxItem(Fx.DAMAGE, 2, 1100, card = id, tone = Color(0xFFFF5A4A), label = "−${c.damage - o.damage}", delay = hitAt(id),
                 side = if (o.attacking) -1 else if (o.blocking) 1 else 0)
             val gained = c.counters.values.sum() - o.counters.values.sum()
-            if (gained != 0) {
+            if (gained != 0 && id !in claimedNow) {
                 val key = c.counters.entries.firstOrNull { (k, v) -> v != (o.counters[k] ?: 0) }?.key ?: ""
                 val n = c.counters.values.sum() - o.counters.values.sum()
                 val label = when {
@@ -595,6 +653,13 @@ class Battlefield {
                         }
                     }
                     Fx.COUNTER -> if (p >= 0f) { val k = .03f * sin(PI.toFloat() * p); scaleX = 1f + k; scaleY = 1f + k }
+                    // sTrig: 180 ms up to 1.12x and 18 px toward the middle on a 145 px card (so 18/145 of the tile's height), held 260 ms, 180 ms back.
+                    Fx.TRIG_SOURCE -> if (p >= 0f) {
+                        val ms = p * it.dur; val e = smooth(0f, 180f, ms) * (1f - smooth(440f, 620f, ms))
+                        scaleX = 1f + .12f * e; scaleY = 1f + .12f * e; translationY = -(if (it.mine) 1f else -1f) * size.height * TRIG_LIFT * e; shadowElevation = 18f * e
+                    }
+                    // The card takes the hit as the streak lands.
+                    Fx.TRIG_LAND -> if (p >= 0f) { val ms = p * it.dur; val k = .06f * (smooth(200f, 280f, ms) * (1f - smooth(280f, 460f, ms))); scaleX = 1f + k; scaleY = 1f + k }
                     else -> {}
                 }
             }
@@ -621,7 +686,8 @@ internal fun FxDriver(fx: Battlefield, st: MatchState) {
     val cue = LocalTableCue.current
     val reduced = androidx.compose.runtime.remember { Playmats.reduced(view.context) }
     SideEffect { fx.onCue = cue; fx.reduced = reduced; fx.low = AppSettings.effects == "minimal" }
-    SideEffect { fx.take(st, anchors) }
+    val trig = LocalTrigger.current
+    SideEffect { fx.trigger(trig, st, anchors); fx.take(st, anchors) }
     LaunchedEffect(fx) { if (!Motion.still) while (true) withFrameMillis { fx.tick(it) } }
 }
 
@@ -746,6 +812,8 @@ internal fun FxLayer(force: Boolean = false) {
             val t = fx.now.longValue
             anchors.version.intValue
             fun rect(k: String?): Rect? = k?.let { anchors.rects[it] }?.translate(-self.x, -self.y)
+            var bandAt: Rect? = null
+            fun band(): Rect = bandAt ?: trailBand(size.width, size.height, anchors.rects.mapValues { (_, r) -> r.translate(-self.x, -self.y) }, 4.dp.toPx()).also { bandAt = it }
             for (it in fx.items) {
                 val p = it.p(t); if (p < 0f) continue
                 if (fx.reduced) {
@@ -756,6 +824,9 @@ internal fun FxLayer(force: Boolean = false) {
                         Fx.LIFE -> rect(it.toKey)?.let { r -> pop(tm, it.label, p, Offset(r.center.x, if (r.center.y < size.height / 2) r.bottom + 16.dp.toPx() else r.top - 6.dp.toPx()), it.tone, if (it.level == 3) 34f + 8f * it.power else 20f, down = r.center.y < size.height / 2) }
                         Fx.COUNTER -> rect("c${it.card}")?.let { r -> pop(tm, it.label, p, Offset(r.center.x, r.top + 4.dp.toPx()), Color(0xFFF3D27E), 15f) }
                         Fx.STAGE -> drawStage(tm, it, p, rect(it.fromKey), rect(it.toKey))
+                        // Reduce motion: the source keeps one still rim; the landing keeps its words (the change, the chip, the line), unmoving.
+                        Fx.TRIG_SOURCE -> rect("c${it.card}")?.let { r -> glowRing(r, it.tone, .9f * (1f - smooth(.8f, 1f, p)), 8.dp.toPx()) }
+                        Fx.TRIG_LAND -> drawTrigLand(tm, it, p, rect(it.fromKey), rect(it.toKey), still = true, band = band())
                         else -> {}
                     }
                     continue
@@ -778,6 +849,8 @@ internal fun FxLayer(force: Boolean = false) {
                     Fx.COUNTER -> rect("c${it.card}")?.let { r -> drawPour(p, r); pop(tm, it.label, p, Offset(r.center.x, r.top + 4.dp.toPx()), Color(0xFFF3D27E), 15f) }
                     Fx.DEATH -> if (!fx.low) it.from?.translate(-self.x, -self.y)?.let { r -> drawShards(it, p, r, rect(it.toKey)) }
                     Fx.STAGE -> drawStage(tm, it, p, rect(it.fromKey), rect(it.toKey))
+                    Fx.TRIG_SOURCE -> rect("c${it.card}")?.let { r -> drawTrigSource(it, p, r) }
+                    Fx.TRIG_LAND -> drawTrigLand(tm, it, p, rect(it.fromKey), rect(it.toKey), band = band())
                 }
             }
         }
@@ -802,6 +875,127 @@ private fun DrawScope.drawStage(tm: androidx.compose.ui.text.TextMeasurer, it: F
     drawRoundRect(Color(0xE60C0C10).copy(alpha = .9f * alpha), Offset(x, y), Size(w, h), CornerRadius(h / 2))
     drawRoundRect(gold.copy(alpha = .7f * alpha), Offset(x, y), Size(w, h), CornerRadius(h / 2), style = Stroke(1.dp.toPx()))
     drawText(lay, topLeft = Offset(x + padX, y + padY))
+}
+
+internal const val TRIG_SOURCE_MS = 620L
+internal const val TRIG_LAND_MS = 1200L
+internal val TRIG_GOLD = Color(0xFFE3C070)
+internal val TRIG_CORAL = Color(0xFFFF6A4D)
+internal val TRIG_GREEN = Color(0xFF62E39A)
+
+/** A trigger's beat right now (TableScreen provides the controller's), read by the board's effects and the P/T plates. */
+val LocalTrigger = androidx.compose.runtime.compositionLocalOf<dev.cardstashy.nativeplay.match.TriggerMoment?> { null }
+
+/** What a result shows on card [id]: the change rising ("+1/+1"), its counter chip ("+1", or null with no counter) and whether it went up. */
+internal fun landing(r: dev.cardstashy.nativeplay.match.Director.Resolution, id: Int): Triple<String, String?, Boolean> {
+    val cs = r.counters.filter { it.cardId == id }
+    val pt = r.pt.firstOrNull { it.cardId == id }
+    fun sg(n: Int) = if (n >= 0) "+$n" else "\u2212${-n}"
+    val main = cs.groupBy { it.counter }.maxByOrNull { (_, l) -> abs(l.sumOf { it.delta }) }
+    if (main != null) {
+        val (kind, l) = main; val n = l.sumOf { it.delta }
+        return when {
+            kind.equals("P1P1", true) -> Triple(if (n > 0) "+$n/+$n" else "\u2212${-n}/\u2212${-n}", sg(n), n > 0)
+            kind.equals("M1M1", true) -> Triple(if (n > 0) "\u2212$n/\u2212$n" else "+${-n}/+${-n}", sg(-n), n < 0)
+            else -> Triple(sg(n) + " " + kind.lowercase().replace('_', ' '), sg(n), pt?.up ?: (n > 0))
+        }
+    }
+    if (pt != null) return Triple("${sg(pt.toP - pt.fromP)}/${sg(pt.toT - pt.fromT)}", null, pt.up)
+    return Triple("", null, true)
+}
+
+/**
+ * The free band for a result's trail line, in the canvas's own space: below the CPU's tucked hand ("cpuhand"), above the
+ * highest card in the upper half (the CPU's top row), and between the boxes beside it on the left (phase track, turn clock)
+ * and right (the CPU's seat and orb, the stack). Measured from [rects], so it fits any table size and the dual-screen top screen.
+ */
+internal fun trailBand(w: Float, h: Float, rects: Map<String, Rect>, gap: Float): Rect {
+    val top = maxOf(gap, (rects["cpuhand"]?.bottom ?: 0f) + gap)
+    val upper = rects.filterKeys { it.length > 1 && it[0] == 'c' && it.drop(1).toIntOrNull() != null }.values.filter { it.center.y < h / 2 }
+    val bottom = maxOf(top + 1f, (upper.minOfOrNull { it.top } ?: h * .27f) - gap)
+    val side = rects.filterKeys { k -> k == "phasetrack" || k == "turnring" || k == "turncount" || k == "cpuseat" || k.startsWith("orb") || k == "stackcard" || k == "stacklabel" }
+        .values.filter { it.bottom > top && it.top < bottom }
+    val left = maxOf(gap, side.filter { it.center.x < w / 2 }.maxOfOrNull { it.right + gap } ?: gap)
+    val right = minOf(w - gap, side.filter { it.center.x >= w / 2 }.minOfOrNull { it.left - gap } ?: (w - gap))
+    return Rect(left, top, maxOf(right, left + 1f), bottom)
+}
+
+/**
+ * sTrig's numbers are preview stage px, where a creature is 104 x 145 px: the ring is 260 px across (2.5 card widths) and the
+ * lift 18 px (18/145 of the card's height). The table sizes both from the tile, so the look holds at any card size.
+ */
+private const val TRIG_RING = 260f / 104f
+internal const val TRIG_LIFT = 18f / 145f
+
+/** Beat 1's ring: one ring out to 2.5 card widths across in 520 ms, and the card's rim in the caster's colour while it is lifted. */
+private fun DrawScope.drawTrigSource(it: FxItem, p: Float, r: Rect) {
+    val ms = p * it.dur
+    val q = (ms / 520f).coerceIn(0f, 1f)
+    if (q < 1f) drawCircle(it.tone.copy(alpha = .9f * (1f - q)), radius = r.width * TRIG_RING / 2f * (.35f + .65f * q), center = r.center, style = Stroke((4f - 3f * q).dp.toPx()))
+    // The rim follows the lifted card (move() lifts it 18/145 of its height toward the middle at 1.12x).
+    val e = smooth(0f, 180f, ms) * (1f - smooth(440f, 620f, ms))
+    val k = 1f + .12f * e; val dy = -(if (it.mine) 1f else -1f) * r.height * TRIG_LIFT * e
+    val lifted = Rect(Offset(r.center.x - r.width * k / 2, r.center.y + dy - r.height * k / 2), Size(r.width * k, r.height * k))
+    glowRing(lifted, it.tone, .95f * e, 9.dp.toPx())
+}
+
+/**
+ * Beat 3 on one card (sTrig): the streak from the source (0 to 280 ms) in the caster's colour, a 380 ms flash in green (up) or
+ * coral (down), the change rising above the card, the counter chip popping .2 to 1.3 to 1 in 320 ms at its corner, and the trail
+ * line in a glass tag under or over the card. [still] (reduce motion): no streak, flash or rise; the words stand.
+ */
+private fun DrawScope.drawTrigLand(tm: androidx.compose.ui.text.TextMeasurer, it: FxItem, p: Float, from: Rect?, to: Rect?, still: Boolean = false, band: Rect? = null) {
+    if (to == null) return
+    val ms = p * it.dur
+    val out = 1f - smooth(it.dur - 220f, it.dur.toFloat(), ms)
+    if (!still) {
+        if (from != null && ms < 300f) comet(from.center, to.center, (ms / 280f).coerceIn(0f, 1f), it.caster, 34f * density)
+        val fq = (ms - 200f) / 380f
+        if (fq in 0f..1f) { val rad = 100.dp.toPx() * (.6f + .4f * fq)
+            drawCircle(Brush.radialGradient(listOf(it.tone.copy(alpha = .8f * (1f - fq)), it.tone.copy(alpha = .3f * (1f - fq)), Color.Transparent), center = to.center, radius = rad), radius = rad, center = to.center) }
+        if (ms in 200f..900f) glowRing(to, it.tone, .9f * (1f - smooth(500f, 900f, ms)), 7.dp.toPx())
+    } else glowRing(to, it.tone, .8f * out, 5.dp.toPx())
+    // The change, rising from the card's top.
+    if (it.label.isNotEmpty() && (still || ms >= 220f)) {
+        val rise = if (still) 0f else smooth(220f, 1000f, ms)
+        val a = if (still) out else smooth(220f, 320f, ms) * out
+        val style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Black, fontSize = 22.sp, color = it.tone.copy(alpha = a))
+        val lay = tm.measure(it.label, style)
+        val at = Offset(to.center.x - lay.size.width / 2f, (to.top - lay.size.height * .6f - 16.dp.toPx() * rise).coerceAtLeast(2.dp.toPx()))
+        for ((dx, dy) in listOf(-1.5f to 0f, 1.5f to 0f, 0f to -1.5f, 0f to 1.5f)) drawText(tm, it.label, at + Offset(dx * density, dy * density), style.copy(color = Color.Black.copy(alpha = .9f * a)))
+        drawText(lay, topLeft = at)
+    }
+    // The counter chip at the card's top right corner.
+    if (it.title.isNotEmpty() && (still || ms >= 240f)) {
+        val q = if (still) 1f else ((ms - 240f) / 320f).coerceIn(0f, 1f)
+        val k = if (q < .6f) .2f + 1.1f * (q / .6f) else 1.3f - .3f * ((q - .6f) / .4f)
+        val style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Black, fontSize = 12.sp, color = Color(0xFF2A1D05).copy(alpha = out))
+        val lay = tm.measure(it.title, style)
+        val h = 20.dp.toPx(); val w = maxOf(h, lay.size.width + 10.dp.toPx())
+        val c = Offset(to.right - 2.dp.toPx(), to.top + 4.dp.toPx())
+        scale(k, c) {
+            drawRoundRect(Brush.radialGradient(listOf(Color(0xFFFFF2C6), Color(0xFFD9B463), Color(0xFFA9822F)), center = c, radius = w), Offset(c.x - w / 2, c.y - h / 2), Size(w, h), CornerRadius(h / 2), alpha = out)
+            drawRoundRect(Color(0xFFFFF3CF).copy(alpha = out), Offset(c.x - w / 2, c.y - h / 2), Size(w, h), CornerRadius(h / 2), style = Stroke(1.5f.dp.toPx()))
+            drawText(lay, topLeft = Offset(c.x - lay.size.width / 2f, c.y - lay.size.height / 2f))
+        }
+    }
+    // The one trail line ("Optimistic Scavenger: +1/+1 counter on Grizzly Bears"), beside the card it landed on.
+    if (it.note.isNotEmpty()) {
+        val a = (if (still) 1f else smooth(200f, 340f, ms)) * out
+        val style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFFF7EEDA).copy(alpha = a))
+        val padX = 10.dp.toPx(); val padY = 5.dp.toPx()
+        // In the free band between the CPU's tucked hand and its top row, clear of the phase track and the CPU's seat, measured
+        // from the table's own boxes each frame (any size, either screen): one line, cut with an ellipsis when it does not fit.
+        val bd = band ?: trailBand(size.width, size.height, emptyMap(), 4.dp.toPx())
+        val lay = tm.measure(it.note, style, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, maxLines = 1, softWrap = false,
+            constraints = androidx.compose.ui.unit.Constraints(maxWidth = (bd.width - 2 * padX).toInt().coerceAtLeast(1)))
+        val w = lay.size.width + 2 * padX; val h = lay.size.height + 2 * padY
+        val x = (to.center.x - w / 2).coerceIn(bd.left, (bd.right - w).coerceAtLeast(bd.left))
+        val y = bd.center.y - h / 2
+        drawRoundRect(Color(0xE60C0C10).copy(alpha = .92f * a), Offset(x, y), Size(w, h), CornerRadius(h / 2))
+        drawRoundRect(it.caster.copy(alpha = .75f * a), Offset(x, y), Size(w, h), CornerRadius(h / 2), style = Stroke(1.dp.toPx()))
+        drawText(lay, topLeft = Offset(x + padX, y + padY))
+    }
 }
 
 @Composable private fun key(k: Any, content: @Composable () -> Unit) = androidx.compose.runtime.key(k) { content() }

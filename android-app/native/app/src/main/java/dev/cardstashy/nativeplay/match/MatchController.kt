@@ -57,6 +57,13 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
 
     private val _shown = MutableStateFlow<MatchState?>(null); val shown: StateFlow<MatchState?> = _shown
     private val _beat = MutableStateFlow<Beat?>(null); val beat: StateFlow<Beat?> = _beat
+    /** A TRIGGER SHOWS ITSELF: the trigger beat the table draws now (source lift, its stack item held, the result landing). */
+    private val _trigger = MutableStateFlow<TriggerMoment?>(null); val trigger: StateFlow<TriggerMoment?> = _trigger
+    private var momentKey = 0L
+    /** Stack ids Forge reported as triggers ("trigger" events), so the table can call them "Trigger" and hold them to read. */
+    private val triggerIds = HashSet<Int>()
+    /** When each stack item was first on screen: a trigger's item stays readable [Director.STACK_HOLD_MS] before it is passed for you. */
+    private val stackSeenAt = HashMap<Int, Long>()
     private val _banner = MutableStateFlow<Banner?>(null); val banner: StateFlow<Banner?> = _banner
     private val _stage = MutableStateFlow(Stage.STARTING); val stage: StateFlow<Stage> = _stage
     /** The coin (play-forge-pregame.js reveal): who Forge already committed to start and whether it was a flip. Shown in full before the opening hand. */
@@ -278,16 +285,24 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         skip = null
     }
 
-    private fun masked(st: MatchState, hidden: Set<Int>): MatchState = if (hidden.isEmpty()) st else st.copy(
+    private fun masked(st: MatchState, hidden: Set<Int>, hiddenStack: Set<Int> = emptySet()): MatchState = if (hidden.isEmpty() && hiddenStack.isEmpty()) st else st.copy(
         players = st.players.map { p -> p.copy(battlefield = p.battlefield.filter { it.id !in hidden }) },
-        stack = st.stack.filter { it.source?.id !in hidden })
+        stack = st.stack.filter { it.source?.id !in hidden && it.id !in hiddenStack })
+
+    /** [st] with [held] stack items on top: a trigger Forge resolved in the poll stays up until its result lands (or, never seen, for its read). */
+    private fun withStack(st: MatchState, held: Collection<dev.cardstashy.nativeplay.engine.StackItem>): MatchState =
+        if (held.isEmpty()) st else st.copy(stack = held.filter { h -> st.stack.none { it.id == h.id } } + st.stack)
 
     private fun show(shown: MatchState) {
         // The bridge's tap plans arrive a beat after their revision (the poller writes them into latest): a queued or masked copy of
         // that revision takes them from latest, so the payment light is never put back dark by a replay.
         val l = latest
-        val st = if (l != null && l.revision == shown.revision && l.selection.tapPlans != shown.selection.tapPlans)
+        val planned = if (l != null && l.revision == shown.revision && l.selection.tapPlans != shown.selection.tapPlans)
             shown.copy(selection = shown.selection.copy(tapPlans = l.selection.tapPlans)) else shown
+        // Items Forge named as triggers read "Trigger" on the table; each item's first moment on screen starts its read time.
+        val st = if (planned.stack.any { it.id in triggerIds && !it.trigger }) planned.copy(stack = planned.stack.map { if (it.id in triggerIds) it.copy(trigger = true) else it }) else planned
+        val seen = SystemClock.elapsedRealtime()
+        for (s in st.stack) stackSeenAt.putIfAbsent(s.id, seen)
         if (_shown.value?.revision != st.revision) TableLog.board("show", st, latest?.revision)
         _shown.value = st
         if (_afkNote.value == NAG && dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) == null) _afkNote.value = null
@@ -313,7 +328,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     fun hold(reason: String, on: Boolean) { if (on) holds.add(reason) else holds.remove(reason) }
     private val timer = TurnClock.Timer(
         snapshot = { latest?.takeIf { (_stage.value == Stage.PLAYING || _stage.value == Stage.MULLIGAN) && _noResult.value == null } },
-        paused = { paused.value || scene.value || holds.isNotEmpty() || _beat.value != null || _think.value != null || _sending.value || _shown.value?.revision != latest?.revision },
+        paused = { paused.value || scene.value || holds.isNotEmpty() || _beat.value != null || _trigger.value != null || _think.value != null || _sending.value || _shown.value?.revision != latest?.revision },
         act = { w, st, done ->
             autoAnswering = true
             try {
@@ -402,16 +417,25 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             if (fresh.isNotEmpty()) lastSeq = fresh.maxOf { it.seq }
             // The director (specs/match-director-native.md): every new event becomes a step; the controller is the only clock and
             // waits on the held ones (a CPU think, the turn banner, a CPU action's caption), one at a time.
-            val steps = Director.plan(st, fresh, if (remote == null) thinkClock else null).filter { it.held }
+            fresh.forEach { if (it.type == "trigger") it.stackId?.let(triggerIds::add) }
+            val before = _shown.value
+            val steps = Director.plan(st, fresh, if (remote == null) thinkClock else null, before = before, triggerIds = triggerIds).filter { it.held }
             TableLog.line("plan rev=${st.revision} fresh=${fresh.size} [${fresh.joinToString(",") { it.type }}] steps=${steps.size} shown=${_shown.value?.revision} queue=${queue.get()}")
             if (steps.isEmpty()) { show(st) } else {
                 // The board advances one CPU action at a time: a CPU card that a step is about to
                 // announce stays off the table (and off the stack) until that step starts.
-                val before = _shown.value?.players?.flatMap { p -> p.battlefield.map { it.id } }?.toSet() ?: emptySet()
+                val bfBefore = before?.players?.flatMap { p -> p.battlefield.map { it.id } }?.toSet() ?: emptySet()
                 val announced = steps.mapNotNull { it.beat?.cardId }.toSet()
-                val hidden = st.cpu.battlefield.map { it.id }.filter { it !in before && it in announced }.toMutableSet()
+                val hidden = st.cpu.battlefield.map { it.id }.filter { it !in bfBefore && it in announced }.toMutableSet()
                 hidden += st.stack.mapNotNull { it.source?.id }.filter { it in announced && st.card(it)?.controller != st.viewer }
-                show(masked(st, hidden))
+                // A TRIGGER SHOWS ITSELF: a trigger's item goes up only after its source has lifted; each result's cards keep their old
+                // numbers (and its tokens wait) until that result's beat; an item Forge resolved in this poll stays on top until then.
+                val hiddenStack = steps.mapNotNull { s -> s.trig?.takeIf { !it.resolvedHere }?.stackId }.toMutableSet()
+                val pending = steps.mapNotNull { it.result }.toMutableList()
+                // Top first: the items that resolve first in this poll.
+                val held = pending.flatMap { r -> r.stackIds.mapNotNull { id -> before?.stack?.firstOrNull { it.id == id } } }.toMutableList()
+                fun board() = withStack(masked(Director.beforeResults(st, before, pending), hidden, hiddenStack), held)
+                show(board())
                 steps.forEachIndexed { i, step ->
                     val waiting = latest?.waitingOnMe == true
                     val ms = Director.lengthOf(step, waiting, steps.drop(i).sumOf { it.ms })
@@ -420,11 +444,52 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                         step.kind == Director.Kind.THINK -> think(ms, st.cpu.handCount)
                         step.banner != null -> { _banner.value = step.banner; hold(ms); _banner.value = null }
                         step.beat != null -> {
-                            if (step.beat.cardId != null && hidden.remove(step.beat.cardId)) show(masked(st, hidden))
+                            if (step.beat.cardId != null && hidden.remove(step.beat.cardId)) show(board())
                             beat(step.beat, ms)
+                        }
+                        step.trig != null -> {
+                            val t = step.trig
+                            // Beat 1: the source lifts 1.12x and rings once in the caster's colour.
+                            _trigger.value = TriggerMoment(TriggerMoment.Phase.SOURCE, t.sourceId, t.sourceName, t.yours, t.stackId, step.count, key = ++momentKey)
+                            hold(Director.SOURCE_MS)
+                            // Beat 2: its item on the stack as the source's art card with "Trigger" and its text, thread to its target.
+                            t.stackId?.let { hiddenStack.remove(it) }
+                            var shownId: Int? = null
+                            if (t.resolvedHere) {
+                                val r = Director.resultFor(t, pending)
+                                val src = t.sourceId?.let { st.card(it) ?: before?.card(it) }
+                                val id = t.stackId ?: -(++momentKey).toInt()
+                                // Whose it is: Forge's word, else the source's controller, else the side the director read (never -1, which reads as the CPU's).
+                                val ctl = t.controller?.takeIf { it >= 0 } ?: src?.controller?.takeIf { it >= 0 } ?: if (t.yours) st.viewer else st.cpu.id
+                                held.add(0, dev.cardstashy.nativeplay.engine.StackItem(id, r?.text ?: Director.triggerText(src?.text), src, ctl,
+                                    ability = true, targets = t.targets, trigger = true))
+                                shownId = id
+                            }
+                            show(board())
+                            if (t.resolvedHere) {
+                                _trigger.value = _trigger.value?.copy(phase = TriggerMoment.Phase.STACK, key = ++momentKey)
+                                hold(Director.STACK_HOLD_MS)
+                                // Forge already resolved it: with no result still to land it leaves the stack now, not at the end of the poll.
+                                if (!Director.keepsStack(t, pending)) { held.removeAll { it.id == shownId }; show(board()) }
+                            }
+                            _trigger.value = null
+                        }
+                        step.result != null -> {
+                            val r = step.result
+                            // Beat 3: the item leaves the stack and its result lands on the card it changed.
+                            pending.remove(r)
+                            held.removeAll { it.id in r.stackIds || (it.source?.id != null && it.source.id == r.sourceId) }
+                            val line = r.line(st.viewer)
+                            if (line != null) _log.value = (_log.value + line).takeLast(60)
+                            _trigger.value = TriggerMoment(TriggerMoment.Phase.RESULT, r.sourceId, r.sourceName, r.controller == st.viewer, r.stackId, r.count, r, line, ++momentKey)
+                            show(board())
+                            hold(ms)
+                            _trigger.value = null
+                            delay(STEP_GAP_MS)
                         }
                     }
                 }
+                _trigger.value = null
                 show(st)
             }
             if (st.finished) { _stage.value = Stage.FINISHED; show(st) }
@@ -561,7 +626,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         if ((stage != Stage.PLAYING && stage != Stage.MULLIGAN) || paused.value || session == null) { stuckSince.clear(); return }
         val l = latest ?: return
         val on = _shown.value ?: return
-        val calm = _beat.value == null && _banner.value == null && autoJob?.isActive != true
+        val calm = _beat.value == null && _banner.value == null && _trigger.value == null && autoJob?.isActive != true
         fun held(kind: String, cond: Boolean, ms: Long): Boolean {
             if (!cond) { stuckSince.remove(kind); return false }
             val t = stuckSince.getOrPut(kind) { now }; if (now - t < ms) return false
@@ -644,8 +709,17 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         // Always in the log (public builds too): why the table waited or passed, so a device run can quote it.
         Log.i(TableLog.TAG, "decide ${st.phase} turn ${st.turn} input=${st.inputType} stack=${st.stack.size} -> ${d.op ?: "wait"} (${d.why})")
         val op = d.op ?: return
+        // A TRIGGER SHOWS ITSELF: a trigger on top of the stack stays readable at least 900 ms even when nobody can respond. Not
+        // yet on screen (its source is still lifting): nothing is passed now; the show that puts it up schedules again.
+        var wait = d.delayMs
+        val top = (latest?.takeIf { it.revision == st.revision } ?: st).stack.firstOrNull()
+        if (top != null && top.id in triggerIds) {
+            val w = Director.passWait(stackSeenAt[top.id]?.takeIf { st.stack.any { it.id == top.id } }, SystemClock.elapsedRealtime(), wait)
+            if (w == null) { Log.i(TableLog.TAG, "decide: trigger ${top.id} not on screen yet, pass waits"); return }
+            wait = w
+        }
         autoJob = scope.launch(Dispatchers.Main) {
-            delay(d.delayMs)
+            delay(wait)
             if (_live.value && latest?.revision == st.revision) { autoAnswering = true; try { if (op == "cancel") cancel() else ok() } finally { autoAnswering = false } }
         }
     }

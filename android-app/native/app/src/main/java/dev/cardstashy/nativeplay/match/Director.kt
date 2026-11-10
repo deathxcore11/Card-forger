@@ -3,6 +3,7 @@ package dev.cardstashy.nativeplay.match
 import dev.cardstashy.nativeplay.engine.GameEvent
 import dev.cardstashy.nativeplay.engine.MatchState
 import dev.cardstashy.nativeplay.engine.Ref
+import kotlin.math.abs
 
 /**
  * The match director (specs/match-director-native.md, Randall approved the feel reference 10 Nov): Forge's event log becomes one
@@ -15,7 +16,9 @@ import dev.cardstashy.nativeplay.engine.Ref
  */
 object Director {
     enum class Kind { THINK, BANNER, UNTAP, DRAW, LAND, CAST, TRIGGER, ABILITY, RESOLVE, FIZZLE, DAMAGE, LIFE, COUNTERS, ATTACH,
-        ENTER, TO_GRAVE, DIES, EXILE, TO_HAND, TOKEN, ATTACK, BLOCK, SHUFFLE }
+        ENTER, TO_GRAVE, DIES, EXILE, TO_HAND, TOKEN, ATTACK, BLOCK, SHUFFLE,
+        /** A TRIGGER SHOWS ITSELF, beat 3: a trigger's resolve with what it changed ([Step.result]). */
+        RESULT }
 
     data class Step(
         val kind: Kind, val ms: Long, val minMs: Long, val cue: String? = null, val focal: Boolean = false,
@@ -25,7 +28,70 @@ object Director {
         /** The caption the table shows for a CPU action (the existing beat card), or the turn banner. */
         val beat: Beat? = null, val banner: Banner? = null,
         val count: Int = 1,
-    ) { val held get() = kind == Kind.THINK || beat != null || banner != null }
+        /** A TRIGGER SHOWS ITSELF, beats 1 and 2: the source lifts and rings, then (when Forge resolved it in the same poll) its stack item is held to read. */
+        val trig: Trig? = null,
+        /** Beat 3: the resolve of a trigger and what it changed, landed on the changed cards. */
+        val result: Resolution? = null,
+    ) { val held get() = kind == Kind.THINK || beat != null || banner != null || trig != null || result != null }
+
+    /** A trigger going on the stack (Forge's "trigger" event): who, from which card, at what; [resolvedHere] its resolve is in the same poll. */
+    data class Trig(val stackId: Int?, val sourceId: Int?, val sourceName: String?, val controller: Int?, val yours: Boolean,
+                    val targets: List<Ref>, val resolvedHere: Boolean)
+
+    /** One counter change Forge reported on a card (counters event: counter type, old and new count). */
+    data class CounterChange(val cardId: Int, val cardName: String?, val counter: String, val delta: Int)
+    /** A card's power/toughness before and after a resolve, from the two snapshots around it (no counters needed). */
+    data class PtChange(val cardId: Int, val cardName: String?, val fromP: Int, val fromT: Int, val toP: Int, val toT: Int) {
+        val up get() = toP + toT > fromP + fromT
+    }
+    data class LifeChange(val player: Int, val from: Int, val to: Int)
+
+    /**
+     * What one stack item's resolve changed, all as Forge reported it: counters (counters events), power/toughness (snapshot diff),
+     * tokens (zone, token=true), damage and life. Forge applies an item's effects first and fires its resolve last, so the results
+     * that belong to a resolve are the ones since the last stack event before it ([resolutions]).
+     */
+    data class Resolution(
+        val seq: Long, val stackId: Int?, val sourceId: Int?, val sourceName: String?, val controller: Int?, val trigger: Boolean,
+        val fizzled: Boolean, val text: String?, val targets: List<Ref>,
+        val counters: List<CounterChange> = emptyList(), val pt: List<PtChange> = emptyList(), val tokens: List<Ref> = emptyList(),
+        val damage: List<Pair<Ref, Int>> = emptyList(), val life: List<LifeChange> = emptyList(),
+        /** Same source, same cards changed, one after another: played as one beat with ×N (table-info I1 addition a). */
+        val count: Int = 1,
+        /** Every stack item this result stands for (one, or the ×N it collapsed). */
+        val stackIds: List<Int> = listOfNotNull(stackId),
+    ) {
+        /** The permanents the result lands on (counters and P/T), in the order Forge changed them. */
+        val changed: List<Int> get() = (counters.map { it.cardId } + pt.map { it.cardId }).distinct()
+        val empty get() = counters.isEmpty() && pt.isEmpty() && tokens.isEmpty() && damage.isEmpty() && life.isEmpty()
+
+        /** The one trail line ("Optimistic Scavenger: +1/+1 counter on Grizzly Bears"), or null when it changed nothing shown. */
+        fun line(viewer: Int): String? {
+            val who = sourceName ?: "A trigger"
+            if (fizzled) return "$who: no legal targets"
+            val parts = ArrayList<String>()
+            for ((_, list) in counters.groupBy { it.cardId }) for ((kind, same) in list.groupBy { it.counter }) {
+                val n = same.sumOf { it.delta }; if (n == 0) continue
+                val on = same.first().cardName ?: "a card"
+                val k = abs(n)
+                val what = when { kind.equals("P1P1", true) -> "+1/+1"; kind.equals("M1M1", true) -> "-1/-1"; else -> counterWord(kind) }
+                parts += (if (k == 1 && n > 0) "" else "$k ") + "$what counter" + (if (k == 1) "" else "s") + (if (n > 0) " on " else " off ") + on
+            }
+            val counted = counters.map { it.cardId }.toSet()
+            for (p in pt) if (p.cardId !in counted) parts += "${p.cardName ?: "a creature"} ${signed(p.toP - p.fromP)}/${signed(p.toT - p.fromT)}"
+            if (tokens.isNotEmpty()) {
+                val names = tokens.mapNotNull { it.name }.distinct()
+                parts += "created " + (if (tokens.size == 1) "a " else "${tokens.size} ") + (names.singleOrNull()?.let { if (it.endsWith("Token", true)) it else "$it token" } ?: "token") + if (tokens.size > 1 && names.size <= 1) "s" else ""
+            }
+            for ((t, n) in damage) parts += "$n damage to " + if (t.kind == "player") (if (t.id == viewer) "you" else "CPU") else (t.name ?: "a card")
+            for (l in life) if (l.to != l.from) parts += (if (l.player == viewer) "you " else "CPU ") + (if (l.to > l.from) "gain${if (l.player == viewer) "" else "s"} ${l.to - l.from}" else "lose${if (l.player == viewer) "" else "s"} ${l.from - l.to}") + " life"
+            if (parts.isEmpty()) return null
+            return who + (if (count > 1) " ×$count" else "") + ": " + parts.joinToString(", ")
+        }
+    }
+
+    private fun signed(n: Int) = if (n >= 0) "+$n" else "−${-n}"
+    private fun counterWord(k: String) = k.lowercase().replace('_', ' ')
 
     /** Event types with no step of their own: the opening deal and mulligans keep their own flow. */
     val SILENT = setOf("mulligan")
@@ -56,11 +122,22 @@ object Director {
      * The steps for [events] (new since the last shown point), read against the newest snapshot [st]. [think] null: no think
      * steps (a test of the bare plan, or a friend match where the other side is a person).
      */
-    fun plan(st: MatchState, events: List<GameEvent>, think: ThinkClock? = null, fast: Boolean = false): List<Step> {
+    fun plan(st: MatchState, events: List<GameEvent>, think: ThinkClock? = null, fast: Boolean = false,
+             before: MatchState? = null, triggerIds: Set<Int> = emptySet()): List<Step> {
         val me = st.viewer
+        // A TRIGGER SHOWS ITSELF: each resolve tied to what it changed; a trigger's result is its own held step at its resolve.
+        val results = resolutions(before, st, events, triggerIds)
+        val resultAt = results.filter { it.trigger && (it.fizzled || !it.empty) }.associateBy { it.seq }
+        val resolvedHere = results.flatMap { it.stackIds }.toSet()
+        // A result collapsed from N copies (×N) gets one source beat for all of them, at its first trigger event in the poll.
+        val mergedOf = results.filter { it.stackIds.size > 1 }.flatMap { r -> r.stackIds.map { it to r } }.toMap()
+        val merged = HashSet<Int>()
         val mine = (st.me.battlefield + st.me.hand + st.me.graveyard + st.me.exile).map { it.id }.toSet()
         fun touchesMe(refs: List<Ref>) = refs.any { (it.kind == "player" && it.id == me) || (it.kind == "card" && it.id in mine) }
-        fun controllerOf(id: Int?) = id?.let { st.card(it)?.controller }
+        fun controllerOf(id: Int?) = id?.let { st.card(it)?.controller?.takeIf { c -> c >= 0 } }
+        // A trigger's source may have left the battlefield (a dies trigger): its controller from the board before, else whose zones hold it.
+        fun sourceSide(id: Int?) = id?.let { i -> controllerOf(i) ?: before?.card(i)?.controller?.takeIf { it >= 0 }
+            ?: (st.players + before?.players.orEmpty()).firstOrNull { p -> (p.battlefield + p.graveyard + p.exile + p.hand + p.command).any { it.id == i } }?.id }
         fun cpu(p: Int?) = p != null && p != me
         // No think while the opening hand or one of your questions is open (they can't start then).
         val thinking = think != null && st.prompt == null && !st.isMulligan
@@ -97,20 +174,35 @@ object Director {
                         beat = Beat(if (hits) Beat.Kind.AFFECTS_YOU else Beat.Kind.ACTION, "CPU casts ${e.source?.name ?: "a spell"}", e.source?.id, e.source?.name,
                             if (hits) targetText(st, e.targets) else null, life?.first, life?.second))
                 } else out += Step(Kind.CAST, 430, 300, "CARD-008", cardId = e.source?.id, cardName = e.source?.name)
-                "trigger", "ability" -> {
-                    val theirs = controllerOf(e.source?.id)?.let { it != me } == true
-                    val kind = if (e.type == "trigger") Kind.TRIGGER else Kind.ABILITY
-                    val cue = if (e.type == "trigger") "CARD-014" else "CARD-013"
-                    if (!theirs) { out += Step(kind, 620, 300, cue, cardId = e.source?.id, cardName = e.source?.name); continue@loop }
-                    if (e.type == "ability") thinkFor(if (e.targets.isNotEmpty()) Decision.CAST_TARGETED else Decision.CAST, e.turn)
-                    val hits = touchesMe(e.targets)
-                    val title = "${e.source?.name ?: "A CPU card"} " + if (e.type == "trigger") "triggers" else "is activated"
-                    // The same trigger several times in a row (one per creature entering, say) is one step with a count.
+                "trigger" -> {
+                    // Beats 1 and 2 for every trigger, yours or the CPU's: the source lifts and rings; when Forge resolved it in this same
+                    // poll its stack item is put up and held to read (900 ms), since no snapshot ever showed it.
+                    val ctl = e.player ?: sourceSide(e.source?.id)
+                    val here = e.stackId != null && e.stackId in resolvedHere
+                    val group = e.stackId?.let { mergedOf[it] }
+                    if (group != null && !merged.add(group.stackIds.first())) continue@loop
                     val prev = out.lastOrNull()
-                    if (prev?.beat != null && !hits && prev.kind == kind && prev.beat.kind == Beat.Kind.ACTION && prev.beat.title.substringBefore(" ×") == title) {
+                    if (group != null) out += Step(Kind.TRIGGER, if (here) SOURCE_MS + STACK_HOLD_MS else SOURCE_MS, if (here) SOURCE_MS + STACK_HOLD_MS else SOURCE_MS, "CARD-014",
+                        focal = true, cpu = cpu(ctl), cardId = e.source?.id, cardName = e.source?.name, count = group.count,
+                        trig = Trig(e.stackId, e.source?.id, e.source?.name, ctl, ctl == me, e.targets, here))
+                    else if (prev?.trig != null && prev.kind == Kind.TRIGGER && prev.trig.sourceId != null && prev.trig.sourceId == e.source?.id &&
+                        prev.trig.targets == e.targets && prev.trig.resolvedHere == here) out[out.lastIndex] = prev.copy(count = prev.count + 1)
+                    else out += Step(Kind.TRIGGER, if (here) SOURCE_MS + STACK_HOLD_MS else SOURCE_MS, if (here) SOURCE_MS + STACK_HOLD_MS else SOURCE_MS, "CARD-014",
+                        focal = true, cpu = cpu(ctl), cardId = e.source?.id, cardName = e.source?.name,
+                        trig = Trig(e.stackId, e.source?.id, e.source?.name, ctl, ctl == me, e.targets, here))
+                }
+                "ability" -> {
+                    val theirs = controllerOf(e.source?.id)?.let { it != me } == true
+                    if (!theirs) { out += Step(Kind.ABILITY, 620, 300, "CARD-013", cardId = e.source?.id, cardName = e.source?.name); continue@loop }
+                    thinkFor(if (e.targets.isNotEmpty()) Decision.CAST_TARGETED else Decision.CAST, e.turn)
+                    val hits = touchesMe(e.targets)
+                    val title = "${e.source?.name ?: "A CPU card"} is activated"
+                    // The same ability several times in a row is one step with a count.
+                    val prev = out.lastOrNull()
+                    if (prev?.beat != null && !hits && prev.kind == Kind.ABILITY && prev.beat.kind == Beat.Kind.ACTION && prev.beat.title.substringBefore(" ×") == title) {
                         val n = prev.count + 1
                         out[out.lastIndex] = prev.copy(count = n, beat = prev.beat.copy(title = "$title ×$n"))
-                    } else out += Step(kind, 1020, 600, cue, focal = true, cpu = true, cardId = e.source?.id, cardName = e.source?.name,
+                    } else out += Step(Kind.ABILITY, 1020, 600, "CARD-013", focal = true, cpu = true, cardId = e.source?.id, cardName = e.source?.name,
                         beat = Beat(if (hits) Beat.Kind.AFFECTS_YOU else Beat.Kind.ACTION, title, e.source?.id, e.source?.name, if (hits) targetText(st, e.targets) else null))
                 }
                 "attack" -> if (cpu(e.player) && e.attackers.isNotEmpty()) {
@@ -128,8 +220,19 @@ object Director {
                         beat = Beat(Beat.Kind.ACTION, "CPU blocks", first.first.id, first.first.name,
                             e.blockers.joinToString("\n") { (b, a) -> "${b.name ?: "A creature"} blocks ${a?.let { st.card(it)?.name } ?: "an attacker"}" }))
                 } else if (e.blockers.isNotEmpty()) out += Step(Kind.BLOCK, 800, 500, "CMB-003", count = e.blockers.size)
-                "resolve" -> out += if (e.fizzled) Step(Kind.FIZZLE, 400, 250, "CARD-012", cardId = e.source?.id ?: e.card?.id)
-                    else Step(Kind.RESOLVE, 300, 200, cardId = e.source?.id ?: e.card?.id)
+                "resolve" -> {
+                    val r = resultAt[e.seq]
+                    out += when {
+                        // Beat 3: the result lands on the card it changed (counter chip, P/T tick, tokens from the source).
+                        r != null -> {
+                            if (r.life.any { it.player == me && it.to < it.from }) explainedLife = true
+                            Step(Kind.RESULT, if (r.fizzled) FIZZLE_MS else RESULT_MS, if (r.fizzled) FIZZLE_MS else RESULT_MS, if (r.fizzled) "CARD-012" else "CARD-027",
+                                focal = true, cpu = cpu(r.controller), cardId = r.sourceId, cardName = r.sourceName, count = r.count, result = r)
+                        }
+                        e.fizzled -> Step(Kind.FIZZLE, 400, 250, "CARD-012", cardId = e.source?.id ?: e.card?.id)
+                        else -> Step(Kind.RESOLVE, 300, 200, cardId = e.source?.id ?: e.card?.id)
+                    }
+                }
                 "damage" -> out += Step(Kind.DAMAGE, 1320, 500, "CMB-018", focal = touchesMe(listOfNotNull(e.target)), cardId = e.source?.id)
                 "life" -> out += Step(Kind.LIFE, 360 + 90L * kotlin.math.abs((e.lifeTo ?: 0) - (e.lifeFrom ?: 0)).coerceAtMost(20), 360,
                     if ((e.lifeTo ?: 0) < (e.lifeFrom ?: 0)) "CMB-005" else "CMB-007", focal = e.player == me)
@@ -147,6 +250,145 @@ object Director {
         }
         return out
     }
+
+    /**
+     * Whether a trigger Forge resolved in this poll keeps its stack item up after its read: only while a result of it is still to
+     * land ([pending], the RESULT steps not yet played). One that changed nothing shown (a draw, a scry) leaves the stack after its read.
+     */
+    fun keepsStack(t: Trig, pending: Collection<Resolution>): Boolean = t.stackId != null && pending.any { t.stackId in it.stackIds }
+
+    /** The result whose words a trigger's stack item reads: the one for its own stack id, by source only when Forge gave no id. */
+    fun resultFor(t: Trig, pending: Collection<Resolution>): Resolution? =
+        if (t.stackId != null) pending.firstOrNull { t.stackId in it.stackIds } else pending.firstOrNull { it.sourceId != null && it.sourceId == t.sourceId }
+
+    /**
+     * How long the auto-pass waits with a trigger on top of the stack: null while it is not on screen yet ([seenAt] null), else at
+     * least what is left of its [STACK_HOLD_MS] read since [seenAt], and never less than the pass's own [base] delay.
+     */
+    fun passWait(seenAt: Long?, now: Long, base: Long): Long? = seenAt?.let { maxOf(base, STACK_HOLD_MS - (now - it)) }
+
+    /** Beat 1, the source's lift and ring (sTrig: 180 up, 260 held, 180 down; the ring 520 ms). */
+    const val SOURCE_MS = 520L
+    /** Beat 2: a trigger's stack item stays readable at least this long, even when nobody can respond (also with reduced motion). */
+    const val STACK_HOLD_MS = 900L
+    /** Beat 3: the landing (streak, flash, "+1/+1" rising, chip pop) and the P/T plate's green or coral tick. */
+    const val RESULT_MS = 1200L
+    const val FIZZLE_MS = 700L
+
+    /** A stack item while the director follows the stack through one poll (top at the end of the list). */
+    private class Entry(val stackId: Int?, val sourceId: Int?, val sourceName: String?, val controller: Int?, val trigger: Boolean, val text: String?, val targets: List<Ref>)
+
+    /**
+     * Each resolve in [events] tied to what it changed, read from Forge's own log and the snapshots around it ([before] the board
+     * last shown, [after] the newest). Forge applies a stack item's effects and fires its resolve last, so a result (counters, a
+     * token entering, non-combat damage, a life change) belongs to the resolve that follows it, as long as no other stack event
+     * (cast, trigger, ability, turn, attack, block, land) comes between; when Forge names the resolving card on the result
+     * (counters.source, zone.by) it must be that resolve's card. Which item resolved comes from following the stack: [before]'s
+     * stack plus the items put on it in [events]; [triggerIds] are the stack ids Forge reported as triggers in earlier polls.
+     * A power/toughness change comes from comparing [before] and [after]: it goes to the resolve that put counters on the card when
+     * those counters explain the whole change, else (never across a turn) to the one that targeted it, else to the only resolve in
+     * the poll when the card is that resolve's own source.
+     * The same trigger from the same source changing the same cards, one after another, is one result with a count.
+     */
+    fun resolutions(before: MatchState?, after: MatchState, events: List<GameEvent>, triggerIds: Set<Int> = emptySet()): List<Resolution> {
+        val snapStack = after.stack + before?.stack.orEmpty()
+        fun textOf(id: Int?) = id?.let { i -> snapStack.firstOrNull { it.id == i }?.text?.takeIf { it.isNotBlank() } }
+        val stack = ArrayList<Entry>()
+        before?.stack?.reversed()?.forEach { s -> stack += Entry(s.id, s.source?.id, s.source?.name, s.controller, s.trigger || s.id in triggerIds, s.text.takeIf { it.isNotBlank() }, s.targets) }
+        val pending = ArrayList<GameEvent>()
+        val out = ArrayList<Resolution>()
+        fun counterDelta(e: GameEvent): Int {
+            val from = e.from?.toIntOrNull(); val to = e.to?.toIntOrNull()
+            if (from != null && to != null) return to - from
+            val id = e.card?.id ?: return 0; val k = e.counter ?: return 0
+            val now = after.card(id)?.counters?.get(k) ?: 0; val was = before?.card(id)?.counters?.get(k) ?: 0
+            return now - was
+        }
+        for (e in events.sortedBy { it.seq }) when (e.type) {
+            "cast", "trigger", "ability" -> {
+                pending.clear()
+                stack += Entry(e.stackId, e.source?.id, e.source?.name, e.player ?: e.source?.id?.let { after.card(it)?.controller }, e.type == "trigger", textOf(e.stackId), e.targets)
+            }
+            "counters", "life" -> pending += e
+            "damage" -> if (!e.combat) pending += e
+            "zone" -> if (e.token && e.to == "Battlefield") pending += e
+            "turn", "attack", "block", "land" -> pending.clear()
+            "resolve" -> {
+                val src = e.source?.id ?: e.card?.id
+                val i = stack.indexOfLast { it.sourceId == src }
+                val entry = if (i >= 0) stack.removeAt(i) else null
+                // A result Forge tied to another resolving card is not this one's.
+                val mine = if (e.fizzled) emptyList() else pending.filter { r -> val by = when (r.type) { "zone" -> r.by; "counters" -> r.source; else -> null }; by == null || by.id == src }
+                pending.clear()
+                fun nameOf(r: Ref?) = r?.name ?: r?.id?.let { (after.card(it) ?: before?.card(it))?.name }
+                out += Resolution(e.seq, entry?.stackId, src, e.source?.name ?: entry?.sourceName ?: src?.let { (after.card(it) ?: before?.card(it))?.name },
+                    entry?.controller ?: src?.let { (after.card(it) ?: before?.card(it))?.controller }, entry?.trigger == true, e.fizzled, entry?.text, entry?.targets.orEmpty(),
+                    counters = mine.filter { it.type == "counters" && it.card != null }.map { CounterChange(it.card!!.id, nameOf(it.card), it.counter ?: "", counterDelta(it)) }.filter { it.delta != 0 },
+                    tokens = mine.filter { it.type == "zone" }.mapNotNull { z -> z.card?.let { c -> c.copy(name = nameOf(c)) } },
+                    damage = mine.filter { it.type == "damage" && it.target != null && (it.amount ?: 0) > 0 }.map { it.target!!.let { t -> t.copy(name = if (t.kind == "card") nameOf(t) else t.name) } to it.amount!! },
+                    life = mine.filter { it.type == "life" && it.player != null && it.lifeFrom != null && it.lifeTo != null }.map { LifeChange(it.player!!, it.lifeFrom!!, it.lifeTo!!) })
+            }
+        }
+        // Power/toughness that moved without (only) counters: the snapshot diff, given to the resolve that explains it.
+        if (before != null && out.isNotEmpty()) {
+            val crossTurn = events.any { it.type == "turn" }
+            val was = before.players.flatMap { it.battlefield }.associateBy { it.id }
+            val live = out.indices.filter { !out[it].fizzled }
+            for (c in after.players.flatMap { it.battlefield }) {
+                val o = was[c.id] ?: continue
+                val p0 = o.power ?: continue; val p1 = c.power ?: continue
+                val t0 = o.toughness ?: 0; val t1 = c.toughness ?: 0
+                if (p0 == p1 && t0 == t1) continue
+                // Counters Forge reported on the card own its change only when they explain all of it: +1/+1 and -1/-1 counters
+                // summed over the poll equal the change on both numbers (anything else, such as a pump ending across a turn, also moved it).
+                val counted = live.filter { k -> out[k].counters.any { it.cardId == c.id } }
+                val owner = if (counted.isNotEmpty()) {
+                    val n = counted.sumOf { k -> out[k].counters.filter { it.cardId == c.id }.sumOf { ch ->
+                        when { ch.counter.equals("P1P1", true) -> ch.delta; ch.counter.equals("M1M1", true) -> -ch.delta; else -> 0 } } }
+                    counted.last().takeIf { n != 0 && p1 - p0 == n && t1 - t0 == n } ?: continue
+                } else if (crossTurn) continue
+                // Else the resolve that targeted it, else the only resolve in the poll when the card is its own source; never a change
+                // Forge did not tie to it (a lord dying, a static effect), and never across a turn.
+                else live.lastOrNull { k -> out[k].targets.any { it.kind == "card" && it.id == c.id } }
+                    ?: live.singleOrNull()?.takeIf { out[it].sourceId == c.id } ?: continue
+                out[owner] = out[owner].copy(pt = out[owner].pt + PtChange(c.id, c.name, p0, t0, p1, t1))
+            }
+        }
+        // One beat with ×N for the same trigger from the same source landing on the same cards (table-info I1 addition a).
+        val merged = ArrayList<Resolution>()
+        for (r in out) {
+            val p = merged.lastOrNull()
+            if (p != null && p.trigger && r.trigger && !p.fizzled && !r.fizzled && !p.empty && !r.empty && p.sourceId != null && p.sourceId == r.sourceId &&
+                p.text == r.text && p.targets == r.targets && p.changed.toSet() == r.changed.toSet()) {
+                val pt = (p.pt + r.pt).groupBy { it.cardId }.map { (_, l) -> l.first().copy(toP = l.last().toP, toT = l.last().toT) }
+                merged[merged.lastIndex] = r.copy(counters = p.counters + r.counters, pt = pt, tokens = p.tokens + r.tokens, damage = p.damage + r.damage,
+                    life = p.life + r.life, count = p.count + r.count, stackIds = p.stackIds + r.stackIds)
+            } else merged += r
+        }
+        return merged
+    }
+
+    /**
+     * [after] as it was before [pending] results landed: the cards they changed keep [before]'s power, toughness and counters, and
+     * the tokens they made are not there yet. The table shows this until each result's own beat, so the change happens on screen.
+     */
+    fun beforeResults(after: MatchState, before: MatchState?, pending: Collection<Resolution>): MatchState {
+        if (pending.isEmpty()) return after
+        val tokens = pending.flatMap { r -> r.tokens.map { it.id } }.toSet()
+        val changed = pending.flatMap { it.changed }.toSet()
+        val was = before?.players?.flatMap { it.battlefield }?.associateBy { it.id }.orEmpty()
+        val added = pending.flatMap { it.counters }.groupBy { it.cardId }
+        return after.copy(players = after.players.map { p -> p.copy(battlefield = p.battlefield.filter { it.id !in tokens }.map { c ->
+            if (c.id !in changed) c
+            else was[c.id]?.let { o -> c.copy(power = o.power, toughness = o.toughness, counters = o.counters) }
+                // New since the last board: take back only the counters Forge said were added.
+                ?: c.copy(counters = c.counters.mapValues { (k, v) -> v - added[c.id].orEmpty().filter { it.counter == k }.sumOf { it.delta } }.filterValues { it > 0 })
+        }) })
+    }
+
+    /** A trigger's own words when Forge never showed its stack item: the source's lines that start "When", "Whenever" or "At". */
+    fun triggerText(text: String?): String =
+        text.orEmpty().lines().map { it.trim() }.filter { Regex("^(When|Whenever|At) ", RegexOption.IGNORE_CASE).containsMatchIn(it) }.joinToString("\n")
 
     private fun zoneStep(e: GameEvent, me: Int): Step? {
         val id = e.card?.id; val from = e.from.orEmpty(); val to = e.to.orEmpty()
@@ -188,6 +430,16 @@ object Director {
         (waiting || queuedMs > 6000) && !s.focal -> s.minMs
         else -> maxOf(s.ms, s.minMs)
     }
+}
+
+/**
+ * A TRIGGER SHOWS ITSELF: the beat of a trigger the table is drawing now, set by the controller for each of its three beats.
+ * SOURCE: the card that triggered lifts and rings in the caster's colour. STACK: its item is up as an art card with "Trigger"
+ * and its text (held to read). RESULT: [result] lands on the cards it changed, with its one trail [line]. [key] is new per beat.
+ */
+data class TriggerMoment(val phase: Phase, val sourceId: Int?, val sourceName: String?, val yours: Boolean, val stackId: Int?, val count: Int = 1,
+                         val result: Director.Resolution? = null, val line: String? = null, val key: Long = 0) {
+    enum class Phase { SOURCE, STACK, RESULT }
 }
 
 /** The CPU thinking right now (the dots by its portrait, the lifted card back in its hand), read by the table. */

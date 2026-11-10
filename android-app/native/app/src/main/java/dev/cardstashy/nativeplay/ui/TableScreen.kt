@@ -109,6 +109,8 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     val decks = DemoDecks.load(context)
     val shown by controller.shown.collectAsState()
     val beat by controller.beat.collectAsState()
+    // A TRIGGER SHOWS ITSELF: the trigger beat now playing (the board draws it; on two screens it stays on the top screen with the board).
+    val trig by controller.trigger.collectAsState()
     // The CPU's last action stays in the feed, quieter, until the next turn's banner.
     var lastBeat by remember { mutableStateOf<Beat?>(null) }
     LaunchedEffect(beat) { beat?.let { lastBeat = it } }
@@ -189,8 +191,8 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
                     // table-emotes.mjs mount(): the CPU's hello once the match is on; everything goes with the table.
                     LaunchedEffect(Unit) { TableEmotes.start(this) }
                     DisposableEffect(Unit) { onDispose { TableEmotes.destroy() } }
-                    CompositionLocalProvider(LocalMatchClock provides controller.clock.collectAsState().value) {
-                    ForgeBoard(st, live && beat == null, controller.intents, selectedHand, { selectedHand = it }, { inspect = it }, { menu = true },
+                    CompositionLocalProvider(LocalMatchClock provides controller.clock.collectAsState().value, LocalTrigger provides trig) {
+                    ForgeBoard(st, live && beat == null && trig == null, controller.intents, selectedHand, { selectedHand = it }, { inspect = it }, { menu = true },
                         handOrder, { handOrder = it }, menu = matchMenu, afk = if (DualScreen.active) afk else null) {
                         TableSide(st, controller, beat, live, lastBeat) { inspect = it }
                     }
