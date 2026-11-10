@@ -334,6 +334,7 @@ fun ForgeBoard(
                 TableZones.hand?.let { h -> TablePad.autoRing = true; val ok = h.requestFocus(androidx.compose.ui.focus.FocusDirection.Enter); TablePad.autoRing = false
                     android.util.Log.i("PadA", "board entered from the top: ring to the hand chip ok=$ok") }
         } }
+        .onFocusChanged { TableZones.ringIn = it.hasFocus }
         .focusGroup()) {
         val d = Du(chromeU(maxWidth, maxHeight))
         with(d) {
@@ -347,6 +348,10 @@ fun ForgeBoard(
             // forge-table.mjs role(): chosen, then a target, then a choice (discard while a discard asks), then playable.
             // W12: the cleanup discard never lifts a card by itself; selectedHand is the card he picked (A or a tap), and only that is discarded.
             val discardAsk = dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) != null
+            // Live 0.4.57: while Forge asks for targets the targets own the ring; the hand chip lifts nothing and A on it goes to them.
+            val targeting = live && st.prompt == null && st.inputType == "InputSelectTargets"
+            // A cast you started asks for targets or for mana: the ring goes there (V4) and LT may cancel it.
+            val padAsking = targeting || (live && st.prompt == null && st.inputType?.startsWith("InputPayMana") == true)
             // The d-pad's walk along the hand while a discard asks: it shows a card's words and name but picks nothing.
             var discardWalk by remember { mutableStateOf<Int?>(null) }
             // W12: a card lifted before cleanup never carries into the discard; he picks again.
@@ -595,18 +600,22 @@ fun ForgeBoard(
                     // While a discard asks, the chip shows the card the d-pad rests on; only A or a tap picks it (W12).
                     val lifted = if (discardAsk) picked ?: hand.firstOrNull { it.id == discardWalk } else picked
                     val playable = { c: Card -> castable(c) }
+                    // Live 0.4.57: after a cast the next lift is where that card was, not card 1 (a land, and it moved with each draw).
+                    fun restAt() = TablePad.handAt.coerceIn(0, hand.lastIndex)
                     fun step(dx: Int) {
                         if (discardAsk) { val i = hand.indexOfFirst { it.id == (discardWalk ?: selectedHand) }
                             discardWalk = hand[if (i < 0) (if (dx > 0) 0 else hand.lastIndex) else (i + dx).coerceIn(0, hand.lastIndex)].id; return }
                         val i = hand.indexOfFirst { it.id == selectedHand }
-                        onSelectHand(hand[if (i < 0) (if (dx > 0) 0 else hand.lastIndex) else (i + dx).coerceIn(0, hand.lastIndex)].id) }
+                        onSelectHand(hand[if (i < 0) (if (TablePad.handAt >= 0) restAt() else if (dx > 0) 0 else hand.lastIndex) else (i + dx).coerceIn(0, hand.lastIndex)].id) }
                     // A on the chip: the walked card is picked for discard, the same card again goes; otherwise it plays what is lifted, or opens it.
                     var chipOn by remember { mutableStateOf(false) }
                     val chipA = {
                         val c = lifted
                         // W11: what A met on the hand chip, so a Thor run shows why a press cast or only lifted (logcat -s PadA).
                         android.util.Log.i("PadA", "chip lifted=${c?.name} sel=$selectedHand discard=$discardAsk live=$live actionable=${c?.let { it.id in st.selection.actionable }} blocked=${c?.let { blocked[it.id] }} prompt=${st.prompt != null} input=${st.inputType}")
-                        if (discardAsk && live) {
+                        // Live 0.4.57: A here during a target prompt lifted a hand card; now it takes the ring to the first legal target.
+                        if (targeting) { TableZones.toAsk("A on the hand chip") }
+                        else if (discardAsk && live) {
                             when (val step = discardChipStep(c, selectedHand, hand, st.selection.cards)) {
                                 is DiscardStep.Walk -> { discardWalk = step.id }
                                 is DiscardStep.Pick -> onSelectHand(step.id)
@@ -614,8 +623,8 @@ fun ForgeBoard(
                                 is DiscardStep.Inspect -> hand.firstOrNull { it.id == step.id }?.let(onInspect)
                                 null -> {}
                             }
-                        } else if (c == null) onSelectHand(hand.first().id)
-                        else if (playable(c)) { onSelectHand(null); if (chipOn && !c.isLand) { TablePad.castAt = android.os.SystemClock.uptimeMillis(); TablePad.castId = c.id }; intents.card(c.id) } else onInspect(c)
+                        } else if (c == null) onSelectHand(hand[restAt()].id)
+                        else if (playable(c)) { TablePad.handAt = hand.indexOf(c); onSelectHand(null); if (chipOn && !c.isLand) { TablePad.castAt = android.os.SystemClock.uptimeMillis(); TablePad.castId = c.id }; intents.card(c.id) } else onInspect(c)
                     }
                     val chipFocus = remember { FocusRequester() }
                     androidx.compose.runtime.DisposableEffect(chipFocus) { TableZones.hand = chipFocus; onDispose { if (TableZones.hand === chipFocus) TableZones.hand = null } }
@@ -645,10 +654,12 @@ fun ForgeBoard(
                     val shape = RoundedCornerShape(999.dp)
                     Row(Modifier.align(Alignment.TopCenter).padding(top = handW / 66f * 30f).widthIn(max = chipMax).anchorRect("handchip")
                         .focusRequester(chipFocus)
-                        .onFocusChanged { if (chipOn != it.isFocused) android.util.Log.i("PadA", "chip focus=${it.isFocused} autoRing=${TablePad.autoRing} sel=$selectedHand"); if (chipOn != it.isFocused) liftLive = it.isFocused && selectedHand != null; chipOn = it.isFocused; if (it.isFocused) { TableZones.at = 0; TablePad.last = chipFocus; if (selectedHand == null && !discardAsk && !TablePad.autoRing) onSelectHand(hand.first().id); TablePad.autoRing = false } }
+                        .onFocusChanged { if (chipOn != it.isFocused) android.util.Log.i("PadA", "chip focus=${it.isFocused} autoRing=${TablePad.autoRing} sel=$selectedHand"); if (chipOn != it.isFocused) liftLive = it.isFocused && selectedHand != null; chipOn = it.isFocused; if (it.isFocused) { TableZones.at = 0; TablePad.last = chipFocus; if (selectedHand == null && !discardAsk && !targeting && !TablePad.autoRing) onSelectHand(hand[restAt()].id); TablePad.autoRing = false } }
                         .onKeyEvent { e -> if (e.nativeKeyEvent.action != android.view.KeyEvent.ACTION_DOWN) return@onKeyEvent false
-                            when (e.nativeKeyEvent.keyCode) { android.view.KeyEvent.KEYCODE_DPAD_LEFT -> { step(-1); true }; android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> { step(1); true }; else -> false } }
-                        .padActs(PadActs(a = if (discardAsk && live) (if (lifted != null && lifted.id == selectedHand) "Discard" else "Pick") else (lifted?.let { if (playable(it)) (if (it.isLand) "Play land" else "Cast") else "Inspect" } ?: "Lift"), y = lifted?.let { c -> PadAct("Inspect") { onInspect(c) } }))
+                            when (e.nativeKeyEvent.keyCode) {
+                                android.view.KeyEvent.KEYCODE_DPAD_LEFT -> { if (targeting) TableZones.toAsk("left on the hand chip") else step(-1); true }
+                                android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> { if (targeting) TableZones.toAsk("right on the hand chip") else step(1); true }; else -> false } }
+                        .padActs(PadActs(a = if (targeting) "To target" else if (discardAsk && live) (if (lifted != null && lifted.id == selectedHand) "Discard" else "Pick") else (lifted?.let { if (playable(it)) (if (it.isLand) "Play land" else "Cast") else "Inspect" } ?: "Lift"), y = lifted?.let { c -> PadAct("Inspect") { onInspect(c) } }))
                         .clip(shape).background(if (chipOn) Color(0x33E8C36F) else Color(0xCC101216)).border(if (chipOn) 2.dp else 1.dp, if (chipOn) Color(0xFFF3D494) else Color(0x40D6AD64), shape)
                         .clickable { chipA() }
                         .padding(horizontal = 12.du, vertical = 5.du), verticalAlignment = Alignment.CenterVertically) {
@@ -663,6 +674,8 @@ fun ForgeBoard(
             // The buttons, bottom right: the gold step and the quiet second one above it (right edges 8 du in, as the site's dock).
             // A controller's X is the gold one: its words and its tap, only while it can be pressed.
             var padX: PadAct? = null
+            // The visible Cancel pill is the last stop of the target walk (live 0.4.57), so it can take the ring.
+            val cancelFocus = remember { FocusRequester() }
             if (st.prompt == null && st.waitingOnMe) {
                 // The cleanup discard (U1): a lifted card goes, so its button says Discard, never Play or Cast.
                 val discardingNow = dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) != null
@@ -688,6 +701,7 @@ fun ForgeBoard(
                 val upperM = if (large) Modifier else Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 94.du)
                 // The quiet pill in that spot reports its width, so the phone's turn count can stand left of it.
                 val quietM = upperM.onSizeChanged { quietW = with(goldDensity) { it.width.toDp() } }.anchorRect("quiet")
+                val cancelM = if (targeting) quietM.focusRequester(cancelFocus) else quietM
                 val lowerM = if (large) Modifier else Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 52.du)
                 val attackM = if (large) Modifier else Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 44.du)
                 // Undo's own spot: never where End turn or the gold step was (U6), and never on a pile or its count (BB11: one slot
@@ -732,7 +746,7 @@ fun ForgeBoard(
                         GoldPill(ok, live && okOn, upperM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }, d, padKey = padX != null, maxW = goldMax) { intents.ok() }
                         GlassPill("Attack all", live, attackM, d, tone = Color(0xFFFFD9CF), edge = Color(0x88FF8A6A)) { intents.attackAll(offered.map { it.id }) }
                     } else if (oneTarget(st) || onePick(st)) {
-                        second?.let { GlassPill(it, live, quietM, d) { intents.cancel() } }
+                        second?.let { GlassPill(it, live, cancelM, d) { intents.cancel() } }
                         if (st.selection.min == 0 && st.buttons.okEnabled) GoldPill("No target", live, lowerM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }, d, padKey = padX != null, maxW = goldMax) { intents.ok() }
                     } else if (short && second != null) {
                         if (st.buttons.okEnabled) GlassPill(ok, live, quietM, d) { intents.ok() }
@@ -746,7 +760,7 @@ fun ForgeBoard(
                         // took the land back (U6), so Undo stands in its own spot and ignores taps for its first 400 ms.
                         val undo = second?.startsWith("Undo", ignoreCase = true) == true
                         val shownAt = remember(second) { android.os.SystemClock.uptimeMillis() }
-                        second?.let { GlassPill(it, live, if (undo) undoM.anchorRect("undo") else quietM, d) {
+                        second?.let { GlassPill(it, live, if (undo) undoM.anchorRect("undo") else cancelM, d) {
                             if (!undo || android.os.SystemClock.uptimeMillis() - shownAt >= 400) intents.cancel() } }
                         GoldPill(ok, live && (selected != null || okOn), lowerM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }, d, padKey = padX != null, maxW = goldMax) {
                             if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok()
@@ -758,16 +772,30 @@ fun ForgeBoard(
             // LB/RB step through your hand (lifting each card: on a dual screen's bottom, or the table's own fan); RT is the gold button
             // (pass, resolve, confirm), LT the quiet one (cancel) — specs/dual-screen-native.md's match map.
             val padGold = padX
+            val castCancel = padAsking && st.buttons.cancelEnabled
+            // The stops of the target walk: target cards (theirs, then yours), target players, then the Cancel pill when it is shown.
+            val targetStops = {
+                val sel = st.selection
+                sel.targetCards.mapNotNull { TableZones.theirs[it] } + sel.targetCards.mapNotNull { TableZones.mine[it] } +
+                    sel.players.filter { it in sel.targetPlayers }.sortedBy { it == st.viewer }.mapNotNull { TableZones.orbs[it] } +
+                    listOfNotNull(cancelFocus.takeIf { st.waitingOnMe && cancelLabel(st) != null })
+            }
+            val stopsNow by androidx.compose.runtime.rememberUpdatedState(targetStops)
+            // Only while the ring is on the table (or nowhere): an open menu, dock or card keeps its own d-pad.
+            fun steerTargets(step: Int): Boolean = if (TablePad.held || (PadPrompts.anyFocus && !TableZones.ringIn)) false else TableZones.steer(stopsNow(), step)
             PadScreen(PadActs(x = padX, start = PadAct("Menu") { if (menu != null) menu.open = !menu.open else onMenu() },
                 // On two screens d-pad left/right on the hand chip already walks the hand, so the shoulders jump between zones instead.
-                tabs = if (dual) ({ step: Int -> TableZones.jump(step) }) else if (hand.isEmpty()) null else ({ step: Int ->
+                // While targets are asked they walk the legal targets only (spec "Match, targeting").
+                tabs = if (targeting) ({ step: Int -> steerTargets(step) }) else if (dual) ({ step: Int -> TableZones.jump(step) }) else if (hand.isEmpty()) null else ({ step: Int ->
                     val i = hand.indexOfFirst { it.id == selectedHand }
                     val next = if (i < 0) (if (step > 0) 0 else hand.lastIndex) else (i + step).coerceIn(0, hand.lastIndex)
-                    onSelectHand(hand[next].id) }), tabsLabel = if (dual) "Zone" else "Hand",
-                // RT (Randall 9 Nov): between your hand and the field; X is already the gold button (pass). LT cancels.
-                page = if (dual) ({ step: Int -> if (step > 0) TableZones.handOrField() else if (live && st.buttons.cancelEnabled) intents.cancel() })
-                    else if (!live) null else ({ step: Int -> if (step > 0) padGold?.run?.invoke() else if (st.buttons.cancelEnabled) intents.cancel() }),
-                pageLabel = if (dual) (if (live && st.buttons.cancelEnabled) "Cancel · Hand/Field" else "Hand / Field") else if (st.buttons.cancelEnabled) "Cancel / Pass" else "Pass"))
+                    onSelectHand(hand[next].id) }), tabsLabel = if (targeting) "Targets" else if (dual) "Zone" else "Hand",
+                // RT (Randall 9 Nov): between your hand and the field; X is already the gold button (pass). LT cancels only a cast you
+                // started, while it asks for targets or mana (spec "Match, targeting: LT cancel"), on a fresh press. At plain priority
+                // Forge's cancel is End turn or Undo, and LT ended the turn or took a land back with no word (live 0.4.57): there it does nothing.
+                page = if (dual) ({ step: Int -> if (step > 0) TableZones.handOrField() else if (castCancel && PadPrompts.keyRepeat == 0) intents.cancel() })
+                    else if (!live) null else ({ step: Int -> if (step > 0) padGold?.run?.invoke() else if (castCancel && PadPrompts.keyRepeat == 0) intents.cancel() }),
+                pageLabel = if (dual) (if (castCancel) "Cancel cast · Hand/Field" else "Hand / Field") else if (castCancel) "Cancel cast / Pass" else "Pass"))
             // V4 a controller's cast: what Forge asks next takes the ring. While it asks for targets, the first legal one (the
             // opponent's cards first, then a player), where A picks; while it asks for mana, a source that pays, where A taps it
             // (X still pays automatically). RT finds the same spot; when the cast is done the ring goes back to the hand chip.
@@ -777,7 +805,8 @@ fun ForgeBoard(
                     !live || st.prompt != null -> null
                     st.inputType == "InputSelectTargets" -> sel.targetCards.firstNotNullOfOrNull { TableZones.theirs[it] }
                         ?: sel.targetCards.firstNotNullOfOrNull { TableZones.mine[it] }
-                        ?: sel.players.sortedBy { it == st.viewer }.firstNotNullOfOrNull { TableZones.orbs[it] }
+                        // Only a player who is a target: an orb that is not one cannot take the ring (live 0.4.57).
+                        ?: sel.players.filter { it in sel.targetPlayers }.sortedBy { it == st.viewer }.firstNotNullOfOrNull { TableZones.orbs[it] }
                     st.inputType?.startsWith("InputPayMana") == true -> sel.actionable.ifEmpty { sel.cards }.firstNotNullOfOrNull { TableZones.mine[it] }
                     else -> null
                 }
@@ -798,13 +827,22 @@ fun ForgeBoard(
                     intents.ok()
                 }
             }
-            val padAsking = live && st.prompt == null && (st.inputType == "InputSelectTargets" || st.inputType?.startsWith("InputPayMana") == true)
-            val padJumped = remember { booleanArrayOf(false) }
+            // The d-pad on a target prompt (live 0.4.57: a spatial walk reached the menu and the emblems): the legal targets in
+            // padAsk's order, then the visible Cancel pill, round again. One stop refusing the ring is passed over.
+            androidx.compose.runtime.DisposableEffect(targeting) {
+                val s: (Int) -> Boolean = { k -> steerTargets(k) }
+                if (targeting) PadPrompts.steer = s
+                onDispose { if (PadPrompts.steer === s) PadPrompts.steer = null }
+            }
             LaunchedEffect(padAsking, st.inputType) {
-                if (!Pad.connected.value || TablePad.held) return@LaunchedEffect
+                if (!Pad.connected.value || TablePad.held) {
+                    if (padAsking) android.util.Log.i("PadA", "ask jump skipped held=${TablePad.held} connected=${Pad.connected.value}")
+                    return@LaunchedEffect
+                }
                 androidx.compose.runtime.withFrameNanos { }
-                if (padAsking) padAsk()?.let { r -> if (runCatching { r.requestFocus() }.isSuccess) { TableZones.at = 1; padJumped[0] = true } }
-                else if (padJumped[0]) { padJumped[0] = false; TableZones.hand?.let { r -> if (runCatching { r.requestFocus() }.isSuccess) TableZones.at = 0 } }
+                if (padAsking) TableZones.toAsk("cast")
+                // The cast is done: back to the hand chip, put there by the table, so it lifts nothing (live 0.4.57 lifted card 1).
+                else if (TableZones.jumped) { TableZones.jumped = false; TableZones.toHand() }
             }
             if (dual) { val goldAct = padX; BottomScreen { MatchBottom(st, hand, (selectedHand ?: discardWalk.takeIf { discardAsk })?.let { id -> hand.firstOrNull { it.id == id } }, goldAct, fan, onInspect, afk) } }
             // With the bottom screen up the hand chip sits where the line would be: the line goes just above the chip, high enough
@@ -1550,8 +1588,48 @@ internal object TableZones {
     var ask: (() -> FocusRequester?)? = null
     /** RT: from the hand to what the table asks for, else your board; from anywhere else back to the hand. */
     fun handOrField() {
-        val r = if (at == 0) (ask?.invoke() ?: lastMine?.let { mine[it] } ?: mine.values.firstOrNull()) else hand
-        if (r != null && runCatching { r.requestFocus() }.isSuccess) at = if (at == 0) 1 else 0
+        if (at != 0) { toHand(); return }
+        val r = ask?.invoke() ?: lastMine?.let { mine[it] } ?: mine.values.firstOrNull()
+        // Live 0.4.57: the no-argument requestFocus() can't refuse, so a refused jump still counted; only a real move does now.
+        if (r != null && take(r)) { if (at == 0) at = 1 }
+        android.util.Log.i("PadA", "hand or field target=${r != null} at=$at held=${TablePad.held} connected=${Pad.connected.value} anyFocus=${PadPrompts.anyFocus}")
+    }
+    /** The ring took [r]: the focus call's own answer, never "it didn't throw". */
+    private fun take(r: FocusRequester): Boolean {
+        PadPrompts.inputModes?.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard)
+        return runCatching { r.requestFocus(androidx.compose.ui.focus.FocusDirection.Enter) }.getOrDefault(false)
+    }
+    /** The ring has gone to what the cast asks for (V4); when the cast is done it goes back to the hand chip. */
+    var jumped = false
+    /** The ring is somewhere on the board. */
+    var ringIn = false
+    /** V4: the ring to what the table asks for (a legal target, else a mana source). A card sets [at] itself; an orb or pill is 1. */
+    fun toAsk(why: String): Boolean {
+        val r = ask?.invoke()
+        val ok = r != null && take(r)
+        if (ok) { jumped = true; if (at == 0) at = 1; TablePad.last = r }
+        android.util.Log.i("PadA", "ask jump ($why) target=${r != null} ok=$ok held=${TablePad.held} connected=${Pad.connected.value} anyFocus=${PadPrompts.anyFocus}")
+        return ok
+    }
+    /** The ring back on the hand chip, put there by the table: it lifts nothing (live 0.4.57: it lifted card 1). */
+    fun toHand(): Boolean {
+        val r = hand ?: return false
+        TablePad.autoRing = true
+        val ok = take(r)
+        TablePad.autoRing = false
+        if (ok) at = 0
+        return ok
+    }
+    /** One step along [stops] from where the ring is (from anywhere else, the first stop); a stop that refuses is passed over. */
+    fun steer(stops: List<FocusRequester>, step: Int): Boolean {
+        if (stops.isEmpty()) return false
+        val i = stops.indexOf(TablePad.last)
+        for (k in 1..stops.size) {
+            val r = stops[if (i < 0) k - 1 else Math.floorMod(i + step * k, stops.size)]
+            if (take(r)) { jumped = true; if (at == 0) at = 1; TablePad.last = r; return true }
+        }
+        android.util.Log.i("PadA", "target walk: no stop took the ring (${stops.size})")
+        return false
     }
     fun jump(step: Int) {
         val order = listOf(0, 1, 2)
@@ -1563,7 +1641,7 @@ internal object TableZones {
                 1 -> (lastMine?.let { mine[it] } ?: mine.values.firstOrNull())
                 else -> (lastTheirs?.let { theirs[it] } ?: theirs.values.firstOrNull())
             }
-            if (r != null && runCatching { r.requestFocus() }.isSuccess) { at = z; return }
+            if (r != null && take(r)) { at = z; return }
         }
     }
 }
@@ -1578,6 +1656,8 @@ internal object TablePad {
     var castId: Int? = null
     /** The ring is being put on the hand chip by the table itself (not a d-pad press): it lifts nothing. */
     var autoRing = false
+    /** Where in the hand the last card A cast or played sat: the next lift starts there (live 0.4.57). -1 none yet. */
+    var handAt = -1
     fun restore() { if (held) { held = false; last?.let { runCatching { it.requestFocus(androidx.compose.ui.focus.FocusDirection.Enter) } } } }
 }
 

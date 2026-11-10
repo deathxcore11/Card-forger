@@ -121,6 +121,10 @@ object PadPrompts {
      */
     /** Where the ring goes first when nothing has it (the match table: the hand chip), else null for the screen's own order. */
     @Volatile var entry: (() -> Boolean)? = null
+    /** A walk of the screen's own (the table's legal targets, live 0.4.57): -1 up or left, +1 down or right. True when it moved the ring. */
+    @Volatile var steer: ((Int) -> Boolean)? = null
+    /** The repeat count of the pad key being handled, so a held trigger can't cancel twice. */
+    @Volatile var keyRepeat = 0
 
     fun enter(keyCode: Int): Boolean {
         if (anyFocus) return false
@@ -141,6 +145,10 @@ object PadPrompts {
      * otherwise keep them for its caret and trap it). Left and right go on to the focused thing (sliders, the pack's hand).
      */
     fun navigate(keyCode: Int): Boolean {
+        steer?.let { s ->
+            val k = when (keyCode) { KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_LEFT -> -1; KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT -> 1; else -> 0 }
+            if (k != 0 && runCatching { s(k) }.getOrDefault(false)) return true
+        }
         if (enter(keyCode)) return true
         val fm = focusManager ?: return false
         return when (keyCode) {
@@ -241,6 +249,7 @@ object PadPrompts {
             return true
         }
         if (!down) return true
+        keyRepeat = event.repeatCount
         when (code) {
             KeyEvent.KEYCODE_BUTTON_X -> if (event.repeatCount == 0) acts.x?.run?.invoke()
             KeyEvent.KEYCODE_BUTTON_L1 -> if (event.repeatCount == 0) acts.tabs?.invoke(-1)
