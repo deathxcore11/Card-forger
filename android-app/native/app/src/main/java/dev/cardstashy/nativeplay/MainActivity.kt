@@ -601,7 +601,7 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
         if (round == 0) LaunchedEffect(Unit) {
             // Art and engine load side by side; the beat holds at least 0.9 s so it reads as a beat, not a flicker.
             val minBeat = launch { delay(if ((pick as? Pick.Table)?.story != null) 0 else 900) }
-            QuickPlay.gateArt(context, s)
+            QuickPlay.gateArt(context, s, controller.firstHand)
             minBeat.join(); versus = false
         }
         LaunchedEffect(Unit) {

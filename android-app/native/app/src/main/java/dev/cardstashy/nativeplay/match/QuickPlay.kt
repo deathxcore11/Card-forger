@@ -134,12 +134,29 @@ object QuickPlay {
      * has its face decoded and its crop on disk, not after a fixed 3 or 8 s. 20 s is a safety cap with a connection (what misses
      * it draws its CardFrame and keeps loading); with no connection at all it passes at once on what the cache has.
      */
-    suspend fun gateArt(context: Context, s: Setup.Ready) {
+    suspend fun gateArt(context: Context, s: Setup.Ready, openingHand: kotlinx.coroutines.flow.Flow<List<String>?>? = null) {
         val online = runCatching { val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
             cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true }.getOrDefault(true)
-        warmArt(context, s, if (online) 20_000 else 800)
-        // Both decks' commanders and covers decoded ahead (their crops are what lands first on the felt and the crests).
+        if (!online) { warmArt(context, s, 800); s.faces.forEach { CardArt.decodeAhead(it) }; return }
+        // T1 (Thor run 10 Nov: 15 s of art before every new match): the gate waits only for what the first screen shows (both
+        // covers, the basic lands, your opening hand once Forge deals it); every other card keeps loading behind, and each one is
+        // decoded ahead the moment it reaches a hand, the stack or the command zone (decodeAhead), before it can land on the felt.
+        val t0 = SystemClock.elapsedRealtime(); val cap = 20_000L
+        fun left() = (cap - (SystemClock.elapsedRealtime() - t0)).coerceAtLeast(300)
+        CardArt.resolveMatch(s.rows)
+        val tLookup = SystemClock.elapsedRealtime() - t0
+        val names = s.rows.map { it.first }
+        val first = (s.faces + names.filter { dev.cardstashy.nativeplay.play.Decks.isBasicLand(it) }).distinct()
+        val n1 = CardArt.warm(context, first, left(), crops = s.faces, detach = true)
+        val tFirst = SystemClock.elapsedRealtime() - t0
+        val firstFrom = CardArt.lastWarm
+        // Then, behind: every face and battlefield crop of both decks (not awaited; the opening hand asked below joins it).
+        bg.launch { CardArt.warm(context, names, 60_000, diskCrops = names, progress = false); Log.i(TAG, "art behind: ${CardArt.lastBehind} in ${SystemClock.elapsedRealtime() - t0} ms") }
+        val hand = openingHand?.let { f -> kotlinx.coroutines.withTimeoutOrNull(left()) { f.first { it != null } } }
+        val n2 = if (hand.isNullOrEmpty()) 0 else CardArt.warm(context, hand, left(), crops = hand, detach = true)
         s.faces.forEach { CardArt.decodeAhead(it) }
+        Log.i(TAG, "art gate: ${s.rows.size} rows, lookup $tLookup ms, first screen ${first.size} cards loaded=$n1 at $tFirst ms ($firstFrom), " +
+            "opening hand ${hand?.size ?: 0} loaded=$n2 (${if (n2 != 0) CardArt.lastWarm else "-"}), gate ${SystemClock.elapsedRealtime() - t0} ms")
     }
 
     suspend fun warmArt(context: Context, s: Setup.Ready, budgetMs: Long) {

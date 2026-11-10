@@ -50,7 +50,9 @@ object CardArt {
      * included, so every request names the app. 0.2.0 shipped without this and no card loaded.
      */
     val client: OkHttpClient by lazy {
-        OkHttpClient.Builder().addNetworkInterceptor { chain ->
+        // OkHttp lets 5 calls per host run at once by default: a match's 300 pictures all come from one host, so the art
+        // gate's 12 slots were really 5 (T1, Thor run 10 Nov: 15 s of art). One HTTP/2 connection carries them all.
+        OkHttpClient.Builder().dispatcher(okhttp3.Dispatcher().apply { maxRequests = 64; maxRequestsPerHost = 16 }).addNetworkInterceptor { chain ->
             chain.proceed(chain.request().newBuilder().header("User-Agent", UA).header("Accept", "image/avif,image/webp,image/*,*/*;q=0.8").build())
         }.build()
     }
@@ -151,8 +153,10 @@ object CardArt {
         val missing = synchronized(index) { rows.filter { (name, r) -> pinId(r)?.let { !index.containsKey("#$it") } ?: (index[name.lowercase()] == null) } }
             .distinctBy { (n, r) -> pinId(r) ?: n.lowercase() }
         if (missing.isEmpty()) return@withContext
-        var added = false
-        for (chunk in missing.chunked(75)) {
+        val addedAny = java.util.concurrent.atomic.AtomicBoolean(false)
+        // The 75-card calls go side by side (T1: they went one after another), at most three at once.
+        val calls = Semaphore(3)
+        coroutineScope { missing.chunked(75).map { chunk -> async { calls.withPermit {
             val ids = chunk.map { (n, r) -> identifier(r, n) }
             val body = JsonObject().apply { add("identifiers", JsonArray().apply { ids.forEach { add(it) } }) }.toString()
             // A dropped or rate-limited call (two chunks back to back) is asked once more after a breath, so a deck's second
@@ -163,7 +167,7 @@ object CardArt {
                 found = try { Http.call("POST", "https://api.scryfall.com/cards/collection", mapOf("User-Agent" to UA), body, timeoutMs = 10000)?.asJsonObject?.getAsJsonArray("data") } catch (_: Exception) { null }
                 if (found != null) break
             }
-            if (found == null) continue
+            if (found == null) return@withPermit
             val cards = found.mapNotNull { it as? JsonObject }
             synchronized(index) {
                 chunk.forEachIndexed { i, (name, _) ->
@@ -179,10 +183,11 @@ object CardArt {
                     val pin = want.get("id")?.asString?.lowercase()?.takeIf { it.equals(card.get("id")?.asString, true) }
                     if (pin != null) { index["#$pin"] = img; index.putIfAbsent(name.lowercase(), img) } else index[name.lowercase()] = img
                     card.let { names(it) }.forEach { n -> index.putIfAbsent(n.lowercase(), img) }
-                    added = true
+                    addedAny.set(true)
                 }
             }
-        }
+        } } }.awaitAll() }
+        var added = addedAny.get()
         // A printing that Scryfall could not match by id or number falls back to its name once.
         val still = missing.filter { (n, _) -> url(n) == null }
         if (still.isNotEmpty()) for (chunk in still.chunked(75)) {
@@ -283,6 +288,11 @@ object CardArt {
     val artMissAtShow = java.util.concurrent.atomic.AtomicInteger(0)
     fun missAtShow(name: String) { android.util.Log.i("CardArt", "artMissAtShow #${artMissAtShow.incrementAndGet()}: $name") }
 
+    /** The last finished warm: how many pictures and where they came from (memory_cache, disk, network, failed), for the logs. */
+    @Volatile var lastWarm = ""
+    /** The same for the last background warm (progress = false). */
+    @Volatile var lastBehind = ""
+
     /** How far the match's art gate has got (0..1), for the matchup screen's "Preparing the table" bar. */
     val warmProgress = kotlinx.coroutines.flow.MutableStateFlow(0f)
 
@@ -296,16 +306,21 @@ object CardArt {
      * downloading after it (a match's own cards), instead of being dropped.
      */
     suspend fun warm(context: Context, names: Collection<String>, timeoutMs: Long, crops: Collection<String> = emptyList(),
-                     diskCrops: Collection<String> = emptyList(), detach: Boolean = false): Int {
+                     diskCrops: Collection<String> = emptyList(), detach: Boolean = false, progress: Boolean = true): Int {
         val gate = Semaphore(12)
+        // Battlefield crops that only go onto disk run in their own lane, so they never hold a slot a face is waiting for (T1).
+        val diskGate = Semaphore(6)
         val faces = names.mapNotNull { url(it) }.distinct()
         // The versus plates' covers first (high priority, spec 12a), then every face, then every battlefield crop onto disk.
-        val jobs = crops.mapNotNull { url(it, crop = true) }.distinct().map { request(context, it, true) } + faces.map { request(context, it, false) } +
-            diskCrops.mapNotNull { url(it, crop = true) }.distinct().filter { it !in faces }.map { diskOnly(context, it) }
+        val jobs = crops.mapNotNull { url(it, crop = true) }.distinct().map { request(context, it, true) to gate } + faces.map { request(context, it, false) to gate } +
+            diskCrops.mapNotNull { url(it, crop = true) }.distinct().filter { it !in faces }.map { diskOnly(context, it) to diskGate }
         val done = java.util.concurrent.atomic.AtomicInteger(0)
-        warmProgress.value = if (jobs.isEmpty()) 1f else 0f
-        suspend fun all() = coroutineScope { jobs.map { r -> async(Dispatchers.IO) { gate.withPermit { ((loader.execute(r) as? SuccessResult) != null).also {
-            warmProgress.value = done.incrementAndGet().toFloat() / jobs.size } } } }.awaitAll().count { it } }
+        val from = java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicInteger>()
+        if (progress) warmProgress.value = if (jobs.isEmpty()) 1f else 0f
+        suspend fun all() = coroutineScope { jobs.map { (r, lane) -> async(Dispatchers.IO) { lane.withPermit { (loader.execute(r) as? SuccessResult).let { ok ->
+            from.getOrPut(ok?.dataSource?.name ?: "FAILED") { java.util.concurrent.atomic.AtomicInteger() }.incrementAndGet()
+            done.incrementAndGet().let { n -> if (progress) warmProgress.value = n.toFloat() / jobs.size }; ok != null } } } }.awaitAll().count { it }
+            .also { val t = "${jobs.size} pictures " + from.entries.sortedBy { it.key }.joinToString(" ") { "${it.key.lowercase()}=${it.value.get()}" }; if (progress) lastWarm = t else lastBehind = t } }
         if (!detach) return withTimeoutOrNull(timeoutMs) { all() } ?: -1
         val job = bg.async { all() }
         return withTimeoutOrNull(timeoutMs) { job.await() } ?: -1

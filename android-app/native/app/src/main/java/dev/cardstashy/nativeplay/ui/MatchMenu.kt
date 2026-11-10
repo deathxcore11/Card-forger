@@ -72,6 +72,8 @@ class MatchMenu(input: String?, val onConcede: () -> Unit, val onLeave: () -> Un
 
     var open by mutableStateOf(false)
     var history by mutableStateOf(false)
+    /** "concede" or "leave" while its confirm is up: leaving a match always asks first (Thor run 10 Nov, pad presses left a match). */
+    var ask by mutableStateOf<String?>(null)
     /** The match told in plain words (HistoryPanel's Story), kept for the whole match. */
     val story = Story()
     /** "deck" or "opponent" while the tracker shows (cardstashy.tracker), else null. */
@@ -139,8 +141,8 @@ internal fun MenuPanel(menu: MatchMenu, stackCount: Int, d: Du, x: Dp, y: Dp) = 
     val items = buildList {
         if (menu.deck.isNotEmpty()) add(Item("Deck tracker", menu.tracker != null, false) { menu.showTracker(if (menu.tracker != null) null else "deck") })
         add(Item("History & stack" + if (stackCount > 0) " · $stackCount" else "", menu.history, false) { menu.history = !menu.history })
-        add(Item("Concede", false, true) { menu.open = false; menu.onConcede() })
-        add(Item("Return to Play setup", false, false) { menu.open = false; menu.onLeave() })
+        add(Item("Concede", false, true) { menu.open = false; menu.ask = "concede" })
+        add(Item("Return to Play setup", false, false) { menu.open = false; menu.ask = "leave" })
     }
     if (dual) BottomScreen {
         ShowcaseCase("Match", "Menu", scroll = false) {
@@ -173,8 +175,8 @@ internal fun MenuPanel(menu: MatchMenu, stackCount: Int, d: Du, x: Dp, y: Dp) = 
         }
         if (menu.deck.isNotEmpty()) item("Deck tracker", menu.tracker != null, TRACKER_ICON, focus = first) { menu.showTracker(if (menu.tracker != null) null else "deck") }
         item("History & stack" + if (stackCount > 0) " · $stackCount" else "", menu.history, focus = if (menu.deck.isEmpty()) first else null) { menu.history = !menu.history }
-        item("Concede") { menu.open = false; menu.onConcede() }
-        item("Return to Play setup") { menu.open = false; menu.onLeave() }
+        item("Concede") { menu.open = false; menu.ask = "concede" }
+        item("Return to Play setup") { menu.open = false; menu.ask = "leave" }
     }
 }
 
@@ -251,4 +253,14 @@ internal fun DeckTracker(st: MatchState, menu: MatchMenu, H: Dp, d: Du, x: Dp, t
         } else if (seen.isEmpty()) Text("Nothing shown yet.", style = sans(sp(12.5f), FontWeight.Medium, Color(0xFF9AA2B1)), modifier = Modifier.padding(horizontal = 12.du, vertical = 14.du))
         else Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(4.du)) { seen.values.forEach { (v, n) -> row(v.name, v.cost, n, "") } }
     }
+}
+
+/** The confirm behind Concede and Return to Play setup: one sheet, Cancel and the action; X does it, B cancels. */
+@Composable
+fun MatchLeaveConfirm(menu: MatchMenu) {
+    val k = menu.ask ?: return
+    val concede = k == "concede"
+    RuleConfirm(text = if (concede) "The CPU wins this match." else "The match ends here and you go back to Play setup.",
+        action = if (concede) "Concede" else "Leave", title = if (concede) "Concede the match?" else "Leave the match?", danger = true,
+        onAction = { menu.ask = null; if (concede) menu.onConcede() else menu.onLeave() }, onCancel = { menu.ask = null })
 }

@@ -154,6 +154,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
 
     LaunchedEffect(inspect != null) { controller.hold("inspect", inspect != null) }
     LaunchedEffect(menu) { controller.hold("menu", menu) }
+    LaunchedEffect(matchMenu.ask) { controller.hold("leave", matchMenu.ask != null) }
     val afk by controller.afkNote.collectAsState()
     // A line from the table itself ("Block not assigned. Try again."), the site's localError.
     val note by controller.note.collectAsState()
@@ -164,7 +165,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     // Only with a pad and nothing else up; a phone keeps its back exactly as it was. Overlays' own B handlers come later and win.
     val padOn by Pad.connected.collectAsState()
     val bareTable = padOn && stage == Stage.PLAYING && inspect == null && !menu && !matchMenu.open && !matchMenu.history &&
-        shown?.prompt == null && !TableEmotes.menuOpen
+        shown?.prompt == null && !TableEmotes.menuOpen && matchMenu.ask == null
     androidx.activity.compose.BackHandler(bareTable) { matchMenu.open = true }
     if (bareTable) PadScreen(PadActs(b = "Menu"))
     // Any touch of the table says you are here (the clock's missed-turn count clears); the touch still reaches the table.
@@ -203,7 +204,8 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
       }
         // Two screens: a card you look at opens on the bottom screen, so the table stays in full view on top (B closes it).
         inspect?.let { c -> if (DualScreen.active) BottomScreen { CardInspect(c, shown?.viewer) { inspect = null } } else CardInspect(c, shown?.viewer) { inspect = null } }
-        if (menu) Menu(onConcede = { menu = false; controller.concede() }, onLeave = { menu = false; onHome() }, onClose = { menu = false })
+        if (menu) Menu(onConcede = { menu = false; matchMenu.ask = "concede" }, onLeave = { menu = false; matchMenu.ask = "leave" }, onClose = { menu = false })
+        MatchLeaveConfirm(matchMenu)
         if (stage == Stage.FINISHED) shown?.let { Result(it, audio, onHome, onRematch, resultNote) }
         if (stage == Stage.FAILED) Failed(failure ?: "The match stopped.", onHome)
     }

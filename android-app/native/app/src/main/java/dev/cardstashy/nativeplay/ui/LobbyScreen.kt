@@ -100,6 +100,7 @@ import dev.cardstashy.nativeplay.match.QuickOpponent
 import dev.cardstashy.nativeplay.match.QuickPower
 import dev.cardstashy.nativeplay.play.MatchRecord
 import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.async
 import dev.cardstashy.nativeplay.play.CardFacts
 import kotlinx.coroutines.delay
 import androidx.compose.ui.platform.LocalDensity
@@ -308,6 +309,8 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     LaunchedEffect(state?.has("wallet") == true) { if (state?.has("wallet") == true && online) TableDecks.loadFree() }
     val decks = remember(state, workspace, facts, free) { TableDecks.list(state, workspace ?: emptyList(), typeOf, free.orEmpty()) }
     val locked = remember(decks) { TableDecks.locked(decks) }
+    /** The CPU deck the lobby is choosing ahead for (your deck, format to level). */
+    var quickPre by remember { mutableStateOf<Triple<SeatDeck, Pair<String, String>, kotlinx.coroutines.Deferred<QuickOpponent.Result?>>?>(null) }
     // A deck page's Practice: seat that deck as yours (selectDeck(id,'player') leaves your seat inspected).
     LaunchedEffect(model.pendingDeck, decks) {
         val id = model.pendingDeck ?: return@LaunchedEffect
@@ -347,8 +350,28 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
             (if (sources.entries("precons", format).isEmpty()) listOf(scope.launch { sources.load(context, "precons", format, signedIn) }) else emptyList())
         withTimeoutOrNull(4000) { jobs.joinAll() }
     }
+    /** A.playFindOpponent: the CPU deck for [you] in [format] at [level] (Power-matched, streak-aware). Throws NoOpponent. */
+    suspend fun chooseQuick(you: SeatDeck, format: String, level: String): QuickOpponent.Result {
+        quickSources(format)
+        val candidates = quickPool(format)
+        val streak = MatchRecord.quickStreak(context, session?.userId, format)
+        // The decks are copied and the engine is asked once for every name in every deck, never on the main thread:
+        // right after an update Forge can still be loading, and Commander has hundreds of lists to check (the 0.4.12 freeze).
+        return withContext(Dispatchers.Default) {
+            val names = java.util.IdentityHashMap<JsonObject, List<String>>()
+            (listOf(you.raw) + candidates).forEach { d -> names[d] = EngineNames.names(EngineNames.deck(d)).toList() }
+            val unknown = ForgeService.unknownNames(names.values.flatten().toSet()).toSet()
+            val mine = names.getValue(you.raw).filter { it in unknown }
+            if (mine.isNotEmpty()) throw QuickOpponent.NoOpponent(engineMissingText("Your deck", mine.distinct().sorted()))
+            // Power reads the lobby hasn't finished get ten seconds; any still out are unrated (the site's random fallback).
+            val deadline = System.currentTimeMillis() + 10_000
+            QuickOpponent.choose(you.raw, candidates, eligible = { d -> forgeCpuDeckComplete(d) && names[d].orEmpty().none { it in unknown } },
+                difficulty = level, streak = streak, rate = { d -> QuickPower.rate(format, d, deadline) })
+        }
+    }
+
     // Quick Play reads the pool's Power while you choose (the site has it in its catalog already), so Play finds a matched deck at once.
-    LaunchedEffect(m.quick, m.format, m.player, signedIn, workspace) {
+    LaunchedEffect(m.quick, m.format, m.player, signedIn, workspace, m.difficulty) {
         if (!m.quick || !signedIn || !online) return@LaunchedEffect
         delay(600)
         val format = m.format
@@ -356,6 +379,17 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
         val pool = listOfNotNull(m.player?.raw) + quickPool(format).filter { it.get("format")?.takeIf { f -> f.isJsonPrimitive }?.asString == format }
         // Each deck is serialized and hashed for its key: not on the main thread.
         withContext(Dispatchers.Default) { QuickPower.warm(format, pool) }
+        // T1 (Thor run 10 Nov: "Finding a CPU deck…" 15 s, then 15 s of art): the CPU deck is chosen as soon as yours is, and its
+        // pictures start loading here, so Play opens the matchup at once. Kept hidden until the match, as before.
+        val you = m.player ?: return@LaunchedEffect
+        if (m.quickMatch != null || !TableDecks.quickReady(you.id, you.source == "saved", locked)) return@LaunchedEffect
+        val level = m.difficulty
+        val job = scope.async { runCatching { chooseQuick(you, format, level) }.getOrNull() }
+        quickPre = Triple(you, format to level, job)
+        val r = job.await() ?: return@LaunchedEffect
+        if (m.player === you && m.format == format && m.difficulty == level && m.quickMatch == null) {
+            m.quickMatch = r; dev.cardstashy.nativeplay.match.QuickPlay.warmDeck(context, r.deck, 1)
+        }
     }
 
     fun selectDeck(d: TableDecks.Deck) {
@@ -457,23 +491,9 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
                 m.quickBusy = true; m.quickError = null
                 scope.launch {
                     try {
-                        val format = m.format; val level = m.difficulty
-                        quickSources(format)
-                        val candidates = quickPool(format)
-                        val streak = MatchRecord.quickStreak(context, session?.userId, format)
-                        // The decks are copied and the engine is asked once for every name in every deck, never on the main thread:
-                        // right after an update Forge can still be loading, and Commander has hundreds of lists to check (the 0.4.12 freeze).
-                        val r = withContext(Dispatchers.Default) {
-                            val names = java.util.IdentityHashMap<JsonObject, List<String>>()
-                            (listOf(you.raw) + candidates).forEach { d -> names[d] = EngineNames.names(EngineNames.deck(d)).toList() }
-                            val unknown = ForgeService.unknownNames(names.values.flatten().toSet()).toSet()
-                            val mine = names.getValue(you.raw).filter { it in unknown }
-                            if (mine.isNotEmpty()) throw QuickOpponent.NoOpponent(engineMissingText("Your deck", mine.distinct().sorted()))
-                            // Power reads the lobby hasn't finished get ten seconds; any still out are unrated (the site's random fallback).
-                            val deadline = System.currentTimeMillis() + 10_000
-                            QuickOpponent.choose(you.raw, candidates, eligible = { d -> forgeCpuDeckComplete(d) && names[d].orEmpty().none { it in unknown } },
-                                difficulty = level, streak = streak, rate = { d -> QuickPower.rate(format, d, deadline) })
-                        }
+                        // The lobby usually chose the CPU deck already (T1, below); a choice still running is awaited, not started twice.
+                        val pre = quickPre?.takeIf { it.first === you && it.second == m.format to m.difficulty }?.third
+                        val r = pre?.await() ?: chooseQuick(you, m.format, m.difficulty)
                         m.quickMatch = r; m.opponent = SeatDeck(r.deck, "quick")
                         onStart(Pick.Table(you.raw, you.name, m.format, factName(you.raw), r.deck, "Medium", quick = true, matchup = r.line))
                     } catch (e: QuickOpponent.NoOpponent) { m.quickError = e.message } catch (e: Exception) { m.quickError = e.message ?: "Couldn’t find a CPU deck." }

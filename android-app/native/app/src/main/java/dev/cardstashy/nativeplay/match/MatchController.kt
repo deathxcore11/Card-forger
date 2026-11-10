@@ -187,6 +187,8 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     /** You have answered the opening hand (keep, or the cards to bottom). Until then no later snapshot is shown, in every mode. */
     @Volatile private var answeredMulligan = keepsOpeningHand
     private val snapshots = Channel<MatchState>(Channel.UNLIMITED)
+    /** Your opening hand's names as soon as Forge deals it (read off the polled board, before the table shows it): the art gate waits for these. */
+    private val _firstHand = MutableStateFlow<List<String>?>(null); val firstHand: StateFlow<List<String>?> = _firstHand
     private var skip: CompletableDeferred<Unit>? = null
     private var lastSeq = 0L
     private var poller: Job? = null
@@ -235,6 +237,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                     if (st.revision != lastRev || prev == null || prev.busy != st.busy || prev.inputType != st.inputType || prev.prompt?.id != st.prompt?.id) {
                         if (st.revision != lastRev) revisionAt = SystemClock.elapsedRealtime()
                         TableLog.board("read", st, latest?.revision)
+                        if (_firstHand.value == null) runCatching { st.me.hand.map { it.name }.filter { it.isNotBlank() } }.getOrNull()?.takeIf { it.isNotEmpty() }?.let { _firstHand.value = it }
                         lastRev = st.revision; latest = st; queue.incrementAndGet(); snapshots.trySend(st)
                     }
                     if (st.status == "failed" || st.finished) { if (st.finished) break }
