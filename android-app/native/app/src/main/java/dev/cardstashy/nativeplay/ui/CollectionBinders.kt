@@ -443,14 +443,8 @@ private fun SmallButton(label: String, icon: SiteSvg?, gold: Boolean, enabled: B
 
 /** .btn.ghost: the glass ghost, at least [minW] wide and 44 tall, 16 in, 15 / 700; dimmed (45 %) and still while it can't be used. */
 @Composable
-private fun GhostButton(label: String, modifier: Modifier = Modifier, minW: Dp = 0.dp, enabled: Boolean = true, desc: String = "", fs: Float = 15f, onClick: () -> Unit) {
-    Box(modifier.widthIn(min = minW).heightIn(min = 44.dp).alpha(if (enabled) 1f else .45f).siteGlassField(11.dp).clip(RoundedCornerShape(11.dp))
-        .clickable(enabled = enabled, onClick = onClick)
-        .semantics { role = Role.Button; if (desc.isNotEmpty()) contentDescription = desc; if (!enabled) disabled() }
-        .padding(horizontal = 17.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
-        Text(label, style = bt(fs, 700, BInk, 1.45f), maxLines = 1)
-    }
-}
+private fun GhostButton(label: String, modifier: Modifier = Modifier, minW: Dp = 0.dp, enabled: Boolean = true, desc: String = "", @Suppress("UNUSED_PARAMETER") fs: Float = 15f, onClick: () -> Unit) =
+    dev.cardstashy.nativeplay.ui.GhostButton(label, modifier.widthIn(min = minW).semantics { if (desc.isNotEmpty()) contentDescription = desc; if (!enabled) disabled() }, enabled = enabled, pad = 17.dp, onClick = onClick)
 
 // ---------------------------------------------------------------- an open binder
 

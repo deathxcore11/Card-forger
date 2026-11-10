@@ -365,16 +365,7 @@ private fun heroWidthDp(size: IntSize, d: androidx.compose.ui.unit.Density) = wi
 
 /** The screen's one gold primary (0a rule 3): gold like metal, ink text, press = scale. */
 @Composable
-fun GoldButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val press = remember { MutableInteractionSource() }
-    val pressed by press.collectIsPressedAsState()
-    val k by animateFloatAsState(if (pressed) .96f else 1f, Site.spring(), label = "press")
-    Box(modifier.scale(k).height(44.dp).clip(CircleShape)
-        .background(Brush.verticalGradient(listOf(Color(0xFFF2CF7E), Site.Gold, Color(0xFFC9963A))))
-        .clickable(press, dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onClick).padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
-        Text(label, style = Site.Button.copy(color = Site.GoldInk), maxLines = 1, softWrap = false)
-    }
-}
+fun GoldButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) = GoldCta(label, modifier, onClick = onClick)
 
 // ---------------------------------------------------------------- page header (sub-pages)
 

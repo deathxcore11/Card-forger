@@ -418,43 +418,10 @@ internal fun PurseRow(p: PlayMath.Purse, onCoins: () -> Unit, onSeals: () -> Uni
 
 // ---------------------------------------------------------------- gold CTA (pl-mode-cta / pe-buy / pd-claim)
 
-@Composable
-fun GoldCta(label: String, modifier: Modifier = Modifier, enabled: Boolean = true, muted: Boolean = false, radius: Dp = 13.dp, leading: (@Composable () -> Unit)? = null, onClick: () -> Unit) {
-    val press = remember { MutableInteractionSource() }
-    val pressed by press.collectIsPressedAsState()
-    val k by animateFloatAsState(if (pressed) .96f else 1f, Site.spring(), label = "cta")
-    val shape = RoundedCornerShape(radius)
-    Row(modifier.scale(k).heightIn(min = 44.dp).testShadow(if (enabled) 10.dp else 0.dp, shape, spotColor = P.CtaBottom).clip(shape)
-        .background(if (enabled) Brush.verticalGradient(listOf(P.CtaTop, P.CtaBottom)) else if (muted) Brush.verticalGradient(listOf(Color(0xFFB3A88F), Color(0xFF8C8370))) else Brush.verticalGradient(listOf(Color(0xFF2A2620), Color(0xFF1C1A16))))
-        .border(1.dp, if (enabled) P.CtaEdge else if (muted) Color(0x55FFFFFF) else Color(0x33D6AD64), shape)
-        .let { if (enabled) it.clickable(press, dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onClick) else it }.padding(horizontal = 22.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
-        leading?.invoke()
-        Text(label, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, letterSpacing = .03.em, color = if (enabled) P.CtaInk else if (muted) Color(0xFF26221B) else Color(0x99D6AD64)), maxLines = 1, softWrap = false)
-    }
-}
-
 /** .btn.cs-plate: the bevelled gold plate with an inner line and diamonds either side of a Cinzel label (Story's Begin). */
 @Composable
-fun GoldPlate(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    val press = remember { MutableInteractionSource() }
-    val pressed by press.collectIsPressedAsState()
-    val k by animateFloatAsState(if (pressed) .96f else 1f, Site.spring(), label = "plate")
-    val shape = RoundedCornerShape(10.dp)
-    Box(modifier.scale(k).height(56.dp).testShadow(14.dp, shape, spotColor = Color(0xFF8A6A2A)).clip(shape)
-        .background(Brush.verticalGradient(listOf(Color(0xFFF4DA9C), Color(0xFFE2BC6C), Color(0xFFC9973F))))
-        .clickable(press, dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onClick).drawBehind {
-            val i = 4.dp.toPx()
-            drawRoundRect(Color(0x5E6B4515), Offset(i, i), Size(size.width - 2 * i, size.height - 2 * i), androidx.compose.ui.geometry.CornerRadius(7.dp.toPx()), style = Stroke(1.dp.toPx()))
-            drawLine(Color(0x99FFFFFF), Offset(10f, 1.5f), Offset(size.width - 10f, 1.5f), 1.dp.toPx())
-        }.padding(horizontal = 30.dp), contentAlignment = Alignment.Center) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Diamond(); Text(label, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 19.sp, letterSpacing = .08.em, color = Color(0xFF3A2708)), maxLines = 1); Diamond()
-        }
-    }
-}
+fun GoldPlate(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) = GoldCta(label, modifier, onClick = onClick)
 
-@Composable private fun Diamond() = Box(Modifier.size(7.dp).rotate(45f).background(Color(0xFF4A3410)))
 
 // ---------------------------------------------------------------- mode cards (pl-modes)
 

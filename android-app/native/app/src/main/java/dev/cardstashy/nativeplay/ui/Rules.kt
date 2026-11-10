@@ -82,6 +82,10 @@ object Rule {
         val CtaTop = androidx.compose.ui.graphics.Color(0xFFF2D18E)
         val CtaBottom = androidx.compose.ui.graphics.Color(0xFFC99A4B)
         val CtaInk = androidx.compose.ui.graphics.Color(0xFF1B1408)
+        /** The gold button's light top edge; then its muted form (disabled, over a light picture) and its off form (disabled). */
+        val CtaEdge = androidx.compose.ui.graphics.Color(0xFFF6DFA8)
+        val CtaMutedTop = androidx.compose.ui.graphics.Color(0xFFB3A88F); val CtaMutedBottom = androidx.compose.ui.graphics.Color(0xFF8C8370); val CtaMutedEdge = androidx.compose.ui.graphics.Color(0x55FFFFFF); val CtaMutedInk = androidx.compose.ui.graphics.Color(0xFF26221B)
+        val CtaOffTop = androidx.compose.ui.graphics.Color(0xFF2A2620); val CtaOffBottom = androidx.compose.ui.graphics.Color(0xFF1C1A16); val CtaOffEdge = androidx.compose.ui.graphics.Color(0x33D6AD64); val CtaOffInk = androidx.compose.ui.graphics.Color(0x99D6AD64)
     }
 
     /** Buttons are 44 tall (48 on a Thor case). */

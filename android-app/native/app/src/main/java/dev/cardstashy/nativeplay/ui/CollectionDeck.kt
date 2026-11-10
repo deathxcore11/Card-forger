@@ -783,14 +783,8 @@ private fun Diamond() {
 
 /** .btn.ghost: glass, 11 corners, 15 bold. */
 @Composable
-internal fun DeckGhost(label: String, modifier: Modifier = Modifier, minHeight: Dp = 44.dp, pad: Dp = 16.dp, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(11.dp)
-    Box(modifier.heightIn(min = minHeight).clip(shape).background(GlassFill).border(1.dp, GlassLine, shape)
-        .drawWithContent { drawContent(); drawRect(Color(0x12FFFFFF), size = Size(size.width, 1.dp.toPx())) }
-        .clickable(onClick = onClick).semantics { role = Role.Button }.padding(horizontal = pad), contentAlignment = Alignment.Center) {
-        Text(label, maxLines = 1, style = sans(15f, 700))
-    }
-}
+internal fun DeckGhost(label: String, modifier: Modifier = Modifier, minHeight: Dp = 44.dp, pad: Dp = 16.dp, onClick: () -> Unit) =
+    GhostButton(label, modifier, minHeight = minHeight, pad = pad, onClick = onClick)
 
 /** .btn (gold): 44 tall, 11 corners, 15 bold on the gold. */
 @Composable

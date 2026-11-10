@@ -725,13 +725,6 @@ fun SealMini(key: String, size: androidx.compose.ui.unit.Dp = 20.dp) = androidx.
     drawPath(star, Color(b))
 }
 
-@Composable
-fun GhostButton(label: String, modifier: Modifier = Modifier, enabled: Boolean = true, gold: Boolean = false, onClick: () -> Unit) {
-    Box(modifier.alpha(if (enabled) 1f else .45f).height(44.dp).clip(RoundedCornerShape(13.dp)).background(Color(0x0FFFFFFF))
-        .border(1.dp, if (gold) Color(0x80E8B95B) else Color(0x29FFFFFF), RoundedCornerShape(13.dp)).clickable(enabled = enabled, onClick = onClick).padding(horizontal = 16.dp),
-        contentAlignment = Alignment.Center) { Text(label, style = t(14f, FontWeight.Bold, if (gold) Site.Gold else Ink)) }
-}
-
 // ---------------------------------------------------------------- Play guide
 
 private val FORMATS = listOf("standard" to "Standard", "pioneer" to "Pioneer", "modern" to "Modern", "legacy" to "Legacy", "vintage" to "Vintage", "pauper" to "Pauper", "commander" to "Commander")
