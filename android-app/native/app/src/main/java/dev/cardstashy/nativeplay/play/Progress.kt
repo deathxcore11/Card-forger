@@ -63,6 +63,8 @@ object Progress {
     private val deedsScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO)
 
     private fun set(next: JsonObject) {
+        // E6a: an answer equal to what is already shown changes nothing, so the pages do not recompose and the file is not rewritten.
+        if (_state.value == next) return
         val before = _state.value?.get("counters")
         _state.value = next
         // Live toasts (app.js: every new server state is diffed): a Play answer that moved the counters refetches the deeds.
@@ -76,7 +78,8 @@ object Progress {
             Http.call(if (body == null) "GET" else "POST", "$SITE/api/progress/$path", mapOf("Authorization" to "Bearer $token"), body?.toString(), timeoutMs = timeoutMs)?.asJsonObject ?: JsonObject()
         } catch (e: Http.Failure) {
             val code = Regex("\"error\"\\s*:\\s*\"([^\"]+)\"").find(e.body)?.groupValues?.get(1) ?: "http_${e.status}"
-            throw Failure(code, MESSAGES[code] ?: "Play rewards are unavailable right now. Try again in a moment.")
+            // An answer with no words of its own still names itself (E5a), so a report or a screenshot says what the server said.
+            throw Failure(code, MESSAGES[code] ?: "Play rewards are unavailable right now. Try again in a moment. ($code)")
         } catch (e: Failure) { throw e } catch (e: Exception) {
             throw Failure("offline", "Couldn’t reach CardStashy. Check your connection.")
         }
@@ -222,10 +225,15 @@ object Progress {
     suspend fun open(id: String): JsonObject {
         val body = JsonObject().apply { addProperty("id", id); addProperty("tz", tz) }
         return try { run("open:$id", "open", body, timeoutMs = 60000) } catch (e: Failure) {
-            if (e.code !in setOf("offline", "cards_unavailable", "http_502", "http_503", "http_504", "http_500")) throw e
+            if (e.code !in setOf("offline", "cards_unavailable", "http_502", "http_503", "http_504", "http_500")) { reportOpen(id, e); throw e }
             kotlinx.coroutines.delay(1500)
-            run("open:$id", "open", body, timeoutMs = 60000)
+            try { run("open:$id", "open", body, timeoutMs = 60000) } catch (again: Failure) { reportOpen(id, again); throw again }
         }
+    }
+    /** E5a: a pack that would not open goes into the auto report with the server's own answer. */
+    private fun reportOpen(id: String, e: Failure) {
+        val set = (_state.value?.get("packs") as? JsonArray)?.firstNotNullOfOrNull { (it as? JsonObject)?.takeIf { o -> o.get("id")?.takeIf { v -> v.isJsonPrimitive }?.asString == id }?.get("set")?.takeIf { v -> v.isJsonPrimitive }?.asString }
+        runCatching { dev.cardstashy.nativeplay.FreezeReport.matchStuck("pack open failed", "set $set code ${e.code} message ${e.message}") }
     }
     suspend fun buy(set: String) = run("buy", "buy", JsonObject().apply { addProperty("set", set); addProperty("tz", tz) })
     suspend fun forge(to: String, times: Int = 1) = run("forge", "forge", JsonObject().apply { addProperty("to", to); addProperty("times", times); addProperty("tz", tz) })
