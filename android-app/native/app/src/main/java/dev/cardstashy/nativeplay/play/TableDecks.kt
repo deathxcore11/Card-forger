@@ -25,7 +25,7 @@ object TableDecks {
     private fun JsonObject?.s(k: String) = this?.get(k)?.takeIf { it.isJsonPrimitive }?.asString ?: ""
     private fun rowsOf(a: JsonArray?) = a?.mapNotNull { e -> val o = e as? JsonObject ?: return@mapNotNull null
         Decks.Row(o.s("name"), o.get("qty")?.takeIf { it.isJsonPrimitive }?.asDouble?.toInt() ?: 0, o.s("board").ifBlank { null }) } ?: emptyList()
-    private fun row(r: Decks.Row) = JsonObject().apply { addProperty("name", r.name); addProperty("qty", maxOf(1, r.qty)) }
+    private fun row(r: Decks.Row) = JsonObject().apply { addProperty("name", r.name); addProperty("qty", maxOf(1, r.qty)); if (r.id.isNotBlank()) addProperty("printingId", r.id) }
 
     /**
      * playTableDecks: Play decks first ({name, qty} rows split into cards and side; a singleton deck's commander is

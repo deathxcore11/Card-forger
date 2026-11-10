@@ -97,11 +97,14 @@ object LobbyPrecons {
         val commanders = d.getAsJsonArray("commander")?.mapNotNull { it as? JsonObject } ?: emptyList()
         for (c in commanders) { val k = key(c.s("name")); if (k !in merged) { names[k] = c.s("name"); merged[k] = c.get("count")?.asInt ?: 1 } }
         if (merged.any { (k, q) -> names[k].isNullOrBlank() || q < 1 || q > 100000 }) return null
+        // A.finderPrecons (web 4.3.159): each card keeps the decklist's own printing (identifiers.scryfallId), commander zone first.
+        val ids = HashMap<String, String>()
+        (commanders + mainBoard.mapNotNull { it as? JsonObject }).forEach { c -> c.getAsJsonObject("identifiers")?.s("scryfallId")?.takeIf { it.isNotBlank() }?.let { ids.putIfAbsent(key(c.s("name")), it) } }
         val deck = JsonObject().apply {
             addProperty("file", entry.s("fileName")); addProperty("name", d.s("name").ifBlank { entry.s("name") }); addProperty("commander", commanders.firstOrNull()?.s("name") ?: "")
             if (commanders.size > 1) add("commanders", JsonArray().apply { commanders.forEach { c -> add(JsonObject().apply { addProperty("name", c.s("name")); addProperty("qty", 1) }) } })
             addProperty("released", entry.s("releaseDate")); addProperty("format", "Commander")
-            add("cards", JsonArray().apply { merged.forEach { (k, q) -> add(JsonObject().apply { addProperty("name", names[k]); addProperty("qty", q) }) } })
+            add("cards", JsonArray().apply { merged.forEach { (k, q) -> add(JsonObject().apply { addProperty("name", names[k]); addProperty("qty", q); ids[k]?.let { addProperty("printingId", it) } }) } })
         }
         return Precon(entry.s("fileName"), deck, listOf("Commander"), listOf("Published precon", entry.s("releaseDate")).filter { it.isNotBlank() }.joinToString(" · "))
     }
