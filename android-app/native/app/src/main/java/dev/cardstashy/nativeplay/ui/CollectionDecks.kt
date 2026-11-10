@@ -171,7 +171,7 @@ private fun DecksPage(m: CollectionDecksModel, top: @Composable (tabs: (@Composa
     if (m.tab == "mine") BottomScreen {
         ShowcaseLens(lens.key) { k ->
             val d = k?.let { id -> m.tiles.firstOrNull { it.id == id } }
-            if (d != null) CollDeckCase(d) { act.deck(d) }
+            if (d != null) CollDeckCase(d, onMenu = act.menu?.let { m -> { m(d) } }) { act.deck(d) }
             else ShowcaseCase(m.game.name.lowercase().replaceFirstChar { it.uppercase() }.let { if (it == "Mtg") "Magic" else it }, m.title, hero = null) {
                 CaseFact("Decks", "%,d".format(m.tiles.size), big = true)
                 val ready = m.tiles.count { it.bar >= .999f }
@@ -407,9 +407,10 @@ private fun TileBody(d: DeckTileModel) {
 
 /** A deck under the ring, on the bottom screen: its box, format, power and how much of it you own. */
 @Composable
-private fun CollDeckCase(d: DeckTileModel, onOpen: () -> Unit) {
+private fun CollDeckCase(d: DeckTileModel, onMenu: (() -> Unit)? = null, onOpen: () -> Unit) {
     ShowcaseCase(listOf(d.format, d.tier).filter { it.isNotBlank() }.joinToString(" · ").ifBlank { "Deck" }, d.name, heroWeight = .4f,
-        buttons = listOf(CaseButton("A", "Open deck", gold = true, run = onOpen)),
+        // Family T4: a case says "Menu" exactly when its item has one (the bar then leaves "Select Menu" out).
+        buttons = listOfNotNull(CaseButton("A", "Open deck", gold = true, run = onOpen), onMenu?.let { CaseButton(null, "Menu", run = it) }),
         hero = { SiteDeckBox(d.boxCards, d.boxColor, true, Modifier.align(Alignment.Center), androidx.compose.ui.unit.DpSize(150.dp, 164.dp)) }) {
         if (d.line.isNotBlank()) Text(d.line, style = sans(14f, 400, Color(0xFFE4DFD3)))
         if (d.power.isNotBlank()) CaseFact(d.powerLabel.ifBlank { "Power" }, d.power + if (d.powerTitle.isNotBlank()) " · " + d.powerTitle else "")
