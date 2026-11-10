@@ -1,4 +1,4 @@
-import {optionLabel,optionCardId} from './forge-session.mjs';
+import {optionLabel,optionCardId,engineNotes} from './forge-session.mjs';
 const OPTION_METHODS=new Set(['getChoices','getAbilityToPlay','chooseSingleEntityForEffect','chooseEntitiesForEffect','showOptionDialog','order']);
 const SEARCH_ZONES=new Set(['Library','Graveyard','Exile']);
 // Only current engine-offered choices enter the picker. Do not enumerate a zone:
@@ -83,7 +83,7 @@ export function orderRemainder(p){
  return ` Leave ${(lo??0)===hi?hi:`${lo??0}–${hi}`} in the source.`;
 }
 // Forge tags card names with their engine id ("Food Token (204)"); players never need that number.
-export const plainText=line=>String(line??'').replace(/ \(\d+\)(?=[\s,.:;!?)]|$)/g,'').trim();
+export const plainText=line=>engineNotes(line).replace(/ \(\d+\)(?=[\s,.:;!?)]|$)/g,'').trim();
 // A mana payment in plain words: what is still owed, for which card, and what it does.
 // `payment` comes from newer bridges; older ones only say "Pay Mana Cost: {2}" in the message.
 const costText=v=>typeof v==='string'&&/^(\{[^{}\s]{1,8}\})+$/.test(v.trim())?v.trim():null;
@@ -144,6 +144,11 @@ const amountDraft={key:null,amounts:null},revealAuto={key:null,timer:0},errSeen=
 // first mode, then cancels at the targets. It is offered only for a spell cast from your hand whose every mode targets,
 // so a target step always follows; anything else (the spell resolving, your next decision) ends the back-out.
 const backOut={until:0,key:''};
+// The option's own words before the table tidies them (they carry Forge's "[Zone Changer: Name (id)]" source note).
+const rawOptionText=v=>v&&typeof v==='object'?String(v.description||v.name||v.text||''):String(v??'');
+// A3: a question with one possible answer (Full Control's "Play land") is answered by one tap, or by itself when it
+// must be taken. Remembered per prompt so a redraw never answers twice.
+const singleAnswer={key:''};
 export function modeBackOutOffered(p,cards=[]){
  if(p?.method!=='getChoices'||p.acknowledgeOnly===true||(p.min??0)<1||p.max!==1||(p.options||[]).length<2)return false;
  return p.options.every(o=>{const v=o.value;if(v?.kind!=='ability'||!/\btarget/i.test(String(v.description||'')))return false;const id=v.card?.id;return v.card?.zone==='Hand'||Number.isSafeInteger(id)&&cards.some(c=>c.id===id&&c.zone==='Hand');});
@@ -169,7 +174,12 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
  const noticeNode=nt=>{const title=String(nt.title||nt.method||'Forge').replace(/\s*\(\d+\)/g,'').trim();let msg=String(nt.message||'').replace(/\s*\(\d+\)/g,'').trim();
   if(!presentation.hosted){const p=node('p',`${title}: ${msg}`,'forge-diagnostic');p.setAttribute('role','status');return p;}
   const picked=msg.match(/\b(?:picked|chose|chooses|named|names)\s+(.+?)\.?$/i);if(/\bForge AI\b/.test(msg))msg=picked?`CPU chose ${picked[1]}`:cpuName(msg);
-  const p=node('p',title&&title!=='Forge'?`${title}: ${msg}`:msg,'forge-notice');p.setAttribute('role','status');return p;};
+  // Forge's minimum-blockers refusal reads "X cannot be blocked with 1 creatures you've assigned"; say the rule instead.
+  const few=msg.match(/^(.+?) cannot be blocked with \d+ creatures? you(?:'|\u2019)ve assigned\.?$/i);
+  if(few){const name=few[1].trim(),c=(s.status?.surface?.cards||[]).find(c=>c.known&&c.name===name),kw=(c?.keywords||[]).map(k=>String(k?.keyword||k).toLowerCase());
+   msg=kw.includes('menace')||/\bmenace\b/i.test(c?.text||'')?`Menace: ${name} needs 2 blockers`:`${name} needs more blockers`;}
+  const p=node('p',title&&title!=='Forge'?`${title}: ${msg}`:msg,'forge-notice');p.setAttribute('role','status');
+  if(/\b(cannot|can['\u2019]t|not enough|needs \d+ blockers|needs more blockers|invalid|illegal)\b/i.test(msg))p.dataset.refusal='true';return p;};
  const run=fn=>()=>{try{const out=fn();if(out?.catch)out.catch(e=>onLocalError(e.message));}catch(e){onLocalError(e.message);}};
  // Phase stops on top of Smart: one tap stops the next time that step comes, a second tap
  // pins it for the whole match (📌), a third clears it. Opened from the turn line in the dock.
@@ -241,11 +251,13 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   const host=presentation.hosted?container.closest('.play-match-table'):null;
   // Forge keeps its last notice in every later state, and each board redraw clears the table, so re-adding it
   // restarted the fade forever ("cannot be blocked with 1 creatures" stuck over the hand for whole CPU turns,
-  // Randall 10 Nov). A notice shows for its 5 s once; the same notice in later states is not shown again.
+  // Randall 10 Nov). A notice shows for its time once; the same notice in later states is not shown again.
   if(host){const nt=n.notification,key=JSON.stringify([nt.id??nt.sequence??nt.seq??null,nt.title||nt.method||'',nt.message]),now=Date.now();
    if(noticeSeen.key!==key){noticeSeen.key=key;noticeSeen.at=now;}
    const was=host.querySelector(':scope>.forge-notice');
-   if(now-noticeSeen.at<5000){if(was?.textContent!==notice.textContent){was?.remove();notice.style.animationDelay=`-${now-noticeSeen.at}ms`;host.append(notice);}}else was?.remove();}
+   // A refused move says why for 2.5 s; other notices (what the CPU chose) stay 5 s.
+   const life=notice.dataset.refusal?2500:5000;
+   if(now-noticeSeen.at<life){if(was?.textContent!==notice.textContent){was?.remove();notice.style.animationDuration=`${life}ms`;notice.style.animationDelay=`-${now-noticeSeen.at}ms`;host.append(notice);setTimeout(()=>notice.remove(),life-(now-noticeSeen.at)+50);}}else was?.remove();}
   else panel.append(notice);}
  else if(presentation.hosted)container.closest?.('.play-match-table')?.querySelector?.(':scope>.forge-notice')?.remove();
  // On the hosted table, trouble is one small toast in plain words with Retry, never a raw code.
@@ -367,10 +379,11 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    panel.append(revealed,button(presentation.hosted?'OK':copy('Continue','Acknowledge native reveal'),()=>{clearTimeout(revealAuto.timer);session.confirmPrompt();},false,'acknowledge-prompt'));
   }else if(OPTION_METHODS.has(p.method)){
    const indexes=s.nativeDraft?.revision===n.revision&&s.nativeDraft?.promptId===p.id?s.nativeDraft.indexes:[],options=p.options||[];
+   const single=!hostedOrder&&presentation.hosted&&['getAbilityToPlay','getChoices','showOptionDialog'].includes(p.method)&&options.length===1&&p.max>=1&&(p.min??0)<=1&&isDescribedOption(options[0].value)&&!indexes.length;
    if(hostedOrder){
     // Arena-style: each choice is its source card; tap them in order, tap again to take one back.
     const cards=s.status?.surface?.cards||[],clean=t=>plainText(String(t||'').replace(/\s*\[[^\]]*\]/g,'').replace(/\s*\(\s*\)/g,'')).trim();
-    const sourceOf=o=>{const id=optionCardId(o.value);let c=id!==null?cards.find(c=>c.id===id):null;if(!c&&o.value?.card?.name)c=cards.find(x=>x.known&&x.name===o.value.card.name&&x.zone==='Battlefield')||null;if(!c){const m=/\[[^\]]*?:\s*([^\]]+?)\s*\((\d+)\)\]/.exec(optionLabel(o.value));if(m)c=cards.find(c=>c.id===Number(m[2]))||cards.find(c=>c.known&&c.name===m[1]);}return c||null;};
+    const sourceOf=o=>{const id=optionCardId(o.value);let c=id!==null?cards.find(c=>c.id===id):null;if(!c&&o.value?.card?.name)c=cards.find(x=>x.known&&x.name===o.value.card.name&&x.zone==='Battlefield')||null;if(!c){const m=/\[[^\]]*?:\s*([^\]]+?)\s*\((\d+)\)\]/.exec(rawOptionText(o.value));if(m)c=cards.find(c=>c.id===Number(m[2]))||cards.find(c=>c.known&&c.name===m[1]);}return c||null;};
     // "Leave 0 in the source" only says every one must be ordered, which the Done button already shows.
     const rest=p.remainingMax>0&&!((p.min??0)>=options.length)?orderRemainder(p):'';panel.append(node('p',`Tap them in order. 1 ${/resolve/i.test(p.topLabel||'')?'resolves first':`is ${String(p.topLabel||'first').toLowerCase()}`}.${rest}`,'forge-order-hint'));
     const grid=node('div',undefined,'forge-order-cards');
@@ -383,6 +396,13 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
      tile.append(badge,art,cap);grid.append(tile);
     }
     panel.append(grid);
+   }else if(single){
+    const only=options[0],cards=s.status?.surface?.cards||[],cardId=optionCardId(only.value),m=/\[[^\]]*?:\s*([^\]]+?)\s*\((\d+)\)\]/.exec(rawOptionText(only.value));
+    const source=(cardId!==null?cards.find(c=>c.id===cardId):null)||(m?cards.find(c=>c.id===Number(m[2]))||cards.find(c=>c.known&&c.name===m[1]):null);
+    const take=()=>{session.selectPrompt(only.index);return session.confirmPrompt();},key=`${n.revision}:${p.id}`;
+    if((p.min??0)>=1){if(singleAnswer.key!==key&&!s.busy){singleAnswer.key=key;setTimeout(()=>{if(session.snapshot().native?.prompt?.id===p.id)run(take)();},0);}panel.append(node('p',optionLabel(only.value),'forge-single-answer'));}
+    else{if(source?.known)panel.append(node('h3',source.name,'forge-single-title'));
+     const row=node('div',undefined,'forge-native-confirm');row.append(button(optionLabel(only.value),take,s.busy,'single-answer'),button('Back',()=>session.confirmPrompt(),s.busy,'single-back'));panel.append(row);}
    }else{
    panel.append(node('p',p.method==='order'?`Choose the destination order.${orderRemainder(p)}`:`Choose ${p.min===p.max?p.min:`${p.min}–${p.max}`} ${presentation.hosted?'':'native '}option${p.max===1?'':'s'}.`));
    const list=node('div',undefined,'forge-native-options');
@@ -396,7 +416,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
     // Like Arena's auto-order: keep the order they came in (the ones already tapped stay first) and go on.
     const auto=()=>{const picked=[...indexes];for(const o of options)if(!picked.includes(o.index)&&picked.length<p.max&&isDescribedOption(o.value)){session.selectPrompt(o.index);picked.push(o.index);}return session.confirmPrompt();};
     const fillable=Math.min(p.max,options.filter(o=>isDescribedOption(o.value)).length)>=p.min;
-    actions.append(button('Reset',()=>session.clearPrompt(),!indexes.length,'clear-prompt'),button('Auto order',auto,!fillable,'auto-order'),button('Done',()=>session.confirmPrompt(),indexes.length<p.min||indexes.length>p.max,'confirm-prompt'));panel.append(actions);}else{
+    actions.append(button('Reset',()=>session.clearPrompt(),!indexes.length,'clear-prompt'),button('Auto order',auto,!fillable,'auto-order'),button('Done',()=>session.confirmPrompt(),indexes.length<p.min||indexes.length>p.max,'confirm-prompt'));panel.append(actions);}else if(!single){
    const summary=node('p',indexes.length?`Selected: ${indexes.map(index=>optionLabel(options.find(o=>o.index===index)?.value)).join(' · ')}`:'Nothing selected');summary.className='forge-native-draft';panel.append(summary);
    panel.append(button(indexes.length===0&&p.min===0?(p.cancelable?copy('Cancel','Cancel native dialog'):copy('Choose none','Submit no selections')):copy('Confirm choice','Confirm native choice'),()=>session.confirmPrompt(),indexes.length<p.min||indexes.length>p.max,'confirm-prompt'),button(copy('Clear selection','Clear draft'),()=>session.clearPrompt(),false,'clear-prompt'));
    if(presentation.hosted&&modeBackOutOffered(p,s.status?.surface?.cards||[]))panel.append(button('Cancel',()=>{backOut.until=Date.now()+8000;backOut.key=`${n.revision}:${p.id}`;session.clearPrompt();session.selectPrompt(p.options[0].index);return session.confirmPrompt();},false,'cancel-mode'));

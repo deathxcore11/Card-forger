@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const src=readFileSync(new URL('./experiments/forge-proof/forge-table.mjs',import.meta.url),'utf8');
 const part=re=>{const m=src.match(re);assert(m,'forge-table.mjs changed shape: '+re);return m[0];};
-const handlers=[/\n const surfaceCard=.*/,/\n function showPeek\(el,pinned=false\)\{[\s\S]*?\n \}/,/\n function hidePeek\(\)\{.*/,/\n function peekAction\(el\)\{[\s\S]*?\n \}/,/\n const peekCard=.*/,/\n const over=.*/,/\n const LISTED_INPUTS=.*/,/\n const previewOnly=\(card,snapshot,touch=false\)=>\{[\s\S]*?\n \};/,/\n const click=e=>\{[\s\S]*?\n \};/].map(part).join('');
+const handlers=[/\n const surfaceCard=.*/,/\n function showPeek\(el,pinned=false\)\{[\s\S]*?\n \}/,/\n function hidePeek\(\)\{.*/,/\n function peekAction\(el\)\{[\s\S]*?\n \}/,/\n const peekCard=.*/,/\n const over=.*/,/\n const LISTED_INPUTS=.*/,/\n const previewOnly=\(card,snapshot,touch=false\)=>\{[\s\S]*?\n \};/,/\n let shortLine=null[\s\S]*?\n const refusedHandCard=.*/,/\n const click=e=>\{[\s\S]*?\n \};/].map(part).join('');
 function table(native={inputType:'InputConfirmMulligan',prompt:null},{busy=false}={}){
  const timers=[],peek={id:'forge-peek-test',dataset:{open:'false'},querySelector:()=>null,setAttribute(){},append(){}},acted=[];
  const snapshot={busy,native,status:{surface:{cards:[{id:1,known:true,name:'Forest'},{id:2,known:true,name:'Island'}]}}};

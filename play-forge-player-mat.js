@@ -240,7 +240,9 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   session?.close();warn(false);try{await client?.close();onClose();}catch(e){message('The table is still closing',['Try returning to setup again in a moment.']);publish({phase:'session-ended',error:e.code||'RESOURCE_CLEANUP_UNCONFIRMED'});}
  }
  // A prompt the table cannot answer (the panel shows a diagnostic instead of controls) must not trap the player: Concede stays open.
- function updateExit(){if(exitConfirm){const s=session?.snapshot(),p=s?.native?.prompt,stuck=nativePromptUnanswerable(p);exitConfirm.disabled=exitSubmitting||!!s?.busy||!stuck&&(!!p||s?.native?.inputType==='InputLockUI');}}
+ function updateExit(){if(exitConfirm){const s=session?.snapshot(),p=s?.native?.prompt,stuck=nativePromptUnanswerable(p);exitConfirm.disabled=exitSubmitting||!!s?.busy||!stuck&&(!!p||s?.native?.inputType==='InputLockUI');
+  // An open question blocks conceding: the question itself pulses behind the dialog instead of a vague line.
+  if(exitDialog){if(!stuck&&!!p)exitDialog.dataset.answerFirst='true';else delete exitDialog.dataset.answerFirst;}}}
  function requestExit(){
   if(disposed||exitDialog)return;
   if(['finished','account-changed','session-ended'].includes(last?.phase)){void closeSession();return;}
@@ -253,7 +255,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
     try{conceding=true;await session.concede();const until=Date.now()+10000;while(last?.phase==='playing'&&Date.now()<until&&!client.status().blocked)await wait(100);if(last?.phase!=='finished')throw Error('NATIVE_CONCESSION_UNCONFIRMED');dialog.remove();exitDialog=null;await closeSession();}
     catch{if(dialog.isConnected){const note=node('p','Forge hasn’t confirmed the concession, so no result was recorded. Keep playing and try again.');note.className='play-exit-note';dialog.append(note);close.disabled=true;}}
    }else{dialog.remove();exitDialog=null;generation++;await closeSession();}
-  });dialog.append(keep,close);dialog.addEventListener('cancel',e=>{e.preventDefault();dialog.remove();exitDialog=null;});doc.body.append(dialog);exitDialog=dialog;exitConfirm=canConcede?close:null;if(canConcede){const hint=node('p','Finish your current choice first.');hint.className='play-exit-hint';dialog.append(hint);}updateExit();if(typeof dialog.showModal==='function')dialog.showModal();else dialog.open=true;keep.focus();
+  });dialog.append(keep,close);dialog.addEventListener('cancel',e=>{e.preventDefault();dialog.remove();exitDialog=null;});doc.body.append(dialog);exitDialog=dialog;exitConfirm=canConcede?close:null;updateExit();if(typeof dialog.showModal==='function')dialog.showModal();else dialog.open=true;keep.focus();
  }
  async function start(){
   if(disposed||opening||client)throw Error('MATCH_ALREADY_OPEN');opening=true;const ticket=++generation,account=forgeAccountKey(readAccount()),setup=readSetup(),selection=selectionKey(setup);

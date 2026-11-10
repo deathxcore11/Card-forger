@@ -185,7 +185,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const foldEmblems=e=>{const open=root.querySelector('.forge-control-emblems[data-open="true"]');if(open&&!open.contains(e.target))open.dataset.open='false';};
  function enhance(){
   if(closed)return;carryOver();if(flights.size)flyNow();if(!loopFrame&&typeof win.requestAnimationFrame==='function')loopFrame=win.requestAnimationFrame(syncLoops);const snap=session.snapshot(),n=snap.native;if(!snap.status||!n)return;
-  if(presentation.hosted){const exit=root.querySelector('[data-focus-key=exit-match]');if(exit&&exit.textContent!=='Return to Play setup')exit.textContent='Return to Play setup';}
+  if(presentation.hosted){const exit=root.querySelector('[data-focus-key=exit-match]'),label=snap.status?.terminal?'Return to Play setup':'Concede match';if(exit&&exit.textContent!==label)exit.textContent=label;}
   const footer=root.querySelector('.play-match-decisions');if(!footer)return;
   const key=JSON.stringify([n.revision,snap.busy,snap.nativeDraft,snap.transportError,snap.selected,localError]);
   if(key!==panelKey||!footer.querySelector('[data-native-panel]')){
@@ -259,7 +259,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
     const shown=counts.filter(([zone,value])=>zone==='Library'||zone==='Graveyard'||value>0);
     let row=mat?.querySelector(`.forge-zone-row[data-seat="${own?'you':'cpu'}"]`);
     if(mat&&!row){row=doc.createElement('nav');row.className='forge-zone-row';row.dataset.seat=own?'you':'cpu';row.setAttribute('aria-label',own?'Your zones':'CPU zones');mat.append(row);}
-    if(row&&row.dataset.counts!==key){row.dataset.counts=key;row.replaceChildren(...shown.map(([zone,value])=>{const b=doc.createElement('button');b.type='button';b.dataset.zone=zone;b.dataset.count=String(value);b.dataset.nativeKey=`zone-${own?'you':'cpu'}-${zone}`;b.setAttribute('aria-label',`${own?'Your':rivalOf(surface)} ${zone.toLowerCase()}: ${value}`);b.innerHTML=`${boardIcon('zone-'+zone.toLowerCase(),'cs-icon cs-zone-icon')||outlineIcon(ZONE_ICONS[zone])}<span>${ZONE_LABELS[zone]}</span><b>${value}</b>`;return b;}));}
+    if(row&&row.dataset.counts!==key){row.dataset.counts=key;row.replaceChildren(...shown.map(([zone,value])=>{const b=doc.createElement('button');b.type='button';b.dataset.zone=zone;b.dataset.count=String(value);b.dataset.nativeKey=`zone-${own?'you':'cpu'}-${zone}`;b.setAttribute('aria-label',`${own?'Your':rivalOf(surface)} ${zone.toLowerCase()}: ${value}`);b.title=b.getAttribute('aria-label');b.innerHTML=`${boardIcon('zone-'+zone.toLowerCase(),'cs-icon cs-zone-icon')||outlineIcon(ZONE_ICONS[zone])}<span>${ZONE_LABELS[zone]}</span><b>${value}</b>`;return b;}));}
    }
    applyZoneFocus();
    // Deck tracker, the untapped way but quieter: Deck lists what is left in your library with the
@@ -861,7 +861,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
     let kr=scaleOf();
     if(kr<.62&&wraps.length>=4){let keep=Math.max(1,Math.floor(wraps.length*(kr/.75)**2)-1);
      if(!more){more=doc.createElement('button');more.type='button';more.className='forge-lane-more';more.dataset.nativeKey='lane-more';more.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const row=more.parentElement,k=Number(more.dataset.keep)||0;openLaneTray([...row.querySelectorAll(':scope>.play-match-card-wrap')].slice(k),more);});row.append(more);}more.hidden=false;
-     const fold=k=>{wraps.forEach((w,i)=>{const hide=i>=k;if(w.hidden!==hide)w.hidden=hide;});const label=`+${wraps.length-k}`;if(more.textContent!==label){more.textContent=label;more.setAttribute('aria-label',`${wraps.length-k} more cards`);}more.dataset.keep=String(k);};
+     const fold=k=>{wraps.forEach((w,i)=>{const hide=i>=k;if(w.hidden!==hide)w.hidden=hide;});
+      // Folded lands say how many are still untapped, so the chip answers "how much mana is left" (Randall 10 Nov).
+      const rest=wraps.slice(k),lands=rest.length&&rest.every(w=>/\bLand\b/.test(w.querySelector('.play-match-card')?.getAttribute('aria-label')||'')||w.closest('.play-match-lane')?.dataset.cardGroup==='lands'),open=rest.filter(w=>w.querySelector('.play-match-card')?.dataset.tapped!=='true').length;
+      const label=`+${rest.length}`+(lands?` · ${open} untapped`:''),aria=`${rest.length} more cards`+(lands?`, ${open} untapped`:'');if(more.textContent!==label){more.textContent=label;more.setAttribute('aria-label',aria);more.title=aria;}more.dataset.keep=String(k);};
      fold(keep);while(keep>1&&scaleOf()<.72){keep--;fold(keep);}kr=scaleOf();}
     else if(more)more.remove();
     if(kr<.995){row.style.transformOrigin='top center';row.style.transform=`scale(${kr.toFixed(3)})`;}}};
@@ -1048,8 +1051,11 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // Smart or Full Control decides only where the game stops; auto-pay keeps the player's own setting
  // (the engine resets it to the mode's default on a switch, so it is put back right after).
  async function switchMode(mode){const keep=session.snapshot().native?.autoPay;await session.setControlMode(mode);
-  if(typeof keep==='boolean'&&typeof session.setAutoPay==='function'){const until=Date.now()+3000;while(Date.now()<until&&session.snapshot().native?.controlMode!==mode)await new Promise(r=>setTimeout(r,100));
-   const now=session.snapshot().native;if(now?.controlMode===mode&&typeof now.autoPay==='boolean'&&now.autoPay!==keep&&!now.prompt&&now.inputType!=='InputLockUI')await session.setAutoPay(keep);}}
+  // The put-back waits for a moment Forge accepts it (no open question, not locked): giving up on a busy
+  // moment left Auto-pay flipped off by a switch to Full Control (seen live 10 Nov).
+  if(typeof keep==='boolean'&&typeof session.setAutoPay==='function'){const until=Date.now()+15000,ready=x=>x?.controlMode===mode&&typeof x.autoPay==='boolean'&&!x.prompt&&x.inputType!=='InputLockUI'&&!session.snapshot().busy;
+   while(Date.now()<until&&!ready(session.snapshot().native))await new Promise(r=>setTimeout(r,150));
+   const now=session.snapshot().native;if(ready(now)&&now.autoPay!==keep)await session.setAutoPay(keep);}}
  function foldMenu(){
   tellStory();
   const menu=root.querySelector('.play-match-header>.play-match-menu');if(!presentation.hosted||!menu)return;
@@ -1369,6 +1375,15 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   return !n.prompt&&(LISTED_INPUTS.has(n.inputType)||!n.inputType&&(n.selection?.cards?.length||0)>0);
  };
  const playerOffered=seat=>{if(['target','chosen'].includes(seat.dataset.forgeRole))return true;const sel=session.snapshot().native?.selection||{};return [...(sel.targets||[]),...(sel.actionable||[]),...(sel.cards||[]),...(sel.chosen||[])].some(r=>r?.kind==='player');};
+ // A1: a hand card you can't pay for lifts and says how short you are, beside the card, instead of doing nothing
+ // (a click) or opening the big zoom (a drag). It clears on the next press or after 2.5 s (Randall 10 Nov).
+ let shortLine=null,shortTimer=0;
+ const shortText=why=>{const m=/need (\d+)(?: more)? mana/i.exec(why||'');return m?`${m[1]} mana short`:/not enough mana/i.test(why||'')?'Not enough mana':String(why||'');};
+ const clearShort=()=>{clearTimeout(shortTimer);shortLine?.remove();shortLine=null;for(const el of root.querySelectorAll('.forge-refused'))el.classList.remove('forge-refused');};
+ const refuseHand=card=>{clearShort();clearTimeout(peekTimer);if(peekFor===card||peekFor?.closest?.('.play-match-hand'))hidePeek();
+  card.classList.add('forge-refused');const r=card.getBoundingClientRect(),line=doc.createElement('div');line.className='forge-short-line';line.setAttribute('role','status');line.textContent=shortText(card.dataset.forgeBlocked);
+  line.style.left=`${Math.round(r.left+r.width/2)}px`;line.style.top=`${Math.round(Math.max(8,r.top-14))}px`;doc.body.append(line);shortLine=line;haptic('tick');shortTimer=setTimeout(clearShort,2500);};
+ const refusedHandCard=e=>{const card=e.target.closest?.('.play-match-hand .play-match-card[data-instance]');return card&&root.contains(card)&&card.dataset.forgeBlocked&&card.dataset.forgeHint!=='true'?card:null;};
  const click=e=>{
   const pinned=peekPinned&&peekFor;if(peekPinned&&!e.target.closest?.('.forge-peek'))hidePeek();
   if(Date.now()<suppressUntil){e.preventDefault();e.stopImmediatePropagation();return;}
@@ -1378,6 +1393,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // A card listed in the Zones menu opens its preview here: the shared inspector stays hidden on this table.
   const listed=presentation.hosted&&e.target.closest?.('button[data-focus-key^="zone-card-"],button[data-focus-key^="revealed-card-"]');
   if(listed&&root.contains(listed)){e.preventDefault();e.stopImmediatePropagation();listed.dataset.instance=listed.dataset.focusKey.replace(/^\D+/,'');pinned===listed?hidePeek():showPeek(listed,true);return;}
+  if(presentation.hosted){const refused=refusedHandCard(e);if(refused&&!session.snapshot().native?.prompt){e.preventDefault();e.stopImmediatePropagation();refuseHand(refused);return;}}
   const card=e.target.closest?.('.play-match-card[data-instance]');if(card&&root.contains(card)){e.preventDefault();e.stopImmediatePropagation();const snapshot=session.snapshot(),cardId=Number(card.dataset.instance);if(previewOnly(card,snapshot,(e.pointerType||lastPointerType)==='touch')){pinned===card?hidePeek():showPeek(card,true);}else if(!snapshot.busy){card.classList.remove('forge-pressed');void card.offsetWidth;card.classList.add('forge-pressed');setTimeout(()=>card.classList.remove('forge-pressed'),420);const go=()=>act(()=>session.nativeSelect('card',cardId)),plan=card.closest('.play-match-hand')&&tapPlan(cardId),warn=plan?.warning;if(warn)confirmCostly(warn,e.clientX,e.clientY,go,plan.amount,plan.lands,()=>payByHand(cardId));else go();}return;}
   // A button inside the seat (Smart, Full Control, Auto-pay, the zone counts) is its own control, never a pick
   // of that player; and on the hosted table a seat is picked only while Forge offers players.
@@ -1563,6 +1579,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // In your hand a still hold reads the card under your thumb (it follows as you slide); elsewhere it reads the card you pressed.
   if(card&&e.pointerType!=='mouse'&&presentation.hosted&&card.closest('.play-match-hand')){clearTimeout(pressTimer);pressAt={x:e.clientX,y:e.clientY,id:e.pointerId};pressShown=false;pressTimer=setTimeout(()=>{if(drag?.active||drag?.intent==='browse')return;const c=handFocus?.querySelector('.play-match-card[data-instance]')||card;if(!c.isConnected)return;showPeek(c,true);pressShown=true;haptic('tick');suppressUntil=Date.now()+60000;},HAND_HOLD);}
   if(card&&e.pointerType!=='mouse'&&!(presentation.hosted&&card.closest('.play-match-hand'))){clearTimeout(pressTimer);pressAt={x:e.clientX,y:e.clientY,id:e.pointerId};pressShown=false;pressTimer=setTimeout(()=>{if(drag?.active)return;showPeek(card,true);pressShown=true;suppressUntil=Date.now()+60000;},420);}
+ if(shortLine&&!refusedHandCard(e))clearShort();
+ if(presentation.hosted&&e.pointerType==='mouse'&&refusedHandCard(e)&&!s.native?.prompt)return; // the click that follows says why; nothing to drag
  if(!card||s.busy||s.native?.prompt||s.native?.inputType==='InputConfirmMulligan'||s.status?.terminal)return;drag={id:Number(card.dataset.instance),revision:s.status.revision,pointerId:e.pointerId,x:e.clientX,y:e.clientY,source:card,active:false,intent:'',ax:e.clientX,ay:e.clientY};};
  // A thumb on your hand stays undecided until its movement shows what it means, as on Arena: sideways
  // browses the whole hand (even when it started on a card), a clear upward stroke picks up the card under
