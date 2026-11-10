@@ -2009,17 +2009,32 @@ private fun OwnCast(st: MatchState, d: Du, top: Dp? = null) = with(d) {
     val c = pendingCast(st) ?: return@with
     val anchors = LocalAnchors.current
     val name = c.name.ifEmpty { Regex("targets? for ([^\n]+)", RegexOption.IGNORE_CASE).find(st.message)?.groupValues?.get(1)?.trim() ?: "" }
-    Column(Modifier.offset(x = 8.du, y = top ?: 58.du).width(76.du)
+    val nameStyle = sans(sp(12f), FontWeight.Bold, Color(0xFFFBF3DF))
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val density = LocalDensity.current
+    // The padding (8 du) and 2 dp so pixel rounding never leaves the widest word a hair short.
+    val colW = remember(name, nameStyle, density) { castPanelWidth(name, 76.du, 8.du + 2.dp, 175.du) { w -> with(density) { measurer.measure(w, nameStyle, softWrap = false, maxLines = 1).size.width.toDp() } } }
+    Column(Modifier.offset(x = 8.du, y = top ?: 58.du).width(colW)
         .drawBehind { drawRoundRect(Color(0x55F0C27A), topLeft = Offset(-6.du.toPx(), -6.du.toPx()), size = Size(size.width + 12.du.toPx(), size.height + 12.du.toPx()), cornerRadius = CornerRadius(18.du.toPx())) }
         .clip(RoundedCornerShape(12.du)).background(Color(0xF5111622)).border(1.dp, Color(0xAAF0C27A), RoundedCornerShape(12.du)).padding(4.du),
         verticalArrangement = Arrangement.spacedBy(3.du)) {
-        Box(Modifier.fillMaxWidth().aspectRatio(488f / 680f).heightIn(max = 150.du).clip(RoundedCornerShape(8.du)).background(Color(0xFF141418))
+        Box(Modifier.width(68.du).align(Alignment.CenterHorizontally).aspectRatio(488f / 680f).heightIn(max = 150.du).clip(RoundedCornerShape(8.du)).background(Color(0xFF141418))
             .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("owncast", it.boundsInRoot()) } else Modifier)) {
             if (name.isNotEmpty()) CardImage(name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         }
         Text("CASTING", style = sans(sp(11f), FontWeight.Bold, Color(0xFFF0C27A)).copy(letterSpacing = 0.05.em))
-        Text(name, style = sans(sp(12f), FontWeight.Bold, Color(0xFFFBF3DF)), maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(name, style = nameStyle, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
+}
+
+/**
+ * Live 0.4.57 on the Thor (fault list 6, 11): in 68 du "Shardmage's Rescue" read "Shardmage' / s Rescue", since a word wider
+ * than the line is split at a letter. The panel is 76 du, or as wide as the name's widest word ([wordWidth]) plus its
+ * [pad], up to [cap]; it grows only while a long name is being cast, and the picture keeps its size.
+ */
+internal fun castPanelWidth(name: String, base: Dp, pad: Dp, cap: Dp, wordWidth: (String) -> Dp): Dp {
+    val widest = name.split(' ').filter { it.isNotEmpty() }.maxOfOrNull { wordWidth(it) } ?: return base
+    return (widest + pad).coerceIn(base, maxOf(base, cap))
 }
 
 
