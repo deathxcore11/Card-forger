@@ -1611,12 +1611,12 @@ internal fun askLine(st: MatchState): String? {
         Regex("^(?:Select|Choose) (\\d+) (.+?)(?:\\(s\\))? to ([a-z][a-z ]*?)\\.?$", RegexOption.IGNORE_CASE).find(ask)?.let { m ->
             val n = m.groupValues[1].toInt(); val action = m.groupValues[3].trim()
             val what = m.groupValues[2].replace(Regex("\\s+(?:(?:they|you) control|with|among|that|from)\\b.*$", RegexOption.IGNORE_CASE), "").trim().ifEmpty { "card" }
-            val verb = if (onePick(st) && st.selection.cards.all { st.card(it)?.zone == "Battlefield" }) "Tap" else "Choose"
+            val verb = if (!Pad.connected.value && onePick(st) && st.selection.cards.all { st.card(it)?.zone == "Battlefield" }) "Tap" else "Choose"
             ask = if (n == 1) "$verb ${if (Regex("^[aeiou]", RegexOption.IGNORE_CASE).containsMatchIn(what)) "an" else "a"} $what to $action"
                 else "Choose $n ${what.split(" or ").joinToString(" or ") { if (it.endsWith("s")) it else it + "s" }} to $action"
         }
         if (ask.isEmpty()) ask = if (input == "InputSelectTargets") "Choose a target" else "Choose a card on the table"
-        ask = if (oneTarget(st)) ask.replace(Regex("^(Select|Choose) (a )?targets? for", RegexOption.IGNORE_CASE), "Tap a target for") else ask.replace(Regex("^Select\\b"), "Choose")
+        ask = if (oneTarget(st) && !Pad.connected.value) ask.replace(Regex("^(Select|Choose) (a )?targets? for", RegexOption.IGNORE_CASE), "Tap a target for") else ask.replace(Regex("^Select\\b"), "Choose")
         return ask
     }
     // A payment your mana can't finish says so above the hand; Cancel is the way out.

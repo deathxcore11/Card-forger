@@ -86,6 +86,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.unit.toSize
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
@@ -693,7 +695,7 @@ private fun DeckBody(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, ac
                 verticalAlignment = Alignment.CenterVertically) { actionRow() }
         }
         if (m.groups.isEmpty()) item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
-            Text("Drag cards up here, or tap + on a card.", style = f(13f, 600, B.Mute), modifier = Modifier.padding(horizontal = 4.dp, vertical = 10.dp))
+            Text(if (Pad.connected.collectAsState().value) "No cards yet." else "Drag cards up here, or tap + on a card.", style = f(13f, 600, B.Mute), modifier = Modifier.padding(horizontal = 4.dp, vertical = 10.dp))
         }
     }
     if (ui.view == "stacks") {

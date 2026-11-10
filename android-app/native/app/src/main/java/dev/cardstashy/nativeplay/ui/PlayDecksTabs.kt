@@ -543,18 +543,18 @@ fun PreconPage(state: JsonObject, o: OpenPrecon, owned: Map<String, Int>, pc: Pr
                 if (!sh.complete) BoxWithConstraints(Modifier.fillMaxWidth()) {
                     // The two ways sit side by side only where each has room (560 and up); on a phone they stack, so the price and
                     // the button never squeeze ("coin s", "Not enoug": Randall 5 Nov 21:41Z).
-                    val side = maxWidth >= 560.dp
+                    val side = maxWidth >= 560.dp * androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceAtLeast(1f) // large text needs the same room per word
                     val sealWay: (@Composable (Modifier) -> Unit)? = if (shop) null else { wm -> Way("Craft with seals", wm) {
                         SEAL_KEYS.filter { (sh.seals[it] ?: 0) > 0 }.forEach { k -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             SealMini(k, 18.dp); Text("${sh.seals[k]}", style = t(13.5f, FontWeight.ExtraBold, if ((need.short[k] ?: 0) > 0) Warn else Color.White))
                             Text("· you have ${have[k] ?: 0}", style = t(11.5f, color = Site.Muted), maxLines = 1) } }
                         val shortBy = need.short.values.sum()
                         if (shortBy > 0) Text(buildAnnotatedString { append("You need "); pushStyle(SpanStyle(color = Warn, fontWeight = FontWeight.Bold)); append("$shortBy more seal${if (shortBy == 1) "" else "s"}"); pop(); append(" for all of it.") }, style = t(12f, color = Site.Muted, line = 16f))
-                        if (need.craftable) GoldCta(if (busy) "Crafting…" else if (armed == "all") "Tap to craft ${sh.total}" else "Craft all ${sh.total}", Modifier.fillMaxWidth(), enabled = !busy) {
+                        if (need.craftable) GoldCta(if (busy) "Crafting…" else if (armed == "all") "${again()} to craft ${sh.total}" else "Craft all ${sh.total}", Modifier.fillMaxWidth(), enabled = !busy) {
                             arm("all") { craft(sh.missing.map { it.name to it.need }, "these cards") } }
                         else {
                             // Short of seals: craft what they cover now; Craft all stays in view, greyed, until they cover it.
-                            if (canNow > 0) GhostButton(if (busy) "Crafting…" else if (armed == "now") "Tap to craft $canNow" else "Craft $canNow now", Modifier.fillMaxWidth(), enabled = !busy, gold = true) {
+                            if (canNow > 0) GhostButton(if (busy) "Crafting…" else if (armed == "now") "${again()} to craft $canNow" else "Craft $canNow now", Modifier.fillMaxWidth(), enabled = !busy, gold = true) {
                                 arm("now") { craft(plan, "these cards") } }
                             GhostButton("Craft all ${sh.total}", Modifier.fillMaxWidth(), enabled = false) {}
                         }
@@ -647,9 +647,9 @@ private fun androidx.compose.foundation.lazy.LazyListScope.preconCardRows(rows: 
 private fun CraftChip(seal: String, n: Int, armed: Boolean, enabled: Boolean, onClick: () -> Unit) {
     Row(Modifier.alpha(if (enabled) 1f else .45f).heightIn(min = 30.dp).clip(RoundedCornerShape(999.dp))
         .then(if (armed) Modifier.background(Brush.verticalGradient(listOf(Color(0xFFF6D58F), Color(0xFFD9A94F)))) else Modifier.background(Color(0x14E2B866)).border(1.dp, Color(0x77E2B866), RoundedCornerShape(999.dp)))
-        .clickable(enabled = enabled, onClick = onClick).semantics { contentDescription = if (armed) "Tap again to craft" else "Craft $n" }.padding(horizontal = 9.dp, vertical = 4.dp),
+        .clickable(enabled = enabled, onClick = onClick).semantics { contentDescription = if (armed) "Press again to craft" else "Craft $n" }.padding(horizontal = 9.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        if (armed) Text("Tap to craft", style = t(11.5f, FontWeight.ExtraBold, Color(0xFF1B1407)))
+        if (armed) Text("${again()} to craft", style = t(11.5f, FontWeight.ExtraBold, Color(0xFF1B1407)))
         else { SealMini(seal, 15.dp); Text(if (n > 1) "Craft ×$n" else "Craft", style = t(11.5f, FontWeight.ExtraBold, Cream)) }
     }
 }
@@ -658,6 +658,9 @@ private fun CraftChip(seal: String, n: Int, armed: Boolean, enabled: Boolean, on
     .background(Brush.verticalGradient(listOf(Color(0x08FFFFFF), Color(0x02FFFFFF)))).background(Color(0xCC0D0F14))
     .border(1.dp, Brush.verticalGradient(listOf(Color(0x40E9C27A), Color(0x0FE9C27A), Color(0x05FFFFFF))), RoundedCornerShape(22.dp)).padding(14.dp).animateContentSize(),
     verticalArrangement = Arrangement.spacedBy(12.dp)) { content() }
+
+/** The second press of an armed craft button: "Tap" by finger, "Press" with a controller. */
+private fun again() = if (Pad.connected.value) "Press" else "Tap"
 
 @Composable private fun Way(title: String, modifier: Modifier, content: @Composable () -> Unit) = Column(modifier.clip(RoundedCornerShape(16.dp)).background(Color(0x08FFFFFF))
     .border(1.dp, SoftRim, RoundedCornerShape(16.dp)).padding(11.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

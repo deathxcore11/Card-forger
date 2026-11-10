@@ -32,6 +32,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -232,7 +233,9 @@ private fun Crop(start: Account.Art, header: Boolean, onBack: () -> Unit, onSave
     PadScreen(remember(ready, saving, header) { PadActs(x = if (ready && !saving) PadAct(if (header) "Save header" else "Save photo") { save() } else null) })
     Text("← Choose another card", style = T.Body.copy(color = Site.Gold, fontWeight = FontWeight.Bold), modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(enabled = !saving, onClick = onBack).padding(vertical = 4.dp))
     Text(art.name, style = T.Head.copy(fontSize = 17.sp))
-    Text(if (header) "Drag the artwork inside the frame. Pinch or use the slider to zoom. Your avatar stays as it is."
+    val padHere by Pad.connected.collectAsState()
+    Text(if (padHere) (if (header) "Use the slider to zoom. Your avatar stays as it is." else "Use the slider to zoom.")
+        else if (header) "Drag the artwork inside the frame. Pinch or use the slider to zoom. Your avatar stays as it is."
         else "Drag the artwork inside the circle. Pinch or use the slider to zoom.", style = T.Small)
     // The stage: the frame you drag and pinch in. Its natural size sets the ratio once the art loads.
     BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {

@@ -39,6 +39,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
@@ -327,7 +329,8 @@ fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, finish: d
                 }
                 else Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) { seg(Modifier); buttons() }
             }
-            val hint = if (!v.effects && !v.art) "Original source image · no CardStashy lighting or foil effects" else "Pinch or double-tap to zoom · drag to move · swipe down to close"
+            val padHere by Pad.connected.collectAsState() // a controller reads its buttons from the prompt bar, never touch words
+            val hint = if (!v.effects && !v.art) "Original source image · no CardStashy lighting or foil effects" else if (padHere) "" else "Pinch or double-tap to zoom · drag to move · swipe down to close"
             Text(hint, style = TextStyle(fontSize = if (phone) 10.sp else 11.5.sp, color = Color(0x80FFFFFF), textAlign = TextAlign.Center),
                 modifier = Modifier.fillMaxWidth().alpha(if (zoomed) 0f else 1f).padding(horizontal = 16.dp).padding(top = if (phone) 18.dp else 10.dp, bottom = 10.dp))
         }
