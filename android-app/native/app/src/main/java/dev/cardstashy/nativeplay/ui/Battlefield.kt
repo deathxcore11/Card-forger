@@ -396,7 +396,8 @@ class Battlefield {
 
         // Arrivals: travel on an arc to the real slot, land with a 2 % squash and a light sweep (450 ms); tokens form from light (400 ms).
         for ((id, c) in bfB) if (id !in bfA) {
-            if (c.token && id !in stackSrcA) { arrivals += FxItem(Fx.TOKEN, 1, 400, card = id, mine = c.controller == viewer); continue }
+            if (c.token && id !in stackSrcA) { arrivals += FxItem(Fx.TOKEN, 1, 400, card = id, mine = c.controller == viewer,
+                delay = runCatching { dev.cardstashy.nativeplay.art.CardArt.holdFor(c.name) }.getOrDefault(0L)); continue }
             val fromStack = id in stackSrcA
             val fromHand = id in handA
             val key = when { fromStack -> null; fromHand -> "hand"; c.controller != viewer && !c.token -> "cpuhand"; else -> null }

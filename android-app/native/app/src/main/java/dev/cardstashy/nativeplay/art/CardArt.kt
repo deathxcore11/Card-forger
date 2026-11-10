@@ -262,7 +262,21 @@ object CardArt {
         loader.enqueue(request(ctx, u, true))
         url(name)?.let { loader.enqueue(request(ctx, it, false)) }
     }
-    fun clearAhead() = decodedAhead.clear()
+    fun clearAhead() { decodedAhead.clear(); firstSeen.clear() }
+
+    /**
+     * Spec 12 item 7: a token or a card made mid-match that the gate never knew. Its picture is asked for on the event that makes
+     * it, and its arrival waits for it: what is left of 400 ms since it was first asked for, then it lands with art or its frame.
+     */
+    private val firstSeen = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    fun made(name: String) {
+        if (firstSeen.putIfAbsent(name.lowercase(), android.os.SystemClock.elapsedRealtime()) != null) return
+        if (url(name, crop = true) == null) want(name) else decodeAhead(name)
+    }
+    fun holdFor(name: String): Long {
+        val at = firstSeen[name.lowercase()] ?: return 0L
+        return (400L - (android.os.SystemClock.elapsedRealtime() - at)).coerceIn(0L, 400L)
+    }
 
     /** Proof counter (spec 12): a card drawn on screen with no picture on record. Logged by name; 0 is the goal on a cold cache. */
     val artMissAtShow = java.util.concurrent.atomic.AtomicInteger(0)

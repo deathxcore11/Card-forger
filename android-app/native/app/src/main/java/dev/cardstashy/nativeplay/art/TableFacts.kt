@@ -27,6 +27,8 @@ object TableFacts {
         }
         st.players.forEach { p -> (p.hand + p.battlefield + p.graveyard + p.exile + p.command).forEach(::add) }
         st.stack.forEach { add(it.source) }
+        // Tokens are made mid-match: ask for the picture on the snapshot that makes them (their arrival waits up to 400 ms for it).
+        st.players.forEach { p -> p.battlefield.forEach { c -> if (c.token && !c.hidden && c.name.isNotBlank()) CardArt.made(c.name) } }
         // Look-ahead: what can reach the felt next (your hand, the command zone, the stack) has its crop decoded now.
         (st.me.hand + st.players.flatMap { it.command } + st.stack.mapNotNull { it.source }).forEach { c -> if (!c.hidden && c.name.isNotBlank()) CardArt.decodeAhead(c.name) }
     }

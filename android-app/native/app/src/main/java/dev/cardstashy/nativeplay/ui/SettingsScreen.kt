@@ -616,6 +616,7 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Art" to "A deck starts loading its pictures the moment you choose it in the lobby, and the CPU deck the moment it is chosen, on any connection, so the Preparing the table wait is shorter. A token now waits a moment (up to 0.4 s) for its picture before it appears.",
     "Precons" to "Free precon decks show each card in the printing from its own decklist (the deck, the match, the versus screen and the preload), not the newest reprint.",
     "Match feel" to "Damage, burns, deaths and counters now sound on the frame you see them happen, not when the engine reports them, and counters have their own sound. When a spell on the stack resolves, the next one slides forward into its place.",
     "Blocks" to "While you choose blockers, a small chip over your portrait shows how much damage gets through and where your life ends up, red while damage gets through and green when it is all blocked. With trample or double strike in the attack it says \"at least\", never a wrong number.",

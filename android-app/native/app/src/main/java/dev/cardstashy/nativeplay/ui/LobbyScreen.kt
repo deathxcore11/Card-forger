@@ -288,6 +288,13 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     val scope = rememberCoroutineScope()
     val session by Account.session.collectAsState()
     val state by Progress.state.collectAsState()
+    // Art spec 12.5: a seat's deck starts loading its pictures the moment it is chosen, yours first, then the CPU's.
+    val warmYou = model.player?.raw; val warmCpu = model.opponent?.raw
+    LaunchedEffect(warmYou, warmCpu, online) {
+        if (!online) return@LaunchedEffect
+        warmYou?.let { dev.cardstashy.nativeplay.match.QuickPlay.warmDeck(context, it, 0) }
+        warmCpu?.let { dev.cardstashy.nativeplay.match.QuickPlay.warmDeck(context, it, 1) }
+    }
     val workspace by Workspace.decks.collectAsState()
     val facts by CardFacts.cards.collectAsState()
     val build by RandomBuild.state.collectAsState()

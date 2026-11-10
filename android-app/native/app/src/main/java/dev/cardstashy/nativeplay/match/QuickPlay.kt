@@ -169,8 +169,32 @@ object QuickPlay {
         }
     }
 
+    private val picked = arrayOfNulls<Job>(2)
+    private val pickedDone = java.util.Collections.synchronizedSet(HashSet<Int>())
+
+    /**
+     * Art spec 12.5: a deck starts warming the moment it is chosen for a seat (yours in the picker, the CPU's when it is picked), on
+     * any connection: the same rows the match will use, so a pinned printing is the one fetched. Faces decoded, crops onto disk.
+     * A new choice for a seat ([slot] 0 yours, 1 the CPU's) replaces that seat's one in flight; a deck already warmed this session is not asked again.
+     */
+    fun warmDeck(context: Context, deck: JsonObject, slot: Int) {
+        val key = System.identityHashCode(deck)
+        if (key in pickedDone) return
+        val app = context.applicationContext
+        picked[slot]?.cancel()
+        picked[slot] = bg.launch {
+            val r = rows(deck)
+            if (r.isEmpty() || r.size > 260) return@launch
+            CardArt.resolve(r)
+            val names = r.map { it.first }
+            val n = CardArt.warm(app, names, 45_000, crops = listOfNotNull(faceOf(deck)), diskCrops = names)
+            if (n >= 0) pickedDone += key
+            Log.i(TAG, "deck warm at select: ${r.size} rows, loaded=$n")
+        }
+    }
+
     /** A match is starting: give the network to its two decks. */
-    fun pauseBackground() { warming?.cancel(); warming = null }
+    fun pauseBackground() { warming?.cancel(); warming = null; picked.indices.forEach { picked[it]?.cancel(); picked[it] = null } }
 
     private fun unmetered(context: Context): Boolean {
         val cm = context.getSystemService(ConnectivityManager::class.java) ?: return false
