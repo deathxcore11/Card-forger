@@ -821,7 +821,14 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const raisedDock=()=>!!win.matchMedia?.('(hover:none) and (pointer:coarse) and (min-width:600px) and (min-height:480px)').matches;
  // A side that changes size after the fit (fonts landing, a chip appearing, 130% text) fits again.
  let boardSizes=null;const boardSeen=new Map(),boardKey=a=>a.dataset.seat||a.className,boardSize=a=>`${a.offsetWidth}x${a.offsetHeight}`;
- function fitBoard(){
+ // Measure the board as it rests, not mid-flight: a card landing or nudged by an animation stretches its row's
+ // scroll box (transforms count as overflow), so the fitter folded a lane into "+N" for a frame or two and then
+ // unfolded it once the animation ended. That was the table flicker in Randall's 10 Nov video. Running
+ // animations are moved to their end for the measuring and put back before anything paints.
+ function fitBoard(){const anims=root.getAnimations?.({subtree:true})||[],saved=[];
+  for(const a of anims){try{const end=a.effect?.getComputedTiming?.().endTime;if(a.playState!=='running'&&a.playState!=='paused')continue;if(!Number.isFinite(end))continue;saved.push([a,a.currentTime,a.playState]);a.currentTime=end;}catch{}}
+  try{return fitBoardNow();}finally{for(const [a,t,ps] of saved){try{a.currentTime=t;if(ps==='running'&&a.playState!=='running')a.play();}catch{}}}}
+ function fitBoardNow(){
   boardFrame=0;if(closed||!presentation.hosted)return;
   // A redraw replaces the sides, and a newly observed box always reports its size once; only a size this
   // fit has not seen yet fits again (each fit is a full layout pass, so a redraw must not cost three).
