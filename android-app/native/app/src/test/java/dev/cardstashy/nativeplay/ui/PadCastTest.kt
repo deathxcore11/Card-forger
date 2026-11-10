@@ -65,4 +65,41 @@ class PadCastTest {
         println("PADCAST after A2 a=${PadPrompts.current().a} sel=$sel played=$played")
         assertEquals(1, played.size)
     }
+
+    /**
+     * Live 0.4.56 on the Thor: the ring start found the chip unfocusable (touch mode) and Android's own default focus, a Down
+     * search from the top, put the ring on the menu button, so every A opened the menu. Now the ring start leaves touch mode,
+     * and the board sends a Down entry to the hand chip.
+     */
+    @Test fun androidsDefaultFocusLandsOnTheHandNotTheMenu() {
+        Motion.still = true; rule.mainClock.autoAdvance = false
+        DualScreen.pretend(DualScreen.Panel(2, "Built-in Screen", 1240, 1080, 60f))
+        Pad.used()
+        val st = state()
+        val played = mutableListOf<Int>()
+        val menu = MatchMenu(null, {}, {})
+        var view: android.view.View? = null
+        var fm: androidx.compose.ui.focus.FocusManager? = null
+        rule.setContent {
+            var s by remember { mutableStateOf<Int?>(null) }
+            view = androidx.compose.ui.platform.LocalView.current
+            fm = androidx.compose.ui.platform.LocalFocusManager.current
+            CompositionLocalProvider(LocalAnchors provides remember { Anchors() }) {
+                Box(Modifier.fillMaxSize().padRoot()) {
+                    ForgeBoard(st, live = true, intents = TableIntents(card = { played += it }), selectedHand = s, onSelectHand = { s = it }, onInspect = {}, onMenu = {}, handOrder = emptyList(), onHandOrder = {}, menu = menu)
+                }
+            }
+        }
+        step()
+        // The ring start alone (no test help) puts the ring on the chip.
+        assert(PadPrompts.current().a != "Select" && PadPrompts.current().a != "Menu") { "ring start missed the chip: ${PadPrompts.current().a}" }
+        // The ring is lost, and Android hands focus back with a Down search from the top (View.clearFocus / leaving touch mode).
+        rule.runOnUiThread { fm!!.clearFocus(force = true); view!!.requestFocus(android.view.View.FOCUS_DOWN) }
+        step()
+        println("PADCAST after refocus a=${PadPrompts.current().a} anyFocus=${PadPrompts.anyFocus}")
+        assert(PadPrompts.current().a != "Menu") { "the ring went to the menu button" }
+        center(); center()
+        assertEquals(false, menu.open)
+        assertEquals(1, played.size)
+    }
 }

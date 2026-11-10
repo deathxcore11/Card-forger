@@ -242,7 +242,7 @@ class MainActivity : ComponentActivity() {
         }
         when (event.keyCode) {
             android.view.KeyEvent.KEYCODE_BUTTON_A -> {
-                if (event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0) android.util.Log.i("PadA", "A to the ring: ${dev.cardstashy.nativeplay.ui.PadPrompts.current().a}")
+                if (event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0) android.util.Log.i("PadA", "A to the ring: ${dev.cardstashy.nativeplay.ui.PadPrompts.current().a} touch=${window.decorView.isInTouchMode} view=${currentFocus?.javaClass?.simpleName}")
                 return super.dispatchKeyEvent(android.view.KeyEvent(event.downTime, event.eventTime, event.action, android.view.KeyEvent.KEYCODE_DPAD_CENTER, event.repeatCount, event.metaState, event.deviceId, event.scanCode, event.flags, event.source))
             }
             android.view.KeyEvent.KEYCODE_BUTTON_B -> {

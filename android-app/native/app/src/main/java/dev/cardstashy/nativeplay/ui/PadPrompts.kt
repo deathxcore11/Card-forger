@@ -125,9 +125,9 @@ object PadPrompts {
     fun enter(keyCode: Int): Boolean {
         if (anyFocus) return false
         // W11/Y5 (Thor test4): on the table the first press lands on your hand, never on whatever spatial search finds first.
+        inputModes?.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard)
         entry?.let { if (runCatching { it() }.getOrDefault(false)) return true }
         val fm = focusManager ?: return false
-        inputModes?.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard)
         val dir = when (keyCode) {
             KeyEvent.KEYCODE_DPAD_UP -> androidx.compose.ui.focus.FocusDirection.Up; KeyEvent.KEYCODE_DPAD_DOWN -> androidx.compose.ui.focus.FocusDirection.Down
             KeyEvent.KEYCODE_DPAD_LEFT -> androidx.compose.ui.focus.FocusDirection.Left; KeyEvent.KEYCODE_DPAD_RIGHT -> androidx.compose.ui.focus.FocusDirection.Right

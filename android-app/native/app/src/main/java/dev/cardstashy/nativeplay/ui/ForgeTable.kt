@@ -31,6 +31,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import kotlin.math.roundToInt
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.focusGroup
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.foundation.indication
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -306,7 +308,15 @@ fun ForgeBoard(
     val fx = outer ?: remember { Battlefield() }
     FxDriver(fx, st)
     androidx.compose.runtime.CompositionLocalProvider(LocalBattlefield provides fx) {
-    BoxWithConstraints(modifier.fillMaxSize().fxSkip(fx).graphicsLayer { fx.shake(this) }) {
+    BoxWithConstraints(modifier.fillMaxSize().fxSkip(fx).graphicsLayer { fx.shake(this) }
+        // Live 0.4.56 on the Thor: Android's own default focus (leaving touch mode, a cleared ring) comes in from the top as a Down
+        // search and landed on the menu button, so A opened the menu. On two screens with a controller it goes to the hand instead.
+        .focusProperties { onEnter = {
+            if (requestedFocusDirection == androidx.compose.ui.focus.FocusDirection.Down && DualScreen.active && Pad.connected.value)
+                TableZones.hand?.let { h -> TablePad.autoRing = true; val ok = h.requestFocus(androidx.compose.ui.focus.FocusDirection.Enter); TablePad.autoRing = false
+                    android.util.Log.i("PadA", "board entered from the top: ring to the hand chip ok=$ok") }
+        } }
+        .focusGroup()) {
         val d = Du(chromeU(maxWidth, maxHeight))
         with(d) {
             val W = maxWidth; val H = maxHeight
@@ -482,10 +492,15 @@ fun ForgeBoard(
             val menuX = if (large) 12.dp else 8.du; val menuY = if (large) 12.dp else 34.du
             val menuFocus = remember { FocusRequester() }
             Box(Modifier.offset(x = menuX, y = menuY).size(44.du).clip(CircleShape).background(Color(0x6612141A)).border(1.dp, Color(0x24FFFFFF), CircleShape)
-                .focusRequester(menuFocus).onFocusChanged { if (it.isFocused) TablePad.last = menuFocus }
+                .focusRequester(menuFocus).onFocusChanged { if (it.isFocused) { TablePad.last = menuFocus
+                    android.util.Log.i("PadA", "ring on menu button mode=${PadPrompts.inputModes?.inputMode}", Throwable()) } }
+                .padActs(PadActs(a = "Menu"))
                 .clickable { if (menu != null) menu.open = !menu.open else onMenu() }, contentAlignment = Alignment.Center) { MenuGlyph(d) }
             // The controller's ring comes back to where it was once the menu closes (it went into the menu's first row).
-            LaunchedEffect(menu?.open) { if (menu?.open == false) TablePad.restore() }
+            LaunchedEffect(menu?.open) { if (menu?.open == false) {
+                // On two screens the ring goes back to the hand, never to the menu button it may have come from (or A reopens the menu).
+                if (DualScreen.active && TablePad.last === menuFocus) TableZones.hand?.let { TablePad.last = it }
+                TablePad.restore() } }
             // The menu carries the stack size as a badge (summary[data-count]::after: 18 px gold pill at -4, -4).
             if (st.stack.isNotEmpty()) Box(Modifier.offset(x = menuX + (44 - 18 + 4).du, y = menuY - 4.du).heightIn(min = 18.du).widthIn(min = 18.du).clip(RoundedCornerShape(9.du)).background(Color(0xFFE8B95B)).padding(horizontal = 5.du),
                 contentAlignment = Alignment.Center) { Text("${st.stack.size}", style = sans(sp(11f), FontWeight.ExtraBold, Color(0xFF1B1406))) }
@@ -564,7 +579,9 @@ fun ForgeBoard(
                     // d-pad press or A is on your hand (not the command zone or a field card).
                     // The table's entry for the ring: a d-pad press or A with nothing focused lands here (no card lifted).
                     androidx.compose.runtime.DisposableEffect(chipFocus) {
-                        val e: () -> Boolean = { TablePad.autoRing = true; val ok = runCatching { chipFocus.requestFocus() }.isSuccess; TablePad.autoRing = false; if (ok) TableZones.at = 0; ok }
+                        val e: () -> Boolean = { PadPrompts.inputModes?.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard)
+                            TablePad.autoRing = true; val ok = runCatching { chipFocus.requestFocus(androidx.compose.ui.focus.FocusDirection.Enter) }.getOrDefault(false); TablePad.autoRing = false
+                            android.util.Log.i("PadA", "entry to the hand chip ok=$ok mode=${PadPrompts.inputModes?.inputMode}"); if (ok) TableZones.at = 0; ok }
                         PadPrompts.entry = e; onDispose { if (PadPrompts.entry === e) PadPrompts.entry = null }
                     }
                     // Keyed on the ring too: when the board loses it (a CPU beat, a closed overlay) while you can act, it comes back here.
@@ -574,16 +591,20 @@ fun ForgeBoard(
                         if (PadPrompts.anyFocus || TablePad.held) return@LaunchedEffect
                         // The ring arrives without lifting a card, so X keeps its pass/step meaning until he walks or presses A.
                         TablePad.autoRing = true
-                        if (runCatching { chipFocus.requestFocus() }.isSuccess) { TableZones.at = 0; android.util.Log.i("PadA", "ring starts on the hand chip") }
+                        // A clickable can't take focus in touch mode (a match is started by touch): leave it first, and log what really happened.
+                        PadPrompts.inputModes?.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard)
+                        val ok = runCatching { chipFocus.requestFocus(androidx.compose.ui.focus.FocusDirection.Enter) }.getOrDefault(false)
+                        android.util.Log.i("PadA", if (ok) "ring starts on the hand chip" else "ring start refused (mode=${PadPrompts.inputModes?.inputMode})")
+                        if (ok) TableZones.at = 0
                         TablePad.autoRing = false
                     }
                     val shape = RoundedCornerShape(999.dp)
                     Row(Modifier.align(Alignment.TopCenter).padding(top = handW / 66f * 30f)
                         .focusRequester(chipFocus)
-                        .onFocusChanged { if (chipOn != it.isFocused) liftLive = it.isFocused && selectedHand != null; chipOn = it.isFocused; if (it.isFocused) { TableZones.at = 0; TablePad.last = chipFocus; if (selectedHand == null && !discardAsk && !TablePad.autoRing) onSelectHand(hand.first().id); TablePad.autoRing = false } }
+                        .onFocusChanged { if (chipOn != it.isFocused) android.util.Log.i("PadA", "chip focus=${it.isFocused} autoRing=${TablePad.autoRing} sel=$selectedHand"); if (chipOn != it.isFocused) liftLive = it.isFocused && selectedHand != null; chipOn = it.isFocused; if (it.isFocused) { TableZones.at = 0; TablePad.last = chipFocus; if (selectedHand == null && !discardAsk && !TablePad.autoRing) onSelectHand(hand.first().id); TablePad.autoRing = false } }
                         .onKeyEvent { e -> if (e.nativeKeyEvent.action != android.view.KeyEvent.ACTION_DOWN) return@onKeyEvent false
                             when (e.nativeKeyEvent.keyCode) { android.view.KeyEvent.KEYCODE_DPAD_LEFT -> { step(-1); true }; android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> { step(1); true }; else -> false } }
-                        .padActs(PadActs(a = if (discardAsk && live) (if (lifted != null && lifted.id == selectedHand) "Discard" else "Pick") else lifted?.let { if (playable(it)) (if (it.isLand) "Play land" else "Cast") else "Inspect" }, y = lifted?.let { c -> PadAct("Inspect") { onInspect(c) } }))
+                        .padActs(PadActs(a = if (discardAsk && live) (if (lifted != null && lifted.id == selectedHand) "Discard" else "Pick") else (lifted?.let { if (playable(it)) (if (it.isLand) "Play land" else "Cast") else "Inspect" } ?: "Lift"), y = lifted?.let { c -> PadAct("Inspect") { onInspect(c) } }))
                         .clip(shape).background(if (chipOn) Color(0x33E8C36F) else Color(0xCC101216)).border(if (chipOn) 2.dp else 1.dp, if (chipOn) Color(0xFFF3D494) else Color(0x40D6AD64), shape)
                         .clickable { chipA() }
                         .padding(horizontal = 12.du, vertical = 5.du), verticalAlignment = Alignment.CenterVertically) {
@@ -1439,7 +1460,7 @@ internal object TablePad {
     var castId: Int? = null
     /** The ring is being put on the hand chip by the table itself (not a d-pad press): it lifts nothing. */
     var autoRing = false
-    fun restore() { if (held) { held = false; last?.let { runCatching { it.requestFocus() } } } }
+    fun restore() { if (held) { held = false; last?.let { runCatching { it.requestFocus(androidx.compose.ui.focus.FocusDirection.Enter) } } } }
 }
 
 /**
