@@ -90,6 +90,8 @@ object DualScreen {
     internal val tops = mutableStateListOf<Slot>()
     /** Keys a bottom case already prints on its buttons; the hint bar leaves them out. */
     internal val shownKeys = androidx.compose.runtime.mutableStateMapOf<Any, Set<String>>()
+    /** The words on the bottom screen's own buttons, lower case: the bar never says them again on another key. */
+    internal val shownLabels = androidx.compose.runtime.mutableStateMapOf<Any, Set<String>>()
     /** The card under the ring's quick look (Collection and Play grids); shown when no screen has its own bottom view. */
     var quick by mutableStateOf<QuickLook?>(null)
 
@@ -239,7 +241,8 @@ private fun BottomPadBar() {
     val pad by Pad.connected.collectAsState()
     if (!pad) return
     val shown = DualScreen.shownKeys.values.flatten().toSet()
-    val items = PadPrompts.prompts(PadPrompts.current()).filter { it.first !in shown }
+    val said = DualScreen.shownLabels.values.flatten().toSet()
+    val items = PadPrompts.prompts(PadPrompts.current()).filter { it.first !in shown && it.second.lowercase() !in said }
     if (items.isEmpty()) return
     Row(Modifier.fillMaxWidth().height(44.dp).background(Color(0xF2101217)).border(1.dp, Color(0x30D6AD64)).padding(horizontal = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.End), verticalAlignment = Alignment.CenterVertically) {

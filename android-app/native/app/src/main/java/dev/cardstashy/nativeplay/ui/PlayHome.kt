@@ -1263,7 +1263,7 @@ private fun DenCase(d: PlayHomeData, act: PlayHomeActions, level: PlayMath.Level
     val cont = when {
         waiting > 0 -> CaseButton(null, "Open your packs · $waiting", gold = true, weight = 1.5f) { act.view("packs") }
         !d.story.done -> CaseButton(null, (if (d.story.won > 0) "Continue Act " else "Begin Act ") + a.act, gold = true, weight = 1.5f) { act.story() }
-        else -> CaseButton(null, "Quick Play", gold = true, weight = 1.5f) { act.mode("quick") }
+        else -> CaseButton("X", "Quick Play", gold = true, weight = 1.5f) { act.mode("quick") }
     }
     ShowcaseCase("Your den · Mastery", "Level ${level.level}", trailing = wallet,
         buttons = listOf(cont, CaseButton(null, "Achievements") { act.view("deeds") }, CaseButton(null, "The Forge") { act.view("forge") })) {

@@ -510,7 +510,7 @@ fun ForgeBoard(
                         .onFocusChanged { chipOn = it.isFocused; if (it.isFocused) { TableZones.at = 0; if (selectedHand == null) onSelectHand(hand.first().id) } }
                         .onKeyEvent { e -> if (e.nativeKeyEvent.action != android.view.KeyEvent.ACTION_DOWN) return@onKeyEvent false
                             when (e.nativeKeyEvent.keyCode) { android.view.KeyEvent.KEYCODE_DPAD_LEFT -> { step(-1); true }; android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> { step(1); true }; else -> false } }
-                        .padActs(PadActs(a = lifted?.let { if (playable(it)) (if (it.isLand) "Play land" else "Cast") else "Open" }, y = lifted?.let { c -> PadAct("Open") { onInspect(c) } }))
+                        .padActs(PadActs(a = lifted?.let { if (playable(it)) (if (it.isLand) "Play land" else "Cast") else "Inspect" }, y = lifted?.let { c -> PadAct("Inspect") { onInspect(c) } }))
                         .clip(shape).background(if (chipOn) Color(0x33E8C36F) else Color(0xCC101216)).border(if (chipOn) 2.dp else 1.dp, if (chipOn) Color(0xFFF3D494) else Color(0x40D6AD64), shape)
                         .clickable { val c = lifted ?: return@clickable onSelectHand(hand.first().id); if (playable(c)) { onSelectHand(null); intents.card(c.id) } else onInspect(c) }
                         .padding(horizontal = 12.du, vertical = 5.du), verticalAlignment = Alignment.CenterVertically) {

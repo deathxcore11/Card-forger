@@ -89,6 +89,13 @@ internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: 
 
 @Composable
 private fun StackView(st: MatchState, gold: PadAct?, onInspect: (Card) -> Unit, onRespond: () -> Unit) {
+    // The gold button below prints its own X, so the bar under it does not say "X Resolve" a second time.
+    val owner = remember { Any() }
+    val goldShown = gold?.run != null
+    androidx.compose.runtime.DisposableEffect(owner, goldShown) {
+        if (goldShown) DualScreen.shownKeys[owner] = setOf("X")
+        onDispose { DualScreen.shownKeys.remove(owner) }
+    }
     Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Column(Modifier.weight(1.25f).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             // Newest first, as it will resolve: the top item large, the older ones stepped behind it.
