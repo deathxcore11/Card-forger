@@ -37,23 +37,33 @@
     },
     {
      "name": "Sahagin",
-     "qty": 1
+     "qty": 1,
+     "set": "fin",
+     "number": "71"
     },
     {
      "name": "Il Mheg Pixie",
-     "qty": 3
+     "qty": 3,
+     "set": "fin",
+     "number": "57"
     },
     {
      "name": "Retrieve the Esper",
-     "qty": 2
+     "qty": 2,
+     "set": "fin",
+     "number": "68"
     },
     {
      "name": "Dreams of Laguna",
-     "qty": 2
+     "qty": 2,
+     "set": "fin",
+     "number": "50"
     },
     {
      "name": "Relm's Sketching",
-     "qty": 1
+     "qty": 1,
+     "set": "fin",
+     "number": "67"
     },
     {
      "name": "Ultimecia, Temporal Threat",
@@ -63,31 +73,45 @@
     },
     {
      "name": "Undercity Dire Rat",
-     "qty": 4
+     "qty": 4,
+     "set": "fin",
+     "number": "123"
     },
     {
      "name": "Shinra Reinforcements",
-     "qty": 3
+     "qty": 3,
+     "set": "fin",
+     "number": "118"
     },
     {
      "name": "Sephiroth's Intervention",
-     "qty": 3
+     "qty": 3,
+     "set": "fin",
+     "number": "116"
     },
     {
      "name": "Shambling Cie'th",
-     "qty": 3
+     "qty": 3,
+     "set": "fin",
+     "number": "117"
     },
     {
      "name": "Al Bhed Salvagers",
-     "qty": 3
+     "qty": 3,
+     "set": "fin",
+     "number": "88"
     },
     {
      "name": "Overkill",
-     "qty": 2
+     "qty": 2,
+     "set": "fin",
+     "number": "109"
     },
     {
      "name": "Evil Reawakened",
-     "qty": 2
+     "qty": 2,
+     "set": "fin",
+     "number": "98"
     },
     {
      "name": "Seymour Flux",
@@ -109,11 +133,15 @@
     },
     {
      "name": "Magitek Scythe",
-     "qty": 1
+     "qty": 1,
+     "set": "fin",
+     "number": "562"
     },
     {
      "name": "Treno, Dark City",
-     "qty": 4
+     "qty": 4,
+     "set": "fin",
+     "number": "290"
     },
     {
      "name": "Island",
@@ -170,31 +198,45 @@
     },
     {
      "name": "Cloudbound Moogle",
-     "qty": 2
+     "qty": 2,
+     "set": "fin",
+     "number": "11"
     },
     {
      "name": "Coeurl",
-     "qty": 2
+     "qty": 2,
+     "set": "fin",
+     "number": "12"
     },
     {
      "name": "Dwarven Castle Guard",
-     "qty": 4
+     "qty": 4,
+     "set": "fin",
+     "number": "18"
     },
     {
      "name": "Fate of the Sun-Cryst",
-     "qty": 2
+     "qty": 2,
+     "set": "fin",
+     "number": "19"
     },
     {
      "name": "Slash of Light",
-     "qty": 2
+     "qty": 2,
+     "set": "fin",
+     "number": "32"
     },
     {
      "name": "White Auracite",
-     "qty": 2
+     "qty": 2,
+     "set": "fin",
+     "number": "41"
     },
     {
      "name": "White Mage's Staff",
-     "qty": 1
+     "qty": 1,
+     "set": "fin",
+     "number": "42"
     },
     {
      "name": "Adelbert Steiner",
@@ -204,11 +246,15 @@
     },
     {
      "name": "The Crystal's Chosen",
-     "qty": 1
+     "qty": 1,
+     "set": "fin",
+     "number": "14"
     },
     {
      "name": "Dragoon's Lance",
-     "qty": 1
+     "qty": 1,
+     "set": "fin",
+     "number": "17"
     },
     {
      "name": "G'raha Tia",
@@ -230,15 +276,21 @@
     },
     {
      "name": "Item Shopkeep",
-     "qty": 3
+     "qty": 3,
+     "set": "fin",
+     "number": "142"
     },
     {
      "name": "Warrior's Sword",
-     "qty": 2
+     "qty": 2,
+     "set": "fin",
+     "number": "169"
     },
     {
      "name": "Suplex",
-     "qty": 1
+     "qty": 1,
+     "set": "fin",
+     "number": "164"
     },
     {
      "name": "Freya Crescent",
@@ -248,7 +300,9 @@
     },
     {
      "name": "Samurai's Katana",
-     "qty": 2
+     "qty": 2,
+     "set": "fin",
+     "number": "154"
     },
     {
      "name": "Barret Wallace",
@@ -264,15 +318,21 @@
     },
     {
      "name": "Judgment Bolt",
-     "qty": 1
+     "qty": 1,
+     "set": "fin",
+     "number": "559"
     },
     {
      "name": "Ultima Weapon",
-     "qty": 1
+     "qty": 1,
+     "set": "fin",
+     "number": "563"
     },
     {
      "name": "Rabanastre, Royal City",
-     "qty": 4
+     "qty": 4,
+     "set": "fin",
+     "number": "287"
     },
     {
      "name": "Plains",
@@ -323,19 +383,27 @@
    "rows": [
     {
      "name": "Byrke, Long Ear of the Law",
-     "qty": 1
+     "qty": 1,
+     "set": "blb",
+     "number": "380"
     },
     {
      "name": "Serra Redeemer",
-     "qty": 1
+     "qty": 1,
+     "set": "blb",
+     "number": "387"
     },
     {
      "name": "Colossification",
-     "qty": 1
+     "qty": 1,
+     "set": "blb",
+     "number": "392"
     },
     {
      "name": "Fecund Greenshell",
-     "qty": 1
+     "qty": 1,
+     "set": "blb",
+     "number": "171"
     },
     {
      "name": "Finneas, Ace Archer",
@@ -345,67 +413,93 @@
     },
     {
      "name": "Pileated Provisioner",
-     "qty": 3
+     "qty": 3,
+     "set": "blb",
+     "number": "25"
     },
     {
      "name": "Warren Elder",
-     "qty": 3
+     "qty": 3,
+     "set": "blb",
+     "number": "37"
     },
     {
      "name": "Rabbit Response",
-     "qty": 2
+     "qty": 2,
+     "set": "blb",
+     "number": "26"
     },
     {
      "name": "Carrot Cake",
-     "qty": 2
+     "qty": 2,
+     "set": "blb",
+     "number": "7"
     },
     {
      "name": "Repel Calamity",
-     "qty": 2
+     "qty": 2,
+     "set": "blb",
+     "number": "27"
     },
     {
      "name": "Hop to It",
-     "qty": 2
+     "qty": 2,
+     "set": "blb",
+     "number": "16"
     },
     {
      "name": "Druid of the Spade",
-     "qty": 3
+     "qty": 3,
+     "set": "blb",
+     "number": "170"
     },
     {
      "name": "Treeguard Duo",
-     "qty": 3
+     "qty": 3,
+     "set": "blb",
+     "number": "200"
     },
     {
      "name": "Rabid Bite",
-     "qty": 2
+     "qty": 2,
+     "set": "blb",
+     "number": "394"
     },
     {
      "name": "Giant Growth",
-     "qty": 2
+     "qty": 2,
+     "set": "blb",
+     "number": "393"
     },
     {
      "name": "Clifftop Lookout",
-     "qty": 2
+     "qty": 2,
+     "set": "blb",
+     "number": "168"
     },
     {
      "name": "Burrowguard Mentor",
-     "qty": 2
+     "qty": 2,
+     "set": "blb",
+     "number": "206"
     },
     {
      "name": "Blossoming Sands",
-     "qty": 4
+     "qty": 4,
+     "set": "blb",
+     "number": "396"
     },
     {
      "name": "Plains",
      "qty": 12,
      "set": "blb",
-     "number": "*"
+     "number": "369"
     },
     {
      "name": "Forest",
      "qty": 11,
      "set": "blb",
-     "number": "*"
+     "number": "377"
     }
    ]
   },
@@ -420,7 +514,9 @@
    "rows": [
     {
      "name": "Bria, Riptide Rogue",
-     "qty": 1
+     "qty": 1,
+     "set": "blb",
+     "number": "379"
     },
     {
      "name": "Mockingbird",
@@ -430,7 +526,9 @@
     },
     {
      "name": "Mind Spring",
-     "qty": 1
+     "qty": 1,
+     "set": "blb",
+     "number": "389"
     },
     {
      "name": "Alania, Divergent Storm",
@@ -440,67 +538,93 @@
     },
     {
      "name": "Sword of Vengeance",
-     "qty": 1
+     "qty": 1,
+     "set": "blb",
+     "number": "395"
     },
     {
      "name": "Thieving Otter",
-     "qty": 3
+     "qty": 3,
+     "set": "blb",
+     "number": "390"
     },
     {
      "name": "Bellowing Crier",
-     "qty": 3
+     "qty": 3,
+     "set": "blb",
+     "number": "42"
     },
     {
      "name": "Waterspout Warden",
-     "qty": 3
+     "qty": 3,
+     "set": "blb",
+     "number": "80"
     },
     {
      "name": "Pearl of Wisdom",
-     "qty": 3
+     "qty": 3,
+     "set": "blb",
+     "number": "64"
     },
     {
      "name": "Charmed Sleep",
-     "qty": 2
+     "qty": 2,
+     "set": "blb",
+     "number": "388"
     },
     {
      "name": "Alania's Pathmaker",
-     "qty": 3
+     "qty": 3,
+     "set": "blb",
+     "number": "123"
     },
     {
      "name": "Flame Lash",
-     "qty": 3
+     "qty": 3,
+     "set": "blb",
+     "number": "391"
     },
     {
      "name": "Coruscation Mage",
-     "qty": 2
+     "qty": 2,
+     "set": "blb",
+     "number": "131"
     },
     {
      "name": "Quaketusk Boar",
-     "qty": 2
+     "qty": 2,
+     "set": "blb",
+     "number": "146"
     },
     {
      "name": "Rabid Gnaw",
-     "qty": 2
+     "qty": 2,
+     "set": "blb",
+     "number": "147"
     },
     {
      "name": "Stormcatch Mentor",
-     "qty": 2
+     "qty": 2,
+     "set": "blb",
+     "number": "234"
     },
     {
      "name": "Swiftwater Cliffs",
-     "qty": 4
+     "qty": 4,
+     "set": "blb",
+     "number": "397"
     },
     {
      "name": "Island",
      "qty": 11,
      "set": "blb",
-     "number": "*"
+     "number": "371"
     },
     {
      "name": "Mountain",
      "qty": 12,
      "set": "blb",
-     "number": "*"
+     "number": "375"
     }
    ]
   },
@@ -689,255 +813,381 @@
     },
     {
      "name": "Cid, Freeflier Pilot",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "13"
     },
     {
      "name": "Cloud's Limit Break",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "14"
     },
     {
      "name": "Elena, Turk Recruit",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "18"
     },
     {
      "name": "Heidegger, Shinra Executive",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "21"
     },
     {
      "name": "Helitrooper",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "22"
     },
     {
      "name": "SOLDIER Military Program",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "25"
     },
     {
      "name": "Ultimate Magic: Holy",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "32"
     },
     {
      "name": "Avalanche of Sector 7",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "53"
     },
     {
      "name": "Cait Sith, Fortune Teller",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "54"
     },
     {
      "name": "Inferno Titan",
-     "qty": 1
+     "qty": 1,
+     "set": "hoc",
+     "number": "198"
     },
     {
      "name": "Ultimate Magic: Meteor",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "62"
     },
     {
      "name": "Vincent, Vengeful Atoner",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "64"
     },
     {
      "name": "Yuffie, Materia Hunter",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "65"
     },
     {
      "name": "Bugenhagen, Wise Elder",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "66"
     },
     {
      "name": "Lifestream's Blessing",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "67"
     },
     {
      "name": "Professor Hojo",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "69"
     },
     {
      "name": "Summoning Materia",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "72"
     },
     {
      "name": "Aerith, Last Ancient",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "76"
     },
     {
      "name": "Barret, Avalanche Leader",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "79"
     },
     {
      "name": "Red XIII, Proud Warrior",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "91"
     },
     {
      "name": "Sephiroth, Fallen Hero",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "92"
     },
     {
      "name": "Conformer Shuriken",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "98"
     },
     {
      "name": "Wrecking Ball Arm",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "100"
     },
     {
      "name": "Austere Command",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "231"
     },
     {
      "name": "Bastion Protector",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "233"
     },
     {
      "name": "Bronze Guardian",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "234"
     },
     {
      "name": "Clever Concealment",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "236"
     },
     {
      "name": "Puresteel Paladin",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "250"
     },
     {
      "name": "Unfinished Business",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "259"
     },
     {
      "name": "Vanquish the Horde",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "260"
     },
     {
      "name": "Chaos Warp",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "291"
     },
     {
      "name": "Hellkite Tyrant",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "295"
     },
     {
      "name": "Professional Face-Breaker",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "296"
     },
     {
      "name": "Decimate",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "323"
     },
     {
      "name": "Armory Automaton",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "336"
     },
     {
      "name": "Champion's Helm",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "337"
     },
     {
      "name": "Conqueror's Flail",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "340"
     },
     {
      "name": "Darksteel Plate",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "342"
     },
     {
      "name": "Inspiring Statuary",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "347"
     },
     {
      "name": "Sword of the Animist",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "362"
     },
     {
      "name": "Battlefield Forge",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "375"
     },
     {
      "name": "Bonders' Enclave",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "376"
     },
     {
      "name": "Brushland",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "377"
     },
     {
      "name": "Canopy Vista",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "378"
     },
     {
      "name": "Cinder Glade",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "380"
     },
     {
      "name": "Clifftop Retreat",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "381"
     },
     {
      "name": "Exotic Orchard",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "390"
     },
     {
      "name": "Fire-Lit Thicket",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "392"
     },
     {
      "name": "Fortified Village",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "396"
     },
     {
      "name": "Furycalm Snarl",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "397"
     },
     {
      "name": "Game Trail",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "398"
     },
     {
      "name": "Mossfire Valley",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "407"
     },
     {
      "name": "Rootbound Crag",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "416"
     },
     {
      "name": "Rugged Prairie",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "417"
     },
     {
      "name": "Scavenger Grounds",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "419"
     },
     {
      "name": "Slayers' Stronghold",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "424"
     },
     {
      "name": "Spire of Industry",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "426"
     },
     {
      "name": "Sungrass Prairie",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "428"
     },
     {
      "name": "Sunpetal Grove",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "432"
     },
     {
      "name": "Sunscorched Divide",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "433"
     },
     {
      "name": "Zack Fair",
-     "qty": 1
+     "qty": 1,
+     "set": "fin",
+     "number": "45"
     },
     {
      "name": "Barret Wallace",
-     "qty": 1
+     "qty": 1,
+     "set": "fin",
+     "number": "129"
     },
     {
      "name": "Dispatch",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "241"
     },
     {
      "name": "Secret Rendezvous",
@@ -947,31 +1197,45 @@
     },
     {
      "name": "Furious Rise",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "294"
     },
     {
      "name": "Vandalblast",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "298"
     },
     {
      "name": "Cultivate",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "300"
     },
     {
      "name": "Harmonize",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "308"
     },
     {
      "name": "Nature's Lore",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "311"
     },
     {
      "name": "Rampant Growth",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "313"
     },
     {
      "name": "Behemoth Sledge",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "320"
     },
     {
      "name": "Arcane Signet",
@@ -981,31 +1245,45 @@
     },
     {
      "name": "Colossus Hammer",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "338"
     },
     {
      "name": "Explorer's Scope",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "344"
     },
     {
      "name": "Hero's Blade",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "345"
     },
     {
      "name": "Hero's Heirloom",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "346"
     },
     {
      "name": "Lightning Greaves",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "349"
     },
     {
      "name": "Mask of Memory",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "350"
     },
     {
      "name": "Skullclamp",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "355"
     },
     {
      "name": "Sol Ring",
@@ -1015,35 +1293,51 @@
     },
     {
      "name": "Trailblazer's Boots",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "370"
     },
     {
      "name": "Ash Barrens",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "374"
     },
     {
      "name": "Evolving Wilds",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "389"
     },
     {
      "name": "Jungle Shrine",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "406"
     },
     {
      "name": "Path of Ancestry",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "411"
     },
     {
      "name": "Radiant Grove",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "414"
     },
     {
      "name": "Sacred Peaks",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "418"
     },
     {
      "name": "Wooded Ridgeline",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "441"
     },
     {
      "name": "Command Tower",
@@ -1131,283 +1425,423 @@
     },
     {
      "name": "Alisaie Leveilleur",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "9"
     },
     {
      "name": "Champions from Beyond",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "11"
     },
     {
      "name": "Dancer's Chakrams",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "17"
     },
     {
      "name": "Summon: Good King Mog XII",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "26"
     },
     {
      "name": "Tataru Taru",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "30"
     },
     {
      "name": "Thancred Waters",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "31"
     },
     {
      "name": "Alphinaud Leveilleur",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "33"
     },
     {
      "name": "Blue Mage's Cane",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "35"
     },
     {
      "name": "Hermes, Overseer of Elpis",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "36"
     },
     {
      "name": "Hraesvelgr of the First Brood",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "37"
     },
     {
      "name": "Observed Stasis",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "40"
     },
     {
      "name": "Eye of Nidhogg",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "44"
     },
     {
      "name": "Fandaniel, Telophoroi Ascian",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "46"
     },
     {
      "name": "Astrologian's Planisphere",
-     "qty": 1
+     "qty": 1,
+     "set": "fin",
+     "number": "46"
     },
     {
      "name": "Reaper's Scythe",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "48"
     },
     {
      "name": "Transpose",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "52"
     },
     {
      "name": "Ardbert, Warrior of Darkness",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "77"
     },
     {
      "name": "Emet-Selch of the Third Seat",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "81"
     },
     {
      "name": "Estinien Varlineau",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "82"
     },
     {
      "name": "Hildibrand Manderville",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "83"
     },
     {
      "name": "Krile Baldesion",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "86"
     },
     {
      "name": "Lyse Hext",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "88"
     },
     {
      "name": "Archmage of Runes",
-     "qty": 1
+     "qty": 1,
+     "set": "fdn",
+     "number": "30"
     },
     {
      "name": "Urianger Augurelt",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "96"
     },
     {
      "name": "Archaeomancer's Map",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "230"
     },
     {
      "name": "Authority of the Consuls",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "232"
     },
     {
      "name": "Cleansing Nova",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "235"
     },
     {
      "name": "Final Judgment",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "243"
     },
     {
      "name": "Archmage Emeritus",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "261"
     },
     {
      "name": "Dig Through Time",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "263"
     },
     {
      "name": "Rite of Replication",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "270"
     },
     {
      "name": "Sublime Epiphany",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "271"
     },
     {
      "name": "Torrential Gearhulk",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "272"
     },
     {
      "name": "Crux of Fate",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "275"
     },
     {
      "name": "Lethal Scheme",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "277"
     },
     {
      "name": "Murderous Rider",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "279"
     },
     {
      "name": "Baleful Strix",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "318"
     },
     {
      "name": "Vindicate",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "330"
     },
     {
      "name": "Void Rend",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "331"
     },
     {
      "name": "Coveted Jewel",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "341"
     },
     {
      "name": "Tome of Legends",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "369"
     },
     {
      "name": "Choked Estuary",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "379"
     },
     {
      "name": "Darkwater Catacombs",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "384"
     },
     {
      "name": "Desolate Mire",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "386"
     },
     {
      "name": "Drowned Catacomb",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "388"
     },
     {
      "name": "Exotic Orchard",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "390"
     },
     {
      "name": "Fetid Heath",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "391"
     },
     {
      "name": "Glacial Fortress",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "400"
     },
     {
      "name": "Isolated Chapel",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "405"
     },
     {
      "name": "Port Town",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "412"
     },
     {
      "name": "Prairie Stream",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "413"
     },
     {
      "name": "Scavenger Grounds",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "419"
     },
     {
      "name": "Shineshadow Snarl",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "422"
     },
     {
      "name": "Skycloud Expanse",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "423"
     },
     {
      "name": "Sunken Hollow",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "429"
     },
     {
      "name": "Sunken Ruins",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "430"
     },
     {
      "name": "Underground River",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "439"
     },
     {
      "name": "White Auracite",
-     "qty": 1
+     "qty": 1,
+     "set": "fin",
+     "number": "41"
     },
     {
      "name": "Sage's Nouliths",
-     "qty": 1
+     "qty": 1,
+     "set": "fin",
+     "number": "70"
     },
     {
      "name": "Circle of Power",
-     "qty": 1
+     "qty": 1,
+     "set": "fin",
+     "number": "92"
     },
     {
      "name": "Cut a Deal",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "238"
     },
     {
      "name": "Lingering Souls",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "245"
     },
     {
      "name": "Swords to Plowshares",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "256"
     },
     {
      "name": "Hypnotic Sprite",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "264"
     },
     {
      "name": "Into the Story",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "266"
     },
     {
      "name": "Propaganda",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "268"
     },
     {
      "name": "Bastion of Remembrance",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "274"
     },
     {
      "name": "Exsanguinate",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "276"
     },
     {
      "name": "Snuff Out",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "285"
     },
     {
      "name": "Syphon Mind",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "288"
     },
     {
      "name": "Arcane Signet",
@@ -1417,7 +1851,9 @@
     },
     {
      "name": "Relic of Legends",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "354"
     },
     {
      "name": "Sol Ring",
@@ -1427,27 +1863,39 @@
     },
     {
      "name": "Talisman of Dominance",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "364"
     },
     {
      "name": "Talisman of Hierarchy",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "365"
     },
     {
      "name": "Talisman of Progress",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "367"
     },
     {
      "name": "Thought Vessel",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "368"
     },
     {
      "name": "Arcane Sanctum",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "373"
     },
     {
      "name": "Ash Barrens",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "374"
     },
     {
      "name": "Command Tower",
@@ -1457,31 +1905,45 @@
     },
     {
      "name": "Contaminated Aquifer",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "383"
     },
     {
      "name": "Demolition Field",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "385"
     },
     {
      "name": "Evolving Wilds",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "389"
     },
     {
      "name": "Idyllic Beachfront",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "404"
     },
     {
      "name": "Path of Ancestry",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "411"
     },
     {
      "name": "Sunlit Marsh",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "431"
     },
     {
      "name": "Temple of the False God",
-     "qty": 1
+     "qty": 1,
+     "set": "fic",
+     "number": "438"
     },
     {
      "name": "Island",
@@ -1563,353 +2025,519 @@
     },
     {
      "name": "Diviner of Mist",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "20"
     },
     {
      "name": "Dread Return",
-     "qty": 1
+     "qty": 1,
+     "set": "cmm",
+     "number": "153"
     },
     {
      "name": "Teval's Judgment",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "28"
     },
     {
      "name": "Welcome the Dead",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "30"
     },
     {
      "name": "Floral Evoker",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "46"
     },
     {
      "name": "Steward of the Harvest",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "48"
     },
     {
      "name": "Will of the Sultai",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "49"
     },
     {
      "name": "Colossal Grave-Reaver",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "50"
     },
     {
      "name": "Gravecrawler",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "93"
     },
     {
      "name": "Life from the Loam",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "96"
     },
     {
      "name": "Casualties of War",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "98"
     },
     {
      "name": "Amphin Mutineer",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "143"
     },
     {
      "name": "River Kelpie",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "166"
     },
     {
      "name": "Dauthi Voidwalker",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "176"
     },
     {
      "name": "Disciple of Bolas",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "178"
     },
     {
      "name": "Junji, the Midnight Sky",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "183"
     },
     {
      "name": "Lethal Scheme",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "184"
     },
     {
      "name": "Living Death",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "185"
     },
     {
      "name": "Lord of the Forsaken",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "186"
     },
     {
      "name": "Necromantic Selection",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "189"
     },
     {
      "name": "Necropolis Fiend",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "190"
     },
     {
      "name": "Noxious Gearhulk",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "191"
     },
     {
      "name": "Ob Nixilis, the Fallen",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "192"
     },
     {
      "name": "Tasigur, the Golden Fang",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "197"
     },
     {
      "name": "Woe Strider",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "201"
     },
     {
      "name": "Avenger of Zendikar",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "247"
     },
     {
      "name": "Conduit of Worlds",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "251"
     },
     {
      "name": "Multani, Yavimaya's Avatar",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "263"
     },
     {
      "name": "Shigeki, Jukai Visionary",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "270"
     },
     {
      "name": "Consuming Aberration",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "283"
     },
     {
      "name": "Jarad, Golgari Lich Lord",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "293"
     },
     {
      "name": "Lord of Extinction",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "295"
     },
     {
      "name": "Meren of Clan Nel Toth",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "297"
     },
     {
      "name": "Command Beacon",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "352"
     },
     {
      "name": "Crypt of Agadeem",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "354"
     },
     {
      "name": "Darkwater Catacombs",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "355"
     },
     {
      "name": "Dreamroot Cascade",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "358"
     },
     {
      "name": "Drownyard Temple",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "359"
     },
     {
      "name": "Exotic Orchard",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "360"
     },
     {
      "name": "Fetid Pools",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "363"
     },
     {
      "name": "Hinterland Harbor",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "371"
     },
     {
      "name": "Llanowar Wastes",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "376"
     },
     {
      "name": "Sunken Hollow",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "398"
     },
     {
      "name": "Temple of Malady",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "403"
     },
     {
      "name": "Woodland Cemetery",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "412"
     },
     {
      "name": "Essence Anchor",
-     "qty": 1
+     "qty": 1,
+     "set": "tdm",
+     "number": "44"
     },
     {
      "name": "Arcane Signet",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "105"
     },
     {
      "name": "Sol Ring",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "106"
     },
     {
      "name": "Command Tower",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "107"
     },
     {
      "name": "Forbidden Alchemy",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "152"
     },
     {
      "name": "Hedron Crab",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "155"
     },
     {
      "name": "Treasure Cruise",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "169"
     },
     {
      "name": "Wonder",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "170"
     },
     {
      "name": "Phyrexian Reclamation",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "194"
     },
     {
      "name": "Reassembling Skeleton",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "195"
     },
     {
      "name": "Stitcher's Supplier",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "196"
     },
     {
      "name": "Victimize",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "198"
     },
     {
      "name": "Kishla Skimmer",
-     "qty": 1
+     "qty": 1,
+     "set": "tdm",
+     "number": "201"
     },
     {
      "name": "Crawling Sensation",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "252"
     },
     {
      "name": "Cultivate",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "253"
     },
     {
      "name": "Farseek",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "255"
     },
     {
      "name": "Grapple with the Past",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "257"
     },
     {
      "name": "Harrow",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "258"
     },
     {
      "name": "Opulent Palace",
-     "qty": 1
+     "qty": 1,
+     "set": "ecc",
+     "number": "157"
     },
     {
      "name": "Rampant Growth",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "265"
     },
     {
      "name": "Sakura-Tribe Elder",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "266"
     },
     {
      "name": "Satyr Wayfinder",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "267"
     },
     {
      "name": "Springbloom Druid",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "271"
     },
     {
      "name": "Tear Asunder",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "273"
     },
     {
      "name": "Timeless Witness",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "274"
     },
     {
      "name": "Grisly Salvage",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "290"
     },
     {
      "name": "Nyx Weaver",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "298"
     },
     {
      "name": "Putrefy",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "300"
     },
     {
      "name": "Skull Prophet",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "304"
     },
     {
      "name": "Millikin",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "321"
     },
     {
      "name": "Cephalid Coliseum",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "349"
     },
     {
      "name": "Contaminated Aquifer",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "353"
     },
     {
      "name": "Foreboding Landscape",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "365"
     },
     {
      "name": "Golgari Rot Farm",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "368"
     },
     {
      "name": "Haunted Mire",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "369"
     },
     {
      "name": "Memorial to Folly",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "377"
     },
     {
      "name": "Myriad Landscape",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "380"
     },
     {
      "name": "Terramorphic Expanse",
-     "qty": 1
+     "qty": 1,
+     "set": "tdc",
+     "number": "408"
     },
     {
      "name": "Island",
      "qty": 4,
-     "set": "tdm",
-     "number": "*"
+     "set": "mdd",
+     "number": "294"
     },
     {
      "name": "Swamp",
      "qty": 5,
-     "set": "tdm",
-     "number": "*"
+     "set": "mdd",
+     "number": "296"
     },
     {
      "name": "Forest",
      "qty": 6,
-     "set": "tdm",
-     "number": "*"
+     "set": "mdd",
+     "number": "301"
     }
    ]
   },
@@ -2975,291 +3603,429 @@
     },
     {
      "name": "Archon of Redemption",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "7"
     },
     {
      "name": "Cartographer's Hawk",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "10"
     },
     {
      "name": "Cleansing Nova",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "12"
     },
     {
      "name": "Emeria Angel",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "21"
     },
     {
      "name": "Gideon Jura",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "24"
     },
     {
      "name": "Hanged Executioner",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "25"
     },
     {
      "name": "Remorseful Cleric",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "31"
     },
     {
      "name": "Sephara, Sky's Blade",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "33"
     },
     {
      "name": "Steel-Plume Marshal",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "35"
     },
     {
      "name": "Storm Herd",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "36"
     },
     {
      "name": "True Conviction",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "38"
     },
     {
      "name": "Angler Turtle",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "43"
     },
     {
      "name": "Bident of Thassa",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "44"
     },
     {
      "name": "Diluvian Primordial",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "47"
     },
     {
      "name": "Glorious Anthem",
-     "qty": 1
+     "qty": 1,
+     "set": "m21",
+     "number": "21"
     },
     {
      "name": "Faerie Formation",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "51"
     },
     {
      "name": "Gravitational Shift",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "54"
     },
     {
      "name": "Inspired Sphinx",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "55"
     },
     {
      "name": "Sharding Sphinx",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "59"
     },
     {
      "name": "Sphinx of Enlightenment",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "61"
     },
     {
      "name": "Windreader Sphinx",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "64"
     },
     {
      "name": "Absorb",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "216"
     },
     {
      "name": "Skycat Sovereign",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "243"
     },
     {
      "name": "Sphinx's Revelation",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "244"
     },
     {
      "name": "Time Wipe",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "252"
     },
     {
      "name": "Moorland Haunt",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "310"
     },
     {
      "name": "Port Town",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "313"
     },
     {
      "name": "Prairie Stream",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "314"
     },
     {
      "name": "Temple of Enlightenment",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "325"
     },
     {
      "name": "Aven Gagglemaster",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "8"
     },
     {
      "name": "Banishing Light",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "9"
     },
     {
      "name": "Condemn",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "15"
     },
     {
      "name": "Crush Contraband",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "16"
     },
     {
      "name": "Disenchant",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "20"
     },
     {
      "name": "Generous Gift",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "23"
     },
     {
      "name": "Kangee's Lieutenant",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "27"
     },
     {
      "name": "Rally of Wings",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "30"
     },
     {
      "name": "Soul Snare",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "34"
     },
     {
      "name": "Swords to Plowshares",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "37"
     },
     {
      "name": "Vow of Duty",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "40"
     },
     {
      "name": "Aetherize",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "42"
     },
     {
      "name": "Counterspell",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "45"
     },
     {
      "name": "Favorable Winds",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "52"
     },
     {
      "name": "Negate",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "58"
     },
     {
      "name": "Tide Skimmer",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "62"
     },
     {
      "name": "Warden of Evos Isle",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "63"
     },
     {
      "name": "Winged Words",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "65"
     },
     {
      "name": "Cloudblazer",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "221"
     },
     {
      "name": "Empyrean Eagle",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "226"
     },
     {
      "name": "Jubilant Skybonder",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "232"
     },
     {
      "name": "Kangee, Sky Warden",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "234"
     },
     {
      "name": "Migratory Route",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "237"
     },
     {
      "name": "Staggering Insight",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "246"
     },
     {
      "name": "Thunderclap Wyvern",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "251"
     },
     {
      "name": "Arcane Signet",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "257"
     },
     {
      "name": "Azorius Signet",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "259"
     },
     {
      "name": "Commander's Sphere",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "261"
     },
     {
      "name": "Hedron Archive",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "266"
     },
     {
      "name": "Pilgrim's Eye",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "271"
     },
     {
      "name": "Sky Diamond",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "273"
     },
     {
      "name": "Skyscanner",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "274"
     },
     {
      "name": "Sol Ring",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "276"
     },
     {
      "name": "Talisman of Progress",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "283"
     },
     {
      "name": "Thought Vessel",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "285"
     },
     {
      "name": "Coastal Tower",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "296"
     },
     {
      "name": "Command Tower",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "297"
     },
     {
      "name": "Meandering River",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "308"
     },
     {
      "name": "Sejiri Refuge",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "317"
     },
     {
      "name": "Tranquil Cove",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "329"
     },
     {
      "name": "Plains",
      "qty": 15,
      "set": "scd",
-     "number": "*"
+     "number": "333"
     },
     {
      "name": "Island",
      "qty": 15,
      "set": "scd",
-     "number": "*"
+     "number": "337"
     }
    ]
   },
@@ -3281,287 +4047,423 @@
     },
     {
      "name": "Geralf's Mindcrusher",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "53"
     },
     {
      "name": "Gravedigger",
-     "qty": 1
+     "qty": 1,
+     "set": "j25",
+     "number": "452"
     },
     {
      "name": "Army of the Damned",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "68"
     },
     {
      "name": "Cemetery Reaper",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "70"
     },
     {
      "name": "Champion of the Perished",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "71"
     },
     {
      "name": "Crippling Fear",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "72"
     },
     {
      "name": "Gravespawn Sovereign",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "79"
     },
     {
      "name": "Josu Vess, Lich Knight",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "82"
     },
     {
      "name": "Liliana, Untouched by Death",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "84"
     },
     {
      "name": "Liliana's Mastery",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "86"
     },
     {
      "name": "Liliana's Standard Bearer",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "87"
     },
     {
      "name": "Midnight Reaper",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "91"
     },
     {
      "name": "Necromantic Selection",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "94"
     },
     {
      "name": "Necrotic Hex",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "95"
     },
     {
      "name": "Open the Graves",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "97"
     },
     {
      "name": "Overseer of the Damned",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "98"
     },
     {
      "name": "Gurmag Angler",
-     "qty": 1
+     "qty": 1,
+     "set": "uma",
+     "number": "102"
     },
     {
      "name": "Unbreathing Horde",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "113"
     },
     {
      "name": "Zombie Apocalypse",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "121"
     },
     {
      "name": "Enter the God-Eternals",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "227"
     },
     {
      "name": "Nightveil Specter",
-     "qty": 1
+     "qty": 1,
+     "set": "gtc",
+     "number": "222"
     },
     {
      "name": "Undermine",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "254"
     },
     {
      "name": "Vela the Night-Clad",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "256"
     },
     {
      "name": "Mind Stone",
-     "qty": 1
+     "qty": 1,
+     "set": "trc",
+     "number": "497"
     },
     {
      "name": "Choked Estuary",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "293"
     },
     {
      "name": "Sunken Hollow",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "322"
     },
     {
      "name": "Temple of Deceit",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "324"
     },
     {
      "name": "Deep Analysis",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "46"
     },
     {
      "name": "Distant Melody",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "48"
     },
     {
      "name": "Eternal Skylord",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "49"
     },
     {
      "name": "Lazotep Plating",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "57"
     },
     {
      "name": "Sinister Sabotage",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "60"
     },
     {
      "name": "Cruel Revival",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "73"
     },
     {
      "name": "Curse of Disturbance",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "74"
     },
     {
      "name": "Feed the Swarm",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "77"
     },
     {
      "name": "Fleshbag Marauder",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "78"
     },
     {
      "name": "Gray Merchant of Asphodel",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "80"
     },
     {
      "name": "Lazotep Reaver",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "83"
     },
     {
      "name": "Liliana's Devotee",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "85"
     },
     {
      "name": "Lord of the Accursed",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "88"
     },
     {
      "name": "Lotleth Giant",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "89"
     },
     {
      "name": "Loyal Subordinate",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "90"
     },
     {
      "name": "Mire Triton",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "92"
     },
     {
      "name": "Murder",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "93"
     },
     {
      "name": "Spark Reaper",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "109"
     },
     {
      "name": "Syphon Flesh",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "110"
     },
     {
      "name": "Undead Augur",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "114"
     },
     {
      "name": "Vampiric Rites",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "116"
     },
     {
      "name": "Vengeful Dead",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "117"
     },
     {
      "name": "Victimize",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "118"
     },
     {
      "name": "Vizier of the Scorpion",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "119"
     },
     {
      "name": "Withered Wretch",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "120"
     },
     {
      "name": "Diregraf Captain",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "224"
     },
     {
      "name": "Gleaming Overseer",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "229"
     },
     {
      "name": "Pilfered Plans",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "238"
     },
     {
      "name": "Arcane Signet",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "257"
     },
     {
      "name": "Commander's Sphere",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "261"
     },
     {
      "name": "Dimir Signet",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "263"
     },
     {
      "name": "Heraldic Banner",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "267"
     },
     {
      "name": "Sol Ring",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "276"
     },
     {
      "name": "Talisman of Dominance",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "280"
     },
     {
      "name": "Unstable Obelisk",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "286"
     },
     {
      "name": "Wayfarer's Bauble",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "287"
     },
     {
      "name": "Command Tower",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "297"
     },
     {
      "name": "Dismal Backwater",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "298"
     },
     {
      "name": "Jwar Isle Refuge",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "306"
     },
     {
      "name": "Salt Marsh",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "316"
     },
     {
      "name": "Submerged Boneyard",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "321"
     },
     {
      "name": "Island",
      "qty": 13,
      "set": "scd",
-     "number": "*"
+     "number": "337"
     },
     {
      "name": "Swamp",
      "qty": 18,
      "set": "scd",
-     "number": "*"
+     "number": "341"
     }
    ]
   },
@@ -3583,295 +4485,435 @@
     },
     {
      "name": "Archfiend of Depravity",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "67"
     },
     {
      "name": "Bloodgift Demon",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "69"
     },
     {
      "name": "Deadly Tempest",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "75"
     },
     {
      "name": "Raise Dead",
-     "qty": 1
+     "qty": 1,
+     "set": "w17",
+     "number": "18"
     },
     {
      "name": "Ob Nixilis Reignited",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "96"
     },
     {
      "name": "Profane Command",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "99"
     },
     {
      "name": "Rakshasa Debaser",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "100"
     },
     {
      "name": "Reign of the Pit",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "102"
     },
     {
      "name": "Sangromancer",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "103"
     },
     {
      "name": "Dread Shade",
-     "qty": 1
+     "qty": 1,
+     "set": "dom",
+     "number": "88"
     },
     {
      "name": "Sepulchral Primordial",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "106"
     },
     {
      "name": "Soul Shatter",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "108"
     },
     {
      "name": "Ogre Slumlord",
-     "qty": 1
+     "qty": 1,
+     "set": "otc",
+     "number": "145"
     },
     {
      "name": "Blasphemous Act",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "124"
     },
     {
      "name": "Brash Taunter",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "125"
     },
     {
      "name": "Chaos Warp",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "127"
     },
     {
      "name": "Combustible Gearhulk",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "128"
     },
     {
      "name": "Dictate of the Twin Gods",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "131"
     },
     {
      "name": "Fiery Confluence",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "141"
     },
     {
      "name": "Geode Rager",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "144"
     },
     {
      "name": "Hill Giant",
-     "qty": 1
+     "qty": 1,
+     "set": "10e",
+     "number": "212"
     },
     {
      "name": "Magmatic Force",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "150"
     },
     {
      "name": "Sunbird's Invocation",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "159"
     },
     {
      "name": "Tectonic Giant",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "161"
     },
     {
      "name": "Wild Ricochet",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "169"
     },
     {
      "name": "Wildfire Devils",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "170"
     },
     {
      "name": "Kaervek the Merciless",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "233"
     },
     {
      "name": "Spiteful Visions",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "245"
     },
     {
      "name": "Stormfist Crusader",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "247"
     },
     {
      "name": "Theater of Horrors",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "250"
     },
     {
      "name": "Coveted Jewel",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "262"
     },
     {
      "name": "Solemn Simulacrum",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "277"
     },
     {
      "name": "Foreboding Ruins",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "300"
     },
     {
      "name": "Smoldering Marsh",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "319"
     },
     {
      "name": "Stensia Bloodhall",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "320"
     },
     {
      "name": "Temple of Malice",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "326"
     },
     {
      "name": "Ambition's Cost",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "66"
     },
     {
      "name": "Feed the Swarm",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "77"
     },
     {
      "name": "Indulgent Tormentor",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "81"
     },
     {
      "name": "Read the Bones",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "101"
     },
     {
      "name": "Sign in Blood",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "107"
     },
     {
      "name": "Syphon Mind",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "111"
     },
     {
      "name": "Vampire Nighthawk",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "115"
     },
     {
      "name": "Abrade",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "122"
     },
     {
      "name": "Explosion of Riches",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "140"
     },
     {
      "name": "Guttersnipe",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "145"
     },
     {
      "name": "Lightning Bolt",
-     "qty": 1
+     "qty": 1,
+     "set": "msc",
+     "number": "806"
     },
     {
      "name": "Mana Geyser",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "151"
     },
     {
      "name": "Thermo-Alchemist",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "162"
     },
     {
      "name": "Breath of Malfegor",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "218"
     },
     {
      "name": "Rakdos Charm",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "239"
     },
     {
      "name": "Terminate",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "249"
     },
     {
      "name": "Unlicensed Disintegration",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "255"
     },
     {
      "name": "Arcane Signet",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "257"
     },
     {
      "name": "Burnished Hart",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "260"
     },
     {
      "name": "Commander's Sphere",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "261"
     },
     {
      "name": "Lightning Greaves",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "269"
     },
     {
      "name": "Nihil Spellbomb",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "270"
     },
     {
      "name": "Rakdos Signet",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "272"
     },
     {
      "name": "Sol Ring",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "276"
     },
     {
      "name": "Talisman of Indulgence",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "282"
     },
     {
      "name": "Wayfarer's Bauble",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "287"
     },
     {
      "name": "Worn Powerstone",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "288"
     },
     {
      "name": "Akoum Refuge",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "289"
     },
     {
      "name": "Bloodfell Caves",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "290"
     },
     {
      "name": "Cinder Barrens",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "294"
     },
     {
      "name": "Command Tower",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "297"
     },
     {
      "name": "Molten Slagheap",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "309"
     },
     {
      "name": "Myriad Landscape",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "311"
     },
     {
      "name": "Urborg Volcano",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "331"
     },
     {
      "name": "Swamp",
      "qty": 15,
      "set": "scd",
-     "number": "*"
+     "number": "341"
     },
     {
      "name": "Mountain",
      "qty": 14,
      "set": "scd",
-     "number": "*"
+     "number": "345"
     }
    ]
   },
@@ -3893,291 +4935,429 @@
     },
     {
      "name": "Akoum Hellkite",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "123"
     },
     {
      "name": "Chain Reaction",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "126"
     },
     {
      "name": "Crucible of Fire",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "129"
     },
     {
      "name": "Demanding Dragon",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "130"
     },
     {
      "name": "Dragonkin Berserker",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "134"
     },
     {
      "name": "Dragonmaster Outcast",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "136"
     },
     {
      "name": "Drakuseth, Maw of Flames",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "138"
     },
     {
      "name": "Dream Pillager",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "139"
     },
     {
      "name": "Flameblast Dragon",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "142"
     },
     {
      "name": "Hoard-Smelter Dragon",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "147"
     },
     {
      "name": "Magmaquake",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "149"
     },
     {
      "name": "Mordant Dragon",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "152"
     },
     {
      "name": "Runehorn Hellkite",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "155"
     },
     {
      "name": "Chandra, Torch of Defiance",
-     "qty": 1
+     "qty": 1,
+     "set": "fra",
+     "number": "244"
     },
     {
      "name": "Scourge of Valkas",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "157"
     },
     {
      "name": "Spit Flame",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "158"
     },
     {
      "name": "Sweltering Suns",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "160"
     },
     {
      "name": "Thunderbreak Regent",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "163"
     },
     {
      "name": "Thundermaw Hellkite",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "164"
     },
     {
      "name": "Tyrant's Familiar",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "165"
     },
     {
      "name": "Verix Bladewing",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "168"
     },
     {
      "name": "Foe-Razer Regent",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "183"
     },
     {
      "name": "Frontier Siege",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "184"
     },
     {
      "name": "Hunter's Prowess",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "192"
     },
     {
      "name": "Primal Might",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "204"
     },
     {
      "name": "Shamanic Revelation",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "211"
     },
     {
      "name": "Clan Defiance",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "220"
     },
     {
      "name": "Harbinger of the Hunt",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "230"
     },
     {
      "name": "Dragon's Hoard",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "264"
     },
     {
      "name": "Steel Hellkite",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "278"
     },
     {
      "name": "Cinder Glade",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "295"
     },
     {
      "name": "Game Trail",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "302"
     },
     {
      "name": "Haven of the Spirit Dragon",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "304"
     },
     {
      "name": "Temple of Abandon",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "323"
     },
     {
      "name": "Dragon Mage",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "132"
     },
     {
      "name": "Dragon Tempest",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "133"
     },
     {
      "name": "Dragonlord's Servant",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "135"
     },
     {
      "name": "Dragonspeaker Shaman",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "137"
     },
     {
      "name": "Furnace Whelp",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "143"
     },
     {
      "name": "Provoke the Trolls",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "153"
     },
     {
      "name": "Rapacious Dragon",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "154"
     },
     {
      "name": "Unleash Fury",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "166"
     },
     {
      "name": "Vandalblast",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "167"
     },
     {
      "name": "Beast Within",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "172"
     },
     {
      "name": "Blossoming Defense",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "173"
     },
     {
      "name": "Cultivate",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "177"
     },
     {
      "name": "Drumhunter",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "179"
     },
     {
      "name": "Elemental Bond",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "180"
     },
     {
      "name": "Garruk's Uprising",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "185"
     },
     {
      "name": "Harmonize",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "187"
     },
     {
      "name": "Hunter's Insight",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "191"
     },
     {
      "name": "Loaming Shaman",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "197"
     },
     {
      "name": "Return to Nature",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "206"
     },
     {
      "name": "Sakura-Tribe Elder",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "208"
     },
     {
      "name": "Draconic Disciple",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "225"
     },
     {
      "name": "Fires of Yavimaya",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "228"
     },
     {
      "name": "Savage Ventmaw",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "240"
     },
     {
      "name": "Arcane Signet",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "257"
     },
     {
      "name": "Atarka Monument",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "258"
     },
     {
      "name": "Commander's Sphere",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "261"
     },
     {
      "name": "Sol Ring",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "276"
     },
     {
      "name": "Swiftfoot Boots",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "279"
     },
     {
      "name": "Talisman of Impulse",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "281"
     },
     {
      "name": "Command Tower",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "297"
     },
     {
      "name": "Kazandu Refuge",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "307"
     },
     {
      "name": "Path of Ancestry",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "312"
     },
     {
      "name": "Rugged Highlands",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "315"
     },
     {
      "name": "Shivan Oasis",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "318"
     },
     {
      "name": "Timber Gorge",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "328"
     },
     {
      "name": "Mountain",
      "qty": 18,
      "set": "scd",
-     "number": "*"
+     "number": "345"
     },
     {
      "name": "Forest",
      "qty": 12,
      "set": "scd",
-     "number": "*"
+     "number": "349"
     }
    ]
   },
@@ -4199,295 +5379,435 @@
     },
     {
      "name": "Ajani, Caller of the Pride",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "6"
     },
     {
      "name": "Citywide Bust",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "11"
     },
     {
      "name": "Commander's Insignia",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "13"
     },
     {
      "name": "Dawn of Hope",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "17"
     },
     {
      "name": "Dictate of Heliod",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "19"
     },
     {
      "name": "Felidar Retreat",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "22"
     },
     {
      "name": "Hour of Reckoning",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "26"
     },
     {
      "name": "Mentor of the Meek",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "28"
     },
     {
      "name": "White Sun's Zenith",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "41"
     },
     {
      "name": "Champion of Lambholt",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "174"
     },
     {
      "name": "Citanul Hierophants",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "175"
     },
     {
      "name": "Collective Unconscious",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "176"
     },
     {
      "name": "Harvest Season",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "188"
     },
     {
      "name": "Hornet Nest",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "189"
     },
     {
      "name": "Hornet Queen",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "190"
     },
     {
      "name": "Rishkar, Peema Renegade",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "207"
     },
     {
      "name": "Scavenging Ooze",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "210"
     },
     {
      "name": "Thunderfoot Baloth",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "213"
     },
     {
      "name": "Verdant Force",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "214"
     },
     {
      "name": "Aura Mutation",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "217"
     },
     {
      "name": "Camaraderie",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "219"
     },
     {
      "name": "Collective Blessing",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "222"
     },
     {
      "name": "Dauntless Escort",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "223"
     },
     {
      "name": "March of the Multitudes",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "236"
     },
     {
      "name": "Trostani Discordant",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "253"
     },
     {
      "name": "Idol of Oblivion",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "268"
     },
     {
      "name": "Slate of Ancestry",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "275"
     },
     {
      "name": "Canopy Vista",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "292"
     },
     {
      "name": "Fortified Village",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "301"
     },
     {
      "name": "Temple of Plenty",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "327"
     },
     {
      "name": "Conclave Tribunal",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "14"
     },
     {
      "name": "Devouring Light",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "18"
     },
     {
      "name": "Path to Exile",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "29"
     },
     {
      "name": "Rootborn Defenses",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "32"
     },
     {
      "name": "Valor in Akros",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "39"
     },
     {
      "name": "Avacyn's Pilgrim",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "171"
     },
     {
      "name": "Rampant Growth",
-     "qty": 1
+     "qty": 1,
+     "set": "trc",
+     "number": "468"
     },
     {
      "name": "Eternal Witness",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "181"
     },
     {
      "name": "Farhaven Elf",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "182"
     },
     {
      "name": "Great Oak Guardian",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "186"
     },
     {
      "name": "Harmonize",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "187"
     },
     {
      "name": "Jade Mage",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "193"
     },
     {
      "name": "Jaspera Sentinel",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "194"
     },
     {
      "name": "Karametra's Favor",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "195"
     },
     {
      "name": "Leafkin Druid",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "196"
     },
     {
      "name": "Loyal Guardian",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "198"
     },
     {
      "name": "Nissa's Expedition",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "199"
     },
     {
      "name": "Nullmage Shepherd",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "200"
     },
     {
      "name": "Overrun",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "201"
     },
     {
      "name": "Overwhelming Instinct",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "202"
     },
     {
      "name": "Presence of Gond",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "203"
     },
     {
      "name": "Reclamation Sage",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "205"
     },
     {
      "name": "Scatter the Seeds",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "209"
     },
     {
      "name": "Sporemound",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "212"
     },
     {
      "name": "Serra Angel",
-     "qty": 1
+     "qty": 1,
+     "set": "fdn",
+     "number": "740"
     },
     {
      "name": "Maja, Bretagard Protector",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "235"
     },
     {
      "name": "Selesnya Evangel",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "241"
     },
     {
      "name": "Selesnya Guildmage",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "242"
     },
     {
      "name": "Sylvan Reclamation",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "248"
     },
     {
      "name": "Arcane Signet",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "257"
     },
     {
      "name": "Commander's Sphere",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "261"
     },
     {
      "name": "Sol Ring",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "276"
     },
     {
      "name": "Talisman of Unity",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "284"
     },
     {
      "name": "Blossoming Sands",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "291"
     },
     {
      "name": "Command Tower",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "297"
     },
     {
      "name": "Elfhame Palace",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "299"
     },
     {
      "name": "Graypelt Refuge",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "303"
     },
     {
      "name": "Holdout Settlement",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "305"
     },
     {
      "name": "Tranquil Expanse",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "330"
     },
     {
      "name": "Vitu-Ghazi, the City-Tree",
-     "qty": 1
+     "qty": 1,
+     "set": "scd",
+     "number": "332"
     },
     {
      "name": "Forest",
      "qty": 15,
      "set": "scd",
-     "number": "*"
+     "number": "349"
     },
     {
      "name": "Plains",
      "qty": 14,
      "set": "scd",
-     "number": "*"
+     "number": "333"
     }
    ]
   }
