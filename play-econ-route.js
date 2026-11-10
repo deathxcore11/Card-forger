@@ -209,7 +209,7 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
   const grantStarterDecks = async () => {
     const decks = await freePrecons(env, request, fetcher);
     if (decks.length < 10) return false;
-    const rows = decks.flatMap(d => d.rows), key = r => r.set ? r.set + ':' + r.number : 'n:' + r.name.toLowerCase();
+    const rows = decks.filter(d => d.format !== 'Commander' || STARTER_COMMANDER_CARDS).flatMap(d => d.rows), key = r => r.set ? r.set + ':' + r.number : 'n:' + r.name.toLowerCase();
     const want = [...new Map(rows.map(r => [key(r), r])).values()];
     const cards = await scryfallCollection(want.map(r => r.set ? {set: r.set, collector_number: r.number} : {name: r.name.split(' // ')[0]}), fetcher);
     const byKey = new Map();
