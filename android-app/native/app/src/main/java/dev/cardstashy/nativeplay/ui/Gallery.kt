@@ -45,7 +45,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -105,7 +104,7 @@ internal fun GalleryWall(g: Gallery, index: Int) {
         // Neighbours: the previous and next piece at 9 % and 91 %, 46 % high, alpha .28, desaturated.
         val grey = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
         for ((i, x) in listOf(index - 1 to .09f, index + 1 to .91f)) g.pieces.getOrNull(i)?.let { p ->
-            val painter = rememberAsyncImagePainter(p.art, imageLoader = dev.cardstashy.nativeplay.art.CardArt.loader)
+            val painter = heroPainter(homeArt(p.art)) ?: return@let
             val ratio = ratioOf(painter)
             val h = H * .46f; val w = h * ratio
             Image(painter, null, Modifier.offset(x = W * x - w / 2, y = H * .44f - h / 2).width(w).height(h).alpha(.28f), contentScale = ContentScale.Fit, colorFilter = grey)
@@ -113,7 +112,7 @@ internal fun GalleryWall(g: Gallery, index: Int) {
         // The piece: centred at 50 % / 44 %, 66 % of the height, its own shape, never cropped. Walking crossfades (650 ms).
         Crossfade(index, animationSpec = tween(if (Motion.still) 0 else 650), label = "piece") { i ->
             val p = g.pieces.getOrNull(i) ?: return@Crossfade
-            val painter = rememberAsyncImagePainter(p.art, imageLoader = dev.cardstashy.nativeplay.art.CardArt.loader)
+            val painter = heroPainter(homeArt(p.art)) ?: return@Crossfade
             val ratio = ratioOf(painter)
             val h = minOf(H * .66f, W * .8f / ratio); val w = h * ratio
             Box(Modifier.fillMaxSize()) {
@@ -128,9 +127,10 @@ internal fun GalleryWall(g: Gallery, index: Int) {
         val breath = if (Motion.still) 1f else rememberInfiniteTransition(label = "light").animateFloat(1f, 1f,
             infiniteRepeatable(keyframes { durationMillis = 6000; 1f at 0; .72f at 3000; 1f at 6000 }, RepeatMode.Restart), label = "b").value
         Canvas(Modifier.fillMaxSize()) {
-            val top = Offset(size.width * .5f, -size.height * .05f)
-            val cone = Path().apply { moveTo(top.x - size.width * .03f, 0f); lineTo(top.x + size.width * .03f, 0f); lineTo(size.width * .78f, size.height * .87f); lineTo(size.width * .22f, size.height * .87f); close() }
-            drawPath(cone, Brush.verticalGradient(listOf(Color(0xFFFFE9C4).copy(alpha = .10f * breath), Color(0xFFFFE9C4).copy(alpha = .02f * breath), Color.Transparent), startY = 0f, endY = size.height * .87f))
+            // A wide, soft pool falling from above the frame: no hard edge anywhere.
+            val c = Offset(size.width * .5f, -size.height * .12f)
+            val r = size.height * 1.05f
+            drawCircle(Brush.radialGradient(0f to Color(0xFFFFE9C4).copy(alpha = .16f * breath), .45f to Color(0xFFFFE9C4).copy(alpha = .07f * breath), 1f to Color.Transparent, center = c, radius = r), r, c)
         }
         Text(if (g.pieces.size > 1) "GALLERY · PIECE ${index + 1} OF ${g.pieces.size}" else "GALLERY", style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, letterSpacing = .18.em, color = Color(0x99E8D9BC)),
             modifier = Modifier.padding(start = 28.dp, top = 22.dp))
@@ -138,8 +138,8 @@ internal fun GalleryWall(g: Gallery, index: Int) {
 }
 
 @Composable
-private fun ratioOf(painter: AsyncImagePainter): Float {
-    painter.state.collectAsState().value
+private fun ratioOf(painter: androidx.compose.ui.graphics.painter.Painter): Float {
+    (painter as? AsyncImagePainter)?.state?.collectAsState()?.value
     val s = painter.intrinsicSize
     return if (s.width > 0f && s.height > 0f && s.width.isFinite() && s.height.isFinite()) s.width / s.height else 626f / 457f
 }
@@ -165,8 +165,8 @@ internal fun GalleryLabel(g: Gallery, index: Int, onWalkTo: (Int) -> Unit) {
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 more.forEach { i -> val q = g.pieces[i]
                     Column(Modifier.width(150.dp).clip(RoundedCornerShape(4.dp)).clickable { onWalkTo(i) }, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Image(rememberAsyncImagePainter(q.art, imageLoader = dev.cardstashy.nativeplay.art.CardArt.loader), q.title,
-                            Modifier.fillMaxWidth().aspectRatio(626f / 457f).border(1.dp, Brass.copy(alpha = .6f)), contentScale = ContentScale.Crop)
+                        heroPainter(homeArt(q.art))?.let { pic -> Image(pic, q.title,
+                            Modifier.fillMaxWidth().aspectRatio(626f / 457f).border(1.dp, Brass.copy(alpha = .6f)), contentScale = ContentScale.Crop) }
                         Text(q.title, style = TextStyle(fontFamily = Type.Sans, fontSize = 12.sp, color = Color(0xCCE8D9BC)), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
