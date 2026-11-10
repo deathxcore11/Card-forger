@@ -910,7 +910,10 @@ private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActi
                     }
                 },
                 right = { size, compact ->
-                    DualSectionBox("Rules text") {
+                    val fi = face.coerceIn(0, faces.lastIndex); val fcur = faces[fi]
+                    val ptHead = fcur.get("power")?.takeIf { it.isJsonPrimitive }?.let { "${fcur.s("power")}/${fcur.s("toughness")}" }
+                        ?: shown.s("loyalty").takeIf { it.isNotBlank() && fi == 0 }?.let { "Loyalty $it" } ?: ""
+                    DualSectionBox("Rules text", trailing = ptHead) {
                         // The face on the card: Flip turns the card and these words follow.
                         listOf(face.coerceIn(0, faces.lastIndex)).forEach { i -> val fc = faces[i]
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -920,9 +923,6 @@ private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActi
                                 }
                                 fc.s("oracle_text").split("\n").filter { it.isNotBlank() }.forEach { line -> RuleLine(line, data, { rule = it }, size) }
                                 fc.s("flavor_text").takeIf { it.isNotBlank() }?.let { Text(flavourText(it), style = t(stepDown(size).toFloat(), color = Rule.Color.Muted).copy(fontStyle = FontStyle.Italic)) }
-                                val pt = fc.get("power")?.takeIf { it.isJsonPrimitive }?.let { "${fc.s("power")}/${fc.s("toughness")}" }
-                                    ?: shown.s("loyalty").takeIf { it.isNotBlank() && i == 0 }?.let { "Loyalty $it" } ?: ""
-                                if (pt.isNotBlank()) Text(pt, style = Rule.Type.sans(size, FontWeight.Bold), modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.End)
                             }
                         }
                     }
@@ -975,12 +975,12 @@ private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActi
                 if (code.isBlank()) null else DualTile { GlassTile(Modifier.fillMaxSize(), onClick = (act.set ?: shopSet)?.let { go -> { go(code) } }) { SetTileBody(shown, state) } })),
             DualSection("Get more", 1.25f, listOfNotNull(
                 if (getLinks.isEmpty()) null else DualTile { GlassTile(Modifier.fillMaxSize(), "Where to find it") {
-                    // The rows share the whole tile evenly (never shorter than a touch target), so it has no dead space.
+                    // Rows are top-anchored under the label at a fixed touch height, so the first line sits where the rulings tile's first line does.
                     BoxWithConstraints(Modifier.fillMaxSize()) {
-                        val rowH = (maxHeight / getLinks.size).coerceAtLeast(40.dp)
+                        val rowH = 40.dp
                         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                             getLinks.forEach { (l, go) ->
-                                if (go != null) TileLink(l, go, Modifier.height(rowH), size = if (getLinks.size == 1) 20 else 16)
+                                if (go != null) TileLink(l, go, Modifier.height(rowH), size = 16)
                                 else Box(Modifier.fillMaxWidth().height(rowH), contentAlignment = Alignment.CenterStart) { Text("$l · not enough seals", style = Rule.Type.S13.copy(color = Rule.Color.Muted)) }
                             }
                         }

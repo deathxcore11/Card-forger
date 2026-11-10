@@ -73,15 +73,17 @@ internal object DualPage {
 
 /** A section heading: gold small caps with a hairline to the edge, the same on both screens. */
 @Composable
-internal fun DualHeading(title: String, modifier: Modifier = Modifier) = Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+internal fun DualHeading(title: String, modifier: Modifier = Modifier, trailing: String? = null) = Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
     Text(title.uppercase(), style = Rule.Type.sans(11, FontWeight.Bold, Rule.Color.Gold).copy(letterSpacing = 1.6.sp), maxLines = 1)
     Box(Modifier.weight(1f).height(1.dp).background(Rule.Color.Edge))
+    // Right-aligned at the end of the line (the rules text heading carries the card's P/T or loyalty here).
+    if (!trailing.isNullOrBlank()) Text(trailing, style = Rule.Type.sans(16, FontWeight.Bold, Rule.Color.Gold), maxLines = 1)
 }
 
 /** A section: heading over its content. */
 @Composable
-internal fun DualSectionBox(title: String, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) =
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) { DualHeading(title); content() }
+internal fun DualSectionBox(title: String, modifier: Modifier = Modifier, trailing: String? = null, content: @Composable ColumnScope.() -> Unit) =
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) { DualHeading(title, trailing = trailing); content() }
 
 /**
  * Draws the first of [count] variants (largest first) whose height fits, so text steps down instead of being cut. The last variant is
@@ -200,7 +202,7 @@ internal fun DualRulingsBody(texts: List<String>) {
     val pad by Pad.connected.collectAsState()
     val n = texts.size
     val shows = (minOf(n, 3) downTo 1).toList()
-    FitFirst(shows.size + 1, Modifier.fillMaxSize(), centre = true) { i, _ ->
+    FitFirst(shows.size + 1, Modifier.fillMaxSize()) { i, _ ->
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             if (i < shows.size) {
                 texts.take(shows[i]).forEach { SymText(it, Rule.Type.S13) }
@@ -208,9 +210,10 @@ internal fun DualRulingsBody(texts: List<String>) {
                 val note = if (more > 0) (if (pad) "$more more rulings" else "$more more rulings · read all ›") else if (pad) null else "Read in full ›"
                 if (note != null) Text(note, style = Rule.Type.sans(12, FontWeight.SemiBold, Rule.Color.Gold))
             } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
-                    Text("$n", style = Rule.Type.sans(28, FontWeight.ExtraBold, Rule.Color.Text), maxLines = 1)
-                    Text(if (pad) "official rulings" else "official rulings ›", style = Rule.Type.S13, modifier = Modifier.padding(bottom = 4.dp))
+                Row(Modifier.heightIn(min = 40.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
+                    // Count and words on one baseline (the big count must not hang below "official rulings").
+                    Text("$n", style = Rule.Type.sans(28, FontWeight.ExtraBold, Rule.Color.Text), maxLines = 1, modifier = Modifier.alignByBaseline())
+                    Text(if (pad) "official rulings" else "official rulings ›", style = Rule.Type.S13, modifier = Modifier.alignByBaseline())
                 }
             }
         }
@@ -229,7 +232,7 @@ internal fun SymText(s: String, style: androidx.compose.ui.text.TextStyle, modif
 internal fun DualSetBody(icon: (@Composable () -> Unit)?, title: String, line: String?, count: String, pct: String?, fill: Float?, caption: String? = null, lineContent: (@Composable () -> Unit)? = null) =
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val compact = maxHeight < 84.dp
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (icon != null && !compact) icon()
                 Column(Modifier.weight(1f)) {

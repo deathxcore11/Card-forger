@@ -2108,7 +2108,7 @@ private fun DualCollectionCard(m: CollectionCardModel, act: CollectionCardAction
                     }
                 },
                 right = { size, compact ->
-                    DualSectionBox("Rules text") {
+                    DualSectionBox("Rules text", trailing = o.faces.map { it.pt }.filter { it.isNotBlank() }.joinToString(" · ")) {
                         o.faces.forEach { fc ->
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 if (o.faces.size > 1) {
@@ -2119,7 +2119,6 @@ private fun DualCollectionCard(m: CollectionCardModel, act: CollectionCardAction
                                 if (fc.pk != null) PkFace(fc.pk, act)
                                 fc.lines.forEach { runs -> Rich(runs, sans(size.toFloat(), 400, Ink, lh = 1.45f), act.rule) }
                                 fc.flavor?.takeIf { it.isNotBlank() }?.let { Text(it, style = sans(maxOf(13, Rule.Sizes.getOrElse(Rule.Sizes.indexOf(size) - 1) { 13 }).toFloat(), 400, Mute).copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)) }
-                                if (fc.pt.isNotBlank()) Text(fc.pt, style = sans(size.toFloat(), 700, Ink), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End)
                             }
                         }
                     }
