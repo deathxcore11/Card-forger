@@ -101,13 +101,17 @@ internal fun GalleryWall(g: Gallery, index: Int) {
             drawRect(Brush.verticalGradient(listOf(Color(0xFF0D0B09), Color(0xFF050404)), startY = fy, endY = size.height), Offset(0f, fy), Size(size.width, size.height - fy))
             drawLine(Color(0xFF2A231A), Offset(0f, fy), Offset(size.width, fy), 1.dp.toPx())
         }
-        // Neighbours: the previous and next piece at 9 % and 91 %, 46 % high, alpha .28, desaturated.
+        // Neighbours: the previous and next piece, 46 % high, alpha .28, desaturated. They hang at 9 % and 91 %, pushed further
+        // out when a wide centre piece would touch them, so bare wall always shows between each neighbour and the frame.
         val grey = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
-        for ((i, x) in listOf(index - 1 to .09f, index + 1 to .91f)) g.pieces.getOrNull(i)?.let { p ->
+        val centreW = g.pieces.getOrNull(index)?.let { p -> heroPainter(homeArt(p.art))?.let { val r = ratioOf(it); minOf(H * .66f, W * .8f / r) * r } } ?: W * .5f
+        val gap = W * .05f
+        for ((i, side) in listOf(index - 1 to -1, index + 1 to 1)) g.pieces.getOrNull(i)?.let { p ->
             val painter = heroPainter(homeArt(p.art)) ?: return@let
             val ratio = ratioOf(painter)
             val h = H * .46f; val w = h * ratio
-            Image(painter, null, Modifier.offset(x = W * x - w / 2, y = H * .44f - h / 2).width(w).height(h).alpha(.28f), contentScale = ContentScale.Fit, colorFilter = grey)
+            val x = if (side < 0) minOf(W * .09f - w / 2, W * .5f - centreW / 2 - gap - w) else maxOf(W * .91f - w / 2, W * .5f + centreW / 2 + gap)
+            Image(painter, null, Modifier.offset(x = x, y = H * .44f - h / 2).width(w).height(h).alpha(.28f), contentScale = ContentScale.Fit, colorFilter = grey)
         }
         // The piece: centred at 50 % / 44 %, 66 % of the height, its own shape, never cropped. Walking crossfades (650 ms).
         Crossfade(index, animationSpec = tween(if (Motion.still) 0 else 650), label = "piece") { i ->
@@ -128,9 +132,9 @@ internal fun GalleryWall(g: Gallery, index: Int) {
             infiniteRepeatable(keyframes { durationMillis = 6000; 1f at 0; .72f at 3000; 1f at 6000 }, RepeatMode.Restart), label = "b").value
         Canvas(Modifier.fillMaxSize()) {
             // A wide, soft pool falling from above the frame: no hard edge anywhere.
-            val c = Offset(size.width * .5f, -size.height * .12f)
-            val r = size.height * 1.05f
-            drawCircle(Brush.radialGradient(0f to Color(0xFFFFE9C4).copy(alpha = .16f * breath), .45f to Color(0xFFFFE9C4).copy(alpha = .07f * breath), 1f to Color.Transparent, center = c, radius = r), r, c)
+            val c = Offset(size.width * .5f, size.height * .02f)
+            val r = size.height * .95f
+            drawCircle(Brush.radialGradient(0f to Color(0xFFFFE9C4).copy(alpha = .26f * breath), .4f to Color(0xFFFFE9C4).copy(alpha = .11f * breath), .75f to Color(0xFFFFE9C4).copy(alpha = .03f * breath), 1f to Color.Transparent, center = c, radius = r), r, c)
         }
         Text(if (g.pieces.size > 1) "GALLERY · PIECE ${index + 1} OF ${g.pieces.size}" else "GALLERY", style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, letterSpacing = .18.em, color = Color(0x99E8D9BC)),
             modifier = Modifier.padding(start = 28.dp, top = 22.dp))
@@ -149,7 +153,7 @@ private fun ratioOf(painter: androidx.compose.ui.graphics.painter.Painter): Floa
 internal fun GalleryLabel(g: Gallery, index: Int, onWalkTo: (Int) -> Unit) {
     val p = g.pieces.getOrNull(index) ?: return
     Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF1B1712), Color(0xFF0E0C0A)))).verticalScroll(rememberScrollState())
-        .padding(horizontal = 56.dp, vertical = 44.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        .padding(horizontal = 56.dp, vertical = 44.dp), verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically)) { // the block sits in the middle of the case
         Box(Modifier.width(56.dp).height(2.dp).background(Brass))
         Text(p.title, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 34.sp, lineHeight = 40.sp, letterSpacing = .02.em, color = Color(0xFFF6EEDB)))
         p.artist?.takeIf { it.isNotBlank() }?.let { Text(it, style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, color = Site.Gold)) }
