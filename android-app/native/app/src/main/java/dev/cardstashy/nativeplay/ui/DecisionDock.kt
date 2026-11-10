@@ -141,7 +141,7 @@ fun DecisionDock(st: MatchState, live: Boolean, intents: TableIntents, onInspect
         val optionalCosts = p.supportedExact && p.method in setOf("order", "getChoices") && p.options.isNotEmpty() && p.options.all { it.kind == "optionalCost" }
         when {
             zone != null -> ZoneSearchDialog(ctx, zone, draft)                                                       // :257-307
-            !p.supportedExact || (p.method == "order" && !p.ordered) -> SideDock(ctx) { Diagnostic("This native prompt is not yet adapted. No response has been invented or sent.", d) }  // :309
+            !p.supportedExact || (p.method == "order" && !p.ordered) -> SideDock(ctx) { Diagnostic("This choice is not playable in the app yet.", d) }  // :309
             optionalCosts -> SideDock(ctx) { OptionalCosts(ctx, draft) }                                             // :310-326
             p.method in AMOUNT_METHODS && amountSpec(p) != null -> AssignDialog(ctx)                                 // :318-341
             p.method in setOf("confirm", "showConfirmDialog") -> SideDock(ctx) { ConfirmChoice(ctx) }                // :342-346
@@ -149,7 +149,7 @@ fun DecisionDock(st: MatchState, live: Boolean, intents: TableIntents, onInspect
             p.acknowledgeOnly && p.method == "getChoices" -> SideDock(ctx) { Reveal(ctx) }                           // :354-359
             p.method in OPTION_METHODS && hostedOrder -> OrderDialog(ctx, draft)                                     // :363-382
             p.method in OPTION_METHODS -> SideDock(ctx) { ChoiceList(ctx, draft) }                                   // :384-395
-            else -> SideDock(ctx) { Diagnostic("Unsupported native dialog: ${p.method}. No reply sent.", d) }        // :397
+            else -> SideDock(ctx) { Diagnostic("This choice is not playable in the app yet.", d) }        // :397
         }
         // A controller: the ring goes into the dock as the question opens (its first choice, or its gold answer), once laid out.
         // Tried again if the choice could not take it yet (busy); never pulled back while the ring is already in the dock.
