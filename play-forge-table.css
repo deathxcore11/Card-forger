@@ -1246,6 +1246,9 @@
    Mulligan a deep blue, Keep warm gold. */
 :where(body.practice-table-open) .play-match-table[data-stage=opening][data-forge-native] .play-match-decisions:has([data-native-key=decision-title]) .forge-native-panel{background:none;border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;padding:0}
 :where(body.practice-table-open) .play-match-table[data-stage=opening][data-forge-native] .play-match-decisions{background:none;border:0;box-shadow:none}
+/* The Keep / Mulligan row never scrolls: its scrollbar thumb showed as a stray gold line beside Keep. */
+:where(body.practice-table-open) .play-match-table[data-stage=opening][data-forge-native] .play-match-decisions{overflow:visible!important;scrollbar-width:none}
+:where(body.practice-table-open) .play-match-table[data-stage=opening][data-forge-native] .play-match-decisions::-webkit-scrollbar{display:none}
 :where(body.practice-table-open) .play-match-table[data-stage=opening][data-forge-native] .forge-native-panel [data-native-key=decision-title]{text-align:center;font:600 15px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#d9cfb6;margin:0 0 14px}
 :where(body.practice-table-open) .play-match-table[data-stage=opening][data-forge-native] .forge-native-panel .forge-native-actions{display:flex;flex-direction:row;justify-content:center;gap:22px;flex-wrap:nowrap}
 :where(body.practice-table-open) .play-match-table[data-stage=opening][data-forge-native] .play-match-decisions .forge-native-panel .forge-native-actions>button{flex:0 0 200px!important;width:200px!important;max-width:44vw;min-height:52px;border-radius:26px;font:700 19px/1 Cinzel,Georgia,serif!important;letter-spacing:.03em;transition:transform .15s ease,filter .15s ease,box-shadow .15s ease}
