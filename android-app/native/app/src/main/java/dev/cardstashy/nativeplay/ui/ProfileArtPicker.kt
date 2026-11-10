@@ -257,12 +257,13 @@ private fun Crop(start: Account.Art, header: Boolean, onBack: () -> Unit, onSave
                 onError = { ready = false; status = "This artwork could not load. Choose another card or try again." })
         }
     }
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    // Zoom and Save only once the art is in (fix list E3): nothing to zoom or save while it has not loaded.
+    if (ready) Row(verticalAlignment = Alignment.CenterVertically) {
         Text("Zoom", style = T.Body.copy(fontWeight = FontWeight.SemiBold)); Spacer(Modifier.width(12.dp))
         Slider(art.zoom.toFloat(), { set(zoom = it.toDouble()) }, Modifier.weight(1f), valueRange = 1f..4f, enabled = ready && !saving,
             colors = SliderDefaults.colors(thumbColor = Site.Gold, activeTrackColor = Site.Gold, inactiveTrackColor = Site.Line))
     }
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    if (ready) Row(verticalAlignment = Alignment.CenterVertically) {
         if (!header) { Box(Modifier.size(44.dp).clip(CircleShape).border(1.5.dp, Site.Gold.copy(alpha = .7f), CircleShape)) { if (ready) ArtFrame(art, 1f, Modifier.fillMaxSize(), CircleShape) }
             Spacer(Modifier.width(10.dp)); Text("Your profile preview", style = T.Small, modifier = Modifier.weight(1f)) } else Spacer(Modifier.weight(1f))
         SiteButton(if (saving) "Saving…" else if (header) "Save header" else "Save photo", enabled = ready && !saving) { save() }

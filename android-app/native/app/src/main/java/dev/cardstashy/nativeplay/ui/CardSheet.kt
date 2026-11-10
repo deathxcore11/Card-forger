@@ -491,11 +491,13 @@ private fun SetLine(shown: JsonObject, state: JsonObject?, act: CardSheetActions
                     shown.s("released_at").take(4).let { if (it.isNotBlank()) " · $it" else "" }, style = t(12f, color = Site.Muted))
             }
         }
+        // A set whose size is not known shows the count alone: no "/ ?", no percent, no bar (fix list C9; data only).
+        val size = total?.takeIf { it > 0 }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("$have / ${total ?: "?"} in your Play collection", style = t(12f, color = Site.Muted), modifier = Modifier.weight(1f))
-            Text("${total?.takeIf { it > 0 }?.let { have * 100 / it } ?: 0}%", style = t(12f, FontWeight.Bold, Color(0xFFC9CED6)))
+            Text(if (size == null) "$have in your Play collection" else "$have / $size in your Play collection", style = t(12f, color = Site.Muted), modifier = Modifier.weight(1f))
+            if (size != null) Text("${have * 100 / size}%", style = t(12f, FontWeight.Bold, Color(0xFFC9CED6)))
         }
-        ProgressBar(total?.takeIf { it > 0 }?.let { have.toFloat() / it } ?: 0f)
+        if (size != null) ProgressBar(have.toFloat() / size)
     }
 }
 

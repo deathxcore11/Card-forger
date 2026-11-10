@@ -88,7 +88,9 @@ private fun sans(size: Float, weight: Int, line: Float, color: Color = INK, trac
 internal fun siteWhen(millis: Long?): String {
     millis ?: return "never"
     val l = java.util.Locale.getDefault()
-    return java.text.SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(l, "yMdjms"), l).format(java.util.Date(millis))
+    // The short form a person reads (fix list E2, H5): "5 Nov, 8:41 AM"; the year only when it is not this one. No seconds.
+    val thisYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR) == java.util.Calendar.getInstance().apply { timeInMillis = millis }.get(java.util.Calendar.YEAR)
+    return java.text.SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(l, if (thisYear) "MMMdjm" else "yMMMdjm"), l).format(java.util.Date(millis))
 }
 internal fun siteWhen(iso: String?): String = siteWhen(iso?.let { runCatching { java.time.OffsetDateTime.parse(it).toInstant().toEpochMilli() }.getOrNull()
     ?: runCatching { java.time.Instant.parse(it).toEpochMilli() }.getOrNull() })

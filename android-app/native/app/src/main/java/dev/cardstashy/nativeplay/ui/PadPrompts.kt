@@ -315,13 +315,18 @@ fun BoxScope.PadPromptBar() {
     AnimatedVisibility(on && items.isNotEmpty(), Modifier.align(Alignment.BottomEnd).windowInsetsPadding(WindowInsets.navigationBars).padding(end = 16.dp, bottom = 16.dp + lift),
         enter = fadeIn(), exit = fadeOut()) {
         val shape = RoundedCornerShape(999.dp)
-        Row(Modifier.alpha(k).clip(shape).background(Color(0xF2101217)).border(1.dp, Color(0x40D6AD64), shape).padding(horizontal = 12.dp, vertical = 7.dp)
+        // The pill's ground stays solid at rest (fix list C2, E4): only its words dim, so the page never reads through it.
+        Row(Modifier.clip(shape).background(Color(0xFF101217)).border(1.dp, Color(0x40D6AD64), shape).padding(horizontal = 12.dp, vertical = 7.dp)
             .semantics { contentDescription = "Controller: " + items.joinToString(", ") { "${it.first} ${it.second}" } },
             horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            items.forEach { (b, l) -> PadKey(b, l) }
+            items.forEach { (b, l) -> Box(Modifier.alpha(k)) { PadKey(b, l) } }
         }
     }
 }
+
+/** How much a scrolling page leaves free at its foot so its last rows can clear the prompt pill (fix list C2, E4): 56 with a pad on one screen, else 0. */
+@Composable
+fun padBarSpace(): androidx.compose.ui.unit.Dp { val pad by Pad.connected.collectAsState(); return if (pad && !DualScreen.active) 56.dp else 0.dp }
 
 internal val KeyA = Color(0xFF5FBF6A); internal val KeyB = Color(0xFFE0645A); internal val KeyX = Color(0xFF5B8DE0); internal val KeyY = Color(0xFFE6C04A)
 

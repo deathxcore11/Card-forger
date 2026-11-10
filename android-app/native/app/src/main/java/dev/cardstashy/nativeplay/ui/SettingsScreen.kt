@@ -134,6 +134,7 @@ fun SettingsScreen(onBack: () -> Unit, onWeb: (String) -> Unit, startTab: String
                         Tab.INFO -> InfoPane(onWeb)
                     }
                 }
+                Spacer(Modifier.height(padBarSpace()))
             }
         }
         // The community pop-up and what it opens (a friend's shared binder or deck, a card's page), over the whole screen.
@@ -143,15 +144,15 @@ fun SettingsScreen(onBack: () -> Unit, onWeb: (String) -> Unit, startTab: String
 
 @Composable
 private fun Tabs(tab: Tab, onTab: (Tab) -> Unit) {
-    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Site.Surface2).border(1.dp, Site.Line, RoundedCornerShape(14.dp)).padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    // One line each (fix list E2): the three share the width while their words fit, else the row scrolls.
+    TabsRow(Tab.entries.size, Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Site.Surface2).border(1.dp, Site.Line, RoundedCornerShape(14.dp)).padding(4.dp), gap = 4.dp) { each ->
         Tab.entries.forEach { t ->
             val on = t == tab; val sh = RoundedCornerShape(11.dp)
-            Row(Modifier.weight(1f).heightIn(min = 46.dp).clip(sh).then(if (on) Modifier.background(Site.Surface).border(1.dp, Site.Gold.copy(alpha = .45f), sh) else Modifier)
+            Row(each.heightIn(min = 46.dp).clip(sh).then(if (on) Modifier.background(Site.Surface).border(1.dp, Site.Gold.copy(alpha = .45f), sh) else Modifier)
                 .clickable { onTab(t) }.padding(horizontal = 6.dp, vertical = 8.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                 Icon(when (t) { Tab.ACCOUNT -> SiteIcons.Profile; Tab.APP -> SiteIcons.Appearance; Tab.INFO -> SiteIcons.Help }, 15.dp, if (on) Site.Text else Site.Muted)
                 Spacer(Modifier.width(6.dp))
-                Text(t.label, style = S.Btn.copy(fontSize = 12.sp, color = if (on) Site.Text else Site.Muted), maxLines = 2)
+                Text(t.label, style = S.Btn.copy(fontSize = 12.sp, color = if (on) Site.Text else Site.Muted), maxLines = 1, softWrap = false)
             }
         }
     }
@@ -337,7 +338,7 @@ fun SignedOut(onSignedIn: () -> Unit = {}) {
             Icon(SiteIcons.Sync, 14.dp, Site.Muted); Spacer(Modifier.width(8.dp))
             Text("Your collection stays private. Device saving works without an account.", style = S.Foot)
         }
-        Disclosure("Help with email links") { Text("Check spam and open the newest link in the browser where you requested it. If a link has expired, request a new one.", style = S.Foot) }
+        Disclosure("Help with email links") { Text("Check spam and open the newest link on the device where you requested it. If a link has expired, request a new one.", style = S.Foot) }
     }
 }
 
@@ -509,7 +510,7 @@ private fun AppPane() {
 /** Offline art plan (4 Nov): what this phone keeps for fast grids, the keep-all switch and Clear. */
 @Composable
 private fun CardArtCard() = Panel {
-    CardHeading("CARD ART", "Saved on this phone")
+    CardHeading("CARD ART", "Saved on this device")
     val store = dev.cardstashy.nativeplay.art.ThumbStore
     val running by store.progress.collectAsState()
     var stamp by remember { mutableStateOf(0) }
@@ -571,7 +572,11 @@ private fun GridCard() = Panel {
     Text("Card size", style = S.Body.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), modifier = Modifier.padding(top = 4.dp))
     Segmented(AppSettings.GRID_SIZES, AppSettings.gridSize) { AppSettings.applyGridSize(it) }
     Text("Applies to card galleries in all three games. List views keep their current layout.", style = S.Foot)
-    Check("Pinch to resize card grids", AppSettings.gridPinch, "Spread two fingers for larger cards; pinch for smaller cards. Only card grids use this gesture when enabled. Turn it off to use browser pinch zoom there.") { AppSettings.applyGridPinch(it) }
+    // The app's own words (fix list E1): no browser; with a pad the switch is named by its effect; no switch where there is no touch.
+    val touch = LocalContext.current.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_TOUCHSCREEN)
+    val pad by Pad.connected.collectAsState()
+    if (touch) Check(if (pad) "Resize card grids with two fingers" else "Pinch to resize card grids", AppSettings.gridPinch,
+        "Spread two fingers for larger cards; pinch for smaller cards. Only card grids use this gesture when enabled.") { AppSettings.applyGridPinch(it) }
 }
 
 /** Dual screen (Randall 8 Nov): on a handheld with a second built-in screen, the bottom screen shows the hand, the stack, the card the ring is on. */

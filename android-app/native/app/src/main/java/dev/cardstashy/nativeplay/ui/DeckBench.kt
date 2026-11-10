@@ -56,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.drawscope.translate
@@ -442,7 +443,11 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
                 Footer(m, ui, split = true, views = !land)
             }
         } else Column(Modifier.fillMaxSize().then(bars)) {
-            Hero(m, a, compact = false, ui = ui)
+            // At large text the tall hero leaves the deck list a row and a half (fix list C8): it folds to its one-line
+            // form while the list is scrolled and opens again at the top.
+            val big = LocalDensity.current.fontScale >= 1.2f
+            val scrolled by remember(ui) { androidx.compose.runtime.derivedStateOf { ui.deckGrid.firstVisibleItemIndex > 0 || ui.deckGrid.firstVisibleItemScrollOffset > 0 } }
+            Hero(m, a, compact = big && scrolled, ui = ui)
             Tabs(m.tabs, ui, iconsOnly = false, a.tab)
             if (ui.tab == "cards") {
                 BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
@@ -657,7 +662,7 @@ private fun Dock(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, action
             }
             ViewSwitch(ui)
         }
-        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().clipToBounds()) {
             val w = maxWidth - 16.dp
             DeckBody(m, ui, a, drag, actionRow, split, w, lift)
         }

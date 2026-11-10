@@ -1162,7 +1162,7 @@ private fun Merchant(s: JsonObject, act: PlayHomeActions) {
 private fun Dashboard(d: PlayHomeData, act: PlayHomeActions, purse: PlayMath.Purse, level: PlayMath.Level, top: Dp, height: Dp, lens: LensHost) {
     val s = d.state
     Row(Modifier.fillMaxSize().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        LazyColumn(Modifier.weight(1f).fillMaxHeight().testTag("playHome"), contentPadding = PaddingValues(top = top, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        LazyColumn(Modifier.weight(1f).fillMaxHeight().testTag("playHome"), contentPadding = PaddingValues(top = top, bottom = 24.dp + padBarSpace()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             item("story") { Probe("story") { Box(Modifier.dualLens(lens, "story")) { StoryBanner(d, act) } } }
             item("modes") { Probe("modes") { Modes(true, act, (height - top - 160.dp).coerceIn(150.dp, 220.dp), lens) } }
             item("tiles") { Box(Modifier.dualLens(lens, null)) { QuickTiles(act) } }
@@ -1174,7 +1174,7 @@ private fun Dashboard(d: PlayHomeData, act: PlayHomeActions, purse: PlayMath.Pur
             }
             item("decks") { Probe("decks") { Decks(s, true, act, lens) } }
         }
-        LazyColumn(Modifier.width(248.dp).fillMaxHeight(), contentPadding = PaddingValues(top = top, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        LazyColumn(Modifier.width(248.dp).fillMaxHeight(), contentPadding = PaddingValues(top = top, bottom = 24.dp + padBarSpace()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             // The mastery level lives in the bottom screen's den while it is up.
             if (!DualScreen.active) item("me") { LevelCard(level) }
             item("featured") { (s.get("shop") as? JsonArray)?.firstOrNull()?.obj()?.let { o -> Box(Modifier.dualLens(lens, "shop:" + (o["code"].str() ?: ""))) { FeaturedPack(s, o, act) } } }
