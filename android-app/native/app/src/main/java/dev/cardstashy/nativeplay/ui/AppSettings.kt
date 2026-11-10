@@ -25,7 +25,11 @@ object AppSettings {
     /** play-presence.js presenceShared(): "Show friends what I’m playing". */
     var presence by mutableStateOf(true); private set
     /** settings-theme.js normalizeTheme / THEME_KEY 'cardstashy-theme': light, dark or aura; dark by default. Per device, never synced. */
-    var theme by mutableStateOf("dark"); private set
+    var chosenTheme by mutableStateOf("dark"); private set
+    /** Which side is on screen. Play is always dark (Randall 10 Nov 13:26Z): a Light setting only lights Collection and the shell. */
+    var play by mutableStateOf(false)
+    /** The theme every screen draws in: the chosen one, except Light in Play, which is dark. */
+    val theme: String get() = if (play && chosenTheme == "light") "dark" else chosenTheme
     /** grid-settings.js GRID_KEY 'cardstashy-grid-size' (small, medium, large; medium by default) and PINCH_KEY 'cardstashy-grid-pinch' (off by default). */
     var gridSize by mutableStateOf("medium"); private set
     var gridPinch by mutableStateOf(false); private set
@@ -38,7 +42,7 @@ object AppSettings {
         val p = context.applicationContext.getSharedPreferences("play", Context.MODE_PRIVATE); prefs = p
         glass = p.getBoolean("glass", true); finish = p.getBoolean("finishEffects", true); tilt = p.getBoolean("motionTilt", true); depth = p.getBoolean("depthCards", true)
         haptics = p.getBoolean("haptics", true); sound = p.getBoolean("packSound", true); appSounds = p.getBoolean("appSounds", true); presence = p.getBoolean("presence", true)
-        theme = normalizeTheme(p.getString("cardstashy-theme", null)); gridSize = normalizeGridSize(p.getString("cardstashy-grid-size", null))
+        chosenTheme = normalizeTheme(p.getString("cardstashy-theme", null)); gridSize = normalizeGridSize(p.getString("cardstashy-grid-size", null))
         gridPinch = p.getString("cardstashy-grid-pinch", null) == "on"
         effects = p.getString("cardstashy-effects", null).takeIf { it in EFFECTS } ?: "balanced"
     }
@@ -56,7 +60,7 @@ object AppSettings {
     fun normalizeGridSize(v: String?) = if (v in GRID_SIZES) v!! else "medium"
 
     /** applyTheme(): saved on this device only. */
-    fun applyTheme(v: String) { theme = normalizeTheme(v); prefs?.edit()?.putString("cardstashy-theme", theme)?.apply() }
+    fun applyTheme(v: String) { chosenTheme = normalizeTheme(v); prefs?.edit()?.putString("cardstashy-theme", chosenTheme)?.apply() }
     /** applyGridSize() / applyGridPinch(). */
     fun applyGridSize(v: String) { gridSize = normalizeGridSize(v); prefs?.edit()?.putString("cardstashy-grid-size", gridSize)?.apply() }
     fun applyGridPinch(on: Boolean) { gridPinch = on; prefs?.edit()?.putString("cardstashy-grid-pinch", if (on) "on" else "off")?.apply() }

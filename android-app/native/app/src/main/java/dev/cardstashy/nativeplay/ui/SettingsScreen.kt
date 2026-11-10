@@ -528,7 +528,7 @@ private fun ThemeCard() = Panel {
     // has a fill (--gold mixed into the panel: #232323 dark, #f6f4f0 light) and a 2 px gold ring. Names are DM Sans 14/900 in --muted.
     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
         for ((id, label, description) in listOf(Triple("light", "Light", "Bright, soft surfaces"), Triple("dark", "Dark", "The familiar night view"), Triple("aura", "Aura", "Soft color from the art you explore"))) {
-            val on = AppSettings.theme == id; val sh = RoundedCornerShape(10.dp)
+            val on = AppSettings.chosenTheme == id; val sh = RoundedCornerShape(10.dp)
             Row(Modifier.fillMaxWidth().heightIn(min = 67.dp).clip(sh).then(if (on) Modifier.background(if (AppSettings.theme == "light") Color(0xFFF6F4F0) else Color(0xFF232323)).border(2.dp, Site.Gold, sh) else Modifier)
                 .clickable { AppSettings.applyTheme(id) }.padding(9.dp), verticalAlignment = Alignment.CenterVertically) {
                 // input[type=radio] 18 px, accent-color --gold
