@@ -47,7 +47,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     companion object {
         const val LAND_MS = 900L; const val ACTION_MS = 2400L; const val AFFECTS_MS = 3600L
         const val ACTION_FLOOR_MS = 1500L; const val AFFECTS_FLOOR_MS = 2400L
-        const val GAP_MS = 250L; const val BACKLOG = 3
+        const val GAP_MS = 250L; const val BACKLOG = 3; const val STEP_GAP_MS = 120L
         const val INTO_HAND_MS = 600L; const val QUIET_MS = 1000L; const val FIRST_BANNER_MS = 1600L; const val BANNER_MS = 1400L
         private const val TAG = "MatchController"
     }
@@ -286,7 +286,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     fun hold(reason: String, on: Boolean) { if (on) holds.add(reason) else holds.remove(reason) }
     private val timer = TurnClock.Timer(
         snapshot = { latest?.takeIf { _stage.value == Stage.PLAYING || _stage.value == Stage.MULLIGAN } },
-        paused = { paused.value || scene.value || holds.isNotEmpty() || _beat.value != null || _sending.value || _shown.value?.revision != latest?.revision },
+        paused = { paused.value || scene.value || holds.isNotEmpty() || _beat.value != null || _think.value != null || _sending.value || _shown.value?.revision != latest?.revision },
         act = { w, st, done ->
             autoAnswering = true
             try {
@@ -363,25 +363,33 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                 hold(FIRST_BANNER_MS); _banner.value = null
                 if (first != null) lastSeq = first.seq
                 _stage.value = Stage.PLAYING
-                beat(Beat(Beat.Kind.LAND, "CPU kept $cpuHandAtKeep", null, null, null, durationMs = LAND_MS))
+                beat(Beat(Beat.Kind.LAND, "CPU kept $cpuHandAtKeep", null, null, null), LAND_MS)
             }
             // 3. Each new event in order: turn banners and CPU actions, one at a time.
             val fresh = st.events.filter { it.seq > lastSeq }
             if (fresh.isNotEmpty()) lastSeq = fresh.maxOf { it.seq }
-            val beats = Pacing.beatsFor(st, fresh)
-            if (beats.isEmpty()) { show(st) } else {
-                // The board advances one CPU action at a time: a CPU card that a beat is about to
-                // announce stays off the table (and off the stack) until that beat starts.
+            // The director (specs/match-director-native.md): every new event becomes a step; the controller is the only clock and
+            // waits on the held ones (a CPU think, the turn banner, a CPU action's caption), one at a time.
+            val steps = Director.plan(st, fresh, if (remote == null) thinkClock else null).filter { it.held }
+            if (steps.isEmpty()) { show(st) } else {
+                // The board advances one CPU action at a time: a CPU card that a step is about to
+                // announce stays off the table (and off the stack) until that step starts.
                 val before = _shown.value?.players?.flatMap { p -> p.battlefield.map { it.id } }?.toSet() ?: emptySet()
-                val announced = beats.mapNotNull { (it as? Pacing.BeatStep)?.beat?.cardId }.toSet()
+                val announced = steps.mapNotNull { it.beat?.cardId }.toSet()
                 val hidden = st.cpu.battlefield.map { it.id }.filter { it !in before && it in announced }.toMutableSet()
                 hidden += st.stack.mapNotNull { it.source?.id }.filter { it in announced && st.card(it)?.controller != st.viewer }
                 show(masked(st, hidden))
-                for (b in beats) {
-                    if (b is Pacing.BannerStep) { _banner.value = b.banner; hold(BANNER_MS); _banner.value = null; continue }
-                    val beat = (b as Pacing.BeatStep).beat
-                    if (beat.cardId != null && hidden.remove(beat.cardId)) show(masked(st, hidden))
-                    beat(beat)
+                steps.forEachIndexed { i, step ->
+                    val waiting = latest?.waitingOnMe == true
+                    val ms = Director.lengthOf(step, waiting, steps.drop(i).sumOf { it.ms })
+                    when {
+                        step.kind == Director.Kind.THINK -> think(ms, st.cpu.handCount)
+                        step.banner != null -> { _banner.value = step.banner; hold(ms); _banner.value = null }
+                        step.beat != null -> {
+                            if (step.beat.cardId != null && hidden.remove(step.beat.cardId)) show(masked(st, hidden))
+                            beat(step.beat, ms)
+                        }
+                    }
                 }
                 show(st)
             }
@@ -389,18 +397,35 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         }
     }
 
-    private suspend fun beat(b: Beat) {
-        val backlog = queued > BACKLOG
-        val ms = when (b.kind) {
-            Beat.Kind.LAND -> LAND_MS
-            Beat.Kind.ACTION -> if (backlog) ACTION_FLOOR_MS else ACTION_MS
-            Beat.Kind.AFFECTS_YOU -> if (backlog) AFFECTS_FLOOR_MS else AFFECTS_MS
-        }
+    private suspend fun beat(b: Beat, ms: Long) {
         _beat.value = b.copy(durationMs = ms)
         _log.value = (_log.value + b.title).takeLast(60)
         hold(ms)
         _beat.value = null
-        delay(GAP_MS)
+        delay(STEP_GAP_MS)
+    }
+
+    /** The CPU's think times (section 5): ranged, never twice the same, capped per turn. */
+    private val thinkClock = Director.ThinkClock()
+    /** While the CPU thinks: the dots by its portrait and which of its hand's card backs is lifted (the tell). */
+    private val _think = CpuThink.now
+
+    /** A think step: one card back lifts, holds and settles; 60 % of the time a second one does the same (reference think()). */
+    private suspend fun think(ms: Long, hand: Int) {
+        try { thinkInner(ms, hand) } finally { _think.value = null }
+    }
+    private suspend fun thinkInner(ms: Long, hand: Int) {
+        if (ms <= 0) return
+        val r = java.util.Random()
+        val first = if (hand > 0) r.nextInt(hand) else null
+        _think.value = CpuThink.Tell(first)
+        if (first != null && hand > 1 && r.nextDouble() < .6) {
+            hold(ms * 55 / 100)
+            _think.value = CpuThink.Tell(null); hold(200)
+            _think.value = CpuThink.Tell((first + 1 + r.nextInt(hand - 1)) % hand)
+            hold((ms * 45 / 100 - 200).coerceAtLeast(0))
+        } else hold(ms)
+        _think.value = null
     }
 
     // ---- Your actions ----
@@ -535,6 +560,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     private fun known(st: MatchState, id: Int) = st.players.any { pl -> (pl.hand + pl.battlefield + pl.graveyard + pl.exile).any { it.id == id } } || st.stack.any { it.source?.id == id }
     private fun mine(st: MatchState, id: Int?) = id != null && st.me.let { (it.hand + it.battlefield + it.graveyard + it.exile).any { c -> c.id == id } }
 
+    private val shortCasts = dev.cardstashy.nativeplay.ui.ShortCasts()
     private fun scheduleAutoPass(st: MatchState) {
         autoJob?.cancel()
         // The CPU showing you its cards (an opening-hand reveal, a tutor): shown as its own beat, then
@@ -554,11 +580,18 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         // A stop you set on the phase track: you get priority there, whatever you hold.
         if (st.phaseStops?.containsKey("${if (st.activePlayer == st.viewer) "you" else "opponent"}:${st.phase}") == true) return
         val ownTop = st.stack.firstOrNull()?.controller == st.viewer
-        val nothing = st.selection.actionable.isEmpty()
+        // Smart auto-pass (director spec 6a): Forge sometimes lists a card you plainly can't pay for as actionable ("unknown"
+        // affordability, a {1}{R} creature with one land out), which left turn 1 stuck on "To combat". Those don't count.
+        val actionable = st.selection.actionable
+        val nothing = actionable.isEmpty() || runCatching { val no = shortCasts.blocked(st); actionable.all { it in no } }.getOrDefault(false)
         if (!ownTop && !nothing) return
+        // Your turn, nothing to play and nothing that can attack: straight to the end of the turn in one beat ("End turn").
+        val yourTurn = st.activePlayer == st.viewer
+        val canAttack = st.me.battlefield.any { it.isCreature && !it.tapped && !it.summoningSick }
+        val toEnd = !ownTop && yourTurn && !canAttack && st.stack.isEmpty() && st.buttons.cancelEnabled && st.buttons.cancel?.contains("end", true) == true
         autoJob = scope.launch(Dispatchers.Main) {
             delay(if (ownTop) 200 else 700)
-            if (_live.value && latest?.revision == st.revision) { autoAnswering = true; try { ok() } finally { autoAnswering = false } }
+            if (_live.value && latest?.revision == st.revision) { autoAnswering = true; try { if (toEnd) cancel() else ok() } finally { autoAnswering = false } }
         }
     }
 }

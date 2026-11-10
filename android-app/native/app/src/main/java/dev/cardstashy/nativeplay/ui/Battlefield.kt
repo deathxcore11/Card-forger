@@ -79,8 +79,8 @@ import kotlin.math.sin
  * Every effect comes from a difference between two Forge snapshots (a card arrived, left, took damage, a spell went on or
  * off the stack, a life total moved); nothing is predicted. The interpreter scores each one 0 to 3 and applies the attention
  * budget: one focal (level 2 or 3) effect at a time, the rest wait their turn or play beside it at level 1. When the
- * player gets priority or a question, everything in flight finishes within 150 ms and new focal effects play at half
- * length. A touch anywhere on the board jumps every effect to its end state. Cards only ever move by transform, so no
+ * player gets priority or a question, nothing is cut short (match director): a non-focal effect may finish at its floor,
+ * focal ones play out. A touch anywhere on the board jumps every effect to its end state. Cards only ever move by transform, so no
  * box on the board changes size.
  */
 /** The strike's shape as fractions of its length: windup ends, contact. */
@@ -233,11 +233,9 @@ class Battlefield {
         val t = now.longValue
         val yours = st.waitingOnMe
         if (yours) {
-            // Priority or a question: what is in flight finishes within 150 ms; what was still waiting is dropped.
-            val keep = items.filter { it.t0 <= t }
-            items.retainAll(keep)
-            for (it in keep) { val p = it.p(t); val left = it.t0 + it.dur - t; if (left > 150) { it.p0 = p; it.t0 = t; it.dur = 150 } }
-            focalEnd = minOf(focalEnd, t + 150)
+            // Priority or a question (match director, section 6): nothing is cut short or dropped any more. What is in flight
+            // finishes at no less than its floor, so the CPU's last action is always readable before you answer it.
+            for (it in items) { val left = it.t0 + it.dur - t; val floor = minOf(it.baseMs * 6 / 10, it.dur); if (it.t0 <= t && left > floor && it.level < 2) { it.p0 = it.p(t); it.t0 = t; it.dur = floor } }
         }
         val groups = diff(before, st, anchors)
         if (groups.isEmpty()) { if (yours) reindex(); return }
@@ -248,10 +246,9 @@ class Battlefield {
             // Staged combat keeps its own pace (one attacker at a time, about 1.4 s each): the table waits for it instead.
             val staged = g.any { it.kind == Fx.STAGE }
             for (it in g) {
-                // New focal effects play at half length while the decision is yours.
-                it.dur = if (yours && it.level >= 2 && !staged) it.baseMs / 2 else it.baseMs
-                // A long queue never runs away from the game: anything starting more than 1.2 s out drops to half length.
-                if (cursor - t > 1200 && !staged) it.dur /= 2
+                // Focal effects keep their full length; only when more than 6 s are queued does a non-focal one play at its floor.
+                it.dur = it.baseMs
+                if (cursor - t > 6000 && !staged && it.level < 2) it.dur = it.baseMs * 6 / 10
                 it.t0 = cursor + it.delay
                 items += it
             }

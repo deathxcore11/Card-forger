@@ -423,6 +423,7 @@ fun ForgeBoard(
             val ax = 80.du + lx; val ay = H - 78.du - ly; val x0 = ax + 52.du + 14.du
             if (!pod) Crest(cpu.command.firstOrNull(), Modifier.offset(x = W - 68.du - lx, y = 16.du + lx), d, onInspect)
             if (!pod) Medallion(cpu, mine = false, live && cpu.id in st.selection.players, cpu.id in st.selection.chosenPlayers, Modifier.offset(x = W - 132.du - lx, y = 26.du + lx), d) { intents.player(cpu.id) }
+            if (!pod) ThinkDots(Modifier.offset(x = W - 132.du - lx - 34.du, y = 26.du + lx + 20.du), d)
             Crest(me.command.firstOrNull(), Modifier.offset(x = 10.du + lx, y = H - 86.du - ly), d, onInspect)
             Medallion(me, mine = true, live && me.id in st.selection.players, me.id in st.selection.chosenPlayers, Modifier.offset(x = ax, y = ay), d) { intents.player(me.id) }
             // A phone's hand starts close to the seat: when the full tool row would reach it, chat drops to the second row
@@ -854,10 +855,31 @@ private fun Pile(count: Int, top: Card?, d: Du, anchor: String? = null, onTap: (
 private fun TuckedHand(n: Int, modifier: Modifier, d: Du) = with(d) {
     if (n <= 0) return@with
     val step = 17.du
-    Box(modifier.size(24.du + step * (n - 1), 34.du)) {
+    // The CPU's tell while it thinks (match director): one card back slides 16 dp out of the hand, holds, and settles.
+    val tell by dev.cardstashy.nativeplay.match.CpuThink.now.collectAsState()
+    Box(modifier.size(24.du + step * (n - 1), 50.du)) {
         repeat(n) { i ->
-            Box(Modifier.offset(x = step * i).size(24.du, 34.du).drawBehind { drawRoundRect(Color(0xAA000000), topLeft = Offset(0f, 4.du.toPx()), size = size, cornerRadius = CornerRadius(5.du.toPx())) }
+            val lift by androidx.compose.animation.core.animateDpAsState(if (tell?.lifted == i && !Motion.still) 16.dp else 0.dp,
+                tween(if (tell?.lifted == i) 220 else 200, easing = FastOutSlowInEasing), label = "tell")
+            Box(Modifier.offset(x = step * i, y = lift).size(24.du, 34.du).drawBehind { drawRoundRect(Color(0xAA000000), topLeft = Offset(0f, 4.du.toPx()), size = size, cornerRadius = CornerRadius(5.du.toPx())) }
                 .clip(RoundedCornerShape(5.du)).border(2.dp, Color(0xFFC9A75A), RoundedCornerShape(5.du))) { CardBack(Modifier.fillMaxSize()) }
+        }
+    }
+}
+
+/** Three dots that breathe in turn beside the CPU's portrait while it thinks (match director, think steps). */
+@Composable
+private fun ThinkDots(modifier: Modifier, d: Du) = with(d) {
+    val tell by dev.cardstashy.nativeplay.match.CpuThink.now.collectAsState()
+    val on by androidx.compose.animation.core.animateFloatAsState(if (tell != null) 1f else 0f, tween(180), label = "dots")
+    if (on <= 0f) return@with
+    val t = rememberInfiniteTransition(label = "think")
+    val phase by t.animateFloat(0f, 3f, infiniteRepeatable(tween(1050, easing = LinearEasing)), label = "p")
+    Row(modifier.graphicsLayer { alpha = on }.clip(RoundedCornerShape(999.dp)).background(Color(0xCC14120E)).border(1.dp, Gold.copy(alpha = .6f), RoundedCornerShape(999.dp))
+        .padding(horizontal = 7.du, vertical = 5.du), horizontalArrangement = Arrangement.spacedBy(4.du)) {
+        repeat(3) { i ->
+            val k = (1f - kotlin.math.abs(((phase - i + 3f) % 3f) - .5f).coerceAtMost(1f)).coerceIn(.35f, 1f)
+            Box(Modifier.size(5.du).graphicsLayer { alpha = k; translationY = -(k - .35f) * 3.du.toPx() }.clip(CircleShape).background(Color(0xFFFFE7B0)))
         }
     }
 }
