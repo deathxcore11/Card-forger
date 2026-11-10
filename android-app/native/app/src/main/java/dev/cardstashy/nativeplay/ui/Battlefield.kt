@@ -293,6 +293,8 @@ class Battlefield {
                 mine -> "hand"
                 else -> "cpuhand"
             }
+            // A CPU spell is the card itself flying to the stack (StackFan); only abilities and your own casts keep the light thread.
+            if (!mine && !s.ability) continue
             casts += FxItem(Fx.CAST, 2, 450, card = null, mine = mine, fromKey = from, toKey = "stackcard", tone = if (mine) Color(0xFFF3D27E) else Color(0xFFFF8A5C))
         }
         // Resolve (level 2, 300 ms): the stack card ripples; a spell with targets sends its light to them.

@@ -497,7 +497,8 @@ private fun TableSide(st: MatchState, c: MatchController, beat: Beat?, live: Boo
     Box(Modifier.fillMaxSize()) {
         // Arena style: no window. A CPU cast, trigger or ability gets the spotlight (the card big at the right and our glass box
         // beside it, table-feel spec 2); other beats keep their one line of glass. Your own spell gets the same, in gold, as it lands on the stack.
-        val spot = beat?.let { spotlightFor(st, it) }
+        // A CPU cast has no glass box any more (director spec 7): the card itself flies onto the stack and is read there.
+        val spot = beat?.let { spotlightFor(st, it) }?.takeIf { it.verb != "casts" }
         // Your own spell: up while it is on the stack, at most 1.6 s, and gone 0.7 s after it leaves the stack, on any new step or turn,
         // or when a CPU beat takes the stage. Each clear runs on its own clock, so a stack change can't cancel it (Randall, test 3:
         // the pop-up stayed through combat and the CPU's turn when the spell resolved inside the 1.6 s).

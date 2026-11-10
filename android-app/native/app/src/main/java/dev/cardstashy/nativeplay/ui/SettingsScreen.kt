@@ -616,6 +616,7 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Match feel" to "A CPU spell is now the card itself: it leaves the CPU’s hand, turns face up and lands on the stack, where it stays with its arrow until it resolves (no pop-up box). Every spell on the stack keeps its arrows, and its target wears a red rim (hostile) or green (friendly).",
     "Match feel" to "The CPU now thinks before it acts, like a person: dots by its portrait and a card lifting in its hand, longer for a removal spell than a land. Its actions are no longer cut short when the decision comes back to you. With nothing playable and nothing to attack with, your turn ends by itself instead of stopping on To combat.",
     "Art" to "The matchup screen now waits (with a Preparing the table bar) until both decks’ pictures are in, up to 20 s, instead of opening the table after 3–8 s with art still loading. The versus plates appear once their art is ready.",
     "Match table" to "No card is ever a blank panel: each one looks up the engine’s own printing of it, and a picture that still won’t load shows the card’s frame in its colours with its name, cost, type, rules text and P/T (hand, battlefield, inspector, crests).",

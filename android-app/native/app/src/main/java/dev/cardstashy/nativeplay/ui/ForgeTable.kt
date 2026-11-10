@@ -1029,10 +1029,33 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
         // Older items fan up and behind, dimmed, names readable.
         shown.drop(1).reversed().forEachIndexed { k, (s, _) ->
             val depth = shown.size - 1 - k
-            StackCard(st, s, 1, Modifier.offset(x = (44 - 16 * depth).du, y = (34 - 16 * depth).du).alpha(if (pick != null && s.id in st.selection.stackTargets) 1f else .6f), d, onInspect, small = true, pick = pick)
+            StackCard(st, s, 1, Modifier.offset(x = (44 - 16 * depth).du, y = (34 - 16 * depth).du).alpha(if (pick != null && s.id in st.selection.stackTargets) 1f else .6f)
+                .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("stack${s.id}", it.boundsInRoot()) } else Modifier), d, onInspect, small = true, pick = pick)
         }
         val (top, n) = shown.first()
-        StackCard(st, top, n, Modifier.offset(x = 44.du, y = 34.du).then(if (anchors != null) Modifier.onGloballyPositioned { val b = it.boundsInRoot(); anchors.put("stacktop", Offset(b.left, b.top + b.height * .3f)); anchors.putRect("stackcard", b) } else Modifier), d, onInspect, pick = pick)
+        // Match director (cast row): a CPU spell is the card itself, out of the CPU's hand with a lift, turning face up, onto the stack
+        // in 430 ms; it then stays there with its arrows until it resolves. No glass box.
+        val fly = remember { Animatable(1f) }
+        var flyFrom by remember { mutableStateOf<Offset?>(null) }
+        val flown = remember { HashSet<Int>() }
+        LaunchedEffect(top.id) {
+            if (Motion.still || top.ability || top.controller == st.viewer || top.source == null || !flown.add(top.id)) return@LaunchedEffect
+            flyFrom = anchors?.rects?.get("cpuhand")?.center ?: return@LaunchedEffect
+            fly.snapTo(0f); fly.animateTo(1f, tween(430, easing = FastOutSlowInEasing)); flyFrom = null
+        }
+        var here by remember { mutableStateOf(Offset.Zero) }
+        Box(Modifier.offset(x = 44.du, y = 34.du).then(if (anchors != null) Modifier.onGloballyPositioned { val b = it.boundsInRoot(); here = b.center; anchors.put("stacktop", Offset(b.left, b.top + b.height * .3f)); anchors.putRect("stackcard", b); anchors.putRect("stack${top.id}", b) } else Modifier)
+            .graphicsLayer {
+                val from = flyFrom; val e = fly.value
+                if (from != null && e < 1f) {
+                    translationX = (from.x - here.x) * (1f - e); translationY = (from.y - here.y) * (1f - e) + kotlin.math.sin(Math.PI.toFloat() * e) * 40.dp.toPx()
+                    val k = .45f + .55f * e; scaleX = k; scaleY = k; rotationY = 180f * (1f - e); cameraDistance = 12f * density
+                }
+            }) {
+            StackCard(st, top, n, Modifier, d, onInspect, pick = pick)
+            // Face down for the first half of the turn-over.
+            if (flyFrom != null && fly.value < .5f) Box(Modifier.matchParentSize().clip(RoundedCornerShape(6.du))) { CardBack(Modifier.fillMaxSize()) }
+        }
         // native-panel.mjs withYield: an ability on top offers Forge's own yield (pass on it every time it is on top, until end of turn).
         if (top.ability) {
             val on = top.yielded
@@ -1325,7 +1348,7 @@ private fun CombatLine(st: MatchState, mid: Dp, W: Dp, d: Du) = with(d) {
     }
 }
 
-private data class Rel(val kind: String, val from: String, val to: String, val held: Boolean = false, val blocker: Int? = null, val attacker: Int? = null)
+private data class Rel(val kind: String, val from: String, val to: String, val held: Boolean = false, val blocker: Int? = null, val attacker: Int? = null, val hostile: Boolean? = null)
 
 /** forge-table.mjs relations(): what the arrows join, as anchor keys ("c<id>" a card, "orb<id>" a player, "stackcard", "owncast"). */
 private fun relations(st: MatchState): List<Rel> {
@@ -1358,10 +1381,12 @@ private fun relations(st: MatchState): List<Rel> {
         val from = when { source != null && source.zone == "Battlefield" -> "c${source.id}"; pendingCast(st) != null -> "owncast"; else -> null }
         if (from != null) for (id in st.selection.chosenCards) out += Rel("target", from, "c$id")
         if (from != null) for (id in st.selection.chosenPlayers) out += Rel("target", from, "orb$id")
-    } else st.stack.firstOrNull()?.let { top ->
-        for (r in top.targets) {
+    } else st.stack.forEachIndexed { i, item ->
+        // Every item keeps its arrows for its whole life on the stack (director spec 7), the top one from the big card.
+        for (r in item.targets) {
             val to = if (r.kind == "card" && board.any { it.id == r.id }) "c${r.id}" else if (r.kind == "player" && st.players.any { it.id == r.id }) "orb${r.id}" else null
-            if (to != null) out += Rel("target", "stackcard", to)
+            val hostile = when (r.kind) { "player" -> r.id != item.controller; else -> board.firstOrNull { it.id == r.id }?.controller != item.controller }
+            if (to != null) out += Rel("target", if (i == 0) "stackcard" else "stack${item.id}", to, hostile = hostile)
         }
     }
     return out
@@ -1419,6 +1444,12 @@ private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) 
                 c.nativeCanvas.drawPath(path.asAndroidPath(), gp)
             }
             drawPath(path, col.copy(alpha = alpha), style = Stroke(w, cap = StrokeCap.Round, pathEffect = dash))
+            // The target's rim (director cast row): red when the spell is hostile to it, green when friendly; stays while it does.
+            if (r.kind == "target" && r.hostile != null && r.to.startsWith("c")) {
+                val rim = if (r.hostile) Color(0xFFFF5A4A) else Color(0xFF6FE08A)
+                drawRoundRect(rim.copy(alpha = .9f), Offset(b.left - self.x - 3 * k, b.top - self.y - 3 * k), androidx.compose.ui.geometry.Size(b.width + 6 * k, b.height + 6 * k),
+                    CornerRadius(6 * k), style = Stroke(2.5f * k))
+            }
             // Arrowhead (marker 10×10 at 4.5 × stroke, refX 7), along the curve's end tangent.
             if (r.kind != "target") {
                 val tx = ex - cx; val ty = ey - cy; val tl = kotlin.math.hypot(tx, ty).coerceAtLeast(.001f); val dx = tx / tl; val dy = ty / tl
