@@ -106,6 +106,20 @@ class ShotTest {
     }
 
     // ---- Play home, from the parity keeper's /api/progress/state fixture (the same one the web board renders).
+    /**
+     * A shot taken a few frames after the content first draws: a page hands its bottom view over in an effect, so the bottom
+     * screen only has it from the second frame (fix list A1: the one-frame shot showed the empty default).
+     */
+    private fun settled(path: String, content: @Composable () -> Unit) {
+        val app = RuntimeEnvironment.getApplication()
+        org.robolectric.Shadows.shadowOf(app.packageManager).addActivityIfNotPresent(android.content.ComponentName(app, androidx.activity.ComponentActivity::class.java))
+        androidx.test.core.app.ActivityScenario.launch(androidx.activity.ComponentActivity::class.java).use { sc ->
+            sc.onActivity { a -> a.setContentView(androidx.compose.ui.platform.ComposeView(a).apply { setContent { content() } }) }
+            repeat(8) { org.robolectric.shadows.ShadowLooper.idleMainLooper(50, java.util.concurrent.TimeUnit.MILLISECONDS) }
+            sc.onActivity { a -> a.findViewById<android.view.View>(android.R.id.content).captureRoboImage(path) }
+        }
+    }
+
     private val home = File(System.getProperty("shotsDir")!!).parentFile.resolve("app/build/shot-art/home")
     private val missing = java.util.TreeSet<String>()
     private fun key(url: String) = java.security.MessageDigest.getInstance("SHA-1").digest(url.toByteArray()).joinToString("") { "%02x".format(it) }
@@ -237,7 +251,7 @@ class ShotTest {
                     RuntimeEnvironment.setQualifiers(q)
                     dev.cardstashy.nativeplay.ui.LensHost.preset = lens
                     val tag = lens?.substringBefore(':')?.let { "-$it" } ?: ""
-                    captureRoboImage(File(System.getProperty("shotsDir"), "handheld/$name-home-bottom$tag-$size.png").path) {
+                    settled(File(System.getProperty("shotsDir"), "handheld/$name-home-bottom$tag-$size.png").path) {
                         androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().padRoot()) {
                             // The top screen's prompts feed the bottom bar; draw the page off to the side so its screen acts register.
                             androidx.compose.foundation.layout.Box(Modifier.size(1.dp)) { page() }

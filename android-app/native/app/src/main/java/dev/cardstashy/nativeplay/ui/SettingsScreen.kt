@@ -701,6 +701,7 @@ private fun InfoPane(onWeb: (String) -> Unit) {
         Column(Modifier.weight(1f)) {
             Text("Updates", style = S.Btn.copy(fontSize = 16.sp))
             Text("Version $number" + if (test) " \u00B7 test build" else "", style = S.Foot)
+            HomeStart.ms?.let { Text("Last start: Home in $it ms", style = S.Foot) }
         }
         // The same update prompt as on launch: "Update to X" when the site has a newer build, otherwise a fresh check.
         val ctx = androidx.compose.ui.platform.LocalContext.current
