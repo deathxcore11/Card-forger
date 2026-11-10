@@ -141,6 +141,9 @@ fun DecisionDock(st: MatchState, live: Boolean, intents: TableIntents, onInspect
         // native-panel.mjs:218-221
         val hostedOrder = p.method == "order" && p.supportedExact && p.ordered
         val optionalCosts = p.supportedExact && p.method in setOf("order", "getChoices") && p.options.isNotEmpty() && p.options.all { it.kind == "optionalCost" }
+        // The turn clock's ring goes round the prompt's confirm button (the site's [data-native-key=confirm-prompt]), drawn over the dock.
+        val ring = remember { PromptRing() }
+        androidx.compose.runtime.CompositionLocalProvider(LocalPromptRing provides ring) {
         when {
             zone != null -> ZoneSearchDialog(ctx, zone, draft)                                                       // :257-307
             !p.supportedExact || (p.method == "order" && !p.ordered) -> SideDock(ctx) { DeadEnd(ctx) }  // :309
@@ -154,6 +157,8 @@ fun DecisionDock(st: MatchState, live: Boolean, intents: TableIntents, onInspect
             p.method in OPTION_METHODS -> TitledDock(ctx, choiceTitle(p, st).ifEmpty { "Your choice" }) { ChoiceList(ctx, draft) }  // :384-395
             else -> SideDock(ctx) { DeadEnd(ctx) }        // :397
         }
+        }
+        PromptRingLayer(ring, u, Modifier.fillMaxSize())
         // A controller: the ring goes into the dock as the question opens (its first choice, or its gold answer), once laid out.
         // Tried again if the choice could not take it yet (busy); never pulled back while the ring is already in the dock.
         LaunchedEffect(p.id, ctx.busy) { if (Pad.connected.value && !pad.inside && !(TablePad.held && !DockFocus.took)) { withFrameNanos { }; runCatching { pad.first.requestFocus() } } }
@@ -387,8 +392,10 @@ private enum class Look { PLAIN, PRESSED, GOLD, SEARCH_GOLD }
 @Composable
 private fun DockButton(text: String, enabled: Boolean, d: DockU, modifier: Modifier = Modifier, look: Look = Look.PLAIN, radius: Float = 9f, height: Float = 44f,
                        padH: Float = 11f, size: Float = 12f, weight: FontWeight = FontWeight.Normal, align: TextAlign = TextAlign.Center,
-                       disabledAlpha: Float = .45f, content: (@Composable () -> Unit)? = null, onClick: () -> Unit) = with(d) {
+                       disabledAlpha: Float = .45f, ring: CountAt? = null, content: (@Composable () -> Unit)? = null, onClick: () -> Unit) = with(d) {
     val shape = RoundedCornerShape(radius.du)
+    // The prompt's confirm button ([ring] says where its last-10 count stands) wears the turn clock's ring (TurnRing.kt).
+    val ringM = if (ring != null) Modifier.promptRing(radius, ring) else Modifier
     val gold = look == Look.GOLD && enabled
     val bg = when {
         gold -> Modifier.background(Brush.verticalGradient(0f to Color(0xFFF7DA97), .55f to Color(0xFFE8B95B), 1f to Color(0xFFC4903A)), shape)
@@ -398,7 +405,7 @@ private fun DockButton(text: String, enabled: Boolean, d: DockU, modifier: Modif
     }
     val edge = when { gold -> Color(0xFFFFE2A0); look == Look.SEARCH_GOLD -> Color(0xFFF0D695); look == Look.PRESSED -> Color(0xFFE3CE9D); else -> Color(0x70DFC58E) }
     val ink = when { gold -> Color(0xFF241605); look == Look.SEARCH_GOLD -> Color(0xFF14171A); else -> Color(0xFFEDF0E8) }
-    Box(modifier.alpha(if (enabled) 1f else disabledAlpha)
+    Box(modifier.then(ringM).alpha(if (enabled) 1f else disabledAlpha)
         .then(if (gold) Modifier.boxShadow(Color(0x66E8B95B), 18.du, radius = radius.du) else Modifier)
         .heightIn(min = height.du).then(bg).border(1.dp, edge, shape).clip(shape).tap(enabled, onClick)
         .padding(horizontal = padH.du, vertical = 8.du),
@@ -501,7 +508,8 @@ private fun OptionalCosts(ctx: DockCtx, draft: MutableList<Int>) = with(ctx.d) {
             // Several: toggle, then cast.
             p.options.forEachIndexed { i, o -> DockButton("", !ctx.busy, this@with, look = if (o.index in draft) Look.PRESSED else Look.PLAIN,
                 modifier = (if (i == 0) Modifier.padFirst(ctx) else Modifier).semantics { selected = o.index in draft }, content = { CostLabel(o.label, this@with) }) { select(p, draft, o.index) } }
-            DockButton(castLabel, castOn, this@with) { answer(draft.toList()) }
+            // The dock's full width: the hand is to its left and the screen's edge to its right, so the count stands above its right end.
+            DockButton(castLabel, castOn, this@with, ring = CountAt.ABOVE) { answer(draft.toList()) }
         }
     }
 }
@@ -610,7 +618,7 @@ private fun ChoiceList(ctx: DockCtx, draft: MutableList<Int>) = with(ctx.d) {
     }
     if (p.options.any { !it.described }) Diagnostic("Some native options have no safe presentation. Those options remain disabled.", this)
     DockLine(if (draft.isNotEmpty()) "Selected: ${draft.joinToString(" · ") { i -> p.options.firstOrNull { it.index == i }?.label ?: "" }}" else "Nothing selected", this, Color(0xFFDFC58E))
-    DockButton(confirmLabel, confirmOn, this, if (firstOn == null) Modifier.padFirst(ctx) else Modifier, look = if (draft.isNotEmpty() || p.min > 0) Look.SEARCH_GOLD else Look.PLAIN, weight = FontWeight.Bold) { ctx.intents.reply(p.id, null, draft.toList(), null) }
+    DockButton(confirmLabel, confirmOn, this, if (firstOn == null) Modifier.padFirst(ctx) else Modifier, look = if (draft.isNotEmpty() || p.min > 0) Look.SEARCH_GOLD else Look.PLAIN, weight = FontWeight.Bold, ring = CountAt.RIGHT) { ctx.intents.reply(p.id, null, draft.toList(), null) }
     DockButton("Clear selection", !ctx.busy, this) { draft.clear() }
     if (modeBackOutOffered(p, ctx.st)) DockButton("Cancel", !ctx.busy, this) {
         BackOut.until = System.currentTimeMillis() + 8000; BackOut.key = "${ctx.st.revision}:${p.id}"
@@ -733,8 +741,9 @@ private fun OrderDialog(ctx: DockCtx, draft: MutableList<Int>) = with(ctx.d) {
                 val picked = draft.toMutableList(); for (o in p.options) if (o.index !in picked && picked.size < p.max && o.described) picked += o.index
                 send(picked)
             }
+            // Last in its row: the count stands right of it, never on Auto order.
             DockButton("Done", doneOn, this@with, Modifier.widthIn(min = 160.du), look = Look.GOLD,
-                radius = 23f, height = 46f, size = 16f, weight = FontWeight.Bold) { send(draft.toList()) }
+                radius = 23f, height = 46f, size = 16f, weight = FontWeight.Bold, ring = CountAt.RIGHT) { send(draft.toList()) }
         }
     }
 }
@@ -802,7 +811,7 @@ private fun AssignDialog(ctx: DockCtx) = with(ctx.d) {
             val skip = ctx.replies.skipAmounts
             if (spec.combat && spec.maySkip && skip != null) DockButton("As though unblocked", !ctx.busy, this@with, radius = 23f, height = 46f, padH = 22f) { skip(p.id) }
             DockButton("Done", doneOn, this@with, Modifier.widthIn(min = 160.du).padFirst(ctx), look = Look.GOLD,
-                radius = 23f, height = 46f, size = 16f, weight = FontWeight.Bold) { ctx.intents.reply(p.id, null, null, amounts.toList()) }
+                radius = 23f, height = 46f, size = 16f, weight = FontWeight.Bold, ring = CountAt.RIGHT) { ctx.intents.reply(p.id, null, null, amounts.toList()) }
         }
     }
 }
@@ -851,7 +860,7 @@ private fun ZoneSearchDialog(ctx: DockCtx, z: ZoneSearch, draft: MutableList<Int
             PadScreen(PadActs(x = if (confirmOn) PadAct("Confirm") { ctx.intents.reply(p.id, null, draft.toList(), null) } else null))
             Row(Modifier.fillMaxWidth().drawBehind { drawRect(Color(0x2CD6AD64), size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }.padding(top = 12.du), horizontalArrangement = Arrangement.spacedBy(8.du, Alignment.End)) {
                 DockButton("Confirm", confirmOn, this@with, Modifier.widthIn(min = 112.du), look = Look.SEARCH_GOLD,
-                    weight = FontWeight.Bold, disabledAlpha = .42f) { ctx.intents.reply(p.id, null, draft.toList(), null) }
+                    weight = FontWeight.Bold, disabledAlpha = .42f, ring = CountAt.LEFT) { ctx.intents.reply(p.id, null, draft.toList(), null) }
                 if (p.min == 0) DockButton(if (p.cancelable) "Cancel" else "Choose none", !ctx.busy, this@with, Modifier.widthIn(min = 112.du), disabledAlpha = .42f) {
                     ctx.intents.reply(p.id, null, emptyList(), null)
                 }

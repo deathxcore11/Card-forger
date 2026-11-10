@@ -130,21 +130,10 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     audio.fxCues = !Motion.still
     val cue = remember(audio) { { id: String, vol: Float, rate: Float -> audio.play(id, vol, rate) } }
     // The turn clock (cue map): a quiet TT-006 as a fresh prompt window opens, TT-007 each second of the last 10, TT-008 at zero. Yours only.
-    val clockNow by controller.clock.collectAsState()
-    LaunchedEffect(clockNow) {
-        val c = clockNow ?: return@LaunchedEffect
-        if (!c.own || c.frozenLeft != null) return@LaunchedEffect
-        var left = c.endsAt - android.os.SystemClock.elapsedRealtime()
-        if (left <= 0) return@LaunchedEffect
-        if (c.totalMs <= 30_000 && c.totalMs - left < 500) audio.play("TT-006", .4f)
-        var said = ((left + 999) / 1000).toInt()
-        while (true) {
-            left = c.endsAt - android.os.SystemClock.elapsedRealtime()
-            if (left <= 0) { audio.play("TT-008", .8f); break }
-            val s = ((left + 999) / 1000).toInt()
-            if (s < said) { said = s; if (s <= 10) audio.play("TT-007", .7f) }
-            delay(minOf(200L, left))
-        }
+    // One loop for the whole match (ClockCues keeps the count across the clock's per-second re-emissions, so no tick is lost).
+    LaunchedEffect(audio) {
+        val cues = ClockCues { id, vol -> audio.play(id, vol) }
+        while (true) { cues.step(controller.clock.value, android.os.SystemClock.elapsedRealtime()); delay(100) }
     }
     var inspect by remember { mutableStateOf<Card?>(null) }
     var selectedHand by remember { mutableStateOf<Int?>(null) }
@@ -191,8 +180,10 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
             when {
                 stage == Stage.TOSS -> { val t = controller.toss.collectAsState().value; if (t != null) TossScreen(t, cpuPlate, onDone = { controller.tossFinished() }) else Loading() }
                 st == null || stage == Stage.STARTING -> Loading()
-                stage == Stage.MULLIGAN -> Mulligan(st, live, controller.clock.collectAsState().value, onOk = { controller.ok() }, onCancel = { controller.cancel() },
-                    onCard = { controller.card(it) }, onDeal = { audio.play("QP-012", .55f) }, onHold = { inspect = it })
+                // The keep is a decision with the same clock as the table's: the ring on Keep (the site's ok key), from LocalMatchClock.
+                stage == Stage.MULLIGAN -> CompositionLocalProvider(LocalMatchClock provides controller.clock.collectAsState().value) {
+                    Mulligan(st, live, onOk = { controller.ok() }, onCancel = { controller.cancel() },
+                        onCard = { controller.card(it) }, onDeal = { audio.play("QP-012", .55f) }, onHold = { inspect = it }) }
                 else -> {
                     var handOrder by remember { mutableStateOf(emptyList<Int>()) }
                     // table-emotes.mjs mount(): the CPU's hello once the match is on; everything goes with the table.
@@ -207,7 +198,6 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
                 }
             }
             banner?.let { b -> BannerView(b.text, b.yours, Modifier.align(Alignment.Center)) }
-            if (stage == Stage.PLAYING) ClockPill(controller.clock.collectAsState().value, Modifier.align(Alignment.CenterEnd).padding(end = 10.dp).offset(y = (-44).dp))
         }
         ((if (DualScreen.active) null else afk) ?: note)?.let { Text(it, style = Type.Label.copy(color = Color(0xFFFFB4A8), fontSize = 14.sp), modifier = Modifier.align(Alignment.TopCenter).padding(top = 96.dp)
             .clip(RoundedCornerShape(999.dp)).background(Color(0xD90C0C0E)).border(1.dp, Palette.Red, RoundedCornerShape(999.dp)).padding(horizontal = 16.dp, vertical = 8.dp)) }
@@ -239,7 +229,7 @@ private fun Loading() {
  * pair sits bottom right: Mulligan (dark glass) and Keep (the gold main button) with the decision's clock running round it.
  */
 @Composable
-internal fun Mulligan(st: MatchState, live: Boolean, clock: MatchController.Clock?, onOk: () -> Unit, onCancel: () -> Unit, onCard: (Int) -> Unit, onDeal: () -> Unit, onHold: (Card) -> Unit) {
+internal fun Mulligan(st: MatchState, live: Boolean, onOk: () -> Unit, onCancel: () -> Unit, onCard: (Int) -> Unit, onDeal: () -> Unit, onHold: (Card) -> Unit) {
     var mulls by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     val choosing = st.inputType != "InputConfirmMulligan" && st.selection.cards.isNotEmpty()
     val yours = live && st.waitingOnMe
@@ -283,39 +273,20 @@ internal fun Mulligan(st: MatchState, live: Boolean, clock: MatchController.Cloc
                     style = sans(sp(14f), FontWeight.Medium, Color(0xFFE6DCC6)), textAlign = TextAlign.Center)
             }
             if (yours) Row(Modifier.align(Alignment.BottomEnd).padding(end = 28.du, bottom = 18.du), horizontalArrangement = Arrangement.spacedBy(14.du), verticalAlignment = Alignment.CenterVertically) {
+                // The turn clock's ring is on Keep (GoldPill); its last-10 count stands first in the row, never on Mulligan beside it.
+                TurnCount(d.u)
+                CompositionLocalProvider(LocalTurnCountOutside provides true) {
                 if (!choosing) st.buttons.cancel?.takeIf { st.buttons.cancelEnabled }?.let { label ->
                     Box(Modifier.height(48.du).widthIn(min = 128.du).clip(RoundedCornerShape(999.dp)).background(Color(0xE60C0D12)).border(1.dp, Color(0x26FFFFFF), RoundedCornerShape(999.dp))
                         .clickable { mulls++; cue?.invoke("QP-014", 1f, 1f); onCancel() }.padding(horizontal = 22.du), contentAlignment = Alignment.Center) {
                         Text(label, style = sans(sp(16f), FontWeight.Bold, Color(0xFFF3E9D2)), maxLines = 1)
                     }
                 }
-                Box(contentAlignment = Alignment.Center) {
-                    GoldPill(st.buttons.ok ?: "Keep", st.buttons.okEnabled, Modifier.height(48.du), d) { if (!choosing) cue?.invoke("QP-013", 1f, 1f); onOk() }
-                    KeepClock(clock, Modifier.matchParentSize())
+                GoldPill(st.buttons.ok ?: "Keep", st.buttons.okEnabled, Modifier.height(48.du).anchorRect("gold"), d) { if (!choosing) cue?.invoke("QP-013", 1f, 1f); onOk() }
                 }
             }
         }
     }
-}
-
-/** The decision's clock as a gold line running round the Keep pill (coral for the last ten seconds); it auto-keeps at zero. */
-@Composable
-private fun KeepClock(c: MatchController.Clock?, modifier: Modifier) {
-    if (c == null || !c.own) return
-    var left by remember(c) { mutableStateOf(c.frozenLeft ?: (c.endsAt - android.os.SystemClock.elapsedRealtime())) }
-    if (c.frozenLeft == null) LaunchedEffect(c) { while (true) { left = (c.endsAt - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0); if (Motion.still) delay(1000) else androidx.compose.runtime.withFrameMillis { }; if (left <= 0) break } }
-    val warn = left <= dev.cardstashy.nativeplay.match.TurnClock.WARN_MS
-    val frac = (left.toFloat() / c.totalMs).coerceIn(0f, 1f)
-    androidx.compose.foundation.Canvas(modifier.padding(0.dp)) {
-        val inset = 3.dp.toPx()
-        val path = androidx.compose.ui.graphics.Path().apply {
-            addRoundRect(androidx.compose.ui.geometry.RoundRect(-inset, -inset, size.width + inset, size.height + inset, androidx.compose.ui.geometry.CornerRadius(size.height / 2 + inset)))
-        }
-        val m = androidx.compose.ui.graphics.PathMeasure().apply { setPath(path, false) }
-        val seg = androidx.compose.ui.graphics.Path(); m.getSegment(0f, m.length * frac, seg, true)
-        drawPath(seg, if (warn) Color(0xFFFF6B5A) else Color(0xFFF6DFA8), style = androidx.compose.ui.graphics.drawscope.Stroke(2.5f.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round))
-    }
-    if (warn) Text(((left + 999) / 1000).toString(), style = Type.Label.copy(color = Color(0xFFFF6B5A), fontSize = 13.sp), modifier = modifier.wrapContentSize(Alignment.TopEnd).offset(x = 10.dp, y = (-14).dp))
 }
 
 // ---- The board: CPU half above, yours below, hand fan at the bottom ----
@@ -862,80 +833,3 @@ private fun FitCard(modifier: Modifier, inner: Modifier = Modifier, content: @Co
     }
 }
 
-/** The clock a match screen is showing; ForgeBoard reads it to lay the rope on the divider. */
-internal val LocalMatchClock = androidx.compose.runtime.compositionLocalOf<MatchController.Clock?> { null }
-
-/** The rope takes over from the ring for the last 30 s of your window. */
-internal const val ROPE_MS = 30_000L
-
-/** Milliseconds left on a clock, ticking each frame (each second under Minimal motion); a held clock stands still. */
-@Composable
-internal fun clockLeft(c: MatchController.Clock): Long {
-    var left by remember(c) { mutableStateOf(c.frozenLeft ?: (c.endsAt - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0)) }
-    if (c.frozenLeft == null) LaunchedEffect(c) { while (true) { left = (c.endsAt - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0); if (Motion.still) delay(1000) else androidx.compose.runtime.withFrameMillis { }; if (left <= 0) break } }
-    return left
-}
-
-/**
- * The rope (table additions 5): in the last 30 s of your window a gold braided fuse lies on the divider and burns from the right,
- * a spark flickering at the burning end, the seconds beside it. Last 10 s: coral (TT-007 ticks come from the clock cue map).
- * Held clock = no burn, no flicker. Any action ends the window and the rope fades out in 300 ms.
- */
-@Composable
-internal fun Rope(c: MatchController.Clock?, modifier: Modifier) {
-    var last by remember { mutableStateOf<MatchController.Clock?>(null) }
-    val on = c != null && c.own && clockLeft(c) <= ROPE_MS
-    if (on) last = c
-    AnimatedVisibility(on, modifier, enter = fadeIn(tween(200)), exit = fadeOut(tween(300))) {
-        val k = last ?: return@AnimatedVisibility
-        val left = clockLeft(k)
-        val held = k.frozenLeft != null
-        val warn = left <= dev.cardstashy.nativeplay.match.TurnClock.WARN_MS
-        val fill = if (warn) Color(0xFFFF6B5A) else Color(0xFFE9C46A)
-        val dark = if (warn) Color(0xFF9E3A2E) else Color(0xFF8A6A2A)
-        val frac = (left.toFloat() / minOf(ROPE_MS, k.totalMs)).coerceIn(0f, 1f)
-        val flick = if (held || Motion.still) 1f else androidx.compose.animation.core.rememberInfiniteTransition(label = "spark")
-            .animateFloat(.7f, 1.15f, androidx.compose.animation.core.infiniteRepeatable(tween(90, easing = LinearEasing), androidx.compose.animation.core.RepeatMode.Reverse), label = "f").value
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            androidx.compose.foundation.Canvas(Modifier.width(260.dp).height(14.dp)) {
-                val h = 8.dp.toPx(); val y = (size.height - h) / 2; val w = size.width * frac
-                // The track: the only line drawn on this stretch of the divider.
-                drawRoundRect(Color(0xCC0C0E13), androidx.compose.ui.geometry.Offset(0f, y), androidx.compose.ui.geometry.Size(size.width, h), androidx.compose.ui.geometry.CornerRadius(h / 2))
-                if (w > 0f) {
-                    drawRoundRect(fill, androidx.compose.ui.geometry.Offset(0f, y), androidx.compose.ui.geometry.Size(w, h), androidx.compose.ui.geometry.CornerRadius(h / 2))
-                    // The braid: slanted darker strands every 6 dp across the fill.
-                    clipRect(0f, y, w, y + h) {
-                        val step = 6.dp.toPx(); var x = -h
-                        while (x < w) { drawLine(dark, androidx.compose.ui.geometry.Offset(x, y + h), androidx.compose.ui.geometry.Offset(x + h, y), 1.4f.dp.toPx()); x += step }
-                    }
-                    // The spark at the burning end.
-                    val r = 5.dp.toPx() * flick
-                    drawCircle(Brush.radialGradient(listOf(Color(0xFFFFF4D0), fill.copy(alpha = .8f), Color.Transparent), androidx.compose.ui.geometry.Offset(w, size.height / 2), r * 2.2f), r * 2.2f, androidx.compose.ui.geometry.Offset(w, size.height / 2))
-                }
-            }
-            // An expired window that waits on you (a CPU-match discard) says so instead of standing at a number.
-            Text(if (held && left <= 0) "Time's up" else ((left + 999) / 1000).toString(), style = Type.Label.copy(color = fill, fontSize = 14.sp), modifier = Modifier.padding(start = 8.dp).widthIn(min = 20.dp))
-        }
-    }
-}
-
-/** The turn clock: a ring that empties over the decision's time, the seconds inside, gold turning red and pulsing for the last ten. Minimal motion counts whole seconds only. */
-@Composable
-internal fun ClockPill(c: MatchController.Clock?, modifier: Modifier) {
-    if (c == null || !c.own) return
-    // Held (the CPU is playing, a pop-up is open): the ring stands still at what was left.
-    val left = clockLeft(c)
-    // The last 30 s belong to the rope on the divider (table additions 5): the number is not shown twice.
-    if (left <= ROPE_MS) return
-    val warn = left <= dev.cardstashy.nativeplay.match.TurnClock.WARN_MS
-    val pulse = androidx.compose.animation.core.rememberInfiniteTransition(label = "clock").animateFloat(1f, 1.1f, androidx.compose.animation.core.infiniteRepeatable(tween(450), androidx.compose.animation.core.RepeatMode.Reverse), label = "p").value
-    val ring = if (warn) Color(0xFFFF6B5A) else Palette.Gold
-    val frac = (left.toFloat() / c.totalMs).coerceIn(0f, 1f)
-    Box(modifier.size(46.dp).graphicsLayer { val k = if (warn && !Motion.still) pulse else 1f; scaleX = k; scaleY = k }.clip(CircleShape).background(Color(0xCC0C0E13)), contentAlignment = Alignment.Center) {
-        androidx.compose.foundation.Canvas(Modifier.fillMaxSize().padding(3.dp)) {
-            drawCircle(Color(0x33FFFFFF), style = androidx.compose.ui.graphics.drawscope.Stroke(3.dp.toPx()))
-            drawArc(ring, -90f, 360f * frac, false, style = androidx.compose.ui.graphics.drawscope.Stroke(3.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round))
-        }
-        Text(((left + 999) / 1000).toString(), style = Type.Label.copy(color = if (warn) ring else Palette.Ink, fontSize = 14.sp))
-    }
-}

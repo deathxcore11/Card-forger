@@ -98,8 +98,9 @@ class TableShotTest {
             captureRoboImage(File(System.getProperty("shotsDir"), "table/table-mulligan-$size.png").path) {
                 Box(Modifier.fillMaxSize().background(Palette.Night)) {
                     PlaymatScene(Modifier.fillMaxSize())
-                    dev.cardstashy.nativeplay.ui.Mulligan(st, live = true, clock = dev.cardstashy.nativeplay.match.MatchController.Clock(android.os.SystemClock.elapsedRealtime() + 21_000, 30_000),
-                        onOk = {}, onCancel = {}, onCard = {}, onDeal = {}, onHold = {})
+                    androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalMatchClock provides dev.cardstashy.nativeplay.match.MatchController.Clock(android.os.SystemClock.elapsedRealtime() + 21_000, 30_000)) {
+                        dev.cardstashy.nativeplay.ui.Mulligan(st, live = true, onOk = {}, onCancel = {}, onCard = {}, onDeal = {}, onHold = {})
+                    }
                 }
             }
         }
