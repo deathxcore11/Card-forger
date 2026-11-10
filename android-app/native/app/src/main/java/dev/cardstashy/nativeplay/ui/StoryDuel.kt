@@ -59,7 +59,7 @@ private fun SideCard(who: String, name: String, deckName: String?, face: String?
     val shape = RoundedCornerShape(20.dp)
     Box(modifier.clip(shape).border(1.dp, if (you) Color(0xAAD6AD64) else Color(0x1FFFFFFF), shape).semantics { contentDescription = "$who $name" }) {
         StoryPic(face, Modifier.matchParentSize(), focusBias)
-        Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color.Transparent, .35f to Color.Transparent, 1f to Color(0xE60C0C0E))))
+        Box(Modifier.matchParentSize().background(Color(0xF20C0C0E).let { ink -> Brush.verticalGradient(0f to Color.Transparent, .2f to Color.Transparent, .62f to ink.copy(alpha = .72f), 1f to ink) }))
         Column(Modifier.align(Alignment.BottomStart).padding(16.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(who.uppercase(), style = storyText(11f, FontWeight.ExtraBold, Color(0xFFE8B95B), 2.2f))
             Text(name, style = storyCinzel(22f, Color(0xFFF6EEDB)))
@@ -114,6 +114,10 @@ fun StoryDuelPage(
     fun faceOf(side: String): Pair<String?, BiasAlignment> =
         if (b.obj(side)!!.str("who") == "you" && !avatarUrl.isNullOrBlank()) avatarUrl to BiasAlignment(0f, 0f)
         else person(side)?.obj("portrait").let { it?.str("crop") to storyFocus(it?.str("focus")) }
+    // Playing the other side, the opponent is the hero's deck, never "You" (fix list D1): its deck name is the title.
+    val foeIsYou = theirs.str("who") == "you"
+    val foeName = if (foeIsYou) theirs.obj("deck")?.str("name") ?: person(other)?.str("name").orEmpty() else person(other)?.str("name").orEmpty()
+    val foeDeck = if (foeIsYou) null else theirs.obj("deck")?.str("name")
     val rw = b.obj("reward"); val set = b.str("rewardSet") ?: ""
     val mineDone = if (seat == "villain") "villain" in rec else "loaner" in rec
     // Story gives you its deck (Randall 8 Nov: "just have the deck that the game is wanting to give you"); your own decks come back later.
@@ -146,8 +150,8 @@ fun StoryDuelPage(
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("OPPONENT", style = storyText(11f, FontWeight.ExtraBold, Site.Gold, 1.6f))
-                Text(person(other)?.str("name").orEmpty(), style = storyCinzel(17f, Color(0xFFF3E7C9)))
-                theirs.obj("deck")?.str("name")?.let { Text(it, style = storyText(13f, FontWeight.Medium, Site.Muted)) }
+                Text(foeName, style = storyCinzel(17f, Color(0xFFF3E7C9)))
+                foeDeck?.let { Text(it, style = storyText(13f, FontWeight.Medium, Site.Muted)) }
                 Spacer(Modifier.weight(1f))
                 Text(prize.first.uppercase(), style = storyText(11f, FontWeight.ExtraBold, Site.Gold, 1.6f))
                 Text(prize.second, style = storyText(13.5f, FontWeight.Medium, Site.Text))
@@ -166,9 +170,10 @@ fun StoryDuelPage(
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             val (yf, ya) = faceOf(seat); val (tf, ta) = faceOf(other)
                             SideCard("You play", person(seat)?.str("name") ?: "You", null, yf, ya, true, Modifier.fillMaxWidth().height(150.dp))
-                            SideCard("Opponent", person(other)?.str("name") ?: "", theirs.obj("deck")?.str("name"), tf, ta, false, Modifier.fillMaxWidth().height(150.dp))
+                            SideCard("Opponent", foeName, foeDeck, tf, ta, false, Modifier.fillMaxWidth().height(150.dp))
                         }
-                        Box(Modifier.align(Alignment.Center).size(44.dp).clip(CircleShape).background(Color(0xEE101216)).border(1.5.dp, Color(0xFFD6AD64), CircleShape), contentAlignment = Alignment.Center) {
+                        // On the seam at the right, clear of both cards' labels, which sit bottom left (fix list D2).
+                        Box(Modifier.align(Alignment.CenterEnd).padding(end = 18.dp).size(44.dp).clip(CircleShape).background(Color(0xEE101216)).border(1.5.dp, Color(0xFFD6AD64), CircleShape), contentAlignment = Alignment.Center) {
                             Text("VS", style = storyCinzel(14f, Color(0xFFE8C36F))) }
                     }
                     Text(b.str("blurb").orEmpty(), style = storyText(15f, FontWeight.Medium, Color(0xFFE4E7EA)))
