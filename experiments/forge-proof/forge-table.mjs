@@ -1062,7 +1062,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    let mark=panel.querySelector(':scope>.forge-remember');
    if(!mark){mark=doc.createElement('button');mark.type='button';mark.className='forge-remember';mark.addEventListener('click',()=>{let m=null;try{m=presentation.onRemember();}catch{m=null;}remembered=m?`Remembered · turn ${m.turn}`:'Moments full';rememberedAt=Date.now();mark.textContent=remembered;mark.setAttribute('aria-live','polite');});(history||panel.firstChild)?.after?.(mark)??panel.prepend(mark);}
    if(remembered&&Date.now()-rememberedAt>4000)remembered='';
-   mark.textContent=remembered||'Remember this moment';
+   // Write only on a change: setting the same text still swaps the text node, the table's observer sees that
+   // as a redraw and runs this again, forever. That froze every web match right after Keep (10 Nov).
+   const label=remembered||'Remember this moment';if(mark.textContent!==label)mark.textContent=label;
   }
   const summary=menu.querySelector(':scope>summary'),count=String(session.snapshot().native?.stack?.length||'');if(summary&&(summary.dataset.count||'')!==count){if(count)summary.dataset.count=count;else delete summary.dataset.count;}
  }

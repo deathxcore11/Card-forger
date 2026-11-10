@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-table-revert-43162-v534";
+const CACHE = "cardforge-shell-keep-freeze-43163-v535";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
