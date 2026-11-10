@@ -18,6 +18,7 @@
 .forge-intro-you{animation:forge-seat-in-left .7s cubic-bezier(.2,.8,.2,1) both}
 .forge-intro-cpu{animation:forge-seat-in-right .7s cubic-bezier(.2,.8,.2,1) both}
 .forge-intro-art{position:absolute;inset:0;z-index:-2;background:radial-gradient(ellipse at 50% 20%,#d6ad641f,transparent 70%),#141416}
+.forge-intro-art.is-frame::before{content:"";position:absolute;left:50%;top:42%;width:min(34%,150px);aspect-ratio:63/88;transform:translate(-50%,-50%) rotate(-4deg);border-radius:9px;border:1px solid #d6ad6466;background:linear-gradient(160deg,#ffffff0d,#ffffff03 45%,#d6ad6412),#16161a;box-shadow:inset 0 0 0 5px #0e0e11,inset 0 0 0 6px #d6ad6433,0 18px 40px #000a}
 .forge-intro-art img{width:100%;height:100%;object-fit:cover;object-position:50% 28%;animation:forge-art-arrive 1.1s ease-out both}
 .forge-intro-seat:after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#0c0c0e99 0%,#0c0c0e1a 26%,transparent 44%,#0c0c0ed9 76%,#0c0c0ef7 100%)}
 .forge-intro-identity,.forge-intro-deck{position:relative;z-index:2}

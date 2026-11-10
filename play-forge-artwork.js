@@ -59,9 +59,9 @@ export function createForgeArtworkPreparation({ resolveNames, lookup, fetchPrint
     async preview(setup, { isCurrent: launchCurrent = () => true } = {}) {
       const mine = ++generation; checkLaunch = launchCurrent; current(); early = new Map();
       const names = new Set();
-      for (const deck of [setup.selected, setup.opponent]) {
+      for (const deck of [setup.selected, setup.opponent, ...(Array.isArray(setup.extraOpponents) ? setup.extraOpponents.map(o => o?.deck) : [])]) {
         for (const n of [deck?.commander, ...(deck?.commanders || []).map(r => typeof r === 'string' ? r : r?.name)]) if (typeof n === 'string' && n) names.add(n);
-        for (const r of (deck?.cards || []).filter(r => r?.name && !r.printingId && !/^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/.test(r.name)).slice(0, 6)) names.add(r.name);
+        for (const r of (deck?.cards || []).filter(r => r?.name && !/^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/.test(r.name)).slice(0, 6)) names.add(r.name);
       }
       const live = () => mine === generation && isCurrent() && launchCurrent();
       try { await resolveNames([...names], { isCurrent: live }); } catch { /* optional artwork */ }
@@ -70,7 +70,8 @@ export function createForgeArtworkPreparation({ resolveNames, lookup, fetchPrint
     },
     previewLookup(name, id) {
       if (prepared) { const card = frozen.get(identity(name, id)); if (card) return structuredClone(card); }
-      const card = id ? null : early.get(identity(name, null)); return card ? structuredClone(card) : null;
+      // A backdrop may show any printing of the card: a deck's chosen printing falls back to the quick look by name.
+      const card = early.get(identity(name, null)); return card ? structuredClone(card) : null;
     },
     lookup(name, id) {
       current(); if (!prepared) throw Error('FORGE_ARTWORK_NOT_PREPARED');

@@ -20,3 +20,14 @@ assert.equal(art.lookup('Slow Card', null), null, 'a card the provider missed ha
 catalog.set('slow card', card('Slow Card'));
 assert.ok(art.lookup('Slow Card', null)?.image_uris.art_crop, 'it appears once the catalogue has it');
 console.log('play forge early artwork ok');
+// The matchup waits for both covers to decode (one retry on error), never past its cap.
+const {preloadDeckBackdrops} = await import('./play-forge-pregame.js');
+const loaded = [];
+const fakeImage = fail => () => { const img = {decode: async () => {}}; Object.defineProperty(img, 'src', {set(u) { loaded.push(u); setTimeout(() => (fail(u) ? img.onerror() : img.onload()), 5); }}); return img; };
+const look = n => ({id: n, name: n, image_uris: {art_crop: 'https://img/' + n}});
+await preloadDeckBackdrops([{commander: 'A', cards: []}, {commander: 'B', cards: []}], n => look(n), {makeImage: fakeImage(u => u === 'https://img/B')});
+assert.deepEqual(loaded.sort(), ['https://img/A', 'https://img/B', 'https://img/B?retry=1'], 'both covers load, a failed one is tried once more');
+const t0 = Date.now();
+await preloadDeckBackdrops([{commander: 'C', cards: []}], n => look(n), {timeoutMs: 50, makeImage: () => ({})});
+assert.ok(Date.now() - t0 < 500, 'never waits past the cap');
+console.log('play forge backdrop preload ok');

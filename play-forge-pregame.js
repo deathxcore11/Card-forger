@@ -27,6 +27,15 @@ export function forgeDeckBackdrop(deck,lookup){
  return null;
 }
 
+// Loads and decodes each deck's backdrop before the matchup appears, so no plate shows empty and then pops.
+// At most timeoutMs in all; one retry on error. Resolves with nothing: the browser cache holds the images.
+export async function preloadDeckBackdrops(decks,lookup,{timeoutMs=4000,makeImage=()=>new Image()}={}){
+ const urls=[...new Set(decks.map(d=>{try{return forgeDeckBackdrop(d,lookup);}catch{return null;}}).filter(Boolean))];
+ const load=(url,retry)=>new Promise(resolve=>{const img=makeImage();img.referrerPolicy='no-referrer';
+  img.onload=()=>Promise.resolve(img.decode?.()).catch(()=>{}).then(resolve);
+  img.onerror=()=>retry?resolve(load(url+(url.includes('?')?'&':'?')+'retry=1',false)):resolve();img.src=url;});
+ let timer;await Promise.race([Promise.all(urls.map(u=>load(u,true))),new Promise(r=>{timer=setTimeout(r,timeoutMs);})]);clearTimeout(timer);
+}
 // Choice icons share the packet's outline style (24-unit grid, currentColor).
 const START_ICONS={
  random:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5.5"/><path d="m12 8.8 1 2.1 2.2.3-1.6 1.5.4 2.2-2-1.1-2 1.1.4-2.2-1.6-1.5 2.2-.3z"/></svg>',
@@ -73,7 +82,14 @@ export function mountForgeMatchIntro({root,setup,lookup=()=>null,onCancel=()=>{}
  const note=node('p','','forge-intro-note');note.hidden=true;
  const cancel=node('button','Return to setup','btn ghost forge-intro-cancel');cancel.type='button';cancel.addEventListener('click',()=>{if(!closed)onCancel();});
  footer.append(steps,status,elapsed,note,cancel);stage.append(header,versus,footer);root.className='play-mat-message play-forge-intro';root.replaceChildren(stage);
- const refreshArtwork=()=>{if(closed)return;for(const {deck,artwork}of seats){const url=forgeDeckBackdrop(deck,lookup);if(!url)continue;const img=node('img');img.src=url;img.alt='';img.referrerPolicy='no-referrer';img.addEventListener('error',()=>img.remove(),{once:true});artwork.replaceChildren(img);}};
+ // A plate without art shows a drawn card frame; art that fails to load is tried once more, then the frame stays.
+ const refreshArtwork=()=>{if(closed)return;for(const seat of seats){const {deck,artwork}=seat;let url=null;try{url=forgeDeckBackdrop(deck,lookup);}catch{url=null;}
+  if(!url){if(!seat.url)artwork.classList?.add('is-frame');continue;}
+  if(seat.url===url)continue;seat.url=url;
+  const img=node('img');img.alt='';img.referrerPolicy='no-referrer';let tries=0;
+  img.addEventListener('error',()=>{if(tries++<1){img.src=url+(url.includes('?')?'&':'?')+'retry=1';return;}img.remove();seat.url=null;artwork.classList?.add('is-frame');});
+  img.src=url;artwork.classList?.remove('is-frame');artwork.replaceChildren(img);}};
+ refreshArtwork();
  const chooseStartingPlayer=()=>{
   if(closed||!isCurrent())return Promise.resolve(null);
   if(setup.playStyle==='quick')return Promise.resolve('random');
