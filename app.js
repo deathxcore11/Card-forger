@@ -2153,7 +2153,7 @@ const friendRoomView=()=>{
 };
 const setFriendRoom=patch=>{friendRoom=patch&&{...(friendRoom||{}),...patch};refreshPlayMenu();};
 const stopFriendPoll=()=>{clearTimeout(friendPoll);friendPoll=null;};
-const friendError=e=>e?.message&&!/^[A-Z_]+$/.test(e.message)?e.message:'The room could not be reached. Try again.';
+const friendError=e=>e?.message&&!/^[A-Z_]+$/.test(e.message)?e.message:'The room could not be reached. Try again.'+(/^[A-Z_]{3,60}$/.test(e?.message||'')?' ('+e.message+')':'');
 function pollFriendRoom(){
  stopFriendPoll();
  friendPoll=setTimeout(async()=>{
