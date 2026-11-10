@@ -175,32 +175,24 @@ internal fun TrunkCardCase(state: JsonObject, c: Trunk.Card, holo: Boolean, prin
     val rarity = print?.str("rarity") ?: c.r
     val finish = Foil.finishFor(print, if (holo) "foil" else "nonfoil")
     val look = data?.let { Foil.look(it, print, finish) }
-    val tilt = rememberFoilTilt(live = finish != "nonfoil", phase = (c.o.hashCode() and 0xff) / 255f, tile = false)
     val face = print?.getAsJsonArray("card_faces")?.firstOrNull() as? JsonObject
     val type = print?.str("type_line") ?: face?.str("type_line")
     val text = print?.str("oracle_text") ?: face?.str("oracle_text")
     val stamp = Trunk.stamp(state, print)
     val up = Trunk.holo(state, c.n, print)
-    ShowcaseCase(if (holo) "Trunk · Holo copy" else "Trunk · Card", c.n, heroWeight = .36f,
+    val seals = buildList {
+        if (stamp != null && c.c < 4) add("Stamp a copy" to "1 ${stamp.rarity} seal · you have ${stamp.seals}")
+        if (up != null && up.can) add("Make one holo" to "${up.cost} ${up.seal} seal${if (up.cost == 1) "" else "s"}" + if (up.afford) "" else " · not enough yet")
+    }
+    // The one card case both sides share (family T2); the Play facts stay Play's: copies, holo copies, the sets it is owned in, seals.
+    QuickLookCase(QuickLook("trunk:" + c.o, if (holo) "Trunk · Holo copy" else "Trunk · Card", c.n, trunkImage(c, print, fact), type, text,
+        facts = listOf("Copies" to "${c.c}", "Holo copies" to "${minOf(c.h, c.c)}", "Rarity" to rarity.replaceFirstChar { it.uppercase() }) + seals,
         buttons = listOf(CaseButton("A", "Open card", gold = true, run = onOpen), CaseButton(null, "Menu", run = onMenu)),
-        hero = { CardPicture(trunkImage(c, print, fact), look?.takeIf { it.shines }, tilt, Modifier.align(Alignment.Center).fillMaxHeight().aspectRatio(63f / 88f), shape = CardCorner) }) {
-        type?.let { Text(it, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = Color(0xFFEDE7DA))) }
-        text?.takeIf { it.isNotBlank() }?.let { Text(it, style = TextStyle(fontFamily = Site.Manrope, fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFFC9CED6)), maxLines = 6, overflow = TextOverflow.Ellipsis) }
-        Row(horizontalArrangement = Arrangement.spacedBy(26.dp), verticalAlignment = Alignment.Bottom) {
-            CaseFact("Copies", "${c.c}")
-            CaseFact("Holo copies", "${minOf(c.h, c.c)}")
-            CaseFact("Rarity", rarity.replaceFirstChar { it.uppercase() })
-        }
-        if (c.s.isNotEmpty()) {
+        look = look, tiltPhase = (c.o.hashCode() and 0xff) / 255f,
+        extra = if (c.s.isEmpty()) null else ({
             CaseLabel("Owned in")
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) { c.s.take(10).forEach { SetBadge(it, rarity) } }
-        }
-        val seals = buildList {
-            if (stamp != null && c.c < 4) add("Stamp a copy" to "1 ${stamp.rarity} seal · you have ${stamp.seals}")
-            if (up != null && up.can) add("Make one holo" to "${up.cost} ${up.seal} seal${if (up.cost == 1) "" else "s"}" + if (up.afford) "" else " · not enough yet")
-        }
-        if (seals.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(26.dp)) { seals.forEach { (l, v) -> CaseFact(l, v) } }
-    }
+        })))
 }
 
 /** The Trunk's default case: the binder plaque (how many cards, copies, holo copies, sets started), the purse, and the sets closest to done. */

@@ -69,18 +69,27 @@ fun Modifier.dualLens(host: LensHost, key: String?): Modifier = if (!DualScreen.
 /** A case's touch button: the pad key it shares (A, X, Y) and what it does. */
 /** The bottom screen's quick look at the card under the ring (Randall 9 Nov): like Play's Trunk case, with what fits the mode. */
 class QuickLook(val key: String, val eyebrow: String, val name: String, val image: String?, val type: String? = null, val text: String? = null,
-                val facts: List<Pair<String, String>> = emptyList(), val buttons: List<CaseButton> = emptyList())
+                val facts: List<Pair<String, String>> = emptyList(), val buttons: List<CaseButton> = emptyList(),
+                /** The card's own foil look, when it shines, and where its light starts (0..1); the picture then tilts as its tile does. */
+                val look: Foil.Look? = null, val tiltPhase: Float = 0f,
+                /** What only this side shows under the facts (Play: the sets a card is owned in, what seals buy). */
+                val extra: (@Composable ColumnScope.() -> Unit)? = null)
 
+/**
+ * One card case for both sides (Play and Collection family, T2): the whole card in its real corners, with its foil when it has
+ * one, then its type, rules text and the facts the side gives it. Play's Trunk and Collection's lots and set cards all build this.
+ */
 @Composable
 internal fun QuickLookCase(q: QuickLook) {
+    val shines = q.look?.takeIf { it.shines }
+    val tilt = rememberFoilTilt(live = shines != null, phase = q.tiltPhase, tile = false)
     ShowcaseCase(q.eyebrow, q.name, heroWeight = .4f, buttons = q.buttons, hero = {
-        val img = heroPainter(q.image?.let(homeArt))
-        if (img != null) androidx.compose.foundation.Image(img, q.name, Modifier.align(Alignment.Center).padding(10.dp).fillMaxHeight().then(Modifier.aspectRatio(63f / 88f, matchHeightConstraintsFirst = true))
-            .clip(RoundedCornerShape(10.dp)), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+        if (!q.image.isNullOrBlank()) CardPicture(q.image, shines, tilt, Modifier.align(Alignment.Center).padding(10.dp).fillMaxHeight().aspectRatio(63f / 88f, matchHeightConstraintsFirst = true), shape = CardCorner)
     }) {
         q.type?.takeIf { it.isNotBlank() }?.let { Text(it, style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Gold)) }
         q.text?.takeIf { it.isNotBlank() }?.let { Text(it, style = TextStyle(fontFamily = Type.Sans, fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFFE4DFD3)), maxLines = 7, overflow = TextOverflow.Ellipsis) }
         q.facts.chunked(3).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) { row.forEach { (l, v) -> CaseFact(l, v) } } }
+        q.extra?.invoke(this)
     }
 }
 
