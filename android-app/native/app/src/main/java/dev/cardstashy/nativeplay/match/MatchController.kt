@@ -665,12 +665,9 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         // Randall 10 Nov on 0.4.56 (Spellbook Vendor, "you may pay {1}" with no mana): Arena never asks you to pay what you can't.
         // Your own trigger, resolving on top of the stack, asks for an optional payment you have no mana for: it is declined for
         // you after its beat, and the table says so. A spell or an ability you start yourself is never cancelled for you.
-        if (st.prompt == null && st.buttons.cancelEnabled && dev.cardstashy.nativeplay.ui.Affordability.paying(st)?.short == true) {
-            val top = st.stack.firstOrNull()
-            if (top != null && top.ability && top.controller == st.viewer && top.source?.id != null && top.source.id == st.payment?.forCard) {
-                say("${top.source.name}: no mana to pay, skipped")
-                return Decision("cancel", "optional payment you can't make: ${top.source.name}", 900)
-            }
+        dev.cardstashy.nativeplay.ui.Affordability.unpayableTrigger(st)?.let { name ->
+            say("$name: not paid")
+            return Decision("cancel", "optional payment you can't make: $name", 150)
         }
         if (st.prompt != null || !st.buttons.okEnabled) return Decision(null, "a question or no button")
         val stopHere = st.phaseStops?.containsKey("${if (st.activePlayer == st.viewer) "you" else "opponent"}:${st.phase}") == true

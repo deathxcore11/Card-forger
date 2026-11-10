@@ -104,6 +104,18 @@ object Affordability {
         return Paying(remaining != null && (autoOff || !pool && !sources), name, ref)
     }
 
+    /**
+     * specs/match-table-master.md OPTIONAL PAY TRIGGERS (Randall 10 Nov, Spellbook Vendor "you may pay {1}" with no mana): your own
+     * trigger, resolving on top of the stack, asks for a payment the reader proves you can't make, and Cancel is open. The name of
+     * its source, to decline it for you; null when it might be payable, is a spell, or an ability you started yourself.
+     */
+    fun unpayableTrigger(st: MatchState): String? {
+        if (st.prompt != null || !st.buttons.cancelEnabled || paying(st)?.short != true) return null
+        val top = st.stack.firstOrNull() ?: return null
+        val src = top.source ?: return null
+        return src.name.takeIf { top.ability && top.controller == st.viewer && src.id == st.payment?.forCard }
+    }
+
     /** owesAttack(): only a must-attack creature that could attack now still owes one. */
     fun owesAttack(c: Card) = c.mustAttack && !c.attacking && !c.tapped && !(c.summoningSick && c.keywords.none { Regex("haste", RegexOption.IGNORE_CASE).containsMatchIn(it) })
 }
