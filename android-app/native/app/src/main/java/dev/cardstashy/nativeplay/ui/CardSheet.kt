@@ -531,7 +531,7 @@ private fun RulesBox(f: JsonObject, shown: JsonObject, multi: Boolean, i: Int, d
         f.s("oracle_text").split("\n").filter { it.isNotBlank() }.forEach { line -> RuleLine(line, data, onRule) }
         f.s("flavor_text").takeIf { it.isNotBlank() }?.let {
             Column(Modifier.fillMaxWidth().border(width = 0.dp, color = Color.Transparent).padding(start = 10.dp)) {
-                Text("FLAVOUR", style = Site.Eyebrow.copy(fontSize = 10.sp, color = Site.Muted)); Text(it, style = t(14f, color = Color(0xFFC7CCD4)).copy(fontStyle = FontStyle.Italic))
+                Text("FLAVOUR", style = Site.Eyebrow.copy(fontSize = 10.sp, color = Site.Muted)); Text(flavourText(it), style = t(14f, color = Color(0xFFC7CCD4)).copy(fontStyle = FontStyle.Italic))
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

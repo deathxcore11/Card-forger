@@ -156,7 +156,7 @@ internal fun GalleryLabel(g: Gallery, index: Int, onWalkTo: (Int) -> Unit) {
         p.line.takeIf { it.isNotBlank() }?.let { Text(it, style = TextStyle(fontFamily = Type.Sans, fontSize = 15.sp, color = Color(0xB3E8D9BC)).copy(fontFeatureSettings = "tnum")) }
         p.flavour?.takeIf { it.isNotBlank() }?.let {
             Spacer(Modifier.height(6.dp))
-            Text(it, style = TextStyle(fontFamily = FontFamily.Serif, fontStyle = FontStyle.Italic, fontSize = 18.sp, lineHeight = 27.sp, color = Color(0xD9F1E7D2)))
+            Text(flavourText(it), style = TextStyle(fontFamily = FontFamily.Serif, fontStyle = FontStyle.Italic, fontSize = 18.sp, lineHeight = 27.sp, color = Color(0xD9F1E7D2)))
         }
         val (head, more) = galleryMore(g.pieces, index)
         if (more.isNotEmpty()) {

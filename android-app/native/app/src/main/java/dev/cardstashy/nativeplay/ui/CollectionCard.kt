@@ -1082,7 +1082,7 @@ private fun Face(f: CardFace, act: CollectionCardActions, go: (CardPress) -> Uni
         f.flavor?.let { fl ->
             Column(Modifier.padding(top = 22.dp, bottom = 6.dp).padding(start = 18.dp, top = 16.dp)) {
                 Text(fl.let { f.flavorLabel }.uppercase(), style = Eyebrow.copy(fontFamily = FontFamily.Serif), modifier = Modifier.padding(bottom = 8.dp))
-                Text(fl, style = TextStyle(fontFamily = FontFamily.Serif, fontStyle = FontStyle.Italic, fontSize = 14.5.sp, lineHeight = 21.sp, color = Color(0xFFC8C2B3)))
+                Text(flavourText(fl), style = TextStyle(fontFamily = FontFamily.Serif, fontStyle = FontStyle.Italic, fontSize = 14.5.sp, lineHeight = 21.sp, color = Color(0xFFC8C2B3)))
             }
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
