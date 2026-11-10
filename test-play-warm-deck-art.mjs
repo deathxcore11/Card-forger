@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {warmDeckArt} from './play-forge-pregame.js';
+const cards={Krenko:{image_uris:{art_crop:'https://i/k-crop',normal:'https://i/k'}},Bolt:{image_uris:{art_crop:'https://i/b-crop',normal:'https://i/b'}},Mountain:{image_uris:{art_crop:'https://i/m-crop',normal:'https://i/m'}},Delver:{card_faces:[{image_uris:{art_crop:'https://i/d-crop'}}]}};
+const lookup=name=>cards[name]||null;
+const requested=[];let active=0,peak=0;
+const makeImage=()=>({set src(u){requested.push(u);active++;peak=Math.max(peak,active);setTimeout(()=>{active--;this.onload();},1);}});
+const decks=[{commander:'Krenko',cards:[{name:'Bolt'},{name:'Mountain'},{name:'Mountain'},{name:'Delver'},{name:'Unknown'}]},{cards:[{name:'Bolt'}]}];
+const n=await warmDeckArt(decks,lookup,{makeImage,saveData:false});
+assert.deepEqual([...requested].sort(),['https://i/b-crop','https://i/d-crop','https://i/k','https://i/k-crop','https://i/m-crop'],'every distinct crop once, plus the commander face');
+assert.equal(n,5);assert.ok(peak<=6,'at most six at a time');
+requested.length=0;assert.equal(await warmDeckArt(decks,lookup,{makeImage,saveData:true}),0);assert.equal(requested.length,0,'Data Saver fetches nothing');
+requested.length=0;await warmDeckArt(decks,lookup,{makeImage,saveData:false,isCurrent:()=>false});assert.equal(requested.length,0,'a closed match fetches nothing');
+console.log('warm deck art ok');

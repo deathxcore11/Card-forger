@@ -2619,3 +2619,47 @@ body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forg
  font:600 14px/1.3 'DM Sans',system-ui,sans-serif;color:#fff1cf;background:#120e08e6;border:1px solid #f2c46f88;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 8px 20px #0008}
 @keyframes forge-tt-pulse{50%{opacity:.55}}
 @media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native][data-turn-timer] .forge-turn-ring,:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-turn-count{animation:none}}
+
+/* The rope (table additions 5): the last 30 s of your window as a fuse on the centre divider. One countdown: it hides the ring,
+   the number and the line under the pill. Same numbers as the app: 8 px high, 260 wide, seconds beside it, coral in the last 10 s. */
+:where(body.practice-table-open) .play-match-table[data-forge-native][data-turn-rope=true] .forge-phase-track::after{display:none}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-fuse{position:fixed;z-index:58;width:320px;height:16px;display:flex;align-items:center;gap:8px;pointer-events:none;animation:forge-fuse-in .2s ease-out both;--rope-fill:#e9c46a;--rope-dark:#8a6a2a}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-fuse[data-hot=true]{--rope-fill:#ff6b5a;--rope-dark:#9e3a2e}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-fuse[data-fade=out]{animation:forge-fuse-out .3s ease-out both}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-fuse::before{content:"";flex:0 0 260px;height:8px;border-radius:4px;background:#0c0e13cc;box-shadow:0 0 0 1px #ffffff14;position:absolute;left:0}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-fuse-burn{position:absolute;left:0;height:8px;max-width:260px;border-radius:4px;background:repeating-linear-gradient(115deg,var(--rope-fill) 0 4px,var(--rope-dark) 4px 6px);box-shadow:0 0 10px color-mix(in srgb,var(--rope-fill) 60%,transparent)}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-fuse-burn::after{content:"";position:absolute;right:-9px;top:50%;width:18px;height:18px;margin-top:-9px;border-radius:50%;background:radial-gradient(circle,#fff4d0 0,color-mix(in srgb,var(--rope-fill) 80%,transparent) 40%,transparent 70%);animation:forge-fuse-spark .12s ease-in-out infinite alternate}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-fuse[data-held=true] .forge-fuse-burn::after{animation:none}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-fuse b{position:absolute;left:270px;font:800 14px/16px 'DM Sans',system-ui,sans-serif;font-variant-numeric:tabular-nums;color:var(--rope-fill);min-width:22px}
+@keyframes forge-fuse-in{from{opacity:0}}
+@keyframes forge-fuse-out{to{opacity:0}}
+@keyframes forge-fuse-spark{from{transform:scale(.7)}to{transform:scale(1.15)}}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-fuse-burn::after{animation:none}}
+/* Blocks, the damage chip (table additions 6): a glass chip above your seat while you choose blockers. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-through{position:fixed;z-index:57;translate:0 -100%;display:flex;flex-direction:column;gap:1px;padding:5px 10px;border-radius:10px;pointer-events:none;background:#0c0d12e6;border:1px solid #ff6a4a;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 6px 18px #0009;animation:forge-fuse-in .2s ease-out both;font-variant-numeric:tabular-nums;white-space:nowrap}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-through b{font:700 12px/1.25 'DM Sans',system-ui,sans-serif;color:#f6eedb}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-through span{font:600 11px/1.25 'DM Sans',system-ui,sans-serif;color:#ff6a4a}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-through[data-tone=safe]{border-color:#7be08a}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-through[data-tone=safe] span{color:#7be08a}
+/* Tidy board (table additions 2): one small badge on the pile itself, top-right: dark pill, 1 px gold border, gold tabular number. */
+:where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-battlefields .play-match-card-wrap:not(:has(>.play-match-card[data-tapped=true]))>.play-match-pile-count{left:auto;right:-6px;top:-7px;bottom:auto;height:auto;width:auto;translate:none;background:#0c0d12ee;border:1px solid #e9c46a;color:#e9c46a;box-shadow:0 3px 8px #0009;font-variant-numeric:tabular-nums}
+:where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-battlefields .play-match-card-wrap:has(>.play-match-card[data-tapped=true])>.play-match-pile-count{background:#0c0d12ee;border:1px solid #e9c46a;color:#e9c46a;box-shadow:0 3px 8px #0009;font-variant-numeric:tabular-nums}
+/* Entrances by importance (table additions 3). */
+:where(body.practice-table-open) .forge-enter-ring{position:absolute;border-radius:50%;border:3px solid #e9c46a;box-shadow:0 0 18px #e9c46a99,inset 0 0 14px #e9c46a55;will-change:transform,opacity}
+:where(body.practice-table-open) .forge-enter-flash{position:absolute;border-radius:50%;background:radial-gradient(circle,#fff 0,#ffeec0cc 30%,#ffc87800 70%);will-change:transform,opacity}
+:where(body.practice-table-open) .forge-enter-dim{position:absolute;inset:0;background:#000b;opacity:0}
+:where(body.practice-table-open) .forge-enter-ghost{position:absolute;transform-origin:50% 50%;overflow:hidden;box-shadow:0 20px 60px #000c;border-radius:6%;border:1px solid #e9c46a;background:linear-gradient(160deg,#1a2030,#0c0f16);display:grid;place-items:center;will-change:transform}
+:where(body.practice-table-open) .forge-enter-ghost img{width:100%;height:100%;object-fit:cover;display:block}
+:where(body.practice-table-open) .forge-enter-ghost span{padding:6%;font:700 10px/1.2 'Cinzel',Georgia,serif;color:#f4d98a;text-align:center}
+:where(body.practice-table-open) .forge-enter-sweep{position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(115deg,#0000 35%,#ffffffcc 49%,#fff1c699 52%,#0000 65%);mix-blend-mode:screen}
+:where(body.practice-table-open) .forge-enter-name{position:absolute;translate:0 0;text-align:center;pointer-events:none;color:#f6eedb;text-shadow:0 2px 12px #000}
+:where(body.practice-table-open) .forge-enter-name small{display:block;font:700 12px/1.3 'DM Sans',system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#e9c46a}
+:where(body.practice-table-open) .forge-enter-name b{display:block;font:700 26px/1.2 'Cinzel','Cormorant Garamond',Georgia,serif;color:#f4d98a;white-space:nowrap}
+
+/* The CPU thinks before it acts (table additions 6): three dots by its portrait while a card in its hand lifts. */
+:where(body.practice-table-open) .play-match-seat>.forge-think{position:absolute;right:10px;bottom:7px;display:flex;gap:4px;align-items:center;padding:4px 7px;border-radius:999px;background:#0b0b10c0;border:1px solid #e8b95b55;pointer-events:none;z-index:2}
+:where(body.practice-table-open) .play-match-seat>.forge-think i{width:5px;height:5px;border-radius:50%;background:#e8b95b;opacity:.35;animation:forge-think-dot 900ms ease-in-out infinite}
+:where(body.practice-table-open) .play-match-seat>.forge-think i:nth-child(2){animation-delay:150ms}
+:where(body.practice-table-open) .play-match-seat>.forge-think i:nth-child(3){animation-delay:300ms}
+@keyframes forge-think-dot{0%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-2px)}}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-seat>.forge-think i{animation:none;opacity:.8}}

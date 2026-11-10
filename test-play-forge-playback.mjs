@@ -84,7 +84,8 @@ test('before a decision opens, the CPU play runs at its own pace, and one tap sk
  q.push(ev(1,4,[]));
  const respond=respondTo();q.push(respond);
  assert.deepEqual(shown.at(-1),[1,true],'the board before the spell is held while it is cast');
- assert.equal(q.busy,true);assert.deepEqual(beats,['CPU · CASTS']);
+ assert.equal(q.busy,true);assert.deepEqual(beats,[],'the CPU thinks first (three dots), then acts');
+ assert.equal(timers.length,1);timers.shift()();assert.deepEqual(beats,['CPU · CASTS']);
  q.push(respondTo());assert.equal(timers.length,1,'the same board polled again does not restart the beat');
  timers[0]();assert.deepEqual(shown.at(-1),[2,false],'then the response window opens, unlocked');assert.equal(q.busy,false);
  const act=tableActivity(respond,{recent:q.recent});
@@ -98,7 +99,7 @@ test('reduced motion keeps the pace: the CPU play is held and told first, then t
  q.push(ev(1,4,[]));
  const respond=respondTo();q.push(respond);
  assert.deepEqual(shown.at(-1),[1,true],'the CPU spell is held on the old board first');
- assert.equal(q.busy,true);assert.deepEqual(beats,['CPU · CASTS'],'the spell is announced');
+ assert.equal(q.busy,true);assert.deepEqual(beats,[],'the CPU thinks first, with reduced motion too (pace holds)');timers.shift()();assert.deepEqual(beats,['CPU · CASTS'],'the spell is announced');
  for(let i=0;i<timers.length&&i<10;i++)timers[i]();
  assert.deepEqual(shown.at(-1),[2,false],'then the response window opens and commands are allowed');
  assert.equal(q.busy,false);

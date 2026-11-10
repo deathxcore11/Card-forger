@@ -23,7 +23,7 @@ const base = new URL("./assets/audio/", import.meta.url);
 // The app bundles only the Opus effects; Safari (no Ogg Opus before 18.4) gets the AAC copies.
 let ext = (() => { if (native()) return "ogg"; try { return new Audio().canPlayType('audio/ogg; codecs="opus"') ? "ogg" : "m4a"; } catch { return "m4a"; } })();
 // Same for the effects: bump SFX_REV whenever they are remade under the same names.
-const SFX_REV = "kit3";
+const SFX_REV = "kit4";
 const sfxURL = (id) => new URL(`sfx/${id}.${ext}`, base).href + `?v=${SFX_REV}`;
 // The music files are cached for a week by browsers and the app's WebView, so a new score needs a new
 // address: bump MUSIC_REV whenever the tracks change under the same names.

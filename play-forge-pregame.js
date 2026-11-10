@@ -36,6 +36,21 @@ export async function preloadDeckBackdrops(decks,lookup,{timeoutMs=20000,makeIma
   img.onerror=()=>retry?resolve(load(url+(url.includes('?')?'&':'?')+'retry=1',false)):resolve();img.src=url;});
  let timer,done=0;onProgress(0,urls.length);await Promise.race([Promise.all(urls.map(u=>load(u,true).then(()=>onProgress(++done,urls.length)))),new Promise(r=>{timer=setTimeout(r,timeoutMs);})]);clearTimeout(timer);
 }
+// Cards arrive on the felt as their art crop (hand cards as the full face), so once the match's whole-deck art is known the browser
+// quietly fetches the crops while the matchup and the coin toss show. Six at a time, never blocks anything, skipped on Data Saver.
+// Commanders also fetch their full face. Resolves when every request has settled (or `isCurrent` turns false).
+export async function warmDeckArt(decks,lookup,{concurrency=6,max=260,isCurrent=()=>true,makeImage=()=>new Image(),saveData=globalThis.navigator?.connection?.saveData===true}={}){
+ if(saveData)return 0;
+ const urls=[],seen=new Set(),add=url=>{try{const u=new URL(url);if(u.protocol==='https:'&&!u.username&&!u.password&&!seen.has(u.href)){seen.add(u.href);urls.push(u.href);}}catch{/* not a URL */}};
+ for(const deck of decks||[]){
+  const commanders=(deck?.commanders||[]).map(row=>typeof row==='string'?{name:row}:row),rows=[...(deck?.commander?[{name:deck.commander}]:[]),...commanders,...(deck?.cards||[])];
+  for(const [i,row]of rows.entries()){if(!row?.name)continue;let card=null;try{const sel=deck?.referencePriceSelections?.[cardKey(row.name)];card=lookup(row.name,row.printingId||sel?.printingId||null);}catch{card=null;}
+   if(!card)continue;const faces=card.card_faces||[];add(card.image_uris?.art_crop||faces[0]?.image_uris?.art_crop);if(i<(deck?.commander?1:0)+commanders.length)add(card.image_uris?.normal||faces[0]?.image_uris?.normal);}
+ }
+ let next=0,done=0;const queue=urls.slice(0,max);
+ const worker=async()=>{while(next<queue.length&&isCurrent()){const url=queue[next++];await new Promise(resolve=>{const img=makeImage();img.referrerPolicy='no-referrer';img.decoding='async';img.onload=img.onerror=()=>{done++;resolve();};img.src=url;});}};
+ await Promise.all(Array.from({length:Math.min(concurrency,queue.length)},worker));return done;
+}
 // The loading screen before the matchup: a gold bar that fills as each deck's art really arrives.
 export function mountForgeArtLoading(root){
  const doc=root.ownerDocument,el=(t,c,x)=>{const n=doc.createElement(t);if(c)n.className=c;if(x!==undefined)n.textContent=x;return n;};
