@@ -2644,3 +2644,14 @@ body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forg
 /* Tidy board (table additions 2): one small badge on the pile itself, top-right: dark pill, 1 px gold border, gold tabular number. */
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-battlefields .play-match-card-wrap:not(:has(>.play-match-card[data-tapped=true]))>.play-match-pile-count{left:auto;right:-6px;top:-7px;bottom:auto;height:auto;width:auto;translate:none;background:#0c0d12ee;border:1px solid #e9c46a;color:#e9c46a;box-shadow:0 3px 8px #0009;font-variant-numeric:tabular-nums}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-battlefields .play-match-card-wrap:has(>.play-match-card[data-tapped=true])>.play-match-pile-count{background:#0c0d12ee;border:1px solid #e9c46a;color:#e9c46a;box-shadow:0 3px 8px #0009;font-variant-numeric:tabular-nums}
+/* Entrances by importance (table additions 3). */
+:where(body.practice-table-open) .forge-enter-ring{position:absolute;border-radius:50%;border:3px solid #e9c46a;box-shadow:0 0 18px #e9c46a99,inset 0 0 14px #e9c46a55;will-change:transform,opacity}
+:where(body.practice-table-open) .forge-enter-flash{position:absolute;border-radius:50%;background:radial-gradient(circle,#fff 0,#ffeec0cc 30%,#ffc87800 70%);will-change:transform,opacity}
+:where(body.practice-table-open) .forge-enter-dim{position:absolute;inset:0;background:#000b;opacity:0}
+:where(body.practice-table-open) .forge-enter-ghost{position:absolute;transform-origin:50% 50%;overflow:hidden;box-shadow:0 20px 60px #000c;border-radius:6%;border:1px solid #e9c46a;background:linear-gradient(160deg,#1a2030,#0c0f16);display:grid;place-items:center;will-change:transform}
+:where(body.practice-table-open) .forge-enter-ghost img{width:100%;height:100%;object-fit:cover;display:block}
+:where(body.practice-table-open) .forge-enter-ghost span{padding:6%;font:700 10px/1.2 'Cinzel',Georgia,serif;color:#f4d98a;text-align:center}
+:where(body.practice-table-open) .forge-enter-sweep{position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(115deg,#0000 35%,#ffffffcc 49%,#fff1c699 52%,#0000 65%);mix-blend-mode:screen}
+:where(body.practice-table-open) .forge-enter-name{position:absolute;translate:0 0;text-align:center;pointer-events:none;color:#f6eedb;text-shadow:0 2px 12px #000}
+:where(body.practice-table-open) .forge-enter-name small{display:block;font:700 12px/1.3 'DM Sans',system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#e9c46a}
+:where(body.practice-table-open) .forge-enter-name b{display:block;font:700 26px/1.2 'Cinzel','Cormorant Garamond',Georgia,serif;color:#f4d98a;white-space:nowrap}

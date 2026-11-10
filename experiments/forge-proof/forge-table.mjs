@@ -14,6 +14,7 @@ import {sym,symbolName,symbolText,manaCost,esc} from '../../ui.js';
 import {haptic} from '../../feel.js';
 import {createTableAudio} from '../../play-table-audio.js';
 import {damageThrough,throughText} from './damage-through.mjs';
+import {entranceLevel,ENTER} from './entrances.mjs';
 import {createTableEmotes} from './table-emotes.mjs';
 // Outline icons from the CardStashy UI packet (24-unit grid, currentColor).
 const ZONE_ICONS={Library:'M6 3h14v16H6zM3 6v16h14M10 7h6M10 11h6',Graveyard:'M6 20V9a6 6 0 0 1 12 0v11M3 20h18M9 10h6M12 7v7',Exile:'m12 2 10 10-10 10L2 12zM8 12h14M17 7l5 5-5 5',Command:'M3 6l5 5 4-8 4 8 5-5-2 14H5zM5 16h14'};
@@ -548,6 +549,51 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    if(!f.hit&&t>=W+T){f.hit=true;const n=f.onHit?.();const at=n?.isConnected?n:null;if(at){motion.flash(at);motion.sparks(at,{n:10,spread:56});}}
    f.tx=X*p/K;f.ty=(Y*p+lift)/K;w.style.transform=`translate(${f.tx.toFixed(1)}px,${f.ty.toFixed(1)}px) scale(${sc.toFixed(3)}) rotate(${rot.toFixed(2)}deg)`;
    if(w.dataset.csStriker!=='true')w.dataset.csStriker='true';}}
+ // Entrances by importance (table additions 3). Level 1 (rare or mythic): the card rises 46 px over its slot, hangs, drops, and two
+ // gold rings, a flash and a small shake land with it. Level 2 (a commander from the command zone): the table dims, the card
+ // flies to the centre at 2.3x with a light sweep and its name, holds, slams into its slot with a short freeze, three rings,
+ // a flash and a strong shake. With a prompt waiting the hold is skipped and only the slam stays.
+ const bigSeen=new Set();
+ const enterRing=(cx,cy,size,ms,delay=0,color='#e9c46a')=>{const d=doc.createElement('span');d.className='forge-enter-ring';Object.assign(d.style,{left:`${cx-size/2}px`,top:`${cy-size/2}px`,width:`${size}px`,height:`${size}px`,borderColor:color});fx.append(d);
+  d.animate([{opacity:.95,transform:'scale(.25)'},{opacity:0,transform:'scale(1)'}],{duration:ms,delay,easing:'cubic-bezier(.2,.7,.3,1)',fill:'both'}).finished.then(()=>d.remove(),()=>d.remove());};
+ const enterFlash=(cx,cy,size,ms=280)=>{const d=doc.createElement('span');d.className='forge-enter-flash';Object.assign(d.style,{left:`${cx-size/2}px`,top:`${cy-size/2}px`,width:`${size}px`,height:`${size}px`});fx.append(d);
+  d.animate([{opacity:.9,transform:'scale(.4)'},{opacity:0,transform:'scale(1)'}],{duration:ms,easing:'ease-out',fill:'both'}).finished.then(()=>d.remove(),()=>d.remove());};
+ const centreOf=el=>{const r=el.getBoundingClientRect();return {cx:r.left+r.width/2,cy:r.top+r.height/2,r};};
+ function landLevel1(el,w){const {cx,cy}=centreOf(el);enterRing(cx,cy,250,520);enterRing(cx,cy,160,420,90);enterFlash(cx,cy,280);motion.shake(root.querySelector('.play-match-main')||root,4,200,{garnish:true});}
+ function enterLevel1(c,el,w,own){
+  const T=ENTER.l1,total=T.travel+T.hold+T.drop,from=own?34:-34;
+  anim(w,[{transform:`translateY(${from}px) scale(1.22)`,opacity:.35},{transform:'translateY(-46px) scale(1.08)',opacity:1,offset:T.travel/total},{transform:'translateY(-46px) scale(1.08)',opacity:1,offset:(T.travel+T.hold)/total},{transform:'none',opacity:1}],{duration:total,easing:'cubic-bezier(.2,.75,.25,1)'});
+  setTimeout(()=>{if(el.isConnected)landLevel1(el,w);},total);
+ }
+ function enterLevel2(c,el,w,own,floor){
+  const T=ENTER.l2,r0=w.getBoundingClientRect();if(!r0.width)return;
+  const dim=doc.createElement('div');dim.className='forge-enter-dim';fx.append(dim);
+  // The flying card is drawn from its own art (a clone of the tile would carry its layout along).
+  const art=resolvePracticeArtwork(c),gw=r0.width,gh=gw*88/63,ghost=doc.createElement('div');ghost.className='forge-enter-ghost';ghost.setAttribute('inert','');ghost.setAttribute('aria-hidden','true');
+  ghost.innerHTML=art?.imageUrl?`<img src="${esc(art.imageUrl)}" alt="" referrerpolicy="no-referrer" decoding="async">`:`<span>${esc(c.name)}</span>`;
+  Object.assign(ghost.style,{left:`${r0.left}px`,top:`${r0.top+r0.height/2-gh/2}px`,width:`${gw}px`,height:`${gh}px`});
+  const sc=Math.max(1.4,Math.min(2.3*Math.max(1,r0.height/Math.max(1,gh)*1.4),(win.innerHeight*.6)/gh,(win.innerWidth*.5)/gw)),dx=win.innerWidth/2-(r0.left+r0.width/2),dy=win.innerHeight/2-(r0.top+r0.height/2);
+  w.style.visibility='hidden';fx.append(ghost);
+  ghost.querySelector('img')?.addEventListener('error',()=>{ghost.innerHTML=`<span>${esc(c.name)}</span>`;},{once:true});
+  const line=doc.createElement('div');line.className='forge-enter-name';line.innerHTML=`<small>${own?'Your commander':'Their commander'}</small><b>${esc(c.name)}</b>`;
+  const ends=()=>{w.style.visibility='';ghost.remove();dim.remove();line.remove();};
+  const slam=()=>{
+   const a=ghost.animate([{transform:`translate(${dx}px,${dy}px) scale(${sc})`},{transform:'translate(0,0) scale(1)'}],{duration:T.slam,easing:'cubic-bezier(.5,0,.9,.5)',fill:'forwards'});
+   a.finished.then(()=>{w.style.visibility='';const {cx,cy}=centreOf(w);
+    // A short freeze on contact, then the rings, flash and the strong shake.
+    setTimeout(()=>{ghost.remove();line.remove();enterRing(cx,cy,460,520);enterRing(cx,cy,300,440,70);enterRing(cx,cy,200,360,140);enterFlash(cx,cy,460,340);motion.shake(root.querySelector('.play-match-main')||root,12,340);
+     dim.animate([{opacity:1},{opacity:0}],{duration:T.dim,fill:'forwards'}).finished.then(()=>dim.remove(),()=>dim.remove());haptic('tap');},T.stop);},ends);
+  };
+  if(floor){dim.animate([{opacity:0},{opacity:1}],{duration:120,fill:'forwards'});slam();return;}
+  dim.animate([{opacity:0},{opacity:1}],{duration:T.dim,fill:'forwards'});
+  const fly=ghost.animate([{transform:'translate(0,0) scale(1)'},{transform:`translate(${dx}px,${dy}px) scale(${sc})`}],{duration:T.fly,easing:'cubic-bezier(.2,.8,.25,1)',fill:'forwards'});
+  fly.finished.then(()=>{
+   // The light sweep crosses the card and the name fades in under it; then the hold ends and it slams.
+   const sweep=doc.createElement('i');sweep.className='forge-enter-sweep';ghost.append(sweep);sweep.animate([{transform:'translateX(-120%)'},{transform:'translateX(120%)'}],{duration:T.sweep,easing:'ease-in-out'}).finished.then(()=>sweep.remove(),()=>sweep.remove());
+   const rr=ghost.getBoundingClientRect();line.style.left=`${rr.left+rr.width/2}px`;line.style.top=`${rr.bottom+14}px`;fx.append(line);line.animate([{opacity:0,transform:'translate(-50%,6px)'},{opacity:1,transform:'translate(-50%,0)'}],{duration:T.name,fill:'forwards'});
+   setTimeout(slam,Math.max(0,T.hold-T.fly+T.fly*.4));
+  },ends);
+ }
  function popNumber(el,text,kind,size=''){if(rectOf(el))motion.number(el.closest('.play-match-card-wrap')||el,text,{kind,size});}
  function boardEffects(prev,next,before,leaving){
   const a=prev?.status?.surface,b=next?.status?.surface;if(!a||!b||!presentation.hosted||reducedMotion()||root.dataset.stage!=='match')return;
@@ -562,7 +608,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // Tokens arriving together get one ring each at most six, so a swarm reads as one arrival.
   let rings=0;for(const c of b.cards){if(!onField(c)||was.get(c.id)?.zone==='Battlefield'||rings>=6)continue;const el=cardEl(c.id);if(!el)continue;rings++;const land=c.known&&c.types?.includes('Land');
    // The card itself drops onto the table from your side (or the CPU's) and settles, then the ring.
-   const w=el.closest('.play-match-card-wrap'),own=c.controller===b.seat;if(w&&rings<=3&&!before?.has(String(c.id)))anim(w,[{transform:`translateY(${own?34:-34}px) scale(1.22)`,opacity:.35},{transform:'translateY(0) scale(.96)',opacity:1,offset:.62},{transform:'none',opacity:1}],{duration:land?380:520,easing:'cubic-bezier(.2,.75,.25,1)'});
+   const w=el.closest('.play-match-card-wrap'),own=c.controller===b.seat;
+   const lvl=c.known&&!c.isToken&&!land?entranceLevel({card:c,prev:was.get(c.id),rarity:resolvePracticeArtwork(c)?.card?.rarity,seen:bigSeen}):0;
+   if(w&&lvl>0&&rings<=3&&(!before?.has(String(c.id))||lvl===2)){if(c.commander)bigSeen.add(c.id);if(lvl===2)enterLevel2(c,el,w,own,!!next.native?.prompt);else enterLevel1(c,el,w,own);continue;}
+   if(w&&rings<=3&&!before?.has(String(c.id)))anim(w,[{transform:`translateY(${own?34:-34}px) scale(1.22)`,opacity:.35},{transform:'translateY(0) scale(.96)',opacity:1,offset:.62},{transform:'none',opacity:1}],{duration:land?380:520,easing:'cubic-bezier(.2,.75,.25,1)'});
    setTimeout(()=>{if(el.isConnected)pulse(el,land?'land':c.known&&c.types?.includes('Creature')?'creature':'permanent',land?sourceTint(c):null);},land?300:420);}
   // 3. Combat impact: damage newly marked on a creature pops as a number where it lands; attackers
   // that dealt it lean in toward what they attacked. Life totals already count on the seats.

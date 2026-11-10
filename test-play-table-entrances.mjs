@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {entranceLevel} from './experiments/forge-proof/entrances.mjs';
+const card=(o={})=>({id:1,known:true,isToken:false,types:['Creature'],commander:false,...o});
+assert.equal(entranceLevel({card:card(),prev:{zone:'Hand'},rarity:'common'}),0,'common');
+assert.equal(entranceLevel({card:card(),prev:{zone:'Hand'},rarity:'uncommon'}),0,'uncommon');
+assert.equal(entranceLevel({card:card(),prev:{zone:'Hand'},rarity:'rare'}),1,'rare');
+assert.equal(entranceLevel({card:card(),prev:{zone:'Hand'},rarity:'mythic'}),1,'mythic');
+assert.equal(entranceLevel({card:card({types:['Land']}),prev:{zone:'Hand'},rarity:'rare'}),0,'a land is always ordinary');
+assert.equal(entranceLevel({card:card({isToken:true}),rarity:'mythic'}),0,'a token is always ordinary');
+assert.equal(entranceLevel({card:card(),prev:{zone:'Hand'},rarity:undefined}),0,'no rarity on record');
+assert.equal(entranceLevel({card:card({commander:true}),prev:{zone:'Command'},rarity:'rare'}),2,'a commander from the command zone');
+assert.equal(entranceLevel({card:card({commander:true}),prev:{zone:'Command'},rarity:'rare',seen:new Set([1])}),1,'its second arrival drops to level 1');
+assert.equal(entranceLevel({card:{known:false}}),0,'face-down');
+console.log('entrance levels ok');
