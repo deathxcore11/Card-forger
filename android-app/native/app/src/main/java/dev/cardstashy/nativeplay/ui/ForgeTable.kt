@@ -1,6 +1,7 @@
 package dev.cardstashy.nativeplay.ui
 
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.runtime.SideEffect
 import dev.cardstashy.nativeplay.engine.Ref
 import dev.cardstashy.nativeplay.engine.GameEvent
 import androidx.compose.ui.text.withStyle
@@ -1108,6 +1109,13 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
             flyFrom = anchors?.rects?.get("cpuhand")?.center ?: return@LaunchedEffect
             fly.snapTo(0f); fly.animateTo(1f, tween(430, easing = FastOutSlowInEasing)); flyFrom = null
         }
+        // Director step 4: when the top resolves, the next item slides forward from its fanned place to the top (240 ms).
+        val older = remember { arrayOf(emptySet<Int>()) }
+        val promoted = remember(top.id) { top.id in older[0] }
+        SideEffect { older[0] = shown.drop(1).map { it.first.id }.toSet() }
+        val slide = remember { Animatable(1f) }
+        LaunchedEffect(top.id) { if (promoted && !Motion.still) { slide.snapTo(0f); slide.animateTo(1f, tween(240, easing = FastOutSlowInEasing)) } }
+        val back = 16.du
         var here by remember { mutableStateOf(Offset.Zero) }
         Box(Modifier.offset(x = 44.du, y = 34.du).then(if (anchors != null) Modifier.onGloballyPositioned { val b = it.boundsInRoot(); here = b.center; anchors.put("stacktop", Offset(b.left, b.top + b.height * .3f)); anchors.putRect("stackcard", b); anchors.putRect("stack${top.id}", b) } else Modifier)
             .graphicsLayer {
@@ -1115,6 +1123,10 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
                 if (from != null && e < 1f) {
                     translationX = (from.x - here.x) * (1f - e); translationY = (from.y - here.y) * (1f - e) + kotlin.math.sin(Math.PI.toFloat() * e) * 40.dp.toPx()
                     val k = .45f + .55f * e; scaleX = k; scaleY = k; rotationY = 180f * (1f - e); cameraDistance = 12f * density
+                } else if (slide.value < 1f) {
+                    val q = slide.value
+                    translationX = -back.toPx() * (1f - q); translationY = -back.toPx() * (1f - q)
+                    val k = .86f + .14f * q; scaleX = k; scaleY = k; alpha = .6f + .4f * q
                 }
             }) {
             StackCard(st, top, n, Modifier, d, onInspect, pick = pick)

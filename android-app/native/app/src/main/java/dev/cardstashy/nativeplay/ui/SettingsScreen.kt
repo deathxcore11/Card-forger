@@ -616,6 +616,7 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Match feel" to "Damage, burns, deaths and counters now sound on the frame you see them happen, not when the engine reports them, and counters have their own sound. When a spell on the stack resolves, the next one slides forward into its place.",
     "Blocks" to "While you choose blockers, a small chip over your portrait shows how much damage gets through and where your life ends up, red while damage gets through and green when it is all blocked. With trample or double strike in the attack it says \"at least\", never a wrong number.",
     "Match feel" to "Big cards make a big entrance: a rare or mythic hangs above its spot, then drops with gold rings and a small shake. A commander arriving from the command zone the first time takes the whole table: the board dims, it flies to the centre with its name in gold, then slams down into place. The usual arrival stays for everything else.",
     "Match table" to "A tidier board: identical permanents share one pile with a small ×N badge on its corner (lands and tokens from two, other cards from three). A card that differs, tapped, damaged, with counters or in combat, steps out of its pile and stands alone.",
