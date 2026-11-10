@@ -73,6 +73,18 @@ export function provenUnaffordable(card,surface,pool={}){
   const fit=i=>{if(i===colored.length)return true;for(let k=0;k<tokens.length;k++)if(!used[k]&&tokens[k].includes(colored[i])){used[k]=true;if(fit(i+1))return true;used[k]=false;}return false;};return fit(0);};
  const walk=(i,tokens)=>i===sources.length?pays(tokens):sources[i].some(opt=>walk(i+1,tokens.concat(opt)));
  return !walk(0,floating);}
+// Smart auto-pass (director spec 6a): an entry Forge lists as "unknown" that the table can prove unpayable is not something to do.
+// Returns the actionable card entries that still count: mana-only lands never do; a card you cannot pay for does not.
+export function playableEntries(n,surface,short=new Map()){
+ const you=n?.players?.find(p=>p.id===surface?.players?.find(p=>p.seat===surface.seat)?.nativeId);
+ return (n?.selection?.actionable||[]).filter(r=>{
+  if(r?.kind!=='card'){return true;}
+  const card=surface?.cards?.find(c=>c.id===Number(r.id));if(!card)return true;
+  if(manaOnlyLand(card))return false;
+  if(card.controller!==surface.seat)return true;
+  return !(r.affordability==='unavailable'||short.has(card.id)||r.affordability!=='available'&&provenUnaffordable(card,surface,you?.mana));
+ });
+}
 const keywordKey=k=>String(k||'').replace(/([a-z])([A-Z])/g,'$1 $2').replace(/[:_]/g,' ').replace(/\s+/g,' ').trim().toLowerCase();
 let keywordReference=null;
 const loadKeywordReference=()=>keywordReference||(keywordReference=import('../../mtg-keyword-reference.js').then(m=>m.KEYWORD_REFERENCE).catch(()=>({})));
@@ -1209,27 +1221,29 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // Smart also moves on when your main phase has nothing left to play, as Arena does:
  // after your last land or spell resolves, a short beat to see it land, then Next.
  // Any playable card, stack item, prompt or Full Control keeps the stop.
- let idleTimer=0,idleKey='';
+ let idleTimer=0,idleKey='',chainTurn=-1;
+ // One 700 ms beat to see what happened, then the rest of your turn walks past at 160 ms a step while nothing is playable.
+ const passBeat=n=>reducedMotion()?250:(chainTurn===n.turn&&n.activePlayer===n.viewer?160:700);
  const idleReady=s=>{const n=s?.native;return !!(presentation.hosted&&n&&n.controlMode==='smart'&&!s.busy&&!s.transportError&&!n.prompt&&!n.failure&&(n.status==='running'||n.status===undefined)
-   &&n.inputType==='InputPassPriority'&&n.priorityPlayer===n.viewer&&n.activePlayer===n.viewer&&['MAIN1','MAIN2'].includes(n.phase)&&!n.stack?.length&&!(n.selection?.actionable||[]).length&&n.buttons?.okEnabled===true&&!drag?.active&&!playback?.running);};
+   &&n.inputType==='InputPassPriority'&&n.priorityPlayer===n.viewer&&n.activePlayer===n.viewer&&['MAIN1','MAIN2'].includes(n.phase)&&!n.stack?.length&&!playableEntries(n,s.status?.surface,shortCasts).length&&n.buttons?.okEnabled===true&&!drag?.active&&!playback?.running);};
  // Smart's last check, as on Arena: when Forge says you have nothing you could cast or activate right now
  // (native.canRespond false), your priority passes on its own after a short beat to see what happened, unless
  // you set a stop on this step. Without the flag nothing changes.
  let noResponseKey='',noResponseTimer=0;
- const noResponseReady=s=>{const n=s?.native;if(!(presentation.hosted&&n&&n.controlMode==='smart'&&n.canRespond===false&&!s.busy&&!s.transportError&&!n.prompt&&!n.failure&&(n.status==='running'||n.status===undefined)
+ const noResponseReady=s=>{const n=s?.native;if(idleReady(s))return false;if(!(presentation.hosted&&n&&n.controlMode==='smart'&&(n.canRespond===false||(n.selection?.actionable||[]).length>0&&!n.stack?.length&&!playableEntries(n,s.status?.surface,shortCasts).length)&&!s.busy&&!s.transportError&&!n.prompt&&!n.failure&&(n.status==='running'||n.status===undefined)
    &&n.inputType==='InputPassPriority'&&n.priorityPlayer===n.viewer&&n.buttons?.okEnabled===true&&!drag?.active&&!playback?.running&&!handFocus&&peek.dataset.open!=='true'))return false;
   const stop=n.phaseStops?.[`${n.activePlayer===n.viewer?'you':'opponent'}:${n.phase}`];return stop!==true&&stop!==false;};
  function autoPassNoResponse(s){
   const n=s?.native,key=n?`${n.revision}`:'';
   if(!noResponseReady(s)){clearTimeout(noResponseTimer);noResponseTimer=0;return;}
   if(noResponseKey===key)return;noResponseKey=key;clearTimeout(noResponseTimer);
-  noResponseTimer=setTimeout(()=>{noResponseTimer=0;const now=session.snapshot();if(closed||!noResponseReady(now)||now.native.revision!==n.revision)return;act(()=>session.nativeButton('ok',n.revision));},reducedMotion()?300:700);
+  noResponseTimer=setTimeout(()=>{noResponseTimer=0;const now=session.snapshot();if(closed||!noResponseReady(now)||now.native.revision!==n.revision)return;if(n.activePlayer===n.viewer)chainTurn=n.turn;act(()=>session.nativeButton('ok',n.revision));},reducedMotion()?300:passBeat(n));
  }
  function autoPassIdle(s){
   const n=s?.native,key=n?`${n.revision}:${n.phase}`:'';
   if(!idleReady(s)){clearTimeout(idleTimer);idleTimer=0;return;}
   if(idleKey===key)return;idleKey=key;clearTimeout(idleTimer);
-  idleTimer=setTimeout(()=>{idleTimer=0;const now=session.snapshot();if(closed||!idleReady(now)||now.native.revision!==n.revision)return;act(()=>session.nativeButton('ok',n.revision));},reducedMotion()?250:900);
+  idleTimer=setTimeout(()=>{idleTimer=0;const now=session.snapshot();if(closed||!idleReady(now)||now.native.revision!==n.revision)return;chainTurn=n.turn;act(()=>session.nativeButton('ok',n.revision));},passBeat(n));
  }
  playback=new CpuActionPlaybackQueue({present:presentBoard,beat:showPlaybackBeat,clear:clearPlaybackBeat,preload:preloadBeatArt,reducedMotion,speed:()=>cpuSpeed==='fast'?.5:1});
  // A tap skips held playback. Playback over a decision never holds the board, so a tap there
