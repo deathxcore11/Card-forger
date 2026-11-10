@@ -59,6 +59,8 @@ class PlayRules(o: JsonObject, storyJson: JsonObject) {
 
     companion object {
         @Volatile private var cached: PlayRules? = null
+        /** E6a: parse the two rule files off the main thread at app start, so the first Play page finds them in memory. */
+        fun warm(context: Context) { if (cached == null) Thread({ runCatching { load(context.applicationContext) } }, "play-rules-warm").start() }
         fun load(context: Context): PlayRules = cached ?: synchronized(this) {
             cached ?: PlayRules(JsonParser.parseString(context.assets.open("play-rules.json").use { String(it.readBytes()) }).asJsonObject, JsonParser.parseString(context.assets.open("story-acts.json").use { String(it.readBytes()) }).asJsonObject).also { cached = it }
         }

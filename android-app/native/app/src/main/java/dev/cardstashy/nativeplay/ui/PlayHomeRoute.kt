@@ -74,6 +74,9 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
     }
     var opener by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<PackResult?>(null) }
     val s = state
+    // E6a: how long Play Home took from opening to its first drawn frame with the binder in hand (one log line per open).
+    val openedAt = androidx.compose.runtime.remember { android.os.SystemClock.elapsedRealtime() }
+    if (s != null) LaunchedEffect(Unit) { androidx.compose.runtime.withFrameNanos { }; android.util.Log.i("CardStashy", "home first frame ${android.os.SystemClock.elapsedRealtime() - openedAt} ms") }
     if (s == null) {
         Box(Modifier.fillMaxSize().playBackdrop(), contentAlignment = Alignment.Center) { Text("Opening your binder…", style = Type.Body) }
         return

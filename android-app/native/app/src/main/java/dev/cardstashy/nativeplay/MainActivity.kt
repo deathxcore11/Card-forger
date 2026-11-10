@@ -151,6 +151,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        dev.cardstashy.nativeplay.play.PlayRules.warm(this)
         // First, so a stall anywhere in start-up is caught too (the 0.3.2 freeze hit 2 s after launch).
         // Silent: a stall or crash report uploads itself; nothing shows on screen (test strip and frame watch off since 0.3.8).
         FreezeReport.init(this); dev.cardstashy.nativeplay.ui.HomeTest.init(this)
