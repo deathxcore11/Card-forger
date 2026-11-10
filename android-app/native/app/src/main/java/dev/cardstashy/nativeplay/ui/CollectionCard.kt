@@ -280,7 +280,9 @@ private fun Rich(runs: List<CardRun>, style: TextStyle, onRule: (String) -> Unit
             r.rule != null -> { val from = length
                 withLink(LinkAnnotation.Clickable("rule:" + r.rule, TextLinkStyles(SpanStyle(fontWeight = if (r.bold) FontWeight.Bold else null, fontStyle = if (r.italic) FontStyle.Italic else null))) { onRule(r.rule) }) { append(r.t.orEmpty()) }
                 if (length > from) words += from until length }
-            else -> withStyle(SpanStyle(fontWeight = if (r.bold) FontWeight.Bold else null, fontStyle = if (r.italic) FontStyle.Italic else null)) { append(r.t.orEmpty()) }
+            else -> withStyle(SpanStyle(fontWeight = if (r.bold) FontWeight.Bold else null, fontStyle = if (r.italic) FontStyle.Italic else null)) {
+                // Raw "{T}" / "{G}" in a plain run is drawn by Play's own renderer (CardSheet.symbols), never as text.
+                if (r.t.orEmpty().contains('{')) symbols(r.t.orEmpty(), inline) else append(r.t.orEmpty()) }
         }
     }
     var layout by remember { mutableStateOf<androidx.compose.ui.text.TextLayoutResult?>(null) }
@@ -2051,7 +2053,7 @@ private fun DualCollectionCard(m: CollectionCardModel, act: CollectionCardAction
     val o = m.overview
     val main = m.price?.add?.takeIf { !it.disabled } ?: o?.main?.firstOrNull { !it.disabled && it.label.isNotBlank() }
     val xAct = main?.let { p -> PadAct("Add a copy") { act.press(p) } }
-    val yAct = o?.zoomArt?.takeIf { it.isNotBlank() }?.let { PadAct("Art view") { zoom = "art" } }
+    val yAct = (o?.zoomArt?.takeIf { it.isNotBlank() } ?: m.head?.art?.takeIf { it.isNotBlank() })?.let { PadAct("Art view") { zoom = "art" } }
     val aAct = if (o?.flip != null) PadAct("Flip") { act.face() } else null
     PadScreen(remember(xAct?.label, yAct?.label, aAct?.label) { PadActs(b = "Close", opaque = true, x = xAct, y = yAct) })
     FoilFocus.Cover()
@@ -2088,15 +2090,18 @@ private fun DualCollectionCard(m: CollectionCardModel, act: CollectionCardAction
                         listOf(m.set?.name.orEmpty(), rarity).filter { it.isNotBlank() }.joinToString(" · ").takeIf { it.isNotBlank() }?.let {
                             Text(it.uppercase(), style = Rule.Type.sans(12, FontWeight.Bold, Rule.Color.Gold).copy(letterSpacing = 1.4.sp)) }
                         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(h.title, style = Rule.Type.cinzel(24), modifier = Modifier.weight(1f))
+                            Text(h.title, style = Rule.Type.cinzel(24), modifier = Modifier.weight(1f, fill = false))
                             if (h.emblems.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { h.emblems.forEach { TitleEmblem(it) } }
-                            else Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) { h.mana.forEach { Sym(it.src, it.alt, 20.dp) } }
+                            else if (h.mana.isNotEmpty()) Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) { h.mana.forEach { Sym(it.src, it.alt, 20.dp) } }
+                            else ManaCost(m.shown.str("mana_cost"), 20.dp, Modifier.padding(top = 4.dp))
                         }
                         if (h.type.isNotBlank()) Text(h.type, style = Rule.Type.S14.copy(color = Rule.Color.Muted))
                     }
                     if (formats.isNotEmpty()) DualSectionBox("Where it plays") { FormatPills(formats) }
                     val artist = f0?.artist.orEmpty().ifBlank { m.shown.str("artist") }
+                    // The eyebrow already says the rarity: the number line keeps it out.
                     val line = m.set?.let { s -> if (s.parts.isNotEmpty()) s.parts.joinToString("") { it.t.orEmpty() } else s.line }.orEmpty()
+                        .split(" · ").filter { !it.equals(rarity, ignoreCase = true) }.joinToString(" · ")
                     if (artist.isNotBlank() || line.isNotBlank()) DualSectionBox("The art") {
                         if (artist.isNotBlank()) Text("Art by $artist", style = Rule.Type.S14)
                         if (line.isNotBlank()) Text(line, style = Rule.Type.S13.copy(color = Rule.Color.Muted))
@@ -2174,12 +2179,17 @@ private fun DualCollectionCard(m: CollectionCardModel, act: CollectionCardAction
                 prints?.let { p -> DualTile(1.1f) { GlassTile(Modifier.fillMaxSize(), p.title) { PrintingsBody(p, act) } } })),
             DualSection(listOfNotNull(if (chart != null) "Price history" else null, if (rulings.isNotEmpty()) "Rulings" else null).joinToString(" & ").replaceFirstChar { it.uppercase() }, 1.25f, listOfNotNull(
                 chart?.let { c -> DualTile { GlassTile(Modifier.fillMaxSize(), "Price history") {
+                    // The graph and its change; the hero price is the Price tile's, not repeated here.
                     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        histHead?.let { hh -> Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            if (hh.value.isNotBlank()) Text(hh.value, style = Rule.Type.sans(20, FontWeight.ExtraBold, Rule.Color.Text)); Text(hh.label, style = Rule.Type.S12.copy(color = Rule.Color.Muted)) } }
+                        val ys = c.points.map { it.second }; val span = (ys.max() - ys.min()).coerceAtLeast(1f)
+                        val d = (c.points.first().second - c.points.last().second) / span   // chart y runs down: a falling y is a rising price
+                        val (word, tint) = when { d > .03f -> "Rising" to Rule.Color.Gold; d < -.03f -> "Falling" to Rule.Color.Coral; else -> "Steady" to Rule.Color.Text }
+                        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(word, style = Rule.Type.sans(20, FontWeight.ExtraBold, tint))
+                            histHead?.label?.takeIf { it.isNotBlank() }?.let { Text(it, style = Rule.Type.S12.copy(color = Rule.Color.Muted), modifier = Modifier.padding(bottom = 2.dp)) } }
                         Sparkline(c.points, Modifier.weight(1f).fillMaxWidth())
                     } } } },
-                if (rulings.isEmpty()) null else DualTile(1.2f) { GlassTile(Modifier.fillMaxSize(), "Rulings", onClick = { rulingsOpen = true }) { CollRulingsBody(rulings) } })))
+                if (rulings.isEmpty()) null else DualTile(1.2f) { GlassTile(Modifier.fillMaxSize(), "Rulings", onClick = { rulingsOpen = true }, padKey = "A") { DualRulingsBody(rulings.map { r -> r.runs.joinToString("") { x -> if (x.sym != null) (x.alt.takeIf { it.startsWith("{") } ?: "{${x.sym.substringAfterLast('/').substringBefore('.')}}") else x.t.orEmpty() } }) } })))
         val buttons = listOfNotNull(
             xAct?.let { CaseButton("X", it.label, gold = true) { it.run?.invoke() } },
             yAct?.let { CaseButton("Y", it.label) { it.run?.invoke() } },
@@ -2188,34 +2198,24 @@ private fun DualCollectionCard(m: CollectionCardModel, act: CollectionCardAction
     } }
 
     if (zoom != null && o != null) {
+        val artSrc = o.zoomArt.ifBlank { m.head?.art.orEmpty() }   // the same art the Y button offers
         TopScreen {
-            CardZoom(o.zoomSrc.ifBlank { o.image }, o.zoomHi.ifBlank { null }, o.zoomArt.ifBlank { null }, look, finish = worn,
-                gallery = o.zoomArt.takeIf { it.isNotBlank() }?.let { a -> val f = o.faces.firstOrNull()
+            CardZoom(o.zoomSrc.ifBlank { o.image }, o.zoomHi.ifBlank { null }, artSrc.ifBlank { null }, look, finish = worn,
+                gallery = artSrc.takeIf { it.isNotBlank() }?.let { a -> val f = o.faces.firstOrNull()
                     Gallery(listOf(galleryPiece(a, f?.name?.ifBlank { null } ?: m.name, f?.artist, f?.flavor, m.shown))) }, startArt = zoom == "art") { zoom = null }
         }
     }
 }
 
-/** The set tile: its symbol and name, its line, then how far through it you are. */
+/** The set tile: its symbol and name, its line, then how far through it you are; spread over the whole tile (no empty top). */
 @Composable
-private fun SetTileBody(s: CardSetSummary) = FitFirst(2, Modifier.fillMaxSize(), centre = true) { i, _ ->
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (s.picture.isEmpty() && i == 0) SetSymbol(s, 28.dp)
-            Column(Modifier.weight(1f)) {
-                Text(s.name, style = Rule.Type.S14.copy(fontWeight = FontWeight.Bold), maxLines = 1)
-                if (s.parts.isNotEmpty()) PartsLine(s.parts, Rule.Type.S12.copy(color = Rule.Color.Muted)) else Text(s.line, style = Rule.Type.S12.copy(color = Rule.Color.Muted), maxLines = 1)
-            }
-        }
-        s.progress?.let { p ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(p.label, style = Rule.Type.S13.copy(fontWeight = FontWeight.SemiBold), modifier = Modifier.weight(1f), maxLines = 1)
-                if (p.pct.isNotBlank()) Text(p.pct, style = Rule.Type.sans(if (i == 0) 16 else 13, FontWeight.Bold, Rule.Color.Text), maxLines = 1)
-            }
-            if (p.track) ProgressBar(p.fill.coerceIn(0f, 1f))
-            if (p.caption.isNotBlank() && i == 0) Text(p.caption, style = Rule.Type.S12.copy(color = Rule.Color.Muted))
-        }
-    }
+private fun SetTileBody(s: CardSetSummary) {
+    // The rarity is on the card's own face; the set line keeps its number and year.
+    val line = s.line.split(" · ").filter { !it.equals(s.rarity, ignoreCase = true) }.joinToString(" · ")
+    val p = s.progress
+    DualSetBody(if (s.picture.isEmpty()) ({ SetSymbol(s, 28.dp) }) else null, s.name, line,
+        p?.label.orEmpty(), p?.pct, p?.takeIf { it.track }?.fill, p?.caption,
+        lineContent = if (s.parts.isNotEmpty()) ({ PartsLine(s.parts, Rule.Type.S12.copy(color = Rule.Color.Muted)) }) else null)
 }
 
 /** The other printings, as many pictures as fit across the tile (each opens that printing), then how many more. */
@@ -2235,17 +2235,3 @@ private fun PrintingsBody(p: CardPrintings, act: CollectionCardActions) {
     }
 }
 
-/** The rulings tile: as many whole rulings as fit, then fewer, then the count; tap reads them all on the top screen. */
-@Composable
-private fun CollRulingsBody(rulings: List<CardItem>) {
-    val n = rulings.size
-    val shows = (minOf(n, 3) downTo 1).toList()
-    FitFirst(shows.size + 1, Modifier.fillMaxSize()) { i, _ ->
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            if (i < shows.size) {
-                rulings.take(shows[i]).forEach { r -> Text(r.runs.joinToString("") { it.t.orEmpty() }, style = Rule.Type.S13) }
-                Text(if (n > shows[i]) "${n - shows[i]} more · tap to read all" else "Tap to read on the top screen", style = Rule.Type.sans(12, FontWeight.SemiBold, Rule.Color.Gold))
-            } else { Text("$n", style = Rule.Type.sans(28, FontWeight.ExtraBold, Rule.Color.Text)); Text("official rulings · tap to read", style = Rule.Type.S13) }
-        }
-    }
-}

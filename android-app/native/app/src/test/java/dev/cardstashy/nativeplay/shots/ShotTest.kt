@@ -734,6 +734,9 @@ class ShotTest {
         trunkSetup(); dev.cardstashy.nativeplay.play.CardData.load(RuntimeEnvironment.getApplication())
         fun pick(name: String, finish: String) = trunkCards.first { it["name"].asString == name }.let { dev.cardstashy.nativeplay.ui.CardPick(name, it["oracle_id"]?.asString ?: "", it["id"].asString, finish) }
         val cases = listOf("short" to pick("Llanowar Elves", "nonfoil"), "long" to pick("Ragavan, Nimble Pilferer", "foil"))
+        // The set tile's progress branch needs the set's size: a fixture for the two cards' sets when the shot art folder has none.
+        dev.cardstashy.nativeplay.play.SetFacts.seed(listOf("Llanowar Elves", "Ragavan, Nimble Pilferer").map { n -> trunkCards.first { it["name"].asString == n } }.associate { c ->
+            val code = c["set"].asString; code to (dev.cardstashy.nativeplay.play.SetFacts.set(code)?.takeIf { (it.total ?: 0) > 0 } ?: dev.cardstashy.nativeplay.play.SetFacts.Set(c["set_name"]?.asString ?: code.uppercase(), "", "", if (code == "mh2") 273 else 286, "")) })
         dev.cardstashy.nativeplay.ui.Pad.used()
         dev.cardstashy.nativeplay.ui.DualPage.testRulings = listOf(
             "Ragavan's ability triggers whenever it deals combat damage to a player, even if that damage was prevented down to zero." to "Wizards of the Coast · 2023-04-14",

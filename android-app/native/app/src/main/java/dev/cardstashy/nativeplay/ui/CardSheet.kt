@@ -504,7 +504,7 @@ private fun SetLine(shown: JsonObject, state: JsonObject?, act: CardSheetActions
         // A set whose size is not known shows the count alone: no "/ ?", no percent, no bar (fix list C9; data only).
         val size = total?.takeIf { it > 0 }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(if (size == null) "$have in your Play collection" else "$have / $size in your Play collection", style = t(12f, color = Site.Muted), modifier = Modifier.weight(1f))
+            Text(if (size == null) "$have in your Trunk" else "$have / $size in your Trunk", style = t(12f, color = Site.Muted), modifier = Modifier.weight(1f))
             if (size != null) Text("${have * 100 / size}%", style = t(12f, FontWeight.Bold, Color(0xFFC9CED6)))
         }
         if (size != null) ProgressBar(have.toFloat() / size)
@@ -580,7 +580,7 @@ private fun RuleLine(line: String, data: CardData?, onRule: (CardData.Rule) -> U
     Text(text, style = t(size.toFloat(), line = size * 1.45f), inlineContent = inline)
 }
 
-private fun AnnotatedString.Builder.symbols(s: String, inline: HashMap<String, InlineTextContent>) {
+internal fun AnnotatedString.Builder.symbols(s: String, inline: HashMap<String, InlineTextContent>) {
     var last = 0
     for (m in Regex("\\{([^}]+)\\}").findAll(s)) {
         append(s.substring(last, m.range.first)); val sym = m.groupValues[1]; val id = "sym:$sym"
@@ -619,7 +619,7 @@ private fun Research(c: JsonObject, name: String) {
 
 @Composable
 private fun OwnLine(n: Int) = Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-    Pips(n); Text(if (n > 0) "$n of 4 in your Play collection" else "Not in your Play collection yet", style = t(14f, FontWeight.Bold))
+    Pips(n); Text(if (n > 0) "$n of 4 in your Trunk" else "Not in your Trunk yet", style = t(14f, FontWeight.Bold))
 }
 
 /** views.js playEditActions: the copy stepper for the open deck (the deck cover is set by holding a tile in the builder). */
@@ -690,7 +690,7 @@ private fun GetIt(name: String, shown: JsonObject, state: JsonObject?, n: Int, a
             if (craft != null && craft.room > 0) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 for (k in 1..craft.room) CraftN(k, craft.seal, k <= craft.seals) { run {
                     var made = 0; repeat(k) { Progress.craft(craft.id); made++ }
-                    Feel.perform(view, "reward-claim"); act.toast("$made $name crafted into your Play collection.") } }
+                    Feel.perform(view, "reward-claim"); act.toast("$made $name crafted into your Trunk.") } }
             } else if (st != null) StampButton("Stamp it", 1, st, false) { run { Progress.craft(st.id, false); Feel.perform(view, "reward-claim"); act.toast("$name is in your Trunk.") } }
             else Text("This printing can't be stamped. Try another printing on Overview.", style = t(13f, color = Site.Muted))
         }
@@ -814,23 +814,6 @@ private fun rulingsOf(shown: JsonObject?): List<Pair<String, String>>? {
 /** The size one step under [size] on the rulebook list, never under its smallest body size (13). */
 private fun stepDown(size: Int): Int = Rule.Sizes.getOrElse(Rule.Sizes.indexOf(size) - 1) { 13 }.coerceAtLeast(13)
 
-/** The rulings tile: as many whole rulings as fit at 13, then fewer, then the count; tap reads them all on the top screen. */
-@Composable
-private fun RulingsBody(rulings: List<Pair<String, String>>) {
-    val n = rulings.size
-    val shows = (minOf(n, 3) downTo 1).toList()
-    FitFirst(shows.size + 1, Modifier.fillMaxSize()) { i, _ ->
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            if (i < shows.size) {
-                rulings.take(shows[i]).forEach { (c, _) -> Text(c, style = Rule.Type.S13) }
-                Text(if (n > shows[i]) "${n - shows[i]} more · tap to read all" else "Tap to read on the top screen", style = Rule.Type.sans(12, FontWeight.SemiBold, Rule.Color.Gold))
-            } else {
-                Text("$n", style = Rule.Type.sans(28, FontWeight.ExtraBold, Rule.Color.Text)); Text("official rulings · tap to read", style = Rule.Type.S13)
-            }
-        }
-    }
-}
-
 /**
  * The Play card sheet on two screens: "Card on the wall" (specs/thor-card-popup-dual.md, Revision 2). Top: the card's art as a dark bleed,
  * its facts on the left, the whole card in the middle, rules text and guide on the right. Bottom: a glass bleed of the art under tiles
@@ -873,7 +856,7 @@ private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActi
     fun run(block: suspend () -> Unit) = scope.launch { runCatching { block() }.onFailure { act.toast(it.message ?: "Something went wrong.") }; Progress.refresh() }
     val getNow: (() -> Unit)? = when {
         owned >= 4 || shown == null -> null
-        craft != null && craft.room > 0 && craft.seals >= 1 -> ({ run { Progress.craft(craft.id); Feel.perform(view, "reward-claim"); act.toast("1 $name crafted into your Play collection.") } })
+        craft != null && craft.room > 0 && craft.seals >= 1 -> ({ run { Progress.craft(craft.id); Feel.perform(view, "reward-claim"); act.toast("1 $name crafted into your Trunk.") } })
         st != null && st.seals >= 1 -> ({ run { Progress.craft(st.id, false); Feel.perform(view, "reward-claim"); act.toast("$name is in your Trunk.") } })
         set.isNotBlank() && toMerchant != null -> ({ toMerchant(set, name) })
         else -> null
@@ -914,7 +897,7 @@ private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActi
                         Text(listOf(shown.s("set_name").ifBlank { shown.s("set").uppercase() }, RARITY[shown.s("rarity")] ?: shown.s("rarity")).filter { it.isNotBlank() }.joinToString(" · ").uppercase(),
                             style = Rule.Type.sans(12, FontWeight.Bold, Rule.Color.Gold).copy(letterSpacing = 1.4.sp))
                         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(name, style = Rule.Type.cinzel(24), modifier = Modifier.weight(1f))
+                            Text(name, style = Rule.Type.cinzel(24), modifier = Modifier.weight(1f, fill = false))
                             ManaCost(f.s("mana_cost").ifBlank { shown.s("mana_cost") }, 20.dp, Modifier.padding(top = 4.dp))
                         }
                         Text(f.s("type_line").ifBlank { shown.s("type_line") }, style = Rule.Type.S14.copy(color = Rule.Color.Muted))
@@ -992,10 +975,10 @@ private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActi
                 if (code.isBlank()) null else DualTile { GlassTile(Modifier.fillMaxSize(), onClick = (act.set ?: shopSet)?.let { go -> { go(code) } }) { SetTileBody(shown, state) } })),
             DualSection("Get more", 1.25f, listOfNotNull(
                 if (getLinks.isEmpty()) null else DualTile { GlassTile(Modifier.fillMaxSize(), "Where to find it") {
-                    FitFirst(getLinks.size, Modifier.fillMaxSize()) { i, _ -> Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    FitFirst(getLinks.size, Modifier.fillMaxSize(), centre = true) { i, _ -> Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         getLinks.take(getLinks.size - i).forEach { (l, go) -> if (go != null) TileLink(l, go) else Text("$l · not enough seals", style = Rule.Type.S13.copy(color = Rule.Color.Muted)) }
                     } } } },
-                if (rulings.isEmpty()) null else DualTile(1.25f) { GlassTile(Modifier.fillMaxSize(), "Rulings", onClick = { rulingsOpen = true }) { RulingsBody(rulings) } })))
+                if (rulings.isEmpty()) null else DualTile(1.25f) { GlassTile(Modifier.fillMaxSize(), "Rulings", onClick = { rulingsOpen = true }, padKey = "A") { DualRulingsBody(rulings.map { it.first }) } })))
         val buttons = listOfNotNull(
             xAct?.let { CaseButton("X", it.label, gold = true) { it.run?.invoke() } },
             yAct?.let { CaseButton("Y", it.label) { it.run?.invoke() } },
@@ -1019,7 +1002,7 @@ private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActi
     }
 }
 
-/** The set tile: its name and number, how much of it you have, a bar, the count. */
+/** The set tile: its name and number and how much of it is in your Trunk, a bar, the count; spread over the whole tile (no empty top). */
 @Composable
 private fun SetTileBody(shown: JsonObject, state: JsonObject?) {
     val code = shown.s("set")
@@ -1027,19 +1010,10 @@ private fun SetTileBody(shown: JsonObject, state: JsonObject?) {
     val (have, total) = Trunk.setProgress(state, code)
     val size = total?.takeIf { it > 0 }
     val num = shown.s("collector_number").ifBlank { "?" }
-    FitFirst(2, Modifier.fillMaxSize(), centre = true) { i, _ ->
-        Column(verticalArrangement = Arrangement.spacedBy(if (i == 0) 8.dp else 4.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (i == 0) RaritySetIcon(code, shown.s("rarity"), 28.dp)
-                Column(Modifier.weight(1f)) {
-                    Text("${shown.s("set_name").ifBlank { code.uppercase() }} · ${code.uppercase()} #$num", style = Rule.Type.S14.copy(fontWeight = FontWeight.Bold))
-                    if (size != null) Text("${have * 100 / size}% of the set", style = Rule.Type.S13.copy(color = Rule.Color.Muted))
-                }
-            }
-            if (size != null) ProgressBar(have.toFloat() / size)
-            Text(if (size != null) "$have of $size" else "$have in your Play collection", style = Rule.Type.S13.copy(fontWeight = FontWeight.SemiBold))
-        }
-    }
+    // At least 1 % once you own any, so a card in the set never reads "0% of the set".
+    val pct = if (size != null) (if (have <= 0) 0 else maxOf(1, Math.round(have * 100f / size))).let { "$it%" } else null
+    DualSetBody({ RaritySetIcon(code, shown.s("rarity"), 28.dp) }, "${shown.s("set_name").ifBlank { code.uppercase() }} · ${code.uppercase()} #$num", null,
+        if (size != null) "$have of $size in your Trunk" else "$have in your Trunk", pct, size?.let { have.toFloat() / it })
 }
 
 /** Over the bottom board: pick the deck the card goes into. */

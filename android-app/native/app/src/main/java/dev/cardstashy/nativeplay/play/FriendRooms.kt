@@ -29,12 +29,44 @@ class FriendRooms(private val site: String = "https://cardstashy.com", private v
             "invalid_room" to "This challenge could not be sent. Check the format and try again.", "room_rate_limit" to "Too many invites in a short time. Wait a minute and try again.",
             "room_not_ready" to "Your friend has not accepted yet.", "deck_required" to "Pick a deck first.", "authentication_required" to "Sign in again to play with friends.",
             "trial_not_authorized" to "Friend matches are not open to this account yet.", "play_not_authorized" to "Friend matches are not open to this account yet.")
+        /** Row fields the room keeps: the card, its count and its printing (the host keeps printing/finish metadata, admission-ledger.mjs). */
+        private val ROW_KEYS = setOf("name", "qty", "set", "number", "collector_number", "cn", "finish", "foil", "lang", "language", "board", "id", "scryfallId", "scryfall_id", "printing", "printingId")
+        /**
+         * friendDeck, in the small shape the room needs: format, name, the cards/side/commanders rows (name, qty, printing) and the
+         * commander/companion, every name in Forge's spelling (engineDeck). A saved deck from the account can carry images, prices and
+         * card data on every row; the host reads at most 128 KB of JSON, so a 100-card deck must not send them.
+         */
+        fun roomDeck(format: String, deck: JsonObject): JsonObject {
+            val e = dev.cardstashy.nativeplay.match.EngineNames.deck(deck)
+            return JsonObject().apply {
+                addProperty("format", format)
+                e.get("name")?.takeIf { it.isJsonPrimitive }?.let { add("name", it) }
+                for (k in listOf("cards", "side", "commanders")) e.getAsJsonArray(k)?.let { rows ->
+                    add(k, JsonArray().apply { rows.forEach { r ->
+                        if (r is JsonObject) add(JsonObject().apply { for ((rk, v) in r.entrySet()) if (rk in ROW_KEYS && (v.isJsonPrimitive)) {
+                            if (rk == "qty" && v.asJsonPrimitive.isNumber) addProperty("qty", v.asDouble.toInt()) else add(rk, v) } })
+                        else add(r)
+                    } })
+                }
+                for (k in listOf("commander", "companion")) e.get(k)?.takeIf { it.isJsonPrimitive }?.let { add(k, it) }
+            }
+        }
         fun link(invite: String) = "https://cardstashy.com/#play/join/$invite"
-        /** friendInviteFromHash, widened to what people paste: the link, the hash or the bare invite. */
+        /** The host's verifyHostUser wants this exact Origin on every non-GET request (browsers send it themselves). */
+        const val ORIGIN = "https://cardstashy.com"
+        /**
+         * friendInviteFromHash, widened to what people paste: the link, the hash or the bare invite. Copying from a chat can add spaces,
+         * line breaks or invisible characters inside the code, so those go first; then the code after #play/join/, else the first
+         * 43-character invite run anywhere in the text.
+         */
         fun inviteFrom(text: String?): String? {
-            val t = text?.trim() ?: return null
-            Regex("#play/join/([A-Za-z0-9_-]{43})").find(t)?.let { return it.groupValues[1] }
-            return t.takeIf { INVITE.matches(it) }
+            text ?: return null
+            val visible = text.replace(Regex("[\\p{Cf}]"), "")
+            val squeezed = visible.replace(Regex("[\\s\\u00A0\\u2028\\u2029]"), "")
+            val bare = Regex("(?<![A-Za-z0-9_-])[A-Za-z0-9_-]{43}(?![A-Za-z0-9_-])")
+            // A space inside the code (as a chat copy did) only joins up once spaces go; words around a clean code stay apart.
+            for (t in listOf(squeezed, visible)) Regex("#play/join/([A-Za-z0-9_-]{43})(?![A-Za-z0-9_-])").find(t)?.let { return it.groupValues[1] }
+            return bare.find(squeezed)?.value ?: bare.find(visible)?.value
         }
         /** friendPlayerCard: your name and picture as the other player sees them. */
         fun playerCard(name: String?, image: String?): JsonObject? {
@@ -48,7 +80,10 @@ class FriendRooms(private val site: String = "https://cardstashy.com", private v
     private suspend fun call(path: String, method: String = "POST", body: JsonObject? = null): JsonObject? = withContext(Dispatchers.IO) {
         val t = token() ?: throw Failure("sign_in", "Sign in to play with friends.")
         try {
-            http(method, "$site$path", mapOf("Authorization" to "Bearer $t"), body?.toString())?.takeIf { it.isJsonObject }?.asJsonObject
+            val text = body?.toString()
+            if (text != null) runCatching { android.util.Log.i("FriendRooms", "$method $path body ${text.toByteArray().size} bytes") }
+            // ORIGIN on every call: the host answers 401 authentication_required to a POST/DELETE without it (what 0.4.55 hit).
+            http(method, "$site$path", mapOf("Authorization" to "Bearer $t", "Origin" to ORIGIN), text)?.takeIf { it.isJsonObject }?.asJsonObject
         } catch (e: Http.Failure) {
             val code = Regex("\"error\"\\s*:\\s*\"([a-z0-9_]{1,100})\"").find(e.body)?.groupValues?.get(1) ?: "room_request_rejected"
             // Unknown refusals keep their code and status on screen (web 8d14265a), so an intermittent failure can be told apart.
@@ -58,8 +93,7 @@ class FriendRooms(private val site: String = "https://cardstashy.com", private v
 
     private fun room(id: String): String { require(UUID.matches(id)) { "FRIEND_ROOM_INVALID" }; return "/api/play/rooms/$id" }
     private fun invite(v: String): String { if (!INVITE.matches(v)) throw Failure("invite_not_found", MESSAGES.getValue("invite_not_found")); return v }
-    /** friendDeck: every card name in Forge's spelling (engineDeck), then the room's format. */
-    private fun deckFor(format: String, deck: JsonObject) = dev.cardstashy.nativeplay.match.EngineNames.deck(deck).apply { addProperty("format", format) }
+    private fun deckFor(format: String, deck: JsonObject) = roomDeck(format, deck)
 
     /** A server from before player cards refuses the extra field: the room then opens without it. */
     private suspend fun withPlayer(path: String, body: JsonObject, player: JsonObject?, refusal: String): JsonObject? {

@@ -229,15 +229,6 @@ private fun SymbolLine(line: String) {
     Text(text, style = TextStyle(fontFamily = Spectral, fontSize = 16.sp, lineHeight = 21.sp, color = Color(0xFFEDE6D6)), inlineContent = inline)
 }
 
-private fun AnnotatedString.Builder.symbols(s: String, inline: HashMap<String, InlineTextContent>) {
-    var last = 0
-    for (m in Regex("\\{([^}]+)\\}").findAll(s)) {
-        append(s.substring(last, m.range.first)); val sym = m.groupValues[1]; val id = "sym:$sym"
-        inline.getOrPut(id) { InlineTextContent(Placeholder(1.05.em, 1.05.em, PlaceholderVerticalAlign.TextCenter)) { Symbol(sym, 16.dp, Modifier.fillMaxSize()) } }
-        appendInlineContent(id, "{$sym}"); last = m.range.last + 1
-    }
-    append(s.substring(last))
-}
 
 
 /**

@@ -36,7 +36,8 @@ class RemoteSession(private val matchId: String, private val token: suspend () -
     @Volatile private var generation: String? = null
     @Volatile private var last: JsonObject? = null
     private val base get() = "$site/api/play/matches/$matchId"
-    private fun auth(): Map<String, String> = mapOf("Authorization" to "Bearer " + (runBlocking { token() } ?: throw java.io.IOException("sign_in")))
+    // The host refuses any non-GET without the site's Origin (session-authority verifyHostUser); a browser adds it, OkHttp does not.
+    private fun auth(): Map<String, String> = mapOf("Authorization" to "Bearer " + (runBlocking { token() } ?: throw java.io.IOException("sign_in")), "Origin" to dev.cardstashy.nativeplay.play.FriendRooms.ORIGIN)
 
     override fun call(method: String, path: String, body: String?): Reply = try {
         when {

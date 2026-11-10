@@ -104,15 +104,16 @@ class CollectionCardShotTest {
         val face = dev.cardstashy.nativeplay.ui.CardFace("", name, emptyList(), type, lines.map { listOf(run(it)) }, "Flavour", flavor, pt, "Simon Dominic", null)
         val blocks = guide.flatMap { (h, items) -> listOf(dev.cardstashy.nativeplay.ui.CardBlock("title", text = h), dev.cardstashy.nativeplay.ui.CardBlock("list", items = items.map { dev.cardstashy.nativeplay.ui.CardItem(runs = listOf(run(it))) })) } +
             dev.cardstashy.nativeplay.ui.CardBlock("rulings", head = "Rulings", items = rulings.map { dev.cardstashy.nativeplay.ui.CardItem(runs = listOf(run(it)), source = "Wizards of the Coast · 2023-04-14") })
-        val ov = dev.cardstashy.nativeplay.ui.CardOverview(image = "", sources = emptyList(), tier = "", zoomSrc = "", zoomHi = "", zoomArt = "", finishKey = "foil", finishEffect = "", flip = null,
+        val ov = dev.cardstashy.nativeplay.ui.CardOverview(image = "", sources = emptyList(), tier = "", zoomSrc = "", zoomHi = "", zoomArt = "https://img.test/art.jpg", finishKey = "foil", finishEffect = "", flip = null,
             finishLabel = "Finish", finishes = listOf(dev.cardstashy.nativeplay.ui.CardFinishChip("foil", "Traditional foil", true, "plain")), finishFoot = "", profile = null,
             printings = dev.cardstashy.nativeplay.ui.CardPrintings("Other printings you own", null, (1..3).map { dev.cardstashy.nativeplay.ui.CardPrintRow(it, "", emptyList(), "Printing $it", "#13$it", "Printing $it", it == 1) }, emptyList(), ""),
             discoverySummary = "", discoveryText = "", discovery = emptyList(), faces = listOf(face), loading = null, rulesEntry = null, alertTitle = "", alertLine = "", alert = null, own = "", legal = null, deck = null,
             chips = emptyList(), factLabel = "", fact = "", researchLabel = "", research = emptyList(), ownedAria = "",
             owned = listOf(dev.cardstashy.nativeplay.ui.CardOwnedGroup("a", "Traditional foil", 2, emptyList(), null), dev.cardstashy.nativeplay.ui.CardOwnedGroup("b", "Nonfoil", 1, emptyList(), null)),
             main = emptyList(), more = emptyList())
-        val set = dev.cardstashy.nativeplay.ui.CardSetSummary("mh2", "mythic", "", "", "Modern Horizons 2", true, "MH2 #138 · Mythic · 2021",
-            dev.cardstashy.nativeplay.ui.CardSetProgress("Your progress", "60 of 273", "21%", .21f, "In your collection"))
+        val code = shown["set"].asString; val total = if (code == "mh2") 273 else 286; val have = 60
+        val set = dev.cardstashy.nativeplay.ui.CardSetSummary(code, shown["rarity"].asString, "", "", shown["set_name"].asString, true, "${code.uppercase()} #${shown["collector_number"].asString} · ${shown["rarity"].asString.replaceFirstChar { it.uppercase() }} · ${shown["released_at"].asString.take(4)}",
+            dev.cardstashy.nativeplay.ui.CardSetProgress("Your progress", "$have of $total", "${Math.round(have * 100f / total)}%", have.toFloat() / total, "In your collection"))
         val price = dev.cardstashy.nativeplay.ui.CardPrice(null, dev.cardstashy.nativeplay.ui.CardRef("$12.40", "Market", "Traditional foil", null), null, press("Add a copy", "add"), "")
         val hist = dev.cardstashy.nativeplay.ui.CardHistory("ready", "", listOf(dev.cardstashy.nativeplay.ui.CardHistBlock("head", value = "$12.40", label = "Market, 90 days"),
             dev.cardstashy.nativeplay.ui.CardHistBlock("chart", points = (0..30).map { it * 12f to 90f - it * 1.5f + (it % 5) * 6f })))

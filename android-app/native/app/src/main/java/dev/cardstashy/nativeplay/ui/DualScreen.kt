@@ -13,6 +13,7 @@ import android.view.WindowManager
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Arrangement
@@ -232,7 +233,7 @@ private fun BottomPadBar() {
     val said = DualScreen.shownLabels.values.flatten().toSet()
     val items = PadPrompts.prompts(PadPrompts.current()).filter { it.first !in shown && it.second.lowercase() !in said }
     if (items.isEmpty()) return
-    Row(Modifier.fillMaxWidth().height(44.dp).background(Color(0xF2101217)).border(1.dp, Color(0x30D6AD64)).padding(horizontal = 14.dp),
+    Row(Modifier.fillMaxWidth().height(44.dp).background(Color(0xF2101217)).drawBehind { drawLine(Color(0x30D6AD64), androidx.compose.ui.geometry.Offset(0f, 0f), androidx.compose.ui.geometry.Offset(size.width, 0f), 2f) }.padding(horizontal = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.End), verticalAlignment = Alignment.CenterVertically) {
         items.forEach { (b, l) -> PadKey(b, l) }
     }
