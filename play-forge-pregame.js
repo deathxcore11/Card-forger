@@ -29,12 +29,21 @@ export function forgeDeckBackdrop(deck,lookup){
 
 // Loads and decodes each deck's backdrop before the matchup appears, so no plate shows empty and then pops.
 // At most timeoutMs in all; one retry on error. Resolves with nothing: the browser cache holds the images.
-export async function preloadDeckBackdrops(decks,lookup,{timeoutMs=4000,makeImage=()=>new Image()}={}){
+export async function preloadDeckBackdrops(decks,lookup,{timeoutMs=20000,makeImage=()=>new Image(),onProgress=()=>{}}={}){
  const urls=[...new Set(decks.map(d=>{try{return forgeDeckBackdrop(d,lookup);}catch{return null;}}).filter(Boolean))];
  const load=(url,retry)=>new Promise(resolve=>{const img=makeImage();img.referrerPolicy='no-referrer';
   img.onload=()=>Promise.resolve(img.decode?.()).catch(()=>{}).then(resolve);
   img.onerror=()=>retry?resolve(load(url+(url.includes('?')?'&':'?')+'retry=1',false)):resolve();img.src=url;});
- let timer;await Promise.race([Promise.all(urls.map(u=>load(u,true))),new Promise(r=>{timer=setTimeout(r,timeoutMs);})]);clearTimeout(timer);
+ let timer,done=0;onProgress(0,urls.length);await Promise.race([Promise.all(urls.map(u=>load(u,true).then(()=>onProgress(++done,urls.length)))),new Promise(r=>{timer=setTimeout(r,timeoutMs);})]);clearTimeout(timer);
+}
+// The loading screen before the matchup: a gold bar that fills as each deck's art really arrives.
+export function mountForgeArtLoading(root){
+ const doc=root.ownerDocument,el=(t,c,x)=>{const n=doc.createElement(t);if(c)n.className=c;if(x!==undefined)n.textContent=x;return n;};
+ const stage=el('section','forge-intro-loading'),title=el('h2',undefined,'Preparing the table'),bar=el('div','forge-intro-loading-bar'),fill=el('span');
+ stage.setAttribute('role','status');stage.setAttribute('aria-label','Preparing the table');bar.append(fill);stage.append(title,bar);
+ root.className='play-mat-message play-forge-intro';root.replaceChildren(stage);
+ let shown=0.08;fill.style.width='8%';
+ return {progress(part){shown=Math.max(shown,Math.min(1,part));fill.style.width=Math.round(shown*100)+'%';}};
 }
 // Choice icons share the packet's outline style (24-unit grid, currentColor).
 const START_ICONS={
