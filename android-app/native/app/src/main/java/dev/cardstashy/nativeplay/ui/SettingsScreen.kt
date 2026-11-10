@@ -428,22 +428,18 @@ private fun SignedIn(onWeb: (String) -> Unit, onPick: (String) -> Unit, layer: C
             }
         }
     }
-    if (confirmOut) AlertDialog(onDismissRequest = { confirmOut = false }, containerColor = Site.Surface,
-        text = { Text("Sign out? Your account’s cards and profile will be hidden. They’ll be here when you sign back in.", style = S.Body) },
-        confirmButton = { TextButton({ confirmOut = false; scope.launch { Account.signOut(); Decks.clear(); dev.cardstashy.nativeplay.play.Progress.clear(); toast("Signed out. Your account data is saved.") } }) { Text("Sign out", style = S.Btn.copy(color = Site.Gold)) } },
-        dismissButton = { TextButton({ confirmOut = false }) { Text("Cancel", style = S.Btn.copy(color = Site.Muted)) } })
+    if (confirmOut) RuleConfirm("Sign out? Your account’s cards and profile will be hidden. They’ll be here when you sign back in.", "Sign out", onCancel = { confirmOut = false },
+        onAction = { confirmOut = false; scope.launch { Account.signOut(); Decks.clear(); dev.cardstashy.nativeplay.play.Progress.clear(); toast("Signed out. Your account data is saved.") } })
     if (confirmDelete) {
         var typed by remember { mutableStateOf("") }
-        AlertDialog(onDismissRequest = { confirmDelete = false }, containerColor = Site.Surface, title = { Text("Delete account", style = S.H2) },
-            text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("This permanently deletes ${session?.email ?: "your account"} and the collection, decks and profile synced to it. It can't be undone. Type DELETE to confirm.", style = S.Body)
-                Field("", typed, { typed = it }, ime = ImeAction.Done) } },
-            confirmButton = { TextButton({
+        RuleConfirm("This permanently deletes ${session?.email ?: "your account"} and the collection, decks and profile synced to it. It can't be undone. Type DELETE to confirm.",
+            "Delete account", title = "Delete account", danger = true, onCancel = { confirmDelete = false },
+            body = { Field("", typed, { typed = it }, ime = ImeAction.Done) },
+            onAction = {
                 confirmDelete = false
-                if (typed.trim() != "DELETE") { toast("Account not deleted. Type DELETE in capitals to confirm."); return@TextButton }
-                busy = "delete"; scope.launch { val e = Account.deleteAccount(); busy = null; if (e == null) { Decks.clear(); dev.cardstashy.nativeplay.play.Progress.clear() }; toast(e ?: "Your account and its synced data were deleted.") }
-            }) { Text("Delete account", style = S.Btn.copy(color = Bad)) } },
-            dismissButton = { TextButton({ confirmDelete = false }) { Text("Cancel", style = S.Btn.copy(color = Site.Muted)) } })
+                if (typed.trim() != "DELETE") toast("Account not deleted. Type DELETE in capitals to confirm.")
+                else { busy = "delete"; scope.launch { val e = Account.deleteAccount(); busy = null; if (e == null) { Decks.clear(); dev.cardstashy.nativeplay.play.Progress.clear() }; toast(e ?: "Your account and its synced data were deleted.") } }
+            })
     }
 }
 

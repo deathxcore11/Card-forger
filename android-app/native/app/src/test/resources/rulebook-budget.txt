@@ -6,17 +6,17 @@ Battlefield.kt 2 0 67
 BrandMark.kt 0 0 2
 CardBits.kt 0 2 29
 CardFrame.kt 0 0 11
-CardSheet.kt 1 8 42
+CardSheet.kt 1 8 39
 CardViews.kt 0 3 20
 CardZoom.kt 0 1 8
 CastSpotlight.kt 0 7 28
 CollectionAcquire.kt 0 0 5
 CollectionBench.kt 0 2 3
-CollectionBinders.kt 1 13 67
+CollectionBinders.kt 1 12 67
 CollectionBuildDeck.kt 0 11 15
 CollectionCard.kt 25 29 125
 CollectionCards.kt 14 25 110
-CollectionDeck.kt 7 35 181
+CollectionDeck.kt 7 34 180
 CollectionDecks.kt 8 6 59
 CollectionDecksC1.kt 0 2 6
 CollectionHome.kt 14 4 96
@@ -45,7 +45,7 @@ DecksScreen.kt 4 5 32
 DualScreen.kt 0 1 8
 FinderScreen.kt 6 2 11
 ForgeTable.kt 0 1 219
-Gallery.kt 0 2 21
+Gallery.kt 0 2 20
 HandFan.kt 0 0 3
 HistoryPanel.kt 0 0 7
 HomeScreen.kt 1 3 9
@@ -58,7 +58,7 @@ MatchBottom.kt 2 3 16
 MatchMenu.kt 0 0 27
 MetaDeckSheet.kt 0 12 16
 ModeSwitch.kt 0 0 10
-PackOpen.kt 5 3 96
+PackOpen.kt 4 3 96
 PackTemplate.kt 0 0 5
 Pad.kt 0 0 3
 PadCursor.kt 0 0 2
@@ -66,7 +66,7 @@ PadFocus.kt 0 0 3
 PadPrompts.kt 0 1 9
 PlayBuildDeck.kt 1 6 42
 PlayDecksTabs.kt 17 8 60
-PlayHome.kt 4 15 180
+PlayHome.kt 3 15 164
 PlaymatPicker.kt 0 1 12
 Playmats.kt 0 0 2
 PodRail.kt 0 0 20

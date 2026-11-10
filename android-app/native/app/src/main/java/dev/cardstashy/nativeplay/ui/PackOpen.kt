@@ -514,12 +514,8 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
         if (shopAsk) pack.shop?.let { sh ->
             val copied = remember { runCatching { (context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager)
                 .setPrimaryClip(android.content.ClipData.newPlainText("Shopping list", sh.lines.joinToString("\n"))); true }.getOrDefault(false) }
-            androidx.compose.material3.AlertDialog(onDismissRequest = { shopAsk = false }, containerColor = Site.Surface2,
-                title = { Text(if (copied) sh.title else sh.failTitle, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Site.Text)) },
-                text = { Text(if (copied) sh.text else sh.failText, style = TextStyle(fontFamily = Site.Body.fontFamily, fontSize = 14.sp, lineHeight = 20.sp, color = Site.Muted)) },
-                confirmButton = { androidx.compose.material3.TextButton({ shopAsk = false; runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(sh.url))) } }) {
-                    Text(sh.ok, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = gold)) } },
-                dismissButton = { androidx.compose.material3.TextButton({ shopAsk = false }) { Text(sh.cancel, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = Site.Muted)) } })
+            RuleConfirm(if (copied) sh.text else sh.failText, sh.ok, title = if (copied) sh.title else sh.failTitle, cancel = sh.cancel, onCancel = { shopAsk = false },
+                onAction = { shopAsk = false; runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(sh.url))) } })
         }
         // pack-preview.js inspect(): a revealed card opens the Play card view over the pack (onDetails); closing it brings the pack back.
         inspecting?.let { p ->

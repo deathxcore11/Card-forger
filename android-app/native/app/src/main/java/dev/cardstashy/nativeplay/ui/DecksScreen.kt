@@ -184,10 +184,8 @@ fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit,
             listOf(ContextAction(SiteIcons.Close, "Delete deck", danger = true) { close(); deleting = d })), close)
     }
     deleting?.let { d ->
-        AlertDialog(onDismissRequest = { deleting = null }, containerColor = Site.Surface2,
-            text = { Text("Delete this Play deck?", style = t(16f, FontWeight.SemiBold)) },
-            confirmButton = { TextButton({ deleting = null; scope.launch { runCatching { Progress.saveDeck(JsonObject().apply { addProperty("id", d.s("id")); addProperty("delete", true) }) } } }) { Text("OK", style = t(15f, FontWeight.Bold, Site.Gold)) } },
-            dismissButton = { TextButton({ deleting = null }) { Text("Cancel", style = t(15f, FontWeight.SemiBold, Site.Muted)) } })
+        RuleConfirm("Delete this Play deck?", "OK", onCancel = { deleting = null }, danger = true,
+            onAction = { deleting = null; scope.launch { runCatching { Progress.saveDeck(JsonObject().apply { addProperty("id", d.s("id")); addProperty("delete", true) }) } } })
     }
 }
 
