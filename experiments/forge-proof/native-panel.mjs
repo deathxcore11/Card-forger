@@ -379,7 +379,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    panel.append(revealed,button(presentation.hosted?'OK':copy('Continue','Acknowledge native reveal'),()=>{clearTimeout(revealAuto.timer);session.confirmPrompt();},false,'acknowledge-prompt'));
   }else if(OPTION_METHODS.has(p.method)){
    const indexes=s.nativeDraft?.revision===n.revision&&s.nativeDraft?.promptId===p.id?s.nativeDraft.indexes:[],options=p.options||[];
-   const single=!hostedOrder&&presentation.hosted&&['getAbilityToPlay','getChoices','showOptionDialog'].includes(p.method)&&options.length===1&&p.max>=1&&(p.min??0)<=1&&isDescribedOption(options[0].value)&&!indexes.length;
+   const single=!hostedOrder&&presentation.hosted&&['getAbilityToPlay','getChoices','showOptionDialog'].includes(p.method)&&options.length===1&&p.max>=1&&(p.min??0)<=1&&isDescribedOption(options[0].value)&&indexes.every(i=>i===options[0].index);
    if(hostedOrder){
     // Arena-style: each choice is its source card; tap them in order, tap again to take one back.
     const cards=s.status?.surface?.cards||[],clean=t=>plainText(String(t||'').replace(/\s*\[[^\]]*\]/g,'').replace(/\s*\(\s*\)/g,'')).trim();
