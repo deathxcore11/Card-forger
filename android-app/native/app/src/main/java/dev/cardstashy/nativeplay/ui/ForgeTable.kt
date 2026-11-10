@@ -776,9 +776,12 @@ fun ForgeBoard(
             // The stops of the target walk: target cards (theirs, then yours), target players, then the Cancel pill when it is shown.
             val targetStops = {
                 val sel = st.selection
-                sel.targetCards.mapNotNull { TableZones.theirs[it] } + sel.targetCards.mapNotNull { TableZones.mine[it] } +
-                    sel.players.filter { it in sel.targetPlayers }.sortedBy { it == st.viewer }.mapNotNull { TableZones.orbs[it] } +
-                    listOfNotNull(cancelFocus.takeIf { st.waitingOnMe && cancelLabel(st) != null })
+                val on = sel.targetCards.mapNotNull { TableZones.theirs[it] } + sel.targetCards.mapNotNull { TableZones.mine[it] } +
+                    sel.players.filter { it in sel.targetPlayers }.sortedBy { it == st.viewer }.mapNotNull { TableZones.orbs[it] }
+                // A spell on the stack (a counter) or a card off the table has no stop here: no walk, so the d-pad can still reach it
+                // instead of sitting on Cancel.
+                if (sel.stackTargets.isNotEmpty() || on.isEmpty()) emptyList<FocusRequester>()
+                else on + listOfNotNull(cancelFocus.takeIf { st.waitingOnMe && cancelLabel(st) != null })
             }
             val stopsNow by androidx.compose.runtime.rememberUpdatedState(targetStops)
             // Only while the ring is on the table (or nowhere): an open menu, dock or card keeps its own d-pad.
