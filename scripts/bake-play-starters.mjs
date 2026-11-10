@@ -39,7 +39,12 @@ if (!root) throw Error('Pass the data folder of a magic-preconstructed-decks clo
 // Every row carries set + collector number (so the deck view finds its art): rows the list has no printing for
 // (or a basic land's '*') take the deck's own set, else Scryfall's default printing of that name.
 const scry = async (identifiers) => {
-  const r = await fetch('https://api.scryfall.com/cards/collection', {method: 'POST', headers: {'Content-Type': 'application/json', Accept: 'application/json', 'User-Agent': 'CardStashy/1.0'}, body: JSON.stringify({identifiers})});
+  let r;
+  for (let t = 0; t < 5; t++) {
+    r = await fetch('https://api.scryfall.com/cards/collection', {method: 'POST', headers: {'Content-Type': 'application/json', Accept: 'application/json', 'User-Agent': 'CardStashy/1.0'}, body: JSON.stringify({identifiers})});
+    if (r.status !== 429) break;
+    await new Promise(ok => setTimeout(ok, 3000 * (t + 1)));
+  }
   if (!r.ok) throw Error('Scryfall ' + r.status);
   await new Promise(ok => setTimeout(ok, 120));
   return (await r.json()).data || [];
@@ -63,7 +68,7 @@ for (const p of PICKS) {
     const m = line.match(/^(COMMANDER: )?(\d+) (.+?)((?: \[[^\]]*\])*)$/);
     if (!m) continue;
     const print = (m[4].match(/\[([A-Za-z0-9]+):([^\]]+)\]/) || []), name = SWAPS[m[3].trim()] || m[3].trim();
-    rows.push({name, qty: Number(m[2]), ...(m[1] ? {commander: true} : {}), ...(print[1] && !SWAPS[m[3].trim()] ? {set: print[1].toLowerCase(), number: print[2]} : {})});
+    rows.push({name, ...(SWAPS[m[3].trim()] ? {was: m[3].trim()} : {}), qty: Number(m[2]), ...(m[1] ? {commander: true} : {}), ...(print[1] && !SWAPS[m[3].trim()] ? {set: print[1].toLowerCase(), number: print[2]} : {})});
   }
   const size = rows.reduce((t, r) => t + r.qty, 0);
   if (size !== (p.format === 'Commander' ? 100 : 60)) throw Error(`${p.name}: ${size} cards`);
