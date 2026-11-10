@@ -20,7 +20,7 @@ COPY native/human/ human/
 COPY native/build-human-overlay.sh build-human-overlay.sh
 COPY native/LICENSE native/PROVENANCE.md native/CONTRACT.md notices/
 COPY hosting/assemble.sh /tmp/assemble.sh
-RUN test "$(sha256sum adapter/src/cardstashy/forge/ForgeHttpBridge.java | cut -d' ' -f1)" = "680b6d42f15ad243e6276268939baf58ae778c7948b8ac6a8d1abc1cb05f0f1c" \
+RUN test "$(sha256sum adapter/src/cardstashy/forge/ForgeHttpBridge.java | cut -d' ' -f1)" = "1f399750494fab44744687e2cc1d69e15f358b51db4cbd4db13897030c781ba7" \
  && bash /tmp/assemble.sh
 
 FROM ${RUNTIME_IMAGE} AS runtime
@@ -39,7 +39,7 @@ COPY hosting/checkpoint-files.json /opt/host001/checkpoint-files.json
 COPY hosting/assemble.sh /opt/host001/assemble.sh
 COPY Dockerfile /opt/host001/Dockerfile
 LABEL org.opencontainers.image.title="CardStashy Forge HOST-001 candidate" \
-      org.opencontainers.image.revision="680b6d42f15ad243e6276268939baf58ae778c7948b8ac6a8d1abc1cb05f0f1c"
+      org.opencontainers.image.revision="1f399750494fab44744687e2cc1d69e15f358b51db4cbd4db13897030c781ba7"
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 USE_SENTRY=false
 USER 10001:10001
 WORKDIR /run/cardstashy
@@ -49,7 +49,7 @@ HEALTHCHECK --interval=15s --timeout=3s --start-period=120s --retries=3 \
  CMD ["python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/ready', timeout=2).read()"]
 ENTRYPOINT ["python3", "/opt/host-service/bootstrap.py"]
 
-LABEL org.cardstashy.native-manifest-sha256="5319f9ce2156b76700802c87144bf41c9d14a37ac956ac1e4c8fafb69e24fe88"
+LABEL org.cardstashy.native-manifest-sha256="98187b0df76d7b3c637dfd3c3ca27784396f084de547747a4aaa8a1a844e31b0"
 
 LABEL org.cardstashy.native-ai-modified="true" \
       org.cardstashy.native-ai-class-set-sha256="e39ea6388050f31319b121c0605fde23069d35e7133a203fd19f0a6c72528f80"
