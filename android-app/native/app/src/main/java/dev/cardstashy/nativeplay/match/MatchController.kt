@@ -303,7 +303,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         val st = if (planned.stack.any { it.id in triggerIds && !it.trigger }) planned.copy(stack = planned.stack.map { if (it.id in triggerIds) it.copy(trigger = true) else it }) else planned
         val seen = SystemClock.elapsedRealtime()
         for (s in st.stack) stackSeenAt.putIfAbsent(s.id, seen)
-        if (_shown.value?.revision != st.revision) TableLog.board("show", st, latest?.revision)
+        if (_shown.value?.revision != st.revision) { TableLog.board("show", st, latest?.revision); TableLog.decision(st) }
         _shown.value = st
         if (_afkNote.value == NAG && dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) == null) _afkNote.value = null
         _live.value = l != null && st.revision == l.revision && st.waitingOnMe && !_sending.value

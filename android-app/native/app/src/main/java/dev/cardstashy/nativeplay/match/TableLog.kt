@@ -20,4 +20,19 @@ object TableLog {
             "status=${st.status} input=${st.inputType} prompt=${p?.let { "${it.id} ${it.method} \"${it.message.take(60)}\" n=${it.options.size}" }} waitingOnMe=${st.waitingOnMe} " +
             st.players.joinToString(" ") { pl -> "seat${pl.id}[hand=${pl.handCount} field=${pl.battlefield.size} life=${pl.life}]" } + " stack=${st.stack.size}")
     }
+
+    /**
+     * Every field of a decision as the app read it, once per prompt or input (a scry arrives as a plain InputConfirm with "Top" / "Bottom"
+     * buttons and no prompt, so the buttons and input type go in too). A device run turns these lines into the test snapshots, e.g. table/snap-dock-scry1.json.
+     */
+    fun decision(st: MatchState) {
+        if (!on) return
+        val p = st.prompt
+        if (p == null && st.inputType == null) return
+        val b = st.buttons
+        line("decision rev=${st.revision} input=${st.inputType} buttons=ok:${b.ok}/${b.okEnabled} cancel:${b.cancel}/${b.cancelEnabled} " +
+            (p?.let { "prompt id=${it.id} method=${it.method} message=\"${it.rawMessage.take(200)}\" min=${it.min} max=${it.max} ordered=${it.ordered} topLabel=${it.topLabel} " +
+                "destinationIndexes=${it.destinationIndexes} sourceIndexes=${it.sourceIndexes} remaining=${it.remainingMin}..${it.remainingMax} supported=${it.supportedExact} cancelable=${it.cancelable} ack=${it.acknowledgeOnly} " +
+                "options=" + it.options.joinToString(";", "[", "]") { o -> "${o.index}:${o.label.take(40)}|kind=${o.kind}|zone=${o.zone}|card=${o.cardId}" } } ?: "prompt=null"))
+    }
 }
