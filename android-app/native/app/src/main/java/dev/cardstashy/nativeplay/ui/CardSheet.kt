@@ -6,6 +6,14 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -141,12 +149,9 @@ private fun JsonObject?.s(k: String) = this?.get(k)?.takeIf { it.isJsonPrimitive
 fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose: () -> Unit, startTab: String = "overview") {
     // Two screens (Randall 9 Nov, approved): this same sheet as one tall strip across both screens (see CollectionCardSheet).
     val part = LocalSpanPart.current
-    if (DualScreen.active && part == null) {
-        val span = remember(pick) { SheetSpan().also { it.tab.value = startTab; it.asked.value = pick.finish } }
-        TopScreen { androidx.compose.runtime.CompositionLocalProvider(LocalSpanPart provides (0 to span)) { CardSheet(pick, state, act, onClose, startTab) } }
-        BottomScreen { androidx.compose.runtime.CompositionLocalProvider(LocalSpanPart provides (1 to span)) { CardSheet(pick, state, act, onClose, startTab) } }
-        return
-    }
+    // Two screens (specs/thor-card-popup-dual.md, approved 10 Nov 14:48Z): the page uses the top screen's full width and the
+    // bottom screen is the card, whole, with its keys. The look is the same; only the placement changes.
+    if (DualScreen.active && part == null) { DualCardSheet(pick, state, act, onClose, startTab); return }
     val span = part?.second; val slice = part?.first
     val context = LocalContext.current
     val data = CardData.ready.collectAsState().value.also { if (it == null) CardData.warm(context) }
@@ -218,7 +223,7 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
                     "overview" -> run {
                         // Randall 6 Nov 01:41Z: a finish shows only when a copy is in it (or the card was opened in it), so a preview never reads as owned.
                         val mine = state?.let { Trunk.finishesOwned(it, name, shown.s("oracle_id").ifBlank { null }) + pick.finish }
-                        Overview(name, shown, faces, imgFaces, face, image, finish, data, state, owned, mine, act, { asked = it }, { face = 1 - face }, { rule = it }, { zoom = true }) { tab = "get" }
+                        Overview(name, shown, faces, imgFaces, face, image, finish, data, state, owned, mine, act, { asked = it }, { face = 1 - face }, { rule = it }, { zoom = true }, { tab = "get" })
                     }
                     "guide" -> Guide(shown, data) { rule = it }
                     else -> GetIt(name, shown, state, owned, act)
@@ -235,7 +240,7 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
                     "overview" -> item {
                         // Randall 6 Nov 01:41Z: a finish shows only when a copy is in it (or the card was opened in it), so a preview never reads as owned.
                         val mine = state?.let { Trunk.finishesOwned(it, name, shown.s("oracle_id").ifBlank { null }) + pick.finish }
-                        Overview(name, shown, faces, imgFaces, face, image, finish, data, state, owned, mine, act, { asked = it }, { face = 1 - face }, { rule = it }, { zoom = true }) { tab = "get" }
+                        Overview(name, shown, faces, imgFaces, face, image, finish, data, state, owned, mine, act, { asked = it }, { face = 1 - face }, { rule = it }, { zoom = true }, { tab = "get" })
                     }
                     "guide" -> item { Guide(shown, data) { rule = it } }
                     else -> item { GetIt(name, shown, state, owned, act) }
@@ -436,9 +441,12 @@ private val CardSheetTabs = listOf("overview" to "Overview", "guide" to "Play gu
 
 @Composable
 private fun Overview(name: String, shown: JsonObject, faces: List<JsonObject>, imgFaces: List<JsonObject>, face: Int, image: String?, finish: String, data: CardData?, state: JsonObject?,
-                     owned: Int, mine: Set<String>?, act: CardSheetActions, onFinish: (String) -> Unit, onFlip: () -> Unit, onRule: (CardData.Rule) -> Unit, onZoom: () -> Unit, onGet: () -> Unit) {
+                     owned: Int, mine: Set<String>?, act: CardSheetActions, onFinish: (String) -> Unit, onFlip: () -> Unit, onRule: (CardData.Rule) -> Unit, onZoom: () -> Unit, onGet: () -> Unit,
+                     /** Two screens: the bottom screen is the card, so the top shows no picture, no flip and no set line (pinned at its foot). */
+                     dual: Boolean = false) {
     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        SetLine(shown, state, act)
+        if (!dual) SetLine(shown, state, act)
+        if (!dual) run {
         // The card: drag across it to move the light (the phone's tilt moves it too); tap to enlarge.
         val look = data?.let { Foil.look(it, shown, finish) }
         // feel.js attachTilt + attachMotionTilt: the card leans to the finger or the phone, and its light (and foil) follows.
@@ -459,6 +467,7 @@ private fun Overview(name: String, shown: JsonObject, faces: List<JsonObject>, i
                 .pointerInput(Unit) { detectTapGestures(onLongPress = {}) { onZoom() } }.padCardTap(padSource, padPic) { zoomNow() }, shape = RoundedCornerShape(16.dp))
         }
         if (imgFaces.size > 1) GhostButton("↻ Flip to ${imgFaces[if (face == 0) 1 else 0].s("name")}", Modifier.fillMaxWidth(), onClick = onFlip)
+        }
         FinishRail(shown, finish, data, mine, onFinish)
         // card detail "Use as profile photo" (profile-art.js): opens the circle editor on this printing's art; never adds the card anywhere.
         val artCrop = (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("art_crop")?.ifBlank { null }
@@ -633,7 +642,9 @@ private fun StepBtn(label: String, enabled: Boolean, gold: Boolean, onClick: () 
 @Composable
 private fun PlayActions(name: String, shown: JsonObject, state: JsonObject?, n: Int, act: CardSheetActions, onGet: () -> Unit) {
     val decks = Trunk.decks(state)
-    var open by remember { mutableStateOf(false) }
+    val ownOpen = remember { mutableStateOf(false) }
+    val openState: androidx.compose.runtime.MutableState<Boolean> = LocalDecksOpen.current ?: ownOpen
+    var open by openState
     val scope = rememberCoroutineScope()
     Column(Modifier.fillMaxWidth().glass(RoundedCornerShape(14.dp)).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -782,3 +793,154 @@ private fun RuleCard(r: CardData.Rule, onClose: () -> Unit) {
     }
 }
 
+
+
+/** Two screens: the bottom screen's X "Add to deck" opens the deck list in the top screen's Overview. */
+private val LocalDecksOpen = androidx.compose.runtime.compositionLocalOf<androidx.compose.runtime.MutableState<Boolean>?> { null }
+
+/**
+ * The card view on two screens (specs/thor-card-popup-dual.md, Randall's yes 10 Nov 14:48Z; the look is locked, placement only).
+ * Top, full width: the art on the left 44 %, fading into the page; the eyebrow, title, type and tabs, then the tab, scrolling on
+ * its own (d-pad, finger), with the set progress pinned at the foot. Bottom: the whole card, fitted (WHOLE CARD, NEVER CUT), with
+ * its facts and keys: X the main action, Y the Art view, A flip (or zoom). LB/RB change the tab on top; B closes.
+ */
+@Composable
+private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose: () -> Unit, startTab: String) {
+    val context = LocalContext.current
+    val data = CardData.ready.collectAsState().value.also { if (it == null) CardData.warm(context) }
+    val prints by CardFacts.prints.collectAsState()
+    val facts by CardFacts.cards.collectAsState()
+    LaunchedEffect(pick) { pick.printId?.let { CardFacts.wantPrint(it) } ?: CardFacts.want(listOf(pick.oracle to null)) }
+    val shown: JsonObject? = pick.printId?.let { prints[it] } ?: facts[pick.oracle]?.card
+    var tab by remember(pick) { mutableStateOf(startTab) }
+    var asked by remember(pick) { mutableStateOf(pick.finish) }
+    var face by remember(pick) { mutableStateOf(0) }
+    var rule by remember { mutableStateOf<CardData.Rule?>(null) }
+    var zoom by remember { mutableStateOf<String?>(null) }   // "card" or "art"
+    val decksOpen = remember(pick) { mutableStateOf(false) }
+    BackHandler(enabled = rule == null && zoom == null) { onClose() }
+    FoilFocus.Cover()
+    val scroll = androidx.compose.foundation.rememberScrollState()
+    val scope = rememberCoroutineScope()
+    // The bottom's keys: what each does now (null: not drawn).
+    val finish = Foil.finishFor(shown, asked)
+    val name = shown?.s("name")?.ifBlank { null } ?: pick.name
+    val faces = shown?.getAsJsonArray("card_faces")?.mapNotNull { it as? JsonObject }?.takeIf { it.isNotEmpty() } ?: listOfNotNull(shown)
+    val imgFaces = faces.filter { it.getAsJsonObject("image_uris") != null }
+    val owned = shown?.let { Trunk.owned(state, name, it.s("oracle_id").ifBlank { null }).coerceAtMost(4) } ?: 0
+    val flip: (() -> Unit)? = if (imgFaces.size > 1) ({ face = 1 - face }) else null
+    val xAct: PadAct? = when {
+        shown == null -> null
+        act.edit != null -> PadAct("Add a copy") { act.edit.step(name, 1) }
+        owned < 4 -> PadAct(if (owned > 0) "Get more" else "Get it") { tab = "get"; scope.launch { scroll.animateScrollTo(0) } }
+        Trunk.decks(state).isNotEmpty() -> PadAct("Add to deck") { tab = "overview"; decksOpen.value = true }
+        else -> null
+    }
+    val heroArt = shown?.let { sh -> (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("art_crop")?.ifBlank { null }
+        ?: sh.getAsJsonObject("image_uris")?.s("art_crop")?.ifBlank { null } ?: faces.firstOrNull()?.getAsJsonObject("image_uris")?.s("art_crop") }
+    val yAct: PadAct? = heroArt?.takeIf { it.isNotBlank() }?.let { PadAct("Art view") { zoom = "art" } }
+    val aAct: PadAct = if (flip != null) PadAct("Flip", flip) else PadAct("Zoom") { zoom = "card" }
+    PadScreen(remember(pick, xAct?.label, yAct?.label, aAct.label) { PadActs(b = "Close", opaque = true, x = xAct, y = yAct,
+        tabs = { d -> val i = CardSheetTabs.indexOfFirst { it.first == tab }.coerceAtLeast(0); tab = CardSheetTabs[(i + d).coerceIn(0, CardSheetTabs.lastIndex)].first }) })
+
+    TopScreen {
+        Box(Modifier.fillMaxSize().background(Rule.Color.Bg)) {
+            if (shown == null) { Loading(pick.name) { onClose() }; return@Box }
+            val f = faces.getOrElse(face) { faces[0] }
+            Row(Modifier.fillMaxSize()) {
+                // The art, edge to edge down the left, melting into the page on its right edge.
+                val p = heroPainter(heroArt?.let(homeArt))
+                Box(Modifier.fillMaxHeight().weight(.44f)) {
+                    if (p != null) Image(p, null, Modifier.fillMaxSize()
+                        .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+                        .drawWithContent { drawContent(); drawRect(Brush.horizontalGradient(0f to Color.Black, .72f to Color.Black, 1f to Color.Transparent), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn) },
+                        contentScale = ContentScale.Crop)
+                }
+                Column(Modifier.weight(.56f).fillMaxHeight().windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.safeDrawing.only(
+                    androidx.compose.foundation.layout.WindowInsetsSides.End + androidx.compose.foundation.layout.WindowInsetsSides.Vertical))) {
+                    // The page scrolls inside the right column (d-pad up and down, or a finger); the art stays put. A on the page is the bottom's A.
+                    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+                    var self by remember { mutableStateOf(false) }
+                    LaunchedEffect(Unit) { androidx.compose.runtime.withFrameNanos { }; runCatching { focus.requestFocus() } }
+                    Column(Modifier.weight(1f).fillMaxWidth().focusRequester(focus).onFocusChanged { self = it.isFocused }
+                        .onPreviewKeyEvent { e ->
+                            val k = e.nativeKeyEvent.keyCode; val down = e.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN
+                            when {
+                                k == android.view.KeyEvent.KEYCODE_DPAD_UP || k == android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+                                    if (down) scope.launch { scroll.animateScrollBy(if (k == android.view.KeyEvent.KEYCODE_DPAD_DOWN) 260f else -260f) }; true }
+                                self && (k == android.view.KeyEvent.KEYCODE_BUTTON_A || k == android.view.KeyEvent.KEYCODE_DPAD_CENTER) -> { if (down && e.nativeKeyEvent.repeatCount == 0) aAct.run?.invoke(); true }
+                                else -> false
+                            }
+                        }.focusable().verticalScroll(scroll).padding(top = 22.dp, end = 8.dp)) {
+                        Column(Modifier.padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(listOf(shown.s("set_name").ifBlank { shown.s("set").uppercase() }, RARITY[shown.s("rarity")] ?: shown.s("rarity")).filter { it.isNotBlank() }.joinToString(" · ").uppercase(),
+                                style = t(11f, FontWeight.Bold, Site.Gold).copy(letterSpacing = 1.4.sp))
+                            Row(verticalAlignment = Alignment.Top) {
+                                Text(name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 24.sp, lineHeight = 28.sp, color = Ink), modifier = Modifier.weight(1f))
+                                ManaCost(f.s("mana_cost").ifBlank { shown.s("mana_cost") }, 20.dp, Modifier.padding(top = 4.dp))
+                            }
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(f.s("type_line").ifBlank { shown.s("type_line") }, style = t(14f, color = Rule.Color.Muted))
+                                Text("Play · $owned of 4", style = t(12f, FontWeight.Bold, Site.Gold), modifier = Modifier.clip(Rule.Radius.Pill)
+                                    .background(Rule.Color.Gold.copy(alpha = .12f)).border(1.dp, Rule.Color.GoldEdge, Rule.Radius.Pill).padding(horizontal = 9.dp, vertical = 2.dp))
+                            }
+                        }
+                        Tabs(tab) { tab = it }
+                        androidx.compose.runtime.CompositionLocalProvider(LocalDecksOpen provides decksOpen) {
+                            when (tab) {
+                                "overview" -> {
+                                    val mine = state?.let { Trunk.finishesOwned(it, name, shown.s("oracle_id").ifBlank { null }) + pick.finish }
+                                    Overview(name, shown, faces, imgFaces, face, null, finish, data, state, owned, mine, act, { asked = it }, { face = 1 - face }, { rule = it }, { zoom = "card" }, { tab = "get" }, dual = true)
+                                }
+                                "guide" -> Guide(shown, data) { rule = it }
+                                else -> GetIt(name, shown, state, owned, act)
+                            }
+                        }
+                        Spacer(Modifier.height(16.dp))
+                    }
+                    // More below: the page fades out above the set card instead of ending on a cut row.
+                    if (scroll.canScrollForward) Box(Modifier.fillMaxWidth().height(0.dp).drawBehind { val h = 28.dp.toPx(); drawRect(Brush.verticalGradient(listOf(Color.Transparent, Rule.Color.Bg), startY = -h, endY = 0f), topLeft = Offset(0f, -h), size = androidx.compose.ui.geometry.Size(size.width, h)) })
+                    // The set progress, pinned at the foot of the page.
+                    Box(Modifier.padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 12.dp)) { SetLine(shown, state, act) }
+                }
+            }
+            rule?.let { RuleCard(it) { rule = null } }
+        }
+    }
+
+    // The bottom screen is the card: whole, fitted, never under the hint bar; its facts and keys beside it.
+    BottomScreen {
+        if (shown == null) return@BottomScreen
+        val image = (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("normal")?.ifBlank { null }
+            ?: shown.getAsJsonObject("image_uris")?.s("normal")?.ifBlank { null } ?: faces.firstOrNull()?.getAsJsonObject("image_uris")?.s("normal")
+        val look = data?.let { Foil.look(it, shown, finish) }
+        val shines = look?.takeIf { it.shines }
+        val tilt = rememberFoilTilt(live = look?.recipe != null)
+        val buttons = listOfNotNull(
+            xAct?.let { CaseButton("X", it.label, gold = true) { it.run?.invoke() } },
+            yAct?.let { CaseButton("Y", it.label) { it.run?.invoke() } },
+            CaseButton("A", aAct.label) { aAct.run?.invoke() })
+        ShowcaseCase("This card", name, buttons = buttons, heroWeight = .5f, scroll = false, hero = if (image == null) null else { {
+            FittedCard(Modifier.fillMaxSize(), margin = 12.dp) { m -> CardPicture(image, shines, tilt, m, shape = CardCorner) }
+        } }) {
+            Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
+                CaseFact("In Trunk", "$owned of 4")
+                CaseFact("Finish", FINISH_NAME[finish] ?: finish.replaceFirstChar { it.uppercase() })
+            }
+        }
+    }
+
+    if (zoom != null && shown != null) {
+        val image = (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("normal")?.ifBlank { null }
+            ?: shown.getAsJsonObject("image_uris")?.s("normal")?.ifBlank { null } ?: faces.firstOrNull()?.getAsJsonObject("image_uris")?.s("normal")
+        val hi = (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("png")?.ifBlank { null }
+            ?: shown.getAsJsonObject("image_uris")?.s("png")?.ifBlank { null }
+        val f = faces.getOrElse(face) { faces[0] }
+        if (image != null) TopScreen {
+            CardZoom(image, hi, heroArt, data?.let { Foil.look(it, shown, finish) },
+                gallery = heroArt?.takeIf { it.isNotBlank() }?.let { a -> Gallery(listOf(galleryPiece(a, f.s("name").ifBlank { name },
+                    f.s("artist").ifBlank { shown.s("artist") }, f.s("flavor_text").ifBlank { shown.s("flavor_text") }, shown))) },
+                startArt = zoom == "art") { zoom = null }
+        }
+    }
+}

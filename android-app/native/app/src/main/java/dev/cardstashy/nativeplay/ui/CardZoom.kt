@@ -80,7 +80,7 @@ private class View(val label: String, val src: String, val hi: String?, val effe
 @Composable
 fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, finish: dev.cardstashy.nativeplay.foil.CardFinish? = null,
              /** Two screens: the Art view is the Gallery (specs/thor-gallery-native.md), the painting up top and its museum label below. */
-             gallery: Gallery? = null, onClose: () -> Unit) {
+             gallery: Gallery? = null, startArt: Boolean = false, onClose: () -> Unit) {
     BackHandler(onBack = onClose)
     val views = remember(src, hi, art) {
         val h = (hi?.ifBlank { null } ?: if (src.contains("scryfall.io")) scryfallHi(src) else null)?.takeIf { it != src }
@@ -89,7 +89,7 @@ fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, finish: d
             if (!art.isNullOrBlank()) add(View("Art", art, null, effects = false, art = true))
         }
     }
-    var view by remember { mutableIntStateOf(0) }
+    var view by remember { mutableIntStateOf(if (startArt) views.indexOfFirst { it.art }.coerceAtLeast(0) else 0) }
     val v = views[view]
     val scope = rememberCoroutineScope()
     val hostView = LocalView.current
