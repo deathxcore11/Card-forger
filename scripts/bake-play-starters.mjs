@@ -7,6 +7,7 @@
 import {readFile, writeFile, mkdir} from 'node:fs/promises';
 import {dirname, join} from 'node:path';
 
+import {addPrintingIds} from './precon-printing-ids.mjs';
 const PICKS = [
   {key: 'fin-ub', home: 'fin', file: 'starter-kit-std/fin/Blue-Black.txt', name: 'Blue-Black', product: 'Final Fantasy Starter Kit', format: 'Standard', face: "Sephiroth, Planet's Heir", plan: 'Graveyard and removal'},
   {key: 'fin-rw', home: 'fin', file: 'starter-kit-std/fin/Red-White.txt', name: 'Red-White', product: 'Final Fantasy Starter Kit', format: 'Standard', face: "Cloud, Planet's Champion", plan: 'Equipment aggro'},
@@ -70,6 +71,7 @@ for (const p of PICKS) {
   const size = rows.reduce((t, r) => t + r.qty, 0);
   if (size !== (p.format === 'Commander' ? 100 : 60)) throw Error(`${p.name}: ${size} cards`);
   await printRows(rows, p.home);
+  await addPrintingIds(rows);
   const {file, ...meta} = p;
   const {home, ...pub} = meta;
   decks.push({...pub, released, rows});

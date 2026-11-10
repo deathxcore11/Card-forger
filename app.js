@@ -1694,9 +1694,9 @@ const PLAY_SINGLETON=['Commander','Standard Brawl','Oathbreaker'];
 // The free Commander precons live only in the Play deck pickers (Practice, Quick Play, Multiplayer),
 // never in Decks or the Trunk, and always play (Randall 4 Nov 00:40Z; data/play-starters/precons.json).
 let freePrecons=null;
-function loadFreePrecons(){if(freePrecons)return;freePrecons=[];fetchJSON('/data/play-starters/precons.json').then(j=>{freePrecons=(j?.decks||[]).filter(d=>d.format==='Commander').map(d=>({id:'free:'+d.key,name:d.name,format:'Commander',commander:d.rows.find(r=>r.commander)?.name||'',cards:d.rows.map(r=>({name:r.name,qty:r.qty})),side:[],free:true,unlocked:true}));if(S.ui.view==='play')refreshPlayMenu();}).catch(()=>{freePrecons=null;});}
+function loadFreePrecons(){if(freePrecons)return;freePrecons=[];fetchJSON('/data/play-starters/precons.json').then(j=>{freePrecons=(j?.decks||[]).filter(d=>d.format==='Commander').map(d=>({id:'free:'+d.key,name:d.name,format:'Commander',commander:d.rows.find(r=>r.commander)?.name||'',cards:d.rows.map(r=>({name:r.name,qty:r.qty,...(r.id?{printingId:r.id}:{})})),side:[],free:true,unlocked:true}));if(S.ui.view==='play')refreshPlayMenu();}).catch(()=>{freePrecons=null;});}
 function playTableDecks(){let st={};try{st=playEcon.snapshot().state||{};}catch{}const owned=ownedByName(st.cards||[]);if(st.wallet)loadFreePrecons();
- return [...(st.decks||[]).map(d=>{const row=r=>({name:String(r.name||''),qty:Math.max(1,r.qty|0)}),cards=(d.cards||[]).filter(r=>r.board!=='side').map(row),side=(d.cards||[]).filter(r=>r.board==='side').map(row),format=d.format||'Standard';
+ return [...(st.decks||[]).map(d=>{const row=r=>({name:String(r.name||''),qty:Math.max(1,r.qty|0),...(r.id?{printingId:String(r.id)}:{})}),cards=(d.cards||[]).filter(r=>r.board!=='side').map(row),side=(d.cards||[]).filter(r=>r.board==='side').map(row),format=d.format||'Standard';
   const commander=PLAY_SINGLETON.includes(format)?(cards.find(r=>r.qty===1&&/Legendary.*(Creature|Planeswalker)/.test(meta(r.name)?.type_line||''))?.name||''):'';
   return {id:d.id,name:d.name||'Untitled deck',format,commander,cards,side,unlocked:deckShortfall(cards,owned,new Map()).complete};}),
   ...(freePrecons||[]),

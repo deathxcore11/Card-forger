@@ -14,6 +14,7 @@ assert.equal(data.decks.filter(d => d.format === 'Commander').length, 10, 'ten C
 for (const d of data.decks) {
   for (const r of d.rows) if (r.was) assert.ok(Object.entries(data.swaps).some(([real, stand]) => real === r.was && stand === r.name), d.name + ': ' + r.name + ' was must name the real card it stands in for');
   for (const r of d.rows) assert.ok(r.set && /^[0-9A-Za-z★†-]+$/.test(r.number || ''), d.name + ': ' + r.name + ' needs a set and collector number (the deck view finds art by them)');
+  for (const r of d.rows) assert.ok(/^[0-9a-f]{8}-[0-9a-f-]{27}$/.test(r.id || ''), d.name + ': ' + r.name + ' needs its exact printing id (a precon shows the art it came with, not the newest reprint)');
   assert.equal(d.rows.reduce((n, r) => n + r.qty, 0), d.format === 'Commander' ? 100 : 60, d.name);
   const commander = d.rows.find(r => r.commander)?.name || '';
   assert.equal(!!commander, d.format === 'Commander', d.name + ': a commander only in Commander');
