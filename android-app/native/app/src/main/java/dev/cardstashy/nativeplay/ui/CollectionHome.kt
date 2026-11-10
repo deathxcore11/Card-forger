@@ -320,7 +320,8 @@ private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (
         Column(Modifier.fillMaxWidth()) {
             // The status bar and the bar float on the art; a short scrim keeps them readable (as on Play's hero).
             Box(Modifier.fillMaxWidth()) {
-                Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = .45f), Color.Transparent))))
+                // Light: the site's light .topbar (settings-theme.css 49), so the rail, the bar and the dark status icons read as one (U12).
+                Box(Modifier.matchParentSize().then(if (AppSettings.theme == "light") Modifier.background(Rule.Color.Bar) else Modifier.background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = .45f), Color.Transparent)))))
                 Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { top(if (wide) ({ GameTabs(m.game, act.game, compact = false, Modifier.widthIn(max = 560.dp)) }) else null) }
             }
             Column(Modifier.fillMaxWidth().padding(horizontal = gutter).padding(top = if (wide) 22.dp else 10.dp, bottom = 28.dp)) {
@@ -438,7 +439,7 @@ private fun SearchPill(prompt: String, hints: SearchHints?, onClick: () -> Unit,
         }
     }
     Box(modifier.fillMaxWidth().heightIn(min = 76.dp).shadow(10.dp, shape, ambientColor = Color.Black.copy(alpha = .2f), spotColor = Color.Black.copy(alpha = .27f))
-        .clip(shape).background(cssGradient(120f, 0f to Color(0xE81B202D), 1f to Color(0xEF131720)))
+        .clip(shape).then(if (AppSettings.theme == "light") Modifier.background(Rule.Color.Surface) else Modifier.background(cssGradient(120f, 0f to Color(0xE81B202D), 1f to Color(0xEF131720))))
         .border(1.dp, gold.copy(alpha = .70f), shape)
         .drawWithContent {
             drawContent()
@@ -470,7 +471,7 @@ private fun Today(card: DailyCard, game: CardGame, screen: Dp, act: CollectionHo
     Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
         Column(Modifier.clip(RoundedCornerShape(10.dp)).clickable { act.daily(card) }.semantics { contentDescription = "Explore ${card.name}, Card of the Day" }
             .padding(top = 8.dp, end = 42.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(card.label, style = sans(11f, FontWeight.Bold, HGold, lh = 1.4f, ls = .66f).copy(shadow = Shadow(Color(0x99000000), Offset(0f, 2f), 18f)))
+            Text(card.label, style = sans(11f, FontWeight.Bold, LocalGameGold.current, lh = 1.4f, ls = .66f).copy(shadow = Shadow(Color(0x99000000), Offset(0f, 2f), 18f)))
             // #homeToday .hh-credit b: clamp(19px, 5vw, 24px), Manrope 800.
             Text(card.name, style = manrope((screen.value * .05f).coerceIn(19f, 24f), FontWeight.ExtraBold, Color.White, lh = 1.15f, ls = -.035f)
                 .copy(shadow = Shadow(Color(0xCC000000), Offset(0f, 2f), 12f)))

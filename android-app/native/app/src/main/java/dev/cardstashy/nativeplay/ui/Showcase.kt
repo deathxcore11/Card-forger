@@ -145,7 +145,7 @@ private fun Plaque(eyebrow: String, title: String, trailing: (@Composable () -> 
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(eyebrow.uppercase(), style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = .16.em, color = Gold), maxLines = 1)
-            val long = title.length > 24
+            val long = title.length > 24 || (trailing != null && title.length > 14) // U14c: beside the purse a title has ~230 dp; wrap, never "The Dawn O…"
             Text(title, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = if (long) 17.sp else 20.sp, lineHeight = if (long) 20.sp else 24.sp, color = Ink),
                 maxLines = if (long) 2 else 1, overflow = TextOverflow.Ellipsis)
         }
@@ -166,7 +166,10 @@ private fun CaseButtonView(b: CaseButton, modifier: Modifier) {
             Box(Modifier.size(26.dp).clip(CircleShape).background(if (b.gold && b.enabled) Color(0xFF1A1206) else Color(0x66000000)).border(1.5.dp, c, CircleShape),
                 contentAlignment = Alignment.Center) { Text(k, style = TextStyle(fontWeight = FontWeight.ExtraBold, fontSize = 13.sp, color = c)) }
         }
-        Text(b.label, style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = ink), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        // One line, whole words (U15: "Achievemen…" on the Thor): the label steps down to fit its button, to 12 at least.
+        androidx.compose.foundation.text.BasicText(b.label, style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = ink),
+            maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
+            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 12.sp, maxFontSize = 16.sp, stepSize = .5.sp))
     }
 }
 

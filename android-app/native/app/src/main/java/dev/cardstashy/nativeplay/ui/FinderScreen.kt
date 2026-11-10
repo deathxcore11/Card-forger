@@ -160,7 +160,11 @@ fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (De
         ShowcaseLens(on) { pair ->
             if (pair != null) { val (a, row) = pair
                 FinderDeckCase(row, a.name.ifEmpty { row.name }, onOpen = { ui.open = row.list }) { use(row.list, row.complete) } }
-            else ShowcaseCase("Build a deck · ${ui.format}", if (ui.busy) "Counting decks" else "${"%,d".format(counts["all"] ?: 0)} decks") {
+            // While the format loads, the lists already fetched this session give the count at once (U11). On two screens
+            // Start empty is this case's button, not a row on the top screen.
+            else ShowcaseCase("Build a deck · ${ui.format}", if (!ui.busy) "${"%,d".format(counts["all"] ?: 0)} decks"
+                else MetaLists.cached(ui.format)?.let { "${"%,d".format(it.size)} decks" } ?: "Counting decks",
+                buttons = if (embedded) emptyList() else listOf(CaseButton(null, "Start empty") { onUse(DeckEdit.Edit(null, "", "Standard", emptyList()), false) })) {
                 val inTrunk = counts["trunk"] ?: 0; val craft = counts["craftable"] ?: 0
                 // Counts first when there is something to count; when both are 0 the purse and the missing cards lead, and the zeros
                 // become one quiet line.
@@ -183,6 +187,7 @@ fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (De
             }
         }
     }
+    var sorting by remember { mutableStateOf(false) }
     Box(Modifier.fillMaxSize().then(if (embedded) Modifier else Modifier.background(Site.Bg))) {
         if (!embedded) Backdrop() // #ambient: the shared art (glass on, or Aura)
         LazyColumn(Modifier.fillMaxSize().then(if (embedded) Modifier else Modifier.windowInsetsPadding(WindowInsets.statusBars)), state = if (embedded) ui.list else rememberLazyListState(),
@@ -190,20 +195,21 @@ fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (De
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (!embedded) { PageHeader("Build a deck", "Play", onBack = onBack)
-                        PlayMath.purse(state)?.let { PurseRow(it, level = PlayMath.mastery(state, it.xp)) } }
+                        // On two screens the purse is the bottom case's (no content twice).
+                        if (!DualScreen.active) PlayMath.purse(state)?.let { PurseRow(it, level = PlayMath.mastery(state, it.xp)) } }
                     // One filter bar (Randall 5 Nov 18:53Z), as on Precons: formats in one sideways row, the deck filters in the next,
                     // then the count with Sort as a chip of the same height.
                     ShelfRow { items(Finder.FORMATS, key = { it }) { f -> ShelfChip(f, f == ui.format) { if (f != ui.format) { ui.format = f; ui.limit = 8 } } } }
-                    if (!embedded) GhostButton("Start empty") { onUse(DeckEdit.Edit(null, "", "Standard", emptyList()), false) }
-                    ShelfRow { items(Finder.FILTERS, key = { it.first }) { (k, l) ->
-                        ShelfChip(l, k == ui.filter, counts[k], Modifier.alpha(if (k == "craftable" && rarityBusy) .7f else 1f), leading = when (k) {
-                            "trunk" -> { { Text("✓", style = t(13.5f, FontWeight.Bold, if (k == ui.filter) Site.Gold else Site.Muted)) } }
-                            "craftable" -> { { SealMini("r", 16.dp) } }
-                            else -> null }) { ui.filter = k; ui.limit = 8 } } }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("${"%,d".format(ranked.size)} deck${if (ranked.size == 1) "" else "s"}", style = t(13f, color = Site.Muted), modifier = Modifier.weight(1f))
-                        ShelfSort(Finder.SORTS.firstOrNull { it.first == ui.sort }?.second ?: Finder.SORTS.first().second) {
-                            val i = Finder.SORTS.indexOfFirst { it.first == ui.sort }; ui.sort = Finder.SORTS[(i + 1) % Finder.SORTS.size].first; ui.limit = 8 }
+                    if (!embedded && !DualScreen.active) GhostButton("Start empty") { onUse(DeckEdit.Edit(null, "", "Standard", emptyList()), false) }
+                    // U11: filters and Sort share one sideways row so deck rows show on the Thor's 540 dp top screen. Each filter chip
+                    // carries its own count (the old "N decks" line repeated it), and Sort opens the one sheet.
+                    ShelfRow {
+                        items(Finder.FILTERS, key = { it.first }) { (k, l) ->
+                            ShelfChip(l, k == ui.filter, counts[k], Modifier.alpha(if (k == "craftable" && rarityBusy) .7f else 1f), leading = when (k) {
+                                "trunk" -> { { Text("✓", style = t(13.5f, FontWeight.Bold, if (k == ui.filter) Site.Gold else Site.Muted)) } }
+                                "craftable" -> { { SealMini("r", 16.dp) } }
+                                else -> null }) { ui.filter = k; ui.limit = 8 } }
+                        item(key = "sort") { ShelfSort(Finder.SORTS.firstOrNull { it.first == ui.sort }?.second ?: Finder.SORTS.first().second) { sorting = true } }
                     }
                     var q by remember { mutableStateOf(ui.query) }
                     LaunchedEffect(q) { delay(250); ui.query = q; ui.limit = 8 }
@@ -224,6 +230,7 @@ fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (De
             if (archs.size > ui.limit) item { GhostButton("More decks", Modifier.fillMaxWidth()) { ui.limit += 8 } }
         }
         if (!embedded) Box(Modifier.align(Alignment.BottomCenter)) { nav() }
+        if (sorting) RuleMenu("Sort decks", Finder.SORTS.map { (k, l) -> RuleRow(l, on = k == ui.sort) { if (k != ui.sort) { ui.sort = k; ui.limit = 8 } } }) { sorting = false }
     }
 }
 

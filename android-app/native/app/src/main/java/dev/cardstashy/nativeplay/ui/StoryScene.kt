@@ -23,7 +23,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsIgnoringVisibility
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
@@ -66,6 +66,7 @@ import kotlinx.coroutines.flow.first
  * centred, whisper and offstage lines in italics. One line types out at 2 characters per 18 ms; a tap completes the line, then
  * goes on; Skip closes it. Reduced motion (Minimal effects) shows each line whole. [onDone] fires once, when the scene closes.
  */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun StoryScene(lines: List<JsonObject>, cast: JsonObject?, leftWho: String, rightWho: String, avatarUrl: String?, title: String, onDone: () -> Unit) {
     fun person(who: String?) = cast?.getAsJsonObject(who ?: "")
@@ -92,7 +93,9 @@ fun StoryScene(lines: List<JsonObject>, cast: JsonObject?, leftWho: String, righ
     if (lines.isEmpty()) return
     // Controller: the scene owns the pad over the match. A on the speech box goes on, as a tap anywhere does; X is the Skip button
     // (Randall 10 Nov: two prompts both said "Next"). B skips as well, instead of reaching the match menu under the scene.
-    PadScreen(PadActs(x = PadAct("Skip") { close() }, b = "Skip", opaque = true))
+    // U14a: an X still coming from the "Duel" press that opened the match must not skip the scene before a line is read.
+    val opened = remember { android.os.SystemClock.uptimeMillis() }
+    PadScreen(PadActs(x = PadAct("Skip") { if (android.os.SystemClock.uptimeMillis() - opened > 700) close() }, b = "Skip", opaque = true))
     androidx.activity.compose.BackHandler(Pad.connected.collectAsState().value) { close() }
     // Bottom screen (W3): the lines already spoken, newest last, so the thread is never lost; Next and Skip with their keys.
     // The top keeps the portraits and the line, and gives its Skip pill to the bottom.
@@ -121,7 +124,7 @@ fun StoryScene(lines: List<JsonObject>, cast: JsonObject?, leftWho: String, righ
     val speech = remember { MutableInteractionSource() }
     // A third speaker stands with whoever they sit nearest: the right (villain) side if it is the villain's line.
     val right = who != null && !stage && who == rightWho
-    val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(); val bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(); val bottom = WindowInsets.navigationBarsIgnoringVisibility.asPaddingValues().calculateBottomPadding() // U14b: bars hidden in a match still come back over the foot
     // The tap-anywhere layer stays a touch target only; the controller's stop is the speech box below (no full-screen ring).
     BoxWithConstraints(Modifier.fillMaxSize().padLayer().alpha(fade).background(Color(0xFF0B0C10)).focusProperties { canFocus = false }.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { next() }) {
         val (bgUrl, bgAlign) = face(rightWho).let { if (it.first != null) it else face(leftWho) }

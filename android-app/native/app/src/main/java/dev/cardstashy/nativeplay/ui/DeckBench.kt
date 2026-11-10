@@ -242,6 +242,8 @@ class BenchUi {
     internal var setGridFor: String? = null
     /** Play's ⋯ dropdown is open (here so the controller's Start opens it too). */
     var menu by mutableStateOf(false)
+    /** Two screens: the deck or browser card the ring is on (its case on the bottom screen), null when the ring is elsewhere. */
+    var ring by mutableStateOf<FocusCard?>(null)
 }
 
 /** LB/RB: the tab [d] steps from [on] in [keys], skipping those [here] says open elsewhere; null at either end. */
@@ -285,8 +287,16 @@ private fun cardPad(m: BenchModel, key: String, ref: String, name: String, qty: 
 /** A deck row's controller stop ([cardPad]); a sideboard row (fixed) only opens its card, as its tap does. */
 @Composable
 private fun Modifier.rowPad(m: BenchModel, r: BenchRow, ui: BenchUi, a: BenchActions): Modifier =
-    if (r.fixed) padTap(PadActs(a = "Open")) { a.open(r.key) }
-    else cardPad(m, r.key, r.ref, r.name, r.qty, ui, a).let { (acts, onA) -> padTap(acts, onA) }
+    if (r.fixed) benchRing(ui, FocusCard(r.name, r.image, actions = listOf(PadAct("Open") { a.open(r.key) }))).padTap(PadActs(a = "Open")) { a.open(r.key) }
+    else cardPad(m, r.key, r.ref, r.name, r.qty, ui, a).let { (acts, onA) -> benchRing(ui, caseOf(r.name, r.image, r.qty, acts, onA)).padTap(acts, onA) }
+
+/** Two screens (U10): the ring on this card puts its case on the bottom screen ([BenchBottom]); leaving it takes the case away. */
+private fun Modifier.benchRing(ui: BenchUi, card: FocusCard): Modifier = if (!DualScreen.active) this else onFocusChanged { f ->
+    if (f.isFocused) ui.ring = card else if (ui.ring?.name == card.name) ui.ring = null }
+
+/** The case's buttons are the pad's own on this card: A first (what A does here), then X when there is one. */
+private fun caseOf(name: String, image: String, inDeck: Int, acts: PadActs, onA: () -> Unit) =
+    FocusCard(name, image, owned = if (inDeck > 0) "$inDeck in the deck" else null, actions = listOfNotNull(PadAct(acts.a ?: "Inspect", onA), acts.x))
 const val SPLIT_EVEN = .40f
 const val SPLIT_MIN = .12f
 const val SPLIT_MAX = .80f
@@ -402,7 +412,7 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
     // Controller (PadPrompts): X the gold button (Save; Collection's Practice / War Chest), LB/RB the deck's tabs, LT/RT a page of the
     // list or grid under the ring (six d-pad steps, as the bar says), Start the ⋯ menu.
     val focus = LocalFocusManager.current
-    BottomScreen { BenchBottom(m) }
+    BottomScreen { BenchBottom(m, ui) }
     PadScreen(PadActs(x = a.save?.takeIf { m.canSave && !m.busy }?.let { PadAct(a.saveLabel, it) },
         tabs = if (m.tabs.size > 1) ({ d -> padTab(m.tabs.map { it.first }, ui.tab, d, a.drawn)?.let { k -> ui.peek = null; if (a.tab?.invoke(k) != false) ui.tab = k } }) else null,
         page = { d -> repeat(6) { focus.moveFocus(if (d > 0) FocusDirection.Down else FocusDirection.Up) } },
@@ -430,7 +440,8 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
         val wash = heroPainter(m.heroArt?.let(homeArt))
         if (wash != null) Image(wash, null, Modifier.fillMaxSize().scale(1.15f).blur(46.dp).alpha(.32f), contentScale = ContentScale.Crop)
         val lift = { haptic.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate) }
-        val bars = if (land) Modifier else Modifier.windowInsetsPadding(WindowInsets.statusBars).windowInsetsPadding(WindowInsets.navigationBars)
+        // The status bar is always kept clear (U10: on the Thor's 960x540 top screen, land, Save and ⋯ ran under the clock).
+        val bars = Modifier.windowInsetsPadding(WindowInsets.statusBars).then(if (land) Modifier else Modifier.windowInsetsPadding(WindowInsets.navigationBars))
         if (split) Row(Modifier.fillMaxSize().then(bars)) {
             // Another tab (War Chest, Power, Rules, Versions) opens in the big side, where the collection was; the deck stays beside it.
             Box(Modifier.weight(1f).fillMaxHeight()) { if (ui.tab == "cards") Browser(m, ui, a, drag, browserSwitch, cols = if (land) 0 else -1, lift, onFilter) else tabBody(ui.tab) }
@@ -1226,7 +1237,7 @@ private fun Tile(m: BenchModel, t: BenchTile, ui: BenchUi, a: BenchActions, drag
         Box(Modifier.fillMaxWidth().aspectRatio(63f / 88f)) {
             Box(Modifier.fillMaxSize().shadow(8.dp, CARD, spotColor = Color.Black).clip(CARD).background(B.Panel)
                 .dualFocus(FocusCard(t.name, t.image, owned = if (t.inDeck > 0) "${t.inDeck} in the deck" else null))
-                .benchCard(drag, t.key, t.image, "coll", lift) { ui.peek = t.key }.then(cardPad(m, t.key, t.key, t.name, t.inDeck, ui, a, known = t.room).let { (acts, onA) -> Modifier.padTap(acts, onA) })
+                .benchCard(drag, t.key, t.image, "coll", lift) { ui.peek = t.key }.then(cardPad(m, t.key, t.key, t.name, t.inDeck, ui, a, known = t.room).let { (acts, onA) -> Modifier.benchRing(ui, caseOf(t.name, t.image, t.inDeck, acts, onA)).padTap(acts, onA) })
                 .semantics { contentDescription = t.name }) {
                 if (img != null) Image(img, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop,
                     colorFilter = if (t.locked) ColorFilter.colorMatrix(GREY) else null)
@@ -1238,7 +1249,7 @@ private fun Tile(m: BenchModel, t: BenchTile, ui: BenchUi, a: BenchActions, drag
             val can = t.room > 0
             // The whole 44 dp takes the tap; the button draws at .82 of it, from the bottom right corner.
             Box(Modifier.align(Alignment.BottomEnd).padding(end = 2.dp, bottom = 2.dp).size(44.dp).clip(CircleShape)
-                .clickable(enabled = can) { a.step(t.key, 1); ui.pop = t.key; ui.popAt = System.nanoTime() }
+                .focusProperties { canFocus = false }.clickable(enabled = can) { a.step(t.key, 1); ui.pop = t.key; ui.popAt = System.nanoTime() }
                 .semantics { contentDescription = "Add ${t.name} to the deck"; role = Role.Button }, contentAlignment = Alignment.BottomEnd) {
                 Box(Modifier.size(36.dp).shadow(6.dp, CircleShape, spotColor = Color(0x99000000)).clip(CircleShape)
                     .background(if (can) Brush.verticalGradient(listOf(Color(0xFFF2D18E), Color(0xFFC99A4B))) else Brush.verticalGradient(listOf(Color(0xFF5E5850), Color(0xFF443F38))))
@@ -1383,7 +1394,9 @@ private fun EmbRow(emb: List<TcgEmb>) = Row(Modifier.clip(RoundedCornerShape(99.
  * a new row when it isn't in the deck yet.
  */
 @Composable
-private fun BenchBottom(m: BenchModel) {
+private fun BenchBottom(m: BenchModel, ui: BenchUi) {
+    // The ring on a card (U10): that card's case, its buttons the ones the pad does on it. No ring: the deck's summary below.
+    ui.ring?.let { FocusedCardView(it); return }
     val on = DualScreen.focus?.name
     Row(Modifier.fillMaxSize().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {

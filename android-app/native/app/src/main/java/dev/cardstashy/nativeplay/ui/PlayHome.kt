@@ -1336,7 +1336,7 @@ internal fun StoryBottom(a: PlayRules.Act, data: JsonObject?, p: dev.cardstashy.
         return
     }
     val won = L.actWon(p, a.act); val stars = L.actStars(p, a.act)
-    ShowcaseCase("Story · Act ${a.act}", a.name, trailing = wallet, buttons = listOfNotNull(cta), heroWeight = .4f,
+    ShowcaseCase("Story · Act ${a.act}", a.name, trailing = wallet, buttons = listOfNotNull(cta), heroWeight = .4f, scroll = false,
         hero = {
             Art(a.art, Modifier.matchParentSize(), BiasAlignment(0f, -.3f))
             Box(Modifier.matchParentSize().background(Brush.verticalGradient(.4f to Color.Transparent, 1f to Color(0xF2090B10))))
@@ -1351,13 +1351,17 @@ internal fun StoryBottom(a: PlayRules.Act, data: JsonObject?, p: dev.cardstashy.
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) { Bar(won.toFloat() / a.battles.coerceAtLeast(1)) }
         if (a.packs.isNotEmpty()) {
             CaseLabel(if (here) "Boosters this act gives" else "The era's boosters")
+            // U14c: the packs take the room left above the case's buttons and shrink to fit it, so their names are never cut under Begin.
+            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+            val packW = minOf(70.dp, (maxHeight - 38.dp) * (5f / 8.2f)).coerceAtLeast(32.dp)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState())) {
                 a.packs.take(6).forEach { (code, name) ->
-                    Column(Modifier.width(70.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(Modifier.width(packW), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Booster(code, null, Modifier.fillMaxWidth(), mini = true)
                         Text(name, style = TextStyle(fontFamily = P.Sans, fontSize = 11.sp, color = P.Muted), maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                 }
+            }
             }
         }
     }

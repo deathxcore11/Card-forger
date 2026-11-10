@@ -545,6 +545,10 @@ private fun App(activity: MainActivity) {
     androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_START) { dev.cardstashy.nativeplay.play.Presence.shown(true) }
     androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_STOP) { dev.cardstashy.nativeplay.play.Presence.visible = false }
     androidx.compose.runtime.SideEffect { dev.cardstashy.nativeplay.ui.AchievementToasts.overTable = screen is Screen.Match; dev.cardstashy.nativeplay.ui.AchievementToasts.open = { tab -> go(Screen.Achievements(tab)) } }
+    // System bar icons follow the theme the page draws in (enableEdgeToEdge's default follows the system's night mode, not ours):
+    // dark icons on Light; Play is always dark (U12: a white clock on the Light rail).
+    val lightBars = dev.cardstashy.nativeplay.ui.AppSettings.theme == "light"
+    androidx.compose.runtime.SideEffect { androidx.core.view.WindowCompat.getInsetsController(activity.window, activity.window.decorView).run { isAppearanceLightStatusBars = lightBars; isAppearanceLightNavigationBars = lightBars } }
 }
 
 /**
@@ -625,7 +629,7 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
         } }
         // The Story scene over the table holds the clock and the first turn.
         LaunchedEffect(holdForScene) { controller.setScene(holdForScene) }
-        BackHandler { /* the table's menu has Leave; Back never drops a match by accident */ }
+        BackHandler(!holdForScene) { /* the table's menu has Leave; Back never drops a match by accident. Off under a Story scene so B skips it (U14a). */ }
         // E3c: a choice the app cannot play ended this match as no result; nothing was recorded.
         val noResult by controller.noResult.collectAsState()
         if (noResult != null) { LaunchedEffect(Unit) { activity.inGame(false) }; NoResult(noResult!!, onHome) }

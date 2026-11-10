@@ -76,13 +76,18 @@ internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: 
                     // As big as the room allows: the height (leaving space for the lift), then the width shared by the cards with a
                     // generous overlap. The size eases as cards come and go, so the fan breathes instead of jumping.
                     val n = hand.size.coerceAtLeast(1)
-                    val byH = (maxHeight - 20.dp) / 1.4f
+                    // HandFan sets each card 2*t*t dp lower toward the ends and tilts it about its foot, below its own box (U15: the right-hand
+                    // cards touched the hint bar). Keep that sag plus a margin clear, so every card stays whole above the bar.
+                    val mid = (n - 1) / 2f
+                    val sag = 2.dp * (mid * mid) + 8.dp
+                    val sagA by androidx.compose.animation.core.animateDpAsState(sag, androidx.compose.animation.core.spring(dampingRatio = .9f, stiffness = 220f), label = "sag")
+                    val byH = (maxHeight - 20.dp - sag) / 1.4f
                     val byW = maxWidth / (1f + (n - 1) * .46f)
                     // The lifted card stands 1.5 times as tall and 18 up (HandFan): it has to end under the words above, on the shortest screen too.
-                    val byPop = (maxHeight - 22.dp) / (1.4f * 1.5f)
+                    val byPop = (maxHeight - 22.dp - sag) / (1.4f * 1.5f)
                     val target = minOf(minOf(byH, byW), minOf(byPop, 190.dp)).coerceAtLeast(56.dp)
                     val cardW by androidx.compose.animation.core.animateDpAsState(target, androidx.compose.animation.core.spring(dampingRatio = .9f, stiffness = 220f), label = "fan")
-                    if (hand.isNotEmpty()) Box(Modifier.fillMaxWidth().padding(bottom = 4.dp)) { fan(cardW) }
+                    if (hand.isNotEmpty()) Box(Modifier.fillMaxWidth().padding(bottom = 4.dp + sagA)) { fan(cardW) }
                 }
             }
         }
