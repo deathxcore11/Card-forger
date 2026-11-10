@@ -578,7 +578,9 @@ fun ForgeBoard(
             // whose right end it measures) wherever the two share a height: on a phone always, on a big board when the line sits up
             // above the hand chip on two screens. With no line it takes the width its words need.
             val goldInset = if (large) 12.dp else 8.du
-            val askText = if (live) askLine(st) else null
+            val askAll = if (live) askLine(st) else null
+            // Two screens: a question the bottom asks is not said on the top too (live 0.4.57, fault list 4 and 14; table-info I5.1).
+            val askText = if (dual && bottomAsk(st, live, askAll) != null) null else askAll
             var askRight by remember { mutableStateOf(Dp.Unspecified) }
             LaunchedEffect(askText == null) { if (askText == null) askRight = Dp.Unspecified }
             val goldMax = if ((!large || dual) && askText != null && askRight != Dp.Unspecified) (W - goldInset - askRight - 12.du).coerceAtLeast(138.du) else Dp.Infinity
@@ -847,7 +849,8 @@ fun ForgeBoard(
                 // The cast is done: back to the hand chip, put there by the table, so it lifts nothing (live 0.4.57 lifted card 1).
                 else if (TableZones.jumped) { TableZones.jumped = false; TableZones.toHand() }
             }
-            if (dual) { val goldAct = padX; BottomScreen { MatchBottom(st, hand, (selectedHand ?: discardWalk.takeIf { discardAsk })?.let { id -> hand.firstOrNull { it.id == id } }, goldAct, fan, onInspect, afk) } }
+            if (dual) { val goldAct = padX; BottomScreen { MatchBottom(st, hand, (selectedHand ?: discardWalk.takeIf { discardAsk })?.let { id -> hand.firstOrNull { it.id == id } }, goldAct, fan, onInspect, afk,
+                ask = askAll, carried = carried?.let { id -> hand.firstOrNull { it.id == id } }, live = live) } }
             // With the bottom screen up the hand chip sits where the line would be: the line goes just above the chip, high enough
             // that its 10 du drop shadow (AskLine) clears the chip too (U3).
             askText?.let { AskLine(it, W, H, d, bottom = if (dual && hand.isNotEmpty()) H - handW / 66f * 37f - 16.du else null, goldInset = goldInset) { r -> askRight = r } }

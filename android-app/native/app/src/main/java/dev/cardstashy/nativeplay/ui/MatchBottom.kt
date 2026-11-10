@@ -49,13 +49,16 @@ import dev.cardstashy.nativeplay.engine.MatchState
  * (back to your hand). The top screen keeps the table and the stack's moment on the felt; its hand fan becomes a small count.
  */
 @Composable
-internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: PadAct?, fan: @Composable (Dp) -> Unit, onInspect: (Card) -> Unit, afk: String? = null) {
+internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: PadAct?, fan: @Composable (Dp) -> Unit, onInspect: (Card) -> Unit, afk: String? = null,
+                         ask: String? = null, carried: Card? = null, live: Boolean = false) {
     var zone by remember { mutableStateOf("hand") }
     val stackUp = st.stack.isNotEmpty()
     var seenStack by remember { mutableStateOf(0) }
     // The stack takes the bottom when it grows; Respond goes back to the hand.
     if (st.stack.size > seenStack) { zone = "stack"; seenStack = st.stack.size } else if (st.stack.size < seenStack) seenStack = st.stack.size
-    val shown = if (zone == "stack" && stackUp) "stack" else "hand"
+    val words = bottomWords(st, live, hand, lifted, carried, ask)
+    // A question keeps the hand view: live 0.4.57 put a target prompt over a CPU spell on the stack and the bottom asked nothing.
+    val shown = if (zone == "stack" && stackUp && words !is BottomWords.Ask) "stack" else "hand"
     Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             ZoneChip("Hand ${hand.size}", shown == "hand") { zone = "hand" }
@@ -70,11 +73,13 @@ internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: 
             else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 // The lifted card's words across the top, the fan across the whole width below (Randall 9 Nov: "the fan can fit the bottom
                 // screen better and knows how to scale when the hand is increasing, nothing jumpy, very natural").
-                // W12: while a discard asks and nothing is picked, no card's words stand in as if it were chosen.
-                val discardAsk = dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) != null
-                val c = lifted ?: hand.firstOrNull().takeIf { !discardAsk }
                 Column(Modifier.fillMaxWidth().heightIn(max = h * .34f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    if (c != null) CardWords(c) else Text(if (discardAsk && hand.isNotEmpty()) "Choose a card to discard." else "Your hand is empty.", style = small(13f, Site.Muted))
+                    when (words) {
+                        // The question in one gold line, wrapped and never cut, then the card it is about.
+                        is BottomWords.Ask -> { Text(words.text, style = small(15f, Site.Gold, FontWeight.ExtraBold)); words.card?.let { CardWords(it) } }
+                        is BottomWords.Words -> CardWords(words.card)
+                        is BottomWords.Line -> Text(words.text, style = small(13f, Site.Muted))
+                    }
                 }
                 BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
                     // As big as the room allows: the height (leaving space for the lift), then the width shared by the cards with a
@@ -96,6 +101,40 @@ internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: 
             }
         }
     }
+}
+
+/** What the bottom's words area says: the question being asked, a card's words, or a plain line. */
+internal sealed interface BottomWords {
+    data class Ask(val text: String, val card: Card?) : BottomWords
+    data class Words(val card: Card) : BottomWords
+    data class Line(val text: String) : BottomWords
+}
+
+/**
+ * The question the bottom screen asks, or null (table-info I5.1: on two screens the question lives on the bottom). [ask] is
+ * askLine's. Attack has no askLine on purpose, so it reads "Choose attackers" (TableScreen's words). "Respond to X?" stays on the
+ * top until the stack view says it, and the discard keeps its own line (W12).
+ */
+internal fun bottomAsk(st: MatchState, live: Boolean, ask: String?): String? {
+    if (!live || st.prompt != null || dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) != null) return null
+    return when (st.inputType) {
+        "InputAttack" -> "Choose attackers"
+        "InputPassPriority" -> null
+        else -> ask
+    }
+}
+
+/**
+ * Live 0.4.57 (fault list 4, 12, 14): during targets, attack and block the bottom showed a hand card left lifted (or hand[0])
+ * and no question. Now a question comes first, with the card under the finger or the spell being cast; never a stale hand card.
+ * W12: while a discard asks and nothing is picked, no card's words stand in as if it were chosen.
+ */
+internal fun bottomWords(st: MatchState, live: Boolean, hand: List<Card>, lifted: Card?, carried: Card?, ask: String?): BottomWords {
+    val question = bottomAsk(st, live, ask)
+    if (question != null) return BottomWords.Ask(question, carried ?: pendingCast(st))
+    (carried ?: lifted)?.let { return BottomWords.Words(it) }
+    if (dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) != null) return BottomWords.Line(if (hand.isNotEmpty()) "Choose a card to discard." else "Your hand is empty.")
+    return hand.firstOrNull()?.let { BottomWords.Words(it) } ?: BottomWords.Line("Your hand is empty.")
 }
 
 @Composable
