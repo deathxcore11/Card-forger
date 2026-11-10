@@ -13,7 +13,7 @@
 #   ENGINE_TGZ  engine build (default: the pods build plus the lesson match setup and the payment busy-settle fix, patches/setup-stack-busy-settle-on-0dbf4041.patch via forge-engine/rebuild-bridge.sh)
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")/.." && pwd); REPO=$(cd "$HERE/../.." && pwd)
-ENGINE_TGZ=${ENGINE_TGZ:-/mnt/project-files/android/forge-engine-build/forge-engine-android-e5a0f81-pods-busyfix.tgz}
+ENGINE_TGZ=${ENGINE_TGZ:-/mnt/project-files/android/forge-engine-build/forge-engine-android-e5a0f81-pods-busyfix2.tgz}
 A="$HERE/app/src/main/assets"; T=$(mktemp -d)
 rm -rf "$HERE/engine-libs" "$A"; mkdir -p "$HERE/engine-libs" "$A/forge-engine" "$A/forge-rules-seed" "$A/cards" "$A/play" "$A/sfx"
 tar -xzf "$ENGINE_TGZ" -C "$T"

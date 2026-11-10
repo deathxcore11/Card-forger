@@ -1,7 +1,15 @@
 diff -ruN a/ForgeHttpBridge.java b/ForgeHttpBridge.java
 --- a/ForgeHttpBridge.java
 +++ b/ForgeHttpBridge.java
-@@ -299,7 +299,10 @@
+@@ -282,6 +282,7 @@
+         controller.getInputQueue().addObserver(forwarder);
+         for(Player p:game.getPlayers())p.updateOpponentsForView();
+         new Thread(()-> {
++            matchThread=Thread.currentThread();
+             try {
+                 match.startGame(game);
+                 if(concessionRequested)awaitConcession();
+@@ -299,7 +300,10 @@
      @com.google.common.eventbus.Subscribe
      public void onGameStarted(forge.game.event.GameEventGameStarted event){
          if(startingPlayer==null||event.firstTurn()==null||!pregame.isEmpty())return;
@@ -12,7 +20,7 @@ diff -ruN a/ForgeHttpBridge.java b/ForgeHttpBridge.java
          if(exactAdmission!=null)exactAdmission.receipt().put("pregame",pregame);
      }
  
-@@ -481,6 +484,7 @@
+@@ -481,6 +485,7 @@
      }
      @Override public void send(NetEvent event) {
          if(!(event instanceof GuiGameEvent e)) return;
@@ -20,11 +28,12 @@ diff -ruN a/ForgeHttpBridge.java b/ForgeHttpBridge.java
          Object[] a=e.getObjects();
          if(e.getMethod()==ProtocolMethod.setGameView||e.getMethod()==ProtocolMethod.applyDelta)refreshBoard();
          // Forge skips a selection equal to the last one (often none), so the prompt's
-@@ -489,7 +493,14 @@
+@@ -489,8 +494,15 @@
          else if(e.getMethod()==ProtocolMethod.updateButtons||e.getMethod()==ProtocolMethod.showPromptMessage)noteBlocked(selection);
          if(e.getMethod()==ProtocolMethod.setSelection||e.getMethod()==ProtocolMethod.updateButtons||e.getMethod()==ProtocolMethod.showPromptMessage)noteMustAttack();
          synchronized(lock){ switch(e.getMethod()) {
 -            case showPromptMessage -> message=(String)a[1];
+-            case updateButtons -> { buttons=obj("ok",a[1],"cancel",a[2],"okEnabled",a[3],"cancelEnabled",a[4]); busy=false; }
 +            case showPromptMessage -> {
 +                message=(String)a[1];
 +                // A payment's prompt text is the last thing Forge sends once a tapped source has paid
@@ -33,10 +42,11 @@ diff -ruN a/ForgeHttpBridge.java b/ForgeHttpBridge.java
 +                    &&controller.getInputProxy().getInput() instanceof forge.gamemodes.match.input.InputPayMana
 +                    &&!nativePaymentPending())busy=false;
 +            }
-             case updateButtons -> { buttons=obj("ok",a[1],"cancel",a[2],"okEnabled",a[3],"cancelEnabled",a[4]); busy=false; }
++            case updateButtons -> { buttons=obj("ok",a[1],"cancel",a[2],"okEnabled",a[3],"cancelEnabled",a[4]); buttonsInput=controller==null?null:controller.getInputProxy().getInput(); busy=false; }
              case setSelection -> { selection=(Selection)a[0]; busy=false; }
              case awaitNextInput -> { busy=true; recheckBusy(); }
-@@ -504,22 +515,40 @@
+             case flashIncorrectAction -> { busy=false; }
+@@ -504,23 +516,57 @@
          if(e.getMethod()==ProtocolMethod.setSelection || e.getMethod()==ProtocolMethod.updateButtons || e.getMethod()==ProtocolMethod.showPromptMessage || e.getMethod()==ProtocolMethod.flashIncorrectAction || e.getMethod()==ProtocolMethod.message || e.getMethod()==ProtocolMethod.showErrorDialog) publish();
          }
      }
@@ -55,6 +65,17 @@ diff -ruN a/ForgeHttpBridge.java b/ForgeHttpBridge.java
 +    final AtomicLong guiTraffic=new AtomicLong();
 +    final AtomicBoolean busyWatch=new AtomicBoolean();
 +    volatile long busyReleases;
++    // The thread running the match. The watchdog only releases busy while it is parked in Forge's
++    // awaitInput: an unchanged prompt alone was not enough (after a choice was answered, Forge was
++    // still checking state-based actions under the old prompt, and an early action raced it).
++    volatile Thread matchThread;
++    boolean forgeAwaitsInput(){
++        Thread t=matchThread;
++        if(t==null||t.getState()!=Thread.State.WAITING)return false;
++        for(StackTraceElement f:t.getStackTrace())
++            if(f.getMethodName().equals("awaitInput")&&f.getClassName().equals("forge.gui.interfaces.IGuiGame"))return true;
++        return false;
++    }
      void recheckBusy(){
 -        PlayerControllerHuman c=controller;if(c==null)return;
 -        forge.gamemodes.match.input.Input in=c.getInputProxy().getInput();
@@ -75,7 +96,8 @@ diff -ruN a/ForgeHttpBridge.java b/ForgeHttpBridge.java
 +                        if(!busy||c==null||failure!=null||finished||concessionRequested){busyWatch.set(false);return;}
 +                        var in=c.getInputProxy().getInput();long now=guiTraffic.get();
 +                        boolean waiting=!commandInFlight&&pending==null&&in!=null
-+                            &&!(in instanceof forge.gamemodes.match.input.InputLockUI)&&!nativePaymentPending();
++                            &&!(in instanceof forge.gamemodes.match.input.InputLockUI)&&!nativePaymentPending()
++                            &&forgeAwaitsInput();
 +                        quiet=waiting&&in==last&&now==traffic?quiet+1:0;
 +                        last=in;traffic=now;
 +                        if(quiet>=2){busy=false;released=true;busyReleases++;busyWatch.set(false);}
@@ -88,9 +110,24 @@ diff -ruN a/ForgeHttpBridge.java b/ForgeHttpBridge.java
 -        },300,TimeUnit.MILLISECONDS);
 +        },BUSY_SETTLE_MS,TimeUnit.MILLISECONDS);
      }
++    // The input the current buttons were sent for. Smart's Auto press must use this payment's own
++    // enabled Auto: a press on the previous prompt's buttons ran Forge's Auto before the payment
++    // was ready, on a game thread beside the one setting it up, and corrupted the mana pool.
++    volatile forge.gamemodes.match.input.Input buttonsInput;
      void clearSmartIntent(){smartIntentOrigin=null;smartIntentAbility=null;}
      // Trustworthy glow. selection.actionable is what can be finished now (the human
-@@ -732,6 +761,7 @@
+     // overlay proves the cost can be paid), so only those cards glow. A card with an
+@@ -702,7 +748,8 @@
+         }
+         if(!autoPay()||smartIntentOrigin==null||pending!=null||commandInFlight
+             ||!(input instanceof forge.gamemodes.match.input.InputPayManaOfCostPayment)
+-            ||input==autoPayAttemptInput||!Boolean.TRUE.equals(buttons.get("okEnabled")))return;
++            ||input==autoPayAttemptInput||input!=buttonsInput||nativePaymentPending()
++            ||!Boolean.TRUE.equals(buttons.get("okEnabled")))return;
+         final SpellAbility paid=controller.getPlayer().getPaidForSA();
+         // Copies/alternate costs and nested or resolving effects deliberately remain manual.
+         boolean alreadyOnStack=false;
+@@ -732,6 +779,7 @@
      }}
      @Override public Object sendAndWait(IdentifiableNetEvent event) {
          GuiGameEvent e=(GuiGameEvent)event;
@@ -98,7 +135,7 @@ diff -ruN a/ForgeHttpBridge.java b/ForgeHttpBridge.java
          if(concessionRequested){
              // Native onPlayerLost can reveal face-down cards: this is display-only, no choice.
              if(Thread.currentThread()==concessionThread){
-@@ -858,7 +888,7 @@
+@@ -858,7 +906,7 @@
          if(value instanceof CardView c) return card(c);
          if(value instanceof forge.item.PaperCard pc)return obj("kind","paperCard","name",pc.getName(),"setCode",pc.getEdition());
          if(value instanceof PlayerView p)return obj("kind","player","id",p.getId(),"name",p.getName());
@@ -107,7 +144,7 @@ diff -ruN a/ForgeHttpBridge.java b/ForgeHttpBridge.java
          if(value instanceof forge.game.replacement.ReplacementEffectView re)return obj("kind","replacementEffect","id",re.getId(),"description",re.getDescription());
          if(value instanceof String || value instanceof Number || value instanceof Boolean || value instanceof Enum<?>)return String.valueOf(value);
          // Kicker, Buyback, Entwine and other optional costs (Forge asks with many(), so an order
-@@ -1032,6 +1062,7 @@
+@@ -1032,6 +1080,7 @@
      SpellAbility costNowFor;Map<String,Object> costNow;
      void publish() { synchronized(lock) {
          if(failure!=null){publishFailure();return;}
@@ -115,7 +152,7 @@ diff -ruN a/ForgeHttpBridge.java b/ForgeHttpBridge.java
          if(board.isEmpty())return;
          publishedInput=controller.getInputProxy().getInput();
          String input=publishedInput==null?null:publishedInput.getClass().getSimpleName();
-@@ -1261,6 +1292,11 @@
+@@ -1261,6 +1310,11 @@
                                  commandInFlight=false;
                                  // Only native stable prompt callbacks or an explicit false selection result release busy.
                                  // The same Input identity can enqueue a later native confirmation, so identity alone is not enough.
