@@ -7,7 +7,7 @@ import {LOOPS} from './audio-loops.js';
 const onField=c=>c.zone==='Battlefield';
 const has=(c,t)=>!!c?.types?.includes(t)||new RegExp(`\\b${t}\\b`).test(c?.type||'');
 const counters=c=>Object.values(c?.counters||{}).reduce((n,v)=>n+(Number(v?.count??v)||0),0);
-const WARM=['CARD-001','CARD-005','CARD-006','CARD-008','CAST-W','CAST-U','CAST-B','CAST-R','CAST-G','CAST-C','CAST-M','CARD-010','CMB-002','CMB-003','CMB-004','CMB-005','CMB-009','TT-001','TT-002'];
+const WARM=['CARD-001','CARD-005','CARD-006','CARD-008','CAST-W','CAST-U','CAST-B','CAST-R','CAST-G','CAST-C','CAST-M','CARD-010','CMB-002','CMB-003','CMB-004','CMB-005','CMB-009','TT-001','TT-002','TT-007'];
 
 // A spell cast from a hand sounds its colour: one colour its own cue, two or more CAST-M, none CAST-C; a card the table
 // can't read (no cost on it) keeps the old cast sound. Same reading as the app: the cost's coloured symbols, hybrid and
@@ -94,7 +94,8 @@ export function createTableAudio(root=null){
   // Early turns, then the fuller table, then the low-life track once anyone is close to losing.
   setMusic('play',low?'MUS-TBL-05':(b.turn||0)<=8?'MUS-TBL-03':'MUS-TBL-04',{alive:onTable});
  }
- return {update,destroy:stop};
+ // The last ten seconds of your window tick once a second (TT-007).
+ return {update,destroy:stop,tick(){sfx('TT-007',{volume:.6});}};
 }
 
 const STORY_IDS=Object.keys(LOOPS).filter(id=>id.startsWith('MUS-ST-'));

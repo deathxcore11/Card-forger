@@ -1180,12 +1180,47 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const timerCount=doc.createElement('div');timerCount.className='forge-turn-count';timerCount.setAttribute('aria-hidden','true');
  const timerRing=doc.createElement('div');timerRing.className='forge-turn-ring';timerRing.setAttribute('aria-hidden','true');
  const timerLabel=c=>c.warn?`${c.seconds} seconds left`:'';
+ // The rope (table additions 5): in the last 30 s of your own window a gold braided fuse lies on the centre divider and burns
+ // from the right, a spark at the burning end, the seconds beside it; coral in the last 10 s. It replaces the ring, the number
+ // and the line under the phase pill for that window, so there is one countdown. A held clock holds the fuse; any action ends
+ // the window and it fades in 300 ms. It only reads what the clock reports.
+ const ROPE_MS=30000;
+ const timerRope=doc.createElement('div');timerRope.className='forge-fuse';timerRope.setAttribute('aria-hidden','true');timerRope.innerHTML='<i class="forge-fuse-burn"></i><b></b>';
+ const ropeBurn=timerRope.firstChild,ropeNum=timerRope.lastChild;let ropeFade=0;
+ const ropePlace=()=>{
+  const areas=[...root.querySelectorAll('.play-match-battlefields>.play-match-seat-area')];if(areas.length<2)return false;
+  const a=areas[0].getBoundingClientRect(),b=areas[1].getBoundingClientRect(),y=(a.bottom+b.top)/2,mid=(Math.min(a.left,b.left)+Math.max(a.right,b.right))/2;
+  timerRope.style.left=`${Math.round(mid-160)}px`;timerRope.style.top=`${Math.round(y-8)}px`;return true;
+ };
+ const ropeUpdate=c=>{
+  const on=!!c&&c.own&&c.remaining<=ROPE_MS;
+  if(!on){
+   if(timerRope.isConnected&&!ropeFade){timerRope.dataset.fade='out';ropeFade=setTimeout(()=>{ropeFade=0;timerRope.remove();delete timerRope.dataset.fade;},300);}
+   return false;
+  }
+  if(ropeFade){clearTimeout(ropeFade);ropeFade=0;delete timerRope.dataset.fade;}
+  if(!timerRope.isConnected){if(!ropePlace())return false;root.append(timerRope);}else ropePlace();
+  const span=Math.min(ROPE_MS,c.total),now=Math.max(0,Math.min(1,c.remaining/span));
+  // Burn toward the next whole second so the fuse moves smoothly; a held clock stands still at what is left.
+  ropeBurn.style.transition=c.paused?'none':'width 1s linear';
+  ropeBurn.style.width=`${((c.paused?now:Math.max(0,(c.remaining-1000)/span))*260).toFixed(1)}px`;
+  ropeNum.textContent=String(c.seconds);
+  if(c.warn)timerRope.dataset.hot='true';else delete timerRope.dataset.hot;
+  if(c.paused)timerRope.dataset.held='true';else delete timerRope.dataset.held;
+  return true;
+ };
  const showTimer=c=>{
-  if(!c||!c.own){timerRing.remove();timerCount.remove();root.removeAttribute('data-turn-warn');}
+  const rope=ropeUpdate(c);
+  if(!c||!c.own){timerRing.remove();timerCount.remove();root.removeAttribute('data-turn-warn');root.removeAttribute('data-turn-rope');}
   if(!c){root.removeAttribute('data-turn-timer');root.style.removeProperty('--tt-left');return;}
   root.dataset.turnTimer=c.own?'own':'rival';root.style.setProperty('--tt-left',String(Math.max(0,Math.min(1,c.remaining/c.total)).toFixed(4)));
   if(!c.own)return;
   if(c.warn)root.dataset.turnWarn='true';else root.removeAttribute('data-turn-warn');
+  // The last 30 s belong to the rope: no ring, no number, no line under the pill, so the window has one countdown.
+  if(rope){root.dataset.turnRope='true';timerRing.remove();timerCount.remove();
+   if(c.warn&&!c.paused){tableAudio.tick();try{presentation.onTimerTick?.(c.seconds);}catch{/* a tick sound is optional */}}
+   return;}
+  root.removeAttribute('data-turn-rope');
   // The ring sits on the main button, wherever the table has put it right now.
   const ok=root.querySelector('[data-native-key=ok],[data-native-key=confirm-prompt]');
   if(!ok){timerRing.remove();timerCount.remove();return;}
@@ -1781,5 +1816,5 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    const seat=seatEl(defenderOf(sf.players,c)),blocked=blockerOf.has(c.id)?cardEl(blockerOf.get(c.id)):null,to=blocked||(c.attackTarget?.kind==='card'?cardEl(c.attackTarget.id):seat);if(!to)continue;
    ms=Math.max(ms,strike(el,to,{face:!blocked&&to===seat,delay:next,big:(c.power||0)>=5,power:c.power||0}));struck++;next+=MOTION.windup+strikeTravel(el.closest('.play-match-card-wrap'),to)+MOTION.hold+140;}
   return struck?Math.max(ms,strikeEnd-Date.now())+250:ms;}
- return {finale,destroy(){closed=true;turnTimer?.stop();clearTimeout(afkNoteTimer);afkNote?.remove();timerCount.remove();timerRing.remove();win.removeEventListener('resize',queueBoard);doc.removeEventListener('pointerdown',foldEmblems,true);if(heldDrop){clearTimeout(heldDrop.timer);heldDrop.ghost.remove();heldDrop=null;}boardSizes?.disconnect();doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);clearTimeout(noResponseTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();ownCast.remove();doc.body.querySelector(':scope>.forge-ask-line')?.remove();doc.body.style.removeProperty('--forge-hand-top');castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ return {finale,destroy(){closed=true;turnTimer?.stop();clearTimeout(afkNoteTimer);afkNote?.remove();timerCount.remove();clearTimeout(ropeFade);timerRope.remove();timerRing.remove();win.removeEventListener('resize',queueBoard);doc.removeEventListener('pointerdown',foldEmblems,true);if(heldDrop){clearTimeout(heldDrop.timer);heldDrop.ghost.remove();heldDrop=null;}boardSizes?.disconnect();doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);clearTimeout(noResponseTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();ownCast.remove();doc.body.querySelector(':scope>.forge-ask-line')?.remove();doc.body.style.removeProperty('--forge-hand-top');castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }
