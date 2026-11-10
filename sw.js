@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-keep-freeze-43163-v535";
+const CACHE = "cardforge-shell-notice-fade-43164-v536";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
