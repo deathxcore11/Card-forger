@@ -247,7 +247,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    const was=host.querySelector(':scope>.forge-notice');
    if(now-noticeSeen.at<5000){if(was?.textContent!==notice.textContent){was?.remove();notice.style.animationDelay=`-${now-noticeSeen.at}ms`;host.append(notice);}}else was?.remove();}
   else panel.append(notice);}
- else if(presentation.hosted)container.closest('.play-match-table')?.querySelector(':scope>.forge-notice')?.remove();
+ else if(presentation.hosted)container.closest?.('.play-match-table')?.querySelector?.(':scope>.forge-notice')?.remove();
  // On the hosted table, trouble is one small toast in plain words with Retry, never a raw code.
  // A refused move's note clears once the next move goes through (the match's revision moves on).
  if(n.lastActionError){if(errSeen.text!==n.lastActionError){errSeen.text=n.lastActionError;errSeen.revision=n.revision;}}else errSeen.text=null;
