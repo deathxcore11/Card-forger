@@ -73,13 +73,6 @@ class DualScreenShotTest {
             captureRoboImage(shot("bottom-inspect-$size")) {
                 Box(Modifier.fillMaxSize().background(bg)) { dev.cardstashy.nativeplay.ui.CardInspect(hand.getOrNull(1) ?: hand.first(), main.viewer) {} }
             }
-            val c = hand.first()
-            captureRoboImage(shot("bottom-collection-$size")) {
-                Box(Modifier.fillMaxSize().background(bg)) {
-                    FocusedCardView(FocusCard(c.name, null, c.type, c.text, owned = "You have 2", price = "$1.24",
-                        actions = listOf(PadAct("Got one") {}, PadAct("Open") {})))
-                }
-            }
         }
     }
 
@@ -160,6 +153,10 @@ class DualScreenShotTest {
         for ((size, q) in listOf("thor-1240x1080" to "w620dp-h540dp-xhdpi", "duo-1280x960" to "w640dp-h480dp-xhdpi")) {
             RuntimeEnvironment.setQualifiers(q)
             captureRoboImage(shot("bottom-trunk-$size")) { Box(Modifier.fillMaxSize().background(bg)) { dev.cardstashy.nativeplay.ui.TrunkBinderCase(st, all, all.size, sets) } }
+            // The ring's default card case on the Collection side, with the same picture as the Trunk case beside it.
+            captureRoboImage(shot("bottom-collection-$size")) { Box(Modifier.fillMaxSize().background(bg)) {
+                FocusedCardView(FocusCard(card.n, dev.cardstashy.nativeplay.ui.trunkImage(card, print, null), print.get("type_line")?.asString, print.get("oracle_text")?.asString, owned = "You have 2", price = "$1.24",
+                    actions = listOf(PadAct("Open card") {}, PadAct("Got one") {}))) } }
             captureRoboImage(shot("bottom-trunk-card-$size")) { Box(Modifier.fillMaxSize().background(bg)) { dev.cardstashy.nativeplay.ui.TrunkCardCase(st, card, card.h > 0, print, null, null, {}, {}) } }
         }
     }

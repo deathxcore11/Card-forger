@@ -38,6 +38,9 @@ import dev.cardstashy.nativeplay.play.Roles
 object DeckViewPref { var mode by mutableStateOf("gallery") }  // deckViewFor: Art grid by default
 
 private val Ink get() = Site.Text
+/** The page's lens on a dual-screen handheld (null on one screen and in the lobby's read-only viewer). */
+private val LocalDeckLens = staticCompositionLocalOf<LensHost?> { null }
+@Composable private fun Modifier.deckLens(name: String?): Modifier = LocalDeckLens.current?.let { dualLens(it, name?.let { n -> "card:$n" }) } ?: this
 private val Warn = Color(0xFFFFB86B)
 private val Ok = Color(0xFF8FD19E)
 private fun t(size: Float, weight: FontWeight = FontWeight.Medium, color: Color = Ink, line: Float = size * 1.4f) =
@@ -77,15 +80,24 @@ fun DeckView(row: Finder.Row, title: String, cardOf: (String) -> JsonObject?, on
     val sub = listOf(if (title != row.name) row.name else "", if (row.source == "Meta") "" else row.source, row.detail).filter { it.isNotEmpty() }.joinToString(" · ")
     // Controller: X is the deck's gold action (Build it), while it can be pressed.
     actions.firstOrNull()?.takeIf { it.enabled }?.let { g -> PadScreen(PadActs(x = PadAct(g.label, g.onClick))) }
+    // Bottom screen (W3): the card under the ring in the shared card case with Play's facts; with no card, what the top does not
+    // say about the deck: its curve, its colours and what is still to craft.
+    val lens = rememberLens()
+    BottomScreen {
+        val on = lens.key?.removePrefix("card:")?.let { n -> entries.firstOrNull { it.name == n } }
+        val gold = actions.firstOrNull()?.takeIf { it.enabled }
+        ShowcaseLens(on) { e -> if (e != null) DeckCardCase(e, gold) { onCard(e.name) } else DeckSummaryCase(row, entries, gold) }
+    }
+    CompositionLocalProvider(LocalDeckLens provides lens.takeIf { DualScreen.active }) {
     BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
         Backdrop() // #ambient: the shared art (glass on, or Aura)
         val wide = maxWidth >= 600.dp
         val inner = maxWidth - 32.dp
         // The status-bar inset sits on the list, so rows never scroll under the clock.
         LazyColumn(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            item { Hero(row, title, sub, wide, onBack) }
+            item { Box(Modifier.deckLens(null)) { Hero(row, title, sub, wide, onBack) } }
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(Modifier.deckLens(null), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     // The hero already lists the seals; the pill only names the state.
                     StatePill(row.status, row.open)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -95,7 +107,7 @@ fun DeckView(row: Finder.Row, title: String, cardOf: (String) -> JsonObject?, on
                 }
             }
             item { goals() }
-            item { Toolbar(mode) { DeckViewPref.mode = it } }
+            item { Box(Modifier.deckLens(null)) { Toolbar(mode) { DeckViewPref.mode = it } } }
             when (mode) {
                 "stacks" -> {
                     item { RoleSummary(entries) }
@@ -120,6 +132,53 @@ fun DeckView(row: Finder.Row, title: String, cardOf: (String) -> JsonObject?, on
             }
         }
         Box(Modifier.align(Alignment.BottomCenter)) { nav() }
+    }
+    }
+}
+
+/** A deck card on the bottom screen: the shared card case with Play's facts (copies in the deck and the Trunk, seals to finish; never money). */
+@Composable
+private fun DeckCardCase(e: Entry, gold: DeckAction?, onOpen: () -> Unit) {
+    val face = e.card?.getAsJsonArray("card_faces")?.firstOrNull() as? JsonObject
+    fun JsonObject.s(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asString
+    val seal = mapOf("c" to "common", "u" to "uncommon", "r" to "rare", "m" to "mythic")[e.seal] ?: e.rarity
+    val need = e.qty - e.have
+    QuickLookCase(QuickLook("deck:" + e.name, "Deck · Card", e.name, e.image, e.card?.s("type_line") ?: face?.s("type_line"), e.card?.s("oracle_text") ?: face?.s("oracle_text"),
+        facts = listOfNotNull("In this deck" to "${e.qty}", if (e.basic) null else "In your Trunk" to "${e.have} of ${e.qty}",
+            if (e.missing) "To finish" to "$need $seal seal${if (need == 1) "" else "s"}" else null),
+        buttons = listOfNotNull(CaseButton("A", "Open card", gold = true, run = onOpen), gold?.let { g -> CaseButton("X", g.label, run = g.onClick) })))
+}
+
+/** The deck page's default case: the mana curve, the colours, and the cards still to craft. The name, owned count and seals stay on the top screen. */
+@Composable
+private fun DeckSummaryCase(row: Finder.Row, entries: List<Entry>, gold: DeckAction?) {
+    val spells = entries.filter { it.cmc < 99.0 && !it.basic && it.cat != "Lands" }
+    val curve = IntArray(8).also { a -> spells.forEach { e -> a[e.cmc.toInt().coerceIn(0, 7)] += e.qty } }
+    val top = curve.max().coerceAtLeast(1)
+    val missing = entries.filter { it.missing }
+    ShowcaseCase("Deck · ${row.format}", "Curve and colours", trailing = { if (row.colors.isNotEmpty()) ManaCost(row.colors.joinToString("") { "{$it}" }, 26.dp) },
+        buttons = listOfNotNull(gold?.let { g -> CaseButton("X", g.label, gold = true, run = g.onClick) })) {
+        if (spells.isNotEmpty()) {
+            CaseLabel("Mana curve")
+            Row(Modifier.fillMaxWidth().height(132.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
+                curve.forEachIndexed { i, n ->
+                    Column(Modifier.weight(1f).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.Bottom)) {
+                        Text("$n", style = Rule.Type.sans(13, FontWeight.Bold, if (n > 0) Rule.Color.Text else Rule.Color.Muted))
+                        Box(Modifier.fillMaxWidth().height(80.dp * (n.toFloat() / top) + 3.dp).clip(RoundedCornerShape(Rule.Radius.Tag)).background(if (n > 0) Rule.Color.GoldHair else Rule.Color.Edge))
+                        Text(if (i == 7) "7+" else "$i", style = Rule.Type.sans(12, FontWeight.SemiBold, Rule.Color.Muted))
+                    }
+                }
+            }
+        }
+        CaseLabel(if (missing.isEmpty()) "In your Trunk" else "Still to craft")
+        if (missing.isEmpty()) Text("Every card is in your Trunk.", style = Rule.Type.S15.copy(color = CaseMuted))
+        else missing.sortedByDescending { it.qty - it.have }.take(8).forEach { e ->
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SealMini(e.seal, 18.dp)
+                Text("${e.qty - e.have}×  ${e.name}", style = Rule.Type.S15, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            }
+        }
+        if (missing.size > 8) Text("and ${missing.size - 8} more", style = Rule.Type.S13.copy(color = CaseMuted))
     }
 }
 
@@ -287,7 +346,7 @@ private val missingGray = androidx.compose.ui.graphics.ColorFilter.colorMatrix(a
 @Composable
 private fun CardTile(e: Entry, modifier: Modifier, showRoles: Boolean = false, onClick: () -> Unit) {
     val p = heroPainter(e.image.let(homeArt))
-    Box(modifier.aspectRatio(63f / 88f).clip(RoundedCornerShape(11.dp)).background(Color(0xFF111318)).padActs(PadActs(a = "Open", y = PlayInspect.act(e.image))).clickable(onClick = onClick)) {
+    Box(modifier.aspectRatio(63f / 88f).clip(RoundedCornerShape(11.dp)).background(Color(0xFF111318)).deckLens(e.name).padActs(PadActs(a = "Open", y = PlayInspect.act(e.image))).clickable(onClick = onClick)) {
         if (p != null) Image(p, e.name, Modifier.fillMaxSize().alpha(if (e.missing) .72f else 1f), contentScale = ContentScale.Crop,
             colorFilter = if (e.missing) missingGray else null)
         else Text(e.name, style = t(13f, FontWeight.Bold), modifier = Modifier.padding(10.dp))
@@ -310,7 +369,7 @@ private fun GalleryCard(e: Entry, modifier: Modifier, onClick: () -> Unit) = Col
 
 @Composable
 private fun NameRow(e: Entry, onClick: () -> Unit) = Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0x0AFFFFFF))
-    .border(1.dp, SoftRim, RoundedCornerShape(14.dp)).clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
+    .border(1.dp, SoftRim, RoundedCornerShape(14.dp)).deckLens(e.name).clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
     Text("${e.qty}× ${e.name}", style = t(15f, FontWeight.Bold, if (e.missing) Site.Muted else Ink), modifier = Modifier.weight(1f))
     if (e.missing) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) { SealMini(e.seal, 18.dp); Text("${e.qty - e.have}", style = t(14f, FontWeight.ExtraBold, Site.Gold)) }
 }
@@ -319,7 +378,7 @@ private fun NameRow(e: Entry, onClick: () -> Unit) = Row(Modifier.fillMaxWidth()
 @Composable
 private fun DetailRow(e: Entry, onClick: () -> Unit) {
     val set = e.card?.get("set")?.asString?.uppercase(); val cn = e.card?.get("collector_number")?.asString
-    Row(Modifier.fillMaxWidth().softTile(18.dp).clickable(onClick = onClick).padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+    Row(Modifier.fillMaxWidth().softTile(18.dp).deckLens(e.name).clickable(onClick = onClick).padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         CardTile(e, Modifier.width(78.dp), onClick = onClick)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
             Text("${e.qty}× ${e.name}", style = t(16f, FontWeight.Bold))

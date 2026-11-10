@@ -170,7 +170,7 @@ object DualScreen {
 }
 
 /** What the bottom screen shows about a card: its name and art, and what is known of it (type, rules text, copies owned). */
-/** [price]: Collection only (Play stays price-free). [actions]: the card's own buttons on the bottom screen (touch), e.g. Got one / Wishlist. */
+/** [price]: Collection only (Play stays price-free). [actions]: the card's own buttons on the bottom screen: the first is what A does on the tile (Open card), the second what X does (Got one). */
 data class FocusCard(val name: String, val image: String?, val type: String? = null, val text: String? = null, val owned: String? = null, val game: String = "mtg",
                      val price: String? = null, val actions: List<PadAct> = emptyList())
 
@@ -214,7 +214,8 @@ fun FocusedCardView(card: FocusCard?, extra: (@Composable () -> Unit)? = null) {
         return
     }
     // The same case as Play's Trunk card and Collection's lots (family T2); only the facts differ. Money shows on the Collection side alone.
-    val buttons = card.actions.filter { it.run != null }.take(3).mapIndexed { i, a -> CaseButton(null, a.label, gold = i == 0) { a.run?.invoke() } }
+    // A case button always prints its key: A opens, X is the main action (the tile binds the same two).
+    val buttons = card.actions.filter { it.run != null }.take(2).mapIndexed { i, a -> CaseButton(if (i == 0) "A" else "X", a.label, gold = i == 0) { a.run?.invoke() } }
     val facts = listOfNotNull(card.owned?.takeIf { it.isNotBlank() }?.let { "Yours" to it }, card.price?.takeIf { it.isNotBlank() }?.let { "Price" to it })
     QuickLookCase(QuickLook("focus:" + card.name, if (card.price.isNullOrBlank()) "Card" else "Collection · Card", card.name, card.image, card.type, card.text, facts, buttons,
         extra = extra?.let { e -> { e() } }))
