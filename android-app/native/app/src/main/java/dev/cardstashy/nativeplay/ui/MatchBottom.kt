@@ -78,7 +78,9 @@ internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: 
                     val n = hand.size.coerceAtLeast(1)
                     val byH = (maxHeight - 20.dp) / 1.4f
                     val byW = maxWidth / (1f + (n - 1) * .46f)
-                    val target = minOf(byH, byW, 190.dp).coerceAtLeast(56.dp)
+                    // The lifted card stands 1.5 times as tall and 18 up (HandFan): it has to end under the words above, on the shortest screen too.
+                    val byPop = (maxHeight - 22.dp) / (1.4f * 1.5f)
+                    val target = minOf(minOf(byH, byW), minOf(byPop, 190.dp)).coerceAtLeast(56.dp)
                     val cardW by androidx.compose.animation.core.animateDpAsState(target, androidx.compose.animation.core.spring(dampingRatio = .9f, stiffness = 220f), label = "fan")
                     if (hand.isNotEmpty()) Box(Modifier.fillMaxWidth().padding(bottom = 4.dp)) { fan(cardW) }
                 }

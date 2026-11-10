@@ -375,12 +375,12 @@ internal fun DeedCase(r: JsonObject, busy: Boolean, onClaim: (Int) -> Unit) {
     }
 }
 
-/** The Achievements default case: the Hall of Deeds count, the purse, and the three deeds you are closest to. */
+/** The Achievements default case: the Hall of Deeds count, the purse, and the deeds you are closest to. */
 @Composable
 internal fun HallCase(state: JsonObject?, rows: List<JsonObject>, earned: Int, total: Int, ready: Int) {
     val near = rows.filter { !it.get("complete").bool() && !(it.get("hidden").bool() && it.get("earned").int() == 0) }.mapNotNull { r ->
         val st = r.arr("steps").firstOrNull { !it.get("done").bool() } ?: return@mapNotNull null
-        val need = st.get("need").int().coerceAtLeast(1); Triple(r, st, r.get("value").int().toFloat() / need) }.sortedByDescending { it.third }.take(3)
+        val need = st.get("need").int().coerceAtLeast(1); Triple(r, st, r.get("value").int().toFloat() / need) }.sortedByDescending { it.third }.take(8)
     ShowcaseCase("Play · Hall of Deeds", "%,d of %,d earned".format(earned, total),
         trailing = { state?.let { s -> PlayMath.purse(s)?.let { PurseRow(it, level = PlayMath.mastery(s, it.xp)) } } }, buttons = emptyList()) {
         Bar(if (total > 0) earned.toFloat() / total else 0f)

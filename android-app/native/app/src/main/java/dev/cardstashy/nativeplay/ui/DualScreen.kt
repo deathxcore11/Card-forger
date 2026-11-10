@@ -213,26 +213,11 @@ fun FocusedCardView(card: FocusCard?, extra: (@Composable () -> Unit)? = null) {
         }
         return
     }
-    Row(Modifier.fillMaxSize().padding(14.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        val img = heroPainter(card.image?.let(homeArt))
-        Box(Modifier.fillMaxHeight().aspectRatio(63f / 88f, matchHeightConstraintsFirst = true).shadow(14.dp, RoundedCornerShape(10.dp)).clip(RoundedCornerShape(10.dp))
-            .background(Color(0xFF1C1E25))) {
-            if (img != null) Image(img, card.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        }
-        Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(card.name, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = Site.Text), maxLines = 3, overflow = TextOverflow.Ellipsis)
-            card.type?.takeIf { it.isNotBlank() }?.let { Text(it, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = Site.Gold)) }
-            card.text?.takeIf { it.isNotBlank() }?.let { Text(it, style = TextStyle(fontFamily = Site.Manrope, fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFFE4E7EA))) }
-            card.owned?.takeIf { it.isNotBlank() }?.let { Text(it, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Site.Muted)) }
-            card.price?.takeIf { it.isNotBlank() }?.let { Text(it, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = Site.Gold)) }
-            extra?.invoke()
-            card.actions.forEach { a -> a.run?.let { run ->
-                val shape = RoundedCornerShape(14.dp)
-                Box(Modifier.fillMaxWidth().heightIn(min = 44.dp).clip(shape).background(Color(0x14FFFFFF)).border(1.dp, Color(0x40D6AD64), shape).clickable(onClick = run),
-                    contentAlignment = Alignment.Center) { Text(a.label, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Site.Text)) }
-            } }
-        }
-    }
+    // The same case as Play's Trunk card and Collection's lots (family T2); only the facts differ. Money shows on the Collection side alone.
+    val buttons = card.actions.filter { it.run != null }.take(3).mapIndexed { i, a -> CaseButton(null, a.label, gold = i == 0) { a.run?.invoke() } }
+    val facts = listOfNotNull(card.owned?.takeIf { it.isNotBlank() }?.let { "Yours" to it }, card.price?.takeIf { it.isNotBlank() }?.let { "Price" to it })
+    QuickLookCase(QuickLook("focus:" + card.name, if (card.price.isNullOrBlank()) "Card" else "Collection · Card", card.name, card.image, card.type, card.text, facts, buttons,
+        extra = extra?.let { e -> { e() } }))
 }
 
 /** The controller's prompt bar, at the bottom screen's foot while it is up (the top screen's is hidden then). */

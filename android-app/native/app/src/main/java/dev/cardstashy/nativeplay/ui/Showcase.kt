@@ -83,9 +83,9 @@ class QuickLook(val key: String, val eyebrow: String, val name: String, val imag
 internal fun QuickLookCase(q: QuickLook) {
     val shines = q.look?.takeIf { it.shines }
     val tilt = rememberFoilTilt(live = shines != null, phase = q.tiltPhase, tile = false)
-    ShowcaseCase(q.eyebrow, q.name, heroWeight = .4f, buttons = q.buttons, hero = {
-        if (!q.image.isNullOrBlank()) CardPicture(q.image, shines, tilt, Modifier.align(Alignment.Center).padding(10.dp).fillMaxHeight().aspectRatio(63f / 88f, matchHeightConstraintsFirst = true), shape = CardCorner)
-    }) {
+    ShowcaseCase(q.eyebrow, q.name, heroWeight = .4f, buttons = q.buttons, hero = if (q.image.isNullOrBlank()) null else { {
+        CardPicture(q.image, shines, tilt, Modifier.align(Alignment.Center).padding(10.dp).fillMaxHeight().aspectRatio(63f / 88f, matchHeightConstraintsFirst = true), shape = CardCorner)
+    } }) {
         q.type?.takeIf { it.isNotBlank() }?.let { Text(it, style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Gold)) }
         q.text?.takeIf { it.isNotBlank() }?.let { Text(it, style = TextStyle(fontFamily = Type.Sans, fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFFE4DFD3)), maxLines = 7, overflow = TextOverflow.Ellipsis) }
         q.facts.chunked(3).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) { row.forEach { (l, v) -> CaseFact(l, v) } } }
