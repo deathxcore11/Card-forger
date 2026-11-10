@@ -119,8 +119,13 @@ object PadPrompts {
      * A d-pad press with nothing focused: put the ring on the screen's first stop in that direction. Compose only moves focus
      * that exists, so without this the first press did nothing (Randall on the AYN Portal, 7 Nov). True when the ring landed.
      */
+    /** Where the ring goes first when nothing has it (the match table: the hand chip), else null for the screen's own order. */
+    @Volatile var entry: (() -> Boolean)? = null
+
     fun enter(keyCode: Int): Boolean {
         if (anyFocus) return false
+        // W11/Y5 (Thor test4): on the table the first press lands on your hand, never on whatever spatial search finds first.
+        entry?.let { if (runCatching { it() }.getOrDefault(false)) return true }
         val fm = focusManager ?: return false
         inputModes?.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard)
         val dir = when (keyCode) {

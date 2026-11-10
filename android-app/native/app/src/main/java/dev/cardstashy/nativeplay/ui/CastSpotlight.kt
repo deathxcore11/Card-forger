@@ -236,7 +236,9 @@ private fun SymbolLine(line: String) {
  * The kicker says whose it is and where; the intent line says its state on the table. Tap anywhere to close.
  */
 @Composable
-fun CardInspect(card: Card, viewer: Int?, start: PadAct? = null, onClose: () -> Unit) {
+fun CardInspect(card: Card, viewer: Int?, start: PadAct? = null,
+    /** Two screens: the card shows on the bottom screen beside play. It takes no ring, holds no clock and hides no table button (test4: X on the gold and the clock died while it stayed open). */
+    beside: Boolean = false, onClose: () -> Unit) {
     val yours = viewer == null || card.controller == viewer
     val where = when (card.zone) { "Battlefield" -> "On the battlefield"; "Hand" -> "In hand"; "Graveyard" -> "In the graveyard"; "Exile" -> "In exile"; "Stack" -> "On the stack"; "Command" -> "In the command zone"; else -> card.zone }
     val state = buildList {
@@ -254,12 +256,12 @@ fun CardInspect(card: Card, viewer: Int?, start: PadAct? = null, onClose: () -> 
     val padOn = Pad.connected.collectAsState().value
     val padFocus = remember { FocusRequester() }
     val close = { TablePad.restore(); onClose() }
-    LaunchedEffect(Unit) { if (Pad.connected.value) runCatching { padFocus.requestFocus() } }
+    LaunchedEffect(Unit) { if (Pad.connected.value && !beside) runCatching { padFocus.requestFocus() } }
     androidx.activity.compose.BackHandler(padOn) { close() }
-    PadScreen(PadActs(b = "Close", start = start, opaque = true))
+    if (!beside) PadScreen(PadActs(b = "Close", start = start, opaque = true))
     val padHere = remember { PadActs(a = "Close") }
     // The whole dimmed page is the target, so it carries no ring of its own; the prompt bar says what A does.
-    BoxWithConstraints(Modifier.fillMaxSize().background(Color(0xB3000000)).padActs(padHere).focusRequester(padFocus).onFocusChanged { if (it.isFocused) TablePad.held = true }
+    BoxWithConstraints(Modifier.fillMaxSize().background(Color(0xB3000000)).then(if (beside) Modifier else Modifier.padActs(padHere).focusRequester(padFocus).onFocusChanged { if (it.isFocused) TablePad.held = true })
         .clickable(remember { MutableInteractionSource() }, null, onClick = close)
         .windowInsetsPadding(WindowInsets.safeDrawing).padding(16.dp)) {
         val cardH = maxHeight * .92f; val cardW = cardH * .716f

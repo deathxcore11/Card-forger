@@ -547,7 +547,13 @@ fun ForgeBoard(
                     androidx.compose.runtime.DisposableEffect(chipFocus) { TableZones.hand = chipFocus; onDispose { if (TableZones.hand === chipFocus) TableZones.hand = null } }
                     // W11/Y5: with a controller the ring starts on the hand chip when your turn to act comes and nothing has it, so the first
                     // d-pad press or A is on your hand (not the command zone or a field card).
-                    LaunchedEffect(live) {
+                    // The table's entry for the ring: a d-pad press or A with nothing focused lands here (no card lifted).
+                    androidx.compose.runtime.DisposableEffect(chipFocus) {
+                        val e: () -> Boolean = { TablePad.autoRing = true; val ok = runCatching { chipFocus.requestFocus() }.isSuccess; TablePad.autoRing = false; if (ok) TableZones.at = 0; ok }
+                        PadPrompts.entry = e; onDispose { if (PadPrompts.entry === e) PadPrompts.entry = null }
+                    }
+                    // Keyed on the ring too: when the board loses it (a CPU beat, a closed overlay) while you can act, it comes back here.
+                    LaunchedEffect(live, PadPrompts.anyFocus) {
                         if (!live || !Pad.connected.value || PadPrompts.anyFocus || TablePad.held) return@LaunchedEffect
                         androidx.compose.runtime.withFrameNanos { }
                         if (PadPrompts.anyFocus || TablePad.held) return@LaunchedEffect

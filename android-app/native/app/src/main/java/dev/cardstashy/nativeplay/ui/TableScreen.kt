@@ -159,7 +159,10 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
         if (!keep) selectedHand = null
     }
 
-    LaunchedEffect(inspect != null) { controller.hold("inspect", inspect != null) }
+    // On two screens the card shows below while play goes on above: the clock keeps running (test4: it froze at 90 and 30).
+    LaunchedEffect(inspect != null) { controller.hold("inspect", inspect != null && !DualScreen.active) }
+    // ...and the next decision or step puts the bottom screen back to your hand.
+    LaunchedEffect(shown?.turn, shown?.phase, shown?.waitingOnMe) { if (DualScreen.active) inspect = null }
     LaunchedEffect(menu) { controller.hold("menu", menu) }
     LaunchedEffect(matchMenu.ask) { controller.hold("leave", matchMenu.ask != null) }
     val afk by controller.afkNote.collectAsState()
@@ -212,7 +215,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
         // Two screens: a card you look at opens on the bottom screen, so the table stays in full view on top (B closes it).
         // Start still opens the match menu from an open inspect (U8: on two screens the ring can't come down to it).
         val inspectStart = PadAct("Menu") { inspect = null; matchMenu.open = true }
-        inspect?.let { c -> if (DualScreen.active) BottomScreen { CardInspect(c, shown?.viewer, inspectStart) { inspect = null } } else CardInspect(c, shown?.viewer, inspectStart) { inspect = null } }
+        inspect?.let { c -> if (DualScreen.active) BottomScreen { CardInspect(c, shown?.viewer, inspectStart, beside = true) { inspect = null } } else CardInspect(c, shown?.viewer, inspectStart) { inspect = null } }
         if (menu) Menu(onConcede = { menu = false; matchMenu.ask = "concede" }, onLeave = { menu = false; matchMenu.ask = "leave" }, onClose = { menu = false })
         MatchLeaveConfirm(matchMenu)
         if (stage == Stage.FINISHED) shown?.let { Result(it, audio, onHome, onRematch, resultNote, endReason(it, controller.conceded)) }
