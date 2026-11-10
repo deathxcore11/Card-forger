@@ -56,7 +56,10 @@ class TableAudio(context: Context) {
         val fresh = b.stack.filter { it.id !in old }
         // A spell cast from hand sounds its colour (Randall 10 Nov, "like before but better"): one colour its own cue, two or more
         // CAST-M, none CAST-C; CARD-008 when the cue isn't there. Triggers and abilities keep CARD-014.
-        val cast = fresh.firstOrNull { s -> s.source?.let { was[it.id]?.zone == "Hand" } == true }?.source
+        // A spell that waited for targets or a hand payment left the hand a board earlier (or is the CPU's, whose hand is hidden):
+        // Forge's own Hand -> Stack move says it was cast.
+        val fromHand = if (fresh.isEmpty()) emptySet() else b.events.filter { it.type == "zone" && it.from == "Hand" && it.to == "Stack" }.mapNotNull { it.card?.id }.toSet()
+        val cast = fresh.firstOrNull { s -> s.source?.let { was[it.id]?.zone == "Hand" || it.id in fromHand } == true }?.source
         if (cast != null) { val cue = castCue(cast.manaCost); play(if (ids.containsKey(cue)) cue else "CARD-008") }
         else if (fresh.isNotEmpty()) play("CARD-014")
         val arrived = field.filter { was[it.id]?.zone != "Battlefield" }

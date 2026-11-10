@@ -147,9 +147,7 @@ object PadPrompts {
         }
     }
 
-    /** The screen layers there were when [owner] came on screen (X11): an item under a page opened later never speaks for that page. */
-    internal fun layersNow(): Set<Any> = screens.mapTo(HashSet()) { it.first }
-    internal fun focus(owner: Any, acts: PadActs, layers: Set<Any>? = null) { if (focusOwner !== owner) focusLayers = layers ?: layersNow(); focusOwner = owner; focused = acts }
+    internal fun focus(owner: Any, acts: PadActs) { if (focusOwner !== owner) focusLayers = screens.mapTo(HashSet()) { it.first }; focusOwner = owner; focused = acts }
     internal fun blur(owner: Any) { if (focusOwner === owner) { focusOwner = null; focused = null } }
 
     /** The screen layers that count: from the innermost down to the first opaque one. */
@@ -199,7 +197,7 @@ object PadPrompts {
         return out
     }
 
-    internal val main = Handler(Looper.getMainLooper())
+    private val main = Handler(Looper.getMainLooper())
     private var yDown = false
     private var yHeld = false
     private var yHoldFn: ((Boolean) -> Unit)? = null
@@ -261,7 +259,7 @@ fun Modifier.padActs(acts: PadActs): Modifier = this then PadActsElement(acts)
 
 private class PadActsElement(val acts: PadActs) : ModifierNodeElement<PadActsNode>() {
     override fun create() = PadActsNode(acts)
-    override fun update(node: PadActsNode) { node.acts = acts; if (node.on) PadPrompts.focus(node, acts, node.layers) }
+    override fun update(node: PadActsNode) { node.acts = acts; if (node.on) PadPrompts.focus(node, acts) }
     override fun equals(other: Any?) = other is PadActsElement && other.acts === acts
     override fun hashCode() = System.identityHashCode(acts)
     override fun InspectorInfo.inspectableProperties() { name = "padActs" }
@@ -269,15 +267,11 @@ private class PadActsElement(val acts: PadActs) : ModifierNodeElement<PadActsNod
 
 private class PadActsNode(var acts: PadActs) : Modifier.Node(), FocusEventModifierNode {
     var on = false
-    /** The layers once this item's own screen has registered (its PadScreen effect runs after the item attaches, so read a beat later). */
-    var layers: Set<Any>? = null
-    private val take = Runnable { layers = PadPrompts.layersNow() }
-    override fun onAttach() { layers = null; PadPrompts.main.post(take) }
     override fun onFocusEvent(focusState: FocusState) {
         on = focusState.isFocused
-        if (on) PadPrompts.focus(this, acts, layers) else PadPrompts.blur(this)
+        if (on) PadPrompts.focus(this, acts) else PadPrompts.blur(this)
     }
-    override fun onDetach() { on = false; PadPrompts.main.removeCallbacks(take); PadPrompts.blur(this) }
+    override fun onDetach() { on = false; PadPrompts.blur(this) }
 }
 
 /** A screen's or sheet's buttons (X main action, LB/RB tabs, LT/RT page, Start menu, B's words) while it is shown. */

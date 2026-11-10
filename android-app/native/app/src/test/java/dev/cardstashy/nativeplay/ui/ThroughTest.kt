@@ -33,4 +33,16 @@ class ThroughTest {
         assertEquals(Through(0, false), damageThrough(board(listOf(c(10, base.viewer, 1, blocks = 1)), them)))
         assertNull(damageThrough(board(emptyList(), listOf(c(1, 0, 3)))))
     }
+
+    @Test fun infectNeverComesOffLife() {
+        val them = listOf(c(1, 0, 3, attacking = true, kw = listOf("Infect")), c(2, 0, 2, attacking = true))
+        assertEquals(Through(2, true), damageThrough(board(emptyList(), them)))
+        assertNull(damageThrough(board(emptyList(), listOf(c(1, 0, 3, attacking = true, kw = listOf("Infect"))))))
+    }
+
+    @Test fun podCountsOnlyAttackersAimedAtYou() {
+        val extra = base.players.first { it.id != base.viewer }.copy(id = 77, battlefield = emptyList())
+        val pod = board(emptyList(), listOf(c(1, 0, 3, attacking = true))).let { it.copy(players = it.players + extra) }
+        assertNull(damageThrough(pod))
+    }
 }

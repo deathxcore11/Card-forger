@@ -67,13 +67,16 @@ object CardArt {
     fun typeLine(name: String): String? = synchronized(index) { types[name.lowercase()] ?: types[lookupName(name).lowercase()] }
     /** W9: type lines for names that have none yet (one Scryfall call per 75 names), for the deck tracker; bumps [version]. */
     suspend fun fetchTypes(names: Collection<String>) = withContext(Dispatchers.IO) {
-        val need = synchronized(index) { names.filter { typeLine(it) == null }.distinctBy { it.lowercase() } }
+        // Also any name with no rarity on record (entrances by importance: rarity was not kept in the index before 0.4.56).
+        val need = synchronized(index) { names.filter { typeLine(it) == null || rarity(it) == null }.distinctBy { it.lowercase() } }
         if (need.isEmpty()) return@withContext
         var got = false
         for (chunk in need.chunked(75)) {
             val body = JsonObject().apply { add("identifiers", JsonArray().apply { chunk.forEach { add(JsonObject().apply { addProperty("name", lookupName(it)) }) } }) }.toString()
             val found = try { Http.call("POST", "https://api.scryfall.com/cards/collection", mapOf("User-Agent" to UA), body, timeoutMs = 10000)?.asJsonObject?.getAsJsonArray("data") } catch (_: Exception) { null } ?: continue
-            synchronized(index) { found.mapNotNull { it as? JsonObject }.forEach { c -> c.get("type_line")?.asString?.let { t -> names(c).forEach { n -> types[n.lowercase()] = t }; got = true } } }
+            synchronized(index) { found.mapNotNull { it as? JsonObject }.forEach { c ->
+                c.get("type_line")?.asString?.let { t -> names(c).forEach { n -> types[n.lowercase()] = t }; got = true }
+                c.get("rarity")?.asString?.let { r -> names(c).forEach { n -> rarities.putIfAbsent(n.lowercase(), r) }; got = true } } }
         }
         if (got) { save(); version.value++ }
     }
@@ -101,6 +104,7 @@ object CardArt {
                 val a = v.asJsonArray
                 if (a.size() > 0 && !a[0].isJsonNull) index[k] = a[0].asString to a.get(1)?.takeIf { !it.isJsonNull }?.asString
                 if (a.size() > 2) a[2]?.takeIf { it.isJsonPrimitive }?.let { types[k] = it.asString }
+                if (a.size() > 3) a[3]?.takeIf { it.isJsonPrimitive }?.let { rarities[k] = it.asString }
             }
         } catch (_: Exception) {}
     }
@@ -125,6 +129,9 @@ object CardArt {
     suspend fun resolveMatch(rows: List<Pair<String, JsonObject>>) {
         TableFacts.clear(); clearAhead(); synchronized(index) { pins.clear(); matchRows.clear(); rows.forEach { (n, r) -> matchRows[n.lowercase()] = r }; tries.clear() }
         resolve(rows)
+        // Names already in the index carry no rarity from before 0.4.56: fill them in the background (never holds the table).
+        val unrated = synchronized(index) { rows.map { it.first }.filter { rarity(it) == null } }
+        if (unrated.isNotEmpty()) kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch { runCatching { fetchTypes(unrated) } }
         var pinnedAny = false
         // A name in both decks with different printings keeps the first row's (your deck comes first), never neither.
         synchronized(index) { rows.forEach { (n, r) -> pinId(r)?.let { index["#$it"] }?.let { if (pins.putIfAbsent(n.lowercase(), it) == null) pinnedAny = true } } }
@@ -134,8 +141,12 @@ object CardArt {
     /** The index is copied under its lock and written outside it, so a card on screen never waits on a file write. */
     private val saving = Any()
     private fun save() = synchronized(saving) {
-        val (copy, tcopy) = synchronized(index) { index.toList() to HashMap(types) }
-        val o = JsonObject(); copy.forEach { (k, v) -> o.add(k, JsonArray().apply { add(v.first); add(v.second); tcopy[k]?.let { add(it) } }) }
+        val (copy, tcopy, rcopy) = synchronized(index) { Triple(index.toList(), HashMap(types), HashMap(rarities)) }
+        // [picture, art crop, type line, rarity]; a missing type line is a null so the rarity keeps its place.
+        val o = JsonObject(); copy.forEach { (k, v) -> o.add(k, JsonArray().apply { add(v.first); add(v.second)
+            val t = tcopy[k]; val r = rcopy[k]
+            if (t != null || r != null) add(t?.let { com.google.gson.JsonPrimitive(it) } ?: com.google.gson.JsonNull.INSTANCE)
+            if (r != null) add(r) }) }
 
         try { indexFile.writeText(o.toString()) } catch (_: Exception) {}
     }

@@ -532,6 +532,7 @@ fun ForgeBoard(
                         val i = hand.indexOfFirst { it.id == selectedHand }
                         onSelectHand(hand[if (i < 0) (if (dx > 0) 0 else hand.lastIndex) else (i + dx).coerceIn(0, hand.lastIndex)].id) }
                     // A on the chip: the walked card is picked for discard, the same card again goes; otherwise it plays what is lifted, or opens it.
+                    var chipOn by remember { mutableStateOf(false) }
                     val chipA = {
                         val c = lifted
                         // W11: what A met on the hand chip, so a Thor run shows why a press cast or only lifted (logcat -s PadA).
@@ -540,9 +541,8 @@ fun ForgeBoard(
                             val pick = c ?: hand.first()
                             if (pick.id in st.selection.cards) { if (pick.id == selectedHand) { onSelectHand(null); intents.card(pick.id) } else onSelectHand(pick.id) } else onInspect(pick)
                         } else if (c == null) onSelectHand(hand.first().id)
-                        else if (playable(c)) { onSelectHand(null); TablePad.castAt = android.os.SystemClock.uptimeMillis(); intents.card(c.id) } else onInspect(c)
+                        else if (playable(c)) { onSelectHand(null); if (chipOn && !c.isLand) { TablePad.castAt = android.os.SystemClock.uptimeMillis(); TablePad.castId = c.id }; intents.card(c.id) } else onInspect(c)
                     }
-                    var chipOn by remember { mutableStateOf(false) }
                     val chipFocus = remember { FocusRequester() }
                     androidx.compose.runtime.DisposableEffect(chipFocus) { TableZones.hand = chipFocus; onDispose { if (TableZones.hand === chipFocus) TableZones.hand = null } }
                     // W11/Y5: with a controller the ring starts on the hand chip when your turn to act comes and nothing has it, so the first
@@ -550,12 +550,16 @@ fun ForgeBoard(
                     LaunchedEffect(live) {
                         if (!live || !Pad.connected.value || PadPrompts.anyFocus || TablePad.held) return@LaunchedEffect
                         androidx.compose.runtime.withFrameNanos { }
+                        if (PadPrompts.anyFocus || TablePad.held) return@LaunchedEffect
+                        // The ring arrives without lifting a card, so X keeps its pass/step meaning until he walks or presses A.
+                        TablePad.autoRing = true
                         if (runCatching { chipFocus.requestFocus() }.isSuccess) { TableZones.at = 0; android.util.Log.i("PadA", "ring starts on the hand chip") }
+                        TablePad.autoRing = false
                     }
                     val shape = RoundedCornerShape(999.dp)
                     Row(Modifier.align(Alignment.TopCenter).padding(top = handW / 66f * 30f)
                         .focusRequester(chipFocus)
-                        .onFocusChanged { chipOn = it.isFocused; if (it.isFocused) { TableZones.at = 0; TablePad.last = chipFocus; if (selectedHand == null && !discardAsk) onSelectHand(hand.first().id) } }
+                        .onFocusChanged { chipOn = it.isFocused; if (it.isFocused) { TableZones.at = 0; TablePad.last = chipFocus; if (selectedHand == null && !discardAsk && !TablePad.autoRing) onSelectHand(hand.first().id); TablePad.autoRing = false } }
                         .onKeyEvent { e -> if (e.nativeKeyEvent.action != android.view.KeyEvent.ACTION_DOWN) return@onKeyEvent false
                             when (e.nativeKeyEvent.keyCode) { android.view.KeyEvent.KEYCODE_DPAD_LEFT -> { step(-1); true }; android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> { step(1); true }; else -> false } }
                         .padActs(PadActs(a = if (discardAsk && live) (if (lifted != null && lifted.id == selectedHand) "Discard" else "Pick") else lifted?.let { if (playable(it)) (if (it.isLand) "Play land" else "Cast") else "Inspect" }, y = lifted?.let { c -> PadAct("Inspect") { onInspect(c) } }))
@@ -582,7 +586,7 @@ fun ForgeBoard(
                 // W10: your main phase 1, nothing on the stack and no creature able to attack: the step that follows is the end of the turn.
                 val endTurnGold = selected == null && !discardingNow && noAttackersLeft(st)
                 val ok = if (selected != null) (if (discardingNow) "Discard ${selected.name}" else if (selected.isLand) "Play land" else "Cast")
-                    else if (discardingNow) "Choose a card to discard" else if (endTurnGold) "End turn" else okLabel(st)
+                    else if (discardingNow && !st.buttons.okEnabled) "Choose a card to discard" else if (endTurnGold) "End turn" else okLabel(st)
                 // End turn takes the gold spot (it presses Forge's cancel); the quiet one keeps the way on to combat.
                 val second = if (selected != null) null else if (endTurnGold) okLabel(st) else cancelLabel(st)
                 // A declaration Forge would refuse (a must-attack creature left out) is not offered as a live button.
@@ -608,7 +612,8 @@ fun ForgeBoard(
                     oneTarget(st) || onePick(st) -> if (live && st.selection.min == 0 && st.buttons.okEnabled) PadAct("No target") { intents.ok() } else null
                     short && second != null -> if (live) PadAct(second) { intents.cancel() } else null
                     endTurnGold -> if (live) PadAct(ok) { intents.cancel() } else null
-                    discardingNow && selected == null -> null
+                    // An "up to N" discard Forge lets you finish keeps its OK (only a must-discard waits for a pick).
+                    discardingNow && selected == null && !okOn -> null
                     else -> if (live && (selected != null || okOn)) PadAct(ok) { if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok() } else null
                 }
                 pair {
@@ -632,7 +637,7 @@ fun ForgeBoard(
                         val shownAt = remember(second) { android.os.SystemClock.uptimeMillis() }
                         second?.let { GlassPill(it, live, if (undo) undoM else upperM, d) {
                             if (!undo || android.os.SystemClock.uptimeMillis() - shownAt >= 400) intents.cancel() } }
-                        GoldPill(ok, live && (selected != null || (okOn && !discardingNow)), lowerM.focusRequester(goldFocus), d, padKey = padX != null) {
+                        GoldPill(ok, live && (selected != null || okOn), lowerM.focusRequester(goldFocus), d, padKey = padX != null) {
                             if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok()
                         }
                     }
@@ -672,11 +677,13 @@ fun ForgeBoard(
             val autoPaid = remember { longArrayOf(-1L) }
             LaunchedEffect(st.revision) {
                 val paying = live && st.prompt == null && st.inputType?.startsWith("InputPayMana") == true
+                // The cast is over (back to priority or anything but targets and payment): nothing later pays itself.
+                if (!paying && st.inputType != null && st.inputType != "InputSelectTargets" && st.inputType != "InputLockUI") { TablePad.castAt = 0L; TablePad.castId = null }
                 if (!paying || autoPaid[0] == st.revision) return@LaunchedEffect
                 if (android.os.SystemClock.uptimeMillis() - TablePad.castAt > 8000 || st.autoPay == false) return@LaunchedEffect
                 if (st.buttons.okEnabled && st.buttons.ok.equals("auto", true)) {
-                    autoPaid[0] = st.revision; TablePad.castAt = 0L
-                    android.util.Log.i("PadA", "pad cast pays automatically (revision ${st.revision})")
+                    autoPaid[0] = st.revision; TablePad.castAt = 0L; TablePad.castId = null
+                    android.util.Log.i("PadA", "pad cast pays automatically (card ${TablePad.castId}, revision ${st.revision})")
                     intents.ok()
                 }
             }
@@ -790,14 +797,18 @@ internal data class Through(val n: Int, val atLeast: Boolean)
  */
 internal fun damageThrough(st: MatchState): Through? {
     val all = st.players.flatMap { it.battlefield }
-    val atMe = all.filter { it.attacking && it.controller != st.viewer && (it.attackTarget == null || (it.attackTarget.kind == "player" && it.attackTarget.id == st.viewer)) }
+    // C2: in a pod an attacker with no known target is not counted as aimed at you.
+    val duel = st.players.size <= 2
+    val atMe = all.filter { it.attacking && it.controller != st.viewer && ((it.attackTarget == null && duel) || (it.attackTarget?.kind == "player" && it.attackTarget.id == st.viewer)) }
     if (atMe.isEmpty()) return null
     val blocked = all.filter { it.blocking }.flatMap { it.blockingIds }.toSet()
     val open = atMe.filter { it.id !in blocked }
-    val n = open.sumOf { (it.power ?: 0).coerceAtLeast(0) }
+    // C1: Infect turns damage to you into poison counters, so it never comes off your life.
+    fun infect(c: Card) = c.keywords.any { it.equals("Infect", true) }
+    val n = open.filterNot(::infect).sumOf { (it.power ?: 0).coerceAtLeast(0) }
     fun unsure(c: Card) = !c.keywordsKnown || c.power == null || c.attachments.isNotEmpty() ||
         c.keywords.any { k -> k.equals("Trample", true) || k.equals("Double Strike", true) || k.startsWith("Trample", true) }
-    val atLeast = open.any(::unsure) || atMe.any { it.id in blocked && it.keywords.any { k -> k.startsWith("Trample", true) } }
+    val atLeast = open.any { unsure(it) || infect(it) } || atMe.any { it.id in blocked && it.keywords.any { k -> k.startsWith("Trample", true) } }
     if (atLeast && n == 0) return null
     return Through(n, atLeast)
 }
@@ -1376,6 +1387,9 @@ internal object TablePad {
     var held = false
     /** When A on the hand chip last cast a spell (W11): its mana is paid automatically when Forge can. */
     var castAt = 0L
+    var castId: Int? = null
+    /** The ring is being put on the hand chip by the table itself (not a d-pad press): it lifts nothing. */
+    var autoRing = false
     fun restore() { if (held) { held = false; last?.let { runCatching { it.requestFocus() } } } }
 }
 

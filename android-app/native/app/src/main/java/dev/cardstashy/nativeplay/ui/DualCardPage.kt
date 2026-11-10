@@ -1,5 +1,7 @@
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.foundation.gestures.animateScrollBy
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
@@ -234,9 +236,9 @@ internal fun DualRulingsBody(texts: List<String>) {
 
 /** Text whose {T} / {G} symbols draw with Play's own renderer ([symbols]), never as raw braces. */
 @Composable
-internal fun SymText(s: String, style: androidx.compose.ui.text.TextStyle, modifier: Modifier = Modifier) {
+internal fun SymText(s: String, style: androidx.compose.ui.text.TextStyle, modifier: Modifier = Modifier, overflow: androidx.compose.ui.text.style.TextOverflow = androidx.compose.ui.text.style.TextOverflow.Clip) {
     val built = remember(s) { val inline = HashMap<String, androidx.compose.foundation.text.InlineTextContent>(); androidx.compose.ui.text.buildAnnotatedString { symbols(s, inline) } to inline }
-    Text(built.first, style = style, inlineContent = built.second, modifier = modifier)
+    Text(built.first, style = style, inlineContent = built.second, modifier = modifier, overflow = overflow)
 }
 
 /** The set tile, one layout for Play and Collection: symbol, name and line on top; "x of N", the percent and the bar at the foot. */
@@ -326,4 +328,28 @@ private val FORMAT_NAMES = listOf("standard" to "Standard", "pioneer" to "Pionee
 internal fun legalFormats(card: com.google.gson.JsonObject?): List<String> {
     val legal = card?.get("legalities")?.takeIf { it.isJsonObject }?.asJsonObject ?: return emptyList()
     return FORMAT_NAMES.mapNotNull { (k, l) -> when (legal.get(k)?.takeIf { it.isJsonPrimitive }?.asString) { "legal" -> l; "restricted" -> "$l · restricted"; else -> null } }
+}
+
+/**
+ * A panel over the card page (the rulings): with a controller it takes the ring when it opens, the d-pad scrolls it and A closes it
+ * (B closes it through its BackHandler), so the page underneath never scrolls behind it.
+ */
+@Composable
+internal fun Modifier.padScrollPanel(scroll: androidx.compose.foundation.ScrollState, onClose: () -> Unit): Modifier {
+    val pad by Pad.connected.collectAsState()
+    if (!pad) return this
+    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val close by androidx.compose.runtime.rememberUpdatedState(onClose)
+    androidx.compose.runtime.LaunchedEffect(Unit) { androidx.compose.runtime.withFrameNanos { }; runCatching { focus.requestFocus() } }
+    return this.focusRequester(focus).onPreviewKeyEvent { e ->
+        val k = e.nativeKeyEvent.keyCode; val down = e.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN
+        when (k) {
+            android.view.KeyEvent.KEYCODE_DPAD_UP, android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+                if (down) scope.launch { scroll.animateScrollBy(if (k == android.view.KeyEvent.KEYCODE_DPAD_DOWN) 260f else -260f) }; true }
+            android.view.KeyEvent.KEYCODE_DPAD_LEFT, android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> true
+            android.view.KeyEvent.KEYCODE_DPAD_CENTER, android.view.KeyEvent.KEYCODE_BUTTON_A -> { if (!down) close(); true }
+            else -> false
+        }
+    }.padActs(PadActs(a = "Close")).focusable()
 }

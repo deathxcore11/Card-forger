@@ -1041,10 +1041,11 @@ private fun DeckPicker(decks: List<JsonObject>, owned: Int, pick: (JsonObject) -
 /** Every official ruling, over the top screen (B closes). */
 @Composable
 private fun RulingsPage(name: String, rulings: List<Pair<String, String>>, onClose: () -> Unit) {
+    val list = rememberScrollState()
     Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .6f)).pointerInput(Unit) { detectTapGestures { onClose() } }, contentAlignment = Alignment.Center) {
         Column(Modifier.fillMaxHeight(.9f).widthIn(max = 640.dp).fillMaxWidth().glass(Rule.Radius.shape(Rule.Radius.Sheet)).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("RULINGS · ${name.uppercase()}", style = Rule.Type.sans(11, FontWeight.Bold, Rule.Color.Gold).copy(letterSpacing = 1.6.sp))
-            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.weight(1f).padScrollPanel(list, onClose).verticalScroll(list), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 rulings.forEach { (c, src) -> Column { RuleLine(c, null, {}, 14); Text(src, style = Rule.Type.S12.copy(color = Rule.Color.Muted)) } }
             }
         }

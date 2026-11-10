@@ -2155,7 +2155,8 @@ private fun DualCollectionCard(m: CollectionCardModel, act: CollectionCardAction
             if (rulingsOpen) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .6f)).pointerInput(Unit) { detectTapGestures { rulingsOpen = false } }, contentAlignment = Alignment.Center) {
                 Column(Modifier.fillMaxHeight(.9f).widthIn(max = 640.dp).fillMaxWidth().glass(Rule.Radius.shape(Rule.Radius.Sheet)).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("RULINGS", style = Rule.Type.sans(11, FontWeight.Bold, Rule.Color.Gold).copy(letterSpacing = 1.6.sp))
-                    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    val list = rememberScrollState()
+                    Column(Modifier.weight(1f).padScrollPanel(list) { rulingsOpen = false }.verticalScroll(list), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         rulings.forEach { r -> Column { Rich(r.runs, sans(14f, 400, Ink), act.rule); Text(r.source, style = sans(12f, 400, Mute)) } }
                     }
                 }
