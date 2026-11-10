@@ -221,6 +221,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                 if (st != null) {
                     // What the table showed (match-facts.js), fed every new snapshot; the match is recorded once when Forge ends it.
                     if (st.revision != lastRev || st.finished) runCatching { facts.update(MatchFacts.surface(com.google.gson.JsonParser.parseString(body).asJsonObject)) }
+                    if (st.revision != lastRev) dev.cardstashy.nativeplay.art.TableFacts.note(st)
                     if (playedFrom == null && st.turn > 0) playedFrom = SystemClock.elapsedRealtime()
                     dev.cardstashy.nativeplay.play.Presence.matchTurn = st.turn
                     if (st.finished && !recorded) { recorded = true; runCatching { onFinished?.invoke(st, facts, playedFrom?.let { SystemClock.elapsedRealtime() - it }) } }

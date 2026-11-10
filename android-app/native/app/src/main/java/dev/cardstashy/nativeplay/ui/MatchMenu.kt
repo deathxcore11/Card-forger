@@ -196,7 +196,7 @@ internal fun DeckTracker(st: MatchState, menu: MatchMenu, H: Dp, d: Du, x: Dp, t
         @Composable fun row(name: String, cost: String, count: Int, sub: String) =
             Row(Modifier.fillMaxWidth().alpha(if (count > 0) 1f else .38f).padding(horizontal = 6.du, vertical = 4.du), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.du)) {
                 Box(Modifier.size(30.du, 22.du).clip(RoundedCornerShape(5.du)).background(Color(0x10FFFFFF)).border(1.dp, Color(0x1AFFFFFF), RoundedCornerShape(5.du))) {
-                    CardImage(name, Modifier.fillMaxSize(), crop = true) {}
+                    CardImage(name, Modifier.fillMaxSize(), crop = true)
                 }
                 Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.du)) {
                     Text(name, style = sans(sp(12.5f), FontWeight.SemiBold, Color(0xFFEEF0F3)), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))

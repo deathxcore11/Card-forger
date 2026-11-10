@@ -727,7 +727,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         // A big board (play-forge-table.css: --nh clamp(15, piece·.15, 22), --nf clamp(11, piece·.083, 13)): the name strip over a dark fade, the art below it.
         val nh = piece?.let { (it.value * .15f).coerceIn(15f, 22f).dp }
         Box(Modifier.fillMaxSize().padding(start = 2.du, end = 2.du, bottom = 2.du, top = nh?.let { it + 3.dp } ?: 2.du).clip(RoundedCornerShape(9.du))) {
-            CardImage(card.name, Modifier.fillMaxSize(), crop = true) { Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(frameTone(cardColors(card)).first, frameTone(cardColors(card)).second)))) }
+            CardImage(card.name, Modifier.fillMaxSize(), crop = true) { CardFrame(card.name, card, Modifier.fillMaxSize(), crop = true) }
         }
         // A card under the top of its pile: art at brightness .78, no name.
         if (!pileTop) Box(Modifier.fillMaxSize().background(Color(0x38000000)))

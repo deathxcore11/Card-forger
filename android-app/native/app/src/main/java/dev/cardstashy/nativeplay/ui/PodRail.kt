@@ -100,8 +100,8 @@ internal fun PodRail(st: MatchState, focus: Int, live: Boolean, intents: TableIn
                     // .play-pod-face: 30 px, #2a2418, a 1.5 px #e8b95b99 ring; the commander's art, else the label's initial (Cinzel 14).
                     Box(Modifier.size(30.du).clip(CircleShape).background(Color(0xFF2A2418)).border(1.5.dp, Color(0x99E8B95B), CircleShape), contentAlignment = Alignment.Center) {
                         Text(label.take(1), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(14f), color = Color(0xFFE8D6A8)))
-                        p.command.firstOrNull { it.commander }?.let { c -> CardImage(c.name, Modifier.fillMaxSize(), crop = true) {} }
-                            ?: (p.battlefield + p.graveyard + p.exile).firstOrNull { it.commander && it.owner == p.id }?.let { c -> CardImage(c.name, Modifier.fillMaxSize(), crop = true) {} }
+                        p.command.firstOrNull { it.commander }?.let { c -> CardImage(c.name, Modifier.fillMaxSize(), crop = true) }
+                            ?: (p.battlefield + p.graveyard + p.exile).firstOrNull { it.commander && it.owner == p.id }?.let { c -> CardImage(c.name, Modifier.fillMaxSize(), crop = true) }
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.du)) {
                         Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis, style = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.Bold, fontSize = sp(12f), color = Color(0xFFEFE6D2)))

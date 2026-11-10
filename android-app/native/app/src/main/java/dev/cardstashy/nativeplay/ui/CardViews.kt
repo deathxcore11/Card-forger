@@ -166,7 +166,7 @@ fun CardFace(
             .focusable(interactionSource = padSource))) {
         Box(Modifier.fillMaxSize().clip(shape).background(Color(0xFF15151A))) {
             if (card.hidden) CardBack(Modifier.fillMaxSize())
-            else CardImage(card.name, Modifier.fillMaxSize()) { TokenFace(card) }
+            else CardImage(card.name, Modifier.fillMaxSize()) { CardFrame(card.name, card, Modifier.fillMaxSize()) }
             if (mark == Mark.PICKED) Box(Modifier.fillMaxSize().background(Palette.GoldBright.copy(alpha = .22f)))
             if (flash.value > 0f) Box(Modifier.fillMaxSize().background(Color.White.copy(alpha = flash.value)))
         }
@@ -193,16 +193,6 @@ fun CardFace(
 private fun Badge(text: String, color: Color, modifier: Modifier) {
     Box(modifier.clip(RoundedCornerShape(8.dp)).background(color).border(1.dp, Palette.Hairline, RoundedCornerShape(8.dp)).padding(horizontal = 4.dp, vertical = 1.dp)) {
         Text(text, style = Type.Label.copy(fontSize = 11.sp, color = Color.White))
-    }
-}
-
-@Composable
-private fun TokenFace(card: Card) {
-    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF3A3326), Color(0xFF15151A)))), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(card.name, style = Type.Label.copy(fontSize = 11.sp), textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Clip)
-            if (card.power != null && card.isCreature) Text("${card.power}/${card.toughness}", style = Type.Label.copy(color = Palette.Gold))
-        }
     }
 }
 

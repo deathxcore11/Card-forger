@@ -99,7 +99,7 @@ object CardArt {
 
     /** A match is starting: resolve both decks with their pinned printings first, and pin those for the match. */
     suspend fun resolveMatch(rows: List<Pair<String, JsonObject>>) {
-        synchronized(index) { pins.clear(); matchRows.clear(); rows.forEach { (n, r) -> matchRows[n.lowercase()] = r }; tries.clear() }
+        TableFacts.clear(); synchronized(index) { pins.clear(); matchRows.clear(); rows.forEach { (n, r) -> matchRows[n.lowercase()] = r }; tries.clear() }
         resolve(rows)
         var pinnedAny = false
         synchronized(index) { rows.forEach { (n, r) -> pinId(r)?.let { index["#$it"] }?.let { pins[n.lowercase()] = it; pinnedAny = true } } }
@@ -197,6 +197,12 @@ object CardArt {
     private val pending = LinkedHashSet<String>()
     private var pumping: Job? = null
     private const val MAX_TRIES = 3
+
+    /** The engine's printing of a card the match's deck rows didn't pin: used when that name's picture is looked up again. */
+    fun enginePrinting(name: String, set: String, number: String) {
+        if (!::indexFile.isInitialized) return
+        synchronized(index) { matchRows.putIfAbsent(name.lowercase(), JsonObject().apply { addProperty("name", name); addProperty("set", set.lowercase()); addProperty("collectorNumber", number) }) }
+    }
 
     /** A card on screen has no picture on record: find it again soon (at most [MAX_TRIES] lookups a name). */
     fun want(name: String) {

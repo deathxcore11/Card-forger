@@ -28,7 +28,9 @@ import dev.cardstashy.nativeplay.ui.AssetImage
  */
 @Composable
 fun CardImage(name: String?, modifier: Modifier = Modifier, crop: Boolean = false, contentScale: ContentScale = ContentScale.Crop,
-              shape: Shape? = null, fallback: @Composable () -> Unit = {}) {
+              shape: Shape? = null, fallback: (@Composable () -> Unit)? = null) {
+    // No picture (yet, or ever): the card's own frame with its name and rules (TableFacts), never an empty panel.
+    val fallback: @Composable () -> Unit = fallback ?: { dev.cardstashy.nativeplay.ui.CardFrame(name, TableFacts.of(name), Modifier.fillMaxSize(), crop) }
     if (name == null) { Box(modifier) { fallback() }; return }
     CardImageTest.art?.invoke(name, crop)?.let { b -> androidx.compose.foundation.Image(b, null, if (shape != null) modifier.clip(shape) else modifier, contentScale = contentScale); return }
     val context = LocalContext.current
