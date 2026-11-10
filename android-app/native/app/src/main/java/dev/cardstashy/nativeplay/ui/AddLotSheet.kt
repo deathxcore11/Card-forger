@@ -364,16 +364,7 @@ internal fun FormSelect(options: List<Pair<String, String>>, selected: String, s
                 drawPath(androidx.compose.ui.graphics.Path().apply { moveTo(0f, 0f); lineTo(size.width, 0f); lineTo(size.width / 2, size.height); close() }, Color(0xFFB4BAC6))
             })
         }
-        DropdownMenu(open, { open = false }, containerColor = Color(0xFF1A1E26)) {
-            options.forEachIndexed { i, (v, l) ->
-                // <optgroup>: glass-select.js's .gp-title over its first option (10.5 / 800, uppercase, white at 50 %).
-                groups.getOrNull(i)?.takeIf { it.isNotEmpty() }?.let { g ->
-                    Text(g.uppercase(), Modifier.padding(start = 10.dp, end = 10.dp, top = if (i == 0) 4.dp else 10.dp, bottom = 6.dp), style = cssType(10.5f, 800, 14f, Color(0x80FFFFFF), 1.05f))
-                }
-                DropdownMenuItem(text = { Text(l, style = cssType(14f, if (v == selected) 700 else 400, 20f, if (v == selected) (LocalGameGold.current.takeIf { it != CardGame.MTG.gold } ?: Site.Gold) else AInk)) },
-                    onClick = { open = false; if (v != selected) onPick(v) })
-            }
-        }
+        if (open) RuleMenu(null, options.mapIndexed { i, (v, l) -> RuleRow(l, on = v == selected, group = groups.getOrNull(i)) { if (v != selected) onPick(v) } }) { open = false }
     }
 }
 

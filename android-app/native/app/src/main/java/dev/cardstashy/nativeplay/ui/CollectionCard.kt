@@ -1441,10 +1441,7 @@ private fun SiteSelect(options: List<CardOpt>, fs: Float, selected: Int, onPick:
                 drawPath(androidx.compose.ui.graphics.Path().apply { moveTo(0f, 0f); lineTo(size.width, 0f); lineTo(size.width / 2, size.height); close() }, Color(0xFFB4BAC6))
             })
         }
-        androidx.compose.material3.DropdownMenu(open, { open = false }, containerColor = Color(0xFF1A1E26)) {
-            options.forEachIndexed { i, o -> androidx.compose.material3.DropdownMenuItem(text = { Text(o.label, style = sans(14f, if (i == selected) 700 else 400, if (i == selected) GoldC else Ink)) },
-                onClick = { open = false; if (i != selected) onPick(i) }) }
-        }
+        if (open) RuleMenu(null, options.mapIndexed { i, o -> RuleRow(o.label, on = i == selected) { if (i != selected) onPick(i) } }) { open = false }
     }
 }
 

@@ -81,7 +81,8 @@ fun RuleSheet(title: String?, onClose: () -> Unit, pad: PadActs = PadActs(b = "C
 }
 
 /** One row of a Menu. */
-class RuleRow(val label: String, val danger: Boolean = false, val enabled: Boolean = true, val onClick: () -> Unit)
+/** [on]: the choice in force (gold). [group]: a small heading drawn over this row (a select's option group). */
+class RuleRow(val label: String, val danger: Boolean = false, val enabled: Boolean = true, val on: Boolean = false, val group: String? = null, val hint: String? = null, val onClick: () -> Unit)
 
 /** The sheet as a Menu: one 48 dp row per choice; picking one closes the sheet first. */
 @Composable
@@ -89,9 +90,13 @@ fun RuleMenu(title: String?, rows: List<RuleRow>, onClose: () -> Unit) = RuleShe
     Column {
         rows.forEachIndexed { i, r ->
             if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Rule.Color.Line))
+            r.group?.takeIf { it.isNotEmpty() }?.let { Text(it.uppercase(), Modifier.padding(start = 6.dp, top = 10.dp, bottom = 2.dp), style = Rule.Type.sans(11, androidx.compose.ui.text.font.FontWeight.Bold, Rule.Color.Muted)) }
             Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(Rule.Radius.Tag)).clickable(enabled = r.enabled) { onClose(); r.onClick() }.padding(horizontal = 6.dp),
                 verticalAlignment = Alignment.CenterVertically) {
-                Text(r.label, style = Rule.Type.MenuRow.copy(color = if (!r.enabled) Rule.Color.Muted else if (r.danger) Rule.Color.Coral else Rule.Color.Text))
+                Column(Modifier.padding(vertical = 6.dp)) {
+                    Text(r.label, style = Rule.Type.MenuRow.copy(color = if (!r.enabled) Rule.Color.Muted else if (r.danger) Rule.Color.Coral else if (r.on) Rule.Color.Gold else Rule.Color.Text))
+                    r.hint?.takeIf { it.isNotBlank() }?.let { Text(it, style = Rule.Type.S12.copy(color = Rule.Color.Muted)) }
+                }
             }
         }
     }

@@ -304,15 +304,7 @@ private fun TierCard(t: TierBuildModel.Tier, game: CardGame, narrow: Boolean, vw
                         .semantics { role = Role.Button; contentDescription = "More for this version"; stateDescription = if (open) "Expanded" else "Collapsed" }, contentAlignment = Alignment.Center) {
                         Text("···", style = cssType(15f, 800, 18f))
                     }
-                    if (open) Popup(alignment = Alignment.BottomEnd, offset = androidx.compose.ui.unit.IntOffset(0, -56), onDismissRequest = { open = false }, properties = PopupProperties(focusable = true)) {
-                        Column(Modifier.widthIn(max = 280.dp).clip(RoundedCornerShape(16.dp)).background(Site.Surface2).border(1.dp, Site.Line, RoundedCornerShape(16.dp)).padding(6.dp)) {
-                            for (x in t.more) Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).clickable { open = false; act.tap(x.id) }
-                                .semantics { role = Role.Button }.padding(horizontal = 12.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                x.icon?.let { SiteIcon(it, 20.dp, accent) }
-                                Column { Text(x.label, style = cssType(14f, 700, 20f)); if (x.note.isNotBlank()) Text(x.note, style = cssType(12f, 400, 17f, Site.Muted)) }
-                            }
-                        }
-                    }
+                    if (open) RuleMenu(null, t.more.map { x -> RuleRow(x.label, hint = x.note) { act.tap(x.id) } }) { open = false }
                 }
             }
         }

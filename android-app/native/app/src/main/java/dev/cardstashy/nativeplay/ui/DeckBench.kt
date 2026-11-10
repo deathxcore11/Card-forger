@@ -611,10 +611,7 @@ private fun PowerBadge(m: BenchModel, open: (() -> Unit)? = null) = Row(Modifier
 private fun MenuButton(items: List<BenchMenuItem>, sheet: (() -> Unit)?, ui: BenchUi) {
     Box {
         Square("⋯", "Deck menu") { if (sheet != null) sheet() else ui.menu = true }
-        DropdownMenu(ui.menu, { ui.menu = false }, containerColor = Color(0xF714161D), shape = RoundedCornerShape(16.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, B.Gold2), modifier = Modifier.widthIn(min = 220.dp)) {
-            for (it in items) DropdownMenuItem({ Text(it.label, style = f(13f, 700)) }, { ui.menu = false; it.onClick() }, modifier = Modifier.heightIn(min = 44.dp))
-        }
+        if (ui.menu) RuleMenu("Deck menu", items.map { RuleRow(it.label, onClick = it.onClick) }) { ui.menu = false }
     }
 }
 

@@ -278,9 +278,7 @@ fun Select(label: String, options: List<Pair<String, String>>, on: String, modif
             Text(options.firstOrNull { it.first == on }?.second ?: label, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Ink), maxLines = 1)
             Text("▾", style = small)
         }
-        DropdownMenu(open, { open = false }, containerColor = Site.Surface2) {
-            options.forEach { (k, l) -> DropdownMenuItem({ Text(l, style = TextStyle(fontFamily = Site.Manrope, fontSize = 14.sp, color = if (k == on) Site.Gold else Ink)) }, { open = false; pick(k) }) }
-        }
+        if (open) RuleMenu(null, options.map { (k, l) -> RuleRow(l, on = k == on) { pick(k) } }) { open = false }
     }
 }
 

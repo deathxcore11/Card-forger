@@ -501,9 +501,7 @@ private fun InputDialog(ctx: DockCtx) = with(ctx.d) {
                     Text(p.options.firstOrNull { it.valueText == value && value.isNotEmpty() }?.label ?: "Select an offered value", style = ts(14f, 18.2f, FontWeight.SemiBold), modifier = Modifier.weight(1f))
                     Text("\u25BC", style = ts(9f, 12f, color = Color(0xFFEDF0E8)))
                 }
-                DropdownMenu(open, { open = false }) {
-                    for (o in p.options) DropdownMenuItem(text = { Text(o.label) }, onClick = { value = o.valueText ?: o.label; open = false })
-                }
+                if (open) RuleMenu(null, p.options.map { o -> RuleRow(o.label, on = value.isNotEmpty() && o.valueText == value) { value = o.valueText ?: o.label } }) { open = false }
             }
         } else {
             BasicTextField(value, { v -> value = v.take(200) }, enabled = !ctx.busy, singleLine = true, textStyle = ts(12f, 15.6f),

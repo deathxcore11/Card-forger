@@ -718,9 +718,7 @@ internal fun Pick(sel: CollSelect, onPick: (String) -> Unit, modifier: Modifier,
                 style = sans(if (big) 12f else 13f, 700, Ink, ls = if (big) -.1f else 0f))
             Text("▼", style = sans(9f, 400, Ink.copy(alpha = .8f)))
         }
-        DropdownMenu(open, { open = false }, containerColor = Color(0xFF1A1E26)) {
-            for (o in sel.options) DropdownMenuItem(text = { Text(o.label, style = sans(14f, if (o.on) 700 else 400, if (o.on) GoldC else Ink)) }, onClick = { open = false; if (!o.on) onPick(o.value) })
-        }
+        if (open) RuleMenu(sel.label.ifBlank { null }, sel.options.map { o -> RuleRow(o.label, on = o.on) { if (!o.on) onPick(o.value) } }) { open = false }
     }
 }
 
