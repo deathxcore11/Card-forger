@@ -238,3 +238,13 @@ test('in a lobby, changing a deck clears ready, a third account is shut out, and
   assert.equal((await json(f, '/api/play/rooms', { body: { format: 'Commander', lobby: true } })).status, 400);
   assert.equal((await json(f, '/api/play/rooms', { body: { format: 'Commander', lobby: true, to: other, deck: structuredClone(deck) } })).status, 400);
 });
+
+test('polling a room is not counted toward the invite limit, so a waiting host can still send and ready', async () => {
+  const f = fixture();
+  const sent = await json(f, '/api/play/rooms', { body: { format: 'Commander', to: other, lobby: true } });
+  assert.equal(sent.status, 201);
+  for (let i = 0; i < 40; i++) assert.equal((await json(f, '/api/play/rooms/' + sent.body.roomId, { method: 'GET' })).status, 200, 'poll ' + i);
+  const [c] = (await json(f, '/api/play/rooms', { token: 'other', method: 'GET' })).body.challenges;
+  assert.equal((await json(f, '/api/play/rooms/join', { token: 'other', body: { invite: c.invite, accept: true } })).status, 200);
+  assert.equal((await json(f, '/api/play/rooms/' + sent.body.roomId + '/ready', { body: { deck: structuredClone(deck), ready: true } })).status, 200);
+});
