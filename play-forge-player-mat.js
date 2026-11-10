@@ -7,7 +7,7 @@ import {createForgeHostClient,exactForgeInput,forgeAccountKey} from './play-forg
 import {createForgePresentationSession} from './experiments/forge-proof/forge-session.mjs';
 import {mountForgeTable} from './experiments/forge-proof/forge-table.mjs';
 import {nativePromptUnanswerable} from './experiments/forge-proof/native-panel.mjs';
-import {mountForgeMatchIntro,forgeStartingPlayer,preloadDeckBackdrops,mountForgeArtLoading} from './play-forge-pregame.js';
+import {mountForgeMatchIntro,forgeStartingPlayer,preloadDeckBackdrops,warmDeckArt,mountForgeArtLoading} from './play-forge-pregame.js';
 import {deckChronicles,deckRecord,recordLine,recordMatch} from './play-match-record.js';
 import {chronicleBlock} from './play-chronicle-ui.js';
 import {createMatchFacts} from './match-facts.js';
@@ -293,7 +293,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    // the match instead of before it. The matchup waits briefly so cached deck art shows.
    // Art is read only once its preparation has finished; before that the lookup refuses.
    // The matchup panels get each deck's commander art first, from a small request, before the whole-deck preparation.
-   const preparing=quick.then(()=>prepareArtwork(setup,{isCurrent:current}));preparing.then(()=>{artReady=true;try{if(current())intro?.refreshArtwork();}catch{/* the matchup keeps its placeholder */}},()=>{});
+   const preparing=quick.then(()=>prepareArtwork(setup,{isCurrent:current}));preparing.then(()=>{artReady=true;try{if(current())intro?.refreshArtwork();}catch{/* the matchup keeps its placeholder */}try{void warmDeckArt([setup.selected,setup.opponent,...(setup.extraOpponents||[]).map(o=>o?.deck)].filter(Boolean),lookup,{isCurrent:current}).catch(()=>{});}catch{/* warming is optional */}},()=>{});
    // The table is requested as soon as the starting player is known: Quick Play knows at
    // once, so the host starts while the matchup shows; Practice asks first.
    let input,created=null;
