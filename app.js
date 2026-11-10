@@ -1694,9 +1694,11 @@ const PLAY_SINGLETON=['Commander','Standard Brawl','Oathbreaker'];
 // The free Commander precons live only in the Play deck pickers (Practice, Quick Play, Multiplayer),
 // never in Decks or the Trunk, and always play (Randall 4 Nov 00:40Z; data/play-starters/precons.json).
 let freePrecons=null;
-function loadFreePrecons(){if(freePrecons)return;freePrecons=[];fetchJSON('/data/play-starters/precons.json').then(j=>{freePrecons=(j?.decks||[]).filter(d=>d.format==='Commander').map(d=>({id:'free:'+d.key,name:d.name,format:'Commander',commander:d.rows.find(r=>r.commander)?.name||'',cards:d.rows.map(r=>({name:r.name,qty:r.qty})),side:[],free:true,unlocked:true}));if(S.ui.view==='play')refreshPlayMenu();}).catch(()=>{freePrecons=null;});}
+function loadFreePrecons(){if(freePrecons)return;freePrecons=[];fetchJSON('/data/play-starters/precons.json').then(j=>{freePrecons=(j?.decks||[]).filter(d=>d.format==='Commander').map(d=>({id:'free:'+d.key,name:d.name,format:'Commander',commander:d.rows.find(r=>r.commander)?.name||'',cards:d.rows.map(r=>({name:r.name,qty:r.qty,...(r.id?{printingId:r.id}:{})})),side:[],free:true,unlocked:true}));if(S.ui.view==='play')refreshPlayMenu();
+ // Every free deck's commander art loads up front, so no picker tile waits on a lookup that never ran.
+ const lead=[...new Set(freePrecons.map(d=>d.commander).filter(Boolean))];if(lead.length)resolveNames(lead,()=>{},false,()=>!accountLocked).then(()=>{if(S.ui.view==='play')refreshPlayMenu();}).catch(()=>{});}).catch(()=>{freePrecons=null;});}
 function playTableDecks(){let st={};try{st=playEcon.snapshot().state||{};}catch{}const owned=ownedByName(st.cards||[]);if(st.wallet)loadFreePrecons();
- return [...(st.decks||[]).map(d=>{const row=r=>({name:String(r.name||''),qty:Math.max(1,r.qty|0)}),cards=(d.cards||[]).filter(r=>r.board!=='side').map(row),side=(d.cards||[]).filter(r=>r.board==='side').map(row),format=d.format||'Standard';
+ return [...(st.decks||[]).map(d=>{const row=r=>({name:String(r.name||''),qty:Math.max(1,r.qty|0),...(r.id?{printingId:String(r.id)}:{})}),cards=(d.cards||[]).filter(r=>r.board!=='side').map(row),side=(d.cards||[]).filter(r=>r.board==='side').map(row),format=d.format||'Standard';
   const commander=PLAY_SINGLETON.includes(format)?(cards.find(r=>r.qty===1&&/Legendary.*(Creature|Planeswalker)/.test(meta(r.name)?.type_line||''))?.name||''):'';
   return {id:d.id,name:d.name||'Untitled deck',format,commander,cards,side,unlocked:deckShortfall(cards,owned,new Map()).complete};}),
   ...(freePrecons||[]),
@@ -2405,7 +2407,7 @@ A.playStartCandidate=async()=>{
    if(!current()||!playerMatRoot)return;
    const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
     resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
-    lookup:(name,id)=>id?S.state.printings?.[id]||storyPrints.get(id)||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
+    lookup:(name,id)=>id?S.state.printings?.[id]||storyPrints.get(id)||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id)),fetchPrintings:fetchPrintingsBatch});
    playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readGoals:resultGoals,readSetup:()=>playSetup.snapshot(),getAccessToken:cloudAccessToken,createClient:localClient,
     prepareArtwork:cards.prepare,previewArtwork:cards.preview,previewLookup:cards.previewLookup,lookup:cards.lookup,resolveLate:(()=>{const late=new Set();let t=0;return name=>{late.add(name);clearTimeout(t);t=setTimeout(()=>{const names=[...late];late.clear();if(current())void resolveNames(names,()=>{},false,current);},250);};})(),onClose:closePlayerMat,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();},
     // A finished match frees its engine after cleanup; warm the next one for a rematch.
@@ -2443,7 +2445,7 @@ A.playFriendLaunch=async matchId=>{
   if(!current()||!playerMatRoot)return;
   const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
    resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
-   lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
+   lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id)),fetchPrintings:fetchPrintingsBatch});
   playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readGoals:resultGoals,readSetup:()=>setup,getAccessToken:cloudAccessToken,
    prepareArtwork:cards.prepare,previewArtwork:cards.preview,previewLookup:cards.previewLookup,lookup:cards.lookup,resolveLate:name=>{late.add(name);clearTimeout(lateTimer);lateTimer=setTimeout(()=>{const names=[...late];late.clear();if(current())void resolveNames(names,()=>{},false,current);},250);},
    onClose:()=>{friendRoom=null;closePlayerMat();},onHome:()=>{friendRoom=null;closePlayerMat();go('#home');}});
@@ -2479,6 +2481,7 @@ A.storyListSide=t=>{storyUi.listSide=t.dataset.storyList==='theirs'?'theirs':'mi
 // Story decklists show the exact era printing of every card, basics included: the rows carry
 // Scryfall ids, fetched once and swapped into the catalog only while the list renders.
 const storyPrints=new Map(),storyPrintAsk=new Set();
+const fetchPrintingsBatch=async ids=>(await api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:ids.map(id=>({id}))})}))?.data||[];
 const storyPrintJobs=new Set();
 // Resolves once every id asked for so far is in storyPrints (or failed), so a match never starts on a half-loaded set of pins.
 async function storyWantPrints(ids){const want=ids.filter(id=>id&&!storyPrints.has(id)&&!storyPrintAsk.has(id));if(!want.length){await Promise.allSettled([...storyPrintJobs]);return;}want.forEach(id=>storyPrintAsk.add(id));
@@ -2537,7 +2540,7 @@ A.storyPlay=async({skipScene=false}={})=>{
   const coach=seat==='hero'?createLessonCoach({root,battle:lessonRun?b:{id:null},playerSide:seat}):null;
   const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
    resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
-   lookup:(name,id)=>id?S.state.printings?.[id]||storyPrints.get(id)||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
+   lookup:(name,id)=>id?S.state.printings?.[id]||storyPrints.get(id)||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id)),fetchPrintings:fetchPrintingsBatch});
   // Story pins every card to its era printing (data/story/act-N.json ids): load them in bulk before the table asks for art.
   const pinIds=[...new Set([b.hero,b.villain].flatMap(s=>s.deck.cards.map(r=>r.id)).filter(Boolean))],prepareCards=cards.prepare;cards.prepare=async(...a)=>{await storyWantPrints(pinIds);return prepareCards(...a);};
   let paid=false,rec=null;
@@ -4448,8 +4451,9 @@ A.finderPrecons = async (format) => {
       F.msg = `Checking ${++i}/${next.length}: ${d.name}…`;
       render();
       try {
-        const p = mtgjsonDeck(await fetchJSON("https://mtgjson.com/api/v5/decks/" + d.fileName.replace(/\.json$/, "") + ".json"));
-        F.precons.push({ file: d.fileName, name: p.name || d.name, commander: p.commander, ...(p.multipleCommanders ? { commanders: p.commanders.map((name) => ({ name, qty: 1 })) } : {}), released: d.releaseDate || "", format: "Commander", cards: p.cards.map((c) => ({ name: c.name, qty: c.qty })) });
+        const raw = await fetchJSON("https://mtgjson.com/api/v5/decks/" + d.fileName.replace(/\.json$/, "") + ".json"), p = mtgjsonDeck(raw), ids = new Map();
+        for (const c of [...((raw?.data || raw)?.commander || []), ...((raw?.data || raw)?.mainBoard || [])]) if (c?.identifiers?.scryfallId && !ids.has(key(c.name))) ids.set(key(c.name), c.identifiers.scryfallId);
+        F.precons.push({ file: d.fileName, name: p.name || d.name, commander: p.commander, ...(p.multipleCommanders ? { commanders: p.commanders.map((name) => ({ name, qty: 1 })) } : {}), released: d.releaseDate || "", format: "Commander", cards: p.cards.map((c) => ({ name: c.name, qty: c.qty, ...(ids.get(key(c.name)) ? { printingId: ids.get(key(c.name)) } : {}) })) });
       } catch {}
     }
     F.msg = "Loading prices…";

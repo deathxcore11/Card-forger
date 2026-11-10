@@ -4,7 +4,7 @@ const key = value => String(value || '').trim().toLowerCase();
 const matches = (card, name) => [card?.name, ...(card?.card_faces || []).map(f => f.name)].some(n => key(n) === key(name));
 const changed = () => Object.assign(Error('ACCOUNT_CHANGED'), { code: 'ACCOUNT_CHANGED' });
 
-export function createForgeArtworkPreparation({ resolveNames, lookup, fetchPrinting, selectionKey = key, isCurrent, timeoutMs = 20000 } = {}) {
+export function createForgeArtworkPreparation({ resolveNames, lookup, fetchPrinting, fetchPrintings = null, selectionKey = key, isCurrent, timeoutMs = 20000 } = {}) {
   if ([resolveNames, lookup, fetchPrinting, isCurrent].some(f => typeof f !== 'function')) throw Error('FORGE_ARTWORK_READERS_REQUIRED');
   let frozen = new Map(), early = new Map(), prepared = false, checkLaunch = () => true, generation = 0;
   const current = () => { if (!isCurrent() || !checkLaunch()) { frozen.clear(); prepared = false; throw changed(); } };
@@ -26,6 +26,7 @@ export function createForgeArtworkPreparation({ resolveNames, lookup, fetchPrint
       }
       let active = true, timer;
       const stillCurrent = () => active && ticket === generation && isCurrent() && launchCurrent();
+      const frozenHas = id => [...requests.values()].filter(r => r.id === id).every(r => frozen.has(identity(r.name, id)));
       const save = (name, id, card) => {
         if (stillCurrent() && card?.id && (!id || card.id === id) && matches(card, name)) frozen.set(identity(name, id), structuredClone(card));
       };
@@ -36,12 +37,22 @@ export function createForgeArtworkPreparation({ resolveNames, lookup, fetchPrint
         if (!stillCurrent()) return;
         for (const row of requests.values()) if (!row.id) save(row.name, null, lookup(row.name, null));
         const ids = [...new Set([...requests.values()].map(r => r.id).filter(id => typeof id === 'string' && id.length <= 160))];
+        // One batched request per 75 ids (the provider paces single reads far slower), so the whole deck's art
+        // lands inside the wait; anything it misses still falls through to the single read below.
+        if (typeof fetchPrintings === 'function') {
+          const need = ids.filter(id => lookup(null, id)?.id !== id);
+          for (let i = 0; i < need.length && stillCurrent(); i += 75) {
+            let cards = []; try { cards = await fetchPrintings(need.slice(i, i + 75)); } catch { cards = []; }
+            if (!stillCurrent()) return;
+            for (const card of cards || []) if (card?.id) for (const row of requests.values()) if (row.id === card.id) save(row.name, card.id, card);
+          }
+        }
         let next = 0;
         // A bounded whole-deck prefetch; there are no card-provider calls from
         // the game-state/hand renderer, and no fallback for a missing printing.
         await Promise.all(Array.from({ length: Math.min(4, ids.length) }, async () => {
           while (stillCurrent() && next < ids.length) {
-            const id = ids[next++]; let card = lookup(null, id);
+            const id = ids[next++]; if (frozenHas(id)) continue; let card = lookup(null, id);
             if (card?.id !== id) { try { card = await fetchPrinting(id); } catch { card = null; } }
             if (!stillCurrent()) return;
             for (const row of requests.values()) if (row.id === id) save(row.name, id, card);

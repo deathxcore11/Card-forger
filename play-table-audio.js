@@ -7,7 +7,16 @@ import {LOOPS} from './audio-loops.js';
 const onField=c=>c.zone==='Battlefield';
 const has=(c,t)=>!!c?.types?.includes(t)||new RegExp(`\\b${t}\\b`).test(c?.type||'');
 const counters=c=>Object.values(c?.counters||{}).reduce((n,v)=>n+(Number(v?.count??v)||0),0);
-const WARM=['CARD-001','CARD-005','CARD-006','CARD-008','CARD-010','CMB-002','CMB-003','CMB-004','CMB-005','CMB-009','TT-001','TT-002'];
+const WARM=['CARD-001','CARD-005','CARD-006','CARD-008','CAST-W','CAST-U','CAST-B','CAST-R','CAST-G','CAST-C','CAST-M','CARD-010','CMB-002','CMB-003','CMB-004','CMB-005','CMB-009','TT-001','TT-002','TT-007'];
+
+// A spell cast from a hand sounds its colour: one colour its own cue, two or more CAST-M, none CAST-C; a card the table
+// can't read (no cost on it) keeps the old cast sound. Same reading as the app: the cost's coloured symbols, hybrid and
+// Phyrexian counted, generic-only costs ignored.
+export function castCue(card){
+ if(!card||card.known===false||typeof card.manaCost!=='string')return 'CARD-008';
+ const colours=new Set((card.manaCost.replace(/\{[^}]*\d[^}]*\}/g,'').match(/[WUBRG]/g))||[]);
+ return colours.size===0?'CAST-C':colours.size===1?'CAST-'+[...colours][0]:'CAST-M';
+}
 
 export function createTableAudio(root=null){
  let warmed=false,lowSeen=false,ended=false,watch=0;
@@ -43,7 +52,7 @@ export function createTableAudio(root=null){
   if(b.cards.some(c=>onField(c)&&c.tapped&&was.get(c.id)?.zone==='Battlefield'&&!was.get(c.id)?.tapped&&!c.attacking&&has(c,'Land')))play('CARD-006',{volume:.7});
   // The stack: something new is a cast (yours) or a trigger/ability.
   const old=new Set((a.stack||[]).map(x=>x.id)),fresh=(b.stack||[]).filter(x=>!old.has(x.id));
-  if(fresh.length){const src=fresh.map(x=>b.cards.find(c=>c.id===x.source)).find(Boolean);play(src&&was.get(src.id)?.zone==='Hand'?'CARD-008':'CARD-014');}
+  if(fresh.length){const src=fresh.map(x=>b.cards.find(c=>c.id===x.source)).find(Boolean);play(src&&was.get(src.id)?.zone==='Hand'?castCue(src):'CARD-014');}
   // Arrivals.
   const arrived=b.cards.filter(c=>onField(c)&&was.get(c.id)?.zone!=='Battlefield');
   if(arrived.some(c=>has(c,'Land')))play('CARD-005');
@@ -85,7 +94,8 @@ export function createTableAudio(root=null){
   // Early turns, then the fuller table, then the low-life track once anyone is close to losing.
   setMusic('play',low?'MUS-TBL-05':(b.turn||0)<=8?'MUS-TBL-03':'MUS-TBL-04',{alive:onTable});
  }
- return {update,destroy:stop};
+ // The last ten seconds of your window tick once a second (TT-007).
+ return {update,destroy:stop,tick(){sfx('TT-007',{volume:.6});}};
 }
 
 const STORY_IDS=Object.keys(LOOPS).filter(id=>id.startsWith('MUS-ST-'));

@@ -13,6 +13,9 @@ import {cachedTokenArt,loadTokenArt,tokenArtKey} from '../../play-token-printing
 import {sym,symbolName,symbolText,manaCost,esc} from '../../ui.js';
 import {haptic} from '../../feel.js';
 import {createTableAudio} from '../../play-table-audio.js';
+import {damageThrough,throughText} from './damage-through.mjs';
+import {entranceLevel,ENTER} from './entrances.mjs';
+const COMMANDER_CENTRE=false;
 import {createTableEmotes} from './table-emotes.mjs';
 // Outline icons from the CardStashy UI packet (24-unit grid, currentColor).
 const ZONE_ICONS={Library:'M6 3h14v16H6zM3 6v16h14M10 7h6M10 11h6',Graveyard:'M6 20V9a6 6 0 0 1 12 0v11M3 20h18M9 10h6M12 7v7',Exile:'m12 2 10 10-10 10L2 12zM8 12h14M17 7l5 5-5 5',Command:'M3 6l5 5 4-8 4 8 5-5-2 14H5zM5 16h14'};
@@ -71,6 +74,18 @@ export function provenUnaffordable(card,surface,pool={}){
   const fit=i=>{if(i===colored.length)return true;for(let k=0;k<tokens.length;k++)if(!used[k]&&tokens[k].includes(colored[i])){used[k]=true;if(fit(i+1))return true;used[k]=false;}return false;};return fit(0);};
  const walk=(i,tokens)=>i===sources.length?pays(tokens):sources[i].some(opt=>walk(i+1,tokens.concat(opt)));
  return !walk(0,floating);}
+// Smart auto-pass (director spec 6a): an entry Forge lists as "unknown" that the table can prove unpayable is not something to do.
+// Returns the actionable card entries that still count: mana-only lands never do; a card you cannot pay for does not.
+export function playableEntries(n,surface,short=new Map()){
+ const you=n?.players?.find(p=>p.id===surface?.players?.find(p=>p.seat===surface.seat)?.nativeId);
+ return (n?.selection?.actionable||[]).filter(r=>{
+  if(r?.kind!=='card'){return true;}
+  const card=surface?.cards?.find(c=>c.id===Number(r.id));if(!card)return true;
+  if(manaOnlyLand(card))return false;
+  if(card.controller!==surface.seat)return true;
+  return !(r.affordability==='unavailable'||short.has(card.id)||r.affordability!=='available'&&provenUnaffordable(card,surface,you?.mana));
+ });
+}
 const keywordKey=k=>String(k||'').replace(/([a-z])([A-Z])/g,'$1 $2').replace(/[:_]/g,' ').replace(/\s+/g,' ').trim().toLowerCase();
 let keywordReference=null;
 const loadKeywordReference=()=>keywordReference||(keywordReference=import('../../mtg-keyword-reference.js').then(m=>m.KEYWORD_REFERENCE).catch(()=>({})));
@@ -183,6 +198,22 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // times in a match; a listener per build would pile up), and it is removed with the table.
  let emblemFoldOn=false;
  const foldEmblems=e=>{const open=root.querySelector('.forge-control-emblems[data-open="true"]');if(open&&!open.contains(e.target))open.dataset.open='false';};
+ // Blocks, the damage chip (table additions 6): while you declare blockers a small glass chip above your seat says what gets
+ // through and what your life would be: red while N>0, green at 0, "At least N" when the table can't be sure. It reads the
+ // board as it stands (attackers aimed at you with no blocker), never predicts a death, and goes the moment blocks are confirmed.
+ const throughChip=doc.createElement('div');throughChip.className='forge-through';throughChip.setAttribute('role','status');
+ const throughUpdate=snap=>{
+  const n=snap.native,surface=snap.status?.surface,on=presentation.hosted&&n?.inputType==='InputBlock'&&!n.prompt&&root.dataset.stage==='match';
+  const t=on?damageThrough(surface):null;
+  if(!t){if(throughChip.isConnected)throughChip.remove();return;}
+  const me=surface.players.find(p=>p.seat===surface.seat),life=n.players?.find(p=>p.id===me?.nativeId)?.life??me?.life,seat=root.querySelector(`.play-match-seat[data-player-seat="${surface.seat}"]`);
+  if(!seat||!Number.isFinite(life)){if(throughChip.isConnected)throughChip.remove();return;}
+  const x=throughText(t,life),html=`<b>${esc(x.head)}</b><span>${esc(x.sub)}</span>`;
+  if(throughChip.dataset.html!==html){throughChip.dataset.html=html;throughChip.innerHTML=html;}
+  throughChip.dataset.tone=x.hurt?'hurt':'safe';
+  if(!throughChip.isConnected)root.append(throughChip);
+  const r=seat.getBoundingClientRect();throughChip.style.left=`${Math.round(r.left)}px`;throughChip.style.top=`${Math.round(r.top-8)}px`;
+ };
  function enhance(){
   if(closed)return;carryOver();if(flights.size)flyNow();if(!loopFrame&&typeof win.requestAnimationFrame==='function')loopFrame=win.requestAnimationFrame(syncLoops);const snap=session.snapshot(),n=snap.native;if(!snap.status||!n)return;
   if(presentation.hosted){const exit=root.querySelector('[data-focus-key=exit-match]');if(exit&&exit.textContent!=='Return to Play setup')exit.textContent='Return to Play setup';}
@@ -203,6 +234,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // Newer hosts say how sure they are per action; 'unavailable' is blocked, 'unknown' gets the quiet rim, 'available' the halo.
   affordability=new Map((n.selection?.actionable||[]).filter(r=>r?.kind==='card'&&typeof r.affordability==='string').map(r=>[Number(r.id),r.affordability])),targets=ids(n.selection?.targets),choices=ids(n.selection?.cards),chosen=ids(n.selection?.chosen);
   paintOwnCast(n,snap.status.surface);
+  throughUpdate(snap);
   // A spell whose payment Forge couldn't finish stays dark until your mana changes (a land, a new turn, floating mana).
   if(presentation.hosted){const sf=snap.status.surface,you=n.players?.find(p=>p.id===sf.players.find(p=>p.seat===sf.seat)?.nativeId),sig=JSON.stringify([n.turn,sf.cards.filter(c=>c.controller===sf.seat&&c.zone==='Battlefield'&&!c.tapped).map(c=>c.id),you?.mana||{}]),paying=String(n.inputType||'').startsWith('InputPayMana')?nativePayment(n,sf.cards):null;
    if(paying?.short&&paying.forCard!==null&&sf.cards.find(c=>c.id===paying.forCard)?.zone!=='Battlefield')shortCasts.set(paying.forCard,shortSig);
@@ -530,6 +562,53 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    if(!f.hit&&t>=W+T){f.hit=true;const n=f.onHit?.();const at=n?.isConnected?n:null;if(at){motion.flash(at);motion.sparks(at,{n:10,spread:56});}}
    f.tx=X*p/K;f.ty=(Y*p+lift)/K;w.style.transform=`translate(${f.tx.toFixed(1)}px,${f.ty.toFixed(1)}px) scale(${sc.toFixed(3)}) rotate(${rot.toFixed(2)}deg)`;
    if(w.dataset.csStriker!=='true')w.dataset.csStriker='true';}}
+ // Entrances by importance (table additions 3). Level 1 (rare or mythic): the card rises 46 px over its slot, hangs, drops, and two
+ // gold rings, a flash and a small shake land with it. Level 2 (a commander from the command zone): the table dims, the card
+ // flies to the centre at 2.3x with a light sweep and its name, holds, slams into its slot with a short freeze, three rings,
+ // a flash and a strong shake. With a prompt waiting the hold is skipped and only the slam stays.
+ const bigSeen=new Set();
+ const enterRing=(cx,cy,size,ms,delay=0,color='#e9c46a')=>{const d=doc.createElement('span');d.className='forge-enter-ring';Object.assign(d.style,{left:`${cx-size/2}px`,top:`${cy-size/2}px`,width:`${size}px`,height:`${size}px`,borderColor:color});fx.append(d);
+  d.animate([{opacity:.95,transform:'scale(.25)'},{opacity:0,transform:'scale(1)'}],{duration:ms,delay,easing:'cubic-bezier(.2,.7,.3,1)',fill:'both'}).finished.then(()=>d.remove(),()=>d.remove());};
+ const enterFlash=(cx,cy,size,ms=280)=>{const d=doc.createElement('span');d.className='forge-enter-flash';Object.assign(d.style,{left:`${cx-size/2}px`,top:`${cy-size/2}px`,width:`${size}px`,height:`${size}px`});fx.append(d);
+  d.animate([{opacity:.9,transform:'scale(.4)'},{opacity:0,transform:'scale(1)'}],{duration:ms,easing:'ease-out',fill:'both'}).finished.then(()=>d.remove(),()=>d.remove());};
+ const centreOf=el=>{const r=el.getBoundingClientRect();return {cx:r.left+r.width/2,cy:r.top+r.height/2,r};};
+ function landLevel1(el,w){const {cx,cy}=centreOf(el);enterRing(cx,cy,250,520);enterRing(cx,cy,160,420,90);enterFlash(cx,cy,280);motion.shake(root.querySelector('.play-match-main')||root,4,200,{garnish:true});}
+ function enterLevel1(c,el,w,own){
+  const T=ENTER.l1,total=T.travel+T.hold+T.drop,from=own?34:-34;
+  anim(w,[{transform:`translateY(${from}px) scale(1.22)`,opacity:.35},{transform:'translateY(-46px) scale(1.08)',opacity:1,offset:T.travel/total},{transform:'translateY(-46px) scale(1.08)',opacity:1,offset:(T.travel+T.hold)/total},{transform:'none',opacity:1}],{duration:total,easing:'cubic-bezier(.2,.75,.25,1)'});
+  setTimeout(()=>{if(el.isConnected)landLevel1(el,w);},total);
+ }
+ function enterLevel2(c,el,w,own,floor){
+  const T=ENTER.l2,r0=w.getBoundingClientRect();if(!r0.width)return;
+  const dim=doc.createElement('div');dim.className='forge-enter-dim';fx.append(dim);
+  // The flying card is drawn from its own art (a clone of the tile would carry its layout along).
+  const art=resolvePracticeArtwork(c),gw=r0.width,gh=gw*88/63,ghost=doc.createElement('div');ghost.className='forge-enter-ghost';ghost.setAttribute('inert','');ghost.setAttribute('aria-hidden','true');
+  ghost.innerHTML=art?.imageUrl?`<img src="${esc(art.imageUrl)}" alt="" referrerpolicy="no-referrer" decoding="async">`:`<span>${esc(c.name)}</span>`;
+  Object.assign(ghost.style,{left:`${r0.left}px`,top:`${r0.top+r0.height/2-gh/2}px`,width:`${gw}px`,height:`${gh}px`});
+  const sc=Math.max(1.4,Math.min(2.3*Math.max(1,r0.height/Math.max(1,gh)*1.4),(win.innerHeight*.6)/gh,(win.innerWidth*.5)/gw)),dx=win.innerWidth/2-(r0.left+r0.width/2),dy=win.innerHeight/2-(r0.top+r0.height/2);
+  w.style.visibility='hidden';fx.append(ghost);
+  ghost.querySelector('img')?.addEventListener('error',()=>{ghost.innerHTML=`<span>${esc(c.name)}</span>`;},{once:true});
+  const line=doc.createElement('div');line.className='forge-enter-name';line.innerHTML=`<small>${own?'Your commander':'Their commander'}</small><b>${esc(c.name)}</b>`;
+  const ends=()=>{clearTimeout(guard);w.style.visibility='';ghost.remove();dim.remove();line.remove();};
+  // Nothing about this may outlive its own length: if any animation never finishes (a hidden tab, a redraw), everything is put back.
+  const guard=setTimeout(()=>{w.style.visibility='';ghost.remove();dim.remove();line.remove();},T.dim+T.fly+T.hold+T.slam+T.stop+1500);
+  const slam=()=>{
+   const a=ghost.animate([{transform:`translate(${dx}px,${dy}px) scale(${sc})`},{transform:'translate(0,0) scale(1)'}],{duration:T.slam,easing:'cubic-bezier(.5,0,.9,.5)',fill:'forwards'});
+   a.finished.then(()=>{w.style.visibility='';const {cx,cy}=centreOf(w);
+    // A short freeze on contact, then the rings, flash and the strong shake.
+    setTimeout(()=>{ghost.remove();line.remove();enterRing(cx,cy,460,520);enterRing(cx,cy,300,440,70);enterRing(cx,cy,200,360,140);enterFlash(cx,cy,460,340);motion.shake(root.querySelector('.play-match-main')||root,12,340);
+     dim.animate([{opacity:1},{opacity:0}],{duration:T.dim,fill:'forwards'}).finished.then(()=>dim.remove(),()=>dim.remove());haptic('tap');},T.stop);},ends);
+  };
+  if(floor){dim.animate([{opacity:0},{opacity:1}],{duration:120,fill:'forwards'});slam();return;}
+  dim.animate([{opacity:0},{opacity:1}],{duration:T.dim,fill:'forwards'});
+  const fly=ghost.animate([{transform:'translate(0,0) scale(1)'},{transform:`translate(${dx}px,${dy}px) scale(${sc})`}],{duration:T.fly,easing:'cubic-bezier(.2,.8,.25,1)',fill:'forwards'});
+  fly.finished.then(()=>{
+   // The light sweep crosses the card and the name fades in under it; then the hold ends and it slams.
+   const sweep=doc.createElement('i');sweep.className='forge-enter-sweep';ghost.append(sweep);sweep.animate([{transform:'translateX(-120%)'},{transform:'translateX(120%)'}],{duration:T.sweep,easing:'ease-in-out'}).finished.then(()=>sweep.remove(),()=>sweep.remove());
+   const rr=ghost.getBoundingClientRect();line.style.left=`${rr.left+rr.width/2}px`;line.style.top=`${rr.bottom+14}px`;fx.append(line);line.animate([{opacity:0,transform:'translate(-50%,6px)'},{opacity:1,transform:'translate(-50%,0)'}],{duration:T.name,fill:'forwards'});
+   setTimeout(slam,Math.max(0,T.hold-T.fly+T.fly*.4));
+  },ends);
+ }
  function popNumber(el,text,kind,size=''){if(rectOf(el))motion.number(el.closest('.play-match-card-wrap')||el,text,{kind,size});}
  function boardEffects(prev,next,before,leaving){
   const a=prev?.status?.surface,b=next?.status?.surface;if(!a||!b||!presentation.hosted||reducedMotion()||root.dataset.stage!=='match')return;
@@ -544,7 +623,12 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // Tokens arriving together get one ring each at most six, so a swarm reads as one arrival.
   let rings=0;for(const c of b.cards){if(!onField(c)||was.get(c.id)?.zone==='Battlefield'||rings>=6)continue;const el=cardEl(c.id);if(!el)continue;rings++;const land=c.known&&c.types?.includes('Land');
    // The card itself drops onto the table from your side (or the CPU's) and settles, then the ring.
-   const w=el.closest('.play-match-card-wrap'),own=c.controller===b.seat;if(w&&rings<=3&&!before?.has(String(c.id)))anim(w,[{transform:`translateY(${own?34:-34}px) scale(1.22)`,opacity:.35},{transform:'translateY(0) scale(.96)',opacity:1,offset:.62},{transform:'none',opacity:1}],{duration:land?380:520,easing:'cubic-bezier(.2,.75,.25,1)'});
+   const w=el.closest('.play-match-card-wrap'),own=c.controller===b.seat;
+   // The centre commander entrance is held back on the web (4.3.161 hot fix: a card froze mid-table on Randall's Commander match); the
+   // commander takes the short rare drop instead. The app owns the full version.
+   const lvl0=c.known&&!c.isToken&&!land?entranceLevel({card:c,prev:was.get(c.id),rarity:resolvePracticeArtwork(c)?.card?.rarity,seen:bigSeen}):0,lvl=lvl0===2&&!COMMANDER_CENTRE?1:lvl0;
+   if(w&&lvl>0&&rings<=3&&(!before?.has(String(c.id))||lvl===2)){if(c.commander)bigSeen.add(c.id);if(lvl===2)enterLevel2(c,el,w,own,!!next.native?.prompt);else enterLevel1(c,el,w,own);continue;}
+   if(w&&rings<=3&&!before?.has(String(c.id)))anim(w,[{transform:`translateY(${own?34:-34}px) scale(1.22)`,opacity:.35},{transform:'translateY(0) scale(.96)',opacity:1,offset:.62},{transform:'none',opacity:1}],{duration:land?380:520,easing:'cubic-bezier(.2,.75,.25,1)'});
    setTimeout(()=>{if(el.isConnected)pulse(el,land?'land':c.known&&c.types?.includes('Creature')?'creature':'permanent',land?sourceTint(c):null);},land?300:420);}
   // 3. Combat impact: damage newly marked on a creature pops as a number where it lands; attackers
   // that dealt it lean in toward what they attacked. Life totals already count on the seats.
@@ -695,7 +779,18 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // The spotlight's photo starts loading when the story is queued, not when its beat opens.
  const preloaded=new Set();
  function preloadBeatArt(beats){void loadKeywordReference();for(const b of beats){if(!b.card||b.kind==='land')continue;const url=resolvePracticeArtwork(b.card)?.imageUrl;if(!url||preloaded.has(url))continue;if(preloaded.size>200)preloaded.clear();preloaded.add(url);const img=new win.Image();img.referrerPolicy='no-referrer';img.decoding='async';img.src=url;}}
- function clearPlaybackBeat(){activeBeat=null;castShow.dataset.open='false';delete doc.body.dataset.forgeSpotlight;root.querySelector('.forge-playback-status')?.remove();queueArrows();updateActivity();}
+ // The CPU thinks before it acts: three dots by its portrait and a card back in its hand lifts, holds and settles (one card,
+ // and a second 60 % of the time). Pace holds with reduced motion; only the lift is dropped.
+ function thinkShow(on,beat,ms){
+  root.querySelector('.forge-think')?.remove();if(!on||!presentation.hosted||root.dataset.stage!=='match')return;
+  const seat=root.querySelector(`.play-match-seat[data-seat=cpu][data-player-seat="${beat?.card?.controller}"]`)||root.querySelector('.play-match-seat[data-seat=cpu]');
+  if(seat){const d=doc.createElement('span');d.className='forge-think';d.setAttribute('aria-hidden','true');d.innerHTML='<i></i><i></i><i></i>';seat.append(d);}
+  if(reducedMotion())return;
+  const backs=[...root.querySelectorAll('.play-match-opponent-hand > *')];if(!backs.length)return;
+  const lift=el=>anim(el,[{transform:'none'},{transform:'translateY(14px)',offset:.22},{transform:'translateY(14px)',offset:.78},{transform:'none'}],{duration:Math.max(300,ms),easing:'ease-in-out'});
+  const first=Math.floor(Math.random()*backs.length);lift(backs[first]);if(backs.length>1&&Math.random()<.6)lift(backs[(first+1+Math.floor(Math.random()*(backs.length-1)))%backs.length]);
+ }
+ function clearPlaybackBeat(){root.querySelector('.forge-think')?.remove();activeBeat=null;castShow.dataset.open='false';delete doc.body.dataset.forgeSpotlight;root.querySelector('.forge-playback-status')?.remove();queueArrows();updateActivity();}
  let activityKey='';
  // Like Snap and Master Duel, CPU turns can play at Normal or Fast; the choice stays on this device.
  const SPEED_KEY='cardstashy-cpu-speed';let cpuSpeed='normal';try{if(win.localStorage?.getItem(SPEED_KEY)==='fast')cpuSpeed='fast';}catch{/* blocked storage keeps Normal */}
@@ -1142,29 +1237,31 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // Smart also moves on when your main phase has nothing left to play, as Arena does:
  // after your last land or spell resolves, a short beat to see it land, then Next.
  // Any playable card, stack item, prompt or Full Control keeps the stop.
- let idleTimer=0,idleKey='';
+ let idleTimer=0,idleKey='',chainTurn=-1;
+ // One 700 ms beat to see what happened, then the rest of your turn walks past at 160 ms a step while nothing is playable.
+ const passBeat=n=>reducedMotion()?250:(chainTurn===n.turn&&n.activePlayer===n.viewer?160:700);
  const idleReady=s=>{const n=s?.native;return !!(presentation.hosted&&n&&n.controlMode==='smart'&&!s.busy&&!s.transportError&&!n.prompt&&!n.failure&&(n.status==='running'||n.status===undefined)
-   &&n.inputType==='InputPassPriority'&&n.priorityPlayer===n.viewer&&n.activePlayer===n.viewer&&['MAIN1','MAIN2'].includes(n.phase)&&!n.stack?.length&&!(n.selection?.actionable||[]).length&&n.buttons?.okEnabled===true&&!drag?.active&&!playback?.running);};
+   &&n.inputType==='InputPassPriority'&&n.priorityPlayer===n.viewer&&n.activePlayer===n.viewer&&['MAIN1','MAIN2'].includes(n.phase)&&!n.stack?.length&&!playableEntries(n,s.status?.surface,shortCasts).length&&n.buttons?.okEnabled===true&&!drag?.active&&!playback?.running);};
  // Smart's last check, as on Arena: when Forge says you have nothing you could cast or activate right now
  // (native.canRespond false), your priority passes on its own after a short beat to see what happened, unless
  // you set a stop on this step. Without the flag nothing changes.
  let noResponseKey='',noResponseTimer=0;
- const noResponseReady=s=>{const n=s?.native;if(!(presentation.hosted&&n&&n.controlMode==='smart'&&n.canRespond===false&&!s.busy&&!s.transportError&&!n.prompt&&!n.failure&&(n.status==='running'||n.status===undefined)
+ const noResponseReady=s=>{const n=s?.native;if(idleReady(s))return false;if(!(presentation.hosted&&n&&n.controlMode==='smart'&&(n.canRespond===false||(n.selection?.actionable||[]).length>0&&!n.stack?.length&&!playableEntries(n,s.status?.surface,shortCasts).length)&&!s.busy&&!s.transportError&&!n.prompt&&!n.failure&&(n.status==='running'||n.status===undefined)
    &&n.inputType==='InputPassPriority'&&n.priorityPlayer===n.viewer&&n.buttons?.okEnabled===true&&!drag?.active&&!playback?.running&&!handFocus&&peek.dataset.open!=='true'))return false;
   const stop=n.phaseStops?.[`${n.activePlayer===n.viewer?'you':'opponent'}:${n.phase}`];return stop!==true&&stop!==false;};
  function autoPassNoResponse(s){
   const n=s?.native,key=n?`${n.revision}`:'';
   if(!noResponseReady(s)){clearTimeout(noResponseTimer);noResponseTimer=0;return;}
   if(noResponseKey===key)return;noResponseKey=key;clearTimeout(noResponseTimer);
-  noResponseTimer=setTimeout(()=>{noResponseTimer=0;const now=session.snapshot();if(closed||!noResponseReady(now)||now.native.revision!==n.revision)return;act(()=>session.nativeButton('ok',n.revision));},reducedMotion()?300:700);
+  noResponseTimer=setTimeout(()=>{noResponseTimer=0;const now=session.snapshot();if(closed||!noResponseReady(now)||now.native.revision!==n.revision)return;if(n.activePlayer===n.viewer)chainTurn=n.turn;act(()=>session.nativeButton('ok',n.revision));},reducedMotion()?300:passBeat(n));
  }
  function autoPassIdle(s){
   const n=s?.native,key=n?`${n.revision}:${n.phase}`:'';
   if(!idleReady(s)){clearTimeout(idleTimer);idleTimer=0;return;}
   if(idleKey===key)return;idleKey=key;clearTimeout(idleTimer);
-  idleTimer=setTimeout(()=>{idleTimer=0;const now=session.snapshot();if(closed||!idleReady(now)||now.native.revision!==n.revision)return;act(()=>session.nativeButton('ok',n.revision));},reducedMotion()?250:900);
+  idleTimer=setTimeout(()=>{idleTimer=0;const now=session.snapshot();if(closed||!idleReady(now)||now.native.revision!==n.revision)return;chainTurn=n.turn;act(()=>session.nativeButton('ok',n.revision));},passBeat(n));
  }
- playback=new CpuActionPlaybackQueue({present:presentBoard,beat:showPlaybackBeat,clear:clearPlaybackBeat,preload:preloadBeatArt,reducedMotion,speed:()=>cpuSpeed==='fast'?.5:1});
+ playback=new CpuActionPlaybackQueue({present:presentBoard,beat:showPlaybackBeat,clear:clearPlaybackBeat,preload:preloadBeatArt,think:thinkShow,reducedMotion,speed:()=>cpuSpeed==='fast'?.5:1});
  // A tap skips held playback. Playback over a decision never holds the board, so a tap there
  // only clears the spotlight and goes on to whatever was tapped.
  // Hotfix (2 Nov): a tap moves on to the CPU's next action instead of jumping past its whole turn, so
@@ -1180,12 +1277,47 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const timerCount=doc.createElement('div');timerCount.className='forge-turn-count';timerCount.setAttribute('aria-hidden','true');
  const timerRing=doc.createElement('div');timerRing.className='forge-turn-ring';timerRing.setAttribute('aria-hidden','true');
  const timerLabel=c=>c.warn?`${c.seconds} seconds left`:'';
+ // The rope (table additions 5): in the last 30 s of your own window a gold braided fuse lies on the centre divider and burns
+ // from the right, a spark at the burning end, the seconds beside it; coral in the last 10 s. It replaces the ring, the number
+ // and the line under the phase pill for that window, so there is one countdown. A held clock holds the fuse; any action ends
+ // the window and it fades in 300 ms. It only reads what the clock reports.
+ const ROPE_MS=30000;
+ const timerRope=doc.createElement('div');timerRope.className='forge-fuse';timerRope.setAttribute('aria-hidden','true');timerRope.innerHTML='<i class="forge-fuse-burn"></i><b></b>';
+ const ropeBurn=timerRope.firstChild,ropeNum=timerRope.lastChild;let ropeFade=0;
+ const ropePlace=()=>{
+  const areas=[...root.querySelectorAll('.play-match-battlefields>.play-match-seat-area')];if(areas.length<2)return false;
+  const a=areas[0].getBoundingClientRect(),b=areas[1].getBoundingClientRect(),y=(a.bottom+b.top)/2,mid=(Math.min(a.left,b.left)+Math.max(a.right,b.right))/2;
+  timerRope.style.left=`${Math.round(mid-160)}px`;timerRope.style.top=`${Math.round(y-8)}px`;return true;
+ };
+ const ropeUpdate=c=>{
+  const on=!!c&&c.own&&c.remaining<=ROPE_MS;
+  if(!on){
+   if(timerRope.isConnected&&!ropeFade){timerRope.dataset.fade='out';ropeFade=setTimeout(()=>{ropeFade=0;timerRope.remove();delete timerRope.dataset.fade;},300);}
+   return false;
+  }
+  if(ropeFade){clearTimeout(ropeFade);ropeFade=0;delete timerRope.dataset.fade;}
+  if(!timerRope.isConnected){if(!ropePlace())return false;root.append(timerRope);}else ropePlace();
+  const span=Math.min(ROPE_MS,c.total),now=Math.max(0,Math.min(1,c.remaining/span));
+  // Burn toward the next whole second so the fuse moves smoothly; a held clock stands still at what is left.
+  ropeBurn.style.transition=c.paused?'none':'width 1s linear';
+  ropeBurn.style.width=`${((c.paused?now:Math.max(0,(c.remaining-1000)/span))*260).toFixed(1)}px`;
+  ropeNum.textContent=String(c.seconds);
+  if(c.warn)timerRope.dataset.hot='true';else delete timerRope.dataset.hot;
+  if(c.paused)timerRope.dataset.held='true';else delete timerRope.dataset.held;
+  return true;
+ };
  const showTimer=c=>{
-  if(!c||!c.own){timerRing.remove();timerCount.remove();root.removeAttribute('data-turn-warn');}
+  const rope=ropeUpdate(c);
+  if(!c||!c.own){timerRing.remove();timerCount.remove();root.removeAttribute('data-turn-warn');root.removeAttribute('data-turn-rope');}
   if(!c){root.removeAttribute('data-turn-timer');root.style.removeProperty('--tt-left');return;}
   root.dataset.turnTimer=c.own?'own':'rival';root.style.setProperty('--tt-left',String(Math.max(0,Math.min(1,c.remaining/c.total)).toFixed(4)));
   if(!c.own)return;
   if(c.warn)root.dataset.turnWarn='true';else root.removeAttribute('data-turn-warn');
+  // The last 30 s belong to the rope: no ring, no number, no line under the pill, so the window has one countdown.
+  if(rope){root.dataset.turnRope='true';timerRing.remove();timerCount.remove();
+   if(c.warn&&!c.paused){tableAudio.tick();try{presentation.onTimerTick?.(c.seconds);}catch{/* a tick sound is optional */}}
+   return;}
+  root.removeAttribute('data-turn-rope');
   // The ring sits on the main button, wherever the table has put it right now.
   const ok=root.querySelector('[data-native-key=ok],[data-native-key=confirm-prompt]');
   if(!ok){timerRing.remove();timerCount.remove();return;}
@@ -1781,5 +1913,5 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    const seat=seatEl(defenderOf(sf.players,c)),blocked=blockerOf.has(c.id)?cardEl(blockerOf.get(c.id)):null,to=blocked||(c.attackTarget?.kind==='card'?cardEl(c.attackTarget.id):seat);if(!to)continue;
    ms=Math.max(ms,strike(el,to,{face:!blocked&&to===seat,delay:next,big:(c.power||0)>=5,power:c.power||0}));struck++;next+=MOTION.windup+strikeTravel(el.closest('.play-match-card-wrap'),to)+MOTION.hold+140;}
   return struck?Math.max(ms,strikeEnd-Date.now())+250:ms;}
- return {finale,destroy(){closed=true;turnTimer?.stop();clearTimeout(afkNoteTimer);afkNote?.remove();timerCount.remove();timerRing.remove();win.removeEventListener('resize',queueBoard);doc.removeEventListener('pointerdown',foldEmblems,true);if(heldDrop){clearTimeout(heldDrop.timer);heldDrop.ghost.remove();heldDrop=null;}boardSizes?.disconnect();doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);clearTimeout(noResponseTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();ownCast.remove();doc.body.querySelector(':scope>.forge-ask-line')?.remove();doc.body.style.removeProperty('--forge-hand-top');castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ return {finale,destroy(){closed=true;turnTimer?.stop();clearTimeout(afkNoteTimer);afkNote?.remove();timerCount.remove();clearTimeout(ropeFade);timerRope.remove();throughChip.remove();timerRing.remove();win.removeEventListener('resize',queueBoard);doc.removeEventListener('pointerdown',foldEmblems,true);if(heldDrop){clearTimeout(heldDrop.timer);heldDrop.ghost.remove();heldDrop=null;}boardSizes?.disconnect();doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);clearTimeout(noResponseTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();ownCast.remove();doc.body.querySelector(':scope>.forge-ask-line')?.remove();doc.body.style.removeProperty('--forge-hand-top');castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }
