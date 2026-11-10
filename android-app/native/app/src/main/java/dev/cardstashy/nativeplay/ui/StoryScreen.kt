@@ -332,8 +332,9 @@ fun StoryRoute(startAct: Int? = null, onBack: () -> Unit, onDuel: (dev.cardstash
     val purse: @Composable () -> Unit = { if (!DualScreen.active) wallet() }
     val open = act
     BackHandler { if (battle != null) { battle = null; duel = StoryDuelUi() } else if (open != null) act = null else onBack() }
+    if (rules.acts.isEmpty()) { RulesMissing(onBack); return }
     if (open == null) { StoryRoad(rules.acts, rules.ages[1] ?: "", p, onBack, { act = it }, purse, wallet); return }
-    val meta = rules.acts.first { it.act == open }
+    val meta = rules.acts.firstOrNull { it.act == open } ?: rules.acts.first()
     val ctx = LocalContext.current
     // The site's copy first (fixes land without an APK), else the copy shipped in the app (offline, or an act the site has not published yet).
     val data by androidx.compose.runtime.produceState<JsonObject?>(null, open) {
@@ -343,7 +344,7 @@ fun StoryRoute(startAct: Int? = null, onBack: () -> Unit, onDuel: (dev.cardstash
         }
     }
     // Controller: LB/RB step through the battles you can fight in this act, LT/RT step between the acts you have reached.
-    val lastAct = StoryLogic.currentAct(p, rules.acts.size).coerceAtMost(rules.acts.maxOf { it.act })
+    val lastAct = StoryLogic.currentAct(p, rules.acts.size).coerceAtMost(rules.lastAct)
     val fightable = data?.getAsJsonArray("battles")?.mapNotNull { it as? JsonObject }
         ?.filter { it["secret"]?.asBoolean != true && (it["slot"]?.asInt ?: 99) <= StoryLogic.currentBattle(p, open) }?.sortedBy { it["slot"].asInt }?.map { it["id"].asString }.orEmpty()
     PadScreen(PadActs(

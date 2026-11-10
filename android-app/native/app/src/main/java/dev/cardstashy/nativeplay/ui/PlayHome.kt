@@ -182,6 +182,7 @@ private val artFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSatur
 
 @Composable
 fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions = PlayHomeActions(), nav: @Composable () -> Unit) {
+    if (d.rules.acts.isEmpty()) { RulesMissing(null); return }
     val s = d.state
     val purse = PlayMath.purse(s) ?: return
     val level = PlayMath.mastery(s, purse.xp)
@@ -229,7 +230,7 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
                     if (g >= 4 && ((s.get("shop") as? JsonArray)?.size() ?: 0) > 0) item("shop") { Probe("shop") { Merchant(s, act) } }
                 }
                 // The site's sticky glass top bar.
-                Box(Modifier.fillMaxWidth().background(if (AppSettings.theme == "light") Color(0xF0F6F9FD) else Color(0xD90C0E13)).drawBehind { // light: settings-theme.css .topbar
+                Box(Modifier.fillMaxWidth().background(Rule.Color.Bar).drawBehind { // light: settings-theme.css .topbar
                     drawLine(Brush.horizontalGradient(listOf(Color.Transparent, Color(0x80D6AD64), Color.Transparent)), Offset(0f, size.height), Offset(size.width, size.height), 1.dp.toPx())
                 }.statusBarsPadding()) {
                     top()
@@ -1555,6 +1556,16 @@ private fun FeaturedPack(s: JsonObject, o: JsonObject, act: PlayHomeActions) {
     }
 }
 
+/** The Error state for a rules file with no Story acts: say so plainly instead of crashing on a first act that is not there. */
+@Composable
+fun RulesMissing(onBack: (() -> Unit)?) {
+    Column(Modifier.fillMaxSize().background(Site.Bg).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("Story couldn’t load", style = Rule.Type.SheetTitle)
+        Text("The app’s Story list is empty. Update the app, then open Play again.", style = Rule.Type.S14.copy(color = Site.Muted), textAlign = TextAlign.Center)
+        if (onBack != null) GhostButton("Back", onClick = onBack)
+    }
+}
+
 /**
  * Play before sign-in, in the dashboard's own look (Randall 4 Nov, Portal 2: "old ugly place holder"): the act 1 band,
  * the four modes and a glass sign-in card. Quick Play runs the demo decks; everything else asks for the account.
@@ -1562,6 +1573,7 @@ private fun FeaturedPack(s: JsonObject, o: JsonObject, act: PlayHomeActions) {
  */
 @Composable
 fun SignedOutHome(rules: PlayRules, top: @Composable () -> Unit, onQuickPlay: () -> Unit, onSignIn: () -> Unit) {
+    if (rules.acts.isEmpty()) { RulesMissing(null); return }
     val a1 = rules.acts.first()
     val act = PlayHomeActions(mode = { if (it == "quick") onQuickPlay() else onSignIn() }, story = onSignIn, view = { onSignIn() })
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
@@ -1582,7 +1594,7 @@ fun SignedOutHome(rules: PlayRules, top: @Composable () -> Unit, onQuickPlay: ()
                 item("me") { SignInCard(onSignIn) }
                 item("modes") { Modes(wide, act) }
             }
-            Box(Modifier.fillMaxWidth().background(if (AppSettings.theme == "light") Color(0xF0F6F9FD) else Color(0xD90C0E13)).drawBehind {
+            Box(Modifier.fillMaxWidth().background(Rule.Color.Bar).drawBehind {
                 drawLine(Brush.horizontalGradient(listOf(Color.Transparent, Color(0x80D6AD64), Color.Transparent)), Offset(0f, size.height), Offset(size.width, size.height), 1.dp.toPx())
             }.statusBarsPadding()) { top() }
         }

@@ -562,9 +562,9 @@ private fun MatchFlow(activity: MainActivity, pick: Pick, onHome: () -> Unit, on
     if (story != null) {
         val c = story
         dev.cardstashy.nativeplay.ui.StoryBubbleLayer(outcome.bubbles, c.cast, c.avatarUrl)
-        if (sceneOn) dev.cardstashy.nativeplay.ui.StoryScene(scene!!, c.cast, c.battle.getAsJsonObject("hero")["who"].asString, c.battle.getAsJsonObject("villain")["who"].asString, c.avatarUrl, c.battle["title"].asString) { scene = null }
-        outcome.ending?.let { lines -> dev.cardstashy.nativeplay.ui.StoryScene(lines, c.cast, c.battle.getAsJsonObject("hero")["who"].asString, c.battle.getAsJsonObject("villain")["who"].asString, c.avatarUrl,
-            if (c.battle["slot"].asInt == 8) "Act ${c.act} finale" else c.battle["title"].asString) { outcome.ending = null } }
+        if (sceneOn) dev.cardstashy.nativeplay.ui.StoryScene(scene!!, c.cast, dev.cardstashy.nativeplay.match.storyWho(c.battle, "hero"), dev.cardstashy.nativeplay.match.storyWho(c.battle, "villain"), c.avatarUrl, dev.cardstashy.nativeplay.match.storyTitle(c.battle)) { scene = null }
+        outcome.ending?.let { lines -> dev.cardstashy.nativeplay.ui.StoryScene(lines, c.cast, dev.cardstashy.nativeplay.match.storyWho(c.battle, "hero"), dev.cardstashy.nativeplay.match.storyWho(c.battle, "villain"), c.avatarUrl,
+            if (c.battle.get("slot")?.takeIf { it.isJsonPrimitive }?.asInt == 8) "Act ${c.act} finale" else dev.cardstashy.nativeplay.match.storyTitle(c.battle)) { outcome.ending = null } }
     }
     }
 }

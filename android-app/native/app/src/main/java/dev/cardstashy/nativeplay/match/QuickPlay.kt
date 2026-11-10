@@ -43,6 +43,11 @@ sealed interface Pick {
 }
 
 /** A Story battle's context (app.js storyPlay): which battle and side, whether your own deck plays, and the act's cast, scenes and cues. */
+/** Who stands on a side of a story battle ("hero" / "villain"); blank when the battle file names nobody, never a crash. */
+fun storyWho(battle: JsonObject, side: String): String = (battle.get(side) as? JsonObject)?.get("who")?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
+/** A story battle's title; blank when the file has none. */
+fun storyTitle(battle: JsonObject): String = battle.get("title")?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
+
 class StoryCtx(val act: Int, val battle: JsonObject, val cast: JsonObject?, val seat: String, val own: Boolean, val firstVisit: Boolean, val avatarUrl: String?,
                val intro: List<JsonObject>, val finale: List<JsonObject>, val villainFinale: List<JsonObject>,
                /** An Act 1 lesson run (first hero-side play, lessons on): the battle whose ideas the Rift whispers, and the engine's

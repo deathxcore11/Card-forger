@@ -69,6 +69,8 @@ object Rule {
         val Text get() = Site.Text
         val Muted get() = Site.Muted
         val Gold get() = Site.Gold
+        /** The opaque ground of a top bar or bottom nav (the site's .topbar / .bottom-nav colour, made solid so scrolling text never shows through). */
+        val Bar get() = if (AppSettings.theme == "light") androidx.compose.ui.graphics.Color(0xFFF6F9FD) else androidx.compose.ui.graphics.Color(0xFF0C0E13)
         /** White at 6 %: a glass fill. */
         val Glass = androidx.compose.ui.graphics.Color(0x0FFFFFFF)
         /** White at 16 %: a glass edge. */

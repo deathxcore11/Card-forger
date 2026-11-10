@@ -950,7 +950,7 @@ fun CollectionNav(active: CollectionTab?, vertical: Boolean = false, scan: Boole
     }
     if (vertical) Column(Modifier.fillMaxHeight().width(76.dp).background(Site.Bg).windowInsetsPadding(WindowInsets.statusBars).padding(vertical = 6.dp)) {
         tabs.forEach { t -> item(t, Modifier.fillMaxWidth().weight(1f)) }
-    } else Row(Modifier.fillMaxWidth().background(Color(0xF00C0E13)).navigationBarsPadding().height(72.dp)) {
+    } else Row(Modifier.fillMaxWidth().background(Rule.Color.Bar).navigationBarsPadding().height(72.dp)) {
         tabs.forEach { t -> item(t, Modifier.weight(1f).fillMaxHeight()) }
     }
 }

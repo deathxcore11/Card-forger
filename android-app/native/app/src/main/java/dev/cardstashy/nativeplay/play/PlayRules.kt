@@ -46,6 +46,8 @@ class PlayRules(o: JsonObject, storyJson: JsonObject) {
                 (a.getAsJsonArray("packSets") ?: a.getAsJsonArray("sets")).map { it.asString }.map { c -> c to (names[c]?.asString ?: c.uppercase()) })
         }
     }
+    /** The highest act number in the rules; 0 when the acts list is empty (a broken rules file), so no screen reads a first act that is not there. */
+    val lastAct: Int get() = acts.maxOfOrNull { it.act } ?: 0
     /** story-acts.js SET_NAMES. */
     val setNames: Map<String, String> = storyJson.getAsJsonObject("setNames").entrySet().associate { it.key to it.value.asString }
     /** story-acts.js ACT.age per act (the Road prints the first one's). */
