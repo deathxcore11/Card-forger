@@ -1484,6 +1484,11 @@ public final class ForgeHttpBridge implements IRemote {
                         commandInFlight=false;
                         // Only native stable prompt callbacks or an explicit false selection result release busy.
                         // The same Input identity can enqueue a later native confirmation, so identity alone is not enough.
+                        // A payment is the exception: its own work holds isPaymentPending from the click (on this thread)
+                        // until its prompt is shown again, so a click that started nothing (an already tapped land)
+                        // leaves the same payment waiting on the player.
+                        if(failure==null&&pending==null&&capturedInput instanceof forge.gamemodes.match.input.InputPayMana
+                            &&capturedInput==controller.getInputProxy().getInput()&&!nativePaymentPending())busy=false;
                         maybeNativeAutoPay();
                         publish();
                     }}
