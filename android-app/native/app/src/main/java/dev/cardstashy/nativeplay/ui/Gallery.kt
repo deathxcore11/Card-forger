@@ -134,7 +134,8 @@ internal fun GalleryWall(g: Gallery, index: Int) {
             // A wide, soft pool falling from above the frame: no hard edge anywhere.
             val c = Offset(size.width * .5f, size.height * .02f)
             val r = size.height * .95f
-            drawCircle(Brush.radialGradient(0f to Color(0xFFFFE9C4).copy(alpha = .26f * breath), .4f to Color(0xFFFFE9C4).copy(alpha = .11f * breath), .75f to Color(0xFFFFE9C4).copy(alpha = .03f * breath), 1f to Color.Transparent, center = c, radius = r), r, c)
+            val warm = Color(0xFFFFE9C4)
+            drawCircle(Brush.radialGradient(0f to warm.copy(alpha = .26f * breath), .4f to warm.copy(alpha = .11f * breath), .75f to warm.copy(alpha = .03f * breath), 1f to Color.Transparent, center = c, radius = r), r, c)
         }
         Text(if (g.pieces.size > 1) "GALLERY · PIECE ${index + 1} OF ${g.pieces.size}" else "GALLERY", style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, letterSpacing = .18.em, color = Color(0x99E8D9BC)),
             modifier = Modifier.padding(start = 28.dp, top = 22.dp))
