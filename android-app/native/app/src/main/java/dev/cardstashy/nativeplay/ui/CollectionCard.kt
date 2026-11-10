@@ -2215,7 +2215,10 @@ private fun SetTileBody(s: CardSetSummary) {
     val p = s.progress
     DualSetBody(if (s.picture.isEmpty()) ({ SetSymbol(s, 28.dp) }) else null, s.name, line,
         p?.label.orEmpty(), p?.pct, p?.takeIf { it.track }?.fill, p?.caption,
-        lineContent = if (s.parts.isNotEmpty()) ({ PartsLine(s.parts, Rule.Type.S12.copy(color = Rule.Color.Muted)) }) else null)
+        lineContent = if (s.parts.isNotEmpty()) ({
+            // Same rule for the parts line: the rarity word is on the card's face, so drop it from the text pieces too.
+            val parts = s.parts.map { q -> if (q.t == null) q else TcgPart(q.t.split(" · ").filter { it.isBlank() || !it.trim().equals(s.rarity, ignoreCase = true) }.joinToString(" · "), q.bold, q.tset, q.img, q.alt, q.ink) }
+            PartsLine(parts, Rule.Type.S12.copy(color = Rule.Color.Muted)) }) else null)
 }
 
 /** The other printings, as many pictures as fit across the tile (each opens that printing), then how many more. */

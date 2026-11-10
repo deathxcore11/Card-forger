@@ -975,9 +975,16 @@ private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActi
                 if (code.isBlank()) null else DualTile { GlassTile(Modifier.fillMaxSize(), onClick = (act.set ?: shopSet)?.let { go -> { go(code) } }) { SetTileBody(shown, state) } })),
             DualSection("Get more", 1.25f, listOfNotNull(
                 if (getLinks.isEmpty()) null else DualTile { GlassTile(Modifier.fillMaxSize(), "Where to find it") {
-                    FitFirst(getLinks.size, Modifier.fillMaxSize(), centre = true) { i, _ -> Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        getLinks.take(getLinks.size - i).forEach { (l, go) -> if (go != null) TileLink(l, go) else Text("$l · not enough seals", style = Rule.Type.S13.copy(color = Rule.Color.Muted)) }
-                    } } } },
+                    // The rows share the whole tile evenly (never shorter than a touch target), so it has no dead space.
+                    BoxWithConstraints(Modifier.fillMaxSize()) {
+                        val rowH = (maxHeight / getLinks.size).coerceAtLeast(40.dp)
+                        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                            getLinks.forEach { (l, go) ->
+                                if (go != null) TileLink(l, go, Modifier.height(rowH), size = if (getLinks.size == 1) 20 else 16)
+                                else Box(Modifier.fillMaxWidth().height(rowH), contentAlignment = Alignment.CenterStart) { Text("$l · not enough seals", style = Rule.Type.S13.copy(color = Rule.Color.Muted)) }
+                            }
+                        }
+                    } } },
                 if (rulings.isEmpty()) null else DualTile(1.25f) { GlassTile(Modifier.fillMaxSize(), "Rulings", onClick = { rulingsOpen = true }, padKey = "A") { DualRulingsBody(rulings.map { it.first }) } })))
         val buttons = listOfNotNull(
             xAct?.let { CaseButton("X", it.label, gold = true) { it.run?.invoke() } },

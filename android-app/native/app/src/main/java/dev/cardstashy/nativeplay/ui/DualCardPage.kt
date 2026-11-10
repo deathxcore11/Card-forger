@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -185,9 +186,9 @@ internal fun GlassTile(modifier: Modifier = Modifier, label: String? = null, onC
         else -> Modifier.clickable(onClick = onClick)
     }
     Column(modifier.glass(shape).then(press).padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        if (label != null) Row(Modifier.fillMaxWidth().heightIn(min = 22.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (label != null) Row(Modifier.fillMaxWidth().height(22.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(label.uppercase(), style = Rule.Type.sans(11, FontWeight.Bold, Rule.Color.Muted).copy(letterSpacing = 1.2.sp), maxLines = 1, modifier = Modifier.weight(1f))
-            if (pad && onClick != null && padKey != null) PadKey(padKey, "")
+            if (pad && onClick != null && padKey != null) Box(Modifier.wrapContentHeight(unbounded = true)) { PadKey(padKey, "") }
         }
         Box(Modifier.weight(1f).fillMaxWidth()) { body() }
     }
@@ -249,10 +250,10 @@ internal fun DualSetBody(icon: (@Composable () -> Unit)?, title: String, line: S
 
 /** A tap row inside a tile ("Its pack at the Merchant ›"). */
 @Composable
-internal fun TileLink(label: String, onClick: () -> Unit) = Row(Modifier.fillMaxWidth().heightIn(min = 40.dp).clickable(onClick = onClick), verticalAlignment = Alignment.CenterVertically,
+internal fun TileLink(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, size: Int = 14) = Row(modifier.fillMaxWidth().heightIn(min = 40.dp).clickable(onClick = onClick), verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-    Text(label, style = Rule.Type.sans(14, FontWeight.SemiBold, Rule.Color.Text), modifier = Modifier.weight(1f, fill = false))
-    Text("›", style = Rule.Type.sans(14, FontWeight.Bold, Rule.Color.Gold))
+    Text(label, style = Rule.Type.sans(size, FontWeight.SemiBold, Rule.Color.Text), modifier = Modifier.weight(1f, fill = false))
+    Text("›", style = Rule.Type.sans(size, FontWeight.Bold, Rule.Color.Gold))
 }
 
 /** A big number over its words: "2 of 4" / "Traditional foil"; steps down to one line when the tile is short. */
