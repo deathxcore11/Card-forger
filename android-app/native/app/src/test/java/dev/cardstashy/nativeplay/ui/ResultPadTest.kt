@@ -4,7 +4,6 @@ import android.view.KeyEvent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -48,13 +47,10 @@ class ResultPadTest {
         Pad.used()
         val st = lost()
         val audio = TableAudio(RuntimeEnvironment.getApplication())
-        var modes: androidx.compose.ui.input.InputModeManager? = null
+        // No keyboard mode set here: the result's own ring start has to leave touch mode, as the table's does.
         rule.setContent {
-            modes = androidx.compose.ui.platform.LocalInputModeManager.current
             Box(Modifier.fillMaxSize().padRoot()) { Result(st, audio, onHome = { did += "home" }, onRematch = { did += "rematch" }) }
         }
-        // The pad was the last thing used: the ring shows (keyboard mode), as on the device after a table X.
-        rule.runOnUiThread { modes?.requestInputMode(InputMode.Keyboard) }
     }
 
     @Test fun xCarriedInFromTheTableDoesNothing() {

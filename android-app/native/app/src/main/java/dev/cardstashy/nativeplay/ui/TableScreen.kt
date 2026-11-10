@@ -780,7 +780,8 @@ internal fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRem
     LaunchedEffect(Unit) {
         delay(300); audio.play(if (draw) "QP-019" else if (won) "QP-017" else "QP-018"); rise.animateTo(1f, tween(400, easing = FastOutSlowInEasing))
         armed = true
-        if (Pad.connected.value) runCatching { homeFocus.requestFocus() }
+        // The ring start leaves touch mode first, as the table's does (live 0.4.56): in touch mode a button can't take focus.
+        if (Pad.connected.value) { PadPrompts.inputModes?.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard); runCatching { homeFocus.requestFocus() } }
     }
     PadScreen(PadActs(x = if (armed) PadAct("Home") { onHome() } else null, opaque = true))
     Box(Modifier.fillMaxSize().background(Color(0xAA000000).copy(alpha = .67f * rise.value)), contentAlignment = Alignment.Center) {
