@@ -27,5 +27,7 @@ object TableFacts {
         }
         st.players.forEach { p -> (p.hand + p.battlefield + p.graveyard + p.exile + p.command).forEach(::add) }
         st.stack.forEach { add(it.source) }
+        // Look-ahead: what can reach the felt next (your hand, the command zone, the stack) has its crop decoded now.
+        (st.me.hand + st.players.flatMap { it.command } + st.stack.mapNotNull { it.source }).forEach { c -> if (!c.hidden && c.name.isNotBlank()) CardArt.decodeAhead(c.name) }
     }
 }

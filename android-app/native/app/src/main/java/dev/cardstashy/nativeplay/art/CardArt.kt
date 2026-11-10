@@ -60,7 +60,9 @@ object CardArt {
     /** Bumped when new names resolve, so the table redraws a card that just got its picture. */
     val version = MutableStateFlow(0)
 
+    @Volatile private var appContext: Context? = null
     fun init(context: Context) {
+        appContext = context.applicationContext
         if (::loader.isInitialized) return
         val app = context.applicationContext
         ThumbStore.init(app)
@@ -99,7 +101,7 @@ object CardArt {
 
     /** A match is starting: resolve both decks with their pinned printings first, and pin those for the match. */
     suspend fun resolveMatch(rows: List<Pair<String, JsonObject>>) {
-        TableFacts.clear(); synchronized(index) { pins.clear(); matchRows.clear(); rows.forEach { (n, r) -> matchRows[n.lowercase()] = r }; tries.clear() }
+        TableFacts.clear(); clearAhead(); synchronized(index) { pins.clear(); matchRows.clear(); rows.forEach { (n, r) -> matchRows[n.lowercase()] = r }; tries.clear() }
         resolve(rows)
         var pinnedAny = false
         synchronized(index) { rows.forEach { (n, r) -> pinId(r)?.let { index["#$it"] }?.let { pins[n.lowercase()] = it; pinnedAny = true } } }
@@ -243,6 +245,20 @@ object CardArt {
     /** Only onto disk: the download is kept, decoded tiny and never held in memory (a battlefield art crop reads it back at once). */
     private fun diskOnly(context: Context, url: String): ImageRequest =
         ImageRequest.Builder(context).data(url).size(Size(8, 8)).memoryCachePolicy(CachePolicy.DISABLED).build()
+
+    /**
+     * Decode ahead (spec 12 item 4): a card's battlefield crop is decoded into memory as soon as it is in a hand, on the stack or
+     * in the command zone, so it is ready before it can reach the felt. Each name once a match.
+     */
+    private val decodedAhead = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
+    fun decodeAhead(name: String) {
+        val ctx = appContext ?: return
+        if (!::loader.isInitialized || !decodedAhead.add(name.lowercase())) return
+        val u = url(name, crop = true) ?: run { decodedAhead.remove(name.lowercase()); return }
+        loader.enqueue(request(ctx, u, true))
+        url(name)?.let { loader.enqueue(request(ctx, it, false)) }
+    }
+    fun clearAhead() = decodedAhead.clear()
 
     /** Proof counter (spec 12): a card drawn on screen with no picture on record. Logged by name; 0 is the goal on a cold cache. */
     val artMissAtShow = java.util.concurrent.atomic.AtomicInteger(0)

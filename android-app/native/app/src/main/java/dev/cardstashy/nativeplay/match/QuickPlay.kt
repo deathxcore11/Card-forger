@@ -133,6 +133,8 @@ object QuickPlay {
         val online = runCatching { val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
             cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true }.getOrDefault(true)
         warmArt(context, s, if (online) 20_000 else 800)
+        // Both decks' commanders and covers decoded ahead (their crops are what lands first on the felt and the crests).
+        s.faces.forEach { CardArt.decodeAhead(it) }
     }
 
     suspend fun warmArt(context: Context, s: Setup.Ready, budgetMs: Long) {
