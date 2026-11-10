@@ -830,7 +830,7 @@ private fun ArtStack(m: CollectionCardModel, o: CardOverview, act: CollectionCar
         val padScope = rememberCoroutineScope()
         PadScreen(remember(lean) { PadActs(y = PadAct("Inspect") { zoomNow() }, yHold = lean.padHold(padScope)) })
         val padSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-        val padPic = remember { PadActs(a = "Enlarge") }
+        val padPic = remember { PadActs(a = "Inspect") }
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             // --frame-w: clamp(6px, 2.4vw, 10px); the card inside at 6 corners.
             val frameW = (androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp * .024f).coerceIn(6.dp, 10.dp)

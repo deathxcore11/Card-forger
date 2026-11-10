@@ -272,7 +272,9 @@ private fun cardPad(m: BenchModel, key: String, ref: String, name: String, qty: 
     val room = known ?: remember(m.tiles, m.basics, ref, name, qty) { val tile = m.tiles.firstOrNull { it.key == ref }
         tile?.room ?: if (tile?.basic == true || m.basics.any { it.first == name }) Int.MAX_VALUE else (4 - qty) }
     fun step(d: Int) { a.step(key, d); ui.pop = key; ui.popAt = System.nanoTime() }
-    val acts = PadActs(a = if (room > 0) "Add one" else null, x = if (qty > 0) PadAct("Take one out") { step(-1) } else null, y = PadAct("Card page") { a.open(key) })
+    val acts = PadActs(a = if (room > 0) "Add one" else null, x = if (qty > 0) PadAct("Take one out") { step(-1) } else null, y = PadAct("Inspect") { ui.peek = key },
+        // One word per action (Play and Collection family, T5): Y is Inspect (the card big, the bench's Peek) as everywhere else; the card page is on Select.
+        menu = PadAct("Card page") { a.open(key) })
     val onA: () -> Unit = { if (room > 0) step(1) else ui.peek = key }
     return acts to onA
 }

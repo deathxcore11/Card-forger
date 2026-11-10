@@ -451,7 +451,7 @@ private fun Overview(name: String, shown: JsonObject, faces: List<JsonObject>, i
         val padScope = rememberCoroutineScope()
         PadScreen(remember(lean) { PadActs(y = PadAct("Inspect") { zoomNow() }, yHold = lean.padHold(padScope)) })
         val padSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-        val padPic = remember { PadActs(a = "Enlarge") }
+        val padPic = remember { PadActs(a = "Inspect") }
         BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             val w = minOf(maxWidth, 340.dp)
             CardPicture(image, shines, tilt, Modifier.size(w, w * 88f / 63f).cardLean(lean, foil = shines != null, shape = RoundedCornerShape(16.dp))
