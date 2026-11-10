@@ -12,6 +12,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -526,6 +530,20 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     BackHandler(cardPick == null && (m.inspectOpen || m.formatOpen)) { m.inspectOpen = false; m.formatOpen = false }
     BackHandler(m.social && m.room is LobbyModel.Room.Waiting) { cancelRoom() }
     val grid = rememberLazyGridState()
+    // Live 0.4.57 on the Thor (fault list 2): the lobby had no first stop, so the first d-pad press went to Compose's own search
+    // (the head's Back) and the decks were out of reach. Now a d-pad press or A with nothing ringed scrolls to your first deck and
+    // rings it. Quick Play has no paste box, so that deck is the item after the count line.
+    val firstDeck = remember { FocusRequester() }
+    val deckEntry = m.quick && signedIn && visible.isNotEmpty() && cardPick == null && !m.inspectOpen && !m.formatOpen
+    androidx.compose.runtime.DisposableEffect(deckEntry) {
+        if (!deckEntry) return@DisposableEffect onDispose { }
+        val e: () -> Boolean = { PadPrompts.inputModes?.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard)
+            // Not composed yet at the top of the page: scroll it in first, then ring it on the next frame.
+            scope.launch { grid.scrollToItem(LIB_HEAD + 2); androidx.compose.runtime.withFrameNanos { }; runCatching { firstDeck.requestFocus() } }; true }
+        PadPrompts.entry = e; onDispose { if (PadPrompts.entry === e) PadPrompts.entry = null }
+    }
+    // The ring's deck row goes to the top, so its ring is never resting under the pinned Play bar.
+    val ringed = { key: String -> grid.layoutInfo.visibleItemsInfo.firstOrNull { it.key == key }?.let { i -> scope.launch { grid.animateScrollToItem(i.index) } }; Unit }
     val density = androidx.compose.ui.platform.LocalDensity.current
     var barH by remember { mutableStateOf(0) }
     val pageLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
@@ -566,7 +584,7 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
                     full { Text("${visible.size} of ${inFormat.size} ${m.format} decks", style = sans(13f, color = Muted), modifier = Modifier.padding(horizontal = 3.dp)) }
                     if (visible.isEmpty()) full { Empty(if (m.query.isNotBlank()) "No matching decks" else "No ${m.format} decks yet",
                         if (quickOnly) "Build a Play deck, or open packs and the Merchant for cards." else "Paste a list or explore the other sources above.") }
-                    else items(visible, key = { "d:" + it.id }) { d -> DeckChoice(d, chosen(d), quickOnly && d.id in locked) { selectDeck(d) } }
+                    else items(visible, key = { "d:" + it.id }) { d -> DeckChoice(d, chosen(d), quickOnly && d.id in locked, if (d === visible[0]) firstDeck else null, { ringed("d:" + d.id) }) { selectDeck(d) } }
                 }
                 source == "random" -> full { RandomPanel(m, build, signedIn, onBuild = { bracket, style, power -> buildSeat = m.browseSeat; RandomBuild.start(m.format, bracket, style, power, session?.userId) }, onSignIn = onSignIn) }
                 else -> {
@@ -878,12 +896,14 @@ private fun LibraryHead(m: LobbyModel, source: String, signedIn: Boolean, onOpen
 
 /** views.js deckTile in the lobby grid (square on phones; stats hidden): art, shade, deck box, colour identity, Cinzel name. */
 @Composable
-private fun DeckChoice(d: TableDecks.Deck, selected: Boolean, locked: Boolean, onClick: () -> Unit) {
+private fun DeckChoice(d: TableDecks.Deck, selected: Boolean, locked: Boolean, focus: FocusRequester? = null, onRing: () -> Unit = {}, onClick: () -> Unit) {
     val shape = RoundedCornerShape(16.dp)
     val cover = coverOf(d.raw)
     val filter = if (locked) Greyed else null
     Box(Modifier.aspectRatio(1f).then(if (selected) Modifier.border(2.dp, Gold, RoundedCornerShape(18.dp)).padding(3.dp) else Modifier)) {
-        Box(Modifier.fillMaxSize().alpha(if (locked) .6f else 1f).clip(shape).background(Site.Surface2).border(1.dp, Line, shape).clickable(onClick = onClick)) {
+        Box(Modifier.fillMaxSize().alpha(if (locked) .6f else 1f).clip(shape).background(Site.Surface2).border(1.dp, Line, shape)
+            .then(if (focus != null) Modifier.focusRequester(focus) else Modifier).onFocusChanged { if (it.isFocused) onRing() }.testTag("deck:" + d.id)
+            .clickable(onClick = onClick)) {
             if (cover != null) Pic(cover, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, colorFilter = filter)
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent, .28f to Color.Transparent, .78f to Color(0xD907080B), 1f to Color(0xF507080B))))
             DeckBox(rowNames(d.raw).take(3), Modifier.padding(10.dp), filter)
