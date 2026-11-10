@@ -768,15 +768,21 @@ private fun Menu(onConcede: () -> Unit, onLeave: () -> Unit, onClose: () -> Unit
 }
 
 @Composable
-private fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRematch: () -> Unit, note: String? = null, reason: String? = null) {
+internal fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRematch: () -> Unit, note: String? = null, reason: String? = null) {
     val won = !st.draw && st.winnerPlayerId == st.viewer
     val draw = st.draw || st.winnerPlayerId == null
     val rise = remember { Animatable(0f) }
-    LaunchedEffect(Unit) { delay(300); audio.play(if (draw) "QP-019" else if (won) "QP-017" else "QP-018"); rise.animateTo(1f, tween(400, easing = FastOutSlowInEasing)) }
-    // A controller: X is Rematch (the gold button), and the ring starts on it; the board under the result lends nothing.
-    PadScreen(PadActs(x = PadAct("Rematch") { onRematch() }, opaque = true))
-    val rematchFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { if (Pad.connected.value) runCatching { rematchFocus.requestFocus() } }
+    // Live 0.4.57: one X on Defeat started a Rematch. As in Arena, X and the ring's start leave to Home; Rematch is a
+    // deliberate step (touch, or the ring right then A). Both wait for the card to finish rising, so an X carried in from the
+    // table does nothing; the board under the result lends nothing either.
+    var armed by remember { mutableStateOf(false) }
+    val homeFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        delay(300); audio.play(if (draw) "QP-019" else if (won) "QP-017" else "QP-018"); rise.animateTo(1f, tween(400, easing = FastOutSlowInEasing))
+        armed = true
+        if (Pad.connected.value) runCatching { homeFocus.requestFocus() }
+    }
+    PadScreen(PadActs(x = if (armed) PadAct("Home") { onHome() } else null, opaque = true))
     Box(Modifier.fillMaxSize().background(Color(0xAA000000).copy(alpha = .67f * rise.value)), contentAlignment = Alignment.Center) {
         Column(Modifier.graphicsLayer { alpha = rise.value; translationY = (1f - rise.value) * 40.dp.toPx() }.width(380.dp).glass(16.dp).padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(Modifier.fillMaxWidth().aspectRatio(5f), contentAlignment = Alignment.Center) {
@@ -788,8 +794,8 @@ private fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRema
             Text("Turn ${st.turn} · You ${st.me.life} · CPU ${st.cpu.life}", style = Type.Body.copy(color = Palette.InkSoft))
             if (note != null) Text(note, style = Type.Body.copy(color = Palette.Gold, fontSize = 13.sp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                GoldButton("Home", true, Modifier.width(150.dp), primary = false, onClick = onHome)
-                GoldButton("Rematch", true, Modifier.width(150.dp).focusRequester(rematchFocus), onClick = onRematch)
+                GoldButton("Home", true, Modifier.width(150.dp).focusRequester(homeFocus), primary = false, onClick = onHome)
+                GoldButton("Rematch", true, Modifier.width(150.dp), onClick = onRematch)
             }
         }
     }
