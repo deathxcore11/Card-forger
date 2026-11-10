@@ -27,9 +27,10 @@ object AppSettings {
     /** settings-theme.js normalizeTheme / THEME_KEY 'cardstashy-theme': light, dark or aura; dark by default. Per device, never synced. */
     var chosenTheme by mutableStateOf("dark"); private set
     /** Which side is on screen. Play is always dark (Randall 10 Nov 13:26Z): a Light setting only lights Collection and the shell. */
-    var play by mutableStateOf(false)
-    /** The theme every screen draws in: the chosen one, except Light in Play, which is dark. */
-    val theme: String get() = if (play && chosenTheme == "light") "dark" else chosenTheme
+    /** Set once by the app: reads the screen on show, so the theme follows it with nothing written while composing. */
+    var playSide: () -> Boolean = { false }
+    /** The theme every screen, sheet, toast and the bottom screen draws in: the chosen one, except Light in Play, which is dark. */
+    val theme: String get() = if (chosenTheme == "light" && playSide()) "dark" else chosenTheme
     /** grid-settings.js GRID_KEY 'cardstashy-grid-size' (small, medium, large; medium by default) and PINCH_KEY 'cardstashy-grid-pinch' (off by default). */
     var gridSize by mutableStateOf("medium"); private set
     var gridPinch by mutableStateOf(false); private set

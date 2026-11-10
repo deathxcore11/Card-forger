@@ -359,7 +359,7 @@ private fun App(activity: MainActivity) {
     androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalShopNav provides { tab -> go(Screen.Shop(tab)) }, dev.cardstashy.nativeplay.ui.LocalShopSetNav provides { code -> go(Screen.Shop("sets", code)) },
         dev.cardstashy.nativeplay.ui.LocalCollectionSearch provides searchOpen) {
     // The Play theme root: every Play screen draws dark whatever the theme setting says; Collection and the shell follow it.
-    (presenceWhere(screen).view == "play").let { if (dev.cardstashy.nativeplay.ui.AppSettings.play != it) dev.cardstashy.nativeplay.ui.AppSettings.play = it }
+    remember { dev.cardstashy.nativeplay.ui.AppSettings.playSide = { presenceWhere(trail.last()).view == "play" } }
     when (val s = screen) {
         Screen.Home -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
