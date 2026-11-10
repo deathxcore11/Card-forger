@@ -189,14 +189,24 @@ data class MatchState(
          */
         fun tidy(text: String): String = text
             .replace(Regex("Forge AI(\\s*[—–-]\\s*CPU)?"), "CPU")
+            // Z1 (Randall 10 Nov): the engine's own seat name for you ("CardStashy", its PLAYER_NAME) never shows; you are You.
+            .replace(Regex("\\bCardStashy(\\s*[—–-]\\s*You)?\\b"), "You")
             .replace(Regex("(?<![Tt]he )\\bCPU's"), "the CPU's")
             .replace(Regex("\\bin You's\\b"), "in your").replace(Regex("\\bYou's\\b"), "Your").replace(Regex("\\bYou is\\b"), "You are")
+
+        /** Z1: a seat is You or CPU (CPU 2, CPU 3 in a pod), never the engine's "CardStashy" or "Forge AI". */
+        fun seatName(raw: String): String = when {
+            raw.isBlank() -> raw
+            Regex("\\bCardStashy\\b").containsMatchIn(raw) -> "You"
+            raw.startsWith("Forge AI") -> Regex("\\bCPU(\\s*\\d+)?").find(raw)?.value ?: "CPU"
+            else -> raw
+        }
 
         private fun parsePlayer(p: JsonObject): Player {
             val z = p.obj("zones")
             fun cards(zone: String) = z?.obj(zone)?.arr("cards")?.map { parseCard(it.asJsonObject) } ?: emptyList()
             return Player(
-                id = p.int("id") ?: 0, name = p.str("name") ?: "", life = p.int("life") ?: 0, isViewer = p.bool("isViewer") == true,
+                id = p.int("id") ?: 0, name = seatName(p.str("name") ?: ""), life = p.int("life") ?: 0, isViewer = p.bool("isViewer") == true,
                 handCount = z?.obj("Hand")?.int("count") ?: 0, libraryCount = z?.obj("Library")?.int("count") ?: 0,
                 hand = cards("Hand"), battlefield = cards("Battlefield"), graveyard = cards("Graveyard"), exile = cards("Exile"),
                 command = cards("Command"), mana = nums(p.obj("mana")), counters = nums(p.obj("counters")),
@@ -209,7 +219,7 @@ data class MatchState(
         fun parseCard(c: JsonObject) = Card(
             id = c.int("id") ?: 0, zone = c.str("zone") ?: "", owner = c.int("owner") ?: -1, controller = c.int("controller") ?: -1,
             hidden = c.bool("hidden") != false, name = c.str("name") ?: "", type = c.str("type") ?: "", manaCost = c.str("manaCost")?.takeIf { it != "no cost" } ?: "",
-            text = (c.str("text") ?: "").replace("\r", ""), power = c.int("power"), toughness = c.int("toughness"),
+            text = tidy((c.str("text") ?: "").replace("\r", "")), power = c.int("power"), toughness = c.int("toughness"),
             tapped = c.bool("tapped") == true, attacking = c.bool("attacking") == true, blocking = c.bool("blocking") == true,
             damage = c.int("damage") ?: 0, summoningSick = c.bool("summoningSick") == true, token = c.bool("token") == true,
             counters = c.obj("counters")?.entrySet()?.mapNotNull { (k, v) -> if (v.isJsonPrimitive && v.asJsonPrimitive.isNumber) k to v.asInt else null }?.toMap() ?: emptyMap(),
