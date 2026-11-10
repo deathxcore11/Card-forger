@@ -138,7 +138,7 @@ export function nativeActionLabel(n,op,raw){
  if(input==='InputSelectTargets'&&op==='ok')return 'Confirm targets';
  return label;
 }
-const amountDraft={key:null,amounts:null},revealAuto={key:null,timer:0},errSeen={text:null,revision:0};let stackOpen=false;
+const amountDraft={key:null,amounts:null},revealAuto={key:null,timer:0},errSeen={text:null,revision:0},noticeSeen={key:null,at:0};let stackOpen=false;
 // Backing out of a spell's mode choice (Randall, 1 Nov). Forge has no way to answer "none" to a required mode, but a
 // cast is undone by Cancel at its target step, which puts the card back in hand. So Cancel on a mode choice picks the
 // first mode, then cancels at the targets. It is offered only for a spell cast from your hand whose every mode targets,
@@ -239,7 +239,15 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
  if(n.notification?.message){const notice=noticeNode(n.notification);
   // The hosted table floats the notice above your hand (the table places it), kept across redraws so its fade runs once.
   const host=presentation.hosted?container.closest('.play-match-table'):null;
-  if(host){const was=host.querySelector(':scope>.forge-notice');if(was?.textContent!==notice.textContent){was?.remove();host.append(notice);}}else panel.append(notice);}
+  // Forge keeps its last notice in every later state, and each board redraw clears the table, so re-adding it
+  // restarted the fade forever ("cannot be blocked with 1 creatures" stuck over the hand for whole CPU turns,
+  // Randall 10 Nov). A notice shows for its 5 s once; the same notice in later states is not shown again.
+  if(host){const nt=n.notification,key=JSON.stringify([nt.id??nt.sequence??nt.seq??null,nt.title||nt.method||'',nt.message]),now=Date.now();
+   if(noticeSeen.key!==key){noticeSeen.key=key;noticeSeen.at=now;}
+   const was=host.querySelector(':scope>.forge-notice');
+   if(now-noticeSeen.at<5000){if(was?.textContent!==notice.textContent){was?.remove();notice.style.animationDelay=`-${now-noticeSeen.at}ms`;host.append(notice);}}else was?.remove();}
+  else panel.append(notice);}
+ else if(presentation.hosted)container.closest('.play-match-table')?.querySelector(':scope>.forge-notice')?.remove();
  // On the hosted table, trouble is one small toast in plain words with Retry, never a raw code.
  // A refused move's note clears once the next move goes through (the match's revision moves on).
  if(n.lastActionError){if(errSeen.text!==n.lastActionError){errSeen.text=n.lastActionError;errSeen.revision=n.revision;}}else errSeen.text=null;
