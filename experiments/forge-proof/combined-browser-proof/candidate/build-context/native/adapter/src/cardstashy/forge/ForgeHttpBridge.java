@@ -634,7 +634,14 @@ public final class ForgeHttpBridge implements IRemote {
         else if(e.getMethod()==ProtocolMethod.updateButtons||e.getMethod()==ProtocolMethod.showPromptMessage)noteBlocked(selection);
         if(e.getMethod()==ProtocolMethod.setSelection||e.getMethod()==ProtocolMethod.updateButtons||e.getMethod()==ProtocolMethod.showPromptMessage)noteMustAttack();
         synchronized(lock){ switch(e.getMethod()) {
-            case showPromptMessage -> message=(String)a[1];
+            case showPromptMessage -> {
+                message=(String)a[1];
+                // A payment's prompt text is the last thing Forge sends once a tapped source has paid
+                // (its buttons and marks are often unchanged, so they are not sent): it is waiting again.
+                if(!commandInFlight&&pending==null&&controller!=null
+                    &&controller.getInputProxy().getInput() instanceof forge.gamemodes.match.input.InputPayMana
+                    &&!nativePaymentPending())busy=false;
+            }
             case updateButtons -> { buttons=obj("ok",a[1],"cancel",a[2],"okEnabled",a[3],"cancelEnabled",a[4]); busy=false; }
             case setSelection -> { selection=(Selection)a[0]; busy=false; }
             case awaitNextInput -> { busy=true; recheckBusy(); }
