@@ -107,7 +107,8 @@ object CardArt {
         TableFacts.clear(); clearAhead(); synchronized(index) { pins.clear(); matchRows.clear(); rows.forEach { (n, r) -> matchRows[n.lowercase()] = r }; tries.clear() }
         resolve(rows)
         var pinnedAny = false
-        synchronized(index) { rows.forEach { (n, r) -> pinId(r)?.let { index["#$it"] }?.let { pins[n.lowercase()] = it; pinnedAny = true } } }
+        // A name in both decks with different printings keeps the first row's (your deck comes first), never neither.
+        synchronized(index) { rows.forEach { (n, r) -> pinId(r)?.let { index["#$it"] }?.let { if (pins.putIfAbsent(n.lowercase(), it) == null) pinnedAny = true } } }
         if (pinnedAny) version.value++
     }
 
