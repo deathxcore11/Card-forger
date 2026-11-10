@@ -49,7 +49,7 @@ import dev.cardstashy.nativeplay.engine.MatchState
  * (back to your hand). The top screen keeps the table and the stack's moment on the felt; its hand fan becomes a small count.
  */
 @Composable
-internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: PadAct?, fan: @Composable (Dp) -> Unit, onInspect: (Card) -> Unit) {
+internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: PadAct?, fan: @Composable (Dp) -> Unit, onInspect: (Card) -> Unit, afk: String? = null) {
     var zone by remember { mutableStateOf("hand") }
     val stackUp = st.stack.isNotEmpty()
     var seenStack by remember { mutableStateOf(0) }
@@ -59,6 +59,8 @@ internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: 
     Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             ZoneChip("Hand ${hand.size}", shown == "hand") { zone = "hand" }
+            // The clock's line ("Time's up. Choose a card to discard.") beside the hand it is about (V13); the top screen leaves it out.
+            if (afk != null) Text(afk, Modifier.weight(1f), style = small(13f, Rule.Color.Coral, FontWeight.Bold), maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (stackUp) ZoneChip("Stack ${st.stack.size}", shown == "stack") { zone = "stack" }
             // Life totals and the gold button stay on the top screen only (each fact in one place, Randall's rule).
         }

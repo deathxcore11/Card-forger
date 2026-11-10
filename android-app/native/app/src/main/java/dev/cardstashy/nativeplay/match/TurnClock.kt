@@ -176,7 +176,8 @@ object TurnClock {
         fun poke() {
             strikes = 0; lastStrikeTurn = null
             val c = cur ?: return
-            if (c.w.kind != Kind.TURN && c.w.kind != Kind.RIVAL && c.left != INF) { c.left = c.w.total; if (c.since != null) c.since = now(); emit() }
+            // Against the CPU the cleanup discard keeps its one window (V13): walking the hand with the pad does not start it over.
+            if (c.w.kind != Kind.TURN && c.w.kind != Kind.RIVAL && c.left != INF && (friend || !c.w.id.startsWith("discard:"))) { c.left = c.w.total; if (c.since != null) c.since = now(); emit() }
         }
         fun strikes() = strikes
         fun stop() { stopped = true; cur = null; onChange(null) }

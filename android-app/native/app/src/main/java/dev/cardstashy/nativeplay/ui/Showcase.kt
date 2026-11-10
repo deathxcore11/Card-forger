@@ -136,6 +136,17 @@ fun ShowcaseCase(eyebrow: String, title: String, trailing: (@Composable () -> Un
     }
 }
 
+/** The case's button row alone (the Thor's card page): registers its keys and words so the hint bar does not repeat them, then draws them equal across. */
+@Composable
+internal fun CaseButtonRow(buttons: List<CaseButton>, modifier: Modifier = Modifier) {
+    val keys = buttons.mapNotNull { it.key?.takeIf { _ -> it.enabled } }.toSet()
+    val labels = buttons.filter { it.enabled }.map { it.label.lowercase() }.toSet()
+    val owner = androidx.compose.runtime.remember { Any() }
+    androidx.compose.runtime.DisposableEffect(owner, keys) { DualScreen.shownKeys[owner] = keys; onDispose { DualScreen.shownKeys.remove(owner) } }
+    androidx.compose.runtime.DisposableEffect(owner, labels) { DualScreen.shownLabels[owner] = labels; onDispose { DualScreen.shownLabels.remove(owner) } }
+    if (buttons.isNotEmpty()) Row(modifier, horizontalArrangement = Arrangement.spacedBy(10.dp)) { buttons.forEach { CaseButtonView(it, Modifier.weight(it.weight).fillMaxHeight()) } }
+}
+
 /** The case's brass plaque: an eyebrow (CARD, DECK, ACT, BATTLE, PACK…) over the name, with the purse or a count at its right. */
 @Composable
 private fun Plaque(eyebrow: String, title: String, trailing: (@Composable () -> Unit)?) {

@@ -110,6 +110,8 @@ fun SettingsScreen(onBack: () -> Unit, onWeb: (String) -> Unit, startTab: String
     val community = remember { CommunityLayerState() }
     // Controller: LB/RB step the tab row (Profile & account, Appearance, Help); a full-screen layer, so nothing under it lends buttons.
     PadScreen(remember { PadActs(tabs = { d -> tab = Tab.entries[(tab.ordinal + d).coerceIn(0, Tab.entries.size - 1)] }, opaque = true) })
+    // Two screens (V10): the bottom shows what this device keeps, never an empty mark.
+    BottomScreen { SettingsBottom(tab) }
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         Backdrop() // #ambient: the shared art (glass on, or Aura)
         Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).imePadding()) {
@@ -504,6 +506,30 @@ private fun AppPane() {
         }
         Check("Sound & music", AppSettings.sound) { AppSettings.set("packSound", it) }
         Check("Soft sounds in the app", AppSettings.appSounds, "Music plays only in matches and Planeswalk. Elsewhere you hear only a few soft sounds, like opening a pack or adding a card, if “Soft sounds in the app” is on. Music streams the first time, then stays on this device. Sound starts after your first tap.") { AppSettings.set("appSounds", it) }
+    }
+}
+
+/**
+ * Two screens, at rest (V10): facts the panes already hold (version, last start, saved card art, the second screen), leaving out
+ * the ones the open tab shows on top (Help has version and last start; Appearance has card art and the screen).
+ */
+@Composable
+private fun SettingsBottom(tab: Tab) {
+    val context = LocalContext.current
+    val version = remember { runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "" }
+    val store = dev.cardstashy.nativeplay.art.ThumbStore
+    val running by store.progress.collectAsState()
+    val art = remember(running) { store.bytes() to store.setsSaved() }
+    ShowcaseCase("Settings", "This device", hero = null) {
+        if (tab != Tab.INFO) {
+            if (version.isNotBlank()) CaseFact("Version", version.substringBefore('-') + if ("test" in version) " \u00B7 test build" else "")
+            HomeStart.ms?.let { CaseFact("Last start", "Home in $it ms") }
+        }
+        if (tab != Tab.APP) {
+            val (used, sets) = art
+            CaseFact("Card art saved", if (sets == 0 && used < 1048576) "Nothing saved yet" else "${"%,.0f".format(used / 1048576.0)} MB · $sets ${if (sets == 1) "set" else "sets"}")
+            DualScreen.detected?.let { p -> CaseFact("Second screen", "${p.width}×${p.height} at ${p.hz.toInt()} Hz") }
+        }
     }
 }
 

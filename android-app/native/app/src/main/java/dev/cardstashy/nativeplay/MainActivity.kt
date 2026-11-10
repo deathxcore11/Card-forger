@@ -281,7 +281,8 @@ class MainActivity : ComponentActivity() {
      * phones, and a strong sideways layout for handhelds). Planeswalk is the one web page that turns sideways on a regular phone.
      */
     private var lastGame = false; private var lastPlay = true
-    fun inGame(on: Boolean, play: Boolean = false) {
+    fun inGame(on: Boolean, play: Boolean = false, force: Boolean = false) {
+        if (!force && on && lastGame && lastPlay == play) return // V6: the match asks twice (MatchFlow, Table); the second must not resize the window again
         lastGame = on; lastPlay = play; Updater.inGame = on
         dev.cardstashy.nativeplay.art.ThumbStore.paused = on // the table gets the network and CPU
         dev.cardstashy.nativeplay.play.RandomBuild.paused = on // background random decks wait (app.js playRandomQueue idle())
@@ -296,7 +297,7 @@ class MainActivity : ComponentActivity() {
     /** Folding or unfolding changes the smallest width: the phone rule is applied again for the screen on show. */
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
-        inGame(lastGame, lastPlay)
+        inGame(lastGame, lastPlay, force = true)
     }
 }
 
@@ -516,7 +517,7 @@ private fun App(activity: MainActivity) {
                     if ((p as? Pick.Table)?.quick == true && !online(activity)) android.widget.Toast.makeText(activity, "Quick Play needs a connection. Practice works offline.", android.widget.Toast.LENGTH_LONG).show()
                     else go(Screen.Match(p)) }, onOpenDecks = { go(Screen.PlayDecks) },
                 onSignIn = { go(Screen.SignIn) }, onFriends = { go(Screen.Lobby("social")) },
-                onOpenSaved = { go(Screen.Web("https://cardstashy.com/#deck/" + android.net.Uri.encode(it) + "/cards")) })
+                onOpenSaved = { dev.cardstashy.nativeplay.ui.deckOpensOn("mtg", it, "cards"); go(Screen.CollectionDeck(it)) })
         }
         Screen.Decks -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
@@ -617,9 +618,15 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
             launch { androidx.compose.runtime.snapshotFlow { versus }.first { !it }; android.util.Log.i("Speed", "versus beat ends at ${at()} ms") }
             launch { controller.stage.first { it == dev.cardstashy.nativeplay.match.Stage.TOSS }; android.util.Log.i("Speed", "toss ready (Forge asked for the keep) at ${at()} ms") }
         }
+        // V5: the table is ready when it takes over from the beat: the coin toss on screen (its own show), else the first board.
+        // A rematch counts from its own start (no versus beat) under its own key.
+        val tRound = remember { if (round == 0) t0 else SystemClock.elapsedRealtime() }
+        val holding by androidx.compose.runtime.rememberUpdatedState(versus || holdForScene)
         LaunchedEffect(Unit) {
-            controller.shown.first { it != null }
-            if (round == 0) Speed.record(if (s.known) Speed.KNOWN else Speed.NEW, SystemClock.elapsedRealtime() - t0)
+            kotlinx.coroutines.flow.combine(controller.stage, controller.shown, androidx.compose.runtime.snapshotFlow { holding }) { st, sh, h ->
+                !h && (st == dev.cardstashy.nativeplay.match.Stage.TOSS || sh != null) }.first { it }
+            Speed.record(if (round > 0) Speed.REMATCH else if (s.known) Speed.KNOWN else Speed.NEW, SystemClock.elapsedRealtime() - tRound)
+            controller.shown.first { it != null }; android.util.Log.i("Speed", "opening hand on screen at ${SystemClock.elapsedRealtime() - tRound} ms")
         }
         if (bubbles != null && outcome != null) LaunchedEffect(Unit) { controller.shown.filterNotNull().collect { st -> bubbles.update(st).forEach { outcome.bubbles.add(it) } } }
         // Story lessons (story-lessons.js): the Rift's whispers on your side of a Story match, fed only what the table shows while play is on.

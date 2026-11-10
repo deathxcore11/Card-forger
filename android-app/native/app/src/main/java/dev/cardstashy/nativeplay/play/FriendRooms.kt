@@ -25,7 +25,10 @@ class FriendRooms(private val site: String = "https://cardstashy.com", private v
             "room_full" to "This room already has two players.", "invite_expired" to "This invite has expired. Ask your friend for a new one.",
             "room_closed" to "Your friend closed this room.", "invite_not_found" to "This invite is no longer valid.", "own_room" to "This is your own room. Send the invite to a friend.",
             "player_busy" to "One of you is still in another match. Finish it, then try again.", "global_match_capacity" to "Every table is busy right now. Try again in a minute.",
-            "invalid_match_input" to "This deck does not fit the room's format.")
+            "invalid_match_input" to "This deck does not fit the room's format.",
+            "invalid_room" to "This challenge could not be sent. Check the format and try again.", "room_rate_limit" to "Too many invites in a short time. Wait a minute and try again.",
+            "room_not_ready" to "Your friend has not accepted yet.", "deck_required" to "Pick a deck first.", "authentication_required" to "Sign in again to play with friends.",
+            "trial_not_authorized" to "Friend matches are not open to this account yet.", "play_not_authorized" to "Friend matches are not open to this account yet.")
         fun link(invite: String) = "https://cardstashy.com/#play/join/$invite"
         /** friendInviteFromHash, widened to what people paste: the link, the hash or the bare invite. */
         fun inviteFrom(text: String?): String? {
@@ -48,13 +51,15 @@ class FriendRooms(private val site: String = "https://cardstashy.com", private v
             http(method, "$site$path", mapOf("Authorization" to "Bearer $t"), body?.toString())?.takeIf { it.isJsonObject }?.asJsonObject
         } catch (e: Http.Failure) {
             val code = Regex("\"error\"\\s*:\\s*\"([a-z0-9_]{1,100})\"").find(e.body)?.groupValues?.get(1) ?: "room_request_rejected"
-            throw Failure(code, MESSAGES[code] ?: "The room could not be reached. Try again.", e.status)
+            // Unknown refusals keep their code and status on screen (web 8d14265a), so an intermittent failure can be told apart.
+            throw Failure(code, MESSAGES[code] ?: ("The room could not be reached. Try again." + (if (code == "room_request_rejected") "" else " ($code)") + (if (e.status > 0) " [${e.status}]" else "")), e.status)
         } catch (e: java.io.IOException) { throw Failure("offline", "Couldn’t reach CardStashy. Check your connection.") }
     }
 
     private fun room(id: String): String { require(UUID.matches(id)) { "FRIEND_ROOM_INVALID" }; return "/api/play/rooms/$id" }
     private fun invite(v: String): String { if (!INVITE.matches(v)) throw Failure("invite_not_found", MESSAGES.getValue("invite_not_found")); return v }
-    private fun deckFor(format: String, deck: JsonObject) = deck.deepCopy().apply { addProperty("format", format) }
+    /** friendDeck: every card name in Forge's spelling (engineDeck), then the room's format. */
+    private fun deckFor(format: String, deck: JsonObject) = dev.cardstashy.nativeplay.match.EngineNames.deck(deck).apply { addProperty("format", format) }
 
     /** A server from before player cards refuses the extra field: the room then opens without it. */
     private suspend fun withPlayer(path: String, body: JsonObject, player: JsonObject?, refusal: String): JsonObject? {

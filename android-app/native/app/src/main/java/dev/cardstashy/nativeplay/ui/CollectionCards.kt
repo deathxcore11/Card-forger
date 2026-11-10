@@ -428,6 +428,22 @@ private fun CardsPage(m: CollectionCardsModel, top: @Composable (tabs: (@Composa
     val tabKeys = m.tabs.map { it.key }
     PadScreen(remember(tabKeys, tab, act) { PadActs(tabs = if (tabKeys.size < 2) null else { d -> val i = tabKeys.indexOf(tab).coerceAtLeast(0)
         tabKeys[(i + d).coerceIn(0, tabKeys.lastIndex)].takeIf { it != tab }?.let(act.tab) }) })
+    // Two screens (V10): the lot under the ring, else the collection's own summary line (moved down here, said once) at rest.
+    if (tab == "cards" && body == null && m.emptyTitle == null) BottomScreen {
+        val q = DualScreen.quick
+        if (q != null) QuickLookCase(q)
+        else if (m.summary.isEmpty()) FocusedCardView(DualScreen.focus)
+        else {
+            val money = m.summary.firstOrNull { it.bold && it.t.trimStart().startsWith('$') }
+            val rest = m.summary.filter { it !== money }.joinToString("") { it.t }.replace(Regex("\\s+"), " ")
+                .replace(Regex("(\\s*·\\s*)+"), " · ").trim().removePrefix("·").removeSuffix("·").trim()
+            ShowcaseCase("Collection · ${m.game.label}", m.title, hero = null,
+                buttons = if (m.refresh != null) listOf(CaseButton(null, m.refreshLabel.ifBlank { "Refresh prices" }) { act.refresh() }) else emptyList()) {
+                money?.let { CaseFact("Value", it.t.trim(), big = true) }
+                if (rest.isNotBlank()) CaseFact("Your cards", rest)
+            }
+        }
+    }
     BoxWithConstraints(modifier) {
     val inner = maxWidth - gutter * 2
     LazyColumn(Modifier.fillMaxSize(), state = state, contentPadding = PaddingValues(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -445,7 +461,8 @@ private fun CardsPage(m: CollectionCardsModel, top: @Composable (tabs: (@Composa
                 if (body != null) Unit
                 else if (m.emptyTitle != null) Empty(m, act)
                 else {
-                    if (m.game != CardGame.MTG) ValueLine(m, act) else Summary(m.summary)
+                    // Two screens: the summary lives in the bottom screen's case (V10), never twice.
+                    if (DualScreen.active) Unit else if (m.game != CardGame.MTG) ValueLine(m, act) else Summary(m.summary)
                     Tools(m, act, wide, query)
                 }
             }

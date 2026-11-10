@@ -128,7 +128,8 @@ object QuickPlay {
         Setup.Ready((pick as? Pick.Table)?.let { val lesson = it.story?.setup
             forgeInput(format, you, cpuDeck, it.level, startingPlayer = if (lesson != null) "first" else "random", quick = it.quick, setup = lesson) } ?: quickInput(format, you, cpuDeck),
             Plate(pick.name, "You", pick.face), Plate(cpuName, "CPU · $format", faceOf(cpuDeck), (pick as? Pick.Table)?.takeIf { it.quick }?.matchup ?: ""),
-            youRows + cpuRows, faces, CardArt.knowsRows(youRows + cpuRows))
+            // A deck played before (V5): your rows only; the CPU's list is a fresh pick each match.
+            youRows + cpuRows, faces, CardArt.knowsRows(youRows))
     }
 
     /** Finds and decodes both decks' pictures; returns when done or when [budgetMs] runs out (the table then fills in as they land). */

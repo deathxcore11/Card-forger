@@ -729,33 +729,37 @@ class ShotTest {
         home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
     }
 
-    /** Two screens (specs/thor-card-popup-dual.md): the card view at the Thor's sizes, each tab; top 1920 × 1080, bottom 1240 × 1080. */
+    /** Two screens ("Card on the wall", specs/thor-card-popup-dual.md Revision 2): a short-text and a long-text card at the Thor's sizes; top 1920 x 1080, bottom 1240 x 1080. */
     @Test fun cardSheetDual() {
         trunkSetup(); dev.cardstashy.nativeplay.play.CardData.load(RuntimeEnvironment.getApplication())
         fun pick(name: String, finish: String) = trunkCards.first { it["name"].asString == name }.let { dev.cardstashy.nativeplay.ui.CardPick(name, it["oracle_id"]?.asString ?: "", it["id"].asString, finish) }
-        val cases = listOf(Triple("overview", pick("Ragavan, Nimble Pilferer", "foil"), "overview"), Triple("guide", pick("Delver of Secrets // Insectile Aberration", "nonfoil"), "guide"),
-            Triple("get", pick("Sheoldred, the Apocalypse", "foil"), "get"))
+        val cases = listOf("short" to pick("Llanowar Elves", "nonfoil"), "long" to pick("Ragavan, Nimble Pilferer", "foil"))
         dev.cardstashy.nativeplay.ui.Pad.used()
+        dev.cardstashy.nativeplay.ui.DualPage.testRulings = listOf(
+            "Ragavan's ability triggers whenever it deals combat damage to a player, even if that damage was prevented down to zero." to "Wizards of the Coast · 2023-04-14",
+            "You exile the top card of that player's library; it stays exiled even if you cannot cast it." to "Wizards of the Coast · 2023-04-14",
+            "Dash lets you cast this creature from your hand for its dash cost; it returns to hand at end of turn." to "Wizards of the Coast · 2023-04-14",
+            "A fourth ruling so that more than three exist." to "Scryfall · 2023-04-14")
         try {
             dev.cardstashy.nativeplay.ui.DualScreen.pretend(dev.cardstashy.nativeplay.ui.DualScreen.Panel(2, "Built-in Screen", 1240, 1080, 60f))
-            for ((name, p, tab) in cases) {
-                val sheet = @Composable { dev.cardstashy.nativeplay.ui.CardSheet(p, trunkState, dev.cardstashy.nativeplay.ui.CardSheetActions(), {}, startTab = tab) }
+            for ((name, p) in cases) {
+                val sheet = @Composable { dev.cardstashy.nativeplay.ui.CardSheet(p, trunkState, dev.cardstashy.nativeplay.ui.CardSheetActions(), {}) }
                 RuntimeEnvironment.setQualifiers("w960dp-h540dp-land-xhdpi")
-                settled(File(System.getProperty("shotsDir"), "w3/card-sheet-top-$name-1920x1080.png").path) {
+                settled(File(System.getProperty("shotsDir"), "w3/play-$name-top.png").path) {
                     androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().background(Site.Bg)) {
                         androidx.compose.foundation.layout.Box(Modifier.size(1.dp)) { sheet() }
                         dev.cardstashy.nativeplay.ui.TopScreenHost()
                     }
                 }
                 RuntimeEnvironment.setQualifiers("w620dp-h540dp-xhdpi")
-                settled(File(System.getProperty("shotsDir"), "w3/card-sheet-bottom-$name-1240x1080.png").path) {
+                settled(File(System.getProperty("shotsDir"), "w3/play-$name-bottom.png").path) {
                     androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().padRoot()) {
                         androidx.compose.foundation.layout.Box(Modifier.size(1.dp)) { sheet() }
                         dev.cardstashy.nativeplay.ui.BottomRoot()
                     }
                 }
             }
-        } finally { dev.cardstashy.nativeplay.ui.DualScreen.pretend(null); dev.cardstashy.nativeplay.ui.Pad.forget() }
+        } finally { dev.cardstashy.nativeplay.ui.DualPage.testRulings = null; dev.cardstashy.nativeplay.ui.DualScreen.pretend(null); dev.cardstashy.nativeplay.ui.Pad.forget() }
     }
 
     /** CP-11/12/14: the card at rest, under a finger at its top right (±8°, scale 1.035, light spot), and leaned by the phone (x .6, y −.4). */

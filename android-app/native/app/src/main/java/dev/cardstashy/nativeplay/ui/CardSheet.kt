@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -556,7 +557,7 @@ private fun RulesBox(f: JsonObject, shown: JsonObject, multi: Boolean, i: Int, d
 
 /** ruleText: rule words become taps (quoted names never do); {X} symbols draw inline. */
 @Composable
-private fun RuleLine(line: String, data: CardData?, onRule: (CardData.Rule) -> Unit) {
+private fun RuleLine(line: String, data: CardData?, onRule: (CardData.Rule) -> Unit, size: Int = 15) {
     val inline = HashMap<String, InlineTextContent>()
     val text = buildAnnotatedString {
         val parts = mutableListOf<Pair<String, Boolean>>()
@@ -576,7 +577,7 @@ private fun RuleLine(line: String, data: CardData?, onRule: (CardData.Rule) -> U
             symbols(part.substring(start), inline)
         }
     }
-    Text(text, style = t(15f, line = 22f), inlineContent = inline)
+    Text(text, style = t(size.toFloat(), line = size * 1.45f), inlineContent = inline)
 }
 
 private fun AnnotatedString.Builder.symbols(s: String, inline: HashMap<String, InlineTextContent>) {
@@ -765,7 +766,7 @@ private fun Guide(shown: JsonObject, data: CardData?, onRule: (CardData.Rule) ->
             when {
                 rulings == null -> StateLoading("Loading official rulings…")
                 rulings!!.isEmpty() -> StateEmpty("No official rulings for this card.")
-                else -> rulings!!.forEach { (c, src) -> Column { RuleLine(c, null) {}; Text(src, style = t(12f, color = Site.Muted)) } }
+                else -> rulings!!.forEach { (c, src) -> Column { RuleLine(c, null, {}); Text(src, style = t(12f, color = Site.Muted)) } }
             }
         }
     }
@@ -798,141 +799,214 @@ private fun RuleCard(r: CardData.Rule, onClose: () -> Unit) {
 /** Two screens: the bottom screen's X "Add to deck" opens the deck list in the top screen's Overview. */
 private val LocalDecksOpen = androidx.compose.runtime.compositionLocalOf<androidx.compose.runtime.MutableState<Boolean>?> { null }
 
+
+/** The official rulings (Scryfall, as the Play guide reads them): comment and its source line; null while loading. */
+@Composable
+private fun rulingsOf(shown: JsonObject?): List<Pair<String, String>>? {
+    val id = shown.s("id")
+    val live by produceState<List<Pair<String, String>>?>(null, id) {
+        value = if (id.isBlank()) emptyList() else withContext(Dispatchers.IO) { runCatching { (Http.call("GET", "https://api.scryfall.com/cards/$id/rulings", mapOf("Accept" to "application/json"), null, 12_000) as? JsonObject)
+            ?.getAsJsonArray("data")?.mapNotNull { (it as? JsonObject)?.let { r -> r.s("comment") to "${if (r.s("source") == "wotc") "Wizards of the Coast" else "Scryfall"} · ${r.s("published_at")}" } } }.getOrNull() ?: emptyList() }
+    }
+    return DualPage.testRulings ?: live
+}
+
+/** The size one step under [size] on the rulebook list, never under its smallest body size (13). */
+private fun stepDown(size: Int): Int = Rule.Sizes.getOrElse(Rule.Sizes.indexOf(size) - 1) { 13 }.coerceAtLeast(13)
+
+/** The rulings tile: as many whole rulings as fit at 13, then fewer, then the count; tap reads them all on the top screen. */
+@Composable
+private fun RulingsBody(rulings: List<Pair<String, String>>) {
+    val n = rulings.size
+    val shows = (minOf(n, 3) downTo 1).toList()
+    FitFirst(shows.size + 1, Modifier.fillMaxSize()) { i, _ ->
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (i < shows.size) {
+                rulings.take(shows[i]).forEach { (c, _) -> Text(c, style = Rule.Type.S13) }
+                Text(if (n > shows[i]) "${n - shows[i]} more · tap to read all" else "Tap to read on the top screen", style = Rule.Type.sans(12, FontWeight.SemiBold, Rule.Color.Gold))
+            } else {
+                Text("$n", style = Rule.Type.sans(28, FontWeight.ExtraBold, Rule.Color.Text)); Text("official rulings · tap to read", style = Rule.Type.S13)
+            }
+        }
+    }
+}
+
 /**
- * The card view on two screens (specs/thor-card-popup-dual.md, Randall's yes 10 Nov 14:48Z; the look is locked, placement only).
- * Top, full width: the art on the left 44 %, fading into the page; the eyebrow, title, type and tabs, then the tab, scrolling on
- * its own (d-pad, finger), with the set progress pinned at the foot. Bottom: the whole card, fitted (WHOLE CARD, NEVER CUT), with
- * its facts and keys: X the main action, Y the Art view, A flip (or zoom). LB/RB change the tab on top; B closes.
+ * The Play card sheet on two screens: "Card on the wall" (specs/thor-card-popup-dual.md, Revision 2). Top: the card's art as a dark bleed,
+ * its facts on the left, the whole card in the middle, rules text and guide on the right. Bottom: a glass bleed of the art under tiles
+ * (what you have, the set, where to get more, rulings) and the case keys: X the main action, Y the Art view, A flip (or zoom).
  */
 @Composable
-private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose: () -> Unit, startTab: String) {
+private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose: () -> Unit, @Suppress("UNUSED_PARAMETER") startTab: String) {
     val context = LocalContext.current
+    val view = LocalView.current
     val data = CardData.ready.collectAsState().value.also { if (it == null) CardData.warm(context) }
     val prints by CardFacts.prints.collectAsState()
     val facts by CardFacts.cards.collectAsState()
     LaunchedEffect(pick) { pick.printId?.let { CardFacts.wantPrint(it) } ?: CardFacts.want(listOf(pick.oracle to null)) }
     val shown: JsonObject? = pick.printId?.let { prints[it] } ?: facts[pick.oracle]?.card
-    var tab by remember(pick) { mutableStateOf(startTab) }
     var asked by remember(pick) { mutableStateOf(pick.finish) }
     var face by remember(pick) { mutableStateOf(0) }
     var rule by remember { mutableStateOf<CardData.Rule?>(null) }
     var zoom by remember { mutableStateOf<String?>(null) }   // "card" or "art"
-    val decksOpen = remember(pick) { mutableStateOf(false) }
-    BackHandler(enabled = rule == null && zoom == null) { onClose() }
+    var decksOpen by remember(pick) { mutableStateOf(false) }
+    var rulingsOpen by remember(pick) { mutableStateOf(false) }
+    BackHandler(enabled = rule == null && zoom == null && !decksOpen && !rulingsOpen) { onClose() }
+    BackHandler(enabled = decksOpen) { decksOpen = false }
+    BackHandler(enabled = rulingsOpen && !decksOpen) { rulingsOpen = false }
     FoilFocus.Cover()
     val scroll = androidx.compose.foundation.rememberScrollState()
     val scope = rememberCoroutineScope()
-    // The bottom's keys: what each does now (null: not drawn).
     val finish = Foil.finishFor(shown, asked)
     val name = shown?.s("name")?.ifBlank { null } ?: pick.name
     val faces = shown?.getAsJsonArray("card_faces")?.mapNotNull { it as? JsonObject }?.takeIf { it.isNotEmpty() } ?: listOfNotNull(shown)
     val imgFaces = faces.filter { it.getAsJsonObject("image_uris") != null }
     val owned = shown?.let { Trunk.owned(state, name, it.s("oracle_id").ifBlank { null }).coerceAtMost(4) } ?: 0
     val flip: (() -> Unit)? = if (imgFaces.size > 1) ({ face = 1 - face }) else null
+    val decks = Trunk.decks(state)
+    // Where to get it: what the Get it tab offered, now a tile and the X key.
+    val st = if (owned < 4 && shown != null) Trunk.stamp(state, shown) else null
+    val craft = shown?.let { Trunk.craft(state, name, it) }
+    val shopSet = LocalShopSetNav.current
+    val set = shown.s("set")
+    val toMerchant = act.merchant ?: shopSet?.let { g -> { code: String, _: String -> g(code) } }
+    fun run(block: suspend () -> Unit) = scope.launch { runCatching { block() }.onFailure { act.toast(it.message ?: "Something went wrong.") }; Progress.refresh() }
+    val getNow: (() -> Unit)? = when {
+        owned >= 4 || shown == null -> null
+        craft != null && craft.room > 0 && craft.seals >= 1 -> ({ run { Progress.craft(craft.id); Feel.perform(view, "reward-claim"); act.toast("1 $name crafted into your Play collection.") } })
+        st != null && st.seals >= 1 -> ({ run { Progress.craft(st.id, false); Feel.perform(view, "reward-claim"); act.toast("$name is in your Trunk.") } })
+        set.isNotBlank() && toMerchant != null -> ({ toMerchant(set, name) })
+        else -> null
+    }
     val xAct: PadAct? = when {
         shown == null -> null
         act.edit != null -> PadAct("Add a copy") { act.edit.step(name, 1) }
-        owned < 4 -> PadAct(if (owned > 0) "Get more" else "Get it") { tab = "get"; scope.launch { scroll.animateScrollTo(0) } }
-        Trunk.decks(state).isNotEmpty() -> PadAct("Add to deck") { tab = "overview"; decksOpen.value = true }
+        getNow != null -> PadAct(if (owned > 0) "Get more" else "Get it") { getNow() }
+        decks.isNotEmpty() -> PadAct("Add to deck") { decksOpen = true }
         else -> null
     }
     val heroArt = shown?.let { sh -> (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("art_crop")?.ifBlank { null }
         ?: sh.getAsJsonObject("image_uris")?.s("art_crop")?.ifBlank { null } ?: faces.firstOrNull()?.getAsJsonObject("image_uris")?.s("art_crop") }
     val yAct: PadAct? = heroArt?.takeIf { it.isNotBlank() }?.let { PadAct("Art view") { zoom = "art" } }
-    val aAct: PadAct = if (flip != null) PadAct("Flip", flip) else PadAct("Zoom") { zoom = "card" }
-    PadScreen(remember(pick, xAct?.label, yAct?.label, aAct.label) { PadActs(b = "Close", opaque = true, x = xAct, y = yAct,
-        tabs = { d -> val i = CardSheetTabs.indexOfFirst { it.first == tab }.coerceAtLeast(0); tab = CardSheetTabs[(i + d).coerceIn(0, CardSheetTabs.lastIndex)].first }) })
+    val aAct: PadAct? = if (flip != null) PadAct("Flip", flip) else null
+    PadScreen(remember(pick, xAct?.label, yAct?.label, aAct?.label) { PadActs(b = "Close", opaque = true, x = xAct, y = yAct) })
+    val rulings = rulingsOf(shown)?.filter { it.first.isNotBlank() }.orEmpty()
+
+    // One tilt value for both screens: the card's foil light, and the art bleeds' parallax.
+    val image = shown?.let { (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("normal")?.ifBlank { null }
+        ?: it.getAsJsonObject("image_uris")?.s("normal")?.ifBlank { null } ?: faces.firstOrNull()?.getAsJsonObject("image_uris")?.s("normal") }
+    val look = if (shown != null) data?.let { Foil.look(it, shown, finish) } else null
+    val shines = look?.takeIf { it.shines }
+    val tilt = rememberFoilTilt(live = true)
 
     TopScreen {
         Box(Modifier.fillMaxSize().background(Rule.Color.Bg)) {
             if (shown == null) { Loading(pick.name) { onClose() }; return@Box }
             val f = faces.getOrElse(face) { faces[0] }
-            Row(Modifier.fillMaxSize()) {
-                // The art, edge to edge down the left, melting into the page on its right edge.
-                val p = heroPainter(heroArt?.let(homeArt))
-                Box(Modifier.fillMaxHeight().weight(.44f)) {
-                    if (p != null) Image(p, null, Modifier.fillMaxSize()
-                        .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
-                        .drawWithContent { drawContent(); drawRect(Brush.horizontalGradient(0f to Color.Black, .72f to Color.Black, 1f to Color.Transparent), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn) },
-                        contentScale = ContentScale.Crop)
-                }
-                Column(Modifier.weight(.56f).fillMaxHeight().windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.safeDrawing.only(
-                    androidx.compose.foundation.layout.WindowInsetsSides.End + androidx.compose.foundation.layout.WindowInsetsSides.Vertical))) {
-                    // The page scrolls inside the right column (d-pad up and down, or a finger); the art stays put. A on the page is the bottom's A.
-                    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
-                    var self by remember { mutableStateOf(false) }
-                    LaunchedEffect(Unit) { androidx.compose.runtime.withFrameNanos { }; runCatching { focus.requestFocus() } }
-                    Column(Modifier.weight(1f).fillMaxWidth().focusRequester(focus).onFocusChanged { self = it.isFocused }
-                        .onPreviewKeyEvent { e ->
-                            val k = e.nativeKeyEvent.keyCode; val down = e.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN
-                            when {
-                                k == android.view.KeyEvent.KEYCODE_DPAD_UP || k == android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
-                                    if (down) scope.launch { scroll.animateScrollBy(if (k == android.view.KeyEvent.KEYCODE_DPAD_DOWN) 260f else -260f) }; true }
-                                self && (k == android.view.KeyEvent.KEYCODE_BUTTON_A || k == android.view.KeyEvent.KEYCODE_DPAD_CENTER) -> { if (down && e.nativeKeyEvent.repeatCount == 0) aAct.run?.invoke(); true }
-                                else -> false
-                            }
-                        }.focusable().verticalScroll(scroll).padding(top = 22.dp, end = 8.dp)) {
-                        Column(Modifier.padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(listOf(shown.s("set_name").ifBlank { shown.s("set").uppercase() }, RARITY[shown.s("rarity")] ?: shown.s("rarity")).filter { it.isNotBlank() }.joinToString(" · ").uppercase(),
-                                style = t(11f, FontWeight.Bold, Site.Gold).copy(letterSpacing = 1.4.sp))
-                            Row(verticalAlignment = Alignment.Top) {
-                                Text(name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 24.sp, lineHeight = 28.sp, color = Ink), modifier = Modifier.weight(1f))
-                                ManaCost(f.s("mana_cost").ifBlank { shown.s("mana_cost") }, 20.dp, Modifier.padding(top = 4.dp))
-                            }
-                            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text(f.s("type_line").ifBlank { shown.s("type_line") }, style = t(14f, color = Rule.Color.Muted))
-                                Text("Play · $owned of 4", style = t(12f, FontWeight.Bold, Site.Gold), modifier = Modifier.clip(Rule.Radius.Pill)
-                                    .background(Rule.Color.Gold.copy(alpha = .12f)).border(1.dp, Rule.Color.GoldEdge, Rule.Radius.Pill).padding(horizontal = 9.dp, vertical = 2.dp))
-                            }
+            val formats = legalFormats(shown)
+            val artist = f.s("artist").ifBlank { shown.s("artist") }
+            val num = shown.s("collector_number")
+            val keywords = data?.let { d -> (shown.getAsJsonArray("keywords")?.map { it.asString } ?: emptyList()).mapNotNull { d.rule(it) } } ?: emptyList()
+            DualTop(heroArt, tilt, scroll,
+                card = { m -> if (image != null) CardPicture(image, shines, tilt, m, shape = CardCorner) },
+                left = {
+                    DualSectionBox("The card") {
+                        Text(listOf(shown.s("set_name").ifBlank { shown.s("set").uppercase() }, RARITY[shown.s("rarity")] ?: shown.s("rarity")).filter { it.isNotBlank() }.joinToString(" · ").uppercase(),
+                            style = Rule.Type.sans(12, FontWeight.Bold, Rule.Color.Gold).copy(letterSpacing = 1.4.sp))
+                        Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(name, style = Rule.Type.cinzel(24), modifier = Modifier.weight(1f))
+                            ManaCost(f.s("mana_cost").ifBlank { shown.s("mana_cost") }, 20.dp, Modifier.padding(top = 4.dp))
                         }
-                        Tabs(tab) { tab = it }
-                        androidx.compose.runtime.CompositionLocalProvider(LocalDecksOpen provides decksOpen) {
-                            when (tab) {
-                                "overview" -> {
-                                    val mine = state?.let { Trunk.finishesOwned(it, name, shown.s("oracle_id").ifBlank { null }) + pick.finish }
-                                    Overview(name, shown, faces, imgFaces, face, null, finish, data, state, owned, mine, act, { asked = it }, { face = 1 - face }, { rule = it }, { zoom = "card" }, { tab = "get" }, dual = true)
-                                }
-                                "guide" -> Guide(shown, data) { rule = it }
-                                else -> GetIt(name, shown, state, owned, act)
-                            }
-                        }
-                        Spacer(Modifier.height(16.dp))
+                        Text(f.s("type_line").ifBlank { shown.s("type_line") }, style = Rule.Type.S14.copy(color = Rule.Color.Muted))
                     }
-                    // More below: the page fades out above the set card instead of ending on a cut row.
-                    if (scroll.canScrollForward) Box(Modifier.fillMaxWidth().height(0.dp).drawBehind { val h = 28.dp.toPx(); drawRect(Brush.verticalGradient(listOf(Color.Transparent, Rule.Color.Bg), startY = -h, endY = 0f), topLeft = Offset(0f, -h), size = androidx.compose.ui.geometry.Size(size.width, h)) })
-                    // The set progress, pinned at the foot of the page.
-                    Box(Modifier.padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 12.dp)) { SetLine(shown, state, act) }
-                }
-            }
+                    if (formats.isNotEmpty()) DualSectionBox("Where it plays") { FormatPills(formats) }
+                    if (artist.isNotBlank() || num.isNotBlank()) DualSectionBox("The art") {
+                        if (artist.isNotBlank()) Text("Art by $artist", style = Rule.Type.S14)
+                        Text(listOf(shown.s("set").uppercase() + if (num.isNotBlank()) " #$num" else "", shown.s("released_at").take(4)).filter { it.isNotBlank() }.joinToString(" · "),
+                            style = Rule.Type.S13.copy(color = Rule.Color.Muted))
+                    }
+                },
+                right = { size, compact ->
+                    DualSectionBox("Rules text") {
+                        // The face on the card: Flip turns the card and these words follow.
+                        listOf(face.coerceIn(0, faces.lastIndex)).forEach { i -> val fc = faces[i]
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                if (faces.size > 1) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) { Text(fc.s("name"), style = Rule.Type.sans(size, FontWeight.Bold), modifier = Modifier.weight(1f)); ManaCost(fc.s("mana_cost"), 16.dp) }
+                                    Text(fc.s("type_line"), style = Rule.Type.sans(13, FontWeight.Normal, Rule.Color.Muted))
+                                }
+                                fc.s("oracle_text").split("\n").filter { it.isNotBlank() }.forEach { line -> RuleLine(line, data, { rule = it }, size) }
+                                fc.s("flavor_text").takeIf { it.isNotBlank() }?.let { Text(flavourText(it), style = t(stepDown(size).toFloat(), color = Rule.Color.Muted).copy(fontStyle = FontStyle.Italic)) }
+                                val pt = fc.get("power")?.takeIf { it.isJsonPrimitive }?.let { "${fc.s("power")}/${fc.s("toughness")}" }
+                                    ?: shown.s("loyalty").takeIf { it.isNotBlank() && i == 0 }?.let { "Loyalty $it" } ?: ""
+                                if (pt.isNotBlank()) Text(pt, style = Rule.Type.sans(size, FontWeight.Bold), modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.End)
+                            }
+                        }
+                    }
+                    if (keywords.isNotEmpty()) DualSectionBox("Play guide") {
+                        // A keyword's first sentence when it is short; a long one is named and left to a tap on its word in the rules text.
+                        fun brief(d: String) = d.substringBefore(". ").trimEnd('.').let { if (it.length <= 110) "$it." else null }
+                        val said = if (compact) emptyList() else keywords.mapNotNull { r -> brief(r.definition)?.let { r to it } }
+                        val named = keywords.filter { r -> said.none { it.first == r } }
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            said.forEach { (r, d) -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("•", style = Rule.Type.sans(stepDown(size), FontWeight.Bold, Rule.Color.Gold))
+                                Text(buildAnnotatedString { withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(r.label) }; append(" · $d") }, style = t(stepDown(size).toFloat()), modifier = Modifier.weight(1f))
+                            } }
+                            if (named.isNotEmpty()) FormatPills(named.map { it.label })
+                        }
+                    }
+                },
+                onKey = { e ->
+                    val k = e.keyCode; val down = e.action == android.view.KeyEvent.ACTION_DOWN
+                    when {
+                        k == android.view.KeyEvent.KEYCODE_DPAD_UP || k == android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+                            if (down) scope.launch { scroll.animateScrollBy(if (k == android.view.KeyEvent.KEYCODE_DPAD_DOWN) 260f else -260f) }; true }
+                        k == android.view.KeyEvent.KEYCODE_BUTTON_A || k == android.view.KeyEvent.KEYCODE_DPAD_CENTER -> { if (down && e.repeatCount == 0) aAct?.run?.invoke(); aAct != null }
+                        else -> false
+                    }
+                })
             rule?.let { RuleCard(it) { rule = null } }
+            if (rulingsOpen) RulingsPage(name, rulings) { rulingsOpen = false }
         }
     }
 
-    // The bottom screen is the card: whole, fitted, never under the hint bar; its facts and keys beside it.
     BottomScreen {
         if (shown == null) return@BottomScreen
-        val image = (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("normal")?.ifBlank { null }
-            ?: shown.getAsJsonObject("image_uris")?.s("normal")?.ifBlank { null } ?: faces.firstOrNull()?.getAsJsonObject("image_uris")?.s("normal")
-        val look = data?.let { Foil.look(it, shown, finish) }
-        val shines = look?.takeIf { it.shines }
-        val tilt = rememberFoilTilt(live = look?.recipe != null)
+        val code = shown.s("set")
+        val inDecks = decks.filter { d -> d.getAsJsonArray("cards")?.any { (it as? JsonObject)?.s("name") == name } == true }
+        val getLinks = buildList<Pair<String, (() -> Unit)?>> {
+            if (owned < 4) {
+                if (craft != null && craft.room > 0) add(("Craft a copy · 1 seal") to (if (craft.seals >= 1) getNow else null))
+                else if (st != null) add(("Stamp it · 1 ${st.rarity} seal") to (if (st.seals >= 1) getNow else null))
+            }
+            if (code.isNotBlank() && toMerchant != null) add("Its pack at the Merchant" to { toMerchant(code, name) })
+            if (owned < 4 && code.isNotBlank()) add("Find it in a precon" to { act.precon(name, code) })
+        }
+        val sections = listOf(
+            DualSection("Yours", .9f, listOfNotNull(
+                DualTile { GlassTile(Modifier.fillMaxSize(), "In your Trunk") { BigFact("$owned of 4", FINISH_NAME[finish] ?: finish.replaceFirstChar { it.uppercase() }) } },
+                if (inDecks.isEmpty()) null else DualTile { GlassTile(Modifier.fillMaxSize(), "In decks", onClick = { decksOpen = true }) {
+                    BigFact("${inDecks.size}", "of your decks use it", inDecks.joinToString(", ") { it.s("name") }) } })),
+            DualSection("The set", 1.1f, listOfNotNull(
+                if (code.isBlank()) null else DualTile { GlassTile(Modifier.fillMaxSize(), onClick = (act.set ?: shopSet)?.let { go -> { go(code) } }) { SetTileBody(shown, state) } })),
+            DualSection("Get more", 1.25f, listOfNotNull(
+                if (getLinks.isEmpty()) null else DualTile { GlassTile(Modifier.fillMaxSize(), "Where to find it") {
+                    FitFirst(getLinks.size, Modifier.fillMaxSize()) { i, _ -> Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        getLinks.take(getLinks.size - i).forEach { (l, go) -> if (go != null) TileLink(l, go) else Text("$l · not enough seals", style = Rule.Type.S13.copy(color = Rule.Color.Muted)) }
+                    } } } },
+                if (rulings.isEmpty()) null else DualTile(1.25f) { GlassTile(Modifier.fillMaxSize(), "Rulings", onClick = { rulingsOpen = true }) { RulingsBody(rulings) } })))
         val buttons = listOfNotNull(
             xAct?.let { CaseButton("X", it.label, gold = true) { it.run?.invoke() } },
             yAct?.let { CaseButton("Y", it.label) { it.run?.invoke() } },
-            CaseButton("A", aAct.label) { aAct.run?.invoke() })
-        ShowcaseCase("This card", name, buttons = buttons, heroWeight = .5f, scroll = false, hero = if (image == null) null else { {
-            FittedCard(Modifier.fillMaxSize(), margin = 12.dp) { m -> CardPicture(image, shines, tilt, m, shape = CardCorner) }
-        } }) {
-            Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
-                CaseFact("In Trunk", "$owned of 4")
-                CaseFact("Finish", FINISH_NAME[finish] ?: finish.replaceFirstChar { it.uppercase() })
-            }
+            aAct?.let { CaseButton("A", it.label) { it.run?.invoke() } })
+        Box(Modifier.fillMaxSize()) {
+            DualBottom(heroArt, tilt, sections, buttons)
+            if (decksOpen) DeckPicker(decks, owned) { d -> decksOpen = false; scope.launch { addToDeck(d, name, state, act) } }
         }
     }
 
     if (zoom != null && shown != null) {
-        val image = (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("normal")?.ifBlank { null }
-            ?: shown.getAsJsonObject("image_uris")?.s("normal")?.ifBlank { null } ?: faces.firstOrNull()?.getAsJsonObject("image_uris")?.s("normal")
         val hi = (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("png")?.ifBlank { null }
             ?: shown.getAsJsonObject("image_uris")?.s("png")?.ifBlank { null }
         val f = faces.getOrElse(face) { faces[0] }
@@ -941,6 +1015,56 @@ private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActi
                 gallery = heroArt?.takeIf { it.isNotBlank() }?.let { a -> Gallery(listOf(galleryPiece(a, f.s("name").ifBlank { name },
                     f.s("artist").ifBlank { shown.s("artist") }, f.s("flavor_text").ifBlank { shown.s("flavor_text") }, shown))) },
                 startArt = zoom == "art") { zoom = null }
+        }
+    }
+}
+
+/** The set tile: its name and number, how much of it you have, a bar, the count. */
+@Composable
+private fun SetTileBody(shown: JsonObject, state: JsonObject?) {
+    val code = shown.s("set")
+    SetFacts.sets.collectAsState().value
+    val (have, total) = Trunk.setProgress(state, code)
+    val size = total?.takeIf { it > 0 }
+    val num = shown.s("collector_number").ifBlank { "?" }
+    FitFirst(2, Modifier.fillMaxSize(), centre = true) { i, _ ->
+        Column(verticalArrangement = Arrangement.spacedBy(if (i == 0) 8.dp else 4.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (i == 0) RaritySetIcon(code, shown.s("rarity"), 28.dp)
+                Column(Modifier.weight(1f)) {
+                    Text("${shown.s("set_name").ifBlank { code.uppercase() }} · ${code.uppercase()} #$num", style = Rule.Type.S14.copy(fontWeight = FontWeight.Bold))
+                    if (size != null) Text("${have * 100 / size}% of the set", style = Rule.Type.S13.copy(color = Rule.Color.Muted))
+                }
+            }
+            if (size != null) ProgressBar(have.toFloat() / size)
+            Text(if (size != null) "$have of $size" else "$have in your Play collection", style = Rule.Type.S13.copy(fontWeight = FontWeight.SemiBold))
+        }
+    }
+}
+
+/** Over the bottom board: pick the deck the card goes into. */
+@Composable
+private fun DeckPicker(decks: List<JsonObject>, owned: Int, pick: (JsonObject) -> Unit) {
+    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .5f)).pointerInput(Unit) { detectTapGestures { } }, contentAlignment = Alignment.Center) {
+        Column(Modifier.padding(DualPage.Gutter).fillMaxWidth().glass(Rule.Radius.shape(Rule.Radius.Sheet)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("ADD TO DECK", style = Rule.Type.sans(11, FontWeight.Bold, Rule.Color.Gold).copy(letterSpacing = 1.6.sp))
+            Column(Modifier.heightIn(max = 300.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                decks.forEach { d -> GhostButton(d.s("name").ifBlank { "Untitled deck" }, Modifier.fillMaxWidth()) { pick(d) } }
+            }
+            if (owned == 0) Text("Greyed in the deck until it is in your Trunk.", style = Rule.Type.S12.copy(color = Rule.Color.Muted))
+        }
+    }
+}
+
+/** Every official ruling, over the top screen (B closes). */
+@Composable
+private fun RulingsPage(name: String, rulings: List<Pair<String, String>>, onClose: () -> Unit) {
+    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .6f)).pointerInput(Unit) { detectTapGestures { onClose() } }, contentAlignment = Alignment.Center) {
+        Column(Modifier.fillMaxHeight(.9f).widthIn(max = 640.dp).fillMaxWidth().glass(Rule.Radius.shape(Rule.Radius.Sheet)).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("RULINGS · ${name.uppercase()}", style = Rule.Type.sans(11, FontWeight.Bold, Rule.Color.Gold).copy(letterSpacing = 1.6.sp))
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                rulings.forEach { (c, src) -> Column { RuleLine(c, null, {}, 14); Text(src, style = Rule.Type.S12.copy(color = Rule.Color.Muted)) } }
+            }
         }
     }
 }

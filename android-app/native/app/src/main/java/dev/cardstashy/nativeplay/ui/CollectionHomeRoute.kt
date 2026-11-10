@@ -200,7 +200,13 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
         CollectionHomeActions(
             // tcg.js A.setGame: the header's game tabs switch Home (and Cards and Decks) to that game.
             game = { g -> CollectionGame.set(g) },
-            go = { to -> if (to == "#sets" && onSets != null) onSets() else if (to == "#decks" && onDecks != null) onDecks() else web(site + to, null) },
+            // A shelf deck tile (data-to #deck/<id>/<tab> or #tdeck/<id>): the native deck page on that tab, never the website (V7).
+            go = { to -> val hit = Regex("^#(t?)deck/([^/?]+)(?:/([^/?]+))?").find(to)?.groupValues
+                if (hit != null && onDeck != null) { val id = android.net.Uri.decode(hit[2])
+                    val g = if (hit[1] == "t") CollectionGame.current.value else CardGame.MTG
+                    if (g == CardGame.MTG) deckOpensOn("mtg", id, hit[3]); onDeck(id, g) }
+                else if (to == "#collection" && onCards != null) onCards()
+                else if (to == "#sets" && onSets != null) onSets() else if (to == "#decks" && onDecks != null) onDecks() else web(site + to, null) },
             open = open,
             search = { searchOpen?.invoke() ?: web(site + "#search", null) },
             // A.homeDailyCard: Magic's opens the website's sheet for now; Yu-Gi-Oh!'s and Pokémon's open the native card page (A.tCard).

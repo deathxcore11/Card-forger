@@ -290,7 +290,7 @@ internal class Du(val u: Float) {
 fun ForgeBoard(
     st: MatchState, live: Boolean, intents: TableIntents, selectedHand: Int?, onSelectHand: (Int?) -> Unit, onInspect: (Card) -> Unit,
     onMenu: () -> Unit, handOrder: List<Int>, onHandOrder: (List<Int>) -> Unit,
-    modifier: Modifier = Modifier, menu: MatchMenu? = null, overlay: @Composable (Dp.() -> Unit)? = null,
+    modifier: Modifier = Modifier, menu: MatchMenu? = null, afk: String? = null, overlay: @Composable (Dp.() -> Unit)? = null,
 ) {
     // Living Battlefield: effects read from each new snapshot; a touch anywhere skips them to their end.
     // One per board; a caller's own (a frame-by-frame test) wins, so card moves and the shake follow it too.
@@ -554,7 +554,9 @@ fun ForgeBoard(
                 val attackM = if (large) Modifier else Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 44.du)
                 // Undo's own spot, one slot above the quiet one: never where End turn or the gold step was (U6).
                 val undoM = if (large) Modifier else Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 136.du)
-                val rowM = Modifier.align(Alignment.TopEnd).offset(x = (-12).dp, y = H - 180.dp)
+                // A short big board (Thor 960 × 540) puts H - 180 across your piles (mid + 60 to the foot of their counts, V12): there the
+                // row drops just under them; a tall board keeps the site's H - 180. Undo shares End turn's place here with its 400 ms guard.
+                val rowM = Modifier.align(Alignment.TopEnd).offset(x = (-12).dp, y = maxOf(H - 180.dp, mid + 60.dp + 70.dp))
                 @Composable fun pair(content: @Composable () -> Unit) = if (large) Row(rowM, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) { content() } else content()
                 padX = when {
                     attackAll -> if (live && okOn) PadAct(ok) { intents.ok() } else null
@@ -600,7 +602,30 @@ fun ForgeBoard(
                 page = if (dual) ({ step: Int -> if (step > 0) TableZones.handOrField() else if (live && st.buttons.cancelEnabled) intents.cancel() })
                     else if (!live) null else ({ step: Int -> if (step > 0) padGold?.run?.invoke() else if (st.buttons.cancelEnabled) intents.cancel() }),
                 pageLabel = if (dual) (if (live && st.buttons.cancelEnabled) "Cancel · Hand/Field" else "Hand / Field") else if (st.buttons.cancelEnabled) "Cancel / Pass" else "Pass"))
-            if (dual) { val goldAct = padX; BottomScreen { MatchBottom(st, hand, selectedHand?.let { id -> hand.firstOrNull { it.id == id } }, goldAct, fan, onInspect) } }
+            // V4 a controller's cast: what Forge asks next takes the ring. While it asks for targets, the first legal one (the
+            // opponent's cards first, then a player), where A picks; while it asks for mana, a source that pays, where A taps it
+            // (X still pays automatically). RT finds the same spot; when the cast is done the ring goes back to the hand chip.
+            val padAsk: () -> FocusRequester? = {
+                val sel = st.selection
+                when {
+                    !live || st.prompt != null -> null
+                    st.inputType == "InputSelectTargets" -> sel.targetCards.firstNotNullOfOrNull { TableZones.theirs[it] }
+                        ?: sel.targetCards.firstNotNullOfOrNull { TableZones.mine[it] }
+                        ?: sel.players.sortedBy { it == st.viewer }.firstNotNullOfOrNull { TableZones.orbs[it] }
+                    st.inputType?.startsWith("InputPayMana") == true -> sel.actionable.ifEmpty { sel.cards }.firstNotNullOfOrNull { TableZones.mine[it] }
+                    else -> null
+                }
+            }
+            TableZones.ask = padAsk
+            val padAsking = live && st.prompt == null && (st.inputType == "InputSelectTargets" || st.inputType?.startsWith("InputPayMana") == true)
+            val padJumped = remember { booleanArrayOf(false) }
+            LaunchedEffect(padAsking, st.inputType) {
+                if (!Pad.connected.value || TablePad.held) return@LaunchedEffect
+                androidx.compose.runtime.withFrameNanos { }
+                if (padAsking) padAsk()?.let { r -> if (runCatching { r.requestFocus() }.isSuccess) { TableZones.at = 1; padJumped[0] = true } }
+                else if (padJumped[0]) { padJumped[0] = false; TableZones.hand?.let { r -> if (runCatching { r.requestFocus() }.isSuccess) TableZones.at = 0 } }
+            }
+            if (dual) { val goldAct = padX; BottomScreen { MatchBottom(st, hand, selectedHand?.let { id -> hand.firstOrNull { it.id == id } }, goldAct, fan, onInspect, afk) } }
             // With the bottom screen up the hand chip sits where the line would be: the line goes just above the chip, high enough
             // that its 10 du drop shadow (AskLine) clears the chip too (U3).
             if (live) askLine(st)?.let { AskLine(it, W, H, d, bottom = if (dual && hand.isNotEmpty()) H - handW / 66f * 37f - 16.du else null) }
@@ -785,6 +810,9 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         mark == Mark.DISCARD -> "Discard"
         draggable -> "Block"
         LocalAttackInput.current && mineSide && card.isCreature && !card.attacking -> "Attack"
+        // V4: a land pays (while Forge asks for mana, or floats it), anything else of yours with a lit ability activates it.
+        mark == Mark.PLAYABLE && mineSide -> if (card.isLand) "Tap for mana" else "Activate"
+        mark == Mark.PICKABLE -> "Choose"
         else -> null
     }
     val padHere = remember(card.id, padA) { PadActs(a = padA, y = PadAct("Inspect") { inspect(cardNow) }) }
@@ -1007,6 +1035,7 @@ internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Bool
     val pulse = if (pickable && !Motion.still) rememberInfiniteTransition(label = "pick").animateFloat(.55f, 1f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "a").value else 1f
     Box(modifier.size(52.du).then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("orb${p.id}", it.boundsInRoot()) } else Modifier)
         .graphicsLayer { translationY = (if (mine) 1f else -1f) * 14.dp.toPx() * recoil.value; translationX = (if (mine) -1f else 1f) * 6.dp.toPx() * recoil.value }
+        .padActs(PadActs(a = if (pickable) "Choose" else null)).focusRequester(TableZones.orb(p.id))
         .clickable(enabled = pickable, onClick = onPick)) {
         Box(Modifier.fillMaxSize().drawBehind {
             drawCircle(Color(0xFF0B0C10), radius = size.minDimension / 2 + 3.du.toPx())
@@ -1249,9 +1278,14 @@ internal object TableZones {
     var lastMine: Int? = null; var lastTheirs: Int? = null
     /** 0 hand, 1 yours, 2 theirs: where the ring is now. */
     var at = 0
-    /** RT: from the hand to your board, from anywhere else back to the hand. */
+    /** The player portraits (Medallion) by player id, so a player target can take the ring. */
+    val orbs = HashMap<Int, FocusRequester>()
+    fun orb(id: Int): FocusRequester = orbs.getOrPut(id) { FocusRequester() }
+    /** What the table asks for now (a legal target, else a mana source that pays), set by the table each frame (V4). */
+    var ask: (() -> FocusRequester?)? = null
+    /** RT: from the hand to what the table asks for, else your board; from anywhere else back to the hand. */
     fun handOrField() {
-        val r = if (at == 0) (lastMine?.let { mine[it] } ?: mine.values.firstOrNull()) else hand
+        val r = if (at == 0) (ask?.invoke() ?: lastMine?.let { mine[it] } ?: mine.values.firstOrNull()) else hand
         if (r != null && runCatching { r.requestFocus() }.isSuccess) at = if (at == 0) 1 else 0
     }
     fun jump(step: Int) {

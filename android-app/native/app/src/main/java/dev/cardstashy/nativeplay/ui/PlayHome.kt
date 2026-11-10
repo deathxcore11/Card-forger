@@ -1231,9 +1231,10 @@ private fun DenCase(d: PlayHomeData, act: PlayHomeActions, level: PlayMath.Level
     // opens both; the first button is a smart Continue that picks up what you were doing.
     val waiting = groups.values.sumOf { it.size }
     val cont = when {
-        waiting > 0 -> CaseButton(null, "Open your packs · $waiting", gold = true, weight = 1.5f) { act.view("packs") }
-        !d.story.done -> CaseButton(null, (if (d.story.won > 0) "Continue Act " else "Begin Act ") + a.act, gold = true, weight = 1.5f) { act.story() }
-        else -> CaseButton("X", "Quick Play", gold = true, weight = 1.5f) { act.mode("quick") }
+        // V8: three equal pills, words whole ("Packs", "Achievements", "The Forge") down to the Thor's and the Duo's bottom widths.
+        waiting > 0 -> CaseButton(null, "Packs · $waiting", gold = true) { act.view("packs") }
+        !d.story.done -> CaseButton(null, (if (d.story.won > 0) "Continue Act " else "Begin Act ") + a.act, gold = true) { act.story() }
+        else -> CaseButton("X", "Quick Play", gold = true) { act.mode("quick") }
     }
     ShowcaseCase("Your den · Mastery", "Level ${level.level}", trailing = wallet,
         buttons = listOf(cont, CaseButton(null, "Achievements") { act.view("deeds") }, CaseButton(null, "The Forge") { act.view("forge") })) {
@@ -1481,12 +1482,15 @@ private fun StoryBanner(d: PlayHomeData, act: PlayHomeActions) {
     }
 }
 
-/** The bottom bar's five places as glass tiles (the bar itself is hidden on the dashboard, so nothing shows twice). */
+/**
+ * The bottom bar's four other places as glass tiles (the bar itself is hidden on the dashboard, so nothing shows twice). Collection
+ * is the top bar's Play | Collection toggle, so it has no tile (V9). The gap matches the mode cards' so each tile sits under one.
+ */
 @Composable
 private fun QuickTiles(act: PlayHomeActions) {
-    val tiles = listOf(Triple(SiteIcons.Sync, "Collection", "switch"), Triple(SiteIcons.Trunk, "Trunk", "collection"), Triple(SiteIcons.Decks, "Decks", "decks"),
+    val tiles = listOf(Triple(SiteIcons.Trunk, "Trunk", "collection"), Triple(SiteIcons.Decks, "Decks", "decks"),
         Triple(SiteIcons.Bag, "Shop", "shop"), Triple(SiteIcons.Trophy, "Trophies", "deeds"))
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
         tiles.forEach { (icon, label, to) ->
             Column(Modifier.weight(1f).height(64.dp).dashGlass().clickable { act.view(to) }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterVertically)) {
                 Icon(icon, 22.dp, P.Gold)

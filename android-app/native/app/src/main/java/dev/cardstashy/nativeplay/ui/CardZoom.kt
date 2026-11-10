@@ -196,12 +196,17 @@ fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, finish: d
 
     BoxWithConstraints(Modifier.fillMaxSize().padLayer().background(Color(4, 5, 8).copy(alpha = .985f * fade))) {
         val phone = maxWidth <= 600.dp; val screenW = maxWidth
-        val stageTop = if (phone) 66.dp else 0.dp; val stageBottom = if (phone) 160.dp else 0.dp
+        // WHOLE CARD, NEVER CUT (fix list V2): the stage is the room between the top row and the bar, at their measured heights
+        // (system bars included), and the card is fitted inside it with a margin (fitCard, as FittedCard), never under a bar.
+        var topBarPx by remember { mutableIntStateOf(0) }; var barPx by remember { mutableIntStateOf(0) }
+        val stageTop = maxOf(if (phone) 66.dp else 0.dp, with(dens) { topBarPx.toDp() })
+        val stageBottom = maxOf(if (phone) 160.dp else 0.dp, with(dens) { barPx.toDp() })
         // .zoom-img: max-width min(94vw, 680px); max-height 100dvh − 150px (− 240px on phones). Art crops are 626×457.
-        val maxW = minOf(maxWidth * .94f, 680.dp); val maxH = maxHeight - if (phone) 240.dp else 150.dp
+        val maxW = minOf(maxWidth * .94f, 680.dp); val maxH = minOf(maxHeight - if (phone) 240.dp else 150.dp, maxHeight - stageTop - stageBottom)
         val aspect = if (v.art) shownSize?.takeIf { it.isSpecified }?.let { it.width / it.height } ?: (626f / 457f) else 745f / 1040f
-        val w = if (maxW / aspect <= maxH) maxW else maxH * aspect
-        val h = w / aspect
+        val fit = fitCard(androidx.compose.ui.unit.DpSize(maxW, maxH.coerceAtLeast(0.dp)), margin = 12.dp, ratio = aspect)
+        val w = fit.width
+        val h = fit.height
         val radius = minOf(w * .0475f, h * .035f) // .zoom-card-light > .zoom-img border-radius 4.75% / 3.5%
 
         // The stage: every touch on it (zoom.js pointer handlers).
@@ -292,7 +297,7 @@ fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, finish: d
         }
 
         // .zoom-top: Tilt (when the phone has the sensor), the size readout, ✕.
-        Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = 12.dp).padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().onGloballyPositioned { topBarPx = it.size.height }.windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = 12.dp).padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             if (sensorThere) ZoomBtn(if (!AppSettings.tilt) "Tilt off" else "Tilt on", small = true, enabled = !Motion.still) { AppSettings.set("motionTilt", !AppSettings.tilt) }
             else Spacer(Modifier.width(44.dp))
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
@@ -303,7 +308,7 @@ fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, finish: d
         }
 
         // .zoom-bar: the views (own row on phones), − Fit +; the hint under it.
-        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().windowInsetsPadding(WindowInsets.navigationBars), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().onGloballyPositioned { barPx = it.size.height }.windowInsetsPadding(WindowInsets.navigationBars), horizontalAlignment = Alignment.CenterHorizontally) {
             val seg = @Composable { mod: Modifier ->
                 Row(mod.clip(RoundedCornerShape(999.dp)).background(Color(0x66000000)).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                     views.forEachIndexed { i, z -> val on = i == view

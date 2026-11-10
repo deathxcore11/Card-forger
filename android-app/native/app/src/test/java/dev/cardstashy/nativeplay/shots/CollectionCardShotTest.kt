@@ -95,21 +95,52 @@ class CollectionCardShotTest {
         if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
     }
 
-    /** Two screens (specs/thor-card-popup-dual.md): the card page across the Thor's top (1920 × 1080) and the whole card on its bottom (1240 × 1080). */
+    /** A card page built by hand (no engine fixtures needed): the Thor's "Card on the wall" shows only what the model carries. */
+    private fun dualModel(name: String, type: String, lines: List<String>, flavor: String?, pt: String, guide: List<Pair<String, List<String>>>, rulings: List<String>): CollectionCardModel {
+        val cards = JsonParser.parseString(javaClass.classLoader!!.getResource("trunk-cards.json")!!.readText()).asJsonArray.map { it.asJsonObject }
+        val shown = cards.first { it["name"].asString.startsWith(name) }
+        fun run(t: String) = dev.cardstashy.nativeplay.ui.CardRun(t, false, false, null, "", null)
+        fun press(l: String, act: String = "x") = dev.cardstashy.nativeplay.ui.CardPress(l, null, act, emptyMap(), "", "", "", false, false, false, false, false)
+        val face = dev.cardstashy.nativeplay.ui.CardFace("", name, emptyList(), type, lines.map { listOf(run(it)) }, "Flavour", flavor, pt, "Simon Dominic", null)
+        val blocks = guide.flatMap { (h, items) -> listOf(dev.cardstashy.nativeplay.ui.CardBlock("title", text = h), dev.cardstashy.nativeplay.ui.CardBlock("list", items = items.map { dev.cardstashy.nativeplay.ui.CardItem(runs = listOf(run(it))) })) } +
+            dev.cardstashy.nativeplay.ui.CardBlock("rulings", head = "Rulings", items = rulings.map { dev.cardstashy.nativeplay.ui.CardItem(runs = listOf(run(it)), source = "Wizards of the Coast · 2023-04-14") })
+        val ov = dev.cardstashy.nativeplay.ui.CardOverview(image = "", sources = emptyList(), tier = "", zoomSrc = "", zoomHi = "", zoomArt = "", finishKey = "foil", finishEffect = "", flip = null,
+            finishLabel = "Finish", finishes = listOf(dev.cardstashy.nativeplay.ui.CardFinishChip("foil", "Traditional foil", true, "plain")), finishFoot = "", profile = null,
+            printings = dev.cardstashy.nativeplay.ui.CardPrintings("Other printings you own", null, (1..3).map { dev.cardstashy.nativeplay.ui.CardPrintRow(it, "", emptyList(), "Printing $it", "#13$it", "Printing $it", it == 1) }, emptyList(), ""),
+            discoverySummary = "", discoveryText = "", discovery = emptyList(), faces = listOf(face), loading = null, rulesEntry = null, alertTitle = "", alertLine = "", alert = null, own = "", legal = null, deck = null,
+            chips = emptyList(), factLabel = "", fact = "", researchLabel = "", research = emptyList(), ownedAria = "",
+            owned = listOf(dev.cardstashy.nativeplay.ui.CardOwnedGroup("a", "Traditional foil", 2, emptyList(), null), dev.cardstashy.nativeplay.ui.CardOwnedGroup("b", "Nonfoil", 1, emptyList(), null)),
+            main = emptyList(), more = emptyList())
+        val set = dev.cardstashy.nativeplay.ui.CardSetSummary("mh2", "mythic", "", "", "Modern Horizons 2", true, "MH2 #138 · Mythic · 2021",
+            dev.cardstashy.nativeplay.ui.CardSetProgress("Your progress", "60 of 273", "21%", .21f, "In your collection"))
+        val price = dev.cardstashy.nativeplay.ui.CardPrice(null, dev.cardstashy.nativeplay.ui.CardRef("$12.40", "Market", "Traditional foil", null), null, press("Add a copy", "add"), "")
+        val hist = dev.cardstashy.nativeplay.ui.CardHistory("ready", "", listOf(dev.cardstashy.nativeplay.ui.CardHistBlock("head", value = "$12.40", label = "Market, 90 days"),
+            dev.cardstashy.nativeplay.ui.CardHistBlock("chart", points = (0..30).map { it * 12f to 90f - it * 1.5f + (it % 5) * 6f })))
+        return CollectionCardModel(name, "", "", "overview", null, false, dev.cardstashy.nativeplay.ui.CardHead("", name, type, "3 in your collection", "", emptyList(), false), emptyList(), emptyList(), set, price, ov,
+            emptyList(), "", listOf(dev.cardstashy.nativeplay.ui.CardSection("", false, true, blocks)), shown, false, emptyMap(),
+            prices = dev.cardstashy.nativeplay.ui.CardPrices(null, emptyList(), null, hist, null, null))
+    }
+
+    /** Two screens ("Card on the wall", specs/thor-card-popup-dual.md Revision 2): a short-text and a long-text card; top 1920 x 1080, bottom 1240 x 1080. */
     @Test fun overviewDual() {
         setUp()
-        val fx = home.resolve("collection-card-lightning-bolt.json"); assumeTrue("write the card fixtures first", fx.exists())
-        val m = CollectionCardModel.parse(JsonParser.parseString(fx.readText()).asJsonObject)
+        val cases = listOf(
+            "short" to dualModel("Llanowar Elves", "Creature — Elf Druid", listOf("{T}: Add {G}."), "Every sapling is a promise.", "1/1", listOf("Works with" to listOf("Mana dorks and ramp", "Anything that wants a turn-one play"), "Watch out" to listOf("Dies to any sweeper")), listOf("It can tap for mana the turn it arrives only if you control it continuously.")),
+            "long" to dualModel("Ragavan", "Legendary Creature — Monkey Pirate", listOf("Whenever Ragavan, Nimble Pilferer deals combat damage to a player, create a Treasure token and exile the top card of that player's library. Until end of turn, you may cast that card.", "Dash {1}{R} (You may cast this spell for its dash cost. If you do, it gains haste, and it's returned from the battlefield to its owner's hand at the beginning of the next end step.)"), "Never trust a monkey with your treasure.", "2/1",
+                listOf("Works with" to listOf("Cheap burn and equipment that rewards connecting", "Treasure payoffs and artifact sacrifice outlets", "Haste enablers and flicker effects"), "Watch out" to listOf("Weak to any early blocker", "Exiled cards can only be cast until end of turn", "Dash returns it to hand, so it cannot carry equipment")),
+                listOf("Ragavan's ability triggers whenever it deals combat damage to a player, even if that damage was prevented down to zero.", "You exile the top card of that player's library; it stays exiled even if you cannot cast it.", "Dash lets you cast this creature from your hand for its dash cost.", "A fourth ruling.")))
         dev.cardstashy.nativeplay.ui.Pad.used()
         try {
             dev.cardstashy.nativeplay.ui.DualScreen.pretend(dev.cardstashy.nativeplay.ui.DualScreen.Panel(2, "Built-in Screen", 1240, 1080, 60f))
-            RuntimeEnvironment.setQualifiers("w960dp-h540dp-land-xhdpi")
-            captureRoboImage(File(System.getProperty("shotsDir"), "w3/collection-card-top-1920x1080.png").path) {
-                Box(Modifier.fillMaxSize()) { Box(Modifier.size(1.dp)) { CollectionCardSheet(m, CollectionCardActions()) {} }; dev.cardstashy.nativeplay.ui.TopScreenHost() }
-            }
-            RuntimeEnvironment.setQualifiers("w620dp-h540dp-xhdpi")
-            captureRoboImage(File(System.getProperty("shotsDir"), "w3/collection-card-bottom-1240x1080.png").path) {
-                Box(Modifier.fillMaxSize()) { Box(Modifier.size(1.dp)) { CollectionCardSheet(m, CollectionCardActions()) {} }; dev.cardstashy.nativeplay.ui.BottomRoot() }
+            for ((nm, m) in cases) {
+                RuntimeEnvironment.setQualifiers("w960dp-h540dp-land-xhdpi")
+                captureRoboImage(File(System.getProperty("shotsDir"), "w3/coll-$nm-top.png").path) {
+                    Box(Modifier.fillMaxSize()) { Box(Modifier.size(1.dp)) { CollectionCardSheet(m, CollectionCardActions()) {} }; dev.cardstashy.nativeplay.ui.TopScreenHost() }
+                }
+                RuntimeEnvironment.setQualifiers("w620dp-h540dp-xhdpi")
+                captureRoboImage(File(System.getProperty("shotsDir"), "w3/coll-$nm-bottom.png").path) {
+                    Box(Modifier.fillMaxSize()) { Box(Modifier.size(1.dp)) { CollectionCardSheet(m, CollectionCardActions()) {} }; dev.cardstashy.nativeplay.ui.BottomRoot() }
+                }
             }
         } finally { dev.cardstashy.nativeplay.ui.DualScreen.pretend(null); dev.cardstashy.nativeplay.ui.Pad.forget() }
     }

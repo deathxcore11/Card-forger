@@ -2015,119 +2015,237 @@ internal fun SpanStrip(span: SheetSpan, slice: Int, content: @Composable () -> U
 }
 
 
+/** Every block of the guide in reading order, groups and "more" opened out. */
+private fun flatBlocks(blocks: List<CardBlock>): List<CardBlock> = blocks.flatMap { b -> if (b.kind == "group" || b.kind == "more") flatBlocks(b.blocks) else listOf(b) }
+
+private fun com.google.gson.JsonObject?.str(k: String) = this?.get(k)?.takeIf { it.isJsonPrimitive }?.asString ?: ""
+
+/** A price history as a bare line: the page's own points, no axes. */
+@Composable
+private fun Sparkline(points: List<Pair<Float, Float>>, modifier: Modifier) {
+    val gold = GoldC
+    androidx.compose.foundation.Canvas(modifier) {
+        if (points.size < 2) return@Canvas
+        val x0 = points.minOf { it.first }; val x1 = points.maxOf { it.first }.coerceAtLeast(x0 + 1f)
+        val y0 = points.minOf { it.second }; val y1 = points.maxOf { it.second }.coerceAtLeast(y0 + 1f)
+        fun at(p: Pair<Float, Float>) = Offset((p.first - x0) / (x1 - x0) * size.width, (p.second - y0) / (y1 - y0) * (size.height - 4.dp.toPx()) + 2.dp.toPx())
+        val line = androidx.compose.ui.graphics.Path().apply { points.forEachIndexed { i, p -> val o = at(p); if (i == 0) moveTo(o.x, o.y) else lineTo(o.x, o.y) } }
+        val area = androidx.compose.ui.graphics.Path().apply { addPath(line); lineTo(at(points.last()).x, size.height); lineTo(at(points.first()).x, size.height); close() }
+        drawPath(area, gold.copy(alpha = .1f))
+        drawPath(line, gold, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx(), join = androidx.compose.ui.graphics.StrokeJoin.Round))
+    }
+}
+
 /**
- * The Collection card page on two screens (specs/thor-card-popup-dual.md; the look is locked, placement only). Top, full width:
- * the art down the left 44 %, the title, tabs and the tab in the right column, scrolling on its own. Bottom: the whole card,
- * fitted (WHOLE CARD, NEVER CUT), You have and Price, X the main action, Y Art view, A flip (or zoom). B closes; LB/RB tabs.
+ * The Collection card page on two screens: "Card on the wall" (specs/thor-card-popup-dual.md, Revision 2). Top: the art as a dark bleed, the card's
+ * facts left, the whole card in the middle, rules text and guide right. Bottom: a glass bleed under tiles (what you have and its price, the set,
+ * other printings, price history, rulings) and the case keys: X the main action, Y the Art view, A flip (or zoom). B closes.
  */
 @Composable
 private fun DualCollectionCard(m: CollectionCardModel, act: CollectionCardActions, onBack: (() -> Unit)?, historyBack: Boolean, onClose: () -> Unit) {
     var zoom by remember { mutableStateOf<String?>(null) }
+    var rulingsOpen by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    BackHandler(enabled = zoom == null) { val b = onBack; if (historyBack && b != null) b() else onClose() }
+    BackHandler(enabled = zoom == null && !rulingsOpen) { val b = onBack; if (historyBack && b != null) b() else onClose() }
+    BackHandler(enabled = rulingsOpen) { rulingsOpen = false }
     val o = m.overview
     val main = m.price?.add?.takeIf { !it.disabled } ?: o?.main?.firstOrNull { !it.disabled && it.label.isNotBlank() }
-    val xAct = main?.let { p -> PadAct(p.label.ifBlank { "Add to collection" }) { act.press(p) } }
+    val xAct = main?.let { p -> PadAct("Add a copy") { act.press(p) } }
     val yAct = o?.zoomArt?.takeIf { it.isNotBlank() }?.let { PadAct("Art view") { zoom = "art" } }
-    val aAct = if (o?.flip != null) PadAct(o.flip.label.ifBlank { "Flip" }) { act.face() } else PadAct("Zoom") { zoom = "card" }
-    val tabsNow = m.tabs
-    val padAct by androidx.compose.runtime.rememberUpdatedState(act)
-    PadScreen(remember(tabsNow, xAct?.label, yAct?.label, aAct.label) { PadActs(b = "Close", opaque = true, x = xAct, y = yAct, tabs = if (tabsNow.size < 2) null else { d ->
-        val i = tabsNow.indexOfFirst { it.on }; tabsNow.getOrNull((i + d).coerceIn(0, tabsNow.lastIndex))?.takeIf { !it.on }?.let { padAct.tab(it.key) } }) })
+    val aAct = if (o?.flip != null) PadAct("Flip") { act.face() } else null
+    PadScreen(remember(xAct?.label, yAct?.label, aAct?.label) { PadActs(b = "Close", opaque = true, x = xAct, y = yAct) })
     FoilFocus.Cover()
     val scroll = rememberScrollState()
+    val data = dev.cardstashy.nativeplay.play.CardData.ready.collectAsStateValue()
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(Unit) { if (data == null) dev.cardstashy.nativeplay.play.CardData.warm(ctx) }
+    val tcg = m.game != CardGame.MTG
+    val finish = Foil.finishFor(m.shown, o?.finishKey?.ifBlank { "nonfoil" } ?: "nonfoil")
+    val look = if (tcg) null else data?.let { Foil.look(it, m.shown, finish) }
+    val worn = remember(o?.tcgFinish, o?.image) { o?.tcgFinish?.let { tcgFinishOf(ctx, m.game, it, o.image) } }
+    val shines = look?.takeIf { it.shines }
+    // One tilt value for both screens: the card's foil light, and the art bleeds' parallax.
+    val tilt = rememberFoilTilt(live = true)
+    val guide = remember(m.guide) { m.guide.flatMap { flatBlocks(it.blocks) } }
+    val rulings = guide.firstOrNull { it.kind == "rulings" }?.items.orEmpty().filter { it.runs.isNotEmpty() }
+    val ratio = if (m.game == CardGame.YGO) 59f / 86f else CARD_RATIO
+    val art = m.head?.art?.ifBlank { null }
 
     TopScreen { androidx.compose.runtime.CompositionLocalProvider(LocalSheetPal provides sheetPal(m.game)) {
         Box(Modifier.fillMaxSize().background(SheetBg)) {
-            Row(Modifier.fillMaxSize()) {
-                val h = m.head
-                Box(Modifier.fillMaxHeight().weight(.44f)) {
-                    val p0 = heroPainter(h?.art?.ifBlank { null }?.let(homeArt))
-                    val pk = h?.crop == "pokemon"
-                    val p = if (pk && p0 != null) remember(p0) { PkArtCrop(p0) } else p0
-                    if (p != null) Image(p, null, Modifier.fillMaxSize().graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
-                        .drawWithContent { drawContent(); drawRect(Brush.horizontalGradient(0f to Color.Black, .72f to Color.Black, 1f to Color.Transparent), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn) },
-                        contentScale = ContentScale.Crop)
-                }
-                Column(Modifier.weight(.56f).fillMaxHeight().windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.safeDrawing.only(
-                    androidx.compose.foundation.layout.WindowInsetsSides.End + androidx.compose.foundation.layout.WindowInsetsSides.Vertical))) {
-                    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
-                    var self by remember { mutableStateOf(false) }
-                    LaunchedEffect(Unit) { androidx.compose.runtime.withFrameNanos { }; runCatching { focus.requestFocus() } }
-                    Column(Modifier.weight(1f).fillMaxWidth().focusRequester(focus).onFocusChanged { self = it.isFocused }
-                        .onPreviewKeyEvent { e ->
-                            val k = e.nativeKeyEvent.keyCode; val down = e.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN
-                            when {
-                                k == android.view.KeyEvent.KEYCODE_DPAD_UP || k == android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
-                                    if (down) scope.launch { scroll.animateScrollBy(if (k == android.view.KeyEvent.KEYCODE_DPAD_DOWN) 260f else -260f) }; true }
-                                self && (k == android.view.KeyEvent.KEYCODE_BUTTON_A || k == android.view.KeyEvent.KEYCODE_DPAD_CENTER) -> { if (down && e.nativeKeyEvent.repeatCount == 0) aAct.run?.invoke(); true }
-                                else -> false
-                            }
-                        }.focusable().verticalScroll(scroll).padding(top = 22.dp, end = 8.dp)) {
-                        if (h != null) Row(Modifier.padding(horizontal = 18.dp), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Column(Modifier.weight(1f)) {
-                                Text(h.title, style = manrope(28f, 800, Rule.Color.Text, lh = 1.12f, ls = -.56f))
-                                Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    if (h.type.isNotBlank()) Text(h.type, style = sans(14f, 600, Rule.Color.Muted, lh = 1.45f))
-                                    h.owned?.let { Text(it, style = sans(11f, 600, Rule.Color.Text, lh = 1.4f), modifier = Modifier.padding(start = 8.dp)
-                                        .clip(Rule.Radius.Pill).background(Rule.Color.Glass).border(1.dp, Rule.Color.Edge, Rule.Radius.Pill)
-                                        .padding(horizontal = 8.dp, vertical = 3.dp).semantics { contentDescription = h.ownedAria }) }
+            val h = m.head
+            if (h == null || o == null) { Text(m.name, style = manrope(28f, 800), modifier = Modifier.align(Alignment.Center)); return@Box }
+            val f0 = o.faces.firstOrNull()
+            val formats = remember(m.shown) { legalFormats(m.shown) }
+            val rarity = m.shown.str("rarity").replaceFirstChar { it.uppercase() }
+            DualTop(art, tilt, scroll,
+                card = { mod -> FittedCard(mod, margin = 0.dp, ratio = ratio) { c ->
+                    if (!tcg) CardPicture(o.image, shines, tilt, c, shape = CardCorner)
+                    else firstOf(o.sources.ifEmpty { listOf(o.image) }).let { p -> if (p != null) CardFace(p, null, tilt, c, CardCorner, finish = worn) else Box(c.clip(CardCorner).background(Surface2)) }
+                } },
+                left = {
+                    DualSectionBox("The card") {
+                        listOf(m.set?.name.orEmpty(), rarity).filter { it.isNotBlank() }.joinToString(" · ").takeIf { it.isNotBlank() }?.let {
+                            Text(it.uppercase(), style = Rule.Type.sans(12, FontWeight.Bold, Rule.Color.Gold).copy(letterSpacing = 1.4.sp)) }
+                        Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(h.title, style = Rule.Type.cinzel(24), modifier = Modifier.weight(1f))
+                            if (h.emblems.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { h.emblems.forEach { TitleEmblem(it) } }
+                            else Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) { h.mana.forEach { Sym(it.src, it.alt, 20.dp) } }
+                        }
+                        if (h.type.isNotBlank()) Text(h.type, style = Rule.Type.S14.copy(color = Rule.Color.Muted))
+                    }
+                    if (formats.isNotEmpty()) DualSectionBox("Where it plays") { FormatPills(formats) }
+                    val artist = f0?.artist.orEmpty().ifBlank { m.shown.str("artist") }
+                    val line = m.set?.let { s -> if (s.parts.isNotEmpty()) s.parts.joinToString("") { it.t.orEmpty() } else s.line }.orEmpty()
+                    if (artist.isNotBlank() || line.isNotBlank()) DualSectionBox("The art") {
+                        if (artist.isNotBlank()) Text("Art by $artist", style = Rule.Type.S14)
+                        if (line.isNotBlank()) Text(line, style = Rule.Type.S13.copy(color = Rule.Color.Muted))
+                    }
+                },
+                right = { size, compact ->
+                    DualSectionBox("Rules text") {
+                        o.faces.forEach { fc ->
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                if (o.faces.size > 1) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Text(fc.name, style = sans(size.toFloat(), 700, Ink), modifier = Modifier.weight(1f)); fc.mana.forEach { Sym(it.src, it.alt, 16.dp) } }
+                                    Text(fc.type, style = sans(13f, 400, Mute))
                                 }
+                                if (fc.pk != null) PkFace(fc.pk, act)
+                                fc.lines.forEach { runs -> Rich(runs, sans(size.toFloat(), 400, Ink, lh = 1.45f), act.rule) }
+                                fc.flavor?.takeIf { it.isNotBlank() }?.let { Text(it, style = sans(maxOf(13, Rule.Sizes.getOrElse(Rule.Sizes.indexOf(size) - 1) { 13 }).toFloat(), 400, Mute).copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)) }
+                                if (fc.pt.isNotBlank()) Text(fc.pt, style = sans(size.toFloat(), 700, Ink), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End)
                             }
-                            if (h.emblems.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) { h.emblems.forEach { TitleEmblem(it) } }
-                            else Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) { h.mana.forEach { Sym(it.src, it.alt, 22.dp) } }
                         }
-                        Box(Modifier.padding(horizontal = 18.dp).padding(top = 14.dp, bottom = 6.dp)) { CardTabs(m.tabs, true, act) }
-                        val gutter = 18.dp
-                        when (m.tab) {
-                            "meta" -> MetaPanel(m, act, gutter)
-                            "guide" -> GuidePanel(m, act, gutter)
-                            "prices" -> BoxWithConstraints { m.prices?.let { PricesPanel(it, act, gutter, maxWidth, 540.dp) } }
-                            else -> { OverviewHead(m, act, true, gutter); m.overview?.let { Overview(m, it, act, true, gutter, dual = true) { zoom = "card" } } }
+                    }
+                    // The page's own guide (Works with, Watch out and the rest), as bullets; the short form drops its prose.
+                    val body = if (compact) guide.filter { it.kind != "text" } else guide
+                    val shownKinds = setOf("title", "head", "eyebrow", "text", "list", "steps", "roles")
+                    if (body.any { it.kind in setOf("list", "steps", "roles", "text") }) DualSectionBox("Play guide") {
+                        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            body.filter { it.kind in shownKinds }.forEach { b -> when (b.kind) {
+                                "title", "head", "eyebrow" -> if (b.text.isNotBlank()) Text(b.text, style = sans(size.toFloat(), 700, Ink))
+                                "text" -> Rich(b.runs, sans(size.toFloat(), 400, if (b.muted) Mute else Ink, lh = 1.4f), act.rule)
+                                "roles" -> FormatPills(b.items.map { it.label })
+                                else -> b.items.forEach { it0 -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("•", style = sans(size.toFloat(), 700, GoldC)); Rich(it0.runs, sans(size.toFloat(), 400, Ink, lh = 1.4f), act.rule, Modifier.weight(1f)) } }
+                            } }
                         }
-                        Spacer(Modifier.height(16.dp))
+                    }
+                },
+                onKey = { e ->
+                    val k = e.keyCode; val down = e.action == android.view.KeyEvent.ACTION_DOWN
+                    when {
+                        k == android.view.KeyEvent.KEYCODE_DPAD_UP || k == android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+                            if (down) scope.launch { scroll.animateScrollBy(if (k == android.view.KeyEvent.KEYCODE_DPAD_DOWN) 260f else -260f) }; true }
+                        k == android.view.KeyEvent.KEYCODE_BUTTON_A || k == android.view.KeyEvent.KEYCODE_DPAD_CENTER -> { if (down && e.repeatCount == 0) aAct?.run?.invoke(); aAct != null }
+                        else -> false
+                    }
+                })
+            if (rulingsOpen) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .6f)).pointerInput(Unit) { detectTapGestures { rulingsOpen = false } }, contentAlignment = Alignment.Center) {
+                Column(Modifier.fillMaxHeight(.9f).widthIn(max = 640.dp).fillMaxWidth().glass(Rule.Radius.shape(Rule.Radius.Sheet)).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("RULINGS", style = Rule.Type.sans(11, FontWeight.Bold, Rule.Color.Gold).copy(letterSpacing = 1.6.sp))
+                    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        rulings.forEach { r -> Column { Rich(r.runs, sans(14f, 400, Ink), act.rule); Text(r.source, style = sans(12f, 400, Mute)) } }
                     }
                 }
             }
         }
     } }
 
-    BottomScreen {
-        val ov = m.overview ?: return@BottomScreen
-        val data = dev.cardstashy.nativeplay.play.CardData.ready.collectAsStateValue()
-        val ctx = androidx.compose.ui.platform.LocalContext.current
-        val tcg = m.game != CardGame.MTG
-        val finish = Foil.finishFor(m.shown, ov.finishKey.ifBlank { "nonfoil" })
-        val look = if (tcg) null else data?.let { Foil.look(it, m.shown, finish) }
-        val worn = remember(ov.tcgFinish, ov.image) { ov.tcgFinish?.let { tcgFinishOf(ctx, m.game, it, ov.image) } }
-        val shines = look?.takeIf { it.shines }
-        val tilt = rememberFoilTilt(live = look?.recipe != null || worn != null)
+    BottomScreen { androidx.compose.runtime.CompositionLocalProvider(LocalSheetPal provides sheetPal(m.game)) {
+        val ov = m.overview ?: return@CompositionLocalProvider
+        val finishLabel = ov.finishes.firstOrNull { it.on }?.label
+        val copies = ov.owned.sumOf { it.qty }
+        val ownedText = m.head?.owned?.takeIf { it.isNotBlank() }
+        val haveBig = if (copies > 0) "$copies" else ownedText
+        val ref = m.price?.ref?.takeIf { it.value.isNotBlank() }
+        val hist = m.prices?.history?.takeIf { it.state == "ready" }
+        val chart = hist?.blocks?.firstOrNull { it.kind == "chart" && it.points.size > 1 }
+        val histHead = hist?.blocks?.firstOrNull { it.kind == "head" }
+        val set = m.set
+        val prints = ov.printings?.takeIf { it.rows.isNotEmpty() }
+        val sections = listOf(
+            DualSection("Yours", .9f, listOfNotNull(
+                haveBig?.let { big -> DualTile { GlassTile(Modifier.fillMaxSize(), "You have") { BigFact(big, if (copies > 0) (ownedText?.takeIf { !it.startsWith("$copies") } ?: "in your collection") else null, finishLabel) } } },
+                ref?.let { r -> DualTile { GlassTile(Modifier.fillMaxSize(), "Price", onClick = r.press?.let { p -> { act.press(p) } }) { BigFact(r.value, r.label.ifBlank { null }, r.finish.ifBlank { null }) } } })),
+            DualSection("The set", 1.1f, listOfNotNull(
+                set?.let { s -> DualTile(1f) { GlassTile(Modifier.fillMaxSize(), onClick = { act.press(s.press ?: CardPress("", null, "set", mapOf("act" to "set", "code" to s.code), "", "", "", false, false, false, false, false)) }) { SetTileBody(s) } } },
+                prints?.let { p -> DualTile(1.1f) { GlassTile(Modifier.fillMaxSize(), p.title) { PrintingsBody(p, act) } } })),
+            DualSection(listOfNotNull(if (chart != null) "Price history" else null, if (rulings.isNotEmpty()) "Rulings" else null).joinToString(" & ").replaceFirstChar { it.uppercase() }, 1.25f, listOfNotNull(
+                chart?.let { c -> DualTile { GlassTile(Modifier.fillMaxSize(), "Price history") {
+                    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        histHead?.let { hh -> Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (hh.value.isNotBlank()) Text(hh.value, style = Rule.Type.sans(20, FontWeight.ExtraBold, Rule.Color.Text)); Text(hh.label, style = Rule.Type.S12.copy(color = Rule.Color.Muted)) } }
+                        Sparkline(c.points, Modifier.weight(1f).fillMaxWidth())
+                    } } } },
+                if (rulings.isEmpty()) null else DualTile(1.2f) { GlassTile(Modifier.fillMaxSize(), "Rulings", onClick = { rulingsOpen = true }) { CollRulingsBody(rulings) } })))
         val buttons = listOfNotNull(
             xAct?.let { CaseButton("X", it.label, gold = true) { it.run?.invoke() } },
             yAct?.let { CaseButton("Y", it.label) { it.run?.invoke() } },
-            CaseButton("A", aAct.label) { aAct.run?.invoke() })
-        ShowcaseCase("This card", m.head?.title ?: m.name, buttons = buttons, heroWeight = .5f, scroll = false, hero = {
-            FittedCard(Modifier.fillMaxSize(), margin = 12.dp, ratio = if (m.game == CardGame.YGO) 59f / 86f else CARD_RATIO) { mod ->
-                if (!tcg) CardPicture(ov.image, shines, tilt, mod, shape = CardCorner)
-                else firstOf(ov.sources.ifEmpty { listOf(ov.image) }).let { p -> if (p != null) CardFace(p, null, tilt, mod, CardCorner, finish = worn) else Box(mod.clip(CardCorner).background(Surface2)) }
-            }
-        }) {
-            Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
-                m.head?.owned?.takeIf { it.isNotBlank() }?.let { CaseFact("You have", it) }
-                m.price?.ref?.value?.takeIf { it.isNotBlank() }?.let { CaseFact("Price", it) }
-            }
-        }
-    }
+            aAct?.let { CaseButton("A", it.label) { it.run?.invoke() } })
+        DualBottom(art, tilt, sections, buttons)
+    } }
 
     if (zoom != null && o != null) {
-        val data = dev.cardstashy.nativeplay.play.CardData.ready.collectAsStateValue()
-        val look = if (m.game != CardGame.MTG) null else data?.let { Foil.look(it, m.shown, Foil.finishFor(m.shown, o.finishKey.ifBlank { "nonfoil" })) }
-        val ctx = androidx.compose.ui.platform.LocalContext.current
-        val tcg = remember(o.tcgFinish, o.image) { o.tcgFinish?.let { tcgFinishOf(ctx, m.game, it, o.image) } }
         TopScreen {
-            CardZoom(o.zoomSrc.ifBlank { o.image }, o.zoomHi.ifBlank { null }, o.zoomArt.ifBlank { null }, look, finish = tcg,
+            CardZoom(o.zoomSrc.ifBlank { o.image }, o.zoomHi.ifBlank { null }, o.zoomArt.ifBlank { null }, look, finish = worn,
                 gallery = o.zoomArt.takeIf { it.isNotBlank() }?.let { a -> val f = o.faces.firstOrNull()
                     Gallery(listOf(galleryPiece(a, f?.name?.ifBlank { null } ?: m.name, f?.artist, f?.flavor, m.shown))) }, startArt = zoom == "art") { zoom = null }
+        }
+    }
+}
+
+/** The set tile: its symbol and name, its line, then how far through it you are. */
+@Composable
+private fun SetTileBody(s: CardSetSummary) = FitFirst(2, Modifier.fillMaxSize(), centre = true) { i, _ ->
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (s.picture.isEmpty() && i == 0) SetSymbol(s, 28.dp)
+            Column(Modifier.weight(1f)) {
+                Text(s.name, style = Rule.Type.S14.copy(fontWeight = FontWeight.Bold), maxLines = 1)
+                if (s.parts.isNotEmpty()) PartsLine(s.parts, Rule.Type.S12.copy(color = Rule.Color.Muted)) else Text(s.line, style = Rule.Type.S12.copy(color = Rule.Color.Muted), maxLines = 1)
+            }
+        }
+        s.progress?.let { p ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(p.label, style = Rule.Type.S13.copy(fontWeight = FontWeight.SemiBold), modifier = Modifier.weight(1f), maxLines = 1)
+                if (p.pct.isNotBlank()) Text(p.pct, style = Rule.Type.sans(if (i == 0) 16 else 13, FontWeight.Bold, Rule.Color.Text), maxLines = 1)
+            }
+            if (p.track) ProgressBar(p.fill.coerceIn(0f, 1f))
+            if (p.caption.isNotBlank() && i == 0) Text(p.caption, style = Rule.Type.S12.copy(color = Rule.Color.Muted))
+        }
+    }
+}
+
+/** The other printings, as many pictures as fit across the tile (each opens that printing), then how many more. */
+@Composable
+private fun PrintingsBody(p: CardPrintings, act: CollectionCardActions) {
+    val n = p.rows.size
+    FitFirst(n, Modifier.fillMaxSize(), centre = true) { i, _ ->
+        val rows = p.rows.take(n - i)
+        androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            rows.forEach { r ->
+                Text(listOf(r.name, r.num).filter { it.isNotBlank() }.joinToString(" · "), style = Rule.Type.sans(12, FontWeight.Bold, Rule.Color.Text), maxLines = 1,
+                    modifier = Modifier.clip(Rule.Radius.Pill).background(Rule.Color.Glass).border(1.dp, if (r.on) GoldC else Rule.Color.Edge, Rule.Radius.Pill)
+                        .clickable { r.press?.let(act.press) ?: act.print(r.i) }.padding(horizontal = 10.dp, vertical = 4.dp))
+            }
+            if (rows.size < n) Text("+${n - rows.size} more", style = Rule.Type.sans(12, FontWeight.Bold, Rule.Color.Gold), modifier = Modifier.clickable { p.more?.let(act.press) }.padding(vertical = 4.dp))
+        }
+    }
+}
+
+/** The rulings tile: as many whole rulings as fit, then fewer, then the count; tap reads them all on the top screen. */
+@Composable
+private fun CollRulingsBody(rulings: List<CardItem>) {
+    val n = rulings.size
+    val shows = (minOf(n, 3) downTo 1).toList()
+    FitFirst(shows.size + 1, Modifier.fillMaxSize()) { i, _ ->
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (i < shows.size) {
+                rulings.take(shows[i]).forEach { r -> Text(r.runs.joinToString("") { it.t.orEmpty() }, style = Rule.Type.S13) }
+                Text(if (n > shows[i]) "${n - shows[i]} more · tap to read all" else "Tap to read on the top screen", style = Rule.Type.sans(12, FontWeight.SemiBold, Rule.Color.Gold))
+            } else { Text("$n", style = Rule.Type.sans(28, FontWeight.ExtraBold, Rule.Color.Text)); Text("official rulings · tap to read", style = Rule.Type.S13) }
         }
     }
 }

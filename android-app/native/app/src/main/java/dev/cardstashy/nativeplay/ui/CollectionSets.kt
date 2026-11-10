@@ -271,7 +271,8 @@ fun CollectionSets(m: CollectionSetsModel, top: @Composable (tabs: (@Composable 
     androidx.compose.runtime.CompositionLocalProvider(LocalGameGold provides m.game.gold) {
         BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
             val screen = maxWidth
-            if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); SetsPage(m, top, act, Modifier.weight(1f).fillMaxHeight(), screen, query) }
+            // The rail leaves the foot bare: the list ends above the gesture bar (V11); the bottom nav pads itself.
+            if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); SetsPage(m, top, act, Modifier.weight(1f).fillMaxHeight().navigationBarsPadding(), screen, query) }
             else Column(Modifier.fillMaxSize()) { SetsPage(m, top, act, Modifier.weight(1f).fillMaxWidth(), screen, query); nav(false) }
         }
     }

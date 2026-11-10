@@ -197,7 +197,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
                     DisposableEffect(Unit) { onDispose { TableEmotes.destroy() } }
                     CompositionLocalProvider(LocalMatchClock provides controller.clock.collectAsState().value) {
                     ForgeBoard(st, live && beat == null, controller.intents, selectedHand, { selectedHand = it }, { inspect = it }, { menu = true },
-                        handOrder, { handOrder = it }, menu = matchMenu) {
+                        handOrder, { handOrder = it }, menu = matchMenu, afk = if (DualScreen.active) afk else null) {
                         TableSide(st, controller, beat, live, lastBeat) { inspect = it }
                     }
                     }
@@ -206,7 +206,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
             banner?.let { b -> BannerView(b.text, b.yours, Modifier.align(Alignment.Center)) }
             if (stage == Stage.PLAYING) ClockPill(controller.clock.collectAsState().value, Modifier.align(Alignment.CenterEnd).padding(end = 10.dp).offset(y = (-44).dp))
         }
-        (afk ?: note)?.let { Text(it, style = Type.Label.copy(color = Color(0xFFFFB4A8), fontSize = 14.sp), modifier = Modifier.align(Alignment.TopCenter).padding(top = 96.dp)
+        ((if (DualScreen.active) null else afk) ?: note)?.let { Text(it, style = Type.Label.copy(color = Color(0xFFFFB4A8), fontSize = 14.sp), modifier = Modifier.align(Alignment.TopCenter).padding(top = 96.dp)
             .clip(RoundedCornerShape(999.dp)).background(Color(0xD90C0C0E)).border(1.dp, Palette.Red, RoundedCornerShape(999.dp)).padding(horizontal = 16.dp, vertical = 8.dp)) }
       }
         // Two screens: a card you look at opens on the bottom screen, so the table stays in full view on top (B closes it).
@@ -215,7 +215,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
         inspect?.let { c -> if (DualScreen.active) BottomScreen { CardInspect(c, shown?.viewer, inspectStart) { inspect = null } } else CardInspect(c, shown?.viewer, inspectStart) { inspect = null } }
         if (menu) Menu(onConcede = { menu = false; matchMenu.ask = "concede" }, onLeave = { menu = false; matchMenu.ask = "leave" }, onClose = { menu = false })
         MatchLeaveConfirm(matchMenu)
-        if (stage == Stage.FINISHED) shown?.let { Result(it, audio, onHome, onRematch, resultNote) }
+        if (stage == Stage.FINISHED) shown?.let { Result(it, audio, onHome, onRematch, resultNote, endReason(it, controller.conceded)) }
         if (stage == Stage.FAILED) Failed(failure ?: "The match stopped.", onHome)
     }
 }
@@ -792,7 +792,7 @@ private fun Menu(onConcede: () -> Unit, onLeave: () -> Unit, onClose: () -> Unit
 }
 
 @Composable
-private fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRematch: () -> Unit, note: String? = null) {
+private fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRematch: () -> Unit, note: String? = null, reason: String? = null) {
     val won = !st.draw && st.winnerPlayerId == st.viewer
     val draw = st.draw || st.winnerPlayerId == null
     val rise = remember { Animatable(0f) }
@@ -807,13 +807,34 @@ private fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRema
                 AssetImage(if (draw) "play/result-draw.webp" else if (won) "play/result-win.webp" else "play/result-loss.webp", Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
                 Text(if (draw) "Draw" else if (won) "Victory" else "Defeat", style = Type.Title.copy(fontSize = 26.sp))
             }
-            Text("Turn ${st.turn} · You ${st.me.life} · CPU ${st.cpu.life}", style = Type.Body.copy(color = Palette.Ink))
+            // Why it ended (V14), then the final board's numbers.
+            if (reason != null) Text(reason, style = Type.Body.copy(color = Palette.Ink), textAlign = TextAlign.Center)
+            Text("Turn ${st.turn} · You ${st.me.life} · CPU ${st.cpu.life}", style = Type.Body.copy(color = Palette.InkSoft))
             if (note != null) Text(note, style = Type.Body.copy(color = Palette.Gold, fontSize = 13.sp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 GoldButton("Home", true, Modifier.width(150.dp), primary = false, onClick = onHome)
                 GoldButton("Rematch", true, Modifier.width(150.dp).focusRequester(rematchFocus), onClick = onRematch)
             }
         }
+    }
+}
+
+/**
+ * Why the match ended (V14), read off the final board: your concession, else on the losing side life at 0, ten poison counters,
+ * 21 damage from one commander, or an empty library. Null for a draw or when the board shows none of these.
+ */
+internal fun endReason(st: MatchState, conceded: Boolean): String? {
+    if (st.draw || st.winnerPlayerId == null) return null
+    val lost = st.winnerPlayerId != st.viewer
+    if (lost && conceded) return "You conceded."
+    val p = if (lost) st.me else st.cpu
+    val cmd = p.commanderDamage.firstOrNull { it.damage >= 21 }
+    return when {
+        p.life <= 0 -> if (lost) "Your life reached 0." else "The CPU's life reached 0."
+        (p.counters["POISON"] ?: 0) >= 10 -> if (lost) "You got ten poison counters." else "The CPU got ten poison counters."
+        cmd != null -> "${cmd.damage} damage from ${cmd.commander}."
+        p.libraryCount == 0 -> if (lost) "You had to draw from an empty library." else "The CPU had to draw from an empty library."
+        else -> null
     }
 }
 

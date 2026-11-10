@@ -358,7 +358,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                         _toss.value = Toss(first == st.viewer, st.startSelection != "first" && st.startSelection != "second")
                         val d = CompletableDeferred<Unit>(); tossDone = d
                         _stage.value = Stage.TOSS
-                        withTimeoutOrNull(20_000) { d.await() }
+                        if (withTimeoutOrNull(20_000) { d.await() } == null) Log.w(TAG, "toss: not finished on screen in 20 s, the keep goes on without it")
                         tossDone = null
                     }
                 }

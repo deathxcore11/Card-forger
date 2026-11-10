@@ -15,6 +15,7 @@ object Speed {
     const val SIGN_IN = "Sign-in to decks"
     const val KNOWN = "Known deck to table"
     const val NEW = "New deck to table"
+    const val REMATCH = "Rematch to table"
     private val BAR = mapOf(KNOWN to 3000L, NEW to 6000L)
 
     private lateinit var prefs: SharedPreferences
