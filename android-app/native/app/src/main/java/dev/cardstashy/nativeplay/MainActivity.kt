@@ -236,7 +236,7 @@ class MainActivity : ComponentActivity() {
                 if (event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0 && dev.cardstashy.nativeplay.ui.PadCursor.pressA()) { android.util.Log.i("PadA", "stick cursor took A"); aTaken = true; return true }
                 // Nothing has the ring (it was lost when the board changed): A puts it on the screen's first stop (the table's hand chip) instead of going nowhere.
                 if (event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0 && !dev.cardstashy.nativeplay.ui.PadPrompts.anyFocus &&
-                    dev.cardstashy.nativeplay.ui.PadPrompts.entry?.let { runCatching { it() }.getOrDefault(false) } == true) { android.util.Log.i("PadA", "A with no ring: ring to the hand chip"); aTaken = true; return true }
+                    dev.cardstashy.nativeplay.ui.PadPrompts.entry?.let { runCatching { it() }.getOrDefault(false) } == true) { android.util.Log.i("PadA", "A with no ring: ring to the screen's first stop (the table's hand chip, the Quick Play lobby's first deck)"); aTaken = true; return true }
                 if (aTaken) { if (event.action == android.view.KeyEvent.ACTION_UP) aTaken = false; return true }
             }
         }
