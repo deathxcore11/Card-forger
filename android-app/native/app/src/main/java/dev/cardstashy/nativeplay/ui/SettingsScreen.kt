@@ -616,6 +616,7 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Quick Play" to "A Commander CPU no longer gets cEDH tournament lists (it couldn’t play them: mulligans to four, a Workshop and nothing to cast) unless your own deck is Bracket 4 or higher; the ten free Commander precons are always in its pool. Precon cards load their exact printing’s art, and a failed art lookup is asked again.",
     "Controllers" to "One button map everywhere, like a console game: A opens, B goes back, X is the screen’s main action, Y inspects (the card big), Select opens the quick menu on decks, Trunk sets and binders (it was Start), LB/RB tabs. The hint bar never shows the same words twice.",
     "Dual screen" to "A card you open now spreads over both screens as one tall page: the same page as before, its top on the upper screen and the rest carrying on below. Scroll it with a finger on either screen, the right stick or the d-pad; tilt works across the hinge; B goes back. With the ring on a card in Collection, the bottom screen shows a quick look at it (what it is, what you have, its price and set; A opens it, X adds one).",
     "Controllers" to "Select opens the quick menu a long press opens, on whatever the ring is on. In a match on two screens RT jumps between your hand and the field (X still passes). A button a case already shows is no longer repeated in the hint bar.",

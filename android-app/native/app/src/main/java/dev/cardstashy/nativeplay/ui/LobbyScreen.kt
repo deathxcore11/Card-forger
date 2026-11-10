@@ -329,6 +329,8 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     // Off the main thread: every deck in it is copied.
     suspend fun quickPool(format: String): List<JsonObject> = withContext(Dispatchers.Default) {
         workspace.orEmpty().map { it.raw.deepCopy().apply { addProperty("format", it.format) } } +
+            // The free Commander precons are always there (no network wait), so a Commander CPU is never only tournament lists.
+            (if (format == "Commander") dev.cardstashy.nativeplay.play.TableDecks.free.value.orEmpty().map { it.raw.deepCopy() } else emptyList()) +
             listOf("precons", "community", "meta").flatMap { sources.entries(it, format).map { e -> e.deck } } +
             MetaDecks.lists(context, format).map { it.deepCopy().apply { addProperty("format", format) } } + RandomBuild.ready(format)
     }

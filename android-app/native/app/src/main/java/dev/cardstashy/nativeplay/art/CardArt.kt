@@ -123,7 +123,7 @@ object CardArt {
     /** The Scryfall identifier for a deck row: its exact printing when the row names one, else its name. */
     fun identifier(row: JsonObject, engineName: String): JsonObject = JsonObject().apply {
         val id = str(row, "printingId", "scryfallId")?.takeIf { UUID.matches(it) }
-        val set = str(row, "set", "setCode")?.lowercase(); val num = str(row, "collectorNumber", "collector_number")
+        val set = str(row, "set", "setCode")?.lowercase(); val num = str(row, "collectorNumber", "collector_number", "number")
         when {
             id != null -> addProperty("id", id)
             set != null && num != null -> { addProperty("set", set); addProperty("collector_number", num) }
@@ -149,9 +149,15 @@ object CardArt {
         for (chunk in missing.chunked(75)) {
             val ids = chunk.map { (n, r) -> identifier(r, n) }
             val body = JsonObject().apply { add("identifiers", JsonArray().apply { ids.forEach { add(it) } }) }.toString()
-            val found = try {
-                Http.call("POST", "https://api.scryfall.com/cards/collection", mapOf("User-Agent" to UA), body, timeoutMs = 10000)?.asJsonObject?.getAsJsonArray("data")
-            } catch (_: Exception) { null } ?: continue
+            // A dropped or rate-limited call (two chunks back to back) is asked once more after a breath, so a deck's second
+            // half never stays name-only (Randall 10 Nov, Draconic Destruction's hand).
+            var found: JsonArray? = null
+            for (attempt in 0..1) {
+                if (attempt > 0) kotlinx.coroutines.delay(700)
+                found = try { Http.call("POST", "https://api.scryfall.com/cards/collection", mapOf("User-Agent" to UA), body, timeoutMs = 10000)?.asJsonObject?.getAsJsonArray("data") } catch (_: Exception) { null }
+                if (found != null) break
+            }
+            if (found == null) continue
             val cards = found.mapNotNull { it as? JsonObject }
             synchronized(index) {
                 chunk.forEachIndexed { i, (name, _) ->

@@ -70,6 +70,13 @@ object QuickOpponent {
         fun ok(n: Double?) = n?.takeIf { it.isFinite() && it >= 0 && it <= 100 }
         val mine = runCatching { rate(listOf(player)).firstOrNull() }.getOrNull()
         val myPower = ok(mine?.power)
+        // Commander (Randall 10 Nov, "cpu not playing shit"): the Meta source is cEDH tournament lists (MTGTop8), fast mana and combo
+        // the CPU can't pilot (it mulligans to four, holds Mishra's Workshop with nothing to cast). They only meet a deck that is
+        // itself Bracket 4+; a precon-level deck, or one not rated, gets the precons, community and your own lists.
+        if (player.s("format") == "Commander" && (mine?.bracket ?: 0) < 4) {
+            val casual = rows.filter { !it.deck.s("id").startsWith("play-meta:") }
+            if (casual.isNotEmpty()) rows = ArrayList(casual)
+        }
         var pick = -1; var wildCard = false; var matched = false
         if (myPower != null && rows.size > 2) {
             val pool = if (rows.size > sample) rows.map { random() to it }.sortedBy { it.first }.take(sample).map { it.second } else rows

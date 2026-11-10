@@ -69,7 +69,9 @@ object TableDecks {
         val commander = rows.firstOrNull { it.get("commander")?.takeIf { p -> p.isJsonPrimitive }?.asBoolean == true }.s("name")
         val raw = JsonObject().apply {
             addProperty("id", "free:" + d.s("key")); addProperty("name", d.s("name")); addProperty("format", "Commander"); addProperty("commander", commander)
-            add("cards", JsonArray().apply { rows.forEach { r -> add(JsonObject().apply { addProperty("name", r.s("name")); addProperty("qty", r.get("qty")?.asInt ?: 1) }) } })
+            add("cards", JsonArray().apply { rows.forEach { r -> add(JsonObject().apply { addProperty("name", r.s("name")); addProperty("qty", r.get("qty")?.asInt ?: 1)
+                // Its exact printing (every row has one from web 4.3.152), so the hand and table find its art (CardArt.identifier).
+                r.s("set").takeIf { it.isNotBlank() }?.let { addProperty("set", it) }; r.s("number").takeIf { it.isNotBlank() }?.let { addProperty("collectorNumber", it) } }) } })
             add("side", JsonArray()); addProperty("free", true)
         }
         Deck("free:" + d.s("key"), d.s("name"), "Commander", commander, raw, false, true)
