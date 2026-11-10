@@ -193,3 +193,48 @@ test('an accepted challenge starts the match like any invite', async () => {
   const hostRoom = await json(f, '/api/play/rooms/' + sent.body.roomId, { method: 'GET' });
   assert.equal(hostRoom.body.status, 'started'); assert.equal(hostRoom.body.opponent.name, 'ldwd11');
 });
+
+test('a lobby challenge is sent with no deck; both seats choose and ready; the match starts when both are ready', async () => {
+  const f = fixture();
+  const sent = await json(f, '/api/play/rooms', { body: { format: 'Commander', to: other, lobby: true } });
+  assert.equal(sent.status, 201, JSON.stringify(sent.body)); assert.equal(sent.body.lobby, true);
+  const id = sent.body.roomId;
+  const [c] = (await json(f, '/api/play/rooms', { token: 'other', method: 'GET' })).body.challenges;
+  assert.equal(c.roomId, id);
+  // Nobody can ready before the friend accepts.
+  assert.equal((await json(f, '/api/play/rooms/' + id + '/ready', { body: { deck: structuredClone(deck), ready: true } })).status, 409);
+  const acc = await json(f, '/api/play/rooms/join', { token: 'other', body: { invite: c.invite, accept: true, player: { name: 'ldwd11' } } });
+  assert.equal(acc.status, 200, JSON.stringify(acc.body)); assert.equal(acc.body.status, 'open');
+  assert.equal((await json(f, '/api/play/rooms', { token: 'other', method: 'GET' })).body.challenges.length, 0);
+  let host = (await json(f, '/api/play/rooms/' + id, { method: 'GET' })).body;
+  assert.equal(host.them.joined, true); assert.equal(host.them.ready, false); assert.equal(host.opponent.name, 'ldwd11');
+  // Ready needs a deck; choosing a deck clears ready; the other deck is never shown.
+  assert.equal((await json(f, '/api/play/rooms/' + id + '/ready', { token: 'other', body: { ready: true } })).status, 409);
+  const guestDeck = structuredClone(deck);
+  let g = (await json(f, '/api/play/rooms/' + id + '/ready', { token: 'other', body: { deck: guestDeck, ready: true } })).body;
+  assert.equal(g.you.ready, true); assert.equal(g.status, 'open');
+  host = (await json(f, '/api/play/rooms/' + id, { method: 'GET' })).body;
+  assert.equal(host.them.hasDeck, true); assert.equal(host.them.ready, true); assert.equal(JSON.stringify(host).includes('Fixture land'), false);
+  const hostReady = await json(f, '/api/play/rooms/' + id + '/ready', { body: { deck: structuredClone(deck), ready: true } });
+  assert.equal(hostReady.status, 202, JSON.stringify(hostReady.body));
+  host = (await json(f, '/api/play/rooms/' + id, { method: 'GET' })).body;
+  assert.equal(host.status, 'started'); assert.ok(host.matchId);
+  assert.deepEqual(f.calls.verified[0].humanDeck, deck); assert.deepEqual(f.calls.verified[0].opponentDeck, guestDeck);
+});
+
+test('in a lobby, changing a deck clears ready, a third account is shut out, and either seat can leave', async () => {
+  const f = fixture();
+  const sent = await json(f, '/api/play/rooms', { body: { format: 'Commander', to: other, lobby: true } });
+  const id = sent.body.roomId, [c] = (await json(f, '/api/play/rooms', { token: 'other', method: 'GET' })).body.challenges;
+  await json(f, '/api/play/rooms/join', { token: 'other', body: { invite: c.invite, accept: true } });
+  assert.equal((await json(f, '/api/play/rooms/' + id + '/ready', { token: 'third', body: { ready: true } })).status, 404);
+  await json(f, '/api/play/rooms/' + id + '/ready', { body: { deck: structuredClone(deck), ready: true } });
+  const changed = await json(f, '/api/play/rooms/' + id + '/ready', { body: { deck: structuredClone(deck) } });
+  assert.equal(changed.body.you.ready, false);
+  assert.equal((await json(f, '/api/play/rooms/' + id + '/ready', { body: { deck: { format: 'Commander', cards: [] } } })).status, 400);
+  assert.equal((await json(f, '/api/play/rooms/' + id, { token: 'other', method: 'DELETE' })).status, 204);
+  assert.equal((await json(f, '/api/play/rooms/' + id + '/ready', { body: { ready: true } })).status, 410);
+  // A lobby needs a named friend and no deck up front.
+  assert.equal((await json(f, '/api/play/rooms', { body: { format: 'Commander', lobby: true } })).status, 400);
+  assert.equal((await json(f, '/api/play/rooms', { body: { format: 'Commander', lobby: true, to: other, deck: structuredClone(deck) } })).status, 400);
+});

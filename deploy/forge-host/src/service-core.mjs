@@ -25,6 +25,8 @@ const WARM_PATH = '/api/play/warm';
 // Friend matches. A room holds the host's deck until the guest joins with an invite.
 const ROOMS_PATH = '/api/play/rooms', JOIN_PATH = '/api/play/rooms/join';
 const ROOM_PATH = new RegExp('^/api/play/rooms/(' + UUID + ')$', 'i');
+// A lobby room (versus lobby): POST /rooms/<id>/ready sets this seat's deck and ready flag.
+const READY_PATH = new RegExp('^/api/play/rooms/(' + UUID + ')/ready$', 'i');
 const INVITE = /^[A-Za-z0-9_-]{43}$/;
 // An invite lasts 30 minutes. Friend matches start with the first three formats.
 const ROOM_MS = 1_800_000, CHALLENGE_MS = 300_000, FRIEND_FORMATS = ['Commander', 'Standard', 'Modern'];
@@ -112,7 +114,7 @@ export async function readJSONWithin(request, maximum, timeoutMs = 5000) {
 // Its service binding is private; also keep origin + owner checks in each DO.
 export async function routeHostRequest(request, env, verifyBearer) {
   const path = new URL(request.url).pathname;
-  const room = path === ROOMS_PATH ? ['GET', 'POST'].includes(request.method) : path === JOIN_PATH ? request.method === 'POST' : ROOM_PATH.test(path) ? ['GET', 'DELETE'].includes(request.method) : null;
+  const room = path === ROOMS_PATH ? ['GET', 'POST'].includes(request.method) : path === JOIN_PATH ? request.method === 'POST' : ROOM_PATH.test(path) ? ['GET', 'DELETE'].includes(request.method) : READY_PATH.test(path) ? request.method === 'POST' : null;
   if (room !== null) {
     if (!room) return error('method_not_allowed', 405);
     if (!await verifyHostUser(request, { verifyBearer, origin: ORIGIN })) return error('authentication_required', 401);
@@ -147,7 +149,7 @@ export class AdmissionService {
   }
   async fetch(request) {
     const path = new URL(request.url).pathname;
-    const roomRoute = path === ROOMS_PATH || path === JOIN_PATH || ROOM_PATH.test(path);
+    const roomRoute = path === ROOMS_PATH || path === JOIN_PATH || ROOM_PATH.test(path) || READY_PATH.test(path);
     if (!roomRoute && (![WARM_PATH, '/api/play/matches'].includes(path) || request.method !== 'POST')) return error('not_found', 404);
     const user = await verifyHostUser(request, { verifyBearer: this.verifyBearer, origin: ORIGIN });
     if (!user) return error('authentication_required', 401);
@@ -224,24 +226,31 @@ export class AdmissionService {
       if (!room || (room.hostId !== user.id && room.guestId !== user.id && !challenged)) return error('room_not_found', 404);
       if (request.method === 'DELETE') {
         // The host cancels; the challenged friend says "not now". Either way it only ends an open room.
-        if (room.hostId !== user.id && !challenged) return error('room_not_found', 404);
+        // In a lobby, either seat can also leave after accepting.
+        if (room.hostId !== user.id && !challenged && !(room.lobby && room.guestId === user.id)) return error('room_not_found', 404);
         if (room.status === 'open') { room.status = room.hostId === user.id ? 'cancelled' : 'declined'; await this.storage.put(key, room); }
         return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } });
       }
       return json(this.roomView(room, user.id));
     }
+    const ready = READY_PATH.exec(path);
+    if (ready) return this.lobbyReady(request, ready[1].toLowerCase(), user, access);
     let body;
     try { body = await readJSONWithin(request, 131072); }
     catch (e) { return error(['body_too_large', 'body_timeout'].includes(e.message) ? e.message : 'invalid_json', e.message === 'body_too_large' ? 413 : e.message === 'body_timeout' ? 408 : 400); }
     if (path === ROOMS_PATH) {
-      if (Object.keys(body).some(k => !['format', 'deck', 'player', 'to'].includes(k)) || !FRIEND_FORMATS.includes(body.format)) return error('invalid_room', 400);
+      if (Object.keys(body).some(k => !['format', 'deck', 'player', 'to', 'lobby'].includes(k)) || !FRIEND_FORMATS.includes(body.format)) return error('invalid_room', 400);
+      // A lobby is a challenge sent before any deck is chosen: each player picks a deck and taps ready after accepting.
+      const lobby = body.lobby === true;
+      if (body.lobby !== undefined && typeof body.lobby !== 'boolean') return error('invalid_room', 400);
+      if (lobby && (body.deck !== undefined || body.to == null)) return error('invalid_room', 400);
       // A challenge names one friend's account; only that account sees it, and it lasts five minutes.
       const to = body.to === undefined || body.to === null ? null : String(body.to).toLowerCase();
       if (to !== null && (!UUID_RE.test(to) || to === user.id.toLowerCase())) return error('invalid_room', 400);
       let hostPlayer; try { hostPlayer = playerCard(body.player); } catch { return error('invalid_room', 400); }
-      try { validateExactDeckInput(friendInput(body.format, body.deck, body.deck)); } catch { return error('invalid_match_input', 400); }
+      if (!lobby) { try { validateExactDeckInput(friendInput(body.format, body.deck, body.deck)); } catch { return error('invalid_match_input', 400); } }
       const invite = randomInvite(), roomId = crypto.randomUUID();
-      const room = { roomId, hostId: user.id, hostPlayer, format: body.format, hostDeck: body.deck, inviteDigest: await digest(invite),
+      const room = { roomId, hostId: user.id, hostPlayer, format: body.format, hostDeck: lobby ? null : body.deck, ...(lobby ? { lobby: true, hostReady: false, guestReady: false, guestDeck: null } : {}), inviteDigest: await digest(invite),
         status: 'open', createdAt: this.now(), expiresAt: this.now() + (to ? CHALLENGE_MS : ROOM_MS), ...(to ? { toId: to } : {}) };
       await this.storage.transaction(async txn => {
         // One open room per host: a new invite ends the old one.
@@ -257,7 +266,7 @@ export class AdmissionService {
       return json({ ...this.roomView(room, user.id), invite }, 201);
     }
     // Join.
-    if (Object.keys(body).some(k => !['invite', 'deck', 'player'].includes(k)) || !INVITE.test(body.invite || '')) return error('invalid_invite', 400);
+    if (Object.keys(body).some(k => !['invite', 'deck', 'player', 'accept'].includes(k)) || !INVITE.test(body.invite || '')) return error('invalid_invite', 400);
     let guestPlayer; try { guestPlayer = playerCard(body.player); } catch { return error('invalid_invite', 400); }
     const roomId = await this.storage.get('invite:' + await digest(body.invite));
     const key = 'room:' + roomId, found = roomId && await this.storage.get(key);
@@ -268,6 +277,7 @@ export class AdmissionService {
     if (found.guestId && found.guestId !== user.id) return error('room_full', 409);
     if (found.status === 'cancelled') return error('room_closed', 410);
     if (found.status === 'open' && this.now() >= found.expiresAt) return error('invite_expired', 410);
+    if (found.lobby) return this.lobbyJoin(key, found, user, guestPlayer, body);
     if (body.deck === undefined || found.status === 'started') return json(this.roomView(found, user.id));
     let input;
     try { input = validateExactDeckInput(friendInput(found.format, found.hostDeck, body.deck)); } catch { return error('invalid_match_input', 400); }
@@ -298,12 +308,82 @@ export class AdmissionService {
     });
     return this.dispatch(result, input);
   }
+  // Lobby seats as each player sees them: your own deck state, and only whether the other has chosen and is ready.
+  lobbySeats(room, userId) {
+    const host = room.hostId === userId;
+    return { you: { hasDeck: host ? !!room.hostDeck : !!room.guestDeck, ready: host ? !!room.hostReady : !!room.guestReady },
+      them: { joined: host ? !!room.guestId : true, hasDeck: host ? !!room.guestDeck : !!room.hostDeck, ready: host ? !!room.guestReady : !!room.hostReady } };
+  }
+  // The invited friend takes the second seat without a deck. Only {invite, accept:true}; a repeat is harmless.
+  async lobbyJoin(key, found, user, guestPlayer, body) {
+    if (body.accept !== true || body.deck !== undefined) return json(this.roomView(found, user.id));
+    if (found.status === 'started') return json(this.roomView(found, user.id));
+    const claim = await this.storage.transaction(async txn => {
+      const room = await txn.get(key);
+      if (room.guestId && room.guestId !== user.id) return { error: 'room_full', status: 409 };
+      if (room.status !== 'open') return { error: 'room_closed', status: 410 };
+      if (!room.guestId) { room.guestId = user.id; room.guestPlayer = guestPlayer; room.expiresAt = this.now() + ROOM_MS; await txn.put(key, room); }
+      return { room };
+    });
+    if (claim.error) return error(claim.error, claim.status);
+    return json(this.roomView(claim.room, user.id));
+  }
+  // POST /rooms/<id>/ready {deck?, ready?}: choose or change your deck (this clears your ready), and set ready.
+  // When both seats are ready the match starts exactly like a joined room.
+  async lobbyReady(request, roomId, user, access) {
+    let body;
+    try { body = await readJSONWithin(request, 131072); }
+    catch (e) { return error(['body_too_large', 'body_timeout'].includes(e.message) ? e.message : 'invalid_json', e.message === 'body_too_large' ? 413 : e.message === 'body_timeout' ? 408 : 400); }
+    if (Object.keys(body).some(k => !['deck', 'ready'].includes(k)) || (body.ready !== undefined && typeof body.ready !== 'boolean')) return error('invalid_room', 400);
+    const key = 'room:' + roomId, found = await this.storage.get(key);
+    if (!found?.lobby || (found.hostId !== user.id && found.guestId !== user.id)) return error('room_not_found', 404);
+    if (found.status === 'cancelled' || found.status === 'declined') return error('room_closed', 410);
+    if (found.status === 'started') return json(this.roomView(found, user.id));
+    if (found.status === 'open' && this.now() >= found.expiresAt) return error('invite_expired', 410);
+    if (!found.guestId) return error('room_not_ready', 409);
+    const host = found.hostId === user.id;
+    if (body.deck !== undefined) { try { validateExactDeckInput(friendInput(found.format, body.deck, body.deck)); } catch { return error('invalid_match_input', 400); } }
+    const both = await this.storage.transaction(async txn => {
+      const room = await txn.get(key);
+      if (room.status !== 'open') return { error: 'room_closed', status: 410 };
+      const dk = host ? 'hostDeck' : 'guestDeck', rk = host ? 'hostReady' : 'guestReady';
+      if (body.deck !== undefined) { room[dk] = body.deck; room[rk] = false; }
+      if (body.ready !== undefined) { if (body.ready && !room[dk]) return { error: 'deck_required', status: 409 }; room[rk] = body.ready; }
+      await txn.put(key, room);
+      return { room, start: !!(room.hostReady && room.guestReady) };
+    });
+    if (both.error) return error(both.error, both.status);
+    if (!both.start) return json(this.roomView(both.room, user.id));
+    const room = both.room;
+    let input; try { input = validateExactDeckInput(friendInput(room.format, room.hostDeck, room.guestDeck)); } catch { return error('invalid_match_input', 400); }
+    return this.startRoomMatch(key, room, user.id, input, access);
+  }
+  // Both seats are decided: one match, one engine, a seat each (shared by join and the lobby).
+  async startRoomMatch(key, found, byUserId, input, access) {
+    const lifetimeMs = access.mode === 'trial' ? Math.min(access.matchMs, access.expiresAt - this.now()) : access.matchMs;
+    const reserveGuard = (txn, allocation) => reserveAdmissionBudget(txn, allocation, access, this.now());
+    const idempotencyKey = 'friend-room-' + found.roomId.replace(/-/g, '');
+    for (const player of [found.hostId, found.guestId]) {
+      const refused = await this.replacePreviousMatch({ ownerId: player, idempotencyKey, input, lifetimeMs, reserveGuard });
+      if (refused) return error(refused.error === 'previous_match_ending' ? 'player_busy' : refused.error, refused.status);
+    }
+    let result;
+    try { result = await this.ledger.reserveProvisional({ ownerId: found.hostId, guestId: found.guestId, idempotencyKey, input, lifetimeMs, reserveGuard }); }
+    catch { return error('invalid_match_input', 400); }
+    if (!result.allocation) return error(result.error === 'user_has_active_allocation' ? 'player_busy' : result.error, result.status);
+    await this.storage.transaction(async txn => {
+      const room = await txn.get(key);
+      room.status = 'started'; room.matchId = result.allocation.matchId; delete room.hostDeck; delete room.guestDeck;
+      await txn.put(key, room); await txn.delete('invite:' + room.inviteDigest);
+    });
+    return this.dispatch(result, input);
+  }
   async challengesFor(userId) {
     const now = this.now(), list = [];
     for (const c of await this.storage.get('challenges:' + userId.toLowerCase()) || []) {
       const room = c.expiresAt > now && await this.storage.get('room:' + c.roomId);
       if (room?.status === 'open' && room.toId === userId.toLowerCase() && !room.guestId && room.expiresAt > now)
-        list.push({ roomId: room.roomId, invite: c.invite, format: room.format, expiresAt: room.expiresAt, fromId: room.hostId, from: room.hostPlayer || null });
+        list.push({ roomId: room.roomId, invite: c.invite, format: room.format, expiresAt: room.expiresAt, fromId: room.hostId, from: room.hostPlayer || null, ...(room.lobby ? { lobby: true } : {}) });
     }
     return list;
   }
@@ -311,6 +391,7 @@ export class AdmissionService {
     const expired = room.status === 'open' && this.now() >= room.expiresAt;
     return { roomId: room.roomId, format: room.format, status: expired ? 'expired' : room.status, expiresAt: room.expiresAt,
       seat: room.hostId === userId ? 'host' : 'guest', guestJoined: !!room.guestId, challenge: !!room.toId,
+      ...(room.lobby ? { lobby: true, ...this.lobbySeats(room, userId) } : {}),
       // The other player, as they chose to show themselves.
       opponent: (room.hostId === userId ? room.guestPlayer : room.hostPlayer) || null,
       ...(room.matchId && room.status === 'started' ? { matchId: room.matchId } : {}) };
