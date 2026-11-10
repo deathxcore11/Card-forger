@@ -62,6 +62,21 @@ object CardArt {
     /** Each card's rarity as Scryfall gave it with its art (table additions 3: entrances by importance). */
     private val rarities = HashMap<String, String>()
     fun rarity(name: String): String? = synchronized(index) { rarities[name.lowercase()] }
+    /** Each card's type line as Scryfall gave it with its art, kept in the index file (W9: the deck tracker counts lands by it). */
+    private val types = HashMap<String, String>()
+    fun typeLine(name: String): String? = synchronized(index) { types[name.lowercase()] ?: types[lookupName(name).lowercase()] }
+    /** W9: type lines for names that have none yet (one Scryfall call per 75 names), for the deck tracker; bumps [version]. */
+    suspend fun fetchTypes(names: Collection<String>) = withContext(Dispatchers.IO) {
+        val need = synchronized(index) { names.filter { typeLine(it) == null }.distinctBy { it.lowercase() } }
+        if (need.isEmpty()) return@withContext
+        var got = false
+        for (chunk in need.chunked(75)) {
+            val body = JsonObject().apply { add("identifiers", JsonArray().apply { chunk.forEach { add(JsonObject().apply { addProperty("name", lookupName(it)) }) } }) }.toString()
+            val found = try { Http.call("POST", "https://api.scryfall.com/cards/collection", mapOf("User-Agent" to UA), body, timeoutMs = 10000)?.asJsonObject?.getAsJsonArray("data") } catch (_: Exception) { null } ?: continue
+            synchronized(index) { found.mapNotNull { it as? JsonObject }.forEach { c -> c.get("type_line")?.asString?.let { t -> names(c).forEach { n -> types[n.lowercase()] = t }; got = true } } }
+        }
+        if (got) { save(); version.value++ }
+    }
     /** Bumped when new names resolve, so the table redraws a card that just got its picture. */
     val version = MutableStateFlow(0)
 
@@ -83,7 +98,9 @@ object CardArt {
         indexFile = File(app.filesDir, "art-index.json")
         try {
             JsonParser.parseString(indexFile.readText()).asJsonObject.entrySet().forEach { (k, v) ->
-                val a = v.asJsonArray; index[k] = a[0].asString to a.get(1)?.takeIf { !it.isJsonNull }?.asString
+                val a = v.asJsonArray
+                if (a.size() > 0 && !a[0].isJsonNull) index[k] = a[0].asString to a.get(1)?.takeIf { !it.isJsonNull }?.asString
+                if (a.size() > 2) a[2]?.takeIf { it.isJsonPrimitive }?.let { types[k] = it.asString }
             }
         } catch (_: Exception) {}
     }
@@ -117,8 +134,9 @@ object CardArt {
     /** The index is copied under its lock and written outside it, so a card on screen never waits on a file write. */
     private val saving = Any()
     private fun save() = synchronized(saving) {
-        val copy = synchronized(index) { index.toList() }
-        val o = JsonObject(); copy.forEach { (k, v) -> o.add(k, JsonArray().apply { add(v.first); add(v.second) }) }
+        val (copy, tcopy) = synchronized(index) { index.toList() to HashMap(types) }
+        val o = JsonObject(); copy.forEach { (k, v) -> o.add(k, JsonArray().apply { add(v.first); add(v.second); tcopy[k]?.let { add(it) } }) }
+
         try { indexFile.writeText(o.toString()) } catch (_: Exception) {}
     }
 
@@ -178,6 +196,7 @@ object CardArt {
                             ?: names(c).any { it.equals(name, true) }
                     } ?: cards.firstOrNull { c -> names(c).any { it.equals(name, true) } }
                     card?.get("rarity")?.asString?.let { rarities[name.lowercase()] = it }
+                    card?.get("type_line")?.asString?.let { t -> types[name.lowercase()] = t }
                     val img = card?.let { images(it) } ?: return@forEachIndexed
                     // A pinned printing is kept by its id; the shared name entry stays whatever it was.
                     val pin = want.get("id")?.asString?.lowercase()?.takeIf { it.equals(card.get("id")?.asString, true) }

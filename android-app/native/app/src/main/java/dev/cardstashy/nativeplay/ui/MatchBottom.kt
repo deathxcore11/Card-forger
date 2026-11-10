@@ -134,8 +134,9 @@ private fun StackView(st: MatchState, gold: PadAct?, onInspect: (Card) -> Unit, 
 @Composable
 private fun CardWords(c: Card) {
     Text(c.name, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, color = Site.Text), maxLines = 2, overflow = TextOverflow.Ellipsis)
-    Text(listOf(c.type, c.manaCost.ifBlank { null }).filterNotNull().joinToString("  ·  "), style = small(12.5f, Site.Gold))
-    if (c.text.isNotBlank()) Text(c.text, style = TextStyle(fontFamily = Site.Manrope, fontSize = 13.5f.sp, lineHeight = 19.sp, color = Color(0xFFE4E7EA)))
+    // {1}{W} and {T} draw as their symbols, as on the card page (SymText), never as raw braces.
+    SymText(listOf(c.type, c.manaCost.ifBlank { null }).filterNotNull().joinToString("  ·  "), small(12.5f, Site.Gold))
+    if (c.text.isNotBlank()) SymText(c.text, TextStyle(fontFamily = Site.Manrope, fontSize = 13.5f.sp, lineHeight = 19.sp, color = Color(0xFFE4E7EA)))
     if (c.power != null && c.toughness != null) Text("${c.power} / ${c.toughness}", style = small(13f, Site.Text, FontWeight.Bold))
 }
 

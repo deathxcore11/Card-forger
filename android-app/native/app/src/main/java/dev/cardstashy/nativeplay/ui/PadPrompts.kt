@@ -308,7 +308,9 @@ fun BoxScope.PadPromptBar() {
     // With the bottom screen up the bar sits at its foot instead (DualScreen.BottomRoot).
     if (!pad || DualScreen.active) return
     val acts = PadPrompts.current()
-    val items = PadPrompts.prompts(acts)
+    // A button on the page already prints its key and words (the table's gold X): the bar does not say them again.
+    val said = DualScreen.shownLabels.values.flatten().toSet()
+    val items = PadPrompts.prompts(acts).filter { it.second.lowercase() !in said }
     var idle by remember { mutableStateOf(false) }
     val pressed = PadPrompts.lastPress
     LaunchedEffect(pressed) { idle = false; delay(4000); idle = true }

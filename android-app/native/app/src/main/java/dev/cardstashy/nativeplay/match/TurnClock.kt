@@ -127,7 +127,7 @@ object TurnClock {
             if (c.w.kind == Kind.RIVAL) { c.left = 0; c.since = null; return }
             // Against the CPU nothing is waiting on you but the game: a discard is your choice, so the clock holds and asks again
             // (no missed turn). With a friend the standing rule holds: the time runs out, a card goes, and it counts as missed.
-            if (!friend && w.id.startsWith("discard:")) { c.left = INF; c.since = null; runCatching(onNag); return }
+            if (!friend && (w.id.startsWith("discard:") || discardCount(s) != null)) { c.left = INF; c.since = null; runCatching(onNag); return }
             val turn = s.turn
             if (turn != lastStrikeTurn) { lastStrikeTurn = turn; strikes++; runCatching { onStrike(strikes, if (friend) STRIKE_LIMIT else null) } }
             c.attempts++
@@ -165,7 +165,12 @@ object TurnClock {
                 cur = Cur(w, banks[w.id] ?: w.total, null)
             }
             val c = cur!!
-            val hold = paused() || acting || s.busy || c.left == INF
+            // W6: the cleanup discard is plainly yours (Forge waits in its card list), so a busy flag left up by the bridge must not
+            // freeze its rope at 30; it counts down and holds only at zero ("Time's up").
+            val discard = c.w.id.startsWith("discard:")
+            val p = paused(); val busy = s.busy && !discard
+            val hold = p || acting || busy || c.left == INF
+            if (hold && c.left != INF && c.since != null) runCatching { TableLog.line("clock held ${c.w.id}: paused=$p acting=$acting busy=${s.busy}") }
             if (hold && c.since != null) { c.left -= now() - c.since!!; c.since = null }
             else if (!hold && c.since == null) c.since = now()
             if (c.w.kind == Kind.TURN) banks[c.w.id] = left()

@@ -114,6 +114,17 @@ object ForgeService {
         // Test builds: an adb hook can name the seed; every test-build match logs the seed it ran on (TableStep).
         val seed = dev.cardstashy.nativeplay.TestHooks.nextSeed?.also { dev.cardstashy.nativeplay.TestHooks.nextSeed = null } ?: (SecureRandom().nextLong() and Long.MAX_VALUE)
         dev.cardstashy.nativeplay.match.TableLog.line("engine seed $seed")
+        // W9: what each seat's deck holds as handed to Forge (rows, copies, basic lands), so a land-light draw can be checked.
+        runCatching {
+            val o = com.google.gson.JsonParser.parseString(inputJson).asJsonObject.let { it.getAsJsonObject("input") ?: it }
+            for (seat in listOf("humanDeck", "opponentDeck")) o.getAsJsonObject(seat)?.let { d ->
+                val rows = d.getAsJsonArray("cards")?.mapNotNull { it as? com.google.gson.JsonObject }.orEmpty()
+                fun q(r: com.google.gson.JsonObject) = r.get("qty")?.takeIf { it.isJsonPrimitive }?.asDouble?.toInt() ?: 1
+                val basics = rows.filter { it.get("name")?.asString?.removePrefix("Snow-Covered ") in setOf("Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes") }.sumOf { q(it) }
+                dev.cardstashy.nativeplay.match.TableLog.line("deck $seat \"${d.get("name")?.takeIf { it.isJsonPrimitive }?.asString}\" rows=${rows.size} copies=${rows.sumOf { q(it) }} basics=$basics " +
+                    "names=" + rows.joinToString("|") { "${q(it)}x${it.get("name")?.asString}" })
+            }
+        }
         return engine.submit(Callable { LocalEngine.start(inputJson, seed) }).get()
     }
 

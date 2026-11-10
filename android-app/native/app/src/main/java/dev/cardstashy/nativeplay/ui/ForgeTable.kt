@@ -468,7 +468,7 @@ fun ForgeBoard(
             PhaseTrack(st, stopLights(st), intents.stop, Modifier.offset(x = if (large) 80.dp else 74.du, y = if (pod) 58.du else if (large) 20.dp else 42.du), d)
 
             // The stack, fanned on the right over its portal, with the arc to its source.
-            if (st.stack.isNotEmpty()) { StackFan(st, Modifier.offset(x = W - 214.du, y = mid - 110.du), d, onInspect, live, intents.yieldSource, intents.stack); StackArc(st, d) }
+            if (st.stack.isNotEmpty()) { StackFan(st, Modifier.offset(x = minOf(W - 214.du, W - 150.du - 16.dp), y = mid - 110.du), d, onInspect, live, intents.yieldSource, intents.stack); StackArc(st, d) }
 
             // The hand: centred 44 du right of the middle (between your seat and the buttons), the middle card's top 67 du above the bottom.
             val hand = orderedHand(me.hand, handOrder)
@@ -566,14 +566,14 @@ fun ForgeBoard(
                 }
                 pair {
                     if (attackAll) {
-                        GoldPill(ok, live && okOn, upperM.focusRequester(goldFocus), d) { intents.ok() }
+                        GoldPill(ok, live && okOn, upperM.focusRequester(goldFocus), d, padKey = padX != null) { intents.ok() }
                         GlassPill("Attack all", live, attackM, d, tone = Color(0xFFFFD9CF), edge = Color(0x88FF8A6A)) { intents.attackAll(offered.map { it.id }) }
                     } else if (oneTarget(st) || onePick(st)) {
                         second?.let { GlassPill(it, live, upperM, d) { intents.cancel() } }
-                        if (st.selection.min == 0 && st.buttons.okEnabled) GoldPill("No target", live, lowerM.focusRequester(goldFocus), d) { intents.ok() }
+                        if (st.selection.min == 0 && st.buttons.okEnabled) GoldPill("No target", live, lowerM.focusRequester(goldFocus), d, padKey = padX != null) { intents.ok() }
                     } else if (short && second != null) {
                         if (st.buttons.okEnabled) GlassPill(ok, live, upperM, d) { intents.ok() }
-                        GoldPill(second, live, lowerM.focusRequester(goldFocus), d) { intents.cancel() }
+                        GoldPill(second, live, lowerM.focusRequester(goldFocus), d, padKey = padX != null) { intents.cancel() }
                     } else {
                         // Forge turns its cancel from End turn into "Undo" once a land or a mana tap can be taken back
                         // (InputPassPriority.showMessage), and then cancel undoes. Drawn in End turn's place, a tap meant for End turn
@@ -582,7 +582,7 @@ fun ForgeBoard(
                         val shownAt = remember(second) { android.os.SystemClock.uptimeMillis() }
                         second?.let { GlassPill(it, live, if (undo) undoM else upperM, d) {
                             if (!undo || android.os.SystemClock.uptimeMillis() - shownAt >= 400) intents.cancel() } }
-                        GoldPill(ok, live && (selected != null || okOn), lowerM.focusRequester(goldFocus), d) {
+                        GoldPill(ok, live && (selected != null || okOn), lowerM.focusRequester(goldFocus), d, padKey = padX != null) {
                             if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok()
                         }
                     }
@@ -1193,8 +1193,9 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
         // on the Thor) and, for an ability only, Forge's own yield (native-panel.mjs withYield; the bridge refuses a yield on a
         // spell: stack_item_not_offered).
         val yours = top.controller == st.viewer
-        Row(Modifier.offset(x = 44.du, y = 34.du - 26.du).width(104.du).wrapContentWidth(Alignment.CenterHorizontally, unbounded = true),
-            horizontalArrangement = Arrangement.spacedBy(6.du), verticalAlignment = Alignment.CenterVertically) {
+        // Centred on the fan's own 150 du box (which itself stays 16 dp inside the screen): the label and its Yield stay on one line inside it (W3: "CPU's ability" cut at the edge).
+        Row(Modifier.offset(y = 34.du - 26.du).width(150.du).wrapContentWidth(Alignment.CenterHorizontally, unbounded = true),
+            horizontalArrangement = Arrangement.spacedBy(6.du, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
             Text("${if (yours) "Your" else "CPU's"} ${if (top.ability) "ability" else "spell"}", style = sans(sp(11f), FontWeight.Bold, if (yours) Gold else CpuRed), maxLines = 1)
             if (top.ability) {
                 val on = top.yielded
@@ -1329,15 +1330,26 @@ internal fun Modifier.matchPadTap(source: androidx.compose.foundation.interactio
 // ---- Buttons (.forge-native-actions on the seat) ----
 
 @Composable
-internal fun GoldPill(text: String, enabled: Boolean, modifier: Modifier, d: Du, onClick: () -> Unit) = with(d) {
+internal fun GoldPill(text: String, enabled: Boolean, modifier: Modifier, d: Du, padKey: Boolean = false, onClick: () -> Unit) = with(d) {
+    // The controller's X is this button: with a pad here the key is printed on it, and the hint bar does not say it again (no prompt twice).
+    val pad by Pad.connected.collectAsState()
+    val keyed = padKey && pad && enabled
+    val owner = remember { Any() }
+    androidx.compose.runtime.DisposableEffect(owner, keyed, text) {
+        if (keyed) DualScreen.shownLabels[owner] = setOf(text.lowercase())
+        onDispose { DualScreen.shownLabels.remove(owner) }
+    }
     Box(modifier.widthIn(min = 138.du).height(44.du).drawBehind { drawRoundRect(Color(0x3DC99A4B), topLeft = Offset(0f, 8.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2)) }
         .clip(RoundedCornerShape(999.dp)).background(if (enabled) Brush.verticalGradient(listOf(Color(0xFFF7DA97), Color(0xFFE8B95B), Color(0xFFC4903A))) else Brush.verticalGradient(listOf(Color(0xFF6B5A3A), Color(0xFF4A3E28))))
         .border(1.dp, Color(0xFFF6DFA8), RoundedCornerShape(999.dp)).clickable(enabled = enabled, onClick = onClick), contentAlignment = Alignment.Center) {
-        // [data-native-key=ok]:after { content: ' ›'; font-size: 20px }
-        Text(androidx.compose.ui.text.buildAnnotatedString {
-            append(text)
-            if (enabled) withStyle(androidx.compose.ui.text.SpanStyle(fontSize = sp(20f))) { append(" \u203A") }
-        }, style = sans(sp(15f), FontWeight.Bold, Color(0xFF1B1408)), maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 18.du))
+        Row(Modifier.padding(horizontal = 18.du), horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
+            if (keyed) PadKey("X", "")
+            // [data-native-key=ok]:after { content: ' ›'; font-size: 20px }
+            Text(androidx.compose.ui.text.buildAnnotatedString {
+                append(text)
+                if (enabled) withStyle(androidx.compose.ui.text.SpanStyle(fontSize = sp(20f))) { append(" \u203A") }
+            }, style = sans(sp(15f), FontWeight.Bold, Color(0xFF1B1408)), maxLines = 1, textAlign = TextAlign.Center)
+        }
     }
 }
 

@@ -492,6 +492,10 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         if (!force && (!_live.value || _sending.value)) return
         autoJob?.cancel()
         if (!autoAnswering && op != "concede") timer.poke()
+        // W1: your own "To <step>" press on an empty stack carries the whole way: if Forge hands priority back in the same step of the
+        // same turn with nothing new (no stack, no question), it is passed again for you. Anything else you press clears it.
+        if (!autoAnswering) { carries = 0; passSeq = st.events.maxOfOrNull { it.seq } ?: 0L }
+        if (!autoAnswering) passFrom = if (op == "ok" && st.inputType == "InputPassPriority" && st.prompt == null && st.stack.isEmpty() && st.activePlayer == st.viewer) st.turn to st.phase else null
         if (st.isMulligan) answeredMulligan = true
         _sending.value = true; _live.value = false; sendingAt = SystemClock.elapsedRealtime()
         scope.launch(Dispatchers.IO) {
@@ -599,6 +603,11 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     private fun known(st: MatchState, id: Int) = st.players.any { pl -> (pl.hand + pl.battlefield + pl.graveyard + pl.exile).any { it.id == id } } || st.stack.any { it.source?.id == id }
     private fun mine(st: MatchState, id: Int?) = id != null && st.me.let { (it.hand + it.battlefield + it.graveyard + it.exile).any { c -> c.id == id } }
 
+    /** W1: the (turn, step) where you pressed the gold "To <step>" button; Forge stopping there again is passed for you. */
+    private var passFrom: Pair<Int, String?>? = null
+    /** The newest engine event when you pressed: anything after it (a CPU spell, a trigger) is "something new" and stops the carry. */
+    private var passSeq = 0L
+    private var carries = 0
     private val shortCasts = dev.cardstashy.nativeplay.ui.ShortCasts()
     private fun scheduleAutoPass(st: MatchState) {
         autoJob?.cancel()
@@ -615,22 +624,68 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             }
             return
         }
-        if (st.prompt != null || st.inputType != "InputPassPriority" || st.priorityPlayer != st.viewer || !st.buttons.okEnabled || st.controlMode == "full") return
-        // A stop you set on the phase track: you get priority there, whatever you hold.
-        if (st.phaseStops?.containsKey("${if (st.activePlayer == st.viewer) "you" else "opponent"}:${st.phase}") == true) return
+        val d = decide(st)
+        TableLog.line("decide ${st.phase} turn ${st.turn} input=${st.inputType} -> ${d.op ?: "wait"} (${d.why})")
+        val op = d.op ?: return
+        autoJob = scope.launch(Dispatchers.Main) {
+            delay(d.delayMs)
+            if (_live.value && latest?.revision == st.revision) { autoAnswering = true; try { if (op == "cancel") cancel() else ok() } finally { autoAnswering = false } }
+        }
+    }
+
+    private class Decision(val op: String?, val why: String, val delayMs: Long = 0)
+
+    /** A permanent whose only abilities make mana (a land, a mana rock): tapping it is never a reason to stop for you (W7, W8). */
+    private fun manaOnly(c: dev.cardstashy.nativeplay.engine.Card): Boolean {
+        val acts = c.text.lines().map { it.replace(Regex("\\([^)]*\\)"), "").trim() }.filter { it.contains(":") }
+        if (acts.isEmpty()) return c.isLand
+        return acts.all { Regex("\\badd\\b", RegexOption.IGNORE_CASE).containsMatchIn(it.substringAfter(":")) }
+    }
+
+    /**
+     * W1, W7, W8: the one place that decides whether the table waits on you. It waits only while Forge offers you a real choice you
+     * can make now: a card or ability it lists as actionable that is not plainly unpayable (ShortCasts) and is not only a mana ability;
+     * a block with a creature that could block. Otherwise the step is passed for you, after its normal beat. Your phase stops and full
+     * control still stop. Every decision is logged under TableStep as one "decide" line.
+     */
+    private fun decide(st: MatchState): Decision {
+        if (st.prompt != null || !st.buttons.okEnabled) return Decision(null, "a question or no button")
+        val stopHere = st.phaseStops?.containsKey("${if (st.activePlayer == st.viewer) "you" else "opponent"}:${st.phase}") == true
+        if (st.inputType == "InputBlock") {
+            if (st.controlMode == "full" || stopHere) return Decision(null, "blocks: your stop")
+            val can = st.me.battlefield.filter { it.isCreature && !it.tapped }
+            return if (can.isEmpty()) Decision("ok", "blocks: no untapped creature can block", 900)
+            else Decision(null, "blocks: ${can.size} could block (${can.take(4).joinToString(",") { it.name }})")
+        }
+        if (st.inputType != "InputPassPriority" || st.priorityPlayer != st.viewer) return Decision(null, "not a priority pass")
+        // W1: the step you already pressed through, offered again with nothing new: carry on to the step the button named.
+        val again = passFrom
+        if (again != null) {
+            if (again.first == st.turn && again.second == st.phase && st.stack.isEmpty() && st.activePlayer == st.viewer && carries < 3 &&
+                st.events.none { it.seq > passSeq && it.type !in setOf("turn", "phase", "priority") }) {
+                carries++
+                return Decision("ok", "carry: ${st.phase} offered again after your press", 150)
+            }
+            if (again.first != st.turn || again.second != st.phase || st.stack.isNotEmpty()) passFrom = null
+        }
+        if (st.controlMode == "full") return Decision(null, "full control")
+        if (stopHere) return Decision(null, "your phase stop")
         val ownTop = st.stack.firstOrNull()?.controller == st.viewer
+        if (ownTop) return Decision("ok", "your own spell or ability on top", 200)
         // Smart auto-pass (director spec 6a): Forge sometimes lists a card you plainly can't pay for as actionable ("unknown"
-        // affordability, a {1}{R} creature with one land out), which left turn 1 stuck on "To combat". Those don't count.
-        val actionable = st.selection.actionable
-        val nothing = actionable.isEmpty() || runCatching { val no = shortCasts.blocked(st); actionable.all { it in no } }.getOrDefault(false)
-        if (!ownTop && !nothing) return
+        // affordability, a {1}{R} creature with one land out). Those don't count, nor do mana abilities.
+        val no: Set<Int> = runCatching { shortCasts.blocked(st).keys }.getOrDefault(emptySet())
+        val mine = st.me.hand + st.me.battlefield + st.me.graveyard + st.me.exile
+        val real = st.selection.actionable.filter { id ->
+            val c = mine.firstOrNull { it.id == id }
+            id !in no && st.selection.affordability[id] != "unavailable" && !(c != null && c in st.me.battlefield && manaOnly(c))
+        }
+        val cards = real.take(6).joinToString(",") { id -> mine.firstOrNull { it.id == id }?.let { "${it.name}:${st.selection.affordability[id] ?: "?"}" } ?: "$id" }
+        if (real.isNotEmpty()) return Decision(null, "${if (st.stack.isNotEmpty()) "respond" else "play"} stop yes, cards=$cards")
         // Your turn, nothing to play and nothing that can attack: straight to the end of the turn in one beat ("End turn").
         val yourTurn = st.activePlayer == st.viewer
         val canAttack = st.me.battlefield.any { it.isCreature && !it.tapped && !it.summoningSick }
-        val toEnd = !ownTop && yourTurn && !canAttack && st.stack.isEmpty() && st.buttons.cancelEnabled && st.buttons.cancel?.contains("end", true) == true
-        autoJob = scope.launch(Dispatchers.Main) {
-            delay(if (ownTop) 200 else 700)
-            if (_live.value && latest?.revision == st.revision) { autoAnswering = true; try { if (toEnd) cancel() else ok() } finally { autoAnswering = false } }
-        }
+        val toEnd = yourTurn && !canAttack && st.stack.isEmpty() && st.buttons.cancelEnabled && st.buttons.cancel?.contains("end", true) == true
+        return Decision(if (toEnd) "cancel" else "ok", "${if (st.stack.isNotEmpty()) "respond" else "play"} stop no (nothing you can do now)${if (toEnd) ", to end of turn" else ""}", 700)
     }
 }

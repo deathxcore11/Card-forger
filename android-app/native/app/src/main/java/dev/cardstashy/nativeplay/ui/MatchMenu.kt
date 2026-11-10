@@ -116,7 +116,7 @@ class MatchMenu(input: String?, val onConcede: () -> Unit, val onLeave: () -> Un
         }
         /** trackerDeck land: the card's type line when known, else a basic land's name. */
         internal fun isLand(name: String, seenType: String?): Boolean =
-            seenType?.let { Regex("\\bLand\\b").containsMatchIn(it) } ?: fact(name)?.t?.let { Regex("\\bLand\\b").containsMatchIn(it) } ?: BASIC_LAND.matches(name)
+            (seenType ?: fact(name)?.t ?: dev.cardstashy.nativeplay.art.CardArt.typeLine(name))?.let { Regex("\\bLand\\b").containsMatchIn(it) } ?: BASIC_LAND.matches(name)
     }
 }
 
@@ -188,6 +188,9 @@ internal fun MenuPanel(menu: MatchMenu, stackCount: Int, d: Du, x: Dp, y: Dp) = 
 @Composable
 internal fun DeckTracker(st: MatchState, menu: MatchMenu, H: Dp, d: Du, x: Dp, top: Dp) = with(d) {
     val side = menu.tracker ?: return@with
+    // W9: the deck's lands are counted by their type lines; names the app has no type for yet are looked up once (Scryfall).
+    dev.cardstashy.nativeplay.art.CardArt.version.collectAsState().value
+    androidx.compose.runtime.LaunchedEffect(menu.deck) { dev.cardstashy.nativeplay.art.CardArt.fetchTypes(menu.deck.map { it.name }) }
     menu.see(st)
     val me = st.me; val lib = me.libraryCount.coerceAtLeast(0)
     // Your library: the deck list minus every copy you can see anywhere else.
