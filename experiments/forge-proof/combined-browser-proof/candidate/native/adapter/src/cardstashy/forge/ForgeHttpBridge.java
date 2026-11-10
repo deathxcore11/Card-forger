@@ -642,7 +642,7 @@ public final class ForgeHttpBridge implements IRemote {
                     &&controller.getInputProxy().getInput() instanceof forge.gamemodes.match.input.InputPayMana
                     &&!nativePaymentPending())busy=false;
             }
-            case updateButtons -> { buttons=obj("ok",a[1],"cancel",a[2],"okEnabled",a[3],"cancelEnabled",a[4]); busy=false; }
+            case updateButtons -> { buttons=obj("ok",a[1],"cancel",a[2],"okEnabled",a[3],"cancelEnabled",a[4]); buttonsInput=controller==null?null:controller.getInputProxy().getInput(); busy=false; }
             case setSelection -> { selection=(Selection)a[0]; busy=false; }
             case awaitNextInput -> { busy=true; recheckBusy(); }
             case flashIncorrectAction -> { busy=false; }
@@ -694,6 +694,10 @@ public final class ForgeHttpBridge implements IRemote {
             }
         },BUSY_SETTLE_MS,TimeUnit.MILLISECONDS);
     }
+    // The input the current buttons were sent for. Smart's Auto press must use this payment's own
+    // enabled Auto: a press on the previous prompt's buttons ran Forge's Auto before the payment
+    // was ready, on a game thread beside the one setting it up, and corrupted the mana pool.
+    volatile forge.gamemodes.match.input.Input buttonsInput;
     void clearSmartIntent(){smartIntentOrigin=null;smartIntentAbility=null;}
     // Trustworthy glow. selection.actionable is what can be finished now (the human
     // overlay proves the cost can be paid), so only those cards glow. A card with an
@@ -875,7 +879,8 @@ public final class ForgeHttpBridge implements IRemote {
         }
         if(!autoPay()||smartIntentOrigin==null||pending!=null||commandInFlight
             ||!(input instanceof forge.gamemodes.match.input.InputPayManaOfCostPayment)
-            ||input==autoPayAttemptInput||!Boolean.TRUE.equals(buttons.get("okEnabled")))return;
+            ||input==autoPayAttemptInput||input!=buttonsInput||nativePaymentPending()
+            ||!Boolean.TRUE.equals(buttons.get("okEnabled")))return;
         final SpellAbility paid=controller.getPlayer().getPaidForSA();
         // Copies/alternate costs and nested or resolving effects deliberately remain manual.
         boolean alreadyOnStack=false;
