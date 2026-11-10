@@ -285,6 +285,7 @@ public final class ForgeHttpBridge implements IRemote {
         }
         for(Player p:game.getPlayers())p.updateOpponentsForView();
         new Thread(()-> {
+            matchThread=Thread.currentThread();
             try {
                 match.startGame(game);
                 if(concessionRequested)awaitConcession();
@@ -671,6 +672,17 @@ public final class ForgeHttpBridge implements IRemote {
     final AtomicLong guiTraffic=new AtomicLong();
     final AtomicBoolean busyWatch=new AtomicBoolean();
     volatile long busyReleases;
+    // The thread running the match. The watchdog only releases busy while it is parked in Forge's
+    // awaitInput: an unchanged prompt alone was not enough (after a choice was answered, Forge was
+    // still checking state-based actions under the old prompt, and an early action raced it).
+    volatile Thread matchThread;
+    boolean forgeAwaitsInput(){
+        Thread t=matchThread;
+        if(t==null||t.getState()!=Thread.State.WAITING)return false;
+        for(StackTraceElement f:t.getStackTrace())
+            if(f.getMethodName().equals("awaitInput")&&f.getClassName().equals("forge.gui.interfaces.IGuiGame"))return true;
+        return false;
+    }
     void recheckBusy(){
         if(!busyWatch.compareAndSet(false,true))return;
         BUSY_RECHECK.schedule(new Runnable(){
@@ -683,7 +695,8 @@ public final class ForgeHttpBridge implements IRemote {
                         if(!busy||c==null||failure!=null||finished||concessionRequested){busyWatch.set(false);return;}
                         var in=c.getInputProxy().getInput();long now=guiTraffic.get();
                         boolean waiting=!commandInFlight&&pending==null&&in!=null
-                            &&!(in instanceof forge.gamemodes.match.input.InputLockUI)&&!nativePaymentPending();
+                            &&!(in instanceof forge.gamemodes.match.input.InputLockUI)&&!nativePaymentPending()
+                            &&forgeAwaitsInput();
                         quiet=waiting&&in==last&&now==traffic?quiet+1:0;
                         last=in;traffic=now;
                         if(quiet>=2){busy=false;released=true;busyReleases++;busyWatch.set(false);}
