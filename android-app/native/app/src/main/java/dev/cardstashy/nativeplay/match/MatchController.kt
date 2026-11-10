@@ -290,6 +290,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             shown.copy(selection = shown.selection.copy(tapPlans = l.selection.tapPlans)) else shown
         if (_shown.value?.revision != st.revision) TableLog.board("show", st, latest?.revision)
         _shown.value = st
+        if (_afkNote.value == NAG && dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) == null) _afkNote.value = null
         _live.value = l != null && st.revision == l.revision && st.waitingOnMe && !_sending.value
         if (_live.value) scheduleAutoPass(st)
         startTicker()
@@ -304,6 +305,8 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     private var autoAnswering = false
     private var noteJob: Job? = null
     /** A line under the clock for 7 s (the same place as the missed-turn warning). */
+    /** The time's-up line for a discard against the CPU: it stays beside the hand until the discard is done (live 0.4.56 lost it after 7 s). */
+    private val NAG get() = "Time's up. Choose a card to discard."
     private fun note(text: String) { noteJob?.cancel(); noteJob = scope.launch { _afkNote.value = text; delay(7000); _afkNote.value = null } }
     /** A card pop-up, the menu or a held card: the clock holds while any is open. */
     private val holds = HashSet<String>()
@@ -331,7 +334,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             _clock.value = c?.let { Clock(now + it.remaining, it.total, if (it.paused) it.remaining else null, it.own) } },
         onStrike = { n, limit -> if (limit != null && n == limit - 1) scope.launch { _afkNote.value = "One more missed turn and you concede."; delay(7000); _afkNote.value = null } },
         friend = remote != null,
-        onNag = { note("Time's up. Choose a card to discard.") },
+        onNag = { noteJob?.cancel(); _afkNote.value = NAG },
         now = { SystemClock.elapsedRealtime() },
         host = { hostClock },
     )
