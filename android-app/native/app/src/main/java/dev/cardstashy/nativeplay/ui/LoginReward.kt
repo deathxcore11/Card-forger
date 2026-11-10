@@ -11,6 +11,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -84,6 +86,25 @@ fun LoginRewardPopup(login: JsonObject, onDone: () -> Unit) {
     BackHandler { claim() }
     // Controller: X claims, and so does B (back claims here). The backdrop only swallows taps, so focus skips it.
     PadScreen(PadActs(x = PadAct("Claim") { claim() }, b = "Claim", opaque = true))
+    // Bottom screen (W3): the reward stays on top; the week's streak moves to the bottom as seven day tiles.
+    BottomScreen {
+        ShowcaseCase("Daily log-in", "Day $stamp of 7", scroll = false) {
+            Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                for (i in 1..7) {
+                    val today = i == stamp; val past = i < stamp
+                    val tile = RoundedCornerShape(Rule.Radius.Panel)
+                    Column(Modifier.weight(1f).fillMaxHeight().clip(tile).background(if (today) Rule.Color.GoldEdge else if (past) Rule.Color.Glass else Color.Transparent)
+                        .border(1.dp, if (today) Rule.Color.CtaTop else Rule.Color.Edge, tile), horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically)) {
+                        Text("DAY", style = Rule.Type.sans(11, FontWeight.Bold, Rule.Color.Muted))
+                        Text("$i", style = Rule.Type.cinzel(34, if (today) Rule.Color.CtaTop else if (past) Rule.Color.Text else Rule.Color.Muted))
+                        Text(if (past) "✓" else if (today) "Today" else " ", style = Rule.Type.sans(12, FontWeight.Bold, Rule.Color.Gold))
+                    }
+                }
+            }
+            Text(if (stamp >= 7) "The week is complete." else "Come back tomorrow for day ${stamp + 1}.", style = Rule.Type.S15.copy(color = CaseMuted))
+        }
+    }
     Box(Modifier.fillMaxSize().graphicsLayer { alpha = enter.value.coerceIn(0f, 1f) }.background(Color(0xCC07080B))
         .focusProperties { canFocus = false }.clickable(remember { MutableInteractionSource() }, null) {}, contentAlignment = Alignment.Center) {
         val shape = RoundedCornerShape(26.dp)
@@ -93,10 +114,10 @@ fun LoginRewardPopup(login: JsonObject, onDone: () -> Unit) {
             .border(1.dp, Brush.verticalGradient(listOf(Color(0x99E9C27A), Color(0x22E9C27A))), shape)
             .padding(horizontal = 22.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("DAY $stamp OF 7", style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.6.sp, color = Color(0xFFB9BFC9)))
+            if (!DualScreen.active) Text("DAY $stamp OF 7", style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.6.sp, color = Color(0xFFB9BFC9)))
             Text("Welcome back", style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 26.sp, color = Color(0xFFF3E3BD)), textAlign = TextAlign.Center)
-            // The week as seven quiet pips: today's glows, earlier days are filled.
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            // The week as seven quiet pips: today's glows, earlier days are filled. On two screens the week is on the bottom.
+            if (!DualScreen.active) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 for (i in 1..7) Box(Modifier.size(if (i == stamp) 14.dp else 10.dp).background(
                     when { i == stamp -> Color(0xFFE2B866); i < stamp -> Color(0x99D6AD64); else -> Color(0x22FFFFFF) }, CircleShape))
             }

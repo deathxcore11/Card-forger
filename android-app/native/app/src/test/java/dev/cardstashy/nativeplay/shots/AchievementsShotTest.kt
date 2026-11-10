@@ -10,6 +10,10 @@ import dev.cardstashy.nativeplay.ui.AchievementsRoute
 import dev.cardstashy.nativeplay.ui.PlayNav
 import dev.cardstashy.nativeplay.ui.PlayTab
 import org.junit.Rule
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.onNodeWithTag
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -91,5 +95,20 @@ class LoginRewardShotTest {
         rule.setContent { androidx.compose.foundation.layout.Box(Modifier.background(androidx.compose.ui.graphics.Color(0xFF0C0E13))) { dev.cardstashy.nativeplay.ui.LoginRewardPopup(login) {} } }
         repeat(10) { rule.mainClock.advanceTimeBy(100); rule.waitForIdle() }
         rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "login-reward-390.png").path)
+    }
+
+    /** W3: on the Thor the reward stays on top and the week's streak is on the bottom. */
+    @Test fun popupDual() {
+        dev.cardstashy.nativeplay.ui.DualScreen.pretend(dev.cardstashy.nativeplay.ui.DualScreen.Panel(2, "Built-in Screen", 1240, 1080, 60f))
+        try {
+            org.robolectric.RuntimeEnvironment.setQualifiers("w960dp-h1080dp-xhdpi")
+            val login = JsonParser.parseString("""{"day":"2026-11-03","stamp":4,"month":4,"reward":{"coins":300,"packs":1},"monthReward":null,"fresh":true}""").asJsonObject
+            rule.setContent { androidx.compose.foundation.layout.Column(Modifier.background(androidx.compose.ui.graphics.Color(0xFF0C0E13))) {
+                androidx.compose.foundation.layout.Box(Modifier.width(960.dp).height(540.dp).testTag("top")) { dev.cardstashy.nativeplay.ui.LoginRewardPopup(login) {} }
+                androidx.compose.foundation.layout.Box(Modifier.width(620.dp).height(540.dp).testTag("bottom")) { dev.cardstashy.nativeplay.ui.BottomRoot() } } }
+            repeat(10) { rule.mainClock.advanceTimeBy(100); rule.waitForIdle() }
+            rule.onNodeWithTag("top").captureRoboImage(File(System.getProperty("shotsDir"), "w3/login-reward-top-1920x1080.png").path)
+            rule.onNodeWithTag("bottom").captureRoboImage(File(System.getProperty("shotsDir"), "w3/login-reward-bottom-1240x1080.png").path)
+        } finally { dev.cardstashy.nativeplay.ui.DualScreen.pretend(null) }
     }
 }
