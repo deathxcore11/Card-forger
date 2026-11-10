@@ -183,18 +183,6 @@ function paced(beats,budget=16000,pace=1){
  return scale<1?beats.map(x=>x.kind==='log'?x:{...x,duration:Math.max(spotlit(x)?SPOT_MIN:MIN_BEAT,Math.round(x.duration*scale))}):beats;
 }
 const onScreen=beats=>beats.filter(b=>b.kind!=='log');
-// The CPU thinks before it acts (table additions 6, the app's director spec section 5): a pause in a range that depends on what
-// it is about to do, never the same value twice running, at most 8 s in one CPU turn. Fast halves it (the queue's speed()).
-export const THINK={land:[700,1000],spell:[1100,1500],targeted:[1500,2100],attack:[700,1000],block:[900,1400],cap:8000};
-export const thinkKind=beat=>{
- if(!beat?.actor)return null;
- if(beat.kind==='land')return 'land';
- if(beat.kind==='spell'&&!/TRIGGER/.test(beat.label||''))return beat.targets?.length?'targeted':'spell';
- if(beat.tone==='attack')return 'attack';
- if(beat.tone==='block')return 'block';
- return null;
-};
-export const pickThink=(kind,last=-1,rand=Math.random)=>{const [lo,hi]=THINK[kind];let v=lo+Math.round(rand()*(hi-lo));if(v===last)v=v+10>hi?v-10:v+10;return v;};
 // Which beat puts each card in its final state on the table. A card named by several beats (a creature
 // cast, then resolved; an attacker that then dies) lands at the last of them; earlier beats only patch
 // what they show (attacking, blocking, damage marked). The CPU's lands tap for its first spell.
@@ -300,7 +288,7 @@ export function answered(s){
 // After the keep, the hand lands and the table settles before the CPU's first turn starts (Randall, 2 Nov).
 const KEEP_BEAT=1600;
 export class CpuActionPlaybackQueue {
- constructor({present,beat=()=>{},clear=()=>{},preload=()=>{},reducedMotion=()=>false,speed=()=>1,think=()=>{},rand=Math.random,schedule=(fn,ms)=>setTimeout(fn,ms),cancel=id=>clearTimeout(id)}={}){Object.assign(this,{present,beat,clear,preload,reducedMotion,speed,think,rand,schedule,cancel});this.thinkSpent=0;this.lastThink=-1;this.current=null;this.latest=null;this.pending=[];this.timer=null;this.running=false;this.overlay=false;this.closed=false;this.recent=[];this.seenSeq=-1;this.loggedSeq=-1;this.target=null;}
+ constructor({present,beat=()=>{},clear=()=>{},preload=()=>{},reducedMotion=()=>false,speed=()=>1,schedule=(fn,ms)=>setTimeout(fn,ms),cancel=id=>clearTimeout(id)}={}){Object.assign(this,{present,beat,clear,preload,reducedMotion,speed,schedule,cancel});this.current=null;this.latest=null;this.pending=[];this.timer=null;this.running=false;this.overlay=false;this.closed=false;this.recent=[];this.seenSeq=-1;this.loggedSeq=-1;this.target=null;}
  // Overlay playback runs over a board that already asks the player something; it never blocks.
  get busy(){return this.running&&!this.overlay||this.pending.length>0||!!this.gate;}
  // The last dozen things that happened, in plain sentences, for the activity line.
@@ -358,7 +346,7 @@ export class CpuActionPlaybackQueue {
   this.present(answered(this.current),true);this.play(beats,next,false);
  }
  play(beats,next,overlay){
-  this.running=true;this.overlay=overlay;this.target=next;let index=0;if(!overlay)this.thinkSpent=0;
+  this.running=true;this.overlay=overlay;this.target=next;let index=0;
   // Held playback moves the board one beat at a time; beats already told keep their place on it.
   const from=this.current,shown=beats.filter(b=>this.seen(b));beats=beats.filter(b=>!this.seen(b));
   // Every card the story will spotlight starts loading now, so none opens on a blank frame.
@@ -366,16 +354,6 @@ export class CpuActionPlaybackQueue {
   const step=()=>{
    if(this.closed)return;this.clear();
    const beat=beats[index++];
-   // Think first: three dots by the CPU and a card in its hand lifts, then the action. A tap skips the pause with the beat.
-   const kind=!overlay&&beat&&!beat.thought?thinkKind(beat):null;
-   if(kind&&this.thinkSpent<THINK.cap){
-    const ms=Math.min(THINK.cap-this.thinkSpent,Math.round(pickThink(kind,this.lastThink,this.rand)*this.speed()));
-    this.lastThink=Math.round(ms/Math.max(.01,this.speed()));this.thinkSpent+=ms;beat.thought=true;index--;
-    try{this.think(true,beat,ms);}catch{/* the pause itself still holds */}
-    this.timer=this.schedule(step,ms);return;
-   }
-   try{this.think(false,beat,0);}catch{/* optional */}
-   if(beat?.tone==='turn')this.thinkSpent=0;
    if(!beat){
     this.timer=null;this.running=false;this.overlay=false;
     if(!overlay){this.current=this.target;this.present(this.target,this.pending.length>0);this.advance();}

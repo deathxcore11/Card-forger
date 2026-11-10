@@ -7,7 +7,7 @@ import {createForgeHostClient,exactForgeInput,forgeAccountKey} from './play-forg
 import {createForgePresentationSession} from './experiments/forge-proof/forge-session.mjs';
 import {mountForgeTable} from './experiments/forge-proof/forge-table.mjs';
 import {nativePromptUnanswerable} from './experiments/forge-proof/native-panel.mjs';
-import {mountForgeMatchIntro,forgeStartingPlayer,preloadDeckBackdrops,warmDeckArt,mountForgeArtLoading} from './play-forge-pregame.js';
+import {mountForgeMatchIntro,forgeStartingPlayer,preloadDeckBackdrops,mountForgeArtLoading} from './play-forge-pregame.js';
 import {deckChronicles,deckRecord,recordLine,recordMatch} from './play-match-record.js';
 import {chronicleBlock} from './play-chronicle-ui.js';
 import {createMatchFacts} from './match-facts.js';
@@ -52,10 +52,12 @@ export function capturedForgeArtwork(setup,lookup,resolveLate=null){
   if(!options.length)options=rows.filter(r=>r.playArtwork&&(r.playArtwork.card?.card_faces||[]).some(f=>String(f?.name||'').toLowerCase()===String(name||'').toLowerCase())).map(r=>r.playArtwork);
   if(!options.length&&native&&!rows.some(r=>r.name===name))options=rows.filter(r=>r.playArtwork&&sameCardFace(r.playArtwork.card,native)).map(r=>r.playArtwork);
   const sameSet=options.filter(a=>a.card?.set?.toLowerCase()===native?.setCode?.toLowerCase());
-  const candidates=sameSet.length?sameSet:options,ids=new Set(candidates.map(a=>a.card.id));
+  const candidates=sameSet.length?sameSet:options,ids=new Set(candidates.map(a=>a.card.id)),exact=rows.some(r=>r.name===name&&r.playArtwork);
   // Native IDs do not map mixed selected printing copies yet. Refuse to invent
   // that association; a unique catalogue reference is labelled as such in UI.
-  return ids.size===1?structuredClone(candidates[0]):null;
+  // The same card in both decks can be two different printings (every Mountain, Sol Ring, Command Tower): the
+  // engine names the card only, so show a printing of the right card (your own deck's first) rather than a blank frame.
+  return ids.size===1||(exact&&candidates.length)?structuredClone(candidates[0]):null;
  };
 }
 
@@ -293,7 +295,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    // the match instead of before it. The matchup waits briefly so cached deck art shows.
    // Art is read only once its preparation has finished; before that the lookup refuses.
    // The matchup panels get each deck's commander art first, from a small request, before the whole-deck preparation.
-   const preparing=quick.then(()=>prepareArtwork(setup,{isCurrent:current}));preparing.then(()=>{artReady=true;try{if(current())intro?.refreshArtwork();}catch{/* the matchup keeps its placeholder */}try{void warmDeckArt([setup.selected,setup.opponent,...(setup.extraOpponents||[]).map(o=>o?.deck)].filter(Boolean),lookup,{isCurrent:current}).catch(()=>{});}catch{/* warming is optional */}},()=>{});
+   const preparing=quick.then(()=>prepareArtwork(setup,{isCurrent:current}));preparing.then(()=>{artReady=true;try{if(current())intro?.refreshArtwork();}catch{/* the matchup keeps its placeholder */}},()=>{});
    // The table is requested as soon as the starting player is known: Quick Play knows at
    // once, so the host starts while the matchup shows; Practice asks first.
    let input,created=null;

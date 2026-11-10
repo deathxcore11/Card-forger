@@ -258,8 +258,7 @@ if (POD) {
   native.players[0].life = 33; native.turnOrder = [YOU, CPU, 3, 4];
   if (STATE === 'podattack') { native.activePlayer = 3; native.priorityPlayer = YOU; }
 }
-// ?rare=1: every card without art reports a rare printing, so the rare entrance can be seen offline.
-const lookupArtwork = name => { const c = scry.get(name); return c ? {card: Object.freeze(c), finish: null, source: 'existing-catalog-printing', badges: []} : params.get('rare') ? {card: Object.freeze({id: 'fixture-rare', name, rarity: 'rare'}), finish: null, source: 'fixture-rare', badges: []} : null; };
+const lookupArtwork = name => { const c = scry.get(name); return c ? {card: Object.freeze(c), finish: null, source: 'existing-catalog-printing', badges: []} : null; };
 const session = createForgePresentationSession({lookupArtwork, allowControlMode: true, request: async (path, body) => {
   if (body) { console.info('fixture action (not sent)', body); throw Object.assign(Error('Fixture: actions are not sent'), {status: 400}); }
   return null;
