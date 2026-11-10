@@ -745,10 +745,10 @@ private fun SetLens(s: JsonObject, code: String, busy: Boolean, onBack: () -> Un
         (q.isEmpty() || c.name.lowercase().contains(q)) && (rarity.isEmpty() || c.rarity == rarity) && when (filter) { "owned" -> n > 0; "missing" -> n == 0; else -> true } }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val cols = if (maxWidth < 600.dp) 3 else maxOf(4, (maxWidth / 150.dp).toInt())
-        LazyVerticalGrid(GridCells.Fixed(cols), Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 120.dp),
+        LazyVerticalGrid(GridCells.Fixed(cols), Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 120.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Column(Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     PageHeader(name, "Shop · ${code.uppercase()}${row?.released?.take(4)?.let { " · $it" } ?: ""}", onBack = onBack)
                     if (!dual) Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         // Only a set with packs shows one: a Secret Lair you own cards from has no booster to buy or open.

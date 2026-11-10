@@ -129,10 +129,11 @@ fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Uni
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val cols = cardGridCells(maxWidth - 32.dp) // Settings > Card size
             // .pe-coll-list: 18 px between rows, 14 px between columns.
-            LazyVerticalGrid(cols, Modifier.fillMaxSize().gridPinch(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 16.dp, bottom = 120.dp),
+            // Nothing scrolls under the status bar (project rule 4): the grid itself stops below it, as Decks and the Shop do.
+            LazyVerticalGrid(cols, Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars).gridPinch(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 16.dp, bottom = 120.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         // head('Collection', snapshot): the purse sits under the title, as on every Play screen.
                         PlayHead("Collection", "Play", onBack) { if (!DualScreen.active) dev.cardstashy.nativeplay.play.PlayMath.purse(state)?.let { PurseRow(it, level = dev.cardstashy.nativeplay.play.PlayMath.mastery(state, it.xp)) } }
                         // Sets moved to the Shop (Randall 3 Nov 20:00Z), and came back as a switch here (8 Nov: "I can't find a way" to look at sets).
@@ -308,8 +309,9 @@ internal fun FilterBar(f: Trunk.Filter, sort: String, sets: List<Trunk.SetRow>, 
             }
             Select("All types", listOf("" to "All types") + Trunk.TYPES.map { it to it }, f.type) { onFilter(f.copy(type = it)) }
         }
-        // .pe-rarity-tabs: wraps; 44 px pills, 14 px sides, DM Sans 700 13 px; the chosen one gold.
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        // .pe-rarity-tabs: 44 px pills, 14 px sides, DM Sans 700 13 px; the chosen one gold. The site wraps them; here they stay on one
+        // row that scrolls sideways, so "Mythic" is never left alone on a second row at phone width (family T10, Randall's recording 10 Nov).
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Trunk.RARITIES.forEach { (k, l) -> val on = f.rarity == k
                 Box(Modifier.height(44.dp).clip(CircleShape).background(if (on) Color(0x29E8B95B) else Color.Transparent).border(1.dp, if (on) Site.Gold else Site.Line, CircleShape)
                     .clickable { onFilter(f.copy(rarity = k)) }.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
