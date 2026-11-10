@@ -34,5 +34,7 @@ class RuleSheetShotTest {
             RuleConfirm("", "Delete", title = "Delete this Play deck?", onAction = {}, onCancel = {}, danger = true); RuleSheetHost() } }
         captureRoboImage(shot("rulesheet-menu-390")) { Box(Modifier.fillMaxSize().background(Site.Bg)) {
             RuleMenu("Sort", dev.cardstashy.nativeplay.play.Trunk.SORTS.mapIndexed { i, (_, l) -> RuleRow(l, on = i == 0) {} }) {}; RuleSheetHost() } }
+        captureRoboImage(shot("rulesheet-playmat-390")) { Box(Modifier.fillMaxSize().background(Site.Bg)) {
+            dev.cardstashy.nativeplay.ui.PlaymatPicker(startOpen = true); RuleSheetHost() } }
     }
 }

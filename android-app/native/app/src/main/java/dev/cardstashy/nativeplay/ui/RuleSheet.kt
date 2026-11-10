@@ -62,15 +62,15 @@ private fun Portal(content: @Composable () -> Unit) {
 
 /** The panel itself: scrim, glass, grabber, title. A tap outside or B closes. */
 @Composable
-fun RuleSheet(title: String?, onClose: () -> Unit, pad: PadActs = PadActs(b = "Close", opaque = true), content: @Composable ColumnScope.() -> Unit) = Portal {
+fun RuleSheet(title: String?, onClose: () -> Unit, pad: PadActs = PadActs(b = "Close", opaque = true), maxWidth: androidx.compose.ui.unit.Dp = 460.dp, content: @Composable ColumnScope.() -> Unit) = Portal {
     BackHandler(onBack = onClose)
     PadScreen(pad)
     val shape = RoundedCornerShape(Rule.Radius.Sheet)
     // A phone: the sheet sits on the bottom edge, above the nav bar. A wide screen or the Thor's top screen: centred.
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = .7f)).focusProperties { canFocus = false }
         .clickable(remember { MutableInteractionSource() }, null, onClick = onClose).padLayer(), contentAlignment = Alignment.Center) {
-        val low = !DualScreen.active && maxWidth < 600.dp
-        Column(Modifier.align(if (low) Alignment.BottomCenter else Alignment.Center).windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 16.dp, vertical = if (low) 8.dp else 16.dp).widthIn(max = 460.dp).fillMaxWidth().testTag("ruleSheet")
+        val low = !DualScreen.active && this.maxWidth < 600.dp
+        Column(Modifier.align(if (low) Alignment.BottomCenter else Alignment.Center).windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 16.dp, vertical = if (low) 8.dp else 16.dp).widthIn(max = maxWidth).fillMaxWidth().testTag("ruleSheet")
             .clip(shape).background(Rule.Color.Surface).border(1.dp, Rule.Color.Edge, shape)
             .focusProperties { canFocus = false }.clickable(remember { MutableInteractionSource() }, null) {}
             .verticalScroll(rememberScrollState()).padding(start = 18.dp, end = 18.dp, top = 10.dp, bottom = 18.dp),

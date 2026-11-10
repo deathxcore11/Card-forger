@@ -77,14 +77,11 @@ fun PlaymatPicker(modifier: Modifier = Modifier, startOpen: Boolean = false) {
     val mats = remember { Playmats.list(context) }
     var choice by remember { mutableStateOf(Playmats.readChoice(context)) }
     var open by remember { mutableStateOf(startOpen) }
-    var anchor by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
     val name = if (choice == Playmats.ROTATE) "Random" else mats.first { it.first == choice }.second
     val turn by animateFloatAsState(if (open) 180f else 0f, tween(200), label = "chevron")
     // .pl-format>summary + .pl-mat>summary: 44 px pill, 4 12 4 4 padding, the art, "Playmat" over the name, the chevron.
     Row(modifier.height(44.dp).clip(Pill).background(Site.Surface.copy(alpha = .8f)).border(1.dp, PillEdge, Pill)
-        .clickable(onClickLabel = "Change playmat") { open = !open }.onGloballyPositioned { c ->
-            // .pl-mat-sheet hangs from .pl-head-tools (top: 100% + 8px), the whole row of tools, so it never covers Invite.
-            val b = c.boundsInWindow(); anchor = androidx.compose.ui.geometry.Rect(b.left, b.top, b.right, maxOf(b.bottom, c.parentLayoutCoordinates?.boundsInWindow()?.bottom ?: b.bottom)) }
+        .clickable(onClickLabel = "Change playmat") { open = !open }
         .padding(start = 4.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         MatArt(choice, Modifier.size(46.dp, 32.dp).clip(ArtShape).border(1.dp, Color(0x66D6AD64), ArtShape))
@@ -94,54 +91,27 @@ fun PlaymatPicker(modifier: Modifier = Modifier, startOpen: Boolean = false) {
         }
         Chevron(Modifier.size(16.dp).rotate(turn))
     }
-    if (open) Sheet(mats, choice, anchor, onClose = { open = false }) { id -> choice = Playmats.setChoice(context, id); open = false }
+    if (open) Sheet(mats, choice, onClose = { open = false }) { id -> choice = Playmats.setChoice(context, id); open = false }
 }
 
 @Composable
-private fun Sheet(mats: List<Pair<String, String>>, choice: String, anchor: androidx.compose.ui.geometry.Rect, onClose: () -> Unit, onPick: (String) -> Unit) {
-    val d = LocalDensity.current
+private fun Sheet(mats: List<Pair<String, String>>, choice: String, onClose: () -> Unit, onPick: (String) -> Unit) {
     val conf = LocalConfiguration.current
     val screenW = conf.screenWidthDp.dp; val screenH = conf.screenHeightDp.dp
     // @media(max-height:520px) and (orientation:landscape): five across, 12 px labels; phones (max-width 700): two across.
     val short = screenH <= 520.dp && screenW > screenH
     val cols = if (short) 5 else if (screenW <= 700.dp) 2 else 3
     val gap = if (cols == 3) 10.dp else 8.dp
-    // .pl-mat-sheet: right-aligned under the tools, min(720px, 100vw - 32px) wide (left 0 right 0 on phones, where the
-    // button fills its row); max-height min(640px, 100dvh - 260px), 100dvh - 265px on phones, 100dvh - 160px - nav on short landscape.
-    val width = minOf(720.dp, screenW - 32.dp)
-    val maxH = if (short) screenH - 160.dp - 64.dp else if (screenW <= 700.dp) screenH - 265.dp else minOf(640.dp, screenH - 260.dp)
-    val x = with(d) { (anchor.right - width.toPx()).coerceAtLeast(16.dp.toPx()).roundToInt() }
-    val y = with(d) { (anchor.bottom + 8.dp.toPx()).roundToInt() }
-    // @keyframes pl-mat-in: .22 s ease-out, from opacity 0 and 6 px up.
-    val shown = remember { androidx.compose.animation.core.Animatable(if (Motion.still) 1f else 0f) }
-    androidx.compose.runtime.LaunchedEffect(Unit) { shown.animateTo(1f, tween(220, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
-    BackHandler(onBack = onClose)
-    // Placed in window coordinates (the button's own bounds), not relative to the row that holds it.
-    val place = remember(x, y) { object : androidx.compose.ui.window.PopupPositionProvider {
-        override fun calculatePosition(anchorBounds: androidx.compose.ui.unit.IntRect, windowSize: androidx.compose.ui.unit.IntSize, layoutDirection: androidx.compose.ui.unit.LayoutDirection, popupContentSize: androidx.compose.ui.unit.IntSize) = IntOffset(x, y)
-    } }
-    Popup(popupPositionProvider = place, onDismissRequest = onClose, properties = PopupProperties(focusable = true)) {
-        val shape = RoundedCornerShape(20.dp)
-        Box(Modifier.width(width).heightIn(max = maxH.coerceAtLeast(120.dp))
-            .graphicsLayer { alpha = shown.value; translationY = (1f - shown.value) * -6.dp.toPx() }
-            .shadow(60.dp, shape, ambientColor = Color(0xAA000000), spotColor = Color(0xAA000000))
-            .clip(shape).background(Site.Surface.copy(alpha = .97f)).border(1.dp, Site.Line, shape)) {
-            Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp)) {
-                // .pl-format-group: "Choose your playmat".
-                Text("CHOOSE YOUR PLAYMAT", style = sans(11f, FontWeight.Bold, Site.Muted, .14f * 11f), modifier = Modifier.padding(start = 2.dp, end = 2.dp, top = 4.dp, bottom = 8.dp))
-                val all = listOf(Playmats.ROTATE to "Random") + mats
-                all.chunked(cols).forEachIndexed { r, row ->
-                    if (r > 0) Spacer(Modifier.height(gap))
-                    Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
-                        row.forEach { (id, label) -> Tile(id, label, id == choice, short, Modifier.weight(1f)) { onPick(id) } }
-                        repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
-                    }
+    // The one sheet (rulebook R5): the same tiles, titled, on the bottom edge on a phone.
+    RuleSheet("Choose your playmat", onClose, maxWidth = 720.dp) {
+        val all = listOf(Playmats.ROTATE to "Random") + mats
+        Column(verticalArrangement = Arrangement.spacedBy(gap)) {
+            all.chunked(cols).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                    row.forEach { (id, label) -> Tile(id, label, id == choice, short, Modifier.weight(1f)) { onPick(id) } }
+                    repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
                 }
-                Spacer(Modifier.height(24.dp)) // the sticky fade's 40 px less its -16 px margin.
             }
-            // .pl-mat-sheet::after: a 40 px fade into the sheet at its bottom edge.
-            Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(40.dp)
-                .background(Brush.verticalGradient(listOf(Color.Transparent, Site.Surface.copy(alpha = .97f)))))
         }
     }
 }

@@ -294,7 +294,8 @@ private fun SearchBar(b: SearchBlock.Field, query: String, act: CollectionSearch
     var focused by remember { mutableStateOf(false) }
     val focus = LocalFocusManager.current
     val shape = RoundedCornerShape(18.dp)
-    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Column(modifier.fillMaxWidth()) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         // The capsule: 52 tall, 18 corners, a gold-tinted rim (brighter with a halo while typing).
         Box(Modifier.weight(1f).height(52.dp)
             .then(if (focused) Modifier.drawBehind {
@@ -319,11 +320,6 @@ private fun SearchBar(b: SearchBlock.Field, query: String, act: CollectionSearch
                     }
                 })
         }
-        // suggest.js: the list opens under the field (10 in from the screen's edges, 6 below), over the page.
-        if (focused && suggest != null && suggest.items.isNotEmpty()) androidx.compose.ui.window.Popup(
-            popupPositionProvider = remember { SuggestBelow() }, properties = androidx.compose.ui.window.PopupProperties(focusable = false)) {
-            SuggestList(suggest, act)
-        }
         // .ask-launch: the CardStashy mark in a dark gold-rimmed round (with "Ask" beside it from 600).
         b.ask?.let { a ->
             val askShape = if (wide) RoundedCornerShape(999.dp) else CircleShape
@@ -339,6 +335,9 @@ private fun SearchBar(b: SearchBlock.Field, query: String, act: CollectionSearch
                 if (wide) Text(a.label, style = sans(15f, 800, Color(0xFFF6E7C4)))
             }
         }
+    }
+    // suggest.js: the list sits under the field, in the page (rulebook R5), so the focus ring walks into it.
+    if (focused && suggest != null && suggest.items.isNotEmpty()) { Spacer(Modifier.height(6.dp)); SuggestList(suggest, act) }
     }
 }
 
@@ -601,22 +600,13 @@ private fun Fan(b: SearchBlock.Fan, act: CollectionSearchActions, screen: Dp, mo
 /** Screenshots: the Filters (and Advanced) drawn open. */
 object SearchShots { @Volatile var filters = false }
 
-/** Under the search row, as wide as it (at least 320, never wider than the screen less 10 each side), 6 below it. */
-private class SuggestBelow : androidx.compose.ui.window.PopupPositionProvider {
-    override fun calculatePosition(anchorBounds: androidx.compose.ui.unit.IntRect, windowSize: androidx.compose.ui.unit.IntSize, layoutDirection: androidx.compose.ui.unit.LayoutDirection,
-                                   popupContentSize: androidx.compose.ui.unit.IntSize): androidx.compose.ui.unit.IntOffset {
-        val x = anchorBounds.left.coerceAtMost(windowSize.width - popupContentSize.width).coerceAtLeast(0)
-        return androidx.compose.ui.unit.IntOffset(x, anchorBounds.bottom + (anchorBounds.height * 6 / 52))
-    }
-}
-
 /** .suggest (Recent: the names, 44 tall) or .home-suggestions with homeResultRow rows (34 by 47 art, the name in 14, the set line in 11, the price in gold). */
 @Composable
 private fun SuggestList(s: SearchSuggest, act: CollectionSearchActions) {
     val gold = GoldC
     val screenW = LocalConfiguration.current.screenWidthDp.dp
     val shape = RoundedCornerShape(if (s.recent) 14.dp else 20.dp)
-    Column(Modifier.widthIn(min = minOf(320.dp, screenW - 20.dp), max = screenW - 20.dp).heightIn(max = if (s.recent) 320.dp else 450.dp)
+    Column(Modifier.fillMaxWidth().heightIn(max = if (s.recent) 320.dp else 450.dp)
         .drawBehind { outerShadow(Color(0xEE000000), 50f, 24f, -18f, if (s.recent) 14f else 20f) }
         .clip(shape).background(if (s.recent) Brush.verticalGradient(listOf(Color(0xF716181E), Color(0xF716181E))) else Brush.linearGradient(listOf(Color(0xFF1D1F29), Color(0xFF12141B))))
         .border(1.dp, if (s.recent) Color(0x1AFFFFFF) else mix(gold, .26f, Color(0x14FFFFFF)), shape)
