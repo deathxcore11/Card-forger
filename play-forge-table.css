@@ -2619,3 +2619,15 @@ body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forg
  font:600 14px/1.3 'DM Sans',system-ui,sans-serif;color:#fff1cf;background:#120e08e6;border:1px solid #f2c46f88;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 8px 20px #0008}
 @keyframes forge-tt-pulse{50%{opacity:.55}}
 @media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native][data-turn-timer] .forge-turn-ring,:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-turn-count{animation:none}}
+/* Stack item names wrap to two lines instead of cutting ("Dismal Bac…"), Randall 10 Nov. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-native-panel .forge-stack-name{white-space:normal!important;text-overflow:clip!important;overflow:hidden;display:-webkit-box!important;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow-wrap:anywhere}
+/* Conceding waits on an open question: that question pulses behind the dialog (replaces "Finish your current choice first."). */
+body:has(dialog.play-match-exit[data-answer-first]) .play-match-table[data-forge-native] .play-match-decisions [data-native-panel]{animation:forge-answer-first 1.1s ease-in-out infinite;border-radius:14px}
+@keyframes forge-answer-first{0%,100%{box-shadow:0 0 0 0 #e9c46a00}50%{box-shadow:0 0 0 3px #e9c46acc,0 0 22px #e9c46a88}}
+@media (prefers-reduced-motion:reduce){body:has(dialog.play-match-exit[data-answer-first]) .play-match-table[data-forge-native] .play-match-decisions [data-native-panel]{animation:none;box-shadow:0 0 0 3px #e9c46acc}}
+/* A1: a hand card you can't pay for lifts and says how short you are. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-card.forge-refused{translate:0 -14px;transition:translate .16s ease-out;animation:forge-refused-nudge .32s ease-out}
+@keyframes forge-refused-nudge{0%,100%{rotate:0deg}30%{rotate:-2deg}65%{rotate:1.5deg}}
+:where(body.practice-table-open) .forge-short-line{position:fixed;z-index:60;transform:translate(-50%,-100%);padding:5px 11px;border-radius:999px;border:1px solid #ff9a7a66;background:#1a1214ee;color:#ffd6c9;font:700 12.5px/1.2 'DM Sans',system-ui,sans-serif;white-space:nowrap;pointer-events:none;box-shadow:0 6px 18px #0009;animation:forge-short-in .18s ease-out}
+@keyframes forge-short-in{from{opacity:0;transform:translate(-50%,-80%)}to{opacity:1;transform:translate(-50%,-100%)}}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-card.forge-refused{animation:none;transition:none}:where(body.practice-table-open) .forge-short-line{animation:none}}

@@ -19,13 +19,14 @@ try{
  const shown=()=>page.evaluate(()=>{const n=document.querySelector('#practicePlayerMat>.forge-notice');return n?n.textContent:null;});
  const BLOCK='Professional Face-Breaker cannot be blocked with 1 creatures you’ve assigned';
  await push(50,BLOCK);await page.clock.runFor(300);
- assert.equal(await shown(),BLOCK,'a new notice shows');
+ assert.equal(await shown(),'Professional Face-Breaker needs more blockers','a new notice shows, in the rule\u2019s words');
  // Later states still carry the same notice; each one redraws the table.
  for(let r=51;r<=60;r++){await push(r,BLOCK);await page.clock.runFor(800);}
  assert.equal(await shown(),null,'the old notice is gone after its fade and is not brought back by redraws');
  await push(61,'Not enough mana for Army of the Damned');await page.clock.runFor(300);
  assert.equal(await shown(),'Not enough mana for Army of the Damned','a different notice still shows');
- await push(62,null);await page.clock.runFor(300);
+ await page.clock.runFor(2600);assert.equal(await shown(),null,'a refusal goes after 2.5 s');await push(62,'CPU chose Incarnation');await page.clock.runFor(3000);assert.equal(await shown(),'CPU chose Incarnation','other notices stay 5 s');
+ await push(63,null);await page.clock.runFor(300);
  assert.equal(await shown(),null,'a state with no notice clears it');
  console.log('forge table notice fade: ok');
 }finally{await browser.close();server.close();}

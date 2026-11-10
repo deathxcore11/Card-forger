@@ -30,12 +30,15 @@ export function manaValue(cost){
 }
 export const arenaHandOrder=cards=>cards.map((c,i)=>({c,i,land:c.known&&c.types?.includes('Land')?0:1,mv:c.known?manaValue(c.manaCost):Infinity})).sort((a,b)=>a.land-b.land||a.mv-b.mv||a.i-b.i).map(x=>x.c);
 // Forge appends bookkeeping such as "[Phase: CardStashy]" to some stack descriptions.
-export const stackText=t=>String(t||'').replace(/\s*\[Phase: [^\]]*\]/g,'').trim();
+// Forge appends its own bookkeeping in brackets ("[Zone Changer: Dismal Backwater (99)]", "[Phase: ...]"). Players never
+// see it. Loyalty costs ("[+1]", "[−2]") have no "Word:" label, so they stay.
+export const engineNotes=t=>String(t??'').replace(/\s*\[[A-Z][A-Za-z ]{1,30}: [^\]]*\]/g,'').replace(/\bCast from command zone (\d+) times?\b/g,(m,n)=>n==='1'?'Cast once from the command zone':`Cast ${n} times from the command zone`);
+export const stackText=t=>engineNotes(t).trim();
 export function optionLabel(value){
  if(value===null||value===undefined)return 'Unlabelled native option';
- if(['string','number','boolean'].includes(typeof value))return String(value);
+ if(['string','number','boolean'].includes(typeof value))return typeof value==='string'?engineNotes(value).trim():String(value);
  if(value.hidden===true||value.card?.hidden===true)return 'Face-down card';
- return value.description||value.name||value.text||`Native ${value.kind||'option'}${id(value.id)?' #'+value.id:''}`;
+ return engineNotes(value.description||value.name||value.text||`Native ${value.kind||'option'}${id(value.id)?' #'+value.id:''}`).trim();
 }
 export function optionCardId(value){
  const card=value?.card||value;return card&&card.hidden===false&&typeof card.name==='string'&&id(card.id)?card.id:null;
@@ -109,7 +112,7 @@ export function projectForge(raw,{lookupArtwork=()=>null,rivalName=null,selfName
  // Break"). The table says the player's own name and the CPU's deck (Randall, 10 Nov), never the engine's seat names.
  const seatNames=players.map(p=>[String(p.name||''),p.seat===seat?(selfName||''):players.length===2&&rivalName?rivalName:String(p.name||'').replace(/^Forge AI\s*[—-]\s*/,'')||p.label]).filter(([from,to])=>from&&to&&from!==to).sort((a,b)=>b[0].length-a[0].length);
  const people=t=>{let out=String(t||'');for(const [from,to]of seatNames)out=out.split(from).join(to);return out.replace(/\bForge AI\s*[—-]\s*/g,'');};
- for(const c of cards.values())if(c.text)c.text=people(c.text);for(const s of stack)s.text=people(s.text);
+ for(const c of cards.values())if(c.text)c.text=engineNotes(people(c.text));for(const s of stack)s.text=people(s.text);
  const revealedZones=[];
  for(const p of players)for(const zone of ['Hand','Library']){
   if(zone==='Hand'&&p.seat===seat)continue;
