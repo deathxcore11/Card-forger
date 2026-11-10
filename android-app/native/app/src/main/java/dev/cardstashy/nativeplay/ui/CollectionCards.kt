@@ -284,8 +284,11 @@ private fun CollectionCardsActions.pad(r: CollRow): PadActs {
 @Composable
 private fun Modifier.lotPad(r: CollRow, act: CollectionCardsActions): Modifier {
     val acts = remember(r, act) { act.pad(r) }
+    // A copy in a finish shows that finish in the case too (family T2): the same look its tile wears, only when two screens are up.
+    val data = if (DualScreen.active && r.print != null && r.art != null && r.tcgFinish == null) CardData.ready.collectAsState().value else null
+    val look = remember(data, r) { data?.let { Foil.look(it, r.print, Foil.finishFor(r.print, r.finishKey.ifBlank { "nonfoil" })) }?.takeIf { it.shines } }
     // Two screens: the lot's quick look follows the ring onto the bottom screen (A opens the card across both screens).
-    return quickLook { collQuick(r, act) }.padActs(acts)
+    return quickLook { collQuick(r, act, look) }.padActs(acts)
 }
 
 // ---------------------------------------------------------------- site colours (style.css tokens as the live page computes them)
@@ -1379,7 +1382,7 @@ private fun SelectTray(t: CollTray, act: CollectionCardsActions, modifier: Modif
 }
 
 /** A lot's quick look on the bottom screen: the card, its type and words (Magic), what you have, its price and set. */
-internal fun collQuick(r: CollRow, act: CollectionCardsActions): QuickLook {
+internal fun collQuick(r: CollRow, act: CollectionCardsActions, look: Foil.Look? = null): QuickLook {
     fun JsonObject.str(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asString
     val face = r.print?.getAsJsonArray("card_faces")?.firstOrNull() as? JsonObject
     val type = r.print?.str("type_line") ?: face?.str("type_line")
@@ -1391,5 +1394,5 @@ internal fun collQuick(r: CollRow, act: CollectionCardsActions): QuickLook {
         r.set?.title?.takeIf { it.isNotBlank() }?.let { "Set" to (it + if (r.set.label.isNotBlank()) " · " + r.set.label else "") })
     val buttons = listOfNotNull(CaseButton("A", "Open card", gold = true) { act.card(r) },
         if (r.wanted) r.got.takeIf { it.isNotBlank() }?.let { CaseButton("X", "Got it") { act.got(r) } } else CaseButton("X", "Got one") { act.qty(r, 1) })
-    return QuickLook("lot:" + r.id, "Collection · Card", r.name, r.art, type, text, facts, buttons)
+    return QuickLook("lot:" + r.id, "Collection · Card", r.name, r.art, type, text, facts, buttons, look = look, tiltPhase = (r.id.hashCode() and 0xff) / 255f)
 }
