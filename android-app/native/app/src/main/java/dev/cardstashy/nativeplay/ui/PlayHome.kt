@@ -240,7 +240,7 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
             }
             if (!dash) nav()
             // Controller: X = Quick Play's Play. Sideways the nav bar is hidden, so RB goes on to Trunk as its next tab would (Home is the first).
-            PadScreen(PadActs(x = PadAct("Quick Play") { act.mode("quick") }, tabs = if (dash) ({ k: Int -> if (k > 0) act.view("collection") }) else null))
+            PadScreen(PadActs(x = PadAct("Quick Play") { act.mode("quick") }, tabs = if (dash) ({ k: Int -> if (k > 0) act.view("collection") }) else null, root = true))
         }
     }
 }
@@ -1406,7 +1406,8 @@ internal fun DeckBoxCase(deck: JsonObject, owned: Map<String, Int>?, history: Li
     val top = cards.filter { (it.get("name").str() ?: "") !in BASICS }.sortedByDescending { it.get("qty").int() ?: 0 }.take(6)
     val tile = owned?.let { dev.cardstashy.nativeplay.play.Decks.tile(deck, it) }
     ShowcaseCase("Deck · $fmt", deck.get("name").str()?.ifBlank { null } ?: "Untitled deck", trailing = wallet, heroWeight = .34f, buttons = buttons,
-        hero = { Art(cover, Modifier.matchParentSize(), BiasAlignment(0f, -.3f)) }) {
+        // No empty frames: a deck with no cover and no lead card gives its width to the facts.
+        hero = if (cover == null) null else ({ Art(cover, Modifier.matchParentSize(), BiasAlignment(0f, -.3f)) })) {
         Row(horizontalArrangement = Arrangement.spacedBy(26.dp)) {
             CaseFact("Cards", "$count / ${tile?.size ?: deckSize(fmt)}")
             if (tile != null) CaseFact("In your Trunk", "${Math.round(tile.share * 100)}%")
@@ -1566,7 +1567,7 @@ fun SignedOutHome(rules: PlayRules, top: @Composable () -> Unit, onQuickPlay: ()
             }.statusBarsPadding()) { top() }
         }
         // Controller: X = Quick Play, the one mode that runs before sign-in.
-        PadScreen(PadActs(x = PadAct("Quick Play", onQuickPlay)))
+        PadScreen(PadActs(x = PadAct("Quick Play", onQuickPlay), root = true))
     }
 }
 

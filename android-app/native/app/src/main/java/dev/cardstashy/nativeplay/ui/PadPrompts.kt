@@ -93,6 +93,8 @@ class PadActs(
     val opaque: Boolean = false,
     /** The app's own bottom tabs (Play, Collection): their LB/RB give way to any tabs on the page itself, wherever those are composed. */
     val nav: Boolean = false,
+    /** The app's first screen: B has nowhere to go, so no "Back" is shown (fix list E5). */
+    val root: Boolean = false,
 )
 
 object PadPrompts {
@@ -170,6 +172,8 @@ object PadPrompts {
             tabs = tabsFrom?.tabs, tabsLabel = tabsFrom?.tabsLabel ?: "Tabs",
             page = pageFrom?.page, pageLabel = pageFrom?.pageLabel ?: "Page",
             start = pick { it.start }, menu = f?.menu, lift = s.firstOrNull()?.lift ?: 0.dp,
+            // Root only while nothing but the root screen and the app's tabs is up (a sheet over Home still shows its B).
+            root = s.any { it.root } && s.all { it.root || it.nav },
         )
     }
 
@@ -187,7 +191,7 @@ object PadPrompts {
             acts.page?.let { add("LT RT" to acts.pageLabel) }
             acts.menu?.let { add("Select" to it.label) }
             acts.start?.let { add("Start" to it.label) }
-            if (acts.b == null) add("B" to "Back")
+            if (acts.b == null && !acts.root) add("B" to "Back")
         }
         for (t in tail) { if (out.size >= 4) break; if (out.none { it.second.equals(t.second, true) }) out += t }
         return out

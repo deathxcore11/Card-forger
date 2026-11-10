@@ -805,18 +805,20 @@ private fun ZoneSearchDialog(ctx: DockCtx, z: ZoneSearch, draft: MutableList<Int
             verticalArrangement = Arrangement.spacedBy(4.du)) {
             Text(heading, style = ts(14f, 16.1f, FontWeight.Bold, Color(0xFFF5EBD3), Type.Cinzel, .28f), maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (body.isNotEmpty()) Text(body.joinToString("\n") { MatchState.tidy(cpuName(it)) }, style = ts(13f, 19.5f, color = Color(0xFFF4EDDD)))
-            Text("Choose from the ${z.choices.size} card${if (z.choices.size == 1) "" else "s"} offered by this effect.", style = ts(13f, 19.5f, color = Color(0xFFAEBACA)))
+            // One zone for every tile: say it once here, not under each name (reviewer follow-up to B3).
+            val oneZone = z.choices.mapNotNull { it.zone }.distinct().singleOrNull()?.takeIf { z.choices.all { c -> c.zone == it } }
+            if (oneZone != null) Text("From your ${oneZone.lowercase()}", style = ts(13f, 19.5f, color = Color(0xFFAEBACA)))
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 4.du, vertical = 6.du), horizontalArrangement = Arrangement.spacedBy(15.du)) {
                 val firstOn = z.choices.firstOrNull { it.visible }?.index
-                for (c in z.choices) SearchCard(ctx, c, c.index in draft, if (c.index == firstOn) Modifier.padFirst(ctx) else Modifier) { select(p, draft, c.index) }
+                for (c in z.choices) SearchCard(ctx, c, c.index in draft, if (c.index == firstOn) Modifier.padFirst(ctx) else Modifier, showZone = oneZone == null) { select(p, draft, c.index) }
             }
             Text(if (draft.isNotEmpty()) "${draft.size} selected" else "No card selected", style = ts(13f, 19.5f, color = Color(0xFFE9D5AA)), modifier = Modifier.heightIn(min = 20.du))
             if (st.busy) Text("One moment…", style = ts(13f, 19.5f, color = Color(0xFFAEBACA)))
             // Actions: a 17 % gold rule above, right-aligned, 8 apart. A controller's X is the gold Confirm while it can be pressed.
             val confirmOn = !ctx.busy && draft.size >= p.min && draft.size <= p.max
-            PadScreen(PadActs(x = if (confirmOn) PadAct("Confirm selection") { ctx.intents.reply(p.id, null, draft.toList(), null) } else null))
+            PadScreen(PadActs(x = if (confirmOn) PadAct("Confirm") { ctx.intents.reply(p.id, null, draft.toList(), null) } else null))
             Row(Modifier.fillMaxWidth().drawBehind { drawRect(Color(0x2CD6AD64), size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }.padding(top = 12.du), horizontalArrangement = Arrangement.spacedBy(8.du, Alignment.End)) {
-                DockButton("Confirm selection", confirmOn, this@with, Modifier.widthIn(min = 112.du), look = Look.SEARCH_GOLD,
+                DockButton("Confirm", confirmOn, this@with, Modifier.widthIn(min = 112.du), look = Look.SEARCH_GOLD,
                     weight = FontWeight.Bold, disabledAlpha = .42f) { ctx.intents.reply(p.id, null, draft.toList(), null) }
                 if (p.min == 0) DockButton(if (p.cancelable) "Cancel" else "Choose none", !ctx.busy, this@with, Modifier.widthIn(min = 112.du), disabledAlpha = .42f) {
                     ctx.intents.reply(p.id, null, emptyList(), null)
@@ -829,7 +831,7 @@ private fun ZoneSearchDialog(ctx: DockCtx, z: ZoneSearch, draft: MutableList<Int
 
 /** .forge-zone-search-card (2 px edge, 11 px corners; the picture; name and zone at the foot). */
 @Composable
-private fun SearchCard(ctx: DockCtx, c: SearchChoice, chosen: Boolean, modifier: Modifier = Modifier, onPick: () -> Unit) = with(ctx.d) {
+private fun SearchCard(ctx: DockCtx, c: SearchChoice, chosen: Boolean, modifier: Modifier = Modifier, showZone: Boolean = true, onPick: () -> Unit) = with(ctx.d) {
     val shape = RoundedCornerShape(11.du)
     val art = c.artName
     // Wider than the site's 84 × 124 so a name gets two lines (fix list B4).
@@ -845,7 +847,7 @@ private fun SearchCard(ctx: DockCtx, c: SearchChoice, chosen: Boolean, modifier:
             Text(c.name, style = ts(if (art == null) 16f else 12f, 15f, FontWeight.Bold, Color(0xFFF6F0E3)), maxLines = 2, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth().background(Brush.verticalGradient(0f to Color.Transparent, .3f to Color(0xF50C121D)))
                     .padding(start = 7.du, end = 7.du, top = if (art == null) 72.du else 24.du, bottom = 5.du))
-            Text(if (chosen) "Selected" else c.zone ?: "", style = ts(11f, 14.3f, if (chosen) FontWeight.Bold else FontWeight.Normal, if (chosen) Color(0xFFF4CD6B) else Color(0xFFACBDD2)),
+            if (chosen || showZone) Text(if (chosen) "Selected" else c.zone ?: "", style = ts(11f, 14.3f, if (chosen) FontWeight.Bold else FontWeight.Normal, if (chosen) Color(0xFFF4CD6B) else Color(0xFFACBDD2)),
                 maxLines = 1, modifier = Modifier.fillMaxWidth().background(Color(0xF50C121D)).padding(start = 7.du, end = 7.du, bottom = 7.du))
         }
     }

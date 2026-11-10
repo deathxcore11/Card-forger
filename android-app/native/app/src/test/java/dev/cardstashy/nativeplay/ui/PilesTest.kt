@@ -32,4 +32,12 @@ class PilesTest {
         val cs = List(3) { c("Soldier", "Creature", token = true) } + c("Soldier", "Creature", token = true, counters = mapOf("P1P1" to 1))
         assertEquals(listOf(3, 1), piles(cs).map { it.size })
     }
+
+    /** A lone card sits on its slot; only a pile's upper cards step right and up, at most three edges. */
+    @Test fun aLoneCardIsNotSteppedOffItsSlot() {
+        assertEquals(0, pileEdge(0, 1))
+        assertEquals(listOf(0, 1), List(2) { pileEdge(it, 2) })
+        assertEquals(listOf(0, 1, 2, 3), List(4) { pileEdge(it, 4) })
+        assertEquals(listOf(0, 0, 0, 1, 2, 3), List(6) { pileEdge(it, 6) })
+    }
 }

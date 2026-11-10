@@ -407,14 +407,15 @@ fun ForgeBoard(
                     PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, rowX, mid - 77.5f.du * stretch, W - 180.du - lane, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) })
                     PermanentRow(others(cpu.battlefield), false, 0, rowX, mid - 34.du * stretch, W - 180.du - lane, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) })
                     PermanentRow(others(me.battlefield), false, 0, rowX, mid + 27.du * stretch, W - 180.du - lane, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) })
-                    PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, rowX, mid + 71.5f.du * stretch, minOf(W - 300.du, W - 180.du - lane), d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) })
+                    // Your back row also ends left of your piles, which stand left of the stack while it is up.
+                    PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, rowX - lane * (24f / 132f), mid + 71.5f.du * stretch, minOf(W - 300.du, W - 180.du - lane * (180f / 132f)), d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) })
                 }
             }
 
             // Piles: yours right of your back row, the CPU's left of its back row.
             // While the side dock asks (it sits bottom right, 168 du wide), your piles slide left of it so their cards and counts stay in view.
             val docked = live && st.failure == null && !st.finished && st.prompt?.let { p -> p.method != "order" && !p.method.startsWith("assign") && p.options.none { it.zone in setOf("Library", "Graveyard", "Exile") } } == true
-            val pilesX by androidx.compose.animation.core.animateDpAsState(if (docked) W - 262.du else W - 120.du, tween(if (Motion.still) 0 else 220), label = "pilesX")
+            val pilesX by androidx.compose.animation.core.animateDpAsState(if (docked || st.stack.isNotEmpty()) W - 262.du else W - 120.du, tween(if (Motion.still) 0 else 220), label = "pilesX")
             Piles(me, mine = true, Modifier.offset(x = pilesX, y = if (large) mid + 60.dp else mid + 46.du * stretch), d, onInspect)
             if (!pod) Piles(cpu, mine = false, Modifier.offset(x = 44.du, y = if (large) mid - 120.dp else mid - 104.du * stretch), d, onInspect)
 
@@ -662,9 +663,10 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
             pile.forEachIndexed { j, card ->
                 key(card.id) {
                     // Cards below the four showing edges hide under the bottom one; a card joining or leaving a pile re-lays out in 260 ms.
-                    val e = maxOf(0, j - (pile.size - PILE_EDGES))
+                    val e = pileEdge(j, pile.size)
                     val ax by androidx.compose.animation.core.animateDpAsState(px + step * e, tween(260, easing = FastOutSlowInEasing), label = "px")
-                    val ay by androidx.compose.animation.core.animateDpAsState(-rise * e, tween(260, easing = FastOutSlowInEasing), label = "py")
+                    // Every pile's top card sits on the row's line (three rises up, as the rows were tuned); the cards under it hang below.
+                    val ay by androidx.compose.animation.core.animateDpAsState(-rise * (e + (PILE_EDGES - 1) - pileEdge(pile.lastIndex, pile.size)), tween(260, easing = FastOutSlowInEasing), label = "py")
                     Tile(card, w, h, land, markOf(card), mine, lookup, tapOf(card), onInspect, Modifier.offset(x = ax, y = ay).zIndex(j.toFloat()), d,
                         count = if (j == pile.lastIndex && pile.size > 1) pile.size else 1, piece = piece, pileTop = j == pile.lastIndex)
                 }
@@ -712,6 +714,8 @@ private fun ThroughChip(t: Through, life: Int, modifier: Modifier, d: Du) = with
 
 /** At most this many card edges show in a pile. */
 internal const val PILE_EDGES = 4
+/** How many edges right (and up) of the pile's bottom card the [j]th of [size] sits: 0 for a lone card, at most PILE_EDGES - 1 for the top. */
+internal fun pileEdge(j: Int, size: Int): Int = maxOf(0, j - maxOf(0, size - PILE_EDGES))
 
 /**
  * Table additions 2 (tidy board): identical permanents share a pile only when everything the player can see is the same: name, tapped,
@@ -1144,7 +1148,8 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
         if (top.ability) {
             val on = top.yielded
             val lock = st.prompt != null || st.inputType == "InputLockUI"
-            Box(Modifier.offset(y = 34.du + 145.du - 42.du).width(36.du).wrapContentWidth(Alignment.End, unbounded = true)) {
+            // Above the top card, clear of the battlefield rows (reviewer follow-up to B6).
+            Box(Modifier.offset(x = 44.du, y = 34.du - 26.du).width(104.du).wrapContentWidth(Alignment.CenterHorizontally, unbounded = true)) {
                 Box(Modifier.clip(RoundedCornerShape(999.dp))
                     .background(if (on) Brush.verticalGradient(listOf(Color(0xFFF6DC9A), Color(0xFFD9A64A))) else Brush.verticalGradient(listOf(Color(0x0DFFFFFF), Color(0x0DFFFFFF))))
                     .semantics { contentDescription = if (on) "Stop yielding to this ability" else "Pass on this ability every time it is on top, until end of turn. Targets and choices still stop."; role = Role.Button; stateDescription = if (on) "On" else "Off" }
@@ -1185,6 +1190,8 @@ private fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier, 
     val rim = if (target) Color(0xFFFF9D5C) else if (mine) Gold else CpuRed
     val src = s.source
     val ability = s.ability || src == null || src.zone != "Stack"
+    // Forge writes an ability as "Source — rules text"; with no source card that lead is the name (fix list B7).
+    val name = src?.name ?: stackSourceName(s.text)
     val w = 104.du; val h = 145.du
     Box(modifier.size(w, h)) {
         Box(Modifier.fillMaxSize().drawBehind {
@@ -1193,8 +1200,9 @@ private fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier, 
             .clickable(enabled = target || src != null) { if (target) pick!!(s.id) else src?.let(onInspect) }) {
             if (!ability && src != null) CardImage(src.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             else Column(Modifier.fillMaxSize().padding(4.du)) {
-                Text((src?.name ?: "Ability"), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(9.5f), color = Color(0xFFF3E7C6)), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Box(Modifier.padding(top = 3.du).fillMaxWidth().height(52.du).clip(RoundedCornerShape(3.du))) { src?.let { CardImage(it.name, Modifier.fillMaxSize(), crop = true) } }
+                Text((name ?: "Ability"), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(9.5f), color = Color(0xFFF3E7C6)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                // The source's art when there is a source card; no empty frame without one.
+                if (src != null) Box(Modifier.padding(top = 3.du).fillMaxWidth().height(52.du).clip(RoundedCornerShape(3.du))) { CardImage(src.name, Modifier.fillMaxSize(), crop = true) }
                 Text(if (s.text.contains("Whenever") || s.text.contains("When ") || s.text.contains("At the beginning")) "Triggered ability" else "Activated ability",
                     style = sans(sp(9f), FontWeight.SemiBold, Color(0xFFD8C9A6)).copy(fontStyle = FontStyle.Italic), modifier = Modifier.padding(top = 3.du))
                 Box(Modifier.padding(top = 3.du).fillMaxWidth().height(1.dp).background(rim.copy(alpha = .5f)))
@@ -1205,6 +1213,9 @@ private fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier, 
             .border(2.dp, Color(0xFFFFF3CF), RoundedCornerShape(999.dp)).padding(horizontal = 5.du)) { Text("×$n", style = sans(sp(11f), FontWeight.Bold, Color(0xFF2A1D05))) }
     }
 }
+
+/** The source's name Forge leads a stack entry's text with ("Soul Warden — Whenever…"), or null. */
+internal fun stackSourceName(text: String): String? = text.substringBefore(" \u2014 ", "").trim().takeIf { it.isNotEmpty() && it.length <= 60 }
 
 // ---- Controller (PadPrompts): the gold ring and A for things that answer touch with their own gestures ----
 
