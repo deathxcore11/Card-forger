@@ -643,6 +643,10 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Triggers" to "When a card triggers it lifts with a ring (gold yours, coral the CPU's), waits on the stack long enough to read, then its result lands on the cards: counters, power and toughness, tokens.",
+    "Match table" to "The rope is gone: your time is a ring around the gold button and the prompt buttons, coral with a sound in the last 10 seconds.",
+    "Match table" to "No stop for a CPU spell you can't answer. A card you can cast in answer lights up. Your Main 1 is no longer skipped after your own trigger. An optional pay {1} trigger you can't afford is declined for you and says so.",
+    "Match table" to "Art for renamed cards and tokens, the whole target prompt on two screens, nothing picked for you in a discard, and the cursor no longer picks things behind a card view.",
     "Controllers" to "On the match table the ring always comes back to your hand: A picks a card up, A again plays or casts it, and its mana pays itself when it can. X presses the gold button, which shows its X.",
     "Match table" to "The table only waits when you have a real move; otherwise it moves on at its normal pace. The turn and discard clocks count down, and a card you look at on the bottom screen no longer stops them.",
     "Match table" to "Seats are You and CPU everywhere, never the engine's names. A cleanup discard starts with nothing picked.",
