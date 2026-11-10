@@ -10,10 +10,10 @@
 #   app/src/main/assets/random-build-web.js  the same builder for the WebView (RandomBuild.kt runs it there first)
 #   app/src/main/assets/collection-engine.js  the site's Collection Home code for QuickJS (same npm tools)
 #
-#   ENGINE_TGZ  engine build (default: the pods build plus the lesson match setup, forge-engine/rebuild-bridge.sh)
+#   ENGINE_TGZ  engine build (default: the pods build plus the lesson match setup and the payment busy-settle fix, patches/setup-stack-busy-settle-on-0dbf4041.patch via forge-engine/rebuild-bridge.sh)
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")/.." && pwd); REPO=$(cd "$HERE/../.." && pwd)
-ENGINE_TGZ=${ENGINE_TGZ:-/mnt/project-files/android/forge-engine-build/forge-engine-android-e5a0f81-pods-setup.tgz}
+ENGINE_TGZ=${ENGINE_TGZ:-/mnt/project-files/android/forge-engine-build/forge-engine-android-e5a0f81-pods-busyfix.tgz}
 A="$HERE/app/src/main/assets"; T=$(mktemp -d)
 rm -rf "$HERE/engine-libs" "$A"; mkdir -p "$HERE/engine-libs" "$A/forge-engine" "$A/forge-rules-seed" "$A/cards" "$A/play" "$A/sfx"
 tar -xzf "$ENGINE_TGZ" -C "$T"
