@@ -49,7 +49,7 @@
     {
       "path": "reviewed-host.mjs",
       "bytes": 2132,
-      "sha256": "55552f95d6fa189129bbd202a3f70f5177073908156b5fbb3974856a4e774856"
+      "sha256": "bc1fbea3c657a8e99fed1d22b78a8d14405f3d7448c403de2e8dc33749e64a33"
     },
     {
       "path": "schema.json",
@@ -59,17 +59,17 @@
     {
       "path": "test-fixtures.mjs",
       "bytes": 7478,
-      "sha256": "baeb91aef0650ef9ce2fed00f5c62329a8d2784d21226b2bdacf831f745c5c1f"
+      "sha256": "f44b018ac8ce846d634649eb26275e5733685dfb71d1355b699df953ca56f2ed"
     },
     {
       "path": "test-local-oci.mjs",
       "bytes": 13461,
-      "sha256": "c0879b2ec6b3275541a1db69aa8b50a7a85a9726705fa4aea7164c0246b01f03"
+      "sha256": "436b1bddbfd39635d85e72ffb213234564e3daf2e13a3c4ec30354f393bbd627"
     },
     {
       "path": "test-provider.mjs",
       "bytes": 14267,
-      "sha256": "3f6fcffb1f6b473a728072b80af9034d241fdd3a067c618207983ff44728b600"
+      "sha256": "0bd01d6935bc39729e1888eef29d7f76f06e57d7910515f3244327155810cdea"
     },
     {
       "path": "test-relay.py",

@@ -28,7 +28,7 @@ def compose(native,expected,destination,bootstrap):
   files['native/'+('CONTRACT.md' if name=='adapter/CONTRACT.md' else name)]=data
  if sha(files['native/cpu/combined-native-ai.patch'])!='cd14c95185c4bfd44e90a809a6095f2027f23d102c1cf04464533ca545a0a4b1':raise ValueError('AI patch mismatch')
  if sha(files['native/cpu/runtime-sha256.json'])!='e39ea6388050f31319b121c0605fde23069d35e7133a203fd19f0a6c72528f80':raise ValueError('AI class manifest mismatch')
- if sha(files['native/rules-data/current/manifest.json'])!='280321c01972283bac2fb250adca154eef534aac8f1c26b6824f07bebbc72ead':raise ValueError('rules manifest mismatch')
+ if sha(files['native/rules-data/current/manifest.json'])!='8b321264a13950b2cc730beba222b7a0a8d6d0514ee394e95cba44aaa46ceeb3':raise ValueError('rules manifest mismatch')
  bootstrap_bytes=regular(bootstrap)
  if sha(bootstrap_bytes)!=BOOTSTRAP:raise ValueError('bootstrap mismatch')
  source_sha=declared['adapter/src/cardstashy/forge/ForgeHttpBridge.java']
