@@ -110,9 +110,9 @@ class CastTravelControllerTest {
         val paused = board(11, true, listOf(move))
         val next = board(12, true, listOf(move, cast))
 
-        // The plan: the move is the cast (its think, flight and rest); the cast event after it adds nothing.
+        // The plan: the move is the cast (its think, flight, pop and rest); the cast event after it adds nothing.
         val plan1 = Director.plan(paused, paused.events, before = before)
-        assertEquals(listOf(Director.Leg.TO_STACK, Director.Leg.REST), plan1.mapNotNull { it.travel?.leg })
+        assertEquals(listOf(Director.Leg.TO_STACK, Director.Leg.POP, Director.Leg.REST), plan1.mapNotNull { it.travel?.leg })
         assertEquals("CPU casts Grizzly Bears", plan1.single { it.beat != null }.beat?.title)
         assertEquals(77, plan1.first { it.travel != null }.travel?.stackId)
         assertTrue(Director.plan(next, listOf(cast), before = paused).none { it.travel != null || it.beat != null })

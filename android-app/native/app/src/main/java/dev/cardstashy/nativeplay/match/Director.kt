@@ -44,7 +44,9 @@ object Director {
      * [TO_SLOT], [TO_HOST] (an aura onto its creature) and [TO_GROUP] (a land, which skips the stack) end at the anchor [toKey].
      */
     /** BACK (T6): Cancel while the spell asked; from the stack back to its place in your hand. */
-    enum class Leg { TAPS, TO_STACK, REST, TO_SLOT, TO_HOST, TO_GROUP, BACK,
+    enum class Leg { TAPS, TO_STACK,
+        /** Mobile table M6: a CPU cast, at the stack, grows large to be read ([POP_GROW_MS]), holds ([POP_HOLD_MS]) and returns to stack size ([POP_SHRINK_MS]) before its lands pay. */
+        POP, REST, TO_SLOT, TO_HOST, TO_GROUP, BACK,
         /** Match punch P2b: lands you tapped by hand ([Travel.taps]) send their light to the floating mana by your square. */
         TO_POOL,
         /** P2b: Forge's Undo took the taps back: the lands ([Travel.taps]) turn back with a gold glint and the light returns to them. */
@@ -191,16 +193,22 @@ object Director {
             // P2b: floating mana you made by hand and this cast spent: its streaks leave the pool by your square, before the lands'.
             val pool = if (mine) poolSpent.also { poolSpent = 0 } else 0
             if (!(mine && id != null && id == waitingUp)) out += Step(Kind.CAST, TO_STACK_MS, TO_STACK_MS, cpu = !mine, cardId = id, cardName = name, travel = Travel(id, name, mine, Leg.TO_STACK, "stackcard", TO_STACK_MS, e.stackId, targets = e.targets))
+            // M6 (measured from Arena): the CPU's card comes out at stack size, grows large and is held to be read with its caption,
+            // then returns to stack size while its lands pay. Your own card you have just held; it does not pop.
+            val pop = !mine
+            if (pop) out += Step(Kind.CAST, POP_MS, POP_MS, focal = true, cpu = true, cardId = id, cardName = name, beat = beat,
+                travel = Travel(id, name, false, Leg.POP, "stackcard", POP_MS, e.stackId, targets = e.targets))
             if (taps.isNotEmpty() || pool > 0) { val ms = payMs(taps.size + pool)
                 out += Step(Kind.CAST, ms, PAY_MIN_MS, cpu = !mine, cardId = id, cardName = name, travel = Travel(id, name, mine, Leg.TAPS, "stackcard", ms, e.stackId, taps, pool = pool)) }
             val restMs = BURST_MS + readMs
-            out += Step(Kind.CAST, restMs, BURST_MIN_MS + CAST_READ_PROMPT_MS, focal = true, cpu = !mine, cardId = id, cardName = name, beat = beat,
+            out += Step(Kind.CAST, restMs, BURST_MIN_MS + (if (pop) 0L else CAST_READ_PROMPT_MS), focal = true, cpu = !mine, cardId = id, cardName = name, beat = if (pop) null else beat,
                 travel = Travel(id, name, mine, Leg.REST, "stackcard", restMs, e.stackId, targets = e.targets, power = if (taps.isEmpty() && pool == 0) .5f else 1f))
         }
         /** The CPU plays a land: its think, then the land from its seat to its group with the caption. */
         fun cpuLand(card: Ref?, turn: Int) {
             thinkFor(Decision.LAND, turn)
-            out += Step(Kind.LAND, 850, 550, "CARD-005", focal = true, cpu = true, cardId = card?.id, cardName = card?.name,
+            // M6: a land flies 500 and the table pauses 500.
+            out += Step(Kind.LAND, TO_GROUP_MS + 500, 550, "CARD-005", focal = true, cpu = true, cardId = card?.id, cardName = card?.name,
                 beat = Beat(Beat.Kind.LAND, "CPU plays ${card?.name ?: "a land"}", card?.id, card?.name, null),
                 travel = Travel(card?.id, card?.name, false, Leg.TO_GROUP, card?.id?.let { "c$it" }, TO_GROUP_MS))
         }
@@ -220,7 +228,8 @@ object Director {
             if (life != null) explainedLife = true
             // P2: the card goes from the CPU seat to the stack, its lands pay into it, then it bursts and rests there with the caption:
             // its arrows 300 + the read (525, or 500 before your prompt).
-            val read = (if (targeted) 300L else 0L) + if (waiting) CAST_READ_PROMPT_MS else CAST_READ_MS
+            // M6: the read is the pop (the card large, with the caption); after the burst only its arrows' 300 remain.
+            val read = if (targeted) 300L else 0L
             castLegs(e, mine = false, readMs = read, beat = Beat(if (hits) Beat.Kind.AFFECTS_YOU else Beat.Kind.ACTION, "CPU casts ${e.source?.name ?: "a spell"}", e.source?.id, e.source?.name,
                     if (hits) targetText(st, e.targets) else null, life?.first, life?.second))
         }
@@ -426,7 +435,19 @@ object Director {
     const val CAST_READ_PROMPT_MS = 500L
     /** P2, Lift: the card dips 10 dp and shrinks 4 % ([LIFT_MS]), then flies to the stack with a small overshoot (300). */
     const val LIFT_MS = 70L
-    const val TO_STACK_MS = 370L
+    const val TO_STACK_MS = 200L
+    /** Mobile table M6 (measured from Arena): out to stack size 200, grow 300, hold 650, shrink 200, the lands pay, drop 400. */
+    const val POP_GROW_MS = 300L
+    const val POP_HOLD_MS = 650L
+    const val POP_SHRINK_MS = 200L
+    const val POP_MS = POP_GROW_MS + POP_HOLD_MS + POP_SHRINK_MS
+    /** How far along its pop a card is at [ms]: 0 at stack size, 1 large. */
+    fun popAt(ms: Long): Float = when {
+        ms <= 0L || ms >= POP_MS -> 0f
+        ms < POP_GROW_MS -> (1f - ms.toFloat() / POP_GROW_MS).let { 1f - it * it * it }
+        ms <= POP_GROW_MS + POP_HOLD_MS -> 1f
+        else -> ((POP_MS - ms).toFloat() / POP_SHRINK_MS).let { it * it * (3f - 2f * it) }
+    }
     /** T5 items 4 to 6: stack to its slot, stack to its host, a land from the hand to its group. */
     /**
      * Match punch P4, the turn banner: 280 in (from half size with a bounce over a widening streak), held to 950, 240 out. The
@@ -436,9 +457,9 @@ object Director {
     const val BANNER_LEAD_MS = 380L
     /** Match punch P3: on the stack the card rises 6 % and 12 dp ([RISE_MS]), then dives to its slot, accelerating (240). */
     const val RISE_MS = 90L
-    const val TO_SLOT_MS = 330L
-    const val TO_HOST_MS = 380L
-    const val TO_GROUP_MS = 380L
+    const val TO_SLOT_MS = 400L
+    const val TO_HOST_MS = 400L
+    const val TO_GROUP_MS = 500L
 
     /** Beat 1, the source's lift and ring (sTrig: 180 up, 260 held, 180 down; the ring 520 ms). */
     const val SOURCE_MS = 520L

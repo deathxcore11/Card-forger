@@ -1922,6 +1922,8 @@ internal fun TravelCard() {
     val anchors = LocalAnchors.current ?: return
     val name = t.name ?: return
     val toStack = t.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_STACK
+    // Mobile table M6: a CPU cast grows from the stack card to be read (82 % of the height on a phone, 64 % on a big screen), is held, and returns.
+    val pop = t.leg == dev.cardstashy.nativeplay.match.Director.Leg.POP
     val fromHand = toStack || t.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_GROUP
     // T6: Cancel, from the stack back to its place in your hand (on two screens, off the bottom edge to the hand below).
     val back = t.leg == dev.cardstashy.nativeplay.match.Director.Leg.BACK
@@ -1951,6 +1953,17 @@ internal fun TravelCard() {
     }
     fun frame(): Rect? {
         anchors.version.intValue
+        if (pop) {
+            val a = anchors.rects["stackcard"] ?: return null
+            if (self.isEmpty) return a
+            val dp = density.density
+            val h = self.height * (if (ZoneLayout.phone(self.width / dp, self.height / dp)) ZoneLayout.POP_PHONE else ZoneLayout.POP_BIG)
+            val w = h * a.width / a.height.coerceAtLeast(1f)
+            val to = Offset(self.right - w / 2 - 10f * dp, self.center.y)
+            val e = dev.cardstashy.nativeplay.match.Director.popAt((p.floatValue * t.ms).toLong())
+            val c = lerpO(a.center, to, e); val cw = a.width + (w - a.width) * e; val ch = a.height + (h - a.height) * e
+            return Rect(c.x - cw / 2, c.y - ch / 2, c.x + cw / 2, c.y + ch / 2)
+        }
         val b = if (back) { val s = anchors.rects["stackcard"] ?: return null
             if (dual) Rect(self.center.x - s.width / 2, self.bottom, self.center.x + s.width / 2, self.bottom + s.height)
             else t.toKey?.let { anchors.rects[it] } ?: anchors.rects["hand"] ?: return null } else t.toKey?.let { anchors.rects[it] } ?: return null
@@ -1992,7 +2005,7 @@ internal fun TravelCard() {
             .semantics { contentDescription = "$name on its way" }
             .clip(shape).background(Color(0xFF141418)).border(2.dp, rim, shape)) {
             // Into a tile the whole card gives way to its art as it shrinks.
-            val crop = !fromHand
+            val crop = !fromHand && !pop
             CardImage(name, Modifier.fillMaxSize().graphicsLayer { if (crop) alpha = 1f - smooth(.35f, .9f, p.floatValue) }, crop = false)
             if (crop) CardImage(name, Modifier.fillMaxSize().graphicsLayer { alpha = smooth(.35f, .9f, p.floatValue) }, crop = true)
             if (!t.mine && fromHand) Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (p.floatValue < .3f) 1f else 0f }) { CardBack(Modifier.fillMaxSize()) }

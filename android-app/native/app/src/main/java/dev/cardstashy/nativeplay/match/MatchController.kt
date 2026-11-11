@@ -467,7 +467,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                                 held.add(0, item); putUp[id] = item
                             }
                         }
-                        Director.Leg.BACK, Director.Leg.UNTAP -> {}
+                        Director.Leg.BACK, Director.Leg.UNTAP, Director.Leg.POP -> {}
                         Director.Leg.TO_SLOT, Director.Leg.TO_HOST, Director.Leg.TO_GROUP -> t.cardId?.let { id ->
                             field.remove(id); hidden.remove(id)
                             putUp.remove(id)?.let { item -> held.removeAll { it === item } }

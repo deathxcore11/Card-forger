@@ -8,7 +8,7 @@ import org.junit.Test
 /** Match punch P3, the landing: its timings and the spring a squashed tile and its neighbours ride back on. */
 class PunchLandTest {
     @Test fun theDiveIsARiseOf90AndADiveOf240() {
-        assertEquals(90L, Director.RISE_MS); assertEquals(330L, Director.TO_SLOT_MS)
+        assertEquals(90L, Director.RISE_MS); assertEquals(400L, Director.TO_SLOT_MS) // mobile table M6: the drop is 400
         assertEquals("neighbours spring for 620 ms", 620L, IMPACT_MS)
     }
 
