@@ -42,6 +42,7 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -438,8 +439,17 @@ fun ForgeBoard(
             // and bars are already off): the two strips, the hand tray, and the board is what is left (ZoneLayout).
             val zones = remember(W, H, DualScreen.active, u) { ZoneLayout.of(W.value, H.value, dual = DualScreen.active, k = u) }
             fun ZoneLayout.Box.at() = Modifier.offset(x = x.dp, y = y.dp)
-            // The gold button's top: 44 du above the bottom of the actions corner.
-            val goldY = zones.actions.bottom.dp - 44.du
+            // 0.4.60 Z6: the gold button and the quiet row above it are 44 dp tall at the least (touch targets; ZoneLayout.BUTTON).
+            val btnH = maxOf(44.du, ZoneLayout.BUTTON.dp)
+            // The gold button's top: its height above the bottom of the actions corner.
+            val goldY = zones.actions.bottom.dp - btnH
+            // Z6: the three-dot menu beside the quiet button (Yield), open or not, and the ring's way into its first line.
+            var dotsOpen by remember { mutableStateOf(false) }
+            // Opened by the controller (LT): its first line takes the ring; a finger's tap leaves the ring where it was.
+            var dotsByPad by remember { mutableStateOf(false) }
+            val dotsFocus = remember { FocusRequester() }
+            val dotsMenu = TableActions.menu(st, live)
+            if (dotsMenu.isEmpty() && dotsOpen) dotsOpen = false
             // 0.4.60 Z2: the four rows in the board, their heights fixed from the usable height (TableGeometry.rows): each side hugs
             // its own edge. A pod's opponent rail runs along the top.
             val rowsG = TableGeometry.rows(DualScreen.active, zones.board.y + (if (pod) 58.du.value else 0f), zones.board.bottom, zones.hb)
@@ -605,7 +615,7 @@ fun ForgeBoard(
                     override val minimumTouchTargetSize get() = androidx.compose.ui.unit.DpSize(vc.minimumTouchTargetSize.width / s, vc.minimumTouchTargetSize.height / s) } }
                 androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalViewConfiguration provides fanVc) {
                     StackFan(if (lane === st.stack) st else st.copy(stack = lane), Modifier.offset(x = cardX - 44.du * s, y = cardY - 34.du * s)
-                        .graphicsLayer { scaleX = s; scaleY = s; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f) }, d, onInspect, live, intents.yieldSource, intents.stack,
+                        .graphicsLayer { scaleX = s; scaleY = s; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f) }, d, onInspect, live, intents.stack,
                         room = spare / s, labelMax = (W - 16.dp - cardX) / s, stepX = 0.dp)
                 }
                 StackArc(st, d)
@@ -681,14 +691,17 @@ fun ForgeBoard(
             // never takes board width (on the Thor's top the gold button stays in the right strip, its label cut with … as BB8).
             fun clearOf(top: Dp, bottom: Dp, gap: Dp): Dp = listOfNotNull(zones.board, zones.handTray, zones.handChip)
                 .filter { it.y.dp < bottom && it.bottom.dp > top }.maxOfOrNull { it.right.dp }?.let { (zones.actions.right.dp - gap - it).coerceAtLeast(0.dp) } ?: Dp.Infinity
-            // The gold button with its turn ring (6 du out) and the quiet pill above it (36 du tall, 42 above the gold one's top).
-            val goldClear = clearOf(goldY - 6.du, goldY + 44.du + 6.du, 8.du)
-            val quietMax = clearOf(goldY - 42.du, goldY - 6.du, 4.du)
+            // The gold button with its turn ring (6 du out) and the quiet row above it (Z6: [btnH] tall, 6 du above the gold one's top),
+            // the three-dot button ([btnH] square) at that row's right end when its menu has a line, the quiet pill left of it.
+            val dotsShown = dotsMenu.isNotEmpty()
+            val dotsW = if (dotsShown) btnH + 6.du else 0.dp
+            val goldClear = clearOf(goldY - 6.du, goldY + btnH + 6.du, 8.du)
+            val quietMax = (clearOf(goldY - 6.du - btnH, goldY - 6.du, 4.du) - dotsW).coerceAtLeast(0.dp)
             val askMax = if (askText != null && askRight != Dp.Unspecified) (W - goldInset - askRight - 12.du).coerceAtLeast(138.du) else Dp.Infinity
             val goldMax = minOf(goldClear, askMax)
             // With Attack all the gold button stands in the quiet one's row, and Attack all (a glass pill) 8 du into the gold one's.
-            val upperGoldMax = minOf(clearOf(goldY - 48.du, goldY + 8.du, 8.du), askMax)
-            val attackAllMax = clearOf(goldY + 8.du, goldY + 44.du, 4.du)
+            val upperGoldMax = (minOf(clearOf(goldY - 12.du - btnH, goldY + 8.du, 8.du), askMax) - dotsW).coerceAtLeast(0.dp)
+            val attackAllMax = clearOf(goldY + 8.du, goldY + btnH, 4.du)
             // The hand chip (two screens) is centred on the hand; on a phone-sized table it shares the gold button's height and stops
             // 12 du short of where the gold button starts (BB8: "Discard Ultimate Magic: Mete…" ran under it).
             val goldDensity = LocalDensity.current
@@ -820,12 +833,21 @@ fun ForgeBoard(
                 // native-panel.mjs "Attack all": every creature Forge offers joins, one tap each, in order.
                 val offered = if (st.inputType == "InputAttack") st.selection.cards.mapNotNull { st.card(it) }.filter { it.zone == "Battlefield" && it.controller == st.viewer && !it.attacking } else emptyList()
                 val attackAll = offered.isNotEmpty() && st.selection.cards.size >= 2
+                // 0.4.60 Z6: the corner's words and presses (TableActions: the same branches as before, unit tested in TableActionsTest).
+                val corner = TableActions.of(st, live, selected, tucked, discardingNow)
+                fun press(a: TableActions.Action): () -> Unit = when (a.press) {
+                    TableActions.Press.OK -> ({ intents.ok() })
+                    TableActions.Press.CANCEL -> ({ intents.cancel() })
+                    TableActions.Press.PLAY -> ({ if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok() })
+                    TableActions.Press.ATTACK_ALL -> ({ intents.attackAll(offered.map { it.id }) })
+                }
                 // 0.4.60 Z1: the buttons stand in the right strip's bottom corner on every board (a big board's one row 180 above the
                 // bottom ran across your back row once the board took the full height): the gold step at the bottom, the quiet one above
-                // it, right edges 8 du in (the strip's padding), as the site's phone dock.
-                val goldTop = goldY; val quietTop = goldTop - 42.du
+                // it, right edges 8 du in (the strip's padding), as the site's phone dock. Z6: the quiet row is [btnH] tall, 6 du above
+                // the gold one, and stands left of the three-dot button when that shows ([dotsW]).
+                val goldTop = goldY; val quietTop = goldTop - 6.du - btnH
                 val edge = W - zones.actions.right.dp
-                val upperM = Modifier.align(Alignment.TopEnd).offset(x = -edge, y = quietTop)
+                val upperM = Modifier.align(Alignment.TopEnd).offset(x = -(edge + dotsW), y = quietTop)
                 // The quiet pill in that spot reports its width, so the phone's turn count can stand left of it.
                 val quietM = upperM.onSizeChanged { quietW = with(goldDensity) { it.width.toDp() } }.anchorRect("quiet")
                 val cancelM = if (targeting) quietM.focusRequester(cancelFocus) else quietM
@@ -840,18 +862,17 @@ fun ForgeBoard(
                 // gold button is itself in that row, so the count goes one row higher at the right edge.
                 val pickOne = oneTarget(st) || onePick(st)
                 // The quiet pill's width from its words (GlassPill: 12.5 sp, 14 du each side), so the count is clear of it in the first frame.
-                val quietWords = (if (short && second != null) ok else second)?.let { w -> with(goldDensity) {
+                val quietWords = corner.quiet?.label?.let { w -> with(goldDensity) {
                     tuckMeasurer.measure(w, sans(sp(12.5f), FontWeight.SemiBold, Color.White), maxLines = 1).size.width.toDp() + 28.du + 2.dp } } ?: 0.dp
-                val quietShown = when { attackAll -> false; pickOne -> second != null; short && second != null -> st.buttons.okEnabled; endTurnGold -> true
-                    else -> second != null && !second.startsWith("Undo", ignoreCase = true) }
+                val quietShown = corner.kind != TableActions.Kind.ATTACK_ALL && corner.quiet != null
                 val goldShown = !tucked && (!pickOne || attackAll || (st.selection.min == 0 && st.buttons.okEnabled))
                 // 0.4.59 T6: while the hand is tucked the gold button gives way to a quiet Cancel in its spot; a confirm Forge offers
                 // (several targets, "No target") stays as a glass pill above it. Both report their width for the line's right end.
                 val tuckW = Modifier
                 @Composable fun pair(content: @Composable () -> Unit) {
                     androidx.compose.runtime.CompositionLocalProvider(LocalTurnCountOutside provides true) { content() }
-                    val countRight = W - edge - (if (quietShown) maxOf(quietW, quietWords) + 12.du else 0.dp)
-                    val countY0 = if (attackAll) quietTop - 8.du - 32.du else quietTop + 2.du
+                    val countRight = W - edge - dotsW - (if (quietShown) maxOf(quietW, quietWords) + 12.du else 0.dp)
+                    val countY0 = if (attackAll) quietTop - 8.du - 32.du else quietTop + (btnH - 32.du) / 2
                     // Z1 review: where that spot meets a zone box (on a phone the board's corner ends 2 du into the quiet row), the count
                     // drops to just under that box, at most touching the gold button's ring.
                     val countY = listOfNotNull(zones.board, zones.handTray, zones.handChip)
@@ -868,35 +889,56 @@ fun ForgeBoard(
                     discardingNow && selected == null && !okOn -> null
                     else -> if (live && (selected != null || okOn)) PadAct(ok) { if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok() } else null
                 }
+                val goldM = lowerM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }
                 pair {
-                    if (tucked) {
-                        second?.let { GlassPill(it, live, lowerM.then(tuckW).focusRequester(cancelFocus).anchorRect("quiet").anchorRect("cancel"), d, maxW = goldClear) { intents.cancel() } }
-                        val confirm = tuckLabels(st).getOrNull(1)
-                        confirm?.let { GlassPill(it, live && okOn, upperM.then(tuckW).focusRequester(goldFocus).anchorRect("confirm"), d, tone = Color(0xFFF3D27E), edge = Color(0x66F3D27E), maxW = quietMax) { intents.ok() } }
-                    } else if (attackAll) {
-                        GoldPill(ok, live && okOn, upperM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }, d, padKey = padX != null, maxW = upperGoldMax) { intents.ok() }
-                        GlassPill("Attack all", live, attackM, d, tone = Color(0xFFFFD9CF), edge = Color(0x88FF8A6A), maxW = attackAllMax) { intents.attackAll(offered.map { it.id }) }
-                    } else if (oneTarget(st) || onePick(st)) {
-                        second?.let { GlassPill(it, live, cancelM, d, maxW = quietMax) { intents.cancel() } }
-                        if (st.selection.min == 0 && st.buttons.okEnabled) GoldPill("No target", live, lowerM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }, d, padKey = padX != null, maxW = goldMax) { intents.ok() }
-                    } else if (short && second != null) {
-                        if (st.buttons.okEnabled) GlassPill(ok, live, quietM, d, maxW = quietMax) { intents.ok() }
-                        GoldPill(second, live, lowerM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }, d, padKey = padX != null, maxW = goldMax) { intents.cancel() }
-                    } else if (endTurnGold) {
-                        GlassPill(second ?: "To combat", live && okOn, quietM, d, maxW = quietMax) { intents.ok() }
-                        GoldPill(ok, live, lowerM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }, d, padKey = padX != null, maxW = goldMax) { intents.cancel() }
-                    } else {
-                        // Forge turns its cancel from End turn into "Undo" once a land or a mana tap can be taken back
-                        // (InputPassPriority.showMessage), and then cancel undoes. Drawn in End turn's place, a tap meant for End turn
-                        // took the land back (U6), so Undo stands in its own spot and ignores taps for its first 400 ms.
-                        val undo = second?.startsWith("Undo", ignoreCase = true) == true
-                        val shownAt = remember(second) { android.os.SystemClock.uptimeMillis() }
-                        second?.let { GlassPill(it, live, if (undo) undoM.anchorRect("undo") else cancelM, d, maxW = if (undo) zones.undo.w.dp else quietMax) {
-                            if (!undo || android.os.SystemClock.uptimeMillis() - shownAt >= 400) intents.cancel() } }
-                        GoldPill(ok, live && (selected != null || okOn), lowerM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }, d, padKey = padX != null, maxW = goldMax) {
-                            if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok()
+                    when (corner.kind) {
+                        TableActions.Kind.TUCKED -> {
+                            corner.quiet?.let { GlassPill(it.label, it.enabled, lowerM.then(tuckW).focusRequester(cancelFocus).anchorRect("quiet").anchorRect("cancel"), d, maxW = goldClear, height = btnH, onClick = press(it)) }
+                            corner.confirm?.let { GlassPill(it.label, it.enabled, upperM.then(tuckW).focusRequester(goldFocus).anchorRect("confirm"), d, tone = Color(0xFFF3D27E), edge = Color(0x66F3D27E), maxW = quietMax, height = btnH, onClick = press(it)) }
+                        }
+                        TableActions.Kind.ATTACK_ALL -> {
+                            corner.gold?.let { GoldPill(it.label, it.enabled, upperM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }, d, padKey = padX != null, maxW = upperGoldMax, height = btnH, onClick = press(it)) }
+                            corner.extra?.let { GlassPill(it.label, it.enabled, attackM, d, tone = Color(0xFFFFD9CF), edge = Color(0x88FF8A6A), maxW = attackAllMax, onClick = press(it)) }
+                        }
+                        TableActions.Kind.PICK_ONE -> {
+                            corner.quiet?.let { GlassPill(it.label, it.enabled, cancelM, d, maxW = quietMax, height = btnH, onClick = press(it)) }
+                            corner.gold?.let { GoldPill(it.label, it.enabled, goldM, d, padKey = padX != null, maxW = goldMax, height = btnH, onClick = press(it)) }
+                        }
+                        TableActions.Kind.SHORT, TableActions.Kind.END_TURN -> {
+                            corner.quiet?.let { GlassPill(it.label, it.enabled, quietM, d, maxW = quietMax, height = btnH, onClick = press(it)) }
+                            corner.gold?.let { GoldPill(it.label, it.enabled, goldM, d, padKey = padX != null, maxW = goldMax, height = btnH, onClick = press(it)) }
+                        }
+                        TableActions.Kind.PLAIN -> {
+                            // Forge turns its cancel from End turn into "Undo" once a land or a mana tap can be taken back
+                            // (InputPassPriority.showMessage), and then cancel undoes. Drawn in End turn's place, a tap meant for End turn
+                            // took the land back (U6), so Undo stands in its own spot and ignores taps for its first 400 ms.
+                            val undo = corner.undo
+                            val shownAt = remember(undo?.label) { android.os.SystemClock.uptimeMillis() }
+                            undo?.let { GlassPill(it.label, it.enabled, undoM.anchorRect("undo"), d, maxW = zones.undo.w.dp) {
+                                if (android.os.SystemClock.uptimeMillis() - shownAt >= 400) intents.cancel() } }
+                            corner.quiet?.let { GlassPill(it.label, it.enabled, cancelM, d, maxW = quietMax, height = btnH, onClick = press(it)) }
+                            corner.gold?.let { GoldPill(it.label, it.enabled, goldM, d, padKey = padX != null, maxW = goldMax, height = btnH, onClick = press(it)) }
                         }
                     }
+                }
+            }
+            // 0.4.60 Z6: the three-dot button at the quiet row's right end (beside End turn), whenever its menu has a line (Yield while an
+            // ability is on top of the stack, whoever's priority it is); its menu opens above it. A controller opens it with LT and its
+            // first line takes the ring, so Yield is two presses (LT, A); a finger, two taps.
+            if (dotsShown) {
+                val dotsTop = goldY - 6.du - btnH
+                val dotsEdge = W - zones.actions.right.dp
+                DotsButton(dotsOpen, Modifier.align(Alignment.TopEnd).offset(x = -dotsEdge, y = dotsTop).anchorRect("dots"), btnH, d) { dotsByPad = false; dotsOpen = !dotsOpen }
+                if (dotsOpen) {
+                    // A tap anywhere else closes it; so does a controller's B (a phone with no pad keeps its back as it was).
+                    Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { dotsOpen = false } })
+                    androidx.activity.compose.BackHandler(Pad.connected.collectAsState().value) { dotsOpen = false }
+                    PadScreen(PadActs(b = "Close", opaque = true))
+                    DotsMenu(dotsMenu, Modifier.align(Alignment.BottomEnd).offset(x = -dotsEdge, y = -(H - dotsTop + 6.du)).anchorRect("dotsmenu"), dotsFocus, d) { item ->
+                        dotsOpen = false
+                        if (item.key == TableActions.YIELD) st.stack.firstOrNull()?.let { top -> intents.yieldSource(top.id, !top.yielded) }
+                    }
+                    LaunchedEffect(Unit) { if (dotsByPad) { androidx.compose.runtime.withFrameNanos { }; runCatching { dotsFocus.requestFocus() } } }
                 }
             }
             // The table's controller buttons: X the gold button, Start the menu (the same toggle as its button). A hand card or permanent adds its own A and Y.
@@ -927,9 +969,14 @@ fun ForgeBoard(
                 // RT (Randall 9 Nov): between your hand and the field; X is already the gold button (pass). LT cancels only a cast you
                 // started, while it asks for targets or mana (spec "Match, targeting: LT cancel"), on a fresh press. At plain priority
                 // Forge's cancel is End turn or Undo, and LT ended the turn or took a land back with no word (live 0.4.57): there it does nothing.
-                page = if (dual) ({ step: Int -> if (step > 0) TableZones.handOrField() else if (castCancel && PadPrompts.keyRepeat == 0) intents.cancel() })
-                    else if (!live) null else ({ step: Int -> if (step > 0) padGold?.run?.invoke() else if (castCancel && PadPrompts.keyRepeat == 0) intents.cancel() }),
-                pageLabel = if (dual) (if (castCancel) "Cancel cast · Hand/Field" else "Hand / Field") else if (castCancel) "Cancel cast / Pass" else "Pass"))
+                // 0.4.60 Z6: when LT has nothing to cancel and the three-dot menu has a line (Yield), LT opens it with its first line
+                // ringed, so A on it is the second press.
+                page = if (dual) ({ step: Int -> if (step > 0) TableZones.handOrField() else if (castCancel && PadPrompts.keyRepeat == 0) intents.cancel()
+                        else if (dotsMenu.isNotEmpty() && PadPrompts.keyRepeat == 0) { dotsByPad = true; dotsOpen = true } })
+                    else if (!live) null else ({ step: Int -> if (step > 0) padGold?.run?.invoke() else if (castCancel && PadPrompts.keyRepeat == 0) intents.cancel()
+                        else if (dotsMenu.isNotEmpty() && PadPrompts.keyRepeat == 0) { dotsByPad = true; dotsOpen = true } }),
+                pageLabel = if (dual) (if (castCancel) "Cancel cast · Hand/Field" else if (dotsMenu.isNotEmpty()) "More · Hand/Field" else "Hand / Field")
+                    else if (castCancel) "Cancel cast / Pass" else if (dotsMenu.isNotEmpty()) "More / Pass" else "Pass"))
             // V4 a controller's cast: what Forge asks next takes the ring. While it asks for targets, the first legal one (the
             // opponent's cards first, then a player), where A picks; while it asks for mana, a source that pays, where A taps it
             // (X still pays automatically). RT finds the same spot; when the cast is done the ring goes back to the hand chip.
@@ -1799,7 +1846,7 @@ private fun PhaseTrack(st: MatchState, stops: Set<String>?, onStop: (String) -> 
 // ---- The stack (approved: fanned cards over a portal, gold rim yours / red rim the CPU's, an arc to the source) ----
 
 @Composable
-private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card) -> Unit, live: Boolean = false, onYield: (Int, Boolean) -> Unit = { _, _ -> }, onPick: (Int) -> Unit = {},
+private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card) -> Unit, live: Boolean = false, onPick: (Int) -> Unit = {},
                      room: Dp = 66.dp, labelMax: Dp = 150.dp,
                      /** How far left each older card steps (0.4.60 Z1: none in the right strip, so they stay off the board). */
                      stepX: Dp? = null) = with(d) {
@@ -1877,9 +1924,9 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
             if (flyFrom != null && fly.value < .5f) Box(Modifier.matchParentSize().clip(RoundedCornerShape(6.du))) { CardBack(Modifier.fillMaxSize()) }
         }
         // Under the top card (BB10: above it the words sat on the top card's corner and on the titles of the older cards fanned
-        // there): whose it is (U5: a CPU spell said nothing on the Thor) and, for an ability only, Forge's own yield
-        // (native-panel.mjs withYield; the bridge refuses a yield on a spell: stack_item_not_offered). It starts at the top card's
-        // left edge and ends at most 16 dp inside the screen (W3: "CPU's ability" cut at the edge), the words cut with … first.
+        // there): whose it is (U5: a CPU spell said nothing on the Thor). 0.4.60 Z6: Forge's yield moved to the three-dot menu beside
+        // End turn (TableActions.menu). It starts at the top card's left edge and ends at most 16 dp inside the screen (W3: "CPU's
+        // ability" cut at the edge), the words cut with … first.
         val yours = top.controller == st.viewer
         Row(Modifier.offset(x = 44.du, y = 34.du + 145.du + 8.du).widthIn(max = labelMax).anchorRect("stacklabel"),
             horizontalArrangement = Arrangement.spacedBy(6.du), verticalAlignment = Alignment.CenterVertically) {
@@ -1890,16 +1937,6 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
                 .semantics { contentDescription = "${olderAll.size} more on the stack"; role = Role.Button; stateDescription = if (listOpen) "Open" else "Closed" }
                 .clickable { listOpen = !listOpen }.padding(horizontal = 8.du, vertical = 4.du)) {
                 Text("+${olderAll.size}", style = sans(sp(11f), FontWeight.Bold, Color(0xFFE8C36F)), maxLines = 1)
-            }
-            if (top.ability) {
-                val on = top.yielded
-                val lock = st.prompt != null || st.inputType == "InputLockUI"
-                Box(Modifier.clip(RoundedCornerShape(999.dp))
-                    .background(if (on) Brush.verticalGradient(listOf(Color(0xFFF6DC9A), Color(0xFFD9A64A))) else Brush.verticalGradient(listOf(Color(0x0DFFFFFF), Color(0x0DFFFFFF))))
-                    .semantics { contentDescription = if (on) "Stop yielding to this ability" else "Pass on this ability every time it is on top, until end of turn. Targets and choices still stop."; role = Role.Button; stateDescription = if (on) "On" else "Off" }
-                    .clickable(enabled = !lock) { onYield(top.id, !on) }.padding(horizontal = 10.du, vertical = 4.du)) {
-                    Text(if (on) "Yielding" else "Yield", style = sans(sp(11f), FontWeight.Bold, if (on) Color(0xFF1B1406) else Color(0xFFCFD4DC)))
-                }
             }
         }
         // The folded items, listed left of the top card (next to resolve first), each one line with whose it is.
@@ -2112,7 +2149,9 @@ internal fun Modifier.matchPadTap(source: androidx.compose.foundation.interactio
 // ---- Buttons (.forge-native-actions on the seat) ----
 
 @Composable
-internal fun GoldPill(text: String, enabled: Boolean, modifier: Modifier, d: Du, padKey: Boolean = false, maxW: Dp = Dp.Infinity, onClick: () -> Unit) = with(d) {
+internal fun GoldPill(text: String, enabled: Boolean, modifier: Modifier, d: Du, padKey: Boolean = false, maxW: Dp = Dp.Infinity,
+                      /** 0.4.60 Z6: the table's action button passes its 44 dp floor; 44 du otherwise. */
+                      height: Dp? = null, onClick: () -> Unit) = with(d) {
     // The controller's X is this button: with a pad here the key is printed on it, and the hint bar does not say it again (no prompt twice).
     val pad by Pad.connected.collectAsState()
     val keyed = padKey && pad && enabled
@@ -2123,7 +2162,7 @@ internal fun GoldPill(text: String, enabled: Boolean, modifier: Modifier, d: Du,
     }
     // The turn clock's ring (and, for the last 10 s, its seconds) sits on this button, wherever the table puts it (TurnRing.kt).
     // Z1 review: 138 du at the least, unless its zone is narrower (the dual top's right strip): then it takes [maxW] and cuts its words.
-    Box(modifier.widthIn(min = minOf(138.du, maxW), max = maxW).height(44.du).turnRing(u).drawBehind { drawRoundRect(Color(0x3DC99A4B), topLeft = Offset(0f, 8.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2)) }
+    Box(modifier.widthIn(min = minOf(138.du, maxW), max = maxW).height(height ?: 44.du).turnRing(u).drawBehind { drawRoundRect(Color(0x3DC99A4B), topLeft = Offset(0f, 8.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2)) }
         .clip(RoundedCornerShape(999.dp)).background(if (enabled) Brush.verticalGradient(listOf(Color(0xFFF7DA97), Color(0xFFE8B95B), Color(0xFFC4903A))) else Brush.verticalGradient(listOf(Color(0xFF6B5A3A), Color(0xFF4A3E28))))
         .border(1.dp, Color(0xFFF6DFA8), RoundedCornerShape(999.dp)).clickable(enabled = enabled, onClick = onClick), contentAlignment = Alignment.Center) {
         Row(Modifier.padding(horizontal = if (maxW < 138.du) 10.du else 18.du), horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
@@ -2141,10 +2180,46 @@ internal fun GoldPill(text: String, enabled: Boolean, modifier: Modifier, d: Du,
 @Composable
 internal fun GlassPill(text: String, enabled: Boolean, modifier: Modifier, d: Du, tone: Color = Color(0xFFEEE6D4), edge: Color = Color(0x26FFFFFF),
                        /** Z1 review: the widest it may be (its zone's width); longer words are cut with …. */
-                       maxW: Dp = Dp.Infinity, onClick: () -> Unit) = with(d) {
-    Box(modifier.widthIn(max = maxW).height(36.du).clip(RoundedCornerShape(999.dp)).background(Color(0xB30C0D12)).border(1.dp, edge, RoundedCornerShape(999.dp))
+                       maxW: Dp = Dp.Infinity,
+                       /** 0.4.60 Z6: the quiet button above the gold one passes its 44 dp floor; 36 du otherwise. */
+                       height: Dp? = null, onClick: () -> Unit) = with(d) {
+    Box(modifier.widthIn(max = maxW).height(height ?: 36.du).clip(RoundedCornerShape(999.dp)).background(Color(0xB30C0D12)).border(1.dp, edge, RoundedCornerShape(999.dp))
         .clickable(enabled = enabled, onClick = onClick).padding(horizontal = 14.du), contentAlignment = Alignment.Center) {
         Text(text, style = sans(sp(12.5f), FontWeight.SemiBold, tone), maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/** 0.4.60 Z6: the three-dot button beside the quiet one (a [side] glass circle); a tap opens or closes its menu. */
+@Composable
+internal fun DotsButton(open: Boolean, modifier: Modifier, side: Dp, d: Du, onClick: () -> Unit) = with(d) {
+    Box(modifier.size(side).clip(CircleShape).background(if (open) Color(0xE61A160E) else Color(0xB30C0D12))
+        .border(1.dp, if (open) Color(0x99E8C36F) else Color(0x26FFFFFF), CircleShape)
+        .semantics { contentDescription = "More: Yield"; role = Role.Button; stateDescription = if (open) "Open" else "Closed" }
+        .clickable(onClick = onClick), contentAlignment = Alignment.Center) {
+        Text("\u00B7\u00B7\u00B7", style = sans(sp(15f), FontWeight.Bold, Color(0xFFEEE6D4)).copy(letterSpacing = sp(1f)), maxLines = 1)
+    }
+}
+
+/**
+ * 0.4.60 Z6: the three-dot menu, one 44 dp line per item ([TableActions.menu]: Yield, gold while it is on). The first line takes
+ * [first], so a controller's ring can be put on it (LT opens the menu, A presses it); a finger taps it.
+ */
+@Composable
+internal fun DotsMenu(items: List<TableActions.Item>, modifier: Modifier, first: FocusRequester, d: Du, onPick: (TableActions.Item) -> Unit) = with(d) {
+    Column(modifier.widthIn(min = 150.du, max = 240.du).clip(RoundedCornerShape(14.du)).background(Color(0xF0101319))
+        .border(1.dp, Color(0x44D6AD64), RoundedCornerShape(14.du)).padding(6.du), verticalArrangement = Arrangement.spacedBy(4.du)) {
+        items.forEachIndexed { i, item ->
+            val source = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+            val tap = { if (item.enabled) onPick(item) }
+            Row(Modifier.fillMaxWidth().heightIn(min = maxOf(44.du, ZoneLayout.BUTTON.dp)).anchorRect(item.key).clip(RoundedCornerShape(10.du))
+                .background(if (item.on) Brush.verticalGradient(listOf(Color(0xFFF6DC9A), Color(0xFFD9A64A))) else Brush.verticalGradient(listOf(Color(0x0DFFFFFF), Color(0x0DFFFFFF))))
+                .semantics { contentDescription = item.about; role = Role.Button; stateDescription = if (item.on) "On" else "Off"; onClick { tap(); true } }
+                .then(if (i == 0) Modifier.focusRequester(first) else Modifier).matchPadTap(source) { tap() }
+                .pointerInput(item) { detectTapGestures { tap() } }
+                .alpha(if (item.enabled) 1f else .5f).padding(horizontal = 14.du), verticalAlignment = Alignment.CenterVertically) {
+                Text(item.label, style = sans(sp(13f), FontWeight.Bold, if (item.on) Color(0xFF1B1406) else Color(0xFFEEE6D4)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
     }
 }
 

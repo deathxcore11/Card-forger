@@ -68,9 +68,10 @@ class ZoneLayoutTest {
         order.zipWithNext().forEach { (a, b) -> assertTrue("$tag: $a not above $b", a.bottom < b.y) }
         assertTrue("$tag: the stack starts right of the board", z.stack.x > z.board.right)
         assertTrue("$tag: the stack ends 16 dp inside the edge", z.stack.right <= z.window.right - ZoneLayout.STACK_EDGE + .01f)
-        // The menu and the buttons are 44 (dp at k = 1): touch targets, not the drawing's 36.
+        // The menu and the buttons are 44 (dp at k = 1): touch targets, not the drawing's 36. 0.4.60 Z6: the gold button and the quiet
+        // row above it never go under 44 dp (the brief's "44 dp tall"), whatever the chrome scale; 6 between them.
         assertEquals("$tag menu height", 44f * z.k, z.menu.h, .01f)
-        assertEquals("$tag actions", 94f * z.k, z.actions.h, .01f)
+        assertEquals("$tag actions", 2 * maxOf(44f * z.k, 44f) + 6f * z.k, z.actions.h, .01f)
         // Nothing of the menu, turn or phase in the top middle.
         assertTrue("$tag: the top middle is board", z.menu.x > z.board.right && z.phase.x > z.board.right)
     }

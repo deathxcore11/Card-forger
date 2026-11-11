@@ -52,6 +52,8 @@ internal object ZoneLayout {
         fun stackAbove(undoShown: Boolean): Box = if (!undoShown) stack else Box(stack.x, stack.y, stack.w, (undo.y - 8f * k - stack.y).coerceAtLeast(0f))
     }
 
+    /** 0.4.60 Z6: the gold action button and the quiet row above it are at least this tall, in dp (the brief's 44 dp). */
+    const val BUTTON = 44f
     /** Each side strip's share of the width inside the insets. */
     const val RAIL = .1425f
     /** The board's share: what the two strips leave. */
@@ -108,8 +110,10 @@ internal object ZoneLayout {
         val qx = right.x + pad; val qw = rail - 2 * pad
         val menu = Box(qx, win.y + pad, qw, 44f * u)
         val phase = Box(qx, menu.bottom + 6f * u, qw, 40f * u)
-        // The gold button (44), 6 between, the quiet one above it (44: touch targets, not the drawing's 36).
-        val ah = 44f * u + 6f * u + 44f * u
+        // The gold button (44), 6 between, the quiet one above it (44: touch targets, not the drawing's 36). Z6: each 44 dp at the
+        // least, so a chrome scale under 1 (a phone short of 844 x 390 inside its bars) never makes them smaller to the finger.
+        val bh = maxOf(44f * u, BUTTON)
+        val ah = bh + 6f * u + bh
         val actions = Box(qx, win.bottom - pad - ah, qw, ah)
         val sy = phase.bottom + 8f * u
         val stackRight = minOf(qx + qw, win.right - STACK_EDGE)

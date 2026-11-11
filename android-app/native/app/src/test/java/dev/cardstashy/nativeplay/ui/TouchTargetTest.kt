@@ -67,8 +67,9 @@ class TouchTargetTest {
         }
     }
     /**
-     * Z1 review: on a phone the stack fan is drawn smaller to fit the right strip (here about 0.88), and its Yield and "+N" chips
-     * with it. Each still takes a tap just inside 22 dp below its middle (a 44 dp box on the screen), not only on its drawn pill.
+     * Z1 review: on a phone the stack fan is drawn smaller to fit the right strip (here about 0.88), and its "+N" chip with it. It
+     * still takes a tap just inside 22 dp below its middle (a 44 dp box on the screen), not only on its drawn pill. 0.4.60 Z6: Yield
+     * moved from the label row into the three-dot menu beside End turn (two taps, 44 dp targets).
      */
     @Test @Config(qualifiers = "w844dp-h390dp-land-xxhdpi")
     fun theStackChipsTakeATapInA44dpBox() {
@@ -96,17 +97,26 @@ class TouchTargetTest {
         val card = anchors.rects["stackcard"] ?: error("no stack card")
         val label = anchors.rects["stacklabel"] ?: error("no stack label")
         assertTrue("the fan is drawn smaller here (${card.width / dp} dp wide)", card.width < 104f * dp - 1f)
-        // Yield: the last pill in the label row, at its right end.
+        // 0.4.60 Z6 (brief: "Yield moves into a three-dot menu beside End turn"): Yield is no longer a pill in the label row. It is the
+        // three-dot menu's line, two taps away, each target 44 dp tall at the least.
         val more = anchors.rects["stackmore"] ?: error("the older items did not fold into +N")
-        val yieldX = (more.right + label.right) / 2
         val half = 22f * dp - 1f
-        val below = label.center.y + half
-        assertTrue("the point is below the drawn row", below > label.bottom)
-        rule.onRoot().performTouchInput { click(Offset(yieldX, below)) }
+        assertTrue("the label row is clear of the dots", anchors.rects["dots"]?.let { !it.overlaps(label) } ?: false)
+        val dots = anchors.rects["dots"]!!
+        assertTrue("the dots are 44 dp tall (${dots.height / dp})", dots.height >= 44f * dp - 1f)
+        rule.onRoot().performTouchInput { click(dots.center) }
         rule.waitForIdle()
-        assertEquals("Yield tapped 22 dp below its middle", listOf(9101), yields)
-        rule.onRoot().performTouchInput { click(Offset(more.center.x, more.center.y + half)) }
+        val line = anchors.rects[TableActions.YIELD] ?: error("the three-dot menu did not open with Yield")
+        assertTrue("the Yield line is 44 dp tall (${line.height / dp})", line.height >= 44f * dp - 1f)
+        rule.onRoot().performTouchInput { click(line.center) }
         rule.waitForIdle()
-        assertTrue("+N tapped 22 dp below its middle opens the list", anchors.rects["stacklist"] != null)
+        assertEquals("Yield in two taps", listOf(9101), yields)
+        // Z6: the three-dot button (a real 44 dp target) now stands just under the label row in the strip; where the point 22 dp
+        // below "+N" is on it, the dots rightly take it, so "+N" is tried 22 dp left of its middle instead (the same 44 dp box).
+        val belowMore = Offset(more.center.x, more.center.y + half)
+        val tapMore = if (dots.contains(belowMore)) Offset(more.center.x - half, more.center.y) else belowMore
+        rule.onRoot().performTouchInput { click(tapMore) }
+        rule.waitForIdle()
+        assertTrue("+N tapped 22 dp from its middle opens the list", anchors.rects["stacklist"] != null)
     }
 }
