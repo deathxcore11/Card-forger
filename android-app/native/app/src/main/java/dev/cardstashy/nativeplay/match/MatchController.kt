@@ -452,7 +452,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                 fun board() = withStack(masked(Director.beforeResults(st, before, pending), hidden, hiddenStack, field, untapped), held)
                 fun startLeg(t: Director.Travel, at: Int) {
                     when (t.leg) {
-                        Director.Leg.TAPS -> untapped -= t.taps.toSet()
+                        Director.Leg.TAPS, Director.Leg.TO_POOL -> untapped -= t.taps.toSet()
                         // T6: a spell that went up while it asked has no leg to the stack here; its rest puts it up instead.
                         Director.Leg.TO_STACK, Director.Leg.REST -> {
                             t.stackId?.let { hiddenStack.remove(it) }
@@ -466,7 +466,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                                 held.add(0, item); putUp[id] = item
                             }
                         }
-                        Director.Leg.BACK -> {}
+                        Director.Leg.BACK, Director.Leg.UNTAP -> {}
                         Director.Leg.TO_SLOT, Director.Leg.TO_HOST, Director.Leg.TO_GROUP -> t.cardId?.let { id ->
                             field.remove(id); hidden.remove(id)
                             putUp.remove(id)?.let { item -> held.removeAll { it === item } }

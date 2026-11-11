@@ -1877,7 +1877,7 @@ private fun ManaPool(mana: Map<String, Int>, modifier: Modifier, d: Du, maxW: Dp
     // 0.4.60 Z4: in the left strip the pool wraps to as many symbols a row as fit [maxW] (24 du each, 4 apart, 6 padding a side).
     val perRow = if (maxW == Dp.Infinity) floating.size else (((maxW - 12.du + 4.du) / 28.du).toInt()).coerceAtLeast(1)
     val shape = RoundedCornerShape(if (floating.size > perRow) 14.du else 999.dp)
-    Column(modifier.heightIn(min = 34.du).clip(shape).background(Color(0xE60B0D12)).border(1.dp, Gold.copy(alpha = .33f), shape)
+    Column(modifier.anchorRect("manapool").heightIn(min = 34.du).clip(shape).background(Color(0xE60B0D12)).border(1.dp, Gold.copy(alpha = .33f), shape)
         .padding(horizontal = 6.du, vertical = 4.du), verticalArrangement = Arrangement.spacedBy(4.du)) {
       for (row in floating.chunked(perRow)) Row(horizontalArrangement = Arrangement.spacedBy(4.du)) {
         row.forEach { (k, n) ->
@@ -3005,8 +3005,9 @@ internal fun tapDelay(taps: List<Int>, id: Int): Long? = taps.indexOf(id).takeIf
 /** A tile's turn as it taps: a paying land one by one (170 ms each, 80 ms apart) while its cast's taps play, any other tap 180 ms. */
 @Composable
 private fun tapSpec(id: Int): androidx.compose.animation.core.AnimationSpec<Float> {
-    val t = LocalTravel.current?.travel?.takeIf { it.leg == dev.cardstashy.nativeplay.match.Director.Leg.TAPS }
-    val at = t?.let { tapDelay(it.taps, id) }
+    val t = LocalTravel.current?.travel?.takeIf { it.leg == dev.cardstashy.nativeplay.match.Director.Leg.TAPS || it.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_POOL }
+    // P2b: a cast that also spends floating mana sends the pool's streaks first; its lands follow them.
+    val at = t?.let { tr -> tapDelay(tr.taps, id)?.let { it + tr.pool * dev.cardstashy.nativeplay.match.Director.TAP_GAP_MS } }
     // Match punch P2, Pay: a paying land turns with a bounce (a small overshoot past its tapped angle, then back).
     return if (at != null) tween(dev.cardstashy.nativeplay.match.Director.TAP_TURN_MS.toInt(), delayMillis = at.toInt(), easing = androidx.compose.animation.core.Easing { backOut(it) })
         else tween(180, easing = FastOutSlowInEasing)

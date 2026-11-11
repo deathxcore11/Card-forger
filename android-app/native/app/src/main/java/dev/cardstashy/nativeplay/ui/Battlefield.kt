@@ -210,7 +210,7 @@ class Battlefield {
         val el = travelMs(m); val D = dev.cardstashy.nativeplay.match.Director
         fun out(ms: Long, span: Long): Float = if (ms < 0 || ms > span) 0f else (1f - ms.toFloat() / span).let { it * it * it }
         return when (m.travel.leg) {
-            dev.cardstashy.nativeplay.match.Director.Leg.TAPS -> 1f + .04f * (m.travel.taps.indices.maxOfOrNull { out(el - D.streakArrives(it), D.CHARGE_MS) } ?: 0f)
+            dev.cardstashy.nativeplay.match.Director.Leg.TAPS -> 1f + .04f * ((0 until m.travel.taps.size + m.travel.pool).maxOfOrNull { out(el - D.streakArrives(it), D.CHARGE_MS) } ?: 0f)
             dev.cardstashy.nativeplay.match.Director.Leg.REST -> 1f + .08f * m.travel.power * out(el - D.BURST_FREEZE_MS, D.BURST_MS - D.BURST_FREEZE_MS)
             else -> 1f
         }
@@ -1469,7 +1469,7 @@ private fun DrawScope.pop(tm: androidx.compose.ui.text.TextMeasurer, text: Strin
 internal fun TravelCard() {
     val m = LocalTravel.current ?: return
     val t = m.travel
-    if (t.leg == dev.cardstashy.nativeplay.match.Director.Leg.TAPS || t.leg == dev.cardstashy.nativeplay.match.Director.Leg.REST) return
+    if (t.leg == dev.cardstashy.nativeplay.match.Director.Leg.TAPS || t.leg == dev.cardstashy.nativeplay.match.Director.Leg.REST || t.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_POOL || t.leg == dev.cardstashy.nativeplay.match.Director.Leg.UNTAP) return
     if (LocalBattlefield.current?.reduced == true) return
     val anchors = LocalAnchors.current ?: return
     val name = t.name ?: return

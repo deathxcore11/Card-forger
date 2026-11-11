@@ -17,6 +17,8 @@ import kotlin.math.abs
 object Director {
     enum class Kind { THINK, BANNER, UNTAP, DRAW, LAND, CAST, TRIGGER, ABILITY, RESOLVE, FIZZLE, DAMAGE, LIFE, COUNTERS, ATTACH,
         ENTER, TO_GRAVE, DIES, EXILE, TO_HAND, TOKEN, ATTACK, BLOCK, SHUFFLE,
+        /** Match punch P2b: mana made by hand, or taken back with Undo (no card moves). */
+        MANA,
         /** A TRIGGER SHOWS ITSELF, beat 3: a trigger's resolve with what it changed ([Step.result]). */
         RESULT }
 
@@ -42,11 +44,17 @@ object Director {
      * [TO_SLOT], [TO_HOST] (an aura onto its creature) and [TO_GROUP] (a land, which skips the stack) end at the anchor [toKey].
      */
     /** BACK (T6): Cancel while the spell asked; from the stack back to its place in your hand. */
-    enum class Leg { TAPS, TO_STACK, REST, TO_SLOT, TO_HOST, TO_GROUP, BACK }
+    enum class Leg { TAPS, TO_STACK, REST, TO_SLOT, TO_HOST, TO_GROUP, BACK,
+        /** Match punch P2b: lands you tapped by hand ([Travel.taps]) send their light to the floating mana by your square. */
+        TO_POOL,
+        /** P2b: Forge's Undo took the taps back: the lands ([Travel.taps]) turn back with a gold glint and the light returns to them. */
+        UNTAP }
     data class Travel(val cardId: Int?, val name: String?, val mine: Boolean, val leg: Leg, val toKey: String?, val ms: Long,
                       val stackId: Int? = null, val taps: List<Int> = emptyList(), val targets: List<Ref> = emptyList(),
                       /** P2: the burst's size on a cast's rest (.5 when nothing was paid). */
-                      val power: Float = 1f)
+                      val power: Float = 1f,
+                      /** P2b: how many of a pay's streaks come from the floating mana by your square (mana you made by hand), before the lands'. */
+                      val pool: Int = 0)
 
     /** A trigger going on the stack (Forge's "trigger" event): who, from which card, at what; [resolvedHere] its resolve is in the same poll. */
     data class Trig(val stackId: Int?, val sourceId: Int?, val sourceName: String?, val controller: Int?, val yours: Boolean,
@@ -162,6 +170,10 @@ object Director {
         // T5: the lands each side tapped since the board last shown (once per side per poll: the first cast pays with them).
         val tapsLeft = st.players.associate { p -> p.id to p.battlefield.filter { c -> c.isLand && c.tapped && !c.attacking &&
             before?.card(c.id)?.let { it.zone == "Battlefield" && !it.tapped } == true }.map { it.id } }.toMutableMap()
+        // P2b: your floating mana before and now. What a cast of yours spent of it (5 streaks at most) pays from the pool.
+        val poolBefore = before?.players?.firstOrNull { it.id == me }?.mana?.values?.sum() ?: 0
+        val poolNow = st.players.firstOrNull { it.id == me }?.mana?.values?.sum() ?: 0
+        var poolSpent = (poolBefore - poolNow).coerceIn(0, 5)
         // Cards whose cast is in this poll: their move from the stack is part of their travel.
         val castHere = events.filter { it.type == "cast" && it.source != null }.associate { it.source!!.id to (it.player == me) }
         /** Whose card is travelling: its controller on the board, else who cast it in this poll. */
@@ -176,12 +188,14 @@ object Director {
         fun castLegs(e: GameEvent, mine: Boolean, readMs: Long, beat: Beat?) {
             val id = e.source?.id; val name = e.source?.name
             val taps = e.player?.let { tapsLeft.remove(it) }.orEmpty()
+            // P2b: floating mana you made by hand and this cast spent: its streaks leave the pool by your square, before the lands'.
+            val pool = if (mine) poolSpent.also { poolSpent = 0 } else 0
             if (!(mine && id != null && id == waitingUp)) out += Step(Kind.CAST, TO_STACK_MS, TO_STACK_MS, cpu = !mine, cardId = id, cardName = name, travel = Travel(id, name, mine, Leg.TO_STACK, "stackcard", TO_STACK_MS, e.stackId, targets = e.targets))
-            if (taps.isNotEmpty()) { val ms = payMs(taps.size)
-                out += Step(Kind.CAST, ms, PAY_MIN_MS, cpu = !mine, cardId = id, cardName = name, travel = Travel(id, name, mine, Leg.TAPS, "stackcard", ms, e.stackId, taps)) }
+            if (taps.isNotEmpty() || pool > 0) { val ms = payMs(taps.size + pool)
+                out += Step(Kind.CAST, ms, PAY_MIN_MS, cpu = !mine, cardId = id, cardName = name, travel = Travel(id, name, mine, Leg.TAPS, "stackcard", ms, e.stackId, taps, pool = pool)) }
             val restMs = BURST_MS + readMs
             out += Step(Kind.CAST, restMs, BURST_MIN_MS + CAST_READ_PROMPT_MS, focal = true, cpu = !mine, cardId = id, cardName = name, beat = beat,
-                travel = Travel(id, name, mine, Leg.REST, "stackcard", restMs, e.stackId, targets = e.targets, power = if (taps.isEmpty()) .5f else 1f))
+                travel = Travel(id, name, mine, Leg.REST, "stackcard", restMs, e.stackId, targets = e.targets, power = if (taps.isEmpty() && pool == 0) .5f else 1f))
         }
         /** The CPU plays a land: its think, then the land from its seat to its group with the caption. */
         fun cpuLand(card: Ref?, turn: Int) {
@@ -336,6 +350,19 @@ object Director {
                 }
             }
         }
+        // P2b, tapping lands by hand (Randall 11 Nov): lands of yours that tapped with no cast to pay for, while your floating mana
+        // grew, send their light to the mana by your square. One step. Forge alone says what was tapped and what is floating.
+        val byHand = tapsLeft[me].orEmpty()
+        if (byHand.isNotEmpty() && poolNow > poolBefore && events.none { it.type in PAID_FOR && it.player == me }) {
+            val ms = poolMs(byHand.size)
+            out += Step(Kind.MANA, ms, PAY_MIN_MS, travel = Travel(null, null, true, Leg.TO_POOL, "manapool", ms, taps = byHand))
+        }
+        // P2b, Undo: lands of yours that stood tapped and are ready again in the same turn, your floating mana gone down with them:
+        // they turn back with a gold glint (240) and the light returns from the pool. One step.
+        if (before != null && before.turn == st.turn && poolNow < poolBefore && events.none { it.type == "turn" || (it.type in PAID_FOR && it.player == me) }) {
+            val back = st.players.firstOrNull { it.id == me }?.battlefield.orEmpty().filter { c -> c.isLand && !c.tapped && before.card(c.id)?.let { it.zone == "Battlefield" && it.tapped } == true }.map { it.id }
+            if (back.isNotEmpty()) out += Step(Kind.MANA, UNDO_MS, UNDO_MS, travel = Travel(null, null, true, Leg.UNTAP, "manapool", UNDO_MS, taps = back))
+        }
         // Damage or drain to you that no cast above explains (combat, a trigger resolving): one red caption.
         if (!explainedLife) lifeChange(st, events)?.let { (from, to) ->
             out += Step(Kind.LIFE, 360 + 90L * (from - to).coerceAtMost(20), 360, "CMB-005", focal = true, cpu = true,
@@ -384,6 +411,12 @@ object Director {
     /** P2, Pay as a whole: the last streak in, then 40 ms before the burst. Never under [PAY_MIN_MS] with a prompt waiting. */
     fun payMs(n: Int): Long = if (n <= 0) 0 else streakArrives(n - 1) + 40L
     const val PAY_MIN_MS = 200L
+    /** P2b: lands tapped by hand, their streaks to the floating mana (the last one in ends the step). */
+    fun poolMs(n: Int): Long = if (n <= 0) 0 else streakArrives(n - 1)
+    /** P2b: Undo, the land turns back with a gold glint. */
+    const val UNDO_MS = 240L
+    /** Events that mana is spent on: with one of yours in the poll, tapped lands paid for it and are not "by hand". */
+    private val PAID_FOR = setOf("cast", "ability")
     /** P2, Burst: a 70 ms freeze, then 300 ms of spikes, ring, sparks, push-in and shake. Min 150. */
     const val BURST_FREEZE_MS = 70L
     const val BURST_MS = 370L

@@ -191,6 +191,7 @@ private fun easeOutQ(x: Float) = 1f - (1f - x) * (1f - x)
 internal fun DrawScope.drawCastPunch(fx: Battlefield, m: dev.cardstashy.nativeplay.match.TravelMoment, rect: (String?) -> androidx.compose.ui.geometry.Rect?) {
     val D = dev.cardstashy.nativeplay.match.Director
     val t = m.travel
+    if (t.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_POOL || t.leg == dev.cardstashy.nativeplay.match.Director.Leg.UNTAP) { drawHandMana(fx, m, rect); return }
     if (t.leg != dev.cardstashy.nativeplay.match.Director.Leg.TAPS && t.leg != dev.cardstashy.nativeplay.match.Director.Leg.REST) return
     val stack = rect("stackcard") ?: return
     val el = fx.travelMs(m); val now = fx.now.longValue
@@ -206,7 +207,18 @@ internal fun DrawScope.drawCastPunch(fx: Battlefield, m: dev.cardstashy.nativepl
     if (t.leg == dev.cardstashy.nativeplay.match.Director.Leg.TAPS) {
         val into = Offset(stack.left + stack.width * .25f, stack.center.y)
         var arrived = 0
-        t.taps.forEachIndexed { i, id ->
+        // P2b: floating mana you made by hand pays first, its streaks from the pool by your square; the lands' follow.
+        val pool = rect("manapool")
+        for (j in 0 until t.pool) {
+            val at = el - D.TAP_GAP_MS * j
+            if (at < 0) continue
+            val sp = (at - D.STREAK_LEAVE_MS).toFloat() / D.STREAK_MS
+            if (!still && pool != null && sp in 0f..1f) streak(pool.center, into, sp * sp, gold, 5f * dp, bend = -.12f)
+            if (at >= D.STREAK_LEAVE_MS + D.STREAK_MS) { arrived++
+                if (!still && fx.once(m.key, 400 + j)) fx.bits.sparks(into, 5, gold, now, 110f * dp, dir = PI.toFloat(), spread = 2.4f, lifeMs = 300, sizePx = 1.4f * dp, seed = 80 + j) }
+        }
+        t.taps.forEachIndexed { k, id ->
+            val i = k + t.pool
             val at = el - D.TAP_GAP_MS * i
             if (at < 0) return@forEachIndexed
             val lc = toneOf(id)
@@ -224,7 +236,7 @@ internal fun DrawScope.drawCastPunch(fx: Battlefield, m: dev.cardstashy.nativepl
                 if (!still && fx.once(m.key, i * 4 + 1)) fx.bits.sparks(into, 5, lc, now, 110f * dp, dir = PI.toFloat(), spread = 2.4f, lifeMs = 300, sizePx = 1.4f * dp, seed = 40 + i) }
         }
         // Charge: the spell's ring steps up with each arrival.
-        if (t.taps.isNotEmpty()) spellRing(.9f * arrived / t.taps.size)
+        if (t.taps.size + t.pool > 0) spellRing(.9f * arrived / (t.taps.size + t.pool))
         return
     }
     // The rest opens with the burst.
@@ -247,4 +259,40 @@ internal fun DrawScope.drawCastPunch(fx: Battlefield, m: dev.cardstashy.nativepl
     // Embers rise off it for half a second (five puffs, 105 ms apart).
     if (!still) for (j in 0 until 5) if (b >= j * 105L && fx.once(m.key, 10 + j))
         fx.bits.embers(Offset(c.x - stack.width * .3f + stack.width * .15f * j, c.y + h * .15f), 4, tone, now, 40f * dp, lifeMs = 800, sizePx = 1.3f * dp, seed = 60 + j)
+}
+
+
+/**
+ * P2b, lands tapped by hand (the behaviour is Forge's; this is the look only). To the pool: each land flashes in its own colour
+ * with a ring and 7 sparks as it turns, and its streak flies to the floating mana by your square. Undo: each land takes a gold
+ * glint (240 ms) as it turns back, and the light returns from the pool to it.
+ */
+private fun DrawScope.drawHandMana(fx: Battlefield, m: dev.cardstashy.nativeplay.match.TravelMoment, rect: (String?) -> androidx.compose.ui.geometry.Rect?) {
+    val D = dev.cardstashy.nativeplay.match.Director
+    val t = m.travel; val el = fx.travelMs(m); val now = fx.now.longValue
+    val gold = Color(0xFFF3D27E); val dp = density; val still = fx.reduced; val half = if (still) .5f else 1f
+    val pool = rect("manapool") ?: fx.board?.let { rect("orb${it.viewer}") }
+    val corner = androidx.compose.ui.geometry.CornerRadius(10f * dp)
+    if (t.leg == dev.cardstashy.nativeplay.match.Director.Leg.UNTAP) {
+        val q = (el.toFloat() / D.UNDO_MS).coerceIn(0f, 1f)
+        for (id in t.taps) rect("c$id")?.let { r ->
+            drawRoundRect(gold.copy(alpha = .8f * half * (1f - q)), r.topLeft, r.size, corner)
+            if (!still && pool != null) streak(pool.center, r.center, q, gold, 4f * dp, bend = .12f)
+        }
+        return
+    }
+    t.taps.forEachIndexed { i, id ->
+        val at = el - D.TAP_GAP_MS * i
+        if (at < 0) return@forEachIndexed
+        val lc = fx.board?.card(id)?.let { frameTone(cardColors(it)).first } ?: gold
+        val r = rect("c$id") ?: return@forEachIndexed
+        if (at < 300) drawRoundRect(lc.copy(alpha = .9f * half * (1f - at / 300f).let { it * it }), r.topLeft, r.size, corner)
+        if (still) return@forEachIndexed
+        if (fx.once(m.key, i * 4)) { fx.bits.ring(r.center, r.height * .75f, lc, now, 320); fx.bits.sparks(r.center, 7, lc, now, 150f * dp, lifeMs = 380, sizePx = 1.6f * dp, seed = i)
+            fx.bits.blob(r.center, r.height * .6f, lc, now, 220) }
+        val sp = (at - D.STREAK_LEAVE_MS).toFloat() / D.STREAK_MS
+        if (pool != null && sp in 0f..1f) streak(r.center, pool.center, sp * sp, lc, 5f * dp, bend = .12f)
+        if (pool != null && at >= D.STREAK_LEAVE_MS + D.STREAK_MS && fx.once(m.key, i * 4 + 1)) { fx.bits.ring(pool.center, pool.height * .9f, lc, now, 260)
+            fx.bits.sparks(pool.center, 4, lc, now, 90f * dp, lifeMs = 280, sizePx = 1.3f * dp, seed = 30 + i) }
+    }
 }
