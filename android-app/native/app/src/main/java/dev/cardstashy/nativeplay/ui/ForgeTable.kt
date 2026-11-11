@@ -519,7 +519,17 @@ fun ForgeBoard(
                 val fh = rowsG.cpuFront.height; val bh0 = rowsG.cpuBack.height
                 val reach = TableGeometry.sideReach(fh * TableGeometry.CROP_MIN, fh).dp
                 val frontLeft = zones.board.x.dp + reach
-                val room = boardRight - reach - lane - frontLeft
+                // M14: the planeswalkers stand in a column at the right end of their owner's side; the creature rows end short of it.
+                val cpuWalk = walkers(cpu.battlefield); val myWalk = walkers(me.battlefield)
+                val walkFull = H * (if (zones.phone) Walkers.PHONE else Walkers.BIG)
+                val myWalkCol = if (myWalk.isEmpty()) null else Walkers.column(myWalk.size, walkFull.value, mid.value + 3.du.value,
+                    minOf(zones.handTray?.y ?: zones.window.bottom, if (zones.phone) Float.MAX_VALUE else rowsG.myBack.top - 10.du.value) - 4.du.value,
+                    rowsG.myFront.centre + (if (zones.phone) 4.du.value else rowsG.myFront.height * .25f), Walkers.GAP.du.value)
+                val cpuWalkCol = if (cpuWalk.isEmpty()) null else Walkers.column(cpuWalk.size, walkFull.value,
+                    if (zones.phone) zones.window.y + 40.du.value else rowsG.cpuBack.bottom + 4.du.value, mid.value - 3.du.value,
+                    rowsG.cpuFront.centre - (if (zones.phone) 4.du.value else rowsG.cpuFront.height * .25f), Walkers.GAP.du.value)
+                val walkLane = listOfNotNull(myWalkCol, cpuWalkCol).maxOfOrNull { it.first * Walkers.WIDE }?.let { it.dp + Walkers.INSET.du + 8.du } ?: 0.dp
+                val room = boardRight - reach - lane - walkLane - frontLeft
                 val backIn = maxOf(6.du, TableGeometry.sideReach(bh0 * TableGeometry.CROP_MIN, bh0).dp)
                 val backX = zones.board.x.dp + backIn
                 val backRoom = boardRight - backIn - lane - backX
@@ -545,7 +555,15 @@ fun ForgeBoard(
                     transformOrigin = androidx.compose.ui.graphics.TransformOrigin((zones.board.x + zones.board.w / 2) / W.value.coerceAtLeast(1f),
                         (zones.board.y + zones.board.h / 2) / H.value.coerceAtLeast(1f))
                     fx.shake(this) }) {
-                PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, backX, rowsG.cpuBack.centre.dp, backRoom, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true, onPile = openPile, gap = backGap, looseRight = true)
+                // M14: on a phone the CPU's column reaches up beside its back row, so that row ends short of it.
+                PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, backX, rowsG.cpuBack.centre.dp, if (zones.phone && cpuWalkCol != null) backRoom - walkLane else backRoom, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true, onPile = openPile, gap = backGap, looseRight = true)
+                // M14: yours stack upward from the first (the second above it), the CPU's downward, the mirror.
+                for ((cards, col, mineSide) in listOf(Triple(cpuWalk, cpuWalkCol, false), Triple(myWalk, myWalkCol, true))) if (col != null) cards.forEachIndexed { i, c -> key(c.id) {
+                    val (wh, top) = col; val ww = wh * Walkers.WIDE
+                    val slot = if (mineSide) cards.lastIndex - i else i
+                    Tile(c, ww.dp, wh.dp, false, markOf(c), mineSide, { st.card(it) }, tapOf(c), onInspect,
+                        Modifier.offset(x = boardRight - lane - Walkers.INSET.du - ww.dp, y = (top + slot * (wh + Walkers.GAP.du.value)).dp).zIndex(40f), d, piece = tilePiece, whole = true)
+                } }
                 PermanentRow(others(cpu.battlefield), false, 0, frontX, rowsG.cpuFront.centre.dp, room, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = fw to fh.dp, advance = advance, onPile = openPile, gap = frontGap, squeezed = tiles.squeezed)
                 PermanentRow(others(me.battlefield), false, 0, frontX, rowsG.myFront.centre.dp, room, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = fw to fh.dp, advance = advance, onPile = openPile, gap = frontGap, squeezed = tiles.squeezed)
                 PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, backX, rowsG.myBack.centre.dp, myBackRoom, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true, onPile = openPile, gap = backGap,
@@ -1196,7 +1214,28 @@ fun ForgeBoard(
 
 /** forge-table.mjs laneFor: creatures in the front row; lands, then the "other" lane (artifacts, enchantments, planeswalkers, battles) in the back row. */
 private fun lands(cards: List<Card>) = cards.filter { it.isLand && !it.isCreature && it.attachedTo == null }
-private fun backOthers(cards: List<Card>) = cards.filter { !it.isLand && !it.isCreature && it.attachedTo == null }
+private fun backOthers(cards: List<Card>) = cards.filter { !it.isLand && !it.isCreature && it.attachedTo == null && !isWalker(it) }
+/** Mobile table M14: a planeswalker (not one that is also a creature, which fights in the creature row). */
+internal fun isWalker(c: Card) = c.type.contains("Planeswalker") && !c.isCreature && !c.isLand && c.attachedTo == null
+internal fun walkers(cards: List<Card>) = cards.filter(::isWalker)
+/**
+ * M14 (specs/mobile-table-arena-parity-brief.md; placement seen in Arena, phone sizes the brief's): a planeswalker stays a whole
+ * upright card at the right end of its owner's side, several in a column, its loyalty in a shield on its bottom edge.
+ */
+internal object Walkers {
+    /** The card's height as a share of the screen's: a phone, a big screen. */
+    const val PHONE = .24f; const val BIG = .17f
+    /** A card's width over its height. */
+    const val WIDE = .716f
+    /** Between two cards of a column (the upper card's shield hangs in it), and from the board's right edge (du). */
+    const val GAP = 14f; const val INSET = 10f
+    /** A column of [n] cards in [roomH]: each card's height (never taller than [full]) and the column's top, centred on [centre] while it fits. */
+    fun column(n: Int, full: Float, top: Float, bottom: Float, centre: Float, gap: Float): Pair<Float, Float> {
+        val h = minOf(full, ((bottom - top) - gap * (n - 1)) / n).coerceAtLeast(1f)
+        val total = h * n + gap * (n - 1)
+        return h to (centre - total / 2).coerceIn(top, maxOf(top, bottom - total))
+    }
+}
 private fun others(cards: List<Card>) = cards.filter { it.isCreature && it.attachedTo == null }
 private fun backRow(cards: List<Card>) = lands(cards) + backOthers(cards)
 
@@ -1400,7 +1439,9 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
                  /** 0.4.60 Z2: how much of this tile shows while the next pile lies over its right part (null: all of it). */
                  visibleW: Dp? = null,
                  /** 0.4.60 Z2: the tile is cropped narrow (TableGeometry.Tiles.squeezed): its name may take three lines, not two. */
-                 squeezed: Boolean = false) = with(d) {
+                 squeezed: Boolean = false,
+                 /** M14: the whole upright card (a planeswalker), no name strip of its own, its loyalty in a shield on its bottom edge. */
+                 whole: Boolean = false) = with(d) {
     val (a, _) = frameTone(cardColors(card))
     // play-forge-table.css: a role's ring and glow (playable/choice #5cc8ff, target #ff9d5c, chosen #f3d27e), combat over it (attacking #ff6a4a, blocking #6aaeff).
     val combat = card.attacking || card.blocking
@@ -1414,11 +1455,13 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         mark == Mark.TARGET -> Triple(Color(0xFFFF9D5C), 2f, Color(0x8CFF9D5C))
         mark == Mark.DISCARD -> Triple(Color(0xFFFF7A6B), 2f, Color(0x8CFF6A5A))
         mark == Mark.PLAYABLE || mark == Mark.PICKABLE -> Triple(Ice, 2f, Color(0x8C5CC8FF))
+        // M14: a planeswalker Forge offers an ability for wears the blue rim.
+        whole && mark == Mark.USABLE -> Triple(Ice, 2f, Color(0x8C5CC8FF))
         else -> null
     }
     val ring = role?.first ?: lerp(a, Color.White, .15f)
     // glow-rules.md: the usable ring (violet, dashed, 7 dp outside) steps back while a hand card is carried; the payment light shows then.
-    val usableRing = mark == Mark.USABLE && !LocalHandCarry.current
+    val usableRing = mark == Mark.USABLE && !LocalHandCarry.current && !whole
     // Match punch P7: the sources that would pay for the card you hold light one after another, 40 ms apart.
     val payAt = LocalPayLight.current.indexOf(card.id)
     val payIn by animateFloatAsState(if (payAt >= 0) 1f else 0f, if (Motion.still || payAt < 0) androidx.compose.animation.core.snap() else tween(160, delayMillis = payAt * PAY_LIGHT_GAP_MS), label = "payLight")
@@ -1524,8 +1567,11 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         // with the tile on a bigger screen. The strip is at least one line of the name tall.
         val textK = piece?.let { TextFloors.scale(it.value * .9f) } ?: 1f
         val nameSp = TextFloors.nameSp(land, squeezed, textK)
-        val nh = piece?.let { maxOf((h.value * .17f).coerceIn(12f, 24f), nameSp * 1.2f).dp }
-        Box(Modifier.fillMaxSize().padding(start = 2.du, end = 2.du, bottom = 2.du, top = nh?.let { it + 3.dp } ?: 2.du).clip(RoundedCornerShape(9.du))
+        val nh = if (whole) null else piece?.let { maxOf((h.value * .17f).coerceIn(12f, 24f), nameSp * 1.2f).dp }
+        if (whole) Box(Modifier.fillMaxSize().then(if (foil) Modifier.boardFoil(fx, card.id, card.tapped) { foilKick.longValue } else Modifier)) {
+            CardImage(card.name, Modifier.fillMaxSize()) { CardFrame(card.name, card, Modifier.fillMaxSize(), crop = false) }
+        }
+        else Box(Modifier.fillMaxSize().padding(start = 2.du, end = 2.du, bottom = 2.du, top = nh?.let { it + 3.dp } ?: 2.du).clip(RoundedCornerShape(9.du))
             .then(if (foil) Modifier.boardFoil(fx, card.id, card.tapped) { foilKick.longValue } else Modifier)) {
             CardImage(card.name, Modifier.fillMaxSize(), crop = true) { CardFrame(card.name, card, Modifier.fillMaxSize(), crop = true) }
         }
@@ -1604,7 +1650,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         val plate = if (card.isCreature && card.power != null) measurer.measure(ptText, sans(fsFit, FontWeight.Bold, Color.White)).size
             .let { (it.width / dens).dp + 14.du to (it.height / dens).dp + 2.du } else null
         TileLayer(card, mark == Mark.PLAYABLE || mark == Mark.USABLE, lookup, d, h, if (card.isCreature && card.power != null) (if (piece != null) statPx / u else statPx) else 0f, top = nh?.let { (if (pileTop) nameH else it) + 6.dp },
-            w = w, visibleW = visibleW, plate = plate, plateLeft = left)
+            w = w, visibleW = visibleW, plate = plate, plateLeft = left, plaque = !whole)
         // .play-current-stats: right 6px, bottom 2px, 1px 7px, #d6ad64c0 hairline, radius 7, #111114f2, white 700; the toughness reads #ff8f84 while damage is marked
         // (forge-table.mjs data-damaged; Forge's toughness already counts counters, damage is not subtracted).
         // T2: in a fanned pile only the front card wears its numbers; the ones behind show their art.
@@ -1641,6 +1687,20 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
             Text(if (side) SIDE_YOURS else SIDE_CPU, maxLines = 1, softWrap = false, style = sans(sp(10f), FontWeight.ExtraBold, Color(0xFF0B0D12)).copy(letterSpacing = .06.em),
                 modifier = Modifier.align(Alignment.TopCenter).offset(y = (-9).du).wrapContentWidth(unbounded = true).clip(RoundedCornerShape(999.dp))
                     .background(if (side) SideYours else SideCpu).border(1.dp, Color(0xCC0B0D12), RoundedCornerShape(999.dp)).padding(horizontal = 6.du, vertical = 1.5f.du))
+        }
+    }
+    // M14: the loyalty Forge counts, in a shield on the card's bottom edge, always in view.
+    if (whole) card.counters["LOYALTY"]?.let { n ->
+        val k = (h.value / u / 94f).coerceIn(.8f, 1.5f)
+        Box(modifier.size(w, h).zIndex(21f)) {
+            Box(Modifier.align(Alignment.BottomCenter).offset(y = (11f * k).du).size((38f * k).du, (26f * k).du).anchorRect("loyalty${card.id}")
+                .semantics { contentDescription = "Loyalty $n" }
+                .drawBehind {
+                    val path = androidx.compose.ui.graphics.Path().apply { moveTo(0f, 0f); lineTo(size.width, 0f); lineTo(size.width, size.height * .58f); lineTo(size.width / 2, size.height); lineTo(0f, size.height * .58f); close() }
+                    drawPath(path, Color(0xFF0B0E15)); drawPath(path, Ice, style = Stroke(1.6.dp.toPx(), join = androidx.compose.ui.graphics.StrokeJoin.Round))
+                }, contentAlignment = Alignment.TopCenter) {
+                Text("$n", style = sans(sp(15f * k), FontWeight.ExtraBold, Ice), maxLines = 1, modifier = Modifier.offset(y = (-1f * k).du))
+            }
         }
     }
     // The attacker's number while you block (1, 2 … in attack order), on its top-left corner.
@@ -3052,7 +3112,9 @@ private val BadgeInk = Color(0xFFF2D496)
 @Composable
 private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d: Du, h: Dp, statFont: Float, top: Dp? = null,
                       /** 0.4.60 G1: the tile's width, the part of it that shows (an overlapped pile), and the P/T plate's size and side. */
-                      w: Dp? = null, visibleW: Dp? = null, plate: Pair<Dp, Dp>? = null, plateLeft: Boolean = false) = with(d) {
+                      w: Dp? = null, visibleW: Dp? = null, plate: Pair<Dp, Dp>? = null, plateLeft: Boolean = false,
+                      /** M14: false on a whole planeswalker card, whose loyalty is in the shield on its bottom edge. */
+                      plaque: Boolean = true) = with(d) {
     val b = remember(card, actionable) { TileBadges.of(card, actionable) } ?: return@with
     val bsz = 9.du
     // .cs-badge: a dark pill with a gold hairline; an icon (72%) and a white number.
@@ -3203,7 +3265,7 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
                 if (b.countersMore > 0) badge(null, ink = Color.White, text = "+${b.countersMore}", dashed = true)
                 if (b.damage > 0) badge("marked-damage", edge = Color(0xFFFF8A7D), ink = Color.White, fill = Color(0xF2A8322A), text = "${b.damage}")
             }
-        b.plaque?.let { (kind, value) ->
+        if (plaque) b.plaque?.let { (kind, value) ->
             Row(Modifier.align(Alignment.BottomEnd).offset(x = (-4).du, y = (-4).du).clip(RoundedCornerShape(5.du)).background(Color(0xF2111114)).border(1.dp, Color(0xC0D6AD64), RoundedCornerShape(5.du))
                 .padding(start = 3.du, end = 5.du, top = 1.du, bottom = 1.du), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.du)) {
                 BoardIcon(if (kind == "loyalty") "loyalty" else "defense", BadgeInk, bsz * .8f)
