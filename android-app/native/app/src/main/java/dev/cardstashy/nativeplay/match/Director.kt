@@ -178,6 +178,15 @@ object Director {
             out += Step(Kind.CAST, restMs, STACK_HOLD_MS, focal = true, cpu = !mine, cardId = id, cardName = name, beat = beat,
                 travel = Travel(id, name, mine, Leg.REST, "stackcard", restMs, e.stackId, targets = e.targets))
         }
+        /** The CPU plays a land: its think, then the land from its seat to its group with the caption. */
+        fun cpuLand(card: Ref?, turn: Int) {
+            thinkFor(Decision.LAND, turn)
+            out += Step(Kind.LAND, 850, 550, "CARD-005", focal = true, cpu = true, cardId = card?.id, cardName = card?.name,
+                beat = Beat(Beat.Kind.LAND, "CPU plays ${card?.name ?: "a land"}", card?.id, card?.name, null),
+                travel = Travel(card?.id, card?.name, false, Leg.TO_GROUP, card?.id?.let { "c$it" }, TO_GROUP_MS))
+        }
+        val landHere = events.filter { it.type == "land" }.mapNotNull { it.card?.id }.toSet()
+        val lastSeq = events.lastOrNull()?.seq
         // Whose turn each event is in: a turn event in the batch changes it; before one, two-player turns alternate.
         val firstTurn = events.firstOrNull { it.type == "turn" }
         var active: Int? = if (firstTurn != null) st.players.map { it.id }.firstOrNull { it != firstTurn.player } else st.activePlayer
@@ -188,12 +197,10 @@ object Director {
                     if (e.turn > 1) out += Step(Kind.BANNER, 1500, 900, if (e.player == me) "TT-001" else "TT-002", focal = true, cpu = cpu(e.player),
                         banner = Banner("Turn ${e.turn} · " + if (e.player == me) "Your turn" else "CPU's turn", e.player == me))
                 }
-                "land" -> if (cpu(e.player)) {
-                    thinkFor(Decision.LAND, e.turn)
-                    out += Step(Kind.LAND, 850, 550, "CARD-005", focal = true, cpu = true, cardId = e.card?.id, cardName = e.card?.name,
-                        beat = Beat(Beat.Kind.LAND, "CPU plays ${e.card?.name ?: "a land"}", e.card?.id, e.card?.name, null),
-                        travel = Travel(e.card?.id, e.card?.name, false, Leg.TO_GROUP, e.card?.id?.let { "c$it" }, TO_GROUP_MS))
-                } else if (e.card != null) {
+                // A land already on the board shown: its play was told from its move (below), in the board before this one.
+                "land" -> if (e.card?.id != null && before?.card(e.card.id)?.zone == "Battlefield") continue@loop
+                else if (cpu(e.player)) cpuLand(e.card, e.turn)
+                else if (e.card != null) {
                     // T5 item 6: your land skips the stack, hand to its group.
                     out += Step(Kind.LAND, TO_GROUP_MS, TO_GROUP_MS, cardId = e.card.id, cardName = e.card.name,
                         travel = Travel(e.card.id, e.card.name, true, Leg.TO_GROUP, "c${e.card.id}", TO_GROUP_MS))
@@ -301,6 +308,12 @@ object Director {
                         // T6 (Arena clip 1): the card goes to the stack first, then asks for its targets or its mana.
                         out += Step(Kind.CAST, TO_STACK_MS, TO_STACK_MS, cardId = id, cardName = e.card.name,
                             travel = Travel(id, e.card.name, true, Leg.TO_STACK, "stackcard", TO_STACK_MS))
+                    } else if (e.from == "Hand" && e.to == "Battlefield" && id != null && !e.token && id !in landHere && e.seq == lastSeq &&
+                        cpu(e.player ?: controllerOf(id)) && st.card(id)?.isLand == true && before?.card(id)?.zone != "Battlefield") {
+                        // The host pauses the CPU on its land play and publishes the board then, before it writes the land event: that
+                        // board ends on the land's move from the hand. It is the land play, told once here; the land event that follows
+                        // in the next board is skipped above (live 0.4.59: the CPU's land flew in twice).
+                        cpuLand(e.card, e.turn)
                     } else zoneStep(e, me)?.let { if (it.kind == Kind.TOKEN || it.kind == Kind.DRAW) groupOrAdd(out, it) else out += it }
                 }
             }
