@@ -53,7 +53,27 @@ object PadCursor {
     private const val DEAD = .18f
 
     /** The left stick's position (-1..1 each way). */
-    fun left(x: Float, y: Float) { lx = x; ly = y; if (hypot(x, y) > DEAD) { if (!shown) appear(); kick() } }
+    fun left(x: Float, y: Float) {
+        snap?.let { s -> snapStick(x, y, s); return }
+        lx = x; ly = y; if (hypot(x, y) > DEAD) { if (!shown) appear(); kick() }
+    }
+
+    /**
+     * 0.4.59 T6: while the table asks for a target the left stick has no free cursor; a push snaps the ring to the nearest legal
+     * answer that way (the same list the d-pad walks), again every [SNAP_REPEAT_MS] while it is held, and once more on each new push.
+     */
+    var snap: ((Offset) -> Boolean)? = null
+    private var snapArmed = false; private var snapAt = 0L
+    internal const val SNAP_PUSH = .5f
+    internal const val SNAP_REPEAT_MS = 220L
+    internal fun snapStick(x: Float, y: Float, s: (Offset) -> Boolean, now: Long = SystemClock.uptimeMillis()) {
+        val m = hypot(x, y)
+        if (m < DEAD) { snapArmed = false; return }
+        if (m < SNAP_PUSH) return
+        if (snapArmed && now - snapAt < SNAP_REPEAT_MS) return
+        snapArmed = true; snapAt = now
+        s(Offset(x, y))
+    }
     /**
      * The right stick scrolls like a console's (Randall 9 Nov: "a real controller going up and down pages that call for it"):
      * analog speed (a nudge creeps, the rim races), one axis at a time, easing in. It drives the scroller the way a finger does

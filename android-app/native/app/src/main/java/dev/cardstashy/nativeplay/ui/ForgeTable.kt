@@ -892,7 +892,18 @@ fun ForgeBoard(
             androidx.compose.runtime.DisposableEffect(targeting) {
                 val s: (Int) -> Boolean = { k -> steerTargets(k) }
                 if (targeting) PadPrompts.steer = s
-                onDispose { if (PadPrompts.steer === s) PadPrompts.steer = null }
+                // 0.4.59 T6: the left stick snaps the ring to the nearest legal target the way it is pushed (the d-pad's list, no free cursor).
+                val snap: (Offset) -> Boolean = snap@{ dir ->
+                    if (TablePad.held || (PadPrompts.anyFocus && !TableZones.ringIn)) return@snap false
+                    val a = handAnchors ?: return@snap false
+                    val sel = st.selection
+                    val stops = sel.targetCards.mapNotNull { id -> (TableZones.theirs[id] ?: TableZones.mine[id])?.let { r -> a.rects["c$id"]?.let { r to it } } } +
+                        sel.players.filter { it in sel.targetPlayers }.mapNotNull { id -> TableZones.orbs[id]?.let { r -> a.rects["orb$id"]?.let { r to it } } }
+                    val from = stops.firstOrNull { it.first === TablePad.last }?.second?.center ?: a.rects["hand"]?.center ?: return@snap false
+                    TableZones.nearest(from, dir, stops.filter { it.first !== TablePad.last })?.let { TableZones.snapTo(it) } ?: false
+                }
+                if (targeting) PadCursor.snap = snap
+                onDispose { if (PadPrompts.steer === s) PadPrompts.steer = null; if (PadCursor.snap === snap) PadCursor.snap = null }
             }
             LaunchedEffect(padAsking, st.inputType) {
                 if (!Pad.connected.value || TablePad.held) {
@@ -1769,6 +1780,23 @@ internal object TableZones {
         return ok
     }
     /** One step along [stops] from where the ring is (from anywhere else, the first stop); a stop that refuses is passed over. */
+    /**
+     * 0.4.59 T6 (input, the left stick): the stop nearest [from] in the direction [dir] (y down), within 60° of it; the angle off
+     * counts as much as the distance, so a push picks what lies that way rather than what is merely close. Null: nothing that way.
+     */
+    fun <T> nearest(from: Offset, dir: Offset, stops: List<Pair<T, androidx.compose.ui.geometry.Rect>>): T? {
+        val len = dir.getDistance(); if (len < 1e-3f) return null
+        val ux = dir.x / len; val uy = dir.y / len
+        return stops.mapNotNull { (k, r) ->
+            val vx = r.center.x - from.x; val vy = r.center.y - from.y; val d = kotlin.math.hypot(vx, vy)
+            if (d < 1f) return@mapNotNull null
+            val cos = (vx * ux + vy * uy) / d
+            if (cos < .5f) null else k to d * (1f + 2f * (1f - cos))
+        }.minByOrNull { it.second }?.first
+    }
+    /** Take [r] as a stick snap does: the ring moves there, the walk's place with it. */
+    fun snapTo(r: FocusRequester): Boolean { val ok = take(r); if (ok) { jumped = true; if (at == 0) at = 1; TablePad.last = r }; return ok }
+
     fun steer(stops: List<FocusRequester>, step: Int): Boolean {
         if (stops.isEmpty()) return false
         val i = stops.indexOf(TablePad.last)
