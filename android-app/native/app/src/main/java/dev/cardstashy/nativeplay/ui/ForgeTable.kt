@@ -655,9 +655,33 @@ fun ForgeBoard(
                 // Z1 review: while Undo shows in its slot at the foot of the stack slot, the stack card stands above it.
                 val undoShown = st.prompt == null && st.waitingOnMe && cancelLabel(st)?.startsWith("Undo", ignoreCase = true) == true
                 val sz = zones.stackAbove(undoShown)
-                val s = minOf(1f, sz.w / 104.du.value, sz.h / (145.du + 30.du + (if (lane.size > 1) 22.du else 0.dp)).value)
-                val spare = (sz.h.dp - (145.du + 30.du) * s).coerceAtLeast(0.dp)
-                val cardX = sz.x.dp + (sz.w.dp - 104.du * s) / 2; val cardY = sz.y.dp + spare
+                val fit = minOf(1f, sz.w / 104.du.value, sz.h / (145.du + 30.du + (if (lane.size > 1) 22.du else 0.dp)).value)
+                val fitSpare = (sz.h.dp - (145.du + 30.du) * fit).coerceAtLeast(0.dp)
+                // Mobile table M5 (the brief's "stack card and the right strip"): on one screen the card stands at Arena's size (58 %
+                // of the height on a phone, 43 % on a big screen) against the right strip, over the right end of the board; the board
+                // does not move or shrink (walk line 27). Step aside: while a question is open and a legal target lies under it, it
+                // drops to the size that fits the strip until the question is answered, so every target stays pickable.
+                val fullH = H * ZoneLayout.stackShare(zones)
+                val sFull = fullH / 145.du
+                val fullX = zones.rightStrip.x.dp - 4.du - 104.du * sFull
+                val fullY = (mid - fullH / 2).coerceIn(zones.window.y.dp + 8.du + (if (lane.size > 1) 22.du * sFull else 0.dp), ((zones.handTray?.y?.dp ?: (zones.window.bottom.dp - 8.du)) - (145.du + 30.du) * sFull).coerceAtLeast(zones.window.y.dp + 8.du + (if (lane.size > 1) 22.du * sFull else 0.dp)))
+                val stackDensity = LocalDensity.current
+                val asked = if (live && st.prompt == null) st.selection.cards + st.selection.targetCards else emptySet()
+                val fullBox = with(stackDensity) { androidx.compose.ui.geometry.Rect(fullX.toPx(), fullY.toPx(), (fullX + 104.du * sFull).toPx(), (fullY + (145.du + 30.du) * sFull).toPx()) }
+                val stackAnchors = LocalAnchors.current
+                val askedNow by androidx.compose.runtime.rememberUpdatedState(asked); val boxNow by androidx.compose.runtime.rememberUpdatedState(fullBox)
+                // Where the tiles are comes from their anchors (written at layout): read through a derived state, so the board is
+                // composed again only when the answer changes, not each time a tile moves.
+                val under by remember(stackAnchors) { androidx.compose.runtime.derivedStateOf {
+                    stackAnchors?.version?.intValue
+                    askedNow.isNotEmpty() && stackAnchors != null && askedNow.any { id -> stackAnchors.rects["c$id"]?.overlaps(boxNow) == true } } }
+                val full = !DualScreen.active && sFull > fit && !under
+                val stackSpec = if (Motion.still) androidx.compose.animation.core.snap<Float>() else tween<Float>(200, easing = FastOutSlowInEasing)
+                val big by animateFloatAsState(if (full) 1f else 0f, stackSpec, label = "stackSize")
+                val s = fit + (sFull - fit) * big
+                val spare = fitSpare + (fullY - zones.window.y.dp - 8.du - fitSpare) * big
+                val cardX = (sz.x.dp + (sz.w.dp - 104.du * fit) / 2).let { it + (fullX - it) * big }
+                val cardY = (sz.y.dp + fitSpare).let { it + (fullY - it) * big }
                 // The words under the top card end 16 dp inside the screen (the stack zone already does).
                 // Z1 review: the fan is drawn smaller (s) to fit the strip, so its small touch targets (Yield, "+N") take taps in a box as big
                 // on the screen as anywhere else: Compose's nearby-touch box (48 dp) is measured in the fan's own scaled units, so it grows by 1/s.

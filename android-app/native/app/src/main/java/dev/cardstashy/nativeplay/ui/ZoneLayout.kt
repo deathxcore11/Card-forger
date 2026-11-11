@@ -94,6 +94,14 @@ internal object ZoneLayout {
     const val HAND_ARC = 1.6f
     /** The phone: the hand starts this far (dp at k = 1) in from the board's left edge; your lands lie in that room. */
     const val HAND_LEFT = 182f
+    /** The card on the stack is this share of the height tall: 58 % on a phone, 43 % on a big screen (the dual top keeps its strip size). */
+    const val STACK_PHONE = .58f
+    const val STACK_BIG = .43f
+    fun stackShare(z: Zones): Float = if (z.phone) STACK_PHONE else STACK_BIG
+    /** A cast card pops to this share of the height to be read: 82 % on a phone, 64 % on a big screen. */
+    const val POP_PHONE = .82f
+    const val POP_BIG = .64f
+    fun popShare(z: Zones): Float = if (z.phone) POP_PHONE else POP_BIG
     /** A lifted hand card is this share of the height tall: 80 % on a phone, 45 % on a big screen. */
     const val HAND_RAISE_PHONE = .80f
     const val HAND_RAISE_BIG = .45f
