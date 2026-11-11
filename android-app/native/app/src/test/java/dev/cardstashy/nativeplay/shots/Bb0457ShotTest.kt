@@ -193,7 +193,7 @@ class Bb0457ShotTest {
         val t = state("targets")
         val st = t.copy(message = "Select targets for Sheltered by Ghosts\nChoose target nonland permanent an opponent controls.")
         val ask = dev.cardstashy.nativeplay.ui.askLine(st) ?: error("no ask for the target prompt")
-        assertTrue("the ask itself is cut: $ask", "Choose target nonland permanent an opponent controls" in ask && "…" !in ask)
+        assertTrue("the ask itself is cut: $ask", ask.contains("choose target nonland permanent an opponent controls", ignoreCase = true) && ask.startsWith("Sheltered by Ghosts: ") && "…" !in ask)
         for (size in listOf(Size("640x360-dual", 640, 360, true)) + sizes.filter { it.dual }) {
             val a = board("c-askline", st, size, clock = null)
             assertTrue("the top still says the ask at ${size.tag}", a.rects["askline"] == null)

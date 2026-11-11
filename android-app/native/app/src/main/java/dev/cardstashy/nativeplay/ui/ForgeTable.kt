@@ -2774,6 +2774,43 @@ internal fun discardChipStep(lifted: Card?, selected: Int?, hand: List<Card>, pi
     else -> DiscardStep.Pick(lifted.id)
 }
 
+/**
+ * Mobile table M1: who is asking a target question. Forge writes it as the first line of the question, "<card> (<id>) - <what
+ * the spell or ability does>", and what to pick on the last ("Select target creature."). [cardId] is that card on the table
+ * (null when Forge's line carries no id); [text] what it does; [pick] Forge's own words for what to pick.
+ */
+internal data class Asker(val name: String, val cardId: Int?, val text: String, val pick: String)
+private val ASKER_HEAD = Regex("^(.{2,80}?)(?: \\((\\d+)\\))? - (.*)$")
+private val ASKER_FOR = Regex("^Select targets? for (.{2,80}?)(?: \\((\\d+)\\))?\\.?$", RegexOption.IGNORE_CASE)
+private val PICK_LINE = Regex("^(Select|Choose)\\b", RegexOption.IGNORE_CASE)
+internal fun asker(st: MatchState): Asker? {
+    if (st.prompt != null || st.inputType != "InputSelectTargets") return null
+    val lines = st.message.lines().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("Targeted:") && !it.startsWith("Parent Targeted:") && !Regex("^\\(\\d+ more can be targeted\\)$").matches(it) }
+    val head = lines.firstNotNullOfOrNull { ASKER_HEAD.find(it) } ?: lines.firstNotNullOfOrNull { ASKER_FOR.find(it) } ?: return null
+    val name = head.groupValues[1].trim(); if (name.isEmpty()) return null
+    val said = head.groupValues.getOrElse(3) { "" }.trim()
+    val pick = lines.lastOrNull { it != head.value && PICK_LINE.containsMatchIn(it) } ?: said.takeIf { PICK_LINE.containsMatchIn(it) } ?: ""
+    return Asker(name, head.groupValues[2].toIntOrNull(), if (PICK_LINE.containsMatchIn(said)) "" else said, pick)
+}
+/**
+ * M1: the question with its asker's name first, "Optimistic Scavenger: put a +1/+1 counter on target creature." What it does,
+ * in Forge's words, when that is one short sentence about a target (a trigger's "Whenever …," and the card's own name at its
+ * start are left off); otherwise [plain], the table's own short ask.
+ */
+internal fun askerLine(a: Asker, plain: String): String = "${a.name}: ${askerBody(a, plain)}"
+/** The question without its asker's name: what it does or what to pick, starting small, ending with a full stop. */
+internal fun askerBody(a: Asker, plain: String): String {
+    var does = a.text.replace(Regex("\\s*\\(Targeting ERROR\\)"), "").trim()
+    Regex("^(?:When|Whenever|At the beginning)\\b[^,]{0,90}, (.+)$", RegexOption.IGNORE_CASE).find(does)?.let { does = it.groupValues[1] }
+    if (does.startsWith(a.name, ignoreCase = true)) does = does.drop(a.name.length).trim()
+    val body = if (does.length in 8..ASK_TEXT_MAX && Regex("\\btarget\\b", RegexOption.IGNORE_CASE).containsMatchIn(does) && does.count { it == '.' } <= 1) does
+        else plain.replace(Regex("\\s+for ${Regex.escape(a.name)}$", RegexOption.IGNORE_CASE), "")
+    val low = body.trim().trimEnd('.').let { b -> if (b.length > 1 && b[0].isUpperCase() && !b[1].isUpperCase()) b[0].lowercase() + b.drop(1) else b }
+    return "$low."
+}
+/** M1: what a spell or ability does is said in the question when it is this short; longer, the question says only what to pick. */
+internal const val ASK_TEXT_MAX = 90
+
 /** native-panel.mjs: the one line that says what the table is asking (the .forge-ask-line above your hand), or null. */
 internal fun askLine(st: MatchState): String? {
     if (st.prompt != null) return null
@@ -2812,6 +2849,8 @@ internal fun askLine(st: MatchState): String? {
         }
         if (ask.isEmpty()) ask = if (input == "InputSelectTargets") "Choose a target" else "Choose a card on the table"
         ask = if (oneTarget(st) && !Pad.connected.value) ask.replace(Regex("^(Select|Choose) (a )?targets? for", RegexOption.IGNORE_CASE), "Tap a target for") else ask.replace(Regex("^Select\\b"), "Choose")
+        // Mobile table M1: a target question always starts with the card that asks it, never a bare "Select target creature".
+        asker(st)?.let { a -> return askerLine(a, if (stackOnly) ask else a.pick.ifEmpty { ask }.replace(Regex("^Select\\b"), "Choose")) }
         return ask
     }
     // A payment your mana can't finish says so above the hand; Cancel is the way out.
@@ -3150,6 +3189,8 @@ internal data class AskParts(val name: String?, val question: String)
 
 internal fun askParts(st: MatchState): AskParts? {
     val ask = askLine(st) ?: return null
+    // Mobile table M1: the asker Forge names, a trigger's as well as a spell's; its name is drawn once, in the aim colour.
+    asker(st)?.let { a -> if (ask.startsWith(a.name + ": ")) return AskParts(a.name, ask.drop(a.name.length + 2).replaceFirstChar { it.uppercase() }) }
     Regex("^((?:Choose|Tap|Select) (?:a |any )?targets?) for (.+)$").find(ask)?.let { m -> return AskParts(m.groupValues[2].trim(), m.groupValues[1] + ".") }
     val name = pendingCast(st)?.name?.takeIf { it.isNotBlank() }
         ?: if (st.inputType == "InputSelectTargets") Regex("targets? for ([^\n]+)", RegexOption.IGNORE_CASE).find(st.message)?.groupValues?.get(1)?.trim()?.replace(Regex("\\s*\\(\\d+\\)$"), "") else null
