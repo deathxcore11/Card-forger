@@ -24,6 +24,16 @@ class AskerTest {
         assertEquals(AskParts("Optimistic Scavenger", "Put a +1/+1 counter on target creature."), askParts(st))
     }
 
+    @Test fun theRealEnginesWordsSayWhatTheTriggerDoes() {
+        // Word for word from the engine this app ships (TriggerTargetProbe, 11 Nov): an ability word in front, Forge's note behind.
+        val st = ask("Optimistic Scavenger (3) - Eerie — Whenever an enchantment you control enters and whenever you fully unlock a Room, put a +1/+1 counter on target creature. [Zone Changer: Sheltered by Ghosts (54)]\n\nSelect target creature")
+        assertEquals("Optimistic Scavenger: put a +1/+1 counter on target creature.", askLine(st))
+        val long = ask("Sheltered by Ghosts (54) - When Sheltered by Ghosts enters, exile target nonland permanent an opponent controls until Sheltered by Ghosts leaves the battlefield. [Zone Changer: Sheltered by Ghosts (54)]\n\nSelect target nonland permanent an opponent controls")
+        assertEquals("Sheltered by Ghosts: choose target nonland permanent an opponent controls.", askLine(long))
+        // The aura itself, cast: Forge repeats the card's name as its text; the line says what to pick.
+        assertEquals("Sheltered by Ghosts: choose target creature you control.", askLine(ask("Sheltered by Ghosts (54) - Sheltered by Ghosts\n\nSelect target creature you control")))
+    }
+
     @Test fun aSpellsQuestionNamesItAndDropsItsOwnNameFromTheSentence() {
         val st = ask("Lightning Bolt (131) - Lightning Bolt deals 3 damage to any target.\nSelect any target\nTargeted:\nGrizzly Bears (124), \n(1 more can be targeted)")
         assertEquals(131, asker(st)!!.cardId); assertEquals("Select any target", asker(st)!!.pick)

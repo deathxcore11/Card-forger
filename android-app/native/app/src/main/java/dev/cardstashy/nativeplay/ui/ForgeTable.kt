@@ -2813,7 +2813,10 @@ internal fun asker(st: MatchState): Asker? {
 internal fun askerLine(a: Asker, plain: String): String = "${a.name}: ${askerBody(a, plain)}"
 /** The question without its asker's name: what it does or what to pick, starting small, ending with a full stop. */
 internal fun askerBody(a: Asker, plain: String): String {
-    var does = a.text.replace(Regex("\\s*\\(Targeting ERROR\\)"), "").trim()
+    // Forge's own words on the real engine (TriggerTargetProbe): "Eerie — Whenever …, put a +1/+1 counter on target creature.
+    // [Zone Changer: Sheltered by Ghosts (54)]". The engine's bracketed note and the ability word are not part of what it does.
+    var does = a.text.replace(Regex("\\s*\\(Targeting ERROR\\)"), "").replace(Regex("\\s*\\[[^\\]]{0,120}\\]\\s*$"), "")
+        .replace(Regex("^[A-Z][A-Za-z' ]{1,24} — "), "").trim()
     Regex("^(?:When|Whenever|At the beginning)\\b[^,]{0,90}, (.+)$", RegexOption.IGNORE_CASE).find(does)?.let { does = it.groupValues[1] }
     if (does.startsWith(a.name, ignoreCase = true)) does = does.drop(a.name.length).trim()
     val body = if (does.length in 8..ASK_TEXT_MAX && Regex("\\btarget\\b", RegexOption.IGNORE_CASE).containsMatchIn(does) && does.count { it == '.' } <= 1) does
