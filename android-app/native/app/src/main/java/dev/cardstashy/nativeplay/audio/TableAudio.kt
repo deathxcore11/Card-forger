@@ -33,8 +33,12 @@ class TableAudio(context: Context) {
     private val router = Cues.Router({ ids.containsKey(it) }, { android.os.SystemClock.uptimeMillis() })
     private var bigStream = 0
 
+    /** Tests listen here: every cue asked for, before it is sent to its file. */
+    internal var asked: ((String) -> Unit)? = null
+
     fun play(id: String, volume: Float = 1f, rate: Float = 1f) {
         if (muted || !dev.cardstashy.nativeplay.ui.AppSettings.sound) return
+        asked?.invoke(id)
         val p = router.route(id, volume, rate) ?: return
         if (p.cuts && bigStream != 0) pool.stop(bigStream)
         val stream = ids[p.name]?.let { pool.play(it, p.volume, p.volume, if (p.name in Cues.BIG) 2 else 1, 0, p.rate) } ?: return
@@ -43,6 +47,11 @@ class TableAudio(context: Context) {
 
     /** While the board's effects run, they play block, clash and face-hit cues on their own frames (Battlefield.cues). */
     var fxCues = false
+    /** The lands of a cast are paying right now (or lighting the floating mana): each sounds its own tick on the frame it turns. */
+    var paying = false
+    private var planRev = -1L; private var plan: Set<String> = emptySet()
+    /** From the board's effects: the cues they will play themselves for the board of [revision] (draw, untap, landing, resolve). */
+    fun planned(revision: Long, cues: Set<String>) { planRev = revision; plan = cues }
 
     fun release() = pool.release()
 
@@ -52,16 +61,20 @@ class TableAudio(context: Context) {
             ended = true // the result plate plays QP-017/018/019 as it rises
             return
         }
+        // What the effects play on their own frames for this board is not played here as well. One board only: the next
+        // board of the same revision (a cast's later legs) was not read by them.
+        val own = if (fxCues && planRev == b.revision) plan else emptySet()
+        plan = emptySet()
         if (a == null) return
         if (b.activePlayer != a.activePlayer && b.turn > 0) play(if (b.activePlayer == b.viewer) "TT-001" else "TT-002")
         else if (b.phase != a.phase && b.turn > 0) play("TT-003", .35f)
         val was = HashMap<Int, dev.cardstashy.nativeplay.engine.Card>()
         for (p in a.players) for (c in p.hand + p.battlefield + p.graveyard + p.exile) was[c.id] = c
         val handIn = b.me.hand.count { was[it.id]?.zone != "Hand" }
-        if (handIn in 1..4) play("CARD-001") // a whole new hand is dealt by the fan, one QP-012 per card
-        if (b.cpu.handCount > a.cpu.handCount && b.turn > 0) play("CARD-002", .5f)
+        if (handIn in 1..4 && "CARD-001" !in own) play("CARD-001") // a whole new hand is dealt by the fan, one QP-012 per card
+        if (b.cpu.handCount > a.cpu.handCount && b.turn > 0 && "CARD-002" !in own) play("CARD-002", .5f)
         val field = b.players.flatMap { it.battlefield }
-        if (field.any { it.tapped && it.isLand && was[it.id]?.zone == "Battlefield" && was[it.id]?.tapped == false && !it.attacking }) play("CARD-006", .7f)
+        if (field.any { it.tapped && it.isLand && was[it.id]?.zone == "Battlefield" && was[it.id]?.tapped == false && !it.attacking } && !(fxCues && paying)) play("CARD-006", .7f)
         val old = a.stack.map { it.id }.toSet()
         val fresh = b.stack.filter { it.id !in old }
         // A spell cast from hand sounds its colour (Randall 10 Nov, "like before but better"): one colour its own cue, two or more
@@ -73,8 +86,10 @@ class TableAudio(context: Context) {
         if (cast != null) { val cue = castCue(cast.manaCost); play(if (ids.containsKey(cue)) cue else "CARD-008") }
         else if (fresh.isNotEmpty()) play("CARD-014")
         val arrived = field.filter { was[it.id]?.zone != "Battlefield" }
-        if (arrived.any { it.isLand }) play("CARD-005")
-        if (arrived.any { !it.isLand && !was.containsKey(it.id) }) play("CARD-025") else if (arrived.any { !it.isLand }) play("CARD-010")
+        if (own.none { it in dev.cardstashy.nativeplay.ui.LANDING_CUES }) {
+            if (arrived.any { it.isLand }) play("CARD-005")
+            if (arrived.any { !it.isLand && !was.containsKey(it.id) }) play("CARD-025") else if (arrived.any { !it.isLand }) play("CARD-010")
+        }
         if (field.any { it.attacking && was[it.id]?.attacking == false }) play("CMB-002")
         val combat = b.phase?.contains("DAMAGE") == true || a.phase?.contains("DAMAGE") == true
         if (!fxCues && field.any { it.blockingIds.size > (was[it.id]?.blockingIds?.size ?: 0) }) play("CMB-003")

@@ -193,6 +193,9 @@ internal class FxItem(
     var points = 0
     /** P6: of a spell's streaks (one per target), the one that also draws the flash on the stack. */
     var lead = true
+    /** The match sound pass: the cue this effect plays once, [soundAt] ms after it starts (its contact frame). */
+    var sound: String? = null; var soundAt = 0L; var soundVol = 1f; var soundRate = 1f
+    fun sounds(id: String, at: Long = 0L, vol: Float = 1f, rate: Float = 1f) = apply { sound = id; soundAt = at; soundVol = vol; soundRate = rate }
     fun once(bit: Int): Boolean = if (marks and bit != 0) false else { marks = marks or bit; true }
     /** 0..1 through the effect, or -1 while it waits for its turn. */
     fun p(now: Long): Float = if (now < t0) -1f else (p0 + (1f - p0) * ((now - t0).toFloat() / dur.coerceAtLeast(1))).coerceAtMost(1f)
@@ -324,15 +327,31 @@ class Battlefield {
             val kind = when {
                 it.kind == Fx.BLOCK && it.p(ms) >= .1f -> "light"
                 it.kind == Fx.LUNGE && ms - it.t0 >= Strike.hit(Strike.face(it)) -> if (Strike.face(it)) "heavy" else "medium"
+                // A landing is felt: light for a land, medium for anything else (a rare's drop and a commander's slam have their own below).
+                it.kind == Fx.IMPACT && it.entrance <= 0 && ms >= it.t0 -> if (it.land) "light" else "medium"
                 it.kind == Fx.ARRIVE && it.entrance == 1 && it.p(ms) * it.dur >= 650f -> "light"
                 it.kind == Fx.ARRIVE && it.entrance == 2 && it.p(ms) * it.dur >= E2_SLAM + 150f -> "heavy"
                 else -> null
             } ?: continue
             felt += it; feel(kind)
         } }
-        onCue?.let { cue -> cues(ms, cue) }
+        onCue?.let { cue -> cues(ms, cue); travel?.let { m -> travelCues(m, travelMs(m), cue) } }
         if (items.any { it.done(ms) }) { items.removeAll { it.done(ms) }; felt.retainAll(items.toSet()); heard.keys.retainAll(items.toSet()); reindex() }
     }
+
+    private var legKey = 0L; private var legAt = -1L
+    /**
+     * The sound pass on a cast's legs ([legCues]): each cue once, on the frame its moment is reached ([el] ms into the leg). A
+     * land that pays is felt too (a light tap, yours only).
+     */
+    internal fun travelCues(m: dev.cardstashy.nativeplay.match.TravelMoment, el: Long, cue: (String, Float, Float) -> Unit) {
+        if (m.key != legKey) { legKey = m.key; legAt = -1L }
+        if (el <= legAt) return
+        for (c in legCues(m.travel)) if (c.at > legAt && c.at <= el) { cue(c.id, c.vol, c.rate); if (c.feel != null) onImpact?.invoke(c.feel) }
+        legAt = el
+    }
+    /** Tells the table's sound player which cues the effects of the board just read will play themselves (so it does not play them too). */
+    internal var onPlan: ((Long, Set<String>) -> Unit)? = null
 
     /** Sounds on the beats themselves (sounds thread cue map, 4 Nov): set by FxDriver from LocalTableCue. */
     internal var onCue: ((String, Float, Float) -> Unit)? = null
@@ -347,6 +366,9 @@ class Battlefield {
                 val got = heard[it] ?: 0
                 if (got and bit == 0 && p >= at) { heard[it] = got or bit; if (id !in now) now[id] = vol to rate }
             }
+            // The sound pass: an effect that carries its own cue plays it once on its contact frame.
+            it.sound?.let { s -> val got = heard[it] ?: 0
+                if (got and 128 == 0 && ms - it.t0 >= it.soundAt) { heard[it] = got or 128; if (s !in now) now[s] = it.soundVol to it.soundRate } }
             when (it.kind) {
                 Fx.ATTACK -> once(1, 0f, "CMB-001", .9f)
                 // At the stamp's slam, the shield ring 40 ms behind it.
@@ -564,6 +586,7 @@ class Battlefield {
             for (it in items) { val left = it.t0 + it.dur - t; val floor = minOf(it.baseMs * 6 / 10, it.dur); if (it.t0 <= t && left > floor && it.level < 2) { it.p0 = it.p(t); it.t0 = t; it.dur = floor } }
         }
         val groups = diff(before, st, anchors)
+        onPlan?.invoke(st.revision, groups.flatMap { g -> g.mapNotNull { it.sound } }.toSet())
         if (groups.isEmpty()) { if (yours) reindex(); return }
         var cursor = maxOf(t, focalEnd)
         var stagedEnd = 0L
@@ -632,13 +655,16 @@ class Battlefield {
         // it flies to a spot above the hand at 1.6 (320), holds there in an ice ring (380) and tucks in as the hand spreads (260).
         // On two screens the hand is below: it leaves through the top screen's bottom edge and the bottom screen shows it.
         if (drawn.size <= 3 && !DualScreen.active && !reduced) drawn.forEachIndexed { i, c ->
-            draws += FxItem(Fx.DRAW, 1, MY_DRAW_MS, card = c.id, player = viewer, mine = true, fromKey = "lib$viewer", toKey = "hand${c.id}", ghost = c, delay = lead + i * 150L) }
-        else drawn.take(3).forEachIndexed { i, _ -> draws += FxItem(Fx.DRAW, 1, 350, player = viewer, mine = true, fromKey = "lib$viewer", toKey = "hand", delay = lead + i * 90L) }
-        if (newTurn) untapOrder(a, b).forEachIndexed { i, id -> draws += FxItem(Fx.GLINT, 1, 260, card = id, tone = Color(0xFFF3D27E), delay = UNTAP_AT_MS + i * UNTAP_GAP_MS) }
+            draws += FxItem(Fx.DRAW, 1, MY_DRAW_MS, card = c.id, player = viewer, mine = true, fromKey = "lib$viewer", toKey = "hand${c.id}", ghost = c, delay = lead + i * 150L).sounds("CARD-001") }
+        // (A whole new hand is dealt by the fan with its own sound; a card or two that slide in sound once.)
+        else drawn.take(3).forEachIndexed { i, _ -> draws += FxItem(Fx.DRAW, 1, 350, player = viewer, mine = true, fromKey = "lib$viewer", toKey = "hand", delay = lead + i * 90L)
+            .also { if (i == 0 && drawn.size <= 4) it.sounds("CARD-001") } }
+        if (newTurn) untapOrder(a, b).forEachIndexed { i, id -> draws += FxItem(Fx.GLINT, 1, 260, card = id, tone = Color(0xFFF3D27E), delay = UNTAP_AT_MS + i * UNTAP_GAP_MS)
+            .also { if (i == 0) it.sounds("untap") } }
         for (p in b.players) if (!p.isViewer && p.id != viewer) {
             val q = a.players.firstOrNull { it.id == p.id } ?: continue
             // P4, the CPU's draw: a card back, 90 lift + 300, no hold.
-            if (p.handCount > q.handCount && p.libraryCount < q.libraryCount) draws += FxItem(Fx.DRAW, 1, 390, player = p.id, fromKey = "lib${p.id}", toKey = "cpuhand", delay = lead)
+            if (p.handCount > q.handCount && p.libraryCount < q.libraryCount) draws += FxItem(Fx.DRAW, 1, 390, player = p.id, fromKey = "lib${p.id}", toKey = "cpuhand", delay = lead).sounds("CARD-002", vol = .5f)
         }
 
         // Cast (level 2, 450 ms): the card lifts out of the hand to the stack; an ability starts at its permanent.
@@ -684,13 +710,15 @@ class Battlefield {
             val target = s.targets.firstOrNull()?.let { r -> if (r.kind == "player") "orb${r.id}" else "c${r.id}" }
             resolves += FxItem(Fx.RESOLVE, if (becomesPermanent) 1 else 2, if (becomesPermanent) 220 else 320, mine = s.controller == viewer, from = stackRect,
                 toKey = if (becomesPermanent) null else target, tone = if (s.controller == viewer) Color(0xFFF3D27E) else Color(0xFFFF8A5C))
+                // A spell with no landing leaves the stack with its own sound (abilities and triggers have theirs on their beats).
+                .also { if (!becomesPermanent && !s.ability && !s.trigger) it.sounds("resolve") }
         }
 
         // Arrivals: travel on an arc to the real slot, land with a 2 % squash and a light sweep (450 ms); tokens form from light (400 ms).
         for ((id, c) in bfB) if (id !in bfA) {
             if (c.token && id in claimedNow) continue
             if (c.token && id !in stackSrcA) { arrivals += FxItem(Fx.TOKEN, 1, 400, card = id, mine = c.controller == viewer,
-                delay = runCatching { dev.cardstashy.nativeplay.art.CardArt.holdFor(c.name) }.getOrDefault(0L)); continue }
+                delay = runCatching { dev.cardstashy.nativeplay.art.CardArt.holdFor(c.name) }.getOrDefault(0L)).sounds("token"); continue }
             val fromStack = id in stackSrcA
             val fromHand = id in handA
             val key = when { fromStack -> null; fromHand -> "hand"; c.controller != viewer && !c.token -> "cpuhand"; else -> null }
@@ -706,7 +734,7 @@ class Battlefield {
                 // adds 30 % (at its drop), a level 2 keeps its big entrance and ends with this landing (after its slam).
                 val base = if (c.isCreature) 1f else 3f / 7f
                 arrivals += FxItem(Fx.IMPACT, 1, IMPACT_MS, card = id, mine = mine, tone = tone, land = c.isLand, power = if (lvl == 1) base * 1.3f else base,
-                    entrance = if (low) -1 else lvl, delay = came.ms + when (lvl) { 2 -> (E2_SLAM + 150f + 110f).toLong(); 1 -> 650L; else -> 0L })
+                    entrance = if (low) -1 else lvl, delay = came.ms + when (lvl) { 2 -> (E2_SLAM + 150f + 110f).toLong(); 1 -> 650L; else -> 0L }).sounds(landingCue(c))
                 arrivals += when (lvl) {
                     2 -> FxItem(Fx.ARRIVE, 2, ENTRANCE2_MS, card = id, mine = mine, tone = tone, entrance = 2, delay = came.ms,
                         title = c.name + "\n" + (if (mine) "Your commander" else "Their commander"))
@@ -721,7 +749,8 @@ class Battlefield {
                 1 -> FxItem(Fx.ARRIVE, 2, ENTRANCE1_MS, card = id, mine = mine, from = if (fromStack) stackRect else null, fromKey = key, tone = tone, land = c.isLand, entrance = 1)
                 else -> FxItem(Fx.ARRIVE, if (fromStack && c.isCreature) 2 else 1, 450, card = id, mine = mine,
                     from = if (fromStack) stackRect else null, fromKey = key, tone = tone, land = c.isLand)
-            }
+            // The landing's sound on the frame it touches down: after the arc (315 of 450), the drop (650) or the slam.
+            }.also { it.sounds(landingCue(c), when (lvl) { 2 -> (E2_SLAM + 150f).toLong(); 1 -> 650L; else -> 315L }) }
         }
 
         // Combat: a new attacker leans in; a new blocker sends a pulse down its thread to the attacker.
@@ -971,6 +1000,8 @@ internal val TRAVEL_LANDS = setOf(dev.cardstashy.nativeplay.match.Director.Leg.T
 internal object TravelClock { var fixed: Float? = null }
 /** The table's sound player (id, volume, playback rate); none outside a match and in tests. */
 val LocalTableCue = staticCompositionLocalOf<((String, Float, Float) -> Unit)?> { null }
+/** The sound player's ear for [Battlefield.onPlan]: the board's revision and the cues its effects will play themselves. */
+val LocalTablePlan = staticCompositionLocalOf<((Long, Set<String>) -> Unit)?> { null }
 
 private val MANA_GLOW = mapOf('W' to Color(0xFFFFF1C2), 'U' to Color(0xFF5AB4FF), 'B' to Color(0xFFB08BD8), 'R' to Color(0xFFFF7A4A), 'G' to Color(0xFF6BE08A))
 
@@ -1075,7 +1106,8 @@ internal fun FxDriver(fx: Battlefield, st: MatchState) {
     SideEffect { fx.onImpact = { kind -> if (AppSettings.haptics) Feel.perform(view, when (kind) { "light" -> "pack-deal"; "heavy" -> "pack-rumble"; else -> "pack-reveal" }) } }
     val cue = LocalTableCue.current
     val reduced = androidx.compose.runtime.remember { Playmats.reduced(view.context) }
-    SideEffect { fx.onCue = cue; fx.reduced = reduced; fx.low = AppSettings.effects == "minimal"; fx.promptWaiting = st.prompt != null && st.waitingOnMe }
+    val plan = LocalTablePlan.current
+    SideEffect { fx.onCue = cue; fx.onPlan = plan; fx.reduced = reduced; fx.low = AppSettings.effects == "minimal"; fx.promptWaiting = st.prompt != null && st.waitingOnMe }
     val trig = LocalTrigger.current
     val travel = LocalTravel.current
     SideEffect { fx.travel = travel; fx.board = st; fx.trigger(trig, st, anchors); fx.take(st, anchors) }

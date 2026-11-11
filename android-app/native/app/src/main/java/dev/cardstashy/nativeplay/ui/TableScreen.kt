@@ -132,6 +132,8 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     // Keyed on the shown state itself: the board can advance within one revision (one CPU action at a time).
     LaunchedEffect(shown) { shown?.let { audio.update(previous, it); music.update(it); previous = it } }
     audio.fxCues = !Motion.still
+    audio.paying = travel?.travel?.leg.let { it == dev.cardstashy.nativeplay.match.Director.Leg.TAPS || it == dev.cardstashy.nativeplay.match.Director.Leg.TO_POOL }
+    val cuePlan = remember(audio) { { rev: Long, cues: Set<String> -> audio.planned(rev, cues) } }
     val cue = remember(audio) { { id: String, vol: Float, rate: Float -> audio.play(id, vol, rate) } }
     // The turn clock (cue map): a quiet TT-006 as a fresh prompt window opens, TT-007 each second of the last 10, TT-008 at zero. Yours only.
     // One loop for the whole match (ClockCues keeps the count across the clock's per-second re-emissions, so no tick is lost).
@@ -187,7 +189,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     // A controller's key press says the same (seen first, never consumed).
     Box(Modifier.fillMaxSize().background(Palette.Night).pointerInput(Unit) { awaitPointerEventScope { while (true) { val e = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial); if (e.type == androidx.compose.ui.input.pointer.PointerEventType.Press) controller.poke() } } }
         .onPreviewKeyEvent { if (Pad.connected.value && it.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) controller.poke(); false }) {
-      CompositionLocalProvider(LocalAnchors provides anchors, LocalTableCue provides cue) {
+      CompositionLocalProvider(LocalAnchors provides anchors, LocalTableCue provides cue, LocalTablePlan provides cuePlan) {
         if (mat != null) PlaymatScene(mat, Modifier.fillMaxSize()) else PlaymatScene(Modifier.fillMaxSize()) // a Story battle's own act mat, else play-playmats.js: this match's mat (nextPlaymat), its own shade, the table root see-through
         BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
             val k = if (maxHeight >= 600.dp) 1.45f else if (maxHeight >= 480.dp) 1.2f else 1f
