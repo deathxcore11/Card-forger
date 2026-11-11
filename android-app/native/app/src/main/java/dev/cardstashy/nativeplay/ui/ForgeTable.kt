@@ -180,6 +180,10 @@ private val SHORT_STEP = mapOf("UPKEEP" to "To draw", "DRAW" to "To main", "MAIN
     "COMBAT_DECLARE_ATTACKERS" to "To blocks", "COMBAT_DECLARE_BLOCKERS" to "To damage", "COMBAT_FIRST_STRIKE_DAMAGE" to "To damage",
     "COMBAT_DAMAGE" to "End combat", "COMBAT_END" to "To main 2", "MAIN2" to "To end step", "END_OF_TURN" to "To cleanup")
 
+/** M3: how long the table may take to pass for you before the Resolve press comes back. */
+internal const val RESOLVE_LATE_MS = 2500L
+/** M3: the gold button's words while your own spell or trigger resolves by itself. It is not a press. */
+internal const val RESOLVING = "Resolving…"
 /** native-panel.mjs nativeActionLabel with the hosted short step ("To combat"). */
 internal fun okLabel(st: MatchState): String {
     val raw = st.buttons.ok ?: "OK"
@@ -187,7 +191,9 @@ internal fun okLabel(st: MatchState): String {
     val mine = st.me.battlefield
     return when {
         st.inputType == "InputPassPriority" -> when {
-            st.stack.isNotEmpty() -> if (st.stack.first().controller == st.viewer) "Resolve" else "No response"
+            // Mobile table M3: your own spell or trigger resolves by itself; the button says so and offers no press.
+            st.stack.isNotEmpty() -> if (st.stack.first().controller != st.viewer) "No response"
+                else if (dev.cardstashy.nativeplay.match.AutoPass.resolvesItself(st, AppSettings.stopToRespond)) RESOLVING else "Resolve"
             st.players.none { p -> p.battlefield.any { it.attacking } } && st.phase in setOf("COMBAT_DECLARE_ATTACKERS", "COMBAT_DECLARE_BLOCKERS", "COMBAT_FIRST_STRIKE_DAMAGE", "COMBAT_DAMAGE") ->
                 if (st.activePlayer == st.viewer) "To main 2" else "Pass"
             st.activePlayer == st.viewer -> SHORT_STEP[st.phase] ?: "Pass priority"
@@ -878,7 +884,12 @@ fun ForgeBoard(
                 val offered = if (st.inputType == "InputAttack") st.selection.cards.mapNotNull { st.card(it) }.filter { it.zone == "Battlefield" && it.controller == st.viewer && !it.attacking } else emptyList()
                 val attackAll = offered.isNotEmpty() && st.selection.cards.size >= 2
                 // 0.4.60 Z6: the corner's words and presses (TableActions: the same branches as before, unit tested in TableActionsTest).
-                val corner = TableActions.of(st, live, selected, tucked, discardingNow)
+                // M3: your own spell or trigger resolves by itself and the button offers no press. If the table has still not
+                // passed 2.5 s on (it never leaves you without a way on), the press comes back as "Resolve".
+                val resolving = live && dev.cardstashy.nativeplay.match.AutoPass.resolvesItself(st, AppSettings.stopToRespond)
+                var resolveLate by remember { mutableStateOf(false) }
+                LaunchedEffect(st.revision, st.stack.firstOrNull()?.id, resolving) { resolveLate = false; if (resolving) { delay(RESOLVE_LATE_MS); resolveLate = true } }
+                val corner = TableActions.of(st, live, selected, tucked, discardingNow, resolveLate)
                 fun press(a: TableActions.Action): () -> Unit = when (a.press) {
                     TableActions.Press.OK -> ({ intents.ok() })
                     TableActions.Press.CANCEL -> ({ intents.cancel() })
@@ -945,6 +956,8 @@ fun ForgeBoard(
                     discardingNow && selected == null && !okOn -> null
                     else -> if (live && (selected != null || okOn)) PadAct(ok) { if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok() } else null
                 }
+                // M3: nothing to press while your own spell or trigger resolves by itself.
+                if (corner.gold?.label == RESOLVING) padX = null
                 // S3: the controller's X is the gold button's press: it dips and sounds as under a finger.
                 if (corner.gold != null) padX = padX?.let { x -> PadAct(x.label, x.run?.let { run -> { GoldPress.pulse.intValue++; run() } }) }
                 val goldM = lowerM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }

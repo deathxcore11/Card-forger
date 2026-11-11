@@ -45,12 +45,14 @@ internal object TableActions {
      * The corner while it is your move ([st].waitingOnMe, no prompt). [selected] is the lifted hand card the gold button would play
      * (already checked castable, or picked for a discard); [tucked] the T6 tucked question; [discarding] the cleanup discard.
      */
-    fun of(st: MatchState, live: Boolean, selected: Card?, tucked: Boolean, discarding: Boolean): Corner {
+    fun of(st: MatchState, live: Boolean, selected: Card?, tucked: Boolean, discarding: Boolean,
+           /** M3's safety net: the table should have passed for you by now and has not, so the press comes back as "Resolve". */
+           resolveLate: Boolean = false): Corner {
         val menu = menu(st, live)
         // W10: your main phase 1, nothing on the stack and no creature able to attack: the step that follows is the end of the turn.
         val endTurnGold = selected == null && !discarding && noAttackersLeft(st)
         val ok = if (selected != null) (if (discarding) "Discard ${selected.name}" else if (selected.isLand) "Play land" else "Cast")
-            else if (discarding && !st.buttons.okEnabled) "Choose a card to discard" else if (endTurnGold) "End turn" else okLabel(st)
+            else if (discarding && !st.buttons.okEnabled) "Choose a card to discard" else if (endTurnGold) "End turn" else okLabel(st).let { if (it == RESOLVING && resolveLate) "Resolve" else it }
         // End turn takes the gold spot on W10's turn (it presses Forge's cancel); the quiet one keeps the way on to combat.
         val second = if (selected != null) null else if (endTurnGold) okLabel(st) else cancelLabel(st)
         // A declaration Forge would refuse (a must-attack creature left out) is not offered as a live button.
@@ -71,7 +73,8 @@ internal object TableActions {
             endTurnGold -> Corner(Kind.END_TURN, Action(ok, Press.CANCEL, live), Action(second ?: "To combat", Press.OK, live && okOn), null, null, null, menu)
             else -> {
                 val undo = second?.startsWith("Undo", ignoreCase = true) == true
-                Corner(Kind.PLAIN, Action(ok, if (selected != null) Press.PLAY else Press.OK, live && (selected != null || okOn)),
+                // Mobile table M3: while your own spell or trigger resolves by itself the gold button is not a press.
+                Corner(Kind.PLAIN, Action(ok, if (selected != null) Press.PLAY else Press.OK, live && (selected != null || (okOn && ok != RESOLVING))),
                     second?.takeIf { !undo }?.let { Action(it, Press.CANCEL, live) }, second?.takeIf { undo }?.let { Action(it, Press.CANCEL, live) }, null, null, menu)
             }
         }

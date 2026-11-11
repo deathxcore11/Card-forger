@@ -42,6 +42,17 @@ object AutoPass {
         }
     }
 
+    /**
+     * Mobile table M3: your own spell or trigger is on top of the stack and the table will pass for you (the same conditions
+     * as the pass itself: not Full Control, no phase stop of yours here, and "Stop to respond" off). The gold button then
+     * offers no Resolve press.
+     */
+    fun resolvesItself(st: MatchState, stopToRespond: Boolean): Boolean {
+        if (stopToRespond || st.prompt != null || st.inputType != "InputPassPriority" || st.priorityPlayer != st.viewer) return false
+        if (st.stack.firstOrNull()?.controller != st.viewer || st.controlMode == "full") return false
+        return st.phaseStops?.containsKey("${if (st.activePlayer == st.viewer) "you" else "opponent"}:${st.phase}") != true
+    }
+
     fun basis(shown: MatchState, forge: MatchState?): MatchState? {
         if (forge == null || forge.revision != shown.revision) return null
         if (shown.stack.map { it.id } != forge.stack.map { it.id }) return null
