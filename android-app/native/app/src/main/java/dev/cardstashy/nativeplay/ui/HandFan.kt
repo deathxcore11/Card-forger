@@ -82,6 +82,8 @@ fun HandFan(
     padEmpty: (() -> Unit)? = null,
     /** Two screens: A on a card that is not the lifted one only lifts it ([onTap]); A on the lifted card plays it. */
     padLift: Boolean = false,
+    /** 0.4.59 T7, a dual bottom screen: a lifted card does not grow (it is already full size); it rises a little with a thicker ring. */
+    flatLift: Boolean = false,
     /** A's words on a card that cannot be played (a card to discard: "Pick", "Discard"). */
     padA: (Card) -> String? = { null },
     /** glow-rules.md: the card being carried now (dragged, under the finger or under the controller's ring), null when none. */
@@ -119,8 +121,8 @@ fun HandFan(
     val carriedNow = (dragging?.takeIf { it != putBack } ?: focus)?.takeIf { id -> id != leaving && cards.any { it.id == id } }
     LaunchedEffect(carriedNow) { carryCb?.invoke(carriedNow) }
     DisposableEffect(Unit) { onDispose { carryCb?.invoke(null) } }
-    val popScale = pop ?: maxOf(1.5f, minOf(2.2f, 110f / cardW.value))
-    val rise = 18.dp
+    val popScale = if (flatLift) 1f else pop ?: maxOf(1.5f, minOf(2.2f, 110f / cardW.value))
+    val rise = if (flatLift) BOTTOM_LIFT else 18.dp
 
     BoxWithConstraints(modifier.fillMaxWidth().height(cardH + 8.dp), contentAlignment = Alignment.BottomStart) {
         val width = maxWidth
@@ -296,6 +298,9 @@ fun HandFan(
                         .onFocusChanged { if (it.isFocused) focus = card.id else if (focus == card.id && dragging == null) focus = null }
                         .padActs(padHere).matchPadTap(padSource, padFocus) { current.firstOrNull { it.id == card.id }?.let { padPress(it) } }) {
                         CardFace(card, cardW, cardH, mark = markOf(card))
+                        // T7: the bottom screen's lift is a thicker ring (ice, with a white edge), not a bigger card.
+                        if (isLift && flatLift) Box(Modifier.matchParentSize().border(3.dp, Color(0xFF5CC8FF), RoundedCornerShape(cardW * (6f / 66f)))
+                            .padding(3.dp).border(1.5.dp, Color.White.copy(alpha = .85f), RoundedCornerShape(cardW * (5f / 66f))).anchorRect("b.lift"))
                         // .play-match-card[data-forge-blocked]::after: bottom 8, #140d0be8, #ff9a7a77 hairline, #ffd4c6 700 11px.
                         if (isLift) blockedOf(card)?.let { why ->
                             androidx.compose.material3.Text(why, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,

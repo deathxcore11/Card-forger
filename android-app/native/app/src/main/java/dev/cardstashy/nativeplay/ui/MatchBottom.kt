@@ -51,7 +51,8 @@ import dev.cardstashy.nativeplay.engine.MatchState
  */
 @Composable
 internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: PadAct?, fan: @Composable (Dp) -> Unit, onInspect: (Card) -> Unit, afk: String? = null,
-                         ask: String? = null, carried: Card? = null, live: Boolean = false) {
+                         ask: String? = null, carried: Card? = null, live: Boolean = false,
+                         canPlay: (Card) -> Boolean = { false }, why: (Card) -> String? = { null }) {
     var zone by remember { mutableStateOf("hand") }
     val stackUp = st.stack.isNotEmpty()
     var seenStack by remember { mutableStateOf(0) }
@@ -76,43 +77,96 @@ internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: 
             val h = maxHeight
             if (shown == "stack") StackView(st, gold, onInspect) { zone = "hand" }
             else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // The lifted card's words across the top, the fan across the whole width below (Randall 9 Nov: "the fan can fit the bottom
-                // screen better and knows how to scale when the hand is increasing, nothing jumpy, very natural").
-                Column(Modifier.fillMaxWidth().heightIn(max = h * .34f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    when (words) {
-                        // The question in one gold line, wrapped and never cut, then the card it is about.
-                        is BottomWords.Ask -> if (parts != null) {
-                            Text(androidx.compose.ui.text.buildAnnotatedString {
-                                parts.name?.let { n -> pushStyle(androidx.compose.ui.text.SpanStyle(color = Color(0xFFFF9D5C))); append(n); pop(); append("  ·  ") }
-                                append(parts.question)
-                            }, Modifier.anchorRect("b.question"), style = small(15f, Site.Gold, FontWeight.ExtraBold))
-                            words.card?.let { CardWords(it) }
-                        } else { Text(words.text, style = small(15f, Site.Gold, FontWeight.ExtraBold)); words.card?.let { CardWords(it) } }
-                        is BottomWords.Words -> CardWords(words.card)
-                        is BottomWords.Line -> Text(words.text, style = small(13f, Site.Muted))
-                    }
+                // A question (or the discard's line) is the bottom's top strip; the card it is about is read in the panel below.
+                when (words) {
+                    is BottomWords.Ask -> if (parts != null) Text(androidx.compose.ui.text.buildAnnotatedString {
+                            parts.name?.let { n -> pushStyle(androidx.compose.ui.text.SpanStyle(color = Color(0xFFFF9D5C))); append(n); pop(); append("  ·  ") }
+                            append(parts.question)
+                        }, Modifier.anchorRect("b.question"), style = small(15f, Site.Gold, FontWeight.ExtraBold))
+                        else Text(words.text, style = small(15f, Site.Gold, FontWeight.ExtraBold))
+                    is BottomWords.Line -> Text(words.text, style = small(13f, Site.Muted))
+                    is BottomWords.Words -> {}
                 }
                 BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
-                    // As big as the room allows: the height (leaving space for the lift), then the width shared by the cards with a
-                    // generous overlap. The size eases as cards come and go, so the fan breathes instead of jumping.
+                    // As big as the room allows: the height, then the width shared by the cards with a generous overlap. The size eases as
+                    // cards come and go, so the fan breathes instead of jumping.
                     val n = hand.size.coerceAtLeast(1)
                     // HandFan sets each card 2*t*t dp lower toward the ends and tilts it about its foot, below its own box (U15: the right-hand
                     // cards touched the hint bar). Keep that sag plus a margin clear, so every card stays whole above the bar.
                     val mid = (n - 1) / 2f
                     val sag = 2.dp * (mid * mid) + 8.dp
                     val sagA by androidx.compose.animation.core.animateDpAsState(sag, androidx.compose.animation.core.spring(dampingRatio = .9f, stiffness = 220f), label = "sag")
-                    val byH = (maxHeight - 20.dp - sag) / 1.4f
+                    // 0.4.59 T7: a lifted card does not grow here (the cards are already full size); it rises [BOTTOM_LIFT] with a thicker ring.
+                    val byH = (maxHeight - BOTTOM_LIFT - 8.dp - sag) / 1.4f
                     val byW = maxWidth / (1f + (n - 1) * .46f)
-                    // The lifted card stands 1.5 times as tall and 18 up (HandFan): it has to end under the words above, on the shortest screen too.
-                    val byPop = (maxHeight - 22.dp - sag) / (1.4f * 1.5f)
-                    val target = minOf(minOf(byH, byW), minOf(byPop, 190.dp)).coerceAtLeast(56.dp)
+                    val target = minOf(minOf(byH, byW), 190.dp).coerceAtLeast(56.dp)
                     val cardW by androidx.compose.animation.core.animateDpAsState(target, androidx.compose.animation.core.spring(dampingRatio = .9f, stiffness = 220f), label = "fan")
                     if (hand.isNotEmpty()) Box(Modifier.fillMaxWidth().padding(bottom = 4.dp + sagA).alpha(if (tablePick) AskTuck.SHADE else 1f).anchorRect("b.hand")) {
                         fan(cardW)
                         if (tablePick) Box(Modifier.matchParentSize().pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent().changes.forEach { it.consume() } } })
                     }
                 }
+                // 0.4.59 T7: under the hand, one glass panel reads the card that matters now (bottomReading).
+                bottomReading(st, live, hand, lifted, carried, ask, canPlay, why)?.let { r ->
+                    ReadingPanel(r, Modifier.fillMaxWidth().heightIn(max = h * .42f).anchorRect("b.read"))
+                }
             }
+        }
+    }
+}
+
+/** What the reading panel says: a small tag, the card, and one status line ([tone] picks its colour). */
+internal data class Reading(val tag: String, val card: Card, val status: String?, val tone: Tone) {
+    enum class Tone { ASK, STACK, OK, NO, NONE }
+}
+
+/** 0.4.59 T7: how high a lifted card stands on the bottom screen (it does not grow there). */
+internal val BOTTOM_LIFT = 6.dp
+
+/**
+ * 0.4.59 T7, the bottom screen always reads the right card, in this order: the asking card, the top stack item, the lifted hand card,
+ * the card under the ring or finger ([carried]), then the first card in the hand. While a discard asks and nothing is picked, no
+ * card is read as if it were chosen (W12). The status line: what the question wants, that it is on the stack, or whether you can play
+ * it ([canPlay]) and, when not, the table's own reason ([why]); words never written for a card.
+ */
+internal fun bottomReading(st: MatchState, live: Boolean, hand: List<Card>, lifted: Card?, carried: Card?, ask: String?,
+                           canPlay: (Card) -> Boolean, why: (Card) -> String?): Reading? {
+    val question = bottomAsk(st, live, ask)
+    val asking = if (question != null) (carried ?: pendingCast(st)) else null
+    if (asking != null) return Reading("Asking", asking, if (st.inputType == "InputSelectTargets") "Legal targets are ringed on the top screen." else null, Reading.Tone.ASK)
+    // A question with no card of its own (attack, block) reads nothing: never a lift or a hand card left from before (fault 4).
+    if (question != null) return null
+    st.stack.firstOrNull()?.let { top ->
+        // A trigger Forge sends with no source is named by its text ("Soul Warden — ..."): read the card of that name on the board.
+        val src = top.source ?: stackSourceName(top.text)?.let { n -> (st.players.filter { it.id == top.controller } + st.players).flatMap { it.battlefield }
+            .firstOrNull { it.name == n } } ?: return@let
+        val tag = if (top.trigger) "Trigger on the stack" else if (top.ability) "Ability on the stack" else "On the stack"
+        return Reading(tag, src, "On the stack now.", Reading.Tone.STACK)
+    }
+    if (dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) != null && lifted == null && carried == null) return null
+    val c = lifted ?: carried ?: hand.firstOrNull() ?: return null
+    if (c.zone != "Hand" || !live) return Reading("In your hand", c, null, Reading.Tone.NONE)
+    if (canPlay(c)) return Reading("In your hand", c, if (c.isLand) "You can play this land." else "You can cast this. The lands that pay are lit in gold.", Reading.Tone.OK)
+    return Reading("In your hand", c, why(c)?.let { it.trimEnd('.') + "." }, Reading.Tone.NO)
+}
+
+@Composable
+private fun ReadingPanel(r: Reading, modifier: Modifier) {
+    val shape = RoundedCornerShape(12.dp)
+    val c = r.card
+    Column(modifier.clip(shape).background(Color(0xC7121620)).border(1.dp, Color(0x61E3C070), shape).verticalScroll(rememberScrollState())
+        .padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(r.tag.uppercase(), style = small(10f, Site.Gold, FontWeight.ExtraBold).copy(letterSpacing = 1.6.sp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(c.name, Modifier.weight(1f, fill = false), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Site.Text), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (c.manaCost.isNotBlank()) SymText(c.manaCost, small(13f, Site.Gold))
+        }
+        Text(c.type + if (c.power != null && c.toughness != null) "  ·  ${c.power}/${c.toughness}" else "", style = small(12f, Site.Muted, FontWeight.Bold))
+        // {1}{W} and {T} draw as their symbols, as on the card page (SymText), never as raw braces.
+        if (c.text.isNotBlank()) SymText(c.text, TextStyle(fontFamily = Site.Manrope, fontSize = 13.5f.sp, lineHeight = 19.sp, color = Color(0xFFE4E7EA)))
+        r.status?.let { line ->
+            val col = when (r.tone) { Reading.Tone.ASK -> Color(0xFFFF9D4D); Reading.Tone.STACK -> Site.Gold; Reading.Tone.NO -> Color(0xFFFF6A4A); else -> Color(0xFF5CC8FF) }
+            Text(line, Modifier.anchorRect("b.status"), style = small(12.5f, col, FontWeight.ExtraBold))
         }
     }
 }
@@ -185,15 +239,6 @@ private fun StackView(st: MatchState, gold: PadAct?, onInspect: (Card) -> Unit, 
             gold?.run?.let { GoldButton(gold.label, it) }
         }
     }
-}
-
-@Composable
-private fun CardWords(c: Card) {
-    Text(c.name, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, color = Site.Text), maxLines = 2, overflow = TextOverflow.Ellipsis)
-    // {1}{W} and {T} draw as their symbols, as on the card page (SymText), never as raw braces.
-    SymText(listOf(c.type, c.manaCost.ifBlank { null }).filterNotNull().joinToString("  ·  "), small(12.5f, Site.Gold))
-    if (c.text.isNotBlank()) SymText(c.text, TextStyle(fontFamily = Site.Manrope, fontSize = 13.5f.sp, lineHeight = 19.sp, color = Color(0xFFE4E7EA)))
-    if (c.power != null && c.toughness != null) Text("${c.power} / ${c.toughness}", style = small(13f, Site.Text, FontWeight.Bold))
 }
 
 @Composable
