@@ -165,12 +165,14 @@ object Director {
         fun mineOf(id: Int) = st.card(id)?.controller?.takeIf { it >= 0 }?.let { it == me } ?: castHere[id] ?: false
         val toHost = HashSet<Int>()
         /** The three legs of a cast (taps, to the stack, the rest); the rest carries [beat] and the read time [restMs]. */
+        // T6: the spell you are choosing targets or paying for already went up (its own leg in the poll that asked).
+        val waitingUp = before?.let { dev.cardstashy.nativeplay.ui.pendingCast(it)?.id }
         fun castLegs(e: GameEvent, mine: Boolean, restMs: Long, beat: Beat?) {
             val id = e.source?.id; val name = e.source?.name
             val taps = e.player?.let { tapsLeft.remove(it) }.orEmpty()
             if (taps.isNotEmpty()) { val ms = tapsMs(taps.size)
                 out += Step(Kind.CAST, ms, ms, cpu = !mine, cardId = id, cardName = name, travel = Travel(id, name, mine, Leg.TAPS, null, ms, e.stackId, taps)) }
-            out += Step(Kind.CAST, TO_STACK_MS, TO_STACK_MS, cpu = !mine, cardId = id, cardName = name, travel = Travel(id, name, mine, Leg.TO_STACK, "stackcard", TO_STACK_MS, e.stackId, targets = e.targets))
+            if (!(mine && id != null && id == waitingUp)) out += Step(Kind.CAST, TO_STACK_MS, TO_STACK_MS, cpu = !mine, cardId = id, cardName = name, travel = Travel(id, name, mine, Leg.TO_STACK, "stackcard", TO_STACK_MS, e.stackId, targets = e.targets))
             out += Step(Kind.CAST, restMs, STACK_HOLD_MS, focal = true, cpu = !mine, cardId = id, cardName = name, beat = beat,
                 travel = Travel(id, name, mine, Leg.REST, "stackcard", restMs, e.stackId, targets = e.targets))
         }
@@ -289,6 +291,10 @@ object Director {
                         val travel = if (host != null) { toHost += id; Travel(id, e.card.name ?: c.name, mineOf(id), Leg.TO_HOST, "c$host", TO_HOST_MS) }
                             else Travel(id, e.card.name ?: c?.name, mineOf(id), Leg.TO_SLOT, "c$id", TO_SLOT_MS)
                         out += Step(Kind.ENTER, travel.ms, travel.ms, focal = true, cpu = !travel.mine, cardId = id, cardName = travel.name, travel = travel)
+                    } else if (e.from == "Hand" && e.to == "Stack" && id != null && id !in castHere && dev.cardstashy.nativeplay.ui.pendingCast(st)?.id == id) {
+                        // T6 (Arena clip 1): the card goes to the stack first, then asks for its targets or its mana.
+                        out += Step(Kind.CAST, TO_STACK_MS, TO_STACK_MS, cardId = id, cardName = e.card.name,
+                            travel = Travel(id, e.card.name, true, Leg.TO_STACK, "stackcard", TO_STACK_MS))
                     } else zoneStep(e, me)?.let { if (it.kind == Kind.TOKEN || it.kind == Kind.DRAW) groupOrAdd(out, it) else out += it }
                 }
             }

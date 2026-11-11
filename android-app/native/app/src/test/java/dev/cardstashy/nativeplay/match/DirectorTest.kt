@@ -85,6 +85,28 @@ class DirectorTest {
         for (w in listOf(true, false)) for (q in listOf(0L, 9000L)) assertTrue(Director.lengthOf(rest, w, q) >= Director.STACK_HOLD_MS)
     }
 
+    /**
+     * T6 (Arena clip 1): a spell that asks goes up first. The poll that asks for its target has its leg to the stack (and no
+     * silent 380 ms step); the poll after you answer has its taps and its rest only, never a second flight.
+     */
+    @Test fun aTargetedSpellGoesUpThenAsksThenTapsAndRests() {
+        val mountain = permanent(40, "Mountain", "Basic Land — Mountain")
+        val bolt = permanent(951, "Lightning Bolt", "Instant")
+        val bears = permanent(960, "Grizzly Bears", "Creature — Bear", controller = cpu)
+        val c = card(951, "Lightning Bolt")
+        val start = board(listOf(mountain), hand = listOf(bolt.copy(zone = "Hand")), theirs = listOf(bears))
+        val up = ev("zone", card = c, from = "Hand", to = "Stack", player = null)
+        val asking = board(listOf(mountain), theirs = listOf(bears)).copy(inputType = "InputSelectTargets", message = "Select targets for Lightning Bolt", events = listOf(up))
+        assertEquals(951, dev.cardstashy.nativeplay.ui.pendingCast(asking)?.id)
+        assertEquals(listOf("CAST:TO_STACK:stackcard:440"), legs(Director.plan(asking, listOf(up), before = start)))
+        val done = board(listOf(mountain.copy(tapped = true)), theirs = emptyList()).copy(inputType = null, message = "")
+        val events = listOf(ev("cast", player = me, source = c, targets = listOf(card(960, "Grizzly Bears"))).copy(stackId = 8),
+            ev("zone", card = c, from = "Stack", to = "Graveyard", player = me), ev("resolve", source = c))
+        assertEquals(listOf("CAST:TAPS:null:140", "CAST:REST:stackcard:900"), legs(Director.plan(done, events, before = asking)))
+        // Cast in one poll with no question (nothing waited on the stack): the flight is there as before.
+        assertTrue(legs(Director.plan(done, listOf(up) + events, before = start)).contains("CAST:TO_STACK:stackcard:440"))
+    }
+
     /** An aura goes from the stack to its host (380), not to a slot of its own, and its attach is not a second trip. */
     @Test fun auraGoesFromTheStackToItsHost() {
         val giant = permanent(960, "Hill Giant", "Creature — Giant")

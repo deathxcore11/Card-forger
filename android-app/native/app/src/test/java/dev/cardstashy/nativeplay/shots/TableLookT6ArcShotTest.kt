@@ -20,6 +20,7 @@ import dev.cardstashy.nativeplay.ui.TableAim
 import dev.cardstashy.nativeplay.ui.TableIntents
 import org.junit.After
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -29,7 +30,7 @@ import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
 /**
- * 0.4.59 T6 (the arc), pictures: Lightning Bolt asking for a target with the ring on a creature (the gold arc to it, the picked one
+ * 0.4.59 T6 (the arc), pictures: Lightning Bolt on top of the stack asking for a target with the ring on a creature (the gold arc to it, the picked one
  * kept), the CPU's Counterspell keeping its coral thread and rim through the question, and the board once the question is gone.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -67,8 +68,10 @@ class TableLookT6ArcShotTest {
                 draw(anchors, countered, "t6-arc-$aim-$size")
                 assertNotNull("$size: the arc's ends ($aim)", anchors.rects[aim])
             }
-            assertNotNull("$size: the cast card", anchors.rects["owncast"])
-            assertNotNull("$size: the stack card", anchors.rects["stackcard"])
+            // The Bolt is the stack card now (T6: it waits on the stack while it asks), the Counterspell behind it.
+            val top = anchors.rects["stackcard"]; val behind = anchors.rects["stack990"]
+            assertNotNull("$size: the stack card", top); assertNotNull("$size: the Counterspell still drawn", behind)
+            for (k in listOf("askline", "buttonRow")) anchors.rects[k]?.let { assertTrue("$size: the stack card is apart from $k", !it.overlaps(top!!)) }
             TableAim.key = null
             draw(anchors, countered.copy(inputType = null, message = "", selection = countered.selection.copy(chosenCards = emptySet())), "t6-arc-after-$size")
         }

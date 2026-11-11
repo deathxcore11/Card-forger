@@ -567,11 +567,13 @@ fun ForgeBoard(
             PhaseTrack(st, stopLights(st), intents.stop, Modifier.offset(x = if (large) 80.dp else 74.du, y = if (pod) 58.du else if (large) 20.dp else 42.du).anchorRect("phasetrack"), d)
 
             // The stack, fanned on the right over its portal, with the arc to its source.
-            if (st.stack.isNotEmpty()) {
+            // T6 (Arena clip 1): the card you are casting waits on top of the stack while it asks for its targets or its mana.
+            val lane = laneStack(st)
+            if (lane.isNotEmpty()) {
                 val fanX = minOf(W - 214.du, W - 150.du - 16.dp); val fanY = mid - 110.du
                 // BB10: older cards fan up only as far as the CPU's seat (its portrait and life pill end 92 du below its top);
                 // the words under the top card end 16 dp inside the screen.
-                StackFan(st, Modifier.offset(x = fanX, y = fanY), d, onInspect, live, intents.yieldSource, intents.stack,
+                StackFan(if (lane === st.stack) st else st.copy(stack = lane), Modifier.offset(x = fanX, y = fanY), d, onInspect, live, intents.yieldSource, intents.stack,
                     room = fanY + 34.du - (26.du + lx + 66.du), labelMax = W - 16.dp - fanX - 44.du)
                 StackArc(st, d)
             }
@@ -946,9 +948,6 @@ fun ForgeBoard(
             // Arrows: attackers to what they attack, blockers to their attacker, your spell to its targets, the top of the stack to its own.
             Arrows(st, live, intents, d)
             if (blockingNow) DragLine(blockDrag, d)
-            // On a big board the menu and the CPU's piles own the top-left corner (U5, Thor 960 × 540: CASTING drew over both);
-            // there it sits under the piles instead.
-            OwnCast(st, d, if (large) mid - 120.dp + 70.dp else null)
             overlay?.invoke(W)
             // T3, one screen: the sheet over the lower 56 % of the table (on two screens it is on the bottom screen, above).
             if (!dual) sheetView()
@@ -2079,7 +2078,8 @@ internal fun relations(st: MatchState, aim: String? = null): List<Rel> {
     }
     // Every item keeps its arrows for its whole life on the stack (director spec 7, glow rules), the top one from the big card,
     // also while you choose a target for something else (0.4.59 T6: they used to vanish for the whole question).
-    st.stack.forEachIndexed { i, item ->
+    val pending = pendingCast(st)
+    laneStack(st).forEachIndexed { i, item ->
         for (r in item.targets) {
             val to = if (r.kind == "card" && board.any { it.id == r.id }) "c${r.id}" else if (r.kind == "player" && st.players.any { it.id == r.id }) "orb${r.id}" else null
             if (to != null) out += Rel("target", if (i == 0) "stackcard" else "stack${item.id}", to, caster = item.controller)
@@ -2092,7 +2092,7 @@ internal fun relations(st: MatchState, aim: String? = null): List<Rel> {
         val source = onStack?.value?.source ?: named?.let { n -> mine.firstOrNull { it.zone == "Battlefield" && it.name == n } }
         val from = when {
             source != null && source.zone == "Battlefield" -> "c${source.id}"
-            pendingCast(st) != null -> "owncast"
+            pending != null -> "stackcard"
             onStack != null -> if (onStack.index == 0) "stackcard" else "stack${onStack.value.id}"
             else -> null
         }
@@ -2112,6 +2112,17 @@ internal fun relations(st: MatchState, aim: String? = null): List<Rel> {
     }
     return out
 }
+
+/**
+ * The stack as the table draws it: the card you are casting on top while it asks for its targets or its mana ([pendingCast]: Forge
+ * moved it from your hand but lists it only once cast), then Forge's own items. The same list when nothing is waiting.
+ */
+internal fun laneStack(st: MatchState): List<StackItem> {
+    val c = pendingCast(st) ?: return st.stack
+    return listOf(StackItem(LANE_ID - c.id, "", c, st.viewer)) + st.stack
+}
+/** The lane item's id: below every id Forge gives, so it is never taken for a stack target or a yield. */
+internal const val LANE_ID = -1_000_000
 
 /** forge-table.mjs pendingCast: the card you just moved from hand to the stack, while its targets or mana are being chosen. */
 internal fun pendingCast(st: MatchState): Card? {
@@ -2204,30 +2215,6 @@ private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) 
         Box(Modifier.offset { IntOffset((at.x - with(density) { half.toPx() }).roundToInt(), (at.y - with(density) { half.toPx() }).roundToInt()) }.size(half * 2)
             .semantics { contentDescription = "Take back this block"; role = Role.Button }
             .clickable(interactionSource = null, indication = PadFocus.Ring) { intents.unblock(r.blocker!!, r.attacker!!) })
-    }
-}
-
-/** .forge-own-cast on a phone (max-height 520): the card you are casting, top left, while you pick its targets or pay. */
-@Composable
-private fun OwnCast(st: MatchState, d: Du, top: Dp? = null) = with(d) {
-    val c = pendingCast(st) ?: return@with
-    val anchors = LocalAnchors.current
-    val name = c.name.ifEmpty { Regex("targets? for ([^\n]+)", RegexOption.IGNORE_CASE).find(st.message)?.groupValues?.get(1)?.trim() ?: "" }
-    val nameStyle = sans(sp(12f), FontWeight.Bold, Color(0xFFFBF3DF))
-    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
-    val density = LocalDensity.current
-    // The padding (8 du) and 2 dp so pixel rounding never leaves the widest word a hair short.
-    val colW = remember(name, nameStyle, density) { castPanelWidth(name, 76.du, 8.du + 2.dp, 175.du) { w -> with(density) { measurer.measure(w, nameStyle, softWrap = false, maxLines = 1).size.width.toDp() } } }
-    Column(Modifier.offset(x = 8.du, y = top ?: 58.du).width(colW)
-        .drawBehind { drawRoundRect(Color(0x55F0C27A), topLeft = Offset(-6.du.toPx(), -6.du.toPx()), size = Size(size.width + 12.du.toPx(), size.height + 12.du.toPx()), cornerRadius = CornerRadius(18.du.toPx())) }
-        .clip(RoundedCornerShape(12.du)).background(Color(0xF5111622)).border(1.dp, Color(0xAAF0C27A), RoundedCornerShape(12.du)).padding(4.du),
-        verticalArrangement = Arrangement.spacedBy(3.du)) {
-        Box(Modifier.width(68.du).align(Alignment.CenterHorizontally).aspectRatio(488f / 680f).heightIn(max = 150.du).clip(RoundedCornerShape(8.du)).background(Color(0xFF141418))
-            .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("owncast", it.boundsInRoot()) } else Modifier)) {
-            if (name.isNotEmpty()) CardImage(name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        }
-        Text("CASTING", style = sans(sp(11f), FontWeight.Bold, Color(0xFFF0C27A)).copy(letterSpacing = 0.05.em))
-        Text(name, style = nameStyle, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }
 

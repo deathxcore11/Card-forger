@@ -20,7 +20,7 @@ class RelationsTest {
 
     @Test fun theArcFollowsTheAimAndThePickStays() {
         val rels = targets(base, "c123")
-        assertEquals(listOf(Rel("target", "owncast", "c124", caster = base.viewer), Rel("target", "owncast", "c123", caster = base.viewer, aim = true)), rels)
+        assertEquals(listOf(Rel("target", "stackcard", "c124", caster = base.viewer), Rel("target", "stackcard", "c123", caster = base.viewer, aim = true)), rels)
         // To a player too, and only to a legal one not yet chosen.
         assertTrue(targets(base, "orb$cpu").any { it.to == "orb$cpu" && it.aim })
         assertEquals("the chosen one is not drawn twice", 1, targets(base, "c124").size)
@@ -30,9 +30,18 @@ class RelationsTest {
 
     @Test fun stackThreadsStayWhileYouChooseInTheirCastersColour() {
         val rels = targets(countered, "c107")
-        assertTrue("the Counterspell's thread stays: $rels", Rel("target", "stackcard", "c123", caster = cpu) in rels)
-        assertTrue("yours are yours: $rels", rels.filter { it.from == "owncast" }.all { it.caster == base.viewer })
+        // The Bolt waits on top of the stack while it asks, so the Counterspell is the second item there.
+        assertTrue("the Counterspell's thread stays: $rels", Rel("target", "stack990", "c123", caster = cpu) in rels)
+        assertTrue("yours are yours: $rels", rels.filter { it.from == "stackcard" }.all { it.caster == base.viewer })
         assertEquals(3, rels.size)
+    }
+
+    @Test fun theCardYouCastWaitsOnTopOfTheStack() {
+        val lane = laneStack(base)
+        assertEquals(listOf("Lightning Bolt", "Counterspell"), lane.map { it.source?.name })
+        assertEquals(base.viewer, lane[0].controller)
+        assertTrue("never one of Forge's ids", lane[0].id < 0 && lane[0].id !in base.selection.stackTargets)
+        assertTrue("nothing waiting: Forge's own stack", laneStack(base.copy(inputType = null, message = "")) === base.copy(inputType = null, message = "").stack)
     }
 
     @Test fun afterTheQuestionOnlyTheStackThreadsRemain() {

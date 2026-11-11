@@ -453,18 +453,19 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                 fun startLeg(t: Director.Travel, at: Int) {
                     when (t.leg) {
                         Director.Leg.TAPS -> untapped -= t.taps.toSet()
-                        Director.Leg.TO_STACK -> {
+                        // T6: a spell that went up while it asked has no leg to the stack here; its rest puts it up instead.
+                        Director.Leg.TO_STACK, Director.Leg.REST -> {
                             t.stackId?.let { hiddenStack.remove(it) }
                             t.cardId?.let { hidden.remove(it) }
                             val id = t.cardId
-                            if (id != null && st.stack.none { it.source?.id == id } && held.none { it.source?.id == id }) {
+                            // A card that is waiting in the stack lane while it asks (pendingCast) is drawn there already.
+                            if (id != null && st.stack.none { it.source?.id == id } && held.none { it.source?.id == id } && dev.cardstashy.nativeplay.ui.pendingCast(st)?.id != id) {
                                 val src = st.card(id) ?: before?.card(id)
                                 val item = dev.cardstashy.nativeplay.engine.StackItem(t.stackId ?: -(++momentKey).toInt(), src?.text.orEmpty(), src?.copy(zone = "Stack"),
                                     if (t.mine) st.viewer else src?.controller?.takeIf { it >= 0 } ?: st.cpu.id, targets = t.targets)
                                 held.add(0, item); putUp[id] = item
                             }
                         }
-                        Director.Leg.REST -> {}
                         Director.Leg.TO_SLOT, Director.Leg.TO_HOST, Director.Leg.TO_GROUP -> t.cardId?.let { id ->
                             field.remove(id); hidden.remove(id)
                             putUp.remove(id)?.let { item -> held.removeAll { it === item } }
