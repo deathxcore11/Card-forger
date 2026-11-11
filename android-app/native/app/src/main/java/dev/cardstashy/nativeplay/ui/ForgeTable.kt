@@ -625,9 +625,14 @@ fun ForgeBoard(
             val handAnchors = LocalAnchors.current
             // A controller: when A plays the last hand card, the ring goes to the gold button (else the menu button), so it isn't lost.
             val goldFocus = remember { FocusRequester() }
+            // 0.4.60 Z5: on one screen the hand lies in a glass tray in the tray's band (ZoneLayout.hand): whole cards side by side, 6 du
+            // apart, flat, inside the window (clear of the bottom edge and the navigation bar); a lifted card grows upward and never past
+            // the window's top. The dual top has no tray (its hand is on the bottom screen, whose fan stays as it was).
+            val trayHand = if (DualScreen.active) null else ZoneLayout.hand(zones, hand.size)
             // The fan itself, at any card width: on the table, or on a dual-screen handheld's bottom screen (MatchBottom).
             val fan: @Composable (Dp) -> Unit = { fanW ->
-                HandFan(hand, fanW, Modifier.fillMaxWidth(), raised = selectedHand, angleDeg = 1.2f, flatLift = DualScreen.active,
+                HandFan(hand, fanW, Modifier.fillMaxWidth(), raised = selectedHand, angleDeg = if (trayHand != null) 0f else 1.2f, flatLift = DualScreen.active,
+                    gap = trayHand?.gap?.dp ?: 4.dp, arc = if (trayHand != null) 0.dp else 2.dp, pop = trayHand?.pop,
                     markOf = ::markOf,
                     canPlay = { card -> castable(card) },
                     onCarry = { carried = it },
@@ -691,7 +696,20 @@ fun ForgeBoard(
                 // Z1 review: on the dual top the chip has its own band under the board (zones.handChip) and stays inside it.
                 zones.handChip?.let { b -> minOf(m, minOf(centreX + 44.du - (b.x.dp + 4.du + maxOf(dockW, 42.du * tools - 8.du) + 12.du), b.right.dp - centreX - 44.du) * 2) } ?: m }
             val handTop = H - handW / 66f * 67f
-            Box(Modifier.offset(x = centreX + 44.du - handW / 66f * 222f, y = handTop).width(handW / 66f * 444f).height(handW / 66f * 120f)
+            if (trayHand != null) {
+                val t = trayHand.tray; val f = trayHand.fan
+                val tuckDip: androidx.compose.ui.graphics.GraphicsLayerScope.() -> Unit = {
+                    if (tuck > 0f) { translationY = tuck * AskTuck.DIP * t.h.dp.toPx(); alpha = 1f - tuck * (1f - AskTuck.SHADE) } }
+                // The glass (the mockup's .tray: rgba(10,13,22,.72), radius 10, a gold hairline); "hand" is where drawn cards fly to.
+                val trayShape = RoundedCornerShape(10.du)
+                Box(Modifier.offset(x = t.x.dp, y = t.y.dp).width(t.w.dp).height(t.h.dp)
+                    .then(if (handAnchors != null) Modifier.onGloballyPositioned { val r = it.boundsInRoot(); handAnchors.putRect("hand", r); handAnchors.putRect("handTray", r) } else Modifier)
+                    .graphicsLayer(tuckDip).clip(trayShape).background(Color(0xB80A0D16)).border(1.dp, Color(0x6BE3C070), trayShape))
+                Box(Modifier.offset(x = f.x.dp, y = f.y.dp).width(f.w.dp).height(f.h.dp).graphicsLayer(tuckDip)) {
+                    fan(trayHand.cardW.dp)
+                    if (tucked) Box(Modifier.matchParentSize().pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent().changes.forEach { it.consume() } } })
+                }
+            } else Box(Modifier.offset(x = centreX + 44.du - handW / 66f * 222f, y = handTop).width(handW / 66f * 444f).height(handW / 66f * 120f)
                 .then(if (handAnchors != null) Modifier.onGloballyPositioned { handAnchors.putRect("hand", it.boundsInRoot()) } else Modifier)
                 .graphicsLayer { if (tuck > 0f) { translationY = tuck * AskTuck.DIP * (handW / 66f * 67f).toPx(); alpha = 1f - tuck * (1f - AskTuck.SHADE) } }) {
                 // With the bottom screen up the hand lives there; the table keeps a small count where the fan was.
@@ -992,7 +1010,8 @@ fun ForgeBoard(
                 val left = trayRight + 12.du
                 val right = W - 8.du - tuckBtnW - 12.du
                 val vis = handW / 66f * 67f
-                TuckedAskLine(parts, left, right, H - vis + vis * AskTuck.DIP / 2f - 18.du, d)
+                val top = trayHand?.let { it.tray.y.dp + it.tray.h.dp * AskTuck.DIP / 2f - 18.du } ?: (H - vis + vis * AskTuck.DIP / 2f - 18.du)
+                TuckedAskLine(parts, left, right, top, d)
             } else askText?.let { val askBottom = if (dual && hand.isNotEmpty()) H - handW / 66f * 37f - 16.du else null
                 AskLine(it, W, H, d, bottom = askBottom, goldInset = goldInset, leftLimit = if (askBottom != null) trayRight + 12.du else null) { r -> askRight = r } }
             // The line between the halves turns into the combat line while you declare (gold attacking, blue blocking).

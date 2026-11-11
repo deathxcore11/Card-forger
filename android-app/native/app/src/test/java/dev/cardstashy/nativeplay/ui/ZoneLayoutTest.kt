@@ -123,5 +123,50 @@ class ZoneLayoutTest {
         assertTrue(bars.handTray!!.bottom <= 390f - 48f && bars.actions.bottom <= 390f - 48f && bars.mySquare.bottom <= 390f - 48f)
     }
 
+    /**
+     * 0.4.60 Z5 (specs/table-zones-brief.md, "Hand tray"): the hand's glass tray holds whole cards inside the window inside its
+     * insets, clear of the bottom edge and the navigation bar, at every size and inset, from 1 to 12 cards; a lifted card (any of
+     * them) grows upward and stays inside the window; the tray stays in its band and on the board.
+     */
+    @Test fun theHandTrayHoldsWholeCardsAndALiftedCardStaysOnScreen() = each { tag, z ->
+        if (z.handTray == null) { assertNull("$tag: the dual top has no hand", ZoneLayout.hand(z, 7)); return@each }
+        val band = z.handTray!!
+        for (n in 1..12) {
+            val h = assertNotNullAndGet(ZoneLayout.hand(z, n))
+            val t = h.tray
+            assertTrue("$tag $n cards: tray $t leaves the window ${z.window}", t.inside(z.window))
+            assertTrue("$tag $n cards: tray $t clear of the bottom edge", t.bottom <= z.window.bottom - 4f * z.k + .01f)
+            assertTrue("$tag $n cards: tray $t off the board's width ${z.board}", t.x >= z.board.x - .01f && t.right <= z.board.right + .01f)
+            assertEquals("$tag $n cards: tray in its band", band.y, t.y, .01f); assertEquals("$tag $n cards: tray height", band.h, t.h, .01f)
+            assertFalse("$tag $n cards: tray meets the board", t.meets(z.board))
+            // Whole cards: a card's top and bottom inside the tray (3 du each side), and every card at rest inside the window.
+            assertTrue("$tag $n cards: card ${h.cardH} taller than the tray", h.fan.y >= t.y && h.fan.y + h.cardH <= t.bottom + .01f)
+            assertEquals("$tag: a hand card is 1.4 times as tall as wide", 1.4f, h.cardH / h.cardW, .001f)
+            for (i in 0 until n) {
+                val up = assertNotNullAndGet(ZoneLayout.hand(z, n, lift = i)?.lifted)
+                assertTrue("$tag $n cards: lifted card $i $up leaves the window ${z.window}", up.inside(z.window))
+                assertTrue("$tag $n cards: lifted card $i grows upward", up.y < h.fan.y && up.bottom <= t.bottom)
+                assertTrue("$tag $n cards: lifted card $i is bigger", up.h > h.cardH)
+            }
+        }
+    }
+
+    @Test fun theMockupsPhoneTray() {
+        // design/roomier-table-mockup.html at 844 × 390: cards 78 tall, 6 apart, 7 each side, the tray's top at 302 (5 cards: 317.2 wide;
+        // ours are 1 / 1.4 as wide as tall, the mockup's .716, a hair narrower).
+        val h = assertNotNullAndGet(ZoneLayout.hand(ZoneLayout.of(844f, 390f), 5))
+        assertEquals(78f, h.cardH, .01f); assertEquals(6f, h.gap, .01f)
+        assertEquals(302f, h.tray.y, .01f)
+        assertEquals(5 * 78f / 1.4f + 4 * 6f + 14f, h.tray.w, .01f)
+        assertEquals(317.2f, h.tray.w, 1f)
+        // Centred on the board.
+        val z = ZoneLayout.of(844f, 390f)
+        assertEquals(z.board.x + z.board.w / 2, h.tray.x + h.tray.w / 2, .01f)
+        // A very short window: the lift is cut so the card's top stays 4 inside it.
+        val low = ZoneLayout.of(640f, 200f)
+        val lifted = assertNotNullAndGet(ZoneLayout.hand(low, 7, lift = 3)?.lifted)
+        assertTrue("short window: $lifted", lifted.y >= low.window.y + 4f * low.k - .01f)
+    }
+
     private fun <T : Any> assertNotNullAndGet(v: T?): T { assertNotNull(v); return v!! }
 }

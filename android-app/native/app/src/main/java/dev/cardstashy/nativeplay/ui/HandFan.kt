@@ -88,6 +88,9 @@ fun HandFan(
     padA: (Card) -> String? = { null },
     /** glow-rules.md: the card being carried now (dragged, under the finger or under the controller's ring), null when none. */
     onCarry: ((Int?) -> Unit)? = null,
+    /** 0.4.60 Z5: the most room between two cards while they fit side by side (the tray's 6), and how far the arc drops a card. */
+    gap: Dp = 4.dp,
+    arc: Dp = 2.dp,
 ) {
     val cardH = cardW * 1.4f
     val haptic = LocalHapticFeedback.current
@@ -130,7 +133,7 @@ fun HandFan(
         val held = cards.filter { it.id != leaving }
         val slots = moving?.let { id -> held.firstOrNull { it.id == id }?.let { m -> held.filter { it.id != id }.toMutableList().apply { add(moveTo.coerceIn(0, size), m) } } } ?: held
         val n = slots.size
-        val step: Dp = if (n <= 1) 0.dp else maxOf(cardW / 4, minOf(cardW + 4.dp, (width - cardW) / (n - 1)))
+        val step: Dp = if (n <= 1) 0.dp else maxOf(cardW / 4, minOf(cardW + gap, (width - cardW) / (n - 1)))
         val total = cardW + step * (n - 1).coerceAtLeast(0)
         val start = ((width - total) / 2).coerceAtLeast(0.dp)
         val mid = (n - 1) / 2f
@@ -261,7 +264,7 @@ fun HandFan(
                     // A popped card keeps its whole scaled rect inside the fan (never over the sidebar).
                     val edge = if (isLift) popW / 2 else 0.dp
                     val x = if (card.id == moving) with(density) { moveX.toDp() } else (start + step * i + shift).coerceIn(edge, (width - cardW - edge).coerceAtLeast(edge))
-                    val y = if (isLift || card.id == moving) -rise else 2.dp * (t * t)
+                    val y = if (isLift || card.id == moving) -rise else arc * (t * t)
                     val newIndex = arriving.indexOf(card.id)
                     val delayMs = if (newIndex >= 0) (dealOrder++) * 70L else 0L
                     val fromX = if (newIndex >= 0) with(density) { (width + cardW).toPx() } else null

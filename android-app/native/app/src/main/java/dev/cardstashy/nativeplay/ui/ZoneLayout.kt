@@ -86,9 +86,10 @@ internal object ZoneLayout {
         val fC = TableGeometry.front(dual)
         val c = minOf(fC * win.h, bw / TableGeometry.cap(dual) / TableGeometry.ASPECT)
         val hb = c / fC
-        // 3. The hand tray: whole cards (20 % of the usable height, .716 as wide), centred on the board, its bottom 4 above the window's.
+        // 3. The hand tray: whole cards (20 % of the usable height, 1 / 1.4 as wide), centred on the board, its bottom 4 above the
+        // window's (Z5: clear of the bottom edge and the navigation bar, which the window already leaves out). [hand] sizes it.
         val tray = if (dual) null else {
-            val hh = .20f * hb; val hw = hh * .716f; val n = hand.coerceAtLeast(1)
+            val hh = .20f * hb; val hw = hh / HAND_TALL; val n = hand.coerceAtLeast(1)
             val tw = minOf(bw, n * hw + (n - 1) * 6f * u + 14f * u)
             val th = hh + 6f * u
             Box(bx + (bw - tw) / 2, win.bottom - 4f * u - th, tw, th)
@@ -116,5 +117,43 @@ internal object ZoneLayout {
         // Undo (36, a glass pill): the foot of the stack slot, 8 above the quiet button's 44, never in End turn's place (U6).
         val undo = Box(qx, stack.bottom - 36f * u, qw, 36f * u)
         return Zones(win, u, hb, left, right, board, tray, cpuSquare, mySquare, menu, phase, stack, actions, chip, undo)
+    }
+
+    /** A hand card is this many times as tall as it is wide (HandFan's own card). */
+    const val HAND_TALL = 1.4f
+    /** How far a lifted hand card rises (HandFan's rise on one screen), in dp. */
+    const val HAND_RISE = 18f
+
+    /**
+     * 0.4.60 Z5: the hand in its glass tray. [tray] is the glass (the mockup's .tray: the cards 6 apart with 7 each side, 3 above and
+     * below), centred on the board inside [Zones.handTray]'s band and never wider than the board; [fan] is the box HandFan lays the
+     * cards out in (the board's width, its top 3 inside the tray, as tall as HandFan is); [cardW] × [cardH] a card, [gap] between two.
+     * [pop] is how much a lifted card grows (HandFan's own rule) cut so its top stays inside the window; [lifted] the lifted card's
+     * box (the [lift]th card) as HandFan draws it: grown from its bottom centre, risen [HAND_RISE], and held inside the fan.
+     */
+    data class Hand(val tray: Box, val fan: Box, val cardW: Float, val cardH: Float, val gap: Float, val pop: Float, val lifted: Box?)
+
+    /** The hand of [n] cards in [z]'s tray ([lift] the lifted card's place, if any), or null on the dual top (no tray). */
+    fun hand(z: Zones, n: Int, lift: Int? = null): Hand? {
+        val band = z.handTray ?: return null
+        val u = z.k
+        val cardH = band.h - 6f * u; val cardW = cardH / HAND_TALL; val gap = 6f * u
+        val fan = Box(z.board.x, band.y + 3f * u, z.board.w, cardH + 8f)
+        // HandFan's slots: cards [gap] apart while they fit, else overlapping (never closer than a quarter card), centred in the fan.
+        val step = if (n <= 1) 0f else maxOf(cardW / 4, minOf(cardW + gap, (fan.w - cardW) / (n - 1)))
+        val total = cardW + step * (n - 1).coerceAtLeast(0)
+        val start = ((fan.w - total) / 2).coerceAtLeast(0f)
+        val tw = minOf(z.board.w, total + 14f * u)
+        val tray = Box(z.board.x + (z.board.w - tw) / 2, band.y, tw, band.h)
+        // HandFan's pop, never so big that the lifted card's top leaves the window (4 clear).
+        val room = fan.y + cardH - HAND_RISE - (z.window.y + 4f * u)
+        val pop = minOf(maxOf(1.5f, minOf(2.2f, 110f / cardW)), room / cardH).coerceAtLeast(1f)
+        val lifted = lift?.takeIf { it in 0 until n }?.let { i ->
+            val popW = cardW * (pop - 1f)
+            val x = (start + step * i).coerceIn(popW / 2, (fan.w - cardW - popW / 2).coerceAtLeast(popW / 2))
+            val bottom = fan.y - HAND_RISE + cardH
+            Box(fan.x + x + cardW / 2 - cardW * pop / 2, bottom - cardH * pop, cardW * pop, cardH * pop)
+        }
+        return Hand(tray, fan, cardW, cardH, gap, pop, lifted)
     }
 }
