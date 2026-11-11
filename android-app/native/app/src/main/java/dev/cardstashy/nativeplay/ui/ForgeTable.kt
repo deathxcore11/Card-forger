@@ -2816,48 +2816,59 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
         val kGap = 2.du
         val tileW = w ?: (h * 1.3f)
         var stripH = 0.dp
-        if (!b.compact && b.iconic.isNotEmpty()) {
+        // 0.4.60 G2: keywords without an icon (Toxic 1, Prowess...) follow the icons as word marks, the same height and pill, as wide as
+        // Forge's word; the same fit rule, in order while they fit, the rest in the "+N".
+        val strip = if (b.compact) emptyList() else b.strip
+        val kFont = (kh.value * .52f).sp
+        val kStyle = sans(kFont, FontWeight.ExtraBold, Color.White).copy(lineHeight = kFont)
+        val kMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
+        val kDens = LocalDensity.current.density
+        if (strip.isNotEmpty()) {
             val anchors = LocalAnchors.current
             val squeezedK = tileW < h
             val right = (visibleW?.coerceAtMost(tileW) ?: tileW) - 3.du
             // The plate: right 6 du, bottom 2 du (left 3 du while the next pile covers this tile's right part).
             val px0 = plate?.let { if (plateLeft) 3.du else tileW - 6.du - it.first }
             val px1 = plate?.let { if (plateLeft) 3.du + it.first else tileW - 6.du }
-            val n = b.iconic.size
-            val x0: Dp; val bottom: Dp; val slots: Int
+            val n = strip.size
+            // A word mark: padding .42 em each side round the word (the preview's .k), never narrower than an icon mark.
+            val pad = kFont.value * .42f
+            val markW = strip.map { k -> if (k.key != null) kh.value else maxOf(kh.value, kMeasurer.measure(k.label, kStyle).size.width / kDens + 2 * pad + 1f) }
+            val x0: Dp; val bottom: Dp; val shown: Int; val more: Int
             if (!squeezedK) {
                 x0 = if (plate != null && plateLeft) px1!! + 4.du else 3.du
                 val x1 = if (plate != null && !plateLeft) minOf(right, px0!! - 4.du) else right
                 bottom = 3.du
+                val room = (x1 - x0).value
                 // Never up into the name.
-                slots = if (h - bottom - kh < top) 0 else TileBadges.stripSlots((x1 - x0).value, kh.value, kGap.value)
+                shown = if (h - bottom - kh < top) 0 else TileBadges.stripFit(markW, room, kGap.value, kh.value)
+                more = if (h - bottom - kh < top || (shown < n && kh.value > room + .01f)) 0 else n - shown
             } else {
                 x0 = 3.du
                 // Over the plate when the plate reaches the left column; up to the name, never into it.
                 bottom = if (plate != null && px0!! < x0 + kh + 2.du && px1!! > x0) 2.du + plate.second + 3.du else 3.du
-                slots = minOf(TileBadges.SQUEEZED_MARKS, TileBadges.stripSlots((h - bottom - top).value, kh.value, kGap.value))
+                val slots = minOf(TileBadges.SQUEEZED_MARKS, TileBadges.stripSlots((h - bottom - top).value, kh.value, kGap.value))
+                // A word wider than the tile's free width folds into the "+N" with what follows it.
+                val wide = markW.indexOfFirst { it > (right - x0).value + .01f }.let { if (it < 0) n else it }
+                shown = minOf(TileBadges.stripShown(n, slots), wide)
+                more = if (slots > 0) n - shown else 0
             }
-            val shown = TileBadges.stripShown(n, slots)
-            val more = if (slots > 0) n - shown else 0
             anchors?.let { it.sizes["kwshown${card.id}"] = shown.toFloat(); it.sizes["kwmore${card.id}"] = more.toFloat() }
-            @Composable fun mark(key: String?, i: Int, text: String? = null) {
-                Box(Modifier.size(kh).then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect(if (key != null) "kw${card.id}.$i" else "kwplus${card.id}", it.boundsInRoot()) } else Modifier)
+            @Composable fun mark(k: TileBadges.Keyword?, i: Int, text: String? = null) {
+                val word = k != null && k.key == null
+                Box(Modifier.height(kh).width(if (word) markW[i].dp else kh).then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect(if (k != null) "kw${card.id}.$i" else "kwplus${card.id}", it.boundsInRoot()) } else Modifier)
                     .drawBehind { drawRoundRect(Color(0xB3000000), topLeft = Offset(0f, 1.dp.toPx()), size = this.size, cornerRadius = CornerRadius(this.size.height / 2)) }
-                    .clip(CircleShape).background(Color(0xF0101114))
-                    .border(1.dp, if (key != null) Color(0xFFD6AD64) else Color(0x8CFFFFFF), CircleShape), contentAlignment = Alignment.Center) {
-                    if (key != null) BoardIcon(key, BadgeInk, kh * .74f)
-                    else Text(text ?: "", maxLines = 1, softWrap = false, style = sans((kh.value * .52f).sp, FontWeight.ExtraBold, Color.White).copy(lineHeight = (kh.value * .52f).sp))
+                    .clip(RoundedCornerShape(50)).background(Color(0xF0101114))
+                    .border(1.dp, if (k != null) Color(0xFFD6AD64) else Color(0x8CFFFFFF), RoundedCornerShape(50)), contentAlignment = Alignment.Center) {
+                    if (k?.key != null) BoardIcon(k.key, BadgeInk, kh * .74f)
+                    else Text(if (word) k!!.label else text ?: "", maxLines = 1, softWrap = false, style = kStyle)
                 }
             }
             if (shown + more > 0) {
-                val marks: @Composable () -> Unit = {
-                    b.iconic.take(shown).forEachIndexed { i, k -> mark(k.key, i) }
-                    if (more > 0) mark(null, shown, "+$more")
-                }
-                if (!squeezedK) Row(Modifier.align(Alignment.BottomStart).offset(x = x0, y = -bottom), horizontalArrangement = Arrangement.spacedBy(kGap)) { marks() }
+                val list = strip.take(shown).mapIndexed { i, k -> Triple(k as TileBadges.Keyword?, i, null as String?) } + (if (more > 0) listOf(Triple(null as TileBadges.Keyword?, shown, "+$more")) else emptyList())
+                if (!squeezedK) Row(Modifier.align(Alignment.BottomStart).offset(x = x0, y = -bottom), horizontalArrangement = Arrangement.spacedBy(kGap)) { list.forEach { (k, i, t) -> mark(k, i, t) } }
                 // First keyword lowest: the column is laid bottom up.
                 else Column(Modifier.align(Alignment.BottomStart).offset(x = x0, y = -bottom), verticalArrangement = Arrangement.spacedBy(kGap, Alignment.Bottom)) {
-                    val list = b.iconic.take(shown).mapIndexed { i, k -> Triple(k.key, i, null as String?) } + (if (more > 0) listOf(Triple(null as String?, shown, "+$more")) else emptyList())
                     list.asReversed().forEach { (k, i, t) -> mark(k, i, t) }
                 }
                 stripH = bottom + (if (squeezedK) kh * (shown + more) + kGap * (shown + more - 1) else kh)
