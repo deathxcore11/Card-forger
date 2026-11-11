@@ -106,16 +106,20 @@ class TableLookZ1ShotTest {
             val tiles = (st.cpu.battlefield + st.me.battlefield).filter { it.attachedTo == null }.mapNotNull { c -> a.rects["c${c.id}"]?.let { c to it } }
             assertTrue("$tag: no tiles drawn", tiles.isNotEmpty())
             // Every permanent lies on the board.
-            for ((c, r) in tiles) assertTrue("$tag: ${c.name} $r off the board ${z.board.px()}", r.inside(z.board.px()))
+            // (Mobile table M5: on a phone your lands lie in the shelf left of the hand, under the board.)
+            for ((c, r) in tiles) { val home = if (z.shelf != null && c.isLand && !c.isCreature && c.controller == st.viewer) z.shelf!!.px() else z.board.px()
+                assertTrue("$tag: ${c.name} $r off ${if (home == z.board.px()) "the board" else "the shelf"} $home", r.inside(home) || (home != z.board.px() && r.top >= home.top - dp && r.bottom <= home.bottom + dp && r.left >= home.left - dp)) }
             // The strips hold the seats, the CPU's hand, the piles, the menu's phase box and the stack card; none of it is on the board.
             val left = listOfNotNull(a.rects["cpuseat"], a.rects["cpuhandwords"]) + st.players.mapNotNull { a.rects["orb${it.id}"] } + st.players.mapNotNull { a.rects["piles${it.id}"] }
             for (r in left) assertTrue("$tag: $r outside the left strip ${z.leftStrip.px()}", r.inside(z.leftStrip.px()))
-            val right = listOfNotNull(a.rects["phasetrack"], a.rects["stackcard"], a.rects["stacklabel"])
+            // (Mobile table M5: on one screen the stack card stands at Arena's size over the board's right end, never on a creature.)
+            val right = listOfNotNull(a.rects["phasetrack"]) + (if (size.dual) listOfNotNull(a.rects["stackcard"], a.rects["stacklabel"]) else emptyList())
             assertTrue("$tag: no phase box", a.rects["phasetrack"] != null)
             for (r in right) assertTrue("$tag: $r outside the right strip ${z.rightStrip.px()}", r.inside(z.rightStrip.px()))
-            a.rects["stackcard"]?.let { assertTrue("$tag: the stack card $it takes board width ${z.board.px()}", it.left > z.board.px().right) }
+            if (size.dual) a.rects["stackcard"]?.let { assertTrue("$tag: the stack card $it takes board width ${z.board.px()}", it.left > z.board.px().right) }
+            // (That it steps off a creature is decided a frame after the tiles are laid out: MobileM5StackShotTest, under a compose rule.)
             // No tile under any of the chrome.
-            val chrome = listOf("cpuseat", "cpuhandwords", "phasetrack", "stackcard", "stacklabel", "gold", "quiet", "undo", "tools", "handchip", "turncount", "turnring",
+            val chrome = (if (size.dual) listOf("stackcard", "stacklabel") else emptyList()) + listOf("cpuseat", "cpuhandwords", "phasetrack", "gold", "quiet", "undo", "tools", "handchip", "turncount", "turnring",
                 "menu", "turn", "askline", "thinkdots") + st.players.flatMap { listOf("orb${it.id}", "piles${it.id}") }
             for (k in chrome) a.rects[k]?.let { box -> for ((c, r) in tiles) assertTrue("$tag: ${c.name} $r under $k $box", !r.deflate(1f).overlaps(box)) }
             // Z1 review: the buttons and Undo keep off every zone box but their own, not only off the tiles: Undo in its slot in the right
@@ -125,7 +129,7 @@ class TableLookZ1ShotTest {
             a.rects["undo"]?.let { assertTrue("$tag: Undo $it outside its slot ${z.undo.px()}", it.inside(z.undo.px())) }
             val others = listOfNotNull(z.board, z.handTray, z.handChip).map { it.px() }
             for (k in listOf("gold", "quiet", "undo", "turncount", "turnring", "menu", "turn", "stackcard", "stacklabel")) a.rects[k]?.let { r ->
-                for (o in others) assertTrue("$tag: $k $r meets the zone $o", !r.deflate(1f).overlaps(o))
+                if (size.dual || !k.startsWith("stack")) for (o in others) assertTrue("$tag: $k $r meets the zone $o", !r.deflate(1f).overlaps(o))
                 assertTrue("$tag: $k $r leaves the window", r.inside(z.window.px()))
                 if (size.dual && k != "turnring") assertTrue("$tag: $k $r outside the right strip ${z.rightStrip.px()}", r.inside(z.rightStrip.px()))
             }

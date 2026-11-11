@@ -127,7 +127,10 @@ class TableLookZ3ShotTest {
                 assertTrue("$tag: ${c.name} land name $sp sp", sp >= TextFloors.LAND_NAME - .01f)
                 assertTrue("$tag: ${c.name} land name cut", a.rects["namecut${c.id}"] == null)
             }
-            assertTrue("$tag: no land name drawn", (st.cpu.battlefield + st.me.battlefield).filter { it.isLand }.any { a.sizes["namesp${it.id}"] != null })
+            // Mobile table M5 (phone conflicts, 2): a land whose name cannot be whole (a tile narrower than a finger) shows its mana
+            // symbol and count only: on the smallest phone every land is narrower than that or overlapped in the shelf.
+            val wideLand = size.tag != "640x360"
+            if (wideLand) assertTrue("$tag: no land name drawn", (st.cpu.battlefield + st.me.battlefield).filter { it.isLand }.any { (a.sizes["namelines${it.id}"] ?: 0f) > 0f })
             for (p in st.players.filter { a.rects["orb${it.id}"] != null }) assertTrue("$tag: life under 19 sp", (a.sizes["lifesp${p.id}"] ?: 0f) >= TextFloors.LIFE)
             val dots = a.rects.filterKeys { it.startsWith("phasedot") }
             assertTrue("$tag: no phase dots", dots.isNotEmpty())

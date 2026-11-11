@@ -112,7 +112,9 @@ class TableLookT1ShotTest {
             // 0.4.60 Z2: the tile heights are fixed (the brief), so on a phone a tapped tile's turned box reaches into the next row's
             // band; what must not happen is the tiles themselves meeting. A tapped tile is checked as the turned card it is (20 degrees,
             // 94 %, its outline worked back from its box), not as its box, which takes in empty corners.
-            fun rowOf(c: dev.cardstashy.nativeplay.engine.Card) = (if (c.controller == st.viewer) 2 else 0) + (if (c.isCreature) 1 else 0).let { if (c.controller == st.viewer) 1 - it else it }
+            // (Mobile table M5: on a phone your loose permanents stand in your creature row; your shelf holds lands only.)
+            val shelf = !dual && dev.cardstashy.nativeplay.ui.ZoneLayout.of(dm.widthPixels / dm.density, dm.heightPixels / dm.density).shelf != null
+            fun rowOf(c: dev.cardstashy.nativeplay.engine.Card) = (if (c.controller == st.viewer) 2 else 0) + (if (c.isCreature || (shelf && c.controller == st.viewer && !c.isLand)) 1 else 0).let { if (c.controller == st.viewer) 1 - it else it }
             // The creature rows never meet, tapped or not; upright tiles never meet anywhere. A back row and its creature row are parted
             // as far as the board's height allows (TableGeometry.rows): where that is short of what two turned tiles need (a phone),
             // a turned corner may reach into the other row by no more than the shortfall.

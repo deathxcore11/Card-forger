@@ -77,8 +77,13 @@ internal object TableGeometry {
     const val STRIP = .15f
     const val STRIPS_MAX = 2
 
-    /** Mobile table M5: a phone's creature tile is 14 % of the height (Arena's is 12 %; ours carries the name). */
-    const val FRONT_PHONE = .14f
+    /**
+     * Mobile table M5: a phone's creature tile is 18.5 % of the height. (Arena's is 12 % and carries no name; ours wears its name, its
+     * P/T plate and the G1 keyword marks, which 14 % had no room for: the brief's "Phone conflicts from the full picture run".)
+     */
+    const val FRONT_PHONE = .185f
+    /** Z2: the narrowest a squeezed creature tile gets (dp at chrome scale 1). */
+    const val FRONT_W_MIN = 59f
     fun front(dualTop: Boolean, phone: Boolean = false) = if (dualTop) FRONT_DUAL else if (phone) FRONT_PHONE else FRONT_ONE
     fun backShare(dualTop: Boolean) = if (dualTop) BACK_DUAL else BACK_ONE
     fun cap(dualTop: Boolean) = if (dualTop) CAP_DUAL else CAP_ONE
@@ -184,7 +189,8 @@ internal object TableGeometry {
         val front = rows.cpuFront.height; val back = rows.cpuBack.height
         val fg = gap(maxOf(cpuFront.size, myFront.size), k)
         val bg = gap(maxOf(cpuBack.size, myBack.size), k)
-        val fw = width(front, listOf(cpuFront to room, myFront to room), fg)
+        // A creature tile is never squeezed under the brief's 59 (times the chrome scale): its name stays whole on three lines.
+        val fw = width(front, listOf(cpuFront to room, myFront to room), fg).coerceAtLeast(minOf(FRONT_W_MIN * k, front * ASPECT))
         val bw = width(back, listOf(cpuBack to backRoom, myBack to myBackRoom), bg, listOf(cpuLane, myLane))
         return Tiles(front, back, fw, bw)
     }

@@ -54,7 +54,10 @@ class MobileM13ShotTest {
         assertTrue("$size: the CPU's lands are on the left", rect("Island", false).right < mid)
         assertTrue("$size: your lands are on the left", rect("Mountain", true).right < mid && rect("Forest", true).right < mid)
         val signet = rect("Arcane Signet", true)
-        if (phone) assertTrue("$size: on a phone your Signet stays in the shelf beside your lands", signet.right < mid)
+        // The brief's "Phone conflicts from the full picture run", 2: on a phone the shelf holds lands only; your loose permanents
+        // stand in your creature row, right of your creatures.
+        if (phone) { val mineC = st.me.battlefield.filter { it.isCreature }.mapNotNull { a.rects["c${it.id}"] }
+            assertTrue("$size: on a phone your Signet stands in your creature row, right of your creatures: $signet", mineC.isNotEmpty() && mineC.all { signet.left >= it.right - 1f && kotlin.math.abs(signet.center.y - it.center.y) < it.height / 2 }) }
         else assertTrue("$size: your Arcane Signet stands at the right end of your back row: $signet", signet.right > right - 40 * dp && signet.right <= right + 1f)
         for (c in (st.me.battlefield + st.cpu.battlefield).filter { it.isCreature }) a.rects["c${c.id}"]?.let { r ->
             assertTrue("$size: ${c.name} is in the middle, clear of the loose permanents", !r.overlaps(ring) && !r.overlaps(signet)) }

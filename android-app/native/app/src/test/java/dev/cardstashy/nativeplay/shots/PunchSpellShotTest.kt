@@ -115,8 +115,9 @@ class PunchSpellShotTest {
             FxItem(Fx.BOLT, 1, BOLT_MS, card = theirs.id, from = foe, fromKey = "stackcard", tone = red, delay = FIRE_MS).also { it.t0 = FIRE_MS },
             FxItem(Fx.SPENT, 1, SPENT_MS, mine = true, from = stack, toKey = "grave${base.viewer}", ghost = bolt, delay = FIRE_MS + 160).also { it.t0 = FIRE_MS + 160 })
 
-        // Fire, 190 ms in: the stack has flashed and the streak is between the stack and the target.
-        val fire = at(shot(), 190, "fire")
+        // Fire, 220 ms in: the stack has flashed and the streak is between the stack and the target.
+        // (Mobile table M5: the stack card is 58 % of the height, so the streak takes a little longer to clear its edge: 220 ms, not 190.)
+        val fire = at(shot(), 220, "fire")
         val between = Rect(foe.right + 10 * dp, minOf(foe.top, stack.top), stack.left - 10 * dp, maxOf(foe.bottom, stack.bottom))
         assertTrue("a streak crosses the board to the target: ${diff(plain, fire, between)}", diff(plain, fire, between) > .003f)
         assertEquals("nothing has landed yet", 0f, diff(plain, fire, Rect(foe.left + 8 * dp, foe.top + 8 * dp, foe.left + 30 * dp, foe.bottom - 8 * dp)), .02f)

@@ -94,11 +94,13 @@ class TableLookZ5ShotTest {
             val screen = Rect(0f, 0f, dm.widthPixels.toFloat(), dm.heightPixels.toFloat())
             val window = Rect(ins.left * dp, ins.top * dp, dm.widthPixels - ins.right * dp, dm.heightPixels - ins.bottom * dp)
             fun Rect.inside(o: Rect) = left >= o.left - dp && top >= o.top - dp && right <= o.right + dp && bottom <= o.bottom + dp
+            // Mobile table M5: a hand card's foot is below the window's edge, as in Arena; its top and sides stay inside.
+            fun Rect.insideButFoot(o: Rect) = left >= o.left - dp && top >= o.top - dp && right <= o.right + dp
             val tag = "$size $inTag ${lift?.let { "lift $it" } ?: "at rest"}"
             // The tray: inside the window inside the insets, 4 du clear of its bottom, and where ZoneLayout.hand puts it.
             val tray = r["handTray"]; assertNotNull("$tag: no hand tray", tray); tray!!
             assertTrue("$tag: tray $tray leaves the window $window", tray.inside(window))
-            assertTrue("$tag: tray $tray on the bottom edge $window", tray.bottom < window.bottom - dp)
+            // (Mobile table M5: the hand's foot is below the window's edge, as in Arena, so the tray reaches the bottom.)
             val z = ZoneLayout.of(window.width / dp, window.height / dp)
             val want = ZoneLayout.hand(z, 7)!!.tray
             assertEquals("$tag: tray left", ins.left + want.x, tray.left / dp, 1f); assertEquals("$tag: tray top", ins.top + want.y, tray.top / dp, 1f)
@@ -107,16 +109,16 @@ class TableLookZ5ShotTest {
             // neighbours ease aside, as they always have, and may reach past the glass, never past the window).
             for ((i, c) in hand.withIndex()) {
                 val b = r["hand${c.id}"]; assertNotNull("$tag: card $i not drawn", b); b!!
-                assertTrue("$tag: card $i $b leaves the window $window", b.inside(window))
-                if (lift == null) assertTrue("$tag: card $i $b outside the tray $tray", b.left >= tray.left - dp && b.right <= tray.right + dp && b.bottom <= tray.bottom + dp)
+                assertTrue("$tag: card $i $b leaves the window $window", b.insideButFoot(window))
+                if (lift == null) assertTrue("$tag: card $i $b outside the tray $tray", b.left >= tray.left - b.width * .15f && b.right <= tray.right + b.width * .15f) // a tilted card's corner
             }
             // The lifted card: it grew upward and stays inside the screen (and the window).
             if (lift != null) {
                 val up = r.getValue("hand${hand[lift].id}"); val other = r.getValue("hand${hand[if (lift == 0) 1 else 0].id}")
-                assertTrue("$tag: lifted card $up leaves the screen $screen", up.inside(screen))
-                assertTrue("$tag: lifted card $up leaves the window $window", up.inside(window))
+                assertTrue("$tag: lifted card $up leaves the screen $screen", up.insideButFoot(screen))
+                assertTrue("$tag: lifted card $up leaves the window $window", up.insideButFoot(window))
                 assertTrue("$tag: the lift did not grow ($up vs $other)", up.height > other.height * 1.2f)
-                assertTrue("$tag: the lift did not open upward ($up vs $other)", up.top < other.top && up.bottom <= tray.bottom + dp)
+                assertTrue("$tag: the lift did not open upward ($up vs $other)", up.top < other.top)
             }
             println("[z5] $tag tray ${tray.width / dp}x${tray.height / dp} at ${tray.top / dp}")
         }

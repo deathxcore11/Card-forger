@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.captureRoboImage
 import dev.cardstashy.nativeplay.art.CardImageTest
 import dev.cardstashy.nativeplay.engine.MatchState
@@ -60,16 +61,21 @@ class MobileM1ShotTest {
         assertNull(askingAbility(st.copy(inputType = "InputPassPriority")))
     }
 
+    @get:org.junit.Rule val rule = androidx.compose.ui.test.junit4.createAndroidComposeRule<androidx.activity.ComponentActivity>()
+
+    /** Drawn under a compose rule and settled before the picture: the step-aside is decided a frame after the tiles are laid out. */
     private fun board(file: String): Anchors {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         val anchors = Anchors()
-        captureRoboImage(File(System.getProperty("shotsDir"), "table-look/$file.png").path) {
+        rule.setContent {
             CompositionLocalProvider(LocalAnchors provides anchors) {
                 Box(Modifier.fillMaxSize().background(Palette.Night)) {
                     ForgeBoard(st, live = true, intents = TableIntents(), selectedHand = null, onSelectHand = {}, onInspect = {}, onMenu = {}, handOrder = emptyList(), onHandOrder = {})
                 }
             }
         }
+        rule.waitForIdle(); rule.mainClock.advanceTimeBy(500); rule.waitForIdle()
+        rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "table-look/$file.png").path)
         return anchors
     }
     private fun check(size: String, a: Anchors) {

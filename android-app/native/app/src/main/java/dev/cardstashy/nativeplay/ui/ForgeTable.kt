@@ -540,8 +540,14 @@ fun ForgeBoard(
                 // buttons keep off the board's box (goldMax, quietMax below), so your back row has the board's whole width.
                 // M5, a phone: your lands lie in the shelf left of the hand, so your back row has that room, not the board's width.
                 val myBackRoom = zones.shelf?.let { minOf(backRoom, it.right.dp - backX) } ?: backRoom
-                val cpuFrontPiles = sizes(others(cpu.battlefield), 0); val myFrontPiles = sizes(others(me.battlefield), 0)
-                val cpuBackPiles = sizes(backRow(cpu.battlefield), lands(cpu.battlefield).size); val myBackPiles = sizes(backRow(me.battlefield), lands(me.battlefield).size)
+                // M5, a phone (the brief's "Phone conflicts from the full picture run", 2): the shelf holds your lands only; your loose
+                // permanents stand at the right end of your creature row, a lane's gap after the creatures, and count toward its squeeze.
+                val shelfLands = zones.shelf != null
+                val myFront = if (shelfLands) others(me.battlefield) + backOthers(me.battlefield) else others(me.battlefield)
+                val myFrontSplit = if (shelfLands) others(me.battlefield).size else 0
+                val myBack = if (shelfLands) lands(me.battlefield) else backRow(me.battlefield)
+                val cpuFrontPiles = sizes(others(cpu.battlefield), 0); val myFrontPiles = sizes(myFront, myFrontSplit)
+                val cpuBackPiles = sizes(backRow(cpu.battlefield), lands(cpu.battlefield).size); val myBackPiles = sizes(myBack, lands(me.battlefield).size)
                 val tiles = TableGeometry.tiles(rowsG, room.value, backRoom.value, cpuFrontPiles, myFrontPiles, cpuBackPiles, myBackPiles,
                     twoLanes(cpu), twoLanes(me), myBackRoom.value, k = u)
                 val frontGap = TableGeometry.gap(maxOf(cpuFrontPiles.size, myFrontPiles.size), u).dp
@@ -567,8 +573,11 @@ fun ForgeBoard(
                         Modifier.offset(x = boardRight - lane - Walkers.INSET.du - ww.dp, y = (top + slot * (wh + Walkers.GAP.du.value)).dp).zIndex(40f), d, piece = tilePiece, whole = true)
                 } }
                 PermanentRow(others(cpu.battlefield), false, 0, frontX, rowsG.cpuFront.centre.dp, room, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = fw to fh.dp, advance = advance, onPile = openPile, gap = frontGap, squeezed = tiles.squeezed)
-                PermanentRow(others(me.battlefield), false, 0, frontX, rowsG.myFront.centre.dp, room, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = fw to fh.dp, advance = advance, onPile = openPile, gap = frontGap, squeezed = tiles.squeezed)
-                PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, backX, rowsG.myBack.centre.dp, myBackRoom, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true, onPile = openPile, gap = backGap,
+                PermanentRow(myFront, false, myFrontSplit, frontX, rowsG.myFront.centre.dp, room, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = fw to fh.dp, advance = advance, onPile = openPile, gap = frontGap, squeezed = tiles.squeezed)
+                // The shelf's lands overlap like a fan when they do not fit, [SHELF_SHOW] dp of each pile showing at the least; past
+                // that the row runs on under the hand's left edge (the hand's cards lie on top).
+                val shelfNeed = if (!shelfLands || myBackPiles.isEmpty()) 0.dp else TableGeometry.rowWidth(bh.value, myBackPiles, step = TableGeometry.FAN_MIN, w = bw.value, gap = 0f).dp - (bw - SHELF_SHOW.dp) * (myBackPiles.size - 1)
+                PermanentRow(myBack, true, lands(me.battlefield).size, backX, rowsG.myBack.centre.dp, if (shelfLands) maxOf(myBackRoom, minOf(shelfNeed, backRoom)) else myBackRoom, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true, onPile = openPile, gap = backGap,
                     // On a phone your back row is the shelf left of the hand: the hand lies where its right end would be.
                     looseRight = zones.shelf == null)
                 }
@@ -691,7 +700,10 @@ fun ForgeBoard(
                 val fullX = zones.rightStrip.x.dp - 4.du - 104.du * sFull
                 val fullY = (mid - fullH / 2).coerceIn(zones.window.y.dp + 8.du + (if (lane.size > 1) 22.du * sFull else 0.dp), ((zones.handTray?.y?.dp ?: (zones.window.bottom.dp - 8.du)) - (145.du + 30.du) * sFull).coerceAtLeast(zones.window.y.dp + 8.du + (if (lane.size > 1) 22.du * sFull else 0.dp)))
                 val stackDensity = LocalDensity.current
-                val asked = if (live && st.prompt == null) st.selection.cards + st.selection.targetCards else emptySet()
+                // Phone conflicts, 3: the card never rests on a creature tile either, question or not (the cast pop is its own card
+                // and still shows full size).
+                val asked = remember(st.revision, st, live) { (st.players.flatMap { p -> p.battlefield.filter { it.isCreature && it.attachedTo == null }.map { it.id } } +
+                    (if (live && st.prompt == null) st.selection.cards + st.selection.targetCards else emptySet())).toSet() }
                 val fullBox = with(stackDensity) { androidx.compose.ui.geometry.Rect(fullX.toPx(), fullY.toPx(), (fullX + 104.du * sFull).toPx(), (fullY + (145.du + 30.du) * sFull).toPx()) }
                 val stackAnchors = LocalAnchors.current
                 val askedNow by androidx.compose.runtime.rememberUpdatedState(asked); val boxNow by androidx.compose.runtime.rememberUpdatedState(fullBox)
@@ -1214,6 +1226,8 @@ fun ForgeBoard(
     }
 }
 
+/** M5, a phone: the least of each land pile that shows when the shelf's piles overlap (dp). */
+internal const val SHELF_SHOW = 20f
 /** forge-table.mjs laneFor: creatures in the front row; lands, then the "other" lane (artifacts, enchantments, planeswalkers, battles) in the back row. */
 private fun lands(cards: List<Card>) = cards.filter { it.isLand && !it.isCreature && it.attachedTo == null }
 private fun backOthers(cards: List<Card>) = cards.filter { !it.isLand && !it.isCreature && it.attachedTo == null && !isWalker(it) }
@@ -1295,7 +1309,9 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
     // Table additions 2: a pile's cards sit 9 px right and 6 px up of the one under them, at most 4 edges showing.
     // T2: a pile fans sideways as wide as the row has room for (TableGeometry.fanStep), so it shows what is in it; no rise.
     // Z2: the row's layout (fan, gaps, overlap) comes from TableGeometry.layRow; the tiles keep their height.
-    val lay = TableGeometry.layRow(w.value, h.value, room.value, piles.map { it.size }, land, laneAt, (gap ?: (w * TableGeometry.GAP)).value,
+    val lay = TableGeometry.layRow(w.value, h.value, room.value, piles.map { it.size }, land, laneAt,
+        // A land narrower than a finger (a phone's CPU lands): its neighbour stands a touch target away while the row has the room.
+        (gap ?: (w * TableGeometry.GAP)).let { if (land && tile != null) maxOf(it, TextFloors.TOUCH.dp - w) else it }.value,
         rightFrom = if (!looseRight || !land) -1 else if (split == 0) 0 else laneAt)
     val step = w * lay.fan
     val rise = if (tile != null) 0.dp else if (piece != null) 6.dp else 6.du
@@ -1615,7 +1631,11 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
                 }
             }
             val (size, lines, cut) = fit
-            Box((if (visibleW != null) Modifier.width(visibleW) else Modifier.fillMaxWidth()).heightIn(min = nh + 10.dp)
+            // M5 (phone conflicts, 2): a land's name is never broken letter by letter. Where it cannot be whole, or less than a
+            // finger's width of the pile shows, the land keeps its mana symbol and its count and drops the name.
+            val noName = land && (cut || (visibleW != null && visibleW < TextFloors.TOUCH.dp))
+            if (noName) androidx.compose.runtime.SideEffect { anchors?.let { it.rects.remove("name${card.id}"); it.rects.remove("namecut${card.id}"); it.sizes["namelines${card.id}"] = 0f } }
+            else Box((if (visibleW != null) Modifier.width(visibleW) else Modifier.fillMaxWidth()).heightIn(min = nh + 10.dp)
                 .background(Brush.verticalGradient(0f to Color(0xF007070B), .55f to Color(0xB807070B), 1f to Color(0x0007070B)))
                 .padding(start = side, end = side, top = 3.dp, bottom = 4.dp)) {
                 Text(card.name, maxLines = lines, overflow = TextOverflow.Clip, style = nameStyle(size),
@@ -2178,6 +2198,9 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
         // a target, picks it). The list opens by itself while one of them is a target.
         val folded = olderN > 0 && stepY < 22.du
         val olderAll = groups.drop(1)
+        if (!folded && anchors != null) androidx.compose.runtime.SideEffect { anchors.rects.remove("stackmore") }
+        // Folded: the older cards are no longer drawn, so their places are forgotten (the card may have been fanned a frame ago, at full size).
+        if (folded && anchors != null) androidx.compose.runtime.SideEffect { olderAll.forEach { g -> anchors.rects.remove("stack${g.first.id}") } }
         var listOpen by remember { mutableStateOf(false) }
         val olderTarget = pick != null && olderAll.any { it.first.id in st.selection.stackTargets }
         LaunchedEffect(olderTarget) { if (olderTarget) listOpen = true }
@@ -2496,10 +2519,28 @@ internal fun GoldPill(text: String, enabled: Boolean, modifier: Modifier, d: Du,
             // [data-native-key=ok]:after { content: ' ›'; font-size: 20px }. A long label ("Discard Ultimate Magic: Meteor") is cut
             // with … inside the button (BB8); the › stays.
             Row(Modifier.weight(1f, fill = false)) {
-                Text(text, style = sans(sp(15f), FontWeight.Bold, Color(0xFF1B1408)), maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false).alignByBaseline())
+                // A label is never cut while it can be fitted: its words step down (15 sp to 11) to the room the button has.
+                val goldRoom = if (maxW == Dp.Infinity) Dp.Infinity else maxW - (if (maxW < 138.du) 20.du else 36.du) - (if (keyed) 36.du else 0.dp) - (if (enabled) 10.du else 0.dp)
+                Text(text, style = sans(fitSp(text, 15f, 11f, goldRoom, FontWeight.Bold, d), FontWeight.Bold, Color(0xFF1B1408)), maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false).alignByBaseline())
                 if (enabled) Text(" \u203A", style = sans(sp(20f), FontWeight.Bold, Color(0xFF1B1408)), maxLines = 1, modifier = Modifier.alignByBaseline())
             }
         }
+    }
+}
+
+/**
+ * The size (sp, already scaled by [d]) at which [text] fits [room] on one line: [base] where it fits, else stepped down in
+ * proportion, never under [floor] (past that the button cuts it with …, as BB8).
+ */
+@Composable
+internal fun fitSp(text: String, base: Float, floor: Float, room: Dp, weight: FontWeight, d: Du): androidx.compose.ui.unit.TextUnit = with(d) {
+    if (room == Dp.Infinity) return@with sp(base)
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val density = LocalDensity.current
+    val full = sp(base)
+    remember(text, base, floor, room, full) {
+        val w = with(density) { measurer.measure(text, sans(full, weight, Color.White), maxLines = 1).size.width.toDp() } + 1.dp
+        if (w <= room || w.value <= 0f) full else full * (room.value / w.value).coerceIn(floor / base, 1f)
     }
 }
 
@@ -2519,8 +2560,9 @@ internal fun GlassPill(text: String, enabled: Boolean, modifier: Modifier, d: Du
                        height: Dp? = null, onClick: () -> Unit) = with(d) {
     val cue = LocalTableCue.current
     Box(modifier.widthIn(max = maxW).height(height ?: 36.du).clip(RoundedCornerShape(999.dp)).background(Color(0xB30C0D12)).border(1.dp, edge, RoundedCornerShape(999.dp))
-        .clickable(enabled = enabled) { cue?.invoke("ui_soft", 1f, 1f); onClick() }.padding(horizontal = 14.du), contentAlignment = Alignment.Center) {
-        Text(text, style = sans(sp(12.5f), FontWeight.SemiBold, tone), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        .clickable(enabled = enabled) { cue?.invoke("ui_soft", 1f, 1f); onClick() }.padding(horizontal = if (maxW < 96.du) 8.du else 14.du), contentAlignment = Alignment.Center) {
+        // A label is never cut while it can be fitted: tighter sides, then its words step down (12.5 sp to 10).
+        Text(text, style = sans(fitSp(text, 12.5f, 10f, if (maxW == Dp.Infinity) Dp.Infinity else maxW - (if (maxW < 96.du) 16.du else 28.du), FontWeight.SemiBold, d), FontWeight.SemiBold, tone), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

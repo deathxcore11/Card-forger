@@ -106,10 +106,12 @@ internal object ZoneLayout {
     const val HAND_RAISE_PHONE = .80f
     const val HAND_RAISE_BIG = .45f
     /** The phone's four rows, each row's centre as a share of the height: the CPU's lands, its creatures, your creatures, your lands. */
-    const val ROW_CPU_BACK = .15f
-    const val ROW_CPU_FRONT = .33f
-    const val ROW_MY_FRONT = .56f
-    const val ROW_MY_BACK = .735f
+    // (Measured in Arena: 15, 33, 56 and 73 %. With our taller tile, 18.5 %, the creature rows part by a quarter of the height so
+    // tapped tiles and aura strips never meet, and the lands step out by as much.)
+    const val ROW_CPU_BACK = .115f
+    const val ROW_CPU_FRONT = .32f
+    const val ROW_MY_FRONT = .57f
+    const val ROW_MY_BACK = .775f
 
     fun scale(w: Float, h: Float): Float = if (w >= 600f && h >= 480f) 1f else minOf(w / 844f, h / 390f)
 
@@ -135,12 +137,13 @@ internal object ZoneLayout {
         val hb = c / fC
         // 3. The hand (M5): cards 31 % of the height on a phone (24 % on a big screen), their foot below the window's edge. Nothing is
         // drawn behind them. On a phone the hand starts [HAND_LEFT] in from the board's left (your lands lie there) and ends 6 into
-        // the right strip; on a big screen it has the board's width. The box is the part of the hand that shows on your turn.
+        // the right strip or short of the gold button, whichever comes first; on a big screen it has the board's width. The box is the part of the hand that shows on your turn.
         val handH = if (dual) 0f else (if (phone) HAND_PHONE else HAND_BIG) * win.h
         val tray = if (dual) null else {
             val top = win.bottom - handH * (if (phone) HAND_SHOW_PHONE else HAND_SHOW_BIG)
             val x0 = if (phone) bx + HAND_LEFT * u else bx
-            val x1 = if (phone) right.x + 6f * u else bx + bw
+            // It ends short of the gold button's least width (138, GoldPill), and a tilted card's corner (24 in all), so no button's words are cut on a phone.
+            val x1 = if (phone) minOf(right.x + 6f * u, win.right - pad - (138f + 24f) * u) else bx + bw
             Box(x0, top, x1 - x0, win.bottom - top)
         }
         // The dual top has no tray, but the hand keeps a chip there ("Hand 7 · bottom screen", the d-pad's way into the hand on the

@@ -105,10 +105,8 @@ class TableSheetShotTest {
         // A tap on the board above the sheet closes it.
         rule.onRoot().performTouchInput { click(Offset(width / 2f, height * .1f)) }; rule.waitForIdle()
         assertTrue(!has("2 ready, 3 tapped"))
-        // A lone card opens by a long press too; a tap on a card in the sheet opens the big view.
+        // 0.4.60 G3: a lone card has no one-card sheet any more ("Now 3/3", Close); a long press opens the one inspect view.
         tap("c113", long = true)
-        assertTrue(has("Hill Giant")); assertTrue(has("Now 3/3"))
-        rule.onNodeWithText("Now 3/3", useUnmergedTree = true).performClick(); rule.waitForIdle()
         assertTrue(inspected.any { it.id == 113 })
     }
 

@@ -172,12 +172,12 @@ class ZoneLayoutTest {
 
     @Test fun thePhonesHand() {
         // M5 at 844 x 390: cards 120.9 tall (31 %), the hand's top at 276.4, starting 182 in from the board's left (your lands lie there)
-        // and ending 6 into the right strip. A lifted card is 80 % of the height.
+        // and ending 6 into the right strip or short of the gold button's 138 and a tilted corner (here 674), whichever comes first. A lifted card is 80 % of the height.
         val z = ZoneLayout.of(844f, 390f)
         val h = assertNotNullAndGet(ZoneLayout.hand(z, 5))
         assertEquals(120.9f, h.cardH, .01f)
         assertEquals(390f - 120.9f * .94f, h.tray.y, .01f)
-        assertEquals(z.board.x + 182f, h.fan.x, .01f); assertEquals(z.rightStrip.x + 6f, h.fan.right, .01f)
+        assertEquals(z.board.x + 182f, h.fan.x, .01f); assertEquals(minOf(z.rightStrip.x + 6f, 844f - 8f - 162f), h.fan.right, .01f)
         assertEquals(.8f * 390f, assertNotNullAndGet(ZoneLayout.hand(z, 5, lift = 2)?.lifted).h, .5f)
         // Five cards, each stepping 78 % of a card, centred in that room.
         assertEquals(h.cardW * (1f + 4 * .78f), h.tray.w, .01f)

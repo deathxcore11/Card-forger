@@ -50,7 +50,8 @@ class TableLookZ2ShotTest {
 
     private class Sz(val tag: String, val q: String, val dual: Boolean, val least: Pair<Float, Float>? = null)
     private val sizes = listOf(
-        Sz("844x390", "w844dp-h390dp-land-xxhdpi", false, 59f to 80f), Sz("904x386", "w904dp-h386dp-land-xxhdpi", false),
+        // Mobile table M5 replaces the phone's floor (the brief's "Phone conflicts from the full picture run"): 18.5 % of the height.
+        Sz("844x390", "w844dp-h390dp-land-xxhdpi", false, 59f to 72f), Sz("904x386", "w904dp-h386dp-land-xxhdpi", false),
         Sz("884x796", "w884dp-h796dp-land-xhdpi", false), Sz("960x540", "w960dp-h540dp-land-xhdpi", false, 82f to 111f),
         Sz("1280x800", "w1280dp-h800dp-land-mdpi", false), Sz("1920x1080", "w1920dp-h1080dp-land-mdpi", true),
         Sz("960x540", "w960dp-h540dp-land-xhdpi", true))

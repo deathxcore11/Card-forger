@@ -78,18 +78,20 @@ class MobileM5StackShotTest {
         rule.runOnUiThread { st = cast.copy(inputType = "InputSelectTargets", message = "Select target creature", selection = cast.selection.copy(targetCards = mine.map { it.id }.toSet(), cards = emptySet(), actionable = emptySet(), min = 1, max = 1)) }
         shot("question-clear")
         assertEquals("full size while no target is under it", .58f * 390f, anchors.rects.getValue("stackcard").height / dp, 1.5f)
-        // Seven creatures: the row runs under the card. With them offered, the card steps aside into the strip.
+        // Seven creatures: the row would run under the card, so the card has stepped aside into the strip already, question or not
+        // (the brief's "Phone conflicts from the full picture run", 3: the card never rests on a creature tile).
         val more = (1..4).map { i -> mine.first().copy(id = 900 + i) }
         val wide = cast.copy(players = cast.players.map { p -> if (p.id == me) p.copy(battlefield = p.battlefield + more) else p })
         rule.runOnUiThread { st = wide }
         shot("wide")
         val big = anchors.rects.getValue("stackcard")
-        val underIt = (mine + more).filter { anchors.rects.getValue("c${it.id}").overlaps(big) }
-        assertTrue("the wide row runs under the full-size card", underIt.isNotEmpty())
+        assertTrue("the card rests on no creature: $big", big.left / dp >= z.rightStrip.x && (mine + more).none { anchors.rects.getValue("c${it.id}").overlaps(big) })
+        val full = Rect(z.rightStrip.x * dp - 170 * dp, big.top, z.rightStrip.x * dp, big.bottom)
+        assertTrue("the wide row runs where the full-size card would stand", (mine + more).any { anchors.rects.getValue("c${it.id}").overlaps(full) })
         rule.runOnUiThread { st = wide.copy(inputType = "InputSelectTargets", message = "Select target creature", selection = wide.selection.copy(targetCards = (mine + more).map { it.id }.toSet(), cards = emptySet(), actionable = emptySet(), min = 1, max = 1)) }
         shot("question-under")
         val small = anchors.rects.getValue("stackcard")
-        assertTrue("the card stepped aside into the strip: $small", small.left / dp >= z.rightStrip.x && small.height < big.height * .8f)
+        assertTrue("the card stepped aside into the strip: $small", small.left / dp >= z.rightStrip.x && small.height < .58f * 390f * dp * .8f)
         for (c in mine + more) assertTrue("${c.name} ${c.id} is clear of the card", !anchors.rects.getValue("c${c.id}").overlaps(Rect(small.left, small.top, small.right, small.bottom)))
     }
 }

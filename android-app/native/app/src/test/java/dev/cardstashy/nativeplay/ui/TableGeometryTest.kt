@@ -29,8 +29,8 @@ class TableGeometryTest {
     @Test fun rowsHaveTheBriefsHeightsAndEachSideHugsItsEdge() {
         for ((w, h) in sizes) for (dual in listOf(false, true)) {
             val z = zones(w, h, dual); val r = rows(w, h, dual); val tag = "$w×$h dual=$dual"
-            // Creature tile 20.5 % of the usable height, land 12.5 % (23.5 % and 13 % on the dual top; M5: 14 % on a phone).
-            assertEquals(tag, (if (dual) .235f else if (z.phone) .14f else .205f) * z.hb, r.cpuFront.height, .01f)
+            // Creature tile 20.5 % of the usable height, land 12.5 % (23.5 % and 13 % on the dual top; M5: 18.5 % on a phone).
+            assertEquals(tag, (if (dual) .235f else if (z.phone) TableGeometry.FRONT_PHONE else .205f) * z.hb, r.cpuFront.height, .01f)
             assertEquals(tag, r.cpuFront.height, r.myFront.height, .001f)
             assertEquals(tag, (if (dual) .13f else .125f) * z.hb, r.cpuBack.height, .01f)
             assertEquals(tag, r.cpuBack.height, r.myBack.height, .001f)
@@ -43,8 +43,8 @@ class TableGeometryTest {
             if (!z.phone) { assertEquals(tag, z.board.y + m, r.cpuBack.top, .01f); assertEquals(tag, z.board.bottom - m, r.myBack.bottom, .01f) }
             else {
                 // M5, a phone: each row's centre is a share of the height; your lands lie in the shelf beside the hand.
-                assertEquals(tag, .15f * h, r.cpuBack.centre, .01f); assertEquals(tag, .33f * h, r.cpuFront.centre, .01f)
-                assertEquals(tag, .56f * h, r.myFront.centre, .01f); assertEquals(tag, .735f * h, r.myBack.centre, .01f)
+                assertEquals(tag, ZoneLayout.ROW_CPU_BACK * h, r.cpuBack.centre, .01f); assertEquals(tag, ZoneLayout.ROW_CPU_FRONT * h, r.cpuFront.centre, .01f)
+                assertEquals(tag, ZoneLayout.ROW_MY_FRONT * h, r.myFront.centre, .01f); assertEquals(tag, ZoneLayout.ROW_MY_BACK * h, r.myBack.centre, .01f)
                 val shelf = z.shelf!!
                 assertTrue("$tag creatures on the board", r.cpuBack.top - m >= z.board.y && r.myFront.centre + TableGeometry.TAPPED_HALF * r.myFront.height <= z.board.bottom)
                 assertTrue("$tag your lands in the shelf", r.myBack.top >= shelf.y && r.myBack.bottom + m <= shelf.bottom)
@@ -94,14 +94,14 @@ class TableGeometryTest {
     @Test fun cropFirstThenOverlap() {
         val z = zones(844f, 390f); val c = rows(844f, 390f).cpuFront.height
         // Four piles: full width. Nine: cropped, not overlapping. Sixteen: at the crop's floor, overlapping from the right.
-        // (M5: a phone's tile is 14 % of the height, so more fit before the crop starts.)
+        // (M5: a phone's tile is 18.5 % of the height.)
         for ((n, crop, over) in listOf(Triple(4, false, false), Triple(9, true, false), Triple(16, true, true))) {
             val t = tiles(844f, 390f, List(n) { 1 }, List(n) { 1 }, listOf(1), listOf(1))
             assertEquals("$n", crop, t.frontW < c * 1.3f - .01f)
             val lay = TableGeometry.layRow(t.frontW, t.front, z.board.w, List(n) { 1 }, false, gap = TableGeometry.gap(n, z.k))
             assertEquals("$n", over, lay.visible != null)
             assertTrue("$n", lay.total <= z.board.w + .5f)
-            if (over) assertEquals(c * TableGeometry.CROP_MIN, t.frontW, .01f)
+            if (over) assertEquals(maxOf(c * TableGeometry.CROP_MIN, TableGeometry.FRONT_W_MIN * z.k), t.frontW, .01f)
             // Every pile starts right of the one before (overlap from the right, like a fan).
             lay.xs.zipWithNext().forEach { (a, b) -> assertTrue(b > a) }
         }
@@ -110,8 +110,8 @@ class TableGeometryTest {
     @Test fun tenPilesASideMeetTheBriefsSizes() {
         // The brief: with ten different piles a side, a phone tile at least 59 × 80 dp, the Portal (960 × 540) 82 × 111 (the
         // mockup's 81.9 × 110.7, so half a dp is allowed for rounding).
-        // M5 replaces the phone's size: a tile 14 % of the height (54.6), at least 56 wide with ten piles.
-        for ((size, want) in listOf((844f to 390f) to (56f to 54.6f), (960f to 540f) to (82f to 111f))) {
+        // M5 replaces the phone's size: a tile 18.5 % of the height (72.15), at least 59 wide with ten piles.
+        for ((size, want) in listOf((844f to 390f) to (59f to 72.15f), (960f to 540f) to (82f to 111f))) {
             val t = tiles(size.first, size.second, List(10) { 1 }, List(10) { 1 }, List(6) { 2 }, List(6) { 2 })
             assertTrue("$size ${t.frontW}×${t.front}", t.frontW >= want.first - .5f && t.front >= want.second - .5f)
         }
