@@ -903,7 +903,8 @@ fun ForgeBoard(
                     TableZones.nearest(from, dir, stops.filter { it.first !== TablePad.last })?.let { TableZones.snapTo(it) } ?: false
                 }
                 if (targeting) PadCursor.snap = snap
-                onDispose { if (PadPrompts.steer === s) PadPrompts.steer = null; if (PadCursor.snap === snap) PadCursor.snap = null }
+                // The arc goes with the question: the next one starts with none until a press or the ring gives it one.
+                onDispose { if (PadPrompts.steer === s) PadPrompts.steer = null; if (PadCursor.snap === snap) PadCursor.snap = null; TableAim.key = null }
             }
             LaunchedEffect(padAsking, st.inputType) {
                 if (!Pad.connected.value || TablePad.held) {
@@ -1223,6 +1224,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
                     style = Stroke(sw, pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))))
             }
         }
+        .aimOn("c${card.id}")
         .then(if (pileTop) Modifier.onFocusChanged { if (it.isFocused) { if (mineSide) { TableZones.lastMine = card.id; TableZones.at = 1 } else { TableZones.lastTheirs = card.id; TableZones.at = 2 } } }
             .padActs(padHere).matchPadTap(padSource, padFocus) { tap?.invoke() ?: inspect(card) } else Modifier)
         .clip(shape).background(Color(0xFF141418))
@@ -1441,7 +1443,7 @@ internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Bool
     val pulse = if (pickable && !Motion.still) rememberInfiniteTransition(label = "pick").animateFloat(.55f, 1f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "a").value else 1f
     Box(modifier.size(52.du).then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("orb${p.id}", it.boundsInRoot()) } else Modifier)
         .graphicsLayer { translationY = (if (mine) 1f else -1f) * 14.dp.toPx() * recoil.value; translationX = (if (mine) -1f else 1f) * 6.dp.toPx() * recoil.value }
-        .padActs(PadActs(a = if (pickable) "Choose" else if (onOpen != null) "Inspect" else null)).focusRequester(TableZones.orb(p.id))
+        .padActs(PadActs(a = if (pickable) "Choose" else if (onOpen != null) "Inspect" else null)).focusRequester(TableZones.orb(p.id)).aimOn("orb${p.id}")
         // BB12: while the portrait is not a target, a tap opens the seat's commander (the crest beside it opens the same card).
         .clickable(enabled = pickable || onOpen != null) { if (pickable) onPick() else onOpen?.invoke() }) {
         Box(Modifier.fillMaxSize().drawBehind {
@@ -2036,10 +2038,24 @@ private fun CombatLine(st: MatchState, mid: Dp, W: Dp, d: Du) = with(d) {
     }
 }
 
-private data class Rel(val kind: String, val from: String, val to: String, val held: Boolean = false, val blocker: Int? = null, val attacker: Int? = null, val hostile: Boolean? = null)
+/**
+ * One arrow. [caster] is who put a target thread there (gold yours, coral the CPU's: glow-rules "who is doing what to whom");
+ * [aim] marks the arc to the target under the finger or the ring while you choose, which has no rim until it is picked.
+ */
+internal data class Rel(val kind: String, val from: String, val to: String, val held: Boolean = false, val blocker: Int? = null, val attacker: Int? = null, val caster: Int? = null, val aim: Boolean = false)
+
+/** 0.4.59 T6: what the arc points at while a target is being chosen: the legal target the finger pressed or the ring is on, whichever moved last. */
+internal object TableAim { var key by mutableStateOf<String?>(null) }
+
+/** The CPU's thread and rim (the colour its cast flight already uses, Battlefield.kt). */
+internal val ThreadCoral = Color(0xFFFF8A5C)
+
+/** The aim follows a press (seen before the tap's own handler) or the pad ring arriving on [key]. */
+internal fun Modifier.aimOn(key: String): Modifier = onFocusChanged { if (it.isFocused) TableAim.key = key }
+    .pointerInput(key) { awaitPointerEventScope { while (true) { val e = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial); if (e.changes.any { it.pressed && !it.previousPressed }) TableAim.key = key } } }
 
 /** forge-table.mjs relations(): what the arrows join, as anchor keys ("c<id>" a card, "orb<id>" a player, "stackcard", "owncast"). */
-private fun relations(st: MatchState): List<Rel> {
+internal fun relations(st: MatchState, aim: String? = null): List<Rel> {
     val out = mutableListOf<Rel>()
     val board = st.players.flatMap { it.battlefield }
     val attackers = board.filter { it.attacking }
@@ -2061,20 +2077,37 @@ private fun relations(st: MatchState): List<Rel> {
         val pair = named.ifEmpty { if (attackers.size == 1) listOf(attackers[0].id) else emptyList() }
         for (id in pair) out += Rel("block", "c${b.id}", "c$id", blocker = b.id, attacker = id)
     }
+    // Every item keeps its arrows for its whole life on the stack (director spec 7, glow rules), the top one from the big card,
+    // also while you choose a target for something else (0.4.59 T6: they used to vanish for the whole question).
+    st.stack.forEachIndexed { i, item ->
+        for (r in item.targets) {
+            val to = if (r.kind == "card" && board.any { it.id == r.id }) "c${r.id}" else if (r.kind == "player" && st.players.any { it.id == r.id }) "orb${r.id}" else null
+            if (to != null) out += Rel("target", if (i == 0) "stackcard" else "stack${item.id}", to, caster = item.controller)
+        }
+    }
     if (st.inputType == "InputSelectTargets") {
         val named = Regex("targets? for ([^\n]+)", RegexOption.IGNORE_CASE).find(st.message)?.groupValues?.get(1)?.trim()
         val mine = st.players.flatMap { listOf(it.battlefield, it.hand) }.flatten().filter { it.controller == st.viewer }
-        val source = st.stack.mapNotNull { it.source }.filter { it.controller == st.viewer && it.zone == "Stack" }.maxByOrNull { it.id }
-            ?: named?.let { n -> mine.firstOrNull { it.zone == "Battlefield" && it.name == n } }
-        val from = when { source != null && source.zone == "Battlefield" -> "c${source.id}"; pendingCast(st) != null -> "owncast"; else -> null }
-        if (from != null) for (id in st.selection.chosenCards) out += Rel("target", from, "c$id")
-        if (from != null) for (id in st.selection.chosenPlayers) out += Rel("target", from, "orb$id")
-    } else st.stack.forEachIndexed { i, item ->
-        // Every item keeps its arrows for its whole life on the stack (director spec 7), the top one from the big card.
-        for (r in item.targets) {
-            val to = if (r.kind == "card" && board.any { it.id == r.id }) "c${r.id}" else if (r.kind == "player" && st.players.any { it.id == r.id }) "orb${r.id}" else null
-            val hostile = when (r.kind) { "player" -> r.id != item.controller; else -> board.firstOrNull { it.id == r.id }?.controller != item.controller }
-            if (to != null) out += Rel("target", if (i == 0) "stackcard" else "stack${item.id}", to, hostile = hostile)
+        val onStack = st.stack.withIndex().filter { (_, it) -> it.source?.controller == st.viewer && it.source.zone == "Stack" }.maxByOrNull { it.value.source!!.id }
+        val source = onStack?.value?.source ?: named?.let { n -> mine.firstOrNull { it.zone == "Battlefield" && it.name == n } }
+        val from = when {
+            source != null && source.zone == "Battlefield" -> "c${source.id}"
+            pendingCast(st) != null -> "owncast"
+            onStack != null -> if (onStack.index == 0) "stackcard" else "stack${onStack.value.id}"
+            else -> null
+        }
+        if (from != null) {
+            for (id in st.selection.chosenCards) out += Rel("target", from, "c$id", caster = st.viewer)
+            for (id in st.selection.chosenPlayers) out += Rel("target", from, "orb$id", caster = st.viewer)
+            // The arc under the finger or the ring (Arena clip 1): only to a legal target not yet chosen.
+            val sel = st.selection
+            val legal = when {
+                aim == null -> false
+                aim.startsWith("orb") -> aim.removePrefix("orb").toIntOrNull()?.let { (it in sel.players || it in sel.targetPlayers) && it !in sel.chosenPlayers } == true
+                aim.startsWith("c") -> aim.removePrefix("c").toIntOrNull()?.let { (it in sel.targetCards || it in sel.cards) && it !in sel.chosenCards && board.any { b -> b.id == it } } == true
+                else -> false
+            }
+            if (legal) out += Rel("target", from, aim!!, caster = st.viewer, aim = true)
         }
     }
     return out
@@ -2098,7 +2131,8 @@ private fun eventName(st: MatchState, id: Int): String = st.events.lastOrNull { 
 @Composable
 private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) = with(d) {
     val anchors = LocalAnchors.current ?: return@with
-    val rels = remember(st) { relations(st) }
+    val aim = TableAim.key
+    val rels = remember(st, aim) { relations(st, aim) }
     if (rels.isEmpty()) return@with
     val flowing = !Motion.still && rels.any { it.kind != "target" }
     val flow = if (flowing) rememberInfiniteTransition(label = "flow").animateFloat(0f, 13f, infiniteRepeatable(tween(1400, easing = LinearEasing)), label = "dash") else remember { mutableFloatStateOf(0f) }
@@ -2122,24 +2156,27 @@ private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) 
             val sx = ax + ux * start; val sy = ay + uy * start; val ex = bx - ux * stop; val ey = by - uy * stop
             val bend = minOf(60 * k, len * .16f); val cx = (sx + ex) / 2 - uy * bend; val cy = (sy + ey) / 2 + ux * bend
             val path = Path().apply { moveTo(sx, sy); quadraticTo(cx, cy, ex, ey) }
-            val col = colors.getValue(r.kind)
+            // A target thread is in its caster's colour: gold yours, coral the CPU's (glow rules; T6 arc).
+            val cpuThread = r.kind == "target" && r.caster != null && r.caster != st.viewer
+            val col = if (cpuThread) ThreadCoral else colors.getValue(r.kind)
+            val glow = if (cpuThread) ThreadCoral.copy(alpha = .67f) else glows.getValue(r.kind)
             val heldLine = r.kind == "attack" && r.held
             val dash = when { r.kind == "target" -> null; heldLine -> PathEffect.dashPathEffect(floatArrayOf(3 * k, 9 * k), 0f); else -> PathEffect.dashPathEffect(floatArrayOf(6 * k, 7 * k), -flow.value * k) }
             val w = (if (r.kind == "target") 2f else 2.5f) * k
             val alpha = if (heldLine) .22f else .9f
             if (!heldLine) drawIntoCanvas { c ->
-                val gp = Paint().asFrameworkPaint().apply { isAntiAlias = true; style = android.graphics.Paint.Style.STROKE; strokeWidth = w + 2 * k; color = glows.getValue(r.kind).toArgb(); maskFilter = android.graphics.BlurMaskFilter(6 * k, android.graphics.BlurMaskFilter.Blur.NORMAL); pathEffect = dash?.let { android.graphics.DashPathEffect(if (r.kind == "attack" || r.kind == "block") floatArrayOf(6 * k, 7 * k) else floatArrayOf(1f, 0f), flow.value * k) } }
+                val gp = Paint().asFrameworkPaint().apply { isAntiAlias = true; style = android.graphics.Paint.Style.STROKE; strokeWidth = w + 2 * k; color = glow.toArgb(); maskFilter = android.graphics.BlurMaskFilter(6 * k, android.graphics.BlurMaskFilter.Blur.NORMAL); pathEffect = dash?.let { android.graphics.DashPathEffect(if (r.kind == "attack" || r.kind == "block") floatArrayOf(6 * k, 7 * k) else floatArrayOf(1f, 0f), flow.value * k) } }
                 c.nativeCanvas.drawPath(path.asAndroidPath(), gp)
             }
             drawPath(path, col.copy(alpha = alpha), style = Stroke(w, cap = StrokeCap.Round, pathEffect = dash))
-            // The target's rim (director cast row): red when the spell is hostile to it, green when friendly; stays while it does.
-            if (r.kind == "target" && r.hostile != null && r.to.startsWith("c")) {
-                val rim = if (r.hostile) Color(0xFFFF5A4A) else Color(0xFF6FE08A)
-                drawRoundRect(rim.copy(alpha = .9f), Offset(b.left - self.x - 3 * k, b.top - self.y - 3 * k), androidx.compose.ui.geometry.Size(b.width + 6 * k, b.height + 6 * k),
+            // The target's rim, in the caster's colour, while the thread is there (glow rules "caster-colour rim + thread"; it was
+            // red or green, hostile or friendly, before 0.4.59 T6). The arc you are still aiming has none until you pick.
+            if (r.kind == "target" && !r.aim && r.to.startsWith("c")) {
+                drawRoundRect(col.copy(alpha = .9f), Offset(b.left - self.x - 3 * k, b.top - self.y - 3 * k), androidx.compose.ui.geometry.Size(b.width + 6 * k, b.height + 6 * k),
                     CornerRadius(6 * k), style = Stroke(2.5f * k))
             }
             // Arrowhead (marker 10×10 at 4.5 × stroke, refX 7), along the curve's end tangent.
-            if (r.kind != "target") {
+            run {
                 val tx = ex - cx; val ty = ey - cy; val tl = kotlin.math.hypot(tx, ty).coerceAtLeast(.001f); val dx = tx / tl; val dy = ty / tl
                 val m = 4.5f * w / 10f
                 val tipX = ex + dx * 3 * m; val tipY = ey + dy * 3 * m
