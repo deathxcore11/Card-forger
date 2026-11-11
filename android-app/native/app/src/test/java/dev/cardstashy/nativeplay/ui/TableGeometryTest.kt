@@ -99,7 +99,7 @@ class TableGeometryTest {
     }
 
     @Test fun tappedBackTilesStayOnTheBoardBox() {
-        // 0.4.60 Z1: the board runs to the window's top (and, on the dual top, its bottom); a tapped land in an outer row stays on it.
+        // 0.4.60 Z1: the board runs to the window's top (and, on the dual top, down to the hand chip's band); a tapped land in an outer row stays on it.
         for ((w, h) in sizes) for (dual in listOf(false, true)) {
             val z = ZoneLayout.of(w, h, dual = dual)
             val r = TableGeometry.rowsIn(dual, z.board.y, z.board.bottom)
@@ -120,5 +120,8 @@ class TableGeometryTest {
             assertEquals(w * TableGeometry.BOARD_X, z.board.x, .01f)
             // ZoneLayout has no input for the stack at all: its board is what the tiles are sized for (BOARD_W of the width).
         }
+        // This checks only the zones' side. ForgeBoard works out the rows' room from these zones with no stack term, and what proves
+        // walk line 27 on the drawn table (the same tiles at the same places and sizes with the stack open and shut) is
+        // TableLookZ1ShotTest.theStackOpeningMovesNoTile.
     }
 }

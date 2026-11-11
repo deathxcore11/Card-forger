@@ -475,14 +475,9 @@ fun ForgeBoard(
                 val backX = zones.board.x.dp + 6.du
                 val backRoom = boardRight - 6.du - lane - backX
                 val frontX = frontLeft + room / 2
-                // Your back row ends before a button standing at its height on the right: Undo (left of the right strip) or, where the
-                // board runs down beside them (the dual top screen), the gold button with its ring. Worked out here with the same
-                // numbers the buttons use below (goldY, undoM), so the first frame is already right; the widths are the most they take.
-                val reserved = listOfNotNull(
-                    (zones.actions.x.dp - 6.du - 72.du).takeIf { goldY - 44.du < rowsG.myBack.bottom.dp && goldY - 8.du > rowsG.myBack.top.dp },
-                    (W - 8.du - maxOf(goldW, 138.du) - 9.du).takeIf { goldY - 9.du < rowsG.myBack.bottom.dp && goldY + 53.du > rowsG.myBack.top.dp },
-                ).minOrNull()?.takeIf { it < backX + backRoom }
-                val myBackRoom = reserved?.let { minOf(backRoom, (it - backX - 6.du).coerceAtLeast(backRoom / 2)) } ?: backRoom
+                // Z1 review: no button takes your back row's width any more. Undo has its slot in the right strip (zones.undo) and the
+                // buttons keep off the board's box (goldMax, quietMax below), so your back row has the board's whole width.
+                val myBackRoom = backRoom
                 val tiles = TableGeometry.tiles(rowsG, room.value, backRoom.value,
                     sizes(others(cpu.battlefield), 0), sizes(others(me.battlefield), 0),
                     sizes(backRow(cpu.battlefield), lands(cpu.battlefield).size), sizes(backRow(me.battlefield), lands(me.battlefield).size), twoLanes(cpu), twoLanes(me), myBackRoom.value,
@@ -507,7 +502,7 @@ fun ForgeBoard(
 
             // The CPU's hand: its backs under its square, as wide as the strip lets them fan.
             // In a pod the rail takes the opponent hand's place (each chip shows its own hand size).
-            if (pod) PodRail(st, cpu.id, live, intents, { podFocus.seat = it; picks++ }, W, d)
+            if (pod) PodRail(st, cpu.id, live, intents, { podFocus.seat = it; picks++ }, W, d, x = zones.board.x.dp, width = zones.board.w.dp)
             else TuckedHand(cpu.handCount, Modifier.offset(x = zones.cpuSquare.x.dp, y = cpuHandY).then(LocalAnchors.current?.let { a -> Modifier.onGloballyPositioned { a.putRect("cpuhand", it.boundsInRoot()) } } ?: Modifier), d,
                 maxW = zones.cpuSquare.w.dp)
 
@@ -518,10 +513,11 @@ fun ForgeBoard(
             // The crest's shield (46 du of its 58) starts at the square's edge and the portrait 4 du after it.
             val ax = zones.mySquare.x.dp + 50.du; val ay = zones.mySquare.bottom.dp - 70.du; val x0 = ax + 52.du + 14.du
             val cax = zones.cpuSquare.x.dp + 50.du; val cay = zones.cpuSquare.y.dp + 18.du
-            if (!pod) Crest(cpu.command.firstOrNull(), Modifier.offset(x = zones.cpuSquare.x.dp - 6.du, y = cay - 10.du), d, onInspect)
+            if (!pod) Crest(cpu.command.firstOrNull(), Modifier.offset(x = zones.cpuSquare.x.dp - 6.du, y = cay - 10.du).anchorRect("cpucrest"), d, onInspect)
             if (!pod) Medallion(cpu, mine = false, live && cpu.id in st.selection.players, cpu.id in st.selection.chosenPlayers, Modifier.offset(x = cax, y = cay).anchorRect("cpuseat"), d,
                 onOpen = commanderOf(cpu)?.let { c -> { onInspect(c) } }) { intents.player(cpu.id) }
-            if (!pod) ThinkDots(Modifier.offset(x = cax - 34.du, y = cay + 20.du), d)
+            // The CPU's thinking dots: in its square's top right corner, above the portrait (Z1 review: left of it they sat on the crest).
+            if (!pod) ThinkDots(Modifier.offset(x = zones.cpuSquare.right.dp - 37.du, y = zones.cpuSquare.y.dp + 1.du).anchorRect("thinkdots"), d)
             // Rule 2: your commander wears the playable ring while Forge offers it and you can pay; a tap casts it (long press opens it).
             Crest(me.command.firstOrNull(), Modifier.offset(x = zones.mySquare.x.dp - 6.du, y = ay - 8.du), d, onInspect,
                 playable = me.command.firstOrNull()?.let { markOf(it) == Mark.PLAYABLE } == true) { intents.card(it.id) }
@@ -531,23 +527,37 @@ fun ForgeBoard(
             // A phone's hand starts close to the seat: when the full tool row would reach it, chat drops to the second row
             // beside the mana, so the tray still never touches the hand.
             val tools = (if (st.controlMode in setOf("smart", "full")) 2 + (if (st.autoPay != null) 1 else 0) else 0) + 1
+            // The dual top's tool row in the chip band: its width (first frame: the tools at their 42 du pitch, the mana not yet measured).
+            val dockDensity = LocalDensity.current
+            var dockW by remember { mutableStateOf(0.dp) }
             val handLeftAt = centreX + 44.du - (if (large) (H.value * .13f).coerceIn(66f, 120f).dp else 66.du) / 66f * 222f
             val chatInRow = x0 + 42.du * tools - 8.du + 8.du <= handLeftAt
             // The tray's right end, from the same pitch (34 du tools, 8 du gaps), for the ask line's left limit (AskLine).
             val trayRight = x0 + 42.du * (if (chatInRow) tools else tools - 1) - 8.du
-            Row(Modifier.offset(x = x0, y = ay - 4.du).anchorRect("tools"), horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
+            // Z1 review: beside your portrait the tray reaches out of the left strip over the board's corner. On one screen the board
+            // ends above it (at the hand tray), but the dual top's board runs down beside it, so there the tools and the mana stand in
+            // one row at the left end of the hand chip's band under the board (the chip keeps clear of them: chipMax).
+            val dockBand = zones.handChip
+            if (dockBand != null) Row(Modifier.offset(x = dockBand.x.dp + 4.du, y = dockBand.y.dp + (dockBand.h.dp - 34.du) / 2).anchorRect("tools")
+                .onSizeChanged { dockW = with(dockDensity) { it.width.toDp() } }, horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
                 ControlEmblems(st, intents, Modifier, d)
-                if (chatInRow) EmoteButton(Modifier, d)
-            }
-            Row(Modifier.offset(x = x0, y = ay + 34.du).anchorRect("tray2"), horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
-                if (!chatInRow) EmoteButton(Modifier, d)
+                EmoteButton(Modifier, d)
                 ManaPool(me.mana, Modifier, d)
+            } else {
+                Row(Modifier.offset(x = x0, y = ay - 4.du).anchorRect("tools"), horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
+                    ControlEmblems(st, intents, Modifier, d)
+                    if (chatInRow) EmoteButton(Modifier, d)
+                }
+                Row(Modifier.offset(x = x0, y = ay + 34.du).anchorRect("tray2"), horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
+                    if (!chatInRow) EmoteButton(Modifier, d)
+                    ManaPool(me.mana, Modifier, d)
+                }
             }
 
             // 0.4.60 Z1: the menu with the turn beside it, then the phase box, top right in the right strip (nothing in the top middle).
             val menuX = zones.menu.right.dp - 44.du; val menuY = zones.menu.y.dp
             val menuFocus = remember { FocusRequester() }
-            Box(Modifier.offset(x = menuX, y = menuY).size(44.du).clip(CircleShape).background(Color(0x6612141A)).border(1.dp, Color(0x24FFFFFF), CircleShape)
+            Box(Modifier.offset(x = menuX, y = menuY).size(44.du).anchorRect("menu").clip(CircleShape).background(Color(0x6612141A)).border(1.dp, Color(0x24FFFFFF), CircleShape)
                 .focusRequester(menuFocus).onFocusChanged { if (it.isFocused) { TablePad.last = menuFocus
                     android.util.Log.i("PadA", "ring on menu button mode=${PadPrompts.inputModes?.inputMode}", Throwable()) } }
                 .padActs(PadActs(a = "Menu"))
@@ -560,7 +570,7 @@ fun ForgeBoard(
             // The menu carries the stack size as a badge (summary[data-count]::after: 18 px gold pill at -4, -4).
             if (st.stack.isNotEmpty()) Box(Modifier.offset(x = menuX + (44 - 18 + 4).du, y = menuY - 4.du).heightIn(min = 18.du).widthIn(min = 18.du).clip(RoundedCornerShape(9.du)).background(Color(0xFFE8B95B)).padding(horizontal = 5.du),
                 contentAlignment = Alignment.Center) { Text("${st.stack.size}", style = sans(sp(11f), FontWeight.ExtraBold, Color(0xFF1B1406))) }
-            Box(Modifier.offset(x = zones.menu.x.dp, y = menuY).width((menuX - 6.du - zones.menu.x.dp).coerceAtLeast(0.dp)).height(44.du), contentAlignment = Alignment.CenterEnd) {
+            Box(Modifier.offset(x = zones.menu.x.dp, y = menuY).width((menuX - 6.du - zones.menu.x.dp).coerceAtLeast(0.dp)).height(44.du).anchorRect("turn"), contentAlignment = Alignment.CenterEnd) {
                 Text("Turn ${st.turn}", style = sans(sp(12f), FontWeight.Bold, if (st.activePlayer == st.viewer) Sky else Ember).copy(letterSpacing = .48.sp), maxLines = 1, softWrap = false)
             }
             PhaseTrack(st, stopLights(st), intents.stop, zones.phase.at().anchorRect("phasetrack"), d, width = zones.phase.w.dp, height = zones.phase.h.dp)
@@ -573,14 +583,23 @@ fun ForgeBoard(
                 // The card (104 × 145 du) and the words under it (8 + 22 du) shrink together to fit the strip; the height the strip has
                 // to spare above them is where older cards fan up (BB10: their titles show whole), else they fold into "+N". With an
                 // older card under the top one the strip keeps at least one 22 du step for it (T6: the Counterspell under your Bolt shows).
-                val sz = zones.stack
+                // Z1 review: while Undo shows in its slot at the foot of the stack slot, the stack card stands above it.
+                val undoShown = st.prompt == null && st.waitingOnMe && cancelLabel(st)?.startsWith("Undo", ignoreCase = true) == true
+                val sz = zones.stackAbove(undoShown)
                 val s = minOf(1f, sz.w / 104.du.value, sz.h / (145.du + 30.du + (if (lane.size > 1) 22.du else 0.dp)).value)
                 val spare = (sz.h.dp - (145.du + 30.du) * s).coerceAtLeast(0.dp)
                 val cardX = sz.x.dp + (sz.w.dp - 104.du * s) / 2; val cardY = sz.y.dp + spare
                 // The words under the top card end 16 dp inside the screen (the stack zone already does).
-                StackFan(if (lane === st.stack) st else st.copy(stack = lane), Modifier.offset(x = cardX - 44.du * s, y = cardY - 34.du * s)
-                    .graphicsLayer { scaleX = s; scaleY = s; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f) }, d, onInspect, live, intents.yieldSource, intents.stack,
-                    room = spare / s, labelMax = (W - 16.dp - cardX) / s, stepX = 0.dp)
+                // Z1 review: the fan is drawn smaller (s) to fit the strip, so its small touch targets (Yield, "+N") take taps in a box as big
+                // on the screen as anywhere else: Compose's nearby-touch box (48 dp) is measured in the fan's own scaled units, so it grows by 1/s.
+                val vc = androidx.compose.ui.platform.LocalViewConfiguration.current
+                val fanVc = remember(vc, s) { object : androidx.compose.ui.platform.ViewConfiguration by vc {
+                    override val minimumTouchTargetSize get() = androidx.compose.ui.unit.DpSize(vc.minimumTouchTargetSize.width / s, vc.minimumTouchTargetSize.height / s) } }
+                androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalViewConfiguration provides fanVc) {
+                    StackFan(if (lane === st.stack) st else st.copy(stack = lane), Modifier.offset(x = cardX - 44.du * s, y = cardY - 34.du * s)
+                        .graphicsLayer { scaleX = s; scaleY = s; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f) }, d, onInspect, live, intents.yieldSource, intents.stack,
+                        room = spare / s, labelMax = (W - 16.dp - cardX) / s, stepX = 0.dp)
+                }
                 StackArc(st, d)
             }
 
@@ -644,12 +663,27 @@ fun ForgeBoard(
             val askText = if (dual && bottomAsk(st, live, askAll) != null) null else askAll
             var askRight by remember { mutableStateOf(Dp.Unspecified) }
             LaunchedEffect(askText == null) { if (askText == null) askRight = Dp.Unspecified }
-            val goldMax = if (askText != null && askRight != Dp.Unspecified) (W - goldInset - askRight - 12.du).coerceAtLeast(138.du) else Dp.Infinity
+            // Z1 review: a button keeps off every zone box beside it at its height (the board where it runs down beside the buttons, as
+            // on the dual top, the hand tray, the hand chip's band): its width stops [gap] short of the nearest one's right edge, so it
+            // never takes board width (on the Thor's top the gold button stays in the right strip, its label cut with … as BB8).
+            fun clearOf(top: Dp, bottom: Dp, gap: Dp): Dp = listOfNotNull(zones.board, zones.handTray, zones.handChip)
+                .filter { it.y.dp < bottom && it.bottom.dp > top }.maxOfOrNull { it.right.dp }?.let { (zones.actions.right.dp - gap - it).coerceAtLeast(0.dp) } ?: Dp.Infinity
+            // The gold button with its turn ring (6 du out) and the quiet pill above it (36 du tall, 42 above the gold one's top).
+            val goldClear = clearOf(goldY - 6.du, goldY + 44.du + 6.du, 8.du)
+            val quietMax = clearOf(goldY - 42.du, goldY - 6.du, 4.du)
+            val askMax = if (askText != null && askRight != Dp.Unspecified) (W - goldInset - askRight - 12.du).coerceAtLeast(138.du) else Dp.Infinity
+            val goldMax = minOf(goldClear, askMax)
+            // With Attack all the gold button stands in the quiet one's row, and Attack all (a glass pill) 8 du into the gold one's.
+            val upperGoldMax = minOf(clearOf(goldY - 48.du, goldY + 8.du, 8.du), askMax)
+            val attackAllMax = clearOf(goldY + 8.du, goldY + 44.du, 4.du)
             // The hand chip (two screens) is centred on the hand; on a phone-sized table it shares the gold button's height and stops
             // 12 du short of where the gold button starts (BB8: "Discard Ultimate Magic: Mete…" ran under it).
             val goldDensity = LocalDensity.current
-            val chipMax = ((W - goldInset - goldW - 12.du - (centreX + 44.du)) * 2).coerceAtLeast(120.du)
-            Box(Modifier.offset(x = centreX + 44.du - handW / 66f * 222f, y = H - handW / 66f * 67f).width(handW / 66f * 444f).height(handW / 66f * 120f)
+            val chipMax = ((W - goldInset - goldW - 12.du - (centreX + 44.du)) * 2).coerceAtLeast(120.du).let { m ->
+                // Z1 review: on the dual top the chip has its own band under the board (zones.handChip) and stays inside it.
+                zones.handChip?.let { b -> minOf(m, minOf(centreX + 44.du - (b.x.dp + 4.du + maxOf(dockW, 42.du * tools - 8.du) + 12.du), b.right.dp - centreX - 44.du) * 2) } ?: m }
+            val handTop = H - handW / 66f * 67f
+            Box(Modifier.offset(x = centreX + 44.du - handW / 66f * 222f, y = handTop).width(handW / 66f * 444f).height(handW / 66f * 120f)
                 .then(if (handAnchors != null) Modifier.onGloballyPositioned { handAnchors.putRect("hand", it.boundsInRoot()) } else Modifier)
                 .graphicsLayer { if (tuck > 0f) { translationY = tuck * AskTuck.DIP * (handW / 66f * 67f).toPx(); alpha = 1f - tuck * (1f - AskTuck.SHADE) } }) {
                 // With the bottom screen up the hand lives there; the table keeps a small count where the fan was.
@@ -715,7 +749,7 @@ fun ForgeBoard(
                         TablePad.autoRing = false
                     }
                     val shape = RoundedCornerShape(999.dp)
-                    Row(Modifier.align(Alignment.TopCenter).padding(top = handW / 66f * 30f).widthIn(max = chipMax).anchorRect("handchip")
+                    Row(Modifier.align(Alignment.TopCenter).padding(top = zones.handChip?.let { b -> (b.y.dp + 4.du - handTop).coerceAtLeast(0.dp) } ?: (handW / 66f * 30f)).widthIn(max = chipMax).anchorRect("handchip")
                         .focusRequester(chipFocus)
                         .onFocusChanged { if (chipOn != it.isFocused) android.util.Log.i("PadA", "chip focus=${it.isFocused} autoRing=${TablePad.autoRing} sel=$selectedHand"); if (chipOn != it.isFocused) liftLive = it.isFocused && selectedHand != null; chipOn = it.isFocused; if (it.isFocused) { TableZones.at = 0; TablePad.last = chipFocus; if (selectedHand == null && !discardAsk && !targeting && !TablePad.autoRing) onSelectHand(hand[restAt()].id); TablePad.autoRing = false } }
                         .onKeyEvent { e -> if (e.nativeKeyEvent.action != android.view.KeyEvent.ACTION_DOWN) return@onKeyEvent false
@@ -772,9 +806,9 @@ fun ForgeBoard(
                 val lowerM = Modifier.align(Alignment.TopEnd).offset(x = -edge, y = goldTop)
                 val attackM = Modifier.align(Alignment.TopEnd).offset(x = -edge, y = goldTop + 8.du)
                 // Undo's own spot: never where End turn or the gold step was (U6), never on a pile or its count (BB11), never on the
-                // stack's words. It stands just left of the right strip (6 du clear of it), in the quiet one's row, and ends 2 du above
-                // the gold button's turn ring (6 du out from the button), which is drawn over it.
-                val undoM = Modifier.align(Alignment.TopEnd).offset(x = -(W - zones.actions.x.dp + 6.du), y = goldTop - 6.du - 2.du - 36.du)
+                // stack's words. Z1 review: its slot in the right strip (zones.undo), at the foot of the stack slot, 16 du above the
+                // quiet one's place; the stack card stands above it while it shows.
+                val undoM = Modifier.align(Alignment.TopEnd).offset(x = -edge, y = zones.undo.y.dp)
                 // The turn clock's last-10 count stands in the quiet one's row above the gold button: left of the quiet pill when there
                 // is one (its right edge 12 du short of it), else at the right edge (where the quiet one would be). With Attack all the
                 // gold button is itself in that row, so the count goes one row higher at the right edge.
@@ -790,8 +824,14 @@ fun ForgeBoard(
                 val tuckW = Modifier
                 @Composable fun pair(content: @Composable () -> Unit) {
                     androidx.compose.runtime.CompositionLocalProvider(LocalTurnCountOutside provides true) { content() }
-                    if (goldShown) TurnCount(d.u, Modifier.align(Alignment.TopEnd).offset(x = -(edge + (if (quietShown) maxOf(quietW, quietWords) + 12.du else 0.dp)),
-                        y = if (attackAll) quietTop - 8.du - 32.du else quietTop + 2.du))
+                    val countRight = W - edge - (if (quietShown) maxOf(quietW, quietWords) + 12.du else 0.dp)
+                    val countY0 = if (attackAll) quietTop - 8.du - 32.du else quietTop + 2.du
+                    // Z1 review: where that spot meets a zone box (on a phone the board's corner ends 2 du into the quiet row), the count
+                    // drops to just under that box, at most touching the gold button's ring.
+                    val countY = listOfNotNull(zones.board, zones.handTray, zones.handChip)
+                        .filter { it.right.dp > countRight - 32.du && it.x.dp < countRight && it.y.dp < countY0 + 32.du && it.bottom.dp > countY0 }
+                        .maxOfOrNull { it.bottom.dp }?.takeIf { it + 32.du <= goldTop - 6.du + .5.dp }?.let { maxOf(it, countY0) } ?: countY0
+                    if (goldShown) TurnCount(d.u, Modifier.align(Alignment.TopEnd).offset(x = -(W - countRight), y = countY))
                 }
                 padX = when {
                     attackAll -> if (live && okOn) PadAct(ok) { intents.ok() } else null
@@ -804,20 +844,20 @@ fun ForgeBoard(
                 }
                 pair {
                     if (tucked) {
-                        second?.let { GlassPill(it, live, lowerM.then(tuckW).focusRequester(cancelFocus).anchorRect("quiet").anchorRect("cancel"), d) { intents.cancel() } }
+                        second?.let { GlassPill(it, live, lowerM.then(tuckW).focusRequester(cancelFocus).anchorRect("quiet").anchorRect("cancel"), d, maxW = goldClear) { intents.cancel() } }
                         val confirm = tuckLabels(st).getOrNull(1)
-                        confirm?.let { GlassPill(it, live && okOn, upperM.then(tuckW).focusRequester(goldFocus).anchorRect("confirm"), d, tone = Color(0xFFF3D27E), edge = Color(0x66F3D27E)) { intents.ok() } }
+                        confirm?.let { GlassPill(it, live && okOn, upperM.then(tuckW).focusRequester(goldFocus).anchorRect("confirm"), d, tone = Color(0xFFF3D27E), edge = Color(0x66F3D27E), maxW = quietMax) { intents.ok() } }
                     } else if (attackAll) {
-                        GoldPill(ok, live && okOn, upperM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }, d, padKey = padX != null, maxW = goldMax) { intents.ok() }
-                        GlassPill("Attack all", live, attackM, d, tone = Color(0xFFFFD9CF), edge = Color(0x88FF8A6A)) { intents.attackAll(offered.map { it.id }) }
+                        GoldPill(ok, live && okOn, upperM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }, d, padKey = padX != null, maxW = upperGoldMax) { intents.ok() }
+                        GlassPill("Attack all", live, attackM, d, tone = Color(0xFFFFD9CF), edge = Color(0x88FF8A6A), maxW = attackAllMax) { intents.attackAll(offered.map { it.id }) }
                     } else if (oneTarget(st) || onePick(st)) {
-                        second?.let { GlassPill(it, live, cancelM, d) { intents.cancel() } }
+                        second?.let { GlassPill(it, live, cancelM, d, maxW = quietMax) { intents.cancel() } }
                         if (st.selection.min == 0 && st.buttons.okEnabled) GoldPill("No target", live, lowerM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }, d, padKey = padX != null, maxW = goldMax) { intents.ok() }
                     } else if (short && second != null) {
-                        if (st.buttons.okEnabled) GlassPill(ok, live, quietM, d) { intents.ok() }
+                        if (st.buttons.okEnabled) GlassPill(ok, live, quietM, d, maxW = quietMax) { intents.ok() }
                         GoldPill(second, live, lowerM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }, d, padKey = padX != null, maxW = goldMax) { intents.cancel() }
                     } else if (endTurnGold) {
-                        GlassPill(second ?: "To combat", live && okOn, quietM, d) { intents.ok() }
+                        GlassPill(second ?: "To combat", live && okOn, quietM, d, maxW = quietMax) { intents.ok() }
                         GoldPill(ok, live, lowerM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }, d, padKey = padX != null, maxW = goldMax) { intents.cancel() }
                     } else {
                         // Forge turns its cancel from End turn into "Undo" once a land or a mana tap can be taken back
@@ -825,7 +865,7 @@ fun ForgeBoard(
                         // took the land back (U6), so Undo stands in its own spot and ignores taps for its first 400 ms.
                         val undo = second?.startsWith("Undo", ignoreCase = true) == true
                         val shownAt = remember(second) { android.os.SystemClock.uptimeMillis() }
-                        second?.let { GlassPill(it, live, if (undo) undoM.anchorRect("undo") else cancelM, d) {
+                        second?.let { GlassPill(it, live, if (undo) undoM.anchorRect("undo") else cancelM, d, maxW = if (undo) zones.undo.w.dp else quietMax) {
                             if (!undo || android.os.SystemClock.uptimeMillis() - shownAt >= 400) intents.cancel() } }
                         GoldPill(ok, live && (selected != null || okOn), lowerM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }, d, padKey = padX != null, maxW = goldMax) {
                             if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok()
@@ -1942,10 +1982,11 @@ internal fun GoldPill(text: String, enabled: Boolean, modifier: Modifier, d: Du,
         onDispose { DualScreen.shownLabels.remove(owner) }
     }
     // The turn clock's ring (and, for the last 10 s, its seconds) sits on this button, wherever the table puts it (TurnRing.kt).
-    Box(modifier.widthIn(min = 138.du, max = maxOf(maxW, 138.du)).height(44.du).turnRing(u).drawBehind { drawRoundRect(Color(0x3DC99A4B), topLeft = Offset(0f, 8.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2)) }
+    // Z1 review: 138 du at the least, unless its zone is narrower (the dual top's right strip): then it takes [maxW] and cuts its words.
+    Box(modifier.widthIn(min = minOf(138.du, maxW), max = maxW).height(44.du).turnRing(u).drawBehind { drawRoundRect(Color(0x3DC99A4B), topLeft = Offset(0f, 8.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2)) }
         .clip(RoundedCornerShape(999.dp)).background(if (enabled) Brush.verticalGradient(listOf(Color(0xFFF7DA97), Color(0xFFE8B95B), Color(0xFFC4903A))) else Brush.verticalGradient(listOf(Color(0xFF6B5A3A), Color(0xFF4A3E28))))
         .border(1.dp, Color(0xFFF6DFA8), RoundedCornerShape(999.dp)).clickable(enabled = enabled, onClick = onClick), contentAlignment = Alignment.Center) {
-        Row(Modifier.padding(horizontal = 18.du), horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.padding(horizontal = if (maxW < 138.du) 10.du else 18.du), horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
             if (keyed) PadKey("X", "")
             // [data-native-key=ok]:after { content: ' ›'; font-size: 20px }. A long label ("Discard Ultimate Magic: Meteor") is cut
             // with … inside the button (BB8); the › stays.
@@ -1958,10 +1999,12 @@ internal fun GoldPill(text: String, enabled: Boolean, modifier: Modifier, d: Du,
 }
 
 @Composable
-internal fun GlassPill(text: String, enabled: Boolean, modifier: Modifier, d: Du, tone: Color = Color(0xFFEEE6D4), edge: Color = Color(0x26FFFFFF), onClick: () -> Unit) = with(d) {
-    Box(modifier.height(36.du).clip(RoundedCornerShape(999.dp)).background(Color(0xB30C0D12)).border(1.dp, edge, RoundedCornerShape(999.dp))
+internal fun GlassPill(text: String, enabled: Boolean, modifier: Modifier, d: Du, tone: Color = Color(0xFFEEE6D4), edge: Color = Color(0x26FFFFFF),
+                       /** Z1 review: the widest it may be (its zone's width); longer words are cut with …. */
+                       maxW: Dp = Dp.Infinity, onClick: () -> Unit) = with(d) {
+    Box(modifier.widthIn(max = maxW).height(36.du).clip(RoundedCornerShape(999.dp)).background(Color(0xB30C0D12)).border(1.dp, edge, RoundedCornerShape(999.dp))
         .clickable(enabled = enabled, onClick = onClick).padding(horizontal = 14.du), contentAlignment = Alignment.Center) {
-        Text(text, style = sans(sp(12.5f), FontWeight.SemiBold, tone), maxLines = 1)
+        Text(text, style = sans(sp(12.5f), FontWeight.SemiBold, tone), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

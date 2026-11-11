@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
 import dev.cardstashy.nativeplay.engine.MatchState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -64,5 +65,48 @@ class TouchTargetTest {
             val got = if (id < 0) players.lastOrNull()?.let { -it } else cards.lastOrNull()
             assertEquals("$key (${r.width / dp} × ${r.height / dp} dp) tapped at $p", id, got)
         }
+    }
+    /**
+     * Z1 review: on a phone the stack fan is drawn smaller to fit the right strip (here about 0.88), and its Yield and "+N" chips
+     * with it. Each still takes a tap just inside 22 dp below its middle (a 44 dp box on the screen), not only on its drawn pill.
+     */
+    @Test @Config(qualifiers = "w844dp-h390dp-land-xxhdpi")
+    fun theStackChipsTakeATapInA44dpBox() {
+        Motion.still = true
+        val base = MatchState.parse(javaClass.classLoader!!.getResource("table/snap-crowded.json")!!.readText())!!
+        val one = base.stack.first()
+        // A CPU ability on top (it has Yield) and three older items (folded into "+3" on a phone); no buttons below the fan.
+        val items = listOf(one.copy(id = 9101, controller = base.cpu.id, ability = true, text = "Soul Warden — Whenever another creature enters, you gain 1 life."),
+            one.copy(id = 9102, controller = base.viewer, ability = true, text = "Llanowar Elves — Add {G}."),
+            one.copy(id = 9103, controller = base.cpu.id, ability = true, text = "Talrand, Sky Summoner — Whenever you cast an instant or sorcery spell, create a 2/2 blue Drake."),
+            one.copy(id = 9104, controller = base.viewer, ability = true, text = "Elvish Mystic — Add {G}."))
+        val st = base.copy(stack = items, prompt = null, inputType = null)
+        val anchors = Anchors()
+        val yields = mutableListOf<Int>()
+        rule.setContent {
+            CompositionLocalProvider(LocalAnchors provides anchors) {
+                Box(Modifier.fillMaxSize().background(Palette.Night)) {
+                    ForgeBoard(st, live = true, intents = TableIntents(yieldSource = { id, _ -> yields += id }), selectedHand = null, onSelectHand = {}, onInspect = {}, onMenu = {},
+                        handOrder = emptyList(), onHandOrder = {})
+                }
+            }
+        }
+        rule.waitForIdle()
+        val dp = org.robolectric.RuntimeEnvironment.getApplication().resources.displayMetrics.density
+        val card = anchors.rects["stackcard"] ?: error("no stack card")
+        val label = anchors.rects["stacklabel"] ?: error("no stack label")
+        assertTrue("the fan is drawn smaller here (${card.width / dp} dp wide)", card.width < 104f * dp - 1f)
+        // Yield: the last pill in the label row, at its right end.
+        val more = anchors.rects["stackmore"] ?: error("the older items did not fold into +N")
+        val yieldX = (more.right + label.right) / 2
+        val half = 22f * dp - 1f
+        val below = label.center.y + half
+        assertTrue("the point is below the drawn row", below > label.bottom)
+        rule.onRoot().performTouchInput { click(Offset(yieldX, below)) }
+        rule.waitForIdle()
+        assertEquals("Yield tapped 22 dp below its middle", listOf(9101), yields)
+        rule.onRoot().performTouchInput { click(Offset(more.center.x, more.center.y + half)) }
+        rule.waitForIdle()
+        assertTrue("+N tapped 22 dp below its middle opens the list", anchors.rects["stacklist"] != null)
     }
 }

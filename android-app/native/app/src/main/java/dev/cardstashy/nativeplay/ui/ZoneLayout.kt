@@ -12,6 +12,10 @@ package dev.cardstashy.nativeplay.ui
  * Numbers follow the approved mockup (design/roomier-table-mockup.html, lines 257 to 332), with [k] its chrome scale. Two changes
  * from the drawing, as the brief says: the menu and the buttons are 44 (dp at k = 1), not the drawing's 36. Pure numbers in dp,
  * no Compose, so the rule is unit tested (ZoneLayoutTest).
+ *
+ * Z1 review: the dual top keeps a band of its own under the board for the "Hand N · bottom screen" chip ([handChip]; the board ends
+ * above it), and Undo has its own slot ([undo]) at the foot of the stack slot, never where End turn was (U6): while Undo shows, the
+ * stack card stands above it ([stackAbove]).
  */
 internal object ZoneLayout {
     /** A zone's box in dp: its left, top, width and height. */
@@ -29,18 +33,23 @@ internal object ZoneLayout {
 
     /**
      * The table's zones. [window] is the area inside the insets; [hb] the mockup's usable height (the window's height, or less once
-     * the tile cap holds on a tall screen); [handTray] is null on the dual top screen (the hand is on the bottom screen).
+     * the tile cap holds on a tall screen); [handTray] is null on the dual top screen (the hand is on the bottom screen), and
+     * [handChip] is null on one screen (the dual top's band under the board for the hand's chip). [undo] is Undo's slot: the
+     * foot of the [stack] slot, right-aligned like the buttons under it.
      */
     data class Zones(
         val window: Box, val k: Float, val hb: Float,
         val leftStrip: Box, val rightStrip: Box, val board: Box, val handTray: Box?,
         val cpuSquare: Box, val mySquare: Box, val menu: Box, val phase: Box, val stack: Box, val actions: Box,
+        val handChip: Box?, val undo: Box,
     ) {
-        /** The boxes that must never meet one another (the strips hold the corners and are not listed themselves). */
+        /** The boxes that must never meet one another (the strips hold the corners and are not listed themselves; [undo] lies in [stack]). */
         val all: Map<String, Box> get() = buildMap {
-            put("board", board); handTray?.let { put("handTray", it) }
+            put("board", board); handTray?.let { put("handTray", it) }; handChip?.let { put("handChip", it) }
             put("cpuSquare", cpuSquare); put("mySquare", mySquare); put("menu", menu); put("phase", phase); put("stack", stack); put("actions", actions)
         }
+        /** The stack card's room: the whole stack slot, or, while Undo shows in its slot, the part above it (8 between). */
+        fun stackAbove(undoShown: Boolean): Box = if (!undoShown) stack else Box(stack.x, stack.y, stack.w, (undo.y - 8f * k - stack.y).coerceAtLeast(0f))
     }
 
     /** Each side strip's share of the width inside the insets. */
@@ -50,7 +59,12 @@ internal object ZoneLayout {
     /** The stack card and its words end at least this far inside the right edge (W3: "CPU's ability" cut at the edge). */
     const val STACK_EDGE = 16f
 
-    /** The chrome scale: 1 on a big board (600 × 480 dp and up), else the 844 × 390 design scaled to fit (chromeU). */
+    /**
+     * The chrome scale: 1 on a big board (600 × 480 dp and up), else the 844 × 390 design scaled to fit (chromeU). The mockup's
+     * hand-picked 1.3 (Portal, Fold, Thor) and 1.6 (tablet) are not used yet: [k] drives every du of the table's chrome (seats,
+     * buttons, ring, piles), so growing it is the text and squares items' rule to set (Z3 "scale with the tile on bigger screens",
+     * Z4 squares), not Z1's.
+     */
     fun scale(w: Float, h: Float): Float = if (w >= 600f && h >= 480f) 1f else minOf(w / 844f, h / 390f)
 
     /**
@@ -79,8 +93,11 @@ internal object ZoneLayout {
             val th = hh + 6f * u
             Box(bx + (bw - tw) / 2, win.bottom - 4f * u - th, tw, th)
         }
-        // 4. The board: the middle of the width, from the window's top to just above the tray (the full height on the dual top).
-        val boardBottom = tray?.let { it.y - 2f * u } ?: win.bottom
+        // The dual top has no tray, but the hand keeps a chip there ("Hand 7 · bottom screen", the d-pad's way into the hand on the
+        // bottom screen): a band of its own across the board's width at the bottom, 36 tall, 4 above the window's bottom.
+        val chip = if (!dual) null else Box(bx, win.bottom - 4f * u - 36f * u, bw, 36f * u)
+        // 4. The board: the middle of the width, from the window's top to just above the tray (above the chip's band on the dual top).
+        val boardBottom = (tray ?: chip)?.let { it.y - 2f * u } ?: win.bottom
         val board = Box(bx, win.y, bw, boardBottom - win.y)
         // 5. The corners. The players' squares in the left strip, 21.5 % of the usable height each.
         val ph = .215f * hb; val sw = rail - 2 * pad
@@ -96,6 +113,8 @@ internal object ZoneLayout {
         val sy = phase.bottom + 8f * u
         val stackRight = minOf(qx + qw, win.right - STACK_EDGE)
         val stack = Box(qx, sy, (stackRight - qx).coerceAtLeast(0f), (actions.y - 8f * u - sy).coerceAtLeast(0f))
-        return Zones(win, u, hb, left, right, board, tray, cpuSquare, mySquare, menu, phase, stack, actions)
+        // Undo (36, a glass pill): the foot of the stack slot, 8 above the quiet button's 44, never in End turn's place (U6).
+        val undo = Box(qx, stack.bottom - 36f * u, qw, 36f * u)
+        return Zones(win, u, hb, left, right, board, tray, cpuSquare, mySquare, menu, phase, stack, actions, chip, undo)
     }
 }
