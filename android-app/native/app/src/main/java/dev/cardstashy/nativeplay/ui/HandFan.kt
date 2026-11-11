@@ -113,6 +113,11 @@ fun HandFan(
     var movedAt by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
     var heldOut by remember { mutableStateOf(false) }
     val overPulse = remember { Animatable(1f) }
+    // The match sound pass: the pick-up, the card crossing onto the table, and a drop that is refused (S1: the card shakes
+    // once, two swings in 160 ms, then slides home).
+    val cueCb by androidx.compose.runtime.rememberUpdatedState(LocalTableCue.current)
+    var refused by remember { mutableStateOf<Int?>(null) }
+    val shake = remember { Animatable(1f) }
     val places = remember { HashMap<Int, androidx.compose.ui.layout.LayoutCoordinates>() }
     val calm = Motion.still || drawFx?.reduced == true
     val lean by androidx.compose.animation.core.animateFloatAsState(if (calm) 0f else leanTo, spring(dampingRatio = .6f, stiffness = 260f), label = "lean")
@@ -233,12 +238,13 @@ fun HandFan(
                         val dt = (ch.uptimeMillis - ch.previousUptimeMillis).coerceAtLeast(1L)
                         leanTo = holdLean(leanTo, (ch.position.x - ch.previousPosition.x) / dt / density.density); movedAt = android.os.SystemClock.uptimeMillis()
                         val o = !stretching && v.y < -playLine
-                        if (o != over) { over = o; haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
+                        if (o != over) { over = o; haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove); if (o) cueCb?.invoke("card_hold", 1f, 1f) }
                         scope.launch { drag.snapTo(v) }; continue
                     }
                     val card = hand.getOrNull(idx)
                     if (card != null && d.y < -slop * 1.5f && abs(d.y) > abs(d.x) * 1.2f) {
-                        stretching = !canPlayCb(card); scope.launch { drag.snapTo(Offset.Zero) }; dragging = card.id; putBack = null; anchor = ch.position; continue
+                        stretching = !canPlayCb(card); scope.launch { drag.snapTo(Offset.Zero) }; dragging = card.id; putBack = null; anchor = ch.position
+                        cueCb?.invoke("card_lift", 1f, 1f); continue
                     }
                     if (reorderCb != null && card != null && (moving != null || abs(d.x) > slop * 1.5f && abs(d.x) > abs(d.y))) {
                         if (moving == null) { moving = card.id; moveTo = idx; focus = null; haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
@@ -270,8 +276,12 @@ fun HandFan(
                     }
                 } else if (lifted != null) {
                     putBack = lifted
+                    // S1: a card that cannot be played was pulled up and let go: it is refused with its sound and one shake.
+                    val no = stretching
+                    if (no) cueCb?.invoke("card_refuse", 1f, 1f)
                     // P7: released early, it springs back to its place (280 ms, a small overshoot).
-                    scope.launch { drag.animateTo(Offset.Zero, tween(HOLD_BACK_MS, easing = androidx.compose.animation.core.Easing { backOut(it) })); if (dragging == lifted) dragging = null; if (putBack == lifted) putBack = null }
+                    scope.launch { if (no && !calm) { refused = lifted; shake.snapTo(0f); shake.animateTo(1f, tween(REFUSE_MS, easing = androidx.compose.animation.core.LinearEasing)); refused = null }
+                        drag.animateTo(Offset.Zero, tween(HOLD_BACK_MS, easing = androidx.compose.animation.core.Easing { backOut(it) })); if (dragging == lifted) dragging = null; if (putBack == lifted) putBack = null }
                     focus = null
                 } else {
                     if (!swept) hand.getOrNull(idx)?.let(tapCb)
@@ -325,7 +335,7 @@ fun HandFan(
                         val held = isLeaving && heldOut
                         // The cards not being carried drop 58 % of a card and dim (P7), as the hand does for a question.
                         val down = if (isDrag || isLeaving) 0f else dropped
-                        translationX = ax + (if (isDrag || isLeaving) drag.value.x else 0f)
+                        translationX = ax + (if (isDrag || isLeaving) drag.value.x else 0f) + (if (card.id == refused) refuseShake(shake.value) * REFUSE_DP.dp.toPx() else 0f)
                         translationY = ay + (if (isDrag || isLeaving) drag.value.y else 0f) - (if (held) 0f else f * cardH.toPx() * 1.1f) + down * cardH.toPx() * AskTuck.DIP
                         rotationZ = if (isDrag && !isLeaving) lean else if (held) 0f else ar
                         val sc = if (held) popScale else if (isLeaving) 1f + .15f * sin(f * PI.toFloat()) + (asc - 1f) * (1f - f) else asc
@@ -377,6 +387,10 @@ private fun rememberSpring(target: Float, from: Float?, delayMs: Long, bounceUp:
 internal const val HOLD_GROW_MS = 140; internal const val HOLD_DROP_MS = 180; internal const val HOLD_BACK_MS = 280
 /** How much of the other cards still shows while one is carried. */
 internal const val HOLD_DIM = .55f
+/** S1, drop refused: the card shakes once, two swings over [REFUSE_MS], [REFUSE_DP] to each side at first and dying away. */
+internal const val REFUSE_MS = 160; internal const val REFUSE_DP = 7f
+/** The shake at [q] (0..1) of its time: -1..1, two full swings, back at rest at the end. */
+internal fun refuseShake(q: Float): Float = if (q <= 0f || q >= 1f) 0f else sin(q * 4f * PI.toFloat()) * (1f - q)
 internal const val HOLD_LEAN_MAX = 18f
 internal val HOLD_ICE = Color(0xFF5CC8FF); internal val HOLD_GOLD = Color(0xFFF3D27E)
 /**
