@@ -1155,12 +1155,11 @@ fun ForgeBoard(
             // that its 10 du drop shadow (AskLine) clears the chip too (U3).
             val parts = if (tucked) askParts(st) else null
             if (parts != null) {
-                // 0.4.59 T6: one glass line in the strip the hand freed, from the tray's right end to the buttons' left (12 du clear each side).
-                val left = trayRight + 12.du
-                val right = W - 8.du - tuckBtnW - 12.du
-                val vis = handW / 66f * 67f
-                val top = trayHand?.let { it.tray.y.dp + it.tray.h.dp * AskTuck.DIP / 2f - 18.du } ?: (H - vis + vis * AskTuck.DIP / 2f - 18.du)
-                TuckedAskLine(parts, left, right, top, d)
+                // Mobile table M1: the question is one plain line on the middle of the table, between the rows and beside the targets
+                // (it was a pill in the hand's strip): centred on the board, ending left of the stack card at its full size.
+                val left = zones.board.x.dp + 8.du
+                val right = if (lane.isNotEmpty()) zones.rightStrip.x.dp - 4.du - 104.du * (H * ZoneLayout.stackShare(zones) / 145.du) - 10.du else zones.board.right.dp - 8.du
+                TuckedAskLine(parts, left, right, mid, d, big = !zones.phone)
             } else askText?.let { val askBottom = if (dual && hand.isNotEmpty()) H - handW / 66f * 37f - 16.du else null
                 AskLine(it, W, H, d, bottom = askBottom, goldInset = goldInset, leftLimit = if (askBottom != null) trayRight + 12.du else null) { r -> askRight = r } }
             // The line between the halves turns into the combat line while you declare (gold attacking, blue blocking).
@@ -2199,7 +2198,8 @@ private fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier, 
                 // The source's art when there is a source card; no empty frame without one.
                 if (src != null) Box(Modifier.padding(top = 3.du).fillMaxWidth().height(52.du).clip(RoundedCornerShape(3.du))) { CardImage(src.name, Modifier.fillMaxSize(), crop = true) }
                 // A TRIGGER SHOWS ITSELF: an item Forge put up as a trigger says "Trigger" in the caster's colour (gold you, coral CPU).
-                if (s.trigger) Text("Trigger", style = sans(sp(9.5f), FontWeight.Bold, if (mine) Gold else CpuRed).copy(fontStyle = FontStyle.Italic), modifier = Modifier.padding(top = 3.du))
+                // Mobile table M1: a trigger's card is labelled ABILITY (it said "Trigger").
+                if (s.trigger) Text(ABILITY_LABEL, style = sans(sp(8.5f), FontWeight.ExtraBold, if (mine) Gold else CpuRed).copy(letterSpacing = 1.5.sp), modifier = Modifier.padding(top = 3.du))
                 else Text(if (s.text.contains("Whenever") || s.text.contains("When ") || s.text.contains("At the beginning")) "Triggered ability" else "Activated ability",
                     style = sans(sp(9f), FontWeight.SemiBold, Color(0xFFD8C9A6)).copy(fontStyle = FontStyle.Italic), modifier = Modifier.padding(top = 3.du))
                 Box(Modifier.padding(top = 3.du).fillMaxWidth().height(1.dp).background(rim.copy(alpha = .5f)))
@@ -2651,6 +2651,8 @@ internal fun relations(st: MatchState, aim: String? = null): List<Rel> {
         val onStack = st.stack.withIndex().filter { (_, it) -> it.source?.controller == st.viewer && it.source.zone == "Stack" }.maxByOrNull { it.value.source!!.id }
         val source = onStack?.value?.source ?: named?.let { n -> mine.firstOrNull { it.zone == "Battlefield" && it.name == n } }
         val from = when {
+            // Mobile table M1: an asking ability aims from its own card in the lane.
+            askingAbility(st) != null -> "stackcard"
             source != null && source.zone == "Battlefield" -> "c${source.id}"
             pending != null -> "stackcard"
             onStack != null -> if (onStack.index == 0) "stackcard" else "stack${onStack.value.id}"
@@ -2678,8 +2680,22 @@ internal fun relations(st: MatchState, aim: String? = null): List<Rel> {
  * moved it from your hand but lists it only once cast), then Forge's own items. The same list when nothing is waiting.
  */
 internal fun laneStack(st: MatchState): List<StackItem> {
-    val c = pendingCast(st) ?: return st.stack
+    val c = pendingCast(st) ?: return askingAbility(st)?.let { listOf(it) + st.stack } ?: st.stack
     return listOf(StackItem(LANE_ID - c.id, "", c, st.viewer)) + st.stack
+}
+/**
+ * Mobile table M1: the ability that is asking a target question, as the card on top of the lane. Forge asks a trigger's target
+ * before it lists the trigger on the stack (TriggerTargetProbe: the stack is empty at the Scavenger's question), so the table
+ * shows the asking card itself: the source Forge names by id ([asker]) and Forge's own words for what it does. Null for a
+ * spell (its own card is in the lane already), when Forge names no card on the table, or when it gives no words.
+ */
+internal fun askingAbility(st: MatchState): StackItem? {
+    val a = asker(st) ?: return null
+    val src = st.card(a.cardId ?: return null)?.takeIf { it.name == a.name && it.zone != "Stack" && it.zone != "Hand" } ?: return null
+    val does = a.text.replace(Regex("\\s*\\(Targeting ERROR\\)"), "").replace(Regex("\\s*\\[[^\\]]{0,120}\\]\\s*$"), "").trim()
+    if (does.isEmpty() || does.equals(a.name, ignoreCase = true)) return null
+    val trigger = Regex("^(?:[A-Z][A-Za-z' ]{1,24} — )?(?:When|Whenever|At the beginning)\\b").containsMatchIn(does)
+    return StackItem(LANE_ID - src.id, does, src, st.viewer, ability = true, trigger = trigger)
 }
 /** The lane item's id: below every id Forge gives, so it is never taken for a stack target or a yield. */
 internal const val LANE_ID = -1_000_000
@@ -2865,6 +2881,7 @@ internal fun askerBody(a: Asker, plain: String): String {
     return "$low."
 }
 /** M2: the words on an offered target while a question offers both sides. */
+internal const val ABILITY_LABEL = "ABILITY"
 internal const val SIDE_YOURS = "YOURS"
 internal const val SIDE_CPU = "CPU'S"
 /** M1: what a spell or ability does is said in the question when it is this short; longer, the question says only what to pick. */
@@ -3277,28 +3294,22 @@ internal fun handTucked(st: MatchState, live: Boolean, anyScreen: Boolean = fals
 internal object AskTuck { const val DIP = .58f; const val SHADE = .40f }
 
 /**
- * 0.4.59 T6: the question in the hand's strip on one screen: the asking card's name in the aim colour, then the question, on
- * one line (cut with … , never wrapped) between [left] and [right], centred there, its top at [top].
+ * Mobile table M1 (it was 0.4.59 T6's pill in the hand's strip): the question on one screen, one plain line on the middle of the
+ * table: the asking card's name, then the question, on one line (smaller first, then cut with … , never wrapped) between [left]
+ * and [right], centred there on the line between the rows ([mid]).
  */
 @Composable
-private fun TuckedAskLine(parts: AskParts, left: Dp, right: Dp, top: Dp, d: Du) = with(d) {
+private fun TuckedAskLine(parts: AskParts, left: Dp, right: Dp, mid: Dp, d: Du, big: Boolean) = with(d) {
     val anchors = LocalAnchors.current
     val room = (right - left).coerceAtLeast(40.du)
-    Box(Modifier.offset(x = left, y = top).width(room), contentAlignment = Alignment.Center) {
-        Row(Modifier.widthIn(max = room).anchorRect("askline").drawBehind {
-            drawRoundRect(Color(0xBB000000), topLeft = Offset(0f, 6.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2))
-        }.clip(RoundedCornerShape(999.dp)).background(Color(0xF010131B))
-            .background(Brush.linearGradient(listOf(Color(0x14FFFFFF), Color(0x03FFFFFF), Color.Transparent)))
-            .border(1.dp, Color(0xAAF2D18E), RoundedCornerShape(999.dp)).padding(horizontal = 16.du, vertical = 8.du),
-            verticalAlignment = Alignment.CenterVertically) {
-            val line = androidx.compose.ui.text.buildAnnotatedString {
-                parts.name?.let { n ->
-                    pushStyle(androidx.compose.ui.text.SpanStyle(color = Color(0xFFFF9D5C))); append(n); pop()
-                    pushStyle(androidx.compose.ui.text.SpanStyle(color = Color(0x99FBF3DF))); append("  ·  "); pop()
-                }
-                append(parts.question)
-            }
-            Text(line, style = sans(sp(14f), FontWeight.Bold, Color(0xFFFBF3DF)), maxLines = 1, overflow = TextOverflow.Ellipsis,
+    val h = if (big) 30.du else 24.du
+    val words = parts.name?.let { n -> "$n: " + parts.question.let { q -> if (q.length > 1 && !q[1].isUpperCase()) q.replaceFirstChar { it.lowercase() } else q } } ?: parts.question
+    Box(Modifier.offset(x = left, y = mid - h / 2).width(room).height(h), contentAlignment = Alignment.Center) {
+        Box(Modifier.widthIn(max = room).height(h).anchorRect("askline").clip(RoundedCornerShape(999.dp)).background(Color(0xDB080A10)).padding(horizontal = 14.du),
+            contentAlignment = Alignment.Center) {
+            // One line: the size steps down before the words are cut with … .
+            androidx.compose.foundation.text.BasicText(words, style = sans(sp(if (big) 17f else 14f), FontWeight.Bold, Color(0xFFEEF0F4)), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = sp(10.5f), maxFontSize = sp(if (big) 17f else 14f), stepSize = sp(.5f)),
                 onTextLayout = { if (it.hasVisualOverflow) anchors?.putRect("askline.cut", androidx.compose.ui.geometry.Rect.Zero) })
         }
     }
