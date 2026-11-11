@@ -104,9 +104,11 @@ class SoundCastLandTest {
         val a = snap(3, lands(false), cpuHand = 4, cpuLib = 40).copy(stack = listOf(StackItem(900, "Draw two cards.", spell, 1)))
         val b = snap(4, lands(false), cpuHand = 5, cpuLib = 39, myGrave = card(30, 1, "Divination", "Graveyard", "Sorcery"))
         val fx2 = play(a, b)
-        assertEquals(setOf("resolve", "CARD-002"), planned.single())
+        assertEquals(setOf("resolve", "CARD-002", "CARD-018"), planned.single())
         run(fx2, 1200)
-        assertEquals(setOf("resolve", "CARD-002"), names().toSet()); assertEquals(2, heard.size)
+        // (8c: the spent card also sounds as it reaches your graveyard.)
+        assertEquals(setOf("resolve", "CARD-002", "CARD-018"), names().toSet()); assertEquals(3, heard.size)
+        assertEquals("resolve first, the pile last", listOf("resolve", "CARD-018"), names().filter { it != "CARD-002" })
         assertEquals("the CPU's draw stays quiet", .5f, heard.first { it.first == "CARD-002" }.second, 0f)
     }
 

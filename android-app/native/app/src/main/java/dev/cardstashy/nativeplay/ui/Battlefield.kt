@@ -189,7 +189,7 @@ internal class FxItem(
     var t0 = 0L; var dur = baseMs; var p0 = 0f
     /** Things this effect has thrown once (a freeze, a burst of particles), by bit. */
     var marks = 0
-    /** P5: a life loss's points, ticked off the pill one by one from this effect's start. */
+    /** P5: a life loss's points, ticked off the pill one by one from this effect's start. On a lunge at a player: the damage it brings (5 or more sounds the big hit). */
     var points = 0
     /** P6: of a spell's streaks (one per target), the one that also draws the flash on the stack. */
     var lead = true
@@ -370,12 +370,12 @@ class Battlefield {
             it.sound?.let { s -> val got = heard[it] ?: 0
                 if (got and 128 == 0 && ms - it.t0 >= it.soundAt) { heard[it] = got or 128; if (s !in now) now[s] = it.soundVol to it.soundRate } }
             when (it.kind) {
-                Fx.ATTACK -> once(1, 0f, "CMB-001", .9f)
                 // At the stamp's slam, the shield ring 40 ms behind it.
                 Fx.BLOCK -> { once(1, .2f, "CMB-021", 1f); once(2, .2f + 40f / it.dur, "CMB-016", .5f) }
                 // The contact frame: CMB-022 carries its own 110 ms hit-stop gap, matching the visual freeze.
-                Fx.LUNGE -> if (Strike.face(it)) { val f = Strike.after(true) / it.dur; once(1, f, "CMB-023", 1f); once(2, f, "CMB-010", .8f) }
-                    else once(1, Strike.hit(false) / it.dur, "CMB-022", 1f)
+                // The sound pass: the dive as the pull-back ends, then the hit on contact (5 or more to a player is the big one).
+                Fx.LUNGE -> { val face = Strike.face(it); once(4, Strike.wind(face) / it.dur, "attack_go", 1f)
+                    once(1, Strike.hit(face) / it.dur, if (!face) "CMB-022" else if (it.points >= 5) "face_hit_big" else "CMB-023", 1f) }
                 // Lower for bigger numbers.
                 Fx.DAMAGE -> { val n = it.label.filter(Char::isDigit).toIntOrNull() ?: 1; once(1, 0f, "CMB-006", .6f, (1.04f - .04f * n).coerceIn(.75f, 1f))
                     // Director step 3: a spell or ability's damage sounds its streak on the frame the number lands (combat has the clash).
@@ -434,7 +434,7 @@ class Battlefield {
     /** P6, Aim: a target thread has just locked on [toKey] ("c<id>" or "orb<id>"), in its caster's colour [tone]. */
     internal fun aimLock(toKey: String, tone: Color) {
         if (reduced || Motion.still) return
-        items += FxItem(Fx.AIM, 1, AIM_MS, card = toKey.takeIf { it.startsWith("c") }?.drop(1)?.toIntOrNull(), toKey = toKey, tone = tone).also { it.t0 = now.longValue }
+        items += FxItem(Fx.AIM, 1, AIM_MS, card = toKey.takeIf { it.startsWith("c") }?.drop(1)?.toIntOrNull(), toKey = toKey, tone = tone).sounds("target_lock").also { it.t0 = now.longValue }
         reindex()
     }
     /** A loss of [player]'s is still in flight (so the pill waits for it). */
@@ -698,14 +698,17 @@ class Battlefield {
                 val tone = if (friendly) TRIG_GREEN else card?.let { frameTone(cardColors(it)).first } ?: Color(0xFFFF8A5C)
                 aimed.forEachIndexed { i, r ->
                     val key = if (r.kind == "player") "orb${r.id}" else "c${r.id}"
-                    resolves += FxItem(Fx.FIRE, 2, FIRE_MS, mine = s.controller == viewer, from = stackRect, toKey = key, tone = tone).also { it.lead = i == 0 }
+                    resolves += FxItem(Fx.FIRE, 2, FIRE_MS, mine = s.controller == viewer, from = stackRect, toKey = key, tone = tone).also { it.lead = i == 0; if (i == 0) it.sounds("bolt") }
                     if (r.kind != "player") { boltAt[r.id] = FIRE_MS
-                        resolves += FxItem(Fx.BOLT, 1, BOLT_MS, card = r.id, mine = bfA[r.id]?.controller == viewer, from = anchors.rects[key], fromKey = "stackcard", tone = tone, power = if (friendly) 0f else 1f, delay = FIRE_MS) }
+                        resolves += FxItem(Fx.BOLT, 1, BOLT_MS, card = r.id, mine = bfA[r.id]?.controller == viewer, from = anchors.rects[key], fromKey = "stackcard", tone = tone, power = if (friendly) 0f else 1f, delay = FIRE_MS)
+                            // The impact: the hit for burn and removal, the soft resolve for a spell on its caster's own card.
+                            .sounds(if (friendly) "resolve" else "CMB-018") }
                 }
             }
             // The spent spell goes to its owner's square (Forge put it in that graveyard), 160 after the impact when it fired.
             if (!becomesPermanent && !s.ability && !s.trigger && card != null && owner != null && stackRect != null)
                 resolves += FxItem(Fx.SPENT, 1, SPENT_MS, mine = owner == viewer, from = stackRect, toKey = "grave$owner", ghost = card, delay = if (aimed.isNotEmpty()) FIRE_MS + 160L else 0L)
+                    .sounds("CARD-018", at = SPENT_MS - 60L) // as it reaches the pile
             if (aimed.isNotEmpty()) continue
             val target = s.targets.firstOrNull()?.let { r -> if (r.kind == "player") "orb${r.id}" else "c${r.id}" }
             resolves += FxItem(Fx.RESOLVE, if (becomesPermanent) 1 else 2, if (becomesPermanent) 220 else 320, mine = s.controller == viewer, from = stackRect,
@@ -755,7 +758,9 @@ class Battlefield {
 
         // Combat: a new attacker leans in; a new blocker sends a pulse down its thread to the attacker.
         // P5: the new attackers step up one after another (210 each, 95 apart), each with a coral ring.
-        declareOrder(a, b).forEachIndexed { i, id -> combat += FxItem(Fx.ATTACK, 1, 300, card = id, mine = bfB[id]?.controller == viewer, tone = Color(0xFFFF6A4A), delay = i * DECLARE_GAP_MS) }
+        declareOrder(a, b).forEachIndexed { i, id -> combat += FxItem(Fx.ATTACK, 1, 300, card = id, mine = bfB[id]?.controller == viewer, tone = Color(0xFFFF6A4A), delay = i * DECLARE_GAP_MS)
+            // Each one that steps up after the first sounds 6 % higher (held from the fifth).
+            .sounds("CMB-001", rate = Math.pow(1.06, minOf(i, 4).toDouble()).toFloat()) }
         for ((id, c) in bfB) {
             val o = bfA[id] ?: continue
             // A block is a moment (spec 3, P5): the blocker steps to its attacker, an ice ring flares over it and BLOCKED slams down.
@@ -803,7 +808,8 @@ class Battlefield {
                 }
                 hits += FxItem(Fx.STAGE, 2, step, card = null, mine = o.controller == viewer, fromKey = "c$id", toKey = to, label = tag, delay = start,
                     ids = setOf(id) + blockers.map { it.id } + (o.attackTarget?.takeIf { it.kind == "card" }?.id?.let { setOf(it) } ?: emptySet()))
-                hits += FxItem(Fx.LUNGE, 2, Strike.ms(face), card = id, mine = o.controller == viewer, toKey = to, tone = Color(0xFFFF6A4A), power = if (face) 1f else .8f, delay = start + STAGE_LEAD_MS); lunged = true
+                hits += FxItem(Fx.LUNGE, 2, Strike.ms(face), card = id, mine = o.controller == viewer, toKey = to, tone = Color(0xFFFF6A4A), power = if (face) 1f else .8f, delay = start + STAGE_LEAD_MS)
+                    .also { if (face) it.points = (o.power ?: 0).coerceAtLeast(0) }; lunged = true
             }
         }
         val lag = if (lunged) Strike.after(false).toLong() else 0L

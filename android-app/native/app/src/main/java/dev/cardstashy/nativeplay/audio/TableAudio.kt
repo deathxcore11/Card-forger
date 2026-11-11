@@ -90,7 +90,7 @@ class TableAudio(context: Context) {
             if (arrived.any { it.isLand }) play("CARD-005")
             if (arrived.any { !it.isLand && !was.containsKey(it.id) }) play("CARD-025") else if (arrived.any { !it.isLand }) play("CARD-010")
         }
-        if (field.any { it.attacking && was[it.id]?.attacking == false }) play("CMB-002")
+        if (field.any { it.attacking && was[it.id]?.attacking == false } && "CMB-001" !in own) play("CMB-002")
         val combat = b.phase?.contains("DAMAGE") == true || a.phase?.contains("DAMAGE") == true
         if (!fxCues && field.any { it.blockingIds.size > (was[it.id]?.blockingIds?.size ?: 0) }) play("CMB-003")
         // Damage, life loss to a burn, deaths and counters sound on their own frames on the board (director step 3) when effects run.
