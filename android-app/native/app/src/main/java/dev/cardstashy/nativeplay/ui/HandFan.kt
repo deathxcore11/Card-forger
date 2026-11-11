@@ -140,6 +140,9 @@ fun HandFan(
         val pxStart = with(density) { start.toPx() }; val pxStep = with(density) { step.toPx() }
         fun indexAt(x: Float): Int = if (n <= 1 || pxStep <= 0f) 0 else floor((x - pxStart) / pxStep).toInt().coerceIn(0, n - 1)
         // Arriving cards (a deal, a draw) come in one per 70 ms along the arc from the library side.
+        // T6: a card coming back from the stack (Cancel) is not dealt in: it waits unseen in its place while it flies there.
+        val backId = LocalTravel.current?.travel?.takeIf { it.leg == dev.cardstashy.nativeplay.match.Director.Leg.BACK }?.cardId
+        if (backId != null && slots.any { it.id == backId }) seen.add(backId)
         val arriving = if (shownOnce || dealIn) slots.filter { it.id !in seen }.map { it.id } else emptyList()
         if (!shownOnce && !dealIn) slots.forEach { seen.add(it.id) }
         // A on a hand card (a controller): a card you can play goes as a slide up past the line does (the same arc and play);
@@ -288,7 +291,7 @@ fun HandFan(
                         rotationZ = if (isDrag && !isLeaving) (drag.value.x / 40f).coerceIn(-8f, 8f) else ar
                         val sc = if (isLeaving) 1f + .15f * sin(f * PI.toFloat()) + (asc - 1f) * (1f - f) else asc
                         scaleX = sc; scaleY = sc
-                        alpha = if (isLeaving) 1f - f * f else 1f
+                        alpha = if (card.id == backId) 0f else if (isLeaving) 1f - f * f else 1f
                     }.then(if (handAnchors != null && !isLeaving) Modifier.onGloballyPositioned { handAnchors.putRect("hand${card.id}", it.boundsInRoot()) } else Modifier)
                         .onFocusChanged { if (it.isFocused) focus = card.id else if (focus == card.id && dragging == null) focus = null }
                         .padActs(padHere).matchPadTap(padSource, padFocus) { current.firstOrNull { it.id == card.id }?.let { padPress(it) } }) {

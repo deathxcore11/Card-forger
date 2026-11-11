@@ -41,7 +41,8 @@ object Director {
      * its hand (yours) or the CPU seat to the stack lane and grows to the stack size; [REST] it lies on the stack with its rim;
      * [TO_SLOT], [TO_HOST] (an aura onto its creature) and [TO_GROUP] (a land, which skips the stack) end at the anchor [toKey].
      */
-    enum class Leg { TAPS, TO_STACK, REST, TO_SLOT, TO_HOST, TO_GROUP }
+    /** BACK (T6): Cancel while the spell asked; from the stack back to its place in your hand. */
+    enum class Leg { TAPS, TO_STACK, REST, TO_SLOT, TO_HOST, TO_GROUP, BACK }
     data class Travel(val cardId: Int?, val name: String?, val mine: Boolean, val leg: Leg, val toKey: String?, val ms: Long,
                       val stackId: Int? = null, val taps: List<Int> = emptyList(), val targets: List<Ref> = emptyList())
 
@@ -166,7 +167,8 @@ object Director {
         val toHost = HashSet<Int>()
         /** The three legs of a cast (taps, to the stack, the rest); the rest carries [beat] and the read time [restMs]. */
         // T6: the spell you are choosing targets or paying for already went up (its own leg in the poll that asked).
-        val waitingUp = before?.let { dev.cardstashy.nativeplay.ui.pendingCast(it)?.id }
+        val waiting0 = before?.let { dev.cardstashy.nativeplay.ui.pendingCast(it) }
+        val waitingUp = waiting0?.id
         fun castLegs(e: GameEvent, mine: Boolean, restMs: Long, beat: Beat?) {
             val id = e.source?.id; val name = e.source?.name
             val taps = e.player?.let { tapsLeft.remove(it) }.orEmpty()
@@ -291,6 +293,10 @@ object Director {
                         val travel = if (host != null) { toHost += id; Travel(id, e.card.name ?: c.name, mineOf(id), Leg.TO_HOST, "c$host", TO_HOST_MS) }
                             else Travel(id, e.card.name ?: c?.name, mineOf(id), Leg.TO_SLOT, "c$id", TO_SLOT_MS)
                         out += Step(Kind.ENTER, travel.ms, travel.ms, focal = true, cpu = !travel.mine, cardId = id, cardName = travel.name, travel = travel)
+                    } else if (e.from == "Stack" && e.to == "Hand" && id != null && waitingUp != null && (id == waitingUp || (e.card.name != null && e.card.name == waiting0.name))) {
+                        // T6: you cancelled while it asked: it goes back to its place in your hand (no card-to-hand sound, no other step).
+                        out += Step(Kind.TO_HAND, BACK_MS, BACK_MS, cardId = id, cardName = e.card.name,
+                            travel = Travel(id, e.card.name, true, Leg.BACK, "hand$id", BACK_MS))
                     } else if (e.from == "Hand" && e.to == "Stack" && id != null && id !in castHere && dev.cardstashy.nativeplay.ui.pendingCast(st)?.id == id) {
                         // T6 (Arena clip 1): the card goes to the stack first, then asks for its targets or its mana.
                         out += Step(Kind.CAST, TO_STACK_MS, TO_STACK_MS, cardId = id, cardName = e.card.name,
@@ -331,6 +337,8 @@ object Director {
         if (top == null) base else passWait(seenAt[top]?.takeIf { top in shown }, now, base)
 
     /** T5 item 1: the paying lands tap one by one, [TAP_GAP_MS] apart, each turning in [TAP_TURN_MS]. */
+/** T6: Cancel, the card from the stack back to your hand. */
+    const val BACK_MS = 380L
     const val TAP_GAP_MS = 70L
     const val TAP_TURN_MS = 140L
     fun tapsMs(n: Int): Long = if (n <= 0) 0 else TAP_GAP_MS * (n - 1) + TAP_TURN_MS

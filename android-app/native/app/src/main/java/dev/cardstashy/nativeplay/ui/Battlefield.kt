@@ -1408,6 +1408,8 @@ internal fun TravelCard() {
     val name = t.name ?: return
     val toStack = t.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_STACK
     val fromHand = toStack || t.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_GROUP
+    // T6: Cancel, from the stack back to its place in your hand (on two screens, off the bottom edge to the hand below).
+    val back = t.leg == dev.cardstashy.nativeplay.match.Director.Leg.BACK
     val dual = DualScreen.active
     val p = remember(m.key) { androidx.compose.runtime.mutableFloatStateOf(TravelClock.fixed ?: 0f) }
     LaunchedEffect(m.key) {
@@ -1428,8 +1430,10 @@ internal fun TravelCard() {
     }
     fun frame(): Rect? {
         anchors.version.intValue
-        val b = t.toKey?.let { anchors.rects[it] } ?: return null
-        val a = source(b) ?: return null
+        val b = if (back) { val s = anchors.rects["stackcard"] ?: return null
+            if (dual) Rect(self.center.x - s.width / 2, self.bottom, self.center.x + s.width / 2, self.bottom + s.height)
+            else t.toKey?.let { anchors.rects[it] } ?: anchors.rects["hand"] ?: return null } else t.toKey?.let { anchors.rects[it] } ?: return null
+        val a = (if (back) anchors.rects["stackcard"] else source(b)) ?: return null
         val q = p.floatValue
         val e = if (toStack) 1f - (1f - q).let { it * it * it } else smooth(0f, 1f, q)
         val c = lerpO(a.center, b.center, e)

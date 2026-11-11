@@ -107,6 +107,26 @@ class DirectorTest {
         assertTrue(legs(Director.plan(done, listOf(up) + events, before = start)).contains("CAST:TO_STACK:stackcard:440"))
     }
 
+    /** T6: Cancel while it asks: one leg from the stack back to its place in your hand, no other step and no card-to-hand sound. */
+    @Test fun cancelPutsTheCardBackInYourHand() {
+        val mountain = permanent(40, "Mountain", "Basic Land — Mountain")
+        val bolt = permanent(951, "Lightning Bolt", "Instant")
+        val c = card(951, "Lightning Bolt")
+        val up = ev("zone", card = c, from = "Hand", to = "Stack", player = null)
+        val asking = board(listOf(mountain)).copy(inputType = "InputSelectTargets", message = "Select targets for Lightning Bolt", events = listOf(up))
+        val down = ev("zone", card = c, from = "Stack", to = "Hand", player = me)
+        val back = board(listOf(mountain), hand = listOf(bolt.copy(zone = "Hand"))).copy(inputType = null, message = "", events = listOf(up, down))
+        val steps = Director.plan(back, listOf(down), before = asking)
+        assertEquals(listOf("TO_HAND:BACK:hand951:380"), legs(steps))
+        assertEquals(1, steps.size)
+        assertEquals(null, steps[0].cue)
+        // Forge gave the card a new id on the way back: the same name still goes back.
+        val renamed = ev("zone", card = card(977, "Lightning Bolt"), from = "Stack", to = "Hand", player = me)
+        assertEquals(listOf("TO_HAND:BACK:hand977:380"), legs(Director.plan(back, listOf(renamed), before = asking)))
+        // A card bounced from the stack with nothing waiting is the usual card-to-hand step.
+        assertEquals("CARD-020", Director.plan(back, listOf(down), before = board(listOf(mountain))).single().cue)
+    }
+
     /** An aura goes from the stack to its host (380), not to a slot of its own, and its attach is not a second trip. */
     @Test fun auraGoesFromTheStackToItsHost() {
         val giant = permanent(960, "Hill Giant", "Creature — Giant")

@@ -579,7 +579,14 @@ fun ForgeBoard(
             }
 
             // The hand: centred 44 du right of the middle (between your seat and the buttons), the middle card's top 67 du above the bottom.
-            val hand = orderedHand(me.hand, handOrder)
+            // T6: the card you cancelled comes back to the place it left, not to the end of its mana value.
+            val leftAt = remember { HashMap<Int, Int>() }
+            val lastHand = remember { arrayOf(emptyList<Int>()) }
+            // Your own drag order wins: a drag forgets where a cancelled card came back to.
+            val lastOrder = remember { arrayOf(handOrder) }
+            if (lastOrder[0] != handOrder) { leftAt.clear(); lastOrder[0] = handOrder }
+            val hand = returnToPlace(orderedHand(me.hand, handOrder), me.hand.map { it.id }.toSet(), lastHand[0], pendingCast(st)?.id, leftAt)
+            lastHand[0] = hand.map { it.id }
             // The hand: 66 px cards on a phone; on a big board they grow with the screen (site: 109 px at 840 tall, 104 at 800).
             val handW = if (large) (H.value * .13f).coerceIn(66f, 120f).dp else 66.du
             val handAnchors = LocalAnchors.current
@@ -984,6 +991,21 @@ internal fun orderedHand(hand: List<Card>, order: List<Int>): List<Card> {
     val arena = hand.withIndex().sortedWith(compareBy({ if (it.value.name.isNotEmpty() && it.value.isLand) 0 else 1 }, { if (it.value.name.isNotEmpty()) manaValue(it.value.manaCost) else Int.MAX_VALUE }, { it.index })).map { it.value }
     val at = order.withIndex().associate { (i, id) -> id to i }
     return arena.sortedWith(compareBy({ at[it.id] ?: Int.MAX_VALUE }, { arena.indexOf(it) }))
+}
+
+/**
+ * T6, Cancel: the card you were casting goes back to the place it left in [ordered]. [leftAt] remembers, for the card waiting on the
+ * stack ([pending]), its index in the hand as last shown ([was]); while it is back in the hand it keeps that index, and the
+ * entry goes once it leaves the hand again for any other reason.
+ */
+internal fun returnToPlace(ordered: List<Card>, inHand: Set<Int>, was: List<Int>, pending: Int?, leftAt: MutableMap<Int, Int>): List<Card> {
+    if (pending != null && pending !in inHand && pending in was) leftAt[pending] = was.indexOf(pending)
+    leftAt.keys.retainAll { it == pending || it in inHand }
+    val back = ordered.filter { it.id in leftAt }
+    if (back.isEmpty()) return ordered
+    val out = ordered.filter { it.id !in leftAt }.toMutableList()
+    for (c in back.sortedBy { leftAt.getValue(it.id) }) out.add(leftAt.getValue(c.id).coerceIn(0, out.size), c)
+    return out
 }
 
 // ---- Battlefield ----

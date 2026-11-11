@@ -122,6 +122,10 @@ class TableLookT5ShotTest {
             leg(anchors, on, Director.Travel(armor.id, armor.name, true, Director.Leg.TO_HOST, "c${giant.id}", 380), "aura-to-host", size,
                 { stackAt }, { anchors.rects.getValue("c${giant.id}") })
 
+            // 0.4.59 T6, Cancel: from the stack back to its own place in your hand.
+            leg(anchors, with(), Director.Travel(elves.id, elves.name, true, Director.Leg.BACK, "hand${elves.id}", Director.BACK_MS), "cancel-to-hand", size,
+                { stackAt }, { anchors.rects.getValue("hand${elves.id}") })
+
             // The CPU's spell: out of its seat to the stack.
             val cpuUp = with(hand = rest, stack = listOf(item(cpuGuide, base.cpu.id)))
             leg(anchors, cpuUp, Director.Travel(cpuGuide.id, cpuGuide.name, false, Director.Leg.TO_STACK, "stackcard", 440), "cpu-to-stack", size,
