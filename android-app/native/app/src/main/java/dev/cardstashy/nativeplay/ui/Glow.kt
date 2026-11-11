@@ -105,7 +105,7 @@ object Glow {
 
     /**
      * Mobile table M2: while a target question offers permanents on both sides of the table, each offered one says whose it is
-     * (true: yours, a blue ring and YOURS; false: the CPU's, a red ring and CPU'S). Whose it is comes from the table state
+     * (true: yours, a blue ring and your seat name; false: the other side's, a red ring and its seat name). Whose it is comes from the table state
      * (its controller), never from a rules judgment. One side only, or no target question: empty, the ring alone.
      */
     fun sideTags(st: MatchState, live: Boolean): Map<Int, Boolean> {

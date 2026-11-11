@@ -31,8 +31,9 @@ import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
 /**
- * Mobile table M2 at phone size: a target question that offers both sides draws YOURS (blue) on your offered creatures and
- * CPU'S (red) on the CPU's; the same question with only the CPU's creatures offered draws no tag. Pictures in table-look/m2-*.png.
+ * Mobile table M2 at phone size: a target question that offers both sides draws your seat name (blue) on your offered creatures
+ * and the other side's (red, "CPU") on its own (Randall 11 Nov 22:54Z: the names, not YOURS and CPU'S); a long name is cut so the
+ * tag is never wider than its tile; the same question with only the CPU's creatures offered draws no tag. Pictures in table-look/m2-*.png.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -70,6 +71,11 @@ class MobileM2ShotTest {
         assertTrue("YOURS over ${mine.name}: ${tagPixels(both, my, SideYours.toArgb())}", tagPixels(both, my, SideYours.toArgb()) > 300)
         assertTrue("CPU'S over ${theirs.name}: ${tagPixels(both, cpu, SideCpu.toArgb())}", tagPixels(both, cpu, SideCpu.toArgb()) > 300)
         assertEquals("no red on yours", 0, tagPixels(both, my, SideCpu.toArgb()))
+        // A long user name is cut with …: its tag is never wider than its tile.
+        val long = Anchors()
+        draw(long, base.copy(players = base.players.map { p -> if (p.id == base.viewer) p.copy(name = "Randall of the very long user name") else p }), "m2-long-name")
+        val tag = long.rects.getValue("sidetag${mine.id}"); val tile = long.rects.getValue("c${mine.id}")
+        assertTrue("the tag keeps to its tile: $tag $tile", tag.width <= tile.width + 1f && tag.left >= tile.left - 1f)
         // One side only: the ring, no tag (and no red: the CPU's creature keeps the target ring it had).
         val cpuOnly = base.copy(selection = base.selection.copy(targetCards = base.selection.targetCards.filter { id -> base.cpu.battlefield.any { it.id == id } }.toSet()))
         val one = draw(Anchors(), cpuOnly, "m2-one-side")

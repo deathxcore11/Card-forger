@@ -7,7 +7,7 @@ import org.junit.Test
 
 /**
  * Mobile table M2 (specs/mobile-table-arena-parity-brief.md): Randall gave the CPU's creature his +1/+1 counter because nothing
- * said whose each offered creature was. While a target question offers permanents on both sides, each says YOURS or CPU'S;
+ * said whose each offered creature was. While a target question offers permanents on both sides, each says whose it is (its owner's seat name);
  * whose it is comes from the card's controller in the table state.
  */
 class SideTagsTest {

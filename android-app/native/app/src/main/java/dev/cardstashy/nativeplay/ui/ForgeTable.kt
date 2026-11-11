@@ -502,8 +502,10 @@ fun ForgeBoard(
             PayEmbers(payLight)
             // P5: the attackers this board declared, in the order they step up.
             val declared = remember(st.revision) { lastBoard[0]?.takeIf { lastBoard[1] === st }?.let { declareOrder(it, st) } ?: emptyList() }
+            // M2 (Randall 11 Nov 22:54Z): the tags carry the seat names the table already shows, yours and the other side's.
+            val seatName = dev.cardstashy.nativeplay.account.Account.profile.collectAsState().value?.name?.takeIf { it.isNotBlank() }
             androidx.compose.runtime.CompositionLocalProvider(LocalUntapRipple provides (if (Motion.still || fx.reduced) emptyList() else ripple), LocalDeclare provides declared, LocalAttackInput provides (live && st.inputType == "InputAttack"),
-                LocalSideTags provides Glow.sideTags(st, live), LocalPayLight provides payLight, LocalHandCarry provides payLight.isNotEmpty(), LocalAbilityOpen provides abilityOpen, LocalPayInput provides (live && Glow.paying(st)),
+                LocalSideTags provides Glow.sideTags(st, live), LocalSideNames provides (sideName(seatName ?: me.name) to sideName(cpu.name)), LocalPayLight provides payLight, LocalHandCarry provides payLight.isNotEmpty(), LocalAbilityOpen provides abilityOpen, LocalPayInput provides (live && Glow.paying(st)),
                 LocalAttackNumbers provides (if (blockingNow && attackersNow.size > 1) attackersNow.withIndex().associate { (i, c) -> c.id to i + 1 } else emptyMap()),
                 LocalBlockDrag provides (if (blockingNow) blockDrag else null)) {
                 // 0.4.60 Z1: the stack lives in the right strip and never takes board width (walk line 27). Only the side dock, which
@@ -1681,11 +1683,13 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
                     .border(1.dp, Color(0xFFFF8A6A), RoundedCornerShape(999.dp)).padding(horizontal = 7.du, vertical = 2.du))
         }
     }
-    // M2: YOURS or CPU'S on the top edge of an offered target, in its ring's colour.
+    // M2: whose it is on the top edge of an offered target, in its ring's colour: the owner's seat name (it said YOURS or CPU'S).
     if (side != null && pileTop) {
         Box(modifier.size(w, h).zIndex(22f)) {
-            Text(if (side) SIDE_YOURS else SIDE_CPU, maxLines = 1, softWrap = false, style = sans(sp(10f), FontWeight.ExtraBold, Color(0xFF0B0D12)).copy(letterSpacing = .06.em),
-                modifier = Modifier.align(Alignment.TopCenter).offset(y = (-9).du).wrapContentWidth(unbounded = true).clip(RoundedCornerShape(999.dp))
+            // The owner's name (your user name, CPU, a friend's name), cut with … so the tag is never wider than the tile.
+            val names = LocalSideNames.current
+            Text(if (side) names.first else names.second, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, style = sans(sp(10f), FontWeight.ExtraBold, Color(0xFF0B0D12)).copy(letterSpacing = .06.em),
+                modifier = Modifier.align(Alignment.TopCenter).offset(y = (-9).du).widthIn(max = w).anchorRect("sidetag${card.id}").clip(RoundedCornerShape(999.dp))
                     .background(if (side) SideYours else SideCpu).border(1.dp, Color(0xCC0B0D12), RoundedCornerShape(999.dp)).padding(horizontal = 6.du, vertical = 1.5f.du))
         }
     }
@@ -2995,8 +2999,10 @@ internal fun askerBody(a: Asker, plain: String): String {
 }
 /** M2: the words on an offered target while a question offers both sides. */
 internal const val ABILITY_LABEL = "ABILITY"
-internal const val SIDE_YOURS = "YOURS"
-internal const val SIDE_CPU = "CPU'S"
+/** M2: a seat's name as its tag wears it (capitals, as the squares do). */
+internal fun sideName(name: String): String = name.trim().uppercase().ifEmpty { "PLAYER" }
+/** M2: the names on the tags, yours then the other side's. */
+internal val LocalSideNames = androidx.compose.runtime.compositionLocalOf { "YOU" to "CPU" }
 /** M1: what a spell or ability does is said in the question when it is this short; longer, the question says only what to pick. */
 internal const val ASK_TEXT_MAX = 90
 
