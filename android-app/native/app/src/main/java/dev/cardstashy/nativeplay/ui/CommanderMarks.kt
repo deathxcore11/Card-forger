@@ -40,6 +40,20 @@ internal object CommanderMarks {
     /** "Cmdr damage 7/21". */
     fun damageLine(d: CommanderDamage): String = "Cmdr damage ${d.damage}/$LETHAL"
 
+    /**
+     * Z7 review: the lines for a square. One line reads "Cmdr damage 7/21"; with two or more (partners, a pod) each names its
+     * source instead, "Talrand 7/21" (the commander's name up to its comma, at most [maxName] letters), so they can be told apart.
+     */
+    fun damageLines(shown: List<CommanderDamage>, maxName: Int = 12): List<String> =
+        if (shown.size <= 1) shown.map(::damageLine)
+        else shown.map { "${shortName(it.commander, maxName)} ${it.damage}/$LETHAL" }
+
+    /** "Talrand, Sky Summoner" to "Talrand"; a long first part is cut to [max] letters with an ellipsis. */
+    fun shortName(name: String, max: Int = 12): String {
+        val head = name.substringBefore(',').trim().ifEmpty { "Cmdr" }
+        return if (head.length <= max) head else head.take(max - 1).trimEnd() + "\u2026"
+    }
+
     /** The crown on a battlefield tile: the card is a commander (Forge's flag) and on the battlefield. */
     fun crowned(c: Card): Boolean = c.commander && c.zone == "Battlefield"
 }

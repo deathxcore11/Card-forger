@@ -77,4 +77,13 @@ class CommanderMarksTest {
         assertEquals(listOf("A", "C"), CommanderMarks.damageShown(pod).map { it.commander })
         assertTrue(CommanderMarks.damageShown(st.me.copy(commanderDamage = emptyList())).isEmpty())
     }
+
+    /** Z7 review: two lines in one square (partners, a pod) each name their commander; one line keeps the brief's words. */
+    @Test fun twoDamageLinesNameTheirSource() {
+        val two = listOf(CommanderDamage(2, "Talrand, Sky Summoner", 7), CommanderDamage(3, "Kraum, Ludevic's Opus", 3))
+        assertEquals(listOf("Talrand 7/21", "Kraum 3/21"), CommanderMarks.damageLines(two))
+        assertEquals(listOf("Cmdr damage 7/21"), CommanderMarks.damageLines(two.take(1)))
+        assertEquals("Asmoranomar\u2026", CommanderMarks.shortName("Asmoranomardicadaistinaculdacar"))
+        assertTrue(CommanderMarks.damageLines(emptyList()).isEmpty())
+    }
 }

@@ -1655,7 +1655,7 @@ private fun PlayerSquare(p: Player, box: ZoneLayout.Box, who: String, active: Bo
         Box(Modifier.offset(x = m(51f), y = m(48f))) { grave(m(19f), m(19f / .716f), maxOf(10f, 11f * s)) }
         if (cmdr.isNotEmpty()) Column(Modifier.offset(x = m(8f), y = (box.h - cmdrRoom + 1f).dp).anchorRect("cmdrdmg${p.id}")) {
             // .czp em: 700, #ffd98a, one line each.
-            for (c in cmdr) Text(CommanderMarks.damageLine(c), style = sans(cmdrSp.sp, FontWeight.Bold, Color(0xFFFFD98A)).copy(fontFeatureSettings = "tnum", lineHeight = (cmdrSp * 1.3f).sp),
+            for (line in CommanderMarks.damageLines(cmdr)) Text(line, style = sans(cmdrSp.sp, FontWeight.Bold, Color(0xFFFFD98A)).copy(fontFeatureSettings = "tnum", lineHeight = (cmdrSp * 1.3f).sp),
                 maxLines = 1, softWrap = false)
         } else anchors?.rects?.remove("cmdrdmg${p.id}")
     }
