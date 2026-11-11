@@ -1,6 +1,7 @@
 package dev.cardstashy.nativeplay.ui
 
 import androidx.compose.ui.draw.drawWithContent
+import dev.cardstashy.nativeplay.match.BoardFoil
 import androidx.compose.runtime.SideEffect
 import dev.cardstashy.nativeplay.engine.Ref
 import dev.cardstashy.nativeplay.engine.GameEvent
@@ -1213,6 +1214,12 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         else -> null
     }
     val padHere = remember(card.id, padA) { PadActs(a = padA, y = PadAct("Inspect") { inspect(cardNow) }) }
+    // 0.4.59 T10: the light board foil, on your foil printings only; never while the tile wears a pick, target or trigger ring.
+    val trigger = LocalTrigger.current
+    val foil = BoardFoil.wears(card.name, if (card.owner == card.controller) mineSide else !mineSide) &&
+        mark !in FOIL_OFF && trigger?.sourceId != card.id
+    // The band plays once when the card lands and once when it takes the ring (the tile's own kick on the board's one clock).
+    val foilKick = remember(card.id) { androidx.compose.runtime.mutableLongStateOf(fx?.now?.longValue ?: 0L) }
     if (pileTop) androidx.compose.runtime.DisposableEffect(card.id, mineSide) {
         val zone = if (mineSide) TableZones.mine else TableZones.theirs
         zone[card.id] = padFocus
@@ -1248,6 +1255,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
             }
         }
         .aimOn("c${card.id}")
+        .then(if (foil) Modifier.onFocusChanged { if (it.isFocused) foilKick.longValue = fx?.now?.longValue ?: 0L } else Modifier)
         .then(if (pileTop) Modifier.onFocusChanged { if (it.isFocused) { if (mineSide) { TableZones.lastMine = card.id; TableZones.at = 1 } else { TableZones.lastTheirs = card.id; TableZones.at = 2 } } }
             .padActs(padHere).matchPadTap(padSource, padFocus) { tap?.invoke() ?: inspect(card) } else Modifier)
         .clip(shape).background(Color(0xFF141418))
@@ -1256,7 +1264,8 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         // A big board (play-forge-table.css: --nh clamp(15, piece·.15, 22), --nf clamp(11, piece·.083, 13)): the name strip over a dark fade, the art below it.
         // 0.4.59 T1: tiles are sized from the screen, so the strip follows the tile (17 % of it) and a small tile shows art only.
         val nh = piece?.let { if (h < 44.dp) null else (h.value * .17f).coerceIn(12f, 24f).dp }
-        Box(Modifier.fillMaxSize().padding(start = 2.du, end = 2.du, bottom = 2.du, top = nh?.let { it + 3.dp } ?: 2.du).clip(RoundedCornerShape(9.du))) {
+        Box(Modifier.fillMaxSize().padding(start = 2.du, end = 2.du, bottom = 2.du, top = nh?.let { it + 3.dp } ?: 2.du).clip(RoundedCornerShape(9.du))
+            .then(if (foil) Modifier.boardFoil(fx, card.id, card.tapped) { foilKick.longValue } else Modifier)) {
             CardImage(card.name, Modifier.fillMaxSize(), crop = true) { CardFrame(card.name, card, Modifier.fillMaxSize(), crop = true) }
         }
         // A card under the top of its pile: art at brightness .78, no name.
@@ -1320,6 +1329,32 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
             .padding(horizontal = 5.du), contentAlignment = Alignment.Center) {
             Text("×$count", style = sans(sp(11f), FontWeight.ExtraBold, Palette.Gold).copy(fontFeatureSettings = "tnum"))
         }
+    }
+}
+
+/** The rings that keep their meaning clean: a tile wearing one shows no foil (0.4.59 T10). */
+private val FOIL_OFF = setOf(Mark.PICKED, Mark.TARGET, Mark.DISCARD, Mark.PICKABLE, Mark.PLAYABLE)
+private val FOIL_SHEEN = listOf(Color(0xFFFFB8DA), Color(0xFFB8E6FF), Color(0xFFFFE7A6), Color(0xFFB9F2D6), Color(0xFFFFB8DA))
+
+/**
+ * 0.4.59 T10, the board's light foil, drawn over the art and inside it (clipped with it; nothing outside the tile, no glow): one soft
+ * four-colour sheen at 13 % drifting corner to corner over 9 s and back, and a slanted band of white light a third of the tile wide
+ * that crosses in 2.2 s once every 8 s from the tile's own start. One clock for the board (the effects layer's frame clock), read
+ * only while drawing. Tapped: a third as strong. Reduced motion or Effects Minimal: the sheen stands still and the band rests.
+ */
+private fun Modifier.boardFoil(fx: Battlefield?, id: Int, tapped: Boolean, kick: () -> Long): Modifier = drawWithContent {
+    drawContent()
+    val t = fx?.now?.longValue ?: 0L
+    val still = fx == null || fx.reduced || fx.low || Motion.still
+    val k = if (tapped) BoardFoil.TAPPED else 1f
+    val w = size.width; val h = size.height
+    val p = if (still) .5f else BoardFoil.sheen(t)
+    val sx = -w * (1f - p); val sy = -h * (1f - p)
+    drawRect(Brush.linearGradient(FOIL_SHEEN, start = Offset(sx, sy), end = Offset(sx + 2f * w, sy + 2f * h)), alpha = .13f * k)
+    if (!still) BoardFoil.band(t, id, kick())?.let { q ->
+        val bw = w / 3f; val cx = -bw + q * (w + 2f * bw)
+        drawRect(Brush.linearGradient(0f to Color.Transparent, .5f to Color.White.copy(alpha = .30f), 1f to Color.Transparent,
+            start = Offset(cx - bw / 2f, 0f), end = Offset(cx + bw / 2f, bw * .36f)), alpha = k)
     }
 }
 

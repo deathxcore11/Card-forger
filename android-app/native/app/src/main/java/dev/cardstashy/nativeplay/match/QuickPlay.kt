@@ -98,6 +98,7 @@ object QuickPlay {
         if (pick is Pick.Friend) {
             // The host's engine has the whole card list and checked both decks when the room opened; nothing to load here but your pictures.
             val youRows = rows(pick.raw)
+            BoardFoil.arm(youRows) // 0.4.59 T10: your foil rows, for the board's light foil.
             return@withContext Setup.Ready("", Plate(pick.name, "You", pick.face), Plate(pick.friendName ?: "Friend", "Friend · ${pick.format}", null), youRows, listOfNotNull(pick.face), CardArt.knows(youRows.map { it.first }))
         }
         // The engine is usually ready long before a deck is picked; this only waits on a cold start.
@@ -122,6 +123,7 @@ object QuickPlay {
         }
         val cpuDeck: JsonObject = cpu ?: return@withContext Setup.Failed("Couldn’t load a $format opponent. Check your connection and try again.")
         val youRows = rows(you); val cpuRows = rows(cpuDeck)
+        BoardFoil.arm(youRows) // 0.4.59 T10: your foil rows, for the board's light foil (the CPU's lists name no finish).
         // Meta lists are named by their key cards ("Karn, the Great Creator · Expedition Map"): the plate shows the first.
         val cpuName = cpuDeck.get("name")?.asString?.substringBefore(" · ")?.trim()?.ifBlank { null } ?: "Tournament list"
         val faces = listOfNotNull(pick.face, faceOf(cpuDeck))
