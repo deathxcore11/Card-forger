@@ -417,7 +417,7 @@ fun ForgeBoard(
             fun tapOf(card: Card): (() -> Unit)? = if (blockingNow) blockTap(card) else if (live && (card.id in st.selection.cards || card.id in st.selection.targetCards || (card.id in st.selection.actionable && card.id !in blocked) || card.id in st.selection.chosenCards ||
                 ((st.inputType == "InputAttack" || st.inputType == "InputBlock") && card.controller == st.viewer && (card.attacking || card.blocking)))) ({ intents.card(card.id) }) else null
 
-            // 0.4.59 T3: the open sheet (a pile, a graveyard, or one card and its attachments), kept as a key so it reads the table as it is.
+            // 0.4.59 T3: the open sheet (a pile or a graveyard), kept as a key so it reads the table as it is.
             var open by remember { mutableStateOf<Open?>(null) }
             // A question that asks for a graveyard card opens that graveyard as the chooser (legal cards ringed); it closes again
             // when the question is answered, unless you opened it yourself.
@@ -428,7 +428,8 @@ fun ForgeBoard(
                 if (c != null) { if (open == null) { open = Open.Grave(c.owner); openedForAsk = true } }
                 else if (openedForAsk) { open = null; openedForAsk = false }
             }
-            val openPile: (List<Card>) -> Unit = { pile -> val c = pile.first(); open = if (pile.size > 1) Open.Group(c.controller, c.name) else Open.One(c.id); openedForAsk = false }
+            // 0.4.60 G3: a lone permanent opens the one inspect view (CardInspect, with its attachments); a pile opens the group sheet.
+            val openPile: (List<Card>) -> Unit = { pile -> when (val t = pileTap(pile)) { is PileTap.Inspect -> onInspect(t.card); is PileTap.Sheet -> { open = t.open; openedForAsk = false } } }
             val openGrave: (Int) -> Unit = { id -> open = Open.Grave(id); openedForAsk = false }
 
             val large = bigBoard(W, H)
@@ -1151,7 +1152,7 @@ internal fun returnToPlace(ordered: List<Card>, inHand: Set<Int>, was: List<Int>
 @Composable
 private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: Dp, cy: Dp, room: Dp, d: Du, markOf: (Card) -> Mark, tapOf: (Card) -> (() -> Unit)?, onInspect: (Card) -> Unit, mine: Boolean = false, lookup: (Int) -> Card? = { null }, piece: Dp? = null,
                          tile: Pair<Dp, Dp>? = null, fromLeft: Boolean = false, advance: Dp? = null,
-                         /** T3: a tap or long press on a pile with no game action opens it (the whole pile, or the lone card). */
+                         /** T3: a tap or long press on a pile with no game action opens it (G3: the whole pile; a lone card opens CardInspect). */
                          onPile: ((List<Card>) -> Unit)? = null, gap: Dp? = null, squeezed: Boolean = false) = with(d) {
     if (cards.isEmpty()) return@with
     val piles = pilesOf(cards, split, markOf, tapOf)

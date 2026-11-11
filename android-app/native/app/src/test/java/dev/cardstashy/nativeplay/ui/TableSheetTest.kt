@@ -6,7 +6,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** 0.4.59 T3 (faults 19 and 24): what the sheet shows for a pile, a graveyard and one card with what is attached to it. */
+/** 0.4.59 T3 (faults 19 and 24): what the sheet shows for a pile and a graveyard; 0.4.60 G3: a lone card inspects, with its attachments. */
 class TableSheetTest {
     private fun state(s: String) = MatchState.parse(javaClass.classLoader!!.getResource("table/snap-$s.json")!!.readText())!!
     private val st = state("crowded")
@@ -30,27 +30,37 @@ class TableSheetTest {
         assertEquals(listOf("Rampant Growth", "Lava Spike", "Shock"), sheetOf(st, Open.Grave(st.viewer))!!.cards.map { it.card.name })
     }
 
-    @Test fun oneCardThenEachAttachmentAttachedToIt() {
+    /**
+     * 0.4.60 G3 (glance-marks-brief.md "One inspect view") replaces T3's one-card sheet: a lone permanent opens CardInspect, which lists
+     * what is attached to it (was: Open.One gave a sheet of the card then each attachment "Attached to Hill Giant").
+     */
+    @Test fun aLonePermanentInspectsAPileOpensTheGroupSheet() {
+        val giant = st.me.battlefield.first { it.name == "Hill Giant" }
+        assertEquals(PileTap.Inspect(giant), pileTap(listOf(giant)))
+        val forests = st.me.battlefield.filter { it.name == "Forest" && it.attachedTo == null && it.attachments.isEmpty() && it.counters.isEmpty() }
+        assertTrue(forests.size > 1)
+        val t = pileTap(forests)
+        assertEquals(PileTap.Sheet(Open.Group(st.viewer, "Forest")), t)
+        // The pile still opens the same group sheet as before.
+        assertEquals("Your Forest ×5", sheetOf(st, (t as PileTap.Sheet).open)!!.title)
+    }
+
+    @Test fun theInspectViewListsEachAttachmentOfTheCard() {
         val giant = st.me.battlefield.first { it.name == "Hill Giant" }
         val aura = giant.copy(id = 990, name = "Ethereal Armor", type = "Enchantment — Aura", power = null, toughness = null, attachedTo = giant.id)
-        val me = st.me.copy(battlefield = st.me.battlefield.map { if (it.id == giant.id) it.copy(attachments = listOf(990)) else it } + aura)
+        val me = st.me.copy(battlefield = st.me.battlefield.map { if (it.id == giant.id) it.copy(attachments = listOf(990, 4242)) else it } + aura)
         val s2 = st.copy(players = st.players.map { if (it.id == st.viewer) me else it })
-        val s = sheetOf(s2, Open.One(giant.id))!!
-        assertEquals("Hill Giant", s.title)
-        assertEquals("1 attached", s.sub)
-        assertEquals(listOf("Hill Giant", "Ethereal Armor"), s.cards.map { it.card.name })
-        assertEquals("Now 3/3", s.cards[0].note)
-        assertEquals("Attached to Hill Giant", s.cards[1].note)
-        // A lone tapped card says so.
-        val tapped = st.me.battlefield.first { it.tapped }
-        assertEquals("Tapped", sheetOf(st, Open.One(tapped.id))!!.sub)
+        // In Forge's order; an id no longer on the table (4242) is skipped.
+        assertEquals(listOf("Ethereal Armor"), attachedOf(s2, s2.card(giant.id)!!).map { it.name })
+        // A card with nothing attached, a card off the battlefield, or no table: nothing listed.
+        assertTrue(attachedOf(s2, s2.me.battlefield.first { it.name == "Forest" }).isEmpty())
+        assertTrue(attachedOf(s2, s2.me.graveyard.first()).isEmpty())
+        assertTrue(attachedOf(null, s2.card(giant.id)!!).isEmpty())
     }
 
     @Test fun whatLeftTheTableClosesTheSheet() {
-        assertNull(sheetOf(st, Open.One(4242)))
         assertNull(sheetOf(st, Open.Group(st.viewer, "Black Lotus")))
-        // A graveyard card is not "one permanent".
-        assertNull(sheetOf(st, Open.One(st.me.graveyard.first().id)))
+        assertNull(sheetOf(st, Open.Grave(4242)))
     }
 
     @Test fun aQuestionThatAsksForAGraveyardCardRingsItAndOnlyWhileLive() {

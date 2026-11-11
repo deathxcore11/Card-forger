@@ -210,7 +210,10 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
         // Two screens: a card you look at opens on the bottom screen, so the table stays in full view on top (B closes it).
         // Start still opens the match menu from an open inspect (U8: on two screens the ring can't come down to it).
         val inspectStart = PadAct("Menu") { inspect = null; matchMenu.open = true }
-        inspect?.let { c -> if (DualScreen.active) BottomScreen { CardInspect(c, shown?.viewer, inspectStart, beside = true) { inspect = null } } else CardInspect(c, shown?.viewer, inspectStart) { inspect = null } }
+        // 0.4.60 G3: the one inspect view lists what is attached to the card; a tap on one of those opens it in the same view.
+        inspect?.let { c -> val att = attachedOf(shown, shown?.card(c.id)?.takeIf { it.zone == c.zone } ?: c); val openAtt: (Card) -> Unit = { inspect = it }
+            if (DualScreen.active) BottomScreen { CardInspect(c, shown?.viewer, inspectStart, beside = true, attached = att, onAttached = openAtt) { inspect = null } }
+            else CardInspect(c, shown?.viewer, inspectStart, attached = att, onAttached = openAtt) { inspect = null } }
         if (menu) Menu(onConcede = { menu = false; matchMenu.ask = "concede" }, onLeave = { menu = false; matchMenu.ask = "leave" }, onClose = { menu = false })
         MatchLeaveConfirm(matchMenu)
         if (stage == Stage.FINISHED) shown?.let { Result(it, audio, onHome, onRematch, resultNote, endReason(it, controller.conceded)) }

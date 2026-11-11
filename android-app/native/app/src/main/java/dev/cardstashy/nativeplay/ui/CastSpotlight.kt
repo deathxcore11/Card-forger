@@ -163,7 +163,7 @@ fun CastSpotlight(s: Spotlight, modifier: Modifier = Modifier, onTap: () -> Unit
 }
 
 @Composable
-private fun GlassBox(s: Spotlight, w: Dp, h: Dp, timer: Float) {
+private fun GlassBox(s: Spotlight, w: Dp, h: Dp, timer: Float, attached: List<Card> = emptyList(), onAttached: (Card) -> Unit = {}) {
     val c = s.card
     val shape = RoundedCornerShape(18.dp)
     val creature = "Creature" in c.type && c.power != null && c.toughness != null
@@ -200,6 +200,8 @@ private fun GlassBox(s: Spotlight, w: Dp, h: Dp, timer: Float) {
                 lines.forEach { l -> SymbolLine(l) }
             }
         }
+        // 0.4.60 G3: what is attached to the card (auras, equipment), under the rules as small cards; a tap on one inspects it.
+        if (attached.isNotEmpty()) AttachedRow(c, attached, onAttached)
         val kws = c.keywords.map { it }.distinct().mapNotNull { k -> hintFor(k)?.let { k to it } }.take(3)
         kws.forEach { (k, hint) ->
             val inline = HashMap<String, InlineTextContent>()
@@ -210,6 +212,27 @@ private fun GlassBox(s: Spotlight, w: Dp, h: Dp, timer: Float) {
         if (s.durationMs > 0) Box(Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(2.dp)).background(Color(0x1FFFFFFF))) {
             Box(Modifier.fillMaxWidth(timer).height(3.dp).background(Brush.horizontalGradient(listOf(Color(0xFFF7DA97), Color(0xFFE8B95B)))))
         }
+    }
+}
+
+/** 0.4.60 G3: the cards attached to [host], each a small card with its name under it; a tap on one opens it in the same view. */
+@Composable
+private fun AttachedRow(host: Card, attached: List<Card>, onAttached: (Card) -> Unit) {
+    Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0x1FFFFFFF)))
+    Text("ATTACHED", style = sans(11.sp, FontWeight.Bold, GOLD).copy(letterSpacing = .16.em))
+    Row(Modifier.fillMaxWidth().anchorRect("inspectAttached${host.id}"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        attached.take(4).forEach { a ->
+            val shape = RoundedCornerShape(5.dp)
+            Column(Modifier.width(58.dp).anchorRect("inspectAtt${a.id}").semantics { contentDescription = "${a.name}, attached to ${host.name}" }
+                .clickable(remember { MutableInteractionSource() }, null) { onAttached(a) }, horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(Modifier.size(52.dp, 72.dp).clip(shape).border(1.dp, Color(0x66E9C98A), shape).background(Color(0xFF141418))) {
+                    if (!a.hidden) CardImage(a.name, Modifier.fillMaxSize().padding(1.dp), contentScale = ContentScale.Fit, shape = shape)
+                }
+                Spacer(Modifier.height(3.dp))
+                Text(a.name, style = sans(10.sp, FontWeight.Bold, Color(0xFFC9C2B2)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+        if (attached.size > 4) Text("+${attached.size - 4}", style = sans(12.sp, FontWeight.Bold, Color(0xFFC9C2B2)), modifier = Modifier.align(Alignment.CenterVertically))
     }
 }
 
@@ -237,6 +260,8 @@ private fun SymbolLine(line: String) {
  */
 @Composable
 fun CardInspect(card: Card, viewer: Int?, start: PadAct? = null,
+    /** 0.4.60 G3: the cards attached to [card] (attachedOf), listed under the rules; a tap on one calls [onAttached] to inspect it. */
+    attached: List<Card> = emptyList(), onAttached: (Card) -> Unit = {},
     /** Two screens: the card shows on the bottom screen beside play. It takes no ring, holds no clock and hides no table button (test4: X on the gold and the clock died while it stayed open). */
     beside: Boolean = false, onClose: () -> Unit) {
     val yours = viewer == null || card.controller == viewer
@@ -273,7 +298,7 @@ fun CardInspect(card: Card, viewer: Int?, start: PadAct? = null,
             if (boxW >= 200.dp) {
                 val dens = androidx.compose.ui.platform.LocalDensity.current
                 androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(dens.density * k, dens.fontScale)) {
-                    GlassBox(s, boxW / k, cardH / k, 0f)
+                    GlassBox(s, boxW / k, cardH / k, 0f, attached, onAttached)
                 }
             }
             Box(Modifier.size(cardW, cardH).drawBehind {

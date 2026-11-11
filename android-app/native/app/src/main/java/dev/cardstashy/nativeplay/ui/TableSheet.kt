@@ -47,7 +47,9 @@ import dev.cardstashy.nativeplay.engine.Card
 import dev.cardstashy.nativeplay.engine.MatchState
 
 /**
- * 0.4.59 T3 (specs/table-look-0459.md, faults 19 and 24): tap a pile, a graveyard or a single permanent to see its whole cards.
+ * 0.4.59 T3 (specs/table-look-0459.md, faults 19 and 24): tap a pile or a graveyard to see its whole cards.
+ * 0.4.60 G3 (glance-marks-brief.md, "One inspect view"): a single permanent no longer opens a sheet of its own; a tap on it with no
+ * game action opens CardInspect, the described view a hold and pad A open, and its attachments are listed there ([attachedOf]).
  *
  * What is open is kept as a key ([Open]), never as cards, so the sheet always reads the table as it is now: a card that dies
  * leaves it, a card that taps turns in it. [sheetOf] is pure and unit tested (TableSheetTest); [TableSheetView] draws it.
@@ -55,8 +57,6 @@ import dev.cardstashy.nativeplay.engine.MatchState
 internal sealed interface Open {
     /** Every card of [name] that [controller] has on the battlefield, standing on its own (no attachments, no counters). */
     data class Group(val controller: Int, val name: String) : Open
-    /** One permanent and what is attached to it. */
-    data class One(val id: Int) : Open
     /** A player's graveyard; the sheet has a tab for each player's. */
     data class Grave(val player: Int) : Open
 }
@@ -74,7 +74,23 @@ internal fun legalNow(st: MatchState, live: Boolean): Set<Int> = if (!live) empt
 internal fun graveChoices(st: MatchState, live: Boolean): List<Card> { val l = legalNow(st, live); return st.players.flatMap { it.graveyard }.filter { it.id in l } }
 
 private fun whose(st: MatchState, id: Int) = if (id == st.viewer) "Your" else if (st.players.size <= 2) "CPU's" else (st.players.firstOrNull { it.id == id }?.name?.let { "$it's" } ?: "CPU's")
-private fun pt(c: Card) = if (c.power != null && c.toughness != null) "${c.power}/${c.toughness}" else null
+
+/** 0.4.60 G3: what a tap with no game action (or a long press) on a battlefield pile opens. */
+internal sealed interface PileTap {
+    /** A lone permanent: the one inspect view (CardInspect), with what is attached to it. */
+    data class Inspect(val card: Card) : PileTap
+    /** A pile of two or more (xN): the group sheet. */
+    data class Sheet(val open: Open) : PileTap
+}
+
+internal fun pileTap(pile: List<Card>): PileTap {
+    val c = pile.first()
+    return if (pile.size > 1) PileTap.Sheet(Open.Group(c.controller, c.name)) else PileTap.Inspect(c)
+}
+
+/** The cards attached to [card] as the table has them now (auras, equipment), in Forge's order; what has left the table is skipped. */
+internal fun attachedOf(st: MatchState?, card: Card): List<Card> =
+    if (st == null || card.zone != "Battlefield") emptyList() else card.attachments.mapNotNull { st.card(it) }.filter { it.zone == "Battlefield" }
 
 /** The sheet for [open] on [st], or null when what was opened has left the table (the sheet closes). */
 internal fun sheetOf(st: MatchState, open: Open, live: Boolean = false): Sheet? {
@@ -88,12 +104,6 @@ internal fun sheetOf(st: MatchState, open: Open, live: Boolean = false): Sheet? 
             // Ready first, then the tapped ones turned (the brief: "ready first, tapped ones turned with Tapped").
             Sheet("${whose(st, open.controller)} ${open.name} ×${all.size}", "${all.size - tapped} ready, $tapped tapped",
                 all.sortedBy { if (it.tapped) 1 else 0 }.map { sc(it, if (it.tapped) "Tapped" else "Ready", it.tapped) })
-        }
-        is Open.One -> {
-            val c = st.card(open.id)?.takeIf { it.zone == "Battlefield" } ?: return null
-            val attached = c.attachments.mapNotNull { st.card(it) }
-            val sub = if (attached.isNotEmpty()) "${attached.size} attached" else if (c.tapped) "Tapped" else ""
-            Sheet(c.name, sub, listOf(sc(c, if (c.tapped) "Tapped" else pt(c)?.let { "Now $it" } ?: c.name, c.tapped)) + attached.map { sc(it, "Attached to ${c.name}") })
         }
         is Open.Grave -> {
             val p = st.players.firstOrNull { it.id == open.player } ?: return null
