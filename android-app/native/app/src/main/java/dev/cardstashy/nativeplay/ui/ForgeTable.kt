@@ -880,10 +880,22 @@ fun ForgeBoard(
                     val countY0 = if (attackAll) quietTop - 8.du - 32.du else quietTop + (btnH - 32.du) / 2
                     // Z1 review: where that spot meets a zone box (on a phone the board's corner ends 2 du into the quiet row), the count
                     // drops to just under that box, at most touching the gold button's ring.
-                    val countY = listOfNotNull(zones.board, zones.handTray, zones.handChip)
-                        .filter { it.right.dp > countRight - 32.du && it.x.dp < countRight && it.y.dp < countY0 + 32.du && it.bottom.dp > countY0 }
-                        .maxOfOrNull { it.bottom.dp }?.takeIf { it + 32.du <= goldTop - 6.du + .5.dp }?.let { maxOf(it, countY0) } ?: countY0
-                    if (goldShown) TurnCount(d.u, Modifier.align(Alignment.TopEnd).offset(x = -(W - countRight), y = countY))
+                    val zoneBoxes = listOfNotNull(zones.board, zones.handTray, zones.handChip)
+                    fun meets(r: Dp, y: Dp) = zoneBoxes.filter { it.right.dp > r - 32.du && it.x.dp < r && it.y.dp < y + 32.du && it.bottom.dp > y }
+                    val under = meets(countRight, countY0).maxOfOrNull { it.bottom.dp }?.takeIf { it + 32.du <= goldTop - 6.du + .5.dp }?.let { maxOf(it, countY0) }
+                    // Z6 review: when that does not fit (the hand tray runs down beside the quiet row, crowded 884x796), the count
+                    // slides right to clear the box by 4 du if it still keeps 12 du off the quiet pill and inside the window; else it
+                    // goes one row higher at the right edge, as with Attack all.
+                    val clash = meets(countRight, countY0)
+                    val slid = clash.maxOfOrNull { it.right.dp }?.let { it + 4.du + 32.du }
+                        ?.takeIf { r -> r <= W - edge - dotsW && meets(r, countY0).isEmpty() && (!quietShown || r + 12.du <= W - edge - dotsW - maxOf(quietW, quietWords)) }
+                    val (countX, countY) = when {
+                        clash.isEmpty() -> countRight to countY0
+                        under != null -> countRight to under
+                        slid != null -> slid to countY0
+                        else -> (W - edge - dotsW) to (quietTop - 8.du - 32.du)
+                    }
+                    if (goldShown) TurnCount(d.u, Modifier.align(Alignment.TopEnd).offset(x = -(W - countX), y = countY))
                 }
                 padX = when {
                     attackAll -> if (live && okOn) PadAct(ok) { intents.ok() } else null
