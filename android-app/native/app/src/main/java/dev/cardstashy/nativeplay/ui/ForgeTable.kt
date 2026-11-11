@@ -92,7 +92,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -298,13 +297,6 @@ internal fun chromeU(w: Dp, h: Dp) = if (bigBoard(w, h)) 1f else minOf(w.value /
 /** A seat's commander for its portrait's inspect, always named as that seat's card (CardInspect reads "CPU" or "You" from its controller). */
 internal fun commanderOf(p: Player): Card? = p.command.firstOrNull()?.let { if (it.controller < 0) it.copy(controller = p.id) else it }
 
-/** A button on the right reports its place (dp) in [into] under [key] while it is shown, so your back row can end before it. */
-private fun Modifier.reserveRight(key: String, into: MutableMap<String, Rect>): Modifier = composed {
-    val density = androidx.compose.ui.platform.LocalDensity.current
-    androidx.compose.runtime.DisposableEffect(key) { onDispose { into.remove(key) } }
-    onGloballyPositioned { c -> val b = c.boundsInRoot(); val r = Rect(b.left / density.density, b.top / density.density, b.right / density.density, b.bottom / density.density); if (into[key] != r) into[key] = r }
-}
-
 /** Records this element's box in root space under [key] when a table [Anchors] is provided (tests read the boxes to prove nothing overlaps). */
 @Composable
 internal fun Modifier.anchorRect(key: String): Modifier {
@@ -423,6 +415,20 @@ fun ForgeBoard(
             fun tapOf(card: Card): (() -> Unit)? = if (blockingNow) blockTap(card) else if (live && (card.id in st.selection.cards || card.id in st.selection.targetCards || (card.id in st.selection.actionable && card.id !in blocked) || card.id in st.selection.chosenCards ||
                 ((st.inputType == "InputAttack" || st.inputType == "InputBlock") && card.controller == st.viewer && (card.attacking || card.blocking)))) ({ intents.card(card.id) }) else null
 
+            // 0.4.59 T3: the open sheet (a pile, a graveyard, or one card and its attachments), kept as a key so it reads the table as it is.
+            var open by remember { mutableStateOf<Open?>(null) }
+            // A question that asks for a graveyard card opens that graveyard as the chooser (legal cards ringed); it closes again
+            // when the question is answered, unless you opened it yourself.
+            var openedForAsk by remember { mutableStateOf(false) }
+            val graveAsk = graveChoices(st, live).map { it.id }
+            LaunchedEffect(graveAsk) {
+                val c = graveAsk.firstOrNull()?.let { st.card(it) }
+                if (c != null) { if (open == null) { open = Open.Grave(c.owner); openedForAsk = true } }
+                else if (openedForAsk) { open = null; openedForAsk = false }
+            }
+            val openPile: (List<Card>) -> Unit = { pile -> val c = pile.first(); open = if (pile.size > 1) Open.Group(c.controller, c.name) else Open.One(c.id); openedForAsk = false }
+            val openGrave: (Int) -> Unit = { id -> open = Open.Grave(id); openedForAsk = false }
+
             // The battlefield band (46 du from the top to 61 du from the bottom); the two halves meet at its middle.
             val bandTop = 46.du; val bandBottom = H - 61.du
             val large = bigBoard(W, H)
@@ -444,8 +450,6 @@ fun ForgeBoard(
             // Nothing of the turn clock lies on the divider (table additions 5): it is a ring on the gold button and a line under the phase track.
 
             // While the side dock asks (it sits bottom right) your piles stand left of it (pilesX below), and the rows end before them.
-            // Buttons on the right that stand at your back row's height (dp, keyed by name): the row ends before them.
-            val rightReserve = remember { androidx.compose.runtime.mutableStateMapOf<String, Rect>() }
             val docked = live && st.failure == null && !st.finished && st.prompt?.let { p -> p.method != "order" && !p.method.startsWith("assign") && p.options.none { it.zone in setOf("Library", "Graveyard", "Exile") } } == true
             // CPU half: lands at the back, creatures at the front; yours mirrored.
             // A creature Forge says must attack this combat wears a tag until it is in the attack.
@@ -466,32 +470,42 @@ fun ForgeBoard(
                 // Review fix: the creature rows start clear of the CPU's piles (44 du in, two 33 du piles 8 du apart, then 6 du and the reach of
                 // a tapped tile's turned corner), and
                 // your back row ends before a button standing at its height on the right (Undo on a phone, the button row on a big
-                // board), as their own places report them (rightReserve).
+                // board). Their places are worked out here with the same numbers the buttons use below (undoM, rowM), so the
+                // first frame is already right; the widths are the most those buttons take (Undo 72 du, the row 300 dp).
                 val frontLeft = maxOf(W * TableGeometry.BOARD_X, if (pod) 0.dp else 44.du + 33.du * 2 + 8.du + 6.du + rowsG.cpuFront.height.dp * (TableGeometry.ASPECT * TableGeometry.TAPPED_SIDE))
                 val room = boardRight - lane - frontLeft
                 val backRoom = W * (TableGeometry.BOARD_W - TableGeometry.BACK_INSET) - lane
                 val frontX = frontLeft + room / 2
                 val backX = W * (TableGeometry.BOARD_X + TableGeometry.BACK_INSET)
-                val reserved = rightReserve.values.filter { r -> r.top < rowsG.myBack.bottom && r.bottom > rowsG.myBack.top }.minOfOrNull { it.left }
-                val myBackRoom = reserved?.let { minOf(backRoom, (it.dp - backX - 6.du).coerceAtLeast(backRoom / 2)) } ?: backRoom
+                val reserved = run {
+                    val foot = rowsG.myFront.centre.dp - 20.du + 46.du + 2.du + 16.du
+                    if (large) { val y = maxOf(H - 180.dp, foot + 14.dp); (W - 12.dp - 300.dp).takeIf { y < rowsG.myBack.bottom.dp && y + 48.dp > rowsG.myBack.top.dp } }
+                    else {
+                        val px = if (docked || st.stack.isNotEmpty()) W - 262.du else W - 120.du
+                        val low = maxOf(H - 94.du, foot + 4.du); val floor = H - 52.du - 6.du - 2.du - 36.du; val y = minOf(low, floor)
+                        val right = if (low <= floor || px + 78.du <= W - 106.du - 72.du || px >= W - 106.du) 106.du else W - px + 6.du
+                        (W - right - 72.du).takeIf { y < rowsG.myBack.bottom.dp && y + 36.du > rowsG.myBack.top.dp }
+                    }
+                }
+                val myBackRoom = reserved?.let { minOf(backRoom, (it - backX - 6.du).coerceAtLeast(backRoom / 2)) } ?: backRoom
                 val tiles = TableGeometry.tiles(rowsG, room.value, backRoom.value,
                     sizes(others(cpu.battlefield), 0), sizes(others(me.battlefield), 0),
                     sizes(backRow(cpu.battlefield), lands(cpu.battlefield).size), sizes(backRow(me.battlefield), lands(me.battlefield).size), twoLanes(cpu), twoLanes(me), myBackRoom.value)
                 val fw = tiles.frontW.dp; val fh = tiles.front.dp; val bw = tiles.backW.dp; val bh = tiles.back.dp
                 val tilePiece = fh / .9f
                 val advance = TableGeometry.advance(rowsG, tiles.front, 12.du.value).dp
-                PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, backX, rowsG.cpuBack.centre.dp, backRoom, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true)
-                PermanentRow(others(cpu.battlefield), false, 0, frontX, rowsG.cpuFront.centre.dp, room, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = fw to fh, advance = advance)
-                PermanentRow(others(me.battlefield), false, 0, frontX, rowsG.myFront.centre.dp, room, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = fw to fh, advance = advance)
-                PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, backX, rowsG.myBack.centre.dp, myBackRoom, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true)
+                PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, backX, rowsG.cpuBack.centre.dp, backRoom, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true, onPile = openPile)
+                PermanentRow(others(cpu.battlefield), false, 0, frontX, rowsG.cpuFront.centre.dp, room, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = fw to fh, advance = advance, onPile = openPile)
+                PermanentRow(others(me.battlefield), false, 0, frontX, rowsG.myFront.centre.dp, room, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = fw to fh, advance = advance, onPile = openPile)
+                PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, backX, rowsG.myBack.centre.dp, myBackRoom, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true, onPile = openPile)
             }
 
             // Piles: yours right of your back row, the CPU's left of its back row.
             // While the side dock asks (it sits bottom right, 168 du wide), your piles slide left of it so their cards and counts stay in view.
             val pilesX by androidx.compose.animation.core.animateDpAsState(if (docked || st.stack.isNotEmpty()) W - 262.du else W - 120.du, tween(if (Motion.still) 0 else 220), label = "pilesX")
             Piles(me, mine = true, Modifier.offset(x = pilesX, y = rowsG.myFront.centre.dp - 20.du), d, onInspect,
-                playable = { markOf(it) == Mark.PLAYABLE }) { intents.card(it.id) }
-            if (!pod) Piles(cpu, mine = false, Modifier.offset(x = 44.du, y = rowsG.cpuFront.top.dp), d, onInspect)
+                playable = { markOf(it) == Mark.PLAYABLE }, onCast = { intents.card(it.id) }, onGrave = openGrave)
+            if (!pod) Piles(cpu, mine = false, Modifier.offset(x = 44.du, y = rowsG.cpuFront.top.dp), d, onInspect, onGrave = openGrave)
 
             // The CPU's hand, tucked off the top edge: the lower half of each back.
             // In a pod the rail takes the opponent hand's place (each chip shows its own hand size).
@@ -736,10 +750,10 @@ fun ForgeBoard(
                 // floor and steps left of the piles instead (6 du clear), when they are where it would be.
                 val undoLow = maxOf(H - 94.du, pilesFoot + 4.du); val undoFloor = H - 52.du - 6.du - 2.du - 36.du
                 val undoRight = if (undoLow <= undoFloor || pilesX + 78.du <= W - 106.du - 72.du || pilesX >= W - 106.du) 106.du else W - pilesX + 6.du
-                val undoM = (if (large) Modifier else Modifier.align(Alignment.TopEnd).offset(x = -undoRight, y = minOf(undoLow, undoFloor))).reserveRight("undo", rightReserve)
+                val undoM = if (large) Modifier else Modifier.align(Alignment.TopEnd).offset(x = -undoRight, y = minOf(undoLow, undoFloor))
                 // A short big board (Thor 960 × 540) puts H - 180 across your piles (mid + 60 to the foot of their counts, V12): there the
                 // row drops just under them; a tall board keeps the site's H - 180. Undo shares End turn's place here with its 400 ms guard.
-                val rowM = Modifier.align(Alignment.TopEnd).offset(x = (-12).dp, y = maxOf(H - 180.dp, pilesFoot + 14.dp)).reserveRight("row", rightReserve).anchorRect("buttonRow")   // Y7/BB11: clear of the piles' counts
+                val rowM = Modifier.align(Alignment.TopEnd).offset(x = (-12).dp, y = maxOf(H - 180.dp, pilesFoot + 14.dp)).anchorRect("buttonRow")   // Y7/BB11: clear of the piles' counts
                 // The turn clock's last-10 count stands first in that row, never over the button beside the gold one (TurnRing.kt).
                 // On a phone the site's spot (44 px left of the gold button) is on the right-most hand card and on the line in the
                 // middle, so the count stands in the quiet one's row above the gold button: left of the quiet pill when there is one
@@ -870,8 +884,16 @@ fun ForgeBoard(
                 // The cast is done: back to the hand chip, put there by the table, so it lifts nothing (live 0.4.57 lifted card 1).
                 else if (TableZones.jumped) { TableZones.jumped = false; TableZones.toHand() }
             }
-            if (dual) { val goldAct = padX; BottomScreen { MatchBottom(st, hand, (selectedHand ?: discardWalk.takeIf { discardAsk })?.let { id -> hand.firstOrNull { it.id == id } }, goldAct, fan, onInspect, afk,
-                ask = askAll, carried = carried?.let { id -> hand.firstOrNull { it.id == id } }, live = live) } }
+            // 0.4.59 T3: the open sheet, kept as a key and read from the table as it is now; it closes when what was opened is gone.
+            open?.let { o -> if (sheetOf(st, o, live) == null) LaunchedEffect(o) { open = null } }
+            // The view reads the open key itself, so the bottom screen (its own composition) redraws when it changes.
+            val sheetView: @Composable () -> Unit = {
+                open?.let { o -> sheetOf(st, o, live) }?.let { sheet ->
+                    TableSheetView(sheet, { id -> open = Open.Grave(id) }, { c -> tapOf(c)?.invoke() }, onInspect, { open = null; openedForAsk = false; TablePad.restore() }, bottom = dual) }
+            }
+            // Two screens: the sheet lies over the bottom screen's lower half, under the hand; the top screen does not change.
+            if (dual) { val goldAct = padX; BottomScreen { Box(Modifier.fillMaxSize()) { MatchBottom(st, hand, (selectedHand ?: discardWalk.takeIf { discardAsk })?.let { id -> hand.firstOrNull { it.id == id } }, goldAct, fan, onInspect, afk,
+                ask = askAll, carried = carried?.let { id -> hand.firstOrNull { it.id == id } }, live = live); sheetView() } } }
             // With the bottom screen up the hand chip sits where the line would be: the line goes just above the chip, high enough
             // that its 10 du drop shadow (AskLine) clears the chip too (U3).
             askText?.let { val askBottom = if (dual && hand.isNotEmpty()) H - handW / 66f * 37f - 16.du else null
@@ -887,6 +909,8 @@ fun ForgeBoard(
             // there it sits under the piles instead.
             OwnCast(st, d, if (large) mid - 120.dp + 70.dp else null)
             overlay?.invoke(W)
+            // T3, one screen: the sheet over the lower 56 % of the table (on two screens it is on the bottom screen, above).
+            if (!dual) sheetView()
             // The order dialog, a damage split and the zone picker sit over the table; the CPU's line waits under them.
             val covered = live && st.prompt?.let { p -> p.method == "order" || p.method.startsWith("assign") || p.options.any { it.zone in setOf("Library", "Graveyard", "Exile") } } == true
             if (!covered) EmoteLayer(W, H, d)
@@ -930,7 +954,9 @@ internal fun orderedHand(hand: List<Card>, order: List<Int>): List<Card> {
  */
 @Composable
 private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: Dp, cy: Dp, room: Dp, d: Du, markOf: (Card) -> Mark, tapOf: (Card) -> (() -> Unit)?, onInspect: (Card) -> Unit, mine: Boolean = false, lookup: (Int) -> Card? = { null }, piece: Dp? = null,
-                         tile: Pair<Dp, Dp>? = null, fromLeft: Boolean = false, advance: Dp? = null) = with(d) {
+                         tile: Pair<Dp, Dp>? = null, fromLeft: Boolean = false, advance: Dp? = null,
+                         /** T3: a tap or long press on a pile with no game action opens it (the whole pile, or the lone card). */
+                         onPile: ((List<Card>) -> Unit)? = null) = with(d) {
     if (cards.isEmpty()) return@with
     val piles = pilesOf(cards, split, markOf, tapOf)
     // The second lane (site: +22 px between lanes) starts at the first pile past the lands.
@@ -960,7 +986,7 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
                     val ax by androidx.compose.animation.core.animateDpAsState(px + step * e, tween(260, easing = FastOutSlowInEasing), label = "px")
                     // Every pile's top card sits on the row's line (three rises up, as the rows were tuned); the cards under it hang below.
                     val ay by androidx.compose.animation.core.animateDpAsState(-rise * (e + (PILE_EDGES - 1) - pileEdge(pile.lastIndex, pile.size)), tween(260, easing = FastOutSlowInEasing), label = "py")
-                    Tile(card, w, h, land, markOf(card), mine, lookup, tapOf(card), onInspect, Modifier.offset(x = ax, y = ay).zIndex(j.toFloat()), d,
+                    Tile(card, w, h, land, markOf(card), mine, lookup, tapOf(card), if (onPile != null) { _ -> onPile(pile) } else onInspect, Modifier.offset(x = ax, y = ay).zIndex(j.toFloat()), d,
                         count = if (j == pile.lastIndex && pile.size > 1) pile.size else 1, piece = piece, pileTop = j == pile.lastIndex, advance = advance)
                 }
             }
@@ -1227,26 +1253,33 @@ private fun DragLine(drag: BlockDrag, d: Du) = with(d) {
 // ---- Piles (approved: real card piles, a count printed under each) ----
 
 @Composable
-private fun Piles(p: Player, mine: Boolean, modifier: Modifier, d: Du, onInspect: (Card) -> Unit, playable: (Card) -> Boolean = { false }, onCast: (Card) -> Unit = {}) = with(d) {
+private fun Piles(p: Player, mine: Boolean, modifier: Modifier, d: Du, onInspect: (Card) -> Unit, playable: (Card) -> Boolean = { false }, onCast: (Card) -> Unit = {},
+                  /** T3: a tap or long press opens the graveyard sheet (a lit top card still casts on a tap). */
+                  onGrave: ((Int) -> Unit)? = null) = with(d) {
     // Yours: graveyard then library; the CPU's mirrored (library then graveyard).
     Row(modifier.anchorRect("piles${p.id}"), horizontalArrangement = Arrangement.spacedBy(8.du)) {
         @Composable fun lib() = Pile(p.libraryCount, null, d, "lib${p.id}") {}
         // Rule 2: the graveyard's top card wears the playable ring when Forge offers it from there (flashback and the like); a tap
         // casts it, a long press opens it. A castable card under the top is not drawn yet (glow-rules open item).
         val top = p.graveyard.lastOrNull(); val lit = top != null && playable(top)
-        @Composable fun grave() = Pile(p.graveyard.size, top, d, "grave${p.id}", lit = lit, onHold = { top?.let(onInspect) }) { top?.let { if (lit) onCast(it) else onInspect(it) } }
+        @Composable fun grave() = if (onGrave != null) Pile(p.graveyard.size, top, d, "grave${p.id}", lit = lit, onHold = { onGrave(p.id) }, pad = if (lit) "Cast" else "Open") { if (lit && top != null) onCast(top) else onGrave(p.id) }
+            else Pile(p.graveyard.size, top, d, "grave${p.id}", lit = lit, onHold = { top?.let(onInspect) }) { top?.let { if (lit) onCast(it) else onInspect(it) } }
         if (mine) { grave(); lib() } else { lib(); grave() }
     }
 }
 
 @Composable
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
-private fun Pile(count: Int, top: Card?, d: Du, anchor: String? = null, lit: Boolean = false, onHold: (() -> Unit)? = null, onTap: () -> Unit) = with(d) {
+private fun Pile(count: Int, top: Card?, d: Du, anchor: String? = null, lit: Boolean = false, onHold: (() -> Unit)? = null,
+                 /** T3: the pad's words for A; a pile with them takes the ring (Up from the hand reaches both graveyards). */
+                 pad: String? = null, onTap: () -> Unit) = with(d) {
     val anchors = LocalAnchors.current
+    val padSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(Modifier.size(33.du, 46.du).then(if (anchors != null && anchor != null) Modifier.onGloballyPositioned { anchors.putRect(anchor, it.boundsInRoot()) } else Modifier)
             // The playable ring (ice, solid), as on a hand card.
             .then(if (lit) Modifier.border(2.dp, Ice, RoundedCornerShape(3.du)) else Modifier)
+            .then(if (pad != null && top != null) Modifier.padActs(remember(pad) { PadActs(a = pad) }).matchPadTap(padSource) { onTap() } else Modifier)
             .combinedClickable(enabled = top != null, onLongClick = onHold, onClick = onTap)) {
             // A little depth under the top card: up to three edges.
             val depth = minOf(3, (count - 1).coerceAtLeast(0))
