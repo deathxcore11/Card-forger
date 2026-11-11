@@ -545,10 +545,12 @@ fun ForgeBoard(
                     transformOrigin = androidx.compose.ui.graphics.TransformOrigin((zones.board.x + zones.board.w / 2) / W.value.coerceAtLeast(1f),
                         (zones.board.y + zones.board.h / 2) / H.value.coerceAtLeast(1f))
                     fx.shake(this) }) {
-                PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, backX, rowsG.cpuBack.centre.dp, backRoom, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true, onPile = openPile, gap = backGap)
+                PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, backX, rowsG.cpuBack.centre.dp, backRoom, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true, onPile = openPile, gap = backGap, looseRight = true)
                 PermanentRow(others(cpu.battlefield), false, 0, frontX, rowsG.cpuFront.centre.dp, room, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = fw to fh.dp, advance = advance, onPile = openPile, gap = frontGap, squeezed = tiles.squeezed)
                 PermanentRow(others(me.battlefield), false, 0, frontX, rowsG.myFront.centre.dp, room, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = fw to fh.dp, advance = advance, onPile = openPile, gap = frontGap, squeezed = tiles.squeezed)
-                PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, backX, rowsG.myBack.centre.dp, myBackRoom, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true, onPile = openPile, gap = backGap)
+                PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, backX, rowsG.myBack.centre.dp, myBackRoom, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true, onPile = openPile, gap = backGap,
+                    // On a phone your back row is the shelf left of the hand: the hand lies where its right end would be.
+                    looseRight = zones.shelf == null)
                 }
             }
 
@@ -1239,7 +1241,9 @@ internal fun returnToPlace(ordered: List<Card>, inHand: Set<Int>, was: List<Int>
 private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: Dp, cy: Dp, room: Dp, d: Du, markOf: (Card) -> Mark, tapOf: (Card) -> (() -> Unit)?, onInspect: (Card) -> Unit, mine: Boolean = false, lookup: (Int) -> Card? = { null }, piece: Dp? = null,
                          tile: Pair<Dp, Dp>? = null, fromLeft: Boolean = false, advance: Dp? = null,
                          /** T3: a tap or long press on a pile with no game action opens it (G3: the whole pile; a lone card opens CardInspect). */
-                         onPile: ((List<Card>) -> Unit)? = null, gap: Dp? = null, squeezed: Boolean = false) = with(d) {
+                         onPile: ((List<Card>) -> Unit)? = null, gap: Dp? = null, squeezed: Boolean = false,
+                         /** M13: a back row's permanents that are neither land nor creature stand at its right end, the mirror of the lands. */
+                         looseRight: Boolean = false) = with(d) {
     if (cards.isEmpty()) return@with
     val piles = pilesOf(cards, split, markOf, tapOf)
     // The second lane (site: +22 px between lanes) starts at the first pile past the lands.
@@ -1250,7 +1254,8 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
     // Table additions 2: a pile's cards sit 9 px right and 6 px up of the one under them, at most 4 edges showing.
     // T2: a pile fans sideways as wide as the row has room for (TableGeometry.fanStep), so it shows what is in it; no rise.
     // Z2: the row's layout (fan, gaps, overlap) comes from TableGeometry.layRow; the tiles keep their height.
-    val lay = TableGeometry.layRow(w.value, h.value, room.value, piles.map { it.size }, land, laneAt, (gap ?: (w * TableGeometry.GAP)).value)
+    val lay = TableGeometry.layRow(w.value, h.value, room.value, piles.map { it.size }, land, laneAt, (gap ?: (w * TableGeometry.GAP)).value,
+        rightFrom = if (!looseRight || !land) -1 else if (split == 0) 0 else laneAt)
     val step = w * lay.fan
     val rise = if (tile != null) 0.dp else if (piece != null) 6.dp else 6.du
     val total = lay.total.dp

@@ -168,6 +168,21 @@ class TableGeometryTest {
         assertTrue(spare(1920f, 1080f, true) >= 2 * (TableGeometry.TAPPED_HALF - .5f) * (rows(1920f, 1080f, true).cpuBack.height + rows(1920f, 1080f, true).cpuFront.height))
     }
 
+    @Test fun loosePermanentsStandAtTheRightEndOfTheBackRow() {
+        // Mobile table M13: lands on the left, the permanents that are neither land nor creature at the right end, the mirror.
+        val plain = TableGeometry.layRow(60f, 46f, 600f, listOf(2, 1, 1, 1), true, laneAt = 2)
+        val lay = TableGeometry.layRow(60f, 46f, 600f, listOf(2, 1, 1, 1), true, laneAt = 2, rightFrom = 2)
+        assertEquals("the lands stay where they were", plain.xs.take(2), lay.xs.take(2))
+        assertEquals("the last one ends at the row's right end", 600f, lay.xs.last() + 60f, .01f)
+        assertEquals("they keep their own spacing", plain.xs[3] - plain.xs[2], lay.xs[3] - lay.xs[2], .01f)
+        assertEquals(600f, lay.total, .01f)
+        // No lands: the whole row is at the right.
+        assertEquals(600f, TableGeometry.layRow(60f, 46f, 600f, listOf(1, 1), true, rightFrom = 0).xs.last() + 60f, .01f)
+        // A crowded row stays as it was: nothing moves, nothing leaves the room.
+        val crowd = List(14) { 1 }
+        assertEquals(TableGeometry.layRow(60f, 46f, 600f, crowd, true, laneAt = 10).xs, TableGeometry.layRow(60f, 46f, 600f, crowd, true, laneAt = 10, rightFrom = 10).xs)
+    }
+
     @Test fun yourBackRowEndsBeforeAButtonAtItsHeight() {
         // A narrower room for your back row alone narrows the back tiles for both sides alike (Z2: the width, never the height), and
         // your row still fits that room.

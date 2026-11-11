@@ -200,7 +200,9 @@ internal object TableGeometry {
      * the gaps close (the lane's gap too); past that the piles overlap from the right like a fan, every pile by the same amount,
      * each later pile over the one before. The height never changes. [laneAt] is the first pile of a back row's second lane (-1: none).
      */
-    fun layRow(w: Float, h: Float, room: Float, piles: List<Int>, back: Boolean, laneAt: Int = -1, gap: Float = w * GAP): RowLay {
+    fun layRow(w: Float, h: Float, room: Float, piles: List<Int>, back: Boolean, laneAt: Int = -1, gap: Float = w * GAP,
+               /** Mobile table M13: the piles from this one on (the permanents that are neither land nor creature) stand at the row's right end, the mirror of the lands; -1: none do. */
+               rightFrom: Int = -1): RowLay {
         if (piles.isEmpty()) return RowLay(emptyList(), 0f, 0f, null)
         val n = piles.size
         val lane = laneAt in 1 until n
@@ -214,6 +216,9 @@ internal object TableGeometry {
         }
         val xs = ArrayList<Float>(n); var x = 0f
         for (i in 0 until n) { if (i == laneAt && lane) x += lg; xs += x; x += pw[i] + g }
+        // M13: with room to spare, the loose permanents move to the right end (a crowded row stays as it was).
+        val slack = room - (x - g)
+        if (rightFrom in 0 until n && visible == null && slack > 0f) { for (i in rightFrom until n) xs[i] = xs[i] + slack; return RowLay(xs, fan, room, visible) }
         return RowLay(xs, fan, x - g, visible)
     }
 
