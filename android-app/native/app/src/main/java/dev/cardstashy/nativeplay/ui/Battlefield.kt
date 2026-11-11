@@ -350,6 +350,8 @@ class Battlefield {
         for (c in legCues(m.travel)) if (c.at > legAt && c.at <= el) { cue(c.id, c.vol, c.rate); if (c.feel != null) onImpact?.invoke(c.feel) }
         legAt = el
     }
+    /** S2: the players whose low-life warning (5 or less) has been given this match. */
+    internal val lowSeen = HashSet<Int>()
     /** Tells the table's sound player which cues the effects of the board just read will play themselves (so it does not play them too). */
     internal var onPlan: ((Long, Set<String>) -> Unit)? = null
 

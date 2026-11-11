@@ -30,6 +30,8 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
+import kotlin.math.PI
+import kotlin.math.sin
 import kotlin.math.roundToInt
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.focusGroup
@@ -943,6 +945,8 @@ fun ForgeBoard(
                     discardingNow && selected == null && !okOn -> null
                     else -> if (live && (selected != null || okOn)) PadAct(ok) { if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok() } else null
                 }
+                // S3: the controller's X is the gold button's press: it dips and sounds as under a finger.
+                if (corner.gold != null) padX = padX?.let { x -> PadAct(x.label, x.run?.let { run -> { GoldPress.pulse.intValue++; run() } }) }
                 val goldM = lowerM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }
                 pair {
                     when (corner.kind) {
@@ -1814,6 +1818,12 @@ internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Bool
             } else if (!fx.lifePending(p.id)) shown = p.life
         }
     }
+    // S2: the first time this player's life shows 5 or less, the pill beats red twice with the low-life sound. Once a game.
+    val beat = remember { Animatable(0f) }
+    LaunchedEffect(shown) {
+        if (shown in 1..LOW_LIFE && fx != null && fx.lowSeen.add(p.id)) { cue?.invoke("CMB-019", 1f, 1f)
+            if (!Motion.still) repeat(2) { beat.snapTo(1f); beat.animateTo(0f, tween(LOW_BEAT_MS)) } }
+    }
     val anchors = LocalAnchors.current
     val pulse = if (pickable && !Motion.still) rememberInfiniteTransition(label = "pick").animateFloat(.55f, 1f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "a").value else 1f
     Box(modifier.size(a).then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("orb${p.id}", it.boundsInRoot()) } else Modifier)
@@ -1839,7 +1849,8 @@ internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Bool
         // (Z4: three quarters of the way down a portrait of any size; the mockup's square puts its middle 9 above the portrait's foot).
         Box(Modifier.align(Alignment.TopCenter).offset(y = a * .75f).wrapContentSize(unbounded = true).anchorRect("lifepill${p.id}")
             .drawBehind { drawRoundRect(Color(0xCC000000), topLeft = Offset(0f, 3.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2)) }
-            .clip(RoundedCornerShape(999.dp)).background(Brush.verticalGradient(listOf(Color(0xFF26221A), Color(0xFF14120E)))).border(1.dp, Gold, RoundedCornerShape(999.dp))
+            .clip(RoundedCornerShape(999.dp)).background(Brush.verticalGradient(listOf(Color(0xFF26221A), Color(0xFF14120E))))
+            .drawBehind { if (beat.value > 0f) drawRect(Color(0xFFE5383B).copy(alpha = .85f * beat.value)) }.border(1.dp, Gold, RoundedCornerShape(999.dp))
             .padding(horizontal = 8.du, vertical = 2.du)) {
             Text("$shown", style = sans(lifeSp.sp, FontWeight.Bold, if (tick.value > 1.01f) Color(0xFFFF8A6A) else Color(0xFFFFF4D8)),
                 modifier = Modifier.graphicsLayer { scaleX = tick.value; scaleY = tick.value })
@@ -2283,7 +2294,16 @@ internal fun Modifier.matchPadTap(source: androidx.compose.foundation.interactio
 @Composable
 internal fun GoldPill(text: String, enabled: Boolean, modifier: Modifier, d: Du, padKey: Boolean = false, maxW: Dp = Dp.Infinity,
                       /** 0.4.60 Z6: the table's action button passes its 44 dp floor; 44 du otherwise. */
-                      height: Dp? = null, onClick: () -> Unit) = with(d) {
+                      height: Dp? = null,
+                      /** The match sound pass: the cue of a press (`ui_gold`); null where the press has its own sound (Keep). */
+                      press: String? = "ui_gold", onClick: () -> Unit) = with(d) {
+    // S3: a press dips the button 4 % and a gleam crosses it (140 ms), with `ui_gold`. The controller's X presses it too ([GoldPress]).
+    val cue = LocalTableCue.current
+    val dip = remember { Animatable(1f) }
+    val pulse = GoldPress.pulse.intValue
+    val pulse0 = remember { pulse }
+    LaunchedEffect(pulse) { if (pulse != pulse0 && enabled) { press?.let { cue?.invoke(it, 1f, 1f) }
+        if (!Motion.still) { dip.snapTo(0f); dip.animateTo(1f, tween(GOLD_PRESS_MS, easing = androidx.compose.animation.core.LinearEasing)) } } }
     // The controller's X is this button: with a pad here the key is printed on it, and the hint bar does not say it again (no prompt twice).
     val pad by Pad.connected.collectAsState()
     val keyed = padKey && pad && enabled
@@ -2294,9 +2314,13 @@ internal fun GoldPill(text: String, enabled: Boolean, modifier: Modifier, d: Du,
     }
     // The turn clock's ring (and, for the last 10 s, its seconds) sits on this button, wherever the table puts it (TurnRing.kt).
     // Z1 review: 138 du at the least, unless its zone is narrower (the dual top's right strip): then it takes [maxW] and cuts its words.
-    Box(modifier.widthIn(min = minOf(138.du, maxW), max = maxW).height(height ?: 44.du).turnRing(u).drawBehind { drawRoundRect(Color(0x3DC99A4B), topLeft = Offset(0f, 8.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2)) }
+    Box(modifier.widthIn(min = minOf(138.du, maxW), max = maxW).height(height ?: 44.du).graphicsLayer { val k = goldDip(dip.value); scaleX = k; scaleY = k }.turnRing(u).drawBehind { drawRoundRect(Color(0x3DC99A4B), topLeft = Offset(0f, 8.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2)) }
         .clip(RoundedCornerShape(999.dp)).background(if (enabled) Brush.verticalGradient(listOf(Color(0xFFF7DA97), Color(0xFFE8B95B), Color(0xFFC4903A))) else Brush.verticalGradient(listOf(Color(0xFF6B5A3A), Color(0xFF4A3E28))))
-        .border(1.dp, Color(0xFFF6DFA8), RoundedCornerShape(999.dp)).clickable(enabled = enabled, onClick = onClick), contentAlignment = Alignment.Center) {
+        .drawWithContent { drawContent()
+            // The gleam: a soft white band crossing left to right, brightest half way.
+            val q = dip.value; if (q < 1f) { val bw = size.width * .35f; val x = -bw + q * (size.width + bw)
+                drawRect(Brush.horizontalGradient(listOf(Color.Transparent, Color.White.copy(alpha = .55f * sin(q * PI.toFloat())), Color.Transparent), startX = x, endX = x + bw), topLeft = Offset(x, 0f), size = androidx.compose.ui.geometry.Size(bw, size.height)) } }
+        .border(1.dp, Color(0xFFF6DFA8), RoundedCornerShape(999.dp)).clickable(enabled = enabled) { GoldPress.pulse.intValue++; onClick() }, contentAlignment = Alignment.Center) {
         Row(Modifier.padding(horizontal = if (maxW < 138.du) 10.du else 18.du), horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
             if (keyed) PadKey("X", "")
             // [data-native-key=ok]:after { content: ' ›'; font-size: 20px }. A long label ("Discard Ultimate Magic: Meteor") is cut
@@ -2309,14 +2333,23 @@ internal fun GoldPill(text: String, enabled: Boolean, modifier: Modifier, d: Du,
     }
 }
 
+/** S3: a press of the gold button, by finger or by the controller's X: the button on screen dips, gleams and sounds once. */
+internal object GoldPress { val pulse = androidx.compose.runtime.mutableIntStateOf(0) }
+internal const val GOLD_PRESS_MS = 140; internal const val GOLD_DIP = .04f
+/** The gold button's size [q] (0..1) through its press: down 4 % half way and back. */
+internal fun goldDip(q: Float): Float = if (q <= 0f || q >= 1f) 1f else 1f - GOLD_DIP * sin(q * PI.toFloat())
+/** S2: at this life or less a player's pill beats red twice ([LOW_BEAT_MS] each) with `low_life`, once a game. */
+internal const val LOW_LIFE = 5; internal const val LOW_BEAT_MS = 220
+
 @Composable
 internal fun GlassPill(text: String, enabled: Boolean, modifier: Modifier, d: Du, tone: Color = Color(0xFFEEE6D4), edge: Color = Color(0x26FFFFFF),
                        /** Z1 review: the widest it may be (its zone's width); longer words are cut with …. */
                        maxW: Dp = Dp.Infinity,
                        /** 0.4.60 Z6: the quiet button above the gold one passes its 44 dp floor; 36 du otherwise. */
                        height: Dp? = null, onClick: () -> Unit) = with(d) {
+    val cue = LocalTableCue.current
     Box(modifier.widthIn(max = maxW).height(height ?: 36.du).clip(RoundedCornerShape(999.dp)).background(Color(0xB30C0D12)).border(1.dp, edge, RoundedCornerShape(999.dp))
-        .clickable(enabled = enabled, onClick = onClick).padding(horizontal = 14.du), contentAlignment = Alignment.Center) {
+        .clickable(enabled = enabled) { cue?.invoke("ui_soft", 1f, 1f); onClick() }.padding(horizontal = 14.du), contentAlignment = Alignment.Center) {
         Text(text, style = sans(sp(12.5f), FontWeight.SemiBold, tone), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

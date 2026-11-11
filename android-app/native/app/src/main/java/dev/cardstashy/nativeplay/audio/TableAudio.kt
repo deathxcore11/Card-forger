@@ -104,6 +104,7 @@ class TableAudio(context: Context) {
         else if (left.any { now[it.id]?.zone == "Graveyard" }) play("CARD-018") }
         if (left.any { now[it.id]?.zone == "Exile" }) play("CARD-019")
         if (left.any { now[it.id]?.zone == "Hand" }) play("CARD-020")
-        if (!lowSeen && b.players.any { it.life in 1..5 }) { lowSeen = true; play("CMB-019") }
+        // (With effects on, each player's life pill gives its own warning as it beats red.)
+        if (!fxCues && !lowSeen && b.players.any { it.life in 1..5 }) { lowSeen = true; play("CMB-019") }
     }
 }

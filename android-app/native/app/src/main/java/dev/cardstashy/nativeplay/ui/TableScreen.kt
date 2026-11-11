@@ -317,7 +317,7 @@ internal fun Mulligan(st: MatchState, live: Boolean, onOk: () -> Unit, onCancel:
                         Text(label, style = sans(sp(16f), FontWeight.Bold, Color(0xFFF3E9D2)), maxLines = 1)
                     }
                 }
-                GoldPill(st.buttons.ok ?: "Keep", st.buttons.okEnabled, Modifier.height(48.du).anchorRect("gold"), d) { if (!choosing) cue?.invoke("QP-013", 1f, 1f); onOk() }
+                GoldPill(st.buttons.ok ?: "Keep", st.buttons.okEnabled, Modifier.height(48.du).anchorRect("gold"), d, press = null) { if (!choosing) cue?.invoke("QP-013", 1f, 1f); onOk() }
                 }
               }
               // T9: one line under Mulligan says what it does, with Forge's numbers (one line, under the pair, clear of the caption).
