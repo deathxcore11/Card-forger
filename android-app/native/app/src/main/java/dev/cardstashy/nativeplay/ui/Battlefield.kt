@@ -188,6 +188,34 @@ class Battlefield {
     internal var promptWaiting = false
     private var wall = -1L; private var frozenTo = -1L; private var held = 0L
 
+    /** The FxLayer's top left in root pixels (set by FxLayer): root positions less this are the canvas's own. */
+    internal var origin = Offset.Zero
+    /** The board being shown (set by FxDriver): a punch reads a card's colour from it, never an outcome. */
+    internal var board: MatchState? = null
+    private val fired = HashSet<Int>(); private var firedKey = Long.MIN_VALUE
+    /** True the first time [bit] is asked for under [key] (a travel leg's key): a burst is thrown once, whatever the frame rate. */
+    internal fun once(key: Long, bit: Int): Boolean { if (key != firedKey) { fired.clear(); firedKey = key }; return fired.add(bit) }
+    /** How far into its leg a travel is (ms): the frame-by-frame tests' fixed clock, else real time since it started. */
+    internal fun travelMs(m: dev.cardstashy.nativeplay.match.TravelMoment): Long =
+        TravelClock.fixed?.let { (it * m.travel.ms).toLong() } ?: (android.os.SystemClock.elapsedRealtime() - m.startedAt)
+
+    /**
+     * P2, Charge and Burst: the stack card's size while [cardId]'s cast pays and bursts. Each streak that arrives swells it 4 %
+     * (easing back over 160 ms); the burst swells it 8 % after its freeze. 1 otherwise, and with reduce motion.
+     */
+    internal fun stackSwell(cardId: Int?): Float {
+        now.longValue // a frame's read, so the layer follows the clock
+        val m = travel ?: return 1f
+        if (reduced || cardId == null || m.travel.cardId != cardId) return 1f
+        val el = travelMs(m); val D = dev.cardstashy.nativeplay.match.Director
+        fun out(ms: Long, span: Long): Float = if (ms < 0 || ms > span) 0f else (1f - ms.toFloat() / span).let { it * it * it }
+        return when (m.travel.leg) {
+            dev.cardstashy.nativeplay.match.Director.Leg.TAPS -> 1f + .04f * (m.travel.taps.indices.maxOfOrNull { out(el - D.streakArrives(it), D.CHARGE_MS) } ?: 0f)
+            dev.cardstashy.nativeplay.match.Director.Leg.REST -> 1f + .08f * m.travel.power * out(el - D.BURST_FREEZE_MS, D.BURST_MS - D.BURST_FREEZE_MS)
+            else -> 1f
+        }
+    }
+
     /** P1: a payoff's short freeze. Pauses the effect clock only (effects, particles, jolts); input and the bridge run on. */
     fun freeze(ms: Long) {
         if (reduced || promptWaiting || ms <= 0L || wall < 0L) return
@@ -731,6 +759,8 @@ val LocalTableCue = staticCompositionLocalOf<((String, Float, Float) -> Unit)?> 
 private val MANA_GLOW = mapOf('W' to Color(0xFFFFF1C2), 'U' to Color(0xFF5AB4FF), 'B' to Color(0xFFB08BD8), 'R' to Color(0xFFFF7A4A), 'G' to Color(0xFF6BE08A))
 
 private fun easeOutBack(x: Float): Float { val c1 = 1.70158f; val c3 = c1 + 1f; return 1f + c3 * (x - 1f).let { it * it * it } + c1 * (x - 1f).let { it * it } }
+/** Ease out with a small overshoot (the preview's E.back, c = 1.9): 0 at 0, 1 at 1, about 1.12 at its peak. */
+internal fun backOut(x: Float): Float { val c = 1.9f; val y = x - 1f; return 1f + (c + 1f) * y * y * y + c * y * y }
 private fun smooth(e0: Float, e1: Float, x: Float): Float { val t = ((x - e0) / (e1 - e0)).coerceIn(0f, 1f); return t * t * (3f - 2f * t) }
 private fun lerpO(a: Offset, b: Offset, t: Float) = Offset(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)
 
@@ -745,7 +775,7 @@ internal fun FxDriver(fx: Battlefield, st: MatchState) {
     SideEffect { fx.onCue = cue; fx.reduced = reduced; fx.low = AppSettings.effects == "minimal"; fx.promptWaiting = st.prompt != null && st.waitingOnMe }
     val trig = LocalTrigger.current
     val travel = LocalTravel.current
-    SideEffect { fx.travel = travel; fx.trigger(trig, st, anchors); fx.take(st, anchors) }
+    SideEffect { fx.travel = travel; fx.board = st; fx.trigger(trig, st, anchors); fx.take(st, anchors) }
     LaunchedEffect(fx) { if (!Motion.still) while (true) withFrameMillis { fx.tick(it) } }
 }
 
@@ -863,7 +893,7 @@ internal fun FxLayer(force: Boolean = false) {
     var self by remember { mutableStateOf(Offset.Zero) }
     val tm = rememberTextMeasurer()
     val density = LocalDensity.current
-    Box(Modifier.fillMaxSize().onGloballyPositioned { val b = it.boundsInRoot(); self = b.topLeft; fx.stageCentre = b.center }) {
+    Box(Modifier.fillMaxSize().onGloballyPositioned { val b = it.boundsInRoot(); self = b.topLeft; fx.origin = b.topLeft; fx.stageCentre = b.center }) {
         // Dying cards: the last picture of the card, breaking into holo bands as it drifts to its graveyard.
         for (it in fx.items) if (it.kind == Fx.DEATH && it.ghost != null && it.from != null) key(it) { Ghost(it, fx, anchors, self, density) }
         Canvas(Modifier.fillMaxSize()) {
@@ -911,6 +941,8 @@ internal fun FxLayer(force: Boolean = false) {
                     Fx.TRIG_LAND -> drawTrigLand(tm, it, p, rect(it.fromKey), rect(it.toKey), band = band())
                 }
             }
+            // P2: a cast's pay (each land's flash and streak), charge and burst, read from the leg the table is drawing.
+            fx.travel?.let { m -> drawCastPunch(fx, m, ::rect) }
             // P1: every particle on this one canvas, over the effects. None with reduce motion or Effects Minimal.
             if (fx.reduced || fx.low) fx.bits.clear() else fx.bits.draw(this, t)
         }
@@ -1447,13 +1479,19 @@ internal fun TravelCard() {
     val back = t.leg == dev.cardstashy.nativeplay.match.Director.Leg.BACK
     val dual = DualScreen.active
     val p = remember(m.key) { androidx.compose.runtime.mutableFloatStateOf(TravelClock.fixed ?: 0f) }
+    val fxB = LocalBattlefield.current
+    val density = LocalDensity.current
     LaunchedEffect(m.key) {
         if (TravelClock.fixed != null) return@LaunchedEffect
         val start = withFrameMillis { it }
-        while (p.floatValue < 1f) withFrameMillis { p.floatValue = ((it - start).toFloat() / t.ms.coerceAtLeast(1)).coerceIn(0f, 1f) }
+        var shed = start
+        while (p.floatValue < 1f) withFrameMillis { p.floatValue = ((it - start).toFloat() / t.ms.coerceAtLeast(1)).coerceIn(0f, 1f)
+            // P2, Lift: the flying card sheds gold embers (two every 45 ms) from where it is.
+            if (toStack && fxB != null && !fxB.low && it - start > dev.cardstashy.nativeplay.match.Director.LIFT_MS && it - shed >= 45) { shed = it
+                anchors.rects["travelcard"]?.let { r -> fxB.bits.embers(r.center - fxB.origin, 2, Color(0xFFF3D27E), fxB.now.longValue, 34f * density.density, lifeMs = 520, sizePx = 1.2f * density.density, seed = (it % 997).toInt()) } }
+        }
     }
     var self by remember { mutableStateOf(Rect.Zero) }
-    val density = LocalDensity.current
     /** Where it starts: the stack card (to a slot or host), your hand card, the CPU's seat; on two screens your card enters at the bottom edge. */
     fun source(dest: Rect): Rect? {
         val r = anchors.rects
@@ -1470,10 +1508,16 @@ internal fun TravelCard() {
             else t.toKey?.let { anchors.rects[it] } ?: anchors.rects["hand"] ?: return null } else t.toKey?.let { anchors.rects[it] } ?: return null
         val a = (if (back) anchors.rects["stackcard"] else source(b)) ?: return null
         val q = p.floatValue
-        val e = if (toStack) 1f - (1f - q).let { it * it * it } else smooth(0f, 1f, q)
+        // P2, Lift: a wind-up first (the card dips 10 dp away from where it is going and shrinks 4 %, 70 ms), then it flies to the
+        // stack with a small overshoot.
+        val lift = if (toStack) (dev.cardstashy.nativeplay.match.Director.LIFT_MS.toFloat() / t.ms.coerceAtLeast(1)).coerceAtMost(.4f) else 0f
+        val u = if (toStack) ((q - lift) / (1f - lift)).coerceIn(0f, 1f) else q
+        val e = if (toStack) backOut(u) else smooth(0f, 1f, q)
+        val wind = if (toStack) (if (q < lift) sin(PI.toFloat() / 2 * q / lift) else 1f - smooth(0f, .35f, u)) else 0f
         val c = lerpO(a.center, b.center, e)
-        val arc = sin(PI.toFloat() * e) * 20f * density.density * (if (t.mine) -1f else 1f)
-        val w = a.width + (b.width - a.width) * e; val h = a.height + (b.height - a.height) * e
+        val arc = sin(PI.toFloat() * e.coerceIn(0f, 1f)) * 20f * density.density * (if (t.mine) -1f else 1f) + wind * 10f * density.density * (if (t.mine) 1f else -1f)
+        val k = 1f - .04f * wind
+        val w = (a.width + (b.width - a.width) * e) * k; val h = (a.height + (b.height - a.height) * e) * k
         return Rect(c.x - w / 2, c.y - h / 2 + arc, c.x + w / 2, c.y + h / 2 + arc)
     }
     val rim = if (t.mine) Color(0xFFE8B95B) else CpuRed

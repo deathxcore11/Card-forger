@@ -126,17 +126,19 @@ internal class Particles(val cap: Int = CAP) {
                 Bit.SMOKE -> { val a = .35f * (1f - q) * min(1f, q * 6f); val r = sz[i] * (1f + q * 1.6f)
                     drawCircle(Brush.radialGradient(listOf(c.copy(alpha = a), c.copy(alpha = 0f)), Offset(px, py), r), r, Offset(px, py)) }
                 Bit.RING -> { val e = 1f - (1f - q) * (1f - q); val r = max(1f, sz[i] * e)
-                    drawCircle(c.copy(alpha = (1f - q) * .9f), r, Offset(x[i], y[i]), style = Stroke(width = max(1f, 4f * (1f - q) + 1f))) }
+                    drawCircle(c.copy(alpha = (1f - q) * .9f), r, Offset(x[i], y[i]), style = Stroke(width = (3f * (1f - q) + 1f) * density)) }
                 Bit.SPIKE -> { val grow = min(1f, q / .35f); val a = (1f - smoothQ(.4f, 1f, q))
                     val from = Offset(x[i], y[i]) + Offset(vx[i], vy[i]) * (sz[i] * .25f * grow)
                     val to = Offset(x[i], y[i]) + Offset(vx[i], vy[i]) * (sz[i] * grow)
-                    drawLine(c.copy(alpha = a), from, to, strokeWidth = 3f * (1f - q) + 1f, cap = StrokeCap.Round) }
+                    drawLine(c.copy(alpha = a), from, to, strokeWidth = (2.2f * (1f - q) + .8f) * density, cap = StrokeCap.Round)
+                    drawLine(Color.White.copy(alpha = a * .7f), from, lerpP(from, to, .6f), strokeWidth = .8f * density, cap = StrokeCap.Round) }
                 Bit.BLOB -> { val a = .7f * (1f - q); val r = sz[i] * (.6f + .4f * q)
                     drawCircle(Brush.radialGradient(listOf(c.copy(alpha = a), c.copy(alpha = 0f)), Offset(x[i], y[i]), r), r, Offset(x[i], y[i])) }
             }
         }
     }
 
+    private fun lerpP(a: Offset, b: Offset, t: Float) = Offset(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)
     private fun smoothQ(e0: Float, e1: Float, v: Float): Float { val t = ((v - e0) / (e1 - e0)).coerceIn(0f, 1f); return t * t * (3f - 2f * t) }
     /** A fixed spread from a seed, so a burst is the same every time (pictures and tests). */
     private fun frac(n: Int): Float { val v = sin(n * 12.9898f + 78.233f) * 43758.547f; return v - kotlin.math.floor(v) }
@@ -172,4 +174,77 @@ internal fun joltAt(jolts: List<Jolt>, now: Long): Triple<Float, Float, Float> {
         if (amp >= best) { best = amp; dx = amp * sin(q * 46f); dy = amp * .7f * cos(q * 39f) }
         zoom = max(zoom, 1f + j.push * sin(min(1f, q * 3f) * (PI / 2).toFloat()) * (1f - q)) }
     return Triple(dx, dy, zoom)
+}
+
+// ---- Match punch P2: Pay, Charge, Burst (drawn on the FxLayer canvas from the travel leg the table is drawing) ----
+
+private fun easeOutQ(x: Float) = 1f - (1f - x) * (1f - x)
+
+/**
+ * P2. While a cast's lands pay ([Director.Leg.TAPS]): each land flashes in its own mana colour as it turns, throws a ring and 7
+ * sparks, and 60 ms later a streak arcs from it to the stack card (280 ms); each arrival steps the spell's ring up. As its rest
+ * opens ([Director.Leg.REST]): a 70 ms freeze, then the burst in the spell's colour, centred on the stack card with its spikes
+ * and sparks fanned toward the board only (the stack stands in the right strip), a ring no wider than 1.1 x the stack card's
+ * height, the board pushed in 3 % with a 4 dp shake, and embers for half a second. Reduce motion: the flashes at half strength
+ * and the ring, nothing that moves.
+ */
+internal fun DrawScope.drawCastPunch(fx: Battlefield, m: dev.cardstashy.nativeplay.match.TravelMoment, rect: (String?) -> androidx.compose.ui.geometry.Rect?) {
+    val D = dev.cardstashy.nativeplay.match.Director
+    val t = m.travel
+    if (t.leg != dev.cardstashy.nativeplay.match.Director.Leg.TAPS && t.leg != dev.cardstashy.nativeplay.match.Director.Leg.REST) return
+    val stack = rect("stackcard") ?: return
+    val el = fx.travelMs(m); val now = fx.now.longValue
+    val gold = Color(0xFFF3D27E)
+    fun toneOf(id: Int?): Color = id?.let { fx.board?.card(it) }?.let { frameTone(cardColors(it)).first } ?: gold
+    val tone = toneOf(t.cardId)
+    val dp = density; val still = fx.reduced; val half = if (still) .5f else 1f
+    val corner = androidx.compose.ui.geometry.CornerRadius(8f * dp)
+    fun spellRing(alpha: Float) { if (alpha <= 0f) return
+        val g = 3f * dp
+        drawRoundRect(tone.copy(alpha = (.25f * alpha).coerceIn(0f, 1f)), stack.topLeft - Offset(g * 2, g * 2), androidx.compose.ui.geometry.Size(stack.width + g * 4, stack.height + g * 4), corner, style = Stroke(width = 6f * dp))
+        drawRoundRect(tone.copy(alpha = alpha.coerceIn(0f, 1f)), stack.topLeft - Offset(g, g), androidx.compose.ui.geometry.Size(stack.width + g * 2, stack.height + g * 2), corner, style = Stroke(width = 2f * dp)) }
+    if (t.leg == dev.cardstashy.nativeplay.match.Director.Leg.TAPS) {
+        val into = Offset(stack.left + stack.width * .25f, stack.center.y)
+        var arrived = 0
+        t.taps.forEachIndexed { i, id ->
+            val at = el - D.TAP_GAP_MS * i
+            if (at < 0) return@forEachIndexed
+            val lc = toneOf(id)
+            rect("c$id")?.let { r ->
+                // The flash on the land, in its own colour (300 ms).
+                if (at < 300) drawRoundRect(lc.copy(alpha = .9f * half * (1f - at / 300f).let { it * it }), r.topLeft, r.size, androidx.compose.ui.geometry.CornerRadius(10f * dp))
+                if (!still) {
+                    if (fx.once(m.key, i * 4)) { fx.bits.ring(r.center, r.height * .75f, lc, now, 320); fx.bits.sparks(r.center, 7, lc, now, 150f * dp, lifeMs = 380, sizePx = 1.6f * dp, seed = i)
+                        fx.bits.blob(r.center, r.height * .6f, lc, now, 220) }
+                    val sp = (at - D.STREAK_LEAVE_MS).toFloat() / D.STREAK_MS
+                    if (sp in 0f..1f) streak(r.center, into, sp * sp, lc, 5f * dp, bend = if (r.center.y > stack.center.y) -.12f else .12f)
+                }
+            }
+            if (at >= D.STREAK_LEAVE_MS + D.STREAK_MS) { arrived++
+                if (!still && fx.once(m.key, i * 4 + 1)) fx.bits.sparks(into, 5, lc, now, 110f * dp, dir = PI.toFloat(), spread = 2.4f, lifeMs = 300, sizePx = 1.4f * dp, seed = 40 + i) }
+        }
+        // Charge: the spell's ring steps up with each arrival.
+        if (t.taps.isNotEmpty()) spellRing(.9f * arrived / t.taps.size)
+        return
+    }
+    // The rest opens with the burst.
+    if (el > D.BURST_MS + 600) return
+    if (fx.once(m.key, 1)) fx.freeze(D.BURST_FREEZE_MS)
+    val b = el - D.BURST_FREEZE_MS
+    if (b < 0) { spellRing(.9f * t.power); return }
+    val c = stack.center; val h = stack.height; val k = t.power
+    if (!still && fx.once(m.key, 2)) {
+        fx.bits.spikes(c, 18, h * .95f * k, tone, now, dir = PI.toFloat(), spread = PI.toFloat() * .95f, lifeMs = 240, seed = 3)
+        fx.bits.ring(c, h * .55f * k, tone, now, 300)
+        fx.bits.blob(c, h * .7f * k, tone, now, 260)
+        fx.bits.sparks(c, (22 * k).toInt(), tone, now, 260f * dp * k, dir = PI.toFloat(), spread = 1.5f, lifeMs = 620, sizePx = 1.8f * dp, seed = 5)
+        fx.jolt(4f * k, 300L, .03f * k)
+    }
+    // The white flash on the spell (320 ms) and its ring going out with it.
+    val q = (b / 320f).coerceIn(0f, 1f)
+    if (q < 1f) drawRoundRect(Color.White.copy(alpha = .85f * half * k * easeOutQ(1f - q)), stack.topLeft, stack.size, corner)
+    spellRing(.9f * k * (1f - (b / 300f).coerceIn(0f, 1f)))
+    // Embers rise off it for half a second (five puffs, 105 ms apart).
+    if (!still) for (j in 0 until 5) if (b >= j * 105L && fx.once(m.key, 10 + j))
+        fx.bits.embers(Offset(c.x - stack.width * .3f + stack.width * .15f * j, c.y + h * .15f), 4, tone, now, 40f * dp, lifeMs = 800, sizePx = 1.3f * dp, seed = 60 + j)
 }

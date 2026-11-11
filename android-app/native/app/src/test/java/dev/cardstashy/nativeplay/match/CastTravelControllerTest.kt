@@ -76,14 +76,15 @@ class CastTravelControllerTest {
         scope.cancel()
 
         val order = frames.mapNotNull { it.leg }.distinct()
-        assertEquals(listOf(Director.Leg.TAPS, Director.Leg.TO_STACK, Director.Leg.REST, Director.Leg.TO_SLOT), order)
-        for (f in frames.filter { it.leg == Director.Leg.TAPS }) assertTrue("taps: off the board and the stack $f", !f.onBoard && !f.onStack)
-        for (f in frames.filter { it.leg == Director.Leg.TO_STACK || it.leg == Director.Leg.REST }) assertTrue("up: on the stack only $f", !f.onBoard && f.onStack)
+        assertEquals(listOf(Director.Leg.TO_STACK, Director.Leg.TAPS, Director.Leg.REST, Director.Leg.TO_SLOT), order)
+        // Match punch P2: it goes up first, and its lands pay into it while it is on the stack.
+        for (f in frames.filter { it.leg == Director.Leg.TO_STACK || it.leg == Director.Leg.TAPS || it.leg == Director.Leg.REST }) assertTrue("up: on the stack only $f", !f.onBoard && f.onStack)
+        assertTrue("the lands are untapped until the pay", frames.filter { it.leg == Director.Leg.TO_STACK }.all { it.tapped == 0 })
         for (f in frames.filter { it.leg == Director.Leg.TO_SLOT }) assertTrue("landing: on the board, off the stack $f", f.onBoard && !f.onStack)
-        // The rest holds at least 900 ms (sampling every 10 ms), the flight 440.
+        // The rest holds its burst and read (370 + 525), the flight 370; sampled every 10 ms, so each may read one sample short.
         fun span(l: Director.Leg) = frames.filter { it.leg == l }.let { it.last().t - it.first().t + 10 }
-        assertTrue("rest ${span(Director.Leg.REST)} ms", span(Director.Leg.REST) >= Director.STACK_HOLD_MS)
-        assertTrue("flight ${span(Director.Leg.TO_STACK)} ms", span(Director.Leg.TO_STACK) >= Director.TO_STACK_MS)
+        assertTrue("rest ${span(Director.Leg.REST)} ms", span(Director.Leg.REST) >= Director.BURST_MS + Director.CAST_READ_MS - 10)
+        assertTrue("flight ${span(Director.Leg.TO_STACK)} ms", span(Director.Leg.TO_STACK) >= Director.TO_STACK_MS - 10)
         // Then the newest board as Forge sent it, nothing travelling.
         val last = frames.last()
         assertTrue("end $last", last.leg == null && last.onBoard && !last.onStack && last.tapped == 2)

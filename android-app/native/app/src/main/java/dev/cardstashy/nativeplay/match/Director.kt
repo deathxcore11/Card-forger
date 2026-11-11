@@ -44,7 +44,9 @@ object Director {
     /** BACK (T6): Cancel while the spell asked; from the stack back to its place in your hand. */
     enum class Leg { TAPS, TO_STACK, REST, TO_SLOT, TO_HOST, TO_GROUP, BACK }
     data class Travel(val cardId: Int?, val name: String?, val mine: Boolean, val leg: Leg, val toKey: String?, val ms: Long,
-                      val stackId: Int? = null, val taps: List<Int> = emptyList(), val targets: List<Ref> = emptyList())
+                      val stackId: Int? = null, val taps: List<Int> = emptyList(), val targets: List<Ref> = emptyList(),
+                      /** P2: the burst's size on a cast's rest (.5 when nothing was paid). */
+                      val power: Float = 1f)
 
     /** A trigger going on the stack (Forge's "trigger" event): who, from which card, at what; [resolvedHere] its resolve is in the same poll. */
     data class Trig(val stackId: Int?, val sourceId: Int?, val sourceName: String?, val controller: Int?, val yours: Boolean,
@@ -169,14 +171,17 @@ object Director {
         // T6: the spell you are choosing targets or paying for already went up (its own leg in the poll that asked).
         val waiting0 = before?.let { dev.cardstashy.nativeplay.ui.pendingCast(it) }
         val waitingUp = waiting0?.id
-        fun castLegs(e: GameEvent, mine: Boolean, restMs: Long, beat: Beat?) {
+        // Match punch P2: the card lifts to the stack first, its lands then pay into it (each a flash and a streak), and its rest opens
+        // with the burst. With nothing to pay the pay is skipped and the burst is half size. [readMs] is the read after the burst.
+        fun castLegs(e: GameEvent, mine: Boolean, readMs: Long, beat: Beat?) {
             val id = e.source?.id; val name = e.source?.name
             val taps = e.player?.let { tapsLeft.remove(it) }.orEmpty()
-            if (taps.isNotEmpty()) { val ms = tapsMs(taps.size)
-                out += Step(Kind.CAST, ms, ms, cpu = !mine, cardId = id, cardName = name, travel = Travel(id, name, mine, Leg.TAPS, null, ms, e.stackId, taps)) }
             if (!(mine && id != null && id == waitingUp)) out += Step(Kind.CAST, TO_STACK_MS, TO_STACK_MS, cpu = !mine, cardId = id, cardName = name, travel = Travel(id, name, mine, Leg.TO_STACK, "stackcard", TO_STACK_MS, e.stackId, targets = e.targets))
-            out += Step(Kind.CAST, restMs, STACK_HOLD_MS, focal = true, cpu = !mine, cardId = id, cardName = name, beat = beat,
-                travel = Travel(id, name, mine, Leg.REST, "stackcard", restMs, e.stackId, targets = e.targets))
+            if (taps.isNotEmpty()) { val ms = payMs(taps.size)
+                out += Step(Kind.CAST, ms, PAY_MIN_MS, cpu = !mine, cardId = id, cardName = name, travel = Travel(id, name, mine, Leg.TAPS, "stackcard", ms, e.stackId, taps)) }
+            val restMs = BURST_MS + readMs
+            out += Step(Kind.CAST, restMs, BURST_MIN_MS + CAST_READ_PROMPT_MS, focal = true, cpu = !mine, cardId = id, cardName = name, beat = beat,
+                travel = Travel(id, name, mine, Leg.REST, "stackcard", restMs, e.stackId, targets = e.targets, power = if (taps.isEmpty()) .5f else 1f))
         }
         /** The CPU plays a land: its think, then the land from its seat to its group with the caption. */
         fun cpuLand(card: Ref?, turn: Int) {
@@ -199,10 +204,10 @@ object Director {
             val hits = touchesMe(e.targets)
             val life = if (hits) lifeChange(st, events) else null
             if (life != null) explainedLife = true
-            // T5: its lands tap, the card goes from the CPU seat to the stack (440), then rests there with the caption: its
-            // arrows 300 + read time (shorter before your prompt), never under the 900 ms rest.
-            val rest = maxOf(STACK_HOLD_MS, (if (targeted) 300L else 0L) + if (waiting) 500L else 850L)
-            castLegs(e, mine = false, restMs = rest, beat = Beat(if (hits) Beat.Kind.AFFECTS_YOU else Beat.Kind.ACTION, "CPU casts ${e.source?.name ?: "a spell"}", e.source?.id, e.source?.name,
+            // P2: the card goes from the CPU seat to the stack, its lands pay into it, then it bursts and rests there with the caption:
+            // its arrows 300 + the read (525, or 500 before your prompt).
+            val read = (if (targeted) 300L else 0L) + if (waiting) CAST_READ_PROMPT_MS else CAST_READ_MS
+            castLegs(e, mine = false, readMs = read, beat = Beat(if (hits) Beat.Kind.AFFECTS_YOU else Beat.Kind.ACTION, "CPU casts ${e.source?.name ?: "a spell"}", e.source?.id, e.source?.name,
                     if (hits) targetText(st, e.targets) else null, life?.first, life?.second))
         }
         loop@ for (e in events) {
@@ -223,7 +228,7 @@ object Director {
                 // A CPU spell already on the stack shown: its cast was told from its move (below), in the board before this one.
                 "cast" -> if (cpu(e.player) && e.source?.id != null && before?.stack?.any { it.source?.id == e.source.id } == true) continue@loop
                 else if (cpu(e.player)) cpuCast(e)
-                else castLegs(e, mine = true, restMs = STACK_HOLD_MS, beat = null)
+                else castLegs(e, mine = true, readMs = if (waiting) CAST_READ_PROMPT_MS else CAST_READ_MS, beat = null)
                 "trigger" -> {
                     // Beats 1 and 2 for every trigger, yours or the CPU's: the source lifts and rings; when Forge resolved it in this same
                     // poll its stack item is put up and held to read (900 ms), since no snapshot ever showed it.
@@ -365,11 +370,30 @@ object Director {
     /** T5 item 1: the paying lands tap one by one, [TAP_GAP_MS] apart, each turning in [TAP_TURN_MS]. */
 /** T6: Cancel, the card from the stack back to your hand. */
     const val BACK_MS = 380L
-    const val TAP_GAP_MS = 70L
-    const val TAP_TURN_MS = 140L
+    /** Match punch P2, Pay: the lands turn [TAP_GAP_MS] apart, each with a bounce in [TAP_TURN_MS]. */
+    const val TAP_GAP_MS = 80L
+    const val TAP_TURN_MS = 170L
     fun tapsMs(n: Int): Long = if (n <= 0) 0 else TAP_GAP_MS * (n - 1) + TAP_TURN_MS
-    /** T5 item 2: hand (or the CPU seat) to the stack lane, ease-out, growing to the stack size. */
-    const val TO_STACK_MS = 440L
+    /** P2, Pay: a land's streak leaves [STREAK_LEAVE_MS] after its turn starts and reaches the stack card [STREAK_MS] later. */
+    const val STREAK_LEAVE_MS = 60L
+    const val STREAK_MS = 280L
+    /** P2, Charge: each arrival swells the spell 4 % for this long. */
+    const val CHARGE_MS = 160L
+    /** When land [i]'s streak reaches the spell, from the start of the pay. */
+    fun streakArrives(i: Int): Long = TAP_GAP_MS * i + STREAK_LEAVE_MS + STREAK_MS
+    /** P2, Pay as a whole: the last streak in, then 40 ms before the burst. Never under [PAY_MIN_MS] with a prompt waiting. */
+    fun payMs(n: Int): Long = if (n <= 0) 0 else streakArrives(n - 1) + 40L
+    const val PAY_MIN_MS = 200L
+    /** P2, Burst: a 70 ms freeze, then 300 ms of spikes, ring, sparks, push-in and shake. Min 150. */
+    const val BURST_FREEZE_MS = 70L
+    const val BURST_MS = 370L
+    const val BURST_MIN_MS = 150L
+    /** P2, Read: a cast spell stays on the stack this long after its burst (500 before one of your prompts). */
+    const val CAST_READ_MS = 525L
+    const val CAST_READ_PROMPT_MS = 500L
+    /** P2, Lift: the card dips 10 dp and shrinks 4 % ([LIFT_MS]), then flies to the stack with a small overshoot (300). */
+    const val LIFT_MS = 70L
+    const val TO_STACK_MS = 370L
     /** T5 items 4 to 6: stack to its slot, stack to its host, a land from the hand to its group. */
     const val TO_SLOT_MS = 380L
     const val TO_HOST_MS = 380L

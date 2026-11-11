@@ -1995,7 +1995,8 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
         val flown = remember { HashSet<Int>() }
         // 0.4.59 T5: while the card itself travels here (TravelCard) the stack card stays clear, and its own flight is not needed.
         val travel = LocalTravel.current?.travel
-        val reducedFx = LocalBattlefield.current?.reduced == true
+        val punchFx = LocalBattlefield.current
+        val reducedFx = punchFx?.reduced == true
         val arriving = !reducedFx && travel?.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_STACK && travel.cardId != null && travel.cardId == top.source?.id
         val travelled = travel?.cardId != null && travel.cardId == top.source?.id
         LaunchedEffect(top.id) {
@@ -2014,6 +2015,9 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
         Box(Modifier.offset(x = 44.du, y = 34.du).then(if (anchors != null) Modifier.onGloballyPositioned { val b = it.boundsInRoot(); here = b.center; anchors.put("stacktop", Offset(b.left, b.top + b.height * .3f)); anchors.putRect("stackcard", b); anchors.putRect("stack${top.id}", b) } else Modifier)
             .graphicsLayer {
                 if (arriving) { alpha = 0f; return@graphicsLayer }
+                // Match punch P2, Charge and Burst: the spell swells as each land's streak reaches it, and again as it bursts.
+                val swell = punchFx?.stackSwell(top.source?.id) ?: 1f
+                if (swell != 1f) { scaleX = swell; scaleY = swell }
                 val from = flyFrom; val e = fly.value
                 if (from != null && e < 1f) {
                     translationX = (from.x - here.x) * (1f - e); translationY = (from.y - here.y) * (1f - e) + kotlin.math.sin(Math.PI.toFloat() * e) * 40.dp.toPx()
@@ -2995,15 +2999,16 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
     }
 }
 
-/** 0.4.59 T5 item 1: when a cast's lands tap ([taps], in order), land [id]'s turn starts this long after the first (70 ms apart); null: not one of them. */
+/** T5 item 1, P2: when a cast's lands tap ([taps], in order), land [id]'s turn starts this long after the first (80 ms apart); null: not one of them. */
 internal fun tapDelay(taps: List<Int>, id: Int): Long? = taps.indexOf(id).takeIf { it >= 0 }?.let { it * dev.cardstashy.nativeplay.match.Director.TAP_GAP_MS }
 
-/** A tile's turn as it taps: a paying land one by one (140 ms each, 70 ms apart) while its cast's taps play, any other tap 180 ms. */
+/** A tile's turn as it taps: a paying land one by one (170 ms each, 80 ms apart) while its cast's taps play, any other tap 180 ms. */
 @Composable
 private fun tapSpec(id: Int): androidx.compose.animation.core.AnimationSpec<Float> {
     val t = LocalTravel.current?.travel?.takeIf { it.leg == dev.cardstashy.nativeplay.match.Director.Leg.TAPS }
     val at = t?.let { tapDelay(it.taps, id) }
-    return if (at != null) tween(dev.cardstashy.nativeplay.match.Director.TAP_TURN_MS.toInt(), delayMillis = at.toInt(), easing = FastOutSlowInEasing)
+    // Match punch P2, Pay: a paying land turns with a bounce (a small overshoot past its tapped angle, then back).
+    return if (at != null) tween(dev.cardstashy.nativeplay.match.Director.TAP_TURN_MS.toInt(), delayMillis = at.toInt(), easing = androidx.compose.animation.core.Easing { backOut(it) })
         else tween(180, easing = FastOutSlowInEasing)
 }
 

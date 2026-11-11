@@ -58,7 +58,10 @@ class DirectorTest {
         duel.copy(prompt = null, activePlayer = me, players = duel.players.map { p -> if (p.id == me) p.copy(battlefield = mine, hand = hand) else p.copy(battlefield = theirs) })
     private fun legs(steps: List<Director.Step>) = steps.filter { it.held }.map { "${it.kind}:${it.travel?.leg}:${it.travel?.toKey}:${it.ms}" }
 
-    /** Your creature: two lands tap one by one (70 ms apart, 140 ms turn), it flies to the stack (440), rests (900), then to its slot (380). */
+    /**
+     * Match punch P2 (was T5): your creature lifts to the stack (70 dip + 300), its two lands pay into it (80 ms apart, a streak each:
+     * 460), it bursts and rests (370 + 525), then goes to its slot (380).
+     */
     @Test fun ownCreatureTapsFliesRestsAndGoesToItsSlot() {
         val forests = listOf(permanent(40, "Forest", "Basic Land — Forest"), permanent(41, "Forest", "Basic Land — Forest"))
         val bears = permanent(950, "Grizzly Bears", "Creature — Bear")
@@ -69,20 +72,27 @@ class DirectorTest {
         val events = listOf(ev("zone", card = c, from = "Hand", to = "Stack", player = null), ev("cast", player = me, source = c).copy(stackId = 7),
             ev("zone", card = c, from = "Stack", to = "Battlefield", player = me), ev("resolve", source = c))
         val steps = Director.plan(st, events, before = before)
-        assertEquals(listOf("CAST:TAPS:null:210", "CAST:TO_STACK:stackcard:440", "CAST:REST:stackcard:900", "ENTER:TO_SLOT:c950:380"), legs(steps))
+        assertEquals(listOf("CAST:TO_STACK:stackcard:370", "CAST:TAPS:stackcard:460", "CAST:REST:stackcard:895", "ENTER:TO_SLOT:c950:380"), legs(steps))
         val taps = steps.first { it.travel?.leg == Director.Leg.TAPS }.travel!!.taps
         assertEquals(listOf(40, 41), taps)
-        // One by one: the second land starts 70 ms after the first, and the last turn ends with the step (70 + 140 = 210).
-        assertEquals(listOf(0L, 70L), taps.map { dev.cardstashy.nativeplay.ui.tapDelay(taps, it) })
+        // One by one: the second land starts 80 ms after the first; its streak leaves 60 ms later and reaches the spell 280 ms after
+        // that, and the pay ends 40 ms on (80 + 60 + 280 + 40 = 460).
+        assertEquals(listOf(0L, 80L), taps.map { dev.cardstashy.nativeplay.ui.tapDelay(taps, it) })
         assertEquals(Director.tapsMs(2), dev.cardstashy.nativeplay.ui.tapDelay(taps, 41)!! + Director.TAP_TURN_MS)
+        assertEquals(420L, Director.streakArrives(1)); assertEquals(460L, Director.payMs(2))
+        // With one of your prompts waiting the pay never runs under 200 ms; paid in full, the burst is full size.
+        val pay = steps.first { it.travel?.leg == Director.Leg.TAPS }
+        assertEquals(Director.PAY_MIN_MS, Director.lengthOf(pay, true, 0L))
+        assertEquals(1f, steps.first { it.travel?.leg == Director.Leg.REST }.travel!!.power)
         assertEquals(null, dev.cardstashy.nativeplay.ui.tapDelay(taps, 99))
         assertTrue(steps.mapNotNull { it.travel }.all { it.mine && it.cardId == 950 && it.stackId == 7 || it.leg == Director.Leg.TO_SLOT })
         // No step of the travel plays a sound of its own: the cast sound stays the table audio's one.
         assertTrue(steps.filter { it.travel != null }.all { it.cue == null })
-        // The rest is focal, so a waiting prompt or a long queue never cuts it under 900 ms.
+        // The rest is focal, so a waiting prompt or a long queue never cuts its burst and read (370 + 525).
         val rest = steps.first { it.travel?.leg == Director.Leg.REST }
         assertTrue(rest.focal)
-        for (w in listOf(true, false)) for (q in listOf(0L, 9000L)) assertTrue(Director.lengthOf(rest, w, q) >= Director.STACK_HOLD_MS)
+        for (w in listOf(true, false)) for (q in listOf(0L, 9000L)) assertTrue(Director.lengthOf(rest, w, q) >= Director.BURST_MS + Director.CAST_READ_MS)
+        assertEquals(Director.BURST_MIN_MS + Director.CAST_READ_PROMPT_MS, rest.minMs)
     }
 
     /**
@@ -98,13 +108,13 @@ class DirectorTest {
         val up = ev("zone", card = c, from = "Hand", to = "Stack", player = null)
         val asking = board(listOf(mountain), theirs = listOf(bears)).copy(inputType = "InputSelectTargets", message = "Select targets for Lightning Bolt", events = listOf(up))
         assertEquals(951, dev.cardstashy.nativeplay.ui.pendingCast(asking)?.id)
-        assertEquals(listOf("CAST:TO_STACK:stackcard:440"), legs(Director.plan(asking, listOf(up), before = start)))
+        assertEquals(listOf("CAST:TO_STACK:stackcard:370"), legs(Director.plan(asking, listOf(up), before = start)))
         val done = board(listOf(mountain.copy(tapped = true)), theirs = emptyList()).copy(inputType = null, message = "")
         val events = listOf(ev("cast", player = me, source = c, targets = listOf(card(960, "Grizzly Bears"))).copy(stackId = 8),
             ev("zone", card = c, from = "Stack", to = "Graveyard", player = me), ev("resolve", source = c))
-        assertEquals(listOf("CAST:TAPS:null:140", "CAST:REST:stackcard:900"), legs(Director.plan(done, events, before = asking)))
+        assertEquals(listOf("CAST:TAPS:stackcard:380", "CAST:REST:stackcard:895"), legs(Director.plan(done, events, before = asking)))
         // Cast in one poll with no question (nothing waited on the stack): the flight is there as before.
-        assertTrue(legs(Director.plan(done, listOf(up) + events, before = start)).contains("CAST:TO_STACK:stackcard:440"))
+        assertTrue(legs(Director.plan(done, listOf(up) + events, before = start)).contains("CAST:TO_STACK:stackcard:370"))
     }
 
     /** T6: Cancel while it asks: one leg from the stack back to its place in your hand, no other step and no card-to-hand sound. */
@@ -137,11 +147,11 @@ class DirectorTest {
         val events = listOf(ev("zone", card = a, from = "Hand", to = "Stack", player = null), ev("cast", player = me, source = a, targets = listOf(card(960, "Hill Giant"))),
             ev("zone", card = a, from = "Stack", to = "Battlefield", player = me), ev("attach", card = a), ev("resolve", source = a))
         val steps = Director.plan(st, events, before = before)
-        assertEquals(listOf("CAST:TO_STACK:stackcard:440", "CAST:REST:stackcard:900", "ENTER:TO_HOST:c960:380"), legs(steps))
+        assertEquals(listOf("CAST:TO_STACK:stackcard:370", "CAST:REST:stackcard:895", "ENTER:TO_HOST:c960:380"), legs(steps))
         assertTrue(steps.any { it.kind == Director.Kind.ATTACH && it.travel == null })
         // When Forge reports only the attach (no zone move), the attach carries the trip to the host.
         val bare = Director.plan(st, events.filter { it.type != "zone" }, before = before)
-        assertEquals(listOf("CAST:TO_STACK:stackcard:440", "CAST:REST:stackcard:900", "ATTACH:TO_HOST:c960:380"), legs(bare))
+        assertEquals(listOf("CAST:TO_STACK:stackcard:370", "CAST:REST:stackcard:895", "ATTACH:TO_HOST:c960:380"), legs(bare))
     }
 
     /** A land skips the stack: hand to its group, 380 ms, and no cast step. */
@@ -155,7 +165,7 @@ class DirectorTest {
         assertTrue(steps.none { it.kind == Director.Kind.CAST })
     }
 
-    /** The CPU's cast starts from its seat: it still thinks first, its lands tap, and its caption rides on the rest (at least 900 ms). */
+    /** The CPU's cast starts from its seat: it still thinks first, it goes up, its lands pay into it, and its caption rides on the rest (burst 370 + read 525). */
     @Test fun cpuCastThinksTapsFliesAndRestsWithItsCaption() {
         val mountain = permanent(70, "Mountain", "Basic Land — Mountain", controller = cpu)
         val chariot = permanent(903, "Goblin Chariot", "Creature — Goblin", controller = cpu)
@@ -164,11 +174,11 @@ class DirectorTest {
         val c = card(903, "Goblin Chariot")
         val steps = Director.plan(st, listOf(ev("cast", source = c), ev("zone", card = c, from = "Stack", to = "Battlefield"), ev("resolve", source = c)),
             Director.ThinkClock { .5 }, before = before).filter { it.held }
-        assertEquals(listOf("THINK:null:null", "CAST:TAPS:null", "CAST:TO_STACK:stackcard", "CAST:REST:stackcard", "ENTER:TO_SLOT:c903"),
+        assertEquals(listOf("THINK:null:null", "CAST:TO_STACK:stackcard", "CAST:TAPS:stackcard", "CAST:REST:stackcard", "ENTER:TO_SLOT:c903"),
             steps.map { "${it.kind}:${it.travel?.leg}:${it.travel?.toKey}" })
-        assertEquals(Director.tapsMs(1), 140L)
+        assertEquals(Director.tapsMs(1), 170L); assertEquals(380L, Director.payMs(1))
         val rest = steps.first { it.travel?.leg == Director.Leg.REST }
-        assertTrue(rest.beat?.title == "CPU casts Goblin Chariot" && rest.ms >= Director.STACK_HOLD_MS && rest.cpu)
+        assertTrue(rest.beat?.title == "CPU casts Goblin Chariot" && rest.ms >= Director.BURST_MS + Director.CAST_READ_MS && rest.cpu)
         assertTrue(steps.filter { it.travel != null }.none { it.travel!!.mine })
         // Its land: the caption as before, and the card travels from its seat to its group.
         val land = Director.plan(st, listOf(ev("land", card = card(71, "Mountain"))), Director.ThinkClock { .5 }).last()
