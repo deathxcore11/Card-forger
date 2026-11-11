@@ -215,7 +215,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
                     }
                 }
             }
-            banner?.let { b -> BannerView(b.text, b.yours, Modifier.align(Alignment.Center)) }
+            banner?.let { b -> BannerView(b.text, b.yours, Modifier) }
         }
         ((if (DualScreen.active) null else afk) ?: note)?.let { Text(it, style = Type.Label.copy(color = Color(0xFFFFB4A8), fontSize = 14.sp), modifier = Modifier.align(Alignment.TopCenter).padding(top = 96.dp)
             .clip(RoundedCornerShape(999.dp)).background(Color(0xD90C0C0E)).border(1.dp, Palette.Red, RoundedCornerShape(999.dp)).padding(horizontal = 16.dp, vertical = 8.dp)) }
@@ -762,11 +762,40 @@ private fun PromptPanel(p: Prompt, st: MatchState, c: MatchController, live: Boo
 
 @Composable
 private fun BannerView(text: String, yours: Boolean, modifier: Modifier) {
-    val a = remember(text) { Animatable(0f) }
-    LaunchedEffect(text) { a.animateTo(1f, tween(260)) }
-    Box(modifier.alpha(a.value).width(420.dp).aspectRatio(5f), contentAlignment = Alignment.Center) {
-        AssetImage(if (yours) "play/turn-you.webp" else "play/turn-cpu.webp", Modifier.fillMaxSize(), maxWidth = 1120, contentScale = ContentScale.Fit)
-        Text(text, style = Type.Title.copy(fontSize = 20.sp), textAlign = TextAlign.Center)
+    // Match punch P4: the banner grows from half size with a bounce (280 ms) over a streak that widens across the board (380), holds
+    // to 950 and fades out (240): gold for your turn, ice blue for the CPU's. It stands inside the board, on the centre line, and
+    // takes no touch. Reduce motion: it fades in and out at full size, no streak.
+    val still = Motion.still || Playmats.reduced(androidx.compose.ui.platform.LocalContext.current)
+    val a = remember(text) { Animatable(if (Motion.still) 1f else 0f) }
+    val grow = remember(text) { Animatable(if (still) 1f else .5f) }
+    val streak = remember(text) { Animatable(0f) }
+    LaunchedEffect(text) {
+        if (Motion.still) return@LaunchedEffect
+        launch { a.animateTo(1f, tween(120)) }
+        if (!still) { launch { grow.animateTo(1f, tween(280, easing = androidx.compose.animation.core.Easing { backOut(it) })) }
+            launch { streak.animateTo(1f, tween(380, easing = androidx.compose.animation.core.Easing { x -> if (x >= 1f) 1f else 1f - Math.pow(2.0, -10.0 * x).toFloat() })) } }
+        delay(950); a.animateTo(0f, tween(240))
+    }
+    val tone = if (yours) Color(0xFFF3D27E) else Color(0xFF5CC8FF)
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxSize()) {
+        val w = maxWidth.value; val h = maxHeight.value
+        val zones = remember(w, h, DualScreen.active) { ZoneLayout.of(w, h, dual = DualScreen.active, k = ZoneLayout.scale(w, h)) }
+        val mid = remember(zones) { TableGeometry.rows(DualScreen.active, zones.board.y, zones.board.bottom, zones.hb).divider }
+        val bw = minOf(420f, zones.board.w * .92f)
+        // The streak: a line of light along the centre line, widening out from the middle and staying inside the board.
+        androidx.compose.foundation.Canvas(Modifier.offset(x = zones.board.x.dp, y = (mid - 30f).dp).size(zones.board.w.dp, 60.dp).alpha(a.value)) {
+            val half = size.width / 2 * streak.value
+            if (half > 1f) { val y = size.height / 2
+                drawLine(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color.Transparent, tone.copy(alpha = .55f), Color.White.copy(alpha = .9f), tone.copy(alpha = .55f), Color.Transparent),
+                    startX = size.width / 2 - half, endX = size.width / 2 + half), androidx.compose.ui.geometry.Offset(size.width / 2 - half, y), androidx.compose.ui.geometry.Offset(size.width / 2 + half, y), strokeWidth = 3.dp.toPx())
+                drawLine(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color.Transparent, tone.copy(alpha = .16f), Color.Transparent),
+                    startX = size.width / 2 - half, endX = size.width / 2 + half), androidx.compose.ui.geometry.Offset(size.width / 2 - half, y), androidx.compose.ui.geometry.Offset(size.width / 2 + half, y), strokeWidth = 26.dp.toPx()) }
+        }
+        Box(Modifier.offset(x = (zones.board.x + zones.board.w / 2 - bw / 2).dp, y = (mid - bw / 10f).dp).width(bw.dp).aspectRatio(5f)
+            .graphicsLayer { alpha = a.value; scaleX = grow.value; scaleY = grow.value }, contentAlignment = Alignment.Center) {
+            AssetImage(if (yours) "play/turn-you.webp" else "play/turn-cpu.webp", Modifier.fillMaxSize(), maxWidth = 1120, contentScale = ContentScale.Fit)
+            Text(text, style = Type.Title.copy(fontSize = 20.sp), textAlign = TextAlign.Center)
+        }
     }
 }
 

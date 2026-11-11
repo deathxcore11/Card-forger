@@ -487,7 +487,11 @@ fun ForgeBoard(
             val docked = live && st.failure == null && !st.finished && st.prompt?.let { p -> p.method != "order" && !p.method.startsWith("assign") && p.options.none { it.zone in setOf("Library", "Graveyard", "Exile") } } == true
             // CPU half: lands at the back, creatures at the front; yours mirrored.
             // A creature Forge says must attack this combat wears a tag until it is in the attack.
-            androidx.compose.runtime.CompositionLocalProvider(LocalAttackInput provides (live && st.inputType == "InputAttack"),
+            // P4: the board before this one, to know which tiles the new turn readied (read in composition, so their turn is delayed).
+            val lastBoard = remember { arrayOfNulls<MatchState>(2) }
+            val ripple = remember(st.revision) { if (lastBoard[1] !== st) { lastBoard[0] = lastBoard[1]; lastBoard[1] = st }
+                lastBoard[0]?.let { untapOrder(it, st) } ?: emptyList() }
+            androidx.compose.runtime.CompositionLocalProvider(LocalUntapRipple provides (if (Motion.still || fx.reduced) emptyList() else ripple), LocalAttackInput provides (live && st.inputType == "InputAttack"),
                 LocalPayLight provides payLight, LocalHandCarry provides payLight.isNotEmpty(), LocalAbilityOpen provides abilityOpen, LocalPayInput provides (live && Glow.paying(st)),
                 LocalAttackNumbers provides (if (blockingNow && attackersNow.size > 1) attackersNow.withIndex().associate { (i, c) -> c.id to i + 1 } else emptyMap()),
                 LocalBlockDrag provides (if (blockingNow) blockDrag else null)) {
@@ -3002,9 +3006,16 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
 /** T5 item 1, P2: when a cast's lands tap ([taps], in order), land [id]'s turn starts this long after the first (80 ms apart); null: not one of them. */
 internal fun tapDelay(taps: List<Int>, id: Int): Long? = taps.indexOf(id).takeIf { it >= 0 }?.let { it * dev.cardstashy.nativeplay.match.Director.TAP_GAP_MS }
 
+/** Match punch P4: the tiles readied by the turn that just began, in ripple order ([untapOrder]); empty otherwise. */
+internal val LocalUntapRipple = androidx.compose.runtime.compositionLocalOf<List<Int>> { emptyList() }
+
 /** A tile's turn as it taps: a paying land one by one (170 ms each, 80 ms apart) while its cast's taps play, any other tap 180 ms. */
 @Composable
 private fun tapSpec(id: Int): androidx.compose.animation.core.AnimationSpec<Float> {
+    // Match punch P4, the untap ripple: on a new turn the readied tiles turn back one after another (240 ms each with a bounce, 50 ms
+    // apart, from 140 ms in) under the banner.
+    LocalUntapRipple.current.indexOf(id).takeIf { it >= 0 }?.let { i ->
+        return tween(UNTAP_TURN_MS, delayMillis = (UNTAP_AT_MS + i * UNTAP_GAP_MS).toInt(), easing = androidx.compose.animation.core.Easing { backOut(it) }) }
     val t = LocalTravel.current?.travel?.takeIf { it.leg == dev.cardstashy.nativeplay.match.Director.Leg.TAPS || it.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_POOL }
     // P2b: a cast that also spends floating mana sends the pool's streaks first; its lands follow them.
     val at = t?.let { tr -> tapDelay(tr.taps, id)?.let { it + tr.pool * dev.cardstashy.nativeplay.match.Director.TAP_GAP_MS } }

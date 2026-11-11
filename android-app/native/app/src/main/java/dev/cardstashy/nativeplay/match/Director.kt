@@ -228,7 +228,7 @@ object Director {
             when (e.type) {
                 "turn" -> {
                     active = e.player
-                    if (e.turn > 1) out += Step(Kind.BANNER, 1500, 900, if (e.player == me) "TT-001" else "TT-002", focal = true, cpu = cpu(e.player),
+                    if (e.turn > 1) out += Step(Kind.BANNER, BANNER_MS, 900, if (e.player == me) "TT-001" else "TT-002", focal = true, cpu = cpu(e.player),
                         banner = Banner("Turn ${e.turn} · " + if (e.player == me) "Your turn" else "CPU's turn", e.player == me))
                 }
                 // A land already on the board shown: its play was told from its move (below), in the board before this one.
@@ -428,6 +428,12 @@ object Director {
     const val LIFT_MS = 70L
     const val TO_STACK_MS = 370L
     /** T5 items 4 to 6: stack to its slot, stack to its host, a land from the hand to its group. */
+    /**
+     * Match punch P4, the turn banner: 280 in (from half size with a bounce over a widening streak), held to 950, 240 out. The
+     * steps after it start [BANNER_LEAD_MS] in and play under it (the untap ripple from 140, your draw from 380); it never blocks input.
+     */
+    const val BANNER_MS = 1190L
+    const val BANNER_LEAD_MS = 380L
     /** Match punch P3: on the stack the card rises 6 % and 12 dp ([RISE_MS]), then dives to its slot, accelerating (240). */
     const val RISE_MS = 90L
     const val TO_SLOT_MS = 330L

@@ -101,6 +101,8 @@ internal enum class Fx { DRAW, CAST, RESOLVE, ARRIVE, TOKEN, ATTACK, LUNGE, BLOC
     TRIG_SOURCE,
     /** Beat 3 on one changed card: a streak from the source, a flash, the change rising ("+1/+1"), the counter chip's pop, the trail line. */
     TRIG_LAND,
+    /** Match punch P4: a gold glint on [FxItem.card]'s tile as it turns back in the untap ripple. */
+    GLINT,
     /** Match punch P3, the landing's impact on [FxItem.card]'s tile: freeze, squash and spring, flash, ring, dust, sparks; [FxItem.power] scales shake and particles. */
     IMPACT }
 
@@ -223,6 +225,12 @@ class Battlefield {
             dev.cardstashy.nativeplay.match.Director.Leg.REST -> 1f + .08f * m.travel.power * out(el - D.BURST_FREEZE_MS, D.BURST_MS - D.BURST_FREEZE_MS)
             else -> 1f
         }
+    }
+
+    /** P4: your drawn card [id] is still on its way (its own picture flies in): its hand card stays clear until it tucks in. */
+    internal fun drawHides(id: Int): Boolean {
+        val t = now.longValue
+        return !reduced && items.any { it.kind == Fx.DRAW && it.card == id && it.ghost != null && !it.done(t) }
     }
 
     /** P1: a payoff's short freeze. Pauses the effect clock only (effects, particles, jolts); input and the bridge run on. */
@@ -519,10 +527,20 @@ class Battlefield {
 
         // Draw (level 1, 350 ms): a card slides off the library into the hand.
         val drawn = b.me.hand.filter { it.id !in handA && it.id !in bfA && it.id !in stackSrcA && a.players.none { p -> p.graveyard.any { g -> g.id == it.id } } }
-        drawn.take(3).forEachIndexed { i, _ -> draws += FxItem(Fx.DRAW, 1, 350, player = viewer, mine = true, fromKey = "lib$viewer", toKey = "hand", delay = i * 90L) }
+        // Match punch P4: a new turn's draw waits for the banner (380 ms in); the untap ripple starts at 140, each tile 50 ms apart.
+        val newTurn = a.turn != b.turn
+        val lead = if (newTurn) DRAW_AT_MS else 0L
+        // P4, your draw (up to three; an opening hand keeps the quick slide): the card itself lifts off your deck (90), flips while
+        // it flies to a spot above the hand at 1.6 (320), holds there in an ice ring (380) and tucks in as the hand spreads (260).
+        // On two screens the hand is below: it leaves through the top screen's bottom edge and the bottom screen shows it.
+        if (drawn.size <= 3 && !DualScreen.active && !reduced) drawn.forEachIndexed { i, c ->
+            draws += FxItem(Fx.DRAW, 1, MY_DRAW_MS, card = c.id, player = viewer, mine = true, fromKey = "lib$viewer", toKey = "hand${c.id}", ghost = c, delay = lead + i * 150L) }
+        else drawn.take(3).forEachIndexed { i, _ -> draws += FxItem(Fx.DRAW, 1, 350, player = viewer, mine = true, fromKey = "lib$viewer", toKey = "hand", delay = lead + i * 90L) }
+        if (newTurn) untapOrder(a, b).forEachIndexed { i, id -> draws += FxItem(Fx.GLINT, 1, 260, card = id, tone = Color(0xFFF3D27E), delay = UNTAP_AT_MS + i * UNTAP_GAP_MS) }
         for (p in b.players) if (!p.isViewer && p.id != viewer) {
             val q = a.players.firstOrNull { it.id == p.id } ?: continue
-            if (p.handCount > q.handCount && p.libraryCount < q.libraryCount) draws += FxItem(Fx.DRAW, 1, 350, player = p.id, fromKey = "lib${p.id}", toKey = "cpuhand")
+            // P4, the CPU's draw: a card back, 90 lift + 300, no hold.
+            if (p.handCount > q.handCount && p.libraryCount < q.libraryCount) draws += FxItem(Fx.DRAW, 1, 390, player = p.id, fromKey = "lib${p.id}", toKey = "cpuhand", delay = lead)
         }
 
         // Cast (level 2, 450 ms): the card lifts out of the hand to the stack; an ability starts at its permanent.
@@ -797,6 +815,80 @@ val LocalTableCue = staticCompositionLocalOf<((String, Float, Float) -> Unit)?> 
 private val MANA_GLOW = mapOf('W' to Color(0xFFFFF1C2), 'U' to Color(0xFF5AB4FF), 'B' to Color(0xFFB08BD8), 'R' to Color(0xFFFF7A4A), 'G' to Color(0xFF6BE08A))
 
 private fun easeOutBack(x: Float): Float { val c1 = 1.70158f; val c3 = c1 + 1f; return 1f + c3 * (x - 1f).let { it * it * it } + c1 * (x - 1f).let { it * it } }
+/** Match punch P4: on a new turn the untap ripple starts 140 ms in (each tile 240 ms, 50 apart) and the draw 380 ms in. */
+internal const val UNTAP_AT_MS = 140L
+internal const val UNTAP_GAP_MS = 50L
+internal const val UNTAP_TURN_MS = 240
+internal const val DRAW_AT_MS = 380L
+/** P4, your draw: lift 90, flip and fly 320, hold 380, tuck 260. */
+internal const val MY_DRAW_MS = 1050L
+
+/**
+ * P4: the cards the player whose turn began readied, in the order the ripple runs: the back row (lands) left to right as Forge
+ * lists them, then the rest. Read from the two boards; nothing is predicted.
+ */
+internal fun untapOrder(a: MatchState, b: MatchState): List<Int> {
+    if (a.turn == b.turn) return emptyList()
+    val was = a.players.flatMap { it.battlefield }.filter { it.tapped }.map { it.id }.toSet()
+    val now = b.players.firstOrNull { it.id == b.activePlayer }?.battlefield.orEmpty().filter { !it.tapped && it.id in was }
+    return (now.filter { it.isLand } + now.filter { !it.isLand }).map { it.id }
+}
+
+/** P4: the ice ring and eight sparks around your drawn card as it holds above the hand (the card itself is [DrawnCard]). */
+private fun DrawScope.drawMyDraw(fx: Battlefield, it: FxItem, p: Float, hand: Rect?) {
+    val ms = p * it.dur
+    if (ms < 410f || fx.low || hand == null) return
+    val at = Offset(hand.center.x, hand.top - hand.height * .55f)
+    if (it.once(1)) fx.bits.sparks(at, 8, Color(0xFF5CC8FF), fx.now.longValue, 110f * density, lifeMs = 420, sizePx = 1.5f * density, seed = it.card ?: 0)
+}
+
+/** P4: where your drawn card is at [ms] into its draw: centre (root px), scale against its hand size, how far it has flipped (0 back, 1 face), alpha. */
+internal fun myDrawAt(ms: Float, lib: Offset, spot: Offset, home: Offset, dp: Float): FloatArray {
+    val out = FloatArray(5)
+    when {
+        ms < 90f -> { val e = 1f - (1f - ms / 90f).let { it * it }; out[0] = lib.x; out[1] = lib.y - 18f * dp * e; out[2] = .3f + .2f * e; out[3] = 0f }
+        ms < 410f -> { val q = (ms - 90f) / 320f; val e = 1f - (1f - q).let { it * it * it }
+            out[0] = lib.x + (spot.x - lib.x) * e; out[1] = lib.y - 18f * dp + (spot.y - (lib.y - 18f * dp)) * e; out[2] = .5f + 1.1f * e; out[3] = q }
+        ms < 790f -> { out[0] = spot.x; out[1] = spot.y; out[2] = 1.6f; out[3] = 1f }
+        else -> { val q = ((ms - 790f) / 260f).coerceIn(0f, 1f); val e = q * q * (3f - 2f * q)
+            out[0] = spot.x + (home.x - spot.x) * e; out[1] = spot.y + (home.y - spot.y) * e; out[2] = 1.6f - .6f * e; out[3] = 1f }
+    }
+    out[4] = 1f
+    return out
+}
+
+@Composable
+private fun DrawnCard(it: FxItem, fx: Battlefield, anchors: Anchors, self: Offset, density: androidx.compose.ui.unit.Density) {
+    val card = it.ghost ?: return
+    Box(Modifier.size(66.dp, 92.dp).graphicsLayer {
+            val p = it.p(fx.now.longValue)
+            anchors.version.intValue
+            val lib = it.fromKey?.let { k -> anchors.rects[k] }
+            val tray = anchors.rects["handTray"] ?: anchors.rects["hand"]
+            if (p < 0f || lib == null || tray == null) { alpha = 0f; return@graphicsLayer }
+            val home = it.toKey?.let { k -> anchors.rects[k] }
+            val base = home?.height ?: (tray.height * .86f)
+            val spot = Offset(tray.center.x, tray.top - base * .55f)
+            val at = myDrawAt(p * it.dur, lib.center, spot, home?.center ?: tray.center, density.density)
+            val k = at[2] * base / size.height
+            transformOrigin = androidx.compose.ui.graphics.TransformOrigin(.5f, .5f)
+            translationX = at[0] - self.x - size.width / 2; translationY = at[1] - self.y - size.height / 2
+            // The flip: the back narrows to nothing at the half-way point and the face widens again.
+            scaleX = k * abs(cos(PI.toFloat() * at[3])).coerceAtLeast(.02f); scaleY = k
+            alpha = if (p >= 1f) 0f else 1f
+        }.semantics { contentDescription = "${card.name} drawn" }
+        .clip(RoundedCornerShape(5.dp)).background(Color(0xFF141418))
+        .drawWithContent {
+            drawContent()
+            // The ice ring while it holds above the hand.
+            val ms = it.p(fx.now.longValue) * it.dur
+            if (ms in 410f..790f) drawRoundRect(Color(0xFF5CC8FF).copy(alpha = .9f * (1f - (ms - 410f) / 380f * .5f)), Offset.Zero, size, CornerRadius(5f * density.density), style = Stroke(width = 2.5f * density.density))
+        }) {
+        CardImage(card.name, Modifier.fillMaxSize().graphicsLayer { alpha = if (it.p(fx.now.longValue) * it.dur >= 250f) 1f else 0f }, crop = false)
+        Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (it.p(fx.now.longValue) * it.dur >= 250f) 0f else 1f }) { CardBack(Modifier.fillMaxSize()) }
+    }
+}
+
 /** The preview's E.elastic: 0 at 0, overshooting and ringing down to 1 (a squash springing back). */
 internal fun elasticOut(x: Float): Float = if (x <= 0f) 0f else if (x >= 1f) 1f else Math.pow(2.0, -10.0 * x).toFloat() * sin((x * 10f - .75f) * (2f * PI.toFloat() / 3f)) + 1f
 /** P3: a landing's impact as a whole (the neighbours' 620 ms spring is its longest part). */
@@ -938,6 +1030,8 @@ internal fun FxLayer(force: Boolean = false) {
     Box(Modifier.fillMaxSize().onGloballyPositioned { val b = it.boundsInRoot(); self = b.topLeft; fx.origin = b.topLeft; fx.stageCentre = b.center }) {
         // Dying cards: the last picture of the card, breaking into holo bands as it drifts to its graveyard.
         for (it in fx.items) if (it.kind == Fx.DEATH && it.ghost != null && it.from != null) key(it) { Ghost(it, fx, anchors, self, density) }
+        // P4: your drawn card itself, on its way from your deck to its place in your hand.
+        if (!fx.reduced) for (it in fx.items) if (it.kind == Fx.DRAW && it.ghost != null) key(it) { DrawnCard(it, fx, anchors, self, density) }
         Canvas(Modifier.fillMaxSize()) {
             val t = fx.now.longValue
             anchors.version.intValue
@@ -963,7 +1057,8 @@ internal fun FxLayer(force: Boolean = false) {
                     continue
                 }
                 when (it.kind) {
-                    Fx.DRAW -> drawDraw(it, p, rect(it.fromKey), rect(it.toKey) ?: Rect(size.width / 2 - 20f, size.height - 60f, size.width / 2 + 20f, size.height))
+                    Fx.GLINT -> rect("c${it.card}")?.let { r -> drawRoundRect(it.tone.copy(alpha = .4f * (1f - p)), r.topLeft, r.size, CornerRadius(10.dp.toPx())) }
+                    Fx.DRAW -> if (it.ghost != null) drawMyDraw(fx, it, p, rect("handTray") ?: rect("hand")) else drawDraw(it, p, rect(it.fromKey), rect(it.toKey) ?: Rect(size.width / 2 - 20f, size.height - 60f, size.width / 2 + 20f, size.height))
                     Fx.CAST -> drawCast(it, p, rect(it.fromKey) ?: (if (it.mine) Rect(size.width / 2, size.height - 40f, size.width / 2, size.height) else Rect(size.width / 2, 0f, size.width / 2, 20f)), rect(it.toKey))
                     Fx.RESOLVE -> drawResolve(it, p, it.from?.translate(-self.x, -self.y), rect(it.toKey))
                     Fx.ARRIVE -> rect("c${it.card}")?.let { r -> if (it.entrance > 0) drawEntrance(tm, it, p, r, fx.stageCentre?.let { c -> c - self }) else drawArrive(it, p, r) }

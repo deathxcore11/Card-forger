@@ -206,6 +206,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     private var poller: Job? = null
     private var player: Job? = null
     private var autoJob: Job? = null
+    private var bannerJob: Job? = null
     /** Snapshots waiting to be shown. Counted on the polling thread and the main thread both, so atomic: a plain count
      *  drifted, and a drifted count kept a decision from ever going live after your tap (a stuck table). */
     private val queue = java.util.concurrent.atomic.AtomicInteger(0)
@@ -490,7 +491,10 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                     step.travel?.let { startLeg(it, i) }
                     when {
                         step.kind == Director.Kind.THINK -> think(ms, st.cpu.handCount)
-                        step.banner != null -> { _banner.value = step.banner; hold(ms); _banner.value = null }
+                        // Match punch P4: the banner plays out its 1190 ms on its own while the steps after it start 380 ms in, under it.
+                        step.banner != null -> { val b = step.banner; _banner.value = b
+                            bannerJob?.cancel(); bannerJob = scope.launch { delay(ms); if (_banner.value === b) _banner.value = null }
+                            hold(minOf(ms, Director.BANNER_LEAD_MS)) }
                         step.beat != null -> {
                             if (step.beat.cardId != null && hidden.remove(step.beat.cardId)) show(board())
                             beat(step.beat, ms)

@@ -96,6 +96,7 @@ fun HandFan(
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
+    val drawFx = LocalBattlefield.current
     // 0.4.59 T5: where each card sits, so the one you cast travels to the stack from its own place.
     val handAnchors = LocalAnchors.current
     var focus by remember { mutableStateOf<Int?>(null) }        // card id under the finger
@@ -296,7 +297,8 @@ fun HandFan(
                         rotationZ = if (isDrag && !isLeaving) (drag.value.x / 40f).coerceIn(-8f, 8f) else ar
                         val sc = if (isLeaving) 1f + .15f * sin(f * PI.toFloat()) + (asc - 1f) * (1f - f) else asc
                         scaleX = sc; scaleY = sc
-                        alpha = if (card.id == backId) 0f else if (isLeaving) 1f - f * f else 1f
+                        // Match punch P4: a card you are drawing is its own picture on its way here; its place stays clear until it tucks in.
+                        alpha = if (card.id == backId || drawFx?.drawHides(card.id) == true) 0f else if (isLeaving) 1f - f * f else 1f
                     }.then(if (handAnchors != null && !isLeaving) Modifier.onGloballyPositioned { handAnchors.putRect("hand${card.id}", it.boundsInRoot()) } else Modifier)
                         .onFocusChanged { if (it.isFocused) focus = card.id else if (focus == card.id && dragging == null) focus = null }
                         .padActs(padHere).matchPadTap(padSource, padFocus) { current.firstOrNull { it.id == card.id }?.let { padPress(it) } }) {
