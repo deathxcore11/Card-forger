@@ -39,6 +39,8 @@ import dev.cardstashy.nativeplay.account.Decks as Workspace
 @Config(sdk = [35], qualifiers = "w960dp-h540dp-land-xhdpi")
 class PadLobbyTest {
     @get:Rule val rule = createComposeRule()
+    // The lobby draws hero art through CardArt; run alone (or first in its JVM) nothing else has started it.
+    init { dev.cardstashy.nativeplay.art.CardArt.init(org.robolectric.RuntimeEnvironment.getApplication()) }
     @After fun off() { Pad.forget() }
 
     private val cards by lazy { JsonParser.parseString(javaClass.classLoader!!.getResource("lobby-cards.json")!!.readText()).asJsonArray.map { it.asJsonObject } }
