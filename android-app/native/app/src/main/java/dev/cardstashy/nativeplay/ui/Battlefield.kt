@@ -11,6 +11,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -130,6 +135,8 @@ class Battlefield {
     internal var reduced = false
     /** Effects set to Minimal (Low power): the beat stays (moves, numbers, ticks); sparks, trails, rays and shards go. */
     internal var low = false
+    /** 0.4.59 T5: the leg of a card's travel the table draws now (set by FxDriver before each snapshot is read). */
+    internal var travel: dev.cardstashy.nativeplay.match.TravelMoment? = null
     /** The frame clock (ms). Draw lambdas read it; the composition never does. */
     internal val now = mutableLongStateOf(0L)
     /** Bumped when the set of running effects changes, so card layers know to look again. */
@@ -437,8 +444,8 @@ class Battlefield {
                 mine -> "hand"
                 else -> "cpuhand"
             }
-            // A CPU spell is the card itself flying to the stack (StackFan); only abilities and your own casts keep the light thread.
-            if (!mine && !s.ability) continue
+            // 0.4.59 T5: a spell, yours or the CPU's, is the card itself flying to the stack (TravelCard); only abilities keep the light thread.
+            if (!s.ability) continue
             casts += FxItem(Fx.CAST, 2, 450, card = null, mine = mine, fromKey = from, toKey = "stackcard", tone = if (mine) Color(0xFFF3D27E) else Color(0xFFFF8A5C))
         }
         // Resolve (level 2, 300 ms): the stack card ripples; a spell with targets sends its light to them.
@@ -463,6 +470,18 @@ class Battlefield {
             val fromCommand = a.players.any { p -> p.command.any { it.id == id } }
             val lvl = entranceLevel(c, fromStack || fromCommand, waiting = b.waitingOnMe)
             val mine = c.controller == viewer
+            // 0.4.59 T5: a card that travelled here (stack to slot, hand to group) is drawn by TravelCard on its way; its tile stays
+            // clear until it lands, then takes the landing squash (level 0) or its entrance from where it landed (levels 1 and 2).
+            val came = travel?.travel?.takeIf { !reduced && it.cardId == id && it.leg in TRAVEL_LANDS }
+            if (came != null) {
+                arrivals += when (lvl) {
+                    2 -> FxItem(Fx.ARRIVE, 2, ENTRANCE2_MS, card = id, mine = mine, tone = tone, entrance = 2, delay = came.ms,
+                        title = c.name + "\n" + (if (mine) "Your commander" else "Their commander"))
+                    1 -> FxItem(Fx.ARRIVE, 2, ENTRANCE1_MS, card = id, mine = mine, tone = tone, land = c.isLand, entrance = 1, delay = came.ms)
+                    else -> FxItem(Fx.ARRIVE, 1, 135, card = id, mine = mine, tone = tone, land = c.isLand, delay = came.ms).also { it.p0 = .7f }
+                }
+                continue
+            }
             arrivals += when (lvl) {
                 2 -> FxItem(Fx.ARRIVE, 2, ENTRANCE2_MS, card = id, mine = mine, from = if (fromStack) stackRect else null, fromKey = key, tone = tone,
                     entrance = 2, title = c.name + "\n" + (if (mine) "Your commander" else "Their commander"))
@@ -668,6 +687,11 @@ class Battlefield {
 }
 
 val LocalBattlefield = staticCompositionLocalOf<Battlefield?> { null }
+/** 0.4.59 T5: the cast's travel leg right now (TableScreen provides the controller's), read by TravelCard, the stack and the aura strips. */
+val LocalTravel = androidx.compose.runtime.compositionLocalOf<dev.cardstashy.nativeplay.match.TravelMoment?> { null }
+internal val TRAVEL_LANDS = setOf(dev.cardstashy.nativeplay.match.Director.Leg.TO_SLOT, dev.cardstashy.nativeplay.match.Director.Leg.TO_HOST, dev.cardstashy.nativeplay.match.Director.Leg.TO_GROUP)
+/** Screenshots and tests: where in its leg the travelling card is drawn (0..1); null runs on the frame clock. */
+internal object TravelClock { var fixed: Float? = null }
 /** The table's sound player (id, volume, playback rate); none outside a match and in tests. */
 val LocalTableCue = staticCompositionLocalOf<((String, Float, Float) -> Unit)?> { null }
 
@@ -687,7 +711,8 @@ internal fun FxDriver(fx: Battlefield, st: MatchState) {
     val reduced = androidx.compose.runtime.remember { Playmats.reduced(view.context) }
     SideEffect { fx.onCue = cue; fx.reduced = reduced; fx.low = AppSettings.effects == "minimal" }
     val trig = LocalTrigger.current
-    SideEffect { fx.trigger(trig, st, anchors); fx.take(st, anchors) }
+    val travel = LocalTravel.current
+    SideEffect { fx.travel = travel; fx.trigger(trig, st, anchors); fx.take(st, anchors) }
     LaunchedEffect(fx) { if (!Motion.still) while (true) withFrameMillis { fx.tick(it) } }
 }
 
@@ -1363,5 +1388,77 @@ private fun DrawScope.pop(tm: androidx.compose.ui.text.TextMeasurer, text: Strin
         // A dark outline so the number reads on any art.
         for ((dx, dy) in listOf(-1.5f to 0f, 1.5f to 0f, 0f to -1.5f, 0f to 1.5f)) drawText(tm, text, tl + Offset(dx * density, dy * density), style.copy(color = Color.Black.copy(alpha = .9f * a)))
         drawText(tm, text, tl, style.copy(color = col.copy(alpha = col.alpha * a)))
+    }
+}
+
+/**
+ * 0.4.59 T5, the cast travels: the card itself on its way. To the stack (440 ms, ease-out): from its place in your hand (on two
+ * screens, in through the bottom edge of the top screen) or from the CPU's seat face down, turning face up, growing to the stack
+ * size; the stack card stays clear until it arrives. To its slot or host (380 ms): from the stack, the whole card cropping to its
+ * art as it shrinks into the tile. A land skips the stack: hand (or the CPU's seat) to its group, 380 ms. With reduce motion
+ * nothing moves (the card is simply where it ends) while the same pauses still play.
+ */
+@Composable
+internal fun TravelCard() {
+    val m = LocalTravel.current ?: return
+    val t = m.travel
+    if (t.leg == dev.cardstashy.nativeplay.match.Director.Leg.TAPS || t.leg == dev.cardstashy.nativeplay.match.Director.Leg.REST) return
+    if (LocalBattlefield.current?.reduced == true) return
+    val anchors = LocalAnchors.current ?: return
+    val name = t.name ?: return
+    val toStack = t.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_STACK
+    val fromHand = toStack || t.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_GROUP
+    val dual = DualScreen.active
+    val p = remember(m.key) { androidx.compose.runtime.mutableFloatStateOf(TravelClock.fixed ?: 0f) }
+    LaunchedEffect(m.key) {
+        if (TravelClock.fixed != null) return@LaunchedEffect
+        val start = withFrameMillis { it }
+        while (p.floatValue < 1f) withFrameMillis { p.floatValue = ((it - start).toFloat() / t.ms.coerceAtLeast(1)).coerceIn(0f, 1f) }
+    }
+    var self by remember { mutableStateOf(Rect.Zero) }
+    val density = LocalDensity.current
+    /** Where it starts: the stack card (to a slot or host), your hand card, the CPU's seat; on two screens your card enters at the bottom edge. */
+    fun source(dest: Rect): Rect? {
+        val r = anchors.rects
+        if (!fromHand) return r["stackcard"]
+        if (!t.mine) return r["cpuhand"]
+        if (!dual) (r["hand${t.cardId}"] ?: r["hand"])?.let { return it }
+        val w = dest.width; val h = dest.height
+        return Rect(self.center.x - w / 2, self.bottom, self.center.x + w / 2, self.bottom + h)
+    }
+    fun frame(): Rect? {
+        anchors.version.intValue
+        val b = t.toKey?.let { anchors.rects[it] } ?: return null
+        val a = source(b) ?: return null
+        val q = p.floatValue
+        val e = if (toStack) 1f - (1f - q).let { it * it * it } else smooth(0f, 1f, q)
+        val c = lerpO(a.center, b.center, e)
+        val arc = sin(PI.toFloat() * e) * 20f * density.density * (if (t.mine) -1f else 1f)
+        val w = a.width + (b.width - a.width) * e; val h = a.height + (b.height - a.height) * e
+        return Rect(c.x - w / 2, c.y - h / 2 + arc, c.x + w / 2, c.y + h / 2 + arc)
+    }
+    val rim = if (t.mine) Color(0xFFE8B95B) else CpuRed
+    val shape = RoundedCornerShape(8.dp)
+    Box(Modifier.fillMaxSize().onGloballyPositioned { self = it.boundsInRoot() }) {
+        Box(Modifier
+            .layout { measurable, c ->
+                val r = frame()
+                val pl = measurable.measure(androidx.compose.ui.unit.Constraints.fixed((r?.width ?: 1f).roundToInt().coerceAtLeast(1), (r?.height ?: 1f).roundToInt().coerceAtLeast(1)))
+                layout(c.maxWidth, c.maxHeight) { pl.place(((r?.left ?: 0f) - self.left).roundToInt(), ((r?.top ?: 0f) - self.top).roundToInt()) }
+            }
+            .graphicsLayer {
+                if (frame() == null) { alpha = 0f; return@graphicsLayer }
+                // The CPU's card turns face up on its way out of the seat.
+                if (!t.mine && fromHand) { rotationY = 180f * (1f - smooth(0f, .6f, p.floatValue)); cameraDistance = 12f * density.density }
+            }
+            .anchorRect("travelcard")
+            .semantics { contentDescription = "$name on its way" }
+            .clip(shape).background(Color(0xFF141418)).border(2.dp, rim, shape)) {
+            // Into a tile the whole card gives way to its art as it shrinks.
+            val crop = !fromHand
+            CardImage(name, Modifier.fillMaxSize().graphicsLayer { if (crop) alpha = 1f - smooth(.35f, .9f, p.floatValue) }, crop = false)
+            if (crop) CardImage(name, Modifier.fillMaxSize().graphicsLayer { alpha = smooth(.35f, .9f, p.floatValue) }, crop = true)
+            if (!t.mine && fromHand) Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (p.floatValue < .3f) 1f else 0f }) { CardBack(Modifier.fillMaxSize()) }
+        }
     }
 }

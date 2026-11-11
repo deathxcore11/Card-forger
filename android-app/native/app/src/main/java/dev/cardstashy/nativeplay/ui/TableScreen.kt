@@ -111,6 +111,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     val beat by controller.beat.collectAsState()
     // A TRIGGER SHOWS ITSELF: the trigger beat now playing (the board draws it; on two screens it stays on the top screen with the board).
     val trig by controller.trigger.collectAsState()
+    val travel by controller.travel.collectAsState()
     // The CPU's last action stays in the feed, quieter, until the next turn's banner.
     var lastBeat by remember { mutableStateOf<Beat?>(null) }
     LaunchedEffect(beat) { beat?.let { lastBeat = it } }
@@ -191,8 +192,8 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
                     // table-emotes.mjs mount(): the CPU's hello once the match is on; everything goes with the table.
                     LaunchedEffect(Unit) { TableEmotes.start(this) }
                     DisposableEffect(Unit) { onDispose { TableEmotes.destroy() } }
-                    CompositionLocalProvider(LocalMatchClock provides controller.clock.collectAsState().value, LocalTrigger provides trig) {
-                    ForgeBoard(st, live && beat == null && trig == null, controller.intents, selectedHand, { selectedHand = it }, { inspect = it }, { menu = true },
+                    CompositionLocalProvider(LocalMatchClock provides controller.clock.collectAsState().value, LocalTrigger provides trig, LocalTravel provides travel) {
+                    ForgeBoard(st, live && beat == null && trig == null && travel == null, controller.intents, selectedHand, { selectedHand = it }, { inspect = it }, { menu = true },
                         handOrder, { handOrder = it }, menu = matchMenu, afk = if (DualScreen.active) afk else null) {
                         TableSide(st, controller, beat, live, lastBeat) { inspect = it }
                     }
@@ -485,33 +486,13 @@ private fun Hand(st: MatchState, c: MatchController, live: Boolean, sizes: Sizes
 @Composable
 private fun TableSide(st: MatchState, c: MatchController, beat: Beat?, live: Boolean, lastBeat: Beat?, onInspect: (Card) -> Unit) {
     Box(Modifier.fillMaxSize()) {
-        // Arena style: no window. A CPU cast, trigger or ability gets the spotlight (the card big at the right and our glass box
-        // beside it, table-feel spec 2); other beats keep their one line of glass. Your own spell gets the same, in gold, as it lands on the stack.
-        // A CPU cast has no glass box any more (director spec 7): the card itself flies onto the stack and is read there.
+        // Arena style: no window. A CPU trigger or ability gets the spotlight (the card big at the right and our glass box beside
+        // it, table-feel spec 2); other beats keep their one line of glass. A cast, yours or the CPU's, has no side panel any more
+        // (0.4.59 T5, which ends faults 6 and 11): the card itself travels to the stack, rests there with its rim and is read there.
         val spot = beat?.let { spotlightFor(st, it) }?.takeIf { it.verb != "casts" }
-        // Your own spell: up while it is on the stack, at most 1.6 s, and gone 0.7 s after it leaves the stack, on any new step or turn,
-        // or when a CPU beat takes the stage. Each clear runs on its own clock, so a stack change can't cancel it (Randall, test 3:
-        // the pop-up stayed through combat and the CPU's turn when the spell resolved inside the 1.6 s).
-        var mine by remember { mutableStateOf<Pair<Spotlight, Int>?>(null) }
-        val top = st.stack.firstOrNull()
-        val seen = remember { HashSet<Int>() }
-        LaunchedEffect(top?.id) {
-            val t = top ?: return@LaunchedEffect
-            if (t.controller != st.viewer || t.ability || t.source == null || !seen.add(t.id)) return@LaunchedEffect
-            mine = Spotlight(t.source, "You", "cast", t.targets.map { r -> if (r.kind == "player") (if (r.id == st.viewer) "you" else "CPU") else r.name ?: "" }, 1600, yours = true) to t.id
-        }
-        val shownMine = mine
-        LaunchedEffect(shownMine) { if (shownMine != null) { delay(1600); if (mine === shownMine) mine = null } }
-        val stillOn = shownMine != null && st.stack.any { it.id == shownMine.second }
-        LaunchedEffect(shownMine, stillOn) { if (shownMine != null && !stillOn) { delay(700); if (mine === shownMine) mine = null } }
-        val step = st.turn to st.phase
-        var lastStep by remember { mutableStateOf(step) }
-        if (step != lastStep) { lastStep = step; mine = null }
-        if (beat != null && mine != null) mine = null
         when {
             spot != null -> CastSpotlight(spot) { c.next() }
             beat != null -> BeatCaption(beat, Modifier.align(Alignment.TopCenter).padding(top = 58.dp)) { c.next() }
-            mine != null -> CastSpotlight(mine!!.first) { mine = null }
         }
         // native-panel.mjs dock: Forge's own questions (triggers order, costs, damage split, search, choices). Called every frame: the
         // spell-mode back-out acts on the step after a prompt.

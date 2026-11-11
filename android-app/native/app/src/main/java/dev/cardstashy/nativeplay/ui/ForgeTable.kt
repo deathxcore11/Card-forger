@@ -242,7 +242,7 @@ private val UsableViolet = Color(0xFFB79CFF)
 private val PayGold = Color(0xFFFFD98A)
 private val Ember = Color(0xFFFF9A7A)
 private val Sky = Color(0xFF8FDCFF)
-private val CpuRed = Color(0xFFE0533F)
+internal val CpuRed = Color(0xFFE0533F)
 private val StopOrange = Color(0xFFFF8A3D)
 
 internal fun sans(size: TextUnit, weight: FontWeight = FontWeight.Bold, color: Color = Color(0xFFEEE6D4)) =
@@ -904,6 +904,8 @@ fun ForgeBoard(
             CombatLine(st, mid, W, d)
             // Arrivals, casts, hits, deaths and numbers over the cards, under the threads.
             FxLayer()
+            // 0.4.59 T5: the card itself on its way to the stack, its slot, its host or its group.
+            TravelCard()
             // Arrows: attackers to what they attack, blockers to their attacker, your spell to its targets, the top of the stack to its own.
             Arrows(st, live, intents, d)
             if (blockingNow) DragLine(blockDrag, d)
@@ -1051,9 +1053,11 @@ internal fun aurasOn(card: Card, lookup: (Int) -> Card?): List<Card> =
  */
 @Composable
 private fun AuraStrips(card: Card, auras: List<Card>, w: Dp, h: Dp, advance: Dp?, mineSide: Boolean, modifier: Modifier, d: Du) = with(d) {
-    val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tween(180, easing = FastOutSlowInEasing), label = "auraTap")
+    val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tapSpec(card.id), label = "auraTap")
     val shown = auras.take(TableGeometry.STRIPS_MAX); val n = shown.size; val more = auras.size - n
     val anchors = LocalAnchors.current
+    // 0.4.59 T5: an aura on its way from the stack (TravelCard) shows its strip once it has arrived.
+    val coming = LocalTravel.current?.travel?.takeIf { it.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_HOST && LocalBattlefield.current?.reduced != true }?.cardId
     Box(modifier.size(w, h).graphicsLayer { rotationZ = turn; val s = if (card.tapped) .94f else 1f; scaleX = s; scaleY = s
         translationY = if (card.attacking) (if (mineSide) -1f else 1f) * (advance?.toPx() ?: (12f * u * density)) else 0f }) {
         // The name bar takes about 60 % of the 15 % that shows, so a sliver of the aura's art shows under it; on a small tile
@@ -1063,6 +1067,7 @@ private fun AuraStrips(card: Card, auras: List<Card>, w: Dp, h: Dp, advance: Dp?
             val shape = RoundedCornerShape(6.du)
             Box(Modifier.offset(x = w * .04f, y = -h * (TableGeometry.STRIP * (n - i)))
                 .size(w * .92f, h * .6f)
+                .graphicsLayer { if (a.id == coming) alpha = 0f }
                 .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("aura${a.id}", it.boundsInRoot()) } else Modifier)
                 .drawBehind { drawRoundRect(Color(0x99000000), topLeft = Offset(0f, 3.dp.toPx()), size = size, cornerRadius = CornerRadius(6.du.toPx())) }
                 .clip(shape).background(Color(0xFF141418)).border(1.dp, Color(0x33E8D3A0), shape)
@@ -1120,7 +1125,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
     val usableRing = mark == Mark.USABLE && !LocalHandCarry.current
     val paid = card.id in LocalPayLight.current
     // Tap: 180 ms (Living Battlefield page 9).
-    val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tween(180, easing = FastOutSlowInEasing), label = "tap")
+    val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tapSpec(card.id), label = "tap")
     val anchors = LocalAnchors.current
     val fx = LocalBattlefield.current
     val shape = RoundedCornerShape(10.du)
@@ -1543,8 +1548,13 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
         val fly = remember { Animatable(1f) }
         var flyFrom by remember { mutableStateOf<Offset?>(null) }
         val flown = remember { HashSet<Int>() }
+        // 0.4.59 T5: while the card itself travels here (TravelCard) the stack card stays clear, and its own flight is not needed.
+        val travel = LocalTravel.current?.travel
+        val reducedFx = LocalBattlefield.current?.reduced == true
+        val arriving = !reducedFx && travel?.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_STACK && travel.cardId != null && travel.cardId == top.source?.id
+        val travelled = travel?.cardId != null && travel.cardId == top.source?.id
         LaunchedEffect(top.id) {
-            if (Motion.still || top.ability || top.controller == st.viewer || top.source == null || !flown.add(top.id)) return@LaunchedEffect
+            if (Motion.still || travelled || top.ability || top.controller == st.viewer || top.source == null || !flown.add(top.id)) return@LaunchedEffect
             flyFrom = anchors?.rects?.get("cpuhand")?.center ?: return@LaunchedEffect
             fly.snapTo(0f); fly.animateTo(1f, tween(430, easing = FastOutSlowInEasing)); flyFrom = null
         }
@@ -1558,6 +1568,7 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
         var here by remember { mutableStateOf(Offset.Zero) }
         Box(Modifier.offset(x = 44.du, y = 34.du).then(if (anchors != null) Modifier.onGloballyPositioned { val b = it.boundsInRoot(); here = b.center; anchors.put("stacktop", Offset(b.left, b.top + b.height * .3f)); anchors.putRect("stackcard", b); anchors.putRect("stack${top.id}", b) } else Modifier)
             .graphicsLayer {
+                if (arriving) { alpha = 0f; return@graphicsLayer }
                 val from = flyFrom; val e = fly.value
                 if (from != null && e < 1f) {
                     translationX = (from.x - here.x) * (1f - e); translationY = (from.y - here.y) * (1f - e) + kotlin.math.sin(Math.PI.toFloat() * e) * 40.dp.toPx()
@@ -2358,4 +2369,16 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
             }
         }
     }
+}
+
+/** 0.4.59 T5 item 1: when a cast's lands tap ([taps], in order), land [id]'s turn starts this long after the first (70 ms apart); null: not one of them. */
+internal fun tapDelay(taps: List<Int>, id: Int): Long? = taps.indexOf(id).takeIf { it >= 0 }?.let { it * dev.cardstashy.nativeplay.match.Director.TAP_GAP_MS }
+
+/** A tile's turn as it taps: a paying land one by one (140 ms each, 70 ms apart) while its cast's taps play, any other tap 180 ms. */
+@Composable
+private fun tapSpec(id: Int): androidx.compose.animation.core.AnimationSpec<Float> {
+    val t = LocalTravel.current?.travel?.takeIf { it.leg == dev.cardstashy.nativeplay.match.Director.Leg.TAPS }
+    val at = t?.let { tapDelay(it.taps, id) }
+    return if (at != null) tween(dev.cardstashy.nativeplay.match.Director.TAP_TURN_MS.toInt(), delayMillis = at.toInt(), easing = FastOutSlowInEasing)
+        else tween(180, easing = FastOutSlowInEasing)
 }

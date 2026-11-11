@@ -1,5 +1,7 @@
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -89,6 +91,8 @@ fun HandFan(
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
+    // 0.4.59 T5: where each card sits, so the one you cast travels to the stack from its own place.
+    val handAnchors = LocalAnchors.current
     var focus by remember { mutableStateOf<Int?>(null) }        // card id under the finger
     var dragging by remember { mutableStateOf<Int?>(null) }     // card id under the finger, moving up
     var leaving by remember { mutableStateOf<Int?>(null) }      // card id flying out after a play
@@ -285,7 +289,8 @@ fun HandFan(
                         val sc = if (isLeaving) 1f + .15f * sin(f * PI.toFloat()) + (asc - 1f) * (1f - f) else asc
                         scaleX = sc; scaleY = sc
                         alpha = if (isLeaving) 1f - f * f else 1f
-                    }.onFocusChanged { if (it.isFocused) focus = card.id else if (focus == card.id && dragging == null) focus = null }
+                    }.then(if (handAnchors != null && !isLeaving) Modifier.onGloballyPositioned { handAnchors.putRect("hand${card.id}", it.boundsInRoot()) } else Modifier)
+                        .onFocusChanged { if (it.isFocused) focus = card.id else if (focus == card.id && dragging == null) focus = null }
                         .padActs(padHere).matchPadTap(padSource, padFocus) { current.firstOrNull { it.id == card.id }?.let { padPress(it) } }) {
                         CardFace(card, cardW, cardH, mark = markOf(card))
                         // .play-match-card[data-forge-blocked]::after: bottom 8, #140d0be8, #ff9a7a77 hairline, #ffd4c6 700 11px.

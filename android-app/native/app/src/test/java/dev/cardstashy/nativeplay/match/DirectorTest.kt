@@ -70,7 +70,12 @@ class DirectorTest {
             ev("zone", card = c, from = "Stack", to = "Battlefield", player = me), ev("resolve", source = c))
         val steps = Director.plan(st, events, before = before)
         assertEquals(listOf("CAST:TAPS:null:210", "CAST:TO_STACK:stackcard:440", "CAST:REST:stackcard:900", "ENTER:TO_SLOT:c950:380"), legs(steps))
-        assertEquals(listOf(40, 41), steps.first { it.travel?.leg == Director.Leg.TAPS }.travel!!.taps)
+        val taps = steps.first { it.travel?.leg == Director.Leg.TAPS }.travel!!.taps
+        assertEquals(listOf(40, 41), taps)
+        // One by one: the second land starts 70 ms after the first, and the last turn ends with the step (70 + 140 = 210).
+        assertEquals(listOf(0L, 70L), taps.map { dev.cardstashy.nativeplay.ui.tapDelay(taps, it) })
+        assertEquals(Director.tapsMs(2), dev.cardstashy.nativeplay.ui.tapDelay(taps, 41)!! + Director.TAP_TURN_MS)
+        assertEquals(null, dev.cardstashy.nativeplay.ui.tapDelay(taps, 99))
         assertTrue(steps.mapNotNull { it.travel }.all { it.mine && it.cardId == 950 && it.stackId == 7 || it.leg == Director.Leg.TO_SLOT })
         // No step of the travel plays a sound of its own: the cast sound stays the table audio's one.
         assertTrue(steps.filter { it.travel != null }.all { it.cue == null })
