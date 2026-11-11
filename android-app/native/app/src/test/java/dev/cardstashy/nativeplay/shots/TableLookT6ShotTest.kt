@@ -3,6 +3,7 @@ package dev.cardstashy.nativeplay.shots
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
@@ -83,5 +84,33 @@ class TableLookT6ShotTest {
             assertTrue("$size $name: one line, ${line.height / dm.density} dp", line.height / dm.density < 40f)
             if (size == "844x390" && name == "targets") assertFalse("844x390: whole", r.containsKey("askline.cut"))
         }
+    }
+
+    /** Two screens (Thor): the question is the bottom screen's top strip over the faded hand; the top screen says nothing, it only rings the targets. */
+    @Test fun onTwoScreensTheQuestionIsTheBottomsTopStrip() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        RuntimeEnvironment.setQualifiers("w960dp-h1080dp-land-xhdpi")
+        dev.cardstashy.nativeplay.ui.DualScreen.pretend(dev.cardstashy.nativeplay.ui.DualScreen.Panel(2, "Built-in Screen", 1240, 1080, 60f))
+        try {
+            val st = state("targets")
+            val anchors = Anchors()
+            captureRoboImage(File(System.getProperty("shotsDir"), "table-look/t6-targets-dual.png").path) {
+                CompositionLocalProvider(LocalAnchors provides anchors) {
+                    androidx.compose.foundation.layout.Column(Modifier.fillMaxSize().background(Palette.Night)) {
+                        Box(Modifier.fillMaxWidth().weight(1f)) {
+                            PlaymatScene(Modifier.fillMaxSize())
+                            ForgeBoard(st, live = true, intents = TableIntents(), selectedHand = null, onSelectHand = {}, onInspect = {}, onMenu = {}, handOrder = emptyList(), onHandOrder = {})
+                        }
+                        Box(Modifier.fillMaxWidth().weight(1f)) { dev.cardstashy.nativeplay.ui.BottomRoot() }
+                    }
+                }
+            }
+            val r = anchors.rects
+            assertNull("the top screen asks nothing", r["askline"])
+            val q = r["b.question"]; val hand = r["b.hand"]
+            assertNotNull("the bottom asks", q); assertNotNull("the hand under it", hand)
+            val dm = RuntimeEnvironment.getApplication().resources.displayMetrics
+            assertTrue("the question is on the bottom screen, above the hand: $q $hand", q!!.top >= dm.heightPixels / 2f && q.bottom <= hand!!.top)
+        } finally { dev.cardstashy.nativeplay.ui.DualScreen.pretend(null) }
     }
 }

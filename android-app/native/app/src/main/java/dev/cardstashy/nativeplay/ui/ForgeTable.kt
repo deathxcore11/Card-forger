@@ -619,8 +619,12 @@ fun ForgeBoard(
             // 0.4.59 T6: the hand dips out of the way while you pick on the table, and the question takes its strip.
             val tucked = handTucked(st, live)
             val tuck by animateFloatAsState(if (tucked) 1f else 0f, if (Motion.still) androidx.compose.animation.core.snap() else tween(220, easing = FastOutSlowInEasing), label = "tuck")
-            var tuckBtnW by remember { mutableStateOf(0.dp) }
-            LaunchedEffect(tucked) { if (!tucked) tuckBtnW = 0.dp }
+            // The tucked buttons' widths, worked out from their words (GlassPill: 12.5 sp, 14 du each side) so the line's right end is
+            // right in the very first frame.
+            val tuckMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
+            val tuckBtnW = if (!tucked) 0.dp else with(LocalDensity.current) {
+                val style = sans(sp(12.5f), FontWeight.SemiBold, Color.White)
+                tuckLabels(st).maxOfOrNull { tuckMeasurer.measure(it, style, maxLines = 1).size.width.toDp() + 28.du + 2.dp } ?: 0.dp }
             // Two screens: a question the bottom asks is not said on the top too (live 0.4.57, fault list 4 and 14; table-info I5.1).
             val askText = if (dual && bottomAsk(st, live, askAll) != null) null else askAll
             var askRight by remember { mutableStateOf(Dp.Unspecified) }
@@ -774,7 +778,7 @@ fun ForgeBoard(
                 val goldShown = !tucked && (!pickOne || attackAll || (st.selection.min == 0 && st.buttons.okEnabled))
                 // 0.4.59 T6: while the hand is tucked the gold button gives way to a quiet Cancel in its spot; a confirm Forge offers
                 // (several targets, "No target") stays as a glass pill above it. Both report their width for the line's right end.
-                val tuckW = Modifier.onSizeChanged { tuckBtnW = maxOf(tuckBtnW, with(goldDensity) { it.width.toDp() }) }
+                val tuckW = Modifier
                 @Composable fun pair(content: @Composable () -> Unit) = if (large) Row(rowM, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     TurnCount(d.u); androidx.compose.runtime.CompositionLocalProvider(LocalTurnCountOutside provides true) { content() } } else {
                     androidx.compose.runtime.CompositionLocalProvider(LocalTurnCountOutside provides true) { content() }
@@ -793,7 +797,7 @@ fun ForgeBoard(
                 pair {
                     if (tucked) {
                         second?.let { GlassPill(it, live, lowerM.then(tuckW).focusRequester(cancelFocus).anchorRect("quiet").anchorRect("cancel"), d) { intents.cancel() } }
-                        val confirm = if (pickOne) (if (st.selection.min == 0 && st.buttons.okEnabled) "No target" else null) else ok.takeIf { st.buttons.okEnabled || st.selection.max > 1 }
+                        val confirm = tuckLabels(st).getOrNull(1)
                         confirm?.let { GlassPill(it, live && okOn, upperM.then(tuckW).focusRequester(goldFocus).anchorRect("confirm"), d, tone = Color(0xFFF3D27E), edge = Color(0x66F3D27E)) { intents.ok() } }
                     } else if (attackAll) {
                         GoldPill(ok, live && okOn, upperM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }, d, padKey = padX != null, maxW = goldMax) { intents.ok() }
@@ -2423,8 +2427,8 @@ internal fun askParts(st: MatchState): AskParts? {
  * sacrifice, a card to keep), the hand dips and fades and the question takes its strip. Not for blocks (staged combat keeps its
  * own buttons), a discard (the hand is the answer), a payment or "Respond to …?".
  */
-internal fun handTucked(st: MatchState, live: Boolean): Boolean {
-    if (!live || st.prompt != null || DualScreen.active) return false
+internal fun handTucked(st: MatchState, live: Boolean, anyScreen: Boolean = false): Boolean {
+    if (!live || st.prompt != null || (DualScreen.active && !anyScreen)) return false
     val input = st.inputType ?: return false
     if (input in setOf("InputPassPriority", "InputAttack", "InputBlock", "InputConfirmMulligan", "InputLockUI") || input.startsWith("InputPayMana")) return false
     if (dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) != null) return false
@@ -2464,4 +2468,11 @@ private fun TuckedAskLine(parts: AskParts, left: Dp, right: Dp, top: Dp, d: Du) 
                 onTextLayout = { if (it.hasVisualOverflow) anchors?.putRect("askline.cut", androidx.compose.ui.geometry.Rect.Zero) })
         }
     }
+}
+
+/** The tucked question's two buttons' words: Cancel (in the gold spot), then the confirm Forge offers, if any ("No target", or OK for several). */
+internal fun tuckLabels(st: MatchState): List<String> {
+    val pickOne = oneTarget(st) || onePick(st)
+    val confirm = if (pickOne) (if (st.selection.min == 0 && st.buttons.okEnabled) "No target" else null) else okLabel(st).takeIf { st.buttons.okEnabled || st.selection.max > 1 }
+    return listOfNotNull(cancelLabel(st) ?: "Cancel", confirm)
 }

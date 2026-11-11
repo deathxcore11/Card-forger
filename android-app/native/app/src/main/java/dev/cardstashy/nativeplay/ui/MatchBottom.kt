@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
@@ -59,6 +60,10 @@ internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: 
     val words = bottomWords(st, live, hand, lifted, carried, ask)
     // A question keeps the hand view: live 0.4.57 put a target prompt over a CPU spell on the stack and the bottom asked nothing.
     val shown = if (zone == "stack" && stackUp && words !is BottomWords.Ask) "stack" else "hand"
+    // 0.4.59 T6 on two screens: while you pick on the table the question is the bottom's top strip (the asking card's name in the
+    // aim colour, then what to do) and the hand under it fades and takes no taps; the top screen only rings the legal targets.
+    val tablePick = words is BottomWords.Ask && handTucked(st, live, anyScreen = true)
+    val parts = if (tablePick) askParts(st) else null
     Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             ZoneChip("Hand ${hand.size}", shown == "hand") { zone = "hand" }
@@ -76,7 +81,13 @@ internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: 
                 Column(Modifier.fillMaxWidth().heightIn(max = h * .34f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     when (words) {
                         // The question in one gold line, wrapped and never cut, then the card it is about.
-                        is BottomWords.Ask -> { Text(words.text, style = small(15f, Site.Gold, FontWeight.ExtraBold)); words.card?.let { CardWords(it) } }
+                        is BottomWords.Ask -> if (parts != null) {
+                            Text(androidx.compose.ui.text.buildAnnotatedString {
+                                parts.name?.let { n -> pushStyle(androidx.compose.ui.text.SpanStyle(color = Color(0xFFFF9D5C))); append(n); pop(); append("  ·  ") }
+                                append(parts.question)
+                            }, Modifier.anchorRect("b.question"), style = small(15f, Site.Gold, FontWeight.ExtraBold))
+                            words.card?.let { CardWords(it) }
+                        } else { Text(words.text, style = small(15f, Site.Gold, FontWeight.ExtraBold)); words.card?.let { CardWords(it) } }
                         is BottomWords.Words -> CardWords(words.card)
                         is BottomWords.Line -> Text(words.text, style = small(13f, Site.Muted))
                     }
@@ -96,7 +107,10 @@ internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: 
                     val byPop = (maxHeight - 22.dp - sag) / (1.4f * 1.5f)
                     val target = minOf(minOf(byH, byW), minOf(byPop, 190.dp)).coerceAtLeast(56.dp)
                     val cardW by androidx.compose.animation.core.animateDpAsState(target, androidx.compose.animation.core.spring(dampingRatio = .9f, stiffness = 220f), label = "fan")
-                    if (hand.isNotEmpty()) Box(Modifier.fillMaxWidth().padding(bottom = 4.dp + sagA)) { fan(cardW) }
+                    if (hand.isNotEmpty()) Box(Modifier.fillMaxWidth().padding(bottom = 4.dp + sagA).alpha(if (tablePick) AskTuck.SHADE else 1f).anchorRect("b.hand")) {
+                        fan(cardW)
+                        if (tablePick) Box(Modifier.matchParentSize().pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent().changes.forEach { it.consume() } } })
+                    }
                 }
             }
         }
