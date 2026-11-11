@@ -491,6 +491,7 @@ fun ForgeBoard(
             val lastBoard = remember { arrayOfNulls<MatchState>(2) }
             val ripple = remember(st.revision) { if (lastBoard[1] !== st) { lastBoard[0] = lastBoard[1]; lastBoard[1] = st }
                 lastBoard[0]?.let { untapOrder(it, st) } ?: emptyList() }
+            PayEmbers(payLight)
             // P5: the attackers this board declared, in the order they step up.
             val declared = remember(st.revision) { lastBoard[0]?.takeIf { lastBoard[1] === st }?.let { declareOrder(it, st) } ?: emptyList() }
             androidx.compose.runtime.CompositionLocalProvider(LocalUntapRipple provides (if (Motion.still || fx.reduced) emptyList() else ripple), LocalDeclare provides declared, LocalAttackInput provides (live && st.inputType == "InputAttack"),
@@ -1357,7 +1358,10 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
     val ring = role?.first ?: lerp(a, Color.White, .15f)
     // glow-rules.md: the usable ring (violet, dashed, 7 dp outside) steps back while a hand card is carried; the payment light shows then.
     val usableRing = mark == Mark.USABLE && !LocalHandCarry.current
-    val paid = card.id in LocalPayLight.current
+    // Match punch P7: the sources that would pay for the card you hold light one after another, 40 ms apart.
+    val payAt = LocalPayLight.current.indexOf(card.id)
+    val payIn by animateFloatAsState(if (payAt >= 0) 1f else 0f, if (Motion.still || payAt < 0) androidx.compose.animation.core.snap() else tween(160, delayMillis = payAt * PAY_LIGHT_GAP_MS), label = "payLight")
+    val paid = payAt >= 0 && payIn > .02f
     // Tap: 180 ms (Living Battlefield page 9).
     val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tapSpec(card.id), label = "tap")
     val stepUp by attackStep(card)
@@ -1423,7 +1427,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
             }
             // The payment light: a wide soft mana-gold glow round the whole card (#ffd98a), under its thin edge.
             if (paid) drawIntoCanvas { c ->
-                val spread = 6.du.toPx(); val p = Paint().asFrameworkPaint().apply { isAntiAlias = true; color = PayGold.copy(alpha = .8f).toArgb(); maskFilter = android.graphics.BlurMaskFilter(16.du.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL) }
+                val spread = 6.du.toPx(); val p = Paint().asFrameworkPaint().apply { isAntiAlias = true; color = PayGold.copy(alpha = .8f * payIn).toArgb(); maskFilter = android.graphics.BlurMaskFilter(16.du.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL) }
                 c.nativeCanvas.drawRoundRect(-spread, -spread, size.width + spread, size.height + spread, r + spread, r + spread, p)
             }
             val ringW = (role?.second ?: 1.5f).du.toPx()
@@ -1467,7 +1471,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         // A card under the top of its pile: art at brightness .78, no name.
         if (!pileTop) Box(Modifier.fillMaxSize().background(Color(0x38000000)))
         // The payment light over the whole card: a soft mana-gold wash.
-        if (paid) Box(Modifier.fillMaxSize().background(PayGold.copy(alpha = .22f)))
+        if (paid) Box(Modifier.fillMaxSize().background(PayGold.copy(alpha = .22f * payIn)))
         // 0.4.60 Z2: the name is never cut: it wraps to two lines (three on a squeezed tile) and keeps to the part of the tile that shows.
         var nameH by remember(card.id) { mutableStateOf(nh ?: 0.dp) }
         val dens = LocalDensity.current.density
@@ -3034,6 +3038,27 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
 
 /** T5 item 1, P2: when a cast's lands tap ([taps], in order), land [id]'s turn starts this long after the first (80 ms apart); null: not one of them. */
 internal fun tapDelay(taps: List<Int>, id: Int): Long? = taps.indexOf(id).takeIf { it >= 0 }?.let { it * dev.cardstashy.nativeplay.match.Director.TAP_GAP_MS }
+
+/** Match punch P7: the paying sources of the card you hold light this far apart (ms), and shed a slow ember each in turn. */
+internal const val PAY_LIGHT_GAP_MS = 40
+
+/** P7: while the payment light is on, its sources shed slow gold embers, one source every 130 ms in turn. */
+@Composable
+private fun PayEmbers(lit: Set<Int>) {
+    val fx = LocalBattlefield.current ?: return
+    val anchors = LocalAnchors.current ?: return
+    val density = LocalDensity.current.density
+    val ids = lit.toList()
+    LaunchedEffect(ids) {
+        if (ids.isEmpty() || Motion.still || fx.reduced || fx.low) return@LaunchedEffect
+        delay(ids.size * PAY_LIGHT_GAP_MS.toLong())
+        var i = 0
+        while (true) {
+            anchors.rects["c${ids[i % ids.size]}"]?.let { r -> fx.bits.embers(Offset(r.center.x, r.top + r.height * .3f) - fx.origin, 1, Color(0xFFFFD98A), fx.now.longValue, 22f * density, lifeMs = 900, sizePx = 1.3f * density, seed = i) }
+            i++; delay(130)
+        }
+    }
+}
 
 /** Match punch P5: the attackers the board on show has just declared, in the order they step up ([declareOrder]); empty otherwise. */
 internal val LocalDeclare = androidx.compose.runtime.compositionLocalOf<List<Int>> { emptyList() }

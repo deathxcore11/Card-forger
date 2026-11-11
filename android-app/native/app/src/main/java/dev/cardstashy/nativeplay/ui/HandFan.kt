@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import dev.cardstashy.nativeplay.engine.Card
 import kotlinx.coroutines.delay
+import androidx.compose.ui.draw.drawBehind
 import kotlinx.coroutines.launch
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -104,6 +105,22 @@ fun HandFan(
     var leaving by remember { mutableStateOf<Int?>(null) }      // card id flying out after a play
     var putBack by remember { mutableStateOf<Int?>(null) }      // card id springing back into the hand after a drag let go
     val drag = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
+    // Match punch P7, holding a card. [over]: the carried card is past the play line (over the table) and can be played: its ring
+    // turns from ice blue to gold with one pulse. [leanTo]: it leans into its travel (up to 18 degrees) and settles when still.
+    // [heldOut]: it was let go over the table, so it casts from where it is (its place there is the cast's starting point).
+    var over by remember { mutableStateOf(false) }
+    var leanTo by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    var movedAt by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
+    var heldOut by remember { mutableStateOf(false) }
+    val overPulse = remember { Animatable(1f) }
+    val places = remember { HashMap<Int, androidx.compose.ui.layout.LayoutCoordinates>() }
+    val calm = Motion.still || drawFx?.reduced == true
+    val lean by androidx.compose.animation.core.animateFloatAsState(if (calm) 0f else leanTo, spring(dampingRatio = .6f, stiffness = 260f), label = "lean")
+    val carrying = dragging != null && dragging != putBack && !flatLift
+    // The rest of the hand drops and dims while one card is carried (180 ms), and comes back when it is let go.
+    val dropped by androidx.compose.animation.core.animateFloatAsState(if (carrying) 1f else 0f, if (calm) androidx.compose.animation.core.snap() else tween(HOLD_DROP_MS), label = "handDrop")
+    LaunchedEffect(dragging) { if (dragging == null) { leanTo = 0f; over = false } else while (true) { delay(40); if (android.os.SystemClock.uptimeMillis() - movedAt > 70) leanTo = 0f } }
+    LaunchedEffect(over) { if (over && !calm) { overPulse.snapTo(0f); overPulse.animateTo(1f, tween(320)) } }
     val flight = remember { Animatable(0f) }
     val current by rememberUpdatedState(cards)
     val tapCb by rememberUpdatedState(onTap); val playCb by rememberUpdatedState(onPlay)
@@ -157,7 +174,9 @@ fun HandFan(
             if (padLift && card.id != raised && canPlayCb(card)) { tapCb(card); return }
             if (canPlayCb(card)) {
                 val was = leaving
-                leaving = card.id; dragging = null; focus = null
+                // The cast starts from where the card is drawn now (its box as it stands, lifted), not from where it was first laid out.
+                places[card.id]?.takeIf { it.isAttached }?.let { handAnchors?.putRect("hand${card.id}", it.boundsInRoot()) }
+                leaving = card.id; dragging = null; focus = null; heldOut = false
                 playCb(card)
                 // The ring steps to the card that closes into its slot (the next one, else the one before), or off the hand when it was the last.
                 if (Pad.connected.value) {
@@ -210,6 +229,11 @@ fun HandFan(
                     val d = ch.position - anchor
                     if (dragging != null) {
                         val v = if (stretching) Offset(0f, -stretch * (1f - exp(minOf(0f, d.y) / (stretch * 2f)))) else d
+                        // P7: the lean follows how fast the card is moving sideways; the ring turns as it crosses the play line.
+                        val dt = (ch.uptimeMillis - ch.previousUptimeMillis).coerceAtLeast(1L)
+                        leanTo = holdLean(leanTo, (ch.position.x - ch.previousPosition.x) / dt / density.density); movedAt = android.os.SystemClock.uptimeMillis()
+                        val o = !stretching && v.y < -playLine
+                        if (o != over) { over = o; haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
                         scope.launch { drag.snapTo(v) }; continue
                     }
                     val card = hand.getOrNull(idx)
@@ -233,16 +257,21 @@ fun HandFan(
                 val lifted = dragging
                 val card = hand.firstOrNull { it.id == lifted }
                 if (card != null && !stretching && drag.value.y < -playLine) {
-                    // Leaves on a 380 ms arc; the slot closes behind it at once.
+                    // P7: released over the table, it casts from where it is. Its place under the finger becomes the cast's
+                    // starting point (the travelling card leaves from there), and it stays put until the cast takes it; the
+                    // slot closes behind it at once. If nothing takes it, it fades after a beat.
+                    places[card.id]?.takeIf { it.isAttached }?.let { handAnchors?.putRect("hand${card.id}", it.boundsInRoot()) }
+                    heldOut = true
                     leaving = card.id; dragging = null; focus = null
                     playCb(card)
                     scope.launch {
-                        flight.snapTo(0f); flight.animateTo(1f, tween(380, easing = FastOutSlowInEasing))
-                        delay(1100); if (leaving == card.id) { leaving = null; drag.snapTo(Offset.Zero) }
+                        flight.snapTo(0f); delay(240); flight.animateTo(1f, tween(260, easing = FastOutSlowInEasing))
+                        delay(900); if (leaving == card.id) { leaving = null; heldOut = false; drag.snapTo(Offset.Zero) }
                     }
                 } else if (lifted != null) {
                     putBack = lifted
-                    scope.launch { drag.animateTo(Offset.Zero, spring(.8f, 600f)); if (dragging == lifted) dragging = null; if (putBack == lifted) putBack = null }
+                    // P7: released early, it springs back to its place (280 ms, a small overshoot).
+                    scope.launch { drag.animateTo(Offset.Zero, tween(HOLD_BACK_MS, easing = androidx.compose.animation.core.Easing { backOut(it) })); if (dragging == lifted) dragging = null; if (putBack == lifted) putBack = null }
                     focus = null
                 } else {
                     if (!swept) hand.getOrNull(idx)?.let(tapCb)
@@ -278,7 +307,8 @@ fun HandFan(
                     val ax = rememberSpring(rest[0], fromX, delayMs)
                     val ay = rememberSpring(rest[1], fromY, delayMs)
                     val ar = rememberSpring(rest[2], if (newIndex >= 0) 20f else null, delayMs)
-                    val asc = rememberSpring(if (isLift) popScale else 1f, null, 0L)
+                    // P7, pick-up: the card grows to its lifted size with a bounce (140 ms); it settles back on the spring.
+                    val asc = rememberSpring(if (isLift) popScale else 1f, null, 0L, bounceUp = !calm)
                     val isDrag = dragging == card.id
                     // A controller: the ring on the card; it stands up and pops as under a finger. A casts what can be cast, Y opens it.
                     val padSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
@@ -292,17 +322,26 @@ fun HandFan(
                     Box(Modifier.zIndex(if (isDrag || isLeaving || card.id == moving) 3f else if (isLift) 2f else 0f).graphicsLayer {
                         transformOrigin = TransformOrigin(.5f, 1f)
                         val f = if (isLeaving) flight.value else 0f
+                        val held = isLeaving && heldOut
+                        // The cards not being carried drop 58 % of a card and dim (P7), as the hand does for a question.
+                        val down = if (isDrag || isLeaving) 0f else dropped
                         translationX = ax + (if (isDrag || isLeaving) drag.value.x else 0f)
-                        translationY = ay + (if (isDrag || isLeaving) drag.value.y else 0f) - f * cardH.toPx() * 1.1f
-                        rotationZ = if (isDrag && !isLeaving) (drag.value.x / 40f).coerceIn(-8f, 8f) else ar
-                        val sc = if (isLeaving) 1f + .15f * sin(f * PI.toFloat()) + (asc - 1f) * (1f - f) else asc
+                        translationY = ay + (if (isDrag || isLeaving) drag.value.y else 0f) - (if (held) 0f else f * cardH.toPx() * 1.1f) + down * cardH.toPx() * AskTuck.DIP
+                        rotationZ = if (isDrag && !isLeaving) lean else if (held) 0f else ar
+                        val sc = if (held) popScale else if (isLeaving) 1f + .15f * sin(f * PI.toFloat()) + (asc - 1f) * (1f - f) else asc
                         scaleX = sc; scaleY = sc
                         // Match punch P4: a card you are drawing is its own picture on its way here; its place stays clear until it tucks in.
-                        alpha = if (card.id == backId || drawFx?.drawHides(card.id) == true) 0f else if (isLeaving) 1f - f * f else 1f
-                    }.then(if (handAnchors != null && !isLeaving) Modifier.onGloballyPositioned { handAnchors.putRect("hand${card.id}", it.boundsInRoot()) } else Modifier)
+                        alpha = if (card.id == backId || drawFx?.drawHides(card.id) == true) 0f else if (isLeaving) 1f - f * f else 1f - (1f - HOLD_DIM) * down
+                    }.then(if (handAnchors != null && !isLeaving) Modifier.onGloballyPositioned { places[card.id] = it; handAnchors.putRect("hand${card.id}", it.boundsInRoot()) } else Modifier.onGloballyPositioned { places[card.id] = it })
                         .onFocusChanged { if (it.isFocused) focus = card.id else if (focus == card.id && dragging == null) focus = null }
                         .padActs(padHere).matchPadTap(padSource, padFocus) { current.firstOrNull { it.id == card.id }?.let { padPress(it) } }) {
                         CardFace(card, cardW, cardH, mark = markOf(card))
+                        // P7: the carried card's ring. Ice blue in the hand; over the table (it would be played) gold, with one pulse.
+                        if (isDrag && !flatLift) { val col by androidx.compose.animation.animateColorAsState(if (over) HOLD_GOLD else HOLD_ICE, tween(120), label = "holdRing")
+                            Box(Modifier.matchParentSize().drawBehind { val rad = androidx.compose.ui.geometry.CornerRadius(cardW.toPx() * (6f / 66f))
+                                drawRoundRect(col, cornerRadius = rad, style = androidx.compose.ui.graphics.drawscope.Stroke(2.5.dp.toPx()))
+                                val q = overPulse.value; if (q < 1f) { val g = 10.dp.toPx() * q
+                                    drawRoundRect(HOLD_GOLD.copy(alpha = .9f * (1f - q)), Offset(-g, -g), androidx.compose.ui.geometry.Size(size.width + 2 * g, size.height + 2 * g), androidx.compose.ui.geometry.CornerRadius(rad.x + g), style = androidx.compose.ui.graphics.drawscope.Stroke(3.dp.toPx() * (1f - q) + 1f)) } }.anchorRect("holdring")) }
                         // T7: the bottom screen's lift is a thicker ring (ice, with a white edge), not a bigger card.
                         if (isLift && flatLift) Box(Modifier.matchParentSize().border(3.dp, Color(0xFF5CC8FF), RoundedCornerShape(cardW * (6f / 66f)))
                             .padding(3.dp).border(1.5.dp, Color.White.copy(alpha = .85f), RoundedCornerShape(cardW * (5f / 66f))).anchorRect("b.lift"))
@@ -323,12 +362,25 @@ fun HandFan(
 
 /** A value that springs (stiffness 600, damping 0.8) to each new target; an arriving card starts at [from] after [delayMs]. */
 @Composable
-private fun rememberSpring(target: Float, from: Float?, delayMs: Long): Float {
+private fun rememberSpring(target: Float, from: Float?, delayMs: Long, bounceUp: Boolean = false): Float {
     val a = remember { Animatable(from ?: target) }
     var first by remember { mutableStateOf(true) }
     LaunchedEffect(target) {
         if (first) { first = false; if (delayMs > 0) delay(delayMs) }
-        a.animateTo(target, spring(dampingRatio = .8f, stiffness = 600f))
+        if (bounceUp && target > a.value) a.animateTo(target, tween(HOLD_GROW_MS, easing = androidx.compose.animation.core.Easing { backOut(it) }))
+        else a.animateTo(target, spring(dampingRatio = .8f, stiffness = 600f))
     }
     return a.value
 }
+
+/** Match punch P7, holding a card: grow with a bounce (140), the rest of the hand drops and dims (180), an early release springs back (280). */
+internal const val HOLD_GROW_MS = 140; internal const val HOLD_DROP_MS = 180; internal const val HOLD_BACK_MS = 280
+/** How much of the other cards still shows while one is carried. */
+internal const val HOLD_DIM = .55f
+internal const val HOLD_LEAN_MAX = 18f
+internal val HOLD_ICE = Color(0xFF5CC8FF); internal val HOLD_GOLD = Color(0xFFF3D27E)
+/**
+ * The carried card's lean (degrees) after one more move: it leans the way it travels, 18 degrees at 1.2 dp a millisecond or more,
+ * eased toward that so a jitter of the finger does not flick it. [was] is the lean before; [dpPerMs] the sideways speed.
+ */
+internal fun holdLean(was: Float, dpPerMs: Float): Float = (was * .6f + (dpPerMs * 15f).coerceIn(-HOLD_LEAN_MAX, HOLD_LEAN_MAX) * .4f).coerceIn(-HOLD_LEAN_MAX, HOLD_LEAN_MAX)
