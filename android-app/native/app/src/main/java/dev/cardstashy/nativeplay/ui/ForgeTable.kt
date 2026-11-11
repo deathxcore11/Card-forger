@@ -1463,6 +1463,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
                 .background(Brush.verticalGradient(0f to Color(0xF007070B), .55f to Color(0xB807070B), 1f to Color(0x0007070B)))
                 .padding(start = side, end = side, top = 3.dp, bottom = 4.dp)) {
                 Text(card.name, maxLines = lines, overflow = TextOverflow.Clip, style = nameStyle(size),
+                    modifier = if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("name${card.id}", it.boundsInRoot()) } else Modifier,
                     onTextLayout = { r ->
                         nameH = maxOf(nh, (r.size.height / dens).dp - 3.dp)
                         // Test hooks: a name that does not fit its lines is marked, so a shot test can say no name is cut; its size and lines.
@@ -1480,25 +1481,30 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         // P/T: clamp(15, piece·.16, 23) in the creature lane, clamp(11, piece·.12, 17) elsewhere, on a big board.
         // 0.4.60 Z3: on the table P/T is 15 sp, growing with the tile (TextFloors); elsewhere as before.
         val statPx = piece?.let { TextFloors.ptSp(textK) } ?: (h.value / u * .26f).coerceIn(9f, 18f)
-        TileLayer(card, mark == Mark.PLAYABLE || mark == Mark.USABLE, lookup, d, h, if (card.isCreature && card.power != null) (if (piece != null) statPx / u else statPx) else 0f, top = nh?.let { (if (pileTop) nameH else it) + 6.dp })
+        val fs = if (piece != null) statPx.sp else sp(statPx)
+        // 0.4.60 Z2: while the next pile covers this tile's right part, the plate moves to the left edge, so it is never covered.
+        // If even there the plate is wider than what shows, its numbers step down in size to fit.
+        val left = visibleW != null && visibleW < w - 6.du
+        val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+        val ptText = "${card.power} / ${card.toughness ?: 0}"
+        val fsFit = if (!left) fs else {
+            val textW = measurer.measure(ptText, sans(fs, FontWeight.Bold, Color.White)).size.width / dens
+            val room = (visibleW!! - 6.du - 14.du - 2.dp).value
+            if (textW > room && textW > 0f) maxOf(TextFloors.PT, fs.value * (room / textW).coerceIn(.5f, 1f)).sp else fs // Z3: never under 15 sp
+        }
+        // 0.4.60 G1: the plate's size (padding 7 × 1 du round the numbers), so the keyword strip keeps clear of it.
+        val plate = if (card.isCreature && card.power != null) measurer.measure(ptText, sans(fsFit, FontWeight.Bold, Color.White)).size
+            .let { (it.width / dens).dp + 14.du to (it.height / dens).dp + 2.du } else null
+        TileLayer(card, mark == Mark.PLAYABLE || mark == Mark.USABLE, lookup, d, h, if (card.isCreature && card.power != null) (if (piece != null) statPx / u else statPx) else 0f, top = nh?.let { (if (pileTop) nameH else it) + 6.dp },
+            w = w, visibleW = visibleW, plate = plate, plateLeft = left)
         // .play-current-stats: right 6px, bottom 2px, 1px 7px, #d6ad64c0 hairline, radius 7, #111114f2, white 700; the toughness reads #ff8f84 while damage is marked
         // (forge-table.mjs data-damaged; Forge's toughness already counts counters, damage is not subtracted).
         // T2: in a fanned pile only the front card wears its numbers; the ones behind show their art.
         if (card.isCreature && card.power != null && pileTop) {
-            val fs = if (piece != null) statPx.sp else sp(statPx)
             // A TRIGGER SHOWS ITSELF: while a result that changed this card's power/toughness lands (1.2 s), the plate ticks green (up)
             // or coral (down). Then it is white again: the steady colour waits for base P/T from the bridge.
             val tick = LocalTrigger.current?.takeIf { it.phase == dev.cardstashy.nativeplay.match.TriggerMoment.Phase.RESULT }?.result?.pt?.firstOrNull { it.cardId == card.id }
             val tone = tick?.let { if (it.up) TRIG_GREEN else TRIG_CORAL }
-            // 0.4.60 Z2: while the next pile covers this tile's right part, the plate moves to the left edge, so it is never covered.
-            // If even there the plate is wider than what shows, its numbers step down in size to fit.
-            val left = visibleW != null && visibleW < w - 6.du
-            val measurer = androidx.compose.ui.text.rememberTextMeasurer()
-            val fsFit = if (!left) fs else {
-                val textW = measurer.measure("${card.power} / ${card.toughness ?: 0}", sans(fs, FontWeight.Bold, Color.White)).size.width / dens
-                val room = (visibleW!! - 6.du - 14.du - 2.dp).value
-                if (textW > room && textW > 0f) maxOf(TextFloors.PT, fs.value * (room / textW).coerceIn(.5f, 1f)).sp else fs // Z3: never under 15 sp
-            }
             anchors?.let { it.sizes["ptsp${card.id}"] = fsFit.value }
             Row(Modifier.align(if (left) Alignment.BottomStart else Alignment.BottomEnd).offset(x = if (left) 3.du else (-6).du, y = (-2).du)
                 .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("pt${card.id}", it.boundsInRoot()) } else Modifier)
@@ -2766,7 +2772,9 @@ private val BadgeEdge = Color(0xB8D6AD64)
 private val BadgeInk = Color(0xFFF2D496)
 
 @Composable
-private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d: Du, h: Dp, statFont: Float, top: Dp? = null) = with(d) {
+private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d: Du, h: Dp, statFont: Float, top: Dp? = null,
+                      /** 0.4.60 G1: the tile's width, the part of it that shows (an overlapped pile), and the P/T plate's size and side. */
+                      w: Dp? = null, visibleW: Dp? = null, plate: Pair<Dp, Dp>? = null, plateLeft: Boolean = false) = with(d) {
     val b = remember(card, actionable) { TileBadges.of(card, actionable) } ?: return@with
     val bsz = 9.du
     // .cs-badge: a dark pill with a gold hairline; an icon (72%) and a white number.
@@ -2799,9 +2807,62 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
                 else badge("blocking", edge = Color(0xFF7FB8FF), ink = Color(0xFFA8CEFF), glow = Color(0x995A9CFF))
             }
         }
-        val cornerShown = b.state.isNotEmpty() || b.activation
-        if (!b.compact && (b.keywords.isNotEmpty() || b.keywordsMore > 0))
-            Column(Modifier.offset(x = 3.du, y = if (cornerShown) top + bsz + 3.du else top), verticalArrangement = Arrangement.spacedBy(1.du)) { rail() }
+        // 0.4.60 G1 (glance-marks-brief.md): a creature's keywords are a strip along the bottom edge, left of the P/T plate, big enough
+        // to read at a glance: marks 22 % of the tile tall (never under 16 dp), the icon 74 % of the mark, the same dark pill with a
+        // gold hairline and a gold icon. Marks show in rank order while they fit; the rest are one "+N". A squeezed tile (narrower
+        // than it is tall) stacks them up the left edge from the bottom, the first keyword lowest, at most two. Lands and other
+        // compact tiles keep the rail above.
+        val kh = maxOf(16.dp, h * .22f)
+        val kGap = 2.du
+        val tileW = w ?: (h * 1.3f)
+        var stripH = 0.dp
+        if (!b.compact && b.iconic.isNotEmpty()) {
+            val anchors = LocalAnchors.current
+            val squeezedK = tileW < h
+            val right = (visibleW?.coerceAtMost(tileW) ?: tileW) - 3.du
+            // The plate: right 6 du, bottom 2 du (left 3 du while the next pile covers this tile's right part).
+            val px0 = plate?.let { if (plateLeft) 3.du else tileW - 6.du - it.first }
+            val px1 = plate?.let { if (plateLeft) 3.du + it.first else tileW - 6.du }
+            val n = b.iconic.size
+            val x0: Dp; val bottom: Dp; val slots: Int
+            if (!squeezedK) {
+                x0 = if (plate != null && plateLeft) px1!! + 4.du else 3.du
+                val x1 = if (plate != null && !plateLeft) minOf(right, px0!! - 4.du) else right
+                bottom = 3.du
+                // Never up into the name.
+                slots = if (h - bottom - kh < top) 0 else TileBadges.stripSlots((x1 - x0).value, kh.value, kGap.value)
+            } else {
+                x0 = 3.du
+                // Over the plate when the plate reaches the left column; up to the name, never into it.
+                bottom = if (plate != null && px0!! < x0 + kh + 2.du && px1!! > x0) 2.du + plate.second + 3.du else 3.du
+                slots = minOf(TileBadges.SQUEEZED_MARKS, TileBadges.stripSlots((h - bottom - top).value, kh.value, kGap.value))
+            }
+            val shown = TileBadges.stripShown(n, slots)
+            val more = if (slots > 0) n - shown else 0
+            anchors?.let { it.sizes["kwshown${card.id}"] = shown.toFloat(); it.sizes["kwmore${card.id}"] = more.toFloat() }
+            @Composable fun mark(key: String?, i: Int, text: String? = null) {
+                Box(Modifier.size(kh).then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect(if (key != null) "kw${card.id}.$i" else "kwplus${card.id}", it.boundsInRoot()) } else Modifier)
+                    .drawBehind { drawRoundRect(Color(0xB3000000), topLeft = Offset(0f, 1.dp.toPx()), size = this.size, cornerRadius = CornerRadius(this.size.height / 2)) }
+                    .clip(CircleShape).background(Color(0xF0101114))
+                    .border(1.dp, if (key != null) Color(0xFFD6AD64) else Color(0x8CFFFFFF), CircleShape), contentAlignment = Alignment.Center) {
+                    if (key != null) BoardIcon(key, BadgeInk, kh * .74f)
+                    else Text(text ?: "", maxLines = 1, softWrap = false, style = sans((kh.value * .52f).sp, FontWeight.ExtraBold, Color.White).copy(lineHeight = (kh.value * .52f).sp))
+                }
+            }
+            if (shown + more > 0) {
+                val marks: @Composable () -> Unit = {
+                    b.iconic.take(shown).forEachIndexed { i, k -> mark(k.key, i) }
+                    if (more > 0) mark(null, shown, "+$more")
+                }
+                if (!squeezedK) Row(Modifier.align(Alignment.BottomStart).offset(x = x0, y = -bottom), horizontalArrangement = Arrangement.spacedBy(kGap)) { marks() }
+                // First keyword lowest: the column is laid bottom up.
+                else Column(Modifier.align(Alignment.BottomStart).offset(x = x0, y = -bottom), verticalArrangement = Arrangement.spacedBy(kGap, Alignment.Bottom)) {
+                    val list = b.iconic.take(shown).mapIndexed { i, k -> Triple(k.key, i, null as String?) } + (if (more > 0) listOf(Triple(null as String?, shown, "+$more")) else emptyList())
+                    list.asReversed().forEach { (k, i, t) -> mark(k, i, t) }
+                }
+                stripH = bottom + (if (squeezedK) kh * (shown + more) + kGap * (shown + more - 1) else kh)
+            }
+        }
         // fitRails(): when the counters column would run into the stats plaque, it becomes a row (row-reverse) sitting 3px above the plaque.
         val railN = b.counters.size + (if (b.countersMore > 0) 1 else 0) + (if (b.damage > 0) 1 else 0)
         val floor = if (statFont > 0f) 2.du + (statFont * 1.25f + 4f).du else 0.du
@@ -2829,7 +2890,7 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
             }
         }
         b.crew?.let { crew ->
-            Row(Modifier.align(Alignment.BottomStart).offset(x = 3.du, y = (-4).du).clip(RoundedCornerShape(999.dp)).background(Color(0xEB101114)).border(1.dp, BadgeEdge, RoundedCornerShape(999.dp))
+            Row(Modifier.align(Alignment.BottomStart).offset(x = 3.du, y = if (stripH > 0.dp) -(stripH + 2.du) else (-4).du).clip(RoundedCornerShape(999.dp)).background(Color(0xEB101114)).border(1.dp, BadgeEdge, RoundedCornerShape(999.dp))
                 .padding(start = 2.du, end = 4.du), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(1.du)) {
                 BoardIcon("vehicle-crew", BadgeInk, bsz * .7f); Text("$crew", style = sans(sp(6.5f), FontWeight.Bold, Color.White))
             }
@@ -2839,7 +2900,7 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
             fun kind(c: Card) = if (Regex("\\bEquipment\\b").containsMatchIn(c.type)) "equipment" else if (Regex("\\bAura\\b").containsMatchIn(c.type)) "aura" else "attached"
             // T4: auras show as strips above the tile (AuraStrips), so the corner badge counts only what is not an aura.
             val kinds = listOf("equipment", "attached").map { k -> k to attached.count { kind(it) == k } }.filter { it.second > 0 }
-            Row(Modifier.align(Alignment.BottomStart).offset(x = 3.du, y = (-4).du), horizontalArrangement = Arrangement.spacedBy(1.du)) {
+            Row(Modifier.align(Alignment.BottomStart).offset(x = 3.du, y = if (stripH > 0.dp) -(stripH + 2.du) else (-4).du), horizontalArrangement = Arrangement.spacedBy(1.du)) {
                 kinds.forEach { (k, n) -> badge(k, text = if (n > 1) "$n" else null) }
             }
         }
