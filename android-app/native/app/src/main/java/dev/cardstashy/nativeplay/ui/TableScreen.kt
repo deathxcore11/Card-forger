@@ -169,7 +169,11 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     val activate: (() -> Unit)? = inspect?.takeIf { abilityNow?.usable == true }?.let { c -> { inspect = null; controller.intents.card(c.id) } }
     // A tap or A on a ringed permanent opens it with its rows. On two screens the table stays in view above while it is open, so a
     // second press on the same card is the tag's own: A activates, a tap puts it down.
-    val onAbility: (Card) -> Unit = { c -> if (DualScreen.active && inspect?.id == c.id) { if (TablePad.byPad && activate != null) activate() else inspect = null } else inspect = c }
+    val onAbility: (Card) -> Unit = { c ->
+        when (abilityPress(DualScreen.active, inspect?.id, c.id, TablePad.byPad, activate != null)) {
+            AbilityPress.OPEN -> inspect = c; AbilityPress.ACTIVATE -> activate?.invoke(); AbilityPress.CLOSE -> inspect = null
+        }
+    }
     // The match owns the controller while it is on: the screens under it lend no buttons (ForgeBoard sets X and Start).
     PadScreen(PadActs(opaque = true))
     // A controller's B on the bare table opens the match menu (Concede, Return to Play setup are in it) instead of doing nothing.
@@ -204,7 +208,8 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
                     DisposableEffect(Unit) { onDispose { TableEmotes.destroy() } }
                     CompositionLocalProvider(LocalMatchClock provides controller.clock.collectAsState().value, LocalTrigger provides trig, LocalTravel provides travel) {
                     ForgeBoard(st, live && beat == null && trig == null && travel == null, controller.intents, selectedHand, { selectedHand = it }, { inspect = it }, { menu = true },
-                        handOrder, { handOrder = it }, menu = matchMenu, afk = if (DualScreen.active) afk else null, onAbility = onAbility) {
+                        handOrder, { handOrder = it }, menu = matchMenu, afk = if (DualScreen.active) afk else null, onAbility = onAbility,
+                        abilityOpen = inspect?.id?.takeIf { abilityNow != null }) {
                         TableSide(st, controller, beat, live, lastBeat) { inspect = it }
                     }
                     }

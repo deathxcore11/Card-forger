@@ -56,6 +56,13 @@ internal fun abilityRows(card: Card): List<AbilityRow> {
     if (card.hidden) return emptyList()
     return card.text.split(Regex("\n+")).mapNotNull { raw ->
         val line = raw.replace(Regex("\\s*\\([^)]*\\)"), "").trim()
+        // 0.4.60 G6 review: an activated keyword ability (Equip {2}, Crew 3...) has no colon of its own. Its row is Forge's reminder
+        // text when the line carries one as "cost: effect", else the line itself as Forge wrote it (cost and words together).
+        if (KEYWORD_ABILITY.containsMatchIn(line) && ':' !in line) {
+            val reminder = Regex("\\(([^)]*)\\)").find(raw)?.groupValues?.get(1)?.trim()
+            val j = reminder?.indexOf(':') ?: -1
+            return@mapNotNull if (reminder != null && j > 0 && j < 60) AbilityRow(reminder.substring(0, j).trim(), reminder.substring(j + 1).trim()) else AbilityRow("", line)
+        }
         val i = line.indexOf(':')
         if (i <= 0) return@mapNotNull null
         val cost = line.substring(0, i).trim(); val text = line.substring(i + 1).trim()
@@ -67,6 +74,12 @@ internal fun abilityRows(card: Card): List<AbilityRow> {
         }
     }
 }
+
+/**
+ * 0.4.60 G6 review: the activated keyword abilities a permanent's line can start with, which Forge writes without a colon
+ * ("Equip {2}", "Crew 3", "Reconfigure {2}"). A line that is only this keyword and its cost; never a line of other keywords.
+ */
+private val KEYWORD_ABILITY = Regex("^(Equip|Fortify|Reconfigure|Crew|Saddle|Outlast|Level up|Station)\\b[^,;]*$", RegexOption.IGNORE_CASE)
 
 /**
  * 0.4.60 G6: the ability rows for [card] as [st] stands, or null when the view shows none: only your own permanents on the
@@ -86,6 +99,20 @@ internal fun abilityView(card: Card, st: MatchState, live: Boolean, sc: ShortCas
         when { taps && c.tapped -> "Tapped"; taps && c.isCreature && c.summoningSick -> "Summoning sick"; else -> null }
     }
     return AbilityView(rows, usable, reason)
+}
+
+/** 0.4.60 G6 review: what a tap or pad A on a permanent wearing the usable ring does (TableScreen's onAbility). */
+internal enum class AbilityPress { OPEN, ACTIVATE, CLOSE }
+
+/**
+ * The first press opens the card with its rows. On two screens the table stays in view above while it is open, so a second press
+ * on the same card ([openId] is [card]) is the tag's own: A ([byPad]) activates when it can, a tap puts it down (glow-rules.md: "a
+ * second tap closes"). On one screen the open view covers the table, so a press on a tile always opens.
+ */
+internal fun abilityPress(dual: Boolean, openId: Int?, card: Int, byPad: Boolean, canActivate: Boolean): AbilityPress = when {
+    !dual || openId != card -> AbilityPress.OPEN
+    byPad && canActivate -> AbilityPress.ACTIVATE
+    else -> AbilityPress.CLOSE
 }
 
 private val AbilityViolet = Color(0xFFB79CFF)

@@ -34,6 +34,14 @@ import dev.cardstashy.nativeplay.ui.TableIntents
 import dev.cardstashy.nativeplay.ui.abilityRows
 import dev.cardstashy.nativeplay.ui.abilityView
 import dev.cardstashy.nativeplay.ui.attachedOf
+import dev.cardstashy.nativeplay.ui.AbilityPress
+import dev.cardstashy.nativeplay.ui.Pad
+import dev.cardstashy.nativeplay.ui.PadPrompts
+import dev.cardstashy.nativeplay.ui.TableZones
+import dev.cardstashy.nativeplay.ui.abilityPress
+import dev.cardstashy.nativeplay.ui.padRoot
+import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.pressKey
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -66,7 +74,7 @@ class TableLookG6ShotTest {
     private fun key(name: String, crop: Boolean) = java.security.MessageDigest.getInstance("SHA-1").digest("$name|$crop".toByteArray()).joinToString("") { "%02x".format(it) }
     private fun state(s: String) = MatchState.parse(javaClass.classLoader!!.getResource("table/snap-$s.json")!!.readText())!!
 
-    @After fun off() { DualScreen.pretend(null) }
+    @After fun off() { DualScreen.pretend(null); Pad.forget(); TableZones.at = 0 }
 
     private val stoneId = 140
 
@@ -86,19 +94,20 @@ class TableLookG6ShotTest {
     private class Seen { var inspected by mutableStateOf<Card?>(null); var acted = mutableListOf<Int>() }
 
     /** The board as TableScreen wires it: onAbility opens CardInspect with abilityView's rows, and Activate puts it down and acts. */
-    private fun board(st: MatchState, live: Boolean): Pair<Anchors, Seen> {
+    private fun board(st: MatchState, live: Boolean, pad: Boolean = false): Pair<Anchors, Seen> {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         CardImageTest.art = { name, crop -> art.resolve(key(name, crop) + ".jpg").takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } }
         DualScreen.pretend(null)
         dev.cardstashy.nativeplay.ui.TableEmotes.destroy()
         val anchors = Anchors(); val seen = Seen()
         val intents = TableIntents(card = { seen.acted += it })
+        if (pad) Pad.used()
         rule.setContent {
             CompositionLocalProvider(LocalAnchors provides anchors) {
-                Box(Modifier.fillMaxSize().background(Palette.Night)) {
+                Box(Modifier.fillMaxSize().then(if (pad) Modifier.padRoot() else Modifier).background(Palette.Night)) {
                     PlaymatScene(Modifier.fillMaxSize())
                     ForgeBoard(st, live = live, intents = intents, selectedHand = null, onSelectHand = {}, onInspect = { seen.inspected = it }, onMenu = {},
-                        handOrder = emptyList(), onHandOrder = {}, onAbility = { seen.inspected = it })
+                        handOrder = emptyList(), onHandOrder = {}, onAbility = { seen.inspected = it }, abilityOpen = seen.inspected?.id)
                     seen.inspected?.let { c ->
                         val view = abilityView(c, st, live)
                         val act: (() -> Unit)? = if (view?.usable == true) ({ seen.inspected = null; intents.card(c.id) }) else null
@@ -189,5 +198,93 @@ class TableLookG6ShotTest {
         shot("tapped-844x390")
         tap(a, "inspectAbility$stoneId.0")
         assertTrue("a tap on a row with no button acts on nothing", seen.acted.isEmpty())
+    }
+
+    // ---- 0.4.60 G6 review ----
+
+    /** An ability Forge writes as a keyword (no colon of its own) still gets a row: Forge's reminder when it has one, else its line. */
+    @Test fun keywordAbilitiesGetARow() {
+        val stone = state("crowded").card(stoneId)!!
+        assertEquals(listOf(AbilityRow("", "Equip {2}")), abilityRows(stone.copy(text = "Equipped creature gets +2/+0.\nEquip {2}")))
+        assertEquals(listOf(AbilityRow("{1}", "Attach to target creature you control. Equip only as a sorcery.")),
+            abilityRows(stone.copy(text = "Equip {1} ({1}: Attach to target creature you control. Equip only as a sorcery.)")))
+        assertEquals(listOf(AbilityRow("", "Crew 3")), abilityRows(stone.copy(text = "Crew 3")))
+        // A line of plain keywords is not an ability you activate.
+        assertTrue(abilityRows(stone.copy(text = "Flying, haste")).isEmpty())
+        assertTrue(abilityRows(stone.copy(text = "Vigilance")).isEmpty())
+    }
+
+    /** glow-rules.md: "The payment light shows what it would tap": the open ability's sources (the bridge's tapPreview), only while usable. */
+    @Test fun theOpenAbilityLightsWhatItWouldTap() {
+        val base = usable()
+        val land = base.me.battlefield.first { it.isLand && !it.tapped }
+        val st = base.copy(selection = base.selection.copy(tapPlans = base.selection.tapPlans + (stoneId to dev.cardstashy.nativeplay.engine.TapPlan(listOf(land.id), null))))
+        val sc = dev.cardstashy.nativeplay.ui.ShortCasts(); val blocked = sc.blocked(st); val quiet = sc.quiet(st, blocked)
+        assertEquals(setOf(land.id), Glow.abilityPayment(st, true, st.card(stoneId)!!, blocked, quiet))
+        assertEquals("not live: no light", emptySet<Int>(), Glow.abilityPayment(st, false, st.card(stoneId)!!, blocked, quiet))
+        val dark = tappedStone()
+        assertEquals("not usable: no light", emptySet<Int>(), Glow.abilityPayment(dark, true, dark.card(stoneId)!!, emptyMap(), emptySet()))
+    }
+
+    /** The rule's checks: the first press opens, a second tap on two screens closes it, A there activates; one screen always opens. */
+    @Test fun aSecondPressOnTwoScreens() {
+        assertEquals(AbilityPress.OPEN, abilityPress(dual = false, openId = null, card = 1, byPad = false, canActivate = true))
+        assertEquals(AbilityPress.OPEN, abilityPress(dual = true, openId = null, card = 1, byPad = true, canActivate = true))
+        assertEquals(AbilityPress.OPEN, abilityPress(dual = true, openId = 2, card = 1, byPad = false, canActivate = true))
+        assertEquals("a second tap closes", AbilityPress.CLOSE, abilityPress(dual = true, openId = 1, card = 1, byPad = false, canActivate = true))
+        assertEquals("a second A activates", AbilityPress.ACTIVATE, abilityPress(dual = true, openId = 1, card = 1, byPad = true, canActivate = true))
+        assertEquals("a second A with nothing to activate closes", AbilityPress.CLOSE, abilityPress(dual = true, openId = 1, card = 1, byPad = true, canActivate = false))
+        assertEquals("one screen: the view covers the table", AbilityPress.OPEN, abilityPress(dual = false, openId = 1, card = 1, byPad = true, canActivate = true))
+    }
+
+    /** A controller on one screen: the prompt on the tile says Inspect, A opens the card and fires nothing, A in the view activates. */
+    @OptIn(androidx.compose.ui.test.ExperimentalTestApi::class)
+    @Test fun padAOpensThenActivates() {
+        val st = usable()
+        val (a, seen) = board(st, live = true, pad = true)
+        // The ring goes to the tile as the table puts it there (TableZones.take): in the pad's keyboard input mode.
+        rule.runOnUiThread { PadPrompts.inputModes?.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard); TableZones.mine[stoneId]!!.requestFocus() }
+        rule.mainClock.advanceTimeBy(500); rule.waitForIdle()
+        assertEquals("the tile's prompt", "Inspect", PadPrompts.current().a)
+        rule.onRoot().performKeyInput { pressKey(androidx.compose.ui.input.key.Key.DirectionCenter) }
+        rule.mainClock.advanceTimeBy(500); rule.waitForIdle()
+        assertEquals("A opened the card", stoneId, seen.inspected?.id)
+        assertEquals("A fired nothing", emptyList<Int>(), seen.acted)
+        assertNotNull("the row with Activate", a.rects["inspectActivate$stoneId.0"])
+        assertEquals("the open view's prompt", "Activate", PadPrompts.current().a)
+        rule.onRoot().performKeyInput { pressKey(androidx.compose.ui.input.key.Key.DirectionCenter) }
+        rule.mainClock.advanceTimeBy(500); rule.waitForIdle()
+        assertEquals("A in the view activates", listOf(stoneId), seen.acted)
+        assertNull("and puts the card down", seen.inspected)
+    }
+
+    /** No room beside the card (a portrait screen): the rows go under the card, so touch always has its Activate. */
+    @Config(qualifiers = "w360dp-h640dp-port-xxhdpi")
+    @Test fun aNarrowViewPutsTheRowsUnderTheCard() {
+        val st = usable()
+        val stone = st.card(stoneId)!!
+        val view = abilityView(stone, st, true)
+        assertTrue(view?.usable == true)
+        val a = Anchors(); val seen = Seen()
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        CardImageTest.art = { name, crop -> art.resolve(key(name, crop) + ".jpg").takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } }
+        // The view alone (the table itself is landscape only), as TableScreen opens it.
+        rule.setContent {
+            CompositionLocalProvider(LocalAnchors provides a) {
+                Box(Modifier.fillMaxSize().background(Palette.Night)) {
+                    CardInspect(stone, st.viewer, ability = view, onActivate = { seen.acted += stoneId }) {}
+                }
+            }
+        }
+        rule.waitForIdle()
+        val bmp = shot("open-360x640")
+        val card = a.rects["inspectCard$stoneId"] ?: error("no card")
+        val row = a.rects["inspectAbility$stoneId.0"] ?: error("no ability row")
+        val btn = a.rects["inspectActivate$stoneId.0"] ?: error("no Activate")
+        assertTrue("the row $row under the card $card", row.top >= card.bottom - .5f)
+        assertTrue("the row $row on screen", row.left >= 0f && row.right <= bmp.width + .5f && row.bottom <= bmp.height + .5f)
+        assertTrue("Activate $btn on screen", btn.left >= 0f && btn.right <= bmp.width + .5f && btn.bottom <= bmp.height + .5f)
+        tap(a, "inspectActivate$stoneId.0")
+        assertEquals(listOf(stoneId), seen.acted)
     }
 }

@@ -388,10 +388,27 @@ fun CardInspect(card: Card, viewer: Int?, start: PadAct? = null,
         val kwW = (260.dp * k).coerceAtMost(maxWidth - cardW - (if (glass) boxW + 16.dp else 0.dp) - 16.dp)
         val kwBeside = boxes.isNotEmpty() && (kwW >= 180.dp * k || !glass)
         // 0.4.60 G6: no glass box (a narrow screen): the ability rows stand beside the card, over any keyword boxes.
-        val abBeside = !glass && ability != null
+        // G6 review: too narrow even for that (under 160 dp beside the card): the card shrinks and the rows go under it, so touch
+        // always has its Activate.
+        val abUnder = !glass && ability != null && kwW < 160.dp * k
+        val abBeside = !glass && ability != null && !abUnder
         val glow = if (yours) GLOW_YOU else GLOW_CPU
         val dens = androidx.compose.ui.platform.LocalDensity.current
-        Row(Modifier.align(Alignment.Center).graphicsLayer { alpha = enter.value; val z = .96f + .04f * enter.value; scaleX = z; scaleY = z }
+        if (abUnder) {
+            val underW = minOf(maxWidth, 420.dp); val fullH = maxHeight
+            val smallH = minOf(maxHeight * .55f, maxWidth / .716f); val smallW = smallH * .716f
+            Column(Modifier.align(Alignment.Center).width(underW).graphicsLayer { alpha = enter.value }.semantics { contentDescription = card.name },
+                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.size(smallW, smallH).anchorRect("inspectCard${card.id}").clip(RoundedCornerShape(16.dp)).border(2.dp, glow.copy(alpha = .8f), RoundedCornerShape(16.dp))
+                    .background(Color(0xFF141418))) {
+                    if (!card.hidden) CardImage(card.name, Modifier.fillMaxSize().padding(2.dp), contentScale = ContentScale.Fit, shape = RoundedCornerShape(13.dp))
+                }
+                Column(Modifier.fillMaxWidth().heightIn(max = fullH - smallH - 12.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    AbilityRows(card, ability!!, act)
+                    if (boxes.isNotEmpty()) KeywordBoxes(card, boxes, Modifier.fillMaxWidth())
+                }
+            }
+        } else Row(Modifier.align(Alignment.Center).graphicsLayer { alpha = enter.value; val z = .96f + .04f * enter.value; scaleX = z; scaleY = z }
             .semantics { contentDescription = card.name }, horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
             if (glass) {
                 androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(dens.density * k, dens.fontScale)) {

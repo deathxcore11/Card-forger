@@ -122,6 +122,16 @@ object Glow {
         if (carried == null || usable(carried, st, live, blocked, quiet) != Mark.PLAYABLE) return emptySet()
         return st.selection.tapPlans[carried.id]?.sources?.toSet() ?: emptySet()
     }
+
+    /**
+     * 0.4.60 G6 review (glow-rules.md "The ability opens on the card": "The payment light shows what it would tap"): while [open]'s
+     * ability rows are open, the sources the bridge's tapPreview names for it. Only for a permanent that wears the usable ring; no
+     * preview from the bridge, no light (the same rule as [payment]).
+     */
+    fun abilityPayment(st: MatchState, live: Boolean, open: Card, blocked: Map<Int, String>, quiet: Set<Int>): Set<Int> {
+        if (usable(open, st, live, blocked, quiet) != Mark.USABLE) return emptySet()
+        return st.selection.tapPlans[open.id]?.sources?.toSet() ?: emptySet()
+    }
 }
 
 /** The sources lit as payment for the carried hand card (mana gold over the card). */

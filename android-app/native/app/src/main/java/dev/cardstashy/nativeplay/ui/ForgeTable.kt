@@ -252,6 +252,8 @@ internal fun sans(size: TextUnit, weight: FontWeight = FontWeight.Bold, color: C
 
 /** One design unit as Dp: the site's CSS px at 844 × 390, scaled to fit. */
 internal val LocalAttackInput = androidx.compose.runtime.staticCompositionLocalOf { false }
+/** 0.4.60 G6 review: the permanent whose ability rows are open in the inspect view (ForgeBoard's abilityOpen), else null. */
+internal val LocalAbilityOpen = androidx.compose.runtime.compositionLocalOf<Int?> { null }
 /** The CPU's attackers numbered in attack order while you block (Table spec, 5 Nov: name each attacker before you drag). */
 internal val LocalAttackNumbers = androidx.compose.runtime.compositionLocalOf { emptyMap<Int, Int>() }
 
@@ -326,6 +328,11 @@ fun ForgeBoard(
      * with its ability rows instead of firing blind; the Activate there runs the activation. Null: [onInspect] opens it.
      */
     onAbility: ((Card) -> Unit)? = null,
+    /**
+     * 0.4.60 G6 review: the permanent whose ability rows are open (the inspect view): its payment light shows what Activate would
+     * tap, and on two screens the pad's A on its tile says "Activate" (the second press activates). Null: none open.
+     */
+    abilityOpen: Int? = null,
     overlay: @Composable (Dp.() -> Unit)? = null,
 ) {
     // Living Battlefield: effects read from each new snapshot; a touch anywhere skips them to their end.
@@ -401,7 +408,9 @@ fun ForgeBoard(
             var liftLive by remember { mutableStateOf(true) }
             LaunchedEffect(selectedHand) { liftLive = selectedHand != null }
             val carriedId = (carried ?: selectedHand?.takeIf { liftLive })?.takeIf { id -> me.hand.any { it.id == id } }
-            val payLight = carriedId?.let { id -> me.hand.firstOrNull { it.id == id } }?.let { Glow.payment(st, live, it, blocked, quiet) } ?: emptySet()
+            val payLight = carriedId?.let { id -> me.hand.firstOrNull { it.id == id } }?.let { Glow.payment(st, live, it, blocked, quiet) }
+                // G6 review (glow-rules.md: "the payment light shows what it would tap"): the open ability's sources.
+                ?: abilityOpen?.let { id -> st.card(id) }?.let { Glow.abilityPayment(st, live, it, blocked, quiet) } ?: emptySet()
             fun blockTap(card: Card): (() -> Unit)? = when {
                 card.attacking && card.controller != st.viewer -> ({
                     val b = blockPick
@@ -479,7 +488,7 @@ fun ForgeBoard(
             // CPU half: lands at the back, creatures at the front; yours mirrored.
             // A creature Forge says must attack this combat wears a tag until it is in the attack.
             androidx.compose.runtime.CompositionLocalProvider(LocalAttackInput provides (live && st.inputType == "InputAttack"),
-                LocalPayLight provides payLight, LocalHandCarry provides payLight.isNotEmpty(), LocalPayInput provides (live && Glow.paying(st)),
+                LocalPayLight provides payLight, LocalHandCarry provides payLight.isNotEmpty(), LocalAbilityOpen provides abilityOpen, LocalPayInput provides (live && Glow.paying(st)),
                 LocalAttackNumbers provides (if (blockingNow && attackersNow.size > 1) attackersNow.withIndex().associate { (i, c) -> c.id to i + 1 } else emptyMap()),
                 LocalBlockDrag provides (if (blockingNow) blockDrag else null)) {
                 // 0.4.60 Z1: the stack lives in the right strip and never takes board width (walk line 27). Only the side dock, which
@@ -1356,7 +1365,8 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         draggable -> "Block"
         LocalAttackInput.current && mineSide && card.isCreature && !card.attacking -> "Attack"
         // V4: a land pays (while Forge asks for mana, or floats it), anything else of yours with a lit ability activates it.
-        mark == Mark.USABLE && mineSide -> "Activate"
+        // 0.4.60 G6 review: A opens the card with its rows first; only on two screens, with this card already open, does A activate.
+        mark == Mark.USABLE && mineSide -> if (DualScreen.active && LocalAbilityOpen.current == card.id) "Activate" else "Inspect"
         mark == Mark.PICKABLE && mineSide && LocalPayInput.current -> "Tap for mana"
         mark == Mark.PICKABLE -> "Choose"
         mark == Mark.NONE && mineSide && Glow.manaOnly(card) -> "Tap for mana"
