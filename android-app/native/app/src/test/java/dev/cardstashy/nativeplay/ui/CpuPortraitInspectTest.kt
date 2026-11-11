@@ -30,6 +30,9 @@ class CpuPortraitInspectTest {
     @get:Rule val rule = createComposeRule()
     init { dev.cardstashy.nativeplay.art.CardArt.init(org.robolectric.RuntimeEnvironment.getApplication()) }
 
+    /** How many "CPU" words the table itself shows (0.4.60 Z4: the CPU's corner square carries its name). */
+    private var cpuWordsBefore = 0
+
     private fun tapPortrait(st: MatchState, seat: Int): Card? {
         Motion.still = true
         val anchors = Anchors()
@@ -43,6 +46,7 @@ class CpuPortraitInspectTest {
             }
         }
         rule.waitForIdle()
+        cpuWordsBefore = rule.onAllNodesWithText("CPU").fetchSemanticsNodes().size
         val orb = anchors.rects["orb$seat"] ?: error("no portrait for seat $seat")
         rule.onRoot().performTouchInput { click(orb.center) }
         rule.mainClock.advanceTimeBy(500); rule.waitForIdle()
@@ -57,7 +61,8 @@ class CpuPortraitInspectTest {
         assertNotNull("the CPU portrait opened nothing", card)
         assertEquals(st.cpu.command.first().name, card!!.name)
         assertEquals(st.cpu.id, card.controller)
-        rule.onNodeWithText("CPU").assertExists()
+        // The opened view names it the CPU's: one more "CPU" than the table showed before the tap (the Z4 square has its own).
+        assertEquals(cpuWordsBefore + 1, rule.onAllNodesWithText("CPU").fetchSemanticsNodes().size)
         rule.onNodeWithText("IN THE COMMAND ZONE").assertExists()
         assertEquals(0, rule.onAllNodesWithText("Forge AI", substring = true, ignoreCase = true).fetchSemanticsNodes().size)
     }
