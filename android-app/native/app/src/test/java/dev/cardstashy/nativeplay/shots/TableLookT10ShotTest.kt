@@ -65,11 +65,11 @@ class TableLookT10ShotTest {
         rule.waitForIdle()
         val plainFile = File(System.getProperty("shotsDir"), "table-look/t10-$shot-plain.png")
         // The art comes in off the main thread: settle until two plain captures agree, so only the foil differs.
-        var last: ByteArray? = null
-        for (i in 0 until 8) { rule.onRoot().captureRoboImage(plainFile.path); val now = plainFile.readBytes(); if (last != null && now.contentEquals(last)) break; last = now; Thread.sleep(300); rule.waitForIdle() }
+        settle(plainFile)
+        // The rebuilt board loads its art again: settle the foil board the same way before comparing.
         BoardFoil.arm(foilRows()); gen = 1; rule.waitForIdle()
         val foilFile = File(System.getProperty("shotsDir"), "table-look/t10-$shot.png")
-        rule.onRoot().captureRoboImage(foilFile.path)
+        settle(foilFile)
         val plain = android.graphics.BitmapFactory.decodeFile(plainFile.path); val foil = android.graphics.BitmapFactory.decodeFile(foilFile.path)
         plainFile.delete()
         return ids.associateWith { id ->
@@ -83,6 +83,12 @@ class TableLookT10ShotTest {
             }
             if (n == 0) 0.0 else sum / n
         }
+    }
+
+    /** Capture until two captures in a row agree (at most 12 tries). */
+    private fun settle(f: File) {
+        var last: ByteArray? = null
+        for (i in 0 until 12) { rule.onRoot().captureRoboImage(f.path); val now = f.readBytes(); if (last != null && now.contentEquals(last)) return; last = now; Thread.sleep(300); rule.waitForIdle() }
     }
 
     @Test fun foilTappedFoilAndTheCpusSameNames() {
