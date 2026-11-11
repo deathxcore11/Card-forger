@@ -512,6 +512,8 @@ fun ForgeBoard(
             // the graveyard's top card with its count (a tap, or A on the pad, opens the T3 sheet); the player whose turn it is wears
             // the gold edge. The CPU's hand backs and both libraries' piles are gone from the strip: their counts are the words.
             val profile by dev.cardstashy.nativeplay.account.Account.profile.collectAsState()
+            // Z4 review: in a pod the rail draws the opponents along the board's top (each chip its own life and hand), as before Z4.
+            if (pod) PodRail(st, cpu.id, live, intents, { podFocus.seat = it; picks++ }, W, d, x = zones.board.x.dp, width = zones.board.w.dp)
             if (!pod) PlayerSquare(cpu, zones.cpuSquare, cpu.name, st.activePlayer == cpu.id, d, handKey = "cpuhand",
                 portrait = { a, m, lifeSp -> Medallion(cpu, mine = false, live && cpu.id in st.selection.players, cpu.id in st.selection.chosenPlayers, m.anchorRect("cpuseat"), d,
                     side = a, lifeSp = lifeSp, onOpen = commanderOf(cpu)?.let { c -> { onInspect(c) } }) { intents.player(cpu.id) } },
@@ -1698,8 +1700,9 @@ private fun ThinkDots(modifier: Modifier, d: Du) = with(d) {
     val tell by dev.cardstashy.nativeplay.match.CpuThink.now.collectAsState()
     val on by androidx.compose.animation.core.animateFloatAsState(if (tell != null) 1f else 0f, tween(180), label = "dots")
     if (on <= 0f) return@with
-    val t = rememberInfiniteTransition(label = "think")
-    val phase by t.animateFloat(0f, 3f, infiniteRepeatable(tween(1050, easing = LinearEasing)), label = "p")
+    // Z4 review: still (screenshots, reduced motion) draws the dots at one fixed phase; an endless animation there never lets the
+    // test clock go idle.
+    val phase = if (Motion.still) 1f else rememberInfiniteTransition(label = "think").animateFloat(0f, 3f, infiniteRepeatable(tween(1050, easing = LinearEasing)), label = "p").value
     Row(modifier.graphicsLayer { alpha = on }.clip(RoundedCornerShape(999.dp)).background(Color(0xCC14120E)).border(1.dp, Gold.copy(alpha = .6f), RoundedCornerShape(999.dp))
         .padding(horizontal = 7.du, vertical = 5.du), horizontalArrangement = Arrangement.spacedBy(4.du)) {
         repeat(3) { i ->
