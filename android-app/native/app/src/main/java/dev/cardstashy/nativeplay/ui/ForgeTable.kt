@@ -320,7 +320,13 @@ internal class Du(val u: Float) {
 fun ForgeBoard(
     st: MatchState, live: Boolean, intents: TableIntents, selectedHand: Int?, onSelectHand: (Int?) -> Unit, onInspect: (Card) -> Unit,
     onMenu: () -> Unit, handOrder: List<Int>, onHandOrder: (List<Int>) -> Unit,
-    modifier: Modifier = Modifier, menu: MatchMenu? = null, afk: String? = null, overlay: @Composable (Dp.() -> Unit)? = null,
+    modifier: Modifier = Modifier, menu: MatchMenu? = null, afk: String? = null,
+    /**
+     * 0.4.60 G6 (glow-rules.md "The ability opens on the card"): a tap or A on your permanent wearing the usable ring opens the card
+     * with its ability rows instead of firing blind; the Activate there runs the activation. Null: [onInspect] opens it.
+     */
+    onAbility: ((Card) -> Unit)? = null,
+    overlay: @Composable (Dp.() -> Unit)? = null,
 ) {
     // Living Battlefield: effects read from each new snapshot; a touch anywhere skips them to their end.
     // One per board; a caller's own (a frame-by-frame test) wins, so card moves and the shake follow it too.
@@ -414,7 +420,10 @@ fun ForgeBoard(
                     }
                 })
             }
-            fun tapOf(card: Card): (() -> Unit)? = if (blockingNow) blockTap(card) else if (live && (card.id in st.selection.cards || card.id in st.selection.targetCards || (card.id in st.selection.actionable && card.id !in blocked) || card.id in st.selection.chosenCards ||
+            // 0.4.60 G6: an ability is never fired blind on the first tap: the usable ring's tap opens the card with its rows.
+            fun tapOf(card: Card): (() -> Unit)? = if (blockingNow) blockTap(card)
+                else if (live && card.zone == "Battlefield" && markOf(card) == Mark.USABLE) ({ (onAbility ?: onInspect)(card) })
+                else if (live && (card.id in st.selection.cards || card.id in st.selection.targetCards || (card.id in st.selection.actionable && card.id !in blocked) || card.id in st.selection.chosenCards ||
                 ((st.inputType == "InputAttack" || st.inputType == "InputBlock") && card.controller == st.viewer && (card.attacking || card.blocking)))) ({ intents.card(card.id) }) else null
 
             // 0.4.59 T3: the open sheet (a pile or a graveyard), kept as a key so it reads the table as it is.
@@ -2205,6 +2214,8 @@ internal object TablePad {
     var autoRing = false
     /** Where in the hand the last card A cast or played sat: the next lift starts there (live 0.4.57). -1 none yet. */
     var handAt = -1
+    /** 0.4.60 G6: the tap being run came from a controller's A (matchPadTap), not a touch. */
+    var byPad = false
     fun restore() { if (held) { held = false; last?.let { runCatching { it.requestFocus(androidx.compose.ui.focus.FocusDirection.Enter) } } } }
 }
 
@@ -2217,7 +2228,7 @@ internal fun Modifier.matchPadTap(source: androidx.compose.foundation.interactio
         .onKeyEvent { e ->
             val k = e.nativeKeyEvent.keyCode
             if (k == android.view.KeyEvent.KEYCODE_DPAD_CENTER || k == android.view.KeyEvent.KEYCODE_ENTER || k == android.view.KeyEvent.KEYCODE_NUMPAD_ENTER) {
-                if (e.nativeKeyEvent.action == android.view.KeyEvent.ACTION_UP && !e.nativeKeyEvent.isCanceled) onTap()
+                if (e.nativeKeyEvent.action == android.view.KeyEvent.ACTION_UP && !e.nativeKeyEvent.isCanceled) { TablePad.byPad = true; try { onTap() } finally { TablePad.byPad = false } }
                 true
             } else false
         }
@@ -2801,10 +2812,10 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
             if (b.keywordsMore > 0) badge(null, ink = Color.White, text = "+${b.keywordsMore}", dashed = true)
         }
         val top = top ?: 14.du
-        if (b.state.isNotEmpty() || b.activation || (b.compact && (b.keywords.isNotEmpty() || b.keywordsMore > 0)))
+        // 0.4.60 G6: no corner pill for an ability (glow-rules.md): the usable ring is its mark, the inspect view its button.
+        if (b.state.isNotEmpty() || (b.compact && (b.keywords.isNotEmpty() || b.keywordsMore > 0)))
             Row(Modifier.offset(x = 3.du, y = top), horizontalArrangement = Arrangement.spacedBy(1.du)) {
                 b.state.forEach { badge(it) }
-                if (b.activation) badge("activated-ability", edge = Color(0xFF7FD6F0), ink = Color(0xFF9BE6FF), glow = Color(0x805CC8F0))
                 if (b.compact) rail()
             }
         b.combat?.let { cb ->

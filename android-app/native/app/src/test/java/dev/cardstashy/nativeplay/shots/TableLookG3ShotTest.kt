@@ -130,10 +130,12 @@ class TableLookG3ShotTest {
         assertTrue(rule.onAllNodesWithText("Your Forest ×", substring = true).fetchSemanticsNodes().isNotEmpty())
     }
 
+    // 0.4.60 G6 changed what a usable ring's tap does (it opens the card with its ability rows, never firing blind; see
+    // TableLookG6ShotTest), so the legal tap here is a target pick, which still acts at once.
     @Test fun aLegalTapStillActsFirst() {
         val main = state("crowded")
         val giant = main.me.battlefield.first { it.name == "Hill Giant" }
-        val st = main.copy(selection = main.selection.copy(actionable = main.selection.actionable + giant.id))
+        val st = main.copy(selection = main.selection.copy(targetCards = main.selection.targetCards + giant.id))
         val (a, seen) = board(st, live = true)
         tap(a, "c${giant.id}")
         assertEquals(listOf(giant.id), seen.acted)
