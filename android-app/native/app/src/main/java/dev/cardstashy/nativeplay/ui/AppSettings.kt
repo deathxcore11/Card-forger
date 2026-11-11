@@ -38,6 +38,10 @@ object AppSettings {
     /** Table effects (Story playmat MOTION-SPEC): cinematic, balanced (default) or minimal. Reduce motion and battery saver act as minimal. */
     var effects by mutableStateOf("balanced"); private set
     val EFFECTS = listOf("cinematic", "balanced", "minimal")
+    /** Mobile table M4: "Ask me to order triggers". Off: triggers that happen together are ordered for you, as Arena does. */
+    var askTriggerOrder by mutableStateOf(false); private set
+    /** Mobile table M3: "Stop to respond". Off: your own spell or trigger on top of the stack resolves by itself. */
+    var stopToRespond by mutableStateOf(false); private set
 
     fun init(context: Context) {
         val p = context.applicationContext.getSharedPreferences("play", Context.MODE_PRIVATE); prefs = p
@@ -46,11 +50,13 @@ object AppSettings {
         chosenTheme = normalizeTheme(p.getString("cardstashy-theme", null)); gridSize = normalizeGridSize(p.getString("cardstashy-grid-size", null))
         gridPinch = p.getString("cardstashy-grid-pinch", null) == "on"
         effects = p.getString("cardstashy-effects", null).takeIf { it in EFFECTS } ?: "balanced"
+        askTriggerOrder = p.getBoolean("askTriggerOrder", false); stopToRespond = p.getBoolean("stopToRespond", false)
     }
 
     fun set(key: String, on: Boolean) {
         when (key) {
             "glass" -> glass = on; "finishEffects" -> finish = on; "haptics" -> haptics = on; "appSounds" -> appSounds = on; "presence" -> presence = on; "depthCards" -> depth = on
+            "askTriggerOrder" -> askTriggerOrder = on; "stopToRespond" -> stopToRespond = on
             "motionTilt" -> { tilt = on; PackSfx.tilt = on }
             "packSound" -> { sound = on; PackSfx.on = on }
         }

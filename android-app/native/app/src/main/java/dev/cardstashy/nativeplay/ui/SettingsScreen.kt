@@ -495,6 +495,9 @@ private fun AppPane() {
             else -> "Light rays, glints and glows, with fewer leaves. Follows Reduce motion and battery saver."
         }, style = S.Foot)
         Check("Tap vibration", AppSettings.haptics, "Animations follow your phone’s “Reduce motion” setting.") { AppSettings.set("haptics", it) }
+        // Mobile table M3 and M4: the table does these for you unless you ask to be asked.
+        Check("Ask me to order triggers", AppSettings.askTriggerOrder, "Off: triggers that happen together are put in order for you.") { AppSettings.set("askTriggerOrder", it) }
+        Check("Stop to respond", AppSettings.stopToRespond, "Off: your own spell or trigger resolves by itself. On: the table waits when you could play something in response.") { AppSettings.set("stopToRespond", it) }
         // Signed in only (views.js setPresence); C.setPresence's toasts.
         val signedIn = dev.cardstashy.nativeplay.account.Account.session.collectAsState().value != null
         if (signedIn) {

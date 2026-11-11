@@ -11,6 +11,37 @@ object AutoPass {
      * (same revision as [shown]); while the board's stack is not Forge's (a held or hidden item, a replay still running) nothing
      * is decided, and the final show of Forge's own state schedules again (the site's !playback.running).
      */
+    /**
+     * Mobile table M4 (Arena orders simultaneous triggers itself): Forge's "order your triggers" question answered for you, in
+     * the order Forge listed them. It is the same answer as the box's Auto order button. Null when the player asked to be
+     * asked ([ask]), when it is another kind of order (cards for the top of a deck), or when Forge's own limits can't be met.
+     */
+    fun triggerOrder(st: MatchState, ask: Boolean): List<Int>? {
+        val p = st.prompt ?: return null
+        if (ask || p.method != "order" || !p.supportedExact || !p.ordered) return null
+        if (!(p.rawMessage + "\n" + p.message).contains("simultaneous abilities", ignoreCase = true)) return null
+        val picked = ArrayList<Int>()
+        for (o in p.options) if (o.described && picked.size < p.max) picked += o.index
+        return picked.takeIf { it.isNotEmpty() && it.size >= p.min }
+    }
+
+    /**
+     * Mobile table M11 (Arena aims a spell with one legal target by itself): the one target Forge offers, when it offers exactly
+     * one, asks for exactly one, and the choice is not optional. Nothing is worked out here: the set is Forge's.
+     */
+    fun onlyTarget(st: MatchState): dev.cardstashy.nativeplay.engine.Ref? {
+        if (st.prompt != null || st.inputType != "InputSelectTargets") return null
+        val sel = st.selection
+        if (sel.min != 1 || sel.max != 1 || sel.chosenCards.isNotEmpty() || sel.chosenPlayers.isNotEmpty()) return null
+        if (sel.stackTargets.isNotEmpty()) return null
+        val cards = sel.cards + sel.targetCards; val players = sel.players
+        return when {
+            cards.size == 1 && players.isEmpty() -> dev.cardstashy.nativeplay.engine.Ref("card", cards.first(), null)
+            cards.isEmpty() && players.size == 1 -> dev.cardstashy.nativeplay.engine.Ref("player", players.first(), null)
+            else -> null
+        }
+    }
+
     fun basis(shown: MatchState, forge: MatchState?): MatchState? {
         if (forge == null || forge.revision != shown.revision) return null
         if (shown.stack.map { it.id } != forge.stack.map { it.id }) return null

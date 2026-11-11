@@ -1134,7 +1134,7 @@ fun ForgeBoard(
             // T3, one screen: the sheet over the lower 56 % of the table (on two screens it is on the bottom screen, above).
             if (!dual) sheetView()
             // The order dialog, a damage split and the zone picker sit over the table; the CPU's line waits under them.
-            val covered = live && st.prompt?.let { p -> p.method == "order" || p.method.startsWith("assign") || p.options.any { it.zone in setOf("Library", "Graveyard", "Exile") } } == true
+            val covered = live && dev.cardstashy.nativeplay.match.AutoPass.triggerOrder(st, AppSettings.askTriggerOrder) == null && st.prompt?.let { p -> p.method == "order" || p.method.startsWith("assign") || p.options.any { it.zone in setOf("Library", "Graveyard", "Exile") } } == true
             if (!covered) EmoteLayer(W, H, d)
             // The deck tracker under the table controls on the left; the menu over everything.
             if (menu != null) {

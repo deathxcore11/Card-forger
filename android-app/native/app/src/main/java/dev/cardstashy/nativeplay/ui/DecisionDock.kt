@@ -130,6 +130,8 @@ fun DecisionDock(st: MatchState, live: Boolean, intents: TableIntents, onInspect
     PadScreen(PadActs(opaque = st.prompt != null && st.failure == null && !st.finished))
     val p = st.prompt ?: return
     if (st.failure != null || st.finished) return
+    // Mobile table M4: triggers the table orders for you never open the box.
+    if (live && dev.cardstashy.nativeplay.match.AutoPass.triggerOrder(st, AppSettings.askTriggerOrder) != null) return
     val d = DockU(u)
     val pad = remember(p.id) { DockFocus() }
     BoxWithConstraints(modifier.fillMaxSize()) {

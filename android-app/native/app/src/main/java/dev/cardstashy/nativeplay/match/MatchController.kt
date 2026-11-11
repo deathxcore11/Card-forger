@@ -760,6 +760,26 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             }
             return
         }
+        // Mobile table M4: triggers that happen together are ordered for you (the box's own Auto order answer), unless you asked to be asked.
+        if (p != null) AutoPass.triggerOrder(st, dev.cardstashy.nativeplay.ui.AppSettings.askTriggerOrder)?.let { order ->
+            Log.i(TableLog.TAG, "decide order: triggers ordered for you $order (${p.options.map { it.label }})")
+            autoJob = scope.launch(Dispatchers.Main) {
+                delay(150)
+                if (_live.value && latest?.prompt?.id == p.id) { autoAnswering = true; try { replyOrder(p.id, order, false) } finally { autoAnswering = false } }
+            }
+            return
+        }
+        // Mobile table M11: Forge offers exactly one target for a must-target: it is taken for you after a beat; the aim line and
+        // the asking card show what happened.
+        AutoPass.onlyTarget(st)?.let { t ->
+            Log.i(TableLog.TAG, "decide target: the one legal target taken for you ${t.kind} ${t.id}")
+            autoJob = scope.launch(Dispatchers.Main) {
+                delay(ONLY_TARGET_MS)
+                if (_live.value && latest?.revision == st.revision && latest?.inputType == "InputSelectTargets") { autoAnswering = true
+                    try { if (t.kind == "player") player(t.id) else card(t.id) } finally { autoAnswering = false } }
+            }
+            return
+        }
         // Finding B: decide on Forge's state, not on a replayed board (a resolved trigger held on the stack read as "your own on top").
         val forge = AutoPass.basis(st, latest) ?: run { Log.i(TableLog.TAG, "decide: board mid-replay (stack ${st.stack.map { it.id }}), waits for Forge's own state"); return }
         val d = decide(forge)
@@ -781,6 +801,8 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     }
 
     private class Decision(val op: String?, val why: String, val delayMs: Long = 0)
+    /** M11: the one legal target is taken after this long, so the question and its asking card are read first. */
+    private val ONLY_TARGET_MS = 650L
 
     /** A permanent whose only abilities make mana (a land, a mana rock): tapping it is never a reason to stop for you (W7, W8). */
     private fun manaOnly(c: dev.cardstashy.nativeplay.engine.Card): Boolean = dev.cardstashy.nativeplay.ui.Glow.manaOnly(c)
@@ -821,7 +843,13 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         if (st.controlMode == "full") return Decision(null, "full control")
         if (stopHere) return Decision(null, "your phase stop")
         val ownTop = st.stack.firstOrNull()?.controller == st.viewer
-        if (ownTop) return Decision("ok", "your own spell or ability on top", 200)
+        // Mobile table M3: your own spell or trigger resolves by itself. With "Stop to respond" on, the table waits when
+        // something of yours could be played in response (what glows, the same rule as every other stop).
+        if (ownTop) {
+            if (dev.cardstashy.nativeplay.ui.AppSettings.stopToRespond && dev.cardstashy.nativeplay.ui.Glow.stopsFor(st, shortCasts).isNotEmpty())
+                return Decision(null, "your own on top: Stop to respond is on and you could respond")
+            return Decision("ok", "your own spell or ability on top", 200)
+        }
         // Smart auto-pass (director spec 6a): Forge sometimes lists a card you plainly can't pay for as actionable ("unknown"
         // affordability, a {1}{R} creature with one land out). Those don't count, nor do mana abilities.
         // W7/W8 (seen again on live 0.4.56: "Respond to …?" with two lands and no instant): the table stops only for what glows
