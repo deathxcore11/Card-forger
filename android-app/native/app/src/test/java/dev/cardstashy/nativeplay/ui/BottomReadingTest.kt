@@ -17,8 +17,8 @@ class BottomReadingTest {
     private val hand = listOf(card(901, "Seam Rip"), card(902, "Sheltered by Ghosts"), card(903, "Plains", "Basic Land — Plains"))
     private val yes: (Card) -> Boolean = { true }; private val no: (Card) -> Boolean = { false }
     private val noWhy: (Card) -> String? = { null }
-    private fun read(st: MatchState, lifted: Card? = null, carried: Card? = null, can: (Card) -> Boolean = yes, why: (Card) -> String? = noWhy) =
-        bottomReading(st, true, hand, lifted, carried, askLine(st), can, why)
+    private fun read(st: MatchState, lifted: Card? = null, carried: Card? = null, can: (Card) -> Boolean = yes, why: (Card) -> String? = noWhy, ringed: Card? = null) =
+        bottomReading(st, true, hand, lifted, carried, askLine(st), can, why, ringed)
 
     @Test fun theAskingCardFirst() {
         val st = snap("targets")
@@ -59,6 +59,20 @@ class BottomReadingTest {
         assertEquals(Reading.Tone.NO, dark.tone); assertEquals("Not enough mana.", dark.status)
         // No reason known: no line made up.
         assertNull(read(st, lifted = hand[1], can = no)!!.status)
+    }
+
+    /** 0.4.60 G5: the ring on a tile on the top screen: the panel reads that card, on the battlefield, with no status line of ours. */
+    @Test fun theRingOnATileReadsThatCard() {
+        val st = snap("main").let { it.copy(stack = emptyList()) }
+        val giant = st.me.battlefield.first { it.id == 107 }
+        val r = read(st, lifted = hand[1], carried = hand[0], ringed = giant)!!
+        assertEquals("Hill Giant", r.card.name); assertEquals("On the battlefield", r.tag); assertNull(r.status); assertEquals(Reading.Tone.NONE, r.tone)
+        // The asking card and the stack still come first; a question with no card of its own still reads nothing.
+        assertEquals("Lightning Bolt", read(snap("targets"), ringed = giant)!!.card.name)
+        assertNull(read(snap("attack"), ringed = giant))
+        // A card that is not on the battlefield (or is face down) is never read as the ringed tile.
+        assertEquals("Seam Rip", read(st, ringed = giant.copy(zone = "Graveyard"))!!.card.name)
+        assertEquals("Seam Rip", read(st, ringed = giant.copy(hidden = true))!!.card.name)
     }
 
     @Test fun theAnswersAreWhatForgeOffersPickedFirst() {

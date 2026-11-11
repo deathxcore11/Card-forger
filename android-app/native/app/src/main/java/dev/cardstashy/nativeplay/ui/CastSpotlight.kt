@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -246,27 +247,39 @@ private fun GlassBox(s: Spotlight, w: Dp, h: Dp, timer: Float, attached: List<Ca
 /**
  * 0.4.60 G4: the keyword boxes, one glass box each: the tile's icon in the tile's mark (dark pill, gold hairline, gold icon), the
  * keyword's name and its sentence with {symbols} drawn by the app's symbol set.
+ * 0.4.60 G5: the dual bottom screen's reading panel draws the same boxes ([prefix] "b.read" names their anchors), two to a row
+ * ([columns]) and lighter ([fill]), as they sit inside its glass.
  */
 @Composable
-private fun KeywordBoxes(host: Card, boxes: List<KeywordBox>, modifier: Modifier = Modifier, tight: Boolean = false) {
+internal fun KeywordBoxes(host: Card, boxes: List<KeywordBox>, modifier: Modifier = Modifier, tight: Boolean = false,
+                          prefix: String = "inspect", columns: Int = 1, fill: Color = Color(0xF00E121C)) {
     // [tight]: under the rules in the glass box, a little closer together so the rules keep their room.
-    Column(modifier.anchorRect("inspectKws${host.id}"), verticalArrangement = Arrangement.spacedBy(if (tight) 5.dp else 7.dp)) {
-        boxes.forEachIndexed { i, b ->
-            val shape = RoundedCornerShape(12.dp)
-            Row(Modifier.fillMaxWidth().anchorRect("inspectKw${host.id}.$i")
-                .clip(shape).background(Color(0xF00E121C)).border(1.dp, Color(0x6BE3C070), shape).padding(horizontal = 11.dp, vertical = if (tight) 6.dp else 9.dp),
-                horizontalArrangement = Arrangement.spacedBy(9.dp), verticalAlignment = Alignment.Top) {
-                if (b.key != null) Box(Modifier.size(24.dp).anchorRect("inspectKwIcon${host.id}.$i").clip(RoundedCornerShape(50)).background(Color(0xF0101114))
-                    .border(1.dp, Color(0xFFD6AD64), RoundedCornerShape(50)), contentAlignment = Alignment.Center) {
-                    BoardIcon(b.key, Color(0xFFF2D496), 24.dp * .74f)
+    val gap = if (tight) 5.dp else 7.dp
+    @Composable fun One(i: Int, b: KeywordBox, m: Modifier) {
+        val shape = RoundedCornerShape(12.dp)
+        Row(m.anchorRect("${prefix}Kw${host.id}.$i")
+            .clip(shape).background(fill).border(1.dp, Color(0x6BE3C070), shape).padding(horizontal = 11.dp, vertical = if (tight) 6.dp else 9.dp),
+            horizontalArrangement = Arrangement.spacedBy(9.dp), verticalAlignment = Alignment.Top) {
+            if (b.key != null) Box(Modifier.size(24.dp).anchorRect("${prefix}KwIcon${host.id}.$i").clip(RoundedCornerShape(50)).background(Color(0xF0101114))
+                .border(1.dp, Color(0xFFD6AD64), RoundedCornerShape(50)), contentAlignment = Alignment.Center) {
+                BoardIcon(b.key, Color(0xFFF2D496), 24.dp * .74f)
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(b.name, style = sans(13.sp, FontWeight.ExtraBold, Color(0xFFFBF3DF)), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (b.hint != null) {
+                    val inline = HashMap<String, InlineTextContent>()
+                    Text(buildAnnotatedString { symbols(b.hint, inline) }, style = sans(12.sp, FontWeight.Medium, Color(0xFFB8C0CD)).copy(lineHeight = 16.sp), inlineContent = inline)
                 }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(b.name, style = sans(13.sp, FontWeight.ExtraBold, Color(0xFFFBF3DF)), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    if (b.hint != null) {
-                        val inline = HashMap<String, InlineTextContent>()
-                        Text(buildAnnotatedString { symbols(b.hint, inline) }, style = sans(12.sp, FontWeight.Medium, Color(0xFFB8C0CD)).copy(lineHeight = 16.sp), inlineContent = inline)
-                    }
-                }
+            }
+        }
+    }
+    Column(modifier.anchorRect("${prefix}Kws${host.id}"), verticalArrangement = Arrangement.spacedBy(gap)) {
+        if (columns <= 1) boxes.forEachIndexed { i, b -> One(i, b, Modifier.fillMaxWidth()) }
+        // Side by side, each row as tall as its taller box so the pair lines up.
+        else boxes.withIndex().chunked(columns).forEach { row ->
+            Row(Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(gap)) {
+                row.forEach { (i, b) -> One(i, b, Modifier.weight(1f).fillMaxHeight()) }
+                repeat(columns - row.size) { Box(Modifier.weight(1f)) }
             }
         }
     }

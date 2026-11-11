@@ -1065,6 +1065,8 @@ fun ForgeBoard(
             // Two screens: the sheet lies over the bottom screen's lower half, under the hand; the top screen does not change.
             if (dual) { val goldAct = padX; BottomScreen { Box(Modifier.fillMaxSize()) { MatchBottom(st, hand, (selectedHand ?: discardWalk.takeIf { discardAsk })?.let { id -> hand.firstOrNull { it.id == id } }, goldAct, fan, onInspect, afk,
                 ask = askAll, carried = carried?.let { id -> hand.firstOrNull { it.id == id } }, live = live, canPlay = { castable(it) }, why = { dimWhy(it) },
+                // 0.4.60 G5: the ring on a tile on the top screen: the bottom's panel reads that card and its keywords.
+                ringed = TableZones.ringed?.let { id -> st.card(id)?.takeIf { it.zone == "Battlefield" } },
                 onAnswer = { a -> a.card?.let { intents.card(it.id) } ?: a.player?.let { intents.player(it) } },
                 onCancel = st.buttons.takeIf { it.cancelEnabled }?.let { { intents.cancel() } }); sheetView() } } }
             // With the bottom screen up the hand chip sits where the line would be: the line goes just above the chip, high enough
@@ -1406,7 +1408,8 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         }
         .aimOn("c${card.id}")
         .then(if (foil) Modifier.onFocusChanged { if (it.isFocused) foilKick.longValue = fx?.now?.longValue ?: 0L } else Modifier)
-        .then(if (pileTop) Modifier.onFocusChanged { if (it.isFocused) { if (mineSide) { TableZones.lastMine = card.id; TableZones.at = 1 } else { TableZones.lastTheirs = card.id; TableZones.at = 2 } } }
+        .then(if (pileTop) Modifier.onFocusChanged { if (it.isFocused) { TableZones.ringed = card.id; if (mineSide) { TableZones.lastMine = card.id; TableZones.at = 1 } else { TableZones.lastTheirs = card.id; TableZones.at = 2 } }
+                else if (TableZones.ringed == card.id) TableZones.ringed = null }
             .padActs(padHere).matchPadTap(padSource, padFocus) { tap?.invoke() ?: inspect(card) } else Modifier)
         .clip(shape).background(Color(0xFF141418))
         .pointerInput(card.id) { detectTapGestures(onTap = { tap?.invoke() ?: inspect(card) }, onLongPress = { inspect(card) }) }
@@ -2128,6 +2131,8 @@ internal object TableZones {
     var jumped = false
     /** The ring is somewhere on the board. */
     var ringIn = false
+    /** 0.4.60 G5: the battlefield card the ring is on (a pile's top tile), read by the dual bottom screen's panel; null when it is off the board. */
+    var ringed by mutableStateOf<Int?>(null)
     /** V4: the ring to what the table asks for (a legal target, else a mana source). A card sets [at] itself; an orb or pill is 1. */
     fun toAsk(why: String): Boolean {
         val r = ask?.invoke()

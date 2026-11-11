@@ -56,6 +56,8 @@ import dev.cardstashy.nativeplay.engine.MatchState
 @Composable
 internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: PadAct?, fan: @Composable (Dp) -> Unit, onInspect: (Card) -> Unit, afk: String? = null,
                          ask: String? = null, carried: Card? = null, live: Boolean = false,
+                         /** 0.4.60 G5: the battlefield card under the ring on the top screen; the panel reads it with its keyword boxes. */
+                         ringed: Card? = null,
                          canPlay: (Card) -> Boolean = { false }, why: (Card) -> String? = { null },
                          onAnswer: (Answer) -> Unit = {}, onCancel: (() -> Unit)? = null) {
     var zone by remember { mutableStateOf("hand") }
@@ -116,10 +118,14 @@ internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: 
                 // 0.4.59 T7: under the hand, one glass panel reads the card that matters now (bottomReading).
                 // While you pick on the table the reading sits left and the answers right ("Answer here or on the table").
                 val answers = if (tablePick && st.inputType == "InputSelectTargets") bottomAnswers(st) else emptyList()
+                val reading = bottomReading(st, live, hand, lifted, carried, ask, canPlay, why, ringed)
+                // 0.4.60 G5: a card on the battlefield is read with its keyword boxes (G4's), which take the panel's spare room.
+                val boxes = reading?.card?.takeIf { it.zone == "Battlefield" }?.let { keywordBoxes(it) }.orEmpty()
                 // The hand only dims while it asks, so the answers may take half the room: four buttons and Cancel, whole, no scrolling.
-                Row(Modifier.fillMaxWidth().heightIn(max = h * if (answers.isNotEmpty()) .5f else .42f), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    bottomReading(st, live, hand, lifted, carried, ask, canPlay, why)?.let { r ->
-                        ReadingPanel(r, Modifier.weight(1f).anchorRect("b.read"))
+                // G5: with keyword boxes the panel may take most of the screen (the fan sizes itself to what is left, as in the preview).
+                Row(Modifier.fillMaxWidth().heightIn(max = h * if (answers.isNotEmpty()) .5f else if (boxes.isNotEmpty()) .62f else .42f), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    reading?.let { r ->
+                        ReadingPanel(r, Modifier.weight(1f).anchorRect("b.read"), boxes)
                     }
                     if (answers.isNotEmpty() || (tablePick && onCancel != null)) AnswerList(answers, onAnswer, if (tablePick) onCancel else null, Modifier.weight(.8f).anchorRect("b.answers"))
                 }
@@ -186,7 +192,7 @@ internal val BOTTOM_LIFT = 6.dp
  * it ([canPlay]) and, when not, the table's own reason ([why]); words never written for a card.
  */
 internal fun bottomReading(st: MatchState, live: Boolean, hand: List<Card>, lifted: Card?, carried: Card?, ask: String?,
-                           canPlay: (Card) -> Boolean, why: (Card) -> String?): Reading? {
+                           canPlay: (Card) -> Boolean, why: (Card) -> String?, ringed: Card? = null): Reading? {
     val question = bottomAsk(st, live, ask)
     val asking = if (question != null) (carried ?: pendingCast(st)) else null
     if (asking != null) return Reading("Asking", asking, if (st.inputType == "InputSelectTargets") "Legal targets are ringed on the top screen." else null, Reading.Tone.ASK)
@@ -200,6 +206,9 @@ internal fun bottomReading(st: MatchState, live: Boolean, hand: List<Card>, lift
         return Reading(tag, src, "On the stack now.", Reading.Tone.STACK)
     }
     if (dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) != null && lifted == null && carried == null) return null
+    // 0.4.60 G5: the ring on a tile on the top screen: that card, said to be on the battlefield (no status of ours). It comes before a
+    // lift, which on two screens outlives the ring leaving the hand.
+    ringed?.takeIf { it.zone == "Battlefield" && !it.hidden }?.let { return Reading("On the battlefield", it, null, Reading.Tone.NONE) }
     val c = lifted ?: carried ?: hand.firstOrNull() ?: return null
     if (c.zone != "Hand" || !live) return Reading("In your hand", c, null, Reading.Tone.NONE)
     if (canPlay(c)) return Reading("In your hand", c, if (c.isLand) "You can play this land." else "You can cast this. The lands that pay are lit in gold.", Reading.Tone.OK)
@@ -207,7 +216,7 @@ internal fun bottomReading(st: MatchState, live: Boolean, hand: List<Card>, lift
 }
 
 @Composable
-internal fun ReadingPanel(r: Reading, modifier: Modifier) {
+internal fun ReadingPanel(r: Reading, modifier: Modifier, boxes: List<KeywordBox> = emptyList()) {
     val shape = RoundedCornerShape(12.dp)
     val c = r.card
     Column(modifier.clip(shape).background(Color(0xC7121620)).border(1.dp, Color(0x61E3C070), shape).verticalScroll(rememberScrollState())
@@ -224,6 +233,8 @@ internal fun ReadingPanel(r: Reading, modifier: Modifier) {
             val col = when (r.tone) { Reading.Tone.ASK -> Color(0xFFFF9D4D); Reading.Tone.STACK -> Site.Gold; Reading.Tone.NO -> Color(0xFFFF6A4A); else -> Color(0xFF5CC8FF) }
             Text(line, Modifier.anchorRect("b.status"), style = small(12.5f, col, FontWeight.ExtraBold))
         }
+        // 0.4.60 G5: the card's keyword boxes (G4's: the tile's icon, Forge's name, the KEYWORD_HINTS sentence), two to a row.
+        if (boxes.isNotEmpty()) KeywordBoxes(c, boxes, Modifier.fillMaxWidth().padding(top = 4.dp), prefix = "b.read", columns = 2, fill = Color(0x0DFFFFFF))
     }
 }
 
