@@ -138,6 +138,8 @@ internal const val DECLARE_MS = 210; internal const val DECLARE_GAP_MS = 95L
 internal const val BLOCK_MS = 700L
 /** P5, a kill: grey and shudder (240), flash and break (200); its embers reach the owner's square in 380 to 560 and the pile answers. */
 internal const val DEATH_MS = 440L; internal const val EMBERS_MS = 880L
+/** P6: Fire is 110 of swell and flash and 130 of streak; the impact plays 450; the spent spell leaves 160 after the impact, 320 to the square and 300 of ring. */
+internal const val FIRE_MS = 240L; internal const val BOLT_MS = 450L; internal const val SPENT_MS = 620L; internal const val AIM_MS = 320L
 /** P5: the life pill comes down one point every 90 ms from contact (faster past eight points, so a big hit still ends in time). */
 internal fun lifeGap(points: Int): Long = if (points <= 8) 90L else (720L / points).coerceAtLeast(30L)
 
@@ -152,6 +154,14 @@ internal enum class Fx { DRAW, CAST, RESOLVE, ARRIVE, TOKEN, ATTACK, LUNGE, BLOC
     GLINT,
     /** Match punch P3, the landing's impact on [FxItem.card]'s tile: freeze, squash and spring, flash, ring, dust, sparks; [FxItem.power] scales shake and particles. */
     IMPACT,
+    /** Match punch P6, Aim: a target thread has locked on [FxItem.card] (or the player at [FxItem.toKey]): it flinches 5 % and a ring closes on it. */
+    AIM,
+    /** P6, Fire: the resolving spell's place on the stack ([FxItem.from]) swells and flashes (110), then a thick streak crosses to [FxItem.toKey] (130). */
+    FIRE,
+    /** P6, Impact on [FxItem.card]: freeze, flash, shake, spikes, sparks and smoke in the spell's colour, the tile knocked and springing; a friendly spell ([FxItem.power] 0) only glows. */
+    BOLT,
+    /** P6, After: the spent spell ([FxItem.ghost]) leaves the stack for its owner's graveyard (320), where the pile answers with a ring. */
+    SPENT,
     /** Match punch P5: nine ember streaks from a dead card's place ([FxItem.from]) to its owner's graveyard, where the pile answers with a ring. */
     EMBERS }
 
@@ -181,6 +191,8 @@ internal class FxItem(
     var marks = 0
     /** P5: a life loss's points, ticked off the pill one by one from this effect's start. */
     var points = 0
+    /** P6: of a spell's streaks (one per target), the one that also draws the flash on the stack. */
+    var lead = true
     fun once(bit: Int): Boolean = if (marks and bit != 0) false else { marks = marks or bit; true }
     /** 0..1 through the effect, or -1 while it waits for its turn. */
     fun p(now: Long): Float = if (now < t0) -1f else (p0 + (1f - p0) * ((now - t0).toFloat() / dur.coerceAtLeast(1))).coerceAtMost(1f)
@@ -397,6 +409,12 @@ class Battlefield {
     /** How far an attacking tile stands toward the other side (px; set by the table), so its declare ring sits where it stands. */
     internal var advancePx = 0f
 
+    /** P6, Aim: a target thread has just locked on [toKey] ("c<id>" or "orb<id>"), in its caster's colour [tone]. */
+    internal fun aimLock(toKey: String, tone: Color) {
+        if (reduced || Motion.still) return
+        items += FxItem(Fx.AIM, 1, AIM_MS, card = toKey.takeIf { it.startsWith("c") }?.drop(1)?.toIntOrNull(), toKey = toKey, tone = tone).also { it.t0 = now.longValue }
+        reindex()
+    }
     /** A loss of [player]'s is still in flight (so the pill waits for it). */
     internal fun lifePending(player: Int) = items.any { it.kind == Fx.LIFE && it.player == player && it.points > 0 }
     /** P5: the life [player]'s pill shows now. Each loss in flight comes off one point at a time from its contact ([lifeGap]). */
@@ -639,9 +657,30 @@ class Battlefield {
         }
         // Resolve (level 2, 300 ms): the stack card ripples; a spell with targets sends its light to them.
         val idsB = b.stack.map { it.id }.toSet()
+        /** P6: the cards a resolving spell struck, and when (ms into the resolve): one it killed breaks there, not after everything else. */
+        val boltAt = HashMap<Int, Long>()
         for (s in a.stack) if (s.id !in idsB) {
             val src = s.source?.id
             val becomesPermanent = src != null && src in bfB && src !in bfA
+            // P6: a spell with targets fires at them (abilities and triggers keep the light thread and their own beats).
+            val aimed = if (becomesPermanent || s.ability || s.trigger) emptyList() else s.targets.filter { r -> r.kind == "player" || r.id in bfA }.take(4)
+            val card = s.source
+            val owner = card?.let { c -> b.players.firstOrNull { p -> p.graveyard.any { it.id == c.id } }?.id }
+            if (aimed.isNotEmpty()) {
+                // Friendly: everything it targets is its caster's own. Then no shake, no freeze, green light.
+                val friendly = aimed.all { r -> if (r.kind == "player") r.id == s.controller else bfA[r.id]?.controller == s.controller }
+                val tone = if (friendly) TRIG_GREEN else card?.let { frameTone(cardColors(it)).first } ?: Color(0xFFFF8A5C)
+                aimed.forEachIndexed { i, r ->
+                    val key = if (r.kind == "player") "orb${r.id}" else "c${r.id}"
+                    resolves += FxItem(Fx.FIRE, 2, FIRE_MS, mine = s.controller == viewer, from = stackRect, toKey = key, tone = tone).also { it.lead = i == 0 }
+                    if (r.kind != "player") { boltAt[r.id] = FIRE_MS
+                        resolves += FxItem(Fx.BOLT, 1, BOLT_MS, card = r.id, mine = bfA[r.id]?.controller == viewer, from = anchors.rects[key], fromKey = "stackcard", tone = tone, power = if (friendly) 0f else 1f, delay = FIRE_MS) }
+                }
+            }
+            // The spent spell goes to its owner's square (Forge put it in that graveyard), 160 after the impact when it fired.
+            if (!becomesPermanent && !s.ability && !s.trigger && card != null && owner != null && stackRect != null)
+                resolves += FxItem(Fx.SPENT, 1, SPENT_MS, mine = owner == viewer, from = stackRect, toKey = "grave$owner", ghost = card, delay = if (aimed.isNotEmpty()) FIRE_MS + 160L else 0L)
+            if (aimed.isNotEmpty()) continue
             val target = s.targets.firstOrNull()?.let { r -> if (r.kind == "player") "orb${r.id}" else "c${r.id}" }
             resolves += FxItem(Fx.RESOLVE, if (becomesPermanent) 1 else 2, if (becomesPermanent) 220 else 320, mine = s.controller == viewer, from = stackRect,
                 toKey = if (becomesPermanent) null else target, tone = if (s.controller == viewer) Color(0xFFF3D27E) else Color(0xFFFF8A5C))
@@ -791,9 +830,14 @@ class Battlefield {
             val toGrave = b.players.any { p -> p.graveyard.any { it.id == id } }
             val clash = lunged && c.isCreature && (c.attacking || c.blocking)
             val item = FxItem(Fx.DEATH, 2, if (toGrave) DEATH_MS else 600, mine = c.controller == viewer, from = rect, toKey = if (toGrave) "grave${c.owner}" else null, ghost = c, delay = if (clash) hitAt(id) else 0L)
-            if (clash) hits += item else deaths += item
+            // P6: a card a spell struck breaks 300 after its impact (inside the resolve), while the hit still rings.
+            val struckAt = boltAt[id]?.takeIf { toGrave && !clash }
+            val group = if (clash) hits else if (struckAt != null) resolves else deaths
+            if (struckAt != null) { resolves += FxItem(Fx.DEATH, 2, DEATH_MS, mine = c.controller == viewer, from = rect, toKey = "grave${c.owner}", ghost = c, delay = struckAt + 300L)
+                resolves += FxItem(Fx.EMBERS, 1, EMBERS_MS, card = id, mine = c.controller == viewer, from = rect, toKey = "grave${c.owner}", delay = struckAt + 540L); continue }
+            group += item
             // The embers follow the break and do not hold the table (level 1): the next thing starts while they fly.
-            if (toGrave) (if (clash) hits else deaths) += FxItem(Fx.EMBERS, 1, EMBERS_MS, card = id, mine = c.controller == viewer, from = rect, toKey = "grave${c.owner}", delay = item.delay + 240L)
+            if (toGrave) group += FxItem(Fx.EMBERS, 1, EMBERS_MS, card = id, mine = c.controller == viewer, from = rect, toKey = "grave${c.owner}", delay = item.delay + 240L)
         }
         return listOf(draws, casts, resolves, arrivals, combat, hits, deaths, counters).filter { it.isNotEmpty() }
     }
@@ -839,6 +883,16 @@ class Battlefield {
                     Fx.DAMAGE -> if (p >= 0f) {
                         if (p < .2f) { scaleX = 1.04f; scaleY = 1.04f }
                         else { val q = (p - .2f) / .8f; translationX += 3.dp.toPx() * sin(q * 38f) * (1f - q) }
+                    }
+                    // P6: the aimed card flinches 5 % and springs back; the struck one is knocked 14 dp away from the stack and springs
+                    // (a friendly spell only swells it 6 %).
+                    Fx.AIM -> if (p >= 0f) { val s = 1f - .05f * (1f - elasticOut(p)); scaleX = s; scaleY = s }
+                    Fx.BOLT -> if (p >= 0f) {
+                        val k = 1f - elasticOut((p * BOLT_MS / 420f).coerceAtMost(1f))
+                        if (it.power <= 0f) { scaleX = 1f + .06f * k; scaleY = 1f + .06f * k }
+                        else { val a = anchors?.rects?.get("stackcard"); val b = anchors?.rects?.get("c$id")
+                            if (a != null && b != null) { val dx = b.center.x - a.center.x; val dy = b.center.y - a.center.y; val dist = kotlin.math.hypot(dx, dy).coerceAtLeast(1f)
+                                translationX += dx / dist * 14.dp.toPx() * k; translationY += dy / dist * 14.dp.toPx() * k; rotationZ = (if (dx >= 0f) 3.4f else -3.4f) * k } }
                     }
                     // P5: a declared attacker steps up in its own tile's layer (attackStep); the effect draws its coral ring only.
                     Fx.ATTACK -> {}
@@ -1144,7 +1198,7 @@ internal fun FxLayer(force: Boolean = false) {
     val density = LocalDensity.current
     Box(Modifier.fillMaxSize().onGloballyPositioned { val b = it.boundsInRoot(); self = b.topLeft; fx.origin = b.topLeft; fx.stageCentre = b.center }) {
         // Dying cards: the last picture of the card, breaking into holo bands as it drifts to its graveyard.
-        for (it in fx.items) if (it.kind == Fx.DEATH && it.ghost != null && it.from != null) key(it) { Ghost(it, fx, anchors, self, density) }
+        for (it in fx.items) if ((it.kind == Fx.DEATH || (it.kind == Fx.SPENT && !fx.reduced)) && it.ghost != null && it.from != null) key(it) { Ghost(it, fx, anchors, self, density) }
         // P4: your drawn card itself, on its way from your deck to its place in your hand.
         if (!fx.reduced) for (it in fx.items) if (it.kind == Fx.DRAW && it.ghost != null) key(it) { DrawnCard(it, fx, anchors, self, density) }
         Canvas(Modifier.fillMaxSize()) {
@@ -1172,6 +1226,12 @@ internal fun FxLayer(force: Boolean = false) {
                     continue
                 }
                 when (it.kind) {
+                    Fx.AIM -> rect(it.toKey)?.let { r -> val q = (p * AIM_MS / 260f).coerceAtMost(1f)
+                        if (q < 1f) drawCircle(it.tone.copy(alpha = .9f * (1f - q)), radius = r.maxDimension * (.95f - .4f * q), center = r.center, style = Stroke(3.dp.toPx() * (1f - .5f * q))) }
+                    Fx.FIRE -> drawFire(it, p, it.from?.translate(-self.x, -self.y), rect(it.toKey))
+                    Fx.BOLT -> (rect("c${it.card}") ?: it.from?.translate(-self.x, -self.y))?.let { r -> drawBolt(fx, it, p, r, rect(it.fromKey)) }
+                    Fx.SPENT -> rect(it.toKey)?.let { g -> val k = (p * SPENT_MS - 320f) / 300f
+                        if (k in 0f..1f) drawCircle(Color(0xFFF3D27E).copy(alpha = .9f * (1f - k)), radius = 15.dp.toPx() + 25.dp.toPx() * (1f - (1f - k) * (1f - k)), center = g.center, style = Stroke((2f * (1f - k) + .6f) * density.density)) }
                     Fx.GLINT -> rect("c${it.card}")?.let { r -> drawRoundRect(it.tone.copy(alpha = .4f * (1f - p)), r.topLeft, r.size, CornerRadius(10.dp.toPx())) }
                     Fx.DRAW -> if (it.ghost != null) drawMyDraw(fx, it, p, rect("handTray") ?: rect("hand")) else drawDraw(it, p, rect(it.fromKey), rect(it.toKey) ?: Rect(size.width / 2 - 20f, size.height - 60f, size.width / 2 + 20f, size.height))
                     Fx.CAST -> drawCast(it, p, rect(it.fromKey) ?: (if (it.mine) Rect(size.width / 2, size.height - 40f, size.width / 2, size.height) else Rect(size.width / 2, 0f, size.width / 2, 20f)), rect(it.toKey))
@@ -1363,7 +1423,14 @@ private fun Ghost(it: FxItem, fx: Battlefield, anchors: Anchors, self: Offset, d
             if (p < 0f) { alpha = 1f; return@graphicsLayer }
             if (fx.reduced) { alpha = 1f - smooth(.3f, 1f, p); return@graphicsLayer }
             val drift = smooth(.28f, 1f, p)
-            if (it.toKey != null) {
+            if (it.kind == Fx.SPENT) {
+                // P6, After: the spent spell shrinks to .3 on its way to its owner's graveyard (320 ms, gathering speed) and is gone.
+                val q = (p * SPENT_MS / 320f).coerceAtMost(1f); val e = q * q * q
+                anchors.version.intValue
+                val g = it.toKey?.let { k -> anchors.rects[k] }
+                if (g != null) { translationX = (g.center.x - r.center.x) * e; translationY = (g.center.y - r.center.y) * e }
+                val s = 1f - .7f * e; scaleX = s; scaleY = s; alpha = 1f - smooth(.55f, 1f, q)
+            } else if (it.toKey != null) {
                 // P5, a kill: it shudders where it stands (240), then swells 18 % and is gone (200); its embers carry it to the square.
                 val ms = p * DEATH_MS; val q = (ms / 240f).coerceAtMost(1f); val out = ((ms - 240f) / 200f).coerceIn(0f, 1f)
                 rotationZ = turn + sin(q * 40f) * 2.9f * (1f - q)
@@ -1372,7 +1439,7 @@ private fun Ghost(it: FxItem, fx: Battlefield, anchors: Anchors, self: Offset, d
             } else { val s = 1f - .12f * drift; scaleX = s; scaleY = s; rotationZ = turn; alpha = 1f - smooth(.7f, 1f, p) }
         }
         .drawWithContent {
-            if (fx.reduced || fx.low) { drawContent(); return@drawWithContent }
+            if (fx.reduced || fx.low || it.kind == Fx.SPENT) { drawContent(); return@drawWithContent }
             val p = it.p(fx.now.longValue).coerceAtLeast(0f)
             val kill = it.toKey != null; val ms = p * DEATH_MS
             val brk = if (kill) smooth(240f, DEATH_MS.toFloat(), ms) else smooth(.12f, .55f, p)
@@ -1397,7 +1464,7 @@ private fun Ghost(it: FxItem, fx: Battlefield, anchors: Anchors, self: Offset, d
             else if (p < .12f) drawRect(Color.White.copy(alpha = .45f * (1f - p / .12f)))
         }
         .clip(RoundedCornerShape(10.dp))) {
-        CardImage(it.ghost!!.name, Modifier.fillMaxSize(), crop = true) {
+        CardImage(it.ghost!!.name, Modifier.fillMaxSize(), crop = it.kind != Fx.SPENT) {
             val (a, b) = frameTone(cardColors(it.ghost))
             Box(Modifier.fillMaxSize().drawWithContent { drawRect(Brush.linearGradient(listOf(a, b))) })
         }
@@ -1584,6 +1651,44 @@ private fun DrawScope.drawLunge(fx: Battlefield, it: FxItem, a: Rect?, b: Rect?,
     val rings = if (face) listOf(Color(0xFFFFF4D6), Color(0xFFFF4A3A), Color(0xFFF0C27A)) else listOf(Color(0xFFFFF0C8), Color(0xFFFF9A3C))
     rings.forEachIndexed { j, col -> val k = ((t - j * 90f) / 620f).coerceIn(0f, 1f); if (k > 0f && k < 1f)
         drawCircle(col.copy(alpha = .9f * (1f - k)), radius = b.maxDimension * (.35f + (if (face) 2.4f else 1.6f) * k), center = at, style = Stroke((6f - 5f * k) * density)) }
+}
+
+/** P6, Fire: the spell's place on the stack swells 8 % and flashes in its colour (110 ms), then a thick streak crosses to the target (130). */
+private fun DrawScope.drawFire(it: FxItem, p: Float, stack: Rect?, target: Rect?) {
+    val ms = p * FIRE_MS
+    val from = stack?.center ?: Offset(size.width - 80f * density, size.height / 2)
+    if (stack != null && it.lead) { val q = (ms / 200f).coerceAtMost(1f); val grow = stack.minDimension * .04f * (1f - (1f - q) * (1f - q))
+        drawRoundRect(Brush.verticalGradient(listOf(Color.White.copy(alpha = .9f * (1f - q)), it.tone.copy(alpha = .8f * (1f - q))), stack.top, stack.bottom),
+            Offset(stack.left - grow, stack.top - grow), Size(stack.width + 2 * grow, stack.height + 2 * grow), CornerRadius(10f * density)) }
+    if (target == null || ms < 110f) return
+    val q = (ms - 110f) / 130f
+    val hot = Color(1f - (1f - it.tone.red) * .45f, 1f - (1f - it.tone.green) * .45f, 1f - (1f - it.tone.blue) * .45f)
+    streak(from, target.center, q * q * q, hot, 6.dp.toPx(), tail = .55f, bend = .04f)
+}
+
+/**
+ * P6, Impact on the tile at [r]: a 115 ms freeze, a white flash (320), a 12 dp shake pushed in 3.5 %, 18 spikes, 30 sparks, a ring, a
+ * blob and smoke in the spell's colour. A friendly spell has no freeze and no shake: a soft flash, a ring and rising embers in its light.
+ */
+private fun DrawScope.drawBolt(fx: Battlefield, it: FxItem, p: Float, r: Rect, stack: Rect?) {
+    val ms = p * BOLT_MS; val now = fx.now.longValue; val seed = (it.card ?: 0) and 0xff
+    val hostile = it.power > 0f
+    if (hostile && it.once(1)) fx.freeze(115L)
+    if (!fx.low && it.once(2)) {
+        if (hostile) {
+            fx.jolt(12f, 300L, .035f)
+            fx.bits.spikes(r.center, 18, r.maxDimension * 1.25f, it.tone, now, lifeMs = 300, seed = seed)
+            fx.bits.sparks(r.center, 30, it.tone, now, 300f * density, lifeMs = 640, sizePx = 1.7f * density, seed = seed)
+            fx.bits.ring(r.center, 90.dp.toPx(), it.tone, now, lifeMs = 340)
+            fx.bits.blob(r.center, 75.dp.toPx(), it.tone, now, lifeMs = 220)
+            fx.bits.smoke(Offset(r.center.x, r.center.y + r.height * .2f), 7, Color(0xFF8A8478), now, 34f * density, lifeMs = 850, sizePx = r.height * .14f, seed = seed)
+        } else {
+            fx.bits.ring(r.center, r.maxDimension * .9f, it.tone, now, lifeMs = 420)
+            fx.bits.embers(Offset(r.center.x, r.bottom - r.height * .2f), 10, it.tone, now, 60f * density, lifeMs = 800, sizePx = 1.6f * density, seed = seed)
+            fx.bits.blob(r.center, r.maxDimension * .7f, it.tone, now, lifeMs = 360)
+        }
+    }
+    if (ms < 320f) drawRoundRect((if (hostile) Color.White else it.tone).copy(alpha = (if (hostile) 1f else .5f) * (1f - ms / 320f)), r.topLeft, r.size, CornerRadius(10f * density))
 }
 
 /** P5, the declare: the attacker's coral ring flares where it now stands, with one ring going out from it (300 ms). */

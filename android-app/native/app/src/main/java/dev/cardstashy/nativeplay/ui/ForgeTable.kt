@@ -2614,6 +2614,18 @@ private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) 
     val anchors = LocalAnchors.current ?: return@with
     val aim = TableAim.key
     val rels = remember(st, aim) { relations(st, aim) }
+    // Match punch P6, Aim: a new target thread whips out from the stack card in 200 ms; when it locks, the target flinches and a
+    // ring closes on it (Battlefield.aimLock). Reduce motion and still pictures: the thread is simply there.
+    val fx = LocalBattlefield.current
+    val whips = remember { HashMap<String, Animatable<Float, androidx.compose.animation.core.AnimationVector1D>>() }
+    val aimed = rels.filter { it.kind == "target" && !it.aim }.associateBy { "${it.caster}>${it.to}" }
+    whips.keys.retainAll(aimed.keys)
+    for (key in aimed.keys) if (key !in whips) whips[key] = Animatable(if (Motion.still || fx == null || fx.reduced) 1f else 0f)
+    LaunchedEffect(aimed.keys) {
+        for ((key, r) in aimed) { val w = whips[key] ?: continue; if (w.value >= 1f) continue
+            launch { w.animateTo(1f, tween(200, easing = androidx.compose.animation.core.Easing { 1f - (1f - it) * (1f - it) * (1f - it) }))
+                fx?.aimLock(r.to, if (r.caster != null && r.caster != st.viewer) ThreadCoral else Color(0xFFF3D27E)) } }
+    }
     if (rels.isEmpty()) return@with
     val flowing = !Motion.still && rels.any { it.kind != "target" }
     val flow = if (flowing) rememberInfiniteTransition(label = "flow").animateFloat(0f, 13f, infiniteRepeatable(tween(1400, easing = LinearEasing)), label = "dash") else remember { mutableFloatStateOf(0f) }
@@ -2636,7 +2648,10 @@ private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) 
             val start = minOf(a.width, a.height) * .42f; val stop = minOf(b.width, b.height) * .48f + 4 * k
             val sx = ax + ux * start; val sy = ay + uy * start; val ex = bx - ux * stop; val ey = by - uy * stop
             val bend = minOf(60 * k, len * .16f); val cx = (sx + ex) / 2 - uy * bend; val cy = (sy + ey) / 2 + ux * bend
-            val path = Path().apply { moveTo(sx, sy); quadraticTo(cx, cy, ex, ey) }
+            val whole = Path().apply { moveTo(sx, sy); quadraticTo(cx, cy, ex, ey) }
+            // P6: how far a new target thread has whipped out (1 once it has locked).
+            val whip = if (r.kind == "target" && !r.aim) whips["${r.caster}>${r.to}"]?.value ?: 1f else 1f
+            val path = if (whip >= 1f) whole else Path().also { part -> androidx.compose.ui.graphics.PathMeasure().apply { setPath(whole, false); getSegment(0f, length * whip, part, true) } }
             // A target thread is in its caster's colour: gold yours, coral the CPU's (glow rules; T6 arc).
             val cpuThread = r.kind == "target" && r.caster != null && r.caster != st.viewer
             val col = if (cpuThread) ThreadCoral else colors.getValue(r.kind)
@@ -2652,6 +2667,7 @@ private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) 
             drawPath(path, col.copy(alpha = alpha), style = Stroke(w, cap = StrokeCap.Round, pathEffect = dash))
             // The target's rim, in the caster's colour, while the thread is there (glow rules "caster-colour rim + thread"; it was
             // red or green, hostile or friendly, before 0.4.59 T6). The arc you are still aiming has none until you pick.
+            if (whip < 1f) { drawCircle(col.copy(alpha = alpha), radius = 3.5f * k, center = Offset(sx, sy)); continue }
             if (r.kind == "target" && !r.aim && r.to.startsWith("c")) {
                 drawRoundRect(col.copy(alpha = .9f), Offset(b.left - self.x - 3 * k, b.top - self.y - 3 * k), androidx.compose.ui.geometry.Size(b.width + 6 * k, b.height + 6 * k),
                     CornerRadius(6 * k), style = Stroke(2.5f * k))
