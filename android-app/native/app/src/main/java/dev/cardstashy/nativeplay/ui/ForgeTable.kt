@@ -543,7 +543,7 @@ fun ForgeBoard(
                 ControlEmblems(st, intents, Modifier, d)
                 if (chatInRow) EmoteButton(Modifier, d)
             }
-            Row(Modifier.offset(x = x0, y = ay + 34.du), horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.offset(x = x0, y = ay + 34.du).anchorRect("tray2"), horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
                 if (!chatInRow) EmoteButton(Modifier, d)
                 ManaPool(me.mana, Modifier, d)
             }
@@ -616,6 +616,11 @@ fun ForgeBoard(
             // above the hand chip on two screens. With no line it takes the width its words need.
             val goldInset = if (large) 12.dp else 8.du
             val askAll = if (live) askLine(st) else null
+            // 0.4.59 T6: the hand dips out of the way while you pick on the table, and the question takes its strip.
+            val tucked = handTucked(st, live)
+            val tuck by animateFloatAsState(if (tucked) 1f else 0f, if (Motion.still) androidx.compose.animation.core.snap() else tween(220, easing = FastOutSlowInEasing), label = "tuck")
+            var tuckBtnW by remember { mutableStateOf(0.dp) }
+            LaunchedEffect(tucked) { if (!tucked) tuckBtnW = 0.dp }
             // Two screens: a question the bottom asks is not said on the top too (live 0.4.57, fault list 4 and 14; table-info I5.1).
             val askText = if (dual && bottomAsk(st, live, askAll) != null) null else askAll
             var askRight by remember { mutableStateOf(Dp.Unspecified) }
@@ -628,10 +633,12 @@ fun ForgeBoard(
             val goldDensity = LocalDensity.current
             val chipMax = if (large) Dp.Infinity else ((W - goldInset - goldW - 12.du - (centreX + 44.du)) * 2).coerceAtLeast(120.du)
             Box(Modifier.offset(x = centreX + 44.du - handW / 66f * 222f, y = H - handW / 66f * 67f).width(handW / 66f * 444f).height(handW / 66f * 120f)
-                .then(if (handAnchors != null) Modifier.onGloballyPositioned { handAnchors.putRect("hand", it.boundsInRoot()) } else Modifier)) {
+                .then(if (handAnchors != null) Modifier.onGloballyPositioned { handAnchors.putRect("hand", it.boundsInRoot()) } else Modifier)
+                .graphicsLayer { if (tuck > 0f) { translationY = tuck * AskTuck.DIP * (handW / 66f * 67f).toPx(); alpha = 1f - tuck * (1f - AskTuck.SHADE) } }) {
                 // With the bottom screen up the hand lives there; the table keeps a small count where the fan was.
                 if (!dual) fan(handW)
-                else if (hand.isNotEmpty()) {
+                if (!dual && tucked) Box(Modifier.matchParentSize().pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent().changes.forEach { it.consume() } } })
+                if (dual && hand.isNotEmpty()) {
                     // The hand's handle on the table: the d-pad lands here, left and right walk the hand on the bottom screen (the lifted
                     // card follows), A plays the lifted card when it can be played (else opens it), Y opens it (Randall 9 Nov: "d-pad should
                     // work better on the hand on the bottom screen").
@@ -764,7 +771,10 @@ fun ForgeBoard(
                 val pickOne = oneTarget(st) || onePick(st)
                 val quietShown = when { attackAll -> false; pickOne -> second != null; short && second != null -> st.buttons.okEnabled; endTurnGold -> true
                     else -> second != null && !second.startsWith("Undo", ignoreCase = true) }
-                val goldShown = !pickOne || attackAll || (st.selection.min == 0 && st.buttons.okEnabled)
+                val goldShown = !tucked && (!pickOne || attackAll || (st.selection.min == 0 && st.buttons.okEnabled))
+                // 0.4.59 T6: while the hand is tucked the gold button gives way to a quiet Cancel in its spot; a confirm Forge offers
+                // (several targets, "No target") stays as a glass pill above it. Both report their width for the line's right end.
+                val tuckW = Modifier.onSizeChanged { tuckBtnW = maxOf(tuckBtnW, with(goldDensity) { it.width.toDp() }) }
                 @Composable fun pair(content: @Composable () -> Unit) = if (large) Row(rowM, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     TurnCount(d.u); androidx.compose.runtime.CompositionLocalProvider(LocalTurnCountOutside provides true) { content() } } else {
                     androidx.compose.runtime.CompositionLocalProvider(LocalTurnCountOutside provides true) { content() }
@@ -781,7 +791,11 @@ fun ForgeBoard(
                     else -> if (live && (selected != null || okOn)) PadAct(ok) { if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok() } else null
                 }
                 pair {
-                    if (attackAll) {
+                    if (tucked) {
+                        second?.let { GlassPill(it, live, lowerM.then(tuckW).focusRequester(cancelFocus).anchorRect("quiet").anchorRect("cancel"), d) { intents.cancel() } }
+                        val confirm = if (pickOne) (if (st.selection.min == 0 && st.buttons.okEnabled) "No target" else null) else ok.takeIf { st.buttons.okEnabled || st.selection.max > 1 }
+                        confirm?.let { GlassPill(it, live && okOn, upperM.then(tuckW).focusRequester(goldFocus).anchorRect("confirm"), d, tone = Color(0xFFF3D27E), edge = Color(0x66F3D27E)) { intents.ok() } }
+                    } else if (attackAll) {
                         GoldPill(ok, live && okOn, upperM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }, d, padKey = padX != null, maxW = goldMax) { intents.ok() }
                         GlassPill("Attack all", live, attackM, d, tone = Color(0xFFFFD9CF), edge = Color(0x88FF8A6A)) { intents.attackAll(offered.map { it.id }) }
                     } else if (oneTarget(st) || onePick(st)) {
@@ -898,7 +912,14 @@ fun ForgeBoard(
                 ask = askAll, carried = carried?.let { id -> hand.firstOrNull { it.id == id } }, live = live); sheetView() } } }
             // With the bottom screen up the hand chip sits where the line would be: the line goes just above the chip, high enough
             // that its 10 du drop shadow (AskLine) clears the chip too (U3).
-            askText?.let { val askBottom = if (dual && hand.isNotEmpty()) H - handW / 66f * 37f - 16.du else null
+            val parts = if (tucked) askParts(st) else null
+            if (parts != null) {
+                // 0.4.59 T6: one glass line in the strip the hand freed, from the tray's right end to the buttons' left (12 du clear each side).
+                val left = trayRight + 12.du
+                val right = if (large) W - 12.dp else W - 8.du - tuckBtnW - 12.du
+                val vis = handW / 66f * 67f
+                TuckedAskLine(parts, left, right, H - vis + vis * AskTuck.DIP / 2f - 18.du, d)
+            } else askText?.let { val askBottom = if (dual && hand.isNotEmpty()) H - handW / 66f * 37f - 16.du else null
                 AskLine(it, W, H, d, bottom = askBottom, goldInset = goldInset, leftLimit = if (askBottom != null) trayRight + 12.du else null) { r -> askRight = r } }
             // The line between the halves turns into the combat line while you declare (gold attacking, blue blocking).
             CombatLine(st, mid, W, d)
@@ -2381,4 +2402,66 @@ private fun tapSpec(id: Int): androidx.compose.animation.core.AnimationSpec<Floa
     val at = t?.let { tapDelay(it.taps, id) }
     return if (at != null) tween(dev.cardstashy.nativeplay.match.Director.TAP_TURN_MS.toInt(), delayMillis = at.toInt(), easing = FastOutSlowInEasing)
         else tween(180, easing = FastOutSlowInEasing)
+}
+
+/**
+ * 0.4.59 T6: the question line's two parts, the asking card's name (drawn in the aim colour) and the question. [askLine] stays
+ * as it is (the bottom screen and other tests read it); a " for <card>" it ends with moves into [name].
+ */
+internal data class AskParts(val name: String?, val question: String)
+
+internal fun askParts(st: MatchState): AskParts? {
+    val ask = askLine(st) ?: return null
+    Regex("^((?:Choose|Tap|Select) (?:a |any )?targets?) for (.+)$").find(ask)?.let { m -> return AskParts(m.groupValues[2].trim(), m.groupValues[1] + ".") }
+    val name = pendingCast(st)?.name?.takeIf { it.isNotBlank() }
+        ?: if (st.inputType == "InputSelectTargets") Regex("targets? for ([^\n]+)", RegexOption.IGNORE_CASE).find(st.message)?.groupValues?.get(1)?.trim()?.replace(Regex("\\s*\\(\\d+\\)$"), "") else null
+    return AskParts(name, ask)
+}
+
+/**
+ * 0.4.59 T6 (glow rule 5, hand cards are not answers): on one screen, while Forge asks you to pick on the table (targets, a card to
+ * sacrifice, a card to keep), the hand dips and fades and the question takes its strip. Not for blocks (staged combat keeps its
+ * own buttons), a discard (the hand is the answer), a payment or "Respond to …?".
+ */
+internal fun handTucked(st: MatchState, live: Boolean): Boolean {
+    if (!live || st.prompt != null || DualScreen.active) return false
+    val input = st.inputType ?: return false
+    if (input in setOf("InputPassPriority", "InputAttack", "InputBlock", "InputConfirmMulligan", "InputLockUI") || input.startsWith("InputPayMana")) return false
+    if (dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) != null) return false
+    val sel = st.selection
+    if (sel.cards.size + sel.targetCards.size + sel.players.size + sel.stackTargets.size == 0) return false
+    val hand = st.me.hand.map { it.id }.toSet()
+    if ((sel.cards + sel.targetCards).any { it in hand }) return false
+    return askLine(st) != null
+}
+
+/** How far the hand dips while it is tucked (a share of its visible height) and how much of it still shows. */
+internal object AskTuck { const val DIP = .58f; const val SHADE = .40f }
+
+/**
+ * 0.4.59 T6: the question in the hand's strip on one screen: the asking card's name in the aim colour, then the question, on
+ * one line (cut with … , never wrapped) between [left] and [right], centred there, its top at [top].
+ */
+@Composable
+private fun TuckedAskLine(parts: AskParts, left: Dp, right: Dp, top: Dp, d: Du) = with(d) {
+    val anchors = LocalAnchors.current
+    val room = (right - left).coerceAtLeast(40.du)
+    Box(Modifier.offset(x = left, y = top).width(room), contentAlignment = Alignment.Center) {
+        Row(Modifier.widthIn(max = room).anchorRect("askline").drawBehind {
+            drawRoundRect(Color(0xBB000000), topLeft = Offset(0f, 6.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2))
+        }.clip(RoundedCornerShape(999.dp)).background(Color(0xF010131B))
+            .background(Brush.linearGradient(listOf(Color(0x14FFFFFF), Color(0x03FFFFFF), Color.Transparent)))
+            .border(1.dp, Color(0xAAF2D18E), RoundedCornerShape(999.dp)).padding(horizontal = 16.du, vertical = 8.du),
+            verticalAlignment = Alignment.CenterVertically) {
+            val line = androidx.compose.ui.text.buildAnnotatedString {
+                parts.name?.let { n ->
+                    pushStyle(androidx.compose.ui.text.SpanStyle(color = Color(0xFFFF9D5C))); append(n); pop()
+                    pushStyle(androidx.compose.ui.text.SpanStyle(color = Color(0x99FBF3DF))); append("  ·  "); pop()
+                }
+                append(parts.question)
+            }
+            Text(line, style = sans(sp(14f), FontWeight.Bold, Color(0xFFFBF3DF)), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                onTextLayout = { if (it.hasVisualOverflow) anchors?.putRect("askline.cut", androidx.compose.ui.geometry.Rect.Zero) })
+        }
+    }
 }
