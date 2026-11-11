@@ -77,7 +77,9 @@ internal object TableGeometry {
     const val STRIP = .15f
     const val STRIPS_MAX = 2
 
-    fun front(dualTop: Boolean) = if (dualTop) FRONT_DUAL else FRONT_ONE
+    /** Mobile table M5: a phone's creature tile is 14 % of the height (Arena's is 12 %; ours carries the name). */
+    const val FRONT_PHONE = .14f
+    fun front(dualTop: Boolean, phone: Boolean = false) = if (dualTop) FRONT_DUAL else if (phone) FRONT_PHONE else FRONT_ONE
     fun backShare(dualTop: Boolean) = if (dualTop) BACK_DUAL else BACK_ONE
     fun cap(dualTop: Boolean) = if (dualTop) CAP_DUAL else CAP_ONE
 
@@ -105,6 +107,23 @@ internal object TableGeometry {
         val myBack = Band(bottom - edge - l, l)
         val myFront = Band(myBack.top - side - c, c)
         return Rows(cpuBack, cpuFront, myFront, myBack)
+    }
+
+    /**
+     * Mobile table M5, a phone: each row's centre is a share of the window's height (ZoneLayout.ROW_*: the CPU's lands 15 %, its
+     * creatures 33 %, yours 56 %, your lands 73 %, beside the hand), in a window from [winTop], [winH] tall. A creature tile is
+     * [FRONT_PHONE] of [hb], a land [BACK_ONE]. A pod's rail ([podTop] off the top) pushes the CPU's rows down under it.
+     */
+    fun rowsPhone(winTop: Float, winH: Float, hb: Float, podTop: Float = 0f): Rows {
+        val c = FRONT_PHONE * hb; val l = BACK_ONE * hb
+        fun band(share: Float, h: Float) = Band(winTop + share * winH - h / 2, h)
+        var cpuBack = band(ZoneLayout.ROW_CPU_BACK, l); var cpuFront = band(ZoneLayout.ROW_CPU_FRONT, c)
+        val edge = (TAPPED_HALF - .5f) * l
+        if (podTop > 0f && cpuBack.top < winTop + podTop + edge) {
+            cpuBack = Band(winTop + podTop + edge, l)
+            cpuFront = Band(maxOf(cpuFront.top, cpuBack.bottom + (TAPPED_HALF - .5f) * (l + c)), c)
+        }
+        return Rows(cpuBack, cpuFront, band(ZoneLayout.ROW_MY_FRONT, c), band(ZoneLayout.ROW_MY_BACK, l))
     }
 
     /** How far past its side a tapped tile [w] wide and [h] tall reaches (turned 20 degrees, shrunk to 94 %). */

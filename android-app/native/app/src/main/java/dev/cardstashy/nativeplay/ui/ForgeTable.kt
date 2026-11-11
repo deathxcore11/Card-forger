@@ -481,7 +481,7 @@ fun ForgeBoard(
             if (dotsMenu.isEmpty() && dotsOpen) dotsOpen = false
             // 0.4.60 Z2: the four rows in the board, their heights fixed from the usable height (TableGeometry.rows): each side hugs
             // its own edge. A pod's opponent rail runs along the top.
-            val rowsG = TableGeometry.rows(DualScreen.active, zones.board.y + (if (pod) 58.du.value else 0f), zones.board.bottom, zones.hb)
+            val rowsG = ZoneLayout.rows(zones, DualScreen.active, if (pod) 58.du.value else 0f)
             val mid = rowsG.divider.dp
             val centreX = W / 2
 
@@ -526,7 +526,8 @@ fun ForgeBoard(
                 val frontX = frontLeft + room / 2
                 // Z1 review: no button takes your back row's width any more. Undo has its slot in the right strip (zones.undo) and the
                 // buttons keep off the board's box (goldMax, quietMax below), so your back row has the board's whole width.
-                val myBackRoom = backRoom
+                // M5, a phone: your lands lie in the shelf left of the hand, so your back row has that room, not the board's width.
+                val myBackRoom = zones.shelf?.let { minOf(backRoom, it.right.dp - backX) } ?: backRoom
                 val cpuFrontPiles = sizes(others(cpu.battlefield), 0); val myFrontPiles = sizes(others(me.battlefield), 0)
                 val cpuBackPiles = sizes(backRow(cpu.battlefield), lands(cpu.battlefield).size); val myBackPiles = sizes(backRow(me.battlefield), lands(me.battlefield).size)
                 val tiles = TableGeometry.tiles(rowsG, room.value, backRoom.value, cpuFrontPiles, myFrontPiles, cpuBackPiles, myBackPiles,
@@ -691,8 +692,8 @@ fun ForgeBoard(
             val trayHand = if (DualScreen.active) null else ZoneLayout.hand(zones, hand.size)
             // The fan itself, at any card width: on the table, or on a dual-screen handheld's bottom screen (MatchBottom).
             val fan: @Composable (Dp) -> Unit = { fanW ->
-                HandFan(hand, fanW, Modifier.fillMaxWidth(), raised = selectedHand, angleDeg = if (trayHand != null) 0f else 1.2f, flatLift = DualScreen.active,
-                    gap = trayHand?.gap?.dp ?: 4.dp, arc = if (trayHand != null) 0.dp else 2.dp, pop = trayHand?.pop,
+                HandFan(hand, fanW, Modifier.fillMaxWidth(), raised = selectedHand, angleDeg = if (trayHand != null) ZoneLayout.HAND_TILT else 1.2f, flatLift = DualScreen.active,
+                    gap = trayHand?.gap?.dp ?: 4.dp, arc = if (trayHand != null) ZoneLayout.HAND_ARC.dp else 2.dp, pop = trayHand?.pop, liftRise = trayHand?.rise?.dp,
                     markOf = ::markOf,
                     canPlay = { card -> castable(card) },
                     onCarry = { carried = it },
@@ -761,13 +762,17 @@ fun ForgeBoard(
             val handTop = H - handW / 66f * 67f
             if (trayHand != null) {
                 val t = trayHand.tray; val f = trayHand.fan
+                // M5: on the CPU's turn (and nothing asked of you) the hand sinks until 14 % of the height shows (9 % on a big screen).
+                // M8: during a question it dips and dims but stays in view, and takes no taps.
+                val sunk by animateFloatAsState(if (st.activePlayer != st.viewer && !live && !st.finished) 1f else 0f,
+                    if (Motion.still) androidx.compose.animation.core.snap() else tween(260, easing = FastOutSlowInEasing), label = "handSunk")
                 val tuckDip: androidx.compose.ui.graphics.GraphicsLayerScope.() -> Unit = {
-                    if (tuck > 0f) { translationY = tuck * AskTuck.DIP * t.h.dp.toPx(); alpha = 1f - tuck * (1f - AskTuck.SHADE) } }
-                // The glass (the mockup's .tray: rgba(10,13,22,.72), radius 10, a gold hairline); "hand" is where drawn cards fly to.
-                val trayShape = RoundedCornerShape(10.du)
+                    translationY = maxOf(sunk * trayHand.sunk.dp.toPx(), tuck * AskTuck.DIP * t.h.dp.toPx())
+                    if (tuck > 0f) alpha = 1f - tuck * (1f - AskTuck.SHADE) }
+                // Nothing is drawn behind the hand (M5: no tray, no glass, no shade; each card has only its own shadow). The box is
+                // the cards' reach: "hand" is where drawn cards fly to.
                 Box(Modifier.offset(x = t.x.dp, y = t.y.dp).width(t.w.dp).height(t.h.dp)
-                    .then(if (handAnchors != null) Modifier.onGloballyPositioned { val r = it.boundsInRoot(); handAnchors.putRect("hand", r); handAnchors.putRect("handTray", r) } else Modifier)
-                    .graphicsLayer(tuckDip).clip(trayShape).background(Color(0xB80A0D16)).border(1.dp, Color(0x6BE3C070), trayShape))
+                    .then(if (handAnchors != null) Modifier.onGloballyPositioned { val r = it.boundsInRoot(); handAnchors.putRect("hand", r); handAnchors.putRect("handTray", r) } else Modifier))
                 Box(Modifier.offset(x = f.x.dp, y = f.y.dp).width(f.w.dp).height(f.h.dp).graphicsLayer(tuckDip)) {
                     fan(trayHand.cardW.dp)
                     if (tucked) Box(Modifier.matchParentSize().pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent().changes.forEach { it.consume() } } })

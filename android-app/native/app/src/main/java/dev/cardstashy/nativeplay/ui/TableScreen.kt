@@ -782,7 +782,7 @@ private fun BannerView(text: String, yours: Boolean, modifier: Modifier) {
     androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxSize()) {
         val w = maxWidth.value; val h = maxHeight.value
         val zones = remember(w, h, DualScreen.active) { ZoneLayout.of(w, h, dual = DualScreen.active, k = ZoneLayout.scale(w, h)) }
-        val mid = remember(zones) { TableGeometry.rows(DualScreen.active, zones.board.y, zones.board.bottom, zones.hb).divider }
+        val mid = remember(zones) { ZoneLayout.rows(zones, DualScreen.active).divider }
         val bw = minOf(420f, zones.board.w * .92f)
         // The streak: a line of light along the centre line, widening out from the middle and staying inside the board.
         androidx.compose.foundation.Canvas(Modifier.offset(x = zones.board.x.dp, y = (mid - 30f).dp).size(zones.board.w.dp, 60.dp).alpha(a.value)) {

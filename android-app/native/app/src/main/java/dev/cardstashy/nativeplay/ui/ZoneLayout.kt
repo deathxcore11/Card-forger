@@ -42,10 +42,16 @@ internal object ZoneLayout {
         val leftStrip: Box, val rightStrip: Box, val board: Box, val handTray: Box?,
         val cpuSquare: Box, val mySquare: Box, val menu: Box, val phase: Box, val stack: Box, val actions: Box,
         val handChip: Box?, val undo: Box,
+        /** Mobile table M5: a phone-size window (not the dual top, not a big board): the phone's measured sizes apply. */
+        val phone: Boolean = false,
+        /** M5: a hand card's height (a share of the window's height), 0 on the dual top. */
+        val handH: Float = 0f,
+        /** M5, the phone: the room left of the hand where your lands lie (your back row), null elsewhere (the row is in [board]). */
+        val shelf: Box? = null,
     ) {
         /** The boxes that must never meet one another (the strips hold the corners and are not listed themselves; [undo] lies in [stack]). */
         val all: Map<String, Box> get() = buildMap {
-            put("board", board); handTray?.let { put("handTray", it) }; handChip?.let { put("handChip", it) }
+            put("board", board); shelf?.let { put("shelf", it) }; handTray?.let { put("handTray", it) }; handChip?.let { put("handChip", it) }
             put("cpuSquare", cpuSquare); put("mySquare", mySquare); put("menu", menu); put("phase", phase); put("stack", stack); put("actions", actions)
         }
         /** The stack card's room: the whole stack slot, or, while Undo shows in its slot, the part above it (8 between). */
@@ -67,6 +73,36 @@ internal object ZoneLayout {
      * buttons, ring, piles), so growing it is the text and squares items' rule to set (Z3 "scale with the tile on bigger screens",
      * Z4 squares), not Z1's.
      */
+    /**
+     * Mobile table M5 (specs/mobile-table-arena-parity-brief.md, measured from Randall's Arena recordings): every size here is a
+     * share of the window's height, kept in one place so it is easy to tune. A phone is a window short of the big board
+     * (600 x 480 dp); the Fold open, a tablet and the Portal are big.
+     */
+    fun phone(w: Float, h: Float): Boolean = !(w >= 600f && h >= 480f)
+    /** A hand card's height: 31 % of the height on a phone, 24 % on a big screen. */
+    const val HAND_PHONE = .31f
+    const val HAND_BIG = .24f
+    /** How much of the hand card shows on your turn (its foot is below the screen's edge): 94 % on a phone, 84 % on a big screen. */
+    const val HAND_SHOW_PHONE = .94f
+    const val HAND_SHOW_BIG = .84f
+    /** On the CPU's turn the hand sinks until this share of the height still shows: 14 % on a phone, 9 % on a big screen. */
+    const val HAND_SUNK_PHONE = .14f
+    const val HAND_SUNK_BIG = .09f
+    /** Hand cards overlap: each steps this share of a card's width at the most; each leans this many degrees per place from the middle and drops along a shallow arc. */
+    const val HAND_STEP = .78f
+    const val HAND_TILT = 2f
+    const val HAND_ARC = 1.6f
+    /** The phone: the hand starts this far (dp at k = 1) in from the board's left edge; your lands lie in that room. */
+    const val HAND_LEFT = 182f
+    /** A lifted hand card is this share of the height tall: 80 % on a phone, 45 % on a big screen. */
+    const val HAND_RAISE_PHONE = .80f
+    const val HAND_RAISE_BIG = .45f
+    /** The phone's four rows, each row's centre as a share of the height: the CPU's lands, its creatures, your creatures, your lands. */
+    const val ROW_CPU_BACK = .15f
+    const val ROW_CPU_FRONT = .33f
+    const val ROW_MY_FRONT = .56f
+    const val ROW_MY_BACK = .735f
+
     fun scale(w: Float, h: Float): Float = if (w >= 600f && h >= 480f) 1f else minOf(w / 844f, h / 390f)
 
     /**
@@ -85,23 +121,30 @@ internal object ZoneLayout {
         val bx = left.right; val bw = BOARD * win.w
         // The mockup's usable height: a creature tile is 20.5 % of it (23.5 % on the dual top) until 4.6 (4.15) full tiles fill the
         // board's width; past that the tile stops growing and the spare height is open table (Z2 sizes the tiles from it).
-        val fC = TableGeometry.front(dual)
+        val phone = !dual && phone(win.w, win.h)
+        val fC = TableGeometry.front(dual, phone)
         val c = minOf(fC * win.h, bw / TableGeometry.cap(dual) / TableGeometry.ASPECT)
         val hb = c / fC
-        // 3. The hand tray: whole cards (20 % of the usable height, 1 / 1.4 as wide), centred on the board, its bottom 4 above the
-        // window's (Z5: clear of the bottom edge and the navigation bar, which the window already leaves out). [hand] sizes it.
+        // 3. The hand (M5): cards 31 % of the height on a phone (24 % on a big screen), their foot below the window's edge. Nothing is
+        // drawn behind them. On a phone the hand starts [HAND_LEFT] in from the board's left (your lands lie there) and ends 6 into
+        // the right strip; on a big screen it has the board's width. The box is the part of the hand that shows on your turn.
+        val handH = if (dual) 0f else (if (phone) HAND_PHONE else HAND_BIG) * win.h
         val tray = if (dual) null else {
-            val hh = .20f * hb; val hw = hh / HAND_TALL; val n = hand.coerceAtLeast(1)
-            val tw = minOf(bw, n * hw + (n - 1) * 6f * u + 14f * u)
-            val th = hh + 6f * u
-            Box(bx + (bw - tw) / 2, win.bottom - 4f * u - th, tw, th)
+            val top = win.bottom - handH * (if (phone) HAND_SHOW_PHONE else HAND_SHOW_BIG)
+            val x0 = if (phone) bx + HAND_LEFT * u else bx
+            val x1 = if (phone) right.x + 6f * u else bx + bw
+            Box(x0, top, x1 - x0, win.bottom - top)
         }
         // The dual top has no tray, but the hand keeps a chip there ("Hand 7 · bottom screen", the d-pad's way into the hand on the
         // bottom screen): a band of its own across the board's width at the bottom, 36 tall, 4 above the window's bottom.
         val chip = if (!dual) null else Box(bx, win.bottom - 4f * u - 36f * u, bw, 36f * u)
         // 4. The board: the middle of the width, from the window's top to just above the tray (above the chip's band on the dual top).
-        val boardBottom = (tray ?: chip)?.let { it.y - 2f * u } ?: win.bottom
+        // On a phone the board ends under your creatures (a tapped tile's turned corner still on it); your lands lie below, in the
+        // shelf left of the hand.
+        val boardBottom = if (phone) win.y + ROW_MY_FRONT * win.h + TableGeometry.TAPPED_HALF * fC * hb + 2f * u
+            else (tray ?: chip)?.let { it.y - 2f * u } ?: win.bottom
         val board = Box(bx, win.y, bw, boardBottom - win.y)
+        val shelf = if (phone && tray != null) Box(bx, boardBottom + 2f * u, (tray.x - 6f * u - bx).coerceAtLeast(1f), (win.bottom - 4f * u - boardBottom - 2f * u).coerceAtLeast(1f)) else null
         // 5. The corners. The players' squares in the left strip, 21.5 % of the usable height each.
         val ph = .215f * hb; val sw = rail - 2 * pad
         val cpuSquare = Box(left.x + pad, win.y + pad, sw, ph)
@@ -120,8 +163,16 @@ internal object ZoneLayout {
         val stack = Box(qx, sy, (stackRight - qx).coerceAtLeast(0f), (actions.y - 8f * u - sy).coerceAtLeast(0f))
         // Undo (36, a glass pill): the foot of the stack slot, 8 above the quiet button's 44, never in End turn's place (U6).
         val undo = Box(qx, stack.bottom - 36f * u, qw, 36f * u)
-        return Zones(win, u, hb, left, right, board, tray, cpuSquare, mySquare, menu, phase, stack, actions, chip, undo)
+        return Zones(win, u, hb, left, right, board, tray, cpuSquare, mySquare, menu, phase, stack, actions, chip, undo, phone, handH, shelf)
     }
+
+    /**
+     * The four rows for [z] (a pod's rail takes [podTop] dp off the top). On a phone each row's centre is a share of the height
+     * (M5: creatures on the centre line, your lands beside the hand); elsewhere the rows hug the board's edges (TableGeometry.rows).
+     */
+    fun rows(z: Zones, dual: Boolean, podTop: Float = 0f): TableGeometry.Rows =
+        if (z.phone) TableGeometry.rowsPhone(z.window.y, z.window.h, z.hb, podTop)
+        else TableGeometry.rows(dual, z.board.y + podTop, z.board.bottom, z.hb)
 
     /** A hand card is this many times as tall as it is wide (HandFan's own card). */
     const val HAND_TALL = 1.4f
@@ -129,35 +180,39 @@ internal object ZoneLayout {
     const val HAND_RISE = 18f
 
     /**
-     * 0.4.60 Z5: the hand in its glass tray. [tray] is the glass (the mockup's .tray: the cards 6 apart with 7 each side, 3 above and
-     * below), centred on the board inside [Zones.handTray]'s band and never wider than the board; [fan] is the box HandFan lays the
-     * cards out in (the board's width, its top 3 inside the tray, as tall as HandFan is); [cardW] × [cardH] a card, [gap] between two.
-     * [pop] is how much a lifted card grows (HandFan's own rule) cut so its top stays inside the window; [lifted] the lifted card's
-     * box (the [lift]th card) as HandFan draws it: grown from its bottom centre, risen [HAND_RISE], and held inside the fan.
+     * Mobile table M5: the hand. Nothing is drawn behind it. [tray] is the cards' own reach (where drawn cards fly to); [fan] is
+     * the box HandFan lays the cards out in ([Zones.handTray]'s width, a whole card tall: its foot runs below the window);
+     * [cardW] x [cardH] a card, [gap] between two (negative: they overlap, each stepping [HAND_STEP] of a card at the most).
+     * [pop] is how much a lifted card grows (to [HAND_RAISE_PHONE] of the height) cut so its top stays inside the window;
+     * [lifted] the lifted card's box (the [lift]th card) as HandFan draws it: grown from its bottom centre, risen [rise],
+     * and held inside the fan. [sunk] is how far the hand sinks on the CPU's turn.
      */
-    data class Hand(val tray: Box, val fan: Box, val cardW: Float, val cardH: Float, val gap: Float, val pop: Float, val lifted: Box?)
+    data class Hand(val tray: Box, val fan: Box, val cardW: Float, val cardH: Float, val gap: Float, val pop: Float, val lifted: Box?, val sunk: Float = 0f, val rise: Float = HAND_RISE)
 
-    /** The hand of [n] cards in [z]'s tray ([lift] the lifted card's place, if any), or null on the dual top (no tray). */
+    /** The hand of [n] cards in [z] ([lift] the lifted card's place, if any), or null on the dual top (its hand is on the bottom screen). */
     fun hand(z: Zones, n: Int, lift: Int? = null): Hand? {
         val band = z.handTray ?: return null
         val u = z.k
-        val cardH = band.h - 6f * u; val cardW = cardH / HAND_TALL; val gap = 6f * u
-        val fan = Box(z.board.x, band.y + 3f * u, z.board.w, cardH + 8f)
-        // HandFan's slots: cards [gap] apart while they fit, else overlapping (never closer than a quarter card), centred in the fan.
+        val cardH = z.handH; val cardW = cardH / HAND_TALL; val gap = -(1f - HAND_STEP) * cardW
+        val fan = Box(band.x, band.y, band.w, cardH + 8f)
+        // HandFan's slots: each card steps [HAND_STEP] of a card while they fit, else closer (never under a quarter card), centred in the fan.
         val step = if (n <= 1) 0f else maxOf(cardW / 4, minOf(cardW + gap, (fan.w - cardW) / (n - 1)))
         val total = cardW + step * (n - 1).coerceAtLeast(0)
         val start = ((fan.w - total) / 2).coerceAtLeast(0f)
-        val tw = minOf(z.board.w, total + 14f * u)
-        val tray = Box(z.board.x + (z.board.w - tw) / 2, band.y, tw, band.h)
-        // HandFan's pop, never so big that the lifted card's top leaves the window (4 clear).
-        val room = fan.y + cardH - HAND_RISE - (z.window.y + 4f * u)
-        val pop = minOf(maxOf(1.5f, minOf(2.2f, 110f / cardW)), room / cardH).coerceAtLeast(1f)
+        val tray = Box(fan.x + start, band.y, minOf(fan.w, total), band.h)
+        // The lifted card: [HAND_RAISE_PHONE] of the height, never so big that its top leaves the window (4 clear).
+        // It rises until its foot is 4 inside the window's bottom.
+        val foot = z.window.bottom - 4f * u
+        val rise = maxOf(HAND_RISE, fan.y + cardH - foot)
+        val room = fan.y + cardH - rise - (z.window.y + 4f * u)
+        val pop = minOf((if (z.phone) HAND_RAISE_PHONE else HAND_RAISE_BIG) * z.window.h / cardH, room / cardH).coerceAtLeast(1f)
         val lifted = lift?.takeIf { it in 0 until n }?.let { i ->
             val popW = cardW * (pop - 1f)
-            val x = (start + step * i).coerceIn(popW / 2, (fan.w - cardW - popW / 2).coerceAtLeast(popW / 2))
-            val bottom = fan.y - HAND_RISE + cardH
+            val x = (start + step * i).coerceIn(minOf(popW / 2, (fan.w - cardW) / 2), maxOf((fan.w - cardW - popW / 2), (fan.w - cardW) / 2))
+            val bottom = fan.y - rise + cardH
             Box(fan.x + x + cardW / 2 - cardW * pop / 2, bottom - cardH * pop, cardW * pop, cardH * pop)
         }
-        return Hand(tray, fan, cardW, cardH, gap, pop, lifted)
+        val sunk = (band.h - (if (z.phone) HAND_SUNK_PHONE else HAND_SUNK_BIG) * z.window.h).coerceAtLeast(0f)
+        return Hand(tray, fan, cardW, cardH, gap, pop, lifted, sunk, rise)
     }
 }

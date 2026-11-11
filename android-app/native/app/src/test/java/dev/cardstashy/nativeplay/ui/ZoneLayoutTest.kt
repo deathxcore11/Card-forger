@@ -52,7 +52,17 @@ class ZoneLayoutTest {
             assertEquals("$tag chip band spans the board", z.board.x, chip.x, .01f); assertEquals(z.board.w, chip.w, .01f)
             assertEquals("$tag board ends above the chip band", chip.y - 2f * z.k, z.board.bottom, .01f)
         } else {
-            assertTrue("$tag board ends above the tray", z.board.bottom < tray.y && tray.y - z.board.bottom <= 2f * z.k + .01f)
+            if (z.phone) {
+                // M5, a phone: the board ends under your creatures; your lands lie in the shelf below it, left of the hand.
+                val shelf = z.shelf ?: error("$tag: a phone has a land shelf")
+                assertTrue("$tag board ends above the hand", z.board.bottom < tray.y)
+                assertEquals("$tag shelf starts under the board", z.board.bottom + 2f * z.k, shelf.y, .01f)
+                assertEquals("$tag shelf starts at the board's left", z.board.x, shelf.x, .01f)
+                assertTrue("$tag shelf ends left of the hand", shelf.right < tray.x)
+            } else {
+                assertNull("$tag: only a phone has a land shelf", z.shelf)
+                assertTrue("$tag board ends above the hand", z.board.bottom < tray.y && tray.y - z.board.bottom <= 2f * z.k + .01f)
+            }
             assertNull("$tag: one screen has no chip band", z.handChip)
         }
     }
@@ -93,9 +103,12 @@ class ZoneLayoutTest {
     @Test fun theDualTopHasNoTrayAndOneScreenHasOne() {
         assertNull(ZoneLayout.of(1920f, 1080f, dual = true).handTray)
         val tray = assertNotNullAndGet(ZoneLayout.of(844f, 390f).handTray)
-        // The mockup's phone tray: 20 % of the height plus 6, its bottom 4 above the edge.
-        assertEquals(84f, tray.h, .01f)
-        assertEquals(386f, tray.bottom, .01f)
+        // M5, a phone: a hand card is 31 % of the height and 94 % of it shows; its foot is below the screen's edge.
+        assertEquals(.31f * 390f * .94f, tray.h, .01f)
+        assertEquals(390f, tray.bottom, .01f)
+        // A big screen (the Fold open): 24 % of the height, 84 % showing, across the board's width.
+        val big = ZoneLayout.of(884f, 796f); val bt = assertNotNullAndGet(big.handTray)
+        assertEquals(.24f * 796f * .84f, bt.h, .01f); assertEquals(big.board.x, bt.x, .01f); assertEquals(big.board.w, bt.w, .01f)
     }
 
     @Test fun theMockupsPhoneNumbers() {
@@ -129,20 +142,25 @@ class ZoneLayoutTest {
      * insets, clear of the bottom edge and the navigation bar, at every size and inset, from 1 to 12 cards; a lifted card (any of
      * them) grows upward and stays inside the window; the tray stays in its band and on the board.
      */
-    @Test fun theHandTrayHoldsWholeCardsAndALiftedCardStaysOnScreen() = each { tag, z ->
+    @Test fun theHandStaysInItsRoomAndALiftedCardStaysOnScreen() = each { tag, z ->
         if (z.handTray == null) { assertNull("$tag: the dual top has no hand", ZoneLayout.hand(z, 7)); return@each }
         val band = z.handTray!!
         for (n in 1..12) {
             val h = assertNotNullAndGet(ZoneLayout.hand(z, n))
             val t = h.tray
-            assertTrue("$tag $n cards: tray $t leaves the window ${z.window}", t.inside(z.window))
-            assertTrue("$tag $n cards: tray $t clear of the bottom edge", t.bottom <= z.window.bottom - 4f * z.k + .01f)
-            assertTrue("$tag $n cards: tray $t off the board's width ${z.board}", t.x >= z.board.x - .01f && t.right <= z.board.right + .01f)
-            assertEquals("$tag $n cards: tray in its band", band.y, t.y, .01f); assertEquals("$tag $n cards: tray height", band.h, t.h, .01f)
-            assertFalse("$tag $n cards: tray meets the board", t.meets(z.board))
-            // Whole cards: a card's top and bottom inside the tray (3 du each side), and every card at rest inside the window.
-            assertTrue("$tag $n cards: card ${h.cardH} taller than the tray", h.fan.y >= t.y && h.fan.y + h.cardH <= t.bottom + .01f)
+            // The cards' reach: inside the hand's band (on a phone that starts right of your lands), down to the window's bottom.
+            assertTrue("$tag $n cards: hand $t leaves its band $band", t.inside(band))
+            assertEquals("$tag $n cards: the hand's top", band.y, t.y, .01f); assertEquals("$tag $n cards: the hand's height", band.h, t.h, .01f)
+            assertFalse("$tag $n cards: hand meets the board", t.meets(z.board))
+            z.shelf?.let { assertFalse("$tag $n cards: hand meets your lands' shelf", t.meets(it)) }
+            // The foot of a card is below the window's edge (M5), and a card is 1.4 times as tall as wide.
+            assertTrue("$tag $n cards: the foot is below the edge", h.fan.y + h.cardH > z.window.bottom)
             assertEquals("$tag: a hand card is 1.4 times as tall as wide", 1.4f, h.cardH / h.cardW, .001f)
+            assertEquals("$tag: a hand card's height", (if (z.phone) .31f else .24f) * z.window.h, h.cardH, .01f)
+            // Cards overlap: each steps at most 78 % of a card.
+            assertEquals("$tag: overlap", -.22f * h.cardW, h.gap, .01f)
+            // Sunk (the CPU's turn): 14 % of the height still shows on a phone, 9 % on a big screen.
+            assertEquals("$tag: sunk", (if (z.phone) .14f else .09f) * z.window.h, band.h - h.sunk, .01f)
             for (i in 0 until n) {
                 val up = assertNotNullAndGet(ZoneLayout.hand(z, n, lift = i)?.lifted)
                 assertTrue("$tag $n cards: lifted card $i $up leaves the window ${z.window}", up.inside(z.window))
@@ -152,17 +170,18 @@ class ZoneLayoutTest {
         }
     }
 
-    @Test fun theMockupsPhoneTray() {
-        // design/roomier-table-mockup.html at 844 × 390: cards 78 tall, 6 apart, 7 each side, the tray's top at 302 (5 cards: 317.2 wide;
-        // ours are 1 / 1.4 as wide as tall, the mockup's .716, a hair narrower).
-        val h = assertNotNullAndGet(ZoneLayout.hand(ZoneLayout.of(844f, 390f), 5))
-        assertEquals(78f, h.cardH, .01f); assertEquals(6f, h.gap, .01f)
-        assertEquals(302f, h.tray.y, .01f)
-        assertEquals(5 * 78f / 1.4f + 4 * 6f + 14f, h.tray.w, .01f)
-        assertEquals(317.2f, h.tray.w, 1f)
-        // Centred on the board.
+    @Test fun thePhonesHand() {
+        // M5 at 844 x 390: cards 120.9 tall (31 %), the hand's top at 276.4, starting 182 in from the board's left (your lands lie there)
+        // and ending 6 into the right strip. A lifted card is 80 % of the height.
         val z = ZoneLayout.of(844f, 390f)
-        assertEquals(z.board.x + z.board.w / 2, h.tray.x + h.tray.w / 2, .01f)
+        val h = assertNotNullAndGet(ZoneLayout.hand(z, 5))
+        assertEquals(120.9f, h.cardH, .01f)
+        assertEquals(390f - 120.9f * .94f, h.tray.y, .01f)
+        assertEquals(z.board.x + 182f, h.fan.x, .01f); assertEquals(z.rightStrip.x + 6f, h.fan.right, .01f)
+        assertEquals(.8f * 390f, assertNotNullAndGet(ZoneLayout.hand(z, 5, lift = 2)?.lifted).h, .5f)
+        // Five cards, each stepping 78 % of a card, centred in that room.
+        assertEquals(h.cardW * (1f + 4 * .78f), h.tray.w, .01f)
+        assertEquals(h.fan.x + h.fan.w / 2, h.tray.x + h.tray.w / 2, .01f)
         // A very short window: the lift is cut so the card's top stays 4 inside it.
         val low = ZoneLayout.of(640f, 200f)
         val lifted = assertNotNullAndGet(ZoneLayout.hand(low, 7, lift = 3)?.lifted)

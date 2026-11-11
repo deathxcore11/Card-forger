@@ -92,6 +92,8 @@ fun HandFan(
     /** 0.4.60 Z5: the most room between two cards while they fit side by side (the tray's 6), and how far the arc drops a card. */
     gap: Dp = 4.dp,
     arc: Dp = 2.dp,
+    /** Mobile table M5: how far a lifted card rises (the hand's foot is below the screen's edge, so it rises until its foot is on screen). */
+    liftRise: Dp? = null,
 ) {
     val cardH = cardW * 1.4f
     val haptic = LocalHapticFeedback.current
@@ -148,7 +150,7 @@ fun HandFan(
     LaunchedEffect(carriedNow) { carryCb?.invoke(carriedNow) }
     DisposableEffect(Unit) { onDispose { carryCb?.invoke(null) } }
     val popScale = if (flatLift) 1f else pop ?: maxOf(1.5f, minOf(2.2f, 110f / cardW.value))
-    val rise = if (flatLift) BOTTOM_LIFT else 18.dp
+    val rise = if (flatLift) BOTTOM_LIFT else liftRise ?: 18.dp
 
     BoxWithConstraints(modifier.fillMaxWidth().height(cardH + 8.dp), contentAlignment = Alignment.BottomStart) {
         val width = maxWidth
