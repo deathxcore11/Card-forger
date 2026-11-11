@@ -137,9 +137,8 @@ import dev.cardstashy.nativeplay.engine.StackItem
  *
  * Randall's approved calm additions (3 Nov 23:56Z, design/stack-cards/calm-*.png, stack-*.png):
  *  - the stack as fanned cards on the right over a portal, gold rim yours / red rim the CPU's, an arc to the source;
- *  - library and graveyard as real card piles, no count chips (0.4.60 Z1: both in the left strip, the CPU's under its square,
- *    yours above yours);
- *  - the CPU hand's backs (0.4.60 Z1: under the CPU's square in the left strip, no longer tucked off the top edge);
+ *  - the graveyard as a real card pile (0.4.60 Z4: its top card with its count in its player's square; the library and the
+ *    hand are "Deck N" and "Hand N" in words there, the CPU hand's backs are gone);
  *  - stops on the phase lights (tap a light, an orange ring);
  *  - sideways drag reorders the hand (HandFan).
  */
@@ -497,65 +496,69 @@ fun ForgeBoard(
                 PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, backX, rowsG.myBack.centre.dp, myBackRoom, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true, onPile = openPile, gap = backGap)
             }
 
-            // 0.4.60 Z1: everything of a player stands in the left strip, never on the board: the CPU's square top left with its hand
-            // and its piles under it, yours bottom left with your piles above it (Z4 gathers them into the squares).
-            val stripX = zones.leftStrip.x.dp; val stripW = zones.leftStrip.w.dp
-            val cpuHandY = zones.cpuSquare.bottom.dp + 6.du
-            Piles(me, mine = true, Modifier.offset(x = stripX + (stripW - 74.du) / 2, y = zones.mySquare.y.dp - 6.du - 64.du), d, onInspect,
-                playable = { markOf(it) == Mark.PLAYABLE }, onCast = { intents.card(it.id) }, onGrave = openGrave)
-            if (!pod) Piles(cpu, mine = false, Modifier.offset(x = stripX + (stripW - 74.du) / 2, y = cpuHandY + (if (cpu.handCount > 0) 34.du + 8.du else 0.dp)), d, onInspect, onGrave = openGrave)
-
-            // The CPU's hand: its backs under its square, as wide as the strip lets them fan.
-            // In a pod the rail takes the opponent hand's place (each chip shows its own hand size).
-            if (pod) PodRail(st, cpu.id, live, intents, { podFocus.seat = it; picks++ }, W, d, x = zones.board.x.dp, width = zones.board.w.dp)
-            else TuckedHand(cpu.handCount, Modifier.offset(x = zones.cpuSquare.x.dp, y = cpuHandY).then(LocalAnchors.current?.let { a -> Modifier.onGloballyPositioned { a.putRect("cpuhand", it.boundsInRoot()) } } ?: Modifier), d,
-                maxW = zones.cpuSquare.w.dp)
-
-            // Seats: the CPU top left, you bottom left (0.4.60 Z1, the corners of the left strip); command-zone crests beside them.
-            // Seat dock (Randall 4 Nov, design/seat-dock/spec.md): your corner is crest, portrait, then a tray: one row of 34 du
-            // round tools (stops, hold, [auto-pay], chat; pitch 42) and under it the floating mana. Nothing overlaps.
-            // The CPU's corner is the same dock: crest outermost at the left edge, portrait inside it.
-            // The crest's shield (46 du of its 58) starts at the square's edge and the portrait 4 du after it.
-            val ax = zones.mySquare.x.dp + 50.du; val ay = zones.mySquare.bottom.dp - 70.du; val x0 = ax + 52.du + 14.du
-            val cax = zones.cpuSquare.x.dp + 50.du; val cay = zones.cpuSquare.y.dp + 18.du
-            if (!pod) Crest(cpu.command.firstOrNull(), Modifier.offset(x = zones.cpuSquare.x.dp - 6.du, y = cay - 10.du).anchorRect("cpucrest"), d, onInspect)
-            if (!pod) Medallion(cpu, mine = false, live && cpu.id in st.selection.players, cpu.id in st.selection.chosenPlayers, Modifier.offset(x = cax, y = cay).anchorRect("cpuseat"), d,
-                onOpen = commanderOf(cpu)?.let { c -> { onInspect(c) } }) { intents.player(cpu.id) }
-            // The CPU's thinking dots: in its square's top right corner, above the portrait (Z1 review: left of it they sat on the crest).
+            // 0.4.60 Z4 (specs/table-zones-brief.md, "Player squares in the corners"; mockup lines 306 to 321): each player's glass
+            // square in its corner of the left strip, the CPU's top left and yours bottom left (the brief's corners; the mockup draws
+            // the same). A square holds the name, the round portrait with the life on its gold pill, "Hand N" and "Deck N" in words and
+            // the graveyard's top card with its count (a tap, or A on the pad, opens the T3 sheet); the player whose turn it is wears
+            // the gold edge. The CPU's hand backs and both libraries' piles are gone from the strip: their counts are the words.
+            val profile by dev.cardstashy.nativeplay.account.Account.profile.collectAsState()
+            if (!pod) PlayerSquare(cpu, zones.cpuSquare, cpu.name, st.activePlayer == cpu.id, d, handKey = "cpuhand",
+                portrait = { a, m, lifeSp -> Medallion(cpu, mine = false, live && cpu.id in st.selection.players, cpu.id in st.selection.chosenPlayers, m.anchorRect("cpuseat"), d,
+                    side = a, lifeSp = lifeSp, onOpen = commanderOf(cpu)?.let { c -> { onInspect(c) } }) { intents.player(cpu.id) } },
+                grave = { w, h, sp -> GravePile(cpu, w, h, sp, d, onInspect, onGrave = openGrave) })
+            PlayerSquare(me, zones.mySquare, profile?.name?.takeIf { it.isNotBlank() } ?: me.name, st.activePlayer == me.id, d, handKey = null,
+                portrait = { a, m, lifeSp -> Medallion(me, mine = true, live && me.id in st.selection.players, me.id in st.selection.chosenPlayers, m, d, side = a, lifeSp = lifeSp) { intents.player(me.id) } },
+                grave = { w, h, sp -> GravePile(me, w, h, sp, d, onInspect, playable = { markOf(it) == Mark.PLAYABLE }, onCast = { intents.card(it.id) }, onGrave = openGrave) })
+            // The CPU's thinking dots: in its square's top right corner, right of its name.
             if (!pod) ThinkDots(Modifier.offset(x = zones.cpuSquare.right.dp - 37.du, y = zones.cpuSquare.y.dp + 1.du).anchorRect("thinkdots"), d)
-            // Rule 2: your commander wears the playable ring while Forge offers it and you can pay; a tap casts it (long press opens it).
-            Crest(me.command.firstOrNull(), Modifier.offset(x = zones.mySquare.x.dp - 6.du, y = ay - 8.du), d, onInspect,
+            // Command-zone crests (Z7 gives them their marks): the CPU's under its square at the right, yours over your tools at the left,
+            // so the two shields never meet in the strip.
+            if (!pod) Crest(cpu.command.firstOrNull(), Modifier.offset(x = zones.cpuSquare.right.dp - 52.du, y = zones.cpuSquare.bottom.dp - 1.du).anchorRect("cpucrest"), d, onInspect)
+            @Composable fun myCrest(m: Modifier) = Crest(me.command.firstOrNull(), m, d, onInspect,
                 playable = me.command.firstOrNull()?.let { markOf(it) == Mark.PLAYABLE } == true) { intents.card(it.id) }
-            Medallion(me, mine = true, live && me.id in st.selection.players, me.id in st.selection.chosenPlayers, Modifier.offset(x = ax, y = ay), d) { intents.player(me.id) }
             // Table additions 6: while you declare blocks, what gets through, above your seat. Gone the moment blocks are confirmed.
-            if (blockingNow) damageThrough(st)?.let { t -> ThroughChip(t, me.life, Modifier.offset(x = ax, y = ay - 50.du), d) }
-            // A phone's hand starts close to the seat: when the full tool row would reach it, chat drops to the second row
-            // beside the mana, so the tray still never touches the hand.
+            if (blockingNow) damageThrough(st)?.let { t -> ThroughChip(t, me.life, Modifier.offset(x = zones.mySquare.x.dp + 50.du, y = zones.mySquare.bottom.dp - 120.du), d) }
             val tools = (if (st.controlMode in setOf("smart", "full")) 2 + (if (st.autoPay != null) 1 else 0) else 0) + 1
             // The dual top's tool row in the chip band: its width (first frame: the tools at their 42 du pitch, the mana not yet measured).
             val dockDensity = LocalDensity.current
             var dockW by remember { mutableStateOf(0.dp) }
+            // Z1 review: the dual top's board runs down beside your square, so there the tools and the mana stand in one row at the left
+            // end of the hand chip's band under the board (the chip keeps clear of them: chipMax). Its ask line keeps left of the old
+            // tray's reach (trayRight), as before Z4.
+            val dockBand = zones.handChip
+            val x0 = zones.mySquare.x.dp + 116.du
             val handLeftAt = centreX + 44.du - (if (large) (H.value * .13f).coerceIn(66f, 120f).dp else 66.du) / 66f * 222f
             val chatInRow = x0 + 42.du * tools - 8.du + 8.du <= handLeftAt
-            // The tray's right end, from the same pitch (34 du tools, 8 du gaps), for the ask line's left limit (AskLine).
-            val trayRight = x0 + 42.du * (if (chatInRow) tools else tools - 1) - 8.du
-            // Z1 review: beside your portrait the tray reaches out of the left strip over the board's corner. On one screen the board
-            // ends above it (at the hand tray), but the dual top's board runs down beside it, so there the tools and the mana stand in
-            // one row at the left end of the hand chip's band under the board (the chip keeps clear of them: chipMax).
-            val dockBand = zones.handChip
-            if (dockBand != null) Row(Modifier.offset(x = dockBand.x.dp + 4.du, y = dockBand.y.dp + (dockBand.h.dp - 34.du) / 2).anchorRect("tools")
-                .onSizeChanged { dockW = with(dockDensity) { it.width.toDp() } }, horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
-                ControlEmblems(st, intents, Modifier, d)
-                EmoteButton(Modifier, d)
-                ManaPool(me.mana, Modifier, d)
-            } else {
-                Row(Modifier.offset(x = x0, y = ay - 4.du).anchorRect("tools"), horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
+            val trayRight = if (dockBand != null) x0 + 42.du * (if (chatInRow) tools else tools - 1) - 8.du else zones.leftStrip.right.dp
+            if (dockBand != null) {
+                Row(Modifier.offset(x = dockBand.x.dp + 4.du, y = dockBand.y.dp + (dockBand.h.dp - 34.du) / 2).anchorRect("tools")
+                    .onSizeChanged { dockW = with(dockDensity) { it.width.toDp() } }, horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
                     ControlEmblems(st, intents, Modifier, d)
-                    if (chatInRow) EmoteButton(Modifier, d)
-                }
-                Row(Modifier.offset(x = x0, y = ay + 34.du).anchorRect("tray2"), horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
-                    if (!chatInRow) EmoteButton(Modifier, d)
+                    EmoteButton(Modifier, d)
                     ManaPool(me.mana, Modifier, d)
+                }
+                myCrest(Modifier.offset(x = zones.mySquare.x.dp - 6.du, y = zones.mySquare.y.dp - 74.du))
+            } else {
+                // Z4: chat and the bolt (the Smart emblem; Full Control and auto-pay beside them as before) keep their function, at 44 dp,
+                // just above your square: two to a row (chat and the bolt the row nearest the square), one when the strip is narrower
+                // than two. Above them the floating mana, then your crest. All of it in the left strip, off the board.
+                val btn = TextFloors.TOUCH.dp
+                val room = zones.leftStrip.w.dp
+                val gap = minOf(8.du, room - btn * 2)
+                val perRow = if (gap >= 2.dp) 2 else 1
+                val rowW = if (perRow == 2) btn * 2 + gap else btn
+                val left = if (zones.mySquare.x.dp + rowW <= zones.mySquare.right.dp) zones.mySquare.x.dp else zones.leftStrip.x.dp + ((room - rowW) / 2).coerceAtLeast(0.dp)
+                val top = if (pod) zones.leftStrip.y.dp else zones.cpuSquare.bottom.dp + 6.du
+                val buttons = listOf<@Composable () -> Unit>({ EmoteButton(Modifier, d, side = btn) }) + emblemsOf(st, intents, d, btn)
+                Box(Modifier.offset(x = left, y = top).width(zones.leftStrip.right.dp - left).height((zones.mySquare.y.dp - 6.du - top).coerceAtLeast(0.dp))) {
+                    Column(Modifier.align(Alignment.BottomStart).wrapContentHeight(Alignment.Bottom, unbounded = true), verticalArrangement = Arrangement.spacedBy(6.du)) {
+                        // The crest's box is 70 du for a 60 du shield: it takes only the shield's height in the strip.
+                        Box(Modifier.height(60.du), contentAlignment = Alignment.Center) { myCrest(Modifier.offset(x = zones.mySquare.x.dp - left - 6.du).wrapContentHeight(unbounded = true)) }
+                        ManaPool(me.mana, Modifier.anchorRect("tray2"), d, maxW = zones.leftStrip.right.dp - left)
+                        Column(Modifier.anchorRect("tools"), verticalArrangement = Arrangement.spacedBy(6.du)) {
+                            for (row in buttons.chunked(perRow).reversed()) Row(horizontalArrangement = Arrangement.spacedBy(gap.coerceAtLeast(0.dp))) { row.forEach { it() } }
+                        }
+                    }
                 }
             }
 
@@ -1503,67 +1506,97 @@ private fun DragLine(drag: BlockDrag, d: Du) = with(d) {
     }
 }
 
-// ---- Piles (approved: real card piles, a count printed under each) ----
+// ---- Player squares (0.4.60 Z4) ----
 
+/** The mockup's phone square (dp at its scale 1): the square's contents are drawn at this size times how much bigger the square is. */
+internal const val SQUARE_W = 104.3f
+internal const val SQUARE_H = 83.8f
+
+/** How much bigger than the mockup's phone square a [w] × [h] dp square is (its contents grow with it; smaller on the smallest phone). */
+internal fun squareScale(w: Float, h: Float): Float = minOf(w / SQUARE_W, h / SQUARE_H)
+
+/**
+ * A player's glass square (mockup .plate, lines 51 to 66 and 306 to 314) filling [box]: the name at the top, the round portrait
+ * ([portrait], given its size, its place and the life's sp) with the life on its gold pill under it, "Hand N" and "Deck N" in words
+ * to its right and the graveyard's top card with its count ([grave], given the card's size and the count's sp) under them. The
+ * player whose turn it is ([active]) wears the gold edge and its glow. [handKey] names the hand's words for the travelling cast and
+ * the draw ("cpuhand"); the deck's words are "lib<id>" (where a drawn card leaves from), the square itself "square<id>".
+ */
 @Composable
-private fun Piles(p: Player, mine: Boolean, modifier: Modifier, d: Du, onInspect: (Card) -> Unit, playable: (Card) -> Boolean = { false }, onCast: (Card) -> Unit = {},
-                  /** T3: a tap or long press opens the graveyard sheet (a lit top card still casts on a tap). */
-                  onGrave: ((Int) -> Unit)? = null) = with(d) {
-    // Yours: graveyard then library; the CPU's mirrored (library then graveyard).
-    Row(modifier.anchorRect("piles${p.id}"), horizontalArrangement = Arrangement.spacedBy(8.du)) {
-        @Composable fun lib() = Pile(p.libraryCount, null, d, "lib${p.id}") {}
-        // Rule 2: the graveyard's top card wears the playable ring when Forge offers it from there (flashback and the like); a tap
-        // casts it, a long press opens it. A castable card under the top is not drawn yet (glow-rules open item).
-        val top = p.graveyard.lastOrNull(); val lit = top != null && playable(top)
-        @Composable fun grave() = if (onGrave != null) Pile(p.graveyard.size, top, d, "grave${p.id}", lit = lit, onHold = { onGrave(p.id) }, pad = if (lit) "Cast" else "Open") { if (lit && top != null) onCast(top) else onGrave(p.id) }
-            else Pile(p.graveyard.size, top, d, "grave${p.id}", lit = lit, onHold = { top?.let(onInspect) }) { top?.let { if (lit) onCast(it) else onInspect(it) } }
-        if (mine) { grave(); lib() } else { lib(); grave() }
+private fun PlayerSquare(p: Player, box: ZoneLayout.Box, who: String, active: Boolean, d: Du, handKey: String?,
+                         portrait: @Composable (Dp, Modifier, Float) -> Unit, grave: @Composable (Dp, Dp, Float) -> Unit) = with(d) {
+    val s = squareScale(box.w, box.h)
+    fun m(v: Float) = (v * s).dp
+    val shape = RoundedCornerShape(m(10f))
+    val anchors = LocalAnchors.current
+    val words = maxOf(9f, 10f * s)
+    Box(Modifier.offset(x = box.x.dp, y = box.y.dp).size(box.w.dp, box.h.dp).anchorRect("square${p.id}")
+        .then(if (active) Modifier.drawBehind { drawRoundRect(Gold.copy(alpha = .28f), topLeft = Offset(-5.dp.toPx(), -5.dp.toPx()), size = androidx.compose.ui.geometry.Size(size.width + 10.dp.toPx(), size.height + 10.dp.toPx()), cornerRadius = CornerRadius(m(14f).toPx())) } else Modifier)
+        .background(Color(0xD10E121C), shape)
+        .border(if (active) 1.5.dp else 1.dp, if (active) Color(0xFFE3C070) else Color(0x6BE3C070), shape)
+        .semantics(mergeDescendants = false) { contentDescription = "$who: life ${p.life}, hand ${p.handCount}, deck ${p.libraryCount}, graveyard ${p.graveyard.size}" + if (active) ", their turn" else "" }) {
+        if (active) anchors?.let { it.sizes["squareactive${p.id}"] = 1f }
+        else anchors?.sizes?.remove("squareactive${p.id}")
+        Text(who.uppercase(), style = sans(maxOf(9f, 10f * s).sp, FontWeight.ExtraBold, Color(0xFFC9CFDB)).copy(letterSpacing = .05.em), maxLines = 1, softWrap = false,
+            overflow = TextOverflow.Ellipsis, modifier = Modifier.offset(x = m(8f), y = m(4f)).widthIn(max = box.w.dp - m(16f) - (if (handKey != null) 40.du else 0.dp)))
+        val a = m(38f)
+        portrait(a, Modifier.offset(x = m(6f), y = m(20f)), TextFloors.LIFE * maxOf(1f, s))
+        Column(Modifier.offset(x = m(51f), y = m(18f))) {
+            @Composable fun line(label: String, n: Int, key: String?) = Row(Modifier.then(if (key != null) Modifier.anchorRect(key) else Modifier), verticalAlignment = Alignment.CenterVertically) {
+                Text("$label ", style = sans(words.sp, FontWeight.Bold, Color(0xFFC9CFDB)), maxLines = 1, softWrap = false)
+                Text("$n", style = sans(words.sp, FontWeight.ExtraBold, Color.White).copy(fontFeatureSettings = "tnum"), maxLines = 1, softWrap = false)
+            }
+            line("Hand", p.handCount, handKey)
+            line("Deck", p.libraryCount, "lib${p.id}")
+        }
+        Box(Modifier.offset(x = m(51f), y = m(48f))) { grave(m(19f), m(19f / .716f), maxOf(10f, 11f * s)) }
     }
 }
 
+/**
+ * A player's graveyard in their square: the top card with its count beside it. A tap, or A on the pad, opens the graveyard sheet
+ * (T3; a long press too); the top card wears the playable ring when Forge offers it from there (flashback and the like), and then a
+ * tap casts it. Anchors: "grave<id>" the card (a dying card flies there), "piles<id>" the card with its count.
+ */
+@Composable
+private fun GravePile(p: Player, w: Dp, h: Dp, countSp: Float, d: Du, onInspect: (Card) -> Unit, playable: (Card) -> Boolean = { false }, onCast: (Card) -> Unit = {},
+                      onGrave: ((Int) -> Unit)? = null) = with(d) {
+    val top = p.graveyard.lastOrNull(); val lit = top != null && playable(top)
+    Box(Modifier.anchorRect("piles${p.id}")) {
+        if (onGrave != null) Pile(p.graveyard.size, top, d, "grave${p.id}", lit = lit, onHold = { onGrave(p.id) }, pad = if (lit) "Cast" else "Open", w = w, h = h, countSp = countSp,
+            label = "${if (p.isViewer) "Your" else "${p.name}'s"} graveyard, ${p.graveyard.size}") { if (lit && top != null) onCast(top) else onGrave(p.id) }
+        else Pile(p.graveyard.size, top, d, "grave${p.id}", lit = lit, onHold = { top?.let(onInspect) }, w = w, h = h, countSp = countSp) { top?.let { if (lit) onCast(it) else onInspect(it) } }
+    }
+}
+
+/** One pile: its top card ([w] × [h], a little depth under it) with its count beside it. */
 @Composable
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 private fun Pile(count: Int, top: Card?, d: Du, anchor: String? = null, lit: Boolean = false, onHold: (() -> Unit)? = null,
                  /** T3: the pad's words for A; a pile with them takes the ring (Up from the hand reaches both graveyards). */
-                 pad: String? = null, onTap: () -> Unit) = with(d) {
+                 pad: String? = null, w: Dp, h: Dp, countSp: Float = 11f, label: String? = null, onTap: () -> Unit) = with(d) {
     val anchors = LocalAnchors.current
     val padSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.size(33.du, 46.du).then(if (anchors != null && anchor != null) Modifier.onGloballyPositioned { anchors.putRect(anchor, it.boundsInRoot()) } else Modifier)
+    val r = RoundedCornerShape(minOf(3.du, w / 8))
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.du)) {
+        Box(Modifier.size(w, h).then(if (anchors != null && anchor != null) Modifier.onGloballyPositioned { anchors.putRect(anchor, it.boundsInRoot()) } else Modifier)
+            .then(if (label != null) Modifier.semantics { contentDescription = label; role = Role.Button } else Modifier)
             // The playable ring (ice, solid), as on a hand card.
-            .then(if (lit) Modifier.border(2.dp, Ice, RoundedCornerShape(3.du)) else Modifier)
+            .then(if (lit) Modifier.border(2.dp, Ice, r) else Modifier)
             .then(if (pad != null && top != null) Modifier.padActs(remember(pad) { PadActs(a = pad) }).matchPadTap(padSource) { onTap() } else Modifier)
             .combinedClickable(enabled = top != null, onLongClick = onHold, onClick = onTap)) {
             // A little depth under the top card: up to three edges.
             val depth = minOf(3, (count - 1).coerceAtLeast(0))
-            for (i in depth downTo 1) Box(Modifier.offset(x = (i * 1.5f).du, y = (i * 1.5f).du).fillMaxSize().clip(RoundedCornerShape(3.du)).background(Color(0xFF15182A)).border(1.dp, Color(0x55C9A75A), RoundedCornerShape(3.du)))
+            for (i in depth downTo 1) Box(Modifier.offset(x = (i * 1.2f).du, y = (i * 1.2f).du).fillMaxSize().clip(r).background(Color(0xFF15182A)).border(1.dp, Color(0x55C9A75A), r))
             if (count > 0) {
-                if (top != null) CardImage(top.name, Modifier.fillMaxSize(), shape = RoundedCornerShape(3.du)) { CardBack(Modifier.fillMaxSize()) }
-                else CardBack(Modifier.fillMaxSize().clip(RoundedCornerShape(3.du)))
-            } else Box(Modifier.fillMaxSize().border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(3.du)))
+                if (top != null) CardImage(top.name, Modifier.fillMaxSize(), crop = true, shape = r) { CardBack(Modifier.fillMaxSize()) }
+                else CardBack(Modifier.fillMaxSize().clip(r))
+            } else Box(Modifier.fillMaxSize().border(1.dp, Color(0x38FFFFFF), r))
         }
-        Text("$count", style = sans(sp(11f), FontWeight.Bold, Color(0xFFD8D0BF)), modifier = Modifier.padding(top = 2.du))
+        Text("$count", style = sans(countSp.sp, FontWeight.ExtraBold, Color.White).copy(fontFeatureSettings = "tnum"), maxLines = 1, softWrap = false)
     }
 }
 
-// ---- The CPU's hand, tucked ----
-
-@Composable
-private fun TuckedHand(n: Int, modifier: Modifier, d: Du, maxW: Dp = Dp.Infinity) = with(d) {
-    if (n <= 0) return@with
-    // 0.4.60 Z1: the backs fan 17 du apart, closer when the CPU's corner is narrower than that.
-    val step = if (n > 1 && maxW != Dp.Infinity) minOf(17.du, ((maxW - 24.du) / (n - 1)).coerceAtLeast(2.du)) else 17.du
-    // The CPU's tell while it thinks (match director): one card back slides 16 dp out of the hand, holds, and settles.
-    val tell by dev.cardstashy.nativeplay.match.CpuThink.now.collectAsState()
-    Box(modifier.size(24.du + step * (n - 1), 50.du)) {
-        repeat(n) { i ->
-            val lift by androidx.compose.animation.core.animateDpAsState(if (tell?.lifted == i && !Motion.still) 16.dp else 0.dp,
-                tween(if (tell?.lifted == i) 220 else 200, easing = FastOutSlowInEasing), label = "tell")
-            Box(Modifier.offset(x = step * i, y = lift).size(24.du, 34.du).drawBehind { drawRoundRect(Color(0xAA000000), topLeft = Offset(0f, 4.du.toPx()), size = size, cornerRadius = CornerRadius(5.du.toPx())) }
-                .clip(RoundedCornerShape(5.du)).border(2.dp, Color(0xFFC9A75A), RoundedCornerShape(5.du))) { CardBack(Modifier.fillMaxSize()) }
-        }
-    }
-}
 
 /** Three dots that breathe in turn beside the CPU's portrait while it thinks (match director, think steps). */
 @Composable
@@ -1586,7 +1619,10 @@ private fun ThinkDots(modifier: Modifier, d: Du) = with(d) {
 
 /** .play-match-seat: a 52 du round portrait in a gold ring, the life total on a pill under it (tap to target the player). */
 @Composable
-internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Boolean, modifier: Modifier, d: Du, onOpen: (() -> Unit)? = null, onPick: () -> Unit) = with(d) {
+internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Boolean, modifier: Modifier, d: Du, onOpen: (() -> Unit)? = null,
+                       /** 0.4.60 Z4: the portrait's size (52 du as live; the player squares draw it at the mockup's 38) and the life's sp. */
+                       side: Dp? = null, lifeSp: Float = TextFloors.LIFE, onPick: () -> Unit) = with(d) {
+    val a = side ?: 52.du
     val flash = remember { Animatable(0f) }
     val recoil = remember { Animatable(0f) }
     val tick = remember { Animatable(1f) }
@@ -1610,7 +1646,7 @@ internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Bool
     }
     val anchors = LocalAnchors.current
     val pulse = if (pickable && !Motion.still) rememberInfiniteTransition(label = "pick").animateFloat(.55f, 1f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "a").value else 1f
-    Box(modifier.size(52.du).then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("orb${p.id}", it.boundsInRoot()) } else Modifier)
+    Box(modifier.size(a).then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("orb${p.id}", it.boundsInRoot()) } else Modifier)
         .graphicsLayer { translationY = (if (mine) 1f else -1f) * 14.dp.toPx() * recoil.value; translationX = (if (mine) -1f else 1f) * 6.dp.toPx() * recoil.value }
         .padActs(PadActs(a = if (pickable) "Choose" else if (onOpen != null) "Inspect" else null)).focusRequester(TableZones.orb(p.id)).aimOn("orb${p.id}")
         // BB12: while the portrait is not a target, a tap opens the seat's commander (the crest beside it opens the same card).
@@ -1623,20 +1659,21 @@ internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Bool
                 val profile by dev.cardstashy.nativeplay.account.Account.profile.collectAsState()
                 // play-player-mat.js practicePlayerPortrait: your profile picture, else the brand mark (brand-idle).
                 val url = profile?.avatarUrl?.takeIf { it.startsWith("http") }
-                if (url == null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BrandMark(30.du) }
+                if (url == null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BrandMark(a * (30f / 52f)) }
                 url?.let { coil3.compose.AsyncImage(model = it, contentDescription = null, imageLoader = dev.cardstashy.nativeplay.art.CardArt.loader, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
-            } else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BrandMark(30.du) } // the CPU wears the brand mark
+            } else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BrandMark(a * (30f / 52f)) } // the CPU wears the brand mark
             if (flash.value > 0f) Box(Modifier.fillMaxSize().background(CpuRed.copy(alpha = .55f * flash.value)))
             if (recoil.value > .3f) Box(Modifier.fillMaxSize().background(Color.White.copy(alpha = .6f * (recoil.value - .3f) / .7f)))
         }
-        // .play-match-life (0.4.60 Z3: 19 sp, never less, was 15 px): 800 #fff4d8 on a dark pill with a gold hairline, 39 du below the portrait's top.
-        Box(Modifier.align(Alignment.TopCenter).offset(y = 39.du).wrapContentSize(unbounded = true)
+        // .play-match-life (0.4.60 Z3: 19 sp, never less, was 15 px): 800 #fff4d8 on a dark pill with a gold hairline, 39 du below the portrait's top
+        // (Z4: three quarters of the way down a portrait of any size; the mockup's square puts its middle 9 above the portrait's foot).
+        Box(Modifier.align(Alignment.TopCenter).offset(y = a * .75f).wrapContentSize(unbounded = true)
             .drawBehind { drawRoundRect(Color(0xCC000000), topLeft = Offset(0f, 3.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2)) }
             .clip(RoundedCornerShape(999.dp)).background(Brush.verticalGradient(listOf(Color(0xFF26221A), Color(0xFF14120E)))).border(1.dp, Gold, RoundedCornerShape(999.dp))
             .padding(horizontal = 8.du, vertical = 2.du)) {
-            Text("$shown", style = sans(TextFloors.LIFE.sp, FontWeight.Bold, if (tick.value > 1.01f) Color(0xFFFF8A6A) else Color(0xFFFFF4D8)),
+            Text("$shown", style = sans(lifeSp.sp, FontWeight.Bold, if (tick.value > 1.01f) Color(0xFFFF8A6A) else Color(0xFFFFF4D8)),
                 modifier = Modifier.graphicsLayer { scaleX = tick.value; scaleY = tick.value })
-            anchors?.let { it.sizes["lifesp${p.id}"] = TextFloors.LIFE }
+            anchors?.let { it.sizes["lifesp${p.id}"] = lifeSp }
         }
     }
 }
@@ -1663,12 +1700,16 @@ private fun Crest(c: Card?, modifier: Modifier, d: Du, onInspect: (Card) -> Unit
 
 /** .forge-seat-mana: what is floating, one symbol each with its count. Nothing floating, nothing shown. */
 @Composable
-private fun ManaPool(mana: Map<String, Int>, modifier: Modifier, d: Du) = with(d) {
+private fun ManaPool(mana: Map<String, Int>, modifier: Modifier, d: Du, maxW: Dp = Dp.Infinity) = with(d) {
     val floating = listOf("W", "U", "B", "R", "G", "C").mapNotNull { k -> mana[k]?.takeIf { it > 0 }?.let { k to it } }
     if (floating.isEmpty()) return@with
-    Row(modifier.heightIn(min = 34.du).clip(RoundedCornerShape(999.dp)).background(Color(0xE60B0D12)).border(1.dp, Gold.copy(alpha = .33f), RoundedCornerShape(999.dp))
-        .padding(horizontal = 6.du, vertical = 4.du), horizontalArrangement = Arrangement.spacedBy(4.du)) {
-        floating.forEach { (k, n) ->
+    // 0.4.60 Z4: in the left strip the pool wraps to as many symbols a row as fit [maxW] (24 du each, 4 apart, 6 padding a side).
+    val perRow = if (maxW == Dp.Infinity) floating.size else (((maxW - 12.du + 4.du) / 28.du).toInt()).coerceAtLeast(1)
+    val shape = RoundedCornerShape(if (floating.size > perRow) 14.du else 999.dp)
+    Column(modifier.heightIn(min = 34.du).clip(shape).background(Color(0xE60B0D12)).border(1.dp, Gold.copy(alpha = .33f), shape)
+        .padding(horizontal = 6.du, vertical = 4.du), verticalArrangement = Arrangement.spacedBy(4.du)) {
+      for (row in floating.chunked(perRow)) Row(horizontalArrangement = Arrangement.spacedBy(4.du)) {
+        row.forEach { (k, n) ->
             Box(Modifier.size(24.du)) {
                 Symbol(k, 22.du, Modifier.align(Alignment.Center))
                 Box(Modifier.align(Alignment.BottomEnd).offset(4.du, 2.du).clip(CircleShape).background(Gold).border(1.dp, Color(0xFF0B0D12), CircleShape).padding(horizontal = 3.du)) {
@@ -1676,6 +1717,7 @@ private fun ManaPool(mana: Map<String, Int>, modifier: Modifier, d: Du) = with(d
                 }
             }
         }
+      }
     }
 }
 
@@ -2111,11 +2153,11 @@ internal fun StrokeIcon(path: String, color: Color, size: Dp, stroke: Float = 2f
 
 /** .forge-control-emblem: 28 px, #0f1117cc with a #ffffff2a hairline; on = gold rim, warm radial fill, #f4d78f icon. */
 @Composable
-private fun Emblem(on: Boolean, enabled: Boolean, label: String, d: Du, onClick: () -> Unit, icon: @Composable (Color) -> Unit) = with(d) {
+private fun Emblem(on: Boolean, enabled: Boolean, label: String, d: Du, onClick: () -> Unit, side: Dp? = null, icon: @Composable (Color) -> Unit) = with(d) {
     val hf = androidx.compose.ui.platform.LocalHapticFeedback.current
     val press = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     val down by press.collectIsPressedAsState()
-    Box(Modifier.size(34.du).graphicsLayer { val s = if (down && enabled) .92f else 1f; scaleX = s; scaleY = s; alpha = if (enabled) 1f else .55f }
+    Box(Modifier.size(side ?: 34.du).graphicsLayer { val s = if (down && enabled) .92f else 1f; scaleX = s; scaleY = s; alpha = if (enabled) 1f else .55f }
         .drawBehind { if (on) drawCircle(Brush.radialGradient(listOf(Gold.copy(alpha = .33f), Color.Transparent), radius = size.width * .9f), radius = size.width * .9f) }
         .clip(CircleShape)
         .background(if (on) Brush.radialGradient(listOf(Color(0xFF4A3C1F), Color(0xFF1B160C)), center = Offset.Unspecified) else Brush.linearGradient(listOf(Color(0xCC0F1117), Color(0xCC0F1117))))
@@ -2126,29 +2168,35 @@ private fun Emblem(on: Boolean, enabled: Boolean, label: String, d: Du, onClick:
         contentAlignment = Alignment.Center) { icon(if (on) Color(0xFFF4D78F) else Color(0xFF8D95A5)) }
 }
 
+/** The response emblems (Smart, the bolt; Full Control; auto-pay when Forge says), each [size] (34 du by default), or none. */
+private fun emblemsOf(st: MatchState, intents: TableIntents, d: Du, side: Dp? = null): List<@Composable () -> Unit> = with(d) {
+    if (st.controlMode !in setOf("smart", "full")) return@with emptyList()
+    val lock = st.prompt != null || st.inputType == "InputLockUI" || st.busy
+    val icon = (side ?: 34.du) * (14f / 34f)
+    listOfNotNull<@Composable () -> Unit>(
+        { Emblem(st.controlMode == "smart", !lock, "Smart: passes empty response windows. Targets and required choices stay yours.", d, { intents.mode("smart") }, side) { StrokeIcon(SMART_ICON, it, icon) } },
+        { Emblem(st.controlMode == "full", !lock, "Full Control: stop at every response window.", d, { intents.mode("full") }, side) { StrokeIcon(FULL_ICON, it, icon) } },
+        st.autoPay?.let { on -> { Emblem(on, !lock, if (on) "Auto-pay mana: on" else "Auto-pay mana: off", d, { intents.autoPay(!on) }, side) { StrokeIcon(PAY_ICON, it, icon, circle = true) } } },
+    )
+}
+
 @Composable
 private fun ControlEmblems(st: MatchState, intents: TableIntents, modifier: Modifier, d: Du) = with(d) {
-    if (st.controlMode !in setOf("smart", "full")) return@with
-    val lock = st.prompt != null || st.inputType == "InputLockUI" || st.busy
+    val emblems = emblemsOf(st, intents, d)
+    if (emblems.isEmpty()) return@with
     // 0.4.60 Z3: the emblems are drawn 34 du but each takes taps in a 44 dp box (Compose's nearby touch); they stand far enough
     // apart that neighbouring boxes do not take each other's half.
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(maxOf(8.du, TextFloors.TOUCH.dp - 34.du))) {
-        Emblem(st.controlMode == "smart", !lock, "Smart: passes empty response windows. Targets and required choices stay yours.", d, { intents.mode("smart") }) { StrokeIcon(SMART_ICON, it, 14.du) }
-        Emblem(st.controlMode == "full", !lock, "Full Control: stop at every response window.", d, { intents.mode("full") }) { StrokeIcon(FULL_ICON, it, 14.du) }
-        st.autoPay?.let { on ->
-            Emblem(on, !lock, if (on) "Auto-pay mana: on" else "Auto-pay mana: off", d, { intents.autoPay(!on) }) { StrokeIcon(PAY_ICON, it, 14.du, circle = true) }
-        }
-    }
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(maxOf(8.du, TextFloors.TOUCH.dp - 34.du))) { emblems.forEach { it() } }
 }
 
 // ---- Emotes (table-emotes.mjs) ----
 
 /** .forge-emote-button: 30 px glass circle with a speech bubble, top-right of your portrait. */
 @Composable
-private fun EmoteButton(modifier: Modifier, d: Du) = with(d) {
+private fun EmoteButton(modifier: Modifier, d: Du, side: Dp? = null) = with(d) {
     val hf = androidx.compose.ui.platform.LocalHapticFeedback.current
     val open = TableEmotes.menuOpen
-    Box(modifier.size(34.du).drawBehind { drawCircle(Color(0x99000000), radius = size.width / 2 + 2.du.toPx(), center = center + Offset(0f, 4.du.toPx())) }
+    Box(modifier.size(side ?: 34.du).drawBehind { drawCircle(Color(0x99000000), radius = size.width / 2 + 2.du.toPx(), center = center + Offset(0f, 4.du.toPx())) }
         .clip(CircleShape).background(Color(0xD914161D)).border(1.dp, if (open) Color(0xFFF0C27A) else Color(0x66D6AD64), CircleShape)
         .semantics { contentDescription = "Emotes"; role = Role.Button }
         .clickable { if (AppSettings.haptics) hf.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove); TableEmotes.menuOpen = !open }, contentAlignment = Alignment.Center) {
