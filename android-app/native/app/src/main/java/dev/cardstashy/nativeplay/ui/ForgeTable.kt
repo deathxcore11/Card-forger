@@ -1318,9 +1318,14 @@ private fun ThroughChip(t: Through, life: Int, modifier: Modifier, d: Du) = with
     }
 }
 
-/** T4: the auras on [card] that show (Forge's attachments whose type says Aura and whose face is up). */
+/**
+ * T4: the auras on [card] that show (Forge's attachments whose type says Aura and whose face is up). Mobile table M13: equipment
+ * sits behind its permanent the same way (it was a corner badge).
+ */
 internal fun aurasOn(card: Card, lookup: (Int) -> Card?): List<Card> =
-    card.attachments.mapNotNull(lookup).filter { !it.hidden && Regex("\\bAura\\b").containsMatchIn(it.type) }
+    card.attachments.mapNotNull(lookup).filter { !it.hidden && BEHIND.containsMatchIn(it.type) }
+/** What sits behind the permanent it is on, as a strip with its name bar (M7, M13). */
+internal val BEHIND = Regex("\\b(?:Aura|Equipment)\\b")
 
 /**
  * T4 (specs/table-look-0459.md, aura look A, Randall 10 Nov): each aura on a creature is a strip behind its tile, raised
@@ -3046,7 +3051,7 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
         // 0.4.60 G1 review: the strip keeps off the state corner (tapped, summoning sick: on the do-not-rebuild list; before G1 the rail
         // started 3 du under it), and leaves room above it for the crew or equipment badge, which sits on top of the strip.
         val attached = card.attachments.mapNotNull(lookup).filter { !it.hidden }
-        val lowBadge = b.crew != null || attached.any { !Regex("\\bAura\\b").containsMatchIn(it.type) }
+        val lowBadge = b.crew != null || attached.any { !BEHIND.containsMatchIn(it.type) }
         val ceil = (if (b.state.isNotEmpty()) top + bsz + 3.du else top) + (if (lowBadge) bsz + 2.du else 0.dp)
         // fitRails(): when the counters column would run into the stats plaque, it becomes a row (row-reverse) sitting 3px above the plaque.
         val railN = b.counters.size + (if (b.countersMore > 0) 1 else 0) + (if (b.damage > 0) 1 else 0)
@@ -3163,10 +3168,9 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
                 BoardIcon("vehicle-crew", BadgeInk, bsz * .7f); Text("$crew", style = sans(sp(6.5f), FontWeight.Bold, Color.White))
             }
         }
-        if (attached.any { !Regex("\\bAura\\b").containsMatchIn(it.type) } && b.crew == null) {
-            fun kind(c: Card) = if (Regex("\\bEquipment\\b").containsMatchIn(c.type)) "equipment" else if (Regex("\\bAura\\b").containsMatchIn(c.type)) "aura" else "attached"
-            // T4: auras show as strips above the tile (AuraStrips), so the corner badge counts only what is not an aura.
-            val kinds = listOf("equipment", "attached").map { k -> k to attached.count { kind(it) == k } }.filter { it.second > 0 }
+        if (attached.any { !BEHIND.containsMatchIn(it.type) } && b.crew == null) {
+            // T4, M13: auras and equipment show as strips above the tile (AuraStrips), so the corner badge counts only what is neither.
+            val kinds = listOf("attached" to attached.count { !BEHIND.containsMatchIn(it.type) }).filter { it.second > 0 }
             Row(Modifier.align(Alignment.BottomStart).offset(x = 3.du, y = if (stripH > 0.dp) -(stripH + 2.du) else (-4).du)
                 .then(if (tileAnchors != null) Modifier.onGloballyPositioned { tileAnchors.putRect("low${card.id}", it.boundsInRoot()) } else Modifier), horizontalArrangement = Arrangement.spacedBy(1.du)) {
                 kinds.forEach { (k, n) -> badge(k, text = if (n > 1) "$n" else null) }
