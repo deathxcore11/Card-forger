@@ -12,7 +12,6 @@ import coil3.size.Size
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import dev.cardstashy.nativeplay.account.Http
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -68,12 +67,12 @@ object CardArt {
     /** W9: type lines for names that have none yet (one Scryfall call per 75 names), for the deck tracker; bumps [version]. */
     suspend fun fetchTypes(names: Collection<String>) = withContext(Dispatchers.IO) {
         // Also any name with no rarity on record (entrances by importance: rarity was not kept in the index before 0.4.56).
-        val need = synchronized(index) { names.filter { typeLine(it) == null || rarity(it) == null }.distinctBy { it.lowercase() } }
+        val need = synchronized(index) { names.filter { lookupName(it).isNotBlank() && (typeLine(it) == null || rarity(it) == null) }.distinctBy { it.lowercase() } }
         if (need.isEmpty()) return@withContext
         var got = false
         for (chunk in need.chunked(75)) {
             val body = JsonObject().apply { add("identifiers", JsonArray().apply { chunk.forEach { add(JsonObject().apply { addProperty("name", lookupName(it)) }) } }) }.toString()
-            val found = try { Http.call("POST", "https://api.scryfall.com/cards/collection", mapOf("User-Agent" to UA), body, timeoutMs = 10000)?.asJsonObject?.getAsJsonArray("data") } catch (_: Exception) { null } ?: continue
+            val found = ScryfallGate.collection(body) ?: continue
             synchronized(index) { found.mapNotNull { it as? JsonObject }.forEach { c ->
                 c.get("type_line")?.asString?.let { t -> names(c).forEach { n -> types[n.lowercase()] = t }; got = true }
                 c.get("rarity")?.asString?.let { r -> names(c).forEach { n -> rarities.putIfAbsent(n.lowercase(), r) }; got = true } } }
@@ -212,7 +211,8 @@ object CardArt {
         val set = str(row, "set", "setCode")?.lowercase(); val num = str(row, "collectorNumber", "collector_number", "number")
         when {
             id != null -> addProperty("id", id)
-            set != null && num != null -> { addProperty("set", set); addProperty("collector_number", num) }
+            // Scryfall refuses a whole call over one set code outside 3-6 characters or number outside 1-10: such a row asks by name.
+            set != null && num != null && set.length in 3..6 && num.length in 1..10 -> { addProperty("set", set); addProperty("collector_number", num) }
             else -> addProperty("name", str(row, "oracleName") ?: lookupName(engineName))
         }
     }
@@ -228,7 +228,7 @@ object CardArt {
      * Scryfall call, and remembers it. A deck seen before needs no call at all.
      */
     suspend fun resolve(rows: List<Pair<String, JsonObject>>) = withContext(Dispatchers.IO) {
-        val missing = synchronized(index) { rows.filter { (name, r) -> pinId(r)?.let { !index.containsKey("#$it") } ?: (index[name.lowercase()] == null) } }
+        val missing = synchronized(index) { rows.filter { (name, r) -> ScryfallGate.valid(identifier(r, name)) && pinId(r)?.let { !index.containsKey("#$it") } ?: (index[name.lowercase()] == null) } }
             .distinctBy { (n, r) -> pinId(r) ?: n.lowercase() }
         if (missing.isEmpty()) return@withContext
         val addedAny = java.util.concurrent.atomic.AtomicBoolean(false)
@@ -237,15 +237,9 @@ object CardArt {
         coroutineScope { missing.chunked(75).map { chunk -> async { calls.withPermit {
             val ids = chunk.map { (n, r) -> identifier(r, n) }
             val body = JsonObject().apply { add("identifiers", JsonArray().apply { ids.forEach { add(it) } }) }.toString()
-            // A dropped or rate-limited call (two chunks back to back) is asked once more after a breath, so a deck's second
-            // half never stays name-only (Randall 10 Nov, Draconic Destruction's hand).
-            var found: JsonArray? = null
-            for (attempt in 0..1) {
-                if (attempt > 0) kotlinx.coroutines.delay(700)
-                found = try { Http.call("POST", "https://api.scryfall.com/cards/collection", mapOf("User-Agent" to UA), body, timeoutMs = 10000)?.asJsonObject?.getAsJsonArray("data") } catch (_: Exception) { null }
-                if (found != null) break
-            }
-            if (found == null) return@withPermit
+            // A dropped or rate-limited call is asked again at Scryfall's pace (ScryfallGate), so a deck's second half never
+            // stays name-only (Randall 10 Nov, Draconic Destruction's hand; 11 Nov, a new deck's hand on plain frames).
+            val found = ScryfallGate.collection(body) ?: return@withPermit
             val cards = found.mapNotNull { it as? JsonObject }
             synchronized(index) {
                 chunk.forEachIndexed { i, (name, _) ->
@@ -270,9 +264,10 @@ object CardArt {
         // A printing that Scryfall could not match by id or number falls back to its name once.
         val still = missing.filter { (n, _) -> url(n) == null }
         if (still.isNotEmpty()) for (chunk in still.chunked(75)) {
-            val asked = chunk.map { (n, r) -> n to (str(r, "oracleName") ?: lookupName(n)) }
+            val asked = chunk.map { (n, r) -> n to (str(r, "oracleName") ?: lookupName(n)) }.filter { it.second.isNotBlank() }
+            if (asked.isEmpty()) continue
             val body = JsonObject().apply { add("identifiers", JsonArray().apply { asked.forEach { (_, q) -> add(JsonObject().apply { addProperty("name", q) }) } }) }.toString()
-            val cards = try { Http.call("POST", "https://api.scryfall.com/cards/collection", mapOf("User-Agent" to UA), body, timeoutMs = 10000)?.asJsonObject?.getAsJsonArray("data") } catch (_: Exception) { null } ?: continue
+            val cards = ScryfallGate.collection(body) ?: continue
             synchronized(index) {
                 cards.mapNotNull { it as? JsonObject }.forEach { c -> images(c)?.let { img ->
                     names(c).forEach { n -> index.putIfAbsent(n.lowercase(), img) }
