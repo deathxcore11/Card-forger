@@ -49,7 +49,7 @@ class PadTargetTest {
     private fun state(s: String) = MatchState.parse(javaClass.classLoader!!.getResource("table/snap-$s.json")!!.readText())!!
     private val targets = setOf(123, 124, 107, 108, 109)
 
-    private fun step() { rule.mainClock.advanceTimeBy(600) }
+    private fun step() { androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications(); rule.mainClock.advanceTimeBy(600) }
     @OptIn(androidx.compose.ui.test.ExperimentalTestApi::class)
     private fun center() {
         rule.onRoot().performKeyInput { pressKey(androidx.compose.ui.input.key.Key.DirectionCenter) }
