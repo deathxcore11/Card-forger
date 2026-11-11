@@ -29,7 +29,17 @@ class TableAudio(context: Context) {
     var muted = false
         set(on) { field = on; if (on) pool.autoPause() else pool.autoResume() }
 
-    fun play(id: String, volume: Float = 1f, rate: Float = 1f) { if (muted || !dev.cardstashy.nativeplay.ui.AppSettings.sound) return; ids[id]?.let { pool.play(it, volume, volume, 1, 0, rate.coerceIn(.5f, 2f)) } }
+    /** The match sound pass: old ids go to the 2026 cues, with its rules (draw takes, pitch variation, one big hit at a time). */
+    private val router = Cues.Router({ ids.containsKey(it) }, { android.os.SystemClock.uptimeMillis() })
+    private var bigStream = 0
+
+    fun play(id: String, volume: Float = 1f, rate: Float = 1f) {
+        if (muted || !dev.cardstashy.nativeplay.ui.AppSettings.sound) return
+        val p = router.route(id, volume, rate) ?: return
+        if (p.cuts && bigStream != 0) pool.stop(bigStream)
+        val stream = ids[p.name]?.let { pool.play(it, p.volume, p.volume, if (p.name in Cues.BIG) 2 else 1, 0, p.rate) } ?: return
+        if (p.name in Cues.BIG) bigStream = stream
+    }
 
     /** While the board's effects run, they play block, clash and face-hit cues on their own frames (Battlefield.cues). */
     var fxCues = false
