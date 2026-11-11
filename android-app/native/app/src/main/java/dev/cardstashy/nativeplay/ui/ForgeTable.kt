@@ -503,7 +503,7 @@ fun ForgeBoard(
             // P5: the attackers this board declared, in the order they step up.
             val declared = remember(st.revision) { lastBoard[0]?.takeIf { lastBoard[1] === st }?.let { declareOrder(it, st) } ?: emptyList() }
             androidx.compose.runtime.CompositionLocalProvider(LocalUntapRipple provides (if (Motion.still || fx.reduced) emptyList() else ripple), LocalDeclare provides declared, LocalAttackInput provides (live && st.inputType == "InputAttack"),
-                LocalPayLight provides payLight, LocalHandCarry provides payLight.isNotEmpty(), LocalAbilityOpen provides abilityOpen, LocalPayInput provides (live && Glow.paying(st)),
+                LocalSideTags provides Glow.sideTags(st, live), LocalPayLight provides payLight, LocalHandCarry provides payLight.isNotEmpty(), LocalAbilityOpen provides abilityOpen, LocalPayInput provides (live && Glow.paying(st)),
                 LocalAttackNumbers provides (if (blockingNow && attackersNow.size > 1) attackersNow.withIndex().associate { (i, c) -> c.id to i + 1 } else emptyMap()),
                 LocalBlockDrag provides (if (blockingNow) blockDrag else null)) {
                 // 0.4.60 Z1: the stack lives in the right strip and never takes board width (walk line 27). Only the side dock, which
@@ -1363,7 +1363,10 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
     val (a, _) = frameTone(cardColors(card))
     // play-forge-table.css: a role's ring and glow (playable/choice #5cc8ff, target #ff9d5c, chosen #f3d27e), combat over it (attacking #ff6a4a, blocking #6aaeff).
     val combat = card.attacking || card.blocking
+    // M2: an offered target says whose it is while the question offers both sides: blue for yours, red for the CPU's.
+    val side = LocalSideTags.current[card.id]
     val role: Triple<Color, Float, Color>? = when {
+        side != null && mark != Mark.PICKED -> if (side) Triple(SideYours, 2.5f, Color(0x8C5CC8FF)) else Triple(SideCpu, 2.5f, Color(0x8CFF5A4A))
         card.attacking -> Triple(Color(0xFFFF6A4A), 2f, Color(0x99FF5A3A))
         card.blocking -> Triple(Color(0xFF6AAEFF), 2f, Color(0x995A9CFF))
         mark == Mark.PICKED -> Triple(Color(0xFFF3D27E), 2.5f, Color(0x8CF3D27E))
@@ -1589,6 +1592,14 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
             Text("MUST ATTACK", maxLines = 1, softWrap = false, style = sans(sp(10.5f), FontWeight.ExtraBold, Color(0xFFFFF1EC)).copy(letterSpacing = .06.em),
                 modifier = Modifier.align(Alignment.BottomCenter).offset(y = 8.du).wrapContentWidth(unbounded = true).clip(RoundedCornerShape(999.dp)).background(Color(0xFF9E2A1E))
                     .border(1.dp, Color(0xFFFF8A6A), RoundedCornerShape(999.dp)).padding(horizontal = 7.du, vertical = 2.du))
+        }
+    }
+    // M2: YOURS or CPU'S on the top edge of an offered target, in its ring's colour.
+    if (side != null && pileTop) {
+        Box(modifier.size(w, h).zIndex(22f)) {
+            Text(if (side) SIDE_YOURS else SIDE_CPU, maxLines = 1, softWrap = false, style = sans(sp(10f), FontWeight.ExtraBold, Color(0xFF0B0D12)).copy(letterSpacing = .06.em),
+                modifier = Modifier.align(Alignment.TopCenter).offset(y = (-9).du).wrapContentWidth(unbounded = true).clip(RoundedCornerShape(999.dp))
+                    .background(if (side) SideYours else SideCpu).border(1.dp, Color(0xCC0B0D12), RoundedCornerShape(999.dp)).padding(horizontal = 6.du, vertical = 1.5f.du))
         }
     }
     // The attacker's number while you block (1, 2 … in attack order), on its top-left corner.
@@ -2824,6 +2835,9 @@ internal fun askerBody(a: Asker, plain: String): String {
     val low = body.trim().trimEnd('.').let { b -> if (b.length > 1 && b[0].isUpperCase() && !b[1].isUpperCase()) b[0].lowercase() + b.drop(1) else b }
     return "$low."
 }
+/** M2: the words on an offered target while a question offers both sides. */
+internal const val SIDE_YOURS = "YOURS"
+internal const val SIDE_CPU = "CPU'S"
 /** M1: what a spell or ability does is said in the question when it is this short; longer, the question says only what to pick. */
 internal const val ASK_TEXT_MAX = 90
 
