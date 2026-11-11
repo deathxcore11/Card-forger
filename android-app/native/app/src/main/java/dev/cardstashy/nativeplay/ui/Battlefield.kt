@@ -633,8 +633,11 @@ class Battlefield {
         return when (dev.cardstashy.nativeplay.art.CardArt.rarity(c.name)) { "rare", "mythic", "special", "bonus" -> 1; else -> 0 }
     }
 
+    /** Mobile table M10: who is looking at this table (set from each board), so a hit knows whether it is you who is hit. */
+    internal var viewerId: Int? = null
     private fun diff(a: MatchState, b: MatchState, anchors: Anchors): List<List<FxItem>> {
         val viewer = b.viewer
+        viewerId = viewer
         val tNow = now.longValue
         claimed.values.removeAll { it < tNow }
         val claimedNow = claimed.keys.toSet()
@@ -1775,7 +1778,10 @@ private fun DrawScope.faceHit(fx: Battlefield, it: FxItem, p: Float, r: Rect, lo
         fx.bits.sparks(r.center, (16 + 12 * k).toInt(), coral, now, 290f * density, lifeMs = 600, sizePx = 1.6f * density, seed = seed)
     }
     // Red at the screen's edges only, peaking near 0.9 and gone by about 700 ms.
-    val vig = (if (ms < 90f) ms / 90f else 1f - smooth(90f, 700f, ms)) * .9f * (.75f + .25f * k)
+    // Mobile table M10 (and match-punch-brief): only when you are hit. Damage to the CPU does not wash the screen red. Yours is
+    // the hit on your own life; with no viewer known (a drawn test), the square in the lower half is yours.
+    val you = fx.viewerId?.let { v -> it.player == v } ?: (r.center.y > size.height / 2)
+    val vig = if (!you) 0f else (if (ms < 90f) ms / 90f else 1f - smooth(90f, 700f, ms)) * .9f * (.75f + .25f * k)
     // The red vignette lives at the screen's edges; the middle of the board stays readable.
     // A band along each edge, as deep on a wide screen's sides as on its top and bottom, so the board stays readable.
     val band = size.minDimension * .24f; val red = Color(0xFFE02A1A).copy(alpha = vig)

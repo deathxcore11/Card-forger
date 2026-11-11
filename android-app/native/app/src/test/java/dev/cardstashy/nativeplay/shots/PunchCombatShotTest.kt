@@ -143,5 +143,10 @@ class PunchCombatShotTest {
         val hit = at(face(), lands + 60, "face-burst", burstAt = lands)
         val off = Rect(orb.right + 4 * dp, orb.top - 10 * dp, orb.right + 60 * dp, orb.bottom + 10 * dp)
         assertTrue("spikes stand off the square: ${diff(reach, hit, off)}", diff(reach, hit, off) > .05f)
+        // Mobile table M10: the CPU's hit leaves the screen's edges alone; the same hit to you washes them red.
+        val rim = Rect(plain.width - 12 * dp, plain.height * .44f, plain.width.toFloat(), plain.height * .56f)
+        assertEquals("no red wash when the CPU is hit", 0f, diff(reach, hit, rim), .002f)
+        val me = at(listOf(FxItem(Fx.LIFE, 3, 950, player = base.viewer, toKey = "orb${base.viewer}", tone = Color(0xFFFF5A4A), power = .5f).also { it.label = "−3"; it.points = 3 }), 90, "face-you")
+        assertTrue("the red wash when you are hit: ${diff(plain, me, rim)}", diff(plain, me, rim) > .5f)
     }
 }
