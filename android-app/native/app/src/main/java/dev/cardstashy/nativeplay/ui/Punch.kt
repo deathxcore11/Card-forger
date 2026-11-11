@@ -296,3 +296,33 @@ private fun DrawScope.drawHandMana(fx: Battlefield, m: dev.cardstashy.nativeplay
             fx.bits.sparks(pool.center, 4, lc, now, 90f * dp, lifeMs = 280, sizePx = 1.3f * dp, seed = 30 + i) }
     }
 }
+
+
+/**
+ * Match punch P3, the landing's impact on a tile at [r]: a 45 ms freeze, a white flash (300 ms), a flat gold ring under the tile
+ * (460) with a quicker white one inside it, a dozen dust puffs from its foot and 16 gold sparks thrown up; the board shakes 7 dp
+ * for a creature and 3 for anything else ([FxItem.power]), pushed in a little. Effects Minimal ([FxItem.entrance] -1) and reduce
+ * motion keep the flash only (halved with reduce motion).
+ */
+internal fun DrawScope.drawImpact(fx: Battlefield, it: FxItem, p: Float, r: androidx.compose.ui.geometry.Rect) {
+    val ms = p * it.dur; val now = fx.now.longValue; val dp = density
+    val gold = Color(0xFFF3D27E); val k = it.power.coerceAtLeast(.3f)
+    val bare = fx.reduced || it.entrance < 0
+    if (!fx.reduced && it.once(1)) fx.freeze(45L)
+    if (!bare && it.once(2)) {
+        val bit = it.card ?: 0
+        fx.jolt(7f * it.power, 220L, .012f)
+        val foot = Offset(r.center.x, r.bottom - r.height * .08f)
+        fx.bits.smoke(foot, (12 * k).toInt().coerceAtLeast(5), Color(0xFF8A8478), now, 46f * dp, lifeMs = 900, sizePx = r.height * .13f, seed = bit and 0xff)
+        fx.bits.sparks(Offset(r.center.x, r.bottom - r.height * .2f), (16 * k).toInt().coerceAtLeast(6), gold, now, 190f * dp, dir = -(PI / 2).toFloat(), spread = 1.3f, lifeMs = 560, sizePx = 1.6f * dp, seed = bit and 0xff)
+    }
+    // White flash on the tile.
+    if (ms < 300f) drawRoundRect(Color.White.copy(alpha = .7f * (if (fx.reduced) .5f else 1f) * (1f - ms / 300f)), r.topLeft, r.size, androidx.compose.ui.geometry.CornerRadius(10f * dp))
+    if (bare) return
+    // The flat rings under the tile: gold (460 ms), and a white one inside it (260).
+    fun flat(span: Float, r0: Float, r1: Float, c: Color, w: Float) { val q = ms / span; if (q >= 1f) return
+        val e = 1f - (1f - q) * (1f - q); val rad = r0 + (r1 - r0) * e
+        drawOval(c.copy(alpha = (1f - q) * .9f), Offset(r.center.x - rad, r.bottom - rad * .3f), androidx.compose.ui.geometry.Size(rad * 2, rad * .6f), style = Stroke(width = w * dp * (1f - q * .6f))) }
+    flat(460f, r.width * .45f, r.width * 1.15f * (.8f + .2f * k), gold, 2.4f)
+    flat(260f, r.width * .3f, r.width * .8f, Color.White, 1.6f)
+}

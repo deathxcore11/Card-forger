@@ -72,7 +72,7 @@ class DirectorTest {
         val events = listOf(ev("zone", card = c, from = "Hand", to = "Stack", player = null), ev("cast", player = me, source = c).copy(stackId = 7),
             ev("zone", card = c, from = "Stack", to = "Battlefield", player = me), ev("resolve", source = c))
         val steps = Director.plan(st, events, before = before)
-        assertEquals(listOf("CAST:TO_STACK:stackcard:370", "CAST:TAPS:stackcard:460", "CAST:REST:stackcard:895", "ENTER:TO_SLOT:c950:380"), legs(steps))
+        assertEquals(listOf("CAST:TO_STACK:stackcard:370", "CAST:TAPS:stackcard:460", "CAST:REST:stackcard:895", "ENTER:TO_SLOT:c950:330"), legs(steps))
         val taps = steps.first { it.travel?.leg == Director.Leg.TAPS }.travel!!.taps
         assertEquals(listOf(40, 41), taps)
         // One by one: the second land starts 80 ms after the first; its streak leaves 60 ms later and reaches the spell 280 ms after

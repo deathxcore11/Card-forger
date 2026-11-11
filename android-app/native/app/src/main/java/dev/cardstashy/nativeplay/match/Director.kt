@@ -428,7 +428,9 @@ object Director {
     const val LIFT_MS = 70L
     const val TO_STACK_MS = 370L
     /** T5 items 4 to 6: stack to its slot, stack to its host, a land from the hand to its group. */
-    const val TO_SLOT_MS = 380L
+    /** Match punch P3: on the stack the card rises 6 % and 12 dp ([RISE_MS]), then dives to its slot, accelerating (240). */
+    const val RISE_MS = 90L
+    const val TO_SLOT_MS = 330L
     const val TO_HOST_MS = 380L
     const val TO_GROUP_MS = 380L
 

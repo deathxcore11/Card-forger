@@ -100,7 +100,9 @@ internal enum class Fx { DRAW, CAST, RESOLVE, ARRIVE, TOKEN, ATTACK, LUNGE, BLOC
     /** A TRIGGER SHOWS ITSELF, beat 1: the card that triggered lifts 1.12x (18 dp) and one ring (260 dp) goes out in the caster's colour. */
     TRIG_SOURCE,
     /** Beat 3 on one changed card: a streak from the source, a flash, the change rising ("+1/+1"), the counter chip's pop, the trail line. */
-    TRIG_LAND }
+    TRIG_LAND,
+    /** Match punch P3, the landing's impact on [FxItem.card]'s tile: freeze, squash and spring, flash, ring, dust, sparks; [FxItem.power] scales shake and particles. */
+    IMPACT }
 
 internal class FxItem(
     val kind: Fx, val level: Int, val baseMs: Long,
@@ -124,6 +126,9 @@ internal class FxItem(
     val caster: Color = Color.White, val note: String = "",
 ) {
     var t0 = 0L; var dur = baseMs; var p0 = 0f
+    /** Things this effect has thrown once (a freeze, a burst of particles), by bit. */
+    var marks = 0
+    fun once(bit: Int): Boolean = if (marks and bit != 0) false else { marks = marks or bit; true }
     /** 0..1 through the effect, or -1 while it waits for its turn. */
     fun p(now: Long): Float = if (now < t0) -1f else (p0 + (1f - p0) * ((now - t0).toFloat() / dur.coerceAtLeast(1))).coerceAtMost(1f)
     fun done(now: Long) = now >= t0 + dur
@@ -192,9 +197,13 @@ class Battlefield {
     internal var origin = Offset.Zero
     /** The board being shown (set by FxDriver): a punch reads a card's colour from it, never an outcome. */
     internal var board: MatchState? = null
-    private val fired = HashSet<Int>(); private var firedKey = Long.MIN_VALUE
+    private val fired = LinkedHashSet<Long>()
     /** True the first time [bit] is asked for under [key] (a travel leg's key): a burst is thrown once, whatever the frame rate. */
-    internal fun once(key: Long, bit: Int): Boolean { if (key != firedKey) { fired.clear(); firedKey = key }; return fired.add(bit) }
+    internal fun once(key: Long, bit: Int): Boolean {
+        val added = fired.add(key * 4099L + bit)
+        if (added && fired.size > 512) fired.iterator().let { it.next(); it.remove() }
+        return added
+    }
     /** How far into its leg a travel is (ms): the frame-by-frame tests' fixed clock, else real time since it started. */
     internal fun travelMs(m: dev.cardstashy.nativeplay.match.TravelMoment): Long =
         TravelClock.fixed?.let { (it * m.travel.ms).toLong() } ?: (android.os.SystemClock.elapsedRealtime() - m.startedAt)
@@ -305,10 +314,31 @@ class Battlefield {
         for (it in items) it.card?.let { id -> byCard.getOrPut(id) { mutableListOf() } += it }
         stages = items.filter { it.kind == Fx.STAGE }
         spots = items.filter { it.kind == Fx.ARRIVE && it.entrance == 2 }
+        impacts = items.filter { it.kind == Fx.IMPACT }
         rev.intValue++
     }
 
     private var spots: List<FxItem> = emptyList()
+    private var impacts: List<FxItem> = emptyList()
+
+    /**
+     * P3, follow-through: the tiles beside a landing rock away from it and spring back (620 ms). Side by side at full width they
+     * are pushed 10 dp; squeezed or overlapping they only lean. Other rows never move.
+     */
+    private fun GraphicsLayerScope.rock(id: Int, anchors: Anchors?) {
+        val t = now.longValue
+        for (it in impacts) {
+            if (it.card == id) continue
+            val p = it.p(t); if (p < 0f) continue
+            val a = anchors?.rects?.get("c${it.card}") ?: continue; val b = anchors.rects["c$id"] ?: continue
+            if (kotlin.math.abs(a.center.y - b.center.y) > a.height * .5f) continue
+            val dx = b.center.x - a.center.x
+            if (kotlin.math.abs(dx) > a.width * 1.9f || kotlin.math.abs(dx) < 1f) continue
+            val k = 1f - elasticOut((p * it.dur / 620f).coerceAtMost(1f)); val dir = if (dx > 0) 1f else -1f
+            if (kotlin.math.abs(dx) >= (a.width + b.width) / 2 * .98f) translationX += dir * 10.dp.toPx() * k
+            rotationZ += dir * 2.9f * k
+        }
+    }
 
     /** A level 2 entrance: every other card on the table dims to 26 % (250 ms in, back out after the slam). */
     private fun GraphicsLayerScope.spotDim(id: Int) {
@@ -535,6 +565,11 @@ class Battlefield {
             // clear until it lands, then takes the landing squash (level 0) or its entrance from where it landed (levels 1 and 2).
             val came = travel?.travel?.takeIf { !reduced && it.cardId == id && it.leg in TRAVEL_LANDS }
             if (came != null) {
+                // P3: the travelled card lands with its impact. A creature shakes the board 7 dp, anything else 3; a level 1 entrance
+                // adds 30 % (at its drop), a level 2 keeps its big entrance and ends with this landing (after its slam).
+                val base = if (c.isCreature) 1f else 3f / 7f
+                arrivals += FxItem(Fx.IMPACT, 1, IMPACT_MS, card = id, mine = mine, tone = tone, land = c.isLand, power = if (lvl == 1) base * 1.3f else base,
+                    entrance = if (low) -1 else lvl, delay = came.ms + when (lvl) { 2 -> (E2_SLAM + 150f + 110f).toLong(); 1 -> 650L; else -> 0L })
                 arrivals += when (lvl) {
                     2 -> FxItem(Fx.ARRIVE, 2, ENTRANCE2_MS, card = id, mine = mine, tone = tone, entrance = 2, delay = came.ms,
                         title = c.name + "\n" + (if (mine) "Your commander" else "Their commander"))
@@ -663,6 +698,7 @@ class Battlefield {
         rev.intValue
         if (stages.isNotEmpty()) scope.dim(id)
         if (spots.isNotEmpty()) scope.spotDim(id)
+        if (impacts.isNotEmpty() && !reduced) with(scope) { rock(id, anchors) }
         val list = byCard[id] ?: return
         if (reduced) return
         val t = now.longValue
@@ -686,6 +722,8 @@ class Battlefield {
                         alpha = (p / .12f).coerceIn(0f, 1f)
                         if (p >= .7f) { val q = (p - .7f) / .3f; val k = .02f * sin(PI.toFloat() * q); scaleX = 1f + k; scaleY = 1f - k }
                     }
+                    // P3, impact: the tile squashes 14 % and springs back (520 ms), after the landing's 45 ms freeze.
+                    Fx.IMPACT -> if (p >= 0f) { val k = .14f * (1f - elasticOut((p * it.dur / 520f).coerceAtMost(1f))); scaleX = 1f + k; scaleY = 1f - k }
                     Fx.TOKEN -> {
                         if (p < 0f) { alpha = 0f; continue }
                         alpha = (p / .55f).coerceIn(0f, 1f)
@@ -759,6 +797,10 @@ val LocalTableCue = staticCompositionLocalOf<((String, Float, Float) -> Unit)?> 
 private val MANA_GLOW = mapOf('W' to Color(0xFFFFF1C2), 'U' to Color(0xFF5AB4FF), 'B' to Color(0xFFB08BD8), 'R' to Color(0xFFFF7A4A), 'G' to Color(0xFF6BE08A))
 
 private fun easeOutBack(x: Float): Float { val c1 = 1.70158f; val c3 = c1 + 1f; return 1f + c3 * (x - 1f).let { it * it * it } + c1 * (x - 1f).let { it * it } }
+/** The preview's E.elastic: 0 at 0, overshooting and ringing down to 1 (a squash springing back). */
+internal fun elasticOut(x: Float): Float = if (x <= 0f) 0f else if (x >= 1f) 1f else Math.pow(2.0, -10.0 * x).toFloat() * sin((x * 10f - .75f) * (2f * PI.toFloat() / 3f)) + 1f
+/** P3: a landing's impact as a whole (the neighbours' 620 ms spring is its longest part). */
+internal const val IMPACT_MS = 620L
 /** Ease out with a small overshoot (the preview's E.back, c = 1.9): 0 at 0, 1 at 1, about 1.12 at its peak. */
 internal fun backOut(x: Float): Float { val c = 1.9f; val y = x - 1f; return 1f + (c + 1f) * y * y * y + c * y * y }
 private fun smooth(e0: Float, e1: Float, x: Float): Float { val t = ((x - e0) / (e1 - e0)).coerceIn(0f, 1f); return t * t * (3f - 2f * t) }
@@ -915,6 +957,7 @@ internal fun FxLayer(force: Boolean = false) {
                         // Reduce motion: the source keeps one still rim; the landing keeps its words (the change, the chip, the line), unmoving.
                         Fx.TRIG_SOURCE -> rect("c${it.card}")?.let { r -> glowRing(r, it.tone, .9f * (1f - smooth(.8f, 1f, p)), 8.dp.toPx()) }
                         Fx.TRIG_LAND -> drawTrigLand(tm, it, p, rect(it.fromKey), rect(it.toKey), still = true, band = band())
+                        Fx.IMPACT -> rect("c${it.card}")?.let { r -> drawImpact(fx, it, p, r) }
                         else -> {}
                     }
                     continue
@@ -939,6 +982,7 @@ internal fun FxLayer(force: Boolean = false) {
                     Fx.STAGE -> drawStage(tm, it, p, rect(it.fromKey), rect(it.toKey))
                     Fx.TRIG_SOURCE -> rect("c${it.card}")?.let { r -> drawTrigSource(it, p, r) }
                     Fx.TRIG_LAND -> drawTrigLand(tm, it, p, rect(it.fromKey), rect(it.toKey), band = band())
+                    Fx.IMPACT -> rect("c${it.card}")?.let { r -> drawImpact(fx, it, p, r) }
                 }
             }
             // P2: a cast's pay (each land's flash and streak), charge and burst, read from the leg the table is drawing.
@@ -1512,11 +1556,17 @@ internal fun TravelCard() {
         // stack with a small overshoot.
         val lift = if (toStack) (dev.cardstashy.nativeplay.match.Director.LIFT_MS.toFloat() / t.ms.coerceAtLeast(1)).coerceAtMost(.4f) else 0f
         val u = if (toStack) ((q - lift) / (1f - lift)).coerceIn(0f, 1f) else q
-        val e = if (toStack) backOut(u) else smooth(0f, 1f, q)
+        // P3, the dive: on the stack the card rises 6 % and 12 dp (90 ms), then dives to its slot, accelerating, cropping to its tile.
+        val dive = t.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_SLOT
+        val rise = if (dive) (dev.cardstashy.nativeplay.match.Director.RISE_MS.toFloat() / t.ms.coerceAtLeast(1)).coerceAtMost(.5f) else 0f
+        val v = if (dive) ((q - rise) / (1f - rise)).coerceIn(0f, 1f) else q
+        val e = if (toStack) backOut(u) else if (dive) v * v * v else smooth(0f, 1f, q)
         val wind = if (toStack) (if (q < lift) sin(PI.toFloat() / 2 * q / lift) else 1f - smooth(0f, .35f, u)) else 0f
+        val up = if (dive) (if (q < rise) 1f - (1f - q / rise).let { it * it } else 1f - v) else 0f
         val c = lerpO(a.center, b.center, e)
-        val arc = sin(PI.toFloat() * e.coerceIn(0f, 1f)) * 20f * density.density * (if (t.mine) -1f else 1f) + wind * 10f * density.density * (if (t.mine) 1f else -1f)
-        val k = 1f - .04f * wind
+        val arc = (if (dive) 0f else sin(PI.toFloat() * e.coerceIn(0f, 1f)) * 20f * density.density * (if (t.mine) -1f else 1f)) +
+            wind * 10f * density.density * (if (t.mine) 1f else -1f) - up * 12f * density.density
+        val k = 1f - .04f * wind + .06f * up
         val w = (a.width + (b.width - a.width) * e) * k; val h = (a.height + (b.height - a.height) * e) * k
         return Rect(c.x - w / 2, c.y - h / 2 + arc, c.x + w / 2, c.y + h / 2 + arc)
     }
