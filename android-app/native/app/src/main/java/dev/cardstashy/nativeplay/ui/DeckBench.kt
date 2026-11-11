@@ -776,29 +776,40 @@ private fun popScale(ui: BenchUi, name: String): Float {
 /** .strip: the Arena list row in our glass, the card's art washed in its colour, "4×", the full name, its cost or the seal that crafts it. */
 @Composable
 private fun Strip(m: BenchModel, r: BenchRow, ui: BenchUi, a: BenchActions, drag: Drag, lift: () -> Unit) {
+    val dragging = !r.fixed && drag.name == r.key && drag.from == "deck"
+    val chip = r.short > 0 && m.play && r.seal.isNotEmpty()
+    DeckStripRow(r, Modifier.scale(popScale(ui, r.key)).alpha(if (dragging) .35f else 1f),
+        Modifier.benchCard(drag, r.key, r.image, "deck", lift, lifts = !r.fixed) { if (r.fixed) a.open(r.key) else ui.peek = r.key }.rowPad(m, r, ui, a),
+        endFlush = chip) { if (chip) SealChip(r) { a.craft(r.key, r.short) } else if (r.emb.isNotEmpty()) EmbRow(r.emb) else ManaCost(r.cost, 15.dp) }
+}
+
+/**
+ * The deck list's row, drawn once for every screen that lists a deck's cards (the Bench's List, 0.4.59 T8's Quick Play top
+ * screen): the card's art washed in its colour, the "N×" chip (coral when copies are short), the full name and [end] (its cost).
+ * [outer] goes on before the row's shape (scale, fade), [inner] after it (taps, drags).
+ */
+@Composable
+internal fun DeckStripRow(r: BenchRow, outer: Modifier = Modifier, inner: Modifier = Modifier, endFlush: Boolean = false,
+                          end: @Composable () -> Unit = { if (r.emb.isNotEmpty()) EmbRow(r.emb) else ManaCost(r.cost, 15.dp) }) {
     val shape = RoundedCornerShape(10.dp)
     val t = tintOf(r.colors)
     val art = heroPainter(r.art.let(homeArt))
-    val dragging = !r.fixed && drag.name == r.key && drag.from == "deck"
-    Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).scale(popScale(ui, r.key)).alpha(if (dragging) .35f else 1f).clip(shape).background(Color(0xFF141720))
+    Row(outer.fillMaxWidth().heightIn(min = 44.dp).clip(shape).background(Color(0xFF141720))
         .border(1.dp, if (r.short > 0) Color(0x80FF7A6A) else t.edge, shape)
-        .benchCard(drag, r.key, r.image, "deck", lift, lifts = !r.fixed) { if (r.fixed) a.open(r.key) else ui.peek = r.key }.rowPad(m, r, ui, a).semantics { contentDescription = "${r.qty} ${r.name}" }, verticalAlignment = Alignment.CenterVertically) {
+        .then(inner).semantics { contentDescription = "${r.qty} ${r.name}" }, verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.weight(1f).heightIn(min = 44.dp)) {
             if (art != null) Image(art, null, Modifier.matchParentSize().alpha(.95f), contentScale = StripCrop, alignment = BiasAlignment(.24f, -.66f))
             Box(Modifier.matchParentSize().background(Brush.horizontalGradient(0f to t.a, .52f to t.b, 1f to Color(0x4D0E1016)))
                 .background(Brush.verticalGradient(0f to Color(0x14FFFFFF), .45f to Color.Transparent)))
             val short = r.short > 0
-            val chip = short && m.play && r.seal.isNotEmpty()
-            Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(start = 3.dp, end = if (chip) 0.dp else 7.dp), verticalAlignment = Alignment.CenterVertically,
+            Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(start = 3.dp, end = if (endFlush) 0.dp else 7.dp), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 Box(Modifier.widthIn(min = 30.dp).height(34.dp).clip(RoundedCornerShape(8.dp)).background(Color(0x73000000))
                     .border(1.dp, if (short) Color(0x80FF7A6A) else Color(0x4DE5C47E), RoundedCornerShape(8.dp)).padding(horizontal = 4.dp), contentAlignment = Alignment.Center) {
                     Text("${r.qty}×", style = f(13f, 800, if (short) B.Coral else B.Gold), maxLines = 1, softWrap = false)
                 }
                 FitName(r.name, Modifier.weight(1f).padding(vertical = 3.dp))
-                if (chip) SealChip(r) { a.craft(r.key, r.short) }
-                else if (r.emb.isNotEmpty()) EmbRow(r.emb)
-                else ManaCost(r.cost, 15.dp)
+                end()
             }
         }
     }
