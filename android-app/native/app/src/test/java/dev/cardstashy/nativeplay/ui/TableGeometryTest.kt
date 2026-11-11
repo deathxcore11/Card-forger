@@ -23,10 +23,12 @@ class TableGeometryTest {
         }
     }
 
-    @Test fun emptyRowsTakeTheirFullBand() {
+    @Test fun emptyRowsTakeTheirFullBandUnlessTappedTilesWouldMeet() {
         for ((w, h) in sizes) {
             val t = tiles(w, h, listOf(1), listOf(1), listOf(1), listOf(1))
-            assertEquals(rows(h).cpuFront.height, t.front, .01f)
+            val r = rows(h)
+            // The band's height, or less when two tapped creatures (turned 20 degrees) would touch across the divider (review fix).
+            assertEquals(minOf(r.cpuFront.height, (r.myFront.centre - r.cpuFront.centre) / (2 * TableGeometry.TAPPED_HALF)), t.front, .01f)
             assertEquals(t.front * 1.3f, t.frontW, .01f)
             assertTrue(t.back <= t.front * TableGeometry.LAND_MAX + .01f)
         }
@@ -55,6 +57,31 @@ class TableGeometryTest {
     @Test fun aLandIsNeverTallerThanSevenTenthsOfACreature() {
         val t = tiles(844f, 390f, List(14) { 1 }, List(14) { 1 }, listOf(3), listOf(4))
         assertTrue(t.back <= t.front * TableGeometry.LAND_MAX + .01f)
+    }
+
+    @Test fun tappedTilesOfNeighbouringRowsNeverMeet() {
+        // Review fix: a tapped tile turns 20 degrees and its corners reach past its row; two rows' tapped tiles still stay apart.
+        for ((w, h) in sizes) for (dual in listOf(false, true)) {
+            val r = rows(h, dual)
+            val t = tiles(w, h, listOf(1), listOf(1), listOf(1), listOf(1), dual)
+            val half = TableGeometry.TAPPED_HALF
+            assertTrue("$w×$h dual=$dual creatures", r.cpuFront.centre + half * t.front <= r.myFront.centre - half * t.front + .01f)
+            assertTrue("$w×$h dual=$dual CPU back", r.cpuBack.centre + half * t.back <= r.cpuFront.centre - half * t.front + .01f)
+            assertTrue("$w×$h dual=$dual your back", r.myFront.centre + half * t.front <= r.myBack.centre - half * t.back + .01f)
+            // An attacker steps toward the other side but, tapped, never reaches an upright tile there.
+            val step = TableGeometry.advance(r, t.front, 12f)
+            assertTrue("$w×$h dual=$dual attack", r.cpuFront.centre + step + half * t.front <= r.myFront.centre - t.front / 2 + .01f)
+            assertTrue(step >= 0f && step <= 12f)
+        }
+    }
+
+    @Test fun yourBackRowEndsBeforeAButtonAtItsHeight() {
+        // A narrower room for your back row alone (a button on the right) shrinks the back tiles for both sides alike.
+        val r = rows(540f)
+        val open = TableGeometry.tiles(r, 690f, 640f, listOf(1), listOf(1), listOf(1), listOf(4, 4, 4, 4, 4, 4, 2, 2))
+        val held = TableGeometry.tiles(r, 690f, 640f, listOf(1), listOf(1), listOf(1), listOf(4, 4, 4, 4, 4, 4, 2, 2), myBackRoom = 380f)
+        assertTrue(held.back < open.back)
+        assertTrue(TableGeometry.rowWidth(held.back, listOf(4, 4, 4, 4, 4, 4, 2, 2)) <= 380.5f)
     }
 
     @Test fun theStackLaneNarrowsTheBoard() {

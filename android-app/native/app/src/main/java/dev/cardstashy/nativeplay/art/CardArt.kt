@@ -205,6 +205,9 @@ object CardArt {
         index.putAll(art)
     }
 
+    /** Unit tests: forget every name the index, rarities and types learned, so one test's fake pictures never reach another's. */
+    internal fun clearForTest() = synchronized(index) { seedForTest(emptyList(), emptyMap()); index.clear(); rarities.clear(); types.clear() }
+
     /** The Scryfall identifier for a deck row: its exact printing when the row names one, else its name. */
     fun identifier(row: JsonObject, engineName: String): JsonObject = JsonObject().apply {
         val id = str(row, "printingId", "scryfallId")?.takeIf { UUID.matches(it) }

@@ -48,6 +48,13 @@ internal object TableGeometry {
     const val LANE = .3f
     /** A land tile is at most this share of a creature tile's height. */
     const val LAND_MAX = .7f
+    /**
+     * A tapped tile turns 20 degrees and shrinks to 94 % (Tile): half its upright bounding box is this share of its height
+     * (.94 x (cos 20 + 1.3 sin 20) / 2). Two neighbouring rows' tiles are never so tall that their tapped tiles meet.
+     */
+    const val TAPPED_HALF = .6506f
+    /** How far past its side a tapped tile's turned corner reaches, as a share of the tile's width (.94 x (cos 20 + sin 20 / 1.3) / 2 - .5). */
+    const val TAPPED_SIDE = .0653f
 
     fun shares(dualTop: Boolean) = if (dualTop) DUAL_TOP else ONE_SCREEN
 
@@ -90,9 +97,19 @@ internal object TableGeometry {
      * [cpuLane] / [myLane] say whether that back row has a second lane (lands and other permanents).
      */
     fun tiles(rows: Rows, room: Float, backRoom: Float, cpuFront: List<Int>, myFront: List<Int>, cpuBack: List<Int>, myBack: List<Int>,
-              cpuLane: Boolean = false, myLane: Boolean = false): Tiles {
-        val front = minOf(fitHeight(rows.cpuFront.height, room, cpuFront), fitHeight(rows.myFront.height, room, myFront))
-        val back = minOf(fitHeight(rows.cpuBack.height, backRoom, cpuBack, cpuLane), fitHeight(rows.myBack.height, backRoom, myBack, myLane), front * LAND_MAX)
+              cpuLane: Boolean = false, myLane: Boolean = false, myBackRoom: Float = backRoom): Tiles {
+        // Review fix: tapped tiles of two neighbouring rows never meet (TAPPED_HALF), creature to creature and creature to back row.
+        val clear = (rows.myFront.centre - rows.cpuFront.centre) / (2 * TAPPED_HALF)
+        val front = minOf(fitHeight(rows.cpuFront.height, room, cpuFront), fitHeight(rows.myFront.height, room, myFront), clear)
+        val backClear = minOf(rows.cpuFront.centre - rows.cpuBack.centre, rows.myBack.centre - rows.myFront.centre) / TAPPED_HALF - front
+        val back = minOf(fitHeight(rows.cpuBack.height, backRoom, cpuBack, cpuLane), fitHeight(rows.myBack.height, myBackRoom, myBack, myLane), front * LAND_MAX, backClear)
         return Tiles(front, back)
     }
+
+    /**
+     * How far an attacking tile steps toward the other side (at most [most]): never so far that, tapped, it reaches an upright tile
+     * in the row it faces.
+     */
+    fun advance(rows: Rows, front: Float, most: Float): Float =
+        (rows.myFront.centre - rows.cpuFront.centre - (TAPPED_HALF + .5f) * front - 1f).coerceIn(0f, most)
 }

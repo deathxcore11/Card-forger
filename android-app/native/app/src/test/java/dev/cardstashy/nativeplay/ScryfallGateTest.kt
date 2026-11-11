@@ -29,11 +29,13 @@ class ScryfallGateTest {
     private val clock = AtomicLong(1_000_000)
     private val starts = Collections.synchronizedList(mutableListOf<Long>())
 
-    @Before fun setUp() { ScryfallGate.now = { clock.get() }; ScryfallGate.pause = { clock.addAndGet(it) } }
-    @After fun tearDown() { ScryfallGate.reset(); CardArt.seedForTest(emptyList(), emptyMap()) }
+    @Before fun setUp() { ScryfallGate.reset(); ScryfallGate.now = { clock.get() }; ScryfallGate.pause = { clock.addAndGet(it) } }
+    @After fun tearDown() { ScryfallGate.reset(); CardArt.clearForTest() }
 
     private fun card(name: String) = JsonObject().apply {
         addProperty("name", name); addProperty("id", java.util.UUID.nameUUIDFromBytes(name.toByteArray()).toString())
+        // With its rarity, as Scryfall sends it: a card without one starts a background type lookup that would outlive the test.
+        addProperty("rarity", "common")
         add("image_uris", JsonObject().apply { addProperty("normal", "https://img/$name.jpg"); addProperty("art_crop", "https://crop/$name.jpg") })
     }
     /** Scryfall by name: every identifier with a name gets its card. */
@@ -44,13 +46,68 @@ class ScryfallGateTest {
     }
 
     @Test fun collectionCallsStartAtScryfallsPace() = runBlocking {
-        // The real clock here: four calls fired together take about 1.5 s.
+        // The real clock here: four calls fired together take about 1.5 s. One call first warms the IO threads, so the first
+        // measured start does not carry their start-up time (that would make the gaps look shorter than the gate made them).
         ScryfallGate.reset()
-        ScryfallGate.send = { b, _ -> starts += System.nanoTime() / 1_000_000; answer(b) }
         val body = """{"identifiers":[{"name":"Forest"}]}"""
+        ScryfallGate.send = { b, _ -> answer(b) }
+        assertNotNull(ScryfallGate.collection(body))
+        ScryfallGate.send = { b, _ -> starts += System.nanoTime() / 1_000_000; answer(b) }
         (0 until 4).map { async { ScryfallGate.collection(body) } }.awaitAll().forEach { assertNotNull(it) }
         assertEquals(4, starts.size)
         starts.sorted().zipWithNext().forEach { (a, b) -> assertTrue("calls ${b - a} ms apart", b - a >= ScryfallGate.GAP_MS - 5) }
+    }
+
+    @Test fun aBusyAnswerSeenWhileAnotherCallerWaitsHoldsThatCallerBack() = runBlocking {
+        // The real clock. A's first answer is busy for 1.5 s; B is already waiting for its start slot when that answer lands, and
+        // must not go out inside A's busy window (before, B took its slot first and A's wait was recorded only after B had gone).
+        ScryfallGate.reset()
+        val t0 = System.nanoTime() / 1_000_000
+        val log = Collections.synchronizedList(mutableListOf<Pair<String, Long>>())
+        var aAsked = 0
+        ScryfallGate.send = { b, _ ->
+            val who = if (b.contains("A-card")) "A" else "B"; val t = System.nanoTime() / 1_000_000 - t0
+            log += who to t
+            if (who == "A" && aAsked++ == 0) ScryfallGate.Reply(429, null, 1500) else answer(b)
+        }
+        val a = async(kotlinx.coroutines.Dispatchers.Default) { ScryfallGate.collection("""{"identifiers":[{"name":"A-card"}]}""") }
+        Thread.sleep(50)
+        val b = async(kotlinx.coroutines.Dispatchers.Default) { ScryfallGate.collection("""{"identifiers":[{"name":"B-card"}]}""") }
+        assertNotNull(a.await()); assertNotNull(b.await())
+        val busyAt = log.first { it.first == "A" }.second
+        val bAt = log.first { it.first == "B" }.second
+        assertTrue("B went out ${bAt - busyAt} ms after the busy answer (log $log)", bAt - busyAt >= 1500 - 5)
+    }
+
+    @Test fun aLongRetryAfterIsCappedSoTheMatchStillOpens() = runBlocking {
+        var n = 0
+        ScryfallGate.send = { b, _ -> starts += clock.get(); if (n++ == 0) ScryfallGate.Reply(429, null, 60_000) else answer(b) }
+        assertNotNull(ScryfallGate.collection("""{"identifiers":[{"name":"Forest"}]}"""))
+        assertEquals(2, starts.size)
+        assertTrue("waited ${starts[1] - starts[0]} ms", starts[1] - starts[0] <= ScryfallGate.MAX_WAIT_MS)
+    }
+
+    @Test fun aStalledNetworkGivesUpWithinTheBudgetAndTheRestGoQuiet() = runBlocking {
+        // Every call hangs until its timeout. The first call gives up inside the budget; the calls after it (the name fallback,
+        // the type lookup) do not wait out their own timeouts.
+        ScryfallGate.send = { _, t -> starts += clock.get(); clock.addAndGet(t.toLong()); throw java.io.IOException("timeout") }
+        val began = clock.get()
+        assertNull(ScryfallGate.collection("""{"identifiers":[{"name":"Forest"}]}"""))
+        val first = clock.get() - began
+        assertTrue("first call took $first ms", first <= ScryfallGate.BUDGET_MS)
+        val asked = starts.size
+        repeat(3) { assertNull(ScryfallGate.collection("""{"identifiers":[{"name":"Island"}]}""")) }
+        assertEquals("calls after a silent one wait for nothing", asked, starts.size)
+        assertEquals(first, clock.get() - began)
+    }
+
+    @Test fun aCallThatGivesUpHoldsNobodyBack() = runBlocking {
+        // A server error on the last try: nothing is asked again, so the next caller starts at its normal pace, not 4.8 s later.
+        ScryfallGate.send = { _, _ -> starts += clock.get(); ScryfallGate.Reply(503, null) }
+        assertNull(ScryfallGate.collection("""{"identifiers":[{"name":"Forest"}]}""", attempts = 1))
+        ScryfallGate.send = { b, _ -> starts += clock.get(); answer(b) }
+        assertNotNull(ScryfallGate.collection("""{"identifiers":[{"name":"Forest"}]}"""))
+        assertTrue("next call ${starts[1] - starts[0]} ms later", starts[1] - starts[0] <= ScryfallGate.GAP_MS)
     }
 
     @Test fun aBusyAnswerWaitsForRetryAfterAndAsksAgain() = runBlocking {

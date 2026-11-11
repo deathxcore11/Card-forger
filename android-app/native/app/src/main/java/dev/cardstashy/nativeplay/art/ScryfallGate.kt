@@ -46,29 +46,53 @@ object ScryfallGate {
     @Volatile internal var send: (String, Int) -> Reply = ::post
     @Volatile internal var now: () -> Long = System::currentTimeMillis
     @Volatile internal var pause: suspend (Long) -> Unit = { delay(it) }
-    internal fun reset() { send = ::post; now = System::currentTimeMillis; pause = { delay(it) }; nextStart = 0L }
+    internal fun reset() { generation++; send = ::post; now = System::currentTimeMillis; pause = { delay(it) }; nextStart.set(0L); quietUntil = 0L }
 
+    /** Longest wait the gate takes for one busy answer, whatever Retry-After says, so a match never waits on Scryfall for long. */
+    const val MAX_WAIT_MS = 4_000L
+    /** One collection call gives up once this long has passed since it began (a stalled network: the match must still open). */
+    const val BUDGET_MS = 25_000L
+    /** After a call that never got any answer, every call skips Scryfall for this long instead of waiting out its own timeouts. */
+    const val QUIET_MS = 30_000L
+
+    /** Callers take their start slot one at a time; a busy answer moves [nextStart] without the lock, so a caller already waiting sees it. */
     private val lock = Mutex()
-    private var nextStart = 0L
+    private val nextStart = java.util.concurrent.atomic.AtomicLong(0L)
+    @Volatile private var quietUntil = 0L
+    /** Unit tests: a call begun before [reset] (a background lookup one test left running) stops instead of reaching the next test's fakes. */
+    @Volatile private var generation = 0
 
     /**
      * POST [body] to /cards/collection and return its `data`, or null when Scryfall refused the request outright (a 4xx other
-     * than 429: asking again would not help) or did not answer after [attempts] tries. Calls start one at a time, [GAP_MS] apart;
-     * their answers may overlap.
+     * than 429: asking again would not help), did not answer after [attempts] tries, or [BUDGET_MS] ran out. Calls start one at a
+     * time, [GAP_MS] apart; their answers may overlap.
      */
     suspend fun collection(body: String, timeoutMs: Int = 10_000, attempts: Int = 4): JsonArray? {
+        val began = now(); val gen = generation
+        var silent = false
         for (attempt in 0 until attempts) {
+            if (gen != generation || now() < quietUntil) return null
+            // A try that could run past the budget is not started: a stalled network gets a quick no, and the rest of the app goes quiet.
+            if (attempt > 0 && now() - began + timeoutMs > BUDGET_MS) { if (silent) quietUntil = now() + QUIET_MS; return null }
             lock.withLock {
-                val wait = nextStart - now()
-                if (wait > 0) pause(wait)
-                nextStart = now() + GAP_MS
+                // Wait for the slot, and again if a busy answer moved it while this caller slept.
+                while (true) { val wait = nextStart.get() - now(); if (wait <= 0) break; pause(wait) }
+                nextStart.accumulateAndGet(now() + GAP_MS, ::maxOf)
             }
             val r = withContext(Dispatchers.IO) { runCatching { send(body, timeoutMs) }.getOrNull() }
-            if (r != null && r.status in 200..299) return r.body?.getAsJsonArray("data") ?: JsonArray()
+            if (gen != generation) return null
+            if (r != null && r.status in 200..299) { quietUntil = 0L; return r.body?.getAsJsonArray("data") ?: JsonArray() }
             if (r != null && r.status in 400..499 && r.status != 429) return null
-            // Busy (429), a server error or no answer: everyone waits, then this call is asked again.
-            val back = if (r?.status == 429) maxOf(1000L, r.retryAfterMs ?: 1000L) else 600L shl attempt
-            lock.withLock { nextStart = maxOf(nextStart, now() + back) }
+            val last = attempt == attempts - 1
+            silent = r == null
+            if (silent && last) { quietUntil = now() + QUIET_MS; return null }
+            // Busy (429), a server error or no answer: everyone waits, then this call is asked again. Busy says how long (at least
+            // 1 s, at most MAX_WAIT_MS); a call that is giving up moves nobody's start, except a busy one, which Scryfall asked for.
+            val busy = r?.status == 429
+            val back = if (busy) (r!!.retryAfterMs ?: 1000L).coerceIn(1000L, MAX_WAIT_MS) else minOf(600L shl attempt, MAX_WAIT_MS)
+            val giveUp = last || now() - began + back >= BUDGET_MS
+            if (!giveUp || busy) nextStart.accumulateAndGet(now() + back, ::maxOf)
+            if (giveUp) return null
         }
         return null
     }
