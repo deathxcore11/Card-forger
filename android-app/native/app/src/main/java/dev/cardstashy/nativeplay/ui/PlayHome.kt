@@ -1093,8 +1093,12 @@ private fun DeckTile(art: String?, name: String, meta: String, modifier: Modifie
     }
 }
 
+/**
+ * The Trunk shelf: your game cards from packs and rewards. It said "Your collection", which is the paper-card tracker's name, so
+ * 1,485 here and 28 there read as one count gone wrong (Randall 11 Nov). The two are separate on purpose (app.js 291-292).
+ */
 @Composable
-private fun Collection(s: JsonObject, act: PlayHomeActions) {
+internal fun Collection(s: JsonObject, act: PlayHomeActions) {
     val facts: Map<String, SetFacts.Set> = SetFacts.sets.collectAsState().value
     val owned = produceState(emptyMap<String, Int>(), s) { value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { LinkedHashMap<String, Int>().also { owned ->
         (s.get("cards") as? JsonArray)?.forEach { c -> ((c as? JsonObject)?.get("s") as? JsonArray)?.forEach { it.str()?.let { k -> owned[k] = (owned[k] ?: 0) + 1 } } }
@@ -1102,7 +1106,7 @@ private fun Collection(s: JsonObject, act: PlayHomeActions) {
     val rows = owned.map { (code, have) -> val f = facts[code]; Triple(code, f, have) }
         .sortedWith(compareByDescending<Triple<String, SetFacts.Set?, Int>> { it.second?.released ?: "" }.thenBy { it.second?.name ?: it.first }).take(4)
     val total = (s.get("cards") as? JsonArray)?.size() ?: 0
-    Shelf("Your collection", "${"%,d".format(total)} cards", { act.view("collection") }) {
+    Shelf("Trunk", "${"%,d".format(total)} cards", { act.view("collection") }) {
         if (rows.isEmpty()) Text("Open a pack and your first set starts filling in.", style = TextStyle(fontFamily = P.Sans, fontSize = 15.sp, color = P.PageFaint))
         Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             rows.forEach { (code, f, have) ->

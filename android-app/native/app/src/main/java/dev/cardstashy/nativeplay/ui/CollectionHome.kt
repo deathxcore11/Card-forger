@@ -271,7 +271,8 @@ private fun ValueCase(m: CollectionHomeModel, act: CollectionHomeActions) {
             }
         }) {
         Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-            if (v.copies.isNotBlank()) CaseFact("Cards", v.copies, big = true)
+            // The paper-card tracker's count, never the Trunk's game cards (Randall 11 Nov: "Paper cards").
+            if (v.copies.isNotBlank()) CaseFact("Paper cards", v.copies, big = true)
             if (v.decks.isNotBlank()) CaseFact("Decks", v.decks, big = true)
         }
         if (v.explanation.isNotBlank()) CaseFact("How it's counted", v.explanation)
@@ -501,7 +502,7 @@ private fun Chip(text: String, size: Float, ls: Float = 0f) {
 // ---------------------------------------------------------------- your collection at a glance (homeValue)
 
 @Composable
-private fun ValueRow(v: HomeValue, screen: Dp, act: CollectionHomeActions) {
+internal fun ValueRow(v: HomeValue, screen: Dp, act: CollectionHomeActions) {
     val roomy = screen >= 700.dp
     val line = Color(0x24FFFFFF)
     Row(Modifier.fillMaxWidth().drawBehind { drawRect(line, Offset(0f, size.height - 1.dp.toPx()), Size(size.width, 1.dp.toPx())) }
@@ -514,7 +515,7 @@ private fun ValueRow(v: HomeValue, screen: Dp, act: CollectionHomeActions) {
             if (v.movement.isNotEmpty()) Text(v.movement, style = sans(11f, FontWeight.SemiBold, if (v.direction == "flat") Site.Muted else Site.Text, lh = 1.55f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy((screen.value * .04f).coerceIn(14f, 44f).dp)) {
-            Count(v.copies, "cards", roomy, screen) { act.go("#collection") }
+            Count(v.copies, "paper cards", roomy, screen) { act.go("#collection") }
             Count(v.decks, "decks", roomy, screen) { act.go("#decks") }
         }
     }
