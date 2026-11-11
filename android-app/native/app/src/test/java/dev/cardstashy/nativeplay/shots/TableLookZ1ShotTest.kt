@@ -108,14 +108,14 @@ class TableLookZ1ShotTest {
             // Every permanent lies on the board.
             for ((c, r) in tiles) assertTrue("$tag: ${c.name} $r off the board ${z.board.px()}", r.inside(z.board.px()))
             // The strips hold the seats, the CPU's hand, the piles, the menu's phase box and the stack card; none of it is on the board.
-            val left = listOfNotNull(a.rects["cpuseat"], a.rects["cpuhand"]) + st.players.mapNotNull { a.rects["orb${it.id}"] } + st.players.mapNotNull { a.rects["piles${it.id}"] }
+            val left = listOfNotNull(a.rects["cpuseat"], a.rects["cpuhandwords"]) + st.players.mapNotNull { a.rects["orb${it.id}"] } + st.players.mapNotNull { a.rects["piles${it.id}"] }
             for (r in left) assertTrue("$tag: $r outside the left strip ${z.leftStrip.px()}", r.inside(z.leftStrip.px()))
             val right = listOfNotNull(a.rects["phasetrack"], a.rects["stackcard"], a.rects["stacklabel"])
             assertTrue("$tag: no phase box", a.rects["phasetrack"] != null)
             for (r in right) assertTrue("$tag: $r outside the right strip ${z.rightStrip.px()}", r.inside(z.rightStrip.px()))
             a.rects["stackcard"]?.let { assertTrue("$tag: the stack card $it takes board width ${z.board.px()}", it.left > z.board.px().right) }
             // No tile under any of the chrome.
-            val chrome = listOf("cpuseat", "cpuhand", "phasetrack", "stackcard", "stacklabel", "gold", "quiet", "undo", "tools", "handchip", "turncount", "turnring",
+            val chrome = listOf("cpuseat", "cpuhandwords", "phasetrack", "stackcard", "stacklabel", "gold", "quiet", "undo", "tools", "handchip", "turncount", "turnring",
                 "menu", "turn", "askline", "thinkdots") + st.players.flatMap { listOf("orb${it.id}", "piles${it.id}") }
             for (k in chrome) a.rects[k]?.let { box -> for ((c, r) in tiles) assertTrue("$tag: ${c.name} $r under $k $box", !r.deflate(1f).overlaps(box)) }
             // Z1 review: the buttons and Undo keep off every zone box but their own, not only off the tiles: Undo in its slot in the right

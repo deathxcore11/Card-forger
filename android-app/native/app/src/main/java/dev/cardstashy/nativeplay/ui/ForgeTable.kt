@@ -560,7 +560,10 @@ fun ForgeBoard(
             val profile by dev.cardstashy.nativeplay.account.Account.profile.collectAsState()
             // Z4 review: in a pod the rail draws the opponents along the board's top (each chip its own life and hand), as before Z4.
             if (pod) PodRail(st, cpu.id, live, intents, { podFocus.seat = it; picks++ }, W, d, x = zones.board.x.dp, width = zones.board.w.dp)
-            if (!pod) PlayerSquare(cpu, zones.cpuSquare, cpu.name, st.activePlayer == cpu.id, d, handKey = "cpuhand",
+            // Mobile table M12: the CPU's hand as a fan of card backs at the top edge, one back per card; the cast card and the
+            // drawn card start and end there ("cpuhand"), so the square's "Hand N" words carry their own key.
+            if (!pod) CpuHandFan(cpu.handCount, zones, d)
+            if (!pod) PlayerSquare(cpu, zones.cpuSquare, cpu.name, st.activePlayer == cpu.id, d, handKey = "cpuhandwords",
                 portrait = { a, m, lifeSp -> Medallion(cpu, mine = false, live && cpu.id in st.selection.players, cpu.id in st.selection.chosenPlayers, m.anchorRect("cpuseat"), d,
                     side = a, lifeSp = lifeSp, onOpen = commanderOf(cpu)?.let { c -> { onInspect(c) } }) { intents.player(cpu.id) } },
                 grave = { w, h, sp -> GravePile(cpu, w, h, sp, d, onInspect, onGrave = openGrave) })
@@ -1725,6 +1728,46 @@ internal const val SQUARE_H = 83.8f
 
 /** How much bigger than the mockup's phone square a [w] × [h] dp square is (its contents grow with it; smaller on the smallest phone). */
 internal fun squareScale(w: Float, h: Float): Float = minOf(w / SQUARE_W, h / SQUARE_H)
+
+/** M12: the CPU's fan of backs. A back's width on a phone and on a big screen (dp at the table's scale), and where the fan sits. */
+internal object CpuFan {
+    const val W_PHONE = 40f; const val W_BIG = 52f
+    /** A back's height over its width. */
+    const val TALL = 1.39f
+    /** The fan's middle, as a share of the board's width from its left edge. */
+    const val AT_PHONE = .66f; const val AT_BIG = .6f
+    /** Each back steps this share of its width; a full hand closes up so the fan is never wider than [SPAN] of the board. */
+    const val STEP = .62f; const val SPAN = .5f
+    /** A back's middle sits this share of its height below the top edge, so a little over half of it shows. */
+    const val DROP = .08f
+    const val TILT = 2.9f; const val ARC = .9f
+    fun step(n: Int, w: Float, boardW: Float): Float = if (n <= 1) 0f else minOf(w * STEP, (boardW * SPAN - w) / (n - 1)).coerceAtLeast(2f)
+}
+
+/**
+ * Mobile table M12 (specs/mobile-table-arena-parity-brief.md; seen in the Arena phone recording): the CPU's hand at the top edge
+ * as a fan of card backs, one per card Forge counts in its hand, so it grows on a draw and a back leaves when the CPU plays. The
+ * whole fan is "cpuhand" (where the CPU's cast leaves from and its draw lands). It takes no taps. A revealed card turned face up
+ * in the fan waits for the host to say which cards are revealed.
+ */
+@Composable
+private fun CpuHandFan(n: Int, zones: ZoneLayout.Zones, d: Du) = with(d) {
+    if (n <= 0) return@with
+    val w = if (zones.phone) CpuFan.W_PHONE else CpuFan.W_BIG; val h = w * CpuFan.TALL
+    val step = CpuFan.step(n, w, zones.board.w / u)
+    val span = step * (n - 1) + w
+    val cx = zones.board.x.dp + zones.board.w.dp * (if (zones.phone) CpuFan.AT_PHONE else CpuFan.AT_BIG)
+    val top = zones.window.y.dp + (h * (CpuFan.DROP - .5f)).du
+    // Under the table's cards: a permanent in the CPU's back row is never covered by a back.
+    Box(Modifier.zIndex(-1f).offset(x = cx - span.du / 2, y = top).size(span.du, h.du).anchorRect("cpuhand").semantics { contentDescription = "CPU's hand: $n ${if (n == 1) "card" else "cards"}" }) {
+        for (i in 0 until n) {
+            val k = i - (n - 1) / 2f
+            Box(Modifier.offset(x = (step * i).du, y = (k * k * CpuFan.ARC).du).size(w.du, h.du).graphicsLayer { rotationZ = -k * CpuFan.TILT }
+                .drawBehind { drawRoundRect(Color(0x99000000), topLeft = Offset(0f, 3.dp.toPx()), size = size, cornerRadius = CornerRadius(4.dp.toPx())) }
+                .clip(RoundedCornerShape(4.du)).anchorRect("cpuback$i")) { CardBack(Modifier.fillMaxSize()) }
+        }
+    }
+}
 
 /**
  * A player's glass square (mockup .plate, lines 51 to 66 and 306 to 314) filling [box]: the name at the top, the round portrait

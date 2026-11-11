@@ -118,8 +118,9 @@ class TableLookZ4ShotTest {
                 // The gold edge on the active player's square only.
                 assertEquals("$tag: ${p.name}'s gold edge", p.id == active, a.sizes["squareactive${p.id}"] == 1f)
             }
-            // The CPU's hand is its words in its square (the travelling cast and the draw start there), no backs under it.
-            val cpuHand = a.rects["cpuhand"]; assertNotNull("$tag: no CPU hand words", cpuHand)
+            // The CPU's hand is its words in its square. Mobile table M12 (the newer brief): the fan of backs at the top edge is
+            // "cpuhand" now (MobileM12ShotTest), so the words carry their own key.
+            val cpuHand = a.rects["cpuhandwords"]; assertNotNull("$tag: no CPU hand words", cpuHand)
             assertTrue("$tag: CPU hand $cpuHand outside its square", cpuHand!!.inside(a.rects.getValue("square${st.cpu.id}")))
             // The picture: the active square's top edge is gold, the other's a faint hairline.
             val bmp = BitmapFactory.decodeFile(path)
