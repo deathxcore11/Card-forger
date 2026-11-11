@@ -32,7 +32,18 @@ object Director {
         val trig: Trig? = null,
         /** Beat 3: the resolve of a trigger and what it changed, landed on the changed cards. */
         val result: Resolution? = null,
-    ) { val held get() = kind == Kind.THINK || beat != null || banner != null || trig != null || result != null }
+        /** 0.4.59 T5, the cast travels: the card itself moving on this step (hand to stack, its rest, stack to slot or host, a land to its group). */
+        val travel: Travel? = null,
+    ) { val held get() = kind == Kind.THINK || beat != null || banner != null || trig != null || result != null || travel != null }
+
+    /**
+     * 0.4.59 T5: one leg of a card's travel. [TAPS] the paying lands ([taps], in order) turn one by one; [TO_STACK] the card goes from
+     * its hand (yours) or the CPU seat to the stack lane and grows to the stack size; [REST] it lies on the stack with its rim;
+     * [TO_SLOT], [TO_HOST] (an aura onto its creature) and [TO_GROUP] (a land, which skips the stack) end at the anchor [toKey].
+     */
+    enum class Leg { TAPS, TO_STACK, REST, TO_SLOT, TO_HOST, TO_GROUP }
+    data class Travel(val cardId: Int?, val name: String?, val mine: Boolean, val leg: Leg, val toKey: String?, val ms: Long,
+                      val stackId: Int? = null, val taps: List<Int> = emptyList(), val targets: List<Ref> = emptyList())
 
     /** A trigger going on the stack (Forge's "trigger" event): who, from which card, at what; [resolvedHere] its resolve is in the same poll. */
     data class Trig(val stackId: Int?, val sourceId: Int?, val sourceName: String?, val controller: Int?, val yours: Boolean,
@@ -145,6 +156,24 @@ object Director {
         val out = ArrayList<Step>()
         var explainedLife = false
         fun thinkFor(d: Decision, turn: Int) { if (thinking) out += Step(Kind.THINK, think!!.next(d, turn, fast), 0, cpu = true) }
+        // T5: the lands each side tapped since the board last shown (once per side per poll: the first cast pays with them).
+        val tapsLeft = st.players.associate { p -> p.id to p.battlefield.filter { c -> c.isLand && c.tapped && !c.attacking &&
+            before?.card(c.id)?.let { it.zone == "Battlefield" && !it.tapped } == true }.map { it.id } }.toMutableMap()
+        // Cards whose cast is in this poll: their move from the stack is part of their travel.
+        val castHere = events.filter { it.type == "cast" && it.source != null }.associate { it.source!!.id to (it.player == me) }
+        /** Whose card is travelling: its controller on the board, else who cast it in this poll. */
+        fun mineOf(id: Int) = st.card(id)?.controller?.takeIf { it >= 0 }?.let { it == me } ?: castHere[id] ?: false
+        val toHost = HashSet<Int>()
+        /** The three legs of a cast (taps, to the stack, the rest); the rest carries [beat] and the read time [restMs]. */
+        fun castLegs(e: GameEvent, mine: Boolean, restMs: Long, beat: Beat?) {
+            val id = e.source?.id; val name = e.source?.name
+            val taps = e.player?.let { tapsLeft.remove(it) }.orEmpty()
+            if (taps.isNotEmpty()) { val ms = tapsMs(taps.size)
+                out += Step(Kind.CAST, ms, ms, cpu = !mine, cardId = id, cardName = name, travel = Travel(id, name, mine, Leg.TAPS, null, ms, e.stackId, taps)) }
+            out += Step(Kind.CAST, TO_STACK_MS, TO_STACK_MS, cpu = !mine, cardId = id, cardName = name, travel = Travel(id, name, mine, Leg.TO_STACK, "stackcard", TO_STACK_MS, e.stackId, targets = e.targets))
+            out += Step(Kind.CAST, restMs, STACK_HOLD_MS, focal = true, cpu = !mine, cardId = id, cardName = name, beat = beat,
+                travel = Travel(id, name, mine, Leg.REST, "stackcard", restMs, e.stackId, targets = e.targets))
+        }
         // Whose turn each event is in: a turn event in the batch changes it; before one, two-player turns alternate.
         val firstTurn = events.firstOrNull { it.type == "turn" }
         var active: Int? = if (firstTurn != null) st.players.map { it.id }.firstOrNull { it != firstTurn.player } else st.activePlayer
@@ -158,7 +187,12 @@ object Director {
                 "land" -> if (cpu(e.player)) {
                     thinkFor(Decision.LAND, e.turn)
                     out += Step(Kind.LAND, 850, 550, "CARD-005", focal = true, cpu = true, cardId = e.card?.id, cardName = e.card?.name,
-                        beat = Beat(Beat.Kind.LAND, "CPU plays ${e.card?.name ?: "a land"}", e.card?.id, e.card?.name, null))
+                        beat = Beat(Beat.Kind.LAND, "CPU plays ${e.card?.name ?: "a land"}", e.card?.id, e.card?.name, null),
+                        travel = Travel(e.card?.id, e.card?.name, false, Leg.TO_GROUP, e.card?.id?.let { "c$it" }, TO_GROUP_MS))
+                } else if (e.card != null) {
+                    // T5 item 6: your land skips the stack, hand to its group.
+                    out += Step(Kind.LAND, TO_GROUP_MS, TO_GROUP_MS, cardId = e.card.id, cardName = e.card.name,
+                        travel = Travel(e.card.id, e.card.name, true, Leg.TO_GROUP, "c${e.card.id}", TO_GROUP_MS))
                 }
                 "cast" -> if (cpu(e.player)) {
                     val targeted = e.targets.isNotEmpty()
@@ -168,12 +202,12 @@ object Director {
                     val hits = touchesMe(e.targets)
                     val life = if (hits) lifeChange(st, events) else null
                     if (life != null) explainedLife = true
-                    // payment 340 + the card's flight 430 + its arrows 300 + read time on the stack (shorter before your prompt).
-                    val ms = 340 + 430 + (if (targeted) 300 else 0) + if (waiting) 500 else 850
-                    out += Step(Kind.CAST, ms.toLong(), 1000, "CARD-008", focal = true, cpu = true, cardId = e.source?.id, cardName = e.source?.name,
-                        beat = Beat(if (hits) Beat.Kind.AFFECTS_YOU else Beat.Kind.ACTION, "CPU casts ${e.source?.name ?: "a spell"}", e.source?.id, e.source?.name,
+                    // T5: its lands tap, the card goes from the CPU seat to the stack (440), then rests there with the caption: its
+                    // arrows 300 + read time (shorter before your prompt), never under the 900 ms rest.
+                    val rest = maxOf(STACK_HOLD_MS, (if (targeted) 300L else 0L) + if (waiting) 500L else 850L)
+                    castLegs(e, mine = false, restMs = rest, beat = Beat(if (hits) Beat.Kind.AFFECTS_YOU else Beat.Kind.ACTION, "CPU casts ${e.source?.name ?: "a spell"}", e.source?.id, e.source?.name,
                             if (hits) targetText(st, e.targets) else null, life?.first, life?.second))
-                } else out += Step(Kind.CAST, 430, 300, "CARD-008", cardId = e.source?.id, cardName = e.source?.name)
+                } else castLegs(e, mine = true, restMs = STACK_HOLD_MS, beat = null)
                 "trigger" -> {
                     // Beats 1 and 2 for every trigger, yours or the CPU's: the source lifts and rings; when Forge resolved it in this same
                     // poll its stack item is put up and held to read (900 ms), since no snapshot ever showed it.
@@ -237,10 +271,26 @@ object Director {
                 "life" -> out += Step(Kind.LIFE, 360 + 90L * kotlin.math.abs((e.lifeTo ?: 0) - (e.lifeFrom ?: 0)).coerceAtMost(20), 360,
                     if ((e.lifeTo ?: 0) < (e.lifeFrom ?: 0)) "CMB-005" else "CMB-007", focal = e.player == me)
                 "counters" -> groupOrAdd(out, Step(Kind.COUNTERS, 360, 200, "CARD-027", cardId = e.card?.id))
-                "attach" -> out += Step(Kind.ATTACH, 300, 200, "CARD-028", cardId = e.card?.id)
+                "attach" -> {
+                    // T5 item 5: an aura cast in this poll goes from the stack to its host, unless its move from the stack already did.
+                    val id = e.card?.id; val host = id?.let { st.card(it)?.attachedTo }
+                    out += if (id != null && host != null && id in castHere && toHost.add(id))
+                        Step(Kind.ATTACH, TO_HOST_MS, TO_HOST_MS, cardId = id, cardName = e.card.name, cpu = !mineOf(id),
+                            travel = Travel(id, e.card.name, mineOf(id), Leg.TO_HOST, "c$host", TO_HOST_MS))
+                    else Step(Kind.ATTACH, 300, 200, "CARD-028", cardId = id)
+                }
                 "shuffle" -> out += Step(Kind.SHUFFLE, 400, 200, "CARD-024")
                 "draw" -> groupOrAdd(out, if (e.player == me) Step(Kind.DRAW, 460, 300, "CARD-001", cardId = e.card?.id) else Step(Kind.DRAW, 770, 250, "CARD-002"))
-                "zone" -> zoneStep(e, me)?.let { if (it.kind == Kind.TOKEN || it.kind == Kind.DRAW) groupOrAdd(out, it) else out += it }
+                "zone" -> {
+                    val id = e.card?.id
+                    // T5 items 4 and 5: a spell leaving the stack for the battlefield goes to its slot, or an aura to its host.
+                    if (e.from == "Stack" && e.to == "Battlefield" && id != null && !e.token) {
+                        val c = st.card(id); val host = c?.attachedTo
+                        val travel = if (host != null) { toHost += id; Travel(id, e.card.name ?: c.name, mineOf(id), Leg.TO_HOST, "c$host", TO_HOST_MS) }
+                            else Travel(id, e.card.name ?: c?.name, mineOf(id), Leg.TO_SLOT, "c$id", TO_SLOT_MS)
+                        out += Step(Kind.ENTER, travel.ms, travel.ms, focal = true, cpu = !travel.mine, cardId = id, cardName = travel.name, travel = travel)
+                    } else zoneStep(e, me)?.let { if (it.kind == Kind.TOKEN || it.kind == Kind.DRAW) groupOrAdd(out, it) else out += it }
+                }
             }
         }
         // Damage or drain to you that no cast above explains (combat, a trigger resolving): one red caption.
@@ -266,6 +316,24 @@ object Director {
      * least what is left of its [STACK_HOLD_MS] read since [seenAt], and never less than the pass's own [base] delay.
      */
     fun passWait(seenAt: Long?, now: Long, base: Long): Long? = seenAt?.let { maxOf(base, STACK_HOLD_MS - (now - it)) }
+
+    /**
+     * 0.4.59 T5: the auto-pass wait with [top] on top of the stack, for every item (a spell rests 900 ms too, not only a trigger):
+     * [base] with nothing there, null while it is not on screen yet ([shown] the items the shown board has), else [passWait].
+     */
+    fun passWaitFor(top: Int?, seenAt: Map<Int, Long>, shown: Collection<Int>, now: Long, base: Long): Long? =
+        if (top == null) base else passWait(seenAt[top]?.takeIf { top in shown }, now, base)
+
+    /** T5 item 1: the paying lands tap one by one, [TAP_GAP_MS] apart, each turning in [TAP_TURN_MS]. */
+    const val TAP_GAP_MS = 70L
+    const val TAP_TURN_MS = 140L
+    fun tapsMs(n: Int): Long = if (n <= 0) 0 else TAP_GAP_MS * (n - 1) + TAP_TURN_MS
+    /** T5 item 2: hand (or the CPU seat) to the stack lane, ease-out, growing to the stack size. */
+    const val TO_STACK_MS = 440L
+    /** T5 items 4 to 6: stack to its slot, stack to its host, a land from the hand to its group. */
+    const val TO_SLOT_MS = 380L
+    const val TO_HOST_MS = 380L
+    const val TO_GROUP_MS = 380L
 
     /** Beat 1, the source's lift and ring (sTrig: 180 up, 260 held, 180 down; the ring 520 ms). */
     const val SOURCE_MS = 520L
@@ -441,6 +509,9 @@ data class TriggerMoment(val phase: Phase, val sourceId: Int?, val sourceName: S
                          val result: Director.Resolution? = null, val line: String? = null, val key: Long = 0) {
     enum class Phase { SOURCE, STACK, RESULT }
 }
+
+/** 0.4.59 T5: the leg of a card's travel the table is drawing now, from [startedAt] (elapsedRealtime); [key] is new per leg. */
+data class TravelMoment(val travel: Director.Travel, val startedAt: Long, val key: Long)
 
 /** The CPU thinking right now (the dots by its portrait, the lifted card back in its hand), read by the table. */
 object CpuThink {

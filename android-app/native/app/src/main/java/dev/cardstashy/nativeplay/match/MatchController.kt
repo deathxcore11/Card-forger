@@ -53,12 +53,16 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         const val GAP_MS = 250L; const val BACKLOG = 3; const val STEP_GAP_MS = 120L
         const val INTO_HAND_MS = 600L; const val QUIET_MS = 1000L; const val FIRST_BANNER_MS = 1600L; const val BANNER_MS = 1400L
         private const val TAG = "MatchController"
+        /** T5: the legs that end on the board (the card shows there once its leg starts). */
+        private val LANDING = setOf(Director.Leg.TO_SLOT, Director.Leg.TO_HOST, Director.Leg.TO_GROUP)
     }
 
     private val _shown = MutableStateFlow<MatchState?>(null); val shown: StateFlow<MatchState?> = _shown
     private val _beat = MutableStateFlow<Beat?>(null); val beat: StateFlow<Beat?> = _beat
     /** A TRIGGER SHOWS ITSELF: the trigger beat the table draws now (source lift, its stack item held, the result landing). */
     private val _trigger = MutableStateFlow<TriggerMoment?>(null); val trigger: StateFlow<TriggerMoment?> = _trigger
+    /** 0.4.59 T5, the cast travels: the leg the table draws now (taps, to the stack, the rest, to its slot, host or group). */
+    private val _travel = MutableStateFlow<TravelMoment?>(null); val travel: StateFlow<TravelMoment?> = _travel
     private var momentKey = 0L
     /** Stack ids Forge reported as triggers ("trigger" events), so the table can call them "Trigger" and hold them to read. */
     private val triggerIds = HashSet<Int>()
@@ -286,8 +290,10 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         skip = null
     }
 
-    private fun masked(st: MatchState, hidden: Set<Int>, hiddenStack: Set<Int> = emptySet()): MatchState = if (hidden.isEmpty() && hiddenStack.isEmpty()) st else st.copy(
-        players = st.players.map { p -> p.copy(battlefield = p.battlefield.filter { it.id !in hidden }) },
+    /** [st] without the [hidden] cards (board and stack), the [field] cards (board only: their travel has not landed) and the [hiddenStack] items; [untapped] lands are drawn ready until their taps. */
+    private fun masked(st: MatchState, hidden: Set<Int>, hiddenStack: Set<Int> = emptySet(), field: Set<Int> = emptySet(), untapped: Set<Int> = emptySet()): MatchState =
+        if (hidden.isEmpty() && hiddenStack.isEmpty() && field.isEmpty() && untapped.isEmpty()) st else st.copy(
+        players = st.players.map { p -> p.copy(battlefield = p.battlefield.filter { it.id !in hidden && it.id !in field }.map { if (it.id in untapped) it.copy(tapped = false) else it }) },
         stack = st.stack.filter { it.source?.id !in hidden && it.id !in hiddenStack })
 
     /** [st] with [held] stack items on top: a trigger Forge resolved in the poll stays up until its result lands (or, never seen, for its read). */
@@ -329,7 +335,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     fun hold(reason: String, on: Boolean) { if (on) holds.add(reason) else holds.remove(reason) }
     private val timer = TurnClock.Timer(
         snapshot = { latest?.takeIf { (_stage.value == Stage.PLAYING || _stage.value == Stage.MULLIGAN) && _noResult.value == null } },
-        paused = { paused.value || scene.value || holds.isNotEmpty() || _beat.value != null || _trigger.value != null || _think.value != null || _sending.value || _shown.value?.revision != latest?.revision },
+        paused = { paused.value || scene.value || holds.isNotEmpty() || _beat.value != null || _trigger.value != null || _travel.value != null || _think.value != null || _sending.value || _shown.value?.revision != latest?.revision },
         act = { w, st, done ->
             autoAnswering = true
             try {
@@ -435,12 +441,51 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                 val pending = steps.mapNotNull { it.result }.toMutableList()
                 // Top first: the items that resolve first in this poll.
                 val held = pending.flatMap { r -> r.stackIds.mapNotNull { id -> before?.stack?.firstOrNull { it.id == id } } }.toMutableList()
-                fun board() = withStack(masked(Director.beforeResults(st, before, pending), hidden, hiddenStack), held)
+                // T5, the cast travels: a card on its way stays off the board until its leg to its slot, host or group starts; a cast's
+                // item stays off the stack until it goes up; the lands that paid for it look ready until they tap.
+                val legs = steps.mapNotNull { it.travel }
+                val field = legs.filter { it.leg in LANDING }.mapNotNull { it.cardId }.filter { it !in bfBefore && st.card(it)?.zone == "Battlefield" }.toMutableSet()
+                hiddenStack += legs.filter { it.leg == Director.Leg.TO_STACK }.mapNotNull { it.stackId }
+                val untapped = legs.flatMap { it.taps }.toMutableSet()
+                /** Items put up for a cast Forge already resolved in this poll (none of its snapshots showed it): card id to item. */
+                val putUp = HashMap<Int, dev.cardstashy.nativeplay.engine.StackItem>()
+                fun board() = withStack(masked(Director.beforeResults(st, before, pending), hidden, hiddenStack, field, untapped), held)
+                fun startLeg(t: Director.Travel, at: Int) {
+                    when (t.leg) {
+                        Director.Leg.TAPS -> untapped -= t.taps.toSet()
+                        Director.Leg.TO_STACK -> {
+                            t.stackId?.let { hiddenStack.remove(it) }
+                            t.cardId?.let { hidden.remove(it) }
+                            val id = t.cardId
+                            if (id != null && st.stack.none { it.source?.id == id } && held.none { it.source?.id == id }) {
+                                val src = st.card(id) ?: before?.card(id)
+                                val item = dev.cardstashy.nativeplay.engine.StackItem(t.stackId ?: -(++momentKey).toInt(), src?.text.orEmpty(), src?.copy(zone = "Stack"),
+                                    if (t.mine) st.viewer else src?.controller?.takeIf { it >= 0 } ?: st.cpu.id, targets = t.targets)
+                                held.add(0, item); putUp[id] = item
+                            }
+                        }
+                        Director.Leg.REST -> {}
+                        Director.Leg.TO_SLOT, Director.Leg.TO_HOST, Director.Leg.TO_GROUP -> t.cardId?.let { id ->
+                            field.remove(id); hidden.remove(id)
+                            putUp.remove(id)?.let { item -> held.removeAll { it === item } }
+                        }
+                    }
+                    _travel.value = TravelMoment(t, SystemClock.elapsedRealtime(), ++momentKey)
+                    show(board())
+                }
+                fun endLeg(t: Director.Travel, at: Int) {
+                    _travel.value = null
+                    // A spell that does not land on the board (an instant, a sorcery) leaves the stack after its rest.
+                    if (t.leg == Director.Leg.REST) t.cardId?.let { id ->
+                        if (steps.drop(at + 1).none { s -> s.travel?.cardId == id && s.travel.leg in LANDING }) putUp.remove(id)?.let { item -> held.removeAll { it === item }; show(board()) }
+                    }
+                }
                 show(board())
                 steps.forEachIndexed { i, step ->
                     val waiting = latest?.waitingOnMe == true
                     val ms = Director.lengthOf(step, waiting, steps.drop(i).sumOf { it.ms })
-                    TableLog.line("step ${i + 1}/${steps.size} ${step.kind} ${step.cardName ?: step.beat?.title ?: step.banner?.text ?: ""} ${ms}ms cpu=${step.cpu} hidden=${hidden.size}")
+                    TableLog.line("step ${i + 1}/${steps.size} ${step.kind}${step.travel?.let { " ${it.leg}" } ?: ""} ${step.cardName ?: step.beat?.title ?: step.banner?.text ?: ""} ${ms}ms cpu=${step.cpu} hidden=${hidden.size}")
+                    step.travel?.let { startLeg(it, i) }
                     when {
                         step.kind == Director.Kind.THINK -> think(ms, st.cpu.handCount)
                         step.banner != null -> { _banner.value = step.banner; hold(ms); _banner.value = null }
@@ -488,8 +533,11 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                             _trigger.value = null
                             delay(STEP_GAP_MS)
                         }
+                        step.travel != null -> hold(ms)
                     }
+                    step.travel?.let { endLeg(it, i) }
                 }
+                _travel.value = null
                 _trigger.value = null
                 show(st)
             }
@@ -716,11 +764,10 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         // yet on screen (its source is still lifting): nothing is passed now; the show that puts it up schedules again.
         var wait = d.delayMs
         val top = (latest?.takeIf { it.revision == st.revision } ?: st).stack.firstOrNull()
-        if (top != null && top.id in triggerIds) {
-            val w = Director.passWait(stackSeenAt[top.id]?.takeIf { st.stack.any { it.id == top.id } }, SystemClock.elapsedRealtime(), wait)
-            if (w == null) { Log.i(TableLog.TAG, "decide: trigger ${top.id} not on screen yet, pass waits"); return }
-            wait = w
-        }
+        // 0.4.59 T5: every item, spells too: a cast rests on the stack at least 900 ms even when nobody can respond.
+        val w = Director.passWaitFor(top?.id, stackSeenAt, st.stack.map { it.id }, SystemClock.elapsedRealtime(), wait)
+        if (w == null) { Log.i(TableLog.TAG, "decide: stack item ${top?.id} not on screen yet, pass waits"); return }
+        wait = w
         autoJob = scope.launch(Dispatchers.Main) {
             delay(wait)
             if (_live.value && latest?.revision == st.revision) { autoAnswering = true; try { if (op == "cancel") cancel() else ok() } finally { autoAnswering = false } }
