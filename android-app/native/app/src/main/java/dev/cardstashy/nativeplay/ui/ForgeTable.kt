@@ -333,7 +333,9 @@ fun ForgeBoard(
     val outer = LocalBattlefield.current
     val fx = outer ?: remember { Battlefield() }
     FxDriver(fx, st)
-    androidx.compose.runtime.CompositionLocalProvider(LocalBattlefield provides fx) {
+    // 0.4.60 G5 review: the ringed tile is this board's own, so a match that ends takes it along (never a stale id in the next).
+    val ringedTile = remember { RingedTile() }
+    androidx.compose.runtime.CompositionLocalProvider(LocalBattlefield provides fx, LocalRinged provides ringedTile) {
     BoxWithConstraints(modifier.fillMaxSize().fxSkip(fx).graphicsLayer { fx.shake(this) }
         // Live 0.4.56 on the Thor: Android's own default focus (leaving touch mode, a cleared ring) comes in from the top as a Down
         // search and landed on the menu button, so A opened the menu. On two screens with a controller it goes to the hand instead.
@@ -1075,7 +1077,7 @@ fun ForgeBoard(
             if (dual) { val goldAct = padX; BottomScreen { Box(Modifier.fillMaxSize()) { MatchBottom(st, hand, (selectedHand ?: discardWalk.takeIf { discardAsk })?.let { id -> hand.firstOrNull { it.id == id } }, goldAct, fan, onInspect, afk,
                 ask = askAll, carried = carried?.let { id -> hand.firstOrNull { it.id == id } }, live = live, canPlay = { castable(it) }, why = { dimWhy(it) },
                 // 0.4.60 G5: the ring on a tile on the top screen: the bottom's panel reads that card and its keywords.
-                ringed = TableZones.ringed?.let { id -> st.card(id)?.takeIf { it.zone == "Battlefield" } },
+                ringed = ringedTile.id?.let { id -> st.card(id)?.takeIf { it.zone == "Battlefield" } },
                 onAnswer = { a -> a.card?.let { intents.card(it.id) } ?: a.player?.let { intents.player(it) } },
                 onCancel = st.buttons.takeIf { it.cancelEnabled }?.let { { intents.cancel() } }); sheetView() } } }
             // With the bottom screen up the hand chip sits where the line would be: the line goes just above the chip, high enough
@@ -1371,10 +1373,12 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
     // name, art and badges stay as they are.
     val crown = pileTop && CommanderMarks.crowned(card)
     anchors?.let { if (crown) it.sizes["crown${card.id}"] = 1f else it.sizes.remove("crown${card.id}") }
+    val ringedTile = LocalRinged.current
     if (pileTop) androidx.compose.runtime.DisposableEffect(card.id, mineSide) {
         val zone = if (mineSide) TableZones.mine else TableZones.theirs
         zone[card.id] = padFocus
-        onDispose { if (zone[card.id] === padFocus) zone.remove(card.id) }
+        // 0.4.60 G5 review: a tile that goes away with the ring on it (no focus change) takes the ring's reading along.
+        onDispose { if (zone[card.id] === padFocus) zone.remove(card.id); ringedTile?.off(card.id) }
     }
     Box(modifier.size(w, h)
         .graphicsLayer { rotationZ = turn; val s = if (card.tapped) .94f else 1f; scaleX = s; scaleY = s; translationY = if (card.attacking) (if (mineSide) -1f else 1f) * (advance?.toPx() ?: (12f * u * density)) else 0f }
@@ -1417,8 +1421,8 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         }
         .aimOn("c${card.id}")
         .then(if (foil) Modifier.onFocusChanged { if (it.isFocused) foilKick.longValue = fx?.now?.longValue ?: 0L } else Modifier)
-        .then(if (pileTop) Modifier.onFocusChanged { if (it.isFocused) { TableZones.ringed = card.id; if (mineSide) { TableZones.lastMine = card.id; TableZones.at = 1 } else { TableZones.lastTheirs = card.id; TableZones.at = 2 } }
-                else if (TableZones.ringed == card.id) TableZones.ringed = null }
+        .then(if (pileTop) Modifier.onFocusChanged { if (it.isFocused) { ringedTile?.on(card.id); if (mineSide) { TableZones.lastMine = card.id; TableZones.at = 1 } else { TableZones.lastTheirs = card.id; TableZones.at = 2 } }
+                else ringedTile?.off(card.id) }
             .padActs(padHere).matchPadTap(padSource, padFocus) { tap?.invoke() ?: inspect(card) } else Modifier)
         .clip(shape).background(Color(0xFF141418))
         .pointerInput(card.id) { detectTapGestures(onTap = { tap?.invoke() ?: inspect(card) }, onLongPress = { inspect(card) }) }
@@ -2140,8 +2144,6 @@ internal object TableZones {
     var jumped = false
     /** The ring is somewhere on the board. */
     var ringIn = false
-    /** 0.4.60 G5: the battlefield card the ring is on (a pile's top tile), read by the dual bottom screen's panel; null when it is off the board. */
-    var ringed by mutableStateOf<Int?>(null)
     /** V4: the ring to what the table asks for (a legal target, else a mana source). A card sets [at] itself; an orb or pill is 1. */
     fun toAsk(why: String): Boolean {
         val r = ask?.invoke()
@@ -3056,3 +3058,22 @@ internal fun tuckLabels(st: MatchState): List<String> {
     val confirm = if (pickOne) (if (st.selection.min == 0 && st.buttons.okEnabled) "No target" else null) else okLabel(st).takeIf { st.buttons.okEnabled || st.selection.max > 1 }
     return listOfNotNull(cancelLabel(st) ?: "Cancel", confirm)
 }
+
+/**
+ * 0.4.60 G5: the battlefield card the ring is on (a pile's top tile), read by the dual bottom screen's panel; null when it is off
+ * the board. One per ForgeBoard (G5 review: it lived in TableZones for the whole process and was never cleared).
+ *
+ * The tile's focus callback can run while the board composes, applies or disposes; a state write there clashed with the same
+ * write made outside composition ("Unsupported concurrent change during composition"). So [on] and [off] post the write to the
+ * main thread's queue, in the order they were made, and it always lands outside composition.
+ */
+internal class RingedTile {
+    var id by mutableStateOf<Int?>(null)
+        private set
+    private val main = android.os.Handler(android.os.Looper.getMainLooper())
+    fun on(card: Int) { main.post { id = card } }
+    /** Clears the reading only if [card] still holds it (the ring may have moved on already). */
+    fun off(card: Int) { main.post { if (id == card) id = null } }
+}
+
+internal val LocalRinged = androidx.compose.runtime.staticCompositionLocalOf<RingedTile?> { null }

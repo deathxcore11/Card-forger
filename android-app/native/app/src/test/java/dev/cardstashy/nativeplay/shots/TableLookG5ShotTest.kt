@@ -72,7 +72,7 @@ class TableLookG5ShotTest {
     private fun key(name: String, crop: Boolean) = java.security.MessageDigest.getInstance("SHA-1").digest("$name|$crop".toByteArray()).joinToString("") { "%02x".format(it) }
     private fun state(s: String) = MatchState.parse(javaClass.classLoader!!.getResource("table/snap-$s.json")!!.readText())!!
 
-    @After fun off() { DualScreen.pretend(null); Pad.forget(); TableZones.ringed = null; TableZones.at = 0 }
+    @After fun off() { DualScreen.pretend(null); Pad.forget(); TableZones.at = 0 }
 
     private val dragonText = "Flying, haste\nWhenever Mordant Dragon deals combat damage to a player, you may have it deal that much damage to target creature that player controls."
     private val akromaText = "Flying, first strike, vigilance, trample, haste, protection from black and from red"
@@ -152,8 +152,10 @@ class TableLookG5ShotTest {
             inspected = null
             // The ring on the tile (the d-pad's way there): the bottom reads it with its keyword boxes.
             rule.runOnUiThread { TableZones.mine[c.id]!!.requestFocus() }
-            step()
-            assertEquals("$who: the ring is on the tile", c.id, TableZones.ringed)
+            // The tile posts the ringed card outside composition (G5 review): it reaches the panel on the next frame.
+            step(); step()
+            // The ringed tile is the board's own now (G5 review), so the test sees it where it lands: the bottom's panel reads that card.
+            assertNotNull("$who: the ring on the tile reaches the bottom's panel", anchors.rects["b.readKw${c.id}.0"])
             // Let the art and the playmat finish loading (off the main thread), so the two top pictures differ only by what this item does.
             var topRing = shot("top", "g5-ring-$label-top-1920x1080")
             for (i in 0 until 15) { Thread.sleep(400); step(); val again = shot("top", "g5-ring-$label-top-1920x1080"); val settled = diff(topRing, again) < .2; topRing = again; if (settled) break }
