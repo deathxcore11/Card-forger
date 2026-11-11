@@ -490,7 +490,9 @@ fun ForgeBoard(
                 val myBackRoom = reserved?.let { minOf(backRoom, (it - backX - 6.du).coerceAtLeast(backRoom / 2)) } ?: backRoom
                 val tiles = TableGeometry.tiles(rowsG, room.value, backRoom.value,
                     sizes(others(cpu.battlefield), 0), sizes(others(me.battlefield), 0),
-                    sizes(backRow(cpu.battlefield), lands(cpu.battlefield).size), sizes(backRow(me.battlefield), lands(me.battlefield).size), twoLanes(cpu), twoLanes(me), myBackRoom.value)
+                    sizes(backRow(cpu.battlefield), lands(cpu.battlefield).size), sizes(backRow(me.battlefield), lands(me.battlefield).size), twoLanes(cpu), twoLanes(me), myBackRoom.value,
+                    cpuStrips = others(cpu.battlefield).maxOfOrNull { aurasOn(it) { id -> st.card(id) }.size } ?: 0,
+                    myStrips = others(me.battlefield).maxOfOrNull { aurasOn(it) { id -> st.card(id) }.size } ?: 0)
                 val fw = tiles.frontW.dp; val fh = tiles.front.dp; val bw = tiles.backW.dp; val bh = tiles.back.dp
                 val tilePiece = fh / .9f
                 val advance = TableGeometry.advance(rowsG, tiles.front, 12.du.value).dp
@@ -986,6 +988,9 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
                     val ax by androidx.compose.animation.core.animateDpAsState(px + step * e, tween(260, easing = FastOutSlowInEasing), label = "px")
                     // Every pile's top card sits on the row's line (three rises up, as the rows were tuned); the cards under it hang below.
                     val ay by androidx.compose.animation.core.animateDpAsState(-rise * (e + (PILE_EDGES - 1) - pileEdge(pile.lastIndex, pile.size)), tween(260, easing = FastOutSlowInEasing), label = "py")
+                    // T4 (aura look A): a creature's auras peek above it as strips, drawn under its tile.
+                    if (tile != null && pile.size == 1) aurasOn(card, lookup).takeIf { it.isNotEmpty() }?.let { auras ->
+                        AuraStrips(card, auras, w, h, advance, mine, Modifier.offset(x = ax, y = ay).zIndex(-1f), d) }
                     Tile(card, w, h, land, markOf(card), mine, lookup, tapOf(card), if (onPile != null) { _ -> onPile(pile) } else onInspect, Modifier.offset(x = ax, y = ay).zIndex(j.toFloat()), d,
                         count = if (j == pile.lastIndex && pile.size > 1) pile.size else 1, piece = piece, pileTop = j == pile.lastIndex, advance = advance)
                 }
@@ -1032,6 +1037,43 @@ private fun ThroughChip(t: Through, life: Int, modifier: Modifier, d: Du) = with
         .padding(horizontal = 10.du, vertical = 5.du)) {
         Text(head, style = sans(sp(11.5f), FontWeight.Bold, Color(0xFFF6EEDB)).copy(fontFeatureSettings = "tnum"), maxLines = 1)
         Text(sub, style = sans(sp(10.5f), FontWeight.SemiBold, edge).copy(fontFeatureSettings = "tnum"), maxLines = 1)
+    }
+}
+
+/** T4: the auras on [card] that show (Forge's attachments whose type says Aura and whose face is up). */
+internal fun aurasOn(card: Card, lookup: (Int) -> Card?): List<Card> =
+    card.attachments.mapNotNull(lookup).filter { !it.hidden && Regex("\\bAura\\b").containsMatchIn(it.type) }
+
+/**
+ * T4 (specs/table-look-0459.md, aura look A, Randall 10 Nov): each aura on a creature is a strip behind its tile, raised
+ * TableGeometry.STRIP of the tile's height per aura, its name bar over a sliver of its art; the creature's art and numbers stay clear.
+ * Two strips at most, the upper one saying "+N" for the rest. The strips turn and step with the tile (tapped, attacking).
+ */
+@Composable
+private fun AuraStrips(card: Card, auras: List<Card>, w: Dp, h: Dp, advance: Dp?, mineSide: Boolean, modifier: Modifier, d: Du) = with(d) {
+    val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tween(180, easing = FastOutSlowInEasing), label = "auraTap")
+    val shown = auras.take(TableGeometry.STRIPS_MAX); val n = shown.size; val more = auras.size - n
+    val anchors = LocalAnchors.current
+    Box(modifier.size(w, h).graphicsLayer { rotationZ = turn; val s = if (card.tapped) .94f else 1f; scaleX = s; scaleY = s
+        translationY = if (card.attacking) (if (mineSide) -1f else 1f) * (advance?.toPx() ?: (12f * u * density)) else 0f }) {
+        // The name bar takes about 60 % of the 15 % that shows, so a sliver of the aura's art shows under it; on a small tile
+        // (a phone) the bar takes the whole of it, up to 10 dp, so the name stays readable.
+        val bar = maxOf(h * .095f, minOf(h * TableGeometry.STRIP, 10.dp))
+        shown.forEachIndexed { i, a ->
+            val shape = RoundedCornerShape(6.du)
+            Box(Modifier.offset(x = w * .04f, y = -h * (TableGeometry.STRIP * (n - i)))
+                .size(w * .92f, h * .6f)
+                .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("aura${a.id}", it.boundsInRoot()) } else Modifier)
+                .drawBehind { drawRoundRect(Color(0x99000000), topLeft = Offset(0f, 3.dp.toPx()), size = size, cornerRadius = CornerRadius(6.du.toPx())) }
+                .clip(shape).background(Color(0xFF141418)).border(1.dp, Color(0x33E8D3A0), shape)
+                .semantics { contentDescription = "${a.name} on ${card.name}" }) {
+                CardImage(a.name, Modifier.fillMaxSize(), crop = true)
+                Row(Modifier.fillMaxWidth().height(bar).background(Color(0xF0281E08)).padding(horizontal = 5.du), verticalAlignment = Alignment.CenterVertically) {
+                    Text(a.name, style = sans((bar.value * .7f).sp, FontWeight.ExtraBold, Color(0xFFE8C77A)), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                    if (i == 0 && more > 0) Text("+$more", style = sans((bar.value * .7f).sp, FontWeight.ExtraBold, Color.White), maxLines = 1)
+                }
+            }
+        }
     }
 }
 
@@ -2298,9 +2340,10 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
             }
         }
         val attached = card.attachments.mapNotNull(lookup).filter { !it.hidden }
-        if (attached.isNotEmpty() && b.crew == null) {
+        if (attached.any { !Regex("\\bAura\\b").containsMatchIn(it.type) } && b.crew == null) {
             fun kind(c: Card) = if (Regex("\\bEquipment\\b").containsMatchIn(c.type)) "equipment" else if (Regex("\\bAura\\b").containsMatchIn(c.type)) "aura" else "attached"
-            val kinds = listOf("equipment", "aura", "attached").map { k -> k to attached.count { kind(it) == k } }.filter { it.second > 0 }
+            // T4: auras show as strips above the tile (AuraStrips), so the corner badge counts only what is not an aura.
+            val kinds = listOf("equipment", "attached").map { k -> k to attached.count { kind(it) == k } }.filter { it.second > 0 }
             Row(Modifier.align(Alignment.BottomStart).offset(x = 3.du, y = (-4).du), horizontalArrangement = Arrangement.spacedBy(1.du)) {
                 kinds.forEach { (k, n) -> badge(k, text = if (n > 1) "$n" else null) }
             }

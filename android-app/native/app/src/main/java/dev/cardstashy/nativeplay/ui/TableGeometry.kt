@@ -55,6 +55,12 @@ internal object TableGeometry {
     const val TAPPED_HALF = .6506f
     /** How far past its side a tapped tile's turned corner reaches, as a share of the tile's width (.94 x (cos 20 + sin 20 / 1.3) / 2 - .5). */
     const val TAPPED_SIDE = .0653f
+    /**
+     * T4 (aura look A): each aura on a creature peeks above its tile as a strip raised this share of the tile's height; at most
+     * [STRIPS_MAX] show (a "+N" on the upper one). A row with auras keeps that much clear above its tiles.
+     */
+    const val STRIP = .15f
+    const val STRIPS_MAX = 2
 
     fun shares(dualTop: Boolean) = if (dualTop) DUAL_TOP else ONE_SCREEN
 
@@ -97,11 +103,14 @@ internal object TableGeometry {
      * [cpuLane] / [myLane] say whether that back row has a second lane (lands and other permanents).
      */
     fun tiles(rows: Rows, room: Float, backRoom: Float, cpuFront: List<Int>, myFront: List<Int>, cpuBack: List<Int>, myBack: List<Int>,
-              cpuLane: Boolean = false, myLane: Boolean = false, myBackRoom: Float = backRoom): Tiles {
+              cpuLane: Boolean = false, myLane: Boolean = false, myBackRoom: Float = backRoom, cpuStrips: Int = 0, myStrips: Int = 0): Tiles {
         // Review fix: tapped tiles of two neighbouring rows never meet (TAPPED_HALF), creature to creature and creature to back row.
-        val clear = (rows.myFront.centre - rows.cpuFront.centre) / (2 * TAPPED_HALF)
+        // T4: your auras' strips rise toward the CPU's creatures, the CPU's toward its own back row; neither touches a tile there.
+        val dist = rows.myFront.centre - rows.cpuFront.centre
+        val clear = minOf(dist / (2 * TAPPED_HALF), dist / (TAPPED_HALF + .5f + STRIP * myStrips.coerceAtMost(STRIPS_MAX)))
         val front = minOf(fitHeight(rows.cpuFront.height, room, cpuFront), fitHeight(rows.myFront.height, room, myFront), clear)
-        val backClear = minOf(rows.cpuFront.centre - rows.cpuBack.centre, rows.myBack.centre - rows.myFront.centre) / TAPPED_HALF - front
+        val cpuReach = maxOf(TAPPED_HALF, .5f + STRIP * cpuStrips.coerceAtMost(STRIPS_MAX)) * front
+        val backClear = minOf((rows.cpuFront.centre - rows.cpuBack.centre - cpuReach) / TAPPED_HALF, (rows.myBack.centre - rows.myFront.centre) / TAPPED_HALF - front)
         val back = minOf(fitHeight(rows.cpuBack.height, backRoom, cpuBack, cpuLane), fitHeight(rows.myBack.height, myBackRoom, myBack, myLane), front * LAND_MAX, backClear)
         return Tiles(front, back)
     }

@@ -84,6 +84,20 @@ class TableGeometryTest {
         assertTrue(TableGeometry.rowWidth(held.back, listOf(4, 4, 4, 4, 4, 4, 2, 2)) <= 380.5f)
     }
 
+    @Test fun auraStripsNeverReachAnotherRow() {
+        // T4: two strips above your creature (30 % of a tile) stay clear of the CPU's creatures, even tapped ones; the CPU's two
+        // strips stay clear of its own back row. A third aura adds no strip ("+N"), so no more room.
+        for ((w, h) in sizes) for (dual in listOf(false, true)) {
+            val r = rows(h, dual)
+            val t = TableGeometry.tiles(r, w * TableGeometry.BOARD_W, w * (TableGeometry.BOARD_W - TableGeometry.BACK_INSET), listOf(1), listOf(1), listOf(1), listOf(1), cpuStrips = 3, myStrips = 3)
+            val rise = TableGeometry.STRIP * TableGeometry.STRIPS_MAX * t.front
+            assertTrue("$w×$h dual=$dual yours", r.myFront.centre - t.front / 2 - rise >= r.cpuFront.centre + TableGeometry.TAPPED_HALF * t.front - .01f)
+            assertTrue("$w×$h dual=$dual CPU's", r.cpuFront.centre - t.front / 2 - rise >= r.cpuBack.centre + TableGeometry.TAPPED_HALF * t.back - .01f)
+            val none = TableGeometry.tiles(r, w * TableGeometry.BOARD_W, w * (TableGeometry.BOARD_W - TableGeometry.BACK_INSET), listOf(1), listOf(1), listOf(1), listOf(1))
+            assertTrue(t.front <= none.front)
+        }
+    }
+
     @Test fun theStackLaneNarrowsTheBoard() {
         val open = tiles(844f, 390f, List(9) { 1 }, List(9) { 1 }, listOf(1), listOf(1))
         val stack = tiles(844f, 390f, List(9) { 1 }, List(9) { 1 }, listOf(1), listOf(1), lane = 80f)
