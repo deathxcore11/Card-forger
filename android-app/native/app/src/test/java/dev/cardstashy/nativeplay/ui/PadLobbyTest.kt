@@ -57,6 +57,7 @@ class PadLobbyTest {
     private fun step() { rule.mainClock.advanceTimeBy(600) }
 
     /** The signed-in Quick Play lobby with a pad, the app's ring look and its pad root. */
+    private var model: LobbyModel? = null
     private fun show() {
         Motion.still = true; rule.mainClock.autoAdvance = false
         CardFacts.seed(cards)
@@ -73,7 +74,7 @@ class PadLobbyTest {
         val col = JsonParser.parseString("""{"id":"col1","name":"Mono-red aggro","format":"Standard","cards":[{"name":"Mountain","qty":22},{"name":"Monastery Swiftspear","qty":4},{"name":"Shock","qty":4}],"side":[]}""").asJsonObject
         Workspace.setForTest(listOf(UserDeck("col1", "Mono-red aggro", "Standard", col)))
         Pad.used()
-        val m = LobbyModel("quick").apply { format = "Standard" }
+        val m = LobbyModel("quick").apply { format = "Standard" }; model = m
         rule.setContent {
             CompositionLocalProvider(LocalIndication provides PadFocus) {
                 Box(Modifier.fillMaxSize().padRoot()) { LobbyScreen(m, {}, {}, {}, {}, {}, online = false) }
@@ -107,15 +108,38 @@ class PadLobbyTest {
         val all = decks()
         assertTrue("first Down: ${tag(first)} is not the first deck", all.all { it.boundsInRoot.top >= first.boundsInRoot.top - 1f } &&
             all.filter { kotlin.math.abs(it.boundsInRoot.top - first.boundsInRoot.top) < 1f }.all { it.boundsInRoot.left >= first.boundsInRoot.left - 1f })
-        // Down walks the decks, a new one each press, and the list scrolls with the ring.
+        // The d-pad walks the decks, a new one each press, and the list scrolls with the ring. 0.4.59 T8: the decks are a grid
+        // (5 across here), so Down goes to the next row and Right along it; these six decks are two rows.
         val seen = mutableListOf(tag(first))
-        repeat(2) { n ->
-            rule.runOnUiThread { PadPrompts.navigate(android.view.KeyEvent.KEYCODE_DPAD_DOWN) }
+        for ((n, key) in listOf(android.view.KeyEvent.KEYCODE_DPAD_DOWN, android.view.KeyEvent.KEYCODE_DPAD_UP, android.view.KeyEvent.KEYCODE_DPAD_RIGHT).withIndex()) {
+            if (key == android.view.KeyEvent.KEYCODE_DPAD_UP) { rule.runOnUiThread { PadPrompts.navigate(key) }; step(); continue }
+            rule.runOnUiThread { PadPrompts.navigate(key) }
             step()
-            val f = assertRingShows("Down ${n + 2}")
-            assertTrue("Down ${n + 2}: the ring went back to ${tag(f)} ($seen)", tag(f) !in seen)
+            val f = assertRingShows("press ${n + 2}")
+            assertTrue("press ${n + 2}: the ring went back to ${tag(f)} ($seen)", tag(f) !in seen)
             seen += tag(f)
         }
+    }
+
+    /** 0.4.59 T8: Up from the top row reaches the format chips (All first), Down comes back; LB/RB change the source tab; Y is search. */
+    @Test fun upReachesTheChipsAndTheShouldersChangeTheSource() {
+        show()
+        rule.runOnUiThread { PadPrompts.navigate(android.view.KeyEvent.KEYCODE_DPAD_DOWN) }; step()
+        val first = assertRingShows("first Down")
+        rule.runOnUiThread { PadPrompts.navigate(android.view.KeyEvent.KEYCODE_DPAD_UP) }; step(); step()
+        assertTrue("Up from the top row: the All chip (${ringed()?.let(::tag)})", ringed()?.let(::tag) == "qfmt:All")
+        rule.runOnUiThread { PadPrompts.navigate(android.view.KeyEvent.KEYCODE_DPAD_DOWN) }; step(); step()
+        assertTrue("Down from All: the first deck again", ringed()?.let(::tag) == tag(first))
+        // RB: Precons; LB: back to Yours.
+        val acts = PadPrompts.current()
+        assertTrue("the shoulders say Decks", acts.tabsLabel == "Decks")
+        rule.runOnUiThread { acts.tabs!!(1) }; step()
+        assertTrue("RB: the Precons tab (${model!!.source})", model!!.source == "precons")
+        rule.runOnUiThread { PadPrompts.current().tabs!!(-1) }; step()
+        assertTrue("LB: Yours again", model!!.source == "yours")
+        // Y is the search, off the d-pad's path.
+        rule.runOnUiThread { PadPrompts.current().y!!.run!!() }; step(); step()
+        assertTrue("Y: search (${PadPrompts.current().y?.label})", PadPrompts.current().y?.label == "Search")
     }
 
     @Test fun aWithNothingRingedStartsOnFirstDeck() {

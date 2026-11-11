@@ -16,9 +16,13 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -45,6 +49,7 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.graphics.layer.drawLayer
@@ -149,6 +154,8 @@ class LobbyModel(style: String) {
     var opponent by mutableStateOf<SeatDeck?>(null)
     var inspected by mutableStateOf("player")
     var source by mutableStateOf("yours")
+    /** 0.4.59 T8: Quick Play's format chip, null for All (the format Play uses is the chosen deck's own, [format]). */
+    var pickFormat by mutableStateOf<String?>(null)
     var query by mutableStateOf("")
     var inspectOpen by mutableStateOf(false)
     var formatOpen by mutableStateOf(false)
@@ -228,7 +235,9 @@ object CpuLevel {
 
 /** The lobby's sources besides your decks (play-deck-sources.js PLAY_DECK_SOURCES). */
 private val SOURCES = listOf("yours" to "Your decks", "precons" to "Precons", "community" to "Community", "meta" to "Meta", "random" to "Random")
-private val LIVE_FORMATS = listOf("Standard", "Commander", "Modern", "Pioneer", "Legacy", "Vintage", "Pauper", "Standard Brawl")
+/** 0.4.59 T8: Quick Play's source tabs (Randall 10 Nov 23:15Z: yours, precons and meta), Yours first. */
+private val QUICK_SOURCES = listOf("yours" to "Yours", "precons" to "Precons", "meta" to "Meta")
+internal val LIVE_FORMATS = listOf("Standard", "Commander", "Modern", "Pioneer", "Legacy", "Vintage", "Pauper", "Standard Brawl")
 private val FORMAT_GROUPS = listOf(
     "60-card constructed · 20 life" to listOf("Standard" to "Recent sets", "Pioneer" to "Return to Ravnica onward", "Modern" to "8th Edition onward",
         "Legacy" to "All sets, ban list", "Vintage" to "All sets, restricted list", "Pauper" to "Commons only"),
@@ -331,15 +340,28 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
 
     val m = model
     val quickOnly = m.quick
-    val source = if (quickOnly) "yours" else m.source
-    val inFormat = decks.filter { it.format == m.format }
+    val source = if (quickOnly && QUICK_SOURCES.none { it.first == m.source }) "yours" else m.source
+    // Quick Play (0.4.59 T8): every deck of the chip's format, or of every format under All; Practice: the lobby's format.
+    val inFormat = if (quickOnly) decks.filter { m.pickFormat == null || it.format == m.pickFormat } else decks.filter { it.format == m.format }
     val visible = inFormat.filter { d -> listOf(d.name, d.commander).any { it.lowercase().contains(m.query.lowercase().trim()) } }
     val browserSelected = m.seat(m.browseSeat)
     fun chosen(d: TableDecks.Deck) = browserSelected?.source == "saved" && browserSelected.id == d.id
 
     // Sources: precons, meta and community lists for the format, loaded on first open (A.playDeckSource).
     val sources = remember { LobbySources() }
-    LaunchedEffect(source, m.format) { if (online && source in setOf("precons", "meta", "community") && sources.entries(source, m.format).isEmpty()) sources.load(context, source, m.format, signedIn) }
+    LaunchedEffect(source, m.format, m.pickFormat, quickOnly) {
+        if (!online || source !in setOf("precons", "meta", "community")) return@LaunchedEffect
+        // Quick Play under All reads every live format's lists, one after another; a chip reads its own.
+        val formats = if (quickOnly) m.pickFormat?.let { listOf(it) } ?: LIVE_FORMATS else listOf(m.format)
+        for (f in formats) if (sources.entries(source, f).isEmpty()) sources.load(context, source, f, signedIn)
+    }
+    /** Quick Play's Precons and Meta tiles: the lists of the chip's format (every live format under All). */
+    val quickEntries = if (quickOnly && source != "yours") (m.pickFormat?.let { listOf(it) } ?: LIVE_FORMATS).flatMap { f -> sources.entries(source, f) }
+        .filter { e -> listOf(e.deck.get("name")?.asString ?: "", e.deck.get("commander")?.takeIf { it.isJsonPrimitive }?.asString ?: "").any { it.lowercase().contains(m.query.lowercase().trim()) } }
+        else emptyList()
+    val owned = remember(state) { dev.cardstashy.nativeplay.play.Decks.ownedByName(state) }
+    /** A Precons or Meta list Quick Play can deal: every card of it in your Trunk (the rule your own decks follow). */
+    fun sourceReady(raw: JsonObject) = dev.cardstashy.nativeplay.play.Decks.shortfall(dev.cardstashy.nativeplay.play.Decks.rows(raw).filter { it.board == null || it.board == "main" }, owned).complete
     remember { CpuLevel.init(context); QuickPower.init(context) }
     // A.playFindOpponent's pool: your decks, every source the lobby has in the format, the tournament lists, and Deck Forge's finished builds.
     // Off the main thread: every deck in it is copied.
@@ -388,7 +410,7 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
         // T1 (Thor run 10 Nov: "Finding a CPU deck…" 15 s, then 15 s of art): the CPU deck is chosen as soon as yours is, and its
         // pictures start loading here, so Play opens the matchup at once. Kept hidden until the match, as before.
         val you = m.player ?: return@LaunchedEffect
-        if (m.quickMatch != null || !TableDecks.quickReady(you.id, you.source == "saved", locked)) return@LaunchedEffect
+        if (m.quickMatch != null || !TableDecks.quickReady(you.id, you.source == "saved" || (you.source in setOf("precons", "meta") && sourceReady(you.raw)), locked)) return@LaunchedEffect
         val level = m.difficulty
         val job = scope.async { runCatching { chooseQuick(you, format, level) }.getOrNull() }
         quickPre = Triple(you, format to level, job)
@@ -401,6 +423,8 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     fun selectDeck(d: TableDecks.Deck) {
         RandomBuild.cancel()
         if (m.quick && d.id in locked) { toast(TableDecks.LOCKED_TOAST); return }
+        // 0.4.59 T8: under All the deck brings its own format; Play and the CPU match use it.
+        if (m.quick && d.format != m.format) { if (d.format !in LIVE_FORMATS) { toast("Quick Play can't play ${d.format} yet."); return }; m.configureFormat(d.format) }
         val seat = m.browseSeat
         m.put(seat, SeatDeck(d.raw.deepCopy().apply { if (!has("id")) addProperty("id", d.id); addProperty("format", d.format) }, "saved"))
         m.importTicket++; m.importBusy = false; m.candidate = null; m.importStatus = "idle"; m.warnings = emptyList(); m.unresolved = emptyList()
@@ -410,6 +434,11 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     }
     fun pickSource(e: LobbySources.Entry) {
         RandomBuild.cancel()
+        if (m.quick) {
+            if (!sourceReady(e.deck)) { toast(TableDecks.LOCKED_TOAST); return }
+            val f = e.deck.get("format")?.takeIf { it.isJsonPrimitive }?.asString ?: m.format
+            if (f != m.format) m.configureFormat(f)
+        }
         m.put(m.browseSeat, SeatDeck(e.deck.deepCopy(), e.kind))
         if (!m.quick && !m.social && m.browseSeat == "player" && m.opponent == null) m.inspected = "opponent"
     }
@@ -491,7 +520,7 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
             return
         }
         if (m.quick) {
-            if (!TableDecks.quickReady(you.id, you.source == "saved", locked)) {
+            if (!TableDecks.quickReady(you.id, you.source == "saved" || (you.source in setOf("precons", "meta") && sourceReady(you.raw)), locked)) {
                 m.player = null; toast(TableDecks.QUICK_NEEDS); return }
             if (m.quickMatch == null) {
                 m.quickBusy = true; m.quickError = null
@@ -514,27 +543,65 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     }
 
     var cardPick by remember { mutableStateOf<CardPick?>(null) }
+    val searchFocus = remember { FocusRequester() }
+    val grid = rememberLazyGridState()
     // Controller: LB/RB step through the deck sources (Mine, Precons, Community, Meta, Random) like their tabs; Quick Play has none.
     // Quick Play (specs/dual-screen-native.md): LB/RB step the format, X finds the match once your deck is in. Practice: LT/RT the CPU level.
-    PadScreen(PadActs(tabs = if (m.quick) ({ d: Int -> val i = (LIVE_FORMATS.indexOf(m.format).coerceAtLeast(0) + d).coerceIn(0, LIVE_FORMATS.size - 1); m.configureFormat(LIVE_FORMATS[i]) })
+    // 0.4.59 T8: in Quick Play LB/RB change the source tab (Yours, Precons, Meta); the format is the chips' (Up from the top row).
+    PadScreen(PadActs(tabs = if (m.quick) ({ d: Int -> val i = (QUICK_SOURCES.indexOfFirst { it.first == source }.coerceAtLeast(0) + d).coerceIn(0, QUICK_SOURCES.size - 1)
+        if (QUICK_SOURCES[i].first != m.source) { m.source = QUICK_SOURCES[i].first; m.query = "" } })
         else ({ d: Int -> val i = (SOURCES.indexOfFirst { it.first == m.source }.coerceAtLeast(0) + d).coerceIn(0, SOURCES.size - 1)
-        if (SOURCES[i].first != m.source) { m.source = SOURCES[i].first; m.query = "" } }), tabsLabel = if (m.quick) "Format" else "Tabs",
+        if (SOURCES[i].first != m.source) { m.source = SOURCES[i].first; m.query = "" } }), tabsLabel = if (m.quick) "Decks" else "Tabs",
         page = if (m.quick || m.social) null else ({ d: Int -> val lv = listOf("Easy", "Medium", "Hard"); val i = (lv.indexOf(m.difficulty).coerceAtLeast(0) + d).coerceIn(0, 2); m.difficulty = lv[i]; m.quickMatch = null }),
         pageLabel = "CPU level",
         x = if (m.quick && m.player != null && !m.quickBusy) PadAct("Find match") { start() }
             // Y8: a waiting room's link goes out with X (copy) and Y (share); B leaves the room.
             else (m.room as? LobbyModel.Room.Waiting)?.takeIf { m.social && m.target == null }?.let { r -> PadAct("Copy link") { friend.copy(r.invite) } },
-        y = (m.room as? LobbyModel.Room.Waiting)?.takeIf { m.social && m.target == null }?.let { r -> PadAct("Share") { friend.share(r.invite) } }))
+        // 0.4.59 T8: Quick Play's search is on Y, never on the d-pad's path.
+        y = if (m.quick) PadAct("Search") { scope.launch { grid.scrollToItem(LIB_HEAD); androidx.compose.runtime.withFrameNanos { }; runCatching { searchFocus.requestFocus() } } } else (m.room as? LobbyModel.Room.Waiting)?.takeIf { m.social && m.target == null }?.let { r -> PadAct("Share") { friend.share(r.invite) } }))
     // Dual screen: your deck on the left, the CPU on the right; with a friend, the room and its link.
     if (!m.social) BottomScreen { LobbyBottom(m) } else BottomScreen { FriendBottom(m, friend) }
     BackHandler(cardPick == null && (m.inspectOpen || m.formatOpen)) { m.inspectOpen = false; m.formatOpen = false }
     BackHandler(m.social && m.room is LobbyModel.Room.Waiting) { cancelRoom() }
-    val grid = rememberLazyGridState()
     // Live 0.4.57 on the Thor (fault list 2): the lobby had no first stop, so the first d-pad press went to Compose's own search
     // (the head's Back) and the decks were out of reach. Now a d-pad press or A with nothing ringed scrolls to your first deck and
     // rings it. Quick Play has no paste box, so that deck is the item after the count line.
     val firstDeck = remember { FocusRequester() }
-    val deckEntry = m.quick && signedIn && visible.isNotEmpty() && cardPick == null && !m.inspectOpen && !m.formatOpen
+    // 0.4.59 T8: the d-pad walks Quick Play's grid by its own rule (QuickPick.next): rows and columns, Up from the top row to the
+    // format chips, Down from a chip back to the decks. Search is never on this path.
+    val tileFocus = remember { HashMap<Int, FocusRequester>() }
+    fun tileReq(i: Int) = if (i == 0) firstDeck else tileFocus.getOrPut(i) { FocusRequester() }
+    val chipFocus = remember { List(QuickPick.chips(LIVE_FORMATS).size) { FocusRequester() } }
+    fun ringTile(i: Int) { scope.launch { grid.scrollToItem(LIB_HEAD + 2 + i); androidx.compose.runtime.withFrameNanos { }; runCatching { tileReq(i).requestFocus() } } }
+    fun quickCount() = if (source == "yours") visible.size else quickEntries.size
+    var focusedTile by remember { mutableStateOf(-1) }
+    var focusedChip by remember { mutableStateOf(-1) }
+    fun steer(i: Int, dir: QuickPick.Dir, cols: Int): Boolean {
+        when (val to = QuickPick.next(i, dir, cols, quickCount())) {
+            is QuickPick.Stop.Deck -> ringTile(to.i)
+            QuickPick.Stop.Chips -> { val c = QuickPick.chips(LIVE_FORMATS).indexOf(m.pickFormat).coerceAtLeast(0)
+                scope.launch { grid.scrollToItem(LIB_HEAD); androidx.compose.runtime.withFrameNanos { }; runCatching { chipFocus[c].requestFocus() } } }
+            null -> {}
+        }
+        return true
+    }
+    // The pad's Up and Down go through PadPrompts.navigate before the screen sees them: the grid's walk takes them there.
+    val colsNow = remember { androidx.compose.runtime.mutableIntStateOf(2) }
+    androidx.compose.runtime.DisposableEffect(quickOnly) {
+        if (!quickOnly) return@DisposableEffect onDispose { }
+        val k: (Int) -> Boolean = { code ->
+            val dir = when (code) { android.view.KeyEvent.KEYCODE_DPAD_UP -> QuickPick.Dir.UP; android.view.KeyEvent.KEYCODE_DPAD_DOWN -> QuickPick.Dir.DOWN
+                android.view.KeyEvent.KEYCODE_DPAD_LEFT -> QuickPick.Dir.LEFT; android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> QuickPick.Dir.RIGHT; else -> null }
+            when {
+                dir == null -> false
+                focusedTile >= 0 -> steer(focusedTile, dir, colsNow.intValue)
+                focusedChip >= 0 && dir == QuickPick.Dir.DOWN -> { QuickPick.fromChips(focusedChip, colsNow.intValue, quickCount())?.let { ringTile(it) }; true }
+                else -> false
+            }
+        }
+        PadPrompts.steerKey = k; onDispose { if (PadPrompts.steerKey === k) PadPrompts.steerKey = null }
+    }
+    val deckEntry = m.quick && signedIn && (if (source == "yours") visible else quickEntries).isNotEmpty() && cardPick == null && !m.inspectOpen && !m.formatOpen
     androidx.compose.runtime.DisposableEffect(deckEntry) {
         if (!deckEntry) return@DisposableEffect onDispose { }
         val e: () -> Boolean = { PadPrompts.inputModes?.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard)
@@ -550,11 +617,16 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     val blurLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
     val gridAt = remember { mutableStateOf(Offset.Zero) }
     val barAt = remember { mutableStateOf(Offset.Zero) }
-    Box(Modifier.fillMaxSize().background(Site.Bg)) {
+    BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
+        // 0.4.59 T8: Quick Play's grid has 5 columns on phones and the Fold, 6 on a tablet; Practice keeps its two.
+        val cols = if (quickOnly) QuickPick.columns(maxWidth.value, DualScreen.active) else 2
+        colsNow.intValue = cols
+        // A short screen (a phone on its side, 390 dp) shows two rows of tiles: the art is a wider band there.
+        val artRatio = if (maxHeight < 500.dp) 2.4f else 1.25f
         Backdrop() // #ambient: the shared art (glass on, or Aura)
         // .play-library is a panel (surface 84 %, 1 px line, radius 20) from its head to the last deck, its contents 19 px in;
         // the grid is laid out at the panel's inner edge and the panel is drawn behind those items.
-        LazyVerticalGrid(GridCells.Fixed(2), state = grid, modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)
+        LazyVerticalGrid(GridCells.Fixed(cols), state = grid, modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)
             // The page is recorded so the pinned Play bar can blur what scrolls under it (.pl-startbar backdrop-filter: blur(14px)).
             .onGloballyPositioned { gridAt.value = it.positionInRoot() }
             .drawWithContent { pageLayer.record { this@drawWithContent.drawContent() }; drawLayer(pageLayer) }
@@ -575,16 +647,34 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
             full { Box(Modifier.outset(19.dp)) { Head(m, onBack, onFriends) } }
             full { Box(Modifier.outset(19.dp)) { Arena(m, friend, onFocusDecks = { scope.launch { grid.animateScrollToItem(LIB_HEAD) } }) } }
             full {
-                LibraryHead(m, source, signedIn, onOpenDecks)
+                LibraryHead(m, source, signedIn, onOpenDecks, if (quickOnly) mapOf("yours" to decks.count { m.pickFormat == null || it.format == m.pickFormat },
+                    "precons" to (m.pickFormat?.let { listOf(it) } ?: LIVE_FORMATS).sumOf { sources.entries("precons", it).size },
+                    "meta" to (m.pickFormat?.let { listOf(it) } ?: LIVE_FORMATS).sumOf { sources.entries("meta", it).size }) else emptyMap(),
+                    chipFocus, onChipDown = { c -> QuickPick.fromChips(c, cols, quickCount())?.let { ringTile(it) } }, searchFocus = if (quickOnly) searchFocus else null,
+                    onChipFocus = { c, on -> if (on) focusedChip = c else if (focusedChip == c) focusedChip = -1 })
             }
             when {
                 source == "yours" && !signedIn -> full { Empty("Your decks, ready for the table", "Sign in above to choose your saved lists.") }
                 source == "yours" -> {
                     if (!quickOnly && pasteShown(m)) full { PasteImport(m, ::importPaste, ::useImport) { cardPick = CardPick(it, "", null, "nonfoil") } }
-                    full { Text("${visible.size} of ${inFormat.size} ${m.format} decks", style = sans(13f, color = Muted), modifier = Modifier.padding(horizontal = 3.dp)) }
-                    if (visible.isEmpty()) full { Empty(if (m.query.isNotBlank()) "No matching decks" else "No ${m.format} decks yet",
+                    val fmtWord = if (quickOnly) m.pickFormat?.let { "$it " } ?: "" else "${m.format} "
+                    full { Text("${visible.size} of ${inFormat.size} ${fmtWord}decks", style = sans(13f, color = Muted), modifier = Modifier.padding(horizontal = 3.dp)) }
+                    if (visible.isEmpty()) full { Empty(if (m.query.isNotBlank()) "No matching decks" else if (quickOnly) QuickPick.empty(m.pickFormat) else "No ${m.format} decks yet",
                         if (quickOnly) "Build a Play deck, or open packs and the Merchant for cards." else "Paste a list or explore the other sources above.") }
+                    else if (quickOnly) itemsIndexed(visible, key = { _, d -> "d:" + d.id }) { i, d -> QuickTile(d.id, d.name, d.format, d.count, deckColors(d.commander, d.raw), quickRaw(d), chosen(d), d.id in locked,
+                        tileReq(i), { ringed("d:" + d.id) }, { dir -> steer(i, dir, cols) }, onFocus = { on -> if (on) focusedTile = i else if (focusedTile == i) focusedTile = -1 }, artRatio = artRatio, onPlay = { selectDeck(d); if (m.player?.id == d.id) start() }) { selectDeck(d) } }
                     else items(visible, key = { "d:" + it.id }) { d -> DeckChoice(d, chosen(d), quickOnly && d.id in locked, if (d === visible[0]) firstDeck else null, { ringed("d:" + d.id) }) { selectDeck(d) } }
+                }
+                // 0.4.59 T8: Quick Play's Precons and Meta as the same tiles; a list missing cards from your Trunk is greyed.
+                quickOnly -> {
+                    full { Text("${quickEntries.size} ${m.pickFormat?.let { "$it " } ?: ""}decks", style = sans(13f, color = Muted), modifier = Modifier.padding(horizontal = 3.dp)) }
+                    if (quickEntries.isEmpty()) full { Empty(QuickPick.empty(m.pickFormat), sources.statuses.values.firstOrNull { it.busy }?.message ?: "Try another format or source.") }
+                    else itemsIndexed(quickEntries, key = { _, e -> "s:" + e.key }) { i, e -> val raw = e.deck; val f = raw.get("format")?.takeIf { it.isJsonPrimitive }?.asString ?: ""
+                        val commander = raw.get("commander")?.takeIf { it.isJsonPrimitive }?.asString ?: ""
+                        QuickTile("s:" + e.key, raw.get("name")?.asString ?: "Untitled deck", f, raw.getAsJsonArray("cards")?.sumOf { (it as? JsonObject)?.get("qty")?.takeIf { q -> q.isJsonPrimitive }?.asInt ?: 0 } ?: 0,
+                            deckColors(commander, raw), raw, browserSelected?.id == raw.get("id")?.asString, !sourceReady(raw), tileReq(i), { ringed("s:" + e.key) }, { dir -> steer(i, dir, cols) },
+                            onFocus = { on -> if (on) focusedTile = i else if (focusedTile == i) focusedTile = -1 }, artRatio = artRatio,
+                            onPlay = { pickSource(e); if (m.player?.id == raw.get("id")?.asString) start() }) { pickSource(e) } }
                 }
                 source == "random" -> full { RandomPanel(m, build, signedIn, onBuild = { bracket, style, power -> buildSeat = m.browseSeat; RandomBuild.start(m.format, bracket, style, power, session?.userId) }, onSignIn = onSignIn) }
                 else -> {
@@ -850,12 +940,14 @@ private fun StartBar(m: LobbyModel, signedIn: Boolean, status: String, friend: F
 // ---------------------------------------------------------------- deck browser
 
 @Composable
-private fun LibraryHead(m: LobbyModel, source: String, signedIn: Boolean, onOpenDecks: () -> Unit) {
+private fun LibraryHead(m: LobbyModel, source: String, signedIn: Boolean, onOpenDecks: () -> Unit, quickCounts: Map<String, Int> = emptyMap(),
+                        chipFocus: List<FocusRequester> = emptyList(), onChipDown: (Int) -> Unit = {}, searchFocus: FocusRequester? = null,
+                        onChipFocus: (Int, Boolean) -> Unit = { _, _ -> }) {
     val seatName = when (m.browseSeat) { "player" -> "Your deck"; else -> "CPU deck" }
     Column(Modifier.fillMaxWidth().padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.Bottom) {
             Text(seatName, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, letterSpacing = (-.36).sp, color = Site.Text))
-            Text(" · ${m.format}", style = sans(13f, FontWeight.SemiBold, Muted))
+            Text(" · ${if (m.quick) m.player?.format ?: QuickPick.chipLabel(m.pickFormat) else m.format}", style = sans(13f, FontWeight.SemiBold, Muted))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (source == "yours" && signedIn && !m.quick) {
@@ -876,7 +968,27 @@ private fun LibraryHead(m: LobbyModel, source: String, signedIn: Boolean, onOpen
             Box(Modifier.height(44.dp).pill(Site.Surface2, Line).clickable(onClick = onOpenDecks).padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
                 Text("Open Decks", style = sans(13.5f, FontWeight.Bold, Site.Text)) }
         }
-        if (m.quick) Text(TableDecks.QUICK_INTRO, style = sans(13f, color = Muted, line = 19.5f))
+        if (m.quick) {
+            Text(TableDecks.QUICK_INTRO, style = sans(13f, color = Muted, line = 19.5f))
+            // 0.4.59 T8: three source tabs with their counts (Yours first), then one sideways row of format chips, All first.
+            TabsRow(QUICK_SOURCES.size, Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(TabsFill).border(1.dp, Line, RoundedCornerShape(14.dp)).padding(3.dp)) { tab ->
+                QUICK_SOURCES.forEach { (k, label) -> val on = source == k
+                    Box(tab.height(44.dp).clip(RoundedCornerShape(10.dp)).then(if (on) Modifier.background(Picked).border(1.dp, Color(0x66D8B76C), RoundedCornerShape(10.dp)) else Modifier)
+                        .clickable { m.source = k; m.query = "" }.testTag("qsrc:$k").padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
+                        Text(label + (quickCounts[k]?.let { " $it" } ?: ""), style = sans(13f, color = if (on) Site.Text else Muted), maxLines = 1, softWrap = false) }
+                }
+            }
+            val chips = QuickPick.chips(LIVE_FORMATS)
+            androidx.compose.foundation.lazy.LazyRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(chips.size) { i -> val f = chips[i]; val on = m.pickFormat == f
+                    Box(Modifier.height(38.dp).pill(if (on) Gold.copy(alpha = .16f) else Site.Surface2, if (on) Gold else Line)
+                        .then(chipFocus.getOrNull(i)?.let { Modifier.focusRequester(it) } ?: Modifier).onFocusChanged { onChipFocus(i, it.isFocused) }
+                        .onPreviewKeyEvent { e -> if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && e.key == androidx.compose.ui.input.key.Key.DirectionDown) { onChipDown(i); true } else false }
+                        .clickable { m.pickFormat = f }.testTag("qfmt:${QuickPick.chipLabel(f)}").padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
+                        Text(QuickPick.chipLabel(f), style = sans(13f, FontWeight.Bold, if (on) Site.Text else Muted), maxLines = 1, softWrap = false) }
+                }
+            }
+        }
         else TabsRow(SOURCES.size, Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(TabsFill).border(1.dp, Line, RoundedCornerShape(14.dp)).padding(3.dp)) { tab ->
             SOURCES.forEach { (k, label) -> val on = source == k
                 Box(tab.height(44.dp).clip(RoundedCornerShape(10.dp)).then(if (on) Modifier.background(Picked).border(1.dp, Color(0x66D8B76C), RoundedCornerShape(10.dp)) else Modifier)
@@ -888,8 +1000,71 @@ private fun LibraryHead(m: LobbyModel, source: String, signedIn: Boolean, onOpen
             Text("Search ${SOURCES.first { it.first == source }.second.lowercase()}", style = sans(12f, color = Muted))
             Box(Modifier.fillMaxWidth().height(44.dp).clip(RoundedCornerShape(11.dp)).background(Site.Surface).border(1.dp, Line, RoundedCornerShape(11.dp)).padding(horizontal = 12.dp), contentAlignment = Alignment.CenterStart) {
                 if (m.query.isEmpty()) Text("Deck name or commander", style = sans(15f, color = Muted.copy(alpha = .7f)))
-                BasicTextField(m.query, { if (it.length <= 160) m.query = it }, singleLine = true, textStyle = sans(15f), cursorBrush = SolidColor(Gold), modifier = Modifier.fillMaxWidth())
+                BasicTextField(m.query, { if (it.length <= 160) m.query = it }, singleLine = true, textStyle = sans(15f), cursorBrush = SolidColor(Gold),
+                    modifier = Modifier.fillMaxWidth().then(searchFocus?.let { Modifier.focusRequester(it) } ?: Modifier))
             }
+        }
+    }
+}
+
+/** Quick Play's copy of a deck for its seat and its Power read: the same object selectDeck seats, so the read is the seat's. */
+private fun quickRaw(d: TableDecks.Deck): JsonObject = d.raw.deepCopy().apply { if (!has("id")) addProperty("id", d.id); addProperty("format", d.format) }
+
+/** The deck's colour pips: its commander's identity, else the colours of its cards (QuickPick.colors). */
+private fun deckColors(commander: String, raw: JsonObject): List<String> =
+    QuickPick.colors(factByName(commander)?.k, rowNames(raw).filter { it !in BASIC }.mapNotNull { factByName(it)?.k })
+
+/**
+ * 0.4.59 T8, one Quick Play deck tile: the deck's own art on top, its name under it in Cinzel on up to two lines (never cut: the
+ * size steps down to fit), then format and card count, the colour pips and the Power chip the deck page draws (QuickPower's read,
+ * the deck page's number). Missing cards greys it; ✓ marks your pick. A plays it (pad); a tap picks it.
+ */
+@Composable
+private fun QuickTile(id: String, name: String, format: String, count: Int, colors: List<String>, raw: JsonObject, selected: Boolean, locked: Boolean,
+                      focus: FocusRequester, onRing: () -> Unit, onSteer: (QuickPick.Dir) -> Boolean, onFocus: (Boolean) -> Unit = {}, artRatio: Float = 1.25f, onPlay: () -> Unit, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    val cover = coverOf(raw)
+    val filter = if (locked) Greyed else null
+    val v by QuickPower.version.collectAsState()
+    val read = remember(raw, format, v) { if (format.isBlank()) null else QuickPower.peek(format, raw) }
+    val power = read?.power?.let { "${kotlin.math.round(it).toInt()}" }
+    val tier = if (format == "Commander" && read?.bracket != null) dev.cardstashy.nativeplay.match.PowerTier.bracketLabel(read.bracket) else dev.cardstashy.nativeplay.match.PowerTier.powerTier(read?.power)
+    Column(Modifier.fillMaxWidth().then(if (selected) Modifier.border(2.dp, Gold, RoundedCornerShape(16.dp)).padding(3.dp) else Modifier)
+        .alpha(if (locked) .6f else 1f).clip(shape).background(Site.Surface2).border(1.dp, Line, shape)
+        .focusRequester(focus).onFocusChanged { onFocus(it.isFocused); if (it.isFocused) onRing() }
+        .onPreviewKeyEvent { e ->
+            if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onPreviewKeyEvent false
+            when (e.key) {
+                androidx.compose.ui.input.key.Key.DirectionUp -> onSteer(QuickPick.Dir.UP)
+                androidx.compose.ui.input.key.Key.DirectionDown -> onSteer(QuickPick.Dir.DOWN)
+                androidx.compose.ui.input.key.Key.DirectionLeft -> onSteer(QuickPick.Dir.LEFT)
+                androidx.compose.ui.input.key.Key.DirectionRight -> onSteer(QuickPick.Dir.RIGHT)
+                // The pad's A reaches the screen as the d-pad centre (MainActivity): A plays the deck under the ring.
+                androidx.compose.ui.input.key.Key.ButtonA, androidx.compose.ui.input.key.Key.DirectionCenter -> { onPlay(); true }
+                else -> false
+            } }
+        .testTag("deck:" + id).clickable(onClick = onClick)) {
+        Box(Modifier.fillMaxWidth().aspectRatio(artRatio)) {
+            if (cover != null) Pic(cover, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, colorFilter = filter)
+            Row(Modifier.align(Alignment.TopEnd).padding(6.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) { colors.forEach { Symbol(it, 15.dp) } }
+            if (selected) Text("✓ Selected", style = sans(11f, FontWeight.Bold, Color(0xFF1B1406)), modifier = Modifier.align(Alignment.BottomStart).padding(6.dp)
+                .clip(RoundedCornerShape(999.dp)).background(Gold).padding(horizontal = 8.dp, vertical = 2.dp))
+            else if (locked) Text("Missing cards", style = sans(11f, FontWeight.SemiBold, Color(0xFFF3E6C4)), modifier = Modifier.align(Alignment.BottomStart).padding(6.dp)
+                .clip(RoundedCornerShape(999.dp)).background(Color(0xA8000000)).padding(horizontal = 8.dp, vertical = 2.dp))
+        }
+        Column(Modifier.padding(horizontal = 8.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            // Two lines, never cut: the largest size from 13.5 sp down whose two lines hold the whole name.
+            // The name's room is two lines at full size on every tile, so a row's tiles stay level whatever size a name takes.
+            BoxWithConstraints(Modifier.fillMaxWidth().height(with(androidx.compose.ui.platform.LocalDensity.current) { (13.5f * 1.15f * 2f).sp.toDp() }), contentAlignment = Alignment.CenterStart) {
+                val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+                val wPx = constraints.maxWidth
+                val size = remember(name, wPx) {
+                    generateSequence(13.5f) { it - .5f }.takeWhile { it >= 7f }.firstOrNull { sz ->
+                        !measurer.measure(name, cinzel(sz, Color.White, .01f * sz, sz * 1.15f), maxLines = 2, constraints = androidx.compose.ui.unit.Constraints(maxWidth = wPx)).hasVisualOverflow } ?: 7f }
+                Text(name, style = cinzel(size, Color.White, .01f * size, size * 1.15f), maxLines = 2, minLines = 2, softWrap = true, modifier = Modifier.testTag("deckname:" + id))
+            }
+            Text("${format.ifBlank { "Casual" }} · $count cards", style = sans(11.5f, FontWeight.SemiBold, Muted), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            PowerChip(power, "power", tier)
         }
     }
 }

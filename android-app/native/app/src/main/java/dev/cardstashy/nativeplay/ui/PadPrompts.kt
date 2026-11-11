@@ -123,6 +123,8 @@ object PadPrompts {
     @Volatile var entry: (() -> Boolean)? = null
     /** A walk of the screen's own (the table's legal targets, live 0.4.57): -1 up or left, +1 down or right. True when it moved the ring. */
     @Volatile var steer: ((Int) -> Boolean)? = null
+    /** A walk that needs the direction itself (0.4.59 T8, the Quick Play grid): the d-pad's key code. True when it took the press. */
+    @Volatile var steerKey: ((Int) -> Boolean)? = null
     /** The repeat count of the pad key being handled, so a held trigger can't cancel twice. */
     @Volatile var keyRepeat = 0
 
@@ -145,6 +147,7 @@ object PadPrompts {
      * otherwise keep them for its caret and trap it). Left and right go on to the focused thing (sliders, the pack's hand).
      */
     fun navigate(keyCode: Int): Boolean {
+        steerKey?.let { s -> if (runCatching { s(keyCode) }.getOrDefault(false)) return true }
         steer?.let { s ->
             val k = when (keyCode) { KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_LEFT -> -1; KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT -> 1; else -> 0 }
             if (k != 0 && runCatching { s(k) }.getOrDefault(false)) return true

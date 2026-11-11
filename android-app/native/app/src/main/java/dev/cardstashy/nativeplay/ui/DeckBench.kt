@@ -612,13 +612,17 @@ private fun ActChip(c: BenchChip, a: BenchActions) = Box(Modifier.heightIn(min =
 }
 
 @Composable
-private fun PowerBadge(m: BenchModel, open: (() -> Unit)? = null) = Row(Modifier.then(if (open != null) Modifier.heightIn(min = 44.dp).clickable(onClick = open)
-    .semantics { role = Role.Button } else Modifier), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-    Text(m.power ?: "—", style = f(15f, 800, B.Gold), maxLines = 1, softWrap = false, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color(0x1FE5C47E))
+private fun PowerBadge(m: BenchModel, open: (() -> Unit)? = null) = PowerChip(m.power, m.powerLabel, m.tier, Modifier.then(if (open != null) Modifier.heightIn(min = 44.dp).clickable(onClick = open)
+    .semantics { role = Role.Button } else Modifier))
+
+/** The deck's Power chip (the number in its gold box, then its label and tier or bracket); the deck page and the Quick Play tiles draw this one. */
+@Composable
+internal fun PowerChip(power: String?, label: String, tier: String, modifier: Modifier = Modifier) = Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    Text(power ?: "—", style = f(15f, 800, B.Gold), maxLines = 1, softWrap = false, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color(0x1FE5C47E))
         .border(1.dp, Color(0x8CE5C47E), RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 1.dp))
     Column {
-        Text(m.powerLabel, style = f(11f, 600, Color(0xFFDDDDDD), line = 12f))
-        if (m.tier.isNotEmpty()) Text(m.tier, style = f(11f, 700, B.Gold, line = 12f), maxLines = 1, softWrap = false)
+        Text(label, style = f(11f, 600, Color(0xFFDDDDDD), line = 12f))
+        if (tier.isNotEmpty()) Text(tier, style = f(11f, 700, B.Gold, line = 12f), maxLines = 1, softWrap = false)
     }
 }
 
