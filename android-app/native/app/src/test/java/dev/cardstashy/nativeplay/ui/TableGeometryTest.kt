@@ -6,10 +6,10 @@ import org.junit.Test
 
 /** 0.4.59 T1 (specs/table-look-0459.md): the battlefield tiles sized from the screen, the same size on both sides. */
 class TableGeometryTest {
-    private val sizes = listOf(844f to 390f, 904f to 386f, 884f to 796f, 1280f to 800f, 1920f to 1080f)
+    private val sizes = listOf(844f to 390f, 904f to 386f, 884f to 796f, 960f to 540f, 1280f to 800f, 1920f to 1080f)
     private fun rows(h: Float, dual: Boolean = false) = TableGeometry.rows(dual, h * .2f, h * .8f)
-    private fun tiles(w: Float, h: Float, cf: List<Int>, mf: List<Int>, cb: List<Int>, mb: List<Int>, dual: Boolean = false, lane: Float = 0f) =
-        TableGeometry.tiles(rows(h, dual), w * TableGeometry.BOARD_W - lane, w * (TableGeometry.BOARD_W - TableGeometry.BACK_INSET) - lane, cf, mf, cb, mb)
+    private fun tiles(w: Float, h: Float, cf: List<Int>, mf: List<Int>, cb: List<Int>, mb: List<Int>, dual: Boolean = false) =
+        TableGeometry.tiles(rows(h, dual), w * TableGeometry.BOARD_W, w * (TableGeometry.BOARD_W - TableGeometry.BACK_INSET), cf, mf, cb, mb)
 
     @Test fun rowsKeepTheBriefsProportionsInTheFreeHeight() {
         for (dual in listOf(false, true)) {
@@ -98,9 +98,27 @@ class TableGeometryTest {
         }
     }
 
-    @Test fun theStackLaneNarrowsTheBoard() {
-        val open = tiles(844f, 390f, List(9) { 1 }, List(9) { 1 }, listOf(1), listOf(1))
-        val stack = tiles(844f, 390f, List(9) { 1 }, List(9) { 1 }, listOf(1), listOf(1), lane = 80f)
-        assertTrue(stack.front < open.front)
+    @Test fun tappedBackTilesStayOnTheBoardBox() {
+        // 0.4.60 Z1: the board runs to the window's top (and, on the dual top, its bottom); a tapped land in an outer row stays on it.
+        for ((w, h) in sizes) for (dual in listOf(false, true)) {
+            val z = ZoneLayout.of(w, h, dual = dual)
+            val r = TableGeometry.rowsIn(dual, z.board.y, z.board.bottom)
+            val t = TableGeometry.tiles(r, z.board.w, z.board.w - 12f, listOf(1), listOf(1), listOf(1), listOf(1))
+            assertTrue("$w×$h dual=$dual CPU back", r.cpuBack.centre - TableGeometry.TAPPED_HALF * t.back >= z.board.y - .01f)
+            assertTrue("$w×$h dual=$dual your back", r.myBack.centre + TableGeometry.TAPPED_HALF * t.back <= z.board.bottom + .01f)
+        }
+    }
+
+    @Test fun theStackNeverNarrowsTheBoard() {
+        // 0.4.60 Z1 (table-zones brief, walk line 27): the stack card stands in the right strip and never takes board width, so the
+        // board's room and the tiles are the same with the stack open or not. (Until 0.4.59 an open stack took an 80 dp lane off
+        // the board and shrank the tiles: theStackLaneNarrowsTheBoard asserted that; the brief changes it on purpose.)
+        for ((w, h) in sizes) for (dual in listOf(false, true)) {
+            val z = ZoneLayout.of(w, h, dual = dual)
+            assertTrue("$w×$h dual=$dual: the stack starts right of the board", z.stack.x > z.board.right)
+            assertEquals(w * TableGeometry.BOARD_W, z.board.w, .01f)
+            assertEquals(w * TableGeometry.BOARD_X, z.board.x, .01f)
+            // ZoneLayout has no input for the stack at all: its board is what the tiles are sized for (BOARD_W of the width).
+        }
     }
 }

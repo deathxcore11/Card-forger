@@ -58,7 +58,7 @@ class TableLookT1ShotTest {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         CardImageTest.art = { name, crop -> art.resolve(key(name, crop) + ".jpg").takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } }
         val sizes = listOf("844x390" to "w844dp-h390dp-land-xxhdpi", "904x386" to "w904dp-h386dp-land-xxhdpi", "884x796" to "w884dp-h796dp-land-xhdpi",
-            "1280x800" to "w1280dp-h800dp-land-mdpi", "1920x1080" to "w1920dp-h1080dp-land-mdpi")
+            "960x540" to "w960dp-h540dp-land-xhdpi", "1280x800" to "w1280dp-h800dp-land-mdpi", "1920x1080" to "w1920dp-h1080dp-land-mdpi")
         for ((size, q) in sizes) for (dual in listOf(false, true)) for (board in listOf("main", "crowded", "full", "realblock")) {
             RuntimeEnvironment.setQualifiers(q)
             DualScreen.pretend(if (dual) DualScreen.Panel(2, "Built-in Screen", 1240, 1080, 60f) else null)

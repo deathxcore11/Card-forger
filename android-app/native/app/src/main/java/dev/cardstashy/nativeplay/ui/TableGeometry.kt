@@ -28,7 +28,8 @@ internal object TableGeometry {
     val ONE_SCREEN = Rows(Band(.015f, .11f), Band(.155f, .20f), Band(.395f, .20f), Band(.635f, .11f))
     val DUAL_TOP = Rows(Band(.03f, .13f), Band(.21f, .235f), Band(.535f, .235f), Band(.83f, .13f))
 
-    const val BOARD_X = .115f
+    /** 0.4.60 Z1: the board starts after the left strip (ZoneLayout.RAIL); it is the middle 71.5 % of the width. */
+    const val BOARD_X = ZoneLayout.RAIL
     const val BOARD_W = .715f
     /** Back rows start this share of the width in from the board's left edge, clear of the seat plate, never centred like a hand. */
     const val BACK_INSET = .045f
@@ -71,6 +72,17 @@ internal object TableGeometry {
         val k = (bottom - top).coerceAtLeast(1f) / (to - from)
         fun place(b: Band) = Band(top + (b.top - from) * k, b.height * k)
         return Rows(place(s.cpuBack), place(s.cpuFront), place(s.myFront), place(s.myBack))
+    }
+
+    /**
+     * 0.4.60 Z1: the rows laid into a board box from [top] to [bottom] (dp) that has nothing above or below to keep clear of but its
+     * own edges: the outer rows sit in by as much as a tapped tile's turned corners reach past their band, so a tapped land in the
+     * CPU's back row or yours stays on the board.
+     */
+    fun rowsIn(dualTop: Boolean, top: Float, bottom: Float): Rows {
+        val s = shares(dualTop)
+        val m = (TAPPED_HALF - .5f) * s.cpuBack.height / (s.myBack.bottom - s.cpuBack.top) * (bottom - top).coerceAtLeast(0f)
+        return rows(dualTop, top + m, bottom - m)
     }
 
     /** The width a row of [piles] (each the number of cards in it, at most [PILE_EDGES] showing) takes at tile height [h]. */
