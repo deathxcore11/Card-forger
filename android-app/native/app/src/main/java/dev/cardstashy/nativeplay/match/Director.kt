@@ -193,14 +193,16 @@ object Director {
             // P2b: floating mana you made by hand and this cast spent: its streaks leave the pool by your square, before the lands'.
             val pool = if (mine) poolSpent.also { poolSpent = 0 } else 0
             if (!(mine && id != null && id == waitingUp)) out += Step(Kind.CAST, TO_STACK_MS, TO_STACK_MS, cpu = !mine, cardId = id, cardName = name, travel = Travel(id, name, mine, Leg.TO_STACK, "stackcard", TO_STACK_MS, e.stackId, targets = e.targets))
-            // M6 (measured from Arena): the CPU's card comes out at stack size, grows large and is held to be read with its caption,
-            // then returns to stack size while its lands pay. Your own card you have just held; it does not pop.
-            val pop = !mine
-            if (pop) out += Step(Kind.CAST, POP_MS, POP_MS, focal = true, cpu = true, cardId = id, cardName = name, beat = beat,
-                travel = Travel(id, name, false, Leg.POP, "stackcard", POP_MS, e.stackId, targets = e.targets))
+            // M6 (measured from Arena, both players): the card comes out at stack size, grows large and is held to be read with its
+            // caption, then returns to stack size while its lands pay. Your own card that waited on the stack for its target or
+            // its mana popped when it went there (below); it does not pop a second time.
+            val pop = !(mine && id != null && id == waitingUp)
+            if (pop) out += Step(Kind.CAST, POP_MS, POP_MS, focal = true, cpu = !mine, cardId = id, cardName = name, beat = beat,
+                travel = Travel(id, name, mine, Leg.POP, "stackcard", POP_MS, e.stackId, targets = e.targets))
             if (taps.isNotEmpty() || pool > 0) { val ms = payMs(taps.size + pool)
                 out += Step(Kind.CAST, ms, PAY_MIN_MS, cpu = !mine, cardId = id, cardName = name, travel = Travel(id, name, mine, Leg.TAPS, "stackcard", ms, e.stackId, taps, pool = pool)) }
-            val restMs = BURST_MS + readMs
+            // Your own card read large in its pop needs no second read after the burst.
+            val restMs = BURST_MS + (if (pop && mine) 0L else readMs)
             out += Step(Kind.CAST, restMs, BURST_MIN_MS + (if (pop) 0L else CAST_READ_PROMPT_MS), focal = true, cpu = !mine, cardId = id, cardName = name, beat = if (pop) null else beat,
                 travel = Travel(id, name, mine, Leg.REST, "stackcard", restMs, e.stackId, targets = e.targets, power = if (taps.isEmpty() && pool == 0) .5f else 1f))
         }
@@ -341,6 +343,9 @@ object Director {
                         // T6 (Arena clip 1): the card goes to the stack first, then asks for its targets or its mana.
                         out += Step(Kind.CAST, TO_STACK_MS, TO_STACK_MS, cardId = id, cardName = e.card.name,
                             travel = Travel(id, e.card.name, true, Leg.TO_STACK, "stackcard", TO_STACK_MS))
+                        // M6: it pops large, then waits at stack size until answered.
+                        out += Step(Kind.CAST, POP_MS, POP_MS, focal = true, cardId = id, cardName = e.card.name,
+                            travel = Travel(id, e.card.name, true, Leg.POP, "stackcard", POP_MS))
                     } else if (e.from == "Hand" && e.to == "Stack" && id != null && id !in castHere && e.seq == lastSeq &&
                         cpu(e.player ?: controllerOf(id)) && before?.stack?.any { it.source?.id == id } != true) {
                         // The host pauses the CPU on its cast and publishes the board then, and may do so before it writes the cast event

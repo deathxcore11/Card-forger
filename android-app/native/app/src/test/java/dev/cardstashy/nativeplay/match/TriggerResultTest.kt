@@ -64,9 +64,10 @@ class TriggerResultTest {
         // The plan: your cast travels first (0.4.59 T5: to the stack, its rest, onto the board), then the source beat with its stack
         // hold (never on a snapshot), then the landing, all held, yours.
         val all = Director.plan(after, events, before = before).filter { it.held }
-        assertEquals(listOf(Director.Kind.CAST, Director.Kind.CAST, Director.Kind.ENTER, Director.Kind.TRIGGER, Director.Kind.RESULT), all.map { it.kind })
-        assertTrue(all.take(3).all { it.travel?.mine == true && it.travel.cardId == 300 })
-        val steps = all.drop(3)
+        // M6: to the stack, the pop, the rest.
+        assertEquals(listOf(Director.Kind.CAST, Director.Kind.CAST, Director.Kind.CAST, Director.Kind.ENTER, Director.Kind.TRIGGER, Director.Kind.RESULT), all.map { it.kind })
+        assertTrue(all.take(4).all { it.travel?.mine == true && it.travel.cardId == 300 })
+        val steps = all.drop(4)
         val t = steps[0].trig!!
         assertTrue(t.yours); assertTrue(t.resolvedHere); assertEquals(200, t.sourceId)
         assertEquals(Director.SOURCE_MS + Director.STACK_HOLD_MS, steps[0].ms)

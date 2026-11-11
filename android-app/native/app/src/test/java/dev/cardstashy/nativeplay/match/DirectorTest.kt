@@ -72,7 +72,7 @@ class DirectorTest {
         val events = listOf(ev("zone", card = c, from = "Hand", to = "Stack", player = null), ev("cast", player = me, source = c).copy(stackId = 7),
             ev("zone", card = c, from = "Stack", to = "Battlefield", player = me), ev("resolve", source = c))
         val steps = Director.plan(st, events, before = before)
-        assertEquals(listOf("CAST:TO_STACK:stackcard:200", "CAST:TAPS:stackcard:460", "CAST:REST:stackcard:895", "ENTER:TO_SLOT:c950:400"), legs(steps))
+        assertEquals(listOf("CAST:TO_STACK:stackcard:200", "CAST:POP:stackcard:1150", "CAST:TAPS:stackcard:460", "CAST:REST:stackcard:370", "ENTER:TO_SLOT:c950:400"), legs(steps))
         val taps = steps.first { it.travel?.leg == Director.Leg.TAPS }.travel!!.taps
         assertEquals(listOf(40, 41), taps)
         // One by one: the second land starts 80 ms after the first; its streak leaves 60 ms later and reaches the spell 280 ms after
@@ -88,11 +88,13 @@ class DirectorTest {
         assertTrue(steps.mapNotNull { it.travel }.all { it.mine && it.cardId == 950 && it.stackId == 7 || it.leg == Director.Leg.TO_SLOT })
         // No step of the travel plays a sound of its own: the cast sound stays the table audio's one.
         assertTrue(steps.filter { it.travel != null }.all { it.cue == null })
-        // The rest is focal, so a waiting prompt or a long queue never cuts its burst and read (370 + 525).
+        // M6 (both players): the pop is the read; it and the rest are focal, so a waiting prompt or a long queue never cuts the
+        // pop (1150) or the burst (370).
+        val pop = steps.first { it.travel?.leg == Director.Leg.POP }
         val rest = steps.first { it.travel?.leg == Director.Leg.REST }
-        assertTrue(rest.focal)
-        for (w in listOf(true, false)) for (q in listOf(0L, 9000L)) assertTrue(Director.lengthOf(rest, w, q) >= Director.BURST_MS + Director.CAST_READ_MS)
-        assertEquals(Director.BURST_MIN_MS + Director.CAST_READ_PROMPT_MS, rest.minMs)
+        assertTrue(pop.focal); assertTrue(rest.focal)
+        for (w in listOf(true, false)) for (q in listOf(0L, 9000L)) { assertEquals(Director.POP_MS, Director.lengthOf(pop, w, q)); assertTrue(Director.lengthOf(rest, w, q) >= Director.BURST_MIN_MS) }
+        assertEquals(Director.BURST_MIN_MS, rest.minMs)
     }
 
     /**
@@ -108,7 +110,8 @@ class DirectorTest {
         val up = ev("zone", card = c, from = "Hand", to = "Stack", player = null)
         val asking = board(listOf(mountain), theirs = listOf(bears)).copy(inputType = "InputSelectTargets", message = "Select targets for Lightning Bolt", events = listOf(up))
         assertEquals(951, dev.cardstashy.nativeplay.ui.pendingCast(asking)?.id)
-        assertEquals(listOf("CAST:TO_STACK:stackcard:200"), legs(Director.plan(asking, listOf(up), before = start)))
+        // M6: it pops large, then waits at stack size for its answer.
+        assertEquals(listOf("CAST:TO_STACK:stackcard:200", "CAST:POP:stackcard:1150"), legs(Director.plan(asking, listOf(up), before = start)))
         val done = board(listOf(mountain.copy(tapped = true)), theirs = emptyList()).copy(inputType = null, message = "")
         val events = listOf(ev("cast", player = me, source = c, targets = listOf(card(960, "Grizzly Bears"))).copy(stackId = 8),
             ev("zone", card = c, from = "Stack", to = "Graveyard", player = me), ev("resolve", source = c))
@@ -147,11 +150,11 @@ class DirectorTest {
         val events = listOf(ev("zone", card = a, from = "Hand", to = "Stack", player = null), ev("cast", player = me, source = a, targets = listOf(card(960, "Hill Giant"))),
             ev("zone", card = a, from = "Stack", to = "Battlefield", player = me), ev("attach", card = a), ev("resolve", source = a))
         val steps = Director.plan(st, events, before = before)
-        assertEquals(listOf("CAST:TO_STACK:stackcard:200", "CAST:REST:stackcard:895", "ENTER:TO_HOST:c960:400"), legs(steps))
+        assertEquals(listOf("CAST:TO_STACK:stackcard:200", "CAST:POP:stackcard:1150", "CAST:REST:stackcard:370", "ENTER:TO_HOST:c960:400"), legs(steps))
         assertTrue(steps.any { it.kind == Director.Kind.ATTACH && it.travel == null })
         // When Forge reports only the attach (no zone move), the attach carries the trip to the host.
         val bare = Director.plan(st, events.filter { it.type != "zone" }, before = before)
-        assertEquals(listOf("CAST:TO_STACK:stackcard:200", "CAST:REST:stackcard:895", "ATTACH:TO_HOST:c960:400"), legs(bare))
+        assertEquals(listOf("CAST:TO_STACK:stackcard:200", "CAST:POP:stackcard:1150", "CAST:REST:stackcard:370", "ATTACH:TO_HOST:c960:400"), legs(bare))
     }
 
     /** A land skips the stack: hand to its group, 380 ms, and no cast step. */
