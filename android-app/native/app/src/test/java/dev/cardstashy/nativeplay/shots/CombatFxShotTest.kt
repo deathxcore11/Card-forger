@@ -48,22 +48,23 @@ class CombatFxShotTest {
         fun item(kind: Fx, ms: Long, card: Int? = null, from: String? = null, to: String? = null, label: String = "", level: Int = 2, player: Int? = null, tone: Color = Color(0xFFFF5A4A), power: Float = 1f) =
             FxItem(kind, level, ms, card = card, fromKey = from, toKey = to, tone = tone, player = player, power = power).also { it.label = label; it.t0 = 0; it.dur = ms }
         val frames = listOf(
-            Triple("block", listOf(item(Fx.BLOCK, 1640, mine.id, "c${mine.id}", "c${theirs.id}")), 700L),
-            Triple("clash", listOf(item(Fx.LUNGE, 1700, theirs.id, to = "c${mine.id}", tone = Color(0xFFFF6A4A), power = .8f),
+            Triple("block", listOf(item(Fx.BLOCK, 700, mine.id, "c${mine.id}", "c${theirs.id}")), 300L),
+            Triple("clash", listOf(item(Fx.LUNGE, 800, theirs.id, to = "c${mine.id}", tone = Color(0xFFFF6A4A), power = .8f),
                 FxItem(Fx.DAMAGE, 2, 1100, card = mine.id, tone = Color(0xFFFF5A4A), side = 1).also { it.label = "−3"; it.dur = 1100 },
                 FxItem(Fx.DAMAGE, 2, 1100, card = theirs.id, tone = Color(0xFFFF5A4A), side = -1).also { it.label = "−2"; it.dur = 1100 }), 0L),
             // Staged combat (5 Nov): this pair lit, the rest of the board at half light, a gold line and the pair's tag.
             Triple("stage", listOf(FxItem(Fx.STAGE, 2, 1400, fromKey = "c${theirs.id}", toKey = "c${mine.id}", ids = setOf(theirs.id, mine.id))
                 .also { it.label = "${theirs.name} ${theirs.power}/${theirs.toughness} blocked by ${mine.name} ${mine.power}/${mine.toughness}"; it.t0 = 0; it.dur = 1400 },
-                item(Fx.LUNGE, 1700, theirs.id, to = "c${mine.id}", tone = Color(0xFFFF6A4A), power = .8f)), 420L),
-            Triple("face", listOf(item(Fx.LUNGE, 1700, theirs.id, to = "orb${st.viewer}", tone = Color(0xFFFF6A4A)),
+                item(Fx.LUNGE, 800, theirs.id, to = "c${mine.id}", tone = Color(0xFFFF6A4A), power = .8f)), 420L),
+            Triple("face", listOf(item(Fx.LUNGE, 1100, theirs.id, to = "orb${st.viewer}", tone = Color(0xFFFF6A4A)),
                 item(Fx.LIFE, 950, to = "orb${st.viewer}", label = "−4", level = 3, player = st.viewer, power = .8f)), 0L),
         )
         for ((name, items, at) in frames) {
             val fx = Battlefield()
-            // Clash and face: 140 ms after contact; the damage and life items start at contact.
-            val now = if (at > 0) at else (1700 * .36f).toLong() + 140
-            items.forEach { if (it.kind == Fx.DAMAGE || it.kind == Fx.LIFE) it.t0 = (1700 * .36f).toLong() }
+            // Clash and face (P5 timings): 140 ms after the freeze ends; the damage and life items start as it ends.
+            val face = items.any { it.kind == Fx.LIFE }; val lands = dev.cardstashy.nativeplay.ui.Strike.after(face).toLong()
+            val now = if (at > 0) at else lands + 140
+            items.forEach { if (it.kind == Fx.DAMAGE || it.kind == Fx.LIFE) it.t0 = lands }
             fx.items.addAll(items); fx.reindex(); fx.now.longValue = now
             dev.cardstashy.nativeplay.ui.TableEmotes.destroy()
             captureRoboImage(File(System.getProperty("shotsDir"), "table/fx-$name-844x390.png").path) {

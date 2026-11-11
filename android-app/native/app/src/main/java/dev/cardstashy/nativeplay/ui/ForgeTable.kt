@@ -491,7 +491,9 @@ fun ForgeBoard(
             val lastBoard = remember { arrayOfNulls<MatchState>(2) }
             val ripple = remember(st.revision) { if (lastBoard[1] !== st) { lastBoard[0] = lastBoard[1]; lastBoard[1] = st }
                 lastBoard[0]?.let { untapOrder(it, st) } ?: emptyList() }
-            androidx.compose.runtime.CompositionLocalProvider(LocalUntapRipple provides (if (Motion.still || fx.reduced) emptyList() else ripple), LocalAttackInput provides (live && st.inputType == "InputAttack"),
+            // P5: the attackers this board declared, in the order they step up.
+            val declared = remember(st.revision) { lastBoard[0]?.takeIf { lastBoard[1] === st }?.let { declareOrder(it, st) } ?: emptyList() }
+            androidx.compose.runtime.CompositionLocalProvider(LocalUntapRipple provides (if (Motion.still || fx.reduced) emptyList() else ripple), LocalDeclare provides declared, LocalAttackInput provides (live && st.inputType == "InputAttack"),
                 LocalPayLight provides payLight, LocalHandCarry provides payLight.isNotEmpty(), LocalAbilityOpen provides abilityOpen, LocalPayInput provides (live && Glow.paying(st)),
                 LocalAttackNumbers provides (if (blockingNow && attackersNow.size > 1) attackersNow.withIndex().associate { (i, c) -> c.id to i + 1 } else emptyMap()),
                 LocalBlockDrag provides (if (blockingNow) blockDrag else null)) {
@@ -525,6 +527,8 @@ fun ForgeBoard(
                 val fw = tiles.frontW.dp; val bw = tiles.backW.dp; val bh = tiles.back.dp
                 val tilePiece = tiles.front.dp / .9f
                 val advance = TableGeometry.advance(rowsG, tiles.front, 12.du.value).dp
+                val advancePx = with(LocalDensity.current) { advance.toPx() }
+                androidx.compose.runtime.SideEffect { fx.advancePx = advancePx }
                 // Match punch P1: the shake and push-in move the board box only (the four rows), about the board's centre. The squares,
                 // phase, End turn and the gold button live outside it and never move under a thumb.
                 Box(Modifier.fillMaxSize().graphicsLayer {
@@ -1280,12 +1284,12 @@ internal fun aurasOn(card: Card, lookup: (Int) -> Card?): List<Card> =
 @Composable
 private fun AuraStrips(card: Card, auras: List<Card>, w: Dp, h: Dp, advance: Dp?, mineSide: Boolean, modifier: Modifier, d: Du) = with(d) {
     val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tapSpec(card.id), label = "auraTap")
+    val stepUp by attackStep(card)
     val shown = auras.take(TableGeometry.STRIPS_MAX); val n = shown.size; val more = auras.size - n
     val anchors = LocalAnchors.current
     // 0.4.59 T5: an aura on its way from the stack (TravelCard) shows its strip once it has arrived.
     val coming = LocalTravel.current?.travel?.takeIf { it.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_HOST && LocalBattlefield.current?.reduced != true }?.cardId
-    Box(modifier.size(w, h).graphicsLayer { rotationZ = turn; val s = if (card.tapped) .94f else 1f; scaleX = s; scaleY = s
-        translationY = if (card.attacking) (if (mineSide) -1f else 1f) * (advance?.toPx() ?: (12f * u * density)) else 0f }) {
+    Box(modifier.size(w, h).graphicsLayer { rotationZ = turn; attackLayer(card.tapped, stepUp, mineSide, advance?.toPx() ?: (12f * u * density)) }) {
         // The name bar takes about 60 % of the 15 % that shows, so a sliver of the aura's art shows under it; on a small tile
         // (a phone) the bar takes the whole of it, up to 10 dp, so the name stays readable.
         val bar = maxOf(h * .095f, minOf(h * TableGeometry.STRIP, 10.dp))
@@ -1356,6 +1360,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
     val paid = card.id in LocalPayLight.current
     // Tap: 180 ms (Living Battlefield page 9).
     val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tapSpec(card.id), label = "tap")
+    val stepUp by attackStep(card)
     val anchors = LocalAnchors.current
     val fx = LocalBattlefield.current
     val shape = RoundedCornerShape(10.du)
@@ -1402,7 +1407,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         onDispose { if (zone[card.id] === padFocus) zone.remove(card.id); ringedTile?.off(card.id) }
     }
     Box(modifier.size(w, h)
-        .graphicsLayer { rotationZ = turn; val s = if (card.tapped) .94f else 1f; scaleX = s; scaleY = s; translationY = if (card.attacking) (if (mineSide) -1f else 1f) * (advance?.toPx() ?: (12f * u * density)) else 0f }
+        .graphicsLayer { rotationZ = turn; attackLayer(card.tapped, stepUp, mineSide, advance?.toPx() ?: (12f * u * density)) }
         .onGloballyPositioned { place[0] = it; anchors?.putRect("c${card.id}", it.boundsInRoot()) }
         // Effects move the card by transform only, after its anchor is read, so lines and slots never follow the motion.
         .then(if (fx != null) Modifier.graphicsLayer { fx.move(this, card.id, anchors) } else Modifier)
@@ -1786,16 +1791,24 @@ internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Bool
     val calm = remember { Playmats.reduced(ctx) } // reduce motion: the life still ticks down, the portrait stays put
     // A hit to the face (spec 3): the portrait recoils 14 dp and flares bright at contact, then the life ticks down one by one,
     // each step popping coral at 1.5x. Gains and reduced motion just show the new number.
+    val fx = LocalBattlefield.current
     LaunchedEffect(p.life) {
         val from = last; last = p.life
-        if (p.life >= from || Motion.still) { shown = p.life; return@LaunchedEffect }
-        delay(730) // the strike reaches the portrait, then the 110 ms hit-stop
-        if (!calm) launch { flash.snapTo(1f); flash.animateTo(0f, tween(900)) }
-        if (!calm) launch { recoil.snapTo(1f); recoil.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = .45f, stiffness = 380f)) }
-        delay(260)
-        var n = 0
-        while (shown > p.life) { shown--; cue?.invoke("CMB-024", .7f, (1f - .03f * n++).coerceAtLeast(.6f)); tick.snapTo(1.5f); launch { tick.animateTo(1f, tween(140)) }; delay(if (from - p.life > 8) 60 else 110) }
-        shown = p.life
+        if (p.life >= from || Motion.still || fx == null) { shown = p.life; return@LaunchedEffect }
+        // Match punch P5: the pill follows the hits themselves. Each loss in flight (Battlefield.lifeShown) comes off one point every
+        // 90 ms from the frame its blow lands, each with a punch; the portrait recoils and flares on the first. A loss with no
+        // effect in flight (effects skipped by a touch) just shows.
+        var first = true; var n = 0
+        while (shown > p.life) {
+            androidx.compose.runtime.withFrameMillis { }
+            val v = fx.lifeShown(p.id, p.life).coerceAtMost(shown)
+            if (v < shown) {
+                if (first && !calm) { launch { flash.snapTo(1f); flash.animateTo(0f, tween(900)) }
+                    launch { recoil.snapTo(1f); recoil.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = .45f, stiffness = 380f)) } }
+                first = false; shown = v
+                cue?.invoke("CMB-024", .7f, (1f - .03f * n++).coerceAtLeast(.6f)); tick.snapTo(1.4f); launch { tick.animateTo(1f, tween(200)) }
+            } else if (!fx.lifePending(p.id)) shown = p.life
+        }
     }
     val anchors = LocalAnchors.current
     val pulse = if (pickable && !Motion.still) rememberInfiniteTransition(label = "pick").animateFloat(.55f, 1f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "a").value else 1f
@@ -3005,6 +3018,37 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
 
 /** T5 item 1, P2: when a cast's lands tap ([taps], in order), land [id]'s turn starts this long after the first (80 ms apart); null: not one of them. */
 internal fun tapDelay(taps: List<Int>, id: Int): Long? = taps.indexOf(id).takeIf { it >= 0 }?.let { it * dev.cardstashy.nativeplay.match.Director.TAP_GAP_MS }
+
+/** Match punch P5: the attackers the board on show has just declared, in the order they step up ([declareOrder]); empty otherwise. */
+internal val LocalDeclare = androidx.compose.runtime.compositionLocalOf<List<Int>> { emptyList() }
+
+/**
+ * Match punch P5, the declare: 0..1 as an attacker steps up (210 ms with a small overshoot, each 95 ms after the one before it in
+ * attack order) and as it goes home after combat (260). With reduce motion, and in still pictures, it is simply there.
+ */
+@Composable
+private fun attackStep(card: Card): androidx.compose.runtime.State<Float> {
+    val i = LocalDeclare.current.indexOf(card.id).coerceAtLeast(0)
+    val calm = Motion.still || LocalBattlefield.current?.reduced == true
+    return animateFloatAsState(if (card.attacking) 1f else 0f, when {
+        calm -> androidx.compose.animation.core.snap()
+        card.attacking -> tween(DECLARE_MS, delayMillis = (i * DECLARE_GAP_MS).toInt(), easing = androidx.compose.animation.core.Easing { backOut(it) })
+        else -> tween(260, easing = FastOutSlowInEasing)
+    }, label = "attackStep")
+}
+
+/**
+ * A tile's own layer while it attacks (the tile and its aura strips share it): stepped [advance] px toward the other side and 8 %
+ * larger. The growth is taken off the step, so its leading edge reaches no further than it did before P5: it never crosses the
+ * centre line or covers the row it faces (walk line 36).
+ */
+internal fun androidx.compose.ui.graphics.GraphicsLayerScope.attackLayer(tapped: Boolean, step: Float, mineSide: Boolean, advance: Float) {
+    val s = (if (tapped) .94f else 1f) * (1f + ATTACK_GROW * step); scaleX = s; scaleY = s
+    translationY = (if (mineSide) -1f else 1f) * attackShift(step, advance, size.height)
+}
+internal const val ATTACK_GROW = .08f
+/** How far an attacker has stepped (px) at [step] of its declare: the advance less half of the growth, never backward when it has settled. */
+internal fun attackShift(step: Float, advance: Float, tileH: Float): Float = (advance - tileH * ATTACK_GROW / 2f).coerceAtLeast(0f) * step
 
 /** Match punch P4: the tiles readied by the turn that just began, in ripple order ([untapOrder]); empty otherwise. */
 internal val LocalUntapRipple = androidx.compose.runtime.compositionLocalOf<List<Int>> { emptyList() }
