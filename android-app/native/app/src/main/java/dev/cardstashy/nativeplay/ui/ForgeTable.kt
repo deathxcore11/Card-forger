@@ -343,7 +343,7 @@ fun ForgeBoard(
     // 0.4.60 G5 review: the ringed tile is this board's own, so a match that ends takes it along (never a stale id in the next).
     val ringedTile = remember { RingedTile() }
     androidx.compose.runtime.CompositionLocalProvider(LocalBattlefield provides fx, LocalRinged provides ringedTile) {
-    BoxWithConstraints(modifier.fillMaxSize().fxSkip(fx).graphicsLayer { fx.shake(this) }
+    BoxWithConstraints(modifier.fillMaxSize().fxSkip(fx)
         // Live 0.4.56 on the Thor: Android's own default focus (leaving touch mode, a cleared ring) comes in from the top as a Down
         // search and landed on the menu button, so A opened the menu. On two screens with a controller it goes to the hand instead.
         .focusProperties { onEnter = {
@@ -521,10 +521,17 @@ fun ForgeBoard(
                 val fw = tiles.frontW.dp; val bw = tiles.backW.dp; val bh = tiles.back.dp
                 val tilePiece = tiles.front.dp / .9f
                 val advance = TableGeometry.advance(rowsG, tiles.front, 12.du.value).dp
+                // Match punch P1: the shake and push-in move the board box only (the four rows), about the board's centre. The squares,
+                // phase, End turn and the gold button live outside it and never move under a thumb.
+                Box(Modifier.fillMaxSize().graphicsLayer {
+                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin((zones.board.x + zones.board.w / 2) / W.value.coerceAtLeast(1f),
+                        (zones.board.y + zones.board.h / 2) / H.value.coerceAtLeast(1f))
+                    fx.shake(this) }) {
                 PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, backX, rowsG.cpuBack.centre.dp, backRoom, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true, onPile = openPile, gap = backGap)
                 PermanentRow(others(cpu.battlefield), false, 0, frontX, rowsG.cpuFront.centre.dp, room, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = fw to fh.dp, advance = advance, onPile = openPile, gap = frontGap, squeezed = tiles.squeezed)
                 PermanentRow(others(me.battlefield), false, 0, frontX, rowsG.myFront.centre.dp, room, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = fw to fh.dp, advance = advance, onPile = openPile, gap = frontGap, squeezed = tiles.squeezed)
                 PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, backX, rowsG.myBack.centre.dp, myBackRoom, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true, onPile = openPile, gap = backGap)
+                }
             }
 
             // 0.4.60 Z4 (specs/table-zones-brief.md, "Player squares in the corners"; mockup lines 306 to 321): each player's glass

@@ -167,6 +167,10 @@ class Battlefield {
             val q = (ms - start) / span
             if (q in 0f..1f) { val amp = amp0 * (1f - q) * (1f - q); dx = amp * sin(q * 46f); dy = amp * .7f * cos(q * 39f) }
         }
+        // P1: the punches' own jolts; the stronger shake and the deeper push-in win (never weaker than today's).
+        val (jx, jy, jz) = joltAt(jolts, t)
+        if (jx * jx + jy * jy > dx * dx + dy * dy) { dx = jx; dy = jy }
+        zoom = maxOf(zoom, jz)
         with(scope) { translationX = dx * density; translationY = dy * density; scaleX = zoom; scaleY = zoom }
     }
     /** Haptics at each beat's contact: light on a block, medium on a clash, heavy on a face hit. Set by FxDriver. */
@@ -177,7 +181,35 @@ class Battlefield {
     private var focalEnd = 0L
     private var started = false
 
-    internal fun tick(ms: Long) {
+    /** Match punch P1: the live particles (on the one FxLayer canvas) and the board's jolts in flight. */
+    internal val bits = Particles()
+    internal val jolts = ArrayList<Jolt>()
+    /** One of your questions is open: freezes are dropped (a prompt never waits on a freeze). Set by FxDriver. */
+    internal var promptWaiting = false
+    private var wall = -1L; private var frozenTo = -1L; private var held = 0L
+
+    /** P1: a payoff's short freeze. Pauses the effect clock only (effects, particles, jolts); input and the bridge run on. */
+    fun freeze(ms: Long) {
+        if (reduced || promptWaiting || ms <= 0L || wall < 0L) return
+        frozenTo = maxOf(frozenTo, wall + ms)
+    }
+
+    /** P1: the board shakes [ampDp] (damped over [ms]) and pushes in by [push]; the board box only. None with reduce motion. */
+    fun jolt(ampDp: Float, ms: Long, push: Float = 0f) {
+        if (reduced) return
+        jolts += Jolt(now.longValue, ampDp, ms, push)
+    }
+
+    /** The effect clock for the frame at [wallMs]: the frame clock less the time spent frozen. */
+    internal fun effectClock(wallMs: Long): Long {
+        if (wall >= 0L && frozenTo > wall) held += (minOf(wallMs, frozenTo) - wall).coerceAtLeast(0L)
+        wall = wallMs
+        return wallMs - held
+    }
+
+    internal fun tick(wallMs: Long) {
+        val ms = effectClock(wallMs)
+        if (jolts.isNotEmpty()) jolts.removeAll { ms - it.t0 > it.ms }
         if (!started) { started = true; if (items.isNotEmpty()) { val base = ms; items.forEach { it.t0 += base }; focalEnd += base } }
         now.longValue = ms
         onImpact?.let { feel -> for (it in items) if (it !in felt) {
@@ -233,6 +265,7 @@ class Battlefield {
     /** A touch on the board: every effect jumps to its end state (spec: "tap = next action"). */
     fun skip() {
         dev.cardstashy.nativeplay.match.CombatPace.release()
+        bits.clear(); jolts.clear(); frozenTo = -1L
         if (items.isEmpty()) return
         items.clear(); focalEnd = now.longValue; reindex()
     }
@@ -709,7 +742,7 @@ internal fun FxDriver(fx: Battlefield, st: MatchState) {
     SideEffect { fx.onImpact = { kind -> if (AppSettings.haptics) Feel.perform(view, when (kind) { "light" -> "pack-deal"; "heavy" -> "pack-rumble"; else -> "pack-reveal" }) } }
     val cue = LocalTableCue.current
     val reduced = androidx.compose.runtime.remember { Playmats.reduced(view.context) }
-    SideEffect { fx.onCue = cue; fx.reduced = reduced; fx.low = AppSettings.effects == "minimal" }
+    SideEffect { fx.onCue = cue; fx.reduced = reduced; fx.low = AppSettings.effects == "minimal"; fx.promptWaiting = st.prompt != null && st.waitingOnMe }
     val trig = LocalTrigger.current
     val travel = LocalTravel.current
     SideEffect { fx.travel = travel; fx.trigger(trig, st, anchors); fx.take(st, anchors) }
@@ -878,6 +911,8 @@ internal fun FxLayer(force: Boolean = false) {
                     Fx.TRIG_LAND -> drawTrigLand(tm, it, p, rect(it.fromKey), rect(it.toKey), band = band())
                 }
             }
+            // P1: every particle on this one canvas, over the effects. None with reduce motion or Effects Minimal.
+            if (fx.reduced || fx.low) fx.bits.clear() else fx.bits.draw(this, t)
         }
     }
 }
