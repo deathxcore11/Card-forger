@@ -35,8 +35,15 @@ internal object TableGeometry {
     const val ASPECT = 1.3f
     /** The gap between piles, as a share of the tile's width. */
     const val GAP = .16f
-    /** How much of each card under a pile's top shows, as a share of the tile's width (T2 revises the fan). */
+    /** How much of each card under a pile's top shows, as a share of the tile's width, when the tile size is worked out. */
     const val STEP = .18f
+    /**
+     * T2 (fans you can read, faults 18 and 19): once the tile size is set, each row fans its piles as wide as it has room for: a
+     * creature pile's cards step right by up to 66 % of a tile, a back row's by up to 30 %, never less than 15 % when tight.
+     */
+    const val FAN_MAX = .66f
+    const val FAN_MAX_BACK = .30f
+    const val FAN_MIN = .15f
     /** The gap before a back row's second lane (its non-land permanents), as a share of the tile's width. */
     const val LANE = .3f
     /** A land tile is at most this share of a creature tile's height. */
@@ -54,10 +61,19 @@ internal object TableGeometry {
     }
 
     /** The width a row of [piles] (each the number of cards in it, at most [PILE_EDGES] showing) takes at tile height [h]. */
-    fun rowWidth(h: Float, piles: List<Int>, lane: Boolean = false): Float {
+    fun rowWidth(h: Float, piles: List<Int>, lane: Boolean = false, step: Float = STEP): Float {
         if (piles.isEmpty()) return 0f
         val w = h * ASPECT
-        return piles.sumOf { (w * (1 + STEP * (minOf(it, PILE_EDGES) - 1))).toDouble() }.toFloat() + w * GAP * (piles.size - 1) + if (lane) w * LANE else 0f
+        return piles.sumOf { (w * (1 + step * (minOf(it, PILE_EDGES) - 1))).toDouble() }.toFloat() + w * GAP * (piles.size - 1) + if (lane) w * LANE else 0f
+    }
+
+    /** T2: the widest fan step (share of the tile's width) that keeps a row of [piles] at tile height [h] inside [room]. */
+    fun fanStep(h: Float, room: Float, piles: List<Int>, back: Boolean, lane: Boolean = false): Float {
+        val max = if (back) FAN_MAX_BACK else FAN_MAX
+        val edges = piles.sumOf { minOf(it, PILE_EDGES) - 1 }
+        if (edges == 0) return max
+        val spare = room - rowWidth(h, piles, lane, 0f)
+        return (spare / (h * ASPECT * edges)).coerceIn(FAN_MIN, max)
     }
 
     /** The tile height a row can have: its band's height, or less when its piles would not fit [room]. */

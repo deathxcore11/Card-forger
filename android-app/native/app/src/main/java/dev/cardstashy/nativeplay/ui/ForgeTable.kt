@@ -459,12 +459,13 @@ fun ForgeBoard(
                 val fw = tiles.frontW.dp; val fh = tiles.front.dp; val bw = tiles.backW.dp; val bh = tiles.back.dp
                 val tilePiece = fh / .9f
                 val room = W * TableGeometry.BOARD_W - lane
+                val backRoom = room - W * TableGeometry.BACK_INSET
                 val frontX = W * (TableGeometry.BOARD_X + TableGeometry.BOARD_W / 2) - lane / 2
                 val backX = W * (TableGeometry.BOARD_X + TableGeometry.BACK_INSET)
-                PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, backX, rowsG.cpuBack.centre.dp, room, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true)
+                PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, backX, rowsG.cpuBack.centre.dp, backRoom, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true)
                 PermanentRow(others(cpu.battlefield), false, 0, frontX, rowsG.cpuFront.centre.dp, room, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = fw to fh)
                 PermanentRow(others(me.battlefield), false, 0, frontX, rowsG.myFront.centre.dp, room, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = fw to fh)
-                PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, backX, rowsG.myBack.centre.dp, room, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true)
+                PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, backX, rowsG.myBack.centre.dp, backRoom, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true)
             }
 
             // Piles: yours right of your back row, the CPU's left of its back row.
@@ -922,8 +923,9 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
     val laneGap = if (tile != null) w * TableGeometry.LANE else if (piece != null) 22.dp else 12.du
     // Table additions 2: a pile's cards sit 9 px right and 6 px up of the one under them, at most 4 edges showing.
     // 0.4.59 T1: on screen-sized tiles the same shape scales with the tile (TableGeometry.STEP of its width).
-    val step = if (tile != null) w * TableGeometry.STEP else if (piece != null) 9.dp else 9.du
-    val rise = if (tile != null) h * .08f else if (piece != null) 6.dp else 6.du
+    // T2: a pile fans sideways as wide as the row has room for (TableGeometry.fanStep), so it shows what is in it; no rise.
+    val step = if (tile != null) w * TableGeometry.fanStep(h.value, room.value, piles.map { it.size }, land, laneAt > 0) else if (piece != null) 9.dp else 9.du
+    val rise = if (tile != null) 0.dp else if (piece != null) 6.dp else 6.du
     val gap = if (tile != null) w * TableGeometry.GAP else if (piece != null) 12.dp else 10.du
     val widths = piles.map { w + step * (minOf(it.size, PILE_EDGES) - 1) }
     val total = widths.fold(0.dp) { a, b -> a + b } + gap * (piles.size - 1) + if (laneAt > 0) laneGap else 0.dp
@@ -1121,7 +1123,8 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         TileLayer(card, mark == Mark.PLAYABLE || mark == Mark.USABLE, lookup, d, h, if (card.isCreature && card.power != null) (if (piece != null) statPx / u else statPx) else 0f, top = nh?.let { it + 6.dp })
         // .play-current-stats: right 6px, bottom 2px, 1px 7px, #d6ad64c0 hairline, radius 7, #111114f2, white 700; the toughness reads #ff8f84 while damage is marked
         // (forge-table.mjs data-damaged; Forge's toughness already counts counters, damage is not subtracted).
-        if (card.isCreature && card.power != null) {
+        // T2: in a fanned pile only the front card wears its numbers; the ones behind show their art.
+        if (card.isCreature && card.power != null && pileTop) {
             val fs = if (piece != null) statPx.sp else sp(statPx)
             // A TRIGGER SHOWS ITSELF: while a result that changed this card's power/toughness lands (1.2 s), the plate ticks green (up)
             // or coral (down). Then it is white again: the steady colour waits for base P/T from the bridge.
