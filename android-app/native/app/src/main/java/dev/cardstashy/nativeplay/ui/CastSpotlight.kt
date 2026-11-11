@@ -3,6 +3,8 @@ package dev.cardstashy.nativeplay.ui
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 import android.graphics.BlurMaskFilter
 import androidx.compose.animation.core.Animatable
@@ -99,6 +101,27 @@ private fun keywordKey(k: String) = k.replace(Regex("([a-z])([A-Z])"), "$1 $2").
 private fun keywordLabel(k: String) = keywordKey(k).replace(Regex("\\b(\\w+) \\1\\b"), "$1").replaceFirstChar { it.uppercase() }
 private fun hintFor(k: String): String? { val key = keywordKey(k); return KEYWORD_HINTS.entries.firstOrNull { key == it.key || key.startsWith(it.key + " ") }?.value }
 
+/**
+ * 0.4.60 G4: one keyword box in the inspect view: the tile's icon ([key], a [TileBadges.KEYWORDS] icon, or null for a keyword the tile
+ * shows as its word), Forge's words for it ([name]) and the KEYWORD_HINTS sentence ([hint], null when there is none).
+ */
+internal data class KeywordBox(val key: String?, val name: String, val hint: String?)
+
+/**
+ * 0.4.60 G4: the keyword boxes of [card], in the tile strip's order (TileBadges.of: the iconic ones in rank order, one per icon,
+ * then the word ones in Forge's order). Names are Forge's own words (TileBadges.currentKeywords); one icon that stands for more
+ * than one of Forge's entries (Protection from black, Protection from red) names them all. The sentence is KEYWORD_HINTS's, never ours.
+ */
+internal fun keywordBoxes(card: Card): List<KeywordBox> {
+    if (card.hidden) return emptyList()
+    val kws = TileBadges.currentKeywords(card)
+    fun rank(key: String) = TileBadges.KEYWORDS.indexOfFirst { it.first == key }
+    val iconic = kws.filter { it.key != null }.groupBy { it.key!! }.entries.sortedBy { rank(it.key) }
+        .map { (key, ks) -> KeywordBox(key, ks.map { it.text }.distinct().joinToString(", "), hintFor(ks.first().text)) }
+    val words = kws.filter { it.key == null }.map { KeywordBox(null, it.label, hintFor(it.text)) }
+    return iconic + words
+}
+
 /** cpuShowHtml's intent: what the play is ("Casting a creature", "Using X's ability"), then who it aims at. */
 internal fun spotlightIntent(s: Spotlight): String {
     if (s.note.isNotEmpty()) return s.note
@@ -163,7 +186,9 @@ fun CastSpotlight(s: Spotlight, modifier: Modifier = Modifier, onTap: () -> Unit
 }
 
 @Composable
-private fun GlassBox(s: Spotlight, w: Dp, h: Dp, timer: Float, attached: List<Card> = emptyList(), onAttached: (Card) -> Unit = {}) {
+private fun GlassBox(s: Spotlight, w: Dp, h: Dp, timer: Float, attached: List<Card> = emptyList(), onAttached: (Card) -> Unit = {},
+    /** 0.4.60 G4: the inspect view's keyword boxes; they replace the keyword lines. [boxesInside]: drawn here under the rules (a short width). */
+    boxes: List<KeywordBox>? = null, boxesInside: Boolean = false) {
     val c = s.card
     val shape = RoundedCornerShape(18.dp)
     val creature = "Creature" in c.type && c.power != null && c.toughness != null
@@ -196,13 +221,16 @@ private fun GlassBox(s: Spotlight, w: Dp, h: Dp, timer: Float, attached: List<Ca
         val lines = c.text.split(Regex("\n+")).map { it.trim() }.filter { it.isNotEmpty() }.take(6)
         if (lines.isNotEmpty()) {
             Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0x1FFFFFFF)))
-            Column(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            // 0.4.60 G4: with the keyword boxes under them the rules keep their full height; the boxes give way (they scroll).
+            Column(if (boxes != null && boxesInside && boxes.isNotEmpty()) Modifier else Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 lines.forEach { l -> SymbolLine(l) }
             }
         }
+        // 0.4.60 G4: no room beside the card: the keyword boxes go under the rules.
+        if (boxes != null && boxesInside && boxes.isNotEmpty()) KeywordBoxes(c, boxes, Modifier.fillMaxWidth().weight(1f, fill = false).verticalScroll(rememberScrollState()), tight = true)
         // 0.4.60 G3: what is attached to the card (auras, equipment), under the rules as small cards; a tap on one inspects it.
         if (attached.isNotEmpty()) AttachedRow(c, attached, onAttached)
-        val kws = c.keywords.map { it }.distinct().mapNotNull { k -> hintFor(k)?.let { k to it } }.take(3)
+        val kws = if (boxes != null) emptyList() else c.keywords.map { it }.distinct().mapNotNull { k -> hintFor(k)?.let { k to it } }.take(3)
         kws.forEach { (k, hint) ->
             val inline = HashMap<String, InlineTextContent>()
             Text(buildAnnotatedString { withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = Color(0xFFF3E9D2))) { append(keywordLabel(k)) }; append(" "); symbols(hint, inline) },
@@ -211,6 +239,35 @@ private fun GlassBox(s: Spotlight, w: Dp, h: Dp, timer: Float, attached: List<Ca
         Spacer(Modifier.height(2.dp))
         if (s.durationMs > 0) Box(Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(2.dp)).background(Color(0x1FFFFFFF))) {
             Box(Modifier.fillMaxWidth(timer).height(3.dp).background(Brush.horizontalGradient(listOf(Color(0xFFF7DA97), Color(0xFFE8B95B)))))
+        }
+    }
+}
+
+/**
+ * 0.4.60 G4: the keyword boxes, one glass box each: the tile's icon in the tile's mark (dark pill, gold hairline, gold icon), the
+ * keyword's name and its sentence with {symbols} drawn by the app's symbol set.
+ */
+@Composable
+private fun KeywordBoxes(host: Card, boxes: List<KeywordBox>, modifier: Modifier = Modifier, tight: Boolean = false) {
+    // [tight]: under the rules in the glass box, a little closer together so the rules keep their room.
+    Column(modifier.anchorRect("inspectKws${host.id}"), verticalArrangement = Arrangement.spacedBy(if (tight) 5.dp else 7.dp)) {
+        boxes.forEachIndexed { i, b ->
+            val shape = RoundedCornerShape(12.dp)
+            Row(Modifier.fillMaxWidth().anchorRect("inspectKw${host.id}.$i")
+                .clip(shape).background(Color(0xF00E121C)).border(1.dp, Color(0x6BE3C070), shape).padding(horizontal = 11.dp, vertical = if (tight) 6.dp else 9.dp),
+                horizontalArrangement = Arrangement.spacedBy(9.dp), verticalAlignment = Alignment.Top) {
+                if (b.key != null) Box(Modifier.size(24.dp).anchorRect("inspectKwIcon${host.id}.$i").clip(RoundedCornerShape(50)).background(Color(0xF0101114))
+                    .border(1.dp, Color(0xFFD6AD64), RoundedCornerShape(50)), contentAlignment = Alignment.Center) {
+                    BoardIcon(b.key, Color(0xFFF2D496), 24.dp * .74f)
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(b.name, style = sans(13.sp, FontWeight.ExtraBold, Color(0xFFFBF3DF)), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    if (b.hint != null) {
+                        val inline = HashMap<String, InlineTextContent>()
+                        Text(buildAnnotatedString { symbols(b.hint, inline) }, style = sans(12.sp, FontWeight.Medium, Color(0xFFB8C0CD)).copy(lineHeight = 16.sp), inlineContent = inline)
+                    }
+                }
+            }
         }
     }
 }
@@ -292,20 +349,29 @@ fun CardInspect(card: Card, viewer: Int?, start: PadAct? = null,
         val cardH = maxHeight * .92f; val cardW = cardH * .716f
         val k = (maxHeight / 560.dp).coerceIn(.64f, 1f)
         val boxW = (340.dp * k).coerceAtMost(maxWidth - cardW - 16.dp)
+        val glass = boxW >= 200.dp
+        // 0.4.60 G4: one glass box per keyword, in a column on the far side of the card from the glass box; when the width is short
+        // (narrower than 180 dp at the glass box's scale) they go under the rules in the glass box instead.
+        val boxes = remember(card) { keywordBoxes(card) }
+        val kwW = (260.dp * k).coerceAtMost(maxWidth - cardW - (if (glass) boxW + 16.dp else 0.dp) - 16.dp)
+        val kwBeside = boxes.isNotEmpty() && (kwW >= 180.dp * k || !glass)
         val glow = if (yours) GLOW_YOU else GLOW_CPU
+        val dens = androidx.compose.ui.platform.LocalDensity.current
         Row(Modifier.align(Alignment.Center).graphicsLayer { alpha = enter.value; val z = .96f + .04f * enter.value; scaleX = z; scaleY = z }
             .semantics { contentDescription = card.name }, horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (boxW >= 200.dp) {
-                val dens = androidx.compose.ui.platform.LocalDensity.current
+            if (glass) {
                 androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(dens.density * k, dens.fontScale)) {
-                    GlassBox(s, boxW / k, cardH / k, 0f, attached, onAttached)
+                    GlassBox(s, boxW / k, cardH / k, 0f, attached, onAttached, boxes = boxes, boxesInside = !kwBeside)
                 }
             }
-            Box(Modifier.size(cardW, cardH).drawBehind {
+            Box(Modifier.size(cardW, cardH).anchorRect("inspectCard${card.id}").drawBehind {
                 drawIntoCanvas { cv -> val p = Paint(); p.asFrameworkPaint().apply { maskFilter = BlurMaskFilter(26.dp.toPx(), BlurMaskFilter.Blur.NORMAL); color = glow.copy(alpha = .45f).toArgb() }
                     cv.drawRoundRect(0f, 0f, size.width, size.height, 18.dp.toPx(), 18.dp.toPx(), p) }
             }.clip(RoundedCornerShape(16.dp)).border(2.dp, glow.copy(alpha = .8f), RoundedCornerShape(16.dp)).background(Color(0xFF141418))) {
                 if (!card.hidden) CardImage(card.name, Modifier.fillMaxSize().padding(2.dp), contentScale = ContentScale.Fit, shape = RoundedCornerShape(13.dp))
+            }
+            if (kwBeside && kwW > 0.dp) androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(dens.density * k, dens.fontScale)) {
+                KeywordBoxes(card, boxes, Modifier.width(kwW / k).heightIn(max = cardH / k).verticalScroll(rememberScrollState()))
             }
         }
     }
