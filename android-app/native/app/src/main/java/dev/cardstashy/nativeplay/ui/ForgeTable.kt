@@ -523,9 +523,12 @@ fun ForgeBoard(
             if (!pod) ThinkDots(Modifier.offset(x = zones.cpuSquare.right.dp - 37.du, y = zones.cpuSquare.y.dp + 1.du).anchorRect("thinkdots"), d)
             // Command-zone crests (Z7 gives them their marks): the CPU's under its square at the right, yours over your tools at the left,
             // so the two shields never meet in the strip.
-            if (!pod) Crest(cpu.command.firstOrNull(), Modifier.offset(x = zones.cpuSquare.right.dp - 52.du, y = zones.cpuSquare.bottom.dp - 1.du).anchorRect("cpucrest"), d, onInspect)
-            @Composable fun myCrest(m: Modifier) = Crest(me.command.firstOrNull(), m, d, onInspect,
-                playable = me.command.firstOrNull()?.let { markOf(it) == Mark.PLAYABLE } == true) { intents.card(it.id) }
+            // 0.4.60 Z7: the shield stays while the commander is out of the command zone (on the battlefield it wears "In play"),
+            // with Forge's tax for the next cast on its badge.
+            if (!pod) Crest(CommanderMarks.shield(cpu, st.players), cpu.id, Modifier.offset(x = zones.cpuSquare.right.dp - 52.du, y = zones.cpuSquare.bottom.dp - 1.du).anchorRect("cpucrest"), d, onInspect)
+            val myShield = CommanderMarks.shield(me, st.players)
+            @Composable fun myCrest(m: Modifier) = Crest(myShield, me.id, m, d, onInspect,
+                playable = myShield?.card?.takeIf { it.zone == "Command" }?.let { markOf(it) == Mark.PLAYABLE } == true) { intents.card(it.id) }
             // Table additions 6: while you declare blocks, what gets through, above your seat. Gone the moment blocks are confirmed.
             if (blockingNow) damageThrough(st)?.let { t -> ThroughChip(t, me.life, Modifier.offset(x = zones.mySquare.x.dp + 50.du, y = zones.mySquare.bottom.dp - 120.du), d) }
             val tools = (if (st.controlMode in setOf("smart", "full")) 2 + (if (st.autoPay != null) 1 else 0) else 0) + 1
@@ -1338,6 +1341,10 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         mark !in FOIL_OFF && trigger?.sourceId != card.id
     // The band plays once when the card lands and once when it takes the ring (the tile's own kick on the board's one clock).
     val foilKick = remember(card.id) { androidx.compose.runtime.mutableLongStateOf(fx?.now?.longValue ?: 0L) }
+    // 0.4.60 Z7: a commander on the battlefield (Forge's flag) wears a gold crown standing on its top edge, outside the tile, so the
+    // name, art and badges stay as they are.
+    val crown = pileTop && CommanderMarks.crowned(card)
+    anchors?.let { if (crown) it.sizes["crown${card.id}"] = 1f else it.sizes.remove("crown${card.id}") }
     if (pileTop) androidx.compose.runtime.DisposableEffect(card.id, mineSide) {
         val zone = if (mineSide) TableZones.mine else TableZones.theirs
         zone[card.id] = padFocus
@@ -1370,6 +1377,16 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
                 val o = 7.dp.toPx(); val sw = 2.dp.toPx()
                 drawRoundRect(UsableViolet, topLeft = Offset(-o, -o), size = Size(size.width + 2 * o, size.height + 2 * o), cornerRadius = CornerRadius(r + o),
                     style = Stroke(sw, pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))))
+            }
+            if (crown) {
+                val cw = 20.du.toPx(); val ch = 12.du.toPx(); val cx = size.width / 2; val base = -4.du.toPx(); val top = base - ch
+                val l = cx - cw / 2; val r2 = cx + cw / 2
+                val path = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(l, base); lineTo(l, top + ch * .2f); lineTo(l + cw * .28f, top + ch * .58f); lineTo(cx, top)
+                    lineTo(r2 - cw * .28f, top + ch * .58f); lineTo(r2, top + ch * .2f); lineTo(r2, base); close()
+                }
+                drawPath(path, Brush.verticalGradient(listOf(Color(0xFFFFE6A0), Color(0xFFE3C070), Color(0xFFA9792C)), startY = top, endY = base))
+                drawPath(path, Color(0xFF1B1405), style = Stroke(1.2.dp.toPx(), join = androidx.compose.ui.graphics.StrokeJoin.Round))
             }
         }
         .aimOn("c${card.id}")
@@ -1591,7 +1608,12 @@ internal fun squareScale(w: Float, h: Float): Float = minOf(w / SQUARE_W, h / SQ
 @Composable
 private fun PlayerSquare(p: Player, box: ZoneLayout.Box, who: String, active: Boolean, d: Du, handKey: String?,
                          portrait: @Composable (Dp, Modifier, Float) -> Unit, grave: @Composable (Dp, Dp, Float) -> Unit) = with(d) {
-    val s = squareScale(box.w, box.h)
+    // 0.4.60 Z7: in a Commander game "Cmdr damage N/21" per opposing commander (Forge's numbers) under the portrait and the
+    // graveyard, at 9 sp: the rest of the square is drawn small enough to leave those lines their room.
+    val cmdr = CommanderMarks.damageShown(p)
+    val cmdrSp = 9f
+    val cmdrRoom = if (cmdr.isEmpty()) 0f else cmdr.size * cmdrSp * 1.3f + 4f
+    val s = squareScale(box.w, box.h - cmdrRoom)
     fun m(v: Float) = (v * s).dp
     val shape = RoundedCornerShape(m(10f))
     val anchors = LocalAnchors.current
@@ -1600,7 +1622,8 @@ private fun PlayerSquare(p: Player, box: ZoneLayout.Box, who: String, active: Bo
         .then(if (active) Modifier.drawBehind { drawRoundRect(Gold.copy(alpha = .28f), topLeft = Offset(-5.dp.toPx(), -5.dp.toPx()), size = androidx.compose.ui.geometry.Size(size.width + 10.dp.toPx(), size.height + 10.dp.toPx()), cornerRadius = CornerRadius(m(14f).toPx())) } else Modifier)
         .background(Color(0xD10E121C), shape)
         .border(if (active) 1.5.dp else 1.dp, if (active) Color(0xFFE3C070) else Color(0x6BE3C070), shape)
-        .semantics(mergeDescendants = false) { contentDescription = "$who: life ${p.life}, hand ${p.handCount}, deck ${p.libraryCount}, graveyard ${p.graveyard.size}" + if (active) ", their turn" else "" }) {
+        .semantics(mergeDescendants = false) { contentDescription = "$who: life ${p.life}, hand ${p.handCount}, deck ${p.libraryCount}, graveyard ${p.graveyard.size}" +
+            cmdr.joinToString("") { ", ${it.damage} of ${CommanderMarks.LETHAL} commander damage from ${it.commander}" } + if (active) ", their turn" else "" }) {
         if (active) anchors?.let { it.sizes["squareactive${p.id}"] = 1f }
         else anchors?.sizes?.remove("squareactive${p.id}")
         Text(who.uppercase(), style = sans(maxOf(9f, 10f * s).sp, FontWeight.ExtraBold, Color(0xFFC9CFDB)).copy(letterSpacing = .05.em), maxLines = 1, softWrap = false,
@@ -1616,6 +1639,11 @@ private fun PlayerSquare(p: Player, box: ZoneLayout.Box, who: String, active: Bo
             line("Deck", p.libraryCount, "lib${p.id}")
         }
         Box(Modifier.offset(x = m(51f), y = m(48f))) { grave(m(19f), m(19f / .716f), maxOf(10f, 11f * s)) }
+        if (cmdr.isNotEmpty()) Column(Modifier.offset(x = m(8f), y = (box.h - cmdrRoom + 1f).dp).anchorRect("cmdrdmg${p.id}")) {
+            // .czp em: 700, #ffd98a, one line each.
+            for (c in cmdr) Text(CommanderMarks.damageLine(c), style = sans(cmdrSp.sp, FontWeight.Bold, Color(0xFFFFD98A)).copy(fontFeatureSettings = "tnum", lineHeight = (cmdrSp * 1.3f).sp),
+                maxLines = 1, softWrap = false)
+        } else anchors?.rects?.remove("cmdrdmg${p.id}")
     }
 }
 
@@ -1733,7 +1761,7 @@ internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Bool
         }
         // .play-match-life (0.4.60 Z3: 19 sp, never less, was 15 px): 800 #fff4d8 on a dark pill with a gold hairline, 39 du below the portrait's top
         // (Z4: three quarters of the way down a portrait of any size; the mockup's square puts its middle 9 above the portrait's foot).
-        Box(Modifier.align(Alignment.TopCenter).offset(y = a * .75f).wrapContentSize(unbounded = true)
+        Box(Modifier.align(Alignment.TopCenter).offset(y = a * .75f).wrapContentSize(unbounded = true).anchorRect("lifepill${p.id}")
             .drawBehind { drawRoundRect(Color(0xCC000000), topLeft = Offset(0f, 3.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2)) }
             .clip(RoundedCornerShape(999.dp)).background(Brush.verticalGradient(listOf(Color(0xFF26221A), Color(0xFF14120E)))).border(1.dp, Gold, RoundedCornerShape(999.dp))
             .padding(horizontal = 8.du, vertical = 2.du)) {
@@ -1744,11 +1772,17 @@ internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Bool
     }
 }
 
-/** .play-command-zone.forge-crest: the commander's art on a shield, beside its owner's portrait. */
+/**
+ * .play-command-zone.forge-crest: the commander's art on a shield, beside its owner's portrait. 0.4.60 Z7 (mockup .czs): Forge's tax
+ * for the next cast on a gold badge at its top left ("+2"; none while it is 0) and a green "In play" tag while the commander is on the
+ * battlefield. Anchors: "cmdtax<id>" (and its number in sizes), "cmdinplay<id>", "crest<id>".
+ */
 @Composable
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
-private fun Crest(c: Card?, modifier: Modifier, d: Du, onInspect: (Card) -> Unit, playable: Boolean = false, onCast: (Card) -> Unit = {}) = with(d) {
-    if (c == null) return@with
+private fun Crest(sh: CommanderMarks.Shield?, owner: Int, modifier: Modifier, d: Du, onInspect: (Card) -> Unit, playable: Boolean = false, onCast: (Card) -> Unit = {}) = with(d) {
+    val anchors = LocalAnchors.current
+    if (sh == null) { anchors?.let { it.rects.remove("cmdtax$owner"); it.rects.remove("cmdinplay$owner"); it.sizes.remove("cmdtaxn$owner") }; return@with }
+    val c = sh.card
     val shield = GenericShape { s, _ ->
         val r = s.width * .09f
         moveTo(r, 0f); lineTo(s.width - r, 0f); quadraticTo(s.width, 0f, s.width, r)
@@ -1760,7 +1794,23 @@ private fun Crest(c: Card?, modifier: Modifier, d: Du, onInspect: (Card) -> Unit
             // The playable ring (ice, solid) round the shield while the commander can be cast now.
             .then(if (playable) Modifier.border(2.dp, Ice, shield).padding(2.dp) else Modifier)
             .clip(shield).background(Brush.verticalGradient(listOf(Color(0xFFF2CF7E), Color(0xFF8A6526)))).padding(2.du).clip(shield)
-            .combinedClickable(onLongClick = { onInspect(c) }) { if (playable) onCast(c) else onInspect(c) }) { CardImage(c.name, Modifier.fillMaxSize(), crop = true) }
+            .combinedClickable(onLongClick = { onInspect(c) }) { if (playable) onCast(c) else onInspect(c) }
+            .semantics { contentDescription = c.name + (CommanderMarks.taxLabel(sh)?.let { ", tax $it" } ?: "") + if (sh.inPlay) ", in play" else "" }
+            .anchorRect("crest$owner")) { CardImage(c.name, Modifier.fillMaxSize(), crop = true) }
+        CommanderMarks.taxLabel(sh)?.let { t ->
+            // .czs i: a #e3c070 pill, #1b1405 800 11 px, on the shield's top left corner.
+            Box(Modifier.align(Alignment.TopStart).offset(x = 2.du, y = 1.du).anchorRect("cmdtax$owner").heightIn(min = 18.du).widthIn(min = 22.du)
+                .clip(RoundedCornerShape(999.dp)).background(Color(0xFFE3C070)).border(1.dp, Color(0xFF1B1405), RoundedCornerShape(999.dp)).padding(horizontal = 5.du),
+                contentAlignment = Alignment.Center) { Text(t, style = sans((11f * maxOf(1f, u)).sp, FontWeight.ExtraBold, Color(0xFF1B1405)), maxLines = 1, softWrap = false) }
+            anchors?.let { it.sizes["cmdtaxn$owner"] = sh.tax!!.toFloat() }
+        } ?: anchors?.let { it.rects.remove("cmdtax$owner"); it.sizes.remove("cmdtaxn$owner") }
+        if (sh.inPlay) {
+            // .czs u: #62e39a 800 8 px uppercase; here 9 sp on a dark pill over the shield's lower half, so it reads on any art.
+            Box(Modifier.align(Alignment.BottomCenter).offset(y = (-18).du).anchorRect("cmdinplay$owner")
+                .clip(RoundedCornerShape(999.dp)).background(Color(0xE60B0D12)).border(1.dp, Color(0x8062E39A), RoundedCornerShape(999.dp)).padding(horizontal = 5.du, vertical = 1.du)) {
+                Text("IN PLAY", style = sans((9f * maxOf(1f, u)).sp, FontWeight.ExtraBold, Color(0xFF62E39A)).copy(letterSpacing = .04.em), maxLines = 1, softWrap = false)
+            }
+        } else anchors?.rects?.remove("cmdinplay$owner")
     }
 }
 

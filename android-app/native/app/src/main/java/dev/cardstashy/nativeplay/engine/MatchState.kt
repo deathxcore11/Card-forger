@@ -19,6 +19,9 @@ data class Card(
     val keywordsKnown: Boolean = false, val attachments: List<Int> = emptyList(), val crew: Int? = null,
     /** Forge says this creature attacks each combat if able (native-panel.mjs owesAttack). */
     val mustAttack: Boolean = false,
+    /** 0.4.60 Z7: a commander's casts from the command zone and the tax Forge charges for the next one (ForgeHttpBridge.card:
+     *  "commanderCasts", "commanderTax", sent only for a commander with an owner). Never worked out by the app. */
+    val commanderCasts: Int? = null, val commanderTax: Int? = null,
 ) {
     val isLand get() = type.contains("Land")
     val isCreature get() = type.contains("Creature")
@@ -260,6 +263,7 @@ data class MatchState(
             attachedTo = c.int("attachedTo"), blockingIds = c.arr("blockingIds").mapNotNull { if (it.isJsonPrimitive) it.asInt else null },
             commander = c.bool("commander") == true, setCode = c.str("setCode"), collectorNumber = c.str("collectorNumber"),
             mustAttack = c.bool("mustAttack") == true,
+            commanderCasts = c.int("commanderCasts")?.takeIf { it >= 0 }, commanderTax = c.int("commanderTax")?.takeIf { it >= 0 },
             attackTarget = c.obj("attackTarget")?.let { t -> val k = t.str("kind"); val i = t.int("id"); if (k != null && i != null) Ref(k, i, null) else null },
         )
 
