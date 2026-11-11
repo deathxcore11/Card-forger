@@ -1312,7 +1312,11 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         .then(if (draggable && drag != null) Modifier.pointerInput(card.id, drag) { blockDragGestures(card.id, drag, anchors, 22.dp.toPx()) { p -> place[0]?.takeIf { it.isAttached }?.localToRoot(p) } } else Modifier)) {
         // A big board (play-forge-table.css: --nh clamp(15, piece·.15, 22), --nf clamp(11, piece·.083, 13)): the name strip over a dark fade, the art below it.
         // 0.4.59 T1: tiles are sized from the screen, so the strip follows the tile (17 % of it) and a small tile shows art only.
-        val nh = piece?.let { if (h < 44.dp) null else (h.value * .17f).coerceIn(12f, 24f).dp }
+        // 0.4.60 Z3: no tile shows art only any more: every top card wears its name, at the text floors (TextFloors), its words growing
+        // with the tile on a bigger screen. The strip is at least one line of the name tall.
+        val textK = piece?.let { TextFloors.scale(it.value * .9f) } ?: 1f
+        val nameSp = TextFloors.nameSp(land, squeezed, textK)
+        val nh = piece?.let { maxOf((h.value * .17f).coerceIn(12f, 24f), nameSp * 1.2f).dp }
         Box(Modifier.fillMaxSize().padding(start = 2.du, end = 2.du, bottom = 2.du, top = nh?.let { it + 3.dp } ?: 2.du).clip(RoundedCornerShape(9.du))
             .then(if (foil) Modifier.boardFoil(fx, card.id, card.tapped) { foilKick.longValue } else Modifier)) {
             CardImage(card.name, Modifier.fillMaxSize(), crop = true) { CardFrame(card.name, card, Modifier.fillMaxSize(), crop = true) }
@@ -1325,26 +1329,47 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         var nameH by remember(card.id) { mutableStateOf(nh ?: 0.dp) }
         val dens = LocalDensity.current.density
         if (nh != null && piece != null && pileTop) {
-            val fs = (nh.value * .6f).coerceIn(9f, 15f)
-            // A squeezed tile (the mockup's squeezed name): tighter sides and letters, and the size steps down (never under 9 sp) before
-            // a word would break or a line would be lost.
-            val tight = squeezed || visibleW != null
-            var size by remember(card.id, card.name, fs, visibleW, squeezed) { mutableStateOf(fs) }
+            // 0.4.60 Z3: name 11 sp on two lines (a squeezed tile 9.5 sp on three, a land 10 sp), times the tile's scale. A name that does
+            // not fit steps down, never under its floor; at the floor a third line comes before any cut (a long name on a narrow tile).
+            val floor = TextFloors.nameFloor(land, squeezed)
+            // A squeezed tile (the mockup's squeezed name), an overlapped one and a land (a small tile): tighter sides and letters.
+            val tight = squeezed || visibleW != null || land
+            // The size and lines are found by measuring before drawing (no redraw loop, so the first frame is already right).
+            val side = if (tight) 3.dp else 7.dp
+            val room = ((visibleW ?: w) - side * 2).coerceAtLeast(1.dp)
+            fun nameStyle(sz: Float) = TextStyle(fontFamily = Spectral, fontWeight = FontWeight.Bold, fontSize = sz.sp,
+                color = Color(0xFFF6EFDF), lineHeight = maxOf(sz * 1.15f, minOf(nh.value, sz * 1.5f)).sp, letterSpacing = if (tight) (-.03f).em else androidx.compose.ui.unit.TextUnit.Unspecified,
+                shadow = androidx.compose.ui.graphics.Shadow(Color.Black, Offset(0f, 1f), 2f))
+            val nameMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
+            val fit = remember(card.name, nameSp, floor, room, tight, nh) {
+                val t = card.name
+                val roomPx = (room.value * dens).toInt().coerceAtLeast(1)
+                // Cut: a lost line, or a line that ends inside a word (as bad as a lost line).
+                fun cut(sz: Float, ln: Int): Boolean {
+                    val r = nameMeasurer.measure(t, nameStyle(sz), overflow = TextOverflow.Clip, maxLines = ln, constraints = androidx.compose.ui.unit.Constraints(maxWidth = roomPx))
+                    return r.hasVisualOverflow || (0 until r.lineCount - 1).any { i -> val e = r.getLineEnd(i); e in 1 until t.length && !t[e - 1].isWhitespace() && t[e - 1] != '-' && !t[e].isWhitespace() }
+                }
+                val l0 = TextFloors.nameLines(squeezed || visibleW != null)
+                var sz = nameSp
+                while (sz > floor + .01f && cut(sz, l0)) sz = maxOf(floor, sz - .5f)
+                when {
+                    !cut(sz, l0) -> Triple(sz, l0, false)
+                    !cut(sz, 3) -> Triple(sz, 3, false)
+                    else -> Triple(sz, 3, true)
+                }
+            }
+            val (size, lines, cut) = fit
             Box((if (visibleW != null) Modifier.width(visibleW) else Modifier.fillMaxWidth()).heightIn(min = nh + 10.dp)
                 .background(Brush.verticalGradient(0f to Color(0xF007070B), .55f to Color(0xB807070B), 1f to Color(0x0007070B)))
-                .padding(start = if (tight) 3.dp else 7.dp, end = if (tight) 3.dp else 7.dp, top = 3.dp, bottom = 4.dp)) {
-                Text(card.name, maxLines = if (squeezed) 3 else 2, overflow = TextOverflow.Clip, style = TextStyle(fontFamily = Spectral, fontWeight = FontWeight.Bold, fontSize = size.sp,
-                    color = Color(0xFFF6EFDF), lineHeight = maxOf(size * 1.15f, minOf(nh.value, size * 1.5f)).sp, letterSpacing = if (squeezed) (-.03f).em else androidx.compose.ui.unit.TextUnit.Unspecified,
-                    shadow = androidx.compose.ui.graphics.Shadow(Color.Black, Offset(0f, 1f), 2f)),
+                .padding(start = side, end = side, top = 3.dp, bottom = 4.dp)) {
+                Text(card.name, maxLines = lines, overflow = TextOverflow.Clip, style = nameStyle(size),
                     onTextLayout = { r ->
-                        val t = card.name
-                        // A line that ends inside a word broke that word: as bad as a lost line.
-                        val broken = (0 until r.lineCount - 1).any { i -> val e = r.getLineEnd(i); e in 1 until t.length && !t[e - 1].isWhitespace() && t[e - 1] != '-' && !t[e].isWhitespace() }
-                        val cut = r.hasVisualOverflow || broken
-                        if (cut && size > 9f) { size = maxOf(9f, size - .5f); return@Text }
                         nameH = maxOf(nh, (r.size.height / dens).dp - 3.dp)
-                        // A test hook: a name that does not fit its lines is marked, so a shot test can say no name is cut.
-                        anchors?.let { if (cut) it.putRect("namecut${card.id}", androidx.compose.ui.geometry.Rect(0f, 0f, 1f, 1f)) else it.rects.remove("namecut${card.id}") }
+                        // Test hooks: a name that does not fit its lines is marked, so a shot test can say no name is cut; its size and lines.
+                        anchors?.let {
+                            if (cut) it.putRect("namecut${card.id}", androidx.compose.ui.geometry.Rect(0f, 0f, 1f, 1f)) else it.rects.remove("namecut${card.id}")
+                            it.sizes["namesp${card.id}"] = size; it.sizes["namelines${card.id}"] = r.lineCount.toFloat()
+                        }
                     })
             }
         }
@@ -1353,7 +1378,8 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
                 contentAlignment = Alignment.Center) { Text("$c", style = sans(sp(7f), FontWeight.Bold, if (c == 'W') Color(0xFF111111) else Color.White)) }
         }
         // P/T: clamp(15, piece·.16, 23) in the creature lane, clamp(11, piece·.12, 17) elsewhere, on a big board.
-        val statPx = piece?.let { if (land) (h.value * .18f).coerceIn(8f, 17f) else (h.value * .19f).coerceIn(9f, 23f) } ?: (h.value / u * .26f).coerceIn(9f, 18f)
+        // 0.4.60 Z3: on the table P/T is 15 sp, growing with the tile (TextFloors); elsewhere as before.
+        val statPx = piece?.let { TextFloors.ptSp(textK) } ?: (h.value / u * .26f).coerceIn(9f, 18f)
         TileLayer(card, mark == Mark.PLAYABLE || mark == Mark.USABLE, lookup, d, h, if (card.isCreature && card.power != null) (if (piece != null) statPx / u else statPx) else 0f, top = nh?.let { (if (pileTop) nameH else it) + 6.dp })
         // .play-current-stats: right 6px, bottom 2px, 1px 7px, #d6ad64c0 hairline, radius 7, #111114f2, white 700; the toughness reads #ff8f84 while damage is marked
         // (forge-table.mjs data-damaged; Forge's toughness already counts counters, damage is not subtracted).
@@ -1371,8 +1397,9 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
             val fsFit = if (!left) fs else {
                 val textW = measurer.measure("${card.power} / ${card.toughness ?: 0}", sans(fs, FontWeight.Bold, Color.White)).size.width / dens
                 val room = (visibleW!! - 6.du - 14.du - 2.dp).value
-                if (textW > room && textW > 0f) (fs.value * (room / textW).coerceIn(.5f, 1f)).sp else fs
+                if (textW > room && textW > 0f) maxOf(TextFloors.PT, fs.value * (room / textW).coerceIn(.5f, 1f)).sp else fs // Z3: never under 15 sp
             }
+            anchors?.let { it.sizes["ptsp${card.id}"] = fsFit.value }
             Row(Modifier.align(if (left) Alignment.BottomStart else Alignment.BottomEnd).offset(x = if (left) 3.du else (-6).du, y = (-2).du)
                 .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("pt${card.id}", it.boundsInRoot()) } else Modifier)
                 .clip(RoundedCornerShape(7.du)).background(tone?.copy(alpha = .28f)?.compositeOver(Color(0xF2111114)) ?: Color(0xF2111114))
@@ -1602,13 +1629,14 @@ internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Bool
             if (flash.value > 0f) Box(Modifier.fillMaxSize().background(CpuRed.copy(alpha = .55f * flash.value)))
             if (recoil.value > .3f) Box(Modifier.fillMaxSize().background(Color.White.copy(alpha = .6f * (recoil.value - .3f) / .7f)))
         }
-        // .play-match-life: 15 px 800 #fff4d8 on a dark pill with a gold hairline, 39 du below the portrait's top.
+        // .play-match-life (0.4.60 Z3: 19 sp, never less, was 15 px): 800 #fff4d8 on a dark pill with a gold hairline, 39 du below the portrait's top.
         Box(Modifier.align(Alignment.TopCenter).offset(y = 39.du).wrapContentSize(unbounded = true)
             .drawBehind { drawRoundRect(Color(0xCC000000), topLeft = Offset(0f, 3.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2)) }
             .clip(RoundedCornerShape(999.dp)).background(Brush.verticalGradient(listOf(Color(0xFF26221A), Color(0xFF14120E)))).border(1.dp, Gold, RoundedCornerShape(999.dp))
             .padding(horizontal = 8.du, vertical = 2.du)) {
-            Text("$shown", style = sans(sp(15f), FontWeight.Bold, if (tick.value > 1.01f) Color(0xFFFF8A6A) else Color(0xFFFFF4D8)),
+            Text("$shown", style = sans(TextFloors.LIFE.sp, FontWeight.Bold, if (tick.value > 1.01f) Color(0xFFFF8A6A) else Color(0xFFFFF4D8)),
                 modifier = Modifier.graphicsLayer { scaleX = tick.value; scaleY = tick.value })
+            anchors?.let { it.sizes["lifesp${p.id}"] = TextFloors.LIFE }
         }
     }
 }
@@ -1670,11 +1698,17 @@ private fun PhaseTrack(st: MatchState, stops: Set<String>?, onStop: (String) -> 
     val at = PHASE_STEPS.indexOfFirst { st.phase in it.second }
     val yours = st.activePlayer == st.viewer
     val track = if (yours) Sky else Ember
-    @Composable fun light(i: Int, label: String) {
+    val anchors = LocalAnchors.current
+    // 0.4.60 Z3: a dot is 8 dp at the least (the current one 9.5), on any screen. In the right strip's phase box each light's touch
+    // box is its share of the box's width and the box's height (Compose's nearby touch makes it 48 dp tall); six lights 44 dp wide
+    // each would not fit the strip.
+    @Composable fun light(i: Int, label: String, mod: Modifier = Modifier.size(16.du)) {
         val stop = stops != null && label in stops
-        Box(Modifier.size(16.du).clip(CircleShape).clickable(enabled = stops != null) { onStop(label) }, contentAlignment = Alignment.Center) {
+        Box(mod.then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("phaselight$i", it.boundsInRoot()) } else Modifier)
+            .clip(CircleShape).clickable(enabled = stops != null) { onStop(label) }, contentAlignment = Alignment.Center) {
             val now = i == at
-            Box(Modifier.size(if (now) 9.5f.du else 7.du).drawBehind { if (now) drawCircle(track.copy(alpha = .45f), radius = size.minDimension) }
+            Box(Modifier.size(if (now) maxOf(9.5f.du, 9.5f.dp) else maxOf(TextFloors.DOT.du, TextFloors.DOT.dp))
+                .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("phasedot$i", it.boundsInRoot()) } else Modifier).drawBehind { if (now) drawCircle(track.copy(alpha = .45f), radius = size.minDimension) }
                 .clip(CircleShape).background(if (now) track else if (i < at) Color(0x70FFFFFF) else Color(0x33FFFFFF)))
             if (stop) Box(Modifier.size(14.du).border(1.5.dp, StopOrange, CircleShape))
         }
@@ -1684,7 +1718,7 @@ private fun PhaseTrack(st: MatchState, stops: Set<String>?, onStop: (String) -> 
             .padding(horizontal = 2.du, vertical = 2.du), verticalArrangement = Arrangement.SpaceEvenly, horizontalAlignment = Alignment.CenterHorizontally) {
             Text(PHASE_STEPS.getOrNull(at)?.first ?: "", style = sans(sp(12f), FontWeight.Bold, Color.White), maxLines = 1, softWrap = false)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                PHASE_STEPS.forEachIndexed { i, (label, _) -> light(i, label) }
+                PHASE_STEPS.forEachIndexed { i, (label, _) -> light(i, label, Modifier.weight(1f).height(maxOf(16.du, 18.dp))) }
             }
         }
         return@with
@@ -2096,7 +2130,9 @@ private fun Emblem(on: Boolean, enabled: Boolean, label: String, d: Du, onClick:
 private fun ControlEmblems(st: MatchState, intents: TableIntents, modifier: Modifier, d: Du) = with(d) {
     if (st.controlMode !in setOf("smart", "full")) return@with
     val lock = st.prompt != null || st.inputType == "InputLockUI" || st.busy
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(8.du)) {
+    // 0.4.60 Z3: the emblems are drawn 34 du but each takes taps in a 44 dp box (Compose's nearby touch); they stand far enough
+    // apart that neighbouring boxes do not take each other's half.
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(maxOf(8.du, TextFloors.TOUCH.dp - 34.du))) {
         Emblem(st.controlMode == "smart", !lock, "Smart: passes empty response windows. Targets and required choices stay yours.", d, { intents.mode("smart") }) { StrokeIcon(SMART_ICON, it, 14.du) }
         Emblem(st.controlMode == "full", !lock, "Full Control: stop at every response window.", d, { intents.mode("full") }) { StrokeIcon(FULL_ICON, it, 14.du) }
         st.autoPay?.let { on ->
