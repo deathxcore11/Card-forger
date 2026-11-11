@@ -190,6 +190,21 @@ object Director {
         // Whose turn each event is in: a turn event in the batch changes it; before one, two-player turns alternate.
         val firstTurn = events.firstOrNull { it.type == "turn" }
         var active: Int? = if (firstTurn != null) st.players.map { it.id }.firstOrNull { it != firstTurn.player } else st.activePlayer
+        /** The CPU casts [e]: its think, then its legs (taps, to the stack, the rest with the caption). */
+        fun cpuCast(e: GameEvent) {
+            val targeted = e.targets.isNotEmpty()
+            // On your turn a CPU spell is an answer to you (an instant in response, or passing back while yours is on the stack).
+            val respond = active == me
+            thinkFor(if (respond) Decision.RESPOND else if (targeted) Decision.CAST_TARGETED else Decision.CAST, e.turn)
+            val hits = touchesMe(e.targets)
+            val life = if (hits) lifeChange(st, events) else null
+            if (life != null) explainedLife = true
+            // T5: its lands tap, the card goes from the CPU seat to the stack (440), then rests there with the caption: its
+            // arrows 300 + read time (shorter before your prompt), never under the 900 ms rest.
+            val rest = maxOf(STACK_HOLD_MS, (if (targeted) 300L else 0L) + if (waiting) 500L else 850L)
+            castLegs(e, mine = false, restMs = rest, beat = Beat(if (hits) Beat.Kind.AFFECTS_YOU else Beat.Kind.ACTION, "CPU casts ${e.source?.name ?: "a spell"}", e.source?.id, e.source?.name,
+                    if (hits) targetText(st, e.targets) else null, life?.first, life?.second))
+        }
         loop@ for (e in events) {
             when (e.type) {
                 "turn" -> {
@@ -205,20 +220,10 @@ object Director {
                     out += Step(Kind.LAND, TO_GROUP_MS, TO_GROUP_MS, cardId = e.card.id, cardName = e.card.name,
                         travel = Travel(e.card.id, e.card.name, true, Leg.TO_GROUP, "c${e.card.id}", TO_GROUP_MS))
                 }
-                "cast" -> if (cpu(e.player)) {
-                    val targeted = e.targets.isNotEmpty()
-                    // On your turn a CPU spell is an answer to you (an instant in response, or passing back while yours is on the stack).
-                    val respond = active == me
-                    thinkFor(if (respond) Decision.RESPOND else if (targeted) Decision.CAST_TARGETED else Decision.CAST, e.turn)
-                    val hits = touchesMe(e.targets)
-                    val life = if (hits) lifeChange(st, events) else null
-                    if (life != null) explainedLife = true
-                    // T5: its lands tap, the card goes from the CPU seat to the stack (440), then rests there with the caption: its
-                    // arrows 300 + read time (shorter before your prompt), never under the 900 ms rest.
-                    val rest = maxOf(STACK_HOLD_MS, (if (targeted) 300L else 0L) + if (waiting) 500L else 850L)
-                    castLegs(e, mine = false, restMs = rest, beat = Beat(if (hits) Beat.Kind.AFFECTS_YOU else Beat.Kind.ACTION, "CPU casts ${e.source?.name ?: "a spell"}", e.source?.id, e.source?.name,
-                            if (hits) targetText(st, e.targets) else null, life?.first, life?.second))
-                } else castLegs(e, mine = true, restMs = STACK_HOLD_MS, beat = null)
+                // A CPU spell already on the stack shown: its cast was told from its move (below), in the board before this one.
+                "cast" -> if (cpu(e.player) && e.source?.id != null && before?.stack?.any { it.source?.id == e.source.id } == true) continue@loop
+                else if (cpu(e.player)) cpuCast(e)
+                else castLegs(e, mine = true, restMs = STACK_HOLD_MS, beat = null)
                 "trigger" -> {
                     // Beats 1 and 2 for every trigger, yours or the CPU's: the source lifts and rings; when Forge resolved it in this same
                     // poll its stack item is put up and held to read (900 ms), since no snapshot ever showed it.
@@ -308,6 +313,14 @@ object Director {
                         // T6 (Arena clip 1): the card goes to the stack first, then asks for its targets or its mana.
                         out += Step(Kind.CAST, TO_STACK_MS, TO_STACK_MS, cardId = id, cardName = e.card.name,
                             travel = Travel(id, e.card.name, true, Leg.TO_STACK, "stackcard", TO_STACK_MS))
+                    } else if (e.from == "Hand" && e.to == "Stack" && id != null && id !in castHere && e.seq == lastSeq &&
+                        cpu(e.player ?: controllerOf(id)) && before?.stack?.any { it.source?.id == id } != true) {
+                        // The host pauses the CPU on its cast and publishes the board then, and may do so before it writes the cast event
+                        // (Forge's handlers for one event run in no fixed order): that board ends on the card's move to the stack. It is the
+                        // cast, told once here with the stack item's own targets; the cast event in the next board is skipped above.
+                        val item = st.stack.firstOrNull { it.source?.id == id }
+                        cpuCast(e.copy(type = "cast", player = e.player ?: controllerOf(id), source = e.card, card = null,
+                            stackId = item?.id, targets = item?.targets.orEmpty()))
                     } else if (e.from == "Hand" && e.to == "Battlefield" && id != null && !e.token && id !in landHere && e.seq == lastSeq &&
                         cpu(e.player ?: controllerOf(id)) && st.card(id)?.isLand == true && before?.card(id)?.zone != "Battlefield") {
                         // The host pauses the CPU on its land play and publishes the board then, before it writes the land event: that

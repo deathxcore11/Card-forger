@@ -88,4 +88,62 @@ class CastTravelControllerTest {
         val last = frames.last()
         assertTrue("end $last", last.leg == null && last.onBoard && !last.onStack && last.tapped == 2)
     }
+
+    /**
+     * Match punch P0: the host pauses the CPU on its cast and publishes the board, and Forge runs its handlers for one event in no
+     * fixed order, so that board can end on the card's move to the stack with the cast event only in the next board. The spell
+     * flies to the stack once, from the first of the two boards, and is not on the stack before its flight.
+     */
+    @Test fun aCpuSpellSplitOverTwoBoardsFliesToTheStackOnce() {
+        val base = MatchState.parse(javaClass.classLoader!!.getResource("table/snap-main.json")!!.readText())!!
+        val cpu = base.cpu.id
+        val bears = card(970, "Grizzly Bears", "Creature — Bear", cpu, zone = "Hand")
+        val b = Ref("card", 970, "Grizzly Bears")
+        val item = dev.cardstashy.nativeplay.engine.StackItem(77, "Grizzly Bears", bears.copy(zone = "Stack"), cpu)
+        fun board(rev: Long, onStack: Boolean, events: List<GameEvent>) = base.copy(busy = true, prompt = null, revision = rev, activePlayer = cpu, events = events,
+            stack = if (onStack) listOf(item) else emptyList(),
+            players = base.players.map { p -> if (p.id == cpu) p.copy(battlefield = emptyList(), hand = if (onStack) emptyList() else listOf(bears)) else p.copy(battlefield = emptyList()) })
+        val move = ev("zone", cpu, card = b, from = "Hand", to = "Stack")
+        val cast = ev("cast", cpu, source = b, stackId = 77)
+        val before = board(10, false, emptyList())
+        val paused = board(11, true, listOf(move))
+        val next = board(12, true, listOf(move, cast))
+
+        // The plan: the move is the cast (its think, flight and rest); the cast event after it adds nothing.
+        val plan1 = Director.plan(paused, paused.events, before = before)
+        assertEquals(listOf(Director.Leg.TO_STACK, Director.Leg.REST), plan1.mapNotNull { it.travel?.leg })
+        assertEquals("CPU casts Grizzly Bears", plan1.single { it.beat != null }.beat?.title)
+        assertEquals(77, plan1.first { it.travel != null }.travel?.stackId)
+        assertTrue(Director.plan(next, listOf(cast), before = paused).none { it.travel != null || it.beat != null })
+        // One board with both events (the other handler order): one flight, as before.
+        assertEquals(1, Director.plan(next, listOf(move, cast), before = before).count { it.travel?.leg == Director.Leg.TO_STACK })
+
+        // On the table: one flight of the card to the stack, and it is not on the stack before it.
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+        val c = MatchController(scope, "{}")
+        set(c, "gatePassed", true); set(c, "mulliganSeen", true); set(c, "answeredMulligan", true); set(c, "lastSeq", 100L)
+        set(c, "latest", next)
+        field<MutableStateFlow<MatchState?>>(c, "_shown").value = before
+        field<MutableStateFlow<Stage>>(c, "_stage").value = Stage.PLAYING
+        field<java.util.concurrent.atomic.AtomicInteger>(c, "queue").addAndGet(2)
+        field<Channel<MatchState>>(c, "snapshots").trySend(paused)
+        field<Channel<MatchState>>(c, "snapshots").trySend(next)
+        val play = MatchController::class.java.getDeclaredMethod("play", kotlin.coroutines.Continuation::class.java).apply { isAccessible = true }
+        scope.launch { suspendCoroutineUninterceptedOrReturn<Any?> { cont -> play.invoke(c, cont) } }
+        val flights = ArrayList<Any>()
+        var lastFlight: Any? = null
+        var upBeforeFlight = false
+        for (t in 0L..6000L step 10) {
+            ShadowLooper.idleMainLooper(10, java.util.concurrent.TimeUnit.MILLISECONDS)
+            val m = c.travel.value?.takeIf { it.travel.cardId == 970 && it.travel.leg == Director.Leg.TO_STACK }
+            if (m != null && m !== lastFlight) flights += m
+            lastFlight = m
+            val s = c.shown.value ?: continue
+            if (flights.isEmpty() && s.stack.any { it.source?.id == 970 }) upBeforeFlight = true
+        }
+        scope.cancel()
+        assertEquals("the spell flies to the stack once", 1, flights.size)
+        assertTrue("it is not on the stack before its flight", !upBeforeFlight)
+        assertTrue("it ends on the stack", c.shown.value!!.stack.any { it.source?.id == 970 })
+    }
 }
