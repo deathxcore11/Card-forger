@@ -182,15 +182,25 @@ class Bb0457ShotTest {
     }
 
     /**
-     * Thor 0.4.56 (finding C): Sheltered by Ghosts' second prompt read "Choose target nonland permanent an opponent contr…". On
-     * two screens (the Thor's top screen about 640 × 360 dp, and the sizes above) the whole ask shows, off the gold button and the
-     * hand chip.
+     * Thor 0.4.56 (finding C): Sheltered by Ghosts' second prompt read "Choose target nonland permanent an opponent contr…". The
+     * whole ask shows. Since b80f7350 (live 0.4.57, fault list 4, 12, 14; table-info I5.1) a target ask on two screens is asked
+     * once, on the bottom screen, where it wraps and is never cut: the top (the Thor's top screen about 640 × 360 dp, and the
+     * sizes above) draws no line, and the bottom says the whole ask. The Thor on one screen (960 × 540) keeps the line on the table,
+     * whole, off the gold button and the hand chip (the phone was never part of this finding).
      */
     @Test fun cAskLineWhole() {
         Pad.used()
         val t = state("targets")
         val st = t.copy(message = "Select targets for Sheltered by Ghosts\nChoose target nonland permanent an opponent controls.")
+        val ask = dev.cardstashy.nativeplay.ui.askLine(st) ?: error("no ask for the target prompt")
+        assertTrue("the ask itself is cut: $ask", "Choose target nonland permanent an opponent controls" in ask && "…" !in ask)
         for (size in listOf(Size("640x360-dual", 640, 360, true)) + sizes.filter { it.dual }) {
+            val a = board("c-askline", st, size, clock = null)
+            assertTrue("the top still says the ask at ${size.tag}", a.rects["askline"] == null)
+            val words = dev.cardstashy.nativeplay.ui.bottomWords(st, true, st.me.hand, null, null, ask)
+            assertTrue("the bottom does not ask at ${size.tag}: $words", words is dev.cardstashy.nativeplay.ui.BottomWords.Ask && words.text == ask)
+        }
+        for (size in sizes.filter { !it.dual && it.tag.startsWith("960") }) {
             val a = board("c-askline", st, size, clock = null)
             val line = a.rects["askline"] ?: error("no ask line at ${size.tag}")
             assertTrue("ask line cut at ${size.tag}", a.rects["askline.cut"] == null)
