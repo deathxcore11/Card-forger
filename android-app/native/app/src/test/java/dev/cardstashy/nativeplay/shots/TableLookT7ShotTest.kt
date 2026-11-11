@@ -20,9 +20,11 @@ import dev.cardstashy.nativeplay.ui.DualScreen
 import dev.cardstashy.nativeplay.ui.HandFan
 import dev.cardstashy.nativeplay.ui.LocalAnchors
 import dev.cardstashy.nativeplay.ui.MatchBottom
+import dev.cardstashy.nativeplay.ui.bottomAnswers
 import dev.cardstashy.nativeplay.ui.PadAct
 import dev.cardstashy.nativeplay.ui.askLine
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -54,7 +56,7 @@ class TableLookT7ShotTest {
             CompositionLocalProvider(LocalAnchors provides anchors) {
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF15171D), Color(0xFF0B0C10))))) {
                     MatchBottom(st, hand, lifted, PadAct("Pass") {}, { w -> HandFan(hand, w, Modifier.fillMaxWidth(), raised = lifted?.id, angleDeg = 1.2f, flatLift = true) }, {},
-                        ask = askLine(st), live = true, canPlay = { it.isLand }, why = { "Not enough mana" })
+                        ask = askLine(st), live = true, canPlay = { it.isLand }, why = { "Not enough mana" }, onCancel = {})
                 }
             }
         }
@@ -68,11 +70,28 @@ class TableLookT7ShotTest {
         val hand = main.me.hand
         for ((size, q) in listOf("thor-1240x1080" to "w620dp-h540dp-xhdpi", "duo-1280x960" to "w640dp-h480dp-xhdpi")) {
             RuntimeEnvironment.setQualifiers(q)
-            for ((name, st, lifted) in listOf(Triple("idle", main, null), Triple("lifted", main, hand.getOrNull(1)), Triple("asking", state("targets"), null))) {
+            val ask4 = state("targets")
+            // Two legal targets: the offered cards cut to the chosen one and one more, no players.
+            val ask2 = ask4.copy(selection = ask4.selection.copy(targetCards = ask4.selection.targetCards.take(2).toSet() + ask4.selection.chosenCards, targetPlayers = emptySet(), players = emptySet()))
+            for ((name, st, lifted) in listOf(Triple("idle", main, null), Triple("lifted", main, hand.getOrNull(1)), Triple("asking", ask4, null), Triple("asking2", ask2, null),
+                    Triple("stack", state("crowded"), null))) {
                 val anchors = Anchors()
-                bottom(anchors, st, if (name == "asking") st.me.hand else hand, lifted, "t7-$name-$size")
+                val asking = name.startsWith("asking")
+                bottom(anchors, st, if (asking || name == "stack") st.me.hand else hand, lifted, "t7-$name-$size")
                 val r = anchors.rects
-                assertNotNull("$size $name: the panel", r["b.read"])
+                if (name != "stack") assertNotNull("$size $name: the panel", r["b.read"])
+                if (asking) {
+                    // Answer here or on the table: one button per legal target (at most 4), then Cancel, beside the panel.
+                    val n = bottomAnswers(st).size
+                    assertEquals("$size $name: answers", if (name == "asking") 4 else 2, n)
+                    for (i in 0 until n) { assertNotNull("$size $name: answer $i", r["b.answer$i"]); for (k in listOf("b.read", "b.hand", "b.question")) apart(r["b.answer$i"], r[k], "$size $name answer $i and $k") }
+                    // Every button whole inside the answers area (no scrolling hides Cancel or the fourth answer).
+                    val box = r["b.answers"]!!
+                    for (k in (0 until n).map { "b.answer$it" } + "b.cancel") assertTrue("$size $name: $k ${r[k]} whole in $box", r[k]!!.bottom <= box.bottom + 1f && r[k]!!.top >= box.top - 1f)
+                    apart(r["b.answers"], r["b.read"], "$size $name answers and panel")
+                    val dm = RuntimeEnvironment.getApplication().resources.displayMetrics
+                    assertTrue("$size $name: answers on screen ${r["b.answers"]}", r["b.answers"]!!.bottom <= dm.heightPixels + 1f && r["b.answers"]!!.right <= dm.widthPixels + 1f)
+                }
                 apart(r["b.hand"], r["b.read"], "$size $name hand and panel")
                 apart(r["b.question"], r["b.read"], "$size $name question and panel")
                 apart(r["b.question"], r["b.hand"], "$size $name question and hand")

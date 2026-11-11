@@ -60,4 +60,18 @@ class BottomReadingTest {
         // No reason known: no line made up.
         assertNull(read(st, lifted = hand[1], can = no)!!.status)
     }
+
+    @Test fun theAnswersAreWhatForgeOffersPickedFirst() {
+        val st = snap("targets")
+        val a = bottomAnswers(st)
+        // Forge offers five cards and both players, one card already chosen: at most four buttons, the chosen one first and ringed.
+        assertEquals(4, a.size)
+        assertEquals(124, a[0].card!!.id); assertEquals(true, a[0].chosen)
+        for (x in a) assertEquals(true, x.card!!.id in st.selection.targetCards + st.selection.chosenCards)
+        // Only players offered: the opponent first, then you.
+        val players = st.copy(selection = st.selection.copy(targetCards = emptySet(), chosenCards = emptySet()))
+        val p = bottomAnswers(players)
+        assertEquals(listOf(st.cpu.id, st.viewer), p.map { it.player })
+        assertEquals("You", p[1].label)
+    }
 }

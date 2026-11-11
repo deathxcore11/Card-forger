@@ -934,7 +934,9 @@ fun ForgeBoard(
             }
             // Two screens: the sheet lies over the bottom screen's lower half, under the hand; the top screen does not change.
             if (dual) { val goldAct = padX; BottomScreen { Box(Modifier.fillMaxSize()) { MatchBottom(st, hand, (selectedHand ?: discardWalk.takeIf { discardAsk })?.let { id -> hand.firstOrNull { it.id == id } }, goldAct, fan, onInspect, afk,
-                ask = askAll, carried = carried?.let { id -> hand.firstOrNull { it.id == id } }, live = live, canPlay = { castable(it) }, why = { dimWhy(it) }); sheetView() } } }
+                ask = askAll, carried = carried?.let { id -> hand.firstOrNull { it.id == id } }, live = live, canPlay = { castable(it) }, why = { dimWhy(it) },
+                onAnswer = { a -> a.card?.let { intents.card(it.id) } ?: a.player?.let { intents.player(it) } },
+                onCancel = st.buttons.takeIf { it.cancelEnabled }?.let { { intents.cancel() } }); sheetView() } } }
             // With the bottom screen up the hand chip sits where the line would be: the line goes just above the chip, high enough
             // that its 10 du drop shadow (AskLine) clears the chip too (U3).
             val parts = if (tucked) askParts(st) else null
