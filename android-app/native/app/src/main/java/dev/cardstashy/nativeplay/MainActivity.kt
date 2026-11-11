@@ -647,7 +647,7 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
         if (noResult != null) { LaunchedEffect(Unit) { activity.inGame(false) }; NoResult(noResult!!, onHome) }
         else if (versus || holdForScene) VersusScreen(s.you, s.cpu, intro = false, preparing = versus) else Box {
           androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalLessonGlow provides (lessons?.glow ?: emptySet())) {
-          TableScreen(controller, onHome = onHome, onRematch = { round++ }, resultNote = outcome?.note, cpuPlate = s.cpu,
+          TableScreen(controller, onHome = onHome, onRematch = { round++ }, resultNote = outcome?.note, cpuPlate = s.cpu, youPlate = s.you,
             mat = (pick as? Pick.Table)?.story?.let { c -> remember { dev.cardstashy.nativeplay.ui.StoryMats.forBattle(context, c.act, c.battle.get("slot")?.takeIf { it.isJsonPrimitive }?.asInt, c.battle.get("kind")?.takeIf { it.isJsonPrimitive }?.asString) } },
             storyMusic = (pick as? Pick.Table)?.story?.let { dev.cardstashy.nativeplay.audio.TableMusic.StoryMusic(it.act, it.battle.get("mood")?.takeIf { m -> m.isJsonPrimitive }?.asString, it.battle.get("kind")?.takeIf { m -> m.isJsonPrimitive }?.asString) })
           }

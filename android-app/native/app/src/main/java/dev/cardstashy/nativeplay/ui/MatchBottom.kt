@@ -207,7 +207,7 @@ internal fun bottomReading(st: MatchState, live: Boolean, hand: List<Card>, lift
 }
 
 @Composable
-private fun ReadingPanel(r: Reading, modifier: Modifier) {
+internal fun ReadingPanel(r: Reading, modifier: Modifier) {
     val shape = RoundedCornerShape(12.dp)
     val c = r.card
     Column(modifier.clip(shape).background(Color(0xC7121620)).border(1.dp, Color(0x61E3C070), shape).verticalScroll(rememberScrollState())
@@ -327,7 +327,7 @@ private fun GlassButton(label: String, enabled: Boolean, run: () -> Unit) {
     }
 }
 
-private fun small(size: Float, color: Color, weight: FontWeight = FontWeight.SemiBold) = TextStyle(fontFamily = Site.Manrope, fontWeight = weight, fontSize = size.sp, color = color)
+internal fun small(size: Float, color: Color, weight: FontWeight = FontWeight.SemiBold) = TextStyle(fontFamily = Site.Manrope, fontWeight = weight, fontSize = size.sp, color = color)
 
 /** Tidy rules, two screens: while a question asks, the hand stays in its row, at about a third and greyed (desaturated), and takes no taps. */
 internal const val BOTTOM_ASK_ALPHA = .34f

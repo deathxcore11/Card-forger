@@ -104,6 +104,7 @@ private data class Sizes(val sidebar: Dp, val field: Dp, val land: Dp, val hand:
 
 @Composable
 fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -> Unit, resultNote: String? = null, cpuPlate: dev.cardstashy.nativeplay.match.Plate? = null,
+    youPlate: dev.cardstashy.nativeplay.match.Plate? = null,
     storyMusic: dev.cardstashy.nativeplay.audio.TableMusic.StoryMusic? = null, mat: String? = null) {
     val context = LocalContext.current
     val decks = DemoDecks.load(context)
@@ -186,7 +187,8 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
                 // The keep is a decision with the same clock as the table's: the ring on Keep (the site's ok key), from LocalMatchClock.
                 stage == Stage.MULLIGAN -> CompositionLocalProvider(LocalMatchClock provides controller.clock.collectAsState().value) {
                     Mulligan(st, live, onOk = { controller.ok() }, onCancel = { controller.cancel() },
-                        onCard = { controller.card(it) }, onDeal = { audio.play("QP-012", .55f) }, onHold = { inspect = it }) }
+                        onCard = { controller.card(it) }, onDeal = { audio.play("QP-012", .55f) }, onHold = { inspect = it },
+                        deck = remember(youPlate) { mullDeckOf(controller.input, youPlate?.name) }) }
                 else -> {
                     var handOrder by remember { mutableStateOf(emptyList<Int>()) }
                     // table-emotes.mjs mount(): the CPU's hello once the match is on; everything goes with the table.
@@ -232,9 +234,18 @@ private fun Loading() {
  * pair sits bottom right: Mulligan (dark glass) and Keep (the gold main button) with the decision's clock running round it.
  */
 @Composable
-internal fun Mulligan(st: MatchState, live: Boolean, onOk: () -> Unit, onCancel: () -> Unit, onCard: (Int) -> Unit, onDeal: () -> Unit, onHold: (Card) -> Unit) {
-    var mulls by remember { androidx.compose.runtime.mutableIntStateOf(0) }
-    val choosing = st.inputType != "InputConfirmMulligan" && st.selection.cards.isNotEmpty()
+internal fun Mulligan(st: MatchState, live: Boolean, onOk: () -> Unit, onCancel: () -> Unit, onCard: (Int) -> Unit, onDeal: () -> Unit, onHold: (Card) -> Unit,
+                      deck: MullDeck? = null) {
+    // 0.4.59 T9: every number from Forge (MulliganProbe on the real engine): it puts the cards on the bottom right after a
+    // mulligan (InputLondonMulligan, "Return N card(s)"), then asks Keep or Mulligan again with the smaller hand.
+    val lines = mulliganLines(st)
+    val mulls = lines.mulls
+    val london = st.inputType == "InputLondonMulligan"
+    // Forge lists no cards to pick while it asks for the bottom; every card in the opening hand is the pick (live 0.4.58: a tap
+    // there only opened the card, so only Auto could answer).
+    val choosing = london || (st.inputType != "InputConfirmMulligan" && st.selection.cards.isNotEmpty())
+    fun pickable(card: Card) = mullPickable(st, live, card)
+    var ringed by remember { mutableStateOf<Int?>(null) }
     val yours = live && st.waitingOnMe
     val youFirst = Regex("(?i)\\byou (are|go|will go)( going)? first").containsMatchIn(st.message) ||
         !Regex("(?i)going first|goes first").containsMatchIn(st.message) && st.activePlayer == st.viewer
@@ -262,31 +273,37 @@ internal fun Mulligan(st: MatchState, live: Boolean, onOk: () -> Unit, onCancel:
             val cardW = minOf((W - 64.dp) / 6.2f, H * .5f / 1.4f)
             Box(Modifier.fillMaxSize().padding(horizontal = 24.dp), contentAlignment = Alignment.Center) {
                 HandFan(st.me.hand, cardW, Modifier.fillMaxWidth().offset(y = (-8).du), angleDeg = 2.5f, dealIn = true,
-                    markOf = { card -> if (card.id in st.selection.chosenCards) Mark.PICKED else if (live && card.id in st.selection.cards) Mark.PICKABLE else Mark.NONE },
-                    onTap = { card -> if (live && card.id in st.selection.cards) { if (choosing) cue?.invoke("QP-015", .8f, 1f); onCard(card.id) } else onHold(card) },
-                    onHold = onHold, onDeal = onDeal, pop = 1.2f)
+                    markOf = { card -> if (card.id in st.selection.chosenCards) Mark.PICKED else if (pickable(card)) Mark.PICKABLE else Mark.NONE },
+                    onTap = { card -> if (pickable(card)) { if (choosing) cue?.invoke("QP-015", .8f, 1f); onCard(card.id) } else onHold(card) },
+                    onHold = onHold, onDeal = onDeal, pop = 1.2f, onCarry = { id -> if (id != null) ringed = id })
             }
             // Three pips (7, 6, 5) and the caption; while putting cards on the bottom, Forge's own line instead.
-            val cards = 7 - mulls
             Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 22.du), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.du)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.du)) {
                     repeat(3) { i -> Box(Modifier.size(9.du).clip(CircleShape).background(if (i == mulls.coerceAtMost(2)) Color(0xFFE8B95B) else Color(0x40FFFFFF))) }
                 }
-                Text(if (choosing) shortMessage(st) else if (cards > 1) "$cards cards \u00B7 you may mulligan to ${cards - 1}" else "$cards card",
+                if (!DualScreen.active) Text(lines.caption, Modifier.anchorRect("mull.caption"),
                     style = sans(sp(14f), FontWeight.Medium, Color(0xFFE6DCC6)), textAlign = TextAlign.Center)
             }
-            if (yours) Row(Modifier.align(Alignment.BottomEnd).padding(end = 28.du, bottom = 18.du), horizontalArrangement = Arrangement.spacedBy(14.du), verticalAlignment = Alignment.CenterVertically) {
+            // Two screens: Keep and Mulligan live on the bottom screen with the card under the ring (MulliganBottom); the top is the hand.
+            if (DualScreen.active) BottomScreen { MulliganBottom(st, lines, st.me.hand.firstOrNull { it.id == ringed } ?: st.me.hand.firstOrNull(), deck, yours, choosing, youFirst,
+                onKeep = { if (!choosing) cue?.invoke("QP-013", 1f, 1f); onOk() }, onMull = { if (!choosing) cue?.invoke("QP-014", 1f, 1f); onCancel() }) }
+            else if (yours) Column(Modifier.align(Alignment.BottomEnd).padding(end = 28.du, bottom = 12.du), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(5.du)) {
+              Row(horizontalArrangement = Arrangement.spacedBy(14.du), verticalAlignment = Alignment.CenterVertically) {
                 // The turn clock's ring is on Keep (GoldPill); its last-10 count stands first in the row, never on Mulligan beside it.
                 TurnCount(d.u)
                 CompositionLocalProvider(LocalTurnCountOutside provides true) {
                 if (!choosing) st.buttons.cancel?.takeIf { st.buttons.cancelEnabled }?.let { label ->
                     Box(Modifier.height(48.du).widthIn(min = 128.du).clip(RoundedCornerShape(999.dp)).background(Color(0xE60C0D12)).border(1.dp, Color(0x26FFFFFF), RoundedCornerShape(999.dp))
-                        .clickable { mulls++; cue?.invoke("QP-014", 1f, 1f); onCancel() }.padding(horizontal = 22.du), contentAlignment = Alignment.Center) {
+                        .clickable { cue?.invoke("QP-014", 1f, 1f); onCancel() }.padding(horizontal = 22.du).anchorRect("mull"), contentAlignment = Alignment.Center) {
                         Text(label, style = sans(sp(16f), FontWeight.Bold, Color(0xFFF3E9D2)), maxLines = 1)
                     }
                 }
                 GoldPill(st.buttons.ok ?: "Keep", st.buttons.okEnabled, Modifier.height(48.du).anchorRect("gold"), d) { if (!choosing) cue?.invoke("QP-013", 1f, 1f); onOk() }
                 }
+              }
+              // T9: one line under Mulligan says what it does, with Forge's numbers (one line, under the pair, clear of the caption).
+              if (!choosing && st.buttons.cancelEnabled) lines.mullLine?.let { Text(it, Modifier.anchorRect("mull.line"), style = sans(sp(12f), FontWeight.Medium, Color(0xFFCFC6B2)), maxLines = 1) }
             }
         }
     }
