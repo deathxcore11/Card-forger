@@ -41,12 +41,20 @@ class FanTest {
     }
 
     @Test fun theFanStillFitsTheRowTheTileSizeWasWorkedOutFor() {
-        // The tile height is set at the sizing step (18 %), so the fan never needs less room than that.
-        val rows = TableGeometry.rows(false, 80f, 310f)
+        // The tile's width is set at the sizing step (18 %), so the fan never needs less room than that. (0.4.60 Z2: the height is
+        // fixed by the rows and the width gives way, so this now checks the width the rows worked out, not a shrunk height.)
+        val z = ZoneLayout.of(844f, 390f)
+        val rows = TableGeometry.rows(false, z.board.y, z.board.bottom, z.hb)
         val piles = listOf(4, 3, 1, 1, 2)
-        val t = TableGeometry.tiles(rows, 600f, 560f, piles, piles, listOf(1), listOf(1))
-        val step = TableGeometry.fanStep(t.front, 600f, piles, back = false)
+        val g = TableGeometry.gap(piles.size, z.k)
+        val t = TableGeometry.tiles(rows, 600f, 560f, piles, piles, listOf(1), listOf(1), k = z.k)
+        assertTrue(t.frontW > t.front * TableGeometry.CROP_MIN)
+        val step = TableGeometry.fanStep(t.front, 600f, piles, back = false, w = t.frontW, gap = g)
         assertTrue(step >= TableGeometry.STEP - .001f)
-        assertTrue(TableGeometry.rowWidth(t.front, piles, step = step) <= 600.5f)
+        assertTrue(TableGeometry.rowWidth(t.front, piles, step = step, w = t.frontW, gap = g) <= 600.5f)
+        val lay = TableGeometry.layRow(t.frontW, t.front, 600f, piles, back = false, gap = g)
+        assertEquals(step, lay.fan, .001f)
+        assertEquals(null, lay.visible)
+        assertTrue(lay.total <= 600.5f)
     }
 }

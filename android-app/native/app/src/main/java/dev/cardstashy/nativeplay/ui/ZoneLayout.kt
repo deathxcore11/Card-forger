@@ -83,8 +83,8 @@ internal object ZoneLayout {
         val bx = left.right; val bw = BOARD * win.w
         // The mockup's usable height: a creature tile is 20.5 % of it (23.5 % on the dual top) until 4.6 (4.15) full tiles fill the
         // board's width; past that the tile stops growing and the spare height is open table (Z2 sizes the tiles from it).
-        val fC = if (dual) .235f else .205f
-        val c = minOf(fC * win.h, bw / (if (dual) 4.15f else 4.6f) / 1.3f)
+        val fC = TableGeometry.front(dual)
+        val c = minOf(fC * win.h, bw / TableGeometry.cap(dual) / TableGeometry.ASPECT)
         val hb = c / fC
         // 3. The hand tray: whole cards (20 % of the usable height, .716 as wide), centred on the board, its bottom 4 above the window's.
         val tray = if (dual) null else {

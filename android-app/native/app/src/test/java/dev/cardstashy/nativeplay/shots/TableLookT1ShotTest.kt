@@ -54,6 +54,29 @@ class TableLookT1ShotTest {
 
     @After fun off() { DualScreen.pretend(null) }
 
+    /** A tile's outline in px: its box, or, tapped, the card turned 20 degrees at 94 % inside that box. */
+    private fun outline(c: dev.cardstashy.nativeplay.engine.Card, r: Rect): List<androidx.compose.ui.geometry.Offset> {
+        if (!c.tapped) return listOf(r.topLeft, r.topRight, r.bottomRight, r.bottomLeft)
+        val t = Math.toRadians(20.0); val cs = kotlin.math.cos(t).toFloat(); val sn = kotlin.math.sin(t).toFloat()
+        val bw = r.width / .94f; val bh = r.height / .94f; val c2 = cs * cs - sn * sn
+        val w = (bw * cs - bh * sn) / c2 * .94f; val h = (bh * cs - bw * sn) / c2 * .94f
+        return listOf(-w / 2 to -h / 2, w / 2 to -h / 2, w / 2 to h / 2, -w / 2 to h / 2).map { (x, y) ->
+            androidx.compose.ui.geometry.Offset(r.center.x + x * cs - y * sn, r.center.y + x * sn + y * cs) }
+    }
+
+    /** How deep two convex outlines overlap in px (separating axes: the least overlap on any edge's axis; 0 or less: apart). */
+    private fun depth(a: List<androidx.compose.ui.geometry.Offset>, b: List<androidx.compose.ui.geometry.Offset>): Float {
+        var least = Float.MAX_VALUE
+        for (poly in listOf(a, b)) for (i in poly.indices) {
+            val p = poly[i]; val q = poly[(i + 1) % poly.size]
+            val ax = -(q.y - p.y); val ay = q.x - p.x; val len = kotlin.math.hypot(ax, ay).takeIf { it > 0f } ?: continue
+            fun span(o: List<androidx.compose.ui.geometry.Offset>) = o.map { (it.x * ax + it.y * ay) / len }.let { it.min() to it.max() }
+            val (a0, a1) = span(a); val (b0, b1) = span(b)
+            least = minOf(least, minOf(a1, b1) - maxOf(a0, b0))
+        }
+        return least
+    }
+
     @Test fun boardsAtEverySize() {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         CardImageTest.art = { name, crop -> art.resolve(key(name, crop) + ".jpg").takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } }
@@ -86,9 +109,22 @@ class TableLookT1ShotTest {
             // No tile lies on a player's library or graveyard.
             for (pl in st.players) a.rects["piles${pl.id}"]?.let { pile -> for ((c, r) in all) assertTrue("$board $size dual=$dual ${c.name} on piles${pl.id}: $r $pile", !r.deflate(2f).overlaps(pile)) }
             // No tile of one row lies on a tile of another row: tapped ones turned, attackers stepped forward (review fix).
+            // 0.4.60 Z2: the tile heights are fixed (the brief), so on a phone a tapped tile's turned box reaches into the next row's
+            // band; what must not happen is the tiles themselves meeting. A tapped tile is checked as the turned card it is (20 degrees,
+            // 94 %, its outline worked back from its box), not as its box, which takes in empty corners.
             fun rowOf(c: dev.cardstashy.nativeplay.engine.Card) = (if (c.controller == st.viewer) 2 else 0) + (if (c.isCreature) 1 else 0).let { if (c.controller == st.viewer) 1 - it else it }
-            for ((c1, r1) in all) for ((c2, r2) in all) if (rowOf(c1) < rowOf(c2))
-                assertTrue("$board $size dual=$dual ${c1.name} on ${c2.name}: $r1 $r2", !r1.deflate(1f).overlaps(r2.deflate(1f)))
+            // The creature rows never meet, tapped or not; upright tiles never meet anywhere. A back row and its creature row are parted
+            // as far as the board's height allows (TableGeometry.rows): where that is short of what two turned tiles need (a phone),
+            // a turned corner may reach into the other row by no more than the shortfall.
+            val z = dev.cardstashy.nativeplay.ui.ZoneLayout.of(dm.widthPixels / dm.density, dm.heightPixels / dm.density, dual = dual)
+            val rg = dev.cardstashy.nativeplay.ui.TableGeometry.rows(dual, z.board.y, z.board.bottom, z.hb)
+            val short = maxOf(0f, (dev.cardstashy.nativeplay.ui.TableGeometry.TAPPED_HALF - .5f) * (rg.cpuBack.height + rg.cpuFront.height) - (rg.cpuFront.top - rg.cpuBack.bottom)) * dm.density
+            for ((c1, r1) in all) for ((c2, r2) in all) if (rowOf(c1) < rowOf(c2)) {
+                val creatures = rowOf(c1) == 1 && rowOf(c2) == 2
+                val allowed = if (creatures || (!c1.tapped && !c2.tapped)) 2f else short + 2f
+                val depth = depth(outline(c1, r1), outline(c2, r2))
+                assertTrue("$board $size dual=$dual ${c1.name} on ${c2.name} by ${depth / dm.density} dp: $r1 $r2", depth <= allowed)
+            }
             // Your back row ends before the button row on the right (review fix).
             a.rects["buttonRow"]?.takeIf { it.width > 0f }?.let { row -> for ((c, r) in rects(st.me.battlefield.filter { !it.isCreature && it.attachedTo == null }))
                 assertTrue("$board $size dual=$dual ${c.name} under the buttons: $r $row", !r.deflate(1f).overlaps(row)) }

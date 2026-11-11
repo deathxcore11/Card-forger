@@ -441,8 +441,9 @@ fun ForgeBoard(
             fun ZoneLayout.Box.at() = Modifier.offset(x = x.dp, y = y.dp)
             // The gold button's top: 44 du above the bottom of the actions corner.
             val goldY = zones.actions.bottom.dp - 44.du
-            // 0.4.59 T1: the four rows fill the board in the brief's proportions (TableGeometry). A pod's opponent rail runs along the top.
-            val rowsG = TableGeometry.rowsIn(DualScreen.active, zones.board.y + (if (pod) 58.du.value else 0f), zones.board.bottom)
+            // 0.4.60 Z2: the four rows in the board, their heights fixed from the usable height (TableGeometry.rows): each side hugs
+            // its own edge. A pod's opponent rail runs along the top.
+            val rowsG = TableGeometry.rows(DualScreen.active, zones.board.y + (if (pod) 58.du.value else 0f), zones.board.bottom, zones.hb)
             val mid = rowsG.divider.dp
             val centreX = W / 2
 
@@ -464,32 +465,36 @@ fun ForgeBoard(
                 // stands bottom right over the board's corner (196 du at most, 8 du in), still has the rows end short of it while it asks.
                 val boardRight = zones.board.right.dp
                 val lane by androidx.compose.animation.core.animateDpAsState(if (docked) (boardRight - (W - 8.du - 196.du) + 8.du).coerceAtLeast(0.dp) else 0.dp, tween(if (Motion.still) 0 else 220), label = "dockLane")
-                // 0.4.59 T1: the existing tiles, sized from the screen. Both creature rows share one tile size, both back rows another
-                // (at most 70 % of a creature tile); creatures centred on the board, back rows from its left end (TableGeometry).
+                // 0.4.60 Z2: the existing tiles, their heights fixed by the rows. Crowding squeezes them sideways (the art cropped, then
+                // the piles overlapping), one width for both creature rows and one for both back rows (TableGeometry.tiles).
                 fun sizes(cs: List<Card>, split: Int) = pilesOf(cs, split, ::markOf, ::tapOf).map { it.size }
                 fun twoLanes(p: Player) = lands(p.battlefield).isNotEmpty() && backOthers(p.battlefield).isNotEmpty()
-                // The creature rows keep a tapped tile's turned corner on the board at both ends; the back rows start 6 du in.
-                val reach = rowsG.cpuFront.height.dp * (TableGeometry.ASPECT * TableGeometry.TAPPED_SIDE)
+                // The creature rows keep a tapped tile's turned corner on the board at both ends (the narrowest tile reaches furthest);
+                // the back rows start 6 du in (or as far as their tapped corner reaches).
+                val fh = rowsG.cpuFront.height; val bh0 = rowsG.cpuBack.height
+                val reach = TableGeometry.sideReach(fh * TableGeometry.CROP_MIN, fh).dp
                 val frontLeft = zones.board.x.dp + reach
                 val room = boardRight - reach - lane - frontLeft
-                val backX = zones.board.x.dp + 6.du
-                val backRoom = boardRight - 6.du - lane - backX
+                val backIn = maxOf(6.du, TableGeometry.sideReach(bh0 * TableGeometry.CROP_MIN, bh0).dp)
+                val backX = zones.board.x.dp + backIn
+                val backRoom = boardRight - backIn - lane - backX
                 val frontX = frontLeft + room / 2
                 // Z1 review: no button takes your back row's width any more. Undo has its slot in the right strip (zones.undo) and the
                 // buttons keep off the board's box (goldMax, quietMax below), so your back row has the board's whole width.
                 val myBackRoom = backRoom
-                val tiles = TableGeometry.tiles(rowsG, room.value, backRoom.value,
-                    sizes(others(cpu.battlefield), 0), sizes(others(me.battlefield), 0),
-                    sizes(backRow(cpu.battlefield), lands(cpu.battlefield).size), sizes(backRow(me.battlefield), lands(me.battlefield).size), twoLanes(cpu), twoLanes(me), myBackRoom.value,
-                    cpuStrips = others(cpu.battlefield).maxOfOrNull { aurasOn(it) { id -> st.card(id) }.size } ?: 0,
-                    myStrips = others(me.battlefield).maxOfOrNull { aurasOn(it) { id -> st.card(id) }.size } ?: 0)
-                val fw = tiles.frontW.dp; val fh = tiles.front.dp; val bw = tiles.backW.dp; val bh = tiles.back.dp
-                val tilePiece = fh / .9f
+                val cpuFrontPiles = sizes(others(cpu.battlefield), 0); val myFrontPiles = sizes(others(me.battlefield), 0)
+                val cpuBackPiles = sizes(backRow(cpu.battlefield), lands(cpu.battlefield).size); val myBackPiles = sizes(backRow(me.battlefield), lands(me.battlefield).size)
+                val tiles = TableGeometry.tiles(rowsG, room.value, backRoom.value, cpuFrontPiles, myFrontPiles, cpuBackPiles, myBackPiles,
+                    twoLanes(cpu), twoLanes(me), myBackRoom.value, k = u)
+                val frontGap = TableGeometry.gap(maxOf(cpuFrontPiles.size, myFrontPiles.size), u).dp
+                val backGap = TableGeometry.gap(maxOf(cpuBackPiles.size, myBackPiles.size), u).dp
+                val fw = tiles.frontW.dp; val bw = tiles.backW.dp; val bh = tiles.back.dp
+                val tilePiece = tiles.front.dp / .9f
                 val advance = TableGeometry.advance(rowsG, tiles.front, 12.du.value).dp
-                PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, backX, rowsG.cpuBack.centre.dp, backRoom, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true, onPile = openPile)
-                PermanentRow(others(cpu.battlefield), false, 0, frontX, rowsG.cpuFront.centre.dp, room, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = fw to fh, advance = advance, onPile = openPile)
-                PermanentRow(others(me.battlefield), false, 0, frontX, rowsG.myFront.centre.dp, room, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = fw to fh, advance = advance, onPile = openPile)
-                PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, backX, rowsG.myBack.centre.dp, myBackRoom, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true, onPile = openPile)
+                PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, backX, rowsG.cpuBack.centre.dp, backRoom, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true, onPile = openPile, gap = backGap)
+                PermanentRow(others(cpu.battlefield), false, 0, frontX, rowsG.cpuFront.centre.dp, room, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = fw to fh.dp, advance = advance, onPile = openPile, gap = frontGap, squeezed = tiles.squeezed)
+                PermanentRow(others(me.battlefield), false, 0, frontX, rowsG.myFront.centre.dp, room, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = fw to fh.dp, advance = advance, onPile = openPile, gap = frontGap, squeezed = tiles.squeezed)
+                PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, backX, rowsG.myBack.centre.dp, myBackRoom, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true, onPile = openPile, gap = backGap)
             }
 
             // 0.4.60 Z1: everything of a player stands in the left strip, never on the board: the CPU's square top left with its hand
@@ -1052,14 +1057,16 @@ internal fun returnToPlace(ordered: List<Card>, inHand: Set<Int>, was: List<Int>
 // ---- Battlefield ----
 
 /**
- * One row of permanents, centred on [cx] with its middle at [cy]. Identical permanents pile ([pilesOf], ×N, 9 right and 6 up
- * apart); everything else stands alone 10 du apart. A row wider than [room] shrinks to fit (the site's zone scale).
+ * One row of permanents, centred on [cx] with its middle at [cy]. Identical permanents pile ([pilesOf], ×N, fanned sideways);
+ * everything else stands alone [gap] apart. 0.4.60 Z2: a row wider than [room] never shrinks: its gaps close, then its piles
+ * overlap from the right like a fan, each later pile over the one before (TableGeometry.layRow). [squeezed]: the tiles are cropped
+ * narrow, so a name may take three lines.
  */
 @Composable
 private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: Dp, cy: Dp, room: Dp, d: Du, markOf: (Card) -> Mark, tapOf: (Card) -> (() -> Unit)?, onInspect: (Card) -> Unit, mine: Boolean = false, lookup: (Int) -> Card? = { null }, piece: Dp? = null,
                          tile: Pair<Dp, Dp>? = null, fromLeft: Boolean = false, advance: Dp? = null,
                          /** T3: a tap or long press on a pile with no game action opens it (the whole pile, or the lone card). */
-                         onPile: ((List<Card>) -> Unit)? = null) = with(d) {
+                         onPile: ((List<Card>) -> Unit)? = null, gap: Dp? = null, squeezed: Boolean = false) = with(d) {
     if (cards.isEmpty()) return@with
     val piles = pilesOf(cards, split, markOf, tapOf)
     // The second lane (site: +22 px between lanes) starts at the first pile past the lands.
@@ -1067,21 +1074,20 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
     // A big board: creatures piece·1.18 × piece·.9, other permanents piece·.98 × piece·.68; a pile overlaps by piece·.8 (·.6); lanes 22 apart.
     val w = tile?.first ?: if (piece != null) (if (land) piece * .98f else piece * 1.18f) else if (land) 42.du else 50.du
     val h = tile?.second ?: if (piece != null) (if (land) piece * .68f else piece * .9f) else if (land) 29.du else 38.du
-    val laneGap = if (tile != null) w * TableGeometry.LANE else if (piece != null) 22.dp else 12.du
     // Table additions 2: a pile's cards sit 9 px right and 6 px up of the one under them, at most 4 edges showing.
-    // 0.4.59 T1: on screen-sized tiles the same shape scales with the tile (TableGeometry.STEP of its width).
     // T2: a pile fans sideways as wide as the row has room for (TableGeometry.fanStep), so it shows what is in it; no rise.
-    val step = if (tile != null) w * TableGeometry.fanStep(h.value, room.value, piles.map { it.size }, land, laneAt > 0) else if (piece != null) 9.dp else 9.du
+    // Z2: the row's layout (fan, gaps, overlap) comes from TableGeometry.layRow; the tiles keep their height.
+    val lay = TableGeometry.layRow(w.value, h.value, room.value, piles.map { it.size }, land, laneAt, (gap ?: (w * TableGeometry.GAP)).value)
+    val step = w * lay.fan
     val rise = if (tile != null) 0.dp else if (piece != null) 6.dp else 6.du
-    val gap = if (tile != null) w * TableGeometry.GAP else if (piece != null) 12.dp else 10.du
-    val widths = piles.map { w + step * (minOf(it.size, PILE_EDGES) - 1) }
-    val total = widths.fold(0.dp) { a, b -> a + b } + gap * (piles.size - 1) + if (laneAt > 0) laneGap else 0.dp
-    val k = if (total > room) room / total else 1f
-    Box(Modifier.offset(x = if (fromLeft) cx else cx - total * k / 2, y = cy - h * k / 2).graphicsLayer { scaleX = k; scaleY = k; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f) }) {
-        var x = 0.dp
+    val total = lay.total.dp
+    // Z2: while piles overlap, only the left part of each pile's top tile shows: its name keeps to it and its P/T moves to its left edge.
+    val visible = lay.visible?.dp
+    Box(Modifier.offset(x = if (fromLeft) cx else cx - total / 2, y = cy - h / 2)) {
         piles.forEachIndexed { i, pile ->
-            if (i == laneAt && i > 0) x += laneGap
-            val px = x
+            val px = lay.xs[i].dp
+            // Each later pile lies over the one before (overlap from the right); inside a pile, each card over the one under it.
+            val z = i * 30f
             pile.forEachIndexed { j, card ->
                 key(card.id) {
                     // Cards below the four showing edges hide under the bottom one; a card joining or leaving a pile re-lays out in 260 ms.
@@ -1091,12 +1097,13 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
                     val ay by androidx.compose.animation.core.animateDpAsState(-rise * (e + (PILE_EDGES - 1) - pileEdge(pile.lastIndex, pile.size)), tween(260, easing = FastOutSlowInEasing), label = "py")
                     // T4 (aura look A): a creature's auras peek above it as strips, drawn under its tile.
                     if (tile != null && pile.size == 1) aurasOn(card, lookup).takeIf { it.isNotEmpty() }?.let { auras ->
-                        AuraStrips(card, auras, w, h, advance, mine, Modifier.offset(x = ax, y = ay).zIndex(-1f), d) }
-                    Tile(card, w, h, land, markOf(card), mine, lookup, tapOf(card), if (onPile != null) { _ -> onPile(pile) } else onInspect, Modifier.offset(x = ax, y = ay).zIndex(j.toFloat()), d,
-                        count = if (j == pile.lastIndex && pile.size > 1) pile.size else 1, piece = piece, pileTop = j == pile.lastIndex, advance = advance)
+                        AuraStrips(card, auras, w, h, advance, mine, Modifier.offset(x = ax, y = ay).zIndex(z - 1f), d) }
+                    val top = j == pile.lastIndex
+                    Tile(card, w, h, land, markOf(card), mine, lookup, tapOf(card), if (onPile != null) { _ -> onPile(pile) } else onInspect, Modifier.offset(x = ax, y = ay).zIndex(z + j), d,
+                        count = if (top && pile.size > 1) pile.size else 1, piece = piece, pileTop = top, advance = advance,
+                        visibleW = if (top && i < piles.lastIndex) visible else null, squeezed = squeezed)
                 }
             }
-            x += widths[i] + gap
         }
     }
 }
@@ -1206,7 +1213,11 @@ internal fun pilesOf(cards: List<Card>, split: Int, markOf: (Card) -> Mark, tapO
 @Composable
 private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: Boolean, lookup: (Int) -> Card?, onTap: (() -> Unit)?, onInspect: (Card) -> Unit, modifier: Modifier, d: Du, count: Int = 1, piece: Dp? = null, pileTop: Boolean = true,
                  /** How far an attacker steps toward the other side (12 du unless the rows are closer: TableGeometry.advance). */
-                 advance: Dp? = null) = with(d) {
+                 advance: Dp? = null,
+                 /** 0.4.60 Z2: how much of this tile shows while the next pile lies over its right part (null: all of it). */
+                 visibleW: Dp? = null,
+                 /** 0.4.60 Z2: the tile is cropped narrow (TableGeometry.Tiles.squeezed): its name may take three lines, not two. */
+                 squeezed: Boolean = false) = with(d) {
     val (a, _) = frameTone(cardColors(card))
     // play-forge-table.css: a role's ring and glow (playable/choice #5cc8ff, target #ff9d5c, chosen #f3d27e), combat over it (attacking #ff6a4a, blocking #6aaeff).
     val combat = card.attacking || card.blocking
@@ -1310,10 +1321,32 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         if (!pileTop) Box(Modifier.fillMaxSize().background(Color(0x38000000)))
         // The payment light over the whole card: a soft mana-gold wash.
         if (paid) Box(Modifier.fillMaxSize().background(PayGold.copy(alpha = .22f)))
-        if (nh != null && piece != null && pileTop) Box(Modifier.fillMaxWidth().height(nh + 10.dp).background(Brush.verticalGradient(0f to Color(0xF007070B), .55f to Color(0xB807070B), 1f to Color(0x0007070B)))
-            .padding(start = 7.dp, end = 7.dp, top = 3.dp)) {
-            Text(card.name, maxLines = 1, overflow = TextOverflow.Ellipsis, style = TextStyle(fontFamily = Spectral, fontWeight = FontWeight.Bold, fontSize = (nh.value * .6f).coerceIn(9f, 15f).sp,
-                color = Color(0xFFF6EFDF), lineHeight = (nh.value * 1f).sp, shadow = androidx.compose.ui.graphics.Shadow(Color.Black, Offset(0f, 1f), 2f)))
+        // 0.4.60 Z2: the name is never cut: it wraps to two lines (three on a squeezed tile) and keeps to the part of the tile that shows.
+        var nameH by remember(card.id) { mutableStateOf(nh ?: 0.dp) }
+        val dens = LocalDensity.current.density
+        if (nh != null && piece != null && pileTop) {
+            val fs = (nh.value * .6f).coerceIn(9f, 15f)
+            // A squeezed tile (the mockup's squeezed name): tighter sides and letters, and the size steps down (never under 9 sp) before
+            // a word would break or a line would be lost.
+            val tight = squeezed || visibleW != null
+            var size by remember(card.id, card.name, fs, visibleW, squeezed) { mutableStateOf(fs) }
+            Box((if (visibleW != null) Modifier.width(visibleW) else Modifier.fillMaxWidth()).heightIn(min = nh + 10.dp)
+                .background(Brush.verticalGradient(0f to Color(0xF007070B), .55f to Color(0xB807070B), 1f to Color(0x0007070B)))
+                .padding(start = if (tight) 3.dp else 7.dp, end = if (tight) 3.dp else 7.dp, top = 3.dp, bottom = 4.dp)) {
+                Text(card.name, maxLines = if (squeezed) 3 else 2, overflow = TextOverflow.Clip, style = TextStyle(fontFamily = Spectral, fontWeight = FontWeight.Bold, fontSize = size.sp,
+                    color = Color(0xFFF6EFDF), lineHeight = maxOf(size * 1.15f, minOf(nh.value, size * 1.5f)).sp, letterSpacing = if (squeezed) (-.03f).em else androidx.compose.ui.unit.TextUnit.Unspecified,
+                    shadow = androidx.compose.ui.graphics.Shadow(Color.Black, Offset(0f, 1f), 2f)),
+                    onTextLayout = { r ->
+                        val t = card.name
+                        // A line that ends inside a word broke that word: as bad as a lost line.
+                        val broken = (0 until r.lineCount - 1).any { i -> val e = r.getLineEnd(i); e in 1 until t.length && !t[e - 1].isWhitespace() && t[e - 1] != '-' && !t[e].isWhitespace() }
+                        val cut = r.hasVisualOverflow || broken
+                        if (cut && size > 9f) { size = maxOf(9f, size - .5f); return@Text }
+                        nameH = maxOf(nh, (r.size.height / dens).dp - 3.dp)
+                        // A test hook: a name that does not fit its lines is marked, so a shot test can say no name is cut.
+                        anchors?.let { if (cut) it.putRect("namecut${card.id}", androidx.compose.ui.geometry.Rect(0f, 0f, 1f, 1f)) else it.rects.remove("namecut${card.id}") }
+                    })
+            }
         }
         landPip(card, land)?.let { c ->
             Box(Modifier.align(Alignment.BottomStart).offset(x = 4.du, y = (-3).du).size(10.du).clip(CircleShape).background(LAND_DOT.getValue(c)).border(1.dp, Color(0xAAFFFFFF), CircleShape),
@@ -1321,7 +1354,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         }
         // P/T: clamp(15, piece·.16, 23) in the creature lane, clamp(11, piece·.12, 17) elsewhere, on a big board.
         val statPx = piece?.let { if (land) (h.value * .18f).coerceIn(8f, 17f) else (h.value * .19f).coerceIn(9f, 23f) } ?: (h.value / u * .26f).coerceIn(9f, 18f)
-        TileLayer(card, mark == Mark.PLAYABLE || mark == Mark.USABLE, lookup, d, h, if (card.isCreature && card.power != null) (if (piece != null) statPx / u else statPx) else 0f, top = nh?.let { it + 6.dp })
+        TileLayer(card, mark == Mark.PLAYABLE || mark == Mark.USABLE, lookup, d, h, if (card.isCreature && card.power != null) (if (piece != null) statPx / u else statPx) else 0f, top = nh?.let { (if (pileTop) nameH else it) + 6.dp })
         // .play-current-stats: right 6px, bottom 2px, 1px 7px, #d6ad64c0 hairline, radius 7, #111114f2, white 700; the toughness reads #ff8f84 while damage is marked
         // (forge-table.mjs data-damaged; Forge's toughness already counts counters, damage is not subtracted).
         // T2: in a fanned pile only the front card wears its numbers; the ones behind show their art.
@@ -1331,11 +1364,22 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
             // or coral (down). Then it is white again: the steady colour waits for base P/T from the bridge.
             val tick = LocalTrigger.current?.takeIf { it.phase == dev.cardstashy.nativeplay.match.TriggerMoment.Phase.RESULT }?.result?.pt?.firstOrNull { it.cardId == card.id }
             val tone = tick?.let { if (it.up) TRIG_GREEN else TRIG_CORAL }
-            Row(Modifier.align(Alignment.BottomEnd).offset(x = (-6).du, y = (-2).du).clip(RoundedCornerShape(7.du)).background(tone?.copy(alpha = .28f)?.compositeOver(Color(0xF2111114)) ?: Color(0xF2111114))
+            // 0.4.60 Z2: while the next pile covers this tile's right part, the plate moves to the left edge, so it is never covered.
+            // If even there the plate is wider than what shows, its numbers step down in size to fit.
+            val left = visibleW != null && visibleW < w - 6.du
+            val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+            val fsFit = if (!left) fs else {
+                val textW = measurer.measure("${card.power} / ${card.toughness ?: 0}", sans(fs, FontWeight.Bold, Color.White)).size.width / dens
+                val room = (visibleW!! - 6.du - 14.du - 2.dp).value
+                if (textW > room && textW > 0f) (fs.value * (room / textW).coerceIn(.5f, 1f)).sp else fs
+            }
+            Row(Modifier.align(if (left) Alignment.BottomStart else Alignment.BottomEnd).offset(x = if (left) 3.du else (-6).du, y = (-2).du)
+                .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("pt${card.id}", it.boundsInRoot()) } else Modifier)
+                .clip(RoundedCornerShape(7.du)).background(tone?.copy(alpha = .28f)?.compositeOver(Color(0xF2111114)) ?: Color(0xF2111114))
                 .border(if (tone != null) 1.5.dp else 1.dp, tone ?: Color(0xC0D6AD64), RoundedCornerShape(7.du))
                 .padding(horizontal = 7.du, vertical = 1.du)) {
-                Text("${card.power} / ", style = sans(fs, FontWeight.Bold, tone ?: Color.White))
-                Text("${card.toughness ?: 0}", style = sans(fs, FontWeight.Bold, tone ?: if (card.damage > 0) Color(0xFFFF8F84) else Color.White))
+                Text("${card.power} / ", style = sans(fsFit, FontWeight.Bold, tone ?: Color.White))
+                Text("${card.toughness ?: 0}", style = sans(fsFit, FontWeight.Bold, tone ?: if (card.damage > 0) Color(0xFFFF8F84) else Color.White))
             }
         }
     }
@@ -1361,7 +1405,8 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
     // It takes a tap and passes it to the top card.
     if (count > 1) {
         val bh = 18.du
-        Box(modifier.offset(x = w - 22.du, y = -bh / 2).zIndex(20f).height(bh).widthIn(min = 28.du)
+        // 0.4.60 Z2: on an overlapped pile it sits on the part that shows, over the next pile's edge.
+        Box(modifier.offset(x = (visibleW?.coerceAtMost(w) ?: w) - 22.du, y = -bh / 2).zIndex(if (visibleW != null) 35f else 20f).height(bh).widthIn(min = 28.du)
             .clip(RoundedCornerShape(999.dp)).background(Color(0xEB0C0D12)).border(1.dp, Palette.Gold, RoundedCornerShape(999.dp))
             .pointerInput(card.id) { detectTapGestures(onTap = { tap?.invoke() ?: inspect(card) }) }
             .padding(horizontal = 5.du), contentAlignment = Alignment.Center) {

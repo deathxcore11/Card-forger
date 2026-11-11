@@ -4,14 +4,14 @@ package dev.cardstashy.nativeplay.ui
  * 0.4.59 T1 (specs/table-look-0459.md, fault 18; Randall 10 Nov "we had that already but you changed it so just make it bigger and
  * better ... scale it right"): the battlefield's existing art tiles, sized from the screen and never from a fixed dp.
  *
- * The brief's rows are shares of the screen's height, drawn for the preview, which has no menu, phase track or seat dock. Here the
- * same four rows, in the same proportions, fill the height the table's own chrome leaves free: from under the menu and phase
- * track to above your seat and hand. One screen has the hand below them; the dual top screen has no hand and its rows are taller
- * (the brief's dual proportions). A tile is 1.3 times as wide as it is tall. The board is the middle 71.5 % of the width.
+ * The four rows lie in the board (ZoneLayout): the CPU's back row and creatures from the top, yours from the bottom. One screen has the
+ * hand below them; the dual top screen has no hand and its rows are taller. A full tile is 1.3 times as wide as it is tall. The board
+ * is the middle 71.5 % of the width.
  *
- * Scale rule: each creature row works out the height its piles need to fit the board's width, and BOTH rows take the smaller one,
- * so your tiles and the CPU's are always the same size. Same for the two back rows (lands first). A land tile is never taller than
- * 70 % of a creature tile. Pure numbers, so the rule is unit tested (TableGeometryTest).
+ * Scale rule (0.4.60 Z2, specs/table-zones-brief.md): a tile's height is fixed from the usable height (20.5 % for creatures, 12.5 %
+ * for lands; 23.5 % and 13 % on the dual top) and never changes with what is on the table. Crowding squeezes sideways: the art is
+ * cropped narrower, down to 0.74 x the height, then the piles overlap from the right like a fan. Both creature rows always share one
+ * tile size, both back rows another. Pure numbers, so the rule is unit tested (TableGeometryTest).
  */
 internal object TableGeometry {
     /** One row: its top and its height (shares of the screen in the brief, dp once placed). */
@@ -24,9 +24,23 @@ internal object TableGeometry {
         val all get() = listOf(cpuBack, cpuFront, myFront, myBack)
     }
 
-    /** The brief's rows, as shares of the screen's height. */
-    val ONE_SCREEN = Rows(Band(.015f, .11f), Band(.155f, .20f), Band(.395f, .20f), Band(.635f, .11f))
-    val DUAL_TOP = Rows(Band(.03f, .13f), Band(.21f, .235f), Band(.535f, .235f), Band(.83f, .13f))
+    /**
+     * 0.4.60 Z2 (specs/table-zones-brief.md, "Tile height is fixed"): a creature tile is this share of the usable height (ZoneLayout's
+     * hb), a land tile this share; the dual top screen's own pair. The usable height stops growing once [CAP_ONE] ([CAP_DUAL]) full
+     * tiles fit across the board (ZoneLayout.of works it out), so on a tall screen the tiles stop growing and the spare is open table.
+     */
+    const val FRONT_ONE = .205f
+    const val BACK_ONE = .125f
+    const val FRONT_DUAL = .235f
+    const val BACK_DUAL = .13f
+    const val CAP_ONE = 4.6f
+    const val CAP_DUAL = 4.15f
+    /** The gap between the two creature rows is at least this share of the usable height (the aura strips rise into it). */
+    const val MID_GAP = .065f
+    /** A crowded row narrows its tiles by cropping the art, never below this share of the tile's height; past that piles overlap. */
+    const val CROP_MIN = .74f
+    /** A tile narrower than this share of its full width (1.3 x height) is squeezed: its name may take three lines. */
+    const val SQUEEZED = .8f
 
     /** 0.4.60 Z1: the board starts after the left strip (ZoneLayout.RAIL); it is the middle 71.5 % of the width. */
     const val BOARD_X = ZoneLayout.RAIL
@@ -63,68 +77,125 @@ internal object TableGeometry {
     const val STRIP = .15f
     const val STRIPS_MAX = 2
 
-    fun shares(dualTop: Boolean) = if (dualTop) DUAL_TOP else ONE_SCREEN
-
-    /** The brief's rows for this screen, laid into the free height from [top] to [bottom] (dp), in the brief's proportions. */
-    fun rows(dualTop: Boolean, top: Float, bottom: Float): Rows {
-        val s = shares(dualTop)
-        val from = s.cpuBack.top; val to = s.myBack.bottom
-        val k = (bottom - top).coerceAtLeast(1f) / (to - from)
-        fun place(b: Band) = Band(top + (b.top - from) * k, b.height * k)
-        return Rows(place(s.cpuBack), place(s.cpuFront), place(s.myFront), place(s.myBack))
-    }
+    fun front(dualTop: Boolean) = if (dualTop) FRONT_DUAL else FRONT_ONE
+    fun backShare(dualTop: Boolean) = if (dualTop) BACK_DUAL else BACK_ONE
+    fun cap(dualTop: Boolean) = if (dualTop) CAP_DUAL else CAP_ONE
 
     /**
-     * 0.4.60 Z1: the rows laid into a board box from [top] to [bottom] (dp) that has nothing above or below to keep clear of but its
-     * own edges: the outer rows sit in by as much as a tapped tile's turned corners reach past their band, so a tapped land in the
-     * CPU's back row or yours stays on the board.
+     * 0.4.60 Z2: the four rows in the board from [top] to [bottom] (dp), their heights fixed from the usable height [hb]: a creature
+     * row [front] of it, a back row [backShare] of it, whatever is on the table. Each side hugs its own edge, in this order of need:
+     *  1. the outer rows sit in by as much as a tapped tile's turned corners reach, so a tapped land stays on the board;
+     *  2. the creature rows keep at least [MID_GAP] of [hb] between them (the aura strips), and never less than two tapped creatures need;
+     *  3. what is left first parts each back row from its creature row until their tapped tiles cannot meet;
+     *  4. the rest is open table between the two sides (a tall screen).
+     * Only a board too short for 1 and 2 (a pod's rail along the top) shrinks the tiles, all rows alike.
      */
-    fun rowsIn(dualTop: Boolean, top: Float, bottom: Float): Rows {
-        val s = shares(dualTop)
-        val m = (TAPPED_HALF - .5f) * s.cpuBack.height / (s.myBack.bottom - s.cpuBack.top) * (bottom - top).coerceAtLeast(0f)
-        return rows(dualTop, top + m, bottom - m)
+    fun rows(dualTop: Boolean, top: Float, bottom: Float, hb: Float): Rows {
+        var c = front(dualTop) * hb
+        var l = backShare(dualTop) * hb
+        var mid = maxOf(MID_GAP * hb, (2 * TAPPED_HALF - 1) * c)
+        var edge = (TAPPED_HALF - .5f) * l
+        val room = (bottom - top).coerceAtLeast(1f)
+        val need = 2 * edge + 2 * l + 2 * c + mid
+        if (room < need) { val s = room / need; c *= s; l *= s; mid *= s; edge *= s }
+        val spare = (room - (2 * edge + 2 * l + 2 * c + mid)).coerceAtLeast(0f)
+        val side = minOf((TAPPED_HALF - .5f) * (l + c), spare / 2)
+        val cpuBack = Band(top + edge, l)
+        val cpuFront = Band(cpuBack.bottom + side, c)
+        val myBack = Band(bottom - edge - l, l)
+        val myFront = Band(myBack.top - side - c, c)
+        return Rows(cpuBack, cpuFront, myFront, myBack)
     }
 
+    /** How far past its side a tapped tile [w] wide and [h] tall reaches (turned 20 degrees, shrunk to 94 %). */
+    fun sideReach(w: Float, h: Float): Float = .94f * (w * .9397f + h * .3420f) / 2 - w / 2
+
     /** The width a row of [piles] (each the number of cards in it, at most [PILE_EDGES] showing) takes at tile height [h]. */
-    fun rowWidth(h: Float, piles: List<Int>, lane: Boolean = false, step: Float = STEP): Float {
+    fun rowWidth(h: Float, piles: List<Int>, lane: Boolean = false, step: Float = STEP, w: Float = h * ASPECT, gap: Float = w * GAP): Float {
         if (piles.isEmpty()) return 0f
-        val w = h * ASPECT
-        return piles.sumOf { (w * (1 + step * (minOf(it, PILE_EDGES) - 1))).toDouble() }.toFloat() + w * GAP * (piles.size - 1) + if (lane) w * LANE else 0f
+        return piles.sumOf { (w * (1 + step * (minOf(it, PILE_EDGES) - 1))).toDouble() }.toFloat() + gap * (piles.size - 1) + if (lane) w * LANE else 0f
     }
 
     /** T2: the widest fan step (share of the tile's width) that keeps a row of [piles] at tile height [h] inside [room]. */
-    fun fanStep(h: Float, room: Float, piles: List<Int>, back: Boolean, lane: Boolean = false): Float {
+    fun fanStep(h: Float, room: Float, piles: List<Int>, back: Boolean, lane: Boolean = false, w: Float = h * ASPECT, gap: Float = w * GAP): Float {
         val max = if (back) FAN_MAX_BACK else FAN_MAX
         val edges = piles.sumOf { minOf(it, PILE_EDGES) - 1 }
         if (edges == 0) return max
-        val spare = room - rowWidth(h, piles, lane, 0f)
-        return (spare / (h * ASPECT * edges)).coerceIn(FAN_MIN, max)
+        val spare = room - rowWidth(h, piles, lane, 0f, w, gap)
+        return (spare / (w * edges)).coerceIn(FAN_MIN, max)
     }
 
-    /** The tile height a row can have: its band's height, or less when its piles would not fit [room]. */
-    fun fitHeight(band: Float, room: Float, piles: List<Int>, lane: Boolean = false): Float {
-        val need = rowWidth(band, piles, lane)
-        return if (need <= room || need <= 0f) band else band * room / need
+    /**
+     * 0.4.60 Z2: the tile sizes for the table. The heights are the rows' (fixed); only the width gives way to crowding: one width for
+     * both creature rows, one for both back rows. [front] / [back] heights, [frontW] / [backW] widths.
+     */
+    data class Tiles(val front: Float, val back: Float, val frontW: Float = front * ASPECT, val backW: Float = back * ASPECT) {
+        /** The creature tiles are squeezed (their art cropped below 80 % of full width): a name may take three lines. */
+        val squeezed get() = frontW < front * ASPECT * SQUEEZED - .01f
     }
 
-    /** The tile heights for the table: one for both creature rows, one for both back rows. */
-    data class Tiles(val front: Float, val back: Float) { val frontW get() = front * ASPECT; val backW get() = back * ASPECT }
+    /**
+     * The gap between piles in a row whose fuller side has [piles] piles: the mockup's 8 (4 once more than five piles share a row),
+     * times the chrome scale [k].
+     */
+    fun gap(piles: Int, k: Float): Float = (if (piles > 5) 4f else 8f) * k
+
+    /**
+     * The widest tile ([h] tall) that lets every row in [rows] (each its pile sizes, and its room) fit side by side at the sizing
+     * fan step, gaps [gap] apart: full width (1.3 x [h]) when it fits, else the art cropped, never below [CROP_MIN] x [h].
+     */
+    fun width(h: Float, rows: List<Pair<List<Int>, Float>>, gap: Float, lanes: List<Boolean> = rows.map { false }): Float {
+        var w = h * ASPECT
+        rows.forEachIndexed { i, (piles, room) ->
+            if (piles.isEmpty()) return@forEachIndexed
+            val edges = piles.sumOf { minOf(it, PILE_EDGES) - 1 }
+            val fits = (room - gap * (piles.size - 1)) / (piles.size + STEP * edges + if (lanes[i]) LANE else 0f)
+            w = minOf(w, fits)
+        }
+        return w.coerceIn(h * CROP_MIN, h * ASPECT)
+    }
 
     /**
      * [rows] placed in dp; [room] the creature rows' width, [backRoom] the back rows'. Each list holds a row's pile sizes;
-     * [cpuLane] / [myLane] say whether that back row has a second lane (lands and other permanents).
+     * [cpuLane] / [myLane] say whether that back row has a second lane (lands and other permanents). [k] is the chrome scale.
+     * The heights are the rows'; never changed by what is on the table (Z2). Strips no longer shrink a tile: the rows keep room.
      */
     fun tiles(rows: Rows, room: Float, backRoom: Float, cpuFront: List<Int>, myFront: List<Int>, cpuBack: List<Int>, myBack: List<Int>,
-              cpuLane: Boolean = false, myLane: Boolean = false, myBackRoom: Float = backRoom, cpuStrips: Int = 0, myStrips: Int = 0): Tiles {
-        // Review fix: tapped tiles of two neighbouring rows never meet (TAPPED_HALF), creature to creature and creature to back row.
-        // T4: your auras' strips rise toward the CPU's creatures, the CPU's toward its own back row; neither touches a tile there.
-        val dist = rows.myFront.centre - rows.cpuFront.centre
-        val clear = minOf(dist / (2 * TAPPED_HALF), dist / (TAPPED_HALF + .5f + STRIP * myStrips.coerceAtMost(STRIPS_MAX)))
-        val front = minOf(fitHeight(rows.cpuFront.height, room, cpuFront), fitHeight(rows.myFront.height, room, myFront), clear)
-        val cpuReach = maxOf(TAPPED_HALF, .5f + STRIP * cpuStrips.coerceAtMost(STRIPS_MAX)) * front
-        val backClear = minOf((rows.cpuFront.centre - rows.cpuBack.centre - cpuReach) / TAPPED_HALF, (rows.myBack.centre - rows.myFront.centre) / TAPPED_HALF - front)
-        val back = minOf(fitHeight(rows.cpuBack.height, backRoom, cpuBack, cpuLane), fitHeight(rows.myBack.height, myBackRoom, myBack, myLane), front * LAND_MAX, backClear)
-        return Tiles(front, back)
+              cpuLane: Boolean = false, myLane: Boolean = false, myBackRoom: Float = backRoom, k: Float = 1f): Tiles {
+        val front = rows.cpuFront.height; val back = rows.cpuBack.height
+        val fg = gap(maxOf(cpuFront.size, myFront.size), k)
+        val bg = gap(maxOf(cpuBack.size, myBack.size), k)
+        val fw = width(front, listOf(cpuFront to room, myFront to room), fg)
+        val bw = width(back, listOf(cpuBack to backRoom, myBack to myBackRoom), bg, listOf(cpuLane, myLane))
+        return Tiles(front, back, fw, bw)
+    }
+
+    /**
+     * One row laid out: [xs] each pile's left edge from the row's start, [fan] the fan step inside a pile (share of the tile's
+     * width), [total] the row's width, [visible] how much of a pile's top tile shows when piles overlap (null: none do).
+     */
+    data class RowLay(val xs: List<Float>, val fan: Float, val total: Float, val visible: Float?)
+
+    /**
+     * 0.4.60 Z2: a row of [piles] tiles [w] wide and [h] tall in [room]. A pile fans as wide as there is room (T2, [fanStep]); then
+     * the gaps close (the lane's gap too); past that the piles overlap from the right like a fan, every pile by the same amount,
+     * each later pile over the one before. The height never changes. [laneAt] is the first pile of a back row's second lane (-1: none).
+     */
+    fun layRow(w: Float, h: Float, room: Float, piles: List<Int>, back: Boolean, laneAt: Int = -1, gap: Float = w * GAP): RowLay {
+        if (piles.isEmpty()) return RowLay(emptyList(), 0f, 0f, null)
+        val n = piles.size
+        val lane = laneAt in 1 until n
+        val fan = fanStep(h, room, piles, back, lane, w, gap)
+        val pw = piles.map { w * (1 + fan * (minOf(it, PILE_EDGES) - 1)) }
+        var g = gap; var lg = if (lane) w * LANE else 0f
+        var visible: Float? = null
+        if (pw.sum() + g * (n - 1) + lg > room && n > 1) {
+            g = (room - pw.sum() - lg) / (n - 1)
+            if (g < 0f) { lg = 0f; g = (room - pw.sum()) / (n - 1); visible = (w + g).coerceAtLeast(1f) }
+        }
+        val xs = ArrayList<Float>(n); var x = 0f
+        for (i in 0 until n) { if (i == laneAt && lane) x += lg; xs += x; x += pw[i] + g }
+        return RowLay(xs, fan, x - g, visible)
     }
 
     /**
