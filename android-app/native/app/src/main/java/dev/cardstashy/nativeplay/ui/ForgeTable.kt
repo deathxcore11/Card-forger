@@ -2807,6 +2807,7 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
         }
     }
     Box(Modifier.fillMaxSize()) {
+        val tileAnchors = LocalAnchors.current
         val rail: @Composable () -> Unit = {
             b.keywords.forEach { badge(it.key) }
             if (b.keywordsMore > 0) badge(null, ink = Color.White, text = "+${b.keywordsMore}", dashed = true)
@@ -2814,7 +2815,8 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
         val top = top ?: 14.du
         // 0.4.60 G6: no corner pill for an ability (glow-rules.md): the usable ring is its mark, the inspect view its button.
         if (b.state.isNotEmpty() || (b.compact && (b.keywords.isNotEmpty() || b.keywordsMore > 0)))
-            Row(Modifier.offset(x = 3.du, y = top), horizontalArrangement = Arrangement.spacedBy(1.du)) {
+            Row(Modifier.offset(x = 3.du, y = top).then(if (tileAnchors != null) Modifier.onGloballyPositioned { tileAnchors.putRect("state${card.id}", it.boundsInRoot()) } else Modifier),
+                horizontalArrangement = Arrangement.spacedBy(1.du)) {
                 b.state.forEach { badge(it) }
                 if (b.compact) rail()
             }
@@ -2833,6 +2835,32 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
         val kGap = 2.du
         val tileW = w ?: (h * 1.3f)
         var stripH = 0.dp
+        // 0.4.60 G1 review: the strip keeps off the state corner (tapped, summoning sick: on the do-not-rebuild list; before G1 the rail
+        // started 3 du under it), and leaves room above it for the crew or equipment badge, which sits on top of the strip.
+        val attached = card.attachments.mapNotNull(lookup).filter { !it.hidden }
+        val lowBadge = b.crew != null || attached.any { !Regex("\\bAura\\b").containsMatchIn(it.type) }
+        val ceil = (if (b.state.isNotEmpty()) top + bsz + 3.du else top) + (if (lowBadge) bsz + 2.du else 0.dp)
+        // fitRails(): when the counters column would run into the stats plaque, it becomes a row (row-reverse) sitting 3px above the plaque.
+        val railN = b.counters.size + (if (b.countersMore > 0) 1 else 0) + (if (b.damage > 0) 1 else 0)
+        val floor = if (statFont > 0f) 2.du + (statFont * 1.25f + 4f).du else 0.du
+        val railRow = statFont > 0f && top + bsz * railN + 2.du * (railN - 1) + 3.du > h - floor - 2.du
+        // G1 review: the counters rail's own width (each badge as badge() lays it out), so the strip can keep clear of it.
+        val railMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
+        val railDens = LocalDensity.current.density
+        val badgeStyle = sans(sp(6.8f), FontWeight.Bold, Color.White).copy(lineHeight = sp(6.8f))
+        fun badgeW(icon: Boolean, text: String?): Dp {
+            val t = text?.let { (railMeasurer.measure(it, badgeStyle).size.width / railDens).dp } ?: 0.dp
+            val inner = (if (icon) bsz * .72f else 0.dp) + t + (if (icon && text != null) 1.du else 0.dp)
+            return maxOf(bsz, inner + bsz * .24f)
+        }
+        val railWs = if (railN == 0) emptyList() else b.counters.map { c -> if (c.icon != null) badgeW(true, "${c.count}") else badgeW(false, "${c.count} ${c.label.take(4)}") } +
+            (if (b.countersMore > 0) listOf(badgeW(false, "+${b.countersMore}")) else emptyList()) + (if (b.damage > 0) listOf(badgeW(true, "${b.damage}")) else emptyList())
+        val railW = if (railWs.isEmpty()) 0.dp else if (railRow) railWs.fold(0.dp) { a, x -> a + x } + 1.du * (railWs.size - 1) else railWs.maxOf { it }
+        val railLeft = tileW - 3.du - railW
+        // The rail as a column: from [top] down, bsz a badge.
+        val railColBottom = top + bsz * railN + 1.du * (railN - 1).coerceAtLeast(0)
+        // Where the rail row sits above the bottom (raised over a squeezed strip when the two would meet: see below).
+        var railLift = floor + 3.du
         // 0.4.60 G2: keywords without an icon (Toxic 1, Prowess...) follow the icons as word marks, the same height and pill, as wide as
         // Forge's word; the same fit rule, in order while they fit, the rest in the "+N".
         val strip = if (b.compact) emptyList() else b.strip
@@ -2854,17 +2882,23 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
             val x0: Dp; val bottom: Dp; val shown: Int; val more: Int
             if (!squeezedK) {
                 x0 = if (plate != null && plateLeft) px1!! + 4.du else 3.du
-                val x1 = if (plate != null && !plateLeft) minOf(right, px0!! - 4.du) else right
                 bottom = 3.du
+                // G1 review: the counters rail, as a row over the plate or a column down the right, ends the strip when they share a height.
+                val railMeets = railN > 0 && (if (railRow) h - bottom - kh < h - floor - 3.du else h - bottom - kh < railColBottom)
+                val x1 = minOf(if (plate != null && !plateLeft) minOf(right, px0!! - 4.du) else right, if (railMeets) railLeft - 2.du else right)
                 val room = (x1 - x0).value
-                // Never up into the name.
-                shown = if (h - bottom - kh < top) 0 else TileBadges.stripFit(markW, room, kGap.value, kh.value)
-                more = if (h - bottom - kh < top || (shown < n && kh.value > room + .01f)) 0 else n - shown
+                // Never up into the name, the state corner or the badge above the strip.
+                shown = if (h - bottom - kh < ceil) 0 else TileBadges.stripFit(markW, room, kGap.value, kh.value)
+                more = if (h - bottom - kh < ceil || (shown < n && kh.value > room + .01f)) 0 else n - shown
             } else {
                 x0 = 3.du
                 // Over the plate when the plate reaches the left column; up to the name, never into it.
                 bottom = if (plate != null && px0!! < x0 + kh + 2.du && px1!! > x0) 2.du + plate.second + 3.du else 3.du
-                val slots = minOf(TileBadges.SQUEEZED_MARKS, TileBadges.stripSlots((h - bottom - top).value, kh.value, kGap.value))
+                // G1 review: the counters rail reaching over the left column: a column rail ends the strip below it; a row rail is lifted
+                // over the strip, so the strip leaves room for it as for the badge above it.
+                val railMeets = railN > 0 && railLeft < x0 + kh + 2.du
+                val top2 = when { !railMeets -> ceil; railRow -> ceil + bsz + 2.du; else -> maxOf(ceil, railColBottom + 2.du) }
+                val slots = minOf(TileBadges.SQUEEZED_MARKS, TileBadges.stripSlots((h - bottom - top2).value, kh.value, kGap.value))
                 // A word wider than the tile's free width folds into the "+N" with what follows it.
                 val wide = markW.indexOfFirst { it > (right - x0).value + .01f }.let { if (it < 0) n else it }
                 shown = minOf(TileBadges.stripShown(n, slots), wide)
@@ -2889,15 +2923,13 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
                     list.asReversed().forEach { (k, i, t) -> mark(k, i, t) }
                 }
                 stripH = bottom + (if (squeezedK) kh * (shown + more) + kGap * (shown + more - 1) else kh)
+                if (squeezedK && railRow && railN > 0 && railLeft < x0 + kh + 2.du) railLift = maxOf(railLift, stripH + 2.du + (if (lowBadge) bsz + 2.du else 0.dp))
             }
         }
-        // fitRails(): when the counters column would run into the stats plaque, it becomes a row (row-reverse) sitting 3px above the plaque.
-        val railN = b.counters.size + (if (b.countersMore > 0) 1 else 0) + (if (b.damage > 0) 1 else 0)
-        val floor = if (statFont > 0f) 2.du + (statFont * 1.25f + 4f).du else 0.du
-        val railRow = statFont > 0f && top + bsz * railN + 2.du * (railN - 1) + 3.du > h - floor - 2.du
+        val railAnchor = if (tileAnchors != null) Modifier.onGloballyPositioned { tileAnchors.putRect("rail${card.id}", it.boundsInRoot()) } else Modifier
         @Composable fun railBox(content: @Composable () -> Unit) = if (railRow)
-            Row(Modifier.align(Alignment.BottomEnd).offset(x = (-3).du, y = -(floor + 3.du)), horizontalArrangement = Arrangement.spacedBy(1.du, Alignment.End), verticalAlignment = Alignment.CenterVertically) { content() }
-        else Column(Modifier.align(Alignment.TopEnd).offset(x = (-3).du, y = top), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(1.du)) { content() }
+            Row(Modifier.align(Alignment.BottomEnd).offset(x = (-3).du, y = -railLift).then(railAnchor), horizontalArrangement = Arrangement.spacedBy(1.du, Alignment.End), verticalAlignment = Alignment.CenterVertically) { content() }
+        else Column(Modifier.align(Alignment.TopEnd).offset(x = (-3).du, y = top).then(railAnchor), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(1.du)) { content() }
         if (railN > 0)
             railBox {
                 b.counters.forEach { c ->
@@ -2918,17 +2950,17 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
             }
         }
         b.crew?.let { crew ->
-            Row(Modifier.align(Alignment.BottomStart).offset(x = 3.du, y = if (stripH > 0.dp) -(stripH + 2.du) else (-4).du).clip(RoundedCornerShape(999.dp)).background(Color(0xEB101114)).border(1.dp, BadgeEdge, RoundedCornerShape(999.dp))
+            Row(Modifier.align(Alignment.BottomStart).offset(x = 3.du, y = if (stripH > 0.dp) -(stripH + 2.du) else (-4).du).then(if (tileAnchors != null) Modifier.onGloballyPositioned { tileAnchors.putRect("low${card.id}", it.boundsInRoot()) } else Modifier).clip(RoundedCornerShape(999.dp)).background(Color(0xEB101114)).border(1.dp, BadgeEdge, RoundedCornerShape(999.dp))
                 .padding(start = 2.du, end = 4.du), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(1.du)) {
                 BoardIcon("vehicle-crew", BadgeInk, bsz * .7f); Text("$crew", style = sans(sp(6.5f), FontWeight.Bold, Color.White))
             }
         }
-        val attached = card.attachments.mapNotNull(lookup).filter { !it.hidden }
         if (attached.any { !Regex("\\bAura\\b").containsMatchIn(it.type) } && b.crew == null) {
             fun kind(c: Card) = if (Regex("\\bEquipment\\b").containsMatchIn(c.type)) "equipment" else if (Regex("\\bAura\\b").containsMatchIn(c.type)) "aura" else "attached"
             // T4: auras show as strips above the tile (AuraStrips), so the corner badge counts only what is not an aura.
             val kinds = listOf("equipment", "attached").map { k -> k to attached.count { kind(it) == k } }.filter { it.second > 0 }
-            Row(Modifier.align(Alignment.BottomStart).offset(x = 3.du, y = if (stripH > 0.dp) -(stripH + 2.du) else (-4).du), horizontalArrangement = Arrangement.spacedBy(1.du)) {
+            Row(Modifier.align(Alignment.BottomStart).offset(x = 3.du, y = if (stripH > 0.dp) -(stripH + 2.du) else (-4).du)
+                .then(if (tileAnchors != null) Modifier.onGloballyPositioned { tileAnchors.putRect("low${card.id}", it.boundsInRoot()) } else Modifier), horizontalArrangement = Arrangement.spacedBy(1.du)) {
                 kinds.forEach { (k, n) -> badge(k, text = if (n > 1) "$n" else null) }
             }
         }
