@@ -356,7 +356,7 @@ fun ForgeBoard(
         // search and landed on the menu button, so A opened the menu. On two screens with a controller it goes to the hand instead.
         .focusProperties { onEnter = {
             if (requestedFocusDirection == androidx.compose.ui.focus.FocusDirection.Down && DualScreen.active && Pad.connected.value)
-                TableZones.hand?.let { h -> TablePad.autoRing = true; val ok = h.requestFocus(androidx.compose.ui.focus.FocusDirection.Enter); TablePad.autoRing = false
+                TableZones.hand?.let { h -> TablePad.autoRing = true; val ok = h.tryFocus(androidx.compose.ui.focus.FocusDirection.Enter); TablePad.autoRing = false
                     android.util.Log.i("PadA", "board entered from the top: ring to the hand chip ok=$ok") }
         } }
         .onFocusChanged { TableZones.ringIn = it.hasFocus }
@@ -2402,6 +2402,15 @@ internal fun stackSourceName(text: String): String? = text.substringBefore(" \u2
  * The table's zones for the shoulders on a dual screen (specs/dual-screen-native.md's match map): LB/RB jump the ring
  * Hand → Your board → Opponent's board and round again, landing on the card it was last on in that zone, else the zone's first.
  */
+/**
+ * Live 0.4.61 on the Thor (12 Nov, seen in logcat: "FocusRequester is not initialized", then the app froze on both screens): a
+ * focus requester whose node is not on the screen throws when asked for the ring. The hand chip's is like that while the hand is
+ * empty (cast your last card, then push the d-pad to pick its target). Asking is safe here: false when it cannot take the ring,
+ * and the ring goes on to the board's own order.
+ */
+internal fun FocusRequester.tryFocus(direction: androidx.compose.ui.focus.FocusDirection = androidx.compose.ui.focus.FocusDirection.Enter): Boolean =
+    runCatching { requestFocus(direction) }.getOrDefault(false)
+
 internal object TableZones {
     var hand: FocusRequester? = null
     val mine = LinkedHashMap<Int, FocusRequester>(); val theirs = LinkedHashMap<Int, FocusRequester>()

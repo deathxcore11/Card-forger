@@ -131,7 +131,8 @@ object PadPrompts {
     fun enter(keyCode: Int): Boolean {
         if (anyFocus) return false
         // W11/Y5 (Thor test4): on the table the first press lands on your hand, never on whatever spatial search finds first.
-        inputModes?.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard)
+        // (Live 0.4.61, the Thor freeze: this call runs the board's own focus entry, so nothing it throws may reach the key event.)
+        runCatching { inputModes?.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard) }
         entry?.let { if (runCatching { it() }.getOrDefault(false)) return true }
         val fm = focusManager ?: return false
         val dir = when (keyCode) {
