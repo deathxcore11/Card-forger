@@ -172,6 +172,10 @@ object QuickPlay {
             "opening hand ${hand?.size ?: 0} loaded=$n2 (${if (n2 != 0) CardArt.lastWarm else "-"}), gate ${SystemClock.elapsedRealtime() - t0} ms")
     }
 
+    /** L6: the largest deck (in rows) whose pictures are fetched on a metered connection. */
+    const val OWNED_WARM_ROWS = 260
+    /** L6: whether a deck you own of [rows] rows is warmed now: always on Wi-Fi, and on any connection when it is small enough. */
+    internal fun warmsOwned(rows: Int, unmetered: Boolean) = rows > 0 && (unmetered || rows <= OWNED_WARM_ROWS)
     /** L4: how long the versus screen waits for the first screen and the CPU's early plays, with a connection. */
     const val EARLY_CAP_MS = 8_000L
     /** L4: the highest mana value the gate waits for in the CPU's deck. */
@@ -204,9 +208,11 @@ object QuickPlay {
             // Tile art first (one lookup for every deck's face), then whole decks on Wi-Fi only.
             CardArt.resolve(decks.mapNotNull { d -> d.face?.let { EngineNames.name(it) to JsonObject().apply { addProperty("name", it) } } })
             CardArt.warm(app, emptyList(), 20_000, crops = decks.mapNotNull { it.face?.let(EngineNames::name) })
-            if (!unmetered(app)) return@launch
+            // L6: a deck you own of [OWNED_WARM_ROWS] rows or fewer is warmed on any connection; a bigger one waits for Wi-Fi.
+            val wifi = unmetered(app)
             for (d in decks) {
                 val r = rows(d.raw)
+                if (!warmsOwned(r.size, wifi)) continue
                 CardArt.resolve(r)
                 // Reading a cached image refreshes its place in the cache, so decks you own stay at the front and are never evicted.
                 CardArt.warm(app, r.map { it.first }, 30_000)
