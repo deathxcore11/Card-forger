@@ -20,10 +20,13 @@ import java.io.File
 /**
  * The table's music (play-table-audio.js music() and audio.js setMusic): the same tracks the site plays, streamed from
  * cardstashy.com the first time and kept on this device after. Loops carry their loop points (audio-loops.js), so the
- * seam sits inside continuous audio. Early turns, the fuller table, then the low-life track; a Story battle plays its
- * act's own songs; the result gets its short sting and then silence. Silent with "Sound & music" off and in the background.
+ * seam sits inside continuous audio. Quick Play, Practice and matches with friends play the two songs of the map on the table
+ * (specs/stage-music-brief.md): A, then B after one full loop, and back; B while anyone is at 5 life or less. A Story battle
+ * plays its act's own songs; the result gets its short sting and then silence. Silent with "Sound & music" off and in the background.
  */
-class TableMusic(private val context: Context, private val scope: CoroutineScope, private val story: StoryMusic? = null) {
+class TableMusic(private val context: Context, private val scope: CoroutineScope, private val story: StoryMusic? = null,
+    /** The id of the map drawn on this table (the same one PlaymatScene is given). */
+    private val stage: String? = null) {
     /** A Story battle's act and its mood or kind (app.js: data-story-act, data-story-mood, data-story-kind). */
     class StoryMusic(val act: Int, val mood: String?, val kind: String?)
 
@@ -47,14 +50,10 @@ class TableMusic(private val context: Context, private val scope: CoroutineScope
         }
     }
 
-    // Story: A the battle song, B the lighter song, C the boss song; a boss fight goes from C to A. Other matches mostly keep the table score.
-    private val pool: List<String>? = story?.let { s ->
-        val n = s.act.toString().padStart(2, '0')
-        val first = MOOD[s.mood] ?: KIND[s.kind] ?: 'A'
-        val order = mapOf('A' to "AB", 'B' to "BA", 'C' to "CA")[first].orEmpty().map { "MUS-ST-$n$it" }.filter { it in LOOPS }
-        order.takeIf { it.isNotEmpty() }
-    } ?: if (Math.random() < .35) LOOPS.keys.filter { it.startsWith("MUS-ST-") && !it.endsWith("C") }.shuffled().take(4) else null
+    // Story: A the battle song, B the lighter song, C the boss song; a boss fight goes from C to A. Any other match: its map's A and B.
+    private val pool: List<String>? = if (story != null) storySongs(story, LOOPS.keys) else stageSongs(stage, LOOPS.keys)
     private var at = 0; private var since = 0L
+    private var playing = ""
 
     fun update(b: MatchState) {
         if (closed || ending) return
@@ -65,13 +64,13 @@ class TableMusic(private val context: Context, private val scope: CoroutineScope
             return
         }
         val low = b.players.any { it.life in 1..5 }
-        val id = if (pool != null && !(low && story == null)) {
-            val now = System.currentTimeMillis()
-            val cur = pool[at % pool.size]
-            val span = LOOPS[cur]?.let { ((it.second - it.first) * 1000).toLong() } ?: 240_000L
-            if (since == 0L) since = now else if (now - since >= span) { at++; since = now }
+        val id = if (pool != null) {
+            val (i, t) = turnOver(pool, at, since, System.currentTimeMillis(), low && story == null, LOOPS)
+            at = i; since = t
             pool[at % pool.size]
+        // Only when a map or an act has no songs listed: the old table score.
         } else if (low) "MUS-TBL-05" else if (b.turn <= 8) "MUS-TBL-03" else "MUS-TBL-04"
+        if (id != playing) { playing = id; runCatching { android.util.Log.i("TableMusic", "song $id (map ${stage ?: "-"})") } }
         play(id, loop = true)
     }
 
@@ -149,6 +148,26 @@ class TableMusic(private val context: Context, private val scope: CoroutineScope
         private val CLIENT by lazy { OkHttpClient() }
         private val MOOD = mapOf("march" to 'A', "duel" to 'A', "tension" to 'A', "lesson" to 'B', "comic" to 'B', "boss" to 'C')
         private val KIND = mapOf("Boss" to 'C', "Lesson" to 'B')
+        /** A map's two songs: moonlit-courtyard gives MUS-MAT-MOONLIT-COURTYARD-A and -B. Null when the map has none listed. */
+        fun stageSongs(stage: String?, known: Set<String>): List<String>? =
+            stage?.let { id -> listOf("A", "B").map { "MUS-MAT-${id.uppercase()}-$it" }.filter { it in known } }?.takeIf { it.isNotEmpty() }
+        /** A Story battle's songs, as before: its act's A and B, or C then A for a boss. */
+        fun storySongs(s: StoryMusic, known: Set<String>): List<String>? {
+            val n = s.act.toString().padStart(2, '0')
+            val first = MOOD[s.mood] ?: KIND[s.kind] ?: 'A'
+            return mapOf('A' to "AB", 'B' to "BA", 'C' to "CA")[first].orEmpty().map { "MUS-ST-$n$it" }.filter { it in known }.takeIf { it.isNotEmpty() }
+        }
+        /**
+         * Which song of [songs] plays at [now]: the place in the list and when that song began. The first call starts the first
+         * song; after one full loop of a song the next one takes over. [holdB] (a map's songs, someone at 5 life or less): B
+         * comes in at once and stays while it lasts.
+         */
+        fun turnOver(songs: List<String>, at: Int, since: Long, now: Long, holdB: Boolean, loops: Map<String, Pair<Float, Float>>): Pair<Int, Long> {
+            if (holdB && songs.size > 1) return if (at % songs.size == 1 && since != 0L) at to since else (at - at % songs.size + 1) to now
+            if (since == 0L) return at to now
+            val span = loops[songs[at % songs.size]]?.let { ((it.second - it.first) * 1000).toLong() } ?: 240_000L
+            return if (now - since >= span) (at + 1) to now else at to since
+        }
         private lateinit var loops: Map<String, Pair<Float, Float>>
         val LOOPS: Map<String, Pair<Float, Float>> get() = loops
         fun init(context: Context) {

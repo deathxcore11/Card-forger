@@ -123,7 +123,10 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     val failure by controller.failure.collectAsState()
     val audio = remember { TableAudio(context) }
     val musicScope = rememberCoroutineScope()
-    val music = remember { dev.cardstashy.nativeplay.audio.TableMusic.init(context); dev.cardstashy.nativeplay.audio.TableMusic(context, musicScope, storyMusic) }
+    // The map on this table, chosen once here (a Story battle's own act mat, else play-playmats.js nextPlaymat): the scene draws it
+    // and the music plays its two songs (specs/stage-music-brief.md), so the two can never differ.
+    val matId = mat ?: remember { Playmats.next(context) }
+    val music = remember { dev.cardstashy.nativeplay.audio.TableMusic.init(context); dev.cardstashy.nativeplay.audio.TableMusic(context, musicScope, storyMusic, matId) }
     // The music lasts only while the table is on screen.
     DisposableEffect(Unit) { onDispose { audio.release(); music.release() } }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { audio.muted = true; music.muted = true; controller.setPaused(true) }
@@ -190,7 +193,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     Box(Modifier.fillMaxSize().background(Palette.Night).pointerInput(Unit) { awaitPointerEventScope { while (true) { val e = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial); if (e.type == androidx.compose.ui.input.pointer.PointerEventType.Press) controller.poke() } } }
         .onPreviewKeyEvent { if (Pad.connected.value && it.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) controller.poke(); false }) {
       CompositionLocalProvider(LocalAnchors provides anchors, LocalTableCue provides cue, LocalTablePlan provides cuePlan) {
-        if (mat != null) PlaymatScene(mat, Modifier.fillMaxSize()) else PlaymatScene(Modifier.fillMaxSize()) // a Story battle's own act mat, else play-playmats.js: this match's mat (nextPlaymat), its own shade, the table root see-through
+        PlaymatScene(matId, Modifier.fillMaxSize()) // this match's mat, its own shade, the table root see-through
         BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
             val k = if (maxHeight >= 600.dp) 1.45f else if (maxHeight >= 480.dp) 1.2f else 1f
             val sizes = Sizes(sidebar = if (maxWidth >= 1000.dp) 280.dp else 168.dp, field = 46.dp * k, land = 36.dp * k, hand = 60.dp * k, back = 20.dp * k)

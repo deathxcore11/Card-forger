@@ -517,6 +517,8 @@ private fun AppPane() {
         }
         Check("Sound & music", AppSettings.sound) { AppSettings.set("packSound", it) }
         Check("Soft sounds in the app", AppSettings.appSounds, "Music plays only in matches and Planeswalk. Elsewhere you hear only a few soft sounds, like opening a pack or adding a card, if “Soft sounds in the app” is on. Music streams the first time, then stays on this device. Sound starts after your first tap.") { AppSettings.set("appSounds", it) }
+        // The stage music's sample libraries ask to be named (music/stage-score/CREDITS.md).
+        Text(STAGE_MUSIC_CREDIT, style = S.Foot, modifier = Modifier.padding(start = 12.dp, top = 6.dp))
     }
 }
 
@@ -865,3 +867,6 @@ private val TOPICS = listOf(
         "Download a backup before changing devices or clearing storage. Restoring a backup changes saved data; checking one only inspects it. Reset onboarding clears guide history only.",
         "A shared deck requires an explicit sharing action. Public profiles, comments, voting and live collaboration are future work; private collections are not automatically public.")),
 )
+
+/** The stage music's required credit, shown under Sound in Settings. */
+internal const val STAGE_MUSIC_CREDIT = "Stage music rendered with Virtual Playing Orchestra 3, Sonatina Symphonic Orchestra, VSCO-2 CE, FreePats and DrumGizmo MuldjordKit (CC BY and CC0). Drum samples provided by DrumGizmo.org"
