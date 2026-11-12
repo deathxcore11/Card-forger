@@ -88,7 +88,8 @@ class TableFeelTest {
         // The four drawn mats carry the showpiece's colours; any other mat the plain profile until F10.
         assertEquals(androidx.compose.ui.graphics.Color(0xFFD8F08A), TableFeel.profile("forest-temple").lightYours)
         assertEquals(androidx.compose.ui.graphics.Color(0xFFFF5A2A), TableFeel.profile("ashen-forge").lightCpu)
-        assertEquals(TableFeel.PLAIN, TableFeel.profile("charcoal-table")); assertEquals(TableFeel.PLAIN, TableFeel.profile(null))
+        // F10: every map has its own entry now; only a mat that is not one of the fourteen is plain.
+        assertEquals(TableFeel.PLAIN, TableFeel.profile("story-act-3")); assertEquals(TableFeel.PLAIN, TableFeel.profile(null))
     }
 
     /** F6: one attack that lands schedules pull-back, dash, hit and return in that order (P5's approved durations), in the card's colour. */
@@ -168,5 +169,23 @@ class TableFeelTest {
             fx.take(snap(3, 3, card(4, 2) + "," + card(5, 5)), an); assertEquals("same turn: it stays", -1L, mark.gone)
             fx.take(snap(4, 4, card(4, 2) + "," + card(5, 5)), an); assertTrue("the turn ended: it leaves", mark.gone >= 0L)
         } finally { AppSettings.applyMatchEffects("full"); Motion.still = was }
+    }
+
+    /** F10: every map of the game has its own entry; the four drawn ones carry the showpiece's exact colours, and the same 5/5 landing leaves a different mark on each (walk line 80). */
+    @Test fun everyMapHasItsOwnProfile() {
+        val src = generateSequence(java.io.File("").absoluteFile) { it.parentFile }.map { java.io.File(it, "play-playmats.js") }.first { it.exists() }.readText()
+        val maps = Regex("\\['([a-z-]+)','[^']+']").findAll(src.lineSequence().first { it.startsWith("export const PLAYMATS") }).map { it.groupValues[1] }.toList()
+        assertEquals(14, maps.size)
+        assertEquals("one entry per map and none for a map that is not in the game", maps.toSet(), TableFeel.PROFILES.keys)
+        for (m in maps) { val p = TableFeel.profile(m); assertEquals(m, p.id); assertTrue("$m air ${p.air}", p.air in TableFeel.AIRS) }
+        assertEquals(setOf("ashen-forge", "drowned-archive", "forest-temple", "star-observatory"), TableFeel.DRAWN)
+        val forge = TableFeel.profile("ashen-forge")
+        assertEquals(androidx.compose.ui.graphics.Color(0xFFFFB46A), forge.lightYours); assertEquals(androidx.compose.ui.graphics.Color(0xFFFF5A2A), forge.lightCpu)
+        assertEquals("ember", forge.air); assertEquals(androidx.compose.ui.graphics.Color(0xFFFF8A3A), forge.win); assertEquals(androidx.compose.ui.graphics.Color(0xFFFFE2B0), forge.winHi)
+        assertEquals(listOf("lava", "ripple", "leaf", "star"), listOf("ashen-forge", "drowned-archive", "forest-temple", "star-observatory").map { TableFeel.profile(it).mark })
+        // The ten not drawn yet: a plain crack, and a light of two colours of their own.
+        for (m in maps - TableFeel.DRAWN) { val p = TableFeel.profile(m); assertEquals("$m", "crack", p.mark); assertTrue("$m has its own light", p.lightYours != p.lightCpu) }
+        // A Story act's mat has no entry: the plain table.
+        assertEquals(TableFeel.PLAIN, TableFeel.profile("story-act-3")); assertEquals(TableFeel.PLAIN, TableFeel.profile(null))
     }
 }

@@ -58,14 +58,36 @@ internal object TableFeel {
     /** F10: one profile per mat, data only. [air] and [mark] are read by F8 and F3. */
     data class Profile(val id: String, val lightYours: Color, val lightCpu: Color, val air: String, val mark: String, val win: Color, val winHi: Color)
     /** The four mats drawn in the showpiece, their exact colours. */
-    val PROFILES = listOf(
+    private val DRAWN_PROFILES = listOf(
         Profile("ashen-forge", Color(0xFFFFB46A), Color(0xFFFF5A2A), "ember", "lava", Color(0xFFFF8A3A), Color(0xFFFFE2B0)),
         Profile("drowned-archive", Color(0xFFCFDCFF), Color(0xFF6F9CFF), "mist", "ripple", Color(0xFF8FD0FF), Color(0xFFEEF8FF)),
         Profile("forest-temple", Color(0xFFD8F08A), Color(0xFF6FD0A0), "firefly", "leaf", Color(0xFFB9F07A), Color(0xFFFFF6C8)),
         Profile("star-observatory", Color(0xFFF3E2B8), Color(0xFF9C8CFF), "star", "star", Color(0xFFB9A8FF), Color(0xFFFFFFFF)),
-    ).associateBy { it.id }
-    /** A mat with no profile yet (F10 fills the other ten): the table's own warm light on both sides, plain dust and crack. */
-    val PLAIN = Profile("", Color(0xFFFFE4B8), Color(0xFFFFE4B8), "dust", "crack", Color(0xFFF3D27E), Color(0xFFFFF0C8))
+    )
+    /** The mats Fable has drawn in the showpiece. The other ten are built from the feel brief's table and are listed as "not drawn" on the Release card. */
+    val DRAWN = DRAWN_PROFILES.map { it.id }.toSet()
+    /** The air kinds F8 knows. */
+    val AIRS = setOf("ember", "mist", "firefly", "star", "dust")
+    private val GOLD = Color(0xFFF3D27E); private val GOLD_HI = Color(0xFFFFF0C8)
+    /**
+     * The other ten (feel brief, F10 table): the light in the two colours the table names, the nearest air kind, the plain crack and
+     * the default gold win. What the table says about the painting itself (candles flare, lanterns flicker, hedrons jolt) is not built.
+     */
+    private val TABLE_PROFILES = listOf(
+        Profile("moonlit-courtyard", Color(0xFFDCE4F2), Color(0xFF7FA8E0), "dust", "crack", GOLD, GOLD_HI),      // moon silver / cold blue, candle motes
+        Profile("white-sanctuary", Color(0xFFFFE08A), Color(0xFFBFD8FF), "dust", "crack", GOLD, GOLD_HI),        // sun gold / pale blue, petals and gold dust
+        Profile("black-ossuary", Color(0xFFFFC27A), Color(0xFFD8324A), "dust", "crack", GOLD, GOLD_HI),          // candle amber / crimson, ash
+        Profile("keldon-battlefield", Color(0xFFFF9A4A), Color(0xFFE0402A), "dust", "crack", GOLD, GOLD_HI),     // sunset orange / red, blowing dust
+        Profile("wild-hedrons", Color(0xFFEEF6FF), Color(0xFF6FD08A), "mist", "crack", GOLD, GOLD_HI),           // sky white / green, mist
+        Profile("artifact-vault", Color(0xFFDCE4F2), Color(0xFFC9A24A), "dust", "crack", GOLD, GOLD_HI),         // moon silver / brass, dust
+        Profile("innistrad-graveyard", Color(0xFFFFC98A), Color(0xFF9FB8E8), "mist", "crack", GOLD, GOLD_HI),    // candle / moon cold, ground mist
+        Profile("ravnica-guild-city", Color(0xFFFFB860), Color(0xFF5F8FE0), "dust", "crack", GOLD, GOLD_HI),     // lantern amber / city blue, dust
+        Profile("zendikar-expedition", Color(0xFFFFE08A), Color(0xFF6FC0F0), "mist", "crack", GOLD, GOLD_HI),    // sun gold / waterfall blue, waterfall mist
+        Profile("charcoal-table", Color(0xFFFFC98A), Color(0xFFD8D8D8), "dust", "crack", GOLD, GOLD_HI),         // candle / neutral, dust
+    )
+    val PROFILES = (DRAWN_PROFILES + TABLE_PROFILES).associateBy { it.id }
+    /** A mat with no profile (a Story act's mat): the table's own warm light on both sides, plain dust and crack. */
+    val PLAIN = Profile("", Color(0xFFFFE4B8), Color(0xFFFFE4B8), "dust", "crack", GOLD, GOLD_HI)
     fun profile(mat: String?): Profile = PROFILES[mat] ?: PLAIN
 
     /** The mat on the table now (PlaymatScene says which), so the feel follows the painting. */
