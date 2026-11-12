@@ -190,6 +190,8 @@ class MainActivity : ComponentActivity() {
                 dev.cardstashy.nativeplay.ui.RuleSheetHost()
                 PadPromptBar()
                 PadCursorLayer()
+                // Loading brief L1: the opening screen over everything until Play home's own waits are over (once per launch).
+                if (!TestHooks.skipOpening) dev.cardstashy.nativeplay.ui.OpeningHost()
             }
         }
         Updater.check(this)
