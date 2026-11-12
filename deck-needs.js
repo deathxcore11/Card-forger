@@ -34,6 +34,11 @@ const subtypeIn = (c, t) => new RegExp('(?:—|\\s)' + esc(t) + '(?:\\s|$)').tes
 const isType = (c, re) => re.test(typeLine(c));
 const mv = c => Number(c?.cmc) || 0;
 
+const hasKeyword = (c, k) => (c?.keywords || []).includes(k) || new RegExp('(?:^|\\n)' + k + '\\b', 'i').test(rulesText(c));
+// Makes tokens for its controller at a price a game reaches: reminder text is stripped (so a gift to the opponent does
+// not count) and an activated ability that costs five or more generic mana is not a token plan.
+const makesTokens = c => textOf(c).split('\n').some(line => /\bcreates? [^.]*\btokens?\b/i.test(line) && !/^[^:]*\{(?:[5-9]|\d\d)\}[^:]*:/.test(line) && !/\b(?:opponent|that player|its controller|their controller) creates?\b/i.test(line));
+const gainsLife = c => /\blifelink\b/i.test(textOf(c)) || (c?.keywords || []).includes('Lifelink') || /\byou gain (?:\d+|x|that much) life\b|\byou gain life equal\b/i.test(textOf(c));
 const memo = new WeakMap();
 // [{id, label, min(size), provides(card)}] for one card. `size` is the deck size.
 export function cardNeeds(card) {
@@ -63,6 +68,22 @@ export function cardNeeds(card) {
  // higher fuel bar from flooding the deck with them.
  if (/put (?:a|an|up to one|one) (?:permanent|creature|artifact|enchantment|creature or planeswalker|nonland permanent)(?: or [a-z]+)? card[^.\n]* from your hand onto the battlefield/i.test(text)) add({ id: 'cheat-target', kind: 'cheat', label: 'expensive permanents to put into play', min: size => size >= 100 ? 8 : 6, cap: true,
   provides: c => c !== card && !isLand(c) && mv(c) >= 6 && !isType(c, /\b(?:Instant|Sorcery)\b/) });
+ // Input conditions (seen 12 Nov in a live Mono-White list): a payoff is only as good as the thing that sets it off.
+ // Agent Maria Hill pays off teamwork costs, Belladonna Took pays off your own tokens, Exemplar of Light pays off lifegain.
+ if (/\bteamwork cost\b|cast using teamwork/i.test(text) && !hasKeyword(card, 'Teamwork')) add({ id: 'teamwork', kind: 'mechanic', label: 'teamwork cards', min: size => size >= 100 ? 10 : 8,
+  provides: c => c !== card && !isLand(c) && hasKeyword(c, 'Teamwork') });
+ if (/whenever (?:a|another|one or more) (?:[a-z]+ )?tokens? you control enters?|for each token you control|\btokens you control (?:get|have|gain)/i.test(text) && !makesTokens(card)) add({ id: 'own-tokens', kind: 'tokens', label: 'token makers', min: size => size >= 100 ? 10 : 8,
+  provides: c => c !== card && !isLand(c) && mv(c) <= 4 && makesTokens(c) });
+ if (/whenever you gain life|if you(?:'ve| have) gained (?:\w+ or more )?life|for each 1 life you gained|equal to the amount of life you gained/i.test(text) && !gainsLife(card)) add({ id: 'lifegain', kind: 'lifegain', label: 'ways to gain life', min: size => size >= 100 ? 10 : 8,
+  provides: c => c !== card && !isLand(c) && mv(c) <= 3 && gainsLife(c) });
+ // A sweeper that takes your own board with it ("exile all artifacts and creatures with mana value 2 or less") has no place
+ // beside a crowd of exactly those cards. `max`: at most this many copies of its own victims may share the list.
+ const sweep = text.match(/(?:exile|destroy) (?:all|each) ([^.\n]*?) with mana value (\d+) or less/i);
+ if (sweep && !/\b(?:your opponents?|an opponent|you don't) controls?\b/i.test(sweep[1])) {
+  const what = sweep[1].toLowerCase(), limit = Number(sweep[2]), kinds = /nonland permanent|\bpermanents?\b/.test(what) ? /./ : new RegExp('\\b(?:' + ['artifact', 'creature', 'enchantment', 'planeswalker'].filter(k => what.includes(k)).map(k => k[0].toUpperCase() + k.slice(1)).join('|') + ')\\b');
+  if (kinds.source !== '\\b(?:)\\b') add({ id: 'self-sweep', kind: 'conflict', label: 'your own cards it would sweep away', min: () => 0, max: size => size >= 100 ? 11 : 7,
+   provides: c => c !== card && !isLand(c) && !isType(c, /\b(?:Instant|Sorcery)\b/) && mv(c) <= limit && isType(c, kinds) });
+ }
  memo.set(card, { sig, needs });
  return needs;
 }
@@ -73,7 +94,8 @@ export function inspectNeeds(rows, { size = 60, exempt = () => false } = {}) {
  const list = rows.filter(r => r?.card && r.qty > 0), out = [];
  for (const row of list) for (const need of cardNeeds(row.card)) {
   const have = list.reduce((n, r) => n + (need.provides(r.card) ? r.qty : 0), 0), min = fuelMinimum(need, size, exempt(row.card));
-  out.push({ name: row.card.name, need: need.id, label: need.label, have, min, met: have >= min, exempt: !!exempt(row.card) });
+  const max = need.max ? need.max(size) : Infinity;
+  out.push({ name: row.card.name, need: need.id, label: need.label, have, min, max, met: have >= min && have <= max, exempt: !!exempt(row.card) });
  }
  return out;
 }
@@ -105,8 +127,11 @@ export function needQueries(card) {
   : need.id === 'second-draw' ? 'cmc<=3 (o:"draw a card" or o:"draw two cards" or o:connive)'
   : need.id === 'graveyard-fill' ? 'cmc<=3 (o:mill or o:surveil or o:"discard a card")'
   : need.id === 'plus-counters' ? 'cmc<=3 o:"+1/+1 counter"'
+  : need.id === 'teamwork' ? 'keyword:teamwork'
+  : need.id === 'own-tokens' ? 'cmc<=3 o:create o:token'
+  : need.id === 'lifegain' ? 'cmc<=3 (keyword:lifelink or o:"you gain")'
   : need.id === 'cheat-target' ? 'cmc>=6 (t:creature or t:enchantment or t:artifact or t:planeswalker)' : '').filter(Boolean);
 }
 // The build-around's own fuel is held to the higher bar (twelve in sixty cards, sixteen in a hundred): it has to
 // be there most games, not some games.
-export const fuelMinimum = (need, size, kept) => kept && !need.cap ? Math.max(need.min(size), size >= 100 ? 16 : 12) : need.min(size);
+export const fuelMinimum = (need, size, kept) => kept && !need.cap && !need.max ? Math.max(need.min(size), size >= 100 ? 16 : 12) : need.min(size);

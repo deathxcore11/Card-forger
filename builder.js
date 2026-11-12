@@ -418,10 +418,13 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
     const roleBonus=r=>{const have=counts.get(r)||0,t=targets[r];if(!t&&r!=='wipe')return 0;if(have<t)return r==='ramp'&&size<100&&topEnd>=6?14:8;if(r==='wipe')return have>=forgeT.wipe.max?-8:0;if(r==='draw')return 0;return -3;};
     // Open needs of cards already in the list pull their providers up; a card whose own need is still open waits.
     const openNeeds=deckRows().flatMap(r=>cardNeeds(r.card).map(need=>({need,owner:cardKey(r.card.name),kept:keptKeys.has(cardKey(r.card.name))}))).filter(o=>providersIn(o.need,o.owner)<fuelMinimum(o.need,size,o.kept));
+    // A sweeper that hits its own side: with a kept one in the list its victims sink; a candidate one sinks under a crowd of them.
+    const sweepers=deckRows().flatMap(r=>cardNeeds(r.card).filter(need=>need.max).map(need=>({need,owner:cardKey(r.card.name)})));
+    const sweepAdj=x=>-sweepers.reduce((n,o)=>n+(provides(o.need,o.owner,x.c)?12:0),0)-(x.needs?.some(need=>need.max&&providersIn(need,cardKey(x.c.name))>need.max(size))?60:0);
     const needAdj=x=>openNeeds.reduce((n,o)=>n+(provides(o.need,o.owner,x.c)?(o.kept?10:5):0),0)-(x.needs?.length&&!keptKeys.has(cardKey(x.c.name))&&x.needs.some(need=>providersIn(need,cardKey(x.c.name))<need.min(size))?3:0);
     // A 60-card list needs ways to win: until twelve cards can attack or make attackers, those rise.
     const threats=size<100?deckRows().reduce((n,r)=>n+(isThreat(r.card)?r.qty:0),0):Infinity;
-    const adaptive=x=>x.s+needAdj(x)+(threats<12&&isThreat(x.c)?8:0)+(x.plan&&supportCopies<Math.ceil(spellTarget*.35)?6:0)+x.roles.reduce((n,r)=>n+roleBonus(r),0)+hooks.reduce((n,h)=>n+(h.min&&x.hookIds.includes(h.id)&&(counts.get('hook:'+h.id)||0)<h.min?5:0),0);
+    const adaptive=x=>x.s+needAdj(x)+sweepAdj(x)+(threats<12&&isThreat(x.c)?8:0)+(x.plan&&supportCopies<Math.ceil(spellTarget*.35)?6:0)+x.roles.reduce((n,r)=>n+roleBonus(r),0)+hooks.reduce((n,h)=>n+(h.min&&x.hookIds.includes(h.id)&&(counts.get('hook:'+h.id)||0)<h.min?5:0),0);
     remaining.sort((a,b)=>adaptive(b)-adaptive(a)||a.c.name.localeCompare(b.c.name));
     const {c}=remaining.shift();
     const left = spellTarget - nonland();
@@ -482,7 +485,8 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
       const left = spellTarget - nonland(); if (left <= 0) break;
       const c = x.c, key = cardKey(c.name), have = qtyOf(c);
       if (banned.has(key) || have >= maxCopies(c)) continue;
-      if (x.needs.some(need => providersIn(need, key) < need.min(size))) continue;
+      if (x.needs.some(need => providersIn(need, key) < need.min(size) || need.max && providersIn(need, key) > need.max(size))) continue;
+      if (deckRows().some(r => cardNeeds(r.card).some(need => need.max && provides(need, cardKey(r.card.name), c) && providersIn(need, cardKey(r.card.name)) >= need.max(size)))) continue;
       if ((Number(c.cmc) || 0) >= forgeT.bigFrom && heavy() >= (f.commander && size >= 100 ? forgeT.bigCards : Math.ceil(spellTarget * 0.15))) continue;
       for (let n = Math.min(wantCopies(c) - have, left); n >= 1; n--) {
         if (canAfford(costFor(c, have, have + n), Math.max(0, left - n) * fillerPrice)) { put(c, n, reasonFor(c, seedTags, seedSubs, available(c.name) >= have + n)); break; }

@@ -85,3 +85,28 @@ console.log('deck needs: reported piles read correctly; 6 real-pool builds hold 
  assert.equal(isThreat({ type_line: 'Instant', oracle_text: 'Counter target spell.' }), false);
  assert.equal(isThreat({ type_line: 'Sorcery', oracle_text: 'Create two 1/1 white Soldier creature tokens.' }), true);
 }
+
+// Seen 12 Nov in a live Mono-White counters list (4.3.184): Agent Maria Hill with no teamwork card, Belladonna Took with no
+// token maker, Exemplar of Light and Lyra with one real way to gain life, and four Pinnacle Starcage beside twenty of the
+// cheap creatures and artifacts it exiles. Real card texts in test-fixtures/deck-input-conditions.json.
+{
+ const cards = JSON.parse(fs.readFileSync(new URL('./test-fixtures/deck-input-conditions.json', import.meta.url), 'utf8')), by = n => cards.find(c => c.name.startsWith(n));
+ const ids = n => cardNeeds(by(n)).map(x => x.id);
+ assert.deepEqual(ids('Agent Maria Hill'), ['teamwork']);
+ assert.deepEqual(ids('Belladonna Took'), ['own-tokens']);
+ assert.deepEqual(ids('Exemplar of Light'), ['lifegain']);
+ assert.deepEqual(ids('Lyra, Archangel of Dawn'), ['lifegain']);
+ assert.deepEqual(ids('Pinnacle Starcage'), ['self-sweep']);
+ assert.deepEqual(ids("Healer's Hawk"), [], 'a plain lifelinker asks for nothing');
+ const tokens = cardNeeds(by('Belladonna Took'))[0], life = cardNeeds(by('Exemplar of Light'))[0];
+ assert.equal(tokens.provides(by('Parting Gust')), false, 'a gift token goes to the opponent');
+ assert.equal(tokens.provides(by('Pinnacle Starcage')), false, 'an eight-mana activation is not a token plan');
+ for (const n of ["Healer's Hawk", 'Ruin-Lurker Bat', 'Hinterland Sanctifier', 'Sheltered by Ghosts', 'Curious Farm Animals']) assert.equal(life.provides(by(n)), true, n + ' gains life');
+ assert.equal(life.provides(by('Lightfoot Technique')), false);
+ const row = (n, qty) => ({ card: by(n), qty }), reported = [row('Exemplar of Light', 4), row('Lyra, Archangel of Dawn', 2), row('Agent Maria Hill', 2), row('Belladonna Took', 2), row('Pinnacle Starcage', 4), row('Nurturing Pixie', 4), row('Guiding Hydra', 4), row('Lightfoot Technique', 4), row('Parting Gust', 4), row('Venat', 2), row('The Mind Stone', 2), row('Curious Farm Animals', 4)];
+ const { unmetNeeds } = await import('./deck-needs.js');
+ const open = unmetNeeds(reported, { size: 60 }).map(n => n.name + ':' + n.need).sort();
+ assert.deepEqual(open, ['Agent Maria Hill:teamwork', 'Belladonna Took:own-tokens', 'Exemplar of Light:lifegain', 'Lyra, Archangel of Dawn:lifegain', 'Pinnacle Starcage:self-sweep'], 'every leak in the reported list is caught');
+ const fixed = [row('Exemplar of Light', 4), row('Lyra, Archangel of Dawn', 2), row("Healer's Hawk", 4), row('Ruin-Lurker Bat', 4), row('Hinterland Sanctifier', 4), row('Sheltered by Ghosts', 4), row('Lightfoot Technique', 4)];
+ assert.deepEqual(unmetNeeds(fixed, { size: 60 }), [], 'the same payoffs with real lifegain pass');
+}
