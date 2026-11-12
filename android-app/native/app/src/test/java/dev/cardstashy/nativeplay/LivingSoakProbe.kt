@@ -23,9 +23,10 @@ import java.nio.file.Files
  * The living table's proof that its effects are look only (specs/living-table-build-guide.md, "Proof at the end"): real CPU
  * matches on the bundled engine, each seed played twice by the same scripted human (RealMatchTest's), once with Match effects
  * Full and once Off. Every board goes through the table's effects ([Battlefield.take], then its frame clock). The answers sent
- * to Forge must be the same list both times, no effect may throw, and no match may hang.
+ * Both matches must finish with the same winner on the same turn, no effect may throw, and no match may hang; whether the
+ * answers and the last life totals were the same is printed.
  * It also reports what the finished board carries (F7): the loser's life, and whether the winning hit was scheduled.
- * Run with ENGINE_ROOT=<unpacked pack.zip>, SOAK=<matches> (default 4), SOAK_FROM=<first seed>.
+ * Run with ENGINE_ROOT=<unpacked pack.zip>, SOAK=<matches> (default 4), SOAK_FROM=<first seed>, SOAK_CONTROL=1 for Full against Full.
  */
 class LivingSoakProbe {
     private class Run(val end: String, val log: List<String>, val kinds: Map<Fx, Int>, val finalLife: String, val win: Boolean, val boards: Int)
@@ -61,7 +62,11 @@ class LivingSoakProbe {
             if (!st.waitingOnMe) { Thread.sleep(15); continue }
             val body = human.decide(st, attacked) ?: run { Thread.sleep(15); null } ?: continue
             if (steps > 3000) { end = "STEP LIMIT"; break }
-            log += "t${st.turn} ${st.phase} $body"
+            // The prompt's number counts how often Forge asked (it re-asks on its own clock), so it is not part of the answer.
+            val last = "t${st.turn} ${st.phase} " + body.deepCopy().apply { remove("promptId") }
+            // How often Forge asks for the same pass in a row is its own timing too (seed 0 gave 49 and then 50 answers on two
+            // runs with nothing changed), so a repeated answer is written once.
+            if (log.lastOrNull() != last) log += last
             body.addProperty("revision", st.revision)
             s.call("POST", "/action", body.toString()); steps++
             val until = System.currentTimeMillis() + 3000
@@ -83,21 +88,29 @@ class LivingSoakProbe {
                 o.getAsJsonArray("cards").map { c -> c.asJsonObject.let { it.get("name").asString to it.get("qty").asInt } }) }, emptyList(), emptyMap())
         LocalEngine.init(root)
         val n = System.getenv("SOAK")?.toIntOrNull() ?: 4; val from = System.getenv("SOAK_FROM")?.toLongOrNull() ?: 0L
-        var same = 0; val bad = ArrayList<String>()
+        // SOAK_CONTROL=1 plays Full against Full: what two runs of one seed differ by with nothing changed.
+        val control = System.getenv("SOAK_CONTROL") == "1"
+        var same = 0; var ended = 0; var finished = 0; val bad = ArrayList<String>()
         try {
             for (seed in from until from + n) {
-                val full = play(decks, seed, "full"); val off = play(decks, seed, "off")
+                val full = play(decks, seed, "full"); val off = play(decks, seed, if (control) "full" else "off")
                 val ok = full.log == off.log && full.end == off.end && (full.end.startsWith("FINISHED") || full.end == "TURN LIMIT")
                 if (ok) same++ else { val at = full.log.zip(off.log).indexOfFirst { (a, b) -> a != b }
-                    bad += "seed $seed: full '${full.end}' ${full.log.size} answers, off '${off.end}' ${off.log.size} answers, first difference at $at: ${full.log.getOrNull(at)} / ${off.log.getOrNull(at)}" }
-                println("SOAK seed $seed ${if (ok) "SAME" else "DIFFERENT"} | ${full.end} | ${full.log.size} answers, ${full.boards} boards | final board: ${full.finalLife} | winning hit scheduled: ${full.win}")
+                    bad += "seed $seed: full '${full.end}' ${full.log.size} answers, off '${off.end}' ${off.log.size} answers, first difference at $at: ${full.log.subList(maxOf(0, at - 1), minOf(full.log.size, at + 2))} / ${off.log.subList(maxOf(0, at - 1), minOf(off.log.size, at + 2))}" }
+                if (full.end == off.end && full.finalLife == off.finalLife) ended++
+                if (full.end == off.end && full.end.startsWith("FINISHED")) finished++
+                println("SOAK seed $seed ${if (ok) "SAME" else "DIFFERENT"} ${if (full.end == off.end && full.finalLife == off.finalLife) "same ending" else "OTHER ENDING ${off.end} ${off.finalLife}"} | ${full.end} | ${full.log.size} answers, ${full.boards} boards | final board: ${full.finalLife} | winning hit scheduled: ${full.win}")
                 println("SOAK   effects full ${full.kinds.toSortedMap()}")
                 println("SOAK   effects off  ${off.kinds.toSortedMap()}")
             }
         } finally { AppSettings.applyMatchEffects("full") }
-        println("SOAK $same of $n the same")
+        println("SOAK ${if (control) "CONTROL full against full" else "full against off"}: $same of $n the same answers, $ended of $n the same ending and life, $finished of $n finished with the same winner on the same turn")
         bad.forEach { println("SOAK $it") }
-        assertEquals(bad.joinToString("\n"), n, same)
+        // What must hold: both matches of every pair finish, with the same winner on the same turn, and nothing threw or hung.
+        // The scripted human sees only the board, never the effects, so effects can reach its answers only through timing: it
+        // answers whichever board it happens to poll. The order of its answers and the last life totals are therefore printed,
+        // not asserted (the control, Full against Full, gave 7 of 8 the same answers on 12 Nov; seed 8 ended -14 and -12).
+        assertEquals(bad.joinToString("\n"), n, finished)
         assertTrue(TableFeel.MODES.contains("off"))
     }
 }
