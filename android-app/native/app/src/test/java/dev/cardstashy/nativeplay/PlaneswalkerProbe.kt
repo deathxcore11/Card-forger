@@ -17,7 +17,21 @@ import java.nio.file.Files
  */
 class PlaneswalkerProbe {
     private fun deck(vararg rows: Pair<String, Int>) = JsonObject().apply { add("cards", JsonArray().apply { rows.forEach { (n, q) -> add(JsonObject().apply { addProperty("name", n); addProperty("qty", q) }) } }) }
-    @Test fun lilianaOffersHerAbilities() {
+    @Test fun lilianaOffersHerAbilities() { play(false) }
+    /**
+     * The host change "a planeswalker's abilities are always asked": Liliana spends −2 and stands at loyalty 1, where only her
+     * +1 can be paid. With the change in the bridge she still asks, with that one option and a way to cancel. Runs only on an
+     * engine whose bridge has the change (ForgeHttpBridge.onPlaneswalker).
+     */
+    @Test fun oneAbilityIsStillAsked() {
+        assumeTrue("this engine's bridge plays a single ability with no question", runCatching { Class.forName("cardstashy.forge.ForgeHttpBridge").getDeclaredMethod("onPlaneswalker", Any::class.java) }.isSuccess)
+        val asked = play(true)
+        org.junit.Assert.assertTrue("Liliana at loyalty 1 was tapped and asked nothing", asked.isNotEmpty())
+        org.junit.Assert.assertTrue("asked with $asked", asked.all { it.size == 1 && it[0].startsWith("+1") })
+    }
+    /** Plays to Liliana and uses her each turn: the first option, or with [minus] her −2 first. The option lists asked while she stood at loyalty 1. */
+    private fun play(minus: Boolean): List<List<String>> {
+        val single = ArrayList<List<String>>()
         val repo = File(System.getProperty("repoRoot")); val root = System.getProperty("engineRoot").orEmpty()
         assumeTrue(root.isNotEmpty() && File(root).isDirectory)
         System.setProperty("user.home", Files.createTempDirectory("forge-home").toString()); System.setProperty("proof.rulesData", File(repo, "forge-rules/current").absolutePath)
@@ -52,7 +66,10 @@ class PlaneswalkerProbe {
             val body = JsonObject().apply { addProperty("revision", st.revision)
                 val p = st.prompt
                 when {
-                    p != null -> { addProperty("op", "reply"); addProperty("promptId", p.id); add("indexes", JsonArray().apply { add(p.options.first().index) }) }
+                    p != null -> { addProperty("op", "reply"); addProperty("promptId", p.id)
+                        if (p.method == "getAbilityToPlay" && lili?.counters?.get("LOYALTY") == 1) { single += p.options.map { it.label }; println("  ASKED AT LOYALTY 1: ${p.options.map { it.label }} cancelable=${com.google.gson.JsonParser.parseString(raw).asJsonObject.getAsJsonObject("prompt")?.get("cancelable")}") }
+                        val pick = (if (minus) p.options.firstOrNull { p.method == "getAbilityToPlay" && !it.label.startsWith("+") } else null) ?: p.options.first()
+                        add("indexes", JsonArray().apply { add(pick.index) }) }
                     st.inputType == "InputSelectTargets" -> { val pl = st.selection.players.firstOrNull { it != st.viewer } ?: st.selection.players.firstOrNull()
                         if (pl != null && pl !in st.selection.chosenPlayers) { addProperty("op", "player"); addProperty("id", pl) } else addProperty("op", "ok") }
                     st.inputType == "InputPassPriority" && st.activePlayer == st.viewer && st.phase == "MAIN1" && top == null -> {
@@ -67,5 +84,6 @@ class PlaneswalkerProbe {
             s.call("POST", "/action", body.toString())
         }
         s.close()
+        return single
     }
 }
