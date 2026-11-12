@@ -141,13 +141,26 @@ class LivingF5ShotTest {
         val whole = Rect(0f, 0f, plain.width.toFloat(), plain.height.toFloat())
         assertTrue("the plain table has colour: ${colour(plain, whole)}", colour(plain, whole) > 20f)
         assertTrue("grey over everything: ${colour(grey, whole)} against ${colour(plain, whole)}", colour(grey, whole) < colour(plain, whole) * .45f)
+        // Her lifted card keeps its colour (design review 12 Nov): its face is the same pixels as on the plain table, 16 dp higher and 1.14 times the size.
+        run { val c0 = anchors.rects.getValue("c970"); val dpx = grey.width / 844f; var same = 0; var all = 0
+            for (fy in listOf(.2f, .35f, .5f, .65f, .8f)) for (fx0 in listOf(.2f, .35f, .5f, .65f, .8f)) { val x = c0.left + c0.width * fx0; val y = c0.top + c0.height * fy
+                val lx = c0.center.x + (x - c0.center.x) * 1.14f; val ly = c0.center.y + (y - c0.center.y) * 1.14f - 16f * dpx
+                val a = plain.getPixel(x.toInt(), y.toInt()); val b = grey.getPixel(lx.toInt(), ly.toInt()); all++
+                if (kotlin.math.abs(((a shr 16) and 0xff) - ((b shr 16) and 0xff)) <= 40 && kotlin.math.abs((a and 0xff) - (b and 0xff)) <= 40) same++ }
+            assertTrue("the lifted card is not greyed: $same of $all points keep their colour", same >= all * 3 / 4) }
         // The pieces are in colour over the grey: six chips in the shield's ice blue, on a ring round her card.
         val card = anchors.rects.getValue("c970"); val orbit = card.height * TableFeel.CLOCK_ORBIT
-        var ice = 0; var far = 0
+        // (Her shield keeps its own ice blue too; it is counted apart from the pieces.)
+        val dpx = grey.width / 844f; val sh0 = anchors.rects.getValue("loyalty970")
+        fun up(o: androidx.compose.ui.geometry.Offset) = androidx.compose.ui.geometry.Offset(card.center.x + (o.x - card.center.x) * 1.14f, card.center.y + (o.y - card.center.y) * 1.14f - 16f * dpx)
+        val shieldNow = Rect(up(sh0.topLeft), up(sh0.bottomRight)).inflate(4 * dpx)
+        var ice = 0; var far = 0; var onShield = 0
         for (y in 0 until grey.height step 2) for (x in 0 until grey.width step 2) { val p = grey.getPixel(x, y); val r = (p shr 16) and 0xff; val b = p and 0xff
+            if (b - r > 90 && b > 170 && shieldNow.contains(androidx.compose.ui.geometry.Offset(x.toFloat(), y.toFloat()))) { onShield++; continue }
             if (b - r > 90 && b > 170) { ice++; val d = kotlin.math.hypot(x - card.center.x, y - (card.center.y - 16f * grey.width / 844f)); if (kotlin.math.abs(d - orbit) > orbit * .25f) far++ } }
         assertTrue("the pieces are drawn in colour: $ice", ice >= 40)
         assertTrue("and they are on the ring: $far of $ice off it", far <= ice / 10)
+        assertTrue("her shield keeps its ice blue under the grey: $onShield", onShield >= 10)
         // Colour is back when the frame ends.
         rule.runOnUiThread { fx.now.longValue = item.t0 + item.dur + 1L }
         rule.waitForIdle()

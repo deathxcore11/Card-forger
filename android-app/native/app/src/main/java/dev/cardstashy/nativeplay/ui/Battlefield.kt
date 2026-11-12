@@ -1350,8 +1350,8 @@ internal fun FxLayer(force: Boolean = false) {
             fun rect(k: String?): Rect? = k?.let { anchors.rects[it] }?.translate(-self.x, -self.y)
             var bandAt: Rect? = null
             fun band(): Rect = bandAt ?: trailBand(size.width, size.height, anchors.rects.mapValues { (_, r) -> r.translate(-self.x, -self.y) }, 4.dp.toPx()).also { bandAt = it }
-            // F5: while the clock is stopped, grey lies over everything under this layer; the effects below are drawn over it, in colour.
-            fx.items.firstOrNull { it.kind == Fx.CLOCK && it.p(t) >= 0f }?.let { drawGrey(TableFeel.clockIn(it.p(t) * it.dur, it.dur)) }
+            // F5: while the clock is stopped, grey lies over everything under this layer but the lifted card and its shield; the effects below are drawn over it, in colour.
+            fx.items.firstOrNull { it.kind == Fx.CLOCK && it.p(t) >= 0f }?.let { drawGrey(TableFeel.clockIn(it.p(t) * it.dur, it.dur), rect("c${it.card}"), rect("loyalty${it.card}")) }
             for (it in fx.items) {
                 val p = it.p(t); if (p < 0f) continue
                 if (fx.reduced) {

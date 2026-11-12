@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.unit.sp
 import kotlin.math.PI
@@ -438,13 +439,31 @@ internal fun DrawScope.drawWin(fx: Battlefield, it: FxItem, p: Float, orb: andro
 
 // ---- Living table F5: the clock stops (specs/living-table-build-guide.md, "F5 The clock stops") ----
 
-/** The grey at strength [e] (0..1): 88 % of the colour out of everything already drawn, then a 25 % dark blue wash. */
-internal fun DrawScope.drawGrey(e: Float) {
+/** Where a point of the card (or of its shield, which travels with it) is while the card is lifted and grown by [e] (0..1). */
+internal fun clockLifted(card: androidx.compose.ui.geometry.Rect, o: Offset, e: Float, dp: Float) =
+    Offset(card.center.x + (o.x - card.center.x) * (1f + TableFeel.CLOCK_GROW * e), card.center.y + (o.y - card.center.y) * (1f + TableFeel.CLOCK_GROW * e) - TableFeel.CLOCK_LIFT * dp * e)
+/** The loyalty shield's outline in [s]. */
+private fun shieldPath(s: androidx.compose.ui.geometry.Rect) = androidx.compose.ui.graphics.Path().apply { moveTo(s.left, s.top); lineTo(s.right, s.top); lineTo(s.right, s.top + s.height * .58f); lineTo(s.center.x, s.bottom); lineTo(s.left, s.top + s.height * .58f); close() }
+
+/**
+ * The grey at strength [e] (0..1): 88 % of the colour out of everything already drawn, then a 25 % dark blue wash. The lifted
+ * card ([card], as it lies) and its shield ([shield]) keep their colour (design review 12 Nov): they are the one thing the eye should go to.
+ */
+internal fun DrawScope.drawGrey(e: Float, card: androidx.compose.ui.geometry.Rect? = null, shield: androidx.compose.ui.geometry.Rect? = null) {
     if (e <= 0f) return
-    // Taking colour out needs the saturation blend (Android 10 and up); older phones get a deeper wash in its place.
-    if (android.os.Build.VERSION.SDK_INT >= 29) drawRect(Color(0xFF808080).copy(alpha = TableFeel.CLOCK_GREY * e), blendMode = androidx.compose.ui.graphics.BlendMode.Saturation)
-    else drawRect(Color(0xFF30333A).copy(alpha = .45f * e))
-    drawRect(TableFeel.CLOCK_WASH_TONE.copy(alpha = TableFeel.CLOCK_WASH * e))
+    val dp = density
+    var keep = androidx.compose.ui.graphics.Path()
+    if (card != null) { val r = androidx.compose.ui.geometry.Rect(clockLifted(card, card.topLeft, e, dp), clockLifted(card, card.bottomRight, e, dp)).inflate(2.5f * dp); val round = minOf(14f * dp, r.width * .16f)
+        keep.addRoundRect(androidx.compose.ui.geometry.RoundRect(r, androidx.compose.ui.geometry.CornerRadius(round)))
+        // The shield overlaps the card's lower edge: the two are joined, so the part they share is kept too.
+        if (shield != null) keep = androidx.compose.ui.graphics.Path.combine(androidx.compose.ui.graphics.PathOperation.Union, keep,
+            shieldPath(androidx.compose.ui.geometry.Rect(clockLifted(card, shield.topLeft, e, dp), clockLifted(card, shield.bottomRight, e, dp)).inflate(1.2f * dp))) }
+    clipPath(keep, clipOp = androidx.compose.ui.graphics.ClipOp.Difference) {
+        // Taking colour out needs the saturation blend (Android 10 and up); older phones get a deeper wash in its place.
+        if (android.os.Build.VERSION.SDK_INT >= 29) drawRect(Color(0xFF808080).copy(alpha = TableFeel.CLOCK_GREY * e), blendMode = androidx.compose.ui.graphics.BlendMode.Saturation)
+        else drawRect(Color(0xFF30333A).copy(alpha = .45f * e))
+        drawRect(TableFeel.CLOCK_WASH_TONE.copy(alpha = TableFeel.CLOCK_WASH * e))
+    }
 }
 
 /**
@@ -456,8 +475,7 @@ internal fun DrawScope.drawClock(tm: androidx.compose.ui.text.TextMeasurer, it: 
     val ms = p * it.dur; val n = it.points; val dp = density; val ice = Color(0xFF5CC8FF)
     val e = TableFeel.clockIn(ms, it.dur); val back = it.dur - TableFeel.CLOCK_OUT_MS
     val c = Offset(card.center.x, card.center.y - TableFeel.CLOCK_LIFT * dp * e)
-    // Where a point of the card (or its shield, which travels with it) is while the card is lifted and grown.
-    fun lifted(o: Offset) = Offset(card.center.x + (o.x - card.center.x) * (1f + TableFeel.CLOCK_GROW * e), card.center.y + (o.y - card.center.y) * (1f + TableFeel.CLOCK_GROW * e) - TableFeel.CLOCK_LIFT * dp * e)
+    fun lifted(o: Offset) = clockLifted(card, o, e, dp)
     val from = lifted(shield?.center ?: Offset(card.center.x, card.bottom))
     val orbit = card.height * TableFeel.CLOCK_ORBIT
     val gone = ((ms - back) / 260f).coerceIn(0f, 1f)
@@ -481,7 +499,7 @@ internal fun DrawScope.drawClock(tm: androidx.compose.ui.text.TextMeasurer, it: 
     val off = TableFeel.clockPieces(ms, n, it.dur); val left = it.label.toIntOrNull()
     if (shield != null && left != null && off < n && ms < back) {
         val s = androidx.compose.ui.geometry.Rect(lifted(shield.topLeft), lifted(shield.bottomRight))
-        val path = androidx.compose.ui.graphics.Path().apply { moveTo(s.left, s.top); lineTo(s.right, s.top); lineTo(s.right, s.top + s.height * .58f); lineTo(s.center.x, s.bottom); lineTo(s.left, s.top + s.height * .58f); close() }
+        val path = shieldPath(s)
         drawPath(path, Color(0xFF0B0E15)); drawPath(path, ice, style = Stroke(1.6f * dp, join = androidx.compose.ui.graphics.StrokeJoin.Round))
         val lay = tm.measure("${left + n - off}", androidx.compose.ui.text.TextStyle(fontFamily = Type.Sans, fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold, fontSize = (s.height * .58f / dp / fontScale).sp, color = ice))
         drawText(lay, topLeft = Offset(s.center.x - lay.size.width / 2f, s.top + s.height * .29f - lay.size.height / 2f))

@@ -90,7 +90,7 @@ class RealMatchTest {
     private var lastCast: Int? = null
 
     /** The table's choices for a scripted human. */
-    private fun decide(st: MatchState, attacked: HashSet<String>): JsonObject? {
+    internal fun decide(st: MatchState, attacked: HashSet<String>): JsonObject? {
         fun op(name: String, vararg kv: Pair<String, Any>) = JsonObject().apply { addProperty("op", name); kv.forEach { (k, v) -> if (v is Int) addProperty(k, v) else if (v is Boolean) addProperty(k, v) else if (v is JsonArray) add(k, v) } }
         st.prompt?.let { p ->
             return when {
