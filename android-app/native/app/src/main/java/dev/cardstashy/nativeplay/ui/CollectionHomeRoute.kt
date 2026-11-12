@@ -269,6 +269,8 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
     }
     val m = model
     Box(Modifier.fillMaxSize()) {
+    // C6: the redraw count in the log names this page while it is up.
+    androidx.compose.runtime.DisposableEffect(Unit) { RootDraws.where = "Collection home"; onDispose { RootDraws.where = "?" } }
     if (m != null) CollectionHome(m, hints, top, act, nav)
     else Column(Modifier.fillMaxSize().background(Site.Bg)) {
         Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { top(null) }

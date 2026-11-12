@@ -177,7 +177,7 @@ class MainActivity : ComponentActivity() {
             // The app is recorded into a layer as it draws, so the toast pill can blur what is under it (backdrop-filter).
             val page = androidx.compose.ui.graphics.rememberGraphicsLayer()
             androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
-                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().padRoot().drawWithContent { page.record { this@drawWithContent.drawContent() }; drawLayer(page) }) {
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().padRoot().drawWithContent { dev.cardstashy.nativeplay.ui.RootDraws.tick(); page.record { this@drawWithContent.drawContent() }; drawLayer(page) }) {
                     androidx.compose.runtime.CompositionLocalProvider(androidx.compose.foundation.LocalIndication provides dev.cardstashy.nativeplay.ui.PadFocus) {
                         App(this@MainActivity); dev.cardstashy.nativeplay.ui.ProfileArtPickerHost()
                     }
