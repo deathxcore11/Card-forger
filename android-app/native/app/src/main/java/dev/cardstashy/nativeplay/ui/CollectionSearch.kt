@@ -602,7 +602,7 @@ object SearchShots { @Volatile var filters = false }
 
 /** .suggest (Recent: the names, 44 tall) or .home-suggestions with homeResultRow rows (34 by 47 art, the name in 14, the set line in 11, the price in gold). */
 @Composable
-private fun SuggestList(s: SearchSuggest, act: CollectionSearchActions) {
+internal fun SuggestList(s: SearchSuggest, act: CollectionSearchActions) {
     val gold = GoldC
     val screenW = LocalConfiguration.current.screenWidthDp.dp
     val shape = RoundedCornerShape(if (s.recent) 14.dp else 20.dp)

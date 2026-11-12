@@ -219,7 +219,27 @@ class CollectionHomeActions(
     val todayPack: (DailyCard) -> Unit = {},
     /** home-meta-open data-act="mtgProven": that Meta deck. */
     val metaDeck: (MetaSlide) -> Unit = {},
+    /** Game-feel home G3, the search box typed in where it sits: the cards that match [String] so far (home-search.js lookup), or the recent searches for an empty box. */
+    val suggest: suspend (String) -> SearchSuggest? = { null },
+    /** A matching card picked from the list under the box (home-search.js pick). */
+    val pick: (String) -> Unit = {},
+    /** Search pressed on the keyboard: every match for these words, on the Search tab. */
+    val find: (String) -> Unit = {},
 )
+
+/** Game-feel home G3: the home search box while it is being typed in. */
+internal class HomeFind {
+    var open by mutableStateOf(false); var q by mutableStateOf(""); var suggest by mutableStateOf<SearchSuggest?>(null)
+    fun shut() { open = false; q = ""; suggest = null }
+}
+
+/** A deck on Home's shelf, the one last worked on first ([tag] is its eyebrow). */
+internal class DeckBoxM(val name: String, val line: String, val tag: String, val art: String?, val to: String, val sources: List<String>, val crop: String)
+/** homeDeckShelf's lead and its next two, as the three deck boxes. */
+internal fun deckBoxes(s: HomeShelf): List<DeckBoxM> = buildList {
+    s.lead?.takeIf { !it.empty }?.let { add(DeckBoxM(it.name, it.line, it.eyebrow, it.art, it.to, it.sources, it.crop)) }
+    for (d in s.decks) add(DeckBoxM(d.name, d.line, "", d.art, d.to, d.sources, d.crop))
+}.take(3)
 
 // ---------------------------------------------------------------- the page
 
@@ -250,7 +270,8 @@ fun CollectionHome(m: CollectionHomeModel, hints: SearchHints?, top: @Composable
 private fun CollectionHomeBottom(m: CollectionHomeModel, act: CollectionHomeActions, lens: LensHost) {
     ShowcaseLens(lens.key) { k ->
         val c = m.daily
-        if (k == "daily" && c != null) DailyCase(c, act) else ValueCase(m, act)
+        val d = k?.takeIf { it.startsWith("deck:") }?.removePrefix("deck:")?.toIntOrNull()?.let { deckBoxes(m.shelf).getOrNull(it) }
+        if (d != null) DeckCase(d, act) else if (k == "daily" && c != null) DailyCase(c, act) else ValueCase(m, act)
     }
 }
 
@@ -276,6 +297,19 @@ private fun ValueCase(m: CollectionHomeModel, act: CollectionHomeActions) {
             if (v.decks.isNotBlank()) CaseFact("Decks", v.decks, big = true)
         }
         if (v.explanation.isNotBlank()) CaseFact("How it's counted", v.explanation)
+    }
+}
+
+/** Two screens, the ring on a deck box: the deck in the case below, while the top screen wears its cover (game-feel home G6). */
+@Composable
+private fun DeckCase(d: DeckBoxM, act: CollectionHomeActions) {
+    ShowcaseCase(d.tag.ifBlank { "Your deck" }, d.name, heroWeight = .46f, buttons = listOf(CaseButton("A", "Open deck", gold = true) { act.go(d.to) }),
+        hero = if (d.art == null) null else ({
+            val raw = if (d.sources.size > 1) firstOf(d.sources) else heroPainter(homeArt(d.art))
+            val p = if (d.crop == "pokemon" && raw != null) remember(raw) { PkArtCrop(raw) } else raw
+            if (p != null) Image(p, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop, alignment = BiasAlignment(0f, -.3f))
+        })) {
+        if (d.line.isNotBlank()) CaseFact("Deck", d.line)
     }
 }
 
@@ -307,22 +341,46 @@ private fun DailyCase(c: DailyCard, act: CollectionHomeActions) {
 /** --gold on Home: Magic's (with its light theme), or the open game's own. */
 private val HGold: Color @Composable @androidx.compose.runtime.ReadOnlyComposable get() = LocalGameGold.current.takeIf { it != Color(0xFFE8B95B) } ?: Site.Gold
 
+/**
+ * Game-feel home (specs/game-feel-home-brief.md; Randall 12 Nov: "we are a game on an app now, and it should feel and look like one",
+ * approved on the mock-up the same day). One screen, not a feed: the Card of the Day's art is the whole top of the screen, its pack
+ * and name sit low on it, then the value plate, three doors (Sets, Meta decks, News) and the decks as boxes. Meta and News open
+ * from their doors. Upright screens stack; screens wider than tall put the art and the name at the left and the rest at the right.
+ */
 @Composable
 private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, act: CollectionHomeActions, modifier: Modifier, screen: Dp, lens: LensHost, checking: Boolean = false) {
-    // The site's breakpoints are the window's width: --gutter 16 / 22 from 600, the Home columns from 600, 700, 760 and 900.
+    // The site's breakpoints are the window's width: --gutter 16 / 22 from 600.
     val wide = screen >= 600.dp
     val gutter = if (wide) 22.dp else 16.dp
-    var root by remember { mutableStateOf<LayoutCoordinates?>(null) }
-    var pillTop by remember { mutableIntStateOf(0) }
-    val density = LocalDensity.current
     // C3: the Card of the Day and the deck covers show together, not one by one.
     val reveal = remember(m.game) { TopReveal() }
     LaunchedEffect(reveal) { delay(reveal.capMs); reveal.giveUp() }
+    var door by remember { mutableStateOf<String?>(null) }
+    val find = remember { HomeFind() }
+    val boxes = remember(m.shelf) { deckBoxes(m.shelf) }
+    val games = CardGame.entries
+    val game by androidx.compose.runtime.rememberUpdatedState(m.game)
+    val step: (Int) -> Unit = remember(act) { { d -> act.game(games[(games.indexOf(game) + d + games.size) % games.size]) } }
+    // The pad (ui/PadPrompts.kt): LT / RT change game, X types in the search box, Y opens today's pack (or the card). LB / RB stay the nav's.
+    val daily = m.daily
+    PadScreen(remember(daily?.id, daily?.pack != null, act) { PadActs(page = step, pageLabel = "Game", x = PadAct("Search") { find.open = true },
+        y = daily?.let { c -> PadAct(if (c.pack != null) "Open pack" else "Open card") { if (c.pack != null) act.todayPack(c) else act.daily(c) } }) })
     androidx.compose.runtime.CompositionLocalProvider(LocalTopReveal provides reveal) {
-    Box(modifier.verticalScroll(rememberScrollState()).onGloballyPositioned { root = it }) {
-        // hh-art + hh-shade: 590 tall, starting 124 above the search pill, so it runs on under the value line.
-        DailyArt(m.daily?.art, with(density) { pillTop.toDp() } + 466.dp, pokemon = m.daily?.crop == "pokemon", sources = m.daily?.sources.orEmpty())
-        Column(Modifier.fillMaxWidth()) {
+    BoxWithConstraints(modifier) {
+        val h = maxHeight
+        val panes = maxWidth > maxHeight
+        // Two screens: the ring on a deck box turns the top screen into that deck's cover (G6).
+        val over = lens.key?.takeIf { DualScreen.active && it.startsWith("deck:") }?.removePrefix("deck:")?.toIntOrNull()?.let { boxes.getOrNull(it) }
+        HomeStage(m.game, daily, over, if (panes) h else h * .8f, panes, dim = find.open)
+        // A sideways swipe on the art is the next or the last game.
+        val swipe = Modifier.pointerInput(step) {
+            var drag = 0f
+            detectHorizontalDragGestures(onDragStart = { drag = 0f }, onDragEnd = { if (abs(drag) > 56.dp.toPx()) step(if (drag < 0) 1 else -1) }) { _, dx -> drag += dx }
+        }
+        // One screen tall. A screen too short for it (a small phone, very large text) scrolls instead of squeezing.
+        val body = if (panes) maxOf(h, 330.dp) else maxOf(h, 600.dp)
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        Column(Modifier.fillMaxWidth().height(body)) {
             // The status bar and the bar float on the art; a short scrim keeps them readable (as on Play's hero).
             Box(Modifier.fillMaxWidth()) {
                 // Light: the site's light .topbar (settings-theme.css 49), so the rail, the bar and the dark status icons read as one (U12).
@@ -330,27 +388,247 @@ private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (
                 Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { top(if (wide) ({ GameTabs(m.game, act.game, compact = false, Modifier.widthIn(max = 560.dp)) }) else null) }
                 CheckLine(checking, Modifier.align(Alignment.BottomCenter))
             }
-            Column(Modifier.fillMaxWidth().padding(horizontal = gutter).padding(top = if (wide) 22.dp else 10.dp, bottom = 28.dp)) {
-                if (!wide) GameTabs(m.game, act.game, compact = true, Modifier.align(Alignment.CenterHorizontally).widthIn(max = 280.dp).padding(bottom = 18.dp))
-                SearchPill(m.prompt, hints, act.search, Modifier.dualLens(lens, null).onGloballyPositioned { c -> root?.takeIf { it.isAttached && c.isAttached }?.let { pillTop = it.localPositionOf(c, Offset.Zero).y.roundToInt() } })
-                Spacer(Modifier.height(18.dp))
-                m.daily?.let { Box(Modifier.dualLens(lens, "daily")) { Today(it, m.game, screen, act) } }
+            val boxH = when { !panes && wide -> 132.dp; !panes -> 96.dp; h >= 600.dp -> 190.dp; else -> 92.dp }
+            val rest: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit = {
                 // With a bottom screen up, the value lives in its case there (not twice).
-                if (!DualScreen.active) { ValueRow(m.value, screen, act); Spacer(Modifier.height(12.dp)) }
-                SetsLink(act)
-                Spacer(Modifier.height(16.dp))
-                if (m.example.isNotEmpty()) { Note(m.example); Spacer(Modifier.height(16.dp)) }
-                Box(Modifier.dualLens(lens, null)) { Shelf(m.shelf, m.game, screen, act) }
-                Spacer(Modifier.height(24.dp))
-                // C5: Meta and News are built, and ask for their pictures, only when the page is scrolled near them.
-                BelowFold(240.dp) { MetaCarousel(m.meta, m.game, screen, act) }
-                Spacer(Modifier.height(22.dp))
-                BelowFold(360.dp) { News(m.news, m.game, screen, act) }
+                if (!DualScreen.active) { Hoard(m.value, wide && !(panes && h < 600.dp), act); Spacer(Modifier.height(10.dp)) }
+                if (!panes) { Doors(act) { door = it }; Spacer(Modifier.height(10.dp)) }
+                if (m.example.isNotEmpty()) { Note(m.example); Spacer(Modifier.height(10.dp)) }
+                DeckShelf(m.shelf, boxes, m.game, boxH, act, lens)
+                if (panes) { Spacer(Modifier.height(10.dp)); Doors(act) { door = it } }
+            }
+            if (!panes) Column(Modifier.weight(1f).fillMaxWidth().padding(horizontal = gutter).padding(top = if (wide) 14.dp else 6.dp, bottom = 12.dp)) {
+                if (!wide) GameTabs(m.game, act.game, compact = true, Modifier.padding(bottom = 10.dp))
+                HomeSearch(m.prompt, hints, find, act, Modifier.dualLens(lens, null))
+                if (find.open) FindResults(find, act, Modifier.weight(1f))
+                else {
+                    // The open art: nothing sits on it.
+                    Box(Modifier.weight(1f).fillMaxWidth().then(swipe))
+                    daily?.let { Box(Modifier.dualLens(lens, "daily").then(swipe)) { Today(it, m.game, screen, act) } }
+                    rest()
+                }
+            }
+            else Row(Modifier.weight(1f).fillMaxWidth().padding(horizontal = gutter).padding(top = 4.dp, bottom = 10.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                Column(Modifier.weight(.44f).fillMaxHeight().then(swipe), verticalArrangement = Arrangement.Bottom) {
+                    daily?.let { Box(Modifier.dualLens(lens, "daily")) { Today(it, m.game, screen, act) } }
+                }
+                Column(Modifier.weight(.56f).fillMaxHeight()) {
+                    HomeSearch(m.prompt, hints, find, act, Modifier.dualLens(lens, null))
+                    if (find.open) FindResults(find, act, Modifier.weight(1f))
+                    else { Spacer(Modifier.weight(1f)); rest() }
+                }
             }
         }
+        }
+        door?.let { which -> DoorSheet(which, m, screen, gutter, act) { door = null } }
     }
     }
 }
+
+// ---------------------------------------------------------------- the stage: the Card of the Day's art as the top of the screen
+
+private data class StageArt(val art: String?, val sources: List<String>, val pokemon: Boolean, val daily: Boolean)
+
+/**
+ * Game-feel home G4 (Randall 12 Nov: the "card of the day art bleed into the background ... I like that the most, it livens up
+ * the app"): the art at full strength across the whole width, melting into the page below it. It drifts slowly, leans a little
+ * with the device, and embers in the game's colour rise over it. A change of game crosses to the new art under one sweep of light.
+ * [over]: a deck's cover instead (two screens, the ring on that deck). [dim]: the search box is being typed in.
+ */
+@Composable
+private fun HomeStage(game: CardGame, daily: DailyCard?, over: DeckBoxM?, height: Dp, panes: Boolean, dim: Boolean) {
+    val shown = if (over != null) StageArt(over.art, over.sources, over.crop == "pokemon", false)
+        else StageArt(daily?.art, daily?.sources.orEmpty(), daily?.crop == "pokemon", true)
+    val still = Motion.still
+    val lean = rememberCardLean()
+    val drift = if (still) null else rememberInfiniteTransition(label = "stage").animateFloat(0f, 1f,
+        infiniteRepeatable(tween(26_000, easing = LinearEasing), androidx.compose.animation.core.RepeatMode.Reverse), label = "drift")
+    val veil by androidx.compose.animation.core.animateFloatAsState(if (dim) .8f else 0f, if (still) androidx.compose.animation.core.snap() else tween(250), label = "stage veil")
+    val gold = game.gold
+    // The sweep: only when the game changes, never on the first paint.
+    val flash = remember { Animatable(1f) }
+    var seenGame by remember { mutableStateOf(game) }
+    LaunchedEffect(game) { if (seenGame != game) { seenGame = game; if (!still) { flash.snapTo(0f); flash.animateTo(1f, tween(650)) } } }
+    Box(Modifier.fillMaxWidth().height(height)) {
+        Crossfade(shown, animationSpec = if (still) androidx.compose.animation.core.snap() else tween(550), label = "stage art") { a ->
+            StagePicture(a, panes) { d ->
+                val t = drift?.value ?: .5f
+                scaleX = 1.07f + .05f * t; scaleY = scaleX
+                translationX = (t - .5f) * 12f * d - lean.tx / 9f * 8f * d
+                translationY = (.5f - t) * 8f * d + lean.ty / 9f * 6f * d
+            }
+        }
+        // The shade: the bar's words stay readable at the top, and the page's own colour takes over at the foot.
+        Box(Modifier.matchParentSize().background(if (panes) Brush.horizontalGradient(.2f to Color.Transparent, .85f to Color(0x8C0D1016))
+            else Brush.verticalGradient(.5f to Color.Transparent, 1f to Site.Bg)).background(Brush.verticalGradient(0f to Color(0x8C080A0E), .22f to Color.Transparent)))
+        if (panes) Box(Modifier.matchParentSize().background(Brush.verticalGradient(.62f to Color.Transparent, 1f to Site.Bg.copy(alpha = .9f))))
+        if (!still) Embers(gold, Modifier.matchParentSize())
+        Box(Modifier.matchParentSize().drawBehind {
+            val t = flash.value
+            if (t < 1f) {
+                val band = size.width * .5f; val x = -band + (size.width + 2 * band) * t; val a = (1f - t).coerceIn(0f, 1f)
+                drawRect(Brush.linearGradient(0f to Color.Transparent, .42f to gold.copy(alpha = .45f * a), .5f to Color.White.copy(alpha = .6f * a), .58f to gold.copy(alpha = .45f * a), 1f to Color.Transparent,
+                    start = Offset(x - band, 0f), end = Offset(x + band, size.height * .35f)), blendMode = BlendMode.Plus)
+            }
+            if (veil > 0f) drawRect(Color(0xFF07090D), alpha = veil)
+        })
+    }
+}
+
+@Composable
+private fun StagePicture(a: StageArt, panes: Boolean, move: androidx.compose.ui.graphics.GraphicsLayerScope.(density: Float) -> Unit) {
+    val url = a.art?.takeIf { it.isNotBlank() }
+    // The img's data-art-sources, walked in order as its onerror does. C4: one picture is asked for at the size of this box; a list
+    // of fallbacks walks as before, and a Pokémon card keeps its full size because only its art window is shown.
+    val boxed = if (a.sources.size > 1 || a.pokemon) null else url?.let { boxArt(homeArt(it)) }
+    val raw = if (a.sources.size > 1) firstOf(a.sources) else if (a.pokemon) url?.let { heroPainter(homeArt(it)) } else boxed?.painter
+    val fit = boxed?.fit ?: Modifier
+    val p = if (a.pokemon && raw != null) remember(raw) { PkArtCrop(raw) } else raw
+    // C3: the Card of the Day waits for the deck covers; a deck's cover shown from the ring does not.
+    val seen = revealAlpha(if (a.daily) url?.let { "daily|$it" } else null, raw)
+    if (p == null) return
+    Box(Modifier.fillMaxSize().graphicsLayer { alpha = seen.value; compositingStrategy = CompositingStrategy.Offscreen }
+        .drawWithContent {
+            drawContent()
+            // The melt into the page: whole to the middle, gone at the foot (side by side: it only darkens low down).
+            drawRect(if (panes) Brush.verticalGradient(.66f to Color.Black, 1f to Color.Black.copy(alpha = .28f))
+                else Brush.verticalGradient(.46f to Color.Black, .8f to Color.Black.copy(alpha = .45f), 1f to Color.Transparent), blendMode = BlendMode.DstIn)
+        }) {
+        Image(p, null, Modifier.matchParentSize().then(fit).graphicsLayer { move(density) }, contentScale = ContentScale.Crop, alignment = BiasAlignment(0f, -.36f))
+    }
+}
+
+private class Ember(val x: Float, val y: Float, val r: Float, val v: Float, val w: Float, val ph: Float, val a: Float)
+
+/** Small lights in the game's colour rising over the art. Drawn in their own layer, so a frame of them redraws nothing else. */
+@Composable
+private fun Embers(color: Color, modifier: Modifier) {
+    val parts = remember { val r = java.util.Random(7); List(24) { Ember(r.nextFloat(), r.nextFloat(), .6f + r.nextFloat() * 1.6f, .012f + r.nextFloat() * .03f, .5f + r.nextFloat(), r.nextFloat() * 6.28f, .25f + r.nextFloat() * .55f) } }
+    var nanos by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
+    LaunchedEffect(Unit) { while (true) androidx.compose.runtime.withFrameNanos { nanos = it } }
+    Canvas(modifier.graphicsLayer { }) {
+        val t = (nanos / 1_000_000L % 3_600_000L) / 1000f
+        for (e in parts) {
+            val up = (e.y + t * e.v) % 1f
+            val y = size.height * (.95f - up * .95f); val x = size.width * e.x + sin(t * e.w + e.ph) * 10.dp.toPx()
+            val a = e.a * (y / (size.height * .25f)).coerceIn(0f, 1f) * (1f - up).coerceIn(0f, 1f) * (.6f + .4f * sin(t * 2.4f * e.w + e.ph))
+            if (a <= 0f) continue
+            drawCircle(color.copy(alpha = a * .22f), e.r * 3.2f * density, Offset(x, y))
+            drawCircle(Color.White.copy(alpha = a * .8f), e.r * .7f * density, Offset(x, y))
+        }
+    }
+}
+
+// ---------------------------------------------------------------- the value plate, the doors, the deck boxes
+
+/** Your collection at a glance (homeValue) as a dark glass plate over the art's foot: the same words and taps as [ValueRow]. */
+@Composable
+internal fun Hoard(v: HomeValue, roomy: Boolean, act: CollectionHomeActions) {
+    val shape = RoundedCornerShape(18.dp)
+    val gold = HGold
+    Row(Modifier.fillMaxWidth().heightIn(min = if (roomy) 100.dp else 80.dp).clip(shape).background(Color(0xB80D1119)).border(1.dp, Color(0x29FFFFFF), shape)
+        .drawWithContent {
+            drawContent()
+            // Gold corner brackets, top left and bottom right.
+            val c = 22.dp.toPx(); val r = CornerRadius(18.dp.toPx()); val s = Stroke(2.dp.toPx())
+            androidx.compose.ui.graphics.drawscope.clipRect(0f, 0f, c, c) { drawRoundRect(gold, cornerRadius = r, style = s) }
+            androidx.compose.ui.graphics.drawscope.clipRect(size.width - c, size.height - c, size.width, size.height) { drawRoundRect(gold, cornerRadius = r, style = s) }
+        }
+        .padding(horizontal = if (roomy) 22.dp else 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.weight(1f).heightIn(min = 44.dp).clickable { act.go("#collection/value") }, verticalArrangement = Arrangement.spacedBy(1.dp, Alignment.CenterVertically)) {
+            Text("YOUR COLLECTION", style = sans(9.5f, FontWeight.Bold, Color(0xFFAEB6C4), ls = 2f))
+            Text(v.amount, maxLines = 1, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.ExtraBold, fontSize = if (roomy) 40.sp else 30.sp, lineHeight = if (roomy) 46.sp else 35.sp,
+                brush = Brush.verticalGradient(listOf(Color(0xFFFFF6D8), Color(0xFFE9C877), Color(0xFFB98A35))), fontFeatureSettings = "tnum"))
+            if (v.note.isNotEmpty()) Text(v.note, style = sans(if (roomy) 12.5f else 11f, color = Color(0xFFB5BCC9)))
+            if (v.movement.isNotEmpty()) Text(v.movement, style = sans(11f, FontWeight.SemiBold, if (v.direction == "flat") Site.Muted else Site.Text, lh = 1.5f))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // The paper-card tracker's count, never the Trunk's game cards (Randall 11 Nov: "Paper cards").
+            Medal(v.copies, "paper cards", gold, roomy) { act.go("#collection") }
+            Medal(v.decks, "decks", gold, roomy) { act.go("#decks") }
+        }
+    }
+}
+
+@Composable
+private fun Medal(n: String, label: String, gold: Color, roomy: Boolean, onClick: () -> Unit) =
+    Column(Modifier.size(if (roomy) 76.dp else 62.dp).clip(CircleShape)
+        .drawBehind {
+            drawCircle(Brush.radialGradient(listOf(gold.copy(alpha = .3f), Color(0x990D1119)), center = Offset(size.width / 2, size.height * .3f), radius = size.width * .7f))
+            drawCircle(gold.copy(alpha = .8f), size.minDimension / 2 - 1.dp.toPx(), style = Stroke(1.5.dp.toPx()))
+        }.clickable(onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Text(n, maxLines = 1, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.ExtraBold, fontSize = if (roomy) 22.sp else 17.sp, color = Color.White))
+        Text(label, maxLines = 1, softWrap = false, style = sans(if (roomy) 9f else 7.5f, FontWeight.Bold, Color(0xFFB5BCC9), lh = 1.2f, ls = .3f))
+    }
+
+/** The three doors: Sets (its own page), and Meta decks and News, which open over Home instead of lengthening it. */
+@Composable
+private fun Doors(act: CollectionHomeActions, open: (String) -> Unit) =
+    Row(Modifier.fillMaxWidth().height(44.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Door(SiteIcons.PackIcon, "Sets", Modifier.weight(1f)) { act.go("#sets") }
+        Door(SiteIcons.Trophy, "Meta decks", Modifier.weight(1f)) { open("meta") }
+        Door(SiteIcons.CardStack, "News", Modifier.weight(1f)) { open("news") }
+    }
+
+@Composable
+private fun Door(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, modifier: Modifier, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(13.dp)
+    Row(modifier.fillMaxHeight().clip(shape).background(Color(0xA60D1119)).border(1.dp, Color(0x26FFFFFF), shape).clickable(onClickLabel = "Open $label", onClick = onClick)
+        .semantics { role = Role.Button }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally)) {
+        Icon(icon, 17.dp, HGold)
+        Text(label, maxLines = 1, style = sans(12.5f, FontWeight.Bold, Color(0xFFE8EBF2)))
+    }
+}
+
+/** Meta decks or News, opened from its door: the same parts Home had under its decks, over the page; Back or the arrow closes it. */
+@Composable
+private fun DoorSheet(which: String, m: CollectionHomeModel, screen: Dp, gutter: Dp, act: CollectionHomeActions, close: () -> Unit) {
+    androidx.activity.compose.BackHandler(onBack = close)
+    Column(Modifier.fillMaxSize().padCover().blockTouchBehind().background(Site.Bg.copy(alpha = .98f)).windowInsetsPadding(WindowInsets.statusBars)) {
+        Row(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = gutter - 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = close).semantics { contentDescription = "Back to Home" }.padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Icon(SiteIcons.Back, 18.dp, Site.Text)
+                Text("Home", style = sans(14f, FontWeight.SemiBold, Site.Text))
+            }
+        }
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = gutter).padding(bottom = 24.dp)) {
+            if (which == "meta") MetaCarousel(m.meta, m.game, screen, act) else News(m.news, m.game, screen, act)
+        }
+    }
+}
+
+/** Your decks (homeDeckShelf) as up to three deck boxes in one row, the one last worked on first with its tag. */
+@Composable
+private fun DeckShelf(s: HomeShelf, boxes: List<DeckBoxM>, game: CardGame, boxH: Dp, act: CollectionHomeActions, lens: LensHost) {
+    Column {
+        Row(Modifier.fillMaxWidth().heightIn(min = 30.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(s.title.ifEmpty { "Your decks" }.uppercase(), style = sans(10f, FontWeight.Bold, Color(0xFFAEB6C4), ls = 2.2f))
+            s.all?.let { link -> Text(link.label + " ›", style = sans(12.5f, FontWeight.SemiBold, HGold),
+                modifier = Modifier.clickable { if (link.to.isNotEmpty()) act.go(link.to) else if (link.href.isNotEmpty()) act.open(link.href) }.padding(start = 12.dp, top = 6.dp, bottom = 6.dp)) }
+        }
+        val lead = s.lead
+        if (lead?.empty == true) EmptyShelf(lead, game, act)
+        if (boxes.isNotEmpty()) Row(Modifier.fillMaxWidth().height(boxH), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            boxes.forEachIndexed { i, d -> DeckBox(d, i == 0 && d.tag.isNotEmpty(), boxH, Modifier.weight(1f).fillMaxHeight().dualLens(lens, "deck:$i"), act) }
+        }
+    }
+}
+
+@Composable
+private fun DeckBox(d: DeckBoxM, lead: Boolean, boxH: Dp, modifier: Modifier, act: CollectionHomeActions) =
+    TileFrame(d.art, lead, 0.dp, modifier, { act.go(d.to) }, "Open ${d.name}", d.sources, d.crop) {
+        val big = boxH >= 130.dp
+        Box(Modifier.fillMaxSize()) {
+            if (lead) Text(d.tag.uppercase(), maxLines = 1, style = sans(if (big) 9f else 7.5f, FontWeight.ExtraBold, Color(0xFF17110A), lh = 1.3f, ls = .9f),
+                modifier = Modifier.align(Alignment.TopStart).padding(top = 8.dp).clip(RoundedCornerShape(topEnd = 6.dp, bottomEnd = 6.dp))
+                    .background(Brush.verticalGradient(listOf(Color(0xFFF7DE9C), Color(0xFFD4A94C)))).padding(horizontal = 7.dp, vertical = 2.dp))
+            Column(Modifier.align(Alignment.BottomStart).padding(horizontal = if (big) 12.dp else 9.dp, vertical = if (big) 11.dp else 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(d.name, maxLines = if (big || !lead) 2 else 1, overflow = TextOverflow.Ellipsis, style = sans(if (big) 15f else 12f, FontWeight.Bold, Color(0xFFF5F6FA), lh = 1.2f).copy(shadow = tileShadow))
+                if (d.line.isNotEmpty()) Text(d.line, maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(if (big) 11f else 9.5f, color = Color(0xFFC9CED9)).copy(shadow = tileShadow))
+            }
+        }
+    }
 
 /**
  * C3: [key]'s picture takes part in the top's one reveal while [painter] is still loading; the opacity its Image draws at
@@ -395,42 +673,37 @@ internal fun CheckLine(on: Boolean, modifier: Modifier = Modifier) {
         .semantics { contentDescription = "Checking your account" })
 }
 
-// ---------------------------------------------------------------- the Card of the Day art behind the top of the page
-
-@Composable
-private fun DailyArt(url: String?, height: Dp, pokemon: Boolean = false, sources: List<String> = emptyList()) {
-    // The img's data-art-sources, walked in order as its onerror does.
-    // C4: one picture is asked for at the size of this box; a list of fallbacks walks as before, and a Pokémon card keeps its
-    // full size because only its art window is shown.
-    val boxed = if (sources.size > 1 || pokemon) null else url?.takeIf { it.isNotBlank() }?.let { boxArt(homeArt(it)) }
-    val raw = if (sources.size > 1) firstOf(sources) else if (pokemon) url?.takeIf { it.isNotBlank() }?.let { heroPainter(homeArt(it)) } else boxed?.painter
-    val fit = boxed?.fit ?: Modifier
-    val p = if (pokemon && raw != null) remember(raw) { PkArtCrop(raw) } else raw
-    val seen = revealAlpha(url?.takeIf { it.isNotBlank() }?.let { "daily|$it" }, raw)
-    Box(Modifier.fillMaxWidth().height(height)) {
-        // opacity .78, object-position 50% 32%, mask: #000 5%, #000e 40%, #0006 74%, transparent.
-        if (p != null) Image(p, null, Modifier.matchParentSize().then(fit).graphicsLayer { alpha = .78f * seen.value; compositingStrategy = CompositingStrategy.Offscreen }
-            .drawWithContent {
-                drawContent()
-                drawRect(Brush.verticalGradient(.05f to Color.Black, .40f to Color.Black.copy(alpha = .933f), .74f to Color.Black.copy(alpha = .4f), 1f to Color.Transparent), blendMode = BlendMode.DstIn)
-            }, contentScale = ContentScale.Crop, alignment = BiasAlignment(0f, -.36f))
-        // .hh-shade: linear-gradient(90deg, #090c13bb, transparent 88%) over linear-gradient(0deg, var(--bg), transparent 65%).
-        Box(Modifier.matchParentSize().background(Brush.verticalGradient(.35f to Color.Transparent, 1f to Site.Bg))
-            .background(Brush.horizontalGradient(0f to Color(0xBB090C13), .88f to Color.Transparent)))
-    }
-}
-
 // ---------------------------------------------------------------- game tabs (home-ui.js gameTabs, game-tabs.css)
 
+/**
+ * Game-feel home G1 (Randall 12 Nov: "notice how clunky it is to switch between the three games"): the three games are equal
+ * thirds at every width and never change size or place. Only the light moves: one bright frame slides to the chosen game.
+ * [compact] is the phone's row (smaller words); the tabs' own art, marks and colours are as before.
+ */
 @Composable
 internal fun GameTabs(game: CardGame, onGame: (CardGame) -> Unit, compact: Boolean, modifier: Modifier = Modifier) {
     val outer = RoundedCornerShape(if (compact) 16.dp else 18.dp)
-    Row(modifier.fillMaxWidth().clip(outer).background(Color(0x90080B10)).border(1.dp, Color(0x13FFFFFF), outer).padding(if (compact) 3.dp else 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 5.dp)) {
-        for (g in CardGame.entries) {
+    val pad = if (compact) 3.dp else 4.dp
+    val gap = if (compact) 2.dp else 5.dp
+    val games = CardGame.entries
+    // Where the light is, in tabs from the left; it springs over when the game changes and stands still otherwise.
+    val at by androidx.compose.animation.core.animateFloatAsState(games.indexOf(game).toFloat(),
+        if (Motion.still) androidx.compose.animation.core.snap() else androidx.compose.animation.core.spring(dampingRatio = .72f, stiffness = 420f), label = "game light")
+    val tint by androidx.compose.animation.animateColorAsState(game.tab, if (Motion.still) androidx.compose.animation.core.snap() else tween(300), label = "game light colour")
+    Row(modifier.fillMaxWidth().clip(outer).background(Color(0x90080B10)).border(1.dp, Color(0x13FFFFFF), outer).padding(pad)
+        .drawWithContent {
+            drawContent()
+            val g = gap.toPx(); val w = (size.width - g * (games.size - 1)) / games.size
+            val x = at * (w + g); val r = CornerRadius(13.dp.toPx())
+            drawRoundRect(Brush.verticalGradient(listOf(tint.copy(alpha = .22f), tint.copy(alpha = .05f))), Offset(x, 0f), Size(w, size.height), r)
+            drawRoundRect(tint, Offset(x, 0f), Size(w, size.height), r, style = Stroke(1.5.dp.toPx()))
+            // The chosen game's underline rides with the light.
+            drawRoundRect(tint, Offset(x + w / 2 - 12.dp.toPx(), size.height - 2.dp.toPx()), Size(24.dp.toPx(), 2.dp.toPx()), CornerRadius(2.dp.toPx()))
+        },
+        horizontalArrangement = Arrangement.spacedBy(gap)) {
+        for (g in games) {
             val on = g == game
-            // Phone: the chosen game stretches with its name, the others are 44 dp marks (style.css .topbar .game-tab).
-            GameTab(g, on, showName = !compact || on, compact, (if (!compact || on) Modifier.weight(1f) else Modifier.width(44.dp)).height(44.dp)) { if (!on) onGame(g) }
+            GameTab(g, on, showName = true, compact, Modifier.weight(1f).height(44.dp)) { if (!on) onGame(g) }
         }
     }
 }
@@ -441,15 +714,14 @@ private fun GameTab(g: CardGame, on: Boolean, showName: Boolean, compact: Boolea
     val context = LocalContext.current
     val art by produceState(AssetImages.cached("${g.tabArt}@480"), g) { value = AssetImages.load(context, g.tabArt, maxWidth = 480) }
     Box(modifier.clip(shape).background(Color(0xFF151A23)).drawBehind { art?.let { tabArt(it, g, on) } }
-        .border(1.dp, if (on) g.tab else Color(0x20FFFFFF), shape).clickable(onClick = onClick).semantics { contentDescription = g.label; role = Role.Tab },
+        .border(1.dp, Color(0x20FFFFFF), shape).clickable(onClick = onClick).semantics { contentDescription = g.label; role = Role.Tab },
         contentAlignment = Alignment.Center) {
         Row(Modifier.padding(horizontal = if (compact) 3.dp else 9.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 7.dp)) {
-            GameMark(g, if (compact) 20.dp else 23.dp, g.tab.copy(alpha = if (on) 1f else .9f))
-            if (showName) Text(g.label, maxLines = 1, style = TextStyle(fontFamily = if (g == CardGame.MTG) Type.Sans else Site.Manrope, fontWeight = FontWeight.ExtraBold,
+            GameMark(g, if (compact) 18.dp else 23.dp, g.tab.copy(alpha = if (on) 1f else .9f))
+            if (showName) Text(g.label, maxLines = 1, softWrap = false, style = TextStyle(fontFamily = if (g == CardGame.MTG) Type.Sans else Site.Manrope, fontWeight = FontWeight.ExtraBold,
                 fontSize = if (compact) 11.5.sp else 14.sp, letterSpacing = when (g) { CardGame.YGO -> (-.045).em; CardGame.PTCG -> (-.04).em; else -> 0.em },
                 color = if (on) Color.White else Color(0xFFF1F3F7), shadow = Shadow(Color.Black, Offset(0f, 1f), 3f)))
         }
-        if (on) Box(Modifier.align(Alignment.BottomCenter).size(24.dp, 2.dp).clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)).background(g.tab))
     }
 }
 
@@ -474,18 +746,24 @@ private fun GameMark(g: CardGame, size: Dp, color: Color, modifier: Modifier = M
 
 // ---------------------------------------------------------------- the search pill (home-search.js, search-hints.js)
 
+/**
+ * Game-feel home G3 (Randall 12 Nov: the home search bar "acts like a button that takes you to the search tab, and that is not
+ * what it should be doing"): the box is typed in where it sits, as the site's own is (home-search.js). A tap puts the cursor in
+ * it with the keyboard up; the cards that match show under it; Back or Cancel puts Home back.
+ */
 @Composable
-private fun SearchPill(prompt: String, hints: SearchHints?, onClick: () -> Unit, modifier: Modifier) {
+private fun HomeSearch(prompt: String, hints: SearchHints?, find: HomeFind, act: CollectionHomeActions, modifier: Modifier) {
     val shape = RoundedCornerShape(25.dp)
     val gold = Color(0xFFE8B95B)
-    // ::before: a light that runs round the gold edge every 9 s (home-search-edge).
-    val edge = if (Motion.still) null else rememberInfiniteTransition(label = "search-edge").animateFloat(0f, 1f, infiniteRepeatable(tween(9000, easing = LinearEasing)), label = "edge")
+    val open = find.open
+    // ::before: a light that runs round the gold edge every 9 s (home-search-edge); it rests while the box is typed in.
+    val edge = if (Motion.still || open) null else rememberInfiniteTransition(label = "search-edge").animateFloat(0f, 1f, infiniteRepeatable(tween(9000, easing = LinearEasing)), label = "edge")
     var text by remember(hints, prompt) { mutableStateOf(hints?.prompt ?: prompt) }
     val fade = remember { Animatable(1f) }
     // startSearchHints: one timer every [every] ms; the first tick starts the clock, hints swap once [first] ms have passed.
-    LaunchedEffect(hints) {
+    LaunchedEffect(hints, open) {
         val h = hints ?: return@LaunchedEffect
-        if (Motion.still || h.pool.isEmpty()) return@LaunchedEffect
+        if (open || Motion.still || h.pool.isEmpty()) return@LaunchedEffect
         var pool = ArrayDeque(h.pool); var ticks = 0L
         while (true) {
             delay(h.every); ticks++
@@ -494,11 +772,25 @@ private fun SearchPill(prompt: String, hints: SearchHints?, onClick: () -> Unit,
             fade.animateTo(0f, tween(h.fade.toInt())); text = pool.removeFirst(); fade.animateTo(1f, tween(h.fade.toInt()))
         }
     }
-    Box(modifier.fillMaxWidth().heightIn(min = 76.dp).shadow(10.dp, shape, ambientColor = Color.Black.copy(alpha = .2f), spotColor = Color.Black.copy(alpha = .27f))
+    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    androidx.activity.compose.BackHandler(open) { find.shut() }
+    LaunchedEffect(open) { if (open) { runCatching { focus.requestFocus() }; keyboard?.show() } else focusManager.clearFocus() }
+    // home-search.js update: the list for what is in the box, 220 ms after the last key (an empty box: the recent searches).
+    LaunchedEffect(open, find.q) {
+        if (!open) return@LaunchedEffect
+        val asked = find.q.trim()
+        if (asked.isNotEmpty()) delay(220)
+        val s = runCatching { act.suggest(asked) }.getOrNull()
+        if (s != null && (if (asked.isEmpty()) s.recent else s.q == asked)) find.suggest = s else if (asked.isEmpty()) find.suggest = null
+    }
+    Box(modifier.fillMaxWidth().height(56.dp).shadow(10.dp, shape, ambientColor = Color.Black.copy(alpha = .2f), spotColor = Color.Black.copy(alpha = .27f))
         .clip(shape).then(if (AppSettings.theme == "light") Modifier.background(Rule.Color.Surface) else Modifier.background(cssGradient(120f, 0f to Color(0xE81B202D), 1f to Color(0xEF131720))))
-        .border(1.dp, gold.copy(alpha = .70f), shape)
+        .border(if (open) 1.5.dp else 1.dp, gold.copy(alpha = if (open) .95f else .70f), shape)
         .drawWithContent {
             drawContent()
+            if (open) return@drawWithContent
             // linear-gradient(110deg, transparent 15%, gold 40%, #d8f5ff 50%, gold 60%, transparent 85%) at 250% wide, sliding 250% per loop.
             val t = edge?.value ?: Motion.cycle
             val tile = size.width * 2.5f
@@ -507,9 +799,34 @@ private fun SearchPill(prompt: String, hints: SearchHints?, onClick: () -> Unit,
                 0f to Color.Transparent, .15f to Color.Transparent, .40f to gold, .50f to Color(0xFFD8F5FF), .60f to gold, .85f to Color.Transparent, 1f to Color.Transparent)),
                 cornerRadius = CornerRadius(25.dp.toPx()), style = Stroke(1.dp.toPx()))
         }
-        .clickable(onClick = onClick).semantics { contentDescription = "Find cards or ask CardStashy" }, contentAlignment = Alignment.CenterStart) {
-        Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 22.dp).alpha(fade.value),
-            style = sans(16f, color = Color(0xFF757575)))
+        .then(if (open) Modifier else Modifier.clickable { find.open = true }.semantics { contentDescription = "Find cards or ask CardStashy" }), contentAlignment = Alignment.CenterStart) {
+        Row(Modifier.fillMaxSize().padding(start = 18.dp, end = if (open) 6.dp else 18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Icon(SiteIcons.Search, 19.dp, LocalGameGold.current)
+            if (!open) Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).alpha(fade.value), style = sans(16f, color = Color(0xFF8A8F9B)))
+            else {
+                androidx.compose.foundation.text.BasicTextField(find.q, { find.q = it }, Modifier.weight(1f).focusRequester(focus).semantics { contentDescription = "Find cards or ask CardStashy" },
+                    singleLine = true, textStyle = sans(16f, color = Site.Text), cursorBrush = androidx.compose.ui.graphics.SolidColor(gold),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
+                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { val q = find.q.trim(); if (q.isNotEmpty()) { find.shut(); act.find(q) } }),
+                    decorationBox = { inner -> Box(contentAlignment = Alignment.CenterStart) {
+                        if (find.q.isEmpty()) Text(prompt, maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(16f, color = Color(0xFF757575)))
+                        inner()
+                    } })
+                Box(Modifier.heightIn(min = 44.dp).clip(CircleShape).clickable { find.shut() }.padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
+                    Text("Cancel", style = sans(13f, FontWeight.Bold, LocalGameGold.current))
+                }
+            }
+        }
+    }
+}
+
+/** Under the box while it is typed in: the matching cards (or the recent searches), each one tap from its page. */
+@Composable
+private fun FindResults(find: HomeFind, act: CollectionHomeActions, modifier: Modifier) {
+    val s = find.suggest
+    Column(modifier.fillMaxWidth().padding(top = 8.dp)) {
+        if (s != null && s.items.isNotEmpty()) SuggestList(s, CollectionSearchActions(pick = { name -> find.shut(); act.pick(name) }))
+        else if (find.q.isNotBlank()) Text("Press Search on the keyboard for every match.", style = sans(13f, color = Site.Muted), modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
     }
 }
 
@@ -576,21 +893,6 @@ internal fun ValueRow(v: HomeValue, screen: Dp, act: CollectionHomeActions) {
     }
 }
 
-/** Sets' front door (Randall 8 Nov: "I can't find a way" to look at sets): every set, your progress in each; the site has it under Search. */
-@Composable
-private fun SetsLink(act: CollectionHomeActions) {
-    val shape = RoundedCornerShape(16.dp)
-    Row(Modifier.fillMaxWidth().clip(shape).background(Color(0x0DFFFFFF)).border(1.dp, Color(0x40D6AD64), shape).clickable(onClickLabel = "Open every set") { act.go("#sets") }
-        .padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Icon(SiteIcons.Pack, 22.dp)
-        Column(Modifier.weight(1f)) {
-            Text("Sets", style = manrope(15f, FontWeight.Bold, Site.Text))
-            Text("Every set, what you own and what's missing", style = sans(12f, color = Site.Muted))
-        }
-        Text("›", style = sans(22f, color = HGold))
-    }
-}
-
 @Composable
 private fun Count(n: String, label: String, start: Boolean, screen: Dp, onClick: () -> Unit) =
     Column(Modifier.heightIn(min = 44.dp).clickable(onClick = onClick), horizontalAlignment = if (start) Alignment.Start else Alignment.End,
@@ -606,31 +908,6 @@ private fun Note(text: String) = Box(Modifier.fillMaxWidth().clip(RoundedCornerS
 }
 
 // ---------------------------------------------------------------- your decks (homeDeckShelf)
-
-@Composable
-private fun Shelf(s: HomeShelf, game: CardGame, screen: Dp, act: CollectionHomeActions) {
-    Column {
-        Heading(s.title.ifEmpty { "Your decks" }, s.all, 13f, act, Modifier.padding(bottom = 10.dp))
-        val lead = s.lead
-        // .home-personal-grid: one column on a phone, two from 600, three from 700; the empty card always spans the row.
-        val cols = when { screen < 600.dp -> 1; screen < 700.dp -> 2; else -> 3 }
-        val minH = if (screen < 600.dp) 132.dp else 154.dp
-        val tiles = buildList<@Composable (Modifier) -> Unit> {
-            if (lead != null && !lead.empty) add { mod -> LeadTile(lead, minH, mod, act) }
-            for (d in s.decks.take(2)) add { mod -> DeckTile(d, minH, mod, act) }
-        }
-        if (lead?.empty == true) EmptyShelf(lead, game, act)
-        Column(verticalArrangement = Arrangement.spacedBy(if (cols == 1) 10.dp else 12.dp)) {
-            tiles.chunked(cols).forEach { row ->
-                Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    row.forEach { it(Modifier.weight(1f).fillMaxHeight()) }
-                    // Two columns and three decks: the last one takes the whole row instead of leaving a hole.
-                    if (row.size < cols && !(cols == 2 && tiles.size == 3)) repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
-                }
-            }
-        }
-    }
-}
 
 /** h2 + the gold link at the right (.home-shelf-heading, .home-meta-heading). */
 @Composable
@@ -681,26 +958,6 @@ private fun TileFrame(art: String?, lead: Boolean, minH: Dp, modifier: Modifier,
 }
 
 private val tileShadow = Shadow(Color(0xBB000000), Offset(0f, 1f), 2f)
-
-/** The deck you last worked on (or one of yours, picked for this visit): its words sit in the middle of the tile. */
-@Composable
-private fun LeadTile(l: ShelfLead, minH: Dp, modifier: Modifier, act: CollectionHomeActions) =
-    TileFrame(l.art, true, minH, modifier, { act.go(l.to) }, "Open ${l.name}", l.sources, l.crop) {
-        Column(Modifier.fillMaxWidth().heightIn(min = minH).padding(18.dp), verticalArrangement = Arrangement.Center) {
-            if (l.eyebrow.isNotEmpty()) Text(l.eyebrow, style = sans(11f, FontWeight.Bold, HGold, ls = .66f).copy(shadow = tileShadow), modifier = Modifier.padding(bottom = 6.dp))
-            Text(l.name, style = manrope(19f, FontWeight.ExtraBold, Color(0xFFF5F6FA), lh = 1.35f, ls = -.02f).copy(shadow = tileShadow), modifier = Modifier.padding(bottom = 4.dp))
-            if (l.line.isNotEmpty()) Text(l.line, style = sans(12f, color = Color(0xB0FFFFFF), lh = 1.6f).copy(shadow = tileShadow))
-        }
-    }
-
-@Composable
-private fun DeckTile(d: ShelfDeck, minH: Dp, modifier: Modifier, act: CollectionHomeActions) =
-    TileFrame(d.art, false, minH, modifier, { act.go(d.to) }, "Open ${d.name}", d.sources, d.crop) {
-        Column(Modifier.fillMaxWidth().heightIn(min = minH).padding(if (minH < 150.dp) 16.dp else 18.dp), verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.Bottom)) {
-            Text(d.name, style = sans(17f, FontWeight.Bold, Color(0xFFF5F6FA), lh = 1.2f).copy(shadow = tileShadow))
-            Text(d.line, style = sans(11f, color = Color(0xFFE0E3EB)).copy(shadow = tileShadow))
-        }
-    }
 
 /** .home-resume-empty: no decks yet, and the way to Decks. */
 @Composable
