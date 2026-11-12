@@ -502,6 +502,8 @@ private fun AppPane() {
             "reduced" -> "In a match: light and marks stay. No shake, no freeze frames, no clock stop."
             else -> "In a match: the table's light, the weight of big creatures and the hits, in the map's own style."
         }, style = S.Foot)
+        // Living table F9.
+        Check("Match vibration", AppSettings.matchVibration, "In a match: landings, hits, the winning hit and the clock stop. Off while Match effects is Reduced.") { AppSettings.set("matchVibration", it) }
         Check("Tap vibration", AppSettings.haptics, "Animations follow your phone’s “Reduce motion” setting.") { AppSettings.set("haptics", it) }
         // Mobile table M3 and M4: the table does these for you unless you ask to be asked.
         Check("Ask me to order triggers", AppSettings.askTriggerOrder, "Off: triggers that happen together are put in order for you.") { AppSettings.set("askTriggerOrder", it) }

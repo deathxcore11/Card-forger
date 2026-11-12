@@ -46,6 +46,9 @@ object AppSettings {
     /** Mobile table M3: "Stop to respond". Off: your own spell or trigger on top of the stack resolves by itself. */
     var stopToRespond by mutableStateOf(false); private set
 
+    /** Living table F9: "Match vibration" (landings, hits, the winning hit, the clock stop). Its own setting, on by default; never in Reduced. */
+    var matchVibration by mutableStateOf(true); private set
+
     fun init(context: Context) {
         val p = context.applicationContext.getSharedPreferences("play", Context.MODE_PRIVATE); prefs = p
         glass = p.getBoolean("glass", true); finish = p.getBoolean("finishEffects", true); tilt = p.getBoolean("motionTilt", true); depth = p.getBoolean("depthCards", true)
@@ -55,12 +58,14 @@ object AppSettings {
         effects = p.getString("cardstashy-effects", null).takeIf { it in EFFECTS } ?: "balanced"
         matchEffects = p.getString("cardstashy-match-effects", null).takeIf { it in TableFeel.MODES } ?: "full"
         askTriggerOrder = p.getBoolean("askTriggerOrder", false); stopToRespond = p.getBoolean("stopToRespond", false)
+        matchVibration = p.getBoolean("matchVibration", true)
     }
 
     fun set(key: String, on: Boolean) {
         when (key) {
             "glass" -> glass = on; "finishEffects" -> finish = on; "haptics" -> haptics = on; "appSounds" -> appSounds = on; "presence" -> presence = on; "depthCards" -> depth = on
             "askTriggerOrder" -> askTriggerOrder = on; "stopToRespond" -> stopToRespond = on
+            "matchVibration" -> matchVibration = on
             "motionTilt" -> { tilt = on; PackSfx.tilt = on }
             "packSound" -> { sound = on; PackSfx.on = on }
         }

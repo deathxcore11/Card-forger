@@ -360,6 +360,12 @@ internal object TableFeel {
         return null
     }
 
+    // F9, vibration (not drawn): a land is a light tick, a landing by its weight, a charge's hit medium, the winning hit heavy
+    // with a long fade, the clock stop one soft pulse per loyalty piece. Its own setting, on by default; never in Reduced.
+    fun vibrates(on: Boolean = AppSettings.matchVibration, setting: String = AppSettings.matchEffects): Boolean = on && mode(setting) != Mode.REDUCED
+    /** The vibration for one of the table's felt moments ("light", "medium", "heavy", "win", "soft"), by the app's haptics name. */
+    fun vibration(kind: String): String = when (kind) { "light" -> "pack-deal"; "heavy" -> "pack-rumble"; "win" -> "table-win"; "soft" -> "table-soft"; else -> "pack-reveal" }
+
     // F8, always alive: specks in the air (the mat's kind), creature tiles that breathe, rims that pulse. Nothing here moves a
     // card's place or what can be tapped; it stops with the frame clock when the app is in the background.
     const val AIR_COUNT = 54

@@ -333,12 +333,18 @@ class Battlefield {
         if (jolts.isNotEmpty()) jolts.removeAll { ms - it.t0 > it.ms }
         if (!started) { started = true; if (items.isNotEmpty()) { val base = ms; items.forEach { it.t0 += base }; focalEnd += base } }
         now.longValue = ms
-        onImpact?.let { feel -> for (it in items) if (it !in felt) {
+        onImpact?.let { feel ->
+            // F9: one soft pulse as each piece leaves the loyalty shield.
+            for (it in items) if (it.kind == Fx.CLOCK && it.p(ms) >= 0f) { val off = TableFeel.clockPieces(it.p(ms) * it.dur, it.points, it.dur); if (off > it.trail + 1) { it.trail = off - 1; feel("soft") } }
+            for (it in items) if (it !in felt) {
             val kind = when {
+                // F9: the winning hit, heavy with a long fade, as the orb breaks.
+                it.kind == Fx.WIN && it.player != null && ms >= it.t0 -> "win"
                 it.kind == Fx.BLOCK && it.p(ms) >= .1f -> "light"
                 it.kind == Fx.LUNGE && ms - it.t0 >= Strike.hit(Strike.face(it)) -> if (Strike.face(it)) "heavy" else "medium"
                 // A landing is felt: light for a land, medium for anything else (a rare's drop and a commander's slam have their own below).
-                it.kind == Fx.IMPACT && it.entrance <= 0 && ms >= it.t0 -> if (it.land) "light" else "medium"
+                // F9, by weight step: a light creature (or any other permanent) light, a medium one medium; a heavy one is felt at its own landing below.
+                it.kind == Fx.IMPACT && it.entrance <= 0 && ms >= it.t0 -> if (it.land || it.points == 0) "light" else if (it.points == 1) "medium" else if (heavies.any { h -> h.card == it.card }) null else "heavy"
                 it.kind == Fx.HEAVY && it.p(ms) * it.baseMs >= TableFeel.HEAVY_DROP_MS -> "heavy"
                 it.kind == Fx.ARRIVE && it.entrance == 1 && it.p(ms) * it.dur >= 650f -> "light"
                 it.kind == Fx.ARRIVE && it.entrance == 2 && it.p(ms) * it.dur >= E2_SLAM + 150f -> "heavy"
@@ -825,6 +831,8 @@ class Battlefield {
                 val wait = if (heavy != null && lvl == 0) TableFeel.HEAVY_DROP_MS.toLong() else 0L
                 arrivals += FxItem(Fx.IMPACT, 1, IMPACT_MS, card = id, mine = mine, tone = tone, land = c.isLand, power = if (lvl == 1) base * 1.3f else base,
                     entrance = if (low) -1 else lvl, delay = came.ms + wait + when (lvl) { 2 -> (E2_SLAM + 150f + 110f).toLong(); 1 -> 650L; else -> 0L }).sounds(landingCue(c))
+                    // F9: the landing is felt by its weight step (Forge's power: 1 to 2 light, 3 to 4 medium, 5 or more heavy).
+                    .also { it.points = if (c.isCreature) TableFeel.weight(c.power).ordinal else 0 }
                 arrivals += when (lvl) {
                     2 -> FxItem(Fx.ARRIVE, 2, ENTRANCE2_MS, card = id, mine = mine, tone = tone, entrance = 2, delay = came.ms,
                         title = c.name + "\n" + (if (mine) "Your commander" else "Their commander"))
@@ -1205,7 +1213,8 @@ private fun lerpO(a: Offset, b: Offset, t: Float) = Offset(a.x + (b.x - a.x) * t
 internal fun FxDriver(fx: Battlefield, st: MatchState) {
     val anchors = LocalAnchors.current
     val view = androidx.compose.ui.platform.LocalView.current
-    SideEffect { fx.onImpact = { kind -> if (AppSettings.haptics) Feel.perform(view, when (kind) { "light" -> "pack-deal"; "heavy" -> "pack-rumble"; else -> "pack-reveal" }) } }
+    // Living table F9: the match's vibration has its own setting ("Match vibration"), and is off in Reduced.
+    SideEffect { fx.onImpact = { kind -> if (TableFeel.vibrates()) Feel.perform(view, TableFeel.vibration(kind), own = true) } }
     val cue = LocalTableCue.current
     val reduced = androidx.compose.runtime.remember { Playmats.reduced(view.context) }
     val plan = LocalTablePlan.current
