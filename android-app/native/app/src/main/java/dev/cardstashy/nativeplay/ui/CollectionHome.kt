@@ -315,6 +315,10 @@ private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (
     var root by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var pillTop by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
+    // C3: the Card of the Day and the deck covers show together, not one by one.
+    val reveal = remember(m.game) { TopReveal() }
+    LaunchedEffect(reveal) { delay(reveal.capMs); reveal.giveUp() }
+    androidx.compose.runtime.CompositionLocalProvider(LocalTopReveal provides reveal) {
     Box(modifier.verticalScroll(rememberScrollState()).onGloballyPositioned { root = it }) {
         // hh-art + hh-shade: 590 tall, starting 124 above the search pill, so it runs on under the value line.
         DailyArt(m.daily?.art, with(density) { pillTop.toDp() } + 466.dp, pokemon = m.daily?.crop == "pokemon", sources = m.daily?.sources.orEmpty())
@@ -345,6 +349,39 @@ private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (
             }
         }
     }
+    }
+}
+
+/**
+ * C3: [key]'s picture takes part in the top's one reveal while [painter] is still loading; the opacity its Image draws at
+ * (0 until the whole top is in, then 1 after one [TopReveal.FADE_MS] fade, or at once when everything was already in memory).
+ */
+@Composable
+private fun revealAlpha(key: String?, painter: androidx.compose.ui.graphics.painter.Painter?): androidx.compose.runtime.State<Float> {
+    val gate = LocalTopReveal.current
+    val async = painter as? coil3.compose.AsyncImagePainter
+    if (gate != null && key != null && async != null) {
+        val st = async.state.collectAsState().value
+        // Said while the page is first built (not a frame later), so no picture is ever drawn and then hidden again.
+        remember(gate, key) { gate.expect(key) }
+        androidx.compose.runtime.DisposableEffect(gate, key) { onDispose { gate.dropped(key) } }
+        // A picture that cannot be loaded holds nothing up either.
+        if (st is coil3.compose.AsyncImagePainter.State.Success || st is coil3.compose.AsyncImagePainter.State.Error) SideEffect { gate.landed(key) }
+    }
+    val open = gate?.open ?: true
+    return androidx.compose.animation.core.animateFloatAsState(if (open) 1f else 0f,
+        if (!open || gate?.instant != false || Motion.still) androidx.compose.animation.core.snap() else androidx.compose.animation.core.tween(TopReveal.FADE_MS), label = "top reveal")
+}
+
+/** C3: a slow band of light across a glass tile while its picture is still to come. Still when motion is off. */
+@Composable
+private fun Sheen(modifier: Modifier) {
+    val t = if (Motion.still) .5f else androidx.compose.animation.core.rememberInfiniteTransition(label = "sheen").animateFloat(0f, 1f,
+        androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(2600, easing = androidx.compose.animation.core.LinearEasing)), label = "sheen").value
+    Box(modifier.drawBehind {
+        val w = size.width * .45f; val x = -w + (size.width + 2 * w) * t
+        drawRect(Brush.linearGradient(listOf(Color.Transparent, Color(0x12FFFFFF), Color.Transparent), Offset(x - w, 0f), Offset(x + w, size.height)))
+    })
 }
 
 /**
@@ -369,9 +406,10 @@ private fun DailyArt(url: String?, height: Dp, pokemon: Boolean = false, sources
     val raw = if (sources.size > 1) firstOf(sources) else if (pokemon) url?.takeIf { it.isNotBlank() }?.let { heroPainter(homeArt(it)) } else boxed?.painter
     val fit = boxed?.fit ?: Modifier
     val p = if (pokemon && raw != null) remember(raw) { PkArtCrop(raw) } else raw
+    val seen = revealAlpha(url?.takeIf { it.isNotBlank() }?.let { "daily|$it" }, raw)
     Box(Modifier.fillMaxWidth().height(height)) {
         // opacity .78, object-position 50% 32%, mask: #000 5%, #000e 40%, #0006 74%, transparent.
-        if (p != null) Image(p, null, Modifier.matchParentSize().then(fit).graphicsLayer { alpha = .78f; compositingStrategy = CompositingStrategy.Offscreen }
+        if (p != null) Image(p, null, Modifier.matchParentSize().then(fit).graphicsLayer { alpha = .78f * seen.value; compositingStrategy = CompositingStrategy.Offscreen }
             .drawWithContent {
                 drawContent()
                 drawRect(Brush.verticalGradient(.05f to Color.Black, .40f to Color.Black.copy(alpha = .933f), .74f to Color.Black.copy(alpha = .4f), 1f to Color.Transparent), blendMode = BlendMode.DstIn)
@@ -623,12 +661,16 @@ private fun TileFrame(art: String?, lead: Boolean, minH: Dp, modifier: Modifier,
     val ready = p != null && (loading !is coil3.compose.AsyncImagePainter || state is coil3.compose.AsyncImagePainter.State.Success)
     var shown by remember { mutableStateOf<String?>(null) }
     if (ready && shown != art) SideEffect { shown = art }
+    // C3: until the whole top is in, the tile is glass with a slow sheen; then its cover shows with the others.
+    val gate = LocalTopReveal.current
+    val seen = revealAlpha(art?.let { "tile|$label|$it" }, raw)
     val heldBox = if (pk) null else shown?.takeIf { !ready && it != art }?.let { boxArt(homeArt(it)) }
     val held = if (pk) shown?.takeIf { !ready && it != art }?.let { heroPainter(homeArt(it)) }?.let { PkArtCrop(it) } else heldBox?.painter
     Box(modifier.heightIn(min = minH).shadow(14.dp, shape, ambientColor = Color.Black.copy(alpha = .35f), spotColor = Color.Black.copy(alpha = .85f))
         .clip(shape).background(cssGradient(135f, 0f to Color(0xFF252936), 1f to Color(0xFF141720))).clickable(onClick = onClick).semantics { contentDescription = label }) {
         if (held != null) Image(held, null, Modifier.matchParentSize().then(heldBox?.fit ?: Modifier), contentScale = ContentScale.Crop)
-        if (p != null) Image(p, null, Modifier.matchParentSize().then(boxed?.fit ?: Modifier), contentScale = ContentScale.Crop)
+        if (p != null) Image(p, null, Modifier.matchParentSize().then(boxed?.fit ?: Modifier).graphicsLayer { alpha = seen.value }, contentScale = ContentScale.Crop)
+        if (gate != null && !gate.open && art != null) Sheen(Modifier.matchParentSize())
         // .home-personal-art:after: linear-gradient(0deg, #0b0e15f7, #0b0e1590 55%, #0b0e1522)
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0x220B0E15), .45f to Color(0x900B0E15), 1f to Color(0xF70B0E15))))
         Box(Modifier.matchParentSize().drawBehind { drawRect(Color(0x1FFFFFFF), Offset.Zero, Size(size.width, 1.dp.toPx())) }
