@@ -129,8 +129,11 @@ fun CardFace(painter: androidx.compose.ui.graphics.painter.Painter, look: Foil.L
     // The 3D layer sits inside the foil (foil/DepthLayer.kt): the foil wears the moved card, so every recipe stays as it was.
     val foil = Modifier.finish(worn, tilt).depth(worn, tilt)
     if (!crop) Box(modifier, contentAlignment = alignment) {
-        Box(Modifier.aspectRatio(ratio).clip(shape).background(Color(0xFF1F232B)).then(foil)) {
-            Image(painter, desc, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
+        Box(Modifier.aspectRatio(ratio).clip(shape).background(Color(0xFF1F232B))) {
+            // The plain picture sits under the foiled one. A phone whose graphics chip cannot run a foil program draws nothing for
+            // that layer (Randall 12 Nov, 0.4.65: every Yu-Gi-Oh! foil card was an empty frame); the card must still be there.
+            if (worn != null) Image(painter, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
+            Box(Modifier.fillMaxSize().then(foil)) { Image(painter, desc, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds) }
         }
     } else Box(modifier.clip(shape).background(Color(0xFF1F232B))) {
         // A cropped tile: the plane is still the WHOLE card, sized to cover the tile and centred, so the foil's card-space boxes
@@ -140,8 +143,9 @@ fun CardFace(painter: androidx.compose.ui.graphics.painter.Painter, look: Foil.L
             val (pw, ph) = if (w.toFloat() / h > ratio) w to (w / ratio).toInt() else (h * ratio).toInt() to h
             val placeable = m.measure(androidx.compose.ui.unit.Constraints.fixed(pw, ph))
             layout(w, h) { placeable.place((w - pw) / 2, (h - ph) / 2) }
-        }.then(foil)) {
-            Image(painter, desc, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
+        }) {
+            if (worn != null) Image(painter, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
+            Box(Modifier.fillMaxSize().then(foil)) { Image(painter, desc, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds) }
         }
     }
 }

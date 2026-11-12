@@ -65,4 +65,16 @@ class YgoFoilTest {
             assertTrue("$name shader has reversed smoothstep edges: $bad", bad.isEmpty())
         }
     }
+    /** The graphics chip's language keeps every name that starts with "gl_" for itself, and the renderer adds "_S1_c0" and the like
+     *  to each helper's name when it builds the program. A helper called gl() became gl_S1_c0, the phone refused the whole program
+     *  and drew NOTHING for every Yu-Gi-Oh! foil card (Randall 12 Nov, 0.4.65; reproduced on a software graphics chip: "name
+     *  'gl_S1_c0' is reserved", all pixels empty). The app's own compile check never sees this. No foil shader may name anything gl. */
+    @Test fun noShaderNameBecomesReservedOnTheGraphicsChip() {
+        val named = Regex("""\b(?:float[234]?|half[34]?|int|bool|void)\s+(gl\w*)\b""")
+        for ((name, src) in listOf("ygo" to YgoFoil.AGSL, "ptcg" to dev.cardstashy.nativeplay.foil.PtcgFoil.AGSL, "depth" to dev.cardstashy.nativeplay.foil.Depth.AGSL,
+            "mtg" to dev.cardstashy.nativeplay.ui.Foil.AGSL)) {
+            val bad = named.findAll(src).map { it.groupValues[1] }.filter { it == "gl" || it.startsWith("gl_") }.toList()
+            assertTrue("$name shader names $bad: reserved once the renderer adds its suffix", bad.isEmpty())
+        }
+    }
 }

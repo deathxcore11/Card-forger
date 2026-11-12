@@ -397,7 +397,7 @@ float3 overInk(float3 base,float3 F,float cover){float3 T=mix(base,base/max(max(
  // Most of a foil's reflection is broadband metal; only part of it is the grating's hue, so inks keep their own colour.
  float3 Fm=mix(float3(dot(F,float3(.2126,.7152,.0722))),F,.55);float3 o=mix(base,shoulder(T*Fm*1.35),clamp(cover,0.,1.));
  float lb=dot(base,float3(.2126,.7152,.0722)),lo=dot(o,float3(.2126,.7152,.0722));return lo<lb*.8?min(o*(lb*.8/max(lo,1e-4)),float3(1.)):o;}
-float gl(float2 uv){float2 t=(uv-u_name.xy)/(u_name.zw-u_name.xy);if(t.x<0.||t.y<0.||t.x>1.||t.y>1.)return 0.;return u_glyph.eval(t*u_gmap).r;}
+float glyphAt(float2 uv){float2 t=(uv-u_name.xy)/(u_name.zw-u_name.xy);if(t.x<0.||t.y<0.||t.x>1.||t.y>1.)return 0.;return u_glyph.eval(t*u_gmap).r;}
 half4 main(float2 p){
  float2 uv=p/u_size;half4 src=u_card.eval(p);float a=src.a;if(a<=0.)return src;
  float3 base=toLin(float3(src.rgb)/a);float4 mk=mapAt(uv),rl=relAt(uv);
@@ -434,9 +434,9 @@ half4 main(float2 p){
    float3 metal=u_stars>3.5?float3(1.,.8,.42):float3(1.,.97,.9);float3 sheen=u_stars>3.5?metal*length(dif)*.35:dif*(u_stars>2.5?.42:.3);
    outC+=(1.-outC)*(metal*sp*.85+sheen*(.45+.55*spot))*sc;}}
  // Hot-stamped name: letters pressed into the card (height = -coverage), lit as metal by the same light.
- if(u_metal>.5&&name>.5){float c=gl(uv);if(c>0.){
+ if(u_metal>.5&&name>.5){float c=glyphAt(uv);if(c>0.){
   float2 dg=1.5/u_gmap*(u_name.zw-u_name.xy);
-  float dx=gl(uv+float2(dg.x,0.))-gl(uv-float2(dg.x,0.)),dy=gl(uv+float2(0.,dg.y))-gl(uv-float2(0.,dg.y));
+  float dx=glyphAt(uv+float2(dg.x,0.))-glyphAt(uv-float2(dg.x,0.)),dy=glyphAt(uv+float2(0.,dg.y))-glyphAt(uv-float2(0.,dg.y));
   float3 n=normalize(float3(dx*1.6,dy*1.6,1.));
   float3 toL=float3((lp-uv)*float2(1.,u_aspect),.45),Ln=normalize(toL),Hn=normalize(Ln+float3(0.,0.,1.));
   float sp2=exp(-dot(toL.xy,toL.xy)/.30),shade=clamp(dot(n,Ln)*.6+.4,.15,1.),spec=pow(max(dot(n,Hn),0.),48.),wall=clamp(length(float2(dx,dy)),0.,1.);
