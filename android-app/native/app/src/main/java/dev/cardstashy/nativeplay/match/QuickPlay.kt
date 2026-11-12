@@ -74,7 +74,9 @@ object QuickPlay {
     val ForgeFormats = listOf("Standard", "Pioneer", "Modern", "Legacy", "Vintage", "Pauper", "Commander")
 
     sealed interface Setup {
-        data class Ready(val input: String, val you: Plate, val cpu: Plate, val rows: List<Pair<String, JsonObject>>, val faces: List<String>, val known: Boolean) : Setup
+        data class Ready(val input: String, val you: Plate, val cpu: Plate, val rows: List<Pair<String, JsonObject>>, val faces: List<String>, val known: Boolean,
+            /** L4: the CPU deck's card names, so the gate can wait for the ones it plays first. */
+            val cpuNames: List<String> = emptyList()) : Setup
         data class Unknown(val names: List<String>) : Setup
         data class Failed(val reason: String) : Setup
     }
@@ -131,7 +133,7 @@ object QuickPlay {
             forgeInput(format, you, cpuDeck, it.level, startingPlayer = if (lesson != null) "first" else "random", quick = it.quick, setup = lesson) } ?: quickInput(format, you, cpuDeck),
             Plate(pick.name, "You", pick.face), Plate(cpuName, "CPU · $format", faceOf(cpuDeck), (pick as? Pick.Table)?.takeIf { it.quick }?.matchup ?: ""),
             // A deck played before (V5): your rows only; the CPU's list is a fresh pick each match.
-            youRows + cpuRows, faces, CardArt.knowsRows(youRows))
+            youRows + cpuRows, faces, CardArt.knowsRows(youRows), cpuRows.map { it.first })
     }
 
     /** Finds and decodes both decks' pictures; returns when done or when [budgetMs] runs out (the table then fills in as they land). */
@@ -152,8 +154,12 @@ object QuickPlay {
         CardArt.resolveMatch(s.rows)
         val tLookup = SystemClock.elapsedRealtime() - t0
         val names = CardArt.cheapestFirst(s.rows.map { it.first })
-        val first = (s.faces + names.filter { dev.cardstashy.nativeplay.play.Decks.isBasicLand(it) }).distinct()
-        val n1 = CardArt.warm(context, first, left(), crops = s.faces, detach = true)
+        // L4 (Randall 12 Nov: "in a quick match the art for opponents are usually missing"): the gate also waits for what the CPU
+        // plays first, its lands and every card of mana value 3 or less, face decoded and battlefield crop on disk. 8 s at most.
+        val early = earlyPlays(s.cpuNames)
+        val first = firstScreen(s.faces, names, early)
+        val n1 = CardArt.warm(context, first, minOf(left(), EARLY_CAP_MS), crops = s.faces, diskCrops = early, detach = true)
+        if (n1 < 0) Log.i(TAG, "art gate: early-plays cap of $EARLY_CAP_MS ms reached with ${first.size} first cards asked (${early.size} CPU early plays); the rest loads behind")
         val tFirst = SystemClock.elapsedRealtime() - t0
         val firstFrom = CardArt.lastWarm
         // Then, behind: every face and battlefield crop of both decks (not awaited; the opening hand asked below joins it).
@@ -164,6 +170,17 @@ object QuickPlay {
         Log.i(TAG, "art gate: ${s.rows.size} rows, lookup $tLookup ms, first screen ${first.size} cards loaded=$n1 at $tFirst ms ($firstFrom), " +
             "opening hand ${hand?.size ?: 0} loaded=$n2 (${if (n2 != 0) CardArt.lastWarm else "-"}), gate ${SystemClock.elapsedRealtime() - t0} ms")
     }
+
+    /** L4: how long the versus screen waits for the first screen and the CPU's early plays, with a connection. */
+    const val EARLY_CAP_MS = 8_000L
+    /** L4: the highest mana value the gate waits for in the CPU's deck. */
+    const val EARLY_COST = 3
+    /** L4: of the CPU's deck, what it can play in its first turns: its lands and every card of mana value [EARLY_COST] or less, cheapest first. A card with no value on record is not waited for. */
+    internal fun earlyPlays(cpuNames: Collection<String>): List<String> = CardArt.cheapestFirst(cpuNames).filter { n ->
+        dev.cardstashy.nativeplay.play.Decks.isBasicLand(n) || CardArt.typeLine(n)?.substringBefore(" // ")?.contains("Land") == true || (CardArt.manaValue(n) ?: Int.MAX_VALUE) <= EARLY_COST }
+    /** What the gate waits for before the opening hand: both covers, both decks' basic lands, then the CPU's [early] plays. */
+    internal fun firstScreen(faces: List<String>, names: List<String>, early: List<String>): List<String> =
+        (faces + names.filter { dev.cardstashy.nativeplay.play.Decks.isBasicLand(it) } + early).distinct()
 
     suspend fun warmArt(context: Context, s: Setup.Ready, budgetMs: Long) {
         val t0 = SystemClock.elapsedRealtime()
