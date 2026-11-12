@@ -24,6 +24,13 @@ class CheapestFirstTest {
         assertEquals(listOf("Mountain", "Steam Vents", "Memnite", "Lightning Bolt", "Counterspell", "Shivan Dragon", "Old Card"), got)
     }
 
+    /** L7: the gate's log says whether two decks of faces fit the memory cache. */
+    @Test fun theCacheNoteSaysFitsOrShortBy() {
+        assertEquals(1_327_360L, CardArt.FACE_BYTES)
+        assertEquals("art memory: 10.0 of 128.0 MB used, 80 faces need 101.3 MB, fits", CardArt.cacheNote(80, 10L shl 20, 128L shl 20))
+        assertEquals("art memory: 60.0 of 64.0 MB used, 80 faces need 101.3 MB, short by 37.3 MB", CardArt.cacheNote(80, 60L shl 20, 64L shl 20))
+    }
+
     @Test fun theManaValueIsKeptInTheIndexFileBesideAnOlderRow() {
         CardArt.recordForTest("Lightning Bolt", "u3", null, null, 1)
         CardArt.recordForTest("Old Card", "u6", "Creature — Bear", null, null)

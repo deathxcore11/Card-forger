@@ -168,6 +168,7 @@ object QuickPlay {
         val hand = openingHand?.let { f -> kotlinx.coroutines.withTimeoutOrNull(left()) { f.first { it != null } } }
         val n2 = if (hand.isNullOrEmpty()) 0 else CardArt.warm(context, hand, left(), crops = hand, detach = true)
         s.faces.forEach { CardArt.decodeAhead(it) }
+        Log.i(TAG, CardArt.cacheNote(names.size))
         Log.i(TAG, "art gate: ${s.rows.size} rows, lookup $tLookup ms, first screen ${first.size} cards loaded=$n1 at $tFirst ms ($firstFrom), " +
             "opening hand ${hand?.size ?: 0} loaded=$n2 (${if (n2 != 0) CardArt.lastWarm else "-"}), gate ${SystemClock.elapsedRealtime() - t0} ms")
     }

@@ -420,6 +420,19 @@ object CardArt {
     /** The same for the last background warm (progress = false). */
     @Volatile var lastBehind = ""
 
+    /** Loading screens L7: a decoded card face (488x680, four bytes a pixel) in bytes. */
+    const val FACE_BYTES = 488L * 680L * 4L
+    /**
+     * L7, the measurement: what [faces] decoded faces need against a memory cache of [maxBytes], as one log line. "short by" means
+     * warmed faces are being dropped, which is the brief's guess; nothing is changed until a device log shows it.
+     */
+    internal fun cacheNote(faces: Int, usedBytes: Long, maxBytes: Long): String {
+        val need = faces * FACE_BYTES; fun mb(b: Long) = "%.1f".format(java.util.Locale.US, b / 1048576.0)
+        return "art memory: ${mb(usedBytes)} of ${mb(maxBytes)} MB used, $faces faces need ${mb(need)} MB, " + (if (need > maxBytes) "short by ${mb(need - maxBytes)} MB" else "fits")
+    }
+    /** L7: the note for this match's distinct faces, for the gate's log. */
+    fun cacheNote(faces: Int): String = if (!::loader.isInitialized) "art memory: no loader" else loader.memoryCache.let { m -> cacheNote(faces, m?.size ?: 0L, m?.maxSize ?: 0L) }
+
     /** How far the match's art gate has got (0..1), for the matchup screen's "Preparing the table" bar. */
     val warmProgress = kotlinx.coroutines.flow.MutableStateFlow(0f)
 
