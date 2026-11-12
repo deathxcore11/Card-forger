@@ -55,4 +55,14 @@ class YgoFoilTest {
         assertNull(CardFinish.ygo("Common", "LOB-EN001", "", "Normal Monster", "x"))
         assertNull(CardFinish.ygo("Ultra Rare", "RD/KP01", "", "Rush Duel Effect Monster", "x"))
     }
+    /** smoothstep(edge0, edge1, x) with edge0 >= edge1 is undefined in the shading language: a phone's graphics driver may answer
+     *  anything, and one bad number blanks the whole card. The prism pattern (Prismatic Secret Rare, the one rarity whose picture
+     *  stayed empty in Randall's 12 Nov recording) was the only place that wrote it that way. No foil shader may. */
+    @Test fun noShaderAsksForAnUndefinedSmoothstep() {
+        val call = Regex("""smoothstep\(\s*(-?[0-9]*\.?[0-9]+)\s*,\s*(-?[0-9]*\.?[0-9]+)\s*,""")
+        for ((name, src) in listOf("ygo" to YgoFoil.AGSL, "ptcg" to dev.cardstashy.nativeplay.foil.PtcgFoil.AGSL, "depth" to dev.cardstashy.nativeplay.foil.Depth.AGSL)) {
+            val bad = call.findAll(src).filter { it.groupValues[1].toFloat() >= it.groupValues[2].toFloat() }.map { it.value }.toList()
+            assertTrue("$name shader has reversed smoothstep edges: $bad", bad.isEmpty())
+        }
+    }
 }

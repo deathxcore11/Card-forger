@@ -371,7 +371,7 @@ float3 foil(float pat,float tint,float2 uv,float3 L,float3 V,float3 H,float spot
  float fine=max(30.,min(210.,u_px.x/2.7)),prism=max(12.,min(72.,u_px.x/7.9)),dots=max(10.,min(64.,u_px.x/8.9)),flake=max(16.,min(110.,u_px.x/5.2));
  if(pat<1.5){d=1350.;lines=.5+.5*sin(px.x*2.0944);mirror=.7;ex=14.;}
  else if(pat<2.5){float2 r=float2(uv.x+uv.y*u_aspect,uv.x-uv.y*u_aspect);float2 j=hash2(floor(r*float2(90.,22.)));float a=PI*.25+(j.x-.5)*.16;g=float2(cos(a),-sin(a));d=1250.+j.y*450.;lines=.5+.5*sin((px.x+px.y)*1.5708);mirror=.35;}
- else if(pat<3.5){float2 c=floor(q*prism),f=fract(q*prism);g=mod(c.x+c.y,2.)<.5?float2(1.,0.):float2(0.,1.);d=1150.+hash(c)*600.;lines=smoothstep(0.,.12,f.x)*smoothstep(0.,.12,f.y)*smoothstep(1.,.88,f.x)*smoothstep(1.,.88,f.y);mirror=.3;}
+ else if(pat<3.5){float2 c=floor(q*prism),f=fract(q*prism);g=mod(c.x+c.y,2.)<.5?float2(1.,0.):float2(0.,1.);d=1150.+hash(c)*600.;lines=smoothstep(0.,.12,f.x)*smoothstep(0.,.12,f.y)*(1.-smoothstep(.88,1.,f.x))*(1.-smoothstep(.88,1.,f.y));mirror=.3;}
  else if(pat<4.5){float3 w=voro(q*fine);float2 j=mix(hash2(w.xy*1.7),float2(vnoise(q*24.),vnoise(q*24.+5.1)),.6);float a=j.x*PI;g=float2(cos(a),sin(a));d=1000.+j.y*900.;float gk=pow(max(dot(normalize(float3((hash2(w.xy*3.1)-.5)*.5,1.)),H),0.),400.)*twinkle(w.xy);glint=gk*1.8+gk*exp(-sq(seedDist(q*fine)/.45))*.9;mirror=.25;}
  else if(pat<7.5){g=normalize(float2(-stroke.y,stroke.x)+1e-4);mirror=.45;}
  else if(pat<8.5){float3 w=voro(q*18.);float2 j=hash2(w.xy);float a=j.x*PI;g=float2(cos(a),sin(a));d=1100.+j.y*700.;seam=smoothstep(0.,.06,w.z);mirror=.4;}
