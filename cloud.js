@@ -208,6 +208,7 @@ export async function initCloud(h, { createClient: factory, startupTimeoutMs=120
     history.replaceState(null, "", location.pathname + (callbackQuery.size ? '?' + callbackQuery : '') + (hash || ''));
   }
   await changeAccount(data?.session?.user || null);
+  if (user && !hadCallbackError && callbackCode) newSignIn();
   if (user && !hadCallbackError && callbackCode && !recoveringPassword) authNotice = 'You’re signed in. Your account is ready.';
   if (hadCallbackError || authNotice) { hooks.passwordRecovery?.(); hooks.changed(); }
   document.addEventListener("visibilitychange", () => {
@@ -263,7 +264,9 @@ function passwordAuth() {
   authNotice = "";
   return createPasswordAuth(client.auth, redirectTo);
 }
-export const signInPassword = async (email,password) => {const data=await passwordAuth().login(email,password);await accountSwitch;return data;};
+// A new sign-in lifts the Android app reminder's "Not now" (see app-update.js).
+const newSignIn=()=>{try{const k='cardstashy-app-update-v1',v=JSON.parse(localStorage.getItem(k)||'{}')||{};if(v.getAppLaterAt)localStorage.setItem(k,JSON.stringify({...v,getAppLaterAt:0}));}catch{}};
+export const signInPassword = async (email,password) => {const data=await passwordAuth().login(email,password);await accountSwitch;newSignIn();return data;};
 export const createAccount = (email,password,confirm) => passwordAuth().signup(email,password,confirm);
 export const requestPasswordReset = email => passwordAuth().reset(email);
 export const resendConfirmation = email => passwordAuth().resend(email);
