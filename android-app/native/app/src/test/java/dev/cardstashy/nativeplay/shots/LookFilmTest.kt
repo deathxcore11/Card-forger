@@ -57,15 +57,16 @@ class LookFilmTest {
     private val fx = Battlefield()
     private val anchors = Anchors()
 
-    @After fun back() { AppSettings.applyMatchEffects("full") }
+    @After fun back() { AppSettings.applyMatchEffects("full"); TableFeel.mat = null }
 
-    private fun board() {
+    private fun board(mat: String = "charcoal-table") {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         TableEmotes.destroy()
+        TableFeel.mat = mat
         rule.setContent {
             CompositionLocalProvider(LocalAnchors provides anchors, LocalBattlefield provides fx) {
                 Box(Modifier.fillMaxSize().background(Palette.Night)) {
-                    PlaymatScene(Modifier.fillMaxSize())
+                    PlaymatScene(mat, Modifier.fillMaxSize())
                     ForgeBoard(st, live = true, intents = TableIntents(), selectedHand = null, onSelectHand = {}, onInspect = {}, onMenu = {}, handOrder = emptyList(), onHandOrder = {})
                     FxLayer(force = true)
                 }
@@ -102,6 +103,36 @@ class LookFilmTest {
             FxItem(Fx.LIFE, 3, 950, player = base.cpu.id, toKey = "orb${base.cpu.id}", tone = Color(0xFFFF5A4A), power = .5f).also { it.label = "−3"; it.points = 3; it.t0 = after },
         ), after + 950) { ms -> lose(base, base.cpu.id, if (ms < after) 0 else minOf(3, ((ms - after) / gap + 1).toInt())) }
     }
+
+    @Test fun heavyLanding() {
+        assumeTrue(want == "all" || want == "heavy")
+        board("ashen-forge")
+        val bears = base.me.battlefield.first { it.isCreature && it.id != base.me.battlefield.first { c -> c.isCreature }.id }
+        val others = base.me.battlefield.map { it.id }.filter { it != bears.id }.toSet()
+        film("heavy", listOf(FxItem(Fx.HEAVY, 1, (TableFeel.HEAVY_DROP_MS + TableFeel.HEAVY_AFTER_MS).toLong(), card = bears.id, mine = true,
+            tone = dev.cardstashy.nativeplay.ui.frameTone(dev.cardstashy.nativeplay.ui.cardColors(bears)).first, ids = others, note = TableFeel.profile("ashen-forge").mark)), 900)
+    }
+
+    @Test fun winningHit() {
+        assumeTrue(want == "all" || want == "win")
+        board("ashen-forge")
+        val look = TableFeel.profile("ashen-forge")
+        film("win", listOf(FxItem(Fx.WIN, 2, TableFeel.WIN_HOLD_MS, player = base.cpu.id, mine = true, toKey = "orb${base.cpu.id}", tone = look.win, caster = look.winHi, ids = base.players.map { it.id }.toSet())), 1800)
+    }
+
+    /** A burn spell at a player: the streak off the stack (240 ms), then the life loss. [you]: at you, with the red edges. */
+    private fun burn(name: String, you: Boolean) {
+        board()
+        val who = if (you) base.viewer else base.cpu.id
+        val dp = anchors.rects.getValue("orb$who").let { rule.activity.resources.displayMetrics.density }
+        val stack = androidx.compose.ui.geometry.Rect(760 * dp, 150 * dp, 830 * dp, 240 * dp)
+        film(name, listOf(
+            FxItem(Fx.FIRE, 2, dev.cardstashy.nativeplay.ui.FIRE_MS, mine = !you, from = stack, toKey = "orb$who", tone = Color(0xFFE8604A)),
+            FxItem(Fx.LIFE, 3, 950, player = who, toKey = "orb$who", tone = Color(0xFFFF5A4A), power = .5f).also { it.label = "−3"; it.points = 3; it.t0 = dev.cardstashy.nativeplay.ui.FIRE_MS },
+        ), dev.cardstashy.nativeplay.ui.FIRE_MS + 950) { ms -> lose(base, who, if (ms < 240) 0 else minOf(3, ((ms - 240) / lifeGap(3) + 1).toInt())) }
+    }
+    @Test fun burnAtTheCpu() { assumeTrue(want == "all" || want == "burn-cpu"); burn("burn-cpu", false) }
+    @Test fun burnAtYou() { assumeTrue(want == "all" || want == "burn-you"); burn("burn-you", true) }
 
     @Test fun chargeAtABlocker() {
         assumeTrue(want == "all" || want == "charge-clash")

@@ -199,8 +199,8 @@ internal class FxItem(
     var marks = 0
     /** P5: a life loss's points, ticked off the pill one by one from this effect's start. On a lunge at a player: the damage it brings (5 or more sounds the big hit). */
     var points = 0
-    /** F6: this life loss (or this damage) came with a charge, which draws the hit: the loss adds its number and nothing else. */
-    var charged = false
+    /** F6: this life loss (or this damage) is drawn the living table's way: its number, and one clean hit. A charge at the same player (or card) draws that hit; a loss with no charge [bursts] it itself. */
+    var charged = false; var bursts = false
     /** F6: the last trail sparks this charge has left behind it (a pair every [TableFeel.CHARGE_TRAIL_EVERY_MS] of the dash). */
     var trail = -1
     /** P6: of a spell's streaks (one per target), the one that also draws the flash on the stack. */
@@ -1422,9 +1422,15 @@ internal fun FxLayer(force: Boolean = false) {
                         val at = if (it.side == 0) r.center.copy(y = r.top + r.height * .3f) else if (r.center.y < size.height / 2) Offset(r.left - r.width * .2f, r.top - r.height * .15f) else Offset(r.right + r.width * .2f, r.bottom + r.height * .05f)
                         bigNumber(tm, it.label, p, at, it.tone, if (size.height < 500.dp.toPx()) 40f else 52f) }
                     Fx.LIFE -> rect(it.toKey)?.let { r ->
-                        if (it.level == 3 && !it.charged && TableFeel.charged(fx.low) && fx.items.any { l -> l.kind == Fx.LUNGE && l.toKey == it.toKey }) it.charged = true
-                        if (it.level == 3) faceHit(fx, it, p, r, fx.low, quiet = it.charged) else glowRing(r, it.tone, .8f * (1f - p), 6.dp.toPx(), round = true)
-                        // F6: a charge's number pops on the struck picture and rises 14 dp off it, so the life total under it ticks down in the clear.
+                        // F6 (the look pass): a blow to a player is one clean hit. A charge draws it where the card lands; a loss that
+                        // comes without one (a spell, an ability) draws the same burst on the picture, once, in its own colour.
+                        if (it.level == 3 && it.marks and 32 == 0 && TableFeel.charged(fx.low)) { it.marks = it.marks or 32
+                            it.charged = true; it.bursts = fx.items.none { l -> l.kind == Fx.LUNGE && l.toKey == it.toKey } }
+                        if (it.level == 3) faceHit(fx, it, p, r, fx.low, quiet = it.charged, square = rect("square" + it.toKey!!.removePrefix("orb"))) else glowRing(r, it.tone, .8f * (1f - p), 6.dp.toPx(), round = true)
+                        if (it.charged && it.bursts) { val rim = minOf(r.width, r.height) / 2
+                            if (it.once(64)) fx.bits.sparks(r.center, 10, TableFeel.hot(it.tone, .3f), fx.now.longValue, 240.dp.toPx(), lifeMs = 460, sizePx = 2.dp.toPx(), seed = (it.player ?: 0) and 0xff)
+                            hitBurst(p * it.dur, r.center, r.center, rim, it.tone, (it.player ?: 0) and 0xff, null, rect("lifepill" + it.toKey!!.removePrefix("orb"))) }
+                        // The number pops on the struck picture and rises 14 dp off it, so the life total under it ticks down in the clear.
                         if (it.charged) pop(tm, it.label, p, r.center - Offset(0f, 2.dp.toPx()), it.tone, TableFeel.CHARGE_NUMBER_SP)
                         else pop(tm, it.label, p, Offset(r.center.x, if (r.center.y < size.height / 2) r.bottom + 16.dp.toPx() else r.top - 6.dp.toPx()), it.tone, if (it.level == 3) 34f + 8f * it.power else 20f, down = r.center.y < size.height / 2) }
                     Fx.COUNTER -> rect("c${it.card}")?.let { r -> drawPour(p, r); pop(tm, it.label, p, Offset(r.center.x, r.top + 4.dp.toPx()), Color(0xFFF3D27E), 15f) }
@@ -1789,10 +1795,10 @@ private fun DrawScope.drawToken(p: Float, r: Rect) {
     }
 }
 
-/** Draws [block] everywhere but inside the pill [r] (a box with round ends); all of it when [r] is null. */
-private inline fun DrawScope.clipOut(r: Rect?, block: DrawScope.() -> Unit) {
+/** Draws [block] everywhere but inside the pill [r] (a box with round ends, or corners of [corner] px); all of it when [r] is null. */
+private inline fun DrawScope.clipOut(r: Rect?, corner: Float? = null, block: DrawScope.() -> Unit) {
     if (r == null) block()
-    else clipPath(androidx.compose.ui.graphics.Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(r, CornerRadius(r.height / 2))) }, androidx.compose.ui.graphics.ClipOp.Difference) { block() }
+    else clipPath(androidx.compose.ui.graphics.Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(r, CornerRadius(corner ?: (r.height / 2)))) }, androidx.compose.ui.graphics.ClipOp.Difference) { block() }
 }
 
 /** An attacker's strike: the living table's charge (F6), or P5's strike as it was with Match effects Off and where no particles are drawn. */
@@ -1856,12 +1862,23 @@ private fun DrawScope.drawCharge(fx: Battlefield, it: FxItem, a: Rect, b: Rect, 
     // Sparks, once, when the freeze ends: off a player's picture back the way the card came, off a tile on past it.
     if (it.once(1)) fx.bits.sparks(at, if (face) 10 else 18, TableFeel.hot(tone, .3f), fx.now.longValue, (if (face) 240f else 480f) * density, dir = if (face) kotlin.math.atan2(-u.y, -u.x) else kotlin.math.atan2(u.y, u.x),
         spread = if (face) 2.4f else 1.5f, lifeMs = 460, sizePx = 2f * density, seed = seed)
-    clipOut(lifePill?.takeIf { face }) {
+    hitBurst(t, at, mid, rim, tone, seed, if (face) null else b, lifePill?.takeIf { face })
+}
+
+/**
+ * F6, the hit: one burst and no more, [t] ms after the blow. A white-hot core at [at] (where the two things meet), one ring in
+ * [tone] running out from [rim] px round [mid], and white spikes off that rim that taper to a point. A struck [tile] flashes
+ * white. Nothing of it is drawn over [lifePill]: at a player the number ticking down is the pay-off.
+ */
+private fun DrawScope.hitBurst(t: Float, at: Offset, mid: Offset, rim: Float, tone: Color, seed: Int, tile: Rect?, lifePill: Rect?) {
+    val hot = TableFeel.hot(tone); val plus = androidx.compose.ui.graphics.BlendMode.Plus
+    fun part(n: Int) = ((n * 0.6180339f) % 1f + 1f) % 1f
+    clipOut(lifePill) {
         val cq = t / TableFeel.CHARGE_CORE_MS
         if (cq < 1f) { val r = TableFeel.CHARGE_CORE * density * (.7f + .5f * cq)
             drawCircle(Brush.radialGradient(0f to Color.White.copy(alpha = 1f - cq), .3f to hot.copy(alpha = .8f * (1f - cq)), 1f to Color.Transparent, center = at, radius = r), r, at, blendMode = plus) }
         // A struck tile flashes white for 220 ms.
-        if (!face && t < 220f) drawRoundRect(Color.White.copy(alpha = .5f * (1f - t / 220f)), b.topLeft, b.size, CornerRadius(10f * density))
+        if (tile != null && t < 220f) drawRoundRect(Color.White.copy(alpha = .5f * (1f - t / 220f)), tile.topLeft, tile.size, CornerRadius(10f * density))
         val rq = t / TableFeel.CHARGE_RING_MS
         if (rq < 1f) { val e = 1f - (1f - rq) * (1f - rq) * (1f - rq); val r = rim + TableFeel.CHARGE_RING_OUT * density * e; val wide = TableFeel.CHARGE_RING_FROM * (1f - .6f * rq) * density
             drawCircle(tone.copy(alpha = .35f * (1f - rq)), r, mid, style = Stroke(wide * 3f), blendMode = plus)
@@ -1992,7 +2009,7 @@ private fun DrawScope.drawEmbers(fx: Battlefield, it: FxItem, p: Float, r: Rect,
 }
 
 /** A hit to a face: a red flash across the board edge, a big shockwave from the orb, sparks, and the life number slamming in. */
-private fun DrawScope.faceHit(fx: Battlefield, it: FxItem, p: Float, r: Rect, low: Boolean = false, quiet: Boolean = false) {
+private fun DrawScope.faceHit(fx: Battlefield, it: FxItem, p: Float, r: Rect, low: Boolean = false, quiet: Boolean = false, square: Rect? = null) {
     val k = it.power
     val ms = p * it.dur
     // P5: coral spikes off the square, a ring and sparks, thrown once on the frame the freeze ends.
@@ -2010,10 +2027,14 @@ private fun DrawScope.faceHit(fx: Battlefield, it: FxItem, p: Float, r: Rect, lo
     // The red vignette lives at the screen's edges; the middle of the board stays readable.
     // A band along each edge, as deep on a wide screen's sides as on its top and bottom, so the board stays readable.
     val band = size.minDimension * .24f; val red = Color(0xFFE02A1A).copy(alpha = vig)
-    drawRect(Brush.horizontalGradient(listOf(red, Color.Transparent), 0f, band), Offset.Zero, Size(band, size.height))
-    drawRect(Brush.horizontalGradient(listOf(Color.Transparent, red), size.width - band, size.width), Offset(size.width - band, 0f), Size(band, size.height))
-    drawRect(Brush.verticalGradient(listOf(red, Color.Transparent), 0f, band), Offset.Zero, Size(size.width, band))
-    drawRect(Brush.verticalGradient(listOf(Color.Transparent, red), size.height - band, size.height), Offset(0f, size.height - band), Size(size.width, band))
+    // F6: your own square sits in the screen's corner, inside two of these bands. With the living table on, the red goes round
+    // it and not over it, so your life total is read while it ticks down.
+    clipOut(square?.takeIf { quiet }, 14f * density) {
+        drawRect(Brush.horizontalGradient(listOf(red, Color.Transparent), 0f, band), Offset.Zero, Size(band, size.height))
+        drawRect(Brush.horizontalGradient(listOf(Color.Transparent, red), size.width - band, size.width), Offset(size.width - band, 0f), Size(band, size.height))
+        drawRect(Brush.verticalGradient(listOf(red, Color.Transparent), 0f, band), Offset.Zero, Size(size.width, band))
+        drawRect(Brush.verticalGradient(listOf(Color.Transparent, red), size.height - band, size.height), Offset(0f, size.height - band), Size(size.width, band))
+    }
     // F6: a charge has drawn its own hit on this picture (one core, one ring, its spikes); the loss adds only the red edges above.
     if (quiet) return
     for (j in 0..2) { val q = ((p - j * .08f) / .6f).coerceIn(0f, 1f); if (q > 0f)
