@@ -32,6 +32,8 @@
     "standalone",
     "minimal-ui"
   ],
+  "related_applications": [{"platform": "play", "id": "com.cardstashy.app"}],
+  "prefer_related_applications": false,
   "categories": [
     "games",
     "utilities"

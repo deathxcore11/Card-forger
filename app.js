@@ -1,7 +1,7 @@
 import './app-motion.js';
 import {cardDiscoverySpec} from './card-discovery.js';
 import {checkRelease,acknowledgeRelease,onReleaseChange,releaseDot,releaseState} from './release-status.js';
-import {appUpdateBanner,paintAppUpdate,onAppUpdate,startAppUpdate,installAppUpdate,cancelAppUpdate,dismissAppBanner,justUpdated} from './app-update.js';
+import {appUpdateBanner,paintAppUpdate,onAppUpdate,startAppUpdate,installAppUpdate,cancelAppUpdate,dismissAppBanner,justUpdated,markAppInstalled,detectInstalledApp} from './app-update.js';
 import {createDeckPipeline} from './deck-pipeline.js';
 import {createDeckExperience,deckWorkspaceSignature} from './deck-experience.js';
 import {createMtgWikiPageController} from './mtg-wiki-ui.js';
@@ -8033,7 +8033,7 @@ A.checkRelease=async()=>{await checkRelease();settingsPopup.refresh();};
 document.addEventListener('toggle',e=>{if(e.target.matches?.('details[data-release-item]')&&e.target.open){acknowledgeRelease(e.target.dataset.releaseItem);e.target.querySelectorAll('.release-dot').forEach(n=>n.remove());}},true);
 // Android app: Update downloads in the app and opens Android's installer; browsers on Android phones are offered the app.
 const paintUpdate=()=>paintAppUpdate(document,{home:S.ui.view==='home'});
-A.appUpdate=()=>startAppUpdate();A.appUpdateInstall=()=>installAppUpdate();A.appUpdateCancel=()=>cancelAppUpdate();A.appUpdateLater=()=>dismissAppBanner();
+A.appUpdate=()=>startAppUpdate();A.appUpdateInstall=()=>installAppUpdate();A.appUpdateCancel=()=>cancelAppUpdate();A.appUpdateLater=()=>dismissAppBanner();A.appHaveIt=()=>markAppInstalled();detectInstalledApp().then(found=>{if(found)paintAppUpdate(document,{home:true});});
 onAppUpdate(paintUpdate);onReleaseChange(paintUpdate);
 {const updated=justUpdated();if(updated)setTimeout(()=>toast(`CardStashy updated to ${updated}. What’s new is in Settings.`),1200);}
 onReleaseChange(()=>{refreshProfileAvatar();document.querySelectorAll('.release-dot,[data-release-unread]').forEach(n=>{if(!releaseState().unread)n.remove();});});

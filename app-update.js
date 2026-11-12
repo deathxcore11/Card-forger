@@ -22,6 +22,14 @@ const set=next=>{job={...job,...next};listeners.forEach(fn=>{try{fn(job);}catch{
 export const onAppUpdate=fn=>{listeners.add(fn);return()=>listeners.delete(fn);};
 export const appUpdateJob=()=>job;
 
+// A new sign-in lifts "Not now" so the reminder shows again; "I already have it" is never lifted.
+export const reminderNewSignIn=()=>{const v=read();if(v.getAppLaterAt)write({getAppLaterAt:0});};
+export const markAppInstalled=()=>{write({haveApp:true});listeners.forEach(fn=>{try{fn(job);}catch{}});};
+// Best effort: the browser may list apps named in the site manifest; a side-loaded build may not appear.
+export async function detectInstalledApp(nav=globalThis.navigator){
+ try{const apps=await nav?.getInstalledRelatedApps?.();if(apps?.some(a=>a.id==='com.cardstashy.app')){write({haveApp:true});return true;}}catch{}
+ return false;
+}
 export const isAndroidBrowser=(ua=globalThis.navigator?.userAgent||'')=>/Android/i.test(ua)&&!native();
 // The published APK this app can update to, or null.
 export function availableUpdate(state=releaseState()){
@@ -99,9 +107,9 @@ export function appUpdateBanner({state=releaseState(),saved=read(),now=Date.now(
   return `<section class="app-update-banner panel" data-app-update="banner" aria-label="App update"><img src="icon-192.png" alt="" width="44" height="44"><div><p class="eyebrow">UPDATE READY</p><h2>CardStashy ${esc(target.version)}</h2><p class="muted small">${mb(target.bytes)} MB · downloads in the app, then Android asks you to confirm.</p><details class="app-update-notes"><summary>What’s new</summary><ul>${whatsNew(state.release,6)}</ul></details>${actions(target,{later:true})}</div></section>`;
  }
  if(!isAndroidBrowser(ua))return '';
- if(saved.getAppLaterAt&&now-saved.getAppLaterAt<14*864e5)return '';
+ if(saved.haveApp||saved.getAppLaterAt)return '';
  const a=nativeTestInfo();if(!a.version)return '';
- return `<section class="app-update-banner panel" data-app-update="banner" aria-label="Get the Android app"><img src="icon-192.png" alt="" width="44" height="44"><div><p class="eyebrow">ANDROID APP</p><h2>Get CardStashy for Android</h2><p class="muted small">Version ${esc(a.version)} · ${mb(a.bytes)} MB · test build</p><div class="actions"><a class="btn small" href="https://cardstashy.com${esc(a.href)}" target="_blank" rel="noopener" download>Download</a><button class="link small" data-act="appUpdateLater">Not now</button></div></div></section>`;
+ return `<section class="app-update-banner panel" data-app-update="banner" aria-label="Get the Android app"><img src="icon-192.png" alt="" width="44" height="44"><div><p class="eyebrow">ANDROID APP</p><h2>Get CardStashy for Android</h2><p class="muted small">Version ${esc(a.version)} · ${mb(a.bytes)} MB · test build</p><div class="actions"><a class="btn small" href="https://cardstashy.com${esc(a.href)}" target="_blank" rel="noopener" download>Download</a><button class="link small" data-act="appUpdateLater">Not now</button></div><button class="link small muted" data-act="appHaveIt">I already have it</button></div></section>`;
 }
 
 // Repaints the Home card and the Settings panel in place, so progress never re-renders the page.
