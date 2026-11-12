@@ -35,6 +35,16 @@ export function forgeRead(card) {
  return { abilities, whole: text, type: typeOf(card), mv: Number(card.cmc) || 0 };
 }
 
+// Mana in an activation cost: generic numbers plus each coloured, colourless or hybrid symbol ({X} counts as nothing).
+const manaIn = cost => (String(cost).match(/\{[^}]+\}/g) || []).reduce((n, m) => n + (/^\{\d+\}$/.test(m) ? Number(m.slice(1, -1)) : /^\{(?:t|q|x|e)\}$/.test(m) ? 0 : 1), 0);
+const WORD_N = { one: 1, two: 2, three: 3, four: 4, five: 5 };
+// Mana an "Add ..." effect makes: its symbols up to the first "or"/full stop, or the number word; unknown amounts read as 2.
+const manaAdded = effect => {
+ const e = String(effect), w = e.match(/^add (one|two|three|four|five) mana/);
+ if (w) return WORD_N[w[1]];
+ const first = e.split(/\bor\b|\./)[0], syms = (first.match(/\{[^}]+\}/g) || []).length;
+ return syms || (/^add\b/.test(e) ? 2 : 0);
+};
 const tierOf = (rule, mv) => rule.tier !== 'mv' ? rule.tier : mv <= 2 ? 'A' : mv <= 3 ? 'B' : 'C';
 function ruleHits(rule, read) {
  const t = read.type, spell = /\b(?:instant|sorcery)\b/.test(t);
@@ -45,6 +55,11 @@ function ruleHits(rule, read) {
  if (rule.re.whole && !rule.re.whole.test(read.whole)) return false;
  return read.abilities.some(a => {
   if (rule.re.costNot && a.cost && rule.re.costNot.test(a.cost)) return false;
+  // A mana ability counts as ramp only when it adds more mana than it costs
+  // (Giant's Boulder and Prophetic Prism turn one mana into one mana).
+  if (rule.net && a.cost && manaAdded(a.effect) <= manaIn(a.cost)) return false;
+  // An activated effect behind more mana than maxCost is not a role the deck can count on.
+  if (rule.maxCost !== undefined && a.cost && manaIn(a.cost) > rule.maxCost) return false;
   if (rule.re.not && rule.re.not.test(a.line)) return false;
   if (rule.re.cost) return !!a.cost && rule.re.cost.test(a.cost) && (!rule.re.effect || rule.re.effect.test(a.effect));
   return rule.re.text.test(a.line);
@@ -180,6 +195,12 @@ export function forgeScore(card, hooks, opts = {}) {
 
 // The roles a card fills for quotas: permanent ramp only, real card advantage,
 // interaction (removal, interruption, protection), wipes, win conditions.
+// Removal that sits behind an activation of five or more mana and earned no removal tag:
+// other scorers must not credit it as interaction either (Giant's Boulder's {7}).
+export function forgeCostlyRemoval(card) {
+ if (forgeTags(card).some(t => t.tag === 'removal' || t.tag === 'wipe')) return false;
+ return forgeRead(card).abilities.some(a => a.cost && manaIn(a.cost) > 4 && /\b(?:destroy|exile) (?:another |up to (?:one|two|x) )?target\b/.test(a.effect));
+}
 export function forgeRoles(card, deckTypeCounts = null) {
  const tags = forgeTags(card), names = new Set(tags.map(t => t.tag)), out = [];
  if (names.has('ramp')) out.push('ramp');
@@ -279,5 +300,6 @@ export function forgeLandCount(spells, { size = 60, commander = false, hooks = [
  const avg = n ? mv / n : 3, landfall = hooks.some(h => h.id === 'landfall');
  if (commander && size >= 100) return Math.round(Math.min(42, Math.max(33, 31.42 + 3.13 * avg - 0.28 * cheap + (landfall ? 2 : 0))));
  const sixty = 19.59 + 1.90 * avg - 0.28 * cheap + (landfall ? 1 : 0);
- return Math.round(Math.min(size * .45, Math.max(size * .3, sixty * size / 60)));
+ // Never under a third of the deck (20 of 60): cheap card draw does not replace land drops.
+ return Math.round(Math.min(size * .45, Math.max(size / 3, sixty * size / 60)));
 }
