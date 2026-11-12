@@ -8,6 +8,8 @@ import { FORMATS, formatOf } from './formats.js';
 import { cardKey, validateDeck } from './core.js';
 import { refineCandidates, towardDeck } from './deck-optimizer.js';
 import { mtgPower } from './power.js';
+import { shapeFaults } from './deck-needs.js';
+import { META_PRIOR_FORMATS } from './deck-meta-prior.js';
 
 // A refinement pass treats candidate objects as immutable: towardDeck clones
 // each change and refineCandidates adds scored copies. Keep this cache inside
@@ -94,7 +96,16 @@ export function createDeckPipeline(x) {
     references=await resolveReferenceCandidates(snapshot.data,request,{now:x.now?.()??Date.now(),cacheState:snapshot,current:options.current,resolve:async name=>{const card=await x.resolve(name,true);if(options.current?.()===false)throw new DOMException('Build replaced','AbortError');if(card)x.cacheCard?.(card);return card;},quote:name=>x.priceOf(name),owned:name=>x.inv(name)?.available??0,priceDeck,withinBudgetCap,inspectPlan:inspectDeckPlan,maxCandidates:2});
     if(refreshNote)references.notes=[refreshNote,...references.notes];
    }
-   const built=await prepareMtgDeck({...request,flow:true,style:[request.theme,request.easy?'easy to play':'',request.style].filter(Boolean).join(' '),budget_basis:request.ownedOnly?'owned':request.budgetBasis,current:options.current},x);
+   // Tournament lists as a card-quality prior for every 60-card format with a feed (deck-meta-prior.js).
+   // A bounded wait: a build never hangs on the list service, it just builds without the prior.
+   let metaLists=null;
+   if(META_PRIOR_FORMATS.includes(request.format)){
+    const key='mtg:'+request.format,state=()=>request.format==='Standard'&&x.referenceMetaState?x.referenceMetaState():metaState(key);
+    if(!state()?.data?.decks?.length&&!(request.format==='Standard'&&x.referenceMetaState)){options.onStatus?.(`Reading current ${request.format} tournament lists…`);await Promise.race([Promise.resolve().then(()=>request.format==='Standard'&&x.loadReferenceMeta?x.loadReferenceMeta():loadMeta(key)).catch(()=>{}),new Promise(r=>setTimeout(r,x.metaPriorTimeoutMs??8000))]);}
+    if(options.current?.()===false)throw new DOMException('Build replaced','AbortError');
+    metaLists=state()?.data?.decks||null;
+   }
+   const built=await prepareMtgDeck({...request,metaLists,flow:true,style:[request.theme,request.easy?'easy to play':'',request.style].filter(Boolean).join(' '),budget_basis:request.ownedOnly?'owned':request.budgetBasis,current:options.current},x);
    if(!built.candidates&&!references.decks.length)return {error:built.choice==='infinite'?'The app cannot verify that every possible infinite combo is excluded. No deck was presented. Name specific cards to exclude, or revise that requirement.':built.note||'The card service could not complete this request.'};
    const candidates=[...references.decks.map(deck=>({...deck,referenceQualifiedForBuild:true,constructionNotes:[...references.notes,...(references.assessments?.find(a=>a.deck?.referenceOrigin.key===deck.referenceOrigin.key)?.notes||[]),'Based on a resolved source list; source results are not results for this generated or adapted deck.']})),...(built.candidates||[]).map(c=>({...c.draft,constructionBasis:'heuristic',referenceSearch:{notes:references.notes,rejections:references.rejections},constructionNotes:request.format==='Standard'?[...references.notes,'Heuristic construction, not a verified tournament-list result. '+(references.decks.length?'A bounded eligible reference lane was also compared.':'No eligible current reference candidate passed the available source, request, quote and list checks.')]:[]}))];if(request.previousDeck){const prior=structuredClone(request.previousDeck);candidates.unshift({...prior,referenceQualifiedForBuild:false,constructionNotes:[...references.notes,...(prior.referenceOrigin?['Preserved previous source-based list; its source was not requalified for this build. Historical source results do not establish current freshness or this deck’s performance.']:(prior.constructionNotes||[]))]});}
    const assessment=createBuildAssessmentCache(d=>assess(d,request,{withPower:false}),d=>mtgPower({...d,id:'construction'}),{
@@ -102,7 +113,10 @@ export function createDeckPipeline(x) {
     // card records during that yield, so object identity alone is insufficient.
     revision:d=>JSON.stringify([d.commander,d.commanders,d.referencePriceSelections,...[['main',d.cards||[]],['side',d.side||[]]].flatMap(([zone,list])=>list.map(r=>[zone,r.name,r.qty,x.meta(r.name),x.inv(r.name)?.available??0,d.referencePrices?.[cardKey(r.name)]??x.priceOf(r.name)]))]),
    });
-   const refined=await refineCandidates(candidates,{evaluate:d=>assessment.power(d),cost:d=>{const p=priceDeck(assessment.inspect(d).rows,request.budgetBasis);return {cost:p.subtotal,unknown:p.unpriced};},accept:d=>{const a=assessment.inspect(d);return a.check.legal&&!inspectDeckPlan(request,a.rows,d,{includeFinalSupport:false}).issues.length;},neighbors:d=>candidates.flatMap(target=>towardDeck(d,target,{protectedKeys:new Set([request.seed,request.commander,...(request.required_cards||[]),...(d.internalRequiredCards||[])].filter(Boolean))})),rounds:2,maxNeighbors:12,status:options.onStatus,current:options.current});
+   // An upgrade swap may not add a shape fault (deck-needs.js): an unsupported card, an idle fixer, a third legend copy, a stray one-of.
+   const parentFaults=new WeakMap(),kept=new Set([request.seed,request.commander,...(request.required_cards||[])].filter(Boolean).map(n=>cardKey(n))),
+    faults=d=>shapeFaults((d.cards||[]).map(r=>({card:x.meta(r.name),qty:r.qty})),{size:(d.cards||[]).reduce((n,r)=>n+r.qty,0),colors:d.colors||[],keep:c=>kept.has(cardKey(c.name))});
+   const refined=await refineCandidates(candidates,{evaluate:d=>assessment.power(d),cost:d=>{const p=priceDeck(assessment.inspect(d).rows,request.budgetBasis);return {cost:p.subtotal,unknown:p.unpriced};},accept:d=>{const a=assessment.inspect(d);return a.check.legal&&!inspectDeckPlan(request,a.rows,d,{includeFinalSupport:false}).issues.length&&faults(d)<=(parentFaults.get(d)??Infinity);},neighbors:d=>{const base=faults(d);return candidates.flatMap(target=>towardDeck(d,target,{protectedKeys:new Set([request.seed,request.commander,...(request.required_cards||[]),...(d.internalRequiredCards||[])].filter(Boolean))})).map(n=>{parentFaults.set(n,base);return n;});},rounds:2,maxNeighbors:12,status:options.onStatus,current:options.current});
    return refined.map(deck=>referenceContext(deck,request));
   }
   const candidates=await x.tcgCtx.prepareDeck(request,options);if(request.previousDeck)candidates.unshift(structuredClone(request.previousDeck));

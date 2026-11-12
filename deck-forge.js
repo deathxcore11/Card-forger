@@ -300,5 +300,6 @@ export function forgeLandCount(spells, { size = 60, commander = false, hooks = [
  const avg = n ? mv / n : 3, landfall = hooks.some(h => h.id === 'landfall');
  if (commander && size >= 100) return Math.round(Math.min(42, Math.max(33, 31.42 + 3.13 * avg - 0.28 * cheap + (landfall ? 2 : 0))));
  const sixty = 19.59 + 1.90 * avg - 0.28 * cheap + (landfall ? 1 : 0);
- return Math.round(Math.min(size * .45, Math.max(size * .3, sixty * size / 60)));
+ // Never under a third of the deck (20 of 60): cheap card draw does not replace land drops.
+ return Math.round(Math.min(size * .45, Math.max(size / 3, sixty * size / 60)));
 }
