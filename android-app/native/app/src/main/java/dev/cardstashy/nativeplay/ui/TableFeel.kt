@@ -90,6 +90,8 @@ internal object TableFeel {
     // until the turn ends; while a spell of yours is on the stack a line in that colour runs from the land up to it.
     const val MANA_RADIUS = .46f
     const val MANA_GLOW = .24f
+    /** The CPU's lands glow too, at the top edge behind them, dimmer so your side stays the stronger one (design thread, 12 Nov). */
+    const val MANA_GLOW_CPU = .16f
     const val MANA_IN_MS = 320L
     const val MANA_OUT_MS = 400L
     /** The line: 2.2 wide with a 10 glow, bowed upward by 12 % of the height; it holds 200 ms, then fades over 700. */
@@ -100,16 +102,18 @@ internal object TableFeel {
     const val LEY_FADE_MS = 700L
 
     /** One tapped land's glow: the tile and its colour; [line] when a spell of yours stands on the stack for it to run to. */
-    data class ManaGlow(val card: Int, val tone: Color, val line: Boolean)
+    data class ManaGlow(val card: Int, val tone: Color, val line: Boolean, val mine: Boolean = true)
     /** What board [b] (after [a]) does to the mana light: the lands you tapped since [a], and whether the turn ended (all glows fade). */
     data class ManaChange(val glows: List<ManaGlow>, val clear: Boolean)
 
     /** F2 from two boards. Only what Forge shows: a land of yours untapped in [a] and tapped in [b]. A new turn clears. */
     fun manaChange(a: MatchState, b: MatchState): ManaChange {
         if (a.turn != b.turn) return ManaChange(emptyList(), true)
-        val ready = a.me.battlefield.filter { it.isLand && !it.tapped }.map { it.id }.toSet()
-        val spell = b.stack.firstOrNull()?.controller == b.viewer
-        return ManaChange(b.me.battlefield.filter { it.isLand && it.tapped && it.id in ready }.map { ManaGlow(it.id, frameTone(cardColors(it)).first, spell) }, false)
+        val caster = b.stack.firstOrNull()?.controller
+        return ManaChange(b.players.sortedBy { it.id != b.viewer }.flatMap { p ->
+            val ready = a.players.firstOrNull { it.id == p.id }?.battlefield.orEmpty().filter { it.isLand && !it.tapped }.map { it.id }.toSet()
+            p.battlefield.filter { it.isLand && it.tapped && it.id in ready }.map { ManaGlow(it.id, frameTone(cardColors(it)).first, caster == p.id, p.id == b.viewer) }
+        }, false)
     }
 
     // F6, the charge. This is P5's strike ([Strike]) with a bigger wind-up and a trail: P5's order, timing and sounds stay as approved.
@@ -179,7 +183,7 @@ internal fun TurnLight(st: MatchState) {
 }
 
 /** F2: one glow on the table (where its land stood, root pixels), when it was lit and, once the turn ended, when it began to fade. */
-private class ManaLit(val card: Int, val x: Float, val y: Float, val tone: Color, val line: Boolean, val born: Long) { var gone: Long = -1L }
+private class ManaLit(val card: Int, val x: Float, val y: Float, val tone: Color, val line: Boolean, val born: Long, val mine: Boolean = true) { var gone: Long = -1L }
 
 /**
  * F2, the mana light: under every card. The lands you tap to pay glow at the table's bottom edge until the turn ends, and a line
@@ -201,7 +205,7 @@ internal fun ManaLight(st: MatchState) {
         val c = TableFeel.manaChange(a, st)
         val t = now()
         if (c.clear) lit.forEach { if (it.gone < 0) it.gone = t }
-        for (g in c.glows) if (lit.none { it.card == g.card && it.gone < 0 }) anchors.rects["c${g.card}"]?.let { r -> lit += ManaLit(g.card, r.center.x, r.center.y, g.tone, g.line, t) }
+        for (g in c.glows) if (lit.none { it.card == g.card && it.gone < 0 }) anchors.rects["c${g.card}"]?.let { r -> lit += ManaLit(g.card, r.center.x, r.center.y, g.tone, g.line, t, g.mine) }
         lit.removeAll { it.gone >= 0 && t - it.gone > TableFeel.MANA_OUT_MS }
     }
     if (lit.isEmpty()) return
@@ -213,9 +217,10 @@ internal fun ManaLight(st: MatchState) {
             val age = (t - g.born).coerceAtLeast(0L)
             val a = (if (still) 1f else (age / TableFeel.MANA_IN_MS.toFloat()).coerceAtMost(1f)) * (if (g.gone < 0) 1f else (1f - (t - g.gone) / TableFeel.MANA_OUT_MS.toFloat()).coerceIn(0f, 1f))
             if (a <= 0f) continue
-            val x = g.x - origin.x; val c = Offset(x, h + 10.dp.toPx())
-            drawRect(Brush.radialGradient(listOf(g.tone.copy(alpha = TableFeel.MANA_GLOW * a), g.tone.copy(alpha = 0f)), center = c, radius = radius),
-                topLeft = Offset(x - radius, h - radius), size = Size(radius * 2, radius), blendMode = BlendMode.Plus)
+            // Yours at the table's foot; the CPU's at the top edge behind its lands, dimmer.
+            val x = g.x - origin.x; val c = Offset(x, if (g.mine) h + 10.dp.toPx() else -10.dp.toPx())
+            drawRect(Brush.radialGradient(listOf(g.tone.copy(alpha = (if (g.mine) TableFeel.MANA_GLOW else TableFeel.MANA_GLOW_CPU) * a), g.tone.copy(alpha = 0f)), center = c, radius = radius),
+                topLeft = Offset(x - radius, if (g.mine) h - radius else 0f), size = Size(radius * 2, radius), blendMode = BlendMode.Plus)
             // The line to the spell: held 200 ms, then fading over 700.
             val la = if (still || !g.line || to == null) 0f else (1f - (age - TableFeel.LEY_HOLD_MS) / TableFeel.LEY_FADE_MS.toFloat()).coerceIn(0f, 1f)
             if (la > 0f && to != null) {

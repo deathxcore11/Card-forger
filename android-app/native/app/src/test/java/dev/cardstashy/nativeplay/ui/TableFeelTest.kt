@@ -63,9 +63,13 @@ class TableFeelTest {
         val byHand = TableFeel.manaChange(before, set(before, setOf(lands[0].id)))
         assertEquals(listOf(lands[0].id), byHand.glows.map { it.card }); assertFalse(byHand.glows.single().line)
         assertTrue(TableFeel.manaChange(paid, paid.copy(revision = paid.revision + 1)).glows.isEmpty())
-        // The CPU's taps light nothing at your edge; the next turn clears every glow.
+        // The CPU's taps glow too, at its own edge (design thread, 12 Nov: "each land tapped to pay", both players), dimmer than
+        // yours; no line unless the spell on the stack is the CPU's. The next turn clears every glow.
         val cpuTaps = before.copy(players = before.players.map { p -> if (p.id == cpu) p.copy(battlefield = p.battlefield.map { it.copy(tapped = true) }) else p })
-        assertTrue(TableFeel.manaChange(before.copy(players = before.players.map { p -> if (p.id == cpu) p.copy(battlefield = p.battlefield.map { it.copy(tapped = false) }) else p }), cpuTaps).glows.isEmpty())
+        val cpuGlows = TableFeel.manaChange(before.copy(players = before.players.map { p -> if (p.id == cpu) p.copy(battlefield = p.battlefield.map { it.copy(tapped = false) }) else p }), cpuTaps).glows
+        assertEquals(base.cpu.battlefield.filter { it.isLand }.map { it.id }, cpuGlows.map { it.card })
+        assertTrue(cpuGlows.isNotEmpty() && cpuGlows.none { it.mine || it.line }); assertTrue(c.glows.all { it.mine })
+        assertEquals(.16f, TableFeel.MANA_GLOW_CPU); assertTrue(TableFeel.MANA_GLOW_CPU < TableFeel.MANA_GLOW)
         val next = TableFeel.manaChange(paid, paid.copy(turn = paid.turn + 1))
         assertTrue(next.clear); assertTrue(next.glows.isEmpty())
         assertEquals(.46f, TableFeel.MANA_RADIUS); assertEquals(.24f, TableFeel.MANA_GLOW); assertEquals(320L, TableFeel.MANA_IN_MS); assertEquals(400L, TableFeel.MANA_OUT_MS)

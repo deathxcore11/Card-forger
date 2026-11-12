@@ -121,4 +121,37 @@ class LivingF1ShotTest {
         rule.runOnUiThread { st = set(lands.map { it.id }.toSet()) }
         assertEquals("Off: no glow", foot(plain), foot(shot("mana-off")))
     }
+
+    /** F2 for the CPU (design thread, 12 Nov): its tapped lands glow at the top edge behind them, dimmer than yours; Off draws nothing. */
+    @Test fun theCpusTappedLandsGlowAtTheTopEdge() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        TableEmotes.destroy()
+        TableFeel.mat = "charcoal-table"
+        val cpu = base.cpu.id
+        fun set(on: Boolean) = base.copy(activePlayer = cpu, players = base.players.map { p -> if (p.id == cpu) p.copy(battlefield = p.battlefield.map { if (it.isLand) it.copy(tapped = on) else it }) else p })
+        val lands = base.cpu.battlefield.filter { it.isLand }
+        st = set(false)
+        val anchors = dev.cardstashy.nativeplay.ui.Anchors()
+        rule.setContent {
+            androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalAnchors provides anchors) {
+                Box(Modifier.fillMaxSize().background(Palette.Night)) {
+                    ForgeBoard(st, live = true, intents = TableIntents(), selectedHand = null, onSelectHand = {}, onInspect = {}, onMenu = {}, handOrder = emptyList(), onHandOrder = {})
+                }
+            }
+        }
+        shot("mana-cpu-before")
+        rule.runOnUiThread { st = set(true) }
+        val paid = shot("mana-cpu")
+        // Read on the bare table at the top edge, just right of the CPU's last (tapped) land, against the same board with effects Off.
+        val x = lands.maxOf { anchors.rects.getValue("c${it.id}").right } / paid.width
+        fun top(b: Bitmap) = tone(b, .015f, x + .02f, x + .06f)
+        fun foot(b: Bitmap) = tone(b, .985f, .14f, .2f)
+        rule.runOnUiThread { AppSettings.applyMatchEffects("off"); st = set(false) }
+        rule.waitForIdle()
+        rule.runOnUiThread { st = set(true) }
+        val off = shot("mana-cpu-off")
+        val a = top(off); val c = top(paid)
+        assertTrue("the top edge glows behind the CPU's tapped lands: $a -> $c", c.first + c.second + c.third > a.first + a.second + a.third + 8f)
+        assertEquals("nothing at your edge", foot(off), foot(paid))
+    }
 }
