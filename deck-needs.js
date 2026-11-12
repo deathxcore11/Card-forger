@@ -104,7 +104,8 @@ export function needQueries(card) {
   : need.id === 'second-spell' ? 'cmc<=2 (t:instant or t:sorcery) (o:"draw a card" or o:scry or o:surveil or cmc<=1)'
   : need.id === 'second-draw' ? 'cmc<=3 (o:"draw a card" or o:"draw two cards" or o:connive)'
   : need.id === 'graveyard-fill' ? 'cmc<=3 (o:mill or o:surveil or o:"discard a card")'
-  : need.id === 'plus-counters' ? 'cmc<=3 o:"+1/+1 counter"' : '').filter(Boolean);
+  : need.id === 'plus-counters' ? 'cmc<=3 o:"+1/+1 counter"'
+  : need.id === 'cheat-target' ? 'cmc>=6 (t:creature or t:enchantment or t:artifact or t:planeswalker)' : '').filter(Boolean);
 }
 // The build-around's own fuel is held to the higher bar (twelve in sixty cards, sixteen in a hundred): it has to
 // be there most games, not some games.

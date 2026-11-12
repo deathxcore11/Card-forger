@@ -97,13 +97,14 @@ export function createDeckPipeline(x) {
     if(refreshNote)references.notes=[refreshNote,...references.notes];
    }
    // Tournament lists as a card-quality prior for every 60-card format with a feed (deck-meta-prior.js).
-   // A bounded wait: a build never hangs on the list service, it just builds without the prior.
+   // The lists load while the card searches run, and the build waits for them only up to a limit counted
+   // from now (a cold list service can take 15 s): a build never hangs on it, it just builds without the prior.
    let metaLists=null;
    if(META_PRIOR_FORMATS.includes(request.format)){
-    const key='mtg:'+request.format,state=()=>request.format==='Standard'&&x.referenceMetaState?x.referenceMetaState():metaState(key);
-    if(!state()?.data?.decks?.length&&!(request.format==='Standard'&&x.referenceMetaState)){options.onStatus?.(`Reading current ${request.format} tournament lists…`);await Promise.race([Promise.resolve().then(()=>request.format==='Standard'&&x.loadReferenceMeta?x.loadReferenceMeta():loadMeta(key)).catch(()=>{}),new Promise(r=>setTimeout(r,x.metaPriorTimeoutMs??8000))]);}
-    if(options.current?.()===false)throw new DOMException('Build replaced','AbortError');
-    metaLists=state()?.data?.decks||null;
+    const key='mtg:'+request.format,standardState=request.format==='Standard'&&x.referenceMetaState,state=()=>standardState?x.referenceMetaState():metaState(key);
+    const loading=state()?.data?.decks?.length||standardState?null:Promise.resolve().then(()=>request.format==='Standard'&&x.loadReferenceMeta?x.loadReferenceMeta():loadMeta(key)).catch(()=>{});
+    const limit=new Promise(r=>setTimeout(r,x.metaPriorTimeoutMs??20000));
+    metaLists=async()=>{if(loading){options.onStatus?.(`Reading current ${request.format} tournament lists…`);await Promise.race([loading,limit]);}return state()?.data?.decks||null;};
    }
    const built=await prepareMtgDeck({...request,metaLists,flow:true,style:[request.theme,request.easy?'easy to play':'',request.style].filter(Boolean).join(' '),budget_basis:request.ownedOnly?'owned':request.budgetBasis,current:options.current},x);
    if(!built.candidates&&!references.decks.length)return {error:built.choice==='infinite'?'The app cannot verify that every possible infinite combo is excluded. No deck was presented. Name specific cards to exclude, or revise that requirement.':built.note||'The card service could not complete this request.'};
