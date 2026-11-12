@@ -7,6 +7,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -66,6 +69,8 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -125,6 +130,8 @@ fun DecisionDock(st: MatchState, live: Boolean, intents: TableIntents, onInspect
     BackOutStep(st, live, intents)
     // The ability already picked on the open card's row is answered here: the same question is not asked a second time.
     val picked = abilityPickStep(st, live, intents)
+    // F4: the plates of a planeswalker's chosen ability stay a moment (gold rim, then they fade) after Forge has its answer.
+    WalkerExitLayer()
     // A controller: once the question is answered the ring goes back to where it was on the table (only if the dock took it).
     LaunchedEffect(st.prompt == null) { if (st.prompt == null && DockFocus.took) { DockFocus.took = false; TablePad.restore() } }
     // The dock owns the pad while it asks (the table's Start and X wait); each kind adds its own X, the gold answer. Always composed,
@@ -148,6 +155,7 @@ fun DecisionDock(st: MatchState, live: Boolean, intents: TableIntents, onInspect
         val optionalCosts = p.supportedExact && p.method in setOf("order", "getChoices") && p.options.isNotEmpty() && p.options.all { it.kind == "optionalCost" }
         // The turn clock's ring goes round the prompt's confirm button (the site's [data-native-key=confirm-prompt]), drawn over the dock.
         val ring = remember { PromptRing() }
+        val walker = remember(p.id, st.revision) { if (DualScreen.active || TableFeel.mode() == TableFeel.Mode.OFF) null else WalkerPlates.of(p, st) }
         androidx.compose.runtime.CompositionLocalProvider(LocalPromptRing provides ring) {
         when {
             zone != null -> ZoneSearchDialog(ctx, zone, draft)                                                       // :257-307
@@ -158,6 +166,8 @@ fun DecisionDock(st: MatchState, live: Boolean, intents: TableIntents, onInspect
             p.method == "showInputDialog" -> SideDock(ctx) { InputDialog(ctx) }                                      // :346-353
             p.acknowledgeOnly && p.method == "getChoices" -> SideDock(ctx) { Reveal(ctx) }                           // :354-359
             p.method in OPTION_METHODS && hostedOrder -> OrderDialog(ctx, draft)                                     // :363-382
+            // Living table F4: on one screen a planeswalker's abilities open from the card as plates (Match effects off: the list as before).
+            walker != null -> WalkerChooser(ctx, walker) { TitledDock(ctx, choiceTitle(p, st).ifEmpty { "Your choice" }) { ChoiceList(ctx, draft) } }
             // U4: the choice reads as the search picker does (framed, the card's name on top, Forge's question under it).
             p.method in OPTION_METHODS -> TitledDock(ctx, choiceTitle(p, st).ifEmpty { "Your choice" }) { ChoiceList(ctx, draft) }  // :384-395
             else -> SideDock(ctx) { DeadEnd(ctx) }        // :397
@@ -950,3 +960,124 @@ private fun SearchCard(ctx: DockCtx, c: SearchChoice, chosen: Boolean, modifier:
         }
     }
 }
+
+// ---- Living table F4: a planeswalker's abilities as plates beside its card ----
+
+private val PLATE_ICE = Color(0xFF8FD0FF)
+private val PLATE_GOLD = Color(0xFFF3D27E)
+
+/** The plates of the ability just chosen, where they stood (dp in the dock), kept after the question has gone. */
+private object WalkerExit {
+    var ask by mutableStateOf<WalkerAsk?>(null)
+    var chosen = -1; var rects: List<androidx.compose.ui.geometry.Rect> = emptyList(); var card = androidx.compose.ui.geometry.Rect.Zero; var big = false
+}
+
+/** One plate's face: the ability's words (two lines, shrinking before they are cut) and its loyalty cost in a shield at the right end. */
+@Composable
+private fun PlateFace(plate: WalkerPlate, big: Boolean, focused: Boolean, chosen: Boolean, modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(12.dp)
+    val rim = if (chosen) PLATE_GOLD else if (focused) PLATE_ICE else Color(0x66A8C8FF)
+    var size by remember(plate.text, big) { mutableStateOf(if (big) 14f else 11.5f) }
+    Row(modifier.drawBehind { if (focused || chosen) drawIntoCanvas { c ->
+            val paint = Paint().asFrameworkPaint().apply { color = rim.copy(alpha = .55f).toArgb(); maskFilter = BlurMaskFilter(12.dp.toPx(), BlurMaskFilter.Blur.NORMAL) }
+            c.nativeCanvas.drawRoundRect(0f, 0f, this.size.width, this.size.height, 12.dp.toPx(), 12.dp.toPx(), paint) } }
+        .clip(shape).background(Color(0xF2101522)).border(if (focused || chosen) 2.dp else 1.dp, rim, shape).padding(start = 12.dp, end = 8.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        Text(plate.text, Modifier.weight(1f), style = TextStyle(fontFamily = Type.Sans, fontSize = size.sp, lineHeight = (size * 1.25f).sp, color = Color(0xFFEDF0E8)), maxLines = 2, overflow = TextOverflow.Ellipsis,
+            onTextLayout = { if (it.hasVisualOverflow && size > 8.5f) size -= 1f })
+        if (plate.cost.isNotEmpty()) {
+            val sw = if (big) 40.dp else 32.dp; val sh = if (big) 44.dp else 36.dp
+            Box(Modifier.padding(start = 8.dp).size(sw, sh).drawBehind {
+                // The shield: flat top, straight sides, a point at the foot.
+                val w = this.size.width; val h = this.size.height
+                val path = androidx.compose.ui.graphics.Path().apply { moveTo(w * .08f, h * .06f); lineTo(w * .92f, h * .06f); lineTo(w * .92f, h * .55f); quadraticBezierTo(w * .9f, h * .82f, w * .5f, h * .97f); quadraticBezierTo(w * .1f, h * .82f, w * .08f, h * .55f); close() }
+                drawPath(path, Color(0xFF1B2540)); drawPath(path, if (chosen) PLATE_GOLD else PLATE_ICE, style = Stroke(1.6.dp.toPx()))
+            }, contentAlignment = Alignment.Center) {
+                Text(plate.cost, style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Bold, fontSize = (if (big) 15f else 12.5f).sp, color = Color.White), maxLines = 1, modifier = Modifier.padding(bottom = 3.dp))
+            }
+        }
+    }
+}
+
+/** The half-dark table with the planeswalker left bright, and the thin lines from the card to each plate; [shown] 0..1 per plate. */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.plateBacking(card: androidx.compose.ui.geometry.Rect, rects: List<androidx.compose.ui.geometry.Rect>, dim: Float, shown: (Int) -> Float) {
+    val d = density
+    val hole = androidx.compose.ui.graphics.Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(card.left * d - 3 * d, card.top * d - 3 * d, card.right * d + 3 * d, card.bottom * d + 14 * d, 10 * d, 10 * d)) }
+    clipPath(hole, androidx.compose.ui.graphics.ClipOp.Difference) { drawRect(Color.Black.copy(alpha = WalkerPlates.DIM * dim)) }
+    rects.forEachIndexed { i, r -> val a = shown(i); if (a <= 0f) return@forEachIndexed
+        val leftSide = r.right <= card.left
+        val from = Offset((if (leftSide) card.left else card.right) * d, card.center.y * d)
+        val to = Offset((if (leftSide) r.right else r.left) * d, r.center.y * d)
+        val end = Offset(from.x + (to.x - from.x) * a, from.y + (to.y - from.y) * a)
+        drawLine(PLATE_ICE.copy(alpha = .25f * a), from, end, 5 * d); drawLine(PLATE_ICE.copy(alpha = .8f * a), from, end, 1.2f * d) }
+}
+
+/**
+ * F4: the plates. They slide out of the card one after another (140 ms apart, 270 ms each), the table behind is half dark and
+ * the planeswalker stays bright. A tap on a plate sends that option; a tap anywhere else leaves the question when Forge allows it.
+ * [list] is the list as it was: used while the card's place on the table is not known.
+ */
+@Composable
+private fun WalkerChooser(ctx: DockCtx, ask: WalkerAsk, list: @Composable () -> Unit) {
+    val anchors = LocalAnchors.current
+    val density = androidx.compose.ui.platform.LocalDensity.current.density
+    var origin by remember { mutableStateOf<Offset?>(null) }
+    anchors?.version?.intValue
+    val at = anchors?.rects?.get("c${ask.card.id}")
+    Box(Modifier.fillMaxSize().onGloballyPositionedAt { origin = it })
+    val o = origin
+    if (at == null || o == null) { if (at == null) list(); return }
+    val card = androidx.compose.ui.geometry.Rect((at.left - o.x) / density, (at.top - o.y) / density, (at.right - o.x) / density, (at.bottom - o.y) / density)
+    val big = ctx.H >= 600.dp
+    val rects = WalkerPlates.place(ask.plates.size, card, ctx.W.value, ctx.H.value, big)
+    val total = (ask.plates.size - 1) * WalkerPlates.STAGGER_MS + WalkerPlates.SLIDE_MS
+    val open = remember(ctx.p.id) { Animatable(if (Motion.still) total.toFloat() else 0f) }
+    LaunchedEffect(ctx.p.id) { if (!Motion.still) open.animateTo(total.toFloat(), tween(total, easing = androidx.compose.animation.core.LinearEasing)) }
+    fun shown(i: Int): Float { val q = ((open.value - i * WalkerPlates.STAGGER_MS) / WalkerPlates.SLIDE_MS).coerceIn(0f, 1f); return 1f - (1f - q) * (1f - q) * (1f - q) }
+    var chosen by remember(ctx.p.id) { mutableStateOf(-1) }
+    // Once one is chosen the plates that stay a moment are drawn by the exit layer.
+    if (chosen >= 0) return
+    Box(Modifier.fillMaxSize().dockFocus(ctx)) {
+        androidx.compose.foundation.Canvas(Modifier.fillMaxSize().semantics { contentDescription = "Leave the abilities" }
+            .pointerInput(ctx.p.id, ctx.busy) { detectTapGestures { if (ask.cancel && !ctx.busy) ctx.intents.reply(ctx.p.id, null, emptyList(), null) } }) {
+            plateBacking(card, rects, (open.value / 260f).coerceAtMost(1f), ::shown)
+        }
+        ask.plates.forEachIndexed { i, plate ->
+            val r = rects[i]
+            val source = remember(ctx.p.id, i) { androidx.compose.foundation.interaction.MutableInteractionSource() }
+            val focused = source.collectIsFocusedAsStateCompat() || source.collectIsPressedAsStateCompat()
+            Box(Modifier.offset(r.left.dp, r.top.dp).size(r.width.dp, r.height.dp)
+                .graphicsLayer { val e = shown(i); alpha = e
+                    translationX = ((if (r.right <= card.left) card.left - r.right else card.right - r.left) * (1f - e)).dp.toPx(); translationY = ((card.center.y - r.center.y) * (1f - e)).dp.toPx()
+                    val s = (.6f + .4f * e) * (if (focused) WalkerPlates.FOCUS else 1f); scaleX = s; scaleY = s }
+                .then(if (i == 0) Modifier.padFirst(ctx) else Modifier)
+                .clickable(source, indication = null, enabled = !ctx.busy) {
+                    chosen = plate.index
+                    WalkerExit.chosen = plate.index; WalkerExit.rects = rects; WalkerExit.card = card; WalkerExit.big = big; WalkerExit.ask = ask
+                    ctx.intents.reply(ctx.p.id, null, WalkerPlates.answer(plate), null)
+                }.semantics { contentDescription = "Ability ${plate.cost} ${plate.text}".trim() }) {
+                PlateFace(plate, big, focused, false, Modifier.fillMaxSize())
+            }
+        }
+    }
+}
+
+/** F4: the chosen plate's gold rim for 520 ms, then every plate and the dimming fade over 220 ms. Takes no taps. */
+@Composable
+private fun WalkerExitLayer() {
+    val ask = WalkerExit.ask ?: return
+    val a = remember(ask) { Animatable(1f) }
+    LaunchedEffect(ask) {
+        if (!Motion.still) { delay(WalkerPlates.CHOSEN_MS); a.animateTo(0f, tween(WalkerPlates.FADE_MS)) }
+        if (WalkerExit.ask === ask) WalkerExit.ask = null
+    }
+    Box(Modifier.fillMaxSize().graphicsLayer { alpha = a.value }) {
+        androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) { plateBacking(WalkerExit.card, WalkerExit.rects, 1f) { 1f } }
+        ask.plates.forEachIndexed { i, plate -> WalkerExit.rects.getOrNull(i)?.let { r ->
+            PlateFace(plate, WalkerExit.big, false, plate.index == WalkerExit.chosen, Modifier.offset(r.left.dp, r.top.dp).size(r.width.dp, r.height.dp)) } }
+    }
+}
+
+@Composable private fun androidx.compose.foundation.interaction.MutableInteractionSource.collectIsFocusedAsStateCompat(): Boolean = collectIsFocusedAsState().value
+@Composable private fun androidx.compose.foundation.interaction.MutableInteractionSource.collectIsPressedAsStateCompat(): Boolean = collectIsPressedAsState().value
+private fun Modifier.onGloballyPositionedAt(set: (Offset) -> Unit): Modifier = onGloballyPositioned { set(it.positionInRoot()) }
