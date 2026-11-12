@@ -55,6 +55,8 @@ export function castableIn(c, colors) {
 }
 // Something that can end the game by itself: a creature that hits, a planeswalker, a vehicle, a token maker, a tagged win condition.
 export const isThreat = (c) => { const t = typeText(c), o = rulesText(c); return /\bCreature\b/.test(t) && !/\bdefender\b/i.test(o) && (Number(c?.power ?? c?.card_faces?.[0]?.power) >= 1 || /\*/.test(String(c?.power ?? c?.card_faces?.[0]?.power ?? ""))) || /\bPlaneswalker\b|\bVehicle\b/.test(t) || /\bcreates? [^.\n]*\bcreature tokens?\b/i.test(o) || forgeRoles(c).includes("wincon"); };
+// 0: enters untapped, 1: tapped unless a condition is met, 2: always enters tapped.
+export const tapRank = (c) => { const t = rulesText(c); return !/enters (?:the battlefield )?tapped/i.test(t) ? 0 : /enters (?:the battlefield )?tapped unless|you may pay|if you don't, it enters tapped/i.test(t) ? 1 : 2; };
 export const fitsDeck = (c, colors, commander) => (commander ? fitsColors(c, colors) : castableIn(c, colors));
 
 // Keep explicit style independent from inferred commander/seed mechanics.
@@ -510,16 +512,23 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
 
   // Mana: owned (or affordable) dual lands that fit, then basics split by color symbols.
   const landPool = [...new Map(Object.values(catalog).filter((c) => c?.name && isLand(c) && !isBasic(c) && isLegal(c) && fitsColors(c, deckColors) && mtgManaSourceProfile(c,{commanderIdentity:lead?.color_identity}).colors.filter((m) => deckColors.includes(m)).length >= Math.min(2, deckColors.length)).map((c) => [cardKey(c.name), c])).values()]
-    .sort((a, b) => available(b.name) - available(a.name) || (f.commander ? (a.edhrec_rank || 1e9) - (b.edhrec_rank || 1e9) : 0) || a.name.localeCompare(b.name));
+    // Lands that enter untapped first, then the ones tournament lists play (seen 12 Nov: a list took Airship Engine Room and
+    // Andoria, eight always-tapped lands, because the pool was in alphabetical order).
+    .sort((a, b) => available(b.name) - available(a.name) || (f.commander ? (a.edhrec_rank || 1e9) - (b.edhrec_rank || 1e9) : tapRank(a) - tapRank(b) || (prior ? prior(b) - prior(a) : 0)) || a.name.localeCompare(b.name));
+  let slowLands = 0;
   // Three or more colours: most lands should fix (video, step 6).
   const dualCap = deckColors.length > 2 ? Math.round(landTarget * 0.6) : deckColors.length > 1 ? Math.round(landTarget * 0.4) : 0;
   for (const c of landPool) {
     const duals = landsIn() - [...rows.values()].filter((r) => isBasic(catalog[cardKey(r.name)])).reduce((a, r) => a + r.qty, 0);
     if (duals >= dualCap || landsIn() >= landTarget || count() >= size) break;
-    const n = Math.min(f.copies === 1 ? 1 : 4, dualCap - duals, landTarget - landsIn(), size-count()),
+    // 60-card lists: at most four lands that always enter tapped.
+    const slow = size < 100 && tapRank(c) === 2;
+    if (slow && slowLands >= 4) continue;
+    const n = Math.min(f.copies === 1 ? 1 : 4, dualCap - duals, landTarget - landsIn(), size-count(), slow ? 4 - slowLands : 99),
       extra = costFor(c, qtyOf(c), qtyOf(c) + n);
     if (canAfford(extra,0,false)) {
       put(c, n, available(c.name) >= n ? "Dual land you own" : "Fixes your colors");
+      if (slow) slowLands += n;
     }
   }
   const pips = { W: 0, U: 0, B: 0, R: 0, G: 0 };

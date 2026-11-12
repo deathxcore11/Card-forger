@@ -110,3 +110,26 @@ console.log('deck needs: reported piles read correctly; 6 real-pool builds hold 
  const fixed = [row('Exemplar of Light', 4), row('Lyra, Archangel of Dawn', 2), row("Healer's Hawk", 4), row('Ruin-Lurker Bat', 4), row('Hinterland Sanctifier', 4), row('Sheltered by Ghosts', 4), row('Lightfoot Technique', 4)];
  assert.deepEqual(unmetNeeds(fixed, { size: 60 }), [], 'the same payoffs with real lifegain pass');
 }
+
+// Seen 12 Nov in a live Izzet list (4.3.184): mana-spent payoffs (Blazing Bomb, Muse Seeker) with almost no spell that costs
+// four, a third-spell payoff (Emeritus of Conflict) beside twelve counterspells, four Engineered Explosives in two colours,
+// and eight always-tapped lands in a 20-land list.
+{
+ const cards = JSON.parse(fs.readFileSync(new URL('./test-fixtures/deck-input-conditions.json', import.meta.url), 'utf8')), by = n => cards.find(c => c.name.startsWith(n));
+ const { unmetNeeds, idleFixer } = await import('./deck-needs.js'), { tapRank } = await import('./builder.js'), { forgeLandCount } = await import('./deck-forge.js');
+ assert.deepEqual(cardNeeds(by('Blazing Bomb')).map(x => x.id), ['big-spells:4']);
+ assert.deepEqual(cardNeeds(by('Muse Seeker')).map(x => x.id), ['big-spells:5']);
+ assert.deepEqual(cardNeeds(by('Emeritus of Conflict')).map(x => x.id), ['third-spell']);
+ assert.deepEqual(cardNeeds(by('Shantotto')).map(x => x.id), [], 'Shantotto grows from every noncreature spell');
+ const third = cardNeeds(by('Emeritus of Conflict'))[0];
+ assert.equal(third.provides(by('Spell Snare')), false, 'a counterspell is not a spell you chain on your own turn');
+ assert.equal(third.provides(by('Opt')), true);
+ assert.equal(idleFixer(by('Engineered Explosives'), ['U', 'R']), true, 'sunburst in two colours');
+ assert.equal(idleFixer(by('Engineered Explosives'), ['W', 'U', 'R']), false);
+ assert.deepEqual(['Airship Engine Room', 'Andoria', 'Spirebluff Canal', 'Steam Vents', 'Riverpyre Verge'].map(n => tapRank(by(n))), [2, 2, 1, 1, 0]);
+ const row = (n, qty) => ({ card: by(n), qty }), reported = [row('Shantotto', 3), row('Blazing Bomb', 1), row('Sunset Strikemaster', 4), row('Emeritus of Conflict', 4), row('Muse Seeker', 4), row('Engineered Explosives', 4), row('Three Steps Ahead', 4), row('Winternight Stories', 4), row('The Theorist', 2), row('Countersculpt', 4), row('Spell Snare', 4), row('Torch the Tower', 2)];
+ assert.deepEqual(unmetNeeds(reported, { size: 60 }).map(n => n.name.split(' // ')[0] + ':' + n.need).sort(), ['Blazing Bomb:big-spells:4', 'Emeritus of Conflict:third-spell', 'Muse Seeker:big-spells:5']);
+ assert.ok(forgeLandCount(reported, { size: 60 }) >= 22, 'no 60-card list under 22 lands');
+}
+assert.deepEqual(cardNeeds({ name: 'Clifftop Retreat', type_line: 'Land', oracle_text: 'This land enters tapped unless you control a Mountain or a Plains.\n{T}: Add {R} or {W}.' }), [], 'a land has no needs');
+assert.deepEqual(cardNeeds({ name: 'Mountain fixture', type_line: 'Creature — Giant', oracle_text: 'This creature gets +2/+0 as long as you control a Mountain.' }), [], '"a Mountain" is not the Mount type');
