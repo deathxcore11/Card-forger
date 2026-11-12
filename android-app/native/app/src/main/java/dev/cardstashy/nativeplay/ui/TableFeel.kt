@@ -197,9 +197,14 @@ internal object TableFeel {
     const val HOP_CARD = 6f
     const val HOP_UP_MS = 90f
     const val HOP_DOWN_MS = 300f
-    /** The mark: 1.5 tile heights across, a fifth of a tile below the tile's middle; it leaves over 400 ms when the turn ends. */
-    const val MARK_SIZE = 1.5f
-    const val MARK_BELOW = .2f
+    /**
+     * The mark (design review, 12 Nov): 2.2 tile heights across, centred on the tile's middle, starting at the tile's rim and running
+     * outward, so a crown shows round the tile even on a full row. After a second it settles to 60 %; it leaves over 400 ms when the turn ends.
+     */
+    const val MARK_SIZE = 2.2f
+    const val MARK_SETTLE = .6f
+    const val MARK_SETTLE_AT_MS = 1000f
+    const val MARK_SETTLE_MS = 600f
     const val MARK_OUT_MS = 400L
     /** How long the whole heavy landing runs after its drop (the ring and the hop are over by then). */
     const val HEAVY_AFTER_MS = 520f
@@ -336,12 +341,18 @@ internal fun LandMarks() {
             val out = if (m.gone < 0L) 1f else (1f - (t - m.gone) / TableFeel.MARK_OUT_MS.toFloat()).coerceIn(0f, 1f)
             if (out <= 0f) continue
             val c = m.at - origin; val seed = m.card * 131
+            // Settled to 60 % a second after the landing, so it does not fight the cards.
+            val calm = 1f - (1f - TableFeel.MARK_SETTLE) * ((age - TableFeel.MARK_SETTLE_AT_MS) / TableFeel.MARK_SETTLE_MS).coerceIn(0f, 1f)
+            val reach = m.size / 2
+            /** Where the ray at [ang] leaves the tile, as a distance from its middle. */
+            fun rim(ang: Float): Float = minOf(m.halfW / kotlin.math.abs(kotlin.math.cos(ang)).coerceAtLeast(.001f), m.halfH / kotlin.math.abs(sin(ang)).coerceAtLeast(.001f))
+            fun on(ang: Float, d: Float) = Offset(c.x + kotlin.math.cos(ang) * d, c.y + sin(ang) * d)
             when (m.kind) {
                 "ripple" -> {
                     // A wet patch that stays, and four rings that run out once.
-                    val wet = (1f - .65f * (age / 4000f).coerceAtMost(1f)) * out
-                    drawOval(Color(0xFF0A1830).copy(alpha = .35f * wet), Offset(c.x - m.size * .6f, c.y - m.size * .25f), Size(m.size * 1.2f, m.size * .5f))
-                    drawOval(Color(0xFFCFE8FF).copy(alpha = .3f * wet), Offset(c.x - m.size * .6f, c.y - m.size * .25f), Size(m.size * 1.2f, m.size * .5f), style = androidx.compose.ui.graphics.drawscope.Stroke(1.2f * u), blendMode = BlendMode.Plus)
+                    val wet = calm * out; val ww = m.halfW + (reach - m.halfH) * .8f; val wh = m.halfH + (reach - m.halfH) * .8f
+                    drawOval(Color(0xFF0A1830).copy(alpha = .35f * wet), Offset(c.x - ww, c.y - wh), Size(ww * 2, wh * 2))
+                    drawOval(Color(0xFFCFE8FF).copy(alpha = .45f * wet), Offset(c.x - ww, c.y - wh), Size(ww * 2, wh * 2), style = androidx.compose.ui.graphics.drawscope.Stroke(1.4f * u), blendMode = BlendMode.Plus)
                     for (i in 0 until 4) { val a0 = age - i * 230f; if (a0 <= 0f || a0 >= 1500f) continue
                         val g = 1f - (1f - a0 / 1500f).let { it * it * it }; val rad = m.size * (.2f + (1.4f + i * .5f) * g)
                         val al = if (a0 < 120f) .9f * a0 / 120f else .9f * (1f - ((a0 - 120f) / 1300f).coerceAtMost(1f)).let { it * it }
@@ -349,27 +360,27 @@ internal fun LandMarks() {
                 }
                 "star" -> {
                     // Eight points joined in the order they light (900 ms); it settles to half strength over three seconds.
-                    val a = (if (age < 150f) age / 150f else 1f - .5f * ((age - 150f) / 3000f).coerceAtMost(1f)) * out
+                    val a = (age / 150f).coerceAtMost(1f) * calm * out
                     val shown = (1f - (1f - (age / 900f).coerceAtMost(1f)).let { it * it * it }) * 8f
-                    val pts = (0 until 8).map { i -> val ang = i / 8f * 6.283f + (markRand(seed + i) - .5f) * .6f; val d = m.size * (.45f + .8f * markRand(seed + i * 7 + 3))
-                        Offset(c.x + kotlin.math.cos(ang) * d, c.y + sin(ang) * d * .6f) }
+                    val pts = (0 until 8).map { i -> val ang = i / 8f * 6.283f + (markRand(seed + i) - .5f) * .6f; val from = rim(ang)
+                        on(ang, from + (reach - from).coerceAtLeast(0f) * (.35f + .65f * markRand(seed + i * 7 + 3))) }
                     val tone = Color(0xFFB9A8FF)
                     for (i in 1 until 8) if (i <= shown) { drawLine(tone.copy(alpha = .3f * a), pts[i - 1], pts[i], 5f * u, blendMode = BlendMode.Plus); drawLine(tone.copy(alpha = a), pts[i - 1], pts[i], 1.2f * u, blendMode = BlendMode.Plus) }
                     pts.forEachIndexed { i, p -> if (i <= shown) drawCircle(Color.White.copy(alpha = a), (2.2f + 1.2f * sin(t / 300f + i)) * u, p, blendMode = BlendMode.Plus) }
                 }
                 else -> {
                     // Cracks: nine rays of three short strokes, flattened to the table. On the forge they glow and cool to 40 % in six seconds.
-                    val size = if (m.kind == "leaf") m.size * .8f else m.size
-                    val a = (age / 80f).coerceAtMost(1f) * out
-                    val rays = (0 until 9).map { i -> val ang = i / 9f * 6.283f + (markRand(seed + i) - .5f) * .5f; var d = 0f
-                        val path = androidx.compose.ui.graphics.Path().apply { moveTo(c.x, c.y)
-                            for (j in 0 until 3) { d += size * (.22f + .18f * markRand(seed + i * 5 + j * 11 + 1)); val aa = ang + (markRand(seed + i * 3 + j * 17 + 2) - .5f) * .7f
-                                lineTo(c.x + kotlin.math.cos(aa) * d, c.y + sin(aa) * d * .55f) } }
-                        path }
+                    val far = if (m.kind == "leaf") .8f else 1f
+                    val a = (age / 80f).coerceAtMost(1f) * calm * out
+                    // Each ray starts where it leaves the tile and runs outward in three short strokes.
+                    val rays = (0 until 9).map { i -> val ang = i / 9f * 6.283f + (markRand(seed + i) - .5f) * .5f; val from = rim(ang); val run = (reach - from).coerceAtLeast(0f) * far
+                        androidx.compose.ui.graphics.Path().apply { on(ang, from).let { moveTo(it.x, it.y) }
+                            for (j in 1..3) { val aa = ang + (if (j == 3) 0f else (markRand(seed + i * 3 + j * 17 + 2) - .5f) * .35f)
+                                on(aa, from + run * (j / 3f) * (.8f + .2f * markRand(seed + i * 5 + j * 11 + 1))).let { lineTo(it.x, it.y) } } } }
                     val round = androidx.compose.ui.graphics.StrokeCap.Round
                     for (ray in rays) drawPath(ray, Color.Black.copy(alpha = .8f * a), style = androidx.compose.ui.graphics.drawscope.Stroke(2.6f * u, cap = round))
                     translateBy(u) { for (ray in rays) drawPath(ray, Color.White.copy(alpha = .13f * a), style = androidx.compose.ui.graphics.drawscope.Stroke(1f * u, cap = round)) }
-                    if (m.kind == "lava") { val heat = (1f - .6f * (age / 6000f).coerceAtMost(1f)) * (.75f + .25f * sin(t / 240f)) * a
+                    if (m.kind == "lava") { val heat = (1f - .6f * (age / 6000f).coerceAtMost(1f)) * (.75f + .25f * sin(t / 240f)) * (age / 80f).coerceAtMost(1f) * out
                         for (ray in rays) { drawPath(ray, Color(0xFFFF5A1A).copy(alpha = .35f * heat), style = androidx.compose.ui.graphics.drawscope.Stroke(7f * u, cap = round), blendMode = BlendMode.Plus)
                             drawPath(ray, Color(0xFFFFB060).copy(alpha = heat), style = androidx.compose.ui.graphics.drawscope.Stroke(1.6f * u, cap = round), blendMode = BlendMode.Plus) } }
                 }

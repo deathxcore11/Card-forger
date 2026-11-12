@@ -108,7 +108,8 @@ class LivingF3ShotTest {
         assertEquals("one mark", 1, fx.landMarks.size); assertEquals("lava", fx.landMarks[0].kind)
         assertTrue("your other tiles hop: ${diff(plain, hit, giant)}", diff(plain, hit, giant) > .2f)
         val hand = anchors.rects.getValue("hand")
-        assertTrue("your hand hops: ${diff(plain, hit, hand)}", diff(plain, hit, hand) > .05f)
+val face = Rect(bears.left + bears.width * .15f, bears.top + bears.height * .15f, bears.right - bears.width * .15f, bears.bottom - bears.height * .15f)
+                assertTrue("your hand hops: ${diff(plain, hit, hand)}", diff(plain, hit, hand) > .05f)
         val round = Rect(bears.center.x - bears.height * 1.2f, bears.center.y - bears.height * 1.2f, bears.center.x + bears.height * 1.2f, bears.center.y + bears.height * 1.2f)
         assertTrue("a ring and the mat's dust round it: ${diff(plain, hit, round)}", diff(plain, hit, round) > .1f)
         // Only the board moves: the squares and the buttons are the same pixels.
@@ -118,10 +119,11 @@ class LivingF3ShotTest {
         rule.waitForIdle()
         val settled = draw("settled")
         assertEquals("one mark stays for the turn", 1, fx.landMarks.size)
-        val gap = Rect(bears.left - bears.width * .9f, bears.top, bears.right + bears.width * .9f, bears.bottom + bears.height * .5f)
-        assertTrue("the mark shows on the mat: ${diff(plain, settled, gap)}", diff(plain, settled, gap) > .004f)
+        // The crown: the mark runs from the tile's rim into the gap toward the middle line, clear of every tile.
+        val gap = Rect(bears.left, bears.top - bears.height * .22f, bears.right, bears.top - 3 * dp)
+        assertTrue("the mark shows above the tile on a full row: ${diff(plain, settled, gap)}", diff(plain, settled, gap) > .01f)
+        assertEquals("2.2 tile heights across", bears.height * 2.2f, fx.landMarks[0].size, 1f)
         assertEquals("the squares are untouched", 0f, diff(plain, settled, z.mySquare.px()), .002f)
-        val face = Rect(bears.left + bears.width * .2f, bears.top + bears.height * .1f, bears.right - bears.width * .2f, bears.top + bears.height * .5f)
         assertEquals("the tile is home at its own size", 0f, diff(plain, settled, face), .01f)
     }
 }

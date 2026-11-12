@@ -31,13 +31,13 @@ internal fun legCues(t: Director.Travel): List<LegCue> = when (t.leg) {
 internal val LANDING_CUES = setOf("land_drop", "enters_tapped", "creature_land", "creature_land_heavy", "token")
 
 /**
- * What [c] sounds like as it lands: a token its pop, a land its drop (dull when it enters tapped), power 4 or more the heavy
+ * What [c] sounds like as it lands: a token its pop, a land its drop (dull when it enters tapped), power 5 or more ([TableFeel.HEAVY_POWER], the same step as the heavy landing's look) the heavy
  * landing, anything else that arrives already turned the dull one, and the rest the plain landing.
  */
 internal fun landingCue(c: Card): String = when {
     c.token -> "token"
     c.isLand -> if (c.tapped) "enters_tapped" else "land_drop"
-    c.isCreature && (c.power ?: 0) >= 4 -> "creature_land_heavy"
+    c.isCreature && (c.power ?: 0) >= TableFeel.HEAVY_POWER -> "creature_land_heavy"
     c.tapped && !c.attacking -> "enters_tapped"
     else -> "creature_land"
 }

@@ -75,7 +75,9 @@ class SoundCastLandTest {
         assertEquals("land_drop", landingCue(c(card(6, 1, "Forest", type = "Basic Land"))))
         assertEquals("enters_tapped", landingCue(c(card(6, 1, "Guildgate", type = "Land", tapped = true))))
         assertEquals("creature_land", landingCue(c(card(7, 1, "Bear", power = 3))))
-        assertEquals("creature_land_heavy", landingCue(c(card(7, 1, "Wurm", power = 4))))
+        // Design thread, 12 Nov: the sound brief said 4 and the living table 5; HEAVY_POWER = 5 decides both, so sound and look agree.
+        assertEquals("creature_land", landingCue(c(card(7, 1, "Giant", power = 4))))
+        assertEquals("creature_land_heavy", landingCue(c(card(7, 1, "Wurm", power = 5))))
         assertEquals("creature_land", landingCue(c(card(8, 1, "Sol Ring", type = "Artifact"))))
         assertEquals("token", landingCue(c(card(9, 1, "Soldier")).copy(token = true)))
         for (cue in listOf("land_drop", "enters_tapped", "creature_land", "creature_land_heavy", "token")) assertTrue(cue in LANDING_CUES)

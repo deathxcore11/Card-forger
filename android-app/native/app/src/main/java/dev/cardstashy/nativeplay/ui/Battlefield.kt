@@ -434,6 +434,7 @@ class Battlefield {
     /** F3: the heavy landings in flight; their cards are drawn over their row while they drop. */
     private var heavies: List<FxItem> = emptyList()
     internal val landers = androidx.compose.runtime.mutableStateOf<Set<Int>>(emptySet())
+    internal fun landsHeavy(card: Int?): Boolean = card != null && heavies.any { it.card == card }
     /** F3: what the heavy landings left on the mat this turn (root pixels), drawn under the cards by [LandMarks]. */
     internal val landMarks = mutableStateListOf<LandMark>()
     /** F3: the other cards of the player whose creature landed heavy hop (tiles [TableFeel.HOP_TILE] dp). */

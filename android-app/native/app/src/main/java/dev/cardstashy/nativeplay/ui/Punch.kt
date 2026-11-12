@@ -328,7 +328,8 @@ internal fun DrawScope.drawImpact(fx: Battlefield, it: FxItem, p: Float, r: andr
     }
     // White flash on the tile.
     if (ms < 300f) drawRoundRect(Color.White.copy(alpha = .7f * (if (fx.reduced) .5f else 1f) * (1f - ms / 300f)), r.topLeft, r.size, androidx.compose.ui.geometry.CornerRadius(10f * dp))
-    if (bare) return
+    // F3: a heavy landing has one ring, in the card's colour ([drawHeavy]); P3's flat rings are left out for it.
+    if (bare || fx.landsHeavy(it.card)) return
     // The flat rings under the tile: gold (460 ms), and a white one inside it (260).
     fun flat(span: Float, r0: Float, r1: Float, c: Color, w: Float) { val q = ms / span; if (q >= 1f) return
         val e = 1f - (1f - q) * (1f - q); val rad = r0 + (r1 - r0) * e
@@ -340,7 +341,9 @@ internal fun DrawScope.drawImpact(fx: Battlefield, it: FxItem, p: Float, r: andr
 // ---- Living table F3: the heavy landing (specs/living-table-build-guide.md, "F3 Weight") ----
 
 /** F3: what a heavy landing left on the mat: where (root pixels), how big, which kind (the mat's), and when it came and began to leave. */
-internal class LandMark(val card: Int, val at: Offset, val size: Float, val kind: String, val tone: Color, val born: Long) { var gone: Long = -1L }
+internal class LandMark(val card: Int, val at: Offset, val size: Float, val kind: String, val tone: Color, val born: Long,
+    /** Half the tile's width and height: the mark starts at the tile's rim. */
+    val halfW: Float = 0f, val halfH: Float = 0f) { var gone: Long = -1L }
 
 /**
  * F3 on the FxLayer canvas: at the frame the heavy tile lands, the clock freezes and the board shakes (Full only), white spikes fly,
@@ -352,11 +355,10 @@ internal fun DrawScope.drawHeavy(fx: Battlefield, it: FxItem, p: Float, r: andro
     val now = fx.now.longValue; val dp = density; val c = r.center; val seed = (it.card ?: 0) and 0xff
     if (it.once(1)) {
         if (TableFeel.mode() == TableFeel.Mode.FULL) { fx.freeze(TableFeel.HEAVY_FREEZE_MS); fx.jolt(TableFeel.HEAVY_SHAKE, (TableFeel.HEAVY_SHAKE / TableFeel.HEAVY_SHAKE_FADE).toLong()) }
-        val at = Offset(c.x, c.y + r.height * TableFeel.MARK_BELOW)
+        val at = c
         if (fx.landMarks.size >= 8) fx.landMarks.removeAt(0)
-        fx.landMarks += LandMark(it.card ?: 0, at + self, r.height * TableFeel.MARK_SIZE, it.note, it.tone, now)
+        fx.landMarks += LandMark(it.card ?: 0, at + self, r.height * TableFeel.MARK_SIZE, it.note, it.tone, now, r.width / 2, r.height / 2)
         if (!fx.low) {
-            fx.bits.spikes(c, TableFeel.HEAVY_SPIKES, TableFeel.HEAVY_SPIKE_LEN * dp, Color.White, now, seed = seed)
             val up = -(PI / 2).toFloat()
             // The mat's own answer (the showpiece's landMark): embers and smoke, spray, leaves, star points; a plain mat throws dust.
             when (it.note) {
@@ -369,6 +371,17 @@ internal fun DrawScope.drawHeavy(fx: Battlefield, it: FxItem, p: Float, r: andro
                     fx.bits.sparks(at, 18, Color.White, now, 250f * dp, lifeMs = 800, sizePx = 1.8f * dp, seed = seed) }
                 else -> fx.bits.smoke(Offset(at.x, at.y + r.height * .2f), 12, Color(0xFF8A8478), now, 46f * dp, sizePx = r.height * .13f, seed = seed)
             }
+        }
+    }
+    // White spikes from the tile's rim outward, tapered to a point (300 ms): they never cross the name or the P/T.
+    if (!fx.low && ms < 300f) { val q = ms / 300f; val grow = minOf(1f, q / .35f); val al = 1f - ((q - .4f) / .6f).coerceIn(0f, 1f)
+        for (j in 0 until TableFeel.HEAVY_SPIKES) {
+            val ang = (2 * PI).toFloat() * ((j + .5f) / TableFeel.HEAVY_SPIKES) + (((seed + j * 7) * 0.6180339f) % 1f - .5f) * .35f
+            val len = TableFeel.HEAVY_SPIKE_LEN * dp * (.7f + .3f * (((j * 11 + seed) * 0.6180339f) % 1f))
+            val d = Offset(cos(ang), sin(ang)); val n = Offset(-d.y, d.x) * (2.2f * dp)
+            val edge = min(r.width / 2 / kotlin.math.abs(d.x).coerceAtLeast(.001f), r.height / 2 / kotlin.math.abs(d.y).coerceAtLeast(.001f)) + 2f * dp
+            val from = c + d * edge; val to = c + d * (edge + len * grow)
+            drawPath(androidx.compose.ui.graphics.Path().apply { moveTo(from.x + n.x, from.y + n.y); lineTo(to.x, to.y); lineTo(from.x - n.x, from.y - n.y); close() }, Color.White.copy(alpha = al))
         }
     }
     // The ring: from 40 dp to 2.4 tile heights, 4 dp thinning, in the card's colour.
