@@ -271,6 +271,8 @@ fun Ambient(art: String?) {
         val ctx = LocalContext.current
         // Blurred once, small, off the main thread, and kept per art; a full-screen live blur cost every scroll frame at Fold size.
         val soft = produceState(Aura.cachedSoft(art), art) { value = art?.let { a -> Aura.cachedSoft(a) ?: softArt(ctx, a)?.also { Aura.keepSoft(a, it) } } }.value
+        // Loading brief L1: the opening screen waits for this one picture.
+        if (soft != null) androidx.compose.runtime.SideEffect { HomeStart.picture.value = true }
         // aura.css .aura-art: a new art fades in over 1 s; the layer drifts slowly (22 s, alternate) unless motion is reduced.
         val still = Motion.still || remember { Playmats.reduced(ctx) }
         val drift = if (theme == "aura" && !still) androidx.compose.animation.core.rememberInfiniteTransition(label = "aura").animateFloat(0f, 1f,
