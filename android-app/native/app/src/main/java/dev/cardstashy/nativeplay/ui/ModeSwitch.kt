@@ -115,10 +115,23 @@ fun CollectionScreen(onPlay: () -> Unit, url: String = "https://cardstashy.com/"
                         runCatching { ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, request.url)) }
                         return true
                     }
+                    // The page itself failed to open (seen 12 Nov, Ask on Search: "net::ERR_FAILED" from the site's saved start
+                    // page on the first open after a release; the second open works): open it again, twice at most, before
+                    // the person is left looking at the browser's error page.
+                    private var retries = 0
+                    private var failed = false
+                    override fun onReceivedError(view: WebView, request: WebResourceRequest, error: android.webkit.WebResourceError) {
+                        if (!request.isForMainFrame || retries >= 2) return
+                        retries++; failed = true
+                        android.util.Log.w("CollectionWeb", "page failed (${error.errorCode} ${error.description}), opening again ($retries)")
+                        view.postDelayed({ view.loadUrl(url) }, 350L * retries)
+                    }
                     // A native button with no address of its own (pick a game, the Card of the Day): press the site's
                     // own button once the page has drawn it, trying for ten seconds.
                     private var pressed = false
                     override fun onPageFinished(view: WebView, loaded: String?) {
+                        // The error page finishing is not the site: the button is pressed on the page that opens after it.
+                        if (failed) { failed = false; return }
                         if (press == null || pressed) return
                         pressed = true
                         // Several selectors, one per line, press in turn: a tile, then a control in the sheet it opens. After a
