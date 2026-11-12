@@ -49,4 +49,27 @@ for (const [format, ci, seed] of [['Standard', 'c', 'The Walls of Ba Sing Se'], 
  assert.deepEqual(unmet, [], label + ' has no unsupported card: ' + JSON.stringify(unmet));
  if (ci.length < 2) assert.deepEqual(rows.filter(r => idleFixer(r.card, deck.colors)).map(r => r.card.name), [], label + ' has no idle colour fixer');
 }
+// Shape (12 Nov): legends are two-ofs, a big build-around brings its ramp and its lands, and the meta prior lifts real staples.
+{
+ const { forgeRoles } = await import('./deck-forge.js'), { metaPrior } = await import('./deck-meta-prior.js'), { shapeFaults } = await import('./deck-needs.js');
+ const legend = c => /\bLegendary\b/.test((c.card_faces?.[0] || c).type_line || '');
+ const walls = build('Standard', 'c', 'The Walls of Ba Sing Se', reportedCards), qty = n => walls.deck.cards.find(r => r.name === n)?.qty || 0;
+ assert.equal(qty('The Walls of Ba Sing Se'), 3, 'an eight-mana legendary build-around is a three-of');
+ assert.ok(walls.deck.lands >= 24, 'a deck built to reach eight mana keeps 24 lands, has ' + walls.deck.lands);
+ const ramp = walls.rows.reduce((n, r) => n + (forgeRoles(r.card).includes('ramp') ? r.qty : 0), 0);
+ assert.ok(ramp >= 6, 'Walls of Ba Sing Se comes with real ramp, has ' + ramp);
+ for (const [format, ci, seed] of [['Standard', 'gu', 'Lessons from Life'], ['Standard', 'wb', 'Duress'], ['Legacy', 'w', 'Day of Judgment'], ['Vintage', 'u', 'Essence Scatter']]) {
+  const b = build(format, ci, seed, [...reportedCards, 'Duress', 'Day of Judgment']); if (!b.deck.cards.length) continue;
+  const over = b.rows.filter(r => legend(r.card) && r.qty > 2 && r.card.name !== seed).map(r => r.card.name);
+  assert.deepEqual(over, [], format + ' ' + seed + ' has no legend past two copies: ' + over);
+  assert.ok(b.deck.lands >= 20, format + ' ' + seed + ' has at least 20 lands, has ' + b.deck.lands);
+  assert.equal(shapeFaults(b.rows, { size: 60, colors: b.deck.colors, keep: c => c.name === seed }), 0, format + ' ' + seed + ' has no shape fault');
+ }
+ // The tournament prior: weights follow how many lists play a card, and a staple outranks an unplayed card.
+ const meta = JSON.parse(zlib.gunzipSync(fs.readFileSync(new URL('./test-fixtures/mtg-meta-standard-2026-11-12.json.gz', import.meta.url)))), prior = metaPrior(meta.decks);
+ assert.equal(prior.size, 126);
+ assert.ok(prior.weight('Stock Up') > 0.5 && prior.weight('Pirate\'s Cutlass') === 0 && prior.weight('Gravestone Strider') === 0);
+ assert.ok(prior.top(150).length === 150 && prior.lands(10).includes('Starting Town'));
+ assert.equal(metaPrior(null).size, 0); assert.equal(metaPrior([]).weight('Stock Up'), 0);
+}
 console.log('deck needs: reported piles read correctly; 6 real-pool builds hold no unsupported card');

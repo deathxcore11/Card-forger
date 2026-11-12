@@ -533,7 +533,8 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
 
   // The finished list sets its own land count (forgeLandCount); buildDeck
   // rebuilds once with it and keeps whichever version is more complete.
-  const landsWanted = Math.max(forgeLandCount([...rows.values()].filter(r => cardKey(r.name) !== cardKey(lead?.name)).map(r => ({ card: catalog[cardKey(r.name)], qty: r.qty })), { size, commander: !!f.commander, hooks }), [...rows.values()].filter(r => r.why === 'Already in your list' && isLand(catalog[cardKey(r.name)])).reduce((n, r) => n + r.qty, 0));
+  // A deck built to reach six mana or more keeps two fifths of its slots for lands, whatever its cheap cards say.
+  const landsWanted = Math.max(size < 100 && topEnd >= 6 ? Math.round(size * 0.4) : 0, forgeLandCount([...rows.values()].filter(r => cardKey(r.name) !== cardKey(lead?.name)).map(r => ({ card: catalog[cardKey(r.name)], qty: r.qty })), { size, commander: !!f.commander, hooks }), [...rows.values()].filter(r => r.why === 'Already in your list' && isLand(catalog[cardKey(r.name)])).reduce((n, r) => n + r.qty, 0));
   const cards = [...rows.values()].filter((r) => r.qty > 0),
     total = sumQty(cards),
     open = Math.max(0, size - total);
