@@ -494,6 +494,8 @@ fun ForgeBoard(
             ManaLight(st)
             // F3: what a heavy landing left on the mat this turn.
             LandMarks()
+            // F8: the air over the mat.
+            TableAir(st)
             FxMat(st, mid)
             // Nothing of the turn clock lies on the divider (table additions 5): it is a ring on the gold button and a line under the phase track.
 
@@ -1551,7 +1553,8 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         .graphicsLayer { rotationZ = turn; attackLayer(card.tapped, stepUp, mineSide, advance?.toPx() ?: (12f * u * density)) }
         .onGloballyPositioned { place[0] = it; anchors?.putRect("c${card.id}", it.boundsInRoot()) }
         // Effects move the card by transform only, after its anchor is read, so lines and slots never follow the motion.
-        .then(if (fx != null) Modifier.graphicsLayer { fx.move(this, card.id, anchors) } else Modifier)
+        // Living table F8: a creature tile breathes (lands and whole cards do not).
+        .then(if (fx != null) Modifier.graphicsLayer { fx.move(this, card.id, anchors); if (card.isCreature && !land && !whole) fx.breathe(this, card.id) } else Modifier)
         .drawBehind {
             // box-shadow: 0 0 0 1.5px ring, 0 0 0 2.5px #000d, 0 10px 22px #000b
             val r = 10.du.toPx()
@@ -1559,7 +1562,8 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
             drawRoundRect(Color(0xDD000000), topLeft = Offset(-2.5f.du.toPx(), -2.5f.du.toPx()), size = Size(size.width + 5f.du.toPx(), size.height + 5f.du.toPx()), cornerRadius = CornerRadius(r + 2.5f.du.toPx()))
             if (role != null) drawIntoCanvas { c ->
                 // 0 0 ~20px 4px glow
-                val spread = 4.du.toPx(); val p = Paint().asFrameworkPaint().apply { isAntiAlias = true; color = role.third.toArgb(); maskFilter = android.graphics.BlurMaskFilter(10.du.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL) }
+                // F8: the rim's glow pulses between 75 % and 100 %.
+                val spread = 4.du.toPx(); val p = Paint().asFrameworkPaint().apply { isAntiAlias = true; color = role.third.let { g -> g.copy(alpha = g.alpha * (fx?.rimPulse() ?: 1f)) }.toArgb(); maskFilter = android.graphics.BlurMaskFilter(10.du.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL) }
                 c.nativeCanvas.drawRoundRect(-spread, -spread, size.width + spread, size.height + spread, r + spread, r + spread, p)
             }
             // The payment light: a wide soft mana-gold glow round the whole card (#ffd98a), under its thin edge.

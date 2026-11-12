@@ -450,6 +450,14 @@ class Battlefield {
             val p = it.p(t); if (p < 0f) continue
             translationY -= TableFeel.hopLift(p * it.baseMs - TableFeel.HEAVY_DROP_MS) * TableFeel.HOP_TILE.dp.toPx() }
     }
+    /** F8: a creature tile breathes (its layer only); nothing when motion is off, effects are Minimal or Match effects are off. */
+    internal fun breathe(scope: GraphicsLayerScope, id: Int) {
+        if (reduced || low || Motion.still || TableFeel.mode() == TableFeel.Mode.OFF) return
+        val s = TableFeel.breath(id, now.longValue.toFloat())
+        with(scope) { scaleX *= s; scaleY *= s }
+    }
+    /** F8: a rim's strength now (75 % to 100 %); 1 when nothing should move. */
+    internal fun rimPulse(): Float = if (reduced || low || Motion.still || TableFeel.mode() == TableFeel.Mode.OFF) 1f else TableFeel.rimPulse(now.longValue.toFloat())
     /** F3: how far your hand's cards hop now (dp), when a creature of yours has just landed heavy. */
     internal fun handHop(): Float {
         rev.intValue

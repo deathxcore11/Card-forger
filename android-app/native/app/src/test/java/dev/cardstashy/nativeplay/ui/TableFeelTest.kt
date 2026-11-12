@@ -242,4 +242,31 @@ class TableFeelTest {
             assertEquals("the same crack every frame", c, TableFeel.crack(from, to, 2))
         } finally { AppSettings.applyMatchEffects("full"); Motion.still = was }
     }
+
+    /** F8: about 54 specks of the mat's kind (70 under the stars), brighter on the side whose turn it is; creature tiles breathe .7 % out of step; rims pulse 75 to 100 %. */
+    @Test fun theAirBreathAndRimPulseKeepToTheirNumbers() {
+        assertEquals(54, TableFeel.specks("ember").size); assertEquals(54, TableFeel.specks("dust").size); assertEquals(70, TableFeel.specks("star").size)
+        assertEquals("the same specks every time", TableFeel.specks("mist"), TableFeel.specks("mist"))
+        // Embers rise 15 to 45 dp a second; mist drifts sideways 4 to 14 and does not rise; stars do not move; dust rises slowly.
+        for (s in TableFeel.specks("ember")) assertTrue(s.vy in -.045f..-.015f)
+        for (s in TableFeel.specks("mist")) { assertTrue(s.vx in .004f..(.014f)); assertEquals(0f, s.vy, 0f) }
+        for (s in TableFeel.specks("star")) { assertEquals(0f, s.vy, 0f); assertEquals(TableFeel.speckAt(s, "star", 0f, 844f, 390f).y, TableFeel.speckAt(s, "star", 9000f, 844f, 390f).y, .01f) }
+        for (s in TableFeel.specks("dust")) assertTrue(s.vy in -.008f..-.002f)
+        // Every speck stays on the table (it comes back in at the far edge).
+        for (air in TableFeel.AIRS) for (s in TableFeel.specks(air)) for (t in listOf(0f, 3333f, 60_000f, 600_000f)) { val at = TableFeel.speckAt(s, air, t, 844f, 390f)
+            assertTrue("$air $at", at.x in -4f..848f && at.y in -4f..394f) }
+        // Brighter on the side whose turn it is: on your turn a speck low on the table outshines the same one high up, and the other way round.
+        val dust = TableFeel.specks("dust").first()
+        val t0 = (0 until 2000).map { it.toFloat() }.first { TableFeel.speckAlpha(dust, "dust", it, .5f, 1f) > .2f }
+        assertTrue(TableFeel.speckAlpha(dust, "dust", t0, .9f, 1f) > TableFeel.speckAlpha(dust, "dust", t0, .1f, 1f))
+        assertTrue(TableFeel.speckAlpha(dust, "dust", t0, .1f, 0f) > TableFeel.speckAlpha(dust, "dust", t0, .9f, 0f))
+        // Breath: never more than .7 % either way, back where it was after 5.6 s, and two cards are out of step.
+        val sizes = (0..5600 step 50).map { TableFeel.breath(7, it.toFloat()) }
+        assertEquals(1.007f, sizes.max(), .0002f); assertEquals(.993f, sizes.min(), .0002f); assertEquals(sizes.first(), sizes.last(), .0001f)
+        val step = (1..12).map { TableFeel.breath(it, 1000f) }
+        assertTrue("out of step: $step", step.max() - step.min() > .005f && step.distinct().size >= 10)
+        // Rims: 75 % to 100 % on a 1.9 s cycle.
+        val rims = (0..1900 step 10).map { TableFeel.rimPulse(it.toFloat()) }
+        assertEquals(1f, rims.max(), .001f); assertEquals(.75f, rims.min(), .001f); assertEquals(rims.first(), rims.last(), .001f)
+    }
 }

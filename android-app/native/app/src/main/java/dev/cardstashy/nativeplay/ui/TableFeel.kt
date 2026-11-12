@@ -293,6 +293,46 @@ internal object TableFeel {
         return Crack(main, branches)
     }
 
+    // F8, always alive: specks in the air (the mat's kind), creature tiles that breathe, rims that pulse. Nothing here moves a
+    // card's place or what can be tapped; it stops with the frame clock when the app is in the background.
+    const val AIR_COUNT = 54
+    const val AIR_COUNT_STAR = 70
+    /** Creature tiles breathe .7 % on a 5.6 s cycle, each out of step; lands and whole cards do not. */
+    const val BREATH = .007f
+    const val BREATH_MS = 5600f
+    /** Rims pulse between 75 % and 100 % on a 1.9 s cycle. */
+    const val RIM_LOW = .75f
+    const val RIM_MS = 1900f
+
+    /** One speck: where it starts (0..1 of the table), its drift (dp a ms), its radius (dp) and its phase. */
+    data class Speck(val x: Float, val y: Float, val vx: Float, val vy: Float, val r: Float, val ph: Float)
+    private fun airRand(n: Int): Float { val v = sin(n * 12.9898f + 78.233f) * 43758.547f; return v - kotlin.math.floor(v) }
+    /** The specks of an air kind (the showpiece's numbers): embers rise, mist drifts sideways, fireflies and stars stay, dust rises slowly. */
+    fun specks(air: String): List<Speck> = List(if (air == "star") AIR_COUNT_STAR else AIR_COUNT) { i ->
+        fun r(k: Int, a: Float, b: Float) = a + (b - a) * airRand(i * 17 + k)
+        Speck(r(1, 0f, 1f), r(2, 0f, 1f), if (air == "mist") r(3, .004f, .014f) else r(3, -.006f, .006f),
+            when (air) { "ember" -> r(4, -.045f, -.015f); "star", "firefly", "mist" -> 0f; else -> r(4, -.008f, -.002f) },
+            if (air == "firefly") r(5, 1.4f, 2.4f) else r(5, .6f, 1.9f), r(6, 0f, 6f))
+    }
+    /** Where a speck is (dp) [t] ms in on a table [w] by [h] dp, wrapping at the edges; fireflies wander and embers sway about their path. */
+    fun speckAt(s: Speck, air: String, t: Float, w: Float, h: Float): Offset {
+        val wx = when (air) { "firefly" -> -kotlin.math.cos(t / 1300f + s.ph) * 26f; "ember" -> -kotlin.math.cos(t / 600f + s.ph) * 6f; else -> 0f }
+        val wy = if (air == "firefly") sin(t / 1700f + s.ph * 2f) * 23.8f else 0f
+        fun wrap(v: Float, span: Float) = ((v % span) + span) % span
+        return Offset(wrap(s.x * w + s.vx * t + wx + 4f, w + 8f) - 4f, wrap(s.y * h + s.vy * t + wy + 4f, h + 8f) - 4f)
+    }
+    /** A speck's strength: its own twinkle times the light of the side it is over ([mine] 0..1: how much the turn is yours; [q] 0 top, 1 bottom). */
+    fun speckAlpha(s: Speck, air: String, t: Float, q: Float, mine: Float): Float {
+        val lit = mine * q + (1f - mine) * (1f - q)
+        val twinkle = when (air) { "firefly" -> maxOf(0f, sin(t / 520f + s.ph * 3f)); "star" -> .35f + .65f * kotlin.math.abs(sin(t / 900f + s.ph * 5f)); else -> .6f + .4f * sin(t / (if (air == "ember") 160f else 700f) + s.ph) }
+        return (when (air) { "mist" -> .06f + .16f * lit; "firefly" -> .75f; "ember" -> .3f + .5f * lit; else -> .1f + .35f * lit }) * twinkle
+    }
+    fun speckTone(s: Speck, air: String): Color = when (air) { "ember" -> Color(0xFFFFA040); "firefly" -> Color(0xFFE6FF7A); "star" -> if (s.ph > 3f) Color(0xFFD8CCFF) else Color.White; "mist" -> Color(0xFFCFE4FF); else -> Color(0xFFFFF3D0) }
+    /** A creature tile's size [t] ms in: 1 give or take .7 %, each card out of step with the others. */
+    fun breath(card: Int, t: Float): Float = 1f + BREATH * sin(2f * PI.toFloat() * t / BREATH_MS + airRand(card) * 2f * PI.toFloat())
+    /** A rim's strength [t] ms in: between 75 % and 100 %. */
+    fun rimPulse(t: Float): Float = RIM_LOW + (1f - RIM_LOW) * (.5f + .5f * sin(2f * PI.toFloat() * t / RIM_MS))
+
     /** The band's strength at [p] (0..1) of its way down. */
     fun sweepStrength(p: Float): Float = if (p <= 0f || p >= 1f) 0f else SWEEP_PEAK * sin(p * PI.toFloat())
 }
@@ -454,4 +494,33 @@ internal fun LandMarks() {
 
 private inline fun androidx.compose.ui.graphics.drawscope.DrawScope.translateBy(d: Float, block: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit) {
     drawContext.transform.translate(d, d); block(); drawContext.transform.translate(-d, -d)
+}
+
+/**
+ * F8, the air: about 54 specks over the mat and under every card, of the mat's own kind (embers, mist, fireflies, stars, dust),
+ * brighter on the side whose turn it is. Off and "Effects: Minimal" draw none; with motion off they stand still.
+ */
+@Composable
+internal fun TableAir(st: MatchState) {
+    if (TableFeel.mode() == TableFeel.Mode.OFF) return
+    val fx = LocalBattlefield.current
+    if (fx?.low == true) return
+    val air = TableFeel.profile(TableFeel.mat).air
+    val specks = remember(air) { TableFeel.specks(air) }
+    val mine = remember { Animatable(if (st.activePlayer == st.viewer) 1f else 0f) }
+    val yours = st.activePlayer == st.viewer
+    LaunchedEffect(yours) { if (Motion.still) mine.snapTo(if (yours) 1f else 0f) else mine.animateTo(if (yours) 1f else 0f, tween(TableFeel.TURN_FADE_MS)) }
+    Canvas(Modifier.fillMaxSize()) {
+        val t = if (Motion.still || fx == null || fx.reduced) 0f else fx.now.longValue.toFloat()
+        val d = density; val w = size.width / d; val h = size.height / d
+        for (s in specks) {
+            val at = TableFeel.speckAt(s, air, t, w, h)
+            val a = TableFeel.speckAlpha(s, air, t, (at.y / h).coerceIn(0f, 1f), mine.value)
+            if (a <= .01f) continue
+            val tone = TableFeel.speckTone(s, air); val c = Offset(at.x * d, at.y * d)
+            // Embers and fireflies carry a soft halo.
+            if (air == "ember" || air == "firefly") drawCircle(tone.copy(alpha = a * .25f), s.r * 3f * d, c, blendMode = BlendMode.Plus)
+            drawCircle(tone.copy(alpha = a.coerceAtMost(1f)), s.r * d, c, blendMode = BlendMode.Plus)
+        }
+    }
 }
