@@ -37,6 +37,21 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 
+/** Lighter Collection home C2: how long Home waits for a slow refresh before it shows what has arrived so far, once. */
+internal const val CALM_CAP_MS = 4_000L
+
+/**
+ * Lighter Collection home C2, one calm update: Home is painted once when [refresh] is done ([paint] with true).
+ * A refresh slower than [capMs] gets one paint of what has arrived by then, and no more until it is done.
+ * (Before, Home was painted again every 1.2 s for as long as the refresh ran.) A refresh that fails paints nothing more.
+ */
+internal suspend fun calmUpdate(capMs: Long = CALM_CAP_MS, refresh: suspend () -> Unit, paint: suspend (final: Boolean) -> Unit) = coroutineScope {
+    val late = launch { delay(capMs); paint(false) }
+    try { refresh() } finally { late.cancel() }
+    late.join()
+    paint(true)
+}
+
 /** What Home showed last, so coming back paints at once while the feeds refresh. */
 internal object HomeCache {
     /** Each account's Home by game ("<user>|mtg"), as last drawn this run. */
@@ -181,12 +196,9 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
         }
         paint()
         if (hints == null || HomeCache.hintsGame != game) withContext(Dispatchers.Default) { CollectionHomeModel.hints(CollectionEngine.hints(game.id)) }.also { hints = it; HomeCache.hints = it; HomeCache.hintsGame = game }
-        // Card names the catalog lacks, the Card of the Day, Meta and News: repaint as they arrive.
-        coroutineScope {
-            val repaint = launch { while (true) { delay(1200); paint() } }
-            // Whatever names this visit looked up are kept, even when it is cut short (after the last paint, so its Power is kept too).
-            try { CollectionEngine.refresh(g.id); repaint.cancel(); paint(final = true) } finally { repaint.cancel(); withContext(kotlinx.coroutines.NonCancellable) { keepCatalog(context) } }
-        }
+        // Card names the catalog lacks, the Card of the Day, Meta and News: one calm update when they are all in (C2), not a redraw every 1.2 s.
+        // Whatever names this visit looked up are kept, even when it is cut short (after the last paint, so its Power is kept too).
+        try { calmUpdate(refresh = { CollectionEngine.refresh(g.id) }, paint = { paint(it) }) } finally { withContext(kotlinx.coroutines.NonCancellable) { keepCatalog(context) } }
         failed = null
     } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) {
         // The site's guard for a workspace it can't open: say so and leave the account copy untouched.
