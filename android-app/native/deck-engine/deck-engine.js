@@ -1,4 +1,4 @@
-/* CardStashy Deck Forge bundle, web eaca90d06ed1599dc33e43a6c1971e853fd9e145 */
+/* CardStashy Deck Forge bundle, web 478cd6bee84c29f999678339ce8d9e5b02453f5d */
 (() => {
   var __getOwnPropNames = Object.getOwnPropertyNames;
   var __esm = (fn, res) => function __init() {
@@ -3782,7 +3782,7 @@
     const avg = n ? mv3 / n : 3, landfall = hooks.some((h) => h.id === "landfall");
     if (commander && size >= 100) return Math.round(Math.min(42, Math.max(33, 31.42 + 3.13 * avg - 0.28 * cheap + (landfall ? 2 : 0))));
     const sixty = 19.59 + 1.9 * avg - 0.28 * cheap + (landfall ? 1 : 0);
-    return Math.round(Math.min(size * 0.45, Math.max(size / 3, sixty * size / 60)));
+    return Math.round(Math.min(size * 0.45, Math.max(size * 22 / 60, sixty * size / 60)));
   }
 
   // ../../insights.js
@@ -4248,7 +4248,7 @@
   var esc3 = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   var OTHER_SUBTYPES = ["Lesson", "Equipment", "Aura", "Vehicle", "Saga", "Shrine", "Curse", "Room", "Case", "Class", "Background", "Adventure", "Arcane", "Trap", "Treasure", "Food", "Clue", "Blood", "Map", "Role"];
   var SUBTYPES = [.../* @__PURE__ */ new Set([...MTG_VOCABULARY["creature-types"], ...OTHER_SUBTYPES])].sort((a, b) => b.length - a.length);
-  var TERM = "(" + SUBTYPES.map(tribePattern).join("|") + ")";
+  var TERM = "(" + SUBTYPES.map(tribePattern).join("|") + ")(?![a-z])";
   var singular = new Map(SUBTYPES.flatMap((t) => {
     const m = tribePattern(t).match(/^\(\?:(.+)\|(.+)\)$/);
     return m ? [[m[1].replace(/\\/g, "").toLowerCase(), t], [m[2].replace(/\\/g, "").toLowerCase(), t]] : [[t.toLowerCase(), t]];
@@ -4270,9 +4270,12 @@
   var subtypeIn = (c, t) => new RegExp("(?:\u2014|\\s)" + esc3(t) + "(?:\\s|$)").test(" " + typeLine(c).split("\u2014").slice(1).join(" \u2014 ") + " ");
   var isType = (c, re) => re.test(typeLine(c));
   var mv2 = (c) => Number(c?.cmc) || 0;
+  var hasKeyword = (c, k) => (c?.keywords || []).includes(k) || new RegExp("(?:^|\\n)" + k + "\\b", "i").test(rulesText(c));
+  var makesTokens = (c) => textOf2(c).split("\n").some((line) => /\bcreates? [^.]*\btokens?\b/i.test(line) && !/^[^:]*\{(?:[5-9]|\d\d)\}[^:]*:/.test(line) && !/\b(?:opponent|that player|its controller|their controller) creates?\b/i.test(line));
+  var gainsLife = (c) => /\blifelink\b/i.test(textOf2(c)) || (c?.keywords || []).includes("Lifelink") || /\byou gain (?:\d+|x|that much) life\b|\byou gain life equal\b/i.test(textOf2(c));
   var memo = /* @__PURE__ */ new WeakMap();
   function cardNeeds(card) {
-    if (!card || typeof card !== "object") return [];
+    if (!card || typeof card !== "object" || isLand(card)) return [];
     const hit = memo.get(card), sig = textOf2(card) + "|" + typeLine(card);
     if (hit?.sig === sig) return hit.needs;
     const text3 = textOf2(card), needs = [], seen = /* @__PURE__ */ new Set();
@@ -4296,13 +4299,33 @@
         provides: (c) => c !== card && !isLand(c) && (subtypeIn(c, type4) || everyType2(c) || new RegExp("create[^.\\n]*\\b" + tribePattern(type4) + "\\b[^.\\n]*token", "i").test(textOf2(c)))
       });
     }
+    const proactive = (c) => !/\bcounter target\b/i.test(textOf2(c));
     if (/\byou cast your second spell each turn/i.test(text3)) add({
       id: "second-spell",
       kind: "tempo",
       label: "cheap spells (two in one turn)",
       min: (size) => size >= 100 ? 18 : 12,
-      provides: (c) => c !== card && !isLand(c) && (mv2(c) <= 1 || mv2(c) <= 2 && isType(c, /\b(?:Instant|Sorcery)\b/))
+      provides: (c) => c !== card && !isLand(c) && proactive(c) && (mv2(c) <= 1 || mv2(c) <= 2 && isType(c, /\b(?:Instant|Sorcery)\b/))
     });
+    if (/\byou cast your third spell each turn/i.test(text3)) add({
+      id: "third-spell",
+      kind: "tempo",
+      label: "one-mana spells (three in one turn)",
+      min: (size) => size >= 100 ? 22 : 16,
+      provides: (c) => c !== card && !isLand(c) && proactive(c) && mv2(c) <= 1
+    });
+    const spent = text3.match(/\b(?:at least )?(four|five|six|seven) (?:or more )?mana was spent to cast/i);
+    if (spent) {
+      const n = { four: 4, five: 5, six: 6, seven: 7 }[spent[1].toLowerCase()], spells = /instant or sorcery/i.test(text3) ? /\b(?:Instant|Sorcery)\b/ : /^(?!.*\bCreature\b)/;
+      add({
+        id: "big-spells:" + n,
+        kind: "mana-spent",
+        subject: n,
+        label: "spells that cost " + n + " or more",
+        min: (size) => size >= 100 ? 10 : 8,
+        provides: (c) => c !== card && !isLand(c) && isType(c, spells) && (mv2(c) >= n || /\{X\}/.test(c?.mana_cost || c?.card_faces?.[0]?.mana_cost || "") && !/\bsunburst\b/i.test(rulesText(c)) || ["Spree", "Kicker", "Overload"].some((k) => hasKeyword(c, k)))
+      });
+    }
     if (/draw your second card each turn/i.test(text3)) add({
       id: "second-draw",
       kind: "draw",
@@ -4332,6 +4355,39 @@
       cap: true,
       provides: (c) => c !== card && !isLand(c) && mv2(c) >= 6 && !isType(c, /\b(?:Instant|Sorcery)\b/)
     });
+    if (/\bteamwork cost\b|cast using teamwork/i.test(text3) && !hasKeyword(card, "Teamwork")) add({
+      id: "teamwork",
+      kind: "mechanic",
+      label: "teamwork cards",
+      min: (size) => size >= 100 ? 10 : 8,
+      provides: (c) => c !== card && !isLand(c) && hasKeyword(c, "Teamwork")
+    });
+    if (/whenever (?:a|another|one or more) (?:[a-z]+ )?tokens? you control enters?|for each token you control|\btokens you control (?:get|have|gain)/i.test(text3) && !makesTokens(card)) add({
+      id: "own-tokens",
+      kind: "tokens",
+      label: "token makers",
+      min: (size) => size >= 100 ? 10 : 8,
+      provides: (c) => c !== card && !isLand(c) && mv2(c) <= 4 && makesTokens(c)
+    });
+    if (/whenever you gain life|if you(?:'ve| have) gained (?:\w+ or more )?life|for each 1 life you gained|equal to the amount of life you gained/i.test(text3) && !gainsLife(card)) add({
+      id: "lifegain",
+      kind: "lifegain",
+      label: "ways to gain life",
+      min: (size) => size >= 100 ? 10 : 8,
+      provides: (c) => c !== card && !isLand(c) && mv2(c) <= 3 && gainsLife(c)
+    });
+    const sweep = text3.match(/(?:exile|destroy) (?:all|each) ([^.\n]*?) with mana value (\d+) or less/i);
+    if (sweep && !/\b(?:your opponents?|an opponent|you don't) controls?\b/i.test(sweep[1])) {
+      const what = sweep[1].toLowerCase(), limit = Number(sweep[2]), kinds = /nonland permanent|\bpermanents?\b/.test(what) ? /./ : new RegExp("\\b(?:" + ["artifact", "creature", "enchantment", "planeswalker"].filter((k) => what.includes(k)).map((k) => k[0].toUpperCase() + k.slice(1)).join("|") + ")\\b");
+      if (kinds.source !== "\\b(?:)\\b") add({
+        id: "self-sweep",
+        kind: "conflict",
+        label: "your own cards it would sweep away",
+        min: () => 0,
+        max: (size) => size >= 100 ? 11 : 7,
+        provides: (c) => c !== card && !isLand(c) && !isType(c, /\b(?:Instant|Sorcery)\b/) && mv2(c) <= limit && isType(c, kinds)
+      });
+    }
     memo.set(card, { sig, needs });
     return needs;
   }
@@ -4339,17 +4395,19 @@
     const list = rows.filter((r3) => r3?.card && r3.qty > 0), out = [];
     for (const row of list) for (const need of cardNeeds(row.card)) {
       const have = list.reduce((n, r3) => n + (need.provides(r3.card) ? r3.qty : 0), 0), min = fuelMinimum(need, size, exempt(row.card));
-      out.push({ name: row.card.name, need: need.id, label: need.label, have, min, met: have >= min, exempt: !!exempt(row.card) });
+      const max = need.max ? need.max(size) : Infinity;
+      out.push({ name: row.card.name, need: need.id, label: need.label, have, min, max, met: have >= min && have <= max, exempt: !!exempt(row.card) });
     }
     return out;
   }
   var unmetNeeds = (rows, options) => inspectNeeds(rows, options).filter((n) => !n.met && !n.exempt);
   function idleFixer(card, colors = []) {
-    if (colors.filter((k) => k !== "C").length > 1 || isLand(card)) return false;
-    if (/\bsunburst\b|\bconverge\b|for each color of mana spent/i.test(rulesText(card))) return true;
+    if (isLand(card)) return false;
+    if (colors.filter((k) => k !== "C").length < 3 && /\bsunburst\b|\bconverge\b|for each color of mana spent/i.test(rulesText(card))) return true;
+    if (colors.filter((k) => k !== "C").length > 1) return false;
     return /add one mana of any (?:color|type)/i.test(textOf2(card)) && !/add (?:two|three|x) mana|\{t\}: add \{/i.test(textOf2(card));
   }
-  var fuelMinimum = (need, size, kept) => kept && !need.cap ? Math.max(need.min(size), size >= 100 ? 16 : 12) : need.min(size);
+  var fuelMinimum = (need, size, kept) => kept && !need.cap && !need.max ? Math.max(need.min(size), size >= 100 ? 16 : 12) : need.min(size);
 
   // ../../deck-mechanic-plan.js
   init_deck_engine_prelude();
@@ -4653,6 +4711,10 @@
     const t = typeText(c), o = rulesText(c);
     return /\bCreature\b/.test(t) && !/\bdefender\b/i.test(o) && (Number(c?.power ?? c?.card_faces?.[0]?.power) >= 1 || /\*/.test(String(c?.power ?? c?.card_faces?.[0]?.power ?? ""))) || /\bPlaneswalker\b|\bVehicle\b/.test(t) || /\bcreates? [^.\n]*\bcreature tokens?\b/i.test(o) || forgeRoles(c).includes("wincon");
   };
+  var tapRank = (c) => {
+    const t = rulesText(c);
+    return !/enters (?:the battlefield )?tapped/i.test(t) ? 0 : /enters (?:the battlefield )?tapped unless|you may pay|if you don't, it enters tapped/i.test(t) ? 1 : 2;
+  };
   var fitsDeck = (c, colors, commander) => commander ? fitsColors(c, colors) : castableIn(c, colors);
   var STYLE_ROLES = { token: "Tokens", graveyard: "Graveyard", reanimator: "Graveyard", spells: "Spells", spellslinger: "Spells", artifact: "Artifacts", lifegain: "Lifegain", lifelink: "Lifelink", landfall: "Landfall", counter: "Counters", proliferate: "Counters" };
   function requestedIntent(style = "") {
@@ -4886,9 +4948,11 @@
         return -3;
       };
       const openNeeds = deckRows().flatMap((r3) => cardNeeds(r3.card).map((need) => ({ need, owner: cardKey(r3.card.name), kept: keptKeys.has(cardKey(r3.card.name)) }))).filter((o) => providersIn(o.need, o.owner) < fuelMinimum(o.need, size, o.kept));
+      const sweepers = deckRows().flatMap((r3) => cardNeeds(r3.card).filter((need) => need.max).map((need) => ({ need, owner: cardKey(r3.card.name) })));
+      const sweepAdj = (x) => -sweepers.reduce((n, o) => n + (provides(o.need, o.owner, x.c) ? 12 : 0), 0) - (x.needs?.some((need) => need.max && providersIn(need, cardKey(x.c.name)) > need.max(size)) ? 60 : 0);
       const needAdj = (x) => openNeeds.reduce((n, o) => n + (provides(o.need, o.owner, x.c) ? o.kept ? 10 : 5 : 0), 0) - (x.needs?.length && !keptKeys.has(cardKey(x.c.name)) && x.needs.some((need) => providersIn(need, cardKey(x.c.name)) < need.min(size)) ? 3 : 0);
       const threats = size < 100 ? deckRows().reduce((n, r3) => n + (isThreat(r3.card) ? r3.qty : 0), 0) : Infinity;
-      const adaptive = (x) => x.s + needAdj(x) + (threats < 12 && isThreat(x.c) ? 8 : 0) + (x.plan && supportCopies < Math.ceil(spellTarget * 0.35) ? 6 : 0) + x.roles.reduce((n, r3) => n + roleBonus(r3), 0) + hooks.reduce((n, h) => n + (h.min && x.hookIds.includes(h.id) && (counts.get("hook:" + h.id) || 0) < h.min ? 5 : 0), 0);
+      const adaptive = (x) => x.s + needAdj(x) + sweepAdj(x) + (threats < 12 && isThreat(x.c) ? 8 : 0) + (x.plan && supportCopies < Math.ceil(spellTarget * 0.35) ? 6 : 0) + x.roles.reduce((n, r3) => n + roleBonus(r3), 0) + hooks.reduce((n, h) => n + (h.min && x.hookIds.includes(h.id) && (counts.get("hook:" + h.id) || 0) < h.min ? 5 : 0), 0);
       remaining.sort((a, b) => adaptive(b) - adaptive(a) || a.c.name.localeCompare(b.c.name));
       const { c } = remaining.shift();
       const left = spellTarget - nonland();
@@ -4939,7 +5003,8 @@
         if (left <= 0) break;
         const c = x.c, key2 = cardKey(c.name), have = qtyOf(c);
         if (banned.has(key2) || have >= maxCopies(c)) continue;
-        if (x.needs.some((need) => providersIn(need, key2) < need.min(size))) continue;
+        if (x.needs.some((need) => providersIn(need, key2) < need.min(size) || need.max && providersIn(need, key2) > need.max(size))) continue;
+        if (deckRows().some((r3) => cardNeeds(r3.card).some((need) => need.max && provides(need, cardKey(r3.card.name), c) && providersIn(need, cardKey(r3.card.name)) >= need.max(size)))) continue;
         if ((Number(c.cmc) || 0) >= forgeT.bigFrom && heavy() >= (f.commander && size >= 100 ? forgeT.bigCards : Math.ceil(spellTarget * 0.15))) continue;
         for (let n = Math.min(wantCopies(c) - have, left); n >= 1; n--) {
           if (canAfford(costFor(c, have, have + n), Math.max(0, left - n) * fillerPrice)) {
@@ -4971,14 +5036,18 @@
       }
     }
     for (const n of inspectNeeds(deckRows(), { size, exempt: (c) => keptKeys.has(cardKey(c.name)) }).filter((n2) => !n2.met && n2.exempt)) warnings.push(`${n.name} wants ${n.min} ${n.label}; this list has ${n.have}.`);
-    const landPool = [...new Map(Object.values(catalog).filter((c) => c?.name && isLand(c) && !isBasic(c) && isLegal(c) && fitsColors(c, deckColors) && mtgManaSourceProfile(c, { commanderIdentity: lead?.color_identity }).colors.filter((m) => deckColors.includes(m)).length >= Math.min(2, deckColors.length)).map((c) => [cardKey(c.name), c])).values()].sort((a, b) => available(b.name) - available(a.name) || (f.commander ? (a.edhrec_rank || 1e9) - (b.edhrec_rank || 1e9) : 0) || a.name.localeCompare(b.name));
+    const landPool = [...new Map(Object.values(catalog).filter((c) => c?.name && isLand(c) && !isBasic(c) && isLegal(c) && fitsColors(c, deckColors) && mtgManaSourceProfile(c, { commanderIdentity: lead?.color_identity }).colors.filter((m) => deckColors.includes(m)).length >= Math.min(2, deckColors.length)).map((c) => [cardKey(c.name), c])).values()].sort((a, b) => available(b.name) - available(a.name) || (f.commander ? (a.edhrec_rank || 1e9) - (b.edhrec_rank || 1e9) : tapRank(a) - tapRank(b) || (prior ? prior(b) - prior(a) : 0)) || a.name.localeCompare(b.name));
+    let slowLands = 0;
     const dualCap = deckColors.length > 2 ? Math.round(landTarget * 0.6) : deckColors.length > 1 ? Math.round(landTarget * 0.4) : 0;
     for (const c of landPool) {
       const duals = landsIn() - [...rows.values()].filter((r3) => isBasic(catalog[cardKey(r3.name)])).reduce((a, r3) => a + r3.qty, 0);
       if (duals >= dualCap || landsIn() >= landTarget || count() >= size) break;
-      const n = Math.min(f.copies === 1 ? 1 : 4, dualCap - duals, landTarget - landsIn(), size - count()), extra = costFor(c, qtyOf(c), qtyOf(c) + n);
+      const slow = size < 100 && tapRank(c) === 2;
+      if (slow && slowLands >= 4) continue;
+      const n = Math.min(f.copies === 1 ? 1 : 4, dualCap - duals, landTarget - landsIn(), size - count(), slow ? 4 - slowLands : 99), extra = costFor(c, qtyOf(c), qtyOf(c) + n);
       if (canAfford(extra, 0, false)) {
         put(c, n, available(c.name) >= n ? "Dual land you own" : "Fixes your colors");
+        if (slow) slowLands += n;
       }
     }
     const pips = { W: 0, U: 0, B: 0, R: 0, G: 0 };
