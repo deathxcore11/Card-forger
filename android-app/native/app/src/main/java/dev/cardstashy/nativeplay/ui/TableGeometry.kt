@@ -114,6 +114,33 @@ internal object TableGeometry {
         return Rows(cpuBack, cpuFront, myFront, myBack)
     }
 
+    /** The block's gaps as shares of the window's height: between the two creature rows, and between a creature row and its own lands. */
+    const val BLOCK_MID = .066f
+    const val BLOCK_SIDE = .05f
+    /** The middle line sits at this share of the space between the top edge and the top of the hand. */
+    const val BLOCK_LINE = .47f
+
+    /**
+     * One screen that is not a phone (the Fold open, a tablet, the Portal): the four rows are one block, as in the approved Fold
+     * preview (Randall on the Fold, 12 Nov: "this kinda don't look like how you showed me"; brief section "Fold and tablet do not
+     * match the approved preview"). [BLOCK_MID] of [winH] lies between the two creature rows with the middle line through it,
+     * [BLOCK_SIDE] between a creature row and its lands (never less than tapped tiles need). The line is at [BLOCK_LINE] of the way
+     * from [top] to the hand's top [handTop]; spare height lies above the CPU's lands and between your lands and the hand, never
+     * between the creature rows. Rows do not move with what is on them. A board too short for the block lays out as [rows] does.
+     */
+    fun rowsBlock(top: Float, bottom: Float, handTop: Float, winH: Float, hb: Float): Rows {
+        val c = FRONT_ONE * hb; val l = BACK_ONE * hb
+        val mid = maxOf(BLOCK_MID * winH, (2 * TAPPED_HALF - 1) * c)
+        val side = maxOf(BLOCK_SIDE * winH, (TAPPED_HALF - .5f) * (l + c))
+        val edge = (TAPPED_HALF - .5f) * l
+        val block = 2 * l + 2 * c + 2 * side + mid
+        if (bottom - top < block + 2 * edge) return rows(false, top, bottom, hb)
+        // The line where the brief puts it, moved only as far as keeps the whole block (and a tapped land's corner) on the board.
+        val line = (top + BLOCK_LINE * (handTop - top)).coerceIn(top + edge + block / 2, bottom - edge - block / 2)
+        val cpuFront = Band(line - mid / 2 - c, c); val myFront = Band(line + mid / 2, c)
+        return Rows(Band(cpuFront.top - side - l, l), cpuFront, myFront, Band(myFront.bottom + side, l))
+    }
+
     /**
      * Mobile table M5, a phone: each row's centre is a share of the window's height (ZoneLayout.ROW_*: the CPU's lands 15 %, its
      * creatures 33 %, yours 56 %, your lands 73 %, beside the hand), in a window from [winTop], [winH] tall. A creature tile is

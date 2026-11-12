@@ -179,11 +179,13 @@ internal object ZoneLayout {
 
     /**
      * The four rows for [z] (a pod's rail takes [podTop] dp off the top). On a phone each row's centre is a share of the height
-     * (M5: creatures on the centre line, your lands beside the hand); elsewhere the rows hug the board's edges (TableGeometry.rows).
+     * (M5: creatures on the centre line, your lands beside the hand); on any other single screen the rows are one block about the
+     * middle line (TableGeometry.rowsBlock); the dual top's rows hug the board's edges (TableGeometry.rows).
      */
     fun rows(z: Zones, dual: Boolean, podTop: Float = 0f): TableGeometry.Rows =
         if (z.phone) TableGeometry.rowsPhone(z.window.y, z.window.h, z.hb, podTop)
-        else TableGeometry.rows(dual, z.board.y + podTop, z.board.bottom, z.hb)
+        else if (dual) TableGeometry.rows(true, z.board.y + podTop, z.board.bottom, z.hb)
+        else TableGeometry.rowsBlock(z.board.y + podTop, z.board.bottom, z.handTray?.y ?: z.board.bottom, z.window.h, z.hb)
 
     /** A hand card is this many times as tall as it is wide (HandFan's own card). */
     const val HAND_TALL = 1.4f

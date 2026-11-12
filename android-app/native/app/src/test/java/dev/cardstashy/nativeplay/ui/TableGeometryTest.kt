@@ -40,8 +40,13 @@ class TableGeometryTest {
             assertTrue(tag, r.myFront.top - r.cpuFront.bottom >= TableGeometry.MID_GAP * z.hb - .01f)
             // On the board, each side at its own edge (a tapped outer tile's corner just inside it).
             val m = (TableGeometry.TAPPED_HALF - .5f) * r.cpuBack.height
-            if (!z.phone) { assertEquals(tag, z.board.y + m, r.cpuBack.top, .01f); assertEquals(tag, z.board.bottom - m, r.myBack.bottom, .01f) }
-            else {
+            if (dual) { assertEquals(tag, z.board.y + m, r.cpuBack.top, .01f); assertEquals(tag, z.board.bottom - m, r.myBack.bottom, .01f) }
+            else if (!z.phone) {
+                // 12 Nov (Randall on the Fold; the brief's "Fold and tablet do not match the approved preview" withdraws Z2's "each side
+                // hugs its own edge" for one screen): the rows are one block about the middle line, the whole block on the board.
+                assertTrue(tag, r.cpuBack.top - m >= z.board.y - .01f && r.myBack.bottom + m <= z.board.bottom + .01f)
+                assertEquals(tag, r.cpuFront.top - r.cpuBack.bottom, r.myBack.top - r.myFront.bottom, .01f)
+            } else {
                 // M5, a phone: each row's centre is a share of the height; your lands lie in the shelf beside the hand.
                 assertEquals(tag, ZoneLayout.ROW_CPU_BACK * h, r.cpuBack.centre, .01f); assertEquals(tag, ZoneLayout.ROW_CPU_FRONT * h, r.cpuFront.centre, .01f)
                 assertEquals(tag, ZoneLayout.ROW_MY_FRONT * h, r.myFront.centre, .01f); assertEquals(tag, ZoneLayout.ROW_MY_BACK * h, r.myBack.centre, .01f)
@@ -54,12 +59,24 @@ class TableGeometryTest {
         }
     }
 
-    @Test fun onATallScreenTheSpareHeightIsOpenTableBetweenTheSides() {
-        // The Fold open (884 × 796) caps the tile; the spare height lies between the creature rows, not over the tiles.
+    @Test fun onTheFoldTheRowsAreOneBlockAboutTheMiddleLine() {
+        // The Fold open (884 × 796) caps the tile. Was Z2's "the spare height lies between the creature rows"; Randall on the Fold,
+        // 12 Nov: "this kinda don't look like how you showed me". The approved Fold preview: line 37 %, the CPU's creatures 28 %,
+        // yours 46 %, your lands 62 %, the hand at 80 %. The spare is above the CPU's lands and between your lands and the hand.
         val z = zones(884f, 796f); val r = rows(884f, 796f)
         assertTrue(z.hb < 796f)
-        assertTrue(r.myFront.top - r.cpuFront.bottom > .2f * z.hb)
         assertEquals(105.7f, r.cpuFront.height, .1f)
+        assertEquals(TableGeometry.BLOCK_MID * 796f, r.myFront.top - r.cpuFront.bottom, .01f)
+        assertEquals(TableGeometry.BLOCK_SIDE * 796f, r.myBack.top - r.myFront.bottom, .01f); assertEquals(TableGeometry.BLOCK_SIDE * 796f, r.cpuFront.top - r.cpuBack.bottom, .01f)
+        assertEquals(TableGeometry.BLOCK_LINE * z.handTray!!.y, r.divider, .01f)
+        assertEquals(.37f, r.divider / 796f, .01f); assertEquals(.28f, r.cpuFront.centre / 796f, .02f)
+        assertEquals(.46f, r.myFront.centre / 796f, .02f); assertEquals(.62f, r.myBack.centre / 796f, .02f)
+        assertEquals(.066f, TableGeometry.BLOCK_MID); assertEquals(.05f, TableGeometry.BLOCK_SIDE); assertEquals(.47f, TableGeometry.BLOCK_LINE)
+        // The rows do not move with what is on them: the layout takes no cards. The dual top and a phone are as they were.
+        assertEquals(TableGeometry.rows(true, zones(884f, 796f, true).board.y, zones(884f, 796f, true).board.bottom, zones(884f, 796f, true).hb), rows(884f, 796f, true))
+        // A board too short for the block (a low wide window) lays out as before, tiles whole.
+        for ((w, h) in sizes) { val zz = zones(w, h); if (zz.phone) continue; val rr = rows(w, h); val m = (TableGeometry.TAPPED_HALF - .5f) * rr.cpuBack.height
+            assertTrue("$w×$h the block is on the board", rr.cpuBack.top - m >= zz.board.y - .01f && rr.myBack.bottom + m <= zz.board.bottom + .01f) }
     }
 
     @Test fun aTileIsAsTallWhateverIsOnTheTable() {
@@ -154,8 +171,9 @@ class TableGeometryTest {
             val phone = zones(w, h, dual).phone
             if (!phone) {
                 val side = minOf(need, spare(w, h, dual) / 2)
-                assertEquals("$tag CPU back", side, r.cpuFront.top - r.cpuBack.bottom, .01f)
-                assertEquals("$tag your back", side, r.myBack.top - r.myFront.bottom, .01f)
+                // One screen, 12 Nov: the block's land gap is 5 % of the height, never less than this; the dual top is exactly this.
+                if (dual) { assertEquals("$tag CPU back", side, r.cpuFront.top - r.cpuBack.bottom, .01f); assertEquals("$tag your back", side, r.myBack.top - r.myFront.bottom, .01f) }
+                else { assertTrue("$tag CPU back", r.cpuFront.top - r.cpuBack.bottom >= side - .01f); assertTrue("$tag your back", r.myBack.top - r.myFront.bottom >= side - .01f) }
             }
             // M5: a phone's rows are placed so that tapped tiles of neighbouring rows never meet.
             if (phone || spare(w, h, dual) >= 2 * need) {
