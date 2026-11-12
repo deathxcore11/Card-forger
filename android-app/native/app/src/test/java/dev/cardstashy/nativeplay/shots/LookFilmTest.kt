@@ -134,6 +134,25 @@ class LookFilmTest {
     @Test fun burnAtTheCpu() { assumeTrue(want == "all" || want == "burn-cpu"); burn("burn-cpu", false) }
     @Test fun burnAtYou() { assumeTrue(want == "all" || want == "burn-you"); burn("burn-you", true) }
 
+    /** A burn spell at a creature that dies: the streak (240), the impact, then the break and the embers to its owner's pile. */
+    @Test fun burnKillsACreature() {
+        assumeTrue(want == "all" || want == "burn-kill")
+        board()
+        val theirs = base.cpu.battlefield.first { it.isCreature }
+        val box = anchors.rects.getValue("c${theirs.id}")
+        val dp = rule.activity.resources.displayMetrics.density
+        val stack = androidx.compose.ui.geometry.Rect(760 * dp, 150 * dp, 830 * dp, 240 * dp)
+        val gone = base.copy(revision = base.revision + 1, players = base.players.map { p -> if (p.id == base.cpu.id) p.copy(battlefield = p.battlefield.filter { it.id != theirs.id }) else p })
+        val fire = dev.cardstashy.nativeplay.ui.FIRE_MS
+        film("burn-kill", listOf(
+            FxItem(Fx.FIRE, 2, fire, mine = true, from = stack, toKey = "c${theirs.id}", tone = Color(0xFFE8604A)),
+            FxItem(Fx.BOLT, 1, dev.cardstashy.nativeplay.ui.BOLT_MS, card = theirs.id, from = box, fromKey = "stackcard", tone = Color(0xFFE8604A), power = 1f).also { it.t0 = fire },
+            FxItem(Fx.DAMAGE, 2, 1100, card = theirs.id, tone = Color(0xFFFF5A4A)).also { it.label = "−3"; it.t0 = fire },
+            FxItem(Fx.DEATH, 2, dev.cardstashy.nativeplay.ui.DEATH_MS, from = box, toKey = "grave${base.cpu.id}", ghost = theirs).also { it.t0 = fire + 300 },
+            FxItem(Fx.EMBERS, 1, dev.cardstashy.nativeplay.ui.EMBERS_MS, card = theirs.id, from = box, toKey = "grave${base.cpu.id}").also { it.t0 = fire + 540 },
+        ), fire + 540 + 900) { ms -> if (ms < fire + 300) base else gone }
+    }
+
     @Test fun chargeAtABlocker() {
         assumeTrue(want == "all" || want == "charge-clash")
         board()
