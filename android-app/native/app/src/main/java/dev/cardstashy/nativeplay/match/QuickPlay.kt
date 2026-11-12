@@ -145,6 +145,7 @@ object QuickPlay {
     suspend fun gateArt(context: Context, s: Setup.Ready, openingHand: kotlinx.coroutines.flow.Flow<List<String>?>? = null) {
         val online = runCatching { val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
             cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true }.getOrDefault(true)
+        CardArt.cpuDeck(s.cpuNames)
         if (!online) { warmArt(context, s, 800); s.faces.forEach { CardArt.decodeAhead(it) }; return }
         // T1 (Thor run 10 Nov: 15 s of art before every new match): the gate waits only for what the first screen shows (both
         // covers, the basic lands, your opening hand once Forge deals it); every other card keeps loading behind, and each one is

@@ -388,6 +388,15 @@ object CardArt {
     }
     fun clearAhead() { decodedAhead.clear(); firstSeen.clear() }
 
+    /** Loading screens L5: the CPU deck's card names for this match (the gate sets them), so its next plays can be decoded before it casts them. */
+    @Volatile private var cpuDeck: List<String> = emptyList()
+    fun cpuDeck(names: Collection<String>) { cpuDeck = names.distinct() }
+    /** L5: of the CPU's deck, the non-land cards it could pay for next: mana value at most its [lands] plus 1. A card with no value on record is left out. */
+    internal fun cpuReach(lands: Int): List<String> = cpuDeck.filter { n ->
+        typeLine(n)?.substringBefore(" // ")?.contains("Land") != true && !dev.cardstashy.nativeplay.play.Decks.isBasicLand(n) && (manaValue(n) ?: Int.MAX_VALUE) <= lands + 1 }
+    /** L5: a CPU turn is starting with [lands] lands: decode the crops (and faces) of what it can reach, each name once a match. */
+    fun aheadForCpu(lands: Int) = cpuReach(lands).forEach(::decodeAhead)
+
     /**
      * Spec 12 item 7: a token or a card made mid-match that the gate never knew. Its picture is asked for on the event that makes
      * it, and its arrival waits for it: what is left of 400 ms since it was first asked for, then it lands with art or its frame.
