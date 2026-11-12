@@ -166,6 +166,8 @@ internal enum class Fx { DRAW, CAST, RESOLVE, ARRIVE, TOKEN, ATTACK, LUNGE, BLOC
     SPENT,
     /** Match punch P5: nine ember streaks from a dead card's place ([FxItem.from]) to its owner's graveyard, where the pile answers with a ring. */
     EMBERS,
+    /** Living table F7, the winning hit: the orb at [FxItem.toKey] breaks, a ring, a crack to the far corner and the mat's win colour flood the table. [FxItem.player] null: a draw, both orbs dim. */
+    WIN,
     /** Living table F3: [FxItem.card] lands heavy. It drops from 1.9 times its size (130 ms); where it lands: freeze, shake, a ring in its colour, the cards in [FxItem.ids] hop and the mat keeps a mark. */
     HEAVY }
 
@@ -434,6 +436,10 @@ class Battlefield {
     /** F3: the heavy landings in flight; their cards are drawn over their row while they drop. */
     private var heavies: List<FxItem> = emptyList()
     internal val landers = androidx.compose.runtime.mutableStateOf<Set<Int>>(emptySet())
+    /** F7: when the table's last blow reached each seat (effect clock ms; in the future while the strike is in flight). */
+    private val seatHit = HashMap<Int, Long>()
+    /** F7: how much of each player's orb is left to see (0: broken off the table; a draw dims both). Players not in it are whole. */
+    internal val orbs = androidx.compose.runtime.mutableStateOf<Map<Int, Float>>(emptyMap())
     internal fun landsHeavy(card: Int?): Boolean = card != null && heavies.any { it.card == card }
     /** F3: what the heavy landings left on the mat this turn (root pixels), drawn under the cards by [LandMarks]. */
     internal val landMarks = mutableStateListOf<LandMark>()
@@ -638,6 +644,11 @@ class Battlefield {
                 it.dur = it.baseMs
                 if (cursor - t > 6000 && !staged && it.level < 2) it.dur = it.baseMs * 6 / 10
                 it.t0 = cursor + it.delay
+                // F7: when the table's own blow reaches a seat (a strike's contact, a face hit's start), for the winning hit to know.
+                it.toKey?.takeIf { k -> k.startsWith("orb") }?.removePrefix("orb")?.toIntOrNull()?.let { seat ->
+                    if (it.kind == Fx.LUNGE) seatHit[seat] = it.t0 + Strike.after(true).toLong() else if (it.kind == Fx.LIFE && it.level == 3) seatHit[seat] = maxOf(seatHit[seat] ?: 0L, it.t0) }
+                // F7 starts at the hit still in flight, else as soon as the finished board is shown; the result card waits for it.
+                if (it.kind == Fx.WIN && it.player != null) { it.t0 = maxOf(t, seatHit[it.player] ?: 0L); TableFeel.resultWait = st.revision to (it.t0 - t) + TableFeel.resultHold() }
                 items += it
             }
             if (staged) stagedEnd = maxOf(stagedEnd, g.maxOf { it.t0 + it.dur })
@@ -687,6 +698,11 @@ class Battlefield {
         val draws = mutableListOf<FxItem>(); val casts = mutableListOf<FxItem>(); val resolves = mutableListOf<FxItem>()
         val arrivals = mutableListOf<FxItem>(); val combat = mutableListOf<FxItem>(); val hits = mutableListOf<FxItem>()
         val deaths = mutableListOf<FxItem>(); val counters = mutableListOf<FxItem>()
+        // F7: the finished board has arrived. The loser's orb breaks (or, in a draw, both dim); it waits its turn behind the last strike.
+        val ends = mutableListOf<FxItem>()
+        val nowMs = now.longValue
+        if (!reduced) TableFeel.ending(a, b, struck = seatHit.filterValues { it >= nowMs - TableFeel.WIN_STRUCK_MS }.keys)?.let { e -> val look = TableFeel.profile(TableFeel.mat)
+            ends += FxItem(Fx.WIN, 2, TableFeel.WIN_HOLD_MS, player = e.loser, mine = e.winner == viewer, toKey = e.loser?.let { "orb$it" }, tone = look.win, caster = look.winHi, ids = b.players.map { it.id }.toSet()) }
 
         // Draw (level 1, 350 ms): a card slides off the library into the hand.
         val drawn = b.me.hand.filter { it.id !in handA && it.id !in bfA && it.id !in stackSrcA && a.players.none { p -> p.graveyard.any { g -> g.id == it.id } } }
@@ -927,7 +943,7 @@ class Battlefield {
             // The embers follow the break and do not hold the table (level 1): the next thing starts while they fly.
             if (toGrave) group += FxItem(Fx.EMBERS, 1, EMBERS_MS, card = id, mine = c.controller == viewer, from = rect, toKey = "grave${c.owner}", delay = item.delay + 240L)
         }
-        return listOf(draws, casts, resolves, arrivals, combat, hits, deaths, counters).filter { it.isNotEmpty() }
+        return listOf(draws, casts, resolves, arrivals, combat, hits, deaths, counters, ends).filter { it.isNotEmpty() }
     }
 
     /** The card's own motion this frame (transform and alpha only), applied in its tile's layer. */
@@ -1350,6 +1366,7 @@ internal fun FxLayer(force: Boolean = false) {
                     Fx.TRIG_LAND -> drawTrigLand(tm, it, p, rect(it.fromKey), rect(it.toKey), band = band())
                     Fx.IMPACT -> rect("c${it.card}")?.let { r -> drawImpact(fx, it, p, r) }
                     Fx.HEAVY -> rect("c${it.card}")?.let { r -> drawHeavy(fx, it, p, r, self) }
+                    Fx.WIN -> drawWin(fx, it, p, rect(it.toKey), it.ids.mapNotNull { id -> rect("orb$id") })
                 }
             }
             // P2: a cast's pay (each land's flash and streak), charge and burst, read from the leg the table is drawing.

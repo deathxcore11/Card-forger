@@ -393,3 +393,43 @@ internal fun DrawScope.drawHeavy(fx: Battlefield, it: FxItem, p: Float, r: andro
     if (q < 1f) { val e = 1f - (1f - q) * (1f - q) * (1f - q); val rad = TableFeel.HEAVY_RING_FROM * dp + (r.height * TableFeel.HEAVY_RING - TableFeel.HEAVY_RING_FROM * dp) * e
         drawCircle(it.tone.copy(alpha = (1f - q) * .9f), rad, c, style = Stroke(width = TableFeel.HEAVY_RING_WIDTH * dp * (1f - q * .7f)), blendMode = androidx.compose.ui.graphics.BlendMode.Plus) }
 }
+
+// ---- Living table F7: the winning hit (specs/living-table-build-guide.md, "F7 The winning hit") ----
+
+/**
+ * F7 on the FxLayer canvas, from the moment the finished board is shown: a 340 ms freeze and a 15 dp shake (Full only), the
+ * loser's orb gone in 18 pieces, a ring out to 70 % of the height, a crack growing from the orb to the far corner (650 ms) and the
+ * mat's win colour flooding from the orb. A draw ([FxItem.player] null) only dims both orbs.
+ */
+internal fun DrawScope.drawWin(fx: Battlefield, it: FxItem, p: Float, orb: androidx.compose.ui.geometry.Rect?, all: List<androidx.compose.ui.geometry.Rect>) {
+    val ms = p * it.baseMs; val now = fx.now.longValue; val dp = density
+    if (it.player == null) { if (it.once(1)) fx.orbs.value = it.ids.associateWith { TableFeel.DRAW_DIM }; return }
+    val r = orb ?: return; val c = r.center
+    if (it.once(1)) {
+        fx.orbs.value = mapOf(it.player to 0f)
+        if (TableFeel.mode() == TableFeel.Mode.FULL) { fx.freeze(TableFeel.WIN_FREEZE_MS); fx.jolt(TableFeel.WIN_SHAKE, TableFeel.WIN_SHAKE_MS, .02f) }
+        // The orb's pieces fly out and fall.
+        if (!fx.low) fx.bits.sparks(c, TableFeel.WIN_PIECES, it.caster, now, 420f * dp, lifeMs = 1100, sizePx = 5f * dp, seed = it.player)
+    }
+    // The flood, under the crack: full in 160 ms, down to 28 % over 1100, where it rests.
+    val flood = if (ms < TableFeel.FLOOD_IN_MS) ms / TableFeel.FLOOD_IN_MS else 1f - (1f - TableFeel.FLOOD_REST) * ((ms - TableFeel.FLOOD_IN_MS) / TableFeel.FLOOD_OUT_MS).coerceAtMost(1f)
+    drawRect(Brush.radialGradient(0f to it.tone.copy(alpha = .8f * flood), .5f to it.tone.copy(alpha = .42f * flood), 1f to it.tone.copy(alpha = .08f * flood), center = c, radius = size.width * 1.1f),
+        blendMode = androidx.compose.ui.graphics.BlendMode.Plus)
+    // The ring.
+    val q = ms / TableFeel.WIN_RING_MS
+    if (q < 1f) { val e = 1f - (1f - q) * (1f - q) * (1f - q)
+        drawCircle(it.caster.copy(alpha = .9f * (1f - q)), r.maxDimension * .5f + (size.height * TableFeel.WIN_RING - r.maxDimension * .5f) * e, c, style = Stroke((6f - 4f * q) * dp), blendMode = androidx.compose.ui.graphics.BlendMode.Plus) }
+    // The crack, from the orb to the corner farthest from it.
+    val far = Offset(if (c.x < size.width / 2) size.width else 0f, if (c.y < size.height / 2) size.height else 0f)
+    val crack = TableFeel.crack(c, far, it.player)
+    val grown = (ms / TableFeel.CRACK_MS).coerceIn(0f, 1f).let { x -> 1f - (1f - x) * (1f - x) } * TableFeel.CRACK_SEGMENTS
+    fun line(pts: List<Offset>, upTo: Float) = androidx.compose.ui.graphics.Path().apply {
+        moveTo(pts[0].x, pts[0].y)
+        for (i in 1 until pts.size) { if (i <= upTo) lineTo(pts[i].x, pts[i].y) else { val f = upTo - (i - 1); if (f > 0f) { val at = pts[i - 1] + (pts[i] - pts[i - 1]) * f; lineTo(at.x, at.y) }; break } } }
+    val paths = listOf(line(crack.main, grown)) + crack.branches.mapNotNull { (at, pts) -> if (grown <= at) null else line(pts, ((grown - at) * 1.5f).coerceAtMost(pts.size - 1f)) }
+    val round = StrokeCap.Round
+    for (path in paths) drawPath(path, Color.Black.copy(alpha = .85f), style = Stroke(TableFeel.CRACK_CORE * dp, cap = round))
+    // The glow falls off from the line outward (three bands inside its 18 dp), so the dark core still reads under it.
+    for (path in paths) { for (k in 0 until 3) drawPath(path, it.caster.copy(alpha = .09f), style = Stroke(TableFeel.CRACK_GLOW * dp * (1f - k * .3f), cap = round), blendMode = androidx.compose.ui.graphics.BlendMode.Plus)
+        drawPath(path, it.caster, style = Stroke(TableFeel.CRACK_LINE * dp, cap = round)) }
+}

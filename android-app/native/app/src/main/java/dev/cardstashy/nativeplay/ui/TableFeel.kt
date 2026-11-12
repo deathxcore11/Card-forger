@@ -230,6 +230,69 @@ internal object TableFeel {
     /** The heavy drop's size and height above its place (in tile heights) [ms] into it. */
     fun dropAt(ms: Float): Pair<Float, Float> { val q = (ms / HEAVY_DROP_MS).coerceIn(0f, 1f); val e = q * q * q; return (HEAVY_SCALE + (1f - HEAVY_SCALE) * e) to HEAVY_RISE * (1f - e) }
 
+    // F7, the winning hit. Forge reports "finished" as its own state after the last board, so the game's end is not known while the
+    // last strike flies: there is no slow motion, and everything here starts when the finished board arrives. The finished board is
+    // a copy of the last running one, which may have been taken before the last damage, so life alone does not decide (design, 12 Nov):
+    // it plays when the loser's life is 0 or less, or when the table's own strike or hit landed on the loser's seat in the last 800 ms
+    // or is still in flight (then it starts at that hit). Every other ending (a concession, an empty library) ends as it did before.
+    const val WIN_STRUCK_MS = 800L
+    const val WIN_FREEZE_MS = 340L
+    const val WIN_SHAKE = 15f
+    const val WIN_SHAKE_MS = 500L
+    const val WIN_PIECES = 18
+    /** The ring runs out to 70 % of the table's height. */
+    const val WIN_RING = .7f
+    const val WIN_RING_MS = 600f
+    /** The crack: 20 segments from the orb to the far corner over 650 ms, each jittered sideways by up to 3.5 % of its length, 6 side branches. */
+    const val CRACK_MS = 650f
+    const val CRACK_SEGMENTS = 20
+    const val CRACK_JITTER = .035f
+    val CRACK_BRANCHES = listOf(3, 6, 9, 12, 15, 17)
+    const val CRACK_CORE = 5f
+    const val CRACK_LINE = 2f
+    const val CRACK_GLOW = 18f
+    /** The flood: the mat's win colour from the orb, full in 160 ms, down to 28 % over 1100 ms, where it stays. */
+    const val FLOOD_IN_MS = 160f
+    const val FLOOD_OUT_MS = 1100f
+    const val FLOOD_REST = .28f
+    /** The result card (the word) waits this long after the hit, so the shatter, the ring and the crack are seen first. */
+    const val WIN_RESULT_AFTER_MS = 1000L
+    /** A draw: no crack; both orbs dim to this. */
+    const val DRAW_DIM = .45f
+    /** How long the ending stays on the table under the result card. */
+    const val WIN_HOLD_MS = 60_000L
+
+    /** How a match ended, for F7: the player whose orb breaks, or a draw. */
+    data class Ending(val loser: Int?, val winner: Int?, val draw: Boolean)
+    /**
+     * F7 from two boards: null unless [b] is the first finished board and it is a draw, or its loser is at 0 life or less or is in
+     * [struck] (the seats the table itself has just shown struck). Off: null.
+     */
+    fun ending(a: MatchState, b: MatchState, setting: String = AppSettings.matchEffects, struck: Set<Int> = emptySet()): Ending? {
+        if (a.finished || !b.finished || mode(setting) == Mode.OFF) return null
+        if (b.draw || b.winnerPlayerId == null) return Ending(null, null, true)
+        val loser = b.players.firstOrNull { it.id != b.winnerPlayerId && (it.life <= 0 || it.id in struck) } ?: return null
+        return Ending(loser.id, b.winnerPlayerId, false)
+    }
+    /** How long the result card waits once the winning hit has landed. */
+    fun resultHold(setting: String = AppSettings.matchEffects): Long = WIN_RESULT_AFTER_MS + (if (mode(setting) == Mode.FULL) WIN_FREEZE_MS else 0L)
+    /** The wait the table has asked of the result card: the finished board's revision and how long from when it was shown (set by the Battlefield). */
+    @Volatile var resultWait: Pair<Long, Long>? = null
+    fun resultWaitFor(st: MatchState): Long = resultWait?.takeIf { it.first == st.revision && !Motion.still }?.second ?: 0L
+
+    /** The crack's line and its side branches, in the order they grow. */
+    data class Crack(val main: List<Offset>, val branches: List<Pair<Int, List<Offset>>>)
+    /** The crack from [from] (the orb) to [to] (the far corner): the same crack for the same [seed]. */
+    fun crack(from: Offset, to: Offset, seed: Int): Crack {
+        fun rnd(n: Int): Float { val v = sin((seed * 31 + n) * 12.9898f + 78.233f) * 43758.547f; return v - kotlin.math.floor(v) }
+        val d = to - from; val len = d.getDistance().coerceAtLeast(1f); val u = d / len; val side = Offset(-u.y, u.x)
+        val main = (0..CRACK_SEGMENTS).map { i -> val p = i / CRACK_SEGMENTS.toFloat()
+            from + d * p + side * (if (i == 0 || i == CRACK_SEGMENTS) 0f else (rnd(i) * 2f - 1f) * len * CRACK_JITTER) }
+        val branches = CRACK_BRANCHES.map { i -> val s = if (i % 2 == 1) 1f else -1f; var at = main[i]
+            i to (listOf(at) + (0 until 4).map { j -> at += side * (s * len * (.03f + .04f * rnd(100 + i * 7 + j))) + u * (len * (.005f + .02f * rnd(200 + i * 5 + j))); at }) }
+        return Crack(main, branches)
+    }
+
     /** The band's strength at [p] (0..1) of its way down. */
     fun sweepStrength(p: Float): Float = if (p <= 0f || p >= 1f) 0f else SWEEP_PEAK * sin(p * PI.toFloat())
 }

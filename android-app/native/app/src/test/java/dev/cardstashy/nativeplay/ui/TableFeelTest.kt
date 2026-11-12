@@ -188,4 +188,58 @@ class TableFeelTest {
         // A Story act's mat has no entry: the plain table.
         assertEquals(TableFeel.PLAIN, TableFeel.profile("story-act-3")); assertEquals(TableFeel.PLAIN, TableFeel.profile(null))
     }
+
+    /** F7 (the guide's test): game over with you as winner breaks the CPU's orb and starts one crack; nothing of it runs on an ordinary hit. */
+    @Test fun theWinningHitBreaksTheLosersOrbAndStartsOneCrack() {
+        val was = Motion.still; Motion.still = false
+        try {
+            fun snap(rev: Int, status: String, cpuLife: Int, extra: String = "") = MatchState.parse("""{"status":"$status","viewer":1,"turn":7,"revision":$rev,"phase":"COMBAT_DAMAGE"$extra,
+                "players":[{"id":1,"isViewer":true,"life":12,"zones":{"Battlefield":{"cards":[]}}},{"id":2,"life":$cpuLife,"zones":{"Battlefield":{"cards":[]}}}]}""")!!
+            val an = Anchors().apply { putRect("orb1", androidx.compose.ui.geometry.Rect(20f, 800f, 120f, 900f)); putRect("orb2", androidx.compose.ui.geometry.Rect(20f, 20f, 120f, 120f)) }
+            val before = snap(1, "running", 4)
+            val hit = snap(2, "running", 0)
+            val won = snap(3, "finished", 0, ""","winnerPlayerId":1""")
+            // An ordinary hit, even one that takes life to 0: Forge has not said the game is over, so nothing of F7 runs.
+            assertNull(TableFeel.ending(before, hit))
+            val fx = Battlefield(); fx.take(before, an); fx.take(hit, an)
+            assertTrue(fx.items.none { it.kind == Fx.WIN })
+            // The finished board: the CPU's orb breaks, once.
+            assertEquals(TableFeel.Ending(loser = 2, winner = 1, draw = false), TableFeel.ending(hit, won))
+            fx.take(won, an)
+            val end = fx.items.single { it.kind == Fx.WIN }
+            assertEquals(2, end.player); assertEquals("orb2", end.toKey); assertTrue(end.mine); assertEquals(TableFeel.profile(TableFeel.mat).win, end.tone)
+            assertNull("the same finished board again starts nothing", TableFeel.ending(won, won.copy(revision = 4)))
+            // A loss plays the same on your orb.
+            assertEquals(TableFeel.Ending(1, 2, false), TableFeel.ending(before, snap(3, "finished", 4, ""","winnerPlayerId":2""").let { st -> st.copy(players = st.players.map { if (it.id == 1) it.copy(life = 0) else it }) }))
+            // Not a blow that ends the game (a concession, an empty library: the loser's life is above 0 and no strike landed): no F7, no wait.
+            val conceded = snap(3, "finished", 4, ""","winnerPlayerId":1""")
+            assertNull(TableFeel.ending(before, conceded))
+            Battlefield().let { q -> q.take(before, an); TableFeel.resultWait = null; q.take(conceded, an); assertTrue(q.items.none { it.kind == Fx.WIN }); assertEquals(0L, TableFeel.resultWaitFor(conceded)) }
+            // The final board can be older than the last damage (it is a copy of the last running board): a strike the table itself
+            // showed on that seat in the last 800 ms, or still in flight, decides it, and F7 starts at that strike's contact.
+            assertEquals(TableFeel.Ending(2, 1, false), TableFeel.ending(before, conceded, struck = setOf(2)))
+            fun card(extra: String) = """{"id":5,"zone":"Battlefield","owner":1,"controller":1,"hidden":false,"name":"Bear","type":"Creature","manaCost":"{1}{G}","power":4,"toughness":2$extra}"""
+            fun fight(rev: Int, status: String, phase: String, cpuLife: Int, extra: String = "") = MatchState.parse("""{"status":"$status","viewer":1,"turn":7,"revision":$rev,"phase":"$phase"$extra,
+                "players":[{"id":1,"isViewer":true,"life":12,"zones":{"Battlefield":{"cards":[${card(""","attacking":true""")}]}}},{"id":2,"life":$cpuLife,"zones":{"Battlefield":{"cards":[]}}}]}""")!!
+            val an2 = Anchors().apply { putRect("c5", androidx.compose.ui.geometry.Rect(100f, 600f, 230f, 700f)); putRect("orb1", androidx.compose.ui.geometry.Rect(20f, 800f, 120f, 900f)); putRect("orb2", androidx.compose.ui.geometry.Rect(20f, 20f, 120f, 120f)) }
+            val late = Battlefield(); late.take(fight(1, "running", "COMBAT_DECLARE_ATTACKERS", 6), an2); late.take(fight(2, "running", "COMBAT_DAMAGE", 2), an2)
+            val lunge = late.items.single { it.kind == Fx.LUNGE }
+            late.take(fight(3, "finished", "COMBAT_DAMAGE", 2, ""","winnerPlayerId":1"""), an2)
+            val atHit = late.items.single { it.kind == Fx.WIN }
+            assertEquals("it starts at the strike's contact", lunge.t0 + Strike.after(true).toLong(), atHit.t0)
+            assertEquals(lunge.t0 + Strike.after(true).toLong() - late.now.longValue + 1340L, TableFeel.resultWait!!.second)
+            // A draw: no crack, both orbs dim.
+            assertEquals(TableFeel.Ending(null, null, true), TableFeel.ending(before, snap(3, "finished", 0, ""","draw":true""")))
+            // Off: nothing, and the result card does not wait. Full: it waits for the freeze and the crack.
+            assertNull(TableFeel.ending(hit, won, "off"))
+            assertEquals(1340L, TableFeel.resultHold("full")); assertEquals(1000L, TableFeel.resultHold("reduced"))
+            // One crack: 20 segments from the orb to the corner, none more than 3.5 % of its length off the line, 6 side branches.
+            val from = androidx.compose.ui.geometry.Offset(70f, 70f); val to = androidx.compose.ui.geometry.Offset(2532f, 1170f)
+            val c = TableFeel.crack(from, to, 2)
+            assertEquals(21, c.main.size); assertEquals(from, c.main.first()); assertEquals(to, c.main.last()); assertEquals(6, c.branches.size)
+            val len = (to - from).getDistance(); val u = (to - from) / len
+            for (p in c.main) { val d = p - from; val off = kotlin.math.abs(d.x * -u.y + d.y * u.x); assertTrue("$off", off <= len * .035f + .5f) }
+            assertEquals("the same crack every frame", c, TableFeel.crack(from, to, 2))
+        } finally { AppSettings.applyMatchEffects("full"); Motion.still = was }
+    }
 }

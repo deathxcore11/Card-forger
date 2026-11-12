@@ -2056,9 +2056,12 @@ internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Bool
             if (!Motion.still) repeat(2) { beat.snapTo(1f); beat.animateTo(0f, tween(LOW_BEAT_MS)) } }
     }
     val anchors = LocalAnchors.current
+    val feelFx = LocalBattlefield.current
     val pulse = if (pickable && !Motion.still) rememberInfiniteTransition(label = "pick").animateFloat(.55f, 1f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "a").value else 1f
     Box(modifier.size(a).then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("orb${p.id}", it.boundsInRoot()) } else Modifier)
-        .graphicsLayer { translationY = (if (mine) 1f else -1f) * 14.dp.toPx() * recoil.value; translationX = (if (mine) -1f else 1f) * 6.dp.toPx() * recoil.value }
+        .graphicsLayer { translationY = (if (mine) 1f else -1f) * 14.dp.toPx() * recoil.value; translationX = (if (mine) -1f else 1f) * 6.dp.toPx() * recoil.value
+            // Living table F7: the loser's orb is broken off the table; in a draw both dim.
+            feelFx?.orbs?.value?.get(p.id)?.let { alpha = it } }
         .padActs(PadActs(a = if (pickable) "Choose" else if (onOpen != null) "Inspect" else null)).focusRequester(TableZones.orb(p.id)).aimOn("orb${p.id}")
         // BB12: while the portrait is not a target, a tap opens the seat's commander (the crest beside it opens the same card).
         .clickable(enabled = pickable || onOpen != null) { if (pickable) onPick() else onOpen?.invoke() }) {

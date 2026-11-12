@@ -234,7 +234,8 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
             else CardInspect(c, shown?.viewer, inspectStart, attached = att, onAttached = openAtt, ability = abilityNow, onActivate = activate) { inspect = null } }
         if (menu) Menu(onConcede = { menu = false; matchMenu.ask = "concede" }, onLeave = { menu = false; matchMenu.ask = "leave" }, onClose = { menu = false })
         MatchLeaveConfirm(matchMenu)
-        if (stage == Stage.FINISHED) shown?.let { Result(it, audio, onHome, onRematch, resultNote, endReason(it, controller.conceded)) }
+        // Living table F7: the result card waits for the winning hit to be seen (not after a concession).
+        if (stage == Stage.FINISHED) shown?.let { Result(it, audio, onHome, onRematch, resultNote, endReason(it, controller.conceded), holdMs = { if (controller.conceded) 0L else TableFeel.resultWaitFor(it) }) }
         if (stage == Stage.FAILED) Failed(failure ?: "The match stopped.", onHome)
     }
 }
@@ -816,7 +817,7 @@ private fun Menu(onConcede: () -> Unit, onLeave: () -> Unit, onClose: () -> Unit
 }
 
 @Composable
-internal fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRematch: () -> Unit, note: String? = null, reason: String? = null) {
+internal fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRematch: () -> Unit, note: String? = null, reason: String? = null, holdMs: () -> Long = { 0L }) {
     val won = !st.draw && st.winnerPlayerId == st.viewer
     val draw = st.draw || st.winnerPlayerId == null
     val rise = remember { Animatable(0f) }
@@ -826,7 +827,7 @@ internal fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRem
     var armed by remember { mutableStateOf(false) }
     val homeFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) {
-        delay(300); audio.play(if (draw) "QP-019" else if (won) "QP-017" else "QP-018"); rise.animateTo(1f, tween(400, easing = FastOutSlowInEasing))
+        delay(300 + holdMs()); audio.play(if (draw) "QP-019" else if (won) "QP-017" else "QP-018"); rise.animateTo(1f, tween(400, easing = FastOutSlowInEasing))
         armed = true
         // The ring start leaves touch mode first, as the table's does (live 0.4.56): in touch mode a button can't take focus.
         if (Pad.connected.value) { PadPrompts.inputModes?.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard); runCatching { homeFocus.requestFocus() } }
