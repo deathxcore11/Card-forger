@@ -117,6 +117,25 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.math.sqrt
 
+// Colours this page uses more than once, named once (rulebook R2: a literal is written in one place).
+private val InkFFE8B95B = Color(0xFFE8B95B)
+private val Ink8C080A0E = Color(0x8C080A0E)
+private val InkFFB5BCC9 = Color(0xFFB5BCC9)
+private val InkFF17110A = Color(0xFF17110A)
+private val InkFFF7DE9C = Color(0xFFF7DE9C)
+private val InkFFD4A94C = Color(0xFFD4A94C)
+private val Ink20FFFFFF = Color(0x20FFFFFF)
+private val InkBB000000 = Color(0xBB000000)
+private val Ink0AFFFFFF = Color(0x0AFFFFFF)
+private val InkFF121218 = Color(0xFF121218)
+private val Ink1CFFFFFF = Color(0x1CFFFFFF)
+private val InkCC000000 = Color(0xCC000000)
+private val InkC4FFFFFF = Color(0xC4FFFFFF)
+private val Ink9CFFFFFF = Color(0x9CFFFFFF)
+private val InkFFD4D9E4 = Color(0xFFD4D9E4)
+private val Ink99000000 = Color(0x99000000)
+private val Ink03FFFFFF = Color(0x03FFFFFF)
+
 /*
  * Collection Home: views.js home() as the website draws it on a phone, an unfolded foldable and a handheld. Every word,
  * date, link and picture comes from the site's own Home code running in the app (collection/CollectionEngine.home:
@@ -133,11 +152,11 @@ enum class CardGame(val id: String, val label: String, val color: Color, val tab
     PTCG("ptcg", "Pokémon", Color(0xFFEF5350), Color(0xFFFFDC62), "collection/game-tab-ptcg.jpg", .53f, 1.55f, 150f);
     companion object { fun of(id: String) = entries.firstOrNull { it.id == id } ?: MTG }
     /** style.css body[data-game] --gold: the accent a game's pages wear (Magic's gold, Yu-Gi-Oh!'s violet, Pokémon's coral). */
-    val gold: Color get() = when (this) { MTG -> Color(0xFFE8B95B); YGO -> Color(0xFFB99BFF); PTCG -> Color(0xFFFF7566) }
+    val gold: Color get() = when (this) { MTG -> InkFFE8B95B; YGO -> Color(0xFFB99BFF); PTCG -> Color(0xFFFF7566) }
 }
 
 /** The open game's --gold, for the parts of a page (and its bottom nav) that wear the accent. Magic's gold unless a page says otherwise. */
-val LocalGameGold = androidx.compose.runtime.staticCompositionLocalOf { Color(0xFFE8B95B) }
+val LocalGameGold = androidx.compose.runtime.staticCompositionLocalOf { InkFFE8B95B }
 
 enum class CollectionTab(val label: String) { HOME("Home"), CARDS("Collection"), SEARCH("Search"), DECKS("Decks"), SCAN("Scan") }
 
@@ -341,7 +360,7 @@ private fun DailyCase(c: DailyCard, act: CollectionHomeActions) {
 }
 
 /** --gold on Home: Magic's (with its light theme), or the open game's own. */
-private val HGold: Color @Composable @androidx.compose.runtime.ReadOnlyComposable get() = LocalGameGold.current.takeIf { it != Color(0xFFE8B95B) } ?: Site.Gold
+private val HGold: Color @Composable @androidx.compose.runtime.ReadOnlyComposable get() = LocalGameGold.current.takeIf { it != InkFFE8B95B } ?: Site.Gold
 
 /**
  * Game-feel home (specs/game-feel-home-brief.md; Randall 12 Nov: "we are a game on an app now, and it should feel and look like one",
@@ -462,7 +481,7 @@ private fun HomeStage(game: CardGame, daily: DailyCard?, over: DeckBoxM?, height
         }
         // The shade: the bar's words stay readable at the top, and the page's own colour takes over at the foot.
         Box(Modifier.matchParentSize().background(if (panes) Brush.horizontalGradient(.2f to Color.Transparent, .85f to Color(0x8C0D1016))
-            else Brush.verticalGradient(.5f to Color.Transparent, 1f to Site.Bg)).background(Brush.verticalGradient(0f to Color(0x8C080A0E), .22f to Color.Transparent)))
+            else Brush.verticalGradient(.5f to Color.Transparent, 1f to Site.Bg)).background(Brush.verticalGradient(0f to Ink8C080A0E, .22f to Color.Transparent)))
         if (panes) Box(Modifier.matchParentSize().background(Brush.verticalGradient(.62f to Color.Transparent, 1f to Site.Bg.copy(alpha = .9f))))
         if (!still) Embers(gold, Modifier.matchParentSize())
         Box(Modifier.matchParentSize().drawBehind {
@@ -526,7 +545,7 @@ private fun Embers(color: Color, modifier: Modifier) {
 /** Your collection at a glance (homeValue) as a dark glass plate over the art's foot: the same words and taps as [ValueRow]. */
 @Composable
 internal fun Hoard(v: HomeValue, roomy: Boolean, act: CollectionHomeActions) {
-    val shape = RoundedCornerShape(18.dp)
+    val shape = RoundedCornerShape(20.dp)
     val gold = HGold
     Row(Modifier.fillMaxWidth().heightIn(min = if (roomy) 100.dp else 80.dp).clip(shape).background(Color(0xB80D1119)).border(1.dp, Color(0x29FFFFFF), shape)
         .drawWithContent {
@@ -541,7 +560,7 @@ internal fun Hoard(v: HomeValue, roomy: Boolean, act: CollectionHomeActions) {
             Text("YOUR COLLECTION", style = sans(9.5f, FontWeight.Bold, Color(0xFFAEB6C4), ls = 2f))
             Text(v.amount, maxLines = 1, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.ExtraBold, fontSize = if (roomy) 40.sp else 30.sp, lineHeight = if (roomy) 46.sp else 35.sp,
                 brush = Brush.verticalGradient(listOf(Color(0xFFFFF6D8), Color(0xFFE9C877), Color(0xFFB98A35))), fontFeatureSettings = "tnum"))
-            if (v.note.isNotEmpty()) Text(v.note, style = sans(if (roomy) 12.5f else 11f, color = Color(0xFFB5BCC9)))
+            if (v.note.isNotEmpty()) Text(v.note, style = sans(if (roomy) 12.5f else 11f, color = InkFFB5BCC9))
             if (v.movement.isNotEmpty()) Text(v.movement, style = sans(11f, FontWeight.SemiBold, if (v.direction == "flat") Site.Muted else Site.Text, lh = 1.5f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -560,7 +579,7 @@ private fun Medal(n: String, label: String, gold: Color, roomy: Boolean, onClick
             drawCircle(gold.copy(alpha = .8f), size.minDimension / 2 - 1.dp.toPx(), style = Stroke(1.5.dp.toPx()))
         }.clickable(onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Text(n, maxLines = 1, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.ExtraBold, fontSize = if (roomy) 22.sp else 17.sp, color = Color.White))
-        Text(label, maxLines = 1, softWrap = false, style = sans(if (roomy) 9f else 7.5f, FontWeight.Bold, Color(0xFFB5BCC9), lh = 1.2f, ls = .3f))
+        Text(label, maxLines = 1, softWrap = false, style = sans(if (roomy) 9f else 7.5f, FontWeight.Bold, InkFFB5BCC9, lh = 1.2f, ls = .3f))
     }
 
 /** The three doors: Sets (its own page), and Meta decks and News, which open over Home instead of lengthening it. */
@@ -578,7 +597,7 @@ private fun Door(icon: androidx.compose.ui.graphics.vector.ImageVector, label: S
     Row(modifier.fillMaxHeight().clip(shape).background(Color(0xA60D1119)).border(1.dp, Color(0x26FFFFFF), shape).clickable(onClickLabel = "Open $label", onClick = onClick)
         .semantics { role = Role.Button }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally)) {
         Icon(icon, 17.dp, HGold)
-        Text(label, maxLines = 1, style = sans(12.5f, FontWeight.Bold, Color(0xFFE8EBF2)))
+        Text(label, maxLines = 1, style = sans(13f, FontWeight.Bold, Color(0xFFE8EBF2)))
     }
 }
 
@@ -588,7 +607,7 @@ private fun DoorSheet(which: String, m: CollectionHomeModel, screen: Dp, gutter:
     androidx.activity.compose.BackHandler(onBack = close)
     Column(Modifier.fillMaxSize().padCover().blockTouchBehind().background(Site.Bg.copy(alpha = .98f)).windowInsetsPadding(WindowInsets.statusBars)) {
         Row(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = gutter - 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Row(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = close).semantics { contentDescription = "Back to Home" }.padding(horizontal = 8.dp),
+            Row(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(13.dp)).clickable(onClick = close).semantics { contentDescription = "Back to Home" }.padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Icon(SiteIcons.Back, 18.dp, Site.Text)
                 Text("Home", style = sans(14f, FontWeight.SemiBold, Site.Text))
@@ -605,8 +624,8 @@ private fun DoorSheet(which: String, m: CollectionHomeModel, screen: Dp, gutter:
 private fun DeckShelf(s: HomeShelf, boxes: List<DeckBoxM>, game: CardGame, boxH: Dp, act: CollectionHomeActions, lens: LensHost) {
     Column {
         Row(Modifier.fillMaxWidth().heightIn(min = 30.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(s.title.ifEmpty { "Your decks" }.uppercase(), style = sans(10f, FontWeight.Bold, Color(0xFFD5DAE4), ls = 2.2f).copy(shadow = Shadow(Color(0xE6000000), Offset(0f, 1f), 6f)))
-            s.all?.let { link -> Text(link.label + " ›", style = sans(12.5f, FontWeight.SemiBold, HGold),
+            Text(s.title.ifEmpty { "Your decks" }.uppercase(), style = sans(11f, FontWeight.Bold, Color(0xFFD5DAE4), ls = 2.2f).copy(shadow = Shadow(Color(0xE6000000), Offset(0f, 1f), 6f)))
+            s.all?.let { link -> Text(link.label + " ›", style = sans(13f, FontWeight.SemiBold, HGold),
                 modifier = Modifier.clickable { if (link.to.isNotEmpty()) act.go(link.to) else if (link.href.isNotEmpty()) act.open(link.href) }.padding(start = 12.dp, top = 6.dp, bottom = 6.dp)) }
         }
         val lead = s.lead
@@ -622,9 +641,9 @@ private fun DeckBox(d: DeckBoxM, lead: Boolean, boxH: Dp, modifier: Modifier, ac
     TileFrame(d.art, lead, 0.dp, modifier, { act.go(d.to) }, "Open ${d.name}", d.sources, d.crop) {
         val big = boxH >= 130.dp
         Box(Modifier.fillMaxSize()) {
-            if (lead) Text(d.tag.uppercase(), maxLines = 1, style = sans(if (big) 9f else 7.5f, FontWeight.ExtraBold, Color(0xFF17110A), lh = 1.3f, ls = .9f),
+            if (lead) Text(d.tag.uppercase(), maxLines = 1, style = sans(if (big) 9f else 7.5f, FontWeight.ExtraBold, InkFF17110A, lh = 1.3f, ls = .9f),
                 modifier = Modifier.align(Alignment.TopStart).padding(top = 8.dp).clip(RoundedCornerShape(topEnd = 6.dp, bottomEnd = 6.dp))
-                    .background(Brush.verticalGradient(listOf(Color(0xFFF7DE9C), Color(0xFFD4A94C)))).padding(horizontal = 7.dp, vertical = 2.dp))
+                    .background(Brush.verticalGradient(listOf(InkFFF7DE9C, InkFFD4A94C))).padding(horizontal = 7.dp, vertical = 2.dp))
             Column(Modifier.align(Alignment.BottomStart).padding(horizontal = if (big) 12.dp else 9.dp, vertical = if (big) 11.dp else 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(d.name, maxLines = if (big || !lead) 2 else 1, overflow = TextOverflow.Ellipsis, style = sans(if (big) 15f else 12f, FontWeight.Bold, Color(0xFFF5F6FA), lh = 1.2f).copy(shadow = tileShadow))
                 if (d.line.isNotEmpty()) Text(d.line, maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(if (big) 11f else 9.5f, color = Color(0xFFC9CED9)).copy(shadow = tileShadow))
@@ -716,7 +735,7 @@ private fun GameTab(g: CardGame, on: Boolean, showName: Boolean, compact: Boolea
     val context = LocalContext.current
     val art by produceState(AssetImages.cached("${g.tabArt}@480"), g) { value = AssetImages.load(context, g.tabArt, maxWidth = 480) }
     Box(modifier.clip(shape).background(Color(0xFF151A23)).drawBehind { art?.let { tabArt(it, g, on) } }
-        .border(1.dp, Color(0x20FFFFFF), shape).clickable(onClick = onClick).semantics { contentDescription = g.label; role = Role.Tab },
+        .border(1.dp, Ink20FFFFFF, shape).clickable(onClick = onClick).semantics { contentDescription = g.label; role = Role.Tab },
         contentAlignment = Alignment.Center) {
         Row(Modifier.padding(horizontal = if (compact) 3.dp else 9.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 7.dp)) {
             GameMark(g, if (compact) 18.dp else 23.dp, g.tab.copy(alpha = if (on) 1f else .9f))
@@ -756,7 +775,7 @@ private fun GameMark(g: CardGame, size: Dp, color: Color, modifier: Modifier = M
 @Composable
 private fun HomeSearch(prompt: String, hints: SearchHints?, find: HomeFind, act: CollectionHomeActions, modifier: Modifier) {
     val shape = RoundedCornerShape(25.dp)
-    val gold = Color(0xFFE8B95B)
+    val gold = InkFFE8B95B
     val open = find.open
     // ::before: a light that runs round the gold edge every 9 s (home-search-edge); it rests while the box is typed in.
     val edge = if (Motion.still || open) null else rememberInfiniteTransition(label = "search-edge").animateFloat(0f, 1f, infiniteRepeatable(tween(9000, easing = LinearEasing)), label = "edge")
@@ -853,22 +872,22 @@ private fun Today(card: DailyCard, game: CardGame, screen: Dp, act: CollectionHo
             .padding(top = 8.dp, end = end, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             // Game-feel home: the label on a small dark capsule (it sits on bright art now), the name in the display face.
             Text(card.label.uppercase(), maxLines = 1, softWrap = false, style = sans(if (tight) 9f else 10f, FontWeight.ExtraBold, LocalGameGold.current, lh = 1.4f, ls = if (tight) 1.2f else 2.2f),
-                modifier = Modifier.clip(CircleShape).background(Color(0x8C080A0E)).padding(horizontal = if (tight) 8.dp else 10.dp, vertical = 3.dp))
+                modifier = Modifier.clip(CircleShape).background(Ink8C080A0E).padding(horizontal = if (tight) 8.dp else 10.dp, vertical = 3.dp))
             Text(card.name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.ExtraBold, fontSize = size.sp,
                 lineHeight = (size * 1.1f).sp, color = Color.White, shadow = Shadow(Color(0xF0000000), Offset(0f, 2f), 14f)))
         }
         if (card.set.isNotEmpty() || card.rarity.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp),
             itemVerticalAlignment = Alignment.CenterVertically) {
             if (card.set.isNotEmpty()) Text(card.set, modifier = Modifier.clickable { if (card.setCode.isEmpty() && card.setName.isNotEmpty()) act.setName(card.setName) else act.set(card.setCode) },
-                style = sans(12.5f, color = Color.White).copy(shadow = Shadow(Color(0xBB000000), Offset(0f, 1f), 8f)))
+                style = sans(12.5f, color = Color.White).copy(shadow = Shadow(InkBB000000, Offset(0f, 1f), 8f)))
             // .today-rarity: text-transform capitalize, each word.
             if (card.rarity.isNotEmpty()) Chip(card.rarity.split(' ').joinToString(" ") { w -> w.replaceFirstChar { it.uppercase() } }, 11f)
         }
         // The one gold button: today's pack when the set has one (the real Open Pack, the card as its hit), else the card's page.
         val go = if (card.pack != null) "Open pack" else "Open card"
-        Box(Modifier.padding(top = 10.dp).heightIn(min = 32.dp).clip(CircleShape).background(Brush.verticalGradient(listOf(Color(0xFFF7DE9C), Color(0xFFD4A94C))))
+        Box(Modifier.padding(top = 10.dp).heightIn(min = 32.dp).clip(CircleShape).background(Brush.verticalGradient(listOf(InkFFF7DE9C, InkFFD4A94C)))
             .clickable { if (card.pack != null) act.todayPack(card) else act.daily(card) }.semantics { role = Role.Button }.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
-            Text("$go  ›", style = sans(11f, FontWeight.ExtraBold, Color(0xFF17110A), ls = 1f))
+            Text("$go  ›", style = sans(11f, FontWeight.ExtraBold, InkFF17110A, ls = 1f))
         }
     }
     }
@@ -882,7 +901,7 @@ private fun Chip(text: String, size: Float, ls: Float = 0f) {
     Box(Modifier.heightIn(min = if (size < 11f) 23.dp else 0.dp).clip(shape).background(Color(0x77000000)).border(1.dp, HGold.copy(alpha = .45f), shape).padding(horizontal = 8.dp, vertical = 2.dp),
         contentAlignment = Alignment.Center) {
         // color-mix(in srgb, var(--gold) 80%, #fff)
-        Text(text, style = sans(size, FontWeight.SemiBold, LocalGameGold.current.let { g -> if (g == Color(0xFFE8B95B)) Color(0xFFEDC77C) else androidx.compose.ui.graphics.lerp(g, Color.White, .2f) }, ls = ls))
+        Text(text, style = sans(size, FontWeight.SemiBold, LocalGameGold.current.let { g -> if (g == InkFFE8B95B) Color(0xFFEDC77C) else androidx.compose.ui.graphics.lerp(g, Color.White, .2f) }, ls = ls))
     }
 }
 
@@ -966,21 +985,21 @@ private fun TileFrame(art: String?, lead: Boolean, minH: Dp, modifier: Modifier,
         // .home-personal-art:after: linear-gradient(0deg, #0b0e15f7, #0b0e1590 55%, #0b0e1522)
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0x220B0E15), .45f to Color(0x900B0E15), 1f to Color(0xF70B0E15))))
         Box(Modifier.matchParentSize().drawBehind { drawRect(Color(0x1FFFFFFF), Offset.Zero, Size(size.width, 1.dp.toPx())) }
-            .border(1.dp, if (lead) cssGradient(155f, 0f to Color(0xE6F6D891), .30f to Color(0x59F1D08A), .55f to Color(0x14FFFFFF), .72f to Color(0x0AFFFFFF), 1f to Color(0x8CF1D08A))
-                else cssGradient(155f, 0f to Color(0xB3F1D08A), .26f to Color(0x38FFFFFF), .52f to Color(0x12FFFFFF), .70f to Color(0x0AFFFFFF), 1f to Color(0x66F1D08A)), shape))
+            .border(1.dp, if (lead) cssGradient(155f, 0f to Color(0xE6F6D891), .30f to Color(0x59F1D08A), .55f to Color(0x14FFFFFF), .72f to Ink0AFFFFFF, 1f to Color(0x8CF1D08A))
+                else cssGradient(155f, 0f to Color(0xB3F1D08A), .26f to Color(0x38FFFFFF), .52f to Color(0x12FFFFFF), .70f to Ink0AFFFFFF, 1f to Color(0x66F1D08A)), shape))
         content()
     }
 }
 
-private val tileShadow = Shadow(Color(0xBB000000), Offset(0f, 1f), 2f)
+private val tileShadow = Shadow(InkBB000000, Offset(0f, 1f), 2f)
 
 /** .home-resume-empty: no decks yet, and the way to Decks. */
 @Composable
 private fun EmptyShelf(l: ShelfLead, game: CardGame, act: CollectionHomeActions) {
     val shape = RoundedCornerShape(20.dp)
-    Row(Modifier.fillMaxWidth().cardShadow(shape).clip(shape).background(cssGradient(160f, 0f to Color(0xFF1B1B25), 1f to Color(0xFF121218)))
+    Row(Modifier.fillMaxWidth().cardShadow(shape).clip(shape).background(cssGradient(160f, 0f to Color(0xFF1B1B25), 1f to InkFF121218))
         .drawBehind { ellipseGlow(game.color.copy(alpha = .16f), 0f, 0f, size.width * 1.1f, size.height * 1.5f, .6f) }
-        .border(1.dp, Color(0x1CFFFFFF), shape).padding(horizontal = 20.dp, vertical = 18.dp),
+        .border(1.dp, Ink1CFFFFFF, shape).padding(horizontal = 20.dp, vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(l.line, style = sans(12f, color = Color(0xB0FFFFFF), lh = 1.6f), modifier = Modifier.weight(1f))
         l.action?.let { a -> Box(Modifier.heightIn(min = 44.dp).clip(CircleShape).clickable { act.go(a.to.ifEmpty { "#decks" }) }.padding(horizontal = 12.dp, vertical = 8.dp), contentAlignment = Alignment.Center) {
@@ -1038,15 +1057,15 @@ private fun MetaCard(s: MetaSlide, game: CardGame, screen: Dp, quiet: Boolean, a
         }
         return
     }
-    Box(Modifier.fillMaxWidth().heightIn(min = 150.dp).cardShadow(shape).clip(shape).background(Color(0xFF121218))) {
+    Box(Modifier.fillMaxWidth().heightIn(min = 150.dp).cardShadow(shape).clip(shape).background(InkFF121218)) {
         CommunityArt(s.art, game, Modifier.matchParentSize(), meta = true)
         Column(Modifier.fillMaxWidth(if (screen >= 900.dp) .65f else 1f).padding(horizontal = 18.dp, vertical = 16.dp).padding(top = if (s.state == "loading") 18.dp else 0.dp)) {
             if (s.eyebrow.isNotEmpty()) Text(s.eyebrow.uppercase(), style = sans(11f, FontWeight.Bold, HGold, ls = .66f), modifier = Modifier.padding(bottom = 4.dp))
-            Text(s.title, style = manrope((screen.value * .048f).coerceIn(18f, 22f), FontWeight.ExtraBold, Color.White, lh = 1.18f, ls = -.02f).copy(shadow = Shadow(Color(0xCC000000), Offset(0f, 2f), 12f)),
+            Text(s.title, style = manrope((screen.value * .048f).coerceIn(18f, 22f), FontWeight.ExtraBold, Color.White, lh = 1.18f, ls = -.02f).copy(shadow = Shadow(InkCC000000, Offset(0f, 2f), 12f)),
                 modifier = Modifier.padding(bottom = 6.dp).then(if (s.key.isNotEmpty()) Modifier.clickable { act.metaDeck(s) } else Modifier))
-            if (s.result.isNotEmpty()) Text(s.result, style = sans(12.5f, color = Color(0xC4FFFFFF), lh = 1.5f), modifier = Modifier.padding(bottom = 6.dp))
+            if (s.result.isNotEmpty()) Text(s.result, style = sans(12.5f, color = InkC4FFFFFF, lh = 1.5f), modifier = Modifier.padding(bottom = 6.dp))
             if (s.note.isNotEmpty()) Text(s.note, style = sans(11f, color = Site.Muted, lh = 1.6f))
-            for (t in listOf(s.source, s.method)) if (t.isNotEmpty()) Text(t, style = sans(10.5f, color = Color(0x9CFFFFFF), lh = 1.65f), modifier = Modifier.padding(vertical = 2.dp))
+            for (t in listOf(s.source, s.method)) if (t.isNotEmpty()) Text(t, style = sans(10.5f, color = Ink9CFFFFFF, lh = 1.65f), modifier = Modifier.padding(vertical = 2.dp))
             if (s.original.isNotEmpty()) Box(Modifier.padding(top = 3.dp).heightIn(min = 35.dp).clickable { act.open(s.original) }, contentAlignment = Alignment.CenterStart) {
                 Text("Original source", style = sans(10f, FontWeight.SemiBold, HGold))
             }
@@ -1071,7 +1090,7 @@ private fun News(news: HomeNews, game: CardGame, screen: Dp, act: CollectionHome
         }
         if (news.empty) {
             val shape = RoundedCornerShape(20.dp)
-            Box(Modifier.fillMaxWidth().clip(shape).background(Color(0xFF121218)).border(1.dp, Color(0x1CFFFFFF), shape).padding(horizontal = 18.dp, vertical = 18.dp)) {
+            Box(Modifier.fillMaxWidth().clip(shape).background(InkFF121218).border(1.dp, Ink1CFFFFFF, shape).padding(horizontal = 18.dp, vertical = 18.dp)) {
                 Text(news.slides.firstOrNull()?.title ?: "", style = sans(14f, FontWeight.SemiBold, Site.Muted))
             }
         } else {
@@ -1111,7 +1130,7 @@ private fun NewsCard(s: NewsSlide, game: CardGame, screen: Dp, modifier: Modifie
     val shape = RoundedCornerShape(20.dp)
     var textOnly by remember(s.id) { mutableStateOf(s.textOnly || s.art == null) }
     var open by remember(s.id) { mutableStateOf(false) }
-    Box(modifier.heightIn(min = 260.dp).cardShadow(shape).clip(shape).background(Color(0xFF121218))) {
+    Box(modifier.heightIn(min = 260.dp).cardShadow(shape).clip(shape).background(InkFF121218)) {
         if (!textOnly) CommunityArt(s.art, game, Modifier.matchParentSize(), meta = false, onGone = { textOnly = true })
         Column(Modifier.fillMaxWidth().heightIn(min = 260.dp).padding(horizontal = 18.dp, vertical = 16.dp), verticalArrangement = Arrangement.Bottom) {
             if (s.chips.isNotEmpty()) FlowRow(Modifier.padding(bottom = 4.dp), horizontalArrangement = Arrangement.spacedBy(7.dp)) { s.chips.forEach { Chip(it, 10.5f, .66f) } }
@@ -1119,16 +1138,16 @@ private fun NewsCard(s: NewsSlide, game: CardGame, screen: Dp, modifier: Modifie
                 append(s.title.ifEmpty { "Visit the source" })
                 if (s.href.isNotEmpty()) withStyle(SpanStyle(color = Site.Muted, fontSize = .75.em)) { append("\u00A0↗") }
             }
-            Text(title, style = manrope((screen.value * .048f).coerceIn(18f, 22f), FontWeight.ExtraBold, Color(0xFFF7F8FC), lh = 1.18f, ls = -.02f).copy(shadow = Shadow(Color(0xCC000000), Offset(0f, 2f), 12f)),
+            Text(title, style = manrope((screen.value * .048f).coerceIn(18f, 22f), FontWeight.ExtraBold, Color(0xFFF7F8FC), lh = 1.18f, ls = -.02f).copy(shadow = Shadow(InkCC000000, Offset(0f, 2f), 12f)),
                 modifier = Modifier.padding(bottom = 6.dp).then(if (s.href.isNotEmpty()) Modifier.clickable { act.open(s.href) } else Modifier))
-            if (s.summary.isNotEmpty()) Text(s.summary, style = sans(12.5f, color = Color(0xC4FFFFFF), lh = 1.55f), modifier = Modifier.padding(bottom = 6.dp))
+            if (s.summary.isNotEmpty()) Text(s.summary, style = sans(12.5f, color = InkC4FFFFFF, lh = 1.55f), modifier = Modifier.padding(bottom = 6.dp))
             if (s.source.isNotEmpty()) FlowRow(Modifier.padding(vertical = 2.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                s.source.forEachIndexed { i, t -> Text(t, style = if (i == 0) sans(10.5f, FontWeight.SemiBold, Color(0xFFEDF0F7), lh = 1.55f) else sans(10.5f, color = Color(0x9CFFFFFF), lh = 1.55f)) }
+                s.source.forEachIndexed { i, t -> Text(t, style = if (i == 0) sans(10.5f, FontWeight.SemiBold, Color(0xFFEDF0F7), lh = 1.55f) else sans(10.5f, color = Ink9CFFFFFF, lh = 1.55f)) }
             }
             if (s.details.isNotEmpty()) {
                 Row(Modifier.heightIn(min = 32.dp).clickable { open = !open }.padding(top = 8.dp, bottom = 3.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Text(if (open) "▼" else "▶", style = sans(7f, color = Color(0xFFD4D9E4)))
-                    Text(s.detailsLabel.ifEmpty { "Source details" }, style = sans(10f, color = Color(0xFFD4D9E4)))
+                    Text(if (open) "▼" else "▶", style = sans(7f, color = InkFFD4D9E4))
+                    Text(s.detailsLabel.ifEmpty { "Source details" }, style = sans(10f, color = InkFFD4D9E4))
                 }
                 if (open) s.details.forEach { Text(it, style = sans(11f, color = Site.Muted, lh = 1.55f), modifier = Modifier.padding(top = 6.dp)) }
             }
@@ -1165,13 +1184,13 @@ private fun CommunityArt(art: HomeArt?, game: CardGame, modifier: Modifier, meta
         // object-fit: cover; object-position: 50% 35%; faded in when it arrives.
         if (painter != null && !missing) Image(painter, null, Modifier.matchParentSize().then(boxed?.fit ?: Modifier).alpha(if (ready) 1f else 0f), contentScale = ContentScale.Crop, alignment = BiasAlignment(0f, -.3f))
         // #content .community-art-shade: linear-gradient(90deg, #000e, #000b 45%, #0005) over linear-gradient(0deg, #0009, transparent 60%).
-        Box(Modifier.matchParentSize().background(Brush.verticalGradient(.4f to Color.Transparent, 1f to Color(0x99000000)))
-            .background(Brush.horizontalGradient(0f to Color(0xEE000000), .45f to Color(0xBB000000), 1f to Color(0x55000000))))
+        Box(Modifier.matchParentSize().background(Brush.verticalGradient(.4f to Color.Transparent, 1f to Ink99000000))
+            .background(Brush.horizontalGradient(0f to Color(0xEE000000), .45f to InkBB000000, 1f to Color(0x55000000))))
         // The credit once the picture is up; the fallback caption while there is none.
         val label = if (ready) credit else if (art?.theme == true || missing) art?.caption.orEmpty() else ""
         if (label.isNotEmpty()) Box(Modifier.align(Alignment.TopEnd).padding(top = 10.dp, end = 12.dp).fillMaxWidth(.46f), contentAlignment = Alignment.TopEnd) {
             Text(label, maxLines = 2, overflow = TextOverflow.Ellipsis, style = manrope(8f, FontWeight.Medium, Color(0xFFE3E8EF), lh = 1.4f, ls = .02f),
-                modifier = Modifier.clip(CircleShape).background(Color(0x99000000)).border(1.dp, Color(0x1AFFFFFF), CircleShape).padding(horizontal = 9.dp, vertical = 3.dp))
+                modifier = Modifier.clip(CircleShape).background(Ink99000000).border(1.dp, Color(0x1AFFFFFF), CircleShape).padding(horizontal = 9.dp, vertical = 3.dp))
         }
     }
 }
@@ -1184,8 +1203,8 @@ private fun DrawScope.theme(game: CardGame, meta: Boolean) {
     val cx = size.width * .85f; val cy = size.height * .12f
     ellipseGlow(glow, cx, cy, maxOf(cx, size.width - cx) * sqrt(2f), maxOf(cy, size.height - cy) * sqrt(2f), .62f)
     val orbit = Offset(size.width + 48 * px - 130 * px, -80 * px + 130 * px)
-    drawCircle(Color(0x03FFFFFF), 142.5f * px, orbit, style = Stroke(25 * px)); drawCircle(Color(0x03FFFFFF), 162.5f * px, orbit, style = Stroke(65 * px))
-    drawCircle(mix(game.color, Color(0x20FFFFFF), .5f), 130 * px, orbit, style = Stroke(px))
+    drawCircle(Ink03FFFFFF, 142.5f * px, orbit, style = Stroke(25 * px)); drawCircle(Ink03FFFFFF, 162.5f * px, orbit, style = Stroke(65 * px))
+    drawCircle(mix(game.color, Ink20FFFFFF, .5f), 130 * px, orbit, style = Stroke(px))
     // repeating-linear-gradient(125deg, transparent 0 38px, #ffffff08 38px 39px)
     val a = Math.toRadians(125.0); val dir = Offset(sin(a).toFloat(), -cos(a).toFloat()); val along = Offset(-dir.y, dir.x)
     val span = abs(size.width * dir.x) + abs(size.height * dir.y); val c = Offset(size.width / 2, size.height / 2); val reach = size.width + size.height
@@ -1215,7 +1234,7 @@ private fun DrawScope.gameMark(game: CardGame, color: Color, box: Float) {
 /** #content .home-meta-card / .community-feature: 1px #ffffff1c edge with the inset top light. */
 @Composable
 private fun androidx.compose.foundation.layout.BoxScope.CardEdge(shape: RoundedCornerShape) =
-    Box(Modifier.matchParentSize().drawBehind { drawRect(Color(0x0DFFFFFF), Offset(20.dp.toPx(), 1.dp.toPx()), Size(size.width - 40.dp.toPx(), 1.dp.toPx())) }.border(1.dp, Color(0x1CFFFFFF), shape))
+    Box(Modifier.matchParentSize().drawBehind { drawRect(Color(0x0DFFFFFF), Offset(20.dp.toPx(), 1.dp.toPx()), Size(size.width - 40.dp.toPx(), 1.dp.toPx())) }.border(1.dp, Ink1CFFFFFF, shape))
 
 /** box-shadow: 0 18px 40px #0005 as the platform's own shadow (cheap while scrolling). */
 private fun Modifier.cardShadow(shape: RoundedCornerShape) = shadow(16.dp, shape, ambientColor = Color.Black.copy(alpha = .25f), spotColor = Color.Black.copy(alpha = .45f))
@@ -1276,7 +1295,7 @@ fun CollectionNav(active: CollectionTab?, vertical: Boolean = false, scan: Boole
         val on = t == active
         Column(modifier.clickable { onSelect(t) }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically)) {
             // .bottom-nav button.on span: the open game's --gold at 20 % behind its icon in --gold (Magic's gold in the app's own themes).
-            val gold = LocalGameGold.current.takeIf { it != Color(0xFFE8B95B) } ?: Site.Gold
+            val gold = LocalGameGold.current.takeIf { it != InkFFE8B95B } ?: Site.Gold
             Box(Modifier.size(56.dp, 30.dp).clip(RoundedCornerShape(15.dp)).background(if (on) gold.copy(alpha = .2f) else Color.Transparent), contentAlignment = Alignment.Center) {
                 Icon(icons.getValue(t), 22.dp, if (on) gold else Site.Muted)
             }
