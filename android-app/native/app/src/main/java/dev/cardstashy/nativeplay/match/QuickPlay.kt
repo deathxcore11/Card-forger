@@ -221,8 +221,15 @@ object QuickPlay {
         }
     }
 
-    /** A match is starting: give the network to its two decks. */
-    fun pauseBackground() { warming?.cancel(); warming = null; picked.indices.forEach { picked[it]?.cancel(); picked[it] = null } }
+    /**
+     * A match is starting: give the network to its two decks. The warm-up of your other decks stops. The two decks chosen for
+     * the seats keep downloading (loading screens L2: Play used to cancel them and the gate started them again from nothing);
+     * the gate asks for the same cards and takes what they have already brought in.
+     */
+    fun pauseBackground() { warming?.cancel(); warming = null }
+    /** For tests: the two seats' warm jobs and the general one, as they stand. */
+    internal fun seatJobs(): List<Job?> = picked.toList()
+    internal fun holdForTest(general: Job?, you: Job?, cpu: Job?) { warming = general; picked[0] = you; picked[1] = cpu }
 
     private fun unmetered(context: Context): Boolean {
         val cm = context.getSystemService(ConnectivityManager::class.java) ?: return false
