@@ -251,6 +251,30 @@ fun heroPainter(art: Any?): Painter? = when (art) {
     else -> coil3.compose.rememberAsyncImagePainter(art, imageLoader = dev.cardstashy.nativeplay.art.CardArt.loader)
 }
 
+/** A picture asked for at the size of its box: the [painter], and the [fit] modifier its Image must carry so the box's size is known. */
+class BoxArt(val painter: Painter?, val fit: Modifier)
+
+/** Collection home, lighter C4: the request for [art] decoded to fill a box whose size [size] reports, never at its original size. */
+internal fun boxRequest(context: android.content.Context, art: Any, size: coil3.size.SizeResolver): coil3.request.ImageRequest =
+    coil3.request.ImageRequest.Builder(context).data(art).size(size).scale(coil3.size.Scale.FILL).build()
+
+/**
+ * C4 (Randall 12 Nov: the home "feels clunky and unoptimized"): [heroPainter] gives the image library no size, and it then decodes
+ * every picture at its original size. This one asks for the picture at the size of the box it is laid out in (cropped to fill it).
+ * An in-memory bitmap (tests, bundled art) is used as it is. Put [BoxArt.fit] on the Image that draws it.
+ */
+@Composable
+fun boxArt(art: Any?): BoxArt = when (art) {
+    null -> BoxArt(null, Modifier)
+    is ImageBitmap -> BoxArt(remember(art) { BitmapPainter(art) }, Modifier)
+    else -> {
+        val size = coil3.compose.rememberConstraintsSizeResolver()
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val request = remember(art, size) { boxRequest(context, art, size) }
+        BoxArt(coil3.compose.rememberAsyncImagePainter(request, imageLoader = dev.cardstashy.nativeplay.art.CardArt.loader, contentScale = androidx.compose.ui.layout.ContentScale.Crop), size)
+    }
+}
+
 // ---------------------------------------------------------------- 0.1 top bar
 
 /** The OTHER mode's emblem (tap switches mode, press = scale) and the profile orb with the unread dot. No bar of its own: it floats on the hero. */

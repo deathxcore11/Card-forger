@@ -350,11 +350,15 @@ private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (
 @Composable
 private fun DailyArt(url: String?, height: Dp, pokemon: Boolean = false, sources: List<String> = emptyList()) {
     // The img's data-art-sources, walked in order as its onerror does.
-    val raw = if (sources.size > 1) firstOf(sources) else url?.takeIf { it.isNotBlank() }?.let { heroPainter(homeArt(it)) }
+    // C4: one picture is asked for at the size of this box; a list of fallbacks walks as before, and a Pokémon card keeps its
+    // full size because only its art window is shown.
+    val boxed = if (sources.size > 1 || pokemon) null else url?.takeIf { it.isNotBlank() }?.let { boxArt(homeArt(it)) }
+    val raw = if (sources.size > 1) firstOf(sources) else if (pokemon) url?.takeIf { it.isNotBlank() }?.let { heroPainter(homeArt(it)) } else boxed?.painter
+    val fit = boxed?.fit ?: Modifier
     val p = if (pokemon && raw != null) remember(raw) { PkArtCrop(raw) } else raw
     Box(Modifier.fillMaxWidth().height(height)) {
         // opacity .78, object-position 50% 32%, mask: #000 5%, #000e 40%, #0006 74%, transparent.
-        if (p != null) Image(p, null, Modifier.matchParentSize().graphicsLayer { alpha = .78f; compositingStrategy = CompositingStrategy.Offscreen }
+        if (p != null) Image(p, null, Modifier.matchParentSize().then(fit).graphicsLayer { alpha = .78f; compositingStrategy = CompositingStrategy.Offscreen }
             .drawWithContent {
                 drawContent()
                 drawRect(Brush.verticalGradient(.05f to Color.Black, .40f to Color.Black.copy(alpha = .933f), .74f to Color.Black.copy(alpha = .4f), 1f to Color.Transparent), blendMode = BlendMode.DstIn)
@@ -594,7 +598,11 @@ private fun TileFrame(art: String?, lead: Boolean, minH: Dp, modifier: Modifier,
                       content: @Composable () -> Unit) {
     val shape = RoundedCornerShape(18.dp)
     // The cover and the fallbacks its img walks (ygoCropArt, pokemonArtCrop); a Pokémon card shows its art window.
-    val raw = if (sources.size > 1) firstOf(sources) else art?.let { heroPainter(homeArt(it)) }
+    // C4: one cover is asked for at the size of its tile; a list of fallbacks walks as before, and a Pokémon card keeps its
+    // full size because only its art window is shown.
+    val pk = crop == "pokemon"
+    val boxed = if (sources.size > 1 || pk) null else art?.let { boxArt(homeArt(it)) }
+    val raw = if (sources.size > 1) firstOf(sources) else if (pk) art?.let { heroPainter(homeArt(it)) } else boxed?.painter
     val p = if (crop == "pokemon" && raw != null) remember(raw) { PkArtCrop(raw) } else raw
     val loading = raw
     // A deck's cover can change while its card names arrive: the last cover shown holds until the new one has loaded.
@@ -602,11 +610,12 @@ private fun TileFrame(art: String?, lead: Boolean, minH: Dp, modifier: Modifier,
     val ready = p != null && (loading !is coil3.compose.AsyncImagePainter || state is coil3.compose.AsyncImagePainter.State.Success)
     var shown by remember { mutableStateOf<String?>(null) }
     if (ready && shown != art) SideEffect { shown = art }
-    val held = shown?.takeIf { !ready && it != art }?.let { heroPainter(homeArt(it)) }?.let { h -> if (crop == "pokemon") PkArtCrop(h) else h }
+    val heldBox = if (pk) null else shown?.takeIf { !ready && it != art }?.let { boxArt(homeArt(it)) }
+    val held = if (pk) shown?.takeIf { !ready && it != art }?.let { heroPainter(homeArt(it)) }?.let { PkArtCrop(it) } else heldBox?.painter
     Box(modifier.heightIn(min = minH).shadow(14.dp, shape, ambientColor = Color.Black.copy(alpha = .35f), spotColor = Color.Black.copy(alpha = .85f))
         .clip(shape).background(cssGradient(135f, 0f to Color(0xFF252936), 1f to Color(0xFF141720))).clickable(onClick = onClick).semantics { contentDescription = label }) {
-        if (held != null) Image(held, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
-        if (p != null) Image(p, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
+        if (held != null) Image(held, null, Modifier.matchParentSize().then(heldBox?.fit ?: Modifier), contentScale = ContentScale.Crop)
+        if (p != null) Image(p, null, Modifier.matchParentSize().then(boxed?.fit ?: Modifier), contentScale = ContentScale.Crop)
         // .home-personal-art:after: linear-gradient(0deg, #0b0e15f7, #0b0e1590 55%, #0b0e1522)
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0x220B0E15), .45f to Color(0x900B0E15), 1f to Color(0xF70B0E15))))
         Box(Modifier.matchParentSize().drawBehind { drawRect(Color(0x1FFFFFFF), Offset.Zero, Size(size.width, 1.dp.toPx())) }
@@ -813,7 +822,8 @@ private fun CommunityArt(art: HomeArt?, game: CardGame, modifier: Modifier, meta
     var src by remember(art) { mutableStateOf(art?.src.orEmpty()) }
     var credit by remember(art) { mutableStateOf(art?.credit.orEmpty()) }
     var missing by remember(art) { mutableStateOf(art == null || art.src.isEmpty()) }
-    val painter: Painter? = if (!missing) heroPainter(homeArt(src)) else null
+    val boxed = if (!missing) boxArt(homeArt(src)) else null
+    val painter: Painter? = boxed?.painter
     val coil = painter as? coil3.compose.AsyncImagePainter
     val state = coil?.state?.collectAsState()?.value
     val failed = !missing && (painter == null || state is coil3.compose.AsyncImagePainter.State.Error)
@@ -826,7 +836,7 @@ private fun CommunityArt(art: HomeArt?, game: CardGame, modifier: Modifier, meta
     Box(modifier) {
         if (art?.theme == true && !ready) Canvas(Modifier.matchParentSize()) { theme(game, meta) }
         // object-fit: cover; object-position: 50% 35%; faded in when it arrives.
-        if (painter != null && !missing) Image(painter, null, Modifier.matchParentSize().alpha(if (ready) 1f else 0f), contentScale = ContentScale.Crop, alignment = BiasAlignment(0f, -.3f))
+        if (painter != null && !missing) Image(painter, null, Modifier.matchParentSize().then(boxed?.fit ?: Modifier).alpha(if (ready) 1f else 0f), contentScale = ContentScale.Crop, alignment = BiasAlignment(0f, -.3f))
         // #content .community-art-shade: linear-gradient(90deg, #000e, #000b 45%, #0005) over linear-gradient(0deg, #0009, transparent 60%).
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(.4f to Color.Transparent, 1f to Color(0x99000000)))
             .background(Brush.horizontalGradient(0f to Color(0xEE000000), .45f to Color(0xBB000000), 1f to Color(0x55000000))))
