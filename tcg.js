@@ -11,7 +11,7 @@ import {recordValueObservation} from './value-history.js';
 import {dailyDate, nextDailyReset} from './daily-clock.js';
 import {ygoRarity} from './ygo-identity.js';
 import {sharedDeckSheet} from './shared-deck-view.js';
-import {finishAttrs,finishPreview,finishArtworkCard,ygoRarityStrip} from './finish-preview.js';
+import {finishAttrs,finishPreview,finishArtworkCard,ygoRarityStrip,setSavedYgoPrintingKey} from './finish-preview.js';
 import {deckBoxMarkup,deckBoxFields,readDeckBox} from './deck-box.js';
 import {contextAction,contextHeader,deckContextShortcuts} from './card-actions.js';
 import {detailSetSummary,detailOwnedSummary,miniPrintingMarkup} from './card-detail-extras.js';
@@ -234,13 +234,19 @@ const tcgTier = (c, e = null, p = undefined) => tierOf(c?.game, e?.rarity || c?.
 export function savedYgoPresentation(card,entry) {
   if(card?.game!=="ygo"||!entry)return card;
   const scoped=entry.setReleaseId?setContextCard("ygo",card,entry.setReleaseId,currentYgoCatalogue()):card;
-  const key=entry.printing&&entry.rarity?entry.printing+"::"+entry.rarity:"";
+  const saved=entry.printing&&entry.rarity?entry.printing+"::"+entry.rarity:"";
+  // A lot saved with its release but not its printing: when that release holds exactly one printing of the card, the release
+  // itself names it (the card page already shows it that way). Lists then wear the same rarity and foil as the page, never a guess:
+  // an unresolved or ambiguous release, or a saved printing code from another release, still borrows nothing.
+  const pinned=scoped.setContext?.status==="resolved"&&!scoped.setContext.printingAmbiguous?scoped.setContext.printing:null;
+  const key=saved||(pinned&&(!entry.printing||entry.printing===pinned.code)&&(!entry.rarity||entry.rarity===pinned.rarity)?pinned.code+"::"+pinned.rarity:"");
   const q=!entry.setReleaseUnverified&&key?presentationQuote("ygo",scoped,"reference",key,entry.edition||""):null;
   const printing=q?.printing||null;
   return {...scoped,sets:printing?[printing]:[],rarity:printing?.rarity||"",displayPrintingKey:printing?key:"",displayEdition:entry.edition||"",
     ...(scoped.setContext?{setContext:{...scoped.setContext,printings:printing?[printing]:[],printing,printingAmbiguous:!printing}}:{}),
     savedPrintingUnresolved:!printing};
 }
+setSavedYgoPrintingKey((card,entry)=>savedYgoPresentation(card,entry).displayPrintingKey||'');
 export function tcgRarityAttrs(c,e=null) {
   if(c?.game!=="ygo")return "";
   if(e)c=savedYgoPresentation(c,e);
@@ -1053,7 +1059,7 @@ export function tcgCollection() {
       const valuation=entryValuation(c,e), p = valuation.price;
       const t = tcgTier(c, e, p);
       const visual=savedYgoPresentation(c,e);
-      return `<div class="lot" ${tcgRarityAttrs(visual)} data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark(g,e.id)}<button class="lot-art" ${finishAttrs(g,visual,{priceFinish:e.variant,savedVariant:e.variant,savedProductId:e.productId,priceEdition:e.printing&&e.rarity?e.printing+'::'+e.rarity:'',priceYgoEdition:e.edition})}  data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${imgTag(c,"card-img",false,g==="ygo"?p:undefined)}${tileBadges(visual)}${tierGem(t)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem(g, c)}</button><span class="lot-sub">${rowBadges(visual)}${visual?.savedPrintingUnresolved?'<span class="muted">Printing not verified</span> · ':""}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(pokemonVariantProductConflict(c,e)?'Saved product identity mismatch':c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></div><div class="lot-side"><span class="lot-value"><button class="price link" data-act="marketOpen" data-game="${g}" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" data-finish="${esc(e.variant||"reference")}" aria-label="Price history and sellers for ${esc(e.name)}">${p === null ? "—" : usd(p * e.qty)}</button>${conditionBadge(e,[],priceOriginNote(valuation))}${priceOriginBadge(valuation)}</span><span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
+      return `<div class="lot" ${tcgRarityAttrs(visual)} data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark(g,e.id)}<button class="lot-art" ${finishAttrs(g,visual,{priceFinish:e.variant,savedVariant:e.variant,savedProductId:e.productId,priceEdition:e.printing&&e.rarity?e.printing+'::'+e.rarity:visual?.displayPrintingKey||'',priceYgoEdition:e.edition})}  data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${imgTag(c,"card-img",false,g==="ygo"?p:undefined)}${tileBadges(visual)}${tierGem(t)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem(g, c)}</button><span class="lot-sub">${rowBadges(visual)}${visual?.savedPrintingUnresolved?'<span class="muted">Printing not verified</span> · ':""}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(pokemonVariantProductConflict(c,e)?'Saved product identity mismatch':c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></div><div class="lot-side"><span class="lot-value"><button class="price link" data-act="marketOpen" data-game="${g}" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" data-finish="${esc(e.variant||"reference")}" aria-label="Price history and sellers for ${esc(e.name)}">${p === null ? "—" : usd(p * e.qty)}</button>${conditionBadge(e,[],priceOriginNote(valuation))}${priceOriginBadge(valuation)}</span><span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
     })
     .join("")}</div>${selectionTray(g)}${!rows.length ? empty("No matching cards", "Try a different search or filter.") : ""}${rows.length > (U.limit || 120) ? `<button class="btn ghost block" data-act="tCollMore">Load more · ${rows.length-(U.limit || 120)} remaining</button>` : ""}`
   : empty(`No ${esc(GAMES[g].short)} cards yet`, "Search for a card and tap “Add to collection”, or import a list.", `<button class="btn" data-act="go" data-to="#search">Find cards</button><button class="btn ghost" data-act="tImportColl">Paste a list</button>`)}

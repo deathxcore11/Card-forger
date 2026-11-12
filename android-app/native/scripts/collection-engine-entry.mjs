@@ -1367,6 +1367,10 @@ function tcgScreenCards(g, view, o = {}) {
     : view === 'collection' ? st.collection.map(e => e.cardId) : st.decks.flatMap(d => (d.zones?.main || []).slice(0, 1).map(r => r.cardId));
   const missing = [...new Set(ids.filter(id => tcgNeedsRefresh(g, tcgCardOf(g, id))))];
   if (missing.length) tcgEnsureMany(g, missing, () => {}).catch(() => {});
+  // A Yu-Gi-Oh! lot saved with its release reads its printing, foil and price through the release list (tcg.js savedYgoPresentation,
+  // entryValuation). Only the card page and the Sets tab loaded that list, so until one of them had been opened the Cards tab drew
+  // such a lot plain with a dash for its price (Randall 12 Nov, 0.4.66). Any Yu-Gi-Oh! screen now asks for it once.
+  if (g === 'ygo' && !tcgUi(g).sets.list.length && st.collection.some(e => e.setReleaseId)) tcgCtx.loadSets(g).catch(() => {});
 }
 // tcg.js's set browser and set page handlers, as the site wires them (data-act / data-change / data-input).
 const tcgSetsAct = {

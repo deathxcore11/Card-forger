@@ -5,7 +5,7 @@ import {printedCardColors} from './magic-card-color.js';
 // supplies resolved owned-lot prices; this module never fetches or records value.
 import { esc, usd } from './ui.js';
 import { artworkHTML, knownPokemonPlaceholder } from './artwork.js';
-import { finishAttrs, finishArtworkCard } from './finish-preview.js';
+import { finishAttrs, finishArtworkCard, savedYgoPrintingKey } from './finish-preview.js';
 import { GAMES, GAME_COLOR, GAME_ICON } from './games.js';
 import { roundedValueTotal } from './value-history.js';
 
@@ -147,7 +147,7 @@ export function valueTopLots({ game='mtg', rows=[] }) {
   const top=rows.filter(r=>finiteValue(r.unit)&&Number(r.entry?.qty)>0).map(r=>({...r,total:r.unit*Number(r.entry.qty)})).sort((a,b)=>b.total-a.total||String(a.entry.name).localeCompare(String(b.entry.name))||String(a.entry.id).localeCompare(String(b.entry.id))).slice(0,12);
   return `<section class="panel value-panel value-top"><div class="value-section-head"><h3>Most valuable</h3><span class="small muted">Owned lots</span></div><div class="value-lots">${top.map(({entry,card,unit,total,valuation})=>{
     if(game==='mtg')card=magicOwnedCard(entry,card);
-    const action=game==='mtg'?`data-act="card" data-name="${esc(entry.name)}"`:`data-act="tCard" data-id="${esc(entry.cardId)}"`, ctx={priceFinish:game==='mtg'?entry.finish||'nonfoil':game==='ptcg'?entry.variant||'unresolved-owned-variant':entry.variant,priceEdition:entry.printing&&entry.rarity?entry.printing+'::'+entry.rarity:'',priceYgoEdition:entry.edition},
+    const action=game==='mtg'?`data-act="card" data-name="${esc(entry.name)}"`:`data-act="tCard" data-id="${esc(entry.cardId)}"`, ctx={priceFinish:game==='mtg'?entry.finish||'nonfoil':game==='ptcg'?entry.variant||'unresolved-owned-variant':entry.variant,priceEdition:entry.printing&&entry.rarity?entry.printing+'::'+entry.rarity:savedYgoPrintingKey(card,entry),priceYgoEdition:entry.edition},
       source=finishArtworkCard(game,card,ctx), shown=source?{...source,prices:{...source.prices,usd:unit},...(source.setContext?{setContext:{...source.setContext,price:unit}}:{})}:source;
     return `<button type="button" class="value-lot" ${action} data-entry="${esc(entry.id)}" aria-label="Open ${esc(entry.name)}, ${esc(lotDetails(game,entry,card))}, ${copies(entry.qty)}"><span class="value-lot-art" ${finishAttrs(game,game==='mtg'&&!entry.printingVerified?null:card,ctx,'small')}>${valueLotArtwork(game,card,entry,shown)}</span><span class="value-lot-info"><strong>${esc(entry.name)}</strong><span class="value-lot-details">${esc(lotDetails(game,entry,card))}</span><span class="value-lot-copies">${copies(entry.qty)} · ${usd(unit)} each</span>${priceOriginBadge(valuation)}</span><span class="value-lot-total">${usd(total)}</span></button>`;
   }).join('')||'<p class="muted small">No priced owned lots yet. Unpriced copies are not ranked as $0 cards.</p>'}</div></section>`;
