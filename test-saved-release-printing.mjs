@@ -27,6 +27,8 @@ const pinned=lot('pinned',{setReleaseId:rel('2019 Gold Sarcophagus Tin')});
 assert.equal(pageEffect(pinned),'ygo-prismatic');
 assert.deepEqual(effects(pinned),['ygo-prismatic','ygo-prismatic','ygo-prismatic'],'Cards, Value and binder follow the saved release');
 assert.equal(savedYgoPresentation(card,pinned).savedPrintingUnresolved,false);assert.doesNotMatch(tcgCollection(),/Printing not verified/);
+// Randall's pick: such a lot is marked 'Edition not set' in the Cards list; a lot with its own saved printing is not.
+S.state.tcg.ygo.collection=[pinned];assert.match(tcgCollection(),/Edition not set/);assert.equal(savedYgoPresentation(card,pinned).printingFromRelease,true);
 // The same with the printing code saved but no rarity.
 assert.deepEqual(effects(lot('code',{setReleaseId:rel('2019 Gold Sarcophagus Tin'),printing:'TN19-EN013'})),['ygo-prismatic','ygo-prismatic','ygo-prismatic']);
 // Nothing is borrowed when the identity is not known: no release, a release with two rarities of the card, a printing code from another release, an unverified release.
@@ -38,4 +40,5 @@ for(const [why,l] of [['no release',lot('none')],['two rarities in the release',
 }
 // A saved printing and rarity still win over the release.
 assert.equal(effects(lot('saved',{setReleaseId:rel('2020 Tin of Lost Memories'),printing:'MP20-EN001',rarity:'Ultra Rare'}))[0],'ygo-ultra');
+assert.doesNotMatch(tcgCollection(),/Edition not set/);
 console.log('PASS: a lot saved with only its release wears the release\'s one printing in Cards, Value and binders, as the card page does; unknown identity borrows nothing.');
