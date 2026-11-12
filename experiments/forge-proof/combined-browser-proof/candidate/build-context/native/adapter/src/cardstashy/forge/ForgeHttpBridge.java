@@ -585,6 +585,12 @@ public final class ForgeHttpBridge implements IRemote {
     @com.google.common.eventbus.Subscribe public void clearPendingCauses(forge.game.event.GameEventTurnPhase e){
         destroyPending=false;sacrificePending.clear();counteredPending.clear();lifeDamage.clear();lifeGain.clear();
     }
+    /** True for an ability whose card is a planeswalker on the battlefield. */
+    static boolean onPlaneswalker(Object ability){
+        if(!(ability instanceof forge.game.spellability.SpellAbilityView v))return false;
+        CardView host=v.getHostCard();
+        return host!=null&&host.getZone()==forge.game.zone.ZoneType.Battlefield&&host.getCurrentState()!=null&&host.getCurrentState().isPlaneswalker();
+    }
     @com.google.common.eventbus.Subscribe public void logCountered(forge.game.event.GameEventSpellRemovedFromStack e){
         var resolving=resolvingAbility();
         if(e.sa()==null||resolving==null||game.isGameOver()||e.sa().getId()==resolving.getView().getId())return;
@@ -944,7 +950,9 @@ public final class ForgeHttpBridge implements IRemote {
         if(failure==null&&controlMode.equals("smart")&&e.getMethod()==ProtocolMethod.getAbilityToPlay){
             List<?> abilities=(List<?>)e.getObjects()[1];
             if(abilities.isEmpty())return null;
-            if(abilities.size()==1){System.out.println("NATIVE_SINGLETON_ABILITY");return abilities.get(0);}
+            // A planeswalker's abilities are always asked, as MTG Arena asks them, even when only one can be paid:
+            // the player sees the cost before loyalty is spent, and can cancel. Forge still lists only what it allows.
+            if(abilities.size()==1&&!onPlaneswalker(abilities.get(0))){System.out.println("NATIVE_SINGLETON_ABILITY");return abilities.get(0);}
         }
         Pending p=makePending(e);
         boolean terminalWait;
