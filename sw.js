@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-native-0464-43179-v551";
+const CACHE = "cardforge-shell-native-0465-43180-v552";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
@@ -329,7 +329,11 @@ self.addEventListener("install", (e) => {
   // Every file is checked with the server so a release never saves an older copy, but a file the
   // page has just downloaded (or that this release did not change) comes back as a bodiless "not
   // modified" instead of being downloaded a second time.
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS.map((a) => new Request(a, { cache: "no-cache" })))));
+  // The start page is saved from "./": the server answers "./index.html" with a redirect to it, and a saved redirected
+  // answer cannot open a page (the first open after every release failed with net::ERR_FAILED, seen 12 Nov).
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS.filter((a) => a !== "./index.html").map((a) => new Request(a, { cache: "no-cache" })))
+    .then(() => fetch(new Request("./", { cache: "no-cache" })))
+    .then((r) => { if (!r.ok || r.redirected) throw new Error("start page not saved"); return c.put("./index.html", r); })));
 });
 // A saved script is re-checked in the background once its copy is older than this.
 const RECHECK_MS = 6 * 3600 * 1000;
@@ -408,7 +412,8 @@ self.addEventListener("fetch", (e) => {
             if (r.ok && r.type === "basic" && !r.redirected) c.put(key, r.clone());
             return r;
           });
-        if (hit) { if (appPage || savedLongAgo(hit)) e.waitUntil(fresh().catch(() => {})); return hit; }
+        // A copy saved by an older worker may be a redirected answer; a page can only open from a plain one.
+        if (hit) { if (appPage || savedLongAgo(hit)) e.waitUntil(fresh().catch(() => {})); return appPage && hit.redirected ? new Response(hit.body, { status: hit.status, statusText: hit.statusText, headers: hit.headers }) : hit; }
         return fresh().catch(() => Response.error());
       }),
     );
