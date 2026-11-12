@@ -1,4 +1,4 @@
-/* CardStashy Deck Forge bundle, web 5f9e793a */
+/* CardStashy Deck Forge bundle, web eaca90d06ed1599dc33e43a6c1971e853fd9e145 */
 (() => {
   var __getOwnPropNames = Object.getOwnPropertyNames;
   var __esm = (fn, res) => function __init() {
@@ -36,32 +36,32 @@
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/price-reference.js
+  // ../../price-reference.js
   var init_price_reference = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/price-reference.js"() {
+    "../../price-reference.js"() {
       init_deck_engine_prelude();
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-tcgprice.js
+  // ../../mtg-tcgprice.js
   var init_mtg_tcgprice = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-tcgprice.js"() {
+    "../../mtg-tcgprice.js"() {
       init_deck_engine_prelude();
       init_price_reference();
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/tier.js
+  // ../../tier.js
   var init_tier = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/tier.js"() {
+    "../../tier.js"() {
       init_deck_engine_prelude();
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/icons.js
+  // ../../icons.js
   var LEAD, ALONE;
   var init_icons = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/icons.js"() {
+    "../../icons.js"() {
       init_deck_engine_prelude();
       LEAD = { "\u25B2": "warn", "\u25CF": "stop", "\u2694": "sword", "\u2620": "poison", "\u{1F3B2}": "random", "\u2692": "build", "\u2727": "ideas", "\u{1F3C6}": "trophy", "\u21C4": "compare", "\u2661": "heart", "\u2665": "heartOn", "\uFF0B": "plus", "+": "plus", "\u21A5": "import", "\u2193": "export", "\u27F3": "refresh", "\u21BB": "flip", "\u29C9": "copy", "\u{1F517}": "link", "\u{1F5A8}": "print", "\u{1F4F7}": "camera", "\u25C8": "pack", "\u2606": "bookmark", "\u25A6": "collection", "\u{1F4D6}": "book", "\u25F7": "history", "\u{1F6D2}": "bag", "\u2315": "search", "\u2611": "pick", "\u26A0": "warn", "\u{1F58C}": "brush", "\u2713": "check", "\u2190": "back", "\u2039": "back", "\u25A7": "scan" };
       ALONE = { "\u25D0": "dark", "\u25A2": "frame", "\u270B": "hand", "\u2600": "glare", "\u25CE": "focus", "\u2713": "check", "\u2715": "close", "\u22EF": "more", "\u2212": "minus", "\uFF0B": "plus", "\u2190": "back", "\u27F3": "refresh", "\u21BB": "flip" };
@@ -69,27 +69,27 @@
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ui.js
+  // ../../ui.js
   var init_ui = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ui.js"() {
+    "../../ui.js"() {
       init_deck_engine_prelude();
       init_tier();
       init_icons();
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/condition-value.js
+  // ../../condition-value.js
   var init_condition_value = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/condition-value.js"() {
+    "../../condition-value.js"() {
       init_deck_engine_prelude();
       init_ui();
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/pokemon-promo-evidence.js
+  // ../../pokemon-promo-evidence.js
   var promos, REVIEWED_COSMOS_PROMOS, rootProducts, aliasProducts;
   var init_pokemon_promo_evidence = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/pokemon-promo-evidence.js"() {
+    "../../pokemon-promo-evidence.js"() {
       init_deck_engine_prelude();
       promos = Object.freeze({
         "swshp-SWSH012": { 232766: { label: "General Mills Promo", group: "Miscellaneous Cards & Products" } },
@@ -107,18 +107,18 @@
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/pokemon-variant-options.js
+  // ../../pokemon-variant-options.js
   var init_pokemon_variant_options = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/pokemon-variant-options.js"() {
+    "../../pokemon-variant-options.js"() {
       init_deck_engine_prelude();
       init_pokemon_promo_evidence();
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ygo-identity.js
+  // ../../ygo-identity.js
   var YGO_RARITIES, names2;
   var init_ygo_identity = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ygo-identity.js"() {
+    "../../ygo-identity.js"() {
       init_deck_engine_prelude();
       YGO_RARITIES = ["Common", "Short Print", "Super Short Print", "Rare", "Super Rare", "Ultra Rare", "Secret Rare", "Ultimate Rare", "Ghost Rare", "Gold Rare", "Gold Secret Rare", "Platinum Rare", "Platinum Secret Rare", "Prismatic Secret Rare", "Starlight Rare", "Collector's Rare", "Quarter Century Secret Rare", "Premium Gold Rare", "10000 Secret Rare", "Normal Parallel Rare", "Super Parallel Rare", "Ultra Parallel Rare", "Secret Parallel Rare", "Duel Terminal Normal Parallel Rare", "Duel Terminal Rare Parallel Rare", "Duel Terminal Super Parallel Rare", "Duel Terminal Ultra Parallel Rare", "Duel Terminal Secret Parallel Rare", "Mosaic Rare", "Shatterfoil Rare", "Starfoil Rare", "Holographic Rare", "Extra Secret Rare", "Ghost/Gold Rare", "Ultra Rare (Pharaoh's Rare)", "Ultra Secret Rare", "Duel Terminal Normal Rare Parallel Rare", "Grand Master Rare"];
       names2 = new Map(YGO_RARITIES.map((x) => [x.toLowerCase(), x]));
@@ -127,17 +127,17 @@
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/feedback-layer.js
+  // ../../feedback-layer.js
   var init_feedback_layer = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/feedback-layer.js"() {
+    "../../feedback-layer.js"() {
       init_deck_engine_prelude();
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/pokemon-anniversary-masks.js
+  // ../../pokemon-anniversary-masks.js
   var ANNIVERSARY_MAPS, ANNIVERSARY_STAMPS;
   var init_pokemon_anniversary_masks = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/pokemon-anniversary-masks.js"() {
+    "../../pokemon-anniversary-masks.js"() {
       init_deck_engine_prelude();
       ANNIVERSARY_MAPS = Object.freeze({
         "cel25cc-CC001": { "mask": "pk-cel25cc-CC001-art", "css": "polygon(evenodd, 87.329700% 13.085938%,24.523161% 13.085938%,24.795640% 13.378906%,22.615804% 15.039062%,22.479564% 15.722656%,21.117166% 16.503906%,20.299728% 16.699219%,19.891008% 17.382812%,19.073569% 17.773438%,18.119891% 17.285156%,17.438692% 17.773438%,15.940054% 18.457031%,13.760218% 16.992188%,12.397820% 17.382812%,11.989101% 16.992188%,11.989101% 51.074219%,79.080479% 51.074219%,78.546536% 50.436338%,78.405281% 49.120073%,78.546908% 48.003381%,79.718140% 46.424179%,78.057130% 45.416742%,76.402452% 44.032997%,75.160687% 42.648406%,74.462239% 41.546987%,74.292874% 40.818584%,75.338105% 40.568844%,77.192785% 40.977899%,79.412590% 41.872921%,81.213277% 43.064361%,82.629595% 44.356449%,83.599261% 44.095804%,85.414541% 43.895621%,87.329700% 44.010771%,87.329700% 13.085938%)", "source": "https://images.pokemontcg.io/cel25c/2_A_hires.png", "images": ["https://images.pokemontcg.io/cel25c/2_A_hires.png", "https://images.pokemontcg.io/cel25c/2_A.png"], "effect": "ptcg-holo" },
@@ -465,18 +465,18 @@
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ygo-prices.js
+  // ../../ygo-prices.js
   var init_ygo_prices = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ygo-prices.js"() {
+    "../../ygo-prices.js"() {
       init_deck_engine_prelude();
       init_ygo_identity();
       init_price_reference();
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ygo-set-prices.js
+  // ../../ygo-set-prices.js
   var init_ygo_set_prices = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ygo-set-prices.js"() {
+    "../../ygo-set-prices.js"() {
       init_deck_engine_prelude();
       init_ygo_identity();
       init_ygo_prices();
@@ -484,9 +484,9 @@
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/pricing-presentation.js
+  // ../../pricing-presentation.js
   var init_pricing_presentation = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/pricing-presentation.js"() {
+    "../../pricing-presentation.js"() {
       init_deck_engine_prelude();
       init_pokemon_variant_options();
       init_ui();
@@ -499,10 +499,10 @@
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ygo-foil-recipes.js
+  // ../../ygo-foil-recipes.js
   var FOIL_PATTERN, FOIL_TINT, P, T, parallel, YGO_FOIL_RECIPES;
   var init_ygo_foil_recipes = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ygo-foil-recipes.js"() {
+    "../../ygo-foil-recipes.js"() {
       init_deck_engine_prelude();
       FOIL_PATTERN = { lines: 1, diag: 2, prism: 3, glitter: 4, ghost: 5, emboss: 6, stroke: 7, mosaic: 8, shatter: 9, stars: 10, parallel: 11, qcr: 12, hieroglyph: 13, dots: 14 };
       FOIL_TINT = { rainbow: 0, gold: 1, silver: 2, platinum: 3 };
@@ -543,10 +543,10 @@
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-foil-recipes.js
+  // ../../mtg-foil-recipes.js
   var MTG_PATTERN, MTG_COVER, MTG_TINT, P2, C, T2, r, MTG_FOIL_RECIPES, MTG_UNMODELLED;
   var init_mtg_foil_recipes = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-foil-recipes.js"() {
+    "../../mtg-foil-recipes.js"() {
       init_deck_engine_prelude();
       MTG_PATTERN = { traditional: 1, oldborder: 2, ftv: 3, etched: 4, textured: 5, surge: 6, galaxy: 7, halo: 8, confetti: 9, doublerainbow: 10, fracture: 11, ripple: 12, mana: 13, dragonscale: 14, rainbow: 15, invisible: 16, raised: 17, silver: 18, ampersand: 19, scanline: 20 };
       MTG_COVER = { whole: 0, frame: 1, gold: 2, neon: 3, paper: 4, lines: 5 };
@@ -600,10 +600,10 @@
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ptcg-foil-recipes.js
+  // ../../ptcg-foil-recipes.js
   var PTCG_PATTERN, PTCG_TINT, P3, T3, r2, PTCG_FOIL_RECIPES, PTCG_HOLO_PATTERNS;
   var init_ptcg_foil_recipes = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ptcg-foil-recipes.js"() {
+    "../../ptcg-foil-recipes.js"() {
       init_deck_engine_prelude();
       PTCG_PATTERN = {
         wotc: 1,
@@ -762,10 +762,10 @@
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/finish-effects.js
+  // ../../finish-effects.js
   var FINISH_SOURCES, FINISH_MASKS, FINISH_MATERIALS, PRINTED_STAMPS;
   var init_finish_effects = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/finish-effects.js"() {
+    "../../finish-effects.js"() {
       init_deck_engine_prelude();
       init_pokemon_anniversary_masks();
       init_pricing_presentation();
@@ -927,14 +927,14 @@
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/finish-materials.js
+  // ../../finish-materials.js
   var init_finish_materials = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/finish-materials.js"() {
+    "../../finish-materials.js"() {
       init_deck_engine_prelude();
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/foil-gl.js
+  // ../../foil-gl.js
   function foilAnalyzer(workerUrl, local) {
     const cache = /* @__PURE__ */ new Map(), pending = /* @__PURE__ */ new Map();
     let worker = null, failed = false, seq = 0;
@@ -988,20 +988,20 @@
     };
   }
   var init_foil_gl = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/foil-gl.js"() {
+    "../../foil-gl.js"() {
       init_deck_engine_prelude();
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ygo-name-foil.js
+  // ../../ygo-name-foil.js
   var init_ygo_name_foil = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ygo-name-foil.js"() {
+    "../../ygo-name-foil.js"() {
       init_deck_engine_prelude();
       init_foil_gl();
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ygo-foil-analysis.js
+  // ../../ygo-foil-analysis.js
   function boxBlur(src, w, h, r3, passes = 2) {
     let a = Float32Array.from(src), b = new Float32Array(a.length);
     for (let p = 0; p < passes; p++) for (const horiz of [true, false]) {
@@ -1228,7 +1228,7 @@
   }
   var YGO_ART_BOX, YGO_LAYOUT_ART, ss;
   var init_ygo_foil_analysis = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ygo-foil-analysis.js"() {
+    "../../ygo-foil-analysis.js"() {
       init_deck_engine_prelude();
       YGO_ART_BOX = [0.1205, 0.1845, 0.8795, 0.7035];
       YGO_LAYOUT_ART = { standard: YGO_ART_BOX, pendulum: [0.066, 0.183, 0.934, 0.609], skill: [0.118, 0.174, 0.882, 0.662] };
@@ -1239,10 +1239,10 @@
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ygo-rarity-foil.js
+  // ../../ygo-rarity-foil.js
   var analyze;
   var init_ygo_rarity_foil = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ygo-rarity-foil.js"() {
+    "../../ygo-rarity-foil.js"() {
       init_deck_engine_prelude();
       init_ygo_foil_analysis();
       init_ygo_foil_recipes();
@@ -1251,7 +1251,7 @@
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-foil-analysis.js
+  // ../../mtg-foil-analysis.js
   function boxBlur2(src, w, h, r3, passes = 2) {
     let a = Float32Array.from(src), b = new Float32Array(a.length);
     for (let p = 0; p < passes; p++) for (const horiz of [true, false]) {
@@ -1309,7 +1309,7 @@
   }
   var ss2;
   var init_mtg_foil_analysis = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-foil-analysis.js"() {
+    "../../mtg-foil-analysis.js"() {
       init_deck_engine_prelude();
       ss2 = (a, b, x) => {
         const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -1318,10 +1318,10 @@
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-foil.js
+  // ../../mtg-foil.js
   var analyze2;
   var init_mtg_foil = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-foil.js"() {
+    "../../mtg-foil.js"() {
       init_deck_engine_prelude();
       init_mtg_foil_analysis();
       init_mtg_foil_recipes();
@@ -1330,10 +1330,10 @@
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ptcg-foil.js
+  // ../../ptcg-foil.js
   var analyze3;
   var init_ptcg_foil = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ptcg-foil.js"() {
+    "../../ptcg-foil.js"() {
       init_deck_engine_prelude();
       init_ygo_foil_analysis();
       init_ptcg_foil_recipes();
@@ -1342,16 +1342,16 @@
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/foil-fx.js
+  // ../../foil-fx.js
   var init_foil_fx = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/foil-fx.js"() {
+    "../../foil-fx.js"() {
       init_deck_engine_prelude();
     }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/finish-preview.js
+  // ../../finish-preview.js
   var init_finish_preview = __esm({
-    "../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/finish-preview.js"() {
+    "../../finish-preview.js"() {
       init_deck_engine_prelude();
       init_feedback_layer();
       init_ui();
@@ -1372,16 +1372,16 @@
   // build/deck-engine-entry.mjs
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/builder.js
+  // ../../builder.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-ability-endpoints.js
+  // ../../mtg-ability-endpoints.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/core.js
+  // ../../core.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/formats.js
+  // ../../formats.js
   init_deck_engine_prelude();
   var FORMATS = [
     // Paper constructed
@@ -1431,7 +1431,7 @@
   }
   var legalityIn = (c, f) => f.legality && c?.legalities ? c.legalities[f.legality] || "not_legal" : null;
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/core.js
+  // ../../core.js
   init_mtg_tcgprice();
   var keyMemo = /* @__PURE__ */ new Map();
   var cardKey = (s) => {
@@ -1497,13 +1497,13 @@
     return printed ? words[printed] || Number(printed) || format.copies : format.copies;
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/goldfish.js
+  // ../../goldfish.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/deckaudit.js
+  // ../../deckaudit.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-mana-sources.js
+  // ../../mtg-mana-sources.js
   init_deck_engine_prelude();
   var COLORS = [..."WUBRGC"];
   var BASIC = { Plains: "W", Island: "U", Swamp: "B", Mountain: "R", Forest: "G" };
@@ -1546,7 +1546,7 @@
     };
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/goldfish.js
+  // ../../goldfish.js
   var lc = (s) => String(s || "").toLowerCase();
   function mtgAuraTargetProfile(c) {
     const face = c?.card_faces?.[0] || c || {}, type4 = face.type_line || c?.type_line || "";
@@ -1558,7 +1558,7 @@
     return { aura: true, status: "supported", evidence: evidence2, control, terms: terms.map((t) => ({ qualifier: t[1] || "", type: t[2] })) };
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-ability-endpoints.js
+  // ../../mtg-ability-endpoints.js
   var front = (c) => c?.card_faces?.[0] || c || {};
   var type2 = (c) => front(c).type_line || "";
   var text = (c) => front(c).oracle_text || "";
@@ -1655,10 +1655,10 @@
     return { status: groups.some((g) => g.status === "unsupported") ? "unsupported" : groups.some((g) => g.status === "unverified") ? "unverified" : groups.length ? "conditional" : "not-applicable", groups, issues: [], notes: groups.flatMap((g) => g.notes.map((n) => g.sourceName + " \u2014 " + g.label + ": " + n)), method: "Optional branch-level structural endpoints only. No legality failure, whole-card ban, whole-engine certification, or simulated payment/sequence is inferred." };
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-primary-inputs.js
+  // ../../mtg-primary-inputs.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-effects.js
+  // ../../mtg-effects.js
   init_deck_engine_prelude();
   var lower = (s) => String(s || "").toLowerCase();
   var unique2 = (xs) => [...new Set(xs.filter(Boolean))];
@@ -1929,7 +1929,7 @@
     return out;
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-primary-inputs.js
+  // ../../mtg-primary-inputs.js
   var front2 = (c) => c?.card_faces?.[0] || c || {};
   var type3 = (c) => front2(c).type_line || typeText(c).split(" // ")[0] || "";
   var subtype2 = (c, t) => new RegExp("(?:^|[ \u2014])" + t + "(?=$|[ /])", "i").test(type3(c));
@@ -1974,10 +1974,10 @@
     return out;
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-commander-conditions.js
+  // ../../mtg-commander-conditions.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-vocabulary.js
+  // ../../mtg-vocabulary.js
   init_deck_engine_prelude();
   var MTG_VOCABULARY = Object.freeze({
     "retrievedAt": "2026-10-23T20:29:43.182278+00:00",
@@ -2762,7 +2762,7 @@
     return [...new Set([...String(text3).matchAll(re)].map((m) => MTG_VOCABULARY["keyword-abilities"].find((k) => k.toLowerCase() === m[0].toLowerCase())))];
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-commander-conditions.js
+  // ../../mtg-commander-conditions.js
   var types = MTG_VOCABULARY["creature-types"];
   var escape2 = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   var front3 = (c) => c?.card_faces?.[0] || c || {};
@@ -2801,16 +2801,16 @@
     return out;
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/deck-preferences.js
+  // ../../deck-preferences.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/deckpower.js
+  // ../../deckpower.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/pokemon-role.js
+  // ../../pokemon-role.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-tags.js
+  // ../../mtg-tags.js
   init_deck_engine_prelude();
   var sets = {};
   var loaded = false;
@@ -2841,7 +2841,7 @@
     return !!s && (s.has(n) || n.includes(" // ") && s.has(n.split(" // ")[0]));
   };
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/deckpower.js
+  // ../../deckpower.js
   var lc2 = (s) => String(s || "").toLowerCase();
   function ygoStarterPrerequisites(c) {
     const text3 = String(c?.text || ""), matches = [...text3.matchAll(/(?:add (?:1|one|2|two|up to \w+)[^.]*?from your deck(?: or gy| or graveyard)? to your hand|search your deck)/gi)];
@@ -2878,7 +2878,7 @@
     return { status: best?.status || "unverified", openingCandidate: !!best && ["supported", "conditional"].includes(best.status), modes, limitations: ["A candidate is not a completed combo or guaranteed resolution; target availability, shared Normal Summon use and interruption remain separate."] };
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/deck-preferences.js
+  // ../../deck-preferences.js
   function setupBurden(game, card = {}) {
     if (game === "ptcg") return card.stage === "Stage2" ? 2 : card.stage === "Stage1" ? 1 : 0;
     if (game === "ygo") {
@@ -2890,7 +2890,7 @@
     return Math.max(0, Number(card.cmc || 0) - 4) * 0.25 + (resources.effects || []).filter((e) => e.status === "conditional" || Number(e.activationMana) > 0 || Number(e.equipMana) > 0).length * 0.25;
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/deck-safety.js
+  // ../../deck-safety.js
   init_deck_engine_prelude();
   function functionalIn(c, format) {
     const f = format?.id ? format : formatOf(format), text3 = rulesText(c);
@@ -2900,10 +2900,10 @@
     return !dependent || independent;
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/deck-forge.js
+  // ../../deck-forge.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/deck-forge-tags.js
+  // ../../deck-forge-tags.js
   init_deck_engine_prelude();
   var DECK_TAGS = Object.freeze({
     version: "deck-tags.v1",
@@ -2915,12 +2915,13 @@
         tag: "ramp",
         tier: "mv",
         on: "permanent",
+        net: true,
         notType: "\\bland\\b",
         cost: "\\{t\\}",
         effect: "^add\\b|^add one mana|^add \\{",
         costNot: "sacrifice (?:~|this)",
         mustMatch: ["Sol Ring", "Arcane Signet", "Mind Stone", "Llanowar Elves", "Talisman of Hierarchy", "Orzhov Signet", "Birds of Paradise", "Ornithopter of Paradise", "Thought Vessel", "Fellwar Stone"],
-        mustNotMatch: ["Lotus Petal", "Ancient Den", "Command Tower", "Nesting Grounds", "Dark Ritual"]
+        mustNotMatch: ["Lotus Petal", "Ancient Den", "Command Tower", "Nesting Grounds", "Dark Ritual", "Giant's Boulder", "Prophetic Prism"]
       },
       {
         id: "ramp-land-search",
@@ -3074,10 +3075,11 @@
         tag: "removal",
         tier: "mv",
         on: "any",
+        maxCost: 4,
         text: "(?:destroy|exile) (?:another |up to (?:one|two|x) )?target (?:[a-z, -]*?)(?:creature|artifact|enchantment|planeswalker|permanent|nonland)",
         not: "target [^.]*you control|from (?:a|your|target player.s) graveyard|then return|\\. return (?:it|that card)",
         mustMatch: ["Swords to Plowshares", "Path to Exile", "Generous Gift", "Anguished Unmaking", "Mortify"],
-        mustNotMatch: ["Airbender Ascension", "Restoration Angel", "Personify", "Flickerwisp", "The Ooze"]
+        mustNotMatch: ["Airbender Ascension", "Restoration Angel", "Personify", "Flickerwisp", "The Ooze", "Giant's Boulder"]
       },
       {
         id: "removal-damage",
@@ -3342,7 +3344,7 @@
     hooks: { fodder: 10, "sac-outlets": 4, "death-payoffs": 5, reenter: 3, "attack-helpers": 3, attackers: 2, "ways-to-leave": 2, counters: 3, "enter-value": 4, spells: 20, lifegain: 8, landfall: 8, tokens: 8, "self-mill": 6, discard: 4, enters: 10, protection: 3, "sac-value": 0, recipients: 0, "draw-trigger": 4, "token-payoffs": 3 }
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/game-changers.js
+  // ../../game-changers.js
   init_deck_engine_prelude();
   var GAME_CHANGER_SNAPSHOT = Object.freeze({
     "version": "game-changers-2026-02-09",
@@ -3568,7 +3570,7 @@
     ]
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/deck-forge.js
+  // ../../deck-forge.js
   var lc3 = (s) => String(s || "").toLowerCase();
   var typeOf = (c) => lc3(c?.type_line || (c?.card_faces || []).map((f) => f.type_line || "").join(" // "));
   var isLandCard = (c) => /\bland\b/.test(typeOf(c).split(" // ")[0]);
@@ -3591,7 +3593,15 @@
     });
     return { abilities, whole: text3, type: typeOf(card), mv: Number(card.cmc) || 0 };
   }
-  var tierOf = (rule, mv2) => rule.tier !== "mv" ? rule.tier : mv2 <= 2 ? "A" : mv2 <= 3 ? "B" : "C";
+  var manaIn = (cost) => (String(cost).match(/\{[^}]+\}/g) || []).reduce((n, m) => n + (/^\{\d+\}$/.test(m) ? Number(m.slice(1, -1)) : /^\{(?:t|q|x|e)\}$/.test(m) ? 0 : 1), 0);
+  var WORD_N = { one: 1, two: 2, three: 3, four: 4, five: 5 };
+  var manaAdded = (effect) => {
+    const e = String(effect), w = e.match(/^add (one|two|three|four|five) mana/);
+    if (w) return WORD_N[w[1]];
+    const first = e.split(/\bor\b|\./)[0], syms = (first.match(/\{[^}]+\}/g) || []).length;
+    return syms || (/^add\b/.test(e) ? 2 : 0);
+  };
+  var tierOf = (rule, mv3) => rule.tier !== "mv" ? rule.tier : mv3 <= 2 ? "A" : mv3 <= 3 ? "B" : "C";
   function ruleHits(rule, read) {
     const t = read.type, spell = /\b(?:instant|sorcery)\b/.test(t);
     if (rule.on === "permanent" && spell) return false;
@@ -3601,6 +3611,8 @@
     if (rule.re.whole && !rule.re.whole.test(read.whole)) return false;
     return read.abilities.some((a) => {
       if (rule.re.costNot && a.cost && rule.re.costNot.test(a.cost)) return false;
+      if (rule.net && a.cost && manaAdded(a.effect) <= manaIn(a.cost)) return false;
+      if (rule.maxCost !== void 0 && a.cost && manaIn(a.cost) > rule.maxCost) return false;
       if (rule.re.not && rule.re.not.test(a.line)) return false;
       if (rule.re.cost) return !!a.cost && rule.re.cost.test(a.cost) && (!rule.re.effect || rule.re.effect.test(a.effect));
       return rule.re.text.test(a.line);
@@ -3683,7 +3695,7 @@
     if (/equipped|enchanted|aura|equipment|commander damage/.test(text3)) add("protection", "Protection", "survive", tag("protection"));
     return [...out.values()];
   }
-  function forgeFit(card, hooks, { leader = null, power = null } = {}) {
+  function forgeFit(card, hooks, { leader = null, power: power2 = null } = {}) {
     const read = forgeRead(card), tags = forgeTags(card), names3 = new Set(tags.map((t) => t.tag)), hit = hooks.filter((h) => h.match(card)).map((h) => h.id), why = [];
     let bonus = 0;
     if (read.abilities.some((a) => /^whenever (?:a|another) (?:nontoken )?creature (?:you control )?enters/.test(a.line)) && hooks.some((h) => ["fodder", "tokens", "enters"].includes(h.id))) {
@@ -3707,20 +3719,20 @@
     const role = ROLE_TAGS.some((t) => names3.has(t));
     let bar2 = "n/a";
     if (hooks.length && !isLandCard(card)) {
-      const mv2 = read.mv, rep = isRepeatable(read);
-      if (mv2 <= 3) bar2 = rep && n >= 1 || role || n >= 2 ? "pass" : "fail";
-      else if (mv2 <= 4) bar2 = n >= 2 || names3.has("enter-doubler") || role ? "pass" : "fail";
-      else if (mv2 <= 5) bar2 = immediate(read) && n >= 1 || names3.has("wipe") || names3.has("wincon") ? "pass" : "fail";
+      const mv3 = read.mv, rep = isRepeatable(read);
+      if (mv3 <= 3) bar2 = rep && n >= 1 || role || n >= 2 ? "pass" : "fail";
+      else if (mv3 <= 4) bar2 = n >= 2 || names3.has("enter-doubler") || role ? "pass" : "fail";
+      else if (mv3 <= 5) bar2 = immediate(read) && n >= 1 || names3.has("wipe") || names3.has("wincon") ? "pass" : "fail";
       else bar2 = names3.has("wipe") || names3.has("wincon") || rep && immediate(read) && n >= 1 || immediate(read) && n >= 3 ? "pass" : "fail";
-      if (bar2 === "fail") penalty += mv2 <= 3 ? 1 : mv2 <= 4 ? 2 : mv2 <= 5 ? 4 : 6;
+      if (bar2 === "fail") penalty += mv3 <= 3 ? 1 : mv3 <= 4 ? 2 : mv3 <= 5 ? 4 : 6;
     }
     const offPlan = hooks.length > 0 && n === 0 && !role && !isLandCard(card);
     if (offPlan) penalty += 7;
     const themeDraw = names3.has("draw") && hooks.some((h) => ["fodder", "sac-outlets", "death-payoffs"].includes(h.id)) && /sacrific|dies|die\b|put into a graveyard/.test(read.whole);
-    const casual = power === "casual" || power === "focused";
+    const casual = power2 === "casual" || power2 === "focused";
     if (names3.has("burst")) penalty += casual ? 9 : 1;
-    if (casual && GAME_CHANGERS.has(lc3(card?.name))) penalty += power === "casual" ? 10 : 4;
-    if (casual && names3.has("tutor")) penalty += power === "casual" ? 3 : 1;
+    if (casual && GAME_CHANGERS.has(lc3(card?.name))) penalty += power2 === "casual" ? 10 : 4;
+    if (casual && names3.has("tutor")) penalty += power2 === "casual" ? 3 : 1;
     return { hooks: [...new Set(hit)], conditions: why, n, overlap, bar: bar2, offPlan, themeDraw, penalty, tags };
   }
   var TIER_POINTS = { A: 1.5, B: 0.75, C: 0 };
@@ -3728,6 +3740,10 @@
     const fit = forgeFit(card, hooks, opts);
     const roleTier = fit.tags.filter((t) => ROLE_TAGS.includes(t.tag)).reduce((m, t) => Math.max(m, TIER_POINTS[t.tier] || 0), 0);
     return { score: fit.overlap * 2.5 + roleTier + (fit.themeDraw ? 2.5 : 0) - fit.penalty, fit };
+  }
+  function forgeCostlyRemoval(card) {
+    if (forgeTags(card).some((t) => t.tag === "removal" || t.tag === "wipe")) return false;
+    return forgeRead(card).abilities.some((a) => a.cost && manaIn(a.cost) > 4 && /\b(?:destroy|exile) (?:another |up to (?:one|two|x) )?target\b/.test(a.effect));
   }
   function forgeRoles(card, deckTypeCounts = null) {
     const tags = forgeTags(card), names3 = new Set(tags.map((t) => t.tag)), out = [];
@@ -3756,41 +3772,41 @@
     return (h >>> 0) / 4294967296 * (variation === "wild" ? 6 : 2.5);
   }
   function forgeLandCount(spells, { size = 60, commander = false, hooks = [] } = {}) {
-    let n = 0, mv2 = 0, cheap = 0;
+    let n = 0, mv3 = 0, cheap = 0;
     for (const { card, qty = 1 } of spells) {
       if (!card || isLandCard(card)) continue;
       n += qty;
-      mv2 += (Number(card.cmc) || 0) * qty;
+      mv3 += (Number(card.cmc) || 0) * qty;
       if ((Number(card.cmc) || 0) <= 2 && forgeRoles(card).some((r3) => r3 === "ramp" || r3 === "draw")) cheap += qty;
     }
-    const avg = n ? mv2 / n : 3, landfall = hooks.some((h) => h.id === "landfall");
+    const avg = n ? mv3 / n : 3, landfall = hooks.some((h) => h.id === "landfall");
     if (commander && size >= 100) return Math.round(Math.min(42, Math.max(33, 31.42 + 3.13 * avg - 0.28 * cheap + (landfall ? 2 : 0))));
     const sixty = 19.59 + 1.9 * avg - 0.28 * cheap + (landfall ? 1 : 0);
-    return Math.round(Math.min(size * 0.45, Math.max(size * 0.3, sixty * size / 60)));
+    return Math.round(Math.min(size * 0.45, Math.max(size / 3, sixty * size / 60)));
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/insights.js
+  // ../../insights.js
   init_deck_engine_prelude();
   init_mtg_tcgprice();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/magic-owned-detail.js
+  // ../../magic-owned-detail.js
   init_deck_engine_prelude();
   init_ui();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/magic-card-color.js
+  // ../../magic-card-color.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/value-history.js
+  // ../../value-history.js
   init_deck_engine_prelude();
   var valueCents = new Intl.NumberFormat("en-US", { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/insights.js
+  // ../../insights.js
   init_condition_value();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/planner.js
+  // ../../planner.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-land-requirements.js
+  // ../../mtg-land-requirements.js
   init_deck_engine_prelude();
   var LAND_SUBTYPES = Object.freeze(["Cave", "Cloud", "Desert", "Gate", "Lair", "Locus", "Mine", "Planet", "Power-Plant", "Sphere", "Tower", "Town", "Urza's"]);
   var LAND_REQUIREMENT_POLICY = Object.freeze({
@@ -3864,7 +3880,7 @@
     return out;
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/planner.js
+  // ../../planner.js
   var CREATURE_THEMES = MTG_VOCABULARY["creature-types"];
   var escapePattern = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   var themeMemo = /* @__PURE__ */ new WeakMap();
@@ -3911,8 +3927,8 @@
     if (new RegExp("\\bexile (?:one |two |three |\\d+ )?target (?:" + object + "|" + noun + "(?:,? (?:and/or |and |or )?(?:artifacts?|creatures?|enchantments?|lands?|permanents?))*) you control(?:[^.]*\\.[^.]*|,? then )return (?:it|that card|those cards) to the battlefield", "i").test(text3)) evidence2.push({ kind: "own-return", text: "Owned-object exile and return" });
     return { status: evidence2.length ? "supported" : new RegExp("\\b" + noun + "\\b", "i").test(text3) ? "unknown" : "not-mentioned", evidence: evidence2 };
   }
-  function tribeEvidence(c, tribe) {
-    const t = tribePattern(tribe), text3 = namedEffectText(c), out = [];
+  function tribeEvidence(c, tribe2) {
+    const t = tribePattern(tribe2), text3 = namedEffectText(c), out = [];
     const subject = new RegExp("\\b" + t + "s?(?: (?:creature|permanent|spell|card)s?)? (?:you control|you cast|in your graveyard|enter|dies|die|spells? you cast)", "i");
     const trigger = new RegExp("(?:whenever|when) (?:another |one or more |a |an |other )?(?:[A-Z][a-z]+ or )?" + t + "s?\\b[^.\\n]*(?:you control|enters|dies|attacks)", "i");
     const token = new RegExp("(?:you )?create[^.\\n]*\\b" + t + "\\b[^.\\n]*creature tokens?", "i");
@@ -3928,7 +3944,7 @@
   function commanderTheme(c) {
     const signature = rulesText(c) + "|" + typeText(c), cached = c && themeMemo.get(c);
     if (cached?.signature === signature) return cached.value;
-    const text3 = intentText(c), candidates = [.../* @__PURE__ */ new Set([...CREATURE_THEMES, ...creatureTypes(c)])].filter((t) => new RegExp("\\b" + tribePattern(t) + "\\b", "i").test(text3)), evidence2 = candidates.map((tribe) => ({ tribe, evidence: tribeEvidence(c, tribe) })).filter((x) => x.evidence.length).sort((a, b) => b.evidence.reduce((n, e) => n + (e.kind === "payoff" ? 3 : 1), 0) - a.evidence.reduce((n, e) => n + (e.kind === "payoff" ? 3 : 1), 0) || a.tribe.localeCompare(b.tribe)), tribes = evidence2.filter((x) => x.evidence.some((e) => e.kind !== "token")).map((x) => x.tribe), inferred = roles({ ...c, oracle_text: text3 }).filter((r3) => !["Creature", "Utility", "Interaction", "Dragons"].includes(r3));
+    const text3 = intentText(c), candidates = [.../* @__PURE__ */ new Set([...CREATURE_THEMES, ...creatureTypes(c)])].filter((t) => new RegExp("\\b" + tribePattern(t) + "\\b", "i").test(text3)), evidence2 = candidates.map((tribe2) => ({ tribe: tribe2, evidence: tribeEvidence(c, tribe2) })).filter((x) => x.evidence.length).sort((a, b) => b.evidence.reduce((n, e) => n + (e.kind === "payoff" ? 3 : 1), 0) - a.evidence.reduce((n, e) => n + (e.kind === "payoff" ? 3 : 1), 0) || a.tribe.localeCompare(b.tribe)), tribes = evidence2.filter((x) => x.evidence.some((e) => e.kind !== "token")).map((x) => x.tribe), inferred = roles({ ...c, oracle_text: text3 }).filter((r3) => !["Creature", "Utility", "Interaction", "Dragons"].includes(r3));
     const generic = namedEffectText(c).split(/[.\n]/).filter((clause) => !LAND_SUBTYPE_WORD.test(clause) && (!/\bwhen(?:ever)? (?:this card|this creature|this permanent) dies\b/i.test(clause) || /\bgraveyard\b|\bmill\b/i.test(clause))).join(".");
     if (!/graveyard|dies|\bmill\b|(?:when|whenever)[^.]*sacrific/i.test(generic)) {
       const index = inferred.indexOf("Graveyard");
@@ -3947,12 +3963,12 @@
     if (c && typeof c === "object") themeMemo.set(c, { signature, value });
     return value;
   }
-  function tribalSupport(c, tribe) {
-    if (!c || isLand(c) || !tribe) return false;
+  function tribalSupport(c, tribe2) {
+    if (!c || isLand(c) || !tribe2) return false;
     const creature = /\bCreature\b/.test(typeText(c) || c?.card_faces?.[0]?.type_line || ""), text3 = intentText(c);
-    if (creature && (creatureTypes(c).some((t) => t.toLowerCase() === tribe.toLowerCase()) || /\bchangeling\b|(?:is|are) every creature type/i.test(text3))) return true;
+    if (creature && (creatureTypes(c).some((t) => t.toLowerCase() === tribe2.toLowerCase()) || /\bchangeling\b|(?:is|are) every creature type/i.test(text3))) return true;
     if (/creatures you control (?:are every creature type|have changeling)|(?:equipped|enchanted) creature is every creature type/i.test(text3)) return true;
-    return tribeEvidence(c, tribe).length > 0;
+    return tribeEvidence(c, tribe2).length > 0;
   }
   var TYPE_TERM = CREATURE_THEMES.slice().sort((a, b) => b.length - a.length).map(tribePattern).join("|");
   var TYPE_LIST = "(?:" + TYPE_TERM + ")(?:\\s*(?:,|and|or|/)\\s*(?:" + TYPE_TERM + "))*";
@@ -4008,10 +4024,10 @@
     return out;
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/commander-criteria.js
+  // ../../commander-criteria.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/insights.js
+  // ../../insights.js
   var lower2 = (c) => rulesText(c).toLowerCase();
   var RAMP = [
     /\{t\}(?:,[^:]*)?: add /,
@@ -4073,7 +4089,7 @@
     return out;
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/extras.js
+  // ../../extras.js
   init_deck_engine_prelude();
   var GAME_CHANGERS2 = new Set(
     [
@@ -4175,7 +4191,7 @@
     return out;
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/ai-deck-goal.js
+  // ../../ai-deck-goal.js
   init_deck_engine_prelude();
   var DECK_GOALS = Object.freeze(["strongest", "theme", "fun", "chaos", "weak"]);
   var tribalDeckStart = new RegExp("^(?:" + MTG_VOCABULARY["creature-types"].map(tribePattern).join("|") + ")(?:[- ]only)?\\b", "i");
@@ -4215,7 +4231,7 @@
     return suggested ? mode === "fun" ? 3 : 2 : 0;
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/deck-strategy-plan.js
+  // ../../deck-strategy-plan.js
   init_deck_engine_prelude();
   var TRIBAL_STRATEGY_POLICY = Object.freeze({
     version: "tribal-package-v1",
@@ -4227,13 +4243,121 @@
     meaning: "A bounded builder coverage target for a requested tribal package, not a universal Magic deck rule or proof of strength."
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/deck-mechanic-plan.js
+  // ../../deck-needs.js
+  init_deck_engine_prelude();
+  var esc3 = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  var OTHER_SUBTYPES = ["Lesson", "Equipment", "Aura", "Vehicle", "Saga", "Shrine", "Curse", "Room", "Case", "Class", "Background", "Adventure", "Arcane", "Trap", "Treasure", "Food", "Clue", "Blood", "Map", "Role"];
+  var SUBTYPES = [.../* @__PURE__ */ new Set([...MTG_VOCABULARY["creature-types"], ...OTHER_SUBTYPES])].sort((a, b) => b.length - a.length);
+  var TERM = "(" + SUBTYPES.map(tribePattern).join("|") + ")";
+  var singular = new Map(SUBTYPES.flatMap((t) => {
+    const m = tribePattern(t).match(/^\(\?:(.+)\|(.+)\)$/);
+    return m ? [[m[1].replace(/\\/g, "").toLowerCase(), t], [m[2].replace(/\\/g, "").toLowerCase(), t]] : [[t.toLowerCase(), t]];
+  }));
+  var SUBTYPE_NEEDS = [
+    "target " + TERM + " you control",
+    "(?:another|other|each other) " + TERM + "(?: creatures?)? you control",
+    "(?:another|other) " + TERM + "\\b(?! token)",
+    "for each (?:other )?" + TERM + " (?:you control|card in your graveyard)",
+    "(?:if|as long as|unless) you control (?:a|an|another|two or more|three or more) " + TERM,
+    "(?:there's|there is) (?:a|an) " + TERM + " card in your graveyard",
+    TERM + " cards? (?:in|from) your graveyard",
+    "[Ww]henever you cast (?:a|an) " + TERM + " spell",
+    "[Ww]henever (?:a|an|another) " + TERM + "(?: you control)? (?:enters|attacks|dies|deals)",
+    "(?:^|\\n|\\. )(?:Other )?" + TERM + "(?: creatures)? you control (?:get|have|gain)"
+  ].map((p) => new RegExp(p, "g"));
+  var textOf2 = (c) => rulesText(c).replace(/\([^)]*\)/g, " ");
+  var typeLine = (c) => c?.card_faces?.length ? c.card_faces.map((f) => f.type_line || "").join(" // ") : typeText(c);
+  var subtypeIn = (c, t) => new RegExp("(?:\u2014|\\s)" + esc3(t) + "(?:\\s|$)").test(" " + typeLine(c).split("\u2014").slice(1).join(" \u2014 ") + " ");
+  var isType = (c, re) => re.test(typeLine(c));
+  var mv2 = (c) => Number(c?.cmc) || 0;
+  var memo = /* @__PURE__ */ new WeakMap();
+  function cardNeeds(card) {
+    if (!card || typeof card !== "object") return [];
+    const hit = memo.get(card), sig = textOf2(card) + "|" + typeLine(card);
+    if (hit?.sig === sig) return hit.needs;
+    const text3 = textOf2(card), needs = [], seen = /* @__PURE__ */ new Set();
+    const add = (need) => {
+      if (!seen.has(need.id)) {
+        seen.add(need.id);
+        needs.push(need);
+      }
+    };
+    for (const re of SUBTYPE_NEEDS) for (const m of text3.matchAll(re)) {
+      const type4 = singular.get(String(m[1]).toLowerCase());
+      if (!type4) continue;
+      if (new RegExp("create[^.\\n]*\\b" + tribePattern(type4) + "\\b[^.\\n]*token", "i").test(text3)) continue;
+      const everyType2 = (c) => /\bCreature\b/.test(typeLine(c)) && /\bchangeling\b|is every creature type/i.test(textOf2(c));
+      add({
+        id: "sub:" + type4,
+        kind: "subtype",
+        subject: type4,
+        label: type4 + " cards",
+        min: (size) => size >= 100 ? 10 : 8,
+        provides: (c) => c !== card && !isLand(c) && (subtypeIn(c, type4) || everyType2(c) || new RegExp("create[^.\\n]*\\b" + tribePattern(type4) + "\\b[^.\\n]*token", "i").test(textOf2(c)))
+      });
+    }
+    if (/\byou cast your second spell each turn/i.test(text3)) add({
+      id: "second-spell",
+      kind: "tempo",
+      label: "cheap spells (two in one turn)",
+      min: (size) => size >= 100 ? 18 : 12,
+      provides: (c) => c !== card && !isLand(c) && (mv2(c) <= 1 || mv2(c) <= 2 && isType(c, /\b(?:Instant|Sorcery)\b/))
+    });
+    if (/draw your second card each turn/i.test(text3)) add({
+      id: "second-draw",
+      kind: "draw",
+      label: "extra card draw",
+      min: (size) => size >= 100 ? 12 : 8,
+      provides: (c) => c !== card && mv2(c) <= 3 && /\bdraws? (?:a|an additional|two|three|x|that many) cards?\b|\bconnives?\b/i.test(textOf2(c))
+    });
+    if (/\bcollect evidence\b/i.test(text3)) add({
+      id: "graveyard-fill",
+      kind: "graveyard",
+      label: "ways to fill your graveyard",
+      min: (size) => size >= 100 ? 10 : 8,
+      provides: (c) => c !== card && (/\bmills?\b|\bsurveil\b|\bdiscard a card\b|\bloot\b|\bdredge\b/i.test(textOf2(c)) || isType(c, /\b(?:Instant|Sorcery)\b/) && mv2(c) >= 2)
+    });
+    if (/(?:each|other|another|target) creatures? you control with a \+1\/\+1 counter|for each \+1\/\+1 counter on (?:other|another)|creatures you control with \+1\/\+1 counters/i.test(text3)) add({
+      id: "plus-counters",
+      kind: "counters",
+      label: "+1/+1 counter makers",
+      min: (size) => size >= 100 ? 10 : 8,
+      provides: (c) => c !== card && /\+1\/\+1 counters?\b[^.\n]*\bon\b|enters with (?:a|two|three|x|\d+) \+1\/\+1 counter|\bproliferate\b|\badapt\b|\bbolster\b|\bmentor\b|\btraining\b|\bevolve\b/i.test(textOf2(c))
+    });
+    if (/put (?:a|an|up to one|one) (?:permanent|creature|artifact|enchantment|creature or planeswalker|nonland permanent)(?: or [a-z]+)? card[^.\n]* from your hand onto the battlefield/i.test(text3)) add({
+      id: "cheat-target",
+      kind: "cheat",
+      label: "expensive permanents to put into play",
+      min: (size) => size >= 100 ? 8 : 6,
+      cap: true,
+      provides: (c) => c !== card && !isLand(c) && mv2(c) >= 6 && !isType(c, /\b(?:Instant|Sorcery)\b/)
+    });
+    memo.set(card, { sig, needs });
+    return needs;
+  }
+  function inspectNeeds(rows, { size = 60, exempt = () => false } = {}) {
+    const list = rows.filter((r3) => r3?.card && r3.qty > 0), out = [];
+    for (const row of list) for (const need of cardNeeds(row.card)) {
+      const have = list.reduce((n, r3) => n + (need.provides(r3.card) ? r3.qty : 0), 0), min = fuelMinimum(need, size, exempt(row.card));
+      out.push({ name: row.card.name, need: need.id, label: need.label, have, min, met: have >= min, exempt: !!exempt(row.card) });
+    }
+    return out;
+  }
+  var unmetNeeds = (rows, options) => inspectNeeds(rows, options).filter((n) => !n.met && !n.exempt);
+  function idleFixer(card, colors = []) {
+    if (colors.filter((k) => k !== "C").length > 1 || isLand(card)) return false;
+    if (/\bsunburst\b|\bconverge\b|for each color of mana spent/i.test(rulesText(card))) return true;
+    return /add one mana of any (?:color|type)/i.test(textOf2(card)) && !/add (?:two|three|x) mana|\{t\}: add \{/i.test(textOf2(card));
+  }
+  var fuelMinimum = (need, size, kept) => kept && !need.cap ? Math.max(need.min(size), size >= 100 ? 16 : 12) : need.min(size);
+
+  // ../../deck-mechanic-plan.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-keyword-reference.js
+  // ../../mtg-keyword-reference.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-wiki-knowledge.js
+  // ../../mtg-wiki-knowledge.js
   init_deck_engine_prelude();
   var reviewedOn = "2026-10-23";
   var freeze = (v) => {
@@ -4464,7 +4588,7 @@
     return [...found.values()].map(copy);
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/deck-mechanic-plan.js
+  // ../../deck-mechanic-plan.js
   var unique3 = (xs) => [...new Set(xs)];
   var escape5 = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   var faces = (c) => c?.card_faces?.length ? c.card_faces : [c || {}];
@@ -4503,7 +4627,7 @@
     return counters;
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/builder.js
+  // ../../builder.js
   var BASIC2 = { W: "Plains", U: "Island", B: "Swamp", R: "Mountain", G: "Forest", C: "Wastes" };
   var BASIC_KEYS = new Set(Object.values(BASIC2).map(cardKey));
   var THEMES = ["Tokens", "Graveyard", "Spells", "Dragons", "Artifacts", "Lifegain", "Lifelink", "Landfall", "Counters"];
@@ -4522,8 +4646,13 @@
       if (parts.includes("P") || parts.some((x) => /^\d+$/.test(x))) continue;
       if (!parts.some((x) => colors.includes(x))) return false;
     }
+    if (!colors.includes("C") && faces2.some((f) => /\{C\}/.test(f?.mana_cost || ""))) return false;
     return faces2.every((f) => f?.mana_cost || !(f?.colors || []).length || f.colors.every((x) => colors.includes(x)));
   }
+  var isThreat = (c) => {
+    const t = typeText(c), o = rulesText(c);
+    return /\bCreature\b/.test(t) && !/\bdefender\b/i.test(o) && (Number(c?.power ?? c?.card_faces?.[0]?.power) >= 1 || /\*/.test(String(c?.power ?? c?.card_faces?.[0]?.power ?? ""))) || /\bPlaneswalker\b|\bVehicle\b/.test(t) || /\bcreates? [^.\n]*\bcreature tokens?\b/i.test(o) || forgeRoles(c).includes("wincon");
+  };
   var fitsDeck = (c, colors, commander) => commander ? fitsColors(c, colors) : castableIn(c, colors);
   var STYLE_ROLES = { token: "Tokens", graveyard: "Graveyard", reanimator: "Graveyard", spells: "Spells", spellslinger: "Spells", artifact: "Artifacts", lifegain: "Lifegain", lifelink: "Lifelink", landfall: "Landfall", counter: "Counters", proliferate: "Counters" };
   function requestedIntent(style = "") {
@@ -4553,7 +4682,7 @@
     s += themeSupport(c, { roles: seedTags, tokenKinds }).length * 3;
     s += subtypes(c).filter((x) => seedSubs.includes(x)).length * 4;
     if (seedSubs.some((x) => new RegExp("\\b" + x + "s?\\b", "i").test(rulesText(c)))) s += 2;
-    if (goal !== "weak" && e.includes("Removal")) s += 2.5;
+    if (goal !== "weak" && e.includes("Removal") && !forgeCostlyRemoval(c)) s += 2.5;
     if (goal !== "weak" && e.includes("Draw")) s += 1.5;
     if (goal !== "weak" && e.includes("Ramp")) s += (size >= 100 ? 2 : 0.5) * candidateRampWeight(c);
     if (goal !== "weak" && e.includes("Wipe")) s += size >= 100 ? 1.5 : 0.5;
@@ -4571,7 +4700,7 @@
     const second = buildDeckOnce({ ...opts, landCount: wanted });
     return second.open <= first.open ? second : first;
   }
-  function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () => 0, price = (c) => null, budget = Infinity, colors = null, commander = null, completionFirst = false, easy = false, preferred = () => 0, requestedStyle = "", goal = "strongest", suggestedCards = [], excludedCards = [], creatureTypesOnly, excludedSubtypes, power = null, variation = "tight", forgeSeed = "", landCount = null }) {
+  function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () => 0, price = (c) => null, budget = Infinity, colors = null, commander = null, completionFirst = false, easy = false, preferred = () => 0, requestedStyle = "", goal = "strongest", suggestedCards = [], excludedCards = [], creatureTypesOnly, excludedSubtypes, power: power2 = null, variation = "tight", forgeSeed = "", landCount = null, prior = null }) {
     const f = formatOf(format);
     if (f.id === "limited") throw Error("Limited decks come from the cards you open \u2014 build those by hand.");
     if (!Number.isFinite(budget) && budget !== Infinity || budget < 0) throw Error("Enter a budget of $0 or more.");
@@ -4597,6 +4726,13 @@
       const r3 = rows.get(cardKey(c.name));
       if (r3) r3.qty += n;
       else rows.set(cardKey(c.name), { name: c.name, qty: n, why });
+    }, drop = (key2) => {
+      const r3 = rows.get(key2), c = catalog[key2];
+      if (!r3) return;
+      const buy = Math.max(0, r3.qty - stock(r3.name)), p = c ? unitCost(c) : null;
+      if (buy && p === null) unknown = Math.max(0, unknown - buy);
+      else if (buy) spent = Math.max(0, spent - buy * p);
+      rows.delete(key2);
     }, count = () => [...rows.values()].reduce((a, r3) => a + r3.qty, 0), landsIn = () => [...rows.values()].filter((r3) => isLand(catalog[cardKey(r3.name)])).reduce((a, r3) => a + r3.qty, 0);
     if (sumQty(base) > size) throw Error(`This list has ${sumQty(base)} cards. Review ${sumQty(base) - size} cuts before building to the ${size}-card target.`);
     for (const b of aggregateCards(base)) {
@@ -4636,12 +4772,34 @@
     }
     const cardConditions = commanderCardConditions(lead || seeds[0]), primaryNeeds = primaryInputRequirements(lead || seeds[0]), conditionBoost = (c) => (cardConditions.some((condition) => condition.matches(c)) ? 8 : 0) + primaryNeeds.reduce((n, need) => n + (need.match(c) ? 8 * need.priority(c) : 0), 0);
     const needBoost = (c) => landNeeds.reduce((n, need) => n + landSubtypeRoles(c, need.subtype).reduce((s, r3) => s + ({ fetch: 8, grant: 8, tutor: 5, setup: 3, payoff: 4 }[r3.kind] || 0), 0), 0);
-    const pool = [...new Map(Object.values(catalog).filter((c) => c?.name && !isLand(c) && isLegal(c) && fitsDeck(c, deckColors, f.commander)).map((c) => [cardKey(c.name), c])).values()], supports = (c) => seedSubs.some((t) => tribalSupport(c, t)) || themeSupport(c, { roles: seedTags, tokenKinds: intent.tokenKinds }).length > 0, scored = pool.map((c) => ({ c, plan: supports(c), forge: forgeScore(c, hooks, { leader: forgeLead, power }), s: -(easy ? setupBurden("mtg", c) * 3 : 0) + scoreCard(c, seedTags, seedSubs, { free: available(c.name) || preferred(c), size, tokenKinds: intent.tokenKinds, goal }) + goalCardPreference(c, goal, { suggested: suggestedCards.some((name) => cardKey(name) === cardKey(c.name)) }) + (styleFit(c, intent.requested) ? goal === "theme" ? 16 : 8 : 0) - (mtgSelfConflicts([...seeds, ...lead ? [lead] : [], c]).length ? 24 : 0) + needBoost(c) + conditionBoost(c) }));
+    const pool = [...new Map(Object.values(catalog).filter((c) => c?.name && !isLand(c) && isLegal(c) && fitsDeck(c, deckColors, f.commander)).map((c) => [cardKey(c.name), c])).values()], supports = (c) => seedSubs.some((t) => tribalSupport(c, t)) || themeSupport(c, { roles: seedTags, tokenKinds: intent.tokenKinds }).length > 0, scored = pool.map((c) => ({ c, plan: supports(c), forge: forgeScore(c, hooks, { leader: forgeLead, power: power2 }), s: -(easy ? setupBurden("mtg", c) * 3 : 0) + scoreCard(c, seedTags, seedSubs, { free: available(c.name) || preferred(c), size, tokenKinds: intent.tokenKinds, goal }) + goalCardPreference(c, goal, { suggested: suggestedCards.some((name) => cardKey(name) === cardKey(c.name)) }) + (styleFit(c, intent.requested) ? goal === "theme" ? 16 : 8 : 0) - (mtgSelfConflicts([...seeds, ...lead ? [lead] : [], c]).length ? 24 : 0) + needBoost(c) + conditionBoost(c) + (prior && goal !== "weak" ? (Number(prior(c)) || 0) * (power2 === "strong" || power2 === "max" ? 8 : 6) : 0) }));
     for (const x of scored) {
       x.s += x.forge.score + forgeNoise(forgeSeed, x.c.name, variation);
       x.roles = forgeRoles(x.c);
       x.hookIds = x.forge.fit.hooks;
     }
+    const keptKeys = /* @__PURE__ */ new Set([...seeds.map((s) => cardKey(s.name)), ...aggregateCards(base).map((b) => cardKey(b.name)), ...lead ? [cardKey(lead.name)] : []]), provideMemo = /* @__PURE__ */ new Map(), provides = (need, owner, c) => {
+      const k = owner + "|" + need.id + "|" + cardKey(c.name);
+      if (!provideMemo.has(k)) provideMemo.set(k, !!need.provides(c));
+      return provideMemo.get(k);
+    }, deckRows = () => [...rows.values()].map((r3) => ({ card: catalog[cardKey(r3.name)], qty: r3.qty })).filter((r3) => r3.card), providersIn = (need, owner) => deckRows().reduce((n, r3) => n + (provides(need, owner, r3.card) ? r3.qty : 0), 0);
+    for (let i = scored.length - 1; i >= 0; i--) {
+      const x = scored[i], key2 = cardKey(x.c.name);
+      x.needs = cardNeeds(x.c);
+      if (keptKeys.has(key2)) continue;
+      if (idleFixer(x.c, deckColors)) {
+        scored.splice(i, 1);
+        continue;
+      }
+      if (!x.needs.length) continue;
+      const reachable = (need) => pool.reduce((n, c) => n + (provides(need, key2, c) ? maxCopies(c) : 0), 0) >= need.min(size);
+      if (!x.needs.every(reachable)) scored.splice(i, 1);
+    }
+    const legendary = (c) => /\bLegendary\b/.test((c.card_faces?.[0] || c).type_line || typeText(c)), wantCopies = (c, isSeed = false) => {
+      if (f.copies === 1) return 1;
+      const mv3 = Number(c.cmc) || 0, base2 = mv3 >= 6 || legendary(c) ? 2 : mv3 >= 5 ? 3 : 4;
+      return Math.min(maxCopies(c), isSeed ? Math.min(4, base2 + 1) : base2);
+    }, topEnd = Math.max(0, ...seeds.map((c) => Number(c.cmc) || 0));
     for (const s of seeds) {
       const hit = scored.find((x) => cardKey(x.c.name) === cardKey(s.name));
       if (hit) hit.s += 1e3;
@@ -4702,7 +4860,7 @@
         }
       }
       while (nonland() < spellTarget) {
-        const choices = scored.filter((x) => qtyOf(x.c) < maxCopies(x.c)).map((x) => ({ ...x, extra: costFor(x.c, qtyOf(x.c), qtyOf(x.c) + 1) })).filter((x) => canAfford(x.extra)).sort((a, b) => a.extra - b.extra || b.s - a.s);
+        const choices = scored.filter((x) => qtyOf(x.c) < wantCopies(x.c, keptKeys.has(cardKey(x.c.name)))).map((x) => ({ ...x, extra: costFor(x.c, qtyOf(x.c), qtyOf(x.c) + 1) })).filter((x) => canAfford(x.extra)).sort((a, b) => a.extra - b.extra || b.s - a.s);
         const next = choices[0];
         if (!next) break;
         put(next.c, 1, stock(next.c.name) > qtyOf(next.c) ? "you own it" : next.extra === Infinity ? "Unpriced candidate; cost unverified" : "Budget completion");
@@ -4717,17 +4875,20 @@
         for (const role of forgeRoles(card)) bump(role, row.qty);
         for (const h of hooks) if (h.match(card)) bump("hook:" + h.id, row.qty);
       }
-      const targets = { ramp: forgeT.ramp, draw: forgeT.draw, interaction: forgeT.interaction, wipe: forgeT.wipe.target, wincon: forgeT.wincon };
+      const targets = { ramp: size < 100 && topEnd >= 6 ? Math.max(forgeT.ramp, 8) : forgeT.ramp, draw: forgeT.draw, interaction: forgeT.interaction, wipe: forgeT.wipe.target, wincon: forgeT.wincon };
       const supportCopies = [...rows.values()].filter((r3) => supports(catalog[cardKey(r3.name)] || {})).reduce((n, r3) => n + r3.qty, 0);
       const roleBonus = (r3) => {
         const have2 = counts.get(r3) || 0, t = targets[r3];
         if (!t && r3 !== "wipe") return 0;
-        if (have2 < t) return 8;
+        if (have2 < t) return r3 === "ramp" && size < 100 && topEnd >= 6 ? 14 : 8;
         if (r3 === "wipe") return have2 >= forgeT.wipe.max ? -8 : 0;
         if (r3 === "draw") return 0;
         return -3;
       };
-      const adaptive = (x) => x.s + (x.plan && supportCopies < Math.ceil(spellTarget * 0.35) ? 6 : 0) + x.roles.reduce((n, r3) => n + roleBonus(r3), 0) + hooks.reduce((n, h) => n + (h.min && x.hookIds.includes(h.id) && (counts.get("hook:" + h.id) || 0) < h.min ? 5 : 0), 0);
+      const openNeeds = deckRows().flatMap((r3) => cardNeeds(r3.card).map((need) => ({ need, owner: cardKey(r3.card.name), kept: keptKeys.has(cardKey(r3.card.name)) }))).filter((o) => providersIn(o.need, o.owner) < fuelMinimum(o.need, size, o.kept));
+      const needAdj = (x) => openNeeds.reduce((n, o) => n + (provides(o.need, o.owner, x.c) ? o.kept ? 10 : 5 : 0), 0) - (x.needs?.length && !keptKeys.has(cardKey(x.c.name)) && x.needs.some((need) => providersIn(need, cardKey(x.c.name)) < need.min(size)) ? 3 : 0);
+      const threats = size < 100 ? deckRows().reduce((n, r3) => n + (isThreat(r3.card) ? r3.qty : 0), 0) : Infinity;
+      const adaptive = (x) => x.s + needAdj(x) + (threats < 12 && isThreat(x.c) ? 8 : 0) + (x.plan && supportCopies < Math.ceil(spellTarget * 0.35) ? 6 : 0) + x.roles.reduce((n, r3) => n + roleBonus(r3), 0) + hooks.reduce((n, h) => n + (h.min && x.hookIds.includes(h.id) && (counts.get("hook:" + h.id) || 0) < h.min ? 5 : 0), 0);
       remaining.sort((a, b) => adaptive(b) - adaptive(a) || a.c.name.localeCompare(b.c.name));
       const { c } = remaining.shift();
       const left = spellTarget - nonland();
@@ -4735,10 +4896,12 @@
       const have = qtyOf(c);
       if (have >= maxCopies(c)) continue;
       const isSeed = seeds.some((s) => cardKey(s.name) === cardKey(c.name));
-      if (!isSeed && (Number(c.cmc) || 0) >= forgeT.bigFrom && heavy() >= (f.commander && size >= 100 ? forgeT.bigCards + Math.floor(Math.max(0, (counts.get("ramp") || 0) - forgeT.ramp) / 3) : Math.ceil(spellTarget * 0.15))) continue;
-      const ideal = Math.min(maxCopies(c) - have, left, f.copies === 1 ? 1 : isSeed ? 4 : 4);
+      const wantedFuel = openNeeds.some((o) => provides(o.need, o.owner, c));
+      if (!isSeed && !wantedFuel && (Number(c.cmc) || 0) >= forgeT.bigFrom && heavy() >= (f.commander && size >= 100 ? forgeT.bigCards + Math.floor(Math.max(0, (counts.get("ramp") || 0) - forgeT.ramp) / 3) : Math.ceil(spellTarget * 0.15))) continue;
+      const ideal = Math.min(wantCopies(c, isSeed) - have, left);
+      if (ideal <= 0) continue;
       let take = 0;
-      for (let n = ideal; n >= (f.copies === 1 || isSeed ? 1 : 2); n--) {
+      for (let n = ideal; n >= (f.copies === 1 || isSeed || have ? 1 : Math.min(2, ideal)); n--) {
         const extra = costFor(c, have, have + n), reserve = Math.max(0, left - n) * fillerPrice;
         if (canAfford(extra, reserve)) {
           take = n;
@@ -4749,10 +4912,11 @@
     }
     if (spellTarget - nonland() > 0) {
       const byPrice = scored.map((x) => ({ ...x, unit: available(x.c.name) > qtyOf(x.c) ? 0 : unitCost(x.c) })).filter((x) => x.unit !== null || budget === Infinity).sort((a, b) => (a.unit ?? Infinity) - (b.unit ?? Infinity) || b.s - a.s);
-      for (const { c } of byPrice) {
+      const inList = byPrice.filter((x) => qtyOf(x.c)).sort((a, b) => b.s - a.s), fresh = byPrice.filter((x) => !qtyOf(x.c));
+      for (const { c } of [...inList, ...fresh]) {
         const left = spellTarget - nonland();
         if (left <= 0) break;
-        const have = qtyOf(c), room = Math.min(maxCopies(c) - have, left, f.copies === 1 ? 1 : 4);
+        const have = qtyOf(c), room = Math.min(wantCopies(c, keptKeys.has(cardKey(c.name))) - have, left);
         for (let n = room; n >= 1; n--) {
           const extra = costFor(c, have, have + n);
           if (canAfford(extra)) {
@@ -4762,6 +4926,51 @@
         }
       }
     }
+    const banned = /* @__PURE__ */ new Set();
+    for (let round = 0; round < 4; round++) {
+      const bad = new Set(unmetNeeds(deckRows(), { size, exempt: (c) => keptKeys.has(cardKey(c.name)) }).map((n) => cardKey(n.name)));
+      if (!bad.size) break;
+      for (const key2 of bad) {
+        drop(key2);
+        banned.add(key2);
+      }
+      for (const x of scored) {
+        const left = spellTarget - nonland();
+        if (left <= 0) break;
+        const c = x.c, key2 = cardKey(c.name), have = qtyOf(c);
+        if (banned.has(key2) || have >= maxCopies(c)) continue;
+        if (x.needs.some((need) => providersIn(need, key2) < need.min(size))) continue;
+        if ((Number(c.cmc) || 0) >= forgeT.bigFrom && heavy() >= (f.commander && size >= 100 ? forgeT.bigCards : Math.ceil(spellTarget * 0.15))) continue;
+        for (let n = Math.min(wantCopies(c) - have, left); n >= 1; n--) {
+          if (canAfford(costFor(c, have, have + n), Math.max(0, left - n) * fillerPrice)) {
+            put(c, n, reasonFor(c, seedTags, seedSubs, available(c.name) >= have + n));
+            break;
+          }
+        }
+      }
+    }
+    if (size < 100 && topEnd >= 6) {
+      const ramp = deckRows().reduce((n, r3) => n + (forgeRoles(r3.card).includes("ramp") ? r3.qty : 0), 0);
+      if (ramp < 4) warnings.push(`${seeds.find((c) => (Number(c.cmc) || 0) === topEnd)?.name} costs ${topEnd} mana and only ${ramp} ramp cards were found for it in this format and these colours.`);
+    }
+    if (f.copies !== 1) for (const r3 of [...rows.values()]) {
+      const c = catalog[cardKey(r3.name)];
+      if (!c || r3.qty !== 1 || isLand(c) || keptKeys.has(cardKey(r3.name)) || legendary(c) || wantCopies(c) === 1 || /^(?:Optional endpoint|Primary input)/.test(r3.why || "")) continue;
+      const host = scored.find((x) => {
+        const have = qtyOf(x.c);
+        return have > 0 && cardKey(x.c.name) !== cardKey(r3.name) && have < wantCopies(x.c, keptKeys.has(cardKey(x.c.name))) && !banned.has(cardKey(x.c.name));
+      });
+      if (!host) continue;
+      const before = { spent, unknown };
+      drop(cardKey(r3.name));
+      if (canAfford(costFor(host.c, qtyOf(host.c), qtyOf(host.c) + 1))) put(host.c, 1, "tidy");
+      else {
+        spent = before.spent;
+        unknown = before.unknown;
+        rows.set(cardKey(r3.name), r3);
+      }
+    }
+    for (const n of inspectNeeds(deckRows(), { size, exempt: (c) => keptKeys.has(cardKey(c.name)) }).filter((n2) => !n2.met && n2.exempt)) warnings.push(`${n.name} wants ${n.min} ${n.label}; this list has ${n.have}.`);
     const landPool = [...new Map(Object.values(catalog).filter((c) => c?.name && isLand(c) && !isBasic(c) && isLegal(c) && fitsColors(c, deckColors) && mtgManaSourceProfile(c, { commanderIdentity: lead?.color_identity }).colors.filter((m) => deckColors.includes(m)).length >= Math.min(2, deckColors.length)).map((c) => [cardKey(c.name), c])).values()].sort((a, b) => available(b.name) - available(a.name) || (f.commander ? (a.edhrec_rank || 1e9) - (b.edhrec_rank || 1e9) : 0) || a.name.localeCompare(b.name));
     const dualCap = deckColors.length > 2 ? Math.round(landTarget * 0.6) : deckColors.length > 1 ? Math.round(landTarget * 0.4) : 0;
     for (const c of landPool) {
@@ -4796,11 +5005,11 @@
         if (take < wanted) warnings.push(`${wanted - take} ${name} copies could not be added within the verified purchase budget.`);
       }
     }
-    const landsWanted = Math.max(forgeLandCount([...rows.values()].filter((r3) => cardKey(r3.name) !== cardKey(lead?.name)).map((r3) => ({ card: catalog[cardKey(r3.name)], qty: r3.qty })), { size, commander: !!f.commander, hooks }), [...rows.values()].filter((r3) => r3.why === "Already in your list" && isLand(catalog[cardKey(r3.name)])).reduce((n, r3) => n + r3.qty, 0));
+    const landsWanted = Math.max(size < 100 && topEnd >= 6 ? Math.round(size * 0.4) : 0, forgeLandCount([...rows.values()].filter((r3) => cardKey(r3.name) !== cardKey(lead?.name)).map((r3) => ({ card: catalog[cardKey(r3.name)], qty: r3.qty })), { size, commander: !!f.commander, hooks }), [...rows.values()].filter((r3) => r3.why === "Already in your list" && isLand(catalog[cardKey(r3.name)])).reduce((n, r3) => n + r3.qty, 0));
     const cards = [...rows.values()].filter((r3) => r3.qty > 0), total = sumQty(cards), open = Math.max(0, size - total);
     if (total > size) throw Error("Generated deck exceeds its target; no version was applied.");
     if (open && !completionFirst) {
-      const economical = buildDeck({ format, seeds, base, catalog, available, price, budget, colors, commander, completionFirst: true, easy, preferred, requestedStyle, goal, suggestedCards, excludedCards, ...restrictions, power, variation, forgeSeed, landCount });
+      const economical = buildDeck({ format, seeds, base, catalog, available, price, budget, colors, commander, completionFirst: true, easy, preferred, requestedStyle, goal, suggestedCards, excludedCards, ...restrictions, power: power2, variation, forgeSeed, landCount, prior });
       const seedKept = seeds.every((seed) => isLand(seed) || economical.cards.some((r3) => cardKey(r3.name) === cardKey(seed.name)));
       if (seedKept && economical.open < open) return economical;
     }
@@ -4809,7 +5018,7 @@
     if (unknown) warnings.push(`${unknown} card${unknown > 1 ? "s have" : " has"} no current price.`);
     if (unknown) warnings.push("Purchase cost is unverified; unknown quotes are not free cards.");
     const owned = cards.reduce((a, r3) => a + Math.min(r3.qty, stock(r3.name)), 0), knownSubtotal = Math.round(spent * 1e6) / 1e6, priceVerified = unknown === 0;
-    return { format: f.name, requestedStyle, goal, ...restrictions, forge: { version: DECK_TAGS.version, hooks: hooks.map((h) => h.id), power, variation, seed: forgeSeed || null, landsWanted }, colors: deckColors, commander: lead?.name || "", cards, cost: priceVerified ? knownSubtotal : null, knownSubtotal, unknown, unpricedCopies: unknown, priceVerified, priceBasis: "purchase", unpricedPurchaseCopies: unknown, withinBudget: priceVerified && knownSubtotal <= budget + 1e-6, budget, total, size, open, owned, warnings, lands: landsIn() };
+    return { format: f.name, requestedStyle, goal, ...restrictions, forge: { version: DECK_TAGS.version, hooks: hooks.map((h) => h.id), power: power2, variation, seed: forgeSeed || null, landsWanted }, colors: deckColors, commander: lead?.name || "", cards, cost: priceVerified ? knownSubtotal : null, knownSubtotal, unknown, unpricedCopies: unknown, priceVerified, priceBasis: "purchase", unpricedPurchaseCopies: unknown, withinBudget: priceVerified && knownSubtotal <= budget + 1e-6, budget, total, size, open, owned, warnings, lands: landsIn() };
   }
   function reasonFor(c, tags, subs, owned) {
     const bits = [];
@@ -4823,13 +5032,13 @@
     return bits.length ? bits.join(" \xB7 ") : "solid in this format";
   }
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/play-deck-finder.js
+  // ../../play-deck-finder.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/play-econ-cards.js
+  // ../../play-econ-cards.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/play-econ-rules.js
+  // ../../play-econ-rules.js
   init_deck_engine_prelude();
   var RARITY_SEAL = Object.freeze({ common: "c", uncommon: "u", rare: "r", mythic: "m", special: "r", bonus: "m" });
   var FORGE_STEPS = Object.freeze({ u: "c", r: "u", m: "r" });
@@ -4847,32 +5056,48 @@
     const one = SINGLETON[format];
     return one ? { size: one.size, copies: 1, exact: true, commander: true, legality: one.legality } : { size: 60, copies: 4, exact: false, commander: false, legality: String(format || "standard").toLowerCase() };
   }
+  var PRECON_RATES = Object.freeze({ c: 25, u: 75, r: 500, m: 1500 });
+  var PRECON_LIST = Object.freeze({ pauper: 1500, standard: 2500, brawl: 3e3, modern: 3500, commander: 5e3, legacy: 7500 });
+  var PRECON_TYPE_CLASS = Object.freeze({
+    "Commander Deck": "commander",
+    "Brawl Deck": "brawl",
+    "Starter Kit": "standard",
+    "Arena Starter Kit": "standard",
+    "Intro Pack": "standard",
+    "Welcome Deck": "standard",
+    "Clash Pack": "standard",
+    "Masters Deck": "legacy",
+    "From the Vault": "legacy",
+    "Premium Deck": "legacy"
+  });
+  var PRECON_ERAS = Object.freeze({ modern: "2012-10-05", legacy: "1900-01-01" });
+  var PRECON_VALUE = Object.freeze({ c: 1, u: 3, r: 20, m: 60 });
   var COLLECTOR_ODDS = 1 / 200;
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/play-deck-finder.js
+  // ../../play-deck-finder.js
   init_ui();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/play-econ-ui.js
+  // ../../play-econ-ui.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/set-list-ui.js
+  // ../../set-list-ui.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/set-experience.js
+  // ../../set-experience.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/set-release-metadata.js
+  // ../../set-release-metadata.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/set-experience.js
+  // ../../set-experience.js
   init_ui();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/set-list-ui.js
+  // ../../set-list-ui.js
   init_pokemon_variant_options();
   init_ygo_identity();
   init_ui();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/emblems.js
+  // ../../emblems.js
   init_deck_engine_prelude();
   init_ui();
   var ATTR = {
@@ -4899,63 +5124,63 @@
   };
   var ENERGY_TYPES = Object.keys(ENERGY);
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/play-econ-ui.js
+  // ../../play-econ-ui.js
   init_ui();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/importance.js
+  // ../../importance.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/meta.js
+  // ../../meta.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/meta-curation.js
+  // ../../meta-curation.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/matchup.js
+  // ../../matchup.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/artwork.js
+  // ../../artwork.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/pokemon-set-art.js
+  // ../../pokemon-set-art.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/artwork.js
+  // ../../artwork.js
   init_ui();
   init_tier();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/meta.js
+  // ../../meta.js
   var TTL = 12 * 3600 * 1e3;
   var PTCG_META_FORMATS = Object.freeze({ standard: { id: "STANDARD", name: "Standard", minPlayers: 24 }, expanded: { id: "EXPANDED", name: "Expanded", minPlayers: 8 }, glc: { id: "GLC", name: "Gym Leader Challenge", minPlayers: 8 } });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/play-econ-ui.js
+  // ../../play-econ-ui.js
   init_finish_preview();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/tiles.js
+  // ../../tiles.js
   init_deck_engine_prelude();
   init_ui();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/deck-viewer.js
+  // ../../deck-viewer.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/store.js
+  // ../../store.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/mtg-cheap.js
+  // ../../mtg-cheap.js
   init_deck_engine_prelude();
   var WEEK = 7 * 864e5;
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/pricehist.js
+  // ../../pricehist.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/account-scope.js
+  // ../../account-scope.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/pricehist.js
+  // ../../pricehist.js
   init_ui();
   var WEEK2 = 7 * 864e5;
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/store.js
+  // ../../store.js
   var blank = () => ({
     version: 3,
     references: [],
@@ -5016,28 +5241,59 @@
     }
   };
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/deck-viewer.js
+  // ../../deck-viewer.js
   init_ui();
   init_icons();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/play-econ-client.js
+  // ../../play-econ-client.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/play-deeds-ui.js
+  // ../../play-deeds-ui.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/play-achievements.js
+  // ../../play-achievements.js
   init_deck_engine_prelude();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/story-deeds.js
+  // ../../story-deeds.js
   init_deck_engine_prelude();
-  var deed = (id, act, battle, title, lore, art, test, seat = "hero", extra = {}) => ({ id, act, battle, title, lore, art, test, seat, ...extra });
-  var sawTheirs = (s, name) => s.theirCards?.includes(name);
-  var sawMine = (s, name) => s.myCards?.includes(name);
+
+  // ../../match-facts.js
+  init_deck_engine_prelude();
+
+  // ../../story-deeds.js
+  var deed = (id, act, battle, title, lore, art, when, seat = "hero", extra = {}) => ({ id, act, battle, title, lore, art, when, seat, ...extra });
+  var hidden = (riddle, extra = {}) => ({ hidden: true, riddle, ...extra });
+  var turnsBy = (n) => ({ myTurns: ["<=", n] });
+  var lifeAtLeast = (n) => ({ minLife: [">=", n] });
+  var endAtLeast = (n) => ({ endLife: [">=", n] });
+  var kills = (n) => ({ kills: [">=", n] });
+  var flyers = (n) => ({ maxFlyers: [">=", n] });
+  var power = (n) => ({ maxPower: [">=", n] });
+  var attackers = (n) => ({ maxAttackers: [">=", n] });
+  var bigTurn = (n) => ({ oppBigTurn: [">=", n] });
+  var gained = (n) => ({ lifeGained: [">=", n] });
+  var lost = (n) => ({ losses: ["<=", n] });
+  var tribe = (t, n) => ({ tribe: [t, ">=", n] });
   var STORY_DEEDS = Object.freeze([
     // Act 1: The Dawn of Dominaria
-    deed("a1-toll-unpaid", 1, "a1b2", "Toll Unpaid", "Cross the Goblin King's pass by turn 8. He never saw the sky coming.", "Goblin King", (s) => s.turns <= 8),
-    deed("a1-no-efreet", 1, "a1b6", "Fair Winds", "Reach Serendib before its Efreet ever takes the field.", "Serendib Efreet", (s) => !sawTheirs(s, "Serendib Efreet")),
+    deed("a1-not-a-scratch", 1, "a1b1", "Not a Scratch", "Win the First Summons without losing a creature. The archers never find a mark.", "Benalish Hero", lost(0)),
+    deed("a1-dawn-charge", 1, "a1b1", "Dawn Charge", "Attack with four creatures at once. The forest learns what knights are.", "Moorish Cavalry", attackers(4)),
+    deed("a1-toll-unpaid", 1, "a1b2", "Toll Unpaid", "Cross the Goblin King's pass by your 8th turn. He never saw the sky coming.", "Goblin King", turnsBy(8)),
+    deed("a1-regicide", 1, "a1b2", "Long Live the King", "Kill the Goblin King. His rabble forgets the toll the moment he falls.", "Goblin Balloon Brigade", { killed: "Goblin King" }),
+    deed("a1-ford-held", 1, "a1b3", "The Ford Holds", "Win with a White Knight that never falls.", "White Knight", { survived: "White Knight" }),
+    deed("a1-order-ford", 1, "a1b3", "Order of the Ford", "Have three Knights on the field at once.", "Northern Paladin", tribe("Knight", 3)),
+    deed("a1-wish-denied", 1, "a1b4", "Wish Denied", "Kill Erhnam Djinn. Some wishes are better refused.", "Erhnam Djinn", { killed: "Erhnam Djinn" }),
+    deed("a1-sky-court", 1, "a1b4", "The Sky Court", "Have four flyers on the field at once. The djinn's forest can't reach you.", "Phantom Monster", flyers(4)),
+    deed("a1-argoth-answers", 1, "a1b5", "Argoth Answers", "Destroy five of Urza's machines.", "Citanul Druid", kills(5)),
+    deed("a1-old-growth", 1, "a1b5", "Old Growth", "Have a creature with 6 or more power. The forest grows back taller.", "Craw Wurm", power(6)),
+    deed("a1-no-efreet", 1, "a1b6", "Fair Winds", "Reach Serendib before its Efreet ever takes the field.", "Serendib Efreet", { notTheirs: "Serendib Efreet" }),
+    deed("a1-deep-answers", 1, "a1b6", "The Deep Answers", "Have three Merfolk on the field at once. Sindbad's crew remembers the sea.", "Lord of Atlantis", tribe("Merfolk", 3)),
+    deed("a1-tawnos-workshop", 1, "a1b7", "Tawnos's Workshop", "Have three artifacts working on the field at once.", "Tawnos's Weaponry", { maxArtifacts: [">=", 3] }),
+    deed("a1-no-altar", 1, "a1b7", "The Altar Goes Hungry", "Kill four of Ashnod's creatures before she can feed them to her altar.", "Ashnod's Altar", kills(4)),
+    deed("a1-unbroken", 1, "a1b8", "Unbroken", "Beat Mishra with your life never dropping below 16. The brothers were never this even.", "Mishra's War Machine", lifeAtLeast(16)),
+    deed("a1-tron", 1, "a1b8", "The Machine Assembled", "Win after putting Urza's Mine, Power Plant and Tower on the field.", "Urza's Tower", { mine: ["Urza's Mine", "Urza's Power Plant", "Urza's Tower"] }),
+    deed("a1-colossus", 1, "a1b8", "The Colossus Wakes", "Have a creature with 9 or more power. Sardia remembers its giant.", "Colossus of Sardia", power(9), "hero", hidden("An old giant of Sardia wakes only for the patient.")),
+    deed("a1-v-dragon-engine", 1, "a1b8", "Thirty Years", "As Mishra, beat Urza with a creature of 6 or more power.", "Dragon Engine", power(6), "villain"),
     // The secret boss: a gold achievement (a Collector pack when claimed), hidden behind a riddle until it's done.
     deed(
       "a1-usenet",
@@ -5046,55 +5302,1037 @@
       "How Do You Stop This Deck?",
       "Beat the Usenet Deck from December 1993 with the 1993 Power deck.",
       "Black Vise",
-      () => true,
+      {},
       "hero",
       { gold: true, riddle: "Someone else was listening. Win every battle of Act 1 with its own decks, then answer them." }
     ),
-    deed("a1-unbroken", 1, "a1b8", "Unbroken", "Beat Mishra without your life ever dropping below 10. The brothers were never this even.", "Mishra's War Machine", (s) => s.minLife >= 10),
+    deed("a1-vise-proof", 1, "a1b9", "Vise-Proof", "Beat the Usenet Deck with 17 life or more. The Vise never squeezed.", "Howling Mine", endAtLeast(17)),
     // Act 2: Legends and the Dark
-    deed("a2-quick-deck", 2, "a2b6", "Faster Than The Deck", "Beat Arcades Sabboth's control deck by turn 12, before it takes over.", "Mirror Universe", (s) => s.turns <= 12),
-    deed("a2-on-the-draw", 2, "a2b8", "Second Breath", "Beat Nicol Bolas on the draw. Elder Dragons hate going first.", "Nicol Bolas", (s) => s.onPlay === false),
-    // Act 3: The Long Winter
-    deed("a3-before-shade", 3, "a3b6", "Before the Shade", "Win Necro Summer before Ihsan's Shade ever rises.", "Ihsan's Shade", (s) => !sawTheirs(s, "Ihsan's Shade")),
-    deed("a3-warm-blood", 3, "a3b8", "Warm Blood", "Beat Lim-D\xFBl with 15 life or more. The dead never touched you.", "Pestilence", (s) => s.endLife >= 15),
+    deed("a2-heretic", 2, "a2b1", "Heretic", "Beat the Inquisitor by your 8th turn. Cast spells loudly.", "Elven Riders", turnsBy(8)),
+    deed("a2-unburned", 2, "a2b1", "Unburned", "Beat the Inquisitor without dropping below 12 life. The Church never lights its fire.", "Inquisition", lifeAtLeast(12)),
+    deed("a2-legend-remains", 2, "a2b2", "Desert Raid", "Deal 10 or more damage in one turn. Hazezon taught the desert to strike fast.", "Hazezon Tamar", bigTurn(10)),
+    deed("a2-twin-fall", 2, "a2b2", "Twin Fall", "Kill Stangg. His twin goes with him.", "Stangg", { killed: "Stangg" }),
+    deed("a2-spore-army", 2, "a2b3", "Spore Army", "Have three Saproling tokens on the field at once.", "Thallid", { maxTokens: [">=", 3] }),
+    deed("a2-havenwood", 2, "a2b3", "Havenwood Stands", "Win with five creatures still standing.", "Thelonite Druid", { endCreatures: [">=", 5] }),
+    deed("a2-test-passed", 2, "a2b4", "Test Passed", "Kill Tetsuo Umezawa. He wanted to know if you were a weapon.", "Swords to Plowshares", { killed: "Tetsuo Umezawa" }),
+    deed("a2-swift-answer", 2, "a2b4", "A Swift Answer", "Beat Tetsuo by your 7th turn.", "Llanowar Elves", turnsBy(7)),
+    deed("a2-combat-medic", 2, "a2b5", "Field Medicine", "Gain 4 or more life. Icatia's healers keep the line standing.", "Combat Medic", gained(4)),
+    deed("a2-phalanx", 2, "a2b5", "Phalanx", "Hold five soldiers on the field at once.", "Icatian Phalanx", { maxCreatures: [">=", 5] }),
+    deed("a2-quick-deck", 2, "a2b6", "Faster Than The Deck", "Beat Arcades Sabboth's control deck by your 6th turn, before it takes over.", "Mirror Universe", turnsBy(6)),
+    deed("a2-moon-rising", 2, "a2b6", "Blood Moon Rising", "Win with Blood Moon on the field. Arcades's duals go dark.", "Blood Moon", { mine: "Blood Moon" }),
+    deed("a2-ball-rolls", 2, "a2b6", "The Ball Rolls", "Deal 14 or more damage to Arcades in one turn.", "Disintegrate", bigTurn(14), "hero", hidden("Lightning in a ball, and an Elder Dragon who never saw it coming.")),
+    deed("a2-choir-silenced", 2, "a2b7", "The Choir Silenced", "Kill four of the Choir's creatures.", "Order of the Ebon Hand", kills(4)),
+    deed("a2-sanity", 2, "a2b7", "Your Mind Holds", "Beat the Hymn with 10 life or more.", "Knights of Thorn", endAtLeast(10)),
+    deed("a2-on-the-draw", 2, "a2b8", "Second Breath", "Beat Nicol Bolas on the draw. Elder Dragons hate going first.", "Nicol Bolas", { onPlay: false }),
+    deed("a2-dragonslayer", 2, "a2b8", "Elder Dragonslayer", "Kill Nicol Bolas. Tetsuo finishes what he started.", "Terror", { killed: "Nicol Bolas" }),
+    deed("a2-v-elder", 2, "a2b8", "The Elder Wakes", "As Nicol Bolas, beat Tetsuo with Bolas on the field.", "Royal Assassin", { mine: "Nicol Bolas" }, "villain"),
+    // Act 3: Ice Age
+    deed("a3-skycaptains", 3, "a3b1", "Skycaptains", "Have three flyers over the pass at once.", "Kjeldoran Skycaptain", flyers(3)),
+    deed("a3-hold-pass", 3, "a3b1", "Hold the Pass", "Win losing one creature or none.", "Kjeldoran Elite Guard", lost(1)),
+    deed("a3-winter-sky", 3, "a3b2", "Winter Sky", "Have three flyers on the field at once. The royal mage keeps the air.", "Air Elemental", flyers(3)),
+    deed("a3-thaw", 3, "a3b2", "Thaw", "Kill three of Varchild's raiders.", "Glacial Wall", kills(3)),
+    deed("a3-book-refused", 3, "a3b3", "The Book Refused", "Beat Leshrac with five creatures on the field at once. Elves need no pages.", "Yavimaya Ancients", { maxCreatures: [">=", 5] }),
+    deed("a3-lhurgoyf", 3, "a3b3", "What Is It?", "Grow a creature to 6 power or more.", "Lhurgoyf", power(6)),
+    deed("a3-off-menu", 3, "a3b4", "Off the Menu", "Kill Baron Sengir at his own feast.", "Baron Sengir", { killed: "Baron Sengir" }),
+    deed("a3-fire-feast", 3, "a3b4", "Flamb\xE9", "Deal 7 or more damage to the Baron in one turn.", "Incinerate", bigTurn(7)),
+    deed("a3-gate-held", 3, "a3b5", "The Gate Holds", "Beat the dead without dropping below 12 life.", "Wall of Swords", lifeAtLeast(12)),
+    deed("a3-master-falls", 3, "a3b5", "No Master", "Kill a Zombie Master.", "Zombie Master", { killed: "Zombie Master" }),
+    deed("a3-before-shade", 3, "a3b6", "Before the Shade", "Win Necro Summer before Ihsan's Shade ever rises.", "Ihsan's Shade", { notTheirs: "Ihsan's Shade" }),
+    deed("a3-race-book", 3, "a3b6", "Race the Book", "Beat the Necro deck by your 7th turn.", "Order of the White Shield", turnsBy(7)),
+    deed("a3-house-burns", 3, "a3b7", "The Still House Burns", "Beat Grandmother Sengir by your 9th turn.", "Orcish Artillery", turnsBy(9)),
+    deed("a3-grandmother", 3, "a3b7", "Mind Your Elders", "Kill Grandmother Sengir.", "Grandmother Sengir", { killed: "Grandmother Sengir" }),
+    deed("a3-warm-blood", 3, "a3b8", "Warm Blood", "Beat Lim-D\xFBl with 15 life or more. The dead never touched you.", "Pestilence", endAtLeast(15)),
+    deed("a3-pestilence-proof", 3, "a3b8", "Pestilence-Proof", "Beat Lim-D\xFBl with three creatures still standing.", "Folk of the Pines", { endCreatures: [">=", 3] }),
+    deed("a3-v-legion", 3, "a3b8", "Legion", "As Lim-D\xFBl, have four creatures on the field at once.", "Legions of Lim-D\xFBl", { maxCreatures: [">=", 4] }, "villain"),
+    deed("a3-greedy", 3, "a3b3", "One More Page", "Hold eight cards in your hand at once in the Black Book.", "Fyndhorn Elder", { maxHand: [">=", 8] }, "hero", hidden("The Book offers. You take more than you should.")),
     // Act 4: The Jamuraan War
-    deed("a4-flank", 4, "a4b1", "Ride Beside Me", "Have four creatures on the field at once in Jabari's charge.", "Zhalfirin Commander", (s) => s.maxCreatures >= 4),
-    deed("a4-no-sale", 4, "a4b6", "No Sale", "Beat Pashad by turn 10. Keep your goats.", "Prosperity", (s) => s.turns <= 10),
-    deed("a4-on-the-draw", 4, "a4b8", "The Reeds Hold", "Beat Kaervek on the draw.", "Kaervek's Torch", (s) => s.onPlay === false),
+    deed("a4-flank", 4, "a4b1", "Ride Beside Me", "Have six creatures on the field at once in Jabari's charge.", "Zhalfirin Commander", { maxCreatures: [">=", 6] }),
+    deed("a4-lance-broken", 4, "a4b1", "Lance Broken", "Kill Telim'Tor.", "Telim'Tor", { killed: "Telim'Tor" }),
+    deed("a4-on-time", 4, "a4b2", "On Time", "Beat Teferi by your 10th turn. For once, he's the one who's late.", "Teferi's Drake", turnsBy(10)),
+    deed("a4-drake-flight", 4, "a4b2", "Drake Flight", "Have four flyers on the field at once.", "Shimmering Efreet", flyers(4)),
+    deed("a4-dawn-comes", 4, "a4b3", "Dawn Comes", "Beat the night stalkers without dropping below 12 life.", "Rashida Scalebane", lifeAtLeast(12)),
+    deed("a4-purraj", 4, "a4b3", "The Song Ends", "Kill Purraj of Urborg.", "Purraj of Urborg", { killed: "Purraj of Urborg" }),
+    deed("a4-elephants", 4, "a4b4", "Elephant Walk", "Have three Elephants on the field at once.", "Noble Elephant", tribe("Elephant", 3)),
+    deed("a4-amber-holds", 4, "a4b4", "The Amber Cracks", "Beat Jolrael with 15 life or more.", "Barl's Cage", endAtLeast(15)),
+    deed("a4-unrewritten", 4, "a4b5", "Unrewritten", "Beat Shauku without dropping below 10 life.", "Hakim, Loreweaver", lifeAtLeast(10)),
+    deed("a4-library-wings", 4, "a4b5", "The Library Has Wings", "Have three flyers on the field at once.", "Azure Drake", flyers(3)),
+    deed("a4-no-sale", 4, "a4b6", "No Sale", "Beat Pashad by your 9th turn. Keep your goats.", "Prosperity", turnsBy(9)),
+    deed("a4-goats", 4, "a4b6", "Two Goats and an Apology", "Beat Pashad with 10 life or more.", "Mtenda Herder", endAtLeast(10)),
+    deed("a4-fireblast-dodged", 4, "a4b7", "Out of Reach", "Beat Sligh without dropping below 8 life. Fireblast finds no target.", "Femeref Knight", lifeAtLeast(8)),
+    deed("a4-griffins", 4, "a4b7", "Griffin Riders", "Have three flyers on the field at once.", "Ekundu Griffin", flyers(3)),
+    deed("a4-on-the-draw", 4, "a4b8", "The Reeds Hold", "Beat Kaervek on the draw.", "Kaervek's Torch", { onPlay: false }),
+    deed("a4-camp-falls", 4, "a4b8", "The Camp Falls", "Kill three of Kaervek's creatures.", "Uktabi Orangutan", kills(3)),
+    deed(
+      "a4-three-nations",
+      4,
+      "a4b8",
+      "Three Nations",
+      "Win after Asmira, Sidar Jabari and Rashida have all taken the field.",
+      "Asmira, Holy Avenger",
+      { mine: ["Asmira, Holy Avenger", "Sidar Jabari", "Rashida Scalebane"] },
+      "hero",
+      hidden("Three nations that hate each other. Three heroes. One camp.")
+    ),
+    deed("a4-v-torch", 4, "a4b8", "Torchbearer", "As Kaervek, deal 6 or more damage in one turn.", "Kaervek's Purge", bigTurn(6), "villain"),
     // Act 5: The Rath Cycle
-    deed("a5-hive", 5, "a5b3", "Kinfolk", "Have five slivers on the field at once.", "Muscle Sliver", (s) => s.maxSlivers >= 5),
-    deed("a5-no-nightmare", 5, "a5b7", "Dreamless", "Win the Laboratory before Recurring Nightmare ever hits the table.", "Recurring Nightmare", (s) => !sawTheirs(s, "Recurring Nightmare")),
-    deed("a5-for-mirri", 5, "a5b8", "For Mirri", "Beat Volrath with Mirri fighting at your side.", "Mirri, Cat Warrior", (s) => sawMine(s, "Mirri, Cat Warrior")),
+    deed("a5-shadow-army", 5, "a5b1", "Shadow Army", "Attack with four creatures at once.", "Soltari Trooper", attackers(4)),
+    deed("a5-untouched-shadow", 5, "a5b1", "Between Worlds", "Beat the Dauthi without dropping below 14 life.", "Soltari Priest", lifeAtLeast(14)),
+    deed("a5-lecture", 5, "a5b2", "Ertai Explains", "Kill four Merfolk.", "Searing Touch", kills(4)),
+    deed("a5-adept", 5, "a5b2", "Insufferable", "Win with an Ertai who never falls.", "Ertai, Wizard Adept", { survived: "Ertai, Wizard Adept" }),
+    deed("a5-hive", 5, "a5b3", "Kinfolk", "Have five slivers on the field at once.", "Muscle Sliver", { maxSlivers: [">=", 5] }),
+    deed("a5-vhati", 5, "a5b3", "Hunter Hunted", "Kill Vhati il-Dal.", "Vhati il-Dal", { killed: "Vhati il-Dal" }),
+    deed("a5-queenless", 5, "a5b3", "Eight Voices", "Have eight slivers on the field at once.", "Heart Sliver", { maxSlivers: [">=", 8] }, "hero", hidden("The hive needs no queen when it has eight voices.")),
+    deed("a5-mirri-watch", 5, "a5b4", "Mirri's Watch", "Gain 6 or more life.", "Spike Feeder", gained(6)),
+    deed("a5-unhunted", 5, "a5b4", "Not Tonight", "Beat Crovax without dropping below 12 life.", "Skyshroud Elite", lifeAtLeast(12)),
+    deed("a5-our-nightmare", 5, "a5b5", "Our Nightmare Now", "Win after Recurring Nightmare hits your side of the table.", "Mulch", { mine: "Recurring Nightmare" }),
+    deed("a5-skyshroud-rising", 5, "a5b5", "Skyshroud Rising", "Kill three of Starke's creatures.", "Eladamri, Lord of Leaves", kills(3)),
+    deed("a5-repelled", 5, "a5b6", "Repel Boarders", "Beat the moggs without dropping below 10 life.", "Wall of Blossoms", lifeAtLeast(10)),
+    deed("a5-overrun", 5, "a5b6", "Weeks of Waiting", "Deal 10 or more damage in one turn.", "Overrun", bigTurn(10)),
+    deed("a5-no-nightmare", 5, "a5b7", "Dreamless", "Win the Laboratory before Recurring Nightmare ever hits the table.", "Recurring Nightmare", { notTheirs: "Recurring Nightmare" }),
+    deed("a5-light-of-day", 5, "a5b7", "Light of Day", "Win with Light of Day on the field. Nothing black moves.", "Light of Day", { mine: "Light of Day" }),
+    deed("a5-for-mirri", 5, "a5b8", "For Mirri", "Beat Volrath with Mirri fighting at your side.", "Mirri, Cat Warrior", { mine: "Mirri, Cat Warrior" }),
+    deed("a5-shapeshifter", 5, "a5b8", "True Face", "Kill Volrath's Shapeshifter.", "Volrath's Shapeshifter", { killed: "Volrath's Shapeshifter" }),
+    deed("a5-v-evincar", 5, "a5b8", "The Evincar Rules", "As Volrath, beat Gerrard by your 8th turn.", "Dauthi Slayer", turnsBy(8), "villain"),
     // Act 6: Urza's War
-    deed("a6-one-use", 6, "a6b2", "Mi'uto", "Take the Thran mana rig from the goblins of Shiv by turn 9.", "Goblin Raider", (s) => s.turns <= 9),
-    deed("a6-school-stands", 6, "a6b8", "The School Stands", "Beat Gix with 15 life or more. Not one child lost.", "Tolarian Academy", (s) => s.endLife >= 15),
+    deed("a6-anthems", 6, "a6b1", "Hymns of the Realm", "Have three enchantments on the field at once.", "Glorious Anthem", { maxEnchantments: [">=", 3] }),
+    deed("a6-avatar", 6, "a6b1", "Faith Has Weight", "Have a creature with 9 or more power.", "Serra Avatar", power(9)),
+    deed("a6-one-use", 6, "a6b2", "Mi'uto", "Take the Thran mana rig from the goblins of Shiv by your 6th turn.", "Goblin Raider", turnsBy(6)),
+    deed("a6-grunk", 6, "a6b2", "Goblin Season", "Kill six goblins.", "Goblin Matron", kills(6)),
+    deed("a6-detention", 6, "a6b3", "Detention", "Beat Barrin by your 12th turn. Late, but not that late.", "Disruptive Student", turnsBy(12)),
+    deed("a6-drakes", 6, "a6b3", "Drake School", "Have three flyers on the field at once.", "Peregrine Drake", flyers(3)),
+    deed("a6-brood-cleansed", 6, "a6b4", "The Brood Cleansed", "Kill five of Kerrick's creatures.", "Bone Shredder", kills(5)),
+    deed("a6-outcast", 6, "a6b4", "The Outcast Stands", "Beat Kerrick without dropping below 10 life.", "Order of Yawgmoth", lifeAtLeast(10)),
+    deed("a6-years", 6, "a6b4", "Years in a Day", "Win a fight that lasts 14 of your turns.", "Phyrexian Broodlings", { myTurns: [">=", 14] }, "hero", hidden("Inside the bubble, years pass in a day. Outlast them.")),
+    deed("a6-cradle", 6, "a6b5", "The Cradle Hums", "Have six creatures on the field at once.", "Gaea's Cradle", { maxCreatures: [">=", 6] }),
+    deed("a6-rancor", 6, "a6b5", "Rancor", "Have a creature with 5 or more power.", "Rancor", power(5)),
+    deed("a6-before-academy", 6, "a6b6", "Class Dismissed", "Beat the Academy by your 8th turn, before it ever goes off.", "Rayne, Academy Chancellor", turnsBy(8)),
+    deed("a6-academy-burns", 6, "a6b6", "The Bubble Bursts", "Beat Gatha with 15 life or more.", "Capashen Templar", endAtLeast(15)),
+    deed("a6-radiant", 6, "a6b7", "Above the Angels", "Beat Radiant with 12 life or more. Her host never touches the workshop.", "Radiant, Archangel", endAtLeast(12)),
+    deed("a6-mantis", 6, "a6b7", "The Artificer's War", "Have three artifacts on the field at once.", "Mantis Engine", { maxArtifacts: [">=", 3] }),
+    deed("a6-school-stands", 6, "a6b8", "The School Stands", "Beat Gix with 15 life or more. Not one child lost.", "Tolarian Academy", endAtLeast(15)),
+    deed("a6-defenders", 6, "a6b8", "Tolaria's Defenders", "Beat Gix losing two creatures or fewer.", "Metathran Soldier", lost(2)),
+    deed("a6-v-praetor", 6, "a6b8", "The Praetor", "As Gix, kill four creatures.", "Sanguine Guard", kills(4), "villain"),
     // Act 7: The Mercadian Masques
-    deed("a7-general", 7, "a7b3", "General Nuisance", "As Squee, have five creatures on the field at once. They gave him a hat for a reason.", "Squee, Goblin Nabob", (s) => s.maxCreatures >= 5),
-    deed("a7-unmasked", 7, "a7b4", "Unmasked", "Beat Takara before Volrath ever shows his true shape.", "Liability", (s) => !sawTheirs(s, "Volrath the Fallen")),
-    deed("a7-defiant", 7, "a7b8", "Defiant", "Beat the Ascendant Evincar with Lin Sivvi on the field.", "Lin Sivvi, Defiant Hero", (s) => sawMine(s, "Lin Sivvi, Defiant Hero")),
+    deed("a7-climb", 7, "a7b1", "The Climb", "Beat the Magistrate by your 9th turn.", "Shock Troops", turnsBy(9)),
+    deed("a7-guard-down", 7, "a7b1", "The Guard Comes Down", "Kill four of the Magistrate's guards.", "Crossbow Infantry", kills(4)),
+    deed("a7-rebel-chain", 7, "a7b2", "Rebel Chain", "Have five Rebels on the field at once.", "Ramosian Captain", tribe("Rebel", 5)),
+    deed("a7-cho-manno", 7, "a7b2", "The Fountain Stays", "Win with a Cho-Manno who never falls.", "Cho-Manno, Revolutionary", { survived: "Cho-Manno, Revolutionary" }),
+    deed("a7-general", 7, "a7b3", "General Nuisance", "As Squee, have five creatures on the field at once. They gave him a hat for a reason.", "Squee, Goblin Nabob", { maxCreatures: [">=", 5] }),
+    deed("a7-hammer", 7, "a7b3", "Hammer Time", "Kill three creatures.", "Hammer Mage", kills(3)),
+    deed("a7-hat", 7, "a7b3", "The Hat Leads", "Attack with five creatures at once with Squee on the field.", "Kyren Legate", { ...attackers(5), mine: "Squee, Goblin Nabob" }, "hero", hidden("A goblin in a hat leads the charge.")),
+    deed("a7-unmasked", 7, "a7b4", "Unmasked", "Beat Takara before Volrath ever shows his true shape.", "Liability", { notTheirs: "Volrath the Fallen" }),
+    deed("a7-falcons", 7, "a7b4", "Falconry", "Have three flyers on the field at once.", "Defiant Falcon", flyers(3)),
+    deed("a7-throne", 7, "a7b5", "What Is Mine", "Beat Volrath by your 8th turn.", "Rathi Intimidator", turnsBy(8)),
+    deed("a7-fallen-again", 7, "a7b5", "Fallen Again", "Kill Volrath the Fallen.", "Volrath the Fallen", { killed: "Volrath the Fallen" }),
+    deed("a7-five-winds", 7, "a7b6", "The Five Winds", "Have three flyers on the field at once.", "Diving Griffin", flyers(3)),
+    deed("a7-gargadon", 7, "a7b6", "Gargadon Down", "Kill the Lesser Gargadon.", "Lesser Gargadon", { killed: "Lesser Gargadon" }),
+    deed("a7-blastoderm", 7, "a7b7", "Fading Fast", "Have a creature with 6 or more power.", "Blastoderm", power(6)),
+    deed("a7-agreed", 7, "a7b7", "Agree to Disagree", "Attack with five creatures at once. Eladamri wins the argument.", "Skyshroud Behemoth", attackers(5)),
+    deed("a7-defiant", 7, "a7b8", "Defiant", "Beat the Ascendant Evincar with Lin Sivvi on the field.", "Lin Sivvi, Defiant Hero", { mine: "Lin Sivvi, Defiant Hero" }),
+    deed("a7-curse-broken", 7, "a7b8", "Curse Broken", "Kill the Ascendant Evincar.", "Rhox", { killed: "Ascendant Evincar" }),
+    deed("a7-v-massacre", 7, "a7b8", "Massacre", "As Crovax, wipe out three or more rebels at once.", "Massacre", { oppWipes: [">=", 1] }, "villain"),
     // Act 8: The Invasion
-    deed("a8-kavu", 8, "a8b2", "Gaea Insisted", "Win the defence of Yavimaya with a Kavu Titan on the field.", "Kavu Titan", (s) => sawMine(s, "Kavu Titan")),
-    deed("a8-not-thirsty", 8, "a8b3", "Ain't Thirsty", "Beat Lord Dralnu before his Lord of the Undead ever reaches the table.", "Lord of the Undead", (s) => !sawTheirs(s, "Lord of the Undead")),
-    deed("a8-destiny", 8, "a8b8", "This Is My Destiny", "Beat Yawgmoth with Gerrard Capashen on the field.", "Gerrard Capashen", (s) => sawMine(s, "Gerrard Capashen")),
+    deed("a8-first-wave", 8, "a8b1", "Benalia Holds", "Beat the first wave without dropping below 12 life.", "Benalish Trapper", lifeAtLeast(12)),
+    deed("a8-cloak", 8, "a8b1", "Armadillo Cloak", "Gain 6 or more life.", "Armadillo Cloak", gained(6)),
+    deed("a8-kavu", 8, "a8b2", "Gaea Insisted", "Win the defence of Yavimaya with a Kavu Titan on the field.", "Kavu Titan", { mine: "Kavu Titan" }),
+    deed("a8-ancient", 8, "a8b2", "Older Than Phyrexia", "Have a creature with 7 or more power.", "Verdeloth the Ancient", power(7)),
+    deed("a8-not-thirsty", 8, "a8b3", "Ain't Thirsty", "Beat Lord Dralnu losing two goblins or fewer. Squee isn't for studying.", "Lord of the Undead", lost(2)),
+    deed("a8-goblin-host", 8, "a8b3", "Goblin Host", "Have six Goblins on the field at once.", "Goblin Ringleader", tribe("Goblin", 6)),
+    deed("a8-tsabo", 8, "a8b4", "The Wells Run Clear", "Kill Tsabo Tavoc.", "Tsabo Tavoc", { killed: "Tsabo Tavoc" }),
+    deed("a8-llanowar", 8, "a8b4", "Llanowar Rallies", "Have four Elves on the field at once.", "Elvish Champion", tribe("Elf", 4)),
+    deed("a8-ship-held", 8, "a8b5", "Not His Ship", "Beat Ertai without dropping below 12 life.", "Galina's Knight", lifeAtLeast(12)),
+    deed("a8-doomsday", 8, "a8b5", "Doomsday Postponed", "Kill a Doomsday Specter.", "Doomsday Specter", { killed: "Doomsday Specter" }),
+    deed("a8-pyre", 8, "a8b6", "Funeral Pyre", "Deal 9 or more damage in one turn.", "Fire // Ice", bigTurn(9)),
+    deed("a8-tolaria-avenged", 8, "a8b6", "Tolaria Avenged", "Kill five of the blight.", "Tower Drake", kills(5)),
+    deed("a8-fires", 8, "a8b7", "Fires of Yavimaya", "Beat Crovax by your 6th turn.", "Fires of Yavimaya", turnsBy(6)),
+    deed("a8-remembered", 8, "a8b7", "Remember Me", "Kill Lord of the Undead.", "Raging Kavu", { killed: "Lord of the Undead" }),
+    deed("a8-destiny", 8, "a8b8", "This Is My Destiny", "Beat Yawgmoth with Gerrard Capashen on the field.", "Gerrard Capashen", { mine: "Gerrard Capashen" }),
+    deed("a8-honor-guard", 8, "a8b8", "The Coalition", "Beat Yawgmoth with four creatures still standing.", "Coalition Honor Guard", { endCreatures: [">=", 4] }),
+    deed("a8-kavu-wake", 8, "a8b2", "Kavu Wake", "Have four Kavu on the field at once.", "Kavu Climber", tribe("Kavu", 4), "hero", hidden("Four of Yavimaya's oldest wake together.")),
+    deed("a8-v-agenda", 8, "a8b8", "Dark Lord", "As Yawgmoth, win with Desolation Angel on the field.", "Desolation Angel", { mine: "Desolation Angel" }, "villain"),
     // Act 9: The Mirari
-    deed("a9-thirteen", 9, "a9b1", "Thirteen", "Win the pit fight by turn 8. The house never saw it coming.", "Kamahl, Pit Fighter", (s) => s.turns <= 8),
-    deed("a9-squirrels", 9, "a9b3", "Keep an Eye Out", "Have six creatures on the field at once in Krosa. The squirrels are watching.", "Squirrel Nest", (s) => s.maxCreatures >= 6),
-    deed("a9-penance", 9, "a9b8", "Penance", "Beat the Patriarch with 10 life or more. Pain teaches lessons, but not this time.", "Mirari", (s) => s.endLife >= 10),
+    deed("a9-thirteen", 9, "a9b1", "Thirteen", "Win the pit fight by your 8th turn. The house never saw it coming.", "Kamahl, Pit Fighter", turnsBy(8)),
+    deed("a9-champion", 9, "a9b1", "New Champion", "Kill the Cabal Torturer.", "Cabal Torturer", { killed: "Cabal Torturer" }),
+    deed("a9-threshold", 9, "a9b2", "Threshold", "Have a creature with 7 or more power.", "Krosan Beast", power(7)),
+    deed("a9-keepers", 9, "a9b2", "Krosa's Keepers", "Beat the Cabal without dropping below 10 life.", "Nimble Mongoose", lifeAtLeast(10)),
+    deed("a9-squirrels", 9, "a9b3", "Keep an Eye Out", "Have six creatures on the field at once in Krosa. The squirrels are watching.", "Squirrel Nest", { maxCreatures: [">=", 6] }),
+    deed("a9-nuts", 9, "a9b3", "Nuts", "Have five tokens on the field at once.", "Chatter of the Squirrel", { maxTokens: [">=", 5] }),
+    deed("a9-nightmare-ends", 9, "a9b4", "The Nightmare Ends", "Kill Chainer, Dementia Master.", "Volcanic Spray", { killed: "Chainer, Dementia Master" }),
+    deed("a9-sledge", 9, "a9b4", "Kamahl's Sledge", "Have a creature with 6 or more power.", "Kamahl's Sledge", power(6)),
+    deed("a9-lavamancer", 9, "a9b5", "Lavamancer", "Kill two of the Cephalid Court.", "Grim Lavamancer", kills(2)),
+    deed("a9-mongrel", 9, "a9b5", "Madness", "Deal 7 or more damage in one turn.", "Wild Mongrel", bigTurn(7)),
+    deed("a9-screech", 9, "a9b6", "Battle Screech", "Have three flyers on the field at once.", "Battle Screech", flyers(3)),
+    deed("a9-braids", 9, "a9b6", "Braids Unbraided", "Kill Braids, Cabal Minion.", "Braids, Cabal Minion", { killed: "Braids, Cabal Minion" }),
+    deed("a9-wake", 9, "a9b7", "Wake Up", "Beat Kamahl by your 8th turn, before the Wake plays itself.", "Balthor the Stout", turnsBy(8)),
+    deed("a9-sister", 9, "a9b7", "A Sister's Patience", "Kill four creatures.", "Lava Dart", kills(4)),
+    deed("a9-penance", 9, "a9b8", "Penance", "Beat the Patriarch with 10 life or more. Pain teaches lessons, but not this time.", "Mirari", endAtLeast(10)),
+    deed("a9-patriarch", 9, "a9b8", "The Cabal Breaks", "Kill six of the Cabal's creatures.", "Arrogant Wurm", kills(6)),
+    deed("a9-pit-king", 9, "a9b1", "Pit King", "Win with a Kamahl, Pit Fighter who never falls.", "Halberdier", { survived: "Kamahl, Pit Fighter" }, "hero", hidden("The barbarian never bleeds in the pit.")),
+    deed("a9-v-mutilate", 9, "a9b8", "Mutilate", "As the Patriarch, kill four creatures.", "Mutilate", kills(4), "villain"),
     // Act 10: The False God
-    deed("a10-faces", 10, "a10b1", "Every Face a Secret", "Win the Coliseum bout with Ixidor on the field.", "Ixidor, Reality Sculptor", (s) => sawMine(s, "Ixidor, Reality Sculptor")),
-    deed("a10-untouched", 10, "a10b4", "Untouched", "Beat Phage before she ever reaches the table. Kamahl never has to choose.", "Phage the Untouchable", (s) => !sawTheirs(s, "Phage the Untouchable")),
-    deed("a10-no-god", 10, "a10b8", "Nobody's God", "Beat Karona with 15 life or more.", "Karona, False God", (s) => s.endLife >= 15)
+    deed("a10-faces", 10, "a10b1", "Every Face a Secret", "Win the Coliseum bout with Ixidor on the field.", "Ixidor, Reality Sculptor", { mine: "Ixidor, Reality Sculptor" }),
+    deed("a10-unmasked", 10, "a10b1", "Reveal", "Turn two face-down creatures face up.", "Echo Tracer", { turnedUp: [">=", 2] }),
+    deed("a10-kinship", 10, "a10b2", "Kinship", "Have six Elves on the field at once.", "Timberwatch Elf", tribe("Elf", 6)),
+    deed("a10-wirewood", 10, "a10b2", "Wirewood Holds", "Kill three of the mutated beasts.", "Elvish Pioneer", kills(3)),
+    deed("a10-pemmin", 10, "a10b3", "Last Researcher", "Beat the slivers without dropping below 10 life.", "Riptide Survivor", lifeAtLeast(10)),
+    deed("a10-sliver-hunt", 10, "a10b3", "Sliver Hunt", "Kill three slivers.", "Crafty Pathmage", kills(3)),
+    deed("a10-untouched", 10, "a10b4", "Untouched", "Beat Phage before she ever reaches the table. Kamahl never has to choose.", "Phage the Untouchable", { notTheirs: "Phage the Untouchable" }),
+    deed("a10-touched", 10, "a10b4", "He Remembers Her", "Kill three of Phage's creatures.", "Silklash Spider", kills(3)),
+    deed("a10-walking-forest", 10, "a10b4", "The Forest Walks", "Have a creature with 10 or more power.", "Krosan Colossus", power(10), "hero", hidden("A forest that walks.")),
+    deed("a10-wrath", 10, "a10b5", "Lightning Rift", "Deal 8 or more damage in one turn.", "Lightning Rift", bigTurn(8)),
+    deed("a10-exalted", 10, "a10b5", "Exalted", "Gain 8 or more life.", "Exalted Angel", gained(8)),
+    deed("a10-hold-line", 10, "a10b6", "Hold the Line", "Beat the goblin tide without dropping below 10 life.", "Daru Warchief", lifeAtLeast(10)),
+    deed("a10-siege", 10, "a10b6", "Siege Broken", "Kill Siege-Gang Commander.", "Siege-Gang Commander", { killed: "Siege-Gang Commander" }),
+    deed("a10-angel-stands", 10, "a10b7", "The Angel Stands", "Win with an Akroma who never falls.", "Gustcloak Savior", { survived: "Akroma, Angel of Wrath" }),
+    deed("a10-made-to-kill", 10, "a10b7", "Made to Kill", "Deal 8 or more damage in one turn.", "Akroma's Devoted", bigTurn(8)),
+    deed("a10-no-god", 10, "a10b8", "Nobody's God", "Beat Karona with 15 life or more.", "Karona, False God", endAtLeast(15)),
+    deed("a10-faces-turned", 10, "a10b8", "Every Mask Off", "Turn two face-down creatures face up.", "Riptide Entrancer", { turnedUp: [">=", 2] }),
+    deed("a10-v-karona", 10, "a10b8", "Worship", "As Karona, win after Akroma and Phage have both taken the field.", "Graveborn Muse", { mine: ["Akroma, Angel of Wrath", "Phage the Untouchable"] }, "villain"),
+    // Act 11: The Metal World
+    deed("a11-makers", 11, "a11b1", "Machines Have Makers", "Beat the levelers by your 8th turn.", "Glissa Sunseeker", turnsBy(8)),
+    deed("a11-equipped", 11, "a11b1", "Fully Equipped", "Have two Equipment on one creature.", "Loxodon Warhammer", { maxAttach: [">=", 2] }),
+    deed("a11-plating", 11, "a11b2", "Cranial Plating", "Have a creature with 6 or more power.", "Cranial Plating", power(6)),
+    deed("a11-junk", 11, "a11b2", "Junk Into Engines", "Have six artifacts on the field at once.", "Frogmite", { maxArtifacts: [">=", 6] }),
+    deed("a11-all-scrap", 11, "a11b2", "All the Scrap in the World", "Have a creature with 15 or more power.", "Krark-Clan Grunt", power(15), "hero", hidden("One goblin, all the scrap in the world.")),
+    deed("a11-iron-golem", 11, "a11b3", "Iron Memory", "Kill five of the archive.", "Arc-Slogger", kills(5)),
+    deed("a11-pontifex", 11, "a11b3", "Out of the Vault", "Beat Pontifex without dropping below 10 life.", "Solemn Simulacrum", lifeAtLeast(10)),
+    deed("a11-ravager-down", 11, "a11b4", "Ravager Down", "Kill Arcbound Ravager.", "Arcbound Ravager", { killed: "Arcbound Ravager" }),
+    deed("a11-tangle", 11, "a11b4", "The Tangle Holds", "Beat the Arcbound without dropping below 10 life.", "Troll Ascetic", lifeAtLeast(10)),
+    deed("a11-sunburst", 11, "a11b5", "Fifth Dawn", "Have four +1/+1 counters on one creature.", "Solarion", { maxCounters: [">=", 4] }),
+    deed("a11-geth", 11, "a11b5", "The Nim Return", "Kill five nim.", "Skyreach Manta", kills(5)),
+    deed("a11-modular", 11, "a11b6", "Modular", "Have three +1/+1 counters on one creature.", "Thoughtcast", { maxCounters: [">=", 3] }),
+    deed("a11-disciple", 11, "a11b6", "Disciple", "Deal 8 or more damage in one turn.", "Disciple of the Vault", bigTurn(8)),
+    deed("a11-colossus", 11, "a11b7", "Darksteel Colossus", "Win with Darksteel Colossus on the field.", "Darksteel Colossus", { mine: "Darksteel Colossus" }),
+    deed("a11-shackles-free", 11, "a11b7", "Unshackled", "Beat Janus without dropping below 10 life.", "Sylvan Scrying", lifeAtLeast(10)),
+    deed("a11-spark", 11, "a11b8", "The Spark Stays", "Beat Memnarch before he ever reaches the table.", "Memnarch", { notTheirs: "Memnarch" }),
+    deed("a11-panopticon", 11, "a11b8", "Panopticon", "Kill six of Memnarch's creatures.", "Fangren Hunter", kills(6)),
+    deed("a11-v-platinum", 11, "a11b8", "Keeper of Mirrodin", "As Memnarch, kill four creatures.", "Platinum Angel", kills(4), "villain"),
+    deed("a11-unclamped", 11, "a11b9", "Not the Creature", "Beat the Clamp Deck with 10 life or more.", "Skullclamp", endAtLeast(10)),
+    deed("a11-cleansing", 11, "a11b9", "Cleansing Fire", "Kill eight creatures.", "Creeping Mold", kills(8)),
+    // Act 12: The Kami War
+    deed("a12-line", 12, "a12b1", "Charge Like the Lion", "Beat the raging kami by your 6th turn.", "Takeno, Samurai General", turnsBy(6)),
+    deed("a12-bushido", 12, "a12b1", "Bushido", "Attack with five creatures at once.", "Isamaru, Hound of Konda", attackers(5)),
+    deed("a12-shrine", 12, "a12b2", "The Shrine Stands", "Beat the robbers with four creatures still standing.", "Kodama of the South Tree", { endCreatures: [">=", 4] }),
+    deed("a12-robbers", 12, "a12b2", "Robbers Caught", "Kill five of the Okiba Gang.", "Order of the Sacred Bell", kills(5)),
+    deed("a12-akki", 12, "a12b3", "Rockslide", "Kill six akki.", "Glacial Ray", kills(6)),
+    deed("a12-kumano", 12, "a12b3", "The Mountain's Secret", "Win with a Kumano who never falls.", "Kumano, Master Yamabushi", { survived: "Kumano, Master Yamabushi" }),
+    deed("a12-hidetsugu", 12, "a12b4", "Oath Settled", "Kill Heartless Hidetsugu.", "Heartless Hidetsugu", { killed: "Heartless Hidetsugu" }),
+    deed("a12-ink-eyes", 12, "a12b4", "From the Shadows", "Win with Ink-Eyes on the field.", "Ninja of the Deep Hours", { mine: "Ink-Eyes, Servant of Oni" }),
+    deed("a12-flipped", 12, "a12b5", "Flip", "Flip a creature.", "Michiko Konda, Truth Seeker", { flipped: [">=", 1] }),
+    deed("a12-gnawer", 12, "a12b5", "Marrow-Gnawed", "Kill five nezumi.", "Pious Kitsune", kills(5)),
+    deed("a12-two-faces", 12, "a12b5", "Two Faces", "Flip two creatures in one battle.", "Kitsune Blademaster", { flipped: [">=", 2] }, "hero", hidden("Two faces turn over in one battle.")),
+    deed("a12-dragon", 12, "a12b6", "Gifts Given", "Win after a dragon spirit, Kokusho or Keiga, takes your side of the field.", "Gifts Ungiven", { mineAny: ["Kokusho, the Evening Star", "Keiga, the Tide Star"] }),
+    deed("a12-godo", 12, "a12b6", "Bandit Warlord", "Kill Godo, Bandit Warlord.", "Godo, Bandit Warlord", { killed: "Godo, Bandit Warlord" }),
+    deed("a12-snakes", 12, "a12b7", "Snakes in the Swamp", "Have four Snakes on the field at once.", "Sosuke's Summons", tribe("Snake", 4)),
+    deed("a12-kiku", 12, "a12b7", "Shadows Fade", "Beat Kiku without dropping below 10 life.", "Sachi, Daughter of Seshiro", lifeAtLeast(10)),
+    deed("a12-taken", 12, "a12b8", "That Which Was Taken", "Beat Konda before he ever reaches the table.", "Konda, Lord of Eiganjo", { notTheirs: "Konda, Lord of Eiganjo" }),
+    deed("a12-oath", 12, "a12b8", "A Thief Keeps His Word", "Win with a Toshiro who never falls.", "Throat Slitter", { survived: "Toshiro Umezawa" }),
+    deed("a12-v-konda", 12, "a12b8", "Lord of Eiganjo", "As Konda, win with Yosei, the Morning Star on the field.", "Yosei, the Morning Star", { mine: "Yosei, the Morning Star" }, "villain"),
+    deed("a12-unjitted", 12, "a12b9", "Kill It Before Damage", "Beat Jitte Weenie with 10 life or more.", "Umezawa's Jitte", endAtLeast(10)),
+    deed("a12-hanabi", 12, "a12b9", "Fireworks", "Kill six creatures.", "Hanabi Blast", kills(6)),
+    // Act 13: The Guildpact
+    deed("a13-festival", 13, "a13b1", "Festival Crowd", "Have three tokens on the field at once.", "Scatter the Seeds", { maxTokens: [">=", 3] }),
+    deed("a13-cultists", 13, "a13b1", "Party Crashers", "Kill five Rakdos cultists.", "Selesnya Guildmage", kills(5)),
+    deed("a13-rotwurm", 13, "a13b2", "Rot Farm", "Have a creature with 5 or more power.", "Golgari Rotwurm", power(5)),
+    deed("a13-surveyors", 13, "a13b2", "Survey Cancelled", "Kill four Izzet weirds.", "Life from the Loam", kills(4)),
+    deed("a13-legion", 13, "a13b3", "Legion's Justice", "Beat the Gruul by your 9th turn.", "Boros Swiftblade", turnsBy(9)),
+    deed("a13-raiders-down", 13, "a13b3", "Raiders Down", "Kill five Gruul raiders.", "Sunhome Enforcer", kills(5)),
+    deed("a13-first-blow", 13, "a13b4", "The First Blow", "Beat the Dimir agents by your 9th turn.", "Agrus Kos, Wojek Veteran", turnsBy(9)),
+    deed("a13-cop-lives", 13, "a13b4", "Thirty Years on the Force", "Win with an Agrus Kos who never falls.", "Veteran Armorer", { survived: "Agrus Kos, Wojek Veteran" }),
+    deed("a13-advokist", 13, "a13b5", "Advokist", "Win with a Teysa who never falls.", "Teysa, Orzhov Scion", { survived: "Teysa, Orzhov Scion" }),
+    deed("a13-writ", 13, "a13b5", "Writ Dismissed", "Kill Grand Arbiter Augustin IV.", "Grand Arbiter Augustin IV", { killed: "Grand Arbiter Augustin IV" }),
+    deed("a13-ghost-dad", 13, "a13b6", "Ghost Dad", "Gain 4 or more life.", "Ghost Council of Orzhova", gained(4)),
+    deed("a13-zoo-closed", 13, "a13b6", "The Zoo Is Closed", "Beat Zoo without dropping below 10 life.", "Pillory of the Sleepless", lifeAtLeast(10)),
+    deed("a13-dividends", 13, "a13b6", "Dividends", "Gain 15 or more life.", "Orzhov Basilica", gained(15), "hero", hidden("The dead pay dividends.")),
+    deed("a13-graft", 13, "a13b7", "Graft", "Have three +1/+1 counters on one creature.", "Plaxcaster Frogling", { maxCounters: [">=", 3] }),
+    deed("a13-firemind", 13, "a13b7", "Firemind Out", "Kill Niv-Mizzet, the Firemind.", "Niv-Mizzet, the Firemind", { killed: "Niv-Mizzet, the Firemind" }),
+    deed("a13-light", 13, "a13b8", "Into the Light", "Beat Szadek before he ever reaches the table.", "Szadek, Lord of Secrets", { notTheirs: "Szadek, Lord of Secrets" }),
+    deed("a13-dragged", 13, "a13b8", "Dragged Out", "Kill five of Szadek's creatures.", "Mourning Thrull", kills(5)),
+    deed("a13-v-secrets", 13, "a13b8", "Lord of Secrets", "As Szadek, kill five creatures.", "Keening Banshee", kills(5), "villain"),
+    deed("a13-no-angel", 13, "a13b9", "No Angel Rises", "Beat Solar Flare without ever facing Angel of Despair.", "Angel of Despair", { notTheirs: "Angel of Despair" }),
+    deed("a13-boros-wins", 13, "a13b9", "Boros Deck Wins", "Beat Solar Flare by your 6th turn.", "Flame-Kin Zealot", turnsBy(6)),
+    // Act 14: The Time Rifts
+    deed("a14-rift", 14, "a14b1", "Rift Bolt", "Have two of your cards suspended at once.", "Rift Bolt", { maxSuspended: [">=", 2] }),
+    deed("a14-queenless", 14, "a14b1", "Queenless", "Kill five slivers.", "Keldon Halberdier", kills(5)),
+    deed("a14-future-waits", 14, "a14b1", "The Future Waits", "Have four of your cards suspended at once.", "Errant Ephemeron", { maxSuspended: [">=", 4] }, "hero", hidden("Four spells waiting in the future.")),
+    deed("a14-second-winter", 14, "a14b2", "The Second Winter", "Have a creature with 7 or more power.", "Panglacial Wurm", power(7)),
+    deed("a14-thallids", 14, "a14b2", "Spores in the Snow", "Kill five thallids.", "Penumbra Spider", kills(5)),
+    deed("a14-teleport", 14, "a14b3", "It Works", "Beat the Cabal's echo losing one creature or none.", "Momentary Blink", lost(1)),
+    deed("a14-echo-fades", 14, "a14b3", "Echo Fades", "Kill five creatures.", "Stonecloaker", kills(5)),
+    deed("a14-keld", 14, "a14b4", "Faster Than the Dead", "Beat Lim-D\xFBl by your 7th turn.", "Radha, Heir to Keld", turnsBy(7)),
+    deed("a14-necro-down", 14, "a14b4", "Back to the Ice", "Kill Lim-D\xFBl the Necromancer.", "Lim-D\xFBl the Necromancer", { killed: "Lim-D\xFBl the Necromancer" }),
+    deed("a14-goyf", 14, "a14b5", "Every Kind of Card", "Have a creature with 6 or more power.", "Tarmogoyf", power(6)),
+    deed("a14-heidar", 14, "a14b5", "The Thaw", "Beat Heidar with 15 life or more. The ice never reaches you.", "Heidar, Rimewind Master", endAtLeast(15)),
+    deed("a14-big-red", 14, "a14b6", "Big Red", "Deal 8 or more damage in one turn.", "Bogardan Firefiend", bigTurn(8)),
+    deed("a14-marauders", 14, "a14b6", "Marauders", "Beat Blink by your 6th turn.", "Keldon Marauders", turnsBy(6)),
+    deed("a14-hive-mind", 14, "a14b7", "Hive Mind", "Have six slivers on the field at once.", "Harmonic Sliver", { maxSlivers: [">=", 6] }),
+    deed("a14-teferi-echo", 14, "a14b7", "Echo Silenced", "Kill Teferi, Mage of Zhalfir.", "Teferi, Mage of Zhalfir", { killed: "Teferi, Mage of Zhalfir" }),
+    deed("a14-mended", 14, "a14b8", "The Mending", "Beat Nicol Bolas with 10 life or more.", "Venser, Shaper Savant", endAtLeast(10)),
+    deed("a14-trio", 14, "a14b8", "Three Against a Dragon", "Win after Venser and Radha have both taken the field.", "Riftwing Cloudskate", { mine: ["Venser, Shaper Savant", "Radha, Heir to Keld"] }),
+    deed("a14-v-rift", 14, "a14b8", "Through the Rift", "As Nicol Bolas, win by your 8th turn.", "Evil Eye of Urborg", turnsBy(8), "villain"),
+    deed("a14-unpickled", 14, "a14b9", "Never Locked", "Beat Pickles without ever facing Brine Elemental.", "Brine Elemental", { notTheirs: "Brine Elemental" }),
+    deed("a14-goyf-beats", 14, "a14b9", "Goyf Beatdown", "Beat Pickles by your 7th turn.", "Aven Mindcensor", turnsBy(7)),
+    // Act 15, The Great Aurora (Lorwyn and Shadowmoor).
+    deed("a15-arrow", 15, "a15b1", "An Elf's Revenge", "Have six Elves on the field at once.", "Imperious Perfect", tribe("Elf", 6)),
+    deed("a15-brigid-falls", 15, "a15b1", "Kinsbaile Mourns", "Kill Brigid, Hero of Kinsbaile. The arrow finds its archer.", "Brigid, Hero of Kinsbaile", { killed: "Brigid, Hero of Kinsbaile" }),
+    deed("a15-merrow-lanes", 15, "a15b2", "The Lanes Run Deep", "Have five Merfolk on the field at once.", "Merrow Reejerey", tribe("Merfolk", 5)),
+    deed("a15-cold-water", 15, "a15b2", "Cold Water", "Beat the flamekin with 15 life or more. The river does not burn.", "Silvergill Adept", endAtLeast(15)),
+    deed("a15-warren-cleared", 15, "a15b3", "Warren Cleared", "Kill six boggarts. Auntie will hear of it.", "Boggart Mob", kills(6)),
+    deed("a15-goldmane", 15, "a15b3", "Goldmane's Blessing", "Gain 4 or more life in one battle.", "Ajani Goldmane", gained(4)),
+    deed("a15-overrun", 15, "a15b4", "Overrun", "Deal 10 or more damage in one turn. The faeries cannot hide from a stampede.", "Garruk Wildspeaker", bigTurn(10)),
+    deed("a15-clique-caught", 15, "a15b4", "Clique Caught", "Kill Mistbind Clique.", "Mistbind Clique", { killed: "Mistbind Clique" }),
+    deed("a15-extinguished", 15, "a15b5", "The Extinguisher", "Kill seven creatures. Persist only delays the end.", "Ashling, the Extinguisher", kills(7)),
+    deed("a15-redcap", 15, "a15b5", "Red Cap, Red Blade", "Win after Murderous Redcap has taken the field.", "Murderous Redcap", { mine: "Murderous Redcap" }),
+    deed("a15-bitterblossom", 15, "a15b6", "Bitter Bloom", "Have three tokens on the field at once.", "Bitterblossom", { maxTokens: [">=", 3] }),
+    deed("a15-faerie-sky", 15, "a15b6", "A Sky of Wings", "Have five flyers on the field at once.", "Scion of Oona", flyers(5)),
+    deed("a15-endless-court", 15, "a15b6", "The Endless Court", "Have five tokens on the field at once.", "Spellstutter Sprite", { maxTokens: [">=", 5] }, "hero", hidden("A blossom that bleeds you, and a court that never stops growing.")),
+    deed("a15-lark", 15, "a15b7", "The Lark Sings", "Win after Reveillark has taken the field.", "Reveillark", { mine: "Reveillark" }),
+    deed("a15-plumeveil", 15, "a15b7", "Behind the Veil", "Beat the kithkin losing two creatures or fewer.", "Plumeveil", lost(2)),
+    deed("a15-archmage", 15, "a15b7", "Clean Sweep", "Kill eight creatures.", "Glen Elendra Archmage", kills(8)),
+    deed("a15-queen-falls", 15, "a15b8", "The Court Unmade", "Kill five of Oona's creatures.", "Oona, Queen of the Fae", kills(5)),
+    deed("a15-three-banners", 15, "a15b8", "Three Banners", "Win after Rhys and Maralen have both taken the field.", "Shriekmaw", { mine: "Maralen of the Mornsong", mineAny: ["Rhys the Exiled", "Rhys the Redeemed"] }),
+    deed("a15-v-glen", 15, "a15b8", "Glen Elendra Holds", "As Oona, have four flyers on the field at once.", "Wydwen, the Biting Gale", flyers(4), "villain"),
+    deed("a15-tower-falls", 15, "a15b9", "The Tower Falls", "Kill Doran, the Siege Tower.", "Doran, the Siege Tower", { killed: "Doran, the Siege Tower" }),
+    deed("a15-destiny", 15, "a15b9", "Destiny Fulfilled", "Have a creature with 8 or more power.", "Figure of Destiny", power(8)),
+    // Act 16, The Conflux (Shards of Alara).
+    deed("a16-exalted", 16, "a16b1", "Exalted", "Deal 9 or more damage in one turn. One knight, the whole shard behind him.", "Rafiq of the Many", bigTurn(9)),
+    deed("a16-hegemon", 16, "a16b1", "The Hegemon Falls", "Kill Sharuum the Hegemon.", "Sharuum the Hegemon", { killed: "Sharuum the Hegemon" }),
+    deed("a16-dragonslayer", 16, "a16b2", "Dragonslayer", "Kill one of Sarkhan's dragons.", "Hellkite Overlord", { killedAny: ["Hellkite Overlord", "Predator Dragon", "Shivan Dragon"] }),
+    deed("a16-naya-stands", 16, "a16b2", "Naya Stands", "Beat the Dragon-Speaker with 16 life or more.", "Woolly Thoctar", endAtLeast(16)),
+    deed("a16-seekers", 16, "a16b3", "The Seekers Undone", "Kill the Master of Etherium.", "Master of Etherium", { killed: "Master of Etherium" }),
+    deed("a16-squadron", 16, "a16b3", "Knight-Errant", "Have two tokens on the field at once.", "Elspeth, Knight-Errant", { maxTokens: [">=", 2] }),
+    deed("a16-martial-law", 16, "a16b3", "Martial Law", "Have five tokens on the field at once.", "Martial Coup", { maxTokens: [">=", 5] }, "hero", hidden("Five soldiers answer one decree.")),
+    deed("a16-brothers-keeper", 16, "a16b4", "Brother's Keeper", "Win after Ajani Vengeant has taken the field. Jazal is avenged.", "Ajani Vengeant", { mine: "Ajani Vengeant" }),
+    deed("a16-traitor-king", 16, "a16b4", "The Traitor King", "Kill Sedris, the Traitor King.", "Sedris, the Traitor King", { killed: "Sedris, the Traitor King" }),
+    deed("a16-ancients", 16, "a16b5", "Where Ancients Tread", "Have a creature with 8 or more power.", "Godsire", power(8)),
+    deed("a16-kresh", 16, "a16b5", "The Horde Breaks", "Kill Kresh the Bloodbraided.", "Kresh the Bloodbraided", { killed: "Kresh the Bloodbraided" }),
+    deed("a16-cascade", 16, "a16b6", "Cascade", "Win after Bloodbraid Elf has taken the field.", "Bloodbraid Elf", { mine: "Bloodbraid Elf" }),
+    deed("a16-baneslayer", 16, "a16b6", "Bane of the Banes", "Kill Baneslayer Angel.", "Baneslayer Angel", { killed: "Baneslayer Angel" }),
+    deed("a16-glory", 16, "a16b7", "Battlegrace", "Deal 10 or more damage in one turn.", "Battlegrace Angel", bigTurn(10)),
+    deed("a16-steel-wind", 16, "a16b7", "Steel Wind Stilled", "Beat Esper losing two creatures or fewer.", "Sphinx of the Steel Wind", lost(2)),
+    deed("a16-bolas-banished", 16, "a16b8", "Bolas Banished", "Beat Nicol Bolas with 18 life or more.", "Path to Exile", endAtLeast(18)),
+    deed("a16-three-walkers", 16, "a16b8", "Three Shards, One Front", "Win after Ajani Goldmane and Elspeth have both taken the field.", "Knight of New Alara", { mine: ["Ajani Goldmane", "Elspeth, Knight-Errant"] }),
+    deed("a16-v-conflux", 16, "a16b8", "The Conflux", "As Nicol Bolas, kill four creatures.", "Malfegor", kills(4), "villain"),
+    deed("a16-unearthed", 16, "a16b9", "Unearthed", "Beat Five-Colour Control by your 9th turn, before the Ultimatum.", "Kathari Bomber", turnsBy(9)),
+    deed("a16-rise-again", 16, "a16b9", "Rise Again", "Kill four creatures.", "Dregscape Zombie", kills(4)),
+    // Act 17, The Eldrazi Rise (Zendikar).
+    deed("a17-expedition", 17, "a17b1", "Every Land an Expedition", "Have seven lands on the field at once.", "Territorial Baloth", { maxLands: [">=", 7] }),
+    deed("a17-joraga", 17, "a17b1", "The Joraga Gather", "Have five Elves on the field at once.", "Elvish Archdruid", tribe("Elf", 5)),
+    deed("a17-skyfishers", 17, "a17b2", "Skyfishers", "Have four flyers on the field at once.", "Kor Skyfisher", flyers(4)),
+    deed("a17-sorin", 17, "a17b2", "Ten Is Not Enough", "Beat Sorin Markov with 14 life or more.", "Sorin Markov", endAtLeast(14)),
+    deed("a17-allies", 17, "a17b3", "Allies Rally", "Have seven creatures on the field at once.", "Talus Paladin", { maxCreatures: [">=", 7] }),
+    deed("a17-sovereign", 17, "a17b3", "The Sovereign Falls", "Kill Merfolk Sovereign.", "Merfolk Sovereign", { killed: "Merfolk Sovereign" }),
+    deed("a17-eye", 17, "a17b4", "The Eye of Ugin", "Deal 7 or more damage in one turn.", "Searing Blaze", bigTurn(7)),
+    deed("a17-dragonlord", 17, "a17b4", "Dragonlord Down", "Kill Kargan Dragonlord.", "Kargan Dragonlord", { killed: "Kargan Dragonlord" }),
+    deed("a17-titan", 17, "a17b4", "A Titan Wakes", "Win after Inferno Titan has taken the field.", "Inferno Titan", { mine: "Inferno Titan" }, "hero", hidden("A titan of fire walks on the Eye.")),
+    deed("a17-brood", 17, "a17b5", "Spawn Breaker", "Kill four creatures.", "Ulamog's Crusher", kills(4)),
+    deed("a17-pridemate", 17, "a17b5", "Pride of the Kor", "Gain 4 or more life in one battle.", "Ajani's Pridemate", gained(4)),
+    deed("a17-stoneforge", 17, "a17b6", "Mind Sculpted", "Win after Jace, the Mind Sculptor has taken the field.", "Stoneforge Mystic", { mine: "Jace, the Mind Sculptor" }),
+    deed("a17-hawks", 17, "a17b6", "Hawk Squadron", "Have three flyers on the field at once.", "Squadron Hawk", flyers(3)),
+    deed("a17-valakut", 17, "a17b7", "Pinnacle Unlit", "Beat Valakut with 14 life or more.", "Valakut, the Molten Pinnacle", endAtLeast(14)),
+    deed("a17-bloodwitch", 17, "a17b7", "Bloodwitch", "Kill three creatures.", "Malakir Bloodwitch", kills(3)),
+    deed("a17-aeons", 17, "a17b8", "Not This Aeon", "Beat Emrakul with 10 life or more.", "Hand of Emrakul", endAtLeast(10)),
+    deed("a17-nissa", 17, "a17b8", "Nissa's Stand", "Win after Nissa Revane has taken the field.", "Nissa Revane", { mine: "Nissa Revane" }),
+    deed("a17-v-monument", 17, "a17b8", "The Monument", "As Emrakul, have a creature with 10 or more power.", "Eldrazi Monument", power(10), "villain"),
+    deed("a17-three-titans", 17, "a17b9", "Three Titans", "Win after an Eldrazi titan has taken the field.", "Kozilek, Butcher of Truth", { mineAny: ["Emrakul, the Aeons Torn", "Ulamog, the Infinite Gyre", "Kozilek, Butcher of Truth"] }),
+    deed("a17-betrayed", 17, "a17b9", "It Betrays", "Have a creature with 15 or more power.", "It That Betrays", power(15)),
+    deed("a17-gyre", 17, "a17b9", "The Infinite Gyre", "Beat the Mind Sculptor by your 10th turn.", "Ulamog, the Infinite Gyre", turnsBy(10)),
+    // Act 18, New Phyrexia (Scars of Mirrodin).
+    deed("a18-metalcraft", 18, "a18b1", "Metalcraft", "Have two artifacts on the field at once.", "Galvanic Blast", { maxArtifacts: [">=", 2] }),
+    deed("a18-geth", 18, "a18b1", "Lord of Nothing", "Kill Geth, Lord of the Vault.", "Geth, Lord of the Vault", { killed: "Geth, Lord of the Vault" }),
+    deed("a18-clean-blood", 18, "a18b2", "Clean Blood", "Beat Vorinclex without taking a single poison counter.", "Elspeth Tirel", { myPoison: ["<=", 0] }),
+    deed("a18-skyguard", 18, "a18b2", "Skyguard", "Have two flyers on the field at once.", "Kemba's Skyguard", flyers(2)),
+    deed("a18-outcast", 18, "a18b3", "The Outcast Endures", "Beat Sheoldred with 12 life or more.", "Melira, Sylvok Outcast", endAtLeast(12)),
+    deed("a18-keepers", 18, "a18b3", "Proliferate", "Kill four of Sheoldred's creatures.", "Melira's Keepers", kills(4)),
+    deed("a18-spark", 18, "a18b4", "A Spark Kept Clean", "Beat Jin-Gitaxias with fewer than three poison counters.", "Porcelain Legionnaire", { myPoison: ["<=", 2] }),
+    deed("a18-riddles", 18, "a18b4", "Riddlesmith", "Have two artifacts on the field at once.", "Riddlesmith", { maxArtifacts: [">=", 2] }),
+    deed("a18-phoenix", 18, "a18b5", "Phoenix Rising", "Deal 7 or more damage in one turn.", "Chandra's Phoenix", bigTurn(7)),
+    deed("a18-furnace", 18, "a18b5", "The Furnace Cools", "Kill three creatures.", "Spikeshot Elder", kills(3)),
+    deed("a18-tempered", 18, "a18b6", "Tempered", "Have four artifacts on the field at once.", "Signal Pest", { maxArtifacts: [">=", 4] }),
+    deed("a18-steel-power", 18, "a18b6", "Steel Answers Steel", "Have a creature with 4 or more power.", "Tempered Steel", power(4)),
+    deed("a18-steel-army", 18, "a18b6", "Nine of Steel", "Have six artifacts on the field at once.", "Memnite", { maxArtifacts: [">=", 6] }, "hero", hidden("Six pieces of steel stand as one.")),
+    deed("a18-ten-counters", 18, "a18b7", "Ten Counters", "Win with ten poison counters.", "Plague Myr", { oppPoison: [">=", 10] }),
+    deed("a18-blighted", 18, "a18b7", "Blighted", "Beat the Crusaders by your 8th turn.", "Blighted Agent", turnsBy(8)),
+    deed("a18-bladehold", 18, "a18b8", "Battle Cry", "Win after Hero of Bladehold has taken the field.", "Hero of Bladehold", { mine: "Hero of Bladehold" }),
+    deed("a18-resistance", 18, "a18b8", "Mirran Resistance", "Kill four creatures.", "Viridian Emissary", kills(4)),
+    deed("a18-v-norn", 18, "a18b8", "Grand Cenobite", "As Elesh Norn, have six creatures on the field at once.", "Elesh Norn, Grand Cenobite", { maxCreatures: [">=", 6] }, "villain"),
+    deed("a18-firebrand", 18, "a18b9", "Red Deck Wins", "Deal 8 or more damage in one turn.", "Chandra, the Firebrand", bigTurn(8)),
+    deed("a18-swordless", 18, "a18b9", "Before the Swords", "Beat Caw-Blade by your 8th turn.", "Sword of Feast and Famine", turnsBy(8)),
+    // Act 19, The Helvault (Innistrad).
+    deed("a19-hunters", 19, "a19b1", "Hunter's Moon", "Kill four werewolves.", "Fiend Hunter", kills(4)),
+    deed("a19-parish", 19, "a19b1", "Champion of the Parish", "Have three +1/+1 counters on one creature.", "Champion of the Parish", { maxCounters: [">=", 3] }),
+    deed("a19-olivia", 19, "a19b2", "Stensia Bleeds", "Kill Olivia Voldaren.", "Olivia Voldaren", { killed: "Olivia Voldaren" }),
+    deed("a19-haunting", 19, "a19b2", "Midnight Haunting", "Have two tokens on the field at once.", "Midnight Haunting", { maxTokens: [">=", 2] }),
+    deed("a19-captains", 19, "a19b3", "Drogskol Sky", "Have four flyers on the field at once.", "Drogskol Captain", flyers(4)),
+    deed("a19-traft", 19, "a19b3", "Saint Traft Rides", "Deal 10 or more damage in one turn.", "Geist of Saint Traft", bigTurn(10)),
+    deed("a19-unstitched", 19, "a19b3", "Unstitched", "Kill six creatures.", "Moon Heron", kills(6), "hero", hidden("What the stitcher sews, you unpick, six times over.")),
+    deed("a19-silverheart", 19, "a19b4", "Silverheart", "Have a creature with 8 or more power.", "Wolfir Silverheart", power(8)),
+    deed("a19-prey", 19, "a19b4", "Prey Upon the Veil", "Kill four of Liliana's creatures.", "Prey Upon", kills(4)),
+    deed("a19-restoration", 19, "a19b5", "Restoration", "Have three flyers on the field at once.", "Restoration Angel", flyers(3)),
+    deed("a19-moon-sage", 19, "a19b5", "The Moon Sage", "Beat the Skirsdag with 12 life or more.", "Tamiyo, the Moon Sage", endAtLeast(12)),
+    deed("a19-delver", 19, "a19b6", "Insectile", "Beat Wolf Run by your 8th turn.", "Snapcaster Mage", turnsBy(8)),
+    deed("a19-geists", 19, "a19b6", "Stormbound", "Have three flyers on the field at once.", "Stormbound Geist", flyers(3)),
+    deed("a19-zombies", 19, "a19b7", "Graveyard Shift", "Have five Zombies on the field at once.", "Diregraf Ghoul", tribe("Zombie", 5)),
+    deed("a19-aristocrat", 19, "a19b7", "Aristocrats", "Deal 8 or more damage in one turn.", "Falkenrath Aristocrat", bigTurn(8)),
+    deed("a19-hope", 19, "a19b8", "Angel of Hope", "Beat Griselbrand with 16 life or more.", "Avacyn, Angel of Hope", endAtLeast(16)),
+    deed("a19-travelers", 19, "a19b8", "Doomed Travelers", "Have three tokens on the field at once.", "Doomed Traveler", { maxTokens: [">=", 3] }),
+    deed("a19-v-griselbrand", 19, "a19b8", "Seven Lives", "As Griselbrand, kill six creatures.", "Griselbrand", kills(6), "villain"),
+    deed("a19-spawning", 19, "a19b9", "Spider Spawning", "Have four tokens on the field at once.", "Spider Spawning", { maxTokens: [">=", 4] }),
+    deed("a19-wurm", 19, "a19b9", "From the Boneyard", "Beat Burning Vengeance by your 10th turn.", "Boneyard Wurm", turnsBy(10)),
+    // Act 20, The Implicit Maze (Return to Ravnica).
+    deed("a20-populate", 20, "a20b1", "Populate", "Have four tokens on the field at once.", "Call of the Conclave", { maxTokens: [">=", 4] }),
+    deed("a20-conclave-heals", 20, "a20b1", "The Conclave Heals", "Beat the Azorius with 14 life or more.", "Centaur Healer", endAtLeast(14)),
+    deed("a20-battalion", 20, "a20b2", "Battalion", "Attack with four creatures at once.", "Boros Elite", attackers(4)),
+    deed("a20-rubblebelt", 20, "a20b2", "Rubblebelt Cleared", "Kill two of the Gruul.", "Truefire Paladin", kills(2)),
+    deed("a20-evolve", 20, "a20b3", "Evolve", "Have three +1/+1 counters on one creature.", "Experiment One", { maxCounters: [">=", 3] }),
+    deed("a20-hybrid", 20, "a20b3", "Rapid Hybridization", "Kill three creatures.", "Rapid Hybridization", kills(3)),
+    deed("a20-biomancer", 20, "a20b3", "Never Stops Growing", "Have six +1/+1 counters on one creature.", "Master Biomancer", { maxCounters: [">=", 6] }, "hero", hidden("It grew six times and never stopped.")),
+    deed("a20-skyknights", 20, "a20b4", "Skyknights", "Have three flyers on the field at once.", "Lyev Skyknight", flyers(3)),
+    deed("a20-architect", 20, "a20b4", "The Architect", "Beat Lazav with 12 life or more.", "Jace, Architect of Thought", endAtLeast(12)),
+    deed("a20-extort", 20, "a20b5", "Extort", "Gain 5 or more life in one battle.", "Basilica Screecher", gained(5)),
+    deed("a20-ghosts", 20, "a20b5", "Debts Paid", "Beat the Rakdos with 12 life or more.", "Teysa, Envoy of Ghosts", endAtLeast(12)),
+    deed("a20-revelation", 20, "a20b6", "Revelation", "Gain 6 or more life in one battle.", "Sphinx's Revelation", gained(6)),
+    deed("a20-verdict", 20, "a20b6", "Supreme Verdict", "Kill five creatures.", "Supreme Verdict", kills(5)),
+    deed("a20-decay", 20, "a20b7", "Abrupt Decay", "Kill three creatures.", "Abrupt Decay", kills(3)),
+    deed("a20-ooze", 20, "a20b7", "The Ooze Grows", "Have three +1/+1 counters on one creature.", "Scavenging Ooze", { maxCounters: [">=", 3] }),
+    deed("a20-dracogenius", 20, "a20b8", "The Living Guildpact", "Beat Niv-Mizzet with 10 life or more.", "Niv-Mizzet, Dracogenius", endAtLeast(10)),
+    deed("a20-sphere", 20, "a20b8", "Detention", "Kill three creatures.", "Detention Sphere", kills(3)),
+    deed("a20-v-overload", 20, "a20b8", "Overload", "As Niv-Mizzet, deal 8 or more damage in one turn.", "Ral Zarek", bigTurn(8), "villain"),
+    deed("a20-maze", 20, "a20b9", "Before the Maze's End", "Beat the Gates by your 8th turn.", "Maze's End", turnsBy(8)),
+    deed("a20-rampage", 20, "a20b9", "Rampage", "Deal 10 or more damage in one turn.", "Ghor-Clan Rampager", bigTurn(10)),
+    // Act 21, The Gods of Theros.
+    deed("a21-phalanx", 21, "a21b1", "Heroic", "Have three +1/+1 counters on one creature.", "Phalanx Leader", { maxCounters: [">=", 3] }),
+    deed("a21-canyon", 21, "a21b1", "Deathbellow Canyon", "Kill three minotaurs.", "Hero of Iroas", kills(3)),
+    deed("a21-kiora", 21, "a21b2", "The Crashing Wave", "Have a creature with 5 or more power.", "Kiora, the Crashing Wave", power(5)),
+    deed("a21-tides", 21, "a21b2", "Against the Tide", "Kill three of Thassa's creatures.", "Boon Satyr", kills(3)),
+    deed("a21-skyguard", 21, "a21b3", "Wings of the Sun", "Have three flyers on the field at once.", "Akroan Skyguard", flyers(3)),
+    deed("a21-sun", 21, "a21b3", "The Sun Holds", "Beat Erebos with 19 life or more.", "Heliod, God of the Sun", endAtLeast(19)),
+    deed("a21-chosen", 21, "a21b3", "Chosen by the Sun", "Have five +1/+1 counters on one creature.", "Archetype of Courage", { maxCounters: [">=", 5] }, "hero", hidden("Five gifts of the sun on one champion.")),
+    deed("a21-mentor", 21, "a21b4", "Mentor of Heroes", "Have four +1/+1 counters on one creature.", "Chronicler of Heroes", { maxCounters: [">=", 4] }),
+    deed("a21-fleecemane", 21, "a21b4", "The Revel Ends", "Have a creature with 7 or more power.", "Fleecemane Lion", power(7)),
+    deed("a21-constellation", 21, "a21b5", "Constellation", "Have six enchantments on the field at once.", "Eidolon of Blossoms", { maxEnchantments: [">=", 6] }),
+    deed("a21-ram", 21, "a21b5", "No Nightmares", "Beat Ashiok with 20 life or more.", "Nyx-Fleece Ram", endAtLeast(20)),
+    deed("a21-waves", 21, "a21b6", "Master of Waves", "Have four tokens on the field at once.", "Master of Waves", { maxTokens: [">=", 4] }),
+    deed("a21-devotion", 21, "a21b6", "Devotion to Blue", "Beat the Monsters by your 9th turn.", "Thassa, God of the Sea", turnsBy(9)),
+    deed("a21-hoplite", 21, "a21b7", "Favored", "Have four +1/+1 counters on one creature.", "Favored Hoplite", { maxCounters: [">=", 4] }),
+    deed("a21-fabled", 21, "a21b7", "Out of the Fire", "Beat Mono-Red with 10 life or more.", "Fabled Hero", endAtLeast(10)),
+    deed("a21-godsend", 21, "a21b8", "Godsend", "Beat Xenagos with 10 life or more.", "Godsend", endAtLeast(10)),
+    deed("a21-brimaz", 21, "a21b8", "King of Oreskos", "Have three tokens on the field at once.", "Brimaz, King of Oreskos", { maxTokens: [">=", 3] }),
+    deed("a21-v-revels", 21, "a21b8", "God of Revels", "As Xenagos, deal 8 or more damage in one turn.", "Stormbreath Dragon", bigTurn(8), "villain"),
+    deed("a21-world-eater", 21, "a21b9", "World Eater", "Have a creature with 9 or more power.", "Polukranos, World Eater", power(9)),
+    deed("a21-hunt", 21, "a21b9", "Out of the Merchant's Reach", "Beat Gray Merchant with 12 life or more.", "Nylea, God of the Hunt", endAtLeast(12)),
+    // Act 22, The Dragonlords (Khans of Tarkir).
+    deed("a22-ferocious", 22, "a22b1", "Ferocious", "Have a creature with 7 or more power.", "Savage Knuckleblade", power(7)),
+    deed("a22-qal-sisma", 22, "a22b1", "Qal Sisma", "Kill four of the Abzan.", "Surrak Dragonclaw", kills(4)),
+    deed("a22-prowess", 22, "a22b2", "Prowess", "Deal 8 or more damage in one turn.", "Monastery Swiftspear", bigTurn(8)),
+    deed("a22-mantis", 22, "a22b2", "The Way of the Wind", "Have two flyers on the field at once.", "Mantis Rider", flyers(2)),
+    deed("a22-delve", 22, "a22b3", "Older Than Delve", "Have a creature with 5 or more power.", "Feral Krushok", power(5)),
+    deed("a22-dragonfire", 22, "a22b3", "Dragonfire", "Kill three of Tasigur's creatures.", "Bathe in Dragonfire", kills(3)),
+    deed("a22-raid", 22, "a22b4", "Raid", "Deal 8 or more damage in one turn.", "Sarkhan, the Dragonspeaker", bigTurn(8)),
+    deed("a22-horde", 22, "a22b4", "The Horde Breaks", "Kill four creatures.", "Arc Lightning", kills(4)),
+    deed("a22-manifest", 22, "a22b5", "Manifest", "Have two face-down creatures on the field at once.", "Whisperwood Elemental", { maxFaceDown: [">=", 2] }),
+    deed("a22-ugin", 22, "a22b5", "Ugin's Guard", "Beat Kolaghan with 14 life or more.", "Ugin's Construct", endAtLeast(14)),
+    deed("a22-unseen", 22, "a22b5", "The Unseen", "Have six face-down creatures on the field at once.", "Mastery of the Unseen", { maxFaceDown: [">=", 6] }, "hero", hidden("Six secrets wait face down on the field.")),
+    deed("a22-outlast", 22, "a22b6", "Outlast", "Have three +1/+1 counters on one creature.", "Warden of the First Tree", { maxCounters: [">=", 3] }),
+    deed("a22-cut", 22, "a22b6", "Murderous Cut", "Kill four creatures.", "Murderous Cut", kills(4)),
+    deed("a22-atarka", 22, "a22b7", "Atarka's Command", "Beat Esper Dragons by your 7th turn.", "Atarka's Command", turnsBy(7)),
+    deed("a22-battle-rage", 22, "a22b7", "Battle Rage", "Deal 11 or more damage in one turn.", "Temur Battle Rage", bigTurn(11)),
+    deed("a22-regents", 22, "a22b8", "Thunderbreak", "Have three flyers on the field at once.", "Thunderbreak Regent", flyers(3)),
+    deed("a22-transcendent", 22, "a22b8", "Transcendent", "Beat Silumgar with 15 life or more.", "Narset Transcendent", endAtLeast(15)),
+    deed("a22-v-silumgar", 22, "a22b8", "The Dragonlord", "As Silumgar, kill four creatures.", "Dragonlord Silumgar", kills(4), "villain"),
+    deed("a22-roar", 22, "a22b9", "Draconic Roar", "Deal 8 or more damage in one turn.", "Draconic Roar", bigTurn(8)),
+    deed("a22-cruise", 22, "a22b9", "Before the Cruise", "Beat Treasure Cruise by your 8th turn.", "Treasure Cruise", turnsBy(8)),
+    // Act 23, The Gatewatch Rises (Battle for Zendikar).
+    deed("a23-sea-gate", 23, "a23b1", "Sea Gate Charge", "Attack with six creatures at once.", "Kor Bladewhirl", attackers(6)),
+    deed("a23-ally", 23, "a23b1", "Ally of Zendikar", "Kill three drones.", "Gideon, Ally of Zendikar", kills(3)),
+    deed("a23-champion", 23, "a23b2", "Undergrowth", "Have three +1/+1 counters on one creature.", "Undergrowth Champion", { maxCounters: [">=", 3] }),
+    deed("a23-hydra", 23, "a23b2", "The Land Fights Back", "Have a creature with 7 or more power.", "Oran-Rief Hydra", power(7)),
+    deed("a23-rogues", 23, "a23b3", "Whirler Rogues", "Have five flyers on the field at once.", "Whirler Rogue", flyers(5)),
+    deed("a23-spy-network", 23, "a23b3", "Spy Network", "Have three tokens on the field at once.", "Thopter Spy Network", { maxTokens: [">=", 3] }),
+    deed("a23-reignited", 23, "a23b4", "Reignited", "Deal 8 or more damage in one turn.", "Valakut Predator", bigTurn(8)),
+    deed("a23-flamecaller", 23, "a23b4", "Flamecaller", "Kill two of Ob Nixilis's creatures.", "Chandra, Flamecaller", kills(2)),
+    deed("a23-depths", 23, "a23b5", "Master of the Depths", "Beat the brood with 15 life or more.", "Kiora, Master of the Depths", endAtLeast(15)),
+    deed("a23-tidecaller", 23, "a23b5", "Tidecaller", "Have three +1/+1 counters on one creature.", "Halimar Tidecaller", { maxCounters: [">=", 3] }),
+    deed("a23-ceaseless", 23, "a23b6", "The Ceaseless Hunger", "Have a creature with 10 or more power.", "Ulamog, the Ceaseless Hunger", power(10)),
+    deed("a23-archive", 23, "a23b6", "Hedron Archive", "Have ten lands on the field at once.", "Hedron Archive", { maxLands: [">=", 10] }),
+    deed("a23-hangarback", 23, "a23b7", "Hangarback", "Have four tokens on the field at once.", "Hangarback Walker", { maxTokens: [">=", 4] }),
+    deed("a23-nalaar", 23, "a23b7", "The Nalaars", "Have four flyers on the field at once.", "Pia and Kiran Nalaar", flyers(4)),
+    deed("a23-thopter-sky", 23, "a23b7", "A Sky of Thopters", "Have eight tokens on the field at once.", "Thopter Engineer", { maxTokens: [">=", 8] }, "hero", hidden("A sky so full of thopters the vampires cannot see.")),
+    deed("a23-voice", 23, "a23b8", "Voice of Zendikar", "Beat the titans with 10 life or more.", "Nissa, Voice of Zendikar", endAtLeast(10)),
+    deed("a23-oath", 23, "a23b8", "The Oath", "Have two tokens on the field at once.", "Oath of Gideon", { maxTokens: [">=", 2] }),
+    deed("a23-v-distortion", 23, "a23b8", "The Great Distortion", "As the titans, have a creature with 11 or more power.", "Kozilek, the Great Distortion", power(11), "villain"),
+    deed("a23-abbot", 23, "a23b9", "Before the Winter", "Beat Eldrazi Winter by your 7th turn.", "Abbot of Keral Keep", turnsBy(7)),
+    deed("a23-impulse", 23, "a23b9", "Fiery Impulse", "Kill four creatures.", "Fiery Impulse", kills(4)),
+    deed("a24-case-closed", 24, "a24b1", "Case Closed", "Have four tokens on the field at once.", "Tireless Tracker", { maxTokens: [">=", 4] }),
+    deed("a24-drownyard", 24, "a24b1", "The Drownyard Emptied", "Kill three of the cultists.", "Drownyard Explorers", kills(3)),
+    deed("a24-journal", 24, "a24b2", "Tamiyo's Notes", "Beat Bruna's flight with 17 life or more.", "Tamiyo's Journal", endAtLeast(17)),
+    deed("a24-grounded", 24, "a24b2", "Flight Grounded", "Kill three of Bruna's creatures.", "Gnarlwood Dryad", kills(3)),
+    deed("a24-bloodline", 24, "a24b3", "Call the Bloodline", "Deal 8 or more damage in one turn.", "Olivia, Mobilized for War", bigTurn(8)),
+    deed("a24-bloodmad", 24, "a24b3", "Bloodmad", "Attack with four creatures at once.", "Bloodmad Vampire", attackers(4)),
+    deed("a24-harbinger", 24, "a24b4", "The Harbinger", "Kill three of Sorin's creatures.", "Nahiri, the Harbinger", kills(3)),
+    deed("a24-defiance", 24, "a24b4", "Collective Defiance", "Beat the Markov line with 10 life or more.", "Collective Defiance", endAtLeast(10)),
+    deed("a24-v-nemesis", 24, "a24b4", "Grim Nemesis", "As the Markov line, have two flyers on the field at once.", "Sorin, Grim Nemesis", flyers(2), "villain"),
+    deed("a24-arlinn", 24, "a24b5", "Arlinn's Pack", "Attack with four creatures at once.", "Arlinn Kord", attackers(4)),
+    deed("a24-moonlight", 24, "a24b5", "Moonlight Hunt", "Have a creature with 6 or more power.", "Moonlight Hunt", power(6)),
+    deed("a24-howlpack", 24, "a24b5", "Under One Moon", "Attack with six creatures at once.", "Breakneck Rider", attackers(6), "hero", hidden("Six wolves run under one moon, and the horrors hear them coming.")),
+    deed("a24-thraben-holds", 24, "a24b6", "Thraben Holds", "Have six creatures on the field at once.", "Thalia's Lieutenant", { maxCreatures: [">=", 6] }),
+    deed("a24-watching", 24, "a24b6", "Always Watching", "Kill eight zombies.", "Always Watching", kills(8)),
+    deed("a24-queller", 24, "a24b7", "Spell Queller", "Have four flyers on the field at once.", "Spell Queller", flyers(4)),
+    deed("a24-grafwidow", 24, "a24b7", "No Web Holds", "Kill four creatures.", "Ishkanah, Grafwidow", kills(4), "hero", hidden("Four of the queen's brood fall, and not one web holds.")),
+    deed("a24-unraveler", 24, "a24b8", "Unraveler of Secrets", "Beat Emrakul's brood with 10 life or more.", "Jace, Unraveler of Secrets", endAtLeast(10)),
+    deed("a24-imprisoned", 24, "a24b8", "Imprisoned in the Moon", "Kill three of Emrakul's creatures.", "Imprisoned in the Moon", kills(3)),
+    deed("a24-v-promised", 24, "a24b8", "The Promised End", "As Emrakul's brood, have a creature with 7 or more power.", "Distended Mindbender", power(7), "villain"),
+    deed("a24-deep-fiend", 24, "a24b9", "Before the Deep-Fiend", "Beat Emerge by your 8th turn.", "Thermo-Alchemist", turnsBy(8)),
+    deed("a24-geistblast", 24, "a24b9", "Geistblast", "Deal 7 or more damage in one turn.", "Geistblast", bigTurn(7)),
+    deed("a25-fairgrounds", 25, "a25b1", "Fairgrounds Rush", "Attack with four creatures at once.", "Lathnu Hellion", attackers(4)),
+    deed("a25-energy", 25, "a25b1", "Charged Up", "Deal 8 or more damage in one turn.", "Harnessed Lightning", bigTurn(8)),
+    deed("a25-security", 25, "a25b1", "Fair Security Beaten", "Kill three of the Consulate.", "Spontaneous Artist", kills(3)),
+    deed("a25-spire", 25, "a25b2", "The Leaking Spire", "Have three artifacts on the field at once.", "Renegade Freighter", { maxArtifacts: [">=", 3] }),
+    deed("a25-syndicate", 25, "a25b2", "Syndicate Broken", "Kill three of Gonti's creatures.", "Pia Nalaar", kills(3)),
+    deed("a25-fabricate", 25, "a25b3", "Fabricate", "Have four tokens on the field at once.", "Weldfast Wingsmith", { maxTokens: [">=", 4] }),
+    deed("a25-exhibition", 25, "a25b3", "The Exhibition", "Beat the Consulate with 12 life or more.", "Saheeli Rai", endAtLeast(12)),
+    deed("a25-compliance", 25, "a25b4", "Chief of Compliance", "Kill three of Baral's creatures.", "Baral, Chief of Compliance", kills(3)),
+    deed("a25-improvise", 25, "a25b4", "Improvise", "Deal 8 or more damage in one turn.", "Chandra's Pyrohelix", bigTurn(8)),
+    deed("a25-conduit", 25, "a25b5", "The Great Conduit", "Have two +1/+1 counters on one creature.", "Rashmi, Eternities Crafter", { maxCounters: [">=", 2] }),
+    deed("a25-revolt", 25, "a25b5", "Revolt", "Have five creatures on the field at once.", "Narnam Renegade", { maxCreatures: [">=", 5] }),
+    deed("a25-v-dovin", 25, "a25b5", "Dovin's Verdict", "As Dovin Baan, have three flyers on the field at once.", "Dovin Baan", flyers(3), "villain"),
+    deed("a25-counters", 25, "a25b6", "Counters and Energy", "Have three +1/+1 counters on one creature.", "Bristling Hydra", { maxCounters: [">=", 3] }),
+    deed("a25-gearhulk", 25, "a25b6", "Verdurous", "Have a creature with 6 or more power.", "Verdurous Gearhulk", power(6)),
+    deed("a25-heart", 25, "a25b7", "Heart of Kiran", "Have four artifacts on the field at once.", "Heart of Kiran", { maxArtifacts: [">=", 4] }),
+    deed("a25-crew", 25, "a25b7", "Crew Up", "Attack with two creatures at once.", "Veteran Motorist", attackers(2)),
+    deed("a25-marvel", 25, "a25b7", "Before the Marvel", "Beat Aetherworks Marvel by your 5th turn.", "Aetherworks Marvel", turnsBy(5), "hero", hidden("The marvel never gets to turn over its first card.")),
+    deed("a25-bridge", 25, "a25b8", "The Planar Bridge", "Beat Tezzeret with 10 life or more.", "Battle at the Bridge", endAtLeast(10)),
+    deed("a25-gatewatch", 25, "a25b8", "Renegades Together", "Attack with five creatures at once.", "Ajani Unyielding", attackers(5)),
+    deed("a25-v-tezzeret", 25, "a25b8", "The Schemer Wins", "As Tezzeret, have a creature with 8 or more power.", "Metalwork Colossus", power(8), "villain"),
+    deed("a25-copycat", 25, "a25b9", "Copycat", "Beat the Felidar combo by your 7th turn.", "Felidar Guardian", turnsBy(7)),
+    deed("a25-saheeli", 25, "a25b9", "Saheeli Denied", "Kill three creatures.", "Torrential Gearhulk", kills(3)),
+    deed("a25-no-combo", 25, "a25b9", "No Combo", "Beat the Felidar combo by your 6th turn.", "Live Fast", turnsBy(6), "hero", hidden("Two turns of cat and copy, and the table is already gone.")),
+    deed("a26-tah-crop", 26, "a26b1", "The Tah Crop", "Attack with four creatures at once.", "Ahn-Crop Crasher", attackers(4)),
+    deed("a26-embalmed", 26, "a26b1", "Embalmed", "Kill four of the initiates.", "Sacred Cat", kills(4)),
+    deed("a26-exerted", 26, "a26b2", "Exerted", "Attack with three creatures at once.", "Combat Celebrant", attackers(3)),
+    deed("a26-trial-strength", 26, "a26b2", "Trial of Strength", "Deal 8 or more damage in one turn.", "Neheb, the Worthy", bigTurn(8)),
+    deed("a26-poisons", 26, "a26b3", "Hapatra's Poisons", "Kill four of Kefnet's creatures.", "Hapatra, Vizier of Poisons", kills(4)),
+    deed("a26-aftermath", 26, "a26b3", "Aftermath", "Beat Kefnet with 12 life or more.", "Lethal Sting", endAtLeast(12)),
+    deed("a26-zeal", 26, "a26b4", "Trial of Zeal", "Kill three of Hazoret's creatures.", "Gideon of the Trials", kills(3)),
+    deed("a26-cycling", 26, "a26b4", "Dauntless", "Have four creatures on the field at once.", "Dauntless Aven", { maxCreatures: [">=", 4] }),
+    deed("a26-eternals", 26, "a26b5", "The Eternals", "Kill four of the Eternals.", "Khenra Eternal", kills(4)),
+    deed("a26-tested", 26, "a26b5", "Samut, the Tested", "Attack with four creatures at once.", "Samut, the Tested", attackers(4)),
+    deed("a26-v-scarab", 26, "a26b5", "The Scarab God", "As the Eternals, kill four creatures.", "The Scarab God", kills(4), "villain"),
+    deed("a26-exert-red", 26, "a26b6", "Exert Red", "Deal 10 or more damage in one turn.", "Glorybringer", bigTurn(10)),
+    deed("a26-neheb-eternal", 26, "a26b6", "Neheb, Eternal", "Attack with four creatures at once.", "Neheb, the Eternal", attackers(4)),
+    deed("a26-gift", 26, "a26b7", "God-Pharaoh's Gift", "Have six creatures on the field at once.", "Angel of Sanctions", { maxCreatures: [">=", 6] }),
+    deed("a26-myriarch", 26, "a26b7", "Majestic", "Have a creature with 6 or more power.", "Majestic Myriarch", power(6)),
+    deed("a26-no-gift", 26, "a26b7", "No Gift", "Beat the Gift deck by your 8th turn.", "Oketra the True", turnsBy(8), "hero", hidden("The Gift is never cast, and nothing walks out of the sand.")),
+    deed("a26-hour", 26, "a26b8", "The Hour of Devastation", "Kill four of Bolas's creatures.", "Archfiend of Ifnir", kills(4)),
+    deed("a26-dissent", 26, "a26b8", "Dissent", "Kill three of Bolas's creatures.", "Gideon's Intervention", kills(3)),
+    deed("a26-survive", 26, "a26b8", "Hold Until Dawn", "Last nine of your own turns.", "Wall of Forgotten Pharaohs", { myTurns: [">=", 9] }),
+    deed("a26-v-bolas", 26, "a26b8", "God-Pharaoh", "As Bolas, kill five creatures.", "Nicol Bolas, God-Pharaoh", kills(5), "villain"),
+    deed("a26-ramunap", 26, "a26b9", "Ramunap Red", "Beat Ramunap Red by your 9th turn.", "Hazoret the Fervent", turnsBy(9)),
+    deed("a26-ruined", 26, "a26b9", "Ruined", "Kill four creatures.", "Regal Caracal", kills(4)),
+    deed("a26-sixth-sense", 26, "a26b9", "Sixth Sense", "Beat Ramunap Red by your 7th turn.", "Sixth Sense", turnsBy(7), "hero", hidden("A cat that sees the burn coming outlasts the whole sun.")),
+    deed("a27-golden-city", 27, "a27b1", "The Search for the Golden City", "Have two +1/+1 counters on one creature.", "Jadelight Ranger", { maxCounters: [">=", 2] }),
+    deed("a27-branchwalkers", 27, "a27b1", "Branchwalkers", "Kill eight of the Legion's creatures.", "Merfolk Branchwalker", kills(8)),
+    deed("a27-plunder", 27, "a27b2", "Plunder and Dance", "Deal 8 or more damage in one turn.", "Dire Fleet Daredevil", bigTurn(8)),
+    deed("a27-treasure", 27, "a27b2", "Treasure Hoard", "Have two tokens on the field at once.", "Swaggering Corsair", { maxTokens: [">=", 2] }),
+    deed("a27-enrage", 27, "a27b3", "Enrage", "Have a creature with 7 or more power.", "Ripjaw Raptor", power(7)),
+    deed("a27-raptors", 27, "a27b3", "Huatli and the Raptors", "Attack with six creatures at once.", "Raging Swordtooth", attackers(6)),
+    deed("a27-vona", 27, "a27b4", "Vona of Iedo", "Kill three of Vona's vampires.", "Jace, Cunning Castaway", kills(3)),
+    deed("a27-castaway", 27, "a27b4", "Cunning Castaway", "Beat Vona with 12 life or more.", "Hostage Taker", endAtLeast(12)),
+    deed("a27-ascend", 27, "a27b5", "The City's Blessing", "Have six creatures on the field at once.", "Kumena, Tyrant of Orazca", { maxCreatures: [">=", 6] }),
+    deed("a27-tishana", 27, "a27b5", "Voice of Thunder", "Deal 9 or more damage in one turn.", "Tishana, Voice of Thunder", bigTurn(9)),
+    deed("a27-v-nezahal", 27, "a27b5", "Primal Tide", "As Tishana's coalition, have a creature with 8 or more power.", "Nezahal, Primal Tide", power(8), "villain"),
+    deed("a27-dinosaurs", 27, "a27b6", "Dinosaurs", "Have four Dinosaurs on the field at once.", "Regisaur Alpha", tribe("Dinosaur", 4)),
+    deed("a27-monstrosaur", 27, "a27b6", "Charge", "Deal 12 or more damage in one turn.", "Charging Monstrosaur", bigTurn(12)),
+    deed("a27-pirates", 27, "a27b7", "Pirates", "Have four Pirates on the field at once.", "Dire Fleet Captain", tribe("Pirate", 4)),
+    deed("a27-buccaneers", 27, "a27b7", "Buccaneers", "Beat the Merfolk by your 8th turn.", "Dire Fleet Neckbreaker", turnsBy(8)),
+    deed("a27-lawbringer", 27, "a27b8", "The Lawbringer", "Kill three of Azor's creatures.", "Azor, the Lawbringer", kills(3)),
+    deed("a27-immortal-sun", 27, "a27b8", "The Immortal Sun", "Beat Azor with 22 life or more.", "The Immortal Sun", endAtLeast(22)),
+    deed("a27-v-azor", 27, "a27b8", "Settle the Wreckage", "As Azor, kill four creatures.", "Settle the Wreckage", kills(4), "villain"),
+    deed("a27-phoenix", 27, "a27b9", "Rekindling Phoenix", "Beat the Brazen Coalition by your 9th turn.", "Captain Lannery Storm", turnsBy(9)),
+    deed("a27-ceratops", 27, "a27b9", "Ceratops Charge", "Deal 13 or more damage in one turn.", "Imperial Ceratops", bigTurn(13)),
+    deed("a27-ashes", 27, "a27b9", "Ashes", "Beat the Brazen Coalition by your 7th turn.", "Angrath's Fury", turnsBy(7), "hero", hidden("The phoenix rises from ashes that never get the chance to cool.")),
+    deed("a28-story-unfolds", 28, "a28b1", "A Story Unfolds", "Have four flyers on the field at once.", "History of Benalia", flyers(4)),
+    deed("a28-chapter-three", 28, "a28b1", "Chapter III", "Kill three of the Cabal's creatures.", "Knight of Grace", kills(3)),
+    deed("a28-weatherlight", 28, "a28b2", "The Weatherlight Rises", "Have five artifacts on the field at once.", "Weatherlight", { maxArtifacts: [">=", 5] }),
+    deed("a28-jhoira", 28, "a28b2", "Jhoira's Familiar", "Deal 8 or more damage in one turn.", "Jhoira, Weatherlight Captain", bigTurn(8)),
+    deed("a28-kicker", 28, "a28b3", "Kicked", "Have six creatures on the field at once.", "Saproling Migration", { maxCreatures: [">=", 6] }),
+    deed("a28-sisay", 28, "a28b3", "Sisay's Heir", "Beat the Keldons with 18 life or more.", "Shanna, Sisay's Legacy", endAtLeast(18)),
+    deed("a28-karn", 28, "a28b4", "Karn Returns", "Kill five of the priests' creatures.", "Voltaic Servant", kills(5)),
+    deed("a28-cold-shoulder", 28, "a28b4", "Cold Shoulder", "Have seven artifacts on the field at once.", "Icy Manipulator", { maxArtifacts: [">=", 7] }),
+    deed("a28-radha", 28, "a28b5", "Radha's Heirs", "Attack with four creatures at once.", "Grand Warlord Radha", attackers(4)),
+    deed("a28-yargle", 28, "a28b5", "Yargle", "Kill nine of Yargle's creatures.", "Yargle, Glutton of Urborg", kills(9)),
+    deed("a28-mono-red", 28, "a28b6", "Mono-Red", "Deal 10 or more damage in one turn.", "Goblin Chainwhirler", bigTurn(10)),
+    deed("a28-lavarunner", 28, "a28b6", "Burn Them Out", "Beat Esper by your 8th turn.", "Ghitu Lavarunner", turnsBy(8)),
+    deed("a28-stompy", 28, "a28b7", "Steel Leaf Stompy", "Have a creature with 6 or more power.", "Steel Leaf Champion", power(6)),
+    deed("a28-marwyn", 28, "a28b7", "Marwyn", "Have two +1/+1 counters on one creature.", "Marwyn, the Nurturer", { maxCounters: [">=", 2] }),
+    deed("a28-v-garna", 28, "a28b7", "The Bloodflame", "As the red-black deck, kill four creatures.", "Garna, the Bloodflame", kills(4), "villain"),
+    deed("a28-demonlord", 28, "a28b8", "The Demonlord", "Kill three of Belzenlok's creatures.", "Demonlord Belzenlok", kills(3)),
+    deed("a28-lyra", 28, "a28b8", "Lyra Dawnbringer", "Beat Belzenlok with 16 life or more.", "Lyra Dawnbringer", endAtLeast(16)),
+    deed("a28-v-belzenlok", 28, "a28b8", "Rite of Belzenlok", "As Belzenlok, have four tokens on the field at once.", "Rite of Belzenlok", { maxTokens: [">=", 4] }, "villain"),
+    deed("a28-teferi", 28, "a28b9", "Hero of Dominaria", "Beat Esper by your 9th turn.", "Cloudreader Sphinx", turnsBy(9)),
+    deed("a28-allosaurus", 28, "a28b9", "Territorial", "Deal 12 or more damage in one turn.", "Territorial Allosaurus", bigTurn(12)),
+    deed("a28-untap", 28, "a28b9", "Untapped", "Beat Esper by your 7th turn.", "Seal Away", turnsBy(7), "hero", hidden("The hero never gets to untap with all his lands.")),
+    deed("a29-beacon", 29, "a29b1", "The Beacon", "Deal 8 or more damage in one turn.", "Beacon Bolt", bigTurn(8)),
+    deed("a29-surveil", 29, "a29b1", "Surveil", "Kill three of the Golgari's creatures.", "Goblin Electromancer", kills(3)),
+    deed("a29-queen", 29, "a29b2", "Queen of the Swarm", "Kill eight of the Boros creatures.", "Vraska, Golgari Queen", kills(8)),
+    deed("a29-mentor", 29, "a29b2", "Mentor", "Beat the Boros with 16 life or more.", "Rotting Regisaur", endAtLeast(16)),
+    deed("a29-debts", 29, "a29b3", "Debts and Ghosts", "Have six flyers on the field at once.", "Empyrean Eagle", flyers(6)),
+    deed("a29-afterlife", 29, "a29b3", "Afterlife", "Have four tokens on the field at once.", "Ministrant of Obligation", { maxTokens: [">=", 4] }),
+    deed("a29-horde", 29, "a29b4", "The Dreadhorde Arrives", "Kill four of the Dreadhorde.", "Ral, Storm Conduit", kills(4)),
+    deed("a29-amass", 29, "a29b4", "Hold the Line", "Beat the Dreadhorde with 10 life or more.", "Arclight Phoenix", endAtLeast(10)),
+    deed("a29-v-amass", 29, "a29b4", "The Army Grows", "As the Dreadhorde, have four +1/+1 counters on one creature.", "Dreadhorde Invasion", { maxCounters: [">=", 4] }, "villain"),
+    deed("a29-gambit", 29, "a29b5", "The Kaya Gambit", "Kill six of the Eternals.", "Kaya, Orzhov Usurper", kills(6)),
+    deed("a29-orzhov", 29, "a29b5", "Orzhov Debts", "Have five creatures on the field at once.", "Pitiless Pontiff", { maxCreatures: [">=", 5] }),
+    deed("a29-superfriends", 29, "a29b6", "Superfriends", "Beat Mono-Red with 38 life or more.", "Teferi, Time Raveler", endAtLeast(38)),
+    deed("a29-wrath", 29, "a29b6", "Kaya's Wrath", "Kill eight creatures.", "Kaya's Wrath", kills(8)),
+    deed("a29-midrange", 29, "a29b7", "Golgari Midrange", "Have a creature with 8 or more power.", "Doom Whisperer", power(8)),
+    deed("a29-casualties", 29, "a29b7", "Casualties", "Kill seven of the Gruul creatures.", "Casualties of War", kills(7)),
+    deed("a29-dragon-god", 29, "a29b8", "The Dragon-God", "Kill four of Bolas's creatures.", "Nicol Bolas, Dragon-God", kills(4)),
+    deed("a29-gatewatch", 29, "a29b8", "Gatewatch Assembled", "Attack with four creatures at once.", "Gideon Blackblade", attackers(4)),
+    deed("a29-v-bolas", 29, "a29b8", "The Dragon Wins", "As Bolas, kill five creatures.", "Ob Nixilis, the Hate-Twisted", kills(5), "villain"),
+    deed("a29-hero", 29, "a29b9", "Hero of Precinct One", "Beat Esper Hero by your 6th turn.", "Hero of Precinct One", turnsBy(6)),
+    deed("a29-rioters", 29, "a29b9", "Rubblebelt Rioters", "Attack with four creatures at once.", "Rubblebelt Rioters", attackers(4)),
+    deed("a29-before-hero", 29, "a29b9", "Before the Hero", "Beat Esper Hero by your 5th turn.", "Domri, Chaos Bringer", turnsBy(5), "hero", hidden("The precinct hero never gets to rally the guilds.")),
+    deed("a30-story", 30, "a30b1", "Every Card Has a Story", "Deal 8 or more damage in one turn.", "Opportunistic Dragon", bigTurn(8)),
+    deed("a30-adventure", 30, "a30b1", "Adventure Awaits", "Kill four of Oko's court.", "Redcap Raiders", kills(4)),
+    deed("a30-questing", 30, "a30b2", "The Questing Beast", "Have a creature with 8 or more power.", "Questing Beast", power(8)),
+    deed("a30-food", 30, "a30b2", "Feast", "Beat Theros with 16 life or more.", "Gluttonous Troll", endAtLeast(16)),
+    deed("a30-escape", 30, "a30b3", "Back from the Underworld", "Kill four of the Underworld.", "Elspeth, Sun's Nemesis", kills(4)),
+    deed("a30-beyond-death", 30, "a30b3", "Beyond Death", "Have five creatures on the field at once.", "Elspeth Conquers Death", { maxCreatures: [">=", 5] }),
+    deed("a30-muse", 30, "a30b4", "The Nightmare Muse", "Kill three of Ashiok's creatures.", "Rowan, Fearless Sparkmage", kills(3)),
+    deed("a30-sculptor", 30, "a30b4", "Sculptor of Fears", "Beat Ashiok with 21 life or more.", "Slaying Fire", endAtLeast(21)),
+    deed("a30-v-ashiok", 30, "a30b4", "Nightmare Muse", "As Ashiok, have two flyers on the field at once.", "Ashiok, Nightmare Muse", flyers(2), "villain"),
+    deed("a30-monsters", 30, "a30b5", "Monsters of Ikoria", "Have a creature with 7 or more power.", "Vivien, Monsters' Advocate", power(7)),
+    deed("a30-mutate", 30, "a30b5", "Mutate", "Attack with six creatures at once.", "Gemrazer", attackers(6)),
+    deed("a30-oko-food", 30, "a30b6", "Oko Food", "Beat the Adventures deck by your 11th turn.", "Wicked Wolf", turnsBy(11)),
+    deed("a30-henge", 30, "a30b6", "The Great Henge", "Have eight creatures on the field at once.", "The Great Henge", { maxCreatures: [">=", 8] }),
+    deed("a30-temur", 30, "a30b7", "Temur Mutate", "Have two flyers on the field at once.", "Archipelagore", flyers(2)),
+    deed("a30-ramp", 30, "a30b7", "Beat the Ramp", "Deal 10 or more damage in one turn.", "Illuna, Apex of Wishes", bigTurn(10)),
+    deed("a30-oko", 30, "a30b8", "Oko, Thief of Crowns", "Kill three of Oko's creatures.", "Oko, Thief of Crowns", kills(3)),
+    deed("a30-allies", 30, "a30b8", "Fairy-Tale Allies", "Deal 7 or more damage in one turn.", "Elspeth, Undaunted Hero", bigTurn(7)),
+    deed("a30-v-oko", 30, "a30b8", "Thief of Crowns", "As Oko, kill three creatures.", "Thunderous Snapper", kills(3), "villain"),
+    deed("a30-fires", 30, "a30b9", "Fires of Invention", "Beat the Fires deck by your 9th turn.", "Fires of Invention", turnsBy(9)),
+    deed("a30-terror", 30, "a30b9", "Terror of the Peaks", "Have a creature with 8 or more power.", "Terror of the Peaks", power(8)),
+    deed("a30-elder", 30, "a30b9", "Elder", "Beat the Fires deck by your 8th turn.", "Elder Gargaroth", turnsBy(8), "hero", hidden("The great wurm never gets to wake.")),
+    deed("a31-party", 31, "a31b1", "The Party", "Deal 9 or more damage in one turn.", "Nahiri, Heir of the Ancients", bigTurn(9)),
+    deed("a31-malakir", 31, "a31b1", "Malakir Blood-Priest", "Kill three of the vampires' creatures.", "Highborn Vampire", kills(3)),
+    deed("a31-doomskar", 31, "a31b2", "Doomskar", "Kill five of Tibalt's raiders.", "Doomskar", kills(5)),
+    deed("a31-valkyrie", 31, "a31b2", "Valkyrie Rising", "Have three flyers on the field at once.", "Righteous Valkyrie", flyers(3)),
+    deed("a31-pests", 31, "a31b3", "Pest Control", "Have three tokens on the field at once.", "Pest Summoning", { maxTokens: [">=", 3] }),
+    deed("a31-honours", 31, "a31b3", "Honours Student", "Beat Silverquill with 20 life or more.", "Culling Ritual", endAtLeast(20)),
+    deed("a31-elves", 31, "a31b4", "Elves of the World Tree", "Kill six of the elves' creatures.", "Sculptor of Winter", kills(6)),
+    deed("a31-lindwurm", 31, "a31b4", "Lindwurm Season", "Have six creatures on the field at once.", "Ravenous Lindwurm", { maxCreatures: [">=", 6] }),
+    deed("a31-v-vorinclex", 31, "a31b4", "Monstrous Raider", "As the elves, have a creature with 8 or more power.", "Vorinclex, Monstrous Raider", power(8), "villain"),
+    deed("a31-magecraft", 31, "a31b5", "Magecraft", "Deal 8 or more damage in one turn.", "Prismari Command", bigTurn(8)),
+    deed("a31-expressionist", 31, "a31b5", "Elemental Expression", "Attack with five creatures at once.", "Elemental Expressionist", attackers(5)),
+    deed("a31-rogues", 31, "a31b6", "Rogue Stopped", "Beat the Rogues by your 9th turn.", "Zareth San, the Trickster", turnsBy(9)),
+    deed("a31-aspirant", 31, "a31b6", "Luminarch", "Have a creature with 10 or more power.", "Luminarch Aspirant", power(10)),
+    deed("a31-dragons", 31, "a31b7", "Dragon Hoard", "Have three flyers on the field at once.", "Goldspan Dragon", flyers(3)),
+    deed("a31-opus", 31, "a31b7", "Magma Opus", "Have three artifacts on the field at once.", "Magma Opus", { maxArtifacts: [">=", 3] }),
+    deed("a31-v-berserkers", 31, "a31b7", "Berserker Rush", "As the Berserkers, kill three creatures.", "Kardur, Doomscourge", kills(3), "villain"),
+    deed("a31-extus", 31, "a31b8", "Extus, Oriq Overlord", "Kill four of the Oriq's creatures.", "Blot Out the Sky", kills(4)),
+    deed("a31-kaya", 31, "a31b8", "Kaya the Inexorable", "Have five flyers on the field at once.", "Kaya the Inexorable", flyers(5)),
+    deed("a31-v-extus", 31, "a31b8", "Rise of Extus", "As the Oriq, kill five creatures.", "Rise of Extus", kills(5), "villain"),
+    deed("a31-snow", 31, "a31b9", "Snow Job", "Beat Kaldheim Stompy by your 6th turn.", "Icehide Troll", turnsBy(6)),
+    deed("a31-maul", 31, "a31b9", "Maul of the Skyclaves", "Have a creature with 10 or more power.", "Maul of the Skyclaves", power(10)),
+    deed("a31-thaw", 31, "a31b9", "Thaw", "Beat Kaldheim Stompy by your 5th turn.", "Blizzard Brawl", turnsBy(5), "hero", hidden("The frost giants never get the chance to thaw before the sky-knights strike.")),
+    deed("a32-dungeon", 32, "a32b1", "Delve the Dungeon", "Kill six of the cult's creatures.", "Dungeon Crawler", kills(6)),
+    deed("a32-gold-dragon", 32, "a32b1", "Adult Gold Dragon", "Attack with five creatures at once.", "Adult Gold Dragon", attackers(5)),
+    deed("a32-wolves", 32, "a32b2", "Wolves of the Ulvenwald", "Kill seven of the wolves.", "Werewolf Pack Leader", kills(7)),
+    deed("a32-cathars", 32, "a32b2", "Cathars of Thraben", "Attack with six creatures at once.", "Adeline, Resplendent Cathar", attackers(6)),
+    deed("a32-rehearsal", 32, "a32b3", "Crashing the Rehearsal", "Have four flyers on the field at once.", "Teferi, Who Slows the Sunset", flyers(4)),
+    deed("a32-disturb", 32, "a32b3", "Disturb", "Have six creatures on the field at once.", "Heron of Hope", { maxCreatures: [">=", 6] }),
+    deed("a32-alena", 32, "a32b4", "Halana and Alena", "Have a creature with 10 or more power.", "Halana and Alena, Partners", power(10)),
+    deed("a32-brood", 32, "a32b4", "Brood of Tiamat", "Kill five of Tiamat's creatures.", "Runebound Wolf", kills(5)),
+    deed("a32-v-tiamat", 32, "a32b4", "Chromatic Terror", "As Tiamat's brood, have a creature with 10 or more power.", "Black Dragon", power(10), "villain"),
+    deed("a32-sorin", 32, "a32b5", "Sorin the Mirthless", "Have three flyers on the field at once.", "Sorin the Mirthless", flyers(3)),
+    deed("a32-court", 32, "a32b5", "Olivia's Court", "Kill four of Olivia's vampires.", "Kaya, Geist Hunter", kills(4)),
+    deed("a32-blue-dragon", 32, "a32b6", "Dragon Hunt", "Have a creature with 9 or more power.", "Blue Dragon", power(9)),
+    deed("a32-alchemist", 32, "a32b6", "Flameskull", "Kill three creatures.", "Flameskull", kills(3)),
+    deed("a32-blood", 32, "a32b7", "Blood Tokens", "Have four artifacts on the field at once.", "Voldaren Epicure", { maxArtifacts: [">=", 4] }),
+    deed("a32-clerics", 32, "a32b7", "Cathars Fall", "Have seven creatures on the field at once.", "Anje, Maid of Dishonor", { maxCreatures: [">=", 7] }),
+    deed("a32-v-clerics", 32, "a32b7", "Orzhov Clerics", "As the clerics, kill six creatures.", "Cathar Commando", kills(6), "villain"),
+    deed("a32-olivia", 32, "a32b8", "Olivia, Crimson Bride", "Kill six of Olivia's creatures.", "Olivia, Crimson Bride", kills(6)),
+    deed("a32-harvester", 32, "a32b8", "Bloodtithe", "Have five tokens on the field at once.", "Bloodtithe Harvester", { maxTokens: [">=", 5] }),
+    deed("a32-v-olivia", 32, "a32b8", "Midnight Ambush", "As Olivia, kill five creatures.", "Olivia's Midnight Ambush", kills(5), "villain"),
+    deed("a32-humans", 32, "a32b9", "Humans of Thraben", "Have a creature with 10 or more power.", "Thalia, Guardian of Thraben", power(10)),
+    deed("a32-moon", 32, "a32b9", "Moonrage", "Beat the Humans by your 7th turn.", "Sigardian Savior", turnsBy(7), "hero", hidden("The cathars turn at moonrise, but the dragons are done before it.")),
+    deed("a33-chip", 33, "a33b1", "The Chip", "Kill nine of the Guard's creatures.", "Thousand-Faced Shadow", kills(9)),
+    deed("a33-towashi", 33, "a33b1", "Shadows of Towashi", "Have eight creatures on the field at once.", "Dokuchi Silencer", { maxCreatures: [">=", 8] }),
+    deed("a33-reconfigure", 33, "a33b2", "Reconfigure", "Have four artifacts on the field at once.", "Lion Sash", { maxArtifacts: [">=", 4] }),
+    deed("a33-kirin", 33, "a33b2", "The Moon-Kami", "Have three flyers on the field at once.", "Cloudsteel Kirin", flyers(3)),
+    deed("a33-maestros", 33, "a33b3", "Families at the Table", "Kill seven of the Brokers' creatures.", "Maestros Diabolist", kills(7)),
+    deed("a33-xander", 33, "a33b3", "The Collector", "Have six creatures on the field at once.", "Lord Xander, the Collector", { maxCreatures: [">=", 6] }),
+    deed("a33-resplendent", 33, "a33b4", "Elspeth Resplendent", "Have a creature with 8 or more power.", "Elspeth Resplendent", power(8)),
+    deed("a33-overseer", 33, "a33b4", "Angels of the Streets", "Have eight creatures on the field at once.", "Inspiring Overseer", { maxCreatures: [">=", 8] }),
+    deed("a33-v-ob", 33, "a33b4", "Demon Who Owns the City", "As Ob Nixilis's Syndicate, kill ten creatures.", "Ob Nixilis, the Adversary", kills(10), "villain"),
+    deed("a33-orfeo", 33, "a33b5", "Mr. Orfeo", "Have a creature with 10 or more power.", "Mr. Orfeo, the Boulder", power(10)),
+    deed("a33-ziatora", 33, "a33b5", "Ziatora", "Kill seven of the Obscura's creatures.", "Ziatora, the Incinerator", kills(7)),
+    deed("a33-queza", 33, "a33b6", "Augur of Agonies", "Have five flyers on the field at once.", "Queza, Augur of Agonies", flyers(5)),
+    deed("a33-connive", 33, "a33b6", "Connive", "Have a creature with 6 or more +1/+1 counters.", "Obscura Interceptor", { maxCounters: [">=", 6] }),
+    deed("a33-skies", 33, "a33b7", "Azorius Skies", "Have four flyers on the field at once.", "Kitsune Ace", flyers(4)),
+    deed("a33-mothrider", 33, "a33b7", "Mothrider", "Attack with six creatures at once.", "Mothrider Patrol", attackers(6)),
+    deed("a33-v-kura", 33, "a33b7", "Kura, the Boundless Sky", "As the Jukai Order, have a creature with 9 or more power.", "Kura, the Boundless Sky", power(9), "villain"),
+    deed("a33-jin", 33, "a33b8", "Jin-Gitaxias, Progress Tyrant", "Beat Jin-Gitaxias by your 7th turn.", "Network Disruptor", turnsBy(7)),
+    deed("a33-kaito", 33, "a33b8", "Kaito Shizuki", "Beat Jin-Gitaxias with 20 life or more.", "Kaito Shizuki", endAtLeast(20)),
+    deed("a33-v-jin", 33, "a33b8", "Progress Tyrant", "As Jin-Gitaxias, have five artifacts on the field at once.", "Tezzeret, Betrayer of Flesh", { maxArtifacts: [">=", 5] }, "villain"),
+    deed("a33-raffine", 33, "a33b9", "Raffine, Scheming Seer", "Have five flyers on the field at once.", "Raffine, Scheming Seer", flyers(5)),
+    deed("a33-void", 33, "a33b9", "Void Rend", "Kill three of the Esper.", "Void Rend", kills(3), "hero", hidden("Four colours of spite, and not one of the Esper left standing.")),
+    deed("a34-read-ahead", 34, "a34b1", "Read Ahead", "Have four flyers on the field at once.", "Archangel of Wrath", flyers(4)),
+    deed("a34-scouts", 34, "a34b1", "Coalition Scouts", "Have eight creatures on the field at once.", "Wing Commando", { maxCreatures: [">=", 8] }),
+    deed("a34-urza", 34, "a34b2", "Urza and Mishra", "Have four artifacts on the field at once.", "Urza, Lord Protector", { maxArtifacts: [">=", 4] }),
+    deed("a34-thopters", 34, "a34b2", "Battlethopter", "Have three flyers on the field at once.", "Liberator, Urza's Battlethopter", flyers(3)),
+    deed("a34-v-mishra", 34, "a34b2", "Claimed by Gix", "As Mishra's army, kill seven creatures.", "Mishra, Claimed by Gix", kills(7), "villain"),
+    deed("a34-karn", 34, "a34b3", "Small or Big", "Kill six of the dragon engines' creatures.", "Karn, Living Legacy", kills(6)),
+    deed("a34-elder", 34, "a34b3", "Silverback", "Have a creature with 7 or more power.", "Silverback Elder", power(7)),
+    deed("a34-teferi", 34, "a34b4", "Teferi and the Praetor", "Have eight creatures on the field at once.", "Teferi, Temporal Pilgrim", { maxCreatures: [">=", 8] }),
+    deed("a34-figments", 34, "a34b4", "Haunting Figments", "Have four tokens on the field at once.", "Haunting Figment", { maxTokens: [">=", 4] }),
+    deed("a34-v-gix", 34, "a34b4", "Yawgmoth Praetor", "As the Brotherhood of Gix, kill four creatures.", "Gix, Yawgmoth Praetor", kills(4), "villain"),
+    deed("a34-kayla", 34, "a34b5", "Ajani's Betrayal", "Kill four of Ajani's creatures.", "Queen Kayla bin-Kroog", kills(4)),
+    deed("a34-tori", 34, "a34b5", "Enlist", "Attack with five creatures at once.", "Tori D'Avenant, Fury Rider", attackers(5)),
+    deed("a34-v-ajani", 34, "a34b5", "Sleeper Agent", "As Ajani, have a creature with 10 or more power.", "Ajani, Sleeper Agent", power(10), "villain"),
+    deed("a34-strike", 34, "a34b6", "Strike Team", "Have six creatures on the field at once.", "Keldon Strike Team", { maxCreatures: [">=", 6] }),
+    deed("a34-hellkite", 34, "a34b6", "Ragefire", "Attack with six creatures at once.", "Ragefire Hellkite", attackers(6)),
+    deed("a34-whelp", 34, "a34b7", "Dragon Whelp", "Have a creature with 7 or more power.", "Dragon Whelp", power(7)),
+    deed("a34-liliana", 34, "a34b7", "Liliana of the Veil", "Kill four creatures.", "Liliana of the Veil", kills(4)),
+    deed("a34-sheoldred", 34, "a34b8", "Sheoldred, the Apocalypse", "Beat Sheoldred with 19 life or more.", "Meria, Scholar of Antiquity", endAtLeast(19)),
+    deed("a34-radha", 34, "a34b8", "The Coalition Strikes", "Beat Sheoldred by your 8th turn.", "Radha, Coalition Warlord", turnsBy(8)),
+    deed("a34-v-sheoldred", 34, "a34b8", "Whenever You Draw", "As Sheoldred's Grixis, kill five creatures.", "Sol'Kanar the Tainted", kills(5), "villain"),
+    deed("a34-mishra", 34, "a34b9", "The Brothers' War", "Kill six of Mishra's creatures.", "Mishra, Excavation Prodigy", kills(6)),
+    deed("a34-guardian", 34, "a34b9", "New Benalia", "Attack with six creatures at once.", "Guardian of New Benalia", attackers(6)),
+    deed("a34-gix", 34, "a34b9", "Gix Unmade", "Beat Mishra with 25 life or more.", "Gixian Infiltrator", endAtLeast(25), "hero", hidden("The sleeper never wakes, and the brother who fell never gets to rise.")),
+    deed("a35-mirrodin", 35, "a35b1", "For Mirrodin!", "Kill six of Vorinclex's beasts.", "Venerated Rotpriest", kills(6)),
+    deed("a35-banesplitter", 35, "a35b1", "Banesplitter", "Have three artifacts on the field at once.", "Mirran Banesplitter", { maxArtifacts: [">=", 3] }),
+    deed("a35-resistance", 35, "a35b2", "The Oil Spreads", "Attack with eight creatures at once.", "Koth, Fire of Resistance", attackers(8)),
+    deed("a35-cultivator", 35, "a35b2", "Rustvine", "Have ten creatures on the field at once.", "Rustvine Cultivator", { maxCreatures: [">=", 10] }),
+    deed("a35-v-jin", 35, "a35b2", "Sectives of Jin-Gitaxias", "As the sectives, kill five creatures.", "Gitaxian Raptor", kills(5), "villain"),
+    deed("a35-defend", 35, "a35b3", "Defend Each Plane", "Have a creature with 7 or more power.", "Danitha, New Benalia's Light", power(7)),
+    deed("a35-calix", 35, "a35b3", "Calix", "Kill six of the invaders.", "Calix, Guided by Fate", kills(6)),
+    deed("a35-compleated", 35, "a35b4", "The Compleated", "Have three flyers on the field at once.", "Archangel Elspeth", flyers(3)),
+    deed("a35-remnants", 35, "a35b4", "Mirran Remnants", "Have three artifacts on the field at once.", "Marshal of Zhalfir", { maxArtifacts: [">=", 3] }),
+    deed("a35-v-compleated", 35, "a35b4", "Compleated", "As the Compleated, have five artifacts on the field at once.", "Phyrexian Obliterator", { maxArtifacts: [">=", 5] }, "villain"),
+    deed("a35-wrenn", 35, "a35b5", "Wrenn and the Roots", "Have a creature with 8 or more power.", "Wrenn and Realmbreaker", power(8)),
+    deed("a35-incubate", 35, "a35b5", "Incubate", "Kill five of the Roots' creatures.", "Timberland Ancient", kills(5)),
+    deed("a35-v-glissa", 35, "a35b5", "Glissa Sunslayer", "As the Invasion Roots, attack with seven creatures at once.", "Glissa Sunslayer", attackers(7), "villain"),
+    deed("a35-archfiend", 35, "a35b6", "Archfiend of the Dross", "Kill six creatures.", "Archfiend of the Dross", kills(6)),
+    deed("a35-charforger", 35, "a35b6", "Charforger", "Beat Mono-White with 11 life or more.", "Charforger", endAtLeast(11)),
+    deed("a35-centurion", 35, "a35b7", "Cutthroat Centurion", "Kill four creatures.", "Cutthroat Centurion", kills(4)),
+    deed("a35-warmonger", 35, "a35b7", "Kolaghan Warmonger", "Beat the Legends with 20 life or more.", "Kolaghan Warmonger", endAtLeast(20)),
+    deed("a35-norn", 35, "a35b8", "Elesh Norn, Mother of Machines", "Beat Elesh Norn with 24 life or more.", "Wary Thespian", endAtLeast(24)),
+    deed("a35-united", 35, "a35b8", "Every Plane United", "Beat Elesh Norn by your 8th turn.", "Knight-Errant of Eos", turnsBy(8)),
+    deed("a35-v-norn", 35, "a35b8", "Mother of Machines", "As Elesh Norn, have six artifacts on the field at once.", "Elesh Norn, Mother of Machines", { maxArtifacts: [">=", 6] }, "villain"),
+    deed("a35-exarch", 35, "a35b9", "Progenitor", "Have four artifacts on the field at once.", "Porcelain Zealot", { maxArtifacts: [">=", 4] }),
+    deed("a35-skrelv", 35, "a35b9", "Skrelv", "Have a creature with 4 or more +1/+1 counters.", "Skrelv, Defector Mite", { maxCounters: [">=", 4] }),
+    deed("a35-atraxa", 35, "a35b9", "Grand Unifier", "Beat Atraxa with 27 life or more.", "Atraxa, Grand Unifier", endAtLeast(27), "hero", hidden("Four colours, and the unifier never gets to unify.")),
+    deed("a36-bargain", 36, "a36b1", "Bargain", "Kill four of Ashiok's nightmares.", "Will, Scion of Peace", kills(4)),
+    deed("a36-archon", 36, "a36b1", "Wild Rose", "Have six creatures on the field at once.", "Archon of the Wild Rose", { maxCreatures: [">=", 6] }),
+    deed("a36-v-ashiok", 36, "a36b1", "Wicked Manipulator", "As Ashiok's nightmares, have five flyers on the field at once.", "Ashiok, Wicked Manipulator", flyers(5), "villain"),
+    deed("a36-quintorius", 36, "a36b2", "Roles", "Kill six of the Coin Empire's creatures.", "Quintorius Kand", kills(6)),
+    deed("a36-anim-pakal", 36, "a36b2", "Thousandth Moon", "Have nine creatures on the field at once.", "Anim Pakal, Thousandth Moon", { maxCreatures: [">=", 9] }),
+    deed("a36-discover", 36, "a36b3", "Discover", "Kill six of Talion's court.", "Seismic Monstrosaur", kills(6)),
+    deed("a36-carnosaur", 36, "a36b3", "Trumpeting Carnosaur", "Beat Talion with 17 life or more.", "Trumpeting Carnosaur", endAtLeast(17)),
+    deed("a36-kutzil", 36, "a36b4", "Aclazotz", "Attack with six creatures at once.", "Kutzil, Malamet Exemplar", attackers(6)),
+    deed("a36-scout", 36, "a36b4", "Cenote Scout", "Have three artifacts on the field at once.", "Cenote Scout", { maxArtifacts: [">=", 3] }),
+    deed("a36-v-aclazotz", 36, "a36b4", "Deepest Betrayal", "As Aclazotz's bats, have a creature with 10 or more power.", "Bloodletter of Aclazotz", power(10), "villain"),
+    deed("a36-alquist", 36, "a36b5", "Collect Evidence", "Have five tokens on the field at once.", "Alquist Proft, Master Sleuth", { maxTokens: [">=", 5] }),
+    deed("a36-district", 36, "a36b5", "Tenth District", "Attack with six creatures at once.", "Tenth District Hero", attackers(6)),
+    deed("a36-v-rot", 36, "a36b5", "Rot Farm", "As the Rot Farm, kill seven creatures.", "Festerleech", kills(7), "villain"),
+    deed("a36-angel", 36, "a36b6", "Resplendent", "Have four flyers on the field at once.", "Resplendent Angel", flyers(4)),
+    deed("a36-teysa", 36, "a36b6", "Opulent Oligarch", "Beat Domain Ramp with 24 life or more.", "Teysa, Opulent Oligarch", endAtLeast(24)),
+    deed("a36-moroii", 36, "a36b7", "Nightdrinker", "Kill five creatures.", "Nightdrinker Moroii", kills(5)),
+    deed("a36-interrogators", 36, "a36b7", "Persuasive Control", "Beat Boros Convoke with 25 life or more.", "Persuasive Interrogators", endAtLeast(25)),
+    deed("a36-ezrim", 36, "a36b8", "Massacre Girl, Known Killer", "Have six tokens on the field at once.", "Ezrim, Agency Chief", { maxTokens: [">=", 6] }),
+    deed("a36-agency", 36, "a36b8", "The Agency", "Beat Massacre Girl with 20 life or more.", "Crimestopper Sprite", endAtLeast(20)),
+    deed("a36-v-massacre", 36, "a36b8", "Known Killer", "As Massacre Girl, kill six creatures.", "Massacre Girl, Known Killer", kills(6), "villain"),
+    deed("a36-hammerskull", 36, "a36b9", "Full Power", "Kill seven of Aurelia's creatures.", "Pugnacious Hammerskull", kills(7)),
+    deed("a36-raptor", 36, "a36b9", "Scytheclaw", "Beat Boros Convoke with 20 life or more.", "Scytheclaw Raptor", endAtLeast(20)),
+    deed("a36-aurelia", 36, "a36b9", "The Law Above", "Kill nine of Aurelia's creatures.", "Aurelia, the Law Above", kills(9), "hero", hidden("The law is above everyone but the one who breaks it first.")),
+    deed("a37-plot", 37, "a37b1", "Plot the Job", "Kill seven of the Hellspur gang's creatures.", "Laughing Jasper Flint", kills(7)),
+    deed("a37-crew", 37, "a37b1", "The Heist Crew", "Have eight creatures on the field at once.", "Pond Prophet", { maxCreatures: [">=", 8] }),
+    deed("a37-warren", 37, "a37b2", "Small Heroes", "Attack with seven creatures at once.", "Seasoned Warrenguard", attackers(7)),
+    deed("a37-warren-tokens", 37, "a37b2", "Burrow Full", "Have ten creatures on the field at once.", "Valley Questcaller", { maxCreatures: [">=", 10] }),
+    deed("a37-v-akul", 37, "a37b2", "Akul's Gang", "As Akul's gang, kill nine creatures.", "Hired Claw", kills(9), "villain"),
+    deed("a37-mabel", 37, "a37b3", "Every Door", "Attack with five creatures at once.", "Mabel, Heir to Cragflame", attackers(5)),
+    deed("a37-charger", 37, "a37b3", "Steampath Charger", "Beat the Calamity Beasts with 17 life or more.", "Steampath Charger", endAtLeast(17)),
+    deed("a37-guardmouse", 37, "a37b3", "Mouse Guard", "Have two tokens on the field at once.", "Veteran Guardmouse", { maxTokens: [">=", 2] }),
+    deed("a37-tyvar", 37, "a37b4", "The House Is Hungry", "Kill six of the House's creatures.", "Tyvar, the Pummeler", kills(6)),
+    deed("a37-doll", 37, "a37b4", "Twitching Doll", "Have four artifacts on the field at once.", "Twitching Doll", { maxArtifacts: [">=", 4] }),
+    deed("a37-v-house", 37, "a37b4", "Balemurk", "As Valgavoth's House, kill three creatures.", "Balemurk Leech", kills(3), "villain"),
+    deed("a37-survival", 37, "a37b5", "Survival", "Kill eight creatures.", "Overlord of the Hauntwoods", kills(8)),
+    deed("a37-rooms", 37, "a37b5", "Haunted Rooms", "Have six creatures on the field at once.", "Patchwork Beastie", { maxCreatures: [">=", 6] }),
+    deed("a37-v-rooms", 37, "a37b5", "Sheltered by Ghosts", "As the haunted rooms, have three flyers on the field at once.", "Sheltered by Ghosts", flyers(3), "villain"),
+    deed("a37-challenger", 37, "a37b6", "Emberheart", "Have seven creatures on the field at once.", "Emberheart Challenger", { maxCreatures: [">=", 7] }),
+    deed("a37-manifold", 37, "a37b6", "Manifold Mouse", "Beat Golgari with 20 life or more.", "Manifold Mouse", endAtLeast(20)),
+    deed("a37-kaito", 37, "a37b7", "Bane of Nightmares", "Kill six creatures.", "Kaito, Bane of Nightmares", kills(6)),
+    deed("a37-scavenger", 37, "a37b7", "Dreadwing", "Have three flyers on the field at once.", "Dreadwing Scavenger", flyers(3)),
+    deed("a37-v-prowess", 37, "a37b7", "Prowess", "As Izzet Prowess, kill four creatures.", "Stormchaser's Talent", kills(4), "villain"),
+    deed("a37-oko", 37, "a37b8", "Valgavoth, Terror Eater", "Kill ten creatures.", "Oko, the Ringleader", kills(10)),
+    deed("a37-zimone", 37, "a37b8", "All-Questioning", "Beat Valgavoth with 20 life or more.", "Zimone, All-Questioning", endAtLeast(20)),
+    deed("a37-v-valgavoth", 37, "a37b8", "Terror Eater", "As Valgavoth, have a creature with 9 or more power.", "Valgavoth, Terror Eater", power(9), "villain"),
+    deed("a37-watchdog", 37, "a37b9", "Mono-Red Mice", "Have three artifacts on the field at once.", "Wary Watchdog", { maxArtifacts: [">=", 3] }),
+    deed("a37-name", 37, "a37b9", "Say Its Name", "Kill three creatures.", "Say Its Name", kills(3)),
+    deed("a37-heartfire", 37, "a37b9", "Heartfire Hero", "Kill ten creatures.", "Heartfire Hero", kills(10), "hero", hidden("A hero of the hearth, and a house that never gets to eat.")),
+    deed("a38-engines", 38, "a38b1", "Start Your Engines", "Kill five of the Aetherdrift racers' creatures.", "Chandra, Spark Hunter", kills(5)),
+    deed("a38-vehicles", 38, "a38b1", "Vehicle Rally", "Have three artifacts on the field at once.", "Greasewrench Goblin", { maxArtifacts: [">=", 3] }),
+    deed("a38-v-racers", 38, "a38b1", "Engine Rat", "As the Aetherdrift racers, kill six creatures.", "Engine Rat", kills(6), "villain"),
+    deed("a38-speed-demon", 38, "a38b2", "One-Shot Powers", "Have a creature with 11 or more power.", "The Speed Demon", power(11)),
+    deed("a38-gearhulk", 38, "a38b2", "Coalstoke", "Have eight creatures on the field at once.", "Coalstoke Gearhulk", { maxCreatures: [">=", 8] }),
+    deed("a38-mardu", 38, "a38b3", "The Mardu Charge", "Have three flyers on the field at once.", "Elspeth, Storm Slayer", flyers(3)),
+    deed("a38-glory", 38, "a38b3", "Bearer of Glory", "Have eleven creatures on the field at once.", "Bearer of Glory", { maxCreatures: [">=", 11] }),
+    deed("a38-victory", 38, "a38b3", "Voice of Victory", "Have five tokens on the field at once.", "Voice of Victory", { maxTokens: [">=", 5] }),
+    deed("a38-skyfarers", 38, "a38b4", "The Speed Demon", "Have three flyers on the field at once.", "Mu Yanling, Wind Rider", flyers(3)),
+    deed("a38-chariot", 38, "a38b4", "Skyseer", "Kill three of the Speed Demon's pack.", "Skyseer's Chariot", kills(3)),
+    deed("a38-v-pack", 38, "a38b4", "Apocalypse Runner", "As the Speed Demon's pack, kill five creatures.", "Apocalypse Runner", kills(5), "villain"),
+    deed("a38-grave", 38, "a38b5", "Spells from the Grave", "Attack with six creatures at once.", "Dragonologist", attackers(6)),
+    deed("a38-hellkite", 38, "a38b5", "Magmatic", "Kill three of Sarkhan's clans.", "Magmatic Hellkite", kills(3)),
+    deed("a38-v-clans", 38, "a38b5", "Beastrider", "As Sarkhan's clans, attack with seven creatures at once.", "Beastrider Vanguard", attackers(7), "villain"),
+    deed("a38-bashtronaut", 38, "a38b6", "Burnout", "Attack with six creatures at once.", "Burnout Bashtronaut", attackers(6)),
+    deed("a38-diver", 38, "a38b6", "Dynamite Diver", "Beat Domain Ramp with 17 life or more.", "Dynamite Diver", endAtLeast(17)),
+    deed("a38-dragonstorm", 38, "a38b7", "Roiling Dragonstorm", "Beat Dimir with 21 life or more.", "Roiling Dragonstorm", endAtLeast(21)),
+    deed("a38-cutter", 38, "a38b7", "Steel Cutter", "Have five creatures on the field at once.", "Cori-Steel Cutter", { maxCreatures: [">=", 5] }),
+    deed("a38-v-dimir", 38, "a38b7", "Night Minister", "As Dimir, kill five creatures.", "Gonti, Night Minister", kills(5), "villain"),
+    deed("a38-surrak", 38, "a38b8", "Sarkhan, Dragon Ascendant", "Beat Sarkhan with 19 life or more.", "Surrak, Elusive Hunter", endAtLeast(19)),
+    deed("a38-clans", 38, "a38b8", "Racers and Clans", "Attack with five creatures at once.", "Zurgo's Vanguard", attackers(5)),
+    deed("a38-v-sarkhan", 38, "a38b8", "Dragon Ascendant", "As Sarkhan's dragons, have four flyers on the field at once.", "Sarkhan, Dragon Ascendant", flyers(4), "villain"),
+    deed("a38-ketramose", 38, "a38b9", "Full Power", "Have four artifacts on the field at once.", "Ketramose, the New Dawn", { maxArtifacts: [">=", 4] }),
+    deed("a38-ascendant", 38, "a38b9", "Embalmed", "Have ten creatures on the field at once.", "Embalmed Ascendant", { maxCreatures: [">=", 10] }),
+    deed("a38-cori", 38, "a38b9", "Cori-Steel", "Beat Izzet Prowess with 36 life or more.", "Fire-Rim Form", endAtLeast(36), "hero", hidden("The prowess never gets going, and the champions never even feel the heat.")),
+    deed("a39-job-select", 39, "a39b1", "Job Select", "Beat Shinra Security with 30 life or more.", "Cloud, Midgar Mercenary", endAtLeast(30)),
+    deed("a39-mercenaries", 39, "a39b1", "Mercenaries", "Kill seven of Shinra's creatures.", "Dwarven Castle Guard", kills(7)),
+    deed("a39-moogle", 39, "a39b1", "Moogle Post", "Have five tokens on the field at once.", "Coeurl", { maxTokens: [">=", 5] }),
+    deed("a39-clive", 39, "a39b2", "Summons", "Have a creature with 8 or more power.", "Summon: G.F. Ifrit", power(8)),
+    deed("a39-raubahn", 39, "a39b2", "Bull of Ala Mhigo", "Attack with six creatures at once.", "Raubahn, Bull of Ala Mhigo", attackers(6)),
+    deed("a39-v-dominants", 39, "a39b2", "The Imperial Dominants", "As the Imperial Dominants, kill eleven creatures.", "Queen Brahne", kills(11), "villain"),
+    deed("a39-returners", 39, "a39b3", "Kefka", "Kill five of Kefka's court.", "Edgar, King of Figaro", kills(5)),
+    deed("a39-barret", 39, "a39b3", "Returners Rising", "Have two flyers on the field at once.", "Barret Wallace", flyers(2)),
+    deed("a39-v-kefka", 39, "a39b3", "Ruler of Ruin", "As Kefka's court, have three flyers on the field at once.", "Ultros, Obnoxious Octopus", flyers(3), "villain"),
+    deed("a39-vivi", 39, "a39b4", "Black Magic", "Kill eight creatures.", "Vivi Ornitier", kills(8)),
+    deed("a39-seifer", 39, "a39b4", "Gunblade", "Attack with five creatures at once.", "Seifer Almasy", attackers(5)),
+    deed("a39-v-lightning", 39, "a39b4", "Lightning's Guard", "As Lightning's Guard, attack with six creatures at once.", "Lightning, Army of One", attackers(6), "villain"),
+    deed("a39-pilgrimage", 39, "a39b5", "The Long Pilgrimage", "Have four flyers on the field at once.", "Yuna, Hope of Spira", flyers(4)),
+    deed("a39-hope", 39, "a39b5", "Hope Estheim", "Beat Sin's pilgrimage with 25 life or more.", "Hope Estheim", endAtLeast(25)),
+    deed("a39-v-sin", 39, "a39b5", "Sin", "As Sin's pilgrimage, kill ten creatures.", "Tonberry", kills(10), "villain"),
+    deed("a39-regalia", 39, "a39b6", "The Road Trip", "Have four artifacts on the field at once.", "The Regalia", { maxArtifacts: [">=", 4] }),
+    deed("a39-trexaur", 39, "a39b6", "Balamb T-Rexaur", "Have a creature with 10 or more power.", "Balamb T-Rexaur", power(10)),
+    deed("a39-v-niflheim", 39, "a39b6", "Empire of Niflheim", "As the Empire of Niflheim, kill seven creatures.", "Ardyn, the Usurper", kills(7), "villain"),
+    deed("a39-horde", 39, "a39b7", "Summon Horde", "Attack with nine creatures at once.", "Vanille, Cheerful l'Cie", attackers(9)),
+    deed("a39-jenova", 39, "a39b7", "Jenova", "Have four tokens on the field at once.", "Jenova, Ancient Calamity", { maxTokens: [">=", 4] }),
+    deed("a39-sephiroth", 39, "a39b8", "Sephiroth", "Beat Sephiroth with 36 life or more.", "Zack Fair", endAtLeast(36)),
+    deed("a39-tifa", 39, "a39b8", "Cloud and Friends", "Kill four of Sephiroth's remnants.", "Tifa Lockhart", kills(4)),
+    deed("a39-v-sephiroth", 39, "a39b8", "One-Winged Angel", "As Sephiroth's remnants, have a creature with 9 or more power.", "Aerith Gainsborough", power(9), "villain"),
+    deed("a39-weapon", 39, "a39b9", "Ultimate Weapon", "Kill four of the Weapons' creatures.", "Diamond Weapon", kills(4)),
+    deed("a39-hunters", 39, "a39b9", "The Hunters", "Beat the Weapons with 26 life or more.", "Snow Villiers", endAtLeast(26)),
+    deed("a39-adamantoise", 39, "a39b9", "Adamantoise", "Beat the Weapons with 32 life or more.", "Ancient Adamantoise", endAtLeast(32), "hero", hidden("The ancient shell never cracks, and the hunters leave unscathed.")),
+    deed("a40-salvage", 40, "a40b1", "Salvage Rights", "Kill six of the Kav miners' creatures.", "Sami, Ship's Engineer", kills(6)),
+    deed("a40-pilot", 40, "a40b1", "Starfighter", "Have two artifacts on the field at once.", "Starfighter Pilot", { maxArtifacts: [">=", 2] }),
+    deed("a40-v-miners", 40, "a40b1", "Kav Miners", "As the Kav miners, have five artifacts on the field at once.", "Oreplate Pangolin", { maxArtifacts: [">=", 5] }, "villain"),
+    deed("a40-thaw", 40, "a40b2", "The Thaw of Evendo", "Have five tokens on the field at once.", "Thawbringer", { maxTokens: [">=", 5] }),
+    deed("a40-lashwhip", 40, "a40b2", "Lashwhip", "Kill seven of the Memorial Navy's creatures.", "Lashwhip Predator", kills(7)),
+    deed("a40-v-navy", 40, "a40b2", "Memorial Navy", "As the Kavaron Memorial Navy, have a creature with 7 or more power.", "Kavaron Turbodrone", power(7), "villain"),
+    deed("a40-cloudsculpt", 40, "a40b3", "Cloudsculpt", "Have five flyers on the field at once.", "Cloudsculpt Technician", flyers(5)),
+    deed("a40-nanoform", 40, "a40b3", "Nanoform", "Have six artifacts on the field at once.", "Nanoform Sentinel", { maxArtifacts: [">=", 6] }),
+    deed("a40-uthros", 40, "a40b3", "The Uthros Combine", "Kill eight of Tezzeret's corsairs.", "Uthros Psionicist", kills(8)),
+    deed("a40-v-tezzeret", 40, "a40b3", "Cruel Captain", "As Tezzeret's corsairs, have ten creatures on the field at once.", "Tezzeret, Cruel Captain", { maxCreatures: [">=", 10] }, "villain"),
+    deed("a40-haliya", 40, "a40b4", "Guided by Light", "Beat the Monoist Faith with 27 life or more.", "Haliya, Guided by Light", endAtLeast(27)),
+    deed("a40-dawnstrike", 40, "a40b4", "Dawnstrike", "Kill eight creatures.", "Dawnstrike Vanguard", kills(8)),
+    deed("a40-v-alpharael", 40, "a40b4", "Stonechosen", "As the Monoist Faith, kill six creatures.", "Alpharael, Stonechosen", kills(6), "villain"),
+    deed("a40-weft", 40, "a40b5", "The Weft and the Wilds", "Have ten creatures on the field at once.", "Genemorph Imago", { maxCreatures: [">=", 10] }),
+    deed("a40-skystinger", 40, "a40b5", "Skystinger", "Have four flyers on the field at once.", "Skystinger", flyers(4)),
+    deed("a40-codecracker", 40, "a40b6", "The Zero Point", "Kill eight of the Monoist Zealots' creatures.", "Codecracker Hound", kills(8)),
+    deed("a40-shieldmate", 40, "a40b6", "Shield Wall", "Have four tokens on the field at once.", "Mechan Shieldmate", { maxTokens: [">=", 4] }),
+    deed("a40-monitor", 40, "a40b6", "Station Monitor", "Beat the Monoist Zealots with 24 life or more.", "Station Monitor", endAtLeast(24)),
+    deed("a40-v-zealots", 40, "a40b6", "Monoist Zealots", "As the Monoist Zealots, kill five creatures.", "Insatiable Skittermaw", kills(5), "villain"),
+    deed("a40-reckoning", 40, "a40b7", "The Kav Reckoning", "Kill four creatures.", "Blade of the Swarm", kills(4)),
+    deed("a40-plasma", 40, "a40b7", "Plasma Bolt", "Beat the Illvoi with 19 life or more.", "Plasma Bolt", endAtLeast(19)),
+    deed("a40-v-illvoi", 40, "a40b7", "Illvoi Control", "As the Illvoi, kill ten creatures.", "Mechan Assembler", kills(10), "villain"),
+    deed("a40-sothera", 40, "a40b8", "Sothera, the Supervoid", "Kill eight of the Supervoid's creatures.", "Sothera, the Supervoid", kills(8)),
+    deed("a40-tannuk", 40, "a40b8", "Steadfast Second", "Beat Sothera with 26 life or more.", "Tannuk, Steadfast Second", endAtLeast(26)),
+    deed("a40-v-supervoid", 40, "a40b8", "Osteoharmonist", "As the Supervoid, kill ten creatures.", "Xu-Ifit, Osteoharmonist", kills(10), "villain"),
+    deed("a40-ensign", 40, "a40b9", "Infinite Guideline Station", "Have a creature with 12 or more power.", "Tannuk, Memorial Ensign", power(12)),
+    deed("a40-impact", 40, "a40b9", "Seedship Impact", "Beat the Station Monitors with 24 life or more.", "Seedship Impact", endAtLeast(24)),
+    deed("a40-massacre", 40, "a40b9", "Mutinous Massacre", "Beat the Station Monitors by your 12th turn.", "Mutinous Massacre", turnsBy(12), "hero", hidden("The station keeps its guidelines, and the crew is gone before it can enforce them.")),
+    deed("a41-web", 41, "a41b1", "Web-Slinging", "Kill eight of the Wild Pack's creatures.", "Aunt May", kills(8)),
+    deed("a41-bugle", 41, "a41b1", "Daily Bugle", "Beat the Wild Pack with 22 life or more.", "Daily Bugle Reporters", endAtLeast(22)),
+    deed("a41-mayhem", 41, "a41b2", "Mayhem", "Beat the Symbiotes with 20 life or more.", "Spider-Punk", endAtLeast(20)),
+    deed("a41-riot", 41, "a41b2", "Riot", "Have seven creatures on the field at once.", "Angry Rabble", { maxCreatures: [">=", 7] }),
+    deed("a41-v-venom", 41, "a41b2", "Evil Unleashed", "As the Symbiotes, kill eight creatures.", "Venom, Evil Unleashed", kills(8), "villain"),
+    deed("a41-mj", 41, "a41b3", "Doctor Octopus", "Kill six of Doc Ock's gang.", "Mary Jane Watson", kills(6)),
+    deed("a41-silk", 41, "a41b3", "Web Weaver", "Have three tokens on the field at once.", "Silk, Web Weaver", { maxTokens: [">=", 3] }),
+    deed("a41-v-ock", 41, "a41b3", "Master Planner", "As Doc Ock's gang, have three flyers on the field at once.", "Doctor Octopus, Master Planner", flyers(3), "villain"),
+    deed("a41-uk", 41, "a41b4", "The Green Goblin", "Attack with ten creatures at once.", "Spider-UK", attackers(10)),
+    deed("a41-spider-ham", 41, "a41b4", "Spider-Verse United", "Beat the Green Goblin with 21 life or more.", "Spider-Ham, Peter Porker", endAtLeast(21)),
+    deed("a41-v-goblin", 41, "a41b4", "The Goblin's Gambit", "As the Goblin's Gambit, kill six creatures.", "Ultimate Green Goblin", kills(6), "villain"),
+    deed("a41-appa", 41, "a41b5", "The Four Nations", "Have three flyers on the field at once.", "Appa, Loyal Sky Bison", flyers(3)),
+    deed("a41-aang", 41, "a41b5", "The Last Airbender", "Kill seven creatures.", "Aang, the Last Airbender", kills(7)),
+    deed("a41-v-raiders", 41, "a41b5", "Fire Nation Raiders", "As the Fire Nation Raiders, attack with ten creatures at once.", "Fire Nation Raider", attackers(10), "villain"),
+    deed("a41-bumi", 41, "a41b6", "Earthbending", "Beat the Dai Li with 23 life or more.", "Bumi, King of Three Trials", endAtLeast(23)),
+    deed("a41-earth-king", 41, "a41b6", "The Earth King", "Kill five creatures.", "The Earth King", kills(5)),
+    deed("a41-v-dai-li", 41, "a41b6", "Grand Secretariat", "As the Dai Li, kill seven creatures.", "Long Feng, Grand Secretariat", kills(7), "villain"),
+    deed("a41-katara", 41, "a41b7", "Koh, the Face Stealer", "Beat Koh with 20 life or more.", "Katara, Bending Prodigy", endAtLeast(20)),
+    deed("a41-glider", 41, "a41b7", "Glider Kids", "Attack with seven creatures at once.", "Glider Kids", attackers(7)),
+    deed("a41-v-koh", 41, "a41b7", "Face Stealer", "As Koh and the spirits, kill nine creatures.", "Koh, the Face Stealer", kills(9), "villain"),
+    deed("a41-suki", 41, "a41b8", "The Phoenix King", "Beat Ozai with 20 life or more.", "Suki, Kyoshi Warrior", endAtLeast(20)),
+    deed("a41-kyoshi", 41, "a41b8", "Kyoshi Warriors", "Kill eight creatures.", "Kyoshi Warriors", kills(8)),
+    deed("a41-v-ozai", 41, "a41b8", "Phoenix King", "As the Phoenix King, have a creature with 7 or more power.", "Ozai, the Phoenix King", power(7), "villain"),
+    deed("a41-arana", 41, "a41b9", "The Spider-Totems", "Kill four creatures.", "Ara\xF1a, Heart of the Spider", kills(4)),
+    deed("a41-sudden", 41, "a41b9", "Sudden Strike", "Have two flyers on the field at once.", "Sudden Strike", flyers(2)),
+    deed("a41-v-totems", 41, "a41b9", "Spider-Rex", "As the Spider-Totems, kill eight creatures.", "Spider-Rex, Daring Dino", kills(8), "villain"),
+    deed("a41-last-hunt", 41, "a41b9", "Kraven's Last Hunt", "Kill seven creatures.", "Kraven's Last Hunt", kills(7), "hero", hidden("The hunt ends the way the totems never planned.")),
+    // Act 42 (Crossing: TMNT and Marvel), 5 Nov 2026.
+    deed("a42-sewer", 42, "a42b1", "Heroes in a Half Shell", "Beat the Foot Clan with 25 life or more.", "Leonardo, Sewer Samurai", endAtLeast(25)),
+    deed("a42-katana", 42, "a42b1", "Blades Drawn", "Kill five creatures.", "Quintessential Katana", kills(5)),
+    deed("a42-v-foot", 42, "a42b1", "Silent Strike", "As the Foot Clan, kill four creatures.", "Foot Mystic", kills(4), "villain"),
+    deed("a42-april", 42, "a42b2", "Friends in Low Places", "Have ten creatures on the field at once.", "April O'Neil, Hacktivist", { maxCreatures: [">=", 10] }),
+    deed("a42-donnie", 42, "a42b2", "Turtle Techie", "Have five artifacts on the field at once.", "Donatello, Turtle Techie", { maxArtifacts: [">=", 5] }),
+    deed("a42-v-dragons", 42, "a42b2", "Street Gang", "As the Purple Dragons, kill five creatures.", "Purple Dragon Punks", kills(5), "villain"),
+    deed("a42-raph", 42, "a42b3", "Tough Turtle", "Kill seven creatures.", "Raphael, Tough Turtle", kills(7)),
+    deed("a42-mikey", 42, "a42b3", "Technodrome Down", "Beat Krang with 16 life or more.", "Michelangelo, Game Master", endAtLeast(16)),
+    deed("a42-v-krang", 42, "a42b3", "Master Mind", "As Krang's Technodrome, have two flyers on the field at once.", "Krang, Master Mind", flyers(2), "villain"),
+    deed("a42-mutanimals", 42, "a42b4", "Mighty Mutanimals", "Attack with nine creatures at once.", "Mighty Mutanimals", attackers(9)),
+    deed("a42-leatherhead", 42, "a42b4", "Swamp Stalker", "Have four tokens on the field at once.", "Leatherhead, Swamp Stalker", { maxTokens: [">=", 4] }),
+    deed("a42-v-shredder", 42, "a42b4", "Unrelenting", "As Super Shredder's Foot, have a creature with 6 or more power.", "Super Shredder", power(6), "villain"),
+    deed("a42-coulson", 42, "a42b5", "Level Seven", "Beat HYDRA with 18 life or more.", "Agent Phil Coulson", endAtLeast(18)),
+    deed("a42-cap", 42, "a42b5", "Assembled Ranks", "Attack with eight creatures at once.", "Captain America, Super-Soldier", attackers(8)),
+    deed("a42-v-hydra", 42, "a42b5", "Hail HYDRA", "As HYDRA, kill three creatures.", "Baron Strucker, HYDRA Overlord", kills(3), "villain"),
+    deed("a42-thor", 42, "a42b6", "Worthy", "Kill five creatures.", "Thor Odinson", kills(5)),
+    deed("a42-war-machine", 42, "a42b6", "Legacy of Iron", "Have four artifacts on the field at once.", "War Machine, Legacy of Iron", { maxArtifacts: [">=", 4] }),
+    deed("a42-v-loki", 42, "a42b6", "Glorious Purpose", "As Loki's Tricks, have three tokens on the field at once.", "Loki, God of Mischief", { maxTokens: [">=", 3] }, "villain"),
+    deed("a42-torch", 42, "a42b7", "Flame On", "Beat Doom with 17 life or more.", "Human Torch, Johnny Storm", endAtLeast(17)),
+    deed("a42-sue", 42, "a42b7", "Force Field", "Kill five creatures.", "Invisible Woman, Sue Storm", kills(5)),
+    deed("a42-v-doom", 42, "a42b7", "Doom Reigns", "As Doom, have five creatures on the field at once.", "Doctor Doom", { maxCreatures: [">=", 5] }, "villain"),
+    deed("a42-avengers", 42, "a42b8", "Avengers Unite", "Attack with five creatures at once.", "Hawkeye, Master Marksman", attackers(5)),
+    deed("a42-assemble", 42, "a42b8", "Avengers Assemble", "Kill five creatures.", "Avengers Assemble!", kills(5)),
+    deed("a42-v-thanos", 42, "a42b8", "Inevitable", "As Thanos, have a creature with 5 or more power.", "Thanos, the Mad Titan", power(5), "villain"),
+    deed("a42-ant-man", 42, "a42b9", "Colony Commander", "Kill six creatures.", "Ant-Man, Colony Commander", kills(6)),
+    deed("a42-moon-girl", 42, "a42b9", "Devil Dinosaur", "Have twelve creatures on the field at once.", "Moon Girl and Devil Dinosaur", { maxCreatures: [">=", 12] }),
+    deed("a42-v-heralds", 42, "a42b9", "Heralds of Galactus", "As the Heralds, kill nine creatures.", "Titania, Rugged Rumbler", kills(9), "villain"),
+    deed("a42-galactus", 42, "a42b9", "The Coming of Galactus", "Beat the Heralds with 16 life or more.", "The Coming of Galactus", endAtLeast(16), "hero", hidden("The devourer arrives, and the small ones stand anyway.")),
+    // Act 43 (The Hobbit), 5 Nov 2026.
+    deed("a43-party", 43, "a43b1", "An Unexpected Party", "Beat the Three Trolls with 18 life or more.", "Belladonna Took", endAtLeast(18)),
+    deed("a43-trolls-down", 43, "a43b1", "Turned to Stone", "Kill four creatures.", "K\xEDli the Resourceful", kills(4)),
+    deed("a43-v-trolls", 43, "a43b1", "Roast Mutton", "As the Three Trolls, kill eight creatures.", "Tom, Bert, and William", kills(8), "villain"),
+    deed("a43-goblin-town", 43, "a43b2", "Down in Goblin-town", "Attack with six creatures at once.", "Gandalf, Wandering Wizard", attackers(6)),
+    deed("a43-escape", 43, "a43b2", "Out of the Mountain", "Beat Goblin-town with 16 life or more.", "Dori, Bearer of Friends", endAtLeast(16)),
+    deed("a43-v-goblins", 43, "a43b2", "Clap! Snap!", "As Goblin-town, have three flyers on the field at once.", "Goblin-town Flunkies", flyers(3), "villain"),
+    deed("a43-riddles", 43, "a43b3", "Riddles in the Dark", "Beat Gollum with 15 life or more.", "Riddles in the Dark", endAtLeast(15)),
+    deed("a43-burglar", 43, "a43b3", "The Burglar", "Have four tokens on the field at once.", "Bilbo, Thief in the Night", { maxTokens: [">=", 4] }),
+    deed("a43-v-gollum", 43, "a43b3", "Precious", "As Gollum and the Goblins, kill eight creatures.", "Gollum the Abandoned", kills(8), "villain"),
+    deed("a43-beorn", 43, "a43b4", "Beorn at the Door", "Put six +1/+1 counters on a single creature.", "Radagast of Rhosgobel", { maxCounters: [">=", 6] }),
+    deed("a43-porch", 43, "a43b4", "The Front Porch", "Kill four creatures.", "Old Thrush", kills(4)),
+    deed("a43-v-beorn", 43, "a43b4", "Skin-changer", "As Beorn and the Bears, have a creature with 10 or more power.", "Beorn the Fierce", power(10), "villain"),
+    deed("a43-mirkwood", 43, "a43b5", "Through Mirkwood", "Beat the Spiders with 20 life or more.", "Thorin Oakenshield", endAtLeast(20)),
+    deed("a43-spiderbane", 43, "a43b5", "Spider-bane", "Kill seven creatures.", "Balin, Loremaster", kills(7)),
+    deed("a43-v-spiders", 43, "a43b5", "Attercop", "As the Spiders of Mirkwood, kill ten creatures.", "Attercop", kills(10), "villain"),
+    deed("a43-erebor", 43, "a43b6", "The Dwarves of Erebor", "Beat the Dwarves with 19 life or more.", "Dwalin, Weaponmaster", endAtLeast(19)),
+    deed("a43-bears", 43, "a43b6", "Bear Hug", "Kill six creatures.", "Bombur, Gentle Dreamer", kills(6)),
+    deed("a43-v-dwarves", 43, "a43b6", "Iron Hills", "As the Dwarves of Erebor, have three tokens on the field at once.", "Iron Hills Stalwart", { maxTokens: [">=", 3] }, "villain"),
+    deed("a43-elvenking", 43, "a43b7", "The Elvenking", "Beat the Elvenking with 25 life or more.", "Bifur, Melodic Rider", endAtLeast(25)),
+    deed("a43-barrels", 43, "a43b7", "Barrel-rider", "Have two artifacts on the field at once.", "Galion, Elvenking's Butler", { maxArtifacts: [">=", 2] }),
+    deed("a43-v-thranduil", 43, "a43b7", "Silvan Rally", "As the Elvenking's Halls, have five tokens on the field at once.", "Thranduil's Decree", { maxTokens: [">=", 5] }, "villain"),
+    deed("a43-bard", 43, "a43b8", "Bard the Bowman", "Have two flyers on the field at once.", "Bard the Bowman", flyers(2)),
+    deed("a43-black-arrow", 43, "a43b8", "The Black Arrow", "Beat Smaug with 13 life or more.", "The Black Arrow", endAtLeast(13)),
+    deed("a43-v-smaug", 43, "a43b8", "Smaug the Magnificent", "As Smaug, have three flyers on the field at once.", "Smaug the Magnificent", flyers(3), "villain"),
+    deed("a43-five-armies", 43, "a43b9", "The Five Armies", "Beat the Goblin Host with 20 life or more.", "D\xE1in, Lord of the Iron Hills", endAtLeast(20)),
+    deed("a43-eagles", 43, "a43b9", "The Eagles Are Coming", "Kill seven creatures.", "Eagle's Rescue", kills(7)),
+    deed("a43-v-bolg", 43, "a43b9", "Bolg of the North", "As the Goblin Host, kill five creatures.", "Bolg of the North", kills(5), "villain"),
+    deed("a43-lord-of-eagles", 43, "a43b9", "Lord of the Eagles", "Have seven artifacts on the field at once.", "The Lord of the Eagles", { maxArtifacts: [">=", 7] }, "hero", hidden("Hoard and horde alike, the treasure outlasts the war.")),
+    // Act 44 (The Echoverse), 5 Nov 2026.
+    deed("a44-eclipse", 44, "a44b1", "The Eclipse", "Beat the Shadowmoor Gloom with 30 life or more.", "Rhys, the Evermore", endAtLeast(30)),
+    deed("a44-sentry", 44, "a44b1", "Kinscaer Sentry", "Kill seven creatures.", "Kinscaer Sentry", kills(7)),
+    deed("a44-v-shadow", 44, "a44b1", "Shadowmoor Gloom", "As the Shadowmoor Gloom, kill ten creatures.", "Gloom Ripper", kills(10), "villain"),
+    deed("a44-court", 44, "a44b2", "Maralen's Court", "Beat Maralen's Court with 23 life or more.", "Creakwood Safewright", endAtLeast(23)),
+    deed("a44-kin", 44, "a44b2", "Wild Kin", "Attack with six creatures at once.", "Heirloom Auntie", attackers(6)),
+    deed("a44-v-maralen", 44, "a44b2", "Fae Ascendant", "As Maralen's Court, kill ten creatures.", "Maralen, Fae Ascendant", kills(10), "villain"),
+    deed("a44-liege", 44, "a44b3", "Lorwyn Liege", "Beat Oko and his court with 20 life or more.", "Enraged Flamecaster", endAtLeast(20)),
+    deed("a44-ember", 44, "a44b3", "Ember Kin", "Kill six creatures.", "Thunderdrum Soloist", kills(6)),
+    deed("a44-v-oko", 44, "a44b3", "Eclipsed Court", "As the Eclipsed Court, have eight creatures on the field at once.", "Curse-Marred Demon", { maxCreatures: [">=", 8] }, "villain"),
+    deed("a44-first-years", 44, "a44b4", "First-Years", "Beat the Rival Students with 18 life or more.", "Tam, Mindful First-Year", endAtLeast(18)),
+    deed("a44-prepared", 44, "a44b4", "Prepared", "Attack with six creatures at once.", "Mutable Explorer", attackers(6)),
+    deed("a44-v-rival", 44, "a44b4", "Rival Students", "As the Rival Students, kill eleven creatures.", "Sanar, Innovative First-Year", kills(11), "villain"),
+    deed("a44-strixhaven", 44, "a44b5", "Strixhaven", "Beat the Archaics with 17 life or more.", "Colorstorm Stallion", endAtLeast(17)),
+    deed("a44-repartee", 44, "a44b5", "Repartee", "Have two flyers on the field at once.", "Molten-Core Maestro", flyers(2)),
+    deed("a44-v-archaic", 44, "a44b5", "Archaics of Arcavios", "As the Archaics, have six creatures on the field at once.", "The Dawning Archaic", { maxCreatures: [">=", 6] }, "villain"),
+    deed("a44-lorehold", 44, "a44b6", "Lorehold", "Beat Witherbloom with 15 life or more.", "Lorehold, the Historian", endAtLeast(15)),
+    deed("a44-academic", 44, "a44b6", "Hardened Academic", "Kill four creatures.", "Hardened Academic", kills(4)),
+    deed("a44-v-witherbloom", 44, "a44b6", "The Balancer", "As Witherbloom, kill eight creatures.", "Witherbloom, the Balancer", kills(8), "villain"),
+    deed("a44-proof", 44, "a44b7", "The Theorist's Proof", "Beat Uldaros Theorix with 20 life or more.", "Chandra's Emberling", endAtLeast(20)),
+    deed("a44-empower", 44, "a44b7", "Empower", "Put three +1/+1 counters on a single creature.", "Draconic Visitor", { maxCounters: [">=", 3] }),
+    deed("a44-v-uldaros", 44, "a44b7", "Uldaros Theorix's Proof", "As Uldaros Theorix, have three flyers on the field at once.", "Uldaros Theorix", flyers(3), "villain"),
+    deed("a44-theorist", 44, "a44b8", "The Theorist", "Beat the Theorist with 18 life or more.", "Aziza, Mage Tower Captain", endAtLeast(18)),
+    deed("a44-allies", 44, "a44b8", "Allies of the Echoverse", "Attack with six creatures at once.", "Bre of Clan Stoutarm", attackers(6)),
+    deed("a44-v-jace", 44, "a44b8", "Reality Sculptor", "As the Theorist, have six flyers on the field at once.", "The Theorist, Jace Beleren", flyers(6), "villain"),
+    deed("a44-exigent", 44, "a44b9", "The Exigent Doom", "Beat Emrakul with 20 life or more.", "Tam, the Possibility", endAtLeast(20)),
+    deed("a44-echoes", 44, "a44b9", "Burgeoning Echoes", "Kill three creatures.", "Avatar of Burgeoning Echoes", kills(3)),
+    deed("a44-v-emrakul", 44, "a44b9", "Emrakul Awakens", "As Emrakul and the Echoes, kill nine creatures.", "Emrakul, the Exigent Doom", kills(9), "villain"),
+    deed("a44-aurora", 44, "a44b9", "Aurora Awakener", "Have two tokens on the field at once.", "Aurora Awakener", { maxTokens: [">=", 2] }, "hero", hidden("What wakes at dawn is small, and many."))
   ]);
-  var STORY_ACT_DEEDS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].flatMap((act) => [
+  var STORY_ACT_DEEDS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44].flatMap((act) => [
     { id: `a${act}-chronicler`, act, kind: "loaner", title: `Chronicler of Act ${act}`, lore: `Win all 8 battles of Act ${act} with the Story decks.` },
     { id: `a${act}-two-faced`, act, kind: "both", title: `Both Sides of Act ${act}`, lore: `Win all 8 battles of Act ${act} from both seats. Understand the villains too.` }
   ]));
-  var CHRONICLER_ART = { 1: "Shivan Dragon", 2: "Tetsuo Umezawa", 3: "Kjeldoran Royal Guard", 4: "Teferi's Isle", 5: "Volrath's Stronghold", 6: "Serra's Sanctum", 7: "Rishadan Port", 8: "Urza's Rage", 9: "Cabal Coffers", 10: "Akroma, Angel of Wrath" };
-  var BOTH_SIDES_ART = { 1: "Mishra, Artificer Prodigy", 2: "Hymn to Tourach", 3: "Lim-D\xFBl's High Guard", 4: "Suq'Ata Lancer", 5: "Crovax the Cursed", 6: "Phyrexian Negator", 7: "Ascendant Evincar", 8: "Yawgmoth's Agenda", 9: "Chainer, Dementia Master", 10: "Riptide Laboratory" };
+  var CHRONICLER_ART = { 1: "Shivan Dragon", 2: "Tetsuo Umezawa", 3: "Kjeldoran Royal Guard", 4: "Teferi's Isle", 5: "Volrath's Stronghold", 6: "Serra's Sanctum", 7: "Rishadan Port", 8: "Urza's Rage", 9: "Cabal Coffers", 10: "Akroma, Angel of Wrath", 11: "Tree of Tales", 12: "Eiganjo Castle", 13: "Pillar of the Paruns", 14: "Lotus Bloom", 15: "Gilt-Leaf Palace", 16: "Conflux", 17: "Eye of Ugin", 18: "Inkmoth Nexus", 19: "Moorland Haunt", 20: "Azorius Guildgate", 21: "Nykthos, Shrine to Nyx", 22: "Crux of Fate", 23: "Sea Gate Wreckage", 24: "Westvale Abbey", 25: "Spire of Industry", 26: "Hashep Oasis", 27: "Rootbound Crag", 28: "Meandering River", 29: "Watery Grave", 30: "Temple of Mystery", 31: "Lorehold Campus", 32: "Sundown Pass", 33: "Spara's Headquarters", 34: "Adarkar Wastes", 35: "Jungle Hollow", 36: "Meticulous Archive", 37: "Botanical Sanctum", 38: "Swiftwater Cliffs", 39: "Fire Magic", 40: "Exosuit Savior", 41: "Earth Kingdom General", 42: "Nick Fury, Agent of S.H.I.E.L.D.", 43: "Elrond, Moon-Reader", 44: "Figure of Fable" };
+  var BOTH_SIDES_ART = { 1: "Mishra, Artificer Prodigy", 2: "Hymn to Tourach", 3: "Lim-D\xFBl's High Guard", 4: "Suq'Ata Lancer", 5: "Crovax the Cursed", 6: "Phyrexian Negator", 7: "Ascendant Evincar", 8: "Yawgmoth's Agenda", 9: "Chainer, Dementia Master", 10: "Riptide Laboratory", 11: "Darksteel Citadel", 12: "Toshiro Umezawa", 13: "Guardian of the Guildpact", 14: "Temporal Eddy", 15: "Maralen of the Mornsong", 16: "Cruel Ultimatum", 17: "Celestial Colonnade", 18: "Sword of Body and Mind", 19: "Unburial Rites", 20: "Lazav, Dimir Mastermind", 21: "Xenagos, the Reveler", 22: "Dig Through Time", 23: "Thought-Knot Seer", 24: "Emrakul, the Promised End", 25: "Noxious Gearhulk", 26: "Hour of Devastation", 27: "Sun-Crested Pterodon", 28: "Josu Vess, Lich Knight", 29: "Massacre Girl", 30: "Charmed Sleep", 31: "Skyclave Shade", 32: "Haunted Ridge", 33: "Biting-Palm Ninja", 34: "Brotherhood's End", 35: "Scoured Barrens", 36: "Raucous Theater", 37: "Blooming Marsh", 38: "Dismal Backwater", 39: "Il Mheg Pixie", 40: "Sami, Wildcat Captain", 41: "Momo, Friendly Flier", 42: "Shredder, Unrelenting", 43: "Azog, Moria's Ruin", 44: "Quandrix, the Proof" };
+  var REWARD_OF = Object.entries({
+    xp: "a1-dawn-charge a1-ford-held a1-sky-court a1-old-growth a1-no-efreet a1-tawnos-workshop a1-no-altar a1-vise-proof a2-spore-army a2-havenwood a2-sanity a3-skycaptains a3-lhurgoyf a3-fire-feast a3-gate-held a3-before-shade a3-pestilence-proof a4-flank a4-drake-flight a4-dawn-comes a4-library-wings a4-goats a4-griffins a4-on-the-draw a5-untouched-shadow a5-lecture a5-unhunted a5-repelled a5-overrun a6-anthems a6-drakes a6-outcast a6-academy-burns a6-mantis a6-defenders a7-guard-down a7-cho-manno a7-general a7-unmasked a7-blastoderm a8-first-wave a8-kavu a8-not-thirsty a8-doomsday a9-keepers a9-squirrels a9-penance a9-patriarch a10-unmasked a10-kinship a10-sliver-hunt a10-untouched a10-hold-line a11-pontifex a11-ravager-down a11-tangle a11-disciple a11-shackles-free a11-spark a11-unclamped a12-bushido a12-akki a12-ink-eyes a12-gnawer a12-kiku a12-taken a12-hanabi a13-surveyors a13-cop-lives a13-zoo-closed a14-rift a14-queenless a14-second-winter a14-thallids a14-teleport a14-big-red a14-mended a14-unpickled a15-merrow-lanes a15-faerie-sky a15-lark a15-archmage a15-queen-falls a16-hegemon a16-naya-stands a16-cascade a16-glory a16-steel-wind a16-bolas-banished a17-sorin a17-allies a17-sovereign a17-hawks a17-valakut a17-aeons a17-three-titans a17-gyre a18-outcast a18-keepers a18-phoenix a18-steel-power a18-ten-counters a18-blighted a18-bladehold a19-captains a19-traft a19-silverheart a19-prey a19-restoration a19-moon-sage a19-geists a19-aristocrat a19-hope a19-spawning a20-populate a20-conclave-heals a20-evolve a20-skyknights a20-architect a20-extort a20-decay a20-ooze a20-dracogenius a20-sphere a20-rampage a21-kiora a21-sun a21-fleecemane a21-constellation a21-ram a21-waves a21-hoplite a21-fabled a21-godsend a21-brimaz a21-hunt a22-ferocious a22-qal-sisma a22-prowess a22-delve a22-dragonfire a22-raid a22-outlast a22-cut a22-regents a22-transcendent a22-roar a23-sea-gate a23-ally a23-champion a23-tidecaller a23-ceaseless a23-archive a23-hangarback a23-nalaar a23-voice a23-impulse a24-case-closed a24-drownyard a24-journal a24-bloodline a24-harbinger a24-thraben-holds a24-watching a24-queller a24-unraveler a25-fairgrounds a25-energy a25-security a25-exhibition a25-improvise a25-conduit a25-revolt a25-counters a25-gearhulk a25-bridge a25-gatewatch a26-tah-crop a26-embalmed a26-aftermath a26-zeal a26-tested a26-survive a27-plunder a27-vona a27-castaway a27-dinosaurs a28-kicker a29-surveil a30-oko a30-allies a32-blue-dragon a32-alchemist a35-charforger a37-rooms a38-dragonstorm a39-weapon a40-reckoning a41-appa a42-leatherhead a42-torch a42-avengers a42-moon-girl a44-exigent a44-echoes",
+    common: "a1-order-ford a1-unbroken a1-tron a2-heretic a2-unburned a2-legend-remains a2-test-passed a2-swift-answer a2-combat-medic a2-phalanx a2-choir-silenced a2-on-the-draw a3-hold-pass a3-winter-sky a3-book-refused a3-race-book a3-warm-blood a4-elephants a4-amber-holds a4-unrewritten a5-shadow-army a5-adept a5-hive a5-mirri-watch a5-our-nightmare a5-no-nightmare a5-light-of-day a5-for-mirri a6-grunk a6-brood-cleansed a6-cradle a6-rancor a6-radiant a7-rebel-chain a7-hammer a7-throne a7-agreed a7-defiant a8-cloak a8-ancient a8-goblin-host a8-ship-held a8-tolaria-avenged a8-destiny a8-honor-guard a9-thirteen a9-champion a9-nuts a9-sledge a9-lavamancer a9-mongrel a9-braids a9-wake a10-faces a10-wirewood a10-pemmin a10-touched a10-angel-stands a10-made-to-kill a10-no-god a10-faces-turned a11-makers a11-equipped a11-junk a11-iron-golem a11-sunburst a11-geth a12-shrine a12-robbers a12-kumano a12-flipped a12-dragon a12-snakes a13-cultists a13-legion a13-raiders-down a13-first-blow a13-advokist a13-ghost-dad a13-firemind a13-light a13-no-angel a14-echo-fades a14-keld a14-goyf a14-heidar a14-marauders a14-hive-mind a14-trio a14-goyf-beats a15-arrow a15-cold-water a15-warren-cleared a15-goldmane a15-overrun a15-clique-caught a15-redcap a15-plumeveil a15-tower-falls a15-destiny a16-dragonslayer a16-brothers-keeper a16-ancients a16-unearthed a16-rise-again a17-expedition a17-dragonlord a17-brood a17-pridemate a17-bloodwitch a17-nissa a18-spark a18-riddles a18-furnace a18-tempered a18-resistance a18-firebrand a18-swordless a19-hunters a19-parish a19-delver a19-zombies a19-travelers a19-wurm a20-rubblebelt a20-hybrid a20-ghosts a20-revelation a20-verdict a20-maze a21-phalanx a21-canyon a21-tides a21-skyguard a21-world-eater a22-mantis a22-horde a22-manifest a22-ugin a22-cruise a23-hydra a23-spy-network a23-reignited a23-flamecaller a23-oath a24-grounded a24-bloodmad a24-defiance a24-arlinn a24-moonlight a24-imprisoned a24-deep-fiend a24-geistblast a25-spire a25-syndicate a25-fabricate a25-compliance a25-crew a25-copycat a25-saheeli a26-exerted a26-trial-strength a26-poisons a26-cycling a26-eternals a26-exert-red a26-neheb-eternal a26-gift a26-myriarch a26-hour a26-dissent a26-ramunap a27-golden-city a27-branchwalkers a27-treasure a27-enrage a27-raptors a27-ascend a27-monstrosaur a27-pirates a27-buccaneers a27-lawbringer a27-phoenix a27-ceratops a28-story-unfolds a28-chapter-three a28-weatherlight a28-jhoira a28-sisay a28-karn a28-cold-shoulder a28-radha a28-yargle a28-lavarunner a28-demonlord a28-lyra a28-teferi a28-allosaurus a29-beacon a29-queen a29-mentor a29-debts a29-afterlife a29-horde a29-amass a29-gambit a29-orzhov a29-superfriends a29-wrath a29-midrange a29-casualties a29-gatewatch a29-hero a30-story a30-adventure a30-questing a30-food a30-escape a30-beyond-death a30-muse a30-sculptor a30-monsters a30-mutate a30-oko-food a30-henge a30-temur a30-ramp a30-fires a31-party a31-malakir a31-doomskar a31-valkyrie a31-pests a31-honours a31-elves a31-lindwurm a31-magecraft a31-expressionist a31-rogues a31-aspirant a31-dragons a31-opus a31-extus a31-kaya a31-snow a32-dungeon a32-gold-dragon a32-wolves a32-cathars a32-rehearsal a32-disturb a32-alena a32-brood a32-sorin a32-court a32-blood a32-clerics a32-olivia a32-harvester a32-humans a33-chip a33-towashi a33-reconfigure a33-kirin a33-maestros a33-xander a33-resplendent a33-overseer a33-orfeo a33-ziatora a33-queza a33-connive a33-mothrider a33-jin a33-kaito a33-raffine a34-read-ahead a34-scouts a34-urza a34-thopters a34-karn a34-elder a34-teferi a34-figments a34-kayla a34-tori a34-strike a34-hellkite a34-whelp a34-sheoldred a34-radha a34-mishra a35-mirrodin a35-banesplitter a35-resistance a35-cultivator a35-defend a35-compleated a35-remnants a35-wrenn a35-incubate a35-archfiend a35-centurion a35-warmonger a35-norn a35-united a35-exarch a35-skrelv a36-bargain a36-quintorius a36-anim-pakal a36-discover a36-carnosaur a36-kutzil a36-scout a36-district a36-angel a36-teysa a36-moroii a36-interrogators a36-ezrim a36-agency a37-plot a37-crew a37-warren a37-warren-tokens a37-mabel a37-charger a37-guardmouse a37-tyvar a37-survival a37-challenger a37-manifold a37-kaito a37-scavenger a37-oko a37-zimone a37-watchdog a37-name a38-engines a38-vehicles a38-speed-demon a38-gearhulk a38-mardu a38-glory a38-skyfarers a38-chariot a38-grave a38-hellkite a38-bashtronaut a38-diver a38-cutter a38-surrak a38-clans a38-ketramose a38-ascendant a39-job-select a39-mercenaries a39-clive a39-raubahn a39-returners a39-vivi a39-seifer a39-pilgrimage a39-hope a39-regalia a39-trexaur a39-horde a39-jenova a39-sephiroth a39-tifa a39-hunters a40-salvage a40-pilot a40-thaw a40-uthros a40-haliya a40-dawnstrike a40-weft a40-codecracker a40-plasma a40-sothera a40-tannuk a40-ensign a40-impact a41-web a41-bugle a41-mayhem a41-mj a41-silk a41-uk a41-spider-ham a41-aang a41-bumi a41-earth-king a41-katara a41-suki a41-arana a41-sudden a42-sewer a42-katana a42-april a42-donnie a42-raph a42-mikey a42-mutanimals a42-coulson a42-cap a42-thor a42-war-machine a42-sue a42-assemble a42-ant-man a43-party a43-trolls-down a43-goblin-town a43-escape a43-riddles a43-burglar a43-beorn a43-porch a43-mirkwood a43-spiderbane a43-erebor a43-bears a43-elvenking a43-barrels a43-bard a43-black-arrow a43-five-armies a43-eagles a44-eclipse a44-sentry a44-court a44-kin a44-liege a44-ember a44-first-years a44-prepared a44-strixhaven a44-repartee a44-lorehold a44-academic a44-proof a44-empower a44-theorist a44-allies",
+    uncommon: "a1-not-a-scratch a1-toll-unpaid a1-regicide a1-wish-denied a1-argoth-answers a1-deep-answers a1-v-dragon-engine a2-twin-fall a2-quick-deck a2-moon-rising a2-dragonslayer a2-v-elder a3-thaw a3-off-menu a3-master-falls a3-house-burns a3-grandmother a3-v-legion a4-lance-broken a4-on-time a4-purraj a4-no-sale a4-fireblast-dodged a4-camp-falls a4-v-torch a5-vhati a5-skyshroud-rising a5-shapeshifter a5-v-evincar a6-avatar a6-one-use a6-detention a6-before-academy a6-school-stands a6-v-praetor a7-climb a7-falcons a7-fallen-again a7-five-winds a7-gargadon a7-curse-broken a7-v-massacre a8-tsabo a8-llanowar a8-pyre a8-fires a8-remembered a8-v-agenda a9-threshold a9-nightmare-ends a9-screech a9-sister a9-v-mutilate a10-wrath a10-exalted a10-siege a10-v-karona a11-plating a11-modular a11-colossus a11-panopticon a11-v-platinum a11-cleansing a12-line a12-hidetsugu a12-godo a12-oath a12-v-konda a12-unjitted a13-festival a13-rotwurm a13-writ a13-graft a13-dragged a13-v-secrets a13-boros-wins a14-necro-down a14-teferi-echo a14-v-rift a15-brigid-falls a15-extinguished a15-bitterblossom a15-three-banners a15-v-glen a16-exalted a16-seekers a16-squadron a16-traitor-king a16-kresh a16-baneslayer a16-three-walkers a16-v-conflux a17-joraga a17-skyfishers a17-eye a17-stoneforge a17-v-monument a17-betrayed a18-metalcraft a18-geth a18-clean-blood a18-skyguard a18-v-norn a19-olivia a19-haunting a19-v-griselbrand a20-battalion a20-v-overload a21-mentor a21-devotion a21-v-revels a22-atarka a22-battle-rage a22-v-silumgar a23-rogues a23-depths a23-v-distortion a23-abbot a24-v-nemesis a24-v-promised a25-v-dovin a25-heart a25-v-tezzeret a26-v-scarab a26-v-bolas a26-ruined a27-tishana a27-v-nezahal a27-immortal-sun a27-v-azor a28-mono-red a28-stompy a28-marwyn a28-v-garna a28-v-belzenlok a29-v-amass a29-dragon-god a29-v-bolas a29-rioters a30-v-ashiok a30-v-oko a30-terror a31-v-vorinclex a31-v-berserkers a31-v-extus a31-maul a32-v-tiamat a32-v-clerics a32-v-olivia a33-v-ob a33-skies a33-v-kura a33-v-jin a34-v-mishra a34-v-gix a34-v-ajani a34-liliana a34-v-sheoldred a34-guardian a35-v-jin a35-calix a35-v-compleated a35-v-glissa a35-v-norn a36-archon a36-v-ashiok a36-v-aclazotz a36-alquist a36-v-rot a36-v-massacre a36-hammerskull a36-raptor a37-v-akul a37-doll a37-v-house a37-v-rooms a37-v-prowess a37-v-valgavoth a38-v-racers a38-victory a38-v-pack a38-v-clans a38-v-dimir a38-v-sarkhan a39-moogle a39-v-dominants a39-barret a39-v-kefka a39-v-lightning a39-v-sin a39-v-niflheim a39-v-sephiroth a40-v-miners a40-lashwhip a40-v-navy a40-cloudsculpt a40-nanoform a40-v-tezzeret a40-v-alpharael a40-skystinger a40-shieldmate a40-monitor a40-v-zealots a40-v-illvoi a40-v-supervoid a41-riot a41-v-venom a41-v-ock a41-v-goblin a41-v-raiders a41-v-dai-li a41-glider a41-v-koh a41-kyoshi a41-v-ozai a41-v-totems a42-v-foot a42-v-dragons a42-v-krang a42-v-shredder a42-v-hydra a42-v-loki a42-v-doom a42-v-thanos a42-v-heralds a43-v-trolls a43-v-goblins a43-v-gollum a43-v-beorn a43-v-spiders a43-v-dwarves a43-v-thranduil a43-v-smaug a43-v-bolg a44-v-shadow a44-v-maralen a44-v-oko a44-v-rival a44-v-archaic a44-v-witherbloom a44-v-uldaros a44-v-jace a44-v-emrakul"
+  }).reduce((m, [tier, ids]) => {
+    for (const id of ids.split(" ")) m[id] = tier;
+    return m;
+  }, {});
+  var KEY_FEATS = Object.freeze({
+    1: ["a1-colossus", "a1-order-ford", "a1-dawn-charge"],
+    2: ["a2-ball-rolls", "a2-heretic", "a2-legend-remains"],
+    3: ["a3-greedy", "a3-hold-pass", "a3-winter-sky"],
+    4: ["a4-elephants", "a4-unrewritten", "a4-flank"],
+    5: ["a5-shadow-army", "a5-adept", "a5-hive"],
+    6: ["a6-grunk", "a6-brood-cleansed", "a6-cradle"],
+    7: ["a7-hat", "a7-rebel-chain", "a7-throne"],
+    8: ["a8-cloak", "a8-ancient", "a8-goblin-host"],
+    9: ["a9-thirteen", "a9-nuts", "a9-sledge"],
+    10: ["a10-faces", "a10-wirewood", "a10-pemmin"],
+    11: ["a11-makers", "a11-junk", "a11-iron-golem"],
+    12: ["a12-shrine", "a12-kumano", "a12-flipped"],
+    13: ["a13-cultists", "a13-legion", "a13-first-blow"],
+    14: ["a14-future-waits", "a14-echo-fades", "a14-keld"],
+    15: ["a15-endless-court", "a15-arrow", "a15-cold-water"],
+    16: ["a16-dragonslayer", "a16-brothers-keeper", "a16-ancients"],
+    17: ["a17-titan", "a17-expedition", "a17-brood"],
+    18: ["a18-spark", "a18-furnace", "a18-tempered"],
+    19: ["a19-hunters", "a19-delver", "a19-zombies"],
+    20: ["a20-biomancer", "a20-rubblebelt", "a20-ghosts"],
+    21: ["a21-phalanx", "a21-tides", "a21-skyguard"],
+    22: ["a22-mantis", "a22-horde", "a22-manifest"],
+    23: ["a23-hydra", "a23-spy-network", "a23-reignited"],
+    24: ["a24-howlpack", "a24-grounded", "a24-bloodmad"],
+    25: ["a25-spire", "a25-fabricate", "a25-compliance"],
+    26: ["a26-no-gift", "a26-exerted", "a26-poisons"],
+    27: ["a27-golden-city", "a27-treasure", "a27-enrage"],
+    28: ["a28-story-unfolds", "a28-weatherlight", "a28-sisay"],
+    29: ["a29-beacon", "a29-queen", "a29-debts"],
+    30: ["a30-story", "a30-questing", "a30-escape"],
+    31: ["a31-party", "a31-doomskar", "a31-extus"],
+    32: ["a32-wolves", "a32-sorin", "a32-olivia"],
+    33: ["a33-reconfigure", "a33-orfeo", "a33-jin"],
+    34: ["a34-urza", "a34-teferi", "a34-sheoldred"],
+    35: ["a35-resistance", "a35-wrenn", "a35-norn"],
+    36: ["a36-quintorius", "a36-kutzil", "a36-ezrim"],
+    37: ["a37-warren", "a37-tyvar", "a37-oko"],
+    38: ["a38-mardu", "a38-skyfarers", "a38-clans"],
+    39: ["a39-clive", "a39-returners", "a39-sephiroth"],
+    40: ["a40-uthros", "a40-codecracker", "a40-sothera"],
+    41: ["a41-mayhem", "a41-spider-ham", "a41-suki"],
+    42: ["a42-sewer", "a42-mutanimals", "a42-avengers"],
+    43: ["a43-party", "a43-beorn", "a43-bard"],
+    44: ["a44-court", "a44-strixhaven", "a44-empower"]
+  });
+  var keyIds = new Set(Object.values(KEY_FEATS).flat());
+  var isKeyFeat = (id) => keyIds.has(id);
+  var storyDeedReward = (d) => d.hidden || d.gold ? null : d.kind ? "feat" : REWARD_OF[d.id] || "uncommon";
   var STORY_DEED_IDS = new Set([...STORY_DEEDS, ...STORY_ACT_DEEDS].map((d) => d.id));
   var storyDeedArt = (d) => d.art || (d.kind === "both" ? BOTH_SIDES_ART : CHRONICLER_ART)[d.act];
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/play-achievement-art.js
+  // ../../play-achievement-art.js
   init_deck_engine_prelude();
   var ACHIEVEMENT_ART = Object.freeze({
     "Chandra, Torch of Defiance": ["ff8086cd-b868-4f4e-823e-2635ad7ebc07", "kld", "110", 1],
@@ -5179,6 +6417,26 @@
     "Ixidor, Reality Sculptor": ["314d5e89-55f7-42b4-af19-d4d0f499a265", "ons", "89", 1],
     "Phage the Untouchable": ["a410b933-99d0-4383-b54b-4839a76eb6fe", "lgn", "78", 1],
     "Karona, False God": ["de53d083-251e-42a4-9e2e-c2978c80615b", "scg", "138", 1],
+    "Glissa Sunseeker": ["670c3106-71fc-464e-8c94-81bf7fafc3e6", "mrd", "120"],
+    "Memnarch": ["57ae2417-b859-4254-a3a5-6bff159447ca", "dst", "129"],
+    "Skullclamp": ["55318397-de3c-47ea-a088-72a24df5c8fa", "dst", "140"],
+    "Tree of Tales": ["94db07aa-43d3-41b5-924e-60f1756b9c69", "mrd", "285"],
+    "Darksteel Citadel": ["c5d0e808-d67b-4ea3-9c04-d20269fe692c", "dst", "164"],
+    "Takeno, Samurai General": ["d038df46-4a30-4125-be0e-8781b16b523e", "chk", "46"],
+    "Konda, Lord of Eiganjo": ["5edab171-94b9-4e5e-ab61-bd8c6c8cfc38", "chk", "30"],
+    "Umezawa's Jitte": ["3b6e5956-f795-451b-bb24-56462d1ced27", "bok", "163"],
+    "Eiganjo Castle": ["219c1d76-40cf-4edf-8145-e6cec8ca39ad", "chk", "275"],
+    "Toshiro Umezawa": ["0e767e07-febd-4025-bf03-d4d816bc1d3d", "bok", "89"],
+    "Agrus Kos, Wojek Veteran": ["c2521942-0ecd-45a9-bac6-04267a2c29ed", "rav", "190"],
+    "Szadek, Lord of Secrets": ["2882793e-5d7d-47f0-9308-652a5e036c2c", "rav", "234"],
+    "Angel of Despair": ["9ae71424-df9c-481c-9305-a0c30adcfda2", "gpt", "101"],
+    "Pillar of the Paruns": ["236dcb39-b81e-4ae2-b153-01be0577ed93", "dis", "176"],
+    "Guardian of the Guildpact": ["c8dd004b-01e4-4fe1-a164-9f2ea8d7d88e", "dis", "10"],
+    "Radha, Heir to Keld": ["7fc23b2e-9124-4f88-b93e-8bfe90e6eb41", "plc", "162"],
+    "Venser, Shaper Savant": ["0e84fc99-4045-4518-b588-512a675f2933", "fut", "46"],
+    "Brine Elemental": ["8dab2c73-501b-46c9-bc76-134b50d35bb8", "tsp", "50"],
+    "Lotus Bloom": ["73127ee0-9a0c-48fa-9c60-b4c600ace8f7", "tsp", "259"],
+    "Temporal Eddy": ["3cab2147-d496-489b-aaf0-b354e31a6b45", "tsp", "85"],
     "Shivan Dragon": ["fefbf149-f988-4f8b-9f53-56f5878116a6", "lea", "174", 1],
     "Mishra, Artificer Prodigy": ["d5deaec5-499d-4e19-b879-8bcd1dc35f3e", "tsp", "243"],
     "Tetsuo Umezawa": ["8384f87b-26c2-45b7-98ef-352c384f205e", "leg", "262", 1],
@@ -5203,13 +6461,1043 @@
     "Ball Lightning": ["3259a9d0-0add-4cf1-958c-9367c7441c62", "m10", "125"],
     "Divine Intervention": ["9eae0ba1-1383-4505-b4e7-4f17dd8f20c5", "leg", "8", 1],
     "Child of Alara": ["863f701f-fba2-48db-95ef-0926986cdac9", "con", "101"],
-    "God-Pharaoh's Gift": ["b2e85a9e-4c37-4721-b7ea-de3413ec39df", "hou", "161"]
+    "God-Pharaoh's Gift": ["b2e85a9e-4c37-4721-b7ea-de3413ec39df", "hou", "161"],
+    // Story deeds rebuilt 3 Nov 2026 (two or more per battle), and the Quick Play, Multiplayer and hidden batch.
+    "Wrath of God": ["0d223e83-0d3c-459e-96f5-ba9227fe49dd", "7ed", "57", 1],
+    "Craterhoof Behemoth": ["a249be17-73ed-4108-89c0-f7e87939beb8", "avr", "172"],
+    "Overwhelming Stampede": ["1d5a46d0-09fe-454c-a920-0343f846b832", "m11", "189"],
+    "Day of Judgment": ["2aa98fca-972b-46c2-bdec-6ace35c988d5", "zen", "9"],
+    "Glistener Elf": ["8b94f4c6-b518-43b3-be52-e889d1f3ea38", "nph", "111"],
+    "Traumatize": ["4cad8762-ff91-4971-84be-f643c7795679", "ody", "110", 1],
+    "Teferi's Protection": ["e59f4627-58ab-45c8-b31b-eaa52dad33fc", "sld", "164"],
+    "Rekindling Phoenix": ["daccec32-84c6-4de4-9b00-c497a6ba5de8", "rix", "111"],
+    "Hornet Queen": ["714cd47b-88f6-448d-9242-481935565250", "cmd", "159"],
+    "Secure the Wastes": ["915d2f5f-b228-4190-ade9-52e2a8056847", "dtk", "36"],
+    "Ghalta, Primal Hunger": ["0104b5b3-9376-4ad7-9a77-3e564e9c42e6", "rix", "130"],
+    "Favorable Winds": ["adfe8174-4e75-4e8f-b59c-f80a98492b5f", "xln", "56"],
+    "Hardened Scales": ["7dcdf1db-bfaf-4160-8003-1fa2e56b00dc", "ktk", "133"],
+    "Puresteel Paladin": ["ca100248-fcd6-41ed-8d75-bcb473845edd", "nph", "20"],
+    "Vanquisher's Banner": ["60b7a85f-3a30-4ece-9bbb-61f3c4b796b8", "xln", "251"],
+    "Ixidron": ["a2f5c613-80ad-487f-995a-6a869c137798", "tsp", "65"],
+    "Aetherflux Reservoir": ["96b6b2e1-c3e6-464c-8a13-b15deb34e862", "kld", "192"],
+    "Big Game Hunter": ["a61f38a9-6f15-4186-a602-78cdb00f2d75", "plc", "63"],
+    "Kynaios and Tiro of Meletis": ["97fa8615-2b6c-445a-bcaf-44a7e847bf65", "c16", "36"],
+    "Gisa and Geralf": ["2e2c85d8-0bef-40d0-abaf-4555462c29c5", "emn", "183"],
+    "Brothers Yamazaki": ["7d854a02-661c-4071-9a92-a97a3ad607b3", "chk", "160b"],
+    "Fling": ["cb28fe03-8269-41de-b766-42c3421aeaef", "eld", "126"],
+    "Rally the Peasants": ["514fe7de-16b2-42c0-adb1-f0af1c89cfd6", "isd", "28"],
+    "Angel's Grace": ["580cb5be-fa59-4eb9-8808-7d2943fb6413", "tsp", "3"],
+    "Comet Storm": ["58d8b2c8-7afe-4299-b59b-8cd2cdc8d4cb", "wwk", "76"],
+    "Benalish Hero": ["11600105-56c6-4073-a4a6-8469030b39c9", "lea", "4", 1],
+    "Moorish Cavalry": ["113a6b31-3748-48c1-a915-ab0b613eabb3", "arn", "7\u2020", 1],
+    "Goblin Balloon Brigade": ["5129b422-7a35-4bc5-b14b-c814012a0d8f", "lea", "153", 1],
+    "White Knight": ["50abfba8-c9f9-4ebf-965a-4b425fe83129", "lea", "43", 1],
+    "Northern Paladin": ["6303233b-35eb-49ca-b844-ba6b9fe1cbd2", "lea", "29", 1],
+    "Erhnam Djinn": ["42bc0c3f-0a52-4bdc-83da-6484bf3102f3", "arn", "48", 1],
+    "Phantom Monster": ["e46d2cf5-e8d0-4fb2-b950-252d52084b63", "lea", "69", 1],
+    "Citanul Druid": ["f8a130dc-3b1f-4fae-8459-b26bb5647fec", "atq", "31", 1],
+    "Craw Wurm": ["bfed1a95-bd67-4e16-a781-81866028af2f", "lea", "190", 1],
+    "Lord of Atlantis": ["210c4a90-fc7a-4c76-aeaa-20a005e45386", "lea", "62", 1],
+    "Tawnos's Weaponry": ["3035cead-a501-4204-9154-5fd648577d32", "atq", "70", 1],
+    "Ashnod's Altar": ["cdcccb0f-ce96-453b-9e82-41d87f52e58b", "atq", "38", 1],
+    "Urza's Tower": ["4a03554a-0ee7-4106-b3e4-4bc51f48032d", "atq", "85c", 1],
+    "Colossus of Sardia": ["067c44e9-1b23-42fd-9acb-daafb62c32a2", "atq", "46", 1],
+    "Dragon Engine": ["07793a71-1106-4303-b620-e403bd378020", "atq", "49", 1],
+    "Howling Mine": ["51f8f6e1-a451-4262-90d3-5107caf54175", "lea", "247", 1],
+    "Elven Riders": ["ad1d349b-b5ab-4b2b-9b39-f8d8f6374aa5", "leg", "183", 1],
+    "Inquisition": ["5f133f06-6398-4db1-8577-66c16fd3e00d", "drk", "47", 1],
+    "Hazezon Tamar": ["17fc3a85-c6b9-4fd2-a6a2-d3210708e5ea", "leg", "230", 1],
+    "Stangg": ["a277775a-6b48-4238-a618-3ae94c4cc85c", "leg", "260", 1],
+    "Thallid": ["01827286-b104-41c5-bac9-7c38414bc40e", "fem", "74d", 1],
+    "Thelonite Druid": ["cd8772dd-513d-4dd0-a5db-5214dc8da4e0", "fem", "78", 1],
+    "Swords to Plowshares": ["386ea9eb-abc1-4862-aa2d-8fb808d79490", "lea", "40", 1],
+    "Llanowar Elves": ["d4f1cc9e-4f99-4c26-ac1b-8ef069fa8ceb", "lea", "210", 1],
+    "Combat Medic": ["2a324a98-31c2-470a-b792-96b6b098a58c", "fem", "1b", 1],
+    "Icatian Phalanx": ["7bc02d30-3eef-4a48-8b11-b4f37219ab3a", "fem", "11", 1],
+    "Blood Moon": ["78373616-e2d6-4ccf-998f-09f02bea45b4", "drk", "58", 1],
+    "Disintegrate": ["8712c49e-f171-4669-bed9-87575a37af11", "lea", "140", 1],
+    "Order of the Ebon Hand": ["22c32774-5507-4a60-9ed2-2a570f6ff8e3", "fem", "42c", 1],
+    "Knights of Thorn": ["ae541c73-9903-49e6-997a-db4701135145", "drk", "11", 1],
+    "Terror": ["21004958-2c7e-4a55-bc80-411c4d780106", "lea", "130", 1],
+    "Royal Assassin": ["59590768-fa96-4869-8763-9d5ab6ac22ad", "lea", "123", 1],
+    "Kjeldoran Skycaptain": ["cf0115e0-6192-48a9-9e58-f3ef77ef77c2", "ice", "39", 1],
+    "Kjeldoran Elite Guard": ["a73bc4b6-f7d0-494c-9e60-48279c11b7b6", "ice", "34", 1],
+    "Air Elemental": ["e5cfaefb-764c-4c56-bdb3-5f0375168597", "4ed", "59", 1],
+    "Glacial Wall": ["07b71bc1-d9a2-4e99-a8fa-cd696925328d", "ice", "71", 1],
+    "Yavimaya Ancients": ["91708e45-f9a1-4c2e-973d-bfc294926c93", "all", "104b", 1],
+    "Lhurgoyf": ["fee6d385-d44b-4f1a-beb1-13aeebde063e", "ice", "252", 1],
+    "Baron Sengir": ["51bdddac-02fc-493a-a0ea-689273252d7e", "hml", "41", 1],
+    "Incinerate": ["9c3f00af-010d-4485-b8b7-47400d99c496", "ice", "194", 1],
+    "Wall of Swords": ["99ec4723-b36c-4015-b361-736a6523e8f5", "lea", "42", 1],
+    "Zombie Master": ["3d4255a0-d445-4c00-b936-bbf07851e1c8", "lea", "137", 1],
+    "Order of the White Shield": ["92e55b10-375f-4b4f-b676-3b9b8085fdd2", "ice", "46", 1],
+    "Orcish Artillery": ["a97208b1-a91b-4129-8a00-2f97b418accc", "lea", "165", 1],
+    "Grandmother Sengir": ["efb0ac91-5e8e-47b1-aa34-902eef60349f", "hml", "50", 1],
+    "Folk of the Pines": ["0c13311d-db83-483f-ba2b-4f54ceb8b026", "ice", "235", 1],
+    "Legions of Lim-D\xFBl": ["75b67eb2-b60e-46b4-9d48-11c284957bec", "ice", "142", 1],
+    "Fyndhorn Elder": ["fca8aa11-f7cb-4f88-a041-30098579f1d2", "ice", "243", 1],
+    "Telim'Tor": ["33cc89c8-a3ea-469e-b499-f48acec4f538", "mir", "197", 1],
+    "Teferi's Drake": ["c24823df-5651-4578-a0c8-f9f52f66abe4", "mir", "97", 1],
+    "Shimmering Efreet": ["23c5704f-5856-4422-9d82-14558dbe1434", "vis", "42", 1],
+    "Rashida Scalebane": ["ebb48053-da60-477a-b1eb-a9ab9ea682af", "mir", "35", 1],
+    "Purraj of Urborg": ["4704bf02-c6be-4983-9bc7-a1d464d21b31", "mir", "135", 1],
+    "Noble Elephant": ["65f399cb-dddb-422a-8d36-938b82b59e10", "mir", "30", 1],
+    "Barl's Cage": ["6768a307-da2e-435e-8efd-72d82b4d4a2b", "drk", "96", 1],
+    "Hakim, Loreweaver": ["8192bca7-03e5-4ea1-ae77-8bc811c19417", "mir", "68", 1],
+    "Azure Drake": ["9ce9086e-112a-45e6-854e-70cab2b008a3", "5ed", "73", 1],
+    "Mtenda Herder": ["51f30a3d-1421-4706-b17f-39a9ec7a0d8b", "mir", "29", 1],
+    "Femeref Knight": ["915a2e07-b449-4d94-93e3-e756e891c542", "mir", "18", 1],
+    "Ekundu Griffin": ["3a32778b-e6ff-45ca-8b22-dc97a406faa4", "mir", "13", 1],
+    "Uktabi Orangutan": ["101c7d58-43cc-4ebd-87f1-2016fbff56dd", "vis", "123", 1],
+    "Asmira, Holy Avenger": ["a7d64600-84fc-42a5-a6a6-b26f98fac0a4", "mir", "256", 1],
+    "Kaervek's Purge": ["7a42ef95-92ec-40fe-ab30-a476f012a525", "mir", "270", 1],
+    "Soltari Trooper": ["32f74aa3-4003-4f53-b774-22b111935391", "tmp", "47", 1],
+    "Soltari Priest": ["35a71390-3fa8-43eb-ad86-67de2a7aeab8", "tmp", "46", 1],
+    "Searing Touch": ["e9091667-d5a8-4978-9023-032ff65f9642", "tmp", "201", 1],
+    "Ertai, Wizard Adept": ["91971e19-61ce-45ac-b700-9ffca5091a27", "exo", "33", 1],
+    "Vhati il-Dal": ["be535a4a-c00d-4c58-a663-a3419a54da51", "tmp", "274", 1],
+    "Heart Sliver": ["27a83ab6-0d15-49e4-90e3-b3a2a095c632", "tmp", "182", 1],
+    "Spike Feeder": ["3751b2ae-a234-4691-984b-2f9f6b1cd1df", "sth", "118", 1],
+    "Skyshroud Elite": ["f6a496a4-1b4c-4c5d-99e5-ec40601c759d", "exo", "123", 1],
+    "Mulch": ["4cf9e9a9-325a-4010-acb8-1406adcaeca9", "sth", "110", 1],
+    "Eladamri, Lord of Leaves": ["0b1689f3-9dfa-4525-90b3-7af15f7eb720", "tmp", "224", 1],
+    "Wall of Blossoms": ["7eb4a1a3-efcf-4c9a-ad1f-0a3f8f2b456f", "sth", "125", 1],
+    "Overrun": ["0ad7a961-d3a1-471a-8472-8407d1057de0", "tmp", "243", 1],
+    "Light of Day": ["70fa9ebe-bdf5-4359-aa3e-6cfa1a1d96cf", "tmp", "27", 1],
+    "Volrath's Shapeshifter": ["ec89ee13-34ef-41c8-8fe4-0a6b21df2032", "sth", "48", 1],
+    "Dauthi Slayer": ["652ccd79-aefd-4b45-b747-75190da0cfc6", "tmp", "126", 1],
+    "Glorious Anthem": ["61f867c5-0727-4408-b479-b81518daa0ec", "usg", "15", 1],
+    "Serra Avatar": ["288b0976-78e8-4fbe-8607-2e55d8761d3e", "usg", "45", 1],
+    "Goblin Matron": ["9e9e2e5d-ad06-4378-9afb-ffb174e6a5b4", "usg", "191", 1],
+    "Disruptive Student": ["ee43681d-e0f7-422b-a363-0d630f68d363", "usg", "69", 1],
+    "Peregrine Drake": ["4951863f-1c16-4d09-ba9a-f57dc3d81a20", "usg", "88", 1],
+    "Bone Shredder": ["ece050ad-788e-4451-b773-ca42c37549d2", "ulg", "49", 1],
+    "Order of Yawgmoth": ["555e858d-d8d2-4626-9343-070cf86949ab", "usg", "144", 1],
+    "Phyrexian Broodlings": ["2313481c-baf9-4dc7-80c7-1ebc6502dce7", "ulg", "58", 1],
+    "Gaea's Cradle": ["9a3cccac-c826-41ad-b595-4d53db1ab8fa", "jgp", "3", 1],
+    "Rancor": ["59e256c2-38df-4012-9308-ce17dd889e5f", "ulg", "110", 1],
+    "Rayne, Academy Chancellor": ["8ee6480c-7697-47e2-893b-ca88c0ab3376", "uds", "43", 1],
+    "Capashen Templar": ["0976a193-463a-4bcb-a951-ca73347a5572", "uds", "5", 1],
+    "Radiant, Archangel": ["99509da7-3e11-4c38-804b-286ce572f36e", "ulg", "20", 1],
+    "Mantis Engine": ["97f7ebfb-f955-4849-a0f5-6806ff6ae891", "uds", "133", 1],
+    "Metathran Soldier": ["650d40d0-78ec-4b6e-8ea0-28d43ce175d5", "uds", "39", 1],
+    "Sanguine Guard": ["5c33fbb0-f49d-4b4d-804d-84b03e0daf4d", "usg", "155", 1],
+    "Shock Troops": ["e7a918ca-3e60-46de-9f29-56bdc6430a77", "mmq", "212", 1],
+    "Crossbow Infantry": ["744c2177-3140-48a1-95a4-2f0a27ca5b2f", "mmq", "16", 1],
+    "Ramosian Captain": ["0e9d2e2a-c608-4787-bbd9-e1871f681b58", "mmq", "35", 1],
+    "Cho-Manno, Revolutionary": ["3dc51393-de63-4ce3-ab02-c695e4448018", "mmq", "11", 1],
+    "Hammer Mage": ["b959d7ad-a78e-439f-9225-4dbb89f490d7", "mmq", "193", 1],
+    "Kyren Legate": ["6f0e9806-be8c-4b88-a4be-0111d1be81d9", "mmq", "197", 1],
+    "Defiant Falcon": ["4c80032b-daeb-4661-9a66-61abe9d12ddd", "nem", "6", 1],
+    "Rathi Intimidator": ["6fc59fa5-144f-49e6-b6bd-2ba6d3f2eff2", "nem", "69", 1],
+    "Volrath the Fallen": ["08bdd66e-9ca1-456e-a61c-7c96cf6f7c56", "nem", "75", 1],
+    "Diving Griffin": ["ec9f72b2-e3d0-4b24-9a73-b95d54695fa4", "pcy", "6", 1],
+    "Lesser Gargadon": ["63ed7aec-a513-418e-9cef-e0c51203055b", "pcy", "97", 1],
+    "Blastoderm": ["9db5d6c2-b11f-442a-b172-c0c99c9bec07", "nem", "102", 1],
+    "Skyshroud Behemoth": ["1c01d17e-45a2-4b6f-aaa5-2af9c8f26181", "nem", "116", 1],
+    "Rhox": ["58388a29-b2a6-4d16-b872-f198563721d9", "nem", "112", 1],
+    "Massacre": ["f05f5d93-50d1-4aa6-af05-383a6808345b", "nem", "58", 1],
+    "Benalish Trapper": ["e312653d-c3e1-4c79-90d2-0963419b618c", "inv", "8", 1],
+    "Armadillo Cloak": ["9d816f98-6cb6-432c-b0a4-a0eed21658ac", "inv", "229", 1],
+    "Verdeloth the Ancient": ["72d5fab1-fa20-4006-b19d-179d36238c9b", "inv", "220", 1],
+    "Goblin Ringleader": ["b6b2cd77-9552-48b1-80cb-26966323c1ea", "apc", "62", 1],
+    "Tsabo Tavoc": ["ccbe2539-7a7c-468b-a270-7ca1bdcccb1e", "inv", "281", 1],
+    "Elvish Champion": ["c19bb473-03b0-4e6d-a7da-0ec1e7707a68", "inv", "186", 1],
+    "Galina's Knight": ["11b492d6-5e28-4f4b-942c-080d03cb0e92", "inv", "248", 1],
+    "Doomsday Specter": ["85206cc1-5484-40c6-b11d-b8d6fad4fc5c", "pls", "103", 1],
+    "Fire // Ice": ["f98f4538-5b5b-475d-b98f-49d01dae6f04", "apc", "128", 1],
+    "Tower Drake": ["aef97b38-f7a5-4db7-9550-24aa1a1ebbda", "inv", "82", 1],
+    "Fires of Yavimaya": ["967f1658-8777-46fc-a648-07fb19e46745", "inv", "246", 1],
+    "Raging Kavu": ["27573679-e9e5-4bfc-b5d5-85d4648b01b6", "inv", "262", 1],
+    "Coalition Honor Guard": ["c5b7be3e-b4af-46d4-bcc6-b44c651f2012", "apc", "3", 1],
+    "Kavu Climber": ["2063f31e-d972-411e-a265-1d409153b49c", "inv", "192", 1],
+    "Desolation Angel": ["445127d4-8afb-47cf-b2a1-564540b1fdae", "apc", "38", 1],
+    "Cabal Torturer": ["ebcf8dd7-f45c-4ac2-9507-fa175fe89887", "tor", "53", 1],
+    "Krosan Beast": ["af822507-fd4c-454b-ab07-106c81c535bf", "ody", "248", 1],
+    "Nimble Mongoose": ["99e5ecf5-a662-4df0-a6ba-9177c62b6503", "ody", "258", 1],
+    "Chatter of the Squirrel": ["84273844-7fab-4ff7-afb3-c82153132daf", "ody", "233", 1],
+    "Volcanic Spray": ["97daab4b-d934-4a3f-a043-f7c9c1dd32bf", "ody", "226", 1],
+    "Kamahl's Sledge": ["38c55518-7bdf-4a42-ae30-cd6525557a59", "tor", "102", 1],
+    "Grim Lavamancer": ["5dd72697-24be-42c7-a6d9-a837bdbd4662", "tor", "100", 1],
+    "Wild Mongrel": ["5bb8dd5c-a79a-4afc-80b2-64645bb17a34", "ody", "283", 1],
+    "Battle Screech": ["c3c38264-0d79-47d4-bca2-a20a991bbac9", "jud", "3", 1],
+    "Braids, Cabal Minion": ["4dcdcad5-e4fb-480e-984f-1ac5cdc986b9", "ody", "117", 1],
+    "Balthor the Stout": ["e81ecdc5-d2c7-4292-9b59-fd6bf3ba29d5", "tor", "91", 1],
+    "Lava Dart": ["865bb1d3-5b7d-40e9-87cc-96be9524a105", "jud", "94", 1],
+    "Arrogant Wurm": ["11b849c7-c91d-4c67-a357-f7d17f9b187a", "tor", "120", 1],
+    "Halberdier": ["b69dfc05-51ba-4798-ac00-1e9b8bbbf280", "ody", "196", 1],
+    "Mutilate": ["6189cab3-1963-4590-9cbc-7ab4a693d7c6", "tor", "73", 1],
+    "Echo Tracer": ["63390760-35a7-4b4c-8c68-5c84f90d0c58", "lgn", "37", 1],
+    "Timberwatch Elf": ["045ae4ec-07f2-4098-a2d9-4bfcbd0273b2", "lgn", "140", 1],
+    "Elvish Pioneer": ["7e71fc2d-643b-4fad-89a8-624d330895d6", "ons", "257", 1],
+    "Riptide Survivor": ["7515187f-4821-400d-b78f-cec173df6b84", "scg", "48", 1],
+    "Crafty Pathmage": ["c5d91378-f831-40ef-a79b-b044af1470e0", "ons", "77", 1],
+    "Silklash Spider": ["e41680e2-6689-4263-a5a3-9fb2e4280d52", "ons", "281", 1],
+    "Krosan Colossus": ["a804f3c0-5ebf-43ca-b200-09f7c1bbe902", "ons", "270", 1],
+    "Lightning Rift": ["d775d729-0ad9-4b14-9d44-6282f6936e07", "ons", "217", 1],
+    "Exalted Angel": ["c2213eac-cea4-4dfd-90c4-c1f466967e2e", "ons", "28", 1],
+    "Daru Warchief": ["2630d3b5-8f3a-4aad-a45e-22a7979429f3", "scg", "6", 1],
+    "Siege-Gang Commander": ["92e78cec-aaf9-4fe8-887b-b7e356d63315", "scg", "103", 1],
+    "Gustcloak Savior": ["0e9d6e81-1869-4ab7-8a4e-477d5c4aed6b", "ons", "36", 1],
+    "Akroma's Devoted": ["798893df-e720-471d-822d-50284de23efd", "lgn", "2", 1],
+    "Riptide Entrancer": ["2cd9abc9-f289-4294-bc0f-4addc8b92a4e", "ons", "108", 1],
+    "Graveborn Muse": ["aa432e4e-ff23-4ad2-8d0a-403efee86f11", "lgn", "73", 1],
+    "Loxodon Warhammer": ["a1a6e375-5c47-4447-9453-adf0038693e3", "mrd", "201"],
+    "Cranial Plating": ["90ea95d0-9f95-462b-a080-22a5da7b2e97", "5dn", "113"],
+    "Frogmite": ["ff504dcb-2eb8-4b3c-a8b9-29697739b649", "mrd", "172"],
+    "Krark-Clan Grunt": ["ffd9e422-206e-4c25-9964-ed6592c16e12", "mrd", "97"],
+    "Arc-Slogger": ["d3dd67e0-72b4-4c55-b49b-c69950feccb1", "mrd", "85"],
+    "Solemn Simulacrum": ["00f9955f-a522-47bf-b064-92dd21a76b18", "mrd", "245"],
+    "Arcbound Ravager": ["72c1a731-7854-42b1-8719-ac3c2a269c1f", "dst", "100"],
+    "Troll Ascetic": ["f01233c2-6df0-4f0e-8668-3855868731ea", "mrd", "135"],
+    "Solarion": ["9070dd3e-7600-493e-84b9-931ac92f44bc", "5dn", "153"],
+    "Skyreach Manta": ["f6b11e69-09ec-4e26-a64d-c129c45574b1", "5dn", "152"],
+    "Thoughtcast": ["efb965a7-877a-4302-b507-25b0a9e32d9b", "mrd", "54"],
+    "Disciple of the Vault": ["644359dc-3c4c-4291-876d-7390dc466877", "mrd", "62"],
+    "Darksteel Colossus": ["cbc27b24-f085-48b0-8757-cd11fbf25b91", "dst", "109"],
+    "Sylvan Scrying": ["b4ff07b6-be9f-498f-9f36-cbd64f1b10cc", "mrd", "130"],
+    "Fangren Hunter": ["2dbc8eef-f032-490a-b487-da1af71b7ff2", "mrd", "119"],
+    "Platinum Angel": ["59bb5aee-b334-4c24-875b-56751d4add02", "mrd", "228"],
+    "Creeping Mold": ["d6b50bda-f19f-4991-977b-de794f11103d", "mrd", "117"],
+    "Isamaru, Hound of Konda": ["2e7f9919-0713-4ef9-96eb-3e0c444e47f4", "chk", "19"],
+    "Kodama of the South Tree": ["120c05f1-5ec3-4a0f-8628-6919e393104a", "chk", "223"],
+    "Order of the Sacred Bell": ["5bc9093a-4397-432f-b9e3-3693efcaec20", "chk", "232"],
+    "Glacial Ray": ["04c713fd-df47-4b35-bd37-ab65d853bdc8", "pal04", "8"],
+    "Kumano, Master Yamabushi": ["f93870f9-343f-43e7-8ae8-e7aaa56aacca", "chk", "176"],
+    "Heartless Hidetsugu": ["4a3ab177-d9ab-46bf-bd92-20a9ecf2d0ad", "bok", "107"],
+    "Ninja of the Deep Hours": ["367a67c7-54db-4336-b55a-3fa27625172a", "bok", "44"],
+    "Michiko Konda, Truth Seeker": ["99c56bf0-ad9f-4419-902c-f3a3880c716c", "sok", "19"],
+    "Pious Kitsune": ["bb4124b9-5169-471e-b805-ceeffeec9184", "chk", "38"],
+    "Kitsune Blademaster": ["fb9d108d-ee19-4b1d-9d4b-b4c4d9b8ad0d", "chk", "25"],
+    "Gifts Ungiven": ["32b91eb5-ea53-4a21-a2e5-9c545a42fa30", "chk", "62"],
+    "Godo, Bandit Warlord": ["fcff0b92-edd0-4197-965b-3fd86bc884d8", "chk", "169"],
+    "Sosuke's Summons": ["42359e94-9f57-45ae-ae39-d4b939813015", "bok", "145"],
+    "Sachi, Daughter of Seshiro": ["4c45b36f-b879-417c-b284-0176990fb9f9", "chk", "238"],
+    "Throat Slitter": ["c4dcfdb4-c2ff-4fc5-aa2a-0c6e311d2910", "bok", "88"],
+    "Yosei, the Morning Star": ["1b38f14a-bd10-47c1-8772-5abe0a0b243f", "chk", "50"],
+    "Hanabi Blast": ["881fecf4-8c14-4614-84bd-c1a3dcdbb5ff", "chk", "170"],
+    "Scatter the Seeds": ["c4415070-4304-482b-b8e5-2bf689af0843", "rav", "181"],
+    "Selesnya Guildmage": ["21061ce3-d098-4057-b341-c5db6ee1b6d4", "rav", "252"],
+    "Golgari Rotwurm": ["2cc97674-f60a-4854-a807-60dbcf90637e", "rav", "210"],
+    "Life from the Loam": ["7ac16d09-8bc7-407c-a757-666f4707bc90", "rav", "172"],
+    "Boros Swiftblade": ["bf25cd63-3304-4eea-841b-1f058010c627", "rav", "193"],
+    "Sunhome Enforcer": ["c4d5a88e-fc8f-4dd6-a1db-8e44b74ee0a1", "rav", "233"],
+    "Veteran Armorer": ["151a455f-c364-4600-a5f8-98da86aabc48", "rav", "34"],
+    "Teysa, Orzhov Scion": ["9eb856e6-8f63-4048-9818-cc3e65748855", "gpt", "134"],
+    "Grand Arbiter Augustin IV": ["a2ac328b-923f-48dd-a4f5-de389ade9125", "dis", "112"],
+    "Ghost Council of Orzhova": ["d83a5785-a9a9-4a07-82c7-97dc5b9a2475", "gpt", "114"],
+    "Pillory of the Sleepless": ["36964bbd-f068-4a69-8d6b-7e4e97938b98", "gpt", "125"],
+    "Orzhov Basilica": ["f9154d2a-3fc5-4fd6-9885-a810cb6b542a", "gpt", "161"],
+    "Plaxcaster Frogling": ["64bb1946-8057-4a31-9de7-4bd1a9845165", "dis", "123"],
+    "Niv-Mizzet, the Firemind": ["5994d98a-090b-4203-b44f-b6517b6a83ea", "gpt", "123"],
+    "Mourning Thrull": ["1e2a217a-e47b-4874-9861-bb57c7b1f06a", "gpt", "146"],
+    "Keening Banshee": ["0866b383-dced-459e-9510-38248a29dd14", "rav", "92"],
+    "Flame-Kin Zealot": ["aec53f16-5bf7-4ef5-b83e-9e36463d1640", "rav", "206"],
+    "Rift Bolt": ["88dde96e-6824-4d26-9fb5-86b9f3c50959", "tsp", "176"],
+    "Keldon Halberdier": ["a90723e0-fbb3-4976-9463-0373f8ed337c", "tsp", "167"],
+    "Errant Ephemeron": ["398c26cc-cd55-42c6-a744-aaefd7018960", "tsp", "60"],
+    "Panglacial Wurm": ["063bb28b-5e32-4f31-a208-16b653edf413", "csp", "116"],
+    "Penumbra Spider": ["6a989ac1-df69-45e7-98bf-564cc7c38973", "tsp", "210"],
+    "Momentary Blink": ["032e072a-0630-472b-9106-5df554dff785", "tsp", "29"],
+    "Stonecloaker": ["f7b11cec-de85-4289-a7b4-e8bfdf655130", "plc", "19"],
+    "Lim-D\xFBl the Necromancer": ["b8a3cdfe-0289-474b-b9c4-07e8c6588ec5", "tsp", "114"],
+    "Tarmogoyf": ["b6876d9e-0908-43ac-8542-09c7aa02b5ba", "fut", "153"],
+    "Heidar, Rimewind Master": ["39916d65-60a6-4da6-8675-8a8ef9505772", "csp", "36"],
+    "Bogardan Firefiend": ["80ff9650-d25f-4c6b-b96e-794b50af3f14", "wth", "91", 1],
+    "Keldon Marauders": ["677c28db-34d2-4325-99d1-9b689753802f", "plc", "102"],
+    "Harmonic Sliver": ["f7904997-a857-44f0-91d8-b78651bb4e83", "tsp", "240"],
+    "Teferi, Mage of Zhalfir": ["3c0145f6-4e27-49e7-9ef6-bac6fa3de26d", "tsp", "83"],
+    "Riftwing Cloudskate": ["78ad6c86-8cfb-4f24-b8e8-ecbeffc949b8", "tsp", "73"],
+    "Evil Eye of Urborg": ["fc17fe31-11f1-48e0-9b0d-7c7dcda417a6", "tsp", "107"],
+    "Aven Mindcensor": ["5b8ede8a-5317-4662-b964-a9bd202a4aab", "fut", "18"],
+    "Pacifism": ["47adc9fc-d620-4cb7-a03c-8d9578992249", "iko", "25"],
+    "Exquisite Firecraft": ["42eca98e-a164-4f70-a0b0-7a604863f30b", "ori", "143"],
+    "Lone Wolf": ["67f885c7-4947-4041-ab82-b5e8dc167f0d", "7ed", "254", 1],
+    "Serra Ascendant": ["1ee65b44-eeb6-418b-b022-a0aef587c738", "m11", "28"],
+    "Mind Twist": ["eee9e106-a248-49d2-b8c8-6bbcd56ce739", "lea", "115", 1],
+    "Fireblast": ["b1eb5b2c-1f02-48a6-a287-88eb189d6780", "vis", "79", 1],
+    "Black Cat": ["bb1c6379-69d5-48aa-8d06-257c0592794e", "dka", "54"],
+    "Massacre Wurm": ["cdd32ec2-02a8-41fc-bf45-c9585bb2b3ee", "mbs", "46"],
+    "Reliquary Tower": ["c5c0c1a5-dce7-4c7d-8a5b-0bf93ba68ace", "con", "143"],
+    "Azusa, Lost but Seeking": ["9ed862a2-d3e2-4543-81a6-453a96399d14", "chk", "201"],
+    "Giant Killer": ["75754468-2850-42e6-ab22-61ff7b9d1214", "eld", "14"],
+    "Brave the Elements": ["c14c492d-3fd7-4b2a-910e-bfcb33752eba", "zen", "4"],
+    "Imperious Perfect": ["4bffc964-b397-409c-8d3a-9f52107e09ca", "pcmp", "9"],
+    "Brigid, Hero of Kinsbaile": ["da70a20f-213e-4d79-a46f-1ef1fc3f4a51", "lrw", "6"],
+    "Merrow Reejerey": ["b57434d9-6fa5-43a6-98b9-044d2259d699", "lrw", "74"],
+    "Silvergill Adept": ["9e07a38a-2d88-4b01-9634-f24cbc8d96d6", "lrw", "86"],
+    "Boggart Mob": ["a61990de-0daf-4340-8e6b-c49852d46980", "lrw", "104"],
+    "Ajani Goldmane": ["2a1470a6-d09d-4a2a-84a6-d56e32ed237a", "lrw", "1", 1],
+    "Garruk Wildspeaker": ["ca6f13a2-9243-4ce9-9f71-bed74355b781", "lrw", "213", 1],
+    "Mistbind Clique": ["cfc421e2-0dd4-4bdf-b5f5-a60c4b0df63b", "lrw", "75"],
+    "Ashling, the Extinguisher": ["350580d8-45db-4428-a292-cc4802bf1e4d", "eve", "33"],
+    "Murderous Redcap": ["5f7171f0-7d42-47c9-ab46-93c2bb42c914", "shm", "192"],
+    "Bitterblossom": ["8145fed6-6b51-420a-84cf-4ea5e0aa1883", "mor", "58"],
+    "Scion of Oona": ["f75fc1eb-09ac-4800-a55d-c0e723f5786b", "lrw", "83"],
+    "Reveillark": ["5629edd4-b5d3-43f8-8c7c-f9d916e35158", "mor", "22"],
+    "Plumeveil": ["8e8b0449-3ae5-4fee-b870-af12be5e5a64", "shm", "145"],
+    "Glen Elendra Archmage": ["09516d3d-e6c2-4359-af2a-a4aa244ca033", "eve", "22"],
+    "Oona, Queen of the Fae": ["24ae75f6-fb74-422c-93f6-a0be7f919e47", "shm", "172"],
+    "Shriekmaw": ["6c61bd2c-1c73-42f6-aa8b-449aee7e5ddd", "plrw", "139\u2605"],
+    "Wydwen, the Biting Gale": ["ff6b558b-74a5-497d-8be4-474c375d7ca7", "lrw", "253"],
+    "Doran, the Siege Tower": ["f78edb37-e36e-4761-8293-154744040d65", "pcmp", "10"],
+    "Figure of Destiny": ["3b2866a9-9f44-410c-8132-9d9822253332", "peve", "139\u2605"],
+    "Spellstutter Sprite": ["4e5ba4a9-a282-4d4b-b25a-179e05e458f4", "lrw", "89"],
+    "Gilt-Leaf Palace": ["cc4bbbb5-4218-4b2a-9ca2-de4d5f5dda19", "lrw", "268"],
+    "Maralen of the Mornsong": ["ba98d363-194b-4bc0-b9fe-987c498ab6fa", "mor", "65"],
+    "Rafiq of the Many": ["249c188d-c11d-46f7-a2d8-a67df4ba401b", "ala", "185"],
+    "Sharuum the Hegemon": ["6589eaa8-95ec-4c97-8155-185487560ae6", "ala", "194"],
+    "Hellkite Overlord": ["7e3c4f96-4a43-440d-b75f-2cdb7c24b92e", "drb", "8"],
+    "Woolly Thoctar": ["7d5907d5-ae5c-4c9d-a5df-61f1c94f979d", "ala", "209"],
+    "Master of Etherium": ["322cdf67-5b36-43f9-99b3-f0e24d423314", "ala", "49"],
+    "Elspeth, Knight-Errant": ["44c52e52-2b1c-4ca8-ab6d-20d97a342704", "ala", "9", 1],
+    "Martial Coup": ["4201385f-6f74-4e3d-aafb-0eff82cb24c1", "con", "11"],
+    "Ajani Vengeant": ["8fc108a3-15e5-44ab-a6e2-182b309f9c0c", "ala", "154", 1],
+    "Sedris, the Traitor King": ["70206cff-9f54-4e27-982c-b0093a51d358", "ala", "193"],
+    "Godsire": ["e2539ff7-2b7d-47e3-bd77-3138a6c42d2b", "ala", "170"],
+    "Kresh the Bloodbraided": ["d485fe46-ed24-4b55-8ddc-ac2fdf4eec93", "ala", "178"],
+    "Bloodbraid Elf": ["7ef67487-c8e5-49bb-b0f7-e073ff2e31f1", "arb", "50"],
+    "Baneslayer Angel": ["6764ea7b-ccb3-4f39-b8ba-654a186210b9", "m10", "4"],
+    "Battlegrace Angel": ["b9be1142-3ba8-4915-9541-757e59ed046c", "ala", "6"],
+    "Sphinx of the Steel Wind": ["c860cf0f-ef68-455f-9c71-a6dd25b51d71", "arb", "110"],
+    "Path to Exile": ["29b7a8b1-b98e-483a-87a4-73bd831c03d4", "con", "15"],
+    "Knight of New Alara": ["0d3fc235-d0d7-41f8-b35a-6e08761f7fa4", "arb", "70"],
+    "Malfegor": ["7e84de2e-3676-4112-823b-549c4d132280", "con", "117"],
+    "Kathari Bomber": ["6c0d4f83-6319-4d40-9fee-6a44b05c8e9e", "arb", "41"],
+    "Dregscape Zombie": ["4b65b7ad-4ab0-4622-81f4-434254625a1e", "ala", "74"],
+    "Cruel Ultimatum": ["0d267804-23de-4521-ae64-4dd5cd836c6c", "ala", "164"],
+    "Conflux": ["db21da75-8d6a-4c8c-a83b-aab8290b586f", "con", "102"],
+    "Territorial Baloth": ["45033b8a-f3a8-4a23-b6b0-e011e3e7a4c1", "zen", "188"],
+    "Elvish Archdruid": ["544bc214-e32d-4370-a15f-62812a0420be", "m10", "176"],
+    "Kor Skyfisher": ["cffc6114-aa99-4c56-80fc-92fb32639d13", "purl", "23"],
+    "Sorin Markov": ["29606aca-f23f-4dfe-b685-2065193109c8", "zen", "111", 1],
+    "Talus Paladin": ["4f5212f4-f04c-4ca3-b254-654bb263829b", "wwk", "21"],
+    "Merfolk Sovereign": ["b9826a2e-361e-4701-9177-0907c0c6dc9f", "m10", "62"],
+    "Searing Blaze": ["301f13dd-39b8-4a93-9c05-3dc4fa1f1c75", "wwk", "90"],
+    "Kargan Dragonlord": ["b669d2d9-649b-4941-9a76-9833bdf77ca4", "roe", "152"],
+    "Inferno Titan": ["f1e4a028-6462-4373-9864-a8adfc78d52b", "m11", "146"],
+    "Ulamog's Crusher": ["76bacedb-9fa8-4a21-b0eb-e7ead64360b4", "roe", "13"],
+    "Ajani's Pridemate": ["f70d1452-6b61-4c63-841f-4256ac498e9f", "m11", "3"],
+    "Stoneforge Mystic": ["19557351-b65f-4b04-b971-66abdc07000a", "wwk", "20"],
+    "Squadron Hawk": ["beddd409-0154-45a5-a20d-833cf1b5e1f4", "m11", "33"],
+    "Valakut, the Molten Pinnacle": ["37bce60d-2cb0-4772-9f5c-122a7ed426a0", "zen", "228"],
+    "Malakir Bloodwitch": ["865ac36f-4c61-468b-a2ed-ed2d1bbbf4e3", "zen", "100"],
+    "Eldrazi Monument": ["aa9f4169-8c49-41f4-9e01-20de06ca4ad9", "zen", "199"],
+    "Hand of Emrakul": ["84d602f4-5876-416a-95e5-821a285358bf", "roe", "5"],
+    "It That Betrays": ["34d790ad-3559-4c32-9057-e2e326740bdc", "roe", "7"],
+    "Nissa Revane": ["1b4c26ab-0f7b-4163-b9e4-a415b91352a6", "zen", "170", 1],
+    "Kozilek, Butcher of Truth": ["067fac91-2483-4678-b86a-2c54a3a480cf", "roe", "6"],
+    "Ulamog, the Infinite Gyre": ["225e3cc6-34d0-4f81-9f49-162d97e2ea59", "roe", "12"],
+    "Eye of Ugin": ["c3b21941-1b7d-4fde-8b1d-7edbd5e5b796", "wwk", "136"],
+    "Celestial Colonnade": ["e2915763-2b63-4408-b014-49d52e3d65f6", "pwwk", "133"],
+    "Galvanic Blast": ["f5881bbc-8600-464d-9dcd-5a7780918d1d", "som", "91"],
+    "Geth, Lord of the Vault": ["fed31f2f-370d-4bbe-aa57-82249ed1b4d4", "som", "64"],
+    "Elspeth Tirel": ["ebe9116e-7b04-4f2a-aa67-89a42c6e1801", "som", "6", 1],
+    "Kemba's Skyguard": ["66ce7c11-09bf-4884-893c-fc8bdbe776d4", "ddf", "13"],
+    "Melira, Sylvok Outcast": ["e83851a1-e4e8-49ec-af5c-4efe86fa51ad", "nph", "115"],
+    "Melira's Keepers": ["d9a935b4-347c-46d9-a7c5-8c5079948959", "mbs", "83"],
+    "Porcelain Legionnaire": ["2616aa0e-8413-4e63-877c-bffd5263f552", "nph", "19"],
+    "Riddlesmith": ["08e25713-05ea-4eed-aa7f-5ca4e57a8152", "som", "40"],
+    "Chandra's Phoenix": ["c7c319cd-74ed-4ad8-ac0f-efb932bf5813", "pm12", "126\u2605"],
+    "Spikeshot Elder": ["fad5621d-eb77-4b4a-80e7-1bfa75a6fcfb", "som", "104"],
+    "Tempered Steel": ["6661b39d-505a-48f4-bc06-59084c6a3b0c", "som", "24"],
+    "Signal Pest": ["be065962-f2ed-4ab9-be6b-bfc66d63ff4e", "mbs", "131"],
+    "Memnite": ["469cc4e0-49c0-4009-97ea-28e44addec69", "som", "174"],
+    "Plague Myr": ["8f932690-9a38-4a3f-8805-a192208152a3", "mbs", "125"],
+    "Blighted Agent": ["cddaebde-a060-4510-8c97-68432d931987", "nph", "29"],
+    "Hero of Bladehold": ["8829efa0-498a-43ca-91aa-f9caeeafe298", "pmbs", "8\u2605"],
+    "Viridian Emissary": ["129fa334-f561-4fbd-9f51-2fa044b674e1", "mbs", "95"],
+    "Elesh Norn, Grand Cenobite": ["b66390d6-1649-4bfa-92d3-77664650d552", "nph", "9"],
+    "Chandra, the Firebrand": ["efb37556-186f-4660-8b75-c52ef16a6d8f", "m12", "124", 1],
+    "Sword of Feast and Famine": ["580b4818-2a01-46ad-b4d9-7d895a625bb3", "mbs", "138"],
+    "Fiend Hunter": ["f1e4c7d8-11a5-40fe-962b-7e938bf08616", "isd", "15"],
+    "Champion of the Parish": ["f7314414-c2d2-48ed-af2c-764cf0207c62", "isd", "6"],
+    "Olivia Voldaren": ["ed750692-ba6a-4a89-ad6d-92fda7edc2cb", "isd", "215"],
+    "Midnight Haunting": ["fe1eb098-7128-4ec8-8218-51fdde3e8326", "isd", "22"],
+    "Drogskol Captain": ["b8238e36-625f-460d-9e39-fd501e65490c", "dka", "136"],
+    "Geist of Saint Traft": ["35b57113-b39a-460b-b4aa-02606b40bbd0", "isd", "213"],
+    "Moon Heron": ["a24de601-1d7b-41c4-aba1-fdb6fd8d5251", "isd", "69"],
+    "Wolfir Silverheart": ["8629c598-11c8-4911-acfb-0643e5feffa8", "avr", "206"],
+    "Prey Upon": ["b7b3eaf0-4207-4bac-923d-29f348c95a35", "isd", "200"],
+    "Restoration Angel": ["c83c7429-751e-4103-b09a-f78a9617020d", "pavr", "32\u2605"],
+    "Tamiyo, the Moon Sage": ["b9398926-13b9-47b8-b66b-1ab9d06bb704", "avr", "79", 1],
+    "Snapcaster Mage": ["9e5b279e-4670-4a1e-87d0-3cab7e4f9e58", "isd", "78"],
+    "Stormbound Geist": ["040eddb0-fca2-41eb-ab07-c48d49385973", "dka", "51"],
+    "Diregraf Ghoul": ["b9cf8ad2-de95-417c-8808-83e60df9c007", "pisd", "97"],
+    "Falkenrath Aristocrat": ["c397388e-ebe2-4034-83b7-a7c0df1af78f", "dka", "138"],
+    "Avacyn, Angel of Hope": ["ba149706-cd17-4da6-8403-ccfe2d6cb437", "avr", "6"],
+    "Doomed Traveler": ["652c3bbb-cac8-47ad-81de-41e954e17a29", "isd", "11"],
+    "Griselbrand": ["b51666ae-2aef-4cb1-9cd4-44aec81530f8", "avr", "106"],
+    "Spider Spawning": ["f97007af-6642-4105-8d8c-4223681e1cf9", "isd", "203"],
+    "Boneyard Wurm": ["3342096a-24bf-4f66-911e-d8a0c856f722", "pw11", "84"],
+    "Inkmoth Nexus": ["ec50c1c3-885e-47d3-ada7-cc0edbf09df1", "mbs", "145"],
+    "Sword of Body and Mind": ["5bc29686-a89c-46e6-b32c-a70733aba389", "v10", "14"],
+    "Moorland Haunt": ["1d5569e3-278c-4cf3-860e-712010333fe6", "isd", "244"],
+    "Unburial Rites": ["2794c82b-e5ce-4369-894e-bf56c6402ae1", "isd", "122"],
+    "Call of the Conclave": ["c6df8f4d-a07a-4664-878d-efec8b2affb9", "rtr", "146"],
+    "Centaur Healer": ["833835d1-9beb-4ad8-b675-7adebdbd7d82", "rtr", "148"],
+    "Boros Elite": ["a03974e6-aced-4664-8c5c-3190bb1eb233", "gtc", "7"],
+    "Truefire Paladin": ["39610192-6d3c-4d03-9c3e-cda966c924b1", "gtc", "202"],
+    "Experiment One": ["d56a2703-06b8-4bdf-b346-dd38dbc06f2b", "f13", "9"],
+    "Rapid Hybridization": ["83557f55-f1ab-4995-9cc1-37be895a59db", "gtc", "44"],
+    "Master Biomancer": ["1a47da7c-80f3-4b98-aaac-778c34a35cb6", "gtc", "176"],
+    "Lyev Skyknight": ["11cbeb3b-1579-4318-a024-4a2c06896eaf", "rtr", "179"],
+    "Jace, Architect of Thought": ["d4df3a38-678e-42dc-a3fd-d1d399368f07", "rtr", "44", 1],
+    "Basilica Screecher": ["d233c6bc-c4dd-482d-b0f4-87359acab7cb", "gtc", "58"],
+    "Teysa, Envoy of Ghosts": ["cbd8183c-6967-4332-b822-02b82c14ef2d", "dgm", "108"],
+    "Sphinx's Revelation": ["404d9413-ef57-4b6e-8584-48a1dc7fe6f1", "rtr", "200"],
+    "Supreme Verdict": ["35e3b17c-1af9-4a6d-9cbe-e9d23ea52c53", "prtr", "201\u2605"],
+    "Abrupt Decay": ["3b1e92b4-6e53-4dba-a572-c67e01965ac5", "rtr", "141"],
+    "Scavenging Ooze": ["371ceb58-f498-4616-a7f0-eb118fe2e4ff", "cmd", "170"],
+    "Niv-Mizzet, Dracogenius": ["c345e475-8095-41b5-90b4-771fcf80b939", "rtr", "183"],
+    "Detention Sphere": ["afee5464-83b7-4d7a-b407-9ee7de21535b", "rtr", "155"],
+    "Ral Zarek": ["fcdbb062-0b0b-4b4c-b4db-dd149f744baa", "dgm", "94", 1],
+    "Maze's End": ["6966ecf0-6dab-4652-bf5b-6e766b8347d0", "pdgm", "152\u2605"],
+    "Ghor-Clan Rampager": ["5dacb6f8-20f7-4ed4-aa9f-8c1d55f09357", "f13", "10"],
+    "Azorius Guildgate": ["984e37df-0734-493a-a958-f519a0c98580", "rtr", "237"],
+    "Lazav, Dimir Mastermind": ["69c8fcdb-4798-4961-995a-e128a3ff431a", "gtc", "174"],
+    "Phalanx Leader": ["955d5107-5caf-45fc-8c6b-8383bbd220f3", "pths", "26"],
+    "Hero of Iroas": ["7917f2ee-f093-4ffb-83ed-a181b14b5957", "bng", "17"],
+    "Kiora, the Crashing Wave": ["f77ac7fa-718d-425f-a0aa-2f8e2bfc0950", "bng", "149", 1],
+    "Boon Satyr": ["f50c12c4-5565-449a-b30e-7cd896da7735", "ths", "152"],
+    "Akroan Skyguard": ["d55e85c3-234e-49c4-a307-96fb4497eea8", "bng", "3"],
+    "Heliod, God of the Sun": ["e90d01c9-e76e-42ff-b0fa-8b6786242aae", "ths", "17"],
+    "Archetype of Courage": ["8e6c4afb-6a94-4519-91c6-9824fed2892c", "bng", "4"],
+    "Chronicler of Heroes": ["de1cbee6-61f4-40f0-86fe-93831a0b87d8", "ths", "190"],
+    "Fleecemane Lion": ["622d6c46-82bb-4a97-abe6-b388def44bda", "ths", "193"],
+    "Eidolon of Blossoms": ["bb2d43eb-a72f-4721-82b5-121a7c4d2ffa", "pjou", "122\u2605"],
+    "Nyx-Fleece Ram": ["98d13a98-e715-49a8-a59e-a2adfcdec70b", "jou", "18"],
+    "Master of Waves": ["19242db3-660d-4d66-800c-d6cee636bcaf", "ths", "53"],
+    "Thassa, God of the Sea": ["d6876c7a-8bbe-484e-b733-70229fa336cd", "ths", "66"],
+    "Favored Hoplite": ["251015ed-9408-4941-894a-158551ed2613", "ths", "13"],
+    "Fabled Hero": ["642d9a5c-5697-4747-adce-5a71bcf1c086", "ths", "12"],
+    "Godsend": ["2dcf3975-7f81-4bdd-810d-476f46444b7a", "jou", "12"],
+    "Brimaz, King of Oreskos": ["f54eb705-6326-4bac-bf0e-68d42db7a270", "bng", "5"],
+    "Stormbreath Dragon": ["471979de-f569-444a-8651-12d7e726949a", "ths", "143"],
+    "Polukranos, World Eater": ["8b5a1182-c707-4024-9000-de57793fba0d", "ddl", "43"],
+    "Nylea, God of the Hunt": ["f185a734-a32a-4244-88e8-dabafbfd064f", "ths", "166"],
+    "Nykthos, Shrine to Nyx": ["834b27a0-dfd7-4f96-8cde-cacac4b24acc", "ths", "223"],
+    "Xenagos, the Reveler": ["3aecfe99-9c4b-4087-84ee-fb208fd22820", "ths", "209", 1],
+    "Savage Knuckleblade": ["4c9dddd3-7c8d-4669-8298-58149b142b8a", "ktk", "197"],
+    "Surrak Dragonclaw": ["03032d89-caca-43ff-b2ea-028e376c829c", "ktk", "206"],
+    "Monastery Swiftspear": ["b81c6c8b-a9cf-4866-89ba-7f8ad077b836", "ktk", "118"],
+    "Mantis Rider": ["82d5ce46-7118-4ede-ba1d-c387e7ce16e7", "ktk", "184"],
+    "Feral Krushok": ["5041996b-c265-4c4f-a52c-dfe29b2e282d", "frf", "128"],
+    "Bathe in Dragonfire": ["b8cc6931-2005-4d0a-a42a-ce8bc279372e", "frf", "92"],
+    "Sarkhan, the Dragonspeaker": ["c58064fd-4d8b-4f54-812f-0bb1d7e2ddc2", "ktk", "119", 1],
+    "Arc Lightning": ["0c81ade7-0074-4447-ba2c-b16fa0f09ccb", "usg", "174", 1],
+    "Whisperwood Elemental": ["66c61828-98b9-4264-b3dd-e83f881f4a67", "frf", "145"],
+    "Ugin's Construct": ["9e509ec4-ed77-4010-beb0-d0df0f620d6f", "ugin", "164"],
+    "Mastery of the Unseen": ["84016da9-e32a-4fa6-a1d7-9198bd995822", "ugin", "19"],
+    "Warden of the First Tree": ["2e0c6628-04f1-4800-baa8-bcaefe64f59f", "frf", "143"],
+    "Murderous Cut": ["b2dadff2-883f-4134-a881-be145cdcbd84", "ktk", "81"],
+    "Atarka's Command": ["903d78c9-c5b3-45c3-a6d0-7e92b4196ae3", "dtk", "213"],
+    "Temur Battle Rage": ["8a1dd786-f4e3-4951-b87b-82442edec016", "frf", "116"],
+    "Thunderbreak Regent": ["06287e93-0da9-4526-88a9-7dda7662e777", "pdtk", "162"],
+    "Narset Transcendent": ["4816d092-e34b-4397-8599-43d8e85a8f39", "dtk", "225", 1],
+    "Dragonlord Silumgar": ["2eae504d-d4a9-440f-8ceb-df967cc50494", "dtk", "220"],
+    "Draconic Roar": ["6cf5591c-46e3-4904-8b4e-4f1f84d3118f", "dtk", "134"],
+    "Treasure Cruise": ["7a59d4b1-6cf4-44ec-8a96-1bb7094fea21", "ktk", "59"],
+    "Crux of Fate": ["e1d45374-a41b-4b3f-a7c8-3eb5ca767cf6", "frf", "65"],
+    "Dig Through Time": ["5c18c2d8-995c-4736-bdef-464abcd1d31a", "ktk", "36"],
+    "Kor Bladewhirl": ["e31b12c7-df11-4450-95e1-b9a5aa97af0e", "bfz", "34"],
+    "Gideon, Ally of Zendikar": ["187e887c-c39d-4d25-a506-cdc95fc70316", "bfz", "29", 1],
+    "Undergrowth Champion": ["d53104d8-5b9a-45b6-a2f9-b2c5d231a03d", "bfz", "197"],
+    "Oran-Rief Hydra": ["155f16eb-32b2-44b6-b12e-64e8997fda1d", "pbfz", "181"],
+    "Whirler Rogue": ["0feb66d2-c50f-4296-af2f-b374c57443b0", "ori", "83"],
+    "Thopter Spy Network": ["5516d86e-539a-4ba8-8d25-1a3b27b1267a", "ori", "79"],
+    "Valakut Predator": ["88318272-8192-4d6d-a22a-eca87abb480d", "bfz", "160"],
+    "Chandra, Flamecaller": ["49fdd0d3-7140-4c12-a41c-37eedd986d9e", "ogw", "104", 1],
+    "Kiora, Master of the Depths": ["4b63c228-3265-4029-9bc0-36b3e31dfb53", "bfz", "213", 1],
+    "Halimar Tidecaller": ["dc3e3b18-bf00-4f1a-9918-9a0e9d75b747", "bfz", "79"],
+    "Ulamog, the Ceaseless Hunger": ["1192f7a9-102e-4b3a-b154-18c8eb332217", "bfz", "15"],
+    "Hedron Archive": ["2519149c-f8a3-413f-b7b2-cd596970be4c", "bfz", "223"],
+    "Hangarback Walker": ["791c21fb-fc78-4106-9a42-abc73f41ab8b", "ori", "229"],
+    "Pia and Kiran Nalaar": ["0dcafa9e-3637-42ca-bdb2-45a2b5da7294", "ori", "157"],
+    "Thopter Engineer": ["a5e6c48a-29d0-40ae-aac6-df7319873f50", "ori", "165"],
+    "Nissa, Voice of Zendikar": ["a600b97b-1851-4b1b-a2af-f80e0307c02c", "ogw", "138", 1],
+    "Oath of Gideon": ["97976ade-c6ec-4068-be6b-953255b86a79", "ogw", "30"],
+    "Kozilek, the Great Distortion": ["f06fc6e0-b22c-40d3-bb53-d5ec400d921c", "ogw", "4"],
+    "Abbot of Keral Keep": ["cb7a2770-9a20-4f52-aac4-24502f50e374", "ori", "127"],
+    "Fiery Impulse": ["5b81a589-44bf-4441-9079-1ae66d067519", "ori", "145"],
+    "Sea Gate Wreckage": ["cd42576b-9de5-4d77-9d30-1ef5b5a4fd73", "ogw", "177"],
+    "Thought-Knot Seer": ["bffc360e-db41-48f3-9365-680d55046e04", "ogw", "9"],
+    // Act 24 (The Moon), 4 Nov 2026.
+    "Tireless Tracker": ["ee8e9928-d9b2-4570-adb8-44b34115decd", "soi", "233"],
+    "Drownyard Explorers": ["3714713f-deb4-4b1c-8764-35287293ca18", "soi", "56"],
+    "Tamiyo's Journal": ["b474378c-5fa8-418f-8d76-23e78003ed18", "soi", "265"],
+    "Gnarlwood Dryad": ["fa506387-e538-4b2c-94df-29866eb74a71", "emn", "159"],
+    "Olivia, Mobilized for War": ["7297dd81-8367-42e9-abf9-9227e202e7ae", "soi", "248"],
+    "Bloodmad Vampire": ["b64e974a-3cf7-49f1-9d5a-c74f920f0169", "soi", "146"],
+    "Nahiri, the Harbinger": ["84d70487-21d1-4897-ac20-2a996e893b5b", "soi", "247", 1],
+    "Collective Defiance": ["8960883f-3813-412b-9a5b-f8cf8d566fac", "emn", "123"],
+    "Sorin, Grim Nemesis": ["c2933144-c931-498a-9e91-f5165873c3b7", "soi", "251", 1],
+    "Moonlight Hunt": ["d9633603-a80f-448d-98d9-00064d379c26", "soi", "219"],
+    "Thalia's Lieutenant": ["fe162594-2332-4816-a9e1-57eb19b12651", "soi", "43"],
+    "Always Watching": ["84826f49-b5fb-4bd6-ab46-98e84b0d25c8", "soi", "1"],
+    "Spell Queller": ["9b76bcd4-580a-4435-afe9-290940b1837f", "emn", "189"],
+    "Ishkanah, Grafwidow": ["2a6c5a98-2fe5-4671-a6a8-98a47c09c5a7", "emn", "162"],
+    "Jace, Unraveler of Secrets": ["20d5521d-e9f1-49e0-aa13-8e6de794cb12", "soi", "69", 1],
+    "Imprisoned in the Moon": ["7990ebba-e9f2-4ba4-a352-e26ec81d4bed", "emn", "65"],
+    "Distended Mindbender": ["8b5d1e41-fb0b-4866-912a-2a7d49542428", "emn", "3"],
+    "Thermo-Alchemist": ["c6c194ea-32a5-4683-a6da-4a93d9b4722e", "emn", "147"],
+    "Geistblast": ["19b1dfd9-b717-4c23-b8e5-a6ec835b278a", "soi", "160"],
+    "Emrakul, the Promised End": ["8d74a469-c71d-4773-99d3-5456b31df424", "emn", "6"],
+    "Arlinn Kord": ["b37aa12c-a6b3-4cf8-b5a4-0a999ff12d02", "soi", "243", 1],
+    "Breakneck Rider": ["fe9f85e8-1e4c-4478-8344-71fae357b694", "soi", "147"],
+    "Westvale Abbey": ["c1f53d7a-9dad-46e8-b686-cd1362867445", "soi", "281"],
+    // Act 25 (The Inventors' Fair), 4 Nov 2026.
+    "Lathnu Hellion": ["14050179-84af-46f6-89be-338f8e7131cc", "kld", "121"],
+    "Harnessed Lightning": ["f9be9b5c-eed4-4a5d-962f-3482da5a6f1d", "kld", "117"],
+    "Spontaneous Artist": ["b8bbeb22-5e50-4b90-b756-9d420f9cfe7f", "kld", "134"],
+    "Renegade Freighter": ["7a10e2c3-0132-4eb2-94f0-5915caca2a17", "kld", "230"],
+    "Pia Nalaar": ["6a2b2954-0734-4219-b6df-c6cc3dcd8d5a", "kld", "124"],
+    "Weldfast Wingsmith": ["8b115a65-e273-4264-9db7-317e1855f492", "kld", "69"],
+    "Saheeli Rai": ["94b38464-39cd-4ee6-b9bf-a0bc1e128d9a", "kld", "186", 1],
+    "Baral, Chief of Compliance": ["60e16d94-1166-4050-8554-686e153a7f80", "aer", "28"],
+    "Chandra's Pyrohelix": ["05659715-3002-4bd0-919e-664814c1ca57", "kld", "111"],
+    "Rashmi, Eternities Crafter": ["3ce37555-49a2-4112-95b4-f3376b55b45b", "kld", "184"],
+    "Narnam Renegade": ["041cc6b1-61c8-4c34-86fc-d647ce306f59", "aer", "117"],
+    "Dovin Baan": ["2344e710-4570-41b6-af84-a3e7d784003a", "kld", "179", 1],
+    "Bristling Hydra": ["4bf38096-05bc-4734-b33c-eb1e8f2986de", "kld", "147"],
+    "Verdurous Gearhulk": ["0130b99e-5b2f-4482-b141-752e59b72c31", "kld", "172"],
+    "Heart of Kiran": ["5e847c44-1849-4251-9075-88ed5c7792a6", "aer", "153"],
+    "Veteran Motorist": ["3f5be9c1-cb28-42bd-b159-5548124ba8d1", "kld", "188"],
+    "Aetherworks Marvel": ["884f6948-3e03-48c6-8be2-6f2539386c9d", "kld", "193"],
+    "Battle at the Bridge": ["74d8b644-4cca-451e-a46c-5237c13bf373", "aer", "53"],
+    "Ajani Unyielding": ["23b82ee9-2ac6-4b81-8c64-dd4f47c2d8cb", "aer", "127", 1],
+    "Metalwork Colossus": ["474480b5-c60b-4c7f-9d3e-751bca43d074", "kld", "222"],
+    "Felidar Guardian": ["44bdbed8-5d21-4bf5-8a32-9623b1139c85", "aer", "19"],
+    "Torrential Gearhulk": ["7892c45c-1b17-4474-82fd-01f6d9a83181", "mps", "2"],
+    "Live Fast": ["ad0bb8da-ad05-43d9-aba3-d917744168fe", "kld", "87"],
+    "Spire of Industry": ["8331724d-6fab-454a-b06c-b06e499fa552", "aer", "184"],
+    "Noxious Gearhulk": ["9f86e5fe-8723-4494-b4cc-b7ac3a047bd1", "kld", "96"],
+    // Act 26 (The God-Pharaoh), 4 Nov 2026.
+    "Ahn-Crop Crasher": ["dd5db68c-24d5-44ce-9809-e446f26fac5d", "akh", "117"],
+    "Sacred Cat": ["08891c78-13c1-4d84-aa9c-78346b3b7d18", "akh", "27"],
+    "Combat Celebrant": ["28b63c3d-2e55-4343-b49a-11fa602ec473", "akh", "125"],
+    "Neheb, the Worthy": ["7593d5fb-c6b3-4d24-b9d3-97a4378161fd", "akh", "203"],
+    "Hapatra, Vizier of Poisons": ["56fbbcc9-db23-4902-b0f7-cea78a2a36af", "akh", "199"],
+    "Lethal Sting": ["eaded6bf-2db7-4b1d-93cc-4b7b571cd2de", "hou", "67"],
+    "Gideon of the Trials": ["959ce13f-519f-4472-bbd1-f26a972723d7", "akh", "14", 1],
+    "Dauntless Aven": ["01e6320c-6f8b-4582-ad11-9b868bff08a1", "hou", "7"],
+    "Khenra Eternal": ["abbdc277-4a76-44a9-aeda-edabab1f579e", "hou", "66"],
+    "Samut, the Tested": ["09f06f55-7918-46c4-80ff-0bf39e091a4a", "hou", "144", 1],
+    "The Scarab God": ["456b330e-5ff7-4192-bc6f-2f2b4654bee7", "mp2", "53"],
+    "Glorybringer": ["3277ad99-5682-4baa-b106-de15721876a6", "akh", "134"],
+    "Neheb, the Eternal": ["54231832-d492-4812-b658-4ab9a30fefe2", "hou", "104"],
+    "Majestic Myriarch": ["78d47cc7-2849-432e-9bcd-6b97023f1969", "hou", "122"],
+    "Oketra the True": ["b3aa8c17-e37e-430e-a940-d016c4ab5852", "mp2", "5"],
+    "Archfiend of Ifnir": ["33176679-d571-47a1-ae05-bed9b748491d", "akh", "78"],
+    "Gideon's Intervention": ["6e2524fb-ec90-4f8e-b851-f78034edef3f", "akh", "15"],
+    "Wall of Forgotten Pharaohs": ["d3f8f211-79f9-4d34-8e23-c0835703cd91", "hou", "168"],
+    "Nicol Bolas, God-Pharaoh": ["985e92f4-3904-41df-91f7-42eedbe3ccd2", "hou", "140", 1],
+    "Hazoret the Fervent": ["36ed9f9d-99a7-49f4-b0ad-d71355809d32", "akh", "136"],
+    "Regal Caracal": ["cc05783c-fd85-4fb2-bddc-2eef72513cf0", "sld", "23"],
+    "Sixth Sense": ["e564db6b-0b8b-4c67-9135-5da76d2225fe", "akh", "187"],
+    "Angel of Sanctions": ["66b1cbf0-1273-406a-bc99-ce20ce53e5aa", "akh", "1"],
+    "Captain Lannery Storm": ["5ab86a8a-7a0a-473e-9a97-da2fe0ab866c", "xln", "136"],
+    "Voltaic Servant": ["28564ac6-8b9b-4b99-9630-8fb3158d354c", "dom", "236"],
+    "Cloudreader Sphinx": ["6c85a696-fa1a-4e05-b0aa-79b3381e849a", "dom", "47"],
+    "Hashep Oasis": ["3bba75d2-3f1b-4828-be11-2da695f7bde7", "hou", "177"],
+    // Act 30 (Three Fairy Tales), 4 Nov 2026.
+    "Opportunistic Dragon": ["3fa16922-3583-4f5b-8805-509b95a8da49", "eld", "133"],
+    "Redcap Raiders": ["686cf5c4-6ba3-4fa0-9732-0a350c637c7a", "eld", "136"],
+    "Questing Beast": ["e41cf82d-3213-47ce-a015-6e51a8b07e4f", "eld", "171"],
+    "Gluttonous Troll": ["867e245b-6153-479c-9e09-682afb017ff3", "eld", "327"],
+    "Elspeth, Sun's Nemesis": ["81aec42f-abb7-42f9-96f5-f1ee2f94db52", "thb", "14", 1],
+    "Elspeth Conquers Death": ["ea20208b-1939-4c69-8cfd-c0a42f9dc427", "thb", "13"],
+    "Rowan, Fearless Sparkmage": ["030f4058-54e5-4333-bd6c-2789c334bf12", "eld", "304", 1],
+    "Slaying Fire": ["83b5b110-c430-4ffe-9fc1-8e6987f52d1e", "eld", "143"],
+    "Ashiok, Nightmare Muse": ["112eb5ce-4fe5-45b3-b810-79fef74b07f9", "thb", "208", 1],
+    "Vivien, Monsters' Advocate": ["3e7ce2ee-2ebc-4336-a9f3-02380ea9784b", "iko", "277", 1],
+    "Gemrazer": ["0095245c-a30e-4e2a-88c9-632c678e9f03", "iko", "155"],
+    "Wicked Wolf": ["09476eac-55d2-4955-8951-ae4ce117c98b", "eld", "181"],
+    "The Great Henge": ["af915ed2-1f34-43f6-85f5-2430325b720f", "eld", "161"],
+    "Archipelagore": ["01cda84f-7bd8-4166-b496-a04a4baa9b62", "iko", "283"],
+    "Illuna, Apex of Wishes": ["5c974c68-1a9f-457a-8bcb-265d29fee8e4", "iko", "300"],
+    "Oko, Thief of Crowns": ["3462a3d0-5552-49fa-9eb7-100960c55891", "eld", "197", 1],
+    "Elspeth, Undaunted Hero": ["bf9867e5-9d69-400c-a84f-3b085a4fd510", "thb", "270", 1],
+    "Thunderous Snapper": ["9576d4f1-47bb-45e0-803c-93fa2cdacbe5", "eld", "215"],
+    "Fires of Invention": ["a12b16b0-f75f-42d8-9b24-947c1908e0f7", "eld", "125"],
+    "Terror of the Peaks": ["432ecd5f-966f-4403-a973-51e175a524a0", "m21", "164"],
+    "Elder Gargaroth": ["d51269cf-a333-4a64-94cd-245798d840d2", "m21", "179"],
+    "Temple of Mystery": ["2f66945b-3e64-498a-9478-5f96a61d4ec7", "ths", "226"],
+    "Charmed Sleep": ["f1f97d9e-650b-4b69-8733-d80c8e0f723f", "eld", "40"],
+    "Nahiri, Heir of the Ancients": ["408be425-b8a6-4c03-b2a6-7ff7bd6555e0", "znr", "230", 1],
+    "Highborn Vampire": ["24c40082-516e-4381-a4cc-e61c5a9a6cac", "znr", "107"],
+    "Doomskar": ["130ee895-1e5e-4f82-bb66-e1275bac75dd", "khm", "9"],
+    "Righteous Valkyrie": ["02fb5f9f-8750-4eb5-a03a-6dacc60e0b90", "khm", "24"],
+    "Pest Summoning": ["6267e19a-a777-4767-8433-86b6624362b6", "stx", "211"],
+    "Culling Ritual": ["8f6f91d3-cc07-4a42-99a0-5fb83b29cc25", "stx", "172"],
+    "Sculptor of Winter": ["9dab2ca2-0039-4eac-a7dc-68756362737d", "khm", "193"],
+    "Ravenous Lindwurm": ["9961e3fc-167e-4043-8510-cc5cf08d473e", "khm", "187"],
+    "Vorinclex, Monstrous Raider": ["dd4b4019-b73d-4be3-991e-2deb811ee675", "khm", "333"],
+    "Prismari Command": ["866b7fd4-86e3-4b42-b1ea-33bad0db1f9f", "stx", "214"],
+    "Elemental Expressionist": ["34b6e53f-f605-430e-9455-b3653cbd8e1d", "stx", "342"],
+    "Luminarch Aspirant": ["fe964e7e-e2c5-4263-889d-0a531eb51442", "znr", "24"],
+    "Zareth San, the Trickster": ["9cfe4fbe-277f-410c-9eee-f7617f4cb850", "znr", "242"],
+    "Goldspan Dragon": ["a7cec498-e2ac-4ca0-9aa2-ef98ba634c32", "khm", "358"],
+    "Magma Opus": ["27c914a3-2294-4feb-9450-c012cfd307a6", "stx", "203"],
+    "Kardur, Doomscourge": ["9685e2a0-5573-41bc-a914-f40c3011459b", "khm", "216"],
+    "Blot Out the Sky": ["bdafd5bf-573d-4d3b-94ff-c39834a92d39", "stx", "335"],
+    "Kaya the Inexorable": ["166c0bd1-b59d-4644-832f-888a4ca3a0aa", "khm", "218", 1],
+    "Rise of Extus": ["bbf97a71-485e-4d47-98de-bdf6f6dae0c2", "stx", "226"],
+    "Icehide Troll": ["02f3aaed-a01f-4c6a-b9bb-cd70b0f6ceb1", "khm", "176"],
+    "Maul of the Skyclaves": ["f18f2608-0d44-442c-97a1-12ac94b7abac", "znr", "27"],
+    "Blizzard Brawl": ["6318918f-34e4-4bbf-9816-8e88f21ae324", "khm", "162"],
+    "Lorehold Campus": ["d35461cf-becf-4399-8329-64b4496b7fc2", "stx", "268"],
+    "Skyclave Shade": ["05347539-de61-4a37-929f-c909e65033f5", "znr", "298"],
+    "Dungeon Crawler": ["4138b66d-cf18-42a5-8522-241bd3969624", "afr", "99"],
+    "Adult Gold Dragon": ["62906879-fcc3-4ede-aa9e-b63d963d331a", "afr", "297"],
+    "Werewolf Pack Leader": ["e88e6b39-bb4d-4d69-8007-d42f31bcbc29", "afr", "211"],
+    "Adeline, Resplendent Cathar": ["18092f68-b96e-4084-9eba-b240d2195d81", "mid", "1"],
+    "Teferi, Who Slows the Sunset": ["ad2e18d4-986c-4a44-8f26-1b8689339cfb", "mid", "245", 1],
+    "Heron of Hope": ["fa7e6933-5c64-4fcd-bb7f-740767a149cb", "vow", "18"],
+    "Halana and Alena, Partners": ["608fa232-f5fe-4c58-9efe-fb780f454b19", "vow", "239"],
+    "Runebound Wolf": ["6f9615f0-376f-4ac0-b269-5f497f2b5223", "vow", "176"],
+    "Black Dragon": ["aaca283a-39f1-4ae7-98fb-7821a927ef86", "afr", "90"],
+    "Sorin the Mirthless": ["112394a6-7819-43b4-adad-f6900aff2936", "vow", "278", 1],
+    "Kaya, Geist Hunter": ["a98a208c-ee2b-4672-a43b-f4a708585b1a", "vow", "240", 1],
+    "Blue Dragon": ["98dea71b-2778-4374-8ea2-7fa82f0f6110", "afr", "49"],
+    "Flameskull": ["8826a883-197b-48e9-bd07-e2c8ce361fcf", "afr", "378"],
+    "Voldaren Epicure": ["ae154e64-f626-45fb-bd52-840c1c27b2d3", "vow", "182"],
+    "Anje, Maid of Dishonor": ["1bfac4ab-97f1-448c-8554-42ed03eb5656", "vow", "231"],
+    "Cathar Commando": ["98cbc1c2-b76e-4da3-aa43-00e10b2ce532", "mid", "10"],
+    "Olivia, Crimson Bride": ["0d5552d3-6860-42e5-8a13-1d36dce77322", "vow", "343"],
+    "Bloodtithe Harvester": ["01182501-2b50-4b87-835a-fea3c5e6e330", "vow", "310"],
+    "Olivia's Midnight Ambush": ["9c1adede-22ad-4c1c-9501-ad731fbe1742", "mid", "118"],
+    "Thalia, Guardian of Thraben": ["824423ff-6441-4be6-b754-810adf9ca6a2", "dka", "24"],
+    "Sigardian Savior": ["1ab1b95e-7f1a-4918-85f6-41df3f7d3cce", "mid", "331"],
+    "Sundown Pass": ["5f1e7d34-f250-4a61-a95b-75450d134eec", "vow", "285"],
+    "Haunted Ridge": ["91f67a64-b97d-473a-be9d-c8044ff86605", "mid", "282"],
+    "Thousand-Faced Shadow": ["89a698a5-f4ac-4b04-96dc-32e1eeef6ac7", "neo", "86"],
+    "Dokuchi Silencer": ["a24d5664-e214-466d-bb53-4e8f6f75a009", "neo", "95"],
+    "Lion Sash": ["3e1766e9-2fa7-4446-a255-7beea1467ece", "neo", "26"],
+    "Cloudsteel Kirin": ["a13ddda7-da6e-415e-8886-295514f862d4", "neo", "8"],
+    "Maestros Diabolist": ["7206db10-e248-420d-bf92-4d57bc72da56", "snc", "200"],
+    "Lord Xander, the Collector": ["ee0a078d-045f-401b-a561-dcb1ad02bf62", "snc", "197"],
+    "Elspeth Resplendent": ["7c606af0-f3d1-44a4-b24e-ee1263569b1f", "snc", "11", 1],
+    "Inspiring Overseer": ["35d9da1d-8678-4252-b0f8-9960795642f0", "snc", "18"],
+    "Ob Nixilis, the Adversary": ["80226520-6b0a-48ea-a868-a29eb3fbd403", "snc", "206", 1],
+    "Mr. Orfeo, the Boulder": ["97caaa92-2a7d-4f79-8d42-86733c902072", "snc", "204"],
+    "Ziatora, the Incinerator": ["ba4fa4c8-f09f-4d97-a7d1-1b93caf7d4f9", "snc", "231"],
+    "Queza, Augur of Agonies": ["7edb7a26-82be-4efd-9a5c-a3816e1ee2d6", "snc", "212"],
+    "Obscura Interceptor": ["08886346-2405-47ee-997f-c0fb7776c783", "snc", "209"],
+    "Kitsune Ace": ["ef1d446a-8607-45b8-a01f-dad17bab76e7", "neo", "22"],
+    "Mothrider Patrol": ["f657f2dc-adc8-4a66-b081-a71b3a127389", "neo", "30"],
+    "Kura, the Boundless Sky": ["06b25752-26be-4189-bc8b-828db6f0e612", "neo", "200"],
+    "Network Disruptor": ["5a37719a-2a87-4870-8f25-12544ca2f2cf", "neo", "71"],
+    "Kaito Shizuki": ["2d35a710-3008-4e27-8afd-6e83329f9917", "neo", "226", 1],
+    "Tezzeret, Betrayer of Flesh": ["2174d16e-4a78-4d27-b220-1086c40db83e", "neo", "84", 1],
+    "Raffine, Scheming Seer": ["716a44b4-f6b0-4f14-a270-6442aed3251f", "snc", "213"],
+    "Void Rend": ["2daab74d-d66b-4164-aa19-24e8d5536f7d", "snc", "230"],
+    "Spara's Headquarters": ["7363f1fb-9af3-4212-921f-d59533faf0e5", "snc", "257"],
+    "Biting-Palm Ninja": ["3017df51-67ae-4c3d-8210-086f83bc2040", "neo", "88"],
+    "Archangel of Wrath": ["2d00bab2-e95d-4296-a805-2a05e7640efb", "dmu", "3"],
+    "Wing Commando": ["43e640c3-02bb-453c-a609-05d8214e2e2e", "bro", "73"],
+    "Urza, Lord Protector": ["8aefe8bd-216a-4ec1-9362-3f9dbf7fd083", "bro", "225"],
+    "Liberator, Urza's Battlethopter": ["c31e6768-bcab-43c4-bfc1-76e961689ae9", "bro", "237"],
+    "Mishra, Claimed by Gix": ["a469d7ec-42de-45de-9d8f-469bb979de58", "bro", "216"],
+    "Karn, Living Legacy": ["e83b1b87-01d5-4624-8a2b-4b771e13e59c", "dmu", "1", 1],
+    "Silverback Elder": ["b987664f-0b74-4c0a-b306-14767a55559a", "dmu", "177"],
+    "Teferi, Temporal Pilgrim": ["23a4f1ec-eadf-4f1e-8821-f22293ad2580", "bro", "66", 1],
+    "Haunting Figment": ["d14b07ea-18e4-41fb-8136-759d5349e88a", "dmu", "53"],
+    "Gix, Yawgmoth Praetor": ["2c76f7e0-37e7-4e87-93a3-a25ba0674645", "bro", "95"],
+    "Queen Kayla bin-Kroog": ["65d8c862-47e9-4cc5-833c-0e762ee2a670", "bro", "379", 1],
+    "Tori D'Avenant, Fury Rider": ["9c873c5b-61f6-49b9-8993-2d5e9823de62", "dmu", "223"],
+    "Ajani, Sleeper Agent": ["7641f4d9-4614-41c8-87f5-4845bd78e9b3", "dmu", "192", 1],
+    "Keldon Strike Team": ["4af4031e-b14e-4568-b047-b3d470d9b18e", "dmu", "136"],
+    "Ragefire Hellkite": ["23ccd68d-0162-4a4c-892e-1726b8b28612", "dmu", "285"],
+    "Dragon Whelp": ["6bbf1eab-bc32-4835-b566-8634b1fe81b0", "lea", "141", 1],
+    "Liliana of the Veil": ["16a5f644-771f-4c31-a595-0881003e7676", "ppro", "2015", 1],
+    "Meria, Scholar of Antiquity": ["3eedd979-783d-4721-92de-965b77c20576", "dmu", "206"],
+    "Radha, Coalition Warlord": ["2cec235e-7ce0-4947-b221-a555b2c865bd", "dmu", "211"],
+    "Sol'Kanar the Tainted": ["3027347d-5fd3-47cd-83d4-8c834e00794c", "dmu", "219"],
+    "Mishra, Excavation Prodigy": ["f5d02416-8578-40a5-bf31-d1ef9b8764f1", "bro", "140"],
+    "Guardian of New Benalia": ["43da76ee-fec3-4b2e-915d-10cf8d518d2c", "dmu", "19"],
+    "Gixian Infiltrator": ["c94a3317-7d1f-4f29-8353-180f1ab48d18", "bro", "98"],
+    "Brotherhood's End": ["d4e7f3f0-765a-4660-a960-87caed438941", "pjsc", "2025-2"],
+    "Adarkar Wastes": ["09dd9023-f7ee-4e99-8821-7059deb83730", "ice", "351", 1],
+    "Venerated Rotpriest": ["d1b032e3-14e3-48ba-ab8a-d2b4f8d31a7d", "one", "192"],
+    "Mirran Banesplitter": ["ee4d00b8-1373-47b2-9be5-2199e0b12540", "mom", "154"],
+    "Koth, Fire of Resistance": ["6528e012-4091-4722-b706-c51772676167", "one", "138", 1],
+    "Rustvine Cultivator": ["6b71fd8f-e688-4210-bc5b-a3f19b5b3497", "one", "181"],
+    "Gitaxian Raptor": ["4f5e95f8-c04d-405f-bba4-e83a8f6bf463", "one", "53"],
+    "Danitha, New Benalia's Light": ["039e43f2-cf3b-4c60-ac55-d2aafb20eb34", "mat", "29"],
+    "Calix, Guided by Fate": ["0a707ab3-b9b5-422a-8b0f-e963d3ad6606", "mat", "26"],
+    "Archangel Elspeth": ["35ed6263-bdd7-4013-ac8c-9b652d71a0db", "mom", "6", 1],
+    "Marshal of Zhalfir": ["c2418f5c-a85f-4249-8a53-c94b011b9714", "mom", "246"],
+    "Phyrexian Obliterator": ["44c4476d-58f9-420d-9545-f5d580c589de", "nph", "68"],
+    "Wrenn and Realmbreaker": ["6f807d91-b157-44e8-a431-49782184f876", "mom", "217", 1],
+    "Timberland Ancient": ["5f73cd60-cd89-4c7a-85a6-e0ae34ca101b", "mom", "210"],
+    "Glissa Sunslayer": ["b2bf633e-0470-4b87-99ed-5ad1683b0954", "one", "202"],
+    "Archfiend of the Dross": ["86b0edaf-8cfd-4508-9554-6f0fddc2dfc4", "one", "82"],
+    "Charforger": ["45db6b46-c4b4-4684-8a49-53a64ffc82f2", "one", "199"],
+    "Cutthroat Centurion": ["b3890961-d636-4ccc-9c42-2088a8531c9b", "one", "89"],
+    "Kolaghan Warmonger": ["8361d9e2-b9fc-4d46-a1ba-a24139157f26", "mat", "17"],
+    "Wary Thespian": ["675b29bf-0b64-410f-9a92-c88e5615c27f", "mom", "215"],
+    "Knight-Errant of Eos": ["ab2ad652-2406-491a-9f22-23e974f943d7", "mom", "26"],
+    "Elesh Norn, Mother of Machines": ["44dcab01-1d13-4dfc-ae2f-fbaa3dd35087", "one", "10"],
+    "Porcelain Zealot": ["0409bacf-b728-473d-bf9b-41fdf364e783", "one", "30"],
+    "Skrelv, Defector Mite": ["60b565da-a49b-479c-b0c4-8ff3dd20cc0b", "one", "33"],
+    "Atraxa, Grand Unifier": ["4a1f905f-1d55-4d02-9d24-e58070793d3f", "one", "196"],
+    "Jungle Hollow": ["fea27aa7-7fcf-4198-b03a-5034a03ba81f", "ktk", "235"],
+    "Scoured Barrens": ["0824a960-dd89-45c5-90f0-3ec9eb47d9ce", "ktk", "242"],
+    "Will, Scion of Peace": ["162088ea-5f99-4244-9427-2fdfb2168fc3", "woe", "218"],
+    "Archon of the Wild Rose": ["00174be7-0dc8-43b9-81b6-f25a8c3fb4eb", "woe", "1"],
+    "Ashiok, Wicked Manipulator": ["6c4d0db1-74a5-42c0-ac95-e696585d8022", "woe", "78", 1],
+    "Quintorius Kand": ["4382fa49-9e34-45b3-8495-4916dcd995ec", "lci", "238", 1],
+    "Anim Pakal, Thousandth Moon": ["868856b7-8875-43c1-8249-0f8fb2c8319b", "lci", "223"],
+    "Seismic Monstrosaur": ["98aeb9dc-18f9-4120-ac3d-226c62a1dc1d", "lci", "166"],
+    "Trumpeting Carnosaur": ["edc035ca-f0a3-4814-9405-d6dc6f048315", "lci", "171"],
+    "Kutzil, Malamet Exemplar": ["c9f88a40-a6ed-4c1f-a309-011aca1acddd", "lci", "232"],
+    "Cenote Scout": ["4ce4b7bc-636b-4723-a7c1-2c859f333492", "lci", "178"],
+    "Bloodletter of Aclazotz": ["d4f6027a-003a-4f9d-929a-0b6da1fa42c9", "lci", "92"],
+    "Alquist Proft, Master Sleuth": ["41129b44-4fa7-473b-b2b7-48c6a58be03c", "mkm", "185"],
+    "Tenth District Hero": ["7c65a79e-f28a-4f30-95a4-1ea55fd84564", "mkm", "34"],
+    "Festerleech": ["83a6fa37-8351-403b-ae05-b67e9bf74bbb", "mkm", "85"],
+    "Resplendent Angel": ["586854d1-edfd-4c66-873d-df459324dbfd", "m19", "34"],
+    "Teysa, Opulent Oligarch": ["9b5a13dd-c2fd-432e-bc49-cc62d94d62a0", "mkm", "234"],
+    "Nightdrinker Moroii": ["ce043cba-aea4-4156-b1d0-545eda06c400", "mkm", "96"],
+    "Persuasive Interrogators": ["f0713025-581f-451b-97a3-97d891285dcc", "mkm", "98"],
+    "Ezrim, Agency Chief": ["9554d5f2-7a33-4734-8cf3-dfae2ccc3596", "mkm", "202"],
+    "Crimestopper Sprite": ["dc4ac597-38f0-48b5-ac2d-dfb0b169f834", "mkm", "49"],
+    "Massacre Girl, Known Killer": ["cb1c8800-9d33-485c-b776-042003b9ea92", "mkm", "94"],
+    "Pugnacious Hammerskull": ["632e5635-a9bc-473a-a885-02e1fd258f7b", "lci", "208"],
+    "Scytheclaw Raptor": ["9436cf62-56d6-4662-9982-72e9be80d25c", "lci", "165"],
+    "Aurelia, the Law Above": ["8f80c6e7-e9f9-4ca6-87f7-a52c96079e4a", "mkm", "188"],
+    "Meticulous Archive": ["652236c2-84ef-45e4-b5fc-ed6170bc3d6c", "mkm", "264"],
+    "Raucous Theater": ["b598c93e-dae1-4d71-a9e4-917abf76d2d0", "mkm", "266"],
+    "Oko, the Ringleader": ["396df8d6-e85d-4486-8116-68841b7e1e2e", "otj", "223", 1],
+    "Zimone, All-Questioning": ["7722f4f7-fe38-4107-a715-7b27b6a4e341", "dsk", "241"],
+    "Pond Prophet": ["fb959e74-61ea-453d-bb9f-ad0183c0e1b1", "blb", "229"],
+    "Seasoned Warrenguard": ["90873995-876f-4e89-8bc7-41a74f4d931f", "blb", "30"],
+    "Laughing Jasper Flint": ["af0b3a41-ba99-41e8-bcfb-5796500c17c7", "otj", "215"],
+    "Mabel, Heir to Cragflame": ["be6627fd-729d-44f2-b6bf-5299f49d1e3d", "blb", "224"],
+    "Valley Questcaller": ["ba629ca8-a368-4282-8a61-9bf6a5c217f0", "blb", "36"],
+    "Steampath Charger": ["03bf1296-e347-4070-8c6f-5c362c2f9364", "blb", "153"],
+    "Veteran Guardmouse": ["3db43c46-b616-4ef8-80ed-0fab345ab3d0", "blb", "237"],
+    "Hired Claw": ["1ae41080-0d67-4719-adb2-49bf2a268b6c", "blb", "140"],
+    "Tyvar, the Pummeler": ["5f7687b1-630a-4e95-89c7-eaf456d8cb68", "dsk", "202"],
+    "Twitching Doll": ["416c025b-e40e-4d95-a774-ba3961f43808", "dsk", "201"],
+    "Balemurk Leech": ["f0621b32-95c5-4f70-96cf-d46d20efc85d", "dsk", "84"],
+    "Overlord of the Hauntwoods": ["05d08ff1-edcc-4c76-96e0-683b3da36ebb", "dsk", "194"],
+    "Patchwork Beastie": ["895de583-36d2-43fd-927f-8876d4302c73", "dsk", "195"],
+    "Sheltered by Ghosts": ["389f3f7b-be40-4a2d-b5cc-28471a577981", "dsk", "30"],
+    "Emberheart Challenger": ["0035082e-bb86-4f95-be48-ffc87fe5286d", "blb", "133"],
+    "Manifold Mouse": ["db3832b5-e83f-4569-bd49-fb7b86fa2d47", "blb", "143"],
+    "Kaito, Bane of Nightmares": ["55a14f30-4ff9-4472-90a6-c3139f1c18e5", "dsk", "220", 1],
+    "Dreadwing Scavenger": ["e24d838b-ab48-410a-9a50-dbfea5da089b", "fdn", "118"],
+    "Stormchaser's Talent": ["a36e682d-b43d-4e08-bf5b-70d7e924dbe5", "blb", "75"],
+    "Valgavoth, Terror Eater": ["7740ff55-67bb-409e-90f7-2c2c8b8c770a", "dsk", "120"],
+    "Wary Watchdog": ["25ed97f2-b47e-49b7-9b1a-694c4bbeca3b", "dsk", "206"],
+    "Say Its Name": ["94c58683-b5f2-4863-9562-6f6be1ec21fe", "dsk", "197"],
+    "Heartfire Hero": ["48ace959-66b2-40c8-9bff-fd7ed9c99a82", "blb", "138"],
+    "Botanical Sanctum": ["8744471b-a528-47d9-84d0-4526273f55e9", "kld", "244"],
+    "Blooming Marsh": ["90da33d4-fe9c-42fe-b326-2fe337dc3ecd", "kld", "243"],
+    "Chandra, Spark Hunter": ["11f9b98e-48a1-491e-bdab-6e94e4ec747a", "dft", "116", 1],
+    "Greasewrench Goblin": ["c8f0b123-fdb0-4f3e-ba78-fa155c227e20", "dft", "132"],
+    "Engine Rat": ["949d6137-98d3-4f46-ab1e-08d7492af307", "dft", "84"],
+    "The Speed Demon": ["62242a80-0444-4a0e-a868-97eabcc77648", "dft", "105"],
+    "Coalstoke Gearhulk": ["73431628-b9b0-41e6-8e9b-8a090939b0c1", "dft", "198"],
+    "Elspeth, Storm Slayer": ["73a065e3-b530-4e62-ab3c-4f6f908184ec", "tdm", "11", 1],
+    "Bearer of Glory": ["d6d91e42-43db-428d-a4dd-ef9d40306314", "tdm", "4"],
+    "Voice of Victory": ["ec3de5f4-bb55-4ab9-995f-f3e0dc22c1bb", "tdm", "33"],
+    "Mu Yanling, Wind Rider": ["76423446-d62f-4cc5-a23a-3175be88bd73", "dft", "52"],
+    "Skyseer's Chariot": ["96ed5b66-8e74-4a90-ad4e-c39d15993994", "dft", "28"],
+    "Apocalypse Runner": ["971286f5-77ea-4824-91de-f0ac88c46238", "dft", "188"],
+    "Dragonologist": ["8810ebb4-9e51-46f0-a54a-a0b4d77b762a", "tdm", "42"],
+    "Magmatic Hellkite": ["b3b3aec8-d931-4c7f-86b5-1e7dfb717b59", "tdm", "111"],
+    "Beastrider Vanguard": ["f4b99a61-49f1-46a2-9eb7-b6c88c236215", "dft", "154"],
+    "Burnout Bashtronaut": ["4db66e7b-cb7a-4d86-a563-d570946aeb0d", "dft", "115"],
+    "Dynamite Diver": ["5a4f96f6-dd91-4357-ae19-1c35db2c2bcb", "dft", "123"],
+    "Roiling Dragonstorm": ["455f4c96-684b-4b14-bd21-6799da2e1fa7", "tdm", "55"],
+    "Cori-Steel Cutter": ["490eb213-9ae2-4b45-abec-6f1dfc83792a", "tdm", "103"],
+    "Gonti, Night Minister": ["d79ca40a-e5c0-4956-8df0-ecbd2a25656f", "dft", "87"],
+    "Surrak, Elusive Hunter": ["e4775a26-0b66-40e9-8f64-41d9308ca032", "tdm", "161"],
+    "Zurgo's Vanguard": ["a1aa3501-5738-4063-a7f4-51d2600b0041", "tdm", "133"],
+    "Sarkhan, Dragon Ascendant": ["c2200646-7b7c-489d-bbae-16b03e1d7fb2", "tdm", "118"],
+    "Ketramose, the New Dawn": ["cffae8d0-7b4e-42ed-8124-24a86b38f490", "dft", "209"],
+    "Embalmed Ascendant": ["5cf181ae-daa7-42f9-b667-5e679d80cf34", "dft", "201"],
+    "Swiftwater Cliffs": ["e782d005-a563-4738-978a-73a3465de78f", "ktk", "243"],
+    "Dismal Backwater": ["a5f74adf-e66b-4b5c-9e26-db4f23c721f6", "ddq", "70"],
+    "Fire-Rim Form": ["32dc1bf4-a135-449f-848f-361a5360fae1", "tdm", "107"],
+    "Cloud, Midgar Mercenary": ["2cf7e8a3-fad7-413d-b17c-7519a9cf5fb5", "fin", "10"],
+    "Dwarven Castle Guard": ["e17c0d27-e88d-4ba9-acbb-3f916cee3d7e", "fin", "18"],
+    "Coeurl": ["7604b534-5480-42fa-bc36-bbae730f8582", "fin", "12"],
+    "Summon: G.F. Ifrit": ["c6c73092-5195-4bdc-b039-a699f6e297b2", "fin", "163"],
+    "Raubahn, Bull of Ala Mhigo": ["7035d11b-525f-4120-8dcb-610095196681", "fin", "151"],
+    "Queen Brahne": ["c38c98bb-74c9-460f-9997-ea5c5f922347", "fin", "149"],
+    "Edgar, King of Figaro": ["950ee302-5512-43c5-ac7c-b2b06f4177bf", "fin", "51"],
+    "Barret Wallace": ["1a504dff-5857-4a61-ab99-616d5df7cf5a", "fin", "129"],
+    "Ultros, Obnoxious Octopus": ["14379198-9a0a-4853-9d51-fb074a24b1c0", "fin", "83"],
+    "Vivi Ornitier": ["ecc1027a-8c07-44a0-bdde-fa2844cff694", "fin", "248"],
+    "Seifer Almasy": ["9c776984-99ea-4181-ac95-78c41ba9d54f", "fin", "156"],
+    "Lightning, Army of One": ["1103da9c-300c-406b-997d-9e5bb7cd02d6", "fin", "233"],
+    "Snow Villiers": ["399bb699-e61d-4b41-b6e9-e594cbad6194", "fin", "33"],
+    "Yuna, Hope of Spira": ["35b613ad-86f0-431b-af93-147d21041fde", "fin", "250"],
+    "Hope Estheim": ["fbdb68cc-5516-481a-94c5-59f6c69b8a17", "fin", "226"],
+    "Tonberry": ["1a9b8723-4383-4c14-b24d-52863af8703d", "fin", "122"],
+    "The Regalia": ["dc420e79-c483-474f-97cd-e9c6a636c306", "fin", "267"],
+    "Balamb T-Rexaur": ["e5857b1b-73bc-458e-b26b-7ed8bef785f3", "fin", "173"],
+    "Ardyn, the Usurper": ["4627072e-9c72-4084-8021-690777342548", "fin", "89"],
+    "Vanille, Cheerful l'Cie": ["91226c1a-63a0-494e-bcf0-77c2d6f49213", "fin", "211"],
+    "Jenova, Ancient Calamity": ["534f98ee-7bc2-44d6-b49f-f57c051807d5", "fin", "228"],
+    "Zack Fair": ["f21f9161-5945-40da-8da0-446f6a4a1c23", "fin", "45"],
+    "Tifa Lockhart": ["fb781323-2746-405d-a9b2-e778c037a6e9", "fin", "206"],
+    "Aerith Gainsborough": ["e86328b6-ded2-41df-8b6e-4a770e7b171e", "fin", "4"],
+    "Diamond Weapon": ["6ce7f494-2a19-4b11-94d4-fc5e5a7068bd", "fin", "183"],
+    "Ancient Adamantoise": ["4c139f30-5ecd-48fd-ae7c-ec2cc98889ff", "fin", "172"],
+    "Il Mheg Pixie": ["ae612312-3a8e-495f-8730-deaaf7505ca1", "fin", "57"],
+    "Fire Magic": ["415ff6a5-61ef-4b37-ae08-e44476300d4a", "fin", "136"],
+    "Sami, Ship's Engineer": ["75c38cc9-07de-46d4-8195-f04b2b7e0fee", "eoe", "225"],
+    "Starfighter Pilot": ["1e571246-aadc-4d1f-a284-9a529e150fe0", "eoe", "38"],
+    "Oreplate Pangolin": ["90209957-95db-4b59-979a-316d14ef876c", "eoe", "150"],
+    "Thawbringer": ["0b7f934f-8eb4-408b-a55f-245ec5cc4a8a", "eoe", "211"],
+    "Lashwhip Predator": ["24553e98-29a9-47e3-91c7-9add708d9ad1", "eoe", "195"],
+    "Kavaron Turbodrone": ["f5e92cdd-75df-499e-94f7-22287f1000b3", "eoe", "141"],
+    "Cloudsculpt Technician": ["51077a54-15cf-4088-8e84-088d72e8e861", "eoe", "49"],
+    "Nanoform Sentinel": ["3eeae8c3-7939-4c79-92f0-fbdb9c1b71d3", "eoe", "71"],
+    "Uthros Psionicist": ["e23cc5fd-afe4-480c-8858-ed80a082584e", "eoe", "84"],
+    "Tezzeret, Cruel Captain": ["02e8e540-8aa3-4e6a-9a11-c3949cab5f0f", "eoe", "2", 1],
+    "Haliya, Guided by Light": ["6f7c63ae-5df3-410f-8643-b8c69133ca9d", "eoe", "19"],
+    "Dawnstrike Vanguard": ["5a041722-9483-469f-9c17-7f0253b0db50", "eoe", "10"],
+    "Alpharael, Stonechosen": ["33063d26-37f7-4e35-8da2-5770dfabdc41", "eoe", "87"],
+    "Genemorph Imago": ["40f0ecf7-f49e-46ff-aa5b-9ff5361b72c5", "eoe", "217"],
+    "Skystinger": ["dfea9941-3675-4c0f-bc4d-981c28deed36", "eoe", "207"],
+    "Codecracker Hound": ["6723b891-6013-4ec6-b439-2233d270dc48", "eoe", "50"],
+    "Mechan Shieldmate": ["745b2119-4d9f-431f-89b9-10ad48b6dc47", "eoe", "65"],
+    "Station Monitor": ["ba9f6d16-ee3e-4fbb-b78a-6292188eb61f", "eoe", "230"],
+    "Insatiable Skittermaw": ["e9d30cca-ea33-418f-bba3-5103f1dbd751", "eoe", "108"],
+    "Blade of the Swarm": ["b157330a-2652-4ed9-b8fa-8e72b4eda15c", "eoe", "90"],
+    "Plasma Bolt": ["a1a1834b-76c2-4496-b8c5-18b69ab34c4c", "eoe", "152"],
+    "Mechan Assembler": ["3fd46726-095e-4eb2-a804-eeeb988eee1d", "eoe", "63"],
+    "Sothera, the Supervoid": ["e99d6fc0-dcf2-4b25-81c2-02c230a36246", "eoe", "115"],
+    "Tannuk, Steadfast Second": ["44607ed3-9523-40ac-9f61-0edd011cf762", "eoe", "162"],
+    "Xu-Ifit, Osteoharmonist": ["c0838f25-2193-4305-b73a-bf0c0bb4981a", "eoe", "127"],
+    "Tannuk, Memorial Ensign": ["52498b7b-0389-4e7b-b29f-7ac86aab9229", "eoe", "233"],
+    "Seedship Impact": ["d060d95f-f33a-4fc0-b002-c394d4cd82ce", "eoe", "205"],
+    "Sami, Wildcat Captain": ["bed64207-9193-4770-8f8f-e3203289d5a6", "eoe", "226"],
+    "Exosuit Savior": ["826c0455-a6ce-43ad-bd5c-0a5df169da90", "eoe", "16"],
+    "Mutinous Massacre": ["42d5034f-18f0-4d57-9840-6be52c286247", "eoe", "222"],
+    "Aunt May": ["83a9e039-f168-40f2-9122-cf6e535e9bb3", "om1", "24"],
+    "Daily Bugle Reporters": ["cc2690bd-390e-4217-a991-340ddc0b487d", "om1", "16"],
+    "Spider-Punk": ["774d48ab-181b-4190-9956-67706bea9b27", "om1", "85"],
+    "Angry Rabble": ["80a99b95-5783-4947-8ce6-3ee1ecfa2525", "om1", "81"],
+    "Venom, Evil Unleashed": ["add0aa73-232a-4d4f-9e04-4cd2a6ff05bc", "om1", "70"],
+    "Mary Jane Watson": ["566eca5c-fbc3-4ac8-9b20-4c15b0101abd", "om1", "132"],
+    "Silk, Web Weaver": ["458cd7a1-7437-493b-b7b7-42ef489e77df", "om1", "123"],
+    "Doctor Octopus, Master Planner": ["7772b146-80ff-4906-84e4-69c704fa6f4c", "om1", "148"],
+    "Spider-UK": ["488f94ef-c9ba-4a96-8abe-99c9a855c5c3", "om1", "18"],
+    "Spider-Ham, Peter Porker": ["b1c95ee4-b60d-4868-b7e3-204849a8f544", "om1", "118"],
+    "Ultimate Green Goblin": ["9905b88b-4b4d-4a14-8032-7f23d4517d8b", "om1", "153"],
+    "Appa, Loyal Sky Bison": ["a9b2a843-c6fe-4d19-801e-1538e4381ab0", "tla", "9"],
+    "Aang, the Last Airbender": ["245e008c-e073-443f-9592-6f628c0026ec", "tla", "4"],
+    "Fire Nation Raider": ["ede1bbdb-c726-46e3-aaf1-b8cf2be2c341", "tla", "135"],
+    "Bumi, King of Three Trials": ["a268697b-22b0-4e1b-a5b6-d9be95025e57", "tla", "169"],
+    "The Earth King": ["a8d5dca6-381a-4361-b265-27de8d04335c", "tla", "172"],
+    "Long Feng, Grand Secretariat": ["a3eb92fe-bc59-4472-9028-f368bd015609", "tla", "233"],
+    "Katara, Bending Prodigy": ["e8372167-383f-4302-a8ea-b6bf495c870c", "tla", "59"],
+    "Glider Kids": ["0613afb5-4cee-4132-8adf-404767ed8d07", "tla", "21"],
+    "Koh, the Face Stealer": ["28f6fa32-5058-4c29-9ba8-9d8f2057eb6d", "tla", "107"],
+    "Suki, Kyoshi Warrior": ["3e311480-04f8-4b8f-938e-1cc6d06b9902", "tla", "243"],
+    "Kyoshi Warriors": ["211045e1-85c7-4088-b830-a2afa0fe520b", "tla", "26"],
+    "Ozai, the Phoenix King": ["a98b1550-4609-4a2f-9371-4afe1cdc613e", "tla", "235"],
+    "Ara\xF1a, Heart of the Spider": ["f41cc164-e799-492b-a155-43b218042189", "om1", "138"],
+    "Sudden Strike": ["3b8ca716-d1ea-47c9-a919-7da112310133", "om1", "20"],
+    "Spider-Rex, Daring Dino": ["36320a3a-e771-4763-b147-f328724cf36c", "om1", "100"],
+    "Kraven's Last Hunt": ["8e34d252-c96d-4f75-bf56-2a9b1e62c002", "om1", "121"],
+    "Earth Kingdom General": ["8688fce5-74b1-41e1-a59a-05a3878a75cb", "tla", "173"],
+    "Momo, Friendly Flier": ["a7b91b5f-815c-4bdc-97e4-dc7bc8ed29c0", "tla", "394"],
+    // Act 42 (TMNT and Marvel), 5 Nov 2026.
+    "Leonardo, Sewer Samurai": ["0e3a0a26-c163-4f31-bed8-1be52a35feea", "tmt", "17"],
+    "Quintessential Katana": ["ef9e227e-c581-479c-a962-2f191352b07f", "tmt", "23"],
+    "Foot Mystic": ["61e40a18-6cc8-436d-826b-1cf8cd037df3", "tmt", "63"],
+    "April O'Neil, Hacktivist": ["f0147f6d-b797-4d5e-aca2-a9d309896eca", "tmt", "29"],
+    "Donatello, Turtle Techie": ["683cfef0-f164-4db8-b83f-79eb804e50ae", "tmt", "37"],
+    "Purple Dragon Punks": ["bbe1d7e5-68e2-4458-aa3f-5e97fa8e7cae", "tmt", "100"],
+    "Raphael, Tough Turtle": ["f24c90c8-ed04-4b4e-8b19-c7d07a90c6b8", "tmt", "104"],
+    "Michelangelo, Game Master": ["2e914c3d-2eed-48bf-af9a-a8998fd5111d", "tmt", "118"],
+    "Krang, Master Mind": ["d27fa497-e842-4812-80fe-28517544e1c5", "tmt", "43"],
+    "Mighty Mutanimals": ["5dd5369c-174c-450b-b776-553866787f8f", "tmt", "21"],
+    "Leatherhead, Swamp Stalker": ["b1f6b5b5-12ca-468d-bc53-dd0cde60e7b6", "tmt", "117"],
+    "Super Shredder": ["37a497b8-e908-4ddc-996e-a8470df72afb", "tmt", "83"],
+    "Agent Phil Coulson": ["1383e587-df58-4b45-9067-b9399e90b9ed", "msh", "4"],
+    "Captain America, Super-Soldier": ["33631d6c-c584-42ff-afe5-2647b5fb321f", "msh", "9"],
+    "Baron Strucker, HYDRA Overlord": ["eaf2251a-ffaf-4055-9474-7e3d08d89609", "msh", "88"],
+    "Thor Odinson": ["0e06f730-ae30-4ef2-88b1-073e02afdb25", "msh", "234"],
+    "War Machine, Legacy of Iron": ["433a7d97-9c0b-4f5c-85ad-b55342c02d22", "msh", "238"],
+    "Loki, God of Mischief": ["ccd9eec2-87d1-4372-a308-8dcb17cdafc9", "pmei", "2026-14"],
+    "Human Torch, Johnny Storm": ["8f8659f6-a793-4edc-8401-d9126840c1c2", "msh", "136"],
+    "Invisible Woman, Sue Storm": ["2f80394b-2f7e-40a7-8203-720bcf39d71b", "msh", "17"],
+    "Doctor Doom": ["9b1f213a-e1d4-4a0f-954b-c83915698d98", "msh", "95"],
+    "Hawkeye, Master Marksman": ["9991b684-0ae0-4aa4-8f22-a9c473f5d69c", "msh", "130"],
+    "Avengers Assemble!": ["bf736399-af74-4f52-9159-67ea67d0cf83", "msh", "6"],
+    "Thanos, the Mad Titan": ["e669c0b2-0011-4feb-9263-f1ecc0a98f18", "msh", "233"],
+    "Ant-Man, Colony Commander": ["26faf2db-ad86-462f-b61f-c1893c9aebbf", "msh", "201"],
+    "Moon Girl and Devil Dinosaur": ["8c6a6d11-45cb-4def-a04b-51b91e1747db", "msh", "223"],
+    "Titania, Rugged Rumbler": ["c281e0ee-155b-4022-b921-ebc391535aad", "msh", "235"],
+    "The Coming of Galactus": ["04a38b92-619e-4fe8-b0cb-6fa31f0824ff", "msh", "212"],
+    "Nick Fury, Agent of S.H.I.E.L.D.": ["3aa6fc02-ef76-426b-accd-6c0ef88b2a5e", "msh", "25"],
+    "Shredder, Unrelenting": ["88a48867-5c65-483c-92b0-f70c53ea2a9e", "tmt", "74"],
+    // Act 43 (The Hobbit), 5 Nov 2026.
+    "Belladonna Took": ["88f0c189-c9ed-4ea3-ae62-3d8ac6c7fecf", "hob", "4"],
+    "K\xEDli the Resourceful": ["1805532f-6d99-47d0-9529-5f5831a7fdc8", "hob", "17"],
+    "Tom, Bert, and William": ["211a9764-3c60-46ba-bb53-e6692640ec8f", "hob", "169"],
+    "Gandalf, Wandering Wizard": ["1f8403a2-849c-4a59-b0ed-c8803995028d", "hob", "41"],
+    "Dori, Bearer of Friends": ["d2f60ad0-c887-4585-85f8-afcf72fb80d0", "hob", "94"],
+    "Goblin-town Flunkies": ["ccff7382-8609-494c-aeee-cd1436456dd0", "hob", "100"],
+    "Bilbo, Thief in the Night": ["484c7f83-8339-4ae1-8350-68ce1f7d05a3", "hob", "33"],
+    "Riddles in the Dark": ["a6129286-7437-4ba4-be55-586a22cd67ca", "hob", "53"],
+    "Gollum the Abandoned": ["50d91ef3-6f5d-4255-8d47-be731b5dad30", "hob", "72"],
+    "Radagast of Rhosgobel": ["5741bbad-a6e4-45e0-b827-73f48c9975bf", "hob", "136"],
+    "Old Thrush": ["3ad02b56-13ec-46ef-92bd-ae078b8bb517", "hob", "2"],
+    "Beorn the Fierce": ["367d5f8b-77ee-47f7-bc71-972d62c280a9", "hob", "119"],
+    "Thorin Oakenshield": ["c7e18609-d1ed-4829-be11-f2ce2cfcbc49", "hob", "165"],
+    "Balin, Loremaster": ["42d7ca7b-c983-40fd-ad57-59f6972bb375", "hob", "87"],
+    "Attercop": ["81263d5d-e402-4813-9458-161112da27ab", "hob", "116"],
+    "Dwalin, Weaponmaster": ["196d9287-a37d-4b27-a83b-a5489a54f081", "hob", "154"],
+    "Bombur, Gentle Dreamer": ["63c317e7-432c-4817-8db4-3670a1d84be3", "hob", "88"],
+    "Iron Hills Stalwart": ["46daa9ac-0ac7-4df9-b9d2-e03ab5b56c72", "hob", "102"],
+    "Bifur, Melodic Rider": ["ee88cc80-8fbf-451c-b2b8-09158426c26a", "hob", "147"],
+    "Galion, Elvenking's Butler": ["985bd676-58c4-42c7-a570-1b413e9aa94c", "hob", "125"],
+    "Thranduil's Decree": ["e4ded4c1-0e3e-47c5-8fdc-e7c187f68b12", "hob", "56"],
+    "Bard the Bowman": ["0b84e232-428c-424a-848c-ef95debc6e50", "hob", "145"],
+    "The Black Arrow": ["ab181190-d53d-4972-8cd5-8e54b45f2276", "hob", "171"],
+    "Smaug the Magnificent": ["43c56e15-ba46-4a27-b9b0-55cde9f8c933", "hob", "249"],
+    "D\xE1in, Lord of the Iron Hills": ["99d27749-d16c-45e9-accc-6a01351c17f9", "hob", "8"],
+    "Eagle's Rescue": ["12c8f2cc-ac9d-4cf6-9025-efe366b4e07f", "hob", "155"],
+    "Bolg of the North": ["7b2d2a7f-88e0-45a9-8579-a6736bcd66eb", "hob", "148"],
+    "The Lord of the Eagles": ["fa0554fc-9448-4ae2-8712-4f4f7af3c7b4", "hob", "46"],
+    "Elrond, Moon-Reader": ["fbcb310c-be73-46f8-8e65-8632454ccc6e", "hob", "36"],
+    "Azog, Moria's Ruin": ["135da718-affc-46ba-be57-c12c23b54dad", "hob", "61"],
+    // Act 44 (The Echoverse), 5 Nov 2026.
+    "Rhys, the Evermore": ["a7072412-4aa2-40ef-a267-bd717551a42b", "ecl", "32"],
+    "Kinscaer Sentry": ["333bf101-14e8-4753-99bc-9174f42c4122", "ecl", "22"],
+    "Gloom Ripper": ["e9ee5d4f-05d1-4e3a-b8d6-f22d0fddedf7", "ecl", "102"],
+    "Creakwood Safewright": ["3bcc24cf-776a-4182-bf77-a611ad90b28f", "ecl", "96"],
+    "Heirloom Auntie": ["cac251b2-d2cc-45b6-9ca8-678e0eab56ea", "ecl", "107"],
+    "Maralen, Fae Ascendant": ["c50f5408-5b5c-41dc-807e-136233403a09", "ecl", "233"],
+    "Enraged Flamecaster": ["104baa2c-75c5-44fc-a3b9-b19efcf3d7c2", "ecl", "135"],
+    "Thunderdrum Soloist": ["590d1d95-ed13-4121-899f-f5a2d8a6617a", "sos", "134"],
+    "Curse-Marred Demon": ["8f827e50-0a08-4bc8-98b1-b26c9af15ef2", "fra", "79"],
+    "Tam, Mindful First-Year": ["6cb0f825-b75b-4f2a-803c-08142ca07e76", "ecl", "245"],
+    "Mutable Explorer": ["8f35d95a-caea-4d5e-b98e-55da1ba7c92d", "ecl", "186"],
+    "Sanar, Innovative First-Year": ["11215561-bbcd-4564-a2e4-a1d77d177a1d", "ecl", "241"],
+    "Colorstorm Stallion": ["f5b54d46-2caf-4d1b-8be1-dbd9e9dce058", "sos", "180"],
+    "Molten-Core Maestro": ["326dfe32-3674-4a11-acd8-5ba62371235a", "sos", "125"],
+    "The Dawning Archaic": ["7a451985-37e1-44d8-839b-dc1e88df5c96", "sos", "1"],
+    "Lorehold, the Historian": ["71a6701f-40f1-43ef-bff5-a5907fd67cd6", "sos", "201"],
+    "Hardened Academic": ["06c9e8a7-2840-4cff-90af-c6636e598f78", "sos", "194"],
+    "Witherbloom, the Balancer": ["ed7b2361-97c6-49e2-bf0b-4770f4ffe2f0", "sos", "245"],
+    "Chandra's Emberling": ["3a64c5f4-9cfc-4d19-bd99-13d619b1aa9d", "fra", "76"],
+    "Draconic Visitor": ["112f8478-bd89-4a14-9721-8ab750613129", "fra", "80"],
+    "Uldaros Theorix": ["a7ad622a-42ff-48fa-ae95-12e0a5bd9387", "fra", "159"],
+    "Aziza, Mage Tower Captain": ["6261e89a-dbf1-481a-823e-6bb00be57195", "sos", "174"],
+    "Bre of Clan Stoutarm": ["013cefb7-a059-45c2-81b0-187f35aac4a2", "ecl", "207"],
+    "The Theorist, Jace Beleren": ["20bb8c55-4b0b-425f-8201-b54fa2fdde86", "fra", "43", 1],
+    "Tam, the Possibility": ["6529d399-677e-45a6-ac3e-12a0b10f6c37", "fra", "276"],
+    "Avatar of Burgeoning Echoes": ["5905995b-7a20-4602-a7cc-90aa5089a082", "fra", "122"],
+    "Emrakul, the Exigent Doom": ["c3ff8dd3-88a8-49dc-a59b-e2748680623c", "fra", "1"],
+    "Aurora Awakener": ["913977c2-73f9-466b-bd01-827c1736e070", "ecl", "165"],
+    "Figure of Fable": ["e0ef33dd-5f6d-48fa-8ef6-a8092868d50f", "ecl", "224"],
+    "Quandrix, the Proof": ["015afe31-af3c-4c9b-9997-d7c33b915a33", "sos", "218"],
+    // Act 29 (War of the Spark), 4 Nov 2026.
+    "Beacon Bolt": ["39c9e4b5-364b-4c0b-bb47-266563a6abf2", "grn", "154"],
+    "Goblin Electromancer": ["632af23c-eb5c-4725-afca-637e84cecf94", "ddj", "3"],
+    "Vraska, Golgari Queen": ["963f641d-aabe-4432-87c5-d8cddf95d8d5", "med", "GR8", 1],
+    "Rotting Regisaur": ["d88c61cb-dbf9-46c3-8795-8896ba1208d5", "m20", "111"],
+    "Empyrean Eagle": ["ac555709-c7cc-4c64-8a6f-8fe2bc149fcd", "m20", "208"],
+    "Ministrant of Obligation": ["bf2a093a-25f0-4247-94dc-550865d86317", "rna", "16"],
+    "Ral, Storm Conduit": ["678ce3bf-152d-45ca-87ae-ad46c921328b", "war", "211", 1],
+    "Arclight Phoenix": ["787de9ce-02c5-4a17-a88b-d38e83dbeb0b", "grn", "91"],
+    "Dreadhorde Invasion": ["04c6e42d-991d-4e6b-a900-38480931f79e", "war", "86"],
+    "Kaya, Orzhov Usurper": ["e360f0de-375e-4ba5-8f0c-0ee630b5b1a3", "med", "RA8", 1],
+    "Pitiless Pontiff": ["98f66c03-cf79-4de0-be55-b921cbdc5038", "rna", "194"],
+    "Teferi, Time Raveler": ["5cb76266-ae50-4bbc-8f96-d98f309b02d3", "war", "221", 1],
+    "Kaya's Wrath": ["5ed140c1-752b-4539-88f2-1fa354049b17", "rna", "187"],
+    "Doom Whisperer": ["0a11ee0d-ff8d-4648-8b4e-29440c135c30", "grn", "69"],
+    "Casualties of War": ["08fc5e50-c6f7-41ec-815a-5667eefded78", "war", "187"],
+    "Nicol Bolas, Dragon-God": ["2c3d5102-c305-4461-8360-534aba0f5c02", "med", "WS6", 1],
+    "Gideon Blackblade": ["071421ba-b54a-4510-9065-ace62368d3cb", "med", "WS2", 1],
+    "Ob Nixilis, the Hate-Twisted": ["14916e2d-73af-4747-a927-d2d4cb3e32db", "war", "100", 1],
+    "Hero of Precinct One": ["87732718-1067-4e5f-a76d-409539c9ef3f", "rna", "11"],
+    "Rubblebelt Rioters": ["9bf8df62-eca1-4a45-84af-fd7c88245a42", "war", "215"],
+    "Domri, Chaos Bringer": ["1f56bbf3-3884-495a-b9cd-6585d86f76f1", "rna", "166", 1],
+    "Watery Grave": ["139b90cd-8272-457a-be32-1298145345be", "rav", "286"],
+    "Massacre Girl": ["be8ec9e1-2c8e-496d-9111-4d453b75b578", "war", "99"],
+    // Act 28 (Dominaria Reborn), 4 Nov 2026.
+    "History of Benalia": ["d134385d-b01c-41c7-bb2d-30722b44dc5a", "dom", "21"],
+    "Knight of Grace": ["7bbbddc0-f8b3-4255-bd82-d50f829ca009", "dom", "23"],
+    "Weatherlight": ["d4581fc0-551c-4ee5-bde0-65c2b8cdf1b7", "dom", "237"],
+    "Jhoira, Weatherlight Captain": ["73cf8c6b-1322-4bc5-a604-6e372607fae4", "dom", "197"],
+    "Saproling Migration": ["2578d25e-5f8d-42ff-90ce-4e7d100cbbb6", "dom", "178"],
+    "Shanna, Sisay's Legacy": ["2c86aae8-08bb-4acc-b39b-10e5b2ac40d9", "pdom", "204"],
+    "Icy Manipulator": ["29dc1596-a2e7-4d60-9f99-89babaef8a06", "lea", "248", 1],
+    "Grand Warlord Radha": ["986981fa-a744-45d8-81c7-68ef335c79e2", "dom", "195"],
+    "Yargle, Glutton of Urborg": ["645cfc1b-76f2-4823-9fb0-03cb009f8b32", "dom", "113"],
+    "Goblin Chainwhirler": ["8bdb2883-3cfd-4fb0-9f99-6a57277f7fe4", "dom", "129"],
+    "Ghitu Lavarunner": ["c448ba82-a502-459f-9ebc-fc9e85674e6c", "dom", "127"],
+    "Steel Leaf Champion": ["24d8a688-79d4-49b9-ab0c-c7f5c9b551f4", "dom", "182"],
+    "Marwyn, the Nurturer": ["251613c0-2e72-4bd1-b3b5-69602b07b6f9", "dom", "172"],
+    "Garna, the Bloodflame": ["ae9c1471-ae6f-4b66-9842-46f1a74e93b5", "dom", "194"],
+    "Demonlord Belzenlok": ["ffb4dbe8-15fa-467f-9366-66382b192113", "dom", "86"],
+    "Lyra Dawnbringer": ["93be6799-7b9d-44d4-84dc-2961692b5a85", "dom", "26"],
+    "Rite of Belzenlok": ["1ed7cca3-79be-44ca-bf10-2ae1c0835ed1", "dom", "102"],
+    "Territorial Allosaurus": ["3d8ac2b0-47ea-4aa3-bf24-c78227a0c913", "dom", "184"],
+    "Seal Away": ["8f8d6588-671d-4eb3-874f-f7139da2e05a", "dom", "31"],
+    "Meandering River": ["6a5bedf1-92b6-465c-afc2-ce8e150a5e57", "ogw", "173"],
+    "Josu Vess, Lich Knight": ["6ed6d088-db82-4648-a109-0e3fa1421847", "dom", "95"],
+    // Act 27 (The Immortal Sun), 4 Nov 2026.
+    "Jadelight Ranger": ["9fe5c719-f20d-4469-9750-fb689d5f3fc8", "rix", "136"],
+    "Merfolk Branchwalker": ["2c6f0d4a-4827-47b6-8af6-803949c195f8", "xln", "197"],
+    "Dire Fleet Daredevil": ["13e3c0c5-7451-4da9-acc0-d6e4e1f2655e", "rix", "99"],
+    "Swaggering Corsair": ["22da9f6a-9598-4cfe-b465-719266b65dee", "rix", "119"],
+    "Ripjaw Raptor": ["7c5368c6-87e0-4f83-aaf7-f4af96d2bf30", "xln", "203"],
+    "Raging Swordtooth": ["15a79137-9589-4c24-9bea-31041fd3c9ae", "xln", "226"],
+    "Jace, Cunning Castaway": ["b75f56f2-88fd-44ba-ad02-56ea3391f173", "xln", "60", 1],
+    "Hostage Taker": ["e8dc67a0-05d9-463e-9794-30a7e951c240", "xln", "223"],
+    "Kumena, Tyrant of Orazca": ["a3aef818-c896-46e6-aaff-56aee52a066c", "rix", "162"],
+    "Tishana, Voice of Thunder": ["19c5cfbe-3972-4d2e-a37f-e96cca33bb33", "xln", "230"],
+    "Nezahal, Primal Tide": ["48eba418-94ab-46a3-958c-4d5058fc2bcd", "rix", "45"],
+    "Regisaur Alpha": ["d6a322c5-aa4c-4a99-a3ca-48c1353104f0", "xln", "227"],
+    "Charging Monstrosaur": ["d5222448-95d1-4b63-ab76-d5060febcf38", "xln", "138"],
+    "Dire Fleet Captain": ["8200f8a3-d60b-470a-a558-0c3555d1f10b", "xln", "221"],
+    "Dire Fleet Neckbreaker": ["5146dd15-f696-42c3-b0e5-6a1b1d7be6b4", "rix", "156"],
+    "Azor, the Lawbringer": ["30dc237e-b28a-4b65-9790-6b434828bf2e", "rix", "154"],
+    "The Immortal Sun": ["adeccd88-8dc0-4cc1-943f-27d540d248bb", "rix", "180"],
+    "Settle the Wreckage": ["9cbd346e-098a-4cf6-a72f-468376fd2e8f", "xln", "34"],
+    "Imperial Ceratops": ["a5030e80-58c4-4ce3-877e-8395b653f6e8", "rix", "10"],
+    "Angrath's Fury": ["708006ba-d494-4093-b108-8249b110831e", "rix", "204"],
+    "Rootbound Crag": ["5433b11b-efe9-4d94-8f71-6bf7c403494d", "m10", "227"],
+    "Sun-Crested Pterodon": ["c298b51f-b725-4a51-a91e-4c66cf6dfe9d", "rix", "27"],
+    // Glory achievements, 4 Nov 2026.
+    "Gideon Jura": ["e0440668-1b0e-437c-9e42-7166dd14dfe5", "roe", "21", 1],
+    "Karn Liberated": ["f9287151-95df-4f5a-b32a-4b0aea825452", "nph", "1", 1],
+    "Mishra's Workshop": ["135de5c7-6ac9-4b68-8f1a-97f120a4b125", "atq", "81", 1],
+    "Survival of the Fittest": ["c060c178-3c0e-493f-b6f0-ead5b1d6f191", "exo", "129", 1],
+    "Academy Ruins": ["af09af65-0a3b-42df-b0fd-372e2158beac", "tsp", "269"],
+    "Sphinx of the Final Word": ["866f92a3-2738-4e0f-adda-3ff9227dc17a", "ogw", "63"],
+    "Nicol Bolas, Planeswalker": ["48ee3939-bc12-4275-a446-9de36f0b4672", "con", "120", 1],
+    "Hour of Devastation": ["d420cc12-cfd7-4007-a0c2-b16c8f63a754", "hou", "97"]
   });
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/play-achievements.js
+  // ../../play-achievements.js
+  var LIVE_ACTS = 44;
   var ACHIEVEMENTS = Object.freeze([
+    // Glory (World of Warcraft style, Randall 4 Nov): meta-achievements. Each counts other achievements; finishing
+    // one pays a Secret Lair card (play-econ-route.js), a rare seal and a title. glory.where picks achievements by
+    // tab, feat or hidden; glory.need fixes the goal (else every match). Steps are set from the matches in achievementRows.
+    { id: "glory-duelist", tab: "glory", title: "Glory of the Duelist", lore: "Earn every Duelist feat.", art: "Gideon Jura", source: "glory", glory: { where: { tab: ["duelist"], feat: true } }, steps: [1], feat: true, reward: "glory", titleReward: "the Duelist" },
+    { id: "glory-table", tab: "glory", title: "Glory of the Table", lore: "Every Quick Play and Multiplayer feat.", art: "Karn Liberated", source: "glory", glory: { where: { tab: ["quick", "friends"], feat: true } }, steps: [1], feat: true, reward: "glory", titleReward: "Tablemaster" },
+    { id: "glory-chronicle-1", tab: "glory", title: "Chronicler Glory: Acts 1-8", lore: "Chronicler of every act from 1 to 8.", art: "Mishra's Workshop", source: "glory", glory: { ids: [1, 2, 3, 4, 5, 6, 7, 8].map((n) => `a${n}-chronicler`) }, steps: [1], feat: true, reward: "glory", titleReward: "the Chronicler" },
+    { id: "glory-chronicle-2", tab: "glory", title: "Chronicler Glory: Acts 9-16", lore: "Chronicler of every act from 9 to 16.", art: "Survival of the Fittest", source: "glory", glory: { ids: [9, 10, 11, 12, 13, 14, 15, 16].map((n) => `a${n}-chronicler`) }, steps: [1], feat: true, reward: "glory", titleReward: "the Loremaster" },
+    { id: "glory-chronicle-3", tab: "glory", title: "Chronicler Glory: Acts 17-26", lore: "Chronicler of every act from 17 to 26.", art: "Academy Ruins", source: "glory", glory: { ids: [17, 18, 19, 20, 21, 22, 23, 24, 25, 26].map((n) => `a${n}-chronicler`) }, steps: [1], feat: true, reward: "glory", titleReward: "the Archivist" },
+    { id: "glory-riddles", tab: "glory", title: "Keeper of Riddles", lore: "Solve 25 hidden riddles, anywhere in Play.", art: "Sphinx of the Final Word", source: "glory", glory: { where: { hidden: true }, need: 25 }, steps: [1], feat: true, reward: "glory", titleReward: "the Riddle-Keeper" },
+    { id: "glory-hunter", tab: "glory", title: "Achievement Hunter", lore: "Achievement points earned. Glory achievements do not count toward it.", art: "Nicol Bolas, Planeswalker", source: "points", steps: [500, 1e3, 2500, 5e3], titleReward: "the Hunter" },
     // Journey: the whole of Play.
-    { id: "first-spark", tab: "journey", title: "First Spark", lore: "Every planeswalker remembers the first time the spark caught.", art: "Chandra, Torch of Defiance", source: "matches", steps: [1], feat: true },
+    { id: "first-spark", tab: "journey", title: "First Spark", lore: "Every planeswalker remembers the first time the spark caught.", art: "Chandra, Torch of Defiance", source: "matches", steps: [1], feat: true, reward: "xp" },
     { id: "faithful", tab: "journey", title: "Faithful Planeswalker", lore: "Days you came back to the Multiverse. Missed days never reset it.", art: "Teferi, Hero of Dominaria", source: "logins", steps: [7, 30, 100, 365], titleReward: "Ever-Present" },
     { id: "table-time", tab: "journey", title: "Time at the Table", lore: "Hours spent in real matches, never in menus.", art: "Karn, Scion of Urza", source: "minutes", steps: [60, 600, 3e3, 9e3, 3e4], unit: "h", titleReward: "Grizzled Veteran" },
     { id: "well-travelled", tab: "journey", title: "Well Travelled", lore: "Matches finished in Story, Quick Play and Multiplayer.", art: "Kiora, Behemoth Beckoner", source: "matches", steps: [10, 50, 250, 1e3] },
@@ -5218,14 +7506,32 @@
     // Duelist: how you win.
     { id: "victor", tab: "duelist", title: "Victor", lore: "Wins against the CPU and in Story. Friend wins never count.", art: "Elspeth, Sun's Champion", source: "wins", steps: [10, 50, 250, 1e3, 5e3] },
     { id: "on-the-draw", tab: "duelist", title: "On the Draw", lore: "Wins when you went second.", art: "Brainstorm", source: "wins_draw", steps: [5, 25, 100] },
-    { id: "swift-justice", tab: "duelist", title: "Swift Justice", lore: "Win by turn 5.", art: "Lightning Bolt", source: "wins_fast", steps: [1], feat: true },
-    { id: "flawless", tab: "duelist", title: "Flawless", lore: "Win with 20 life or more.", art: "Serra Angel", source: "wins_flawless", steps: [1], feat: true },
-    { id: "long-game", tab: "duelist", title: "The Long Game", lore: "Win a match that reaches turn 20.", art: "Ugin, the Spirit Dragon", source: "wins_long", steps: [1], feat: true },
-    { id: "comeback", tab: "duelist", title: "Back From the Brink", lore: "Win with 5 life or less. The table thought you were finished.", art: "Worship", source: "wins_low", steps: [1, 10, 50] },
+    { id: "swift-justice", tab: "duelist", title: "Swift Justice", lore: "Win by your 5th turn.", art: "Lightning Bolt", source: "wins_fast", steps: [1], feat: true, reward: "uncommon" },
+    { id: "flawless", tab: "duelist", title: "Flawless", lore: "Win with 20 life or more.", art: "Serra Angel", source: "wins_flawless", steps: [1], feat: true, reward: "common" },
+    { id: "long-game", tab: "duelist", title: "The Long Game", lore: "Win a match that lasts 15 of your turns.", art: "Ugin, the Spirit Dragon", source: "wins_long", steps: [1], feat: true, reward: "common" },
+    { id: "comeback", tab: "duelist", title: "Back From the Brink", lore: "Win with 5 life or less. The table thought you were finished.", art: "Worship", source: "wins_low", steps: [1, 10, 50], titleReward: "the Unbroken" },
+    { id: "executioner", tab: "duelist", title: "Executioner", lore: "Opposing creatures you destroyed, in every mode but Practice.", art: "Wrath of God", source: "kills", steps: [25, 100, 500, 2e3, 5e3] },
+    { id: "one-big-turn", tab: "duelist", title: "One Big Turn", lore: "Deal 15 or more damage to one opponent in a single turn.", art: "Craterhoof Behemoth", source: "f_big15", steps: [1], feat: true, reward: "uncommon" },
+    { id: "alpha-strike", tab: "duelist", title: "Alpha Strike", lore: "Attack with six or more creatures at once.", art: "Overwhelming Stampede", source: "f_alpha6", steps: [1], feat: true, reward: "common" },
+    { id: "clean-slate", tab: "duelist", title: "Clean Slate", lore: "Wipe out three or more opposing creatures at once.", art: "Day of Judgment", source: "wipes", steps: [1, 10, 50] },
+    { id: "poison-pen", tab: "duelist", title: "Poison Pen", lore: "Win with your opponent on 10 poison counters.", art: "Glistener Elf", source: "wins_poison", steps: [1, 10], tiers: ["bronze", "silver"] },
+    { id: "read-to-end", tab: "duelist", title: "Read to the End", lore: "Win with your opponent out of cards to draw.", art: "Traumatize", source: "wins_mill", steps: [1], feat: true, reward: "uncommon" },
+    { id: "untouched", tab: "duelist", title: "Untouchable", lore: "Win without ever losing a point of life.", art: "Teferi's Protection", source: "wins_untouched", steps: [1, 10], tiers: ["bronze", "silver"] },
+    { id: "from-ashes", tab: "duelist", title: "From the Ashes", lore: "Win after your life fell to 3 or less at some point.", art: "Rekindling Phoenix", source: "wins_phoenix", steps: [1, 10, 25] },
     { id: "overkill", tab: "duelist", title: "Overkill", lore: "Win with your opponent at -5 life or lower.", art: "Fireball", source: "wins_overkill", steps: [1, 10], tiers: ["bronze", "silver"] },
     // Quick Play: matches against the CPU at Normal.
     { id: "quick-draw", tab: "quick", title: "Quickest Draw", lore: "Quick Play wins against the CPU.", art: "Goblin Guide", source: "wins_quick", steps: [5, 25, 100, 500] },
     { id: "quick-regular", tab: "quick", title: "Regular at the Table", lore: "Quick Play matches finished, win or lose.", art: "Hellrider", source: "quick_matches", steps: [10, 100, 500], tiers: ["bronze", "silver", "silver"] },
+    { id: "swarm", tab: "quick", title: "Swarm", lore: "Have ten creatures on the field at once.", art: "Hornet Queen", source: "f_swarm10", steps: [1], feat: true, reward: "uncommon" },
+    { id: "token-army", tab: "quick", title: "Token Army", lore: "Have eight tokens on the field at once.", art: "Secure the Wastes", source: "f_tokens8", steps: [1], feat: true, reward: "common" },
+    { id: "colossal", tab: "quick", title: "Colossal", lore: "Have a creature with 15 or more power.", art: "Ghalta, Primal Hunger", source: "f_power15", steps: [1], feat: true, reward: "uncommon" },
+    { id: "air-superiority", tab: "quick", title: "Air Superiority", lore: "Have five flyers on the field at once.", art: "Favorable Winds", source: "f_flyers5", steps: [1], feat: true, reward: "common" },
+    { id: "growth-spurt", tab: "quick", title: "Growth Spurt", lore: "Put ten +1/+1 counters on one creature.", art: "Hardened Scales", source: "f_counters10", steps: [1], feat: true, reward: "common" },
+    { id: "armed", tab: "quick", title: "Armed to the Teeth", lore: "Have three Auras or Equipment on one creature.", art: "Puresteel Paladin", source: "f_attach3", steps: [1], feat: true, reward: "common" },
+    { id: "chieftain", tab: "quick", title: "Chieftain", lore: "Have six creatures of one creature type on the field at once.", art: "Vanquisher's Banner", source: "f_tribe6", steps: [1], feat: true, reward: "common" },
+    { id: "many-faces", tab: "quick", title: "Many Faces", lore: "Turn three face-down creatures face up in one match.", art: "Ixidron", source: "f_turnup3", steps: [1], feat: true, reward: "uncommon" },
+    { id: "lifebloom", tab: "quick", title: "Lifebloom", lore: "Gain 20 or more life in one match.", art: "Aetherflux Reservoir", source: "f_gain20", steps: [1], feat: true, reward: "common" },
+    { id: "quick-hunter", tab: "quick", title: "Big Game Hunter", lore: "Opposing creatures destroyed in Quick Play.", art: "Big Game Hunter", source: "quick_kills", steps: [25, 250, 1e3], tiers: ["bronze", "silver", "gold"] },
     { id: "pod-boss", tab: "quick", title: "Last One Standing", lore: "Win a Commander pod against three CPU players.", art: "Kenrith, the Returned King", source: "wins_pod", steps: [1, 10, 50] },
     // Formats.
     { id: "format-explorer", tab: "formats", title: "Format Explorer", lore: "Win in different formats.", art: "Jace, the Mind Sculptor", source: "fmt", steps: [2, 4, 6] },
@@ -5234,20 +7540,28 @@
     { id: "modern-wins", tab: "formats", title: "Modern Times", lore: "Modern wins.", art: "Thoughtseize", source: "fmt:Modern", steps: [1, 25], tiers: ["bronze", "silver"] },
     { id: "legacy-wins", tab: "formats", title: "Legacy", lore: "Legacy wins.", art: "Force of Will", source: "fmt:Legacy", steps: [1, 25], tiers: ["bronze", "silver"] },
     { id: "pauper-wins", tab: "formats", title: "Prince of Paupers", lore: "Pauper wins. Commons only, and still enough.", art: "Delver of Secrets", source: "fmt:Pauper", steps: [1, 25], tiers: ["bronze", "silver"] },
-    { id: "old-school-wins", tab: "formats", title: "Old School", lore: "Old School wins, with the cards of 1993 and 1994.", art: "Juz\xE1m Djinn", source: "fmt:Old School", steps: [1, 25], tiers: ["bronze", "silver"] },
+    // Old School wins are hidden until a real Old School mode exists (Story records descriptive formats, so nothing
+    // could ever count; Legacy wins must not stand in for it). Re-add the old-school-wins row with its mode.
     // Colours: read from the basic lands in the deck you won with.
     { id: "guild-ties", tab: "colours", title: "Guild Ties", lore: "Win with different two-colour pairs. There are ten.", art: "Transguild Promenade", source: "#gp", steps: [1, 3, 5, 10] },
     { id: "mono-master", tab: "colours", title: "True to One", lore: "Win with mono-coloured decks of different colours.", art: "Painter's Servant", source: "#mc", steps: [1, 3, 5] },
     { id: "shards-wedges", tab: "colours", title: "Shards and Wedges", lore: "Win with different three-colour decks. There are ten.", art: "Obelisk of Alara", source: "#tc", steps: [1, 5, 10] },
     // Story.
     { id: "storyteller", tab: "story", title: "Storyteller", lore: "Story battles won, from Dominaria onward.", art: "Urza, Lord High Artificer", source: "story_wins", steps: [1, 10, 30, 60] },
-    { id: "acts-cleared", tab: "story", title: "Through the Ages", lore: "Story acts with all 8 battles won, from Alpha to the newest set.", art: "Time Spiral", source: "story_acts", steps: [1, 5, 10, 25, 45] },
+    { id: "acts-cleared", tab: "story", title: "Through the Ages", lore: "Story acts with all 8 battles won, from Alpha to the newest set.", art: "Time Spiral", source: "story_acts", steps: [1, 5, 10, 25, LIVE_ACTS] },
     { id: "villain-side", tab: "story", title: "The Other Side", lore: "Story battles won from the villain's seat.", art: "Villainous Wealth", source: "story_villain", steps: [1, 10, 40] },
     { id: "own-deck", tab: "story", title: "Bring Your Own", lore: "Story battles won with your own Play deck instead of the Story deck.", art: "Personal Tutor", source: "story_own", steps: [1, 10, 40] },
     // Multiplayer: friend matches count as played, never as won.
     { id: "good-company", tab: "friends", title: "Good Company", lore: "Friend matches finished. Three count each day.", art: "Ajani, Mentor of Heroes", source: "friend_matches", steps: [5, 25, 100, 500] },
     { id: "friend-formats", tab: "friends", title: "House Rules", lore: "Play friend matches in different formats.", art: "Secret Rendezvous", source: "#ff", steps: [2, 4], tiers: ["bronze", "silver"] },
-    { id: "friend-marathon", tab: "friends", title: "One More Turn", lore: "Friend matches that reach turn 15.", art: "Long Road Home", source: "friend_long", steps: [1, 10], tiers: ["bronze", "silver"] },
+    { id: "friend-marathon", tab: "friends", title: "One More Turn", lore: "Friend matches that last 10 of your turns.", art: "Long Road Home", source: "friend_long", steps: [1, 10], tiers: ["bronze", "silver"] },
+    { id: "around-table", tab: "friends", title: "Around the Table", lore: "Commander pods finished, win or lose.", art: "Kynaios and Tiro of Meletis", source: "pod_matches", steps: [5, 25, 100], tiers: ["bronze", "silver", "gold"] },
+    { id: "pod-hunter", tab: "friends", title: "Table Politics", lore: "Creatures destroyed in Commander pods.", art: "Gisa and Geralf", source: "pod_kills", steps: [25, 250], tiers: ["bronze", "silver"] },
+    { id: "game-night", tab: "friends", title: "Game Night", lore: "Different days you finished a friend match.", art: "Brothers Yamazaki", source: "#fd", steps: [3, 10, 30] },
+    { id: "show-off", tab: "friends", title: "Show-Off", lore: "In a friend match, deal 10 or more damage in one turn.", art: "Fling", source: "f_friend_big10", steps: [1], feat: true, reward: "common" },
+    { id: "crowded-table", tab: "friends", title: "Crowded Table", lore: "In a friend match, have eight creatures on the field at once.", art: "Rally the Peasants", source: "f_friend_swarm8", steps: [1], feat: true, reward: "common" },
+    { id: "down-to-wire", tab: "friends", title: "Down to the Wire", lore: "Finish a friend match on 3 life or less.", art: "Angel's Grace", source: "f_friend_wire", steps: [1], feat: true, reward: "xp" },
+    { id: "friendly-fire", tab: "friends", title: "Friendly Fire", lore: "Your friends' creatures you destroyed.", art: "Comet Storm", source: "friend_kills", steps: [10, 50, 200], tiers: ["bronze", "silver", "gold"] },
     // Practice: honour only.
     { id: "drills", tab: "practice", title: "Drills", lore: "Practice matches finished. Practice never pays, but it remembers.", art: "Training Grounds", source: "practice_matches", steps: [10, 50, 200], honour: true },
     { id: "sparring", tab: "practice", title: "Sparring Partner", lore: "Practice wins against the CPU on Hard.", art: "Sparring Golem", source: "practice_wins_hard", steps: [1, 10, 50], honour: true },
@@ -5279,24 +7593,47 @@
     ...[...STORY_DEEDS, ...STORY_ACT_DEEDS].map((d) => ({
       id: d.id,
       tab: "story",
+      act: d.act,
       title: d.title,
       lore: d.lore,
       art: storyDeedArt(d),
       source: "sd:" + d.id,
       steps: [1],
-      ...d.gold ? { hidden: true, riddle: d.riddle } : { feat: true }
+      ...isKeyFeat(d.id) ? { key: true } : {},
+      ...d.gold ? { hidden: true, riddle: d.riddle } : d.hidden ? { feat: true, hidden: true, riddle: d.riddle } : { feat: true, reward: storyDeedReward(d) }
     })),
-    { id: "marathon", tab: "hidden", title: "Marathon", lore: "Win a match that reaches turn 30.", riddle: "The sun rose and set and still you fought.", art: "Approach of the Second Sun", source: "wins_marathon", steps: [1], feat: true, hidden: true },
-    { id: "turn-four", tab: "hidden", title: "Turn Four", lore: "Win by turn 4.", riddle: "They never got to see their fourth land.", art: "Ball Lightning", source: "wins_t4", steps: [1], feat: true, hidden: true },
+    { id: "marathon", tab: "hidden", title: "Marathon", lore: "Win a match that lasts 20 of your turns.", riddle: "The sun rose and set and still you fought.", art: "Approach of the Second Sun", source: "wins_marathon", steps: [1], feat: true, hidden: true },
+    { id: "turn-four", tab: "hidden", title: "Turn Four", lore: "Win by your 4th turn.", riddle: "They never got to see their fourth land.", art: "Ball Lightning", source: "wins_t4", steps: [1], feat: true, hidden: true },
     { id: "stalemate", tab: "hidden", title: "Stalemate", lore: "Finish a match in a draw.", riddle: "Nobody won, and nobody lost.", art: "Divine Intervention", source: "draws", steps: [1], feat: true, hidden: true },
     { id: "pentachrome", tab: "hidden", title: "Every Colour at Once", lore: "Win with a five-colour deck.", riddle: "White, blue, black, red and green walked into a bar.", art: "Child of Alara", source: "wins_five", steps: [1], feat: true, hidden: true },
+    { id: "pacifist", tab: "hidden", title: "Pacifist", lore: "Win without ever attacking.", riddle: "They fell, and you never raised a hand.", art: "Pacifism", source: "wins_pacifist", steps: [1], feat: true, hidden: true },
+    { id: "exact-change", tab: "hidden", title: "Exact Change", lore: "Win with your opponent on exactly 0 life.", riddle: "Not one point more than needed.", art: "Exquisite Firecraft", source: "wins_exact", steps: [1], feat: true, hidden: true },
+    { id: "lone-wolf", tab: "hidden", title: "Lone Wolf", lore: "Win without ever having more than one creature on the field.", riddle: "You only ever needed one.", art: "Lone Wolf", source: "wins_lone", steps: [1], feat: true, hidden: true },
+    { id: "heaven", tab: "hidden", title: "Twice Alive", lore: "Reach 40 life.", riddle: "Twice as alive as anyone at the table.", art: "Serra Ascendant", source: "f_life40", steps: [1], feat: true, hidden: true },
+    { id: "hellbent", tab: "hidden", title: "Empty Hands", lore: "Win after your opponent ran out of cards in hand.", riddle: "Their hands were empty. Yours were not.", art: "Mind Twist", source: "wins_hellbent", steps: [1], feat: true, hidden: true },
+    { id: "turn-three", tab: "hidden", title: "Three Turns", lore: "Win by your 3rd turn.", riddle: "Three turns. That's all it took.", art: "Fireblast", source: "wins_t3", steps: [1], feat: true, hidden: true },
+    { id: "unlucky", tab: "hidden", title: "Unlucky for Some", lore: "Win on exactly your 13th turn.", riddle: "Thirteen turns, and luck had nothing to do with it.", art: "Black Cat", source: "wins_13", steps: [1], feat: true, hidden: true },
+    { id: "body-count", tab: "hidden", title: "Body Count", lore: "Destroy ten opposing creatures in one match.", riddle: "Ten fell before you.", art: "Massacre Wurm", source: "f_kills10", steps: [1], feat: true, hidden: true },
+    { id: "hoarder", tab: "hidden", title: "Hoarder", lore: "Hold ten cards in your hand at once.", riddle: "Ten cards in hand, and still hungry.", art: "Reliquary Tower", source: "f_hand10", steps: [1], feat: true, hidden: true },
+    { id: "landlord", tab: "hidden", title: "Landlord", lore: "Have twelve lands on the field.", riddle: "A dozen lands to call your own.", art: "Azusa, Lost but Seeking", source: "f_lands12", steps: [1], feat: true, hidden: true },
+    { id: "giant-killer", tab: "hidden", title: "Giant Killer", lore: "Win while your opponent had twice as many creatures as your best board.", riddle: "Outnumbered two to one, and still standing.", art: "Giant Killer", source: "wins_outnumbered", steps: [1], feat: true, hidden: true },
+    { id: "no-losses", tab: "hidden", title: "Not One Lost", lore: "Win a match lasting 8 or more of your turns without losing a creature.", riddle: "Every soldier came home.", art: "Brave the Elements", source: "wins_nolosses", steps: [1], feat: true, hidden: true },
     { id: "god-pack", tab: "hidden", title: "Touched by the Gods", lore: "Open a god pack: every card a holo rare or mythic.", riddle: "One pack in a thousand is blessed.", art: "God-Pharaoh's Gift", source: "packs_god", steps: [1], feat: true, hidden: true }
   ]);
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/play-deeds-ui.js
+  // ../../play-titles.js
+  init_deck_engine_prelude();
+
+  // ../../play-deeds-ui.js
   init_ui();
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/play-econ-ui.js
+  // ../../story-acts.js
+  init_deck_engine_prelude();
+
+  // ../../play-secret-lair.js
+  init_deck_engine_prelude();
+
+  // ../../play-econ-ui.js
   var ART = "https://cards.scryfall.io/art_crop/front/";
   var TILE_ART = {
     shop: ART + "c/8/c88acaa8-ad4d-4321-a6f6-9361916e5b5e.jpg",
@@ -5308,7 +7645,7 @@
     decks: ART + "f/d/fd99bce1-ce39-464b-8e61-2631eb3ed6f6.jpg"
   };
 
-  // ../../../../../tmp/claude-0/-home-user-Card-forger/441cf015-16f8-5804-a05f-33d8b860b47c/scratchpad/finder-web/play-deck-finder.js
+  // ../../play-deck-finder.js
   var FINDER_FORMATS = ["Standard", "Pioneer", "Modern", "Pauper", "Legacy", "Vintage", "Commander", "Standard Brawl"];
   if (FINDER_FORMATS.some((f) => !PLAY_FORMATS.includes(f))) throw Error("Finder format outside Play");
   var BASIC_COLOR = { Plains: "W", Island: "U", Swamp: "B", Mountain: "R", Forest: "G", Wastes: "C" };
