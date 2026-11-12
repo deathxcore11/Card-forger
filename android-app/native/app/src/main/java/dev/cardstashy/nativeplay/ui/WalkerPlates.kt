@@ -50,19 +50,46 @@ internal object WalkerPlates {
     /** What choosing [plate] sends: the same single option the list's Confirm sent. */
     fun answer(plate: WalkerPlate): List<Int> = listOf(plate.index)
 
+    /** Design review, 12 Nov: an ability's words are never cut. A plate may widen to this, then its words step down, then it grows taller. */
+    const val WIDE_W = 320f; const val BIG_WIDE_W = 400f
+    const val TEXT_SP = 11.5f; const val BIG_TEXT_SP = 14f
+    const val SMALL_SP = 9.5f; const val BIG_SMALL_SP = 11.5f
+    const val LINE = 1.25f
+    /** What is not words in a plate's width: the padding and the cost's shield. */
+    fun chrome(big: Boolean, cost: Boolean): Float = 12f + 8f + (if (cost) (if (big) 48f else 40f) else 4f)
+
+    /** One plate's size (dp) and the size of its words (sp). */
+    data class Fit(val w: Float, val h: Float, val sp: Float)
     /**
-     * Where the [n] plates stand (dp) for a card at [card] on a screen [w] by [h]: a column beside the card, on its left when there
-     * is room and else on its right, centred on the card's middle and kept on the screen, in Forge's order from the top.
+     * The plate for words that take [lines] (words at this sp, in this many dp of width) lines: 11.5 sp on two lines; else wider,
+     * up to 320 (400 on a big screen); else 9.5 sp; else as many lines as the words need, the plate taller for each line over two.
      */
-    fun place(n: Int, card: Rect, w: Float, h: Float, big: Boolean): List<Rect> {
-        val pw = if (big) BIG_W else PLATE_W; val ph = if (big) BIG_H else PLATE_H
-        val total = n * ph + (n - 1) * GAP
+    fun fit(big: Boolean, cost: Boolean, lines: (sp: Float, widthDp: Float) -> Int): Fit {
+        val w0 = if (big) BIG_W else PLATE_W; val w1 = if (big) BIG_WIDE_W else WIDE_W; val h0 = if (big) BIG_H else PLATE_H
+        val sp = if (big) BIG_TEXT_SP else TEXT_SP; val small = if (big) BIG_SMALL_SP else SMALL_SP; val c = chrome(big, cost)
+        if (lines(sp, w0 - c) <= 2) return Fit(w0, h0, sp)
+        if (lines(sp, w1 - c) <= 2) return Fit(w1, h0, sp)
+        val n = lines(small, w1 - c)
+        // Two lines of the small words fit the plate as it is; each further line adds its own height.
+        return Fit(w1, h0 + (n - 2).coerceAtLeast(0) * small * LINE, small)
+    }
+
+    /**
+     * Where the plates of these [sizes] stand (dp) for a card at [card] on a screen [w] by [h]: a column beside the card, on its
+     * left when there is room and else on its right, centred on the card's middle and kept on the screen, in Forge's order from the top.
+     */
+    fun place(sizes: List<Fit>, card: Rect, w: Float, h: Float): List<Rect> {
+        val n = sizes.size
+        val total = sizes.sumOf { it.h.toDouble() }.toFloat() + (n - 1) * GAP
         val top = (card.center.y - total / 2).coerceIn(8f, maxOf(8f, h - 8f - total))
-        val left = card.left - LEAD - pw - MID_OUT >= 8f
-        return (0 until n).map { i ->
+        val widest = sizes.maxOf { it.w }
+        val left = card.left - LEAD - widest - MID_OUT >= 8f
+        var y = top
+        return sizes.mapIndexed { i, f ->
             val out = if (i in 1 until n - 1) MID_OUT else 0f
-            val x = if (left) card.left - LEAD - pw - out else minOf(card.right + LEAD + out, w - 8f - pw)
-            Rect(x, top + i * (ph + GAP), x + pw, top + i * (ph + GAP) + ph)
+            val x = if (left) card.left - LEAD - f.w - out else minOf(card.right + LEAD + out, w - 8f - f.w)
+            Rect(x, y, x + f.w, y + f.h).also { y += f.h + GAP }
         }
     }
+    fun place(n: Int, card: Rect, w: Float, h: Float, big: Boolean): List<Rect> = place(List(n) { Fit(if (big) BIG_W else PLATE_W, if (big) BIG_H else PLATE_H, if (big) BIG_TEXT_SP else TEXT_SP) }, card, w, h)
 }

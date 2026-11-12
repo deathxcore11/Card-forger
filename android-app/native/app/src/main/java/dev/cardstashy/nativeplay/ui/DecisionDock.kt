@@ -970,21 +970,20 @@ private val PLATE_GOLD = Color(0xFFF3D27E)
 private object WalkerExit {
     var ask by mutableStateOf<WalkerAsk?>(null)
     var chosen = -1; var rects: List<androidx.compose.ui.geometry.Rect> = emptyList(); var card = androidx.compose.ui.geometry.Rect.Zero; var big = false
+    var sps: List<Float> = emptyList()
 }
 
-/** One plate's face: the ability's words (two lines, shrinking before they are cut) and its loyalty cost in a shield at the right end. */
+/** One plate's face: the ability's words, whole ([sp] and the plate's size are fitted to them), and its loyalty cost in a shield at the right end. */
 @Composable
-private fun PlateFace(plate: WalkerPlate, big: Boolean, focused: Boolean, chosen: Boolean, modifier: Modifier = Modifier) {
+private fun PlateFace(plate: WalkerPlate, big: Boolean, focused: Boolean, chosen: Boolean, sp: Float, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(12.dp)
     val rim = if (chosen) PLATE_GOLD else if (focused) PLATE_ICE else Color(0x66A8C8FF)
-    var size by remember(plate.text, big) { mutableStateOf(if (big) 14f else 11.5f) }
     Row(modifier.drawBehind { if (focused || chosen) drawIntoCanvas { c ->
             val paint = Paint().asFrameworkPaint().apply { color = rim.copy(alpha = .55f).toArgb(); maskFilter = BlurMaskFilter(12.dp.toPx(), BlurMaskFilter.Blur.NORMAL) }
             c.nativeCanvas.drawRoundRect(0f, 0f, this.size.width, this.size.height, 12.dp.toPx(), 12.dp.toPx(), paint) } }
         .clip(shape).background(Color(0xF2101522)).border(if (focused || chosen) 2.dp else 1.dp, rim, shape).padding(start = 12.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically) {
-        Text(plate.text, Modifier.weight(1f), style = TextStyle(fontFamily = Type.Sans, fontSize = size.sp, lineHeight = (size * 1.25f).sp, color = Color(0xFFEDF0E8)), maxLines = 2, overflow = TextOverflow.Ellipsis,
-            onTextLayout = { if (it.hasVisualOverflow && size > 8.5f) size -= 1f })
+        Text(plate.text, Modifier.weight(1f), style = plateStyle(sp))
         if (plate.cost.isNotEmpty()) {
             val sw = if (big) 40.dp else 32.dp; val sh = if (big) 44.dp else 36.dp
             Box(Modifier.padding(start = 8.dp).size(sw, sh).drawBehind {
@@ -998,6 +997,8 @@ private fun PlateFace(plate: WalkerPlate, big: Boolean, focused: Boolean, chosen
         }
     }
 }
+
+private fun plateStyle(sp: Float) = TextStyle(fontFamily = Type.Sans, fontSize = sp.sp, lineHeight = (sp * WalkerPlates.LINE).sp, color = Color(0xFFEDF0E8))
 
 /** The half-dark table with the planeswalker left bright, and the thin lines from the card to each plate; [shown] 0..1 per plate. */
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.plateBacking(card: androidx.compose.ui.geometry.Rect, rects: List<androidx.compose.ui.geometry.Rect>, dim: Float, shown: (Int) -> Float) {
@@ -1029,7 +1030,16 @@ private fun WalkerChooser(ctx: DockCtx, ask: WalkerAsk, list: @Composable () -> 
     if (at == null || o == null) { if (at == null) list(); return }
     val card = androidx.compose.ui.geometry.Rect((at.left - o.x) / density, (at.top - o.y) / density, (at.right - o.x) / density, (at.bottom - o.y) / density)
     val big = ctx.H >= 600.dp
-    val rects = WalkerPlates.place(ask.plates.size, card, ctx.W.value, ctx.H.value, big)
+    // The words are never cut: each plate is fitted to its own (wider, then smaller words, then taller).
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val dens = androidx.compose.ui.platform.LocalDensity.current
+    val fits = remember(ctx.p.id, big, dens) { ask.plates.map { pl -> WalkerPlates.fit(big, pl.cost.isNotEmpty()) { sp, wDp ->
+        measurer.measure(pl.text, plateStyle(sp), constraints = androidx.compose.ui.unit.Constraints(maxWidth = with(dens) { wDp.dp.roundToPx() })).lineCount } } }
+    val rects = WalkerPlates.place(fits, card, ctx.W.value, ctx.H.value)
+    // A way out you can see (design review): "Cancel" stands in the quiet button's place, and the pad's back does the same.
+    val leave = { if (ask.cancel && !ctx.busy) ctx.intents.reply(ctx.p.id, null, emptyList(), null) }
+    if (ask.cancel) { PadScreen(PadActs(b = "Cancel")); androidx.activity.compose.BackHandler(enabled = true) { leave() } }
+    val quiet = anchors.rects["quiet"]
     val total = (ask.plates.size - 1) * WalkerPlates.STAGGER_MS + WalkerPlates.SLIDE_MS
     val open = remember(ctx.p.id) { Animatable(if (Motion.still) total.toFloat() else 0f) }
     LaunchedEffect(ctx.p.id) { if (!Motion.still) open.animateTo(total.toFloat(), tween(total, easing = androidx.compose.animation.core.LinearEasing)) }
@@ -1039,7 +1049,7 @@ private fun WalkerChooser(ctx: DockCtx, ask: WalkerAsk, list: @Composable () -> 
     if (chosen >= 0) return
     Box(Modifier.fillMaxSize().dockFocus(ctx)) {
         androidx.compose.foundation.Canvas(Modifier.fillMaxSize().semantics { contentDescription = "Leave the abilities" }
-            .pointerInput(ctx.p.id, ctx.busy) { detectTapGestures { if (ask.cancel && !ctx.busy) ctx.intents.reply(ctx.p.id, null, emptyList(), null) } }) {
+            .pointerInput(ctx.p.id, ctx.busy) { detectTapGestures { leave() } }) {
             plateBacking(card, rects, (open.value / 260f).coerceAtMost(1f), ::shown)
         }
         ask.plates.forEachIndexed { i, plate ->
@@ -1053,11 +1063,16 @@ private fun WalkerChooser(ctx: DockCtx, ask: WalkerAsk, list: @Composable () -> 
                 .then(if (i == 0) Modifier.padFirst(ctx) else Modifier)
                 .clickable(source, indication = null, enabled = !ctx.busy) {
                     chosen = plate.index
-                    WalkerExit.chosen = plate.index; WalkerExit.rects = rects; WalkerExit.card = card; WalkerExit.big = big; WalkerExit.ask = ask
+                    WalkerExit.chosen = plate.index; WalkerExit.rects = rects; WalkerExit.card = card; WalkerExit.big = big; WalkerExit.sps = fits.map { it.sp }; WalkerExit.ask = ask
                     ctx.intents.reply(ctx.p.id, null, WalkerPlates.answer(plate), null)
                 }.semantics { contentDescription = "Ability ${plate.cost} ${plate.text}".trim() }) {
-                PlateFace(plate, big, focused, false, Modifier.fillMaxSize())
+                PlateFace(plate, big, focused, false, fits[i].sp, Modifier.fillMaxSize())
             }
+        }
+        if (ask.cancel) with(ctx.d) {
+            val at = quiet?.let { q -> Modifier.offset(((q.left - o.x) / density).dp, ((q.top - o.y) / density).dp).size((q.width / density).dp, (q.height / density).dp) }
+                ?: Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = 64.dp).width(120.dp)
+            DockButton("Cancel", !ctx.busy, this, at.semantics { contentDescription = "Cancel the abilities" }, height = if (quiet != null) quiet.height / density / u else 44f) { leave() }
         }
     }
 }
@@ -1074,7 +1089,7 @@ private fun WalkerExitLayer() {
     Box(Modifier.fillMaxSize().graphicsLayer { alpha = a.value }) {
         androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) { plateBacking(WalkerExit.card, WalkerExit.rects, 1f) { 1f } }
         ask.plates.forEachIndexed { i, plate -> WalkerExit.rects.getOrNull(i)?.let { r ->
-            PlateFace(plate, WalkerExit.big, false, plate.index == WalkerExit.chosen, Modifier.offset(r.left.dp, r.top.dp).size(r.width.dp, r.height.dp)) } }
+            PlateFace(plate, WalkerExit.big, false, plate.index == WalkerExit.chosen, WalkerExit.sps.getOrElse(i) { WalkerPlates.TEXT_SP }, Modifier.offset(r.left.dp, r.top.dp).size(r.width.dp, r.height.dp)) } }
     }
 }
 

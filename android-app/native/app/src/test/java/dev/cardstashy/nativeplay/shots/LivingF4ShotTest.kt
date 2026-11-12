@@ -75,6 +75,17 @@ class LivingF4ShotTest {
         assertTrue(r[0].top < r[1].top && r[1].top < r[2].top)
         for (p in r) { assertTrue(p.right <= card.left && p.left >= 8f && p.top >= 8f && p.bottom <= 382f); assertEquals(236f, p.width, .01f); assertEquals(46f, p.height, .01f) }
         assertEquals(14f, r[0].left - r[1].left, .01f); assertEquals(r[0].left, r[2].left, .01f); assertEquals(8f, r[1].top - r[0].bottom, .01f)
+        // The words are never cut: two lines at 11.5 sp; else wider; else 9.5 sp; else taller, a line at a time.
+        fun lines(at: Map<Pair<Float, Float>, Int>) = { sp: Float, w: Float -> at.getValue(sp to w) }
+        val c = WalkerPlates.chrome(false, true)
+        assertEquals(WalkerPlates.Fit(236f, 46f, 11.5f), WalkerPlates.fit(false, true, lines(mapOf((11.5f to 236f - c) to 2))))
+        assertEquals(WalkerPlates.Fit(320f, 46f, 11.5f), WalkerPlates.fit(false, true, lines(mapOf((11.5f to 236f - c) to 3, (11.5f to 320f - c) to 2))))
+        assertEquals(WalkerPlates.Fit(320f, 46f, 9.5f), WalkerPlates.fit(false, true, lines(mapOf((11.5f to 236f - c) to 4, (11.5f to 320f - c) to 3, (9.5f to 320f - c) to 2))))
+        val tall = WalkerPlates.fit(false, true, lines(mapOf((11.5f to 236f - c) to 6, (11.5f to 320f - c) to 5, (9.5f to 320f - c) to 4)))
+        assertEquals(320f, tall.w, 0f); assertEquals(46f + 2 * 9.5f * 1.25f, tall.h, .01f); assertEquals(9.5f, tall.sp, 0f)
+        // Plates of different sizes keep their order, their gap and their side of the card.
+        val mixed = WalkerPlates.place(listOf(WalkerPlates.Fit(236f, 46f, 11.5f), WalkerPlates.Fit(320f, 70f, 9.5f)), card, 844f, 390f)
+        assertEquals(8f, mixed[1].top - mixed[0].bottom, .01f); assertTrue(mixed.all { it.right <= card.left && it.left >= 8f })
         // No room on the left: they stand on the right. A tablet's plates are 290 by 58.
         assertTrue(WalkerPlates.place(3, Rect(60f, 190f, 120f, 274f), 844f, 390f, false).all { it.left >= 120f })
         assertEquals(290f, WalkerPlates.place(3, Rect(900f, 400f, 1000f, 540f), 1280f, 800f, true)[0].width, .01f)
@@ -103,6 +114,9 @@ class LivingF4ShotTest {
         assertTrue("in Forge's order from the top", boxes[0].top < boxes[1].top && boxes[1].top < boxes[2].top)
         for (b in boxes) assertTrue("beside the card, not over it: $b $card", b.right <= card.left || b.left >= card.right)
         assertEquals("the list box is not shown", 0, rule.onAllNodesWithText("Confirm").fetchSemanticsNodes().size)
+        // Every ability's words are whole: the long one's last words are on its plate.
+        assertTrue(rule.onAllNodesWithText("in the pile of their choice.", substring = true).fetchSemanticsNodes().isNotEmpty())
+        for (b in boxes) assertTrue("on the screen: $b", b.left >= 0f && b.top >= 0f && b.bottom <= 390f * 3 && b.right <= 844f * 3)
         // Choosing the second sends option 1, once.
         rule.onNodeWithContentDescription("Ability −2", substring = true).performClick()
         rule.waitForIdle()
@@ -113,6 +127,18 @@ class LivingF4ShotTest {
         rule.onNodeWithContentDescription("Leave the abilities").performClick()
         rule.waitForIdle()
         assertEquals(listOf(32 to emptyList<Int>()), sent)
+        // A way out you can see: "Cancel" stands where the quiet button is and answers the same.
+        rule.runOnUiThread { sent.clear(); st = table.copy(revision = table.revision + 5, prompt = ask(35)) }
+        rule.waitForIdle()
+        val cancel = rule.onNodeWithContentDescription("Cancel the abilities").fetchSemanticsNode().boundsInRoot
+        anchors.rects["quiet"]?.let { q -> assertTrue("in the quiet button's place: $cancel $q", kotlin.math.abs(cancel.center.x - q.center.x) < 4f && kotlin.math.abs(cancel.center.y - q.center.y) < 4f) }
+        rule.onNodeWithContentDescription("Cancel the abilities").performClick()
+        rule.waitForIdle()
+        assertEquals(listOf(35 to emptyList<Int>()), sent)
+        // A question Forge does not let you leave shows no Cancel.
+        rule.runOnUiThread { sent.clear(); st = table.copy(revision = table.revision + 6, prompt = ask(36, min = 1)) }
+        rule.waitForIdle()
+        assertEquals(0, rule.onAllNodesWithContentDescription("Cancel the abilities").fetchSemanticsNodes().size)
         // Match effects off: the list as it was.
         rule.runOnUiThread { AppSettings.applyMatchEffects("off"); sent.clear(); st = table.copy(revision = table.revision + 2, prompt = ask(33)) }
         rule.waitForIdle()
