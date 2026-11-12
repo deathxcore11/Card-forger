@@ -22,7 +22,7 @@ import kotlin.math.sqrt
  */
 
 /** Particle kinds, in the order they are dropped when the cap is reached (sparks first, smoke last). */
-internal enum class Bit { SPARK, EMBER, SPIKE, RING, BLOB, SMOKE }
+internal enum class Bit { SPARK, EMBER, SPIKE, RING, BLOB, SMOKE, GLOW }
 
 /**
  * Live particles in plain arrays (no allocation per frame). Positions are in the FxLayer's own pixels. [now] is the effect clock,
@@ -107,6 +107,12 @@ internal class Particles(val cap: Int = CAP) {
         for (j in 0 until n) { val a = dir - spread / 2 + spread * ((j + .5f) / n) + (frac(seed + j * 7) - .5f) * spread / n * .6f
             add(Bit.SPIKE, at, Offset(cos(a), sin(a)), len * (.7f + .3f * frac(j * 11 + seed)), c, lifeMs, now) }
     }
+    /** F6: [n] glowing points (a [corePx] core in a [glowPx] soft glow) drifting from [at] along [dir], started across [across] px either side of the line. */
+    fun glows(at: Offset, n: Int, c: Color, now: Long, speed: Float, dir: Float, spread: Float, across: Float, lifeMs: Long, corePx: Float, glowPx: Float, seed: Int = 0) {
+        for (j in 0 until n) { val a = dir - spread / 2 + spread * frac(seed * 31 + j * 7 + 1); val s = speed * (.55f + .45f * frac(seed * 17 + j * 13 + 3))
+            val side = (frac(seed * 5 + j * 37 + 11) - .5f) * 2f * across
+            add(Bit.GLOW, at + Offset(-sin(dir) * side, cos(dir) * side), Offset(cos(a) * s, sin(a) * s), corePx, c, (lifeMs * (.7f + .3f * frac(j * 3 + seed + 9))).toLong(), now, gravity = glowPx) }
+    }
     /** One soft glow blob at [at]. */
     fun blob(at: Offset, radius: Float, c: Color, now: Long, lifeMs: Long = 360) { add(Bit.BLOB, at, Offset.Zero, radius, c, lifeMs, now) }
 
@@ -132,6 +138,10 @@ internal class Particles(val cap: Int = CAP) {
                     val to = Offset(x[i], y[i]) + Offset(vx[i], vy[i]) * (sz[i] * grow)
                     drawLine(c.copy(alpha = a), from, to, strokeWidth = (2.2f * (1f - q) + .8f) * density, cap = StrokeCap.Round)
                     drawLine(Color.White.copy(alpha = a * .7f), from, lerpP(from, to, .6f), strokeWidth = .8f * density, cap = StrokeCap.Round) }
+                // (A glow keeps its halo's size where a spark keeps its gravity: it does not fall.)
+                Bit.GLOW -> { val a = (1f - q).coerceIn(0f, 1f); val at = Offset(x[i] + vx[i] * s, y[i] + vy[i] * s); val halo = grav[i]
+                    drawCircle(Brush.radialGradient(listOf(c.copy(alpha = .55f * a), c.copy(alpha = 0f)), at, halo), halo, at)
+                    drawCircle(c.copy(alpha = a), sz[i] / 2, at); drawCircle(Color.White.copy(alpha = .6f * a), sz[i] / 4, at) }
                 Bit.BLOB -> { val a = .7f * (1f - q); val r = sz[i] * (.6f + .4f * q)
                     drawCircle(Brush.radialGradient(listOf(c.copy(alpha = a), c.copy(alpha = 0f)), Offset(x[i], y[i]), r), r, Offset(x[i], y[i])) }
             }

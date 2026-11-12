@@ -94,6 +94,7 @@ class LivingF6ShotTest {
             }
         }
         rule.waitForIdle()
+        val plain = draw("board"); val dp = plain.width / 844f
         val home = anchors.rects.getValue("c${mine.id}"); val orb = anchors.rects.getValue("orb${base.cpu.id}")
         fun face() = listOf(FxItem(Fx.LUNGE, 2, Strike.FACE_MS, card = mine.id, mine = true, toKey = "orb${base.cpu.id}", tone = TableFeel.chargeTone(mine)))
         val w = Strike.wind(true).toLong(); val h = Strike.hit(true).toLong(); val after = Strike.after(true).toLong()
@@ -112,5 +113,13 @@ class LivingF6ShotTest {
         val (dash, hit) = run("full")
         assertTrue("a trail lies on the line behind the attacker: ${diff(offDash, dash, way)}", diff(offDash, dash, way) > .0005f)
         assertTrue("spikes and a ring where it lands: ${diff(offHit, hit, round)}", diff(offHit, hit, round) > .01f)
+        // Design review, 12 Nov: the life number is the pay-off, so the flash is not drawn over the life pill; and the attacker is
+        // drawn over the CPU's seat panel at the hit (it was under it), so the panel's pixels beside the picture have changed.
+        val pill = anchors.rects.getValue("lifepill${base.cpu.id}")
+        val inner = Rect(pill.left + 3 * dp, pill.top + 3 * dp, pill.right - 3 * dp, pill.bottom - 3 * dp)
+        assertTrue("the life pill is clear of the flash: ${diff(plain, hit, inner)}", diff(plain, hit, inner) < .12f)
+        assertTrue("with effects off the flash covers it as before: ${diff(plain, offHit, inner)}", diff(plain, offHit, inner) > .5f)
+        // The same hit with its life loss, for the eye: the number and the pill ticking down.
+        at(face() + FxItem(Fx.LIFE, 3, 950, player = base.cpu.id, toKey = "orb${base.cpu.id}", tone = Color(0xFFFF5A4A), power = .5f).also { it.label = "−3"; it.points = 3; it.t0 = after }, after + 60, "full-hit-life", burstAt = after)
     }
 }

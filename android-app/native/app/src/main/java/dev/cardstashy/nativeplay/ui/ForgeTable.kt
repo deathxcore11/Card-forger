@@ -563,7 +563,7 @@ fun ForgeBoard(
                 androidx.compose.runtime.SideEffect { fx.advancePx = advancePx }
                 // Match punch P1: the shake and push-in move the board box only (the four rows), about the board's centre. The squares,
                 // phase, End turn and the gold button live outside it and never move under a thumb.
-                Box(Modifier.fillMaxSize().graphicsLayer {
+                Box(Modifier.fillMaxSize().zIndex(if (fx.strikers.value.isEmpty()) 0f else 1f).graphicsLayer {
                     transformOrigin = androidx.compose.ui.graphics.TransformOrigin((zones.board.x + zones.board.w / 2) / W.value.coerceAtLeast(1f),
                         (zones.board.y + zones.board.h / 2) / H.value.coerceAtLeast(1f))
                     fx.shake(this) }) {
@@ -1329,7 +1329,9 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
     val total = lay.total.dp
     // Z2: while piles overlap, only the left part of each pile's top tile shows: its name keeps to it and its P/T moves to its left edge.
     val visible = lay.visible?.dp
-    Box(Modifier.offset(x = if (fromLeft) cx else cx - total / 2, y = cy - h / 2)) {
+    // F6: a row with an attacker in a strike is drawn over the other rows, and that attacker over its own row.
+    val strikers = LocalBattlefield.current?.strikers?.value.orEmpty()
+    Box(Modifier.offset(x = if (fromLeft) cx else cx - total / 2, y = cy - h / 2).zIndex(if (cards.any { it.id in strikers }) 50f else 0f)) {
         piles.forEachIndexed { i, pile ->
             val px = lay.xs[i].dp
             // Each later pile lies over the one before (overlap from the right); inside a pile, each card over the one under it.
@@ -1345,7 +1347,7 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
                     if (tile != null && pile.size == 1) aurasOn(card, lookup).takeIf { it.isNotEmpty() }?.let { auras ->
                         AuraStrips(card, auras, w, h, advance, mine, Modifier.offset(x = ax, y = ay).zIndex(z - 1f), d) }
                     val top = j == pile.lastIndex
-                    Tile(card, w, h, land, markOf(card), mine, lookup, tapOf(card), if (onPile != null) { _ -> onPile(pile) } else onInspect, Modifier.offset(x = ax, y = ay).zIndex(z + j), d,
+                    Tile(card, w, h, land, markOf(card), mine, lookup, tapOf(card), if (onPile != null) { _ -> onPile(pile) } else onInspect, Modifier.offset(x = ax, y = ay).zIndex(z + j + (if (card.id in strikers) 5000f else 0f)), d,
                         count = if (top && pile.size > 1) pile.size else 1, piece = piece, pileTop = top, advance = advance,
                         visibleW = if (top && i < piles.lastIndex) visible else null, squeezed = squeezed)
                 }

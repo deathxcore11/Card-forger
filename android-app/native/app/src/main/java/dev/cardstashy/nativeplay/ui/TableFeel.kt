@@ -125,10 +125,19 @@ internal object TableFeel {
     const val CHARGE_TRAIL_SPEED = 350f
     const val CHARGE_TRAIL_SPREAD = .5f
     const val CHARGE_TRAIL_LIFE_MS = 340L
-    const val CHARGE_TRAIL_SIZE = 2.5f
+    const val CHARGE_TRAIL_SIZE = 3f
+    /** Design review, 12 Nov: the sparks are glowing points (a 3 dp core in a 10 dp glow), three a frame across the card's width, so an 85 ms dash leaves twelve or more. */
+    const val CHARGE_TRAIL_GLOW = 10f
+    const val CHARGE_TRAIL_PER = 3
+    /** The after-images behind the card are its own colour: the nearest at 18 %, each one dimmer. */
+    const val CHARGE_GHOST = .18f
     const val CHARGE_SPIKES = 10
     const val CHARGE_SPIKE_LEN = 70f
-    const val CHARGE_RING = 90f
+    /** The ring starts at the struck seat's (or tile's) size 4 dp thick and thins to 1 dp as it grows to 1.6 times that over 220 ms. */
+    const val CHARGE_RING_GROW = 1.6f
+    const val CHARGE_RING_MS = 220f
+    const val CHARGE_RING_FROM = 4f
+    const val CHARGE_RING_TO = 1f
     val DECLARE_GOLD = Color(0xFFF3D27E)
     /** As it was before F6 (and with Match effects off): the coral of P5's declare ring. */
     val CORAL = Color(0xFFFF6A4A)
