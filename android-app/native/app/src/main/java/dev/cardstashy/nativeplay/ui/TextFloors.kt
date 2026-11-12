@@ -15,6 +15,10 @@ internal object TextFloors {
     const val NAME_SQUEEZED = 9.5f
     const val LAND_NAME = 10f
     const val PT = 15f
+    /** A plate on a tile the next pile overlaps: its numbers may step down this far so the plate is whole in the part that shows. */
+    const val PT_OVERLAPPED = 12f
+    /** A name's word too long for its tile steps down to this before it ends in an ellipsis. */
+    const val NAME_WORD = 9.5f
     const val LIFE = 19f
     /** Phase dots (dp); the current step's dot is drawn bigger. */
     const val DOT = 8f

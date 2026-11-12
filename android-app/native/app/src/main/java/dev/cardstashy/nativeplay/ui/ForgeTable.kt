@@ -1230,6 +1230,8 @@ fun ForgeBoard(
     }
 }
 
+/** A tile's name as fitted: its size and lines, whether it had to be shortened ([cut], shown with an ellipsis), and the words shown. */
+private data class NameFit(val size: Float, val lines: Int, val cut: Boolean, val text: String, val newLine: Boolean = false)
 /** M5, a phone: the least of each land pile that shows when the shelf's piles overlap (dp). */
 internal const val SHELF_SHOW = 20f
 /** forge-table.mjs laneFor: creatures in the front row; lands, then the "other" lane (artifacts, enchantments, planeswalkers, battles) in the back row. */
@@ -1629,12 +1631,26 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
                 var sz = nameSp
                 while (sz > floor + .01f && cut(sz, l0)) sz = maxOf(floor, sz - .5f)
                 when {
-                    !cut(sz, l0) -> Triple(sz, l0, false)
-                    !cut(sz, 3) -> Triple(sz, 3, false)
-                    else -> Triple(sz, 3, true)
+                    !cut(sz, l0) -> NameFit(sz, l0, false, t)
+                    !cut(sz, 3) -> NameFit(sz, 3, false, t)
+                    // Phone review, 6: a name is never wrapped inside a word. A word too long for the tile steps down to 9.5 sp; if it
+                    // still does not fit, the name stops at that word, which ends in an ellipsis ("Llanowar…").
+                    land -> NameFit(sz, 3, true, t) // a land drops its name instead (below)
+                    !cut(minOf(sz, TextFloors.NAME_WORD), 3) -> NameFit(minOf(sz, TextFloors.NAME_WORD), 3, false, t)
+                    else -> {
+                        val small = minOf(sz, TextFloors.NAME_WORD)
+                        val words = t.split(' ')
+                        fun wide(w: String) = nameMeasurer.measure(w, nameStyle(small), maxLines = 1).size.width > roomPx
+                        val k = words.indexOfFirst(::wide)
+                        if (k < 0) NameFit(small, 3, true, t) // more than three lines of whole words: the last line ends in an ellipsis
+                        else {
+                            val before = if (k == 0) 0 else nameMeasurer.measure(words.take(k).joinToString(" "), nameStyle(small), constraints = androidx.compose.ui.unit.Constraints(maxWidth = roomPx)).lineCount
+                            NameFit(small, (before + 1).coerceAtMost(3), true, words.take(k + 1).joinToString(" "), newLine = k > 0 && before < 3)
+                        }
+                    }
                 }
             }
-            val (size, lines, cut) = fit
+            val size = fit.size; val lines = fit.lines; val cut = fit.cut
             // M5 (phone conflicts, 2): a land's name is never broken letter by letter. Where it cannot be whole, or less than a
             // finger's width of the pile shows, the land keeps its mana symbol and its count and drops the name.
             val noName = land && (cut || (visibleW != null && visibleW < TextFloors.TOUCH.dp))
@@ -1642,7 +1658,9 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
             else Box((if (visibleW != null) Modifier.width(visibleW) else Modifier.fillMaxWidth()).heightIn(min = nh + 10.dp)
                 .background(Brush.verticalGradient(0f to Color(0xF007070B), .55f to Color(0xB807070B), 1f to Color(0x0007070B)))
                 .padding(start = side, end = side, top = 3.dp, bottom = 4.dp)) {
-                Text(card.name, maxLines = lines, overflow = TextOverflow.Clip, style = nameStyle(size),
+                // (A long last word is put on its own line so the ellipsis falls on it, not on the word before.)
+                val shown = if (fit.newLine) fit.text.substringBeforeLast(' ') + "\n" + fit.text.substringAfterLast(' ') else fit.text
+                Text(shown, maxLines = lines, overflow = if (cut) TextOverflow.Ellipsis else TextOverflow.Clip, style = nameStyle(size),
                     modifier = if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("name${card.id}", it.boundsInRoot()) } else Modifier,
                     onTextLayout = { r ->
                         nameH = maxOf(nh, (r.size.height / dens).dp - 3.dp)
@@ -1650,6 +1668,9 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
                         anchors?.let {
                             if (cut) it.putRect("namecut${card.id}", androidx.compose.ui.geometry.Rect(0f, 0f, 1f, 1f)) else it.rects.remove("namecut${card.id}")
                             it.sizes["namesp${card.id}"] = size; it.sizes["namelines${card.id}"] = r.lineCount.toFloat()
+                            // A line that ends inside a word (never allowed: phone review, 6).
+                            val broken = (0 until r.lineCount - 1).any { i -> val e = r.getLineEnd(i); e in 1 until shown.length && !shown[e - 1].isWhitespace() && shown[e - 1] != '-' && !shown[e].isWhitespace() }
+                            if (broken) it.putRect("namebroken${card.id}", androidx.compose.ui.geometry.Rect(0f, 0f, 1f, 1f)) else it.rects.remove("namebroken${card.id}")
                         }
                     })
             }
@@ -1666,15 +1687,23 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         // If even there the plate is wider than what shows, its numbers step down in size to fit.
         val left = visibleW != null && visibleW < w - 6.du
         val measurer = androidx.compose.ui.text.rememberTextMeasurer()
-        val ptText = "${card.power} / ${card.toughness ?: 0}"
-        val fsFit = if (!left) fs else {
+        // Phone review (the brief's "Builder's phone build", 5): the plate is whole inside the part that shows. Where "12 / 12" is
+        // too wide for it, the spaces go first ("12/12"), then the numbers step down, never under 12 sp.
+        val ptRoom = if (left) (visibleW!! - 6.du - 14.du - 2.dp).value else Float.MAX_VALUE
+        // (A tight plate also draws its sides in: 3 du each, not 7.)
+        val ptRoomTight = if (left) (visibleW!! - 3.du - 6.du - 2.dp).value else Float.MAX_VALUE
+        val ptWide = "${card.power} / ${card.toughness ?: 0}"
+        val ptTight = left && measurer.measure(ptWide, sans(fs, FontWeight.Bold, Color.White)).size.width / dens > ptRoom
+        val ptSep = if (ptTight) "/" else " / "
+        val ptText = "${card.power}$ptSep${card.toughness ?: 0}"
+        val fsFit = if (!ptTight) fs else {
             val textW = measurer.measure(ptText, sans(fs, FontWeight.Bold, Color.White)).size.width / dens
-            val room = (visibleW!! - 6.du - 14.du - 2.dp).value
-            if (textW > room && textW > 0f) maxOf(TextFloors.PT, fs.value * (room / textW).coerceIn(.5f, 1f)).sp else fs // Z3: never under 15 sp
+            if (textW > ptRoomTight && textW > 0f) maxOf(TextFloors.PT_OVERLAPPED, fs.value * (ptRoomTight / textW).coerceIn(.5f, 1f)).sp else fs
         }
+        val ptPad = if (ptTight) 3.du else 7.du
         // 0.4.60 G1: the plate's size (padding 7 × 1 du round the numbers), so the keyword strip keeps clear of it.
         val plate = if (card.isCreature && card.power != null) measurer.measure(ptText, sans(fsFit, FontWeight.Bold, Color.White)).size
-            .let { (it.width / dens).dp + 14.du to (it.height / dens).dp + 2.du } else null
+            .let { (it.width / dens).dp + ptPad * 2 to (it.height / dens).dp + 2.du } else null
         TileLayer(card, mark == Mark.PLAYABLE || mark == Mark.USABLE, lookup, d, h, if (card.isCreature && card.power != null) (if (piece != null) statPx / u else statPx) else 0f, top = nh?.let { (if (pileTop) nameH else it) + 6.dp },
             w = w, visibleW = visibleW, plate = plate, plateLeft = left, plaque = !whole)
         // .play-current-stats: right 6px, bottom 2px, 1px 7px, #d6ad64c0 hairline, radius 7, #111114f2, white 700; the toughness reads #ff8f84 while damage is marked
@@ -1690,8 +1719,8 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
                 .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("pt${card.id}", it.boundsInRoot()) } else Modifier)
                 .clip(RoundedCornerShape(7.du)).background(tone?.copy(alpha = .28f)?.compositeOver(Color(0xF2111114)) ?: Color(0xF2111114))
                 .border(if (tone != null) 1.5.dp else 1.dp, tone ?: Color(0xC0D6AD64), RoundedCornerShape(7.du))
-                .padding(horizontal = 7.du, vertical = 1.du)) {
-                Text("${card.power} / ", style = sans(fsFit, FontWeight.Bold, tone ?: Color.White))
+                .padding(horizontal = ptPad, vertical = 1.du)) {
+                Text("${card.power}$ptSep", style = sans(fsFit, FontWeight.Bold, tone ?: Color.White))
                 Text("${card.toughness ?: 0}", style = sans(fsFit, FontWeight.Bold, tone ?: if (card.damage > 0) Color(0xFFFF8F84) else Color.White))
             }
         }
