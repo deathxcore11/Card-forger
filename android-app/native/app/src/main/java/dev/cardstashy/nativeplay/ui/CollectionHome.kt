@@ -229,7 +229,7 @@ class CollectionHomeActions(
  */
 @Composable
 fun CollectionHome(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit,
-                   act: CollectionHomeActions = CollectionHomeActions(), nav: @Composable (vertical: Boolean) -> Unit = {}) =
+                   act: CollectionHomeActions = CollectionHomeActions(), checking: Boolean = false, nav: @Composable (vertical: Boolean) -> Unit = {}) =
     // body[data-game]: the open game's --gold (Yu-Gi-Oh!'s violet, Pokémon's coral) on every gold word of the page.
     androidx.compose.runtime.CompositionLocalProvider(LocalGameGold provides m.game.gold) {
     val lens = rememberLens()
@@ -237,8 +237,8 @@ fun CollectionHome(m: CollectionHomeModel, hints: SearchHints?, top: @Composable
     BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
         // Sideways (handhelds, a phone on its side): the nav stands up as a rail so the short height goes to the page.
         val screen = maxWidth
-        if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); Page(m, hints, top, act, Modifier.weight(1f).fillMaxHeight(), screen, lens) }
-        else Column(Modifier.fillMaxSize()) { Page(m, hints, top, act, Modifier.weight(1f).fillMaxWidth(), screen, lens); nav(false) }
+        if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); Page(m, hints, top, act, Modifier.weight(1f).fillMaxHeight(), screen, lens, checking) }
+        else Column(Modifier.fillMaxSize()) { Page(m, hints, top, act, Modifier.weight(1f).fillMaxWidth(), screen, lens, checking); nav(false) }
     }
     }
 
@@ -308,7 +308,7 @@ private fun DailyCase(c: DailyCard, act: CollectionHomeActions) {
 private val HGold: Color @Composable @androidx.compose.runtime.ReadOnlyComposable get() = LocalGameGold.current.takeIf { it != Color(0xFFE8B95B) } ?: Site.Gold
 
 @Composable
-private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, act: CollectionHomeActions, modifier: Modifier, screen: Dp, lens: LensHost) {
+private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, act: CollectionHomeActions, modifier: Modifier, screen: Dp, lens: LensHost, checking: Boolean = false) {
     // The site's breakpoints are the window's width: --gutter 16 / 22 from 600, the Home columns from 600, 700, 760 and 900.
     val wide = screen >= 600.dp
     val gutter = if (wide) 22.dp else 16.dp
@@ -324,6 +324,7 @@ private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (
                 // Light: the site's light .topbar (settings-theme.css 49), so the rail, the bar and the dark status icons read as one (U12).
                 Box(Modifier.matchParentSize().then(if (AppSettings.theme == "light") Modifier.background(Rule.Color.Bar) else Modifier.background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = .45f), Color.Transparent)))))
                 Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { top(if (wide) ({ GameTabs(m.game, act.game, compact = false, Modifier.widthIn(max = 560.dp)) }) else null) }
+                CheckLine(checking, Modifier.align(Alignment.BottomCenter))
             }
             Column(Modifier.fillMaxWidth().padding(horizontal = gutter).padding(top = if (wide) 22.dp else 10.dp, bottom = 28.dp)) {
                 if (!wide) GameTabs(m.game, act.game, compact = true, Modifier.align(Alignment.CenterHorizontally).widthIn(max = 280.dp).padding(bottom = 18.dp))
@@ -344,6 +345,17 @@ private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (
             }
         }
     }
+}
+
+/**
+ * Lighter Collection home C1: while the account is checked, the page as last seen stays whole and the only sign is this thin
+ * gold line under the top bar. It fades in and out in 250 ms and does not move, so it costs no redraws while it waits.
+ */
+@Composable
+internal fun CheckLine(on: Boolean, modifier: Modifier = Modifier) {
+    val a by androidx.compose.animation.core.animateFloatAsState(if (on) 1f else 0f, androidx.compose.animation.core.tween(if (Motion.still) 0 else 250), label = "checking")
+    if (a > 0f) Box(modifier.fillMaxWidth().height(1.5.dp).alpha(a).background(Brush.horizontalGradient(listOf(Color.Transparent, HGold.copy(alpha = .85f), Color.Transparent)))
+        .semantics { contentDescription = "Checking your account" })
 }
 
 // ---------------------------------------------------------------- the Card of the Day art behind the top of the page

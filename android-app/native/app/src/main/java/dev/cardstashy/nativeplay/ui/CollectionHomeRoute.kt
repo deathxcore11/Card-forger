@@ -172,7 +172,9 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
     LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
     var failed by remember { mutableStateOf<String?>(null) }
     var retry by remember { mutableStateOf(0) }
-    LaunchedEffect(session?.userId, revision, game, retry) { try {
+    // C1: how many checks of the account are running (one, or two for a moment when the game is switched): the thin gold line shows while any is.
+    var checking by remember { mutableStateOf(0) }
+    LaunchedEffect(session?.userId, revision, game, retry) { checking++; try {
         // The account, game and page this effect draws for, fixed as it starts (a paint that ends after a switch is kept under its own).
         val u = session?.userId; val g = game; val k = "$u|${g.id}"; val keep = LastSeenWriter(u, LastSeen.homeName(g.id))
         if (!ensureCollection(context, u, session != null, revision)) {
@@ -193,6 +195,8 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
             }
             HomeCache.raw[k] = raw; shown[k] = m; HomeCache.models[k] = m
             keep.keep(raw, final)
+            // C1: the first screen's pictures stay the newest in the art cache, so they are the last to be dropped from it.
+            if (final) withContext(Dispatchers.IO) { HomePins.pin(m) }
         }
         paint()
         if (hints == null || HomeCache.hintsGame != game) withContext(Dispatchers.Default) { CollectionHomeModel.hints(CollectionEngine.hints(game.id)) }.also { hints = it; HomeCache.hints = it; HomeCache.hintsGame = game }
@@ -204,7 +208,7 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
         // The site's guard for a workspace it can't open: say so and leave the account copy untouched.
         HomeCache.loaded = null
         if (shown[homeKey] == null && HomeCache.models[homeKey] == null) failed = e.message?.takeIf { it.isNotBlank() } ?: "Your collection couldn’t be opened here."
-    } }
+    } finally { checking-- } }
     val site = "https://cardstashy.com/"
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val searchOpen = LocalCollectionSearch.current
@@ -283,7 +287,7 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
     Box(Modifier.fillMaxSize()) {
     // C6: the redraw count in the log names this page while it is up.
     androidx.compose.runtime.DisposableEffect(Unit) { RootDraws.where = "Collection home"; onDispose { RootDraws.where = "?" } }
-    if (m != null) CollectionHome(m, hints, top, act, nav)
+    if (m != null) CollectionHome(m, hints, top, act, checking > 0, nav)
     else Column(Modifier.fillMaxSize().background(Site.Bg)) {
         Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { top(null) }
         // app.js's account-opening card, while the account's copy arrives.
