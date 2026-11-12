@@ -360,15 +360,19 @@ internal fun DrawScope.drawHeavy(fx: Battlefield, it: FxItem, p: Float, r: andro
         fx.landMarks += LandMark(it.card ?: 0, at + self, r.height * TableFeel.MARK_SIZE, it.note, it.tone, now, r.width / 2, r.height / 2)
         if (!fx.low) {
             val up = -(PI / 2).toFloat()
+            // Design review: what the mat throws up rises from the cracks at the tile's rim, never from the card's middle over its name.
+            val rim = listOf(Offset(r.left, c.y), Offset(r.right, c.y), Offset(c.x - r.width * .3f, r.top), Offset(c.x + r.width * .3f, r.top))
+            fun burst(n: Int, tone: Color, speed: Float, spread: Float, life: Long, sizePx: Float, dir: Float? = up) = rim.forEachIndexed { k, at0 ->
+                if (dir != null) fx.bits.sparks(at0, n / rim.size + 1, tone, now, speed, dir = dir, spread = spread, lifeMs = life, sizePx = sizePx, seed = seed + k * 13)
+                else fx.bits.sparks(at0, n / rim.size + 1, tone, now, speed, lifeMs = life, sizePx = sizePx, seed = seed + k * 13) }
             // The mat's own answer (the showpiece's landMark): embers and smoke, spray, leaves, star points; a plain mat throws dust.
             when (it.note) {
                 "lava" -> { fx.bits.smoke(Offset(at.x, at.y + r.height * .2f), 14, Color(0xFF8A8478), now, 46f * dp, sizePx = r.height * .13f, seed = seed)
-                    fx.bits.sparks(at, 26, Color(0xFFFF9A3A), now, 300f * dp, dir = up, spread = 1.3f, lifeMs = 900, sizePx = 1.8f * dp, seed = seed) }
-                "ripple" -> fx.bits.sparks(at, 24, Color(0xFFDFF1FF), now, 280f * dp, dir = up, spread = 1.2f, lifeMs = 700, sizePx = 1.8f * dp, seed = seed)
+                    burst(26, Color(0xFFFF9A3A), 300f * dp, 1.3f, 900, 1.8f * dp) }
+                "ripple" -> burst(24, Color(0xFFDFF1FF), 280f * dp, 1.2f, 700, 1.8f * dp)
                 "leaf" -> { fx.bits.smoke(Offset(at.x, at.y + r.height * .2f), 8, Color(0xFF8A8478), now, 46f * dp, sizePx = r.height * .13f, seed = seed)
-                    fx.bits.sparks(at, 30, Color(0xFF8FD45A), now, 250f * dp, dir = up, spread = 1.5f, lifeMs = 1300, sizePx = 2.4f * dp, seed = seed) }
-                "star" -> { fx.bits.spikes(at, 14, 90f * dp, Color(0xFFD8CCFF), now, seed = seed + 3)
-                    fx.bits.sparks(at, 18, Color.White, now, 250f * dp, lifeMs = 800, sizePx = 1.8f * dp, seed = seed) }
+                    burst(30, Color(0xFF8FD45A), 250f * dp, 1.5f, 1300, 2.4f * dp) }
+                "star" -> { burst(18, Color.White, 250f * dp, 0f, 800, 1.8f * dp, dir = null) }
                 else -> fx.bits.smoke(Offset(at.x, at.y + r.height * .2f), 12, Color(0xFF8A8478), now, 46f * dp, sizePx = r.height * .13f, seed = seed)
             }
         }

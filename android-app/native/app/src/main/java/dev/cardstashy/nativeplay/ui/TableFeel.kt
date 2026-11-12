@@ -77,7 +77,7 @@ internal object TableFeel {
         Profile("moonlit-courtyard", Color(0xFFDCE4F2), Color(0xFF7FA8E0), "dust", "crack", GOLD, GOLD_HI),      // moon silver / cold blue, candle motes
         Profile("white-sanctuary", Color(0xFFFFE08A), Color(0xFFBFD8FF), "dust", "crack", GOLD, GOLD_HI),        // sun gold / pale blue, petals and gold dust
         Profile("black-ossuary", Color(0xFFFFC27A), Color(0xFFD8324A), "dust", "crack", GOLD, GOLD_HI),          // candle amber / crimson, ash
-        Profile("keldon-battlefield", Color(0xFFFF9A4A), Color(0xFFE0402A), "dust", "crack", GOLD, GOLD_HI),     // sunset orange / red, blowing dust
+        Profile("keldon-battlefield", Color(0xFFFFC870), Color(0xFFFF5038), "dust", "crack", GOLD, GOLD_HI),     // sun gold / red (design, 12 Nov: orange is lost on the orange dirt), blowing dust
         Profile("wild-hedrons", Color(0xFFEEF6FF), Color(0xFF6FD08A), "mist", "crack", GOLD, GOLD_HI),           // sky white / green, mist
         Profile("artifact-vault", Color(0xFFDCE4F2), Color(0xFFC9A24A), "dust", "crack", GOLD, GOLD_HI),         // moon silver / brass, dust
         Profile("innistrad-graveyard", Color(0xFFFFC98A), Color(0xFF9FB8E8), "mist", "crack", GOLD, GOLD_HI),    // candle / moon cold, ground mist
