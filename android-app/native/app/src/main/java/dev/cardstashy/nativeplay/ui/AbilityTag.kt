@@ -140,7 +140,7 @@ internal fun AbilityRows(host: Card, view: AbilityView, onActivate: (() -> Unit)
                         style = Stroke(sw, pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 3.dp.toPx()))))
                 }
                 .clip(shape).background(AbilityViolet.copy(alpha = .08f))
-                .then(if (act != null) Modifier.clickable(remember { MutableInteractionSource() }, null) { act() } else Modifier)
+                .then(if (act != null) Modifier.clickable(remember { MutableInteractionSource() }, null) { AbilityPick.want(host.id, r); act() } else Modifier)
                 .padding(horizontal = 9.dp, vertical = 7.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 val inline = HashMap<String, InlineTextContent>()
@@ -151,7 +151,7 @@ internal fun AbilityRows(host: Card, view: AbilityView, onActivate: (() -> Unit)
                 if (act != null) Box(Modifier.anchorRect("inspectActivate${host.id}.$i").heightIn(min = 30.dp).clip(RoundedCornerShape(999.dp))
                     .background(Brush.verticalGradient(listOf(Color(0xFFF0D48A), Color(0xFFC79A3E))))
                     .semantics { contentDescription = "Activate ${host.name}" }
-                    .clickable { act() }.padding(horizontal = 13.dp), contentAlignment = Alignment.Center) {
+                    .clickable { AbilityPick.want(host.id, r); act() }.padding(horizontal = 13.dp), contentAlignment = Alignment.Center) {
                     Text("Activate", style = sans(12.sp, FontWeight.ExtraBold, Color(0xFF1B1405)))
                 }
                 else if (view.reason != null) Text(view.reason, modifier = Modifier.anchorRect("inspectAbilityWhy${host.id}.$i"),

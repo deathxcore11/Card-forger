@@ -123,6 +123,8 @@ class DockReplies(
 @Composable
 fun DecisionDock(st: MatchState, live: Boolean, intents: TableIntents, onInspect: (Card) -> Unit, u: Float, modifier: Modifier = Modifier, replies: DockReplies = DockReplies()) {
     BackOutStep(st, live, intents)
+    // The ability already picked on the open card's row is answered here: the same question is not asked a second time.
+    val picked = abilityPickStep(st, live, intents)
     // A controller: once the question is answered the ring goes back to where it was on the table (only if the dock took it).
     LaunchedEffect(st.prompt == null) { if (st.prompt == null && DockFocus.took) { DockFocus.took = false; TablePad.restore() } }
     // The dock owns the pad while it asks (the table's Start and X wait); each kind adds its own X, the gold answer. Always composed,
@@ -130,6 +132,7 @@ fun DecisionDock(st: MatchState, live: Boolean, intents: TableIntents, onInspect
     PadScreen(PadActs(opaque = st.prompt != null && st.failure == null && !st.finished))
     val p = st.prompt ?: return
     if (st.failure != null || st.finished) return
+    if (picked) return
     // Mobile table M4: triggers the table orders for you never open the box.
     if (live && dev.cardstashy.nativeplay.match.AutoPass.triggerOrder(st, AppSettings.askTriggerOrder) != null) return
     val d = DockU(u)
@@ -311,6 +314,58 @@ internal fun modeBackOutOffered(p: Prompt, st: MatchState): Boolean {
         if (o.kind != "ability" || !Regex("\\btarget", RegexOption.IGNORE_CASE).containsMatchIn(o.label)) false
         else o.cardZone == "Hand" || (o.rawCardId != null && st.players.any { pl -> pl.hand.any { it.id == o.rawCardId } })
     }
+}
+
+/**
+ * Randall, 12 Nov ("why is it making me do it twice?"): the open card lists its abilities, each with its own Activate. The row
+ * he pressed is kept here for a moment; when Forge then asks "Choose an ability" for that card (getAbilityToPlay) and exactly
+ * one of Forge's options is that row, it is the answer and the box never opens. Anything else (no match, two matches, another
+ * card, another question, too late) leaves Forge's question on the table as before. Forge still decides what can be played.
+ */
+internal object AbilityPick {
+    const val HOLD_MS = 4000L
+    var card = -1; var row: AbilityRow? = null; var until = 0L
+    /** The prompt this pick answers and with which option: its box stays shut while the reply is on its way. */
+    var answered = -1; var index = -1
+    fun want(card: Int, row: AbilityRow, now: Long = System.currentTimeMillis()) { if (row.cost.isEmpty() && row.text.isEmpty()) clear() else { this.card = card; this.row = row; until = now + HOLD_MS } }
+    fun clear() { card = -1; row = null; until = 0L }
+    /** The option of [p] to send for the pressed row, or null. A question that is asked uses the pick up, whatever it is. */
+    fun decide(p: Prompt?, live: Boolean, now: Long = System.currentTimeMillis()): Int? {
+        if (p == null) { if (now > until) clear(); return null }
+        if (answered == p.id) return index
+        if (!live) return null
+        val r = row; val id = card; val fresh = now <= until
+        clear()
+        if (r == null || !fresh || p.method != "getAbilityToPlay") return null
+        if (p.options.any { (it.rawCardId ?: it.cardId)?.let { c -> c != id } == true }) return null
+        return abilityOption(r, p.options)?.also { answered = p.id; index = it }
+    }
+}
+
+/** The one option of Forge's ability question whose words are [row]'s cost and text; null when none or more than one is. */
+internal fun abilityOption(row: AbilityRow, options: List<PromptOption>): Int? {
+    fun norm(v: String) = plainText(v).lowercase().filter { it.isLetterOrDigit() || it == '{' || it == '}' || it == '+' || it == '−' || it == '-' }
+    val cost = norm(row.cost); val text = norm(row.text)
+    if (cost.isEmpty() && text.isEmpty()) return null
+    val hits = options.filter { o -> val l = norm(o.label); l == cost + text || (cost.isNotEmpty() && text.isNotEmpty() && l.startsWith(cost) && l.endsWith(text)) }
+    return hits.singleOrNull()?.index
+}
+
+/** How long the box stays shut for an answer on its way; after that Forge's question is shown as before, so nothing can hang. */
+internal const val ABILITY_PICK_WAIT_MS = 1500L
+
+/** Answers Forge's ability question with the row pressed on the open card ([AbilityPick]); true while that answer is on its way. */
+@Composable
+private fun abilityPickStep(st: MatchState, live: Boolean, intents: TableIntents): Boolean {
+    val p = st.prompt
+    val index = remember(p?.id, live) { AbilityPick.decide(p, live) }
+    val late = remember(p?.id) { androidx.compose.runtime.mutableStateOf(false) }
+    LaunchedEffect(p?.id, index) {
+        if (p == null || index == null) return@LaunchedEffect
+        intents.reply(p.id, null, listOf(index), null)
+        kotlinx.coroutines.delay(ABILITY_PICK_WAIT_MS); late.value = true
+    }
+    return p != null && index != null && !late.value
 }
 
 /** The back-out in flight (native-panel.mjs:145 backOut): module state, so it outlives the dock between decisions. */
