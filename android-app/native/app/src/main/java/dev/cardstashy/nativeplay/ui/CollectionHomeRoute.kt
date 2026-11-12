@@ -225,6 +225,15 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
                 else if (to == "#sets" && onSets != null) onSets() else if (to == "#decks" && onDecks != null) onDecks() else web(site + to, null) },
             open = open,
             search = { searchOpen?.invoke() ?: web(site + "#search", null) },
+            // Game-feel home G3: the box is typed in on Home. The matches are the engine's own (suggest.js, as the Search tab's box).
+            suggest = { q -> if (HomeCache.loaded == null) null else {
+                val g = CollectionGame.current.value.id
+                var j = CollectionEngine.searchSuggest(g, q)
+                if (j == null) { CollectionEngine.settle(15_000); j = CollectionEngine.searchSuggestModel() }
+                SearchSuggest.parse(j) } },
+            // A match picked, or Search pressed: those words on the Search tab, already searched (never its empty page).
+            pick = { name -> searchFor(CollectionGame.current.value.id, name); searchOpen?.invoke() ?: web(site + "#search", null) },
+            find = { q -> searchFor(CollectionGame.current.value.id, q); searchOpen?.invoke() ?: web(site + "#search", null) },
             // A.homeDailyCard: Magic's opens the website's sheet for now; Yu-Gi-Oh!'s and Pokémon's open the native card page (A.tCard).
             daily = { d -> val g = CollectionGame.current.value
                 // app.js A.homeDailyCard: Magic's opens in the printing Home shows (Randall 7 Nov: it opened the website).

@@ -51,6 +51,10 @@ private object SearchCache { val models = mutableMapOf<String, CollectionSearchM
  * A search left in the engine by another page (Magic's Deck review: app.js A.findRole, A.formatSearch, which set S.ui.db and go("#search")):
  * the Search tab opens on its words and filters, and pumps the search it started until it lands.
  */
+/** Words typed in Home's search box (game-feel home G3), by game: the Search tab opens with them in its box and searched. Taken once. */
+private val handed = java.util.concurrent.ConcurrentHashMap<String, String>()
+fun searchFor(game: String, words: String) { if (words.isNotBlank()) handed[game] = words.trim() }
+
 fun searchAsked(review: String? = null) { SearchCache.models.remove("mtg"); SearchCache.asked = true; SearchCache.review = review }
 
 private const val SITE = "https://cardstashy.com/"
@@ -155,6 +159,15 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
         } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) {
             CollectionWrites.show(e.message?.takeIf { it.isNotBlank() } ?: "That didn’t work here.")
         } } }
+    }
+    // Home's box handed its words over: they go in this box and its own Enter runs, once the page is up.
+    val ready = model != null
+    LaunchedEffect(game, ready) {
+        if (!ready) return@LaunchedEffect
+        val words = handed.remove(game) ?: return@LaunchedEffect
+        query = words
+        turn.withLock { runCatching { CollectionEngine.searchRemember(game, words) } }
+        model?.field?.let { f -> if (f.input.isNotBlank()) run(f.input, emptyMap(), words); if (f.enter.isNotBlank()) run(f.enter, emptyMap(), words) }
     }
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     val focusClear: (() -> Unit)? = { focusManager.clearFocus() }

@@ -2,6 +2,9 @@ package dev.cardstashy.nativeplay.ui
 
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.performTouchInput
@@ -36,19 +39,20 @@ class CollectionHomeRouteTest {
         rule.setContent { CollectionHomeRoute(onPlay = {}, onProfile = {}, web = { url, press -> opened += "$url ${press.orEmpty()}" }, open = { opened += it }) }
         // The empty account's value first, then the live feeds.
         rule.waitUntil(30_000) { rule.onAllNodesWithText("Ready for your first card").fetchSemanticsNodes().isNotEmpty() }
-        rule.waitUntil(90_000) { rule.onAllNodesWithText("Card of the Day").fetchSemanticsNodes().isNotEmpty() }
-        // Lighter home C5: Meta may be below the first screen and built only when the page is scrolled near it (BelowFoldTest).
-        // Its article: a deck, or the site's own note when the tournament source cannot be reached from where the test runs
-        // (seen 12 Nov 15:40Z in this container: "Tournament lists are unavailable right now.").
-        fun meta() = rule.onAllNodesWithText("Original source").fetchSemanticsNodes().isNotEmpty() ||
-            rule.onAllNodesWithText("Tournament lists are unavailable right now.").fetchSemanticsNodes().isNotEmpty()
-        try { rule.waitUntil(90_000) { rule.onRoot().performTouchInput { swipeUp() }; rule.waitForIdle(); meta() } }
-        catch (e: androidx.compose.ui.test.ComposeTimeoutException) {
-            error("no Meta article after scrolling: " + rule.onAllNodes(androidx.compose.ui.test.isRoot()).fetchSemanticsNodes().joinToString(" | ") { words(it) })
-        }
-        repeat(8) { rule.onRoot().performTouchInput { swipeDown() }; rule.waitForIdle() }
+        rule.waitUntil(90_000) { rule.onAllNodesWithText("Card of the Day", ignoreCase = true).fetchSemanticsNodes().isNotEmpty() }
         rule.onAllNodesWithText("No saved decks yet.").fetchSemanticsNodes().let { check(it.isNotEmpty()) { "no empty shelf" } }
         rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "collection-home-route-390x844.png").path)
+        // Game-feel home: Meta decks live behind their door, on the same screen.
+        // Its article: a deck, or the site's own note when the tournament source cannot be reached from where the test runs
+        // (seen 12 Nov 15:40Z in this container: "Tournament lists are unavailable right now.").
+        rule.onNodeWithText("Meta decks").performClick()
+        fun meta() = rule.onAllNodesWithText("Original source").fetchSemanticsNodes().isNotEmpty() ||
+            rule.onAllNodesWithText("Tournament lists are unavailable right now.").fetchSemanticsNodes().isNotEmpty()
+        try { rule.waitUntil(90_000) { meta() } }
+        catch (e: androidx.compose.ui.test.ComposeTimeoutException) {
+            error("no Meta article behind its door: " + rule.onAllNodes(androidx.compose.ui.test.isRoot()).fetchSemanticsNodes().joinToString(" | ") { words(it) })
+        }
+        rule.onNodeWithContentDescription("Back to Home").performClick()
         println("ROUTE OK ${RuntimeEnvironment.getQualifiers()}")
     }
 

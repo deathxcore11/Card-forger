@@ -78,6 +78,8 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
@@ -410,7 +412,7 @@ private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (
             }
             else Row(Modifier.weight(1f).fillMaxWidth().padding(horizontal = gutter).padding(top = 4.dp, bottom = 10.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                 Column(Modifier.weight(.44f).fillMaxHeight().then(swipe), verticalArrangement = Arrangement.Bottom) {
-                    daily?.let { Box(Modifier.dualLens(lens, "daily")) { Today(it, m.game, screen, act) } }
+                    daily?.let { Box(Modifier.dualLens(lens, "daily")) { Today(it, m.game, screen, act, room = this@BoxWithConstraints.maxWidth * .44f) } }
                 }
                 Column(Modifier.weight(.56f).fillMaxHeight()) {
                     HomeSearch(m.prompt, hints, find, act, Modifier.dualLens(lens, null))
@@ -531,8 +533,8 @@ internal fun Hoard(v: HomeValue, roomy: Boolean, act: CollectionHomeActions) {
             drawContent()
             // Gold corner brackets, top left and bottom right.
             val c = 22.dp.toPx(); val r = CornerRadius(18.dp.toPx()); val s = Stroke(2.dp.toPx())
-            androidx.compose.ui.graphics.drawscope.clipRect(0f, 0f, c, c) { drawRoundRect(gold, cornerRadius = r, style = s) }
-            androidx.compose.ui.graphics.drawscope.clipRect(size.width - c, size.height - c, size.width, size.height) { drawRoundRect(gold, cornerRadius = r, style = s) }
+            clipRect(0f, 0f, c, c) { drawRoundRect(gold, cornerRadius = r, style = s) }
+            clipRect(size.width - c, size.height - c, size.width, size.height) { drawRoundRect(gold, cornerRadius = r, style = s) }
         }
         .padding(horizontal = if (roomy) 22.dp else 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Column(Modifier.weight(1f).heightIn(min = 44.dp).clickable { act.go("#collection/value") }, verticalArrangement = Arrangement.spacedBy(1.dp, Alignment.CenterVertically)) {
@@ -603,7 +605,7 @@ private fun DoorSheet(which: String, m: CollectionHomeModel, screen: Dp, gutter:
 private fun DeckShelf(s: HomeShelf, boxes: List<DeckBoxM>, game: CardGame, boxH: Dp, act: CollectionHomeActions, lens: LensHost) {
     Column {
         Row(Modifier.fillMaxWidth().heightIn(min = 30.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(s.title.ifEmpty { "Your decks" }.uppercase(), style = sans(10f, FontWeight.Bold, Color(0xFFAEB6C4), ls = 2.2f))
+            Text(s.title.ifEmpty { "Your decks" }.uppercase(), style = sans(10f, FontWeight.Bold, Color(0xFFD5DAE4), ls = 2.2f).copy(shadow = Shadow(Color(0xE6000000), Offset(0f, 1f), 6f)))
             s.all?.let { link -> Text(link.label + " ›", style = sans(12.5f, FontWeight.SemiBold, HGold),
                 modifier = Modifier.clickable { if (link.to.isNotEmpty()) act.go(link.to) else if (link.href.isNotEmpty()) act.open(link.href) }.padding(start = 12.dp, top = 6.dp, bottom = 6.dp)) }
         }
@@ -799,12 +801,12 @@ private fun HomeSearch(prompt: String, hints: SearchHints?, find: HomeFind, act:
                 0f to Color.Transparent, .15f to Color.Transparent, .40f to gold, .50f to Color(0xFFD8F5FF), .60f to gold, .85f to Color.Transparent, 1f to Color.Transparent)),
                 cornerRadius = CornerRadius(25.dp.toPx()), style = Stroke(1.dp.toPx()))
         }
-        .then(if (open) Modifier else Modifier.clickable { find.open = true }.semantics { contentDescription = "Find cards or ask CardStashy" }), contentAlignment = Alignment.CenterStart) {
+        .semantics { contentDescription = "Find cards or ask CardStashy" }.then(if (open) Modifier else Modifier.clickable { find.open = true }), contentAlignment = Alignment.CenterStart) {
         Row(Modifier.fillMaxSize().padding(start = 18.dp, end = if (open) 6.dp else 18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Icon(SiteIcons.Search, 19.dp, LocalGameGold.current)
             if (!open) Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).alpha(fade.value), style = sans(16f, color = Color(0xFF8A8F9B)))
             else {
-                androidx.compose.foundation.text.BasicTextField(find.q, { find.q = it }, Modifier.weight(1f).focusRequester(focus).semantics { contentDescription = "Find cards or ask CardStashy" },
+                androidx.compose.foundation.text.BasicTextField(find.q, { find.q = it }, Modifier.weight(1f).focusRequester(focus),
                     singleLine = true, textStyle = sans(16f, color = Site.Text), cursorBrush = androidx.compose.ui.graphics.SolidColor(gold),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
                     keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { val q = find.q.trim(); if (q.isNotEmpty()) { find.shut(); act.find(q) } }),
@@ -834,20 +836,26 @@ private fun FindResults(find: HomeFind, act: CollectionHomeActions, modifier: Mo
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Today(card: DailyCard, game: CardGame, screen: Dp, act: CollectionHomeActions) {
+private fun Today(card: DailyCard, game: CardGame, screen: Dp, act: CollectionHomeActions, room: Dp = screen) {
     val wide = screen >= 600.dp
     // .home-today: the pack (.today-pack-slot, centred) then the text, 16 apart (22 wide); no pack, the text alone.
-    Row(Modifier.fillMaxWidth().heightIn(min = if (wide) 190.dp else 160.dp).padding(horizontal = if (wide) 8.dp else 0.dp)
-        .padding(top = if (wide) 26.dp else 22.dp, bottom = if (wide) 24.dp else 22.dp), horizontalArrangement = Arrangement.spacedBy(if (wide) 22.dp else 16.dp),
+    Row(Modifier.fillMaxWidth().padding(horizontal = if (wide) 8.dp else 0.dp).padding(top = 8.dp, bottom = if (wide) 18.dp else 14.dp), horizontalArrangement = Arrangement.spacedBy(if (wide) 22.dp else 16.dp),
         verticalAlignment = Alignment.CenterVertically) {
     card.pack?.let { TodayPack(it, game, screen) { act.todayPack(card) } }
-    Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
+    BoxWithConstraints(Modifier.weight(1f)) {
+    // The name never breaks inside a word: its size comes down until the longest word fits the room beside the pack (Thor's left pane).
+    val tight = maxWidth < 220.dp
+    val end = if (tight) 0.dp else 42.dp
+    val longest = card.name.split(' ').maxOfOrNull { it.length } ?: 1
+    val size = minOf((room.value * .068f).coerceIn(24f, 40f), (maxWidth - end).value / (longest * .66f)).coerceAtLeast(15f)
+    Column(verticalArrangement = Arrangement.Center) {
         Column(Modifier.clip(RoundedCornerShape(10.dp)).clickable { act.daily(card) }.semantics { contentDescription = "Explore ${card.name}, Card of the Day" }
-            .padding(top = 8.dp, end = 42.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(card.label, style = sans(11f, FontWeight.Bold, LocalGameGold.current, lh = 1.4f, ls = .66f).copy(shadow = Shadow(Color(0x99000000), Offset(0f, 2f), 18f)))
-            // #homeToday .hh-credit b: clamp(19px, 5vw, 24px), Manrope 800.
-            Text(card.name, style = manrope((screen.value * .05f).coerceIn(19f, 24f), FontWeight.ExtraBold, Color.White, lh = 1.15f, ls = -.035f)
-                .copy(shadow = Shadow(Color(0xCC000000), Offset(0f, 2f), 12f)))
+            .padding(top = 8.dp, end = end, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Game-feel home: the label on a small dark capsule (it sits on bright art now), the name in the display face.
+            Text(card.label.uppercase(), maxLines = 1, softWrap = false, style = sans(if (tight) 9f else 10f, FontWeight.ExtraBold, LocalGameGold.current, lh = 1.4f, ls = if (tight) 1.2f else 2.2f),
+                modifier = Modifier.clip(CircleShape).background(Color(0x8C080A0E)).padding(horizontal = if (tight) 8.dp else 10.dp, vertical = 3.dp))
+            Text(card.name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.ExtraBold, fontSize = size.sp,
+                lineHeight = (size * 1.1f).sp, color = Color.White, shadow = Shadow(Color(0xF0000000), Offset(0f, 2f), 14f)))
         }
         if (card.set.isNotEmpty() || card.rarity.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp),
             itemVerticalAlignment = Alignment.CenterVertically) {
@@ -856,6 +864,13 @@ private fun Today(card: DailyCard, game: CardGame, screen: Dp, act: CollectionHo
             // .today-rarity: text-transform capitalize, each word.
             if (card.rarity.isNotEmpty()) Chip(card.rarity.split(' ').joinToString(" ") { w -> w.replaceFirstChar { it.uppercase() } }, 11f)
         }
+        // The one gold button: today's pack when the set has one (the real Open Pack, the card as its hit), else the card's page.
+        val go = if (card.pack != null) "Open pack" else "Open card"
+        Box(Modifier.padding(top = 10.dp).heightIn(min = 32.dp).clip(CircleShape).background(Brush.verticalGradient(listOf(Color(0xFFF7DE9C), Color(0xFFD4A94C))))
+            .clickable { if (card.pack != null) act.todayPack(card) else act.daily(card) }.semantics { role = Role.Button }.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
+            Text("$go  ›", style = sans(11f, FontWeight.ExtraBold, Color(0xFF17110A), ls = 1f))
+        }
+    }
     }
 }
 }
