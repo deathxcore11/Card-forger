@@ -399,8 +399,10 @@ float3 overInk(float3 base,float3 F,float cover){float3 T=mix(base,base/max(max(
  float lb=dot(base,float3(.2126,.7152,.0722)),lo=dot(o,float3(.2126,.7152,.0722));return lo<lb*.8?min(o*(lb*.8/max(lo,1e-4)),float3(1.)):o;}
 float glyphAt(float2 uv){float2 t=(uv-u_name.xy)/(u_name.zw-u_name.xy);if(t.x<0.||t.y<0.||t.x>1.||t.y>1.)return 0.;return u_glyph.eval(t*u_gmap).r;}
 half4 main(float2 p){
- float2 uv=p/u_size;half4 src=u_card.eval(p);float a=src.a;if(a<=0.)return src;
- float3 base=toLin(float3(src.rgb)/a);float4 mk=mapAt(uv),rl=relAt(uv);
+ // No early way out of main: with the name bar's extra reads of the card, a graphics chip dropped the whole art foil when main
+ // could leave before them (seen on the GPU check, 12 Nov). An empty pixel simply comes out empty at the end (times a = 0).
+ float2 uv=p/u_size;half4 src=u_card.eval(p);float a=src.a;
+ float3 base=toLin(clamp(float3(src.rgb)/max(a,1e-4),0.,1.));float4 mk=mapAt(uv),rl=relAt(uv);
  float art=inBox(uv,u_art),name=inBox(uv,u_name),text=inBox(uv,u_text),frame=(1.-art)*(1.-text)*(1.-name);
  float2 lp=float2(.5,.45)+u_tilt*.6;float3 P=float3(uv.x,uv.y*u_aspect,0.);
  float3 L=normalize(float3(lp.x,lp.y*u_aspect,.85)-P),V=normalize(float3(.5,.5*u_aspect,2.2)-P),H=normalize(L+V);

@@ -77,4 +77,15 @@ class YgoFoilTest {
             assertTrue("$name shader names $bad: reserved once the renderer adds its suffix", bad.isEmpty())
         }
     }
+
+    /** The Yu-Gi-Oh! shader reads the card picture a second time (the name bar's ground). With an early "return" in main before those
+     *  reads, a graphics chip drew the name foil but dropped the whole art foil, while the software path drew both (GPU check,
+     *  12 Nov: prismatic, tile and full size). A shader that reads the card more than once must leave main only at its end. */
+    @Test fun aShaderThatReadsTheCardTwiceLeavesMainOnlyAtItsEnd() {
+        for ((name, src) in listOf("ygo" to YgoFoil.AGSL, "ptcg" to dev.cardstashy.nativeplay.foil.PtcgFoil.AGSL, "mtg" to dev.cardstashy.nativeplay.ui.Foil.AGSL)) {
+            if (Regex("""u_card\.eval""").findAll(src).count() < 2) continue
+            val main = src.substring(src.indexOf("half4 main("))
+            assertEquals("$name: main returns early", 1, Regex("""\breturn\b""").findAll(main).count())
+        }
+    }
 }
