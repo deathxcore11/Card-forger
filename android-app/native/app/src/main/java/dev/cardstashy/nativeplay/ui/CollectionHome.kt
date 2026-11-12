@@ -337,9 +337,10 @@ private fun Page(m: CollectionHomeModel, hints: SearchHints?, top: @Composable (
                 if (m.example.isNotEmpty()) { Note(m.example); Spacer(Modifier.height(16.dp)) }
                 Box(Modifier.dualLens(lens, null)) { Shelf(m.shelf, m.game, screen, act) }
                 Spacer(Modifier.height(24.dp))
-                MetaCarousel(m.meta, m.game, screen, act)
+                // C5: Meta and News are built, and ask for their pictures, only when the page is scrolled near them.
+                BelowFold(240.dp) { MetaCarousel(m.meta, m.game, screen, act) }
                 Spacer(Modifier.height(22.dp))
-                News(m.news, m.game, screen, act)
+                BelowFold(360.dp) { News(m.news, m.game, screen, act) }
             }
         }
     }
