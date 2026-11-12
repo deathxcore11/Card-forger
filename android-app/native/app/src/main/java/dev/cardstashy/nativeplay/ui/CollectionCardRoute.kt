@@ -66,6 +66,7 @@ private fun CardHostBody(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen)
                          onRandom: (() -> Unit)?, onBack: (() -> Unit)?) {
     if (open.game != "mtg") return TcgCardHost(open, onClose, onOpen, web, onSet, onRandom, onBack)
     val context = LocalContext.current
+    val searchOpen = LocalCollectionSearch.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var model by remember(open) { mutableStateOf<CollectionCardModel?>(null) }
     /** A control waiting for the site's handler (kind to value). */
@@ -134,6 +135,9 @@ private fun CardHostBody(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen)
             p.act == "cardTab" && d["tab"] in setOf("overview", "meta", "guide", "prices") -> asked = "tab" to d.getValue("tab")
             p.act == "marketRange" && !d["range"].isNullOrBlank() -> asked = "range" to d.getValue("range")
             p.act == "priceSource" && !d["src"].isNullOrBlank() -> asked = "source" to d.getValue("src")
+            // The artist's name and the "Explore types & abilities" chips (card-discovery.js A.ruleCards): the app's own Search tab with
+            // the site's search words, this page closed. Before 12 Nov they opened the website inside the app, which lost the search.
+            p.act == "ruleCards" && searchOpen != null && discoveryWords(d) != null -> { searchFor("mtg", discoveryWords(d)!!); onClose(); searchOpen() }
             p.act.isNotBlank() -> site("[data-act=\"${css(p.act)}\"]" + d.filterKeys { it != "act" }.entries.joinToString("") { (k, v) -> "[data-${k}=\"${css(v)}\"]" })
         }
     }
@@ -162,6 +166,23 @@ private fun CardHostBody(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen)
     )
     CollectionCardSheet(m, act, onBack = onBack?.takeIf { open.back.isNotBlank() }, historyBack = open.back in setOf("proven", "review") && onBack != null, onClose = onClose)
     RuleGlassOver(glass, open, ruleKey, web, scope) { glass = it }
+}
+
+/**
+ * card-discovery.js cardDiscoverySpec for Magic, as the words its search takes: an artist's cards (a:"Name"), a type's (t:"x" per
+ * word; "Time Lord" is one type) and a keyword's (the chips come from the card's own keywords). Null for anything else (a concept,
+ * another game, a value the site's own check refuses): the website's handler keeps those.
+ */
+internal fun discoveryWords(d: Map<String, String>): String? {
+    val value = d["discovery-value"].orEmpty().trim()
+    if (d["game"] != "mtg" || value.isEmpty() || value.length > 120 || value.any { it < ' ' || it in "<>\"\\" }) return null
+    fun q(s: String) = "\"" + s.lowercase() + "\""
+    return when (d["discovery-kind"]) {
+        "artist" -> "a:\"$value\""
+        "type" -> (if (value == "Time Lord") listOf(value) else value.split(Regex("\\s+"))).joinToString(" ") { "t:" + q(it) }
+        "keyword" -> "keyword:" + q(value)
+        else -> null
+    }
 }
 
 /**

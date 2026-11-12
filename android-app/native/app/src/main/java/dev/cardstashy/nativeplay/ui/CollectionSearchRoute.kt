@@ -53,7 +53,9 @@ private object SearchCache { val models = mutableMapOf<String, CollectionSearchM
  */
 /** Words typed in Home's search box (game-feel home G3), by game: the Search tab opens with them in its box and searched. Taken once. */
 private val handed = java.util.concurrent.ConcurrentHashMap<String, String>()
-fun searchFor(game: String, words: String) { if (words.isNotBlank()) handed[game] = words.trim() }
+/** Counts each hand-over, so a Search tab that is already open takes the words too (a card page's artist name, 12 Nov). */
+private val handedTick = kotlinx.coroutines.flow.MutableStateFlow(0)
+fun searchFor(game: String, words: String) { if (words.isNotBlank()) { handed[game] = words.trim(); handedTick.value++ } }
 
 fun searchAsked(review: String? = null) { SearchCache.models.remove("mtg"); SearchCache.asked = true; SearchCache.review = review }
 
@@ -162,7 +164,8 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
     }
     // Home's box handed its words over: they go in this box and its own Enter runs, once the page is up.
     val ready = model != null
-    LaunchedEffect(game, ready) {
+    val handedNow by handedTick.collectAsState()
+    LaunchedEffect(game, ready, handedNow) {
         if (!ready) return@LaunchedEffect
         val words = handed.remove(game) ?: return@LaunchedEffect
         query = words
