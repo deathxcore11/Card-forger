@@ -706,7 +706,7 @@ fun ForgeBoard(
                 val stackDensity = LocalDensity.current
                 // Phone conflicts, 3: the card never rests on a creature tile either, question or not (the cast pop is its own card
                 // and still shows full size).
-                val asked = remember(st.revision, st, live) { (st.players.flatMap { p -> p.battlefield.filter { it.isCreature && it.attachedTo == null }.map { it.id } } +
+                val asked = remember(st.revision, st, live) { (st.players.flatMap { p -> p.battlefield.filter { (it.isCreature || it.type.contains("Planeswalker")) && it.attachedTo == null }.map { it.id } } +
                     (if (live && st.prompt == null) st.selection.cards + st.selection.targetCards else emptySet())).toSet() }
                 val fullBox = with(stackDensity) { androidx.compose.ui.geometry.Rect(fullX.toPx(), fullY.toPx(), (fullX + 104.du * sFull).toPx(), (fullY + (145.du + 30.du) * sFull).toPx()) }
                 val stackAnchors = LocalAnchors.current
@@ -720,9 +720,12 @@ fun ForgeBoard(
                 val stackSpec = if (Motion.still) androidx.compose.animation.core.snap<Float>() else tween<Float>(200, easing = FastOutSlowInEasing)
                 val big by animateFloatAsState(if (full) 1f else 0f, stackSpec, label = "stackSize")
                 val s = fit + (sFull - fit) * big
-                val spare = fitSpare + (fullY - zones.window.y.dp - 8.du - fitSpare) * big
+                // Fold and tablets (Randall on the Fold, 12 Nov: the small card stood beside the hand, its words under the hand cards): at
+                // strip size the card is centred on the middle line too, inside its slot; the room above it is the older cards'.
+                val stripSpare = if (zones.phone || DualScreen.active) fitSpare else (mid - 145.du * fit / 2 - sz.y.dp).coerceIn(0.dp, fitSpare)
+                val spare = stripSpare + (fullY - zones.window.y.dp - 8.du - stripSpare) * big
                 val cardX = (sz.x.dp + (sz.w.dp - 104.du * fit) / 2).let { it + (fullX - it) * big }
-                val cardY = (sz.y.dp + fitSpare).let { it + (fullY - it) * big }
+                val cardY = (sz.y.dp + stripSpare).let { it + (fullY - it) * big }
                 // The words under the top card end 16 dp inside the screen (the stack zone already does).
                 // Z1 review: the fan is drawn smaller (s) to fit the strip, so its small touch targets (Yield, "+N") take taps in a box as big
                 // on the screen as anywhere else: Compose's nearby-touch box (48 dp) is measured in the fan's own scaled units, so it grows by 1/s.
@@ -1194,7 +1197,9 @@ fun ForgeBoard(
                 onCancel = st.buttons.takeIf { it.cancelEnabled }?.let { { intents.cancel() } }); sheetView() } } }
             // With the bottom screen up the hand chip sits where the line would be: the line goes just above the chip, high enough
             // that its 10 du drop shadow (AskLine) clears the chip too (U3).
-            val parts = if (tucked) askParts(st) else null
+            // "Respond to X?" follows M1 on one screen (design thread, 12 Nov): a plain line on the middle line, never a plate over
+            // the hand cards you would answer with.
+            val parts = if (tucked) askParts(st) else askText?.takeIf { !dual && it.startsWith("Respond to ") }?.let { AskParts(null, it) }
             if (parts != null) {
                 // Mobile table M1: the question is one plain line on the middle of the table, between the rows and beside the targets
                 // (it was a pill in the hand's strip): centred on the board, ending left of the stack card at its full size.
