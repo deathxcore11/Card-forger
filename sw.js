@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-native-0465-43180-v552";
+const CACHE = "cardforge-shell-native-0466-43181-v553";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
