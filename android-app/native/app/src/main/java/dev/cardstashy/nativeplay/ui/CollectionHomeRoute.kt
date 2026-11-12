@@ -41,12 +41,12 @@ import java.io.File
 internal const val CALM_CAP_MS = 4_000L
 
 /**
- * Lighter Collection home C2, one calm update: Home is painted once when [refresh] is done ([paint] with true).
- * A refresh slower than [capMs] gets one paint of what has arrived by then, and no more until it is done.
- * (Before, Home was painted again every 1.2 s for as long as the refresh ran.) A refresh that fails paints nothing more.
+ * Lighter Collection home C2, calm updates: Home is painted when [refresh] is done ([paint] with true). A refresh slower than
+ * [capMs] gets a paint of what has arrived every [capMs] until then (a slow card lookup must not hold back a feed that is in;
+ * a paint with nothing new redraws nothing). Before, this ran every 1.2 s from the start. A refresh that fails paints nothing more.
  */
 internal suspend fun calmUpdate(capMs: Long = CALM_CAP_MS, refresh: suspend () -> Unit, paint: suspend (final: Boolean) -> Unit) = coroutineScope {
-    val late = launch { delay(capMs); paint(false) }
+    val late = launch { while (true) { delay(capMs); paint(false) } }
     try { refresh() } finally { late.cancel() }
     late.join()
     paint(true)

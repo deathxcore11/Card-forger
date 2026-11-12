@@ -18,12 +18,16 @@ class CalmUpdateTest {
 
     @Test fun aQuickRefreshPaintsOnce() = assertEquals(listOf(true), run(capMs = 2_000, refreshMs = 20))
 
-    /** Ten caps long: the 1.2 s loop would have painted about ten times here. */
-    @Test fun aSlowRefreshPaintsOnceAtTheCapThenOnceAtTheEnd() = assertEquals(listOf(false, true), run(capMs = 40, refreshMs = 400))
+    /** A refresh ten caps long: a paint at each cap, never sooner, then the last one. */
+    @Test fun aSlowRefreshPaintsAtEachCapThenAtTheEnd() {
+        val p = run(capMs = 100, refreshMs = 450)
+        assertEquals(true, p.last())
+        assertTrue("about one paint per cap: $p", p.count { !it } in 3..4)
+    }
 
     @Test fun aRefreshThatFailsPaintsNothingAfter() {
         assertEquals(emptyList<Boolean>(), run(capMs = 2_000, refreshMs = 20, fail = true))
-        assertEquals(listOf(false), run(capMs = 40, refreshMs = 200, fail = true))
+        assertTrue(run(capMs = 100, refreshMs = 150, fail = true) == listOf(false))
     }
 
     @Test fun theCapIsFourSeconds() = assertTrue(CALM_CAP_MS == 4_000L)

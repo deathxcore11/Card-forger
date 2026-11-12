@@ -380,7 +380,7 @@ private fun Sheen(modifier: Modifier) {
         androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(2600, easing = androidx.compose.animation.core.LinearEasing)), label = "sheen").value
     Box(modifier.drawBehind {
         val w = size.width * .45f; val x = -w + (size.width + 2 * w) * t
-        drawRect(Brush.linearGradient(listOf(Color.Transparent, Color(0x12FFFFFF), Color.Transparent), Offset(x - w, 0f), Offset(x + w, size.height)))
+        drawRect(Brush.linearGradient(listOf(Color.Transparent, Site.GlassHi.copy(alpha = .07f), Color.Transparent), Offset(x - w, 0f), Offset(x + w, size.height)))
     })
 }
 
