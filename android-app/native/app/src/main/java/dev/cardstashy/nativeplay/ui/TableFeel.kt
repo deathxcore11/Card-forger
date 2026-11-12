@@ -139,27 +139,45 @@ internal object TableFeel {
     }
 
     // F6, the charge. This is P5's strike ([Strike]) with a bigger wind-up and a trail: P5's order, timing and sounds stay as approved.
-    // The attacker swells to 1.14 on the pull back, leaves sparks in its own colour on the dash, and where it lands there are white
-    // spikes and a ring in its colour. A declared attacker's rim is gold.
+    // The look pass (12 Nov) draws it as the living table preview does. The attacker swells to 1.14 on the pull back. On the dash it
+    // leaves a streak of its own colour, widest at the card and tapering to nothing, with sparks thrown back off it. Where it lands
+    // there is one burst and no more: a small white-hot core, one ring in the card's colour and white spikes that taper to a point.
+    // At a player the card's nose meets the picture, the number pops on the picture and the life total under it stays clear.
     const val CHARGE_SWELL = 1.14f
+    /** The streak reaches from the card's back edge to where that edge was this long ago, so it grows as the card speeds up. */
+    const val CHARGE_TAIL_MS = 70f
+    /** The streak at the card: this share of the card's width across its line, at this strength in its middle. */
+    const val CHARGE_TAIL_WIDE = .6f
+    const val CHARGE_TAIL_ALPHA = .7f
+    /** It is light, not a shape: this many wedges laid over each other, each narrower, with a few thin speed lines in them. */
+    const val CHARGE_TAIL_LAYERS = 5
+    const val CHARGE_TAIL_LINES = 5
+    /** Sparks: two every 16 ms of the dash, thrown back at up to 300 dp a second inside one radian, 1.8 dp thick, gone in 340 ms. */
     const val CHARGE_TRAIL_EVERY_MS = 16f
-    const val CHARGE_TRAIL_BACK = 20f
-    const val CHARGE_TRAIL_SPEED = 350f
-    const val CHARGE_TRAIL_SPREAD = .5f
+    const val CHARGE_TRAIL_PER = 2
+    const val CHARGE_TRAIL_SPEED = 300f
+    const val CHARGE_TRAIL_SPREAD = 1f
     const val CHARGE_TRAIL_LIFE_MS = 340L
-    const val CHARGE_TRAIL_SIZE = 3f
-    /** Design review, 12 Nov: the sparks are glowing points (a 3 dp core in a 10 dp glow), three a frame across the card's width, so an 85 ms dash leaves twelve or more. */
-    const val CHARGE_TRAIL_GLOW = 10f
-    const val CHARGE_TRAIL_PER = 3
-    /** The after-images behind the card are its own colour: the nearest at 18 %, each one dimmer. */
-    const val CHARGE_GHOST = .18f
+    const val CHARGE_TRAIL_SIZE = 1.8f
+    /** The hit's core: a white-hot glow this many dp across its radius where the card meets what it strikes, gone in 160 ms. */
+    const val CHARGE_CORE = 34f
+    const val CHARGE_CORE_MS = 160f
+    /** The ring runs out 70 dp from the struck picture's rim (from 20 dp on a tile) in 400 ms, 3 dp thick thinning to 1.2. */
+    const val CHARGE_RING_OUT = 70f
+    const val CHARGE_RING_START = 20f
+    const val CHARGE_RING_MS = 400f
+    const val CHARGE_RING_FROM = 3f
+    /** Ten white spikes, 7 dp wide where they start and a point where they end, 32 to 70 dp long, each gone in 140 to 240 ms. */
     const val CHARGE_SPIKES = 10
     const val CHARGE_SPIKE_LEN = 70f
-    /** The ring starts at the struck seat's (or tile's) size 4 dp thick and thins to 1 dp as it grows to 1.6 times that over 220 ms. */
-    const val CHARGE_RING_GROW = 1.6f
-    const val CHARGE_RING_MS = 220f
-    const val CHARGE_RING_FROM = 4f
-    const val CHARGE_RING_TO = 1f
+    const val CHARGE_SPIKE_HALF = 3.5f
+    /** How small the card is when it meets a player's picture (P5), and the number that pops on the picture. */
+    const val CHARGE_FIST = .45f
+    const val CHARGE_NUMBER_SP = 26f
+    /** Whether the charge is drawn (and its number and reach used): Match effects on, on a device that draws particles ([low] is false). */
+    fun charged(low: Boolean): Boolean = !low && mode() != Mode.OFF
+    /** A colour run [by] of the way to white (45 % unless said): the hot middle of a streak, a spark, a ring. */
+    fun hot(c: Color, by: Float = .45f): Color = Color(1f - (1f - c.red) * (1f - by), 1f - (1f - c.green) * (1f - by), 1f - (1f - c.blue) * (1f - by))
     val DECLARE_GOLD = Color(0xFFF3D27E)
     /** As it was before F6 (and with Match effects off): the coral of P5's declare ring. */
     val CORAL = Color(0xFFFF6A4A)

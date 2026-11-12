@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import dev.cardstashy.nativeplay.engine.MatchState
 import org.junit.After
@@ -98,5 +99,12 @@ class PunchCombatTest {
         // On the new board the picture is on a square drawn over the rows: the attacker (small by then) stops at the square's
         // edge, 270 px up its line, with only its tip under the glass.
         assertEquals(270f - 130f * .45f * .4f, strikeReach(a, b, true, Rect(-20f, 60f, 200f, 280f)), .001f)
+        // F6, the charge: it lands beside the picture on the square's open side (here the right), its middle .42 of its small
+        // width from the rim and a little above the picture's middle. With Match effects off, or no square, P5's line stands.
+        val orb = Rect(10f, 100f, 110f, 200f)
+        assertEquals(Offset(110f + 130f * .45f * .42f, 150f - 12f), chargeAim(a, orb, Rect(0f, 90f, 300f, 260f)))
+        assertEquals(Offset(10f - 130f * .45f * .42f, 150f - 12f), chargeAim(a, orb, Rect(-200f, 90f, 120f, 260f)))
+        assertEquals(null, chargeAim(a, orb, null)); assertEquals(null, chargeAim(a, orb, Rect(0f, 90f, 300f, 260f), low = true))
+        AppSettings.applyMatchEffects("off"); assertEquals(null, chargeAim(a, orb, Rect(0f, 90f, 300f, 260f))); AppSettings.applyMatchEffects("full")
     }
 }

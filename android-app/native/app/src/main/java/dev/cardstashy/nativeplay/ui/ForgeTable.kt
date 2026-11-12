@@ -572,6 +572,7 @@ fun ForgeBoard(
                 Box(Modifier.fillMaxSize().zIndex(if (fx.strikers.value.isEmpty()) 0f else 1f).graphicsLayer {
                     transformOrigin = androidx.compose.ui.graphics.TransformOrigin((zones.board.x + zones.board.w / 2) / W.value.coerceAtLeast(1f),
                         (zones.board.y + zones.board.h / 2) / H.value.coerceAtLeast(1f))
+                    fx.pivot = fx.origin + Offset(transformOrigin.pivotFractionX * size.width, transformOrigin.pivotFractionY * size.height)
                     fx.shake(this) }) {
                 // M14: on a phone the CPU's column reaches up beside its back row, so that row ends short of it.
                 PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, backX, rowsG.cpuBack.centre.dp, if (zones.phone && cpuWalkCol != null) backRoom - walkLane else backRoom, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) }, piece = tilePiece, tile = bw to bh, fromLeft = true, onPile = openPile, gap = backGap, looseRight = true)

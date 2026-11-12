@@ -110,9 +110,10 @@ class PunchCombatShotTest {
         // 60 ms after the freeze: sparks have flown on past the hit, away from the attacker, and the struck tile is knocked.
         val after = Strike.after(false).toLong()
         val burst = at(clash(), after + 60, "clash-burst", burstAt = after)
-        val up = foe.center.y < home.center.y
-        val beyond = if (up) Rect(foe.left - 20 * dp, foe.top - 46 * dp, foe.right + 20 * dp, foe.top - 6 * dp) else Rect(foe.left - 20 * dp, foe.bottom + 6 * dp, foe.right + 20 * dp, foe.bottom + 46 * dp)
-        assertTrue("sparks fly on past the hit: ${diff(contact, burst, beyond)}", diff(contact, burst, beyond) > .01f)
+        // F6 (the look pass, 12 Nov): the hit is one burst where the cards meet. Its sparks are thrown on through the struck tile
+        // (eighteen of them, alive 60 ms on), and the tile itself flashes.
+        assertTrue("the hit throws its sparks: ${fx.bits.kinds()}", fx.bits.kinds().count { it == dev.cardstashy.nativeplay.ui.Bit.SPARK } >= 18)
+        assertTrue("the struck tile flashes: ${diff(contact, burst, foe)}", diff(contact, burst, foe) > .3f)
         assertEquals("the buttons are clear of the clash", 0f, diff(plain, burst, z.actions.px()), .002f)
 
         // The kill: the CPU's creature is gone from the board; its last picture shudders, breaks, and its embers fly to the CPU's square.
@@ -135,10 +136,9 @@ class PunchCombatShotTest {
             FxItem(Fx.LIFE, 3, 950, player = base.cpu.id, toKey = "orb${base.cpu.id}", tone = Color(0xFFFF5A4A), power = .5f).also { it.label = "−3"; it.points = 3; it.t0 = Strike.after(true).toLong() })
         val reach = at(face(), 365, "face-contact")
         assertTrue("the attacker is off its tile: ${diff(plain, reach, home)}", diff(plain, reach, home) > .3f)
-        // It stops at the edge of the CPU's square (the square is drawn over the board), small, where it can be seen.
-        val sq = anchors.rects.getValue("square${base.cpu.id}")
-        val edge = Rect(sq.right - 12 * dp, sq.top, sq.right + 60 * dp, sq.bottom + 40 * dp)
-        assertTrue("and seen at the CPU's square: ${diff(plain, reach, edge)}", diff(plain, reach, edge) > .05f)
+        // F6 (the look pass, 12 Nov): it lands beside the CPU's picture, on the square's open side, small and drawn over the square.
+        val beside = Rect(orb.right + 2 * dp, orb.top, orb.right + home.width * dev.cardstashy.nativeplay.ui.TableFeel.CHARGE_FIST * .8f, orb.bottom)
+        assertTrue("and seen beside the CPU's picture: ${diff(plain, reach, beside)}", diff(plain, reach, beside) > .3f)
         val lands = Strike.after(true).toLong()
         val hit = at(face(), lands + 60, "face-burst", burstAt = lands)
         val off = Rect(orb.right + 4 * dp, orb.top - 10 * dp, orb.right + 60 * dp, orb.bottom + 10 * dp)

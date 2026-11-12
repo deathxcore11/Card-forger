@@ -199,7 +199,9 @@ internal class FxItem(
     var marks = 0
     /** P5: a life loss's points, ticked off the pill one by one from this effect's start. On a lunge at a player: the damage it brings (5 or more sounds the big hit). */
     var points = 0
-    /** F6: the last trail spark this charge has left behind it (one every [TableFeel.CHARGE_TRAIL_EVERY_MS] of the dash). */
+    /** F6: this life loss (or this damage) came with a charge, which draws the hit: the loss adds its number and nothing else. */
+    var charged = false
+    /** F6: the last trail sparks this charge has left behind it (a pair every [TableFeel.CHARGE_TRAIL_EVERY_MS] of the dash). */
     var trail = -1
     /** P6: of a spell's streaks (one per target), the one that also draws the flash on the stack. */
     var lead = true
@@ -225,9 +227,12 @@ class Battlefield {
     /** Bumped when the set of running effects changes, so card layers know to look again. */
     internal val rev = mutableIntStateOf(0)
     /** The board's own jolt: the strongest face hit in flight (0..1) and when it struck. Read in the board's layer only. */
-    fun shake(scope: GraphicsLayerScope) {
-        val t = now.longValue
-        if (reduced || TableFeel.mode() == TableFeel.Mode.REDUCED) return
+    fun shake(scope: GraphicsLayerScope) { val (dx, dy, zoom) = camera(now.longValue); with(scope) { translationX = dx * density; translationY = dy * density; scaleX = zoom; scaleY = zoom } }
+    /** Where the board box's middle sits in the window (px): what its jolt and push-in turn about. Set by the table. */
+    internal var pivot: Offset? = null
+    /** The board's jolt (dp across and down) and its push-in at [t]. */
+    internal fun camera(t: Long): Triple<Float, Float, Float> {
+        if (reduced || TableFeel.mode() == TableFeel.Mode.REDUCED) return Triple(0f, 0f, 1f)
         // Camera (table-feel spec 3): the board leans in while a strike travels, 1.07 for a clash and 1.09 for a hit to a face.
         val lunge = items.firstOrNull { it.kind == Fx.LUNGE && it.p(t) in 0f..1f }
         var zoom = 1f
@@ -254,7 +259,7 @@ class Battlefield {
         val (jx, jy, jz) = joltAt(jolts, t)
         if (jx * jx + jy * jy > dx * dx + dy * dy) { dx = jx; dy = jy }
         zoom = maxOf(zoom, jz)
-        with(scope) { translationX = dx * density; translationY = dy * density; scaleX = zoom; scaleY = zoom }
+        return Triple(dx, dy, zoom)
     }
     /** Haptics at each beat's contact: light on a block, medium on a clash, heavy on a face hit. Set by FxDriver. */
     internal var onImpact: ((String) -> Unit)? = null
@@ -1048,11 +1053,22 @@ class Battlefield {
                         if (a != null && b != null) {
                             // P5 ([Strike]): pull back and swell, strike to contact, held through the freeze, then home.
                             val face = Strike.face(it); val ms = (t - it.t0).toFloat()
-                            val dx = b.center.x - a.center.x; val dy = b.center.y - a.center.y
+                            val square = if (face) anchors?.rects?.get("square" + it.toKey!!.removePrefix("orb")) else null
+                            // F6: at a player the charge flies to its landing place beside the picture ([chargeAim]).
+                            val aim = if (face) chargeAim(a, b, square, low) else null; val to = aim ?: b.center
+                            val dx = to.x - a.center.x; val dy = to.y - a.center.y
                             val dist = kotlin.math.hypot(dx, dy).coerceAtLeast(1f); val ux = dx / dist; val uy = dy / dist
-                            val off = Strike.offset(face, ms, strikeReach(a, b, face, if (face) anchors?.rects?.get("square" + it.toKey!!.removePrefix("orb")) else null), strikePull(dist, density))
+                            val off = Strike.offset(face, ms, if (aim != null) dist else strikeReach(a, b, face, square), strikePull(dist, density))
                             translationX = ux * off; translationY = uy * off
-                            val sc = Strike.scale(face, ms, TableFeel.chargeSwell()); scaleX = sc; scaleY = sc; shadowElevation = 20f
+                            var sc = Strike.scale(face, ms, TableFeel.chargeSwell())
+                            // F6: the picture it flies at is not on the board box, which jolts and pushes in under the card. So the card
+                            // holds its own line in the window (the box's move is taken back out of it) and lands on the place it aimed at.
+                            val turn = pivot
+                            if (aim != null && turn != null) { val (cx, cy, zoom) = camera(t)
+                                val wx = a.center.x + ux * off; val wy = a.center.y + uy * off
+                                translationX = (wx - turn.x - cx * density) / zoom + turn.x - a.center.x; translationY = (wy - turn.y - cy * density) / zoom + turn.y - a.center.y
+                                sc /= zoom }
+                            scaleX = sc; scaleY = sc; shadowElevation = 20f
                             // It leans back on the pull, into the blow on the strike (a face hit spins in), and straightens going home.
                             val lean = if (ux >= 0f) 1f else -1f; val w = Strike.wind(face); val h = Strike.hit(face); val home = Strike.homeAt(face)
                             val far = if (face) -26f else 1.2f
@@ -1098,6 +1114,17 @@ internal fun strikeReach(a: Rect, b: Rect, face: Boolean, square: Rect? = null):
         if (enter in 0f..leave) return (enter - maxOf(a.width, a.height) * .45f * .4f).coerceIn(0f, dist)
     }
     return (dist - minOf(b.width, b.height) * .25f).coerceAtLeast(0f)
+}
+/**
+ * F6 (the look pass, 12 Nov): where a charging attacker's middle comes to rest at a player. The picture [orb] sits at one end of
+ * its player's [square] with the life total under it. The attacker (small by then, and drawn over the square) lands beside the
+ * picture on the square's open side, a little above the picture's middle, with its near corner on the picture's rim: it touches
+ * what it hits and the life total stays in the clear. Null with Match effects off or with no square: P5's line, as it was.
+ */
+internal fun chargeAim(a: Rect, orb: Rect, square: Rect?, low: Boolean = false): Offset? {
+    if (square == null || !TableFeel.charged(low)) return null
+    val side = if (square.center.x >= orb.center.x) 1f else -1f
+    return Offset(orb.center.x + side * (orb.width / 2 + a.width * TableFeel.CHARGE_FIST * .42f), orb.center.y - orb.height * .12f)
 }
 /** The pull back: a tenth of the way, at most 30 dp. */
 internal fun strikePull(dist: Float, density: Float) = minOf(dist * .1f, 30f * density)
@@ -1386,12 +1413,20 @@ internal fun FxLayer(force: Boolean = false) {
                     Fx.ATTACK -> rect("c${it.card}")?.let { r -> drawDeclare(fx, it, p, r) }
                     Fx.LUNGE -> drawLunge(fx, it, rect("c${it.card}"), rect(it.toKey), if (Strike.face(it)) rect("square" + it.toKey!!.removePrefix("orb")) else null, if (Strike.face(it)) rect("lifepill" + it.toKey!!.removePrefix("orb")) else null)
                     Fx.BLOCK -> { val a = rect(it.fromKey); val b = rect(it.toKey); if (a != null && b != null) drawBlock(tm, it, p, a, b) }
-                    Fx.DAMAGE -> rect("c${it.card}")?.let { r -> drawHit((p * 3.1f).coerceAtMost(1f), r)
+                    Fx.DAMAGE -> rect("c${it.card}")?.let { r ->
+                        // F6: a charge draws the hit itself, where the cards meet; its two numbers add no flash and no ring at the cards' homes.
+                        if (!it.charged && TableFeel.charged(fx.low) && fx.items.any { l -> l.kind == Fx.LUNGE && (l.card == it.card || l.toKey == "c${it.card}") }) it.charged = true
+                        if (!it.charged) drawHit((p * 3.1f).coerceAtMost(1f), r)
                         // An attacker's number sits lower left and a blocker's upper right, so two never stack and the P/T stays readable.
                         // Away from the clash: a card in the upper half shows it above-left, one in the lower half below-right.
                         val at = if (it.side == 0) r.center.copy(y = r.top + r.height * .3f) else if (r.center.y < size.height / 2) Offset(r.left - r.width * .2f, r.top - r.height * .15f) else Offset(r.right + r.width * .2f, r.bottom + r.height * .05f)
                         bigNumber(tm, it.label, p, at, it.tone, if (size.height < 500.dp.toPx()) 40f else 52f) }
-                    Fx.LIFE -> rect(it.toKey)?.let { r -> if (it.level == 3) faceHit(fx, it, p, r, fx.low) else glowRing(r, it.tone, .8f * (1f - p), 6.dp.toPx(), round = true); pop(tm, it.label, p, Offset(r.center.x, if (r.center.y < size.height / 2) r.bottom + 16.dp.toPx() else r.top - 6.dp.toPx()), it.tone, if (it.level == 3) 34f + 8f * it.power else 20f, down = r.center.y < size.height / 2) }
+                    Fx.LIFE -> rect(it.toKey)?.let { r ->
+                        if (it.level == 3 && !it.charged && TableFeel.charged(fx.low) && fx.items.any { l -> l.kind == Fx.LUNGE && l.toKey == it.toKey }) it.charged = true
+                        if (it.level == 3) faceHit(fx, it, p, r, fx.low, quiet = it.charged) else glowRing(r, it.tone, .8f * (1f - p), 6.dp.toPx(), round = true)
+                        // F6: a charge's number pops on the struck picture and rises 14 dp off it, so the life total under it ticks down in the clear.
+                        if (it.charged) pop(tm, it.label, p, r.center - Offset(0f, 2.dp.toPx()), it.tone, TableFeel.CHARGE_NUMBER_SP)
+                        else pop(tm, it.label, p, Offset(r.center.x, if (r.center.y < size.height / 2) r.bottom + 16.dp.toPx() else r.top - 6.dp.toPx()), it.tone, if (it.level == 3) 34f + 8f * it.power else 20f, down = r.center.y < size.height / 2) }
                     Fx.COUNTER -> rect("c${it.card}")?.let { r -> drawPour(p, r); pop(tm, it.label, p, Offset(r.center.x, r.top + 4.dp.toPx()), Color(0xFFF3D27E), 15f) }
                     Fx.DEATH -> if (!fx.low && it.toKey == null) it.from?.translate(-self.x, -self.y)?.let { r -> drawShards(it, p, r, rect(it.toKey)) }
                     Fx.EMBERS -> if (!fx.low) it.from?.translate(-self.x, -self.y)?.let { r -> drawEmbers(fx, it, p, r, rect(it.toKey)) }
@@ -1754,16 +1789,97 @@ private fun DrawScope.drawToken(p: Float, r: Rect) {
     }
 }
 
-/** The strike (spec 3): ghost trails behind the lunge (5 for a clash, 7 for a face), then at contact a white-gold flash
- *  growing to 1.7x, two shock rings (white-gold, then orange 90 ms later, 620 ms) and sparks that fall (28, or 36 at a face). */
 /** Draws [block] everywhere but inside the pill [r] (a box with round ends); all of it when [r] is null. */
 private inline fun DrawScope.clipOut(r: Rect?, block: DrawScope.() -> Unit) {
     if (r == null) block()
     else clipPath(androidx.compose.ui.graphics.Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(r, CornerRadius(r.height / 2))) }, androidx.compose.ui.graphics.ClipOp.Difference) { block() }
 }
 
+/** An attacker's strike: the living table's charge (F6), or P5's strike as it was with Match effects Off and where no particles are drawn. */
 private fun DrawScope.drawLunge(fx: Battlefield, it: FxItem, a: Rect?, b: Rect?, sq: Rect? = null, lifePill: Rect? = null) {
     if (a == null || b == null) return
+    if (TableFeel.charged(fx.low)) drawCharge(fx, it, a, b, sq, lifePill) else drawStrike(fx, it, a, b, sq)
+}
+
+/**
+ * F6, the charge, drawn as the living table preview draws it (the look pass, 12 Nov).
+ * The dash: a streak of the card's own colour from its back edge to where that edge was [TableFeel.CHARGE_TAIL_MS] ago, widest at
+ * the card and tapering to nothing, with a hot core, and sparks thrown back off it.
+ * The hit is one burst and no more: a small white-hot core where the card meets what it strikes, one ring in the card's colour, and
+ * white spikes that taper to a point. At a player none of it is drawn over the life pill: the number ticking down is the pay-off.
+ */
+private fun DrawScope.drawCharge(fx: Battlefield, it: FxItem, a: Rect, b: Rect, sq: Rect?, lifePill: Rect?) {
+    val face = Strike.face(it); val ms = (fx.now.longValue - it.t0).toFloat()
+    val aim = if (face) chargeAim(a, b, sq) else null
+    val dir = (aim ?: b.center) - a.center; val len = kotlin.math.hypot(dir.x, dir.y).coerceAtLeast(1f)
+    val u = Offset(dir.x / len, dir.y / len); val n = Offset(-u.y, u.x)
+    val reach = if (aim != null) len else strikeReach(a, b, face, sq); val pull = strikePull(len, density)
+    val w0 = Strike.wind(face); val h0 = Strike.hit(face)
+    val tone = it.tone; val hot = TableFeel.hot(tone); val plus = androidx.compose.ui.graphics.BlendMode.Plus
+    fun part(seed: Int) = ((seed * 0.6180339f) % 1f + 1f) % 1f
+    fun wedge(from: Offset, half: Float, to: Offset, c: Color, alpha: Float) = drawPath(
+        androidx.compose.ui.graphics.Path().apply { moveTo(from.x + n.x * half, from.y + n.y * half); lineTo(to.x, to.y); lineTo(from.x - n.x * half, from.y - n.y * half); close() },
+        Brush.linearGradient(listOf(c.copy(alpha = alpha), c.copy(alpha = 0f)), from, to), blendMode = plus)
+    // Where the card's line leaves its back edge, and its half-width across the line.
+    val along = minOf(a.width / 2 / abs(u.x).coerceAtLeast(.001f), a.height / 2 / abs(u.y).coerceAtLeast(.001f)); val across = (abs(u.y) * a.width + abs(u.x) * a.height) / 2
+    if (ms in w0..h0) {
+        val sc = Strike.scale(face, ms, TableFeel.chargeSwell())
+        val head = a.center + u * (Strike.offset(face, ms, reach, pull) - along * sc * .8f)
+        val tail = a.center + u * (Strike.offset(face, (ms - TableFeel.CHARGE_TAIL_MS).coerceAtLeast(w0), reach, pull) - along * sc * .8f)
+        val long = (head - tail).getDistance()
+        if (long > 2f * density) {
+            // Light, not a shape: five wedges laid over each other, each narrower, so the middle is bright and the sides fade out.
+            val half = across * sc * TableFeel.CHARGE_TAIL_WIDE; val layers = TableFeel.CHARGE_TAIL_LAYERS
+            for (i in 0 until layers) { val f = i / (layers - 1f)
+                wedge(head, half * (1f - .8f * f), tail, Color(tone.red + (hot.red - tone.red) * f, tone.green + (hot.green - tone.green) * f, tone.blue + (hot.blue - tone.blue) * f), TableFeel.CHARGE_TAIL_ALPHA / layers * (1f + f)) }
+            // Speed lines in it: thin, white-hot at the card, gone before the streak's end.
+            for (j in 0 until TableFeel.CHARGE_TAIL_LINES) { val seed = (it.card ?: 0) * 5 + j * 23
+                val from = head + n * ((part(seed) - .5f) * 1.5f * half); val to = from - u * (long * (.45f + .5f * part(seed + 9)))
+                drawLine(Brush.linearGradient(listOf(Color.White.copy(alpha = .55f), hot.copy(alpha = 0f)), from, to), from, to, strokeWidth = 1.2f * density, cap = androidx.compose.ui.graphics.StrokeCap.Round, blendMode = plus) }
+        }
+        // Sparks off the card's back edge, thrown back along its line.
+        val k = ((ms - w0) / TableFeel.CHARGE_TRAIL_EVERY_MS).toInt()
+        if (k > it.trail) { it.trail = k
+            for (j in 0 until TableFeel.CHARGE_TRAIL_PER) { val seed = ((it.card ?: 0) * 7 + k * 13 + j * 29) and 0xfff
+                fx.bits.sparks(head + n * ((part(seed) - .5f) * 2f * across * sc * .8f), 1, TableFeel.hot(tone, .3f), fx.now.longValue, TableFeel.CHARGE_TRAIL_SPEED * density, dir = kotlin.math.atan2(-u.y, -u.x),
+                    spread = TableFeel.CHARGE_TRAIL_SPREAD, lifeMs = TableFeel.CHARGE_TRAIL_LIFE_MS, sizePx = TableFeel.CHARGE_TRAIL_SIZE * density, seed = seed) }
+        }
+    }
+    // Contact, then the freeze: nothing new draws until it ends.
+    val t = ms - Strike.after(face)
+    if (t < 0f) return
+    // Where the card meets what it strikes (a picture's rim on the side the card lands, a tile's near edge), and where the ring and the spikes spread from.
+    val rim = if (face) minOf(b.width, b.height) / 2 else TableFeel.CHARGE_RING_START * density
+    val at = if (!face) b.center - u * (minOf(b.width, b.height) * .42f) else if (aim != null) b.center + (aim - b.center).let { d -> d / d.getDistance().coerceAtLeast(1f) } * rim else b.center - u * rim
+    val mid = if (face) b.center else at
+    val seed = (it.card ?: 0) and 0xff
+    // Sparks, once, when the freeze ends: off a player's picture back the way the card came, off a tile on past it.
+    if (it.once(1)) fx.bits.sparks(at, if (face) 10 else 18, TableFeel.hot(tone, .3f), fx.now.longValue, (if (face) 240f else 480f) * density, dir = if (face) kotlin.math.atan2(-u.y, -u.x) else kotlin.math.atan2(u.y, u.x),
+        spread = if (face) 2.4f else 1.5f, lifeMs = 460, sizePx = 2f * density, seed = seed)
+    clipOut(lifePill?.takeIf { face }) {
+        val cq = t / TableFeel.CHARGE_CORE_MS
+        if (cq < 1f) { val r = TableFeel.CHARGE_CORE * density * (.7f + .5f * cq)
+            drawCircle(Brush.radialGradient(0f to Color.White.copy(alpha = 1f - cq), .3f to hot.copy(alpha = .8f * (1f - cq)), 1f to Color.Transparent, center = at, radius = r), r, at, blendMode = plus) }
+        // A struck tile flashes white for 220 ms.
+        if (!face && t < 220f) drawRoundRect(Color.White.copy(alpha = .5f * (1f - t / 220f)), b.topLeft, b.size, CornerRadius(10f * density))
+        val rq = t / TableFeel.CHARGE_RING_MS
+        if (rq < 1f) { val e = 1f - (1f - rq) * (1f - rq) * (1f - rq); val r = rim + TableFeel.CHARGE_RING_OUT * density * e; val wide = TableFeel.CHARGE_RING_FROM * (1f - .6f * rq) * density
+            drawCircle(tone.copy(alpha = .35f * (1f - rq)), r, mid, style = Stroke(wide * 3f), blendMode = plus)
+            drawCircle(hot.copy(alpha = 1f - rq), r, mid, style = Stroke(wide), blendMode = plus) }
+        for (j in 0 until TableFeel.CHARGE_SPIKES) {
+            val q = t / (140f + 100f * part(seed + j * 17 + 5)); if (q >= 1f) continue
+            val e = 1f - (1f - q) * (1f - q) * (1f - q)
+            val ang = (2 * PI).toFloat() * j / TableFeel.CHARGE_SPIKES + (part(seed + j * 7) - .5f) * .3f
+            val d = Offset(cos(ang), sin(ang)); val side = Offset(-d.y, d.x) * (TableFeel.CHARGE_SPIKE_HALF * density)
+            val from = mid + d * (rim + 4f * density); val to = mid + d * (rim + 12f * density + TableFeel.CHARGE_SPIKE_LEN * density * (.45f + .55f * part(seed + j * 11 + 3)) * e)
+            drawPath(androidx.compose.ui.graphics.Path().apply { moveTo(from.x + side.x, from.y + side.y); lineTo(to.x, to.y); lineTo(from.x - side.x, from.y - side.y); close() }, Color.White.copy(alpha = 1f - q), blendMode = plus)
+        }
+    }
+}
+
+/** The strike (spec 3) as it was before the living table: ghost trails behind the lunge (5 for a clash, 7 for a face), then at contact a
+ *  white-gold flash growing to 1.7x, two shock rings (white-gold, then orange 90 ms later, 620 ms) and sparks that fall (28, or 36 at a face). */
+private fun DrawScope.drawStrike(fx: Battlefield, it: FxItem, a: Rect, b: Rect, sq: Rect?) {
     val face = Strike.face(it); val low = fx.low
     val ms = (fx.now.longValue - it.t0).toFloat()
     val dir = b.center - a.center; val len = kotlin.math.hypot(dir.x, dir.y).coerceAtLeast(1f)
@@ -1779,20 +1895,8 @@ private fun DrawScope.drawLunge(fx: Battlefield, it: FxItem, a: Rect?, b: Rect?,
             val apart = smooth(0f, minOf(a.width, a.height) * .9f, kotlin.math.abs(now - off))
             if (apart <= 0f) continue
             val sc = Strike.scale(face, mi); val w = a.width * sc; val h = a.height * sc; val cx = a.center.x + ux * off; val cy = a.center.y + uy * off
-            // F6 (design review): with Match effects on the after-images are the card's own colour, from 18 %, each dimmer than the last.
-            val ghost = if (TableFeel.mode() == TableFeel.Mode.OFF) Color(0xFFFFE2B0).copy(alpha = .5f * apart * (1f - i / (n + 1f))) else it.tone.copy(alpha = TableFeel.CHARGE_GHOST * apart * (1f - (i - 1f) / n))
-            drawRoundRect(ghost, Offset(cx - w / 2, cy - h / 2), Size(w, h), CornerRadius(10f * density))
+            drawRoundRect(Color(0xFFFFE2B0).copy(alpha = .5f * apart * (1f - i / (n + 1f))), Offset(cx - w / 2, cy - h / 2), Size(w, h), CornerRadius(10f * density))
         }
-    }
-    // F6, the charge: on the dash the card leaves sparks in its own colour behind it, thrown back along its line.
-    val feel = !low && TableFeel.mode() != TableFeel.Mode.OFF
-    if (feel && ms in w0..h0) {
-        val k = ((ms - w0) / TableFeel.CHARGE_TRAIL_EVERY_MS).toInt()
-        if (k > it.trail) { it.trail = k
-            val off = Strike.offset(face, ms, reach, pull) - TableFeel.CHARGE_TRAIL_BACK * density
-            fx.bits.glows(a.center + Offset(ux, uy) * off, TableFeel.CHARGE_TRAIL_PER, it.tone, fx.now.longValue, TableFeel.CHARGE_TRAIL_SPEED * .25f * density, dir = kotlin.math.atan2(-uy, -ux),
-                spread = TableFeel.CHARGE_TRAIL_SPREAD, across = a.width * Strike.scale(face, ms, TableFeel.chargeSwell()) / 2, lifeMs = TableFeel.CHARGE_TRAIL_LIFE_MS,
-                corePx = TableFeel.CHARGE_TRAIL_SIZE * density, glowPx = TableFeel.CHARGE_TRAIL_GLOW * density, seed = ((it.card ?: 0) + k * 13) and 0xff) }
     }
     // Contact, then the freeze: nothing new draws until it ends.
     val t = ms - Strike.after(face)
@@ -1800,42 +1904,21 @@ private fun DrawScope.drawLunge(fx: Battlefield, it: FxItem, a: Rect?, b: Rect?,
     // Where the blow lands: the struck tile's near edge, or the middle of the profile picture.
     val at = if (face) b.center else b.center - Offset(ux, uy) * (minOf(b.width, b.height) * .42f)
     // P5: sparks thrown on past the hit, away from the attacker, with a quick white ring and a soft blob; once, when the freeze ends.
-    if (!low && it.once(1)) {
+    if (!low && !face && it.once(1)) {
         val now = fx.now.longValue; val seed = (it.card ?: 0) and 0xff; val away = kotlin.math.atan2(uy, ux)
-        // F6: white spikes and one ring in the attacker's colour where the blow lands.
-        if (!face) {
-            fx.bits.sparks(at, 24, Color(0xFFFFF3D0), now, 330f * density, dir = away, spread = 1.25f, lifeMs = 520, sizePx = 1.6f * density, seed = seed)
-            fx.bits.sparks(at, 10, Color(0xFFF3D27E), now, 170f * density, lifeMs = 480, sizePx = 1.4f * density, seed = seed + 7)
-            fx.bits.ring(at, 65.dp.toPx(), Color.White, now, lifeMs = 260)
-            fx.bits.blob(at, 60.dp.toPx(), Color(0xFFFFF3D0), now, lifeMs = 160)
-        }
+        fx.bits.sparks(at, 24, Color(0xFFFFF3D0), now, 330f * density, dir = away, spread = 1.25f, lifeMs = 520, sizePx = 1.6f * density, seed = seed)
+        fx.bits.sparks(at, 10, Color(0xFFF3D27E), now, 170f * density, lifeMs = 480, sizePx = 1.4f * density, seed = seed + 7)
+        fx.bits.ring(at, 65.dp.toPx(), Color.White, now, lifeMs = 260)
+        fx.bits.blob(at, 60.dp.toPx(), Color(0xFFFFF3D0), now, lifeMs = 160)
     }
-    // F6: the life number is the pay-off, so at a player nothing of the burst is drawn over the life pill.
-    clipOut(lifePill?.takeIf { feel && face }) {
-        // F6: the ring in the attacker's colour, from the struck seat's (or tile's) size, thinning as it grows.
-        if (feel && t < TableFeel.CHARGE_RING_MS) { val k = t / TableFeel.CHARGE_RING_MS; val r0 = (sq ?: b).maxDimension / 2
-            drawCircle(it.tone.copy(alpha = 1f - .6f * k), radius = r0 * (1f + (TableFeel.CHARGE_RING_GROW - 1f) * k), center = (sq ?: b).center,
-                style = Stroke((TableFeel.CHARGE_RING_FROM + (TableFeel.CHARGE_RING_TO - TableFeel.CHARGE_RING_FROM) * k) * density)) }
-        // Flash: 150 dp of white-gold growing to 1.7x and gone; and a white flash on both tiles of a clash (240 and 280 ms).
-        val fq = (t / 260f).coerceIn(0f, 1f)
-        // F6: the life number is the pay-off, so at a player the flash is not drawn over the life pill.
-        if (fq < 1f) drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = .95f * (1f - fq)), Color(0xFFFFD98A).copy(alpha = .7f * (1f - fq)), Color.Transparent), center = at, radius = 75.dp.toPx() * (1f + .7f * fq)), radius = 75.dp.toPx() * (1f + .7f * fq), center = at)
-        if (!face && t < 280f) drawRoundRect(Color.White.copy(alpha = .8f * (1f - t / 280f)), b.topLeft, b.size, CornerRadius(10f * density))
-        // Shock rings: white-gold, then orange 90 ms later (face: and red), 620 ms each.
-        val rings = if (face) listOf(Color(0xFFFFF4D6), Color(0xFFFF4A3A), Color(0xFFF0C27A)) else listOf(Color(0xFFFFF0C8), Color(0xFFFF9A3C))
-        rings.forEachIndexed { j, col -> val k = ((t - j * 90f) / 620f).coerceIn(0f, 1f); if (k > 0f && k < 1f)
-            drawCircle(col.copy(alpha = .9f * (1f - k)), radius = b.maxDimension * (.35f + (if (face) 2.4f else 1.6f) * k), center = at, style = Stroke((6f - 5f * k) * density)) }
-        // F6: white spikes that taper to a point (300 ms), drawn here so the life pill stays clear of them too.
-        if (feel && t < 300f) { val q = t / 300f; val grow = minOf(1f, q / .35f); val al = 1f - smooth(.4f, 1f, q); val seed = (it.card ?: 0) and 0xff
-            for (j in 0 until TableFeel.CHARGE_SPIKES) {
-                val ang = (2 * PI).toFloat() * ((j + .5f) / TableFeel.CHARGE_SPIKES) + (((seed + j * 7) * 0.6180339f) % 1f - .5f) * .35f
-                val len = TableFeel.CHARGE_SPIKE_LEN * density * (.7f + .3f * (((j * 11 + seed) * 0.6180339f) % 1f))
-                val d = Offset(cos(ang), sin(ang)); val n = Offset(-d.y, d.x) * (1.8f * density)
-                val from = at + d * (len * .25f * grow); val to = at + d * (len * grow)
-                drawPath(androidx.compose.ui.graphics.Path().apply { moveTo(from.x + n.x, from.y + n.y); lineTo(to.x, to.y); lineTo(from.x - n.x, from.y - n.y); close() }, Color.White.copy(alpha = al))
-            }
-        }
-    }
+    // Flash: 150 dp of white-gold growing to 1.7x and gone; and a white flash on both tiles of a clash (240 and 280 ms).
+    val fq = (t / 260f).coerceIn(0f, 1f)
+    if (fq < 1f) drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = .95f * (1f - fq)), Color(0xFFFFD98A).copy(alpha = .7f * (1f - fq)), Color.Transparent), center = at, radius = 75.dp.toPx() * (1f + .7f * fq)), radius = 75.dp.toPx() * (1f + .7f * fq), center = at)
+    if (!face && t < 280f) drawRoundRect(Color.White.copy(alpha = .8f * (1f - t / 280f)), b.topLeft, b.size, CornerRadius(10f * density))
+    // Shock rings: white-gold, then orange 90 ms later (face: and red), 620 ms each.
+    val rings = if (face) listOf(Color(0xFFFFF4D6), Color(0xFFFF4A3A), Color(0xFFF0C27A)) else listOf(Color(0xFFFFF0C8), Color(0xFFFF9A3C))
+    rings.forEachIndexed { j, col -> val k = ((t - j * 90f) / 620f).coerceIn(0f, 1f); if (k > 0f && k < 1f)
+        drawCircle(col.copy(alpha = .9f * (1f - k)), radius = b.maxDimension * (.35f + (if (face) 2.4f else 1.6f) * k), center = at, style = Stroke((6f - 5f * k) * density)) }
 }
 
 /** P6, Fire: the spell's place on the stack swells 8 % and flashes in its colour (110 ms), then a thick streak crosses to the target (130). */
@@ -1909,11 +1992,11 @@ private fun DrawScope.drawEmbers(fx: Battlefield, it: FxItem, p: Float, r: Rect,
 }
 
 /** A hit to a face: a red flash across the board edge, a big shockwave from the orb, sparks, and the life number slamming in. */
-private fun DrawScope.faceHit(fx: Battlefield, it: FxItem, p: Float, r: Rect, low: Boolean = false) {
+private fun DrawScope.faceHit(fx: Battlefield, it: FxItem, p: Float, r: Rect, low: Boolean = false, quiet: Boolean = false) {
     val k = it.power
     val ms = p * it.dur
     // P5: coral spikes off the square, a ring and sparks, thrown once on the frame the freeze ends.
-    if (!low && it.once(1)) {
+    if (!low && !quiet && it.once(1)) {
         val now = fx.now.longValue; val coral = Color(0xFFFF6A4A); val seed = (it.player ?: 0) and 0xff
         fx.bits.spikes(r.center, 14, r.maxDimension * (1.2f + .6f * k), coral, now, lifeMs = 300, seed = seed)
         fx.bits.ring(r.center, r.maxDimension * 1.7f, coral, now, lifeMs = 360)
@@ -1931,6 +2014,8 @@ private fun DrawScope.faceHit(fx: Battlefield, it: FxItem, p: Float, r: Rect, lo
     drawRect(Brush.horizontalGradient(listOf(Color.Transparent, red), size.width - band, size.width), Offset(size.width - band, 0f), Size(band, size.height))
     drawRect(Brush.verticalGradient(listOf(red, Color.Transparent), 0f, band), Offset.Zero, Size(size.width, band))
     drawRect(Brush.verticalGradient(listOf(Color.Transparent, red), size.height - band, size.height), Offset(0f, size.height - band), Size(size.width, band))
+    // F6: a charge has drawn its own hit on this picture (one core, one ring, its spikes); the loss adds only the red edges above.
+    if (quiet) return
     for (j in 0..2) { val q = ((p - j * .08f) / .6f).coerceIn(0f, 1f); if (q > 0f)
         drawCircle(it.tone.copy(alpha = .85f * (1f - q)), radius = r.maxDimension * (.5f + (2.4f + 2f * k) * q), center = r.center, style = Stroke((7f - 6f * q) * density)) }
     // The flash: a white-gold burst on the struck portrait only, 150 dp, 120 ms in and 200 ms out.

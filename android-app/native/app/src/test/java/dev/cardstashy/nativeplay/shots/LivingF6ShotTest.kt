@@ -43,8 +43,9 @@ import java.io.File
 
 /**
  * The living table F6, the charge, at phone size: P5's strike at a player with the wind-up and the trail added. Mid-dash the
- * attacker has left sparks in its own colour on the line behind it; where it lands there are white spikes and a ring in its
- * colour. With Match effects Off neither is drawn (the strike as it was). Pictures in table-look/f6-*.png.
+ * attacker has left a streak of light and sparks in its own colour on the line behind it. It lands beside the CPU's picture; where
+ * it lands there are white spikes and one ring in its colour, the damage number pops on the picture, and the life total under the
+ * picture stays in the clear. With Match effects Off none of it is drawn (the strike as it was). Pictures in table-look/f6-*.png.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -119,7 +120,13 @@ class LivingF6ShotTest {
         val inner = Rect(pill.left + 3 * dp, pill.top + 3 * dp, pill.right - 3 * dp, pill.bottom - 3 * dp)
         assertTrue("the life pill is clear of the flash: ${diff(plain, hit, inner)}", diff(plain, hit, inner) < .12f)
         assertTrue("with effects off the flash covers it as before: ${diff(plain, offHit, inner)}", diff(plain, offHit, inner) > .5f)
-        // The same hit with its life loss, for the eye: the number and the pill ticking down.
-        at(face() + FxItem(Fx.LIFE, 3, 950, player = base.cpu.id, toKey = "orb${base.cpu.id}", tone = Color(0xFFFF5A4A), power = .5f).also { it.label = "−3"; it.points = 3; it.t0 = after }, after + 60, "full-hit-life", burstAt = after)
+        // The look pass, 12 Nov: the attacker lands beside the picture, on the square's open side, so it touches what it hits.
+        val beside = Rect(orb.right + 2 * dp, orb.top, orb.right + home.width * TableFeel.CHARGE_FIST * .8f, orb.bottom)
+        assertTrue("the attacker is beside the picture at the hit: ${diff(plain, hit, beside)}", diff(plain, hit, beside) > .3f)
+        // The same hit with its life loss: the number pops on the picture, and the loss adds no burst of its own over the life total.
+        val life = at(face() + FxItem(Fx.LIFE, 3, 950, player = base.cpu.id, toKey = "orb${base.cpu.id}", tone = Color(0xFFFF5A4A), power = .5f).also { it.label = "−3"; it.points = 3; it.t0 = after }, after + 200, "full-hit-life", burstAt = after)
+        val face = Rect(orb.center.x - orb.width * .3f, orb.top + orb.height * .15f, orb.center.x + orb.width * .3f, orb.center.y)
+        assertTrue("the number is on the picture: ${diff(plain, life, face)}", diff(plain, life, face) > .25f)
+        assertTrue("the life total is clear of the number and the burst: ${diff(plain, life, inner)}", diff(plain, life, inner) < .12f)
     }
 }
