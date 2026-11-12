@@ -47,6 +47,31 @@ class TableFeelTest {
         assertNull(TableFeel.turnChange(b, b.copy(revision = b.revision + 1)))
     }
 
+    /** F2 (the guide's test): paying with four lands lights four glows in the lands' colours, with a line while your spell is on the stack; the turn's end clears them. */
+    @Test fun payingFourLandsLightsFourGlowsAndTheTurnsEndClearsThem() {
+        val lands = base.me.battlefield.filter { it.isLand }.take(4)
+        assertEquals(4, lands.size)
+        fun set(st: MatchState, tapped: Set<Int>) = st.copy(players = st.players.map { p -> if (p.id == me) p.copy(battlefield = p.battlefield.map { if (it.isLand) it.copy(tapped = it.id in tapped) else it }) else p })
+        val before = set(base.copy(stack = emptyList()), emptySet())
+        val spell = base.me.hand.first { !it.isLand }
+        val paid = set(before.copy(stack = listOf(dev.cardstashy.nativeplay.engine.StackItem(7, spell.text, spell.copy(zone = "Stack"), me))), lands.map { it.id }.toSet())
+        val c = TableFeel.manaChange(before, paid)
+        assertFalse(c.clear)
+        assertEquals(lands.map { it.id }, c.glows.map { it.card })
+        for (g in c.glows) { assertEquals(frameTone(cardColors(base.card(g.card)!!)).first, g.tone); assertTrue("a line to your spell", g.line) }
+        // A land tapped by hand with no spell: the glow, no line. A land already tapped lights nothing new.
+        val byHand = TableFeel.manaChange(before, set(before, setOf(lands[0].id)))
+        assertEquals(listOf(lands[0].id), byHand.glows.map { it.card }); assertFalse(byHand.glows.single().line)
+        assertTrue(TableFeel.manaChange(paid, paid.copy(revision = paid.revision + 1)).glows.isEmpty())
+        // The CPU's taps light nothing at your edge; the next turn clears every glow.
+        val cpuTaps = before.copy(players = before.players.map { p -> if (p.id == cpu) p.copy(battlefield = p.battlefield.map { it.copy(tapped = true) }) else p })
+        assertTrue(TableFeel.manaChange(before.copy(players = before.players.map { p -> if (p.id == cpu) p.copy(battlefield = p.battlefield.map { it.copy(tapped = false) }) else p }), cpuTaps).glows.isEmpty())
+        val next = TableFeel.manaChange(paid, paid.copy(turn = paid.turn + 1))
+        assertTrue(next.clear); assertTrue(next.glows.isEmpty())
+        assertEquals(.46f, TableFeel.MANA_RADIUS); assertEquals(.24f, TableFeel.MANA_GLOW); assertEquals(320L, TableFeel.MANA_IN_MS); assertEquals(400L, TableFeel.MANA_OUT_MS)
+        assertEquals(2.2f, TableFeel.LEY_WIDTH); assertEquals(.12f, TableFeel.LEY_BOW); assertEquals(200L, TableFeel.LEY_HOLD_MS); assertEquals(700L, TableFeel.LEY_FADE_MS)
+    }
+
     @Test fun theSettingAndTheGuidesNumbers() {
         assertEquals(TableFeel.Mode.FULL, TableFeel.mode("full")); assertEquals(TableFeel.Mode.REDUCED, TableFeel.mode("reduced"))
         assertEquals(TableFeel.Mode.OFF, TableFeel.mode("off")); assertEquals(TableFeel.Mode.FULL, TableFeel.mode("anything else"))

@@ -498,9 +498,9 @@ private fun AppPane() {
         Text("Match effects", style = S.Body.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), modifier = Modifier.padding(top = 6.dp))
         Segmented(TableFeel.MODES, AppSettings.matchEffects) { AppSettings.applyMatchEffects(it) }
         Text(when (AppSettings.matchEffects) {
-            "off" -> "The table as it was: no turn light, mana light, weight or map feel."
-            "reduced" -> "Light and marks stay. No shake, no freeze frames, no clock stop."
-            else -> "The table lights up with the turn, mana and big moments, in the map's own style."
+            "off" -> "In a match: the table as it was, with no turn light, mana light, weight or map feel."
+            "reduced" -> "In a match: light and marks stay. No shake, no freeze frames, no clock stop."
+            else -> "In a match: the table's light, the weight of big creatures and the hits, in the map's own style."
         }, style = S.Foot)
         Check("Tap vibration", AppSettings.haptics, "Animations follow your phone’s “Reduce motion” setting.") { AppSettings.set("haptics", it) }
         // Mobile table M3 and M4: the table does these for you unless you ask to be asked.

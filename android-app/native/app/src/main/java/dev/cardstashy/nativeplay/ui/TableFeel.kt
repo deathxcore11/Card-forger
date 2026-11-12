@@ -17,6 +17,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.unit.dp
 import dev.cardstashy.nativeplay.engine.MatchState
 import kotlin.math.PI
 import kotlin.math.sin
@@ -83,6 +86,32 @@ internal object TableFeel {
         return TurnChange(b.activePlayer == b.viewer, flashes)
     }
 
+    // F2, the mana light. Each land you tap to pay leaves a soft round glow at the table's bottom edge under it, in its colour,
+    // until the turn ends; while a spell of yours is on the stack a line in that colour runs from the land up to it.
+    const val MANA_RADIUS = .46f
+    const val MANA_GLOW = .24f
+    const val MANA_IN_MS = 320L
+    const val MANA_OUT_MS = 400L
+    /** The line: 2.2 wide with a 10 glow, bowed upward by 12 % of the height; it holds 200 ms, then fades over 700. */
+    const val LEY_WIDTH = 2.2f
+    const val LEY_GLOW = 10f
+    const val LEY_BOW = .12f
+    const val LEY_HOLD_MS = 200L
+    const val LEY_FADE_MS = 700L
+
+    /** One tapped land's glow: the tile and its colour; [line] when a spell of yours stands on the stack for it to run to. */
+    data class ManaGlow(val card: Int, val tone: Color, val line: Boolean)
+    /** What board [b] (after [a]) does to the mana light: the lands you tapped since [a], and whether the turn ended (all glows fade). */
+    data class ManaChange(val glows: List<ManaGlow>, val clear: Boolean)
+
+    /** F2 from two boards. Only what Forge shows: a land of yours untapped in [a] and tapped in [b]. A new turn clears. */
+    fun manaChange(a: MatchState, b: MatchState): ManaChange {
+        if (a.turn != b.turn) return ManaChange(emptyList(), true)
+        val ready = a.me.battlefield.filter { it.isLand && !it.tapped }.map { it.id }.toSet()
+        val spell = b.stack.firstOrNull()?.controller == b.viewer
+        return ManaChange(b.me.battlefield.filter { it.isLand && it.tapped && it.id in ready }.map { ManaGlow(it.id, frameTone(cardColors(it)).first, spell) }, false)
+    }
+
     /** The band's strength at [p] (0..1) of its way down. */
     fun sweepStrength(p: Float): Float = if (p <= 0f || p >= 1f) 0f else SWEEP_PEAK * sin(p * PI.toFloat())
 }
@@ -120,3 +149,56 @@ internal fun TurnLight(st: MatchState) {
         }
     }
 }
+
+/** F2: one glow on the table (where its land stood, root pixels), when it was lit and, once the turn ended, when it began to fade. */
+private class ManaLit(val card: Int, val x: Float, val y: Float, val tone: Color, val line: Boolean, val born: Long) { var gone: Long = -1L }
+
+/**
+ * F2, the mana light: under every card. The lands you tap to pay glow at the table's bottom edge until the turn ends, and a line
+ * runs from each to your spell on the stack. Read from the boards as they arrive ([TableFeel.manaChange]); Off draws nothing.
+ */
+@Composable
+internal fun ManaLight(st: MatchState) {
+    if (TableFeel.mode() == TableFeel.Mode.OFF) return
+    val fx = LocalBattlefield.current
+    val anchors = LocalAnchors.current ?: return
+    val lit = remember { androidx.compose.runtime.mutableStateListOf<ManaLit>() }
+    val last = remember { arrayOfNulls<MatchState>(1) }
+    var origin by remember { mutableStateOf(Offset.Zero) }
+    val clock = remember { androidx.compose.runtime.mutableLongStateOf(0L) }
+    fun now() = fx?.now?.longValue ?: clock.longValue
+    androidx.compose.runtime.SideEffect {
+        val a = last[0]; last[0] = st
+        if (a == null || a === st) return@SideEffect
+        val c = TableFeel.manaChange(a, st)
+        val t = now()
+        if (c.clear) lit.forEach { if (it.gone < 0) it.gone = t }
+        for (g in c.glows) if (lit.none { it.card == g.card && it.gone < 0 }) anchors.rects["c${g.card}"]?.let { r -> lit += ManaLit(g.card, r.center.x, r.center.y, g.tone, g.line, t) }
+        lit.removeAll { it.gone >= 0 && t - it.gone > TableFeel.MANA_OUT_MS }
+    }
+    if (lit.isEmpty()) return
+    Canvas(Modifier.fillMaxSize().then(Modifier.onGloballyPositionedOrigin { origin = it })) {
+        val t = now(); val h = size.height; val still = Motion.still
+        val radius = h * TableFeel.MANA_RADIUS
+        val to = anchors.rects["stackcard"]?.center?.minus(origin)
+        for (g in lit) {
+            val age = (t - g.born).coerceAtLeast(0L)
+            val a = (if (still) 1f else (age / TableFeel.MANA_IN_MS.toFloat()).coerceAtMost(1f)) * (if (g.gone < 0) 1f else (1f - (t - g.gone) / TableFeel.MANA_OUT_MS.toFloat()).coerceIn(0f, 1f))
+            if (a <= 0f) continue
+            val x = g.x - origin.x; val c = Offset(x, h + 10.dp.toPx())
+            drawRect(Brush.radialGradient(listOf(g.tone.copy(alpha = TableFeel.MANA_GLOW * a), g.tone.copy(alpha = 0f)), center = c, radius = radius),
+                topLeft = Offset(x - radius, h - radius), size = Size(radius * 2, radius), blendMode = BlendMode.Plus)
+            // The line to the spell: held 200 ms, then fading over 700.
+            val la = if (still || !g.line || to == null) 0f else (1f - (age - TableFeel.LEY_HOLD_MS) / TableFeel.LEY_FADE_MS.toFloat()).coerceIn(0f, 1f)
+            if (la > 0f && to != null) {
+                val from = Offset(x, g.y - origin.y)
+                val path = androidx.compose.ui.graphics.Path().apply { moveTo(from.x, from.y); quadraticBezierTo((from.x + to.x) / 2, minOf(from.y, to.y) - h * TableFeel.LEY_BOW, to.x, to.y) }
+                drawPath(path, g.tone.copy(alpha = .25f * la), style = androidx.compose.ui.graphics.drawscope.Stroke(TableFeel.LEY_GLOW.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round), blendMode = BlendMode.Plus)
+                drawPath(path, g.tone.copy(alpha = la), style = androidx.compose.ui.graphics.drawscope.Stroke(TableFeel.LEY_WIDTH.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round), blendMode = BlendMode.Plus)
+            }
+        }
+    }
+}
+
+/** Where this layer starts in the root, so anchor boxes (root pixels) can be drawn in it. */
+private fun Modifier.onGloballyPositionedOrigin(set: (Offset) -> Unit): Modifier = onGloballyPositioned { set(it.positionInRoot()) }

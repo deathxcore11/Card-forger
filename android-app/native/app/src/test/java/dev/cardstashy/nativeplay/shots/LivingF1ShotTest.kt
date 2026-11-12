@@ -90,4 +90,35 @@ class LivingF1ShotTest {
         // (Its light is gone 70 % down: read below that, in the gap between the hand and the gold button.)
         assertEquals("the bottom is not", tone(cpuOff, .75f, .805f, .82f), tone(theirs, .75f, .805f, .82f))
     }
+
+    /** F2 at phone size: two of your lands tapped to pay leave a glow in their colour at the table's foot under them; Off draws none. */
+    @Test fun tappedLandsGlowAtTheTablesFoot() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        TableEmotes.destroy()
+        TableFeel.mat = "charcoal-table"
+        val me = base.viewer
+        fun set(tapped: Set<Int>) = base.copy(activePlayer = base.cpu.id, players = base.players.map { p -> if (p.id == me) p.copy(battlefield = p.battlefield.map { if (it.isLand) it.copy(tapped = it.id in tapped) else it }) else p })
+        val lands = base.me.battlefield.filter { it.isLand }.take(2)
+        st = set(emptySet())
+        val anchors = dev.cardstashy.nativeplay.ui.Anchors()
+        rule.setContent {
+            androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalAnchors provides anchors) {
+                Box(Modifier.fillMaxSize().background(Palette.Night)) {
+                    ForgeBoard(st, live = true, intents = TableIntents(), selectedHand = null, onSelectHand = {}, onInspect = {}, onMenu = {}, handOrder = emptyList(), onHandOrder = {})
+                }
+            }
+        }
+        val plain = shot("mana-before")
+        rule.runOnUiThread { st = set(lands.map { it.id }.toSet()) }
+        val paid = shot("mana")
+        // Read on the bare table just under the left strip's edge of the shelf row: the foot of the table left of the first land.
+        val x = anchors.rects.getValue("c${lands[0].id}").center.x / paid.width
+        fun foot(b: Bitmap) = tone(b, .985f, (x - .1f).coerceAtLeast(.14f), (x - .06f).coerceAtLeast(.16f))
+        val a = foot(plain); val c = foot(paid)
+        assertTrue("the foot of the table glows under the tapped lands: $a -> $c", c.first + c.second + c.third > a.first + a.second + a.third + 12f)
+        rule.runOnUiThread { AppSettings.applyMatchEffects("off"); st = set(emptySet()) }
+        rule.waitForIdle()
+        rule.runOnUiThread { st = set(lands.map { it.id }.toSet()) }
+        assertEquals("Off: no glow", foot(plain), foot(shot("mana-off")))
+    }
 }

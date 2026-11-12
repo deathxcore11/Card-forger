@@ -490,6 +490,8 @@ fun ForgeBoard(
             // The mat's ambient light: turn warmth, the priority edge light and combat grain, under every card.
             // The living table F1: the turn light, under every card.
             TurnLight(st)
+            // F2: the mana light of the lands you tapped this turn.
+            ManaLight(st)
             FxMat(st, mid)
             // Nothing of the turn clock lies on the divider (table additions 5): it is a ring on the gold button and a line under the phase track.
 
