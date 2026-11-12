@@ -151,7 +151,7 @@ object QuickPlay {
         fun left() = (cap - (SystemClock.elapsedRealtime() - t0)).coerceAtLeast(300)
         CardArt.resolveMatch(s.rows)
         val tLookup = SystemClock.elapsedRealtime() - t0
-        val names = s.rows.map { it.first }
+        val names = CardArt.cheapestFirst(s.rows.map { it.first })
         val first = (s.faces + names.filter { dev.cardstashy.nativeplay.play.Decks.isBasicLand(it) }).distinct()
         val n1 = CardArt.warm(context, first, left(), crops = s.faces, detach = true)
         val tFirst = SystemClock.elapsedRealtime() - t0
@@ -214,7 +214,8 @@ object QuickPlay {
             val r = rows(deck)
             if (r.isEmpty() || r.size > 260) return@launch
             CardArt.resolve(r)
-            val names = r.map { it.first }
+            // L3: the cards played first are fetched first (lands, then mana value 0 to 3, then the rest).
+            val names = CardArt.cheapestFirst(r.map { it.first })
             val n = CardArt.warm(app, names, 45_000, crops = listOfNotNull(faceOf(deck)), diskCrops = names)
             if (n >= 0) pickedDone += key
             Log.i(TAG, "deck warm at select: ${r.size} rows, loaded=$n")

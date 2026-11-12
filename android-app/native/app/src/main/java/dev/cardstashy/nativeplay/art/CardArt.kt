@@ -63,11 +63,21 @@ object CardArt {
     fun rarity(name: String): String? = synchronized(index) { rarities[name.lowercase()] }
     /** Each card's type line as Scryfall gave it with its art, kept in the index file (W9: the deck tracker counts lands by it). */
     private val types = HashMap<String, String>()
+    /** Each card's mana value as Scryfall gave it with its art, kept in the index file (loading screens L3: the cheapest cards are downloaded first). */
+    private val costs = HashMap<String, Int>()
+    fun manaValue(name: String): Int? = synchronized(index) { costs[name.lowercase()] ?: costs[lookupName(name).lowercase()] }
+    /**
+     * Loading screens L3: [names] in the order a match needs them. Lands first, then cards of mana value 0 to 3 cheapest first,
+     * then the rest cheapest first; a card whose value is not on record yet goes after those that are. Names keep their order within a step.
+     */
+    fun cheapestFirst(names: Collection<String>): List<String> = names.distinct().sortedBy { n ->
+        val land = typeLine(n)?.substringBefore(" // ")?.contains("Land") == true || dev.cardstashy.nativeplay.play.Decks.isBasicLand(n)
+        if (land) -1 else manaValue(n) ?: Int.MAX_VALUE }
     fun typeLine(name: String): String? = synchronized(index) { types[name.lowercase()] ?: types[lookupName(name).lowercase()] }
     /** W9: type lines for names that have none yet (one Scryfall call per 75 names), for the deck tracker; bumps [version]. */
     suspend fun fetchTypes(names: Collection<String>) = withContext(Dispatchers.IO) {
         // Also any name with no rarity on record (entrances by importance: rarity was not kept in the index before 0.4.56).
-        val need = synchronized(index) { names.filter { lookupName(it).isNotBlank() && (typeLine(it) == null || rarity(it) == null) }.distinctBy { it.lowercase() } }
+        val need = synchronized(index) { names.filter { lookupName(it).isNotBlank() && (typeLine(it) == null || rarity(it) == null || manaValue(it) == null) }.distinctBy { it.lowercase() } }
         if (need.isEmpty()) return@withContext
         var got = false
         for (chunk in need.chunked(75)) {
@@ -75,7 +85,8 @@ object CardArt {
             val found = ScryfallGate.collection(body) ?: continue
             synchronized(index) { found.mapNotNull { it as? JsonObject }.forEach { c ->
                 c.get("type_line")?.asString?.let { t -> names(c).forEach { n -> types[n.lowercase()] = t }; got = true }
-                c.get("rarity")?.asString?.let { r -> names(c).forEach { n -> rarities.putIfAbsent(n.lowercase(), r) }; got = true } } }
+                c.get("rarity")?.asString?.let { r -> names(c).forEach { n -> rarities.putIfAbsent(n.lowercase(), r) }; got = true }
+                cmc(c)?.let { v -> names(c).forEach { n -> costs.putIfAbsent(n.lowercase(), v) }; got = true } } }
         }
         if (got) { save(); version.value++ }
     }
@@ -98,18 +109,26 @@ object CardArt {
             })
             .build()
         indexFile = File(app.filesDir, "art-index.json")
+        loadIndex()
+    }
+    /** Reads the index file: [picture, art crop, type line, rarity, mana value] per name; older files have fewer places. */
+    internal fun loadIndex() = synchronized(index) {
         try {
             JsonParser.parseString(indexFile.readText()).asJsonObject.entrySet().forEach { (k, v) ->
                 val a = v.asJsonArray
                 if (a.size() > 0 && !a[0].isJsonNull) index[k] = a[0].asString to a.get(1)?.takeIf { !it.isJsonNull }?.asString
                 if (a.size() > 2) a[2]?.takeIf { it.isJsonPrimitive }?.let { types[k] = it.asString }
                 if (a.size() > 3) a[3]?.takeIf { it.isJsonPrimitive }?.let { rarities[k] = it.asString }
+                if (a.size() > 4) a[4]?.takeIf { it.isJsonPrimitive }?.let { costs[k] = it.asInt }
             }
         } catch (_: Exception) {}
     }
+    /** A card's mana value from Scryfall's "cmc" (a whole number for every real card; a half is rounded down). */
+    private fun cmc(c: JsonObject): Int? = c.get("cmc")?.takeIf { it.isJsonPrimitive }?.let { runCatching { it.asDouble.toInt() }.getOrNull() }
 
     /** Unit tests: the name index without an image loader. */
     internal fun initIndexOnly(dir: File) { indexFile = File(dir, "art-index.json") }
+    internal fun indexDirForTest(): File = indexFile.parentFile!!
 
     fun url(name: String, crop: Boolean = false): String? = synchronized(index) { pins[name.lowercase()] ?: index[name.lowercase()] }?.let { if (crop) it.second ?: it.first else it.first }
 
@@ -130,7 +149,7 @@ object CardArt {
             deckNames.clear(); shownAs.clear(); askedName.clear(); rows.forEach { (n, _) -> deckNames.putIfAbsent(n.lowercase(), n) } }
         resolve(rows)
         // Names already in the index carry no rarity from before 0.4.56: fill them in the background (never holds the table).
-        val unrated = synchronized(index) { rows.map { it.first }.filter { rarity(it) == null } }
+        val unrated = synchronized(index) { rows.map { it.first }.filter { rarity(it) == null || manaValue(it) == null } }
         if (unrated.isNotEmpty()) kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch { runCatching { fetchTypes(unrated) } }
         var pinnedAny = false
         // A name in both decks with different printings keeps the first row's (your deck comes first), never neither.
@@ -142,11 +161,13 @@ object CardArt {
     private val saving = Any()
     private fun save() = synchronized(saving) {
         val (copy, tcopy, rcopy) = synchronized(index) { Triple(index.toList(), HashMap(types), HashMap(rarities)) }
-        // [picture, art crop, type line, rarity]; a missing type line is a null so the rarity keeps its place.
+        val ccopy = synchronized(index) { HashMap(costs) }
+        // [picture, art crop, type line, rarity, mana value]; a missing one before the last is a null so the later ones keep their places.
         val o = JsonObject(); copy.forEach { (k, v) -> o.add(k, JsonArray().apply { add(v.first); add(v.second)
-            val t = tcopy[k]; val r = rcopy[k]
-            if (t != null || r != null) add(t?.let { com.google.gson.JsonPrimitive(it) } ?: com.google.gson.JsonNull.INSTANCE)
-            if (r != null) add(r) }) }
+            val t = tcopy[k]; val r = rcopy[k]; val c = ccopy[k]
+            if (t != null || r != null || c != null) add(t?.let { com.google.gson.JsonPrimitive(it) } ?: com.google.gson.JsonNull.INSTANCE)
+            if (r != null || c != null) add(r?.let { com.google.gson.JsonPrimitive(it) } ?: com.google.gson.JsonNull.INSTANCE)
+            if (c != null) add(c) }) }
 
         try { indexFile.writeText(o.toString()) } catch (_: Exception) {}
     }
@@ -206,7 +227,12 @@ object CardArt {
     }
 
     /** Unit tests: forget every name the index, rarities and types learned, so one test's fake pictures never reach another's. */
-    internal fun clearForTest() = synchronized(index) { seedForTest(emptyList(), emptyMap()); index.clear(); rarities.clear(); types.clear() }
+    internal fun clearForTest() = synchronized(index) { seedForTest(emptyList(), emptyMap()); index.clear(); rarities.clear(); types.clear(); costs.clear() }
+    /** Unit tests: what a lookup would have put on record for [name], written to the index file. */
+    internal fun recordForTest(name: String, picture: String, typeLine: String?, rarity: String?, manaValue: Int?) {
+        synchronized(index) { val k = name.lowercase(); index[k] = picture to null; typeLine?.let { types[k] = it }; rarity?.let { rarities[k] = it }; manaValue?.let { costs[k] = it } }
+        save()
+    }
 
     /** The Scryfall identifier for a deck row: its exact printing when the row names one, else its name. */
     fun identifier(row: JsonObject, engineName: String): JsonObject = JsonObject().apply {
@@ -254,6 +280,7 @@ object CardArt {
                     } ?: cards.firstOrNull { c -> names(c).any { it.equals(name, true) || it.equals(want.get("name")?.asString, true) } }
                     card?.get("rarity")?.asString?.let { rarities[name.lowercase()] = it }
                     card?.get("type_line")?.asString?.let { t -> types[name.lowercase()] = t }
+                    card?.let { cmc(it) }?.let { v -> costs[name.lowercase()] = v }
                     val img = card?.let { images(it) } ?: return@forEachIndexed
                     // A pinned printing is kept by its id; the shared name entry stays whatever it was.
                     val pin = want.get("id")?.asString?.lowercase()?.takeIf { it.equals(card.get("id")?.asString, true) }
