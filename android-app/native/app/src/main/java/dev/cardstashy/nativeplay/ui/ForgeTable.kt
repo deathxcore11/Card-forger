@@ -1767,6 +1767,10 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         Box(modifier.size(w, h).zIndex(21f)) {
             Box(Modifier.align(Alignment.BottomCenter).offset(y = (11f * k).du).size((38f * k).du, (26f * k).du).anchorRect("loyalty${card.id}")
                 .semantics { contentDescription = "Loyalty $n" }
+                // The shield travels with its card: the card's own effect transform (F5 lifts the card; a landing drops it), about the
+                // card's middle, after the shield's anchor is read and with no shadow of its own.
+                .then(if (fx != null) Modifier.graphicsLayer { fx.move(this, card.id, anchors); shadowElevation = 0f
+                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(.5f, (h.toPx() / 2f - (h.toPx() + (11f * k).du.toPx() - size.height)) / size.height) } else Modifier)
                 .drawBehind {
                     val path = androidx.compose.ui.graphics.Path().apply { moveTo(0f, 0f); lineTo(size.width, 0f); lineTo(size.width, size.height * .58f); lineTo(size.width / 2, size.height); lineTo(0f, size.height * .58f); close() }
                     drawPath(path, Color(0xFF0B0E15)); drawPath(path, Ice, style = Stroke(1.6.dp.toPx(), join = androidx.compose.ui.graphics.StrokeJoin.Round))

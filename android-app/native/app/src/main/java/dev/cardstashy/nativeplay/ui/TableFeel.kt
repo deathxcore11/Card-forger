@@ -317,6 +317,49 @@ internal object TableFeel {
         return Crack(main, branches)
     }
 
+    // F5, the clock stops: for a loyalty ability that cost 5 or more loyalty. The frame only (grey, lift, pieces, colour back);
+    // whatever Forge reports plays inside it with its normal animations. The engine never waits for it.
+    /** Grey over everything: 88 % of the colour taken out and a 25 % dark blue wash, in over 320 ms. */
+    const val CLOCK_GREY = .88f
+    const val CLOCK_WASH = .25f
+    val CLOCK_WASH_TONE = Color(0xFF0A1430)
+    const val CLOCK_IN_MS = 320L
+    /** The card lifts 16 dp and grows to 1.14. */
+    const val CLOCK_LIFT = 16f
+    const val CLOCK_GROW = .14f
+    /** One piece off the shield per loyalty point, 120 ms apart, the life tick 7 % higher each time. */
+    const val CLOCK_PIECE_GAP_MS = 120L
+    const val CLOCK_PITCH = 1.07f
+    /** The pieces circle the card at 78 % of its height for 650 ms; then colour returns over 520 ms. */
+    const val CLOCK_ORBIT = .78f
+    const val CLOCK_CIRCLE_MS = 650L
+    const val CLOCK_OUT_MS = 520L
+    /** The whole frame for a cost of [cost] loyalty. */
+    fun clockMs(cost: Int): Long = CLOCK_IN_MS + cost * CLOCK_PIECE_GAP_MS + CLOCK_CIRCLE_MS + CLOCK_OUT_MS
+    /** The frame cut short because Forge has already resolved the ability, [elapsed] ms in: the grey is let in, then colour returns at once. */
+    fun clockCut(elapsed: Long, dur: Long): Long = minOf(dur, maxOf(elapsed, CLOCK_IN_MS) + CLOCK_OUT_MS)
+    /** How far the frame is in (0..1: the grey's strength, the card's lift) [ms] into a frame [dur] ms long. */
+    fun clockIn(ms: Float, dur: Long): Float { val up = (ms / CLOCK_IN_MS).coerceIn(0f, 1f); val down = ((ms - (dur - CLOCK_OUT_MS)) / CLOCK_OUT_MS).coerceIn(0f, 1f)
+        return up * up * (3f - 2f * up) * (1f - down * down * (3f - 2f * down)) }
+    /** The pieces off the shield [ms] in (none after colour starts to return). */
+    fun clockPieces(ms: Float, cost: Int, dur: Long): Int = (0 until cost).count { k -> val at = CLOCK_IN_MS + k * CLOCK_PIECE_GAP_MS; ms >= at && at <= dur - CLOCK_OUT_MS }
+    data class ClockStop(val card: Int, val cost: Int, val left: Int)
+    /**
+     * The loyalty ability that stops the clock between two boards: a new activated ability on the stack whose source is a permanent
+     * on the battlefield in both, with [CLOCK_STOP_COST] or more fewer loyalty counters than it had. Nothing is worked out from
+     * the card's words. Full effects only. (A planeswalker that leaves the battlefield as it pays is not framed: its cost is not on the board.)
+     */
+    fun clockStop(a: MatchState, b: MatchState, setting: String = AppSettings.matchEffects): ClockStop? {
+        if (mode(setting) != Mode.FULL) return null
+        val was = a.stack.map { it.id }.toSet()
+        val before = a.players.flatMap { it.battlefield }.associateBy { it.id }
+        val after = b.players.flatMap { it.battlefield }.associateBy { it.id }
+        for (s in b.stack) { if (!s.ability || s.trigger || s.id in was) continue
+            val id = s.source?.id ?: continue; val old = before[id]?.counters?.get("LOYALTY") ?: continue; val now = after[id]?.counters?.get("LOYALTY") ?: continue
+            if (old - now >= CLOCK_STOP_COST) return ClockStop(id, old - now, now) }
+        return null
+    }
+
     // F8, always alive: specks in the air (the mat's kind), creature tiles that breathe, rims that pulse. Nothing here moves a
     // card's place or what can be tapped; it stops with the frame clock when the app is in the background.
     const val AIR_COUNT = 54

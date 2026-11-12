@@ -6,6 +6,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.unit.sp
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.max
@@ -432,4 +434,56 @@ internal fun DrawScope.drawWin(fx: Battlefield, it: FxItem, p: Float, orb: andro
     val q = ms / TableFeel.WIN_RING_MS
     if (q < 1f) { val e = 1f - (1f - q) * (1f - q) * (1f - q)
         drawCircle(it.caster.copy(alpha = .9f * (1f - q)), r.maxDimension * .5f + (size.height * TableFeel.WIN_RING - r.maxDimension * .5f) * e, c, style = Stroke((6f - 4f * q) * dp), blendMode = androidx.compose.ui.graphics.BlendMode.Plus) }
+}
+
+// ---- Living table F5: the clock stops (specs/living-table-build-guide.md, "F5 The clock stops") ----
+
+/** The grey at strength [e] (0..1): 88 % of the colour out of everything already drawn, then a 25 % dark blue wash. */
+internal fun DrawScope.drawGrey(e: Float) {
+    if (e <= 0f) return
+    // Taking colour out needs the saturation blend (Android 10 and up); older phones get a deeper wash in its place.
+    if (android.os.Build.VERSION.SDK_INT >= 29) drawRect(Color(0xFF808080).copy(alpha = TableFeel.CLOCK_GREY * e), blendMode = androidx.compose.ui.graphics.BlendMode.Saturation)
+    else drawRect(Color(0xFF30333A).copy(alpha = .45f * e))
+    drawRect(TableFeel.CLOCK_WASH_TONE.copy(alpha = TableFeel.CLOCK_WASH * e))
+}
+
+/**
+ * F5 over the grey: one piece leaves the loyalty shield ([shield]) per point, 120 ms apart, and circles the card ([card], as it
+ * lies) at 78 % of its height; the shield counts down with them from what it had to what Forge says it has left. When colour
+ * starts to return the pieces fly out and fade.
+ */
+internal fun DrawScope.drawClock(tm: androidx.compose.ui.text.TextMeasurer, it: FxItem, p: Float, card: androidx.compose.ui.geometry.Rect, shield: androidx.compose.ui.geometry.Rect?) {
+    val ms = p * it.dur; val n = it.points; val dp = density; val ice = Color(0xFF5CC8FF)
+    val e = TableFeel.clockIn(ms, it.dur); val back = it.dur - TableFeel.CLOCK_OUT_MS
+    val c = Offset(card.center.x, card.center.y - TableFeel.CLOCK_LIFT * dp * e)
+    // Where a point of the card (or its shield, which travels with it) is while the card is lifted and grown.
+    fun lifted(o: Offset) = Offset(card.center.x + (o.x - card.center.x) * (1f + TableFeel.CLOCK_GROW * e), card.center.y + (o.y - card.center.y) * (1f + TableFeel.CLOCK_GROW * e) - TableFeel.CLOCK_LIFT * dp * e)
+    val from = lifted(shield?.center ?: Offset(card.center.x, card.bottom))
+    val orbit = card.height * TableFeel.CLOCK_ORBIT
+    val gone = ((ms - back) / 260f).coerceIn(0f, 1f)
+    for (k in 0 until n) {
+        val born = TableFeel.CLOCK_IN_MS + k * TableFeel.CLOCK_PIECE_GAP_MS
+        if (ms < born || born > back) continue
+        val age = ms - born; val out = (age / 260f).coerceAtMost(1f).let { x -> 1f - (1f - x) * (1f - x) }
+        // Each takes its own place on the ring, and the ring turns half way round in 650 ms.
+        val ang = (k.toFloat() / n) * 2f * PI.toFloat() - PI.toFloat() / 2f + age / TableFeel.CLOCK_CIRCLE_MS * PI.toFloat()
+        val on = Offset(c.x + cos(ang) * orbit * (1f + .35f * gone), c.y + sin(ang) * orbit * (1f + .35f * gone))
+        val at = from + (on - from) * out; val a = 1f - gone; val r = 4.2f * dp
+        drawCircle(Brush.radialGradient(listOf(ice.copy(alpha = .5f * a), ice.copy(alpha = 0f)), at, r * 3f), r * 3f, at)
+        // A chip of the shield: a small kite, turning as it goes.
+        val turn = ang * 2f; val cs = cos(turn); val sn = sin(turn)
+        fun pt(x: Float, y: Float) = Offset(at.x + x * cs - y * sn, at.y + x * sn + y * cs)
+        val path = androidx.compose.ui.graphics.Path().apply { val a0 = pt(0f, -r); val b0 = pt(r * .7f, 0f); val c0 = pt(0f, r * 1.3f); val d0 = pt(-r * .7f, 0f)
+            moveTo(a0.x, a0.y); lineTo(b0.x, b0.y); lineTo(c0.x, c0.y); lineTo(d0.x, d0.y); close() }
+        drawPath(path, Color(0xFF0B0E15).copy(alpha = a)); drawPath(path, ice.copy(alpha = a), style = Stroke(1.2f * dp))
+    }
+    // The number on the shield counts down with the pieces (the tile's own shield already shows what is left).
+    val off = TableFeel.clockPieces(ms, n, it.dur); val left = it.label.toIntOrNull()
+    if (shield != null && left != null && off < n && ms < back) {
+        val s = androidx.compose.ui.geometry.Rect(lifted(shield.topLeft), lifted(shield.bottomRight))
+        val path = androidx.compose.ui.graphics.Path().apply { moveTo(s.left, s.top); lineTo(s.right, s.top); lineTo(s.right, s.top + s.height * .58f); lineTo(s.center.x, s.bottom); lineTo(s.left, s.top + s.height * .58f); close() }
+        drawPath(path, Color(0xFF0B0E15)); drawPath(path, ice, style = Stroke(1.6f * dp, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+        val lay = tm.measure("${left + n - off}", androidx.compose.ui.text.TextStyle(fontFamily = Type.Sans, fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold, fontSize = (s.height * .58f / dp / fontScale).sp, color = ice))
+        drawText(lay, topLeft = Offset(s.center.x - lay.size.width / 2f, s.top + s.height * .29f - lay.size.height / 2f))
+    }
 }

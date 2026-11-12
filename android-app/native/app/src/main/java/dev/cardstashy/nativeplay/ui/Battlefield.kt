@@ -169,7 +169,9 @@ internal enum class Fx { DRAW, CAST, RESOLVE, ARRIVE, TOKEN, ATTACK, LUNGE, BLOC
     /** Living table F7, the winning hit: the orb at [FxItem.toKey] breaks, a ring, a crack to the far corner and the mat's win colour flood the table. [FxItem.player] null: a draw, both orbs dim. */
     WIN,
     /** Living table F3: [FxItem.card] lands heavy. It drops from 1.9 times its size (130 ms); where it lands: freeze, shake, a ring in its colour, the cards in [FxItem.ids] hop and the mat keeps a mark. */
-    HEAVY }
+    HEAVY,
+    /** Living table F5, the clock stops: grey over everything, [FxItem.card] lifts, [FxItem.points] pieces leave its loyalty shield one by one and circle it, then colour returns. [FxItem.label]: the loyalty it has left. */
+    CLOCK }
 
 internal class FxItem(
     val kind: Fx, val level: Int, val baseMs: Long,
@@ -395,6 +397,9 @@ class Battlefield {
                 Fx.LIFE -> if (it.level == 3 && items.none { l -> l.kind == Fx.LUNGE && l.toKey == it.toKey }) once(1, 0f, "CMB-018", if (it.power >= .8f) 1f else .8f)
                 // Counters: on the pop.
                 Fx.COUNTER -> once(1, 0f, "CARD-027", .7f)
+                // F5: the life tick as each piece leaves the shield, 7 % higher each time.
+                Fx.CLOCK -> for (k in 0 until minOf(it.points, 20)) { val at = TableFeel.CLOCK_IN_MS + k * TableFeel.CLOCK_PIECE_GAP_MS
+                    if (at <= it.dur - TableFeel.CLOCK_OUT_MS) once(1 shl (8 + k), at.toFloat() / it.dur, "life_tick", .8f, Math.pow(TableFeel.CLOCK_PITCH.toDouble(), k.toDouble()).toFloat()) }
                 // A death: on the white flash after the 260 ms shake; a non-creature to the graveyard softer.
                 Fx.DEATH -> if (it.toKey != null || it.ghost?.token == true) once(1, if (it.dur == DEATH_MS) .54f else .38f, if (it.ghost?.isCreature == true) "CMB-009" else "CARD-018", 1f)
                 else -> {}
@@ -422,7 +427,8 @@ class Battlefield {
         spots = items.filter { it.kind == Fx.ARRIVE && it.entrance == 2 }
         impacts = items.filter { it.kind == Fx.IMPACT }
         heavies = items.filter { it.kind == Fx.HEAVY }
-        val down = heavies.mapNotNull { it.card }.toSet()
+        // F5: the card the clock has stopped for is lifted above the table too.
+        val down = (heavies.mapNotNull { it.card } + items.filter { it.kind == Fx.CLOCK }.mapNotNull { it.card }).toSet()
         if (down != landers.value) landers.value = down
         struck = items.filter { it.kind == Fx.LUNGE && it.toKey?.startsWith("c") == true }
         // F6 (design review): the cards in a strike are drawn above the seat panels and the lands for the whole strike.
@@ -636,7 +642,8 @@ class Battlefield {
         if (yours) {
             // Priority or a question (match director, section 6): nothing is cut short or dropped any more. What is in flight
             // finishes at no less than its floor, so the CPU's last action is always readable before you answer it.
-            for (it in items) { val left = it.t0 + it.dur - t; val floor = minOf(it.baseMs * 6 / 10, it.dur); if (it.t0 <= t && left > floor && it.level < 2) { it.p0 = it.p(t); it.t0 = t; it.dur = floor } }
+            for (it in items) { val left = it.t0 + it.dur - t; val floor = minOf(it.baseMs * 6 / 10, it.dur); if (it.t0 <= t && left > floor && it.level < 2 && it.kind != Fx.CLOCK) { it.p0 = it.p(t); it.t0 = t; it.dur = floor } }
+            // (F5's frame keeps its own time: it is cut only when its ability has left the stack, in diff.)
         }
         val groups = diff(before, st, anchors)
         onPlan?.invoke(st.revision, groups.flatMap { g -> g.mapNotNull { it.sound } }.toSet())
@@ -650,7 +657,7 @@ class Battlefield {
             for (it in g) {
                 // Focal effects keep their full length; only when more than 6 s are queued does a non-focal one play at its floor.
                 it.dur = it.baseMs
-                if (cursor - t > 6000 && !staged && it.level < 2) it.dur = it.baseMs * 6 / 10
+                if (cursor - t > 6000 && !staged && it.level < 2 && it.kind != Fx.CLOCK) it.dur = it.baseMs * 6 / 10
                 it.t0 = cursor + it.delay
                 // F7: when the table's own blow reaches a seat (a strike's contact, a face hit's start), for the winning hit to know.
                 it.toKey?.takeIf { k -> k.startsWith("orb") }?.removePrefix("orb")?.toIntOrNull()?.let { seat ->
@@ -709,6 +716,11 @@ class Battlefield {
         // F7: the finished board has arrived. The loser's orb breaks (or, in a draw, both dim); it waits its turn behind the last strike.
         val ends = mutableListOf<FxItem>()
         val nowMs = now.longValue
+        // F5: a loyalty ability that cost 5 or more stops the clock. It never holds the queue (level 1): what Forge reports plays inside it.
+        val clocks = mutableListOf<FxItem>()
+        if (!reduced) TableFeel.clockStop(a, b)?.let { c -> clocks += FxItem(Fx.CLOCK, 1, TableFeel.clockMs(c.cost), card = c.card, from = anchors.rects["c${c.card}"], label = "${c.left}").also { it.points = c.cost } }
+        // The engine does not wait for the grey: once the ability has left the stack the circling is cut short and colour returns.
+        for (it in items) if (it.kind == Fx.CLOCK && b.stack.none { s -> s.ability && s.source?.id == it.card }) it.dur = TableFeel.clockCut(nowMs - it.t0, it.dur)
         if (!reduced) TableFeel.ending(a, b, struck = seatHit.filterValues { it >= nowMs - TableFeel.WIN_STRUCK_MS }.keys)?.let { e -> val look = TableFeel.profile(TableFeel.mat)
             ends += FxItem(Fx.WIN, 2, TableFeel.WIN_HOLD_MS, player = e.loser, mine = e.winner == viewer, toKey = e.loser?.let { "orb$it" }, tone = look.win, caster = look.winHi, ids = b.players.map { it.id }.toSet()) }
 
@@ -951,7 +963,7 @@ class Battlefield {
             // The embers follow the break and do not hold the table (level 1): the next thing starts while they fly.
             if (toGrave) group += FxItem(Fx.EMBERS, 1, EMBERS_MS, card = id, mine = c.controller == viewer, from = rect, toKey = "grave${c.owner}", delay = item.delay + 240L)
         }
-        return listOf(draws, casts, resolves, arrivals, combat, hits, deaths, counters, ends).filter { it.isNotEmpty() }
+        return listOf(clocks, draws, casts, resolves, arrivals, combat, hits, deaths, counters, ends).filter { it.isNotEmpty() }
     }
 
     /** The card's own motion this frame (transform and alpha only), applied in its tile's layer. */
@@ -1045,6 +1057,9 @@ class Battlefield {
                         }
                     }
                     Fx.COUNTER -> if (p >= 0f) { val k = .03f * sin(PI.toFloat() * p); scaleX = 1f + k; scaleY = 1f + k }
+                    // F5: the card the clock stops for lifts 16 dp and grows to 1.14 while the grey is in.
+                    Fx.CLOCK -> if (p >= 0f) { val e = TableFeel.clockIn(p * it.dur, it.dur)
+                        scaleX *= 1f + TableFeel.CLOCK_GROW * e; scaleY *= 1f + TableFeel.CLOCK_GROW * e; translationY -= TableFeel.CLOCK_LIFT.dp.toPx() * e; shadowElevation = 22f * e }
                     // sTrig: 180 ms up to 1.12x and 18 px toward the middle on a 145 px card (so 18/145 of the tile's height), held 260 ms, 180 ms back.
                     Fx.TRIG_SOURCE -> if (p >= 0f) {
                         val ms = p * it.dur; val e = smooth(0f, 180f, ms) * (1f - smooth(440f, 620f, ms))
@@ -1326,6 +1341,8 @@ internal fun FxLayer(force: Boolean = false) {
             fun rect(k: String?): Rect? = k?.let { anchors.rects[it] }?.translate(-self.x, -self.y)
             var bandAt: Rect? = null
             fun band(): Rect = bandAt ?: trailBand(size.width, size.height, anchors.rects.mapValues { (_, r) -> r.translate(-self.x, -self.y) }, 4.dp.toPx()).also { bandAt = it }
+            // F5: while the clock is stopped, grey lies over everything under this layer; the effects below are drawn over it, in colour.
+            fx.items.firstOrNull { it.kind == Fx.CLOCK && it.p(t) >= 0f }?.let { drawGrey(TableFeel.clockIn(it.p(t) * it.dur, it.dur)) }
             for (it in fx.items) {
                 val p = it.p(t); if (p < 0f) continue
                 if (fx.reduced) {
@@ -1375,6 +1392,7 @@ internal fun FxLayer(force: Boolean = false) {
                     Fx.IMPACT -> rect("c${it.card}")?.let { r -> drawImpact(fx, it, p, r) }
                     Fx.HEAVY -> rect("c${it.card}")?.let { r -> drawHeavy(fx, it, p, r, self) }
                     Fx.WIN -> drawWin(fx, it, p, rect(it.toKey), it.ids.mapNotNull { id -> rect("orb$id") })
+                    Fx.CLOCK -> (rect("c${it.card}") ?: it.from?.translate(-self.x, -self.y))?.let { r -> drawClock(tm, it, p, r, rect("loyalty${it.card}")) }
                 }
             }
             // P2: a cast's pay (each land's flash and streak), charge and burst, read from the leg the table is drawing.
