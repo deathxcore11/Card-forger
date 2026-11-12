@@ -488,6 +488,8 @@ fun ForgeBoard(
             // The divider between the halves: a thin violet line with a notch on your side's turn.
             Box(Modifier.offset(y = mid).fillMaxWidth().height(1.dp).background(Brush.horizontalGradient(listOf(Color.Transparent, Color(0x998A7BD8), Color(0x998A7BD8), Color.Transparent))))
             // The mat's ambient light: turn warmth, the priority edge light and combat grain, under every card.
+            // The living table F1: the turn light, under every card.
+            TurnLight(st)
             FxMat(st, mid)
             // Nothing of the turn clock lies on the divider (table additions 5): it is a ring on the gold button and a line under the phase track.
 

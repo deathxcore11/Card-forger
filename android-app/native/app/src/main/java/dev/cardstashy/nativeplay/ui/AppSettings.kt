@@ -37,6 +37,9 @@ object AppSettings {
     val GRID_SIZES = listOf("small", "medium", "large")
     /** Table effects (Story playmat MOTION-SPEC): cinematic, balanced (default) or minimal. Reduce motion and battery saver act as minimal. */
     var effects by mutableStateOf("balanced"); private set
+    /** The living table (F1 to F10): the match's feel effects, full (default), reduced (no shake, freeze or clock stop) or off. */
+    var matchEffects by mutableStateOf("full"); private set
+    fun applyMatchEffects(v: String) { matchEffects = if (v in TableFeel.MODES) v else "full"; prefs?.edit()?.putString("cardstashy-match-effects", matchEffects)?.apply() }
     val EFFECTS = listOf("cinematic", "balanced", "minimal")
     /** Mobile table M4: "Ask me to order triggers". Off: triggers that happen together are ordered for you, as Arena does. */
     var askTriggerOrder by mutableStateOf(false); private set
@@ -50,6 +53,7 @@ object AppSettings {
         chosenTheme = normalizeTheme(p.getString("cardstashy-theme", null)); gridSize = normalizeGridSize(p.getString("cardstashy-grid-size", null))
         gridPinch = p.getString("cardstashy-grid-pinch", null) == "on"
         effects = p.getString("cardstashy-effects", null).takeIf { it in EFFECTS } ?: "balanced"
+        matchEffects = p.getString("cardstashy-match-effects", null).takeIf { it in TableFeel.MODES } ?: "full"
         askTriggerOrder = p.getBoolean("askTriggerOrder", false); stopToRespond = p.getBoolean("stopToRespond", false)
     }
 

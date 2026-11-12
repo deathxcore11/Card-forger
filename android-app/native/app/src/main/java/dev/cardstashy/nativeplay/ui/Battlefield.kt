@@ -664,7 +664,10 @@ class Battlefield {
         // (A whole new hand is dealt by the fan with its own sound; a card or two that slide in sound once.)
         else drawn.take(3).forEachIndexed { i, _ -> draws += FxItem(Fx.DRAW, 1, 350, player = viewer, mine = true, fromKey = "lib$viewer", toKey = "hand", delay = lead + i * 90L)
             .also { if (i == 0 && drawn.size <= 4) it.sounds("CARD-001") } }
-        if (newTurn) untapOrder(a, b).forEachIndexed { i, id -> draws += FxItem(Fx.GLINT, 1, 260, card = id, tone = Color(0xFFF3D27E), delay = UNTAP_AT_MS + i * UNTAP_GAP_MS)
+        // The living table F1: a readied land flashes in its own colour (70 %, 240 ms) on the same ripple; Off keeps P4's gold glint.
+        val landFlash = if (TableFeel.mode() == TableFeel.Mode.OFF) emptyMap() else TableFeel.turnChange(a, b)?.flashes.orEmpty().associateBy { it.card }
+        if (newTurn) untapOrder(a, b).forEachIndexed { i, id -> val f = landFlash[id]
+            draws += FxItem(Fx.GLINT, 1, f?.let { TableFeel.UNTAP_FLASH_MS } ?: 260, card = id, tone = f?.tone ?: Color(0xFFF3D27E), delay = UNTAP_AT_MS + i * UNTAP_GAP_MS, power = if (f != null) TableFeel.UNTAP_FLASH else 0f)
             .also { if (i == 0) it.sounds("untap") } }
         for (p in b.players) if (!p.isViewer && p.id != viewer) {
             val q = a.players.firstOrNull { it.id == p.id } ?: continue
@@ -1275,7 +1278,7 @@ internal fun FxLayer(force: Boolean = false) {
                     Fx.BOLT -> (rect("c${it.card}") ?: it.from?.translate(-self.x, -self.y))?.let { r -> drawBolt(fx, it, p, r, rect(it.fromKey)) }
                     Fx.SPENT -> rect(it.toKey)?.let { g -> val k = (p * SPENT_MS - 320f) / 300f
                         if (k in 0f..1f) drawCircle(Color(0xFFF3D27E).copy(alpha = .9f * (1f - k)), radius = 15.dp.toPx() + 25.dp.toPx() * (1f - (1f - k) * (1f - k)), center = g.center, style = Stroke((2f * (1f - k) + .6f) * density.density)) }
-                    Fx.GLINT -> rect("c${it.card}")?.let { r -> drawRoundRect(it.tone.copy(alpha = .4f * (1f - p)), r.topLeft, r.size, CornerRadius(10.dp.toPx())) }
+                    Fx.GLINT -> rect("c${it.card}")?.let { r -> drawRoundRect(it.tone.copy(alpha = (if (it.power > 0f) it.power else .4f) * (1f - p)), r.topLeft, r.size, CornerRadius(10.dp.toPx())) }
                     Fx.DRAW -> if (it.ghost != null) drawMyDraw(fx, it, p, rect("handTray") ?: rect("hand")) else drawDraw(it, p, rect(it.fromKey), rect(it.toKey) ?: Rect(size.width / 2 - 20f, size.height - 60f, size.width / 2 + 20f, size.height))
                     Fx.CAST -> drawCast(it, p, rect(it.fromKey) ?: (if (it.mine) Rect(size.width / 2, size.height - 40f, size.width / 2, size.height) else Rect(size.width / 2, 0f, size.width / 2, 20f)), rect(it.toKey))
                     Fx.RESOLVE -> drawResolve(it, p, it.from?.translate(-self.x, -self.y), rect(it.toKey))
