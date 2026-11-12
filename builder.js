@@ -4,7 +4,7 @@ import {commanderCardConditions, inspectCommanderCardConditions, commanderEngine
 import {mtgManaSourceProfile} from './mtg-mana-sources.js';
 import {setupBurden} from './deck-preferences.js';
 import { functionalIn } from "./deck-safety.js";
-import { commanderHooks, forgeScore, forgeRoles, forgeTargets, forgeNoise, forgeDiscoveryQueries, forgeLandCount, DECK_TAGS } from './deck-forge.js';
+import { commanderHooks, forgeScore, forgeRoles, forgeTargets, forgeNoise, forgeDiscoveryQueries, forgeLandCount, forgeCostlyRemoval, DECK_TAGS } from './deck-forge.js';
 // Format-aware deck generator: builds a full, legal deck around one or more
 // seed cards, preferring cards you own and staying inside a purchase budget.
 // Works for every constructed format in formats.js (60-card, singleton and
@@ -179,7 +179,7 @@ export function scoreCard(c, seedTags, seedSubs, { free = 0, size = 60, tokenKin
   s += themeSupport(c,{roles:seedTags,tokenKinds}).length * 3;
   s += subtypes(c).filter((x) => seedSubs.includes(x)).length * 4;
   if (seedSubs.some((x) => new RegExp("\\b" + x + "s?\\b", "i").test(rulesText(c)))) s += 2;
-  if (goal !== "weak" && e.includes("Removal")) s += 2.5;
+  if (goal !== "weak" && e.includes("Removal") && !forgeCostlyRemoval(c)) s += 2.5;
   if (goal !== "weak" && e.includes("Draw")) s += 1.5;
   if (goal !== "weak" && e.includes("Ramp")) s += (size >= 100 ? 2 : 0.5)*candidateRampWeight(c);
   if (goal !== "weak" && e.includes("Wipe")) s += size >= 100 ? 1.5 : 0.5;

@@ -21,6 +21,16 @@ for (const n of ['Sol Ring', 'Arcane Signet', 'Birds of Paradise', 'Ornithopter 
 assert.equal(forgeTags(card('Sol Ring')).find(t => t.tag === 'ramp').tier, 'A');
 assert.ok(!tagNames('Opt').includes('draw') && !tagNames('Brainstorm').includes('draw'), 'cantrips are not card advantage');
 
+// Honest labels (12 Nov): a filter that turns one mana into one mana is not ramp, and
+// removal behind a seven-mana activation is not interaction a deck can count on.
+for (const n of ["Giant's Boulder", 'Prophetic Prism']) assert.ok(!tagNames(n).includes('ramp'), n + ' nets no mana, so it is not ramp');
+assert.ok(!tagNames("Giant's Boulder").includes('removal'), "Giant's Boulder's {7} removal is not counted");
+for (const n of ['Orzhov Signet', 'Arcane Signet', 'Mind Stone']) assert.ok(tagNames(n).includes('ramp'), n + ' still ramps');
+{
+ const { scoreCard } = await import('./builder.js'), { forgeRoles } = await import('./deck-forge.js');
+ assert.deepEqual(forgeRoles(card("Giant's Boulder")), [], "Giant's Boulder fills no quota");
+ assert.ok(scoreCard(card("Giant's Boulder"), [], [], { size: 60 }) <= 0, "Giant's Boulder earns no removal bonus in the card score");
+}
 // THE FOUR QUESTIONS for Hei Bai produce the video's groups.
 const hei = card('Hei Bai, Spirit of Balance'), hooks = commanderHooks(hei), ids = hooks.map(h => h.id);
 for (const id of ['reenter', 'attack-helpers', 'attackers', 'protection', 'ways-to-leave', 'fodder', 'sac-outlets', 'death-payoffs', 'enter-value', 'counters', 'recipients']) assert.ok(ids.includes(id), 'Hei Bai hook ' + id + ' in ' + ids);
