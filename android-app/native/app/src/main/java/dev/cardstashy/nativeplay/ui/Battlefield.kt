@@ -102,7 +102,9 @@ internal object Strike {
     /** Contact. */
     fun hit(face: Boolean) = if (face) 360f else 235f
     /** The freeze ends: the burst, the shake and the numbers start here. */
-    fun after(face: Boolean) = hit(face) + (if (face) 125f else 100f)
+    fun after(face: Boolean) = hit(face) + freeze(face)
+    /** The hold on contact. Match effects on Reduced has no freeze (living table rule 5): the burst comes with the contact. */
+    fun freeze(face: Boolean) = if (TableFeel.mode() == TableFeel.Mode.REDUCED) 0f else if (face) 125f else 100f
     /** The attacker starts home, and how long that takes. */
     fun homeAt(face: Boolean) = if (face) after(true) + 120f else after(false)
     fun homeMs(face: Boolean) = if (face) 320f else 240f
@@ -117,14 +119,14 @@ internal object Strike {
             else -> { val q = ((ms - home) / homeMs(face)).coerceAtMost(1f); reach * (1f - (if (face) 1f - (1f - q) * (1f - q) * (1f - q) else backOut(q))) }
         }
     }
-    /** The attacker's size: swells 10 % on the pull back; a hit to a face shrinks it to .45 as it flies at the picture. */
-    fun scale(face: Boolean, ms: Float): Float {
+    /** The attacker's size: swells 10 % on the pull back ([swell]; the living table's charge, F6, makes it 14 %); a hit to a face shrinks it to .45 as it flies at the picture. */
+    fun scale(face: Boolean, ms: Float, swell: Float = 1.1f): Float {
         val w = wind(face); val h = hit(face); val home = homeAt(face)
-        val far = if (face) .45f else 1.1f
+        val far = if (face) .45f else swell
         return when {
             ms < 0f -> 1f
-            ms < w -> 1f + .1f * (ms / w)
-            ms < h -> 1.1f + (far - 1.1f) * ((ms - w) / (h - w))
+            ms < w -> 1f + (swell - 1f) * (ms / w)
+            ms < h -> swell + (far - swell) * ((ms - w) / (h - w))
             ms < home -> far
             else -> far + (1f - far) * ((ms - home) / homeMs(face)).coerceAtMost(1f)
         }
@@ -191,6 +193,8 @@ internal class FxItem(
     var marks = 0
     /** P5: a life loss's points, ticked off the pill one by one from this effect's start. On a lunge at a player: the damage it brings (5 or more sounds the big hit). */
     var points = 0
+    /** F6: the last trail spark this charge has left behind it (one every [TableFeel.CHARGE_TRAIL_EVERY_MS] of the dash). */
+    var trail = -1
     /** P6: of a spell's streaks (one per target), the one that also draws the flash on the stack. */
     var lead = true
     /** The match sound pass: the cue this effect plays once, [soundAt] ms after it starts (its contact frame). */
@@ -217,7 +221,7 @@ class Battlefield {
     /** The board's own jolt: the strongest face hit in flight (0..1) and when it struck. Read in the board's layer only. */
     fun shake(scope: GraphicsLayerScope) {
         val t = now.longValue
-        if (reduced) return
+        if (reduced || TableFeel.mode() == TableFeel.Mode.REDUCED) return
         // Camera (table-feel spec 3): the board leans in while a strike travels, 1.07 for a clash and 1.09 for a hit to a face.
         val lunge = items.firstOrNull { it.kind == Fx.LUNGE && it.p(t) in 0f..1f }
         var zoom = 1f
@@ -766,7 +770,7 @@ class Battlefield {
 
         // Combat: a new attacker leans in; a new blocker sends a pulse down its thread to the attacker.
         // P5: the new attackers step up one after another (210 each, 95 apart), each with a coral ring.
-        declareOrder(a, b).forEachIndexed { i, id -> combat += FxItem(Fx.ATTACK, 1, 300, card = id, mine = bfB[id]?.controller == viewer, tone = Color(0xFFFF6A4A), delay = i * DECLARE_GAP_MS)
+        declareOrder(a, b).forEachIndexed { i, id -> combat += FxItem(Fx.ATTACK, 1, 300, card = id, mine = bfB[id]?.controller == viewer, tone = TableFeel.declareRim(), delay = i * DECLARE_GAP_MS)
             // Each one that steps up after the first sounds 6 % higher (held from the fifth).
             .sounds("CMB-001", rate = Math.pow(1.06, minOf(i, 4).toDouble()).toFloat()) }
         for ((id, c) in bfB) {
@@ -816,7 +820,7 @@ class Battlefield {
                 }
                 hits += FxItem(Fx.STAGE, 2, step, card = null, mine = o.controller == viewer, fromKey = "c$id", toKey = to, label = tag, delay = start,
                     ids = setOf(id) + blockers.map { it.id } + (o.attackTarget?.takeIf { it.kind == "card" }?.id?.let { setOf(it) } ?: emptySet()))
-                hits += FxItem(Fx.LUNGE, 2, Strike.ms(face), card = id, mine = o.controller == viewer, toKey = to, tone = Color(0xFFFF6A4A), power = if (face) 1f else .8f, delay = start + STAGE_LEAD_MS)
+                hits += FxItem(Fx.LUNGE, 2, Strike.ms(face), card = id, mine = o.controller == viewer, toKey = to, tone = TableFeel.chargeTone(o), power = if (face) 1f else .8f, delay = start + STAGE_LEAD_MS)
                     .also { if (face) it.points = (o.power ?: 0).coerceAtLeast(0) }; lunged = true
             }
         }
@@ -959,7 +963,7 @@ class Battlefield {
                             val dist = kotlin.math.hypot(dx, dy).coerceAtLeast(1f); val ux = dx / dist; val uy = dy / dist
                             val off = Strike.offset(face, ms, strikeReach(a, b, face, if (face) anchors?.rects?.get("square" + it.toKey!!.removePrefix("orb")) else null), strikePull(dist, density))
                             translationX = ux * off; translationY = uy * off
-                            val sc = Strike.scale(face, ms); scaleX = sc; scaleY = sc; shadowElevation = 20f
+                            val sc = Strike.scale(face, ms, TableFeel.chargeSwell()); scaleX = sc; scaleY = sc; shadowElevation = 20f
                             // It leans back on the pull, into the blow on the strike (a face hit spins in), and straightens going home.
                             val lean = if (ux >= 0f) 1f else -1f; val w = Strike.wind(face); val h = Strike.hit(face); val home = Strike.homeAt(face)
                             val far = if (face) -26f else 1.2f
@@ -1674,6 +1678,15 @@ private fun DrawScope.drawLunge(fx: Battlefield, it: FxItem, a: Rect?, b: Rect?,
             drawRoundRect(Color(0xFFFFE2B0).copy(alpha = .5f * apart * (1f - i / (n + 1f))), Offset(cx - w / 2, cy - h / 2), Size(w, h), CornerRadius(10f * density))
         }
     }
+    // F6, the charge: on the dash the card leaves sparks in its own colour behind it, thrown back along its line.
+    val feel = !low && TableFeel.mode() != TableFeel.Mode.OFF
+    if (feel && ms in w0..h0) {
+        val k = ((ms - w0) / TableFeel.CHARGE_TRAIL_EVERY_MS).toInt()
+        if (k > it.trail) { it.trail = k
+            val off = Strike.offset(face, ms, reach, pull) - TableFeel.CHARGE_TRAIL_BACK * density
+            fx.bits.sparks(a.center + Offset(ux, uy) * off, 1, it.tone, fx.now.longValue, TableFeel.CHARGE_TRAIL_SPEED * density, dir = kotlin.math.atan2(-uy, -ux),
+                spread = TableFeel.CHARGE_TRAIL_SPREAD, lifeMs = TableFeel.CHARGE_TRAIL_LIFE_MS, sizePx = TableFeel.CHARGE_TRAIL_SIZE * density, seed = ((it.card ?: 0) + k * 13) and 0xff) }
+    }
     // Contact, then the freeze: nothing new draws until it ends.
     val t = ms - Strike.after(face)
     if (t < 0f) return
@@ -1682,6 +1695,9 @@ private fun DrawScope.drawLunge(fx: Battlefield, it: FxItem, a: Rect?, b: Rect?,
     // P5: sparks thrown on past the hit, away from the attacker, with a quick white ring and a soft blob; once, when the freeze ends.
     if (!low && it.once(1)) {
         val now = fx.now.longValue; val seed = (it.card ?: 0) and 0xff; val away = kotlin.math.atan2(uy, ux)
+        // F6: white spikes and one ring in the attacker's colour where the blow lands.
+        if (feel) { fx.bits.spikes(at, TableFeel.CHARGE_SPIKES, TableFeel.CHARGE_SPIKE_LEN * density, Color.White, now, seed = seed)
+            fx.bits.ring(at, TableFeel.CHARGE_RING * density, it.tone, now) }
         if (!face) {
             fx.bits.sparks(at, 24, Color(0xFFFFF3D0), now, 330f * density, dir = away, spread = 1.25f, lifeMs = 520, sizePx = 1.6f * density, seed = seed)
             fx.bits.sparks(at, 10, Color(0xFFF3D27E), now, 170f * density, lifeMs = 480, sizePx = 1.4f * density, seed = seed + 7)

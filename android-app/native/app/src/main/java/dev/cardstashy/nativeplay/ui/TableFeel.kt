@@ -112,6 +112,34 @@ internal object TableFeel {
         return ManaChange(b.me.battlefield.filter { it.isLand && it.tapped && it.id in ready }.map { ManaGlow(it.id, frameTone(cardColors(it)).first, spell) }, false)
     }
 
+    // F6, the charge. This is P5's strike ([Strike]) with a bigger wind-up and a trail: P5's order, timing and sounds stay as approved.
+    // The attacker swells to 1.14 on the pull back, leaves sparks in its own colour on the dash, and where it lands there are white
+    // spikes and a ring in its colour. A declared attacker's rim is gold.
+    const val CHARGE_SWELL = 1.14f
+    const val CHARGE_TRAIL_EVERY_MS = 16f
+    const val CHARGE_TRAIL_BACK = 20f
+    const val CHARGE_TRAIL_SPEED = 350f
+    const val CHARGE_TRAIL_SPREAD = .5f
+    const val CHARGE_TRAIL_LIFE_MS = 340L
+    const val CHARGE_TRAIL_SIZE = 2.5f
+    const val CHARGE_SPIKES = 10
+    const val CHARGE_SPIKE_LEN = 70f
+    const val CHARGE_RING = 90f
+    val DECLARE_GOLD = Color(0xFFF3D27E)
+    /** As it was before F6 (and with Match effects off): the coral of P5's declare ring. */
+    val CORAL = Color(0xFFFF6A4A)
+
+    /** One beat of a charge: its name, when it starts (ms from the attacker's first move) and how long it lasts. */
+    data class Beat(val name: String, val at: Float, val ms: Float)
+    /** A charge's four beats in order, read from [Strike]: pull back, dash, the hit's freeze, the return ([face]: at a player). */
+    fun charge(face: Boolean): List<Beat> = listOf(
+        Beat("pull-back", 0f, Strike.wind(face)), Beat("dash", Strike.wind(face), Strike.hit(face) - Strike.wind(face)),
+        Beat("hit", Strike.hit(face), Strike.freeze(face)), Beat("return", Strike.homeAt(face), Strike.homeMs(face)))
+    fun chargeSwell(): Float = if (mode() == Mode.OFF) 1.1f else CHARGE_SWELL
+    /** The colour of an attacker's trail and ring: the card's own frame colour. Off: P5's coral. */
+    fun chargeTone(c: dev.cardstashy.nativeplay.engine.Card): Color = if (mode() == Mode.OFF) CORAL else frameTone(cardColors(c)).first
+    fun declareRim(): Color = if (mode() == Mode.OFF) CORAL else DECLARE_GOLD
+
     /** The band's strength at [p] (0..1) of its way down. */
     fun sweepStrength(p: Float): Float = if (p <= 0f || p >= 1f) 0f else SWEEP_PEAK * sin(p * PI.toFloat())
 }

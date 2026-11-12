@@ -86,4 +86,39 @@ class TableFeelTest {
         assertEquals(androidx.compose.ui.graphics.Color(0xFFFF5A2A), TableFeel.profile("ashen-forge").lightCpu)
         assertEquals(TableFeel.PLAIN, TableFeel.profile("charcoal-table")); assertEquals(TableFeel.PLAIN, TableFeel.profile(null))
     }
+
+    /** F6: one attack that lands schedules pull-back, dash, hit and return in that order (P5's approved durations), in the card's colour. */
+    @Test fun aChargeIsPullBackDashHitReturnInTheCardsColour() {
+        val was = Motion.still; Motion.still = false
+        try {
+            fun card(id: Int, who: Int, extra: String = "") = """{"id":$id,"zone":"Battlefield","owner":$who,"controller":$who,"hidden":false,"name":"Bear","type":"Creature","manaCost":"{1}{G}","power":2,"toughness":2$extra}"""
+            fun snap(rev: Int, phase: String, mine: String, life: Int) = MatchState.parse("""{"status":"running","viewer":1,"turn":3,"revision":$rev,"phase":"$phase",
+                "players":[{"id":1,"isViewer":true,"life":20,"zones":{"Battlefield":{"cards":[$mine]}}},{"id":2,"life":$life,"zones":{"Battlefield":{"cards":[]}}}]}""")!!
+            val an = Anchors().apply { putRect("c5", androidx.compose.ui.geometry.Rect(100f, 600f, 230f, 700f)); putRect("orb1", androidx.compose.ui.geometry.Rect(20f, 800f, 120f, 900f)); putRect("orb2", androidx.compose.ui.geometry.Rect(20f, 20f, 120f, 120f)) }
+            val a0 = snap(1, "COMBAT_BEGIN", card(5, 1), 20)
+            val a = snap(2, "COMBAT_DECLARE_ATTACKERS", card(5, 1, ""","attacking":true"""), 20)
+            val b = snap(3, "COMBAT_DAMAGE", card(5, 1, ""","attacking":true"""), 18)
+            fun plan(setting: String): Pair<FxItem, FxItem> { AppSettings.applyMatchEffects(setting)
+                val fx = Battlefield(); fx.take(a0, an); fx.take(a, an); val up = fx.items.single { it.kind == Fx.ATTACK }
+                fx.take(b, an); return up to fx.items.single { it.kind == Fx.LUNGE } }
+            val (up, lunge) = plan("full")
+            val green = frameTone(cardColors(a.card(5)!!)).first
+            assertEquals("the declare's rim is gold", TableFeel.DECLARE_GOLD, up.tone)
+            assertEquals("the trail and ring are the card's colour", green, lunge.tone); assertEquals("orb2", lunge.toKey)
+            // At a player: pull back 160, dash 200, a 125 ms freeze on the hit, home 120 later in 320, inside the lunge's 1100.
+            val beats = TableFeel.charge(true)
+            assertEquals(listOf("pull-back", "dash", "hit", "return"), beats.map { it.name })
+            assertEquals(listOf(0f, 160f, 360f, 605f), beats.map { it.at }); assertEquals(listOf(160f, 200f, 125f, 320f), beats.map { it.ms })
+            assertTrue("each beat starts when the one before has ended, or later", beats.zipWithNext().all { (x, y) -> y.at >= x.at + x.ms })
+            assertTrue(beats.last().let { it.at + it.ms } <= lunge.dur)
+            // At a blocker: 150, 85, a 100 ms freeze, home in 240.
+            assertEquals(listOf(150f, 85f, 100f, 240f), TableFeel.charge(false).map { it.ms })
+            assertEquals("it grows to 1.14 on the pull back", 1.14f, Strike.scale(false, Strike.wind(false), TableFeel.chargeSwell()), .001f)
+            // Reduced: no freeze; the burst comes with the contact. Off: the strike as it was (coral, 1.10).
+            AppSettings.applyMatchEffects("reduced")
+            assertEquals(0f, TableFeel.charge(true)[2].ms, 0f); assertEquals(Strike.hit(true), Strike.after(true), 0f)
+            val (upOff, lungeOff) = plan("off")
+            assertEquals(TableFeel.CORAL, upOff.tone); assertEquals(TableFeel.CORAL, lungeOff.tone); assertEquals(1.1f, TableFeel.chargeSwell(), 0f)
+        } finally { AppSettings.applyMatchEffects("full"); Motion.still = was }
+    }
 }
