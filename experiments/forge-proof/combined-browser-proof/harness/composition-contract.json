@@ -8,18 +8,18 @@
   "productionReleasePolicy": null,
   "sourceIdentity": {
     "forgeRevision": "e5a0f8156da70ffc7866f923bed371c0111707cd",
-    "nativeSourceSHA256": "1163de2e3c78b250d9cbb0805b422139f71877d4581b468524fb96d900a5c608",
+    "nativeSourceSHA256": "d856d2a815bed727893ec445992eef9d790855dc4ad9bd6a5f24959e34647cd2",
     "difficultyPolicyVersion": "forge-heuristic-medium-beta-v1",
     "imageBuiltOrDeployedByThisPackage": false
   },
   "inputs": {
     "nativeDescendantManifest": {
       "path": "${CANDIDATE}/native/SHA256SUMS",
-      "sha256": "647c0d2d0920fbd966c54aa8c87ae148e2ca37c8248f5084fcd8855da4d4a470"
+      "sha256": "12ffb30ae0b69ec5382a282d74b277e665b1c48f52c3fffca30613fdf02a50da"
     },
     "nativeBridge": {
       "path": "${CANDIDATE}/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java",
-      "sha256": "1163de2e3c78b250d9cbb0805b422139f71877d4581b468524fb96d900a5c608"
+      "sha256": "d856d2a815bed727893ec445992eef9d790855dc4ad9bd6a5f24959e34647cd2"
     },
     "hostManifest": {
       "path": "${CANDIDATE}/HOST-SHA256.json",
@@ -27,7 +27,7 @@
     },
     "hostContextManifest": {
       "path": "${CANDIDATE}/build-context/CONTEXT-SHA256.json",
-      "sha256": "b652821a6d7e04eefcbf7f708540105da8e5c4bae26031c026e8ec95adcd6ca4"
+      "sha256": "64343d3ef40b6519ce4704863d158c4173b12b5abb3a1a2228cbd9d5f9a5816e"
     },
     "uiManifest": {
       "path": "${CANDIDATE}/UI-SHA256.json",
@@ -59,7 +59,7 @@
     },
     "fixtureServer": {
       "path": "${PACKAGE}/fixture-server.mjs",
-      "sha256": "0a78dc0169f571c75ed908b7f5b44b714008eca2c56011ffff9c350c4e459725"
+      "sha256": "f5aa0e5393fad8d63177dbb166577554376d4f91bcb447e30af2e43f5206660e"
     },
     "browserDriver": {
       "path": "${PACKAGE}/browser-journey.mjs",
@@ -91,7 +91,7 @@
     },
     "imageStagesManifest": {
       "path": "${PACKAGE}/image-stages/MANIFEST.json",
-      "sha256": "62a975f8386c5dd57ad74d5596b9aeebd19258adceda588eec2f6a9a08e663c9"
+      "sha256": "8798278e8c032f682a0309439533ee322867cc69d4a1127d9134f49abb5e463c"
     },
     "runtimeUISubset": {
       "path": "${CANDIDATE}/UI-RUNTIME-SHA256.json",
