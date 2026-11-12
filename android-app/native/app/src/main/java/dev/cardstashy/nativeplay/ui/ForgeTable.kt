@@ -492,6 +492,8 @@ fun ForgeBoard(
             TurnLight(st)
             // F2: the mana light of the lands you tapped this turn.
             ManaLight(st)
+            // F3: what a heavy landing left on the mat this turn.
+            LandMarks()
             FxMat(st, mid)
             // Nothing of the turn clock lies on the divider (table additions 5): it is a ring on the gold button and a line under the phase track.
 
@@ -1330,7 +1332,7 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
     // Z2: while piles overlap, only the left part of each pile's top tile shows: its name keeps to it and its P/T moves to its left edge.
     val visible = lay.visible?.dp
     // F6: a row with an attacker in a strike is drawn over the other rows, and that attacker over its own row.
-    val strikers = LocalBattlefield.current?.strikers?.value.orEmpty()
+    val strikers = LocalBattlefield.current?.let { it.strikers.value + it.landers.value }.orEmpty()
     Box(Modifier.offset(x = if (fromLeft) cx else cx - total / 2, y = cy - h / 2).zIndex(if (cards.any { it.id in strikers }) 50f else 0f)) {
         piles.forEachIndexed { i, pile ->
             val px = lay.xs[i].dp

@@ -165,7 +165,9 @@ internal enum class Fx { DRAW, CAST, RESOLVE, ARRIVE, TOKEN, ATTACK, LUNGE, BLOC
     /** P6, After: the spent spell ([FxItem.ghost]) leaves the stack for its owner's graveyard (320), where the pile answers with a ring. */
     SPENT,
     /** Match punch P5: nine ember streaks from a dead card's place ([FxItem.from]) to its owner's graveyard, where the pile answers with a ring. */
-    EMBERS }
+    EMBERS,
+    /** Living table F3: [FxItem.card] lands heavy. It drops from 1.9 times its size (130 ms); where it lands: freeze, shake, a ring in its colour, the cards in [FxItem.ids] hop and the mat keeps a mark. */
+    HEAVY }
 
 internal class FxItem(
     val kind: Fx, val level: Int, val baseMs: Long,
@@ -333,6 +335,7 @@ class Battlefield {
                 it.kind == Fx.LUNGE && ms - it.t0 >= Strike.hit(Strike.face(it)) -> if (Strike.face(it)) "heavy" else "medium"
                 // A landing is felt: light for a land, medium for anything else (a rare's drop and a commander's slam have their own below).
                 it.kind == Fx.IMPACT && it.entrance <= 0 && ms >= it.t0 -> if (it.land) "light" else "medium"
+                it.kind == Fx.HEAVY && it.p(ms) * it.baseMs >= TableFeel.HEAVY_DROP_MS -> "heavy"
                 it.kind == Fx.ARRIVE && it.entrance == 1 && it.p(ms) * it.dur >= 650f -> "light"
                 it.kind == Fx.ARRIVE && it.entrance == 2 && it.p(ms) * it.dur >= E2_SLAM + 150f -> "heavy"
                 else -> null
@@ -416,6 +419,9 @@ class Battlefield {
         stages = items.filter { it.kind == Fx.STAGE }
         spots = items.filter { it.kind == Fx.ARRIVE && it.entrance == 2 }
         impacts = items.filter { it.kind == Fx.IMPACT }
+        heavies = items.filter { it.kind == Fx.HEAVY }
+        val down = heavies.mapNotNull { it.card }.toSet()
+        if (down != landers.value) landers.value = down
         struck = items.filter { it.kind == Fx.LUNGE && it.toKey?.startsWith("c") == true }
         // F6 (design review): the cards in a strike are drawn above the seat panels and the lands for the whole strike.
         val up = if (TableFeel.mode() == TableFeel.Mode.OFF) emptySet() else items.filter { it.kind == Fx.LUNGE }.mapNotNull { it.card }.toSet()
@@ -425,6 +431,25 @@ class Battlefield {
 
     private var spots: List<FxItem> = emptyList()
     private var impacts: List<FxItem> = emptyList()
+    /** F3: the heavy landings in flight; their cards are drawn over their row while they drop. */
+    private var heavies: List<FxItem> = emptyList()
+    internal val landers = androidx.compose.runtime.mutableStateOf<Set<Int>>(emptySet())
+    /** F3: what the heavy landings left on the mat this turn (root pixels), drawn under the cards by [LandMarks]. */
+    internal val landMarks = mutableStateListOf<LandMark>()
+    /** F3: the other cards of the player whose creature landed heavy hop (tiles [TableFeel.HOP_TILE] dp). */
+    private fun GraphicsLayerScope.hop(id: Int) {
+        val t = now.longValue
+        for (it in heavies) { if (id !in it.ids) continue
+            val p = it.p(t); if (p < 0f) continue
+            translationY -= TableFeel.hopLift(p * it.baseMs - TableFeel.HEAVY_DROP_MS) * TableFeel.HOP_TILE.dp.toPx() }
+    }
+    /** F3: how far your hand's cards hop now (dp), when a creature of yours has just landed heavy. */
+    internal fun handHop(): Float {
+        rev.intValue
+        if (heavies.isEmpty() || reduced) return 0f
+        val t = now.longValue
+        return heavies.filter { it.mine }.maxOfOrNull { val p = it.p(t); if (p < 0f) 0f else TableFeel.hopLift(p * it.baseMs - TableFeel.HEAVY_DROP_MS) }?.times(TableFeel.HOP_CARD) ?: 0f
+    }
     /** P5: the clashes in flight, by what they strike: the struck tile is knocked back 16 dp and springs. */
     private var struck: List<FxItem> = emptyList()
     /** The struck tile [id] is knocked 16 dp along the blow and springs back (420 ms, elastic), tipping a little. */
@@ -590,6 +615,8 @@ class Battlefield {
         if (st.revision <= before.revision && st.revision != 0L) return
         if (st.players.map { it.id } != before.players.map { it.id }) return
         val t = now.longValue
+        // F3: the marks of the turn that ended leave the mat.
+        if (st.turn != before.turn) { landMarks.forEach { if (it.gone < 0L) it.gone = t }; landMarks.removeAll { it.gone >= 0L && t - it.gone > TableFeel.MARK_OUT_MS && it.gone != t } }
         val yours = st.waitingOnMe
         if (yours) {
             // Priority or a question (match director, section 6): nothing is cut short or dropped any more. What is in flight
@@ -746,6 +773,10 @@ class Battlefield {
             val fromCommand = a.players.any { p -> p.command.any { it.id == id } }
             val lvl = entranceLevel(c, fromStack || fromCommand, waiting = b.waitingOnMe)
             val mine = c.controller == viewer
+            // F3: a creature of power 5 or more lands heavy (not a commander's own slam, which is bigger). Its drop ends on the landing's frame.
+            val heavy = if (reduced || lvl == 2) null else TableFeel.landing(c)
+            fun heavyAt(landsAt: Long) = FxItem(Fx.HEAVY, 1, (TableFeel.HEAVY_DROP_MS + TableFeel.HEAVY_AFTER_MS).toLong(), card = id, mine = mine, tone = frameTone(cardColors(c)).first,
+                ids = b.players.firstOrNull { it.id == c.controller }?.battlefield.orEmpty().map { it.id }.filter { it != id }.toSet(), delay = landsAt - TableFeel.HEAVY_DROP_MS.toLong(), note = heavy?.mark.orEmpty())
             // 0.4.59 T5: a card that travelled here (stack to slot, hand to group) is drawn by TravelCard on its way; its tile stays
             // clear until it lands, then takes the landing squash (level 0) or its entrance from where it landed (levels 1 and 2).
             val came = travel?.travel?.takeIf { !reduced && it.cardId == id && it.leg in TRAVEL_LANDS }
@@ -753,14 +784,17 @@ class Battlefield {
                 // P3: the travelled card lands with its impact. A creature shakes the board 7 dp, anything else 3; a level 1 entrance
                 // adds 30 % (at its drop), a level 2 keeps its big entrance and ends with this landing (after its slam).
                 val base = if (c.isCreature) 1f else 3f / 7f
+                // F3: an ordinary heavy landing waits for the drop (130 ms); a rare's drop already ends at 650.
+                val wait = if (heavy != null && lvl == 0) TableFeel.HEAVY_DROP_MS.toLong() else 0L
                 arrivals += FxItem(Fx.IMPACT, 1, IMPACT_MS, card = id, mine = mine, tone = tone, land = c.isLand, power = if (lvl == 1) base * 1.3f else base,
-                    entrance = if (low) -1 else lvl, delay = came.ms + when (lvl) { 2 -> (E2_SLAM + 150f + 110f).toLong(); 1 -> 650L; else -> 0L }).sounds(landingCue(c))
+                    entrance = if (low) -1 else lvl, delay = came.ms + wait + when (lvl) { 2 -> (E2_SLAM + 150f + 110f).toLong(); 1 -> 650L; else -> 0L }).sounds(landingCue(c))
                 arrivals += when (lvl) {
                     2 -> FxItem(Fx.ARRIVE, 2, ENTRANCE2_MS, card = id, mine = mine, tone = tone, entrance = 2, delay = came.ms,
                         title = c.name + "\n" + (if (mine) "Your commander" else "Their commander"))
                     1 -> FxItem(Fx.ARRIVE, 2, ENTRANCE1_MS, card = id, mine = mine, tone = tone, land = c.isLand, entrance = 1, delay = came.ms)
                     else -> FxItem(Fx.ARRIVE, 1, 135, card = id, mine = mine, tone = tone, land = c.isLand, delay = came.ms).also { it.p0 = .7f }
                 }
+                if (heavy != null) arrivals += heavyAt(came.ms + wait + (if (lvl == 1) 650L else 0L))
                 continue
             }
             arrivals += when (lvl) {
@@ -771,6 +805,7 @@ class Battlefield {
                     from = if (fromStack) stackRect else null, fromKey = key, tone = tone, land = c.isLand)
             // The landing's sound on the frame it touches down: after the arc (315 of 450), the drop (650) or the slam.
             }.also { it.sounds(landingCue(c), when (lvl) { 2 -> (E2_SLAM + 150f).toLong(); 1 -> 650L; else -> 315L }) }
+            if (heavy != null) arrivals += heavyAt(if (lvl == 1) 650L else 315L)
         }
 
         // Combat: a new attacker leans in; a new blocker sends a pulse down its thread to the attacker.
@@ -900,6 +935,7 @@ class Battlefield {
         if (stages.isNotEmpty()) scope.dim(id)
         if (spots.isNotEmpty()) scope.spotDim(id)
         if (impacts.isNotEmpty() && !reduced) with(scope) { rock(id, anchors) }
+        if (heavies.isNotEmpty() && !reduced) with(scope) { hop(id) }
         if (reduced) return
         val t = now.longValue
         if (struck.isNotEmpty()) with(scope) { knock(id, anchors, t) }
@@ -926,6 +962,9 @@ class Battlefield {
                     }
                     // P3, impact: the tile squashes 14 % and springs back (520 ms), after the landing's 45 ms freeze.
                     Fx.IMPACT -> if (p >= 0f) { val k = .14f * (1f - elasticOut((p * it.dur / 520f).coerceAtMost(1f))); scaleX = 1f + k; scaleY = 1f - k }
+                    // F3: the heavy drop, on top of whatever brought the tile here: 1.9 times its size and a tile's height up, down in 130 ms.
+                    Fx.HEAVY -> if (p >= 0f) { val ms = p * it.baseMs
+                        if (ms < TableFeel.HEAVY_DROP_MS) { val (sc, up) = TableFeel.dropAt(ms); scaleX *= sc; scaleY *= sc; translationY -= up * size.height } }
                     Fx.TOKEN -> {
                         if (p < 0f) { alpha = 0f; continue }
                         alpha = (p / .55f).coerceIn(0f, 1f)
@@ -1309,6 +1348,7 @@ internal fun FxLayer(force: Boolean = false) {
                     Fx.TRIG_SOURCE -> rect("c${it.card}")?.let { r -> drawTrigSource(it, p, r) }
                     Fx.TRIG_LAND -> drawTrigLand(tm, it, p, rect(it.fromKey), rect(it.toKey), band = band())
                     Fx.IMPACT -> rect("c${it.card}")?.let { r -> drawImpact(fx, it, p, r) }
+                    Fx.HEAVY -> rect("c${it.card}")?.let { r -> drawHeavy(fx, it, p, r, self) }
                 }
             }
             // P2: a cast's pay (each land's flash and streak), charge and burst, read from the leg the table is drawing.

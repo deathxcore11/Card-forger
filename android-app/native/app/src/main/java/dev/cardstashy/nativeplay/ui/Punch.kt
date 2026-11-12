@@ -336,3 +336,43 @@ internal fun DrawScope.drawImpact(fx: Battlefield, it: FxItem, p: Float, r: andr
     flat(460f, r.width * .45f, r.width * 1.15f * (.8f + .2f * k), gold, 2.4f)
     flat(260f, r.width * .3f, r.width * .8f, Color.White, 1.6f)
 }
+
+// ---- Living table F3: the heavy landing (specs/living-table-build-guide.md, "F3 Weight") ----
+
+/** F3: what a heavy landing left on the mat: where (root pixels), how big, which kind (the mat's), and when it came and began to leave. */
+internal class LandMark(val card: Int, val at: Offset, val size: Float, val kind: String, val tone: Color, val born: Long) { var gone: Long = -1L }
+
+/**
+ * F3 on the FxLayer canvas: at the frame the heavy tile lands, the clock freezes and the board shakes (Full only), white spikes fly,
+ * the mat's own dust rises and its mark is left; then a ring in the card's colour runs out to 2.4 tile heights.
+ */
+internal fun DrawScope.drawHeavy(fx: Battlefield, it: FxItem, p: Float, r: androidx.compose.ui.geometry.Rect, self: Offset) {
+    val ms = p * it.baseMs - TableFeel.HEAVY_DROP_MS
+    if (ms < 0f) return
+    val now = fx.now.longValue; val dp = density; val c = r.center; val seed = (it.card ?: 0) and 0xff
+    if (it.once(1)) {
+        if (TableFeel.mode() == TableFeel.Mode.FULL) { fx.freeze(TableFeel.HEAVY_FREEZE_MS); fx.jolt(TableFeel.HEAVY_SHAKE, (TableFeel.HEAVY_SHAKE / TableFeel.HEAVY_SHAKE_FADE).toLong()) }
+        val at = Offset(c.x, c.y + r.height * TableFeel.MARK_BELOW)
+        if (fx.landMarks.size >= 8) fx.landMarks.removeAt(0)
+        fx.landMarks += LandMark(it.card ?: 0, at + self, r.height * TableFeel.MARK_SIZE, it.note, it.tone, now)
+        if (!fx.low) {
+            fx.bits.spikes(c, TableFeel.HEAVY_SPIKES, TableFeel.HEAVY_SPIKE_LEN * dp, Color.White, now, seed = seed)
+            val up = -(PI / 2).toFloat()
+            // The mat's own answer (the showpiece's landMark): embers and smoke, spray, leaves, star points; a plain mat throws dust.
+            when (it.note) {
+                "lava" -> { fx.bits.smoke(Offset(at.x, at.y + r.height * .2f), 14, Color(0xFF8A8478), now, 46f * dp, sizePx = r.height * .13f, seed = seed)
+                    fx.bits.sparks(at, 26, Color(0xFFFF9A3A), now, 300f * dp, dir = up, spread = 1.3f, lifeMs = 900, sizePx = 1.8f * dp, seed = seed) }
+                "ripple" -> fx.bits.sparks(at, 24, Color(0xFFDFF1FF), now, 280f * dp, dir = up, spread = 1.2f, lifeMs = 700, sizePx = 1.8f * dp, seed = seed)
+                "leaf" -> { fx.bits.smoke(Offset(at.x, at.y + r.height * .2f), 8, Color(0xFF8A8478), now, 46f * dp, sizePx = r.height * .13f, seed = seed)
+                    fx.bits.sparks(at, 30, Color(0xFF8FD45A), now, 250f * dp, dir = up, spread = 1.5f, lifeMs = 1300, sizePx = 2.4f * dp, seed = seed) }
+                "star" -> { fx.bits.spikes(at, 14, 90f * dp, Color(0xFFD8CCFF), now, seed = seed + 3)
+                    fx.bits.sparks(at, 18, Color.White, now, 250f * dp, lifeMs = 800, sizePx = 1.8f * dp, seed = seed) }
+                else -> fx.bits.smoke(Offset(at.x, at.y + r.height * .2f), 12, Color(0xFF8A8478), now, 46f * dp, sizePx = r.height * .13f, seed = seed)
+            }
+        }
+    }
+    // The ring: from 40 dp to 2.4 tile heights, 4 dp thinning, in the card's colour.
+    val q = ms / TableFeel.HEAVY_RING_MS
+    if (q < 1f) { val e = 1f - (1f - q) * (1f - q) * (1f - q); val rad = TableFeel.HEAVY_RING_FROM * dp + (r.height * TableFeel.HEAVY_RING - TableFeel.HEAVY_RING_FROM * dp) * e
+        drawCircle(it.tone.copy(alpha = (1f - q) * .9f), rad, c, style = Stroke(width = TableFeel.HEAVY_RING_WIDTH * dp * (1f - q * .7f)), blendMode = androidx.compose.ui.graphics.BlendMode.Plus) }
+}

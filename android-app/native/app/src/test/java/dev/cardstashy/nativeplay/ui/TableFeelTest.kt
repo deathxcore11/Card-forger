@@ -125,4 +125,48 @@ class TableFeelTest {
             assertEquals(TableFeel.CORAL, upOff.tone); assertEquals(TableFeel.CORAL, lungeOff.tone); assertEquals(1.1f, TableFeel.chargeSwell(), 0f)
         } finally { AppSettings.applyMatchEffects("full"); Motion.still = was }
     }
+
+    /** F3 (the guide's test): power 5 schedules the freeze, the shake, the hop and one mark; power 2 schedules none of them. */
+    @Test fun powerFiveLandsHeavyAndPowerTwoDoesNot() {
+        val was = Motion.still; Motion.still = false
+        try {
+            fun card(id: Int, power: Int) = """{"id":$id,"zone":"Battlefield","owner":1,"controller":1,"hidden":false,"name":"Beast $id","type":"Creature","manaCost":"{3}{G}{G}","power":$power,"toughness":5}"""
+            fun snap(rev: Int, turn: Int, mine: String) = MatchState.parse("""{"status":"running","viewer":1,"turn":$turn,"revision":$rev,"phase":"MAIN1",
+                "players":[{"id":1,"isViewer":true,"life":20,"zones":{"Battlefield":{"cards":[$mine]}}},{"id":2,"life":20,"zones":{"Battlefield":{"cards":[${card(9, 2).replace("\"owner\":1,\"controller\":1", "\"owner\":2,\"controller\":2")}]}}}]}""")!!
+            val an = Anchors()
+            val before = snap(1, 3, card(4, 2))
+            fun enters(power: Int, setting: String): Battlefield { AppSettings.applyMatchEffects(setting)
+                return Battlefield().also { it.take(before, an); it.take(snap(2, 3, card(4, 2) + "," + card(5, power)), an) } }
+            assertEquals(TableFeel.Weight.HEAVY, TableFeel.weight(5)); assertEquals(TableFeel.Weight.MEDIUM, TableFeel.weight(4)); assertEquals(TableFeel.Weight.MEDIUM, TableFeel.weight(3))
+            assertEquals(TableFeel.Weight.LIGHT, TableFeel.weight(2)); assertEquals(TableFeel.Weight.LIGHT, TableFeel.weight(null))
+            // Power 5: one heavy landing for that card. Its drop is 130 ms and ends on the landing's frame (315 ms into the arc).
+            val fx = enters(5, "full")
+            val heavy = fx.items.single { it.kind == Fx.HEAVY }
+            assertEquals(5, heavy.card); assertEquals(315L - 130L, heavy.delay)
+            assertEquals("your other cards hop, the CPU's do not", setOf(4), heavy.ids)
+            assertEquals("the ring is the card's colour", frameTone(cardColors(snap(2, 3, card(5, 5)).card(5)!!)).first, heavy.tone)
+            val full = TableFeel.landing(snap(2, 3, card(5, 5)).card(5)!!, "full", "ashen-forge")!!
+            assertEquals(130f, full.dropMs, 0f); assertEquals(90L, full.freezeMs); assertEquals(11f, full.shakeDp, 0f); assertEquals(366L, full.shakeMs); assertTrue(full.hop)
+            assertEquals("the forge's mark", "lava", full.mark); assertEquals("no mat chosen: a crack", "crack", heavy.note)
+            assertEquals("a plain mat cracks", "crack", TableFeel.landing(snap(2, 3, card(5, 5)).card(5)!!, "full", null)!!.mark)
+            // The drop: 1.9 times the size and above its place at the start, its own size and place at the end.
+            assertEquals(1.9f, TableFeel.dropAt(0f).first, .001f); assertTrue(TableFeel.dropAt(0f).second > 1f)
+            assertEquals(1f, TableFeel.dropAt(130f).first, .001f); assertEquals(0f, TableFeel.dropAt(130f).second, .001f)
+            // The hop: up in 90 ms, back down by 390.
+            assertEquals(0f, TableFeel.hopLift(0f), 0f); assertEquals(1f, TableFeel.hopLift(90f), .001f); assertTrue(TableFeel.hopLift(45f) in .5f..1f); assertEquals(0f, TableFeel.hopLift(390f), 0f)
+            // Power 2 (and 4): P3's landing as it was, nothing heavy.
+            assertTrue(enters(2, "full").items.none { it.kind == Fx.HEAVY }); assertTrue(enters(4, "full").items.none { it.kind == Fx.HEAVY })
+            assertNull(TableFeel.landing(snap(2, 3, card(5, 2)).card(5)!!, "full", null))
+            // Reduced: the drop, hop and mark stay; no freeze and no shake. Off: nothing.
+            val calm = TableFeel.landing(snap(2, 3, card(5, 5)).card(5)!!, "reduced", null)!!
+            assertEquals(0L, calm.freezeMs); assertEquals(0f, calm.shakeDp, 0f); assertTrue(calm.hop)
+            assertTrue(enters(5, "reduced").items.any { it.kind == Fx.HEAVY })
+            assertTrue(enters(5, "off").items.none { it.kind == Fx.HEAVY })
+            // A mark stays for the turn and leaves when the next one starts.
+            val mark = LandMark(5, androidx.compose.ui.geometry.Offset(10f, 10f), 100f, "crack", androidx.compose.ui.graphics.Color.White, 0L)
+            fx.landMarks += mark
+            fx.take(snap(3, 3, card(4, 2) + "," + card(5, 5)), an); assertEquals("same turn: it stays", -1L, mark.gone)
+            fx.take(snap(4, 4, card(4, 2) + "," + card(5, 5)), an); assertTrue("the turn ended: it leaves", mark.gone >= 0L)
+        } finally { AppSettings.applyMatchEffects("full"); Motion.still = was }
+    }
 }

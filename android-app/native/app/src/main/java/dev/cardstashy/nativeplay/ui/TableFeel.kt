@@ -153,6 +153,56 @@ internal object TableFeel {
     fun chargeTone(c: dev.cardstashy.nativeplay.engine.Card): Color = if (mode() == Mode.OFF) CORAL else frameTone(cardColors(c)).first
     fun declareRim(): Color = if (mode() == Mode.OFF) CORAL else DECLARE_GOLD
 
+    // F3, weight. A creature of [HEAVY_POWER] or more lands heavy: its tile comes in at 1.9 times its size from above and drops in
+    // 130 ms (ease-in cubic); where it lands the clock freezes 90 ms, the board shakes 11 dp (fading .03 a ms), a ring in the card's
+    // colour runs out to 2.4 tile heights, every other card of that player hops, and the mat keeps a mark until the turn ends.
+    // Power 3 to 4 (medium) and 1 to 2 (light) are P3's landing as approved; nothing is added to them.
+    const val HEAVY_SCALE = 1.9f
+    const val HEAVY_DROP_MS = 130f
+    /** How far above its place the drop starts, in tile heights (a fifth of the phone's height). */
+    const val HEAVY_RISE = 1.08f
+    const val HEAVY_FREEZE_MS = 90L
+    const val HEAVY_SHAKE = 11f
+    const val HEAVY_SHAKE_FADE = .03f
+    const val HEAVY_RING = 2.4f
+    const val HEAVY_RING_FROM = 40f
+    const val HEAVY_RING_WIDTH = 4f
+    const val HEAVY_RING_MS = 460f
+    const val HEAVY_SPIKES = 10
+    const val HEAVY_SPIKE_LEN = 70f
+    /** The hop: tiles 11 dp, whole cards (your hand) 6 dp; up in 90 ms, down in 300 with an overshoot. */
+    const val HOP_TILE = 11f
+    const val HOP_CARD = 6f
+    const val HOP_UP_MS = 90f
+    const val HOP_DOWN_MS = 300f
+    /** The mark: 1.5 tile heights across, a fifth of a tile below the tile's middle; it leaves over 400 ms when the turn ends. */
+    const val MARK_SIZE = 1.5f
+    const val MARK_BELOW = .2f
+    const val MARK_OUT_MS = 400L
+    /** How long the whole heavy landing runs after its drop (the ring and the hop are over by then). */
+    const val HEAVY_AFTER_MS = 520f
+
+    enum class Weight { LIGHT, MEDIUM, HEAVY }
+    /** The landing's weight from the power Forge reports: 1 to 2 light, 3 to 4 medium, [HEAVY_POWER] or more heavy. */
+    fun weight(power: Int?): Weight = when { (power ?: 0) >= HEAVY_POWER -> Weight.HEAVY; (power ?: 0) >= 3 -> Weight.MEDIUM; else -> Weight.LIGHT }
+    /** What a heavy landing schedules. Reduced keeps the drop, ring, hop and mark and drops the freeze and the shake. */
+    data class Landing(val dropMs: Float, val freezeMs: Long, val shakeDp: Float, val shakeMs: Long, val hop: Boolean, val mark: String)
+    /** F3 for an entering card: null unless it is a creature that lands heavy and Match effects are not off. */
+    fun landing(c: dev.cardstashy.nativeplay.engine.Card, setting: String = AppSettings.matchEffects, mat: String? = TableFeel.mat): Landing? {
+        val m = mode(setting)
+        if (m == Mode.OFF || !c.isCreature || weight(c.power) != Weight.HEAVY) return null
+        val calm = m == Mode.REDUCED
+        return Landing(HEAVY_DROP_MS, if (calm) 0L else HEAVY_FREEZE_MS, if (calm) 0f else HEAVY_SHAKE, if (calm) 0L else (HEAVY_SHAKE / HEAVY_SHAKE_FADE).toLong(), true, profile(mat).mark)
+    }
+    /** The hop's height (0..1, a little under 0 on the way down) [ms] after the landing. */
+    fun hopLift(ms: Float): Float = when {
+        ms <= 0f || ms >= HOP_UP_MS + HOP_DOWN_MS -> 0f
+        ms < HOP_UP_MS -> 1f - (1f - ms / HOP_UP_MS).let { it * it * it }
+        else -> { val x = (ms - HOP_UP_MS) / HOP_DOWN_MS - 1f; val c1 = 1.70158f; -((c1 + 1f) * x * x * x + c1 * x * x) }
+    }
+    /** The heavy drop's size and height above its place (in tile heights) [ms] into it. */
+    fun dropAt(ms: Float): Pair<Float, Float> { val q = (ms / HEAVY_DROP_MS).coerceIn(0f, 1f); val e = q * q * q; return (HEAVY_SCALE + (1f - HEAVY_SCALE) * e) to HEAVY_RISE * (1f - e) }
+
     /** The band's strength at [p] (0..1) of its way down. */
     fun sweepStrength(p: Float): Float = if (p <= 0f || p >= 1f) 0f else SWEEP_PEAK * sin(p * PI.toFloat())
 }
@@ -244,3 +294,68 @@ internal fun ManaLight(st: MatchState) {
 
 /** Where this layer starts in the root, so anchor boxes (root pixels) can be drawn in it. */
 private fun Modifier.onGloballyPositionedOrigin(set: (Offset) -> Unit): Modifier = onGloballyPositioned { set(it.positionInRoot()) }
+
+private fun markRand(n: Int): Float { val v = sin(n * 12.9898f + 78.233f) * 43758.547f; return v - kotlin.math.floor(v) }
+
+/**
+ * F3, the mark a heavy landing leaves: under every card, over the mat, until the turn ends. Which mark is the mat's own
+ * ([TableFeel.Profile.mark]): cracks that glow on the forge, rings on the water, a smaller crack in the temple, a constellation
+ * under the stars; a mat with no profile cracks. Off: none are made, so nothing is drawn.
+ */
+@Composable
+internal fun LandMarks() {
+    val fx = LocalBattlefield.current ?: return
+    if (fx.landMarks.isEmpty()) return
+    var origin by remember { mutableStateOf(Offset.Zero) }
+    Canvas(Modifier.fillMaxSize().then(Modifier.onGloballyPositionedOrigin { origin = it })) {
+        val t = fx.now.longValue; val u = 1.dp.toPx()
+        for (m in fx.landMarks) {
+            val age = (t - m.born).coerceAtLeast(0L).toFloat()
+            val out = if (m.gone < 0L) 1f else (1f - (t - m.gone) / TableFeel.MARK_OUT_MS.toFloat()).coerceIn(0f, 1f)
+            if (out <= 0f) continue
+            val c = m.at - origin; val seed = m.card * 131
+            when (m.kind) {
+                "ripple" -> {
+                    // A wet patch that stays, and four rings that run out once.
+                    val wet = (1f - .65f * (age / 4000f).coerceAtMost(1f)) * out
+                    drawOval(Color(0xFF0A1830).copy(alpha = .35f * wet), Offset(c.x - m.size * .6f, c.y - m.size * .25f), Size(m.size * 1.2f, m.size * .5f))
+                    drawOval(Color(0xFFCFE8FF).copy(alpha = .3f * wet), Offset(c.x - m.size * .6f, c.y - m.size * .25f), Size(m.size * 1.2f, m.size * .5f), style = androidx.compose.ui.graphics.drawscope.Stroke(1.2f * u), blendMode = BlendMode.Plus)
+                    for (i in 0 until 4) { val a0 = age - i * 230f; if (a0 <= 0f || a0 >= 1500f) continue
+                        val g = 1f - (1f - a0 / 1500f).let { it * it * it }; val rad = m.size * (.2f + (1.4f + i * .5f) * g)
+                        val al = if (a0 < 120f) .9f * a0 / 120f else .9f * (1f - ((a0 - 120f) / 1300f).coerceAtMost(1f)).let { it * it }
+                        drawOval(Color(0xFFCFE8FF).copy(alpha = al * out), Offset(c.x - rad, c.y - rad * .42f), Size(rad * 2, rad * .84f), style = androidx.compose.ui.graphics.drawscope.Stroke(1.6f * u), blendMode = BlendMode.Plus) }
+                }
+                "star" -> {
+                    // Eight points joined in the order they light (900 ms); it settles to half strength over three seconds.
+                    val a = (if (age < 150f) age / 150f else 1f - .5f * ((age - 150f) / 3000f).coerceAtMost(1f)) * out
+                    val shown = (1f - (1f - (age / 900f).coerceAtMost(1f)).let { it * it * it }) * 8f
+                    val pts = (0 until 8).map { i -> val ang = i / 8f * 6.283f + (markRand(seed + i) - .5f) * .6f; val d = m.size * (.45f + .8f * markRand(seed + i * 7 + 3))
+                        Offset(c.x + kotlin.math.cos(ang) * d, c.y + sin(ang) * d * .6f) }
+                    val tone = Color(0xFFB9A8FF)
+                    for (i in 1 until 8) if (i <= shown) { drawLine(tone.copy(alpha = .3f * a), pts[i - 1], pts[i], 5f * u, blendMode = BlendMode.Plus); drawLine(tone.copy(alpha = a), pts[i - 1], pts[i], 1.2f * u, blendMode = BlendMode.Plus) }
+                    pts.forEachIndexed { i, p -> if (i <= shown) drawCircle(Color.White.copy(alpha = a), (2.2f + 1.2f * sin(t / 300f + i)) * u, p, blendMode = BlendMode.Plus) }
+                }
+                else -> {
+                    // Cracks: nine rays of three short strokes, flattened to the table. On the forge they glow and cool to 40 % in six seconds.
+                    val size = if (m.kind == "leaf") m.size * .8f else m.size
+                    val a = (age / 80f).coerceAtMost(1f) * out
+                    val rays = (0 until 9).map { i -> val ang = i / 9f * 6.283f + (markRand(seed + i) - .5f) * .5f; var d = 0f
+                        val path = androidx.compose.ui.graphics.Path().apply { moveTo(c.x, c.y)
+                            for (j in 0 until 3) { d += size * (.22f + .18f * markRand(seed + i * 5 + j * 11 + 1)); val aa = ang + (markRand(seed + i * 3 + j * 17 + 2) - .5f) * .7f
+                                lineTo(c.x + kotlin.math.cos(aa) * d, c.y + sin(aa) * d * .55f) } }
+                        path }
+                    val round = androidx.compose.ui.graphics.StrokeCap.Round
+                    for (ray in rays) drawPath(ray, Color.Black.copy(alpha = .8f * a), style = androidx.compose.ui.graphics.drawscope.Stroke(2.6f * u, cap = round))
+                    translateBy(u) { for (ray in rays) drawPath(ray, Color.White.copy(alpha = .13f * a), style = androidx.compose.ui.graphics.drawscope.Stroke(1f * u, cap = round)) }
+                    if (m.kind == "lava") { val heat = (1f - .6f * (age / 6000f).coerceAtMost(1f)) * (.75f + .25f * sin(t / 240f)) * a
+                        for (ray in rays) { drawPath(ray, Color(0xFFFF5A1A).copy(alpha = .35f * heat), style = androidx.compose.ui.graphics.drawscope.Stroke(7f * u, cap = round), blendMode = BlendMode.Plus)
+                            drawPath(ray, Color(0xFFFFB060).copy(alpha = heat), style = androidx.compose.ui.graphics.drawscope.Stroke(1.6f * u, cap = round), blendMode = BlendMode.Plus) } }
+                }
+            }
+        }
+    }
+}
+
+private inline fun androidx.compose.ui.graphics.drawscope.DrawScope.translateBy(d: Float, block: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit) {
+    drawContext.transform.translate(d, d); block(); drawContext.transform.translate(-d, -d)
+}

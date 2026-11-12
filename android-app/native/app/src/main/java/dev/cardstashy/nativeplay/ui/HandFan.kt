@@ -339,6 +339,8 @@ fun HandFan(
                         val down = if (isDrag || isLeaving) 0f else dropped
                         translationX = ax + (if (isDrag || isLeaving) drag.value.x else 0f) + (if (card.id == refused) refuseShake(shake.value) * REFUSE_DP.dp.toPx() else 0f)
                         translationY = ay + (if (isDrag || isLeaving) drag.value.y else 0f) - (if (held) 0f else f * cardH.toPx() * 1.1f) + down * cardH.toPx() * AskTuck.DIP
+                        // Living table F3: your hand hops 6 dp when a creature of yours lands heavy.
+                        drawFx?.handHop()?.let { if (it != 0f) translationY -= it.dp.toPx() }
                         rotationZ = if (isDrag && !isLeaving) lean else if (held) 0f else ar
                         val sc = if (held) popScale else if (isLeaving) 1f + .15f * sin(f * PI.toFloat()) + (asc - 1f) * (1f - f) else asc
                         scaleX = sc; scaleY = sc
