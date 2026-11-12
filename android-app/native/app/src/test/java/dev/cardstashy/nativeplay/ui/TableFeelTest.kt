@@ -240,6 +240,19 @@ class TableFeelTest {
             val len = (to - from).getDistance(); val u = (to - from) / len
             for (p in c.main) { val d = p - from; val off = kotlin.math.abs(d.x * -u.y + d.y * u.x); assertTrue("$off", off <= len * .035f + .5f) }
             assertEquals("the same crack every frame", c, TableFeel.crack(from, to, 2))
+            // Splinters, not sticks (design review 12 Nov): 2 or 3 steps, each 1.5 to 3 % of the crack's length, turning at most 25 degrees
+            // from the one before, 60 % of the main width down to 20 %.
+            for ((_, pts) in c.branches) {
+                assertTrue("${pts.size}", pts.size in 3..4)
+                val steps = pts.zipWithNext { a, b -> b - a }
+                for (st in steps) assertTrue("${st.getDistance() / len}", st.getDistance() in len * .0149f..len * .0301f)
+                for ((a, b) in steps.zipWithNext()) { val turn = Math.toDegrees(kotlin.math.abs(kotlin.math.atan2(a.x * b.y - a.y * b.x, a.x * b.x + a.y * b.y)).toDouble()); assertTrue("$turn", turn <= 25.01) }
+                assertEquals(.6f, TableFeel.splinterWidth(0, pts.size - 1), .001f); assertEquals(.2f, TableFeel.splinterWidth(pts.size - 2, pts.size - 1), .001f)
+            }
+            // The flood on the mat peaks at .6, .32, .08 (orb, half way, far edge) and rests at 28 %; the cards get a third of it.
+            assertEquals(listOf(.6f, .32f, .08f), TableFeel.FLOOD_MAT); assertEquals(1f, TableFeel.flood(160f), .001f); assertEquals(.28f, TableFeel.flood(5000f), .001f)
+            assertEquals(1f / 3f, TableFeel.FLOOD_OVER_CARDS, .001f)
+            assertEquals(.85f, TableFeel.CRACK_CORE_ALPHA, 0f); assertEquals(.35f, TableFeel.CRACK_GLOW_ALPHA, 0f)
         } finally { AppSettings.applyMatchEffects("full"); Motion.still = was }
     }
 

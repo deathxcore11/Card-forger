@@ -22,7 +22,7 @@ import kotlin.math.sqrt
  */
 
 /** Particle kinds, in the order they are dropped when the cap is reached (sparks first, smoke last). */
-internal enum class Bit { SPARK, EMBER, SPIKE, RING, BLOB, SMOKE, GLOW }
+internal enum class Bit { SPARK, EMBER, SPIKE, RING, BLOB, SMOKE, GLOW, SHARD }
 
 /**
  * Live particles in plain arrays (no allocation per frame). Positions are in the FxLayer's own pixels. [now] is the effect clock,
@@ -89,6 +89,11 @@ internal class Particles(val cap: Int = CAP) {
         for (j in 0 until n) { val a = dir - spread / 2 + spread * frac(seed * 31 + j * 7 + 1); val s = speed * (.55f + .45f * frac(seed * 17 + j * 13 + 3))
             add(Bit.SPARK, at, Offset(cos(a) * s, sin(a) * s), sizePx * (.7f + .6f * frac(j * 5 + seed)), c, (lifeMs * (.7f + .3f * frac(j * 3 + seed + 9))).toLong(), now, gravity = speed * 1.2f) }
     }
+    /** F7: [n] thin three- or four-sided shards [minPx] to [maxPx] long thrown out from [at], spinning as they fall; two in three [hi], one in three [rim]. */
+    fun shards(at: Offset, n: Int, hi: Color, rim: Color, now: Long, speed: Float, minPx: Float, maxPx: Float, lifeMs: Long = 1100, seed: Int = 0) {
+        for (j in 0 until n) { val a = (2 * PI).toFloat() * frac(seed * 31 + j * 7 + 1); val s = speed * (.45f + .55f * frac(seed * 17 + j * 13 + 3))
+            add(Bit.SHARD, at, Offset(cos(a) * s, sin(a) * s - speed * .25f), minPx + (maxPx - minPx) * frac(j * 5 + seed), if (j % 3 == 2) rim else hi, (lifeMs * (.7f + .3f * frac(j * 3 + seed + 9))).toLong(), now, gravity = speed * 1.6f) }
+    }
     /** Slow embers rising from [at]. */
     fun embers(at: Offset, n: Int, c: Color, now: Long, rise: Float, lifeMs: Long = 800, sizePx: Float = 2.4f, seed: Int = 0) {
         for (j in 0 until n) { val dx = (frac(seed * 11 + j * 7) - .5f) * rise * .8f
@@ -142,6 +147,14 @@ internal class Particles(val cap: Int = CAP) {
                 Bit.GLOW -> { val a = (1f - q).coerceIn(0f, 1f); val at = Offset(x[i] + vx[i] * s, y[i] + vy[i] * s); val halo = grav[i]
                     drawCircle(Brush.radialGradient(listOf(c.copy(alpha = .55f * a), c.copy(alpha = 0f)), at, halo), halo, at)
                     drawCircle(c.copy(alpha = a), sz[i] / 2, at); drawCircle(Color.White.copy(alpha = .6f * a), sz[i] / 4, at) }
+                // A shard: a thin sliver with three or four corners, turning 4 to 9 radians a second (which way and how fast is its own).
+                Bit.SHARD -> { val a = (if (q < .7f) 1f else 1f - (q - .7f) / .3f).coerceIn(0f, 1f)
+                    val k = kotlin.math.abs(vx[i] * .37f + vy[i] * .11f) % 1f; val turn = (4f + 5f * k) * (if (vx[i] < 0f) -1f else 1f) * s + k * 6.283f
+                    val len = sz[i] / 2; val wide = sz[i] * .19f; val cs = cos(turn); val sn = sin(turn)
+                    fun at(lx: Float, ly: Float) = Offset(px + lx * cs - ly * sn, py + lx * sn + ly * cs)
+                    val pts = if (k > .5f) listOf(at(-len, 0f), at(-len * .1f, -wide), at(len, -wide * .3f), at(len * .2f, wide)) else listOf(at(-len, -wide * .4f), at(len, 0f), at(-len * .3f, wide))
+                    val path = androidx.compose.ui.graphics.Path().apply { moveTo(pts[0].x, pts[0].y); for (j in 1 until pts.size) lineTo(pts[j].x, pts[j].y); close() }
+                    drawPath(path, c.copy(alpha = a)); drawLine(Color.White.copy(alpha = .55f * a), pts[0], pts[1], .7f * density) }
                 Bit.BLOB -> { val a = .7f * (1f - q); val r = sz[i] * (.6f + .4f * q)
                     drawCircle(Brush.radialGradient(listOf(c.copy(alpha = a), c.copy(alpha = 0f)), Offset(x[i], y[i]), r), r, Offset(x[i], y[i])) }
             }
@@ -398,8 +411,8 @@ internal fun DrawScope.drawHeavy(fx: Battlefield, it: FxItem, p: Float, r: andro
 
 /**
  * F7 on the FxLayer canvas, from the moment the finished board is shown: a 340 ms freeze and a 15 dp shake (Full only), the
- * loser's orb gone in 18 pieces, a ring out to 70 % of the height, a crack growing from the orb to the far corner (650 ms) and the
- * mat's win colour flooding from the orb. A draw ([FxItem.player] null) only dims both orbs.
+ * loser's orb gone in 18 spinning shards, a ring out to 70 % of the height and a light wash of the mat's win colour over the
+ * cards. The flood itself and the crack are in the mat, under the cards ([WinMark]). A draw ([FxItem.player] null) only dims both orbs.
  */
 internal fun DrawScope.drawWin(fx: Battlefield, it: FxItem, p: Float, orb: androidx.compose.ui.geometry.Rect?, all: List<androidx.compose.ui.geometry.Rect>) {
     val ms = p * it.baseMs; val now = fx.now.longValue; val dp = density
@@ -408,28 +421,15 @@ internal fun DrawScope.drawWin(fx: Battlefield, it: FxItem, p: Float, orb: andro
     if (it.once(1)) {
         fx.orbs.value = mapOf(it.player to 0f)
         if (TableFeel.mode() == TableFeel.Mode.FULL) { fx.freeze(TableFeel.WIN_FREEZE_MS); fx.jolt(TableFeel.WIN_SHAKE, TableFeel.WIN_SHAKE_MS, .02f) }
-        // The orb's pieces fly out and fall.
-        if (!fx.low) fx.bits.sparks(c, TableFeel.WIN_PIECES, it.caster, now, 420f * dp, lifeMs = 1100, sizePx = 5f * dp, seed = it.player)
+        // The orb's pieces: shards that fly out, spin and fall.
+        if (!fx.low) fx.bits.shards(c, TableFeel.WIN_PIECES, it.caster, TableFeel.ORB_RIM, now, 420f * dp, TableFeel.SHARD_MIN * dp, TableFeel.SHARD_MAX * dp, seed = it.player)
     }
-    // The flood, under the crack: full in 160 ms, down to 28 % over 1100, where it rests.
-    val flood = if (ms < TableFeel.FLOOD_IN_MS) ms / TableFeel.FLOOD_IN_MS else 1f - (1f - TableFeel.FLOOD_REST) * ((ms - TableFeel.FLOOD_IN_MS) / TableFeel.FLOOD_OUT_MS).coerceAtMost(1f)
-    drawRect(Brush.radialGradient(0f to it.tone.copy(alpha = .8f * flood), .5f to it.tone.copy(alpha = .42f * flood), 1f to it.tone.copy(alpha = .08f * flood), center = c, radius = size.width * 1.1f),
+    // Over the cards only a light wash, a third of the flood (the rest and the crack are in the mat: [WinMark]).
+    val wash = TableFeel.flood(ms) * TableFeel.FLOOD_OVER_CARDS
+    drawRect(Brush.radialGradient(0f to it.tone.copy(alpha = TableFeel.FLOOD_MAT[0] * wash), .5f to it.tone.copy(alpha = TableFeel.FLOOD_MAT[1] * wash), 1f to it.tone.copy(alpha = TableFeel.FLOOD_MAT[2] * wash), center = c, radius = size.width * 1.1f),
         blendMode = androidx.compose.ui.graphics.BlendMode.Plus)
     // The ring.
     val q = ms / TableFeel.WIN_RING_MS
     if (q < 1f) { val e = 1f - (1f - q) * (1f - q) * (1f - q)
         drawCircle(it.caster.copy(alpha = .9f * (1f - q)), r.maxDimension * .5f + (size.height * TableFeel.WIN_RING - r.maxDimension * .5f) * e, c, style = Stroke((6f - 4f * q) * dp), blendMode = androidx.compose.ui.graphics.BlendMode.Plus) }
-    // The crack, from the orb to the corner farthest from it.
-    val far = Offset(if (c.x < size.width / 2) size.width else 0f, if (c.y < size.height / 2) size.height else 0f)
-    val crack = TableFeel.crack(c, far, it.player)
-    val grown = (ms / TableFeel.CRACK_MS).coerceIn(0f, 1f).let { x -> 1f - (1f - x) * (1f - x) } * TableFeel.CRACK_SEGMENTS
-    fun line(pts: List<Offset>, upTo: Float) = androidx.compose.ui.graphics.Path().apply {
-        moveTo(pts[0].x, pts[0].y)
-        for (i in 1 until pts.size) { if (i <= upTo) lineTo(pts[i].x, pts[i].y) else { val f = upTo - (i - 1); if (f > 0f) { val at = pts[i - 1] + (pts[i] - pts[i - 1]) * f; lineTo(at.x, at.y) }; break } } }
-    val paths = listOf(line(crack.main, grown)) + crack.branches.mapNotNull { (at, pts) -> if (grown <= at) null else line(pts, ((grown - at) * 1.5f).coerceAtMost(pts.size - 1f)) }
-    val round = StrokeCap.Round
-    for (path in paths) drawPath(path, Color.Black.copy(alpha = .85f), style = Stroke(TableFeel.CRACK_CORE * dp, cap = round))
-    // The glow falls off from the line outward (three bands inside its 18 dp), so the dark core still reads under it.
-    for (path in paths) { for (k in 0 until 3) drawPath(path, it.caster.copy(alpha = .09f), style = Stroke(TableFeel.CRACK_GLOW * dp * (1f - k * .3f), cap = round), blendMode = androidx.compose.ui.graphics.BlendMode.Plus)
-        drawPath(path, it.caster, style = Stroke(TableFeel.CRACK_LINE * dp, cap = round)) }
 }

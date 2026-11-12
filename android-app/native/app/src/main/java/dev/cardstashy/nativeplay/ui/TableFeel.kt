@@ -248,9 +248,25 @@ internal object TableFeel {
     const val CRACK_SEGMENTS = 20
     const val CRACK_JITTER = .035f
     val CRACK_BRANCHES = listOf(3, 6, 9, 12, 15, 17)
+    /** A crack with light coming through: an 18 dp glow at 35 %, a 5 dp core of black at 85 % over it, a 2 dp bright line inside the core. */
     const val CRACK_CORE = 5f
+    const val CRACK_CORE_ALPHA = .85f
     const val CRACK_LINE = 2f
     const val CRACK_GLOW = 18f
+    const val CRACK_GLOW_ALPHA = .35f
+    /** Side branches are splinters: 2 or 3 steps, each 1.5 to 3 % of the crack's length, turning up to 25 degrees from the one before, 60 % of the main width down to 20 %. */
+    const val SPLINTER_MIN = .015f
+    const val SPLINTER_MAX = .03f
+    const val SPLINTER_TURN = 25f
+    const val SPLINTER_WIDE = .6f
+    const val SPLINTER_THIN = .2f
+    /** The flood's strength at the orb, half way out and at the far edge (added light), on the mat; the cards get a third of it, so names and numbers stay readable. */
+    val FLOOD_MAT = listOf(.6f, .32f, .08f)
+    const val FLOOD_OVER_CARDS = 1f / 3f
+    /** The orb breaks into shards 4 to 9 dp long: two in three in the mat's highlight colour, one in three in the orb's gold rim. */
+    const val SHARD_MIN = 4f
+    const val SHARD_MAX = 9f
+    val ORB_RIM = Color(0xFFD6AD64)
     /** The flood: the mat's win colour from the orb, full in 160 ms, down to 28 % over 1100 ms, where it stays. */
     const val FLOOD_IN_MS = 160f
     const val FLOOD_OUT_MS = 1100f
@@ -280,6 +296,10 @@ internal object TableFeel {
     @Volatile var resultWait: Pair<Long, Long>? = null
     fun resultWaitFor(st: MatchState): Long = resultWait?.takeIf { it.first == st.revision && !Motion.still }?.second ?: 0L
 
+    /** The flood's strength [ms] after the hit: full in 160 ms, down to 28 % over 1100 ms, where it rests. */
+    fun flood(ms: Float): Float = if (ms < FLOOD_IN_MS) (ms / FLOOD_IN_MS).coerceAtLeast(0f) else 1f - (1f - FLOOD_REST) * ((ms - FLOOD_IN_MS) / FLOOD_OUT_MS).coerceAtMost(1f)
+    /** A splinter's width at step [j] of [n], as a share of the main line's. */
+    fun splinterWidth(j: Int, n: Int): Float = if (n <= 1) SPLINTER_WIDE else SPLINTER_WIDE + (SPLINTER_THIN - SPLINTER_WIDE) * j / (n - 1f)
     /** The crack's line and its side branches, in the order they grow. */
     data class Crack(val main: List<Offset>, val branches: List<Pair<Int, List<Offset>>>)
     /** The crack from [from] (the orb) to [to] (the far corner): the same crack for the same [seed]. */
@@ -288,8 +308,12 @@ internal object TableFeel {
         val d = to - from; val len = d.getDistance().coerceAtLeast(1f); val u = d / len; val side = Offset(-u.y, u.x)
         val main = (0..CRACK_SEGMENTS).map { i -> val p = i / CRACK_SEGMENTS.toFloat()
             from + d * p + side * (if (i == 0 || i == CRACK_SEGMENTS) 0f else (rnd(i) * 2f - 1f) * len * CRACK_JITTER) }
+        val along = kotlin.math.atan2(u.y, u.x)
         val branches = CRACK_BRANCHES.map { i -> val s = if (i % 2 == 1) 1f else -1f; var at = main[i]
-            i to (listOf(at) + (0 until 4).map { j -> at += side * (s * len * (.03f + .04f * rnd(100 + i * 7 + j))) + u * (len * (.005f + .02f * rnd(200 + i * 5 + j))); at }) }
+            var ang = along + s * Math.toRadians(35.0 + 25.0 * rnd(100 + i * 7)).toFloat()
+            i to (listOf(at) + (0 until (if (rnd(300 + i) < .5f) 2 else 3)).map { j ->
+                if (j > 0) ang += Math.toRadians(((rnd(400 + i * 5 + j) * 2f - 1f) * SPLINTER_TURN).toDouble()).toFloat()
+                at += Offset(kotlin.math.cos(ang), sin(ang)) * (len * (SPLINTER_MIN + (SPLINTER_MAX - SPLINTER_MIN) * rnd(200 + i * 5 + j))); at }) }
         return Crack(main, branches)
     }
 
@@ -426,6 +450,48 @@ internal fun ManaLight(st: MatchState) {
 private fun Modifier.onGloballyPositionedOrigin(set: (Offset) -> Unit): Modifier = onGloballyPositioned { set(it.positionInRoot()) }
 
 private fun markRand(n: Int): Float { val v = sin(n * 12.9898f + 78.233f) * 43758.547f; return v - kotlin.math.floor(v) }
+
+/**
+ * F7, what the winning hit leaves in the table: the mat's win colour flooding from the loser's orb and one crack from the orb to
+ * the far corner. It is in the mat, with the landing marks: under every tile, card, the hand and all buttons, so where it passes
+ * under a card it is hidden. The orb's pieces, the ring and a light wash over the cards are [drawWin]'s, over everything.
+ */
+@Composable
+internal fun WinMark() {
+    val fx = LocalBattlefield.current ?: return
+    val anchors = LocalAnchors.current ?: return
+    if (fx.items.none { it.kind == Fx.WIN && it.player != null }) return
+    var origin by remember { mutableStateOf(Offset.Zero) }
+    Canvas(Modifier.fillMaxSize().then(Modifier.onGloballyPositionedOrigin { origin = it })) {
+        val t = fx.now.longValue; val u = 1.dp.toPx()
+        val it = fx.items.firstOrNull { it.kind == Fx.WIN && it.player != null } ?: return@Canvas
+        val p = it.p(t); if (p < 0f) return@Canvas
+        val ms = p * it.baseMs
+        val c = (anchors.rects["orb${it.player}"] ?: return@Canvas).center - origin
+        // The flood: what the wash over the cards does not already add.
+        val flood = TableFeel.flood(ms) * (1f - TableFeel.FLOOD_OVER_CARDS)
+        drawRect(Brush.radialGradient(0f to it.tone.copy(alpha = TableFeel.FLOOD_MAT[0] * flood), .5f to it.tone.copy(alpha = TableFeel.FLOOD_MAT[1] * flood), 1f to it.tone.copy(alpha = TableFeel.FLOOD_MAT[2] * flood),
+            center = c, radius = size.width * 1.1f), blendMode = BlendMode.Plus)
+        // The crack, from the orb to the corner farthest from it.
+        val far = Offset(if (c.x < size.width / 2) size.width else 0f, if (c.y < size.height / 2) size.height else 0f)
+        val crack = TableFeel.crack(c, far, it.player!!)
+        val grown = (ms / TableFeel.CRACK_MS).coerceIn(0f, 1f).let { x -> 1f - (1f - x) * (1f - x) } * TableFeel.CRACK_SEGMENTS
+        val main = androidx.compose.ui.graphics.Path().apply { val pts = crack.main
+            moveTo(pts[0].x, pts[0].y)
+            for (i in 1 until pts.size) { if (i <= grown) lineTo(pts[i].x, pts[i].y) else { val f = grown - (i - 1); if (f > 0f) { val at = pts[i - 1] + (pts[i] - pts[i - 1]) * f; lineTo(at.x, at.y) }; break } } }
+        // Each splinter step that has grown: its two ends and its width as a share of the main line's.
+        val steps = crack.branches.flatMap { (at, pts) -> val upTo = ((grown - at) * 1.5f).coerceAtMost(pts.size - 1f)
+            (0 until pts.size - 1).mapNotNull { j -> if (upTo <= j) null else Triple(pts[j], pts[j] + (pts[j + 1] - pts[j]) * (upTo - j).coerceAtMost(1f), TableFeel.splinterWidth(j, pts.size - 1)) } }
+        val round = androidx.compose.ui.graphics.StrokeCap.Round
+        fun all(colour: Color, width: Float, blend: BlendMode = BlendMode.SrcOver) {
+            drawPath(main, colour, style = androidx.compose.ui.graphics.drawscope.Stroke(width * u, cap = round, join = androidx.compose.ui.graphics.StrokeJoin.Round), blendMode = blend)
+            for ((a, b, w) in steps) drawLine(colour, a, b, width * u * w, cap = round, blendMode = blend) }
+        // Light coming through: the glow first (six bands inside its 18 dp that add up to 35 % at the line, so it falls off softly), the dark core over it, the bright line inside the core.
+        for (k in 0 until 6) all(it.caster.copy(alpha = TableFeel.CRACK_GLOW_ALPHA / 6f), TableFeel.CRACK_GLOW * (1f - k * .14f), BlendMode.Plus)
+        all(Color.Black.copy(alpha = TableFeel.CRACK_CORE_ALPHA), TableFeel.CRACK_CORE)
+        all(it.caster, TableFeel.CRACK_LINE)
+    }
+}
 
 /**
  * F3, the mark a heavy landing leaves: under every card, over the mat, until the turn ends. Which mark is the mat's own

@@ -494,6 +494,8 @@ fun ForgeBoard(
             ManaLight(st)
             // F3: what a heavy landing left on the mat this turn.
             LandMarks()
+            // F7: the winning hit's flood and crack, in the mat.
+            WinMark()
             // F8: the air over the mat.
             TableAir(st)
             FxMat(st, mid)
