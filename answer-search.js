@@ -99,7 +99,7 @@ export function wikiTitles(q,game='mtg'){
  if(y&&pro)out.push(`${Number(y)-1}–${String(y).slice(2)} Pro Tour Season`,`${y}–${String(Number(y)+1).slice(2)} Pro Tour Season`);
  if(y&&event&&!pro)out.push(`${y} World Championships`);
  if(y&&event&&!pro&&game==='mtg')out.push(`${Number(y)-1}–${String(y).slice(2)} Pro Tour Season`);
- const plain=n.replace(/\b(?:who|whom|what|when|where|why|how|which|won|win|wins|winner|was|were|is|are|did|does|do|the|a|an|of|in|at|for|to|tell|me|about|history|magic|mtg|magics|pokemon|pokemons|yugioh|ygo|s)\b/g,' ').replace(/\s+/g,' ').trim();
+ const plain=n.replace(/\b(?:who|whom|what|when|where|why|how|which|won|win|wins|winner|was|were|is|are|did|does|do|the|a|an|of|in|at|for|to|tell|me|about|history|designed|designer|designers|design|made|make|created|invented|born|died|die|held|released|release|come|came|out|old|prize|nickname|magic|mtg|magics|pokemon|pokemons|yugioh|ygo|s)\b/g,' ').replace(/\s+/g,' ').trim();
  if(plain&&!out.includes(plain))out.push(plain);
  return out;
 }

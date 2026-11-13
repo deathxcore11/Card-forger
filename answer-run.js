@@ -8,6 +8,33 @@ const cardItem=(game,c)=>({kind:'card',game,ref:c.ref||(game==='mtg'?c.name:Stri
 const miss=(text,extra={})=>({ok:false,miss:text,items:[],more:[],buttons:[],...extra});
 const UNKNOWN="The app's data can't answer that one.";
 
+// A wiki article's fact box holds labelled facts ("Winner", "Release date", "Location"). A question's words are
+// matched to those labels, so "who won ..." reads the Winner row instead of guessing from prose.
+const FACT_WORDS=[
+ [/\b(?:won|win|winner|wins|champion|champions)\b/,/^(?:winner|winners|champion|world champion)s?$/],
+ [/\b(?:when|date|year|released?|come out|came out|held|happen\w*)\b/,/^(?:date|dates|release date|released|first released)$/],
+ [/\bborn\b|\bbirthday\b|\bhow old\b/,/^born$/],[/\bdied?\b|\bdeath\b|\bpassed\b/,/^died$/],
+ [/\b(?:where|location|place|city|country|held)\b/,/^(?:location|venue|residence|nationality)$/],
+ [/\b(?:designed|designer|designers|made|created|design)\b/,/^(?:set design|vision design|design|designer|designers|lead designer|development)$/],
+ [/\bart direct\w*\b/,/^art direction$/],[/\bprize\b|\bpayout\b|\bmoney\b/,/^(?:prize pool|winnings)$/],
+ [/\b(?:how many players|attendance|players|attended)\b/,/^attendance$/],[/\bformats?\b/,/^formats?$/],
+ [/\bnickname\b|\bcalled\b/,/^nickname$/],[/\b(?:mechanics?|keywords?)\b/,/^(?:keywords.*|themes and mechanics)$/],
+ [/\b(?:how many cards|set size|how big)\b/,/^set size$/],[/\bplane\b/,/^plane$/],[/\b(?:set )?code\b/,/^expansion code$/],
+];
+const blockText=c=>(c||[]).map(x=>typeof x?.text==='string'?x.text:Array.isArray(x?.content)?blockText(x.content):x?.label||'').join('');
+const tidy=v=>String(v||'').replace(/\[\d+\]/g,'').replace(/\s*\b[A-Z]{3} flag /g,' · ').replace(/^ · /,'').replace(/\u200b/g,'').replace(/;\s*\d+ (?:years?|months?|days?) ago.*$/,'').replace(/\s+/g,' ').trim();
+/** The fact-box rows of a wiki article as [label, value]. */
+export function wikiFacts(article){
+ const out=[];for(const b of article?.lead||[])if(b?.infobox)for(const r of b.rows||[]){const c=r.cells||[];if(c.length===2&&c[0].header&&!c[1].header){const label=tidy(blockText(c[0].content)),value=tidy(blockText(c[1].content));if(label&&value&&value.length<=200)out.push([label,value]);}}
+ return out;
+}
+/** The fact a question asks for, or null: only a label the question's own words point at. */
+export function wikiFact(article,question){
+ const n=String(question||'').toLowerCase(),facts=wikiFacts(article);
+ for(const [ask,label] of FACT_WORDS)if(ask.test(n)){const f=facts.find(([l])=>label.test(l.toLowerCase()));if(f)return {label:f[0],value:f[1]};}
+ return null;
+}
+
 /**
  * tools: makeAskTools() result. io: { cardSearch({game,q,order,dir,limit}) -> [{name,price,ref?}], signal }
  * Returns { ok, say, strong, quote, items, more, buttons:[{label,item|route|search|discover|judge}], source, miss }
@@ -81,10 +108,12 @@ export async function answerFor(plan,tools,io={}){
   if(tool==='wiki_lookup'){
    const tries=[args.query,...(plan.call.alternates||[])].slice(0,3);
    for(const query of tries){
-    const r=await tools.wiki_lookup({game:g,query},{userRequest:tries.join(' '),signal:io.signal}).catch(()=>null),hit=r?.status==='available'&&r.results?.[0];
+    const r=await tools.wiki_lookup({game:g,query},{userRequest:tries.join(' '),signal:io.signal}).catch(()=>null),flat=x=>String(x||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(),hit=r?.status==='available'&&(r.results.find(x=>flat(x.source?.title)===flat(query))||r.results[0]);
     if(!hit)continue;
     const title=hit.source?.title||query;
-    return {ok:true,say:'From the wiki page',strong:title,quote:hit.extract||'',items:[],more:[],buttons:[{label:'Read the article',route:'#wiki/'+encodeURIComponent(title)}],others:r.results.slice(1,3).map(x=>x.source?.title).filter(Boolean),source:[r.source?.providerName||'Wiki','community reference'].join(' · ')};
+    // The article's own fact box answers "who won", "when", "where" directly; the short excerpt stays as the quote.
+    const article=io.wikiArticle?await io.wikiArticle(g,title).catch(()=>null):null,fact=article?wikiFact(article,plan.P.raw):null;
+    return {ok:true,say:'From the wiki page',strong:title,fact,quote:hit.extract||'',items:[],more:[],buttons:[{label:'Read the article',route:'#wiki/'+encodeURIComponent(title)}],others:r.results.filter(x=>x!==hit).slice(0,2).map(x=>x.source?.title).filter(Boolean),source:[r.source?.providerName||'Wiki','community reference'].join(' · ')};
    }
    return miss('The wiki has no page for that, or it could not be reached.');
   }
@@ -109,5 +138,5 @@ export function answerMarkup(a,read,{esc,preview=()=>''}){
  if(a.ask)return `<section class="answer-card is-ask" aria-live="polite">${head}<p class="answer-say">${esc(a.ask.ask)}</p>${(a.ask.choices||[]).length?`<div class="answer-choices">${a.ask.choices.map((c,i)=>`<button type="button" class="chip" data-answer-choice="${i}">${esc(c.name)}</button>`).join('')}</div>`:''}</section>`;
  if(!a.ok)return `<section class="answer-card is-miss" aria-live="polite">${head}<p class="answer-say">${esc(a.miss)}</p><p class="answer-source">Here is the closest the app has.</p></section>`;
  const say=a.strong&&a.say==='From the wiki page'?`${esc(a.say)} <b>${esc(a.strong)}</b>:`:`${a.strong?`<b>${esc(a.strong)}</b> `:''}${esc(a.say||'')}`;
- return `<section class="answer-card" aria-live="polite">${head}<p class="answer-say">${say}</p>${a.quote?`<blockquote class="answer-quote">${esc(a.quote)}</blockquote>`:''}${a.note?`<p class="answer-note">${esc(a.note)}</p>`:''}${a.items.length?`<div class="answer-items">${a.items.map((s,i)=>preview(s,i)).join('')}</div>`:''}${a.buttons.length?`<div class="answer-buttons">${a.buttons.map((b,i)=>`<button type="button" class="${i?'btn ghost':'btn primary'}" data-answer-button="${i}">${esc(b.label)}</button>`).join('')}</div>`:''}${a.source?`<p class="answer-source">${esc(a.source)}</p>`:''}${a.more?.length?`<p class="home-app-label">${esc(a.moreLabel||'Also')}</p><div class="answer-items is-more">${a.more.map((s,i)=>preview(s,i+a.items.length)).join('')}</div>`:''}${a.others?.length?`<p class="home-app-label">Also on the wiki</p><div class="answer-choices">${a.others.map(t=>`<button type="button" class="chip" data-answer-wiki="${esc(t)}">${esc(t)}</button>`).join('')}</div>`:''}</section>`;
+ return `<section class="answer-card" aria-live="polite">${head}<p class="answer-say">${say}</p>${a.fact?`<p class="answer-fact"><small>${esc(a.fact.label)}</small><b>${esc(a.fact.value)}</b></p>`:''}${a.quote?`<blockquote class="answer-quote">${esc(a.quote)}</blockquote>`:''}${a.note?`<p class="answer-note">${esc(a.note)}</p>`:''}${a.items.length?`<div class="answer-items">${a.items.map((s,i)=>preview(s,i)).join('')}</div>`:''}${a.buttons.length?`<div class="answer-buttons">${a.buttons.map((b,i)=>`<button type="button" class="${i?'btn ghost':'btn primary'}" data-answer-button="${i}">${esc(b.label)}</button>`).join('')}</div>`:''}${a.source?`<p class="answer-source">${esc(a.source)}</p>`:''}${a.more?.length?`<p class="home-app-label">${esc(a.moreLabel||'Also')}</p><div class="answer-items is-more">${a.more.map((s,i)=>preview(s,i+a.items.length)).join('')}</div>`:''}${a.others?.length?`<p class="home-app-label">Also on the wiki</p><div class="answer-choices">${a.others.map(t=>`<button type="button" class="chip" data-answer-wiki="${esc(t)}">${esc(t)}</button>`).join('')}</div>`:''}</section>`;
 }

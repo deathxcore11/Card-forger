@@ -1,7 +1,7 @@
 // The answer card is filled only from what the app's lookups return; failures and empty results say so.
 import assert from 'node:assert/strict';
 import {planQuery} from './answer-search.js';
-import {answerFor,answerMarkup} from './answer-run.js';
+import {answerFor,answerMarkup,wikiFact,wikiFacts} from './answer-run.js';
 
 const sets=[{code:'blb',name:'Bloomburrow'}];
 let suggested=[];
@@ -48,6 +48,17 @@ r=await ask('how do i scan a card');assert.equal(r.a.buttons[0].item.kind,'help'
 r=await ask('is blue better than red');assert.equal(r.a.ok,false);assert.match(r.a.miss,/can't answer/);
 r=await ask('lightning bolt');assert.equal(r.a,null,'a card name gets no answer card');
 r=await ask('build me a goblin deck');assert.equal(r.a,null,'the builder keeps deck requests');
+// The wiki's fact box answers the question the words point at (shape copied from the live 1999 World Championships article).
+const cell=(text,header=false)=>({header,content:[{type:'text',text}],colspan:1,rowspan:1}),row=(a,b)=>({cells:[cell(a,true),cell(b)]});
+const article={title:'1999 World Championships',lead:[{type:'paragraph',content:[{type:'text',text:'Intro'}]},{type:'table',infobox:true,rows:[{cells:[cell('1999 World Championships',true)]},row('Date','August 4–8, 1999'),row('Location','JPN flag Yokohama, Japan'),row('Attendance','208 players 39 teams'),row('Prize pool','$250,000'),row('Winner','DEU flag Kai Budde USA flag United States (team)'),row('Release date','August 2, 2024; 2 years ago (2024-08-02)')]}],sections:[]};
+assert.deepEqual(wikiFact(article,"who won magic's tournament in 1999"),{label:'Winner',value:'Kai Budde · United States (team)'});
+assert.deepEqual(wikiFact(article,'where was the 1999 world championship'),{label:'Location',value:'Yokohama, Japan'});
+assert.equal(wikiFact(article,'what was the prize at worlds 1999').value,'$250,000');
+assert.equal(wikiFact(article,'tell me about worlds 1999'),null,'no fact is picked unless the words ask for one');
+assert.equal(wikiFacts(article).find(f=>f[0]==='Release date')[1],'August 2, 2024');
+r=await (async()=>{const plan=planQuery("who won magic's tournament in 1999",{game:'mtg'});return {a:await answerFor(plan,tools,{wikiArticle:async()=>article}),plan};})();
+assert.deepEqual(r.a.fact,{label:'Winner',value:'Kai Budde · United States (team)'});
+assert.match(answerMarkup(r.a,r.plan.read,{esc}),/answer-fact"><small>Winner<\/small><b>Kai Budde · United/);
 // A lookup that throws is a plain miss.
 assert.equal((await answerFor(planQuery('best deck in the meta',{game:'mtg'}),{...tools,meta_decks:async()=>{throw Error('offline');}})).ok,false);
 // Markup: escaped, with the Read as chips, tiles through the caller's preview, indexed buttons.

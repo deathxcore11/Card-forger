@@ -120,6 +120,7 @@ import { metaState, loadMeta as loadMetaData, MTG_META_FORMATS, DEFAULT_MTG_META
 import {searchApp,parseQuery} from './universal-search.js';
 import {planQuery,fixChoices,gameOfLabel} from './answer-search.js';
 import {answerFor,answerMarkup} from './answer-run.js';
+import {readGameWikiArticle} from './mtg-wiki-client.js';
 import {searchGameConcepts} from './game-wiki-knowledge.js';
 import {communityState,communitySlideUrl} from './community-feed.js';
 import { mtgPower, mtgMetaKey, asShown, shownPower } from "./power.js";
@@ -4919,7 +4920,7 @@ const homeAnswer={
  },
  run(plan){
   const tools=ensureAskTools();
-  return answerFor(plan,tools,{cardSearch:async({game,q,order,dir,limit})=>{
+  return answerFor(plan,tools,{wikiArticle:async(game,title)=>{const d=await readGameWikiArticle(game,title);return d?.status==='available'?d.article:null;},cardSearch:async({game,q,order,dir,limit})=>{
    if(game!=='mtg')return [];
    const d=await api('/cards/search?'+new URLSearchParams({q:q+' game:paper',order,dir,unique:'cards'})).catch(()=>null);
    return (d?.data||[]).slice(0,limit||3).map(c=>{cacheCard(c);return {name:c.name,price:Number(c.prices?.usd)||null};});
