@@ -5703,6 +5703,7 @@ function answerDest(b, plan) {
   const g = plan.game;
   if (b.item) return {to: 'show', show: b.item};
   if (b.judge) return {to: 'judge', game: g, text: plan.P.raw};
+  if (b.build) return {to: 'build', game: b.build.game || g, request: b.build};
   if (b.discover) { if (g !== 'mtg') return {to: 'discover', game: g, kind: b.discover.kind, value: b.discover.value};
     const spec = b.discover.kind === 'artist' ? {q: 'a:"' + b.discover.value + '"'} : cardDiscoverySpec(g, b.discover.kind, b.discover.value);
     return spec?.q ? {to: 'search', game: g, q: spec.q, sort: ''} : {to: 'none'}; }

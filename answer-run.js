@@ -1,6 +1,7 @@
 // Runs a plan from answer-search.js with the app's own lookups (ai-tools.js) and shapes the answer card.
 // Every sentence is filled from what the lookup returned. A lookup that fails or comes back empty gives a
 // plain "miss" line, never a guess. No AI, no DOM: answerMarkup() only builds a string.
+import {readBuildContract} from './ai-build-contract.js';
 const usd=n=>typeof n==='number'&&Number.isFinite(n)?'$'+n.toFixed(2):null;
 // Dates are written by hand: the app's small JS engine has no locale formatting.
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -49,6 +50,10 @@ export async function answerFor(plan,tools,io={}){
  const {tool,args,pick}=plan.call,g=plan.game;
  try{
   if(tool==='go')return {ok:true,say:'Open '+args.title+'.',items:[],more:[],buttons:[{label:'Open '+args.title,route:args.route}],go:args.route};
+  if(tool==='build_deck'){
+   const {request,labels}=buildRequest(args.request,g,args.format);
+   return {ok:true,say:labels.length?'The deck builder is set up from your words: '+labels.join(', ')+'.':'Open the deck builder to choose a card, format and budget.',items:[],more:[],buttons:[{label:'Open the deck builder',build:request}],source:'Deck builder · nothing is saved until you choose'};
+  }
   if(tool==='glossary'){
    const e=plan.entry;
    return {ok:true,strong:e.label,quote:e.definition,items:[],more:[],source:e.sourceLabel,
@@ -132,6 +137,25 @@ export async function answerFor(plan,tools,io={}){
   }
  }catch{return miss('That lookup failed. Check your connection and try again.');}
  return null;
+}
+
+/** A typed deck request as the deck builder's own setup: {game, format, budget, colors, theme, creatureTypesOnly, seed}. The words are
+ *  read by the builder's fixed contract reader (ai-build-contract.js); nothing is guessed and no deck is drafted here. */
+const THEME_NAMES=['Cats','Angels','Humans','Elves','Goblins','Zombies','Lifelink','Lifegain','Tokens','Artifacts','Graveyard'];
+const COLOR_NAMES={W:'white',U:'blue',B:'black',R:'red',G:'green',C:'colorless'};
+export function buildRequest(words,game='mtg',format=''){
+ const c=readBuildContract([{type:'message',role:'user',content:String(words||'')}],null,{game}),g=c.game||game,request={game:g},labels=[];
+ const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
+ if(g==='mtg'){
+  const f=format||c.format;if(f){request.format=f;labels.push(f);}
+  if(c.colors?.length){request.colors=[...c.colors];labels.push(c.colors.map(x=>COLOR_NAMES[x]).join(' and '));}
+  const t=c.themes?.[0];if(t){request.theme=THEME_NAMES.find(n=>n.toLowerCase()===t||n.toLowerCase()===t+'s'||n.toLowerCase()===t.replace(/f$/,'ves'))||cap(t);labels.push(request.theme.toLowerCase()+' theme');}
+  if(c.creatureTypesOnly?.length)request.creatureTypesOnly=[...c.creatureTypesOnly];
+  const seed=c.commander||c.required_cards?.[0];if(seed){request.seed=seed;labels.push('built around '+seed);}
+ }
+ if(c.budget>0){request.budget=String(c.budget);labels.push((c.budgetBoundary==='exclusive'?'under $':'up to $')+c.budget);}
+ if(c.budget_basis==='owned'){request.budgetBasis='owned';labels.push('only cards you own');}
+ return {request,labels};
 }
 
 /** The answer card. preview(item,i) and esc come from the caller; buttons carry their index for the click handler. */

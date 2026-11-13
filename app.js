@@ -119,7 +119,7 @@ import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag, animateTurn
 import { metaState, loadMeta as loadMetaData, MTG_META_FORMATS, DEFAULT_MTG_META_FORMAT, allCachedMeta } from "./meta.js";
 import {searchApp,parseQuery} from './universal-search.js';
 import {planQuery,fixChoices,gameOfLabel} from './answer-search.js';
-import {answerFor,answerMarkup} from './answer-run.js';
+import {answerFor,answerMarkup,buildRequest} from './answer-run.js';
 import {readGameWikiArticle} from './mtg-wiki-client.js';
 import {searchGameConcepts} from './game-wiki-knowledge.js';
 import {communityState,communitySlideUrl} from './community-feed.js';
@@ -4713,20 +4713,21 @@ async function homeLookup(g,q){
   }catch{error=true;}}
  const result={cards,error,corrected};if(!error){homeResultCache.set(k,result);if(homeResultCache.size>40)homeResultCache.delete(homeResultCache.keys().next().value);}return result;
 }
+async function openBuilderFor(request){
+ if(request.game&&T.game()!==request.game&&await A.setGame({dataset:{game:request.game}})===false)return;
+ return deckExperience.open(request);
+}
 async function submitHome(q,mode){
  q=String(q||'').trim();if(!q)return;const g=T.game();homeQueries[g]=q;
- if(mode==='build'){const core=parseQuery(q).core;return A.askOpen({query:isDeckBuildRequest(q)?q:`Build me a ${core} deck`});}
- if((mode||homeIntent(q))==='ask'){
-  if(!isDeckBuildRequest(q)&&/\b(?:rules?|ruling|resolve|stack|trigger|can i (?:cast|summon|attack|activate)|when can)\b/i.test(q)){
-   A.askRules({dataset:{game:g}});const input=document.querySelector('.rules-ask-dialog .ask-input');if(input){input.value=q;input.focus();}return;
-  }
-  return A.askOpen({query:q});
+ // A deck request opens the deck builder set up from the words (format, budget, colours, theme). No AI is asked anywhere here.
+ if(mode==='build'||isDeckBuildRequest(q))return openBuilderFor(buildRequest(isDeckBuildRequest(q)?q:`Build me a ${parseQuery(q).core} deck`,g).request);
+ if((mode||homeIntent(q))==='ask'&&!isDeckBuildRequest(q)&&/\b(?:rules?|ruling|resolve|stack|trigger|can i (?:cast|summon|attack|activate)|when can)\b/i.test(q)){
+  A.askRules({dataset:{game:g}});const input=document.querySelector('.rules-ask-dialog .ask-input');if(input){input.value=q;input.focus();}return;
  }
  if(T.isTcg()){T.ui().search.q=q;await go('#search');if(T.game()===g)A.tSearch();}
  else{S.ui.db.term=q;dbInvalidate();await go('#search');if(T.game()===g)A.dbSearch();}
 }
 A.homeSearch=()=>submitHome($('#homeQ')?.value);
-A.homeAsk=()=>{const q=$('#homeQ')?.value||'';homeSearchController.close();A.askOpen();const input=document.querySelector('.ask-dialog .ask-input');if(input){input.value=q;input.focus();}};
 window.matchMedia?.("(min-width:1200px)").addEventListener?.("change",()=>placeGlobalSearch(T.game(),S.ui.view));
 const deckBoxTransitions=createDeckBoxTransitions();
 function refreshProfileAvatar(){
@@ -4935,6 +4936,7 @@ const homeAnswer={
   if(el.dataset.answerChoice!==undefined){const c=a.ask?.choices?.[Number(el.dataset.answerChoice)];return c?tools.open({kind:'set',game:plan.game,ref:String(c.id||c.code),label:c.name}):undefined;}
   const b=a.buttons?.[Number(el.dataset.answerButton)];if(!b)return;
   if(b.item)return tools.open(b.item);
+  if(b.build)return openBuilderFor(b.build);
   if(b.judge){A.askRules({dataset:{game:plan.game}});const input=document.querySelector('.rules-ask-dialog .ask-input');if(input){input.value=plan.P.raw;input.focus();}return;}
   if(b.discover){if(T.game()!==plan.game&&await A.setGame({dataset:{game:plan.game}})===false)return;return A.ruleCards({dataset:{game:plan.game,discoveryKind:b.discover.kind,discoveryValue:b.discover.value}});}
   if(b.search){S.ui.db.term=b.search.q;S.ui.db.filters={};dbInvalidate();await go('#search');if(T.game()==='mtg')return A.dbSearch();return;}
@@ -5148,7 +5150,6 @@ A.wikiCards=async t=>{const q=t.dataset.wikiQuery,account=accountGeneration;if(T
 A.mtgWikiRetry=()=>currentWikiPage().retry();
 A.mtgWikiDailyRetry=()=>currentWikiPage().daily(true);
 A.mtgWikiCancel=()=>currentWikiPage().cancelLookup();
-A.mtgWikiAsk=()=>{const text=$('#wikiQ')?.value.trim()||currentWikiPage().state.topic||'Explain this card game topic.';A.askOpen();const input=document.querySelector('.ask-dialog .ask-input');if(input){input.value=text;input.focus();}};
 A.cardTab = async (t) => {
   const commit=scopedCommit();
   const ctx = S.ui.sheetCtx;

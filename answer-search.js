@@ -121,8 +121,8 @@ export function planQuery(q,ctx={}){
  const mine=MINE.test(n),rank=RANKS.find(r=>r[1].test(n)),y=year(n);
  const format=()=>{const f=(FORMATS[game].includes(ctx.fix?.format)?ctx.fix.format:null)||findFormat(n,game)||(l=>FORMATS[game].includes(l)?l:null)(ctx.formatLast?.[game]==='EDH'?'Commander':ctx.formatLast?.[game])||DEFAULT_FORMAT[game];read.push(chip(f,'format',true));return f;};
 
- // Build a deck: the builder owns it, exactly as today.
- if(/\b(?:make|create|build)\b.*\bdeck\b/.test(n))return plan('build',null,{hand:'build'});
+ // Build a deck: the builder is set up from the words (format, budget, colours, theme); no AI drafts anything.
+ if(/\b(?:make|create|build)\b.*\bdeck\b/.test(n)){read.push(chip('deck builder','page'));return plan('build',{tool:'build_deck',args:{game,request:raw,format:ctx.fix?.format||''}});}
 
  // Do something in the app: "scan a card", "start a match", "open my wishlist".
  if(ACT_VERB.test(n)&&P.words.length<=6){const act=ACTIONS.find(a=>a[0].test(n));if(act){read.push(chip(act[1],'page'));return plan('go',{tool:'go',args:{route:act[2],title:act[1]}});}}

@@ -91,6 +91,10 @@ class AnswerEngineTest {
             val page = CollectionEngine.searchModel()
             assertEquals("c:r t:dragon f:standard", page.s("term"))
             assertTrue(page.getAsJsonArray("blocks").map { it.asJsonObject }.first { it.s("kind") == "tiles" }.getAsJsonArray("tiles").size() >= 3)
+            // A typed deck request sets up the app's Build a deck from its words; nothing is drafted by AI.
+            a = ask("build me a mono red goblin deck for modern under $50")!!.o("answer")!!
+            val build = a.list("buttons")[0].o("dest")!!
+            assertEquals("build", build.s("to")); assertEquals("""{"game":"mtg","format":"Modern","colors":["R"],"theme":"Goblins","budget":"50"}""", build.o("request").toString())
             a = ask("scan a card")!!.o("answer")!!
             assertEquals("#scan", a.list("buttons")[0].o("dest")!!.s("hash"))
             a = ask("best pokemon deck")!!.o("answer")!!

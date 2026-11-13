@@ -49,7 +49,8 @@ class SearchTest {
         assertEquals(listOf("gallery", "compact", "symbols"), m.getAsJsonArray("views").map { it.asJsonObject.s("mode") })
         val search = block(m, "search")!!
         assertEquals("Name, set + number, or text", search.s("placeholder"))
-        assertEquals("askOpen", search["ask"].asJsonObject.s("act"))
+        // The Ask AI button is gone (Randall 13 Nov): the box answers questions from the app's own data.
+        assertTrue(search["ask"] == null || search["ask"].isJsonNull)
         assertEquals(listOf("compareOpen", "go", "mtgWikiOpen", "dbRandom"), block(m, "tools")!!.getAsJsonArray("items").map { it.asJsonObject.s("act") })
         // store.js starts the search on Commander: the chip says so, and Clear all is there.
         assertEquals("Legal in Commander", block(m, "chips")!!.getAsJsonArray("items")[0].asJsonObject.s("label"))

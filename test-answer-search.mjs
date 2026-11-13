@@ -87,8 +87,8 @@ for(const [q,intent,tool,check,extra] of CASES){
 // A blank it cannot fill is asked for, never guessed.
 {const x=p('most expensive card in this set');assert.equal(x.intent,'set.rank');assert.equal(x.answerable,false);assert.equal(x.call,null);assert.deepEqual(x.missing,[{slot:'set',ask:'Which set?'}]);}
 // Work another screen owns is handed over, not answered here.
-assert.equal(p('build me a goblin deck').hand,'build');
-assert.equal(p('make a mono red deck under $50').hand,'build');
+{const x=p('build me a goblin deck');assert.equal(x.intent,'build');assert.equal(x.call.tool,'build_deck');assert.equal(x.call.args.request,'build me a goblin deck');}
+assert.equal(p('make a mono red deck under $50').call.tool,'build_deck');
 assert.equal(p('can i respond to a ward trigger with a counterspell').hand,'judge');
 assert.equal(p('what happens if two legendary creatures enter').hand,'judge');
 // What the app's data cannot answer is said plainly; a card name stays a card name.

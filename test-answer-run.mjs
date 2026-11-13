@@ -47,7 +47,8 @@ r=await ask('scan a card');assert.equal(r.a.go,'#scan');
 r=await ask('how do i scan a card');assert.equal(r.a.buttons[0].item.kind,'help');
 r=await ask('is blue better than red');assert.equal(r.a.ok,false);assert.match(r.a.miss,/can't answer/);
 r=await ask('lightning bolt');assert.equal(r.a,null,'a card name gets no answer card');
-r=await ask('build me a goblin deck');assert.equal(r.a,null,'the builder keeps deck requests');
+r=await ask('build me a mono red goblin deck for modern under $50');assert.deepEqual(r.a.buttons[0].build,{game:'mtg',format:'Modern',colors:['R'],theme:'Goblins',budget:'50'},'a deck request sets up the builder from its words');assert.match(r.a.say,/Modern, red, goblins theme, under \$50/);
+r=await ask('build me a deck');assert.deepEqual(r.a.buttons[0].build,{game:'mtg'},'nothing is guessed for a bare request');
 // The wiki's fact box answers the question the words point at (shape copied from the live 1999 World Championships article).
 const cell=(text,header=false)=>({header,content:[{type:'text',text}],colspan:1,rowspan:1}),row=(a,b)=>({cells:[cell(a,true),cell(b)]});
 const article={title:'1999 World Championships',lead:[{type:'paragraph',content:[{type:'text',text:'Intro'}]},{type:'table',infobox:true,rows:[{cells:[cell('1999 World Championships',true)]},row('Date','August 4–8, 1999'),row('Location','JPN flag Yokohama, Japan'),row('Attendance','208 players 39 teams'),row('Prize pool','$250,000'),row('Winner','DEU flag Kai Budde USA flag United States (team)'),row('Release date','August 2, 2024; 2 years ago (2024-08-02)')]}],sections:[]};

@@ -188,6 +188,8 @@ internal fun answerGo(scope: CoroutineScope, d: JsonObject, e: AnswerEnv) {
         "search" -> e.search(g, d.s("q"), d.s("sort"))
         "discover" -> e.discover(g, d.s("kind"), d.s("value"))
         "judge" -> CollectionWrites.judge(null, g)
+        // A typed deck request: the app's Build a deck, set up from the words (format, budget, colours, theme).
+        "build" -> d.o("request")?.let { CollectionWrites.building.value = CollectionWrites.BuildOpen(it, "openDeckFlow", e.web) }
         "route" -> answerRoute(d, e)
     }
 }
