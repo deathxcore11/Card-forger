@@ -39,3 +39,12 @@ const ptcg=await load('ptcg'),ygo=await load('ygo');
 a=judgeAnswer(ptcg,'what does poisoned do',{format:'Standard',glossary:PTCG_GLOSSARY});assert.match(a.lead.text,/During Pokémon Checkup, place a damage counter on your Poisoned Pokémon/);assert.ok(a.lead.text.length<600);assert.equal(a.terms[0].ours,true);
 a=judgeAnswer(ygo,'can i attack on the first turn',{glossary:YGO_GLOSSARY});assert.match(a.lead.text,/goes first cannot conduct their Battle Phase on their first turn/);
 console.log('judge-search: questions are answered with exact rule text, from the rulebook alone');
+// Card names inside a question are found in the name list the app ships; rulebook terms stay terms.
+{const {findCardNames}=await import('./judge-search.js');const names=new Set(readFileSync(new URL('./forge-card-names-e5a0f815.txt',import.meta.url),'utf8').split('\n').map(n=>n.trim().toLowerCase()).filter(Boolean));
+ const f=q=>findCardNames(q,names,mtg).map(x=>x.name);
+ assert.deepEqual(f('does questing beast kill a blocker with protection'),['questing beast']);
+ assert.deepEqual(f("can i counter thassa's oracle trigger with stifle"),["thassa's oracle",'stifle']);
+ assert.deepEqual(f('does deathtouch work with trample'),[]);
+ assert.deepEqual(f('can a creature attack the turn it enters'),[]);
+ assert.deepEqual(f('how does lightning bolt work with first strike'),['lightning bolt']);
+ console.log('judge-search: card names in a question are found without a network call');}

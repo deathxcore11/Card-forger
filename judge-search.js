@@ -211,3 +211,20 @@ export function judgeAnswer(pack, question, { format = '', cards = [], glossary 
   });
   return { status, read, lead: rules[0] || null, rules: rules.slice(1), terms: definitions, cards: cardRows, game: pack.game, format, edition: (pack.sources || [])[0] ? { title: pack.sources[0].title, date: pack.sources[0].date } : null };
 }
+
+/**
+ * Card names typed inside a question, found in a name list the app already ships (lower-cased Set), longest first.
+ * A name that is also a rulebook term (Flash, Counterspell is fine, "First Strike" is not a card) stays a term.
+ */
+export function findCardNames(question, names, pack = null, max = 3) {
+  if (!names?.size) return [];
+  const index = pack ? judgeIndex(pack) : null, raw = norm(question).replace(/[^a-z0-9',\- ]+/g, ' ').split(/\s+/).filter(Boolean), found = [], used = new Set();
+  for (let n = Math.min(7, raw.length); n >= 1 && found.length < max; n--) for (let i = 0; i + n <= raw.length && found.length < max; i++) {
+    if ([...Array(n).keys()].some(k => used.has(i + k))) continue;
+    const span = raw.slice(i, i + n), trimmed = span.join(' ').replace(/[,]+$/, ''), key = words(trimmed).join(' ');
+    const name = [trimmed, trimmed.replace(/'s$/, ''), trimmed.replace(/s$/, '')].find(x => names.has(x)); if (!name) continue;
+    if (index?.concepts.has(key) || (n === 1 && (name.length < 4 || STOP.has(stem(name)) || PLAIN.has(stem(name)) || /^(?:counter|block|blocks|attack|response|respond|destroy|exile|sacrifice|discard|draw|token|tokens|commander|stack|turn|instant|sorcery|creature|creatures|spell|spells|trigger|ability|copy|damage|combat|priority|mana|land|lands|library|graveyard|hand|play|plays|cast|enters|dies|flyer|flyers|opponent|opponents|target|targets|beat|beats|stop|stops|work|works|happens|blocker|blockers|attacker|attackers|untap|upkeep|board|wipe|player|players)$/.test(name)))) continue;
+    found.push({ name, at: i, words: n }); for (let k = 0; k < n; k++) used.add(i + k);
+  }
+  return found.sort((a, b) => a.at - b.at);
+}
