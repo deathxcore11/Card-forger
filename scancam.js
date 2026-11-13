@@ -1,4 +1,3 @@
-import { aiFetch, invalidateAiAuth, hasAiSession } from './ai-auth.js';
 import {mountFeedback,removeFeedback} from './feedback-layer.js';
 import {scannerLookupHTML,scannerCandidateCarousel,scannerBrowseHTML,scannerBrowseFilters,createScannerBrowse,scanHelp} from './scanner-review.js';
 import {attachPrintingCarousel} from './printing-carousel.js';
@@ -144,7 +143,7 @@ let ocrLoading = null,
   worker = null,
   workerLang = "",
   workerLoading = null;
-export const SCAN_DEADLINES={worker:15000,ocr:12000,local:6000,remote:8000,hydration:6000,artwork:2500,ai:12000,total:45000};
+export const SCAN_DEADLINES={worker:15000,ocr:12000,local:6000,remote:8000,hydration:6000,artwork:2500,total:45000};
 export function scanDeadline(work,ms,label,onTimeout=()=>{}) {
   let timer;
   return Promise.race([Promise.resolve().then(work),new Promise((_,reject)=>{timer=setTimeout(()=>{onTimeout();const e=Error(`${label} timed out. Capture saved for retry.`);e.code='SCAN_TIMEOUT';reject(e);},ms);})]).finally(()=>clearTimeout(timer));
@@ -704,47 +703,6 @@ export function recoverScanCandidates(g, result, visual, read = {}) {
   return {...result,cands:uniquePrintings([...suggestions,...result.cands.map(c=>({...c,exact:false,...(!compatible.length?{identityConflict:true}:{})}))]),tried:[...(result.tried||[]),...(visual.tried||[])]};
 }
 
-// The AI photo reader returns printed text only. Its transcription enters the
-// same catalogue, title and identifier gates as the phone's own reading: one
-// strong title observation plus a footer string, never a card ID or a verdict.
-export const AI_GAMES=['mtg','ptcg','ygo'];
-export function aiHintsRead(g,hints={}){
-  const name=String(hints.name||'').trim(),number=String(hints.number||'').trim(),set=String(hints.set||'').trim().toUpperCase();
-  let code=number;
-  // "LOB EN001" is the same printed code as LOB-EN001.
-  if(g==='ygo')code=number.toUpperCase().replace(/\s*-\s*|\s+/g,'-');
-  if(g==='mtg'){
-    // The footer grammar reads a fraction, or a bare number beside its rarity
-    // letter, with the set and language marker on the next line. A bare number
-    // gets a placeholder rarity letter; nothing downstream reads that letter.
-    const bare=/^\d{1,4}[a-z★†]?$/i.test(number),setCode=/^[A-Z0-9]{3,5}$/.test(set)?set:'';
-    code=[number&&(bare?`${number} R`:number),setCode&&`${setCode} EN`].filter(Boolean).join('\n');
-  }
-  return {name,code,full:'',stats:'',titles:name?[{text:name,source:'ai',confidence:92}]:[],...(AI_GAMES.includes(hints.game)?{game:hints.game}:{}),ai:true};
-}
-// A verified AI read stands alone. An unverified one is extra evidence beside
-// the phone read: a differing title or number still has to be reviewed.
-export function mergeAiEvidence(r,ai){
-  if(!ai)return r;
-  if(ai.verified||!r||r.g!==ai.g)return {...ai,cands:ai.cands.map(c=>ai.verified?c:{...c,exact:false})};
-  const read={...r.read,name:[ai.read.name,r.read.name].filter(Boolean).join('\n'),code:joinReads(ai.read.code,r.read.code),titles:[...(ai.read.titles||[]),...(r.read.titles||[{text:r.read.name||'',source:'title',confidence:null}])],...(ai.read.game?{game:ai.read.game}:{})};
-  return {...r,read,cands:uniquePrintings([...ai.cands,...r.cands]),tried:[...(r.tried||[]),...(ai.tried||[])],aiAssisted:true};
-}
-// The phone reader and the AI reader run together. A verified AI read wins at
-// once and ends the phone read; a phone read that verifies first stands; any
-// other phone result waits for the AI read (its own deadline) and absorbs it.
-// A promise that has already settled answers at once; a pending one yields the
-// sentinel. The promise must not reject (callers attach their own catch first).
-export const PENDING=Symbol('pending');
-export const settledValue=promise=>Promise.race([promise,Promise.resolve(PENDING)]);
-export async function raceReads(ocrTask,aiTask,onAiWin=()=>{}){
-  const ocr=ocrTask.then(value=>({value}),error=>({error})),ai=aiTask.then(value=>({value}),()=>({value:null}));
-  const first=await Promise.race([ocr.then(x=>({ocr:x})),ai.then(x=>({ai:x}))]);
-  if(first.ai?.value?.verified){onAiWin();return first.ai.value;}
-  const o=await ocr;if(o.error)throw o.error;
-  if(o.value?.cands?.some(c=>textVerifiedMatch(o.value.g,c,o.value.read)))return o.value;
-  return mergeAiEvidence(o.value,(await ai).value);
-}
 // Several printings share the read name and no number settled it: the picture
 // decides the order. Every candidate must compare, or the order stays as read.
 export async function rankByLikeness(g,card,cands){
@@ -755,17 +713,8 @@ export async function rankByLikeness(g,card,cands){
   if(a.score<0.5||(b&&a.score-b.score<0.04))return cands;
   return ranked.map(({c,score},i)=>({...c,artLikeness:score,...(i===0?{why:'Looks most like this printing · check printing'}:{})}));
 }
-// What the AI reader sees: the card at the original's resolution, cut to its
+
 // proposed frame with a margin, or the whole original when the frame is unsure.
-function aiCaptureImage(packet){
-  const source=packet.original,quad=packet.proposal?.cropSafe===true?packet.proposal.quad:null;
-  let sx=0,sy=0,sw=source.width,sh=source.height;
-  if(quad){const xs=quad.map(p=>p.x),ys=quad.map(p=>p.y),w=Math.max(...xs)-Math.min(...xs),h=Math.max(...ys)-Math.min(...ys);sx=Math.max(0,Math.min(...xs)-w*.04);sy=Math.max(0,Math.min(...ys)-h*.04);sw=Math.min(source.width-sx,w*1.08);sh=Math.min(source.height-sy,h*1.08);}
-  const k=Math.min(1,(quad?1024:1280)/Math.max(sw,sh)),c=document.createElement('canvas');
-  c.width=Math.max(1,Math.round(sw*k));c.height=Math.max(1,Math.round(sh*k));
-  c.getContext('2d').drawImage(source,sx,sy,sw,sh,0,0,c.width,c.height);
-  return c.toDataURL('image/jpeg',.85);
-}
 
 // Conflicting OCR must be reviewed even when it yields only one candidate.
 export function initialReviewIndex(entry) {
@@ -808,12 +757,11 @@ export function scanConditionNotice(q) {
 
 // Signed-in profiles get AI help automatically when the scanner can't identify a
 // card; the server still decides access. Signed-out visitors get the AI button.
-let aiAccount=()=>false;
 export function scanConfirmation(g, st, prefs) {
   const q=st.confirm;if(!q)return "";
   const c=st.cands?.[q.i??0],isBatch=!!q.batchId,options=st.cands||[],chosen=q.i>=0,inGrid=st.panel==='grid';
   const observations=st.supplement?`<details class="scan-review-more"><summary>Compare original and clearer frame</summary><figure><img class="scan-confirm-art" src="${esc(st.supplement.original)}" alt="First accepted original" width="96" height="134"><figcaption>First accepted original</figcaption></figure><figure><img class="scan-confirm-art" src="${esc(st.supplement.clearer)}" alt="Clearer supplemental frame" width="96" height="134"><figcaption>Clearer frame · review only</figcaption></figure></details>`:'';
-  const correction=scannerLookupHTML({...q,game:g},{busy:st.lookup,photo:!!st.shot,aiButton:!aiAccount()});
+  const correction=scannerLookupHTML({...q,game:g},{busy:st.lookup,photo:!!st.shot});
   const close=`<button class="icon" data-act="scanDismiss" aria-label="Keep for later and continue scanning" ${q.saving?'disabled':''}>✕</button>`;
   // In Your scans the card opens as a page of its own: it scrolls like a page and Save docks above the nav.
   const sheet=`scan-confirm scan-batch-review${inGrid?' is-fix-page':''}`;
@@ -832,7 +780,7 @@ export function scanConfirmation(g, st, prefs) {
   const finish=!chosen?`<p class="scan-step-hint">${q.inline?'Swipe to your printing, then tap it.':'Check the card above.'}</p>`
     :q.inline&&q.finish&&!candidate.finishUnconfirmed?`<div class="scan-finish"><span class="scan-finish-label">${kind}</span><span class="scan-chip is-static scan-selected-finish">${esc(finishLabel(g,candidate,q.finish))}</span>${qty}</div>`
     :`<div class="scan-finish"><span class="scan-finish-label" id="scanFinishLabel">${kind}</span><div class="scan-chips" role="radiogroup" aria-labelledby="scanFinishLabel">${fs.map(f=>`<button class="scan-chip" role="radio" aria-checked="${q.finish===f}" data-act="scanFinishChip" data-value="${esc(f)}" ${busy}>${esc(finishLabel(g,candidate,f))}</button>`).join('')}</div>${qty}</div>`;
-  const fixOpen=q.fixOpen||!!q.error||st.lookup||q.aiBusy;
+  const fixOpen=q.fixOpen||!!q.error||st.lookup;
   const browse=q.inline?scannerBrowseFilters(q.inline):`<button class="link small" data-act="scanChangePrinting" ${q.saving||q.pickerOpening||!chosen?'disabled':''}>${q.pickerOpening?'Loading printings…':'Browse every printing'}</button>`;
   // Your photo beside the match when one printing is chosen; the swipeable
   // candidate rail (with the photo above it) when there is more than one.
@@ -841,8 +789,8 @@ export function scanConfirmation(g, st, prefs) {
   const photoRow=st.shot?`<figure class="scan-fix-photo-row"><img src="${esc(st.shot)}" alt=""><figcaption>Your photo</figcaption></figure>`:'';
   const cards=compare||(q.inline?photoRow+scannerBrowseHTML(q.inline):`<div class="scan-fix-candidates">${shot}${scannerCandidateCarousel(st)}</div>`);
   const title=inGrid?'Fix card':`${GAME_LABEL[g]} · ${!chosen||q.inline&&!q.inline.selectedKey?'Find your printing':q.finish?'Ready to add':'Choose '+kind.toLowerCase()}`;
-  const primary=inGrid&&isBatch?`<button class="btn" data-act="scanFixSave" ${q.saving||q.aiBusy||st.lookup||!chosen||!q.finish?'disabled':''}>Save</button>`
-    :`<button class="btn" data-act="scanConfirm" ${q.saving||q.aiBusy||st.lookup||!chosen||!q.finish?'disabled':''}>${q.saving?'Saving…':'Add to collection'}</button>`;
+  const primary=inGrid&&isBatch?`<button class="btn" data-act="scanFixSave" ${q.saving||st.lookup||!chosen||!q.finish?'disabled':''}>Save</button>`
+    :`<button class="btn" data-act="scanConfirm" ${q.saving||st.lookup||!chosen||!q.finish?'disabled':''}>${q.saving?'Saving…':'Add to collection'}</button>`;
   return `${open}${head(title)}<div class="scan-confirm-body">${reviewCapturePile(st)}
   ${cards}
   ${finish}${observations}
@@ -857,7 +805,6 @@ export function scanConfirmation(g, st, prefs) {
 }
 
 export function registerScanner(ctx) {
-  aiAccount=typeof ctx.aiAccount==='function'?ctx.aiAccount:()=>false;
   const { A, C, render, toast, game, match, add, details } = ctx,
     s = () => S.ui.scan;
   const prefs = () => loadPrefs(game());
@@ -875,7 +822,7 @@ export function registerScanner(ctx) {
     const generation=lifecycleGeneration,st=s(),G=game();
     return () => !suspended&&generation===lifecycleGeneration&&s()===st&&game()===G&&S.ui.view==='scan';
   };
-  const photoDraft = st => ({mode:st.mode||'live',url:st.url||null,rot:st.rot||0,crop:st.crop&&typeof st.crop==='object'?{...st.crop}:null,auto:st.auto!==false,...(st.confirm&&!st.confirm.batchId?{confirm:{...st.confirm,pickerOpening:false,detailStartedFor:null,priceRequest:null,pickerRequest:null,inline:null,inlineStarted:false,candidateRail:null,aiBusy:false,aiRequest:null},cands:st.cands,read:st.read,shot:st.shot,status:st.status}:{})});
+  const photoDraft = st => ({mode:st.mode||'live',url:st.url||null,rot:st.rot||0,crop:st.crop&&typeof st.crop==='object'?{...st.crop}:null,auto:st.auto!==false,...(st.confirm&&!st.confirm.batchId?{confirm:{...st.confirm,pickerOpening:false,detailStartedFor:null,priceRequest:null,pickerRequest:null,inline:null,inlineStarted:false,candidateRail:null},cands:st.cands,read:st.read,shot:st.shot,status:st.status}:{})});
   const idleScan = draft => ({mode:'live',url:null,rot:0,crop:null,auto:true,cands:[],confirm:null,read:null,busy:false,status:'',camOn:false,photoLoading:false,...draft});
   const priceFor=(G,c,finish,selection={})=>ctx.priceOf(G,c,finish,{condition:selection.condition||'Near Mint',language:String(selection.lang||selection.language||'en').toLowerCase().replace('_','-')});
   const refreshReviewPrice=()=>{const q=s().confirm,c=s().cands?.[q?.i??0];if(q)q.price=c&&q.finish?priceFor(q.game||game(),c,q.finish,q):null;};
@@ -969,7 +916,6 @@ export function registerScanner(ctx) {
   const stopCamera = () => suspendCamera();
   ctx.stopCamera = stopCamera;
   ctx.accountChanged=()=>{
-    invalidateAiAuth();
     lifecycleGeneration++;stopCamera();closePop();
     for(const draft of photoDrafts.values())if(draft?.url)URL.revokeObjectURL(draft.url);
     photoDrafts.clear();switchSource=null;suspended=false;
@@ -1015,34 +961,6 @@ export function registerScanner(ctx) {
     const control=budget.adapterControl(active);
     try{return await scanDeadline(()=>match(G,{...read},lang,false,progress,prefs,control),Math.min(SCAN_DEADLINES.remote,budget.remaining),'Card lookup',()=>control.cancel());}
     finally{control.cancel();}
-  };
-  // One AI transcription per capture, raced against the phone reader. Skipped
-  // when turned off, offline or without a signed-in profile; any failure simply
-  // leaves the phone read in charge. Its result passes the ordinary gates.
-  const aiReadFlow=async(packet,selectedGame,snapshots,lang,progress,trace,active,budget)=>{
-    if(prefs().aiRead===false||globalThis.navigator?.onLine===false||!(await hasAiSession()))return null;
-    if(!active())return null;
-    const image=aiCaptureImage(packet);
-    const hints=await trace.stage('aiRead',()=>aiFetch('/api/ai/identify-card',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(Math.max(1000,Math.min(SCAN_DEADLINES.ai,budget.remaining))),body:JSON.stringify({game:selectedGame,image})}).then(async r=>{const result=await r.json();if(!r.ok)throw Error(result.message||'AI photo help is unavailable.');return result;}));
-    if(!active()||!hints?.readable||(!hints.name&&!hints.number))return null;
-    const G=AI_GAMES.includes(hints.game)?hints.game:selectedGame,read=aiHintsRead(G,hints);
-    if(!scanLookupNames(G,read).length&&!scanIdentifierEvidence(G,read).observations.length)return null;
-    let r=await trace.stage('aiLocal',()=>scanDeadline(()=>localScanMatch(G,read),SCAN_DEADLINES.local,'Local catalogue',()=>invalidateCatalogRead(G)));
-    if(!r.cands.some(c=>textVerifiedMatch(G,c,read))&&active()&&scanLookupNames(G,read).length){
-      try{const remote=await budget.lookup(scanQueryKey(G,read),()=>trace.stage('aiRemote',()=>boundedMatch(G,read,lang,progress,snapshots[G]||{},active,budget)));r={...r,cands:uniquePrintings([...r.cands,...remote.cands].sort((a,b)=>Number(!!b.exact)-Number(!!a.exact))),tried:[...(r.tried||[]),...(remote.tried||[])]};}
-      catch(e){if(e.code==='SCAN_TIMEOUT'||e.code==='SCAN_BUDGET'||e.code==='SCAN_CANCELED')throw e;}
-    }
-    const cands=rankScanCandidates(G,r.cands||[],read);
-    return budget.checkpoint({...r,g:G,read,cands,ai:true,verified:cands.some(c=>textVerifiedMatch(G,c,read))});
-  };
-  // Every queued capture is read by AI while it waits, so a fast scanner never
-  // waits on the previous card: by the time the reader reaches it a verified
-  // answer is usually there and the phone reader is skipped altogether.
-  const prefetchAiRead=(queued,entry,G,snapshots)=>{
-    const active=()=>!suspended&&loadBatch().some(x=>x.id===entry.id&&x.captureRevision===entry.captureRevision);
-    const started=clockNow(),trace={stage:(name,fn)=>fn()};
-    queued.aiTask=aiReadFlow(queued,G,snapshots,entry.ocrLang||'eng',()=>{},trace,active,queued.budget).catch(()=>null);
-    queued.aiTask.then(()=>{queued.aiPrefetchMs=clockNow()-started;});
   };
   const readFlow = async (card, selectedGame, snapshots, lang, progress, trace, active,budget,view=null) => {
     let G=selectedGame,read;
@@ -1218,19 +1136,7 @@ export function registerScanner(ctx) {
       const checkpoint=budget.checkpoint.bind(budget);budget.checkpoint=result=>{if(result.cands?.length&&trace.timings.firstCandidateMs==null)trace.timings.firstCandidateMs=clockNow()-(packet.processingAt||processingAt);return checkpoint(result);};
       try {
         const rawFirst=!view&&(entry.originalOnly||entry.geometryUncertain||packet.proposal?.cropSafe===false);
-        // A verified AI read stops the phone reader at its next step; its late
-        // rejection is absorbed by the race, and its status lines stop with it.
-        let aiWon=false;const ocrActive=()=>current()&&!aiWon,ocrProgress=m=>{if(ocrActive())setStatus(m);};
-        const aiTask=packet.aiTask||aiReadFlow(packet,entry.game,snapshots,entry.ocrLang||'eng',progress,trace,current,budget).catch(()=>null);
-        if(packet.aiPrefetchMs!=null)trace.timings.aiPrefetchMs=packet.aiPrefetchMs;
-        // A read prefetched while this capture waited in the queue and already
-        // verified a printing needs no phone reader at all.
-        const early=packet.aiTask?await settledValue(packet.aiTask):PENDING;
-        if(early!==PENDING&&early?.verified){aiWon=true;r=early;}
-        else{
-          const ocrTask=rawFirst?readOriginalEvidence(packet.original,null,entry,ocrProgress,trace,ocrActive,budget):readFlow(card,entry.game,snapshots,entry.ocrLang||'eng',ocrProgress,trace,ocrActive,budget,view);
-          r=await raceReads(ocrTask,aiTask,()=>{aiWon=true;});
-        }
+        r=await (rawFirst?readOriginalEvidence(packet.original,null,entry,progress,trace,current,budget):readFlow(card,entry.game,snapshots,entry.ocrLang||'eng',progress,trace,current,budget,view));
         if(!r.picture&&!r.cands.some(c=>textVerifiedMatch(r.g,c,r.read))&&packet.proposal?.quad&&!rawFirst)r=await readOriginalEvidence(packet.original,r,entry,progress,trace,current,budget);
         // A near-edge card can fail conservative auto geometry while still giving
         // a useful deskew hypothesis. Probe its upright title/footer after the
@@ -1323,7 +1229,7 @@ export function registerScanner(ctx) {
     for(let i=captureBuffer.length-1;i>=0;i--)if(captureBuffer[i].id===entry.id)captureBuffer.splice(i,1);
     enqueueCapture.lastAccepted={id:entry.id,revision:entry.captureRevision,budget};
     const queued={...packet,budget,refinement:capture.refinement===true,id:entry.id,captureRevision:entry.captureRevision,queuedAt:clockNow(),captureMs:clockNow()-started+(capture.captureMs||0),detectMs:capture.detectMs,frameAnalysisMs:capture.frameAnalysisMs,firstEligibleToAcceptedMs:capture.firstEligibleAt?Date.now()-capture.firstEligibleAt:0,stableMs:capture.stableMs,persistMs:clockNow()-persistStarted};
-    prefetchAiRead(queued,entry,G,snapshots);captureBuffer.push(queued);s().buffered=captureBuffer.length;
+    captureBuffer.push(queued);s().buffered=captureBuffer.length;
     if(!capture.refinement)(s().queueAnimationIds ||= []).push(entry.id);
     feedback('ok',prefs());flash(capture.refinement?'Clearer frame · same capture':'Queued · next card');render();void drainCaptures();return true;
   };
@@ -1630,7 +1536,7 @@ export function registerScanner(ctx) {
   };
 
   if(ctx.I){
-    const edit=(field,t)=>{const q=s().confirm;if(q){q[field]=t.value;q.aiRequest=null;q.aiBusy=false;}};
+    const edit=(field,t)=>{const q=s().confirm;if(q){q[field]=t.value;}};
     ctx.I.scanNameDraft=t=>edit('nameDraft',t);
     ctx.I.scanNumberDraft=t=>edit('numberDraft',t);
     ctx.I.scanSetDraft=t=>edit('setDraft',t);
@@ -1645,7 +1551,7 @@ export function registerScanner(ctx) {
     const st=s(),review=st.confirm,G=review?.game||game(),visitCurrent=scanCurrent(),request=Symbol('name-correction');
     const captureId=review?.batchId,revision=review?.captureRevision;
     const current=()=>visitCurrent()&&st.confirm===review&&st.lookupRequest===request&&(!captureId||loadBatch().some(e=>e.id===captureId&&e.captureRevision===revision));
-    st.lookup=true;st.lookupRequest=request;if(review){review.nameDraft=q;review.numberDraft=number;review.setDraft=set;review.aiRequest=null;review.aiBusy=false;}else st.read=null;
+    st.lookup=true;st.lookupRequest=request;if(review){review.nameDraft=q;review.numberDraft=number;review.setDraft=set;}else st.read=null;
     setStatus('Looking it up…');
     let r;
     // Only a code typed? The card already on screen supplies the name, so "46"
@@ -1709,7 +1615,7 @@ export function registerScanner(ctx) {
   };
   A.scanBatchReview=t=>{if(!s().batchSaving&&!s().confirm?.saving)openBatchReview(t?.dataset?.id||'');};
   A.scanFinishChip=t=>C.scanConfirmFinish({value:t.dataset.value});
-  A.scanFixToggle=()=>{const q=s().confirm;if(q){q.fixOpen=!(q.fixOpen||!!q.error||s().lookup||q.aiBusy);if(!q.fixOpen)q.error='';render();}};
+  A.scanFixToggle=()=>{const q=s().confirm;if(q){q.fixOpen=!(q.fixOpen||!!q.error||s().lookup);if(!q.fixOpen)q.error='';render();}};
   A.scanConfirmQty=t=>{const q=s().confirm;if(q&&!q.saving){q.qty=Math.min(999,Math.max(1,q.qty+Number(t.dataset.d)));persistReview();render();}};
   A.scanRetryConditionPrice=()=>{const q=s().confirm;if(q&&!q.saving&&q.priceStatus!=='loading')requestReviewPrice({retry:true});};
   A.scanConfirmCondition=t=>{const q=s().confirm;if(q&&!q.saving&&CONDITIONS.some(([v])=>v===t.dataset.condition)){q.condition=t.dataset.condition;q.detailsOpen=true;refreshReviewPrice();persistReview();render();requestReviewPrice();}};
@@ -1727,13 +1633,13 @@ export function registerScanner(ctx) {
     const request=Symbol('printing-review'),revision=String(q.captureRevision||''),captureId=String(q.batchId||''),visitCurrent=scanCurrent();
     const isCurrent=()=>visitCurrent()&&st.confirm===q&&q.pickerRequest===request&&
       (!captureId||loadBatch().some(row=>row.id===captureId&&String(row.captureRevision||'')===revision));
-    q.inline?.close();q.inline=null;q.inlineStarted=true;q.aiRequest=null;q.aiBusy=false;q.pickerRequest=request;q.pickerOpening=true;render();
+    q.inline?.close();q.inline=null;q.inlineStarted=true;q.pickerRequest=request;q.pickerOpening=true;render();
     try{
       await ctx.openPrintingPicker({game:G,candidate:c,captureId,captureRevision:revision,parentContext:S.ui.sheetCtx,isCurrent,
-        ...(ctx.inlinePrinting?{openInline:async config=>{if(!isCurrent())return;const [code='',rarity='']=String(c.print||'').split('|');q.inline=createScannerBrowse({...config,focus:{cardId:c.id,code,rarity}},{current:()=>isCurrent()&&!q.saving,draw:()=>{if(isCurrent())drawReview();},preview:()=>{q.aiRequest=null;q.aiBusy=false;st.lookupRequest=null;st.lookup=false;q.i=-1;q.finish='';q.price=null;q.priceRequest=null;persistReview();}});await q.inline.load();}}:{}),
+        ...(ctx.inlinePrinting?{openInline:async config=>{if(!isCurrent())return;const [code='',rarity='']=String(c.print||'').split('|');q.inline=createScannerBrowse({...config,focus:{cardId:c.id,code,rarity}},{current:()=>isCurrent()&&!q.saving,draw:()=>{if(isCurrent())drawReview();},preview:()=>{st.lookupRequest=null;st.lookup=false;q.i=-1;q.finish='';q.price=null;q.priceRequest=null;persistReview();}});await q.inline.load();}}:{}),
         onSelect:result=>{
           if(!isCurrent()||!result?.candidate||result.candidate.game!==G||(!finishesFor(G,result.candidate).includes(result.finish)&&!(result.finish===''&&result.candidate.finishUnconfirmed===true)))return false;
-          q.aiRequest=null;q.aiBusy=false;st.lookupRequest=null;st.lookup=false;
+          st.lookupRequest=null;st.lookup=false;
           const candidate={...result.candidate,exact:false,printingConfirmed:true,reviewSource:'printing-picker'};
           // This is explicit manual review, not new OCR evidence or an automatic save.
           // Update only printing fields; capture pixels, revision and defaults stay intact.
@@ -1755,30 +1661,6 @@ export function registerScanner(ctx) {
   A.scanBrowseClear=()=>s().confirm?.inline?.clear();
   C.scanBrowseFilter=t=>s().confirm?.inline?.filter(t.dataset.field,t.value);
   C.scanBrowseVariant=t=>{const q=s().confirm,b=q?.inline;if(!b||q.saving)return;b.versions[t.dataset.group]=t.value;b.selectedKey='';q.i=-1;q.finish='';q.price=null;q.priceRequest=null;persistReview();render();};
-  A.scanIdentifyAI=async()=>{
-    const st=s(),q=st.confirm;if(!q||q.saving||q.aiBusy||st.lookup||!st.shot)return;
-    const visit=scanCurrent(),token=Symbol('photo-identification'),captureId=q.batchId,revision=q.captureRevision;
-    const current=()=>visit()&&st.confirm===q&&q.aiRequest===token&&(!captureId||loadBatch().some(e=>e.id===captureId&&e.captureRevision===revision));
-    q.aiRequest=token;q.aiBusy=true;q.aiMessage='Let me take a closer look at the name and bottom number…';q.error='';render();
-    try{
-      let image=st.shot;
-      if(!ctx.identifyPhoto){const photo=await loadImage(image);if(!current())return;const scale=Math.min(1,1400/Math.max(photo.naturalWidth,photo.naturalHeight)),canvas=document.createElement('canvas');canvas.width=Math.round(photo.naturalWidth*scale);canvas.height=Math.round(photo.naturalHeight*scale);canvas.getContext('2d').drawImage(photo,0,0,canvas.width,canvas.height);image=canvas.toDataURL('image/jpeg',.88);}
-      if(!current())return;
-      const hints=ctx.identifyPhoto?await ctx.identifyPhoto({game:q.game||game(),image}):await aiFetch('/api/ai/identify-card',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(50000),body:JSON.stringify({game:q.game||game(),image})}).then(async r=>{const result=await r.json();if(!r.ok)throw Error(result.message||'AI photo help is unavailable. Try the name and bottom number.');return result;});
-      if(!current())return;
-      const G=q.game||game();
-      if(hints.game!=='unknown'&&hints.game!==G){q.aiMessage='This looks like a different game. Switch games and try again, or enter the name and bottom number.';return;}
-      if(!hints.readable||(!hints.name&&!hints.number)){q.aiMessage=scanHelp;return;}
-      q.nameDraft=hints.name||'';q.numberDraft=hints.number||'';q.setDraft=hints.set||'';q.aiMessage='I found a few clues. Checking them against the card catalogue…';render();
-      const candidates=await ctx.lookupCandidates?.(G,{name:hints.name,number:hints.number,set:hints.set||'',strictName:true},{isCurrent:current});
-      if(!current())return;
-      if(!candidates?.length){q.aiMessage='I could read part of it, but couldn’t match a card yet. Check the name and bottom number below, or try a clearer photo.';return;}
-      q.inline?.close();st.cands=candidates.map(c=>({...c,exact:false,printingConfirmed:false,reviewSource:'ai-hint'}));
-      Object.assign(q,{i:0,finish:'',price:null,priceRequest:null,priceStatus:'',pickerRequest:null,inline:null,inlineStarted:false,candidateGroup:'0',error:'',unresolved:false,aiMessage:'Here’s what I could match. Check the art, set and number, then choose your finish.'});
-      if(captureId)updatePending(captureId,{cands:st.cands,selectedIndex:0,finish:'',status:'review',printingVerified:false,printingConfirmed:false,reason:'AI suggested a catalogue match · check printing'});
-    }catch(e){if(current())q.aiMessage=e.name==='TimeoutError'?'That took too long. Try a clearer photo, or enter the name and bottom number.':e.message||scanHelp;}
-    finally{if(current()){q.aiBusy=false;render();if(st.cands.length===1&&q.aiMessage.startsWith('Here’s'))void A.scanChangePrinting();}}
-  };
   A.scanRetry=async()=>{
     const st=s(),q=st.confirm,current=scanCurrent();if(suspended||st.busy||q?.saving)return;
     const entry=loadBatch().find(x=>x.id===q?.batchId);
@@ -1795,7 +1677,7 @@ export function registerScanner(ctx) {
   A.scanBatchDiscard=()=>{const q=s().confirm;if(q?.batchId&&!q.saving){removeBatch(q.batchId);resetConfirmation('Capture removed. Move to the next card.');}};
   A.scanConfirm=async()=>{
     const st=s(),q=st.confirm,c=st.cands?.[q?.i??0],G=q?.game||game();
-    if(!q||!c||q.i<0||!q.finish||q.saving||q.aiBusy||st.lookup)return;
+    if(!q||!c||q.i<0||!q.finish||q.saving||st.lookup)return;
     q.saving=true;q.error='';q.errorDetail='';render();
     try{
       const resolved=await hydrateCandidate(G,c);
@@ -1916,7 +1798,7 @@ export function registerScanner(ctx) {
   // Fix sheet in the grid: Save marks the card ready and keeps it in the batch.
   A.scanFixSave=()=>{
     const st=s(),q=st.confirm,c=st.cands?.[q?.i??0],G=q?.game||game();
-    if(!q?.batchId||!c||q.i<0||!q.finish||q.saving||q.aiBusy||st.lookup)return;
+    if(!q?.batchId||!c||q.i<0||!q.finish||q.saving||st.lookup)return;
     if(!finishesFor(G,c).includes(q.finish)){q.finish='';q.error='This printing has different finishes. Choose its exact finish.';render();return;}
     persistReview();updatePending(q.batchId,{status:'ready',printingVerified:true,reason:'Checked by you',reviewTouched:true});
     closeReview();st.status='';render();void drainCaptures();
@@ -2088,7 +1970,6 @@ export function registerScanner(ctx) {
       ${G === "mtg" ? chk("ignorePromos", "Ignore promos", "Prefer the regular printing when a name match lands on a promo.") : ""}
       ${chk("preferFoil", "Prefer foil", "Start new scans as foil (you can still tap the finish).")}
       ${chk("confirmEach", "Check every card before adding", "Off: cards with a verified name and number add in one tap from Your scans.")}
-      ${chk("aiRead", "Read with AI", "Each capture is also read by AI for a faster, surer match. Off keeps reading on this device only.")}
       ${chk("sounds", "Sounds", "A short chime for each card added, a low tone when nothing matched.")}
       ${chk("haptics", "Vibration", "A tap on each card added.")}
       ${chk("showValue", "Show prices and total value")}
@@ -2196,7 +2077,7 @@ export function registerScanner(ctx) {
     // retires every old callback/read; import, recovery, reset and game changes
     // use the full stop even when their saved game happens to match.
     const keepCamera=workspace&&kind==='undo'&&sourceGame===targetGame&&S.ui.view==='scan'&&st.camOn&&!!stream;
-    switchSource={game:sourceGame,keepCamera,torch:st.torch,torchCap:st.torchCap,lastCaptureAt:st.lastCaptureAt,review:st.confirm?{...st.confirm,pickerOpening:false,detailStartedFor:null,priceRequest:null,pickerRequest:null,inline:null,inlineStarted:false,candidateRail:null,aiBusy:false,aiRequest:null}:null,cands:st.cands,read:st.read,shot:st.shot,status:st.status};
+    switchSource={game:sourceGame,keepCamera,torch:st.torch,torchCap:st.torchCap,lastCaptureAt:st.lastCaptureAt,review:st.confirm?{...st.confirm,pickerOpening:false,detailStartedFor:null,priceRequest:null,pickerRequest:null,inline:null,inlineStarted:false,candidateRail:null}:null,cands:st.cands,read:st.read,shot:st.shot,status:st.status};
     lifecycleGeneration++;
     suspended=true;
     closePop();
@@ -2245,11 +2126,10 @@ export function registerScanner(ctx) {
         q.candidateRail?.carouselObserver?.disconnect();
         const rail=q.candidateRail={activeGroup:q.candidateGroup??String(Math.max(0,q.i||0))};
         attachPrintingCarousel(document.querySelector('.scan-candidate-carousel'),rail,{step:n=>rail.moveCarousel?.(n),onChange:i=>{if(current()&&st.confirm===q&&!q.saving){q.candidateGroup=String(i);q.i=-1;q.finish='';q.price=null;q.priceRequest=null;persistReview();render();}}});
-        if(ctx.inlinePrinting&&!q.inlineStarted&&!q.pickerOpening&&!q.aiBusy&&st.cands.length&&new Set(st.cands.map(c=>c.name)).size===1){q.inlineStarted=true;queueMicrotask(()=>{if(current()&&st.confirm===q)void A.scanChangePrinting();});}
+        if(ctx.inlinePrinting&&!q.inlineStarted&&!q.pickerOpening&&st.cands.length&&new Set(st.cands.map(c=>c.name)).size===1){q.inlineStarted=true;queueMicrotask(()=>{if(current()&&st.confirm===q)void A.scanChangePrinting();});}
       }
       // The scanner found nothing: for a signed-in profile, ask AI once per capture
       // without a tap. The match still needs the user's confirmation to be saved.
-      if(!st.cands?.length&&st.shot&&aiAccount()&&!q.aiAutoTried&&!q.aiBusy&&!q.saving&&!st.lookup){q.aiAutoTried=true;queueMicrotask(()=>{if(current()&&st.confirm===q)void A.scanIdentifyAI();});}
       if((c?.localReference||c?.detailsOnly) && q.detailStartedFor!==JSON.stringify([c.id,c.print,c.setReleaseId||c.releaseName])){
         q.detailStartedFor=JSON.stringify([c.id,c.print,c.setReleaseId||c.releaseName]);
         hydrateCandidate(reviewGame,c).then(full=>{if(current()&&st.confirm===q&&st.cands[q.i??0]===c){st.cands[q.i??0]=full;const fs=finishesFor(reviewGame,full);if(q.finish&&!fs.includes(q.finish))q.finish="";q.price=q.finish?priceFor(reviewGame,full,q.finish,q):null;render();if(q.priceReviewRequested)requestReviewPrice();}}).catch(()=>{});

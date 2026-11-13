@@ -167,23 +167,9 @@ async function reviewScenario(app,game){
   assert.equal(await inventorySnapshot(page),beforeState);assert.equal(await page.locator('#sheet[open]').count(),0);
   assert.equal(await page.evaluate(()=>window.__uiTestState.state.settings.game),'mtg');
   await capture(page,`synthetic-search-scanner-${game}-selected-inline`);
-  // An unreadable photo is friendly and leaves the existing catalogue selection intact.
-  await page.route('**/api/ai/identify-card',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({game,readable:false,name:'',number:'',set:''})}));
-  await openReviewFix(page);await page.getByRole('button',{name:'Identify with AI',exact:true}).click();
-  await page.locator('.scan-ai-message').filter({hasText:'clearer photo'}).waitFor();
-  assert.equal((await queue(page))[0].cands[0].id,row.cardId);assert.equal(await inventorySnapshot(page),beforeState);
   await act(page,'scanDismiss').click();await page.waitForFunction(()=>!window.__uiTestState.ui.scan.confirm);
   assert.equal((await queue(page)).length,2);assert.equal(await page.evaluate(()=>window.__scannerReviewTest.ocrCalls),0);
   const playing=await page.locator('#scanVideo').evaluate(video=>video.srcObject===window.__scannerReviewTest.stream&&!video.paused);assert(playing,'Same camera continues after inline review');
-}
-async function lateCancelledScenario(app){
- const {page}=app;await seed(app,'mtg');await readyInline(page);
- let release,seen;const started=new Promise(r=>seen=r),gate=new Promise(r=>release=r);
- await page.route('**/api/ai/identify-card',async route=>{seen();await gate;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({game:'mtg',readable:true,name:'Fixture',number:'123',set:'one'})}).catch(()=>{});});
- await openReviewFix(page);await page.getByRole('button',{name:'Identify with AI',exact:true}).click();await bounded(started,'Held AI photo read');
- await act(page,'scanDismiss').click();await openCapturedCard(page,'synthetic-capture-B');await readyInline(page);
- const before=await queue(page);release();await frame(page);
- assert.deepEqual(await queue(page),before);assert.equal(await page.evaluate(()=>window.__uiTestState.ui.scan.confirm.batchId),'synthetic-capture-B');assert.equal(await page.locator('#sheet[open]').count(),0);
 }
 async function seedYgoCodeMetadata(page){
   const guards=await page.evaluate(ygoCodeGuardSnapshot,YGO_CODE_FIXTURE);assertYgoCodeGuards(guards);
@@ -278,7 +264,6 @@ async function run(label,game,fn){
 try{
   server=await startServer();browser=await chromium.launch();
   for(const game of GAMES)await run(`${game}-scanner-printing-review`,game,app=>reviewScenario(app,game));
-  await run('mtg-late-ai-a-to-b','mtg',lateCancelledScenario);
   await run('ygo-manual-full-code','ygo',ygoManualFullCodeScenario);
   await run('ygo-uncertain-code-review','ygo',ygoUncertainCodeScenario);
 }catch(error){record('runner','setup',error);}
