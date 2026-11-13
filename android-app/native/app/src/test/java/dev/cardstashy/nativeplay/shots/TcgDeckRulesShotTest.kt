@@ -19,6 +19,7 @@ import dev.cardstashy.nativeplay.account.Decks
 import dev.cardstashy.nativeplay.ui.CardGame
 import dev.cardstashy.nativeplay.ui.CollectionDeckRoute
 import dev.cardstashy.nativeplay.ui.CollectionGame
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -114,14 +115,15 @@ class TcgDeckRulesShotTest {
         assertTrue(shows("PDF page 12"))
     }
 
-    /** Ask about the rules is the site's AI (app.js askRules): it opens the website's Rules tab and presses the same button there. */
+    /** Ask about the rules (app.js askRules) opens the app's own Ask a Judge for Pokémon, with the deck's format; never the website (gap audit H4). */
     @Test fun pokemonAsk() {
+        dev.cardstashy.nativeplay.ui.CollectionWrites.judging.value = null
         open(CardGame.PTCG, pikachu, "Pikachu ex")
         tap("Ask about Pokémon rules →")
-        rule.waitUntil(20_000) { webs.isNotEmpty() }
-        val (url, press) = webs.last()
-        assertTrue(url, url.endsWith("#tdeck/$pikachu/rules"))
-        assertTrue(press.orEmpty(), press.orEmpty().contains("[data-act=\"askRules\"]"))
+        rule.waitUntil(20_000) { dev.cardstashy.nativeplay.ui.CollectionWrites.judging.value != null }
+        assertEquals("ptcg", dev.cardstashy.nativeplay.ui.CollectionWrites.judging.value!!.game)
+        assertTrue(webs.toString(), webs.isEmpty())
+        dev.cardstashy.nativeplay.ui.CollectionWrites.judging.value = null
     }
 
     /**
