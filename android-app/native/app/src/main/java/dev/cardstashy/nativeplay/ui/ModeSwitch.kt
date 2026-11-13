@@ -145,8 +145,12 @@ fun CollectionScreen(onPlay: () -> Unit, url: String = "https://cardstashy.com/"
                 addJavascriptInterface(object { @android.webkit.JavascriptInterface fun missed() { post { android.widget.Toast.makeText(ctx, "That opens on the website. Sign in there to use it.", android.widget.Toast.LENGTH_LONG).show() } } }, "NativePress")
                 webViewClient = object : WebViewClient() {
                     // The sign-in step (WebSession): served by the app at the site's own origin, once, before the page.
+                    // Planeswalk (gap audit G6): while it is the page open, it and its scripts come from the app's pack.
+                    @Volatile private var planeswalk = PlaneswalkPack.isPage(android.net.Uri.parse(url))
                     override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): android.webkit.WebResourceResponse? {
                         val u = request.url
+                        if (request.isForMainFrame && u.path != WebSession.PATH) planeswalk = PlaneswalkPack.isPage(u)
+                        if (planeswalk) PlaneswalkPack.serve(ctx, u)?.let { return it }
                         if (!request.isForMainFrame || u.host != "cardstashy.com" || u.path != WebSession.PATH) return null
                         val html = WebSession.page(signedIn.value, url); signedIn.value = null
                         return android.webkit.WebResourceResponse("text/html", "utf-8", html.byteInputStream()).apply { responseHeaders = mapOf("Cache-Control" to "no-store") }

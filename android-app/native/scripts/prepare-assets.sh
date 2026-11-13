@@ -9,6 +9,7 @@
 #   app/src/main/assets/random-build.js  the site's random deck builder for QuickJS (needs npm: scripts/js-tools)
 #   app/src/main/assets/random-build-web.js  the same builder for the WebView (RandomBuild.kt runs it there first)
 #   app/src/main/assets/collection-engine.js  the site's Collection Home code for QuickJS (same npm tools)
+#   app/src/main/assets/planeswalk/  Planeswalk's page and its scripts (export-planeswalk.mjs)
 #
 #   ENGINE_TGZ  engine build (default: the pods build plus the lesson match setup and the payment busy-settle fix, patches/setup-stack-busy-settle-on-0dbf4041.patch via forge-engine/rebuild-bridge.sh)
 set -euo pipefail
@@ -50,6 +51,8 @@ node "$HERE/scripts/export-card-data.mjs" "$REPO" "$A/card-data.json"
 # esbuild pinned in scripts/js-tools. Until 5 Nov this step was missing, so no APK carried it and Random always stopped.
 (cd "$HERE/scripts/js-tools" && npm ci --no-audit --no-fund --silent) && mkdir -p "$HERE/build"
 node "$HERE/scripts/export-random-build.mjs" "$REPO" "$HERE/scripts/js-tools/node_modules/.bin/esbuild"
+# Planeswalk inside the app (gap audit G6): the site's page and every script and style it loads, unchanged (ui/PlaneswalkPack.kt).
+node "$HERE/scripts/export-planeswalk.mjs" "$REPO" "$A"
 # Collection Home: the site's own Home code (value, decks, Card of the Day, Meta, News) for QuickJS.
 node "$HERE/scripts/export-collection-engine.mjs" "$REPO"
 # Randall's painted art pieces (each replaces its code-drawn version; a missing piece keeps the code one).
