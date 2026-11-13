@@ -2,6 +2,22 @@
 // frame; this module snaps each side onto the card's real edge on a larger frame, so the name
 // strip and the tiny bottom line land where the readers expect them. Pure pixel maths, no DOM.
 
+import {detectCardQuad,warpPixels} from './scan-vision.js';
+import {levelFrame} from './scan-light.js';
+
+// A smaller copy of an RGBA frame (box filter: every source pixel counts once, so grain averages out).
+export function boxShrink(rgba,w,h,ow,oh){
+ const out=new Uint8ClampedArray(ow*oh*4),sx=w/ow,sy=h/oh;
+ for(let y=0;y<oh;y++){
+  const y0=Math.floor(y*sy),y1=Math.max(y0+1,Math.floor((y+1)*sy));
+  for(let x=0;x<ow;x++){
+   const x0=Math.floor(x*sx),x1=Math.max(x0+1,Math.floor((x+1)*sx));let r=0,g=0,b=0,n=0;
+   for(let yy=y0;yy<y1;yy++)for(let xx=x0;xx<x1;xx++){const i=(yy*w+xx)*4;r+=rgba[i];g+=rgba[i+1];b+=rgba[i+2];n++;}
+   const o=(y*ow+x)*4;out[o]=r/n;out[o+1]=g/n;out[o+2]=b/n;out[o+3]=255;
+  }
+ }
+ return out;
+}
 // Grey (0-255) copy of an RGBA frame.
 export function luma(rgba,w,h){
  const out=new Float32Array(w*h);
@@ -87,4 +103,22 @@ export function snapQuad(grey,w,h,quad,{reaches=[.13,.05,.022],points=44}={}){
   cur=next;
  }
  return cur;
+}
+// The whole find, for one camera frame or photo of any size: level the light, propose a rough
+// outline on a small copy, snap it to the card's rim on a medium copy. Returns
+// {quad (corners clockwise from top-left, in the source frame's pixels), snapped, support} or null
+// when nothing card-shaped is in view.
+export function locateCard(rgba,w,h){
+ const aw=192,ah=Math.max(20,Math.round(192*h/w)),small=levelFrame(boxShrink(rgba,w,h,aw,ah),aw,ah),rough=detectCardQuad(small,aw,ah);
+ if(!rough?.quad)return null;
+ const mw=Math.min(w,540),mh=Math.round(mw*h/w),mid=mw===w?levelFrame(rgba,w,h):levelFrame(boxShrink(rgba,w,h,mw,mh),mw,mh);
+ const snap=snapQuad(luma(mid,mw,mh),mw,mh,rough.quad.map(p=>({x:p.x*mw/aw,y:p.y*mh/ah})));
+ const quad=snap?snap.quad.map(p=>({x:p.x*w/mw,y:p.y*h/mh})):rough.quad.map(p=>({x:p.x*w/aw,y:p.y*h/ah}));
+ return {quad,snapped:!!snap,support:snap?snap.support:0};
+}
+// The card cut out of the frame and laid flat and upright, as RGBA (outW x outH).
+// scale > 1 takes a slightly larger outline and < 1 a tighter one, about the card's centre.
+export function flattenCard(rgba,w,h,quad,outW=252,outH=352,scale=1){
+ const cx=(quad[0].x+quad[1].x+quad[2].x+quad[3].x)/4,cy=(quad[0].y+quad[1].y+quad[2].y+quad[3].y)/4;
+ return warpPixels(rgba,w,h,scale===1?quad:quad.map(p=>({x:cx+(p.x-cx)*scale,y:cy+(p.y-cy)*scale})),outW,outH);
 }
