@@ -62,6 +62,24 @@ export const fitsDeck = (c, colors, commander) => (commander ? fitsColors(c, col
 // Keep explicit style independent from inferred commander/seed mechanics.
 const THEME_TERMS = {Tokens:'(o:"creature token" or o:populate)',Graveyard:'o:graveyard',Spells:'(t:instant or t:sorcery or o:"instant or sorcery")',Dragons:'t:dragon',Artifacts:'(t:artifact or o:artifact)',Lifegain:'(keyword:lifelink or (o:gain o:life))',Lifelink:'(keyword:lifelink or o:lifelink)',Landfall:'o:landfall',Counters:'(o:"+1/+1 counter" or o:proliferate)'};
 const STYLE_ROLES = {token:"Tokens",graveyard:"Graveyard",reanimator:"Graveyard",spells:"Spells",spellslinger:"Spells",artifact:"Artifacts",lifegain:"Lifegain",lifelink:"Lifelink",landfall:"Landfall",counter:"Counters",proliferate:"Counters"};
+// A play style asked for in words moves the role targets the builder already fills (deck-forge-tags.js DECK_TARGETS):
+// "ramp" wants half again as much ramp, "control" more interaction, one more wipe and more cards, "card draw" more draw,
+// "removal" more interaction. It never adds a rule of its own; a word not listed here changes nothing.
+export const PLAY_STYLES = Object.freeze({
+  ramp: { re: /\b(?:ramp|big mana|mana ramp)\b/i, label: 'more ramp' },
+  control: { re: /\b(?:control|controlling)\b/i, label: 'control: more answers and card draw' },
+  draw: { re: /\b(?:card draw|card advantage|draw cards|lots of draw)\b/i, label: 'more card draw' },
+  removal: { re: /\b(?:removal|interaction|interactive|answers)\b/i, label: 'more removal' },
+});
+export const playStylesIn = (style = "") => Object.keys(PLAY_STYLES).filter(k => PLAY_STYLES[k].re.test(String(style)));
+export function playStyleTargets(targets, style = "") {
+  const on = playStylesIn(style), t = { ...targets };
+  if (on.includes('ramp')) t.ramp = Math.ceil(t.ramp * 1.5);
+  if (on.includes('control')) { t.interaction += 4; t.wipe += 1; t.draw += 2; }
+  if (on.includes('draw')) t.draw += 4;
+  if (on.includes('removal')) t.interaction += 4;
+  return t;
+}
 export function requestedIntent(style = "") {
   const positive=String(style).replace(/[‐‑‒–—]/g,'-').replace(/\b(?:no|without|avoid|don't use|do not use)\s+[^,.;]*(?=[,.;]|$)/gi,' ').replace(new RegExp('\\bnon[- ](?:'+CREATURE_THEMES.map(tribePattern).join('|')+')s?\\b','gi'),' '),
     concepts=readMtgConceptMentions(positive).filter(c=>c.id==='bloodlust'),mechanics=requestedMechanics(positive),
@@ -70,7 +88,7 @@ export function requestedIntent(style = "") {
     matchedTribes=CREATURE_THEMES.filter(t=>new RegExp('\\b'+tribePattern(t)+'\\b','i').test(thematic)),
     stripped=[...abilities,...matchedTribes].reduce((s,k)=>s.replace(new RegExp('\\b'+(matchedTribes.includes(k)?tribePattern(k):k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))+'\\b','gi'),' '),thematic),
     words = stripped.toLowerCase().replace(/life[- ]gain/g,'lifegain').replace(/\+1\/\+1/g,"counter").match(/[\p{L}\p{N}]+/gu) || [],
-    noise = new Set("a an the and or with for of in mono white blue black red green colorless deck decks good budget tribal kindred commander build around focused focus theme themed strongest best optimized optimal strong powerful competitive fun casual silly janky jank chaos chaotic weak bad easy easier to play simple simpler beginner friendly prefer preferably only strictly creature creatures card cards infinite unlimited unbounded mana loop loops combo combos".split(" ")),
+    noise = new Set("a an the and or with for of in mono white blue black red green colorless deck decks good budget tribal kindred commander build around focused focus theme themed ramp control controlling removal interaction interactive answers draw advantage lots big more strongest best optimized optimal strong powerful competitive fun casual silly janky jank chaos chaotic weak bad easy easier to play simple simpler beginner friendly prefer preferably only strictly creature creatures card cards infinite unlimited unbounded mana loop loops combo combos".split(" ")),
     terms = [...new Set(words.filter(w => !noise.has(w)).map(w => ({elves:"elf",dwarves:"dwarf",spells:"spells"})[w] || (w.endsWith("s")?w.slice(0,-1):w)))].slice(0,6),
     tribes = matchedTribes,
     roles = [...new Set(terms.map(w => STYLE_ROLES[w]).filter(Boolean))],
@@ -415,7 +433,7 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
     // A card that fills a short quota rises; one that overfills a role sinks.
     const counts=new Map(),bump=(k,n)=>counts.set(k,(counts.get(k)||0)+n);
     for(const row of rows.values()){const card=catalog[cardKey(row.name)];if(!card||cardKey(row.name)===cardKey(lead?.name))continue;for(const role of forgeRoles(card))bump(role,row.qty);for(const h of hooks)if(h.match(card))bump('hook:'+h.id,row.qty);}
-    const targets={ramp:size<100&&topEnd>=6?Math.max(forgeT.ramp,8):forgeT.ramp,draw:forgeT.draw,interaction:forgeT.interaction,wipe:forgeT.wipe.target,wincon:forgeT.wincon};
+    const targets=playStyleTargets({ramp:size<100&&topEnd>=6?Math.max(forgeT.ramp,8):forgeT.ramp,draw:forgeT.draw,interaction:forgeT.interaction,wipe:forgeT.wipe.target,wincon:forgeT.wincon},requestedStyle);
     const supportCopies=[...rows.values()].filter(r=>supports(catalog[cardKey(r.name)]||{})).reduce((n,r)=>n+r.qty,0);
     const roleBonus=r=>{const have=counts.get(r)||0,t=targets[r];if(!t&&r!=='wipe')return 0;if(have<t)return r==='ramp'&&size<100&&topEnd>=6?14:8;if(r==='wipe')return have>=forgeT.wipe.max?-8:0;if(r==='draw')return 0;return -3;};
     // Open needs of cards already in the list pull their providers up; a card whose own need is still open waits.

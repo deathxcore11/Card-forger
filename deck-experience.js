@@ -1,5 +1,6 @@
 import {deckViewer,deckCardAttrs,syncDeckViewers,deckShell} from './deck-viewer.js';
 import {exportDeckText} from './core.js';
+import {PLAY_STYLES,playStylesIn} from './builder.js';
 import {DECK_POLICY} from './deck-construction.js';
 import {esc,usd,referencePrintingPills,bar,customBudget} from './ui.js';
 import {buildOverlay} from './build-overlay.js';
@@ -30,6 +31,10 @@ function requestRestrictions(request){
  else if(colors.length)labels.push(colors.map(c=>typeName(names[c])).join(' / ')+' identity');
  if(only.length)labels.push(only.map(typeName).join(' or ')+' creature cards only');
  if(excluded.length)labels.push('No '+excluded.map(typeName).join(' or ')+' creature cards');
+ // The deck brief read by search (answer-run.js buildRequest): the power target, the play style and the colours to answer.
+ if(request.power)labels.push(request.bracket?'Aimed at bracket '+request.bracket:({casual:'Casual',focused:'Focused',strong:'Strong',max:'Maximum'})[request.power]+' power');
+ for(const k of playStylesIn(request.style))labels.push(PLAY_STYLES[k].label.replace(/^./,c=>c.toUpperCase()));
+ if(list(request.against).length)labels.push('Answers for '+list(request.against).filter(c=>names[c]).map(c=>names[c].toLowerCase()).join(', '));
  return labels.length?`<div class="chips" aria-label="Requested deck restrictions">${labels.map(label=>`<span class="chip">${esc(label)}</span>`).join('')}</div>${only.length?'<p class="foot">This checks creature cards, including the commander. Noncreature support is allowed; token types may differ.</p>':''}`:'';
 }
 const strategyLabel=status=>({supported:'Recognized tribal package; playtesting needed',partial:'Tribal plan partly established',unverified:'Tribal plan not established'}[status]||'Tribal plan not established');

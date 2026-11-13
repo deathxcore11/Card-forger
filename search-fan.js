@@ -4,6 +4,10 @@ import { esc } from "./ui.js";
 // day, instead of a black void. Tapping one opens it. Shared by all three games: each passes
 // its owned cards as { id, name, art } (art is ready <img> markup) and the open action.
 export function searchFanMarkup(pool, act, idOf = (p) => p.name) {
+  // Taken off the Search page on all three games (Randall, 13 Nov 2026): these are only cards you already own, so they add
+  // nothing to a search. The empty page shows the search box, its tools and the example searches.
+  return "";
+  // eslint-disable-next-line no-unreachable
   if (pool.length < 3) return "";
   const day = Math.floor(Date.now() / 864e5), picks = [];
   for (let i = 0; i < Math.min(5, pool.length); i++) picks.push(pool[(day * 7 + i * 13) % pool.length]);
