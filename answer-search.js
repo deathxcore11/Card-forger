@@ -184,8 +184,8 @@ export function planQuery(q,ctx={}){
   const term=subject(n),entry=term?gameGlossaryEntry(game,term)||(term.endsWith('s')?gameGlossaryEntry(game,term.slice(0,-1)):null):null;
   if(entry&&(meaning||norm(entry.label)===term)){read.push(chip('keyword: '+entry.label,'keyword'),chip('meaning','ask'));return plan('keyword',{tool:'glossary',args:{game,term:entry.label}},{entry});}
  }
- // A ruling between cards cannot be settled by fixed rules: hand it to Ask a Judge with the words carried over.
- if(/\b(?:can i|can you|does .+ (?:trigger|stack|resolve|counter|target|work with)|what happens (?:if|when)|who wins|in response|interaction|ruling)\b/.test(n))return plan('ruling',null,{hand:'judge'});
+ // A rules question: the Judge reads the bundled rulebook and quotes the rule that covers it (judge-search.js). No AI.
+ if(/\b(?:can i|can you|does .+ (?:trigger|stack|resolve|counter|target|work with)|what happens (?:if|when)|who wins|in response|interaction|ruling)\b/.test(n)||(/^(?:can|could|does|do|is|are|if|when can|when do|when does|how does|how do|how many|what happens)\b/.test(n)&&/\b(?:attacks?|blocks?|blocked|respond|triggers?|stacks?|countered|targets?|tapped|untap|sacrific\w+|destroy\w*|exiled?|dies|enters?|summoning|priority|mulligan|commander|combat|damage|phase|step|evolve|retreat|chains?|summon|activate|resolves?|tokens?|lands?|first turn|each turn)\b/.test(n)&&!mine)){read.push(chip('rules','ask'));return plan('ruling',{tool:'judge',args:{game,question:raw}});}
 
  // Cards by what they are: colour, type, mana, rarity, keyword, format, price. Two filters, or one plus a rank, make a question.
  if(game==='mtg'&&!mine&&!hit){
@@ -212,7 +212,8 @@ export function planQuery(q,ctx={}){
   if(titles.length)return plan('wiki',{tool:'wiki_lookup',args:{game,query:titles[0]},alternates:titles.slice(1)});
  }
  // Question-shaped but nothing matched: say so plainly; plain name results still show underneath.
- return plan(/^(?:how|why|when|can|could|should|which|what|where|who|does|do|is|are)\b/.test(n)?'unknown':'names',null);
+ // Question-shaped and nothing else matched: the rulebook gets one try, and a miss is said plainly; plain name results still show underneath.
+ return /^(?:how|why|when|can|could|should|which|what|where|who|does|do|is|are|if)\b/.test(n)?plan('ruling',{tool:'judge',args:{game,question:raw},pick:'maybe'}):plan('names',null);
 }
 
 /** What a tapped "Read as" chip can be changed to. */

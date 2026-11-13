@@ -48,7 +48,7 @@ const SAYINGS = {
     [/\b(?:color identity)\b/, { find: ['color identity of a card is'], label: 'color identity' }],
     [/\b(?:combat damage|assign(?:s|ing)? damage|double block|multiple blockers|damage order)\b/, { head: 'Combat Damage Step', label: 'combat damage' }],
     [/\b(?:declare (?:an? )?attack|attack(?:ing)? (?:a |my |the )?planeswalker|who can i attack|attack tax)\b/, { head: 'Declare Attackers Step', label: 'declaring attackers' }],
-    [/\b(?:chump|declare block|block(?:ing)? (?:more than one|two|multiple)|can (?:it|i|a creature) block|tapped .*block|block .*tapped)\b/, { head: 'Declare Blockers Step', find: ['untapped creature'], label: 'declaring blockers' }],
+    [/\b(?:chump|declare block|blocked by|(?:get|gets|be|been) blocked|block(?:ing)? (?:more than one|two|multiple)|can (?:it|i|a creature) block|tapped .*block|block .*tapped)\b/, { head: 'Declare Blockers Step', find: ['untapped creature'], label: 'declaring blockers' }],
     [/\b(?:untap step|upkeep|draw step|end step|cleanup|beginning of combat|main phase|until end of turn)\b/, { phases: true, label: 'turn structure' }],
     [/\b(?:mana pool|mana burn|floating mana|mana (?:empties|empty|goes away|disappear))\b/, { find: ['unspent mana', 'empties'], label: 'unspent mana' }],
     [/\b(?:concede|scoop|draw the game|tie)\b/, { head: 'Ending the Game', label: 'ending the game' }],
@@ -131,7 +131,7 @@ const headingFor = (index, id) => { const m = id.match(/^(\d{3})(?:\.(\d+))?/); 
 // The sentences of a long rulebook page that carry the words asked, in page order.
 function bestSentences(text, qWords, max = 520) {
   const flat = text.replace(/\s*\n\s*/g, ' ').replace(/^THE POK[ÉE]MON TRADING CARD GAME: WEB RULEBOOK \| \d{4} \d+\s*/, '').trim(); if (flat.length <= max) return flat;
-  const parts = flat.match(/[^.!?]+[.!?]+(?:[”"')]+)?\s*/g) || [flat], scored = parts.map((t, i) => { const w = new Set(words(t)); return { t, i, s: qWords.filter(x => w.has(x)).length }; });
+  const parts = flat.match(/[^.!?]+[.!?]+(?:[”"')]+)?\s*/g) || [flat], sets = parts.map(t => new Set(words(t))), rare = new Map(qWords.map(x => [x, 1 / Math.max(1, sets.filter(w => w.has(x)).length)])), scored = parts.map((t, i) => ({ t, i, s: qWords.reduce((n, x) => n + (sets[i].has(x) ? rare.get(x) : 0), 0) }));
   let best = 0, top = -1; for (let i = 0; i < scored.length; i++) { let n = 0, len = 0; for (let k = i; k < scored.length && len + scored[k].t.length <= max; k++) { n += scored[k].s; len += scored[k].t.length; } if (n > top) { top = n; best = i; } }
   let out = '', k = best; while (k < scored.length && out.length + scored[k].t.length <= max) out += scored[k++].t;
   return (best ? '… ' : '') + (out || flat.slice(0, max)).trim() + (k < scored.length ? ' …' : '');
@@ -163,7 +163,7 @@ export function judgeAnswer(pack, question, { format = '', cards = [], glossary 
   if (many && terms.some(c => c.key !== 'stack' && c.sections.length)) terms = terms.filter(c => c.key !== 'stack');
   for (const card of cards) for (const k of card.keywords || []) { const c = index.concepts.get(words(k).join(' ')); if (c && !terms.some(t => t.key === c.key) && !cardTerms.some(t => t.key === c.key)) cardTerms.push({ ...c, card: card.name }); }
   const weight = c => { const n = mentions(index, c).size; return 6 + 22 / (1 + Math.log(1 + n)); };
-  for (const [list, scale] of [[terms, 1], [cardTerms, 0.45]]) for (const c of list) {
+  for (const [list, scale] of [[terms, 1], [cardTerms, 0.22]]) for (const c of list) {
     const w = weight(c) * scale;
     for (const s of c.sections) index.rows.filter(r => inSection(r.id, s) && !r.heading).forEach((r, i) => bump(r.id, w * (i === 0 ? 1.5 : 1) * (1 - Math.min(i, 12) * 0.03), c.label));
     c.refs.forEach(id => { const row = index.rows.find(r => r.id === id) || index.rows.find(r => r.id === id + '.'); if (!row) return; if (row.heading) index.rows.filter(r => inSection(r.id, row.id) && !r.heading).slice(0, 5).forEach((r, i) => bump(r.id, w * 0.9 - i, c.label)); else bump(row.id, w * 1.3, c.label); });
@@ -198,7 +198,7 @@ export function judgeAnswer(pack, question, { format = '', cards = [], glossary 
   for (const r of rules) if (pack.game === 'mtg') r.heading = headingFor(index, r.id);
   // A long rule keeps its whole text, plus the sentences that carry the words asked so a small screen can lead with them.
   const focusWords = [...new Set([...qWords, ...terms.flatMap(t => t.key.split(' ')), ...said.flatMap(x => words(x))])];
-  for (const r of rules) if (pack.game === 'mtg' && r.text.length > 420) r.focus = bestSentences(r.text.split(/\s+Example:/)[0], focusWords, 380);
+  for (const r of rules) if (pack.game === 'mtg' && r.text.length > 300) r.focus = bestSentences(r.text.split(/\s+Example:/)[0], focusWords, 260);
   const definitions = terms.filter(t => t.def).slice(0, 3).map(t => ({ label: t.label, def: t.def }));
   // Pokémon and Yu-Gi-Oh! have no rulebook glossary: the app's own reviewed term notes stand in, marked as ours.
   for (const [, label, , aliases, summary, points] of glossary) { if (definitions.length >= 3) break; if ([label, ...(aliases || [])].some(a => new RegExp('(?:^|[^a-z])' + norm(a).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:s|es|ed|ing)?(?![a-z])').test(q))) { definitions.push({ label, def: summary, points: points || [], ours: true }); read.push(label); } }

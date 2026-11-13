@@ -54,6 +54,14 @@ export async function answerFor(plan,tools,io={}){
    const {request,labels}=buildRequest(args.request,g,args.format);
    return {ok:true,say:labels.length?'The deck builder is set up from your words: '+labels.join(', ')+'.':'Open the deck builder to choose a card, format and budget.',items:[],more:[],buttons:[{label:'Open the deck builder',build:request}],source:'Deck builder · nothing is saved until you choose'};
   }
+  if(tool==='judge'){
+   // The rule that covers the question, quoted from the bundled rulebook. An unsure match is not shown as an answer.
+   const j=io.judge?await io.judge(g,args.question):null,r=j?.status==='answered'?j.lead:null;
+   if(!r)return pick==='maybe'?miss(UNKNOWN):{ok:false,miss:'I couldn’t find one rule that settles that. Ask a Judge shows the closest rules.',items:[],more:[],buttons:[{label:'Ask a Judge',judge:true}]};
+   const mtg=g==='mtg',page=String(r.number).match(/p(\d+)$/)?.[1];
+   return {ok:true,strong:mtg?'Rule '+r.number:(r.heading||'Rulebook').replace(/\s*·\s*PDF page \d+$/,'')+(page?', page '+page:''),say:mtg&&r.heading?' · '+r.heading:'',quote:r.focus||r.text,items:[],more:[],
+    source:(j.edition?j.edition.title+' · '+j.edition.date+' · ':'')+'quoted from the rulebook',buttons:[{label:j.rules.length?'See the rules that go with it':'Open in Ask a Judge',judge:true}]};
+  }
   if(tool==='glossary'){
    const e=plan.entry;
    return {ok:true,strong:e.label,quote:e.definition,items:[],more:[],source:e.sourceLabel,

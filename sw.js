@@ -192,7 +192,9 @@ const ASSETS = [
   "./mtg-route-coverage.js",
 
   "./ai-ask.js", "./ask-navigation.js",
-  "./ai-rules.js",
+  "./judge-ui.js",
+  "./judge-search.js",
+  "./rules-retrieval.js",
   "./ai-rules-panel.js",
   "./ai-ui.js",
   "./brand.js",

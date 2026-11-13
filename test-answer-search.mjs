@@ -89,11 +89,11 @@ for(const [q,intent,tool,check,extra] of CASES){
 // Work another screen owns is handed over, not answered here.
 {const x=p('build me a goblin deck');assert.equal(x.intent,'build');assert.equal(x.call.tool,'build_deck');assert.equal(x.call.args.request,'build me a goblin deck');}
 assert.equal(p('make a mono red deck under $50').call.tool,'build_deck');
-assert.equal(p('can i respond to a ward trigger with a counterspell').hand,'judge');
-assert.equal(p('what happens if two legendary creatures enter').hand,'judge');
+assert.equal(p('can i respond to a ward trigger with a counterspell').call.tool,'judge');
+assert.equal(p('what happens if two legendary creatures enter').call.tool,'judge');
 // What the app's data cannot answer is said plainly; a card name stays a card name.
-for(const q of ['is blue better than red','why is the sky blue','should i sell my cards'])assert.equal(p(q).answerable,false,`"${q}" gets no made-up answer`);
-assert.equal(p('is blue better than red').intent,'unknown');
+for(const q of ['is blue better than red','why is the sky blue','should i sell my cards'])assert.equal(p(q).call?.pick,'maybe',`"${q}" gets no made-up answer: only one try at the rulebook`);
+assert.equal(p('is blue better than red').call.pick,'maybe','a question nothing else reads gets one try at the rulebook');
 for(const q of ['lightning bolt','sheoldred','black lotus','atraxa grand unifier']){const x=p(q);assert.equal(x.intent,'names',`"${q}" is a plain name search`);assert.equal(x.call,null);}
 // A search line typed by hand stays a search.
 for(const q of ['c:r t:dragon f:standard','t:angel o:flying','usd<5 legendary'])assert.equal(p(q).intent,'names',`"${q}" is a search line`);

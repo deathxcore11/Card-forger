@@ -82,7 +82,10 @@ import { showAiReview, clearAiReviews } from './ai-review.js';
 import {createAskNavigation,captureSheetForm,restoreSheetForm} from './ask-navigation.js';
 import { openAsk, closeAsk, clearAskConversations } from './ai-ask.js';
 import { isDeckBuildRequest } from './ai-deck-goal.js';
-import { openRulesAsk, closeRulesAsk, clearRulesConversations } from './ai-rules.js';
+import { openJudge, closeJudge } from './judge-ui.js';
+import { judgeAnswer } from './judge-search.js';
+import { loadRulePack } from './rule-corpus.js';
+import { PTCG_GLOSSARY, YGO_GLOSSARY } from './game-glossary-data.js';
 import { makeAskTools } from './ai-tools.js';
 import { ask, askText } from "./dialog.js";
 import { attachHomeSwipe } from "./home-swipe.js";
@@ -1120,7 +1123,7 @@ function currentRulesOrigin() {
   const deck = view === "deck" && game === "mtg" ? deckById(S.ui.deckId) : view === "tdeck" && game !== "mtg" ? T.gs(game).decks.find(d => d.id === S.ui.tdeckId) : null;
   return { game, route: location.hash, deckFormat: deck?.format || "" };
 }
-function dismissRulesGuide() { closeRulesAsk(); dismissRuleHint(); rulesGuideOrigin = null; }
+function dismissRulesGuide() { closeJudge(); dismissRuleHint(); rulesGuideOrigin = null; }
 function render() {
   for(const [game,controller] of Object.entries(wikiPageControllers))if(S.ui.view!=="wiki"||T.game()!==game)controller.cancel();
   if(accountLocked){
@@ -4010,7 +4013,14 @@ askNavigation=createAskNavigation({sheetKey,
  restoreSheet:snapshot=>{sheetTrail.items=[...snapshot.trail];restoreSheet(snapshot);restoreSheetForm($('#sheetBody'),snapshot.form);},
  closeSheet:()=>{closeSheet(false);sheetReturn=null;},closeAsk
 });
-A.askRules = (button) => {
+// Ask a Judge answers from the bundled rulebook (judge-search.js). No AI is called.
+const judgeCard = async name => {
+  const c = meta(name) || await resolve(name).catch(() => null); if (!c) return null;
+  const text = [c.oracle_text, ...(c.card_faces || []).map(f => f.oracle_text)].filter(Boolean).join('\n');
+  const r = c.id ? await api('/cards/' + encodeURIComponent(c.id) + '/rulings').catch(() => null) : null;
+  return { name: c.name, text, keywords: c.keywords || [], rulings: (r?.data || []).map(x => ({ date: x.published_at || '', text: x.comment || '' })) };
+};
+A.askRules = (button, question = '') => {
   const scope = button?.closest?.('[data-learning-root]');
   const game = button?.dataset?.game || scope?.dataset?.game || T.game();
   const origin = currentRulesOrigin();
@@ -4020,7 +4030,7 @@ A.askRules = (button) => {
   if (context) { const card = JSON.parse(context); if (card.game === game) cards = [card]; }
   if (button?.dataset?.rulesReferences) references = JSON.parse(button.dataset.rulesReferences);
   const trigger = button?.closest?.(".rule-glass") ? dismissRuleHint() || button : button;
-  openRulesAsk({ game, format, cards, references, trigger });
+  openJudge({ game, format, cards: cards.map(c => ({ name: c.name, text: c.text || '' })), trigger, question: typeof question === 'string' ? question : '', names: () => loadEngineCardNames(), card: judgeCard });
   rulesGuideOrigin = origin;
 };
 function ensureAskTools() {
@@ -4723,7 +4733,7 @@ async function submitHome(q,mode){
  // A deck request opens the deck builder set up from the words (format, budget, colours, theme). No AI is asked anywhere here.
  if(mode==='build'||isDeckBuildRequest(q))return openBuilderFor(buildRequest(isDeckBuildRequest(q)?q:`Build me a ${parseQuery(q).core} deck`,g).request);
  if((mode||homeIntent(q))==='ask'&&!isDeckBuildRequest(q)&&/\b(?:rules?|ruling|resolve|stack|trigger|can i (?:cast|summon|attack|activate)|when can)\b/i.test(q)){
-  A.askRules({dataset:{game:g}});const input=document.querySelector('.rules-ask-dialog .ask-input');if(input){input.value=q;input.focus();}return;
+  return A.askRules({dataset:{game:g}},q);
  }
  if(T.isTcg()){T.ui().search.q=q;await go('#search');if(T.game()===g)A.tSearch();}
  else{S.ui.db.term=q;dbInvalidate();await go('#search');if(T.game()===g)A.dbSearch();}
@@ -4922,7 +4932,7 @@ const homeAnswer={
  },
  run(plan){
   const tools=ensureAskTools();
-  return answerFor(plan,tools,{wikiArticle:async(game,title)=>{const d=await readGameWikiArticle(game,title);return d?.status==='available'?d.article:null;},cardSearch:async({game,q,order,dir,limit})=>{
+  return answerFor(plan,tools,{judge:async(game,question)=>judgeAnswer(await loadRulePack(game),question,{glossary:game==='ptcg'?PTCG_GLOSSARY:game==='ygo'?YGO_GLOSSARY:[]}),wikiArticle:async(game,title)=>{const d=await readGameWikiArticle(game,title);return d?.status==='available'?d.article:null;},cardSearch:async({game,q,order,dir,limit})=>{
    if(game!=='mtg')return [];
    const d=await api('/cards/search?'+new URLSearchParams({q:q+' game:paper',order,dir,unique:'cards'})).catch(()=>null);
    return (d?.data||[]).slice(0,limit||3).map(c=>{cacheCard(c);return {name:c.name,price:Number(c.prices?.usd)||null};});
@@ -4938,7 +4948,7 @@ const homeAnswer={
   const b=a.buttons?.[Number(el.dataset.answerButton)];if(!b)return;
   if(b.item)return tools.open(b.item);
   if(b.build)return openBuilderFor(b.build);
-  if(b.judge){A.askRules({dataset:{game:plan.game}});const input=document.querySelector('.rules-ask-dialog .ask-input');if(input){input.value=plan.P.raw;input.focus();}return;}
+  if(b.judge)return A.askRules({dataset:{game:plan.game}},plan.P.raw);
   if(b.discover){if(T.game()!==plan.game&&await A.setGame({dataset:{game:plan.game}})===false)return;return A.ruleCards({dataset:{game:plan.game,discoveryKind:b.discover.kind,discoveryValue:b.discover.value}});}
   if(b.search){S.ui.db.term=b.search.q;S.ui.db.filters=b.search.order==='usd'?{sort:b.search.dir==='asc'?'usdAsc':'usd'}:{};dbInvalidate();await go('#search');if(T.game()==='mtg')return A.dbSearch();return;}
   if(b.route&&/^#wiki\//.test(b.route))return A.wikiOpen({dataset:{game:plan.game,topic:decodeURIComponent(b.route.slice(6))}});
@@ -7733,7 +7743,7 @@ A.reset = async () => {
   if (cloudInfo().user) await signOut();
   detachDeviceSync();
   clearAskConversations();
-  clearRulesConversations();
+  closeJudge();
   rulesGuideOrigin = null;
   await replaceWorkspace(blank(), { recovery: true });
   go("#home");
@@ -7964,7 +7974,7 @@ async function boot() {
       dismissConditionInfo();aiMatchups.reset();resetMatchups();matchupImport=null;
       accountLocked=true;valueHistoryReady=false;accountGeneration++;workspaceVisitRevision++;lastUndo=null;closePlayerMat();
       community.reset();deckBoxTransitions.reset();clearConditionAttempts();conditionScheduler=createConditionRefreshScheduler();
-      clearAskConversations();clearRulesConversations();rulesGuideOrigin=null;
+      clearAskConversations();closeJudge();rulesGuideOrigin=null;
       scanCtx.accountChanged?.();profilePicker.close(true);headerPicker.close(true);
       settingsPopup.close(false);clearGameContext();disclosureStates.clear();
       endHold();heldTarget=null;lastActTarget=null;

@@ -46,6 +46,11 @@ r=await ask('3 mana blue instants');assert.equal(r.a.ok,false,'no matching cards
 r=await ask('scan a card');assert.equal(r.a.go,'#scan');
 r=await ask('how do i scan a card');assert.equal(r.a.buttons[0].item.kind,'help');
 r=await ask('is blue better than red');assert.equal(r.a.ok,false);assert.match(r.a.miss,/can't answer/);
+// Rules questions are answered by the Judge's rulebook reader; an unsure match is a plain miss.
+{const judge=async(g,q)=>/attack the turn/.test(q)?{status:'answered',lead:{number:'302.6',heading:'Creatures',text:'A creature can’t attack unless it has been under its controller’s control continuously since their most recent turn began.'},rules:[{number:'702.10b'}],edition:{title:'Comprehensive Rules',date:'2026-09-25'}}:{status:'none',lead:null,rules:[]};
+ const run=async q=>{const plan=planQuery(q,{game:'mtg'});return answerFor(plan,tools,{judge});};
+ let a=await run('can a creature attack the turn it enters');assert.equal(a.strong,'Rule 302.6');assert.match(a.quote,/can’t attack unless/);assert.match(a.source,/Comprehensive Rules/);assert.ok(a.buttons[0].judge);
+ a=await run('can i respond to nothing at all');assert.equal(a.ok,false);assert.ok(a.buttons[0].judge,'a rules question with no single rule still offers the Judge');}
 r=await ask('lightning bolt');assert.equal(r.a,null,'a card name gets no answer card');
 r=await ask('build me a mono red goblin deck for modern under $50');assert.deepEqual(r.a.buttons[0].build,{game:'mtg',format:'Modern',colors:['R'],theme:'Goblins',budget:'50'},'a deck request sets up the builder from its words');assert.match(r.a.say,/Modern, red, goblins theme, under \$50/);
 r=await ask('build me a deck');assert.deepEqual(r.a.buttons[0].build,{game:'mtg'},'nothing is guessed for a bare request');
