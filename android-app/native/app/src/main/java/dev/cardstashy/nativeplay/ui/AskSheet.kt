@@ -92,7 +92,7 @@ internal fun AskSheet(o: CollectionWrites.AskOpen, backdrop: GraphicsLayer?, onC
             leaving = true
             val dest = CollectionEngine.askShow(show)
             onClose()
-            dest?.let(o.go)
+            dest?.let { d -> askTo(d, o) }
         }
     }
     val lines = m.getAsJsonArray("lines")?.map { it.asJsonObject }.orEmpty()
@@ -223,6 +223,24 @@ private fun AskTile(t: JsonObject, open: (JsonObject) -> Unit) {
 }
 
 private fun JsonObject.s(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
+
+/**
+ * A tapped tile's place in the app: a tournament deck's sheet (over any page), the app's Build a deck on the drafted request, a deck's
+ * page; anything else for the page that opened the chat ([CollectionWrites.AskOpen.go], [askGo]).
+ */
+internal fun askTo(d: JsonObject, o: CollectionWrites.AskOpen) {
+    val game = d.s("game").ifBlank { o.game }
+    when (d.s("to")) {
+        "none" -> {}
+        "meta" -> CollectionWrites.metaDeck.value = CollectionWrites.MetaOpen(game, o.web)
+        "build" -> d.getAsJsonObject("request")?.let { CollectionWrites.building.value = CollectionWrites.BuildOpen(it, "openDeckFlow", o.web) }
+        else -> {
+            val h = d.s("hash"); val deck = Regex("^#t?deck/([^/]+)").find(h)?.groupValues?.get(1)?.let(android.net.Uri::decode)
+            val nav = CollectionWrites.deckNav
+            if (d.s("to") == "route" && deck != null && nav != null) nav(deck, if (h.startsWith("#tdeck/")) game else "mtg") else o.go(d)
+        }
+    }
+}
 
 /**
  * Where a tapped tile leads (CollectionEngine.askShow's {to, ...}) from a page that opens card pages over itself ([card]): a card's

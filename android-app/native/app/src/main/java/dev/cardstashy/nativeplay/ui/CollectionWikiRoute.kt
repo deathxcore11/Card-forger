@@ -79,7 +79,7 @@ fun CollectionWikiRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () ->
             "mtgWikiAsk" -> CollectionWrites.asking.value = CollectionWrites.AskOpen(game,
                 draft = ds("text").trim().ifBlank { route.first.trim() }.ifBlank { "Explain this card game topic." },
                 go = { d -> askGo(d, page, card = { c -> cards = cards + c }, sets = { onSets() }, set = { _, code -> web(SITE + "#set/" + android.net.Uri.encode(code), null) },
-                    wiki = { _, t -> val next = t.trim() to false; if (next != stack.last()) stack = stack + next }, web = web) })
+                    wiki = { _, t -> val next = t.trim() to false; if (next != stack.last()) stack = stack + next }, web = web) }, web = web)
             // wikiCard (a printing), wikiCards (a card search) and wikiDeck (a source deck): the article on the site, the same link pressed.
             else -> if (act.isNotBlank()) web(page, "[data-act=\"${css(act)}\"]" + d.entrySet().filter { it.value.isJsonPrimitive }.joinToString("") { (k, v) ->
                 "[data-" + k.replace(Regex("[A-Z]")) { "-" + it.value.lowercase() } + "=\"" + css(v.asString) + "\"]" })

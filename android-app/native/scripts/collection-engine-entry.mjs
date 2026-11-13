@@ -5584,7 +5584,6 @@ function compareModelOf(G) {
 // token, as aiFetch does). The chat is read back from the page the site writes; a tapped tile runs the site's tools.open, whose
 // moves (A.card, A.tCard, go, the draft builders) come back to the app as where to go (askDest).
 let askNode = null, askGame = '', askRun = null, askDest = null, askToolsSet = null;
-const askDrafts = new Map();
 configureAiAuth(async () => conditionToken);
 function askTools() {
   if (askToolsSet) return askToolsSet;
@@ -5593,8 +5592,9 @@ function askTools() {
   const A = {
     card: t => dest({to: 'card', game: 'mtg', name: t?.dataset?.name || '', id: t?.printing?.id || ''}),
     tCard: t => dest({to: 'card', game: t?.dataset?.game || TcgAll.game(), id: String(t?.dataset?.id || ''), setId: t?.dataset?.setId || ''}),
-    mtgProven: t => dest({to: 'meta', game: 'mtg', key: t?.dataset?.key || '', format: t?.dataset?.format || ''}),
-    tMetaDeck: t => dest({to: 'meta', game: TcgAll.game(), key: t?.dataset?.key || ''}),
+    // The tournament deck's sheet (A.mtgProven / tA.tMetaDeck), opened here as Home's is (provenHome); the app draws it (MetaDeckHost).
+    mtgProven: t => { toasts = []; provenOpened = false; mtgFocus(); mtgProven(t); return dest({to: 'meta', game: 'mtg'}); },
+    tMetaDeck: async t => { const g = TcgAll.game(); toasts = []; provenOpened = false; tcgFocus(g, 'home'); await provenRun(() => TA.tMetaDeck(t)); return dest({to: 'meta', game: g}); },
     helpOpen: t => dest({to: 'help', id: t?.dataset?.id || ''}),
     wikiOpen: t => dest({to: 'wiki', game: t?.dataset?.game || TcgAll.game(), topic: t?.dataset?.topic || ''}),
     setGame: t => { askFocus(t?.dataset?.game || 'mtg'); return true; },
@@ -5602,9 +5602,16 @@ function askTools() {
   askToolsSet = makeAskTools({S, T: TcgAll, A, go: hash => dest({to: 'route', hash: String(hash || '')}), toast: text => { if (text) toasts.push({text: String(text), undo: false}); },
     esc, api, resolve, cacheCard, loadSetIndex, loadMetaData: loadMeta, metaState, MTG_META_FORMATS,
     allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx,
-    // app.js openMtgDraft / openTcgBuild: the drafted deck, kept here for the app's Build a deck to open.
-    openMtgDraft: draft => { const id = 'draft-' + (askDrafts.size + 1); askDrafts.set(id, {game: 'mtg', draft: structuredClone(draft)}); return dest({to: 'build', game: 'mtg', id}); },
-    openTcgBuild: (g, id, budget, format) => dest({to: 'build', game: g, seed: String(id || ''), budget: budget > 0 ? budget : 0, format: format || ''})});
+    // app.js openTcgBuild: A.tBuild on the card, whose openDeckFlow request the app's Build a deck opens (as tMetaBuild's does).
+    openTcgBuild: async (g, id, budget, format) => {
+      tcgFocus(g, 'decks'); flowAskPanel = null; flowAsked = null;
+      await TA.tBuild({dataset: {id: String(id), format}, initialBudget: budget > 0 ? budget : ''});
+      return dest(flowAsked ? {to: 'build', game: g, request: flowAsked} : {to: 'none'});
+    },
+    // app.js openMtgDraft opens the drafted list in the site's build sheet; the app opens its Build a deck on the same request
+    // (the build-around or commander, format and budget), as the site's own deck builder (deckExperience) does for Ask today.
+    openMtgDraft: draft => dest({to: 'build', game: 'mtg', request: {game: 'mtg', seed: draft.commander || draft.buildAround || '', format: draft.format || 'Standard',
+      budget: Number.isFinite(draft.budget) ? draft.budget : ''}})});
   return askToolsSet;
 }
 function askFocus(G) { tcgReady(); tcgFocus(G, S.ui.view || 'search'); }

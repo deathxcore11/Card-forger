@@ -178,8 +178,14 @@ internal object CollectionWrites {
      * Ask CardStashy (app.js A.askOpen, ai-ask.js openAsk) for [game]: [prefill] asked at once, [draft] left in the bar (A.mtgWikiAsk); [go] takes
      * the app where a tapped tile leads (CollectionEngine.askShow's {to, ...}).
      */
-    data class AskOpen(val game: String, val prefill: String = "", val go: (com.google.gson.JsonObject) -> Unit = {}, val draft: String = "", val id: Long = System.nanoTime())
+    data class AskOpen(val game: String, val prefill: String = "", val go: (com.google.gson.JsonObject) -> Unit = {}, val draft: String = "",
+                       val web: (url: String, press: String?) -> Unit = { _, _ -> }, val id: Long = System.nanoTime())
     val asking = MutableStateFlow<AskOpen?>(null)
+    /** A tournament deck's sheet the engine has open (an Ask tile, A.mtgProven / tMetaDeck), drawn over any page (MetaDeckHost). */
+    data class MetaOpen(val game: String, val web: (url: String, press: String?) -> Unit, val id: Long = System.nanoTime())
+    val metaDeck = MutableStateFlow<MetaOpen?>(null)
+    /** The app's own deck page (id, game), set by the app's navigation; null while it isn't there. */
+    @Volatile var deckNav: ((String, String) -> Unit)? = null
     /** Counts alert saves and removals: the Value tab's alert list reads again. */
     val alertsChanged = MutableStateFlow(0)
     /** A tap with the site's data-act="priceAlert" dataset (game, id, name). */

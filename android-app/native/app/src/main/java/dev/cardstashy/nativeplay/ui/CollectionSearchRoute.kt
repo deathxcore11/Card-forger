@@ -201,7 +201,7 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
                 // Compare (gap audit H1) and Ask CardStashy (H3): the app's own sheets.
                 a in setOf("compareOpen", "tCompareOpen") -> CollectionWrites.comparing.value = CollectionWrites.CompareOpen(game, openCard = compared)
                 a == "askOpen" -> CollectionWrites.asking.value = CollectionWrites.AskOpen(game, go = { d -> askGo(d, SITE + "#search", card = { c -> cards = cards + c },
-                    sets = onSets, set = onSet, wiki = onWiki, web = web) })
+                    sets = onSets, set = onSet, wiki = onWiki, web = web) }, web = web)
                 a == "mtgWikiOpen" -> site("[data-act=\"${css(a)}\"]")
                 a.isNotBlank() -> run(a, data, value)
             } },

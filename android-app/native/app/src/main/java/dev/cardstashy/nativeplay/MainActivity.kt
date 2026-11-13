@@ -384,6 +384,8 @@ private fun App(activity: MainActivity) {
         val prev = trail.getOrNull(trail.size - 2)
         if (prev is Screen.CollectionSearch) { back(); if (prev.game != g) swap(Screen.CollectionSearch(g)) } else go(Screen.CollectionSearch(g))
     }) else null
+    // An Ask tile's deck (gap audit H3): the app's own deck page.
+    androidx.compose.runtime.SideEffect { dev.cardstashy.nativeplay.ui.CollectionWrites.deckNav = if (NATIVE_DECK) ({ id, g -> go(Screen.CollectionDeck(id, g)) }) else null }
     androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalShopNav provides { tab -> go(Screen.Shop(tab)) }, dev.cardstashy.nativeplay.ui.LocalShopSetNav provides { code -> go(Screen.Shop("sets", code)) }, dev.cardstashy.nativeplay.ui.LocalPlayDecksNav provides { if (screen != Screen.PlayDecks) go(Screen.PlayDecks) },
         dev.cardstashy.nativeplay.ui.LocalCollectionSearch provides searchOpen) {
     // The Play theme root: every Play screen draws dark whatever the theme setting says; Collection and the shell follow it.

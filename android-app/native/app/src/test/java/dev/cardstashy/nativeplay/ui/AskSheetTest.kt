@@ -75,4 +75,20 @@ class AskSheetTest {
         assertEquals("", CollectionWrites.asking.value?.prefill)
         CollectionWrites.asking.value = null
     }
+
+    @Test fun decksTournamentDecksAndDraftsOpenInTheApp() {
+        val o = CollectionWrites.AskOpen("ygo")
+        val went = mutableListOf<String>()
+        CollectionWrites.deckNav = { id, g -> went += "deck:$g:$id" }
+        try {
+            askTo(j("""{"to":"route","hash":"#tdeck/d-7","game":"ygo"}"""), o)
+            askTo(j("""{"to":"route","hash":"#deck/abc","game":"mtg"}"""), o)
+            assertEquals(listOf("deck:ygo:d-7", "deck:mtg:abc"), went)
+            askTo(j("""{"to":"meta","game":"ygo"}"""), o)
+            assertEquals("ygo", CollectionWrites.metaDeck.value?.game)
+            askTo(j("""{"to":"build","game":"ptcg","request":{"game":"ptcg","seed":"Charizard ex","format":"standard","budget":40}}"""), o)
+            assertEquals("Charizard ex", CollectionWrites.building.value?.request?.get("seed")?.asString)
+            assertEquals("openDeckFlow", CollectionWrites.building.value?.act)
+        } finally { CollectionWrites.deckNav = null; CollectionWrites.metaDeck.value = null; CollectionWrites.building.value = null }
+    }
 }
