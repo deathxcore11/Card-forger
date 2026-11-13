@@ -65,5 +65,33 @@ class RandomBuildTest {
         assertEquals(60, s.deck!!.getAsJsonArray("cards").sumOf { it.asJsonObject.get("qty").asInt })
         org.junit.Assert.assertTrue("handed over at once ($took ms)", took < 2_000)
     }
-}
 
+    /**
+     * Gap audit G1: a finished background deck is kept on the device, so the next cold start hands it back to the queue and builds
+     * nothing ("random queue: 1 on file, 0 to build"); peek gives the same deck. Another bundle's file is dropped.
+     */
+    @Test fun keptBetweenLaunches() = runBlocking {
+        assumeTrue(bundle.isFile)
+        RandomBuild.initFrom(bundle)
+        val dir = kotlin.io.path.createTempDirectory("random-queue").toFile(); RandomBuild.keptDir = dir
+        RandomBuild.restartForTest()
+        RandomBuild.enqueue(listOf("Standard" to null), "keeper")
+        val first = kotlinx.coroutines.withTimeout(600_000) { RandomBuild.awaitReady("Standard") }[0]
+        val file = RandomBuild.keptFile("keeper")!!
+        kotlinx.coroutines.withTimeout(10_000) { while (!file.isFile) kotlinx.coroutines.delay(100) }
+        // A cold start: a new engine, the file still there.
+        RandomBuild.restartForTest()
+        val t0 = System.currentTimeMillis()
+        RandomBuild.enqueue(listOf("Standard" to null), "keeper")
+        val again = kotlinx.coroutines.withTimeout(15_000) { RandomBuild.awaitReady("Standard") }[0]
+        println("[kept] back in ${(System.currentTimeMillis() - t0) / 1000.0}s: ${again.get("name")}")
+        assertEquals(1 to 0, RandomBuild.lastRestore)
+        assertEquals(first.get("name"), again.get("name"))
+        assertEquals(first.getAsJsonArray("cards"), again.getAsJsonArray("cards"))
+        // Another bundle's file is not handed out: it is dropped.
+        file.writeText(file.readText().replace(Regex("\"v\":\"[0-9a-f]+\""), "\"v\":\"old\""))
+        assertEquals(null, RandomBuild.keptFor("keeper"))
+        assertEquals(false, file.exists())
+        RandomBuild.keptDir = null
+    }
+}

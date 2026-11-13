@@ -64,9 +64,42 @@ object RandomBuild {
     private val client by lazy { OkHttpClient.Builder().callTimeout(20, TimeUnit.SECONDS).build() }
 
     private var app: Context? = null
-    fun init(context: Context) { val a = context.applicationContext; app = a; source = { a.assets.open("random-build.js").bufferedReader().readText() } }
+    fun init(context: Context) { val a = context.applicationContext; app = a; source = { a.assets.open("random-build.js").bufferedReader().readText() }; keptDir = File(a.filesDir, "random-queue") }
     /** For tests: the bundle from a file, in QuickJS. */
     fun initFrom(file: File) { source = { file.readText() }; app = null }
+
+    /**
+     * Gap audit G1: the background queue's finished decks are kept on the device (one file per account, with the bundle's version), so a
+     * cold start hands them back to the queue instead of building four decks again. A new bundle or another account starts empty.
+     */
+    @Volatile var keptDir: File? = null
+    @Volatile private var keptUser: String? = null
+    private var restoredFor: String? = null                  // build thread
+    private val bundleVersion by lazy { java.security.MessageDigest.getInstance("SHA-1").digest(source().toByteArray()).joinToString("") { "%02x".format(it) }.take(16) }
+    internal fun keptFile(user: String): File? = keptDir?.let { File(it, java.security.MessageDigest.getInstance("SHA-1").digest(user.toByteArray()).joinToString("") { b -> "%02x".format(b) }.take(20) + ".json") }
+    /** keptChanged()'s list ([{request, deck}]) for the account in hand: written whole, then moved over the old file. */
+    private fun keep(json: String?) {
+        if (json.isNullOrEmpty()) return
+        val f = keptFile(keptUser ?: return) ?: return
+        runCatching {
+            f.parentFile?.mkdirs()
+            val o = JsonObject().apply { addProperty("v", bundleVersion); add("decks", JsonParser.parseString(json)) }
+            val tmp = File(f.path + ".tmp"); tmp.writeText(o.toString()); if (!tmp.renameTo(f)) { f.delete(); tmp.renameTo(f) }
+        }
+    }
+    /** The decks kept for [user] by this same bundle ([{request, deck}]); the file is dropped when it is another bundle's or unreadable. */
+    internal fun keptFor(user: String): JsonArray? {
+        val f = keptFile(user)?.takeIf { it.isFile } ?: return null
+        val o = runCatching { JsonParser.parseString(f.readText()).asJsonObject }.getOrNull()
+        if (o?.get("v")?.asString != bundleVersion) { f.delete(); return null }
+        return o.get("decks")?.takeIf { it.isJsonArray }?.asJsonArray
+    }
+    private fun qkey(o: JsonObject) = listOf(o.get("format")?.asString, o.get("targetBracket")?.takeIf { !it.isJsonNull }?.asInt, o.get("deckStyle")?.asString ?: "classic", o.get("power")?.asString).joinToString("|")
+    /** What the last restore found: on file, and still to build for the asks it came with (tests read it; the log says it). */
+    @Volatile var lastRestore: Pair<Int, Int>? = null; private set
+    /** Tests: a fresh engine, as a cold start has (the kept file stays). */
+    internal suspend fun restartForTest() = withContext(thread) { pump?.cancel(); pump = null; runCatching { qjs?.close() }; qjs = null; restoredFor = null; lastRestore = null }
+    private fun log(m: String) { runCatching { android.util.Log.i("RandomBuild", m) }.onFailure { println("RandomBuild: $m") } }
 
     private fun js(): QuickJs = qjs ?: QuickJs.create().also { q ->
         q.maxStackSize = 6L shl 20
@@ -214,7 +247,20 @@ object RandomBuild {
     internal fun enqueue(asks: List<Pair<String, String?>>, user: String?) {
         val a = com.google.gson.JsonArray().apply { asks.forEach { (f, p) -> add(ask(f, null, "classic", p)) } }
         // The WebView's first start costs the main thread a moment, so not while Home is still drawing or Collection is warming.
-        scope.launch { if (app != null && webReady == null) { delay(2_000); withTimeoutOrNull(20_000) { dev.cardstashy.nativeplay.collection.CollectionWarm.done.await() } }; runCatching { eval(scoped(user) + "RandomBuild.warm(" + JsonPrimitive(a.toString()) + ")") } }
+        scope.launch { if (app != null && webReady == null) { delay(2_000); withTimeoutOrNull(20_000) { dev.cardstashy.nativeplay.collection.CollectionWarm.done.await() } }
+            runCatching {
+                keptUser = user
+                // Once per account and process: last launch's finished decks go back to the queue before it is asked to build.
+                val restore = if (user != null && restoredFor != user) { restoredFor = user; keptFor(user) } else null
+                val back = restore?.let { r -> eval(scoped(user) + "RandomBuild.restore(" + JsonPrimitive(r.toString()) + ")", pump = false)?.toIntOrNull() ?: 0 }
+                if (restore != null) {
+                    val have = restore.mapNotNull { (it as? JsonObject)?.getAsJsonObject("request")?.let(::qkey) }.toSet()
+                    val build = a.count { qkey(it.asJsonObject) !in have }
+                    lastRestore = (back ?: 0) to build
+                    log("random queue: ${back ?: 0} on file, $build to build")
+                }
+                eval(scoped(user) + "RandomBuild.warm(" + JsonPrimitive(a.toString()) + ")")
+            } }
     }
 
     /** Decks the queue has ready for [format] (play-random-queue.js peek), with their Power. */
@@ -245,6 +291,7 @@ object RandomBuild {
                 for (r in p.getAsJsonArray("requests")) send(r.asJsonObject)
                 publish(q.evaluate("RandomBuild.poll()") as String?)
                 delivered(q.evaluate("RandomBuild.takeDone()") as String?)
+                keep(q.evaluate("RandomBuild.keptChanged()") as String?)
                 val open = p.get("open").asInt; val next = p.get("nextTimer")?.takeIf { it.isJsonPrimitive }?.asLong
                 if (p.get("ran").asInt > 0 || answers.isNotEmpty()) continue
                 if (calls.isNotEmpty() && open == 0 && next == null) { kotlinx.coroutines.withTimeoutOrNull(250) { wake.receive() }; continue }
@@ -278,13 +325,14 @@ object RandomBuild {
     private const val PAGE = "<!doctype html><meta charset=\"utf-8\"><script src=\"/__native/random-build-web.js\"></script>" +
         "<script>(function(){var ok=typeof RandomBuild==='object';NativeRandom.ready(ok);if(!ok)return;var last=null;" +
         "var lf='';setInterval(function(){var s=RandomBuild.poll();if(s!==last){last=s;NativeRandom.state(s);}var d=RandomBuild.takeDone();if(d)NativeRandom.done(d);" +
-        "var f=typeof DeckFlow==='object'?DeckFlow.status():'';if(f!==lf){lf=f;NativeRandom.flow(f);}},100);})();</script>"
+        "var k=RandomBuild.keptChanged&&RandomBuild.keptChanged();if(k)NativeRandom.kept(k);var f=typeof DeckFlow==='object'?DeckFlow.status():'';if(f!==lf){lf=f;NativeRandom.flow(f);}},100);})();</script>"
 
     private class Bridge(val ready: CompletableDeferred<Boolean>) {
         @JavascriptInterface fun ready(ok: Boolean) { ready.complete(ok) }
         @JavascriptInterface fun state(json: String?) { publish(json) }
         @JavascriptInterface fun done(json: String?) { delivered(json) }
         @JavascriptInterface fun flow(status: String?) { _flowStatus.value = status ?: "" }
+        @JavascriptInterface fun kept(json: String?) { keep(json) }
     }
 
     /** The WebView once its page has the bundle, or null when this phone can't run it (QuickJS then, for the rest of the session). */
