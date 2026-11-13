@@ -159,6 +159,8 @@ class CollectionSearchActions(
     val view: (String) -> Unit = {},
     /** A result tile or a card of the fan (data-act="card" data-name / data-act="tCard" data-id). */
     val card: (SetTileM) -> Unit = {},
+    /** A result tile held: the card's actions (Compare). */
+    val hold: ((SetTileM) -> Unit)? = null,
     val fan: (SearchFanCard) -> Unit = {},
     /** The box gained or lost focus (suggest.js opens its list on focus). */
     val focus: (Boolean) -> Unit = {},
@@ -210,7 +212,7 @@ private fun SearchPage(m: CollectionSearchModel, top: @Composable (tabs: (@Compo
     // The site's <details> open themselves in the browser: the app keeps them open or shut per game.
     var filtersOpen by rememberSaveable(m.game) { mutableStateOf(SearchShots.filters) }
     var advancedOpen by rememberSaveable(m.game) { mutableStateOf(SearchShots.filters) }
-    val tileAct = remember(act) { CollectionSetActions(card = act.card) }
+    val tileAct = remember(act) { CollectionSetActions(card = act.card, hold = act.hold) }
     LazyColumn(modifier, contentPadding = PaddingValues(bottom = 28.dp)) {
         item(key = "top") {
             Box(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)) {

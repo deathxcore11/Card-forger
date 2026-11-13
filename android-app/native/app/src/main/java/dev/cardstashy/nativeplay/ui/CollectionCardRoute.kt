@@ -129,6 +129,9 @@ private fun CardHostBody(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen)
                 CollectionWrites.picking.value = CollectionWrites.DeckPick("mtg", d.getValue("name"), closeAll = onClose, go = { to -> web("https://cardstashy.com/$to", null) })
             // pricing-presentation.js's Add to collection (A.own): the add sheet with this printing, saved here.
             p.act == "own" && !d["name"].isNullOrBlank() -> CollectionWrites.openAdd(JsonObject().apply { addProperty("own", d.getValue("name")); addProperty("fromCard", true) })
+            // views.js "⇄ Compare" (A.compareFrom): the app's Compare sheet with this card on the first empty side; a compared card's page over this one.
+            p.act == "compareFrom" && !d["name"].isNullOrBlank() -> CollectionWrites.comparing.value = CollectionWrites.CompareOpen("mtg", first = d.getValue("name"),
+                openCard = { n, _ -> CollectionWrites.comparing.value = null; onOpen(CardOpen(n, page = open.page, tile = "[data-act=\"card\"][data-name=\"${css(n)}\"]")) })
             // pricehist.js "Set a price alert" / "Price alert active · edit" (A.priceAlert): the app's alert sheet, the page again after.
             p.act == "priceAlert" -> CollectionWrites.openAlert(d) { scope.launch { CollectionEngine.cardModel().takeIf { it.size() > 0 }?.let { model = CollectionCardModel.parse(it) } } }
             p.act == "buyBack" || p.act == "buyCompare" -> asked = p.act to ""
@@ -251,6 +254,9 @@ private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) 
             p.act == "tOwn" && v("id").isNotBlank() -> CollectionWrites.tAdding.value = CollectionWrites.TcgAddOpen(dataset(d).apply { addProperty("game", open.game) },
                 saved = { scope.launch { show(CollectionEngine.tcardModel()) } }, closeAll = onClose)
             p.act == "priceAlert" -> CollectionWrites.openAlert(d) { scope.launch { show(CollectionEngine.tcardModel()) } }
+            // tcg.js "⇄ Compare" (A.tCompareFrom): the same for this game.
+            p.act == "tCompareFrom" && v("id").isNotBlank() -> CollectionWrites.comparing.value = CollectionWrites.CompareOpen(open.game, first = v("id"),
+                openCard = { n, id -> CollectionWrites.comparing.value = null; onOpen(CardOpen(n, page = open.page, tile = "[data-act=\"tCard\"][data-id=\"${css(id)}\"]", game = open.game, id = id)) })
             p.act == "go" && v("to").isNotBlank() -> web("https://cardstashy.com/" + v("to"), null)
             p.act == "cardTab" && v("tab") in setOf("overview", "meta", "guide", "prices", "rulings", "legal") -> asked = "tab" to v("tab")
             p.act == "cardFinishPreview" && v("finish").isNotBlank() -> asked = "finish" to v("finish")

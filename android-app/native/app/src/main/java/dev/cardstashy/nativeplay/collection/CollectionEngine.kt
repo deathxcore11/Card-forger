@@ -410,6 +410,25 @@ object CollectionEngine {
     /** What the search's handlers said (toast), once. */
     suspend fun searchToasts(): List<String> = on { q -> JsonParser.parseString(q.evaluate("Collection.searchToasts()") as String).asJsonArray.map { it.asString } }
     /** The saved searches (tcg.js savedSearches' device storage, every game), to keep and to put back. */
+    // ---- Compare cards (gap audit H1; the engine's Collection.compare*) ----
+    /** The compare sheet of [game]: {title, sides [{empty, i} or {i, name, picture, id, lines, chips, facts, effects}], verdict, swap, foot, clear}. */
+    suspend fun compareModel(game: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.compareModel(${str(game)})") as String).asJsonObject }
+    private suspend fun compareWait(maxMs: Long): String? {
+        val until = System.currentTimeMillis() + maxMs
+        while (System.currentTimeMillis() < until) {
+            val r = on { q -> JsonParser.parseString(q.evaluate("Collection.compareDone()") as String).asJsonObject }
+            if (r["done"]?.asBoolean == true) return r["error"]?.takeIf { it.isJsonPrimitive }?.asString
+            settle(1_000)
+        }
+        return "Card lookup timed out. Check your connection and try again."
+    }
+    /** A held card into the first empty side ([ref]: a Magic name, else the card id); the error line or null. */
+    suspend fun compareFrom(game: String, ref: String, maxMs: Long = 30_000): String? { on { q -> q.evaluate("Collection.compareFrom(${str(game)}, ${str(ref)})") }; return compareWait(maxMs) }
+    /** Side [i] from a typed name; the site's error line ("No card with that name.") or null. */
+    suspend fun compareLookup(game: String, i: Int, name: String, maxMs: Long = 30_000): String? { on { q -> q.evaluate("Collection.compareLookup(${str(game)}, $i, ${str(name)})") }; return compareWait(maxMs) }
+    /** Clear side [i], or both with -1 (A.compareReset); the sheet again. */
+    suspend fun compareClear(game: String, i: Int): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.compareClear(${str(game)}, $i)") as String).asJsonObject }
+
     // ---- Price alerts (pricehist.js; the engine's Collection.alert*) ----
     /** Each alert a price seen in the engine set off: {game, id, name, usd, text} (pricehist.js alertText). */
     val alertsFired = kotlinx.coroutines.flow.MutableSharedFlow<JsonObject>(extraBufferCapacity = 16)

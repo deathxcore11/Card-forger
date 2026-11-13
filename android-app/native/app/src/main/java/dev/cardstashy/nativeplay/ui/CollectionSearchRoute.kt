@@ -174,6 +174,14 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
     }
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     val focusClear: (() -> Unit)? = { focusManager.clearFocus() }
+    var held by remember(game) { mutableStateOf<SetTileM?>(null) }
+    // A compared card's page over Search (the sheet steps aside first).
+    val compared: (String, String) -> Unit = { name, id ->
+        CollectionWrites.comparing.value = null
+        val page = SITE + "#search"
+        cards = cards + if (id.isNotEmpty()) CardOpen(name, page = page, tile = "[data-act=\"tCard\"][data-id=\"${css(id)}\"]", game = game, id = id)
+            else CardOpen(name, page = page, tile = "[data-act=\"card\"][data-name=\"${css(name)}\"]")
+    }
     val act = remember(game, savedKey) {
         CollectionSearchActions(
             game = { g -> if (g.id != game) onGame(g.id) },
@@ -190,8 +198,9 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
                 a == "go" -> data["to"].orEmpty().let { to -> if (to == "#sets") onSets(game) else if (to == "#rules" && onRules != null) onRules(game) else web(SITE + to, null) }
                 // app.js A.wikiOpen: the Wiki at the button's topic.
                 a in setOf("mtgWikiOpen", "wikiOpen") && onWiki != null -> onWiki(data["game"]?.takeIf { it.isNotBlank() } ?: game, data["topic"]?.takeIf { it.isNotBlank() } ?: data["wikiTopic"].orEmpty())
-                // Compare and Ask (CardStashy AI) are the website's for now: open it there and press the same control.
-                a in setOf("compareOpen", "tCompareOpen", "mtgWikiOpen", "askOpen") -> site("[data-act=\"${css(a)}\"]")
+                // Compare (gap audit H1): the app's Compare sheet. Ask (CardStashy AI) is the website's for now.
+                a in setOf("compareOpen", "tCompareOpen") -> CollectionWrites.comparing.value = CollectionWrites.CompareOpen(game, openCard = compared)
+                a in setOf("mtgWikiOpen", "askOpen") -> site("[data-act=\"${css(a)}\"]")
                 a.isNotBlank() -> run(a, data, value)
             } },
             view = { v ->
@@ -204,6 +213,8 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
                     setId = t.open["setId"].orEmpty(), setVariant = t.open["setVariant"].orEmpty(), printing = t.open["printing"].orEmpty(), edition = t.open["edition"].orEmpty())
                     else CardOpen(t.r.name, page = page, tile = "[data-act=\"card\"][data-name=\"${css(t.r.name)}\"]")
             },
+            // A held result: its card actions (card-actions.js cardActionButtons' Compare), as the preview's "hold a card and choose Compare".
+            hold = { t -> held = t },
             fan = { c -> open(JsonObject().apply { addProperty("act", c.act); addProperty("name", c.name); addProperty("id", c.id) }) },
         )
     }
@@ -247,6 +258,15 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
                     // Anything else (A.deckTab among them: the deck's own tab): the website's deck page, its review pressed, then the button.
                     else -> { review = null; web(deckPage, "[data-act=\"deckReview\"]\n[data-act=\"${css(x.act)}\"]" + (if (x.id.isNotBlank()) "[data-id=\"${css(x.id)}\"]" else "") + (if (x.role.isNotBlank()) "[data-role=\"${css(x.role)}\"]" else "")) }
                 } }))
+        }
+        // A held result's card actions: Compare (card-actions.js "Choose another card while browsing" / "Use as the second card").
+        held?.let { t ->
+            ContextSheet("Card actions", t.r.name, t.price.ifBlank { null }, t.r.art, listOf(listOf(
+                ContextAction(SiteIcons.ViewStacks, "Compare", "Choose another card while browsing") {
+                    held = null
+                    CollectionWrites.comparing.value = CollectionWrites.CompareOpen(game, first = if (game == "mtg") t.r.name else t.id, openCard = compared)
+                },
+                ContextAction(SiteIcons.CardStack, "Open card") { held = null; act.card(t) }))) { held = null }
         }
         cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) {
             CollectionCardHost(c, onClose = { cards = cards.dropLast(1) }, onOpen = { cards = cards + it }, web = web, onSet = { s -> onSet(c.game, s) },

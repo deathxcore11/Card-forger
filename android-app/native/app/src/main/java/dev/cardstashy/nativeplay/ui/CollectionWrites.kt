@@ -168,6 +168,12 @@ internal object CollectionWrites {
     /** pricehist.js alertSheet (app.js A.priceAlert) for card [cardId] of [game]; [saved] redraws the page that opened it. */
     data class AlertOpen(val game: String, val cardId: String, val name: String, val saved: () -> Unit = {}, val id: Long = System.nanoTime())
     val alerting = MutableStateFlow<AlertOpen?>(null)
+    /**
+     * Compare cards (app.js A.compareOpen / compareFrom, tcg.js A.tCompareOpen / tCompareFrom) for [game]; [first] a card to put in the
+     * first empty side (a Magic name, else the card id); [openCard] opens a compared card's page (name, id).
+     */
+    data class CompareOpen(val game: String, val first: String? = null, val openCard: (String, String) -> Unit = { _, _ -> }, val id: Long = System.nanoTime())
+    val comparing = MutableStateFlow<CompareOpen?>(null)
     /** Counts alert saves and removals: the Value tab's alert list reads again. */
     val alertsChanged = MutableStateFlow(0)
     /** A tap with the site's data-act="priceAlert" dataset (game, id, name). */

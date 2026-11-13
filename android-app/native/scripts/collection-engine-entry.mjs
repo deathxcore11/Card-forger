@@ -24,7 +24,8 @@ import {loadCommunity, communitySlides} from 'WEB/community-feed.js';
 import {loadPulse} from 'WEB/news-pulse.js';
 import {collection as collectionPage, decks as decksView, deckPage as deckView, cardSheet as cardView, buySheet as buyView, setsPage as setsView, setPage as setView, rowsFor} from 'WEB/views.js';
 import {loadMagicPrintingPage, mergeMagicCards, searchQuery, rankByName, magicFilterError, hasMagicSearchQuery, magicSearchSpec, scryfallSearchPath} from 'WEB/catalog-tools.js';
-import {search as searchView, mtgFilterChips} from 'WEB/views.js';
+import {search as searchView, mtgFilterChips, compareSheet as compareSheetView} from 'WEB/views.js';
+import {tcgCompareSheet} from 'WEB/tcgcompare.js';
 import {magicOwnedDetail, magicOwnedContext, magicOwnedCurrent, magicOwnedCard} from 'WEB/magic-owned-detail.js';
 import {scanView, registerScanner} from 'WEB/scancam.js';
 import {addScannedEntry} from 'WEB/collection-stack.js';
@@ -2642,6 +2643,18 @@ const powerKeep = globalThis.__powerKeep = {map: new Map(), dirty: false,
   put(h, v) { try { let whole = true; const t = JSON.stringify(v, (k, x) => { if ((typeof x === 'number' && !Number.isFinite(x)) || (Array.isArray(x) && x.includes(undefined))) whole = false; return x; });
     if (whole && t !== undefined) { this.map.set(h, JSON.parse(t)); this.dirty = true; } } catch {} }};
 const writeActs = {
+  // app.js A.compareSwap (5353): the second compared card in for the first in the open deck, with a snapshot to compare in Versions.
+  async compareSwap() {
+    const [a, b] = S.ui.compare || [], d = currentDeck();
+    if (!a || !b || !d) return;
+    if (key(a.name) === key(d.commander)) { toasts.push({text: "Change commanders by starting a new deck.", undo: false}); return; }
+    await commit((s) => {
+      const i = s.decks.findIndex((x) => x.id === d.id);
+      let deck = withSnapshot(s.decks[i], "Before swapping " + a.name);
+      deck = mergeDeckCard(mergeDeckCard(deck, a.name, -1), b.name, 1);
+      s.decks[i] = deck;
+    }, {msg: `Swapped ${a.name} → ${b.name}. Compare in Versions.`});
+  },
   // The Scanner (its WebView engine, ScanWeb.kt) saving a batch: app.js scanCtx.addMany / add, here where the workspace is. [items]
   // as scancam.js passes them ({cand, qty, finish, condition, lang, location, captureId}); [single]: app.js mtgScanAdd / c.scanAdd.
   async scanAddMany(d) {
@@ -5543,7 +5556,54 @@ function seedPickModel(G) {
     empty: text(q('.seed-list > p')), go: text(q('#seedGo'))};
 }
 
+// ---- Compare cards (gap audit H1): app.js A.compareOpen / compareFrom / compareReset / compareLookup / compareSwap and tcg.js
+// A.tCompareOpen / tCompareFrom / tCompareClear / tCompareLookup with their sheets (views.js compareSheet, tcgcompare.js
+// tcgCompareSheet), read back as data. The pair is the site's own (S.ui.compare, tcg.js ui(g).compare).
+let compareRun = null;
+const cmpPair = G => (G === 'mtg' ? (S.ui.compare ||= [null, null]) : (tcgUi(G).compare ||= [null, null]));
+function compareModelOf(G) {
+  const pair = cmpPair(G), html = G === 'mtg' ? compareSheetView() : tcgCompareSheet(G, pair), t = tree(html);
+  const sides = all(one(t, cls('cmp')), cls('cmp-side')).map((n, i) => {
+    if (cls('pick')(n)) return {empty: true, i};
+    const c = pair[i] || {}, spans = all(n, x => x.tag === 'span' && !cls('chip')(x) && !(x.attrs.class || '').includes('mana') && text(x));
+    return {i, name: text(one(n, tagIs('b'))), picture: picture(one(n, tagIs('img'))), id: G === 'mtg' ? '' : String(c.id ?? ''),
+      lines: spans.filter(x => !cls('chips')(x)).map(text).filter(Boolean), chips: all(n, cls('chip')).map(text),
+      facts: all(one(n, cls('cmp-facts')), tagIs('div')).map(f => [text(one(f, tagIs('dt'))), text(one(f, tagIs('dd')))]),
+      effects: text(one(one(n, cls('cmp-effects')), tagIs('p')))};
+  });
+  const panel = one(t, cls('panel')), swap = one(panel, x => x.attrs['data-act'] === 'compareSwap');
+  return {game: G, title: text(one(one(t, cls('sheet-head')), tagIs('h2'))), sides, verdict: text(one(panel, tagIs('p'))), swap: swap ? text(swap) : '',
+    foot: text(one(t, cls('foot'))), clear: !!one(t, x => x.attrs['data-act'] === 'compareReset') || pair.some(Boolean)};
+}
 globalThis.Collection = {
+  // ---- Compare cards (gap audit H1) ----
+  compareModel(G) { return json(compareModelOf(G)); },
+  // A.compareFrom / tCompareFrom, as the app's hold menu: the card fills the first empty side (a full pair starts again from it).
+  // [ref] is the Magic card's name, or a Yu-Gi-Oh! / Pokémon card id; compareDone() says when it is in.
+  compareFrom(G, ref) {
+    const run = compareRun = {done: false};
+    (async () => {
+      const card = G === 'mtg' ? (meta(ref) || await resolve(ref, true)) : (tcgCardOf(G, ref) || await tcgEnsureCard(G, ref));
+      const pair = cmpPair(G), i = pair.findIndex(x => !x);
+      if (i < 0) { pair[0] = card; pair[1] = null; } else pair[i] = card;
+    })().then(() => { run.done = true; }, e => { run.done = true; run.error = String(e?.message || e); });
+    return '{}';
+  },
+  // A.compareLookup / tCompareLookup: side [i] from the typed name; the site's "No card with that name." when nothing matches.
+  compareLookup(G, i, q) {
+    const run = compareRun = {done: false}; q = String(q || '').trim(); i = Number(i);
+    (async () => {
+      if (!q) return;
+      if (G === 'mtg') { cmpPair(G)[i] = await resolve(q, true); return; }
+      const r = await tcgSources[G].search({q, size: 20}).catch(() => null), hit = rankByName(r?.cards || [], q)[0];
+      if (!hit) throw Error("No card with that name.");
+      cmpPair(G)[i] = (await tcgEnsureCard(G, hit.id).catch(() => null)) || hit;
+    })().then(() => { run.done = true; }, e => { run.done = true; run.error = String(e?.message || e); });
+    return '{}';
+  },
+  compareDone() { return json(compareRun || {done: true}); },
+  // A.compareReset ([i] < 0) or tCompareClear (one side).
+  compareClear(G, i) { i = Number(i); const pair = cmpPair(G); if (i < 0) { pair[0] = pair[1] = null; } else pair[i] = null; return json(compareModelOf(G)); },
   // ---- Price alerts (pricehist.js, app.js A.priceAlert / priceAlertSave / priceAlertClear) ----
   // The signed-in account whose alerts the site's code reads and writes ('guest' signed out).
   alertOwner(user) { alertOwner = String(user || 'guest'); return '{}'; },

@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -136,6 +137,8 @@ class CollectionSetActions(
     val more: () -> Unit = {},
     /** A card (data-act="card" data-name data-set-i data-set-finish). */
     val card: (SetTileM) -> Unit = {},
+    /** A card held (card-actions.js attachCardGestures onHold: the card's actions); null where the page has none. */
+    val hold: ((SetTileM) -> Unit)? = null,
     /** Open Pack · Simulator (data-act="openSetPack"). */
     val pack: () -> Unit = {},
     /** Try again. */
@@ -368,6 +371,10 @@ private fun Toolbar(m: CollectionSetModel, act: CollectionSetActions, wide: Bool
  */
 /** A set card under the controller's ring: A opens its page. */
 private val OpenPad = PadActs(a = "Open")
+/** A tile's tap opens the card; holding it (where the page offers card actions) opens them. */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+private fun Modifier.tileTap(t: SetTileM, act: CollectionSetActions): Modifier =
+    if (act.hold == null) clickable { act.card(t) } else combinedClickable(onLongClick = { act.hold.invoke(t) }) { act.card(t) }
 
 @Composable
 internal fun GridCard(t: SetTileM, reduced: Boolean, act: CollectionSetActions, modifier: Modifier) {
@@ -377,7 +384,7 @@ internal fun GridCard(t: SetTileM, reduced: Boolean, act: CollectionSetActions, 
         val w = 2.dp.toPx(); drawRect(Color(0x8C6FD29A), topLeft = Offset(w / 2, w / 2), size = Size(size.width - w, size.height - w), style = Stroke(w))
     } else Modifier)) {
         Box {
-            TierFrame(t.r.tier, reduced, Modifier.fillMaxWidth().quickLook { setQuick(t, act) }.padActs(OpenPad).clickable { act.card(t) }.semantics { contentDescription = "Open ${t.r.name}" },
+            TierFrame(t.r.tier, reduced, Modifier.fillMaxWidth().quickLook { setQuick(t, act) }.padActs(OpenPad).tileTap(t, act).semantics { contentDescription = "Open ${t.r.name}" },
                 fw = if (tn) 5.dp else 7.5.dp, corner = if (tn) null else 12.dp, blur = 18f, plain = tn) { framed ->
                 val fw = if (!framed) 0.dp else if (tn) 5.dp else 7.5.dp
                 Box(Modifier.fillMaxSize().padding(fw)) {
@@ -414,7 +421,7 @@ private fun Badge(text: String, other: Boolean, title: String, modifier: Modifie
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ListCard(t: SetTileM, compact: Boolean, reduced: Boolean, act: CollectionSetActions) {
-    Box(Modifier.fillMaxWidth().lotFrame(t.r, reduced).quickLook { setQuick(t, act) }.padActs(OpenPad).clickable { act.card(t) }.semantics { contentDescription = "Open ${t.r.name}" }) {
+    Box(Modifier.fillMaxWidth().lotFrame(t.r, reduced).quickLook { setQuick(t, act) }.padActs(OpenPad).tileTap(t, act).semantics { contentDescription = "Open ${t.r.name}" }) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             if (compact) Box(Modifier.size(48.dp, 67.dp).clip(RoundedCornerShape(5.dp)).background(Surface2)) { RowPicture(t.r, Modifier.fillMaxSize(), RoundedCornerShape(5.dp)) }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -650,7 +657,7 @@ internal fun TcgGridCard(t: SetTileM, game: CardGame, reduced: Boolean, act: Col
         val w = 2.dp.toPx(); drawRect(Color(0x8C6FD29A), topLeft = Offset(w / 2, w / 2), size = Size(size.width - w, size.height - w), style = Stroke(w))
     } else Modifier)) {
         Box {
-            TierFrame(t.r.tier, reduced, Modifier.fillMaxWidth().quickLook { setQuick(t, act) }.padActs(OpenPad).clickable { act.card(t) }.semantics { contentDescription = "Open ${t.r.name}" },
+            TierFrame(t.r.tier, reduced, Modifier.fillMaxWidth().quickLook { setQuick(t, act) }.padActs(OpenPad).tileTap(t, act).semantics { contentDescription = "Open ${t.r.name}" },
                 fw = if (tn) 5.dp else 7.5.dp, corner = if (tn) null else 12.dp, blur = 18f, plain = tn, ratio = if (ygo) 59f / 86f else 63f / 88f) { framed ->
                 val fw = if (!framed) 0.dp else if (tn) 5.dp else 7.5.dp
                 Box(Modifier.fillMaxSize().padding(fw)) {
