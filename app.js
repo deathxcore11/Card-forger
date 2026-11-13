@@ -120,6 +120,7 @@ import { metaState, loadMeta as loadMetaData, MTG_META_FORMATS, DEFAULT_MTG_META
 import {searchApp,parseQuery} from './universal-search.js';
 import {planQuery,fixChoices,gameOfLabel} from './answer-search.js';
 import {answerFor,answerMarkup,buildRequest} from './answer-run.js';
+import {searchAnswer} from './answer-state.js';
 import {readGameWikiArticle} from './mtg-wiki-client.js';
 import {searchGameConcepts} from './game-wiki-knowledge.js';
 import {communityState,communitySlideUrl} from './community-feed.js';
@@ -4939,12 +4940,31 @@ const homeAnswer={
   if(b.build)return openBuilderFor(b.build);
   if(b.judge){A.askRules({dataset:{game:plan.game}});const input=document.querySelector('.rules-ask-dialog .ask-input');if(input){input.value=plan.P.raw;input.focus();}return;}
   if(b.discover){if(T.game()!==plan.game&&await A.setGame({dataset:{game:plan.game}})===false)return;return A.ruleCards({dataset:{game:plan.game,discoveryKind:b.discover.kind,discoveryValue:b.discover.value}});}
-  if(b.search){S.ui.db.term=b.search.q;S.ui.db.filters={};dbInvalidate();await go('#search');if(T.game()==='mtg')return A.dbSearch();return;}
+  if(b.search){S.ui.db.term=b.search.q;S.ui.db.filters=b.search.order==='usd'?{sort:b.search.dir==='asc'?'usdAsc':'usd'}:{};dbInvalidate();await go('#search');if(T.game()==='mtg')return A.dbSearch();return;}
   if(b.route&&/^#wiki\//.test(b.route))return A.wikiOpen({dataset:{game:plan.game,topic:decodeURIComponent(b.route.slice(6))}});
   if(b.route==='planeswalk.html'){location.href='planeswalk.html';return;}
   if(b.route)return go(b.route);
  },
 };
+// The Search page's own box: a typed question shows the same answer card above the results; a card name or search line searches as before.
+async function answerFirst(q,run,fix={}){
+ const g=T.game();let plan=null;try{plan=String(q||'').trim()?homeAnswer.plan(g,q,fix):null;}catch{}
+ if(!plan||!(plan.call||plan.missing?.length)){searchAnswer.html='';searchAnswer.state=null;return run();}
+ const state=searchAnswer.state={plan,a:null,g,q,run,fix};
+ searchAnswer.html='<section class="answer-card is-loading" aria-live="polite"><p class="answer-say">Looking…</p></section>';render();
+ const a=await Promise.resolve(homeAnswer.run(plan)).catch(()=>null);
+ if(searchAnswer.state!==state)return;
+ state.a=a;searchAnswer.html=a?homeAnswer.html(a,plan):'';render();
+}
+tcgCtx.answerFirst=answerFirst;
+document.addEventListener('input',e=>{if(searchAnswer.html&&e.target.matches?.('#dbTerm,[data-input="tQ"]')){searchAnswer.html='';searchAnswer.state=null;document.querySelector('[data-search-answer]')?.remove();}});
+document.addEventListener('click',e=>{
+ const b=e.target.closest?.('[data-search-answer] button'),st=searchAnswer.state;if(!b||!st)return;
+ if(b.dataset.answerFix){const kind=b.dataset.answerFix,row=document.querySelector('[data-search-answer] .answer-fixes');if(row){row.remove();return;}
+  b.closest('.answer-read').insertAdjacentHTML('afterend',`<div class="answer-choices answer-fixes">${homeAnswer.choices(st.plan,kind).map(c=>`<button type="button" class="chip" data-answer-fixed="${esc(kind)}" data-value="${esc(c)}">${esc(c)}</button>`).join('')}</div>`);return;}
+ if(b.dataset.answerFixed){answerFirst(st.q,st.run,{...st.fix,[b.dataset.answerFixed]:b.dataset.value});return;}
+ if(st.a)homeAnswer.act(b,st.a,st.plan,st.g);
+});
 const homeSearchController=attachHomeSearch({game:T.game,lookup:homeLookup,submit:submitHome,local:homeLocal,run:runHomeItem,answer:homeAnswer,open:async(g,c)=>{
  if(T.game()!==g)return;
  if(g==='mtg'){
@@ -6623,7 +6643,7 @@ A.dbSavedDel = (t) => {
   T.setSavedSearches("mtg", list);
   render();
 };
-A.dbSearch = () => dbSearch();
+A.dbSearch = () => answerFirst(S.ui.db.term, () => dbSearch());
 A.dbMore = () => dbSearch(true);
 A.undo = async () => {
 

@@ -62,6 +62,7 @@ import { tileChrome } from "./tiles.js";
 // Yu-Gi-Oh! and Pokémon: collection, search, sets and deck building, sharing one
 // set of screens. Each game's data, rules and formats come from its adapter.
 import { S, uid, slim, meta as mtgDeckMeta } from "./store.js";
+import { searchAnswerMarkup } from "./answer-state.js";
 import { esc, safeHref, usd, empty, bar, options, segmented, referencePrintingPills, ring } from "./ui.js";
 import { competitiveScore } from "./scouting.js";
 import { GAMES, GAME_ICON, GAME_COLOR, GAME_IDS, blankGame, gameOf } from "./games.js";
@@ -761,7 +762,7 @@ export function tcgSearch() {
     ],
     count = `${list.length.toLocaleString()} shown · ${loaded.length.toLocaleString()} loaded${Number.isFinite(U.total) ? ` · ${U.total.toLocaleString()} provider matches before local filters` : ""}`;
   return `${U.discoveryNote?`<p class="note small" role="status">${esc(U.discoveryNote)}</p>`:""}<div class="page-head"><h1>Search cards</h1>${viewControl(g,"search")}</div>
-  <div class="searchbar search-query"><input type="search" data-suggest="${g}" value="${esc(U.q)}" placeholder="${g === "ygo" ? "Name or code (BLZD-EN010)" : "Card name or set + number"}" data-input="tQ" data-enter="tSearch" aria-label="Search cards" autocomplete="off" enterkeyhint="search"></div>
+  <div class="searchbar search-query"><input type="search" data-suggest="${g}" value="${esc(U.q)}" placeholder="${g === "ygo" ? "Name or code (BLZD-EN010)" : "Card name or set + number"}" data-input="tQ" data-enter="tSearch" aria-label="Search cards" autocomplete="off" enterkeyhint="search"></div>${searchAnswerMarkup()}
   <div class="search-tools" aria-label="Search shortcuts"><button class="chip tool-chip" data-act="tCompareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="chip tool-chip" data-act="go" data-to="#sets" aria-label="Browse sets">${actionIcon("sets")}<span>Sets</span></button><button class="chip tool-chip" data-act="mtgWikiOpen" aria-label="Open Wiki">${actionIcon("wiki")}<span>Wiki</span></button><button class="chip tool-chip" data-act="tRandomCard" aria-label="Random card">${actionIcon("random")}<span>Random</span></button></div>
   ${chips.length ? `<div class="filter-chips" aria-label="Active filters">${chips.map(([k,l]) => `<button class="fchip" data-act="tChip" data-field="${esc(k)}" aria-label="Remove ${esc(l)}"><span class="fchip-label">${esc(l)}</span> <span aria-hidden="true">×</span></button>`).join("")}<button class="link small" data-act="tClear">Clear all</button></div>` : ""}
   ${savedSearches(g).length ? `<div class="saved-searches"><span class="muted small">Saved:</span>${savedSearches(g).map((x,i) => `<span class="schip"><button data-act="tSaved" data-i="${i}">${esc(x.label)}</button><button data-act="tSavedDel" data-i="${i}" aria-label="Delete saved search ${esc(x.label)}">×</button></span>`).join("")}</div>` : ""}
@@ -2334,7 +2335,8 @@ export function registerTcg(c) {
     }
   };
   I.tQ = t => (ui().search.q = t.value);
-  A.tSearch = () => runSearch();
+  // A typed question is answered from the app's own data first (app.js answerFirst); anything else searches.
+  A.tSearch = () => c.answerFirst ? c.answerFirst(ui().search.q, () => runSearch()) : runSearch();
   A.tRetrySearch = () => runSearch(false, true);
   A.tMore = () => runSearch(true);
   A.tSearchDetails = () => {

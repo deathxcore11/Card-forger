@@ -65,6 +65,7 @@ import { mtgPower, powerPanel, powerChip, shownPower, powerReadiness, powerPageH
 import { factBox, overviewFacts } from "./facts.js";
 import { ensureTcgPrices } from "./mtg-tcgprice.js";
 import { S, meta, inv, deckById, currentDeck, priceOf } from "./store.js";
+import { searchAnswerMarkup } from "./answer-state.js";
 import {
   esc, safeHref, usd, pct, signed, art, cardImage, img, manaCost, colorDots, segmented,
   options, bar, ring, curveChart, empty, setBadge, referencePrintingPills, sym, symbolText, setIconUrl,
@@ -251,7 +252,7 @@ export function search() {
     chips = mtgFilterChips(f),
     shown = db.results.filter((c) => (f.own === "owned" ? inv(c.name).owned > 0 : f.own === "missing" ? !inv(c.name).owned : true));
   return `<div class="page-head"><h1>Search cards</h1>${viewControl("mtg","search")}</div>
-  <div class="searchbar search-query"><input id="dbTerm" type="search" data-suggest="mtg" value="${esc(db.term)}" placeholder="Name, set + number, or text" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off" enterkeyhint="search"></div>
+  <div class="searchbar search-query"><input id="dbTerm" type="search" data-suggest="mtg" value="${esc(db.term)}" placeholder="Name, set + number, or text" data-input="dbTerm" data-enter="dbSearch" aria-label="Search all cards" autocomplete="off" enterkeyhint="search"></div>${searchAnswerMarkup()}
   <div class="search-tools" aria-label="Search shortcuts"><button class="chip tool-chip" data-act="compareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="chip tool-chip" data-act="go" data-to="#sets" aria-label="Browse sets">${actionIcon("sets")}<span>Sets</span></button><button class="chip tool-chip" data-act="mtgWikiOpen" aria-label="Open Wiki">${actionIcon("wiki")}<span>Wiki</span></button><button class="chip tool-chip" data-act="dbRandom" aria-label="Random card">${actionIcon("random")}<span>Random</span></button></div>
   ${chipRow(chips, "dbChip", "dbClear")}
   ${savedRow(savedSearches("mtg"), "dbSaved", "dbSavedDel")}
