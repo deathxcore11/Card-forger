@@ -1480,7 +1480,7 @@ function mtgMostValuable(d) {
   return `<section class="panel"><h3>Most valuable cards</h3><div class="list compact">${top.map((r) => `<button class="mini-row" data-act="card" data-name="${esc(r.name)}" data-deck="${esc(d.id)}"><span class="ellip">${r.qty}× ${esc(r.name)}</span><span class="small">${usd(r.p * r.qty)}</span></button>`).join("")}</div></section>`;
 }
 
-// AI coach hooks: owned cards that could join this deck, and the app's own re-score of a swap.
+// Deck coach hooks: owned cards that could join this deck, and the app's own re-score of a swap.
 export function mtgCoachHooks(d, pw) {
   return {
     candidates: () => {
@@ -1506,6 +1506,8 @@ export function mtgCoachHooks(d, pw) {
         return { name: a.name, share: a.share, lists: lists.length, rows: [...by].sort((x, y) => y[1] - x[1]).slice(0, 12).map(([name, n]) => ({ name, qty: Math.max(1, Math.round(n / Math.max(1, lists.length))), c: meta(name) })) };
       }).filter((f) => f.rows.length).slice(0, 5);
     },
+    // The app's matchup simulation against each top deck (null until the tournament field is loaded).
+    matchups: () => { const m = phMatchups(d, pw); return m?.all?.length ? m : null; },
     rescore: (out, add) => {
       if (out.zone !== "main") throw Error("main deck only");
       const p2 = mtgPower({ ...d, id: d.id + "~coach", cards: applySwapsToCards(d.cards, [{ cut: out.row.name, add: add.name }]) });
@@ -1553,7 +1555,7 @@ function phMatchups(d, pw, p) {
   const f = fieldSummary(sims, d.results || [], st, mtgListSig(d)).field.map((m) => ({ name: m.name, share: m.share, w: m.shown, why: (m.sim.reasons || [])[0] || "" }));
   const strong = f.filter((m) => m.w >= even + 0.05).sort((a, b) => b.w - a.w).slice(0, 3),
     weak = f.filter((m) => m.w <= even - 0.05).sort((a, b) => a.w - b.w).slice(0, 3);
-  return { strong, weak, even, n: f.length };
+  return { strong, weak, even, n: f.length, all: f };
 }
 function phMatchRow(m, cls) { return `<div class="pwp-m"><span><b>${esc(m.name)}</b>${m.why ? `<small>${esc(m.why)}</small>` : ""}</span><em class="${cls}">${Math.round(m.w * 100)}%</em></div>`; }
 
@@ -1602,7 +1604,7 @@ function deckEngine(d) {
   return `${p.unknown ? `<div class="note warn">${p.unknown} cards have no card data yet, so they aren’t counted. <button class="link" data-act="refreshDeck">Load card data</button></div>` : ""}${powerHub(d, pw, p, issues)}
   ${d.format === "Commander" ? `<details class="pwp-more"><summary>Why Bracket ${bracketEstimate(d, S.catalog).bracket}</summary>${bracketPanel(d)}</details>` : ""}
   <details class="pwp-more"><summary>Mana base and payment</summary>${manaBasePanel(d, p)}</details>
-  <details class="pwp-more"><summary>AI coach</summary>${aiReviewPanel("mtg", d, meta, pw, mtgCoachHooks(d, pw))}</details>
+  <details class="pwp-more"><summary>Deck coach</summary>${aiReviewPanel("mtg", d, meta, pw, mtgCoachHooks(d, pw))}</details>
   ${issues.length ? `<details class="pwp-more"><summary>${issues.length} rules checks to fix</summary><ul class="issues">${issues.slice(0, 40).map((i) => `<li>${esc(i.text)}</li>`).join("")}</ul></details>` : ""}`;
 }
 

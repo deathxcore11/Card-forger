@@ -5726,3 +5726,8 @@ body[data-game="ygo"] .card-grid .tile-chrome { aspect-ratio: 59 / 86; }
 .judge-try{display:flex;flex-direction:column;gap:6px}.judge-try button{font:inherit;font-size:14px;text-align:left;padding:9px 12px;border-radius:12px;border:1px solid var(--line);background:none;color:var(--text);cursor:pointer}
 .judge-with{margin:10px 0 0;font-size:13px;color:var(--muted)}
 @media(prefers-reduced-motion:reduce){.judge-answer{animation:none!important}}
+/* Deck coach, no AI: measured odds rows and the tournament-list card. */
+.air-odds{display:grid;gap:8px}.air-odd{display:flex;align-items:baseline;gap:12px;padding:8px 0;border-top:1px solid color-mix(in srgb,currentColor 12%,transparent)}.air-odd:first-of-type{border-top:0}
+.air-odd b{flex:none;min-width:58px;font-size:1.15rem;font-variant-numeric:tabular-nums}.air-odd.good b{color:var(--good,#5fd08a)}.air-odd.warn b{color:var(--warn,#e2b657)}
+.air-odd span{min-width:0;line-height:1.35}.air-odd small{display:block;opacity:.7;font-size:.8rem}
+.air-field .air-lead{margin-bottom:4px}.ai-dialog-head .judge-mark{flex:none}

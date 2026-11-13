@@ -94,26 +94,17 @@ for (const game of ['mtg', 'ygo', 'ptcg']) {
   const d = game === 'mtg' ? { id: 'd', cards: [{ name: 'Test Engine', qty: 4 }], side: [{ name: 'Side', qty: 1 }], privateNotes: 'private' } : { id: 'd', zones: { main: [{ cardId: 'x', name: 'Test Engine', qty: 3 }], extra: [{ cardId: 'y', qty: 1 }] }, privateNotes: 'private' };
   const lookup = () => ({ name: card.name, oracle_text: card.text, text: card.text, prices: { usd: 999 }, abilities: [{ name: 'Test', effect: 'Draw two cards.' }] });
   const data = reviewPayload(game, d, lookup, p); assert.equal(data.cards.length, 2); assert.ok(!JSON.stringify(data).includes('privateNotes')); assert.ok(!JSON.stringify(data).includes('999'));
-  const html = aiReviewPanel(game, d, lookup, p); assert.match(html, /Coach this deck/); assert.match(html, /OpenAI/);
-  let n = 0; await runAiReview(game + ':d', () => {}, async () => { n++; return Response.json({ ...review, omitted: 0 }); });
+  const html = aiReviewPanel(game, d, lookup, p); assert.match(html, /Coach this deck/); assert.doesNotMatch(html, /OpenAI|AI coach|AI review/);
+  let n = 0; await runAiReview(game + ':d', () => {}, async () => { n++; throw Error('the coach must not use the network'); });
   assert.match(aiReviewPanel(game, d, lookup, p), /Open coaching/);
   assert.match(aiReviewDialogContent({ result: { ...review, omitted: 0 }, payload: { hand: [] }, rows: [], game }), /Needs fodder/);
-  await runAiReview(game + ':d', () => {}, async () => { n++; }); assert.equal(n, 1, 'repeat clicks reuse in-memory review');
+  await runAiReview(game + ':d', () => {}, async () => { n++; }); assert.equal(n, 0, 'the coach never calls the network');
   if (game === 'mtg') d.cards[0].qty++; else d.zones.main[0].qty++;
   assert.match(aiReviewPanel(game, d, lookup, p), /Coach this deck/, 'editing quantities invalidates the review');
 }
-// Late responses never replace the review of the changed deck.
+// Coaching text is escaped in the UI.
 const d = { id: 'race', cards: [{ name: 'Test', qty: 1 }] }, lookup = () => ({ name: 'Test', oracle_text: card.text });
-aiReviewPanel('mtg', d, lookup, p); let finish;
-const pending = runAiReview('mtg:race', () => {}, () => new Promise(resolve => { finish = resolve; }));
-while (!finish) await new Promise(r => setTimeout(r, 1));
-d.cards[0].qty = 2; aiReviewPanel('mtg', d, lookup, p);
-finish(Response.json({ ...review, omitted: 0 })); await pending;
-assert.doesNotMatch(aiReviewPanel('mtg', d, lookup, p), /Needs fodder/);
-// Model output is escaped in the UI, including citations.
 const evil = { ...review, headline: '<script>alert(1)</script>', omitted: 0 };
-await runAiReview('mtg:race', () => {}, async () => Response.json(evil));
-assert.doesNotMatch(aiReviewPanel('mtg', d, lookup, p), /<script>/);
 assert.match(aiReviewDialogContent({ result: evil, payload: { hand: [] }, rows: [], game: 'mtg' }), /&lt;script&gt;/);
 assert.match(readFileSync('.assetsignore', 'utf8'), /ai-review-route\.js/);
 assert.match(readFileSync('.gitignore', 'utf8'), /\.dev\.vars/);
@@ -184,13 +175,9 @@ assert.deepEqual(reviewPayload('mtg', fdeck, flook, fp).hand, fpay.hand, 'same l
 let rescored = 0;
 const hooks = { candidates: () => [{ name: 'Owned Legend', legalities: { commander: 'legal' }, type_line: 'Legendary Creature', oracle_text: 'Haste', cmc: 2 }], rescore: (out, add) => { rescored++; assert.equal(add.name, 'Owned Legend'); return { before: 70, after: 74, beforeIssues: [], issues: [] }; } };
 aiReviewPanel('mtg', fdeck, flook, fp, hooks);
-let sent;
-await runAiReview('mtg:f', () => {}, async (u, init) => { sent = JSON.parse(init.body); return Response.json({ ...review, improve: [{ ...swap, cut: 'c3', cutName: 'Legend 2', add: 'o0', addName: 'Owned Legend' }], omitted: 0 }); });
-assert.deepEqual(sent.candidates[0].legalities, { commander: 'legal' }); assert.equal(sent.candidates[0].name, 'Owned Legend'); assert.equal(sent.candidates[0].id, 'o0');
-const { showAiReview: _s } = await import('./ai-review.js');
-const html = aiReviewPanel('mtg', fdeck, flook, fp, hooks);
-assert.match(html, /1 swap\b/);
-console.log('PASS: Coaching sends computed facts, a repeatable sample hand and owned swap candidates.');
+await runAiReview('mtg:f', () => {}, async () => { throw Error('no network'); });
+assert.match(aiReviewPanel('mtg', fdeck, flook, fp, hooks), /Open coaching/);
+console.log('PASS: Coaching uses computed facts and a repeatable sample hand, with no network call.');
 // A paraphrased quote shows the card's real sentence; an unrelated one is rejected.
 const { matchQuote } = await import('./ai-review-route.js');
 const drak = { known: true, text: 'Ability: Recon Directive\nOnce during your turn, you may look at the top 2 cards of your deck and put 1 of them into your hand. Put the other card on the bottom of your deck.', details: '{}' };

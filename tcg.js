@@ -1575,7 +1575,7 @@ function tcgPowerPage(g, d, f, s) {
   const U = pw.upgrades;
   const up = `<section class="pwp-card"><h3>Upgrades</h3>${U ? U.adds.slice(0, 4).map((x) => `<div class="pwp-sw"><span class="n" style="grid-column:1/-1;text-align:left">+ ${esc(x.name)}</span><small>${Math.round(x.share * 100)}% of ${esc(m.archetype)} lists play it · they run ${x.typical}, you run ${x.have}</small></div>`).join("") + (U.cuts.length ? `<small>Few placing lists play: ${U.cuts.slice(0, 4).map((x) => esc(x.name)).join(", ")}</small>` : "") : ""}${pw.metaLoaded ? "" : `<small>Load recent tournament decks to see what lists like yours play.</small><button class="btn pwp-btn" data-act="tMetaRefresh">Load tournament decks</button>`}<details class="pwp-more"><summary>Staples and budget builds</summary>${deckUpgradeTab(g, d, f, s)}</details></section>`;
   const foot = `Estimates from this list${gf?.runs ? `: ${gf.runs.toLocaleString()} solitaire trials` : ""}, tournament lists. Not match results.`;
-  const tcgMore = `<details class="pwp-more"><summary>Card odds, roles and Extra Deck</summary><div class="pwp-cols">${deckInsights(g, d, f, s, true)}</div></details><details class="pwp-more"><summary>AI coach</summary>${aiReviewPanel(g, d, x => cardOf(g, x), pw, tcgCoachHooks(g, d, f, pw))}</details>`;
+  const tcgMore = `<details class="pwp-more"><summary>Card odds, roles and Extra Deck</summary><div class="pwp-cols">${deckInsights(g, d, f, s, true)}</div></details><details class="pwp-more"><summary>Deck coach</summary>${aiReviewPanel(g, d, x => cardOf(g, x), pw, tcgCoachHooks(g, d, f, pw))}</details>`;
   return powerPageHtml({ score, tier, plan: pw.plan || pw.lens || "", sub: score == null ? "Power unavailable until the checks pass" : comp == null ? "from the deck's own cards" : "against what is winning now", chips: [], drivers, tempo, wins: { sources, chains, text: sources.length ? "" : gf?.winCon || "" }, meta, risks, matchups: mu, upgrades: up, foot }) + tcgMore;
 }
 
@@ -1598,7 +1598,7 @@ function realResults(sims, p) {
   });
 }
 
-// AI coach hooks: owned cards that could join this deck, and the app's own re-score of a swap.
+// Deck coach hooks: owned cards that could join this deck, and the app's own re-score of a swap.
 export function tcgCoachHooks(g, d, f, pw) {
   return {
     candidates: () => {
@@ -1621,6 +1621,15 @@ export function tcgCoachHooks(g, d, f, pw) {
         for (const l of lists) for (const r of g === "ygo" ? (l.main || []).map((cid) => ({ key: String(cid), qty: 1 })) : (l.list || []).filter((x) => !/^(?:basic )?\w+ energy$/i.test(x.name)).map((x) => ({ key: x.name, qty: x.qty }))) by.set(r.key, (by.get(r.key) || 0) + r.qty);
         return { name: a.name || id, share: a.share, lists: lists.length, rows: [...by].sort((x, y) => y[1] - x[1]).slice(0, 12).map(([k, n]) => { const c = g === "ygo" ? cardOf(g, k) : byName.get(k); return { name: c?.name || k, qty: Math.max(1, Math.round(n / Math.max(1, lists.length))), c }; }) };
       }).filter((f) => f.rows.length).slice(0, 5);
+    },
+    // The app's matchup simulation against each top deck (null until the field has been simulated once).
+    matchups: () => {
+      const st = muStateT(g, d), fkey = tcgFieldKey(g), field = st.field?.length && st.fieldKey === fkey ? st.field : metaState(g)?.data ? fieldStore.get(fkey) : null;
+      const me = field?.length ? profileOf(g, pw, tRows(g, d.zones.main), tRows(g, d.zones.extra)) : null;
+      if (!me) return null;
+      let sims = computeMatchups(fkey + "|" + listSig({ main: d.zones.main || [], side: d.zones.side || [] }), field, me, () => null, (a, b) => simulateMatchup(g, a, b), 0);
+      if (g === "ptcg") sims = realResults(sims, pw);
+      return { even: 0.5, all: sims.map((m) => ({ name: m.name, w: m.sim.win, why: (m.sim.reasons || [])[0] || "" })) };
     },
     rescore: (out, add) => {
       if (out.zone === "side") throw Error("main deck only");
