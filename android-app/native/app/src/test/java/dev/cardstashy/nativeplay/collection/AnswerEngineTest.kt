@@ -124,13 +124,17 @@ class AnswerEngineTest {
         suspend fun ask(q: String) = CollectionEngine.searchAnswer("mtg", q, JsonObject(), 90_000).also { println("ANSWER[$q] ${it.toString().take(1500)}") }!!
         var m = ask("best red deck"); var a = m.o("answer")!!
         assertTrue(m.list("read").any { it.s("label") == "has red" })
-        if (a["ok"].asBoolean) { assertTrue(a.s("say"), a.s("say").contains("most played Standard deck with red in it")); assertTrue(a.s("note"), Regex("""^Colours: [a-z, ]*red""").containsMatchIn(a.s("note"))) }
-        else assertEquals("No Standard deck with red in it is among the tournament decks right now.", a.s("miss"))
+        // A day with no red list at all is answered too: the card says so and the deck builder makes one (plainDeckWordsGetADeck).
+        assertTrue(a.toString(), a["ok"].asBoolean)
+        if (a.s("say").contains("most played")) { assertTrue(a.s("say"), a.s("say").contains("most played Standard deck with red in it")); assertTrue(a.s("note"), Regex("""^Colours: [a-z, ]*red""").containsMatchIn(a.s("note"))) }
+        else assertTrue(a.s("strong"), a.s("strong").startsWith("No Standard deck with red in it is among the"))
         a = ask("best mono white deck").o("answer")!!
-        if (a["ok"].asBoolean) { assertTrue(a.s("say").contains("most played mono-white Standard deck")); assertTrue(a.s("note"), a.s("note").startsWith("Colours: white ·") || a.s("note") == "Colours: white") }
-        else assertEquals("No mono-white Standard deck is among the tournament decks right now.", a.s("miss"))
+        assertTrue(a.toString(), a["ok"].asBoolean)
+        if (a.s("say").contains("most played")) { assertTrue(a.s("say").contains("most played mono-white Standard deck")); assertTrue(a.s("note"), a.s("note").startsWith("Colours: white ·") || a.s("note") == "Colours: white") }
+        else assertTrue(a.s("strong"), Regex("^No mono-white Standard deck is among the \\d+ tournament lists right now\\.$").matches(a.s("strong")))
         a = ask("best izzet deck").o("answer")!!
-        if (a["ok"].asBoolean) assertTrue(a.s("note"), a.s("note").startsWith("Colours: blue, red")) else assertTrue(a.s("miss").startsWith("No Izzet Standard deck"))
+        assertTrue(a.toString(), a["ok"].asBoolean)
+        if (a.s("say").contains("most played")) assertTrue(a.s("note"), a.s("note").startsWith("Colours: blue, red")) else assertTrue(a.s("strong"), a.s("strong").startsWith("No Izzet Standard deck"))
         a = ask("best zzyzx deck").o("answer")!!
         assertFalse(a["ok"].asBoolean); assertTrue(a.s("miss"), a.s("miss").contains("is named \"zzyzx\" or plays a card named \"zzyzx\""))
         a = ask("best deck last year").o("answer")!!
@@ -208,5 +212,50 @@ class AnswerEngineTest {
             assertTrue(q + " -> " + x.list("read").map { it.s("label") }, x.list("read").any { it.s("label") == intent })
         }
         Unit
+    }
+    /**
+     * Seen on Randall's phone, 13 Nov 2026 (0.4.74): "white mono deck" and "red mono decks" gave no answer at all, and "best mono red
+     * standard deck" stopped at "No mono-red Standard deck". Plain deck words are deck questions; when no tournament list fits, the
+     * answer shows the closest lists that do exist and the deck the app's own builder made. This runs the app's own bundle against
+     * the live tournament feed and card service, and checks the words a person sees.
+     */
+    @Test fun plainDeckWordsGetADeck() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.store = CollectionEngine.MemoryStore()
+        CollectionEngine.initFrom(bundle); CollectionEngine.restart()
+        CollectionEngine.load(JsonObject(), null)
+        for (q in listOf("red deck", "white mono deck", "white mono standard deck", "red mono decks", "mono red deck", "deck red", "good mono red standard deck", "blue white deck", "goblin deck"))
+            assertEquals(q, "answer", CollectionEngine.searchAsks("mtg", q))
+        for (q in listOf("charizard deck", "fire deck")) assertEquals(q, "answer", CollectionEngine.searchAsks("ptcg", q))
+        for (q in listOf("dark deck", "dragon decks")) assertEquals(q, "answer", CollectionEngine.searchAsks("ygo", q))
+        assertEquals("none", CollectionEngine.searchAsks("mtg", "deck of many things"))
+
+        // "red deck": the most played list with red in it, and the answer says that is what it is.
+        var m = CollectionEngine.searchAnswer("mtg", "red deck", JsonObject(), 60_000)!!
+        println("PLAIN[red deck] ${m.toString().take(1500)}")
+        var a = m.o("answer")!!
+        assertTrue(a.toString(), a["ok"].asBoolean); assertTrue(a.s("say"), a.s("say").contains("with red in it"))
+        assertEquals("meta", a.list("items").single().o("show")!!.s("kind"))
+        assertTrue(a.list("buttons").any { it.s("label").startsWith("Build a red") && it.o("dest")!!.s("to") == "build" })
+
+        // "white mono standard deck": either a mono-white list is in today's feed and is named, or the answer says none is, shows the
+        // closest lists, and builds one. Which of the two depends on the day's feed; both are checked by what the card shows.
+        val seen = mutableListOf<JsonObject>()
+        m = CollectionEngine.searchAnswer("mtg", "white mono standard deck", JsonObject(), 60_000, 150_000) { seen += it }!!
+        println("PLAIN[white mono standard deck] ${m.toString().take(3000)}")
+        a = m.o("answer")!!
+        assertTrue(a.toString(), a["ok"].asBoolean)
+        assertEquals("done", m.s("state"))
+        if (a.s("strong").startsWith("No mono-white Standard deck")) {
+            assertTrue(a.s("strong"), Regex("among the \\d+ tournament lists").containsMatchIn(a.s("strong")))
+            // While the builder worked, the card already said so (never a bare "Looking…" for the whole build).
+            assertTrue(seen.any { it.o("answer")?.list("rows")?.any { r -> r.s("label") == "Building" } == true })
+            val rows = a.list("rows")
+            assertTrue("the built deck's rows: $rows", rows.size >= 6 && Regex("^\\d+ cards · \\d+ lands").containsMatchIn(rows[0].s("value")))
+            assertTrue(rows[0].s("label"), rows[0].s("label").startsWith("Mono-white Standard"))
+            assertTrue(a.s("note"), a.s("note").contains("It is not a tournament list."))
+            assertEquals("build", a.list("buttons").first().o("dest")!!.s("to"))
+            assertTrue(a.list("follow").isNotEmpty())
+        } else assertTrue(a.s("say"), a.s("say").contains("most played mono-white Standard deck"))
     }
 }

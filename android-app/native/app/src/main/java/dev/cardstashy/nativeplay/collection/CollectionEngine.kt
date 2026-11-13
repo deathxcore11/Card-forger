@@ -525,25 +525,33 @@ object CollectionEngine {
      * [opts] = {fix: {format, game}, set, card}. Null when the words are a plain card name or the box is empty; else
      * {q, game, read: [{label, kind, choices}], answer: {ok, say, strong, fact, quote, note, source, miss, ask, items, more, buttons, others}}.
      */
-    suspend fun searchAnswer(game: String, text: String, opts: JsonObject = JsonObject(), maxMs: Long = 30_000, onModel: (JsonObject) -> Unit = {}): JsonObject? {
+    suspend fun searchAnswer(game: String, text: String, opts: JsonObject = JsonObject(), maxMs: Long = 30_000, buildMs: Long = 120_000, onModel: (JsonObject) -> Unit = {}): JsonObject? {
         fun read(raw: Any?) = JsonParser.parseString(raw as String).takeIf { it.isJsonObject }?.asJsonObject
         var j = on { q -> read(q.evaluate("Collection.searchAnswer(${str(game)}, ${str(text)}, ${str(opts.toString())})")) }
-        val until = System.currentTimeMillis() + maxMs
+        var until = System.currentTimeMillis() + maxMs
+        /** The answer as it stands while the deck builder is still making its deck: shown at once, and kept if the build runs out of time. */
+        var partial: JsonObject? = null
         while (System.currentTimeMillis() < until) {
             val state = j?.get("state")?.asString
             if (state == "done" && j?.get("q")?.asString == text) return j
             if (state == "none") return null
-            if (state == "loading") j?.let(onModel)
+            if (state == "loading") {
+                j?.let(onModel)
+                if (partial == null && j?.get("answer")?.isJsonObject == true && j.get("q")?.asString == text) { partial = j; until = System.currentTimeMillis() + buildMs }
+                else if (partial != null && j?.get("answer")?.isJsonObject == true) partial = j
+            }
             settle(400)
             j = on { q -> read(q.evaluate("Collection.searchAnswerModel()")) }
         }
-        return null
+        return partial
     }
     /** Whether [text] is a question the app answers ("answer"), one it can't ("miss") or a plain search ("none"). */
     suspend fun searchAsks(game: String, text: String): String = on { q -> q.evaluate("Collection.searchAsks(${str(game)}, ${str(text)})") as String }
     /** An answer's "See them all in Search" for Magic: the Search page set to [q] and [sort] (usd, usdAsc or blank) and started. */
     suspend fun searchAnswerSearch(q: String, sort: String): JsonObject = askEval("Collection.searchAnswerSearch(${str(q)}, ${str(sort)})")
     /** suggest.js rememberSearch: Enter, or a picked suggestion. */
+    /** Home's words are a new search: filters an earlier page left on are cleared (app.js submitHome). */
+    suspend fun searchFresh(game: String) = on { q -> q.evaluate("Collection.searchFresh(${str(game)})"); Unit }
     suspend fun searchRemember(game: String, text: String) = on { q -> q.evaluate("Collection.searchRemember(${str(game)}, ${str(text)})"); Unit }
     const val SETS_MODEL = "Collection.setsModel()"
     suspend fun setsModel(): JsonObject = on { q -> JsonParser.parseString(q.evaluate(SETS_MODEL) as String).asJsonObject }

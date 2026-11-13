@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -177,5 +178,25 @@ class SearchTest {
         }
         // Back to Magic: the site's own game setting is handed back.
         assertEquals("mtg", CollectionEngine.search("mtg").s("game"))
+    }
+
+    /**
+     * Seen on Randall's phone, 13 Nov 2026: Home's words opened the Search tab with "Legal in Commander" still on from an earlier
+     * deck page, so plain words found nothing. Words handed over from Home are a new search (searchFresh clears the old filters).
+     */
+    @Test fun homeWordsStartAFreshSearch() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle); CollectionEngine.restart(); workspace()
+        CollectionEngine.search("mtg")
+        var m = CollectionEngine.searchDo("dbFilter", data("commander", "field" to "format"))
+        assertTrue(block(m, "chips").toString(), block(m, "chips").toString().contains("Legal in Commander"))
+        CollectionEngine.searchFresh("mtg")
+        m = CollectionEngine.searchModel()
+        assertFalse(blocks(m).toString().contains("Legal in Commander"))
+        // With the filter gone the words search every card; with nothing found the page says so in words (never grey tiles).
+        CollectionEngine.searchDo("dbTerm", data("zzqq notacard"))
+        m = run("dbSearch")
+        assertTrue(blocks(m).any { it.s("kind") == "note" && it.s("text") == "No cards match that search." })
+        assertNull(block(m, "loading"))
     }
 }

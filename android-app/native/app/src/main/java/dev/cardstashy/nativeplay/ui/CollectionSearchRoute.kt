@@ -211,7 +211,7 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
         }
         val words = handed.remove(game) ?: return@LaunchedEffect
         query = words
-        turn.withLock { runCatching { CollectionEngine.searchRemember(game, words) } }
+        turn.withLock { runCatching { CollectionEngine.searchRemember(game, words); CollectionEngine.searchFresh(game) } }
         // A question handed over from Home: its answer card shows; the card search is not run on those words.
         if (runCatching { CollectionEngine.searchAsks(game, words) }.getOrNull() == "answer") return@LaunchedEffect
         model?.field?.let { f -> if (f.input.isNotBlank()) run(f.input, emptyMap(), words); if (f.enter.isNotBlank()) run(f.enter, emptyMap(), words) }

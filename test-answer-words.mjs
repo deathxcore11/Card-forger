@@ -56,10 +56,11 @@ r=await ask('best boros deck');assert.equal(r.a.strong,'Boros Burn');
 r=await ask('best blue deck');assert.equal(r.a.strong,'Three Steps Ahead · Countersculpt','blue still finds the blue deck');
 r=await ask('best deck not blue');assert.equal(r.a.strong,'Mono-Red Aggro');assert.match(r.a.say,/with no blue/);
 r=await ask('best two color deck');assert.equal(r.a.strong,'Izzet Prowess');assert.match(r.a.say,/2-colour Standard deck/);
-// No deck of that colour: said plainly, with no deck offered in its place.
-r=await ask('best green deck');assert.equal(r.a.ok,false);assert.equal(r.a.miss,'No Standard deck with green in it is among the tournament decks right now.');assert.equal(r.a.items.length,0);
-r=await ask('best golgari deck');assert.equal(r.a.ok,false);assert.equal(r.a.miss,'No Golgari Standard deck is among the tournament decks right now.');
-r=await ask('best mono white deck');assert.equal(r.a.miss,'No mono-white Standard deck is among the tournament decks right now.');
+// No deck of that colour: said plainly with the number of lists looked at, and no other deck passed off as it. Since 13 Nov
+// 2026 the deck builder then makes one (test-answer-plain.mjs checks that end to end over the real feed).
+r=await ask('best green deck');assert.equal(r.a.ok,true);assert.match(r.a.strong,/^No Standard deck with green in it is among the \d+ tournament lists right now\.$/);assert.equal(r.a.items.length,0);assert.equal(typeof r.a.finish,'function');assert.equal(r.a.more.length,0,'no list of another colour is shown as "closest" when none has green');
+r=await ask('best golgari deck');assert.equal(r.a.ok,true);assert.match(r.a.strong,/^No Golgari Standard deck is among the \d+ tournament lists right now\.$/);
+r=await ask('best mono white deck');assert.match(r.a.strong,/^No mono-white Standard deck is among the \d+ tournament lists right now\.$/);assert.equal(r.a.items.length,0);
 // Card colours that cannot be loaded: said, not guessed. The missing cards were asked for in one batch.
 known=false;fetched=[];r=await ask('best red deck');assert.equal(r.a.ok,false);assert.match(r.a.miss,/could not be loaded/);assert.ok(fetched.includes('Monastery Swiftspear')&&!fetched.includes('Mountain'),'nonland cards are fetched, lands are not');known=true;
 // No colour words: the old answer, unchanged.
@@ -69,7 +70,7 @@ r=await ask('best deck in the meta');assert.equal(r.a.strong,'Three Steps Ahead 
 r=await ask('best aggro deck');assert.equal(r.a.strong,'Mono-Red Aggro');assert.match(r.a.say,/most played aggro Standard deck/);
 r=await ask('best prowess deck in standard');assert.equal(r.a.strong,'Izzet Prowess');
 r=await ask('best deck with lightning strike');assert.equal(r.a.strong,'Izzet Prowess');assert.match(r.a.say,/Standard deck that plays Lightning Strike/);
-r=await ask('best control deck');assert.equal(r.a.ok,false);assert.equal(r.a.miss,'No Standard deck among the tournament decks is named "control" or plays a card named "control" right now.');
+r=await ask('best control deck');assert.equal(r.a.ok,true);assert.match(r.a.strong,/^No Standard deck among the \d+ tournament lists is named "control" or plays a card named "control" right now\.$/);assert.equal(typeof r.a.finish,'function','a play style the builder knows is built');
 r=await ask('best charizard deck');assert.equal(r.a.ok,false,'a word from another game is not dropped');
 r=await ask('second best deck in standard');assert.equal(r.a.strong,'Izzet Prowess');assert.match(r.a.say,/2nd most played Standard deck/);assert.equal(r.a.items[0].ref,'izzet');
 r=await ask('second best mono red deck');assert.equal(r.a.ok,false);assert.match(r.a.miss,/^Only 1 mono-red Standard deck is among/);

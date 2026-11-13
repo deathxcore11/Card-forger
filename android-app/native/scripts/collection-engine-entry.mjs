@@ -5544,7 +5544,7 @@ async function appCopyText(t, msg) {
 // request to the app (acted openDeckFlow), which opens the native Build a deck on it.
 let flowPipeline = null;
 flowUseDocument(new SiteDocument());
-const flowPipe = () => { tcgReady(); return flowPipeline ||= createDeckPipeline({S, T: TcgAll, api, resolve, cacheCard, meta, priceOf, inv, tcgCtx}); };
+const flowPipe = () => { tcgReady(); return flowPipeline ||= createDeckPipeline({S, T: TcgAll, api, resolve, resolveNames, cacheCard, meta, priceOf, inv, tcgCtx}); };
 const flowResults = new Map(), flowThemes = {};
 let flowSeq = 0, flowCurrent = 0, flowStatus = '', flowRun = null;
 // Where openDeckFlow's request goes: the panel that was tapped (acted openDeckFlow) or, for a write act, [made].
@@ -5669,6 +5669,8 @@ function askTools() {
     },
     // app.js openMtgDraft opens the drafted list in the site's build sheet; the app opens its Build a deck on the same request
     // (the build-around or commander, format and budget), as the site's own deck builder (deckExperience) does for Ask today.
+    // The deck builder run inside search (ai-tools.js build_now): the same pipeline the Build a deck page runs.
+    buildFlow: (request, options) => flowPipe().build(request, options),
     openMtgDraft: draft => dest({to: 'build', game: 'mtg', request: {game: 'mtg', seed: draft.commander || draft.buildAround || '', format: draft.format || 'Standard',
       budget: Number.isFinite(draft.budget) ? draft.budget : ''}})});
   return askToolsSet;
@@ -5743,6 +5745,7 @@ function answerStart(g0, q, o = {}) {
     try {
       if (plan.game !== 'mtg') askFocus(plan.game);
       a = await answerFor(plan, askTools(), {
+        current: () => my === answerTicket,
         // A rules question: the rulebook kept in the app, read by judge-search.js (no AI).
         judge: async (game, question) => judgeAnswer(await loadRulePack(game), question, {glossary: game === 'ptcg' ? PTCG_GLOSSARY : game === 'ygo' ? YGO_GLOSSARY : []}),
         wikiArticle: async (game, title) => { const d = await readGameWikiArticle(game, title); return d?.status === 'available' ? d.article : null; },
@@ -5754,6 +5757,13 @@ function answerStart(g0, q, o = {}) {
         }});
     } catch { a = {ok: false, miss: 'That lookup failed. Check your connection and try again.', items: [], more: [], buttons: []}; }
     if (my !== answerTicket) return;
+    // An answer that is still working (the deck builder making a deck): shown at once as it stands, finished when the build lands.
+    if (a?.finish) {
+      answerOut = {...answerModel(q, plan, a), state: 'loading'};
+      const b = await Promise.resolve().then(() => a.finish()).catch(() => null);
+      if (my !== answerTicket) return;
+      if (b) a = b; else { a = {...a, rows: [], note: 'The deck builder could not finish this one. Open it to build the deck.'}; }
+    }
     answerOut = answerModel(q, plan, a);
   })().catch(e => { globalThis.__lastError = String(e?.stack || e); if (my === answerTicket) answerOut = {q, state: 'none'}; });
 }
@@ -6511,6 +6521,9 @@ globalThis.Collection = {
   searchSuggest(game, q) { suggestStart(game || 'mtg', q); return json(suggestOut); },
   searchSuggestModel() { return json(suggestOut); },
   searchRemember(game, q) { rememberSearch(game || 'mtg', q); },
+  // Words handed over from Home's box are a new search: a filter an earlier page left on ("Legal in Commander" from a deck's
+  // review) does not narrow it, as app.js submitHome clears it on the site.
+  searchFresh(game) { if ((game || 'mtg') === 'mtg') { S.ui.db.filters = {color: '', type: '', format: '', maxPrice: ''}; dbInvalidate(); } },
   // The answer card over the suggestions: searchAnswer reads what is typed and starts its lookup ([opts] = {fix, set, card}; the app
   // pumps it with settle()); searchAnswerModel reads it (null while the words are read, state 'none' | 'loading' | 'done').
   searchAnswer(game, q, opts) { let o = {}; try { o = JSON.parse(opts || '{}') || {}; } catch {} answerStart(game || 'mtg', q, o); return json(answerOut); },

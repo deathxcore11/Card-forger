@@ -80,7 +80,9 @@ export function attachHomeSearch({game,lookup,open,submit,local=()=>({sections:[
   const wants=ansPlan&&!ansPlan.hand&&(ansPlan.call||ansPlan.missing?.length||ansPlan.intent==='unknown');
   if(wants){
    ansHtml='<section class="answer-card is-loading" aria-live="polite"><p class="answer-say">Looking…</p></section>';
-   Promise.resolve(answer.run(ansPlan)).catch(()=>null).then(a=>{if(id!==ticket||field!==f||f.value.trim()!==q||game()!==g)return;ans=a;ansHtml=a?answer.html(a,ansPlan):'';show(rows,lastStatus);});
+   Promise.resolve(answer.run(ansPlan)).catch(()=>null).then(a=>{if(id!==ticket||field!==f||f.value.trim()!==q||game()!==g)return;ans=a;ansHtml=a?answer.html(a,ansPlan):'';show(rows,lastStatus);
+    // An answer that is still working (the deck builder making a deck): the card is redrawn when it finishes, if the same words are still there.
+    if(a?.finish)Promise.resolve().then(()=>a.finish()).catch(()=>null).then(b=>{if(!b||id!==ticket||field!==f||f.value.trim()!==q||game()!==g)return;ans=b;ansHtml=answer.html(b,ansPlan);show(rows,lastStatus);});});
   }
   if(homeIntent(q)==='ask'&&!build&&!sections.length)return show([],'');
   show([],'');

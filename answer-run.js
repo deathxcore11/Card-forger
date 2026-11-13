@@ -72,11 +72,57 @@ async function answerAll(plan,tools,io={}){
  for(const e of plan.extra){
   let text;
   if(!a.ok)text='Not answered, because the first part found nothing.';
+  else if(a.building&&e.facet)text='Not answered, because no tournament deck fits the first part. The deck the builder makes shows its own numbers.';
   else if(e.facet)text=a.facets?.[e.facet]||"Search can't answer that about this deck yet.";
   else{const b=e.plan?await answerOne(e.plan,tools,io):null;text=!b?"Search can't answer that one. Try it on its own line.":b.ask?b.ask.ask:b.ok?[b.strong,b.say&&b.say!=='From the wiki page'?b.say:'',b.fact?b.fact.label+': '+b.fact.value:'',b.quote?'“'+b.quote+'”':''].filter(Boolean).join(' '):b.miss;}
   a.also.push({ask:e.text,text});
  }
  delete a.facets;return a;
+}
+const HUE={w:'white',u:'blue',b:'black',r:'red',g:'green'};
+const colourWords=(colors,exact)=>{const n=[...'wubrg'].filter(c=>(colors||[]).map(x=>String(x).toLowerCase()).includes(c)).map(c=>HUE[c]);return (exact&&n.length===1?'mono-':'')+n.join('-');};
+const plural=t=>/(?:s|x|ch|sh)$/i.test(t)?t+'es':/[^aeiou]y$/i.test(t)?t.slice(0,-1)+'ies':/f$/i.test(t)?t.slice(0,-1)+'ves':t+'s';
+// No tournament list fits what was asked: say so with the number of lists looked at, show the closest lists that do exist, and
+// run the deck builder on the same words. The first answer comes at once; [finish] finishes with the deck the builder made.
+async function builtAnswer(plan,tools,io,{r,fmt,lead}){
+ const {args}=plan.call,g=plan.game,raw=plan.P?.raw||'',{request,unused}=buildRequest(raw,g,fmt);
+ if(!request.format)request.format=fmt;
+ // With no colour asked for, the builder runs only when it took every word (a theme or a play style): "best charizard deck" in
+ // Magic stays a plain miss, never a random deck.
+ if(!args.colors?.length&&(unused.length||!(request.theme||request.style||request.seed)))return null;
+ if(!request.colors?.length&&args.colors?.length)request.colors=args.colors.map(c=>String(c).toUpperCase());
+ const hue=request.colors?.length?colourWords(request.colors,args.exact!==false||request.colors.length>1):'',theme=[request.theme,request.style].filter(Boolean).join(' ').toLowerCase();
+ const what=[hue,theme,fmt,'deck'].filter(Boolean).join(' ');
+ // The closest that do exist: lists that have the colour in them, most played first.
+ let more=[],moreLabel='';
+ if(args.colors?.length&&(args.exact||args.match||args.under!=null)){
+  const near=await tools.meta_decks({game:g,format:args.format,colors:args.colors,exact:false}).catch(()=>null);
+  if(near?.decks?.length){more=tools.suggestedItems().slice(0,3);moreLabel=`Closest tournament decks with ${colourWords(args.colors,false).replace(/-/g,' and ')} in them`;}
+ }
+ // Questions that fit: the creature types and abilities this colour really has in the format, each a whole question of its own.
+ // The card database can be slow; the first answer waits for it a second and a half at most, the finished one a little longer.
+ const asking=request.colors?.length?Promise.resolve().then(()=>tools.deck_angles({game:g,format:fmt,colors:request.colors})).catch(()=>null):Promise.resolve(null),within=ms=>Promise.race([asking,new Promise(r=>setTimeout(()=>r(null),ms))]);
+ const base=[hue.replace('-',' '),null,fmt.toLowerCase(),'deck'];
+ const chips=found=>[...(found?.angles||[]).filter(a=>!new RegExp('\\b'+a.name+'s?\\b','i').test(raw)).slice(0,4).map(a=>({label:(a.kind==='tribe'?plural(a.name):a.name)+'?',q:base.map(x=>x===null?(a.kind==='tribe'?plural(a.name):a.name).toLowerCase():x).filter(Boolean).join(' ')})),...(request.budget?[]:[{label:'Under $50?',q:base.filter(Boolean).join(' ')+' under $50'}])];
+ const follow=chips(await within(1500));
+ const source='Deck builder · '+fmt+'-legal cards · nothing is saved until you choose',open={label:'Open the deck builder',build:request};
+ const skipped=unused.length?' Not used by the builder: '+unused.map(u=>'"'+u+'"').join(', ')+'.':'';
+ const first={ok:true,strong:lead,say:'',rows:[{label:'Building',value:'a '+what+' with the deck builder…'}],note:'The deck builder is making one now. It can take up to a minute.'+skipped,items:[],more,moreLabel,buttons:[open],follow,source,building:true};
+ first.finish=async()=>{
+  const b=await tools.build_now(request,{current:io.current}).catch(e=>({error:String(e?.message||e)}));
+  if(b?.cancelled)return null;
+  first.follow=chips(await within(4000));
+  if(!b||b.error)return {...first,building:false,finish:undefined,rows:[],note:(b?.unavailable?'':'The deck builder could not finish this one: ')+(b?.error||'no deck came back')+skipped};
+  const cards=b.cards.filter(c=>!c.land).sort((p,q)=>q.qty-p.qty||(q.price||0)-(p.price||0)),shown=cards.slice(0,6),rest=cards.slice(6).reduce((n,c)=>n+c.qty,0);
+  const made=b.colors!=null?colourWords([...b.colors],b.colors.length===1):'',off=made&&hue&&made!==hue&&!(hue.split('-').length===made.split('-').length&&hue.split('-').every(x=>made.includes(x.replace('mono-',''))));
+  const title=[made||hue,theme,b.format,'deck'].filter(Boolean).join(' '),rows=[{label:title.charAt(0).toUpperCase()+title.slice(1),value:`${b.total} cards · ${b.lands} lands${b.estimate!=null?' · about $'+Math.round(b.estimate):''}`,tone:'good'},
+   ...shown.map(c=>({label:c.name,value:'×'+c.qty})),...(rest?[{label:'and '+rest+' more card'+(rest===1?'':'s'),value:''}]:[])];
+  const checks=!b.complete?'The list is not complete; open it to see what is missing.':!b.legal?'The builder flags a legality problem in it; open it to see which.':!b.satisfied?'The builder marks some of its own checks as not met; open the deck to see them.':'';
+  return {...first,building:false,finish:undefined,say:' The deck builder made this one:',rows,
+   note:['Built by the app from '+b.format+'-legal cards. It is not a tournament list.',off?`It reads as ${made}, not ${hue}.`:'',checks,skipped.trim()].filter(Boolean).join(' '),
+   buttons:[b.item?{label:'Open this deck',item:b.item}:{label:'Open it in the deck builder',build:request}]};
+ };
+ return first;
 }
 async function answerOne(plan,tools,io={}){
  if(!plan||plan.hand)return null;
@@ -114,7 +160,11 @@ async function answerOne(plan,tools,io={}){
    const fmt=g==='mtg'&&args.format?args.format:r.format||args.format,{pre='',post='',nth=1}=plan.call;
    // What was asked for, in words, so a miss names it: "No mono-red Standard deck ...", never the top deck of another colour.
    const asked=[pre,fmt,'deck',post].filter(Boolean).join(' '),quoted=args.match?'"'+args.match+'"':'';
-   if(r.none)return miss(quoted?(r.matched?.known===false?`No ${asked} among the tournament decks is named ${quoted} right now.`:`No ${asked} among the tournament decks is named ${quoted} or plays a card named ${quoted} right now.`):args.under!=null?`No ${asked} among the tournament decks costs you $${args.under} or less to finish right now.`:args.sort?`The app has no prices for the ${fmt} tournament decks right now.`:`No ${asked} is among the tournament decks right now.`);
+   // Magic, and no tournament list fits the colours or the theme asked for: the deck builder makes one, right here.
+   const noneText=r.none?quoted?(r.matched?.known===false?`No ${asked} among the tournament decks is named ${quoted} right now.`:`No ${asked} among the tournament decks is named ${quoted} or plays a card named ${quoted} right now.`):args.under!=null?`No ${asked} among the tournament decks costs you $${args.under} or less to finish right now.`:args.sort?`The app has no prices for the ${fmt} tournament decks right now.`:`No ${asked} is among the tournament decks right now.`:'';
+   // Magic, and no tournament list fits the colours, theme or budget asked for: the deck builder makes one, right here.
+   if(g==='mtg'&&r.none&&(args.colors?.length||args.match)&&!args.sort&&!args.key&&pick==='top'&&!plan.call.opponent){const made=await builtAnswer(plan,tools,io,{r,fmt,lead:noneText.replace('the tournament decks',r.total?`the ${r.total} tournament lists`:'the tournament lists')});if(made)return made;}
+   if(r.none)return miss(noneText);
    if(r.error||!r.decks?.length)return miss(r.error||'No tournament decks for '+args.format+' right now.');
    const source=[r.source,r.fetchedAt?'updated '+when(r.fetchedAt):''].filter(Boolean).join(' · ');
    if(pick==='cards')return {ok:true,say:'The most played cards are on the tournament page for '+fmt+'.',items:[],more:[],buttons:[{label:'Open '+fmt+' tournament decks',route:'#decks/inspiration'}],source};
@@ -145,8 +195,10 @@ async function answerOne(plan,tools,io={}){
     return {ok:true,subject,strong:top.name,say:f==='list'&&rows.length||f==='other'?text:': '+text,rows,items:items.slice(0,1),more:[],buttons:[{label:'Open the deck',item:items[0]}],source};
    }
    const vs=plan.call.opponent?[{ask:'against '+plan.call.opponent,text:`Search can't rank decks by how they do against ${plan.call.opponent} yet, so this is by play share.`}]:null;
+   // A colour asked for with no ranking word ("red deck") may want a deck of your own: the builder is one press away.
+   const mk=g==='mtg'&&args.colors?.length&&!args.sort&&args.under==null&&!vs?buildRequest(plan.P?.raw||'',g,fmt).request:null;
    return {ok:true,subject,facets,...(vs?{vs}:{}),strong:top.name,say,items:items.slice(0,1),more:items.slice(1),moreLabel:args.sort==='closest'?'Next closest':args.sort?'Then':'Next most played',
-    buttons:[{label:'Open the deck',item:items[0]},{label:'All '+fmt+' decks',route:'#decks/inspiration'}],source:args.sort||args.under!=null?[source,'cost is for the copies you are missing'].filter(Boolean).join(' · '):source,note:[top.colors!=null?'Colours: '+([...top.colors].map(c=>({w:'white',u:'blue',b:'black',r:'red',g:'green'})[c]).join(', ')||'colourless'):'',top.best?'Best finish: '+top.best:''].filter(Boolean).join(' · ')};
+    buttons:[{label:'Open the deck',item:items[0]},...(mk?.colors?.length?[{label:'Build a '+colourWords(args.colors,args.exact)+' '+fmt+' deck',build:mk}]:[]),{label:'All '+fmt+' decks',route:'#decks/inspiration'}],source:args.sort||args.under!=null?[source,'cost is for the copies you are missing'].filter(Boolean).join(' · '):source,note:[top.colors!=null?'Colours: '+([...top.colors].map(c=>({w:'white',u:'blue',b:'black',r:'red',g:'green'})[c]).join(', ')||'colourless'):'',top.best?'Best finish: '+top.best:''].filter(Boolean).join(' · ')};
   }
   if(tool==='set_cards'){
    if(pick==='price-asc'){

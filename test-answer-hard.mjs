@@ -165,7 +165,7 @@ assert.equal(r.a.strong,'Mono-Red Aggro');assert.equal(r.a.also[0].text,'Its col
 assert.match(r.a.also[1].text,/Ask "what beats it" on its own line and the app simulates the matchups/,'a matchup ask on a shared line points at the simulation, never guesses');
 
 r=await ask('best green deck and how much does it cost');
-assert.equal(r.a.ok,false);assert.match(r.a.also[0].text,/Not answered, because the first part found nothing/,'a follow-up about a deck that was not found is not answered from another deck');
+assert.match(r.a.strong,/^No Standard deck with green in it is among the \d+ tournament lists/);assert.match(r.a.also[0].text,/Not answered, because no tournament deck fits the first part/,'a follow-up about a deck that was not found is not answered from another deck');
 
 r=await ask('which mono red deck beats control');
 assert.equal(r.a.strong,'Mono-Red Aggro');assert.match(r.a.vs[0].text,/can't rank decks by how they do against control/,'the answer says it is by play share, not by matchup');
