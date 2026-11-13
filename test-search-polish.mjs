@@ -7,7 +7,7 @@ S.state=blank();
 for(const game of ['mtg','ptcg','ygo']) {
  S.state.settings.game=game;
  const html=game==='mtg'?search():tcgSearch();
- assert.equal((html.match(/data-act="askOpen"/g)||[]).length,1,`${game}: one Ask entry on Search`);
+ assert.equal((html.match(/data-act="askOpen"/g)||[]).length,0,`${game}: no Ask AI entry on Search (Randall 13 Nov: the search answers from the app's own data)`);
  assert.match(html,/search-query/); assert.doesNotMatch(html,/ask-chip/);
  const hero=homeHero(game,'Your cards');
  assert.match(hero,/data-home-search=/,`${game}: Home uses the integrated search entry`);

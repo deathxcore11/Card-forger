@@ -1,0 +1,2 @@
+// Starter questions for Ask a Judge, shared by the website's screen and the app's.
+export const JUDGE_EXAMPLES = { mtg: ['Can a creature attack the turn it enters?', 'Does deathtouch work with trample?', 'Does lifelink stack?', 'Can I respond to a land being played?'], ptcg: ['Can I attack on my first turn?', 'When can I evolve a Pokémon?', 'What does Poisoned do?'], ygo: ['Can I attack on the first turn?', 'How do Chains work?', 'What is a Quick Effect?'] };

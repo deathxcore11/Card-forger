@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-native-0471-43187-v559";
+const CACHE = "cardforge-shell-native-0472-43188-v560";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
@@ -192,7 +192,10 @@ const ASSETS = [
   "./mtg-route-coverage.js",
 
   "./ai-ask.js", "./ask-navigation.js",
-  "./ai-rules.js",
+  "./judge-ui.js",
+  "./judge-examples.js",
+  "./judge-search.js",
+  "./rules-retrieval.js",
   "./ai-rules-panel.js",
   "./ai-ui.js",
   "./brand.js",
@@ -259,6 +262,9 @@ const ASSETS = [
   "./tour.js",
   "./home-search.js",
   "./universal-search.js",
+  "./answer-search.js",
+  "./answer-run.js", "./answer-state.js",
+  "./coach-plan.js", "./matchup-plan.js",
   "./search-fan.js",
   "./app-info.js",
   "./tabletop.js", "./tabletop-themes.js", "./game-night.js", "./table-share.js", "./play-by-hand.js", "./war-chest.js",

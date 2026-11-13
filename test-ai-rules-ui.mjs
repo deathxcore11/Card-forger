@@ -23,8 +23,9 @@ for (const other of [ rulesContext({ game: 'ygo' }), rulesContext({ game: 'ptcg'
 assert.notEqual(rulesContextKey(rulesContext({ game: 'ptcg', cards: [card] })), rulesContextKey(rulesContext({ game: 'ptcg', cards: [{ ...card, id: 'two' }] })));
 assert.notEqual(rulesContextKey(rulesContext({ game: 'ptcg', cards: [card] })), rulesContextKey(rulesContext({ game: 'ptcg', cards: [{ ...card, text: 'Changed exact text' }] })));
 const escaped = rulesAnswerHtml({ ...valid, shortAnswer: section('<img src=x onerror=evil()>') }); assert.match(escaped, /&lt;img/); assert.doesNotMatch(escaped, /<img/);
-assert.match(rulesAskPanel({ game: 'ptcg' }), /Format not selected/); assert.match(rulesAskPanel({ game: 'mtg', format: 'Modern' }), /Modern/);
-assert.match(rulesAskPanel({ game: 'ygo' }), /AI rules guide/);
+// The Rules page invitation now opens the no-AI Judge (judge-ui.js): it says where answers come from and never says AI.
+assert.match(rulesAskPanel({ game: 'ptcg' }), /From the rulebook · works offline/); assert.match(rulesAskPanel({ game: 'mtg', format: 'Modern' }), /data-rule-format="Modern"/);
+assert.doesNotMatch(rulesAskPanel({ game: 'ygo' }), /\bAI\b/);
 console.log('PASS: client canonical citation reconstruction, game/format/version isolation, exact printing/text session keys, corrupt metadata/quotes rejected and escaped progressive output.');
 
 let focused = '', transportCalls = 0; const dialogs = [];

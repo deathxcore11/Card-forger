@@ -71,33 +71,25 @@ export function createTableAudio(root=null){
  // Story battles play their act's own music (Randall, 1 Nov): A the battle song, B the lighter song for
  // lessons and funny fights, C the boss song. The battle's mood picks the first track, and on a long
  // match the music crossfades on to the act's next song after each full loop. Other matches mostly keep
- // the table's map songs (below).
+ // the table score, but now and then shuffle in Story songs (never a boss song) the same way.
  const story=storyTrack(root);
- // Outside Story the table's map (data-playmat) picks the music: its song A, then song B after one full loop and
- // back; anyone at 5 life or less brings B in at once and holds it (same rule as the app's TableMusic).
- const mat=()=>{const el=root||globalThis.document?.querySelector?.('.play-match-table');const id=el?.getAttribute?.('data-playmat')||el?.closest?.('[data-playmat]')?.getAttribute?.('data-playmat')||'';return id?`MUS-MAT-${id.toUpperCase()}`:'';};
- const pool=story;
+ const pool=story||(Math.random()<0.35?shuffle(STORY_IDS.filter(id=>!id.endsWith('C'))).slice(0,4):null);
  let at=0,since=0;
  function music(b){
-  const low=b.players.some(p=>p.life>0&&p.life<=5);
-  if(pool){
+  const low=b.players.some(p=>p.life<=5);
+  if(pool&&!(low&&!story)){
    const now=Date.now(),id=pool[at%pool.length],span=LOOPS[id]?(LOOPS[id][1]-LOOPS[id][0])*1000:240000;
    if(!since)since=now;else if(now-since>=span){at++;since=now;}
    return setMusic('play',pool[at%pool.length],{alive:onTable});
   }
-  const m=mat(),songs=[`${m}-A`,`${m}-B`];
-  if(m&&LOOPS[songs[0]]&&LOOPS[songs[1]]){
-   if(low){at=1;since=Date.now();}
-   else{const now=Date.now(),span=(LOOPS[songs[at%2]][1]-LOOPS[songs[at%2]][0])*1000;if(!since)since=now;else if(now-since>=span){at++;since=now;}}
-   return setMusic('play',songs[at%2],{alive:onTable});
-  }
-  // No songs for this map: the old table score.
+  // Early turns, then the fuller table, then the low-life track once anyone is close to losing.
   setMusic('play',low?'MUS-TBL-05':(b.turn||0)<=8?'MUS-TBL-03':'MUS-TBL-04',{alive:onTable});
  }
  return {update,destroy:stop};
 }
 
 const STORY_IDS=Object.keys(LOOPS).filter(id=>id.startsWith('MUS-ST-'));
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
 // The Story launcher marks the table's host with the act and the battle's mood (or its kind until the
 // act's moods are written). Returns the act's tracks in play order, or null outside Story.
 const MOOD={march:'A',duel:'A',tension:'A',lesson:'B',comic:'B',boss:'C'},KIND={Boss:'C',Lesson:'B'};

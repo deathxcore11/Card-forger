@@ -31,9 +31,11 @@ export function homeResultRow(game,c,i){
 }
 export function homeSearchMarkup(game){return `<div class="home-search-wrap"><div class="home-search-pill"><span class="home-sr-only" id="home-search-label">Cards & answers</span><input id="homeQ" type="search" data-home-search="${game}" value="${esc(homeQueries[game]||'')}" placeholder="${SEARCH_PROMPT}" maxlength="300" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="homeSearchResults" aria-label="Find cards or ask CardStashy" aria-describedby="home-search-label" autocomplete="off" enterkeyhint="search"></div></div>`;}
 
-export function attachHomeSearch({game,lookup,open,submit,local=()=>({sections:[]}),run=()=>{}}){
- let field=null,box=null,rows=[],items=[],sections=[],build=null,active=-1,ticket=0,timer;
- const close=()=>{clearTimeout(timer);ticket++;box?.remove();box=null;active=-1;field?.setAttribute('aria-expanded','false');field?.removeAttribute('aria-activedescendant');};
+// answer (optional): {plan(g,q), run(plan), html(a,plan), act(el,a,plan,g)}. With it, a question gets the app's own answer
+// card on top and the AI button is gone; without it the popup behaves as before.
+export function attachHomeSearch({game,lookup,open,submit,local=()=>({sections:[]}),run=()=>{},answer=null}){
+ let field=null,box=null,rows=[],items=[],sections=[],build=null,active=-1,ticket=0,timer,ans=null,ansPlan=null,ansHtml='',lastStatus='',fix={};
+ const close=()=>{clearTimeout(timer);ticket++;box?.remove();box=null;active=-1;ans=null;ansHtml='';field?.setAttribute('aria-expanded','false');field?.removeAttribute('aria-activedescendant');};
  function position(){
   if(!box)return;if(!field?.isConnected||!field.getClientRects().length||game()!==field.dataset.homeSearch)return close();
   const r=field.closest('.home-search-pill').getBoundingClientRect(),v=window.visualViewport;
@@ -43,19 +45,24 @@ export function attachHomeSearch({game,lookup,open,submit,local=()=>({sections:[
  }
  function show(cards,status){
   if(!field?.isConnected||document.activeElement!==field||game()!==field.dataset.homeSearch)return;
-  rows=cards;active=-1;items=sections.flatMap(s=>s.items);
+  rows=cards;lastStatus=status;active=-1;items=sections.flatMap(s=>s.items);
   if(!box){box=document.createElement('div');box.id='homeSearchPopup';box.className='home-suggestions view-compact';box.setAttribute('role','region');box.setAttribute('aria-label','Matching cards');document.body.append(box);
    box.addEventListener('pointerdown',e=>{if(e.target.closest('button'))e.preventDefault();});
-   box.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-home-pick'))pick(Number(b.dataset.homePick));else if(b.hasAttribute('data-home-item'))choose(Number(b.dataset.homeItem));else{const q=field.value;close();submit(q,b.dataset.homeAction);}});
+   box.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.closest('.answer-card')){const a=ans,plan=ansPlan,g=field?.dataset.homeSearch;if(!plan||game()!==g)return;
+    // A tapped "Read as" chip offers its other readings; picking one asks again with it, the words untouched.
+    if(b.dataset.answerFix){const kind=b.dataset.answerFix,row=box.querySelector('.answer-fixes');if(row){row.remove();return;}b.closest('.answer-read').insertAdjacentHTML('afterend',`<div class="answer-choices answer-fixes">${answer.choices(plan,kind).map(c=>`<button type="button" class="chip" data-answer-fixed="${esc(kind)}" data-value="${esc(c)}">${esc(c)}</button>`).join('')}</div>`);position();return;}
+    if(b.dataset.answerFixed){fix={...fix,[b.dataset.answerFixed]:b.dataset.value};clearTimeout(timer);ticket++;update();return;}
+    if(!a)return;close();answer.act(b,a,plan,g);return;}if(b.hasAttribute('data-home-pick'))pick(Number(b.dataset.homePick));else if(b.hasAttribute('data-home-item'))choose(Number(b.dataset.homeItem));else{const q=field.value;close();submit(q,b.dataset.homeAction);}});
   }
-  // Smart actions: a question goes straight to CardStashy AI; a card name leads with the app's own matches, and
+  // Smart actions: a question gets the app's own answer (no AI); a card name leads with the app's own matches, and
   // AI is offered as the second choice only. No counts or filler lines, only a status when something needs saying.
   const asking=homeIntent(field.value.trim())==='ask',all=!asking&&cards.length>1;
-  const askBtn=`<button type="button" class="home-assistant-action${asking||!cards.length?' is-lead':''}" data-home-action="ask">${aiOrb()}<span>${asking?esc(field.value.trim()):'Ask about this'}<small>CardStashy AI</small></span></button>`;
+  const askBtn='';
   box.classList.toggle('is-asking',asking);
-  const buildBtn=build?`<button type="button" class="home-assistant-action is-lead" data-home-action="build">${aiOrb()}<span>Build ${esc(build)}<small>CardStashy AI</small></span></button>`:'';
+  const buildBtn=build?`<button type="button" class="home-assistant-action is-lead" data-home-action="build">${aiOrb()}<span>Build ${esc(build)}<small>Deck builder</small></span></button>`:'';
   box.classList.toggle('has-app',!!items.length);
-  box.innerHTML=`${items.length?`<div class="home-app-results" role="listbox" aria-label="In CardStashy">${appSectionsMarkup(sections)}</div>`:''}${status?`<p class="home-result-status" role="status">${esc(status)}</p>`:''}${cards.length?`<div class="home-app-group"${items.length?'':' data-only'}>${items.length?'<p class="home-app-label">Cards</p>':''}<div class="display-list" id="homeSearchResults" role="listbox" aria-label="Matching cards">${cards.map((c,i)=>homeResultRow(game(),c,i)).join('')}</div></div>`:''}<div class="home-result-actions">${all?`<button type="button" class="home-catalogue-action" data-home-action="cards">${searchEmblem()}<span>View all matches</span></button>`:''}${buildBtn||(items.some(x=>x.score===0)&&!asking&&!cards.length?'':askBtn)}</div>`;
+  box.classList.toggle('has-answer',!!ansHtml);
+  box.innerHTML=`${ansHtml}${items.length?`<div class="home-app-results" role="listbox" aria-label="In CardStashy">${appSectionsMarkup(sections)}</div>`:''}${status?`<p class="home-result-status" role="status">${esc(status)}</p>`:''}${cards.length?`<div class="home-app-group"${items.length?'':' data-only'}>${items.length?'<p class="home-app-label">Cards</p>':''}<div class="display-list" id="homeSearchResults" role="listbox" aria-label="Matching cards">${cards.map((c,i)=>homeResultRow(game(),c,i)).join('')}</div></div>`:''}<div class="home-result-actions">${all?`<button type="button" class="home-catalogue-action" data-home-action="cards">${searchEmblem()}<span>View all matches</span></button>`:''}${buildBtn||(items.some(x=>x.score===0)&&!asking&&!cards.length?'':askBtn)}</div>`;
   field.setAttribute('aria-expanded','true');position();
  }
  function pick(i){const c=rows[i],g=field?.dataset.homeSearch;if(!c||game()!==g)return;close();open(g,c);}
@@ -66,16 +73,23 @@ export function attachHomeSearch({game,lookup,open,submit,local=()=>({sections:[
   // The app's own answers are local and instant; cards follow from the card source.
   let found={sections:[]};try{found=local(g,q)||found;}catch{}
   sections=found.sections||[];build=found.build||null;
+  // The app's own answer: read the question, show "Looking…", then the card once the lookup lands.
+  ans=null;ansHtml='';ansPlan=null;try{ansPlan=answer?.plan(g,q,fix)||null;}catch{}
+  const wants=ansPlan&&!ansPlan.hand&&(ansPlan.call||ansPlan.missing?.length||ansPlan.intent==='unknown');
+  if(wants){
+   ansHtml='<section class="answer-card is-loading" aria-live="polite"><p class="answer-say">Looking…</p></section>';
+   Promise.resolve(answer.run(ansPlan)).catch(()=>null).then(a=>{if(id!==ticket||field!==f||f.value.trim()!==q||game()!==g)return;ans=a;ansHtml=a?answer.html(a,ansPlan):'';show(rows,lastStatus);});
+  }
   if(homeIntent(q)==='ask'&&!build&&!sections.length)return show([],'');
   show([],'');
-  if(homeIntent(q)==='ask'||found.skipCards)return;
+  if(homeIntent(q)==='ask'||found.skipCards||(wants&&ansPlan.intent!=='names'))return;
   try{const result=await lookup(g,q);if(id!==ticket||field!==f||f.value.trim()!==q||game()!==g)return;
    show(result.cards,result.corrected&&result.cards.length?'Did you mean':result.cards.length||sections.length?'':result.error?'Card search is offline right now.':'No card by that name.');
   }catch{if(id===ticket)show([],sections.length?'':'Card source unavailable. Try again.');}
  }
  document.addEventListener('focusin',e=>{const f=e.target.closest?.('[data-home-search]');if(!f)return;close();field=f;update();});
- document.addEventListener('input',e=>{if(!e.target.matches?.('[data-home-search]'))return;field=e.target;homeQueries[field.dataset.homeSearch]=field.value;close();timer=setTimeout(update,220);});
- document.addEventListener('keydown',e=>{if(e.target!==field)return;if(e.key==='Escape'){e.preventDefault();close();}else if(['ArrowDown','ArrowUp'].includes(e.key)&&box&&box.querySelector('[role=option]')){e.preventDefault();const opts=[...box.querySelectorAll('[role=option]')];active=(active+(e.key==='ArrowDown'?1:-1)+opts.length)%opts.length;opts.forEach((n,i)=>{n.setAttribute('aria-selected',String(i===active));if(i===active)n.scrollIntoView({block:'nearest'});});field.setAttribute('aria-activedescendant',opts[active].id);}else if(e.key==='Enter'){e.preventDefault();e.stopImmediatePropagation();const sel=box&&active>=0?[...box.querySelectorAll('[role=option]')][active]:null;if(sel)sel.click();else{const q=field.value;close();submit(q,homeIntent(q));}}},true);
+ document.addEventListener('input',e=>{if(!e.target.matches?.('[data-home-search]'))return;field=e.target;homeQueries[field.dataset.homeSearch]=field.value;fix={};close();timer=setTimeout(update,220);});
+ document.addEventListener('keydown',e=>{if(e.target!==field)return;if(e.key==='Escape'){e.preventDefault();close();}else if(['ArrowDown','ArrowUp'].includes(e.key)&&box&&box.querySelector('[role=option]')){e.preventDefault();const opts=[...box.querySelectorAll('[role=option]')];active=(active+(e.key==='ArrowDown'?1:-1)+opts.length)%opts.length;opts.forEach((n,i)=>{n.setAttribute('aria-selected',String(i===active));if(i===active)n.scrollIntoView({block:'nearest'});});field.setAttribute('aria-activedescendant',opts[active].id);}else if(e.key==='Enter'){e.preventDefault();e.stopImmediatePropagation();const sel=box&&active>=0?[...box.querySelectorAll('[role=option]')][active]:null;if(sel)sel.click();else if(answer&&ansPlan&&!ansPlan.hand&&ansPlan.intent!=='names'){const first=box?.querySelector('.answer-card [data-answer-button]');if(first)first.click();}else{const q=field.value;close();submit(q,answer?(ansPlan?.hand==='build'?'build':ansPlan?.hand==='judge'?'ask':'cards'):homeIntent(q));}}},true);
  document.addEventListener('pointerdown',e=>{if(box&&!box.contains(e.target)&&!e.target.closest('[data-home-search]'))close();},{passive:true});
  document.addEventListener('focusout',()=>setTimeout(()=>{if(box&&!box.contains(document.activeElement)&&document.activeElement!==field)close();},150));
  if(typeof MutationObserver!=='undefined')new MutationObserver(()=>{if(box&&(!field?.isConnected||game()!==field.dataset.homeSearch))close();}).observe(document.querySelector('#content'),{childList:true});
