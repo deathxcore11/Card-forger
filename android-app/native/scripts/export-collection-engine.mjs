@@ -20,6 +20,18 @@ import {homeSearchMarkup} from ${W('home-search.js')};
 import {pokemonArtCrop} from ${W('artwork.js')};
 ${tcg.slice(from, to)}
 `);
+// ai-ask.js (Ask CardStashy: openAsk, ask, restartAsk, closeAsk and the words it writes), the site's file whole, with its own
+// small page (site-dom.mjs) as its `document`: the app reads the chat back from that page (Collection.ask*, gap audit H3).
+{
+  const ask = readFileSync(join(web, 'ai-ask.js'), 'utf8').replace(/from '\.\/([\w.-]+)'/g, (_, f) => 'from ' + W(f)).replace(/from "\.\/([\w.-]+)"/g, (_, f) => 'from ' + W(f));
+  if (!/export function openAsk/.test(ask) || !/export async function ask\(/.test(ask)) throw Error('ai-ask.js moved: update export-collection-engine.mjs');
+  writeFileSync(join(app, 'build', 'ai-ask-cut.mjs'), `// ai-ask.js with its own page; written by scripts/export-collection-engine.mjs; do not edit.
+import {Document as AskPage} from '../scripts/site-dom.mjs';
+const document = new AskPage();
+export const askPage = document;
+${ask}
+`);
+}
 const {sha, kb} = bundleWeb({web, esbuild, preludes: WEB_PLATFORM, entry: 'collection-engine-entry.mjs', name: 'collection-engine', banner: 'CardStashy Collection engine bundle',
   out: join(app, 'app/src/main/assets/collection-engine.js')});
 console.log('collection engine bundled from', sha, kb + ' KB');

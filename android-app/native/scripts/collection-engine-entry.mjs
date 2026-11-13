@@ -99,7 +99,11 @@ import {createDeckPipeline} from 'WEB/deck-pipeline.js';
 import {deckSetupMarkup, deckResultMarkup} from 'WEB/deck-experience.js';
 import * as TcgAll from 'WEB/tcg.js';
 import {setupModel as flowSetupOf, resultModel as flowResultOf, useDocument as flowUseDocument, draw as flowDraw} from '../scripts/deck-flow-models.mjs';
-import {mtgPower, asShown} from 'WEB/power.js';
+import {mtgPower, asShown, shownPower} from 'WEB/power.js';
+import {lotPrice} from 'WEB/insights.js';
+import {makeAskTools} from 'WEB/ai-tools.js';
+import {configureAiAuth} from 'WEB/ai-auth.js';
+import {openAsk, ask as askSite, restartAsk, closeAsk} from './ai-ask-cut.mjs';
 // mtg-tags.js loads its tags lazily, and Power is worked out without them until they arrive, then all over again (power.js's
 // signature carries mtgTagsReady()). The engine starts with the same file the site fetches, so each deck's Power is worked out
 // once, and the Power keep's entries from the last visit still match.
@@ -5575,8 +5579,94 @@ function compareModelOf(G) {
   return {game: G, title: text(one(one(t, cls('sheet-head')), tagIs('h2'))), sides, verdict: text(one(panel, tagIs('p'))), swap: swap ? text(swap) : '',
     foot: text(one(t, cls('foot'))), clear: !!one(t, x => x.attrs['data-act'] === 'compareReset') || pair.some(Boolean)};
 }
+// ---- Ask CardStashy (gap audit H3): ai-ask.js whole (openAsk, ask, restartAsk, closeAsk; ./ai-ask-cut.mjs, its own small page)
+// with the site's tools (ai-tools.js makeAskTools) and loop (ai-ask-loop.js runAskLoop, posting to /api/ai/ask with the account's
+// token, as aiFetch does). The chat is read back from the page the site writes; a tapped tile runs the site's tools.open, whose
+// moves (A.card, A.tCard, go, the draft builders) come back to the app as where to go (askDest).
+let askNode = null, askGame = '', askRun = null, askDest = null, askToolsSet = null;
+const askDrafts = new Map();
+configureAiAuth(async () => conditionToken);
+function askTools() {
+  if (askToolsSet) return askToolsSet;
+  tcgReady();
+  const dest = d => { askDest = d; return true; };
+  const A = {
+    card: t => dest({to: 'card', game: 'mtg', name: t?.dataset?.name || '', id: t?.printing?.id || ''}),
+    tCard: t => dest({to: 'card', game: t?.dataset?.game || TcgAll.game(), id: String(t?.dataset?.id || ''), setId: t?.dataset?.setId || ''}),
+    mtgProven: t => dest({to: 'meta', game: 'mtg', key: t?.dataset?.key || '', format: t?.dataset?.format || ''}),
+    tMetaDeck: t => dest({to: 'meta', game: TcgAll.game(), key: t?.dataset?.key || ''}),
+    helpOpen: t => dest({to: 'help', id: t?.dataset?.id || ''}),
+    wikiOpen: t => dest({to: 'wiki', game: t?.dataset?.game || TcgAll.game(), topic: t?.dataset?.topic || ''}),
+    setGame: t => { askFocus(t?.dataset?.game || 'mtg'); return true; },
+  };
+  askToolsSet = makeAskTools({S, T: TcgAll, A, go: hash => dest({to: 'route', hash: String(hash || '')}), toast: text => { if (text) toasts.push({text: String(text), undo: false}); },
+    esc, api, resolve, cacheCard, loadSetIndex, loadMetaData: loadMeta, metaState, MTG_META_FORMATS,
+    allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx,
+    // app.js openMtgDraft / openTcgBuild: the drafted deck, kept here for the app's Build a deck to open.
+    openMtgDraft: draft => { const id = 'draft-' + (askDrafts.size + 1); askDrafts.set(id, {game: 'mtg', draft: structuredClone(draft)}); return dest({to: 'build', game: 'mtg', id}); },
+    openTcgBuild: (g, id, budget, format) => dest({to: 'build', game: g, seed: String(id || ''), budget: budget > 0 ? budget : 0, format: format || ''})});
+  return askToolsSet;
+}
+function askFocus(G) { tcgReady(); tcgFocus(G, S.ui.view || 'search'); }
+// The chat as the app draws it: the greeting and starter questions (an empty chat), then each line: yours, "Thinking" with the step
+// it is on, the answer (its source label, text, tiles, deck choices, follow-up questions), or the error line.
+function askModelOf() {
+  const node = askNode, log = node?.querySelector('.ask-log'), txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
+  if (!log) return {open: false};
+  const empty = log.querySelector('.ask-empty');
+  const lines = log.querySelectorAll('.ask-msg').map(m => {
+    const c = m.classList;
+    if (c.contains('me')) return {who: 'me', text: txt(m), pending: c.contains('pending')};
+    if (c.contains('thinking')) return {who: 'thinking', step: txt(m.querySelector('.ask-step'))};
+    if (c.contains('error')) return {who: 'error', text: txt(m)};
+    const src = m.querySelector('.ask-source'), ps = m.querySelectorAll(':scope > p');
+    return {who: 'ai', source: txt(src), sourceKind: ['app', 'general', 'mixed'].find(k => src?.classList.contains(k)) || 'mixed', text: txt(ps.find(p => p !== src)),
+      items: m.querySelectorAll('[data-ask-show]').map(b => {
+        let show = null; try { show = JSON.parse(b.getAttribute('data-ask-show')); } catch {}
+        return {show, title: txt(b.querySelector('b')), lines: b.querySelectorAll('small').map(txt).filter(Boolean), price: txt(b.querySelector('em')) || txt(b.querySelector('.art-price')),
+          art: b.querySelector('img')?.getAttribute('src') || '', build: b.classList.contains('ask-build'), status: txt(b.querySelector('.ask-build-status')), label: b.getAttribute('aria-label') || ''};
+      }),
+      choices: m.querySelectorAll('[data-ask-choice]').map(b => ({id: b.getAttribute('data-ask-choice'), label: txt(b), turn: Number(b.getAttribute('data-ask-turn'))})),
+      follow: m.querySelectorAll('[data-ask-q]').map(b => b.getAttribute('data-ask-q'))};
+  });
+  return {open: true, game: askGame, title: txt(node.querySelector('#ask-title')), eyebrow: txt(node.querySelector('.ask-head .eyebrow')),
+    placeholder: node.querySelector('.ask-input')?.getAttribute('placeholder') || '', draft: node.querySelector('.ask-input')?.value || '',
+    hello: txt(empty?.querySelector('.ask-hello')), blurb: txt(empty?.querySelector('.muted')), examples: empty ? empty.querySelectorAll('[data-ask-q]').map(b => b.getAttribute('data-ask-q')) : [],
+    lines, busy: node.classList.contains('thinking')};
+}
+// ai-ask.js ask, as its form and buttons call it. A deck choice is the latest answer's only (the site's turn check).
+function askAsk(text, choice = null, turn = 0) {
+  if (choice) {
+    const answers = askNode?.querySelectorAll('.ask-log .ask-msg.ai').filter(m => !m.classList.contains('thinking') && !m.classList.contains('error')) || [], last = answers[answers.length - 1];
+    if (!last?.querySelectorAll('[data-ask-choice]').some(b => b.getAttribute('data-ask-choice') === choice.id && Number(b.getAttribute('data-ask-turn')) === turn)) return;
+  }
+  askSite(text, fetch, choice).catch(e => { globalThis.__lastError = String(e?.stack || e); });
+}
+function askOpenGame(G, prefill = '') {
+  if (askNode && askGame === G && askNode.parentNode) return;
+  askFocus(G); askGame = G;
+  askNode = openAsk({game: G, tools: askTools(), prefill, show: s => askShowRun(s)});
+}
+function askShowRun(s) {
+  askDest = null; const run = askRun = {done: false};
+  (async () => { askFocus(s?.game || askGame); await askTools().open(s); })().then(() => { run.done = true; run.dest = askDest; }, e => { run.done = true; run.error = String(e?.message || e); });
+}
 globalThis.Collection = {
   // ---- Compare cards (gap audit H1) ----
+  // ---- Ask CardStashy (gap audit H3) ----
+  // Opens game [G]'s chat (kept while the app runs, one per game, as the site keeps it for the page's life); [prefill] asks it.
+  askOpen(G, prefill) { askOpenGame(G); if (prefill) askAsk(String(prefill)); return json(askModelOf()); },
+  askModel() { return json(askModelOf()); },
+  // ai-ask.js ask: the question (a starter, a follow-up, or typed); askModel().busy says when the answer is in.
+  askSend(G, text) { askOpenGame(G); askAsk(String(text || '')); return json(askModelOf()); },
+  // A deck choice button (ai-ask.js data-ask-choice): only the latest answer's, as the site's turn check allows.
+  askChoice(G, id, label, turn) { askOpenGame(G); askAsk(String(label || ''), {id: String(id)}, Number(turn)); return json(askModelOf()); },
+  // New chat (restartAsk) and leaving (closeAsk: a question still out is called off, its words put back in the bar).
+  askNew(G) { askOpenGame(G); askNode = restartAsk() || askNode; return json(askModelOf()); },
+  askClose() { closeAsk({handoff: true}); return '{}'; },
+  // A tapped tile (its data-ask-show): the site's tools.open; askShowDone() says where the app goes ({dest}) once it is worked out.
+  askShow(item) { let s = null; try { s = JSON.parse(item); } catch {} if (!s) return '{}'; closeAsk({handoff: true}); askShowRun(s); return '{}'; },
+  askShowDone() { return json(askRun || {done: true}); },
   compareModel(G) { return json(compareModelOf(G)); },
   // A.compareFrom / tCompareFrom, as the app's hold menu: the card fills the first empty side (a full pair starts again from it).
   // [ref] is the Magic card's name, or a Yu-Gi-Oh! / Pokémon card id; compareDone() says when it is in.
