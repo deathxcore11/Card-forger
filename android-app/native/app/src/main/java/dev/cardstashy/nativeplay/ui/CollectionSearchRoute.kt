@@ -56,6 +56,9 @@ private val handed = java.util.concurrent.ConcurrentHashMap<String, String>()
 /** Counts each hand-over, so a Search tab that is already open takes the words too (a card page's artist name, 12 Nov). */
 private val handedTick = kotlinx.coroutines.flow.MutableStateFlow(0)
 fun searchFor(game: String, words: String) { if (words.isNotBlank()) { handed[game] = words.trim(); handedTick.value++ } }
+/** A Yu-Gi-Oh! / Pokémon card page's chip (kind, value): the Search tab opens on the site's search for it (A.ruleCards). Taken once. */
+private val discovered = java.util.concurrent.ConcurrentHashMap<String, Pair<String, String>>()
+fun searchDiscover(game: String, kind: String, value: String) { discovered[game] = kind to value; handedTick.value++ }
 
 fun searchAsked(review: String? = null) { SearchCache.models.remove("mtg"); SearchCache.asked = true; SearchCache.review = review }
 
@@ -167,6 +170,17 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
     val handedNow by handedTick.collectAsState()
     LaunchedEffect(game, ready, handedNow) {
         if (!ready) return@LaunchedEffect
+        discovered.remove(game)?.let { (kind, value) ->
+            turn.withLock { runCatching {
+                val j = CollectionEngine.discoverySearch(game, kind, value)
+                j.get("error")?.takeIf { it.isJsonPrimitive }?.asString?.let { CollectionWrites.show(it); return@runCatching }
+                show(j); query = ""
+                CollectionEngine.settle(60_000, CollectionEngine.SEARCH_MODEL, ::show)
+                show(CollectionEngine.searchModel())
+                CollectionEngine.searchToasts().lastOrNull()?.let { CollectionWrites.show(it) }
+            } }
+            return@LaunchedEffect
+        }
         val words = handed.remove(game) ?: return@LaunchedEffect
         query = words
         turn.withLock { runCatching { CollectionEngine.searchRemember(game, words) } }

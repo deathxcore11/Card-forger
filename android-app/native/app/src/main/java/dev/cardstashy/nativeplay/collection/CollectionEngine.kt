@@ -404,6 +404,9 @@ object CollectionEngine {
     suspend fun searchDo(act: String, data: JsonObject = JsonObject()): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.searchDo(${str(act)}, ${str(data.toString())})") as String).asJsonObject }
     const val SEARCH_MODEL = "Collection.searchModel()"
+    /** A Yu-Gi-Oh! / Pokémon card page's chip (app.js A.ruleCards): the game's search set to it and started; {error} when it can't be. */
+    suspend fun discoverySearch(game: String, kind: String, value: String): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.discoverySearch(${str(game)}, ${str(kind)}, ${str(value)})") as String).asJsonObject }
     suspend fun searchModel(): JsonObject = on { q -> JsonParser.parseString(q.evaluate(SEARCH_MODEL) as String).asJsonObject }
     /** The card a press opened (Random: {act: card, name} or {act: tCard, id, game}), once; null when none. */
     suspend fun searchWent(): JsonObject? = on { q -> JsonParser.parseString(q.evaluate("Collection.searchWent()") as String).takeIf { it.isJsonObject }?.asJsonObject }

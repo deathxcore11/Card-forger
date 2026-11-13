@@ -203,6 +203,7 @@ internal fun discoveryWords(d: Map<String, String>): String? {
 private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -> Unit, web: (url: String, press: String?) -> Unit, onSet: ((String) -> Unit)?, onRandom: (() -> Unit)?,
                         onBack: (() -> Unit)? = null) {
     val context = LocalContext.current
+    val searchOpen = LocalCollectionSearch.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var model by remember(open) { mutableStateOf<CollectionCardModel?>(null) }
     var asked by remember(open) { mutableStateOf<Pair<String, String>?>(null) }
@@ -255,6 +256,10 @@ private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) 
                 saved = { scope.launch { show(CollectionEngine.tcardModel()) } }, closeAll = onClose)
             p.act == "priceAlert" -> CollectionWrites.openAlert(d) { scope.launch { show(CollectionEngine.tcardModel()) } }
             // tcg.js "⇄ Compare" (A.tCompareFrom): the same for this game.
+            // The artist, type, archetype, attribute and ability chips (card-discovery.js, app.js A.ruleCards): the app's own Search tab
+            // on the site's search for them (gap audit L1).
+            p.act == "ruleCards" && searchOpen != null && v("game") == open.game && open.game != "mtg" && v("discovery-kind").isNotBlank() && v("discovery-value").isNotBlank() -> {
+                searchDiscover(open.game, v("discovery-kind"), v("discovery-value")); onClose(); searchOpen() }
             p.act == "tCompareFrom" && v("id").isNotBlank() -> CollectionWrites.comparing.value = CollectionWrites.CompareOpen(open.game, first = v("id"),
                 openCard = { n, id -> CollectionWrites.comparing.value = null; onOpen(CardOpen(n, page = open.page, tile = "[data-act=\"tCard\"][data-id=\"${css(id)}\"]", game = open.game, id = id)) })
             p.act == "go" && v("to").isNotBlank() -> web("https://cardstashy.com/" + v("to"), null)

@@ -44,6 +44,8 @@ import {locationPicker, rememberLocation} from 'WEB/collection-locations.js';
 import {acquireMissing, parseDeckImport} from 'WEB/deck-flow.js';
 import {alerts as priceAlerts, alertFor, setAlert, onAlert, alertText, priceSeries, recordCardPrice} from 'WEB/pricehist.js';
 import {sharedPoints, loadSharedPoints, mergePoints} from 'WEB/sharedprices.js';
+import {cardDiscoverySpec} from 'WEB/card-discovery.js';
+import {ruleCardContext} from 'WEB/rule-dex.js';
 import {quoteModel, recordQuote, HISTORY_RANGES, modeFor, selectionState, registerWorkbench} from 'WEB/workbench-ui.js';
 import {setHistoryRefresh} from 'WEB/shared-history.js';
 import {loadSharedHistory} from 'WEB/shared-history.js';
@@ -6203,6 +6205,22 @@ globalThis.Collection = {
     return json(searchPageModel(searchGame));
   },
   searchWent() { const w = searchWent; searchWent = null; return json(w); },
+  // app.js A.ruleCards for Yu-Gi-Oh! and Pokémon (a card page's artist, type, archetype, attribute and ability chips): the game's
+  // search set to the chip's filters (card-discovery.js cardDiscoverySpec), then run (tcg.js A.tSearch), or the loaded cards matched
+  // for a Pokémon ability or text. Its error line when the chip names nothing the site can search.
+  discoverySearch(G, kind, value) {
+    const spec = cardDiscoverySpec(G, kind, value);
+    if (!spec || G === 'mtg') return json({error: 'Reopen this card in its game before searching.'});
+    searchGame = G; tcgFocus(G, 'search');
+    TcgAll.invalidateTcgSearch(G, true); const U = tcgUi(G).search;
+    Object.assign(U, {q: '', f: spec.filters, own: '', maxPrice: '', sort: G === 'ygo' ? 'name' : 'new', discoveryNote: ''});
+    if (spec.loadedAbility || spec.loadedText) {
+      const key = (spec.loadedAbility || spec.loadedText).toLocaleLowerCase();
+      const cards = Object.values(tcgCache[G]).filter(c => !c.brief && (spec.loadedAbility ? c.abilities?.some(a => a.name?.toLocaleLowerCase() === key) : ruleCardContext(G, c).text.toLocaleLowerCase().includes(key)));
+      Object.assign(U, {results: cards, ran: true, total: cards.length, more: false, busy: false, error: '', discoveryNote: `${spec.label}. Loaded card data only; this is not a complete catalogue search. Shared text or an Ability name does not prove the same effect or a working combo.`});
+    } else Promise.resolve(TA.tSearch()).catch(e => toasts.push({text: e?.message || 'Search failed.', undo: false}));
+    return json(searchPageModel(G));
+  },
   searchToasts() { const t = toasts.map(x => x.text); toasts = []; return json(t); },
   // tcg.js's saved searches live in this device's storage (cardforge-saved-searches-v1): the app keeps them between visits.
   // suggest.js keeps each game's recent searches (cardstashy-recent-<game>) the same way: both go back and forth as one object.
