@@ -68,6 +68,7 @@ export function makeAskTools(x) {
     return matches.length===1?matches[0]:null;
   }
   let suggestions = [], buildId = 0, buildEpoch = 0;
+  const angleCache = new Map();
   const builders = new Map();
   let buildReads=new Map(),buildReadVersion=null,bestBuild=null;
   const stateVersion = g => {const st=g==='mtg'?S.state:T.gs?.(g)||S.state;return JSON.stringify([st?.collection||[],st?.decks||[]]);};
@@ -310,7 +311,7 @@ export function makeAskTools(x) {
         if (!data) return { error: 'Tournament data for that format isn\'t available right now.' };
         const summary=d=>completionSummary([...(d.commanders||[]).map(r=>typeof r==='string'?{name:r,qty:1}:r),...(d.main||[])],n=>x.inv(n).owned,n=>x.priceOf(n));
         const rows=await narrowMeta(g,(data.archetypes||[]).map(a=>{const d=data.decks.find(y=>y.key===a.best)||data.decks.find(y=>(y.archetype||y.name)===a.name);return {a,d,name:a.name,cards:(d?.main||[]).filter(c=>!c.land)};}),args,summary);
-        if(rows.error)return {game:g,format:k.slice(4),...rows};
+        if(rows.error)return {game:g,format:k.slice(4),total:(data.decks||[]).length,...rows};
         return decorateMeta(g,data,{game:g,format:k.slice(4),source:data.source||'tournament results',fetchedAt:data.fetchedAt||data.updatedAt||null,matched:rows.matched,decks:rows.slice(0,8).map(({a,d,sum,colors})=>({name:a.name,key:d?.key||'',share:Math.round((a.share||0)*1000)/10,lists:a.lists||a.count||0,best:d?`${d.place||''} ${d.event||''}`.trim():'',eventDate:d?.date||null,...(colors?{colors}:{}),...(args.key&&d?deckTop(g,d):{}),...(d?sum||summary(d):{listUnavailable:true,ownedPercent:null,costToFinish:null})}))});
       }
       const data = (await x.tcgCtx.loadMeta?.(g).catch(() => null)) || T.metaState(g).data;
@@ -480,6 +481,55 @@ export function makeAskTools(x) {
       for (const f of field) { const them = prof(f.y.main), sim = them && simulateMatchup('mtg', me, them); if (!sim) { skipped++; continue; } out.push({ name: f.a.name, key: f.y.key || '', share: Math.round((f.a.share || 0) * 1000) / 10, win: pct(sim.win), onPlay: pct(sim.onPlay), onDraw: pct(sim.onDraw), runs: sim.runs, reasons: sim.reasons || [] }); }
       if (!out.length) return { game: g, deck: { id: d.id, name: d.name, format: covered[0] }, mine, error: 'The tournament lists could not be loaded for a simulation right now.' };
       return { game: g, deck: { id: d.id, name: d.name, key: d.key || '', format: covered[0] }, mine, narrowed: !!(want.length || opponent), field: out, skipped };
+    },
+    // The deck builder run from the search box: the same build the Build a deck page runs, finished here, so the answer can show
+    // the list it made. [request] is the builder's own request (answer-run.js buildRequest). Nothing is saved.
+    async build_now(request, handshake={}) {
+      const g = g0(request?.game), current = () => handshake.current?.() !== false;
+      const run = x.deckExperience ? (r, o) => x.deckExperience.build(r, o) : x.buildFlow;
+      if (!run) return { game: g, unavailable: true, error: 'The deck builder cannot run inside search here. Open it to build this deck.' };
+      const version = stateVersion(g), scope = () => stateVersion(g) === version;
+      let result;
+      try { result = await run({ ...request, game: g }, { current, signal: handshake.signal, onStatus: handshake.onStatus }); }
+      catch (e) { return current() ? { game: g, error: String(e?.message || e || 'The deck builder could not finish this deck.') } : { cancelled: true }; }
+      if (!current()) return { cancelled: true };
+      if (!result?.ok) return { game: g, error: result?.message || 'The deck builder could not finish this deck.' };
+      const main = (result.rows || []).filter(r => r.zone === 'main' || !r.zone), isLand = r => /\bLand\b/.test(String(r.card?.type_line || '').split('//')[0]);
+      let item = null;
+      if (x.deckExperience?.register) {
+        const id = x.deckExperience.register(result, scope);
+        x.pending = () => x.deckExperience.openResult(id); x.pending.current = x.deckExperience.isCurrent ? () => x.deckExperience.isCurrent(id) : scope; x.pendingGame = g; x.pending.resultId = id;
+        const cover = result.request.seedCard || result.rows.find(r => r.name === result.deck.commander || r.name === result.deck.buildAround)?.card;
+        x.pending.visual = { card: cover, image: cover?.image_uris?.art_crop || cover?.card_faces?.[0]?.image_uris?.art_crop || mtgImg(cover), name: result.request.seedCard?.name || result.deck.buildAround || result.deck.commander || 'Your deck', format: result.request.formatName, summary: `${main.reduce((n, r) => n + r.qty, 0)} cards · ${result.request.formatName}`, status: result.requestSatisfied ? 'Request checks passed' : 'Review remaining checks', ready: result.requestSatisfied === true, estimate: result.pricing?.estimate };
+        item = tools.pendingItem();
+      }
+      const colors = g === 'mtg' ? mtgDeckColors(main.filter(r => !isLand(r))) : null;
+      return { game: g, format: result.request.formatName || result.request.format || '', around: result.request.seedCard?.name || result.deck?.buildAround || result.deck?.commander || '', commander: result.deck?.commander || '',
+        total: main.reduce((n, r) => n + r.qty, 0), lands: main.filter(isLand).reduce((n, r) => n + r.qty, 0), colors,
+        cards: main.map(r => ({ name: r.name, qty: r.qty, land: isLand(r), type: String(r.card?.type_line || '').split('//')[0].trim(), price: r.price ?? null })),
+        estimate: result.pricing?.estimate ?? null, unpriced: result.pricing?.unpriced ?? 0, power: result.power?.score ?? result.power?.power ?? null,
+        satisfied: result.requestSatisfied === true, complete: !!result.check?.complete, legal: !!result.check?.legal, issues: (result.check?.issues || []).slice(0, 4), item };
+    },
+    // Questions worth asking about a deck in these colours, counted from the cards themselves: the creature types and abilities
+    // the colour really has in this format right now (one card search, kept for the session). Nothing here is a guess.
+    async deck_angles({ game, format, colors }) {
+      const g = g0(game); if (g !== 'mtg' || !colors?.length) return { game: g, angles: [] };
+      const id = colors.map(c => String(c).toLowerCase()).join(''), legal = String(format || 'Standard').toLowerCase().replace(/[^a-z]/g, ''), key = legal + ':' + id;
+      if (angleCache.has(key)) return angleCache.get(key);
+      const d = await x.api('/cards/search?' + new URLSearchParams({ q: `f:${legal} id=${id} t:creature game:paper`, order: 'edhrec', unique: 'cards' })).catch(() => null);
+      if (!d?.data?.length) return { game: g, angles: [] };
+      const skip = new Set(['Human', 'Warrior', 'Soldier', 'Wizard', 'Shaman', 'Cleric', 'Rogue', 'Knight', 'Scout', 'Berserker', 'Artificer', 'Noble', 'Mutant', 'Advisor', 'Citizen', 'Peasant', 'Monk', 'Druid', 'Pirate', 'Ally', 'Hero', 'Villain', 'Performer', 'Detective', 'Mercenary', 'Employee', 'Guest', 'Rebel', 'Assassin', 'Archer', 'Samurai', 'Ninja', 'Barbarian', 'Bard', 'Ranger', 'Warlock', 'Pilot', 'Scientist', 'Robot']);
+      const tribe = new Map(), word = new Map(), bump = (m, k) => m.set(k, (m.get(k) || 0) + 1);
+      for (const c of d.data) {
+        const [types, subs = ''] = String(c.type_line || c.card_faces?.[0]?.type_line || '').split('//')[0].split('—');
+        if (!/\bCreature\b/.test(types)) continue;
+        for (const t of subs.trim().split(/\s+/).filter(Boolean)) if (!skip.has(t)) bump(tribe, t);
+        for (const k of c.keywords || []) if (['Haste', 'Flying', 'Trample', 'First strike', 'Lifelink', 'Deathtouch', 'Prowess', 'Menace', 'Vigilance', 'Flash'].includes(k)) bump(word, k);
+      }
+      const top = m => [...m].sort((a, b) => b[1] - a[1]);
+      const out = { game: g, format, checked: d.data.length, angles: [...top(tribe).filter(t => t[1] >= 5).slice(0, 2).map(([name, cards]) => ({ kind: 'tribe', name, cards })), ...top(word).filter(t => t[1] >= 8).slice(0, 2).map(([name, cards]) => ({ kind: 'ability', name, cards }))] };
+      angleCache.set(key, out);
+      return out;
     },
     async build_deck(input, handshake={}) {
       const checked=validateBuildProposal(input);

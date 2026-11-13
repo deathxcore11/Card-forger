@@ -115,7 +115,7 @@ export function createDeckPipeline(x) {
     if(options.current?.()===false)throw new DOMException('Build replaced','AbortError');
     const refreshNote=refreshStatus?.status==='timeout'?'Current reference refresh timed out; this build continues with bounded heuristic search. A late cache response cannot relabel this build.':refreshStatus?.status==='failed'?'Current reference refresh failed; this build continues with bounded heuristic search.':'';
     const snapshot=refreshNote?{...state(),error:refreshNote}:state();
-    references=await resolveReferenceCandidates(snapshot.data,request,{now:x.now?.()??Date.now(),cacheState:snapshot,current:options.current,resolve:async name=>{const card=await x.resolve(name,true);if(options.current?.()===false)throw new DOMException('Build replaced','AbortError');if(card)x.cacheCard?.(card);return card;},quote:name=>x.priceOf(name),owned:name=>x.inv(name)?.available??0,priceDeck,withinBudgetCap,inspectPlan:inspectDeckPlan,maxCandidates:2});
+    references=await resolveReferenceCandidates(snapshot.data,request,{now:x.now?.()??Date.now(),resolveMany:x.resolveNames?names=>x.resolveNames(names.filter(n=>!x.meta(n))):undefined,cacheState:snapshot,current:options.current,resolve:async name=>{const card=await x.resolve(name,true);if(options.current?.()===false)throw new DOMException('Build replaced','AbortError');if(card)x.cacheCard?.(card);return card;},quote:name=>x.priceOf(name),owned:name=>x.inv(name)?.available??0,priceDeck,withinBudgetCap,inspectPlan:inspectDeckPlan,maxCandidates:2});
     if(refreshNote)references.notes=[refreshNote,...references.notes];
    }
    // Tournament lists as a card-quality prior for every 60-card format with a feed (deck-meta-prior.js).

@@ -1668,7 +1668,7 @@ createWikiDeckHandoff({A,article:()=>currentWikiPage()?.state.response,game:T.ga
  card:(game,row,current)=>{if(!current())return null;const target=parseWikiCardLink(row.cardUrl,game);if(target?.kind==='printing')return wikiCardHandoff.open(target);if(row.set&&row.number)return toast('The linked printing could not be matched.');return A.card({dataset:{name:row.name,readOnly:'true'}});},
  importDeck:snapshot=>{deckImportSheet({text:snapshot.text,name:snapshot.title,format:snapshot.format||'60-card casual',commander:snapshot.commander,destination:'new',url:snapshot.source.url,kind:'Community deck',description:`Source decklist from ${snapshot.source.name}: ${snapshot.source.title}.`});if(!snapshot.format){const field=$('#dImpFormat'),choice=document.createElement('option'),preview=$('#dImpPreviewBtn');choice.value='';choice.textContent='Choose a format';choice.disabled=true;choice.selected=true;field.prepend(choice);field.value='';preview.disabled=true;$('#dImpCommanderRow').style.display='none';field.addEventListener('change',()=>{preview.disabled=!field.value;});}}
 });
-const deckPipeline=createDeckPipeline({S,T,api,resolve,cacheCard,meta,priceOf,inv,tcgCtx});
+const deckPipeline=createDeckPipeline({S,T,api,resolve,resolveNames,cacheCard,meta,priceOf,inv,tcgCtx});
 const randomBuildSeed=async request=>{if(request.game!=='mtg')return deckPipeline.resolveSeed(request);const f=formatOf(request.format),theme=String(request.theme||'').replace(/[^\p{L}\p{N} '-]/gu,'').slice(0,80);return cacheCard(await api('/cards/random?'+new URLSearchParams({q:`${f.legality?'f:'+f.legality:'game:paper'} -t:land ${f.commander?'is:commander':''} ${theme?`(t:"${theme}" or o:"${theme}")`:''}`})));};
 const deckExperience=createDeckExperience({pipeline:deckPipeline,A,S,T,meta,game:T.game,
  identity:()=>{const account=accountGeneration;return ()=>!accountLocked&&account===accountGeneration;},
@@ -4745,7 +4745,8 @@ async function submitHome(q,mode){
   return A.askRules({dataset:{game:g}},q);
  }
  if(T.isTcg()){T.ui().search.q=q;await go('#search');if(T.game()===g)A.tSearch();}
- else{S.ui.db.term=q;dbInvalidate();await go('#search');if(T.game()===g)A.dbSearch();}
+ // Words typed in the top bar are a new search: a filter left on by an earlier one ("Legal in Commander" from a deck) does not narrow it.
+ else{S.ui.db.term=q;S.ui.db.filters={color:"",type:"",format:"",maxPrice:""};dbInvalidate();await go('#search');if(T.game()===g)A.dbSearch();}
 }
 A.homeSearch=()=>submitHome($('#homeQ')?.value);
 window.matchMedia?.("(min-width:1200px)").addEventListener?.("change",()=>placeGlobalSearch(T.game(),S.ui.view));
@@ -4976,6 +4977,8 @@ async function answerFirst(q,run,fix={}){
  const a=await Promise.resolve(homeAnswer.run(plan)).catch(()=>null);
  if(searchAnswer.state!==state)return;
  state.a=a;searchAnswer.html=a?homeAnswer.html(a,plan):'';render();
+ // An answer that is still working (the deck builder making a deck) is redrawn when it finishes.
+ if(a?.finish){const b=await Promise.resolve().then(()=>a.finish()).catch(()=>null);if(!b||searchAnswer.state!==state)return;state.a=b;searchAnswer.html=homeAnswer.html(b,plan);render();}
 }
 tcgCtx.answerFirst=answerFirst;
 document.addEventListener('input',e=>{if(searchAnswer.html&&e.target.matches?.('#dbTerm,[data-input="tQ"]')){searchAnswer.html='';searchAnswer.state=null;document.querySelector('[data-search-answer]')?.remove();}});
@@ -8088,6 +8091,11 @@ async function boot() {
       opened = Date.now(); touched = false;
       if (registration && opened - checked > 600000) { checked = opened; registration.update().catch(() => {}); }
     });
+    // A desktop tab that is never hidden kept the old page for as long as it stayed open (seen 13 Nov: a page from before the
+    // no-AI search was still on screen after two releases). So a tab in view also checks every 15 minutes, and a release that
+    // is waiting is switched to on the next move to another page, when nothing is open or typed.
+    setInterval(() => { if (document.visibilityState === "visible" && registration && Date.now() - checked > 600000) { checked = Date.now(); registration.update().catch(() => {}); } }, 900000);
+    addEventListener("hashchange", () => { if (waiting && quiet()) setTimeout(() => { if (waiting && quiet()) location.reload(); }, 0); });
     navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).then((r) => { registration = r; checked = Date.now(); }).catch(() => {});
   }
   // Scryfall role tags arrive after first paint; redraw Magic pages so Deck Power counts them.

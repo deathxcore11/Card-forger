@@ -225,6 +225,20 @@ async function saveFeed(env, key, data) {
     return null;
   }
 }
+// A copy saved before colours were worked out (seen 13 Nov: every live feed, hours after the release that added them) gets
+// them after the reply, so the next reader has them and no phone loads every card of every deck to answer "red deck". One
+// try a quarter of an hour for each feed, so a card database that is down is not asked on every request.
+const needsColors = (d) => !!d?.decks?.length && !d.decks.some((x) => typeof x.colors === "string");
+async function colorSavedFeed(env, format, days, key, data) {
+  const cache = caches.default,
+    tried = new Request(`https://cardforge.cache/mtg/colors-tried/${encodeURIComponent(key)}`);
+  if (await cache.match(tried)) return;
+  await cache.put(tried, json({ at: Date.now() }, 200, 900));
+  const copy = structuredClone(data);
+  await addDeckColors(copy);
+  if (needsColors(copy)) return;
+  await Promise.all([cache.put(mtgKey(format, days), json(copy, 200, 600)), saveFeed(env, key, copy)]);
+}
 async function mtgMeta(env, format, days, ctx, { force = false } = {}) {
   const cache = caches.default,
     key = `mtg:${format}${format === "EDH" ? "-mtgtop8" : ""}:${days}`;
@@ -233,7 +247,10 @@ async function mtgMeta(env, format, days, ctx, { force = false } = {}) {
     // Empty entries cached by an earlier outage are skipped so they refetch.
     if (hit) {
       const cached = await hit.json();
-      if (cached?.decks?.length) return cached;
+      if (cached?.decks?.length) {
+        if (ctx && needsColors(cached)) ctx.waitUntil(colorSavedFeed(env, format, days, key, cached).catch(() => {}));
+        return cached;
+      }
     }
     const saved = await savedFeed(env, key);
     if (saved?.decks?.length) {
@@ -242,6 +259,7 @@ async function mtgMeta(env, format, days, ctx, { force = false } = {}) {
       const work = [cache.put(mtgKey(format, days), json(saved, 200, stale ? 600 : Math.max(600, Math.min(MTG_TTL, Math.round((FEED_STALE_MS - age) / 1000)))))];
       // A copy the daily refresh missed is still sent at once; the rebuild runs after the reply.
       if (stale && ctx) work.push(mtgMeta(env, format, days, null, { force: true }).catch(() => {}));
+      if (!stale && ctx && needsColors(saved)) work.push(colorSavedFeed(env, format, days, key, saved).catch(() => {}));
       if (ctx) ctx.waitUntil(Promise.all(work));
       else await work[0];
       return saved;
