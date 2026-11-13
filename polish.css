@@ -775,6 +775,9 @@ body.glass :is(.guide-along-row, .guide-link) { background: linear-gradient(160d
 .answer-card.is-miss .answer-say, .answer-card.is-loading .answer-say { font-weight:600; color:var(--muted); }
 .answer-card .answer-quote { margin:0; padding-left:10px; border-left:2px solid var(--gold); font-size:13px; line-height:1.45; max-height:9.5em; overflow:auto; }
 .answer-card .answer-note { margin:0; font-size:12px; color:var(--muted); }
+/* The other asks on the same line: the ask in the card's own text colour, its answer beside it. */
+.answer-card .answer-also { font-size:13px; }
+.answer-card .answer-also b { color:inherit; font-weight:600; margin-right:4px; }
 .answer-card .answer-items { display:flex; flex-direction:column; gap:6px; }
 .answer-card .answer-buttons, .answer-card .answer-choices { display:flex; flex-wrap:wrap; gap:8px; }
 .answer-card .answer-buttons .btn { flex:1 1 auto; min-height:44px; }

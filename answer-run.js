@@ -2,6 +2,7 @@
 // Every sentence is filled from what the lookup returned. A lookup that fails or comes back empty gives a
 // plain "miss" line, never a guess. No AI, no DOM: answerMarkup() only builds a string.
 import {readBuildContract} from './ai-build-contract.js';
+import {buildLeftover,deckColors} from './answer-search.js';
 const usd=n=>typeof n==='number'&&Number.isFinite(n)?'$'+n.toFixed(2):null;
 // Dates are written by hand: the app's small JS engine has no locale formatting.
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -43,6 +44,22 @@ export function wikiFact(article,question){
  * Returns { ok, say, strong, quote, items, more, buttons:[{label,item|route|search|discover|judge}], source, miss }
  */
 export async function answerFor(plan,tools,io={}){
+ // No answer may sit on "Looking…" for ever: after [io.limitMs] the wait ends with a plain sentence, and asking again uses whatever has loaded since.
+ let timer;const first=answerOne(plan,tools,io),late=new Promise(r=>{timer=setTimeout(()=>r(miss('That is taking too long on this connection. Check your internet, then ask again.',{slow:true})),io.limitMs||20000);});
+ const a=await Promise.race([first,late]).finally(()=>clearTimeout(timer));first?.catch?.(()=>{});
+ if(!a||!plan?.extra?.length)return a&&(delete a.facets,a);
+ // The other asks on the same line, in the order asked. A follow-up about "it" reads the first answer's own facts.
+ a.also=[];
+ for(const e of plan.extra){
+  let text;
+  if(!a.ok)text='Not answered, because the first part found nothing.';
+  else if(e.facet)text=a.facets?.[e.facet]||"Search can't answer that about this deck yet.";
+  else{const b=e.plan?await answerOne(e.plan,tools,io):null;text=!b?"Search can't answer that one. Try it on its own line.":b.ask?b.ask.ask:b.ok?[b.strong,b.say&&b.say!=='From the wiki page'?b.say:'',b.fact?b.fact.label+': '+b.fact.value:'',b.quote?'“'+b.quote+'”':''].filter(Boolean).join(' '):b.miss;}
+  a.also.push({ask:e.text,text});
+ }
+ delete a.facets;return a;
+}
+async function answerOne(plan,tools,io={}){
  if(!plan||plan.hand)return null;
  if(plan.intent==='unknown')return miss(plan.why||UNKNOWN);
  if(plan.missing?.length)return {ok:false,ask:plan.missing[0],items:[],more:[],buttons:[]};
@@ -51,8 +68,11 @@ export async function answerFor(plan,tools,io={}){
  try{
   if(tool==='go')return {ok:true,say:'Open '+args.title+'.',items:[],more:[],buttons:[{label:'Open '+args.title,route:args.route}],go:args.route};
   if(tool==='build_deck'){
-   const {request,labels}=buildRequest(args.request,g,args.format);
-   return {ok:true,say:labels.length?'The deck builder is set up from your words: '+labels.join(', ')+'.':'Open the deck builder to choose a card, format and budget.',items:[],more:[],buttons:[{label:'Open the deck builder',build:request}],source:'Deck builder · nothing is saved until you choose'};
+   const {request,labels,unused}=buildRequest(args.request,g,args.format,{seed:args.seed});
+   const opp=plan.call.opponent,pod=plan.call.pod,notes=[unused.length?'Not used yet: '+unused.map(u=>'"'+u+'"').join(', ')+'. The builder has no setting for that yet.':'',opp?`The builder can't tune a deck against ${opp} yet.`:'',
+    pod?.decks?.length?`The builder can't tune a deck against the other decks (${pod.decks.map(d=>d.label).join(', ')}) yet.`:'',
+    pod?.power?"It can't measure the pod's power level yet, so it can't match it.":''].filter(Boolean);
+   return {ok:true,say:labels.length?'The deck builder is set up from your words: '+labels.join(', ')+'.':'Open the deck builder to choose a card, format and budget.',note:notes.join(' '),items:[],more:[],buttons:[{label:'Open the deck builder',build:request}],source:'Deck builder · nothing is saved until you choose'};
   }
   if(tool==='judge'){
    // The rule that covers the question, quoted from the bundled rulebook. An unsure match is not shown as an answer.
@@ -87,7 +107,18 @@ export async function answerFor(plan,tools,io={}){
     say=`is the ${what} closest to your collection: you own ${top.ownedPercent}% of it${usd(top.costToFinish)?', about '+usd(top.costToFinish)+' to finish':''}.`;
    }else if(args.sort)say=`is the ${args.sort==='cheapest'?'cheapest':'most expensive'} ${what} to finish from your collection: about ${usd(top.costToFinish)}. It is ${field}.`;
    else say=`is the ${ord}most played ${what} right now: ${field}.`;
-   return {ok:true,strong:top.name,say,items:items.slice(0,1),more:items.slice(1),moreLabel:args.sort==='closest'?'Next closest':args.sort?'Then':'Next most played',
+   const hues=top.colors!=null?[...top.colors].map(c=>({w:'white',u:'blue',b:'black',r:'red',g:'green'})[c]).join(', ')||'colourless':'';
+   const facets={
+    cost:usd(top.costToFinish)?`About ${usd(top.costToFinish)} to finish; you own ${top.ownedPercent}% of it.`:top.listUnavailable?'Its list is not available, so there is no price.':'Some of its cards have no price right now, so there is no total.',
+    own:top.ownedPercent!=null?`You own ${top.ownedPercent}% of it${top.missingCopies?', '+top.missingCopies+' cards short':''}.`:'Its list is not available, so the app cannot compare it with your cards.',
+    colors:hues?'Its colours: '+hues+'.':g==='mtg'?'Its card colours could not be loaded right now.':'This game has no deck colours.',
+    place:top.best?'Best finish: '+top.best+'.':'The feed has no finish for it.',
+    popular:`${field.charAt(0).toUpperCase()+field.slice(1)}.`,
+    list:'Open the deck to see its full list.',
+    beat:"Search can't work out matchups yet.",
+   };
+   const vs=plan.call.opponent?[{ask:'against '+plan.call.opponent,text:`Search can't rank decks by how they do against ${plan.call.opponent} yet, so this is by play share.`}]:null;
+   return {ok:true,facets,...(vs?{vs}:{}),strong:top.name,say,items:items.slice(0,1),more:items.slice(1),moreLabel:args.sort==='closest'?'Next closest':args.sort?'Then':'Next most played',
     buttons:[{label:'Open the deck',item:items[0]},{label:'All '+fmt+' decks',route:'#decks/inspiration'}],source:args.sort||args.under!=null?[source,'cost is for the copies you are missing'].filter(Boolean).join(' · '):source,note:[top.colors!=null?'Colours: '+([...top.colors].map(c=>({w:'white',u:'blue',b:'black',r:'red',g:'green'})[c]).join(', ')||'colourless'):'',top.best?'Best finish: '+top.best:''].filter(Boolean).join(' · ')};
   }
   if(tool==='set_cards'){
@@ -186,19 +217,32 @@ export async function answerFor(plan,tools,io={}){
  *  read by the builder's fixed contract reader (ai-build-contract.js); nothing is guessed and no deck is drafted here. */
 const THEME_NAMES=['Cats','Angels','Humans','Elves','Goblins','Zombies','Lifelink','Lifegain','Tokens','Artifacts','Graveyard'];
 const COLOR_NAMES={W:'white',U:'blue',B:'black',R:'red',G:'green',C:'colorless'};
-export function buildRequest(words,game='mtg',format=''){
- const c=readBuildContract([{type:'message',role:'user',content:String(words||'')}],null,{game}),g=c.game||game,request={game:g},labels=[];
+export function buildRequest(words,game='mtg',format='',extra={}){
+ const c=readBuildContract([{type:'message',role:'user',content:String(words||'')}],null,{game}),g=c.game||game,request={game:g},labels=[],used=[];
  const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
  if(g==='mtg'){
   const f=format||c.format;if(f){request.format=f;labels.push(f);}
+  // The builder's own reading knows colour words; guild and shard names ("izzet", "esper") are read here the way search reads them.
+  if(!c.colors?.length){const dc=deckColors(String(words||'').toLowerCase().replace(/[^a-z0-9 ]+/g,' '));if(dc?.colors?.length&&!dc.without?.length)c.colors=dc.colors.map(x=>x.toUpperCase());}
   if(c.colors?.length){request.colors=[...c.colors];labels.push(c.colors.map(x=>COLOR_NAMES[x]).join(' and '));}
-  const t=c.themes?.[0];if(t){request.theme=THEME_NAMES.find(n=>n.toLowerCase()===t||n.toLowerCase()===t+'s'||n.toLowerCase()===t.replace(/f$/,'ves'))||cap(t);labels.push(request.theme.toLowerCase()+' theme');}
+  const t=c.themes?.[0];if(t){request.theme=THEME_NAMES.find(n=>n.toLowerCase()===t||n.toLowerCase()===t+'s'||n.toLowerCase()===t.replace(/f$/,'ves'))||cap(t);labels.push(request.theme.toLowerCase()+' theme');used.push(t,t+'s',t.replace(/f$/,'ves'),request.theme);}
+  // Further themes ("angels and flying") go to the builder as its style, which it reads the same way as the first.
+  const more=(c.themes||[]).slice(1);if(more.length){request.style=more.join(' ');for(const m of more){labels.push(m+' theme');used.push(m,m+'s');}}
   if(c.creatureTypesOnly?.length)request.creatureTypesOnly=[...c.creatureTypesOnly];
-  const seed=c.commander||c.required_cards?.[0];if(seed){request.seed=seed;labels.push('built around '+seed);}
+  const seed=extra.seed||c.commander||c.required_cards?.[0];if(seed){request.seed=seed;labels.push('built around '+seed);used.push(seed,'this commander','this card','this one','this legend','i have this');}
  }
  if(c.budget>0){request.budget=String(c.budget);labels.push((c.budgetBoundary==='exclusive'?'under $':'up to $')+c.budget);}
  if(c.budget_basis==='owned'){request.budgetBasis='owned';labels.push('only cards you own');}
- return {request,labels};
+ if(!c.goal&&/\bfunn?(?:est|iest|er)\b/i.test(String(words)))c.goal='fun';
+ if(c.goal&&c.goal!=='strongest'&&g==='mtg')request.goal=c.goal;
+ if(c.goal&&c.goal!=='strongest')labels.push(c.goal==='fun'?'a fun deck':c.goal==='theme'?'theme first':c.goal+' deck');
+ // What is left names the thing to build around in Pokémon and Yu-Gi-Oh! (a Pokémon, an archetype); in Magic it is shown as not used.
+ let unused=buildLeftover(words,g,used);
+ if(g!=='mtg'&&!request.seed){
+  if(extra.seed){request.seed=extra.seed;labels.push('built around '+extra.seed);}
+  else{const i=unused.findIndex(u=>!/^(?:tier|bracket|power|would|will|can|could|might|surpris|impress|annoy|scare|shock)/.test(u));if(i>=0){request.seed=unused[i];labels.push('built around "'+unused[i]+'"');unused=unused.filter((_,k)=>k!==i);}}
+ }
+ return {request,labels,unused};
 }
 
 /** The answer card. preview(item,i) and esc come from the caller; buttons carry their index for the click handler. */
@@ -209,5 +253,5 @@ export function answerMarkup(a,read,{esc,preview=()=>''}){
  if(a.ask)return `<section class="answer-card is-ask" aria-live="polite">${head}<p class="answer-say">${esc(a.ask.ask)}</p>${(a.ask.choices||[]).length?`<div class="answer-choices">${a.ask.choices.map((c,i)=>`<button type="button" class="chip" data-answer-choice="${i}">${esc(c.name)}</button>`).join('')}</div>`:''}</section>`;
  if(!a.ok)return `<section class="answer-card is-miss" aria-live="polite">${head}<p class="answer-say">${esc(a.miss)}</p><p class="answer-source">Here is the closest the app has.</p></section>`;
  const say=a.strong&&a.say==='From the wiki page'?`${esc(a.say)} <b>${esc(a.strong)}</b>:`:`${a.strong?`<b>${esc(a.strong)}</b> `:''}${esc(a.say||'')}`;
- return `<section class="answer-card" aria-live="polite">${head}<p class="answer-say">${say}</p>${a.fact?`<p class="answer-fact"><small>${esc(a.fact.label)}</small><b>${esc(a.fact.value)}</b></p>`:''}${a.quote?`<blockquote class="answer-quote">${esc(a.quote)}</blockquote>`:''}${a.note?`<p class="answer-note">${esc(a.note)}</p>`:''}${a.items.length?`<div class="answer-items">${a.items.map((s,i)=>preview(s,i)).join('')}</div>`:''}${a.buttons.length?`<div class="answer-buttons">${a.buttons.map((b,i)=>`<button type="button" class="${i?'btn ghost':'btn primary'}" data-answer-button="${i}">${esc(b.label)}</button>`).join('')}</div>`:''}${a.source?`<p class="answer-source">${esc(a.source)}</p>`:''}${a.more?.length?`<p class="home-app-label">${esc(a.moreLabel||'Also')}</p><div class="answer-items is-more">${a.more.map((s,i)=>preview(s,i+a.items.length)).join('')}</div>`:''}${a.others?.length?`<p class="home-app-label">Also on the wiki</p><div class="answer-choices">${a.others.map(t=>`<button type="button" class="chip" data-answer-wiki="${esc(t)}">${esc(t)}</button>`).join('')}</div>`:''}</section>`;
+ return `<section class="answer-card" aria-live="polite">${head}<p class="answer-say">${say}</p>${a.fact?`<p class="answer-fact"><small>${esc(a.fact.label)}</small><b>${esc(a.fact.value)}</b></p>`:''}${a.quote?`<blockquote class="answer-quote">${esc(a.quote)}</blockquote>`:''}${a.note?`<p class="answer-note">${esc(a.note)}</p>`:''}${[...(a.vs||[]),...(a.also||[])].map(x=>`<p class="answer-note answer-also"><b>${esc(x.ask)}</b> ${esc(x.text)}</p>`).join('')}${a.items.length?`<div class="answer-items">${a.items.map((s,i)=>preview(s,i)).join('')}</div>`:''}${a.buttons.length?`<div class="answer-buttons">${a.buttons.map((b,i)=>`<button type="button" class="${i?'btn ghost':'btn primary'}" data-answer-button="${i}">${esc(b.label)}</button>`).join('')}</div>`:''}${a.source?`<p class="answer-source">${esc(a.source)}</p>`:''}${a.more?.length?`<p class="home-app-label">${esc(a.moreLabel||'Also')}</p><div class="answer-items is-more">${a.more.map((s,i)=>preview(s,i+a.items.length)).join('')}</div>`:''}${a.others?.length?`<p class="home-app-label">Also on the wiki</p><div class="answer-choices">${a.others.map(t=>`<button type="button" class="chip" data-answer-wiki="${esc(t)}">${esc(t)}</button>`).join('')}</div>`:''}</section>`;
 }

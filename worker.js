@@ -1,4 +1,5 @@
 import {pokemonMetaRoute} from './pokemon-meta-route.js';
+import {deckColorsOf} from './deck-colors.js';
 import {RELEASE} from './release-record.js';
 import {proxyForgePlayRequest} from './deploy/forge-host/src/app-route.mjs';
 import { progressRoute } from './play-econ-route.js';
@@ -164,8 +165,65 @@ async function fetchTopdeck(env, format, days) {
   if (!r.ok) throw Error(r.status === 401 ? "TopDeck rejected the API key" : r.status === 429 ? "TopDeck rate limit reached" : "TopDeck error " + r.status);
   return { ...normalizeTopdeck(await r.json(), { format, days }), fetchedAt: new Date().toISOString() };
 }
+// Each deck's colours, worked out here once so no phone has to load every card of every deck to answer "best red deck".
+// A card's colours never change, so they are kept for a month and only names not seen before are asked for (75 a request).
+const COLOR_KEY = new Request("https://cardforge.cache/scryfall/card-colors-v1");
+export async function addDeckColors(data, fetchImpl = fetch) {
+  const names = [...new Set((data.decks || []).flatMap((d) => (d.main || []).filter((c) => !c.land).map((c) => String(c.name || "").split(" // ")[0])))].filter(Boolean);
+  if (!names.length) return data;
+  const hit = await caches.default.match(COLOR_KEY).catch(() => null),
+    known = hit ? await hit.json().catch(() => ({})) : {},
+    low = (n) => n.toLowerCase(),
+    missing = names.filter((n) => !(low(n) in known));
+  let added = 0;
+  // At most 12 requests a run: the rest is picked up by the next run, and those decks go out without colours until then.
+  for (let i = 0; i < missing.length && i < 75 * 12; i += 75) {
+    const chunk = missing.slice(i, i + 75);
+    const r = await fetchImpl("https://api.scryfall.com/cards/collection", { method: "POST", headers: { ...UA, Accept: "application/json", "Content-Type": "application/json" }, body: JSON.stringify({ identifiers: chunk.map((name) => ({ name })) }) }).catch(() => null);
+    if (!r?.ok) break;
+    const body = await r.json().catch(() => null);
+    for (const c of body?.data || []) {
+      const row = { type_line: c.type_line || c.card_faces?.[0]?.type_line || "", colors: c.colors?.length ? c.colors : c.card_faces?.[0]?.colors || [] };
+      for (const n of [c.name, String(c.name || "").split(" // ")[0], ...(c.card_faces || []).map((f) => f.name)]) if (n) known[low(n)] = row;
+      added++;
+    }
+    // A name the card database does not know is remembered too, so it is not asked for again every run.
+    for (const nf of body?.not_found || []) if (nf?.name) known[low(nf.name)] = null;
+  }
+  if (added) await caches.default.put(COLOR_KEY, json(known, 200, LAST_GOOD_TTL)).catch(() => {});
+  for (const d of data.decks || []) {
+    const colors = deckColorsOf((d.main || []).filter((c) => !c.land), (n) => known[low(String(n || "").split(" // ")[0])] || null);
+    if (colors != null) d.colors = colors;
+  }
+  return data;
+}
+// The edge cache is separate in every Cloudflare data centre, and the daily refresh only fills the one it runs in. Seen 13 Nov
+// 2026: a phone near a data centre with nothing cached waited 16 to 62 seconds while the Worker rebuilt the whole feed from the
+// tournament pages, and search sat on "Looking…". So each finished feed is also saved once in durable storage that every data
+// centre reads. A request is answered from the nearest copy; rebuilding happens on the daily schedule, never while a phone waits,
+// except the very first time a format is asked for.
+const FEED_STALE_MS = 26 * 60 * 60 * 1000;
+const feedStore = (env) => (env?.DAILY_CARDS ? env.DAILY_CARDS.get(env.DAILY_CARDS.idFromName("shared-feeds-v1")) : null);
+async function savedFeed(env, key) {
+  const store = feedStore(env);
+  if (!store) return null;
+  try {
+    const r = await store.fetch(`https://feeds.internal/?feed=${encodeURIComponent(key)}`);
+    return r.ok ? await r.json() : null;
+  } catch {
+    return null;
+  }
+}
+async function saveFeed(env, key, data) {
+  const store = feedStore(env);
+  if (!store) return;
+  try {
+    await store.fetch(`https://feeds.internal/?feed=${encodeURIComponent(key)}`, { method: "PUT", body: JSON.stringify(data) });
+  } catch {}
+}
 async function mtgMeta(env, format, days, ctx, { force = false } = {}) {
-  const cache = caches.default;
+  const cache = caches.default,
+    key = `mtg:${format}${format === "EDH" ? "-mtgtop8" : ""}:${days}`;
   if (!force) {
     const hit = await cache.match(mtgKey(format, days));
     // Empty entries cached by an earlier outage are skipped so they refetch.
@@ -173,11 +231,23 @@ async function mtgMeta(env, format, days, ctx, { force = false } = {}) {
       const cached = await hit.json();
       if (cached?.decks?.length) return cached;
     }
+    const saved = await savedFeed(env, key);
+    if (saved?.decks?.length) {
+      const age = Date.now() - (Date.parse(saved.fetchedAt || "") || 0),
+        stale = age > FEED_STALE_MS;
+      const work = [cache.put(mtgKey(format, days), json(saved, 200, stale ? 600 : Math.max(600, Math.min(MTG_TTL, Math.round((FEED_STALE_MS - age) / 1000)))))];
+      // A copy the daily refresh missed is still sent at once; the rebuild runs after the reply.
+      if (stale && ctx) work.push(mtgMeta(env, format, days, null, { force: true }).catch(() => {}));
+      if (ctx) ctx.waitUntil(Promise.all(work));
+      else await work[0];
+      return saved;
+    }
   }
   try {
     const data = await fetchMtg(env, format, days);
+    await addDeckColors(data).catch(() => {});
     const put = (kind, ttl) => cache.put(mtgKey(format, days, kind), json(data, 200, ttl));
-    const work = Promise.all([put("fresh", MTG_TTL), put("good", LAST_GOOD_TTL)]);
+    const work = Promise.all([put("fresh", MTG_TTL), put("good", LAST_GOOD_TTL), saveFeed(env, key, data)]);
     if (ctx) ctx.waitUntil(work);
     else await work;
     return data;
@@ -185,6 +255,8 @@ async function mtgMeta(env, format, days, ctx, { force = false } = {}) {
     const old = await cache.match(mtgKey(format, days, "good"));
     const oldData = old ? await old.json() : null;
     if (oldData?.decks?.length) return { ...oldData, stale: true, staleReason: e.message };
+    const saved = force ? await savedFeed(env, key) : null;
+    if (saved?.decks?.length) return { ...saved, stale: true, staleReason: e.message };
     throw e;
   }
 }

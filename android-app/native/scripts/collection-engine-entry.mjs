@@ -5706,7 +5706,9 @@ function answerModel(q, plan, a) {
   const base = {q, game: plan.game, intent: plan.intent, hand: plan.hand || '', read};
   if (!a) return {...base, state: 'none'};
   let n = 0; const tile = s => answerTile(s, n++);
-  return {...base, state: 'done', answer: {ok: !!a.ok, say: a.say || '', strong: a.strong || '', wiki: a.say === 'From the wiki page', fact: a.fact || null, quote: a.quote || '', note: a.note || '', source: a.source || '',
+  return {...base, state: 'done', answer: {ok: !!a.ok, say: a.say || '', strong: a.strong || '', wiki: a.say === 'From the wiki page', fact: a.fact || null, quote: a.quote || '',
+    // The other asks on the same line sit under the first answer, one per line, in the note's own style.
+    note: [a.note || '', ...[...(a.vs || []), ...(a.also || [])].map(x => x.ask + ': ' + x.text)].filter(Boolean).join('\n'), source: a.source || '',
     miss: a.miss || '', ask: a.ask ? {ask: a.ask.ask, choices: (a.ask.choices || []).map(c => ({label: c.name, show: {kind: 'set', game: plan.game, ref: String(c.id || c.code), label: c.name}}))} : null,
     items: (a.items || []).map(tile), moreLabel: a.moreLabel || 'Also', more: (a.more || []).map(tile),
     buttons: (a.buttons || []).map(b => ({label: b.label, dest: answerDest(b, plan)})), others: (a.others || []).map(t => ({label: t, dest: {to: 'wiki', game: plan.game, topic: t}}))}};

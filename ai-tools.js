@@ -1,4 +1,5 @@
 import {findInfo,INFO_TOPICS} from './app-info.js';
+import { deckColorsOf } from './deck-colors.js';
 import {FORMATS} from './formats.js';
 import {prepareMtgDeck} from './ai-deck-builder.js';
 import {cardPrice,cardKey} from './core.js';
@@ -99,13 +100,14 @@ export function makeAskTools(x) {
   async function decorateMeta(g, data, result) {
     const items = (result.decks || []).slice(0,6).map(d=>({kind:'meta',game:g,ref:d.key || d.name,label:d.name}));
     suggestions = items;
-    await Promise.all(items.map(async (item,i)=> {
+    // The pictures on the tiles are worth a short wait, never a long one: on a slow connection the answer shows without them.
+    await Promise.race([new Promise(r => setTimeout(r, x.artWaitMs || 2500)), Promise.all(items.map(async (item,i)=> {
       const d=(data.decks || []).find(d=>d.key===item.ref) || (data.decks || []).find(d=>d.name===item.ref);
       if (d) {metaTargets.set(visualKey(item),{deck:d,data,format:result.format});return deckVisual(g,d,item,result.decks[i].share);}
       const a=(data.archetypes || []).find(a=>(a.name || a.id)===item.label);
       const icon=a?.icons?.[0];
       visuals.set(visualKey(item), { image:g==='ptcg' && icon?ptcgIcon(icon):'', sprite:!!icon, share:result.decks[i].share, label:item.label });
-    }));
+    })).catch(() => {})]);
     return result;
   }
   const g0 = (g) => (GAMES.includes(g) ? g : T.game());
@@ -122,18 +124,7 @@ export function makeAskTools(x) {
   // A Magic deck's colours, read from its nonland cards: a colour counts when at least 4 copies (and 8% of the coloured
   // copies) carry it, so one hybrid card or a light splash does not rename the deck. Null when too few cards are known.
   const WUBRG = 'WUBRG';
-  function mtgDeckColors(rows) {
-    const w = { W: 0, U: 0, B: 0, R: 0, G: 0 }; let known = 0, total = 0;
-    for (const r of rows || []) {
-      const c = x.meta(r.name), q = Math.max(1, Number(r.qty) || 1);
-      if (c && /\bLand\b/.test(String(c.type_line || '').split('//')[0])) continue;
-      total += q; if (!c) continue; known += q;
-      for (const k of (c.colors?.length ? c.colors : c.card_faces?.[0]?.colors) || []) if (k in w) w[k] += q;
-    }
-    if (!total || known / total < .75) return null;
-    const sum = Object.values(w).reduce((a, b) => a + b, 0);
-    return [...WUBRG].filter(k => w[k] >= 4 && w[k] >= sum * .08).join('').toLowerCase();
-  }
+  const mtgDeckColors = rows => deckColorsOf(rows, x.meta);
   const colorFits = (have, { colors, exact, without, count }) => {
     if (colors?.length && !(exact ? have.length === colors.length && colors.every(c => have.includes(c)) : colors.every(c => have.includes(c)))) return false;
     if (without?.length && without.some(c => have.includes(c))) return false;
@@ -145,12 +136,20 @@ export function makeAskTools(x) {
   async function narrowMeta(g, rows, args, summary) {
     const flat = t => ' ' + String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[’']/g, '').replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
     let matched = null;
-    if (g === 'mtg' && (args.colors?.length || args.without?.length || args.count)) {
-      const names = [...new Set(rows.flatMap(r => r.cards.map(c => c.name)))].filter(n => !x.meta(n));
-      if (names.length) await (x.resolveNames ? x.resolveNames(names) : Promise.all(names.slice(0, 60).map(n => x.resolve(n).catch(() => null)))).catch(() => {});
-      for (const r of rows) r.colors = r.d ? mtgDeckColors(r.cards) : null;
-      if (!rows.some(r => r.colors != null)) return { error: "The cards in these decks could not be loaded, so the app can't sort them by colour right now.", noData: true };
-      rows = rows.filter(r => r.colors != null && colorFits(r.colors, args));
+    if (g === 'mtg' && (args.colors?.length || args.without?.length || args.count || args.needColors)) {
+      // The server works out each deck's colours once a day and sends them with the feed. Only a feed that came without them
+      // makes the app load the cards itself, and that wait is capped: a slow connection gets a plain sentence, never an endless "Looking…".
+      const need = rows.filter(r => r.d && typeof r.d.colors !== 'string');
+      const names = [...new Set(need.flatMap(r => r.cards.map(c => c.name)))].filter(n => !x.meta(n));
+      let slow = false;
+      if (names.length) {
+        const load = Promise.resolve(x.resolveNames ? x.resolveNames(names) : Promise.all(names.slice(0, 60).map(n => x.resolve(n).catch(() => null)))).catch(() => {});
+        slow = await Promise.race([load.then(() => false), new Promise(r => setTimeout(() => r(true), x.colorWaitMs || 9000))]);
+      }
+      for (const r of rows) r.colors = !r.d ? null : typeof r.d.colors === 'string' ? r.d.colors : mtgDeckColors(r.cards);
+      if (slow && !rows.some(r => r.colors != null)) return { error: "The cards in these decks are still loading on this connection. Ask again in a moment.", noData: true };
+      if (!rows.some(r => r.colors != null) && !(args.needColors && !(args.colors?.length || args.without?.length || args.count))) return { error: "The cards in these decks could not be loaded, so the app can't sort them by colour right now.", noData: true };
+      if (args.colors?.length || args.without?.length || args.count) rows = rows.filter(r => r.colors != null && colorFits(r.colors, args));
     }
     if (args.match) {
       // Pokémon type nicknames read as the energy the deck plays: "dark" is Darkness, "steel" is Metal, "electric" is Lightning.

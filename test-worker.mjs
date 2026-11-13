@@ -149,3 +149,59 @@ console.log("PASS: Worker Magic meta — Magic Online and MTGTop8 without a key,
   assert.deepEqual(j[0].relation, ["delegate_permission/common.handle_all_urls"]);
   console.log("PASS: Android asset links file.");
 }
+
+// Deck colours are worked out on the server and sent with the feed, so "best red deck" on a phone needs no card lookups.
+// Seen 13 Nov 2026: the app loaded every card of every deck to learn colours, and sat on "Looking…" on a slow connection.
+{
+  const { addDeckColors } = await import("./worker.js");
+  const C = { "lightning strike": ["R"], "monastery swiftspear": ["R"], "opt": ["U"], "stormchaser drake": ["U"], "fable of the mirror-breaker": ["R"] };
+  let asked = [];
+  const scry = async (url, init) => {
+    assert.equal(url, "https://api.scryfall.com/cards/collection");
+    const names = JSON.parse(init.body).identifiers.map((i) => i.name); asked.push(...names);
+    return new Response(JSON.stringify({ data: names.filter((n) => C[n.toLowerCase()]).map((n) => ({ name: n === "Fable of the Mirror-Breaker" ? "Fable of the Mirror-Breaker // Reflection of Kiki-Jiki" : n, type_line: "Instant", colors: n.startsWith("Fable") ? undefined : C[n.toLowerCase()], card_faces: n.startsWith("Fable") ? [{ name: "Fable of the Mirror-Breaker", colors: ["R"] }, { name: "Reflection of Kiki-Jiki", colors: ["R"] }] : undefined })), not_found: names.filter((n) => !C[n.toLowerCase()]).map((name) => ({ name })) }));
+  };
+  const feed = () => ({ decks: [
+    { key: "red", main: [{ name: "Lightning Strike", qty: 4 }, { name: "Monastery Swiftspear", qty: 4 }, { name: "Fable of the Mirror-Breaker", qty: 4 }, { name: "Mountain", qty: 20, land: true }] },
+    { key: "izzet", main: [{ name: "Lightning Strike", qty: 4 }, { name: "Opt", qty: 4 }, { name: "Stormchaser Drake", qty: 4 }, { name: "Island", qty: 20, land: true }] },
+    { key: "unknown", main: [{ name: "Card Nobody Knows", qty: 8 }, { name: "Opt", qty: 4 }] },
+  ] });
+  let d = await addDeckColors(feed(), scry);
+  assert.deepEqual(d.decks.map((x) => x.colors), ["r", "ur", undefined], "mono-red, blue-red, and no colours claimed for a deck whose cards are mostly unknown");
+  assert.ok(!asked.includes("Mountain") && !asked.includes("Island"), "lands are not looked up");
+  const first = asked.length; asked = [];
+  d = await addDeckColors(feed(), scry);
+  assert.equal(asked.length, 0, "a card's colours are asked for once (" + first + " names the first time), then kept");
+  assert.deepEqual(d.decks.map((x) => x.colors), ["r", "ur", undefined]);
+  // The card database is down: the feed still goes out, without colours, and the app falls back to its own lookup.
+  store.clear();
+  d = await addDeckColors(feed(), async () => new Response("", { status: 503 }));
+  assert.deepEqual(d.decks.map((x) => x.colors), [undefined, undefined, undefined]);
+  console.log("PASS: deck colours are added to the tournament feed on the server, cached, and left out when unknown.");
+}
+
+// A data centre with nothing cached answers from the shared saved feed at once: it never rebuilds the feed while a phone waits.
+// Seen 13 Nov 2026 on the live site: 16, 34 and 62 seconds for the first request of a format, then under a second.
+{
+  const { DailyCards } = await import("./daily-card-route.js");
+  const map = new Map(), object = new DailyCards({ storage: { get: async (k) => map.get(k), put: async (k, v) => void map.set(k, v), getAlarm: async () => null, setAlarm: async () => {} } });
+  const names = [], envS = { DAILY_CARDS: { idFromName: (n) => (names.push(n), n), get: () => ({ fetch: (url, init) => object.fetch(new Request(url, init)) }) } };
+  const get = () => worker.fetch(new Request("https://x/api/meta/mtg?format=Pioneer&days=30"), envS, { waitUntil: (p) => p });
+  store.clear(); calls.mtgo = 0;
+  const a = await (await get()).json();
+  await new Promise((r) => setTimeout(r, 20));
+  assert.equal(calls.mtgo, 1, "the first request ever builds the feed");
+  assert.ok(map.has("feed:mtg:Pioneer:30"), "and saves it where every data centre can read it");
+  assert.deepEqual([...new Set(names)], ["shared-feeds-v1"], "in its own instance, apart from the daily cards");
+  store.clear(); // another data centre: its own cache is empty
+  down = true; // and the tournament site cannot even be reached
+  const b = await (await get()).json();
+  assert.equal(calls.mtgo, 1, "no rebuild while a phone waits");
+  assert.equal(b.decks.length, a.decks.length); assert.equal(b.fetchedAt, a.fetchedAt); assert.ok(!b.stale);
+  down = false;
+  // A visitor cannot write or read the store through the daily-card address.
+  const { dailyCardRoute } = await import("./daily-card-route.js");
+  const r = await dailyCardRoute(new Request("https://cardstashy.com/api/daily-card?game=mtg&feed=mtg:Pioneer:30", { method: "PUT", body: "{}" }), envS);
+  assert.equal(r.status, 405);
+  console.log("PASS: a finished tournament feed is shared by every data centre; a cold one answers without rebuilding.");
+}

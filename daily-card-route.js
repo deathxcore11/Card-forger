@@ -30,6 +30,14 @@ export async function dailyCardRoute(request, env) {
 export class DailyCards {
   constructor(state) { this.storage = state.storage; this.pending = new Map(); }
   async fetch(request) {
+    // A second instance of this object ("shared-feeds-v1") keeps the finished tournament feeds for every data centre
+    // (worker.js mtgMeta). It is reached only from the Worker itself, never from a visitor's request.
+    const feed = new URL(request.url).searchParams.get('feed');
+    if (feed) {
+      if (request.method === 'PUT') { await this.storage.put('feed:' + feed, await request.text()); return json({ ok: true }); }
+      const saved = await this.storage.get('feed:' + feed);
+      return saved ? new Response(saved, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }) : json({ error: 'none' }, 404);
+    }
     const game = new URL(request.url).searchParams.get('game');
     if (request.method !== 'GET' || !GAMES.includes(game)) return json({ error: 'Invalid daily card request' }, 400);
     try {

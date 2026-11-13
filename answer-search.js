@@ -93,6 +93,10 @@ export function cardFilters(n,format){
  return parts.length?{q:[...new Set(parts)].join(' '),labels:[...new Set(labels)],count:new Set(parts).size,used:used.sort((a,b)=>b.length-a.length)}:null;
 }
 
+// The other player in the question: "my friend has a blue deck", "against control", "to beat mono red".
+const PLAYER='(?:friends?|buddy|buddies|brother|sister|opponents?|dad|mom|son|daughter|wife|husband|girlfriend|boyfriend|partner|kids?|cousin|roommate|playgroup|pod|group)';
+const OTHER_PLAYER=new RegExp('\\b(?:my|our|his|her|their) (?:best )?'+PLAYER+'\\b','g');
+const OPPONENT=new RegExp('\\b(?:(?:and|but|because|since|when|while|if) )?(?:my|a|our|his|her|their) (?:best )?'+PLAYER+' (?:has|have|plays?|is playing|are playing|uses?|runs?|is on|will (?:play|use|bring|have)|always plays?|only plays?|loves?|likes?) (?:an? |the )?(.+)$|\\b(?:against|versus|vs|to beat|that beats?|that can beat|beats|beating) (?:(?:my|a|his|her|their) '+PLAYER+' ?s? )?(?:an? |the )?(.+)$');
 // Every answer must account for every word of the question. rest() is what is left once the words a rule
 // understood are taken out; a rule that leaves words over must use them, say it can't, or not answer.
 // (0.4.72 answered "best red deck" with a blue deck because the rule saw "best" and "deck" and never looked at "red".)
@@ -154,15 +158,30 @@ export function wikiTitles(q,game='mtg'){
  * Returns { intent, game, read:[chips], call:{tool,args}|null, missing:[{slot,ask}], answerable, hand }
  *   answerable: the lookup can run now.  hand: 'judge' | 'build' | null for work another screen owns.
  */
-export function planQuery(q,ctx={}){
- const raw=String(q||'').trim(),n=norm(raw).replace(/\bmono(white|blue|black|red|green)\b/g,'mono $1'),P=parseQuery(raw);
+function planOne(q,ctx={}){
+ const raw=String(q||'').trim(),P=parseQuery(raw);
+ let n=norm(raw).replace(/\bmono(white|blue|black|red|green)\b/g,'mono $1'),opp='';
+ // "... and my friend has a blue deck", "... against control": the other player's deck is not the deck being asked for.
+ if(/\bdecks?\b/.test(n)){const om=n.match(OPPONENT);if(om&&om.index>0){opp=(om[1]||om[2]||'').replace(/\b(?:decks?|one|ones)\b/g,' ').replace(/\s+/g,' ').trim();n=n.slice(0,om.index).replace(/\b(?:and|but|because|since|when|while|if|that|to)$/,'').trim();}}
+ const nowYear=String(new Date().getFullYear());
  const named=GAMES.find(g=>g[1].test(n)),game=ctx.fix?.game||(named?named[0]:ctx.game||'mtg');
  const read=[chip(GAME_LABEL[game],'game',true)],missing=[];
  const plan=(intent,call,extra={})=>({intent,game,P,read,missing,call:missing.length?null:call,answerable:!missing.length&&!!call,hand:null,...extra});
+ // A table of other players described in full is a deck request for that table, whatever else the line says.
+ const table=/\b(?:decks?|make|build|commander)\b/.test(n)?readPod(raw):null;
+ if(table){
+  const {pod}=table,seed=/\bthis (?:commander|card|one|legend|pokemon|monster)\b|\bi have this\b/i.test(raw)?ctx.screen?.card?.name||'':'';
+  read.push(chip('deck builder','page'));if(seed)read.push(chip(seed,'card'));
+  if(pod.size)read.push(chip('pod of '+pod.size,'filter'));
+  if(pod.decks.length)read.push(chip('against '+pod.decks.map(d=>d.label).join(' · '),'filter'));
+  if(pod.power)read.push(chip("match the pod's power",'filter'));
+  for(const l of pod.lacks)read.push(chip('pod lacks '+l,'filter'));
+  return plan('build',{tool:'build_deck',args:{game,request:table.mine,format:ctx.fix?.format||(game==='mtg'&&(pod.size>=3||/\bcommander\b/.test(n))?'Commander':''),...(seed?{seed}:{})},opponent:'',pod});
+ }
  if(n.length<2)return plan('none',null);
  // Search syntax typed by hand (c:r, t:dragon, usd<5) is a search line, not a question.
  if(/(?:^|\s)-?[a-z]{1,10}[:=<>](?=\S)/i.test(raw))return plan('names',null);
- const mine=MINE.test(n),rank=RANKS.find(r=>r[1].test(n)),y=year(n);
+ const mine=MINE.test(n.replace(OTHER_PLAYER,' ')),rank=RANKS.find(r=>r[1].test(n)),y=year(n);
  const hit=findSet(n,ctx.sets),thisSet=/\b(?:this|that|the current) (?:set|expansion)\b/.test(n);
  const cant=(scope,what,left)=>{read.push(chip(scope,'scope'));return plan('unknown',null,{why:`Search can't narrow ${what} by "${left.join(' ')}" yet.`});};
  const colorChips=col=>{for(const c of col?.chips||[])read.push(chip(c,'filter'));};
@@ -170,7 +189,19 @@ export function planQuery(q,ctx={}){
  const format=()=>{const f=(FORMATS[game].includes(ctx.fix?.format)?ctx.fix.format:null)||findFormat(n,game)||(l=>FORMATS[game].includes(l)?l:null)(ctx.formatLast?.[game]==='EDH'?'Commander':ctx.formatLast?.[game])||DEFAULT_FORMAT[game];read.push(chip(f,'format',true));return f;};
 
  // Build a deck: the builder is set up from the words (format, budget, colours, theme); no AI drafts anything.
- if(/\b(?:make|create|build)\b.*\bdeck\b/.test(n)){read.push(chip('deck builder','page'));return plan('build',{tool:'build_deck',args:{game,request:raw,format:ctx.fix?.format||''}});}
+ // Asking for a kind of deck rather than a ranking ("what is a fun commander deck with angels", "a ramp deck i can buy for under $50",
+ // "a cool blue-eyes deck to surprise my friend") is the same job: the builder makes it.
+ const wantsDeck=/\bdecks?\b/.test(n)&&!/\bmy (?:\w+ ){0,2}decks?\b/.test(n.replace(OTHER_PLAYER,' '))&&!/\b(?:meta(?:game)?|tournaments?|winning|tier ?(?:1|one)|most played|most popular)\b/.test(n)&&(
+  /\b(?:fun|funnest|funniest|funner|cool|coolest|casual|silly|janky|jank|spicy|unique|interesting|creative|weird|awesome|sick|neat|surpris\w+|unexpected|themed?|tribal|kindred)\b/.test(n)||
+  /\b(?:suggest|recommend|give me|i want|i need|id like|i would like|looking for|ideas? for|help me (?:find|pick|choose|make|build)|can you (?:find|suggest|recommend)|could you|make me|build me)\b/.test(n)||
+  (/\b(?:what is|whats|what would be|what are|is there|are there|show me)\b.*\ban? (?:\w+ ){0,6}decks?\b/.test(n)&&!/\b(?:best|top|strongest)\b/.test(n))||
+  /\bdecks? (?:that |which )?(?:(?:i|we) (?:can|could)|(?:can|could|should) (?:i|we)) (?:buy|purchase|get|afford)\b/.test(n));
+ if(/\b(?:make|create|build)\b.*\bdeck\b/.test(n)||wantsDeck){
+  // "I have this commander": the card open on screen is what the deck is built around.
+  const seed=/\bthis (?:commander|card|one|legend|pokemon|monster)\b|\bi have this\b/.test(n)?ctx.screen?.card?.name||'':'';
+  read.push(chip('deck builder','page'));if(seed)read.push(chip(seed,'card'));if(opp)read.push(chip('against '+opp,'filter'));
+  return plan('build',{tool:'build_deck',args:{game,request:opp?n:raw,format:ctx.fix?.format||'',...(seed?{seed}:{})},opponent:opp});
+ }
 
  // Do something in the app: "scan a card", "start a match", "open my wishlist".
  if(ACT_VERB.test(n)&&P.words.length<=6){const act=ACTIONS.find(a=>a[0].test(n));if(act){read.push(chip(act[1],'page'));return plan('go',{tool:'go',args:{route:act[2],title:act[1]}});}}
@@ -202,10 +233,10 @@ export function planQuery(q,ctx={}){
  const metaWord=/\bmeta(?:game)?\b|\btournaments? decks?\b|\bwinning\b|\btier ?(?:1|one|list)\b|\bcompetitive\b/.test(n);
  const deckWord=/\b(?:decks?|archetypes?|lists?)\b/.test(n),bestWord=/\b(?:best|top|strongest|good|most played|most popular|most common|number one|#1)\b/.test(n)||/\b(?:what|which) decks?\b.*\b(?:play|run|use|pick|choose)\b/.test(n);
  // Words about you turn the question around: the tournament deck you are closest to owning, or the cheapest one to finish.
- const CLOSEST=/\b(?:i can (?:build|make|afford)|can i (?:build|make)|(?:am i |im )?clos(?:est|e) to(?: (?:owning|building|finishing))?|for my (?:collection|cards)|(?:with|from) my (?:collection|cards)|i (?:almost|nearly) (?:have|own))\b/;
- const closest=deckWord&&CLOSEST.test(n),deckPrice=deckWord&&!/\bcards?\b/.test(n)&&(rank?.[0].startsWith('price')||/\b(?:budget|cheap|affordable)\b/.test(n))?(rank?.[0]==='price-desc'?'priciest':'cheapest'):null;
- if((closest||!mine)&&((metaWord&&(deckWord||bestWord||/\bwhats?\b/.test(n)||/\bmeta(?:game)?\b/.test(n)))||(bestWord&&deckWord)||closest||deckPrice)){
-  if(y||/\b(?:last|previous|past) (?:year|season|month)\b|\b(?:years?|months?) ago\b|\ball time\b|\bever\b|\bhistory\b/.test(n)){read.push(chip('tournament decks','source'));return plan('unknown',null,{why:"The tournament data only covers recent events, so the app can't answer for another time."});}
+ const CLOSEST=/\b(?:i can (?:build|make|afford)|can i (?:build|make)|(?:am i |im )?clos(?:est|e) to(?: (?:owning|building|finishing))?|clos(?:est|er|e)\b.*\bto (?:my|what i|the cards i|mine)\b(?: (?:collection|cards|binder|own|have))?|for my (?:collection|cards)|(?:with|from) my (?:collection|cards)|i (?:almost|nearly) (?:have|own))\b/;
+ const closest=deckWord&&CLOSEST.test(n)&&!/\b(?:of )?my decks?\b/.test(n),deckPrice=deckWord&&!/\bcards?\b/.test(n)&&(rank?.[0].startsWith('price')||/\b(?:budget|cheap|affordable)\b/.test(n))?(rank?.[0]==='price-desc'?'priciest':'cheapest'):null;
+ if((closest||!mine)&&((opp&&deckWord)||(metaWord&&(deckWord||bestWord||/\bwhats?\b/.test(n)||/\bmeta(?:game)?\b/.test(n)))||(bestWord&&deckWord)||closest||deckPrice)){
+  if((y&&y!==nowYear)||/\b(?:last|previous|past) (?:year|season|month)\b|\b(?:years?|months?) ago\b|\ball time\b|\bever\b|\bhistory\b/.test(n)){read.push(chip('tournament decks','source'));return plan('unknown',null,{why:"The tournament data only covers recent events, so the app can't answer for another time."});}
   // "best deck with black lotus": what follows "with" is a card's name, word for word, not a colour and not filler.
   const withM=n.match(/\b(?:with|playing|running|using|that (?:plays?|runs?|uses?|has|have)) (.+)$/),withCard=withM&&!/^(?:my|no|only)\b/.test(withM[1])?withM[1].replace(formatWords(game),' ').replace(/\b(?:right now|today|currently|this week|in it|in them|in the meta|in|decks?)\s*$/g,' ').replace(/\s+/g,' ').trim().replace(/ in$/,''):'';
   const nq=withCard?n.slice(0,withM.index):n;
@@ -213,15 +244,16 @@ export function planQuery(q,ctx={}){
   const nthM=n.match(/\b(second|2nd|third|3rd|fourth|4th|fifth|5th)\b/),nth=nthM?{second:2,'2nd':2,third:3,'3rd':3,fourth:4,'4th':4,fifth:5,'5th':5}[nthM[1]]:1;
   const capM=n.match(/\b(?:under|below|less than|cheaper than|for) \$ ?(\d+)(?:\.\d+)?|\$ ?(\d+)(?:\.\d+)? or less/),under=capM?Number(capM[1]||capM[2]):null;
   // Whatever is left names the deck or a card in it: "aggro", "prowess", "lightning bolt", "charizard".
-  const match=withCard||rest(nq,capM?.[0],GAME_WORDS,formatWords(game),/\btop \d+\b/g,col?.used,CLOSEST,rank?.[1],nthM?.[0],
+  const match=withCard||rest(nq,capM?.[0],nowYear,/\bthis (?:year|season|month)\b/g,GAME_WORDS,formatWords(game),/\btop \d+\b/g,col?.used,CLOSEST,closest?/\b(?:clos(?:est|er|e)|collection|cards|binder|own|have)\b/g:null,rank?.[1],nthM?.[0],
    game==='mtg'?null:/\b(?:types?|attribute|monsters?|energy)\b/g,
    /\b(?:meta(?:game)?|tournaments?|decks?|archetypes?|lists?|winning|wins|tier ?(?:1|one|list)|tier|competitive|best|top|strongest|most played|most popular|most common|number one|1|played|popular|good|strong|powerful|most|more|lot|pick|choose|week|month|lately|recently|being|play|playing|plays|run|running|runs|use|using|uses|build|budget|cheap|affordable|finish|complete)\b/g).join(' ');
   const sort=closest?'closest':deckPrice;
   read.push(chip('tournament decks','source'));colorChips(col);
   if(match)read.push(chip('"'+match+'"','filter'));
   if(under!=null)read.push(chip('under $'+under+' to finish','filter'));
+  if(opp)read.push(chip('against '+opp,'filter'));
   read.push(chip(sort==='closest'?'closest to your collection':sort==='cheapest'?'cheapest to finish':sort==='priciest'?'highest price':nth>1?'number '+nth+' by share':'top share','ask'));
-  return plan('meta.best',{tool:'meta_decks',args:{game,format:f,...colorArgs(col),...(match?{match}:{}),...(sort?{sort}:{}),...(under!=null?{under}:{})},pick:'top',nth,pre:col?.pre||'',post:col?.post||''});
+  return plan('meta.best',{tool:'meta_decks',args:{game,format:f,...colorArgs(col),...(match?{match}:{}),...(sort?{sort}:{}),...(under!=null?{under}:{})},pick:'top',nth,pre:col?.pre||'',post:col?.post||'',opponent:opp});
  }
 
  // How-to questions about the app itself.
@@ -333,6 +365,147 @@ export function planQuery(q,ctx={}){
  // Question-shaped but nothing matched: say so plainly; plain name results still show underneath.
  // Question-shaped and nothing else matched: the rulebook gets one try, and a miss is said plainly; plain name results still show underneath.
  return /^(?:how|why|when|can|could|should|which|what|where|who|does|do|is|are|if)\b/.test(n)?plan('ruling',{tool:'judge',args:{game,question:raw},pick:'maybe'}):plan('names',null);
+}
+
+// ---- Spelling. A word that is one slip away from a word the search knows ("modren", "cheepest", "standrd") is read as that word,
+// but only when the question as typed was not understood: a card's own name ("Commandeer") is never "corrected" into a question word.
+const KNOWN=new Set(('best top strongest cheapest expensive valuable priciest popular played newest latest oldest biggest largest deck decks card cards collection binder wishlist worth price value cost budget '+
+ 'tournament tournaments meta metagame competitive winning legal banned forbidden limited restricted playable release released rotate creature creatures instant instants sorcery sorceries artifact artifacts enchantment enchantments planeswalker planeswalkers land lands legendary equipment vehicle '+
+ 'common uncommon mythic rare white blue black red green colorless multicolor mono color colour colors colours magic pokemon yugioh commander closest build which what where when under below against artist illustrated '+
+ 'second third fourth fifth trainer supporter stadium energy monster monsters spell spells trap traps dragon dragons flying trample haste').split(' ').concat(Object.keys(GUILDS),Object.values(FORMATS).flat().flatMap(f=>norm(f).split(' ')),Object.keys(FORMAT_ALIAS)));
+// Everyday words that sit one letter from a search word and are never a slip of it.
+const COMMON=new Set('whats hows wheres whens thats heres there their these those them then than that this with have has had been being were where when will would could should about after before again every other some more most much many each both into onto over only also just very really like make made want need know think good great nice cool cheap first last next play plays game games name names find show tell give take open close start bolt ring lotus path fire water dark light storm burn list lists rest test west nest pest vest lest beck neck peck dock duck desk disc disk read real seal deal meal heal best beat beast bust base'.split(' '));
+function slips(a,b){
+ // Damerau-Levenshtein distance, stopped early: adjacent letters swapped count once.
+ if(Math.abs(a.length-b.length)>2)return 3;
+ const d=[];for(let i=0;i<=a.length;i++){d[i]=[i];for(let j=1;j<=b.length;j++)d[i][j]=i===0?j:Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1),i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1]?d[i-2][j-2]+1:9);}
+ return d[a.length][b.length];
+}
+export function respell(text,ctx={},keep=new Set()){
+ const words=new Set(KNOWN);for(const s of ctx.sets||[])for(const w of norm(s.name||s.title).split(' '))if(w.length>=5)words.add(w);
+ const fixes=[],out=String(text||'').split(/(\s+)/).map(tok=>{
+  const w=norm(tok);if(!w||keep.has(w)||/\s/.test(tok)||w.includes(' ')||/\d/.test(w)||w.length<4||words.has(w)||FILL.has(w)||COMMON.has(w))return tok;
+  let best=null,tie=false;const max=w.length>=8?2:1;
+  for(const k of words){if(Math.abs(k.length-w.length)>max||k[0]!==w[0]&&k[1]!==w[1])continue;const dist=slips(w,k);
+   // A four-letter word is only repaired when two neighbouring letters were swapped ("dcek"), never by guessing a letter.
+   if(dist>max||(w.length===4&&!(k.length===4&&[...k].sort().join('')===[...w].sort().join(''))))continue;
+   if(!best||dist<best.dist){best={k,dist};tie=false;}else if(dist===best.dist&&k!==best.k)tie=true;}
+  if(!best||tie)return tok;
+  fixes.push([w,best.k]);return best.k;
+ });
+ return {text:out.join(''),fixes};
+}
+// How well a reading holds: answered outright beats a name search, a shrug or a leftover word treated as a deck name.
+const weak=p=>!p.answerable||p.call?.pick==='maybe'||!!p.call?.args?.match||p.intent==='names';
+function planSpelled(q,ctx){
+ const p=planOne(q,ctx);if(!weak(p))return p;
+ let fixed=respell(q,ctx);if(!fixed.fixes.length)return p;
+ let p2=planOne(fixed.text,ctx);
+ // Taken only when the repaired words read better than the words as typed.
+ if(weak(p2)&&!(p2.intent==='build'||(p2.answerable&&p2.call?.pick!=='maybe'&&p.intent==='names')))return p;
+ // Only the repairs the reading needs are kept: in "is pot of greed bannd" the card keeps its own word "greed".
+ const keep=new Set();
+ for(const [from] of fixes(fixed)){
+  const t=respell(q,ctx,new Set([...keep,from])),p3=planOne(t.text,ctx);
+  if(p3.intent===p2.intent&&p3.call?.tool===p2.call?.tool&&p3.call?.pick===p2.call?.pick&&weak(p3)===weak(p2)&&!p3.call?.args?.match===!p2.call?.args?.match){keep.add(from);fixed=t;p2=p3;}
+ }
+ if(!fixed.fixes.length)return p;
+ for(const [from,to] of fixes(fixed))p2.read.push(chip('"'+from+'" read as '+to,'spelling'));
+ p2.P=p.P;p2.respelled=fixed.text;return p2;
+}
+const fixes=f=>f.fixes.filter(([a,b],i,all)=>all.findIndex(x=>x[0]===a)===i);
+
+// ---- Several asks in one line: "what is the best red deck, how much does it cost and where did it place?"
+const ASK_WORD="how|what|whats|what's|where|when|who|is|are|do|does|did|can|which|will";
+const splitAsks=raw=>String(raw||'').split(new RegExp('\\s*[?;]+\\s*|\\s+(?:and also|also|and then|then|plus)\\s+(?=(?:'+ASK_WORD+')\\b)|,?\\s+and\\s+(?=(?:'+ASK_WORD+')\\b)|,\\s+(?=(?:'+ASK_WORD+')\\b)','i')).map(s=>s.trim()).filter(s=>s.length>=2).slice(0,5);
+const IT=/\b(?:it|its|that deck|this deck|the deck|that one|this one|that card|this card|the card|that|them)\b/;
+// What a follow-up asks about the deck the first ask found.
+const DECK_FACETS=[
+ ['beat',/\b(?:beat|beats|against|counter|counters|weak to|lose to|loses to|good against|bad against|matchups?)\b/],
+ ['own',/\b(?:do i (?:own|have)|how (?:much|many) (?:of (?:it|them) )?do i (?:own|have)|how close|what am i missing|what do i need|missing)\b/],
+ ['cost',/\b(?:how much|cost|costs|price|priced|expensive|cheap|afford|buy|to build|to finish|worth)\b/],
+ ['colors',/\bcolou?rs?\b/],
+ ['place',/\b(?:place|placed|finish|finished|results?|won|win|how did|did it do|do well)\b/],
+ ['popular',/\b(?:popular|how many (?:people|players|lists)|share|how played|how common)\b/],
+ ['list',/\b(?:whats in|what is in|cards (?:are )?in|decklist|deck list|what does it (?:play|run)|what cards)\b/],
+];
+// ---- A whole table described in one breath: "I'm in a pod with three other people. They have a blue-white, a red-blue and a
+// mono-black deck, I have this commander, keep it within their bracket, they had no reach so I'd like flying."
+// The other players' decks, the table's power and what they lacked are facts about THEM; only the rest describes my deck.
+const COUNT={one:1,two:2,three:3,four:4,five:5,1:1,2:2,3:3,4:4,5:5};
+const THEM='(?:they|them|the others?|the other (?:players|people|decks|guys)|my friends|our friends|my opponents|opponents|everyone else|the rest)';
+export function readPod(raw){
+ const parts=String(raw||'').split(/[.!?;]+|,?\s+\b(?:and|so|but|because|since|plus|also)\b\s+(?=(?:i|im|i'm|i’m|id|i'd|i’d|we|were|we're|we’re|they|a lot|lots|most|some|none|many|last time)\b)/i).map(x=>x.trim()).filter(Boolean);
+ const pod={size:0,decks:[],power:false,lacks:[]},mine=[];
+ for(const part of parts){
+  const t=norm(part);let used=false,keep='';
+  const sz=t.match(/\b(one|two|three|four|five|\d) other (?:people|players|friends|guys|decks|opponents)\b/);
+  if(sz){pod.size=COUNT[sz[1]]+1;used=true;}else if(/\b(?:in|with) (?:a|my|our|the) (?:pod|playgroup|play group|group|table)\b/.test(t)){pod.size=pod.size||4;used=true;}
+  const th=t.match(new RegExp('\\b'+THEM+'\\b.*?\\b(?:have|has|had|play|plays|played|run|runs|ran|are on|are playing|were playing|bring|brings|brought|use|uses|used)\\b (.+)$'));
+  const lack=t.match(new RegExp('\\b(?:'+THEM+'|of them|none of them)\\b.*?\\b(?:didnt have|dont have|did not have|do not have|have no|had no|lack|lacked|lacks|couldnt block|cant block|had nothing (?:with|for)|have nothing (?:with|for))\\b ?(?:any |much |a lot of |many )?(.+)$'));
+  if(lack){pod.lacks.push(lack[1].replace(/\b(?:creatures?|blockers?|cards?|at all|really)\b/g,' ').replace(/\s+/g,' ').trim());used=true;}
+  else if(th&&/\bdecks?\b|\b(?:white|blue|black|red|green|mono)\b/.test(th[1])){
+   // "a blue, white, a red, blue, and a black mono deck": each "a" starts a deck. With no "a", commas and "and" divide them.
+   let said=part.slice(part.toLowerCase().search(/\b(?:have|has|had|plays?|played|runs?|ran|are on|are playing|were playing|brings?|brought|uses?|used)\b/)).replace(/^\S+(?: (?:on|playing))?\s+/,'');
+   // Their decks end at the word "deck"; what follows on the same line is about mine.
+   const end=said.search(/\bdecks?\b/i);if(end>=0){const cut=end+said.slice(end).match(/^decks?/i)[0].length;keep=said.slice(cut).replace(/^[\s,]+/,'');said=said.slice(0,cut);}
+   // Two or more "a ..." is a spoken list where commas sit inside a deck's colours; otherwise commas and "and" divide the decks.
+   const spoken=(said.match(/\ban?\b/gi)||[]).length>=2;
+   const segs=(spoken?said.split(/,?\s*\b(?:and\s+)?an?\b\s+/i):said.split(/\s*,\s*(?:and\s+)?|\s+\band\b\s+/i)).map(x=>x.replace(/^an?\s+/i,'').trim()).filter(Boolean);
+   for(const seg of segs){
+    const w=norm(seg).replace(/\b(white|blue|black|red|green) mono\b/g,'mono $1').replace(/\bmono(white|blue|black|red|green)\b/g,'mono $1').replace(/\b(?:decks?|ones?|player|guy)\b/g,' ').replace(/\s+/g,' ').trim();if(!w)continue;
+    const dc=deckColors(w+' deck'),cs=dc?.colors||[];
+    const names={w:'white',u:'blue',b:'black',r:'red',g:'green'};
+    pod.decks.push(cs.length&&!dc.without?.length?{colors:cs,label:cs.length===1?'mono-'+names[cs[0]]:[...'wubrg'].filter(c=>cs.includes(c)).map(c=>names[c]).join('-')}:{colors:[],label:w});
+   }
+   used=true;
+  }
+  const POWER=/,?\s*\b(?:(?:that|which|and|to|so it|make it|keep it|trying to make it|im trying to make it|i'm trying to make it)\s+)*(?:is\s+|stays?\s+|be\s+)?(?:within|match|matches|matching|the same as|same as|around|close to|near|fits?|fair for|even with|on par with|at)\s+(?:their|the pod'?s?|the table'?s?|our|everyone'?s?|everybody'?s?)\s+(?:power levels?|power|brackets?|levels?)(?:\s+or\s+(?:within\s+)?(?:their|the|our)\s+(?:power levels?|power|brackets?|levels?))?/i;
+  const src=used?keep:part;
+  if(POWER.test(src)){pod.power=true;keep=src.replace(POWER,' ').trim();used=true;}
+  if(!used)mine.push(part);else if(keep&&norm(keep).split(' ').length>=2)mine.push(keep);
+ }
+ const found=pod.decks.length>0||(pod.size>0&&(pod.power||pod.lacks.length>0));
+ return found?{pod,mine:mine.join('. ')}:null;
+}
+
+/**
+ * ctx: as planOne. Reads a whole line: spelling slips are repaired when the words as typed were not understood, and a line that
+ * holds several asks is answered ask by ask (plan.extra: [{text, facet} | {text, plan}]), follow-ups meaning the first answer by "it".
+ */
+export function planQuery(q,ctx={}){
+ const raw=String(q||'').trim(),whole=planSpelled(raw,ctx),parts=splitAsks(raw);
+ if(parts.length<2||['build','go','help','keyword','wiki','none'].includes(whole.intent)||(whole.intent==='ruling'&&whole.call?.pick!=='maybe'))return whole;
+ const main=planSpelled(parts[0],ctx);
+ if(!main.answerable||main.call?.pick==='maybe'||main.intent==='names')return whole;
+ const inner={...ctx,game:main.game,fix:{...(ctx.fix||{}),game:main.game,format:ctx.fix?.format||(main.call.tool==='meta_decks'?main.call.args.format:undefined)}};
+ main.extra=parts.slice(1).map(text=>{
+  const t=norm(text);
+  if(main.call.tool==='meta_decks'&&(IT.test(t)||!/\b(?:decks?|cards?|sets?)\b/.test(t))){const f=DECK_FACETS.find(x=>x[1].test(t));if(f)return {text,facet:f[0]};if(IT.test(t))return {text,facet:'other'};}
+  // About the card just asked for: "it" is that card.
+  const name=main.call.tool==='card_details'?main.call.args.name:'';
+  const sub=planSpelled(name&&IT.test(t)?t.replace(IT,name):text,inner);
+  return {text,plan:sub};
+ });
+ if(main.extra.some(e=>e.facet==='colors'))main.call.args.needColors=true;
+ main.read.push(chip('+ '+main.extra.length+' more ask'+(main.extra.length>1?'s':''),'ask'));
+ main.P=parseQuery(raw);
+ return main;
+}
+
+/** The words of a deck request the builder's setup did not take: [used] are the labels it did take. Never dropped, always shown. */
+export function buildLeftover(words,game,used=[]){
+ let n=norm(words).replace(/\bmono(white|blue|black|red|green)\b/g,'mono $1');
+ // "tier 2", "bracket 3", "power level 7" are whole asks, kept as said.
+ const power=(n.match(/\b(?:tier|bracket|power level|power) ?(?:\d+|one|two|three|four|five)\b/)||[])[0]||'';
+ if(power)n=n.replace(power,' ');
+ // A wish no setting can hold ("that would surprise my friend") is kept whole and shown as not used.
+ const wish=(n.match(/\b(?:that |which |to )?(?:would |will |can |could |might )?(?:surpris\w*|impress\w*|annoy\w*|scare\w*|shock\w*) (?:my |a |the |his |her )?(?:best )?\w+\b/)||[])[0]||'';
+ if(wish)n=n.replace(wish,' ');
+ const left=rest(n,used.map(norm).filter(Boolean),GAME_WORDS,formatWords(game),/\$ ?\d+(?:\.\d+)?|\b\d+ (?:dollars?|bucks?|usd)\b/g,
+  /\b(?:decks?|make|makes|made|build|builds|built|create|creates|want|wants|need|needs|would|like|id|lets|let|suggest|recommend|looking|ideas?|help|pick|choose|play|plays|playing|played|purchase|buy|afford|get|use|uses|using|utilizes?|utilizing|around|based|focused|under|below|less|than|most|least|up|about|roughly|budget|cheap|affordable|new|really|super|pretty|kind|sort|good|great|nice|strong|fun|funnest|funniest|funner|casual|silly|janky|jank|theme|themed|tribal|kindred|competitive|best|strongest|optimal|optimized|powerful|chaos|chaotic|weak|bad|mono|only|own|owned|cards?|collection|commander|edh|cedh|have|has|one|something|thing|anything|possible|maybe|also|too|then|which|who|whats|im|ive|cool|coolest|awesome|sick|neat|interesting|unique|creative|weird|there|having|if|thats|trying|were|all|keep|up|able)\b/g,
+  game==='mtg'?[...Object.keys(COLORS),...Object.keys(GUILDS)]:[]);
+ return [...(power?[power]:[]),...(left.length?[left.join(' ')]:[]),...(wish?[wish.replace(/^(?:that|which|to) /,'')]:[])];
 }
 
 /** What a tapped "Read as" chip can be changed to. */

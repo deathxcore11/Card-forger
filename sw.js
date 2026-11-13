@@ -263,7 +263,7 @@ const ASSETS = [
   "./home-search.js",
   "./universal-search.js",
   "./answer-search.js",
-  "./answer-run.js", "./answer-state.js",
+  "./answer-run.js", "./answer-state.js", "./deck-colors.js",
   "./coach-plan.js", "./matchup-plan.js",
   "./search-fan.js",
   "./app-info.js",
