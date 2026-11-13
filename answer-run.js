@@ -3,6 +3,7 @@
 // plain "miss" line, never a guess. No AI, no DOM: answerMarkup() only builds a string.
 import {readBuildContract} from './ai-build-contract.js';
 import {buildLeftover,deckColors} from './answer-search.js';
+import {PLAY_STYLES,playStylesIn} from './builder.js';
 const usd=n=>typeof n==='number'&&Number.isFinite(n)?'$'+n.toFixed(2):null;
 // Dates are written by hand: the app's small JS engine has no locale formatting.
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -86,11 +87,13 @@ async function answerOne(plan,tools,io={}){
  try{
   if(tool==='go')return {ok:true,say:'Open '+args.title+'.',items:[],more:[],buttons:[{label:'Open '+args.title,route:args.route}],go:args.route};
   if(tool==='build_deck'){
-   const {request,labels,unused}=buildRequest(args.request,g,args.format,{seed:args.seed});
-   const opp=plan.call.opponent,pod=plan.call.pod,notes=[unused.length?'Not used yet: '+unused.map(u=>'"'+u+'"').join(', ')+'. The builder has no setting for that yet.':'',opp?`The builder can't tune a deck against ${opp} yet.`:'',
-    pod?.decks?.length?`The builder can't tune a deck against the other decks (${pod.decks.map(d=>d.label).join(', ')}) yet.`:'',
-    pod?.power?"It can't measure the pod's power level yet, so it can't match it.":''].filter(Boolean);
-   return {ok:true,say:labels.length?'The deck builder is set up from your words: '+labels.join(', ')+'.':'Open the deck builder to choose a card, format and budget.',note:notes.join(' '),items:[],more:[],buttons:[{label:'Open the deck builder',build:request}],source:'Deck builder · nothing is saved until you choose'};
+   const {request,labels,unused,rows}=buildRequest(args.request,g,args.format,{seed:args.seed,opponent:plan.call.opponent,pod:plan.call.pod});
+   const opp=plan.call.opponent,pod=plan.call.pod,notes=[unused.length?(rows.length>1?'The builder has no setting yet for the words marked not used.':'Not used yet: '+unused.map(u=>'"'+u+'"').join(', ')+'. The builder has no setting for that yet.'):'',opp&&!request.against?`The builder can't tune a deck against ${opp} yet.`:'',
+    request.against?'Answers for the other colours are only cards whose own text names that colour or cannot be countered. The app does not know how the matchup plays.':'',
+    pod?.decks?.some(d=>!d.colors?.length)?`It could not read a colour from: ${pod.decks.filter(d=>!d.colors?.length).map(d=>d.label).join(', ')}.`:'',
+    pod?.power&&!request.power?"The pod's power is not known to the app. Add a bracket (\"bracket 3\") or a power level and the builder aims there.":'',
+    g!=='mtg'&&(opp||pod)?'Power targets and answers for other decks are for Magic decks so far.':''].filter(Boolean);
+   return {ok:true,say:rows.length>1?'The deck builder is set up from your words.':labels.length?'The deck builder is set up from your words: '+labels.join(', ')+'.':'Open the deck builder to choose a card, format and budget.',rows:rows.length>1?rows:[],note:notes.join(' '),items:[],more:[],buttons:[{label:'Open the deck builder',build:request}],source:'Deck builder · nothing is saved until you choose'};
   }
   if(tool==='judge'){
    // The rule that covers the question, quoted from the bundled rulebook. An unsure match is not shown as an answer.
@@ -242,6 +245,19 @@ async function answerOne(plan,tools,io={}){
  *  read by the builder's fixed contract reader (ai-build-contract.js); nothing is guessed and no deck is drafted here. */
 const THEME_NAMES=['Cats','Angels','Humans','Elves','Goblins','Zombies','Lifelink','Lifegain','Tokens','Artifacts','Graveyard'];
 const COLOR_NAMES={W:'white',U:'blue',B:'black',R:'red',G:'green',C:'colorless'};
+// A power target said in words, as the builder's own dial (Deck Forge: casual, focused, strong, max).
+// Commander brackets 1 to 5 are the published ones; "tier" counts down from the top; "power level" is the 1 to 10 table talk.
+const POWER_NAME={casual:'Casual',focused:'Focused',strong:'Strong',max:'Maximum'},BRACKET_NAME={1:'Exhibition',2:'Core',3:'Upgraded',4:'Optimized',5:'cEDH'};
+const NUM={one:1,two:2,three:3,four:4,five:5};
+export function readPower(words){
+ const n=String(words||'').toLowerCase(),m=n.match(/\b(tier|bracket|power level|power) ?(\d+|one|two|three|four|five)\b/);
+ if(!m)return /\bcedh\b/.test(n)?{power:'max',label:'cEDH: maximum power',said:'cedh'}:null;
+ const v=NUM[m[2]]||Number(m[2]),kind=m[1];
+ if(kind==='bracket'){if(v<1||v>5)return null;return {power:v<=2?'casual':v===3?'focused':v===4?'strong':'max',bracket:v,label:`bracket ${v} (${BRACKET_NAME[v]})`,said:m[0]};}
+ if(kind==='tier'){const power=v<=1?'max':v===2?'strong':v===3?'focused':'casual';return {power,label:`tier ${v}: ${POWER_NAME[power].toLowerCase()} power`,said:m[0]};}
+ if(v<1||v>10)return null;
+ const power=v<=4?'casual':v<=6?'focused':v<=8?'strong':'max';return {power,label:`power level ${v}: ${POWER_NAME[power].toLowerCase()} power`,said:m[0]};
+}
 export function buildRequest(words,game='mtg',format='',extra={}){
  const c=readBuildContract([{type:'message',role:'user',content:String(words||'')}],null,{game}),g=c.game||game,request={game:g},labels=[],used=[];
  const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
@@ -253,6 +269,16 @@ export function buildRequest(words,game='mtg',format='',extra={}){
   const t=c.themes?.[0];if(t){request.theme=THEME_NAMES.find(n=>n.toLowerCase()===t||n.toLowerCase()===t+'s'||n.toLowerCase()===t.replace(/f$/,'ves'))||cap(t);labels.push(request.theme.toLowerCase()+' theme');used.push(t,t+'s',t.replace(/f$/,'ves'),request.theme);}
   // Further themes ("angels and flying") go to the builder as its style, which it reads the same way as the first.
   const more=(c.themes||[]).slice(1);if(more.length){request.style=more.join(' ');for(const m of more){labels.push(m+' theme');used.push(m,m+'s');}}
+  // What the other players lacked is a reason for a theme of my own: no reach or no flyers means my flyers get through.
+  const lacks=(extra.pod?.lacks||[]).join(' ');
+  if(/\b(?:reach|flying|flyers?|fliers?)\b/.test(lacks)&&!(c.themes||[]).includes('flying')){request.style=[request.style,'flying'].filter(Boolean).join(' ');if(!request.theme)request.theme='Flying';labels.push('flying, because the pod lacks reach');}
+  else if(/\b(?:reach|flying|flyers?|fliers?)\b/.test(lacks)){const i=labels.indexOf('flying theme');if(i>=0)labels[i]='flying, because the pod lacks reach';}
+  // A play style moves the builder's own role targets (builder.js PLAY_STYLES).
+  for(const k of playStylesIn(words)){request.style=[request.style,k==='draw'?'card draw':k].filter(Boolean).join(' ');labels.push(PLAY_STYLES[k].label);used.push(...(String(words).toLowerCase().match(new RegExp(PLAY_STYLES[k].re.source,'g'))||[]));}
+  // A power target is the builder's power dial; the other players' colours ask for cards whose own text answers them.
+  const pw=readPower(words);if(pw){request.power=pw.power;if(pw.bracket)request.bracket=pw.bracket;labels.push(pw.label);used.push(pw.said);}
+  const foes=[...new Set([...(extra.pod?.decks||[]).flatMap(d=>d.colors||[]),...(deckColors(String(extra.opponent||'')+' deck')?.colors||[])])].map(x=>x.toUpperCase()).sort((p,q)=>'WUBRG'.indexOf(p)-'WUBRG'.indexOf(q));
+  if(foes.length){request.against=foes;labels.push('answers for '+foes.map(x=>COLOR_NAMES[x]).join(', '));}
   if(c.creatureTypesOnly?.length)request.creatureTypesOnly=[...c.creatureTypesOnly];
   const seed=extra.seed||c.commander||c.required_cards?.[0];if(seed){request.seed=seed;labels.push('built around '+seed);used.push(seed,'this commander','this card','this one','this legend','i have this');}
  }
@@ -262,12 +288,27 @@ export function buildRequest(words,game='mtg',format='',extra={}){
  if(c.goal&&c.goal!=='strongest'&&g==='mtg')request.goal=c.goal;
  if(c.goal&&c.goal!=='strongest')labels.push(c.goal==='fun'?'a fun deck':c.goal==='theme'?'theme first':c.goal+' deck');
  // What is left names the thing to build around in Pokémon and Yu-Gi-Oh! (a Pokémon, an archetype); in Magic it is shown as not used.
- let unused=buildLeftover(words,g,used);
+ let unused=buildLeftover(words,g,used).filter(u=>!(request.power&&/^(?:tier|bracket|power)/.test(u)));
  if(g!=='mtg'&&!request.seed){
   if(extra.seed){request.seed=extra.seed;labels.push('built around '+extra.seed);}
   else{const i=unused.findIndex(u=>!/^(?:tier|bracket|power|would|will|can|could|might|surpris|impress|annoy|scare|shock)/.test(u));if(i>=0){request.seed=unused[i];labels.push('built around "'+unused[i]+'"');unused=unused.filter((_,k)=>k!==i);}}
  }
- return {request,labels,unused};
+ // The same reading as rows, for the answer card: one line per setting the builder will get.
+ const rows=[];
+ if(request.format)rows.push({label:'Format',value:request.format});
+ if(request.colors?.length)rows.push({label:'Colours',value:request.colors.map(x=>COLOR_NAMES[x]).join(', ')});
+ if(request.seed)rows.push({label:'Built around',value:request.seed});
+ const themes=[request.theme,...String(request.style||'').split(' ').filter(w=>w&&w.toLowerCase()!==String(request.theme||'').toLowerCase()&&!/^(?:ramp|control|card|draw|removal)$/.test(w))].filter(Boolean);
+ if(themes.length)rows.push({label:themes.length>1?'Themes':'Theme',value:themes.join(', ').toLowerCase()+(extra.pod?.lacks?.length&&/flying/i.test(themes.join(' '))?' (the pod lacks reach)':'')});
+ const styles=g==='mtg'?playStylesIn(words).map(k=>PLAY_STYLES[k].label):[];
+ if(styles.length)rows.push({label:'Play style',value:styles.join(', ')});
+ if(request.power)rows.push({label:'Power',value:readPower(words).label});
+ if(request.against?.length)rows.push({label:'Answers for',value:request.against.map(x=>COLOR_NAMES[x]).join(', ')});
+ if(request.budget)rows.push({label:'Budget',value:(c.budgetBoundary==='exclusive'?'under $':'up to $')+request.budget});
+ if(request.budgetBasis==='owned')rows.push({label:'Cards',value:'only cards you own'});
+ if(c.goal&&c.goal!=='strongest')rows.push({label:'Goal',value:c.goal==='fun'?'a fun deck':c.goal==='theme'?'theme first':c.goal});
+ for(const u of unused)rows.push({label:'Not used',value:'"'+u+'"',tone:'warn'});
+ return {request,labels,unused,rows};
 }
 
 /** The answer card. preview(item,i) and esc come from the caller; buttons carry their index for the click handler. */

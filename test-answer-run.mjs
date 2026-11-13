@@ -52,7 +52,7 @@ r=await ask('is blue better than red');assert.equal(r.a.ok,false);assert.match(r
  let a=await run('can a creature attack the turn it enters');assert.equal(a.strong,'Rule 302.6');assert.match(a.quote,/can’t attack unless/);assert.match(a.source,/Comprehensive Rules/);assert.ok(a.buttons[0].judge);
  a=await run('can i respond to nothing at all');assert.equal(a.ok,false);assert.ok(a.buttons[0].judge,'a rules question with no single rule still offers the Judge');}
 r=await ask('lightning bolt');assert.equal(r.a,null,'a card name gets no answer card');
-r=await ask('build me a mono red goblin deck for modern under $50');assert.deepEqual(r.a.buttons[0].build,{game:'mtg',format:'Modern',colors:['R'],theme:'Goblins',budget:'50'},'a deck request sets up the builder from its words');assert.match(r.a.say,/Modern, red, goblins theme, under \$50/);
+r=await ask('build me a mono red goblin deck for modern under $50');assert.deepEqual(r.a.buttons[0].build,{game:'mtg',format:'Modern',colors:['R'],theme:'Goblins',budget:'50'},'a deck request sets up the builder from its words');assert.deepEqual(r.a.rows.map(x=>x.value),['Modern','red','goblins','under $50']);
 r=await ask('build me a deck');assert.deepEqual(r.a.buttons[0].build,{game:'mtg'},'nothing is guessed for a bare request');
 // The wiki's fact box answers the question the words point at (shape copied from the live 1999 World Championships article).
 const cell=(text,header=false)=>({header,content:[{type:'text',text}],colspan:1,rowspan:1}),row=(a,b)=>({cells:[cell(a,true),cell(b)]});

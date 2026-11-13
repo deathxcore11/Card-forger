@@ -3,7 +3,7 @@
 // each word is used, shown as not used, or the question is not answered. Nothing here calls a model.
 import assert from 'node:assert/strict';
 import {planQuery,respell,buildLeftover,readPod} from './answer-search.js';
-import {answerFor,buildRequest,answerMarkup} from './answer-run.js';
+import {answerFor,buildRequest,readPower,answerMarkup} from './answer-run.js';
 import {makeAskTools} from './ai-tools.js';
 import {esc} from './ui.js';
 
@@ -21,8 +21,8 @@ p=P('what is the 2019 best blue and red deck?');
 assert.equal(p.answerable,false,'another year is not answered with this year\'s decks');assert.match(p.why,/only covers recent events/);
 
 let b=B('I have this commander, can you make me a tier 2 deck?','mtg',{screen:{card:{name:"Atraxa, Praetors' Voice"}}});
-assert.deepEqual(b.request,{game:'mtg',format:'Commander',seed:"Atraxa, Praetors' Voice"},'"this commander" is the card that is open');
-assert.deepEqual(b.unused,['tier 2'],'the builder has no power tier, so "tier 2" is shown as not used');
+assert.deepEqual(b.request,{game:'mtg',format:'Commander',power:'strong',seed:"Atraxa, Praetors' Voice"},'"this commander" is the card that is open, and "tier 2" is the builder\'s Strong power');
+assert.deepEqual(b.unused,[],'every word is used');assert.ok(b.labels.includes('tier 2: strong power'));
 b=B('I have this commander, can you make me a tier 2 deck?');
 assert.equal(b.request.format,'Commander');assert.ok(!b.request.seed,'with no card open there is no commander to build around');
 
@@ -38,7 +38,7 @@ assert.equal(b.request.seed,'blue eyes white dragon');assert.deepEqual(b.unused,
 assert.ok(!b.request.colors&&!b.request.format,'Yu-Gi-Oh! has no colours, and "blue" and "white" are part of the card\'s name');
 
 b=B('what is a ramp deck that I can purchase for under $50?');
-assert.equal(b.request.budget,'50');assert.deepEqual(b.unused,['ramp']);
+assert.equal(b.request.budget,'50');assert.deepEqual(b.unused,[]);assert.equal(b.request.style,'ramp','"ramp" is a play style the builder fills more of');
 
 // ---- 1b. A whole table in one breath (Randall, 13 Nov 2026, as dictated).
 const POD="I'm playing in a pod with three other people. They have a blue, white, a red, blue, and a black mono deck, and I have this commander, and I'm trying to make it within their power level or within their bracket, so we're all having fun. And I would like it to. And I noticed last time we played, a lot of them didn't have reach, so I would like to have flying if that's possible.";
@@ -60,7 +60,7 @@ for(const [game,q,want,unused] of [
  ['mtg','i want a casual elf deck for commander under 100 dollars',{format:'Commander',theme:'Elves',budget:'100'},[]],
  ['mtg','is there a good zombie deck i can build with only cards i own',{theme:'Zombies',budgetBasis:'owned'},[]],
  ['mtg','give me a spicy dragon deck',{theme:'Dragon'},['spicy']],
- ['mtg','build me a bracket 3 izzet commander deck',{format:'Commander',colors:['U','R']},['bracket 3']],
+ ['mtg','build me a bracket 3 izzet commander deck',{format:'Commander',colors:['U','R'],power:'focused',bracket:3},[]],
  ['ptcg','i want a fun pikachu deck',{seed:'pikachu'},[]],
  ['ptcg','make me a charizard deck under $40',{seed:'charizard',budget:'40'},[]],
  ['ygo','what yugioh deck can i buy for under $60',{budget:'60'},[]],
@@ -151,7 +151,7 @@ const own=new Map([['monastery swiftspear',4],['lightning strike',4],['mountain'
 const tools=makeAskTools({S:{state:{settings:{},decks:[],collection:[]},ui:{}},T:{game:()=>'mtg',cache:{},gs:()=>({decks:[],collection:[]}),ownedMap:()=>new Map(),metaState:()=>({data}),ui:()=>({})},esc,
  meta:n=>CARDS[String(n).toLowerCase()]||null,resolve:async n=>CARDS[String(n).toLowerCase()]||null,resolveNames:async()=>{},
  inv:n=>({owned:own.get(String(n).toLowerCase())||0}),priceOf:()=>2,loadMetaData:async()=>data,metaState:()=>({data}),MTG_META_FORMATS:[['Standard','Standard'],['Modern','Modern']],mtgPower:d=>d.cards.length,shownPower:x=>x});
-const ask=async(q,ctx={})=>{const plan=P(q,'mtg',{formatLast:{mtg:'Standard'},...ctx});return {plan,a:await answerFor(plan,tools,{cardSearch:async()=>[]})};};
+const ask=async(q,ctx={},game='mtg')=>{const plan=P(q,game,{formatLast:{mtg:'Standard'},...ctx});return {plan,a:await answerFor(plan,tools,{cardSearch:async()=>[]})};};
 
 let r=await ask('what is the best red deck, how much does it cost and where did it place?');
 assert.equal(r.a.strong,'Izzet Prowess');assert.equal(r.plan.extra.length,2);
@@ -180,13 +180,23 @@ assert.equal(r.plan.extra[0].plan.intent,'set.rank-sets','a second ask about som
 // A deck request with a friend's deck: the builder opens with what it took, and says what it could not take.
 r=await ask('what is the funnest deck I can play with mono red and my friend has a blue deck');
 assert.equal(r.a.buttons[0].label,'Open the deck builder');assert.deepEqual(r.a.buttons[0].build.colors,['R']);
-assert.match(r.a.say,/set up from your words: red, a fun deck/);assert.match(r.a.note,/can't tune a deck against blue yet/);
+assert.deepEqual(r.a.rows,[{label:'Colours',value:'red'},{label:'Answers for',value:'blue'},{label:'Goal',value:'a fun deck'}]);assert.deepEqual(r.a.buttons[0].build.against,['U']);assert.match(r.a.note,/does not know how the matchup plays/);
 r=await ask(POD,{screen:{card:{name:'Sol Ring'}}});
-assert.equal(r.a.say,'The deck builder is set up from your words: Commander, flying theme, built around Sol Ring, a fun deck.');
-assert.match(r.a.note,/can't tune a deck against the other decks \(white-blue, blue-red, mono-black\) yet/);assert.match(r.a.note,/can't measure the pod's power level yet/);
-assert.deepEqual(r.a.buttons[0].build,{game:'mtg',format:'Commander',theme:'Flying',seed:'Sol Ring',goal:'fun'});
+assert.deepEqual(r.a.rows,[{label:'Format',value:'Commander'},{label:'Built around',value:'Sol Ring'},{label:'Theme',value:'flying (the pod lacks reach)'},{label:'Answers for',value:'white, blue, black, red'},{label:'Goal',value:'a fun deck'}]);
+assert.match(r.a.note,/pod's power is not known to the app\. Add a bracket/,'a pod power with no number is said, not guessed');
+assert.deepEqual(r.a.buttons[0].build,{game:'mtg',format:'Commander',theme:'Flying',against:['W','U','B','R'],seed:'Sol Ring',goal:'fun'});
+// The deck brief (idea 2): a power target, a play style and the other decks' colours all reach the builder.
+r=await ask('im in a pod with 3 other players, they play azorius, izzet and mono black. build me a fun bracket 3 commander ramp deck with flying around this commander under $100 with lots of dragons',{screen:{card:{name:'Sol Ring'}}});
+assert.deepEqual(r.a.buttons[0].build,{game:'mtg',format:'Commander',theme:'Flying',style:'dragon ramp',power:'focused',bracket:3,against:['W','U','B','R'],seed:'Sol Ring',budget:'100',goal:'fun'});
+assert.deepEqual(r.a.rows.map(x=>x.label+': '+x.value),['Format: Commander','Built around: Sol Ring','Themes: flying, dragon','Play style: more ramp','Power: bracket 3 (Upgraded)','Answers for: white, blue, black, red','Budget: under $100','Goal: a fun deck']);
+assert.ok(!/power is not known/.test(r.a.note),'with a bracket said, nothing is missing');
+r=await ask('make me a tier 2 control deck with lots of card draw in modern');
+assert.deepEqual(r.a.buttons[0].build,{game:'mtg',format:'Modern',style:'control card draw',power:'strong'});assert.equal(r.a.note,'');
+assert.deepEqual(readPower('power level 7'),{power:'strong',label:'power level 7: strong power',said:'power level 7'});assert.equal(readPower('bracket 9'),null);assert.equal(readPower('a cedh deck').power,'max');
+r=await ask('build a pikachu deck that beats my friends charizard deck',{},'ptcg');
+assert.match(r.a.note,/can't tune a deck against charizard yet/);
 r=await ask('I have this commander, can you make me a tier 2 deck',{screen:{card:{name:'Sol Ring'}}});
-assert.equal(r.a.buttons[0].build.seed,'Sol Ring');assert.match(r.a.note,/Not used yet: "tier 2"/);
+assert.equal(r.a.buttons[0].build.seed,'Sol Ring');assert.equal(r.a.buttons[0].build.power,'strong');assert.ok(r.a.rows.some(x=>x.label==='Power'&&x.value==='tier 2: strong power'));
 
 // ---- 6b. Follow-up chips: the answer remembers what "it" is (idea 1 of the approved mock-up).
 {
@@ -232,3 +242,15 @@ assert.equal(r.a.buttons[0].build.seed,'Sol Ring');assert.match(r.a.note,/Not us
 }
 
 console.log(`answer-hard: Randall's six questions, ${typos} generated misspellings, wrong-order and several-ask questions read correctly`);
+
+// ---- 6c. The deck brief inside the builder: a play style moves its role targets, and the other decks' colours become a card search.
+{
+ const {playStyleTargets,playStylesIn}=await import('./builder.js'),{againstQuery}=await import('./deck-pipeline.js');
+ const base={ramp:10,draw:10,interaction:10,wipe:3,wincon:3};
+ assert.deepEqual(playStyleTargets(base,'ramp'),{...base,ramp:15});
+ assert.deepEqual(playStyleTargets(base,'control card draw'),{ramp:10,draw:16,interaction:14,wipe:4,wincon:3});
+ assert.deepEqual(playStyleTargets(base,'dragon flying'),base,'a theme word moves no target');
+ assert.deepEqual(playStylesIn('a deck with lots of removal'),['removal']);
+ assert.equal(againstQuery('U',{legality:'commander',identity:'wr'}),`(o:"protection from blue" or o:"hexproof from blue" or o:"target blue" or o:"can't be countered") -t:land f:commander id<=wr`);
+ assert.equal(againstQuery('X'),'');
+}
