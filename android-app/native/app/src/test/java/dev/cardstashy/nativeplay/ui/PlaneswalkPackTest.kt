@@ -67,4 +67,38 @@ class PlaneswalkPackTest {
         assertEquals(setOf("planeswalk.html", "a.js", "b.js", "s.css", "manifest.json"), dir.list()!!.toSet())
         assertEquals(sha, JSONObject(File(dir, "manifest.json").readText()).getString("page"))
     }
+
+    /** Randall 13 Nov, "Download once on first open": the art, figures and effects the page loads are listed, saved whole and answered offline. */
+    @Test fun artAndSoundsSavedOnceThenServedOffline() {
+        val media = File(pack, "media.json"); assumeTrue(media.isFile)
+        val a = JSONObject(media.readText()).getJSONArray("files")
+        val list = (0 until a.length()).map { a.getJSONArray(it) }.map { PlaneswalkPack.Media(it.getString(0), it.getLong(1), it.getString(2)) }
+        val paths = list.map { it.path }.toSet()
+        // What the page names at runtime: the cast's index and figures, a patron's art, an effect it plays, the finish stamp.
+        for (p in listOf("planeswalk-cast/cast.json", "planeswalk-art/patrons/sealed-back.webp", "assets/audio/sfx/PWB-001.ogg", "assets/finishes/stamp-first-movie.png"))
+            assertTrue(p, p in paths)
+        assertTrue(list.sumOf { it.bytes } in 40_000_000L..90_000_000L)
+        // Saving: a file the site answers wrongly is not kept (tried again next open); the rest are, byte for byte.
+        val dir = kotlin.io.path.createTempDirectory("pw-media").toFile()
+        val some = list.filter { it.path.startsWith("planeswalk-cast/") }.take(3) + list.first { it.path == "assets/audio/sfx/PWB-001.ogg" }
+        var asked = 0
+        val left = PlaneswalkPack.saveMedia(dir, some) { p -> asked++; if (p == some[1].path) "broken".toByteArray() else File(root, p).readBytes() }
+        assertEquals(1, left); assertEquals(4, asked)
+        assertEquals(some[0].sha, MessageDigest.getInstance("SHA-256").digest(File(dir, some[0].path).readBytes()).joinToString("") { "%02x".format(it) })
+        assertTrue(!File(dir, some[1].path).exists())
+        // A second open asks only for what is still missing.
+        asked = 0
+        assertEquals(0, PlaneswalkPack.saveMedia(dir, some) { p -> asked++; File(root, p).readBytes() }); assertEquals(1, asked)
+        // While Planeswalk is open the app answers a saved file itself, so it shows with no connection.
+        val ctx = org.robolectric.RuntimeEnvironment.getApplication()
+        val saved = PlaneswalkPack.mediaDir(ctx).apply { deleteRecursively() }
+        dir.copyRecursively(saved)
+        if (PlaneswalkPack.mediaList(ctx).isNotEmpty()) {
+            val r = PlaneswalkPack.serve(ctx, android.net.Uri.parse("https://cardstashy.com/assets/audio/sfx/PWB-001.ogg?v=kit3"))!!
+            assertEquals("audio/ogg", r.mimeType)
+            assertTrue(r.data.readBytes().contentEquals(File(root, "assets/audio/sfx/PWB-001.ogg").readBytes()))
+            assertEquals(null, PlaneswalkPack.serve(ctx, android.net.Uri.parse("https://cardstashy.com/planeswalk-art/patrons/sealed-back.webp")))
+        }
+        saved.deleteRecursively(); dir.deleteRecursively()
+    }
 }

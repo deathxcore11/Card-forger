@@ -18,6 +18,7 @@ import java.io.File
  *
  * Freshness: each time Planeswalk opens online, the site's page is checked in the background (its ETag); when the site has a newer
  * one, it and its scripts are saved whole beside the pack and the next open uses them. The open itself never waits for the network.
+ * Its art, figures and sounds are saved once on the first open online (see [saveMedia]) and answered from the phone after that.
  */
 object PlaneswalkPack {
     const val PAGE = "/planeswalk.html"
@@ -62,15 +63,53 @@ object PlaneswalkPack {
 
     fun isPage(url: android.net.Uri) = url.scheme == "https" && url.host == "cardstashy.com" && url.path == PAGE
     internal fun mime(path: String) = when (path.substringAfterLast('.')) {
-        "html" -> "text/html"; "js", "mjs" -> "text/javascript"; "css" -> "text/css"; "json" -> "application/json"; else -> "application/octet-stream" }
+        "html" -> "text/html"; "js", "mjs" -> "text/javascript"; "css" -> "text/css"; "json" -> "application/json"
+        "webp" -> "image/webp"; "png" -> "image/png"; "jpg", "jpeg" -> "image/jpeg"; "svg" -> "image/svg+xml"; "ogg" -> "audio/ogg"; "m4a" -> "audio/mp4"
+        else -> "application/octet-stream" }
     /** The app's answer for [url], or null to let the site answer. */
     fun serve(context: Context, url: android.net.Uri): WebResourceResponse? {
         if (url.scheme != "https" || url.host != "cardstashy.com") return null
         val path = url.path?.removePrefix("/") ?: return null
         val p = current(context)
-        if (path !in p.files) return null
+        if (path !in p.files) return media(context, path)
         val body = runCatching { p.dir?.let { File(it, path).inputStream() } ?: context.assets.open("planeswalk/$path") }.getOrNull() ?: return null
         return WebResourceResponse(mime(path), "utf-8", body).apply { responseHeaders = mapOf("Cache-Control" to "no-cache", "Access-Control-Allow-Origin" to "https://cardstashy.com") }
+    }
+
+    // ---------------------------------------------------------------- Art, figures and sounds offline (Randall 13 Nov: download once)
+    // The page's art (planeswalk-art/), figures (planeswalk-cast/) and effects (assets/audio/sfx/*.ogg) are listed at build time in
+    // planeswalk/media.json ([path, bytes, sha256]). The first time Planeswalk opens online they are saved, one by one, to
+    // planeswalk-media/ in the app's storage; each is answered from there once it is saved whole, so after that it plays offline.
+    // Files the site adds later still come from the site. Music keeps itself already (audio.js's Cache Storage, once a track has played).
+    internal class Media(val path: String, val bytes: Long, val sha: String)
+    @Volatile private var mediaList: Map<String, Media>? = null
+    internal fun mediaDir(context: Context) = File(context.filesDir, "planeswalk-media")
+    internal fun mediaList(context: Context): Map<String, Media> = mediaList ?: runCatching {
+        val a = JSONObject(context.assets.open("planeswalk/media.json").bufferedReader().readText()).getJSONArray("files")
+        (0 until a.length()).map { a.getJSONArray(it) }.associate { it.getString(0) to Media(it.getString(0), it.getLong(1), it.getString(2)) }
+    }.getOrDefault(emptyMap()).also { mediaList = it }
+    /** A saved art, figure or sound file for [path], when it is saved whole; else null (the site answers). */
+    private fun media(context: Context, path: String): WebResourceResponse? {
+        val m = mediaList(context)[path] ?: return null
+        val f = File(mediaDir(context), path).takeIf { it.isFile && it.length() == m.bytes } ?: return null
+        return WebResourceResponse(mime(path), null, runCatching { f.inputStream() }.getOrNull() ?: return null)
+            .apply { responseHeaders = mapOf("Cache-Control" to "no-cache", "Access-Control-Allow-Origin" to "https://cardstashy.com") }
+    }
+    /**
+     * Saves every listed file [dir] lacks (or holds with the wrong size): [get] fetches a site path; each is checked against its
+     * sha256 and put in place whole, so a broken download is never served. Returns how many are still missing.
+     */
+    internal fun saveMedia(dir: File, list: Collection<Media>, get: (String) -> ByteArray?): Int {
+        var missing = 0
+        for (m in list) {
+            val f = File(dir, m.path)
+            if (f.isFile && f.length() == m.bytes) continue
+            val b = get(m.path)
+            val sha = b?.let { java.security.MessageDigest.getInstance("SHA-256").digest(it).joinToString("") { x -> "%02x".format(x) } }
+            if (b == null || b.size.toLong() != m.bytes || sha != m.sha) { missing++; continue }
+            f.parentFile?.mkdirs(); val tmp = File(f.path + ".part"); tmp.writeBytes(b); if (!tmp.renameTo(f)) { f.delete(); tmp.renameTo(f) }
+        }
+        return missing
     }
 
     /** The files [path] loads as code (script src, link href, imports, a quoted "./x.js" or "./x.css"), as export-planeswalk.mjs reads them. */
@@ -124,6 +163,13 @@ object PlaneswalkPack {
                     if (saved) { keptRead = false; android.util.Log.i("Planeswalk", "a newer Planeswalk from the site is saved for the next open") }
                     if (saved || java.security.MessageDigest.getInstance("SHA-256").digest(body).joinToString("") { "%02x".format(it) } == now.page) r.header("ETag")?.let { seen.writeText(it) }
                 }
+            }
+            // Art, figures and sounds: whatever is not saved yet (all of it on the first open online, about 60 MB; nothing after).
+            runCatching {
+                val client = okhttp3.OkHttpClient.Builder().callTimeout(120, java.util.concurrent.TimeUnit.SECONDS).build()
+                val left = saveMedia(mediaDir(app), mediaList(app).values) { p -> runCatching {
+                    client.newCall(okhttp3.Request.Builder().url(SITE + p).build()).execute().use { x -> if (x.isSuccessful) x.body?.bytes() else null } }.getOrNull() }
+                android.util.Log.i("Planeswalk", if (left == 0) "art and sounds saved for offline play" else "$left art and sound files not saved yet; tried again next open")
             }
         }
     }
