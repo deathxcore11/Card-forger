@@ -2,8 +2,10 @@
 // Every sentence is filled from what the lookup returned. A lookup that fails or comes back empty gives a
 // plain "miss" line, never a guess. No AI, no DOM: answerMarkup() only builds a string.
 const usd=n=>typeof n==='number'&&Number.isFinite(n)?'$'+n.toFixed(2):null;
-const when=iso=>{const t=Date.parse(iso);if(!Number.isFinite(t))return '';const d=new Date(t),today=new Date().toDateString()===d.toDateString();return (today?'today ':d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' ')+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});};
-const longDate=d=>{const t=Date.parse(d);return Number.isFinite(t)?new Date(t).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric',timeZone:'UTC'}):String(d||'');};
+// Dates are written by hand: the app's small JS engine has no locale formatting.
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const when=iso=>{const t=Date.parse(iso);if(!Number.isFinite(t))return '';const d=new Date(t);return new Date().toDateString()===d.toDateString()?'today':MONTHS[d.getMonth()].slice(0,3)+' '+d.getDate();};
+const longDate=d=>{const t=Date.parse(d);if(!Number.isFinite(t))return String(d||'');const x=new Date(t);return MONTHS[x.getUTCMonth()]+' '+x.getUTCDate()+', '+x.getUTCFullYear();};
 const cardItem=(game,c)=>({kind:'card',game,ref:c.ref||(game==='mtg'?c.name:String(c.id||c.name)),label:c.name});
 const miss=(text,extra={})=>({ok:false,miss:text,items:[],more:[],buttons:[],...extra});
 const UNKNOWN="The app's data can't answer that one.";
@@ -54,10 +56,10 @@ export async function answerFor(plan,tools,io={}){
   }
   if(tool==='meta_decks'){
    const r=await tools.meta_decks(args);if(r.error||!r.decks?.length)return miss(r.error||'No tournament decks for '+args.format+' right now.');
-   const items=tools.suggestedItems().slice(0,3),top=r.decks[0],source=[r.source,r.fetchedAt?'updated '+when(r.fetchedAt):''].filter(Boolean).join(' · ');
-   if(pick==='cards')return {ok:true,say:'The most played cards are on the tournament page for '+r.format+'.',items:[],more:[],buttons:[{label:'Open '+r.format+' tournament decks',route:'#decks/inspiration'}],source};
-   return {ok:true,strong:top.name,say:`is the most played ${r.format} deck right now: ${top.lists?top.lists+' lists, ':''}${top.share}% of the field.`,items:items.slice(0,1),more:items.slice(1),moreLabel:'Next most played',
-    buttons:[{label:'Open the deck',item:items[0]},{label:'All '+r.format+' decks',route:'#decks/inspiration'}],source,note:top.best?'Best finish: '+top.best:''};
+   const items=tools.suggestedItems().slice(0,3),top=r.decks[0],fmt=g==='mtg'&&args.format?args.format:r.format,source=[r.source,r.fetchedAt?'updated '+when(r.fetchedAt):''].filter(Boolean).join(' · ');
+   if(pick==='cards')return {ok:true,say:'The most played cards are on the tournament page for '+fmt+'.',items:[],more:[],buttons:[{label:'Open '+fmt+' tournament decks',route:'#decks/inspiration'}],source};
+   return {ok:true,strong:top.name,say:`is the most played ${fmt} deck right now: ${top.lists?top.lists+' lists, ':''}${top.share}% of the field.`,items:items.slice(0,1),more:items.slice(1),moreLabel:'Next most played',
+    buttons:[{label:'Open the deck',item:items[0]},{label:'All '+fmt+' decks',route:'#decks/inspiration'}],source,note:top.best?'Best finish: '+top.best:''};
   }
   if(tool==='set_cards'){
    if(pick==='price-asc'){

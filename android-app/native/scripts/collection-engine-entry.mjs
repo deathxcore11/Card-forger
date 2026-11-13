@@ -106,6 +106,9 @@ import {setupModel as flowSetupOf, resultModel as flowResultOf, useDocument as f
 import {mtgPower, asShown, shownPower} from 'WEB/power.js';
 import {lotPrice} from 'WEB/insights.js';
 import {makeAskTools} from 'WEB/ai-tools.js';
+import {planQuery, fixChoices, gameOfLabel} from 'WEB/answer-search.js';
+import {answerFor} from 'WEB/answer-run.js';
+import {readGameWikiArticle} from 'WEB/mtg-wiki-client.js';
 import {configureAiAuth} from 'WEB/ai-auth.js';
 import {openAsk, ask as askSite, restartAsk, closeAsk} from './ai-ask-cut.mjs';
 import {openRulesAsk, askRules, restartRulesAsk, removeRulesCardContext, closeRulesAsk, rulesPage as judgePage, rulesSession as judgeSession} from './ai-rules-cut.mjs';
@@ -5683,6 +5686,82 @@ function askShowRun(s) {
   askDest = null; const run = askRun = {done: false};
   (async () => { askFocus(s?.game || askGame); await askTools().open(s); })().then(() => { run.done = true; run.dest = askDest; }, e => { run.done = true; run.error = String(e?.message || e); });
 }
+// ---- The search box answers questions (Randall 13 Nov: one search, no AI): answer-search.js reads the typed words into one of
+// the app's own lookups (the same ai-tools.js lookups Ask ran), answer-run.js fills the answer card from what it returns. Nothing
+// is posted to /api/ai. The app draws the card ({read chips, say, fact, quote, tiles, buttons, source}); a tile is opened by
+// askShow as before, a button says where the app goes ({to: show | wiki | route | search | discover | judge}).
+let answerOut = null, answerTicket = 0;
+function answerTile(s, i) {
+  let b = null; try { b = one(tree(askTools().preview(s, i, {compact: s.kind === 'card'})), tagIs('button')); } catch {}
+  if (!b) return {show: s, title: s.label || s.ref || '', lines: [], price: '', art: '', label: ''};
+  let show = s; try { show = JSON.parse(b.attrs['data-ask-show']) || s; } catch {}
+  const im = one(b, tagIs('img'));
+  return {show, title: text(one(b, tagIs('b'))) || s.label || '', lines: all(b, tagIs('small')).map(text).filter(Boolean), price: text(one(b, tagIs('em'))) || text(one(b, cls('art-price'))),
+    art: im ? abs(im.attrs.src || '') : '', label: b.attrs['aria-label'] || ''};
+}
+function answerDest(b, plan) {
+  const g = plan.game;
+  if (b.item) return {to: 'show', show: b.item};
+  if (b.judge) return {to: 'judge', game: g, text: plan.P.raw};
+  if (b.discover) { if (g !== 'mtg') return {to: 'discover', game: g, kind: b.discover.kind, value: b.discover.value};
+    const spec = b.discover.kind === 'artist' ? {q: 'a:"' + b.discover.value + '"'} : cardDiscoverySpec(g, b.discover.kind, b.discover.value);
+    return spec?.q ? {to: 'search', game: g, q: spec.q, sort: ''} : {to: 'none'}; }
+  if (b.search) return {to: 'search', game: g, q: b.search.q, sort: b.search.order === 'usd' ? (b.search.dir === 'asc' ? 'usdAsc' : 'usd') : ''};
+  if (b.route && /^#wiki\//.test(b.route)) return {to: 'wiki', game: g, topic: decodeURIComponent(b.route.slice(6))};
+  return {to: 'route', game: g, hash: b.route || ''};
+}
+function answerModel(q, plan, a) {
+  const read = (plan.read || []).map(c => ({label: c.label, kind: c.kind, choices: c.fix && (c.kind === 'format' || c.kind === 'game') ? fixChoices(plan, c.kind) : []}));
+  const base = {q, game: plan.game, intent: plan.intent, hand: plan.hand || '', read};
+  if (!a) return {...base, state: 'none'};
+  let n = 0; const tile = s => answerTile(s, n++);
+  return {...base, state: 'done', answer: {ok: !!a.ok, say: a.say || '', strong: a.strong || '', wiki: a.say === 'From the wiki page', fact: a.fact || null, quote: a.quote || '', note: a.note || '', source: a.source || '',
+    miss: a.miss || '', ask: a.ask ? {ask: a.ask.ask, choices: (a.ask.choices || []).map(c => ({label: c.name, show: {kind: 'set', game: plan.game, ref: String(c.id || c.code), label: c.name}}))} : null,
+    items: (a.items || []).map(tile), moreLabel: a.moreLabel || 'Also', more: (a.more || []).map(tile),
+    buttons: (a.buttons || []).map(b => ({label: b.label, dest: answerDest(b, plan)})), others: (a.others || []).map(t => ({label: t, dest: {to: 'wiki', game: plan.game, topic: t}}))}};
+}
+// app.js homeAnswer.plan / run, with the open screen's set and card handed in by the app ([o] = {fix: {format, game}, set: {id, code, name}, card: {name}}).
+function answerStart(g0, q, o = {}) {
+  const my = ++answerTicket; answerOut = null;
+  if (!String(q || '').trim()) { answerOut = {q: '', state: 'none'}; return; }
+  (async () => {
+    const fix = o.fix || {}, g = gameOfLabel(fix.game) || g0, mtg = g === 'mtg';
+    tcgReady();
+    const list = () => (mtg ? S.ui.sets.list : tcgUi(g).sets?.list) || [];
+    const ctx = sets => ({game: g, fix: {format: fix.format, game: gameOfLabel(fix.game) || undefined}, formatLast: {mtg: S.ui.mtgMeta?.format || undefined},
+      sets: sets.filter(x => !x.digital).map(x => ({id: mtg ? x.code : x.id, code: x.code || x.id, name: x.name})), screen: {set: o.set || null, card: o.card || null}});
+    let plan = planQuery(q, ctx(list()));
+    // A question about sets needs the set list: it is loaded once, then the words are read again.
+    if (!list().length && (/\bset\b|\bsets\b|\bcome out\b|\bcame out\b|\breleased?\b|\bcards? in\b/i.test(q) || plan.intent === 'unknown')) {
+      try { if (mtg) await loadSetIndex(); else await tcgCtx.loadSets(g); } catch {}
+      if (my !== answerTicket) return;
+      plan = planQuery(q, ctx(list()));
+    }
+    if (!plan.call && !plan.missing?.length && plan.intent !== 'unknown') { answerOut = answerModel(q, plan, null); return; }
+    answerOut = {...answerModel(q, plan, null), state: 'loading'};
+    let a = null;
+    try {
+      if (plan.game !== 'mtg') askFocus(plan.game);
+      a = await answerFor(plan, askTools(), {
+        wikiArticle: async (game, title) => { const d = await readGameWikiArticle(game, title); return d?.status === 'available' ? d.article : null; },
+        cardSearch: async ({game, q, order, dir, limit}) => {
+          if (game !== 'mtg') return [];
+          const d = await api('/cards/search?' + new URLSearchParams({q: q + ' game:paper', order, dir, unique: 'cards'})).catch(e => { globalThis.__answerError = String(e?.message || e); return null; });
+          return (d?.data || []).slice(0, limit || 3).map(c => { cacheCard(c); return {name: c.name, price: Number(c.prices?.usd) || null}; });
+        }});
+    } catch { a = {ok: false, miss: 'That lookup failed. Check your connection and try again.', items: [], more: [], buttons: []}; }
+    if (my !== answerTicket) return;
+    answerOut = answerModel(q, plan, a);
+  })().catch(e => { globalThis.__lastError = String(e?.stack || e); if (my === answerTicket) answerOut = {q, state: 'none'}; });
+}
+// "See them all in Search" for Magic: the words and the sort set on the Search page as app.js homeAnswer.act does, and the search started.
+function answerSearch(q, sort) {
+  mtgFocus(); searchGame = 'mtg';
+  S.ui.db.term = String(q || ''); S.ui.db.filters = sort ? {sort} : {};
+  dbInvalidate();
+  dbSearch().catch(e => toasts.push({text: e?.message || 'Search failed.', undo: false}));
+  return {term: S.ui.db.term, filters: S.ui.db.filters};
+}
 // ---- Ask a Judge (gap audit H4): ai-rules.js whole (openRulesAsk, askRules, restartRulesAsk, removeRulesCardContext, closeRulesAsk;
 // ./ai-rules-cut.mjs, its own small page), posting to /api/ai/ask with the account's token (aiFetch) and checking each answer as the
 // site does (validateRulesResponse: the game, format and source edition must match, every citation must quote the bundled rulebook).
@@ -6415,6 +6494,11 @@ globalThis.Collection = {
   searchSuggest(game, q) { suggestStart(game || 'mtg', q); return json(suggestOut); },
   searchSuggestModel() { return json(suggestOut); },
   searchRemember(game, q) { rememberSearch(game || 'mtg', q); },
+  // The answer card over the suggestions: searchAnswer reads what is typed and starts its lookup ([opts] = {fix, set, card}; the app
+  // pumps it with settle()); searchAnswerModel reads it (null while the words are read, state 'none' | 'loading' | 'done').
+  searchAnswer(game, q, opts) { let o = {}; try { o = JSON.parse(opts || '{}') || {}; } catch {} answerStart(game || 'mtg', q, o); return json(answerOut); },
+  searchAnswerModel() { return json(answerOut); },
+  searchAnswerSearch(q, sort) { return json(answerSearch(q, sort || '')); },
   // views.js setsPage(), every set: [opts] = {q, family, release, year, sort} as the app last left them. setsLoad starts the
   // set list's lookup (app.js loadSetIndex; the app pumps it with settle()); setsDo applies a control (setsAct).
   sets(game, opts) {

@@ -15,6 +15,7 @@ const FORMATS={
  ptcg:['Standard','Expanded','Gym Leader Challenge'],
  ygo:['Advanced','Goat','Edison'],
 };
+const DEFAULT_FORMAT={mtg:'Standard',ptcg:'Standard',ygo:'Advanced'};
 const FORMAT_ALIAS={cedh:'Commander',edh:'Commander',glc:'Gym Leader Challenge',tcg:'Advanced'};
 const RANKS=[
  ['price-desc',/\b(?:most expensive|priciest|most valuable|highest priced?|worth the most|costs? the most|best pulls?|chase cards?)\b/,'highest price'],
@@ -116,7 +117,7 @@ export function planQuery(q,ctx={}){
  const plan=(intent,call,extra={})=>({intent,game,P,read,missing,call:missing.length?null:call,answerable:!missing.length&&!!call,hand:null,...extra});
  if(n.length<2)return plan('none',null);
  const mine=MINE.test(n),rank=RANKS.find(r=>r[1].test(n)),y=year(n);
- const format=()=>{const f=(FORMATS[game].includes(ctx.fix?.format)?ctx.fix.format:null)||findFormat(n,game)||ctx.formatLast?.[game]||FORMATS[game][0];read.push(chip(f,'format',true));return f;};
+ const format=()=>{const f=(FORMATS[game].includes(ctx.fix?.format)?ctx.fix.format:null)||findFormat(n,game)||(l=>FORMATS[game].includes(l)?l:null)(ctx.formatLast?.[game]==='EDH'?'Commander':ctx.formatLast?.[game])||DEFAULT_FORMAT[game];read.push(chip(f,'format',true));return f;};
 
  // Build a deck: the builder owns it, exactly as today.
  if(/\b(?:make|create|build)\b.*\bdeck\b/.test(n))return plan('build',null,{hand:'build'});

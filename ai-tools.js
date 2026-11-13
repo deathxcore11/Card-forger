@@ -119,7 +119,7 @@ export function makeAskTools(x) {
   }
   async function mtgSets() { if (!S.ui.sets?.list?.length) await x.loadSetIndex().catch(() => {}); return (S.ui.sets?.list || []).filter((s) => !s.digital); }
   async function tcgSets(g) { if (!T.ui(g).sets?.list?.length) await x.tcgCtx.loadSets?.(g).catch(() => {}); return T.ui(g).sets?.list || []; }
-  const metaKey = (format) => { const f = String(format || S.ui.mtgMeta?.format || 'Modern'); return 'mtg:' + (/commander|edh|cedh/i.test(f) ? 'EDH' : x.MTG_META_FORMATS.find(([k]) => k.toLowerCase() === f.toLowerCase())?.[0] || 'Modern'); };
+  const metaKey = (format) => { const f = String(format || S.ui.mtgMeta?.format || 'Modern'); return 'mtg:' + (x.MTG_META_FORMATS.find(([k]) => k.toLowerCase() === f.toLowerCase())?.[0] || (/commander|edh|cedh/i.test(f) ? 'EDH' : 'Modern')); };
 
   const tools = {
     async game_concepts({game,query}) {

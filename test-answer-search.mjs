@@ -100,6 +100,9 @@ for(const q of ['lightning bolt','sheoldred','black lotus','atraxa grand unifier
 // "Best" about a price is not a meta question; "my" keeps a question on the device.
 assert.equal(p('most expensive deck in the meta').intent,'meta.best');
 assert.notEqual(p('what is my best deck').call.tool,'meta_decks');
+// With no format in the words: the tournament format last looked at, else Standard (never the first in the list).
+assert.equal(p('best deck in the meta',{formatLast:{}}).call.args.format,'Standard');
+assert.equal(p('best deck in the meta',{formatLast:{mtg:'EDH'}}).call.args.format,'Commander');
 // A tapped chip overrides what was read, the words untouched.
 assert.equal(p('best deck in the meta',{fix:{format:'Pioneer'}}).call.args.format,'Pioneer');
 assert.equal(p('best deck in the meta',{fix:{game:'ptcg'}}).game,'ptcg');

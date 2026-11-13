@@ -548,6 +548,27 @@ object CollectionEngine {
     suspend fun searchSuggest(game: String, text: String): JsonObject? = on { q -> JsonParser.parseString(q.evaluate("Collection.searchSuggest(${str(game)}, ${str(text)})") as String).takeIf { it.isJsonObject }?.asJsonObject }
     const val SUGGEST_MODEL = "Collection.searchSuggestModel()"
     suspend fun searchSuggestModel(): JsonObject? = on { q -> JsonParser.parseString(q.evaluate(SUGGEST_MODEL) as String).takeIf { it.isJsonObject }?.asJsonObject }
+    /**
+     * The search box's answer card (answer-search.js / answer-run.js, no AI): reads [text] into one of the app's own lookups and runs it.
+     * [opts] = {fix: {format, game}, set, card}. Null when the words are a plain card name or the box is empty; else
+     * {q, game, read: [{label, kind, choices}], answer: {ok, say, strong, fact, quote, note, source, miss, ask, items, more, buttons, others}}.
+     */
+    suspend fun searchAnswer(game: String, text: String, opts: JsonObject = JsonObject(), maxMs: Long = 30_000, onModel: (JsonObject) -> Unit = {}): JsonObject? {
+        fun read(raw: Any?) = JsonParser.parseString(raw as String).takeIf { it.isJsonObject }?.asJsonObject
+        var j = on { q -> read(q.evaluate("Collection.searchAnswer(${str(game)}, ${str(text)}, ${str(opts.toString())})")) }
+        val until = System.currentTimeMillis() + maxMs
+        while (System.currentTimeMillis() < until) {
+            val state = j?.get("state")?.asString
+            if (state == "done" && j?.get("q")?.asString == text) return j
+            if (state == "none") return null
+            if (state == "loading") j?.let(onModel)
+            settle(400)
+            j = on { q -> read(q.evaluate("Collection.searchAnswerModel()")) }
+        }
+        return null
+    }
+    /** An answer's "See them all in Search" for Magic: the Search page set to [q] and [sort] (usd, usdAsc or blank) and started. */
+    suspend fun searchAnswerSearch(q: String, sort: String): JsonObject = askEval("Collection.searchAnswerSearch(${str(q)}, ${str(sort)})")
     /** suggest.js rememberSearch: Enter, or a picked suggestion. */
     suspend fun searchRemember(game: String, text: String) = on { q -> q.evaluate("Collection.searchRemember(${str(game)}, ${str(text)})"); Unit }
     const val SETS_MODEL = "Collection.setsModel()"

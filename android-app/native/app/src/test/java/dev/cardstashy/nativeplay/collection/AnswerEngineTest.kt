@@ -1,0 +1,92 @@
+package dev.cardstashy.nativeplay.collection
+
+import com.google.gson.JsonObject
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
+import org.junit.Test
+import java.io.File
+
+/**
+ * The search box answers questions with no AI (Randall 13 Nov): answer-search.js and answer-run.js in the Collection engine, against
+ * the live card, set, tournament and wiki services. Any call to /api/ai fails the test.
+ */
+class AnswerEngineTest {
+    private val bundle = File(System.getProperty("repoRoot"), "android-app/native/app/src/main/assets/collection-engine.js")
+    private fun JsonObject.s(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
+    private fun JsonObject.o(k: String) = get(k)?.takeIf { it.isJsonObject }?.asJsonObject
+    private fun JsonObject.list(k: String) = getAsJsonArray(k)?.map { it.asJsonObject }.orEmpty()
+
+    @Test fun questionsAreAnsweredFromTheAppsOwnData() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.store = CollectionEngine.MemoryStore()
+        CollectionEngine.initFrom(bundle); CollectionEngine.restart()
+        CollectionEngine.load(JsonObject(), null)
+        var ai = 0
+        CollectionEngine.answerForTest = { url -> if (url.contains("/api/ai/")) { ai++; 500 to "{}" } else null }
+        try {
+            suspend fun ask(q: String, opts: JsonObject = JsonObject(), game: String = "mtg") = CollectionEngine.searchAnswer(game, q, opts, 60_000).also { println("ANSWER[$q] ${it.toString().take(1800)}") }
+
+            // Randall's first example: the tournament decks, the format read from the words, the chip offering the other formats.
+            var m = ask("whats the best deck out right now in meta")!!
+            var a = m.o("answer")!!
+            assertTrue(a["ok"].asBoolean); assertTrue(a.s("strong").isNotBlank()); assertTrue(a.s("say"), a.s("say").contains("most played Standard deck"))
+            assertEquals(listOf("game", "format"), m.list("read").take(2).map { it.s("kind") })
+            assertTrue(m.list("read")[1].getAsJsonArray("choices").any { it.asString == "Modern" })
+            val deck = a.list("items").single()
+            assertEquals("meta", deck.o("show")!!.s("kind"))
+            assertEquals("show", a.list("buttons")[0].o("dest")!!.s("to"))
+            // The tile opens the tournament deck's own sheet.
+            assertEquals("meta", CollectionEngine.askShow(deck.o("show")!!)!!.s("to"))
+            // A tapped chip: the same words, another format.
+            m = ask("whats the best deck out right now in meta", JsonObject().apply { add("fix", JsonObject().apply { addProperty("format", "Modern") }) })!!
+            assertTrue(m.o("answer")!!.s("say").contains("most played Modern deck"))
+
+            // His second: the set's prices, the set from the words; "this set" asks which when no set is open, and uses the open one.
+            m = ask("most expensive card in bloomburrow")!!; a = m.o("answer")!!
+            assertTrue(a.s("say"), Regex("""is the most expensive card in Bloomburrow at \$\d+\.\d\d\.""").matches(a.s("say")))
+            val card = a.list("items").single()
+            assertTrue(card.s("art").startsWith("https://")); assertTrue(card.s("price").startsWith("$"))
+            assertEquals("card", CollectionEngine.askShow(card.o("show")!!)!!.s("to"))
+            assertEquals(2, a.list("more").size)
+            m = ask("what is the most expensive card in this set")!!
+            assertEquals("Which set?", m.o("answer")!!.o("ask")!!.s("ask"))
+            m = ask("what is the most expensive card in this set", JsonObject().apply { add("set", JsonObject().apply { addProperty("id", "blb"); addProperty("code", "blb"); addProperty("name", "Bloomburrow") }) })!!
+            assertTrue(m.o("answer")!!.s("say").contains("Bloomburrow"))
+
+            // The wiki's fact box.
+            m = ask("who won magic's tournament in 1999")!!; a = m.o("answer")!!
+            assertEquals("1999 World Championships", a.s("strong")); assertEquals("Winner", a.o("fact")!!.s("label")); assertTrue(a.o("fact")!!.s("value").contains("Kai Budde"))
+            assertEquals("wiki", a.list("buttons")[0].o("dest")!!.s("to")); assertEquals("1999 World Championships", a.list("buttons")[0].o("dest")!!.s("topic"))
+
+            // A keyword from the app's own rules book; prices; artists; filters; actions.
+            a = ask("what does ward do")!!.o("answer")!!
+            assertEquals("Ward", a.s("strong")); assertTrue(a.s("quote").contains("unless that player pays")); assertEquals("judge", a.list("buttons").last().o("dest")!!.s("to"))
+            a = ask("how much is lightning bolt")!!.o("answer")!!
+            assertEquals("Lightning Bolt", a.s("strong")); assertTrue(a.s("say"), a.s("say").startsWith("is $"))
+            a = ask("cards by rebecca guay")!!.o("answer")!!
+            assertTrue(a.list("items").isNotEmpty()); assertEquals("a:\"rebecca guay\"", a.list("buttons")[0].o("dest")!!.s("q"))
+            a = ask("cheapest red dragon legal in standard")!!.o("answer")!!
+            val go = a.list("buttons")[0].o("dest")!!
+            assertEquals("search", go.s("to")); assertEquals("c:r t:dragon f:standard", go.s("q")); assertEquals("usdAsc", go.s("sort"))
+            // "See them all in Search": the Search page takes the words and the sort.
+            CollectionEngine.searchAnswerSearch(go.s("q"), go.s("sort")); CollectionEngine.settle(60_000)
+            val page = CollectionEngine.searchModel()
+            assertEquals("c:r t:dragon f:standard", page.s("term"))
+            assertTrue(page.getAsJsonArray("blocks").map { it.asJsonObject }.first { it.s("kind") == "tiles" }.getAsJsonArray("tiles").size() >= 3)
+            a = ask("scan a card")!!.o("answer")!!
+            assertEquals("#scan", a.list("buttons")[0].o("dest")!!.s("hash"))
+            a = ask("best pokemon deck")!!.o("answer")!!
+            assertTrue(a.toString(), a["ok"].asBoolean)
+
+            // What the app's data can't answer is said plainly; a card name gets no answer card.
+            a = ask("is blue better than red")!!.o("answer")!!
+            assertFalse(a["ok"].asBoolean); assertTrue(a.s("miss").isNotBlank())
+            assertNull(ask("lightning bolt")); assertNull(ask(""))
+            assertEquals("no AI was asked", 0, ai)
+        } finally { CollectionEngine.answerForTest = null }
+    }
+}
