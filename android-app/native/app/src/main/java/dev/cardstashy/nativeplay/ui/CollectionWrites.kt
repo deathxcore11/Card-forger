@@ -165,6 +165,16 @@ internal object CollectionWrites {
      */
     data class DeckPick(val game: String, val name: String, val closeAll: () -> Unit, val go: (String) -> Unit, val id: Long = System.nanoTime())
     val picking = MutableStateFlow<DeckPick?>(null)
+    /** pricehist.js alertSheet (app.js A.priceAlert) for card [cardId] of [game]; [saved] redraws the page that opened it. */
+    data class AlertOpen(val game: String, val cardId: String, val name: String, val saved: () -> Unit = {}, val id: Long = System.nanoTime())
+    val alerting = MutableStateFlow<AlertOpen?>(null)
+    /** Counts alert saves and removals: the Value tab's alert list reads again. */
+    val alertsChanged = MutableStateFlow(0)
+    /** A tap with the site's data-act="priceAlert" dataset (game, id, name). */
+    fun openAlert(d: Map<String, String>, saved: () -> Unit = {}) {
+        val g = d["game"].orEmpty(); val id = d["id"].orEmpty(); if (g.isBlank() || id.isBlank()) return
+        alerting.value = AlertOpen(g, id, d["name"].orEmpty().ifBlank { "This card" }, saved)
+    }
     /** The picker's decks from this device's collection: {decks: [[id, name]], selected}. Null (with a toast) when it can't open. */
     suspend fun deckPickModel(context: Context, game: String): JsonObject? {
         val s = Account.session.value ?: return null.also { show("Sign in to save cards to your collection.") }

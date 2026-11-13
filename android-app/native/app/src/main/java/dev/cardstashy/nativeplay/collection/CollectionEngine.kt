@@ -125,6 +125,8 @@ object CollectionEngine {
         while (true) { val a = answers.poll() ?: break; landed = true; q.evaluate("__host.answer(${a.first}, ${a.second}, ${str(a.third.first)}, ${str(a.third.second)})") }
         val p = JsonParser.parseString(q.evaluate("__host.pump(${System.currentTimeMillis()})") as String).asJsonObject
         for (x in p.getAsJsonArray("requests")) send(x.asJsonObject)
+        // Price alerts a price seen in this turn set off (app.js onAlert): their lines for the app's toast.
+        p.getAsJsonArray("alerts")?.forEach { a -> runCatching { alertsFired.tryEmit(a.asJsonObject) } }
         p.getAsJsonObject("stored")?.entrySet()?.forEach { (k, v) -> runCatching { store.save(k, v.takeIf { it.isJsonPrimitive }?.asString) } }
         p to after(q, p, landed)
     }
@@ -408,6 +410,20 @@ object CollectionEngine {
     /** What the search's handlers said (toast), once. */
     suspend fun searchToasts(): List<String> = on { q -> JsonParser.parseString(q.evaluate("Collection.searchToasts()") as String).asJsonArray.map { it.asString } }
     /** The saved searches (tcg.js savedSearches' device storage, every game), to keep and to put back. */
+    // ---- Price alerts (pricehist.js; the engine's Collection.alert*) ----
+    /** Each alert a price seen in the engine set off: {game, id, name, usd, text} (pricehist.js alertText). */
+    val alertsFired = kotlinx.coroutines.flow.MutableSharedFlow<JsonObject>(extraBufferCapacity = 16)
+    /** Whose alerts the site's code reads and writes: the signed-in account, or "guest". */
+    suspend fun alertOwner(user: String?) = on { q -> q.evaluate("Collection.alertOwner(${str(user ?: "guest")})"); Unit }
+    /** The alert sheet for one card: {name, price, exists, below, above, hintBelow, hintAbove, series}. */
+    suspend fun alertOpen(game: String, id: String, name: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.alertOpen(${str(game)}, ${str(id)}, ${str(name)})") as String).asJsonObject }
+    /** Save Alert with the two fields as typed: {error} or {ok, toast}. A turn follows so the list reaches the device's storage. */
+    suspend fun alertSave(game: String, id: String, name: String, below: String, above: String): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.alertSave(${str(game)}, ${str(id)}, ${str(name)}, ${str(below)}, ${str(above)})") as String).asJsonObject }.also { turn { _, _, _ -> } }
+    suspend fun alertClear(game: String, id: String): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.alertClear(${str(game)}, ${str(id)})") as String).asJsonObject }.also { turn { _, _, _ -> } }
+    /** This account's alerts: [{game, id, name, below, above, created, firedAt}]. */
+    suspend fun alertList(): com.google.gson.JsonArray = on { q -> JsonParser.parseString(q.evaluate("Collection.alertList()") as String).asJsonObject.getAsJsonArray("alerts") }
     suspend fun searchSaved(): String = on { q -> q.evaluate("Collection.searchSaved()") as String }
     suspend fun searchSavedSet(raw: String) = on { q -> q.evaluate("Collection.searchSavedSet(${str(raw)})"); Unit }
     /** suggest.js under the search box: start it for [text] (empty: the recent searches at once); pump with [settle] on [SUGGEST_MODEL]. */

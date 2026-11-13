@@ -111,6 +111,10 @@ fun CollectionWritesHost(backdrop: androidx.compose.ui.graphics.layer.GraphicsLa
     adding?.let { a -> key(a.id) { AddLotSheet(a, backdrop, onClose = { if (CollectionWrites.adding.value === a) CollectionWrites.adding.value = null }) } }
     val tAdding by CollectionWrites.tAdding.collectAsState()
     tAdding?.let { a -> key(a.id) { TcgAddSheet(a, backdrop, onClose = { if (CollectionWrites.tAdding.value === a) CollectionWrites.tAdding.value = null }) } }
+    val alerting by CollectionWrites.alerting.collectAsState()
+    alerting?.let { a -> key(a.id) { GameAccent(a.game) { PriceAlertSheet(a, backdrop, onClose = { if (CollectionWrites.alerting.value === a) CollectionWrites.alerting.value = null }) } } }
+    // app.js onAlert: an alert a price seen now set off, as the site's toast (pricehist.js alertText).
+    LaunchedEffect(Unit) { dev.cardstashy.nativeplay.collection.CollectionEngine.alertsFired.collect { f -> f.get("text")?.asString?.let { CollectionWrites.show(it) } } }
     val picking by CollectionWrites.picking.collectAsState()
     picking?.let { pk -> key(pk.id) { DeckPickSheet(pk, backdrop, onBack = { if (CollectionWrites.picking.value === pk) CollectionWrites.picking.value = null }) } }
     val building by CollectionWrites.building.collectAsState()

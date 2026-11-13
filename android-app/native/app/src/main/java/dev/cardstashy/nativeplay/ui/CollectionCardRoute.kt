@@ -129,6 +129,8 @@ private fun CardHostBody(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen)
                 CollectionWrites.picking.value = CollectionWrites.DeckPick("mtg", d.getValue("name"), closeAll = onClose, go = { to -> web("https://cardstashy.com/$to", null) })
             // pricing-presentation.js's Add to collection (A.own): the add sheet with this printing, saved here.
             p.act == "own" && !d["name"].isNullOrBlank() -> CollectionWrites.openAdd(JsonObject().apply { addProperty("own", d.getValue("name")); addProperty("fromCard", true) })
+            // pricehist.js "Set a price alert" / "Price alert active · edit" (A.priceAlert): the app's alert sheet, the page again after.
+            p.act == "priceAlert" -> CollectionWrites.openAlert(d) { scope.launch { CollectionEngine.cardModel().takeIf { it.size() > 0 }?.let { model = CollectionCardModel.parse(it) } } }
             p.act == "buyBack" || p.act == "buyCompare" -> asked = p.act to ""
             p.act == "magicVersionsMore" -> asked = "more" to ""
             p.act == "flipFace" -> asked = "face" to ""
@@ -248,6 +250,7 @@ private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) 
             // pricing-presentation.js's Add to collection (A.tOwn): the site's add sheet over this page, saved here; the page shows the copies after.
             p.act == "tOwn" && v("id").isNotBlank() -> CollectionWrites.tAdding.value = CollectionWrites.TcgAddOpen(dataset(d).apply { addProperty("game", open.game) },
                 saved = { scope.launch { show(CollectionEngine.tcardModel()) } }, closeAll = onClose)
+            p.act == "priceAlert" -> CollectionWrites.openAlert(d) { scope.launch { show(CollectionEngine.tcardModel()) } }
             p.act == "go" && v("to").isNotBlank() -> web("https://cardstashy.com/" + v("to"), null)
             p.act == "cardTab" && v("tab") in setOf("overview", "meta", "guide", "prices", "rulings", "legal") -> asked = "tab" to v("tab")
             p.act == "cardFinishPreview" && v("finish").isNotBlank() -> asked = "finish" to v("finish")

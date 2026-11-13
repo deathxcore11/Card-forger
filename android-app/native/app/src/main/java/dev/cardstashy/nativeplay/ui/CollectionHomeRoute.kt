@@ -94,6 +94,7 @@ private suspend fun ensureLoaded(context: android.content.Context, userId: Strin
         if (!HomeCache.warm) CollectionEngine.tcgCacheLoad(withContext(Dispatchers.IO) { tcgCacheFile(context).takeIf { it.isFile }?.readText() })
         // Every deck's Power from the last visit (the site's own signature decides what is still current).
         if (!HomeCache.warm) CollectionEngine.powerLoad(withContext(Dispatchers.IO) { powerFile(context).takeIf { it.isFile }?.readText() })
+        CollectionEngine.alertOwner(userId.takeIf { signedIn })
         CollectionEngine.load(raw ?: "", catalog)
         HomeCache.loaded = key; HomeCache.warm = true
     }

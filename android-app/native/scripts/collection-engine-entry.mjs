@@ -41,6 +41,7 @@ import {configureConditionAuth, clearConditionAttempts, forgetConditionAttempt, 
 import {createConditionRefreshScheduler, changedConditionLots, conditionLotIdentity} from 'WEB/condition-refresh-scheduler.js';
 import {locationPicker, rememberLocation} from 'WEB/collection-locations.js';
 import {acquireMissing, parseDeckImport} from 'WEB/deck-flow.js';
+import {alerts as priceAlerts, alertFor, setAlert, onAlert, alertText, priceSeries} from 'WEB/pricehist.js';
 import {quoteModel, recordQuote, HISTORY_RANGES, modeFor, selectionState, registerWorkbench} from 'WEB/workbench-ui.js';
 import {setHistoryRefresh} from 'WEB/shared-history.js';
 import {loadSharedHistory} from 'WEB/shared-history.js';
@@ -124,17 +125,27 @@ import {Document as SiteDocument, Event as SiteEvent, serialize as domJson, byId
 // community-feed.js their last feed), so a launch shows them at once instead of after the network.
 const KEPT_KEYS = new Set(['cardforge-meta-v1', 'cardforge-precons-v1', 'cardforge-hero-v2', 'cardforge-pulse-v2', 'cardforge-community-v3']);
 // app.js A.openSetPack's today's-pack claim (cardstashy-today-pack:<game>:<date>:<id>): the Card of the Day comes once a day.
-const kept = k => KEPT_KEYS.has(k) || k.startsWith('cardstashy-today-pack:');
+// pricehist.js's price alerts (cardstashy-price-alerts-v1): the site keeps them per account (account-scope.js privateKey); the app
+// keeps one list per signed-in account the same way (Collection.alertOwner), under ALERTS::app:<account>, and on this device.
+const ALERTS = 'cardstashy-price-alerts-v1';
+let alertOwner = 'guest';
+const alertKey = k => (String(k) === ALERTS ? ALERTS + '::app:' + alertOwner : String(k));
+const kept = k => KEPT_KEYS.has(k) || k.startsWith('cardstashy-today-pack:') || k.startsWith(ALERTS + '::app:');
 const keptDirty = new Set();
-const keptStore = globalThis.localStorage, keptSet = keptStore.setItem, keptRemove = keptStore.removeItem;
-keptStore.setItem = (k, v) => { keptSet(k, v); if (kept(String(k))) keptDirty.add(String(k)); };
-keptStore.removeItem = k => { keptRemove(k); if (kept(String(k))) keptDirty.add(String(k)); };
+const keptStore = globalThis.localStorage, keptSet = keptStore.setItem, keptRemove = keptStore.removeItem, keptGet = keptStore.getItem;
+keptStore.getItem = k => keptGet.call(keptStore, alertKey(k));
+keptStore.setItem = (k, v) => { k = alertKey(k); keptSet.call(keptStore, k, v); if (kept(k)) keptDirty.add(k); };
+keptStore.removeItem = k => { k = alertKey(k); keptRemove.call(keptStore, k); if (kept(k)) keptDirty.add(k); };
+// app.js onAlert: an alert set off by a price seen now; the app shows alertText as its toast (each pump's "alerts").
+let alertsFired = [];
+onAlert(f => { alertsFired.push({game: f.game, id: f.id, name: f.name, usd: f.usd, text: alertText(f)}); });
 {
   const pump = globalThis.__host.pump;
   globalThis.__host.pump = now => {
-    const out = pump(now);
+    let out = pump(now);
+    if (alertsFired.length) { out = out.slice(0, -1) + ',"alerts":' + JSON.stringify(alertsFired) + '}'; alertsFired = []; }
     if (!keptDirty.size) return out;
-    const stored = {}; for (const k of keptDirty) stored[k] = keptStore.getItem(k); keptDirty.clear();
+    const stored = {}; for (const k of keptDirty) stored[k] = keptGet.call(keptStore, k); keptDirty.clear();
     return out.slice(0, -1) + ',"stored":' + JSON.stringify(stored) + '}';
   };
 }
@@ -5533,6 +5544,35 @@ function seedPickModel(G) {
 }
 
 globalThis.Collection = {
+  // ---- Price alerts (pricehist.js, app.js A.priceAlert / priceAlertSave / priceAlertClear) ----
+  // The signed-in account whose alerts the site's code reads and writes ('guest' signed out).
+  alertOwner(user) { alertOwner = String(user || 'guest'); return '{}'; },
+  // pricehist.js alertSheet's model for card [id] of game [g]: the price now as A.priceAlert finds it (the card's price history,
+  // else its quote), the two numbers the sheet's fields start with (an alert's own, else 15 % under and 25 % over), and the card's
+  // price history series for the line.
+  alertOpen(g, id, name) {
+    id = String(id || '');
+    let value = priceSeries(g, id).at(-1)?.[1] ?? null;
+    if (value == null) try { const card = g === 'mtg' ? meta(name) : tcgCardOf(g, id.split('|')[0]), finish = id.split('|')[1] || (g === 'mtg' ? 'nonfoil' : 'reference');
+      value = quoteModel(g, card, finish)?.value ?? null; } catch {}
+    const a = alertFor(g, id), fill = (own, f) => (a ? (own ?? '') : value != null ? (value * f).toFixed(2) : '');
+    return json({game: g, id, name: name || 'This card', price: value, exists: !!a, below: String(fill(a?.below, .85)), above: String(fill(a?.above, 1.25)),
+      hintBelow: value != null ? (value * .85).toFixed(2) : 'e.g. 5.00', hintAbove: value != null ? (value * 1.25).toFixed(2) : 'e.g. 20.00',
+      series: priceSeries(g, id)});
+  },
+  // A.priceAlertSave with the two fields' text: its error line, or the alert saved and its toast.
+  alertSave(g, id, name, belowText, aboveText) {
+    const num = (x) => (x === "" || x == null || !(Number(x) > 0) || !Number.isFinite(Number(x)) ? null : Math.round(Number(x) * 100) / 100),
+      below = num(belowText), above = num(aboveText);
+    if (below == null && above == null) return json({error: "Enter a price above $0 in either field."});
+    if (below != null && above != null && below >= above) return json({error: "The lower price must be less than the upper price."});
+    setAlert(g, String(id), name, {below, above});
+    return json({ok: true, toast: "Alert saved. Checked while you use the app; no background monitoring."});
+  },
+  // A.priceAlertClear.
+  alertClear(g, id) { setAlert(g, String(id), "", {}); return json({ok: true, toast: "Alert removed."}); },
+  // Every alert of this account (the daily check's list).
+  alertList() { return json({alerts: priceAlerts()}); },
   // What the app kept of the site's browser storage (KEPT_KEYS), put back when the bundle starts.
   storeLoad(keptJson) { const o = keptJson ? JSON.parse(keptJson) : {}; for (const [k, v] of Object.entries(o)) if (kept(k) && typeof v === 'string') keptSet(k, v); },
   // The account's workspace row data (cloud.js), normalized as app.js loads it; [catalogJson] is the app's saved catalog.
