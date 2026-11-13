@@ -187,7 +187,7 @@ internal object CollectionWrites {
     data class AskOpen(val game: String, val prefill: String = "", val go: (com.google.gson.JsonObject) -> Unit = {}, val draft: String = "",
                        val web: (url: String, press: String?) -> Unit = { _, _ -> }, val id: Long = System.nanoTime())
     val asking = MutableStateFlow<AskOpen?>(null)
-    /** Ask a Judge (app.js A.askRules, ai-rules.js openRulesAsk) with the site's [context]: {game, format, cards, references}. */
+    /** Ask a Judge (app.js A.askRules, judge-ui.js openJudge; no AI) with the site's [context]: {game, format, cards, question}. */
     data class JudgeOpen(val context: com.google.gson.JsonObject, val game: String, val id: Long = System.nanoTime())
     val judging = MutableStateFlow<JudgeOpen?>(null)
     /** Opens Ask a Judge from a press's context: the engine's (a panel's askRules, its data's judge) or just the game and format. */

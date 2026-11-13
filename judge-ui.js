@@ -7,7 +7,8 @@ import { PTCG_GLOSSARY, YGO_GLOSSARY } from './game-glossary-data.js';
 import { openRuleReference, closeRuleReference, attachRuleLearning } from './rule-learning.js';
 
 const NAMES = { mtg: 'Magic', ptcg: 'Pokémon', ygo: 'Yu-Gi-Oh!' };
-export const JUDGE_EXAMPLES = { mtg: ['Can a creature attack the turn it enters?', 'Does deathtouch work with trample?', 'Does lifelink stack?', 'Can I respond to a land being played?'], ptcg: ['Can I attack on my first turn?', 'When can I evolve a Pokémon?', 'What does Poisoned do?'], ygo: ['Can I attack on the first turn?', 'How do Chains work?', 'What is a Quick Effect?'] };
+import { JUDGE_EXAMPLES } from './judge-examples.js';
+export { JUDGE_EXAMPLES };
 const GLOSSARY = { ptcg: PTCG_GLOSSARY, ygo: YGO_GLOSSARY };
 const MONTHS = ['Jan.', 'Feb.', 'March', 'April', 'May', 'June', 'July', 'Aug.', 'Sept.', 'Oct.', 'Nov.', 'Dec.'];
 const dated = v => { const m = String(v || '').match(/^(\d{4})-(\d{2})(?:-(\d{2}))?/); return m ? `${MONTHS[+m[2] - 1]}${m[3] ? ' ' + +m[3] + ',' : ''} ${m[1]}` : String(v || ''); };
@@ -25,7 +26,7 @@ export function judgeAnswerHtml(answer, index = 0) {
   const cards = (answer.cards || []).filter(c => c.text || c.rulings.length).map(c => `<div class="judge-card"><b>${esc(c.name)}</b>${c.text ? `<p class="judge-card-text">${esc(c.text)}</p>` : ''}${c.rulings.map(r => `<p class="judge-ruling"><small>Official ruling${r.date ? ' · ' + esc(dated(r.date)) : ''}</small>${esc(r.text)}</p>`).join('')}${!c.rulings.length && c.rulingCount ? `<p class="foot">This card has ${c.rulingCount} official ruling${c.rulingCount === 1 ? '' : 's'}; none match these words.</p>` : ''}</div>`).join('');
   if (answer.status === 'none' && !cards) return `<article class="judge-answer judge-miss"><h3>That isn’t in the rulebook</h3><p>I only answer from the rules. Try naming a keyword, a step of the turn, or what happened at the table.</p><div class="judge-try">${(JUDGE_EXAMPLES[game] || []).slice(0, 2).map(q => `<button type="button" data-judge-example="${esc(q)}">${esc(q)}</button>`).join('')}</div></article>`;
   const read = answer.read.length ? `<p class="judge-read">Read as ${answer.read.map(x => `<span class="chip">${esc(x)}</span>`).join('')}</p>` : '';
-  const rules = [answer.lead, ...answer.rules].filter(Boolean).slice(0, 4), sure = answer.status === 'answered', cardBlock = cards ? '<p class="judge-label">Cards you named</p>' + cards : '';
+  const rules = [answer.lead, ...answer.rules].filter(Boolean).slice(0, 3), sure = answer.status === 'answered', cardBlock = cards ? '<p class="judge-label">Cards you named</p>' + cards : '';
   const terms = (answer.terms || []).map(t => `<p class="judge-term"><b>${esc(t.label)}</b> ${esc(t.def)}${(t.points || []).map(p => ' ' + esc(p)).join('')}${t.ours ? ' <small>CardStashy note</small>' : ''}</p>`).join('');
   return `<article class="judge-answer">${read}${cardBlock}${!sure && rules.length ? `<p class="judge-label">${cards ? 'Rules for what these cards do' : 'Closest rules I found'}</p>` : ''}${rules.map((r, n) => (n === 1 && sure ? '<p class="judge-label">Goes with it</p>' : '') + ruleHtml(game, r, index + ':' + n, n === 0 && sure)).join('')}${terms}<p class="foot judge-foot">${edition}At an event, the judge there has the final say.</p></article>`;
 }

@@ -31,6 +31,8 @@ done
 cp "$HERE"/sfx/*.ogg "$A/sfx/"
 python3 "$HERE/scripts/fetch-art.py" "$HERE/decks/demo-decks.json" "$A/cards"
 cp "$HERE/decks/demo-decks.json" "$A/"
+# Ask a Judge reads these inside the app (no network): the three rulebooks with their manifest, and the card-name list.
+mkdir -p "$A/rulebooks" && cp "$REPO"/rulebooks/manifest.json "$REPO"/rulebooks/*-rules-v*.json.gz "$REPO"/forge-card-names-*.txt "$A/rulebooks/"
 # The web's Play rule data (achievements, quests, Story acts, CPU levels, playmats), from its own modules.
 node "$HERE/scripts/export-play-rules.mjs" "$REPO" "$A/play-rules.json"
 node "$HERE/scripts/export-board-icons.mjs" "$REPO" "$A/board-icons.json"

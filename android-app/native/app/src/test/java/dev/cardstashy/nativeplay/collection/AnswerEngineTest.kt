@@ -37,7 +37,7 @@ class AnswerEngineTest {
                 for (t in a.list("items") + a.list("more")) t.s("art").takeIf { it.startsWith("https://") }?.let { u -> val f = File(out, sha1(u) + ".jpg")
                     if (!f.exists()) runCatching { f.writeBytes(java.net.URI(u).toURL().openStream().use { it.readBytes() }) }.onFailure { println("ART MISSING $u") } } }
             val names = mapOf("whats the best deck out right now in meta" to "meta", "most expensive card in bloomburrow" to "set", "who won magic's tournament in 1999" to "wiki",
-                "what does ward do" to "keyword", "cheapest red dragon legal in standard" to "filter", "is blue better than red" to "miss", "what is the most expensive card in this set" to "which")
+                "what does ward do" to "keyword", "cheapest red dragon legal in standard" to "filter", "is blue better than red" to "miss", "can a creature attack the turn it enters" to "rule", "what is the most expensive card in this set" to "which")
             suspend fun ask(q: String, opts: JsonObject = JsonObject(), game: String = "mtg") = CollectionEngine.searchAnswer(game, q, opts, 60_000).also { println("ANSWER[$q] ${it.toString().take(1800)}")
                 if (opts.size() == 0) names[q]?.let { n -> keep(n, it) } }
             // A hand-typed search line and a card name are not questions; a question is.
@@ -103,6 +103,11 @@ class AnswerEngineTest {
             // What the app's data can't answer is said plainly; a card name gets no answer card.
             a = ask("is blue better than red")!!.o("answer")!!
             assertFalse(a["ok"].asBoolean); assertTrue(a.s("miss").isNotBlank())
+            // A rules question typed in the search box: the rule that covers it, quoted from the rulebook, with the Judge one tap away.
+            a = ask("can a creature attack the turn it enters")!!.o("answer")!!
+            assertTrue(a.toString(), a["ok"].asBoolean); assertEquals("Rule 302.6", a.s("strong")); assertTrue(a.s("quote").contains("can’t attack unless"))
+            assertEquals("judge", a.list("buttons")[0].o("dest")!!.s("to")); assertEquals("can a creature attack the turn it enters", a.list("buttons")[0].o("dest")!!.s("text"))
+            assertEquals("answer", CollectionEngine.searchAsks("mtg", "can a creature attack the turn it enters"))
             assertNull(ask("lightning bolt")); assertNull(ask(""))
             assertEquals("no AI was asked", 0, ai)
         } finally { CollectionEngine.answerForTest = null }

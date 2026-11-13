@@ -131,10 +131,15 @@ const headingFor = (index, id) => { const m = id.match(/^(\d{3})(?:\.(\d+))?/); 
 // The sentences of a long rulebook page that carry the words asked, in page order.
 function bestSentences(text, qWords, max = 520) {
   const flat = text.replace(/\s*\n\s*/g, ' ').replace(/^THE POK[ÉE]MON TRADING CARD GAME: WEB RULEBOOK \| \d{4} \d+\s*/, '').trim(); if (flat.length <= max) return flat;
-  const parts = flat.match(/[^.!?]+[.!?]+(?:[”"')]+)?\s*/g) || [flat], sets = parts.map(t => new Set(words(t))), rare = new Map(qWords.map(x => [x, 1 / Math.max(1, sets.filter(w => w.has(x)).length)])), scored = parts.map((t, i) => ({ t, i, s: qWords.reduce((n, x) => n + (sets[i].has(x) ? rare.get(x) : 0), 0) }));
-  let best = 0, top = -1; for (let i = 0; i < scored.length; i++) { let n = 0, len = 0; for (let k = i; k < scored.length && len + scored[k].t.length <= max; k++) { n += scored[k].s; len += scored[k].t.length; } if (n > top) { top = n; best = i; } }
-  let out = '', k = best; while (k < scored.length && out.length + scored[k].t.length <= max) out += scored[k++].t;
-  return (best ? '… ' : '') + (out || flat.slice(0, max)).trim() + (k < scored.length ? ' …' : '');
+  // A sentence ends at . ! ? (and a closing quote or bracket) before a space and a capital; "rule 702.19b" and "e.g." do not end one.
+  const parts = []; let from = 0;
+  for (const m of flat.matchAll(/[.!?][”"')]*\s+(?=[A-Z“(\d])/g)) { const end = m.index + m[0].length; if (/\b(?:e\.g|i\.e|vs|etc)\.\s*$/i.test(flat.slice(from, end))) continue; parts.push(flat.slice(from, end)); from = end; }
+  if (from < flat.length) parts.push(flat.slice(from));
+  const sets = parts.map(t => new Set(words(t))), rare = new Map(qWords.map(x => [x, 1 / Math.max(1, sets.filter(w => w.has(x)).length)])), scored = parts.map((t, i) => ({ t, i, s: qWords.reduce((n, x) => n + (sets[i].has(x) ? rare.get(x) : 0), 0) }));
+  // The best run of whole sentences that fits; one sentence longer than the room is still shown whole (up to twice the room).
+  let best = 0, top = -1; for (let i = 0; i < scored.length; i++) { let n = 0, len = 0; for (let k = i; k < scored.length && (k === i || len + scored[k].t.length <= max); k++) { n += scored[k].s; len += scored[k].t.length; } if (n > top) { top = n; best = i; } }
+  let out = scored[best].t.length > max * 2 ? scored[best].t.slice(0, max * 2).replace(/\s+\S*$/, '') + ' ' : scored[best].t, k = best + 1; while (k < scored.length && out.length + scored[k].t.length <= max) out += scored[k++].t;
+  return (best ? '… ' : '') + out.trim() + (k < scored.length || out.length < scored[best].t.length ? ' …' : '');
 }
 export function judgeAnswer(pack, question, { format = '', cards = [], glossary = [], limit = 5 } = {}) {
   const index = judgeIndex(pack), q = norm(question), qWords = words(question).filter(w => !STOP.has(w));
@@ -173,13 +178,13 @@ export function judgeAnswer(pack, question, { format = '', cards = [], glossary 
   const all = [...terms, ...cardTerms];
   if (all.length > 1) for (const r of index.rows) { const n = all.filter(c => mentions(index, c).has(r.id) || c.sections.some(s => inSection(r.id, s))).length, direct = terms.filter(c => mentions(index, c).has(r.id) || c.sections.some(s => inSection(r.id, s))).length; if (n > 1 && direct) bump(r.id, 38 * (n - 1) + (direct > 1 ? 30 : 0), 'covers ' + all.filter(c => mentions(index, c).has(r.id) || c.sections.some(s => inSection(r.id, s))).map(c => c.label).join(' and ')); }
   // Two keyword sections rarely name each other; the rulebook term they share (lethal damage, combat damage step) joins them.
-  const withSections = terms.filter(c => c.sections.length);
+  const withSections = terms.filter(c => c.sections.length), bridged = [];
   if (withSections.length > 1) {
     const sectionRows = withSections.map(c => index.rows.filter(r => !r.heading && c.sections.some(s => inSection(r.id, s))));
     for (const bridge of index.concepts.values()) {
       if (bridge.n < 2 || all.some(c => c.key === bridge.key)) continue;
       const phrase = phraseOf(bridge), per = sectionRows.map(list => list.filter(r => r.low.includes(phrase)));
-      if (per.filter(list => list.length).length > 1) per.flat().forEach(r => bump(r.id, 46, 'both ' + withSections.map(c => c.label).join(' and ') + ' turn on ' + phrase));
+      if (per.filter(list => list.length).length > 1) bridged.push(...words(phrase)), per.flat().forEach(r => bump(r.id, 46, 'both ' + withSections.map(c => c.label).join(' and ') + ' turn on ' + phrase));
     }
   }
   // 5. "Does it stack?": the rule about several instances of that keyword.
@@ -197,8 +202,8 @@ export function judgeAnswer(pack, question, { format = '', cards = [], glossary 
   if (!rules.length) { try { rules = retrieveRules(pack, question, { format, limit }).filter(p => { const rw = new Set(words(p.text)); return !/^glossary|contents/i.test(p.reference?.entryId || '') && (p.score >= 30 || (qWords.length > 1 && qWords.filter(w => rw.has(w)).length / qWords.length >= 0.75)); }).slice(0, limit).map(p => ({ id: normalizeRuleId(p.reference.entryId), number: String(p.reference.entryId).replace(/\.$/, ''), reference: p.reference, source: p.source, text: pack.game === 'mtg' ? p.text.replace(/^\d{3}\.\d*[a-z]?\.?\s*/, '').replace(/\s*\n\s*/g, ' ').trim() : bestSentences(p.text, qWords), heading: pack.game === 'mtg' ? '' : p.title, why: p.score >= 30 ? 'topic' : 'matching words' })); } catch { rules = []; } status = rules.length ? (rules[0].why === 'topic' ? 'answered' : 'related') : 'none'; }
   for (const r of rules) if (pack.game === 'mtg') r.heading = headingFor(index, r.id);
   // A long rule keeps its whole text, plus the sentences that carry the words asked so a small screen can lead with them.
-  const focusWords = [...new Set([...qWords, ...terms.flatMap(t => t.key.split(' ')), ...said.flatMap(x => words(x))])];
-  for (const r of rules) if (pack.game === 'mtg' && r.text.length > 300) r.focus = bestSentences(r.text.split(/\s+Example:/)[0], focusWords, 260);
+  const focusWords = [...new Set([...qWords, ...bridged, ...terms.flatMap(t => t.key.split(' ')), ...said.flatMap(x => words(x))])];
+  for (const r of rules) if (pack.game === 'mtg' && r.text.length > 400) r.focus = bestSentences(r.text.split(/\s+Example:/)[0], focusWords, 360);
   const definitions = terms.filter(t => t.def).slice(0, 3).map(t => ({ label: t.label, def: t.def }));
   // Pokémon and Yu-Gi-Oh! have no rulebook glossary: the app's own reviewed term notes stand in, marked as ours.
   for (const [, label, , aliases, summary, points] of glossary) { if (definitions.length >= 3) break; if ([label, ...(aliases || [])].some(a => new RegExp('(?:^|[^a-z])' + norm(a).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:s|es|ed|ing)?(?![a-z])').test(q))) { definitions.push({ label, def: summary, points: points || [], ours: true }); read.push(label); } }

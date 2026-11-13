@@ -193,6 +193,7 @@ const ASSETS = [
 
   "./ai-ask.js", "./ask-navigation.js",
   "./judge-ui.js",
+  "./judge-examples.js",
   "./judge-search.js",
   "./rules-retrieval.js",
   "./ai-rules-panel.js",

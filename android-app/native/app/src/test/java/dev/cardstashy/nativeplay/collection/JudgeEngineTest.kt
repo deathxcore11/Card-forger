@@ -1,7 +1,6 @@
 package dev.cardstashy.nativeplay.collection
 
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -11,90 +10,72 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Gap audit H4 step 1: Ask a Judge runs the site's own ai-rules.js in the Collection engine. The rules server (/api/ai/ask) is stood
- * in for here with one answer of each kind; the site's check of every answer (validateRulesResponse) and the rulebook are real.
+ * Ask a Judge without AI: the Collection engine answers a rules question from the rulebook shipped inside the app (judge-search.js).
+ * The network is refused for the whole test, so every answer here is an offline answer; no AI service is ever asked.
  */
 class JudgeEngineTest {
-    private val bundle = File(System.getProperty("repoRoot"), "android-app/native/app/src/main/assets/collection-engine.js")
-    private val mtg = "c7f3846b799a29021d011421770f5383ffa9283421b4fdf1efb57609b10c11c6"
-
-    private fun section(text: String, vararg ids: String) = """{"text":${com.google.gson.JsonPrimitive(text)},"citationIds":[${ids.joinToString(",") { "\"$it\"" }}]}"""
-    private fun reply(format: String, status: String, short: String, cited: Boolean, questions: String = "[]") = """{"context":{"mode":"rules","game":"mtg","format":"$format","version":"$mtg"},
-        "answer":{"status":"$status","shortAnswer":${section(short, *(if (cited) arrayOf("mtg:0:702.9b") else arrayOf()))},
-        "explanation":[${if (cited) section("Only a creature with flying or reach can block it.", "mtg:0:702.9b") else section("")}],"example":${section("")},"details":[],
-        "questions":$questions,"limitations":["Comprehensive Rules only."],"disclaimer":"AI interpretation, not an official judge or guaranteed ruling.",
-        "citations":[${if (cited) """{"id":"mtg:0:702.9b","quote":"A creature with flying can’t be blocked except by creatures with flying and/or reach.","reference":{"kind":"bundled-entry","game":"mtg","version":"$mtg","doc":0,"entryId":"702.9b","label":"702.9b"}}""" else ""}]}}"""
-
+    private val repo = File(System.getProperty("repoRoot"))
+    private val bundle = File(repo, "android-app/native/app/src/main/assets/collection-engine.js")
     private fun lines(m: JsonObject) = m["lines"].asJsonArray.map { it.asJsonObject }
+    private fun rules(l: JsonObject) = l["rules"].asJsonArray.map { it.asJsonObject }
 
-    @Test fun formatFirstThenEachKindOfAnswer() { runBlocking {
+    @Test fun answersFromTheShippedRulebookWithNoNetwork() { runBlocking {
         assumeTrue(bundle.isFile)
         CollectionEngine.store = CollectionEngine.MemoryStore()
         CollectionEngine.initFrom(bundle); CollectionEngine.restart()
         CollectionEngine.load(JsonObject(), null)
-        CollectionEngine.auth("test-token")
-        val replies = ArrayDeque(listOf(
-            reply("Standard", "answered", "No. Only a creature with flying or reach can block it.", true),
-            reply("Standard", "needs_context", "Which blocker do you mean?", false, """["Does the blocker have reach?"]"""),
-            reply("Standard", "insufficient_evidence", "The indexed rules don't settle this.", false),
-            reply("Modern", "answered", "No.", true)))
-        val sent = mutableListOf<String>()
-        CollectionEngine.answerForTest = { url -> if (url.startsWith("https://cardstashy.com/api/ai/ask")) { sent += url; 200 to replies.removeFirst() } else null }
+        // What prepare-assets.sh ships under assets/rulebooks: the repo's rulebooks and the card-name list.
+        CollectionEngine.shipped = { name -> name.removePrefix("rulebooks/").let { f -> listOf(File(repo, "rulebooks/$f"), File(repo, f)).firstOrNull { it.isFile }?.readBytes() } }
+        val asked = mutableListOf<String>()
+        CollectionEngine.answerForTest = { url -> asked += url; 503 to "" }
         try {
             var m = CollectionEngine.judgeOpen(JsonObject().apply { addProperty("game", "mtg") })
-            println("OPEN $m")
-            assertEquals("AI rules guide · Magic", m["eyebrow"].asString)
+            assertEquals("Magic rulebook · offline", m["eyebrow"].asString)
             assertEquals("Ask a Judge", m["title"].asString)
-            assertEquals("Choose your format first", m["hello"].asString)
-            assertEquals("Choose a format before asking. Rules can differ between formats.", m["formatHint"].asString)
-            assertTrue(m["sendLocked"].asBoolean)
-            assertEquals(listOf("Can a creature attack the turn it enters?", "How does priority work?", "How do flying and reach interact?"), m["examples"].asJsonArray.map { it.asString })
-            assertTrue(m["formats"].asJsonArray.any { it.asJsonObject["value"].asString == "Standard" })
+            assertEquals("Can a creature attack the turn it enters?", m["examples"].asJsonArray[0].asString)
+            assertFalse(m.has("formats"))
 
-            // No format: nothing is sent, the site's line says why.
-            m = CollectionEngine.judgeSend("Can my bear block a flier?")
-            assertEquals("Choose a format before asking. Your question is still here.", m["status"].asString)
-            assertEquals(0, sent.size)
+            suspend fun ask(q: String): JsonObject { m = CollectionEngine.judgeSend(q); assertTrue(m["busy"].asBoolean); m = CollectionEngine.judgeWait(); assertFalse(m["busy"].asBoolean); return lines(m).last() }
 
-            m = CollectionEngine.judgeFormat("Standard")
-            assertEquals("Standard", m["format"].asString); assertFalse(m["sendLocked"].asBoolean); assertEquals("", m["formatHint"].asString)
-            assertEquals("What happened at the table?", m["hello"].asString)
+            var a = ask("can a creature attack the turn it enters")
+            println("JUDGE 1 $a")
+            assertEquals("judge", a["who"].asString); assertEquals("answered", a["status"].asString)
+            assertEquals(listOf("summoning sickness"), a["read"].asJsonArray.map { it.asString })
+            assertEquals("302.6", rules(a)[0]["number"].asString); assertEquals("Creatures", rules(a)[0]["heading"].asString); assertTrue(rules(a)[0]["lead"].asBoolean)
+            assertTrue(rules(a)[0]["text"].asString.contains("can’t attack unless it has been under its controller’s control continuously"))
+            assertEquals("bundled-entry", rules(a)[0]["reference"].asJsonObject["kind"].asString)
+            assertTrue(rules(a).any { it["heading"].asString == "Haste" })
+            assertTrue(a["foot"].asString.startsWith("Comprehensive Rules, Sept. 25, 2026."))
 
-            CollectionEngine.judgeSend("Can my bear block a flier?")
-            m = CollectionEngine.judgeWait(60_000)
-            println("ANSWERED $m")
-            var a = lines(m).last()
-            assertEquals("answered", a["status"].asString)
-            assertEquals("From the indexed rules · AI interpretation", a["source"].asString)
-            assertEquals("No. Only a creature with flying or reach can block it.", a["short"].asString)
-            val cite = a["citations"].asJsonArray.single().asJsonObject
-            assertTrue(cite["title"].asString.startsWith("702.9b"))
-            assertEquals("702.9b", cite["reference"].asJsonObject["entryId"].asString)
-            assertEquals("Rules explanation ready.", m["status"].asString)
+            a = ask("does deathtouch work with trample")
+            assertEquals(listOf("Deathtouch", "Trample"), a["read"].asJsonArray.map { it.asString })
+            assertEquals(listOf("702.2c", "702.19b"), rules(a).take(2).map { it["number"].asString })
+            assertTrue(rules(a)[1]["whole"].asString.length > rules(a)[1]["text"].asString.length)
 
-            CollectionEngine.judgeSend("What if it has reach?")
-            a = lines(CollectionEngine.judgeWait(60_000)).last()
-            assertEquals("needs_context", a["status"].asString); assertEquals("One detail first", a["source"].asString)
-            assertEquals(listOf("Does the blocker have reach?"), a["questions"].asJsonArray.map { it.asString })
+            a = ask("does lifelink stack")
+            assertEquals("Multiple instances of lifelink on the same object are redundant.", rules(a)[0]["text"].asString)
 
-            CollectionEngine.judgeSend("And with a hexproof flier?")
-            m = CollectionEngine.judgeWait(60_000)
-            a = lines(m).last()
-            assertEquals("insufficient_evidence", a["status"].asString); assertEquals("Evidence is limited", a["source"].asString)
+            a = ask("is blue better than red")
+            assertEquals("none", a["status"].asString); assertEquals("That isn’t in the rulebook", a["missTitle"].asString)
 
-            // An answer for another format is refused: no ruling is shown.
-            CollectionEngine.judgeSend("One more?")
-            m = CollectionEngine.judgeWait(60_000)
-            val e = lines(m).last()
-            assertEquals("error", e["who"].asString)
-            assertEquals("This answer did not match the selected game, format and source edition.", e["text"].asString)
-            assertEquals(8, lines(m).size)
-
-            // New chat starts over, format kept.
-            m = CollectionEngine.judgeNew()
-            assertEquals(0, lines(m).size); assertEquals("Standard", m["format"].asString)
+            // New: the questions are cleared, the Judge stays open.
+            // The chat as the app draws it (JudgeShotTest reads it back).
+            File(repo, "android-app/native/app/build/shot-art/home").apply { mkdirs() }.resolve("judge-chat.json").writeText(m.toString())
+            m = CollectionEngine.judgeNew(); assertEquals(0, lines(m).size); assertTrue(m["open"].asBoolean)
             CollectionEngine.judgeClose()
-            assertFalse(CollectionEngine.judgeModel()["open"].asBoolean)
-        } finally { CollectionEngine.answerForTest = null }
+
+            // Pokémon: the rulebook page cut to the sentences asked about, plus the app's own term note, marked as ours.
+            m = CollectionEngine.judgeOpen(JsonObject().apply { addProperty("game", "ptcg"); addProperty("question", "what does poisoned do") })
+            assertTrue(m["busy"].asBoolean); m = CollectionEngine.judgeWait()
+            a = lines(m).last()
+            println("JUDGE PTCG $a")
+            assertEquals("Page 16", rules(a)[0]["number"].asString); assertEquals("Pokémon rulebook", rules(a)[0]["heading"].asString)
+            assertTrue(rules(a)[0]["text"].asString.contains("During Pokémon Checkup, place a damage counter on your Poisoned Pokémon"))
+            assertTrue(a["terms"].asJsonArray[0].asJsonObject["ours"].asBoolean)
+            CollectionEngine.judgeClose()
+
+            assertTrue("no AI service is asked: $asked", asked.none { it.contains("/api/ai") })
+            assertTrue("the rulebook and names come from inside the app: $asked", asked.none { it.contains("/rulebooks/") || it.contains("forge-card-names") })
+        } finally { CollectionEngine.answerForTest = null; CollectionEngine.shipped = null }
     } }
 }

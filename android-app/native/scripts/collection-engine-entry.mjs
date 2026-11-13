@@ -111,7 +111,11 @@ import {answerFor} from 'WEB/answer-run.js';
 import {readGameWikiArticle} from 'WEB/mtg-wiki-client.js';
 import {configureAiAuth} from 'WEB/ai-auth.js';
 import {openAsk, ask as askSite, restartAsk, closeAsk} from './ai-ask-cut.mjs';
-import {openRulesAsk, askRules, restartRulesAsk, removeRulesCardContext, closeRulesAsk, rulesPage as judgePage, rulesSession as judgeSession} from './ai-rules-cut.mjs';
+import {judgeAnswer, findCardNames} from 'WEB/judge-search.js';
+import {loadRulePack} from 'WEB/rule-corpus.js';
+import {PTCG_GLOSSARY, YGO_GLOSSARY} from 'WEB/game-glossary-data.js';
+import {JUDGE_EXAMPLES} from 'WEB/judge-examples.js';
+import {ENGINE_CARD_NAMES_FILE} from 'WEB/play-engine-names.js';
 // mtg-tags.js loads its tags lazily, and Power is worked out without them until they arrive, then all over again (power.js's
 // signature carries mtgTagsReady()). The engine starts with the same file the site fetches, so each deck's Power is worked out
 // once, and the Power keep's entries from the last visit still match.
@@ -5735,7 +5739,7 @@ function answerStart(g0, q, o = {}) {
   (async () => {
     let {g, mtg, sets, plan} = answerPlan(g0, q, o);
     // A question about sets needs the set list: it is loaded once, then the words are read again.
-    if (!sets.length && (/\bset\b|\bsets\b|\bcome out\b|\bcame out\b|\breleased?\b|\bcards? in\b/i.test(q) || plan.intent === 'unknown')) {
+    if (!sets.length && (/\bset\b|\bsets\b|\bcome out\b|\bcame out\b|\breleased?\b|\bcards? in\b/i.test(q) || plan.intent === 'unknown' || plan.call?.pick === 'maybe')) {
       try { if (mtg) await loadSetIndex(); else await tcgCtx.loadSets(g); } catch {}
       if (my !== answerTicket) return;
       plan = answerPlan(g0, q, o).plan;
@@ -5746,6 +5750,8 @@ function answerStart(g0, q, o = {}) {
     try {
       if (plan.game !== 'mtg') askFocus(plan.game);
       a = await answerFor(plan, askTools(), {
+        // A rules question: the rulebook kept in the app, read by judge-search.js (no AI).
+        judge: async (game, question) => judgeAnswer(await loadRulePack(game), question, {glossary: game === 'ptcg' ? PTCG_GLOSSARY : game === 'ygo' ? YGO_GLOSSARY : []}),
         wikiArticle: async (game, title) => { const d = await readGameWikiArticle(game, title); return d?.status === 'available' ? d.article : null; },
         cardSearch: async ({game, q, order, dir, limit}) => {
           if (game !== 'mtg') return [];
@@ -5765,47 +5771,72 @@ function answerSearch(q, sort) {
   dbSearch().catch(e => toasts.push({text: e?.message || 'Search failed.', undo: false}));
   return {term: S.ui.db.term, filters: S.ui.db.filters};
 }
-// ---- Ask a Judge (gap audit H4): ai-rules.js whole (openRulesAsk, askRules, restartRulesAsk, removeRulesCardContext, closeRulesAsk;
-// ./ai-rules-cut.mjs, its own small page), posting to /api/ai/ask with the account's token (aiFetch) and checking each answer as the
-// site does (validateRulesResponse: the game, format and source edition must match, every citation must quote the bundled rulebook).
-// The chat is read back from the page the site writes and the open chat's record; a citation carries its exact rule reference.
-let judgeRun = null;
-const judgeNode = () => judgePage.body.querySelector('.rules-ask-dialog');
-function judgeModelOf() {
-  const node = judgeNode(), s = judgeSession(), txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
-  if (!node || !s) return {open: false};
-  const log = node.querySelector('.rules-ai-log'), empty = log.querySelector('.ask-empty'), sel = node.querySelector('[data-rules-format]');
-  const rows = log.querySelectorAll('.rules-ai-row');
-  const lines = s.entries.map((e, i) => {
-    if (e.kind === 'question') return {who: 'me', text: e.text};
-    if (e.kind === 'error') return {who: 'error', text: e.text, foot: txt(rows[i]?.querySelector('.foot'))};
-    const a = e.answer, row = rows[i], t = x => String(x?.text || '');
-    return {who: 'ai', status: a.status, source: txt(row?.querySelector('.ask-source')), short: t(a.shortAnswer), explanation: (a.explanation || []).map(t).filter(Boolean),
-      example: t(a.example), questions: (a.questions || []).map(String), details: (a.details || []).map(t).filter(Boolean),
-      citations: a.citations.map((c, n) => ({i, n, title: c.title, source: `${c.source?.title || ''} · ${c.source?.date || ''}${c.source?.legacy ? ' · legacy source' : ''}`, quote: c.quote, reference: c.reference})),
-      external: (a.externalReferences || []).map((r, n) => ({i, n, label: 'Open ' + (r.label || '') + ' →', reference: r})),
-      limits: (a.limitations || []).map(String), disclaimer: a.disclaimer || 'AI interpretation, not an official judge or guaranteed ruling.',
-      dropCards: !!row?.querySelector('[data-rules-drop-cards]')};
-  });
-  return {open: true, game: s.context.game, eyebrow: txt(node.querySelector('.ask-head .eyebrow')), title: txt(node.querySelector('#rules-ask-title')),
-    format: s.context.format, formatLabel: txt(node.querySelector('.rules-ai-format > span')),
-    formats: sel.querySelectorAll('option').filter(o => o.value).map(o => ({value: o.value, label: txt(o)})),
-    formatHint: node.querySelector('[data-rules-format-needed]')?.hidden ? '' : txt(node.querySelector('[data-rules-format-needed]')),
-    status: txt(node.querySelector('.rules-ai-status')), placeholder: node.querySelector('.ask-input')?.getAttribute('placeholder') || '', draft: node.querySelector('.ask-input')?.value || '',
-    sendLocked: !!node.querySelector('.ask-send')?.disabled,
-    hello: txt(empty?.querySelector('.ask-hello')), blurb: txt(empty?.querySelector('.muted')),
-    cards: s.context.cards.map(c => ({name: c.name, line: [c.set, c.number, c.id].filter(Boolean).join(' · '), complete: c.complete})),
-    cardsNote: txt(empty?.querySelector('.rules-ai-cards > .foot')), dropCards: !!empty?.querySelector('[data-rules-drop-cards]'),
-    examples: empty ? empty.querySelectorAll('[data-rules-example]').map(b => b.getAttribute('data-rules-example')) : [],
-    foot: empty ? empty.querySelectorAll(':scope > .foot, :scope > .note').map(txt) : [],
-    thinking: s.pending ? txt(log.querySelector('[data-rules-pending] .ask-step')) : '', lines, busy: !!s.pending};
+// ---- Ask a Judge, no AI (judge-search.js): the question is read into the rulebook's own terms and answered with the exact rule
+// text from the rulebook kept in the app, as the site's judge-ui.js does. Nothing is sent to an AI service; a card named in the
+// question brings its printed text, and its official rulings when the network is there (a miss just leaves them out).
+const JUDGE_NAMES = {mtg: 'Magic', ptcg: 'Pokémon', ygo: 'Yu-Gi-Oh!'};
+let judge = null, judgeNames = null;
+const judgeRuleNumber = (game, r) => game === 'mtg' ? r.number : 'Page ' + (String(r.number).match(/p(\d+)$/)?.[1] || r.number);
+const judgeRuleHead = (game, r) => game === 'mtg' ? (r.heading || '') : String(r.heading || '').replace(/\s*·\s*PDF page \d+$/, '');
+const judgeDate = v => { const m = String(v || '').match(/^(\d{4})-(\d{2})(?:-(\d{2}))?/); return m ? `${JUDGE_MONTHS[+m[2] - 1]}${m[3] ? ' ' + +m[3] + ',' : ''} ${m[1]}` : String(v || ''); };
+const JUDGE_MONTHS = ['Jan.', 'Feb.', 'March', 'April', 'May', 'June', 'July', 'Aug.', 'Sept.', 'Oct.', 'Nov.', 'Dec.'];
+function judgeLine(e) {
+  if (e.kind === 'question') return {who: 'me', text: e.text};
+  if (e.kind === 'error') return {who: 'error', text: e.text};
+  const a = e.answer, sure = a.status === 'answered';
+  const rules = [a.lead, ...a.rules].filter(Boolean).slice(0, 3).map((r, n) => ({number: judgeRuleNumber(a.game, r), heading: judgeRuleHead(a.game, r), text: r.focus && r.focus !== r.text ? r.focus : r.text,
+    whole: r.focus && r.focus !== r.text ? r.text : '', lead: n === 0 && sure, reference: r.reference, title: [judgeRuleNumber(a.game, r), judgeRuleHead(a.game, r)].filter(Boolean).join(' · '), quote: r.text}));
+  const cards = (a.cards || []).filter(c => c.text || c.rulings.length).map(c => ({name: c.name, text: c.text, rulings: c.rulings.map(r => ({label: 'Official ruling' + (r.date ? ' · ' + judgeDate(r.date) : ''), text: r.text})),
+    note: !c.rulings.length && c.rulingCount ? `This card has ${c.rulingCount} official ruling${c.rulingCount === 1 ? '' : 's'}; none match these words.` : ''}));
+  return {who: 'judge', status: !rules.length && !cards.length ? 'none' : a.status, read: a.read, rules, cards,
+    rulesLabel: sure ? '' : cards.length ? 'Rules for what these cards do' : 'Closest rules I found',
+    terms: (a.terms || []).map(t => ({label: t.label, def: [t.def, ...(t.points || [])].join(' '), ours: !!t.ours})),
+    foot: (a.edition ? `${a.edition.title}, ${judgeDate(a.edition.date)}. ` : '') + 'At an event, the judge there has the final say.',
+    missTitle: 'That isn’t in the rulebook', missText: 'I only answer from the rules. Try naming a keyword, a step of the turn, or what happened at the table.', examples: (JUDGE_EXAMPLES[a.game] || []).slice(0, 2)};
 }
-// ai-rules.js askRules, as its form calls it; judgeModel().busy says when the answer is in.
-function judgeAsk(text) { judgeRun = askRules(String(text || '')).catch(e => { globalThis.__lastError = String(e?.stack || e); }); }
-// The format select's change (the site opens the chat for that format, keeping the words typed so far).
-function judgeFormat(f) {
-  const sel = judgeNode()?.querySelector('[data-rules-format]'); if (!sel) return;
-  sel.value = String(f || ''); sel.dispatchEvent(new SiteEvent('change', {bubbles: true}));
+function judgeModelOf() {
+  const s = judge; if (!s) return {open: false};
+  return {open: true, game: s.game, eyebrow: `${JUDGE_NAMES[s.game]} rulebook · offline`, title: 'Ask a Judge', placeholder: 'Ask about a rule, keyword or card…',
+    hello: 'What happened at the table?', blurb: 'Name a keyword, a step of the turn or a card. You get the exact rule, with its number.',
+    cards: s.cards.map(c => ({name: c.name})), examples: JUDGE_EXAMPLES[s.game] || [], lines: s.entries.map(judgeLine), busy: !!s.busy};
+}
+// A card the Judge shows: its printed text from the app's card data, and its official rulings if they can be read now.
+async function judgeCard(name) {
+  const c = meta(name) || await resolve(name).catch(() => null); if (!c) return null;
+  const text = [c.oracle_text, ...(c.card_faces || []).map(f => f.oracle_text)].filter(Boolean).join('\n');
+  const r = c.id ? await api('/cards/' + encodeURIComponent(c.id) + '/rulings').catch(() => null) : null;
+  return {name: c.name, text, keywords: c.keywords || [], rulings: (r?.data || []).map(x => ({date: x.published_at || '', text: x.comment || ''}))};
+}
+// The card names the app ships (the list the play engine accepts), read once.
+function judgeNameList() {
+  return judgeNames ||= fetch(ENGINE_CARD_NAMES_FILE).then(r => r.ok ? r.text() : '').then(t => new Set(String(t).split('\n').map(n => n.trim().toLowerCase()).filter(Boolean))).catch(() => new Set());
+}
+// The answer for one question: the rulebook, the cards (the ones the Judge was opened on, then names typed in the question), the rules.
+async function judgeWork(s, question) {
+  const pack = await loadRulePack(s.game), cards = [];
+  for (const c of s.cards) {
+    let full = null;
+    if (s.game === 'mtg' && !c.rulings) full = await judgeCard(c.name).catch(() => null);
+    cards.push(full || c);
+  }
+  s.cards = cards.slice();
+  if (s.game === 'mtg') {
+    const names = await judgeNameList(), found = findCardNames(question, names, pack);
+    for (const f of found) {
+      if (cards.some(c => c.name.toLowerCase() === f.name)) continue;
+      const card = await judgeCard(f.name).catch(() => null);
+      if (card) cards.push(card);
+    }
+  }
+  return judgeAnswer(pack, question, {format: s.format, cards, glossary: s.game === 'ptcg' ? PTCG_GLOSSARY : s.game === 'ygo' ? YGO_GLOSSARY : []});
+}
+function judgeAsk(text) {
+  const s = judge, question = String(text || '').trim().slice(0, 400);
+  if (!s || !question || s.busy) return;
+  s.entries.push({kind: 'question', text: question});
+  s.busy = judgeWork(s, question).then(
+    answer => { s.busy = null; if (judge === s) s.entries.push({kind: 'answer', answer}); },
+    e => { s.busy = null; globalThis.__lastError = String(e?.stack || e); if (judge === s) s.entries.push({kind: 'error', text: e?.message || 'The rulebook could not be opened.'}); });
 }
 // ---------------------------------------------------------------- Settings > Backup (gap audit S1): app.js 7564-7670
 // app.js backupPayload (7564), verbatim but for saveable() (the player's own settings.game, as the account keeps it).
@@ -5893,13 +5924,13 @@ globalThis.Collection = {
   artKeep() { return json({urls: artKeepList()}); },
   // ---- Ask a Judge (gap audit H4) ----
   // Opens the rules chat with the site's context ({game, format, cards, references}: app.js A.askRules), kept per context as the site keeps it.
-  judgeOpen(o) { const c = JSON.parse(o || '{}'); openRulesAsk({game: c.game || 'mtg', format: c.format || '', cards: c.cards || [], references: c.references || [], fetcher: fetch}); return json(judgeModelOf()); },
+  judgeOpen(o) { const c = JSON.parse(o || '{}'), game = JUDGE_NAMES[c.game] ? c.game : 'mtg'; judge = {game, format: c.format || '', cards: (c.cards || []).filter(x => x?.name).slice(0, 4).map(x => ({name: x.name, text: x.text || ''})), entries: [], busy: null}; if (c.question) judgeAsk(c.question); return json(judgeModelOf()); },
   judgeModel() { return json(judgeModelOf()); },
-  judgeFormat(f) { judgeFormat(f); return json(judgeModelOf()); },
+  judgeFormat(f) { if (judge) judge.format = String(f || ''); return json(judgeModelOf()); },
   judgeSend(text) { judgeAsk(text); return json(judgeModelOf()); },
-  judgeNew() { restartRulesAsk(); return json(judgeModelOf()); },
-  judgeDropCards() { removeRulesCardContext(); return json(judgeModelOf()); },
-  judgeClose() { closeRulesAsk(); return '{}'; },
+  judgeNew() { if (judge) judge = {...judge, cards: [], entries: [], busy: null}; return json(judgeModelOf()); },
+  judgeDropCards() { if (judge) judge.cards = []; return json(judgeModelOf()); },
+  judgeClose() { judge = null; return '{}'; },
   // Settings > Backup: the backup file's words (app.js backupPayload) and Check file's line (C.checkBackup).
   backupPayload() { return backupPayload(); },
   backupCheck(text) { return checkBackup(text); },
@@ -6502,7 +6533,7 @@ globalThis.Collection = {
   searchAnswer(game, q, opts) { let o = {}; try { o = JSON.parse(opts || '{}') || {}; } catch {} answerStart(game || 'mtg', q, o); return json(answerOut); },
   searchAnswerModel() { return json(answerOut); },
   // Whether the words are a question the app answers ('answer'), one it can't ('miss': the plain search still runs) or a plain search ('none').
-  searchAsks(game, q) { const p = String(q || '').trim() ? answerPlan(game || 'mtg', q).plan : null; return !p ? 'none' : p.call || p.missing?.length ? 'answer' : p.intent === 'unknown' ? 'miss' : 'none'; },
+  searchAsks(game, q) { const p = String(q || '').trim() ? answerPlan(game || 'mtg', q).plan : null; return !p ? 'none' : p.call?.pick === 'maybe' || p.intent === 'unknown' ? 'miss' : p.call || p.missing?.length ? 'answer' : 'none'; },
   searchAnswerSearch(q, sort) { return json(answerSearch(q, sort || '')); },
   // views.js setsPage(), every set: [opts] = {q, family, release, year, sort} as the app last left them. setsLoad starts the
   // set list's lookup (app.js loadSetIndex; the app pumps it with settle()); setsDo applies a control (setsAct).

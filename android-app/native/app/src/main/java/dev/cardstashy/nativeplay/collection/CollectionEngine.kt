@@ -34,7 +34,7 @@ object CollectionEngine {
     private val answers = ConcurrentLinkedQueue<Triple<Int, Int, Pair<String, String>>>()
     private val client by lazy { OkHttpClient.Builder().callTimeout(20, TimeUnit.SECONDS).build() }
 
-    fun init(context: Context) { val app = context.applicationContext; filesDir = app.filesDir; source = { app.assets.open("collection-engine.js").bufferedReader().readText() }
+    fun init(context: Context) { val app = context.applicationContext; filesDir = app.filesDir; shipped = { name -> runCatching { app.assets.open(name).use { it.readBytes() } }.getOrNull() }; source = { app.assets.open("collection-engine.js").bufferedReader().readText() }
         if (store !is FileStore) store = FileStore(File(app.filesDir, "collection-store"), app.getSharedPreferences("collection-engine-storage", Context.MODE_PRIVATE)) }
 
     /**
@@ -80,6 +80,8 @@ object CollectionEngine {
     @Volatile var store: Store = MemoryStore()
     /** This device's files (rulebooks kept for offline use); unset in tests run from a file. */
     @Volatile internal var filesDir: File? = null
+    /** A file shipped inside the app (assets), or null: the rulebooks and the card-name list, so Ask a Judge works with no network. */
+    @Volatile internal var shipped: ((String) -> ByteArray?)? = null
     /** For tests: the bundle from a file. */
     fun initFrom(file: File) { source = { file.readText() } }
     /** For tests: a fresh engine (the bundle read again on the next call), so one test's pages don't carry into the next. */
@@ -437,10 +439,10 @@ object CollectionEngine {
     /** A judge's citation on the open Rules page (rule-learning.js openRuleReference): the panel, or {opened: false}. */
     suspend fun ruleOpen(ref: JsonObject): JsonObject = askEval("Collection.ruleOpen(${str(ref.toString())})")
     /**
-     * The rules chat for [context] ({game, format, cards, references}, as app.js A.askRules gives it): {open, game, eyebrow, title,
-     * format, formatLabel, formats [{value, label}], formatHint, status, placeholder, draft, sendLocked, hello, blurb, cards, cardsNote,
-     * dropCards, examples, foot, thinking, lines, busy}. A line is {who: me|error|ai}; an answer has status, source, short, explanation,
-     * example, questions, details, citations [{i, n, title, source, quote, reference}], external, limits, disclaimer, dropCards.
+     * Ask a Judge, no AI (judge-search.js) for [context] ({game, format, cards, question}): {open, game, eyebrow, title, placeholder,
+     * hello, blurb, cards [{name}], examples, lines, busy}. A line is {who: me|error|judge}; an answer has status (answered | related |
+     * none), read, rules [{number, heading, text, whole, lead, reference, title, quote}], rulesLabel, cards [{name, text, rulings
+     * [{label, text}], note}], terms [{label, def, ours}], foot, and for a miss missTitle, missText, examples.
      */
     suspend fun judgeOpen(context: JsonObject): JsonObject = askEval("Collection.judgeOpen(${str(context.toString())})")
     suspend fun judgeModel(): JsonObject = askEval(JUDGE_MODEL)
@@ -449,8 +451,8 @@ object CollectionEngine {
     suspend fun judgeNew(): JsonObject = askEval("Collection.judgeNew()")
     suspend fun judgeDropCards(): JsonObject = askEval("Collection.judgeDropCards()")
     suspend fun judgeClose() { askEval("Collection.judgeClose()") }
-    /** Runs the question out to its checked answer, [onModel] seeing the chat as it changes. */
-    suspend fun judgeWait(maxMs: Long = 120_000, onModel: (JsonObject) -> Unit = {}): JsonObject {
+    /** Runs the question out to its answer, [onModel] seeing the chat as it changes. */
+    suspend fun judgeWait(maxMs: Long = 30_000, onModel: (JsonObject) -> Unit = {}): JsonObject {
         val until = System.currentTimeMillis() + maxMs
         var m = judgeModel()
         while (m.get("busy")?.asBoolean == true && System.currentTimeMillis() < until) {
@@ -764,6 +766,7 @@ object CollectionEngine {
     internal suspend fun eval(code: String): String = on { q -> q.evaluate("String($code)") as String }
 
     private val JSON = "application/json".toMediaType()
+    private val SHIPPED = Regex("^https://cardstashy\\.com/(?:rulebooks/)?((?:manifest\\.json|[a-z]+-rules-v\\d+\\.json\\.gz|forge-card-names-[\\w.-]+\\.txt))$")
     /** A body as text: a gzip file (the rulebooks, .json.gz) unpacked first, as the site's loadRulePack unpacks it. */
     private fun body(b: ByteArray): String =
         if (b.size > 2 && b[0] == 0x1f.toByte() && b[1] == 0x8b.toByte()) java.util.zip.GZIPInputStream(b.inputStream()).use { it.readBytes() }.toString(Charsets.UTF_8)
@@ -783,6 +786,8 @@ object CollectionEngine {
         val raw = r.get("url").asString
         // The site's own routes are relative ("api/meta/mtg?…", "/api/…"): they resolve against the site.
         val url = if (raw.startsWith("http")) raw else "https://cardstashy.com/" + raw.removePrefix("/")
+        // The rulebooks and the card-name list ship inside the app: read there first, so the Judge never waits on the network.
+        SHIPPED.find(url.substringBefore('?'))?.let { m -> shipped?.invoke("rulebooks/" + m.groupValues[1])?.let { b -> answers.add(Triple(id, 200, "{}" to body(b))); return } }
         answerForTest?.invoke(url)?.let { (code, text) -> if (code == 0) heldForTest.add(r) else answers.add(Triple(id, code, "{}" to text)); return }
         val method = r.get("method")?.asString ?: "GET"
         val body = r.get("body")?.takeIf { it.isJsonPrimitive }?.asString

@@ -187,7 +187,8 @@ internal fun answerGo(scope: CoroutineScope, d: JsonObject, e: AnswerEnv) {
         "wiki" -> e.wiki?.invoke(g, d.s("topic")) ?: e.web(ANSWER_SITE + "#wiki/" + android.net.Uri.encode(d.s("topic")), null)
         "search" -> e.search(g, d.s("q"), d.s("sort"))
         "discover" -> e.discover(g, d.s("kind"), d.s("value"))
-        "judge" -> CollectionWrites.judge(null, g)
+        // The question goes with it: the Judge opens already answering (judge-search.js, no AI).
+        "judge" -> CollectionWrites.judge(JsonObject().apply { addProperty("game", g); addProperty("question", d.s("text")) }.toString(), g)
         // A typed deck request: the app's Build a deck, set up from the words (format, budget, colours, theme).
         "build" -> d.o("request")?.let { CollectionWrites.building.value = CollectionWrites.BuildOpen(it, "openDeckFlow", e.web) }
         "route" -> answerRoute(d, e)
