@@ -73,6 +73,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.cardstashy.nativeplay.account.Account
 import dev.cardstashy.nativeplay.collection.WorkspaceSync
+import dev.cardstashy.nativeplay.collection.CollectionEngine
 import dev.cardstashy.nativeplay.account.Decks
 import dev.cardstashy.nativeplay.art.CardArt
 import kotlinx.coroutines.launch
@@ -80,8 +81,8 @@ import kotlinx.coroutines.launch
 /*
  * Settings, ported from the site: views.js settings() 1949 (tabs, panes), accountPanel 1889, signedOutAccount 1861,
  * settings-theme.js SETTINGS_TABS, app-info.js infoPanel, profile-art.js profileAvatar / profilePhotoControl.
- * Native differences (deviation list): no Backup tab (it holds the device's Collection workspace, which this Play app
- * doesn't keep; app updates live in Help), no Google button or email link yet (both need the browser round trip), Friends / View profile /
+ * Native differences (deviation list): Backup (gap audit S1) leaves out Reset data and demo collection, Keep offline data and the
+ * install card (app updates live in Help); no Google button or email link yet (both need the browser round trip), Friends / View profile /
  * Blocked accounts open the site.
  */
 
@@ -100,15 +101,15 @@ private object S {
     val Btn get() = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Site.Text)
 }
 
-private enum class Tab(val label: String) { ACCOUNT("Profile & account"), APP("Appearance"), INFO("Help") }
+private enum class Tab(val label: String) { ACCOUNT("Profile & account"), APP("Appearance"), BACKUP("Backup"), INFO("Help") }
 
 @Composable
 fun SettingsScreen(onBack: () -> Unit, onWeb: (String) -> Unit, startTab: String = "account", onChallenge: ((com.google.gson.JsonObject) -> Unit)? = null,
                    onDeck: ((game: String, id: String) -> Unit)? = null) {
     BackHandler(onBack = onBack)
-    var tab by rememberSaveable { mutableStateOf(if (startTab == "info") Tab.INFO else if (startTab == "app") Tab.APP else Tab.ACCOUNT) }
+    var tab by rememberSaveable { mutableStateOf(when (startTab) { "info" -> Tab.INFO; "app" -> Tab.APP; "recovery", "backup" -> Tab.BACKUP; else -> Tab.ACCOUNT }) }
     val community = remember { CommunityLayerState() }
-    // Controller: LB/RB step the tab row (Profile & account, Appearance, Help); a full-screen layer, so nothing under it lends buttons.
+    // Controller: LB/RB step the tab row (Profile & account, Appearance, Backup, Help); a full-screen layer, so nothing under it lends buttons.
     PadScreen(remember { PadActs(tabs = { d -> tab = Tab.entries[(tab.ordinal + d).coerceIn(0, Tab.entries.size - 1)] }, opaque = true) })
     // Two screens (V10): the bottom shows what this device keeps, never an empty mark.
     BottomScreen { SettingsBottom(tab) }
@@ -133,6 +134,7 @@ fun SettingsScreen(onBack: () -> Unit, onWeb: (String) -> Unit, startTab: String
                     when (tab) {
                         Tab.ACCOUNT -> AccountPane(onWeb, onPick = { ArtPick.open(it) }, community)
                         Tab.APP -> AppPane()
+                        Tab.BACKUP -> BackupPane()
                         Tab.INFO -> InfoPane(onWeb)
                     }
                 }
@@ -152,7 +154,7 @@ private fun Tabs(tab: Tab, onTab: (Tab) -> Unit) {
             val on = t == tab; val sh = RoundedCornerShape(11.dp)
             Row(each.heightIn(min = 46.dp).clip(sh).then(if (on) Modifier.background(Site.Surface).border(1.dp, Site.Gold.copy(alpha = .45f), sh) else Modifier)
                 .clickable { onTab(t) }.padding(horizontal = 6.dp, vertical = 8.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                Icon(when (t) { Tab.ACCOUNT -> SiteIcons.Profile; Tab.APP -> SiteIcons.Appearance; Tab.INFO -> SiteIcons.Help }, 15.dp, if (on) Site.Text else Site.Muted)
+                Icon(when (t) { Tab.ACCOUNT -> SiteIcons.Profile; Tab.APP -> SiteIcons.Appearance; Tab.BACKUP -> SiteIcons.Backup; Tab.INFO -> SiteIcons.Help }, 15.dp, if (on) Site.Text else Site.Muted)
                 Spacer(Modifier.width(6.dp))
                 Text(t.label, style = S.Btn.copy(fontSize = 12.sp, color = if (on) Site.Text else Site.Muted), maxLines = 1, softWrap = false)
             }
@@ -554,17 +556,164 @@ private fun SettingsBottom(tab: Tab) {
     }
 }
 
-/** Offline art plan (4 Nov): what this phone keeps for fast grids, the keep-all switch and Clear. */
+/**
+ * views.js settings' Backup pane ("Backups & offline storage", gap audit S1) as the preview draws it: Export backup (app.js
+ * A.exportBackup: the site's file in Downloads), Import or check a backup (C.restoreBackup, C.checkBackup, through Android's file
+ * picker), Earlier saves (renderRecoverySnapshots: this device's Recovery journal, with Download and Restore…) and Storage & cleanup
+ * (Remove downloaded pictures, which was Appearance's Clear saved art). Every write goes through the site's handler in the engine
+ * (Collection.act restoreBackup / restoreRecovery), with its question first; the copy it replaces joins Earlier saves.
+ */
+@Composable
+private fun BackupPane() {
+    val context = LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val user = Account.session.collectAsState().value?.userId
+    var exportStatus by remember { mutableStateOf("Ready to download your cards, decks and settings.") }
+    var exportOk by remember { mutableStateOf(false) }
+    var checkLine by remember { mutableStateOf("") }
+    var stamp by remember { mutableStateOf(0) }
+    val written by CollectionWrites.written.collectAsState()
+    val saves = remember(user, stamp, written) { mutableStateOf<List<dev.cardstashy.nativeplay.collection.RecoveryJournal.Snapshot>?>(null) }
+    var savesSize by remember { mutableStateOf(0L) }
+    var savedAt by remember { mutableStateOf<String?>(null) }
+    androidx.compose.runtime.LaunchedEffect(user, stamp, written) {
+        val u = user ?: return@LaunchedEffect
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            saves.value = runCatching { dev.cardstashy.nativeplay.collection.RecoveryJournal.list(context, u) }.getOrDefault(emptyList())
+            savesSize = dev.cardstashy.nativeplay.collection.RecoveryJournal.estimate(context, u)
+            savedAt = WorkspaceSync.summarize(Decks.deviceFile(context, u).takeIf { it.isFile }?.readText()).saved
+        }
+    }
+    // The picked file's words, or null with the site's "Backup is larger than 60 MB." (readBackup's file.size check) in [fail].
+    suspend fun read(uri: android.net.Uri, fail: (String) -> Unit): String? = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching {
+            context.contentResolver.openInputStream(uri)!!.use { input ->
+                val bytes = input.readNBytes(60_000_001)
+                if (bytes.size > 60_000_000) { fail("Backup is larger than 60 MB."); null } else String(bytes, Charsets.UTF_8)
+            }
+        }.getOrElse { fail(it.message ?: "The file could not be read."); null }
+    }
+    val restorePick = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            val text = read(uri) { CollectionWrites.show("Restore failed — nothing changed. $it") } ?: return@launch
+            CollectionWrites.act(context, "restoreBackup", com.google.gson.JsonObject().apply { addProperty("text", text) }) { _ ->
+                scope.launch { keepCatalog(context); stamp++ }
+            }
+        }
+    }
+    val checkPick = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            val text = read(uri) { checkLine = "✕ Not a valid backup: $it" } ?: return@launch
+            if (!CollectionReady.ready(context)) return@launch
+            checkLine = CollectionEngine.backupCheck(text)
+        }
+    }
+    val types = arrayOf("application/json", "text/plain", "application/octet-stream")
+    Text("Backups & offline storage", style = S.H2)
+    if (user == null) {
+        // The app keeps cards only in an account (CollectionWrites), so there is nothing on this device to back up yet.
+        Panel { Text("Sign in to save cards to your collection.", style = S.Body) }
+    } else {
+        Panel {
+            CardHeading("A COPY YOU CONTROL", "Export backup")
+            Text("Collection, decks and settings across all three games, together in one file.", style = S.Small)
+            SiteButton("Download backup", Modifier.fillMaxWidth()) {
+                scope.launch {
+                    if (!CollectionReady.ready(context)) return@launch
+                    // app.js A.exportBackup: download(...) then the status line and the same words as a toast.
+                    val ok = runCatching {
+                        val text = CollectionEngine.backupPayload()
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            CollectionWrites.download(context.applicationContext, "CardStashy_Backup_" + java.time.LocalDate.now(java.time.ZoneOffset.UTC) + ".json", text)
+                        }
+                    }.isSuccess
+                    val message = if (ok) "Backup prepared. Check your downloads to confirm the file was saved." else "Backup could not be prepared. Your saved data is unchanged. Try again."
+                    exportStatus = if (ok) "✓ $message" else message; exportOk = ok
+                    CollectionWrites.show(message)
+                }
+            }
+            Text(exportStatus, style = S.Small.copy(color = if (exportOk) Good else Site.Muted))
+            Text("Last saved on this device: " + (savedAt?.let { siteWhen(it) } ?: "Not yet"), style = S.Foot)
+            Spacer(Modifier.height(2.dp))
+            Text("Import or check a backup", style = S.Body.copy(fontWeight = FontWeight.Bold))
+            Text("Restore replaces your collection, decks and settings with the backup. You can review the changes before confirming.", style = S.Foot)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SiteButton("Restore backup", Modifier.weight(1f), ghost = true) { restorePick.launch(types) }
+                SiteButton("Check file", Modifier.weight(1f), ghost = true) { checkPick.launch(types) }
+            }
+            if (checkLine.isNotEmpty()) Text(checkLine, style = S.Small.copy(color = if (checkLine.startsWith("✓")) Good else Bad))
+        }
+        Panel {
+            Text("Earlier saves", style = S.H2)
+            Text("Restore a previous version of your cards and decks", style = S.Small)
+            val list = saves.value
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(if (list == null) "Loading recovery copies…" else "${list.size} saved recovery ${if (list.size == 1) "copy" else "copies"} on this device for this account · ~${"%.1f".format(savesSize / 1048576.0)} MB estimated.",
+                    Modifier.weight(1f), style = S.Foot)
+                SiteButton("Refresh", ghost = true, small = true) { stamp++ }
+            }
+            Text("Saved before loading another account version or restoring a backup. Restoring also updates your online account when signed in. Your current cards and decks are saved first.", style = S.Small)
+            if (list != null && list.isEmpty()) Text("No automatic recovery copies yet. Copies saved before sync conflicts and restores will appear here.", style = S.Small)
+            list.orEmpty().forEach { item -> RecoveryRow(item,
+                onDownload = { scope.launch {
+                    val name = "CardStashy_Recovery_" + item.label.replace(Regex("[^a-z0-9]+", RegexOption.IGNORE_CASE), "_").trim('_').ifEmpty { "deck" } + ".json"
+                    val ok = runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { CollectionWrites.download(context.applicationContext, name, WorkspaceSync.backupEnvelope(item.state)) } }.isSuccess
+                    CollectionWrites.show(if (ok) "Backup prepared. Check your downloads to confirm the file was saved." else "Couldn’t save $name.")
+                } },
+                onRestore = { scope.launch {
+                    CollectionWrites.act(context, "restoreRecovery", com.google.gson.JsonObject().apply { addProperty("text", item.state); addProperty("at", item.createdAt) }) { _ -> stamp++ }
+                } }) }
+        }
+    }
+    StorageCard()
+}
+
+/** renderRecoverySnapshots' row: the label, when it was saved, "N cards · M decks · All games", Download and Restore…. */
+@Composable
+private fun RecoveryRow(item: dev.cardstashy.nativeplay.collection.RecoveryJournal.Snapshot, onDownload: () -> Unit, onRestore: () -> Unit) {
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Site.Surface2).border(1.dp, Site.Line, RoundedCornerShape(12.dp)).padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(item.label, style = S.Body.copy(fontWeight = FontWeight.Bold, fontSize = 13.5.sp))
+        Text(siteWhen(item.createdAt), style = S.Foot)
+        val copies = item.summary.copies.let { if (it % 1.0 == 0.0) it.toLong().toString() else it.toString() }
+        Text("$copies ${if (item.summary.copies == 1.0) "card" else "cards"} · ${item.summary.decks} ${if (item.summary.decks == 1) "deck" else "decks"} · All games", style = S.Small)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
+            SiteButton("Download", ghost = true, small = true, onClick = onDownload)
+            SiteButton("Restore…", small = true, onClick = onRestore)
+        }
+    }
+}
+
+/** views.js "Storage & cleanup": the pictures this device keeps (ThumbStore) and Remove downloaded pictures (app.js clearCachedImages). */
+@Composable
+private fun StorageCard() = Panel {
+    CardHeading("ON THIS DEVICE", "Storage & cleanup")
+    val store = dev.cardstashy.nativeplay.art.ThumbStore
+    val running by store.progress.collectAsState()
+    var stamp by remember { mutableStateOf(0) }
+    var status by remember { mutableStateOf("") }
+    val used = remember(stamp, running) { store.bytes() }
+    Text("Saved art: ${"%,.0f".format(used / 1048576.0)} MB", style = S.Small)
+    SiteButton("Remove downloaded pictures", ghost = true, small = true) {
+        // app.js A.clearCachedImages' words, with this device's count of saved pictures.
+        val n = store.files(); store.clear(); stamp++
+        status = "Cleared $n cached images. Your saved data and pending scans are unchanged."; CollectionWrites.show(status)
+    }
+    Text("Removing downloaded pictures keeps your cards, decks, earlier saves and unfinished scans. Pictures download again when needed and may be unavailable offline until then.", style = S.Foot)
+    if (status.isNotEmpty()) Text(status, style = S.Small.copy(color = Good))
+}
+
+/** Offline art plan (4 Nov): what this phone keeps for fast grids. Its Clear is Backup's Remove downloaded pictures (gap audit S1). */
 @Composable
 private fun CardArtCard() = Panel {
     CardHeading("CARD ART", "Saved on this device")
     val store = dev.cardstashy.nativeplay.art.ThumbStore
     val running by store.progress.collectAsState()
-    var stamp by remember { mutableStateOf(0) }
-    val used = remember(stamp, running) { store.bytes() }; val sets = remember(stamp, running) { store.setsSaved() }
+    val used = remember(running) { store.bytes() }; val sets = remember(running) { store.setsSaved() }
     Text(if (sets == 0 && used < 1048576) "Nothing saved yet" else "${"%,.0f".format(used / 1048576.0)} MB · $sets ${if (sets == 1) "set" else "sets"}", style = S.Body.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold))
     Text("A set's grid pictures save the first time you open it, so it is instant (and works offline) after that. Foil still shimmers on saved cards.", style = S.Foot)
-    if (used > 0) SiteButton("Clear saved art", small = true) { store.clear(); stamp++ }
 }
 
 /** settings-theme.js themeSettings(): Color mode, three choices (aura.css: one column under 480 px, radio · 64 px swatch · text). */

@@ -658,6 +658,10 @@ object CollectionEngine {
 
     /** app.js A.undo: the state before the last undoable change, written the same way; {writes, toasts}. */
     suspend fun undo(): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.undo()") as String).asJsonObject }
+    /** Settings > Backup's file (app.js backupPayload): the workspace in confidence.js backupEnvelope with its cards' data. */
+    suspend fun backupPayload(): String = on { q -> q.evaluate("Collection.backupPayload()") as String }
+    /** Settings > Backup's Check file line (app.js C.checkBackup) for a picked file's words. */
+    suspend fun backupCheck(text: String): String = on { q -> q.evaluate("Collection.backupCheck(${str(text)})") as String }
     /** The workspace as the account keeps it (this device's copy, and what a push sends). */
     suspend fun saved(): String = on { q -> q.evaluate("Collection.saved()") as String }
     /** cloud.js workspaceSig and isEmptyWorkspace of [saved]: {sig, empty}. */

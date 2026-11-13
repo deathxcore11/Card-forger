@@ -86,9 +86,6 @@ internal object CollectionWrites {
             runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(u)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) } }
         // A file it downloaded (tcg.js A.tExportColl): saved to Downloads, as the browser saves it.
         r["downloaded"]?.takeIf { it.isJsonObject }?.asJsonObject?.let { f -> saveFile(context, f) }
-        // The recovery copy a whole-collection replacement keeps first (app.js commit's recovery: RECOVERY in this device's storage).
-        r["recovery"]?.takeIf { it.isJsonPrimitive }?.asString?.let { t -> Account.session.value?.userId?.let { u ->
-            runCatching { withContext(Dispatchers.IO) { java.io.File(Decks.deviceFile(context.applicationContext, u).parentFile, "recovery-$u.json").writeText(t) } } } }
         val saved = done(r)
         if (kind == "addDelete" && saved) adding.value = null
         if (saved) { settleLater(context); after?.invoke(r) }
@@ -109,9 +106,18 @@ internal object CollectionWrites {
         return WorkspaceSync.lock.withLock {
             if (!ensureCollection(app, s.userId, true, Decks.fullRevision.value)) return null.also { show("Your collection is still loading. Try again in a moment.") }
             val r = CollectionEngine.act(kind, data, ms, onStep)
+            // The recovery copy a whole-workspace replacement keeps first, before the new copy is written (app.js replaceWorkspace:
+            // RECOVERY and the Recovery journal, Settings > Backup's Earlier saves).
+            r["recovery"]?.takeIf { it.isJsonPrimitive }?.asString?.let { t -> withContext(Dispatchers.IO) { keepRecovery(app, s.userId, t, kind) } }
             if ((r["writes"]?.asInt ?: 0) > 0 || CollectionEngine.bg() > 0) { val text = CollectionEngine.saved(); withContext(Dispatchers.IO) { WorkspaceSync.wroteLocally(app, s.userId, text) } }
             r
         }
+    }
+
+    /** [text] (the workspace a write replaced) as RECOVERY (recovery-<user>.json) and in the Recovery journal. */
+    internal fun keepRecovery(app: Context, u: String, text: String, kind: String) {
+        runCatching { java.io.File(Decks.deviceFile(app, u).parentFile, "recovery-$u.json").writeText(text) }
+        runCatching { dev.cardstashy.nativeplay.collection.RecoveryJournal.append(app, u, text, "Before workspace replacement", kind) }
     }
 
     /**
@@ -258,7 +264,7 @@ internal object CollectionWrites {
         if (android.os.Build.VERSION.SDK_INT >= 29) {
             val r = c.contentResolver
             val v = android.content.ContentValues().apply {
-                put(android.provider.MediaStore.Downloads.DISPLAY_NAME, name); put(android.provider.MediaStore.Downloads.MIME_TYPE, if (name.endsWith(".csv", true)) "text/csv" else "text/plain")
+                put(android.provider.MediaStore.Downloads.DISPLAY_NAME, name); put(android.provider.MediaStore.Downloads.MIME_TYPE, if (name.endsWith(".csv", true)) "text/csv" else if (name.endsWith(".json", true)) "application/json" else "text/plain")
                 put(android.provider.MediaStore.Downloads.IS_PENDING, 1)
             }
             val uri = r.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, v) ?: error("Couldn’t save the file.")

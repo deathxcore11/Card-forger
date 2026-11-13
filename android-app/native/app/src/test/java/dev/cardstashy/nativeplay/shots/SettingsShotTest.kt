@@ -96,6 +96,23 @@ class SettingsShotTest {
         rule.onNodeWithText("Help").performClick(); rule.waitForIdle(); shot("help")
     }
 
+    /** Gap audit S1: the Backup tab as the preview draws it, with an Earlier save on this device (tall enough for all of it). */
+    @Config(qualifiers = "w390dp-h1900dp-xxhdpi")
+    @Test fun backup() {
+        signedIn()
+        val c = org.robolectric.RuntimeEnvironment.getApplication()
+        c.filesDir.listFiles()?.filter { it.name.startsWith("recovery") }?.forEach { it.delete() }
+        dev.cardstashy.nativeplay.collection.RecoveryJournal.append(c, "u",
+            """{"collection":[{"id":"l1","name":"Lightning Bolt","qty":4}],"decks":[{"id":"d1","name":"Burn","cards":[]}],"wishlist":[]}""",
+            "Before workspace replacement", "restore", java.time.Instant.parse("2026-11-12T23:02:00Z"))
+        rule.setContent { SettingsScreen(onBack = {}, onWeb = {}, startTab = "recovery") }
+        rule.waitForIdle(); settle(); shot("backup")
+        for (t in listOf("Export backup", "Download backup", "Import or check a backup", "Restore backup", "Check file", "Earlier saves",
+                "Before workspace replacement", "4 cards · 1 deck · All games", "Restore…", "Storage & cleanup", "Remove downloaded pictures"))
+            rule.onNodeWithText(t).assertExists()
+        rule.onNodeWithText("1 saved recovery copy on this device for this account", substring = true).assertExists()
+    }
+
     /** settings-theme.js / grid-settings.js: the Appearance pane in each colour mode, tall enough for all three cards. */
     @Config(qualifiers = "w390dp-h1900dp-xxhdpi")
     @Test fun appearanceThemes() {

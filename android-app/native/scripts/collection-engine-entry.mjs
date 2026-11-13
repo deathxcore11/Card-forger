@@ -4,7 +4,8 @@
 // and hands their models to the app instead of HTML.
 import {S, blank, meta, cacheCard, slim, inv, uid} from 'WEB/store.js';
 import {cardKey, typeText, cardPrice, mergeDeckCard, exportDeckText, exportDeck, sumQty, aggregateCards, physicalRequirements} from 'WEB/core.js';
-import {validateWorkspace, parseImport, previewImport, printingState, exportCollectionCSV, importErrorsCSV, applyImport, deckRowsFromImport} from 'WEB/confidence.js';
+import {validateWorkspace, parseImport, previewImport, printingState, exportCollectionCSV, importErrorsCSV, applyImport, deckRowsFromImport, backupEnvelope} from 'WEB/confidence.js';
+import {recoverySummary} from 'WEB/recovery-store.js';
 import {normalizeHomeDeckActivity, recordHomeDeckWork} from 'WEB/home-deck-activity.js';
 import {collectionValue, recordValuePoint, withSnapshot} from 'WEB/insights.js';
 import {homeValueCoverage, homeValueModel, homeMetaKey, homeMetaSlides, homeMetaArticle, homeMetaCarousel, homeDeckShelf, homeCommunity, featureArticle} from 'WEB/home-ui.js';
@@ -5661,7 +5662,75 @@ function askShowRun(s) {
   askDest = null; const run = askRun = {done: false};
   (async () => { askFocus(s?.game || askGame); await askTools().open(s); })().then(() => { run.done = true; run.dest = askDest; }, e => { run.done = true; run.error = String(e?.message || e); });
 }
+// ---------------------------------------------------------------- Settings > Backup (gap audit S1): app.js 7564-7670
+// app.js backupPayload (7564), verbatim but for saveable() (the player's own settings.game, as the account keeps it).
+function backupPayload() {
+  const st = saveable(), names = new Set();
+  for (const e of st.collection) names.add(key(e.name));
+  for (const d of [...st.decks, ...(st.references || [])]) for (const c of d.cards) names.add(key(c.name));
+  for (const w of st.wishlist) names.add(key(w.name));
+  const cache = {};
+  for (const n of names) if (S.catalog[n]) cache[n] = S.catalog[n];
+  return JSON.stringify({ ...backupEnvelope(st), cache });
+}
+// app.js readBackup (7625): [text] is the picked file's words (the app checks its size first too, as file.size).
+function readBackup(text) {
+  if (String(text).length > 60e6) throw Error("Backup is larger than 60 MB.");
+  const raw = JSON.parse(text);
+  return { next: normalize(raw), cache: raw.cache && typeof raw.cache === "object" ? raw.cache : {} };
+}
+// app.js replaceWorkspace (391) with recovery, notify and stamp: the copy it replaces is the recovery copy (siteRecovery, which the
+// app keeps in this device's Earlier saves before writing the new one).
+function replaceWith(next) {
+  return queueWorkspaceWrite(async () => {
+    siteRecovery = JSON.stringify(saveable());
+    const valid = normalize(structuredClone(next));
+    valid.lastSavedAt = new Date().toISOString();
+    if (tcgPrev !== undefined) valid.settings.game = S.state.settings?.game;
+    S.state = valid; conditionWorkspaceRevision++; lastUndo = null; commits++;
+    useMyPrices(S.state.myPrices);
+  });
+}
+// app.js C.checkBackup (7630): the line under the buttons.
+function checkBackup(text) {
+  try {
+    const { next } = readBackup(text);
+    return `✓ Valid backup: ${recoverySummary(next).copies} card copies, ${recoverySummary(next).decks} decks across all games, exported ${next.exportedAt ? new Date(next.exportedAt).toLocaleString() : "date unknown"}.`;
+  } catch (e) {
+    return "✕ Not a valid backup: " + e.message;
+  }
+}
+Object.assign(writeActs, {
+  // app.js C.restoreBackup (7638), signed in (the app saves only to an account): [d.text] the picked file.
+  async restoreBackup(d) {
+    try {
+      const { next, cache } = readBackup(d.text);
+      if (!ask(`Replace the workspace across all games with ${recoverySummary(next).copies} card copies and ${recoverySummary(next).decks} decks from this backup? The restored workspace will sync to your other devices. Your current data is saved as a recovery copy first.`, d.confirmed)) return;
+      for (const [k, c] of Object.entries(cache)) if (!S.catalog[k]) S.catalog[k] = slim(c);
+      S.catalogDirty = true;
+      await replaceWith(next);
+      toasts.push({text: "Backup restored.", undo: false});
+    } catch (e) {
+      toasts.push({text: "Restore failed — nothing changed. " + e.message, undo: false});
+    }
+  },
+  // app.js A.restoreRecovery (7593): [d.text] a recovery copy's workspace, [d.at] when it was saved.
+  async restoreRecovery(d) {
+    try {
+      const state = JSON.parse(d.text), summary = recoverySummary(state);
+      if (!ask(`Restore ${summary.copies} card copies, ${summary.decks} decks and ${summary.wishlist} wishlist entries across all games from ${new Date(d.at).toLocaleString()}? This replaces this account's current workspace and will sync to your other devices. Your current workspace will be saved as another recovery copy first.`, d.confirmed)) return;
+      await replaceWith(state);
+      toasts.push({text: 'Recovery copy restored. Your previous workspace remains in Recovery.', undo: false});
+    } catch (error) {
+      toasts.push({text: 'Recovery could not be restored. ' + error.message, undo: false});
+    }
+  },
+});
+
 globalThis.Collection = {
+  // Settings > Backup: the backup file's words (app.js backupPayload) and Check file's line (C.checkBackup).
+  backupPayload() { return backupPayload(); },
+  backupCheck(text) { return checkBackup(text); },
   // ---- Compare cards (gap audit H1) ----
   // ---- Ask CardStashy (gap audit H3) ----
   // Opens game [G]'s chat (kept while the app runs, one per game, as the site keeps it for the page's life); [prefill] asks it.
