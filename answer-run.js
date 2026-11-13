@@ -183,6 +183,30 @@ async function answerOne(plan,tools,io={}){
    if(pick==='power'){const ranked=decks.filter(d=>d.power!=null).sort((a,b)=>b.power-a.power);if(!ranked.length)return miss('None of your decks has a power score yet.');return {ok:true,strong:ranked[0].name,say:`is your strongest ${narrowed?'deck ('+narrowed+')':'deck'} by the app's power score (${ranked[0].power}).`,items:[deck(ranked[0])],more:ranked.slice(1,3).map(deck),moreLabel:'Then',buttons:[{label:'Open the deck',item:deck(ranked[0])}],source:"The app's Deck Power score, not a win rate"};}
    return {ok:true,say:narrowed?`${decks.length} of your saved decks match${decks.length===1?'es':''}: ${narrowed}.`:`You have ${decks.length} saved deck${decks.length===1?'':'s'}.`,items:decks.slice(0,3).map(deck),more:[],buttons:[{label:'All my decks',route:'#decks'}],source:'Your saved decks'};
   }
+  if(tool==='deck_check'||tool==='deck_upgrade'){
+   const r=await tools[tool](args),deck=d=>({kind:'deck',game:g,ref:String(d.id),label:d.name}),ask=tool==='deck_check'?n=>'is my '+n+' deck legal'+(args.format?' in '+args.format:''):n=>'how do i make my '+n+' deck better';
+   if(r.none)return miss('You have no saved decks in this game.',{buttons:[{label:'All my decks',route:'#decks'}]});
+   // More than one deck fits, or none by that name: the decks are offered as chips, never guessed.
+   if(r.choose)return {ok:true,say:r.unmatched?`None of your saved decks is named "${args.match}". Pick one:`:'Which of your decks?',items:[],more:[],follow:r.choose.map(d=>({label:d.name+(d.format?' · '+d.format:''),q:ask(d.name.toLowerCase())})),buttons:[{label:'All my decks',route:'#decks'}],source:'Your saved decks'};
+   if(r.error)return miss(r.error,{buttons:[{label:'Open the deck',item:deck(r.deck)}]});
+   const subject={kind:'mydeck',game:g,name:r.deck.name.toLowerCase()},open={label:'Open the deck',item:deck(r.deck)};
+   if(tool==='deck_check'){
+    const bad=r.issues.filter(i=>i.kind==='bad'),un=r.issues.filter(i=>i.kind==='unverified'),notes=r.issues.filter(i=>i.kind==='note');
+    // A row per failing card or rule, in the validator's own words: "Name: reason" splits into the row's two halves.
+    const row=(i,tone)=>{const m=i.text.match(/^(.{2,60}?): (.+)$/);return m?{label:m[1],value:m[2].replace(/\.$/,''),tone}:{label:'',value:i.text.replace(/\.$/,''),tone};};
+    const rows=[...bad.map(i=>row(i,'bad')),...un.slice(0,bad.length?3:8).map(i=>row(i,'warn'))].slice(0,12);
+    const more=bad.length+un.length-rows.length;
+    const say=bad.length?`: not yet. ${bad.length} thing${bad.length===1?'':'s'} to fix for ${r.format}.`:un.length?`: nothing breaks ${r.format}, but ${un.length} check${un.length===1?'':'s'} could not be finished.`:`: yes. All ${r.cards} cards are legal in ${r.format}.`;
+    const note=[more>0?`And ${more} more in the deck's own rules review.`:'',pick==='rotate'?'The app has no rotation dates, so this is what is legal today, not what leaves next.':'',...notes.slice(0,1).map(i=>i.text)].filter(Boolean).join(' ');
+    return {ok:true,subject,strong:r.deck.name,say,rows,note,items:[deck(r.deck)],more:[],buttons:[open],source:`The app's ${r.format} deck rules · card legality from the card data`};
+   }
+   if(r.far)return {ok:true,subject,strong:r.deck.name,say:` is not close to any ${r.target.format} tournament list this week. The nearest is ${r.target.name}, sharing ${r.percent}% of its cards.`,meter:{pct:r.percent,label:r.percent+'% of '+r.target.name},items:[deck(r.deck)],more:[],buttons:[open],source:'Counted against this week\'s tournament lists'};
+   const buy=r.addCopies-r.ownedCopies,bill=!buy?'':r.unpriced?(r.cost?usd(r.cost)+' plus '+r.unpriced+' with no price':'no price for the rest'):usd(r.cost)+' for the rest';
+   const rows=[{label:'Add '+r.addCopies+' card'+(r.addCopies===1?'':'s'),value:[r.ownedCopies?'you own '+r.ownedCopies:'',bill].filter(Boolean).join(' · ')||'none'},...r.add.slice(0,5).map(c=>({label:'+ '+c.qty+' '+c.name,value:c.owned>=c.qty?'you own it':c.price!=null?usd(c.price*(c.qty-c.owned)):'no price'})),
+    {label:'Cut '+r.cutCopies+' card'+(r.cutCopies===1?'':'s'),value:r.cut.slice(0,3).map(c=>c.qty+' '+c.name).join(', ')+(r.cut.length>3?' and '+(r.cut.length-3)+' more':'')}];
+   return {ok:true,subject,strong:r.deck.name,say:` shares ${r.percent}% of its cards with ${r.target.name}, the closest ${r.target.format} tournament list${r.target.best?' ('+r.target.best+')':''}.`,meter:{pct:r.percent,label:r.percent+'% of the way to '+r.target.name},rows,
+    note:r.add.length>5?`${r.add.length-5} more cards to add are in that deck's list.`:'',items:[deck(r.deck)],more:[],buttons:[open,...(r.target.key?[{label:'Open '+r.target.name,item:{kind:'meta',game:g,ref:r.target.key,label:r.target.name}}]:[])],source:'Counted against this week\'s tournament lists. It does not say which deck wins.'};
+  }
   if(tool==='card_details'){
    let r=await tools.card_details(args);
    // "how many lightning bolts do i have": the plural of a card's name is still that card.

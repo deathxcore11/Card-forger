@@ -24,6 +24,9 @@ const RANKS=[
  ['oldest',/\b(?:oldest|first|earliest)\b/,'oldest'],
  ['largest',/\b(?:biggest|largest)\b/,'biggest'],
 ];
+// Words that ask whether a deck may be played, and words that ask how to make it better.
+const DECK_CHECK=/\b(?:legal|legality|illegal|banned|ban ?list|allowed|valid|tournament ready|tournament legal|rotat\w*|playable|(?:can|could|may) i (?:play|use|bring|run|enter))\b/;
+const DECK_UP=/\b(?:better|improve|improved|improving|upgrade|upgrades|upgraded|upgrading|stronger|tune|tuned|tuning|fix|fixed|competitive|missing|closest tournament|what (?:should|can|could) i (?:add|cut|change|swap))\b/;
 const MINE=/\b(?:my|mine|i own|i have|do i|have i|ive got|i got)\b/;
 const year=n=>(n.match(/\b(19[89]\d|20[0-4]\d)\b/)||[])[1]||null;
 const chip=(label,kind,fix=false)=>({label,kind,fix});
@@ -187,6 +190,23 @@ function planOne(q,ctx={}){
  const colorChips=col=>{for(const c of col?.chips||[])read.push(chip(c,'filter'));};
  const colorArgs=col=>col?{...(col.colors?{colors:col.colors,exact:!!col.exact}:{}),...(col.without?{without:col.without}:{}),...(col.count?{count:col.count}:{})}:{};
  const format=()=>{const f=(FORMATS[game].includes(ctx.fix?.format)?ctx.fix.format:null)||findFormat(n,game)||(l=>FORMATS[game].includes(l)?l:null)(ctx.formatLast?.[game]==='EDH'?'Commander':ctx.formatLast?.[game])||DEFAULT_FORMAT[game];read.push(chip(f,'format',true));return f;};
+
+ // One of your own decks, checked against the rules or compared with the tournament lists. The deck is named by "my ... deck"
+ // or by the name of a saved deck (ctx.myDecks), so "can i play goblin rush in pioneer" is about the deck called Goblin Rush.
+ {const own=(ctx.myDecks||[]).map(norm).filter(d=>d.length>2).sort((a,b)=>b.length-a.length).find(d=>(' '+n+' ').includes(' '+d+' '))||'';
+  const said=/\bmy (?:\w+ ){0,5}decks?\b/.test(n.replace(OTHER_PLAYER,' '))||(mine&&/\b(?:decks?|it)\b/.test(n)&&!!own);
+  if(said||own){
+   const check=DECK_CHECK.test(n),up=!check&&DECK_UP.test(n);
+   if(check||up){
+    const f=check?findFormat(n,game):null;
+    const match=own||rest(n,GAME_WORDS,f?formatWords(game):null,MINE,new RegExp(DECK_CHECK.source,'g'),new RegExp(DECK_UP.source,'g'),/\b(?:decks?|is|are|it|its|in|at|for|still|what|which|whats|cards?|out|of|from|will|does|do|did|the|a|an|check|any|anything|to|list|how|can|could|should|would|i|we|me|make|made|get|be|this|that|there|way|ways|with|on|and|or|now|right|today|please|tell|show|know|if|so|more|much|lot|bit|little|really|some|something|things?|need|needs|want|change|changes|add|cut|swap|swaps|here|about)\b/g).join(' ');
+    read.push(chip(match?'your deck "'+match+'"':'your deck','scope'));if(f)read.push(chip(f,'filter'));
+    if(check)return plan('decks.check',{tool:'deck_check',args:{game,...(f?{format:f}:{}),...(match?{match}:{})},pick:/\brotat/.test(n)?'rotate':'legal'});
+    read.push(chip('closest tournament list','rank'));
+    return plan('decks.upgrade',{tool:'deck_upgrade',args:{game,...(match?{match}:{})}});
+   }
+  }
+ }
 
  // Build a deck: the builder is set up from the words (format, budget, colours, theme); no AI drafts anything.
  // Asking for a kind of deck rather than a ranking ("what is a fun commander deck with angels", "a ramp deck i can buy for under $50",

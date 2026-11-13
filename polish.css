@@ -784,6 +784,7 @@ body.glass :is(.guide-along-row, .guide-link) { background: linear-gradient(160d
 .answer-card .answer-row span { color:var(--muted); text-align:right; flex:0 1 auto; }
 .answer-card .answer-row.is-bad span { color:#f0a261; }
 .answer-card .answer-row.is-good span { color:#7fd1a0; }
+.answer-card .answer-row.is-warn span { color:#e6c873; }
 .answer-card .answer-meter { height:8px; border-radius:99px; background:#ffffff14; overflow:hidden; }
 .answer-card .answer-meter i { display:block; height:100%; background:var(--gold); }
 .answer-card .answer-chip.can-ask { cursor:pointer; color:inherit; font-family:inherit; border-color:color-mix(in srgb,var(--gold) 45%,transparent); background:color-mix(in srgb,var(--gold) 9%,transparent); min-height:32px; }

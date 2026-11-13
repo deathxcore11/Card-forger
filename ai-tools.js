@@ -2,7 +2,8 @@ import {findInfo,INFO_TOPICS} from './app-info.js';
 import { deckColorsOf } from './deck-colors.js';
 import {FORMATS} from './formats.js';
 import {prepareMtgDeck} from './ai-deck-builder.js';
-import {cardPrice,cardKey} from './core.js';
+import {cardPrice,cardKey,validateDeck} from './core.js';
+import {formatOf as mtgFormatOf} from './formats.js';
 import {validateBuildProposal,proposalFeedback} from './ai-build-contract.js';
 import {goalDescription} from './ai-deck-goal.js';
 import {resolveYgoSet} from './ygo.js';
@@ -186,6 +187,16 @@ export function makeAskTools(x) {
   }
   const metaKey = (format) => { const f = String(format || S.ui.mtgMeta?.format || 'Modern'); return 'mtg:' + (x.MTG_META_FORMATS.find(([k]) => k.toLowerCase() === f.toLowerCase())?.[0] || (/commander|edh|cedh/i.test(f) ? 'EDH' : 'Modern')); };
 
+  // The one saved deck a question is about, by its name or its commander. Several matches are listed, never guessed.
+  const ownDeck = (g, match) => {
+    const flat = t => ' ' + String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() + ' ', all = g === 'mtg' ? S.state.decks : T.gs(g).decks;
+    if (!all.length) return { none: true };
+    const words = flat(match).trim().split(' ').filter(Boolean), hit = all.filter(d => { const hay = flat(d.name) + flat(d.commander); return words.every(w => hay.includes(' ' + w) ); });
+    const exact = hit.filter(d => flat(d.name) === flat(match));
+    const one = exact.length === 1 ? exact[0] : hit.length === 1 ? hit[0] : !words.length && all.length === 1 ? all[0] : null;
+    return one ? { deck: one } : { choose: (hit.length ? hit : all).slice(0, 8).map(d => ({ id: d.id, name: d.name, format: d.format || '' })), unmatched: !!words.length && !hit.length };
+  };
+
   const tools = {
     async game_concepts({game,query}) {
       const g=g0(game);
@@ -320,6 +331,65 @@ export function makeAskTools(x) {
       const filtered = !!(format || match || wantsColor);
       if (g === 'mtg') return { game: g, filtered, unknownColors, decks: S.state.decks.filter(d => fmt(d) && named(d) && colored(d)).slice(0, 15).map((d) => { let power = null; try { power = x.shownPower(x.mtgPower(d)); } catch {} return { id: d.id, name: d.name, format: d.format, commander: d.commander || '', cards: d.cards.reduce((s, r) => s + r.qty, 0), power }; }) };
       return { game: g, filtered, decks: T.gs(g).decks.filter(d => fmt(d) && named(d)).slice(0, 15).map((d) => ({ id: d.id, name: d.name, format: d.format, cards: (d.zones?.main || []).reduce((s, r) => s + r.qty, 0), power: T.deckPowerScore?.(g, d) ?? null })) };
+    },
+    // Deck check (is my deck legal): every card of one saved deck against the format's card pool, ban list and copy limits,
+    // with the app's own validators (core.js validateDeck, ygo.js validateYgo, ptcg.js validatePtcg). Nothing is judged here.
+    async deck_check({ game, match, format }) {
+      const g = g0(game), found = ownDeck(g, match);
+      if (!found.deck) return { game: g, ...found };
+      const d = found.deck, out = { game: g, deck: { id: d.id, name: d.name, format: d.format || '' }, asked: !!format };
+      if (g === 'mtg') {
+        const f = mtgFormatOf(format || d.format), deck = { ...d, format: f.name };
+        if (format && f.name.toLowerCase() !== String(format).toLowerCase() && f.id !== String(format).toLowerCase()) return { ...out, error: `The app has no deck rules for ${format}.` };
+        const names = [...(d.cards || []), ...(d.side || [])].map(c => c.name).concat(d.commander || []).filter(Boolean);
+        if (names.some(n => !x.meta(n))) await x.resolveNames([...new Set(names)]).catch(() => {});
+        const v = validateDeck(deck, S.catalog, [], []);
+        return { ...out, format: f.name, cards: v.count, issues: v.issues.map(i => ({ kind: i.kind === 'unverified' ? 'unverified' : 'bad', text: i.text })) };
+      }
+      const flat = t => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ''), all = T.formatsOf(g);
+      const f = format ? all.find(y => flat(y.name) === flat(format) || flat(y.id) === flat(format) || flat(y.name).startsWith(flat(format))) : all.find(y => y.id === d.format) || all[0];
+      if (!f) return { ...out, error: `The app has no deck rules for ${format}.` };
+      const issues = T.SOURCES[g].validate(d, id => T.cardOf(g, id), f);
+      return { ...out, format: f.name, cards: (d.zones?.main || []).reduce((n, r) => n + r.qty, 0), issues: issues.map(i => ({ kind: i.level === 'bad' ? 'bad' : i.level === 'pending' ? 'unverified' : 'note', text: i.text })) };
+    },
+    // Upgrade path: the tournament list in this week's feed that shares the most cards with one saved deck, and the cards
+    // that differ. Only counting: shared copies over the tournament list's size. It says nothing about which deck wins.
+    async deck_upgrade({ game, match }) {
+      const g = g0(game), found = ownDeck(g, match);
+      if (!found.deck) return { game: g, ...found };
+      const d = found.deck, out = { game: g, deck: { id: d.id, name: d.name, format: d.format || '' } }, key = n => String(n).toLowerCase().replace(/^basic /, '');
+      const tally = rows => { const m = new Map(); for (const r of rows) { if (!r?.name) continue; const k = key(r.name), o = m.get(k) || { name: r.name, qty: 0, id: r.id }; o.qty += Number(r.qty) || 1; m.set(k, o); } return m; };
+      let mine, lists, format, owned, price;
+      if (g === 'mtg') {
+        const covered = x.MTG_META_FORMATS.find(([k]) => k.toLowerCase() === String(d.format || '').toLowerCase());
+        if (!covered) return { ...out, error: /commander|edh/i.test(d.format || '') ? 'The tournament feed has no lists for casual Commander, so there is no list to compare this deck with.' : `The tournament feed has no ${d.format || 'such'} lists.` };
+        const k = 'mtg:' + covered[0], data = await x.loadMetaData(k).catch(() => x.metaState(k).data);
+        if (!data?.decks?.length) return { ...out, error: 'Tournament data for that format isn\'t available right now.' };
+        format = covered[0]; mine = tally(d.cards || []);
+        lists = data.decks.map(y => ({ name: y.archetype || y.name, key: y.key, best: `${y.place || ''} ${y.event || ''}`.trim(), rows: tally([...(y.commanders || []).map(r => typeof r === 'string' ? { name: r, qty: 1 } : r), ...(y.main || [])]) }));
+        owned = n => x.inv(n).owned || 0; price = n => num(x.priceOf(n));
+      } else {
+        const data = (await x.tcgCtx.loadMeta?.(g).catch(() => null)) || T.metaState(g).data;
+        if (!data?.decks?.length) return { ...out, error: 'Tournament data isn\'t available right now.' };
+        format = g === 'ptcg' ? 'Standard' : 'Advanced (TCG)';
+        const zone = [...(d.zones?.main || []), ...(g === 'ygo' ? d.zones?.extra || [] : [])];
+        mine = tally(zone.map(r => ({ name: T.cardOf(g, r.cardId)?.name || r.name, qty: r.qty })));
+        const nameOf = id => T.cardOf(g, id)?.name || '';
+        lists = data.decks.map(y => ({ name: y.archetype || y.name || y.id, key: y.key, best: `${y.place || ''} ${y.event || ''}`.trim(), rows: g === 'ptcg' ? tally(y.list || []) : tally([...(y.main || []), ...(y.extra || [])].map(id => ({ name: nameOf(id), qty: 1, id }))) }));
+        const byName = new Map(); for (const e of T.gs(g).collection) byName.set(key(e.name), (byName.get(key(e.name)) || 0) + e.qty);
+        const cards = Object.values(T.cache?.[g] || {});
+        owned = n => byName.get(key(n)) || 0; price = n => num(cards.find(c => key(c.name) === key(n))?.prices?.usd);
+      }
+      let best = null;
+      for (const l of lists) { let shared = 0, total = 0; for (const [k, r] of l.rows) { total += r.qty; shared += Math.min(r.qty, mine.get(k)?.qty || 0); } if (total && (!best || shared / total > best.shared / best.total)) best = { ...l, shared, total }; }
+      if (!best) return { ...out, error: 'The tournament lists could not be read right now.' };
+      const percent = Math.round(best.shared / best.total * 100), target = { name: best.name, key: best.key || '', best: best.best, format };
+      if (best.shared / best.total < 0.25) return { ...out, target, percent, far: true };
+      const add = [], cut = []; let cost = 0, unpriced = 0, ownedCopies = 0, addCopies = 0;
+      for (const [k, r] of best.rows) { const have = mine.get(k)?.qty || 0, need = r.qty - have; if (need <= 0) continue; const spare = Math.max(0, Math.min(need, owned(r.name) - have)), each = price(r.name), buy = need - spare; addCopies += need; ownedCopies += spare; if (buy) { if (each == null) unpriced += buy; else cost += each * buy; } add.push({ name: r.name, qty: need, owned: spare, price: each }); }
+      for (const [k, r] of mine) { const over = r.qty - (best.rows.get(k)?.qty || 0); if (over > 0) cut.push({ name: r.name, qty: over }); }
+      add.sort((a, b) => (b.price || 0) * (b.qty - b.owned) - (a.price || 0) * (a.qty - a.owned));
+      return { ...out, target, percent, add, cut, addCopies, ownedCopies, cutCopies: cut.reduce((n, r) => n + r.qty, 0), cost: num(cost), unpriced };
     },
     async build_deck(input, handshake={}) {
       const checked=validateBuildProposal(input);

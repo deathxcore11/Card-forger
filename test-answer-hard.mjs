@@ -254,3 +254,39 @@ console.log(`answer-hard: Randall's six questions, ${typos} generated misspellin
  assert.equal(againstQuery('U',{legality:'commander',identity:'wr'}),`(o:"protection from blue" or o:"hexproof from blue" or o:"target blue" or o:"can't be countered") -t:land f:commander id<=wr`);
  assert.equal(againstQuery('X'),'');
 }
+
+// ---- 6d. Deck check and upgrade path (ideas 3 and 4): one of your own decks against the rules, then against the tournament lists.
+{
+ const {cardKey}=await import('./core.js');
+ const catalog=Object.fromEntries(Object.values(CARDS).map(c=>[cardKey(c.name),{...c,legalities:{standard:c.name==='Sol Ring'?'not_legal':'legal',modern:c.name==='Lightning Strike'?'banned':'legal',commander:'legal'}}]));
+ const rush={id:'d1',name:'Goblin Rush',format:'Standard',cards:[{name:'Monastery Swiftspear',qty:4},{name:'Lightning Strike',qty:4},{name:'Sol Ring',qty:1},{name:'Opt',qty:5},{name:'Mountain',qty:46}]};
+ const drake={id:'d2',name:'Drake Tempo',format:'Standard',cards:[{name:'Stormchaser Drake',qty:4},{name:'Opt',qty:4},{name:'Island',qty:52}]};
+ const S2={state:{settings:{},decks:[rush,drake],collection:[]},ui:{},catalog};
+ const t2=makeAskTools({S:S2,T:{game:()=>'mtg',cache:{},gs:()=>({decks:[],collection:[]}),ownedMap:()=>new Map(),metaState:()=>({data}),ui:()=>({})},esc,meta:n=>catalog[cardKey(n)]||null,resolve:async()=>null,resolveNames:async()=>{},
+  inv:n=>({owned:own.get(String(n).toLowerCase())||0}),priceOf:()=>2,loadMetaData:async()=>data,metaState:()=>({data}),MTG_META_FORMATS:[['Standard','Standard'],['Modern','Modern']],mtgPower:d=>d.cards.length,shownPower:x=>x});
+ const go=async(q,game='mtg')=>{const plan=planQuery(q,{game,formatLast:{mtg:'Standard'},sets:[],myDecks:['Goblin Rush','Drake Tempo']});return {plan,a:await answerFor(plan,t2,{})};};
+ let r=await go('is my goblin rush deck legal');
+ assert.equal(r.plan.intent,'decks.check');assert.equal(r.a.strong,'Goblin Rush');assert.match(r.a.say,/not yet\. 2 things to fix for Standard/);
+ assert.deepEqual(r.a.rows,[{label:'Sol Ring',value:'not legal in Standard',tone:'bad'},{label:'Opt',value:'more than 4 copies',tone:'bad'}],'each failing card is named with the rule it breaks');
+ assert.deepEqual(r.a.follow.map(f=>f.q),['how do i make my goblin rush deck better'],'the next question is offered');
+ r=await go('can I play goblin rush in modern');
+ assert.equal(r.plan.intent,'decks.check','a saved deck\'s name is enough, without "my"');assert.ok(r.a.rows.some(x=>x.label==='Lightning Strike'&&x.value==='banned in Modern'));
+ r=await go('is my drake tempo deck legal');assert.match(r.a.say,/yes\. All 60 cards are legal in Standard/);assert.deepEqual(r.a.rows,[]);
+ r=await go('is my deck legal');assert.equal(r.a.say,'Which of your decks?');assert.deepEqual(r.a.follow.map(f=>f.q),['is my goblin rush deck legal','is my drake tempo deck legal'],'two decks: it asks, never guesses');
+ r=await go('is my elf deck legal');assert.match(r.a.say,/None of your saved decks is named "elf"/);
+ r=await go('what rotates out of my drake tempo deck');assert.match(r.a.note,/no rotation dates/);
+ r=await go('is my goblin rush deck legal in vintage rules');
+ // Upgrade path: shared copies over the tournament list's size.
+ r=await go('how do I make my goblin rush deck better');
+ assert.equal(r.plan.intent,'decks.upgrade');assert.match(r.a.say,/shares 88% of its cards with Mono-Red Aggro, the closest Standard tournament list \(1st Standard Challenge\)/);
+ assert.deepEqual(r.a.meter,{pct:88,label:'88% of the way to Mono-Red Aggro'});
+ assert.deepEqual(r.a.rows,[{label:'Add 4 cards',value:'$8.00 for the rest'},{label:'+ 4 Burst Lightning',value:'$8.00'},{label:'Cut 30 cards',value:'1 Sol Ring, 5 Opt, 24 Mountain'}]);
+ assert.equal(r.a.buttons[1].label,'Open Mono-Red Aggro');
+ S2.state.decks=[{id:'d3',name:'Elves',format:'Commander',cards:[{name:'Sol Ring',qty:1}]}];
+ r=await go('upgrade my elves deck');assert.equal(r.a.ok,false);assert.match(r.a.miss,/no lists for casual Commander/);
+ S2.state.decks=[{id:'d4',name:'Sol',format:'Modern',cards:[{name:'Sol Ring',qty:60}]}];
+ r=await go('make my deck better');assert.match(r.a.say,/is not close to any Modern tournament list this week/,'nothing close is said, not stretched');
+ S2.state.decks=[];r=await go('is my deck legal');assert.equal(r.a.miss,'You have no saved decks in this game.');
+ // A question about a card, or about decks in general, is still what it was.
+ assert.equal(planQuery('is lightning bolt legal in modern',{game:'mtg'}).intent,'card.legal');assert.equal(planQuery('make me a goblin deck',{game:'mtg'}).intent,'build');assert.equal(planQuery('what is my best deck',{game:'mtg'}).intent,'decks.mine');
+}

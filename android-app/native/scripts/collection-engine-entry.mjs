@@ -5721,7 +5721,7 @@ function answerPlan(g0, q, o = {}) {
   const fix = o.fix || {}, g = gameOfLabel(fix.game) || g0, mtg = g === 'mtg';
   tcgReady();
   const sets = (mtg ? S.ui.sets.list : tcgUi(g).sets?.list) || [];
-  return {g, mtg, sets, plan: planQuery(q, {game: g, about: answerAbout(), fix: {format: fix.format, game: gameOfLabel(fix.game) || undefined}, formatLast: {mtg: S.ui.mtgMeta?.format || undefined},
+  return {g, mtg, sets, plan: planQuery(q, {game: g, about: answerAbout(), myDecks: (mtg ? S.state.decks : TcgAll.gs(g).decks).map(d => d.name), fix: {format: fix.format, game: gameOfLabel(fix.game) || undefined}, formatLast: {mtg: S.ui.mtgMeta?.format || undefined},
     sets: sets.filter(x => !x.digital).map(x => ({id: mtg ? x.code : x.id, code: x.code || x.id, name: x.name})), screen: {set: o.set || null, card: o.card || null}})};
 }
 function answerStart(g0, q, o = {}) {

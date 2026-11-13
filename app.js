@@ -4937,7 +4937,7 @@ const homeAnswer={
   const g=gameOfLabel(fix.game)||g0,mtg=g==='mtg',sets=(mtg?S.ui.sets.list:(T.ui(g).sets?.list||[]))||[],view=S.ui.view,ctx=S.ui.sheetCtx;
   const openSet=view==='set'?sets.find(x=>String(mtg?x.code:x.id).toLowerCase()===String(mtg?S.ui.set?.code:S.ui.tsetId||T.ui(g).set?.id||'').toLowerCase()):null;
   const card=ctx?.type==='card'&&ctx.name?{name:ctx.name}:null;
-  return planQuery(q,{game:g,about:answerAbout(),fix:{format:fix.format,game:gameOfLabel(fix.game)||undefined},formatLast:{mtg:S.ui.mtgMeta?.format||undefined},sets:sets.filter(x=>!x.digital).map(x=>({id:mtg?x.code:x.id,code:x.code||x.id,name:x.name})),screen:{set:openSet?{id:mtg?openSet.code:openSet.id,code:openSet.code||openSet.id,name:openSet.name}:null,card}});
+  return planQuery(q,{game:g,about:answerAbout(),myDecks:(mtg?S.state.decks:T.gs(g).decks).map(d=>d.name),fix:{format:fix.format,game:gameOfLabel(fix.game)||undefined},formatLast:{mtg:S.ui.mtgMeta?.format||undefined},sets:sets.filter(x=>!x.digital).map(x=>({id:mtg?x.code:x.id,code:x.code||x.id,name:x.name})),screen:{set:openSet?{id:mtg?openSet.code:openSet.id,code:openSet.code||openSet.id,name:openSet.name}:null,card}});
  },
  run(plan){
   const tools=ensureAskTools();
