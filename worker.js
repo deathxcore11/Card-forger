@@ -14,7 +14,6 @@ import {conditionFeedRoute} from './condition-feed-route.js';
 import {weeklyCurationRoute,scheduledWeeklyCuration} from './weekly-curation-route.js';
 import {newsPulseRoute} from './news-pulse-route.js';
 import {mtgWikiReferenceRoute,wikiReferenceRoute} from './mtg-wiki-reference.js';
-import { scanIdentifyRoute } from './scan-identify-route.js';
 export { AiReviewLimits } from './ai-review-route.js';
 import {recentHistoryRoute} from './recent-history.js';
 import {ygoSetPriceRoute} from './ygo-set-prices.js';
@@ -381,10 +380,9 @@ const handlers = {
     if (url.pathname === '/api/news') return newsPulseRoute(request, url, ctx);
     if (url.pathname === '/api/community' || url.pathname === '/api/meta/curation') return weeklyCurationRoute(request, url, env);
     // Ask, the deck coach and the matchup read no longer use AI: the app answers from its own data (answer-search.js, coach-plan.js,
-    // matchup-plan.js). Their old routes are switched off; only the scanner's identify-card still calls a model.
-    if (url.pathname === "/api/ai/matchup" || url.pathname === "/api/ai/deck-review" || url.pathname === "/api/ai/ask")
+    // matchup-plan.js), and the scanner reads cards on the device (scan-fuse.js). No route here calls a model any more.
+    if (url.pathname === "/api/ai/matchup" || url.pathname === "/api/ai/deck-review" || url.pathname === "/api/ai/ask" || url.pathname === "/api/ai/identify-card")
       return new Response(JSON.stringify({ error: "This feature now runs in the app, with no AI. Update CardStashy to use it.", code: "ai_removed" }), { status: 410, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
-    if (url.pathname === "/api/ai/identify-card") return scanIdentifyRoute(request, env);
     // Booster pack artwork for the pack opener, served same-origin and cached for a month.
     const packImage=url.pathname.match(/^\/img\/pack\/(mtg|ptcg|ygo)\.jpg$/);
     if(packImage){

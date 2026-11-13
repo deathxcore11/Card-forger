@@ -43,28 +43,7 @@ try {
   }
  } finally {globalThis.caches=oldCaches;}
  // Ask, the deck coach and the matchup read no longer use AI: their routes are switched off and reach no provider.
- for(const path of ['/api/ai/ask','/api/ai/deck-review','/api/ai/matchup']){const start=providerCalls,gone=await worker.fetch(request(path),env,{});assert.equal(gone.status,410,path);assert.equal((await gone.json()).code,'ai_removed');assert.equal(providerCalls,start,'a removed AI route never reaches a provider');}
- for(const path of ['/api/ai/identify-card']){
-  for(const origin of [NATIVE,WEB]){
-   const start=providerCalls;
-   assert.equal((await worker.fetch(request(path,{origin,token:null}),env,{})).status,401);
-   for(const bad of [null,{id:'forged',is_anonymous:false},{...user,is_anonymous:true},{id:user.id}]) {identity=bad;assert.equal((await worker.fetch(request(path,{origin}),env,{})).status,401);}
-   authError=true;assert.equal((await worker.fetch(request(path,{origin}),env,{})).status,401);authError=false;identity=user;
-   assert.equal(providerCalls,start,'invalid/absent identities never reach provider');
-   const req=request(path,{origin,headers:{'Sec-Fetch-Site':origin===NATIVE?'cross-site':'same-origin'}});
-   const res=await worker.fetch(req,env,{});assert.equal(res.status,path.endsWith('ask')||path.endsWith('identify-card')?200:503,await res.clone().text());
-   assert.equal(providerCalls,start+1,'actual original route reaches mocked provider once');
-   assert.equal(isNativeAdmitted(req),false,'admission removed after handler completes');
-   assert.equal(res.headers.get('Access-Control-Allow-Origin'),origin===NATIVE?NATIVE:null);
-  }
-  quota=false;const before=providerCalls;const rate=await worker.fetch(request(path),env,{});assert.equal(rate.status,429);assert.equal(providerCalls,before);quota=true;
-  assert.equal((await worker.fetch(request(path,{headers:{'Content-Type':'text/plain'}}),env,{})).status,415);
-  assert.equal((await worker.fetch(request(path,{body:'x'.repeat(1_800_100)}),env,{})).status,413,'stream body bound retained');
-  assert.equal((await worker.fetch(request(path,{headers:{'Content-Length':'2000000'}}),env,{})).status,413,'declared size bound retained');
-  assert.equal((await worker.fetch(request(path,{body:'{bad'}),env,{})).status,400);
-  assert.equal((await worker.fetch(request(path,{origin:'https://evil.test'}),env,{})).status,403);
-  assert.equal((await worker.fetch(request(path,{origin:WEB,headers:{'Sec-Fetch-Site':'cross-site'}}),env,{})).status,403);
- }
+ for(const path of ['/api/ai/ask','/api/ai/deck-review','/api/ai/matchup','/api/ai/identify-card']){const start=providerCalls,gone=await worker.fetch(request(path),env,{});assert.equal(gone.status,410,path);assert.equal((await gone.json()).code,'ai_removed');assert.equal(providerCalls,start,'a removed AI route never reaches a provider');}
  assert.equal((await aiAskRoute(request('/api/ai/ask',{headers:{'X-Native-Admitted':'true'}}),env)).status,403,'headers cannot forge internal native admission');
  const before=authCalls;
  const pre=await worker.fetch(request('/api/ai/ask',{method:'OPTIONS',token:null,headers:{'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'Content-Type, Authorization'}}),env,{});
