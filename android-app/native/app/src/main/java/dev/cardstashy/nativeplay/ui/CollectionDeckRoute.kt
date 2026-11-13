@@ -245,6 +245,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
             // Versions' Restore and Delete, a logged game and its delete (app.js A.restoreVer, A.deleteVer, A.logGame, A.deleteNote):
             // saved here, asked first where the site asks; the tab is drawn again from the saved account.
             !tcg && act in setOf("restoreVer", "deleteVer", "deleteNote") -> { write(act, "id" to got("id")); return }
+            // A coach swap on the Power page (app.js A.coachSwap): one copy out, one in, the list before it kept in Versions.
+            !tcg && act == "coachSwap" && got("cut").isNotEmpty() && got("add").isNotEmpty() -> { write(act, "cut" to got("cut"), "add" to got("add")); return }
             !tcg && act == "lifeLog" -> { write(act, "result" to got("result")); return }
             // A.lifeEnd: asked first, then the tracker closes (nothing is saved).
             !tcg && act == "lifeEnd" -> { CollectionWrites.confirm(got("question")) { endLife() }; return }
@@ -293,7 +295,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
         if (deckTab == "cards") { panel = null; return@LaunchedEffect }
         runCatching {
             take(SitePanelModel.parse(CollectionEngine.deckPanel(game.id, deckId, deckTab)))
-            CollectionEngine.settle(15_000, CollectionEngine.PANEL_MODEL) { j -> if (j.has("key")) take(SitePanelModel.parse(j)) }
+            // Power runs its matchup odds and the coach's swaps by itself as it opens (the field's lists, 2,000 games each): as long as a tap's.
+            CollectionEngine.settle(if (deckTab == "engine" || deckTab == "insights") 120_000 else 15_000, CollectionEngine.PANEL_MODEL) { j -> if (j.has("key")) take(SitePanelModel.parse(j)) }
         }
     }
     // A.deckShare / tcg.js A.tShare: the share sheet; its Preview opens the link (the shared deck's page on the website).

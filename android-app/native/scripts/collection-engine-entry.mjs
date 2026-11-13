@@ -82,6 +82,7 @@ import {podSpeed, newGame, proxyList, proxySheetHTML} from 'WEB/extras.js';
 import {formatUpgrades, applyFormatSwap} from 'WEB/format-upgrades.js';
 import {upgradeSuggestions, sourceCredit, mtgjsonDeck, collectionIdeas} from 'WEB/strategy.js';
 import {applySwapsToCards, cardSig} from 'WEB/insights.js';
+import {redealCoachHand} from 'WEB/ai-review.js';
 import {comparePower, bestBudgetDecks, purchaseCost, refineCandidates, towardDeck, spendUp, cardQuality, budgetNotes, variantsFrom, difficultyOf} from 'WEB/deck-optimizer.js';
 import {playRate} from 'WEB/importance.js';
 import {forgeOptions, newForgeSeed} from 'WEB/deck-forge.js';
@@ -3007,6 +3008,14 @@ const writeActs = {
     await edit((y) => withSnapshot(y, d.label || "Snapshot"));
     toasts.push({text: (deckOf(d.deck)?.versions || []).length > before ? "Version saved." : "No changes since the last version.", undo: false});
   },
+  // app.js A.coachSwap: one copy of [d].cut out and one of [d].add in (a coach swap on the Power page), the list before it saved as a version.
+  async coachSwap(d) {
+    const x = deckOf(d.deck), edit = editDeckOf(x?.id);
+    if (!x || !x.cards.some((r) => r.name === d.cut)) throw Error("Your deck changed. Open Power again.");
+    await resolveNames([d.add]);
+    const cards = applySwapsToCards(x.cards, [{ cut: d.cut, add: d.add }]);
+    await edit((y) => withSnapshot({ ...withSnapshot(y, "Before coach swap"), cards }, "Coach swap"), { msg: `${d.add} in, ${d.cut} out. Previous list saved in Versions.` });
+  },
   // app.js A.restoreVer (7222): asked first; the current list saved as a version, then the version's lists.
   async restoreVer(d) {
     const x = deckOf(d.deck), edit = editDeckOf(x?.id), v = (x?.versions || []).find((y) => y.id === d.id);
@@ -3726,6 +3735,19 @@ function judgeContextOf(t) {
   if (t?.dataset?.rulesReferences) { try { references = JSON.parse(t.dataset.rulesReferences); } catch {} }
   return {game, format, cards, references};
 }
+// What the site asks its page for (window events): the tab drawn again (the coach's swaps have landed, cards have loaded), or the
+// matchup odds run by themselves the first time Power opens. Here the open panel answers.
+globalThis.Event ||= class { constructor(type) { this.type = type; } };
+globalThis.dispatchEvent = e => {
+  const p = panel, t = e?.type;
+  if (!p?.redraw) return true;
+  try {
+    if (t === 'cardstashy-rerender') p.redraw();
+    else if (t === 'cardstashy-want-matchups' && /^(deck\|mtg\||playpower\|)/.test(p.key)) p.acts.muRun?.();
+    else if (t === 'cardstashy-want-tmatchups' && p.key.startsWith('tdeck|')) p.acts.tMuRun?.();
+  } catch (err) { toasts.push({text: err?.message || String(err), undo: false}); }
+  return true;
+};
 const PANEL_ACTS = {ruleHint: t => showRuleHint(t), askRules: t => { panel.acted = {act: 'askRules', data: {...t.dataset, judge: JSON.stringify(judgeContextOf(t))}}; }};
 // [acts]: the page's own data-act handlers for this panel (a deck tab's, TDECK_ACTS), before the shared ones.
 function panelOpen(key, html, attach, acts = {}) {
@@ -3981,6 +4003,11 @@ const MDECK_ACTS = {
   logGame: () => { const v = q => panel.doc.querySelector(q)?.value ?? '';
     panel.acted = {act: 'logGame', data: {result: v('#logResult'), turn: v('#logTurn'), note: v('#logNote')}}; },
   muRun: () => { mtgMuRun(); },
+  // The coach on the Power page (app.js A.coachRedeal, A.amPick, A.coachSwap): another opening hand; an opponent's read opened under
+  // its row (the website opens its matchup sheet; here it reads in place, from the same simulation); a swap saved by the app's write.
+  coachRedeal: t => { redealCoachHand(t.dataset.ai); panel.redraw(); },
+  amPick: t => { const d = currentDeck(); if (!d) return; const st = muState(d); st.read = st.read === t.dataset.name ? null : t.dataset.name; panel.redraw(); },
+  coachSwap: t => { panel.acted = {act: 'coachSwap', data: {cut: t.dataset.cut, add: t.dataset.add}}; },
   // app.js A.suggestFormatUpgrades (4141-4149), verbatim but for render().
   suggestFormatUpgrades: () => { (async () => {
     const d=currentDeck(),B=S.ui.build,f=formatOf(d);if(B.busy)return;
@@ -4037,7 +4064,8 @@ function mtgDeckPanel(id, tab) {
   mtgFocus(); deckOpen(id); S.ui.deckTab = tab;
   const d = (S.state.decks || []).find(x => String(x.id) === String(id)), key = ['deck', 'mtg', id, tab, d?.format || ''].join('|');
   panel = null;
-  const body = () => { const box = new SiteDocument().createElement('div'); box.innerHTML = deckView(); return box.querySelector('.deck-body')?.innerHTML || ''; };
+  // "Pick any other deck" (A.amOpen) is the website's matchup sheet: left out here until the app has its own picker.
+  const body = () => { const box = new SiteDocument().createElement('div'); box.innerHTML = deckView(); const page = box.querySelector('.deck-body'); for (const x of [...(page?.querySelectorAll('[data-act="amOpen"]') || [])]) x.remove(); return page?.innerHTML || ''; };
   const attach = host => PANEL_ATTACH[tab]?.(host);
   panelOpen(key, body(), attach, MDECK_ACTS);
   panel.redraw = () => { mtgFocus(); deckOpen(id); S.ui.deckTab = tab; panelRun(() => { panel.host.innerHTML = body(); attach(panel.host); }); };
@@ -4061,6 +4089,7 @@ function playPowerBody() {
     const box = new SiteDocument().createElement('div'); box.innerHTML = deckView();
     const body = box.querySelector('.deck-body'); if (!body) return '';
     for (const card of [...body.querySelectorAll('.pwp-card')]) if (card.querySelector('h3')?.textContent.trim() === 'Upgrades') card.remove();
+    for (const x of [...body.querySelectorAll('[data-act="amOpen"]')]) x.remove();
     return body.innerHTML;
   });
 }

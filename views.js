@@ -10,6 +10,7 @@ import {browseSets,setBrowserControls,setBrowserRows,setBrowserDetail} from './s
 import {magicOwnedCard} from './magic-owned-detail.js';
 import {myPrintingPrice} from './mtg-tcgprice.js';
 import {renderMagicMatchups} from './magic-matchups-ui.js';
+import {buildMatchupPlan} from './matchup-plan.js';
 import {themeSettings,settingsTabs,normalizeSettingsTab} from './settings-theme.js';
 import {valuePageOverview,valueTopLots,valuePageAttrs} from './value-page.js';
 import {finishEffectsOn} from './finish-preview.js';
@@ -1554,10 +1555,18 @@ function phMatchups(d, pw, p) {
     if (!me) return { none: "This deck's cards are still loading." };
     sims = computeMatchups(fkey + "|" + mtgListSig(d), st.field, me, () => null, (a, b) => simulateMatchup("mtg", a, b), mtgBias(pw, st.field));
   }
-  const f = fieldSummary(sims, d.results || [], st, mtgListSig(d)).field.map((m) => ({ name: m.name, share: m.share, w: m.shown, why: (m.sim.reasons || [])[0] || "" }));
+  const f = fieldSummary(sims, d.results || [], st, mtgListSig(d)).field.map((m) => ({ name: m.name, share: m.share, w: m.shown, why: (m.sim.reasons || [])[0] || "", sim: m.sim, profile: m.profile }));
   const strong = f.filter((m) => m.w >= even + 0.05).sort((a, b) => b.w - a.w).slice(0, 3),
     weak = f.filter((m) => m.w <= even - 0.05).sort((a, b) => a.w - b.w).slice(0, 3);
-  return { strong, weak, even, n: f.length, all: f };
+  return { strong, weak, even, n: f.length, all: f, me: d.format === "Commander" ? null : profileOf("mtg", mtgConstructedPower(d, S.catalog, key, fm.size), rows) };
+}
+// The read for one opponent, drawn under its row (the phone app opens it in place; the website opens its matchup sheet instead).
+function phRead(d, M, x) {
+  const R = x.sim?.reasons || [];
+  if (!M.me || !x.profile || x.sim?.onPlay == null) return `<div class="pwp-read">${R.map((r) => `<p class="pwp-text">${esc(r)}</p>`).join("")}</div>`;
+  const plan = buildMatchupPlan({ request: { player: { name: d.name, cards: [] }, opponent: { name: x.name, cards: [] } }, me: M.me, op: x.profile, sim: { ...x.sim, win: x.w }, mode: "bo1" });
+  const pc = (v) => Math.round(v * 100) + "%";
+  return `<div class="pwp-read"><div class="pwp-tiles"><div class="pwp-tile ${plan.onPlay >= 0.45 ? "" : "w"}"><b>${pc(plan.onPlay)}</b>when you go first</div><div class="pwp-tile ${plan.onDraw >= 0.45 ? "" : "w"}"><b>${pc(plan.onDraw)}</b>when you go second</div></div>${plan.scenarios.map((sc) => `<p class="pwp-eyebrow">${esc(sc.title)}</p><p class="pwp-text">${esc(sc.plan)}</p>${sc.risk ? `<p class="pwp-text"><b>Watch for.</b> ${esc(sc.risk)}</p>` : ""}`).join("")}<p class="pwp-foot">${esc(plan.disclaimer)}</p></div>`;
 }
 function phMatchRow(m, cls) { return `<div class="pwp-m"><span><b>${esc(m.name)}</b>${m.why ? `<small>${esc(m.why)}</small>` : ""}</span><em class="${cls}">${Math.round(m.w * 100)}%</em></div>`; }
 
@@ -1581,7 +1590,7 @@ function powerHub(d, pw, p, issues) {
   // Against the field: closest list, the top decks with simulated odds (tap one for the read), and what can break.
   const M = phMatchups(d, pw, p), even = M.even ?? 0.5, mst = (S.ui.mu ||= {})[d.id];
   if (M.load && !M.error && mst && !mst.auto) { mst.auto = true; setTimeout(() => globalThis.dispatchEvent?.(new Event("cardstashy-want-matchups")), 0); }
-  const oppRow = (x) => { const tone = x.w >= even + 0.05 ? "up" : x.w <= even - 0.05 ? "down" : ""; return `<button class="pwp-opp" data-act="amPick" data-name="${esc(x.name)}"><span><b>${esc(x.name)}</b><small>${x.share ? Math.round(x.share * 100) + "% of the field" : ""}${x.why ? (x.share ? " · " : "") + esc(x.why) : ""}</small></span><em class="${tone}">${Math.round(x.w * 100)}%<i>${tone === "up" ? "Good" : tone === "down" ? "Tough" : "Close"}</i></em></button>`; };
+  const oppRow = (x) => { const tone = x.w >= even + 0.05 ? "up" : x.w <= even - 0.05 ? "down" : ""; const open = mst?.read === x.name; return `<button class="pwp-opp" data-act="amPick" data-name="${esc(x.name)}"${mst?.read !== undefined ? ` aria-expanded="${open}"` : ""}><span><b>${esc(x.name)}</b><small>${x.share ? Math.round(x.share * 100) + "% of the field" : ""}${x.why ? (x.share ? " · " : "") + esc(x.why) : ""}</small></span><em class="${tone}">${Math.round(x.w * 100)}%<i>${tone === "up" ? "Good" : tone === "down" ? "Tough" : "Close"}</i></em></button>${open ? phRead(d, M, x) : ""}`; };
   const breaks = (C.pressure || []).slice(0, 2).map((x) => `<p class="pwp-text"><b>${esc(x.threat.replace(/^Something shuts off your /, "").replace(/^./, (ch) => ch.toUpperCase()))}.</b> ${esc(x.impact)} ${esc(x.backup)}</p>`).join("");
   const mt = metaInfo.match;
   const fieldCard = `<section class="pwp-card"><div class="pwp-row"><h3>Against the field</h3>${M.all?.length ? `<small>2,000 games each${even < 0.5 ? " · four-player pods" : ""}</small>` : ""}</div>${mt ? `<p class="pwp-text">Closest tournament list: <b>${esc(mt.archetype)}</b>, ${Math.round(mt.sim * 100)}% the same.</p>` : ""}${M.none ? `<p class="pwp-text">${esc(M.none)}</p>` : M.busy ? `<p class="pwp-text" role="status">${esc(M.busy)}</p>` : M.load ? (M.error ? `<p class="pwp-text warn-text">${esc(M.error)}</p><button class="btn ghost pwp-btn" data-act="muRun">Try again</button>` : `<p class="pwp-text" role="status">Simulating against the decks winning right now…</p>`) : [...M.all].sort((x, y) => (y.share || 0) - (x.share || 0)).slice(0, 5).map(oppRow).join("")}${breaks ? `<h3>Where it can break</h3>${breaks}` : ""}<button class="btn ghost pwp-btn" data-act="amOpen" data-tab="setup">Pick any other deck</button></section>`;

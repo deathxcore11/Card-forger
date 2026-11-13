@@ -368,6 +368,7 @@ body .deck-body[data-tab="engine"] { columns: auto; }
 .pwp-opp b { font-size: .88rem; line-height: 1.25; } .pwp-opp small { display: block; margin-top: 2px; }
 .pwp-opp em { font-style: normal; font-weight: 700; font-size: 1.15rem; text-align: right; font-variant-numeric: tabular-nums; } .pwp-opp em i { display: block; font-style: normal; font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: var(--muted); }
 .pwp-opp em.up, .pwp-opp em.up i { color: var(--good, #6fcf97); } .pwp-opp em.down, .pwp-opp em.down i { color: var(--bad, #ef8a7c); }
+.pwp-read { display: grid; gap: 8px; padding: 2px 0 14px; } .pwp-read .pwp-eyebrow { margin: 4px 0 0; }
 .pwp-opp:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 8px; }
 .pwp-card .pwp-text b { color: var(--text); }
 .pwp-own em { grid-column: 1 / -1; font-style: normal; font-weight: 700; color: var(--good, #6fcf97); font-size: .82rem; }
