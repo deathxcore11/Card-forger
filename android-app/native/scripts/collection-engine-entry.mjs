@@ -139,7 +139,9 @@ import {Document as SiteDocument, Event as SiteEvent, serialize as domJson, byId
 // for the session only (store.js), so no other Ideas key exists to keep.
 // Home's header and rails paint from what the site keeps too (tcg.js HERO_KEY: today's Card of the Day per game; news-pulse.js and
 // community-feed.js their last feed), so a launch shows them at once instead of after the network.
-const KEPT_KEYS = new Set(['cardforge-meta-v1', 'cardforge-precons-v1', 'cardforge-hero-v2', 'cardforge-pulse-v2', 'cardforge-community-v3']);
+// pricehist.js's saved prices (cardstashy-price-hist-v1: a point per card when its price moves 2% or a week passes) are what search's
+// price memory answers from ("what went up in my collection this week"), so the app keeps them between launches as the site does.
+const KEPT_KEYS = new Set(['cardforge-meta-v1', 'cardforge-precons-v1', 'cardforge-hero-v2', 'cardforge-pulse-v2', 'cardforge-community-v3', 'cardstashy-price-hist-v1']);
 // app.js A.openSetPack's today's-pack claim (cardstashy-today-pack:<game>:<date>:<id>): the Card of the Day comes once a day.
 // pricehist.js's price alerts (cardstashy-price-alerts-v1): the site keeps them per account (account-scope.js privateKey); the app
 // keeps one list per signed-in account the same way (Collection.alertOwner), under ALERTS::app:<account>, and on this device.

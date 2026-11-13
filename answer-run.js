@@ -207,6 +207,21 @@ async function answerOne(plan,tools,io={}){
    return {ok:true,subject,strong:r.deck.name,say:` shares ${r.percent}% of its cards with ${r.target.name}, the closest ${r.target.format} tournament list${r.target.best?' ('+r.target.best+')':''}.`,meter:{pct:r.percent,label:r.percent+'% of the way to '+r.target.name},rows,
     note:r.add.length>5?`${r.add.length-5} more cards to add are in that deck's list.`:'',items:[deck(r.deck)],more:[],buttons:[open,...(r.target.key?[{label:'Open '+r.target.name,item:{kind:'meta',game:g,ref:r.target.key,label:r.target.name}}]:[])],source:'Counted against this week\'s tournament lists. It does not say which deck wins.'};
   }
+  if(tool==='price_moves'){
+   const r=await tools.price_moves(args),span=plan.call.span||'past week',d=x=>{const t=Date.parse(x);if(!Number.isFinite(t))return String(x||'');const y=new Date(t);return y.getUTCDate()+' '+MONTHS[y.getUTCMonth()].slice(0,3);},signed=v=>(v<0?'−':'+')+usd(Math.abs(v)),src='Prices this device has saved. It saves one each time it sees a price move.';
+   if(r.error)return miss(r.error);
+   if(r.card){
+    const item=cardItem(g,{name:r.card.name,id:r.card.id}),open={label:'Open the card',item};
+    if(!r.move)return miss(`This device has no saved price for ${r.card.name} from before today, so it can't compare.${usd(r.card.price)?' It is '+usd(r.card.price)+' now.':''}`,{items:[item],buttons:[open]});
+    const m=r.move,delta=Math.round((m.to-m.from)*100)/100,word=delta>0?'is up':delta<0?'is down':'has not moved';
+    return {ok:true,strong:r.card.name,say:delta?`${word} ${usd(Math.abs(delta))} since ${d(m.since)}: ${usd(m.from)} then, ${usd(m.to)} now.`:`${word} since ${d(m.since)}: ${usd(m.to)}.`,note:m.late?`The saved prices for this card start on ${d(m.since)}, later than the ${span} you asked about.`:'',items:[item],more:[],buttons:[open],source:src};
+   }
+   if(!r.counted)return miss(`This device has no saved prices for your cards going back that far (${span}). It saves a price each time it sees one, so this fills in from now on.`,{buttons:[{label:'Open Value',route:'#collection/value'}]});
+   const rows=r.movers.map(m=>({label:m.name+(m.qty>1?' ×'+m.qty:''),value:signed(m.delta)+' · '+usd(m.from)+' to '+usd(m.to),tone:m.delta>0?'good':'bad'}));
+   const say=!r.up&&!r.down?`None of your cards with a saved price has moved over the ${span}.`:`Your collection is ${r.total>0?'up':r.total<0?'down':'level'}${r.total?' '+usd(Math.abs(r.total)):''} over the ${span}. ${r.up} card${r.up===1?'':'s'} went up and ${r.down} went down.`;
+   const note=[r.missing?`${r.missing} of your cards have no saved price that far back and are not counted.`:'',r.late?`For some cards the saved prices start later, the latest on ${d(r.earliest)}.`:''].filter(Boolean).join(' ');
+   return {ok:true,say,rows,note,items:[],more:[],buttons:[{label:'Open Value',route:'#collection/value'}],source:src};
+  }
   if(tool==='card_details'){
    let r=await tools.card_details(args);
    // "how many lightning bolts do i have": the plural of a card's name is still that card.

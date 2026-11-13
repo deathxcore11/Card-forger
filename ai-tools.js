@@ -4,6 +4,7 @@ import {FORMATS} from './formats.js';
 import {prepareMtgDeck} from './ai-deck-builder.js';
 import {cardPrice,cardKey,validateDeck} from './core.js';
 import {formatOf as mtgFormatOf} from './formats.js';
+import {trackedQuote,priceSeries} from './pricehist.js';
 import {validateBuildProposal,proposalFeedback} from './ai-build-contract.js';
 import {goalDescription} from './ai-deck-goal.js';
 import {resolveYgoSet} from './ygo.js';
@@ -390,6 +391,41 @@ export function makeAskTools(x) {
       for (const [k, r] of mine) { const over = r.qty - (best.rows.get(k)?.qty || 0); if (over > 0) cut.push({ name: r.name, qty: over }); }
       add.sort((a, b) => (b.price || 0) * (b.qty - b.owned) - (a.price || 0) * (a.qty - a.owned));
       return { ...out, target, percent, add, cut, addCopies, ownedCopies, cutCopies: cut.reduce((n, r) => n + r.qty, 0), cost: num(cost), unpriced };
+    },
+    // Price memory: how a price moved since a day, from the prices this device has saved (pricehist.js: a point each time a
+    // price it sees has moved 2% or a week has passed). The price "then" is the last one saved on or before that day; when the
+    // saved prices start later, that later day is used and said. Nothing is estimated between points.
+    async price_moves({ game, name, since, dir }) {
+      const g = g0(game), series = x.priceSeries || priceSeries, from = /^\d{4}-\d{2}-\d{2}$/.test(since || '') ? since : new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+      const move = card => {
+        const q = card && trackedQuote(g, card), pts = q ? series(g, q.id) : [];
+        if (!pts.length) return null;
+        let start = null; for (const p of pts) { if (p[0] <= from) start = p; else break; }
+        const late = !start; if (late) start = pts[0];
+        const now = Number(q.value) > 0 ? Math.round(Number(q.value) * 100) / 100 : pts[pts.length - 1][1];
+        if (late && pts.length === 1 && now === start[1]) return null;
+        return { from: start[1], to: now, since: start[0], late };
+      };
+      if (name) {
+        let c = null;
+        if (g === 'mtg') c = x.meta(name) || (await x.resolve(name, true).catch(() => null));
+        else { c = await T.SOURCES[g].byName(name).catch(() => null); if (!c) c = (await T.SOURCES[g].search({ q: name, page: 0, size: 1 }).catch(() => ({ cards: [] }))).cards?.[0]; if (c) c = (await T.ensureCard?.(g, c.id).catch(() => null)) || c; }
+        if (!c) return { game: g, error: `No card named ${name}.` };
+        const m = move(c);
+        return { game: g, since: from, card: { name: c.name, id: String(c.id || ''), price: num(trackedQuote(g, c)?.value) }, move: m };
+      }
+      const rows = [], col = g === 'mtg' ? S.state.collection : T.gs(g).collection; let missing = 0, counted = 0, total = 0, earliest = '', late = false;
+      const seen = new Map();
+      for (const e of col) {
+        const c = g === 'mtg' ? x.meta(e.name) : T.cardOf(g, e.cardId), m = move(c), qty = Number(e.qty) || 1;
+        if (!m) { missing += qty; continue; }
+        counted += qty; const delta = Math.round((m.to - m.from) * 100) / 100; total += delta * qty; if (m.late) late = true; if (!earliest || m.since > earliest) earliest = m.since;
+        const k = c.name, o = seen.get(k) || { name: c.name, ref: g === 'mtg' ? c.name : String(c.id), from: m.from, to: m.to, delta, qty: 0 }; o.qty += qty; seen.set(k, o);
+      }
+      for (const o of seen.values()) if (o.delta) rows.push(o);
+      rows.sort((a, b) => Math.abs(b.delta * b.qty) - Math.abs(a.delta * a.qty));
+      const pickDir = dir === 'up' ? rows.filter(r => r.delta > 0) : dir === 'down' ? rows.filter(r => r.delta < 0) : rows;
+      return { game: g, since: from, counted, missing, total: num(total), late, earliest, movers: pickDir.slice(0, 6), up: rows.filter(r => r.delta > 0).length, down: rows.filter(r => r.delta < 0).length };
     },
     async build_deck(input, handshake={}) {
       const checked=validateBuildProposal(input);

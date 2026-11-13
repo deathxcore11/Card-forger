@@ -290,3 +290,36 @@ console.log(`answer-hard: Randall's six questions, ${typos} generated misspellin
  // A question about a card, or about decks in general, is still what it was.
  assert.equal(planQuery('is lightning bolt legal in modern',{game:'mtg'}).intent,'card.legal');assert.equal(planQuery('make me a goblin deck',{game:'mtg'}).intent,'build');assert.equal(planQuery('what is my best deck',{game:'mtg'}).intent,'decks.mine');
 }
+
+// ---- 6e. Price memory (idea 5): how prices moved, from the prices this device has saved. Nothing is estimated.
+{
+ const {readSpan}=await import('./answer-search.js'),{cardKey}=await import('./core.js');
+ const now=new Date('2026-11-13T12:00:00Z');
+ assert.deepEqual(readSpan('what went up in my collection this week',now),{since:'2026-11-06',label:'past week',used:'this week'});
+ assert.equal(readSpan('is sheoldred cheaper than last month',now).since,'2026-10-14');
+ assert.deepEqual(readSpan('what did my collection gain since october',now),{since:'2026-10-01',label:'since October',used:'since october'});
+ assert.equal(readSpan('since december',now).since,'2025-12-01','a month still to come this year means last year\'s');
+ assert.equal(readSpan('in the last 3 days',now).since,'2026-11-10');
+ let p=planQuery('what went up in my collection this week',{game:'mtg'});
+ assert.equal(p.intent,'prices.moved');assert.equal(p.call.args.dir,'up');assert.deepEqual(p.read.map(c=>c.label),['Magic','your collection','saved prices','past week']);
+ p=planQuery('is sheoldred cheaper than last month',{game:'mtg'});assert.equal(p.intent,'card.moved');assert.equal(p.call.args.name,'sheoldred');assert.equal(p.call.args.dir,'down');
+ p=planQuery('did the one ring go up in price',{game:'mtg'});assert.equal(p.call.args.name,'one ring');
+ assert.equal(planQuery('what deck is getting more popular in standard',{game:'mtg'}).intent==='prices.moved',false,'decks over time are not prices');
+ assert.equal(planQuery('how much is my collection worth',{game:'mtg'}).intent,'collection.value');
+ const card=(id,name,usd)=>({id,name,prices:{usd:String(usd)}}),cat=Object.fromEntries([card('a','The One Ring',80),card('b','Ragavan, Nimble Pilferer',50),card('c','Sheoldred, the Apocalypse',64),card('d','Opt',0.25)].map(c=>[cardKey(c.name),c]));
+ const saved={'a|nonfoil|Scryfall / TCGplayer|USD':[['2026-10-01',60],['2026-11-01',62],['2026-11-10',80]],'b|nonfoil|Scryfall / TCGplayer|USD':[['2026-11-09',41],['2026-11-12',50]],'c|nonfoil|Scryfall / TCGplayer|USD':[['2026-09-20',70],['2026-11-08',64]]};
+ const t=makeAskTools({S:{state:{settings:{},decks:[],collection:[{name:'The One Ring',qty:1},{name:'Ragavan, Nimble Pilferer',qty:2},{name:'Sheoldred, the Apocalypse',qty:1},{name:'Opt',qty:4}]},ui:{},catalog:cat},T:{game:()=>'mtg',cache:{},gs:()=>({decks:[],collection:[]}),ownedMap:()=>new Map(),metaState:()=>({}),ui:()=>({})},esc,
+  meta:n=>cat[cardKey(n)]||null,resolve:async n=>Object.values(cat).find(c=>c.name.toLowerCase().includes(String(n).toLowerCase()))||null,resolveNames:async()=>{},inv:()=>({owned:0}),priceOf:()=>1,MTG_META_FORMATS:[],priceSeries:(g,id)=>saved[id]||[]});
+ let r=await t.price_moves({game:'mtg',since:'2026-11-06',dir:'both'});
+ assert.deepEqual([r.total,r.counted,r.missing,r.up,r.down,r.late],[30,4,4,2,1,true],'+18 on the Ring, +9 twice on Ragavan, −6 on Sheoldred; Opt has no saved price');
+ assert.deepEqual(r.movers.map(m=>[m.name,m.delta,m.from,m.to]),[['The One Ring',18,62,80],['Ragavan, Nimble Pilferer',9,41,50],['Sheoldred, the Apocalypse',-6,70,64]]);
+ let a=await answerFor(planQuery('what went up in my collection this week',{game:'mtg'}),t,{});
+ assert.match(a.say,/^Your collection is up \$30\.00 over the past week\. 2 cards went up and 1 went down\.$/);
+ assert.deepEqual(a.rows.map(x=>x.label+' '+x.value),['The One Ring +$18.00 · $62.00 to $80.00','Ragavan, Nimble Pilferer ×2 +$9.00 · $41.00 to $50.00']);
+ assert.match(a.note,/4 of your cards have no saved price that far back/);assert.match(a.note,/start later, the latest on 9 Nov/);
+ a=await answerFor(planQuery('is sheoldred cheaper than last month',{game:'mtg'}),t,{});
+ assert.equal(a.strong,'Sheoldred, the Apocalypse');assert.equal(a.say,'is down $6.00 since 20 Sep: $70.00 then, $64.00 now.');
+ a=await answerFor(planQuery('did opt go up in price',{game:'mtg'}),t,{});assert.equal(a.ok,false);assert.match(a.miss,/no saved price for Opt from before today/);
+ const none=makeAskTools({S:{state:{settings:{},decks:[],collection:[{name:'Opt',qty:4}]},ui:{},catalog:cat},T:{game:()=>'mtg',cache:{},gs:()=>({decks:[],collection:[]})},esc,meta:n=>cat[cardKey(n)]||null,MTG_META_FORMATS:[],priceSeries:()=>[]});
+ a=await answerFor(planQuery('what went up in my collection this week',{game:'mtg'}),none,{});assert.match(a.miss,/no saved prices for your cards going back that far/);
+}

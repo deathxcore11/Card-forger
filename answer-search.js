@@ -24,6 +24,21 @@ const RANKS=[
  ['oldest',/\b(?:oldest|first|earliest)\b/,'oldest'],
  ['largest',/\b(?:biggest|largest)\b/,'biggest'],
 ];
+// Words that ask how a price moved, and the span of time asked about (price memory).
+const PRICE_UP=/\b(?:went up|go(?:es|ne|ing)? up|rose|risen|rising|rise|gain(?:ed|ers?|s|ing)?|increas(?:ed|e|es|ing)|spik(?:ed|e|es|ing)|climb(?:ed|ing|s)?|jump(?:ed|ing|s)?|pricier|more expensive|worth more)\b/;
+const PRICE_DOWN=/\b(?:went down|go(?:es|ne|ing)? down|dropp?(?:ed|ing|s)?|fell|fallen|falling|fall|los[te]|losing|losers?|decreas(?:ed|e|es|ing)|crash(?:ed|ing)?|tank(?:ed|ing)?|cheaper|less expensive|worth less)\b/;
+const PRICE_MOVE=/\b(?:price history|price changes?|prices? (?:changed?|moved?|moving)|chang(?:ed?|es) in (?:price|value)|moved? in (?:price|value)|movers?)\b/;
+const MONTHS=['january','february','march','april','may','june','july','august','september','october','november','december'];
+export function readSpan(n,now=new Date()){
+ const iso=d=>d.toISOString().slice(0,10),ago=k=>iso(new Date(now.getTime()-k*864e5));
+ let m=n.match(/\b(?:since|from|in|than(?: in)?) (january|february|march|april|may|june|july|august|september|october|november|december)\b/);
+ if(m){const i=MONTHS.indexOf(m[1]),y=now.getUTCFullYear()-(i>now.getUTCMonth()?1:0);return {since:iso(new Date(Date.UTC(y,i,1))),label:'since '+m[1].charAt(0).toUpperCase()+m[1].slice(1),used:m[0]};}
+ m=n.match(/\b(?:(?:in|over|for|than) )?(?:the )?(?:last|past) (\d{1,3}) days?\b|\b(\d{1,3}) days? ago\b/);
+ if(m){const k=Math.max(1,Math.min(400,Number(m[1]||m[2])));return {since:ago(k),label:'past '+k+' days',used:m[0]};}
+ for(const [re,k,label] of [[/\b(?:since |than )?(?:today|yesterday|overnight)\b/,1,'since yesterday'],[/\b(?:(?:in|over|for|than|since) )?(?:this|the last|last|the past|past|a) week\b|\bweekly\b|\ba week ago\b/,7,'past week'],[/\b(?:(?:in|over|for|than|since) )?(?:this|the last|last|the past|past|a) month\b|\bmonthly\b|\ba month ago\b/,30,'past month'],[/\b(?:(?:in|over|for|than|since) )?(?:this|the last|last|the past|past|a) year\b|\ba year ago\b/,365,'past year'],[/\b(?:lately|recently)\b/,7,'past week']]){
+  m=n.match(re);if(m)return {since:ago(k),label,used:m[0]};}
+ return {since:ago(7),label:'past week',used:''};
+}
 // Words that ask whether a deck may be played, and words that ask how to make it better.
 const DECK_CHECK=/\b(?:legal|legality|illegal|banned|ban ?list|allowed|valid|tournament ready|tournament legal|rotat\w*|playable|(?:can|could|may) i (?:play|use|bring|run|enter))\b/;
 const DECK_UP=/\b(?:better|improve|improved|improving|upgrade|upgrades|upgraded|upgrading|stronger|tune|tuned|tuning|fix|fixed|competitive|missing|closest tournament|what (?:should|can|could) i (?:add|cut|change|swap))\b/;
@@ -206,6 +221,18 @@ function planOne(q,ctx={}){
     return plan('decks.upgrade',{tool:'deck_upgrade',args:{game,...(match?{match}:{})}});
    }
   }
+ }
+
+ // Price memory: how prices moved over a span of time, for your collection or for one card. Decks over time are not prices.
+ if(!/\bdecks?\b/.test(n)&&(PRICE_UP.test(n)||PRICE_DOWN.test(n)||PRICE_MOVE.test(n))&&(mine||/\b(?:price|prices|cost|worth|value|cheaper|expensive|pricier|up|down)\b/.test(n))){
+  const span=readSpan(n),dir=PRICE_MOVE.test(n)||(PRICE_UP.test(n)&&PRICE_DOWN.test(n))?'both':PRICE_UP.test(n)?'up':'down';
+  let left=n;if(span.used)left=left.replace(span.used,' ');
+  const name=rest(left,GAME_WORDS,MINE,new RegExp(PRICE_UP.source,'g'),new RegExp(PRICE_DOWN.source,'g'),new RegExp(PRICE_MOVE.source,'g'),/\b(?:what|which|whats|is|are|was|were|did|does|do|has|have|had|the|a|an|of|in|on|it|its|than|then|now|price|prices|priced|cost|costs|worth|value|values|much|how|most|biggest|largest|top|any|anything|been|being|be|or|and|my|me|show|tell|that|to|for|by|at|so|far|lot|since|before|ago|over|time|history|money|dollars?|usd)\b/g).join(' ');
+  const whole=mine&&(/\b(?:collection|cards?|binder|stuff|everything)\b/.test(n)||!name.replace(/\b(?:collection|cards?|binder|stuff|everything)\b/g,'').trim());
+  if(whole){read.push(chip('your collection','scope'));read.push(chip('saved prices','source'));read.push(chip(span.label,'filter'));
+   return plan('prices.moved',{tool:'price_moves',args:{game,since:span.since,dir},span:span.label});}
+  if(name){read.push(chip(name,'card'));read.push(chip('saved prices','source'));read.push(chip(span.label,'filter'));
+   return plan('card.moved',{tool:'price_moves',args:{game,name,since:span.since,dir},span:span.label});}
  }
 
  // Build a deck: the builder is set up from the words (format, budget, colours, theme); no AI drafts anything.
