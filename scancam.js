@@ -981,7 +981,7 @@ export function registerScanner(ctx) {
       let f=fuseClues(G,view.pack,view.verdict,read);
       // Light print on a dark ground: Magic's footer, full-art Pokémon, most Yu-Gi-Oh! names.
       if(!f.sure){read.code=joinReads(read.code,await zone('ocrFooterInverted',FOOT,3,true));f=fuseClues(G,view.pack,view.verdict,read);}
-      if(!f.sure&&!f.named){read.name=joinReads(read.name,await zone('ocrNameInverted',TOP,2,true));f=fuseClues(G,view.pack,view.verdict,read);}
+      if(!f.sure&&!f.named&&!f.idSeen){read.name=joinReads(read.name,await zone('ocrNameInverted',TOP,2,true));f=fuseClues(G,view.pack,view.verdict,read);}
       // Keep the title as evidence only where this card's own name was found in it; loose words
       // from a sparse read are not a title.
       read.zoneTitle=read.name;read.name=f.named?view.verdict.name:'';
@@ -1102,6 +1102,31 @@ export function registerScanner(ctx) {
     if(prior.g===G)r.cands=uniquePrintings([...r.cands,...prior.cands].sort((a,b)=>Number(!!b.exact)-Number(!!a.exact)));
     return budget.checkpoint({...r,g:G,read,cands:rankScanCandidates(G,r.cands,read)});
   };
+  // Helpers for camera frames. levelPixels evens out the light in the small detection picture, so a dim
+  // room or a warm lamp no longer hides the card from the outline finder or fails its brightness
+  // gate. pictureVote asks the picture index which card this frame shows; the loop counts frames
+  // that agree, names the card on screen and captures as soon as two frames agree, without
+  // waiting for a perfectly sharp frame. It is a vote only: the capture is then read and proved
+  // (or sent to review) exactly like any other.
+  const levelPixels=pixels=>{try{pixels.data.set(levelFrame(pixels.data,pixels.width,pixels.height));}catch{}return pixels;};
+  const livePix={};let voteCanvas=null;
+  const pictureVote=frame=>{
+    try{
+      const G=game(),state=catalogState(G);if(state.status!=='ready')return null;
+      if(livePix[G]===undefined){livePix[G]=null;loadPix(G,state.pack).then(pix=>{livePix[G]=pix||false;},()=>{livePix[G]=false;});}
+      const pix=livePix[G];if(!pix)return null;
+      const w=Math.min(540,frame.width),h=Math.round(w*frame.height/frame.width),c=voteCanvas ||= document.createElement('canvas');
+      if(c.width!==w||c.height!==h){c.width=w;c.height=h;}
+      const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(frame,0,0,w,h);
+      const rgba=x.getImageData(0,0,w,h).data;if(rgba.length<w*h*4)return null;
+      const found=locateCard(rgba,w,h);if(!found?.snapped)return null;
+      const len=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);let q=found.quad;
+      if(len(q[0],q[1])>len(q[1],q[2])*1.12)q=[q[3],q[0],q[1],q[2]];
+      const thumb=pixThumb(flattenCard(rgba,w,h,q,252,352),252,352),up=pictureVerdict(G,state.pack,pix,pixHashThumb(thumb,G)),down=pictureVerdict(G,state.pack,pix,pixHashThumb(pixFlip(thumb),G));
+      const v=down&&(!up||down.dist<up.dist-12)?down:up;
+      return v?{strong:v.strong,name:v.name,dist:v.dist}:null;
+    }catch{return null;}
+  };
   const captureBuffer=[];
   let draining=false;
   const updatePending=(id,patch)=>updateBatch(id,patch);
@@ -1129,7 +1154,8 @@ export function registerScanner(ctx) {
     let status='unresolved',recognitionError='';
     try {
       const view=await trace.stage('engine',()=>engineView(packet,entry.game)).catch(()=>null);
-      const card=view?.card||await trace.stage('crop',()=>cardForCapture(packet));
+      let card=view?.card;
+      if(!card)card=await trace.stage('crop',()=>cardForCapture(packet));
       const snapshots=entry.defaultsByGame||{[entry.game]:{...loadPrefs(entry.game),...entry.defaults}};
       let r;
       const progress=m=>{if(current())setStatus(m);};
@@ -1151,16 +1177,21 @@ export function registerScanner(ctx) {
       const scanPrefs=snapshots[G]||entry.defaults||{};
       if(!r.cands.some(c=>textVerifiedMatch(G,c,read))&&!recognitionError){
         const hint=view?.g===G&&view.verdict?fuseClues(G,view.pack,view.verdict,read):null;
-        const local=r.picture?null:hint?(hint.cands.length?{cands:hint.cands,tried:[view.verdict.name]}:null):await trace.stage('artwork',()=>scanDeadline(()=>localArtwork(card,G),SCAN_DEADLINES.artwork,'Artwork lookup')).catch(()=>null);
+        let local=null;
+        if(hint){if(hint.cands.length&&!r.picture)local={cands:hint.cands,tried:[view.verdict.name]};}
+        else if(!r.picture)local=await trace.stage('artwork',()=>scanDeadline(()=>localArtwork(card,G),SCAN_DEADLINES.artwork,'Artwork lookup')).catch(()=>null);
         if(local)r=recoverScanCandidates(G,r,local,read);
       }
       if(!current())return;
       r.cands=uniquePrintings(rankWithPicture(G,r.cands,read)).map(c=>textVerifiedMatch(G,c,read)?c:{...c,exact:false});
       if(r.cands.filter(c=>c.exact).length>1)r.cands=r.cands.map(c=>({...c,exact:false}));
       const hydrationControl=budget.adapterControl(current);
-      const detailed=budget.expired||budget.remaining<=0?r.cands.slice(0,3).map(c=>({status:'fulfilled',value:{...c,exact:false}})):await trace.stage('hydration',()=>settleLimited(r.cands.slice(0,3),c=>{hydrationControl.check();return c.localReference?scanDeadline(()=>hydrateCandidate(G,c,{identityOnly:true,control:hydrationControl}),SCAN_DEADLINES.hydration,'Card details',()=>hydrationControl.cancel()):c;},2)).catch(e=>{recognitionError=e.message;return r.cands.slice(0,3).map(c=>({status:'fulfilled',value:{...c,exact:false}}));});
+      // The picture already named this card from the pack on the device: card details from the network get a short wait only.
+      const detailed=budget.expired||budget.remaining<=0?r.cands.slice(0,3).map(c=>({status:'fulfilled',value:{...c,exact:false}})):await trace.stage('hydration',()=>settleLimited(r.cands.slice(0,3),c=>{hydrationControl.check();return c.localReference?scanDeadline(()=>hydrateCandidate(G,c,{identityOnly:true,control:hydrationControl}),r.picture?1500:SCAN_DEADLINES.hydration,'Card details',()=>hydrationControl.cancel()):c;},2)).catch(e=>{recognitionError=e.message;return r.cands.slice(0,3).map(c=>({status:'fulfilled',value:{...c,exact:false}}));});
       hydrationControl.cancel();
-      r.cands=rankWithPicture(G,detailed.map((x,i)=>x.status==='fulfilled'?x.value:{...r.cands[i],exact:false}).filter(Boolean),read);
+      // Card details from the network are a nicety for a printing this device already proved (offline scanning).
+      const proved=c=>read.pix?.sure===true&&textVerifiedMatch(G,c,read);
+      r.cands=rankWithPicture(G,detailed.map((x,i)=>x.status==='fulfilled'?x.value:proved(r.cands[i])?r.cands[i]:{...r.cands[i],exact:false}).filter(Boolean),read);
       if(!current())return;
       if(r.cands.length>1&&card!==packet.original&&!r.cands.some(c=>textVerifiedMatch(G,c,read)))r.cands=await trace.stage('likeness',()=>scanDeadline(()=>rankByLikeness(G,card,r.cands),SCAN_DEADLINES.artwork,'Picture comparison')).catch(()=>r.cands);
       if(!current())return;
@@ -1252,7 +1283,7 @@ export function registerScanner(ctx) {
       const c=(loop.canvases ||= {})[region.kind] ||= document.createElement('canvas');
       c.width=region.width;c.height=region.height;const x=c.getContext('2d',{willReadFrequently:true});
       x.drawImage(frame,region.x,region.y,region.w,region.h,0,0,c.width,c.height);
-      const pixels=x.getImageData(0,0,c.width,c.height);
+      const pixels=levelPixels(x.getImageData(0,0,c.width,c.height));
       return {region,pixels,proposal:detectCardQuad(pixels.data,c.width,c.height)};
     });
     const found=selectSensorProposal(observations,fw,fh);loop.detectMs=clockNow()-detectorStarted;
@@ -1266,10 +1297,14 @@ export function registerScanner(ctx) {
       m={edges:found.edges??0,sharp:Math.min(quality.nameSharp,quality.codeSharp),nameSharp:quality.nameSharp,codeSharp:quality.codeSharp,bright:quality.bright,glare:Math.max(quality.nameSharp<T.sharp?quality.nameGlare:0,quality.codeSharp<T.sharp?quality.codeGlare:0),motion:Math.max(prevGray?sigDiff(quality.gray,prevGray):0,loop.geometryMotion*300)};prevGray=quality.gray;loop.signature=toGray(warpPixels(pixels.data,W,H,analysis.quad,16,22),16,22);
     }else {loop.quad=null;loop.proposal=null;loop.signature=null;prevGray=null;loop.bestCapture=null;}
     loop.quality=m;
-    loop.observation={original:frame,proposal:loop.proposal,frameAnalysisMs:clockNow()-freezeAt,signature:loop.signature&&Float32Array.from(loop.signature),quality:{...m},at:Date.now(),selectedGame:game(),defaultsByGame:capturePrefs(),ocrLang:scanLang(),captureMs:frameMs,detectMs:loop.detectMs,geometryUncertain:!found||found.cropSafe!==true};
+    // Frames that agree on the picture: two in a row name the card.
+    const vote=found&&!captureLock&&m.motion<T.motion?pictureVote(frame):null;
+    loop.vote=vote?.strong?{name:vote.name,count:loop.vote?.name===vote.name?loop.vote.count+1:1}:null;
+    const named=!!loop.vote&&loop.vote.count>=2;
+    loop.observation={original:frame,proposal:loop.proposal,frameAnalysisMs:clockNow()-freezeAt,signature:loop.signature&&Float32Array.from(loop.signature),quality:{...m},at:Date.now(),selectedGame:game(),defaultsByGame:capturePrefs(),ocrLang:scanLang(),captureMs:frameMs,detectMs:loop.detectMs,geometryUncertain:!found||(found.cropSafe!==true&&!named)};
     if(!found||m.motion>=T.motion||m.sharp<T.sharp)loop.stableAt=0;else loop.stableAt ||=Date.now();
     if (Array.isArray(window.__scanDebug)) {window.__scanDebug.push({ ...m, vw:v.videoWidth,vh:v.videoHeight,retainedWidth:fw,retainedHeight:fh,previewWidth:v.clientWidth,previewHeight:v.clientHeight,detectorPasses:observations.length,sensorOccupancy:found?.fraction||0,boundaryReason:found?.boundary?.reason||'no-proposal' });window.__scanDebug.splice(0,Math.max(0,window.__scanDebug.length-120));}
-    let st = found?.cropSafe===false?{state:'amber',icon:'◎',msg:'Show the whole card on a clear background'}:found?guideState(m, steady):{state:"red",icon:"◎",msg:"Show the whole card, including its name and bottom edge"};
+    let st = named?{state:'green',icon:'✓',msg:loop.vote.name}:found?.cropSafe===false?{state:'amber',icon:'◎',msg:'Show the whole card on a clear background'}:found?guideState(m, steady):{state:"red",icon:"◎",msg:"Show the whole card, including its name and bottom edge"};
     steady = st.state === "green" || (st.state === "amber" && st.msg === "Hold steady…") ? steady + 1 : 0;
     // After an add, wait for a different card (or the card to leave) before capturing again.
     // One automatic capture per card: wait for a different card (or the card to leave) first.
@@ -1294,7 +1329,7 @@ export function registerScanner(ctx) {
     }
     loop.observation.frameAnalysisMs=clockNow()-freezeAt;
     if(loop.bestCapture&&(!canReuseCapture(loop.bestCapture,loop.signature,loop.geometryMotion)||m.motion>=T.motion||loop.bestCapture.selectedGame!==loop.observation.selectedGame||loop.bestCapture.ocrLang!==loop.observation.ocrLang||JSON.stringify(loop.bestCapture.defaultsByGame)!==JSON.stringify(loop.observation.defaultsByGame)))loop.bestCapture=null;
-    if(found&&found.cropSafe===true&&!captureLock&&m.motion<T.motion&&m.sharp>=T.sharp&&m.glare<=T.glare){
+    if(found&&(found.cropSafe===true||named)&&!captureLock&&m.motion<T.motion&&(named||(m.sharp>=T.sharp&&m.glare<=T.glare))){
       const qualityScore=m.sharp/(1+m.motion);
       if(!loop.bestCapture||qualityScore>loop.bestCapture.score){
         loop.bestCapture={...loop.observation,score:qualityScore,stableMs:Date.now()-(loop.stableAt||Date.now()),firstEligibleAt:loop.stableAt};
@@ -1347,7 +1382,7 @@ export function registerScanner(ctx) {
     // sensor frame in that case and let original-photo recovery handle it.
     const observed=automatic?loop.observation:loop(false);
     if(automatic&&(!loop.quad||Date.now()-loop.quadAt>1000))return;
-    if(automatic&&loop.proposal?.cropSafe===true&&(loop.quality?.sharp||0)<T.sharp){setStatus('Keep the name and bottom code readable. Hold steady.');return;}
+    if(automatic&&!loop.vote&&loop.proposal?.cropSafe===true&&(loop.quality?.sharp||0)<T.sharp){setStatus('Keep the name and bottom code readable. Hold steady.');return;}
     const candidate=automatic&&canReuseCapture(loop.bestCapture,loop.signature,loop.geometryMotion)?loop.bestCapture:observed||{...freezeCapture(v),at:Date.now(),selectedGame:game(),defaultsByGame:capturePrefs(),ocrLang:scanLang(),geometryUncertain:true};
     if(!automatic&&captureLock&&Date.now()-(s().lastCaptureAt||0)<600&&sigDiff(captureLock.signature,sourceLockSignature(candidate.original,captureLock.region))<9)return;
     const nextLock=acceptedCaptureLock(candidate);

@@ -143,7 +143,7 @@ export function fuseClues(g,pack,verdict,read={}){
   if(byId.length&&keys(byId).size===1){proof=named?'picture, name and number':'picture and number';pick=byId;}
   else if(!byId.length&&keys(seen).size===1&&seen[0].clean&&(named||stat)){proof=named?'picture and name':'picture and printed stats';pick=seen;}
   if(pick)return {sure:true,known:true,named,proof,key:printKey(g,pick[0].r),cands:out(pick,{exact:true,why:`Matched by ${proof}`})};
-  return {sure:false,named,known:named||stat||verdict.dist<=FUSE.strong-16,cands:out(byId.length>1?byId:seen,{exact:false,identitySource:'artwork',why:keys(seen).size>1?'Picture matched · choose the printing':'Picture matched · check the card'})};
+  return {sure:false,named,idSeen:byId.length>0,known:named||stat||verdict.dist<=FUSE.strong-16,cands:out(byId.length>1?byId:seen,{exact:false,identitySource:'artwork',why:keys(seen).size>1?'Picture matched · choose the printing':'Picture matched · check the card'})};
  }
  if(verdict.dist<=FUSE.suggest&&verdict.rival-verdict.dist>=FUSE.suggestGap)return {sure:false,known:false,cands:out(seen,{exact:false,identitySource:'artwork',why:'Looks like this card · check the card and printing'})};
  return {sure:false,known:false,cands:[]};
