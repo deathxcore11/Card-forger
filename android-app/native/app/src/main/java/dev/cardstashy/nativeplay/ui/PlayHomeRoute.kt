@@ -100,7 +100,9 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
     val act = PlayHomeActions(
         mode = { when (it) { "quick", "practice", "social" -> onLobby(it); "planeswalk" -> onWeb("https://cardstashy.com/planeswalk.html"); else -> onWeb(SITE_PLAY) } },
         story = { onStory() },
-        view = { when (it) { "switch" -> onCollection(); "collection" -> onTrunk(); "decks" -> onDecks(); "deeds" -> onAchievements(null); "quests" -> onAchievements("quests"); "shop" -> onShop("sets", null); "packs" -> onShop("packs", null); "forge" -> onShop("forge", null); else -> onWeb(SITE_PLAY) } },
+        view = { when (it) { "switch" -> onCollection(); "collection" -> onTrunk(); "decks" -> onDecks(); "deeds" -> onAchievements(null); "quests" -> onAchievements("quests"); "shop" -> onShop("sets", null); "packs" -> onShop("packs", null); "forge" -> onShop("forge", null)
+            // Build a deck: the app's own finder on Play Decks (not the website).
+            "finder" -> { DecksOpen.ask.value = DecksAsk.Finder; onDecks() }; else -> onWeb(SITE_PLAY) } },
         claim = { kind, id -> run { Progress.claim(kind, id, null) } },
         claimDeed = { id, step -> run { Progress.claim("ach", id, step) } },
         forge = { to, times -> run { Progress.forge(to, times) } },
@@ -112,7 +114,8 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
                 scope.launch { val r = openOne(id); if (opener?.note == LOADING) { opener = r; if (r == null) android.widget.Toast.makeText(context, why ?: "That pack didn't open. Try again in a moment.", android.widget.Toast.LENGTH_LONG).show() } }
             } },
         buy = { code -> run { Progress.buy(code) } },
-        deck = { onWeb(SITE_PLAY) },
+        // A deck tile (and the Thor's Open deck) opens that deck on Play Decks.
+        deck = { id -> DecksOpen.ask.value = DecksAsk.Deck(id); onDecks() },
         set = { onShop("sets", it) },
     )
     androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {

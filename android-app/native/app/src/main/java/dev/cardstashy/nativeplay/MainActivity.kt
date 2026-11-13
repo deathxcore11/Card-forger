@@ -379,7 +379,7 @@ private fun App(activity: MainActivity) {
         val prev = trail.getOrNull(trail.size - 2)
         if (prev is Screen.CollectionSearch) { back(); if (prev.game != g) swap(Screen.CollectionSearch(g)) } else go(Screen.CollectionSearch(g))
     }) else null
-    androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalShopNav provides { tab -> go(Screen.Shop(tab)) }, dev.cardstashy.nativeplay.ui.LocalShopSetNav provides { code -> go(Screen.Shop("sets", code)) },
+    androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalShopNav provides { tab -> go(Screen.Shop(tab)) }, dev.cardstashy.nativeplay.ui.LocalShopSetNav provides { code -> go(Screen.Shop("sets", code)) }, dev.cardstashy.nativeplay.ui.LocalPlayDecksNav provides { if (screen != Screen.PlayDecks) go(Screen.PlayDecks) },
         dev.cardstashy.nativeplay.ui.LocalCollectionSearch provides searchOpen) {
     // The Play theme root: every Play screen draws dark whatever the theme setting says; Collection and the shell follow it.
     remember { dev.cardstashy.nativeplay.ui.AppSettings.playSide = { presenceWhere(trail.last()).view == "play" } }

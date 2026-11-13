@@ -122,12 +122,22 @@ class CardSheetActions(
     val merchant: ((code: String, name: String) -> Unit)? = null,
     /** Null: the Shop's set page (LocalShopSetNav); a host can send it elsewhere. */
     val set: ((code: String) -> Unit)? = null,
-    val precon: (name: String, code: String) -> Unit = { _, _ -> },
-    val newDeck: (name: String) -> Unit = {},
+    /** Null: Play Decks finds the set's precon with the card (DecksAsk.Precon, LocalPlayDecksNav); with neither, the button is hidden. */
+    val precon: ((name: String, code: String) -> Unit)? = null,
+    /** Null: Play Decks opens a new deck holding the card (DecksAsk.NewDeck, LocalPlayDecksNav); with neither, the button is hidden. */
+    val newDeck: ((name: String) -> Unit)? = null,
     val toast: (String) -> Unit = {},
     /** app.js play.edit: a deck open in the builder; the card view steps copies there and can make the card its cover. */
     val edit: DeckEditCtx? = null,
 )
+
+/** A card's New deck and Find it in a precon: the host's own, else Play Decks (one handler for Trunk, lobby, Shop, packs). */
+@Composable
+private fun deckLinks(act: CardSheetActions): Pair<((String) -> Unit)?, ((String, String) -> Unit)?> {
+    val nav = LocalPlayDecksNav.current
+    return (act.newDeck ?: nav?.let { go -> { name: String -> DecksOpen.ask.value = DecksAsk.NewDeck(name); go() } }) to
+        (act.precon ?: nav?.let { go -> { name: String, code: String -> DecksOpen.ask.value = DecksAsk.Precon(name, code); go() } })
+}
 
 class DeckEditCtx(val name: String, val qty: (String) -> Int, val copies: Int, val step: (String, Int) -> Unit)
 
@@ -642,6 +652,7 @@ private fun StepBtn(label: String, enabled: Boolean, gold: Boolean, onClick: () 
 
 @Composable
 private fun PlayActions(name: String, shown: JsonObject, state: JsonObject?, n: Int, act: CardSheetActions, onGet: () -> Unit) {
+    val newDeck = deckLinks(act).first
     val decks = Trunk.decks(state)
     val ownOpen = remember { mutableStateOf(false) }
     val openState: androidx.compose.runtime.MutableState<Boolean> = LocalDecksOpen.current ?: ownOpen
@@ -654,7 +665,7 @@ private fun PlayActions(name: String, shown: JsonObject, state: JsonObject?, n: 
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (n < 4) GoldCta(if (n > 0) "Get more copies" else "Get it", onClick = onGet)
             if (decks.isNotEmpty()) GhostButton("Add to deck", gold = n >= 4) { open = !open }
-            GhostButton("New deck") { act.newDeck(name) }
+            newDeck?.let { nd -> GhostButton("New deck") { nd(name) } }
         }
         if (open) Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             decks.forEach { d -> GhostButton(d.s("name").ifBlank { "Untitled deck" }, Modifier.fillMaxWidth()) { scope.launch { addToDeck(d, name, state, act) } } }
@@ -677,6 +688,7 @@ private suspend fun addToDeck(d: JsonObject, name: String, state: JsonObject?, a
 
 @Composable
 private fun GetIt(name: String, shown: JsonObject, state: JsonObject?, n: Int, act: CardSheetActions) {
+    val precon = deckLinks(act).second
     val scope = rememberCoroutineScope()
     val view = LocalView.current
     val st = if (n < 4) Trunk.stamp(state, shown) else null
@@ -705,7 +717,7 @@ private fun GetIt(name: String, shown: JsonObject, state: JsonObject?, n: Int, a
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (toMerchant != null) { if (n < 4) GoldCta("Its pack at the Merchant") { toMerchant(set, name) } else GhostButton("Its pack at the Merchant") { toMerchant(set, name) } }
                 if (toSet != null) GhostButton("See the whole set") { toSet(set) }
-                if (n < 4) GhostButton("Find it in a precon") { act.precon(name, set) }
+                if (n < 4 && precon != null) GhostButton("Find it in a precon") { precon(name, set) }
             }
         }
     }
@@ -821,6 +833,7 @@ private fun stepDown(size: Int): Int = Rule.Sizes.getOrElse(Rule.Sizes.indexOf(s
  */
 @Composable
 private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose: () -> Unit, @Suppress("UNUSED_PARAMETER") startTab: String) {
+    val precon = deckLinks(act).second
     val context = LocalContext.current
     val view = LocalView.current
     val data = CardData.ready.collectAsState().value.also { if (it == null) CardData.warm(context) }
@@ -965,7 +978,7 @@ private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActi
                 else if (st != null) add(("Stamp it · 1 ${st.rarity} seal") to (if (st.seals >= 1) getNow else null))
             }
             if (code.isNotBlank() && toMerchant != null) add("Its pack at the Merchant" to { toMerchant(code, name) })
-            if (owned < 4 && code.isNotBlank()) add("Find it in a precon" to { act.precon(name, code) })
+            if (owned < 4 && code.isNotBlank() && precon != null) add("Find it in a precon" to { precon(name, code) })
         }
         val sections = listOf(
             DualSection("Yours", .9f, listOfNotNull(

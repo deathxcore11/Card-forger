@@ -472,8 +472,6 @@ fun TrunkRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
             CardSheet(pick, s, startTab = openTab, act = CardSheetActions(
                 merchant = { code, _ -> open = null; onSet(code) },
                 set = { code -> open = null; onSet(code) },
-                precon = { _, _ -> open = null; onWeb("https://cardstashy.com/#play") },
-                newDeck = { open = null; onWeb("https://cardstashy.com/#play") },
                 toast = toast), onClose = { open = null })
         }
     }
