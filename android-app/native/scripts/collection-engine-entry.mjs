@@ -43,6 +43,7 @@ import {createConditionRefreshScheduler, changedConditionLots, conditionLotIdent
 import {locationPicker, rememberLocation} from 'WEB/collection-locations.js';
 import {acquireMissing, parseDeckImport} from 'WEB/deck-flow.js';
 import {alerts as priceAlerts, alertFor, setAlert, onAlert, alertText, priceSeries, recordCardPrice} from 'WEB/pricehist.js';
+import {sharedPoints, loadSharedPoints, mergePoints} from 'WEB/sharedprices.js';
 import {quoteModel, recordQuote, HISTORY_RANGES, modeFor, selectionState, registerWorkbench} from 'WEB/workbench-ui.js';
 import {setHistoryRefresh} from 'WEB/shared-history.js';
 import {loadSharedHistory} from 'WEB/shared-history.js';
@@ -5709,13 +5710,18 @@ globalThis.Collection = {
   // price history series for the line.
   alertOpen(g, id, name) {
     id = String(id || '');
-    let value = priceSeries(g, id).at(-1)?.[1] ?? null;
-    if (value == null) try { const card = g === 'mtg' ? meta(name) : tcgCardOf(g, id.split('|')[0]), finish = id.split('|')[1] || (g === 'mtg' ? 'nonfoil' : 'reference');
-      value = quoteModel(g, card, finish)?.value ?? null; } catch {}
+    let value = priceSeries(g, id).at(-1)?.[1] ?? null, quote = null;
+    try { const card = g === 'mtg' ? meta(name) : tcgCardOf(g, id.split('|')[0]), finish = id.split('|')[1] || (g === 'mtg' ? 'nonfoil' : 'reference');
+      quote = card ? quoteModel(g, card, finish) : null; if (value == null) value = quote?.value ?? null; } catch {}
     const a = alertFor(g, id), fill = (own, f) => (a ? (own ?? '') : value != null ? (value * f).toFixed(2) : '');
+    // The line: this device's own price checks merged with the site's shared daily prices (sharedprices.js, as the card page's
+    // history merges them: the server's point wins on the same day); the shared ones asked for when none are here yet.
+    const shared = quote ? sharedPoints(quote) : [], sharedAsked = !!quote && !shared.length && (g === 'mtg' || g === 'ygo');
+    if (sharedAsked) loadSharedPoints(quote);
+    const series = mergePoints(priceSeries(g, id).map(([date, v]) => ({date, value: v})), shared).map(p => [p.date, Number(p.value)]);
     return json({game: g, id, name: name || 'This card', price: value, exists: !!a, below: String(fill(a?.below, .85)), above: String(fill(a?.above, 1.25)),
       hintBelow: value != null ? (value * .85).toFixed(2) : 'e.g. 5.00', hintAbove: value != null ? (value * 1.25).toFixed(2) : 'e.g. 20.00',
-      series: priceSeries(g, id)});
+      series, sharedAsked});
   },
   // A.priceAlertSave with the two fields' text: its error line, or the alert saved and its toast.
   alertSave(g, id, name, belowText, aboveText) {

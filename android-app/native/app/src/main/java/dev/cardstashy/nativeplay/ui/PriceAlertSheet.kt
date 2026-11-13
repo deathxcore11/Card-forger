@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -42,7 +43,8 @@ import kotlinx.coroutines.launch
  * pricehist.js alertSheet (app.js A.priceAlert), drawn as the gap-screens preview: the card and its price now, its price line with the
  * two marks, "Tell me when it drops below" / "or rises above" (the alert's own numbers, else 15 % under and 25 % over), the site's two
  * error lines, "Price alert active" when one is set, Save alert and Remove alert. Saved in the Collection engine with the site's own
- * code (Collection.alertSave / alertClear), per account; [CollectionWrites.AlertOpen.saved] redraws the page under it.
+ * code (Collection.alertSave / alertClear), per account; [CollectionWrites.AlertOpen.saved] redraws the page under it. The price line
+ * is this device's checks merged with the site's shared daily prices (sharedprices.js), so it shows on a fresh launch.
  */
 @Composable
 internal fun PriceAlertSheet(a: CollectionWrites.AlertOpen, backdrop: GraphicsLayer?, onClose: () -> Unit) {
@@ -54,6 +56,13 @@ internal fun PriceAlertSheet(a: CollectionWrites.AlertOpen, backdrop: GraphicsLa
     var above by remember(m) { mutableStateOf(m.str("above")) }
     var error by remember(m) { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
+    // The site's shared daily prices, when this device had none for the card yet: fetched once, then the line drawn with them.
+    var line by remember(m) { mutableStateOf(m) }
+    LaunchedEffect(m) {
+        if (m.get("sharedAsked")?.asBoolean != true) return@LaunchedEffect
+        CollectionEngine.settle(10_000)
+        runCatching { CollectionEngine.alertOpen(a.game, a.cardId, a.name) }.getOrNull()?.getAsJsonArray("series")?.let { s -> line = m.deepCopy().apply { add("series", s) } }
+    }
     val exists = m.get("exists")?.asBoolean == true
     // Android's notification permission, asked once on the first Save alert while the daily check is on (gap audit H2 step 4).
     val ask = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { }
@@ -89,7 +98,7 @@ internal fun PriceAlertSheet(a: CollectionWrites.AlertOpen, backdrop: GraphicsLa
         }
     }
     SiteSheet("Price alert", backdrop, onClose = onClose) { _ ->
-        PriceAlertBody(m, below, above, error, exists, onBelow = { below = it; error = "" }, onAbove = { above = it; error = "" })
+        PriceAlertBody(line, below, above, error, exists, onBelow = { below = it; error = "" }, onAbove = { above = it; error = "" })
         Spacer(Modifier.height(10.dp))
         // The preview's line: the daily check (the same switch as Settings › Price alert notifications).
         Row(Modifier.fillMaxWidth().clickable { AppSettings.set("priceAlertDaily", !AppSettings.priceAlertDaily) }, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {

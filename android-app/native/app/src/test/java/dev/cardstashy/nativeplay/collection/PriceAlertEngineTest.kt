@@ -45,4 +45,25 @@ class PriceAlertEngineTest {
         CollectionEngine.alertClear("mtg", id)
         assertEquals(0, CollectionEngine.alertList().size())
     }
+
+    /** The line on a fresh launch: the site's shared daily prices (sharedprices.js, /api/prices/history), merged with this device's. */
+    @Test fun lineFromTheSharedDailyPrices() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.store = CollectionEngine.MemoryStore()
+        CollectionEngine.initFrom(bundle); CollectionEngine.restart()
+        CollectionEngine.load(com.google.gson.JsonObject(), null)
+        assertEquals(null, CollectionEngine.compareLookup("mtg", 0, "Lightning Bolt"))   // the card looked up, as its page does
+        var asked = ""
+        CollectionEngine.answerForTest = { url -> if (url.contains("/api/prices/history")) { asked = url; 200 to """{"points":[{"date":"2026-11-01","value":1.1},{"date":"2026-11-12","value":1.3}]}""" } else null }
+        try {
+            val first = CollectionEngine.alertOpen("mtg", "bolt|nonfoil", "Lightning Bolt")
+            assertTrue(first.toString(), first["sharedAsked"].asBoolean)
+            CollectionEngine.settle(10_000)
+            val again = CollectionEngine.alertOpen("mtg", "bolt|nonfoil", "Lightning Bolt")
+            println("ASKED $asked SERIES ${again["series"]}")
+            assertTrue(asked.contains("game=mtg"))
+            assertEquals(listOf("2026-11-01", "2026-11-12"), again["series"].asJsonArray.map { it.asJsonArray[0].asString })
+            assertFalse(again["sharedAsked"].asBoolean)
+        } finally { CollectionEngine.answerForTest = null }
+    }
 }
