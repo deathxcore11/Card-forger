@@ -91,4 +91,13 @@ class AskSheetTest {
             assertEquals("openDeckFlow", CollectionWrites.building.value?.act)
         } finally { CollectionWrites.deckNav = null; CollectionWrites.metaDeck.value = null; CollectionWrites.building.value = null }
     }
+
+    @Test fun thorTopScreenShowsWhatTheAnswerNames() {
+        val opened = mutableListOf<String>()
+        val lines = listOf(j("""{"who":"me","text":"Best deck?"}"""), j("""{"who":"ai","source":"From your app data","sourceKind":"app","text":"Snake-Eye leads.",
+            "items":[{"show":{"kind":"meta","game":"ygo","ref":"snake-eye"},"title":"Snake-Eye Fire King","lines":["Meta deck · Yu-Gi-Oh!"],"price":"","art":"","build":false,"status":"","label":""}],"choices":[],"follow":[]}"""))
+        rule.setContent { Column { AskNamed(lines) { opened += it["ref"].asString } } }
+        rule.onNodeWithContentDescription("Open Snake-Eye Fire King").performSemanticsAction(SemanticsActions.OnClick)
+        assertEquals(listOf("snake-eye"), opened)
+    }
 }

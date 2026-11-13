@@ -12,6 +12,10 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -98,15 +102,27 @@ internal fun AskSheet(o: CollectionWrites.AskOpen, backdrop: GraphicsLayer?, onC
     val lines = m.getAsJsonArray("lines")?.map { it.asJsonObject }.orEmpty()
     val end = remember { BringIntoViewRequester() }
     LaunchedEffect(lines.size, busy) { runCatching { end.bringIntoView() } }
-    SiteSheet(m.s("title").ifBlank { "Ask CardStashy" }, backdrop, onClose = onClose, eyebrow = m.s("eyebrow"),
-        lead = { Box(Modifier.size(38.dp).clip(CircleShape).background(Color(0x1AD6AD64)), contentAlignment = Alignment.Center) { BrandMark(30.dp) } },
-        action = { AskNew(enabled = !busy) { restart() } },
-        foot = { AskBar(typed, { typed = it.take(300) }, m.s("placeholder"), enabled = !busy) { send(typed) } }) { _ ->
+    val two = DualScreen.active
+    val chat: @Composable ColumnScope.() -> Unit = {
         if (lines.isEmpty()) AskEmpty(m, enabled = !busy) { send(it) }
         else Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             lines.forEach { l -> AskLine(l, busy, ::send, ::choose, ::open) }
         }
         Spacer(Modifier.height(1.dp).bringIntoViewRequester(end))
+    }
+    val bar: @Composable () -> Unit = { AskBar(typed, { typed = it.take(300) }, m.s("placeholder"), enabled = !busy) { send(typed) } }
+    SiteSheet(m.s("title").ifBlank { "Ask CardStashy" }, backdrop, onClose = onClose, eyebrow = m.s("eyebrow"),
+        lead = { Box(Modifier.size(38.dp).clip(CircleShape).background(Color(0x1AD6AD64)), contentAlignment = Alignment.Center) { BrandMark(30.dp) } },
+        action = { AskNew(enabled = !busy) { restart() } },
+        foot = if (two) null else bar) { _ ->
+        // A two-screen handheld: the chat and its bar on the bottom screen, what the newest answer names on the top one.
+        if (two) AskNamed(lines, ::open) else chat()
+    }
+    if (two) BottomScreen {
+        Column(Modifier.fillMaxSize().background(Site.Bg).padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), content = chat)
+            Spacer(Modifier.height(10.dp)); bar()
+        }
     }
     PadScreen(PadActs(y = if (!busy && lines.isNotEmpty()) PadAct("New") { restart() } else null))
 }
@@ -261,5 +277,36 @@ internal fun askGo(d: JsonObject, page: String, card: (CardOpen) -> Unit, sets: 
             else -> web("https://cardstashy.com/$h", null)
         } }
         else -> web("https://cardstashy.com/#search", "[data-act=\"askOpen\"]")
+    }
+}
+
+/**
+ * The top screen on a two-screen handheld: the cards, sets and decks the newest answer names, large, each opening its page; before
+ * any, the greeting.
+ */
+@Composable
+internal fun ColumnScope.AskNamed(lines: List<JsonObject>, open: (JsonObject) -> Unit) {
+    val last = lines.lastOrNull { it.s("who") == "ai" }
+    val items = last?.getAsJsonArray("items")?.map { it.asJsonObject }.orEmpty()
+    if (items.isEmpty()) {
+        Spacer(Modifier.height(24.dp))
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { BrandMark(72.dp) }
+        Spacer(Modifier.height(12.dp))
+        Text(if (last == null) "Ask on the bottom screen. The cards and decks it names show here." else last.s("text"), Modifier.fillMaxWidth(),
+            style = cssType(15f, 600, 22f, AskMute), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        return
+    }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        items.take(4).forEach { t ->
+            val show = t.getAsJsonObject("show") ?: return@forEach
+            val title = t.s("title").ifBlank { show.s("label").ifBlank { show.s("ref") } }
+            Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable { open(show) }.semantics { role = Role.Button; contentDescription = "Open $title" },
+                verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (t.s("art").isNotEmpty()) CardPicture(t.s("art"), null, null, Modifier.fillMaxWidth().aspectRatio(if (show.s("kind") == "card") 488f / 680f else 4f / 3f), RoundedCornerShape(10.dp),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+                Text(title, style = cssType(13.5f, 700, 18f), maxLines = 2)
+                if (t.s("price").isNotEmpty()) Text(t.s("price"), style = cssType(13f, 700, 17f, Site.Gold))
+            }
+        }
     }
 }
