@@ -60,7 +60,7 @@ console.log('collection engine bundled from', sha, kb + ' KB');
 
 // The Scanner's engine for the app's WebView (ScanWeb.kt): scancam.js and its scan-* modules as the site runs them, with Chrome's own
 // canvas, images, timers, fetch and storage (scan-web-entry.mjs). The site's text reader goes with it (vendor/tesseract.min.js and
-// vendor/worker.min.js, served to that page as the site serves them; its core and language data load from jsdelivr, as on the site).
+// vendor/worker.min.js, served to that page as the site serves them, with its engine and English data from vendor/tess, so reading works with no network).
 {
   const {execFileSync} = await import('node:child_process');
   const tmp = join(app, 'build', 'scan-web-entry.mjs');
@@ -70,5 +70,7 @@ console.log('collection engine bundled from', sha, kb + ' KB');
     `--banner:js=/* CardStashy Scanner engine (WebView), web ${sha} */`, `--outfile=${out}`, '--log-level=error']);
   mkdirSync(join(app, 'app/src/main/assets/vendor'), {recursive: true});
   for (const f of ['tesseract.min.js', 'worker.min.js', 'TESSERACT-LICENSE.txt']) writeFileSync(join(app, 'app/src/main/assets/vendor', f), readFileSync(join(web, 'vendor', f)));
+  mkdirSync(join(app, 'app/src/main/assets/vendor/tess'), {recursive: true});
+  for (const f of ['tesseract-core-simd-lstm.wasm.js', 'eng.traineddata.gz', 'CORE-LICENSE.txt']) writeFileSync(join(app, 'app/src/main/assets/vendor/tess', f), readFileSync(join(web, 'vendor/tess', f)));
   console.log('scanner engine (WebView) bundled', (readFileSync(out).length / 1024).toFixed(0) + ' KB');
 }

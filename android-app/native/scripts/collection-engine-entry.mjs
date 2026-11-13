@@ -4364,7 +4364,6 @@ const scanCtx = {
   // A card's page: the app opens it (acted card / tCard).
   details: (g, c) => { if (panel?.scan) panel.acted = g === "mtg" ? {act: 'card', data: {name: c.name}} : {act: 'tCard', data: {id: c.id, game: g}}; },
 };
-scanCtx.aiAccount=()=>!!cloudInfo().user;
 scanCtx.rememberLocation=(g,name,{createBinder=false}={})=>commit(s=>{rememberLocation(s,g,name,{createBinder});},{rerender:false});
 scanCtx.lookupCandidates=createScannerLookup({requestMagic:api,sources:tcgSources,candById:scanCtx.candById,match:scanCtx.match});
 function scanReady() { if (scanOn) return; scanOn = true; tcgReady(); registerScanner(scanCtx); }
