@@ -116,7 +116,8 @@ private sealed interface Screen {
     /** The Search tab for a game (the site's #search). */
     data class CollectionSearch(val game: String = "mtg") : Screen
     /** The Rules page (#rules) for a game. */
-    data class CollectionRules(val game: String = "mtg", val learn: Boolean = false) : Screen
+    /** [ref]: a judge's citation to open on the page (its title and quoted words shown in its place if the page can't open it). */
+    data class CollectionRules(val game: String = "mtg", val learn: Boolean = false, val ref: com.google.gson.JsonObject? = null, val refTitle: String = "", val refQuote: String = "") : Screen
     /** The Wiki page (#wiki, #wiki/<topic>) for a game. */
     data class CollectionWiki(val game: String = "mtg", val topic: String = "") : Screen
     /** The Scan tab (the site's #scan) for a game. */
@@ -400,6 +401,7 @@ private fun App(activity: MainActivity) {
     // An Ask tile's deck (gap audit H3): the app's own deck page.
     androidx.compose.runtime.SideEffect { dev.cardstashy.nativeplay.ui.CollectionWrites.deckNav = if (NATIVE_DECK) ({ id, g -> go(Screen.CollectionDeck(id, g)) }) else null }
     androidx.compose.runtime.SideEffect { dev.cardstashy.nativeplay.ui.CollectionWrites.rulesNav = { g, learn -> go(Screen.CollectionRules(g, learn)) } }
+    androidx.compose.runtime.SideEffect { dev.cardstashy.nativeplay.ui.CollectionWrites.ruleRef = { g, ref, title, quote -> go(Screen.CollectionRules(g, ref = ref, refTitle = title, refQuote = quote)) } }
     androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalShopNav provides { tab -> go(Screen.Shop(tab)) }, dev.cardstashy.nativeplay.ui.LocalShopSetNav provides { code -> go(Screen.Shop("sets", code)) }, dev.cardstashy.nativeplay.ui.LocalPlayDecksNav provides { if (screen != Screen.PlayDecks) go(Screen.PlayDecks) },
         dev.cardstashy.nativeplay.ui.LocalCollectionSearch provides searchOpen) {
     // The Play theme root: every Play screen draws dark whatever the theme setting says; Collection and the shell follow it.
@@ -496,7 +498,7 @@ private fun App(activity: MainActivity) {
                 onDecks = { if (NATIVE_DECKS) go(Screen.CollectionDecks) else go(Screen.Web("https://cardstashy.com/#decks", null)) },
                 onSearch = { go(Screen.CollectionSearch(s.game)) }, web = { url, press -> site(url, press) }, game = s.game,
                 onGame = { g -> dev.cardstashy.nativeplay.ui.CollectionGame.set(dev.cardstashy.nativeplay.ui.CardGame.of(g)); swap(Screen.CollectionRules(g)) },
-                onWiki = { t -> go(Screen.CollectionWiki(s.game, t)) }, startLearn = s.learn)
+                onWiki = { t -> go(Screen.CollectionWiki(s.game, t)) }, startLearn = s.learn, startRef = s.ref, refTitle = s.refTitle, refQuote = s.refQuote)
         }
         is Screen.CollectionWiki -> {
             LaunchedEffect(Unit) { activity.inGame(false) }

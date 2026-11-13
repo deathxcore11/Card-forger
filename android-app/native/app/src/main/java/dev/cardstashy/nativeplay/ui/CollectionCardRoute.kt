@@ -317,7 +317,7 @@ internal fun dataset(d: Map<String, String>) = JsonObject().apply { for ((k, v) 
 
 /**
  * rule-dex.js's glass for a rule word on a card's page (A.ruleHint), drawn over it (SiteGlass): its ✕, a tap outside, Back and
- * Read the exact source run here; its Find related cards, Ask and Explore rules (the Search, AI and Rules pages) open the website's
+ * Read the exact source run here, and Ask about this situation opens the app's Ask a Judge; its Find related cards and Explore rules open the website's
  * card sheet with the same word and press the same button there.
  */
 @Composable
@@ -328,6 +328,8 @@ internal fun RuleGlassOver(glass: SitePanelModel?, open: CardOpen, ruleKey: Stri
     fun shut() { scope.launch { runCatching { CollectionEngine.ruleGlassClose() } }; set(null) }
     fun take(m: SitePanelModel) {
         val a = m.acted?.get("act")?.takeIf { it.isJsonPrimitive }?.asString
+        // Ask about this situation (A.askRules): the app's Ask a Judge, with this card and rule (the engine's judgeContextOf).
+        if (a == "askRules") { shut(); CollectionWrites.judge(m.acted?.getAsJsonObject("data")?.get("judge")?.takeIf { it.isJsonPrimitive }?.asString, open.game.ifBlank { "mtg" }); return }
         if (a != null) { shut()
             web(open.page, listOf(open.tile, "#sheet[open] [data-act=\"ruleHint\"][data-rule=\"${css(ruleKey)}\"]", ".rule-glass [data-act=\"${css(a)}\"]").joinToString("\n")); return }
         if (m.glass == null) shut() else set(m)

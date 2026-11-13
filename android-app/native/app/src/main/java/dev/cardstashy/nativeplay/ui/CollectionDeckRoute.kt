@@ -227,6 +227,9 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
         val act = a.get("act")?.takeIf { it.isJsonPrimitive }?.asString ?: return
         val got = { k: String -> a.getAsJsonObject("data")?.get(k)?.takeIf { it.isJsonPrimitive }?.asString.orEmpty() }
         when {
+            // Ask a Judge (A.askRules, and the War Chest's judge: app.js chestTool's A.askRules with the deck's format): the app's own chat.
+            act == "askRules" -> { CollectionWrites.judge(got("judge").ifBlank { null }, game.id, got("ruleFormat")); return }
+            act == "chestTool" && got("tool") == "judge" -> { CollectionWrites.judge(null, game.id, m.key.split('|').getOrElse(4) { "" }); return }
             // A card in the panel (the War Chest's sample hand, tcg.js A.tCard): its page here.
             act == "tCard" && got("id").isNotEmpty() -> { tcgOpen(got("id")); return }
             // A tab the panel opens (the War Chest's Goldfish, tcg.js A.tDeckTab): here when drawn here, else the website's.
@@ -257,13 +260,11 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
         val sel = "[data-act=\"${css(act)}\"]" + data.joinToString("") { (k, v) -> "[data-" + k.replace(Regex("[A-Z]")) { "-" + it.value.lowercase() } + "=\"${css(v.asString)}\"]" }
         // Game Night (tabletop.js openTabletop) is the website's. From the deck's War Chest it keeps the deck's journal; when the
         // website on this phone does not have the deck (not signed in there, or not synced yet) the Rules page's Tabletop
-        // button (A.tabletop) opens the same table without it, rather than nothing happening (Randall 6 Nov). Ask the Judge the same
-        // way: the Rules page's Ask about rules (A.askRules).
+        // button (A.tabletop) opens the same table without it, rather than nothing happening (Randall 6 Nov).
         // Card lookup (app.js chestTool: go('#search')): the app's own Search.
         if (act == "chestTool" && got("tool") == "lookup") { searchTab?.let { it(); return } }
         val table = act == "chestTool" && got("tool") in setOf("gameNight", "share", "spirit", "journal")
-        val judge = act == "chestTool" && got("tool") == "judge"
-        web("$page/" + android.net.Uri.encode(deckTab), if (table) "$sel\n||\n#rules\n[data-act=\"tabletop\"]" else if (judge) "$sel\n||\n#rules\n[data-act=\"askRules\"]" else sel)
+        web("$page/" + android.net.Uri.encode(deckTab), if (table) "$sel\n||\n#rules\n[data-act=\"tabletop\"]" else sel)
     }
     /** A tap or typing in the panel: the site's listeners, then what they start (the rulebook, a source) as it lands. */
     fun panelDo(call: suspend () -> com.google.gson.JsonObject) = scope.launch {

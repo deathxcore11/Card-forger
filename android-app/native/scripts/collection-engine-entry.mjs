@@ -71,7 +71,7 @@ import {cardImage, img as imgHtml} from 'WEB/ui.js';
 import {artworkHTML, artworkSources} from 'WEB/artwork.js';
 import {deckCardCategory} from 'WEB/deck-viewer.js';
 import {massEntryUrl} from 'WEB/buy.js';
-import {interactiveRules, attachRuleLearning} from 'WEB/rule-learning.js';
+import {interactiveRules, attachRuleLearning, openRuleReference} from 'WEB/rule-learning.js';
 import {rulesPage, learnSheet} from 'WEB/rules.js';
 import {showRuleHint} from 'WEB/rule-dex.js';
 import {rollDice, warChestMarkup, chestResume} from 'WEB/war-chest.js';
@@ -3708,7 +3708,18 @@ function panelRun(f) {
   globalThis.document = panel.doc; globalThis.window = {innerWidth: 390, innerHeight: 844, document: panel.doc, addEventListener() {}, removeEventListener() {}, dispatchEvent() { return true; }, getComputedStyle: () => ({})};
   try { return f(); } finally { for (const k of ['document', 'window']) { if (was[k] === undefined) delete globalThis[k]; else globalThis[k] = was[k]; } }
 }
-const PANEL_ACTS = {ruleHint: t => showRuleHint(t)};
+// app.js A.askRules: the rules chat's context from the pressed button (its game and format, else its learning section's; the card the
+// rule glass is about; the rule it shows), handed to the app, which opens Ask a Judge with it (gap audit H4).
+function judgeContextOf(t) {
+  const scope = t?.closest?.('[data-learning-root]'), game = t?.dataset?.game || scope?.dataset?.game || TcgAll.game();
+  const format = t?.dataset?.ruleFormat ?? scope?.dataset?.ruleFormat ?? '';
+  let cards = [], references = [];
+  const raw = t?.closest?.('[data-rule-card-context]')?.dataset?.ruleCardContext;
+  if (raw) { try { const c = JSON.parse(raw); if (c.game === game) cards = [c]; } catch {} }
+  if (t?.dataset?.rulesReferences) { try { references = JSON.parse(t.dataset.rulesReferences); } catch {} }
+  return {game, format, cards, references};
+}
+const PANEL_ACTS = {ruleHint: t => showRuleHint(t), askRules: t => { panel.acted = {act: 'askRules', data: {...t.dataset, judge: JSON.stringify(judgeContextOf(t))}}; }};
 // [acts]: the page's own data-act handlers for this panel (a deck tab's, TDECK_ACTS), before the shared ones.
 function panelOpen(key, html, attach, acts = {}) {
   if (panel?.key === key) return;
@@ -6123,6 +6134,15 @@ globalThis.Collection = {
   playPower(deck) { playPowerPanel(deck); return panelModel(); },
   /** The Rules page for [game] (#rules); read again with panelModel. */
   rulesPage(game) { rulesPagePanel(game || 'mtg'); return panelModel(); },
+  // A judge's citation (gap audit H4): rule-learning.js openRuleReference on the Rules page's learning section, as the page's own
+  // "Open exact rule" does; the rule arrives through panelModel. {opened: false} when the page has no such section or the reference is unreadable.
+  ruleOpen(ref) {
+    let r = null; try { r = JSON.parse(ref); } catch {}
+    const root = panel?.key?.startsWith('rulespage|') ? panel.host.querySelector('[data-learning-root]') : null;
+    if (!root || !r || r.game !== root.dataset.game) return json({opened: false});
+    panelRun(() => { openRuleReference(root, r).catch(() => {}); });
+    return panelModel();
+  },
   /** How to play · keywords (A.learnGame: learnSheet) for [game]. */
   learnGame(game) { learnPanel(game || 'mtg'); return panelModel(); },
   // The Scan page's markup for a screen (scanPanel).

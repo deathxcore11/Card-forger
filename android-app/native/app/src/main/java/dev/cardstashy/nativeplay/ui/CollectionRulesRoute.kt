@@ -44,13 +44,15 @@ private const val SITE = "https://cardstashy.com/"
  * The Rules page (the site's #rules: rules.js rulesPage) for [game], through the site's own code in the Collection engine and drawn by
  * SitePanel: the interactive rules (rule-learning.js, rule words open their glass), Formats & deck limits, the ban lists loaded live
  * (A.rulesList) and the official documents. How to play · keywords (A.learnGame) shows learnSheet here, its ← back to the page.
- * Tabletop and Ask a Judge are the website's for now (opened there with the same press); a banned card opens its page. No tab of
- * the bar is lit (app.js lights none for the rules view).
+ * Ask a Judge opens the app's own chat (JudgeSheet) with the page's context; a judge's citation ([startRef]) opens that exact rule
+ * here, or, when the page cannot open it, shows the rule's title and quoted words in its place (and says so in the log). Tabletop is
+ * the website's for now (opened there with the same press); a banned card opens its page. No tab of the bar is lit (app.js lights
+ * none for the rules view).
  */
 @Composable
 fun CollectionRulesRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, onCards: () -> Unit, onDecks: () -> Unit, onSearch: () -> Unit,
                          web: (url: String, press: String?) -> Unit, game: String = "mtg", onGame: (String) -> Unit = {}, onWiki: ((topic: String) -> Unit)? = null,
-                         startLearn: Boolean = false) {
+                         startLearn: Boolean = false, startRef: JsonObject? = null, refTitle: String = "", refQuote: String = "") {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
@@ -74,8 +76,10 @@ fun CollectionRulesRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             "go" -> when (val to = ds("to")) { "#rules" -> learn = false; "#search" -> onSearch(); "#decks" -> onDecks(); "#collection" -> onCards(); "#home" -> onHome(); else -> web(SITE + to, null) }
             "card" -> cards = cards + CardOpen(ds("name"), page = page, tile = "[data-act=\"card\"][data-name=\"${css(ds("name"))}\"]")
             "tCard" -> cards = cards + CardOpen("", page = page, tile = "[data-act=\"tCard\"][data-id=\"${css(ds("id"))}\"]", game = game, id = ds("id"))
+            // A.askRules: Ask a Judge, in the app, with the press's context (the engine's judgeContextOf).
+            "askRules" -> CollectionWrites.judge(ds("judge").ifBlank { null }, game, ds("ruleFormat"))
             "mtgWikiOpen", "wikiOpen" -> onWiki?.invoke(ds("wikiTopic").ifBlank { ds("topic") }) ?: web(SITE + "#wiki", null)
-            // tabletop.js openTabletop and the AI judge (A.askRules) are the website's: opened there, the same control pressed.
+            // tabletop.js openTabletop is the website's: opened there, the same control pressed.
             else -> if (act.isNotBlank()) web(page, (if (learn) "[data-act=\"learnGame\"]\n#sheet[open] " else "") + "[data-act=\"${css(act)}\"]")
         }
     }
@@ -85,6 +89,17 @@ fun CollectionRulesRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
         runCatching { take(SitePanelModel.parse(call())); CollectionEngine.settle(30_000, CollectionEngine.PANEL_MODEL) { j -> if (j.has("key")) take(SitePanelModel.parse(j)) } }
     }
     LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
+    // A judge's citation: opened once the page is up; if the page can't open it, its words show at the top instead.
+    var refShown by remember(startRef) { mutableStateOf(false) }
+    var refMissing by remember(startRef) { mutableStateOf(false) }
+    LaunchedEffect(panel?.key, startRef) {
+        val r = startRef ?: return@LaunchedEffect
+        if (refShown || learn || panel?.key != "rulespage|$game") return@LaunchedEffect
+        refShown = true
+        val j = runCatching { CollectionEngine.ruleOpen(r) }.getOrNull()
+        if (j == null || j.get("opened")?.asBoolean == false) { refMissing = true; android.util.Log.w("Judge", "cited rule has no Rules page here: $r"); return@LaunchedEffect }
+        panelDo { j }
+    }
     LaunchedEffect(game, learn, session?.userId, revision) {
         failed = false
         val ok = runCatching { ensureCollection(context, session?.userId, session != null, revision) }.getOrDefault(false)
@@ -123,6 +138,7 @@ fun CollectionRulesRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
                         }
                         Column(Modifier.fillMaxWidth().padding(horizontal = gutter).padding(top = if (wide) 4.dp else 10.dp, bottom = 28.dp)) {
                             if (!wide) GameTabs(g, { c -> if (c != g) onGame(c.id) }, compact = true, Modifier.align(Alignment.CenterHorizontally).widthIn(max = 280.dp).padding(bottom = 12.dp))
+                            if (refMissing) JudgeRuleInPlace(refTitle, refQuote)
                             val p = panel
                             if (p == null) Text(if (failed) "The rules couldn’t open. Check your connection and try again." else "Opening the rules…",
                                 Modifier.fillMaxWidth().padding(top = 40.dp), style = Site.Meta, textAlign = TextAlign.Center)
@@ -139,4 +155,15 @@ fun CollectionRulesRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) {
         CollectionCardHost(c, onClose = { cards = emptyList() }, onOpen = { cards = cards + it }, web = web, onBack = { cards = cards.dropLast(1) })
     } }
+}
+
+/** A judge's cited rule the Rules page could not open: its title and the quoted words, in its place. */
+@Composable
+private fun JudgeRuleInPlace(title: String, quote: String) {
+    Column(Modifier.fillMaxWidth().padding(bottom = 14.dp).background(Site.Surface, androidx.compose.foundation.shape.RoundedCornerShape(14.dp)).padding(14.dp)) {
+        Text("CITED BY THE JUDGE", style = Site.Meta)
+        Text(title, Modifier.padding(top = 4.dp), style = Site.Meta.copy(color = Site.Text, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold))
+        if (quote.isNotBlank()) Text(quote, Modifier.padding(top = 6.dp), style = Site.Meta.copy(color = Site.Text))
+        Text("This exact rule could not be opened on this page.", Modifier.padding(top = 6.dp), style = Site.Meta)
+    }
 }

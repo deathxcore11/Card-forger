@@ -434,6 +434,8 @@ object CollectionEngine {
 
     // ---- Ask a Judge (gap audit H4: ai-rules.js in the engine; Collection.judge*) ----
     const val JUDGE_MODEL = "Collection.judgeModel()"
+    /** A judge's citation on the open Rules page (rule-learning.js openRuleReference): the panel, or {opened: false}. */
+    suspend fun ruleOpen(ref: JsonObject): JsonObject = askEval("Collection.ruleOpen(${str(ref.toString())})")
     /**
      * The rules chat for [context] ({game, format, cards, references}, as app.js A.askRules gives it): {open, game, eyebrow, title,
      * format, formatLabel, formats [{value, label}], formatHint, status, placeholder, draft, sendLocked, hello, blurb, cards, cardsNote,
