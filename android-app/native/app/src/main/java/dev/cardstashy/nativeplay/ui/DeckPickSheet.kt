@@ -39,7 +39,9 @@ internal fun DeckPickSheet(p: CollectionWrites.DeckPick, backdrop: GraphicsLayer
         if (busy) return
         busy = true
         scope.launch {
-            val saved = CollectionWrites.act(context, "addToDeck", JsonObject().apply { addProperty("deck", selected); addProperty("name", p.name) })
+            // Magic's A.addToDeck by name; a Yu-Gi-Oh! or Pokémon card's tcg.js A.tAddToDeck by its id.
+            val saved = if (p.game == "mtg") CollectionWrites.act(context, "addToDeck", JsonObject().apply { addProperty("deck", selected); addProperty("name", p.name) })
+                else CollectionWrites.act(context, "tAddToDeck", JsonObject().apply { addProperty("game", p.game); addProperty("deck", selected); addProperty("id", p.cardId) })
             busy = false
             if (saved) onBack()
         }
@@ -55,9 +57,9 @@ internal fun DeckPickSheet(p: CollectionWrites.DeckPick, backdrop: GraphicsLayer
         } else {
             // p.muted: its 6 above meets the name's 6 below (the margins collapse).
             Text("Create a deck first to add this card.", Modifier.padding(bottom = 6.dp), style = SHEET_PLAIN.copy(color = Color(0xFF9AA2B1)))
-            FormGold("Open Decks") { onBack(); p.closeAll(); p.go("#decks") }
+            FormGold("Open Decks") { onBack(); p.closeAll(); p.go(if (p.game == "mtg") "#decks" else "#tdecks") }
         }
     }
     // Controller: X = the sheet's gold button (Add to deck, or Open Decks with none). After SiteSheet, so it sits above the sheet's own entry.
-    PadScreen(PadActs(x = if (decks.isNotEmpty()) PadAct("Add to deck") { add() } else PadAct("Open Decks") { onBack(); p.closeAll(); p.go("#decks") }))
+    PadScreen(PadActs(x = if (decks.isNotEmpty()) PadAct("Add to deck") { add() } else PadAct("Open Decks") { onBack(); p.closeAll(); p.go(if (p.game == "mtg") "#decks" else "#tdecks") }))
 }

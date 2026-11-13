@@ -263,6 +263,24 @@ private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) 
             p.act == "tCompareFrom" && v("id").isNotBlank() -> CollectionWrites.comparing.value = CollectionWrites.CompareOpen(open.game, first = v("id"),
                 openCard = { n, id -> CollectionWrites.comparing.value = null; onOpen(CardOpen(n, page = open.page, tile = "[data-act=\"tCard\"][data-id=\"${css(id)}\"]", game = open.game, id = id)) })
             p.act == "go" && v("to").isNotBlank() -> web("https://cardstashy.com/" + v("to"), null)
+            // The card head's buttons, here as on a Magic card (gap audit): Add to deck (A.cardDeckPicker) is the app's deck picker over this page.
+            p.act == "cardDeckPicker" && v("game") == open.game && v("id").isNotBlank() ->
+                CollectionWrites.picking.value = CollectionWrites.DeckPick(open.game, v("name"), closeAll = onClose, go = { to -> web("https://cardstashy.com/$to", null) }, cardId = v("id"))
+            // A printing's set (A.tSetByName): the app's set page for the release that name points to; the website when none is found.
+            p.act == "tSetByName" && v("name").isNotBlank() && onSet != null -> scope.launch {
+                val id = runCatching { CollectionEngine.setByName(open.game, v("name")) }.getOrDefault("")
+                if (id.isNotBlank()) onSet(id) else { SiteHandoff.log("card " + open.game, p.act); site("[data-act=\"tSetByName\"][data-name=\"${css(v("name"))}\"]") } }
+            // "Interactive rules · how to play →" (A.learnGame): the app's Rules page on How to play · keywords.
+            p.act == "learnGame" && CollectionWrites.rulesNav != null -> { onClose(); CollectionWrites.rulesNav?.invoke(v("game").ifBlank { open.game }, true) }
+            // ⚒ Build decks (A.tBuild): the site's build request for this card, opened in the app's Build a deck.
+            p.act == "tBuild" && v("id").isNotBlank() -> scope.launch {
+                val r = CollectionWrites.actRaw(context, "tBuildCard", JsonObject().apply { addProperty("game", open.game); addProperty("id", v("id")) })
+                r?.get("error")?.takeIf { it.isJsonPrimitive }?.asString?.let { CollectionWrites.show(it) }
+                r?.getAsJsonArray("toasts")?.forEach { t -> t.asJsonObject.get("text")?.asString?.let { CollectionWrites.show(it) } }
+                val req = r?.get("made")?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.startsWith("{") }?.let { runCatching { com.google.gson.JsonParser.parseString(it).asJsonObject }.getOrNull() }
+                if (req != null) CollectionWrites.building.value = CollectionWrites.BuildOpen(req, "openDeckFlow", web) }
+            // The archetype line and "More <archetype> cards" (A.tArchetype): the app's Search on that archetype's cards.
+            p.act == "tArchetype" && v("name").isNotBlank() && searchOpen != null && open.game != "mtg" -> { searchDiscover(open.game, "tArchetype", v("name")); onClose(); searchOpen() }
             p.act == "cardTab" && v("tab") in setOf("overview", "meta", "guide", "prices", "rulings", "legal") -> asked = "tab" to v("tab")
             p.act == "cardFinishPreview" && v("finish").isNotBlank() -> asked = "finish" to v("finish")
             p.act == "ygoPickRarity" && v("edition").isNotBlank() -> asked = "rarity" to v("edition")

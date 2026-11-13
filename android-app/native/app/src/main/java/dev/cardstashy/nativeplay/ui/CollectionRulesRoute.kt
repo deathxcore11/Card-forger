@@ -49,13 +49,15 @@ private const val SITE = "https://cardstashy.com/"
  */
 @Composable
 fun CollectionRulesRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, onCards: () -> Unit, onDecks: () -> Unit, onSearch: () -> Unit,
-                         web: (url: String, press: String?) -> Unit, game: String = "mtg", onGame: (String) -> Unit = {}, onWiki: ((topic: String) -> Unit)? = null) {
+                         web: (url: String, press: String?) -> Unit, game: String = "mtg", onGame: (String) -> Unit = {}, onWiki: ((topic: String) -> Unit)? = null,
+                         startLearn: Boolean = false) {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
     val profile by Account.profile.collectAsState()
     val scope = rememberCoroutineScope()
-    var learn by remember(game) { mutableStateOf(false) }
+    // A card page's "Interactive rules · how to play →" (A.learnGame) opens here on learnSheet (startLearn).
+    var learn by remember(game) { mutableStateOf(startLearn) }
     var panel by remember(game) { mutableStateOf<SitePanelModel?>(null) }
     var failed by remember(game) { mutableStateOf(false) }
     var cards by remember { mutableStateOf(listOf<CardOpen>()) }

@@ -3075,6 +3075,15 @@ const writeActs = {
     await commit((s) => { if (r.game === 'mtg') s.decks.push(deck); else { s.tcg ||= {}; s.tcg[r.game] ||= tcgGs(r.game); s.tcg[r.game].decks.push(deck); } }, { msg: 'Saved to My decks.' });
     made = id;
   },
+  // tcg.js A.tAddToDeck: a Yu-Gi-Oh! or Pokémon card page's Add to deck (A.cardDeckPicker's Deck <select> is [d].deck).
+  async tAddToDeck(d) { tcgFocus(d.game, S.ui.view || 'search'); await siteRun(() => TA.tAddToDeck({dataset: {id: String(d.id)}}), d, {'#tToDeck': d.deck}); },
+  // tcg.js A.tBuild on a card page (⚒ Build decks): its openDeckFlow request comes back as [made], for the app's Build a deck.
+  async tBuildCard(d) {
+    tcgFocus(d.game, S.ui.view || 'search'); flowAskPanel = null; flowAsked = null;
+    // siteRun: tcg.js checks the open #sheet before and after it loads the card (none here; the card page is the app's).
+    await siteRun(() => TA.tBuild({dataset: {id: String(d.id)}}), d);
+    if (flowAsked) made = JSON.stringify(flowAsked);
+  },
   // tcg.js A.tSeedGo (the app's Pick cards sheet, its ticked ids): A.tBuildMulti, whose openDeckFlow request comes back as [made].
   async tSeedGo(d) {
     tcgFocus(d.game, 'decks'); flowAskPanel = null; flowAsked = null;
@@ -6278,6 +6287,15 @@ globalThis.Collection = {
   // search set to the chip's filters (card-discovery.js cardDiscoverySpec), then run (tcg.js A.tSearch), or the loaded cards matched
   // for a Pokémon ability or text. Its error line when the chip names nothing the site can search.
   discoverySearch(G, kind, value) {
+    // tcg.js A.tArchetype (a Yu-Gi-Oh! card's archetype line, "More <archetype> cards"): the search page on that archetype, a list of its
+    // cards (gap audit card head): its own filter and words, as the site sets them before runSearch.
+    if (kind === 'tArchetype' && G !== 'mtg' && value) {
+      searchGame = G; tcgFocus(G, 'search');
+      TcgAll.invalidateTcgSearch(G, true); const U = tcgUi(G).search;
+      Object.assign(U, {q: '', f: {archetype: value, setName: 'Archetype: ' + value}, discoveryNote: ''});
+      Promise.resolve(TA.tSearch()).catch(e => toasts.push({text: e?.message || 'Search failed.', undo: false}));
+      return json(searchPageModel(G));
+    }
     const spec = cardDiscoverySpec(G, kind, value);
     if (!spec || G === 'mtg') return json({error: 'Reopen this card in its game before searching.'});
     searchGame = G; tcgFocus(G, 'search');

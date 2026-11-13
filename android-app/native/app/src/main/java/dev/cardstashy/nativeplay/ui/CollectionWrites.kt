@@ -169,7 +169,7 @@ internal object CollectionWrites {
      * A card page's Add to deck (app.js A.cardDeckPicker): the card, and what the sheet's ✕ (closeSheet: the card page too) and
      * Open Decks do on the page that opened it.
      */
-    data class DeckPick(val game: String, val name: String, val closeAll: () -> Unit, val go: (String) -> Unit, val id: Long = System.nanoTime())
+    data class DeckPick(val game: String, val name: String, val closeAll: () -> Unit, val go: (String) -> Unit, val id: Long = System.nanoTime(), val cardId: String = "")
     val picking = MutableStateFlow<DeckPick?>(null)
     /** pricehist.js alertSheet (app.js A.priceAlert) for card [cardId] of [game]; [saved] redraws the page that opened it. */
     data class AlertOpen(val game: String, val cardId: String, val name: String, val saved: () -> Unit = {}, val id: Long = System.nanoTime())
@@ -192,6 +192,8 @@ internal object CollectionWrites {
     val metaDeck = MutableStateFlow<MetaOpen?>(null)
     /** The app's own deck page (id, game), set by the app's navigation; null while it isn't there. */
     @Volatile var deckNav: ((String, String) -> Unit)? = null
+    /** The app's Rules page for a game, on How to play · keywords when learn (A.learnGame), set by the app's navigation. */
+    @Volatile var rulesNav: ((game: String, learn: Boolean) -> Unit)? = null
     /** Counts alert saves and removals: the Value tab's alert list reads again. */
     val alertsChanged = MutableStateFlow(0)
     /** A tap with the site's data-act="priceAlert" dataset (game, id, name). */
