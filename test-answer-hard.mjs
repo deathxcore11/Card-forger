@@ -323,3 +323,24 @@ console.log(`answer-hard: Randall's six questions, ${typos} generated misspellin
  const none=makeAskTools({S:{state:{settings:{},decks:[],collection:[{name:'Opt',qty:4}]},ui:{},catalog:cat},T:{game:()=>'mtg',cache:{},gs:()=>({decks:[],collection:[]})},esc,meta:n=>cat[cardKey(n)]||null,MTG_META_FORMATS:[],priceSeries:()=>[]});
  a=await answerFor(planQuery('what went up in my collection this week',{game:'mtg'}),none,{});assert.match(a.miss,/no saved prices for your cards going back that far/);
 }
+
+// ---- 6f. What is rising (idea 6): today's shares against a day the server saved. A day that was not saved is never made up.
+{
+ const feed={...data,history:{start:'2026-10-20',today:'2026-11-13',days:[{day:'2026-10-20',shares:{'Mono-Red Aggro':.3,'Izzet Prowess':.05,'Old Deck':.2}},{day:'2026-11-05',shares:{'Mono-Red Aggro':.2,'Izzet Prowess':.1,'Three Steps Ahead · Countersculpt':.2}}]}};
+ const mk=d=>makeAskTools({S:{state:{settings:{},decks:[],collection:[]},ui:{}},T:{game:()=>'mtg',cache:{},gs:()=>({decks:[],collection:[]}),ownedMap:()=>new Map(),metaState:()=>({data:d}),ui:()=>({})},esc,meta:()=>null,resolveNames:async()=>{},inv:()=>({owned:0}),priceOf:()=>2,loadMetaData:async()=>d,metaState:()=>({data:d}),MTG_META_FORMATS:[['Standard','Standard']]});
+ const go=async(q,d=feed,game='mtg')=>{const plan=planQuery(q,{game,formatLast:{mtg:'Standard'}});return {plan,a:await answerFor(plan,mk(d),{})};};
+ let r=await go('what deck is getting more popular in standard');
+ assert.equal(r.plan.intent,'meta.trend');assert.deepEqual(r.plan.call.args,{game:'mtg',format:'Standard',back:7,trend:'rising'});
+ assert.equal(r.a.strong,'Izzet Prowess');assert.equal(r.a.say,'is rising the most in Standard: 10% of decks on 5 Nov, 15% now.');assert.deepEqual(r.a.rows,[]);
+ r=await go('which decks are falling off in standard');assert.equal(r.a.strong,'Mono-Red Aggro');assert.match(r.a.say,/falling the most in Standard: 20% of decks on 5 Nov, 10% now/);
+ r=await go('what was the best deck last month');
+ assert.deepEqual(r.plan.call.args,{game:'mtg',format:'Standard',back:30,trend:'then'});
+ assert.equal(r.a.strong,'Mono-Red Aggro');assert.equal(r.a.say,'was the most played Standard deck on 20 Oct, at 30% of decks. It is at 10% now.');
+ assert.match(r.a.note,/saved days only go back to 20 Oct/,'a month ago was not saved, so the first saved day is used and said');
+ assert.deepEqual(r.a.rows[0],{label:'Old Deck',value:'20% then · not in the feed now',tone:''});
+ r=await go('what deck is getting more popular in standard',{...data,history:{start:'2026-11-13',today:'2026-11-13',days:[]}});
+ assert.equal(r.a.ok,false);assert.match(r.a.miss,/started saving tournament days on 13 Nov/);
+ r=await go('what deck is getting more popular in standard',data);assert.match(r.a.miss,/no saved tournament days/);
+ r=await go('what pokemon deck is getting more popular',feed,'ptcg');assert.match(r.a.miss,/only keeps tournament days for Magic/);
+ assert.equal(planQuery('what is the best deck in standard',{game:'mtg'}).intent,'meta.best');
+}

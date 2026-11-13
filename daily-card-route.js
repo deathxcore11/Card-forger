@@ -27,6 +27,20 @@ export async function dailyCardRoute(request, env) {
   return env.DAILY_CARDS.get(env.DAILY_CARDS.idFromName('shared-daily-cards-v1')).fetch(`https://daily-card.internal/?game=${game}`);
 }
 
+const FEED_PART = 30000;
+/** One line per day for a tournament feed: the share of its 40 most played archetypes. [saved] is the list so far.
+ *  Returns the new list (120 days at most) and what a phone needs: the first saved day, and the saved day at or just
+ *  before 7, 14 and 30 days ago. A day that was never saved is never made up. */
+export function feedHistory(saved, data, today) {
+  const shares = {};
+  for (const a of (data.archetypes || []).slice(0, 40)) if (a?.name && Number.isFinite(a.share)) shares[a.name] = Math.round(a.share * 10000) / 10000;
+  const days = [...(Array.isArray(saved) ? saved : []).filter(d => d && typeof d.day === 'string' && d.day < today), { day: today, shares }].sort((a, b) => a.day.localeCompare(b.day)).slice(-120);
+  const back = n => { const t = new Date(Date.parse(today) - n * 864e5).toISOString().slice(0, 10); let hit = null; for (const d of days) { if (d.day <= t) hit = d; else break; } return hit; };
+  const picks = [];
+  for (const d of [days[0], back(30), back(14), back(7)]) if (d && d.day !== today && !picks.some(p => p.day === d.day)) picks.push(d);
+  return { days, history: { start: days[0].day, today, days: picks.sort((a, b) => a.day.localeCompare(b.day)) } };
+}
+
 export class DailyCards {
   constructor(state) { this.storage = state.storage; this.pending = new Map(); }
   async fetch(request) {
@@ -34,8 +48,32 @@ export class DailyCards {
     // (worker.js mtgMeta). It is reached only from the Worker itself, never from a visitor's request.
     const feed = new URL(request.url).searchParams.get('feed');
     if (feed) {
-      if (request.method === 'PUT') { await this.storage.put('feed:' + feed, await request.text()); return json({ ok: true }); }
-      const saved = await this.storage.get('feed:' + feed);
+      if (request.method === 'PUT') {
+        let text = await request.text(), history = null;
+        // Each saved feed also leaves one small line per day (the share of each archetype), so the app can say what is
+        // rising and what led a month ago. The picked days ride inside the feed itself as "history".
+        try {
+          const data = JSON.parse(text);
+          if (Array.isArray(data?.archetypes) && data.archetypes.length) {
+            const made = feedHistory(await this.storage.get('days:' + feed), data, new Date().toISOString().slice(0, 10));
+            await this.storage.put('days:' + feed, made.days); history = made.history; data.history = history; text = JSON.stringify(data);
+          }
+        } catch {}
+        // Stored in pieces, so one large feed never meets the size limit of a single stored value.
+        const parts = []; for (let i = 0; i < text.length; i += FEED_PART) parts.push(text.slice(i, i + FEED_PART));
+        const before = await this.storage.get('feed:' + feed), old = before && typeof before === 'object' ? before.parts : 0;
+        for (let i = 0; i < parts.length; i += 100) await this.storage.put(Object.fromEntries(parts.slice(i, i + 100).map((part, k) => ['feed:' + feed + ':' + (i + k), part])));
+        await this.storage.put('feed:' + feed, { parts: parts.length });
+        if (old > parts.length) await this.storage.delete(Array.from({ length: old - parts.length }, (_, k) => 'feed:' + feed + ':' + (parts.length + k)));
+        return json({ ok: true, history });
+      }
+      const head = await this.storage.get('feed:' + feed);
+      let saved = typeof head === 'string' ? head : '';
+      if (head && typeof head === 'object' && head.parts > 0) {
+        const keys = Array.from({ length: head.parts }, (_, k) => 'feed:' + feed + ':' + k), got = new Map();
+        for (let i = 0; i < keys.length; i += 100) for (const [k, v] of await this.storage.get(keys.slice(i, i + 100))) got.set(k, v);
+        saved = keys.every(k => typeof got.get(k) === 'string') ? keys.map(k => got.get(k)).join('') : '';
+      }
       return saved ? new Response(saved, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }) : json({ error: 'none' }, 404);
     }
     const game = new URL(request.url).searchParams.get('game');

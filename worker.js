@@ -218,8 +218,12 @@ async function saveFeed(env, key, data) {
   const store = feedStore(env);
   if (!store) return;
   try {
-    await store.fetch(`https://feeds.internal/?feed=${encodeURIComponent(key)}`, { method: "PUT", body: JSON.stringify(data) });
-  } catch {}
+    // The store answers with the feed's saved days (daily-card-route.js feedHistory), which go out with the feed.
+    const r = await store.fetch(`https://feeds.internal/?feed=${encodeURIComponent(key)}`, { method: "PUT", body: JSON.stringify(data) });
+    return r.ok ? (await r.json()).history || null : null;
+  } catch {
+    return null;
+  }
 }
 async function mtgMeta(env, format, days, ctx, { force = false } = {}) {
   const cache = caches.default,
@@ -246,8 +250,10 @@ async function mtgMeta(env, format, days, ctx, { force = false } = {}) {
   try {
     const data = await fetchMtg(env, format, days);
     await addDeckColors(data).catch(() => {});
+    const history = await saveFeed(env, key, data);
+    if (history) data.history = history;
     const put = (kind, ttl) => cache.put(mtgKey(format, days, kind), json(data, 200, ttl));
-    const work = Promise.all([put("fresh", MTG_TTL), put("good", LAST_GOOD_TTL), saveFeed(env, key, data)]);
+    const work = Promise.all([put("fresh", MTG_TTL), put("good", LAST_GOOD_TTL)]);
     if (ctx) ctx.waitUntil(work);
     else await work;
     return data;

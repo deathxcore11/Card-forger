@@ -207,6 +207,16 @@ async function answerOne(plan,tools,io={}){
    return {ok:true,subject,strong:r.deck.name,say:` shares ${r.percent}% of its cards with ${r.target.name}, the closest ${r.target.format} tournament list${r.target.best?' ('+r.target.best+')':''}.`,meter:{pct:r.percent,label:r.percent+'% of the way to '+r.target.name},rows,
     note:r.add.length>5?`${r.add.length-5} more cards to add are in that deck's list.`:'',items:[deck(r.deck)],more:[],buttons:[open,...(r.target.key?[{label:'Open '+r.target.name,item:{kind:'meta',game:g,ref:r.target.key,label:r.target.name}}]:[])],source:'Counted against this week\'s tournament lists. It does not say which deck wins.'};
   }
+  if(tool==='meta_trend'){
+   const r=await tools.meta_trend(args),d=x=>{const t=Date.parse(x);if(!Number.isFinite(t))return String(x||'');const y=new Date(t);return y.getUTCDate()+' '+MONTHS[y.getUTCMonth()].slice(0,3);};
+   if(r.error)return miss(r.error);
+   if(r.empty)return miss(r.start?`The app started saving tournament days on ${d(r.start)}, so there is no earlier day to compare with yet. Ask again in a few days.`:'The app has no saved tournament days for this format yet, so it cannot compare with an earlier time.',{buttons:[{label:'Open tournament decks',route:'#decks/meta'}]});
+   const src=`${r.format} tournament feed, one saved line a day since ${d(r.start)}. Each share is over the 30 days before its date.`,short=r.short?`The saved days only go back to ${d(r.day)}, so that is the day compared with.`:'';
+   if(!r.decks.length)return miss(r.trend==='then'?`No ${r.format} deck is on record for ${d(r.day)}.`:`No ${r.format} deck has ${r.trend==='falling'?'fallen':'risen'} since ${d(r.day)}.`+(short?' '+short:''));
+   const top=r.decks[0],item=x=>({kind:'meta',game:g,ref:x.key||x.name,label:x.name}),line=x=>({label:x.name,value:r.trend==='then'?x.then+'% then · '+(x.gone?'not in the feed now':x.now+'% now'):(x.delta>0?'+':'−')+Math.abs(x.delta)+' · '+(x.fresh?'not in the top 40':x.then+'%')+' to '+x.now+'%',tone:r.trend==='then'?'':x.delta>0?'good':'bad'});
+   const say=r.trend==='then'?`was the most played ${r.format} deck on ${d(r.day)}, at ${top.then}% of decks. ${top.gone?'It is not in the feed now.':'It is at '+top.now+'% now.'}`:`is ${r.trend==='falling'?'falling':'rising'} the most in ${r.format}: ${top.fresh?'not in the top 40':top.then+'% of decks'} on ${d(r.day)}, ${top.now}% now.`;
+   return {ok:true,...(top.key?{subject:{kind:'meta',game:g,format:r.format,key:top.key,name:top.name}}:{}),strong:top.name,say,rows:r.decks.slice(1).map(line),note:short,items:top.gone?[]:[item(top)],more:[],buttons:top.gone?[]:[{label:'Open the deck',item:item(top)}],source:src};
+  }
   if(tool==='price_moves'){
    const r=await tools.price_moves(args),span=plan.call.span||'past week',d=x=>{const t=Date.parse(x);if(!Number.isFinite(t))return String(x||'');const y=new Date(t);return y.getUTCDate()+' '+MONTHS[y.getUTCMonth()].slice(0,3);},signed=v=>(v<0?'−':'+')+usd(Math.abs(v)),src='Prices this device has saved. It saves one each time it sees a price move.';
    if(r.error)return miss(r.error);

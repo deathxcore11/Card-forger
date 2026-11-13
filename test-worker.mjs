@@ -184,7 +184,7 @@ console.log("PASS: Worker Magic meta — Magic Online and MTGTop8 without a key,
 // Seen 13 Nov 2026 on the live site: 16, 34 and 62 seconds for the first request of a format, then under a second.
 {
   const { DailyCards } = await import("./daily-card-route.js");
-  const map = new Map(), object = new DailyCards({ storage: { get: async (k) => map.get(k), put: async (k, v) => void map.set(k, v), getAlarm: async () => null, setAlarm: async () => {} } });
+  const map = new Map(), object = new DailyCards({ storage: { get: async (k) => Array.isArray(k) ? new Map(k.filter((x) => map.has(x)).map((x) => [x, map.get(x)])) : map.get(k), put: async (k, v) => { if (typeof k === "object") for (const [x, y] of Object.entries(k)) map.set(x, y); else map.set(k, v); }, delete: async (k) => { for (const x of [].concat(k)) map.delete(x); }, getAlarm: async () => null, setAlarm: async () => {} } });
   const names = [], envS = { DAILY_CARDS: { idFromName: (n) => (names.push(n), n), get: () => ({ fetch: (url, init) => object.fetch(new Request(url, init)) }) } };
   const get = () => worker.fetch(new Request("https://x/api/meta/mtg?format=Pioneer&days=30"), envS, { waitUntil: (p) => p });
   store.clear(); calls.mtgo = 0;
@@ -193,6 +193,9 @@ console.log("PASS: Worker Magic meta — Magic Online and MTGTop8 without a key,
   assert.equal(calls.mtgo, 1, "the first request ever builds the feed");
   assert.ok(map.has("feed:mtg:Pioneer:30"), "and saves it where every data centre can read it");
   assert.deepEqual([...new Set(names)], ["shared-feeds-v1"], "in its own instance, apart from the daily cards");
+  assert.ok(map.get("feed:mtg:Pioneer:30").parts >= 1 && [...map.keys()].filter((k) => k.startsWith("feed:mtg:Pioneer:30:")).every((k) => map.get(k).length <= 30000), "in pieces no larger than one stored value may be");
+  assert.equal(map.get("days:mtg:Pioneer:30").length, 1, "and one line for today is kept for the feed's history");
+  assert.equal(a.history.start, new Date().toISOString().slice(0, 10)); assert.deepEqual(a.history.days, [], "on the first day there is no earlier day to compare with");
   store.clear(); // another data centre: its own cache is empty
   down = true; // and the tournament site cannot even be reached
   const b = await (await get()).json();
@@ -203,5 +206,16 @@ console.log("PASS: Worker Magic meta — Magic Online and MTGTop8 without a key,
   const { dailyCardRoute } = await import("./daily-card-route.js");
   const r = await dailyCardRoute(new Request("https://cardstashy.com/api/daily-card?game=mtg&feed=mtg:Pioneer:30", { method: "PUT", body: "{}" }), envS);
   assert.equal(r.status, 405);
-  console.log("PASS: a finished tournament feed is shared by every data centre; a cold one answers without rebuilding.");
+  // The feed's memory: one line a day, and the days a phone compares with. A day that was not saved is not invented.
+  const { feedHistory } = await import("./daily-card-route.js");
+  const arch = (...rows) => ({ archetypes: rows.map(([name, share]) => ({ name, share })) });
+  let h = feedHistory(null, arch(["Izzet Prowess", 0.1]), "2026-11-01");
+  assert.deepEqual(h, { days: [{ day: "2026-11-01", shares: { "Izzet Prowess": 0.1 } }], history: { start: "2026-11-01", today: "2026-11-01", days: [] } });
+  h = feedHistory(h.days, arch(["Izzet Prowess", 0.12]), "2026-11-05");
+  h = feedHistory(h.days, arch(["Izzet Prowess", 0.14]), "2026-11-06");
+  h = feedHistory(h.days, arch(["Izzet Prowess", 0.2], ["Mono-Red Aggro", 0.05]), "2026-11-13");
+  assert.deepEqual(h.history.days.map((d) => d.day), ["2026-11-01", "2026-11-06"], "the first saved day, and the saved day at or before a week ago");
+  assert.equal(feedHistory(h.days, arch(["Izzet Prowess", 0.21]), "2026-11-13").days.length, 4, "the same day saved twice is one line");
+  assert.equal(b.history?.start, a.history.start, "the saved copy carries the history too");
+  console.log("PASS: a finished tournament feed is shared by every data centre; a cold one answers without rebuilding, and it remembers one line a day.");
 }

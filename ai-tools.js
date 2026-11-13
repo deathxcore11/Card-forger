@@ -427,6 +427,24 @@ export function makeAskTools(x) {
       const pickDir = dir === 'up' ? rows.filter(r => r.delta > 0) : dir === 'down' ? rows.filter(r => r.delta < 0) : rows;
       return { game: g, since: from, counted, missing, total: num(total), late, earliest, movers: pickDir.slice(0, 6), up: rows.filter(r => r.delta > 0).length, down: rows.filter(r => r.delta < 0).length };
     },
+    // What is rising: today's tournament shares against a saved earlier day (the feed's "history", one line a day kept by the
+    // server). The earlier day is the saved one at or just before the day asked for; if the saved days start later, the first
+    // saved day is used and said. Only the 40 most played archetypes of a day are kept, so one missing then counts as zero.
+    async meta_trend({ game, format, back, trend }) {
+      const g = g0(game);
+      if (g !== 'mtg') return { game: g, error: 'The app only keeps tournament days for Magic so far.' };
+      const k = metaKey(format), data = await x.loadMetaData(k).catch(() => x.metaState(k).data), fmt = k.slice(4);
+      if (!data?.archetypes?.length) return { game: g, format: fmt, error: 'Tournament data for that format isn\'t available right now.' };
+      const h = data.history, days = (h?.days || []).filter(d => d?.day && d.shares);
+      if (!days.length) return { game: g, format: fmt, empty: true, start: h?.start || null };
+      const today = h.today || new Date().toISOString().slice(0, 10), n = Math.max(1, Math.min(120, Number(back) || 7)), target = new Date(Date.parse(today) - n * 864e5).toISOString().slice(0, 10);
+      let day = null; for (const d of days) if (d.day <= target) day = d;
+      const short = !day; if (short) day = days[0];
+      const pct = v => Math.round((Number(v) || 0) * 1000) / 10, now = new Map(data.archetypes.map(a => [a.name, a]));
+      const rows = [...new Set([...now.keys(), ...Object.keys(day.shares)])].map(name => ({ name, key: now.get(name)?.best || '', now: pct(now.get(name)?.share), then: pct(day.shares[name]), fresh: !(name in day.shares), gone: !now.has(name) })).map(r => ({ ...r, delta: Math.round((r.now - r.then) * 10) / 10 }));
+      const picked = trend === 'then' ? rows.filter(r => r.then > 0).sort((a, b) => b.then - a.then) : trend === 'falling' ? rows.filter(r => r.delta < 0).sort((a, b) => a.delta - b.delta) : rows.filter(r => r.delta > 0).sort((a, b) => b.delta - a.delta);
+      return { game: g, format: fmt, trend: trend || 'rising', day: day.day, today, short, start: h.start || day.day, decks: picked.slice(0, 4) };
+    },
     async build_deck(input, handshake={}) {
       const checked=validateBuildProposal(input);
       if(!checked.ok)return proposalFeedback(checked,{terminal:true});

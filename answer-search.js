@@ -39,6 +39,10 @@ export function readSpan(n,now=new Date()){
   m=n.match(re);if(m)return {since:ago(k),label,used:m[0]};}
  return {since:ago(7),label:'past week',used:''};
 }
+// Words that ask how tournament decks are moving, or which one led at an earlier time.
+const TREND_UP=/\b(?:getting|becoming|growing|gaining|rising|trending|climbing|on the rise|up and coming|heating up|more popular|more played|picking up|blowing up)\b/;
+const TREND_DOWN=/\b(?:falling off|less popular|less played|declining|dying|dropping off|on the way out|losing (?:ground|popularity|share)|fading|getting worse)\b/;
+const TREND_PAST=/\b(?:last|previous|past) (?:week|month)\b|\b(?:a|one|two|2|three|3) (?:weeks?|month) ago\b/;
 // Words that ask whether a deck may be played, and words that ask how to make it better.
 const DECK_CHECK=/\b(?:legal|legality|illegal|banned|ban ?list|allowed|valid|tournament ready|tournament legal|rotat\w*|playable|(?:can|could|may) i (?:play|use|bring|run|enter))\b/;
 const DECK_UP=/\b(?:better|improve|improved|improving|upgrade|upgrades|upgraded|upgrading|stronger|tune|tuned|tuning|fix|fixed|competitive|missing|closest tournament|what (?:should|can|could) i (?:add|cut|change|swap))\b/;
@@ -275,6 +279,16 @@ function planOne(q,ctx={}){
   return plan('cards.artist',{tool:'discover',args:{game,kind:'artist',value:artist}});
  }
  if(/\bmost played cards?\b|\bstaples?\b/.test(n)&&!mine){const f=format();read.push(chip('most played cards','ask'));return plan('meta.cards',{tool:'meta_decks',args:{game,format:f},pick:'cards'});}
+
+ // What is rising: tournament decks over time, from the one line a day the server keeps for each feed.
+ if(/\b(?:decks?|archetypes?|meta(?:game)?)\b/.test(n)&&!mine){
+  const up=TREND_UP.test(n),down=TREND_DOWN.test(n),past=TREND_PAST.test(n)&&/\b(?:best|top|most played|most popular|winning|strongest|number one|leading)\b/.test(n);
+  if(up||down||past){
+   const f=format(),trend=down?'falling':up?'rising':'then',back=/\bmonth\b/.test(n)?30:/\b(?:three|3) weeks\b/.test(n)?21:/\b(?:two|2) weeks\b/.test(n)?14:7;
+   read.push(chip('tournament decks','source'));read.push(chip(trend==='then'?(back===30?'a month ago':back+' days ago'):trend+' over '+(back===30?'a month':back+' days'),'ask'));
+   return plan('meta.trend',{tool:'meta_trend',args:{game,format:f,back,trend}});
+  }
+ }
 
  // Tournament decks: "best deck in the meta", "what's winning in modern", "top pioneer decks".
  const metaWord=/\bmeta(?:game)?\b|\btournaments? decks?\b|\bwinning\b|\btier ?(?:1|one|list)\b|\bcompetitive\b/.test(n);
