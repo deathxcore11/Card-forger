@@ -153,10 +153,18 @@ export function makeAskTools(x) {
       rows = rows.filter(r => r.colors != null && colorFits(r.colors, args));
     }
     if (args.match) {
-      const m = flat(args.match), one = m.replace(/s $/, ' '), has = t => { const f = flat(t); return f.includes(m) || f.includes(one) || f.replace(/s /g, ' ').includes(one); };
+      // Pokémon type nicknames read as the energy the deck plays: "dark" is Darkness, "steel" is Metal, "electric" is Lightning.
+      const alias = g === 'ptcg' ? { dark: 'darkness', steel: 'metal', electric: 'lightning' }[String(args.match).toLowerCase()] : null;
+      const m = flat(alias || args.match), one = m.replace(/s $/, ' '), has = t => { const f = flat(t); return f.includes(m) || f.includes(one) || f.replace(/s /g, ' ').includes(one); };
       const byName = rows.filter(r => has(r.name));
       if (byName.length) { rows = byName; matched = { by: 'name' }; }
-      else { let card = ''; rows = rows.filter(r => { const c = r.cards.find(c => has(c.name)); if (c && !card) card = c.name; return !!c; }); matched = { by: 'card', card }; }
+      else {
+        // Yu-Gi-Oh!: an attribute or monster type ("dark", "dragon") is a deck whose known monsters are mostly that.
+        const word = String(args.match).toLowerCase(), mostly = g === 'ygo' ? rows.filter(r => { const mon = r.cards.filter(c => c.attribute); return mon.length >= 5 && mon.filter(c => String(c.attribute).toLowerCase() === word || String(c.race).toLowerCase() === word).length * 2 >= mon.length; }) : [];
+        const known = rows.some(r => r.cards.length);
+        if (mostly.length) { rows = mostly; matched = { by: 'kind', kind: word }; }
+        else { let card = ''; rows = rows.filter(r => { const c = r.cards.find(c => has(c.name)); if (c && !card) card = c.name; return !!c; }); matched = { by: 'card', card, known }; }
+      }
     }
     if (args.sort || args.under != null) for (const r of rows) r.sum = r.d ? summary(r.d) : null;
     if (args.under != null) rows = rows.filter(r => r.sum?.costToFinish != null && r.sum.costToFinish <= args.under);
@@ -206,7 +214,7 @@ export function makeAskTools(x) {
       if (!c) c = (await T.SOURCES[g].search({ q, page: 0, size: 1 }).catch(() => ({ cards: [] }))).cards?.[0];
       if (!c) return { error: `No ${g === 'ygo' ? 'Yu-Gi-Oh!' : 'Pokémon'} card named ${q}.` };
       c = (await T.ensureCard(g, c.id).catch(() => null)) || c;
-      return { game: g, card: { ...tcgCard(g, c), text: clip(c.text || c.desc || [...(c.abilities || []).map((a) => `${a.name}: ${a.effect}`), ...(c.attacks || []).map((a) => `${a.name} ${a.damage || ''} ${a.effect || ''}`)].join(' | '), 900), hp: c.hp || null, level: c.level || null, atk: c.atk ?? null, def: c.def ?? null, printings: (c.sets || []).slice(0, 8).map((s) => ({ set: s.name || s.set, code: s.code, rarity: s.rarity, price: num(s.price) })) },wiki:buildGameWikiReference(g,gameWikiTitleForCard(g,c)) };
+      return { game: g, card: { ...tcgCard(g, c), text: clip(c.text || c.desc || [...(c.abilities || []).map((a) => `${a.name}: ${a.effect}`), ...(c.attacks || []).map((a) => `${a.name} ${a.damage || ''} ${a.effect || ''}`)].join(' | '), 900), hp: c.hp || null, legalIn: g === 'ptcg' ? c.legal || null : null, ban: g === 'ygo' ? c.ban || null : null, level: c.level || null, atk: c.atk ?? null, def: c.def ?? null, printings: (c.sets || []).slice(0, 8).map((s) => ({ set: s.name || s.set, code: s.code, rarity: s.rarity, price: num(s.price) })) },wiki:buildGameWikiReference(g,gameWikiTitleForCard(g,c)) };
     },
     async my_collection({ game, sort, limit }) {
       const g = g0(game), n = lim(limit, 10, 25);
@@ -285,7 +293,7 @@ export function makeAskTools(x) {
       const summary=d=>g==='ygo'?completionSummary([...(d.main||[]),...(d.extra||[])].map(id=>({name:String(id),qty:1})),id=>own.get('id:'+id),id=>T.cardOf(g,id)?.prices?.usd):completionSummary(d.list,n=>byName.get(n.toLowerCase().replace(/^basic /,'')),n=>Object.values(T.cache?.[g]||{}).find(c=>c.name.toLowerCase()===n.toLowerCase())?.prices?.usd);
       const metaFormat=g==='ptcg'?'Standard':'Advanced (TCG)';
       if(format&&!(g==='ptcg'?/^standard$/i:/^(tcg|advanced(?: \(tcg\))?)$/i).test(format))return {game:g,error:'This tournament source covers '+metaFormat+'. Choose that format or use the builder for other formats.',format:metaFormat};
-      const rows=await narrowMeta(g,(data.archetypes||[]).map(a=>{const d=data.decks.find(y=>y.key===a.best)||a.representative;return {a,d,name:a.name||a.id,cards:g==='ptcg'?(d?.list||[]):[]};}),args,summary);
+      const rows=await narrowMeta(g,(data.archetypes||[]).map(a=>{const d=data.decks.find(y=>y.key===a.best)||a.representative;return {a,d,name:a.name||a.id,cards:g==='ptcg'?(d?.list||[]):[...(d?.main||[]),...(d?.extra||[])].map(id=>T.cardOf(g,id)).filter(Boolean)};}),args,summary);
       if(rows.error)return {game:g,format:metaFormat,...rows};
       return decorateMeta(g,data,{game:g,format:metaFormat,source:data.source||'tournament results',fetchedAt:data.fetchedAt||data.updatedAt||null,matched:rows.matched,decks:rows.slice(0,8).map(({a,d,sum})=>({name:a.name||a.id,key:d?.key||'',share:Math.round((a.share||0)*1000)/10,lists:a.count||0,best:d?`${d.place||''} ${d.event||''}`.trim():'',eventDate:d?.date||null,...(d?sum||summary(d):{listUnavailable:true,ownedPercent:null,costToFinish:null})}))});
     },

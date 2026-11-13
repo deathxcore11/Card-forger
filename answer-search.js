@@ -31,7 +31,7 @@ const chip=(label,kind,fix=false)=>({label,kind,fix});
 function findSet(n,sets=[]){
  // Longest set name that appears whole in the question; a bare code counts only beside the word "set".
  let best=null;
- for(const s of sets){const name=norm(s.name||s.title);if(name.length>=4&&(' '+n+' ').includes(' '+name+' ')&&(!best||name.length>best.len))best={set:s,len:name.length,text:name};}
+ for(const s of sets){const name=norm(s.name||s.title);if((name.length>=4||(name.length===3&&/\b(?:in|from|of|when|release\w*|sets?|came out|come out)\b/.test(n)))&&(' '+n+' ').includes(' '+name+' ')&&(!best||name.length>best.len))best={set:s,len:name.length,text:name};}
  if(best)return best;
  if(/\bsets?\b/.test(n))for(const s of sets){const code=norm(s.code);if(code&&code.length>=3&&new RegExp('\\b'+code+'\\b').test(n))return {set:s,len:code.length,text:code};}
  return null;
@@ -105,6 +105,16 @@ export function rest(n,...used){
  for(const u of used.flat()){if(!u)continue;s=s.replace(typeof u==='string'?new RegExp('(?<![a-z0-9])'+u.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![a-z0-9])','g'):u.global?u:new RegExp(u.source,'g'),' ');}
  return s.split(/[\s$.]+/).filter(w=>w&&!FILL.has(w));
 }
+// Kinds of card in Pokémon and Yu-Gi-Oh!: never an artist's name, never a card's name.
+const PTCG_TYPE={grass:'Grass',fire:'Fire',water:'Water',lightning:'Lightning',electric:'Lightning',psychic:'Psychic',fighting:'Fighting',darkness:'Darkness',dark:'Darkness',metal:'Metal',steel:'Metal',dragon:'Dragon',colorless:'Colorless',colourless:'Colorless',fairy:'Fairy'};
+const YGO_ATTRIBUTE={dark:'DARK',light:'LIGHT',earth:'EARTH',water:'WATER',fire:'FIRE',wind:'WIND',divine:'DIVINE'};
+const KIND_WORDS={
+ mtg:new Set(),
+ ptcg:new Set([...Object.keys(PTCG_TYPE),'pokemon','pokemons','trainer','trainers','supporter','supporters','item','items','stadium','stadiums','tool','tools','energy','energies','basic','stage','ex','gx','v','vmax','vstar','tera','holo','holos','reverse','rare','rares','promo','promos','type','types']),
+ ygo:new Set([...Object.keys(YGO_ATTRIBUTE),'monster','monsters','spell','spells','trap','traps','link','links','synchro','synchros','xyz','fusion','fusions','ritual','rituals','pendulum','pendulums','effect','normal','tuner','tuners','extra','rare','rares','attribute','type','types','level','rank']),
+};
+// One finish, edition or rarity of a card has its own price, which the search does not read.
+const FINISH=/\b(?:reverse holos?|holos?|holofoil|1st edition|first edition|unlimited|shadowless|ghost rares?|secret rares?|ultra rares?|super rares?|starlight rares?|quarter century|collectors rares?|full arts?|alt(?:ernate)? arts?|special illustration rares?|illustration rares?|hyper rares?|rainbow rares?|gold rares?|etched|borderless|showcase|extended art|graded|psa ?\d*|bgs ?\d*|cgc ?\d*|near mint|played|damaged)\b/;
 // A deck's colours in words: "red" (has red), "mono red", "blue white", guild and shard names, "not blue", "two colour".
 const WUBRG='wubrg',COLOR_WORD={w:'white',u:'blue',b:'black',r:'red',g:'green'};
 const GUILDS={azorius:'wu',dimir:'ub',rakdos:'br',gruul:'rg',selesnya:'gw',orzhov:'wb',izzet:'ur',golgari:'bg',boros:'rw',simic:'gu',esper:'wub',grixis:'ubr',jund:'brg',naya:'rgw',bant:'gwu',abzan:'wbg',jeskai:'urw',sultai:'bgu',mardu:'rwb',temur:'gur'};
@@ -151,7 +161,7 @@ export function planQuery(q,ctx={}){
  const plan=(intent,call,extra={})=>({intent,game,P,read,missing,call:missing.length?null:call,answerable:!missing.length&&!!call,hand:null,...extra});
  if(n.length<2)return plan('none',null);
  // Search syntax typed by hand (c:r, t:dragon, usd<5) is a search line, not a question.
- if(/(?:^|\s)-?[a-z]{1,10}[:=<>]/i.test(raw))return plan('names',null);
+ if(/(?:^|\s)-?[a-z]{1,10}[:=<>](?=\S)/i.test(raw))return plan('names',null);
  const mine=MINE.test(n),rank=RANKS.find(r=>r[1].test(n)),y=year(n);
  const hit=findSet(n,ctx.sets),thisSet=/\b(?:this|that|the current) (?:set|expansion)\b/.test(n);
  const cant=(scope,what,left)=>{read.push(chip(scope,'scope'));return plan('unknown',null,{why:`Search can't narrow ${what} by "${left.join(' ')}" yet.`});};
@@ -170,7 +180,9 @@ export function planQuery(q,ctx={}){
  const artistIn=(hit?n.replace(hit.text,' '):n).replace(GAMES.find(g=>g[0]===game)[1],' ').replace(/\s+/g,' ').trim().replace(/ (?:in|from)(?: the)?(?: set)?$/,'');
  let artist=artistOf(artistIn);
  // "black cards" and "cards that draw cards" are not artists: a name made of filter or filler words is not a name.
- if(artist&&artist.split(' ').some(w=>COLORS[w]||RARITY[w]||TYPES.includes(w.replace(/s$/,''))||singular(w)||['that','with','like','in','my','the','best','top','most','from','for','and','or','not','draw','good','new','cheap','all','how','many','much','what','which','who','when','are','is','do','does','i','me','show','any','these','those','this'].includes(w)))artist=null;
+ if(artist&&artist.split(' ').some(w=>COLORS[w]||RARITY[w]||TYPES.includes(w.replace(/s$/,''))||singular(w)||['that','with','like','in','my','the','best','top','most','from','for','and','or','not','draw','good','new','cheap','all','how','many','much','what','which','who','when','are','is','do','does','i','me','show','any','these','those','this'].includes(w)||KIND_WORDS[game].has(w)))artist=null;
+ // "trainer cards", "spell cards": one bare word before "cards" is a kind of card, not a person. An artist needs "by", or two names.
+ if(artist&&!/\b(?:by|from|artist|illustrator)\b/.test(artistIn)&&artist.split(' ').length<2)artist=null;
  if(artist&&!mine){
   if(game==='ygo'){read.push(chip('artist: '+artist,'artist'));return plan('unknown',null,{why:'Yu-Gi-Oh! cards do not name their artist.'});}
   const filters=game==='mtg'?cardFilters(artistIn.replace(artist,' ').replace(/\s+/g,' ').trim(),null):null;
@@ -192,13 +204,17 @@ export function planQuery(q,ctx={}){
  // Words about you turn the question around: the tournament deck you are closest to owning, or the cheapest one to finish.
  const CLOSEST=/\b(?:i can (?:build|make|afford)|can i (?:build|make)|(?:am i |im )?clos(?:est|e) to(?: (?:owning|building|finishing))?|for my (?:collection|cards)|(?:with|from) my (?:collection|cards)|i (?:almost|nearly) (?:have|own))\b/;
  const closest=deckWord&&CLOSEST.test(n),deckPrice=deckWord&&!/\bcards?\b/.test(n)&&(rank?.[0].startsWith('price')||/\b(?:budget|cheap|affordable)\b/.test(n))?(rank?.[0]==='price-desc'?'priciest':'cheapest'):null;
- if((closest||!mine)&&((metaWord&&(deckWord||bestWord||/\bwhat\b/.test(n)))||(bestWord&&deckWord)||closest||deckPrice)){
+ if((closest||!mine)&&((metaWord&&(deckWord||bestWord||/\bwhats?\b/.test(n)||/\bmeta(?:game)?\b/.test(n)))||(bestWord&&deckWord)||closest||deckPrice)){
   if(y||/\b(?:last|previous|past) (?:year|season|month)\b|\b(?:years?|months?) ago\b|\ball time\b|\bever\b|\bhistory\b/.test(n)){read.push(chip('tournament decks','source'));return plan('unknown',null,{why:"The tournament data only covers recent events, so the app can't answer for another time."});}
-  const f=format(),col=game==='mtg'?deckColors(n):null;
+  // "best deck with black lotus": what follows "with" is a card's name, word for word, not a colour and not filler.
+  const withM=n.match(/\b(?:with|playing|running|using|that (?:plays?|runs?|uses?|has|have)) (.+)$/),withCard=withM&&!/^(?:my|no|only)\b/.test(withM[1])?withM[1].replace(formatWords(game),' ').replace(/\b(?:right now|today|currently|this week|in it|in them|in the meta|in|decks?)\s*$/g,' ').replace(/\s+/g,' ').trim().replace(/ in$/,''):'';
+  const nq=withCard?n.slice(0,withM.index):n;
+  const f=format(),col=game==='mtg'?deckColors(nq):null;
   const nthM=n.match(/\b(second|2nd|third|3rd|fourth|4th|fifth|5th)\b/),nth=nthM?{second:2,'2nd':2,third:3,'3rd':3,fourth:4,'4th':4,fifth:5,'5th':5}[nthM[1]]:1;
   const capM=n.match(/\b(?:under|below|less than|cheaper than|for) \$ ?(\d+)(?:\.\d+)?|\$ ?(\d+)(?:\.\d+)? or less/),under=capM?Number(capM[1]||capM[2]):null;
   // Whatever is left names the deck or a card in it: "aggro", "prowess", "lightning bolt", "charizard".
-  const match=rest(n,capM?.[0],GAME_WORDS,formatWords(game),/\btop \d+\b/g,col?.used,CLOSEST,rank?.[1],nthM?.[0],
+  const match=withCard||rest(nq,capM?.[0],GAME_WORDS,formatWords(game),/\btop \d+\b/g,col?.used,CLOSEST,rank?.[1],nthM?.[0],
+   game==='mtg'?null:/\b(?:types?|attribute|monsters?|energy)\b/g,
    /\b(?:meta(?:game)?|tournaments?|decks?|archetypes?|lists?|winning|wins|tier ?(?:1|one|list)|tier|competitive|best|top|strongest|most played|most popular|most common|number one|1|played|popular|good|strong|powerful|most|more|lot|pick|choose|week|month|lately|recently|being|play|playing|plays|run|running|runs|use|using|uses|build|budget|cheap|affordable|finish|complete)\b/g).join(' ');
   const sort=closest?'closest':deckPrice;
   read.push(chip('tournament decks','source'));colorChips(col);
@@ -237,11 +253,11 @@ export function planQuery(q,ctx={}){
     read.push(chip('your collection','scope'),chip(rank[2],'ask'));return plan('collection.top',{tool:'my_collection',args:{game,sort,limit:/\bcards\b/.test(n)?10:1},pick:rank[0]});
    }
   }
-  if(/\b(?:do i|have i|i own|i have|how many)\b/.test(n)){
+  if(/\b(?:do i (?:own|have)|have i got|i own|i have|ive got|how many .+ (?:do i (?:own|have)|have i got|i (?:own|have)))\b/.test(n)&&!/\b(?:each turn|per turn|a turn|every turn|in (?:my|a|the) (?:hand|deck)|first turn|draw|summons?|attacks?|phase)\b/.test(n)){
    const name=nameOf(n.replace(MINE,' '));
    // "how many red cards do i own", "how many foils do i have": a colour, type, rarity or finish is not a card name.
-   const kinds=name.split(' ').filter(w=>COLORS[w]||RARITY[w]||/^foils?$/.test(w)||TYPES.includes(w.replace(/(?:ies|s)$/,'')));
-   if(kinds.length&&(kinds.length===name.split(' ').length||/\bfoils?\b/.test(name)))return cant('your collection','your collection',kinds);
+   const kinds=name.split(' ').filter(w=>game==='mtg'?COLORS[w]||RARITY[w]||/^foils?$/.test(w)||TYPES.includes(w.replace(/(?:ies|s)$/,'')):KIND_WORDS[game].has(w)||w==='cards'||w==='card'||/^foils?$/.test(w)),isCard=game==='ptcg'&&/\benergy\b/.test(name);
+   if(kinds.length&&!isCard&&(kinds.length===name.split(' ').length||/\bfoils?\b/.test(name)))return cant('your collection','your collection',kinds);
    if(name){read.push(chip('your collection','scope'),chip(name,'card'));return plan('collection.own',{tool:'card_details',args:{game,name},pick:'owned'});}
   }
  }
@@ -272,16 +288,18 @@ export function planQuery(q,ctx={}){
  // Keywords and rules words: the app's own keyword book and glossary come before any wiki.
  const meaning=/^(?:what does|what is|whats|what are|how does|how do|explain|define)\b|\b(?:mean|means|meaning|do|work|works)$/.test(n);
  if(meaning||P.words.length<=3){
-  const term=subject(n),entry=term?gameGlossaryEntry(game,term)||(term.endsWith('s')?gameGlossaryEntry(game,term.slice(0,-1)):null):null;
+  const whole=n.replace(/^(?:what does|what is|whats|what are|how does|how do|explain|define)\s+/,'').replace(/\s+(?:mean|means|meaning|do|does|work|works)$/,'').replace(/^(?:a|an|the) /,'').replace(GAME_WORDS,' ').replace(/\s+/g,' ').replace(/^in | in$/g,'').trim();
+  const term=whole&&(gameGlossaryEntry(game,whole)||(whole.endsWith('s')&&gameGlossaryEntry(game,whole.slice(0,-1))))?whole:subject(n),entry=term?gameGlossaryEntry(game,term)||(term.endsWith('s')?gameGlossaryEntry(game,term.slice(0,-1)):null):null;
   if(entry&&(meaning||norm(entry.label)===term)){read.push(chip('keyword: '+entry.label,'keyword'),chip('meaning','ask'));return plan('keyword',{tool:'glossary',args:{game,term:entry.label}},{entry});}
  }
  // Is a card legal in a format: read from the card's own legality list.
- if(game==='mtg'&&!mine&&/\b(?:legal|banned|restricted|allowed|playable)\b/.test(n)&&/^(?:is|are|can i|can you|was)\b/.test(n)){
-  const name=nameOf(n.replace(formatWords(game),' ').replace(/\b(?:legal|banned|restricted|allowed|playable|can|you|play|use|run|still|not|ever|was)\b/g,' ').replace(/\s+/g,' ').trim());
-  if(name){const f=format();read.push(chip(name,'card'),chip('legality','ask'));return plan('card.legal',{tool:'card_details',args:{game,name},pick:'legal',format:f});}
+ if(!mine&&/\b(?:legal|banned|forbidden|restricted|limited|semi limited|allowed|playable)\b/.test(n)&&/^(?:is|are|can i|can you|was)\b/.test(n)){
+  const ocg=game==='ygo'&&/\bocg\b/.test(n);
+  const name=nameOf(n.replace(formatWords(game),' ').replace(GAME_WORDS,' ').replace(/\b(?:legal|banned|forbidden|restricted|semi limited|limited|allowed|playable|can|you|play|use|run|still|not|ever|was|ocg|format|on the (?:ban ?list|list))\b/g,' ').replace(/\s+/g,' ').trim().replace(/(?: (?:in|on|the))+$/,''));
+  if(name){const f=format();if(ocg)read.push(chip('OCG list','filter'));read.push(chip(name,'card'),chip('legality','ask'));return plan('card.legal',{tool:'card_details',args:{game,name},pick:'legal',format:f,ocg});}
  }
  // A rules question: the Judge reads the bundled rulebook and quotes the rule that covers it (judge-search.js). No AI.
- if(/\b(?:can i|can you|does .+ (?:trigger|stack|resolve|counter|target|work with)|what happens (?:if|when)|who wins|in response|interaction|ruling)\b/.test(n)||(/^(?:can|could|does|do|is|are|if|when can|when do|when does|how does|how do|how many|what happens)\b/.test(n)&&/\b(?:attacks?|blocks?|blocked|respond|triggers?|stacks?|countered|targets?|tapped|untap|sacrific\w+|destroy\w*|exiled?|dies|enters?|summoning|priority|mulligan|commander|combat|damage|phase|step|evolve|retreat|chains?|summon|activate|resolves?|tokens?|lands?|first turn|each turn)\b/.test(n)&&!mine)){read.push(chip('rules','ask'));return plan('ruling',{tool:'judge',args:{game,question:raw}});}
+ if(/\b(?:can i|can you|does .+ (?:trigger|stack|resolve|counter|target|work with)|what happens (?:if|when)|who wins|in response|interaction|ruling)\b/.test(n)||(/^(?:can|could|does|do|is|are|if|when can|when do|when does|how does|how do|how many|what happens)\b/.test(n)&&/\b(?:attacks?|blocks?|blocked|respond|triggers?|stacks?|countered|targets?|tapped|untap|sacrific\w+|destroy\w*|exiled?|dies|enters?|summoning|priority|mulligan|commander|combat|damage|phase|step|evolve|retreat|chains?|summon|activate|resolves?|tokens?|lands?|first turn|each turn|draw|prize|hand|attach|shuffle|discard)\b/.test(n)&&!(mine&&/\b(?:my (?:collection|cards|decks?|binders?|wishlist)|own)\b/.test(n)))){read.push(chip('rules','ask'));return plan('ruling',{tool:'judge',args:{game,question:raw}});}
 
  // Cards by what they are: colour, type, mana, rarity, keyword, format, price. Two filters, or one plus a rank, make a question.
  if(game==='mtg'&&!mine&&!hit){
@@ -299,6 +317,8 @@ export function planQuery(q,ctx={}){
  if(/\b(?:how much|price|worth|cost|costs|going for|selling for)\b/.test(n)&&!mine){
   // One printing ("lightning bolt from bloomburrow") has its own price the search does not read; foil is read from the card.
   if(hit&&new RegExp('\\b(?:from|in)(?: the)? '+hit.text).test(n)){read.push(chip(hit.set.name||hit.set.title,'set'));return plan('unknown',null,{why:"Search can't price one printing of a card yet. Ask without the set name for its usual price."});}
+  const fin=n.match(FINISH)||(game!=='mtg'&&n.match(/\bfoils?\b/));
+  if(fin){read.push(chip('price','ask'));return plan('unknown',null,{why:`Search can't price one finish, edition or rarity ("${fin[0]}") of a card yet. Ask with only the card's name for its usual price.`});}
   const foil=/\bfoils?\b/.test(n),name=nameOf(n.replace(/\b(?:in |a |an )?foils?\b/g,' ').replace(/\s+/g,' ').trim());
   if(name){read.push(chip(name,'card'),chip(foil?'foil price':'price','ask'));return plan('card.price',{tool:'card_details',args:{game,name},pick:foil?'price-foil':'price'});}
   if(ctx.screen?.card){read.push(chip(ctx.screen.card.name,'card',true),chip('price','ask'));return plan('card.price',{tool:'card_details',args:{game,name:ctx.screen.card.name},pick:'price'});}

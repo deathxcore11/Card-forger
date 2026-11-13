@@ -129,6 +129,24 @@ for(const q of ['what deck is winning the most in modern','what deck should i pl
 assert.equal(planQuery("what's the price of ragavan",{}).call.args.name,'ragavan');
 assert.equal(planQuery('whats the one ring worth',{}).call.args.name,'the one ring');
 assert.equal(planQuery('good red decks in standard',{}).call.args.colors[0],'r');
+// --- Pokémon and Yu-Gi-Oh!: legality and ban list status from the card's own data; kinds of card are not artists.
+{
+ const pk={id:'p1',name:'Charizard ex',legal:{standard:true,expanded:false},prices:{usd:20}},yg={id:'y1',name:'Pot of Greed',ban:{tcg:'banned',ocg:'limited',goat:'limited'},prices:{usd:1}},free={id:'y2',name:'Dark Magician',ban:{tcg:null,ocg:null,goat:null},prices:{usd:1}};
+ const src=cards=>({byName:async q=>cards.find(c=>c.name.toLowerCase()===String(q).toLowerCase())||null,search:async()=>({cards:[]}),ownKey:c=>'id:'+c.id,formats:[]});
+ const T2={game:()=>'ptcg',cache:{ptcg:{},ygo:{}},cardOf:()=>null,gs:()=>({decks:[],collection:[]}),ownedMap:()=>new Map(),metaState:()=>({data:null}),ui:()=>({}),ensureCard:async()=>null,SOURCES:{ptcg:src([pk]),ygo:src([yg,free])},setCardOwnedCount:()=>0};
+ const t2=makeAskTools({S:{state:{settings:{},decks:[],collection:[]},ui:{}},T:T2,esc,meta:()=>null,inv:()=>({owned:0}),priceOf:()=>null});
+ const ask2=async(game,q)=>{const plan=planQuery(q,{game,formatLast:{},sets:[],screen:{}});return {plan,a:await answerFor(plan,t2,{})};};
+ let x=await ask2('ptcg','is charizard ex legal in standard');assert.equal(x.a.strong,'Charizard ex');assert.equal(x.a.say,'is legal in Standard.');
+ x=await ask2('ptcg','is charizard ex legal in expanded');assert.equal(x.a.say,'is not legal in Expanded.');
+ x=await ask2('ygo','is pot of greed banned');assert.equal(x.a.say,'is Forbidden on the TCG list: no copies allowed.');
+ x=await ask2('ygo','is pot of greed banned in the ocg');assert.equal(x.a.say,'is Limited on the OCG list: 1 copy allowed.');
+ x=await ask2('ygo','is pot of greed legal in goat');assert.equal(x.a.say,'is Limited on the Goat format list: 1 copy allowed.');
+ x=await ask2('ygo','is dark magician limited');assert.equal(x.a.say,'is not on the TCG Forbidden & Limited list: 3 copies allowed.');
+ x=await ask2('ygo','is dark magician legal in edison');assert.equal(x.a.ok,false);assert.match(x.a.miss,/no Edison list status/);
+ x=await ask2('ygo','is some card nobody made banned');assert.equal(x.a.ok,false);assert.match(x.a.miss,/No Yu-Gi-Oh! card named/);
+ for(const [g,q] of [['ptcg','trainer cards'],['ptcg','supporter cards'],['ygo','spell cards'],['ygo','trap cards']])assert.notEqual(planQuery(q,{game:g}).intent,'cards.artist',q+' is a kind of card, not an artist');
+ for(const [g,q] of [['ptcg','how much is a holo charizard'],['ygo','how much is a 1st edition blue eyes white dragon']]){x=await ask2(g,q);assert.equal(x.a.ok,false,q);assert.match(x.a.miss,/finish, edition or rarity/);}
+}
 // --- The helpers.
 assert.deepEqual(rest('best red deck in standard',/\b(?:best|deck|standard)\b/g),['red']);
 assert.deepEqual(deckColors('best esper deck').colors.sort(),['b','u','w']);

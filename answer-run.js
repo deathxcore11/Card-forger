@@ -73,14 +73,14 @@ export async function answerFor(plan,tools,io={}){
    const fmt=g==='mtg'&&args.format?args.format:r.format||args.format,{pre='',post='',nth=1}=plan.call;
    // What was asked for, in words, so a miss names it: "No mono-red Standard deck ...", never the top deck of another colour.
    const asked=[pre,fmt,'deck',post].filter(Boolean).join(' '),quoted=args.match?'"'+args.match+'"':'';
-   if(r.none)return miss(quoted?`No ${asked} among the tournament decks is named ${quoted} or plays a card named ${quoted} right now.`:args.under!=null?`No ${asked} among the tournament decks costs you $${args.under} or less to finish right now.`:args.sort?`The app has no prices for the ${fmt} tournament decks right now.`:`No ${asked} is among the tournament decks right now.`);
+   if(r.none)return miss(quoted?(r.matched?.known===false?`No ${asked} among the tournament decks is named ${quoted} right now.`:`No ${asked} among the tournament decks is named ${quoted} or plays a card named ${quoted} right now.`):args.under!=null?`No ${asked} among the tournament decks costs you $${args.under} or less to finish right now.`:args.sort?`The app has no prices for the ${fmt} tournament decks right now.`:`No ${asked} is among the tournament decks right now.`);
    if(r.error||!r.decks?.length)return miss(r.error||'No tournament decks for '+args.format+' right now.');
    const source=[r.source,r.fetchedAt?'updated '+when(r.fetchedAt):''].filter(Boolean).join(' · ');
    if(pick==='cards')return {ok:true,say:'The most played cards are on the tournament page for '+fmt+'.',items:[],more:[],buttons:[{label:'Open '+fmt+' tournament decks',route:'#decks/inspiration'}],source};
    const top=r.decks[nth-1],items=tools.suggestedItems().slice(nth-1,nth+2),ord=['','','2nd ','3rd ','4th ','5th '][nth]||'';
    if(!top)return miss(`Only ${r.decks.length} ${asked}${r.decks.length===1?' is':'s are'} among the tournament decks right now.`);
    // "aggro" found in the deck's name reads as a kind of deck; found in its list, as a card it plays.
-   const kind=[pre,r.matched?.by==='name'?args.match:'',fmt,'deck'].filter(Boolean).join(' '),tail=[post,r.matched?.by==='card'?'that plays '+(r.matched.card||quoted):'',args.under!=null?`that costs you $${args.under} or less to finish`:''].filter(Boolean).join(' '),what=kind+(tail?' '+tail:''),field=`${top.lists?top.lists+(top.lists===1?' list, ':' lists, '):''}${top.share}% of the field`;
+   const kind=[pre,r.matched?.by==='name'?args.match:'',fmt,'deck'].filter(Boolean).join(' '),tail=[post,r.matched?.by==='card'?'that plays '+(r.matched.card||quoted):r.matched?.by==='kind'?'whose monsters are mostly '+r.matched.kind.toUpperCase():'',args.under!=null?`that costs you $${args.under} or less to finish`:''].filter(Boolean).join(' '),what=kind+(tail?' '+tail:''),field=`${top.lists?top.lists+(top.lists===1?' list, ':' lists, '):''}${top.share}% of the field`;
    let say;
    if(args.sort==='closest'){
     if(!top.ownedPercent)return miss(`You don't own cards from any ${what} among the tournament decks yet.`);
@@ -131,6 +131,17 @@ export async function answerFor(plan,tools,io={}){
    if((r.error||!r.card)&&/[^s]s$/.test(args.name)){const one=await tools.card_details({...args,name:args.name.slice(0,-1)});if(one.card)r=one;}
    if(r.error||!r.card)return miss(r.error||'No card by that name.');
    const c=r.card,item=cardItem(g,c);
+   if(pick==='legal'&&g==='ptcg'){
+    const f=plan.call.format,ok=c.legalIn?.[String(f).toLowerCase()];
+    if(typeof ok!=='boolean')return miss(`The app has no ${f} legality for ${c.name}.`,{items:[item]});
+    return {ok:true,strong:c.name,say:ok?`is legal in ${f}.`:`is not legal in ${f}.`,items:[item],more:[],buttons:[{label:'Open the card',item}],source:'Format legality from the card data · other printings of the same card can differ'};
+   }
+   if(pick==='legal'&&g==='ygo'){
+    const f=plan.call.format,list=f==='Goat'?'goat':plan.call.ocg?'ocg':'tcg',label=list==='goat'?'Goat format':list.toUpperCase();
+    if(f==='Edison'||!c.ban)return miss(`The app has no ${f==='Edison'?'Edison':label} list status for ${c.name}.`,{items:[item]});
+    const st=c.ban[list];
+    return {ok:true,strong:c.name,say:st==='banned'?`is Forbidden on the ${label} list: no copies allowed.`:st==='limited'?`is Limited on the ${label} list: 1 copy allowed.`:st==='semi'?`is Semi-Limited on the ${label} list: 2 copies allowed.`:`is not on the ${label} Forbidden & Limited list: 3 copies allowed.`,items:[item],more:[],buttons:[{label:'Open the card',item}],source:'Forbidden & Limited list from the card data'};
+   }
    if(pick==='legal'){
     const f=plan.call.format,st=c.legalities?.[f==='Duel Commander'?'duel':String(f).toLowerCase().replace(/ /g,'')];
     if(!st)return miss(`The app has no ${f} legality for ${c.name}.`,{items:[item]});

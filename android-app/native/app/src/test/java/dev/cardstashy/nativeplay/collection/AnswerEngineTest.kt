@@ -143,4 +143,29 @@ class AnswerEngineTest {
         assertFalse(a["ok"].asBoolean); assertTrue(a.s("miss").contains("can't narrow your collection by \"red\""))
         Unit
     }
+    /** The same rule in Pokémon and Yu-Gi-Oh! (Randall 13 Nov: "is it full of bugs too?"). Live data: names are not fixed, the reading is. */
+    @Test fun pokemonAndYugiohQuestionsKeepTheirWords() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.store = CollectionEngine.MemoryStore()
+        CollectionEngine.initFrom(bundle); CollectionEngine.restart()
+        CollectionEngine.load(JsonObject(), null)
+        suspend fun ask(g: String, q: String) = CollectionEngine.searchAnswer(g, q, JsonObject(), 90_000).also { println("ANSWER[$g: $q] ${it.toString().take(1500)}") }
+        var a = ask("ygo", "is pot of greed banned")!!.o("answer")!!
+        assertEquals("Pot of Greed", a.s("strong")); assertEquals("is Forbidden on the TCG list: no copies allowed.", a.s("say"))
+        a = ask("ygo", "is dark magician limited")!!.o("answer")!!
+        assertEquals("is not on the TCG Forbidden & Limited list: 3 copies allowed.", a.s("say"))
+        a = ask("ptcg", "is pikachu legal in standard")!!.o("answer")!!
+        assertTrue(a.toString(), if (a["ok"].asBoolean) Regex("""^is (not )?legal in Standard\.$""").matches(a.s("say")) else a.s("miss").contains("Standard legality"))
+        var m = ask("ptcg", "best charizard deck")!!; a = m.o("answer")!!
+        assertTrue(m.list("read").any { it.s("label") == "\"charizard\"" })
+        if (a["ok"].asBoolean) assertTrue(a.s("strong") + " " + a.s("say"), (a.s("strong") + a.s("say")).contains("harizard")) else assertTrue(a.s("miss"), a.s("miss").contains("\"charizard\""))
+        m = ask("ygo", "best blue eyes deck")!!; a = m.o("answer")!!
+        if (a["ok"].asBoolean) assertTrue(a.s("strong"), a.s("strong").replace("-", " ").contains("Blue Eyes", true)) else assertTrue(a.s("miss"), a.s("miss").contains("\"blue eyes\""))
+        a = ask("ptcg", "how much is a holo charizard")!!.o("answer")!!
+        assertFalse(a["ok"].asBoolean); assertTrue(a.s("miss").contains("finish, edition or rarity"))
+        a = ask("ygo", "my most valuable card")!!.o("answer")!!
+        assertFalse("an empty collection is said, not guessed", a["ok"].asBoolean)
+        for ((g, q) in listOf("ptcg" to "trainer cards", "ygo" to "spell cards")) { val r = ask(g, q); assertTrue("$q is not an artist", r == null || !r.toString().contains("artist")) }
+        Unit
+    }
 }
