@@ -1108,7 +1108,7 @@ export function registerScanner(ctx) {
   // that agree, names the card on screen and captures as soon as two frames agree, without
   // waiting for a perfectly sharp frame. It is a vote only: the capture is then read and proved
   // (or sent to review) exactly like any other.
-  const levelPixels=pixels=>{try{pixels.data.set(levelFrame(pixels.data,pixels.width,pixels.height));}catch{}return pixels;};
+  const levelPixels=pixels=>{if(!(pixels?.width>0&&pixels.height>0&&pixels.data?.length>=pixels.width*pixels.height*4))return pixels;try{pixels.data.set(levelFrame(pixels.data,pixels.width,pixels.height));}catch{}return pixels;};
   const livePix={};let voteCanvas=null;
   const pictureVote=frame=>{
     try{
