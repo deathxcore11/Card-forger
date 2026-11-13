@@ -133,7 +133,7 @@ private val AskMute = Color(0xFF9B9CA8)
 
 /** .ask-new: "＋ New". */
 @Composable
-private fun AskNew(enabled: Boolean, onClick: () -> Unit) {
+internal fun AskNew(enabled: Boolean, onClick: () -> Unit) {
     Text("＋ New", Modifier.clip(RoundedCornerShape(12.dp)).background(Color(0xFF1F232B)).border(1.dp, Color(0xFF2A2F39), RoundedCornerShape(12.dp))
         .clickable(enabled = enabled, onClick = onClick).semantics { role = Role.Button; contentDescription = "New chat" }
         .padding(horizontal = 11.dp, vertical = 12.dp).alpha(if (enabled) 1f else .5f), style = cssType(13f, 700, 16f))
@@ -141,7 +141,7 @@ private fun AskNew(enabled: Boolean, onClick: () -> Unit) {
 
 /** .ask-bar: the question field and the round gold Ask button. */
 @Composable
-private fun AskBar(value: String, onValue: (String) -> Unit, placeholder: String, enabled: Boolean, onSend: () -> Unit) {
+internal fun AskBar(value: String, onValue: (String) -> Unit, placeholder: String, enabled: Boolean, onSend: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Box(Modifier.weight(1f)) {
             FormInput(value, onValue, cssType(14f, 400, 20f), placeholder = placeholder.ifBlank { "Ask about cards, prices, sets, decks…" }, desc = "Your question",
@@ -169,7 +169,7 @@ internal fun ColumnScope.AskEmpty(m: JsonObject, enabled: Boolean, ask: (String)
 }
 
 @Composable
-private fun AskPill(q: String, enabled: Boolean, modifier: Modifier = Modifier, small: Boolean = false, onClick: () -> Unit) {
+internal fun AskPill(q: String, enabled: Boolean, modifier: Modifier = Modifier, small: Boolean = false, onClick: () -> Unit) {
     Text(q, modifier.clip(RoundedCornerShape(if (small) 999.dp else 14.dp)).background(Color(0x0CFFFFFF)).border(1.dp, Color(0x1FFFFFFF), RoundedCornerShape(if (small) 999.dp else 14.dp))
         .clickable(enabled = enabled, onClick = onClick).semantics { role = Role.Button }
         .padding(horizontal = if (small) 11.dp else 14.dp, vertical = if (small) 7.dp else 11.dp), style = cssType(if (small) 13f else 14f, 600, if (small) 17f else 19f))
@@ -212,7 +212,7 @@ internal fun AskLine(l: JsonObject, busy: Boolean, ask: (String) -> Unit, choose
 }
 
 @Composable
-private fun AiBubble(border: Color = AskLineC, content: @Composable ColumnScope.() -> Unit) {
+internal fun AiBubble(border: Color = AskLineC, content: @Composable ColumnScope.() -> Unit) {
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
         Column(Modifier.widthIn(max = 360.dp).clip(RoundedCornerShape(20.dp, 20.dp, 20.dp, 6.dp)).background(AskPanel)
             .border(1.dp, border, RoundedCornerShape(20.dp, 20.dp, 20.dp, 6.dp)).padding(horizontal = 15.dp, vertical = 12.dp), content = content)

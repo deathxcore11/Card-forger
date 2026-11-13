@@ -187,6 +187,17 @@ internal object CollectionWrites {
     data class AskOpen(val game: String, val prefill: String = "", val go: (com.google.gson.JsonObject) -> Unit = {}, val draft: String = "",
                        val web: (url: String, press: String?) -> Unit = { _, _ -> }, val id: Long = System.nanoTime())
     val asking = MutableStateFlow<AskOpen?>(null)
+    /** Ask a Judge (app.js A.askRules, ai-rules.js openRulesAsk) with the site's [context]: {game, format, cards, references}. */
+    data class JudgeOpen(val context: com.google.gson.JsonObject, val game: String, val id: Long = System.nanoTime())
+    val judging = MutableStateFlow<JudgeOpen?>(null)
+    /** Opens Ask a Judge from a press's context: the engine's (a panel's askRules, its data's judge) or just the game and format. */
+    fun judge(contextJson: String?, game: String = "mtg", format: String = "") {
+        val c = runCatching { com.google.gson.JsonParser.parseString(contextJson ?: "").asJsonObject }.getOrNull()
+            ?: com.google.gson.JsonObject().apply { addProperty("game", game); addProperty("format", format) }
+        judging.value = JudgeOpen(c, c.get("game")?.takeIf { it.isJsonPrimitive }?.asString ?: game)
+    }
+    /** A judge's citation opens that exact rule on the app's Rules page: game, the rule's reference, its title and the quoted words. */
+    @Volatile var ruleRef: ((game: String, ref: com.google.gson.JsonObject, title: String, quote: String) -> Unit)? = null
     /** A tournament deck's sheet the engine has open (an Ask tile, A.mtgProven / tMetaDeck), drawn over any page (MetaDeckHost). */
     data class MetaOpen(val game: String, val web: (url: String, press: String?) -> Unit, val id: Long = System.nanoTime())
     val metaDeck = MutableStateFlow<MetaOpen?>(null)
