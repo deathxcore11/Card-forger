@@ -42,7 +42,9 @@ try {
    assert.equal(response.status,200,path);assert.equal(await response.text(),'cached exact artwork');
   }
  } finally {globalThis.caches=oldCaches;}
- for(const path of Object.keys(payloads)){
+ // Ask, the deck coach and the matchup read no longer use AI: their routes are switched off and reach no provider.
+ for(const path of ['/api/ai/ask','/api/ai/deck-review','/api/ai/matchup']){const start=providerCalls,gone=await worker.fetch(request(path),env,{});assert.equal(gone.status,410,path);assert.equal((await gone.json()).code,'ai_removed');assert.equal(providerCalls,start,'a removed AI route never reaches a provider');}
+ for(const path of ['/api/ai/identify-card']){
   for(const origin of [NATIVE,WEB]){
    const start=providerCalls;
    assert.equal((await worker.fetch(request(path,{origin,token:null}),env,{})).status,401);
@@ -70,8 +72,8 @@ try {
  for(const headers of [{'Access-Control-Request-Method':'DELETE'},{'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'X-Admin'},{'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'Cookie'}])assert.ok((await worker.fetch(request('/api/ai/ask',{method:'OPTIONS',token:null,headers}),env,{})).status>=400);
  assert.equal((await worker.fetch(new Request('https://evil.test/api/ai/ask',{method:'OPTIONS',headers:{Origin:NATIVE,'Access-Control-Request-Method':'POST'}}),env,{})).status,403);
  assert.equal((await worker.fetch(request('/api/uninventoried',{method:'GET',token:null}),env,{})).status,404);
- assert.equal((await worker.fetch(request('/api/ai/ask',{method:'GET',token:null}),env,{})).status,200,'native availability read');
- assert.equal((await worker.fetch(request('/api/ai/ask',{method:'GET',origin:WEB,token:null}),env,{})).status,200,'legacy web availability read');
+ assert.equal((await worker.fetch(request('/api/ai/ask',{method:'GET',token:null}),env,{})).status,410,'the removed AI chat route says it is gone to the app');
+ assert.equal((await worker.fetch(request('/api/ai/ask',{method:'GET',origin:WEB,token:null}),env,{})).status,410,'the removed AI chat route says it is gone to the website');
  assert.equal((await worker.fetch(request('/api/ai/ask',{headers:{Cookie:'session=forged'}}),env,{})).status,403);
  // Existing web Lens no-Origin acceptance and body bounds unchanged. Native admission
  // permits only origin exception, not MIME or size exceptions.
