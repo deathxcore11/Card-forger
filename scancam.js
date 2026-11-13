@@ -197,6 +197,10 @@ async function getWorker(lang, progress) {
     const creating=Promise.resolve(Tess.createWorker(lang, 1, {
       workerPath: new URL("vendor/worker.min.js", location.href).href,
       workerBlobURL: false,
+      // The reader's engine and its English data are our own files (vendor/tess), so the first scan
+      // needs no outside site and works offline once cached. Other languages still load on demand.
+      corePath: new URL("vendor/tess/", location.href).href.replace(/\/$/, ""),
+      ...(lang === "eng" ? { langPath: new URL("vendor/tess/", location.href).href.replace(/\/$/, "") } : {}),
       logger: (m) => m.status && progress?.(m.status + (typeof m.progress === "number" ? " · " + Math.round(m.progress * 100) + "%" : "")),
     })).then(created=>{if(expired){retireWorker(created);throw Error('Reader startup expired.');}return created;});
     worker = await scanDeadline(()=>creating,SCAN_DEADLINES.worker,'Text reader startup',()=>{expired=true;});
