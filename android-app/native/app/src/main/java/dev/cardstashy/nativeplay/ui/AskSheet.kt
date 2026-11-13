@@ -54,79 +54,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-/**
- * Ask CardStashy (gap audit H3; app.js A.askOpen, ai-ask.js openAsk), as the gap-screens preview draws it: the head with the orb,
- * "In-app assistant" and New; an empty chat's greeting and the game's four starter questions; then the chat (your line, "Thinking"
- * by the brand mark with the step it is on, each answer with where it came from, its tiles, deck choices and follow-up questions);
- * the bar at the bottom. Every word, the loop and its tools are the site's own, run in the Collection engine (CollectionEngine.ask*),
- * posting to /api/ai/ask with the signed-in account. A tile takes the app to its own page ([CollectionWrites.AskOpen.go]).
- * The site's microphone is left out (Android has no page speech recognition here).
- */
-@Composable
-internal fun AskSheet(o: CollectionWrites.AskOpen, backdrop: GraphicsLayer?, onClose: () -> Unit) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var model by remember { mutableStateOf<JsonObject?>(null) }
-    var typed by remember { mutableStateOf(o.draft.take(300)) }
-    var leaving by remember { mutableStateOf(false) }
-    suspend fun signIn() { CollectionEngine.auth(if (Account.session.value != null) Account.token() else null) }
-    suspend fun runOut() { model = CollectionEngine.askWait { m -> model = m } }
-    LaunchedEffect(o.id) {
-        if (!CollectionReady.ready(context)) { onClose(); return@LaunchedEffect }
-        signIn()
-        model = CollectionEngine.askOpen(o.game, o.prefill)
-        if (model?.get("busy")?.asBoolean == true) runOut()
-    }
-    // Leaving calls a question still out off (ai-ask.js closeAsk); the chat itself is kept for next time.
-    DisposableEffect(o.id) { onDispose { if (!leaving) CoroutineScope(Dispatchers.Default).launch { runCatching { CollectionEngine.askClose() } } } }
-    val m = model ?: return
-    val busy = m.get("busy")?.asBoolean == true
-    fun send(text: String) {
-        val q = text.trim().take(300); if (q.isEmpty() || busy) return
-        typed = ""
-        scope.launch { signIn(); model = CollectionEngine.askSend(o.game, q); runOut() }
-    }
-    fun choose(c: JsonObject) {
-        if (busy) return
-        scope.launch { signIn(); model = CollectionEngine.askChoice(o.game, c.s("id"), c.s("label"), c.get("turn")?.asInt ?: 0); runOut() }
-    }
-    fun restart() { if (!busy) scope.launch { typed = ""; model = CollectionEngine.askNew(o.game) } }
-    fun open(show: JsonObject) {
-        scope.launch {
-            leaving = true
-            val dest = CollectionEngine.askShow(show)
-            onClose()
-            dest?.let { d -> askTo(d, o) }
-        }
-    }
-    val lines = m.getAsJsonArray("lines")?.map { it.asJsonObject }.orEmpty()
-    val end = remember { BringIntoViewRequester() }
-    LaunchedEffect(lines.size, busy) { runCatching { end.bringIntoView() } }
-    val two = DualScreen.active
-    val chat: @Composable ColumnScope.() -> Unit = {
-        if (lines.isEmpty()) AskEmpty(m, enabled = !busy) { send(it) }
-        else Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            lines.forEach { l -> AskLine(l, busy, ::send, ::choose, ::open) }
-        }
-        Spacer(Modifier.height(1.dp).bringIntoViewRequester(end))
-    }
-    val bar: @Composable () -> Unit = { AskBar(typed, { typed = it.take(300) }, m.s("placeholder"), enabled = !busy) { send(typed) } }
-    SiteSheet(m.s("title").ifBlank { "Ask CardStashy" }, backdrop, onClose = onClose, eyebrow = m.s("eyebrow"),
-        lead = { Box(Modifier.size(38.dp).clip(CircleShape).background(Color(0x1AD6AD64)), contentAlignment = Alignment.Center) { BrandMark(30.dp) } },
-        action = { AskNew(enabled = !busy) { restart() } },
-        foot = if (two) null else bar) { _ ->
-        // A two-screen handheld: the chat and its bar on the bottom screen, what the newest answer names on the top one.
-        if (two) AskNamed(lines, ::open) else chat()
-    }
-    if (two) BottomScreen {
-        Column(Modifier.fillMaxSize().background(Site.Bg).padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), content = chat)
-            Spacer(Modifier.height(10.dp)); bar()
-        }
-    }
-    PadScreen(PadActs(y = if (!busy && lines.isNotEmpty()) PadAct("New") { restart() } else null))
-}
-
 private val AskPanel = Color(0x0DFFFFFF)
 private val AskLineC = Color(0x17FFFFFF)
 private val AskMute = Color(0xFF9B9CA8)
@@ -155,60 +82,11 @@ internal fun AskBar(value: String, onValue: (String) -> Unit, placeholder: Strin
     }
 }
 
-/** .ask-empty: the greeting, what it can use, and the game's four starter questions. */
-@Composable
-internal fun ColumnScope.AskEmpty(m: JsonObject, enabled: Boolean, ask: (String) -> Unit) {
-    Spacer(Modifier.height(18.dp))
-    Text(m.s("hello"), Modifier.fillMaxWidth(), style = cssType(20f, 750, 27f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-    Spacer(Modifier.height(8.dp))
-    Text(m.s("blurb"), Modifier.fillMaxWidth(), style = cssType(13f, 400, 19f, AskMute), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-    Spacer(Modifier.height(16.dp))
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        m.getAsJsonArray("examples")?.map { it.asString }.orEmpty().forEach { q -> AskPill(q, enabled, Modifier.fillMaxWidth()) { ask(q) } }
-    }
-}
-
 @Composable
 internal fun AskPill(q: String, enabled: Boolean, modifier: Modifier = Modifier, small: Boolean = false, onClick: () -> Unit) {
     Text(q, modifier.clip(RoundedCornerShape(if (small) 999.dp else 14.dp)).background(Color(0x0CFFFFFF)).border(1.dp, Color(0x1FFFFFFF), RoundedCornerShape(if (small) 999.dp else 14.dp))
         .clickable(enabled = enabled, onClick = onClick).semantics { role = Role.Button }
         .padding(horizontal = if (small) 11.dp else 14.dp, vertical = if (small) 7.dp else 11.dp), style = cssType(if (small) 13f else 14f, 600, if (small) 17f else 19f))
-}
-
-/** One line of the chat: yours (the game's colour), "Thinking", the error line, or an answer. */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-internal fun AskLine(l: JsonObject, busy: Boolean, ask: (String) -> Unit, choose: (JsonObject) -> Unit, open: (JsonObject) -> Unit) {
-    val gold = LocalGameGold.current
-    when (l.s("who")) {
-        "me" -> Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-            Text(l.s("text"), Modifier.widthIn(max = 320.dp).alpha(if (l.get("pending")?.asBoolean == true) .75f else 1f)
-                .clip(RoundedCornerShape(20.dp, 20.dp, 6.dp, 20.dp)).background(gold).padding(horizontal = 15.dp, vertical = 12.dp),
-                style = cssType(14f, 600, 21f, Color(0xFF0D0F14)))
-        }
-        "thinking" -> AiBubble {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                BrandMark(30.dp)
-                Text(l.s("step").ifBlank { "Thinking" }, style = cssType(13.5f, 600, 19f, AskMute))
-            }
-        }
-        "error" -> AiBubble(border = Color(0x55F07C7C)) { Text(l.s("text"), style = cssType(14f, 400, 21f, Color(0xFFF6B3B3))) }
-        else -> AiBubble {
-            val (fg, bg) = when (l.s("sourceKind")) { "app" -> Color(0xFF6FD3A0) to Color(0x246FD3A0); "general" -> Color(0xFFF4BF58) to Color(0x18F4BF58); else -> Color(0xFFB9C6FF) to Color(0x188FA3FF) }
-            if (l.s("source").isNotEmpty()) Text(l.s("source").uppercase(), Modifier.clip(RoundedCornerShape(999.dp)).background(bg).padding(horizontal = 8.dp, vertical = 3.dp),
-                style = cssType(11f, 800, 13f, fg, .66f))
-            Spacer(Modifier.height(6.dp))
-            Text(l.s("text"), style = cssType(14f, 400, 21f))
-            val items = l.getAsJsonArray("items")?.map { it.asJsonObject }.orEmpty()
-            if (items.isNotEmpty()) Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { items.forEach { AskTile(it, open) } }
-            val choices = l.getAsJsonArray("choices")?.map { it.asJsonObject }.orEmpty()
-            val follow = l.getAsJsonArray("follow")?.map { it.asString }.orEmpty()
-            if (choices.isNotEmpty() || follow.isNotEmpty()) FlowRow(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                choices.forEach { c -> AskPill(c.s("label"), !busy, small = true) { choose(c) } }
-                follow.forEach { q -> AskPill(q, !busy, small = true) { ask(q) } }
-            }
-        }
-    }
 }
 
 @Composable
@@ -277,36 +155,5 @@ internal fun askGo(d: JsonObject, page: String, card: (CardOpen) -> Unit, sets: 
             else -> web("https://cardstashy.com/$h", null)
         } }
         else -> web("https://cardstashy.com/#search", "[data-act=\"askOpen\"]")
-    }
-}
-
-/**
- * The top screen on a two-screen handheld: the cards, sets and decks the newest answer names, large, each opening its page; before
- * any, the greeting.
- */
-@Composable
-internal fun ColumnScope.AskNamed(lines: List<JsonObject>, open: (JsonObject) -> Unit) {
-    val last = lines.lastOrNull { it.s("who") == "ai" }
-    val items = last?.getAsJsonArray("items")?.map { it.asJsonObject }.orEmpty()
-    if (items.isEmpty()) {
-        Spacer(Modifier.height(24.dp))
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { BrandMark(72.dp) }
-        Spacer(Modifier.height(12.dp))
-        Text(if (last == null) "Ask on the bottom screen. The cards and decks it names show here." else last.s("text"), Modifier.fillMaxWidth(),
-            style = cssType(15f, 600, 22f, AskMute), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-        return
-    }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        items.take(4).forEach { t ->
-            val show = t.getAsJsonObject("show") ?: return@forEach
-            val title = t.s("title").ifBlank { show.s("label").ifBlank { show.s("ref") } }
-            Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable { open(show) }.semantics { role = Role.Button; contentDescription = "Open $title" },
-                verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (t.s("art").isNotEmpty()) CardPicture(t.s("art"), null, null, Modifier.fillMaxWidth().aspectRatio(if (show.s("kind") == "card") 488f / 680f else 4f / 3f), RoundedCornerShape(10.dp),
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop)
-                Text(title, style = cssType(13.5f, 700, 18f), maxLines = 2)
-                if (t.s("price").isNotEmpty()) Text(t.s("price"), style = cssType(13f, 700, 17f, Site.Gold))
-            }
-        }
     }
 }

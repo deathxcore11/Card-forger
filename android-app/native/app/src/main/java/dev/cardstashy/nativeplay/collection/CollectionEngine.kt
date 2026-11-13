@@ -465,38 +465,8 @@ object CollectionEngine {
         return m
     }
 
-    // ---- Ask CardStashy (gap audit H3: ai-ask.js, ai-tools.js and ai-ask-loop.js in the engine; Collection.ask*) ----
+    // ---- The app's own lookups behind the search answers (ai-tools.js in the engine: plain app code, no AI) ----
     private suspend fun askEval(code: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate(code) as String).asJsonObject }
-    const val ASK_MODEL = "Collection.askModel()"
-    /**
-     * Game [game]'s chat (kept while the app runs, one per game): {open, game, title, eyebrow, placeholder, draft, hello, blurb,
-     * examples, lines, busy}. Each line is {who: me|thinking|error|ai, ...}; an answer has source, sourceKind, text, items (tiles:
-     * show, title, lines, price, art, build, status), choices ({id, label, turn}) and follow (follow-up questions). [prefill] asks it.
-     */
-    suspend fun askOpen(game: String, prefill: String = ""): JsonObject = askEval("Collection.askOpen(${str(game)}, ${str(prefill)})")
-    suspend fun askModel(): JsonObject = askEval(ASK_MODEL)
-    /** A question (typed, a starter or a follow-up); [askWait] runs it to its answer. */
-    suspend fun askSend(game: String, text: String): JsonObject = askEval("Collection.askSend(${str(game)}, ${str(text)})")
-    /** One of the latest answer's deck choices. */
-    suspend fun askChoice(game: String, id: String, label: String, turn: Int): JsonObject =
-        askEval("Collection.askChoice(${str(game)}, ${str(id)}, ${str(label)}, $turn)")
-    /** New chat. */
-    suspend fun askNew(game: String): JsonObject = askEval("Collection.askNew(${str(game)})")
-    /** Leaving the chat: a question still out is called off (the site's closeAsk), the chat kept. */
-    suspend fun askClose() { askEval("Collection.askClose()") }
-    /** Runs the question out to its answer (each round's fetches and tools), [onModel] seeing the chat as it changes. */
-    suspend fun askWait(maxMs: Long = 600_000, onModel: (JsonObject) -> Unit = {}): JsonObject {
-        val until = System.currentTimeMillis() + maxMs
-        var m = askModel()
-        while (m.get("busy")?.asBoolean == true && System.currentTimeMillis() < until) {
-            val t = System.currentTimeMillis()
-            settle(1_000, ASK_MODEL) { onModel(it) }
-            if (System.currentTimeMillis() - t < 20) delay(40)
-            m = askModel()
-        }
-        onModel(m)
-        return m
-    }
     /**
      * A tapped tile ([show], its data-ask-show): the site's tools.open worked out; where the app goes, or null. {to: card (game, name
      * or id, setId), meta (game, key, format), route (hash), build (game, id or seed, budget, format), help (id), wiki (game, topic)}.

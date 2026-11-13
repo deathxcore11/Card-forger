@@ -245,10 +245,8 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
                 a == "go" -> data["to"].orEmpty().let { to -> if (to == "#sets") onSets(game) else if (to == "#rules" && onRules != null) onRules(game) else web(SITE + to, null) }
                 // app.js A.wikiOpen: the Wiki at the button's topic.
                 a in setOf("mtgWikiOpen", "wikiOpen") && onWiki != null -> onWiki(data["game"]?.takeIf { it.isNotBlank() } ?: game, data["topic"]?.takeIf { it.isNotBlank() } ?: data["wikiTopic"].orEmpty())
-                // Compare (gap audit H1) and Ask CardStashy (H3): the app's own sheets.
+                // Compare (gap audit H1): the app's own sheet.
                 a in setOf("compareOpen", "tCompareOpen") -> CollectionWrites.comparing.value = CollectionWrites.CompareOpen(game, openCard = compared)
-                a == "askOpen" -> CollectionWrites.asking.value = CollectionWrites.AskOpen(game, go = { d -> askGo(d, SITE + "#search", card = { c -> cards = cards + c },
-                    sets = onSets, set = onSet, wiki = onWiki, web = web) }, web = web)
                 a == "mtgWikiOpen" -> site("[data-act=\"${css(a)}\"]")
                 a.isNotBlank() -> run(a, data, value)
             } },

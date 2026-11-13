@@ -16,9 +16,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Gap audit H3 steps 2 to 4: Ask CardStashy drawn from the chat the engine reads back (AskEngineTest): the greeting and starter
- * questions, your line, "Thinking" with its step, an answer with its source label, tile, deck choices and follow-up questions; a tile
- * taking the app to its own card page, Sets or Wiki (askGo); the wiki's ask box leaving its words in the bar.
+ * Where a tapped tile of a search answer takes the app: its own card page, Sets, Wiki, a deck, a tournament deck or Build a deck
+ * (askGo, askTo). The AI chat these once belonged to (Ask CardStashy) is gone.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w390dp-h844dp-xxhdpi")
@@ -26,34 +25,6 @@ class AskSheetTest {
     init { dev.cardstashy.nativeplay.art.CardArt.init(org.robolectric.RuntimeEnvironment.getApplication()); Motion.still = true }
     @get:Rule val rule = createComposeRule()
     private fun j(s: String) = JsonParser.parseString(s).asJsonObject
-
-    @Test fun greetingAndStarters() {
-        val asked = mutableListOf<String>()
-        val m = j("""{"hello":"What do you want to know about your Magic cards?","blurb":"I can use CardStashy’s cards, prices, sets, tournament decks, your collection and your decks.",
-            "examples":["What's my most valuable card?","Build me a mono-red deck for $50"]}""")
-        rule.setContent { Column { AskEmpty(m, true) { asked += it } } }
-        rule.onNodeWithText("What do you want to know about your Magic cards?").assertExists()
-        rule.onNodeWithText("What's my most valuable card?").performSemanticsAction(SemanticsActions.OnClick)
-        assertEquals(listOf("What's my most valuable card?"), asked)
-    }
-
-    @Test fun chatLinesTilesChoicesAndFollowUps() {
-        val asked = mutableListOf<String>(); val chosen = mutableListOf<String>(); val opened = mutableListOf<JsonObject>()
-        val lines = listOf(j("""{"who":"me","text":"What's my most valuable card?","pending":false}"""),
-            j("""{"who":"ai","source":"From your app data","sourceKind":"app","text":"Sheoldred, the Apocalypse is worth the most.",
-                "items":[{"show":{"kind":"card","game":"mtg","ref":"Sheoldred, the Apocalypse"},"title":"Sheoldred, the Apocalypse","lines":["DMU · #107"],"price":"$62.00","art":"","build":false,"status":"","label":"Open Sheoldred, the Apocalypse"}],
-                "choices":[{"id":"format:Standard","label":"Standard","turn":2}],"follow":["What is my whole collection worth?"]}"""),
-            j("""{"who":"thinking","step":"Checking your collection…"}"""))
-        rule.setContent { Column { lines.forEach { AskLine(it, false, { q -> asked += q }, { c -> chosen += c["id"].asString }, { s -> opened += s }) } } }
-        rule.onNodeWithText("What's my most valuable card?").assertExists()
-        rule.onNodeWithText("FROM YOUR APP DATA").assertExists()
-        rule.onNodeWithText("Checking your collection…").assertExists()
-        rule.onNodeWithContentDescription("Open Sheoldred, the Apocalypse").performSemanticsAction(SemanticsActions.OnClick)
-        assertEquals("Sheoldred, the Apocalypse", opened.single()["ref"].asString)
-        rule.onNodeWithText("Standard").performSemanticsAction(SemanticsActions.OnClick); assertEquals(listOf("format:Standard"), chosen)
-        rule.onNodeWithText("What is my whole collection worth?").performSemanticsAction(SemanticsActions.OnClick)
-        assertEquals(listOf("What is my whole collection worth?"), asked)
-    }
 
     @Test fun tilesGoToTheAppsOwnPages() {
         val cards = mutableListOf<CardOpen>(); val went = mutableListOf<String>()
@@ -67,13 +38,6 @@ class AskSheetTest {
         assertEquals("Lightning Bolt", cards[0].name)
         assertEquals("14558127", cards[1].id); assertEquals("ygo", cards[1].game)
         assertEquals(listOf("set:mtg:dmu", "sets:ptcg", "wiki:mtg:Trample"), went)
-    }
-
-    @Test fun wikiAskBoxLeavesItsWordsInTheBar() {
-        CollectionWrites.asking.value = CollectionWrites.AskOpen("mtg", draft = "What is trample?")
-        assertEquals("What is trample?", CollectionWrites.asking.value?.draft)
-        assertEquals("", CollectionWrites.asking.value?.prefill)
-        CollectionWrites.asking.value = null
     }
 
     @Test fun decksTournamentDecksAndDraftsOpenInTheApp() {
@@ -90,14 +54,5 @@ class AskSheetTest {
             assertEquals("Charizard ex", CollectionWrites.building.value?.request?.get("seed")?.asString)
             assertEquals("openDeckFlow", CollectionWrites.building.value?.act)
         } finally { CollectionWrites.deckNav = null; CollectionWrites.metaDeck.value = null; CollectionWrites.building.value = null }
-    }
-
-    @Test fun thorTopScreenShowsWhatTheAnswerNames() {
-        val opened = mutableListOf<String>()
-        val lines = listOf(j("""{"who":"me","text":"Best deck?"}"""), j("""{"who":"ai","source":"From your app data","sourceKind":"app","text":"Snake-Eye leads.",
-            "items":[{"show":{"kind":"meta","game":"ygo","ref":"snake-eye"},"title":"Snake-Eye Fire King","lines":["Meta deck · Yu-Gi-Oh!"],"price":"","art":"","build":false,"status":"","label":""}],"choices":[],"follow":[]}"""))
-        rule.setContent { Column { AskNamed(lines) { opened += it["ref"].asString } } }
-        rule.onNodeWithContentDescription("Open Snake-Eye Fire King").performSemanticsAction(SemanticsActions.OnClick)
-        assertEquals(listOf("snake-eye"), opened)
     }
 }

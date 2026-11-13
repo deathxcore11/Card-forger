@@ -113,8 +113,6 @@ fun CollectionWritesHost(backdrop: androidx.compose.ui.graphics.layer.GraphicsLa
     tAdding?.let { a -> key(a.id) { TcgAddSheet(a, backdrop, onClose = { if (CollectionWrites.tAdding.value === a) CollectionWrites.tAdding.value = null }) } }
     val comparing by CollectionWrites.comparing.collectAsState()
     comparing?.let { o -> key(o.id) { GameAccent(o.game) { CardCompareSheet(o, backdrop, onClose = { if (CollectionWrites.comparing.value === o) CollectionWrites.comparing.value = null }) } } }
-    val askChat by CollectionWrites.asking.collectAsState()
-    askChat?.let { o -> key(o.id) { GameAccent(o.game) { AskSheet(o, backdrop, onClose = { if (CollectionWrites.asking.value === o) CollectionWrites.asking.value = null }) } } }
     val judgeChat by CollectionWrites.judging.collectAsState()
     judgeChat?.let { o -> key(o.id) { GameAccent(o.game) { JudgeSheet(o, backdrop, onClose = { if (CollectionWrites.judging.value === o) CollectionWrites.judging.value = null }) } } }
     val metaOpen by CollectionWrites.metaDeck.collectAsState()

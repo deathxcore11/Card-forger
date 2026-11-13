@@ -11,7 +11,7 @@ const card=(id,name=id,oracle_id=id)=>({id,name,oracle_id,set:'fdn',prices:{usd:
 const queued=[],cached=[],toasts=[],saved=[];let renders=0,game='mtg';
 const db={term:'Alpha',filters:{},results:[],next:null,total:0,busy:false,error:''};
 const context={navigationStamp:()=>({}),navigationCurrent:()=>true,A:{},C:{},I:{},S:{ui:{db,view:'search'}},T:{game:()=>game,savedSearches:()=>saved,setSavedSearches:(_g,x)=>saved.splice(0,saved.length,...x)},URL,URLSearchParams,AbortController,structuredClone,searchQuery,rankByName,magicFilterError,hasMagicSearchQuery,magicSearchSpec,scryfallSearchPath,mergeMagicCards,
- api:(path,options={})=>new Promise((resolve,reject)=>queued.push({path,signal:options.signal,resolve,reject})),cacheCard:c=>cached.push(c),saveCatalogSoon(){},render:()=>renders++,toast:m=>toasts.push(m),V:{mtgFilterChips:()=>[]},currentDeck:()=>null};
+ api:(path,options={})=>new Promise((resolve,reject)=>queued.push({path,signal:options.signal,resolve,reject})),cacheCard:c=>cached.push(c),saveCatalogSoon(){},render:()=>renders++,toast:m=>toasts.push(m),V:{mtgFilterChips:()=>[]},currentDeck:()=>null,answerFirst:(_q,run)=>run()};
 vm.createContext(context);vm.runInContext(source.slice(start,end),context);
 const {A,C,I}=context,tick=()=>new Promise(r=>setTimeout(r,0));
 const response=(data,more=false,next='https://api.scryfall.com/cards/search?page=2')=>({data,total_cards:8,has_more:more,next_page:more?next:null});

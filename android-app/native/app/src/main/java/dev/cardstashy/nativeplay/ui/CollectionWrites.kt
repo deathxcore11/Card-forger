@@ -181,12 +181,11 @@ internal object CollectionWrites {
     data class CompareOpen(val game: String, val first: String? = null, val openCard: (String, String) -> Unit = { _, _ -> }, val id: Long = System.nanoTime())
     val comparing = MutableStateFlow<CompareOpen?>(null)
     /**
-     * Ask CardStashy (app.js A.askOpen, ai-ask.js openAsk) for [game]: [prefill] asked at once, [draft] left in the bar (A.mtgWikiAsk); [go] takes
-     * the app where a tapped tile leads (CollectionEngine.askShow's {to, ...}).
+     * Where a tapped tile of a search answer leads for [game]: [go] takes the app there (CollectionEngine.askShow's {to, ...}). The AI chat
+     * this once opened (Ask CardStashy) is gone; [prefill] and [draft] are unused.
      */
     data class AskOpen(val game: String, val prefill: String = "", val go: (com.google.gson.JsonObject) -> Unit = {}, val draft: String = "",
                        val web: (url: String, press: String?) -> Unit = { _, _ -> }, val id: Long = System.nanoTime())
-    val asking = MutableStateFlow<AskOpen?>(null)
     /** Ask a Judge (app.js A.askRules, judge-ui.js openJudge; no AI) with the site's [context]: {game, format, cards, question}. */
     data class JudgeOpen(val context: com.google.gson.JsonObject, val game: String, val id: Long = System.nanoTime())
     val judging = MutableStateFlow<JudgeOpen?>(null)
