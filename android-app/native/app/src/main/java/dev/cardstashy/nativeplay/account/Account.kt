@@ -110,8 +110,11 @@ object Account {
         lock.withLock { clear() }
     }
 
+    /** Runs after the account is cleared (sign-out, or a refresh the server refused): the in-app website forgets it too (WebSession). */
+    @Volatile var onCleared: () -> Unit = {}
     private fun clear() {
         prefs.edit().clear().apply(); _session.value = null; _profile.value = null
+        runCatching { onCleared() }
     }
 
     private fun JsonObject.str(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }

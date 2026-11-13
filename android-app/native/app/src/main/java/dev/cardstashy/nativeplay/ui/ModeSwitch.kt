@@ -95,6 +95,34 @@ private fun DrawScope.drawEmblem(mode: Mode) {
 }
 
 /**
+ * Gap audit G5: the website inside the app is signed in as the app is. Before a cardstashy.com page opens, a tiny page served by the
+ * app at that origin writes the site's own Supabase session entry (cloud.js, supabase-js's sb-<ref>-auth-token) and moves on to the
+ * page. It carries the app's current access token only: its refresh token stays with the app (the page's copy cannot refresh, so the
+ * app's own sign-in is never rotated away), and when it runs out the page simply asks to sign in. Never logged, never in a URL, only
+ * for cardstashy.com. Signing out of the app clears the web view's storage.
+ */
+object WebSession {
+    const val PATH = "/__native/signin"
+    val KEY = "sb-" + android.net.Uri.parse(dev.cardstashy.nativeplay.account.Account.URL).host!!.substringBefore('.') + "-auth-token"
+    fun ours(url: String) = runCatching { android.net.Uri.parse(url) }.getOrNull()?.let { it.scheme == "https" && (it.host == "cardstashy.com" || it.host?.endsWith(".cardstashy.com") == true) } == true
+    /** The site's session entry for [s] (access token only; [s].expiresAt in seconds). */
+    internal fun entry(s: dev.cardstashy.nativeplay.account.Account.Session): String = com.google.gson.JsonObject().apply {
+        addProperty("access_token", s.access); addProperty("token_type", "bearer"); addProperty("expires_at", s.expiresAt)
+        addProperty("expires_in", (s.expiresAt - System.currentTimeMillis() / 1000).coerceAtLeast(0))
+        // Not the app's refresh token: the page cannot rotate it (and so sign the app out). Its refresh fails; it then asks to sign in.
+        addProperty("refresh_token", "app-held")
+        add("user", com.google.gson.JsonObject().apply { addProperty("id", s.userId); addProperty("email", s.email); addProperty("aud", "authenticated"); addProperty("role", "authenticated") })
+    }.toString()
+    /** The page served at [PATH]: write the entry, then open [target] in its place. */
+    internal fun page(entry: String?, target: String): String {
+        val q = { v: String -> com.google.gson.JsonPrimitive(v).toString().replace("</", "<\\/") }
+        val write = if (entry != null) "localStorage.setItem(${q(KEY)},${q(entry)});" else ""
+        return "<!doctype html><meta charset=\"utf-8\"><script>try{$write}catch(e){}location.replace(${q(target)});</script>"
+    }
+    fun clear() { android.os.Handler(android.os.Looper.getMainLooper()).post { runCatching { android.webkit.WebStorage.getInstance().deleteAllData() } } }
+}
+
+/**
  * Collection mode: the CardStashy app as it is on the web, until each tab goes native (big
  * picture, step 3). Back returns to Play (Randall 3 Nov: no floating Play button for now).
  */
@@ -102,12 +130,27 @@ private fun DrawScope.drawEmblem(mode: Mode) {
 @Composable
 fun CollectionScreen(onPlay: () -> Unit, url: String = "https://cardstashy.com/", press: String? = null) {
     val web = remember { mutableStateOf<WebView?>(null) }
+    // The session the page opens with, read fresh (the app refreshes its token first when it is near its end); null when signed out.
+    val signedIn = remember { mutableStateOf<String?>(null) }
+    val ready by produceState(false) { if (WebSession.ours(url) && dev.cardstashy.nativeplay.account.Account.session.value != null) {
+        dev.cardstashy.nativeplay.account.Account.token(); signedIn.value = dev.cardstashy.nativeplay.account.Account.session.value?.let(WebSession::entry) }
+        value = true }
+    if (!ready) { Box(Modifier.fillMaxSize().background(Palette.Night)); return }
     BackHandler { web.value?.takeIf { it.canGoBack() }?.goBack() ?: onPlay() }
     Box(Modifier.fillMaxSize().background(Palette.Night)) {
         AndroidView(factory = { ctx ->
             WebView(ctx).apply {
                 settings.javaScriptEnabled = true; settings.domStorageEnabled = true
+                // The pressed button never came: say so instead of leaving the press silent.
+                addJavascriptInterface(object { @android.webkit.JavascriptInterface fun missed() { post { android.widget.Toast.makeText(ctx, "That opens on the website. Sign in there to use it.", android.widget.Toast.LENGTH_LONG).show() } } }, "NativePress")
                 webViewClient = object : WebViewClient() {
+                    // The sign-in step (WebSession): served by the app at the site's own origin, once, before the page.
+                    override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): android.webkit.WebResourceResponse? {
+                        val u = request.url
+                        if (!request.isForMainFrame || u.host != "cardstashy.com" || u.path != WebSession.PATH) return null
+                        val html = WebSession.page(signedIn.value, url); signedIn.value = null
+                        return android.webkit.WebResourceResponse("text/html", "utf-8", html.byteInputStream()).apply { responseHeaders = mapOf("Cache-Control" to "no-store") }
+                    }
                     // Stay on CardStashy; other sites open in the browser.
                     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                         val host = request.url.host ?: return false
@@ -132,6 +175,7 @@ fun CollectionScreen(onPlay: () -> Unit, url: String = "https://cardstashy.com/"
                     override fun onPageFinished(view: WebView, loaded: String?) {
                         // The error page finishing is not the site: the button is pressed on the page that opens after it.
                         if (failed) { failed = false; return }
+                        if (loaded?.let { android.net.Uri.parse(it).path } == WebSession.PATH) return
                         if (press == null || pressed) return
                         pressed = true
                         // Several selectors, one per line, press in turn: a tile, then a control in the sheet it opens. After a
@@ -139,10 +183,10 @@ fun CollectionScreen(onPlay: () -> Unit, url: String = "https://cardstashy.com/"
                         val parts = press.split("\n||\n", limit = 2)
                         fun arr(t: String) = org.json.JSONArray(t.split("\n").filter { it.isNotBlank() }).toString()
                         val sels = arr(parts[0]); val alt = parts.getOrNull(1)?.let(::arr) ?: "[]"
-                        view.evaluateJavascript("(function t(s,i,n,a){if(i>=s.length)return;if(s[i].charAt(0)==='#'){location.hash=s[i];setTimeout(function(){t(s,i+1,0,a)},300);return;}var b=document.querySelector(s[i]);if(b&&b.getClientRects().length){b.click();setTimeout(function(){t(s,i+1,0,a)},120);}else if(n<(a.length?20:50)){setTimeout(function(){t(s,i,n+1,a)},200);}else if(a.length){t(a,0,0,[]);}})($sels,0,0,$alt)", null)
+                        view.evaluateJavascript("(function t(s,i,n,a){if(i>=s.length)return;if(s[i].charAt(0)==='#'){location.hash=s[i];setTimeout(function(){t(s,i+1,0,a)},300);return;}var b=document.querySelector(s[i]);if(b&&b.getClientRects().length){b.click();setTimeout(function(){t(s,i+1,0,a)},120);}else if(n<(a.length?20:50)){setTimeout(function(){t(s,i,n+1,a)},200);}else if(a.length){t(a,0,0,[]);}else if(window.NativePress){NativePress.missed();}})($sels,0,0,$alt)", null)
                     }
                 }
-                loadUrl(url)
+                loadUrl(if (signedIn.value != null) "https://cardstashy.com" + WebSession.PATH else url)
                 web.value = this
             }
         }, modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing), onRelease = { it.destroy() })
