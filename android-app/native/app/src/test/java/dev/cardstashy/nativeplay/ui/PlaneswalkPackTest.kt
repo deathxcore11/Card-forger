@@ -53,4 +53,18 @@ class PlaneswalkPackTest {
         assertTrue(!PlaneswalkPack.isPage(android.net.Uri.parse("https://evil.test/planeswalk.html")))
         assertEquals("text/javascript", PlaneswalkPack.mime("vendor/supabase-js-2.110.0.js"))
     }
+
+    /** Freshness: a newer page from the site is saved whole with every file it loads; the same page or a missing file keeps nothing. */
+    @Test fun newerPageSavedWhole() {
+        val dir = File(kotlin.io.path.createTempDirectory("pw").toFile(), "planeswalk-live")
+        val site = mapOf("a.js" to "import {x} from './b.js'".toByteArray(), "b.js" to "export const x=1".toByteArray(), "s.css" to "body{}".toByteArray())
+        val page = "<script type=\"module\" src=\"./a.js\"></script><script>const css='./s.css'</script>".toByteArray()
+        val sha = MessageDigest.getInstance("SHA-256").digest(page).joinToString("") { "%02x".format(it) }
+        assertTrue("same page: nothing to save", !PlaneswalkPack.save(dir, sha, page, "e1") { site[it] })
+        assertTrue("a file the site could not give: nothing kept", !PlaneswalkPack.save(dir, "old", page, "e1") { if (it == "b.js") null else site[it] })
+        assertTrue(!dir.exists())
+        assertTrue(PlaneswalkPack.save(dir, "old", page, "e2") { site[it] })
+        assertEquals(setOf("planeswalk.html", "a.js", "b.js", "s.css", "manifest.json"), dir.list()!!.toSet())
+        assertEquals(sha, JSONObject(File(dir, "manifest.json").readText()).getString("page"))
+    }
 }

@@ -190,6 +190,7 @@ fun CollectionScreen(onPlay: () -> Unit, url: String = "https://cardstashy.com/"
                         view.evaluateJavascript("(function t(s,i,n,a){if(i>=s.length)return;if(s[i].charAt(0)==='#'){location.hash=s[i];setTimeout(function(){t(s,i+1,0,a)},300);return;}var b=document.querySelector(s[i]);if(b&&b.getClientRects().length){b.click();setTimeout(function(){t(s,i+1,0,a)},120);}else if(n<(a.length?20:50)){setTimeout(function(){t(s,i,n+1,a)},200);}else if(a.length){t(a,0,0,[]);}else if(window.NativePress){NativePress.missed();}})($sels,0,0,$alt)", null)
                     }
                 }
+                if (PlaneswalkPack.isPage(android.net.Uri.parse(url))) PlaneswalkPack.refresh(ctx)
                 loadUrl(if (signedIn.value != null) "https://cardstashy.com" + WebSession.PATH else url)
                 web.value = this
             }
