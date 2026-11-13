@@ -36,4 +36,10 @@ class EarlyPlaysGateTest {
         assertEquals(emptyList<String>(), QuickPlay.earlyPlays(emptyList()))
         assertEquals(listOf("A", "Forest"), QuickPlay.firstScreen(listOf("A"), listOf("Forest", "B"), emptyList()))
     }
+
+    /** Randall 13 Nov: after the early plays, the gate waits for the rest of both decks, up to 15 s from its start. */
+    @Test fun wholeDecksWaitedFor() {
+        assertEquals(15_000L, QuickPlay.WHOLE_CAP_MS)
+        assertEquals(15_000L, QuickPlay.wholeWait(0)); assertEquals(7_000L, QuickPlay.wholeWait(8_000)); assertEquals(300L, QuickPlay.wholeWait(20_000))
+    }
 }

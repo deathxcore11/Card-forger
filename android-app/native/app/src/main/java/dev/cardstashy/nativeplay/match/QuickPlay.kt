@@ -163,13 +163,18 @@ object QuickPlay {
         if (n1 < 0) Log.i(TAG, "art gate: early-plays cap of $EARLY_CAP_MS ms reached with ${first.size} first cards asked (${early.size} CPU early plays); the rest loads behind")
         val tFirst = SystemClock.elapsedRealtime() - t0
         val firstFrom = CardArt.lastWarm
+        // Randall 13 Nov ("the biggest problem I have"): then the rest of both decks, every face and battlefield crop, cheapest first,
+        // so no card the CPU or you play later pops in. Up to WHOLE_CAP_MS from the start; a deck seen before comes from the phone.
+        val rest = names.filter { it !in first }
+        val nWhole = if (rest.isEmpty()) 0 else CardArt.warm(context, rest, wholeWait(SystemClock.elapsedRealtime() - t0), diskCrops = rest, detach = true)
+        if (nWhole < 0) Log.i(TAG, "art gate: whole-deck cap of $WHOLE_CAP_MS ms reached with ${rest.size} more cards asked; the rest loads behind")
         // Then, behind: every face and battlefield crop of both decks (not awaited; the opening hand asked below joins it).
         bg.launch { CardArt.warm(context, names, 60_000, diskCrops = names, progress = false); Log.i(TAG, "art behind: ${CardArt.lastBehind} in ${SystemClock.elapsedRealtime() - t0} ms") }
         val hand = openingHand?.let { f -> kotlinx.coroutines.withTimeoutOrNull(left()) { f.first { it != null } } }
         val n2 = if (hand.isNullOrEmpty()) 0 else CardArt.warm(context, hand, left(), crops = hand, detach = true)
         s.faces.forEach { CardArt.decodeAhead(it) }
         Log.i(TAG, CardArt.cacheNote(names.size))
-        Log.i(TAG, "art gate: ${s.rows.size} rows, lookup $tLookup ms, first screen ${first.size} cards loaded=$n1 at $tFirst ms ($firstFrom), " +
+        Log.i(TAG, "art gate: ${s.rows.size} rows, lookup $tLookup ms, first screen ${first.size} cards loaded=$n1 at $tFirst ms ($firstFrom), whole decks ${rest.size} more loaded=$nWhole, " +
             "opening hand ${hand?.size ?: 0} loaded=$n2 (${if (n2 != 0) CardArt.lastWarm else "-"}), gate ${SystemClock.elapsedRealtime() - t0} ms")
     }
 
@@ -179,6 +184,10 @@ object QuickPlay {
     internal fun warmsOwned(rows: Int, unmetered: Boolean) = rows > 0 && (unmetered || rows <= OWNED_WARM_ROWS)
     /** L4: how long the versus screen waits for the first screen and the CPU's early plays, with a connection. */
     const val EARLY_CAP_MS = 8_000L
+    /** Randall 13 Nov: how long, from the gate's start, the versus screen waits for the whole of both decks with a connection. */
+    const val WHOLE_CAP_MS = 15_000L
+    /** How long the whole-deck wait may take when [elapsed] ms of the gate have passed: what is left of [WHOLE_CAP_MS], at least 300 ms. */
+    internal fun wholeWait(elapsed: Long): Long = (WHOLE_CAP_MS - elapsed).coerceAtLeast(300)
     /** L4: the highest mana value the gate waits for in the CPU's deck. */
     const val EARLY_COST = 3
     /** L4: of the CPU's deck, what it can play in its first turns: its lands and every card of mana value [EARLY_COST] or less, cheapest first. A card with no value on record is not waited for. */
