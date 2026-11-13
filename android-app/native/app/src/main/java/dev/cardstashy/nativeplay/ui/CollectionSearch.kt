@@ -166,6 +166,8 @@ class CollectionSearchActions(
     val focus: (Boolean) -> Unit = {},
     /** A suggestion picked: it fills the box and searches. */
     val pick: (String) -> Unit = {},
+    /** The answer card's taps (a typed question answered from the app's own data). */
+    val answer: AnswerActs = AnswerActs(),
 )
 
 private val Ink = Color(0xFFEEF0F4)
@@ -187,19 +189,21 @@ private fun mix(a: Color, p: Float, b: Color) = Color(a.red * p + b.red * (1 - p
 
 @Composable
 fun CollectionSearch(m: CollectionSearchModel, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, act: CollectionSearchActions = CollectionSearchActions(),
-                     nav: @Composable (vertical: Boolean) -> Unit = {}, query: String = m.field?.value ?: "", suggest: SearchSuggest? = null) {
+                     nav: @Composable (vertical: Boolean) -> Unit = {}, query: String = m.field?.value ?: "", suggest: SearchSuggest? = null,
+                     /** The answer to the words in the box when they are a question (CollectionEngine.searchAnswer), else null. */
+                     answer: JsonObject? = null) {
     androidx.compose.runtime.CompositionLocalProvider(LocalGameGold provides m.game.gold) {
         BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
             val screen = maxWidth; val tall = maxHeight
-            if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); SearchPage(m, top, act, Modifier.weight(1f).fillMaxHeight(), screen, tall, query, suggest) }
-            else Column(Modifier.fillMaxSize()) { SearchPage(m, top, act, Modifier.weight(1f).fillMaxWidth(), screen, tall, query, suggest); nav(false) }
+            if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); SearchPage(m, top, act, Modifier.weight(1f).fillMaxHeight(), screen, tall, query, suggest, answer) }
+            else Column(Modifier.fillMaxSize()) { SearchPage(m, top, act, Modifier.weight(1f).fillMaxWidth(), screen, tall, query, suggest, answer); nav(false) }
         }
     }
 }
 
 @Composable
 private fun SearchPage(m: CollectionSearchModel, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, act: CollectionSearchActions, modifier: Modifier, screen: Dp, tall: Dp, query: String,
-                       suggest: SearchSuggest?) {
+                       suggest: SearchSuggest?, answer: JsonObject?) {
     val wide = screen >= 600.dp
     val gutter = if (wide) 22.dp else 16.dp
     val inner = screen - gutter * 2
@@ -230,7 +234,7 @@ private fun SearchPage(m: CollectionSearchModel, top: @Composable (tabs: (@Compo
             }
         }
         for ((n, b) in m.blocks.withIndex()) when (b) {
-            is SearchBlock.Field -> item(key = "field") { SearchBar(b, query, act, wide, suggest, Modifier.padding(horizontal = gutter).padding(top = 14.dp, bottom = 12.dp)) }
+            is SearchBlock.Field -> item(key = "field") { SearchBar(b, query, act, wide, suggest, answer, Modifier.padding(horizontal = gutter).padding(top = 14.dp, bottom = 12.dp)) }
             is SearchBlock.Tools -> item(key = "tools") { Tools(b.items, act, screen, Modifier.padding(bottom = 14.dp), gutter) }
             is SearchBlock.Chips -> item(key = "chips") { Chips(b, act, Modifier.padding(horizontal = gutter).padding(vertical = 8.dp)) }
             is SearchBlock.Saved -> item(key = "saved") { Saved(b, act, Modifier.padding(horizontal = gutter).padding(vertical = 8.dp)) }
@@ -288,10 +292,10 @@ private fun SearchPage(m: CollectionSearchModel, top: @Composable (tabs: (@Compo
     }
 }
 
-// ---------------------------------------------------------------- the search box and Ask (.searchbar.search-query)
+// ---------------------------------------------------------------- the search box and its answer card (.searchbar.search-query)
 
 @Composable
-private fun SearchBar(b: SearchBlock.Field, query: String, act: CollectionSearchActions, wide: Boolean, suggest: SearchSuggest?, modifier: Modifier) {
+private fun SearchBar(b: SearchBlock.Field, query: String, act: CollectionSearchActions, wide: Boolean, suggest: SearchSuggest?, answer: JsonObject?, modifier: Modifier) {
     val gold = GoldC
     var focused by remember { mutableStateOf(false) }
     val focus = LocalFocusManager.current
@@ -322,22 +326,9 @@ private fun SearchBar(b: SearchBlock.Field, query: String, act: CollectionSearch
                     }
                 })
         }
-        // .ask-launch: the CardStashy mark in a dark gold-rimmed round (with "Ask" beside it from 600).
-        b.ask?.let { a ->
-            val askShape = if (wide) RoundedCornerShape(999.dp) else CircleShape
-            Row(Modifier.padding(start = if (wide) 10.dp else 8.dp).height(52.dp).then(if (wide) Modifier else Modifier.width(52.dp))
-                .drawBehind { outerShadow(Color(0x66000000), 18f, 6f, 0f, 26f); outerShadow(Color(0x14E8B95B), 0f, 0f, 3f, 26f) }
-                .clip(askShape).background(Color(0xCC14161C)).drawBehind { drawRect(Color(0x1AFFFFFF), size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }
-                .drawBehind { drawCircle(Brush.radialGradient(listOf(Color(0x1FFFFFFF), Color.Transparent), center = Offset(size.width * .35f, size.height * .3f), radius = size.minDimension * .55f)) }
-                .border(1.dp, Color(0x8CE8B95B), askShape).clickable { act.press(a.act, a.data, "") }
-                .semantics { contentDescription = a.aria.ifBlank { a.label }; role = Role.Button }
-                .padding(start = if (wide) 12.dp else 0.dp, end = if (wide) 20.dp else 0.dp),
-                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
-                BrandMark(30.dp)
-                if (wide) Text(a.label, style = sans(15f, 800, Color(0xFFF6E7C4)))
-            }
-        }
     }
+    // A typed question: its answer from the app's own data, above the matching cards (no AI; the Ask button is gone, Randall 13 Nov).
+    if (answer != null) { Spacer(Modifier.height(8.dp)); AnswerCard(answer, act.answer) }
     // suggest.js: the list sits under the field, in the page (rulebook R5), so the focus ring walks into it.
     if (focused && suggest != null && suggest.items.isNotEmpty()) { Spacer(Modifier.height(6.dp)); SuggestList(suggest, act) }
     }

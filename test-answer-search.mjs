@@ -95,6 +95,8 @@ assert.equal(p('what happens if two legendary creatures enter').hand,'judge');
 for(const q of ['is blue better than red','why is the sky blue','should i sell my cards'])assert.equal(p(q).answerable,false,`"${q}" gets no made-up answer`);
 assert.equal(p('is blue better than red').intent,'unknown');
 for(const q of ['lightning bolt','sheoldred','black lotus','atraxa grand unifier']){const x=p(q);assert.equal(x.intent,'names',`"${q}" is a plain name search`);assert.equal(x.call,null);}
+// A search line typed by hand stays a search.
+for(const q of ['c:r t:dragon f:standard','t:angel o:flying','usd<5 legendary'])assert.equal(p(q).intent,'names',`"${q}" is a search line`);
 // Yu-Gi-Oh! cards carry no artist: said plainly.
 {const x=p('yugioh cards by kazuki takahashi');assert.equal(x.answerable,false);assert.match(x.why,/artist/);}
 // "Best" about a price is not a meta question; "my" keeps a question on the device.

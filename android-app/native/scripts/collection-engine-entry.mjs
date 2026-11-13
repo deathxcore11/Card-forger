@@ -5721,21 +5721,23 @@ function answerModel(q, plan, a) {
     buttons: (a.buttons || []).map(b => ({label: b.label, dest: answerDest(b, plan)})), others: (a.others || []).map(t => ({label: t, dest: {to: 'wiki', game: plan.game, topic: t}}))}};
 }
 // app.js homeAnswer.plan / run, with the open screen's set and card handed in by the app ([o] = {fix: {format, game}, set: {id, code, name}, card: {name}}).
+function answerPlan(g0, q, o = {}) {
+  const fix = o.fix || {}, g = gameOfLabel(fix.game) || g0, mtg = g === 'mtg';
+  tcgReady();
+  const sets = (mtg ? S.ui.sets.list : tcgUi(g).sets?.list) || [];
+  return {g, mtg, sets, plan: planQuery(q, {game: g, fix: {format: fix.format, game: gameOfLabel(fix.game) || undefined}, formatLast: {mtg: S.ui.mtgMeta?.format || undefined},
+    sets: sets.filter(x => !x.digital).map(x => ({id: mtg ? x.code : x.id, code: x.code || x.id, name: x.name})), screen: {set: o.set || null, card: o.card || null}})};
+}
 function answerStart(g0, q, o = {}) {
   const my = ++answerTicket; answerOut = null;
   if (!String(q || '').trim()) { answerOut = {q: '', state: 'none'}; return; }
   (async () => {
-    const fix = o.fix || {}, g = gameOfLabel(fix.game) || g0, mtg = g === 'mtg';
-    tcgReady();
-    const list = () => (mtg ? S.ui.sets.list : tcgUi(g).sets?.list) || [];
-    const ctx = sets => ({game: g, fix: {format: fix.format, game: gameOfLabel(fix.game) || undefined}, formatLast: {mtg: S.ui.mtgMeta?.format || undefined},
-      sets: sets.filter(x => !x.digital).map(x => ({id: mtg ? x.code : x.id, code: x.code || x.id, name: x.name})), screen: {set: o.set || null, card: o.card || null}});
-    let plan = planQuery(q, ctx(list()));
+    let {g, mtg, sets, plan} = answerPlan(g0, q, o);
     // A question about sets needs the set list: it is loaded once, then the words are read again.
-    if (!list().length && (/\bset\b|\bsets\b|\bcome out\b|\bcame out\b|\breleased?\b|\bcards? in\b/i.test(q) || plan.intent === 'unknown')) {
+    if (!sets.length && (/\bset\b|\bsets\b|\bcome out\b|\bcame out\b|\breleased?\b|\bcards? in\b/i.test(q) || plan.intent === 'unknown')) {
       try { if (mtg) await loadSetIndex(); else await tcgCtx.loadSets(g); } catch {}
       if (my !== answerTicket) return;
-      plan = planQuery(q, ctx(list()));
+      plan = answerPlan(g0, q, o).plan;
     }
     if (!plan.call && !plan.missing?.length && plan.intent !== 'unknown') { answerOut = answerModel(q, plan, null); return; }
     answerOut = {...answerModel(q, plan, null), state: 'loading'};
@@ -6498,6 +6500,8 @@ globalThis.Collection = {
   // pumps it with settle()); searchAnswerModel reads it (null while the words are read, state 'none' | 'loading' | 'done').
   searchAnswer(game, q, opts) { let o = {}; try { o = JSON.parse(opts || '{}') || {}; } catch {} answerStart(game || 'mtg', q, o); return json(answerOut); },
   searchAnswerModel() { return json(answerOut); },
+  // Whether the words are a question the app answers ('answer'), one it can't ('miss': the plain search still runs) or a plain search ('none').
+  searchAsks(game, q) { const p = String(q || '').trim() ? answerPlan(game || 'mtg', q).plan : null; return !p ? 'none' : p.call || p.missing?.length ? 'answer' : p.intent === 'unknown' ? 'miss' : 'none'; },
   searchAnswerSearch(q, sort) { return json(answerSearch(q, sort || '')); },
   // views.js setsPage(), every set: [opts] = {q, family, release, year, sort} as the app last left them. setsLoad starts the
   // set list's lookup (app.js loadSetIndex; the app pumps it with settle()); setsDo applies a control (setsAct).

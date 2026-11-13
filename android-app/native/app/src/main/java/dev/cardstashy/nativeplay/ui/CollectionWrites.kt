@@ -205,6 +205,8 @@ internal object CollectionWrites {
     @Volatile var deckNav: ((String, String) -> Unit)? = null
     /** The app's Rules page for a game, on How to play · keywords when learn (A.learnGame), set by the app's navigation. */
     @Volatile var rulesNav: ((game: String, learn: Boolean) -> Unit)? = null
+    /** The app's Wiki page for a game at a topic (blank: its home), set by the app's navigation. */
+    @Volatile var wikiNav: ((game: String, topic: String) -> Unit)? = null
     /** Counts alert saves and removals: the Value tab's alert list reads again. */
     val alertsChanged = MutableStateFlow(0)
     /** A tap with the site's data-act="priceAlert" dataset (game, id, name). */

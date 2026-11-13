@@ -401,6 +401,7 @@ private fun App(activity: MainActivity) {
     // An Ask tile's deck (gap audit H3): the app's own deck page.
     androidx.compose.runtime.SideEffect { dev.cardstashy.nativeplay.ui.CollectionWrites.deckNav = if (NATIVE_DECK) ({ id, g -> go(Screen.CollectionDeck(id, g)) }) else null }
     androidx.compose.runtime.SideEffect { dev.cardstashy.nativeplay.ui.CollectionWrites.rulesNav = { g, learn -> go(Screen.CollectionRules(g, learn)) } }
+    androidx.compose.runtime.SideEffect { dev.cardstashy.nativeplay.ui.CollectionWrites.wikiNav = { g, t -> go(Screen.CollectionWiki(g, t)) } }
     androidx.compose.runtime.SideEffect { dev.cardstashy.nativeplay.ui.CollectionWrites.ruleRef = { g, ref, title, quote -> go(Screen.CollectionRules(g, ref = ref, refTitle = title, refQuote = quote)) } }
     androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalShopNav provides { tab -> go(Screen.Shop(tab)) }, dev.cardstashy.nativeplay.ui.LocalShopSetNav provides { code -> go(Screen.Shop("sets", code)) }, dev.cardstashy.nativeplay.ui.LocalPlayDecksNav provides { if (screen != Screen.PlayDecks) go(Screen.PlayDecks) },
         dev.cardstashy.nativeplay.ui.LocalCollectionSearch provides searchOpen) {

@@ -217,6 +217,13 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
     val site = "https://cardstashy.com/"
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val searchOpen = LocalCollectionSearch.current
+    // Where an answer card's taps lead from Home: card pages over Home, the app's own Sets, Wiki, Decks and Search pages.
+    fun answerEnv() = AnswerEnv(CollectionGame.current.value.id, site, card = { c -> cards = cards + c },
+        sets = { _ -> onSets?.invoke() ?: web(site + "#sets", null) }, set = { _, code -> onSet?.invoke(code) ?: web(site + "#set/" + android.net.Uri.encode(code), null) },
+        wiki = CollectionWrites.wikiNav, web = web,
+        search = { g, q, sort -> if (CollectionGame.current.value.id != g) CollectionGame.set(CardGame.of(g)); searchAnswered(g, q, sort); searchOpen?.invoke() ?: web(site + "#search", null) },
+        discover = { g, k, v -> if (CollectionGame.current.value.id != g) CollectionGame.set(CardGame.of(g)); searchDiscover(g, k, v); searchOpen?.invoke() ?: web(site + "#search", null) },
+        play = onPlay, cards = onCards, decks = onDecks, rules = CollectionWrites.rulesNav?.let { nav -> { g: String -> nav(g, false) } })
     val act = remember(searchOpen) {
         CollectionHomeActions(
             // tcg.js A.setGame: the header's game tabs switch Home (and Cards and Decks) to that game.
@@ -236,6 +243,11 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
                 var j = CollectionEngine.searchSuggest(g, q)
                 if (j == null) { CollectionEngine.settle(15_000); j = CollectionEngine.searchSuggestModel() }
                 SearchSuggest.parse(j) } },
+            // A typed question: answered here from the app's own lookups (answer-search.js in the engine; no AI is asked).
+            answer = { q, fix, loading -> if (HomeCache.loaded == null) null else CollectionEngine.searchAnswer(CollectionGame.current.value.id, q,
+                com.google.gson.JsonObject().apply { add("fix", com.google.gson.JsonObject().apply { fix.forEach { (k, v) -> addProperty(k, v) } }) }, onModel = loading) },
+            answerOpen = { show -> answerShow(scope, show, answerEnv()) },
+            answerGo = { d -> answerGo(scope, d, answerEnv()) },
             // A match picked, or Search pressed: those words on the Search tab, already searched (never its empty page).
             pick = { name -> searchFor(CollectionGame.current.value.id, name); searchOpen?.invoke() ?: web(site + "#search", null) },
             find = { q -> searchFor(CollectionGame.current.value.id, q); searchOpen?.invoke() ?: web(site + "#search", null) },

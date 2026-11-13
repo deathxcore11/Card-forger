@@ -55,7 +55,9 @@ export async function answerFor(plan,tools,io={}){
     buttons:[{label:'Read more',route:'#wiki/'+encodeURIComponent(e.label)},...(g==='mtg'&&e.official?[{label:'Cards with '+e.label.toLowerCase(),discover:{kind:'keyword',value:e.label}}]:[]),{label:'Ask a Judge',judge:true}]};
   }
   if(tool==='meta_decks'){
-   const r=await tools.meta_decks(args);if(r.error||!r.decks?.length)return miss(r.error||'No tournament decks for '+args.format+' right now.');
+   // The tournament feed sometimes fails on its first read: one more try before saying it is unavailable.
+   let r=await tools.meta_decks(args);if(r.error&&!r.format)r=await tools.meta_decks(args);
+   if(r.error||!r.decks?.length)return miss(r.error||'No tournament decks for '+args.format+' right now.');
    const items=tools.suggestedItems().slice(0,3),top=r.decks[0],fmt=g==='mtg'&&args.format?args.format:r.format,source=[r.source,r.fetchedAt?'updated '+when(r.fetchedAt):''].filter(Boolean).join(' · ');
    if(pick==='cards')return {ok:true,say:'The most played cards are on the tournament page for '+fmt+'.',items:[],more:[],buttons:[{label:'Open '+fmt+' tournament decks',route:'#decks/inspiration'}],source};
    return {ok:true,strong:top.name,say:`is the most played ${fmt} deck right now: ${top.lists?top.lists+' lists, ':''}${top.share}% of the field.`,items:items.slice(0,1),more:items.slice(1),moreLabel:'Next most played',

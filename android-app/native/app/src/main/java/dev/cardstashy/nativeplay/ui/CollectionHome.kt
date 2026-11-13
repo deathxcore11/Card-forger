@@ -246,12 +246,19 @@ class CollectionHomeActions(
     val pick: (String) -> Unit = {},
     /** Search pressed on the keyboard: every match for these words, on the Search tab. */
     val find: (String) -> Unit = {},
+    /** The words in the box read as a question: its answer from the app's own data (no AI), null for a plain card search. [fix] is a "Read as" chip's other choice. */
+    val answer: suspend (q: String, fix: Map<String, String>, loading: (com.google.gson.JsonObject) -> Unit) -> com.google.gson.JsonObject? = { _, _, _ -> null },
+    /** The answer card's tiles and buttons. */
+    val answerOpen: (show: com.google.gson.JsonObject) -> Unit = {},
+    val answerGo: (dest: com.google.gson.JsonObject) -> Unit = {},
 )
 
 /** Game-feel home G3: the home search box while it is being typed in. */
 internal class HomeFind {
     var open by mutableStateOf(false); var q by mutableStateOf(""); var suggest by mutableStateOf<SearchSuggest?>(null)
-    fun shut() { open = false; q = ""; suggest = null }
+    /** The answer card for the words in the box, and a "Read as" chip's other choice for those words. */
+    var answer by mutableStateOf<com.google.gson.JsonObject?>(null); var fix by mutableStateOf("" to mapOf<String, String>())
+    fun shut() { open = false; q = ""; suggest = null; answer = null }
 }
 
 /** A deck on Home's shelf, the one last worked on first ([tag] is its eyebrow). */
@@ -804,6 +811,14 @@ private fun HomeSearch(prompt: String, hints: SearchHints?, find: HomeFind, act:
         val s = runCatching { act.suggest(asked) }.getOrNull()
         if (s != null && (if (asked.isEmpty()) s.recent else s.q == asked)) find.suggest = s else if (asked.isEmpty()) find.suggest = null
     }
+    // A typed question: its answer from the app's own data, above the matching cards.
+    LaunchedEffect(open, find.q, find.fix) {
+        val asked = find.q.trim()
+        if (!open || asked.isEmpty()) { find.answer = null; return@LaunchedEffect }
+        if (find.answer?.get("q")?.asString != asked) find.answer = null
+        delay(300)
+        find.answer = runCatching { act.answer(asked, if (find.fix.first == asked) find.fix.second else emptyMap()) { find.answer = it } }.getOrNull()
+    }
     Box(modifier.fillMaxWidth().height(56.dp).shadow(10.dp, shape, ambientColor = Color.Black.copy(alpha = .2f), spotColor = Color.Black.copy(alpha = .27f))
         .clip(shape).then(if (AppSettings.theme == "light") Modifier.background(Rule.Color.Surface) else Modifier.background(cssGradient(120f, 0f to Color(0xE81B202D), 1f to Color(0xEF131720))))
         .border(if (open) 1.5.dp else 1.dp, gold.copy(alpha = if (open) .95f else .70f), shape)
@@ -843,9 +858,15 @@ private fun HomeSearch(prompt: String, hints: SearchHints?, find: HomeFind, act:
 @Composable
 private fun FindResults(find: HomeFind, act: CollectionHomeActions, modifier: Modifier) {
     val s = find.suggest
-    Column(modifier.fillMaxWidth().padding(top = 8.dp)) {
+    val focus = androidx.compose.ui.platform.LocalFocusManager.current
+    Column(modifier.fillMaxWidth().padding(top = 8.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        find.answer?.let { a ->
+            val asked = find.q.trim()
+            AnswerCard(a, AnswerActs(open = { focus.clearFocus(); act.answerOpen(it) }, go = { focus.clearFocus(); act.answerGo(it) },
+                fix = { kind, choice -> find.fix = asked to ((if (find.fix.first == asked) find.fix.second else emptyMap()) + (kind to choice)) }))
+        }
         if (s != null && s.items.isNotEmpty()) SuggestList(s, CollectionSearchActions(pick = { name -> find.shut(); act.pick(name) }))
-        else if (find.q.isNotBlank()) Text("Press Search on the keyboard for every match.", style = sans(13f, color = Site.Muted), modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+        else if (find.q.isNotBlank() && find.answer == null) Text("Press Search on the keyboard for every match.", style = sans(13f, color = Site.Muted), modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
     }
 }
 

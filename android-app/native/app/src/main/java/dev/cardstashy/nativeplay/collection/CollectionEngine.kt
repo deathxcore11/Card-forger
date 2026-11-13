@@ -567,6 +567,8 @@ object CollectionEngine {
         }
         return null
     }
+    /** Whether [text] is a question the app answers ("answer"), one it can't ("miss") or a plain search ("none"). */
+    suspend fun searchAsks(game: String, text: String): String = on { q -> q.evaluate("Collection.searchAsks(${str(game)}, ${str(text)})") as String }
     /** An answer's "See them all in Search" for Magic: the Search page set to [q] and [sort] (usd, usdAsc or blank) and started. */
     suspend fun searchAnswerSearch(q: String, sort: String): JsonObject = askEval("Collection.searchAnswerSearch(${str(q)}, ${str(sort)})")
     /** suggest.js rememberSearch: Enter, or a picked suggestion. */

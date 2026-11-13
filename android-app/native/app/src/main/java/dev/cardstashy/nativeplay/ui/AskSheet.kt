@@ -221,7 +221,7 @@ internal fun AiBubble(border: Color = AskLineC, content: @Composable ColumnScope
 
 /** .ask-item: a card, set, deck or drafted deck the answer names; its picture, name, what it is and its price. */
 @Composable
-private fun AskTile(t: JsonObject, open: (JsonObject) -> Unit) {
+internal fun AskTile(t: JsonObject, open: (JsonObject) -> Unit) {
     val show = t.getAsJsonObject("show") ?: return
     val title = t.s("title").ifBlank { show.s("label").ifBlank { show.s("ref") } }
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0x2A000000)).border(1.dp, Color(0x1CFFFFFF), RoundedCornerShape(14.dp))

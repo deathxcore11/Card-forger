@@ -28,7 +28,21 @@ class AnswerEngineTest {
         var ai = 0
         CollectionEngine.answerForTest = { url -> if (url.contains("/api/ai/")) { ai++; 500 to "{}" } else null }
         try {
-            suspend fun ask(q: String, opts: JsonObject = JsonObject(), game: String = "mtg") = CollectionEngine.searchAnswer(game, q, opts, 60_000).also { println("ANSWER[$q] ${it.toString().take(1800)}") }
+            // The answers as they came back are kept for the picture test (AnswerCardShotTest), with the tiles' art.
+            val out = File(System.getProperty("repoRoot"), "android-app/native/app/build/shot-art/home").apply { mkdirs() }
+            fun sha1(u: String) = java.security.MessageDigest.getInstance("SHA-1").digest(u.toByteArray()).joinToString("") { "%02x".format(it) }
+            fun keep(name: String, m: JsonObject?) { if (m == null) return
+                File(out, "answer-$name.json").writeText(m.toString())
+                val a = m.o("answer") ?: return
+                for (t in a.list("items") + a.list("more")) t.s("art").takeIf { it.startsWith("https://") }?.let { u -> val f = File(out, sha1(u) + ".jpg")
+                    if (!f.exists()) runCatching { f.writeBytes(java.net.URI(u).toURL().openStream().use { it.readBytes() }) }.onFailure { println("ART MISSING $u") } } }
+            val names = mapOf("whats the best deck out right now in meta" to "meta", "most expensive card in bloomburrow" to "set", "who won magic's tournament in 1999" to "wiki",
+                "what does ward do" to "keyword", "cheapest red dragon legal in standard" to "filter", "is blue better than red" to "miss", "what is the most expensive card in this set" to "which")
+            suspend fun ask(q: String, opts: JsonObject = JsonObject(), game: String = "mtg") = CollectionEngine.searchAnswer(game, q, opts, 60_000).also { println("ANSWER[$q] ${it.toString().take(1800)}")
+                if (opts.size() == 0) names[q]?.let { n -> keep(n, it) } }
+            // A hand-typed search line and a card name are not questions; a question is.
+            assertEquals("none", CollectionEngine.searchAsks("mtg", "c:r t:dragon f:standard")); assertEquals("none", CollectionEngine.searchAsks("mtg", "lightning bolt"))
+            assertEquals("answer", CollectionEngine.searchAsks("mtg", "best deck in the meta")); assertEquals("miss", CollectionEngine.searchAsks("mtg", "is blue better than red"))
 
             // Randall's first example: the tournament decks, the format read from the words, the chip offering the other formats.
             var m = ask("whats the best deck out right now in meta")!!

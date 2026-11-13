@@ -116,6 +116,8 @@ export function planQuery(q,ctx={}){
  const read=[chip(GAME_LABEL[game],'game',true)],missing=[];
  const plan=(intent,call,extra={})=>({intent,game,P,read,missing,call:missing.length?null:call,answerable:!missing.length&&!!call,hand:null,...extra});
  if(n.length<2)return plan('none',null);
+ // Search syntax typed by hand (c:r, t:dragon, usd<5) is a search line, not a question.
+ if(/(?:^|\s)-?[a-z]{1,10}[:=<>]/i.test(raw))return plan('names',null);
  const mine=MINE.test(n),rank=RANKS.find(r=>r[1].test(n)),y=year(n);
  const format=()=>{const f=(FORMATS[game].includes(ctx.fix?.format)?ctx.fix.format:null)||findFormat(n,game)||(l=>FORMATS[game].includes(l)?l:null)(ctx.formatLast?.[game]==='EDH'?'Commander':ctx.formatLast?.[game])||DEFAULT_FORMAT[game];read.push(chip(f,'format',true));return f;};
 
