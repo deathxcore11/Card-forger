@@ -41,7 +41,7 @@ import {configureConditionAuth, clearConditionAttempts, forgetConditionAttempt, 
 import {createConditionRefreshScheduler, changedConditionLots, conditionLotIdentity} from 'WEB/condition-refresh-scheduler.js';
 import {locationPicker, rememberLocation} from 'WEB/collection-locations.js';
 import {acquireMissing, parseDeckImport} from 'WEB/deck-flow.js';
-import {alerts as priceAlerts, alertFor, setAlert, onAlert, alertText, priceSeries} from 'WEB/pricehist.js';
+import {alerts as priceAlerts, alertFor, setAlert, onAlert, alertText, priceSeries, recordCardPrice} from 'WEB/pricehist.js';
 import {quoteModel, recordQuote, HISTORY_RANGES, modeFor, selectionState, registerWorkbench} from 'WEB/workbench-ui.js';
 import {setHistoryRefresh} from 'WEB/shared-history.js';
 import {loadSharedHistory} from 'WEB/shared-history.js';
@@ -137,7 +137,7 @@ keptStore.getItem = k => keptGet.call(keptStore, alertKey(k));
 keptStore.setItem = (k, v) => { k = alertKey(k); keptSet.call(keptStore, k, v); if (kept(k)) keptDirty.add(k); };
 keptStore.removeItem = k => { k = alertKey(k); keptRemove.call(keptStore, k); if (kept(k)) keptDirty.add(k); };
 // app.js onAlert: an alert set off by a price seen now; the app shows alertText as its toast (each pump's "alerts").
-let alertsFired = [];
+let alertsFired = [], alertRun = null;
 onAlert(f => { alertsFired.push({game: f.game, id: f.id, name: f.name, usd: f.usd, text: alertText(f)}); });
 {
   const pump = globalThis.__host.pump;
@@ -5573,6 +5573,24 @@ globalThis.Collection = {
   alertClear(g, id) { setAlert(g, String(id), "", {}); return json({ok: true, toast: "Alert removed."}); },
   // Every alert of this account (the daily check's list).
   alertList() { return json({alerts: priceAlerts()}); },
+  // The app's daily check (gap audit H2 step 4, new beyond the site, which checks only while open): each alerted card's price
+  // fetched now and recorded as the site records a price it sees (recordCardPrice: pricehist.js checkAlerts, once a day per card);
+  // what it sets off comes out in the pumps' "alerts". alertCheckPoll() says when it is done.
+  alertCheck() {
+    const run = alertRun = {done: false, checked: 0, failed: 0};
+    (async () => {
+      for (const a of priceAlerts()) {
+        const id = String(a.id || '').split('|')[0]; if (!id) continue;
+        try {
+          if (a.game === 'mtg') recordCardPrice('mtg', await api('/cards/' + encodeURIComponent(id)));
+          else await tcgEnsureCard(a.game, id, true);
+          run.checked++;
+        } catch { run.failed++; }
+      }
+    })().finally(() => { run.done = true; });
+    return '{}';
+  },
+  alertCheckPoll() { return json(alertRun || {done: true, checked: 0, failed: 0}); },
   // What the app kept of the site's browser storage (KEPT_KEYS), put back when the bundle starts.
   storeLoad(keptJson) { const o = keptJson ? JSON.parse(keptJson) : {}; for (const [k, v] of Object.entries(o)) if (kept(k) && typeof v === 'string') keptSet(k, v); },
   // The account's workspace row data (cloud.js), normalized as app.js loads it; [catalogJson] is the app's saved catalog.

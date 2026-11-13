@@ -517,6 +517,12 @@ private fun AppPane() {
                 Toast.makeText(context, if (on) "Friends can see what you’re playing." else "Friends no longer see what you’re playing.", Toast.LENGTH_SHORT).show()
             }
         }
+        // Gap audit H2 step 4: the daily price check (collection/PriceAlertDaily.kt), new beyond the website.
+        val ctx = androidx.compose.ui.platform.LocalContext.current; val alertScope = androidx.compose.runtime.rememberCoroutineScope()
+        Check("Price alert notifications", AppSettings.priceAlertDaily, "Once a day on Wi-Fi, the app checks the cards you set a price alert on and sends a notification when one crosses your price, even when the app is closed.") { on ->
+            AppSettings.set("priceAlertDaily", on)
+            alertScope.launch { dev.cardstashy.nativeplay.collection.PriceAlertDaily.sync(ctx, if (on) dev.cardstashy.nativeplay.collection.CollectionEngine.alertList().size() else 0) }
+        }
         Check("Sound & music", AppSettings.sound) { AppSettings.set("packSound", it) }
         Check("Soft sounds in the app", AppSettings.appSounds, "Music plays only in matches and Planeswalk. Elsewhere you hear only a few soft sounds, like opening a pack or adding a card, if “Soft sounds in the app” is on. Music streams the first time, then stays on this device. Sound starts after your first tap.") { AppSettings.set("appSounds", it) }
         // The stage music's sample libraries ask to be named (music/stage-score/CREDITS.md).

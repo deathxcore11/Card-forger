@@ -3,6 +3,7 @@ package dev.cardstashy.nativeplay.ui
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -54,6 +55,15 @@ internal fun PriceAlertSheet(a: CollectionWrites.AlertOpen, backdrop: GraphicsLa
     var error by remember(m) { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     val exists = m.get("exists")?.asBoolean == true
+    // Android's notification permission, asked once on the first Save alert while the daily check is on (gap audit H2 step 4).
+    val ask = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { }
+    fun askOnce() {
+        val p = context.getSharedPreferences("play", android.content.Context.MODE_PRIVATE)
+        if (android.os.Build.VERSION.SDK_INT < 33 || p.getBoolean(dev.cardstashy.nativeplay.collection.PriceAlertDaily.ASKED, false)) return
+        p.edit().putBoolean(dev.cardstashy.nativeplay.collection.PriceAlertDaily.ASKED, true).apply()
+        if (context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED)
+            runCatching { ask.launch(android.Manifest.permission.POST_NOTIFICATIONS) }
+    }
     fun save() {
         if (busy) return
         busy = true
@@ -61,7 +71,11 @@ internal fun PriceAlertSheet(a: CollectionWrites.AlertOpen, backdrop: GraphicsLa
             val r = CollectionEngine.alertSave(a.game, a.cardId, a.name, below, above)
             busy = false
             r.get("error")?.asString?.let { error = it; return@launch }
-            r.get("toast")?.asString?.let { CollectionWrites.show(it) }
+            val daily = AppSettings.priceAlertDaily
+            // The site's toast says it checks only while open; with the daily check on, the app's own words.
+            (if (daily) "Alert saved. Checked once a day, with a notification when it crosses your price." else r.get("toast")?.asString)?.let { CollectionWrites.show(it) }
+            if (daily) askOnce()
+            dev.cardstashy.nativeplay.collection.PriceAlertDaily.sync(context, CollectionEngine.alertList().size())
             CollectionWrites.alertsChanged.value++; a.saved(); onClose()
         }
     }
@@ -70,12 +84,20 @@ internal fun PriceAlertSheet(a: CollectionWrites.AlertOpen, backdrop: GraphicsLa
         busy = true
         scope.launch {
             CollectionEngine.alertClear(a.game, a.cardId).get("toast")?.asString?.let { CollectionWrites.show(it) }
+            dev.cardstashy.nativeplay.collection.PriceAlertDaily.sync(context, CollectionEngine.alertList().size())
             busy = false; CollectionWrites.alertsChanged.value++; a.saved(); onClose()
         }
     }
     SiteSheet("Price alert", backdrop, onClose = onClose) { _ ->
         PriceAlertBody(m, below, above, error, exists, onBelow = { below = it; error = "" }, onAbove = { above = it; error = "" })
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(10.dp))
+        // The preview's line: the daily check (the same switch as Settings › Price alert notifications).
+        Row(Modifier.fillMaxWidth().clickable { AppSettings.set("priceAlertDaily", !AppSettings.priceAlertDaily) }, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            androidx.compose.material3.Checkbox(AppSettings.priceAlertDaily, { AppSettings.set("priceAlertDaily", it) },
+                colors = androidx.compose.material3.CheckboxDefaults.colors(checkedColor = Site.Gold, checkmarkColor = Color(0xFF1A1408)))
+            Text("Send a phone notification, even when the app is closed", Modifier.weight(1f), style = cssType(12.5f, 400, 18f, AlertMute))
+        }
+        Spacer(Modifier.height(8.dp))
         FormGold("Save alert", enabled = !busy, modifier = Modifier.fillMaxWidth()) { save() }
         if (exists) { Spacer(Modifier.height(10.dp)); SiteGhost("Remove alert", Modifier.fillMaxWidth()) { remove() } }
     }

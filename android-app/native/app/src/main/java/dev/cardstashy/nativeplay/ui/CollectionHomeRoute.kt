@@ -95,6 +95,8 @@ private suspend fun ensureLoaded(context: android.content.Context, userId: Strin
         // Every deck's Power from the last visit (the site's own signature decides what is still current).
         if (!HomeCache.warm) CollectionEngine.powerLoad(withContext(Dispatchers.IO) { powerFile(context).takeIf { it.isFile }?.readText() })
         CollectionEngine.alertOwner(userId.takeIf { signedIn })
+        // The daily price check runs while this account has alerts (and the setting is on).
+        runCatching { dev.cardstashy.nativeplay.collection.PriceAlertDaily.sync(context, if (signedIn) CollectionEngine.alertList().size() else 0) }
         CollectionEngine.load(raw ?: "", catalog)
         HomeCache.loaded = key; HomeCache.warm = true
     }

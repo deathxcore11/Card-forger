@@ -8,6 +8,10 @@
     <!-- The Scanner reads cards through the camera (asked for the first time it opens); phones without one still scan photos. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <!-- Price alerts' daily check (Settings: Price alert notifications): a phone notification, asked for on the first Save alert;
+         the check is kept across restarts. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application
         android:enableOnBackInvokedCallback="true"
         android:allowBackup="false"
@@ -35,5 +39,7 @@
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/update_paths" />
         </provider>
+        <service android:name="dev.cardstashy.nativeplay.collection.PriceAlertJob"
+            android:permission="android.permission.BIND_JOB_SERVICE" android:exported="false" />
     </application>
 </manifest>

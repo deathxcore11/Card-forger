@@ -48,6 +48,8 @@ object AppSettings {
 
     /** Living table F9: "Match vibration" (landings, hits, the winning hit, the clock stop). Its own setting, on by default; never in Reduced. */
     var matchVibration by mutableStateOf(true); private set
+    /** Price alerts' daily check with a phone notification (gap audit H2 step 4, new beyond the site). On by default. */
+    var priceAlertDaily by mutableStateOf(true); private set
 
     fun init(context: Context) {
         val p = context.applicationContext.getSharedPreferences("play", Context.MODE_PRIVATE); prefs = p
@@ -59,6 +61,7 @@ object AppSettings {
         matchEffects = p.getString("cardstashy-match-effects", null).takeIf { it in TableFeel.MODES } ?: "full"
         askTriggerOrder = p.getBoolean("askTriggerOrder", false); stopToRespond = p.getBoolean("stopToRespond", false)
         matchVibration = p.getBoolean("matchVibration", true)
+        priceAlertDaily = p.getBoolean("priceAlertDaily", true)
     }
 
     fun set(key: String, on: Boolean) {
@@ -66,6 +69,7 @@ object AppSettings {
             "glass" -> glass = on; "finishEffects" -> finish = on; "haptics" -> haptics = on; "appSounds" -> appSounds = on; "presence" -> presence = on; "depthCards" -> depth = on
             "askTriggerOrder" -> askTriggerOrder = on; "stopToRespond" -> stopToRespond = on
             "matchVibration" -> matchVibration = on
+            "priceAlertDaily" -> priceAlertDaily = on
             "motionTilt" -> { tilt = on; PackSfx.tilt = on }
             "packSound" -> { sound = on; PackSfx.on = on }
         }

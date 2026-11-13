@@ -422,6 +422,24 @@ object CollectionEngine {
         on { q -> JsonParser.parseString(q.evaluate("Collection.alertSave(${str(game)}, ${str(id)}, ${str(name)}, ${str(below)}, ${str(above)})") as String).asJsonObject }.also { turn { _, _, _ -> } }
     suspend fun alertClear(game: String, id: String): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.alertClear(${str(game)}, ${str(id)})") as String).asJsonObject }.also { turn { _, _, _ -> } }
+    /**
+     * The daily check (gap audit H2 step 4): every alerted card's price fetched now and recorded as the site records a price it sees;
+     * returns what it set off ({game, id, name, usd, text}). Gives up after [maxMs].
+     */
+    suspend fun alertCheck(maxMs: Long = 120_000): List<JsonObject> = kotlinx.coroutines.coroutineScope {
+        val got = java.util.Collections.synchronizedList(mutableListOf<JsonObject>())
+        val listen = launch(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) { alertsFired.collect { got += it } }
+        try {
+            on { q -> q.evaluate("Collection.alertCheck()") }
+            val until = System.currentTimeMillis() + maxMs
+            while (System.currentTimeMillis() < until) {
+                settle(2_000)
+                if (on { q -> JsonParser.parseString(q.evaluate("Collection.alertCheckPoll()") as String).asJsonObject["done"].asBoolean }) break
+            }
+            settle(1_000)
+        } finally { listen.cancel() }
+        got.toList()
+    }
     /** This account's alerts: [{game, id, name, below, above, created, firedAt}]. */
     suspend fun alertList(): com.google.gson.JsonArray = on { q -> JsonParser.parseString(q.evaluate("Collection.alertList()") as String).asJsonObject.getAsJsonArray("alerts") }
     suspend fun searchSaved(): String = on { q -> q.evaluate("Collection.searchSaved()") as String }
