@@ -42,6 +42,10 @@ function findFormat(n,game){
 // What is left after the words that only shape the question: the thing being asked about.
 const SHAPE=/\b(?:this|that|it|how much|how many|how|how many|what|whats|what is|is|are|does|do|did|the|a|an|of|for|in|on|to|me|my|i|own|have|got|worth|price|priced|cost|costs|value|card|cards|copy|copies|right now|now|today|currently|please|tell|show|magic|mtg|pokemon|ptcg|yugioh|ygo|go for|going for|selling for|mean|means|meaning|work|works|keyword|ability|mechanic|explain|rule|rules|when|come out|came out|released?|release date|set|sets|many|any|there)\b/g;
 const subject=n=>n.replace(SHAPE,' ').replace(/[$.]/g,' ').replace(/\s+/g,' ').trim();
+// A card's name keeps its own small words ("the one ring", "path to exile"): only the question's shape is cut away, then stray edge words.
+const NAME_SHAPE=/\b(?:how much|how many|what|whats|what is|whats the|does|do|did|me|my|i|own|have|got|worth|price|priced|cost|costs|value|card|cards|copy|copies|right now|now|today|currently|please|tell|show|magic|mtg|pokemon|ptcg|yugioh|ygo|go for|going for|selling for|this|that|it)\b/g;
+const EDGE=new Set(['is','are','of','for','in','on','a','an']);
+const nameOf=n=>{const w=n.replace(NAME_SHAPE,' ').replace(/[$.]/g,' ').split(/\s+/).filter(Boolean);while(w.length&&EDGE.has(w[0]))w.shift();while(w.length&&EDGE.has(w.at(-1)))w.pop();return w.join(' ');};
 
 // Things the app can do, asked for as an action: "scan a card", "start a match", "open my wishlist".
 const ACTIONS=[
@@ -107,12 +111,12 @@ export function wikiTitles(q,game='mtg'){
  */
 export function planQuery(q,ctx={}){
  const raw=String(q||'').trim(),n=norm(raw),P=parseQuery(raw);
- const named=GAMES.find(g=>g[1].test(n)),game=named?named[0]:ctx.game||'mtg';
+ const named=GAMES.find(g=>g[1].test(n)),game=ctx.fix?.game||(named?named[0]:ctx.game||'mtg');
  const read=[chip(GAME_LABEL[game],'game',true)],missing=[];
  const plan=(intent,call,extra={})=>({intent,game,P,read,missing,call:missing.length?null:call,answerable:!missing.length&&!!call,hand:null,...extra});
  if(n.length<2)return plan('none',null);
  const mine=MINE.test(n),rank=RANKS.find(r=>r[1].test(n)),y=year(n);
- const format=()=>{const f=findFormat(n,game)||ctx.formatLast?.[game]||FORMATS[game][0];read.push(chip(f,'format',true));return f;};
+ const format=()=>{const f=(FORMATS[game].includes(ctx.fix?.format)?ctx.fix.format:null)||findFormat(n,game)||ctx.formatLast?.[game]||FORMATS[game][0];read.push(chip(f,'format',true));return f;};
 
  // Build a deck: the builder owns it, exactly as today.
  if(/\b(?:make|create|build)\b.*\bdeck\b/.test(n))return plan('build',null,{hand:'build'});
@@ -151,7 +155,7 @@ export function planQuery(q,ctx={}){
    if(sort){read.push(chip('your collection','scope'),chip(rank[2],'ask'));return plan('collection.top',{tool:'my_collection',args:{game,sort,limit:/\bcards\b/.test(n)?10:1},pick:rank[0]});}
   }
   if(/\b(?:do i|have i|i own|i have|how many)\b/.test(n)){
-   const name=subject(n.replace(MINE,' '));
+   const name=nameOf(n.replace(MINE,' '));
    if(name){read.push(chip('your collection','scope'),chip(name,'card'));return plan('collection.own',{tool:'card_details',args:{game,name},pick:'owned'});}
   }
  }
@@ -193,7 +197,7 @@ export function planQuery(q,ctx={}){
 
  // One card's price.
  if(/\b(?:how much|price|worth|cost|costs|going for|selling for)\b/.test(n)&&!mine){
-  const name=subject(n);
+  const name=nameOf(n);
   if(name){read.push(chip(name,'card'),chip('price','ask'));return plan('card.price',{tool:'card_details',args:{game,name},pick:'price'});}
   if(ctx.screen?.card){read.push(chip(ctx.screen.card.name,'card',true),chip('price','ask'));return plan('card.price',{tool:'card_details',args:{game,name:ctx.screen.card.name},pick:'price'});}
  }
@@ -207,3 +211,7 @@ export function planQuery(q,ctx={}){
  // Question-shaped but nothing matched: say so plainly; plain name results still show underneath.
  return plan(/^(?:how|why|when|can|could|should|which|what|where|who|does|do|is|are)\b/.test(n)?'unknown':'names',null);
 }
+
+/** What a tapped "Read as" chip can be changed to. */
+export const fixChoices=(plan,kind)=>kind==='format'?FORMATS[plan.game].filter(f=>!['Goat','Edison','Gym Leader Challenge','Duel Commander'].includes(f)):kind==='game'?GAMES.map(g=>g[2]):[];
+export const gameOfLabel=label=>GAMES.find(g=>g[2]===label)?.[0]||null;

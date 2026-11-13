@@ -104,7 +104,7 @@ export async function answerFor(plan,tools,io={}){
 /** The answer card. preview(item,i) and esc come from the caller; buttons carry their index for the click handler. */
 export function answerMarkup(a,read,{esc,preview=()=>''}){
  if(!a)return '';
- const chips=(read||[]).map((c,i)=>`<span class="answer-chip${c.fix?' can-fix':''}" data-answer-chip="${i}">${esc(c.label)}</span>`).join('');
+ const chips=(read||[]).map(c=>c.fix&&(c.kind==='format'||c.kind==='game')?`<button type="button" class="answer-chip can-fix" data-answer-fix="${c.kind}" aria-label="Change ${esc(c.label)}">${esc(c.label)} ▾</button>`:`<span class="answer-chip">${esc(c.label)}</span>`).join('');
  const head=chips?`<p class="answer-read"><em>Read as</em>${chips}</p>`:'';
  if(a.ask)return `<section class="answer-card is-ask" aria-live="polite">${head}<p class="answer-say">${esc(a.ask.ask)}</p>${(a.ask.choices||[]).length?`<div class="answer-choices">${a.ask.choices.map((c,i)=>`<button type="button" class="chip" data-answer-choice="${i}">${esc(c.name)}</button>`).join('')}</div>`:''}</section>`;
  if(!a.ok)return `<section class="answer-card is-miss" aria-live="polite">${head}<p class="answer-say">${esc(a.miss)}</p><p class="answer-source">Here is the closest the app has.</p></section>`;

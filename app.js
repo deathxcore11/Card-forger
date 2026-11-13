@@ -118,6 +118,8 @@ import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag, animateTurn
 // strategy.js, deck-flow.js and insights.js.
 import { metaState, loadMeta as loadMetaData, MTG_META_FORMATS, DEFAULT_MTG_META_FORMAT, allCachedMeta } from "./meta.js";
 import {searchApp,parseQuery} from './universal-search.js';
+import {planQuery,fixChoices,gameOfLabel} from './answer-search.js';
+import {answerFor,answerMarkup} from './answer-run.js';
 import {searchGameConcepts} from './game-wiki-knowledge.js';
 import {communityState,communitySlideUrl} from './community-feed.js';
 import { mtgPower, mtgMetaKey, asShown, shownPower } from "./power.js";
@@ -4019,8 +4021,8 @@ A.askRules = (button) => {
   openRulesAsk({ game, format, cards, references, trigger });
   rulesGuideOrigin = origin;
 };
-A.askOpen = (options={}) => {
-  askTools ||= makeAskTools({ S, T, A, go, navigationStamp, navigationCurrent, toast, esc, api, resolve, cacheCard, loadSetIndex, loadMetaData, metaState, MTG_META_FORMATS, allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx, deckExperience,
+function ensureAskTools() {
+  return askTools ||= makeAskTools({ S, T, A, go, navigationStamp, navigationCurrent, toast, esc, api, resolve, cacheCard, loadSetIndex, loadMetaData, metaState, MTG_META_FORMATS, allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx, deckExperience,
     captureAskScope: () => { const scope=mutationScope(); return () => mutationCurrent(scope); },
     openMtgDraft: (draft, current) => {
       if (!current?.() || T.game() !== 'mtg') return toast("Your account or workspace changed. Ask again in the current workspace.");
@@ -4034,6 +4036,9 @@ A.askOpen = (options={}) => {
       if (!current?.() || T.game() !== g) return toast("Your account or workspace changed. Ask again in the current workspace.");
       return A.tBuild({dataset:{id,format},initialBudget:budget>0?budget:"",buildCurrent:current});
     } });
+}
+A.askOpen = (options={}) => {
+  ensureAskTools();
   const game=T.game(),account=accountGeneration,workspace=workspaceVisitRevision,route=location.hash;
   const current=()=>!accountLocked&&account===accountGeneration&&workspace===workspaceVisitRevision&&game===T.game()&&route===location.hash;
   const show=s=>s.kind==='build'&&s.game===game?safely(askNavigation.handoff(()=>askTools.open(s))):safely(askNavigation.leave(true).then(()=>askTools.open(s)));
@@ -4902,7 +4907,42 @@ function runHomeItem(item,g){
  if(item.route==='planeswalk.html'){location.href='planeswalk.html';return;}
  if(item.route)return go(item.route);
 }
-const homeSearchController=attachHomeSearch({game:T.game,lookup:homeLookup,submit:submitHome,local:homeLocal,run:runHomeItem,open:async(g,c)=>{
+// The search box answers questions from the app's own data: answer-search.js reads the words, the same lookups
+// Ask used run here on the device, and no AI is called. What the open screen shows fills "this set / this card".
+const homeAnswer={
+ choices:fixChoices,
+ plan(g0,q,fix={}){
+  const g=gameOfLabel(fix.game)||g0,mtg=g==='mtg',sets=(mtg?S.ui.sets.list:(T.ui(g).sets?.list||[]))||[],view=S.ui.view,ctx=S.ui.sheetCtx;
+  const openSet=view==='set'?sets.find(x=>String(mtg?x.code:x.id).toLowerCase()===String(mtg?S.ui.set?.code:S.ui.tsetId||T.ui(g).set?.id||'').toLowerCase()):null;
+  const card=ctx?.type==='card'&&ctx.name?{name:ctx.name}:null;
+  return planQuery(q,{game:g,fix:{format:fix.format,game:gameOfLabel(fix.game)||undefined},formatLast:{mtg:S.ui.mtgMeta?.format||undefined},sets:sets.filter(x=>!x.digital).map(x=>({id:mtg?x.code:x.id,code:x.code||x.id,name:x.name})),screen:{set:openSet?{id:mtg?openSet.code:openSet.id,code:openSet.code||openSet.id,name:openSet.name}:null,card}});
+ },
+ run(plan){
+  const tools=ensureAskTools();
+  return answerFor(plan,tools,{cardSearch:async({game,q,order,dir,limit})=>{
+   if(game!=='mtg')return [];
+   const d=await api('/cards/search?'+new URLSearchParams({q:q+' game:paper',order,dir,unique:'cards'})).catch(()=>null);
+   return (d?.data||[]).slice(0,limit||3).map(c=>{cacheCard(c);return {name:c.name,price:Number(c.prices?.usd)||null};});
+  }});
+ },
+ html(a,plan){const tools=ensureAskTools();return answerMarkup(a,plan.read,{esc,preview:(s,i)=>tools.preview(s,i,{compact:s.kind==='card'})});},
+ async act(el,a,plan,g){
+  if(T.game()!==g&&plan.game===g)return;
+  const tools=ensureAskTools();
+  if(el.dataset.askShow){try{return await tools.open(JSON.parse(el.dataset.askShow));}catch{return;}}
+  if(el.dataset.answerWiki)return A.wikiOpen({dataset:{game:plan.game,topic:el.dataset.answerWiki}});
+  if(el.dataset.answerChoice!==undefined){const c=a.ask?.choices?.[Number(el.dataset.answerChoice)];return c?tools.open({kind:'set',game:plan.game,ref:String(c.id||c.code),label:c.name}):undefined;}
+  const b=a.buttons?.[Number(el.dataset.answerButton)];if(!b)return;
+  if(b.item)return tools.open(b.item);
+  if(b.judge){A.askRules({dataset:{game:plan.game}});const input=document.querySelector('.rules-ask-dialog .ask-input');if(input){input.value=plan.P.raw;input.focus();}return;}
+  if(b.discover){if(T.game()!==plan.game&&await A.setGame({dataset:{game:plan.game}})===false)return;return A.ruleCards({dataset:{game:plan.game,discoveryKind:b.discover.kind,discoveryValue:b.discover.value}});}
+  if(b.search){S.ui.db.term=b.search.q;S.ui.db.filters={};dbInvalidate();await go('#search');if(T.game()==='mtg')return A.dbSearch();return;}
+  if(b.route&&/^#wiki\//.test(b.route))return A.wikiOpen({dataset:{game:plan.game,topic:decodeURIComponent(b.route.slice(6))}});
+  if(b.route==='planeswalk.html'){location.href='planeswalk.html';return;}
+  if(b.route)return go(b.route);
+ },
+};
+const homeSearchController=attachHomeSearch({game:T.game,lookup:homeLookup,submit:submitHome,local:homeLocal,run:runHomeItem,answer:homeAnswer,open:async(g,c)=>{
  if(T.game()!==g)return;
  if(g==='mtg'){
   if(c.oracle_text!==undefined||c.card_faces?.some(f=>f.oracle_text!==undefined))return A.card({dataset:{name:c.name},printing:c});

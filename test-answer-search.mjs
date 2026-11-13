@@ -31,8 +31,8 @@ const CASES=[
  ['whats the next set','set.next','list_sets',x=>x.call.pick==='upcoming'],
  ['when did bloomburrow come out','set.info','list_sets',x=>x.call.pick==='date'],
  ['how many cards in foundations','set.info','list_sets',x=>x.call.pick==='count'],
- ['how much is sheoldred the apocalypse','card.price','card_details',x=>x.call.args.name==='sheoldred apocalypse'],
- ['price of the one ring','card.price','card_details',x=>x.call.args.name==='one ring'],
+ ['how much is sheoldred the apocalypse','card.price','card_details',x=>x.call.args.name==='sheoldred the apocalypse'],
+ ['price of the one ring','card.price','card_details',x=>x.call.args.name==='the one ring'],
  ['how much is this worth','card.price','card_details',x=>x.call.args.name==='Sol Ring',{screen:{card:{name:'Sol Ring'}}}],
  // Your own cards.
  ['how much is my collection worth','collection.value','my_collection',x=>x.call.pick==='total'],
@@ -100,6 +100,10 @@ for(const q of ['lightning bolt','sheoldred','black lotus','atraxa grand unifier
 // "Best" about a price is not a meta question; "my" keeps a question on the device.
 assert.equal(p('most expensive deck in the meta').intent,'meta.best');
 assert.notEqual(p('what is my best deck').call.tool,'meta_decks');
+// A tapped chip overrides what was read, the words untouched.
+assert.equal(p('best deck in the meta',{fix:{format:'Pioneer'}}).call.args.format,'Pioneer');
+assert.equal(p('best deck in the meta',{fix:{game:'ptcg'}}).game,'ptcg');
+assert.equal(p('how much is path to exile').call.args.name,'path to exile');
 // Wiki titles.
 assert.deepEqual(wikiTitles('who won worlds 2019','ygo').slice(0,1),['2019 World Championships']);
 assert.equal(wikiTitles('who won the pro tour in 2001')[0],'2000–01 Pro Tour Season');
