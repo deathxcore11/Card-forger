@@ -1,0 +1,795 @@
+[
+{
+"name": "Exemplar of Light",
+"mana_cost": "{2}{W}{W}",
+"cmc": 4.0,
+"type_line": "Creature \u2014 Angel",
+"oracle_text": "Flying\nWhenever you gain life, put a +1/+1 counter on this creature.\nWhenever you put one or more +1/+1 counters on this creature, draw a card. This ability triggers only once each turn.",
+"colors": [
+"W"
+],
+"color_identity": [
+"W"
+],
+"keywords": [
+"Flying"
+],
+"power": "3",
+"toughness": "3",
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Lyra, Archangel of Dawn",
+"mana_cost": "{2}{W}",
+"cmc": 3.0,
+"type_line": "Legendary Creature \u2014 Angel Knight",
+"oracle_text": "Flying\nWhenever you gain life, put a +1/+1 counter on each Angel you control.",
+"colors": [
+"W"
+],
+"color_identity": [
+"W"
+],
+"keywords": [
+"Flying"
+],
+"power": "3",
+"toughness": "3",
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Agent Maria Hill",
+"mana_cost": "{W}",
+"cmc": 1.0,
+"type_line": "Legendary Creature \u2014 Human Spy Hero",
+"oracle_text": "Whenever Agent Maria Hill becomes tapped to pay a teamwork cost, put a +1/+1 counter on her and draw a card.",
+"colors": [
+"W"
+],
+"color_identity": [
+"W"
+],
+"keywords": [],
+"power": "2",
+"toughness": "1",
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Belladonna Took",
+"mana_cost": "{1}{W}",
+"cmc": 2.0,
+"type_line": "Legendary Creature \u2014 Halfling Citizen",
+"oracle_text": "Whenever a token you control enters, you gain 1 life if this is the first time this ability has resolved this turn. If it's the second time, draw a card. If it's the third time, put a +1/+1 counter on each creature you control.",
+"colors": [
+"W"
+],
+"color_identity": [
+"W"
+],
+"keywords": [],
+"power": "2",
+"toughness": "2",
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Pinnacle Starcage",
+"mana_cost": "{1}{W}{W}",
+"cmc": 3.0,
+"type_line": "Artifact",
+"oracle_text": "When this artifact enters, exile all artifacts and creatures with mana value 2 or less until this artifact leaves the battlefield.\n{6}{W}{W}: Put each card exiled with this artifact into its owner's graveyard, then create a 2/2 colorless Robot artifact creature token for each card put into a graveyard this way. Sacrifice this artifact.",
+"colors": [
+"W"
+],
+"color_identity": [
+"W"
+],
+"keywords": [],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Nurturing Pixie",
+"mana_cost": "{W}",
+"cmc": 1.0,
+"type_line": "Creature \u2014 Faerie Rogue",
+"oracle_text": "Flying\nWhen this creature enters, return up to one target non-Faerie, nonland permanent you control to its owner's hand. If a permanent was returned this way, put a +1/+1 counter on this creature.",
+"colors": [
+"W"
+],
+"color_identity": [
+"W"
+],
+"keywords": [
+"Flying"
+],
+"power": "1",
+"toughness": "1",
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Guiding Hydra",
+"mana_cost": "{X}{W}",
+"cmc": 1.0,
+"type_line": "Creature \u2014 Hydra Horror",
+"oracle_text": "This creature enters with X +1/+1 counters on it.\nAt the beginning of combat on your turn, you may remove a +1/+1 counter from this creature. If you do, put a +1/+1 counter on each other creature you control.",
+"colors": [
+"W"
+],
+"color_identity": [
+"W"
+],
+"keywords": [],
+"power": "1",
+"toughness": "0",
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Lightfoot Technique",
+"mana_cost": "{1}{W}",
+"cmc": 2.0,
+"type_line": "Instant",
+"oracle_text": "Put a +1/+1 counter on target creature. It gains flying and indestructible until end of turn. (Damage and effects that say \"destroy\" don't destroy it.)",
+"colors": [
+"W"
+],
+"color_identity": [
+"W"
+],
+"keywords": [],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Parting Gust",
+"mana_cost": "{W}{W}",
+"cmc": 2.0,
+"type_line": "Instant",
+"oracle_text": "Gift a tapped Fish (You may promise an opponent a gift as you cast this spell. If you do, they create a tapped 1/1 blue Fish creature token before its other effects.)\nExile target nontoken creature. If the gift wasn't promised, return that card to the battlefield under its owner's control with a +1/+1 counter on it at the beginning of the next end step.",
+"colors": [
+"W"
+],
+"color_identity": [
+"W"
+],
+"keywords": [
+"Gift"
+],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Venat, Heart of Hydaelyn // Hydaelyn, the Mothercrystal",
+"cmc": 3.0,
+"type_line": "Legendary Creature \u2014 Elder Wizard // Legendary Creature \u2014 God",
+"color_identity": [
+"W"
+],
+"keywords": [
+"Blessing of Light",
+"Indestructible",
+"Transform"
+],
+"card_faces": [
+{
+"name": "Venat, Heart of Hydaelyn",
+"mana_cost": "{1}{W}{W}",
+"type_line": "Legendary Creature \u2014 Elder Wizard",
+"oracle_text": "Whenever you cast a legendary spell, draw a card. This ability triggers only once each turn.\nHero's Sundering \u2014 {7}, {T}: Exile target nonland permanent. Transform Venat. Activate only as a sorcery.",
+"power": "3",
+"toughness": "3"
+},
+{
+"name": "Hydaelyn, the Mothercrystal",
+"mana_cost": "",
+"type_line": "Legendary Creature \u2014 God",
+"oracle_text": "Indestructible\nBlessing of Light \u2014 At the beginning of combat on your turn, put a +1/+1 counter on another target creature you control. Until your next turn, it gains indestructible. If that creature is legendary, draw a card.",
+"power": "4",
+"toughness": "4"
+}
+],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "The Mind Stone",
+"mana_cost": "{1}{W}",
+"cmc": 2.0,
+"type_line": "Legendary Artifact \u2014 Infinity Stone",
+"oracle_text": "Indestructible\n{T}: Add {W}.\n{5}{W}, {T}: Harness The Mind Stone. (Once harnessed, its \u221e ability is active.)\n\u221e \u2014 At the beginning of your end step, exile up to one other target nonland permanent you control, then return that card to the battlefield under its owner's control.",
+"colors": [
+"W"
+],
+"color_identity": [
+"W"
+],
+"keywords": [
+"Indestructible"
+],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Curious Farm Animals",
+"mana_cost": "{W}",
+"cmc": 1.0,
+"type_line": "Creature \u2014 Boar Elk Bird Ox",
+"oracle_text": "When this creature dies, you gain 3 life.\n{2}, Sacrifice this creature: Destroy up to one target artifact or enchantment.",
+"colors": [
+"W"
+],
+"color_identity": [
+"W"
+],
+"keywords": [],
+"power": "1",
+"toughness": "1",
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Hinterland Sanctifier",
+"mana_cost": "{W}",
+"cmc": 1.0,
+"type_line": "Creature \u2014 Rabbit Cleric",
+"oracle_text": "Whenever another creature you control enters, you gain 1 life.",
+"colors": [
+"W"
+],
+"color_identity": [
+"W"
+],
+"keywords": [],
+"power": "1",
+"toughness": "2",
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Sheltered by Ghosts",
+"mana_cost": "{1}{W}",
+"cmc": 2.0,
+"type_line": "Enchantment \u2014 Aura",
+"oracle_text": "Enchant creature you control\nWhen this Aura enters, exile target nonland permanent an opponent controls until this Aura leaves the battlefield.\nEnchanted creature gets +1/+0 and has lifelink and ward {2}.",
+"colors": [
+"W"
+],
+"color_identity": [
+"W"
+],
+"keywords": [
+"Enchant"
+],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Healer's Hawk",
+"mana_cost": "{W}",
+"cmc": 1.0,
+"type_line": "Creature \u2014 Bird",
+"oracle_text": "Flying\nLifelink (Damage dealt by this creature also causes you to gain that much life.)",
+"colors": [
+"W"
+],
+"color_identity": [
+"W"
+],
+"keywords": [
+"Flying",
+"Lifelink"
+],
+"power": "1",
+"toughness": "1",
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Ruin-Lurker Bat",
+"mana_cost": "{W}",
+"cmc": 1.0,
+"type_line": "Creature \u2014 Bat",
+"oracle_text": "Flying, lifelink\nAt the beginning of your end step, if you descended this turn, scry 1. (You descended if a permanent card was put into your graveyard from anywhere.)",
+"colors": [
+"W"
+],
+"color_identity": [
+"W"
+],
+"keywords": [
+"Scry",
+"Flying",
+"Lifelink"
+],
+"power": "1",
+"toughness": "1",
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Temporary Lockdown",
+"mana_cost": "{1}{W}{W}",
+"cmc": 3.0,
+"type_line": "Enchantment",
+"oracle_text": "When this enchantment enters, exile each nonland permanent with mana value 2 or less until this enchantment leaves the battlefield.",
+"colors": [
+"W"
+],
+"color_identity": [
+"W"
+],
+"keywords": [],
+"legalities": {
+"standard": "not_legal"
+}
+},
+{
+"name": "Lyra Dawnbringer",
+"mana_cost": "{3}{W}{W}",
+"cmc": 5.0,
+"type_line": "Legendary Creature \u2014 Angel",
+"oracle_text": "Flying\nFirst strike (This creature deals combat damage before creatures without first strike.)\nLifelink (Damage dealt by this creature also causes you to gain that much life.)\nOther Angels you control get +1/+1 and have lifelink.",
+"colors": [
+"W"
+],
+"color_identity": [
+"W"
+],
+"keywords": [
+"Flying",
+"Lifelink",
+"First strike"
+],
+"power": "5",
+"toughness": "5",
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Shantotto, Tactician Magician",
+"mana_cost": "{1}{U}{R}",
+"cmc": 3.0,
+"type_line": "Legendary Creature \u2014 Dwarf Wizard",
+"oracle_text": "Whenever you cast a noncreature spell, Shantotto gets +X/+0 until end of turn, where X is the amount of mana spent to cast that spell. If X is 4 or more, draw a card.",
+"colors": [
+"R",
+"U"
+],
+"color_identity": [
+"R",
+"U"
+],
+"keywords": [],
+"power": "0",
+"toughness": "4",
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Blazing Bomb",
+"mana_cost": "{R}",
+"cmc": 1.0,
+"type_line": "Creature \u2014 Elemental",
+"oracle_text": "Whenever you cast a noncreature spell, if at least four mana was spent to cast it, put a +1/+1 counter on this creature.\nBlow Up \u2014 {T}, Sacrifice this creature: It deals damage equal to its power to target creature. Activate only as a sorcery.",
+"colors": [
+"R"
+],
+"color_identity": [
+"R"
+],
+"keywords": [
+"Blow Up"
+],
+"power": "1",
+"toughness": "1",
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Sunset Strikemaster",
+"mana_cost": "{1}{R}",
+"cmc": 2.0,
+"type_line": "Creature \u2014 Human Monk",
+"oracle_text": "{T}: Add {R}.\n{2}{R}, {T}, Sacrifice this creature: It deals 6 damage to target creature with flying.",
+"colors": [
+"R"
+],
+"color_identity": [
+"R"
+],
+"keywords": [],
+"power": "3",
+"toughness": "1",
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Emeritus of Conflict // Lightning Bolt",
+"mana_cost": "{1}{R} // {R}",
+"cmc": 2.0,
+"type_line": "Creature \u2014 Human Wizard // Instant",
+"colors": [
+"R"
+],
+"color_identity": [
+"R"
+],
+"keywords": [
+"First strike",
+"Prepared"
+],
+"power": "2",
+"toughness": "2",
+"card_faces": [
+{
+"name": "Emeritus of Conflict",
+"mana_cost": "{1}{R}",
+"type_line": "Creature \u2014 Human Wizard",
+"oracle_text": "First strike\nWhenever you cast your third spell each turn, this creature becomes prepared. (While it's prepared, you may cast a copy of its spell. Doing so unprepares it.)",
+"power": "2",
+"toughness": "2"
+},
+{
+"name": "Lightning Bolt",
+"mana_cost": "{R}",
+"type_line": "Instant",
+"oracle_text": "Lightning Bolt deals 3 damage to any target."
+}
+],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Muse Seeker",
+"mana_cost": "{1}{U}",
+"cmc": 2.0,
+"type_line": "Creature \u2014 Elf Wizard",
+"oracle_text": "Opus \u2014 Whenever you cast an instant or sorcery spell, draw a card. Then discard a card unless five or more mana was spent to cast that spell.",
+"colors": [
+"U"
+],
+"color_identity": [
+"U"
+],
+"keywords": [
+"Opus"
+],
+"power": "1",
+"toughness": "2",
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Engineered Explosives",
+"mana_cost": "{X}",
+"cmc": 0.0,
+"type_line": "Artifact",
+"oracle_text": "Sunburst (This artifact enters with a charge counter on it for each color of mana spent to cast it.)\n{2}, Sacrifice this artifact: Destroy each nonland permanent with mana value equal to the number of charge counters on this artifact.",
+"colors": [],
+"color_identity": [],
+"keywords": [
+"Sunburst"
+],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Three Steps Ahead",
+"mana_cost": "{U}",
+"cmc": 1.0,
+"type_line": "Instant",
+"oracle_text": "Spree (Choose one or more additional costs.)\n+ {1}{U} \u2014 Counter target spell.\n+ {3} \u2014 Create a token that's a copy of target artifact or creature you control.\n+ {2} \u2014 Draw two cards, then discard a card.",
+"colors": [
+"U"
+],
+"color_identity": [
+"U"
+],
+"keywords": [
+"Spree"
+],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Winternight Stories",
+"mana_cost": "{2}{U}",
+"cmc": 3.0,
+"type_line": "Sorcery",
+"oracle_text": "Draw three cards. Then discard two cards unless you discard a creature card.\nHarmonize {4}{U} (You may cast this card from your graveyard for its harmonize cost. You may tap a creature you control to reduce that cost by {X}, where X is its power. Then exile this spell.)",
+"colors": [
+"U"
+],
+"color_identity": [
+"U"
+],
+"keywords": [
+"Harmonize"
+],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "The Theorist, Jace Beleren",
+"mana_cost": "{2}{U}{U}",
+"cmc": 4.0,
+"type_line": "Legendary Planeswalker \u2014 Jace",
+"oracle_text": "At the beginning of each opponent's draw step, you draw a card.\n+1: Create a 1/1 blue Illusion creature token.\n\u22122: For each opponent, return up to one target artifact or creature that player controls to its owner's hand.\n\u22126: Draw three cards. Then put X +1/+1 counters on each creature you control, where X is the number of cards in your hand.",
+"colors": [
+"U"
+],
+"color_identity": [
+"U"
+],
+"keywords": [],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Countersculpt",
+"mana_cost": "{U}{U}",
+"cmc": 2.0,
+"type_line": "Instant",
+"oracle_text": "As an additional cost to cast this spell, behold a Jace or pay {1}. (To behold a Jace, choose a Jace you control or reveal a Jace card from your hand.)\nCounter target spell. Empower Jace 1. (Put a loyalty counter on a Jace token you control. If you don't control one, first create a blue Jace planeswalker token with \"[\u22121]: Surveil 1\" and \"[\u22123]: Draw a card.\")",
+"colors": [
+"U"
+],
+"color_identity": [
+"U"
+],
+"keywords": [
+"Surveil",
+"Empower Jace",
+"Behold"
+],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Spell Snare",
+"mana_cost": "{U}",
+"cmc": 1.0,
+"type_line": "Instant",
+"oracle_text": "Counter target spell with mana value 2.",
+"colors": [
+"U"
+],
+"color_identity": [
+"U"
+],
+"keywords": [],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Torch the Tower",
+"mana_cost": "{R}",
+"cmc": 1.0,
+"type_line": "Instant",
+"oracle_text": "Bargain (You may sacrifice an artifact, enchantment, or token as you cast this spell.)\nTorch the Tower deals 2 damage to target creature or planeswalker. If this spell was bargained, instead it deals 3 damage to that permanent and you scry 1.\nIf a permanent dealt damage by Torch the Tower would die this turn, exile it instead.",
+"colors": [
+"R"
+],
+"color_identity": [
+"R"
+],
+"keywords": [
+"Bargain",
+"Scry"
+],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Airship Engine Room",
+"mana_cost": "",
+"cmc": 0.0,
+"type_line": "Land",
+"oracle_text": "This land enters tapped.\n{T}: Add {U} or {R}.\n{4}, {T}, Sacrifice this land: Draw a card.",
+"colors": [],
+"color_identity": [
+"R",
+"U"
+],
+"keywords": [],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Andoria",
+"mana_cost": "",
+"cmc": 0.0,
+"type_line": "Land \u2014 Planet",
+"oracle_text": "This land enters tapped.\nWhen this land enters, you gain 1 life.\n{T}: Add {U} or {R}.",
+"colors": [],
+"color_identity": [
+"R",
+"U"
+],
+"keywords": [],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Riverpyre Verge",
+"mana_cost": "",
+"cmc": 0.0,
+"type_line": "Land",
+"oracle_text": "{T}: Add {R}.\n{T}: Add {U}. Activate only if you control an Island or a Mountain.",
+"colors": [],
+"color_identity": [
+"R",
+"U"
+],
+"keywords": [],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Spirebluff Canal",
+"mana_cost": "",
+"cmc": 0.0,
+"type_line": "Land",
+"oracle_text": "This land enters tapped unless you control two or fewer other lands.\n{T}: Add {U} or {R}.",
+"colors": [],
+"color_identity": [
+"R",
+"U"
+],
+"keywords": [],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Steam Vents",
+"mana_cost": "",
+"cmc": 0.0,
+"type_line": "Land \u2014 Island Mountain",
+"oracle_text": "({T}: Add {U} or {R}.)\nAs this land enters, you may pay 2 life. If you don't, it enters tapped.",
+"colors": [],
+"color_identity": [
+"R",
+"U"
+],
+"keywords": [],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Opt",
+"mana_cost": "{U}",
+"cmc": 1.0,
+"type_line": "Instant",
+"oracle_text": "Scry 1. (Look at the top card of your library. You may put that card on the bottom.)\nDraw a card.",
+"colors": [
+"U"
+],
+"color_identity": [
+"U"
+],
+"keywords": [
+"Scry"
+],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Sleight of Hand",
+"mana_cost": "{U}",
+"cmc": 1.0,
+"type_line": "Sorcery",
+"oracle_text": "Look at the top two cards of your library. Put one of them into your hand and the other on the bottom of your library.",
+"colors": [
+"U"
+],
+"color_identity": [
+"U"
+],
+"keywords": [],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Burst Lightning",
+"mana_cost": "{R}",
+"cmc": 1.0,
+"type_line": "Instant",
+"oracle_text": "Kicker {4} (You may pay an additional {4} as you cast this spell.)\nBurst Lightning deals 2 damage to any target. If this spell was kicked, it deals 4 damage instead.",
+"colors": [
+"R"
+],
+"color_identity": [
+"R"
+],
+"keywords": [
+"Kicker"
+],
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Slickshot Show-Off",
+"mana_cost": "{1}{R}",
+"cmc": 2.0,
+"type_line": "Creature \u2014 Bird Wizard",
+"oracle_text": "Flying, haste\nWhenever you cast a noncreature spell, this creature gets +2/+0 until end of turn.\nPlot {1}{R} (You may pay {1}{R} and exile this card from your hand. Cast it as a sorcery on a later turn without paying its mana cost. Plot only as a sorcery.)",
+"colors": [
+"R"
+],
+"color_identity": [
+"R"
+],
+"keywords": [
+"Flying",
+"Plot",
+"Haste"
+],
+"power": "1",
+"toughness": "2",
+"legalities": {
+"standard": "legal"
+}
+},
+{
+"name": "Cori-Steel Cutter",
+"mana_cost": "{1}{R}",
+"cmc": 2.0,
+"type_line": "Artifact \u2014 Equipment",
+"oracle_text": "Equipped creature gets +1/+1 and has trample and haste.\nFlurry \u2014 Whenever you cast your second spell each turn, create a 1/1 white Monk creature token with prowess. You may attach this Equipment to it. (Whenever you cast a noncreature spell, the token gets +1/+1 until end of turn.)\nEquip {1}{R}",
+"colors": [
+"R"
+],
+"color_identity": [
+"R"
+],
+"keywords": [
+"Flurry",
+"Equip"
+],
+"legalities": {
+"standard": "banned"
+}
+}
+]

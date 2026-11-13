@@ -85,3 +85,51 @@ console.log('deck needs: reported piles read correctly; 6 real-pool builds hold 
  assert.equal(isThreat({ type_line: 'Instant', oracle_text: 'Counter target spell.' }), false);
  assert.equal(isThreat({ type_line: 'Sorcery', oracle_text: 'Create two 1/1 white Soldier creature tokens.' }), true);
 }
+
+// Seen 12 Nov in a live Mono-White counters list (4.3.184): Agent Maria Hill with no teamwork card, Belladonna Took with no
+// token maker, Exemplar of Light and Lyra with one real way to gain life, and four Pinnacle Starcage beside twenty of the
+// cheap creatures and artifacts it exiles. Real card texts in test-fixtures/deck-input-conditions.json.
+{
+ const cards = JSON.parse(fs.readFileSync(new URL('./test-fixtures/deck-input-conditions.json', import.meta.url), 'utf8')), by = n => cards.find(c => c.name.startsWith(n));
+ const ids = n => cardNeeds(by(n)).map(x => x.id);
+ assert.deepEqual(ids('Agent Maria Hill'), ['teamwork']);
+ assert.deepEqual(ids('Belladonna Took'), ['own-tokens']);
+ assert.deepEqual(ids('Exemplar of Light'), ['lifegain']);
+ assert.deepEqual(ids('Lyra, Archangel of Dawn'), ['lifegain']);
+ assert.deepEqual(ids('Pinnacle Starcage'), ['self-sweep']);
+ assert.deepEqual(ids("Healer's Hawk"), [], 'a plain lifelinker asks for nothing');
+ const tokens = cardNeeds(by('Belladonna Took'))[0], life = cardNeeds(by('Exemplar of Light'))[0];
+ assert.equal(tokens.provides(by('Parting Gust')), false, 'a gift token goes to the opponent');
+ assert.equal(tokens.provides(by('Pinnacle Starcage')), false, 'an eight-mana activation is not a token plan');
+ for (const n of ["Healer's Hawk", 'Ruin-Lurker Bat', 'Hinterland Sanctifier', 'Sheltered by Ghosts', 'Curious Farm Animals']) assert.equal(life.provides(by(n)), true, n + ' gains life');
+ assert.equal(life.provides(by('Lightfoot Technique')), false);
+ const row = (n, qty) => ({ card: by(n), qty }), reported = [row('Exemplar of Light', 4), row('Lyra, Archangel of Dawn', 2), row('Agent Maria Hill', 2), row('Belladonna Took', 2), row('Pinnacle Starcage', 4), row('Nurturing Pixie', 4), row('Guiding Hydra', 4), row('Lightfoot Technique', 4), row('Parting Gust', 4), row('Venat', 2), row('The Mind Stone', 2), row('Curious Farm Animals', 4)];
+ const { unmetNeeds } = await import('./deck-needs.js');
+ const open = unmetNeeds(reported, { size: 60 }).map(n => n.name + ':' + n.need).sort();
+ assert.deepEqual(open, ['Agent Maria Hill:teamwork', 'Belladonna Took:own-tokens', 'Exemplar of Light:lifegain', 'Lyra, Archangel of Dawn:lifegain', 'Pinnacle Starcage:self-sweep'], 'every leak in the reported list is caught');
+ const fixed = [row('Exemplar of Light', 4), row('Lyra, Archangel of Dawn', 2), row("Healer's Hawk", 4), row('Ruin-Lurker Bat', 4), row('Hinterland Sanctifier', 4), row('Sheltered by Ghosts', 4), row('Lightfoot Technique', 4)];
+ assert.deepEqual(unmetNeeds(fixed, { size: 60 }), [], 'the same payoffs with real lifegain pass');
+}
+
+// Seen 12 Nov in a live Izzet list (4.3.184): mana-spent payoffs (Blazing Bomb, Muse Seeker) with almost no spell that costs
+// four, a third-spell payoff (Emeritus of Conflict) beside twelve counterspells, four Engineered Explosives in two colours,
+// and eight always-tapped lands in a 20-land list.
+{
+ const cards = JSON.parse(fs.readFileSync(new URL('./test-fixtures/deck-input-conditions.json', import.meta.url), 'utf8')), by = n => cards.find(c => c.name.startsWith(n));
+ const { unmetNeeds, idleFixer } = await import('./deck-needs.js'), { tapRank } = await import('./builder.js'), { forgeLandCount } = await import('./deck-forge.js');
+ assert.deepEqual(cardNeeds(by('Blazing Bomb')).map(x => x.id), ['big-spells:4']);
+ assert.deepEqual(cardNeeds(by('Muse Seeker')).map(x => x.id), ['big-spells:5']);
+ assert.deepEqual(cardNeeds(by('Emeritus of Conflict')).map(x => x.id), ['third-spell']);
+ assert.deepEqual(cardNeeds(by('Shantotto')).map(x => x.id), [], 'Shantotto grows from every noncreature spell');
+ const third = cardNeeds(by('Emeritus of Conflict'))[0];
+ assert.equal(third.provides(by('Spell Snare')), false, 'a counterspell is not a spell you chain on your own turn');
+ assert.equal(third.provides(by('Opt')), true);
+ assert.equal(idleFixer(by('Engineered Explosives'), ['U', 'R']), true, 'sunburst in two colours');
+ assert.equal(idleFixer(by('Engineered Explosives'), ['W', 'U', 'R']), false);
+ assert.deepEqual(['Airship Engine Room', 'Andoria', 'Spirebluff Canal', 'Steam Vents', 'Riverpyre Verge'].map(n => tapRank(by(n))), [2, 2, 1, 1, 0]);
+ const row = (n, qty) => ({ card: by(n), qty }), reported = [row('Shantotto', 3), row('Blazing Bomb', 1), row('Sunset Strikemaster', 4), row('Emeritus of Conflict', 4), row('Muse Seeker', 4), row('Engineered Explosives', 4), row('Three Steps Ahead', 4), row('Winternight Stories', 4), row('The Theorist', 2), row('Countersculpt', 4), row('Spell Snare', 4), row('Torch the Tower', 2)];
+ assert.deepEqual(unmetNeeds(reported, { size: 60 }).map(n => n.name.split(' // ')[0] + ':' + n.need).sort(), ['Blazing Bomb:big-spells:4', 'Emeritus of Conflict:third-spell', 'Muse Seeker:big-spells:5']);
+ assert.ok(forgeLandCount(reported, { size: 60 }) >= 22, 'no 60-card list under 22 lands');
+}
+assert.deepEqual(cardNeeds({ name: 'Clifftop Retreat', type_line: 'Land', oracle_text: 'This land enters tapped unless you control a Mountain or a Plains.\n{T}: Add {R} or {W}.' }), [], 'a land has no needs');
+assert.deepEqual(cardNeeds({ name: 'Mountain fixture', type_line: 'Creature — Giant', oracle_text: 'This creature gets +2/+0 as long as you control a Mountain.' }), [], '"a Mountain" is not the Mount type');
