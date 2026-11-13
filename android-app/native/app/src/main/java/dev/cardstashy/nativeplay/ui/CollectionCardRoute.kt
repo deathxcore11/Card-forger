@@ -143,7 +143,7 @@ private fun CardHostBody(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen)
             // The artist's name and the "Explore types & abilities" chips (card-discovery.js A.ruleCards): the app's own Search tab with
             // the site's search words, this page closed. Before 12 Nov they opened the website inside the app, which lost the search.
             p.act == "ruleCards" && searchOpen != null && discoveryWords(d) != null -> { searchFor("mtg", discoveryWords(d)!!); onClose(); searchOpen() }
-            p.act.isNotBlank() -> site("[data-act=\"${css(p.act)}\"]" + d.filterKeys { it != "act" }.entries.joinToString("") { (k, v) -> "[data-${k}=\"${css(v)}\"]" })
+            p.act.isNotBlank() -> { SiteHandoff.log("card mtg", p.act); site("[data-act=\"${css(p.act)}\"]" + d.filterKeys { it != "act" }.entries.joinToString("") { (k, v) -> "[data-${k}=\"${css(v)}\"]" }) }
         }
     }
     val m = model ?: return
@@ -268,7 +268,7 @@ private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) 
             p.act == "ygoPickRarity" && v("edition").isNotBlank() -> asked = "rarity" to v("edition")
             p.act == "cardPriceJump" -> asked = "jump" to v("finish")
             p.act == "marketRange" && v("range").isNotBlank() -> asked = "range" to v("range")
-            p.act.isNotBlank() -> site("[data-act=\"${css(p.act)}\"]" + d.filterKeys { it != "act" }.entries.joinToString("") { (k, x) -> "[data-${k}=\"${css(x)}\"]" })
+            p.act.isNotBlank() -> { SiteHandoff.log("card " + open.game, p.act); site("[data-act=\"${css(p.act)}\"]" + d.filterKeys { it != "act" }.entries.joinToString("") { (k, x) -> "[data-${k}=\"${css(x)}\"]" }) }
         }
     }
     val m = model ?: return

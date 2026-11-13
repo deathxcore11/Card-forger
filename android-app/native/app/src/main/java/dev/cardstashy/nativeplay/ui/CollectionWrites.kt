@@ -475,3 +475,8 @@ internal object CollectionWrites {
     /** The tap a question belongs to, set by [act] just before it runs. */
     private var pendingAsk: Ask? = null
 }
+
+/** Gap audit L1 / L2: each control a native page still hands to the website, logged (adb logcat -s SiteHandoff) to list what is left. */
+internal object SiteHandoff {
+    fun log(where: String, act: String) { runCatching { android.util.Log.i("SiteHandoff", "$where: $act") } }
+}

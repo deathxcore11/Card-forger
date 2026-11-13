@@ -327,8 +327,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
                         web = { x, sc -> web(page, "[data-act=\"deckMenu\"]\n[data-act=\"${css(x)}\"]" + (if (sc.isNotEmpty()) "[data-scope=\"${css(sc)}\"]" else "")) },
                         openDeck = onDeck, deleted = onBack, share = ::share, site = { u -> webAt(u, null) })
                     a.isBlank() -> {}
-                    id.isNotBlank() -> web(page, "[data-act=\"${css(a)}\"][data-id=\"${css(id)}\"]")
-                    else -> web(page, "[data-act=\"${css(a)}\"]")
+                    id.isNotBlank() -> { SiteHandoff.log("deck " + game.id, a); web(page, "[data-act=\"${css(a)}\"][data-id=\"${css(id)}\"]") }
+                    else -> { SiteHandoff.log("deck " + game.id, a); web(page, "[data-act=\"${css(a)}\"]") }
                 }
             },
             tab = { k -> openTab(k) },
@@ -416,7 +416,7 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
                     if (searchOpen != null) { review = false; searchAsked(deckId.takeIf { x.act == "formatSearch" }); searchOpen() }
                     else { review = false; web(site + "#search", null) }
                 }
-                else -> { review = false; web(page, "[data-act=\"deckReview\"]\n[data-act=\"${css(x.act)}\"]" + (if (x.id.isNotBlank()) "[data-id=\"${css(x.id)}\"]" else "") + (if (x.role.isNotBlank()) "[data-role=\"${css(x.role)}\"]" else "")) }
+                else -> { review = false; SiteHandoff.log("deck review", x.act); web(page, "[data-act=\"deckReview\"]\n[data-act=\"${css(x.act)}\"]" + (if (x.id.isNotBlank()) "[data-id=\"${css(x.id)}\"]" else "") + (if (x.role.isNotBlank()) "[data-role=\"${css(x.role)}\"]" else "")) }
             } }))
     }
     tbuild?.let { t ->
