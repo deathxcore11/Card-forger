@@ -241,6 +241,8 @@ export const ANDROID_APPS = [
   { package: "dev.workers.deathxcore11.cardforge2.twa", sha256: ["89:18:F5:EC:D8:0C:08:48:7D:D0:84:9E:A7:84:BF:2A:02:07:0F:5E:D0:B0:AD:82:D3:83:CF:42:2F:60:5D:65"] },
   // Android beta (downloads/): its sign-in link https://cardstashy.com/auth/android/callback opens the app.
   { package: "com.cardstashy.app", sha256: ["E6:E4:01:A6:1B:7B:1B:9A:52:5B:A0:6F:F6:9E:7E:B7:6B:7E:D3:C4:A9:A8:83:1C:61:F1:56:4E:AA:DC:3F:55"] },
+  // The native Android app: the same release certificate, the same sign-in return link (Google and email sign-in).
+  { package: "com.cardstashy.app.nativetest", sha256: ["E6:E4:01:A6:1B:7B:1B:9A:52:5B:A0:6F:F6:9E:7E:B7:6B:7E:D3:C4:A9:A8:83:1C:61:F1:56:4E:AA:DC:3F:55"] },
 ];
 export function assetLinks(apps = ANDROID_APPS) {
   if (!apps.length) return new Response("No Android app registered yet.", { status: 404 });

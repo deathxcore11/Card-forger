@@ -25,11 +25,19 @@
             android:name=".MainActivity"
             android:exported="true"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|screenLayout|uiMode|navigation|density"
-            android:screenOrientation="fullUser">
+            android:screenOrientation="fullUser"
+            android:launchMode="singleTask">
             <property android:name="android.window.PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY" android:value="true" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Sign-in returns here only: verified against https://cardstashy.com/.well-known/assetlinks.json. No custom scheme. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="cardstashy.com" android:path="/auth/android/callback" />
             </intent-filter>
         </activity>
         <provider

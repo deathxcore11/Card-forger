@@ -156,6 +156,8 @@ class MainActivity : ComponentActivity() {
         // Silent: a stall or crash report uploads itself; nothing shows on screen (test strip and frame watch off since 0.3.8).
         FreezeReport.init(this); dev.cardstashy.nativeplay.ui.HomeTest.init(this)
         TestHooks.read(intent)
+        // The sign-in return link on a cold start (gap audit S2).
+        dev.cardstashy.nativeplay.account.AuthReturn.take(intent)
         enableEdgeToEdge()
         fastestRefresh()
         // The card database starts loading as the app opens, so it is ready before Quick Play is.
@@ -203,7 +205,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() { dev.cardstashy.nativeplay.play.RandomBuild.detach(this); dev.cardstashy.nativeplay.collection.ScanWeb.detach(this); super.onDestroy() }
-    override fun onNewIntent(intent: android.content.Intent) { super.onNewIntent(intent); setIntent(intent); TestHooks.read(intent) }
+    override fun onNewIntent(intent: android.content.Intent) { super.onNewIntent(intent); setIntent(intent); TestHooks.read(intent); dev.cardstashy.nativeplay.account.AuthReturn.take(intent) }
 
     override fun onResume() { super.onResume(); Updater.resumed(this); dev.cardstashy.nativeplay.collection.WorkspaceSync.kick(this) }
     override fun onStart() { super.onStart(); dev.cardstashy.nativeplay.play.RandomBuild.hidden = false; dev.cardstashy.nativeplay.ui.DualScreen.attach(this) }
