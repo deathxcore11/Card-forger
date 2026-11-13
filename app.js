@@ -4043,7 +4043,7 @@ A.askRules = (button, question = '') => {
   rulesGuideOrigin = origin;
 };
 function ensureAskTools() {
-  return askTools ||= makeAskTools({ S, T, A, go, navigationStamp, navigationCurrent, toast, esc, api, resolve, cacheCard, loadSetIndex, loadMetaData, metaState, MTG_META_FORMATS, allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx, deckExperience,
+  return askTools ||= makeAskTools({ S, T, A, go, navigationStamp, navigationCurrent, toast, esc, api, resolve, resolveNames, cacheCard, loadSetIndex, loadMetaData, metaState, MTG_META_FORMATS, allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx, deckExperience,
     captureAskScope: () => { const scope=mutationScope(); return () => mutationCurrent(scope); },
     openMtgDraft: (draft, current) => {
       if (!current?.() || T.game() !== 'mtg') return toast("Your account or workspace changed. Ask again in the current workspace.");

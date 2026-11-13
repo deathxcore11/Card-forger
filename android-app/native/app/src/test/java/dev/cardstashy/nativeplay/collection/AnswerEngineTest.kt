@@ -112,4 +112,35 @@ class AnswerEngineTest {
             assertEquals("no AI was asked", 0, ai)
         } finally { CollectionEngine.answerForTest = null }
     }
+    /**
+     * Seen on a phone in 0.4.72: "best red deck" answered with a blue deck, the word "red" dropped. Every word is now used or the
+     * card says it can't use it. Live tournament data, so the deck's name is not fixed here: its colours are.
+     */
+    @Test fun noWordOfAQuestionIsDropped() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.store = CollectionEngine.MemoryStore()
+        CollectionEngine.initFrom(bundle); CollectionEngine.restart()
+        CollectionEngine.load(JsonObject(), null)
+        suspend fun ask(q: String) = CollectionEngine.searchAnswer("mtg", q, JsonObject(), 90_000).also { println("ANSWER[$q] ${it.toString().take(1500)}") }!!
+        var m = ask("best red deck"); var a = m.o("answer")!!
+        assertTrue(m.list("read").any { it.s("label") == "has red" })
+        if (a["ok"].asBoolean) { assertTrue(a.s("say"), a.s("say").contains("most played Standard deck with red in it")); assertTrue(a.s("note"), Regex("""^Colours: [a-z, ]*red""").containsMatchIn(a.s("note"))) }
+        else assertEquals("No Standard deck with red in it is among the tournament decks right now.", a.s("miss"))
+        a = ask("best mono white deck").o("answer")!!
+        if (a["ok"].asBoolean) { assertTrue(a.s("say").contains("most played mono-white Standard deck")); assertTrue(a.s("note"), a.s("note").startsWith("Colours: white ·") || a.s("note") == "Colours: white") }
+        else assertEquals("No mono-white Standard deck is among the tournament decks right now.", a.s("miss"))
+        a = ask("best izzet deck").o("answer")!!
+        if (a["ok"].asBoolean) assertTrue(a.s("note"), a.s("note").startsWith("Colours: blue, red")) else assertTrue(a.s("miss").startsWith("No Izzet Standard deck"))
+        a = ask("best zzyzx deck").o("answer")!!
+        assertFalse(a["ok"].asBoolean); assertTrue(a.s("miss"), a.s("miss").contains("is named \"zzyzx\" or plays a card named \"zzyzx\""))
+        a = ask("best deck last year").o("answer")!!
+        assertFalse(a["ok"].asBoolean); assertTrue(a.s("miss").contains("recent events"))
+        a = ask("is sol ring banned in commander").o("answer")!!
+        assertEquals("Sol Ring", a.s("strong")); assertEquals("is legal in Commander.", a.s("say"))
+        a = ask("how much is a foil lightning bolt").o("answer")!!
+        assertEquals("Lightning Bolt", a.s("strong")); assertTrue(a.s("say"), a.s("say").endsWith("in foil."))
+        a = ask("my most valuable red card").o("answer")!!
+        assertFalse(a["ok"].asBoolean); assertTrue(a.s("miss").contains("can't narrow your collection by \"red\""))
+        Unit
+    }
 }

@@ -5657,7 +5657,7 @@ function askTools() {
     setGame: t => { askFocus(t?.dataset?.game || 'mtg'); return true; },
   };
   askToolsSet = makeAskTools({S, T: TcgAll, A, go: hash => dest({to: 'route', hash: String(hash || '')}), toast: text => { if (text) toasts.push({text: String(text), undo: false}); },
-    esc, api, resolve, cacheCard, loadSetIndex, loadMetaData: loadMeta, metaState, MTG_META_FORMATS,
+    esc, api, resolve, resolveNames, cacheCard, loadSetIndex, loadMetaData: loadMeta, metaState, MTG_META_FORMATS,
     allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx,
     // app.js openTcgBuild: A.tBuild on the card, whose openDeckFlow request the app's Build a deck opens (as tMetaBuild's does).
     openTcgBuild: async (g, id, budget, format) => {

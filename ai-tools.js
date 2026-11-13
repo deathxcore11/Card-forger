@@ -119,6 +119,53 @@ export function makeAskTools(x) {
   }
   async function mtgSets() { if (!S.ui.sets?.list?.length) await x.loadSetIndex().catch(() => {}); return (S.ui.sets?.list || []).filter((s) => !s.digital); }
   async function tcgSets(g) { if (!T.ui(g).sets?.list?.length) await x.tcgCtx.loadSets?.(g).catch(() => {}); return T.ui(g).sets?.list || []; }
+  // A Magic deck's colours, read from its nonland cards: a colour counts when at least 4 copies (and 8% of the coloured
+  // copies) carry it, so one hybrid card or a light splash does not rename the deck. Null when too few cards are known.
+  const WUBRG = 'WUBRG';
+  function mtgDeckColors(rows) {
+    const w = { W: 0, U: 0, B: 0, R: 0, G: 0 }; let known = 0, total = 0;
+    for (const r of rows || []) {
+      const c = x.meta(r.name), q = Math.max(1, Number(r.qty) || 1);
+      if (c && /\bLand\b/.test(String(c.type_line || '').split('//')[0])) continue;
+      total += q; if (!c) continue; known += q;
+      for (const k of (c.colors?.length ? c.colors : c.card_faces?.[0]?.colors) || []) if (k in w) w[k] += q;
+    }
+    if (!total || known / total < .75) return null;
+    const sum = Object.values(w).reduce((a, b) => a + b, 0);
+    return [...WUBRG].filter(k => w[k] >= 4 && w[k] >= sum * .08).join('').toLowerCase();
+  }
+  const colorFits = (have, { colors, exact, without, count }) => {
+    if (colors?.length && !(exact ? have.length === colors.length && colors.every(c => have.includes(c)) : colors.every(c => have.includes(c)))) return false;
+    if (without?.length && without.some(c => have.includes(c))) return false;
+    if (count && have.length !== count) return false;
+    return true;
+  };
+  // Narrow tournament archetypes by what the question asked: colours, a name or card, a price cap, then the order.
+  // rows: [{a, d, name, cards:[{name,qty}]}]. Returns the rows left (with .matched), or {error, none|noData}.
+  async function narrowMeta(g, rows, args, summary) {
+    const flat = t => ' ' + String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[’']/g, '').replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
+    let matched = null;
+    if (g === 'mtg' && (args.colors?.length || args.without?.length || args.count)) {
+      const names = [...new Set(rows.flatMap(r => r.cards.map(c => c.name)))].filter(n => !x.meta(n));
+      if (names.length) await (x.resolveNames ? x.resolveNames(names) : Promise.all(names.slice(0, 60).map(n => x.resolve(n).catch(() => null)))).catch(() => {});
+      for (const r of rows) r.colors = r.d ? mtgDeckColors(r.cards) : null;
+      if (!rows.some(r => r.colors != null)) return { error: "The cards in these decks could not be loaded, so the app can't sort them by colour right now.", noData: true };
+      rows = rows.filter(r => r.colors != null && colorFits(r.colors, args));
+    }
+    if (args.match) {
+      const m = flat(args.match), one = m.replace(/s $/, ' '), has = t => { const f = flat(t); return f.includes(m) || f.includes(one) || f.replace(/s /g, ' ').includes(one); };
+      const byName = rows.filter(r => has(r.name));
+      if (byName.length) { rows = byName; matched = { by: 'name' }; }
+      else { let card = ''; rows = rows.filter(r => { const c = r.cards.find(c => has(c.name)); if (c && !card) card = c.name; return !!c; }); matched = { by: 'card', card }; }
+    }
+    if (args.sort || args.under != null) for (const r of rows) r.sum = r.d ? summary(r.d) : null;
+    if (args.under != null) rows = rows.filter(r => r.sum?.costToFinish != null && r.sum.costToFinish <= args.under);
+    if (args.sort === 'closest') rows = rows.filter(r => r.sum).sort((a, b) => b.sum.ownedPercent - a.sum.ownedPercent);
+    if (args.sort === 'cheapest' || args.sort === 'priciest') { rows = rows.filter(r => r.sum?.costToFinish != null); rows.sort((a, b) => args.sort === 'cheapest' ? a.sum.costToFinish - b.sum.costToFinish : b.sum.costToFinish - a.sum.costToFinish); }
+    if (!rows.length) return { error: 'No tournament deck matches.', none: true, matched };
+    rows.matched = matched;
+    return rows;
+  }
   const metaKey = (format) => { const f = String(format || S.ui.mtgMeta?.format || 'Modern'); return 'mtg:' + (x.MTG_META_FORMATS.find(([k]) => k.toLowerCase() === f.toLowerCase())?.[0] || (/commander|edh|cedh/i.test(f) ? 'EDH' : 'Modern')); };
 
   const tools = {
@@ -153,7 +200,7 @@ export function makeAskTools(x) {
       if (g === 'mtg') {
         const c = x.meta(q) || (await x.resolve(q, true).catch(() => null));
         if (!c) return { error: `No Magic card named ${q}.` };
-        return { game: g, card: { ...mtgCard(c), text: mtgText(c).slice(0,6000), textTruncated:mtgText(c).length>6000, oracleId:c.oracle_id||null, pt: c.power != null ? `${c.power}/${c.toughness}` : '', foilPrice: num(c.prices?.usd_foil), legal: Object.entries(c.legalities || {}).filter(([, v]) => v === 'legal').map(([k]) => k).slice(0, 12) },wiki:buildMtgWikiReference(c.name) };
+        return { game: g, card: { ...mtgCard(c), text: mtgText(c).slice(0,6000), textTruncated:mtgText(c).length>6000, oracleId:c.oracle_id||null, pt: c.power != null ? `${c.power}/${c.toughness}` : '', foilPrice: num(c.prices?.usd_foil), legalities: c.legalities || {}, legal: Object.entries(c.legalities || {}).filter(([, v]) => v === 'legal').map(([k]) => k).slice(0, 12) },wiki:buildMtgWikiReference(c.name) };
       }
       let c = await T.SOURCES[g].byName(q).catch(() => null);
       if (!c) c = (await T.SOURCES[g].search({ q, page: 0, size: 1 }).catch(() => ({ cards: [] }))).cards?.[0];
@@ -221,13 +268,16 @@ export function makeAskTools(x) {
       const unpriced = full.filter(c=>c.setContext?.price == null);
       return { game: g, set: { ...choice(s), cards: s.count }, cards: [...priced,...unpriced].slice(0,n).map(c=>exactCardResult(g,c,s.id,tcgCard(g,c))), unpricedChecked: unpriced.length, checked: full.length };
     },
-    async meta_decks({ game, format }) {
+    async meta_decks(args) {
+      const { game, format } = args;
       const g = g0(game);
       if (g === 'mtg') {
         const k = metaKey(format), data = await x.loadMetaData(k).catch(() => x.metaState(k).data);
         if (!data) return { error: 'Tournament data for that format isn\'t available right now.' };
         const summary=d=>completionSummary([...(d.commanders||[]).map(r=>typeof r==='string'?{name:r,qty:1}:r),...(d.main||[])],n=>x.inv(n).owned,n=>x.priceOf(n));
-        return decorateMeta(g,data,{game:g,format:k.slice(4),source:data.source||'tournament results',fetchedAt:data.fetchedAt||data.updatedAt||null,decks:(data.archetypes||[]).slice(0,8).map(a=>{const d=data.decks.find(y=>y.key===a.best)||data.decks.find(y=>(y.archetype||y.name)===a.name);return {name:a.name,key:d?.key||'',share:Math.round((a.share||0)*1000)/10,lists:a.lists||a.count||0,best:d?`${d.place||''} ${d.event||''}`.trim():'',eventDate:d?.date||null,...(d?summary(d):{listUnavailable:true,ownedPercent:null,costToFinish:null})};})});
+        const rows=await narrowMeta(g,(data.archetypes||[]).map(a=>{const d=data.decks.find(y=>y.key===a.best)||data.decks.find(y=>(y.archetype||y.name)===a.name);return {a,d,name:a.name,cards:(d?.main||[]).filter(c=>!c.land)};}),args,summary);
+        if(rows.error)return {game:g,format:k.slice(4),...rows};
+        return decorateMeta(g,data,{game:g,format:k.slice(4),source:data.source||'tournament results',fetchedAt:data.fetchedAt||data.updatedAt||null,matched:rows.matched,decks:rows.slice(0,8).map(({a,d,sum,colors})=>({name:a.name,key:d?.key||'',share:Math.round((a.share||0)*1000)/10,lists:a.lists||a.count||0,best:d?`${d.place||''} ${d.event||''}`.trim():'',eventDate:d?.date||null,...(colors?{colors}:{}),...(d?sum||summary(d):{listUnavailable:true,ownedPercent:null,costToFinish:null})}))});
       }
       const data = (await x.tcgCtx.loadMeta?.(g).catch(() => null)) || T.metaState(g).data;
       if (!data) return { error: 'Tournament data isn\'t available right now.' };
@@ -235,12 +285,21 @@ export function makeAskTools(x) {
       const summary=d=>g==='ygo'?completionSummary([...(d.main||[]),...(d.extra||[])].map(id=>({name:String(id),qty:1})),id=>own.get('id:'+id),id=>T.cardOf(g,id)?.prices?.usd):completionSummary(d.list,n=>byName.get(n.toLowerCase().replace(/^basic /,'')),n=>Object.values(T.cache?.[g]||{}).find(c=>c.name.toLowerCase()===n.toLowerCase())?.prices?.usd);
       const metaFormat=g==='ptcg'?'Standard':'Advanced (TCG)';
       if(format&&!(g==='ptcg'?/^standard$/i:/^(tcg|advanced(?: \(tcg\))?)$/i).test(format))return {game:g,error:'This tournament source covers '+metaFormat+'. Choose that format or use the builder for other formats.',format:metaFormat};
-      return decorateMeta(g,data,{game:g,format:metaFormat,source:data.source||'tournament results',fetchedAt:data.fetchedAt||data.updatedAt||null,decks:(data.archetypes||[]).slice(0,8).map(a=>{const d=data.decks.find(y=>y.key===a.best)||a.representative;return {name:a.name||a.id,key:d?.key||'',share:Math.round((a.share||0)*1000)/10,lists:a.count||0,best:d?`${d.place||''} ${d.event||''}`.trim():'',eventDate:d?.date||null,...(d?summary(d):{listUnavailable:true,ownedPercent:null,costToFinish:null})};})});
+      const rows=await narrowMeta(g,(data.archetypes||[]).map(a=>{const d=data.decks.find(y=>y.key===a.best)||a.representative;return {a,d,name:a.name||a.id,cards:g==='ptcg'?(d?.list||[]):[]};}),args,summary);
+      if(rows.error)return {game:g,format:metaFormat,...rows};
+      return decorateMeta(g,data,{game:g,format:metaFormat,source:data.source||'tournament results',fetchedAt:data.fetchedAt||data.updatedAt||null,matched:rows.matched,decks:rows.slice(0,8).map(({a,d,sum})=>({name:a.name||a.id,key:d?.key||'',share:Math.round((a.share||0)*1000)/10,lists:a.count||0,best:d?`${d.place||''} ${d.event||''}`.trim():'',eventDate:d?.date||null,...(d?sum||summary(d):{listUnavailable:true,ownedPercent:null,costToFinish:null})}))});
     },
-    async my_decks({ game }) {
-      const g = g0(game);
-      if (g === 'mtg') return { game: g, decks: S.state.decks.slice(0, 15).map((d) => { let power = null; try { power = x.shownPower(x.mtgPower(d)); } catch {} return { id: d.id, name: d.name, format: d.format, commander: d.commander || '', cards: d.cards.reduce((s, r) => s + r.qty, 0), power }; }) };
-      return { game: g, decks: T.gs(g).decks.slice(0, 15).map((d) => ({ id: d.id, name: d.name, format: d.format, cards: (d.zones?.main || []).reduce((s, r) => s + r.qty, 0), power: T.deckPowerScore?.(g, d) ?? null })) };
+    async my_decks(args) {
+      const { game, format, match } = args;
+      const g = g0(game), flat = t => ' ' + String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
+      const fmt = d => !format || flat(d.format) === flat(format) || (/commander/i.test(format) && /commander|edh/i.test(d.format || ''));
+      const named = d => !match || flat(d.name).includes(flat(match));
+      const wantsColor = g === 'mtg' && (args.colors?.length || args.without?.length || args.count);
+      let unknownColors = 0;
+      const colored = d => { if (!wantsColor) return true; const c = mtgDeckColors(d.cards); if (!c) { unknownColors++; return false; } return colorFits(c, args); };
+      const filtered = !!(format || match || wantsColor);
+      if (g === 'mtg') return { game: g, filtered, unknownColors, decks: S.state.decks.filter(d => fmt(d) && named(d) && colored(d)).slice(0, 15).map((d) => { let power = null; try { power = x.shownPower(x.mtgPower(d)); } catch {} return { id: d.id, name: d.name, format: d.format, commander: d.commander || '', cards: d.cards.reduce((s, r) => s + r.qty, 0), power }; }) };
+      return { game: g, filtered, decks: T.gs(g).decks.filter(d => fmt(d) && named(d)).slice(0, 15).map((d) => ({ id: d.id, name: d.name, format: d.format, cards: (d.zones?.main || []).reduce((s, r) => s + r.qty, 0), power: T.deckPowerScore?.(g, d) ?? null })) };
     },
     async build_deck(input, handshake={}) {
       const checked=validateBuildProposal(input);

@@ -70,11 +70,25 @@ export async function answerFor(plan,tools,io={}){
   if(tool==='meta_decks'){
    // The tournament feed sometimes fails on its first read: one more try before saying it is unavailable.
    let r=await tools.meta_decks(args);if(r.error&&!r.format)r=await tools.meta_decks(args);
+   const fmt=g==='mtg'&&args.format?args.format:r.format||args.format,{pre='',post='',nth=1}=plan.call;
+   // What was asked for, in words, so a miss names it: "No mono-red Standard deck ...", never the top deck of another colour.
+   const asked=[pre,fmt,'deck',post].filter(Boolean).join(' '),quoted=args.match?'"'+args.match+'"':'';
+   if(r.none)return miss(quoted?`No ${asked} among the tournament decks is named ${quoted} or plays a card named ${quoted} right now.`:args.under!=null?`No ${asked} among the tournament decks costs you $${args.under} or less to finish right now.`:args.sort?`The app has no prices for the ${fmt} tournament decks right now.`:`No ${asked} is among the tournament decks right now.`);
    if(r.error||!r.decks?.length)return miss(r.error||'No tournament decks for '+args.format+' right now.');
-   const items=tools.suggestedItems().slice(0,3),top=r.decks[0],fmt=g==='mtg'&&args.format?args.format:r.format,source=[r.source,r.fetchedAt?'updated '+when(r.fetchedAt):''].filter(Boolean).join(' · ');
+   const source=[r.source,r.fetchedAt?'updated '+when(r.fetchedAt):''].filter(Boolean).join(' · ');
    if(pick==='cards')return {ok:true,say:'The most played cards are on the tournament page for '+fmt+'.',items:[],more:[],buttons:[{label:'Open '+fmt+' tournament decks',route:'#decks/inspiration'}],source};
-   return {ok:true,strong:top.name,say:`is the most played ${fmt} deck right now: ${top.lists?top.lists+' lists, ':''}${top.share}% of the field.`,items:items.slice(0,1),more:items.slice(1),moreLabel:'Next most played',
-    buttons:[{label:'Open the deck',item:items[0]},{label:'All '+fmt+' decks',route:'#decks/inspiration'}],source,note:top.best?'Best finish: '+top.best:''};
+   const top=r.decks[nth-1],items=tools.suggestedItems().slice(nth-1,nth+2),ord=['','','2nd ','3rd ','4th ','5th '][nth]||'';
+   if(!top)return miss(`Only ${r.decks.length} ${asked}${r.decks.length===1?' is':'s are'} among the tournament decks right now.`);
+   // "aggro" found in the deck's name reads as a kind of deck; found in its list, as a card it plays.
+   const kind=[pre,r.matched?.by==='name'?args.match:'',fmt,'deck'].filter(Boolean).join(' '),tail=[post,r.matched?.by==='card'?'that plays '+(r.matched.card||quoted):'',args.under!=null?`that costs you $${args.under} or less to finish`:''].filter(Boolean).join(' '),what=kind+(tail?' '+tail:''),field=`${top.lists?top.lists+' lists, ':''}${top.share}% of the field`;
+   let say;
+   if(args.sort==='closest'){
+    if(!top.ownedPercent)return miss(`You don't own cards from any ${what} among the tournament decks yet.`);
+    say=`is the ${what} closest to your collection: you own ${top.ownedPercent}% of it${usd(top.costToFinish)?', about '+usd(top.costToFinish)+' to finish':''}.`;
+   }else if(args.sort)say=`is the ${args.sort==='cheapest'?'cheapest':'most expensive'} ${what} to finish from your collection: about ${usd(top.costToFinish)}. It is ${field}.`;
+   else say=`is the ${ord}most played ${what} right now: ${field}.`;
+   return {ok:true,strong:top.name,say,items:items.slice(0,1),more:items.slice(1),moreLabel:args.sort==='closest'?'Next closest':args.sort?'Then':'Next most played',
+    buttons:[{label:'Open the deck',item:items[0]},{label:'All '+fmt+' decks',route:'#decks/inspiration'}],source:args.sort||args.under!=null?[source,'cost is for the copies you are missing'].filter(Boolean).join(' · '):source,note:[top.colors!=null?'Colours: '+([...top.colors].map(c=>({w:'white',u:'blue',b:'black',r:'red',g:'green'})[c]).join(', ')||'colourless'):'',top.best?'Best finish: '+top.best:''].filter(Boolean).join(' · ')};
   }
   if(tool==='set_cards'){
    if(pick==='price-asc'){
@@ -105,14 +119,24 @@ export async function answerFor(plan,tools,io={}){
    return {ok:true,strong:top.name,say:`is ${label}${pick!=='newest'&&usd(top.value)?' at '+usd(top.value):''}.`,items:[cardItem(g,top)],more:cards.slice(1,args.limit>1?5:1).map(c=>cardItem(g,c)),moreLabel:'Then',buttons:[{label:'Open the card',item:cardItem(g,top)},{label:'Open Value',route:'#collection/value'}],source:'Your saved cards and conditions'};
   }
   if(tool==='my_decks'){
-   const r=await tools.my_decks(args),decks=[...(r.decks||[])];if(!decks.length)return miss('You have no saved decks in this game.');
+   const r=await tools.my_decks(args),decks=[...(r.decks||[])],narrowed=plan.read.filter(c=>c.kind==='filter').map(c=>c.label).join(', ');
+   if(!decks.length)return miss(narrowed?(r.unknownColors?"Some of your decks' cards are not loaded yet, so the app can't sort them by colour right now.":`None of your saved decks match: ${narrowed}.`):'You have no saved decks in this game.');
    const deck=d=>({kind:'deck',game:g,ref:String(d.id),label:d.name});
-   if(pick==='power'){const ranked=decks.filter(d=>d.power!=null).sort((a,b)=>b.power-a.power);if(!ranked.length)return miss('None of your decks has a power score yet.');return {ok:true,strong:ranked[0].name,say:`is your strongest deck by the app's power score (${ranked[0].power}).`,items:[deck(ranked[0])],more:ranked.slice(1,3).map(deck),moreLabel:'Then',buttons:[{label:'Open the deck',item:deck(ranked[0])}],source:"The app's Deck Power score, not a win rate"};}
-   return {ok:true,say:`You have ${decks.length} saved deck${decks.length===1?'':'s'}.`,items:decks.slice(0,3).map(deck),more:[],buttons:[{label:'All my decks',route:'#decks'}],source:'Your saved decks'};
+   if(pick==='power'){const ranked=decks.filter(d=>d.power!=null).sort((a,b)=>b.power-a.power);if(!ranked.length)return miss('None of your decks has a power score yet.');return {ok:true,strong:ranked[0].name,say:`is your strongest ${narrowed?'deck ('+narrowed+')':'deck'} by the app's power score (${ranked[0].power}).`,items:[deck(ranked[0])],more:ranked.slice(1,3).map(deck),moreLabel:'Then',buttons:[{label:'Open the deck',item:deck(ranked[0])}],source:"The app's Deck Power score, not a win rate"};}
+   return {ok:true,say:narrowed?`${decks.length} of your saved decks match${decks.length===1?'es':''}: ${narrowed}.`:`You have ${decks.length} saved deck${decks.length===1?'':'s'}.`,items:decks.slice(0,3).map(deck),more:[],buttons:[{label:'All my decks',route:'#decks'}],source:'Your saved decks'};
   }
   if(tool==='card_details'){
-   const r=await tools.card_details(args);if(r.error||!r.card)return miss(r.error||'No card by that name.');
+   let r=await tools.card_details(args);
+   // "how many lightning bolts do i have": the plural of a card's name is still that card.
+   if((r.error||!r.card)&&/[^s]s$/.test(args.name)){const one=await tools.card_details({...args,name:args.name.slice(0,-1)});if(one.card)r=one;}
+   if(r.error||!r.card)return miss(r.error||'No card by that name.');
    const c=r.card,item=cardItem(g,c);
+   if(pick==='legal'){
+    const f=plan.call.format,st=c.legalities?.[f==='Duel Commander'?'duel':String(f).toLowerCase().replace(/ /g,'')];
+    if(!st)return miss(`The app has no ${f} legality for ${c.name}.`,{items:[item]});
+    return {ok:true,strong:c.name,say:st==='legal'?`is legal in ${f}.`:st==='banned'?`is banned in ${f}.`:st==='restricted'?`is restricted in ${f}: one copy per deck.`:`is not legal in ${f}.`,items:[item],more:[],buttons:[{label:'Open the card',item}],source:'Format legality from the card data'};
+   }
+   if(pick==='price-foil'){const f=usd(c.foilPrice);if(!f)return miss('The app has no foil price for '+c.name+' right now.',{items:[item]});return {ok:true,strong:c.name,say:`is ${f} in foil.`,items:[item],more:[],buttons:[{label:'Open the card',item}],source:[c.set,'foil market price'].filter(Boolean).join(' · ')};}
    if(pick==='owned')return {ok:true,strong:c.name,say:c.owned?`: you own ${c.owned}.`:`: you don't own it.`,items:[item],more:[],buttons:[{label:'Open the card',item}],source:'Your saved cards'};
    const p=usd(c.price),f=usd(c.foilPrice);if(!p&&!f)return miss('The app has no price for '+c.name+' right now.',{items:[item]});
    return {ok:true,strong:c.name,say:`is ${p||f+' in foil'}${p&&f?' ('+f+' in foil)':''}.`,items:[item],more:[],buttons:[{label:'Open the card',item}],source:[c.set,'market price'].filter(Boolean).join(' · ')};
