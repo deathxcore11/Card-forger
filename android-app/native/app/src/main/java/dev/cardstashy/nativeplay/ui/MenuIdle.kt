@@ -7,7 +7,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.withFrameNanos
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -53,7 +52,8 @@ internal fun menuClock(): suspend () -> Long {
     var acc = 0L; var last = -1L
     return {
         if (MenuIdle.idle.value) { MenuIdle.idle.first { !it }; last = -1L }
-        withFrameNanos { n -> if (last >= 0) acc += n - last; last = n }
+        // The infinite-animation frame: a test (InfiniteAnimationPolicy) can still go idle, as with rememberInfiniteTransition.
+        androidx.compose.animation.core.withInfiniteAnimationFrameNanos { n -> if (last >= 0) acc += n - last; last = n }
         acc
     }
 }
