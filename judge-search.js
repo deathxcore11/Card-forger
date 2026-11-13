@@ -121,7 +121,7 @@ export function readTerms(pack, question) {
   return found.sort((a, b) => a.at - b.at);
 }
 const passage = (pack, entry, why) => { const canonical = resolveRuleReference(pack, entryReference(pack.game, entry.id)); return { id: normalizeRuleId(entry.id), number: entry.id.replace(/\.$/, ''), reference: canonical?.reference || entryReference(pack.game, entry.id), source: canonical?.source || null, text: entry.text.replace(/^\d{3}\.\d*[a-z]?\.?\s*/, '').replace(/\s*\n\s*/g, ' ').trim(), why }; };
-const headingFor = (index, id) => { const m = id.match(/^(\d{3})(?:\.(\d+))?/); if (!m) return ''; return index.rows.find(r => r.heading && r.id === (m[2] ? m[1] + '.' + m[2] : m[1] + '.'))?.heading || index.rows.find(r => r.heading && r.id === m[1] + '.')?.heading || ''; };
+const headingFor = (index, id) => { const m = id.match(/^(\d{3})(?:\.(\d+))?/); if (!m) return ''; return (m[2] && index.rows.find(r => r.heading && r.id === m[1] + '.' + m[2])?.heading) || index.rows.find(r => r.heading && r.id === m[1])?.heading || ''; };
 
 /**
  * Answer a rules question from the rulebook alone.
@@ -196,6 +196,9 @@ export function judgeAnswer(pack, question, { format = '', cards = [], glossary 
   // 7. Nothing recognised: fall back to plain word matching over the rulebook, and say it is only related.
   if (!rules.length) { try { rules = retrieveRules(pack, question, { format, limit }).filter(p => { const rw = new Set(words(p.text)); return !/^glossary|contents/i.test(p.reference?.entryId || '') && (p.score >= 30 || (qWords.length > 1 && qWords.filter(w => rw.has(w)).length / qWords.length >= 0.75)); }).slice(0, limit).map(p => ({ id: normalizeRuleId(p.reference.entryId), number: String(p.reference.entryId).replace(/\.$/, ''), reference: p.reference, source: p.source, text: pack.game === 'mtg' ? p.text.replace(/^\d{3}\.\d*[a-z]?\.?\s*/, '').replace(/\s*\n\s*/g, ' ').trim() : bestSentences(p.text, qWords), heading: pack.game === 'mtg' ? '' : p.title, why: p.score >= 30 ? 'topic' : 'matching words' })); } catch { rules = []; } status = rules.length ? (rules[0].why === 'topic' ? 'answered' : 'related') : 'none'; }
   for (const r of rules) if (pack.game === 'mtg') r.heading = headingFor(index, r.id);
+  // A long rule keeps its whole text, plus the sentences that carry the words asked so a small screen can lead with them.
+  const focusWords = [...new Set([...qWords, ...terms.flatMap(t => t.key.split(' ')), ...said.flatMap(x => words(x))])];
+  for (const r of rules) if (pack.game === 'mtg' && r.text.length > 420) r.focus = bestSentences(r.text.split(/\s+Example:/)[0], focusWords, 380);
   const definitions = terms.filter(t => t.def).slice(0, 3).map(t => ({ label: t.label, def: t.def }));
   // Pokémon and Yu-Gi-Oh! have no rulebook glossary: the app's own reviewed term notes stand in, marked as ours.
   for (const [, label, , aliases, summary, points] of glossary) { if (definitions.length >= 3) break; if ([label, ...(aliases || [])].some(a => new RegExp('(?:^|[^a-z])' + norm(a).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:s|es|ed|ing)?(?![a-z])').test(q))) { definitions.push({ label, def: summary, points: points || [], ours: true }); read.push(label); } }
