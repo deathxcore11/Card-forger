@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay
 
+import androidx.lifecycle.lifecycleScope
 import android.content.pm.ActivityInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -163,6 +164,16 @@ class MainActivity : ComponentActivity() {
         // The card database starts loading as the app opens, so it is ready before Quick Play is.
         ForgeService.prepare(this)
         Account.init(this); Account.onCleared = { dev.cardstashy.nativeplay.ui.WebSession.clear() }; dev.cardstashy.nativeplay.ui.AppSettings.init(this); dev.cardstashy.nativeplay.ui.Aura.init(this); dev.cardstashy.nativeplay.ui.TableEmotes.init(this); dev.cardstashy.nativeplay.ui.MatchMenu.init(this); Thread { dev.cardstashy.nativeplay.ui.BoardIcons.get(applicationContext, "tapped") }.start(); CardArt.init(this); CardArt.oracleOf = { dev.cardstashy.nativeplay.engine.ForgeService.oracleName(it) }; dev.cardstashy.nativeplay.engine.MatchState.shownName = CardArt::shown; dev.cardstashy.nativeplay.engine.MatchState.shownIn = CardArt::shownIn; Speed.init(this)
+        // Gap audit S3: the return link finishes the Google or email-link sign-in waiting for it (never logged); signed in, as Log in does.
+        lifecycleScope.launch {
+            dev.cardstashy.nativeplay.account.AuthReturn.pending.collect { r ->
+                r ?: return@collect
+                dev.cardstashy.nativeplay.account.AuthReturn.pending.value = null
+                val e = Account.finishReturn(r)
+                if (e != null) dev.cardstashy.nativeplay.ui.CollectionWrites.show(e)
+                else { dev.cardstashy.nativeplay.account.Decks.clear(); dev.cardstashy.nativeplay.account.Decks.load(this@MainActivity); dev.cardstashy.nativeplay.play.Progress.clear() }
+            }
+        }
         dev.cardstashy.nativeplay.play.Progress.init(this); dev.cardstashy.nativeplay.play.SetFacts.init(this); dev.cardstashy.nativeplay.play.CardFacts.init(this); dev.cardstashy.nativeplay.play.DeckEngine.init(this); dev.cardstashy.nativeplay.play.RandomBuild.init(this); dev.cardstashy.nativeplay.collection.ScanWeb.init(this); dev.cardstashy.nativeplay.play.CraftRarity.init(this)
         dev.cardstashy.nativeplay.play.CardData.warm(this); dev.cardstashy.nativeplay.ui.PackSfx.warm(this)
         // Offline play: when a network comes back, matches finished without signal are sent (the server still decides rewards).

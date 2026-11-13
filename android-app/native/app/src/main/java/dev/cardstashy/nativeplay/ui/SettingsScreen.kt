@@ -82,7 +82,7 @@ import kotlinx.coroutines.launch
  * Settings, ported from the site: views.js settings() 1949 (tabs, panes), accountPanel 1889, signedOutAccount 1861,
  * settings-theme.js SETTINGS_TABS, app-info.js infoPanel, profile-art.js profileAvatar / profilePhotoControl.
  * Native differences (deviation list): Backup (gap audit S1) leaves out Reset data and demo collection, Keep offline data and the
- * install card (app updates live in Help); no Google button or email link yet (both need the browser round trip), Friends / View profile /
+ * install card (app updates live in Help); Google and the email link return through the verified link (gap audit S3), Friends / View profile /
  * Blocked accounts open the site.
  */
 
@@ -293,6 +293,18 @@ fun SignedOut(onSignedIn: () -> Unit = {}) {
             BrandMark(40.dp); Spacer(Modifier.width(12.dp)); CardHeading("CARDSTASHY ACCOUNT", "Your account")
         }
         Text("Keep your collection and decks with you across devices.", style = S.Small)
+        // Gap audit S3: Continue with Google (shown when the account service has it on, as views.js does), then "or".
+        var google by remember { mutableStateOf<Boolean?>(null) }
+        androidx.compose.runtime.LaunchedEffect(Unit) { google = Account.googleEnabled() }
+        if (google == true && mode != "reset") {
+            SiteButton(if (busy) "Opening Google…" else "Continue with Google", Modifier.fillMaxWidth(), ghost = true, enabled = !busy) {
+                runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(Account.googleUrl()))) }
+                    .onFailure { feedback = "Couldn’t open the browser. Try again." to false }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f).height(1.dp).background(Site.Line)); Text("or", Modifier.padding(horizontal = 10.dp), style = S.Foot); Box(Modifier.weight(1f).height(1.dp).background(Site.Line))
+            }
+        }
         if (mode != "reset") Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Site.Surface2).border(1.dp, Site.Line, RoundedCornerShape(14.dp)).padding(4.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             listOf("login" to "Log in", "signup" to "Create account").forEach { (id, label) ->
@@ -311,6 +323,12 @@ fun SignedOut(onSignedIn: () -> Unit = {}) {
                 Field("Email address", email, { email = it }, "you@example.com", keyboard = KeyboardType.Email)
                 Field("Password", password, { password = it }, "Your password", password = true, keyboard = KeyboardType.Password, ime = ImeAction.Go, onGo = { go() })
                 SiteButton(if (busy) "Logging in…" else "Log in", Modifier.fillMaxWidth(), enabled = !busy) { go() }
+                // Gap audit S3: the email link (cloud.js signInEmail), which opens the app signed in.
+                SiteButton("Email me a sign-in link instead", Modifier.fillMaxWidth(), ghost = true, enabled = !busy) {
+                    if (email.isBlank()) feedback = "Type your email first." to false
+                    else run { val e = Account.sendLink(email); feedback = (e ?: "Check your email for the sign-in link. It opens CardStashy signed in.") to (e == null) }
+                }
+                Text("No password needed with a link.", style = S.Foot)
                 LinkText("Forgot password?", small = true) { mode = "reset"; feedback = null }
             }
             "signup" -> {

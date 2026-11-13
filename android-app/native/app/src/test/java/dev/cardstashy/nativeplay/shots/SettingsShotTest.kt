@@ -35,8 +35,14 @@ class SettingsShotTest {
 
     @Test fun signedOut() {
         Account.setForTest(null, null)
+        // Gap audit S3: Google sign-in is on at the account service, so Continue with Google shows.
+        dev.cardstashy.nativeplay.account.Http.fake = { _, u, _ -> if (u.endsWith("/auth/v1/settings")) com.google.gson.JsonParser.parseString("{\"external\":{\"google\":true}}") else null }
+        try { signedOutShots() } finally { dev.cardstashy.nativeplay.account.Http.fake = null }
+    }
+    private fun signedOutShots() {
         rule.setContent { SettingsScreen(onBack = {}, onWeb = {}) }
-        rule.waitForIdle(); shot("signed-out-login")
+        rule.waitForIdle(); settle(); shot("signed-out-login")
+        rule.onNodeWithText("Continue with Google").assertExists(); rule.onNodeWithText("Email me a sign-in link instead").assertExists()
         rule.onNodeWithText("Create account").performClick(); rule.waitForIdle(); shot("signed-out-signup")
     }
 
