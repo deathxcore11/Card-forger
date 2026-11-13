@@ -130,7 +130,7 @@ internal fun AnswerCard(m: JsonObject, act: AnswerActs, modifier: Modifier = Mod
             Row(Modifier.fillMaxWidth().clip(rs).background(Color(0x0AFFFFFF)).border(1.dp, Color(0x1FFFFFFF), rs).padding(horizontal = 10.dp, vertical = 7.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(r.s("label"), Modifier.weight(1f), style = cssType(13.5f, 700, 18f, AnsInk))
-                Text(r.s("value"), style = cssType(13f, 400, 18f, when (r.s("tone")) { "bad" -> Color(0xFFF0A261); "good" -> Color(0xFF7FD1A0); else -> AnsMute }),
+                Text(r.s("value"), style = cssType(13f, 400, 18f, when (r.s("tone")) { "bad" -> Color(0xFFF0A261); "good" -> Color(0xFF7FD1A0); "warn" -> Color(0xFFE6C873); else -> AnsMute }),
                     textAlign = androidx.compose.ui.text.style.TextAlign.End)
             }
         }

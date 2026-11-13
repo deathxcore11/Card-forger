@@ -383,3 +383,18 @@ console.log(`answer-hard: Randall's six questions, ${typos} generated misspellin
  assert.equal(planQuery('which mono red deck beats control',{game:'mtg'}).intent,'meta.best','a question about tournament decks is still that');
  assert.equal(planQuery('what is the funnest deck I can play with mono red and my friend has a blue deck',{game:'mtg'}).intent,'build');
 }
+
+// ---- 6h. "around X" names the card to build around; a theme, a play style or colours after "around" do not.
+{
+ const req=q=>buildRequest(q,'mtg','').request;
+ assert.deepEqual(req('build me a ramp deck around krenko mob boss'),{game:'mtg',style:'ramp',seed:'krenko mob boss'});
+ assert.deepEqual(req('make a deck built around dragons'),{game:'mtg',theme:'Dragon'});
+ assert.deepEqual(req('build a commander deck around ramp'),{game:'mtg',format:'Commander',style:'ramp'});
+ assert.deepEqual(req('build a deck around blue and red'),{game:'mtg',colors:['U','R']});
+ assert.deepEqual(req('make me a deck around atraxa under $100'),{game:'mtg',seed:'atraxa',budget:'100'});
+ // The answer cards for the other colours: the most played one per colour goes in, the rest are offered.
+ const {againstCandidates}=await import('./deck-pipeline.js');
+ const asked=[],x={meta:()=>null,resolve:async()=>null,cacheCard:()=>{},api:async u=>{const q=decodeURIComponent(u.replace(/\+/g,' '));asked.push(q);return {data:/from blue/.test(q)?[{name:'Red Elemental Blast'},{name:'Pyroblast'},{name:'Vexing Shusher'}]:[{name:'Ghostly Flicker'}]};}};
+ assert.deepEqual(await againstCandidates({format:'Commander',colors:['R'],against:['U','B'],budget:'50'},x),{must:['Red Elemental Blast','Ghostly Flicker'],offered:['Pyroblast','Vexing Shusher']});
+ assert.ok(asked.every(u=>/id<=r/.test(u)&&/usd<5/.test(u)&&/f:commander/.test(u)),'only legal cards in the deck\'s colours, cheap ones when a budget is set');
+}

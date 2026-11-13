@@ -186,17 +186,27 @@ class AnswerEngineTest {
         assertTrue(m.list("read").map { it.s("label") }.toString(), m.list("read").any { it.s("label") == "\"bset\" read as best" } && m.list("read").any { it.s("label") == "Modern" })
         m = ask("mtg", "what is the funnest deck I can play with mono red and my friend has a blue deck")!!; a = m.o("answer")!!
         assertTrue(m.list("read").any { it.s("label") == "against blue" })
-        assertEquals("The deck builder is set up from your words: red, a fun deck.", a.s("say"))
-        assertTrue(a.s("note"), a.s("note").contains("can't tune a deck against blue yet"))
+        // The deck brief: each setting the builder gets is a row, and the friend's colour asks for cards that answer it.
+        assertEquals("The deck builder is set up from your words.", a.s("say"))
+        assertEquals(listOf("Colours: red", "Answers for: blue", "Goal: a fun deck"), a.list("rows").map { it.s("label") + ": " + it.s("value") })
+        assertTrue(a.s("note"), a.s("note").contains("does not know how the matchup plays"))
         a = ask("mtg", "what is a ramp deck that I can purchase for under \$50")!!.o("answer")!!
-        assertEquals("The deck builder is set up from your words: under \$50.", a.s("say")); assertTrue(a.s("note"), a.s("note").contains("Not used yet: \"ramp\""))
+        assertEquals(listOf("Play style: more ramp", "Budget: under \$50"), a.list("rows").map { it.s("label") + ": " + it.s("value") }); assertEquals("", a.s("note"))
+        a = ask("mtg", "build me a bracket 3 izzet commander ramp deck")!!.o("answer")!!
+        assertEquals(listOf("Format: Commander", "Colours: blue, red", "Play style: more ramp", "Power: bracket 3 (Upgraded)"), a.list("rows").map { it.s("label") + ": " + it.s("value") })
         // A whole pod in one breath, as dictated.
         m = ask("mtg", "I'm playing in a pod with three other people. They have a blue, white, a red, blue, and a black mono deck, and I have this commander, and I'm trying to make it within their power level or within their bracket, so we're all having fun. And I noticed last time we played, a lot of them didn't have reach, so I would like to have flying if that's possible.")!!; a = m.o("answer")!!
         assertEquals(listOf("Magic", "deck builder", "pod of 4", "against white-blue · blue-red · mono-black", "match the pod's power", "pod lacks reach"), m.list("read").map { it.s("label") })
-        assertEquals("The deck builder is set up from your words: Commander, flying theme, a fun deck.", a.s("say"))
-        assertTrue(a.s("note"), a.s("note").contains("can't tune a deck against the other decks (white-blue, blue-red, mono-black) yet") && a.s("note").contains("can't measure the pod's power level yet"))
+        assertEquals(listOf("Format: Commander", "Theme: flying (the pod lacks reach)", "Answers for: white, blue, black, red", "Goal: a fun deck"), a.list("rows").map { it.s("label") + ": " + it.s("value") })
+        assertTrue(a.s("note"), a.s("note").contains("pod's power is not known to the app"))
         a = ask("ygo", "what's a really cool Blue Eyes White Dragon deck that would surprise my friend")!!.o("answer")!!
-        assertTrue(a.s("say"), a.s("say").contains("built around \"blue eyes white dragon\"")); assertTrue(a.s("note"), a.s("note").contains("\"would surprise my friend\""))
+        assertTrue(a.list("rows").toString(), a.list("rows").any { it.s("label") == "Built around" && it.s("value") == "blue eyes white dragon" } && a.list("rows").any { it.s("label") == "Not used" && it.s("value") == "\"would surprise my friend\"" })
+        // The seven ideas, read in the app's engine as on the site: each question goes to its own answer, with what it read shown.
+        for ((q, intent) in listOf("is my goblin deck legal in modern" to "your deck \"goblin\"", "how do i make my goblin deck better" to "closest tournament list",
+            "what went up in my collection this week" to "saved prices", "what deck is getting more popular in standard" to "rising over 7 days", "what beats my goblin deck" to "simulated games")) {
+            val x = ask("mtg", q)!!
+            assertTrue(q + " -> " + x.list("read").map { it.s("label") }, x.list("read").any { it.s("label") == intent })
+        }
         Unit
     }
 }

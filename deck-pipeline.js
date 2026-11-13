@@ -34,19 +34,23 @@ export async function waitForReferenceRefresh(refresh,{current=()=>true,timeoutM
 // Cards whose own text answers a colour: protection or hexproof from it, text that targets its spells or permanents, and for blue,
 // spells that can't be countered. Only what the card text proves; nothing here knows how a matchup really plays.
 const COLOR_WORD={W:'white',U:'blue',B:'black',R:'red',G:'green'};
-export const againstQuery=(color,{legality='',identity=''}={})=>{
+export const againstQuery=(color,{legality='',identity='',cheap=false}={})=>{
  const n=COLOR_WORD[color];if(!n)return '';
- return `(o:"protection from ${n}" or o:"hexproof from ${n}" or o:"target ${n}"${color==='U'?` or o:"can't be countered"`:''}) -t:land ${legality?'f:'+legality:'game:paper'}${identity?' id<='+identity:''}`;
+ return `(o:"protection from ${n}" or o:"hexproof from ${n}" or o:"target ${n}"${color==='U'?` or o:"can't be countered"`:''}) -t:land ${legality?'f:'+legality:'game:paper'}${identity?' id<='+identity:''}${cheap?' usd<5':''}`;
 };
 export async function againstCandidates(request,x){
  const f=formatOf(request.format),lead=request.seed?x.meta?.(request.seed)||await x.resolve(request.seed,true).catch(()=>null):null;
  const identity=(request.colors?.length?request.colors:f.commander&&lead?lead.color_identity||[]:[]).join('').toLowerCase()||(f.commander&&lead?'c':'');
- const colors=[...new Set(request.against)].filter(c=>COLOR_WORD[c]).slice(0,3),out=[];
+ const colors=[...new Set(request.against)].filter(c=>COLOR_WORD[c]).slice(0,3),out=[],first=[];
  for(const c of colors){
-  const r=await x.api('/cards/search?'+new URLSearchParams({q:againstQuery(c,{legality:f.legality,identity}),order:'edhrec',unique:'cards'})).catch(()=>null);
-  for(const card of (r?.data||[]).slice(0,Math.ceil(6/colors.length))){x.cacheCard?.(card);out.push(card.name);}
+  const r=await x.api('/cards/search?'+new URLSearchParams({q:againstQuery(c,{legality:f.legality,identity,cheap:Number(request.budget)>0}),order:'edhrec',unique:'cards'})).catch(()=>null);
+  const found=(r?.data||[]).filter(card=>card.name!==lead?.name).slice(0,Math.ceil(6/colors.length));
+  for(const card of found){x.cacheCard?.(card);out.push(card.name);}
+  if(found[0])first.push(found[0].name);
  }
- return [...new Set(out)].slice(0,6);
+ // The most played answer for each colour goes into the deck; the rest are offered and kept only if they fit.
+ const must=[...new Set(first)].slice(0,3);
+ return {must,offered:[...new Set(out)].filter(n=>!must.includes(n)).slice(0,6)};
 }
 export function createDeckPipeline(x) {
  const {T,S}=x;
@@ -127,13 +131,24 @@ export function createDeckPipeline(x) {
    // The deck brief (answer-run.js buildRequest): a power target becomes Deck Forge's own power dial, and cards that answer
    // the other players' colours are offered to the builder as candidates. It keeps only those that are legal and fit the deck.
    const brief={...(request.power&&!request.forge?{forge:{power:request.power}}:{})};
-   if(request.against?.length){options.onStatus?.('Looking for cards that answer the other decks…');const names=await againstCandidates(request,x).catch(()=>[]);if(names.length)brief.candidate_cards=[...new Set([...(request.candidate_cards||[]),...names])].slice(0,6);}
+   let answers=[];
+   if(request.against?.length){
+    options.onStatus?.('Looking for cards that answer the other decks…');
+    const found=await againstCandidates(request,x).catch(()=>null),typed=(request.creatureTypesOnly||[]).length>0;
+    if(found){
+     // A creature-type rule of the request wins over an answer card, so nothing is forced then.
+     const must=typed?[]:found.must,offered=typed?[...found.must,...found.offered]:found.offered;
+     answers=[...must,...offered];
+     if(must.length)brief.required_cards=[...new Set([...(request.required_cards||[]),...must])].slice(0,8);
+     if(offered.length)brief.candidate_cards=[...new Set([...(request.candidate_cards||[]),...offered])].slice(0,6);
+    }
+   }
    const built=await prepareMtgDeck({...request,...brief,metaLists,flow:true,style:[request.theme,request.easy?'easy to play':'',request.style].filter(Boolean).join(' '),budget_basis:request.ownedOnly?'owned':request.budgetBasis,current:options.current},x);
    if(!built.candidates&&!references.decks.length)return {error:built.choice==='infinite'?'The app cannot verify that every possible infinite combo is excluded. No deck was presented. Name specific cards to exclude, or revise that requirement.':built.note||'The card service could not complete this request.'};
    // What the brief asked for against what the finished list is: the bracket it reads as, and which offered answers it kept.
    const briefNotes=d=>{const out=[];
     if(request.bracket&&request.format==='Commander'){try{const b=bracketEstimate(d,S.catalog);if(Number.isInteger(b?.bracket))out.push(b.bracket===request.bracket?`Asked for bracket ${request.bracket}. This list reads as bracket ${b.bracket}.`:`Asked for bracket ${request.bracket}. This list reads as bracket ${b.bracket}${b.reasons?.length?' ('+b.reasons.join(', ')+')':''}.`);}catch{}}
-    if(brief.candidate_cards?.length){const have=new Set((d.cards||[]).map(c=>String(c.name).toLowerCase())),kept=brief.candidate_cards.filter(n=>have.has(n.toLowerCase()));out.push(kept.length?'Answers for the other decks kept in this list: '+kept.join(', ')+'.':'None of the cards that answer the other decks fit this list.');}
+    if(answers.length){const have=new Set((d.cards||[]).map(c=>String(c.name).toLowerCase())),kept=answers.filter(n=>have.has(n.toLowerCase()));out.push(kept.length?'Answers for the other decks kept in this list: '+kept.join(', ')+'.':'None of the cards that answer the other decks fit this list.');}
     return out;};
    const candidates=[...references.decks.map(deck=>({...deck,referenceQualifiedForBuild:true,constructionNotes:[...references.notes,...(references.assessments?.find(a=>a.deck?.referenceOrigin.key===deck.referenceOrigin.key)?.notes||[]),'Based on a resolved source list; source results are not results for this generated or adapted deck.']})),...(built.candidates||[]).map(c=>({...c.draft,constructionBasis:'heuristic',referenceSearch:{notes:references.notes,rejections:references.rejections},constructionNotes:request.format!=='Standard'?briefNotes(c.draft):[...briefNotes(c.draft),...references.notes,'Heuristic construction, not a verified tournament-list result. '+(references.decks.length?'A bounded eligible reference lane was also compared.':'No eligible current reference candidate passed the available source, request, quote and list checks.')]}))];if(request.previousDeck){const prior=structuredClone(request.previousDeck);candidates.unshift({...prior,referenceQualifiedForBuild:false,constructionNotes:[...references.notes,...(prior.referenceOrigin?['Preserved previous source-based list; its source was not requalified for this build. Historical source results do not establish current freshness or this deck’s performance.']:(prior.constructionNotes||[]))]});}
    const assessment=createBuildAssessmentCache(d=>assess(d,request,{withPower:false}),d=>mtgPower({...d,id:'construction'}),{

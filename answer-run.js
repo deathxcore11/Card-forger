@@ -219,7 +219,7 @@ async function answerOne(plan,tools,io={}){
     // From the other decks' side: the lists this one does worst against.
     const by=[...r.field].sort((a,b)=>a.win-b.win),top=by[0];
     if(top.win>=50)return {ok:true,strong:r.deck.name,say:` is not behind against any of the ${r.field.length} most played ${r.deck.format} decks in the app's simulation. Its closest matchup is ${top.name} (${top.win}%).`,rows:by.slice(0,3).map(x=>row(x,true)),items:[],more:[],buttons:[],source:src};
-    return {ok:true,strong:top.name,say:` does best against ${r.deck.name} in the app's simulation: it wins ${100-top.win}% of simulated games.`,rows:by.slice(1,4).filter(x=>x.win<50).map(x=>row(x,true)),note:(top.reasons||[]).slice(0,1).map(t=>'From '+r.deck.name+"'s side: "+t).join(''),items:[metaItem(top)],more:[],buttons:[{label:'Open '+top.name,item:metaItem(top)}],source:src};
+    return {ok:true,strong:top.name,say:` does best against ${r.deck.name} in the app's simulation: it wins ${100-top.win}% of simulated games.`,rows:by.slice(1,4).filter(x=>x.win<50).map(x=>row(x,true)),items:[metaItem(top)],more:[],buttons:[{label:'Open '+top.name,item:metaItem(top)}],source:src};
    }
    const subject={kind:'mydeck',game:g,name:r.deck.name.toLowerCase()},open={label:'Open the deck',item:deck(r.deck)};
    if(r.narrowed||r.field.length===1){
@@ -351,7 +351,12 @@ export function buildRequest(words,game='mtg',format='',extra={}){
   const foes=[...new Set([...(extra.pod?.decks||[]).flatMap(d=>d.colors||[]),...(deckColors(String(extra.opponent||'')+' deck')?.colors||[])])].map(x=>x.toUpperCase()).sort((p,q)=>'WUBRG'.indexOf(p)-'WUBRG'.indexOf(q));
   if(foes.length){request.against=foes;labels.push('answers for '+foes.map(x=>COLOR_NAMES[x]).join(', '));}
   if(c.creatureTypesOnly?.length)request.creatureTypesOnly=[...c.creatureTypesOnly];
-  const seed=extra.seed||c.commander||c.required_cards?.[0];if(seed){request.seed=seed;labels.push('built around '+seed);used.push(seed,'this commander','this card','this one','this legend','i have this');}
+  // "a ramp deck around krenko mob boss": what follows "around" is the card to build around, as it is for the other games.
+  const around=!extra.seed&&!c.commander&&!c.required_cards?.length?(String(words||'').toLowerCase().replace(/[^a-z0-9' ,-]+/g,' ').match(/\b(?:built |build |based )?around ([a-z0-9' ,-]{3,40}?)(?= (?:and|but|with|for|under|in|that|so|because)\b|$)/)||[])[1]||'':'';
+  const aroundName=around.replace(/\b(?:this|my|the|a|an) ?(?:commander|card|one|legend)?\b/g,' ').replace(/\s+/g,' ').trim();
+  // A theme or a play style after "around" ("built around dragons", "around ramp") is not a card.
+  const aroundCard=aroundName.length>2&&!(c.themes||[]).some(t=>aroundName.includes(t)||t.includes(aroundName))&&!playStylesIn(aroundName).length&&!deckColors(aroundName+' deck')?.colors?.length;
+  const seed=extra.seed||c.commander||c.required_cards?.[0]||(aroundCard?aroundName:'');if(seed){request.seed=seed;labels.push('built around '+seed);used.push(seed,'this commander','this card','this one','this legend','i have this');}
  }
  if(c.budget>0){request.budget=String(c.budget);labels.push((c.budgetBoundary==='exclusive'?'under $':'up to $')+c.budget);}
  if(c.budget_basis==='owned'){request.budgetBasis='owned';labels.push('only cards you own');}
