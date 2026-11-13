@@ -432,6 +432,35 @@ object CollectionEngine {
     /** Clear side [i], or both with -1 (A.compareReset); the sheet again. */
     suspend fun compareClear(game: String, i: Int): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.compareClear(${str(game)}, $i)") as String).asJsonObject }
 
+    // ---- Ask a Judge (gap audit H4: ai-rules.js in the engine; Collection.judge*) ----
+    const val JUDGE_MODEL = "Collection.judgeModel()"
+    /**
+     * The rules chat for [context] ({game, format, cards, references}, as app.js A.askRules gives it): {open, game, eyebrow, title,
+     * format, formatLabel, formats [{value, label}], formatHint, status, placeholder, draft, sendLocked, hello, blurb, cards, cardsNote,
+     * dropCards, examples, foot, thinking, lines, busy}. A line is {who: me|error|ai}; an answer has status, source, short, explanation,
+     * example, questions, details, citations [{i, n, title, source, quote, reference}], external, limits, disclaimer, dropCards.
+     */
+    suspend fun judgeOpen(context: JsonObject): JsonObject = askEval("Collection.judgeOpen(${str(context.toString())})")
+    suspend fun judgeModel(): JsonObject = askEval(JUDGE_MODEL)
+    suspend fun judgeFormat(format: String): JsonObject = askEval("Collection.judgeFormat(${str(format)})")
+    suspend fun judgeSend(text: String): JsonObject = askEval("Collection.judgeSend(${str(text)})")
+    suspend fun judgeNew(): JsonObject = askEval("Collection.judgeNew()")
+    suspend fun judgeDropCards(): JsonObject = askEval("Collection.judgeDropCards()")
+    suspend fun judgeClose() { askEval("Collection.judgeClose()") }
+    /** Runs the question out to its checked answer, [onModel] seeing the chat as it changes. */
+    suspend fun judgeWait(maxMs: Long = 120_000, onModel: (JsonObject) -> Unit = {}): JsonObject {
+        val until = System.currentTimeMillis() + maxMs
+        var m = judgeModel()
+        while (m.get("busy")?.asBoolean == true && System.currentTimeMillis() < until) {
+            val t = System.currentTimeMillis()
+            settle(1_000, JUDGE_MODEL) { onModel(it) }
+            if (System.currentTimeMillis() - t < 20) delay(40)
+            m = judgeModel()
+        }
+        onModel(m)
+        return m
+    }
+
     // ---- Ask CardStashy (gap audit H3: ai-ask.js, ai-tools.js and ai-ask-loop.js in the engine; Collection.ask*) ----
     private suspend fun askEval(code: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate(code) as String).asJsonObject }
     const val ASK_MODEL = "Collection.askModel()"

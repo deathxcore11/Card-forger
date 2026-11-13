@@ -108,6 +108,7 @@ import {lotPrice} from 'WEB/insights.js';
 import {makeAskTools} from 'WEB/ai-tools.js';
 import {configureAiAuth} from 'WEB/ai-auth.js';
 import {openAsk, ask as askSite, restartAsk, closeAsk} from './ai-ask-cut.mjs';
+import {openRulesAsk, askRules, restartRulesAsk, removeRulesCardContext, closeRulesAsk, rulesPage as judgePage, rulesSession as judgeSession} from './ai-rules-cut.mjs';
 // mtg-tags.js loads its tags lazily, and Power is worked out without them until they arrive, then all over again (power.js's
 // signature carries mtgTagsReady()). The engine starts with the same file the site fetches, so each deck's Power is worked out
 // once, and the Power keep's entries from the last visit still match.
@@ -5671,6 +5672,48 @@ function askShowRun(s) {
   askDest = null; const run = askRun = {done: false};
   (async () => { askFocus(s?.game || askGame); await askTools().open(s); })().then(() => { run.done = true; run.dest = askDest; }, e => { run.done = true; run.error = String(e?.message || e); });
 }
+// ---- Ask a Judge (gap audit H4): ai-rules.js whole (openRulesAsk, askRules, restartRulesAsk, removeRulesCardContext, closeRulesAsk;
+// ./ai-rules-cut.mjs, its own small page), posting to /api/ai/ask with the account's token (aiFetch) and checking each answer as the
+// site does (validateRulesResponse: the game, format and source edition must match, every citation must quote the bundled rulebook).
+// The chat is read back from the page the site writes and the open chat's record; a citation carries its exact rule reference.
+let judgeRun = null;
+const judgeNode = () => judgePage.body.querySelector('.rules-ask-dialog');
+function judgeModelOf() {
+  const node = judgeNode(), s = judgeSession(), txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
+  if (!node || !s) return {open: false};
+  const log = node.querySelector('.rules-ai-log'), empty = log.querySelector('.ask-empty'), sel = node.querySelector('[data-rules-format]');
+  const rows = log.querySelectorAll('.rules-ai-row');
+  const lines = s.entries.map((e, i) => {
+    if (e.kind === 'question') return {who: 'me', text: e.text};
+    if (e.kind === 'error') return {who: 'error', text: e.text, foot: txt(rows[i]?.querySelector('.foot'))};
+    const a = e.answer, row = rows[i], t = x => String(x?.text || '');
+    return {who: 'ai', status: a.status, source: txt(row?.querySelector('.ask-source')), short: t(a.shortAnswer), explanation: (a.explanation || []).map(t).filter(Boolean),
+      example: t(a.example), questions: (a.questions || []).map(String), details: (a.details || []).map(t).filter(Boolean),
+      citations: a.citations.map((c, n) => ({i, n, title: c.title, source: `${c.source?.title || ''} · ${c.source?.date || ''}${c.source?.legacy ? ' · legacy source' : ''}`, quote: c.quote, reference: c.reference})),
+      external: (a.externalReferences || []).map((r, n) => ({i, n, label: 'Open ' + (r.label || '') + ' →', reference: r})),
+      limits: (a.limitations || []).map(String), disclaimer: a.disclaimer || 'AI interpretation, not an official judge or guaranteed ruling.',
+      dropCards: !!row?.querySelector('[data-rules-drop-cards]')};
+  });
+  return {open: true, game: s.context.game, eyebrow: txt(node.querySelector('.ask-head .eyebrow')), title: txt(node.querySelector('#rules-ask-title')),
+    format: s.context.format, formatLabel: txt(node.querySelector('.rules-ai-format > span')),
+    formats: sel.querySelectorAll('option').filter(o => o.value).map(o => ({value: o.value, label: txt(o)})),
+    formatHint: node.querySelector('[data-rules-format-needed]')?.hidden ? '' : txt(node.querySelector('[data-rules-format-needed]')),
+    status: txt(node.querySelector('.rules-ai-status')), placeholder: node.querySelector('.ask-input')?.getAttribute('placeholder') || '', draft: node.querySelector('.ask-input')?.value || '',
+    sendLocked: !!node.querySelector('.ask-send')?.disabled,
+    hello: txt(empty?.querySelector('.ask-hello')), blurb: txt(empty?.querySelector('.muted')),
+    cards: s.context.cards.map(c => ({name: c.name, line: [c.set, c.number, c.id].filter(Boolean).join(' · '), complete: c.complete})),
+    cardsNote: txt(empty?.querySelector('.rules-ai-cards > .foot')), dropCards: !!empty?.querySelector('[data-rules-drop-cards]'),
+    examples: empty ? empty.querySelectorAll('[data-rules-example]').map(b => b.getAttribute('data-rules-example')) : [],
+    foot: empty ? empty.querySelectorAll(':scope > .foot, :scope > .note').map(txt) : [],
+    thinking: s.pending ? txt(log.querySelector('[data-rules-pending] .ask-step')) : '', lines, busy: !!s.pending};
+}
+// ai-rules.js askRules, as its form calls it; judgeModel().busy says when the answer is in.
+function judgeAsk(text) { judgeRun = askRules(String(text || '')).catch(e => { globalThis.__lastError = String(e?.stack || e); }); }
+// The format select's change (the site opens the chat for that format, keeping the words typed so far).
+function judgeFormat(f) {
+  const sel = judgeNode()?.querySelector('[data-rules-format]'); if (!sel) return;
+  sel.value = String(f || ''); sel.dispatchEvent(new SiteEvent('change', {bubbles: true}));
+}
 // ---------------------------------------------------------------- Settings > Backup (gap audit S1): app.js 7564-7670
 // app.js backupPayload (7564), verbatim but for saveable() (the player's own settings.game, as the account keeps it).
 function backupPayload() {
@@ -5755,6 +5798,15 @@ function artKeepList() {
 globalThis.Collection = {
   // Card art saved once: every picture the player's decks, collection and wishlist draw (artKeepList).
   artKeep() { return json({urls: artKeepList()}); },
+  // ---- Ask a Judge (gap audit H4) ----
+  // Opens the rules chat with the site's context ({game, format, cards, references}: app.js A.askRules), kept per context as the site keeps it.
+  judgeOpen(o) { const c = JSON.parse(o || '{}'); openRulesAsk({game: c.game || 'mtg', format: c.format || '', cards: c.cards || [], references: c.references || [], fetcher: fetch}); return json(judgeModelOf()); },
+  judgeModel() { return json(judgeModelOf()); },
+  judgeFormat(f) { judgeFormat(f); return json(judgeModelOf()); },
+  judgeSend(text) { judgeAsk(text); return json(judgeModelOf()); },
+  judgeNew() { restartRulesAsk(); return json(judgeModelOf()); },
+  judgeDropCards() { removeRulesCardContext(); return json(judgeModelOf()); },
+  judgeClose() { closeRulesAsk(); return '{}'; },
   // Settings > Backup: the backup file's words (app.js backupPayload) and Check file's line (C.checkBackup).
   backupPayload() { return backupPayload(); },
   backupCheck(text) { return checkBackup(text); },

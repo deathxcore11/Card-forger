@@ -32,6 +32,20 @@ export const askPage = document;
 ${ask}
 `);
 }
+// ai-rules.js (Ask a Judge: openRulesAsk, askRules, restartRulesAsk, removeRulesCardContext, closeRulesAsk and the words it writes),
+// the site's file whole, with its own small page as its `document`: the app reads the chat back from that page (Collection.judge*, H4).
+{
+  const rules = readFileSync(join(web, 'ai-rules.js'), 'utf8').replace(/from '\.\/([\w.-]+)'/g, (_, f) => 'from ' + W(f)).replace(/from "\.\/([\w.-]+)"/g, (_, f) => 'from ' + W(f));
+  if (!/export function openRulesAsk/.test(rules) || !/export async function askRules\(/.test(rules) || !/export async function validateRulesResponse/.test(rules)) throw Error('ai-rules.js moved: update export-collection-engine.mjs');
+  writeFileSync(join(app, 'build', 'ai-rules-cut.mjs'), `// ai-rules.js with its own page; written by scripts/export-collection-engine.mjs; do not edit.
+import {Document as RulesPage} from '../scripts/site-dom.mjs';
+const document = new RulesPage();
+export const rulesPage = document;
+${rules}
+// The open chat's own record (its context and entries: each answer as validateRulesResponse returned it), read by the app.
+export const rulesSession = () => current;
+`);
+}
 const {sha, kb} = bundleWeb({web, esbuild, preludes: WEB_PLATFORM, entry: 'collection-engine-entry.mjs', name: 'collection-engine', banner: 'CardStashy Collection engine bundle',
   out: join(app, 'app/src/main/assets/collection-engine.js')});
 console.log('collection engine bundled from', sha, kb + ' KB');
