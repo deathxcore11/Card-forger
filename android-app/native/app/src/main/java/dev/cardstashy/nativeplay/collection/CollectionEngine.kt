@@ -702,6 +702,8 @@ object CollectionEngine {
     suspend fun hints(game: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.hints(${str(game)})") as String).asJsonObject }
 
     /** The catalog the lookups filled (store.js S.catalog), for the app to keep between visits. */
+    /** Card art saved once: every picture the player's decks, collection and wishlist draw, in every game (art/ArtKeep.kt). */
+    suspend fun artKeep(): List<String> = on { q -> JsonParser.parseString(q.evaluate("Collection.artKeep()") as String).asJsonObject.getAsJsonArray("urls").mapNotNull { it?.takeIf { e -> e.isJsonPrimitive }?.asString } }
     suspend fun catalog(): String = on { q -> q.evaluate("Collection.catalog()") as String }
 
     /** For tests: any expression in the bundle's scope, as a string. */

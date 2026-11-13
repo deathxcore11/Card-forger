@@ -99,6 +99,8 @@ private suspend fun ensureLoaded(context: android.content.Context, userId: Strin
         runCatching { dev.cardstashy.nativeplay.collection.PriceAlertDaily.sync(context, if (signedIn) CollectionEngine.alertList().size() else 0) }
         CollectionEngine.load(raw ?: "", catalog)
         HomeCache.loaded = key; HomeCache.warm = true
+        // Card art saved once: each picture these cards draw is downloaded once and drawn from the phone after that (ArtKeep).
+        runCatching { dev.cardstashy.nativeplay.art.ArtKeep.keep(CollectionEngine.artKeep()) }
     }
     true
 }

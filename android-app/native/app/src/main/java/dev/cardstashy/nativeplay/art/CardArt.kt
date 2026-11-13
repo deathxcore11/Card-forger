@@ -99,8 +99,9 @@ object CardArt {
         if (::loader.isInitialized) return
         val app = context.applicationContext
         ThumbStore.init(app)
+        ArtKeep.init(app)
         loader = ImageLoader.Builder(app)
-            .components { add(ThumbStore.interceptor); add(OkHttpNetworkFetcherFactory(callFactory = { client })); add(coil3.svg.SvgDecoder.Factory()) }
+            .components { add(ThumbStore.interceptor); add(ArtKeep.interceptor); add(OkHttpNetworkFetcherFactory(callFactory = { client })); add(coil3.svg.SvgDecoder.Factory()) }
             .memoryCache { MemoryCache.Builder().maxSizePercent(app, .25).build() }
             .diskCache { DiskCache.Builder().directory(File(app.filesDir, "art-cache").toOkioPath()).maxSizeBytes(2L shl 30).build() }
             .eventListener(object : coil3.EventListener() {

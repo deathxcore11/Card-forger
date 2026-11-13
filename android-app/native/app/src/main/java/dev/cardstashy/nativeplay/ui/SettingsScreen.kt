@@ -560,7 +560,7 @@ private fun SettingsBottom(tab: Tab) {
     val version = remember { runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "" }
     val store = dev.cardstashy.nativeplay.art.ThumbStore
     val running by store.progress.collectAsState()
-    val art = remember(running) { store.bytes() to store.setsSaved() }
+    val art = remember(running) { (store.bytes() + dev.cardstashy.nativeplay.art.ArtKeep.bytes()) to store.setsSaved() }
     ShowcaseCase("Settings", "This device", hero = null) {
         if (tab != Tab.INFO) {
             if (version.isNotBlank()) CaseFact("Version", version.substringBefore('-') + if ("test" in version) " \u00B7 test build" else "")
@@ -712,11 +712,11 @@ private fun StorageCard() = Panel {
     val running by store.progress.collectAsState()
     var stamp by remember { mutableStateOf(0) }
     var status by remember { mutableStateOf("") }
-    val used = remember(stamp, running) { store.bytes() }
+    val used = remember(stamp, running) { store.bytes() + dev.cardstashy.nativeplay.art.ArtKeep.bytes() }
     Text("Saved art: ${"%,.0f".format(used / 1048576.0)} MB", style = S.Small)
     SiteButton("Remove downloaded pictures", ghost = true, small = true) {
         // app.js A.clearCachedImages' words, with this device's count of saved pictures.
-        val n = store.files(); store.clear(); stamp++
+        val n = store.files() + dev.cardstashy.nativeplay.art.ArtKeep.files(); store.clear(); dev.cardstashy.nativeplay.art.ArtKeep.clear(); stamp++
         status = "Cleared $n cached images. Your saved data and pending scans are unchanged."; CollectionWrites.show(status)
     }
     Text("Removing downloaded pictures keeps your cards, decks, earlier saves and unfinished scans. Pictures download again when needed and may be unavailable offline until then.", style = S.Foot)
@@ -729,9 +729,9 @@ private fun CardArtCard() = Panel {
     CardHeading("CARD ART", "Saved on this device")
     val store = dev.cardstashy.nativeplay.art.ThumbStore
     val running by store.progress.collectAsState()
-    val used = remember(running) { store.bytes() }; val sets = remember(running) { store.setsSaved() }
+    val used = remember(running) { store.bytes() + dev.cardstashy.nativeplay.art.ArtKeep.bytes() }; val sets = remember(running) { store.setsSaved() }
     Text(if (sets == 0 && used < 1048576) "Nothing saved yet" else "${"%,.0f".format(used / 1048576.0)} MB · $sets ${if (sets == 1) "set" else "sets"}", style = S.Body.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold))
-    Text("A set's grid pictures save the first time you open it, so it is instant (and works offline) after that. Foil still shimmers on saved cards.", style = S.Foot)
+    Text("Your decks, collection and wishlist pictures save once, and a set's grid pictures save the first time you open it, so they show at once (and offline) after that. Foil still shimmers on saved cards.", style = S.Foot)
 }
 
 /** settings-theme.js themeSettings(): Color mode, three choices (aura.css: one column under 480 px, radio · 64 px swatch · text). */

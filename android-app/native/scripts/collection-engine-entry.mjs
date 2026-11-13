@@ -68,7 +68,7 @@ import {packTemplateArt, packArtSources} from 'WEB/pack-wrappers.js';
 import {pkCatalogueSymbolSources, pkRarity} from 'WEB/emblems.js';
 import {rarityKind} from 'WEB/rarity-emblem.js';
 import {cardImage, img as imgHtml} from 'WEB/ui.js';
-import {artworkHTML} from 'WEB/artwork.js';
+import {artworkHTML, artworkSources} from 'WEB/artwork.js';
 import {deckCardCategory} from 'WEB/deck-viewer.js';
 import {massEntryUrl} from 'WEB/buy.js';
 import {interactiveRules, attachRuleLearning} from 'WEB/rule-learning.js';
@@ -5736,7 +5736,25 @@ Object.assign(writeActs, {
   },
 });
 
+// ---- Card art saved once (Randall 13 Nov: "Put this saved pop in on art"): every picture a Collection tile, deck row or wishlist
+// row draws, for every game, by the site's own choice of picture (ui.js cardImage for a Magic printing, artwork.js artworkSources
+// for a Yu-Gi-Oh! or Pokémon card): the app saves each once on the phone and draws it from there (art/ArtKeep.kt). Decks first.
+function artKeepList() {
+  const out = [], seen = new Set(), add = u => { u = abs(u || ''); if (u && !seen.has(u)) { seen.add(u); out.push(u); } };
+  const mtgCard = e => (e.printingId && S.state.printings?.[e.printingId]) || meta(e.name);
+  for (const d of S.state.decks || []) for (const c of d.cards || []) { try { add(cardImage(mtgCard(c))); } catch {} }
+  for (const e of S.state.collection || []) { try { add(cardImage(magicOwnedCard(e, S.state.printings?.[e.printingId]))); } catch {} }
+  for (const w of S.state.wishlist || []) { try { add(cardImage(mtgCard(w))); } catch {} }
+  for (const G of ['ygo', 'ptcg']) {
+    let st; try { st = tcgGs(G); } catch { continue; }
+    const ids = [...(st.decks || []).flatMap(d => Object.values(d.zones || {}).flat()), ...(st.collection || []), ...(st.wishlist || [])].map(e => e?.cardId).filter(Boolean);
+    for (const id of ids) { try { const c = tcgCardOf(G, id); if (c) add(artworkSources(c)[0]); } catch {} }
+  }
+  return out;
+}
 globalThis.Collection = {
+  // Card art saved once: every picture the player's decks, collection and wishlist draw (artKeepList).
+  artKeep() { return json({urls: artKeepList()}); },
   // Settings > Backup: the backup file's words (app.js backupPayload) and Check file's line (C.checkBackup).
   backupPayload() { return backupPayload(); },
   backupCheck(text) { return checkBackup(text); },
