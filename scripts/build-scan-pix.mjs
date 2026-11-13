@@ -16,7 +16,7 @@ const hashAt=k=>{
  for(let i=0,j=0;i<PIX_W*PIX_H;i++,j+=3){planes[0][i]=buf[j];planes[1][i]=buf[j+1];planes[2][i]=buf[j+2];}
  return pixHashThumb(planes,g);
 };
-let out,count=0;
+let out,count=0,meta={game:g,schema:2};
 if(g==='ygo'){
  const keep=ids.map((_,k)=>k).filter(k=>done.has(k));out=new Uint8Array(keep.length*PIX_REC);
  keep.forEach((k,i)=>{out.set(hashAt(k),i*PIX_REC);count++;});
@@ -24,7 +24,10 @@ if(g==='ygo'){
 }else{
  const rows=JSON.parse(gunzipSync(readFileSync(join(root,g+'-catalog-v1.json.gz')))).rows,at=new Map(ids.map((id,k)=>[id,k]));
  out=new Uint8Array(rows.length*PIX_REC);
+ // The scanner checks these against the catalogue on the phone: records and rows must line up.
+ meta.rows=rows.length;meta.samples=[0,rows.length>>1,rows.length-1].map(i=>[i,rows[i][0]]);
  rows.forEach((r,i)=>{const k=at.get(r[0]);if(k!=null&&done.has(k)){out.set(hashAt(k),i*PIX_REC);count++;}});
 }
 closeSync(fd);writeFileSync(join(root,g+'-pix-v2.bin'),out);
+meta.records=out.length/PIX_REC;meta.pictures=count;meta.sha256=createHash('sha256').update(out).digest('hex');writeFileSync(join(root,g+'-pix-v2.json'),JSON.stringify(meta)+'\n');
 console.log(`${g}: ${count} pictures in ${out.length/PIX_REC} records, ${out.length} bytes, sha256 ${createHash('sha256').update(out).digest('hex')}`);

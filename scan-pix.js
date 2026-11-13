@@ -60,10 +60,11 @@ const POP=Uint8Array.from({length:256},(_,i)=>{let n=0;for(let b=i;b;b>>=1)n+=b&
 // outlines of it: each record keeps its best). Distance: differing art bits count fully, whole-card
 // bits half (frames repeat across cards; art does not). Lower is closer; 0 is the same picture,
 // about 141 is an unrelated one. Records that are all zero (no picture known) are skipped.
-// Returns [[row, distance], ...] closest first.
-export function pixNearest(hashes,bin,k=12){
+// skip(row) leaves rows out (to find the closest different card). Returns [[row, distance], ...] closest first.
+export function pixNearest(hashes,bin,k=12,skip=null){
  const hs=hashes instanceof Uint8Array?[hashes]:hashes,n=Math.floor(bin.length/PIX_REC),best=[];let worst=Infinity;
  for(let i=0;i<n;i++){
+  if(skip&&skip(i))continue;
   const o=i*PIX_REC;let dist=Infinity,any=0;
   for(let j=0;j<PIX_REC;j+=7)any|=bin[o+j];
   if(!any){let z=0;for(let j=0;j<PIX_REC;j++)z|=bin[o+j];if(!z)continue;}
@@ -83,3 +84,12 @@ export function pixNearest(hashes,bin,k=12){
  }
  return best;
 }
+// Distance from a capture's fingerprints to one index record, or null when that record has no picture.
+export function pixDist(hashes,bin,row){
+ const hs=hashes instanceof Uint8Array?[hashes]:hashes,o=row*PIX_REC;let z=0,dist=Infinity;
+ for(let j=0;j<PIX_REC;j++)z|=bin[o+j];if(!z)return null;
+ for(const h of hs){let a=0,f=0;for(let c=0;c<48;c+=16){for(let j=0;j<8;j++)a+=POP[h[c+j]^bin[o+c+j]];for(let j=8;j<16;j++)f+=POP[h[c+j]^bin[o+c+j]];}if(a+f*.5<dist)dist=a+f*.5;}
+ return dist;
+}
+// The same thumb turned upside down (a card held the other way up).
+export const pixFlip=planes=>planes.map(p=>Float32Array.from(p).reverse());

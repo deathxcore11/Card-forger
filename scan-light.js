@@ -16,3 +16,22 @@ export function levelFrame(rgba,w,h,{low=.02,high=.98,cast=true}={}){
  for(let i=0;i<n;i++){const j=i*4;out[j]=lut[0][rgba[j]];out[j+1]=lut[1][rgba[j+1]];out[j+2]=lut[2][rgba[j+2]];out[j+3]=255;}
  return out;
 }
+
+// Makes print readable on any background: every pixel is compared with the average of its own
+// neighbourhood, so ink becomes black on white whether it sits on a yellow border, a textured
+// purple panel, a shadow or a dim photo. light=true reads light letters on a dark ground instead.
+// rad: neighbourhood half-size in pixels (about one line of text). Works in place on RGBA.
+export function inkFlatten(rgba,w,h,{rad=24,gain=6,off=6,light=false}={}){
+ const n=w*h,g=new Float32Array(n),W=w+1,I=new Float64Array(W*(h+1));
+ for(let i=0,j=0;i<n;i++,j+=4)g[i]=.299*rgba[j]+.587*rgba[j+1]+.114*rgba[j+2];
+ for(let y=0;y<h;y++){let run=0;for(let x=0;x<w;x++){run+=g[y*w+x];I[(y+1)*W+x+1]=I[y*W+x+1]+run;}}
+ for(let y=0;y<h;y++){
+  const y0=Math.max(0,y-rad),y1=Math.min(h,y+rad+1);
+  for(let x=0;x<w;x++){
+   const x0=Math.max(0,x-rad),x1=Math.min(w,x+rad+1),m=(I[y1*W+x1]-I[y0*W+x1]-I[y1*W+x0]+I[y0*W+x0])/((y1-y0)*(x1-x0));
+   const d=light?g[y*w+x]-m:m-g[y*w+x],v=255-Math.max(0,Math.min(255,(d-off)*gain)),j=(y*w+x)*4;
+   rgba[j]=rgba[j+1]=rgba[j+2]=v;rgba[j+3]=255;
+  }
+ }
+ return rgba;
+}

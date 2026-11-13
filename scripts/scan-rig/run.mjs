@@ -22,7 +22,7 @@ const base=`http://127.0.0.1:${server.address().port}`,browser=await chromium.la
 const key=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 const results=[];
 for(const g of games){
- const labels=JSON.parse(await readFile(join(set,g,'labels.json'),'utf8')).slice(0,limit||undefined);
+ const labels=JSON.parse(await readFile(join(set,g,'labels.json'),'utf8')).filter(L=>!(g==='ptcg'&&/^(?:[AB]\d|P-A)/.test(String(L.id)))).slice(0,limit||undefined); // Pocket cards are digital only
  const context=await browser.newContext({...devices['Pixel 7']}),page=await context.newPage();page.setDefaultTimeout(20000);
  await page.goto(base+'/#scan');await page.getByRole('heading',{name:'Scan',exact:true}).waitFor();
  const skip=page.getByRole('button',{name:'Skip',exact:true});try{await skip.waitFor({state:'visible',timeout:2500});await skip.click();}catch{}
@@ -42,7 +42,7 @@ for(const g of games){
    await page.getByRole('button',{name:'Read card',exact:true}).click();
    await page.waitForFunction(()=>{const q=window.__rig;return q.loadBatch().some(x=>['ready','review','unresolved'].includes(x.status))&&!q.state().busy;},{},{timeout:150000});
    row.seconds=(Date.now()-t)/1000;
-   const got=await page.evaluate(()=>{const e=window.__rig.loadBatch()[0],s=window.__rig.state();return {status:e.status,reason:e.reason||'',cands:(e.cands||[]).slice(0,3).map(c=>({id:String(c.id),name:c.name,exact:!!c.exact})),read:{name:(s.read?.name||'').slice(0,80),code:(s.read?.code||'').slice(0,80)}};});
+   const got=await page.evaluate(()=>{const e=window.__rig.loadBatch()[0],s=window.__rig.state();return {status:e.status,reason:e.reason||'',sure:!!e.printingVerified,proof:e.read?.pix?.proof||'',ocr:e.counts?.budget||null,ms:Math.round(e.timings?.totalMs||0),cands:(e.cands||[]).slice(0,3).map(c=>({id:String(c.id),name:c.name,exact:!!c.exact})),read:{name:(e.read?.name||'').slice(0,160),code:(e.read?.code||'').slice(0,240)}};});
    Object.assign(row,got);
    const top=got.cands[0];
    row.card=!!top&&(g==='ygo'?top.id===row.want.id:key(top.name)===key(L.name));
@@ -59,7 +59,7 @@ for(const g of games){
 }
 const pct=(a,f)=>a.length?Math.round(100*a.filter(f).length/a.length)+'%':'-';
 const line=(label,a)=>{const p=a.filter(r=>r.printing!=null),s=a.map(r=>r.seconds||0).sort((x,y)=>x-y);
- return `${label.padEnd(12)} n=${String(a.length).padStart(3)}  card ${pct(a,r=>r.card).padStart(4)}  printing ${pct(p,r=>r.printing).padStart(4)}  ready ${pct(a,r=>r.ready).padStart(4)}  wrong+ready ${pct(a,r=>r.ready&&!r.card).padStart(4)}  median ${s[Math.floor(s.length/2)]?.toFixed(1)}s  slowest ${s.at(-1)?.toFixed(1)}s`;};
+ return `${label.padEnd(12)} n=${String(a.length).padStart(3)}  card ${pct(a,r=>r.card).padStart(4)}  printing ${pct(p,r=>r.printing).padStart(4)}  sure ${pct(a,r=>r.sure).padStart(4)}  wrong+sure ${pct(a,r=>r.sure&&!(r.printing??r.card)).padStart(4)}  ready ${pct(a,r=>r.ready).padStart(4)}  median ${s[Math.floor(s.length/2)]?.toFixed(1)}s  slowest ${s.at(-1)?.toFixed(1)}s`;};
 console.log('\n'+line('ALL',results));
 for(const g of games)console.log(line(g,results.filter(r=>r.game===g)));
 for(const l of ['good','dim','glare','warm','tilt'])console.log(line(l,results.filter(r=>r.light===l)));

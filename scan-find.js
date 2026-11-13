@@ -109,6 +109,9 @@ export function snapQuad(grey,w,h,quad,{reaches=[.13,.05,.022],points=44}={}){
 // {quad (corners clockwise from top-left, in the source frame's pixels), snapped, support} or null
 // when nothing card-shaped is in view.
 export function locateCard(rgba,w,h){
+ // A featureless frame (covered lens, blank table) has no card: say so before doing any work.
+ let lo=255,hi=0;for(let y=0;y<24;y++)for(let x=0;x<24;x++){const v=rgba[(Math.floor((y+.5)*h/24)*w+Math.floor((x+.5)*w/24))*4+1];if(v<lo)lo=v;if(v>hi)hi=v;}
+ if(hi-lo<12)return null;
  const aw=192,ah=Math.max(20,Math.round(192*h/w)),small=levelFrame(boxShrink(rgba,w,h,aw,ah),aw,ah),rough=detectCardQuad(small,aw,ah);
  if(!rough?.quad)return null;
  const mw=Math.min(w,540),mh=Math.round(mw*h/w),mid=mw===w?levelFrame(rgba,w,h):levelFrame(boxShrink(rgba,w,h,mw,mh),mw,mh);
