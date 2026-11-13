@@ -80,7 +80,7 @@ export async function answerFor(plan,tools,io={}){
    const top=r.decks[nth-1],items=tools.suggestedItems().slice(nth-1,nth+2),ord=['','','2nd ','3rd ','4th ','5th '][nth]||'';
    if(!top)return miss(`Only ${r.decks.length} ${asked}${r.decks.length===1?' is':'s are'} among the tournament decks right now.`);
    // "aggro" found in the deck's name reads as a kind of deck; found in its list, as a card it plays.
-   const kind=[pre,r.matched?.by==='name'?args.match:'',fmt,'deck'].filter(Boolean).join(' '),tail=[post,r.matched?.by==='card'?'that plays '+(r.matched.card||quoted):'',args.under!=null?`that costs you $${args.under} or less to finish`:''].filter(Boolean).join(' '),what=kind+(tail?' '+tail:''),field=`${top.lists?top.lists+' lists, ':''}${top.share}% of the field`;
+   const kind=[pre,r.matched?.by==='name'?args.match:'',fmt,'deck'].filter(Boolean).join(' '),tail=[post,r.matched?.by==='card'?'that plays '+(r.matched.card||quoted):'',args.under!=null?`that costs you $${args.under} or less to finish`:''].filter(Boolean).join(' '),what=kind+(tail?' '+tail:''),field=`${top.lists?top.lists+(top.lists===1?' list, ':' lists, '):''}${top.share}% of the field`;
    let say;
    if(args.sort==='closest'){
     if(!top.ownedPercent)return miss(`You don't own cards from any ${what} among the tournament decks yet.`);
