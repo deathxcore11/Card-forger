@@ -5,6 +5,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -136,7 +137,12 @@ fun CollectionScreen(onPlay: () -> Unit, url: String = "https://cardstashy.com/"
         dev.cardstashy.nativeplay.account.Account.token(); signedIn.value = dev.cardstashy.nativeplay.account.Account.session.value?.let(WebSession::entry) }
         value = true }
     if (!ready) { Box(Modifier.fillMaxSize().background(Palette.Night)); return }
-    BackHandler { web.value?.takeIf { it.canGoBack() }?.goBack() ?: onPlay() }
+    // Planeswalk (G6): B pauses the run (Escape), B again with the pause menu up leaves to Play; A taps where the stick cursor is.
+    val walking = remember { mutableStateOf(PlaneswalkPack.isPage(android.net.Uri.parse(url))) }
+    DisposableEffect(Unit) { PadCursor.freeTap = walking.value; onDispose { PadCursor.freeTap = false } }
+    BackHandler { val w = web.value
+        if (w != null && walking.value) w.evaluateJavascript(PlaneswalkPack.MENU_JS) { PlaneswalkPack.back(it, { PlaneswalkPack.escape(w) }, onPlay) }
+        else w?.takeIf { it.canGoBack() }?.goBack() ?: onPlay() }
     Box(Modifier.fillMaxSize().background(Palette.Night)) {
         AndroidView(factory = { ctx ->
             WebView(ctx).apply {
@@ -149,7 +155,8 @@ fun CollectionScreen(onPlay: () -> Unit, url: String = "https://cardstashy.com/"
                     @Volatile private var planeswalk = PlaneswalkPack.isPage(android.net.Uri.parse(url))
                     override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): android.webkit.WebResourceResponse? {
                         val u = request.url
-                        if (request.isForMainFrame && u.path != WebSession.PATH) planeswalk = PlaneswalkPack.isPage(u)
+                        if (request.isForMainFrame && u.path != WebSession.PATH) { planeswalk = PlaneswalkPack.isPage(u)
+                            PadCursor.freeTap = planeswalk; val p = planeswalk; view.post { walking.value = p } }
                         if (planeswalk) PlaneswalkPack.serve(ctx, u)?.let { return it }
                         if (!request.isForMainFrame || u.host != "cardstashy.com" || u.path != WebSession.PATH) return null
                         val html = WebSession.page(signedIn.value, url); signedIn.value = null
@@ -158,6 +165,7 @@ fun CollectionScreen(onPlay: () -> Unit, url: String = "https://cardstashy.com/"
                     // Stay on CardStashy; other sites open in the browser.
                     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                         val host = request.url.host ?: return false
+                        if (planeswalk && PlaneswalkPack.leaves(request.url)) { view.post(onPlay); return true }
                         if (host == "cardstashy.com" || host.endsWith(".cardstashy.com")) return false
                         runCatching { ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, request.url)) }
                         return true

@@ -50,6 +50,12 @@ object PadCursor {
 
     fun attach(decor: View) { root = decor }
 
+    /**
+     * A page with no Compose targets under it (Planeswalk in the web view, gap audit G6): A taps the screen where the cursor
+     * points, as a finger would, instead of looking for something the ring can rest on.
+     */
+    @Volatile var freeTap = false
+
     private const val DEAD = .18f
 
     /** The left stick's position (-1..1 each way). */
@@ -107,6 +113,12 @@ object PadCursor {
         ev.source = android.view.InputDevice.SOURCE_TOUCHSCREEN
         runCatching { v.dispatchTouchEvent(ev) }
         ev.recycle()
+    }
+
+    /** One finger tap at [p] (window pixels): down, then up. */
+    private fun tap(p: Offset) {
+        val d = Drag(SystemClock.uptimeMillis(), p.x, p.y, false, -1)
+        touch(android.view.MotionEvent.ACTION_DOWN, d); touch(android.view.MotionEvent.ACTION_UP, d)
     }
 
     private fun lift() {
@@ -172,6 +184,7 @@ object PadCursor {
         // Only while the cursor can be seen: once it fades, or the ring moves on by LB/RB, RT or a restore, A belongs to the ring
         // (U8: A on the hand chip opened a field card the faded cursor was still over).
         if (!shown || SystemClock.uptimeMillis() - lastMove > 3500) return false
+        if (freeTap) { val p = pos ?: return false; tap(p); lastMove = SystemClock.uptimeMillis(); return true }
         val id = target?.id ?: return false
         // Read it fresh: the one kept from aim() was taken before the ring moved onto it, so it never read as focused.
         val t = nodes()?.firstOrNull { it.id == id } ?: return false

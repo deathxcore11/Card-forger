@@ -41,6 +41,25 @@ object PlaneswalkPack {
     private fun current(context: Context) = kept(context) ?: packed(context)
     fun files(context: Context): Set<String> = current(context).files
 
+    /** The page's own Exit goes to the site's Play menu ("/#play"); in the app that is the app's Play, not the website. */
+    fun leaves(url: android.net.Uri) = url.host == "cardstashy.com" && (url.path.isNullOrEmpty() || url.path == "/") && url.fragment == "play"
+
+    /** Asks the page whether its pause menu is up ("open") or not. */
+    const val MENU_JS = "(function(){var m=document.querySelector('.pw-menu');return m&&m.getClientRects().length?'open':'shut'})()"
+
+    /**
+     * B on the controller: the first press sends Escape, which closes a zoomed card or help, else opens the pause menu; B with the
+     * pause menu up leaves to Play. [menu] is what [MENU_JS] answered (quoted, as evaluateJavascript gives it).
+     */
+    fun back(menu: String?, escape: () -> Unit, leave: () -> Unit) { if (menu?.trim('"') == "open") leave() else escape() }
+
+    /** Escape, down then up, to the web view (the page listens for the key "Escape"). */
+    fun escape(view: android.view.View) {
+        val now = android.os.SystemClock.uptimeMillis()
+        view.dispatchKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_ESCAPE, 0))
+        view.dispatchKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_ESCAPE, 0))
+    }
+
     fun isPage(url: android.net.Uri) = url.scheme == "https" && url.host == "cardstashy.com" && url.path == PAGE
     internal fun mime(path: String) = when (path.substringAfterLast('.')) {
         "html" -> "text/html"; "js", "mjs" -> "text/javascript"; "css" -> "text/css"; "json" -> "application/json"; else -> "application/octet-stream" }
