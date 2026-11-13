@@ -190,6 +190,8 @@ class MainActivity : ComponentActivity() {
                 dev.cardstashy.nativeplay.ui.RuleSheetHost()
                 PadPromptBar()
                 PadCursorLayer()
+                // Menus idle after 20 s with no input (gap audit G4): checked once a second.
+                androidx.compose.runtime.LaunchedEffect(Unit) { while (true) { kotlinx.coroutines.delay(1000); dev.cardstashy.nativeplay.ui.MenuIdle.tick(android.os.SystemClock.uptimeMillis()) } }
                 // Loading brief L1: the opening screen over everything until Play home's own waits are over (once per launch).
                 if (!TestHooks.skipOpening) dev.cardstashy.nativeplay.ui.OpeningHost()
             }
@@ -209,7 +211,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) { super.onWindowFocusChanged(hasFocus); dev.cardstashy.nativeplay.ui.PadPrompts.windowFocused = hasFocus }
 
-    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean { FreezeReport.touched(ev); return super.dispatchTouchEvent(ev) }
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean { FreezeReport.touched(ev); dev.cardstashy.nativeplay.ui.MenuIdle.input(android.os.SystemClock.uptimeMillis()); return super.dispatchTouchEvent(ev) }
 
     /**
      * Controllers on handhelds (AYN Thor, Retroid and the like): A presses what has the gold focus ring
@@ -217,6 +219,7 @@ class MainActivity : ComponentActivity() {
      * gives these fallbacks, so the app maps them itself. The left stick moves focus like the d-pad.
      */
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        dev.cardstashy.nativeplay.ui.MenuIdle.input(android.os.SystemClock.uptimeMillis())
         if (event.isFromSource(android.view.InputDevice.SOURCE_GAMEPAD)) dev.cardstashy.nativeplay.ui.Pad.used()
         if (event.action == android.view.KeyEvent.ACTION_DOWN && (event.isFromSource(android.view.InputDevice.SOURCE_GAMEPAD) || event.isFromSource(android.view.InputDevice.SOURCE_DPAD)))
             dev.cardstashy.nativeplay.ui.PadPrompts.lastPress = android.os.SystemClock.uptimeMillis()
@@ -259,6 +262,7 @@ class MainActivity : ComponentActivity() {
     private var aTaken = false
     private var dpadEntered = 0
     override fun dispatchGenericMotionEvent(ev: android.view.MotionEvent): Boolean {
+        dev.cardstashy.nativeplay.ui.MenuIdle.input(android.os.SystemClock.uptimeMillis())
         if (ev.isFromSource(android.view.InputDevice.SOURCE_JOYSTICK) && ev.action == android.view.MotionEvent.ACTION_MOVE) {
             dev.cardstashy.nativeplay.ui.Pad.used()
             // The d-pad on many handhelds (the AYN Portal among them) arrives as a hat, not keys: one ring step per press. Taking the
@@ -291,6 +295,7 @@ class MainActivity : ComponentActivity() {
     fun inGame(on: Boolean, play: Boolean = false, force: Boolean = false) {
         if (!force && on && lastGame && lastPlay == play) return // V6: the match asks twice (MatchFlow, Table); the second must not resize the window again
         lastGame = on; lastPlay = play; Updater.inGame = on
+        dev.cardstashy.nativeplay.ui.MenuIdle.onMenu = !on // the table keeps its motion; only menus go idle
         dev.cardstashy.nativeplay.art.ThumbStore.paused = on // the table gets the network and CPU
         dev.cardstashy.nativeplay.play.RandomBuild.paused = on // background random decks wait (app.js playRandomQueue idle())
         val sideways = on || (play && resources.configuration.smallestScreenWidthDp < 600)  // play = Planeswalk on a phone

@@ -51,6 +51,7 @@ import kotlin.math.sin
  * Layers are icon.svg's own card groups, rendered upright by scripts (art/brand-*.webp).
  */
 /** Screenshots and tests: no endless animations (Compose would never go idle). */
+private val BreatheEase = CubicBezierEasing(.42f, 0f, .58f, 1f)
 object Motion { @Volatile var still = false; /** Frame used when still: cycle 0..1 and light angle. */ var cycle = .5f; var light = .7f; var breathe = .5f }
 
 @Composable
@@ -64,13 +65,12 @@ fun BrandMark(markSize: Dp, modifier: Modifier = Modifier, onClick: (() -> Unit)
     val still = Motion.still || static
     var breathe = if (static) .444f else Motion.breathe; var cycle = if (static) .42f else Motion.cycle; var drift = if (static) 0f else Motion.light
     if (!still) {
-        val t = rememberInfiniteTransition(label = "brand")
-        // stashy-breathe: 4.8 s, up 1 px and 2.5 % larger at the middle.
-        breathe = t.animateFloat(0f, 1f, infiniteRepeatable(tween(2400, easing = CubicBezierEasing(.42f, 0f, .58f, 1f)), RepeatMode.Reverse), label = "breathe").value
+        // stashy-breathe: 4.8 s, up 1 px and 2.5 % larger at the middle. (Menu loops: they hold while the menus are idle.)
+        breathe = menuLoop(2400, BreatheEase, reverse = true).value
         // brand-lift: 6 s cycle; each card lifts 10 units and straightens to 55 % of its angle from 14 % to 22 %, back by 36 %.
-        cycle = t.animateFloat(0f, 1f, infiniteRepeatable(tween(6000, easing = LinearEasing)), label = "cycle").value
+        cycle = menuLoop(6000).value
         // brand-sheen: 7.5 s; the light rests off the card, then crosses it between 55 % and 85 % of the loop.
-        drift = t.animateFloat(0f, 1f, infiniteRepeatable(tween(7500, easing = LinearEasing)), label = "sheen").value
+        drift = menuLoop(7500).value
     }
     val press = remember { MutableInteractionSource() }
     val pressed by press.collectIsPressedAsState()

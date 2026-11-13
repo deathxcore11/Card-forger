@@ -275,8 +275,7 @@ fun Ambient(art: String?) {
         if (soft != null) androidx.compose.runtime.SideEffect { HomeStart.picture.value = true }
         // aura.css .aura-art: a new art fades in over 1 s; the layer drifts slowly (22 s, alternate) unless motion is reduced.
         val still = Motion.still || remember { Playmats.reduced(ctx) }
-        val drift = if (theme == "aura" && !still) androidx.compose.animation.core.rememberInfiniteTransition(label = "aura").animateFloat(0f, 1f,
-            androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(22000, easing = androidx.compose.animation.core.FastOutSlowInEasing), androidx.compose.animation.core.RepeatMode.Reverse), label = "drift") else null
+        val drift = if (theme == "aura" && !still) menuLoop(22000, androidx.compose.animation.core.FastOutSlowInEasing, reverse = true) else null
         androidx.compose.animation.Crossfade(soft, androidx.compose.ui.Modifier.fillMaxSize(), animationSpec = androidx.compose.animation.core.tween(if (theme == "aura" && !still) 1000 else 0), label = "ambient") { bmp ->
             if (bmp != null) androidx.compose.foundation.Image(bmp, null, Modifier.fillMaxSize().graphicsLayer {
                 alpha = when (theme) { "light" -> .8f; "aura" -> 1f; else -> .85f }
@@ -607,8 +606,7 @@ private fun FoilBooster(code: String, label: String, f: SetFacts.Set?, modifier:
 /** The art window while its picture is on the way: the dark gradient with one light sweep moving across it. */
 @Composable
 private fun ArtShimmer(modifier: Modifier) {
-    val t = if (Motion.still) 0.3f else androidx.compose.animation.core.rememberInfiniteTransition(label = "shimmer").animateFloat(0f, 1f,
-        androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(1400, easing = androidx.compose.animation.core.LinearEasing)), label = "x").value
+    val t = if (Motion.still) 0.3f else menuLoop(1400).value
     Box(modifier.background(Brush.radialGradient(listOf(Color(0xFF3B4152), Color(0xFF15181F)))).drawBehind {
         val x = (t * 1.6f - .3f) * size.width
         drawRect(Brush.linearGradient(listOf(Color.Transparent, Color(0x22FFFFFF), Color.Transparent), start = Offset(x - size.width * .3f, 0f), end = Offset(x + size.width * .3f, size.height)))
@@ -736,7 +734,7 @@ private fun Modifier.collectorGlow() = drawBehind {
  */
 @Composable
 private fun CollectorSheen(modifier: Modifier) {
-    val t = if (Motion.still) .5f else rememberInfiniteTransition(label = "collector").animateFloat(0f, 1f, infiniteRepeatable(tween(4500, easing = LinearEasing)), label = "c").value
+    val t = if (Motion.still) .5f else menuLoop(4500).value
     Box(modifier.drawWithContent {
         // background-position p% of a 250 % image: its left edge sits at p · (W − 2.5 W) = −1.5 W · p.
         val bw = size.width * 2.5f; val pos = 1f + (-1.5f - 1f) * t

@@ -462,8 +462,7 @@ private fun HomeStage(game: CardGame, daily: DailyCard?, over: DeckBoxM?, height
         else StageArt(daily?.art, daily?.sources.orEmpty(), daily?.crop == "pokemon", true)
     val still = Motion.still
     val lean = rememberCardLean()
-    val drift = if (still) null else rememberInfiniteTransition(label = "stage").animateFloat(0f, 1f,
-        infiniteRepeatable(tween(26_000, easing = LinearEasing), androidx.compose.animation.core.RepeatMode.Reverse), label = "drift")
+    val drift = if (still) null else menuLoop(26_000, reverse = true)
     val veil by androidx.compose.animation.core.animateFloatAsState(if (dim) .8f else 0f, if (still) androidx.compose.animation.core.snap() else tween(250), label = "stage veil")
     val gold = game.gold
     // The sweep: only when the game changes, never on the first paint.
@@ -526,7 +525,7 @@ private class Ember(val x: Float, val y: Float, val r: Float, val v: Float, val 
 private fun Embers(color: Color, modifier: Modifier) {
     val parts = remember { val r = java.util.Random(7); List(24) { Ember(r.nextFloat(), r.nextFloat(), .6f + r.nextFloat() * 1.6f, .012f + r.nextFloat() * .03f, .5f + r.nextFloat(), r.nextFloat() * 6.28f, .25f + r.nextFloat() * .55f) } }
     var nanos by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
-    LaunchedEffect(Unit) { while (true) androidx.compose.runtime.withFrameNanos { nanos = it } }
+    LaunchedEffect(Unit) { val clock = menuClock(); while (true) nanos = clock() }
     Canvas(modifier.graphicsLayer { }) {
         val t = (nanos / 1_000_000L % 3_600_000L) / 1000f
         for (e in parts) {
@@ -675,8 +674,7 @@ private fun revealAlpha(key: String?, painter: androidx.compose.ui.graphics.pain
 /** C3: a slow band of light across a glass tile while its picture is still to come. Still when motion is off. */
 @Composable
 private fun Sheen(modifier: Modifier) {
-    val t = if (Motion.still) .5f else androidx.compose.animation.core.rememberInfiniteTransition(label = "sheen").animateFloat(0f, 1f,
-        androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(2600, easing = androidx.compose.animation.core.LinearEasing)), label = "sheen").value
+    val t = if (Motion.still) .5f else menuLoop(2600).value
     Box(modifier.drawBehind {
         val w = size.width * .45f; val x = -w + (size.width + 2 * w) * t
         drawRect(Brush.linearGradient(listOf(Color.Transparent, Site.GlassHi.copy(alpha = .07f), Color.Transparent), Offset(x - w, 0f), Offset(x + w, size.height)))
@@ -778,7 +776,7 @@ private fun HomeSearch(prompt: String, hints: SearchHints?, find: HomeFind, act:
     val gold = InkFFE8B95B
     val open = find.open
     // ::before: a light that runs round the gold edge every 9 s (home-search-edge); it rests while the box is typed in.
-    val edge = if (Motion.still || open) null else rememberInfiniteTransition(label = "search-edge").animateFloat(0f, 1f, infiniteRepeatable(tween(9000, easing = LinearEasing)), label = "edge")
+    val edge = if (Motion.still || open) null else menuLoop(9000)
     var text by remember(hints, prompt) { mutableStateOf(hints?.prompt ?: prompt) }
     val fade = remember { Animatable(1f) }
     // startSearchHints: one timer every [every] ms; the first tick starts the clock, hints swap once [first] ms have passed.
