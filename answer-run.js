@@ -52,7 +52,7 @@ export const forgetAnswer=()=>{about=null;};
 function followUps(sub){
  if(sub.kind==='meta')return [{label:'What does it cost me?',q:'how much does it cost'},{label:'How much do I own?',q:'how much of it do i own'},{label:"What's in it?",q:'what cards are in it'},{label:'Where did it place?',q:'where did it place'},{label:'What beats it?',q:'what beats it'}];
  if(sub.kind==='card')return [{label:'Do I own it?',q:'do i own it'},...(sub.game==='mtg'?[{label:'Is it legal?',q:'is it legal in '+(sub.format||'standard')}]:[{label:'Is it legal?',q:'is it legal'}]),{label:'Which decks play it?',q:'best deck with '+sub.name}];
- if(sub.kind==='mydeck')return [{label:'Is it legal?',q:'is my '+sub.name+' deck legal'},{label:'Make it better',q:'how do i make my '+sub.name+' deck better'}];
+ if(sub.kind==='mydeck')return [{label:'Is it legal?',q:'is my '+sub.name+' deck legal'},{label:'Make it better',q:'how do i make my '+sub.name+' deck better'},{label:'What beats it?',q:'what beats my '+sub.name+' deck'}];
  return [];
 }
 export async function answerFor(plan,tools,io={}){
@@ -136,7 +136,7 @@ async function answerOne(plan,tools,io={}){
     place:top.best?'Best finish: '+top.best+'.':'The feed has no finish for it.',
     popular:`${field.charAt(0).toUpperCase()+field.slice(1)}.`,
     list:'Open the deck to see its full list.',
-    beat:"Search can't work out matchups yet.",
+    beat:g==='mtg'?'Ask "what beats it" on its own line and the app simulates the matchups.':'Search can only simulate Magic matchups so far.',
    };
    const subject={kind:'meta',game:g,format:g==='mtg'?args.format:r.format,key:top.key,name:top.name};
    if(pick==='about'){
@@ -206,6 +206,28 @@ async function answerOne(plan,tools,io={}){
     {label:'Cut '+r.cutCopies+' card'+(r.cutCopies===1?'':'s'),value:r.cut.slice(0,3).map(c=>c.qty+' '+c.name).join(', ')+(r.cut.length>3?' and '+(r.cut.length-3)+' more':'')}];
    return {ok:true,subject,strong:r.deck.name,say:` shares ${r.percent}% of its cards with ${r.target.name}, the closest ${r.target.format} tournament list${r.target.best?' ('+r.target.best+')':''}.`,meter:{pct:r.percent,label:r.percent+'% of the way to '+r.target.name},rows,
     note:r.add.length>5?`${r.add.length-5} more cards to add are in that deck's list.`:'',items:[deck(r.deck)],more:[],buttons:[open,...(r.target.key?[{label:'Open '+r.target.name,item:{kind:'meta',game:g,ref:r.target.key,label:r.target.name}}]:[])],source:'Counted against this week\'s tournament lists. It does not say which deck wins.'};
+  }
+  if(tool==='deck_matchup'){
+   const r=await tools.deck_matchup(args),deck=d=>({kind:'deck',game:g,ref:String(d.id),label:d.name}),metaItem=x=>({kind:'meta',game:g,ref:x.key||x.name,label:x.name});
+   const src="The app's matchup simulation, 2,000 simulated games per deck. It models two decks racing; it is not games played on the table.";
+   if(r.none)return miss('You have no saved decks in this game.',{buttons:[{label:'All my decks',route:'#decks'}]});
+   if(r.choose)return {ok:true,say:r.unmatched?`None of your saved decks is named "${args.match}". Pick one:`:'Which of your decks?',items:[],more:[],follow:r.choose.map(d=>({label:d.name+(d.format?' · '+d.format:''),q:'what beats my '+d.name.toLowerCase()+' deck'})),buttons:[{label:'All my decks',route:'#decks'}],source:'Your saved decks'};
+   if(r.error)return miss(r.error,r.deck?.id?{buttons:[{label:'Open the deck',item:deck(r.deck)}]}:{});
+   if(r.noField)return miss(`No ${r.deck.format} tournament deck ${r.opponent?'matches "'+r.opponent+'"':'has those colours'} in this week's feed, so there is nothing to simulate against.`);
+   const row=(x,flip)=>({label:x.name,value:(flip?100-x.win:x.win)+'% · '+x.share+'% of decks',tone:(flip?100-x.win:x.win)>=55?'good':(flip?100-x.win:x.win)<=45?'bad':''});
+   if(pick==='beats'){
+    // From the other decks' side: the lists this one does worst against.
+    const by=[...r.field].sort((a,b)=>a.win-b.win),top=by[0];
+    if(top.win>=50)return {ok:true,strong:r.deck.name,say:` is not behind against any of the ${r.field.length} most played ${r.deck.format} decks in the app's simulation. Its closest matchup is ${top.name} (${top.win}%).`,rows:by.slice(0,3).map(x=>row(x,true)),items:[],more:[],buttons:[],source:src};
+    return {ok:true,strong:top.name,say:` does best against ${r.deck.name} in the app's simulation: it wins ${100-top.win}% of simulated games.`,rows:by.slice(1,4).filter(x=>x.win<50).map(x=>row(x,true)),note:(top.reasons||[]).slice(0,1).map(t=>'From '+r.deck.name+"'s side: "+t).join(''),items:[metaItem(top)],more:[],buttons:[{label:'Open '+top.name,item:metaItem(top)}],source:src};
+   }
+   const subject={kind:'mydeck',game:g,name:r.deck.name.toLowerCase()},open={label:'Open the deck',item:deck(r.deck)};
+   if(r.narrowed||r.field.length===1){
+    const x=r.field[0];
+    return {ok:true,subject,strong:r.deck.name,say:` wins ${x.win}% of simulated games against ${x.name}. On the play ${x.onPlay}%, on the draw ${x.onDraw}%.`,meter:{pct:x.win,label:x.win+'% against '+x.name},rows:r.field.slice(1).map(y=>row(y)),note:(x.reasons||[]).slice(0,2).join(' '),items:[deck(r.deck)],more:[],buttons:[open,{label:'Open '+x.name,item:metaItem(x)}],source:src};
+   }
+   const by=[...r.field].sort((a,b)=>a.win-b.win),ahead=r.field.filter(x=>x.win>=50).length;
+   return {ok:true,subject,strong:r.deck.name,say:` is ahead against ${ahead} of the ${r.field.length} most played ${r.deck.format} decks in the app's simulation. Its hardest matchup is ${by[0].name} (${by[0].win}%).`,rows:by.slice(0,5).map(x=>row(x)),note:r.skipped?`${r.skipped} list${r.skipped===1?'':'s'} could not be loaded and ${r.skipped===1?'is':'are'} not counted.`:'',items:[deck(r.deck)],more:[],buttons:[open],source:src};
   }
   if(tool==='meta_trend'){
    const r=await tools.meta_trend(args),d=x=>{const t=Date.parse(x);if(!Number.isFinite(t))return String(x||'');const y=new Date(t);return y.getUTCDate()+' '+MONTHS[y.getUTCMonth()].slice(0,3);};

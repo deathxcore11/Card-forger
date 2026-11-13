@@ -162,7 +162,7 @@ const html=answerMarkup(r.a,r.plan.read,{esc});assert.match(html,/answer-also"><
 
 r=await ask('best mono red deck? what colors is it? how do i beat it');
 assert.equal(r.a.strong,'Mono-Red Aggro');assert.equal(r.a.also[0].text,'Its colours: red.');
-assert.match(r.a.also[1].text,/can't work out matchups/,'a matchup ask is said to be out of reach, never guessed');
+assert.match(r.a.also[1].text,/Ask "what beats it" on its own line and the app simulates the matchups/,'a matchup ask on a shared line points at the simulation, never guesses');
 
 r=await ask('best green deck and how much does it cost');
 assert.equal(r.a.ok,false);assert.match(r.a.also[0].text,/Not answered, because the first part found nothing/,'a follow-up about a deck that was not found is not answered from another deck');
@@ -208,6 +208,7 @@ assert.equal(r.a.buttons[0].build.seed,'Sol Ring');assert.equal(r.a.buttons[0].b
  // Each chip is a whole question the search answers about that same deck, also when typed by hand on the next line.
  for(const f of r.a.follow){
   const x=await ask(f.q,{about:answerAbout()});
+  if(f.q==='what beats it'){assert.equal(x.plan.intent,'meta.matchup');assert.deepEqual(chips(x.plan).split(' | ').slice(0,2),['Magic','Mono-Red Aggro']);continue;}
   assert.equal(x.plan.intent,'meta.about',f.q);assert.equal(x.a.strong,'Mono-Red Aggro',f.q+' is about the same deck');
   assert.deepEqual(chips(x.plan).split(' | ').slice(0,2),['Magic','Mono-Red Aggro']);
   assert.ok(!x.a.follow.some(y=>y.q===f.q),'the chip just asked is not offered again');
@@ -216,7 +217,7 @@ assert.equal(r.a.buttons[0].build.seed,'Sol Ring');assert.equal(r.a.buttons[0].b
  assert.deepEqual(x.a.rows.map(r=>r.label),['Monastery Swiftspear','Lightning Strike','Burst Lightning'],'its own cards, lands left out');
  assert.equal(x.a.rows[0].value,'×4 · you own 4');assert.equal(x.a.rows[2].value,'×4');
  x=await ask('how much is it',{about:answerAbout()});assert.match(x.a.say,/^: (?:About \$|Some of its cards have no price)/);
- x=await ask('what beats it',{about:answerAbout()});assert.match(x.a.say,/can't work out matchups yet/);
+ x=await ask('what beats it',{about:answerAbout()});assert.equal(x.plan.intent,'meta.matchup','"what beats it" is the app\'s matchup simulation of that deck');assert.equal(x.plan.call.tool,'deck_matchup');
  // Words that name something else are a new question, and with nothing remembered "it" is not guessed.
  x=await ask('is it better than izzet prowess',{about:answerAbout()});assert.notEqual(x.plan.intent,'meta.about');
  x=await ask('how much is lightning strike',{about:answerAbout()});assert.equal(x.plan.intent,'card.price');
@@ -268,7 +269,7 @@ console.log(`answer-hard: Randall's six questions, ${typos} generated misspellin
  let r=await go('is my goblin rush deck legal');
  assert.equal(r.plan.intent,'decks.check');assert.equal(r.a.strong,'Goblin Rush');assert.match(r.a.say,/not yet\. 2 things to fix for Standard/);
  assert.deepEqual(r.a.rows,[{label:'Sol Ring',value:'not legal in Standard',tone:'bad'},{label:'Opt',value:'more than 4 copies',tone:'bad'}],'each failing card is named with the rule it breaks');
- assert.deepEqual(r.a.follow.map(f=>f.q),['how do i make my goblin rush deck better'],'the next question is offered');
+ assert.deepEqual(r.a.follow.map(f=>f.q),['how do i make my goblin rush deck better','what beats my goblin rush deck'],'the next question is offered');
  r=await go('can I play goblin rush in modern');
  assert.equal(r.plan.intent,'decks.check','a saved deck\'s name is enough, without "my"');assert.ok(r.a.rows.some(x=>x.label==='Lightning Strike'&&x.value==='banned in Modern'));
  r=await go('is my drake tempo deck legal');assert.match(r.a.say,/yes\. All 60 cards are legal in Standard/);assert.deepEqual(r.a.rows,[]);
@@ -343,4 +344,42 @@ console.log(`answer-hard: Randall's six questions, ${typos} generated misspellin
  r=await go('what deck is getting more popular in standard',data);assert.match(r.a.miss,/no saved tournament days/);
  r=await go('what pokemon deck is getting more popular',feed,'ptcg');assert.match(r.a.miss,/only keeps tournament days for Magic/);
  assert.equal(planQuery('what is the best deck in standard',{game:'mtg'}).intent,'meta.best');
+}
+
+// ---- 6g. Simulated matchups (idea 7, first step): the app's own matchup model against the tournament lists, always labelled as simulated.
+{
+ const {cardKey}=await import('./core.js');
+ const K=(name,colors,type,cmc,mana_cost,oracle_text='',extra={})=>({name,colors,color_identity:colors,type_line:type,cmc,mana_cost,oracle_text,prices:{usd:'1.00'},legalities:{standard:'legal'},...extra});
+ const cards=[K('Monastery Swiftspear',['R'],'Creature — Human Monk',1,'{R}','Haste\nProwess',{power:'1',toughness:'2'}),K('Lightning Strike',['R'],'Instant',2,'{1}{R}','Lightning Strike deals 3 damage to any target.'),K('Burst Lightning',['R'],'Instant',1,'{R}','Burst Lightning deals 2 damage to any target.'),K('Goblin Guide',['R'],'Creature — Goblin Scout',1,'{R}','Haste',{power:'2',toughness:'2'}),
+  K('Opt',['U'],'Instant',1,'{U}','Scry 1.\nDraw a card.'),K('Counterspell',['U'],'Instant',2,'{U}{U}','Counter target spell.'),K('Stormchaser Drake',['U'],'Creature — Drake',2,'{1}{U}','Flying',{power:'2',toughness:'1'}),K('Tolarian Terror',['U'],'Creature — Serpent',7,'{6}{U}','Ward {2}',{power:'5',toughness:'5'}),
+  K('Mountain',[],'Basic Land — Mountain',0,'','({T}: Add {R}.)'),K('Island',[],'Basic Land — Island',0,'','({T}: Add {U}.)')];
+ const cat=Object.fromEntries(cards.map(c=>[cardKey(c.name),c]));
+ const list=(key,name,colors,rows)=>({key,name,colors,place:'1st',event:'Standard Challenge',main:rows.map(([name,qty])=>({name,qty,land:/Mountain|Island/.test(name)}))});
+ const feed={source:'Fixture',fetchedAt:'2026-11-13T10:00:00Z',decks:[list('blue','Blue Tempo',['u'],[['Opt',4],['Counterspell',4],['Stormchaser Drake',4],['Tolarian Terror',4],['Island',24],['Opt',20]]),list('red','Mono-Red Aggro',['r'],[['Monastery Swiftspear',4],['Goblin Guide',4],['Lightning Strike',4],['Burst Lightning',4],['Mountain',20],['Goblin Guide',24]])],
+  archetypes:[{name:'Blue Tempo',best:'blue',share:.2},{name:'Mono-Red Aggro',best:'red',share:.1}]};
+ const rush={id:'d1',name:'Goblin Rush',format:'Standard',cards:[{name:'Goblin Guide',qty:4},{name:'Monastery Swiftspear',qty:4},{name:'Lightning Strike',qty:4},{name:'Burst Lightning',qty:4},{name:'Mountain',qty:22},{name:'Goblin Guide',qty:22}]};
+ const S3={state:{settings:{},decks:[rush],collection:[]},ui:{},catalog:cat};
+ const t=makeAskTools({S:S3,T:{game:()=>'mtg',cache:{},gs:()=>({decks:[],collection:[]})},esc,meta:n=>cat[cardKey(n)]||null,resolveNames:async()=>{},inv:()=>({owned:0}),priceOf:()=>1,loadMetaData:async()=>feed,metaState:()=>({data:feed}),MTG_META_FORMATS:[['Standard','Standard']]});
+ const go=async(q,ctx={})=>{const plan=planQuery(q,{game:'mtg',myDecks:['Goblin Rush'],formatLast:{mtg:'Standard'},...ctx});return {plan,a:await answerFor(plan,t,{})};};
+ let r=await go('is my goblin rush deck good against blue');
+ assert.equal(r.plan.intent,'decks.matchup');assert.deepEqual(r.plan.call.args,{game:'mtg',match:'goblin rush',colors:['u'],opponent:'blue'});
+ assert.deepEqual(r.plan.read.map(c=>c.label),['Magic','your deck "goblin rush"','against blue decks','simulated games']);
+ assert.match(r.a.say,/^ wins \d+% of simulated games against Blue Tempo\. On the play \d+%, on the draw \d+%\.$/);assert.ok(r.a.meter.pct>50,'a fast red deck is ahead of a slow blue one');
+ assert.match(r.a.source,/not games played on the table/,'every matchup answer says it is a simulation');
+ const again=await go('is my goblin rush deck good against blue');assert.equal(again.a.say,r.a.say,'the same two lists always give the same numbers');
+ r=await go('what beats my goblin rush deck');assert.equal(r.plan.intent,'decks.matchup');assert.match(r.a.say,/of the 2 most played Standard decks in the app's simulation\. Its hardest matchup is /);assert.equal(r.a.rows.length,2);
+ r=await go('is my deck good against green');assert.match(r.a.miss,/No Standard tournament deck matches "green"/);
+ r=await go('how does goblin rush do against golgari midrange');assert.match(r.a.miss,/No Standard tournament deck matches "golgari midrange"/);
+ r=await go('how does goblin rush do against dimir tempo');assert.match(r.a.miss,/nothing to simulate against/);
+ r=await go('how does goblin rush do against mono red aggro');assert.match(r.a.say,/against Mono-Red Aggro/,'a deck named in full is found by its name');
+ // "What beats it?" about a tournament deck: the other top lists, from their side.
+ const {answerAbout}=await import('./answer-run.js');
+ r=await go('best blue deck');assert.equal(r.a.strong,'Blue Tempo');
+ r=await go('what beats it',{about:answerAbout()});
+ assert.equal(r.plan.intent,'meta.matchup');assert.equal(r.a.strong,'Mono-Red Aggro');assert.match(r.a.say,/does best against Blue Tempo in the app's simulation: it wins \d+% of simulated games/);
+ // Other games and Commander say plainly that there is nothing to simulate.
+ S3.state.decks=[{id:'c1',name:'Elves',format:'Commander',cards:[{name:'Opt',qty:1}]}];
+ r=await go('what beats my elves deck',{myDecks:['Elves']});assert.match(r.a.miss,/no lists for casual Commander/);
+ assert.equal(planQuery('which mono red deck beats control',{game:'mtg'}).intent,'meta.best','a question about tournament decks is still that');
+ assert.equal(planQuery('what is the funnest deck I can play with mono red and my friend has a blue deck',{game:'mtg'}).intent,'build');
 }

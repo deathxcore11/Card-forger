@@ -5,6 +5,8 @@ import {prepareMtgDeck} from './ai-deck-builder.js';
 import {cardPrice,cardKey,validateDeck} from './core.js';
 import {formatOf as mtgFormatOf} from './formats.js';
 import {trackedQuote,priceSeries} from './pricehist.js';
+import {profileOf,simulateMatchup} from './matchup.js';
+import {mtgConstructedPower} from './deckpower.js';
 import {validateBuildProposal,proposalFeedback} from './ai-build-contract.js';
 import {goalDescription} from './ai-deck-goal.js';
 import {resolveYgoSet} from './ygo.js';
@@ -444,6 +446,40 @@ export function makeAskTools(x) {
       const rows = [...new Set([...now.keys(), ...Object.keys(day.shares)])].map(name => ({ name, key: now.get(name)?.best || '', now: pct(now.get(name)?.share), then: pct(day.shares[name]), fresh: !(name in day.shares), gone: !now.has(name) })).map(r => ({ ...r, delta: Math.round((r.now - r.then) * 10) / 10 }));
       const picked = trend === 'then' ? rows.filter(r => r.then > 0).sort((a, b) => b.then - a.then) : trend === 'falling' ? rows.filter(r => r.delta < 0).sort((a, b) => a.delta - b.delta) : rows.filter(r => r.delta > 0).sort((a, b) => b.delta - a.delta);
       return { game: g, format: fmt, trend: trend || 'rising', day: day.day, today, short, start: h.start || day.day, decks: picked.slice(0, 4) };
+    },
+    // Matchups by the app's own simulation (matchup.js, the one the Power page uses): one list against the most played
+    // tournament lists of its format, a couple of thousand simulated games each. It is a model of two decks racing, not games
+    // played on the table, and every answer says so. Magic only for now.
+    async deck_matchup({ game, match, key, format, colors, opponent }) {
+      const g = g0(game);
+      if (g !== 'mtg') return { game: g, error: 'Search can only simulate Magic matchups so far. The deck\'s Power page has matchups for this game.' };
+      let d, mine = !key, fmt;
+      if (mine) { const found = ownDeck(g, match); if (!found.deck) return { game: g, ...found }; d = found.deck; fmt = d.format || ''; }
+      const covered = x.MTG_META_FORMATS.find(([k]) => k.toLowerCase() === String(mine ? fmt : format || '').toLowerCase());
+      if (!covered) return { game: g, ...(d ? { deck: { id: d.id, name: d.name, format: fmt } } : {}), error: /commander|edh/i.test(fmt) ? 'The tournament feed has no lists for casual Commander, so there is nothing to simulate against.' : `The tournament feed has no ${fmt || format || 'such'} lists to simulate against.` };
+      const k = 'mtg:' + covered[0], data = await x.loadMetaData(k).catch(() => x.metaState(k).data);
+      if (!data?.decks?.length) return { game: g, error: 'Tournament data for that format isn\'t available right now.' };
+      const listOf = a => data.decks.find(y => y.key === a.best) || data.decks.find(y => (y.archetype || y.name) === a.name);
+      if (!mine) { const y = data.decks.find(z => z.key === key); if (!y) return { game: g, error: 'That deck is no longer in the tournament feed.' }; d = { name: y.archetype || y.name, key, cards: y.main || [], format: covered[0] }; }
+      const flat = t => ' ' + String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
+      let field = [...(data.archetypes || [])].sort((a, b) => (b.share || 0) - (a.share || 0)).map(a => ({ a, y: listOf(a) })).filter(f => f.y?.main?.length && f.y.key !== key);
+      const want = (colors || []).map(c => String(c).toLowerCase());
+      // A deck named in the words ("izzet prowess") wins over its colours; colours alone ("blue") mean the top decks with them.
+      const words = opponent ? flat(opponent).trim().split(' ') : [], named = words.length ? field.filter(f => words.every(w => flat(f.a.name).includes(' ' + w))) : [];
+      if (named.length) field = named;
+      else if (want.length) field = field.filter(f => Array.isArray(f.y.colors) ? want.every(c => f.y.colors.map(z => String(z).toLowerCase()).includes(c)) : false);
+      else if (words.length) field = [];
+      if (!field.length) return { game: g, deck: { id: d.id, name: d.name, format: covered[0] }, mine, noField: true, opponent: opponent || '', colors: want };
+      field = field.slice(0, want.length || opponent ? 3 : 8);
+      const names = [...new Set([...d.cards, ...field.flatMap(f => f.y.main)].map(r => r.name).filter(Boolean))];
+      if (names.some(n => !x.meta(n))) await x.resolveNames(names.slice(0, 700)).catch(() => {});
+      const prof = cards => { const rows = cards.map(r => ({ qty: r.qty, c: x.meta(r.name) })).filter(r => r.c); try { return rows.length ? profileOf('mtg', mtgConstructedPower({ cards }, S.catalog, cardKey, 60), rows) : null; } catch { return null; } };
+      const me = prof(d.cards);
+      if (!me) return { game: g, deck: { id: d.id, name: d.name, format: covered[0] }, mine, error: 'The deck needs a full list with loaded cards before it can be simulated.' };
+      const pct = v => Math.round(v * 100), out = []; let skipped = 0;
+      for (const f of field) { const them = prof(f.y.main), sim = them && simulateMatchup('mtg', me, them); if (!sim) { skipped++; continue; } out.push({ name: f.a.name, key: f.y.key || '', share: Math.round((f.a.share || 0) * 1000) / 10, win: pct(sim.win), onPlay: pct(sim.onPlay), onDraw: pct(sim.onDraw), runs: sim.runs, reasons: sim.reasons || [] }); }
+      if (!out.length) return { game: g, deck: { id: d.id, name: d.name, format: covered[0] }, mine, error: 'The tournament lists could not be loaded for a simulation right now.' };
+      return { game: g, deck: { id: d.id, name: d.name, key: d.key || '', format: covered[0] }, mine, narrowed: !!(want.length || opponent), field: out, skipped };
     },
     async build_deck(input, handshake={}) {
       const checked=validateBuildProposal(input);

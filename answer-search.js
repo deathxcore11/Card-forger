@@ -43,6 +43,8 @@ export function readSpan(n,now=new Date()){
 const TREND_UP=/\b(?:getting|becoming|growing|gaining|rising|trending|climbing|on the rise|up and coming|heating up|more popular|more played|picking up|blowing up)\b/;
 const TREND_DOWN=/\b(?:falling off|less popular|less played|declining|dying|dropping off|on the way out|losing (?:ground|popularity|share)|fading|getting worse)\b/;
 const TREND_PAST=/\b(?:last|previous|past) (?:week|month)\b|\b(?:a|one|two|2|three|3) (?:weeks?|month) ago\b/;
+// One of your decks set against another: what follows is the other deck ("against blue", "beat izzet prowess"), or nothing ("what beats my deck").
+const DECK_VS=/\b(?:against|versus|vs|beats?|beating|loses? to|weak to|bad against|good against|matchups?|in the meta|into the meta)\b\s*(.*)$/;
 // Words that ask whether a deck may be played, and words that ask how to make it better.
 const DECK_CHECK=/\b(?:legal|legality|illegal|banned|ban ?list|allowed|valid|tournament ready|tournament legal|rotat\w*|playable|(?:can|could|may) i (?:play|use|bring|run|enter))\b/;
 const DECK_UP=/\b(?:better|improve|improved|improving|upgrade|upgrades|upgraded|upgrading|stronger|tune|tuned|tuning|fix|fixed|competitive|missing|closest tournament|what (?:should|can|could) i (?:add|cut|change|swap))\b/;
@@ -212,9 +214,20 @@ function planOne(q,ctx={}){
 
  // One of your own decks, checked against the rules or compared with the tournament lists. The deck is named by "my ... deck"
  // or by the name of a saved deck (ctx.myDecks), so "can i play goblin rush in pioneer" is about the deck called Goblin Rush.
- {const own=(ctx.myDecks||[]).map(norm).filter(d=>d.length>2).sort((a,b)=>b.length-a.length).find(d=>(' '+n+' ').includes(' '+d+' '))||'';
-  const said=/\bmy (?:\w+ ){0,5}decks?\b/.test(n.replace(OTHER_PLAYER,' '))||(mine&&/\b(?:decks?|it)\b/.test(n)&&!!own);
+ {const full=norm(raw),own=(ctx.myDecks||[]).map(norm).filter(d=>d.length>2).sort((a,b)=>b.length-a.length).find(d=>(' '+full+' ').includes(' '+d+' '))||'';
+  const said=/\bmy (?:\w+ ){0,5}decks?\b/.test(full.replace(OTHER_PLAYER,' '))||(mine&&/\b(?:decks?|it)\b/.test(n)&&!!own);
   if(said||own){
+   // "is my goblin rush deck good against blue", "what beats my deck": the app's matchup simulation against the tournament lists.
+   const vm=full.match(DECK_VS);
+   if(vm){
+    // "what beats my goblin deck": the deck after the word is mine, and the other side is the whole field.
+    const tailMine=/\bmy\b/.test(vm[1]||'')||(!!own&&(' '+(vm[1]||'')+' ').includes(' '+own+' '));
+    const who=tailMine?'':(vm[1]||'').replace(/\b(?:an?|the|decks?|lists?|top|best|meta|field|other|others|everything|anything|everyone|most|right now|now|today|in|standard|modern|pioneer|legacy|vintage|pauper)\b/g,' ').replace(/\s+/g,' ').trim();
+    const col=who?deckColors(who+' deck'):null,head=tailMine?vm[1]:full.slice(0,vm.index);
+    const match=own||rest(head,GAME_WORDS,MINE,/\b(?:decks?|is|are|it|its|how|does|do|did|well|good|bad|great|any|would|will|can|could|what|which|whats|who|the|a|an|my|fare|stack|up|hold|match|matchups?|chances?|odds|win|wins|winning|i|we|in|at|to|of|so|and|really|even|still|think)\b/g).join(' ');
+    read.push(chip(match?'your deck "'+match+'"':'your deck','scope'));read.push(chip(col?.colors?.length?'against '+who+' decks':who?'against "'+who+'"':'against the top decks','filter'));read.push(chip('simulated games','source'));
+    return plan('decks.matchup',{tool:'deck_matchup',args:{game,...(match?{match}:{}),...(col?.colors?.length?{colors:col.colors}:{}),...(who?{opponent:who}:{})},pick:'mine'});
+   }
    const check=DECK_CHECK.test(n),up=!check&&DECK_UP.test(n);
    if(check||up){
     const f=check?findFormat(n,game):null;
@@ -540,6 +553,8 @@ function planAbout(raw,ctx){
   const left=rest(t.replace(IT,' '),f?f[1]:null,/\b(?:how|much|many|does|do|did|is|are|was|what|whats|where|which|who|can|could|would|will|i|me|my|to|of|in|the|a|an|and|for|with|well|good good|have|has|own|need|cards?|decks?|lists?|play|run|finish|build|cost|costs|whole|all|still|right now|now|today|please|tell|show)\b/g);
   if(left.length)return null;
   const read=[chip(GAME_LABEL[a.game],'game'),chip(a.name,'deck'),chip(FACET_LABEL[f?f[0]:'other'],'ask')];
+  // "What beats it?": the app's own matchup simulation of the other top lists against this one (Magic).
+  if(f?.[0]==='beat'&&a.game==='mtg'){read.push(chip('simulated games','source'));return {intent:'meta.matchup',game:a.game,P:parseQuery(raw),read,missing:[],call:{tool:'deck_matchup',args:{game:a.game,format:a.format,key:a.key},pick:'beats',name:a.name},answerable:true,hand:null};}
   return {intent:'meta.about',game:a.game,P:parseQuery(raw),read,missing:[],call:{tool:'meta_decks',args:{game:a.game,format:a.format,key:a.key},pick:'about',facet:f?f[0]:'other',name:a.name},answerable:true,hand:null};
  }
  if(a.kind==='card'||a.kind==='mydeck'){
