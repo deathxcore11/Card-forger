@@ -25,7 +25,7 @@ import { homeValue, homeEdition, homeDeckShelf } from "./home-ui.js";
 import {interactiveRules} from './rule-learning.js';
 import {brandMark,brandStaticMark} from './brand.js';
 import {conditionBadge,conditionValue} from './condition-value.js';
-import { aiReviewPanel } from './ai-review.js';
+import { coachModel } from './ai-review.js';
 import { rankPairs } from "./pairing.js";
 import { APP_VERSION } from "./config.js";
 import { matchupsTab, fieldStore, computeMatchups } from "./matchups-ui.js";
@@ -1346,7 +1346,7 @@ function commanderPods(d, fm, mk, st, base) {
   return matchupsTab({ ...pod, ...fieldSummary(sims, d.results || [], st, mtgListSig(d)), podWin: res.win, seats: res.seats, speed: me.speed });
 }
 // The calibration of the field archetype this deck copies (see calibrateField), else 0.
-const mtgBias = (p, field) => { const m = p?.match; if (!canBorrowResults(p)) return 0; const f = (field || []).find((x) => String(x.name).toLowerCase() === String(m.archetype).toLowerCase()); return f?.bias || 0; };
+export const mtgBias = (p, field) => { const m = p?.match; if (!canBorrowResults(p)) return 0; const f = (field || []).find((x) => String(x.name).toLowerCase() === String(m.archetype).toLowerCase()); return f?.bias || 0; };
 export const mtgListSig = (d) => listSig({ main: d.cards, side: d.side || [] });
 // Only games played with this exact list feed the numbers; earlier lists stay in the history.
 export function fieldSummary(sims, results, st, sig) {
@@ -1495,6 +1495,8 @@ export function mtgCoachHooks(d, pw) {
       const had = new Set(powerReadiness("mtg", d, f, meta).issues), legal = (c) => !powerReadiness("mtg", { ...d, cards: [...d.cards, { name: c.name, qty: 1 }] }, f, meta).issues.some((i) => !had.has(i) && i.includes(c.name));
       return [...new Set([...fits.slice(0, 30), ...ranked, ...owned])].filter(legal).slice(0, 60);
     },
+    // How many owned cards have their card data loaded: the coach looks for swaps again when this grows.
+    poolSize: () => { let n = 0; for (const e of S.state.collection) if (meta(e.name)) n++; return n; },
     probe: (card) => mtgPower({ ...d, id: d.id + "~probe", cards: [...d.cards, { name: card.name, qty: 1 }] }).parts,
     // The decks this list would face: the top archetypes in the app's tournament data, each with
     // its most-played cards across that archetype's placing lists.
@@ -1570,25 +1572,34 @@ function powerHub(d, pw, p, issues) {
   const chains = [...(pw.engine?.links || []).reduce((mp, x) => { const text = "wants " + String(x.need).replace(/^type:(\w+)/i, (m, t) => t[0].toUpperCase() + t.slice(1) + " Energy") + ": " + x.providers.slice(0, 3).map((q) => `${q.qty}× ${q.name}`).join(", "); const e = mp.get(text); e ? e.heads.push(x.payoff) : mp.set(text, { heads: [x.payoff], text }); return mp; }, new Map()).values()].slice(0, 3).map((e) => ({ head: e.heads.join(" and "), text: e.text }));
   const wins = { sources, chains, text: sources.length ? "" : g?.winCon || "" };
   const m = pw.match, c = pw.ctx || {};
-  const meta = { match: m ? { archetype: m.archetype, sim: m.sim, lists: m.lists, share: m.share, missing: (m.missing || []).slice(0, 3), extra: (m.extra || []).slice(0, 3) } : null, field: c.field || [] };
+  const metaInfo = { match: m ? { archetype: m.archetype, sim: m.sim, lists: m.lists, share: m.share, missing: (m.missing || []).slice(0, 3), extra: (m.extra || []).slice(0, 3) } : null, field: c.field || [] };
   const risks = (pw.strategicRisk?.axes || []).map((a) => ({ label: a.label, copies: a.copies }));
   const colorTotal = Object.values(p.pips).reduce((a, b) => a + b, 0), srcTotal = Object.values(p.sources).reduce((a, b) => a + b, 0), colors = Object.keys(p.pips).filter((k) => p.pips[k] > 0 || p.sources[k] > 0);
   const curve = curveChart(p.curve) + (colors.length ? `<div class="pwp-colors">${colors.map((k) => `<div class="meter two"><span>${sym(k)}</span><span class="pair">${bar(colorTotal ? p.pips[k] / colorTotal : 0, "c-" + k)}${bar(srcTotal ? p.sources[k] / srcTotal : 0, "c-" + k + " faint")}</span><b class="small">${pct(colorTotal ? p.pips[k] / colorTotal : 0)} cost · ${pct(srcTotal ? p.sources[k] / srcTotal : 0)} lands</b></div>`).join("")}</div>` : "");
-  // Matchups as pros and cons.
-  const M = phMatchups(d, pw, p);
-  const mu = `<section class="pwp-card"><h3>Matchups</h3>${M.none ? `<p class="pwp-text">${esc(M.none)}</p>` : M.busy ? `<p class="pwp-text" role="status">${esc(M.busy)}</p>` : M.load ? `<p class="pwp-text">Simulate this deck against the decks winning right now.</p>${M.error ? `<p class="pwp-text warn-text">${esc(M.error)}</p>` : ""}<div class="pwp-actions"><button class="btn pwp-btn" data-act="muRun">Simulate matchups</button><button class="btn ghost pwp-btn" data-act="amOpen" data-tab="setup">Read one matchup</button></div>` : `<div class="pwp-pc"><div class="pwp-pro"><h4>Strong against</h4>${M.strong.map((x) => phMatchRow(x, "up")).join("") || '<p class="pwp-text">No clear edge in this field.</p>'}</div><div class="pwp-con"><h4>Weak against</h4>${M.weak.map((x) => phMatchRow(x, "down")).join("") || '<p class="pwp-text">No clear weakness in this field.</p>'}</div></div><small>${M.n} tournament decks, 2,000 games each${M.even < 0.5 ? ", share of four-player pods" : ""}.</small>`}${M.load ? "" : `<button class="btn ghost pwp-btn" data-act="amOpen" data-tab="setup">Read one matchup</button>`}</section>`;
+  // The coach lives on this page: what to fix, the opening hand, and swaps Power has re-scored.
+  const C = coachModel("mtg", d, meta, pw, mtgCoachHooks(d, pw));
+  // Against the field: closest list, the top decks with simulated odds (tap one for the read), and what can break.
+  const M = phMatchups(d, pw, p), even = M.even ?? 0.5, mst = (S.ui.mu ||= {})[d.id];
+  if (M.load && !M.error && mst && !mst.auto) { mst.auto = true; setTimeout(() => globalThis.dispatchEvent?.(new Event("cardstashy-want-matchups")), 0); }
+  const oppRow = (x) => { const tone = x.w >= even + 0.05 ? "up" : x.w <= even - 0.05 ? "down" : ""; return `<button class="pwp-opp" data-act="amPick" data-name="${esc(x.name)}"><span><b>${esc(x.name)}</b><small>${x.share ? Math.round(x.share * 100) + "% of the field" : ""}${x.why ? (x.share ? " · " : "") + esc(x.why) : ""}</small></span><em class="${tone}">${Math.round(x.w * 100)}%<i>${tone === "up" ? "Good" : tone === "down" ? "Tough" : "Close"}</i></em></button>`; };
+  const breaks = (C.pressure || []).slice(0, 2).map((x) => `<p class="pwp-text"><b>${esc(x.threat.replace(/^Something shuts off your /, "").replace(/^./, (ch) => ch.toUpperCase()))}.</b> ${esc(x.impact)} ${esc(x.backup)}</p>`).join("");
+  const mt = metaInfo.match;
+  const fieldCard = `<section class="pwp-card"><div class="pwp-row"><h3>Against the field</h3>${M.all?.length ? `<small>2,000 games each${even < 0.5 ? " · four-player pods" : ""}</small>` : ""}</div>${mt ? `<p class="pwp-text">Closest tournament list: <b>${esc(mt.archetype)}</b>, ${Math.round(mt.sim * 100)}% the same.</p>` : ""}${M.none ? `<p class="pwp-text">${esc(M.none)}</p>` : M.busy ? `<p class="pwp-text" role="status">${esc(M.busy)}</p>` : M.load ? (M.error ? `<p class="pwp-text warn-text">${esc(M.error)}</p><button class="btn ghost pwp-btn" data-act="muRun">Try again</button>` : `<p class="pwp-text" role="status">Simulating against the decks winning right now…</p>`) : [...M.all].sort((x, y) => (y.share || 0) - (x.share || 0)).slice(0, 5).map(oppRow).join("")}${breaks ? `<h3>Where it can break</h3>${breaks}` : ""}<button class="btn ghost pwp-btn" data-act="amOpen" data-tab="setup">Pick any other deck</button></section>`;
+  const coachSwaps = C.swaps.length ? [...C.swaps].sort((x, y) => y.after - y.before - (x.after - x.before)).slice(0, 4).map((x) => `<div class="pwp-sw pwp-own"><span class="o">${esc(x.cut)}</span><i>→</i><span class="n">${esc(x.add)}</span><small>${esc(x.why)}</small><em>Power ${x.before} → ${x.after}</em><button class="btn ghost pwp-btn" data-act="coachSwap" data-cut="${esc(x.cut)}" data-add="${esc(x.add)}">Swap 1 copy</button></div>`).join("") : C.busy ? `<p class="pwp-text" role="status">Trying swaps from the cards you own…</p>` : `<p class="pwp-text">No card you own raises this deck's Power right now.</p>`;
+  const fromLists = C.field && (C.field.core.length || C.field.missing.length) ? `<p class="pwp-text">Tournament lists like this one also play: ${esc([...new Set([...C.field.core, ...C.field.missing])].filter((n) => !C.swaps.some((x) => x.add === n)).slice(0, 6).join(", "))}.</p>` : "";
+  const ownHead = `<div class="pwp-row"><h3>Upgrades</h3><small>from cards you own</small></div>${coachSwaps}${fromLists}`;
   // Upgrades.
   const U = S.ui.upgrade, B = S.ui.build;
   let up;
   if (d.format === "Commander") {
     const plans = U.deckId === d.id ? U.plans : {}, plan = plans[U.budget];
-    up = `<section class="pwp-card"><h3>Upgrades</h3>${plan?.swaps?.length ? plan.swaps.slice(0, 4).map((s) => `<div class="pwp-sw"><span class="o">${esc(s.cut)}</span><i>→</i><span class="n">${esc(s.add)}</span>${s.powerBefore != null && s.powerAfter != null ? `<small>Power ${s.powerBefore} → ${s.powerAfter}</small>` : ""}</div>`).join("") : ""}${U.msg ? `<small role="status" id="upMsg">${esc(U.msg)}</small>` : ""}<button class="btn pwp-btn" data-act="upRun" ${U.busy ? "disabled" : ""}>${U.busy ? "Working…" : plan ? "↻ Refresh" : "Find upgrades"}</button>${plan ? `<details class="pwp-more"><summary>Review and apply swaps</summary>${swapPanel(d)}${swapResults(d, plan)}</details>` : ""}</section>`;
+    up = `<section class="pwp-card" id="pwpUpgrades">${ownHead}${plan?.swaps?.length ? plan.swaps.slice(0, 4).map((s) => `<div class="pwp-sw"><span class="o">${esc(s.cut)}</span><i>→</i><span class="n">${esc(s.add)}</span>${s.powerBefore != null && s.powerAfter != null ? `<small>Power ${s.powerBefore} → ${s.powerAfter}</small>` : ""}</div>`).join("") : ""}${U.msg ? `<small role="status" id="upMsg">${esc(U.msg)}</small>` : ""}<button class="btn pwp-btn" data-act="upRun" ${U.busy ? "disabled" : ""}>${U.busy ? "Working…" : plan ? "↻ Refresh" : "Find upgrades"}</button>${plan ? `<details class="pwp-more"><summary>Review and apply swaps</summary>${swapPanel(d)}${swapResults(d, plan)}</details>` : ""}</section>`;
   } else {
     const swaps = B.fillDeck === d.id ? B.formatSwaps || [] : [], count = sumQty(d.cards);
-    up = `<section class="pwp-card"><h3>Upgrades</h3>${swaps.map((s, i) => `<div class="pwp-sw"><span class="o">${esc(s.cardOut)}</span><i>→</i><span class="n">${esc(s.cardIn)}</span><small>${esc(s.reason)}</small><button class="btn ghost pwp-btn" data-act="applyFormatUpgrade" data-i="${i}">Swap 1 copy</button></div>`).join("")}${count === fm.size ? `<button class="btn pwp-btn" data-act="suggestFormatUpgrades" ${B.busy ? "disabled" : ""}>${swaps.length ? "↻ Refresh" : "Find paired upgrades"}</button>` : ""}<details class="pwp-more"><summary>${count < fm.size ? "Fill open slots and compare budgets" : "Complete this list and compare budgets"}</summary>${fillAnyPanel(d, fm, count)}</details></section>`;
+    up = `<section class="pwp-card" id="pwpUpgrades">${ownHead}${swaps.map((s, i) => `<div class="pwp-sw"><span class="o">${esc(s.cardOut)}</span><i>→</i><span class="n">${esc(s.cardIn)}</span><small>${esc(s.reason)}</small><button class="btn ghost pwp-btn" data-act="applyFormatUpgrade" data-i="${i}">Swap 1 copy</button></div>`).join("")}${count === fm.size ? `<button class="btn pwp-btn" data-act="suggestFormatUpgrades" ${B.busy ? "disabled" : ""}>${swaps.length ? "↻ Refresh" : "Find paired upgrades"}</button>` : ""}<details class="pwp-more"><summary>${count < fm.size ? "Fill open slots and compare budgets" : "Complete this list and compare budgets"}</summary>${fillAnyPanel(d, fm, count)}</details></section>`;
   }
   const foot = `Estimates from this list: ${g ? g.runs.toLocaleString() + " solitaire trials, " : ""}${pw.sims?.length ? "3,000 shuffles, " : ""}tournament lists. Not match results. Rules checks: <b class="${issues.length ? "warn-text" : "ok-text"}">${issues.length ? issues.length + " to fix" : "pass"}</b>`;
-  return powerPageHtml({ score, tier: tier.word, plan: pw.plan || pw.lens || "", sub: score == null ? "Power unavailable until the checks pass" : tier.sub, chips, drivers, tempo, wins, meta, risks, curve, matchups: mu, upgrades: up, foot });
+  return powerPageHtml({ score, tier: tier.word, plan: pw.plan || pw.lens || "", sub: score == null ? "Power unavailable until the checks pass" : tier.sub, chips, drivers, tempo, wins, meta: metaInfo, risks, curve, upgrades: up, foot, coach: C, fieldCard, game: "mtg" });
 }
 
 function deckEngine(d) {
@@ -1604,7 +1615,6 @@ function deckEngine(d) {
   return `${p.unknown ? `<div class="note warn">${p.unknown} cards have no card data yet, so they aren’t counted. <button class="link" data-act="refreshDeck">Load card data</button></div>` : ""}${powerHub(d, pw, p, issues)}
   ${d.format === "Commander" ? `<details class="pwp-more"><summary>Why Bracket ${bracketEstimate(d, S.catalog).bracket}</summary>${bracketPanel(d)}</details>` : ""}
   <details class="pwp-more"><summary>Mana base and payment</summary>${manaBasePanel(d, p)}</details>
-  <details class="pwp-more"><summary>Deck coach</summary>${aiReviewPanel("mtg", d, meta, pw, mtgCoachHooks(d, pw))}</details>
   ${issues.length ? `<details class="pwp-more"><summary>${issues.length} rules checks to fix</summary><ul class="issues">${issues.slice(0, 40).map((i) => `<li>${esc(i.text)}</li>`).join("")}</ul></details>` : ""}`;
 }
 

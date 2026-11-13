@@ -55,5 +55,22 @@ for (const c of cases) {
   for (const tab of ['deck', 'pilot', 'meta', 'improve']) { e.tab = tab; const html = aiReviewDialogContent({ ...e, tab }); assert.doesNotMatch(html, /OpenAI|AI coach|AI review|undefined|NaN/, `${c.g} ${tab} tab`); assert.ok(html.length > 400); }
   console.log(`  ${c.g}: ${r.headline} | ${r.explain.length} parts, ${r.pressure.scenarios.length} stress tests, ${r.improve.length} swaps`);
 }
+// The coach as data for the Power page: fix first, the hand, owned swaps with their Power gain; no window of its own.
+{
+  const { coachModel, redealCoachHand } = await import(R + 'ai-review.js'), { powerPageHtml } = await import(R + 'power.js');
+  const c = cases[0], { d, p, hooks, lookup } = setup(c); let changed = 0;
+  let M = coachModel('mtg', d, lookup, p, hooks, () => changed++);
+  assert.ok(M.fix && M.hand.cards.length === 7 && M.busy && !M.swapsReady, 'everything but the swaps is ready at once');
+  for (let i = 0; i < 400 && !changed; i++) await new Promise(r => setTimeout(r, 25));
+  M = coachModel('mtg', d, lookup, p, hooks, () => changed++); assert.ok(M.swapsReady && !M.busy && changed === 1, 'swaps arrive once, in the background');
+  for (const s of M.swaps) assert.ok(s.after >= s.before && s.cut && s.add);
+  const first = M.hand.cards.map(x => x.name).join(); redealCoachHand(M.key); const again = coachModel('mtg', d, lookup, p, hooks).hand.cards.map(x => x.name).join(); assert.notEqual(again, first, 'Deal another hand deals a different hand');
+  const html = powerPageHtml({ score: 50, tier: 'Tier 3', plan: p.plan, chips: [], coach: M, fieldCard: '<section class="pwp-card"><h3>Against the field</h3></section>', upgrades: '<section class="pwp-card" id="pwpUpgrades"></section>', game: 'mtg' });
+  for (const want of [/Fix first/, /Opening hand/, /data-act="coachRedeal"/, /Across 3,000 shuffles/, /Against the field/, /All \d+ measured parts/]) assert.match(html, want);
+  assert.ok(html.indexOf('Opening hand') < html.indexOf('Against the field') && html.indexOf('Against the field') < html.indexOf('pwpUpgrades'), 'the page reads: fix, hand, field, upgrades');
+  assert.doesNotMatch(html, /\bAI\b|undefined|NaN/);
+  assert.match(powerPageHtml({ score: 50, tier: 'T', drivers: [{ label: 'x', ratio: .5 }] }), /pwp-drivers/, 'without the coach the older layout is kept');
+  console.log('PASS: the coach feeds the Power page (fix first, hand with redeal, background swaps) and the page keeps its reading order.');
+}
 assert.equal(net, 0, 'no network call at all');
 console.log('PASS: the deck coach is written by the app from Power, hand odds, the goldfish and the tournament field for all three games; swaps are owned, legal and re-scored; zero network calls.');

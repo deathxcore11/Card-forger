@@ -7,7 +7,7 @@ import {brandMark} from './brand.js';
 // (Power's numbers, a sample hand, hand odds, the goldfish, the tournament field, owned swap candidates),
 // and every swap is re-scored by Power before it is shown. Nothing leaves the device; it works offline.
 import { esc } from './ui.js';
-import { buildCoachPlan } from './coach-plan.js';
+import { buildCoachPlan, coachBasics } from './coach-plan.js';
 import { review } from './deckaudit.js';
 import { competitiveScore } from './scouting.js';
 const entries = new Map();
@@ -217,9 +217,40 @@ function verify(entry) {
 
 /* ---------- Launcher and dialog ---------- */
 
-export function aiReviewPanel(game, deck, lookup, p, hooks = {}, {compact = false} = {}) {
+// The coach entry for a deck: made once per list, replaced when the list changes.
+function entryFor(game, deck, lookup, p, hooks) {
   const payload = reviewPayload(game, deck, lookup, p), signature = JSON.stringify(payload), key = game + ':' + deck.id;
   let entry = entries.get(key);
+  if (!entry || entry.signature !== signature) {
+    if (entries.size > 40) entries.delete(entries.keys().next().value);
+    entry = { signature, payload, game, p, rows: deckRows(game, deck, lookup), hooks, busy: false, result: null, error: '', errorCode: '', tab: 'deck', handN: 0 }; entries.set(key, entry);
+    if (activeDialog?.key === key) { activeDialog.stale = true; updateDialog(); }
+  } else { entry.hooks = hooks; entry.p = p; }
+  return { key, entry };
+}
+/**
+ * The coach, as data for the Power page (no window of its own). Everything but the swaps is ready at once; the
+ * swaps are worked out in the background (Power re-scores each one) and `changed()` is called when they arrive.
+ */
+export function coachModel(game, deck, lookup, p, hooks = {}, changed = () => globalThis.dispatchEvent?.(new Event('cardstashy-rerender'))) {
+  const { key, entry } = entryFor(game, deck, lookup, p, hooks), P = entry.payload.power || { areas: [], priority: [] };
+  const handIds = entry.handN ? sampleHand(game, entry.rows, entry.signature.length + ':' + entry.handN + ':' + entry.rows.map(r => r.row.qty).join(''), entry.payload.format) : entry.payload.hand;
+  const basics = entry.basics?.n === entry.handN ? entry.basics.r : (entry.basics = { n: entry.handN, r: coachBasics(entry, p, handIds) }).r;
+  let pool = null; try { pool = hooks.poolSize?.() ?? null; } catch {}
+  if (entry.result && !entry.busy && pool != null && entry.poolN != null && pool !== entry.poolN) { entry.result = null; entry.verified = null; entry.queued = false; }
+  if (!entry.result && !entry.busy && !entry.error && !entry.queued) { entry.queued = true; entry.poolN = pool; setTimeout(() => { void runAiReview(key, changed, undefined, { quiet: true }); }, 0); }
+  const info = cardInfo(game, entry.rows), v = entry.result ? verify(entry) : null, top = P.areas.find(a => a.key === P.priority[0]) || null;
+  const area = a => ({ key: a.key, label: a.label, count: a.count, target: a.target, ratio: a.ratio, status: a.status, max: a.max ?? null, lost: a.lost, says: basics.explain.find(x => x.area === a.key)?.says || a.why || '' });
+  const swaps = (entry.result?.improve || []).map((s, i) => ({ s, sc: v?.swaps[i] })).filter(x => x.sc && !x.sc.issues.length && x.sc.after >= x.sc.before).map(({ s, sc }) => ({ cut: s.cutName, add: s.addName, why: s.area ? s.gain : s.gain, before: sc.before, after: sc.after }));
+  return { key, headline: basics.headline, fix: top ? area(top) : null, weak: P.priority.map(k => P.areas.find(a => a.key === k)).filter(Boolean).map(area), strong: P.areas.filter(a => a.status === 'strong').map(area), all: P.areas.length,
+    hand: basics.pilot.hand ? { ...basics.pilot.hand, cards: (handIds || []).map(id => info.get(id)).filter(Boolean).map(c => ({ name: c.name, img: c.img, land: c.land, cost: c.cost })), note: entry.payload.handProfile?.note || '' } : null,
+    pressure: basics.pressure.scenarios, field: basics.field, needs: basics.needs, swaps, swapsReady: !!entry.result, busy: !entry.result && !entry.error };
+}
+/** Deal another opening hand for the coach on the Power page. */
+export function redealCoachHand(key) { const e = entries.get(key); if (e) e.handN = (e.handN || 0) + 1; }
+export function aiReviewPanel(game, deck, lookup, p, hooks = {}, {compact = false} = {}) {
+  const { key, entry: made } = entryFor(game, deck, lookup, p, hooks), payload = made.payload, signature = made.signature;
+  let entry = made;
   if (!entry || entry.signature !== signature) {
     if (entries.size > 40) entries.delete(entries.keys().next().value);
     entry = { signature, payload, game, p, rows: deckRows(game, deck, lookup), hooks, busy: false, result: null, error: '', errorCode: '', tab: 'deck' }; entries.set(key, entry);
@@ -391,9 +422,9 @@ function areaMove(v, key) {
   const a = v.beforeParts?.find(x => x.key === key), b = v.afterParts?.find(x => x.key === key);
   return a && b ? { before: a.count, after: b.count, up: b.ratio > a.ratio + 1e-9, down: b.ratio < a.ratio - 1e-9 } : null;
 }
-export async function runAiReview(key, render, fetcher = fetch) {
+export async function runAiReview(key, render, fetcher = fetch, { quiet = false } = {}) {
   const entry = entries.get(key); if (!entry || entry.busy || entry.result) return;
-  entry.busy = true; entry.error = ''; entry.errorCode = ''; entry.verified = null; render(); updateDialog();
+  entry.busy = true; entry.error = ''; entry.errorCode = ''; entry.verified = null; if (!quiet) render(); updateDialog();
   try {
     await withCandidates(entry);
     if (entries.get(key) !== entry) return;

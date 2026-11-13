@@ -36,8 +36,8 @@ function explain(P, ref) {
 }
 
 // Opening hand: a fixed rule, stated in the answer. Magic: lands in hand and what can be cast early.
-function handRead(entry, p) {
-  const byId = new Map(entry.rows.map(r => [r.id, r])), hand = (entry.payload.hand || []).map(id => byId.get(id)).filter(r => r?.c);
+function handRead(entry, p, ids = entry.payload.hand) {
+  const byId = new Map(entry.rows.map(r => [r.id, r])), hand = (ids || []).map(id => byId.get(id)).filter(r => r?.c);
   if (!hand.length) return null;
   const game = entry.game, weak = (entry.payload.power?.areas || []).find(a => a.key === (entry.payload.power.priority || []).find(k => !k.startsWith('cap:')));
   const odds = (p?.sims || []).filter(s => Number.isFinite(s.p)).slice(0, 5).map(s => ({ label: s.label, p: s.p, target: s.target ?? null, lower: !!s.lower, note: s.note || '' }));
@@ -158,8 +158,8 @@ function needs(entry) {
   } catch { return []; }
 }
 
-/** The whole coaching result for one deck, in the shape the coach screen draws. `p` is Deck Power's result. */
-export async function buildCoachPlan(entry, p) {
+/** Everything the coach can say at once (no swaps yet), in the shape the coach screen draws. `p` is Deck Power's result; `hand` is a dealt hand's row ids. */
+export function coachBasics(entry, p, hand = entry.payload.hand) {
   const P = entry.payload.power || { areas: [], priority: [] }, ref = refs(entry), g = p?.goldfish;
   const engine = ref((p?.engine?.links || []).flatMap(l => [l.payoff, ...(l.providers || [])]), 6);
   return {
@@ -167,9 +167,11 @@ export async function buildCoachPlan(entry, p) {
     identity: { plan: cut(P.plan || 'The app could not name a plan for this list.', 300), howItWins: cut(g?.headline || '', 300), winCards: [], proposedCards: [], winEvidence: [], evidenceStatus: '', engineCards: engine, winCon: cut(g?.winCon || '', 300), endgame: cut(g?.endgame || '', 300) },
     explain: explain(P, ref), beyond: [],
     meta: metaRead(entry, ref),
-    pilot: { hand: handRead(entry, p), lines: curveLine(entry), goldfish: (g?.metrics || []).filter(m => m.value != null).slice(0, 6).map(m => ({ label: m.label, value: m.pct ? pct(m.value) : num(typeof m.value === 'number' ? +m.value.toFixed(2) : m.value), note: m.note || '' })) },
+    pilot: { hand: handRead(entry, p, hand), lines: curveLine(entry), goldfish: (g?.metrics || []).filter(m => m.value != null).slice(0, 6).map(m => ({ label: m.label, value: m.pct ? pct(m.value) : num(typeof m.value === 'number' ? +m.value.toFixed(2) : m.value), note: m.note || '' })) },
     pressure: { scenarios: pressure(p) },
-    improve: await swaps(entry), field: fieldAdds(p), needs: needs(entry), checks: (p?.readiness?.issues || []).slice(0, 6),
+    improve: [], field: fieldAdds(p), needs: needs(entry), checks: (p?.readiness?.issues || []).slice(0, 6),
     tests: [], omitted: 0,
   };
 }
+/** The whole coaching result for one deck: the basics plus swaps from owned cards that Power has re-scored. */
+export async function buildCoachPlan(entry, p) { return { ...coachBasics(entry, p), improve: await swaps(entry) }; }

@@ -348,3 +348,26 @@ body .deck-body[data-tab="engine"] { columns: auto; }
 .pwp-cols { display: block; }
 .pwp-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; } .pwp-actions .pwp-btn { margin-top: 0; }
 .pwp-eyebrow { margin: 0 0 2px; font-size: .64rem; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); font-weight: 700; }
+/* Power page with the coach inside it: fix first, measured parts, opening hand, the field, owned swaps. */
+.pwp-fix { flex: 1 1 280px; min-width: 0; display: grid; gap: 4px; padding: 12px 14px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--line)); background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 13%, transparent), color-mix(in srgb, var(--gold) 4%, transparent)); }
+.pwp-fix b { font-size: 1rem; line-height: 1.3; } .pwp-jump { font-size: .8rem; font-weight: 600; color: var(--gold); text-decoration: none; min-height: 32px; display: inline-flex; align-items: center; }
+.pwp-area { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; padding: 9px 0; border-top: 1px solid var(--line); font-size: .86rem; }
+.pwp-card > h3 + .pwp-area { border-top: 0; padding-top: 0; }
+.pwp-area .pwp-n { font-weight: 600; font-variant-numeric: tabular-nums; } .pwp-area .pwp-n small { color: var(--muted); font-weight: 400; font-size: .8rem; }
+.pwp-area i { grid-column: 1 / -1; display: block; height: 5px; border-radius: 9px; background: var(--surface-2, var(--line)); overflow: hidden; }
+.pwp-area i span { display: block; height: 100%; border-radius: 9px; background: var(--muted); } .pwp-area.w i span { background: var(--warn, #e0b55a); } .pwp-area.g i span { background: var(--good, #6fcf97); }
+.pwp-area p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: .78rem; line-height: 1.45; }
+.pwp-all > summary { cursor: pointer; min-height: 40px; display: flex; align-items: center; color: var(--gold); font-size: .8rem; font-weight: 600; } .pwp-all[open] > summary { margin-bottom: 4px; }
+.pwp-verdict { border-radius: 999px; padding: 4px 12px; font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; background: color-mix(in srgb, var(--warn, #e0b55a) 18%, transparent); color: var(--warn, #e0b55a); }
+.pwp-verdict.keep { background: var(--good, #6fcf97); color: #0c2416; } .pwp-verdict.mulligan { background: color-mix(in srgb, var(--bad, #ef8a7c) 20%, transparent); color: var(--bad, #ef8a7c); }
+.pwp-fan { display: flex; justify-content: center; padding: 10px 0 6px; }
+.pwp-fan span { flex: 0 1 62px; min-width: 0; aspect-ratio: 5 / 7; margin-left: -10px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); background: var(--surface-2, var(--surface)); box-shadow: 0 4px 10px rgba(0, 0, 0, .4); transform: rotate(calc(var(--k) * 4deg)) translateY(calc(var(--k) * var(--k) * 1.5px)); }
+.pwp-fan span:first-child { margin-left: 0; } .pwp-fan img { width: 100%; height: 100%; object-fit: cover; display: block; } .pwp-fan b { display: block; padding: 5px 4px; font-size: .56rem; line-height: 1.2; font-weight: 600; }
+.pwp-lead { margin: 0; font-size: .92rem; line-height: 1.45; }
+.pwp-opp { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; width: 100%; min-height: 56px; padding: 9px 0; border: 0; border-top: 1px solid var(--line); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.pwp-opp b { font-size: .88rem; line-height: 1.25; } .pwp-opp small { display: block; margin-top: 2px; }
+.pwp-opp em { font-style: normal; font-weight: 700; font-size: 1.15rem; text-align: right; font-variant-numeric: tabular-nums; } .pwp-opp em i { display: block; font-style: normal; font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: var(--muted); }
+.pwp-opp em.up, .pwp-opp em.up i { color: var(--good, #6fcf97); } .pwp-opp em.down, .pwp-opp em.down i { color: var(--bad, #ef8a7c); }
+.pwp-opp:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 8px; }
+.pwp-card .pwp-text b { color: var(--text); }
+.pwp-own em { grid-column: 1 / -1; font-style: normal; font-weight: 700; color: var(--good, #6fcf97); font-size: .82rem; }

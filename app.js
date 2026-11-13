@@ -78,7 +78,7 @@ import {brandMark} from './brand.js';
 import {syncDataLoading} from './data-loading.js';
 import {ownedCardLots,quickQuantity,adjustOwnedLot} from './quick-quantity.js';
 import {conditionName,conditionValue,conditionPriceHtml,conditionManualPlaceholder,attachConditionInfo} from './condition-value.js';
-import { showAiReview, clearAiReviews } from './ai-review.js';
+import { showAiReview, clearAiReviews, redealCoachHand } from './ai-review.js';
 import {createAskNavigation,captureSheetForm,restoreSheetForm} from './ask-navigation.js';
 import { openAsk, closeAsk, clearAskConversations } from './ai-ask.js';
 import { isDeckBuildRequest } from './ai-deck-goal.js';
@@ -3497,6 +3497,14 @@ function openMatchup(tab='setup',side='player'){
 const aiMatchups=createMagicMatchups({getDeck:()=>T.game()==='mtg'?currentDeck():null,state:matchupState,lookup:meta,loadMeta:async key=>{const data=await loadMetaData(key),cached=metaState(key);return {...data,stale:!!cached.error||Date.now()-cached.at>12*3600000,fetchedAt:cached.at?new Date(cached.at).toISOString():''};},metaKey:mtgMetaKey,resolveNames,capture:()=>({scope:mutationScope(),visit:navigationStamp()}),current:ticket=>mutationCurrent(ticket.scope)&&navigationCurrent(ticket.visit)&&T.game()==='mtg',render:renderMatchups,
  profile:d=>{const edh=!!d.commander||/commander|edh/i.test(d.format||''),cards=[...(d.cards||[])];if(d.commander&&!cards.some(r=>r.name===d.commander))cards.push({name:d.commander,qty:1});const rows=cards.map(r=>({qty:r.qty,c:meta(r.name)})).filter(r=>r.c);return profileOf('mtg',mtgConstructedPower({cards},S.catalog,key,edh?100:60),rows);}});
 A.amOpen=t=>openMatchup(t.dataset.tab,t.dataset.side);
+// Power page: tap a deck in "Against the field" for its read. The read uses the same adjusted odds the page shows.
+A.amPick=async t=>{const deck=currentDeck();if(!deck)return;const st=matchupState(deck),name=t.dataset.name||'';aiMatchups.cancel();Object.assign(st,{question:name,colors:[],selectionMode:'top',result:null,opponent:null,error:''});
+ const mu=(S.ui.mu||{})[deck.id],f=(mu?.field||[]).find(x=>x.name===name);st.shift=f?{name,by:(V.mtgBias(mtgPower(deck),mu.field)-(f.bias||0))/2}:null;
+ openMatchup('analysis');await aiMatchups.select();if(matchupState(currentDeck())!==st||!st.opponent)return;await aiMatchups.analyze();};
+A.coachRedeal=t=>{redealCoachHand(t.dataset.ai);render();};
+A.coachSwap=async t=>{const commit=scopedCommit(),editDeck=scopedEditDeck(commit),d=currentDeck(),cut=t.dataset.cut,add=t.dataset.add;if(!d||!d.cards.some(r=>r.name===cut))throw Error('Your deck changed. Open Power again.');
+ await resolveNames([add]);const cards=applySwapsToCards(d.cards,[{cut,add}]);await editDeck(d=>withSnapshot({...withSnapshot(d,'Before coach swap'),cards},'Coach swap'),{msg:`${add} in, ${cut} out. Previous list saved in Versions.`});render();};
+globalThis.addEventListener?.('cardstashy-want-matchups',()=>{if(S.ui.view==='deck'&&T.game()==='mtg'&&currentDeck())void A.muRun();});
 const amPresent=(key,allowed)=>t=>{const ctx=S.ui.sheetCtx;if(!matchupContextDeck(ctx))return;const value=t.dataset.id||t.dataset.mode||t.dataset.tab;if(!allowed.includes(value))return;ctx[key]=key==='scenario'?Number(value):value;refreshSheet();};
 A.amTab=amPresent('tab',['setup','decks','analysis']);
 A.amDeck=amPresent('side',['player','opponent']);

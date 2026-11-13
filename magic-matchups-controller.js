@@ -48,7 +48,10 @@ export function createMagicMatchups({getDeck,state,lookup,loadMeta,metaKey,resol
    await resolveNames(oppNames);if(!valid(op)||selection!==JSON.stringify([op.st.opponent,op.st.question,op.st.mode]))return;
    const me=profile?.(op.deck),them=profile?.({...op.st.opponent,cards:op.st.opponent.cards||op.st.opponent.main||[]});
    if(!me||!them)throw Error('A full list is needed on both sides to simulate this matchup. Finish the deck, or pick another opponent.');
-   const sim=simulateMatchup('mtg',me,them);
+   let sim=simulateMatchup('mtg',me,them);
+   // Opened from the Power page: use the same field-adjusted odds that page shows for this deck.
+   const by=op.st.shift?.name===op.st.opponent.name?Number(op.st.shift.by)||0:0,cl=v=>Math.max(0,Math.min(1,v+by));
+   if(Math.abs(by)>0.005)sim={...sim,win:cl(sim.win),onPlay:cl(sim.onPlay),onDraw:cl(sim.onDraw),reasons:[...sim.reasons,`Adjusted ${by>0?'up':'down'} ${Math.round(Math.abs(by)*100)} points for how these decks really do against the field.`]};
    const rows=list=>(list||[]).map(r=>({qty:r.qty,name:r.name,c:lookup(r.name)})).filter(r=>r.c);
    const plan=op.st.mode==='bo3'?gamePlan('mtg',me,them,{main:rows(op.deck.cards),side:rows(op.deck.side),reprofile:list=>profile({...op.deck,cards:list.map(r=>({name:r.c.name,qty:r.qty})),side:[]}),sim:sim.win}):null;
    op.st.result=buildMatchupPlan({request,me,op:them,sim,plan,mode:op.st.mode});
