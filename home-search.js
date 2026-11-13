@@ -54,12 +54,12 @@ export function attachHomeSearch({game,lookup,open,submit,local=()=>({sections:[
     if(b.dataset.answerFixed){fix={...fix,[b.dataset.answerFixed]:b.dataset.value};clearTimeout(timer);ticket++;update();return;}
     if(!a)return;close();answer.act(b,a,plan,g);return;}if(b.hasAttribute('data-home-pick'))pick(Number(b.dataset.homePick));else if(b.hasAttribute('data-home-item'))choose(Number(b.dataset.homeItem));else{const q=field.value;close();submit(q,b.dataset.homeAction);}});
   }
-  // Smart actions: a question goes straight to CardStashy AI; a card name leads with the app's own matches, and
+  // Smart actions: a question gets the app's own answer (no AI); a card name leads with the app's own matches, and
   // AI is offered as the second choice only. No counts or filler lines, only a status when something needs saying.
   const asking=homeIntent(field.value.trim())==='ask',all=!asking&&cards.length>1;
-  const askBtn=answer?'':`<button type="button" class="home-assistant-action${asking||!cards.length?' is-lead':''}" data-home-action="ask">${aiOrb()}<span>${asking?esc(field.value.trim()):'Ask about this'}<small>CardStashy AI</small></span></button>`;
+  const askBtn='';
   box.classList.toggle('is-asking',asking);
-  const buildBtn=build?`<button type="button" class="home-assistant-action is-lead" data-home-action="build">${aiOrb()}<span>Build ${esc(build)}<small>CardStashy AI</small></span></button>`:'';
+  const buildBtn=build?`<button type="button" class="home-assistant-action is-lead" data-home-action="build">${aiOrb()}<span>Build ${esc(build)}<small>Deck builder</small></span></button>`:'';
   box.classList.toggle('has-app',!!items.length);
   box.classList.toggle('has-answer',!!ansHtml);
   box.innerHTML=`${ansHtml}${items.length?`<div class="home-app-results" role="listbox" aria-label="In CardStashy">${appSectionsMarkup(sections)}</div>`:''}${status?`<p class="home-result-status" role="status">${esc(status)}</p>`:''}${cards.length?`<div class="home-app-group"${items.length?'':' data-only'}>${items.length?'<p class="home-app-label">Cards</p>':''}<div class="display-list" id="homeSearchResults" role="listbox" aria-label="Matching cards">${cards.map((c,i)=>homeResultRow(game(),c,i)).join('')}</div></div>`:''}<div class="home-result-actions">${all?`<button type="button" class="home-catalogue-action" data-home-action="cards">${searchEmblem()}<span>View all matches</span></button>`:''}${buildBtn||(items.some(x=>x.score===0)&&!asking&&!cards.length?'':askBtn)}</div>`;
