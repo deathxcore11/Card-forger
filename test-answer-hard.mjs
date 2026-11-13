@@ -188,6 +188,31 @@ assert.deepEqual(r.a.buttons[0].build,{game:'mtg',format:'Commander',theme:'Flyi
 r=await ask('I have this commander, can you make me a tier 2 deck',{screen:{card:{name:'Sol Ring'}}});
 assert.equal(r.a.buttons[0].build.seed,'Sol Ring');assert.match(r.a.note,/Not used yet: "tier 2"/);
 
+// ---- 6b. Follow-up chips: the answer remembers what "it" is (idea 1 of the approved mock-up).
+{
+ const {answerAbout,forgetAnswer}=await import('./answer-run.js');forgetAnswer();
+ let r=await ask('best mono red deck');
+ assert.deepEqual(answerAbout(),{kind:'meta',game:'mtg',format:'Standard',key:'red',name:'Mono-Red Aggro'});
+ assert.deepEqual(r.a.follow.map(f=>f.label),['What does it cost me?','How much do I own?',"What's in it?",'Where did it place?','What beats it?']);
+ assert.match(answerMarkup(r.a,r.plan.read,{esc}),/data-answer-ask="what cards are in it">What&#39;s in it\?<|data-answer-ask="what cards are in it">What's in it\?</);
+ // Each chip is a whole question the search answers about that same deck, also when typed by hand on the next line.
+ for(const f of r.a.follow){
+  const x=await ask(f.q,{about:answerAbout()});
+  assert.equal(x.plan.intent,'meta.about',f.q);assert.equal(x.a.strong,'Mono-Red Aggro',f.q+' is about the same deck');
+  assert.deepEqual(chips(x.plan).split(' | ').slice(0,2),['Magic','Mono-Red Aggro']);
+  assert.ok(!x.a.follow.some(y=>y.q===f.q),'the chip just asked is not offered again');
+ }
+ let x=await ask('what cards are in it',{about:answerAbout()});
+ assert.deepEqual(x.a.rows.map(r=>r.label),['Monastery Swiftspear','Lightning Strike','Burst Lightning'],'its own cards, lands left out');
+ assert.equal(x.a.rows[0].value,'×4 · you own 4');assert.equal(x.a.rows[2].value,'×4');
+ x=await ask('how much is it',{about:answerAbout()});assert.match(x.a.say,/^: (?:About \$|Some of its cards have no price)/);
+ x=await ask('what beats it',{about:answerAbout()});assert.match(x.a.say,/can't work out matchups yet/);
+ // Words that name something else are a new question, and with nothing remembered "it" is not guessed.
+ x=await ask('is it better than izzet prowess',{about:answerAbout()});assert.notEqual(x.plan.intent,'meta.about');
+ x=await ask('how much is lightning strike',{about:answerAbout()});assert.equal(x.plan.intent,'card.price');
+ forgetAnswer();x=await ask('how much does it cost');assert.notEqual(x.plan.intent,'meta.about');
+}
+
 // ---- 7. Seen on a phone, 13 Nov 2026: "best mono red deck" sat on "Looking…" for ever. The colours now come with the feed
 // from the server, so no card is looked up; and no answer may wait for ever, whatever the connection does.
 {

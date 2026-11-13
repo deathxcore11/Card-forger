@@ -268,7 +268,8 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
                 discover = { g, k, v -> focusClear?.invoke(); searchDiscover(g, k, v); if (g != game) onGame(g) },
                 play = onPlay, cards = onCards, decks = onDecks, rules = onRules).let { env ->
                 AnswerActs(open = { show -> focusClear?.invoke(); answerShow(scope, show, env) }, go = { d -> focusClear?.invoke(); answerGo(scope, d, env) },
-                    fix = { kind, choice -> fixFor = query to ((if (fixFor.first == query) fixFor.second else emptyMap()) + (kind to choice)) }) },
+                    fix = { kind, choice -> fixFor = query to ((if (fixFor.first == query) fixFor.second else emptyMap()) + (kind to choice)) },
+                    ask = { q -> query = q; model?.field?.input?.takeIf { it.isNotBlank() }?.let { a -> run(a, emptyMap(), q) } }) },
         )
     }
     val top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit = { tabs ->

@@ -52,6 +52,8 @@ export function attachHomeSearch({game,lookup,open,submit,local=()=>({sections:[
     // A tapped "Read as" chip offers its other readings; picking one asks again with it, the words untouched.
     if(b.dataset.answerFix){const kind=b.dataset.answerFix,row=box.querySelector('.answer-fixes');if(row){row.remove();return;}b.closest('.answer-read').insertAdjacentHTML('afterend',`<div class="answer-choices answer-fixes">${answer.choices(plan,kind).map(c=>`<button type="button" class="chip" data-answer-fixed="${esc(kind)}" data-value="${esc(c)}">${esc(c)}</button>`).join('')}</div>`);position();return;}
     if(b.dataset.answerFixed){fix={...fix,[b.dataset.answerFixed]:b.dataset.value};clearTimeout(timer);ticket++;update();return;}
+    // An "Ask more" chip: its question goes in the box and is answered about the same deck or card.
+    if(b.dataset.answerAsk){field.value=b.dataset.answerAsk;fix={};field.dispatchEvent(new Event('input',{bubbles:true}));field.focus();return;}
     if(!a)return;close();answer.act(b,a,plan,g);return;}if(b.hasAttribute('data-home-pick'))pick(Number(b.dataset.homePick));else if(b.hasAttribute('data-home-item'))choose(Number(b.dataset.homeItem));else{const q=field.value;close();submit(q,b.dataset.homeAction);}});
   }
   // Smart actions: a question gets the app's own answer (no AI); a card name leads with the app's own matches, and

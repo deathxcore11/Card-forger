@@ -43,7 +43,25 @@ export function wikiFact(article,question){
  * tools: makeAskTools() result. io: { cardSearch({game,q,order,dir,limit}) -> [{name,price,ref?}], signal }
  * Returns { ok, say, strong, quote, items, more, buttons:[{label,item|route|search|discover|judge}], source, miss }
  */
+// The subject of the last answer (a tournament deck, a card, one of your decks): what "it" means on the next line.
+let about=null;
+export const answerAbout=()=>about;
+export const forgetAnswer=()=>{about=null;};
+// What people ask next about a subject, as whole questions the search itself answers. [off] is a reason a chip cannot be asked yet.
+function followUps(sub){
+ if(sub.kind==='meta')return [{label:'What does it cost me?',q:'how much does it cost'},{label:'How much do I own?',q:'how much of it do i own'},{label:"What's in it?",q:'what cards are in it'},{label:'Where did it place?',q:'where did it place'},{label:'What beats it?',q:'what beats it'}];
+ if(sub.kind==='card')return [{label:'Do I own it?',q:'do i own it'},...(sub.game==='mtg'?[{label:'Is it legal?',q:'is it legal in '+(sub.format||'standard')}]:[{label:'Is it legal?',q:'is it legal'}]),{label:'Which decks play it?',q:'best deck with '+sub.name}];
+ if(sub.kind==='mydeck')return [{label:'Is it legal?',q:'is my '+sub.name+' deck legal'},{label:'Make it better',q:'how do i make my '+sub.name+' deck better'}];
+ return [];
+}
 export async function answerFor(plan,tools,io={}){
+ const a=await answerAll(plan,tools,io);
+ // A card answered about is the subject too: "is it legal", "do I own it" on the next line mean that card.
+ if(a?.ok&&!a.subject&&plan?.call?.tool==='card_details'&&a.strong)a.subject={kind:'card',game:plan.game,name:a.strong,format:plan.call.format||''};
+ if(a?.ok&&a.subject){about=a.subject;const asked=String(plan?.P?.raw||'').toLowerCase();a.follow=followUps(a.subject).filter(f=>f.q!==asked&&!(plan.call?.facet&&f.q===({cost:'how much does it cost',own:'how much of it do i own',list:'what cards are in it',place:'where did it place',beat:'what beats it'})[plan.call.facet]));}
+ return a;
+}
+async function answerAll(plan,tools,io={}){
  // No answer may sit on "Looking…" for ever: after [io.limitMs] the wait ends with a plain sentence, and asking again uses whatever has loaded since.
  let timer;const first=answerOne(plan,tools,io),late=new Promise(r=>{timer=setTimeout(()=>r(miss('That is taking too long on this connection. Check your internet, then ask again.',{slow:true})),io.limitMs||20000);});
  const a=await Promise.race([first,late]).finally(()=>clearTimeout(timer));first?.catch?.(()=>{});
@@ -117,14 +135,20 @@ async function answerOne(plan,tools,io={}){
     list:'Open the deck to see its full list.',
     beat:"Search can't work out matchups yet.",
    };
+   const subject={kind:'meta',game:g,format:g==='mtg'?args.format:r.format,key:top.key,name:top.name};
+   if(pick==='about'){
+    const f=plan.call.facet,rows=f==='list'?(top.cards||[]).map(c=>({label:c.name,value:'×'+c.qty+(c.owned?' · you own '+Math.min(c.owned,c.qty):'')})):[];
+    const text=f==='list'&&rows.length?`plays ${top.cardCount} cards. Its most played:`:f==='other'?say:facets[f]||"Search can't answer that about this deck yet.";
+    return {ok:true,subject,strong:top.name,say:f==='list'&&rows.length||f==='other'?text:': '+text,rows,items:items.slice(0,1),more:[],buttons:[{label:'Open the deck',item:items[0]}],source};
+   }
    const vs=plan.call.opponent?[{ask:'against '+plan.call.opponent,text:`Search can't rank decks by how they do against ${plan.call.opponent} yet, so this is by play share.`}]:null;
-   return {ok:true,facets,...(vs?{vs}:{}),strong:top.name,say,items:items.slice(0,1),more:items.slice(1),moreLabel:args.sort==='closest'?'Next closest':args.sort?'Then':'Next most played',
+   return {ok:true,subject,facets,...(vs?{vs}:{}),strong:top.name,say,items:items.slice(0,1),more:items.slice(1),moreLabel:args.sort==='closest'?'Next closest':args.sort?'Then':'Next most played',
     buttons:[{label:'Open the deck',item:items[0]},{label:'All '+fmt+' decks',route:'#decks/inspiration'}],source:args.sort||args.under!=null?[source,'cost is for the copies you are missing'].filter(Boolean).join(' · '):source,note:[top.colors!=null?'Colours: '+([...top.colors].map(c=>({w:'white',u:'blue',b:'black',r:'red',g:'green'})[c]).join(', ')||'colourless'):'',top.best?'Best finish: '+top.best:''].filter(Boolean).join(' · ')};
   }
   if(tool==='set_cards'){
    if(pick==='price-asc'){
     if(g!=='mtg'||!io.cardSearch)return miss('The app can rank the most expensive cards in a set, not the cheapest, for this game.');
-    const cards=await io.cardSearch({game:g,q:'set:'+args.set+' usd>0',order:'usd',dir:'asc',limit:3});if(!cards.length)return miss('No priced cards found in that set.');
+    const cards=await io.cardSearch({game:g,q:'set:'+args.set+' usd>0',order:'usd',dir:'asc',limit:3});if(!cards)return miss('The card prices could not be loaded right now. Ask again in a moment.');if(!cards.length)return miss('No priced cards found in that set.');
     return {ok:true,strong:cards[0].name,say:`is the cheapest priced card in the set at ${usd(cards[0].price)}.`,items:[cardItem(g,cards[0])],more:cards.slice(1).map(c=>cardItem(g,c)),moreLabel:'Then',buttons:[{label:'Open the card',item:cardItem(g,cards[0])},{label:'Whole set',item:{kind:'set',game:g,ref:args.set,label:'Set'}}],source:'Regular (non-foil) market price'};
    }
    const r=await tools.set_cards(args);if(r.error)return r.requiresChoice?{ok:false,ask:{slot:'set',ask:'Which set?',choices:(r.candidates||[]).slice(0,6)},items:[],more:[],buttons:[]}:miss(r.error);
@@ -204,6 +228,7 @@ async function answerOne(plan,tools,io={}){
    const search=tool==='discover'?{discover:{kind:args.kind,value:args.value}}:{search:{q:args.q,order:args.order,dir:args.dir}};
    const q=tool==='discover'?(g==='mtg'?'a:"'+args.value+'"':null):args.q;
    const cards=q&&io.cardSearch?await io.cardSearch({game:g,q,order:args.order||'edhrec',dir:args.dir||'asc',limit:3}):[];
+   if(cards===null)return miss('The card database could not be reached right now. Ask again in a moment.');
    const what=tool==='discover'?'Cards illustrated by '+args.value:plan.read.filter(c=>c.kind==='filter').map(c=>c.label).join(', ');
    if(q&&io.cardSearch&&!cards.length)return miss('No cards match: '+what+'.');
    const lead=pick==='price-asc'?'is the cheapest':pick==='price-desc'?'is the most expensive':null;
@@ -252,6 +277,9 @@ export function answerMarkup(a,read,{esc,preview=()=>''}){
  const head=chips?`<p class="answer-read"><em>Read as</em>${chips}</p>`:'';
  if(a.ask)return `<section class="answer-card is-ask" aria-live="polite">${head}<p class="answer-say">${esc(a.ask.ask)}</p>${(a.ask.choices||[]).length?`<div class="answer-choices">${a.ask.choices.map((c,i)=>`<button type="button" class="chip" data-answer-choice="${i}">${esc(c.name)}</button>`).join('')}</div>`:''}</section>`;
  if(!a.ok)return `<section class="answer-card is-miss" aria-live="polite">${head}<p class="answer-say">${esc(a.miss)}</p><p class="answer-source">Here is the closest the app has.</p></section>`;
- const say=a.strong&&a.say==='From the wiki page'?`${esc(a.say)} <b>${esc(a.strong)}</b>:`:`${a.strong?`<b>${esc(a.strong)}</b> `:''}${esc(a.say||'')}`;
- return `<section class="answer-card" aria-live="polite">${head}<p class="answer-say">${say}</p>${a.fact?`<p class="answer-fact"><small>${esc(a.fact.label)}</small><b>${esc(a.fact.value)}</b></p>`:''}${a.quote?`<blockquote class="answer-quote">${esc(a.quote)}</blockquote>`:''}${a.note?`<p class="answer-note">${esc(a.note)}</p>`:''}${[...(a.vs||[]),...(a.also||[])].map(x=>`<p class="answer-note answer-also"><b>${esc(x.ask)}</b> ${esc(x.text)}</p>`).join('')}${a.items.length?`<div class="answer-items">${a.items.map((s,i)=>preview(s,i)).join('')}</div>`:''}${a.buttons.length?`<div class="answer-buttons">${a.buttons.map((b,i)=>`<button type="button" class="${i?'btn ghost':'btn primary'}" data-answer-button="${i}">${esc(b.label)}</button>`).join('')}</div>`:''}${a.source?`<p class="answer-source">${esc(a.source)}</p>`:''}${a.more?.length?`<p class="home-app-label">${esc(a.moreLabel||'Also')}</p><div class="answer-items is-more">${a.more.map((s,i)=>preview(s,i+a.items.length)).join('')}</div>`:''}${a.others?.length?`<p class="home-app-label">Also on the wiki</p><div class="answer-choices">${a.others.map(t=>`<button type="button" class="chip" data-answer-wiki="${esc(t)}">${esc(t)}</button>`).join('')}</div>`:''}</section>`;
+ const say=a.strong&&a.say==='From the wiki page'?`${esc(a.say)} <b>${esc(a.strong)}</b>:`:`${a.strong?`<b>${esc(a.strong)}</b>${String(a.say||'').startsWith(':')?'':' '}`:''}${esc(a.say||'')}`;
+ const rows=(a.rows||[]).length?`<div class="answer-rows">${a.rows.map(r=>`<p class="answer-row${r.tone?' is-'+esc(r.tone):''}"><b>${esc(r.label)}</b><span>${esc(r.value||'')}</span></p>`).join('')}</div>`:'';
+ const meter=a.meter?`<div class="answer-meter" role="img" aria-label="${esc(a.meter.label||a.meter.pct+'%')}"><i style="width:${Math.max(0,Math.min(100,Number(a.meter.pct)||0))}%"></i></div>`:'';
+ const follow=(a.follow||[]).length?`<p class="answer-read answer-follow"><em>Ask more</em>${a.follow.map(f=>`<button type="button" class="answer-chip can-ask" data-answer-ask="${esc(f.q)}">${esc(f.label)}</button>`).join('')}</p>`:'';
+ return `<section class="answer-card" aria-live="polite">${head}<p class="answer-say">${say}</p>${a.fact?`<p class="answer-fact"><small>${esc(a.fact.label)}</small><b>${esc(a.fact.value)}</b></p>`:''}${a.quote?`<blockquote class="answer-quote">${esc(a.quote)}</blockquote>`:''}${meter}${a.note?`<p class="answer-note">${esc(a.note)}</p>`:''}${rows}${[...(a.vs||[]),...(a.also||[])].map(x=>`<p class="answer-note answer-also"><b>${esc(x.ask)}</b> ${esc(x.text)}</p>`).join('')}${a.items.length?`<div class="answer-items">${a.items.map((s,i)=>preview(s,i)).join('')}</div>`:''}${a.buttons.length?`<div class="answer-buttons">${a.buttons.map((b,i)=>`<button type="button" class="${i?'btn ghost':'btn primary'}" data-answer-button="${i}">${esc(b.label)}</button>`).join('')}</div>`:''}${follow}${a.source?`<p class="answer-source">${esc(a.source)}</p>`:''}${a.more?.length?`<p class="home-app-label">${esc(a.moreLabel||'Also')}</p><div class="answer-items is-more">${a.more.map((s,i)=>preview(s,i+a.items.length)).join('')}</div>`:''}${a.others?.length?`<p class="home-app-label">Also on the wiki</p><div class="answer-choices">${a.others.map(t=>`<button type="button" class="chip" data-answer-wiki="${esc(t)}">${esc(t)}</button>`).join('')}</div>`:''}</section>`;
 }

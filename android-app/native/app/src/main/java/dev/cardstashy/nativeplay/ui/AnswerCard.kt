@@ -4,6 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -49,6 +52,8 @@ class AnswerActs(
     val go: (dest: JsonObject) -> Unit = {},
     /** A "Read as" chip's other choice: the same words asked again with it. */
     val fix: (kind: String, choice: String) -> Unit = { _, _ -> },
+    /** An "Ask more" chip: its question goes in the box and is answered about the same deck or card. */
+    val ask: (q: String) -> Unit = {},
 )
 
 private val AnsInk = Color(0xFFEEF0F4)
@@ -113,7 +118,22 @@ internal fun AnswerCard(m: JsonObject, act: AnswerActs, modifier: Modifier = Mod
         }
         if (a.s("quote").isNotEmpty()) Text(a.s("quote"), Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0x0DFFFFFF)).padding(horizontal = 12.dp, vertical = 9.dp),
             style = cssType(13.5f, 400, 20f, AnsInk))
+        a.o("meter")?.let { mt ->
+            Box(Modifier.fillMaxWidth().height(8.dp).clip(pill).background(Color(0x14FFFFFF)).semantics { contentDescription = mt.s("label") }) {
+                Box(Modifier.fillMaxWidth((mt.get("pct")?.asFloat ?: 0f).coerceIn(0f, 100f) / 100f).height(8.dp).clip(pill).background(gold))
+            }
+        }
         if (a.s("note").isNotEmpty()) Text(a.s("note"), style = cssType(12.5f, 400, 18f, AnsMute))
+        // .answer-rows: a deck's cards, the cards that break a format, price moves. The name on the left, its fact on the right.
+        a.list("rows").forEach { r ->
+            val rs = RoundedCornerShape(10.dp)
+            Row(Modifier.fillMaxWidth().clip(rs).background(Color(0x0AFFFFFF)).border(1.dp, Color(0x1FFFFFFF), rs).padding(horizontal = 10.dp, vertical = 7.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(r.s("label"), Modifier.weight(1f), style = cssType(13.5f, 700, 18f, AnsInk))
+                Text(r.s("value"), style = cssType(13f, 400, 18f, when (r.s("tone")) { "bad" -> Color(0xFFF0A261); "good" -> Color(0xFF7FD1A0); else -> AnsMute }),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End)
+            }
+        }
         a.list("items").forEach { AskTile(it, act.open) }
         val buttons = a.list("buttons")
         if (buttons.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -123,6 +143,15 @@ internal fun AnswerCard(m: JsonObject, act: AnswerActs, modifier: Modifier = Mod
                     .then(if (first) Modifier.background(Brush.verticalGradient(listOf(Color(0xFFF2D496), Color(0xFFA67C34)))) else Modifier.background(Color(0xFF1F232B)).border(1.dp, Color(0xFF2A2F39), r))
                     .clickable { b.o("dest")?.let(act.go) }.semantics { role = Role.Button }.padding(horizontal = 14.dp, vertical = 12.dp),
                     style = cssType(14f, 800, 20f, if (first) Color(0xFF1A1408) else AnsInk))
+            }
+        }
+        // .answer-follow: what people ask next about this deck or card, each one tap away.
+        val follow = a.list("follow")
+        if (follow.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+            Text("ASK MORE", style = cssType(10.5f, 800, 14f, AnsMute, .8f))
+            follow.forEach { f ->
+                Text(f.s("label"), Modifier.clip(pill).background(gold.copy(alpha = .09f)).border(1.dp, gold.copy(alpha = .45f), pill)
+                    .clickable { act.ask(f.s("q")) }.semantics { role = Role.Button }.padding(horizontal = 11.dp, vertical = 8.dp), style = cssType(12.5f, 700, 16f, AnsInk))
             }
         }
         if (a.s("source").isNotEmpty()) Text(a.s("source"), style = cssType(11.5f, 400, 16f, AnsMute))

@@ -97,6 +97,15 @@ export function makeAskTools(x) {
     } catch {}
     visuals.set(visualKey(item), { image, card, share, name: d.name, label:item.label });
   }
+  // One deck's own cards for "what's in it": the twelve it plays most, lands left out, with how many of each you own.
+  function deckTop(g, d) {
+    let rows = [];
+    if (g === 'mtg') rows = (d.main || []).filter(c => !c.land).map(c => ({ name: c.name, qty: Number(c.qty) || 1, owned: x.inv(c.name).owned || 0 }));
+    else if (g === 'ptcg') rows = (d.list || []).filter(c => c && c.name && c.kind !== 'Energy').map(c => ({ name: c.name, qty: Number(c.qty || c.count) || 1, owned: 0 }));
+    else { const n = new Map(); for (const id of [...(d.main || []), ...(d.extra || [])]) { const c = T.cardOf(g, id); if (c?.name) n.set(c.name, (n.get(c.name) || 0) + 1); } rows = [...n].map(([name, qty]) => ({ name, qty, owned: 0 })); }
+    const all = rows.reduce((t, r) => t + r.qty, 0) + (g === 'mtg' ? (d.main || []).filter(c => c.land).reduce((t, c) => t + (Number(c.qty) || 1), 0) : 0);
+    return { cards: rows.sort((a, b) => b.qty - a.qty).slice(0, 12), cardCount: all };
+  }
   async function decorateMeta(g, data, result) {
     const items = (result.decks || []).slice(0,6).map(d=>({kind:'meta',game:g,ref:d.key || d.name,label:d.name}));
     suggestions = items;
@@ -136,6 +145,8 @@ export function makeAskTools(x) {
   async function narrowMeta(g, rows, args, summary) {
     const flat = t => ' ' + String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[’']/g, '').replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
     let matched = null;
+    // A follow-up about one deck ("what's in it"): that deck alone, by its key in the feed.
+    if (args.key) rows = rows.filter(r => r.d?.key === args.key);
     if (g === 'mtg' && (args.colors?.length || args.without?.length || args.count || args.needColors)) {
       // The server works out each deck's colours once a day and sends them with the feed. Only a feed that came without them
       // makes the app load the cards itself, and that wait is capped: a slow connection gets a plain sentence, never an endless "Looking…".
@@ -261,7 +272,9 @@ export function makeAskTools(x) {
       if(candidates.length!==1)return {game:g,error:'That name or code identifies more than one release. Choose a full release ID.',requiresChoice:true,candidates:candidates.slice(0,30).map(choice)};
       const s = candidates[0];
       if (g === 'mtg') {
-        const d = await x.api('/cards/search?' + new URLSearchParams({ q: `set:${s.code} game:paper`, order: 'usd', dir: 'desc' })).catch(() => null);
+        const d = await x.api('/cards/search?' + new URLSearchParams({ q: `set:${s.code} game:paper`, order: 'usd', dir: 'desc' })).catch(e => (e?.status === 404 ? { data: [] } : null));
+        // The card database not answering is not "this set has no priced cards": it is said as what it is.
+        if (!d) return { game: g, error: `The cards in ${s.name} could not be loaded right now. Ask again in a moment.` };
         return { game: g, set: { code: s.code, name: s.name, date: s.released_at }, cards: (d?.data || []).slice(0, n).map(c => exactCardResult(g,c,s.code,mtgSetCard(c))) };
       }
       let cards = await T.SOURCES[g].setCards(s).catch(() => []);
@@ -284,7 +297,7 @@ export function makeAskTools(x) {
         const summary=d=>completionSummary([...(d.commanders||[]).map(r=>typeof r==='string'?{name:r,qty:1}:r),...(d.main||[])],n=>x.inv(n).owned,n=>x.priceOf(n));
         const rows=await narrowMeta(g,(data.archetypes||[]).map(a=>{const d=data.decks.find(y=>y.key===a.best)||data.decks.find(y=>(y.archetype||y.name)===a.name);return {a,d,name:a.name,cards:(d?.main||[]).filter(c=>!c.land)};}),args,summary);
         if(rows.error)return {game:g,format:k.slice(4),...rows};
-        return decorateMeta(g,data,{game:g,format:k.slice(4),source:data.source||'tournament results',fetchedAt:data.fetchedAt||data.updatedAt||null,matched:rows.matched,decks:rows.slice(0,8).map(({a,d,sum,colors})=>({name:a.name,key:d?.key||'',share:Math.round((a.share||0)*1000)/10,lists:a.lists||a.count||0,best:d?`${d.place||''} ${d.event||''}`.trim():'',eventDate:d?.date||null,...(colors?{colors}:{}),...(d?sum||summary(d):{listUnavailable:true,ownedPercent:null,costToFinish:null})}))});
+        return decorateMeta(g,data,{game:g,format:k.slice(4),source:data.source||'tournament results',fetchedAt:data.fetchedAt||data.updatedAt||null,matched:rows.matched,decks:rows.slice(0,8).map(({a,d,sum,colors})=>({name:a.name,key:d?.key||'',share:Math.round((a.share||0)*1000)/10,lists:a.lists||a.count||0,best:d?`${d.place||''} ${d.event||''}`.trim():'',eventDate:d?.date||null,...(colors?{colors}:{}),...(args.key&&d?deckTop(g,d):{}),...(d?sum||summary(d):{listUnavailable:true,ownedPercent:null,costToFinish:null})}))});
       }
       const data = (await x.tcgCtx.loadMeta?.(g).catch(() => null)) || T.metaState(g).data;
       if (!data) return { error: 'Tournament data isn\'t available right now.' };
@@ -294,7 +307,7 @@ export function makeAskTools(x) {
       if(format&&!(g==='ptcg'?/^standard$/i:/^(tcg|advanced(?: \(tcg\))?)$/i).test(format))return {game:g,error:'This tournament source covers '+metaFormat+'. Choose that format or use the builder for other formats.',format:metaFormat};
       const rows=await narrowMeta(g,(data.archetypes||[]).map(a=>{const d=data.decks.find(y=>y.key===a.best)||a.representative;return {a,d,name:a.name||a.id,cards:g==='ptcg'?(d?.list||[]):[...(d?.main||[]),...(d?.extra||[])].map(id=>T.cardOf(g,id)).filter(Boolean)};}),args,summary);
       if(rows.error)return {game:g,format:metaFormat,...rows};
-      return decorateMeta(g,data,{game:g,format:metaFormat,source:data.source||'tournament results',fetchedAt:data.fetchedAt||data.updatedAt||null,matched:rows.matched,decks:rows.slice(0,8).map(({a,d,sum})=>({name:a.name||a.id,key:d?.key||'',share:Math.round((a.share||0)*1000)/10,lists:a.count||0,best:d?`${d.place||''} ${d.event||''}`.trim():'',eventDate:d?.date||null,...(d?sum||summary(d):{listUnavailable:true,ownedPercent:null,costToFinish:null})}))});
+      return decorateMeta(g,data,{game:g,format:metaFormat,source:data.source||'tournament results',fetchedAt:data.fetchedAt||data.updatedAt||null,matched:rows.matched,decks:rows.slice(0,8).map(({a,d,sum})=>({name:a.name||a.id,key:d?.key||'',share:Math.round((a.share||0)*1000)/10,lists:a.count||0,best:d?`${d.place||''} ${d.event||''}`.trim():'',eventDate:d?.date||null,...(args.key&&d?deckTop(g,d):{}),...(d?sum||summary(d):{listUnavailable:true,ownedPercent:null,costToFinish:null})}))});
     },
     async my_decks(args) {
       const { game, format, match } = args;

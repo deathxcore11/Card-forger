@@ -108,7 +108,7 @@ import {mtgPower, asShown, shownPower} from 'WEB/power.js';
 import {lotPrice} from 'WEB/insights.js';
 import {makeAskTools} from 'WEB/ai-tools.js';
 import {planQuery, fixChoices, gameOfLabel} from 'WEB/answer-search.js';
-import {answerFor} from 'WEB/answer-run.js';
+import {answerFor, answerAbout} from 'WEB/answer-run.js';
 import {readGameWikiArticle} from 'WEB/mtg-wiki-client.js';
 import {judgeAnswer, findCardNames} from 'WEB/judge-search.js';
 import {loadRulePack} from 'WEB/rule-corpus.js';
@@ -5711,6 +5711,9 @@ function answerModel(q, plan, a) {
     note: [a.note || '', ...[...(a.vs || []), ...(a.also || [])].map(x => x.ask + ': ' + x.text)].filter(Boolean).join('\n'), source: a.source || '',
     miss: a.miss || '', ask: a.ask ? {ask: a.ask.ask, choices: (a.ask.choices || []).map(c => ({label: c.name, show: {kind: 'set', game: plan.game, ref: String(c.id || c.code), label: c.name}}))} : null,
     items: (a.items || []).map(tile), moreLabel: a.moreLabel || 'Also', more: (a.more || []).map(tile),
+    // Rows (a deck's cards, the cards that break a format, price moves), a progress bar, and the "Ask more" chips, each a whole question.
+    rows: (a.rows || []).map(r => ({label: r.label, value: r.value || '', tone: r.tone || ''})), meter: a.meter ? {pct: Math.max(0, Math.min(100, Number(a.meter.pct) || 0)), label: a.meter.label || ''} : null,
+    follow: (a.follow || []).map(f => ({label: f.label, q: f.q})),
     buttons: (a.buttons || []).map(b => ({label: b.label, dest: answerDest(b, plan)})), others: (a.others || []).map(t => ({label: t, dest: {to: 'wiki', game: plan.game, topic: t}}))}};
 }
 // app.js homeAnswer.plan / run, with the open screen's set and card handed in by the app ([o] = {fix: {format, game}, set: {id, code, name}, card: {name}}).
@@ -5718,7 +5721,7 @@ function answerPlan(g0, q, o = {}) {
   const fix = o.fix || {}, g = gameOfLabel(fix.game) || g0, mtg = g === 'mtg';
   tcgReady();
   const sets = (mtg ? S.ui.sets.list : tcgUi(g).sets?.list) || [];
-  return {g, mtg, sets, plan: planQuery(q, {game: g, fix: {format: fix.format, game: gameOfLabel(fix.game) || undefined}, formatLast: {mtg: S.ui.mtgMeta?.format || undefined},
+  return {g, mtg, sets, plan: planQuery(q, {game: g, about: answerAbout(), fix: {format: fix.format, game: gameOfLabel(fix.game) || undefined}, formatLast: {mtg: S.ui.mtgMeta?.format || undefined},
     sets: sets.filter(x => !x.digital).map(x => ({id: mtg ? x.code : x.id, code: x.code || x.id, name: x.name})), screen: {set: o.set || null, card: o.card || null}})};
 }
 function answerStart(g0, q, o = {}) {
@@ -5743,7 +5746,8 @@ function answerStart(g0, q, o = {}) {
         wikiArticle: async (game, title) => { const d = await readGameWikiArticle(game, title); return d?.status === 'available' ? d.article : null; },
         cardSearch: async ({game, q, order, dir, limit}) => {
           if (game !== 'mtg') return [];
-          const d = await api('/cards/search?' + new URLSearchParams({q: q + ' game:paper', order, dir, unique: 'cards'})).catch(e => { globalThis.__answerError = String(e?.message || e); return null; });
+          const d = await api('/cards/search?' + new URLSearchParams({q: q + ' game:paper', order, dir, unique: 'cards'})).catch(e => { globalThis.__answerError = String(e?.message || e); return e?.status === 404 ? {data: []} : null; });
+          if (!d) return null; // the card database did not answer: said as that, never as "nothing matched"
           return (d?.data || []).slice(0, limit || 3).map(c => { cacheCard(c); return {name: c.name, price: Number(c.prices?.usd) || null}; });
         }});
     } catch { a = {ok: false, miss: 'That lookup failed. Check your connection and try again.', items: [], more: [], buttons: []}; }

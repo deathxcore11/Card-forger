@@ -122,7 +122,7 @@ import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag, animateTurn
 import { metaState, loadMeta as loadMetaData, MTG_META_FORMATS, DEFAULT_MTG_META_FORMAT, allCachedMeta } from "./meta.js";
 import {searchApp,parseQuery} from './universal-search.js';
 import {planQuery,fixChoices,gameOfLabel} from './answer-search.js';
-import {answerFor,answerMarkup,buildRequest} from './answer-run.js';
+import {answerFor,answerMarkup,buildRequest,answerAbout} from './answer-run.js';
 import {searchAnswer} from './answer-state.js';
 import {readGameWikiArticle} from './mtg-wiki-client.js';
 import {searchGameConcepts} from './game-wiki-knowledge.js';
@@ -4937,13 +4937,15 @@ const homeAnswer={
   const g=gameOfLabel(fix.game)||g0,mtg=g==='mtg',sets=(mtg?S.ui.sets.list:(T.ui(g).sets?.list||[]))||[],view=S.ui.view,ctx=S.ui.sheetCtx;
   const openSet=view==='set'?sets.find(x=>String(mtg?x.code:x.id).toLowerCase()===String(mtg?S.ui.set?.code:S.ui.tsetId||T.ui(g).set?.id||'').toLowerCase()):null;
   const card=ctx?.type==='card'&&ctx.name?{name:ctx.name}:null;
-  return planQuery(q,{game:g,fix:{format:fix.format,game:gameOfLabel(fix.game)||undefined},formatLast:{mtg:S.ui.mtgMeta?.format||undefined},sets:sets.filter(x=>!x.digital).map(x=>({id:mtg?x.code:x.id,code:x.code||x.id,name:x.name})),screen:{set:openSet?{id:mtg?openSet.code:openSet.id,code:openSet.code||openSet.id,name:openSet.name}:null,card}});
+  return planQuery(q,{game:g,about:answerAbout(),fix:{format:fix.format,game:gameOfLabel(fix.game)||undefined},formatLast:{mtg:S.ui.mtgMeta?.format||undefined},sets:sets.filter(x=>!x.digital).map(x=>({id:mtg?x.code:x.id,code:x.code||x.id,name:x.name})),screen:{set:openSet?{id:mtg?openSet.code:openSet.id,code:openSet.code||openSet.id,name:openSet.name}:null,card}});
  },
  run(plan){
   const tools=ensureAskTools();
   return answerFor(plan,tools,{judge:async(game,question)=>judgeAnswer(await loadRulePack(game),question,{glossary:game==='ptcg'?PTCG_GLOSSARY:game==='ygo'?YGO_GLOSSARY:[]}),wikiArticle:async(game,title)=>{const d=await readGameWikiArticle(game,title);return d?.status==='available'?d.article:null;},cardSearch:async({game,q,order,dir,limit})=>{
    if(game!=='mtg')return [];
-   const d=await api('/cards/search?'+new URLSearchParams({q:q+' game:paper',order,dir,unique:'cards'})).catch(()=>null);
+   // null: the card database did not answer (said as that); []: it answered and nothing matched.
+   const d=await api('/cards/search?'+new URLSearchParams({q:q+' game:paper',order,dir,unique:'cards'})).catch(e=>e?.status===404?{data:[]}:null);
+   if(!d)return null;
    return (d?.data||[]).slice(0,limit||3).map(c=>{cacheCard(c);return {name:c.name,price:Number(c.prices?.usd)||null};});
   }});
  },
@@ -4982,6 +4984,8 @@ document.addEventListener('click',e=>{
  if(b.dataset.answerFix){const kind=b.dataset.answerFix,row=document.querySelector('[data-search-answer] .answer-fixes');if(row){row.remove();return;}
   b.closest('.answer-read').insertAdjacentHTML('afterend',`<div class="answer-choices answer-fixes">${homeAnswer.choices(st.plan,kind).map(c=>`<button type="button" class="chip" data-answer-fixed="${esc(kind)}" data-value="${esc(c)}">${esc(c)}</button>`).join('')}</div>`);return;}
  if(b.dataset.answerFixed){answerFirst(st.q,st.run,{...st.fix,[b.dataset.answerFixed]:b.dataset.value});return;}
+ // An "Ask more" chip: its question goes in the box and is answered about the same deck or card.
+ if(b.dataset.answerAsk){const f=document.querySelector('#dbTerm,[data-input="tQ"]');if(f)f.value=b.dataset.answerAsk;if(T.game()==='mtg')S.ui.db.term=b.dataset.answerAsk;answerFirst(b.dataset.answerAsk,()=>{},{});return;}
  if(st.a)homeAnswer.act(b,st.a,st.plan,st.g);
 });
 const homeSearchController=attachHomeSearch({game:T.game,lookup:homeLookup,submit:submitHome,local:homeLocal,run:runHomeItem,answer:homeAnswer,open:async(g,c)=>{

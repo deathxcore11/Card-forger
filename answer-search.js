@@ -469,12 +469,34 @@ export function readPod(raw){
  return found?{pod,mine:mine.join('. ')}:null;
 }
 
+const FACET_LABEL={cost:'cost to finish',own:'how much you own',colors:'colours',place:'best finish',popular:'how popular',list:'cards in it',beat:'matchups',other:'about it'};
+function planAbout(raw,ctx){
+ const a=ctx.about,t=norm(raw);if(!a||!t||!IT.test(t))return null;
+ // Words that name something else ("how much is it in modern", "is it better than burn") are a new question, not a follow-up.
+ if(a.kind==='meta'){
+  if(ctx.fix?.game&&ctx.fix.game!==a.game)return null;
+  const f=DECK_FACETS.find(x=>x[1].test(t));
+  const left=rest(t.replace(IT,' '),f?f[1]:null,/\b(?:how|much|many|does|do|did|is|are|was|what|whats|where|which|who|can|could|would|will|i|me|my|to|of|in|the|a|an|and|for|with|well|good good|have|has|own|need|cards?|decks?|lists?|play|run|finish|build|cost|costs|whole|all|still|right now|now|today|please|tell|show)\b/g);
+  if(left.length)return null;
+  const read=[chip(GAME_LABEL[a.game],'game'),chip(a.name,'deck'),chip(FACET_LABEL[f?f[0]:'other'],'ask')];
+  return {intent:'meta.about',game:a.game,P:parseQuery(raw),read,missing:[],call:{tool:'meta_decks',args:{game:a.game,format:a.format,key:a.key},pick:'about',facet:f?f[0]:'other',name:a.name},answerable:true,hand:null};
+ }
+ if(a.kind==='card'||a.kind==='mydeck'){
+  const p=planSpelled(t.replace(IT,a.kind==='card'?a.name:'my '+a.name+' deck'),{...ctx,about:null,game:a.game});
+  return p.answerable&&p.call?.pick!=='maybe'&&p.intent!=='names'?p:null;
+ }
+ return null;
+}
+
 /**
  * ctx: as planOne. Reads a whole line: spelling slips are repaired when the words as typed were not understood, and a line that
  * holds several asks is answered ask by ask (plan.extra: [{text, facet} | {text, plan}]), follow-ups meaning the first answer by "it".
  */
 export function planQuery(q,ctx={}){
- const raw=String(q||'').trim(),whole=planSpelled(raw,ctx),parts=splitAsks(raw);
+ const raw=String(q||'').trim();
+ // A follow-up about the last answer: "how much is it", "what's in it", "is it legal". [ctx.about] is that answer's subject.
+ const follow=ctx.about?planAbout(raw,ctx):null;if(follow)return follow;
+ const whole=planSpelled(raw,ctx),parts=splitAsks(raw);
  if(parts.length<2||['build','go','help','keyword','wiki','none'].includes(whole.intent)||(whole.intent==='ruling'&&whole.call?.pick!=='maybe'))return whole;
  const main=planSpelled(parts[0],ctx);
  if(!main.answerable||main.call?.pick==='maybe'||main.intent==='names')return whole;

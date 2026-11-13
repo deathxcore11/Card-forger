@@ -863,7 +863,8 @@ private fun FindResults(find: HomeFind, act: CollectionHomeActions, modifier: Mo
         find.answer?.let { a ->
             val asked = find.q.trim()
             AnswerCard(a, AnswerActs(open = { focus.clearFocus(); act.answerOpen(it) }, go = { focus.clearFocus(); act.answerGo(it) },
-                fix = { kind, choice -> find.fix = asked to ((if (find.fix.first == asked) find.fix.second else emptyMap()) + (kind to choice)) }))
+                fix = { kind, choice -> find.fix = asked to ((if (find.fix.first == asked) find.fix.second else emptyMap()) + (kind to choice)) },
+                ask = { q -> find.q = q }))
         }
         if (s != null && s.items.isNotEmpty()) SuggestList(s, CollectionSearchActions(pick = { name -> find.shut(); act.pick(name) }))
         else if (find.q.isNotBlank() && find.answer == null) Text("Press Search on the keyboard for every match.", style = sans(13f, color = Site.Muted), modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
