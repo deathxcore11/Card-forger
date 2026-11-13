@@ -174,6 +174,12 @@ internal object CollectionWrites {
      */
     data class CompareOpen(val game: String, val first: String? = null, val openCard: (String, String) -> Unit = { _, _ -> }, val id: Long = System.nanoTime())
     val comparing = MutableStateFlow<CompareOpen?>(null)
+    /**
+     * Ask CardStashy (app.js A.askOpen, ai-ask.js openAsk) for [game]: [prefill] asked at once, [draft] left in the bar (A.mtgWikiAsk); [go] takes
+     * the app where a tapped tile leads (CollectionEngine.askShow's {to, ...}).
+     */
+    data class AskOpen(val game: String, val prefill: String = "", val go: (com.google.gson.JsonObject) -> Unit = {}, val draft: String = "", val id: Long = System.nanoTime())
+    val asking = MutableStateFlow<AskOpen?>(null)
     /** Counts alert saves and removals: the Value tab's alert list reads again. */
     val alertsChanged = MutableStateFlow(0)
     /** A tap with the site's data-act="priceAlert" dataset (game, id, name). */
