@@ -106,6 +106,7 @@ const ASSETS = [
   "./magic-matchups.css",
   "./settings-theme.js",
   "./console-settings.js",
+  "./daily-login.js",
   "./settings-storage.js",
   "./mobile-tilt.js", "./set-experience.js", "./pack-preview.js", "./pack-wrappers.js", "./pack-art-data.js", "./mtg-boosters.js", "./rarity-emblem.js", "./data-loading.js", "./collector-search.js",
   "./sync-merge.js",

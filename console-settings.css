@@ -96,3 +96,36 @@
 /* Help: the guides as a list of names, like the rest (no banner, no summary under each). */
 .c-pane .info-centre>header{display:none}
 .c-pane .info-topic>summary .muted{display:none}
+/* The daily log-in pop-up (the app's LoginReward.kt): slow rays behind the day, each reward on a medal, the week as a track. */
+.dl-host{position:fixed;inset:0;z-index:2147483000}
+.dl-veil{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden;padding:max(24px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom));background:radial-gradient(circle at 50% 40%,color-mix(in srgb,#f1c572 24%,transparent),transparent 62%),#0b0d13;color:#f6efe0;opacity:0;transition:opacity .2s}
+.dl-in .dl-veil{opacity:1}.dl-out .dl-veil{opacity:0;transition-duration:.18s}
+.dl-rays{position:absolute;left:50%;top:40%;width:150vmax;height:150vmax;margin:-75vmax 0 0 -75vmax;background:repeating-conic-gradient(from 0deg,color-mix(in srgb,#f1c572 15%,transparent) 0 6deg,transparent 6deg 18deg);-webkit-mask:radial-gradient(circle,#000 0,transparent 50%);mask:radial-gradient(circle,#000 0,transparent 50%);animation:dlTurn 50s linear infinite;pointer-events:none}
+@keyframes dlTurn{to{transform:rotate(360deg)}}
+.dl-sheet{position:relative;width:min(420px,100%);display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;transform:scale(.86);transition:transform .45s cubic-bezier(.3,1.45,.5,1)}
+.dl-in .dl-sheet{transform:none}
+.dl-head{display:flex;flex-direction:column;align-items:center;gap:4px;margin-bottom:8px}
+.dl-kicker{font:700 12px Cinzel,Georgia,serif;letter-spacing:.3em;text-transform:uppercase;color:#e7c98a}
+.dl-day{margin:0;font:700 34px/1.1 Cinzel,Georgia,serif;color:#fff1cf;text-shadow:0 4px 30px color-mix(in srgb,#e2b45c 45%,transparent)}
+.dl-sub{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#c9bfa8}
+.dl-medals{list-style:none;margin:0;padding:0;width:100%;display:flex;flex-wrap:wrap;justify-content:center;gap:14px 10px;transition:transform .52s ease,opacity .52s ease}
+.dl-medal{flex:0 0 calc((100% - (var(--per,4) - 1) * 10px) / var(--per,4));display:flex;flex-direction:column;align-items:center;gap:5px;min-width:70px;animation:dlDrop .5s cubic-bezier(.3,1.5,.5,1) both;animation-delay:calc(120ms + var(--i) * 110ms)}
+@keyframes dlDrop{from{opacity:0;transform:translateY(-26px) scale(1.25)}}
+.dl-coin{display:grid;place-items:center;width:88px;height:88px;max-width:100%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#3a2c15,#17110a);border:2px solid #e2b45c;box-shadow:0 0 0 6px color-mix(in srgb,#e2b45c 12%,transparent)}
+.dl-coin svg{width:52%;height:52%}
+.dl-medal b{font-size:24px;font-weight:800;color:#fff1cf;white-space:nowrap}
+.dl-medal small{font-size:12px;font-weight:700;letter-spacing:.06em;color:#c9bfa8;white-space:nowrap}
+.dl-lift .dl-medals{transform:translateY(-96px) scale(.65);opacity:.1}
+.dl-track{display:flex;align-items:center;width:min(336px,100%);margin-top:6px}
+.dl-link{flex:1;height:3px;background:#3a3a44}.dl-link.on{background:#e2b45c}
+.dl-dot{display:grid;place-items:center;flex:none;width:26px;height:26px;border-radius:50%;background:#1d1f28;border:1.5px solid #4a4a56;font-size:12px;font-weight:800;color:#c9bfa8}
+.dl-dot.on{background:#e2b45c;border-color:#e2b45c;color:#2a1c05}
+.dl-dot.now{width:36px;height:36px;font-size:15px;box-shadow:0 0 0 5px color-mix(in srgb,#e2b45c 25%,transparent)}
+.dl-bonus{margin:0;font-size:13px;font-weight:600;color:#e7c98a}
+.dl-claim{width:min(300px,100%);min-height:52px;font-size:16px}
+.dl-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media(max-height:470px){.dl-sheet{width:min(780px,100%);display:grid;grid-template-columns:.85fr 1fr;grid-template-areas:"head medals" "track bonus" "track claim";gap:12px 28px;align-items:center}
+  .dl-head{grid-area:head;margin:0}.dl-medals{grid-area:medals}.dl-track{grid-area:track;align-self:start;margin:0 auto}.dl-bonus{grid-area:bonus}.dl-claim{grid-area:claim;justify-self:center}
+  .dl-coin{width:64px;height:64px}.dl-medal b{font-size:20px}}
+@media(max-width:380px){.dl-coin{width:68px;height:68px}}
+@media(prefers-reduced-motion:reduce){.dl-rays,.dl-medal{animation:none}.dl-sheet,.dl-veil{transition:none}.dl-veil{opacity:1}.dl-sheet{transform:none}}

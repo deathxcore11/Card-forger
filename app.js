@@ -42,6 +42,7 @@ import {buildMatchupRequest,matchupImportNotice} from './ai-matchup-core.js';
 import {initAura} from './aura.js';
 import {initTheme,applyTheme,normalizeSettingsTab,activateSettingsTab} from './settings-theme.js';
 import {initConsoleSettings,primeConsoleSettings} from './console-settings.js';
+import {showDailyLogin} from './daily-login.js';
 import {recoveryKey,syncBaselineKey,createRecoverySnapshot,appendRecoverySnapshot,readRecoverySnapshots,createSyncBaseline,recoverySummary} from './recovery-store.js';
 import {mergeLegacyGameHistories,mergeValueHistory} from './value-history.js';
 import {sharedBinderRows,sharedBinderValue} from './community-profile.js';
@@ -1782,7 +1783,7 @@ function presenceMatch(){try{if(!playerMatRoot)return null;const s=playerMatHost
  return {kind:setup?.playStyle==='practice'?'practice':'quick',format:setup?.match?.format||'',turn};}catch{return null;}}
 const presence=createPresence({read:()=>({view:S.ui.view,playView,match:presenceMatch()}),send:(action,payload)=>presenceRequest(action,payload),enabled:()=>!!cloudInfo()?.user?.id&&presenceShared()});
 C.setPresence=t=>{if(!rememberPresence(t.checked)){t.checked=!t.checked;return toast('Could not save that setting.');}void presence.setShare(t.checked);toast(t.checked?'Friends can see what you’re playing.':'Friends no longer see what you’re playing.');};
-const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(id){presence.start();if(!presenceShared())void presenceRequest('hide');}if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort()};playView=ECON_VIEWS.has(playView)?'home':playView;if(id)setTimeout(()=>playEcon.refresh().then(()=>playEcon.login()).then(l=>{if(l?.fresh)toast(`Day ${l.stamp} stamped on your log-in calendar.`);}),0);};
+const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(id){presence.start();if(!presenceShared())void presenceRequest('hide');}if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort()};playView=ECON_VIEWS.has(playView)?'home':playView;if(id)setTimeout(()=>playEcon.refresh().then(()=>playEcon.login()).then(l=>{if(l?.fresh)void showDailyLogin(l,{sound:()=>{haptic('success');appSound('PACK-005',{volume:.5,gap:0});}});}),0);};
 const econFocus=()=>requestAnimationFrame(()=>document.getElementById('playTitle')?.focus?.({preventScroll:true}));
 A.playEconView=t=>{const v=t.dataset.econView;if(!ECON_VIEWS.has(v))return;playView=v;if(t.dataset.econTab)econUi.deedTab=t.dataset.econTab;if(v==='decks')loadPreconIndex();playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});if(v==='shop'&&t.dataset.econFocus==='press')requestAnimationFrame(()=>document.querySelector('.pe-forge')?.scrollIntoView({block:'center',behavior:'smooth'}));else econFocus();};
 // Secret Lair (play-secret-lair.js): this week's bundle, and the rare art styles rewards unlock.
