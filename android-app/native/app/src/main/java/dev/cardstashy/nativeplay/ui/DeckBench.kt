@@ -2,6 +2,7 @@
 
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.RepeatMode
@@ -134,7 +135,9 @@ class BenchRow(val name: String, val qty: Int, val short: Int, val seal: String,
                /** The row's move between zones as the page words it (tcg.js "→ side" / "→ deck"), in the big view. */
                val move: String = "",
                /** The row's own legality tags (tcg.js deckCardsTab: Limited, Forbidden, Not legal …), true = bad; the Detailed view shows them. */
-               val flags: List<Pair<String, Boolean>> = emptyList())
+               val flags: List<Pair<String, Boolean>> = emptyList(),
+               /** Its mana value (the curve, the list's Mana sort); -1 = not known (Yu-Gi-Oh!, Pokémon, a card still loading). */
+               val cmc: Double = -1.0)
 class BenchGroup(val name: String, val rows: List<BenchRow>)
 /** A chip in the hero that does something (Collection's "2 to review", views.js deckPage's review eyebrow): its words, warn colour, the site action. */
 class BenchChip(val label: String, val warn: Boolean, val act: String)
@@ -145,7 +148,14 @@ class BenchTile(val name: String, val image: String, val cmc: Double, val land: 
                 /** The format's word on it as the deck rows show it (tcg.js: Forbidden, Limited, Semi-Limited, Not legal); [tagBad] = coral. */
                 val tag: String = "", val tagBad: Boolean = false,
                 /** What a [locked] tile says: Play's "Craft"; Collection's All cards, a card not owned yet, "To buy". */
-                val lockWord: String = "Craft")
+                val lockWord: String = "Craft",
+                /** What the filters read (Magic): its colours, type line, rarity, set code and name, release date (Newest). */
+                val colors: List<String> = emptyList(), val typeLine: String = "", val rarity: String = "", val set: String = "", val setName: String = "",
+                val released: String = "",
+                /** Every set the card can count as for the Set filter (Play: every printing you have unlocked; Collection: the sets your copies are from). */
+                val sets: List<String> = emptyList(),
+                /** Its Scryfall card, for the builder's role tags (the Does filter), when the caller has it. */
+                val card: com.google.gson.JsonObject? = null)
 class BenchStat(val value: String, val label: String, val warn: Boolean = false)
 /**
  * One shelf of All cards (Randall 6-7 Nov: deck-first shelves, a set at a time, "only when you pick All"): "For this deck" ([gold]) or a
@@ -157,7 +167,12 @@ class BenchShelf(val key: String, val title: String, val code: String = "", val 
                  /** Under a "For this deck" card: why it is there ("In 42% of top decks", "Instant"). */
                  val why: Map<String, String> = emptyMap(),
                  /** Still filling: its tiles so far show, and its ask stays on while it is on screen. */
-                 val loading: Boolean = false)
+                 val loading: Boolean = false,
+                 /** How many cards it has loaded before the Bench's filters (null: no filter has run on it). */
+                 val raw: Int? = null) {
+    /** The same shelf showing [t] (the Bench's filters on its cards); [raw] keeps how many it really loaded, so paging and opening go on. */
+    fun with(t: List<BenchTile>) = BenchShelf(key, title, code, meta, gold, t, note, count, why, loading, tiles?.size)
+}
 class BenchModel(
     val play: Boolean, val modeChip: String, val formatChip: String, val title: String, val heroArt: String?,
     val stats: List<BenchStat>, val power: String?, val tier: String, val roles: List<Pair<String, Int>>,
@@ -224,6 +239,10 @@ class BenchUi {
     var find by mutableStateOf("")
     var colors by mutableStateOf(emptySet<String>())
     var type by mutableStateOf("All")
+    /** The Filters panel's picks and Sort (BenchFilter.kt), whether the panel is open, and the deck list's order (type or mana). */
+    var filter by mutableStateOf(BenchFilter())
+    var filters by mutableStateOf(false)
+    var deckSort by mutableStateOf("type")
     var peek by mutableStateOf<String?>(null)
     /** The card that just changed: it pops once in the deck and the browser. */
     var pop by mutableStateOf<String?>(null)
@@ -240,6 +259,8 @@ class BenchUi {
     var setPick by mutableStateOf(false)
     val setGrid = LazyGridState()
     internal var setGridFor: String? = null
+    /** The browser grid's last search and filters: a change (even made while the side panel hid the grid) starts it at the top. */
+    internal var asked: List<Any>? = null
     /** Play's ⋯ dropdown is open (here so the controller's Start opens it too). */
     var menu by mutableStateOf(false)
     /** Two screens: the deck or browser card the ring is on (its case on the bottom screen), null when the ring is elsewhere. */
@@ -331,6 +352,7 @@ internal val BENCH_ICONS = mapOf(
     "gallery" to ic(r(4f, 4f, 6.5f, 6.5f, 1.5f), r(13.5f, 4f, 6.5f, 6.5f, 1.5f), r(4f, 13.5f, 6.5f, 6.5f, 1.5f), r(13.5f, 13.5f, 6.5f, 6.5f, 1.5f)),
     "list" to ic(p("M9 6h11M9 12h11M9 18h11"), c(4.5f, 6f, 1.2f), c(4.5f, 12f, 1.2f), c(4.5f, 18f, 1.2f)),
     "detail" to ic(r(3f, 4f, 6f, 6f, 1f), r(3f, 14f, 6f, 6f, 1f), p("M12 5h9M12 9h6M12 15h9M12 19h6")),
+    "filters" to ic(p("M4 7h10M18 7h2M4 17h4M12 17h8"), c(16f, 7f, 2f), c(10f, 17f, 2f)),
 )
 /** The site's tab keys (views.js deckPage: engine = Power, playtest = War Chest; tcg.js: insights = Power) to the Bench's icons. */
 private val TAB_ICON = mapOf("engine" to "power", "insights" to "power", "playtest" to "chest")
@@ -409,13 +431,32 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
         if (from == "coll" && zone == "deck") { a.step(name, 1); pop(name) } else if (from == "deck" && zone == "coll") { a.step(name, -1); pop(name) }
     }
     androidx.activity.compose.BackHandler(enabled = ui.peek != null) { ui.peek = null }
+    // The filters (deck view redesign, Randall 14 Nov): Magic's bar colours and the panel's picks decide what the browser shows,
+    // here for every caller, so the grid, the shelves, the live count and the chips agree. Yu-Gi-Oh! and Pokémon keep their own.
+    val magic = m.colorFilter
+    androidx.activity.compose.BackHandler(enabled = ui.filters && ui.peek == null) { ui.filters = false }
+    LaunchedEffect(magic, ui.tab) { if (!magic || ui.tab != "cards") ui.filters = false }
+    val roleMap by BenchRoles.tags.collectAsState()
+    val doesOn = ui.filter.does.isNotEmpty()
+    LaunchedEffect(doesOn, m.tiles, m.shelves) { if (doesOn) BenchRoles.want(m.tiles.mapNotNull { it.card } + m.shelves.orEmpty().flatMap { s -> s.tiles.orEmpty().mapNotNull { it.card } }) }
+    val shown = remember(m.tiles, ui.filter, ui.colors, ui.find, roleMap, magic) {
+        if (!magic) m.tiles else ui.filter.sorted(m.tiles.filter { ui.filter.keeps(it, ui.find, ui.colors, roleMap) }) }
+    val shelves = remember(m.shelves, ui.filter, ui.colors, roleMap, magic) {
+        if (!magic) m.shelves else m.shelves?.map { s -> s.tiles?.let { ts -> s.with(ui.filter.sorted(ts.filter { ui.filter.keeps(it, "", ui.colors, roleMap) })) } ?: s } }
+    val sets = remember(m.tiles, m.shelves) { benchSets(m.tiles, m.shelves) }
+    // "Show N cards": the grid's count; All cards a shelf at a time has no one number.
+    val count = if (m.shelves != null && ui.find.isBlank()) null else shown.size
     // Controller (PadPrompts): X the gold button (Save; Collection's Practice / War Chest), LB/RB the deck's tabs, LT/RT a page of the
     // list or grid under the ring (six d-pad steps, as the bar says), Start the ⋯ menu.
     val focus = LocalFocusManager.current
-    BottomScreen { BenchBottom(m, ui) }
+    // Thor (approved 14 Nov): the Filters panel opens on the bottom screen and the top keeps the cards.
+    BottomScreen { if (ui.filters && magic) FilterPanel(m, ui, count, sets, "bottom", onFilter) else BenchBottom(m, ui, onFilter) { if (a.tab?.invoke("cards") != false) ui.tab = "cards" } }
+    // Magic: LT/RT step the browser's mana value (specs/dual-screen-native.md), R3 opens Filters; the others keep LT/RT as a page.
     PadScreen(PadActs(x = a.save?.takeIf { m.canSave && !m.busy }?.let { PadAct(a.saveLabel, it) },
         tabs = if (m.tabs.size > 1) ({ d -> padTab(m.tabs.map { it.first }, ui.tab, d, a.drawn)?.let { k -> ui.peek = null; if (a.tab?.invoke(k) != false) ui.tab = k } }) else null,
-        page = { d -> repeat(6) { focus.moveFocus(if (d > 0) FocusDirection.Down else FocusDirection.Up) } },
+        page = if (magic && ui.tab == "cards") ({ d -> if (PadPrompts.keyRepeat == 0) { ui.filter = ui.filter.stepMana(d); onFilter() } }) else ({ d -> repeat(6) { focus.moveFocus(if (d > 0) FocusDirection.Down else FocusDirection.Up) } }),
+        pageLabel = if (magic && ui.tab == "cards") "Mana value" else "Page",
+        r3 = if (magic && ui.tab == "cards") PadAct("Filters") { ui.peek = null; ui.setPick = false; ui.filters = !ui.filters } else null,
         start = PadAct("Menu") { val o = a.menuOpen; if (o == null) ui.menu = true; o?.invoke() }))
     BoxWithConstraints(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(Color(0xFF1B1F2B), B.Bg), radius = 1400f, center = Offset(540f, 0f)))
         .onGloballyPositioned { drag.origin = it.positionInRoot() }
@@ -444,13 +485,15 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
         val bars = Modifier.windowInsetsPadding(WindowInsets.statusBars).then(if (land) Modifier else Modifier.windowInsetsPadding(WindowInsets.navigationBars))
         if (split) Row(Modifier.fillMaxSize().then(bars)) {
             // Another tab (War Chest, Power, Rules, Versions) opens in the big side, where the collection was; the deck stays beside it.
-            Box(Modifier.weight(1f).fillMaxHeight()) { if (ui.tab == "cards") Browser(m, ui, a, drag, browserSwitch, cols = if (land) 0 else -1, lift, onFilter) else tabBody(ui.tab) }
+            // Filters (tablet, unfolded, Portal): the panel takes the browser's place and the deck stays beside it.
+            Box(Modifier.weight(1f).fillMaxHeight()) { if (ui.tab == "cards") { if (ui.filters && magic && !DualScreen.active) FilterPanel(m, ui, count, sets, "side", onFilter)
+                else Browser(m, ui, a, drag, browserSwitch, cols = if (land) 0 else -1, lift, onFilter, shown, shelves, sets) } else tabBody(ui.tab) }
             Column(Modifier.fillMaxWidth(if (wide) .37f else .43f).fillMaxHeight().background(Color(0x33000000)).drawBehind {
                 drawLine(B.Line, Offset(0f, 0f), Offset(0f, size.height), 1.dp.toPx()) }) {
                 Hero(m, a, compact = land, ui = ui)
                 // Phone landscape: the four views sit at the end of the icon tabs; wider, under the list in the footer.
                 Tabs(m.tabs, ui, iconsOnly = land, a.tab, trailing = if (land && ui.tab == "cards") ({ ViewSwitch(ui, bare = true) }) else null)
-                Dock(m, ui, a, drag, actionRow, split = true, Modifier.weight(1f), lift)
+                Dock(m, ui, a, drag, actionRow, split = true, Modifier.weight(1f), lift, compact = land, onFilter = onFilter)
                 Footer(m, ui, split = true, views = !land)
             }
         } else Column(Modifier.fillMaxSize().then(bars)) {
@@ -470,9 +513,9 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
                     val target = if (drag.name != null && drag.from == "coll" && zone == "deck") maxOf(.66f, ui.split) else if (drag.name != null && drag.from == "deck" && zone == "coll") minOf(.18f, ui.split) else ui.split
                     val share by animateFloatAsState(target, if (gripping || Motion.still) snap() else tween(280, easing = FOCUS_EASE), label = "focus")
                     Column(Modifier.fillMaxSize()) {
-                        Dock(m, ui, a, drag, actionRow, split = false, Modifier.height(room * share), lift)
+                        Dock(m, ui, a, drag, actionRow, split = false, Modifier.height(room * share), lift, onFilter = onFilter)
                         SplitGrip(ui, room, onGrip = { gripping = it })
-                        Box(Modifier.weight(1f).fillMaxWidth()) { Browser(m, ui, a, drag, browserSwitch, cols = 3, lift, onFilter) }
+                        Box(Modifier.weight(1f).fillMaxWidth()) { Browser(m, ui, a, drag, browserSwitch, cols = 3, lift, onFilter, shown, shelves, sets) }
                     }
                 }
                 Footer(m, ui, split = false, views = false)
@@ -487,6 +530,8 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
                 if (img != null) Image(img, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             }
         }
+        // Phone: the Filters panel rises as a sheet over the Bench.
+        if (ui.filters && magic && !split && !DualScreen.active && ui.tab == "cards") FilterSheet(m, ui, count, sets, onFilter)
         ui.peek?.let { Peek(m, ui, a, it, split) }
     }
 }
@@ -661,7 +706,8 @@ private fun Tabs(tabs: List<Pair<String, String>>, ui: BenchUi, iconsOnly: Boole
 // ---------------------------------------------------------------- the deck dock
 
 @Composable
-private fun Dock(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, actionRow: (@Composable RowScope.() -> Unit)?, split: Boolean, modifier: Modifier, lift: () -> Unit) {
+private fun Dock(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, actionRow: (@Composable RowScope.() -> Unit)?, split: Boolean, modifier: Modifier, lift: () -> Unit,
+                 compact: Boolean = false, onFilter: () -> Unit = {}) {
     val shape = RoundedCornerShape(16.dp)
     val glow = drag.name != null && drag.from == "coll" && drag.zone == "deck"
     Column(modifier.fillMaxWidth().padding(start = if (split) 8.dp else 10.dp, end = if (split) 8.dp else 10.dp, top = if (split) 6.dp else 8.dp)
@@ -670,6 +716,16 @@ private fun Dock(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, action
         .background(B.Glass).background(Brush.verticalGradient(listOf(Color(0x0FFFFFFF), Color(0x04FFFFFF))))
         .border(if (glow) 2.dp else 1.dp, if (glow) B.Gold else B.Line, shape)
         .drawBehind { if (glow) drawRect(Brush.radialGradient(listOf(Color(0x2EE5C47E), Color.Transparent), radius = size.maxDimension * .7f)) }) {
+        // The deck header's curve on every size (Magic): a tap on a bar filters the browser to that mana value; the list's Type / Mana
+        // order beside it. Beside the browser it stays put; on a phone it is the list's first row, so it scrolls away and the cards get the room.
+        val curveRow: (@Composable () -> Unit)? = if (!m.colorFilter) null else ({
+            Row(Modifier.fillMaxWidth().padding(start = if (split) 10.dp else 2.dp, end = if (split) 6.dp else 0.dp, top = if (split) 6.dp else 2.dp, bottom = 2.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                CurveBar(m, ui, if (compact) 44.dp else if (split) 60.dp else 50.dp, Modifier.weight(1f), onFilter = onFilter, toCards = { if (a.tab?.invoke("cards") != false) ui.tab = "cards" })
+                DeckSortSeg(ui)
+            }
+        })
+        if (split) curveRow?.invoke()
         if (!split) Row(Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = 2.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FlowRow(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(9.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 for ((role, n) in m.roles) Text(buildAnnotatedString { append("$role "); withStyle(SpanStyle(color = B.Fg, fontWeight = FontWeight.Bold)) { append("$n") } },
@@ -679,7 +735,7 @@ private fun Dock(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, action
         }
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().clipToBounds()) {
             val w = maxWidth - 16.dp
-            DeckBody(m, ui, a, drag, actionRow, split, w, lift)
+            DeckBody(m, ui, a, drag, actionRow, split, w, lift, if (split) null else curveRow)
         }
     }
 }
@@ -699,7 +755,10 @@ private fun ViewSwitch(ui: BenchUi, bare: Boolean = false) {
 
 /** The dock's list: the action row, then the deck grouped by type in the chosen view. */
 @Composable
-private fun DeckBody(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, actionRow: (@Composable RowScope.() -> Unit)?, split: Boolean, w: Dp, lift: () -> Unit) {
+private fun DeckBody(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, actionRow: (@Composable RowScope.() -> Unit)?, split: Boolean, w: Dp, lift: () -> Unit,
+                     curveRow: (@Composable () -> Unit)? = null) {
+    // The list's order (Type / Mana in the deck header): by mana value regroups the spells; Lands and a sideboard stay as they are.
+    val groups = remember(m.groups, ui.deckSort, m.colorFilter) { if (ui.deckSort == "mana" && m.colorFilter) benchByMana(m.groups) else m.groups }
     val cols = when (ui.view) {
         "list" -> if (split) 1 else maxOf(1, (w.value / 176).toInt())
         "gallery" -> maxOf(3, (w.value / 88).toInt())
@@ -707,21 +766,23 @@ private fun DeckBody(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, ac
         else -> 1
     }
     val head: LazyGridScope.() -> Unit = {
+        if (curveRow != null) item(key = "curve", span = { GridItemSpan(maxLineSpan) }) { curveRow() }
         if (actionRow != null) item(key = "actions", span = { GridItemSpan(maxLineSpan) }) {
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 2.dp, bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically) { actionRow() }
         }
-        if (m.groups.isEmpty()) item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
+        if (groups.isEmpty()) item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
             Text(if (Pad.connected.collectAsState().value) "No cards yet." else "Drag cards up here, or tap + on a card.", style = f(13f, 600, B.Mute), modifier = Modifier.padding(horizontal = 4.dp, vertical = 10.dp))
         }
     }
     if (ui.view == "stacks") {
         Column(Modifier.fillMaxSize().padding(horizontal = 8.dp)) {
+            curveRow?.invoke()
             if (actionRow != null) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 2.dp, bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically) { actionRow() }
             val pw = if (split && w > 300.dp) 120.dp else if (split) 92.dp else 96.dp
             Row(Modifier.fillMaxSize().horizontalScroll(rememberScrollState()).verticalScroll(rememberScrollState()).padding(bottom = 8.dp, top = 2.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                for (g in m.groups) Column(Modifier.width(pw)) {
+                for (g in groups) Column(Modifier.width(pw)) {
                     GroupHead(g.name, g.rows.sumOf { it.qty }, lines = 2)
                     // .pile .card + .card: each card 20 % of the pile's width under the one before.
                     val step = pw * .2f
@@ -738,7 +799,7 @@ private fun DeckBody(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, ac
         horizontalArrangement = Arrangement.spacedBy(if (ui.view == "gallery") 8.dp else 6.dp)) {
         head()
         // The deck's own groups, the basics under Lands, then a sideboard (Collection) last.
-        val (side, main) = m.groups.partition { g -> g.rows.isNotEmpty() && g.rows.all { it.fixed } }
+        val (side, main) = groups.partition { g -> g.rows.isNotEmpty() && g.rows.all { it.fixed } }
         val lands = main.any { it.name == "Lands" }
         fun LazyGridScope.group(g: BenchGroup) {
             item(key = "g:" + g.name, span = { GridItemSpan(maxLineSpan) }) { GroupHead(g.name, g.rows.sumOf { it.qty }) }
@@ -918,17 +979,18 @@ private fun sections(tiles: List<BenchTile>, order: List<String>): List<Section>
 }
 
 @Composable
-private fun Browser(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, switch: (@Composable () -> Unit)?, cols: Int, lift: () -> Unit, onFilter: () -> Unit) {
+private fun Browser(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, switch: (@Composable () -> Unit)?, cols: Int, lift: () -> Unit, onFilter: () -> Unit,
+                    shown: List<BenchTile>, shelves: List<BenchShelf>?, sets: List<Pair<String, String>>) {
     val remove = drag.name != null && drag.from == "deck" && drag.zone == "coll"
     Column(Modifier.fillMaxSize()) {
-        // The tools in one scrolling row, fading out at the right edge.
-        Row(Modifier.fillMaxWidth().graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
-            .drawWithFade().horizontalScroll(rememberScrollState()).padding(start = 10.dp, end = 26.dp, top = if (cols == 3) 0.dp else 6.dp),
-            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(buildAnnotatedString { append(m.browserTitle); if (m.shelves == null || ui.find.isNotBlank()) withStyle(SpanStyle(fontFamily = Site.Manrope, fontSize = 11.sp, color = B.Mute)) { append("  ${m.tiles.size}") } },
+        // The tools. 0.4.79 and before: a misplaced brace put Find, the colours and the type chips inside the Set button's "if", so
+        // Your cards (no shelves) showed none of them (deck view redesign, 14 Nov). Each now stands on its own.
+        val title: @Composable () -> Unit = {
+            Text(buildAnnotatedString { append(m.browserTitle); if (m.shelves == null || ui.find.isNotBlank()) withStyle(SpanStyle(fontFamily = Site.Manrope, fontSize = 11.sp, color = B.Mute)) { append("  ${shown.size}") } },
                 style = cinzel(15f, B.Gold, track = .03f), maxLines = 1, softWrap = false, modifier = Modifier.padding(start = 2.dp, end = 4.dp))
-            switch?.invoke()
-            // Set (before Find, so it shows without scrolling the row): a glass dropdown of every set to open one full (Randall 8 Nov).
+        }
+        // Set (All cards' shelves): a glass dropdown of every set to open one full (Randall 8 Nov).
+        val setButton: @Composable () -> Unit = {
             if (m.shelves != null && ui.find.isBlank() && m.shelves.count { it.code.isNotEmpty() } > 1) {
                 val open = m.shelves.firstOrNull { it.key == ui.openSet }
                 val on = open != null || ui.setPick
@@ -939,40 +1001,67 @@ private fun Browser(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, swi
                     Text(open?.code?.ifBlank { null } ?: "Set", style = f(12f, 700, if (on) B.Gold else B.Fg), maxLines = 1, softWrap = false)
                     Text(if (ui.setPick) "▴" else "▾", style = f(11f, 700, B.Gold))
                 }
-            FindBox(ui, onFilter)
-            if (m.colorFilter) Row {
-                for (k in listOf("W", "U", "B", "R", "G")) {
-                    val on = k in ui.colors
-                    Box(Modifier.size(44.dp).clickable { ui.colors = if (on) ui.colors - k else ui.colors + k; onFilter() }
-                        .semantics { contentDescription = "Show ${COLOR_NAME[k]}"; selected = on }, contentAlignment = Alignment.Center) {
-                        Box(Modifier.size(24.dp).then(if (on) Modifier.shadow(6.dp, CircleShape, ambientColor = Color.White, spotColor = Color.White).border(2.dp, Color.White, CircleShape) else Modifier)
-                            .alpha(if (on) 1f else .38f)) { ManaCost("{$k}", 24.dp) }
+            }
+        }
+        val pips: @Composable () -> Unit = { for (k in BenchFilters.COLORS) { val on = k in ui.colors; PipButton(k, on) { ui.colors = if (on) ui.colors - k else ui.colors + k; onFilter() } } }
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val twoRows = m.colorFilter && cols != 3 && maxWidth < 940.dp
+            // Magic on a phone held upright (the approved phone board): Find and Filters, then the seven colours across, then the switch.
+            // Once the cards are scrolled, the colours and the switch fold away (as the hero does) so the cards get the room; back at
+            // the top they open again. Find and Filters stay.
+            if (m.colorFilter && cols == 3 && maxWidth < 600.dp) Column(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp).animateContentSize()) {
+                val folded by remember(ui) { androidx.compose.runtime.derivedStateOf { ui.tileGrid.firstVisibleItemIndex > 0 || ui.shelfList.firstVisibleItemIndex > 0 } }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(Modifier.weight(1f)) { FindBox(ui, onFilter, fill = true) }
+                    FiltersButton(ui)
+                }
+                if (!folded) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { pips() }
+                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        switch?.invoke(); setButton(); title()
                     }
                 }
             }
-            for (t in m.types) {
-                val on = ui.type == t
-                Box(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).background(if (on) Color(0x1AE5C47E) else Color(0x0DFFFFFF))
-                    .border(1.dp, if (on) Color(0x99E5C47E) else B.Line, RoundedCornerShape(12.dp)).clickable { ui.type = t; onFilter() }
-                    .semantics { role = Role.RadioButton; selected = on }.padding(horizontal = 11.dp), contentAlignment = Alignment.Center) {
-                    Text(t, style = f(12f, 700, if (on) B.Gold else B.Mute), maxLines = 1, softWrap = false)
+            // Wider (and Yu-Gi-Oh!, Pokémon): one scrolling row, fading out at the right edge; Magic's Filters stays pinned at its end
+            // so it never scrolls out of reach (the Thor's and the Portal's 960-wide screens).
+            else Row(Modifier.fillMaxWidth().padding(bottom = if (twoRows) 44.dp else 0.dp), verticalAlignment = Alignment.CenterVertically) { Row(Modifier.weight(1f).graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+                .drawWithFade().horizontalScroll(rememberScrollState()).padding(start = 10.dp, end = 26.dp, top = if (cols == 3) 0.dp else 6.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                title()
+                switch?.invoke()
+                setButton()
+                FindBox(ui, onFilter)
+                if (m.colorFilter && !twoRows) Row { pips() }
+                else if (!m.colorFilter) for (t in m.types) {
+                    val on = ui.type == t
+                    Box(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).background(if (on) Color(0x1AE5C47E) else Color(0x0DFFFFFF))
+                        .border(1.dp, if (on) Color(0x99E5C47E) else B.Line, RoundedCornerShape(12.dp)).clickable { ui.type = t; onFilter() }
+                        .semantics { role = Role.RadioButton; selected = on }.padding(horizontal = 11.dp), contentAlignment = Alignment.Center) {
+                        Text(t, style = f(12f, 700, if (on) B.Gold else B.Mute), maxLines = 1, softWrap = false)
+                    }
                 }
             }
-            }
+            if (m.colorFilter) Box(Modifier.padding(start = 4.dp, end = 10.dp, top = if (cols == 3) 0.dp else 6.dp)) { FiltersButton(ui) } }
+            // Too narrow for all of it on one line (the Portal, the Thor's top screen, the unfolded inner screen): the colours get their own.
+            if (twoRows) Row(Modifier.padding(start = 6.dp, top = 50.dp)) { pips() }
         }
-        if (m.shelves != null && ui.find.isBlank()) Box(Modifier.weight(1f).fillMaxWidth().padding(top = 2.dp).onGloballyPositioned { drag.grid = it.boundsInRoot().translate(-drag.origin) }) {
-            Shelves(m, ui, a, drag, lift)
-            if (ui.setPick) SetPicker(m.shelves, ui)
+        if (m.colorFilter) FilterChips(ui, sets, onFilter)
+        if (shelves != null && ui.find.isBlank()) Box(Modifier.weight(1f).fillMaxWidth().padding(top = 2.dp).onGloballyPositioned { drag.grid = it.boundsInRoot().translate(-drag.origin) }) {
+            Shelves(m, shelves, ui, a, drag, lift)
+            if (ui.setPick) SetPicker(m.shelves.orEmpty(), ui)
             if (remove) Box(Modifier.fillMaxSize().padding(horizontal = 6.dp, vertical = 2.dp).clip(RoundedCornerShape(14.dp)).background(Color(0x14FF7A6A)).drawBehind {
                 drawRoundRect(B.Coral, style = Stroke(2.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx()))), cornerRadius = CornerRadius(14.dp.toPx())) })
         } else BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(top = 2.dp).onGloballyPositioned { drag.grid = it.boundsInRoot().translate(-drag.origin) }) {
             val n = if (cols > 0) cols else if (cols == 0) maxOf(3, ((maxWidth.value - 48) / 96).toInt()) else maxOf(4, ((maxWidth.value - 48) / 104).toInt())
-            val secs = remember(m.tiles, m.sectionOrder) { sections(m.tiles, m.sectionOrder) }
+            // Sorted by mana value: the browser's own sections; by anything else, one run in the Sort's order.
+            val sort = if (m.colorFilter) ui.filter.sort else "mv"
+            val secs = remember(shown, m.sectionOrder, sort) { if (sort == "mv" || shown.isEmpty()) sections(shown, m.sectionOrder)
+                else listOf(Section("", shown, BenchFilters.SORTS.firstOrNull { it.first == sort }?.second?.let { "By ${it.lowercase()}" } ?: "")) }
             // Each section's first item in the grid, for the letter rail.
             val starts = remember(secs) { var i = 0; secs.map { s -> (s.key to i).also { i += 1 + s.tiles.size } } }
             // A new search or filter starts the grid at the top; coming back to the Bench keeps its place.
-            var asked by remember { mutableStateOf(Triple(ui.find, ui.colors, ui.type)) }
-            LaunchedEffect(ui.find, ui.colors, ui.type) { val now = Triple(ui.find, ui.colors, ui.type); if (now != asked) { asked = now; ui.tileGrid.scrollToItem(0) } }
+            LaunchedEffect(ui.find, ui.colors, ui.type, ui.filter) { val now = listOf(ui.find, ui.colors, ui.type, ui.filter); val was = ui.asked; ui.asked = now
+                if (was != null && now != was) ui.tileGrid.scrollToItem(0) }
             LazyVerticalGrid(GridCells.Fixed(n), Modifier.fillMaxSize().semantics { contentDescription = "Cards to add" }, ui.tileGrid, PaddingValues(start = 10.dp, end = 38.dp, top = 2.dp, bottom = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (secs.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
@@ -996,19 +1085,207 @@ private fun Browser(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, swi
             }
             if (remove) Box(Modifier.fillMaxSize().padding(horizontal = 6.dp, vertical = 2.dp).clip(RoundedCornerShape(14.dp)).background(Color(0x14FF7A6A)).drawBehind {
                 drawRoundRect(B.Coral, style = Stroke(2.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx()))), cornerRadius = CornerRadius(14.dp.toPx())) })
-            if (secs.isNotEmpty()) Rail(secs.map { it.key }, starts.toMap(), ui.tileGrid, Modifier.align(Alignment.TopEnd))
+            if (secs.size > 1) Rail(secs.map { it.key }, starts.toMap(), ui.tileGrid, Modifier.align(Alignment.TopEnd))
         }
     }
 }
-private val COLOR_NAME = mapOf("W" to "white", "U" to "blue", "B" to "black", "R" to "red", "G" to "green")
+
+// ---------------------------------------------------------------- filters (deck view redesign, Randall 14 Nov 15:03Z)
+
+/** The bar's colour buttons: W U B R G as their mana symbols, C colourless, M multicolour (a ring of the five). */
+@Composable
+private fun ColourPip(k: String, size: Dp) {
+    if (k == "M") Box(Modifier.size(size).clip(CircleShape).background(Brush.sweepGradient(listOf(Color(0xFFF8E7B9), Color(0xFF6FB7E8), Color(0xFF9C8BA8), Color(0xFFE58063), Color(0xFF6FBF8A), Color(0xFFF8E7B9))))
+        .border(1.dp, Color(0x66000000), CircleShape))
+    else ManaCost("{$k}", size)
+}
+
+@Composable
+private fun PipButton(k: String, on: Boolean, onClick: () -> Unit) = Box(Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onClick)
+    .semantics { contentDescription = "Show ${BenchFilters.COLOR_NAMES[k]?.lowercase()}"; role = Role.Checkbox; selected = on }, contentAlignment = Alignment.Center) {
+    Box(Modifier.size(24.dp).then(if (on) Modifier.shadow(6.dp, CircleShape, ambientColor = Color.White, spotColor = Color.White).border(2.dp, Color.White, CircleShape) else Modifier)
+        .alpha(if (on) 1f else .38f)) { ColourPip(k, 24.dp) }
+}
+
+/** The bar's Filters button: the sliders, the word, and how many panel picks are on. */
+@Composable
+private fun FiltersButton(ui: BenchUi) {
+    val n = ui.filter.count; val on = ui.filters || n > 0
+    Row(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).background(if (on) Color(0x1AE5C47E) else Color(0x0DFFFFFF))
+        .border(1.dp, if (on) Color(0x99E5C47E) else B.Line, RoundedCornerShape(12.dp)).clickable { ui.peek = null; ui.setPick = false; ui.filters = !ui.filters }
+        .semantics { role = Role.Button; contentDescription = if (n > 0) "Filters, $n on" else "Filters" }.padding(horizontal = 11.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        SiteIcon(BENCH_ICONS["filters"], 17.dp, if (on) B.Gold else B.Fg)
+        Text("Filters", style = f(12f, 700, if (on) B.Gold else B.Fg), maxLines = 1, softWrap = false)
+        if (n > 0) Box(Modifier.defaultMinSize(minWidth = 18.dp).height(18.dp).clip(RoundedCornerShape(99.dp)).background(B.GoldBtn).padding(horizontal = 5.dp), contentAlignment = Alignment.Center) {
+            Text("$n", style = f(11f, 800, B.GoldInk, line = 12f), maxLines = 1, softWrap = false)
+        }
+    }
+}
+
+/** Under the bar while panel picks are on: one chip per pick (× takes it off) and Reset. */
+@Composable
+private fun FilterChips(ui: BenchUi, sets: List<Pair<String, String>>, onFilter: () -> Unit) {
+    val names = sets.toMap()
+    val chips = ui.filter.chips { code -> names[code] ?: code.uppercase() }
+    if (chips.isEmpty()) return
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(start = 10.dp, end = 10.dp), verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        for ((label, without) in chips) Box(Modifier.heightIn(min = 44.dp).clickable { ui.filter = without; onFilter() }.semantics { role = Role.Button; contentDescription = "Take off $label" },
+            contentAlignment = Alignment.Center) {
+            Row(Modifier.height(30.dp).clip(RoundedCornerShape(99.dp)).background(Color(0x1FE5C47E)).border(1.dp, Color(0x80E5C47E), RoundedCornerShape(99.dp)).padding(start = 11.dp, end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(label, style = f(12f, 700, B.Gold), maxLines = 1, softWrap = false)
+                Text("×", style = f(14f, 800, B.Gold, line = 15f))
+            }
+        }
+        Box(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(10.dp)).clickable { ui.filter = BenchFilter(sort = ui.filter.sort); onFilter() }.semantics { role = Role.Button }
+            .padding(horizontal = 8.dp), contentAlignment = Alignment.Center) { Text("Reset", style = f(12f, 700, B.Mute), maxLines = 1, softWrap = false) }
+    }
+}
+
+/** One option in the panel: a pill (words) or a round button (a number, a colour). Gold when on. */
+@Composable
+private fun Opt(on: Boolean, desc: String? = null, round: Boolean = false, radio: Boolean = false, onClick: () -> Unit, content: @Composable () -> Unit) {
+    val shape = if (round) CircleShape else RoundedCornerShape(12.dp)
+    Box(Modifier.heightIn(min = 44.dp).then(if (round) Modifier.width(44.dp) else Modifier).clip(shape).background(if (on) Color(0x24E5C47E) else Color(0x0DFFFFFF))
+        .border(1.dp, if (on) Color(0xB3E5C47E) else B.Line, shape).clickable(onClick = onClick)
+        .semantics { if (desc != null) contentDescription = desc; role = if (radio) Role.RadioButton else Role.Checkbox; selected = on }
+        .padding(horizontal = if (round) 0.dp else 13.dp), contentAlignment = Alignment.Center) { content() }
+}
+@Composable
+private fun OptText(s: String, on: Boolean) = Text(s, style = f(13f, 700, if (on) B.Gold else B.Fg), maxLines = 1, softWrap = false)
+
+/** The sets the browser's cards come from (code to name), newest first, for the panel's Set and the chips. */
+private fun benchSets(tiles: List<BenchTile>, shelves: List<BenchShelf>?): List<Pair<String, String>> {
+    val out = LinkedHashMap<String, Pair<String, String>>()
+    shelves.orEmpty().filter { it.code.isNotEmpty() }.forEach { s -> out.getOrPut(s.code.lowercase()) { s.code.lowercase() to s.title } }
+    val names = HashMap<String, String>()
+    tiles.forEach { t -> if (t.set.isNotEmpty() && t.setName.isNotBlank()) names.putIfAbsent(t.set.lowercase(), t.setName) }
+    tiles.sortedByDescending { it.released }.forEach { t -> (listOf(t.set) + t.sets).filter { it.isNotEmpty() }.forEach { c -> val k = c.lowercase()
+        out.getOrPut(k) { k to (names[k] ?: k.uppercase()) } } }
+    return out.values.toList()
+}
+
+/**
+ * The Filters panel: one screen, no descriptions. Colour, Mana value, Type, Does, Rarity, Copies you own, Set, Sort; Reset and
+ * "Show N cards" (N live). [where]: "side" replaces the browser beside the deck (tablet, unfolded, Portal), "sheet" rises from the
+ * bottom (phone), "bottom" fills the Thor's bottom screen while the top keeps the cards.
+ */
+@Composable
+private fun FilterPanel(m: BenchModel, ui: BenchUi, shown: Int?, sets: List<Pair<String, String>>, where: String, onFilter: () -> Unit) {
+    val fl = ui.filter
+    fun put(n: BenchFilter) { ui.filter = n; onFilter() }
+    var allSets by remember { mutableStateOf(false) }
+    val first = remember { FocusRequester() }
+    val pad by Pad.connected.collectAsState()
+    LaunchedEffect(Unit) { if (pad && where != "bottom") runCatching { first.requestFocus() } }
+    PadScreen(PadActs(b = "Close", x = PadAct(if (shown != null) "Show $shown" else "Show cards") { ui.filters = false },
+        start = PadAct("Reset") { ui.colors = emptySet(); put(BenchFilter(sort = fl.sort)) }))
+    BoxWithConstraints(Modifier.fillMaxSize().background(Color(0xFF10131A))) {
+        val cols = if (maxWidth >= 560.dp) 2 else 1
+        Column(Modifier.fillMaxSize().padding(start = 18.dp, end = 14.dp, top = 10.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Filters", style = cinzel(20f, B.Fg))
+                Text(m.browserTitle, style = f(12f, 600, B.Mute), maxLines = 1, softWrap = false, modifier = Modifier.weight(1f))
+                Box(Modifier.size(44.dp).clip(CircleShape).clickable { ui.filters = false }.semantics { contentDescription = "Close filters"; role = Role.Button }, contentAlignment = Alignment.Center) {
+                    Text("×", style = f(24f, 600, B.Fg, line = 26f))
+                }
+            }
+            val groups: List<Pair<String, @Composable () -> Unit>> = listOf(
+                "Colour" to { for (k in BenchFilters.COLORS) { val on = k in ui.colors
+                    Opt(on, "${BenchFilters.COLOR_NAMES[k]}", round = true, onClick = { ui.colors = if (on) ui.colors - k else ui.colors + k; onFilter() }) {
+                    Box(Modifier.alpha(if (on) 1f else .45f)) { ColourPip(k, 24.dp) } } } },
+                "Mana value" to { for (v in BenchFilters.MANA) { val on = v in fl.mana
+                    Opt(on, "Mana value ${BenchFilters.manaLabel(v)}", round = true, onClick = { put(fl.copy(mana = if (on) fl.mana - v else fl.mana + v)) }) { OptText(BenchFilters.manaLabel(v), on) } } },
+                "Type" to { for (t in BenchFilters.TYPES) { val on = t in fl.types; Opt(on, onClick = { put(fl.copy(types = if (on) fl.types - t else fl.types + t)) }) { OptText(t, on) } } },
+                "Does" to { for ((k, w) in BenchFilters.DOES) { val on = k in fl.does; Opt(on, onClick = { put(fl.copy(does = if (on) fl.does - k else fl.does + k)) }) { OptText(w, on) } } },
+                "Rarity" to { for ((k, w) in BenchFilters.RARITIES) { val on = k in fl.rarity; Opt(on, onClick = { put(fl.copy(rarity = if (on) fl.rarity - k else fl.rarity + k)) }) { OptText(w, on) } } },
+                "Copies you own" to { for (n in BenchFilters.COPIES) { val on = n in fl.copies
+                        Opt(on, if (n >= 4) "Own 4 or more" else "Own $n", round = true, onClick = { put(fl.copy(copies = if (on) fl.copies - n else fl.copies + n)) }) { OptText(if (n >= 4) "4+" else "$n", on) } }
+                    Opt(fl.notInDeck, onClick = { put(fl.copy(notInDeck = !fl.notInDeck)) }) { OptText("Not in this deck", fl.notInDeck) } },
+                "Set" to { Opt(fl.set.isEmpty(), radio = true, onClick = { put(fl.copy(set = "")) }) { OptText("All sets", fl.set.isEmpty()) }
+                    val list = if (allSets) sets else sets.take(2).let { s -> if (fl.set.isNotEmpty() && s.none { it.first == fl.set }) s + sets.filter { it.first == fl.set } else s }
+                    for ((code, name) in list) { val on = fl.set == code; Opt(on, radio = true, onClick = { put(fl.copy(set = if (on) "" else code)) }) { OptText(name, on) } }
+                    if (sets.size > 2) Opt(false, onClick = { allSets = !allSets }) { OptText(if (allSets) "Fewer" else "More", false) } },
+                "Sort" to { for ((k, w) in BenchFilters.SORTS) { val on = fl.sort == k; Opt(on, radio = true, onClick = { put(fl.copy(sort = k)) }) { OptText(w, on) } } },
+            )
+            Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                groups.chunked(cols).forEachIndexed { row, pair -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                    pair.forEachIndexed { i, (title, body) -> Column(Modifier.weight(1f).then(if (row == 0 && i == 0) Modifier.focusRequester(first) else Modifier), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(title.uppercase(), style = f(11f, 800, B.Gold, track = .1f))
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) { body() }
+                    } }
+                    if (pair.size < cols) Spacer(Modifier.weight(1f))
+                } }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                HeroGhost("Reset") { ui.colors = emptySet(); put(BenchFilter(sort = fl.sort)) }
+                val shape = RoundedCornerShape(13.dp)
+                Box(Modifier.weight(1f).heightIn(min = 48.dp).shadow(8.dp, shape, spotColor = Color(0xB3E5C47E)).clip(shape).background(B.GoldBtn).clickable { ui.filters = false }
+                    .semantics { role = Role.Button }, contentAlignment = Alignment.Center) {
+                    Text(if (shown == null) "Show cards" else if (shown == 1) "Show 1 card" else "Show $shown cards", style = f(15f, 800, B.GoldInk), maxLines = 1, softWrap = false)
+                }
+            }
+        }
+    }
+}
+
+/** Phone: the panel as a sheet over the Bench, the browser's cards dimmed behind it; a tap above it closes it. */
+@Composable
+private fun FilterSheet(m: BenchModel, ui: BenchUi, shown: Int?, sets: List<Pair<String, String>>, onFilter: () -> Unit) {
+    Box(Modifier.fillMaxSize().background(Color(0x99000000)).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { ui.filters = false }) {
+        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(.86f).windowInsetsPadding(WindowInsets.navigationBars)
+            .shadow(24.dp, RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
+            .border(1.dp, Color(0x33E5C47E), RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}) {
+            FilterPanel(m, ui, shown, sets, "sheet", onFilter)
+        }
+    }
+}
+
+/**
+ * The deck's mana curve (0 to 7+, lands left out) in the deck header. A tap on a bar shows only that mana value in the browser (tap
+ * again to take it off); [lit] glows the bar the ring's card would add to (Thor's bottom screen).
+ */
+@Composable
+private fun CurveBar(m: BenchModel, ui: BenchUi, height: Dp, modifier: Modifier = Modifier, lit: Int? = null, onFilter: () -> Unit = {}, toCards: () -> Unit = {}) {
+    val curve = remember(m.groups) { benchCurve(m.groups) }
+    val top = maxOf(1, curve.max())
+    val room = (height - 30.dp).coerceAtLeast(8.dp)
+    Row(modifier.height(height).semantics { contentDescription = "Mana curve" }, horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.Bottom) {
+        curve.forEachIndexed { i, n -> val on = i in ui.filter.mana; val glow = on || i == lit; val label = BenchFilters.manaLabel(i)
+            Column(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(7.dp)).background(if (on) Color(0x14E5C47E) else Color.Transparent)
+                .clickable { ui.peek = null; if (ui.tab != "cards") toCards(); ui.filter = ui.filter.copy(mana = if (on) ui.filter.mana - i else ui.filter.mana + i); onFilter() }
+                .semantics { contentDescription = "Mana value $label, $n ${if (n == 1) "card" else "cards"}"; role = Role.Checkbox; selected = on },
+                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
+                Text(if (n > 0) "$n" else "", style = f(11f, 800, if (glow) B.Gold else B.Fg, line = 13f), maxLines = 1, softWrap = false)
+                Box(Modifier.padding(top = 2.dp).fillMaxWidth(.7f).height(if (n == 0) 3.dp else room * (n.toFloat() / top)).clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
+                    .background(if (glow) B.GoldBtn else SolidColor(Color(if (n == 0) 0x26E5C47E else 0x66E5C47E))))
+                Text(label, style = f(11f, 700, if (glow) B.Gold else B.Mute, line = 13f), maxLines = 1, softWrap = false)
+            }
+        }
+    }
+}
+
+/** The deck list's order: by Type (the deck's groups) or by Mana value. */
+@Composable
+private fun DeckSortSeg(ui: BenchUi) = Row(Modifier.clip(RoundedCornerShape(12.dp)).background(Color(0x40000000)).border(1.dp, B.Line, RoundedCornerShape(12.dp)).padding(2.dp)) {
+    for ((k, w) in listOf("type" to "Type", "mana" to "Mana")) { val on = ui.deckSort == k
+        Box(Modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(9.dp)).then(if (on) Modifier.background(Color(0x29E5C47E)) else Modifier).clickable { ui.deckSort = k }
+            .semantics { role = Role.RadioButton; selected = on; contentDescription = "Sort the deck by ${w.lowercase()}" }.padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
+            Text(w, style = f(12f, 700, if (on) B.Gold else B.Mute), maxLines = 1, softWrap = false)
+        }
+    }
+}
 
 // ---------------------------------------------------------------- All cards, shelf by shelf
 
 /** The shelves, one under another; each asks for its cards when it comes on screen, so only what you scroll to ever loads. */
 @Composable
-private fun Shelves(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, lift: () -> Unit) {
+private fun Shelves(m: BenchModel, list: List<BenchShelf>?, ui: BenchUi, a: BenchActions, drag: Drag, lift: () -> Unit) {
     // A set with no cards for this deck stays as one line, so the shelves under it don't slide up into view and load on their own.
-    val shown = m.shelves.orEmpty()
+    val shown = list.orEmpty()
     // Until the shelves are known the list isn't drawn at all, so its kept scroll place (BenchUi.shelfList) isn't lost to an empty list.
     if (shown.isEmpty()) { Text(m.browserNote ?: "Looking through every card…", style = f(12f, 600, B.Mute), modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)); return }
     val open = ui.openSet?.let { k -> shown.firstOrNull { it.key == k } }
@@ -1027,13 +1304,15 @@ private fun Shelves(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, lif
 @Composable
 private fun Shelf(m: BenchModel, s: BenchShelf, back: String, ui: BenchUi, a: BenchActions, drag: Drag, lift: () -> Unit) {
     val shape = RoundedCornerShape(14.dp)
-    val none = s.tiles != null && s.tiles.isEmpty() && s.note.isEmpty()
+    // Nothing in the set for this deck at all; a shelf whose cards the filters hide still shows and opens.
+    val none = s.tiles != null && (s.raw ?: s.tiles.size) == 0 && s.note.isEmpty()
     Column(Modifier.fillMaxWidth().padding(horizontal = if (s.gold) 6.dp else 0.dp).then(if (s.gold) Modifier.clip(shape)
         .background(Brush.verticalGradient(listOf(Color(0x24E5C47E), Color(0x08E5C47E)))).border(1.dp, Color(0x59E5C47E), shape) else Modifier)
         .padding(top = if (none) 4.dp else 8.dp, bottom = 4.dp).semantics(mergeDescendants = false) { contentDescription = s.title + if (s.code.isNotEmpty()) ", ${s.code}" else "" }) {
         ShelfHead(s, none, open = false) { ui.openSet = s.key }
         if (none) Unit
         else if (s.note.isNotEmpty() && s.tiles.isNullOrEmpty()) Text(s.note, style = f(12f, 600, B.Mute), modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+        else if (s.tiles?.isEmpty() == true) Text("No cards match", style = f(12f, 600, B.Mute), modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
         else {
             val n = s.tiles?.size ?: 6
             androidx.compose.foundation.lazy.LazyRow(Modifier.fillMaxWidth().padding(top = 6.dp), contentPadding = PaddingValues(horizontal = 10.dp),
@@ -1079,7 +1358,7 @@ private fun ShelfHead(s: BenchShelf, none: Boolean, open: Boolean, onClick: () -
 /** One set, full: its heading (tap, or Back, for every shelf again) and every card in a grid; Magic's next page loads near the end. */
 @Composable
 private fun SetFull(m: BenchModel, s: BenchShelf, ui: BenchUi, a: BenchActions, drag: Drag, lift: () -> Unit) {
-    androidx.activity.compose.BackHandler(enabled = ui.peek == null) { ui.openSet = null }
+    androidx.activity.compose.BackHandler(enabled = ui.peek == null && !ui.filters) { ui.openSet = null }
     PadScreen(PadActs(b = "Every set"))
     if (s.tiles == null || s.loading || s.note.isNotEmpty()) LaunchedEffect(s.key, m.shelvesGen) { a.shelf(s.key) }
     val tiles = s.tiles.orEmpty()
@@ -1089,11 +1368,13 @@ private fun SetFull(m: BenchModel, s: BenchShelf, ui: BenchUi, a: BenchActions, 
         LazyVerticalGrid(GridCells.Fixed(n), Modifier.fillMaxSize().semantics { contentDescription = "${s.title}, every card" }, ui.setGrid,
             PaddingValues(start = 10.dp, end = 10.dp, top = 6.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             item(key = "head", span = { GridItemSpan(maxLineSpan) }) { ShelfHead(s, false, open = true) { ui.openSet = null } }
-            val note = if (s.note.isNotEmpty() && tiles.isEmpty()) s.note else if (s.tiles == null) "Opening the set…" else if (tiles.isEmpty()) "No cards here for this deck" else null
+            // The filters can hide every card loaded so far: the set keeps loading its next page under the note.
+            val loaded = s.raw ?: tiles.size
+            val note = if (s.note.isNotEmpty() && tiles.isEmpty()) s.note else if (s.tiles == null) "Opening the set…" else if (tiles.isEmpty()) (if (loaded > 0) "No cards match" else "No cards here for this deck") else null
             if (note != null) item(key = "note", span = { GridItemSpan(maxLineSpan) }) { Text(note, style = f(12f, 600, B.Mute), modifier = Modifier.padding(horizontal = 2.dp, vertical = 8.dp)) }
             itemsIndexed(tiles, key = { i, t -> "f:${t.key}:$i" }) { _, t -> Tile(m, t, ui, a, drag, lift) }
-            if (s.count > tiles.size && tiles.isNotEmpty()) item(key = "more", span = { GridItemSpan(maxLineSpan) }) {
-                LaunchedEffect(tiles.size) { a.shelfMore(s.key) }
+            if (s.count > loaded && loaded > 0) item(key = "more", span = { GridItemSpan(maxLineSpan) }) {
+                LaunchedEffect(loaded) { a.shelfMore(s.key) }
                 Text("More of the set…", style = f(12f, 600, B.Mute), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp))
             }
         }
@@ -1104,7 +1385,7 @@ private fun SetFull(m: BenchModel, s: BenchShelf, ui: BenchUi, a: BenchActions, 
 @Composable
 private fun SetPicker(shelves: List<BenchShelf>, ui: BenchUi) {
     var q by remember { mutableStateOf("") }
-    androidx.activity.compose.BackHandler { ui.setPick = false }
+    androidx.activity.compose.BackHandler(enabled = !ui.filters) { ui.setPick = false }
     PadScreen(PadActs(b = "Close", opaque = true))
     val sets = shelves.filter { it.code.isNotEmpty() }
     val t = q.trim()
@@ -1216,11 +1497,11 @@ private fun Modifier.drawWithFade() = this.drawWithContent {
 }
 
 @Composable
-private fun FindBox(ui: BenchUi, onFilter: () -> Unit) {
+private fun FindBox(ui: BenchUi, onFilter: () -> Unit, fill: Boolean = false) {
     var focused by remember { mutableStateOf(false) }
     val w by animateFloatAsState(if (focused || ui.find.isNotEmpty()) 170f else 118f, tween(200), label = "find")
     BasicTextField(ui.find, { ui.find = it.take(60); onFilter() }, singleLine = true, textStyle = f(13f, 600), cursorBrush = SolidColor(B.Gold),
-        modifier = Modifier.width(w.dp).height(44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0x0FFFFFFF))
+        modifier = (if (fill) Modifier.fillMaxWidth() else Modifier.width(w.dp)).height(44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0x0FFFFFFF))
             .border(1.dp, if (focused) B.Gold else B.Line, RoundedCornerShape(12.dp)).onFocusChanged { focused = it.isFocused }.semantics { contentDescription = "Find a card" },
         decorationBox = { field -> Box(Modifier.fillMaxSize().padding(horizontal = 12.dp), contentAlignment = Alignment.CenterStart) {
             if (ui.find.isEmpty()) Text("Find a card", style = f(13f, 600, B.Mute), maxLines = 1, softWrap = false)
@@ -1409,7 +1690,7 @@ private fun EmbRow(emb: List<TcgEmb>) = Row(Modifier.clip(RoundedCornerShape(99.
  * a new row when it isn't in the deck yet.
  */
 @Composable
-private fun BenchBottom(m: BenchModel, ui: BenchUi) {
+private fun BenchBottom(m: BenchModel, ui: BenchUi, onFilter: () -> Unit = {}, toCards: () -> Unit = {}) {
     // The ring on a card (U10): that card's case, its buttons the ones the pad does on it. No ring: the deck's summary below.
     ui.ring?.let { FocusedCardView(it); return }
     val on = DualScreen.focus?.name
@@ -1419,28 +1700,25 @@ private fun BenchBottom(m: BenchModel, ui: BenchUi) {
             Text(m.formatChip, style = f(12f, 700, B.Mute))
             m.stats.take(3).forEach { st -> Text(buildAnnotatedString { withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = if (st.warn) B.Coral else B.Fg)) { append(st.value) }; append("  " + st.label) }, style = f(13f, 600, B.Mute)) }
             m.power?.let { p -> Text(buildAnnotatedString { withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = B.Gold)) { append(p) }; append("  power" + if (m.tier.isNotBlank()) " · ${m.tier}" else "") }, style = f(13f, 600, B.Mute)) }
-            // The mana curve from the list's own costs (Magic): 0 to 6+, the bar the ring's card would add to glows.
-            val curve = IntArray(7); var any = false
-            val onCost = m.groups.flatMap { it.rows }.firstOrNull { it.name == on }?.cost
-            for (g in m.groups) for (r in g.rows) { if (r.cost.isBlank()) continue; any = true; curve[manaValue(r.cost).coerceAtMost(6)] += r.qty }
-            if (any) {
-                val top = maxOf(1, curve.max()); val lit = onCost?.let { manaValue(it).coerceAtMost(6) }
-                Row(Modifier.fillMaxWidth().weight(1f, fill = false).heightIn(max = 90.dp).height(70.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Bottom) {
-                    curve.forEachIndexed { i, n -> Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(Modifier.fillMaxWidth().height((52f * n / top).coerceAtLeast(2f).dp).clip(RoundedCornerShape(3.dp)).background(if (i == lit) B.Gold else Color(0x66E5C47E)))
-                        Text(if (i == 6) "6+" else "$i", style = f(11f, 700, if (i == lit) B.Gold else B.Mute))
-                    } }
-                }
+            // The deck's curve, 0 to 7+ (the deck header's on every size): the bar the ring's card would add to glows, and a tap on a
+            // bar filters the cards on the top screen to that mana value.
+            if (m.colorFilter && m.groups.isNotEmpty()) {
+                val lit = m.groups.flatMap { it.rows }.firstOrNull { it.name == on }?.let(::rowMana)
+                CurveBar(m, ui, 96.dp, Modifier.fillMaxWidth(), lit = lit, onFilter = onFilter, toCards = toCards)
             }
         }
-        androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1.2f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            val inDeck = m.groups.any { g -> g.rows.any { it.name == on } }
+        val groups = remember(m.groups, ui.deckSort, m.colorFilter) { if (ui.deckSort == "mana" && m.colorFilter) benchByMana(m.groups) else m.groups }
+        Column(Modifier.weight(1.2f).fillMaxHeight()) {
+        if (m.colorFilter) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) { DeckSortSeg(ui) }
+        androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            val inDeck = groups.any { g -> g.rows.any { it.name == on } }
             if (on != null && !inDeck) item(key = "new") { BottomRow("0 → 1", on, true) }
-            for (g in m.groups) {
+            for (g in groups) {
                 item(key = "g:" + g.name) { Text("${g.name.uppercase()}  ${g.rows.sumOf { it.qty }}", style = f(11f, 800, B.Gold, track = .1f), modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)) }
                 items(g.rows.size, key = { "r:${g.name}:" + g.rows[it].key }) { i -> val r = g.rows[i]; val lit = r.name == on
                     BottomRow(if (lit) "${r.qty} → ${r.qty + 1}" else "${r.qty}", r.name, lit) }
             }
+        }
         }
     }
 }

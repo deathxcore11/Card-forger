@@ -12,6 +12,7 @@ import {metaState, loadMeta as loadMetaData} from 'WEB/meta.js';
 import {cardKey as key} from 'WEB/core.js';
 import {loadMtgTags, mtgTagsReady, setMtgTags} from 'WEB/mtg-tags.js';
 import {engineRoles} from 'WEB/insights.js';
+import {forgeTags} from 'WEB/deck-forge.js';
 
 // app.js:475-484, verbatim.
 const api = createScryfallClient();
@@ -111,6 +112,13 @@ const calls = {
   },
   // Deck Bench (the app's deck editor): quickContext's Power and bracket for the deck being edited, and deck-viewer.js stackSummary's
   // roles (deck-viewer.js deckCardAttrs: insights.js engineRoles without Land, by copies, main deck only, in the list's order).
+  // Deck Bench's Does filter (deck view redesign, 14 Nov): the builder's own role tags (deck-forge.js forgeTags: ramp, draw,
+  // removal, wipe, protection, wincon) for the cards the browser shows, by name. Rules only: no network, no AI.
+  roleTags: a => {
+    const keep = new Set(['ramp', 'draw', 'removal', 'wipe', 'protection', 'wincon']), out = {};
+    for (const c of a.cards || []) { if (!c || !c.name) continue; try { out[c.name] = [...new Set(forgeTags(c).map(t => t.tag).filter(t => keep.has(t)))]; } catch (e) { out[c.name] = []; } }
+    return out;
+  },
   benchContext: async a => {
     const [ctx] = await calls.quickContext({format: a.format, decks: [a.deck]});
     const counts = new Map(), cards = {};
