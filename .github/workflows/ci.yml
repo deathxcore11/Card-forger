@@ -344,6 +344,9 @@ jobs:
       - name: Test all-game rule hover previews
         if: ${{ !cancelled() }}
         run: node test-rule-hover-browser.mjs
+      - name: Test Magic foil on a real card picture
+        if: ${{ !cancelled() }}
+        run: node test-mtg-foil-real-browser.mjs
       # --- rule-hover-app-browser ---
       - if: ${{ !cancelled() }}
         name: Trace actual native dialog Escape handling

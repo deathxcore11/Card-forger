@@ -55,18 +55,42 @@ assert(at(30,20,0)>200&&at(90,20,0)<40,'Gold ink found, neon is not gold');
 assert(at(90,20,1)>200&&at(30,20,1)<40,'Fluorescent ink found, gold is not neon');
 assert(at(60,60,2)>200&&at(30,20,2)<40&&at(60,150,2)<40,'Bare paper found, inks and dark areas are not paper');
 assert(at(12,100,3)>120&&at(60,60,3)<20,'Drawn lines found, flat paper has none');
-// Shader: ink-selective treatments never reach the rules box; patterned sheets are softer there.
-assert.match(MTG_FOIL_FRAGMENT,/if\(mode>1\.5&&\(mode<2\.5\|\|mode>3\.5\)\)cov\*=1\.-text;/);
-assert.match(MTG_FOIL_FRAGMENT,/cov\*=1\.-\.45\*text\*patterned;/);
-assert.match(MTG_FOIL_FRAGMENT,/return mix\(base,shoulder\(T\*F\*1\.35\),clamp\(cover,0\.,1\.\)\);/,'Zero coverage returns the exact source pixel');
+// Shader: ink-selective treatments never reach the rules box, and where the foil does not cover, the
+// card's own pixel is what the ink-over-foil step returns.
+for(const ch of ['r','b','a'])assert.match(MTG_FOIL_FRAGMENT,new RegExp(`cov=mk\\.${ch}\\*\\(1\\.-text\\);`),'ink '+ch+' stays out of the rules box');
+assert.match(MTG_FOIL_FRAGMENT,/vec3 outC=mix\(base,shoulder\(lit\),c\);/,'Zero coverage keeps the source pixel under the foil');
 // Textured foil keeps the art and text readable: gentle relief and half the printed art left visible.
 {const t=MTG_FOIL_RECIPES['mtg-textured'];assert(t.relief<=.4,'textured relief stays gentle');assert(t.keep>=.4,'textured foil keeps the printed art visible');}
 // Foil index additions: masterpieces, ampersand, silver screen, scroll, Vault Boy, Premium Deck Series,
 // unknown set-specific '...foil' promo types, and the M15 holo stamp on modern rares and mythics.
 {const R=await import('./mtg-foil-recipes.js');
  assert.equal(mtgFoilEffect({set_type:'masterpiece',set:'kld'}),'mtg-masterpiece');assert.equal(mtgFoilEffect({set:'pd2'}),'mtg-pds');
- for(const [p,e] of [['ampersand','mtg-ampersand'],['silverscreen','mtg-silverscreen'],['scroll','mtg-traditional'],['vaultboy','mtg-vaultboy'],['chocobotrackfoil','mtg-traditional'],['textured','mtg-textured']])assert.equal(mtgFoilEffect({promo_types:[p]}),e,p);
+ for(const [p,e] of [['ampersand','mtg-ampersand'],['silverscreen','mtg-silverscreen'],['scroll','mtg-traditional'],['vaultboy','mtg-traditional'],['chocobotrackfoil','mtg-traditional'],['textured','mtg-textured']])assert.equal(mtgFoilEffect({promo_types:[p]}),e,p);
  assert.equal(mtgFoilEffect({promo_types:['boosterfun']}),'mtg-traditional','non-foil promo types keep traditional');
  assert(R.mtgHoloStamp({frame:'2015',rarity:'mythic'}));assert(!R.mtgHoloStamp({frame:'2015',rarity:'common'}));assert(!R.mtgHoloStamp({frame:'2003',rarity:'rare'}));
  for(const k of ['mtg-masterpiece','mtg-ampersand','mtg-silverscreen','mtg-scroll','mtg-vaultboy','mtg-pds','mtg-emblem'])assert(MTG_FOIL_RECIPES[k],k);}
+// One small shader per foil type: every recipe composes to plain GLSL (no directive left behind), a card
+// only carries its own type's lines, and recipes that draw differently never share a program.
+{const {MTG_FOIL_TEMPLATE,composeFoil,foilDefs,foilKey,mtgFoilFragment}=await import('./mtg-foil-shader.js'),R=await import('./mtg-foil-recipes.js');
+ const keys=new Map();
+ for(const [k,r] of Object.entries(MTG_FOIL_RECIPES))for(const kind of [0,1,2]){const src=mtgFoilFragment(r,kind),key=foilKey(foilDefs(r,kind));
+  assert.doesNotMatch(src,/^\s*#/m,k+': no preprocessor line reaches the driver');assert.match(src,/void main\(\)/,k);
+  assert(src.length<MTG_FOIL_TEMPLATE.length*.75,k+' compiles only part of the template');
+  if(keys.has(key))assert.equal(keys.get(key),src,'one key, one shader');keys.set(key,src);}
+ assert.doesNotMatch(mtgFoilFragment(MTG_FOIL_RECIPES['mtg-traditional']),/voro\(q\*|u_emblem|shootingStar/,'a traditional foil carries no other type\'s pattern');
+ assert.match(mtgFoilFragment(MTG_FOIL_RECIPES['mtg-oldborder']),/shootingStar\(uv\)/,'old-border keeps its shooting star');
+ assert.throws(()=>composeFoil('#if PAT==1\nx',{PAT:1}),/#if without #endif/);assert.throws(()=>composeFoil('#endif',{}),/without #if/);assert.throws(()=>composeFoil('#if pat\n#endif',{}),/bad condition/);
+ assert.equal(composeFoil('a\n#if X==2\nb\n#elif X>2&&Y\nc\n#else\nd\n#endif\ne',{X:3,Y:1}),'a\nc\ne');assert.equal(composeFoil('#if X\n#if Y\nb\n#else\nc\n#endif\n#else\nd\n#endif',{X:0,Y:1}),'d');
+ // 21 is the native app's facet foil and stamp value 2 its oval stamp: the web numbers must not collide.
+ assert(!Object.values(MTG_PATTERN).includes(21));assert.equal(MTG_PATTERN.compleat,22);
+ // Big emblems come from the printing's own set, and only on the treatments that have one.
+ // Fields copied from Scryfall: Indominus Rex, Alpha (REX 39) and Tiamat (PAFR 235a); the id and the image address are placeholders.
+ const rex={id:'r',name:'Indominus Rex, Alpha',game:'mtg',set:'rex',collector_number:'39',layout:'normal',finishes:['foil'],frame:'2015',frame_effects:['legendary','inverted'],border_color:'borderless',promo_types:['universesbeyond','embossed','boosterfun'],image_uris:{normal:'https://cards.scryfall.io/normal/front/r.jpg'}};
+ const tiamat={name:'Tiamat',set:'pafr',collector_number:'235a',frame:'2015',promo_types:['embossed','instore'],finishes:['foil']};
+ assert.equal(R.mtgFoilEmblem(rex),'rex');assert.equal(R.mtgFoilEmblem(tiamat),'amp');
+ assert.equal(R.mtgFoilEmblem({set:'rex',promo_types:[]}),'','a plain Jurassic World foil has no emblem');assert.equal(R.mtgFoilEmblem({set:'sld',promo_types:['embossed']}),'','other embossed promos have no measured emblem');
+ assert.equal(foilDefs(MTG_FOIL_RECIPES['mtg-embossed'],1).EMB,1);assert.equal(foilDefs(MTG_FOIL_RECIPES['mtg-traditional'],1).EMB,0,'only the gloss pattern takes an emblem');
+ assert.equal(finishChoices('mtg',rex,{}).find(v=>v.key==='foil').emblem,'rex','the finish carries the emblem to the foil');
+ assert.equal(foil.emblem,undefined,'a surge foil carries none');
+ for(const e of Object.values(R.MTG_EMBLEMS)){const {existsSync}=await import('node:fs');assert(existsSync(new URL('./'+e.src,import.meta.url)),e.src);}}
 console.log('PASS: Magic foil router picks each printing\'s treatment from Scryfall data (old border, FTV, textured, surge, galaxy, oil slick, compleat, gilded, neon, serialized, fracture, raised); recipes, frames, finish wiring and ink analysis verified.');
