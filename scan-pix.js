@@ -56,29 +56,38 @@ export function pixHashThumb(planes,g='mtg'){
 export const pixHash=(rgba,w,h,g)=>pixHashThumb(pixThumb(rgba,w,h),g);
 
 const POP=Uint8Array.from({length:256},(_,i)=>{let n=0;for(let b=i;b;b>>=1)n+=b&1;return n;});
+// Fingerprints and the index read four bytes at a time (a 48-byte record is 12 words). The view
+// is kept per buffer; a buffer that does not start on a word boundary is copied once.
+const WORDS=new WeakMap();
+function words(u8){
+ let w=WORDS.get(u8);
+ if(!w){const len=u8.length&~3;w=u8.byteOffset%4===0?new Uint32Array(u8.buffer,u8.byteOffset,len>>2):new Uint32Array(u8.slice(0,len).buffer);WORDS.set(u8,w);}
+ return w;
+}
+const pop=v=>{v-=(v>>>1)&0x55555555;v=(v&0x33333333)+((v>>>2)&0x33333333);return (((v+(v>>>4))&0x0f0f0f0f)*0x01010101)>>>24;};
 // The k closest index records to one or more fingerprints of the same capture (slightly different
 // outlines of it: each record keeps its best). Distance: differing art bits count fully, whole-card
 // bits half (frames repeat across cards; art does not). Lower is closer; 0 is the same picture,
 // about 141 is an unrelated one. Records that are all zero (no picture known) are skipped.
 // skip(row) leaves rows out (to find the closest different card). Returns [[row, distance], ...] closest first.
 export function pixNearest(hashes,bin,k=12,skip=null){
- const hs=hashes instanceof Uint8Array?[hashes]:hashes,n=Math.floor(bin.length/PIX_REC),best=[];let worst=Infinity;
+ const hs=(hashes instanceof Uint8Array?[hashes]:hashes).map(words),B=words(bin),n=Math.floor(bin.length/PIX_REC),best=[];let worst=Infinity;
  for(let i=0;i<n;i++){
+  const o=i*12;
+  if(!(B[o]|B[o+1]|B[o+2]|B[o+3]|B[o+4]|B[o+5]|B[o+6]|B[o+7]|B[o+8]|B[o+9]|B[o+10]|B[o+11]))continue;
   if(skip&&skip(i))continue;
-  const o=i*PIX_REC;let dist=Infinity,any=0;
-  for(let j=0;j<PIX_REC;j+=7)any|=bin[o+j];
-  if(!any){let z=0;for(let j=0;j<PIX_REC;j++)z|=bin[o+j];if(!z)continue;}
-  for(const h of hs){
-   let a=0,f=0;
-   for(let c=0;c<48;c+=16){
-    for(let j=0;j<8;j++)a+=POP[h[c+j]^bin[o+c+j]];
-    if(a+f*.5>=dist)break;
-    for(let j=8;j<16;j++)f+=POP[h[c+j]^bin[o+c+j]];
-   }
-   const d=a+f*.5;if(d<dist)dist=d;
+  let dist=Infinity;
+  for(let j=0;j<hs.length;j++){
+   const h=hs[j];
+   // Art bits first: most records are ruled out before the whole-card bits are looked at.
+   const a=pop(h[0]^B[o])+pop(h[1]^B[o+1])+pop(h[4]^B[o+4])+pop(h[5]^B[o+5])+pop(h[8]^B[o+8])+pop(h[9]^B[o+9]);
+   if(a>=dist)continue;
+   const d=a+.5*(pop(h[2]^B[o+2])+pop(h[3]^B[o+3])+pop(h[6]^B[o+6])+pop(h[7]^B[o+7])+pop(h[10]^B[o+10])+pop(h[11]^B[o+11]));
+   if(d<dist)dist=d;
   }
   if(best.length<k||dist<worst){
-   best.push([i,dist]);best.sort((x,y)=>x[1]-y[1]);if(best.length>k)best.pop();
+   let at=best.length;while(at>0&&best[at-1][1]>dist)at--;
+   best.splice(at,0,[i,dist]);if(best.length>k)best.pop();
    worst=best.length===k?best[k-1][1]:Infinity;
   }
  }
