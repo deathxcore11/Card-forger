@@ -352,7 +352,8 @@ private fun margins(n: SiteNode, ctx: Ctx): Pair<Float, Float> = when {
     n.has("pwp-eyebrow") -> 0f to 2f
     n.has("pwp-plan") -> 2f to 0f
     n.has("pwp-pills") -> 10f to 0f
-    n.has("pwp-tier") || n.has("pwp-foot") || n.has("pwp-text") -> 0f to 0f
+    n.has("pwp-tier") || n.has("pwp-foot") || n.has("pwp-text") || n.has("pwp-lead") -> 0f to 0f
+    n.has("pwp-eyebrow") && ctx.parentHas("pwp-read") -> 4f to 0f
     n.tag == "h3" && ctx.inside("pwp-card") -> 0f to 0f
     n.tag == "h4" && ctx.inside("pwp-pc") -> 0f to 4f
     n.tag == "p" && n.has("eyebrow") -> 0f to 4f
@@ -422,6 +423,9 @@ private fun Element(n: SiteNode, ui: SiteUi, ctx: Ctx) {
             drawLine(Site.Line, Offset(0f, size.height - .5.dp.toPx()), Offset(size.width, size.height - .5.dp.toPx()), 1.dp.toPx()) }.padding(bottom = 8.8.dp))
         n.has("note-row") -> NoteRow(n, ui, ctx, mark)
         n.has("life-card") -> LifeCard(n, ui, ctx, mark)
+        n.has("pwp-opp") -> PwpOpp(n, ui, ctx, mark)
+        // .pwp-jump ("See the swaps that help ↓") scrolls the website's page; the app's page is one scroll, so it is left out.
+        n.has("pwp-jump") -> Unit
         n.tag == "button" || n.tag == "a" -> SiteButton(n, ui, ctx, mark)
         n.tag == "input" -> SiteInput(n, ui, mark)
         n.tag == "select" -> SiteSelect(n, ui, mark)
@@ -567,6 +571,8 @@ private fun textCtx(n: SiteNode, ctx: Ctx): Ctx {
         fontWeight = FontWeight(700)), upper = true)
     if (n.has("pwp-tier")) c = c.copy(style = pwpDisplay(24f, Site.Text), line = 1.302f)
     if (n.has("pwp-plan")) c = c.size(14.08f).color(Site.Muted)
+    // .pwp-lead: .92rem, 1.45.
+    if (n.has("pwp-lead")) c = c.size(14.72f, 1.45f)
     if (n.has("pwp-foot")) c = c.size(11.2f).color(Site.Muted)
     if (n.tag == "b" && ctx.parentHas("pwp-match")) c = c.size(15.2f)
     if (n.tag == "h4" && ctx.inside("pwp-pc")) c = c.copy(style = c.style.copy(fontSize = 10.88.sp, lineHeight = (10.88f * c.line).sp, letterSpacing = 1.306.sp,
@@ -623,12 +629,18 @@ private fun Container(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
         n.has("pwp-drivers") || n.has("pwp-field") || n.has("pwp-colors") || n.has("pwp-match") -> Column(mark.fillMaxWidth()) {
             FlexItems(n.kids, ui, inner, gap = when { n.has("pwp-drivers") -> 8f; n.has("pwp-field") -> 7f; n.has("pwp-colors") -> 6f; else -> 4f }) }
         n.has("pwp-dr") -> PwpDr(n, mark)
+        n.has("pwp-fix") -> PwpFix(n, ui, inner, mark)
+        n.has("pwp-area") -> PwpArea(n, ui, ctx, mark)
+        n.has("pwp-fan") -> PwpFan(n, mark)
+        // .pwp-read: an opponent's read under its row: a grid 8 apart, 2 above and 14 under.
+        n.has("pwp-read") -> Column(mark.fillMaxWidth().padding(top = 2.dp, bottom = 14.dp)) { FlexItems(n.kids, ui, inner, gap = 8f) }
         n.has("pwp-f") -> PwpField(n, mark)
         // .pwp-row: its heading and its note (or the share) apart on one line, centred, 10 at least between.
         n.has("pwp-row") -> FlexBetween(mark.fillMaxWidth(), 10.dp) {
             shown.filterIsInstance<SiteNode>().forEach { k ->
                 when {
                     k.has("pwp-same") -> Text(k.text(), style = pwpDisplay(22.4f, Site.Gold))
+                    k.has("pwp-verdict") -> PwpVerdict(k)
                     k.tag == "small" -> Paragraph(k.kids, ui, textCtx(k, inner).under(k), fill = false)
                     else -> Element(k, ui, inner)
                 }
@@ -937,6 +949,8 @@ private fun Details(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
             pad = PaddingValues(start = 14.dp, end = 14.dp, bottom = if (open) 12.dp else 0.dp)
             sum = inner.size(13.12f).color(Site.Gold).let { it.copy(style = it.style.copy(letterSpacing = .787.sp)) }
         }
+        // .pwp-all: no box; its summary 40 tall, gold, .8rem, 600, no marker; 4 under it when open.
+        n.has("pwp-all") -> { sum = inner.size(12.8f).color(Site.Gold).weight(600); openGap = 4f }
         ctx.parentHas("rules-list") -> {
             // .rules-list details: a line between (10 in); in the rulebook a line under each (14 in), the summary's small on its own line.
             val library = ctx.inside("rule-library")
@@ -949,7 +963,7 @@ private fun Details(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
     Column(m.padding(pad)) {
         val tall = n.has("pwp-more")
         if (summary != null) Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).clickable { ui.tap(summary.id) }.semantics { role = Role.Button }
-            .then(if (tall) Modifier.heightIn(min = 44.dp) else Modifier), verticalArrangement = Arrangement.Center) {
+            .then(if (tall) Modifier.heightIn(min = 44.dp) else if (n.has("pwp-all")) Modifier.heightIn(min = 40.dp) else Modifier), verticalArrangement = Arrangement.Center) {
             if (marker) Row(verticalAlignment = Alignment.CenterVertically) {
                 val ink = sum.style.color
                 androidx.compose.foundation.Canvas(Modifier.size(7.dp, 8.5.dp)) {
@@ -1458,7 +1472,7 @@ private fun PwpCard(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
     }.padding(horizontal = 16.dp, vertical = 14.dp)
     if (!hero) { Column(box.fillMaxHeight()) { FlexItems(n.kids, ui, inner, gap = 10f) }; return }
     // .pwp-ring flex none (104), .pwp-id flex 1 1 220px, .pwp-drivers flex 1 1 300px.
-    val parts = n.elements.filter { !it.hidden }.map { k -> k to when { k.has("pwp-ring") -> 104f to 0f; k.has("pwp-drivers") -> 300f to 1f; else -> 220f to 1f } }
+    val parts = n.elements.filter { !it.hidden }.map { k -> k to when { k.has("pwp-ring") -> 104f to 0f; k.has("pwp-drivers") -> 300f to 1f; k.has("pwp-fix") -> 280f to 1f; else -> 220f to 1f } }
     FlexWrap(parts.map { it.second.first.dp }, parts.map { it.second.second }, 22.dp, 16.dp, box) { parts.forEach { (k, _) -> Element(k, ui, inner) } }
 }
 
@@ -1726,6 +1740,114 @@ private fun PwpField(n: SiteNode, mark: Modifier) {
     }
 }
 
+/**
+ * .pwp-fix: "Fix first" in the hero: 12 / 14 in, corners 14, a line 45 % gold, gold 13 % down to 4 % behind it; its eyebrow, its
+ * sentence (1rem, 1.3, bold) and its note 4 apart.
+ */
+@Composable
+private fun PwpFix(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
+    val gold = Site.Gold; val shape = RoundedCornerShape(14.dp)
+    Column(mark.fillMaxWidth().clip(shape).background(Brush.verticalGradient(listOf(gold.copy(alpha = .13f), gold.copy(alpha = .04f))))
+        .border(1.dp, srgbMix(Site.Line, gold, .45f), shape).padding(horizontal = 14.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        n.elements.filter { !it.hidden && !it.has("pwp-jump") }.forEach { k ->
+            if (k.tag == "b") Text(k.text(), style = cssType(16f, 700, 20.8f, Site.Text)) else Paragraph(k.kids, ui, textCtx(k, ctx).under(k))
+        }
+    }
+}
+
+/**
+ * .pwp-area: one measured part: its name (bold, .86rem) and its count over its target at the end (600, the target muted .8rem); a
+ * 5-tall track filled to its share (.w warn, .g good, else muted); its note under (.78rem muted). 9 above and under, a line above
+ * unless it follows the card's heading.
+ */
+@Composable
+private fun PwpArea(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
+    val line = Site.Line
+    val sibs = ctx.parent?.elements.orEmpty().filter { !it.hidden }
+    val first = sibs.getOrNull(sibs.indexOf(n) - 1)?.tag.let { it == "h3" || it == "summary" }
+    val ink = when { n.has("w") -> Warn; n.has("g") -> Good; else -> Site.Muted }
+    Column(mark.fillMaxWidth().then(if (first) Modifier else Modifier.drawBehind { drawLine(line, Offset(0f, .5.dp.toPx()), Offset(size.width, .5.dp.toPx()), 1.dp.toPx()) })
+        .padding(top = if (first) 0.dp else 9.dp, bottom = 9.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(n.elements.firstOrNull { it.tag == "b" }?.text().orEmpty(), Modifier.weight(1f), style = cssType(13.76f, 700, 19.95f, Site.Text))
+            n.elements.firstOrNull { it.has("pwp-n") }?.let { c ->
+                val muted = Site.Muted
+                Text(buildAnnotatedString {
+                    for (k in c.kids) if (k is String) append(k.replace(Regex("\\s+"), " ")) else if (k is SiteNode) withStyle(SpanStyle(color = muted, fontWeight = FontWeight.Normal, fontSize = 12.8.sp)) { append(" " + k.text()) }
+                }, style = cssType(13.76f, 600, 19.95f, Site.Text).copy(fontFeatureSettings = "tnum"))
+            }
+        }
+        n.elements.firstOrNull { it.tag == "i" }?.let { t ->
+            PwpTrack(Modifier, 5.dp, styleNum(t.elements.firstOrNull()?.get("style"), "width") ?: 0f, round = true) { androidx.compose.ui.graphics.SolidColor(ink) } }
+        n.elements.firstOrNull { it.tag == "p" }?.let { Text(it.text(), style = cssType(12.48f, 400, 18.1f, Site.Muted)) }
+    }
+}
+
+/** .pwp-verdict: a pill, 4 / 12 in, .7rem 700, .08em apart, upper case: warn on warn 18 %; .keep dark on good; .mulligan bad on bad 20 %. */
+@Composable
+private fun PwpVerdict(n: SiteNode) {
+    val (bg, ink) = when { n.has("keep") -> Good to Color(0xFF0C2416); n.has("mulligan") -> Bad.copy(alpha = .2f) to Bad; else -> Warn.copy(alpha = .18f) to Warn }
+    Box(Modifier.clip(RoundedCornerShape(999.dp)).background(bg).padding(horizontal = 12.dp, vertical = 4.dp)) {
+        Text(n.text().uppercase(), style = cssType(11.2f, 700, 16.24f, ink).copy(letterSpacing = .896.sp), maxLines = 1)
+    }
+}
+
+/**
+ * .pwp-fan: the opening hand as a fan, centred, 10 above and 6 under: each card at most 62 wide (narrower where seven don't fit),
+ * 5 : 7, corners 6, its line, lapping the one before by 10, turned 4° a place from the middle and dropped 1.5 a place squared. A
+ * card with no picture shows its name (.56rem, 600).
+ */
+@Composable
+private fun PwpFan(n: SiteNode, mark: Modifier) {
+    val cards = n.elements.filter { !it.hidden }
+    if (cards.isEmpty()) return
+    androidx.compose.foundation.layout.BoxWithConstraints(mark.fillMaxWidth().padding(top = 10.dp, bottom = 6.dp)) {
+        val lap = 10.dp; val room = maxWidth
+        val w = minOf(62.dp, (room + lap * (cards.size - 1)) / cards.size)
+        val all = w * cards.size - lap * (cards.size - 1)
+        val shape = RoundedCornerShape(6.dp)
+        Box(Modifier.fillMaxWidth().height(w * 7 / 5 + 14.dp)) {
+            cards.forEachIndexed { i, c ->
+                val k = i - (cards.size - 1) / 2f
+                val img = c.find { it.tag == "img" }
+                val pic = img?.pic.orEmpty().let { if (it.isEmpty()) null else firstOf(it) }
+                val name = c["title"] ?: img?.get("alt") ?: c.text()
+                Box(Modifier.padding(start = (room - all) / 2 + (w - lap) * i).width(w).aspectRatio(5f / 7f)
+                    .graphicsLayer { rotationZ = k * 4f; translationY = k * k * 1.5f * density; shadowElevation = 4.dp.toPx(); this.shape = shape; clip = true }
+                    .background(Site.Surface2).border(1.dp, Site.Line, shape).semantics { contentDescription = name }) {
+                    if (pic != null) androidx.compose.foundation.Image(pic, null, Modifier.matchParentSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+                    else Text(name, Modifier.padding(horizontal = 4.dp, vertical = 5.dp), style = cssType(8.96f, 600, 10.75f, Site.Text), maxLines = 5, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * .pwp-opp: one deck of the field: its name (bold, .88rem) over its share and first reason (.76rem muted), and at the end its win
+ * share (700 1.15rem; .up good, .down bad) over Good / Close / Tough (.62rem, .1em apart, upper case). At least 56 tall, 9 above and
+ * under, a line above. A button (Magic's) opens that deck's read under it.
+ */
+@Composable
+private fun PwpOpp(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
+    val line = Site.Line
+    val words = n.elements.firstOrNull { it.tag == "span" }; val em = n.elements.firstOrNull { it.tag == "em" }
+    val ink = when { em?.has("up") == true -> Good; em?.has("down") == true -> Bad; else -> Site.Text }
+    val tap = if (n.tag == "button") Modifier.clickable { ui.tap(n.id) }.semantics(mergeDescendants = true) { role = Role.Button
+        n["aria-expanded"]?.let { stateDescription = if (it == "true") "Read open" else "Read closed" } } else Modifier
+    Row(mark.fillMaxWidth().heightIn(min = 56.dp).drawBehind { drawLine(line, Offset(0f, .5.dp.toPx()), Offset(size.width, .5.dp.toPx()), 1.dp.toPx()) }.then(tap).padding(vertical = 9.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            words?.elements?.firstOrNull { it.tag == "b" }?.let { Text(it.text(), style = cssType(14.08f, 700, 17.6f, Site.Text)) }
+            words?.elements?.firstOrNull { it.tag == "small" }?.text()?.takeIf { it.isNotEmpty() }?.let { Text(it, Modifier.padding(top = 2.dp), style = cssType(12.16f, 400, 17.63f, Site.Muted)) }
+        }
+        if (em != null) Column(horizontalAlignment = Alignment.End) {
+            Text(em.kids.filterIsInstance<String>().joinToString("").trim(), style = cssType(18.4f, 700, 24f, ink).copy(fontFeatureSettings = "tnum"))
+            em.elements.firstOrNull { it.tag == "i" }?.let { Text(it.text().uppercase(), style = cssType(9.92f, 700, 13.4f, if (ink == Site.Text) Site.Muted else ink).copy(letterSpacing = .992.sp)) }
+        }
+    }
+}
+
 /** .pwp-pc: Strong against beside Weak against, 14 apart (one over the other at 560 and under). */
 @Composable
 private fun PwpPc(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
@@ -1766,8 +1888,13 @@ private fun PwpSwap(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
             Text(n.elements.firstOrNull { it.tag == "i" }?.text() ?: "→", style = st.copy(color = Site.Gold))
             Text(into?.text().orEmpty(), Modifier.weight(1f), style = st.copy(color = Good), textAlign = TextAlign.End)
         } else if (into != null) Text(into.text(), Modifier.fillMaxWidth(), style = st.copy(color = Good))
-        n.elements.filter { it.tag == "small" || it.tag == "button" }.forEach { k ->
-            if (k.tag == "small") Paragraph(k.kids, ui, textCtx(k, inner).under(k)) else SiteButton(k, ui, inner)
+        n.elements.filter { it.tag == "small" || it.tag == "button" || it.tag == "em" }.forEach { k ->
+            when (k.tag) {
+                "small" -> Paragraph(k.kids, ui, textCtx(k, inner).under(k))
+                // .pwp-own em: the Power gain across the row, good, 700, .82rem.
+                "em" -> Text(k.text(), style = cssType(13.12f, 700, 19.02f, Good))
+                else -> SiteButton(k, ui, inner)
+            }
         }
     }
 }

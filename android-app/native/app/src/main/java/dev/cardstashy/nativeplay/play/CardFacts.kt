@@ -70,9 +70,9 @@ object CardFacts {
             if (need.isEmpty()) return@withLock
             for (chunk in need.chunked(75)) {
                 val ids = JsonArray().apply { chunk.forEach { (o, id) -> add(JsonObject().apply { if (id != null && Regex("^[0-9a-f-]{36}$", RegexOption.IGNORE_CASE).matches(id)) addProperty("id", id) else addProperty("oracle_id", o) }) } }
-                val body = runCatching { Http.call("POST", "$SCRYFALL/cards/collection", mapOf("Accept" to "application/json", "Content-Type" to "application/json"),
-                    JsonObject().apply { add("identifiers", ids) }.toString(), 15_000) as? JsonObject }.getOrNull() ?: continue
-                add(body.getAsJsonArray("data")?.mapNotNull { it as? JsonObject } ?: emptyList())
+                // Paced with every other collection call in the app (ScryfallGate), so this never crowds a match's art lookup.
+                val data = dev.cardstashy.nativeplay.art.ScryfallGate.collection(JsonObject().apply { add("identifiers", ids) }.toString(), 15_000) ?: continue
+                add(data.mapNotNull { it as? JsonObject })
             }
             save()
         }
@@ -85,9 +85,9 @@ object CardFacts {
             val need = names.distinct().filter { it.isNotBlank() && it !in known && tried.add("name:$it") }
             for (chunk in need.chunked(75)) {
                 val ids = JsonArray().apply { chunk.forEach { n -> add(JsonObject().apply { addProperty("name", n) }) } }
-                val body = runCatching { Http.call("POST", "$SCRYFALL/cards/collection", mapOf("Accept" to "application/json", "Content-Type" to "application/json"),
-                    JsonObject().apply { add("identifiers", ids) }.toString(), 15_000) as? JsonObject }.getOrNull() ?: continue
-                add(body.getAsJsonArray("data")?.mapNotNull { it as? JsonObject } ?: emptyList())
+                // Paced with every other collection call in the app (ScryfallGate), so this never crowds a match's art lookup.
+                val data = dev.cardstashy.nativeplay.art.ScryfallGate.collection(JsonObject().apply { add("identifiers", ids) }.toString(), 15_000) ?: continue
+                add(data.mapNotNull { it as? JsonObject })
             }
             if (need.isNotEmpty()) save()
         }

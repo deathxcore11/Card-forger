@@ -12,7 +12,6 @@ import coil3.size.Size
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import dev.cardstashy.nativeplay.account.Http
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -64,19 +63,30 @@ object CardArt {
     fun rarity(name: String): String? = synchronized(index) { rarities[name.lowercase()] }
     /** Each card's type line as Scryfall gave it with its art, kept in the index file (W9: the deck tracker counts lands by it). */
     private val types = HashMap<String, String>()
+    /** Each card's mana value as Scryfall gave it with its art, kept in the index file (loading screens L3: the cheapest cards are downloaded first). */
+    private val costs = HashMap<String, Int>()
+    fun manaValue(name: String): Int? = synchronized(index) { costs[name.lowercase()] ?: costs[lookupName(name).lowercase()] }
+    /**
+     * Loading screens L3: [names] in the order a match needs them. Lands first, then cards of mana value 0 to 3 cheapest first,
+     * then the rest cheapest first; a card whose value is not on record yet goes after those that are. Names keep their order within a step.
+     */
+    fun cheapestFirst(names: Collection<String>): List<String> = names.distinct().sortedBy { n ->
+        val land = typeLine(n)?.substringBefore(" // ")?.contains("Land") == true || dev.cardstashy.nativeplay.play.Decks.isBasicLand(n)
+        if (land) -1 else manaValue(n) ?: Int.MAX_VALUE }
     fun typeLine(name: String): String? = synchronized(index) { types[name.lowercase()] ?: types[lookupName(name).lowercase()] }
     /** W9: type lines for names that have none yet (one Scryfall call per 75 names), for the deck tracker; bumps [version]. */
     suspend fun fetchTypes(names: Collection<String>) = withContext(Dispatchers.IO) {
         // Also any name with no rarity on record (entrances by importance: rarity was not kept in the index before 0.4.56).
-        val need = synchronized(index) { names.filter { typeLine(it) == null || rarity(it) == null }.distinctBy { it.lowercase() } }
+        val need = synchronized(index) { names.filter { lookupName(it).isNotBlank() && (typeLine(it) == null || rarity(it) == null || manaValue(it) == null) }.distinctBy { it.lowercase() } }
         if (need.isEmpty()) return@withContext
         var got = false
         for (chunk in need.chunked(75)) {
             val body = JsonObject().apply { add("identifiers", JsonArray().apply { chunk.forEach { add(JsonObject().apply { addProperty("name", lookupName(it)) }) } }) }.toString()
-            val found = try { Http.call("POST", "https://api.scryfall.com/cards/collection", mapOf("User-Agent" to UA), body, timeoutMs = 10000)?.asJsonObject?.getAsJsonArray("data") } catch (_: Exception) { null } ?: continue
+            val found = ScryfallGate.collection(body) ?: continue
             synchronized(index) { found.mapNotNull { it as? JsonObject }.forEach { c ->
                 c.get("type_line")?.asString?.let { t -> names(c).forEach { n -> types[n.lowercase()] = t }; got = true }
-                c.get("rarity")?.asString?.let { r -> names(c).forEach { n -> rarities.putIfAbsent(n.lowercase(), r) }; got = true } } }
+                c.get("rarity")?.asString?.let { r -> names(c).forEach { n -> rarities.putIfAbsent(n.lowercase(), r) }; got = true }
+                cmc(c)?.let { v -> names(c).forEach { n -> costs.putIfAbsent(n.lowercase(), v) }; got = true } } }
         }
         if (got) { save(); version.value++ }
     }
@@ -89,8 +99,9 @@ object CardArt {
         if (::loader.isInitialized) return
         val app = context.applicationContext
         ThumbStore.init(app)
+        ArtKeep.init(app)
         loader = ImageLoader.Builder(app)
-            .components { add(ThumbStore.interceptor); add(OkHttpNetworkFetcherFactory(callFactory = { client })); add(coil3.svg.SvgDecoder.Factory()) }
+            .components { add(ThumbStore.interceptor); add(ArtKeep.interceptor); add(OkHttpNetworkFetcherFactory(callFactory = { client })); add(coil3.svg.SvgDecoder.Factory()) }
             .memoryCache { MemoryCache.Builder().maxSizePercent(app, .25).build() }
             .diskCache { DiskCache.Builder().directory(File(app.filesDir, "art-cache").toOkioPath()).maxSizeBytes(2L shl 30).build() }
             .eventListener(object : coil3.EventListener() {
@@ -99,18 +110,26 @@ object CardArt {
             })
             .build()
         indexFile = File(app.filesDir, "art-index.json")
+        loadIndex()
+    }
+    /** Reads the index file: [picture, art crop, type line, rarity, mana value] per name; older files have fewer places. */
+    internal fun loadIndex() = synchronized(index) {
         try {
             JsonParser.parseString(indexFile.readText()).asJsonObject.entrySet().forEach { (k, v) ->
                 val a = v.asJsonArray
                 if (a.size() > 0 && !a[0].isJsonNull) index[k] = a[0].asString to a.get(1)?.takeIf { !it.isJsonNull }?.asString
                 if (a.size() > 2) a[2]?.takeIf { it.isJsonPrimitive }?.let { types[k] = it.asString }
                 if (a.size() > 3) a[3]?.takeIf { it.isJsonPrimitive }?.let { rarities[k] = it.asString }
+                if (a.size() > 4) a[4]?.takeIf { it.isJsonPrimitive }?.let { costs[k] = it.asInt }
             }
         } catch (_: Exception) {}
     }
+    /** A card's mana value from Scryfall's "cmc" (a whole number for every real card; a half is rounded down). */
+    private fun cmc(c: JsonObject): Int? = c.get("cmc")?.takeIf { it.isJsonPrimitive }?.let { runCatching { it.asDouble.toInt() }.getOrNull() }
 
     /** Unit tests: the name index without an image loader. */
     internal fun initIndexOnly(dir: File) { indexFile = File(dir, "art-index.json") }
+    internal fun indexDirForTest(): File = indexFile.parentFile!!
 
     fun url(name: String, crop: Boolean = false): String? = synchronized(index) { pins[name.lowercase()] ?: index[name.lowercase()] }?.let { if (crop) it.second ?: it.first else it.first }
 
@@ -127,10 +146,11 @@ object CardArt {
 
     /** A match is starting: resolve both decks with their pinned printings first, and pin those for the match. */
     suspend fun resolveMatch(rows: List<Pair<String, JsonObject>>) {
-        TableFacts.clear(); clearAhead(); synchronized(index) { pins.clear(); matchRows.clear(); rows.forEach { (n, r) -> matchRows[n.lowercase()] = r }; tries.clear() }
+        TableFacts.clear(); clearAhead(); synchronized(index) { pins.clear(); matchRows.clear(); rows.forEach { (n, r) -> matchRows[n.lowercase()] = r }; tries.clear()
+            deckNames.clear(); shownAs.clear(); askedName.clear(); rows.forEach { (n, _) -> deckNames.putIfAbsent(n.lowercase(), n) } }
         resolve(rows)
         // Names already in the index carry no rarity from before 0.4.56: fill them in the background (never holds the table).
-        val unrated = synchronized(index) { rows.map { it.first }.filter { rarity(it) == null } }
+        val unrated = synchronized(index) { rows.map { it.first }.filter { rarity(it) == null || manaValue(it) == null } }
         if (unrated.isNotEmpty()) kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch { runCatching { fetchTypes(unrated) } }
         var pinnedAny = false
         // A name in both decks with different printings keeps the first row's (your deck comes first), never neither.
@@ -142,11 +162,13 @@ object CardArt {
     private val saving = Any()
     private fun save() = synchronized(saving) {
         val (copy, tcopy, rcopy) = synchronized(index) { Triple(index.toList(), HashMap(types), HashMap(rarities)) }
-        // [picture, art crop, type line, rarity]; a missing type line is a null so the rarity keeps its place.
+        val ccopy = synchronized(index) { HashMap(costs) }
+        // [picture, art crop, type line, rarity, mana value]; a missing one before the last is a null so the later ones keep their places.
         val o = JsonObject(); copy.forEach { (k, v) -> o.add(k, JsonArray().apply { add(v.first); add(v.second)
-            val t = tcopy[k]; val r = rcopy[k]
-            if (t != null || r != null) add(t?.let { com.google.gson.JsonPrimitive(it) } ?: com.google.gson.JsonNull.INSTANCE)
-            if (r != null) add(r) }) }
+            val t = tcopy[k]; val r = rcopy[k]; val c = ccopy[k]
+            if (t != null || r != null || c != null) add(t?.let { com.google.gson.JsonPrimitive(it) } ?: com.google.gson.JsonNull.INSTANCE)
+            if (r != null || c != null) add(r?.let { com.google.gson.JsonPrimitive(it) } ?: com.google.gson.JsonNull.INSTANCE)
+            if (c != null) add(c) }) }
 
         try { indexFile.writeText(o.toString()) } catch (_: Exception) {}
     }
@@ -163,13 +185,64 @@ object CardArt {
      */
     @Volatile var oracleOf: ((String) -> String?)? = null
 
+    // ---- One name for a card on every surface (live 0.4.57, fault list 7, 11): the opening hand and the log said "Wonderweave
+    // Aerialist" over a blank face, the table and the bottom said "Skyward Spider". Forge's flavor name now reads as the deck's row. ----
+    private val deckNames = HashMap<String, String>()
+    private val shownAs = HashMap<String, Pair<String, Regex>>()
+    private val askedName = HashSet<String>()
+
+    /**
+     * The name a card shows: the deck row's name when Forge plays it under a flavor name, else [name]. A face-up name no deck row
+     * has is asked of the engine once a match (blocks up to 2 s, the poll thread only); the answer also takes the row's picture.
+     */
+    fun shown(name: String): String {
+        val k = name.lowercase()
+        synchronized(index) {
+            if (name.isBlank() || deckNames.isEmpty() || k in deckNames) return name
+            shownAs[k]?.let { return it.first }
+            if (!askedName.add(k)) return name
+        }
+        val o = runCatching { oracleOf?.invoke(name) }.getOrNull() ?: return name
+        val d = synchronized(index) {
+            val d = deckNames[o.lowercase()] ?: return name
+            shownAs[k] = d to Regex("(?<!\\w)" + Regex.escape(name) + "(?!\\w)", RegexOption.IGNORE_CASE)
+            index[d.lowercase()]?.let { index[k] = it }
+            pins[d.lowercase()]?.let { pins[k] = it }
+            d
+        }
+        version.value++
+        return d
+    }
+
+    /** [text] with every flavor name already met this match read as its deck row's name (prompts, the stack, the log). */
+    fun shownIn(text: String): String {
+        val m = synchronized(index) { if (shownAs.isEmpty()) return text; shownAs.values.toList() }
+        return m.fold(text) { t, (d, re) -> re.replace(t, Regex.escapeReplacement(d)) }
+    }
+
+    /** Unit tests: a match's deck rows and their pictures without the network. */
+    internal fun seedForTest(rows: List<Pair<String, JsonObject>>, art: Map<String, Pair<String, String?>>) = synchronized(index) {
+        pins.clear(); matchRows.clear(); deckNames.clear(); shownAs.clear(); askedName.clear()
+        rows.forEach { (n, r) -> matchRows[n.lowercase()] = r; deckNames[n.lowercase()] = n }
+        index.putAll(art)
+    }
+
+    /** Unit tests: forget every name the index, rarities and types learned, so one test's fake pictures never reach another's. */
+    internal fun clearForTest() = synchronized(index) { seedForTest(emptyList(), emptyMap()); index.clear(); rarities.clear(); types.clear(); costs.clear() }
+    /** Unit tests: what a lookup would have put on record for [name], written to the index file. */
+    internal fun recordForTest(name: String, picture: String, typeLine: String?, rarity: String?, manaValue: Int?) {
+        synchronized(index) { val k = name.lowercase(); index[k] = picture to null; typeLine?.let { types[k] = it }; rarity?.let { rarities[k] = it }; manaValue?.let { costs[k] = it } }
+        save()
+    }
+
     /** The Scryfall identifier for a deck row: its exact printing when the row names one, else its name. */
     fun identifier(row: JsonObject, engineName: String): JsonObject = JsonObject().apply {
         val id = str(row, "printingId", "scryfallId")?.takeIf { UUID.matches(it) }
         val set = str(row, "set", "setCode")?.lowercase(); val num = str(row, "collectorNumber", "collector_number", "number")
         when {
             id != null -> addProperty("id", id)
-            set != null && num != null -> { addProperty("set", set); addProperty("collector_number", num) }
+            // Scryfall refuses a whole call over one set code outside 3-6 characters or number outside 1-10: such a row asks by name.
+            set != null && num != null && set.length in 3..6 && num.length in 1..10 -> { addProperty("set", set); addProperty("collector_number", num) }
             else -> addProperty("name", str(row, "oracleName") ?: lookupName(engineName))
         }
     }
@@ -185,7 +258,7 @@ object CardArt {
      * Scryfall call, and remembers it. A deck seen before needs no call at all.
      */
     suspend fun resolve(rows: List<Pair<String, JsonObject>>) = withContext(Dispatchers.IO) {
-        val missing = synchronized(index) { rows.filter { (name, r) -> pinId(r)?.let { !index.containsKey("#$it") } ?: (index[name.lowercase()] == null) } }
+        val missing = synchronized(index) { rows.filter { (name, r) -> ScryfallGate.valid(identifier(r, name)) && pinId(r)?.let { !index.containsKey("#$it") } ?: (index[name.lowercase()] == null) } }
             .distinctBy { (n, r) -> pinId(r) ?: n.lowercase() }
         if (missing.isEmpty()) return@withContext
         val addedAny = java.util.concurrent.atomic.AtomicBoolean(false)
@@ -194,15 +267,9 @@ object CardArt {
         coroutineScope { missing.chunked(75).map { chunk -> async { calls.withPermit {
             val ids = chunk.map { (n, r) -> identifier(r, n) }
             val body = JsonObject().apply { add("identifiers", JsonArray().apply { ids.forEach { add(it) } }) }.toString()
-            // A dropped or rate-limited call (two chunks back to back) is asked once more after a breath, so a deck's second
-            // half never stays name-only (Randall 10 Nov, Draconic Destruction's hand).
-            var found: JsonArray? = null
-            for (attempt in 0..1) {
-                if (attempt > 0) kotlinx.coroutines.delay(700)
-                found = try { Http.call("POST", "https://api.scryfall.com/cards/collection", mapOf("User-Agent" to UA), body, timeoutMs = 10000)?.asJsonObject?.getAsJsonArray("data") } catch (_: Exception) { null }
-                if (found != null) break
-            }
-            if (found == null) return@withPermit
+            // A dropped or rate-limited call is asked again at Scryfall's pace (ScryfallGate), so a deck's second half never
+            // stays name-only (Randall 10 Nov, Draconic Destruction's hand; 11 Nov, a new deck's hand on plain frames).
+            val found = ScryfallGate.collection(body) ?: return@withPermit
             val cards = found.mapNotNull { it as? JsonObject }
             synchronized(index) {
                 chunk.forEachIndexed { i, (name, _) ->
@@ -214,6 +281,7 @@ object CardArt {
                     } ?: cards.firstOrNull { c -> names(c).any { it.equals(name, true) || it.equals(want.get("name")?.asString, true) } }
                     card?.get("rarity")?.asString?.let { rarities[name.lowercase()] = it }
                     card?.get("type_line")?.asString?.let { t -> types[name.lowercase()] = t }
+                    card?.let { cmc(it) }?.let { v -> costs[name.lowercase()] = v }
                     val img = card?.let { images(it) } ?: return@forEachIndexed
                     // A pinned printing is kept by its id; the shared name entry stays whatever it was.
                     val pin = want.get("id")?.asString?.lowercase()?.takeIf { it.equals(card.get("id")?.asString, true) }
@@ -227,9 +295,10 @@ object CardArt {
         // A printing that Scryfall could not match by id or number falls back to its name once.
         val still = missing.filter { (n, _) -> url(n) == null }
         if (still.isNotEmpty()) for (chunk in still.chunked(75)) {
-            val asked = chunk.map { (n, r) -> n to (str(r, "oracleName") ?: lookupName(n)) }
+            val asked = chunk.map { (n, r) -> n to (str(r, "oracleName") ?: lookupName(n)) }.filter { it.second.isNotBlank() }
+            if (asked.isEmpty()) continue
             val body = JsonObject().apply { add("identifiers", JsonArray().apply { asked.forEach { (_, q) -> add(JsonObject().apply { addProperty("name", q) }) } }) }.toString()
-            val cards = try { Http.call("POST", "https://api.scryfall.com/cards/collection", mapOf("User-Agent" to UA), body, timeoutMs = 10000)?.asJsonObject?.getAsJsonArray("data") } catch (_: Exception) { null } ?: continue
+            val cards = ScryfallGate.collection(body) ?: continue
             synchronized(index) {
                 cards.mapNotNull { it as? JsonObject }.forEach { c -> images(c)?.let { img ->
                     names(c).forEach { n -> index.putIfAbsent(n.lowercase(), img) }
@@ -320,6 +389,15 @@ object CardArt {
     }
     fun clearAhead() { decodedAhead.clear(); firstSeen.clear() }
 
+    /** Loading screens L5: the CPU deck's card names for this match (the gate sets them), so its next plays can be decoded before it casts them. */
+    @Volatile private var cpuDeck: List<String> = emptyList()
+    fun cpuDeck(names: Collection<String>) { cpuDeck = names.distinct() }
+    /** L5: of the CPU's deck, the non-land cards it could pay for next: mana value at most its [lands] plus 1. A card with no value on record is left out. */
+    internal fun cpuReach(lands: Int): List<String> = cpuDeck.filter { n ->
+        typeLine(n)?.substringBefore(" // ")?.contains("Land") != true && !dev.cardstashy.nativeplay.play.Decks.isBasicLand(n) && (manaValue(n) ?: Int.MAX_VALUE) <= lands + 1 }
+    /** L5: a CPU turn is starting with [lands] lands: decode the crops (and faces) of what it can reach, each name once a match. */
+    fun aheadForCpu(lands: Int) = cpuReach(lands).forEach(::decodeAhead)
+
     /**
      * Spec 12 item 7: a token or a card made mid-match that the gate never knew. Its picture is asked for on the event that makes
      * it, and its arrival waits for it: what is left of 400 ms since it was first asked for, then it lands with art or its frame.
@@ -342,6 +420,19 @@ object CardArt {
     @Volatile var lastWarm = ""
     /** The same for the last background warm (progress = false). */
     @Volatile var lastBehind = ""
+
+    /** Loading screens L7: a decoded card face (488x680, four bytes a pixel) in bytes. */
+    const val FACE_BYTES = 488L * 680L * 4L
+    /**
+     * L7, the measurement: what [faces] decoded faces need against a memory cache of [maxBytes], as one log line. "short by" means
+     * warmed faces are being dropped, which is the brief's guess; nothing is changed until a device log shows it.
+     */
+    internal fun cacheNote(faces: Int, usedBytes: Long, maxBytes: Long): String {
+        val need = faces * FACE_BYTES; fun mb(b: Long) = "%.1f".format(java.util.Locale.US, b / 1048576.0)
+        return "art memory: ${mb(usedBytes)} of ${mb(maxBytes)} MB used, $faces faces need ${mb(need)} MB, " + (if (need > maxBytes) "short by ${mb(need - maxBytes)} MB" else "fits")
+    }
+    /** L7: the note for this match's distinct faces, for the gate's log. */
+    fun cacheNote(faces: Int): String = if (!::loader.isInitialized) "art memory: no loader" else loader.memoryCache.let { m -> cacheNote(faces, m?.size ?: 0L, m?.maxSize ?: 0L) }
 
     /** How far the match's art gate has got (0..1), for the matchup screen's "Preparing the table" bar. */
     val warmProgress = kotlinx.coroutines.flow.MutableStateFlow(0f)

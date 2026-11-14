@@ -411,6 +411,30 @@ private fun SaveRow(c: Check, onChange: (Check) -> Unit, onSave: (Check) -> Unit
     }
 }
 
+/** What another screen asks Play Decks to open when it gets there: Play home's Build a deck (the finder) and its deck tiles, a card's
+ *  New deck (app.js playCardNewDeck) and Find it in a precon (playCardPrecon). */
+sealed interface DecksAsk {
+    data object Finder : DecksAsk
+    data class Deck(val id: String) : DecksAsk
+    data class NewDeck(val card: String) : DecksAsk
+    data class Precon(val card: String, val set: String) : DecksAsk
+}
+object DecksOpen { val ask = kotlinx.coroutines.flow.MutableStateFlow<DecksAsk?>(null) }
+/** Opens Play Decks from anywhere (MainActivity); null where there is no app navigation (tests, previews). */
+val LocalPlayDecksNav = androidx.compose.runtime.staticCompositionLocalOf<(() -> Unit)?> { null }
+
+/** app.js playCardPrecon: the first of the set's precons (up to 8, MTGJSON) whose list holds the card, front face too; null if none. */
+internal suspend fun preconWithCard(pc: PreconUi, card: String, set: String): Decks.PreconEntry? {
+    loadPreconIndex(pc)
+    val code = set.lowercase()
+    for (e in pc.index.orEmpty().filter { it.code.lowercase() == code }.take(8)) {
+        val j = fetchJson("https://mtgjson.com/api/v5/decks/" + e.fileName.removeSuffix(".json") + ".json") ?: continue
+        val d = j.getAsJsonObject("data") ?: j
+        if (Decks.preconRows(d).any { it.name == card || it.name.substringBefore(" // ") == card }) return e
+    }
+    return null
+}
+
 /** The Decks page with live Play state: the tabs, and on top of them the Finder, the editor or a precon's page. */
 @Composable
 fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> Unit, onTrunkSet: (String) -> Unit = {}) {
@@ -430,6 +454,20 @@ fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
     var cardTab by remember { mutableStateOf("overview") }
     val tabs = remember { DecksTabs() }
     val precon = remember { PreconUi() }
+    val newDeck = { name: String -> editor = EditorUi().apply { edit = dev.cardstashy.nativeplay.play.DeckEdit.Edit(null, "", "Standard", listOf(dev.cardstashy.nativeplay.play.DeckEdit.Line(name, 1))) } }
+    val findPrecon = { name: String, set: String -> if (!precon.opening) { precon.opening = true; scope.launch {
+        val e = preconWithCard(precon, name, set); precon.opening = false
+        if (e != null) openPrecon(scope, precon, e, toast) else toast("No precon from this set has that card. Packs and seals still work.") } }; Unit }
+    // What Play home or a card's pop-up asked for on the way here.
+    val ask by DecksOpen.ask.collectAsState()
+    LaunchedEffect(ask) { val a = ask ?: return@LaunchedEffect; DecksOpen.ask.value = null
+        when (a) {
+            DecksAsk.Finder -> finder = finder ?: FinderUi()
+            is DecksAsk.Deck -> s.getAsJsonArray("decks")?.mapNotNull { it as? JsonObject }?.firstOrNull { it.get("id")?.asString == a.id }?.let { d ->
+                editor = EditorUi().apply { adding = false; edit = dev.cardstashy.nativeplay.play.DeckEdit.open(d) } }
+            is DecksAsk.NewDeck -> newDeck(a.card)
+            is DecksAsk.Precon -> findPrecon(a.card, a.set)
+        } }
     val meta = remember { FinderUi() }
     val owned = remember(s) { Decks.ownedByName(s) }
     val ed = editor
@@ -465,10 +503,10 @@ fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
         }
         card?.let { pick ->
             CardSheet(pick, s, CardSheetActions(
-                merchant = { code, _ -> card = null; toast("Merchant comes with the next build"); onTrunkSet(code) },
+                merchant = { code, _ -> card = null; onTrunkSet(code) },
                 set = { code -> card = null; onTrunkSet(code) },
-                precon = { _, _ -> card = null },
-                newDeck = { name -> card = null; editor = EditorUi().apply { edit = dev.cardstashy.nativeplay.play.DeckEdit.Edit(null, "", "Standard", listOf(dev.cardstashy.nativeplay.play.DeckEdit.Line(name, 1))) } },
+                precon = { name, set -> card = null; findPrecon(name, set) },
+                newDeck = { name -> card = null; newDeck(name) },
                 toast = toast, edit = ed?.let { u -> DeckEditCtx(u.edit.name.ifBlank { "this deck" },
                     qty = { n -> u.edit.cards.filter { it.name == n }.sumOf { it.qty } }, copies = if (u.edit.format == "Commander") 1 else 4,
                     step = { n, k -> u.edit = u.edit.copy(cards = dev.cardstashy.nativeplay.play.DeckEdit.step(u.edit.cards, n, k, u.edit.format), dirty = true) }) }),

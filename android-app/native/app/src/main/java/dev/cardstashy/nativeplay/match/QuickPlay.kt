@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -74,7 +75,9 @@ object QuickPlay {
     val ForgeFormats = listOf("Standard", "Pioneer", "Modern", "Legacy", "Vintage", "Pauper", "Commander")
 
     sealed interface Setup {
-        data class Ready(val input: String, val you: Plate, val cpu: Plate, val rows: List<Pair<String, JsonObject>>, val faces: List<String>, val known: Boolean) : Setup
+        data class Ready(val input: String, val you: Plate, val cpu: Plate, val rows: List<Pair<String, JsonObject>>, val faces: List<String>, val known: Boolean,
+            /** L4: the CPU deck's card names, so the gate can wait for the ones it plays first. */
+            val cpuNames: List<String> = emptyList()) : Setup
         data class Unknown(val names: List<String>) : Setup
         data class Failed(val reason: String) : Setup
     }
@@ -98,6 +101,7 @@ object QuickPlay {
         if (pick is Pick.Friend) {
             // The host's engine has the whole card list and checked both decks when the room opened; nothing to load here but your pictures.
             val youRows = rows(pick.raw)
+            BoardFoil.arm(youRows) // 0.4.59 T10: your foil rows, for the board's light foil.
             return@withContext Setup.Ready("", Plate(pick.name, "You", pick.face), Plate(pick.friendName ?: "Friend", "Friend · ${pick.format}", null), youRows, listOfNotNull(pick.face), CardArt.knows(youRows.map { it.first }))
         }
         // The engine is usually ready long before a deck is picked; this only waits on a cold start.
@@ -122,6 +126,7 @@ object QuickPlay {
         }
         val cpuDeck: JsonObject = cpu ?: return@withContext Setup.Failed("Couldn’t load a $format opponent. Check your connection and try again.")
         val youRows = rows(you); val cpuRows = rows(cpuDeck)
+        BoardFoil.arm(youRows) // 0.4.59 T10: your foil rows, for the board's light foil (the CPU's lists name no finish).
         // Meta lists are named by their key cards ("Karn, the Great Creator · Expedition Map"): the plate shows the first.
         val cpuName = cpuDeck.get("name")?.asString?.substringBefore(" · ")?.trim()?.ifBlank { null } ?: "Tournament list"
         val faces = listOfNotNull(pick.face, faceOf(cpuDeck))
@@ -129,7 +134,7 @@ object QuickPlay {
             forgeInput(format, you, cpuDeck, it.level, startingPlayer = if (lesson != null) "first" else "random", quick = it.quick, setup = lesson) } ?: quickInput(format, you, cpuDeck),
             Plate(pick.name, "You", pick.face), Plate(cpuName, "CPU · $format", faceOf(cpuDeck), (pick as? Pick.Table)?.takeIf { it.quick }?.matchup ?: ""),
             // A deck played before (V5): your rows only; the CPU's list is a fresh pick each match.
-            youRows + cpuRows, faces, CardArt.knowsRows(youRows))
+            youRows + cpuRows, faces, CardArt.knowsRows(youRows), cpuRows.map { it.first })
     }
 
     /** Finds and decodes both decks' pictures; returns when done or when [budgetMs] runs out (the table then fills in as they land). */
@@ -141,27 +146,79 @@ object QuickPlay {
     suspend fun gateArt(context: Context, s: Setup.Ready, openingHand: kotlinx.coroutines.flow.Flow<List<String>?>? = null) {
         val online = runCatching { val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
             cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true }.getOrDefault(true)
+        CardArt.cpuDeck(s.cpuNames)
         if (!online) { warmArt(context, s, 800); s.faces.forEach { CardArt.decodeAhead(it) }; return }
         // T1 (Thor run 10 Nov: 15 s of art before every new match): the gate waits only for what the first screen shows (both
         // covers, the basic lands, your opening hand once Forge deals it); every other card keeps loading behind, and each one is
         // decoded ahead the moment it reaches a hand, the stack or the command zone (decodeAhead), before it can land on the felt.
-        val t0 = SystemClock.elapsedRealtime(); val cap = 20_000L
+        val t0 = SystemClock.elapsedRealtime(); val cap = GATE_CAP_MS
         fun left() = (cap - (SystemClock.elapsedRealtime() - t0)).coerceAtLeast(300)
-        CardArt.resolveMatch(s.rows)
+        // The card lookup shares Scryfall's queue with everything else the app asks (lobby decks, the tracker): it may wait there
+        // a long time, so the gate waits for it LOOKUP_CAP_MS at most and it finishes behind (Randall 14 Nov: the table never opened).
+        if (!lookupWithin(s.rows, minOf(left(), LOOKUP_CAP_MS))) Log.i(TAG, "art gate: card lookup still queued after $LOOKUP_CAP_MS ms; it finishes behind")
         val tLookup = SystemClock.elapsedRealtime() - t0
-        val names = s.rows.map { it.first }
-        val first = (s.faces + names.filter { dev.cardstashy.nativeplay.play.Decks.isBasicLand(it) }).distinct()
-        val n1 = CardArt.warm(context, first, left(), crops = s.faces, detach = true)
+        val names = CardArt.cheapestFirst(s.rows.map { it.first })
+        // Then, behind the gate however it ends (its own caps, or the screen's backstop): every face and battlefield crop of both decks.
+        val behind = java.util.concurrent.atomic.AtomicBoolean(false)
+        fun behind() { if (behind.compareAndSet(false, true)) bg.launch { CardArt.warm(context, names, 60_000, diskCrops = names, progress = false); Log.i(TAG, "art behind: ${CardArt.lastBehind} in ${SystemClock.elapsedRealtime() - t0} ms") } }
+        kotlinx.coroutines.currentCoroutineContext()[kotlinx.coroutines.Job]?.invokeOnCompletion { behind() }
+        // L4 (Randall 12 Nov: "in a quick match the art for opponents are usually missing"): the gate also waits for what the CPU
+        // plays first, its lands and every card of mana value 3 or less, face decoded and battlefield crop on disk. 8 s at most.
+        val early = earlyPlays(s.cpuNames)
+        val first = firstScreen(s.faces, names, early)
+        val n1 = CardArt.warm(context, first, minOf(left(), EARLY_CAP_MS), crops = s.faces, diskCrops = early, detach = true)
+        if (n1 < 0) Log.i(TAG, "art gate: early-plays cap of $EARLY_CAP_MS ms reached with ${first.size} first cards asked (${early.size} CPU early plays); the rest loads behind")
         val tFirst = SystemClock.elapsedRealtime() - t0
         val firstFrom = CardArt.lastWarm
-        // Then, behind: every face and battlefield crop of both decks (not awaited; the opening hand asked below joins it).
-        bg.launch { CardArt.warm(context, names, 60_000, diskCrops = names, progress = false); Log.i(TAG, "art behind: ${CardArt.lastBehind} in ${SystemClock.elapsedRealtime() - t0} ms") }
+        // Randall 13 Nov ("the biggest problem I have"): then the rest of both decks, every face and battlefield crop, cheapest first,
+        // so no card the CPU or you play later pops in. Up to WHOLE_CAP_MS from the start; a deck seen before comes from the phone.
+        val rest = names.filter { it !in first }
+        val nWhole = if (rest.isEmpty()) 0 else CardArt.warm(context, rest, wholeWait(SystemClock.elapsedRealtime() - t0), diskCrops = rest, detach = true)
+        if (nWhole < 0) Log.i(TAG, "art gate: whole-deck cap of $WHOLE_CAP_MS ms reached with ${rest.size} more cards asked; the rest loads behind")
+        behind()
         val hand = openingHand?.let { f -> kotlinx.coroutines.withTimeoutOrNull(left()) { f.first { it != null } } }
         val n2 = if (hand.isNullOrEmpty()) 0 else CardArt.warm(context, hand, left(), crops = hand, detach = true)
         s.faces.forEach { CardArt.decodeAhead(it) }
-        Log.i(TAG, "art gate: ${s.rows.size} rows, lookup $tLookup ms, first screen ${first.size} cards loaded=$n1 at $tFirst ms ($firstFrom), " +
+        Log.i(TAG, CardArt.cacheNote(names.size))
+        Log.i(TAG, "art gate: ${s.rows.size} rows, lookup $tLookup ms, first screen ${first.size} cards loaded=$n1 at $tFirst ms ($firstFrom), whole decks ${rest.size} more loaded=$nWhole, " +
             "opening hand ${hand?.size ?: 0} loaded=$n2 (${if (n2 != 0) CardArt.lastWarm else "-"}), gate ${SystemClock.elapsedRealtime() - t0} ms")
     }
+
+    /** L6: the largest deck (in rows) whose pictures are fetched on a metered connection. */
+    const val OWNED_WARM_ROWS = 260
+    /** L6: whether a deck you own of [rows] rows is warmed now: always on Wi-Fi, and on any connection when it is small enough. */
+    internal fun warmsOwned(rows: Int, unmetered: Boolean) = rows > 0 && (unmetered || rows <= OWNED_WARM_ROWS)
+    /** L4: how long the versus screen waits for the first screen and the CPU's early plays, with a connection. */
+    const val EARLY_CAP_MS = 8_000L
+    /**
+     * Randall 14 Nov ("You broke the game", 0.4.76: the versus screen sat on Preparing the table for 20 s and more): the longest the
+     * versus screen waits, everything included (card lookup, first screen, whole decks, opening hand). What misses it loads behind.
+     */
+    const val GATE_CAP_MS = 10_000L
+    /** The longest the gate waits for the match's card lookup (Scryfall) before it goes on with what the phone already knows. */
+    const val LOOKUP_CAP_MS = 4_000L
+    /**
+     * The gate, run apart from the screen that waits on it: the screen stops waiting at [GATE_CAP_MS] even if a step inside cannot be
+     * cancelled at once (a network call), and that step finishes behind.
+     */
+    /** The match's card lookup, waited for [ms] at most: true when it finished in time, else it goes on behind. */
+    internal suspend fun lookupWithin(rows: List<Pair<String, JsonObject>>, ms: Long): Boolean {
+        val lookup = bg.async { CardArt.resolveMatch(rows) }
+        return kotlinx.coroutines.withTimeoutOrNull(ms) { lookup.await() } != null
+    }
+    fun gateAsync(context: Context, s: Setup.Ready, openingHand: kotlinx.coroutines.flow.Flow<List<String>?>? = null) = bg.async { gateArt(context, s, openingHand) }
+    /** Randall 13 Nov: how long, from the gate's start, the versus screen waits for the whole of both decks with a connection. */
+    const val WHOLE_CAP_MS = 9_000L
+    /** How long the whole-deck wait may take when [elapsed] ms of the gate have passed: what is left of [WHOLE_CAP_MS], at least 300 ms. */
+    internal fun wholeWait(elapsed: Long): Long = (WHOLE_CAP_MS - elapsed).coerceAtLeast(300)
+    /** L4: the highest mana value the gate waits for in the CPU's deck. */
+    const val EARLY_COST = 3
+    /** L4: of the CPU's deck, what it can play in its first turns: its lands and every card of mana value [EARLY_COST] or less, cheapest first. A card with no value on record is not waited for. */
+    internal fun earlyPlays(cpuNames: Collection<String>): List<String> = CardArt.cheapestFirst(cpuNames).filter { n ->
+        dev.cardstashy.nativeplay.play.Decks.isBasicLand(n) || CardArt.typeLine(n)?.substringBefore(" // ")?.contains("Land") == true || (CardArt.manaValue(n) ?: Int.MAX_VALUE) <= EARLY_COST }
+    /** What the gate waits for before the opening hand: both covers, both decks' basic lands, then the CPU's [early] plays. */
+    internal fun firstScreen(faces: List<String>, names: List<String>, early: List<String>): List<String> =
+        (faces + names.filter { dev.cardstashy.nativeplay.play.Decks.isBasicLand(it) } + early).distinct()
 
     suspend fun warmArt(context: Context, s: Setup.Ready, budgetMs: Long) {
         val t0 = SystemClock.elapsedRealtime()
@@ -184,9 +241,11 @@ object QuickPlay {
             // Tile art first (one lookup for every deck's face), then whole decks on Wi-Fi only.
             CardArt.resolve(decks.mapNotNull { d -> d.face?.let { EngineNames.name(it) to JsonObject().apply { addProperty("name", it) } } })
             CardArt.warm(app, emptyList(), 20_000, crops = decks.mapNotNull { it.face?.let(EngineNames::name) })
-            if (!unmetered(app)) return@launch
+            // L6: a deck you own of [OWNED_WARM_ROWS] rows or fewer is warmed on any connection; a bigger one waits for Wi-Fi.
+            val wifi = unmetered(app)
             for (d in decks) {
                 val r = rows(d.raw)
+                if (!warmsOwned(r.size, wifi)) continue
                 CardArt.resolve(r)
                 // Reading a cached image refreshes its place in the cache, so decks you own stay at the front and are never evicted.
                 CardArt.warm(app, r.map { it.first }, 30_000)
@@ -212,15 +271,23 @@ object QuickPlay {
             val r = rows(deck)
             if (r.isEmpty() || r.size > 260) return@launch
             CardArt.resolve(r)
-            val names = r.map { it.first }
+            // L3: the cards played first are fetched first (lands, then mana value 0 to 3, then the rest).
+            val names = CardArt.cheapestFirst(r.map { it.first })
             val n = CardArt.warm(app, names, 45_000, crops = listOfNotNull(faceOf(deck)), diskCrops = names)
             if (n >= 0) pickedDone += key
             Log.i(TAG, "deck warm at select: ${r.size} rows, loaded=$n")
         }
     }
 
-    /** A match is starting: give the network to its two decks. */
-    fun pauseBackground() { warming?.cancel(); warming = null; picked.indices.forEach { picked[it]?.cancel(); picked[it] = null } }
+    /**
+     * A match is starting: give the network to its two decks. The warm-up of your other decks stops. The two decks chosen for
+     * the seats keep downloading (loading screens L2: Play used to cancel them and the gate started them again from nothing);
+     * the gate asks for the same cards and takes what they have already brought in.
+     */
+    fun pauseBackground() { warming?.cancel(); warming = null }
+    /** For tests: the two seats' warm jobs and the general one, as they stand. */
+    internal fun seatJobs(): List<Job?> = picked.toList()
+    internal fun holdForTest(general: Job?, you: Job?, cpu: Job?) { warming = general; picked[0] = you; picked[1] = cpu }
 
     private fun unmetered(context: Context): Boolean {
         val cm = context.getSystemService(ConnectivityManager::class.java) ?: return false

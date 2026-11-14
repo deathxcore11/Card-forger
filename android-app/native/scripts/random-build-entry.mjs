@@ -32,7 +32,17 @@ const playRandomProducer=createRandomDeckProducer({pipeline:deckPipeline,pickSee
 // app.js playRandomQueue: one finished deck waits per format (bracket, style, power), built in the background one at a time and
 // again after each is taken; scope is the signed-in account (app.js readScope), idle is the app's (no match on the table, app in front).
 let scope = null, idle = true;
-const playRandomQueue = createRandomDeckQueue({produce: playRandomProducer, readScope: () => scope, idle: () => idle});
+// The app keeps finished decks between launches (gap audit G1): [kept] is what the queue holds ready, by its key, and [onFile] the decks
+// read back at start, which the producer hands over at once instead of building. A taken deck leaves [kept]; a new account drops both.
+const kept = new Map(), onFile = new Map();
+let keptDirty = false;
+const keptProducer = (request, o) => {
+  const k = playRandomQueue.key(request);
+  if (onFile.has(k)) { const deck = onFile.get(k); onFile.delete(k); kept.set(k, {request, deck}); keptDirty = true; return Promise.resolve(deck); }
+  return playRandomProducer(request, o).then(deck => { if (deck && o?.current?.() !== false) { kept.set(k, {request, deck}); keptDirty = true; } return deck; });
+};
+const playRandomQueue = createRandomDeckQueue({produce: keptProducer, readScope: () => scope, idle: () => idle});
+const keptTake = request => { if (kept.delete(playRandomQueue.key(request))) keptDirty = true; };
 // A finished deck as the app reads it: the site's Power number with it (power.js shownPower, as the Play deck chip shows).
 const withPower = deck => deck && {...deck, power: shownPower(mtgPower({...deck, id: 'construction'}))};
 
@@ -119,7 +129,13 @@ globalThis.RandomBuild = {
   },
   takeDone() { return done.length ? JSON.stringify(done.splice(0)) : ''; },
   // The account the queued decks belong to; a new one drops them (play-random-queue.js check).
-  scope(json) { scope = JSON.parse(json); },
+  scope(json) { const next = JSON.parse(json); if (JSON.stringify(next) !== JSON.stringify(scope)) { if (scope !== null) { kept.clear(); onFile.clear(); keptDirty = true; } } scope = next; },
+  // The ready decks to keep on the device ([{request, deck}]), when they changed since the last ask; '' when not.
+  keptChanged() { if (!keptDirty) return ''; keptDirty = false; return JSON.stringify([...kept.values()]); },
+  // The decks kept from the last launch: the next warm() for their request hands them over without building. Returns how many.
+  restore(json) { const list = JSON.parse(json || '[]'); for (const e of list) if (e && e.request && e.deck) onFile.set(playRandomQueue.key(e.request), e.deck); return String(onFile.size); },
+  // How many restored decks still wait to be handed to the queue.
+  onFile() { return String(onFile.size); },
   idle(on) { idle = !!on; },
   // app.js warmPlayRandom: these requests ({format, targetBracket, deckStyle, power}) start building in the background.
   warm(json) { playRandomQueue.warm(JSON.parse(json)); },
@@ -137,8 +153,8 @@ globalThis.RandomBuild = {
         result = {busy: false, status: '', deck: withPower(deck), error: deck ? null : 'cancelled', ticket: tag};
         return;
       }
-      let deck = playRandomQueue.take(ask);
-      if (!deck && playRandomQueue.pending(ask)) { result = {...result, status: 'Finishing your next deck…'}; await playRandomQueue.pending(ask); if (!current()) return; deck = playRandomQueue.take(ask); }
+      let deck = playRandomQueue.take(ask); if (deck) keptTake(ask);
+      if (!deck && playRandomQueue.pending(ask)) { result = {...result, status: 'Finishing your next deck…'}; await playRandomQueue.pending(ask); if (!current()) return; deck = playRandomQueue.take(ask); if (deck) keptTake(ask); }
       if (!deck) { deck = await playRandomProducer(ask, {current, onStatus: m => { if (current()) result.status = String(m); }}); if (!current()) return; playRandomQueue.warm([ask]); }
       result = {busy: false, status: '', deck: withPower(deck), error: deck ? null : 'cancelled', ticket: tag};
     })().catch(e => { if (current()) result = {busy: false, status: '', deck: null, error: String(e && e.message || e), trace: String(e && e.stack || ''), ticket: tag}; });

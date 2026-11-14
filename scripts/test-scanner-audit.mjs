@@ -10,7 +10,6 @@ const files=[
   "test-batch-scan-vikavolt.mjs",
   "test-build-printing-recovery.mjs",
   "test-celebrations-scan.mjs",
-  "test-scan-ai-read.mjs",
   "test-collector-search.mjs",
   "test-import-pricing-printings.mjs",
   "test-import-pricing-proven-printings.mjs",
@@ -51,7 +50,6 @@ const files=[
   "test-scan-catalog-audit.mjs",
   "test-scan-camera-audit.mjs",
   "test-scan-edition-audit.mjs",
-  "test-scan-ai-set-audit.mjs",
   "test-scan-aquapolis-audit.mjs",
   "test-scan-ocr-confidence-audit.mjs"
 ];

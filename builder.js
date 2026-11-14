@@ -4,7 +4,7 @@ import {commanderCardConditions, inspectCommanderCardConditions, commanderEngine
 import {mtgManaSourceProfile} from './mtg-mana-sources.js';
 import {setupBurden} from './deck-preferences.js';
 import { functionalIn } from "./deck-safety.js";
-import { commanderHooks, forgeScore, forgeRoles, forgeTargets, forgeNoise, forgeDiscoveryQueries, forgeLandCount, DECK_TAGS } from './deck-forge.js';
+import { commanderHooks, forgeScore, forgeRoles, forgeTargets, forgeNoise, forgeDiscoveryQueries, forgeLandCount, forgeCostlyRemoval, DECK_TAGS } from './deck-forge.js';
 // Format-aware deck generator: builds a full, legal deck around one or more
 // seed cards, preferring cards you own and staying inside a purchase budget.
 // Works for every constructed format in formats.js (60-card, singleton and
@@ -20,6 +20,7 @@ import { atLeastOne } from './deckaudit.js';
 import { requestedKeywords, tribePattern } from './mtg-vocabulary.js';
 import { mtgAbilityEvidence } from './mtg-effects.js';
 import { inspectTribalStrategy } from './deck-strategy-plan.js';
+import { cardNeeds, inspectNeeds, unmetNeeds, idleFixer, needQueries, fuelMinimum } from './deck-needs.js';
 import { inspectMechanicPlan, requestedMechanics, mechanicCardMatches, mechanicDiscoveryQueries } from './deck-mechanic-plan.js';
 import { readMtgConceptMentions } from './mtg-wiki-knowledge.js';
 import { commanderLandRequirements, landSubtypeRoles, hasLandSubtype, inspectLandRequirements, LAND_REQUIREMENT_POLICY } from './mtg-land-requirements.js';
@@ -47,14 +48,38 @@ export function castableIn(c, colors) {
     if (parts.includes("P") || parts.some((x) => /^\d+$/.test(x))) continue;
     if (!parts.some((x) => colors.includes(x))) return false;
   }
+  // A {C} in the cost is colourless mana only: basic Islands cannot pay for Kozilek's Command.
+  if (!colors.includes("C") && faces.some((f) => /\{C\}/.test(f?.mana_cost || ""))) return false;
   // Colour indicators (no mana cost, e.g. suspend cards) still need their colours.
   return faces.every((f) => f?.mana_cost || !(f?.colors || []).length || f.colors.every((x) => colors.includes(x)));
 }
+// Something that can end the game by itself: a creature that hits, a planeswalker, a vehicle, a token maker, a tagged win condition.
+export const isThreat = (c) => { const t = typeText(c), o = rulesText(c); return /\bCreature\b/.test(t) && !/\bdefender\b/i.test(o) && (Number(c?.power ?? c?.card_faces?.[0]?.power) >= 1 || /\*/.test(String(c?.power ?? c?.card_faces?.[0]?.power ?? ""))) || /\bPlaneswalker\b|\bVehicle\b/.test(t) || /\bcreates? [^.\n]*\bcreature tokens?\b/i.test(o) || forgeRoles(c).includes("wincon"); };
+// 0: enters untapped, 1: tapped unless a condition is met, 2: always enters tapped.
+export const tapRank = (c) => { const t = rulesText(c); return !/enters (?:the battlefield )?tapped/i.test(t) ? 0 : /enters (?:the battlefield )?tapped unless|you may pay|if you don't, it enters tapped/i.test(t) ? 1 : 2; };
 export const fitsDeck = (c, colors, commander) => (commander ? fitsColors(c, colors) : castableIn(c, colors));
 
 // Keep explicit style independent from inferred commander/seed mechanics.
 const THEME_TERMS = {Tokens:'(o:"creature token" or o:populate)',Graveyard:'o:graveyard',Spells:'(t:instant or t:sorcery or o:"instant or sorcery")',Dragons:'t:dragon',Artifacts:'(t:artifact or o:artifact)',Lifegain:'(keyword:lifelink or (o:gain o:life))',Lifelink:'(keyword:lifelink or o:lifelink)',Landfall:'o:landfall',Counters:'(o:"+1/+1 counter" or o:proliferate)'};
 const STYLE_ROLES = {token:"Tokens",graveyard:"Graveyard",reanimator:"Graveyard",spells:"Spells",spellslinger:"Spells",artifact:"Artifacts",lifegain:"Lifegain",lifelink:"Lifelink",landfall:"Landfall",counter:"Counters",proliferate:"Counters"};
+// A play style asked for in words moves the role targets the builder already fills (deck-forge-tags.js DECK_TARGETS):
+// "ramp" wants half again as much ramp, "control" more interaction, one more wipe and more cards, "card draw" more draw,
+// "removal" more interaction. It never adds a rule of its own; a word not listed here changes nothing.
+export const PLAY_STYLES = Object.freeze({
+  ramp: { re: /\b(?:ramp|big mana|mana ramp)\b/i, label: 'more ramp' },
+  control: { re: /\b(?:control|controlling)\b/i, label: 'control: more answers and card draw' },
+  draw: { re: /\b(?:card draw|card advantage|draw cards|lots of draw)\b/i, label: 'more card draw' },
+  removal: { re: /\b(?:removal|interaction|interactive|answers)\b/i, label: 'more removal' },
+});
+export const playStylesIn = (style = "") => Object.keys(PLAY_STYLES).filter(k => PLAY_STYLES[k].re.test(String(style)));
+export function playStyleTargets(targets, style = "") {
+  const on = playStylesIn(style), t = { ...targets };
+  if (on.includes('ramp')) t.ramp = Math.ceil(t.ramp * 1.5);
+  if (on.includes('control')) { t.interaction += 4; t.wipe += 1; t.draw += 2; }
+  if (on.includes('draw')) t.draw += 4;
+  if (on.includes('removal')) t.interaction += 4;
+  return t;
+}
 export function requestedIntent(style = "") {
   const positive=String(style).replace(/[‐‑‒–—]/g,'-').replace(/\b(?:no|without|avoid|don't use|do not use)\s+[^,.;]*(?=[,.;]|$)/gi,' ').replace(new RegExp('\\bnon[- ](?:'+CREATURE_THEMES.map(tribePattern).join('|')+')s?\\b','gi'),' '),
     concepts=readMtgConceptMentions(positive).filter(c=>c.id==='bloodlust'),mechanics=requestedMechanics(positive),
@@ -63,7 +88,7 @@ export function requestedIntent(style = "") {
     matchedTribes=CREATURE_THEMES.filter(t=>new RegExp('\\b'+tribePattern(t)+'\\b','i').test(thematic)),
     stripped=[...abilities,...matchedTribes].reduce((s,k)=>s.replace(new RegExp('\\b'+(matchedTribes.includes(k)?tribePattern(k):k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))+'\\b','gi'),' '),thematic),
     words = stripped.toLowerCase().replace(/life[- ]gain/g,'lifegain').replace(/\+1\/\+1/g,"counter").match(/[\p{L}\p{N}]+/gu) || [],
-    noise = new Set("a an the and or with for of in mono white blue black red green colorless deck decks good budget tribal kindred commander build around focused focus theme themed strongest best optimized optimal strong powerful competitive fun casual silly janky jank chaos chaotic weak bad easy easier to play simple simpler beginner friendly prefer preferably only strictly creature creatures card cards infinite unlimited unbounded mana loop loops combo combos".split(" ")),
+    noise = new Set("a an the and or with for of in mono white blue black red green colorless deck decks good budget tribal kindred commander build around focused focus theme themed ramp control controlling removal interaction interactive answers draw advantage lots big more strongest best optimized optimal strong powerful competitive fun casual silly janky jank chaos chaotic weak bad easy easier to play simple simpler beginner friendly prefer preferably only strictly creature creatures card cards infinite unlimited unbounded mana loop loops combo combos".split(" ")),
     terms = [...new Set(words.filter(w => !noise.has(w)).map(w => ({elves:"elf",dwarves:"dwarf",spells:"spells"})[w] || (w.endsWith("s")?w.slice(0,-1):w)))].slice(0,6),
     tribes = matchedTribes,
     roles = [...new Set(terms.map(w => STYLE_ROLES[w]).filter(Boolean))],
@@ -80,7 +105,7 @@ export function themeQueries(seed, style = "") {
     other = requested.other.length?'('+requested.other.map(w=>`t:"${w}" or o:"${w}"`).join(' or ')+')':'';
   // Separate requests keep a popular generic support pool from crowding actual
   // payoff subjects out of the provider's first page. No subtype-slot truncation.
-  return [...new Set([...mechanicDiscoveryQueries(requested.mechanics,{limit:1}),...(/\bLegendary\b/.test(typeText(seed))?forgeDiscoveryQueries(seed):[]),...requested.tribes.map(tribeQuery),...requested.abilities.map(k=>`keyword:"${k.toLowerCase()}"`),...primaryInputQueries(seed),...abilityEndpointRequirements(seed).filter(r=>r.recognized).map(r=>r.query),explicit,other,...tribes.map(tribeQuery),support].filter(Boolean))];
+  return [...new Set([...mechanicDiscoveryQueries(requested.mechanics,{limit:1}),...(/\bLegendary\b/.test(typeText(seed))?forgeDiscoveryQueries(seed):[]),...requested.tribes.map(tribeQuery),...requested.abilities.map(k=>`keyword:"${k.toLowerCase()}"`),...needQueries(seed),...primaryInputQueries(seed),...abilityEndpointRequirements(seed).filter(r=>r.recognized).map(r=>r.query),explicit,other,...tribes.map(tribeQuery),support].filter(Boolean))];
 }
 export function themeQuery(seed, style = "") {
   const queries = themeQueries(seed,style);
@@ -179,7 +204,7 @@ export function scoreCard(c, seedTags, seedSubs, { free = 0, size = 60, tokenKin
   s += themeSupport(c,{roles:seedTags,tokenKinds}).length * 3;
   s += subtypes(c).filter((x) => seedSubs.includes(x)).length * 4;
   if (seedSubs.some((x) => new RegExp("\\b" + x + "s?\\b", "i").test(rulesText(c)))) s += 2;
-  if (goal !== "weak" && e.includes("Removal")) s += 2.5;
+  if (goal !== "weak" && e.includes("Removal") && !forgeCostlyRemoval(c)) s += 2.5;
   if (goal !== "weak" && e.includes("Draw")) s += 1.5;
   if (goal !== "weak" && e.includes("Ramp")) s += (size >= 100 ? 2 : 0.5)*candidateRampWeight(c);
   if (goal !== "weak" && e.includes("Wipe")) s += size >= 100 ? 1.5 : 0.5;
@@ -205,7 +230,7 @@ export function buildDeck(opts) {
   const second = buildDeckOnce({ ...opts, landCount: wanted });
   return second.open <= first.open ? second : first;
 }
-function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () => 0, price = (c) => null, budget = Infinity, colors = null, commander = null, completionFirst = false, easy = false, preferred = () => 0, requestedStyle = "", goal = "strongest", suggestedCards = [], excludedCards = [], creatureTypesOnly, excludedSubtypes, power = null, variation = "tight", forgeSeed = "", landCount = null }) {
+function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () => 0, price = (c) => null, budget = Infinity, colors = null, commander = null, completionFirst = false, easy = false, preferred = () => 0, requestedStyle = "", goal = "strongest", suggestedCards = [], excludedCards = [], creatureTypesOnly, excludedSubtypes, power = null, variation = "tight", forgeSeed = "", landCount = null, prior = null }) {
   const f = formatOf(format);
   if (f.id === "limited") throw Error("Limited decks come from the cards you open — build those by hand.");
   if ((!Number.isFinite(budget) && budget!==Infinity) || budget < 0) throw Error("Enter a budget of $0 or more.");
@@ -244,6 +269,13 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
       const r = rows.get(cardKey(c.name));
       if (r) r.qty += n;
       else rows.set(cardKey(c.name), { name: c.name, qty: n, why });
+    },
+    // Takes a whole row back out, returning what it cost (needs check below).
+    drop = (key) => {
+      const r = rows.get(key), c = catalog[key]; if (!r) return;
+      const buy = Math.max(0, r.qty - stock(r.name)), p = c ? unitCost(c) : null;
+      if (buy && p === null) unknown = Math.max(0, unknown - buy); else if (buy) spent = Math.max(0, spent - buy * p);
+      rows.delete(key);
     },
     count = () => [...rows.values()].reduce((a, r) => a + r.qty, 0),
     landsIn = () => [...rows.values()].filter((r) => isLand(catalog[cardKey(r.name)])).reduce((a, r) => a + r.qty, 0);
@@ -298,8 +330,34 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
 
   const pool = [...new Map(Object.values(catalog).filter((c) => c?.name && !isLand(c) && isLegal(c) && fitsDeck(c, deckColors, f.commander)).map((c) => [cardKey(c.name), c])).values()],
     supports=c=>seedSubs.some(t=>tribalSupport(c,t))||themeSupport(c,{roles:seedTags,tokenKinds:intent.tokenKinds}).length>0,
-    scored = pool.map((c) => ({ c, plan:supports(c), forge:forgeScore(c, hooks, { leader: forgeLead, power }), s: -(easy?setupBurden('mtg',c)*3:0) + scoreCard(c, seedTags, seedSubs, { free: available(c.name) || preferred(c), size, tokenKinds:intent.tokenKinds, goal }) + goalCardPreference(c,goal,{suggested:suggestedCards.some(name=>cardKey(name)===cardKey(c.name))}) + (styleFit(c,intent.requested)?(goal === "theme"?16:8):0) - (mtgSelfConflicts([...seeds,...(lead?[lead]:[]),c]).length?24:0) + needBoost(c) + conditionBoost(c) }));
+    scored = pool.map((c) => ({ c, plan:supports(c), forge:forgeScore(c, hooks, { leader: forgeLead, power }), s: -(easy?setupBurden('mtg',c)*3:0) + scoreCard(c, seedTags, seedSubs, { free: available(c.name) || preferred(c), size, tokenKinds:intent.tokenKinds, goal }) + goalCardPreference(c,goal,{suggested:suggestedCards.some(name=>cardKey(name)===cardKey(c.name))}) + (styleFit(c,intent.requested)?(goal === "theme"?16:8):0) - (mtgSelfConflicts([...seeds,...(lead?[lead]:[]),c]).length?24:0) + needBoost(c) + conditionBoost(c) + (prior && goal !== "weak" ? (Number(prior(c)) || 0) * (power === 'strong' || power === 'max' ? 8 : 6) : 0) }));
   for (const x of scored) { x.s += x.forge.score + forgeNoise(forgeSeed, x.c.name, variation); x.roles = forgeRoles(x.c); x.hookIds = x.forge.fit.hooks; }
+  // Needs (deck-needs.js): a card whose need the whole legal pool cannot meet is never a candidate
+  // (Pirate's Cutlass with no Pirates to find); a colour fixer in a deck of one colour or none sinks.
+  const keptKeys = new Set([...seeds.map(s => cardKey(s.name)), ...aggregateCards(base).map(b => cardKey(b.name)), ...(lead ? [cardKey(lead.name)] : [])]),
+    provideMemo = new Map(),
+    provides = (need, owner, c) => { const k = owner + '|' + need.id + '|' + cardKey(c.name); if (!provideMemo.has(k)) provideMemo.set(k, !!need.provides(c)); return provideMemo.get(k); },
+    deckRows = () => [...rows.values()].map(r => ({ card: catalog[cardKey(r.name)], qty: r.qty })).filter(r => r.card),
+    providersIn = (need, owner) => deckRows().reduce((n, r) => n + (provides(need, owner, r.card) ? r.qty : 0), 0);
+  for (let i = scored.length - 1; i >= 0; i--) {
+    const x = scored[i], key = cardKey(x.c.name);
+    x.needs = cardNeeds(x.c);
+    if (keptKeys.has(key)) continue;
+    if (idleFixer(x.c, deckColors)) { scored.splice(i, 1); continue; }
+    if (!x.needs.length) continue;
+    const reachable = need => pool.reduce((n, c) => n + (provides(need, key, c) ? maxCopies(c) : 0), 0) >= need.min(size);
+    if (!x.needs.every(reachable)) scored.splice(i, 1);
+  }
+  // How many copies a 60-card deck wants (Randall, 12 Nov: four Elronds and four eight-drops are not a deck):
+  // a legend or a six-drop is a two-of, a five-drop a three-of; the build-around gets one more, never past the format's limit.
+  const legendary = c => /\bLegendary\b/.test((c.card_faces?.[0] || c).type_line || typeText(c)),
+    wantCopies = (c, isSeed = false) => {
+      if (f.copies === 1) return 1;
+      const mv = Number(c.cmc) || 0, base = mv >= 6 || legendary(c) ? 2 : mv >= 5 ? 3 : 4;
+      return Math.min(maxCopies(c), isSeed ? Math.min(4, base + 1) : base);
+    },
+    // A build-around of six mana or more is a plan to reach that mana: the ramp target rises with it.
+    topEnd = Math.max(0, ...seeds.map(c => Number(c.cmc) || 0));
   // Seeds go in first at full copies, then everything else by score.
   for (const s of seeds) {
     const hit = scored.find((x) => cardKey(x.c.name) === cardKey(s.name));
@@ -364,7 +422,7 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
     for(const seed of seeds){const c=pool.find(c=>cardKey(c.name)===cardKey(seed.name));if(!c||qtyOf(c)||nonland()>=spellTarget)continue;
       const extra=costFor(c,0,1);if(canAfford(extra)){put(c,1,'Your build-around card');}}
     while(nonland()<spellTarget){
-      const choices=scored.filter(x=>qtyOf(x.c)<maxCopies(x.c)).map(x=>({...x,extra:costFor(x.c,qtyOf(x.c),qtyOf(x.c)+1)})).filter(x=>canAfford(x.extra)).sort((a,b)=>a.extra-b.extra||b.s-a.s);
+      const choices=scored.filter(x=>qtyOf(x.c)<wantCopies(x.c,keptKeys.has(cardKey(x.c.name)))).map(x=>({...x,extra:costFor(x.c,qtyOf(x.c),qtyOf(x.c)+1)})).filter(x=>canAfford(x.extra)).sort((a,b)=>a.extra-b.extra||b.s-a.s);
       const next=choices[0];if(!next)break;put(next.c,1,stock(next.c.name)>qtyOf(next.c)?'you own it':next.extra===Infinity?'Unpriced candidate; cost unverified':'Budget completion');
     }
     remaining.length=0;
@@ -375,10 +433,18 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
     // A card that fills a short quota rises; one that overfills a role sinks.
     const counts=new Map(),bump=(k,n)=>counts.set(k,(counts.get(k)||0)+n);
     for(const row of rows.values()){const card=catalog[cardKey(row.name)];if(!card||cardKey(row.name)===cardKey(lead?.name))continue;for(const role of forgeRoles(card))bump(role,row.qty);for(const h of hooks)if(h.match(card))bump('hook:'+h.id,row.qty);}
-    const targets={ramp:forgeT.ramp,draw:forgeT.draw,interaction:forgeT.interaction,wipe:forgeT.wipe.target,wincon:forgeT.wincon};
+    const targets=playStyleTargets({ramp:size<100&&topEnd>=6?Math.max(forgeT.ramp,8):forgeT.ramp,draw:forgeT.draw,interaction:forgeT.interaction,wipe:forgeT.wipe.target,wincon:forgeT.wincon},requestedStyle);
     const supportCopies=[...rows.values()].filter(r=>supports(catalog[cardKey(r.name)]||{})).reduce((n,r)=>n+r.qty,0);
-    const roleBonus=r=>{const have=counts.get(r)||0,t=targets[r];if(!t&&r!=='wipe')return 0;if(have<t)return 8;if(r==='wipe')return have>=forgeT.wipe.max?-8:0;if(r==='draw')return 0;return -3;};
-    const adaptive=x=>x.s+(x.plan&&supportCopies<Math.ceil(spellTarget*.35)?6:0)+x.roles.reduce((n,r)=>n+roleBonus(r),0)+hooks.reduce((n,h)=>n+(h.min&&x.hookIds.includes(h.id)&&(counts.get('hook:'+h.id)||0)<h.min?5:0),0);
+    const roleBonus=r=>{const have=counts.get(r)||0,t=targets[r];if(!t&&r!=='wipe')return 0;if(have<t)return r==='ramp'&&size<100&&topEnd>=6?14:8;if(r==='wipe')return have>=forgeT.wipe.max?-8:0;if(r==='draw')return 0;return -3;};
+    // Open needs of cards already in the list pull their providers up; a card whose own need is still open waits.
+    const openNeeds=deckRows().flatMap(r=>cardNeeds(r.card).map(need=>({need,owner:cardKey(r.card.name),kept:keptKeys.has(cardKey(r.card.name))}))).filter(o=>providersIn(o.need,o.owner)<fuelMinimum(o.need,size,o.kept));
+    // A sweeper that hits its own side: with a kept one in the list its victims sink; a candidate one sinks under a crowd of them.
+    const sweepers=deckRows().flatMap(r=>cardNeeds(r.card).filter(need=>need.max).map(need=>({need,owner:cardKey(r.card.name)})));
+    const sweepAdj=x=>-sweepers.reduce((n,o)=>n+(provides(o.need,o.owner,x.c)?12:0),0)-(x.needs?.some(need=>need.max&&providersIn(need,cardKey(x.c.name))>need.max(size))?60:0);
+    const needAdj=x=>openNeeds.reduce((n,o)=>n+(provides(o.need,o.owner,x.c)?(o.kept?10:5):0),0)-(x.needs?.length&&!keptKeys.has(cardKey(x.c.name))&&x.needs.some(need=>providersIn(need,cardKey(x.c.name))<need.min(size))?3:0);
+    // A 60-card list needs ways to win: until twelve cards can attack or make attackers, those rise.
+    const threats=size<100?deckRows().reduce((n,r)=>n+(isThreat(r.card)?r.qty:0),0):Infinity;
+    const adaptive=x=>x.s+needAdj(x)+sweepAdj(x)+(threats<12&&isThreat(x.c)?8:0)+(x.plan&&supportCopies<Math.ceil(spellTarget*.35)?6:0)+x.roles.reduce((n,r)=>n+roleBonus(r),0)+hooks.reduce((n,h)=>n+(h.min&&x.hookIds.includes(h.id)&&(counts.get('hook:'+h.id)||0)<h.min?5:0),0);
     remaining.sort((a,b)=>adaptive(b)-adaptive(a)||a.c.name.localeCompare(b.c.name));
     const {c}=remaining.shift();
     const left = spellTarget - nonland();
@@ -387,11 +453,14 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
     if (have >= maxCopies(c)) continue;
     const isSeed = seeds.some((s) => cardKey(s.name) === cardKey(c.name));
     // Keep only a few big cards (video: 3 or 4 in Commander), more when the deck ramps hard.
-    if (!isSeed && (Number(c.cmc) || 0) >= forgeT.bigFrom && heavy() >= (f.commander && size >= 100 ? forgeT.bigCards + Math.floor(Math.max(0, (counts.get('ramp') || 0) - forgeT.ramp) / 3) : Math.ceil(spellTarget * 0.15))) continue;
+    // A big card that is the fuel an open need is waiting for (something for Kona to put into play) is not "one more fatty".
+    const wantedFuel = openNeeds.some(o => provides(o.need, o.owner, c));
+    if (!isSeed && !wantedFuel && (Number(c.cmc) || 0) >= forgeT.bigFrom && heavy() >= (f.commander && size >= 100 ? forgeT.bigCards + Math.floor(Math.max(0, (counts.get('ramp') || 0) - forgeT.ramp) / 3) : Math.ceil(spellTarget * 0.15))) continue;
     // Playsets in 60-card formats; fewer copies when only a few are affordable.
-    const ideal = Math.min(maxCopies(c) - have, left, f.copies === 1 ? 1 : isSeed ? 4 : 4);
+    const ideal = Math.min(wantCopies(c, isSeed) - have, left);
+    if (ideal <= 0) continue;
     let take = 0;
-    for (let n = ideal; n >= (f.copies === 1 || isSeed ? 1 : 2); n--) {
+    for (let n = ideal; n >= (f.copies === 1 || isSeed || have ? 1 : Math.min(2, ideal)); n--) {
       const extra = costFor(c, have, have + n),
         reserve = Math.max(0, left - n) * fillerPrice; // keep money for the rest of the slots
       if (canAfford(extra,reserve)) {
@@ -408,11 +477,13 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
       .map((x) => ({ ...x, unit: available(x.c.name) > qtyOf(x.c) ? 0 : unitCost(x.c) }))
       .filter((x) => x.unit !== null || budget===Infinity)
       .sort((a, b) => (a.unit??Infinity) - (b.unit??Infinity) || b.s - a.s);
-    for (const { c } of byPrice) {
+    // Rows already in the list reach their own copy count before a stray one-of arrives.
+    const inList = byPrice.filter(x => qtyOf(x.c)).sort((a, b) => b.s - a.s), fresh = byPrice.filter(x => !qtyOf(x.c));
+    for (const { c } of [...inList, ...fresh]) {
       const left = spellTarget - nonland();
       if (left <= 0) break;
       const have = qtyOf(c),
-        room = Math.min(maxCopies(c) - have, left, f.copies === 1 ? 1 : 4);
+        room = Math.min(wantCopies(c, keptKeys.has(cardKey(c.name))) - have, left);
       for (let n = room; n >= 1; n--) {
         const extra = costFor(c, have, have + n);
         if (canAfford(extra)) {
@@ -423,18 +494,59 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
     }
   }
 
+  // Needs gate: a card the finished list cannot support comes back out, and its slots go to the
+  // best cards whose own needs the list already meets. Build-arounds and the player's own cards stay.
+  const banned = new Set();
+  for (let round = 0; round < 4; round++) {
+    const bad = new Set(unmetNeeds(deckRows(), { size, exempt: c => keptKeys.has(cardKey(c.name)) }).map(n => cardKey(n.name)));
+    if (!bad.size) break;
+    for (const key of bad) { drop(key); banned.add(key); }
+    for (const x of scored) {
+      const left = spellTarget - nonland(); if (left <= 0) break;
+      const c = x.c, key = cardKey(c.name), have = qtyOf(c);
+      if (banned.has(key) || have >= maxCopies(c)) continue;
+      if (x.needs.some(need => providersIn(need, key) < need.min(size) || need.max && providersIn(need, key) > need.max(size))) continue;
+      if (deckRows().some(r => cardNeeds(r.card).some(need => need.max && provides(need, cardKey(r.card.name), c) && providersIn(need, cardKey(r.card.name)) >= need.max(size)))) continue;
+      if ((Number(c.cmc) || 0) >= forgeT.bigFrom && heavy() >= (f.commander && size >= 100 ? forgeT.bigCards : Math.ceil(spellTarget * 0.15))) continue;
+      for (let n = Math.min(wantCopies(c) - have, left); n >= 1; n--) {
+        if (canAfford(costFor(c, have, have + n), Math.max(0, left - n) * fillerPrice)) { put(c, n, reasonFor(c, seedTags, seedSubs, available(c.name) >= have + n)); break; }
+      }
+    }
+  }
+  if (size < 100 && topEnd >= 6) {
+    const ramp = deckRows().reduce((n, r) => n + (forgeRoles(r.card).includes('ramp') ? r.qty : 0), 0);
+    if (ramp < 4) warnings.push(`${seeds.find(c => (Number(c.cmc) || 0) === topEnd)?.name} costs ${topEnd} mana and only ${ramp} ramp cards were found for it in this format and these colours.`);
+  }
+  // Tidy: a stray single copy of a non-legend joins a row that still wants a copy (60-card formats).
+  if (f.copies !== 1) for (const r of [...rows.values()]) {
+    const c = catalog[cardKey(r.name)];
+    if (!c || r.qty !== 1 || isLand(c) || keptKeys.has(cardKey(r.name)) || legendary(c) || wantCopies(c) === 1 || /^(?:Optional endpoint|Primary input)/.test(r.why || '')) continue;
+    const host = scored.find(x => { const have = qtyOf(x.c); return have > 0 && cardKey(x.c.name) !== cardKey(r.name) && have < wantCopies(x.c, keptKeys.has(cardKey(x.c.name))) && !banned.has(cardKey(x.c.name)); });
+    if (!host) continue;
+    const before = { spent, unknown }; drop(cardKey(r.name));
+    if (canAfford(costFor(host.c, qtyOf(host.c), qtyOf(host.c) + 1))) put(host.c, 1, 'tidy'); else { spent = before.spent; unknown = before.unknown; rows.set(cardKey(r.name), r); }
+  }
+  for (const n of inspectNeeds(deckRows(), { size, exempt: c => keptKeys.has(cardKey(c.name)) }).filter(n => !n.met && n.exempt)) warnings.push(`${n.name} wants ${n.min} ${n.label}; this list has ${n.have}.`);
+
   // Mana: owned (or affordable) dual lands that fit, then basics split by color symbols.
   const landPool = [...new Map(Object.values(catalog).filter((c) => c?.name && isLand(c) && !isBasic(c) && isLegal(c) && fitsColors(c, deckColors) && mtgManaSourceProfile(c,{commanderIdentity:lead?.color_identity}).colors.filter((m) => deckColors.includes(m)).length >= Math.min(2, deckColors.length)).map((c) => [cardKey(c.name), c])).values()]
-    .sort((a, b) => available(b.name) - available(a.name) || (f.commander ? (a.edhrec_rank || 1e9) - (b.edhrec_rank || 1e9) : 0) || a.name.localeCompare(b.name));
+    // Lands that enter untapped first, then the ones tournament lists play (seen 12 Nov: a list took Airship Engine Room and
+    // Andoria, eight always-tapped lands, because the pool was in alphabetical order).
+    .sort((a, b) => available(b.name) - available(a.name) || (f.commander ? (a.edhrec_rank || 1e9) - (b.edhrec_rank || 1e9) : tapRank(a) - tapRank(b) || (prior ? prior(b) - prior(a) : 0)) || a.name.localeCompare(b.name));
+  let slowLands = 0;
   // Three or more colours: most lands should fix (video, step 6).
   const dualCap = deckColors.length > 2 ? Math.round(landTarget * 0.6) : deckColors.length > 1 ? Math.round(landTarget * 0.4) : 0;
   for (const c of landPool) {
     const duals = landsIn() - [...rows.values()].filter((r) => isBasic(catalog[cardKey(r.name)])).reduce((a, r) => a + r.qty, 0);
     if (duals >= dualCap || landsIn() >= landTarget || count() >= size) break;
-    const n = Math.min(f.copies === 1 ? 1 : 4, dualCap - duals, landTarget - landsIn(), size-count()),
+    // 60-card lists: at most four lands that always enter tapped.
+    const slow = size < 100 && tapRank(c) === 2;
+    if (slow && slowLands >= 4) continue;
+    const n = Math.min(f.copies === 1 ? 1 : 4, dualCap - duals, landTarget - landsIn(), size-count(), slow ? 4 - slowLands : 99),
       extra = costFor(c, qtyOf(c), qtyOf(c) + n);
     if (canAfford(extra,0,false)) {
       put(c, n, available(c.name) >= n ? "Dual land you own" : "Fixes your colors");
+      if (slow) slowLands += n;
     }
   }
   const pips = { W: 0, U: 0, B: 0, R: 0, G: 0 };
@@ -458,13 +570,14 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
 
   // The finished list sets its own land count (forgeLandCount); buildDeck
   // rebuilds once with it and keeps whichever version is more complete.
-  const landsWanted = Math.max(forgeLandCount([...rows.values()].filter(r => cardKey(r.name) !== cardKey(lead?.name)).map(r => ({ card: catalog[cardKey(r.name)], qty: r.qty })), { size, commander: !!f.commander, hooks }), [...rows.values()].filter(r => r.why === 'Already in your list' && isLand(catalog[cardKey(r.name)])).reduce((n, r) => n + r.qty, 0));
+  // A deck built to reach six mana or more keeps two fifths of its slots for lands, whatever its cheap cards say.
+  const landsWanted = Math.max(size < 100 && topEnd >= 6 ? Math.round(size * 0.4) : 0, forgeLandCount([...rows.values()].filter(r => cardKey(r.name) !== cardKey(lead?.name)).map(r => ({ card: catalog[cardKey(r.name)], qty: r.qty })), { size, commander: !!f.commander, hooks }), [...rows.values()].filter(r => r.why === 'Already in your list' && isLand(catalog[cardKey(r.name)])).reduce((n, r) => n + r.qty, 0));
   const cards = [...rows.values()].filter((r) => r.qty > 0),
     total = sumQty(cards),
     open = Math.max(0, size - total);
   if(total>size)throw Error("Generated deck exceeds its target; no version was applied.");
   if(open && !completionFirst){
-    const economical=buildDeck({format,seeds,base,catalog,available,price,budget,colors,commander,completionFirst:true,easy,preferred,requestedStyle,goal,suggestedCards,excludedCards,...restrictions,power,variation,forgeSeed,landCount});
+    const economical=buildDeck({format,seeds,base,catalog,available,price,budget,colors,commander,completionFirst:true,easy,preferred,requestedStyle,goal,suggestedCards,excludedCards,...restrictions,power,variation,forgeSeed,landCount,prior});
     const seedKept=seeds.every(seed=>isLand(seed)||economical.cards.some(r=>cardKey(r.name)===cardKey(seed.name)));
     if(seedKept && economical.open<open)return economical;
   }

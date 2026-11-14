@@ -5,6 +5,8 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
@@ -49,7 +51,8 @@ class SearchTest {
         assertEquals(listOf("gallery", "compact", "symbols"), m.getAsJsonArray("views").map { it.asJsonObject.s("mode") })
         val search = block(m, "search")!!
         assertEquals("Name, set + number, or text", search.s("placeholder"))
-        assertEquals("askOpen", search["ask"].asJsonObject.s("act"))
+        // The Ask AI button is gone (Randall 13 Nov): the box answers questions from the app's own data.
+        assertTrue(search["ask"] == null || search["ask"].isJsonNull)
         assertEquals(listOf("compareOpen", "go", "mtgWikiOpen", "dbRandom"), block(m, "tools")!!.getAsJsonArray("items").map { it.asJsonObject.s("act") })
         // store.js starts the search on Commander: the chip says so, and Clear all is there.
         assertEquals("Legal in Commander", block(m, "chips")!!.getAsJsonArray("items")[0].asJsonObject.s("label"))
@@ -60,10 +63,8 @@ class SearchTest {
         assertEquals(listOf("Rarity", "Mana value", "Commander identity", "Set code"), f["advanced"].asJsonObject.getAsJsonArray("fields").map { it.asJsonObject.s("label") })
         assertTrue(f["advanced"].asJsonObject.s("foot").startsWith("The search box also takes Scryfall syntax"))
         assertEquals(listOf("Cheap card draw", "Angels", "Red legends", "Token makers"), block(m, "hints")!!.getAsJsonArray("items").map { it.asJsonObject.s("label") })
-        // The fan of cards from the collection (search-fan.js: up to five a day, repeats folded together).
-        val fan = block(m, "fan")!!
-        assertEquals("From your collection today", fan.s("title")); assertTrue(fan.getAsJsonArray("cards").size() >= 1)
-        assertTrue(fan.getAsJsonArray("cards").all { it.asJsonObject.s("act") == "card" && it.asJsonObject.s("name").isNotBlank() })
+        // The fan of cards from the collection is gone from the Search page on all three games (Randall, 13 Nov 2026).
+        assertNull(block(m, "fan"))
 
         // A typed search: app.js I.dbTerm, then dbSearch (data-enter) against Scryfall.
         CollectionEngine.searchDo("dbTerm", data("t:angel o:flying"))
@@ -177,5 +178,25 @@ class SearchTest {
         }
         // Back to Magic: the site's own game setting is handed back.
         assertEquals("mtg", CollectionEngine.search("mtg").s("game"))
+    }
+
+    /**
+     * Seen on Randall's phone, 13 Nov 2026: Home's words opened the Search tab with "Legal in Commander" still on from an earlier
+     * deck page, so plain words found nothing. Words handed over from Home are a new search (searchFresh clears the old filters).
+     */
+    @Test fun homeWordsStartAFreshSearch() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle); CollectionEngine.restart(); workspace()
+        CollectionEngine.search("mtg")
+        var m = CollectionEngine.searchDo("dbFilter", data("commander", "field" to "format"))
+        assertTrue(block(m, "chips").toString(), block(m, "chips").toString().contains("Legal in Commander"))
+        CollectionEngine.searchFresh("mtg")
+        m = CollectionEngine.searchModel()
+        assertFalse(blocks(m).toString().contains("Legal in Commander"))
+        // With the filter gone the words search every card; with nothing found the page says so in words (never grey tiles).
+        CollectionEngine.searchDo("dbTerm", data("zzqq notacard"))
+        m = run("dbSearch")
+        assertTrue(blocks(m).any { it.s("kind") == "note" && it.s("text") == "No cards match that search." })
+        assertNull(block(m, "loading"))
     }
 }

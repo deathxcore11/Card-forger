@@ -94,4 +94,5 @@ internal suspend fun warmHome(user: String, game: String) {
     val raw = CollectionEngine.homeRaw(game)
     val m = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { CollectionHomeModel.parse(JsonParser.parseString(raw).asJsonObject) }
     if (HomeCache.models.putIfAbsent(k, m) == null) { HomeCache.raw[k] = raw; kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { LastSeen.write(user, LastSeen.homeName(game), raw) } }
+    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { HomePins.pin(m) }
 }

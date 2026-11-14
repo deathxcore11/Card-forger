@@ -24,6 +24,8 @@ object TestHooks {
     val finder = MutableStateFlow(false)
     /** The seed for the next match the engine starts; cleared once used. */
     @Volatile var nextSeed: Long? = null
+    /** A scripted run (adb extras) goes straight to its screen: no opening screen over it. */
+    val skipOpening: Boolean get() = ask.value != null
 
     fun read(intent: Intent?) {
         if (!TableLog.on) return

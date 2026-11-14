@@ -12,7 +12,6 @@ import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import coil3.toBitmap
-import dev.cardstashy.nativeplay.R
 import dev.cardstashy.nativeplay.art.CardArt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -57,7 +56,10 @@ object DepthModel {
         release?.cancel()
         try {
             val env = OrtEnvironment.getEnvironment()
-            val s = session ?: env.createSession(context.resources.openRawResource(R.raw.depth_anything_v2_small).use { it.readBytes() },
+            // The model is not in the app (gap audit G2): it comes from the site on first use. Until it is on the phone the card
+            // keeps the window-only depth, and nothing waits for it.
+            val model = DepthModelFile.ready(context) ?: run { DepthModelFile.fetchOnce(context); return null }
+            val s = session ?: env.createSession(model.path,
                 // Two threads that sleep when idle (no spin-waiting), created from the background thread so they share its low priority.
                 OrtSession.SessionOptions().apply { setIntraOpNumThreads(2); setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
                     runCatching { addConfigEntry("session.intra_op.allow_spinning", "0"); addConfigEntry("session.inter_op.allow_spinning", "0") } }
@@ -82,6 +84,61 @@ object DepthModel {
             release = scope.launch { delay(60_000); lock.withLock { session?.close(); session = null } }
         }
     }
+}
+
+/**
+ * The depth model's file (gap audit G2: about 28 MB off the APK). The site keeps it in parts under the 25 MiB file limit
+ * (downloads/models, as the APK); the first card that asks for depth fetches it once per launch in the background, joins the
+ * parts, checks its sha256 and only then puts it in place. A missing or wrong file never reaches ONNX Runtime.
+ */
+object DepthModelFile {
+    const val SHA256 = "c77dcadfc49d3ff57114c5dc7a6986bf4d26dec495209d7e353c5feafdfea124"
+    const val SIZE = 28_967_622L
+    const val PARTS = 2
+    const val URL = "https://cardstashy.com/downloads/models/depth-anything-v2-small.onnx"
+    private const val NAME = "depth-anything-v2-small.onnx"
+    private val tried = java.util.concurrent.atomic.AtomicBoolean(false)
+    @Volatile private var checked: File? = null
+    private val fetchScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    internal fun fileIn(dir: File) = File(File(dir, "models"), NAME)
+    /** The model on the phone, checked once per launch; null (and a wrong file removed) when it is not there yet. */
+    fun ready(context: Context): File? = checked ?: readyIn(context.filesDir)?.also { checked = it }
+    internal fun readyIn(dir: File): File? {
+        val f = fileIn(dir)
+        if (!f.isFile) return null
+        if (f.length() == SIZE && sha256(f) == SHA256) return f
+        f.delete(); return null
+    }
+    internal fun sha256(f: File): String = MessageDigest.getInstance("SHA-256").let { md ->
+        f.inputStream().buffered().use { s -> val b = ByteArray(1 shl 16); while (true) { val n = s.read(b); if (n < 0) break; md.update(b, 0, n) } }
+        md.digest().joinToString("") { "%02x".format(it) }
+    }
+    /** Joins [parts] (opened in order) into the model's place in [dir] when they make the right file; false and nothing kept if not. */
+    internal fun install(dir: File, parts: List<() -> java.io.InputStream>): Boolean {
+        val f = fileIn(dir); f.parentFile?.mkdirs()
+        val tmp = File(f.path + ".part")
+        return try {
+            tmp.outputStream().buffered().use { out -> for (p in parts) p().use { it.copyTo(out, 1 shl 16) } }
+            if (tmp.length() != SIZE || sha256(tmp) != SHA256) { tmp.delete(); false }
+            else { f.delete(); tmp.renameTo(f) }
+        } catch (t: Throwable) { tmp.delete(); false }
+    }
+    /** At most once per launch, in the background: fetch the parts from the site. A failure waits for the next launch. */
+    fun fetchOnce(context: Context) {
+        if (!tried.compareAndSet(false, true)) return
+        val dir = context.applicationContext.filesDir
+        fetchScope.launch {
+            val client = okhttp3.OkHttpClient.Builder().callTimeout(10, java.util.concurrent.TimeUnit.MINUTES).build()
+            val ok = install(dir, (1..PARTS).map { n -> {
+                val r = client.newCall(okhttp3.Request.Builder().url("$URL.part$n").build()).execute()
+                if (!r.isSuccessful) { r.close(); throw java.io.IOException("part $n: HTTP ${r.code}") }
+                r.body?.byteStream() ?: throw java.io.IOException("part $n: empty")
+            } })
+            Log.i(TAG, if (ok) "depth model downloaded and checked" else "depth model download failed; next launch tries again")
+        }
+    }
+    private const val TAG = "DepthModel"
 }
 
 /**

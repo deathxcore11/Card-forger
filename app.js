@@ -78,11 +78,14 @@ import {brandMark} from './brand.js';
 import {syncDataLoading} from './data-loading.js';
 import {ownedCardLots,quickQuantity,adjustOwnedLot} from './quick-quantity.js';
 import {conditionName,conditionValue,conditionPriceHtml,conditionManualPlaceholder,attachConditionInfo} from './condition-value.js';
-import { showAiReview, clearAiReviews } from './ai-review.js';
+import { showAiReview, clearAiReviews, redealCoachHand } from './ai-review.js';
 import {createAskNavigation,captureSheetForm,restoreSheetForm} from './ask-navigation.js';
 import { openAsk, closeAsk, clearAskConversations } from './ai-ask.js';
 import { isDeckBuildRequest } from './ai-deck-goal.js';
-import { openRulesAsk, closeRulesAsk, clearRulesConversations } from './ai-rules.js';
+import { openJudge, closeJudge } from './judge-ui.js';
+import { judgeAnswer } from './judge-search.js';
+import { loadRulePack } from './rule-corpus.js';
+import { PTCG_GLOSSARY, YGO_GLOSSARY } from './game-glossary-data.js';
 import { makeAskTools } from './ai-tools.js';
 import { ask, askText } from "./dialog.js";
 import { attachHomeSwipe } from "./home-swipe.js";
@@ -118,6 +121,10 @@ import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag, animateTurn
 // strategy.js, deck-flow.js and insights.js.
 import { metaState, loadMeta as loadMetaData, MTG_META_FORMATS, DEFAULT_MTG_META_FORMAT, allCachedMeta } from "./meta.js";
 import {searchApp,parseQuery} from './universal-search.js';
+import {planQuery,fixChoices,gameOfLabel} from './answer-search.js';
+import {answerFor,answerMarkup,buildRequest,answerAbout} from './answer-run.js';
+import {searchAnswer} from './answer-state.js';
+import {readGameWikiArticle} from './mtg-wiki-client.js';
 import {searchGameConcepts} from './game-wiki-knowledge.js';
 import {communityState,communitySlideUrl} from './community-feed.js';
 import { mtgPower, mtgMetaKey, asShown, shownPower } from "./power.js";
@@ -1116,7 +1123,7 @@ function currentRulesOrigin() {
   const deck = view === "deck" && game === "mtg" ? deckById(S.ui.deckId) : view === "tdeck" && game !== "mtg" ? T.gs(game).decks.find(d => d.id === S.ui.tdeckId) : null;
   return { game, route: location.hash, deckFormat: deck?.format || "" };
 }
-function dismissRulesGuide() { closeRulesAsk(); dismissRuleHint(); rulesGuideOrigin = null; }
+function dismissRulesGuide() { closeJudge(); dismissRuleHint(); rulesGuideOrigin = null; }
 function render() {
   for(const [game,controller] of Object.entries(wikiPageControllers))if(S.ui.view!=="wiki"||T.game()!==game)controller.cancel();
   if(accountLocked){
@@ -1661,7 +1668,7 @@ createWikiDeckHandoff({A,article:()=>currentWikiPage()?.state.response,game:T.ga
  card:(game,row,current)=>{if(!current())return null;const target=parseWikiCardLink(row.cardUrl,game);if(target?.kind==='printing')return wikiCardHandoff.open(target);if(row.set&&row.number)return toast('The linked printing could not be matched.');return A.card({dataset:{name:row.name,readOnly:'true'}});},
  importDeck:snapshot=>{deckImportSheet({text:snapshot.text,name:snapshot.title,format:snapshot.format||'60-card casual',commander:snapshot.commander,destination:'new',url:snapshot.source.url,kind:'Community deck',description:`Source decklist from ${snapshot.source.name}: ${snapshot.source.title}.`});if(!snapshot.format){const field=$('#dImpFormat'),choice=document.createElement('option'),preview=$('#dImpPreviewBtn');choice.value='';choice.textContent='Choose a format';choice.disabled=true;choice.selected=true;field.prepend(choice);field.value='';preview.disabled=true;$('#dImpCommanderRow').style.display='none';field.addEventListener('change',()=>{preview.disabled=!field.value;});}}
 });
-const deckPipeline=createDeckPipeline({S,T,api,resolve,cacheCard,meta,priceOf,inv,tcgCtx});
+const deckPipeline=createDeckPipeline({S,T,api,resolve,resolveNames,cacheCard,meta,priceOf,inv,tcgCtx});
 const randomBuildSeed=async request=>{if(request.game!=='mtg')return deckPipeline.resolveSeed(request);const f=formatOf(request.format),theme=String(request.theme||'').replace(/[^\p{L}\p{N} '-]/gu,'').slice(0,80);return cacheCard(await api('/cards/random?'+new URLSearchParams({q:`${f.legality?'f:'+f.legality:'game:paper'} -t:land ${f.commander?'is:commander':''} ${theme?`(t:"${theme}" or o:"${theme}")`:''}`})));};
 const deckExperience=createDeckExperience({pipeline:deckPipeline,A,S,T,meta,game:T.game,
  identity:()=>{const account=accountGeneration;return ()=>!accountLocked&&account===accountGeneration;},
@@ -3487,8 +3494,17 @@ function openMatchup(tab='setup',side='player'){
  const ctx={type:'matchup',deckId:deck.id,fingerprint:matchupFingerprint(deck),scope:mutationScope(),tab:['setup','decks','analysis'].includes(tab)?tab:'setup',side:side==='opponent'?'opponent':'player',view:'compact',scenario:0};
  openSheet(renderMagicMatchupSheet(deck,{...ctx,renderCards:cards=>V.deckList(cards,{readOnly:true,unfiltered:true,cardAction:'amCard'})}),ctx);
 }
-const aiMatchups=createMagicMatchups({getDeck:()=>T.game()==='mtg'?currentDeck():null,state:matchupState,lookup:meta,loadMeta:async key=>{const data=await loadMetaData(key),cached=metaState(key);return {...data,stale:!!cached.error||Date.now()-cached.at>12*3600000,fetchedAt:cached.at?new Date(cached.at).toISOString():''};},metaKey:mtgMetaKey,resolveNames,capture:()=>({scope:mutationScope(),visit:navigationStamp()}),current:ticket=>mutationCurrent(ticket.scope)&&navigationCurrent(ticket.visit)&&T.game()==='mtg',render:renderMatchups});
+const aiMatchups=createMagicMatchups({getDeck:()=>T.game()==='mtg'?currentDeck():null,state:matchupState,lookup:meta,loadMeta:async key=>{const data=await loadMetaData(key),cached=metaState(key);return {...data,stale:!!cached.error||Date.now()-cached.at>12*3600000,fetchedAt:cached.at?new Date(cached.at).toISOString():''};},metaKey:mtgMetaKey,resolveNames,capture:()=>({scope:mutationScope(),visit:navigationStamp()}),current:ticket=>mutationCurrent(ticket.scope)&&navigationCurrent(ticket.visit)&&T.game()==='mtg',render:renderMatchups,
+ profile:d=>{const edh=!!d.commander||/commander|edh/i.test(d.format||''),cards=[...(d.cards||[])];if(d.commander&&!cards.some(r=>r.name===d.commander))cards.push({name:d.commander,qty:1});const rows=cards.map(r=>({qty:r.qty,c:meta(r.name)})).filter(r=>r.c);return profileOf('mtg',mtgConstructedPower({cards},S.catalog,key,edh?100:60),rows);}});
 A.amOpen=t=>openMatchup(t.dataset.tab,t.dataset.side);
+// Power page: tap a deck in "Against the field" for its read. The read uses the same adjusted odds the page shows.
+A.amPick=async t=>{const deck=currentDeck();if(!deck)return;const st=matchupState(deck),name=t.dataset.name||'';aiMatchups.cancel();Object.assign(st,{question:name,colors:[],selectionMode:'top',result:null,opponent:null,error:''});
+ const mu=(S.ui.mu||{})[deck.id],f=(mu?.field||[]).find(x=>x.name===name);st.shift=f?{name,by:(V.mtgBias(mtgPower(deck),mu.field)-(f.bias||0))/2}:null;
+ openMatchup('analysis');await aiMatchups.select();if(matchupState(currentDeck())!==st||!st.opponent)return;await aiMatchups.analyze();};
+A.coachRedeal=t=>{redealCoachHand(t.dataset.ai);render();};
+A.coachSwap=async t=>{const commit=scopedCommit(),editDeck=scopedEditDeck(commit),d=currentDeck(),cut=t.dataset.cut,add=t.dataset.add;if(!d||!d.cards.some(r=>r.name===cut))throw Error('Your deck changed. Open Power again.');
+ await resolveNames([add]);const cards=applySwapsToCards(d.cards,[{cut,add}]);await editDeck(d=>withSnapshot({...withSnapshot(d,'Before coach swap'),cards},'Coach swap'),{msg:`${add} in, ${cut} out. Previous list saved in Versions.`});render();};
+globalThis.addEventListener?.('cardstashy-want-matchups',()=>{if(S.ui.view==='deck'&&T.game()==='mtg'&&currentDeck())void A.muRun();});
 const amPresent=(key,allowed)=>t=>{const ctx=S.ui.sheetCtx;if(!matchupContextDeck(ctx))return;const value=t.dataset.id||t.dataset.mode||t.dataset.tab;if(!allowed.includes(value))return;ctx[key]=key==='scenario'?Number(value):value;refreshSheet();};
 A.amTab=amPresent('tab',['setup','decks','analysis']);
 A.amDeck=amPresent('side',['player','opponent']);
@@ -4006,7 +4022,14 @@ askNavigation=createAskNavigation({sheetKey,
  restoreSheet:snapshot=>{sheetTrail.items=[...snapshot.trail];restoreSheet(snapshot);restoreSheetForm($('#sheetBody'),snapshot.form);},
  closeSheet:()=>{closeSheet(false);sheetReturn=null;},closeAsk
 });
-A.askRules = (button) => {
+// Ask a Judge answers from the bundled rulebook (judge-search.js). No AI is called.
+const judgeCard = async name => {
+  const c = meta(name) || await resolve(name).catch(() => null); if (!c) return null;
+  const text = [c.oracle_text, ...(c.card_faces || []).map(f => f.oracle_text)].filter(Boolean).join('\n');
+  const r = c.id ? await api('/cards/' + encodeURIComponent(c.id) + '/rulings').catch(() => null) : null;
+  return { name: c.name, text, keywords: c.keywords || [], rulings: (r?.data || []).map(x => ({ date: x.published_at || '', text: x.comment || '' })) };
+};
+A.askRules = (button, question = '') => {
   const scope = button?.closest?.('[data-learning-root]');
   const game = button?.dataset?.game || scope?.dataset?.game || T.game();
   const origin = currentRulesOrigin();
@@ -4016,11 +4039,11 @@ A.askRules = (button) => {
   if (context) { const card = JSON.parse(context); if (card.game === game) cards = [card]; }
   if (button?.dataset?.rulesReferences) references = JSON.parse(button.dataset.rulesReferences);
   const trigger = button?.closest?.(".rule-glass") ? dismissRuleHint() || button : button;
-  openRulesAsk({ game, format, cards, references, trigger });
+  openJudge({ game, format, cards: cards.map(c => ({ name: c.name, text: c.text || '' })), trigger, question: typeof question === 'string' ? question : '', names: () => loadEngineCardNames(), card: judgeCard });
   rulesGuideOrigin = origin;
 };
-A.askOpen = (options={}) => {
-  askTools ||= makeAskTools({ S, T, A, go, navigationStamp, navigationCurrent, toast, esc, api, resolve, cacheCard, loadSetIndex, loadMetaData, metaState, MTG_META_FORMATS, allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx, deckExperience,
+function ensureAskTools() {
+  return askTools ||= makeAskTools({ S, T, A, go, navigationStamp, navigationCurrent, toast, esc, api, resolve, resolveNames, cacheCard, loadSetIndex, loadMetaData, metaState, MTG_META_FORMATS, allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx, deckExperience,
     captureAskScope: () => { const scope=mutationScope(); return () => mutationCurrent(scope); },
     openMtgDraft: (draft, current) => {
       if (!current?.() || T.game() !== 'mtg') return toast("Your account or workspace changed. Ask again in the current workspace.");
@@ -4034,6 +4057,9 @@ A.askOpen = (options={}) => {
       if (!current?.() || T.game() !== g) return toast("Your account or workspace changed. Ask again in the current workspace.");
       return A.tBuild({dataset:{id,format},initialBudget:budget>0?budget:"",buildCurrent:current});
     } });
+}
+A.askOpen = (options={}) => {
+  ensureAskTools();
   const game=T.game(),account=accountGeneration,workspace=workspaceVisitRevision,route=location.hash;
   const current=()=>!accountLocked&&account===accountGeneration&&workspace===workspaceVisitRevision&&game===T.game()&&route===location.hash;
   const show=s=>s.kind==='build'&&s.game===game?safely(askNavigation.handoff(()=>askTools.open(s))):safely(askNavigation.leave(true).then(()=>askTools.open(s)));
@@ -4707,20 +4733,22 @@ async function homeLookup(g,q){
   }catch{error=true;}}
  const result={cards,error,corrected};if(!error){homeResultCache.set(k,result);if(homeResultCache.size>40)homeResultCache.delete(homeResultCache.keys().next().value);}return result;
 }
+async function openBuilderFor(request){
+ if(request.game&&T.game()!==request.game&&await A.setGame({dataset:{game:request.game}})===false)return;
+ return deckExperience.open(request);
+}
 async function submitHome(q,mode){
  q=String(q||'').trim();if(!q)return;const g=T.game();homeQueries[g]=q;
- if(mode==='build'){const core=parseQuery(q).core;return A.askOpen({query:isDeckBuildRequest(q)?q:`Build me a ${core} deck`});}
- if((mode||homeIntent(q))==='ask'){
-  if(!isDeckBuildRequest(q)&&/\b(?:rules?|ruling|resolve|stack|trigger|can i (?:cast|summon|attack|activate)|when can)\b/i.test(q)){
-   A.askRules({dataset:{game:g}});const input=document.querySelector('.rules-ask-dialog .ask-input');if(input){input.value=q;input.focus();}return;
-  }
-  return A.askOpen({query:q});
+ // A deck request opens the deck builder set up from the words (format, budget, colours, theme). No AI is asked anywhere here.
+ if(mode==='build'||isDeckBuildRequest(q))return openBuilderFor(buildRequest(isDeckBuildRequest(q)?q:`Build me a ${parseQuery(q).core} deck`,g).request);
+ if((mode||homeIntent(q))==='ask'&&!isDeckBuildRequest(q)&&/\b(?:rules?|ruling|resolve|stack|trigger|can i (?:cast|summon|attack|activate)|when can)\b/i.test(q)){
+  return A.askRules({dataset:{game:g}},q);
  }
  if(T.isTcg()){T.ui().search.q=q;await go('#search');if(T.game()===g)A.tSearch();}
- else{S.ui.db.term=q;dbInvalidate();await go('#search');if(T.game()===g)A.dbSearch();}
+ // Words typed in the top bar are a new search: a filter left on by an earlier one ("Legal in Commander" from a deck) does not narrow it.
+ else{S.ui.db.term=q;S.ui.db.filters={color:"",type:"",format:"",maxPrice:""};dbInvalidate();await go('#search');if(T.game()===g)A.dbSearch();}
 }
 A.homeSearch=()=>submitHome($('#homeQ')?.value);
-A.homeAsk=()=>{const q=$('#homeQ')?.value||'';homeSearchController.close();A.askOpen();const input=document.querySelector('.ask-dialog .ask-input');if(input){input.value=q;input.focus();}};
 window.matchMedia?.("(min-width:1200px)").addEventListener?.("change",()=>placeGlobalSearch(T.game(),S.ui.view));
 const deckBoxTransitions=createDeckBoxTransitions();
 function refreshProfileAvatar(){
@@ -4902,7 +4930,68 @@ function runHomeItem(item,g){
  if(item.route==='planeswalk.html'){location.href='planeswalk.html';return;}
  if(item.route)return go(item.route);
 }
-const homeSearchController=attachHomeSearch({game:T.game,lookup:homeLookup,submit:submitHome,local:homeLocal,run:runHomeItem,open:async(g,c)=>{
+// The search box answers questions from the app's own data: answer-search.js reads the words, the same lookups
+// Ask used run here on the device, and no AI is called. What the open screen shows fills "this set / this card".
+const homeAnswer={
+ choices:fixChoices,
+ plan(g0,q,fix={}){
+  const g=gameOfLabel(fix.game)||g0,mtg=g==='mtg',sets=(mtg?S.ui.sets.list:(T.ui(g).sets?.list||[]))||[],view=S.ui.view,ctx=S.ui.sheetCtx;
+  const openSet=view==='set'?sets.find(x=>String(mtg?x.code:x.id).toLowerCase()===String(mtg?S.ui.set?.code:S.ui.tsetId||T.ui(g).set?.id||'').toLowerCase()):null;
+  const card=ctx?.type==='card'&&ctx.name?{name:ctx.name}:null;
+  return planQuery(q,{game:g,about:answerAbout(),myDecks:(mtg?S.state.decks:T.gs(g).decks).map(d=>d.name),fix:{format:fix.format,game:gameOfLabel(fix.game)||undefined},formatLast:{mtg:S.ui.mtgMeta?.format||undefined},sets:sets.filter(x=>!x.digital).map(x=>({id:mtg?x.code:x.id,code:x.code||x.id,name:x.name})),screen:{set:openSet?{id:mtg?openSet.code:openSet.id,code:openSet.code||openSet.id,name:openSet.name}:null,card}});
+ },
+ run(plan){
+  const tools=ensureAskTools();
+  return answerFor(plan,tools,{judge:async(game,question)=>judgeAnswer(await loadRulePack(game),question,{glossary:game==='ptcg'?PTCG_GLOSSARY:game==='ygo'?YGO_GLOSSARY:[]}),wikiArticle:async(game,title)=>{const d=await readGameWikiArticle(game,title);return d?.status==='available'?d.article:null;},cardSearch:async({game,q,order,dir,limit})=>{
+   if(game!=='mtg')return [];
+   // null: the card database did not answer (said as that); []: it answered and nothing matched.
+   const d=await api('/cards/search?'+new URLSearchParams({q:q+' game:paper',order,dir,unique:'cards'})).catch(e=>e?.status===404?{data:[]}:null);
+   if(!d)return null;
+   return (d?.data||[]).slice(0,limit||3).map(c=>{cacheCard(c);return {name:c.name,price:Number(c.prices?.usd)||null};});
+  }});
+ },
+ html(a,plan){const tools=ensureAskTools();return answerMarkup(a,plan.read,{esc,preview:(s,i)=>tools.preview(s,i,{compact:s.kind==='card'})});},
+ async act(el,a,plan,g){
+  if(T.game()!==g&&plan.game===g)return;
+  const tools=ensureAskTools();
+  if(el.dataset.askShow){try{return await tools.open(JSON.parse(el.dataset.askShow));}catch{return;}}
+  if(el.dataset.answerWiki)return A.wikiOpen({dataset:{game:plan.game,topic:el.dataset.answerWiki}});
+  if(el.dataset.answerChoice!==undefined){const c=a.ask?.choices?.[Number(el.dataset.answerChoice)];return c?tools.open({kind:'set',game:plan.game,ref:String(c.id||c.code),label:c.name}):undefined;}
+  const b=a.buttons?.[Number(el.dataset.answerButton)];if(!b)return;
+  if(b.item)return tools.open(b.item);
+  if(b.build)return openBuilderFor(b.build);
+  if(b.judge)return A.askRules({dataset:{game:plan.game}},plan.P.raw);
+  if(b.discover){if(T.game()!==plan.game&&await A.setGame({dataset:{game:plan.game}})===false)return;return A.ruleCards({dataset:{game:plan.game,discoveryKind:b.discover.kind,discoveryValue:b.discover.value}});}
+  if(b.search){S.ui.db.term=b.search.q;S.ui.db.filters=b.search.order==='usd'?{sort:b.search.dir==='asc'?'usdAsc':'usd'}:{};dbInvalidate();await go('#search');if(T.game()==='mtg')return A.dbSearch();return;}
+  if(b.route&&/^#wiki\//.test(b.route))return A.wikiOpen({dataset:{game:plan.game,topic:decodeURIComponent(b.route.slice(6))}});
+  if(b.route==='planeswalk.html'){location.href='planeswalk.html';return;}
+  if(b.route)return go(b.route);
+ },
+};
+// The Search page's own box: a typed question shows the same answer card above the results; a card name or search line searches as before.
+async function answerFirst(q,run,fix={}){
+ const g=T.game();let plan=null;try{plan=String(q||'').trim()?homeAnswer.plan(g,q,fix):null;}catch{}
+ if(!plan||!(plan.call||plan.missing?.length)){searchAnswer.html='';searchAnswer.state=null;return run();}
+ const state=searchAnswer.state={plan,a:null,g,q,run,fix};
+ searchAnswer.html='<section class="answer-card is-loading" aria-live="polite"><p class="answer-say">Looking…</p></section>';render();
+ const a=await Promise.resolve(homeAnswer.run(plan)).catch(()=>null);
+ if(searchAnswer.state!==state)return;
+ state.a=a;searchAnswer.html=a?homeAnswer.html(a,plan):'';render();
+ // An answer that is still working (the deck builder making a deck) is redrawn when it finishes.
+ if(a?.finish){const b=await Promise.resolve().then(()=>a.finish()).catch(()=>null);if(!b||searchAnswer.state!==state)return;state.a=b;searchAnswer.html=homeAnswer.html(b,plan);render();}
+}
+tcgCtx.answerFirst=answerFirst;
+document.addEventListener('input',e=>{if(searchAnswer.html&&e.target.matches?.('#dbTerm,[data-input="tQ"]')){searchAnswer.html='';searchAnswer.state=null;document.querySelector('[data-search-answer]')?.remove();}});
+document.addEventListener('click',e=>{
+ const b=e.target.closest?.('[data-search-answer] button'),st=searchAnswer.state;if(!b||!st)return;
+ if(b.dataset.answerFix){const kind=b.dataset.answerFix,row=document.querySelector('[data-search-answer] .answer-fixes');if(row){row.remove();return;}
+  b.closest('.answer-read').insertAdjacentHTML('afterend',`<div class="answer-choices answer-fixes">${homeAnswer.choices(st.plan,kind).map(c=>`<button type="button" class="chip" data-answer-fixed="${esc(kind)}" data-value="${esc(c)}">${esc(c)}</button>`).join('')}</div>`);return;}
+ if(b.dataset.answerFixed){answerFirst(st.q,st.run,{...st.fix,[b.dataset.answerFixed]:b.dataset.value});return;}
+ // An "Ask more" chip: its question goes in the box and is answered about the same deck or card.
+ if(b.dataset.answerAsk){const f=document.querySelector('#dbTerm,[data-input="tQ"]');if(f)f.value=b.dataset.answerAsk;if(T.game()==='mtg')S.ui.db.term=b.dataset.answerAsk;answerFirst(b.dataset.answerAsk,()=>{},{});return;}
+ if(st.a)homeAnswer.act(b,st.a,st.plan,st.g);
+});
+const homeSearchController=attachHomeSearch({game:T.game,lookup:homeLookup,submit:submitHome,local:homeLocal,run:runHomeItem,answer:homeAnswer,open:async(g,c)=>{
  if(T.game()!==g)return;
  if(g==='mtg'){
   if(c.oracle_text!==undefined||c.card_faces?.some(f=>f.oracle_text!==undefined))return A.card({dataset:{name:c.name},printing:c});
@@ -5107,7 +5196,6 @@ A.wikiCards=async t=>{const q=t.dataset.wikiQuery,account=accountGeneration;if(T
 A.mtgWikiRetry=()=>currentWikiPage().retry();
 A.mtgWikiDailyRetry=()=>currentWikiPage().daily(true);
 A.mtgWikiCancel=()=>currentWikiPage().cancelLookup();
-A.mtgWikiAsk=()=>{const text=$('#wikiQ')?.value.trim()||currentWikiPage().state.topic||'Explain this card game topic.';A.askOpen();const input=document.querySelector('.ask-dialog .ask-input');if(input){input.value=text;input.focus();}};
 A.cardTab = async (t) => {
   const commit=scopedCommit();
   const ctx = S.ui.sheetCtx;
@@ -6581,7 +6669,7 @@ A.dbSavedDel = (t) => {
   T.setSavedSearches("mtg", list);
   render();
 };
-A.dbSearch = () => dbSearch();
+A.dbSearch = () => answerFirst(S.ui.db.term, () => dbSearch());
 A.dbMore = () => dbSearch(true);
 A.undo = async () => {
 
@@ -7551,7 +7639,6 @@ const scanCtx = {
   candOf: async (g, p, why, exact) => (g === "mtg" ? (p.card ? mtgScanCand(p.card, why, exact) : null) : tcgCtx.scanCandById?.(g, p.id, why, exact) ?? null),
   details: (g, c) => (g === "mtg" ? A.card({ dataset: { name: c.name } }) : A.tCard({ dataset: { id: c.id } })),
 };
-scanCtx.aiAccount=()=>!!cloudInfo().user;
 // The scanner's "Add to" chips: remember a place or make a binder for it, in the same commit path as the collection.
 scanCtx.rememberLocation=(g,name,{createBinder=false}={})=>commit(s=>{rememberLocation(s,g,name,{createBinder});},{rerender:false});
 scanCtx.lookupCandidates=createScannerLookup({requestMagic:api,sources:T.SOURCES,candById:scanCtx.candById,match:scanCtx.match});
@@ -7671,7 +7758,7 @@ A.reset = async () => {
   if (cloudInfo().user) await signOut();
   detachDeviceSync();
   clearAskConversations();
-  clearRulesConversations();
+  closeJudge();
   rulesGuideOrigin = null;
   await replaceWorkspace(blank(), { recovery: true });
   go("#home");
@@ -7902,7 +7989,7 @@ async function boot() {
       dismissConditionInfo();aiMatchups.reset();resetMatchups();matchupImport=null;
       accountLocked=true;valueHistoryReady=false;accountGeneration++;workspaceVisitRevision++;lastUndo=null;closePlayerMat();
       community.reset();deckBoxTransitions.reset();clearConditionAttempts();conditionScheduler=createConditionRefreshScheduler();
-      clearAskConversations();clearRulesConversations();rulesGuideOrigin=null;
+      clearAskConversations();closeJudge();rulesGuideOrigin=null;
       scanCtx.accountChanged?.();profilePicker.close(true);headerPicker.close(true);
       settingsPopup.close(false);clearGameContext();disclosureStates.clear();
       endHold();heldTarget=null;lastActTarget=null;
@@ -8003,6 +8090,11 @@ async function boot() {
       opened = Date.now(); touched = false;
       if (registration && opened - checked > 600000) { checked = opened; registration.update().catch(() => {}); }
     });
+    // A desktop tab that is never hidden kept the old page for as long as it stayed open (seen 13 Nov: a page from before the
+    // no-AI search was still on screen after two releases). So a tab in view also checks every 15 minutes, and a release that
+    // is waiting is switched to on the next move to another page, when nothing is open or typed.
+    setInterval(() => { if (document.visibilityState === "visible" && registration && Date.now() - checked > 600000) { checked = Date.now(); registration.update().catch(() => {}); } }, 900000);
+    addEventListener("hashchange", () => { if (waiting && quiet()) setTimeout(() => { if (waiting && quiet()) location.reload(); }, 0); });
     navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).then((r) => { registration = r; checked = Date.now(); }).catch(() => {});
   }
   // Scryfall role tags arrive after first paint; redraw Magic pages so Deck Power counts them.

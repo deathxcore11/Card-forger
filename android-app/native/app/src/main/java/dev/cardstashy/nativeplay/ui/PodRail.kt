@@ -71,12 +71,14 @@ private val Manrope = Type.Sans
 
 /** .play-pod-rail: centred in 60 … W − 8 at the top (max 640, gap 6); each chip up to 210 × 44. */
 @Composable
-internal fun PodRail(st: MatchState, focus: Int, live: Boolean, intents: TableIntents, onFocus: (Int) -> Unit, W: Dp, d: Du) = with(d) {
+internal fun PodRail(st: MatchState, focus: Int, live: Boolean, intents: TableIntents, onFocus: (Int) -> Unit, W: Dp, d: Du,
+                     /** Where the rail runs (0.4.60 Z1 review: the board's width, so it keeps off "Turn N" and the menu in the right strip). */
+                     x: Dp? = null, width: Dp? = null) = with(d) {
     val rivals = st.players.filter { it.id != st.viewer }
     val labels = StorySurface.of(st).labels
     val you = st.me
-    Box(Modifier.offset(x = 60.du, y = 8.du).width(W - 68.du), contentAlignment = Alignment.TopCenter) {
-        Row(Modifier.widthIn(max = 640.du), horizontalArrangement = Arrangement.spacedBy(6.du)) {
+    Box(Modifier.offset(x = x ?: 60.du, y = 8.du).width(width ?: (W - 68.du)), contentAlignment = Alignment.TopCenter) {
+        Row(Modifier.widthIn(max = 640.du).anchorRect("podrail"), horizontalArrangement = Arrangement.spacedBy(6.du)) {
             for (p in rivals) {
                 val cmd = you.commanderDamage.filter { it.from == p.id }.maxOfOrNull { it.damage } ?: 0
                 val focused = p.id == focus; val active = p.id == st.activePlayer; val lost = p.life <= 0

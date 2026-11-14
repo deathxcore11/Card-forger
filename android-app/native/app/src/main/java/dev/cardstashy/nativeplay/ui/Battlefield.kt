@@ -9,8 +9,15 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -23,7 +30,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameMillis
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
@@ -83,11 +92,62 @@ import kotlin.math.sin
  * focal ones play out. A touch anywhere on the board jumps every effect to its end state. Cards only ever move by transform, so no
  * box on the board changes size.
  */
-/** The strike's shape as fractions of its length: windup ends, contact. */
-private const val LUNGE_WIND = .18f
-private const val LUNGE_HIT = .36f
-/** Contact freezes everything for 110 ms (the hit-stop); the flash, rings, shake, numbers and shards come after it. */
-private const val HIT_STOP = 110L
+/**
+ * Match punch P5, the strike's shape in ms. A clash: pull back and swell (150), strike (85), a 100 ms freeze on contact, then the
+ * flash, sparks, ring, shake and numbers while the attacker springs home (240): about 800 a pair. A hit to a face: pull back (160),
+ * fly at the profile picture (200), a 125 ms freeze, the burst and the life ticking down, home 120 later (320): about 1100.
+ */
+internal object Strike {
+    const val CLASH_MS = 800L; const val FACE_MS = 1100L
+    fun face(it: FxItem) = it.toKey?.startsWith("orb") == true
+    fun ms(face: Boolean) = if (face) FACE_MS else CLASH_MS
+    /** The pull back ends. */
+    fun wind(face: Boolean) = if (face) 160f else 150f
+    /** Contact. */
+    fun hit(face: Boolean) = if (face) 360f else 235f
+    /** The freeze ends: the burst, the shake and the numbers start here. */
+    fun after(face: Boolean) = hit(face) + freeze(face)
+    /** The hold on contact. Match effects on Reduced has no freeze (living table rule 5): the burst comes with the contact. */
+    fun freeze(face: Boolean) = if (TableFeel.mode() == TableFeel.Mode.REDUCED) 0f else if (face) 125f else 100f
+    /** The attacker starts home, and how long that takes. */
+    fun homeAt(face: Boolean) = if (face) after(true) + 120f else after(false)
+    fun homeMs(face: Boolean) = if (face) 320f else 240f
+    /** How far along its line the attacker is (px): back by [pull], out to [reach], held, then home (a clash springs past it). */
+    fun offset(face: Boolean, ms: Float, reach: Float, pull: Float): Float {
+        val w = wind(face); val h = hit(face); val home = homeAt(face)
+        return when {
+            ms < 0f -> 0f
+            ms < w -> -pull * (1f - (1f - ms / w).let { it * it * it })
+            ms < h -> { val q = (ms - w) / (h - w); -pull + (reach + pull) * q * q * q }
+            ms < home -> reach
+            else -> { val q = ((ms - home) / homeMs(face)).coerceAtMost(1f); reach * (1f - (if (face) 1f - (1f - q) * (1f - q) * (1f - q) else backOut(q))) }
+        }
+    }
+    /** The attacker's size: swells 10 % on the pull back ([swell]; the living table's charge, F6, makes it 14 %); a hit to a face shrinks it to .45 as it flies at the picture. */
+    fun scale(face: Boolean, ms: Float, swell: Float = 1.1f): Float {
+        val w = wind(face); val h = hit(face); val home = homeAt(face)
+        val far = if (face) .45f else swell
+        return when {
+            ms < 0f -> 1f
+            ms < w -> 1f + (swell - 1f) * (ms / w)
+            ms < h -> swell + (far - swell) * ((ms - w) / (h - w))
+            ms < home -> far
+            else -> far + (1f - far) * ((ms - home) / homeMs(face)).coerceAtMost(1f)
+        }
+    }
+}
+/** P5, the declare: each new attacker steps up in 210 ms, 95 apart, with a coral ring (300). */
+/** A staged pair is lit and joined this long before its attacker moves. */
+internal const val STAGE_LEAD_MS = 140L
+internal const val DECLARE_MS = 210; internal const val DECLARE_GAP_MS = 95L
+/** P5, a block: the blocker steps to its attacker (190), rests under its ice ring (360), then goes home. */
+internal const val BLOCK_MS = 700L
+/** P5, a kill: grey and shudder (240), flash and break (200); its embers reach the owner's square in 380 to 560 and the pile answers. */
+internal const val DEATH_MS = 440L; internal const val EMBERS_MS = 880L
+/** P6: Fire is 110 of swell and flash and 130 of streak; the impact plays 450; the spent spell leaves 160 after the impact, 320 to the square and 300 of ring. */
+internal const val FIRE_MS = 240L; internal const val BOLT_MS = 450L; internal const val SPENT_MS = 620L; internal const val AIM_MS = 320L
+/** P5: the life pill comes down one point every 90 ms from contact (faster past eight points, so a big hit still ends in time). */
+internal fun lifeGap(points: Int): Long = if (points <= 8) 90L else (720L / points).coerceAtLeast(30L)
 
 internal enum class Fx { DRAW, CAST, RESOLVE, ARRIVE, TOKEN, ATTACK, LUNGE, BLOCK, DAMAGE, LIFE, DEATH, COUNTER,
     /** One attacker's moment in staged combat: the board dims but for [FxItem.ids], a gold line and the pair's glass tag. */
@@ -95,7 +155,32 @@ internal enum class Fx { DRAW, CAST, RESOLVE, ARRIVE, TOKEN, ATTACK, LUNGE, BLOC
     /** A TRIGGER SHOWS ITSELF, beat 1: the card that triggered lifts 1.12x (18 dp) and one ring (260 dp) goes out in the caster's colour. */
     TRIG_SOURCE,
     /** Beat 3 on one changed card: a streak from the source, a flash, the change rising ("+1/+1"), the counter chip's pop, the trail line. */
-    TRIG_LAND }
+    TRIG_LAND,
+    /** Match punch P4: a gold glint on [FxItem.card]'s tile as it turns back in the untap ripple. */
+    GLINT,
+    /** Match punch P3, the landing's impact on [FxItem.card]'s tile: freeze, squash and spring, flash, ring, dust, sparks; [FxItem.power] scales shake and particles. */
+    IMPACT,
+    /** Match punch P6, Aim: a target thread has locked on [FxItem.card] (or the player at [FxItem.toKey]): it flinches 5 % and a ring closes on it. */
+    AIM,
+    /** P6, Fire: the resolving spell's place on the stack ([FxItem.from]) swells and flashes (110), then a thick streak crosses to [FxItem.toKey] (130). */
+    FIRE,
+    /** P6, Impact on [FxItem.card]: freeze, flash, shake, spikes, sparks and smoke in the spell's colour, the tile knocked and springing; a friendly spell ([FxItem.power] 0) only glows. */
+    BOLT,
+    /** P6, After: the spent spell ([FxItem.ghost]) leaves the stack for its owner's graveyard (320), where the pile answers with a ring. */
+    SPENT,
+    /** Match punch P5: nine ember streaks from a dead card's place ([FxItem.from]) to its owner's graveyard, where the pile answers with a ring. */
+    EMBERS,
+    /** Living table F7, the winning hit: the orb at [FxItem.toKey] breaks, a ring, a crack to the far corner and the mat's win colour flood the table. [FxItem.player] null: a draw, both orbs dim. */
+    WIN,
+    /** Living table F3: [FxItem.card] lands heavy. It drops from 1.9 times its size (130 ms); where it lands: freeze, shake, a ring in its colour, the cards in [FxItem.ids] hop and the mat keeps a mark. */
+    HEAVY,
+    /** Living table F5, the clock stops: grey over everything, [FxItem.card] lifts, [FxItem.points] pieces leave its loyalty shield one by one and circle it, then colour returns. [FxItem.label]: the loyalty it has left. */
+    CLOCK,
+    /**
+     * Every Result Names Its Cause: a plate on the card a result moved (at [FxItem.toKey], else [FxItem.fromKey]): its word
+     * ([FxItem.label], "EXILED"), who did it ([FxItem.note], "by Sheltered by Ghosts") and that card's picture ([FxItem.art]).
+     */
+    PLATE }
 
 internal class FxItem(
     val kind: Fx, val level: Int, val baseMs: Long,
@@ -117,8 +202,24 @@ internal class FxItem(
     val title: String = "",
     /** A trigger landing: the caster's colour (its streak) and the one trail line it carries. */
     val caster: Color = Color.White, val note: String = "",
+    /** A cause plate: the name of the card whose picture it carries ("" for none), the card it is about (for a screen reader), and whether that card stays on the table (the plate then keeps off its numbers). */
+    val art: String = "", val about: String = "", val beside: Boolean = false,
 ) {
     var t0 = 0L; var dur = baseMs; var p0 = 0f
+    /** Things this effect has thrown once (a freeze, a burst of particles), by bit. */
+    var marks = 0
+    /** P5: a life loss's points, ticked off the pill one by one from this effect's start. On a lunge at a player: the damage it brings (5 or more sounds the big hit). */
+    var points = 0
+    /** F6: this life loss (or this damage) is drawn the living table's way: its number, and one clean hit. A charge at the same player (or card) draws that hit; a loss with no charge [bursts] it itself. */
+    var charged = false; var bursts = false
+    /** F6: the last trail sparks this charge has left behind it (a pair every [TableFeel.CHARGE_TRAIL_EVERY_MS] of the dash). */
+    var trail = -1
+    /** P6: of a spell's streaks (one per target), the one that also draws the flash on the stack. */
+    var lead = true
+    /** The match sound pass: the cue this effect plays once, [soundAt] ms after it starts (its contact frame). */
+    var sound: String? = null; var soundAt = 0L; var soundVol = 1f; var soundRate = 1f
+    fun sounds(id: String, at: Long = 0L, vol: Float = 1f, rate: Float = 1f) = apply { sound = id; soundAt = at; soundVol = vol; soundRate = rate }
+    fun once(bit: Int): Boolean = if (marks and bit != 0) false else { marks = marks or bit; true }
     /** 0..1 through the effect, or -1 while it waits for its turn. */
     fun p(now: Long): Float = if (now < t0) -1f else (p0 + (1f - p0) * ((now - t0).toFloat() / dur.coerceAtLeast(1))).coerceAtMost(1f)
     fun done(now: Long) = now >= t0 + dur
@@ -130,25 +231,30 @@ class Battlefield {
     internal var reduced = false
     /** Effects set to Minimal (Low power): the beat stays (moves, numbers, ticks); sparks, trails, rays and shards go. */
     internal var low = false
+    /** 0.4.59 T5: the leg of a card's travel the table draws now (set by FxDriver before each snapshot is read). */
+    internal var travel: dev.cardstashy.nativeplay.match.TravelMoment? = null
     /** The frame clock (ms). Draw lambdas read it; the composition never does. */
     internal val now = mutableLongStateOf(0L)
     /** Bumped when the set of running effects changes, so card layers know to look again. */
     internal val rev = mutableIntStateOf(0)
     /** The board's own jolt: the strongest face hit in flight (0..1) and when it struck. Read in the board's layer only. */
-    fun shake(scope: GraphicsLayerScope) {
-        val t = now.longValue
-        if (reduced) return
+    fun shake(scope: GraphicsLayerScope) { val (dx, dy, zoom) = camera(now.longValue); with(scope) { translationX = dx * density; translationY = dy * density; scaleX = zoom; scaleY = zoom } }
+    /** Where the board box's middle sits in the window (px): what its jolt and push-in turn about. Set by the table. */
+    internal var pivot: Offset? = null
+    /** The board's jolt (dp across and down) and its push-in at [t]. */
+    internal fun camera(t: Long): Triple<Float, Float, Float> {
+        if (reduced || TableFeel.mode() == TableFeel.Mode.REDUCED) return Triple(0f, 0f, 1f)
         // Camera (table-feel spec 3): the board leans in while a strike travels, 1.07 for a clash and 1.09 for a hit to a face.
         val lunge = items.firstOrNull { it.kind == Fx.LUNGE && it.p(t) in 0f..1f }
         var zoom = 1f
-        if (lunge != null) { val p = lunge.p(t); val face = lunge.toKey?.startsWith("orb") == true
-            zoom = 1f + (if (face) .09f else .07f) * smooth(.1f, LUNGE_HIT, p) * (1f - smooth(LUNGE_HIT + .22f, 1f, p)) }
+        if (lunge != null) { val ms = (t - lunge.t0).toFloat(); val face = Strike.face(lunge)
+            zoom = 1f + (if (face) .09f else .07f) * smooth(Strike.wind(face) * .4f, Strike.hit(face), ms) * (1f - smooth(Strike.after(face) + 100f, Strike.ms(face).toFloat(), ms)) }
         // Shake from the contact: 16 dp over 480 ms for a clash, 20 dp over 560 ms for a face hit, damped.
         var dx = 0f; var dy = 0f
-        val hit = items.firstOrNull { it.kind == Fx.LUNGE && (t - it.t0 - (it.dur * LUNGE_HIT).toLong() - HIT_STOP) in 0L..560L }
+        val hit = items.firstOrNull { it.kind == Fx.LUNGE && (t - it.t0 - Strike.after(Strike.face(it)).toLong()) in 0L..(if (Strike.face(it)) 560L else 480L) }
         if (hit != null) {
-            val face = hit.toKey?.startsWith("orb") == true; val span = if (face) 560f else 480f
-            val q = ((t - hit.t0 - hit.dur * LUNGE_HIT - HIT_STOP) / span).coerceIn(0f, 1f); val amp = (if (face) 20f else 16f) * (1f - q) * (1f - q)
+            val face = Strike.face(hit); val span = if (face) 560f else 480f
+            val q = ((t - hit.t0 - Strike.after(face)) / span).coerceIn(0f, 1f); val amp = (if (face) 20f else 16f) * (1f - q) * (1f - q)
             dx = amp * sin(q * 46f); dy = amp * .7f * cos(q * 39f)
         } else items.firstOrNull { it.kind == Fx.LIFE && it.level == 3 && it.p(t) in 0f..1f }?.let { h ->
             val p = h.p(t); if (p <= .5f) { val q = p / .5f; val amp = 20f * h.power * (1f - q) * (1f - q); dx = amp * sin(q * 52f); dy = amp * .7f * cos(q * 43f) }
@@ -160,7 +266,11 @@ class Battlefield {
             val q = (ms - start) / span
             if (q in 0f..1f) { val amp = amp0 * (1f - q) * (1f - q); dx = amp * sin(q * 46f); dy = amp * .7f * cos(q * 39f) }
         }
-        with(scope) { translationX = dx * density; translationY = dy * density; scaleX = zoom; scaleY = zoom }
+        // P1: the punches' own jolts; the stronger shake and the deeper push-in win (never weaker than today's).
+        val (jx, jy, jz) = joltAt(jolts, t)
+        if (jx * jx + jy * jy > dx * dx + dy * dy) { dx = jx; dy = jy }
+        zoom = maxOf(zoom, jz)
+        return Triple(dx, dy, zoom)
     }
     /** Haptics at each beat's contact: light on a block, medium on a clash, heavy on a face hit. Set by FxDriver. */
     internal var onImpact: ((String) -> Unit)? = null
@@ -170,22 +280,113 @@ class Battlefield {
     private var focalEnd = 0L
     private var started = false
 
-    internal fun tick(ms: Long) {
+    /** Match punch P1: the live particles (on the one FxLayer canvas) and the board's jolts in flight. */
+    internal val bits = Particles()
+    internal val jolts = ArrayList<Jolt>()
+    /** One of your questions is open: freezes are dropped (a prompt never waits on a freeze). Set by FxDriver. */
+    internal var promptWaiting = false
+    private var wall = -1L; private var frozenTo = -1L; private var held = 0L
+
+    /** The FxLayer's top left in root pixels (set by FxLayer): root positions less this are the canvas's own. */
+    internal var origin = Offset.Zero
+    /** The board being shown (set by FxDriver): a punch reads a card's colour from it, never an outcome. */
+    internal var board: MatchState? = null
+    private val fired = LinkedHashSet<Long>()
+    /** True the first time [bit] is asked for under [key] (a travel leg's key): a burst is thrown once, whatever the frame rate. */
+    internal fun once(key: Long, bit: Int): Boolean {
+        val added = fired.add(key * 4099L + bit)
+        if (added && fired.size > 512) fired.iterator().let { it.next(); it.remove() }
+        return added
+    }
+    /** How far into its leg a travel is (ms): the frame-by-frame tests' fixed clock, else real time since it started. */
+    internal fun travelMs(m: dev.cardstashy.nativeplay.match.TravelMoment): Long =
+        TravelClock.fixed?.let { (it * m.travel.ms).toLong() } ?: (android.os.SystemClock.elapsedRealtime() - m.startedAt)
+
+    /**
+     * P2, Charge and Burst: the stack card's size while [cardId]'s cast pays and bursts. Each streak that arrives swells it 4 %
+     * (easing back over 160 ms); the burst swells it 8 % after its freeze. 1 otherwise, and with reduce motion.
+     */
+    internal fun stackSwell(cardId: Int?): Float {
+        now.longValue // a frame's read, so the layer follows the clock
+        val m = travel ?: return 1f
+        if (reduced || cardId == null || m.travel.cardId != cardId) return 1f
+        val el = travelMs(m); val D = dev.cardstashy.nativeplay.match.Director
+        fun out(ms: Long, span: Long): Float = if (ms < 0 || ms > span) 0f else (1f - ms.toFloat() / span).let { it * it * it }
+        return when (m.travel.leg) {
+            dev.cardstashy.nativeplay.match.Director.Leg.TAPS -> 1f + .04f * ((0 until m.travel.taps.size + m.travel.pool).maxOfOrNull { out(el - D.streakArrives(it), D.CHARGE_MS) } ?: 0f)
+            dev.cardstashy.nativeplay.match.Director.Leg.REST -> 1f + .08f * m.travel.power * out(el - D.BURST_FREEZE_MS, D.BURST_MS - D.BURST_FREEZE_MS)
+            else -> 1f
+        }
+    }
+
+    /** P4: your drawn card [id] is still on its way (its own picture flies in): its hand card stays clear until it tucks in. */
+    internal fun drawHides(id: Int): Boolean {
+        val t = now.longValue
+        return !reduced && items.any { it.kind == Fx.DRAW && it.card == id && it.ghost != null && !it.done(t) }
+    }
+
+    /** P1: a payoff's short freeze. Pauses the effect clock only (effects, particles, jolts); input and the bridge run on. */
+    fun freeze(ms: Long) {
+        if (reduced || promptWaiting || ms <= 0L || wall < 0L) return
+        frozenTo = maxOf(frozenTo, wall + ms)
+    }
+
+    /** P1: the board shakes [ampDp] (damped over [ms]) and pushes in by [push]; the board box only. None with reduce motion. */
+    fun jolt(ampDp: Float, ms: Long, push: Float = 0f) {
+        if (reduced) return
+        jolts += Jolt(now.longValue, ampDp, ms, push)
+    }
+
+    /** The effect clock for the frame at [wallMs]: the frame clock less the time spent frozen. */
+    internal fun effectClock(wallMs: Long): Long {
+        if (wall >= 0L && frozenTo > wall) held += (minOf(wallMs, frozenTo) - wall).coerceAtLeast(0L)
+        wall = wallMs
+        return wallMs - held
+    }
+
+    internal fun tick(wallMs: Long) {
+        val ms = effectClock(wallMs)
+        if (jolts.isNotEmpty()) jolts.removeAll { ms - it.t0 > it.ms }
         if (!started) { started = true; if (items.isNotEmpty()) { val base = ms; items.forEach { it.t0 += base }; focalEnd += base } }
         now.longValue = ms
-        onImpact?.let { feel -> for (it in items) if (it !in felt) {
+        onImpact?.let { feel ->
+            // F9: one soft pulse as each piece leaves the loyalty shield.
+            for (it in items) if (it.kind == Fx.CLOCK && it.p(ms) >= 0f) { val off = TableFeel.clockPieces(it.p(ms) * it.dur, it.points, it.dur); if (off > it.trail + 1) { it.trail = off - 1; feel("soft") } }
+            for (it in items) if (it !in felt) {
             val kind = when {
+                // F9: the winning hit, heavy with a long fade, as the orb breaks.
+                it.kind == Fx.WIN && it.player != null && ms >= it.t0 -> "win"
                 it.kind == Fx.BLOCK && it.p(ms) >= .1f -> "light"
-                it.kind == Fx.LUNGE && it.p(ms) >= LUNGE_HIT -> if (it.toKey?.startsWith("orb") == true) "heavy" else "medium"
+                it.kind == Fx.LUNGE && ms - it.t0 >= Strike.hit(Strike.face(it)) -> if (Strike.face(it)) "heavy" else "medium"
+                // A landing is felt: light for a land, medium for anything else (a rare's drop and a commander's slam have their own below).
+                // F9, by weight step: a light creature (or any other permanent) light, a medium one medium; a heavy one is felt at its own landing below.
+                it.kind == Fx.IMPACT && it.entrance <= 0 && ms >= it.t0 -> if (it.land || it.points == 0) "light" else if (it.points == 1) "medium" else if (heavies.any { h -> h.card == it.card }) null else "heavy"
+                it.kind == Fx.HEAVY && it.p(ms) * it.baseMs >= TableFeel.HEAVY_DROP_MS -> "heavy"
                 it.kind == Fx.ARRIVE && it.entrance == 1 && it.p(ms) * it.dur >= 650f -> "light"
                 it.kind == Fx.ARRIVE && it.entrance == 2 && it.p(ms) * it.dur >= E2_SLAM + 150f -> "heavy"
                 else -> null
             } ?: continue
             felt += it; feel(kind)
         } }
-        onCue?.let { cue -> cues(ms, cue) }
+        onCue?.let { cue -> cues(ms, cue); travel?.let { m -> travelCues(m, travelMs(m), cue) } }
         if (items.any { it.done(ms) }) { items.removeAll { it.done(ms) }; felt.retainAll(items.toSet()); heard.keys.retainAll(items.toSet()); reindex() }
     }
+
+    private var legKey = 0L; private var legAt = -1L
+    /**
+     * The sound pass on a cast's legs ([legCues]): each cue once, on the frame its moment is reached ([el] ms into the leg). A
+     * land that pays is felt too (a light tap, yours only).
+     */
+    internal fun travelCues(m: dev.cardstashy.nativeplay.match.TravelMoment, el: Long, cue: (String, Float, Float) -> Unit) {
+        if (m.key != legKey) { legKey = m.key; legAt = -1L }
+        if (el <= legAt) return
+        for (c in legCues(m.travel)) if (c.at > legAt && c.at <= el) { cue(c.id, c.vol, c.rate); if (c.feel != null) onImpact?.invoke(c.feel) }
+        legAt = el
+    }
+    /** S2: the players whose low-life warning (5 or less) has been given this match. */
+    internal val lowSeen = HashSet<Int>()
+    /** Tells the table's sound player which cues the effects of the board just read will play themselves (so it does not play them too). */
+    internal var onPlan: ((Long, Set<String>) -> Unit)? = null
 
     /** Sounds on the beats themselves (sounds thread cue map, 4 Nov): set by FxDriver from LocalTableCue. */
     internal var onCue: ((String, Float, Float) -> Unit)? = null
@@ -200,13 +401,16 @@ class Battlefield {
                 val got = heard[it] ?: 0
                 if (got and bit == 0 && p >= at) { heard[it] = got or bit; if (id !in now) now[id] = vol to rate }
             }
+            // The sound pass: an effect that carries its own cue plays it once on its contact frame.
+            it.sound?.let { s -> val got = heard[it] ?: 0
+                if (got and 128 == 0 && ms - it.t0 >= it.soundAt) { heard[it] = got or 128; if (s !in now) now[s] = it.soundVol to it.soundRate } }
             when (it.kind) {
-                Fx.ATTACK -> once(1, 0f, "CMB-001", .9f)
                 // At the stamp's slam, the shield ring 40 ms behind it.
-                Fx.BLOCK -> { once(1, .24f, "CMB-021", 1f); once(2, .24f + 40f / it.dur, "CMB-016", .5f) }
+                Fx.BLOCK -> { once(1, .2f, "CMB-021", 1f); once(2, .2f + 40f / it.dur, "CMB-016", .5f) }
                 // The contact frame: CMB-022 carries its own 110 ms hit-stop gap, matching the visual freeze.
-                Fx.LUNGE -> if (it.toKey?.startsWith("orb") == true) { val f = LUNGE_HIT + HIT_STOP.toFloat() / it.dur; once(1, f, "CMB-023", 1f); once(2, f, "CMB-010", .8f) }
-                    else once(1, LUNGE_HIT, "CMB-022", 1f)
+                // The sound pass: the dive as the pull-back ends, then the hit on contact (5 or more to a player is the big one).
+                Fx.LUNGE -> { val face = Strike.face(it); once(4, Strike.wind(face) / it.dur, "attack_go", 1f)
+                    once(1, Strike.hit(face) / it.dur, if (!face) "CMB-022" else if (it.points >= 5) "face_hit_big" else "CMB-023", 1f) }
                 // Lower for bigger numbers.
                 Fx.DAMAGE -> { val n = it.label.filter(Char::isDigit).toIntOrNull() ?: 1; once(1, 0f, "CMB-006", .6f, (1.04f - .04f * n).coerceIn(.75f, 1f))
                     // Director step 3: a spell or ability's damage sounds its streak on the frame the number lands (combat has the clash).
@@ -215,8 +419,11 @@ class Battlefield {
                 Fx.LIFE -> if (it.level == 3 && items.none { l -> l.kind == Fx.LUNGE && l.toKey == it.toKey }) once(1, 0f, "CMB-018", if (it.power >= .8f) 1f else .8f)
                 // Counters: on the pop.
                 Fx.COUNTER -> once(1, 0f, "CARD-027", .7f)
+                // F5: the life tick as each piece leaves the shield, 7 % higher each time.
+                Fx.CLOCK -> for (k in 0 until minOf(it.points, 20)) { val at = TableFeel.CLOCK_IN_MS + k * TableFeel.CLOCK_PIECE_GAP_MS
+                    if (at <= it.dur - TableFeel.CLOCK_OUT_MS) once(1 shl (8 + k), at.toFloat() / it.dur, "life_tick", .8f, Math.pow(TableFeel.CLOCK_PITCH.toDouble(), k.toDouble()).toFloat()) }
                 // A death: on the white flash after the 260 ms shake; a non-creature to the graveyard softer.
-                Fx.DEATH -> if (it.toKey != null || it.ghost?.token == true) once(1, .38f, if (it.ghost?.isCreature == true) "CMB-009" else "CARD-018", 1f)
+                Fx.DEATH -> if (it.toKey != null || it.ghost?.token == true) once(1, if (it.dur == DEATH_MS) .54f else .38f, if (it.ghost?.isCreature == true) "CMB-009" else "CARD-018", 1f)
                 else -> {}
             }
         }
@@ -226,21 +433,120 @@ class Battlefield {
     /** A touch on the board: every effect jumps to its end state (spec: "tap = next action"). */
     fun skip() {
         dev.cardstashy.nativeplay.match.CombatPace.release()
+        bits.clear(); jolts.clear(); frozenTo = -1L
         if (items.isEmpty()) return
-        items.clear(); focalEnd = now.longValue; reindex()
+        // A cause plate is words to read, not motion: it stays for its beat (the controller holds the table that long anyway).
+        items.removeAll { it.kind != Fx.PLATE }; focalEnd = now.longValue; reindex()
     }
 
     /** Staged combat's pairs in flight, so every card can dim while one pair plays out. */
     private var stages: List<FxItem> = emptyList()
+    /** The attackers of the strikes in flight (empty with Match effects off): the table lifts them above everything on it. */
+    internal val strikers = androidx.compose.runtime.mutableStateOf<Set<Int>>(emptySet())
     internal fun reindex() {
         byCard.clear()
         for (it in items) it.card?.let { id -> byCard.getOrPut(id) { mutableListOf() } += it }
         stages = items.filter { it.kind == Fx.STAGE }
         spots = items.filter { it.kind == Fx.ARRIVE && it.entrance == 2 }
+        impacts = items.filter { it.kind == Fx.IMPACT }
+        heavies = items.filter { it.kind == Fx.HEAVY }
+        // F5: the card the clock has stopped for is lifted above the table too.
+        val down = (heavies.mapNotNull { it.card } + items.filter { it.kind == Fx.CLOCK }.mapNotNull { it.card }).toSet()
+        if (down != landers.value) landers.value = down
+        struck = items.filter { it.kind == Fx.LUNGE && it.toKey?.startsWith("c") == true }
+        // F6 (design review): the cards in a strike are drawn above the seat panels and the lands for the whole strike.
+        val up = if (TableFeel.mode() == TableFeel.Mode.OFF) emptySet() else items.filter { it.kind == Fx.LUNGE }.mapNotNull { it.card }.toSet()
+        if (up != strikers.value) strikers.value = up
         rev.intValue++
     }
 
     private var spots: List<FxItem> = emptyList()
+    private var impacts: List<FxItem> = emptyList()
+    /** F3: the heavy landings in flight; their cards are drawn over their row while they drop. */
+    private var heavies: List<FxItem> = emptyList()
+    internal val landers = androidx.compose.runtime.mutableStateOf<Set<Int>>(emptySet())
+    /** F7: when the table's last blow reached each seat (effect clock ms; in the future while the strike is in flight). */
+    private val seatHit = HashMap<Int, Long>()
+    /** F7: how much of each player's orb is left to see (0: broken off the table; a draw dims both). Players not in it are whole. */
+    internal val orbs = androidx.compose.runtime.mutableStateOf<Map<Int, Float>>(emptyMap())
+    internal fun landsHeavy(card: Int?): Boolean = card != null && heavies.any { it.card == card }
+    /** F3: what the heavy landings left on the mat this turn (root pixels), drawn under the cards by [LandMarks]. */
+    internal val landMarks = mutableStateListOf<LandMark>()
+    /** F3: the other cards of the player whose creature landed heavy hop (tiles [TableFeel.HOP_TILE] dp). */
+    private fun GraphicsLayerScope.hop(id: Int) {
+        val t = now.longValue
+        for (it in heavies) { if (id !in it.ids) continue
+            val p = it.p(t); if (p < 0f) continue
+            translationY -= TableFeel.hopLift(p * it.baseMs - TableFeel.HEAVY_DROP_MS) * TableFeel.HOP_TILE.dp.toPx() }
+    }
+    /** F8: a creature tile breathes (its layer only); nothing when motion is off, effects are Minimal or Match effects are off. */
+    internal fun breathe(scope: GraphicsLayerScope, id: Int) {
+        if (reduced || low || Motion.still || TableFeel.mode() == TableFeel.Mode.OFF) return
+        val s = TableFeel.breath(id, now.longValue.toFloat())
+        with(scope) { scaleX *= s; scaleY *= s }
+    }
+    /** F8: a rim's strength now (75 % to 100 %); 1 when nothing should move. */
+    internal fun rimPulse(): Float = if (reduced || low || Motion.still || TableFeel.mode() == TableFeel.Mode.OFF) 1f else TableFeel.rimPulse(now.longValue.toFloat())
+    /** F3: how far your hand's cards hop now (dp), when a creature of yours has just landed heavy. */
+    internal fun handHop(): Float {
+        rev.intValue
+        if (heavies.isEmpty() || reduced) return 0f
+        val t = now.longValue
+        return heavies.filter { it.mine }.maxOfOrNull { val p = it.p(t); if (p < 0f) 0f else TableFeel.hopLift(p * it.baseMs - TableFeel.HEAVY_DROP_MS) }?.times(TableFeel.HOP_CARD) ?: 0f
+    }
+    /** P5: the clashes in flight, by what they strike: the struck tile is knocked back 16 dp and springs. */
+    private var struck: List<FxItem> = emptyList()
+    /** The struck tile [id] is knocked 16 dp along the blow and springs back (420 ms, elastic), tipping a little. */
+    private fun GraphicsLayerScope.knock(id: Int, anchors: Anchors?, t: Long) {
+        val key = "c$id"
+        for (s in struck) {
+            if (s.toKey != key) continue
+            val ms = t - s.t0 - Strike.after(false); if (ms < 0f || ms > 420f) continue
+            val a = anchors?.rects?.get("c${s.card}") ?: continue; val b = anchors.rects[key] ?: continue
+            val dx = b.center.x - a.center.x; val dy = b.center.y - a.center.y; val dist = kotlin.math.hypot(dx, dy).coerceAtLeast(1f)
+            val k = 1f - elasticOut(ms / 420f)
+            translationX = dx / dist * 16.dp.toPx() * k; translationY = dy / dist * 16.dp.toPx() * k; rotationZ = (if (dx >= 0f) 2.9f else -2.9f) * k
+        }
+    }
+    /** How far an attacking tile stands toward the other side (px; set by the table), so its declare ring sits where it stands. */
+    internal var advancePx = 0f
+
+    /** P6, Aim: a target thread has just locked on [toKey] ("c<id>" or "orb<id>"), in its caster's colour [tone]. */
+    internal fun aimLock(toKey: String, tone: Color) {
+        if (reduced || Motion.still) return
+        items += FxItem(Fx.AIM, 1, AIM_MS, card = toKey.takeIf { it.startsWith("c") }?.drop(1)?.toIntOrNull(), toKey = toKey, tone = tone).sounds("target_lock").also { it.t0 = now.longValue }
+        reindex()
+    }
+    /** A loss of [player]'s is still in flight (so the pill waits for it). */
+    internal fun lifePending(player: Int) = items.any { it.kind == Fx.LIFE && it.player == player && it.points > 0 }
+    /** P5: the life [player]'s pill shows now. Each loss in flight comes off one point at a time from its contact ([lifeGap]). */
+    internal fun lifeShown(player: Int, life: Int): Int {
+        val t = now.longValue; var back = 0
+        for (it in items) if (it.kind == Fx.LIFE && it.player == player && it.points > 0) {
+            val done = if (t < it.t0) 0 else minOf(it.points, ((t - it.t0) / lifeGap(it.points)).toInt() + 1)
+            back += it.points - done
+        }
+        return life + back
+    }
+
+    /**
+     * P3, follow-through: the tiles beside a landing rock away from it and spring back (620 ms). Side by side at full width they
+     * are pushed 10 dp; squeezed or overlapping they only lean. Other rows never move.
+     */
+    private fun GraphicsLayerScope.rock(id: Int, anchors: Anchors?) {
+        val t = now.longValue
+        for (it in impacts) {
+            if (it.card == id) continue
+            val p = it.p(t); if (p < 0f) continue
+            val a = anchors?.rects?.get("c${it.card}") ?: continue; val b = anchors.rects["c$id"] ?: continue
+            if (kotlin.math.abs(a.center.y - b.center.y) > a.height * .5f) continue
+            val dx = b.center.x - a.center.x
+            if (kotlin.math.abs(dx) > a.width * 1.9f || kotlin.math.abs(dx) < 1f) continue
+            val k = 1f - elasticOut((p * it.dur / 620f).coerceAtMost(1f)); val dir = if (dx > 0) 1f else -1f
+            if (kotlin.math.abs(dx) >= (a.width + b.width) / 2 * .98f) translationX += dir * 10.dp.toPx() * k
+            rotationZ += dir * 2.9f * k
+        }
+    }
 
     /** A level 2 entrance: every other card on the table dims to 26 % (250 ms in, back out after the slam). */
     private fun GraphicsLayerScope.spotDim(id: Int) {
@@ -300,6 +606,8 @@ class Battlefield {
     private var lastMoment = 0L
     /** Cards a trigger's result lands on (and its tokens), until when: the snapshot diff leaves their counter and token effects to it. */
     private val claimed = HashMap<Int, Long>()
+    /** The cards a result's beat took off the battlefield or put onto it (id to the time the claim ends): [trigger] plays their leaving and arriving, so [diff] does not play them a second time. */
+    private val claimedMoves = HashMap<Int, Long>()
 
     /**
      * A TRIGGER SHOWS ITSELF (sTrig, approved 10 Nov): the controller's beat [m] becomes effects. SOURCE: the card lifts and rings in
@@ -339,6 +647,37 @@ class Battlefield {
                     note = if (r.changed.isEmpty() && i == 0) m.line.orEmpty() else "", delay = i * 120L)) }
                 if (r.changed.isEmpty() && r.tokens.isNotEmpty() && hit.isEmpty() && m.line != null) r.tokens.firstOrNull()?.let { tok ->
                     add(FxItem(Fx.TRIG_LAND, 1, TRIG_LAND_MS, fromKey = from, toKey = "c${tok.id}", tone = caster, caster = caster, note = m.line)) }
+                // EVERY RESULT NAMES ITS CAUSE: a plate on each card it moved, on the item it countered, on the card its ward guards.
+                // A trigger's light runs from its source to the card first (a spell has its own strike, P6).
+                val plates = causePlates(r, st.viewer)
+                // The streak's ring fades by 900 ms (it was written for a long landing): cut shorter it flickers before the plate.
+                if (r.trigger) plates.filter { it.streak }.forEachIndexed { i, pl -> add(FxItem(Fx.TRIG_LAND, 1, 900, fromKey = from, toKey = pl.key, tone = pl.tone, caster = caster, delay = i * PLATE_GAP_MS)) }
+                // Every plate of the result leaves with its beat (the controller holds the table for Director.namedMs, then 120 ms),
+                // so a chain's next plate never rises under an old one.
+                val beat = dev.cardstashy.nativeplay.match.Director.namedMs(r) + 120L
+                plates.forEachIndexed { i, pl ->
+                    val delay = (if (r.trigger && pl.streak) 220L else 0L) + i * PLATE_GAP_MS
+                    add(FxItem(Fx.PLATE, 1, (beat - delay).coerceAtLeast(900L), fromKey = pl.orKey, toKey = pl.key, tone = pl.tone, label = pl.title, note = pl.sub, art = pl.art, about = pl.about, beside = pl.beside, delay = delay)) }
+                // The cards it moved leave or arrive in this beat, under their plates. The board the table shows changes with the
+                // beat and not with a new board from Forge, so the table's own diff never sees it: the break, the embers to the
+                // pile, the fade of an exile and the arrival are queued here (and claimed, should the diff see the same move).
+                for (mv in r.moves) {
+                    val id = mv.cardId ?: continue; val c = st.card(id) ?: continue
+                    val mineCard = c.controller == st.viewer
+                    if (mv.from == "Battlefield") {
+                        val rect = anchors.rects["c$id"] ?: anchors.rects["aura$id"] ?: continue
+                        val grave = mv.to == "Graveyard"
+                        // An Aura that fell off sat behind its permanent as a strip: only its embers fly to the pile.
+                        if (mv.went != dev.cardstashy.nativeplay.match.Director.Went.FELL_OFF)
+                            add(FxItem(Fx.DEATH, 2, if (grave) DEATH_MS else 600, mine = mineCard, from = rect, toKey = if (grave) "grave${c.owner}" else null, ghost = c))
+                        if (grave) add(FxItem(Fx.EMBERS, 1, EMBERS_MS, card = id, mine = mineCard, from = rect, toKey = "grave${c.owner}", delay = 240L))
+                        claimedMoves[id] = until
+                    } else if (mv.to == "Battlefield") {
+                        // A card that was held in exile comes back from where it hung on its holder.
+                        add(FxItem(Fx.ARRIVE, 1, 450, card = id, mine = mineCard, fromKey = "held$id".takeIf { anchors.rects.containsKey(it) }, tone = caster))
+                        claimedMoves[id] = until
+                    }
+                }
                 items.removeAll { (it.kind == Fx.COUNTER || it.kind == Fx.TOKEN) && it.card != null && it.card in claimed }
             }
         }
@@ -353,13 +692,17 @@ class Battlefield {
         if (st.revision <= before.revision && st.revision != 0L) return
         if (st.players.map { it.id } != before.players.map { it.id }) return
         val t = now.longValue
+        // F3: the marks of the turn that ended leave the mat.
+        if (st.turn != before.turn) { landMarks.forEach { if (it.gone < 0L) it.gone = t }; landMarks.removeAll { it.gone >= 0L && t - it.gone > TableFeel.MARK_OUT_MS && it.gone != t } }
         val yours = st.waitingOnMe
         if (yours) {
             // Priority or a question (match director, section 6): nothing is cut short or dropped any more. What is in flight
             // finishes at no less than its floor, so the CPU's last action is always readable before you answer it.
-            for (it in items) { val left = it.t0 + it.dur - t; val floor = minOf(it.baseMs * 6 / 10, it.dur); if (it.t0 <= t && left > floor && it.level < 2) { it.p0 = it.p(t); it.t0 = t; it.dur = floor } }
+            for (it in items) { val left = it.t0 + it.dur - t; val floor = minOf(it.baseMs * 6 / 10, it.dur); if (it.t0 <= t && left > floor && it.level < 2 && it.kind != Fx.CLOCK) { it.p0 = it.p(t); it.t0 = t; it.dur = floor } }
+            // (F5's frame keeps its own time: it is cut only when its ability has left the stack, in diff.)
         }
         val groups = diff(before, st, anchors)
+        onPlan?.invoke(st.revision, groups.flatMap { g -> g.mapNotNull { it.sound } }.toSet())
         if (groups.isEmpty()) { if (yours) reindex(); return }
         var cursor = maxOf(t, focalEnd)
         var stagedEnd = 0L
@@ -370,8 +713,13 @@ class Battlefield {
             for (it in g) {
                 // Focal effects keep their full length; only when more than 6 s are queued does a non-focal one play at its floor.
                 it.dur = it.baseMs
-                if (cursor - t > 6000 && !staged && it.level < 2) it.dur = it.baseMs * 6 / 10
+                if (cursor - t > 6000 && !staged && it.level < 2 && it.kind != Fx.CLOCK) it.dur = it.baseMs * 6 / 10
                 it.t0 = cursor + it.delay
+                // F7: when the table's own blow reaches a seat (a strike's contact, a face hit's start), for the winning hit to know.
+                it.toKey?.takeIf { k -> k.startsWith("orb") }?.removePrefix("orb")?.toIntOrNull()?.let { seat ->
+                    if (it.kind == Fx.LUNGE) seatHit[seat] = it.t0 + Strike.after(true).toLong() else if (it.kind == Fx.LIFE && it.level == 3) seatHit[seat] = maxOf(seatHit[seat] ?: 0L, it.t0) }
+                // F7 starts at the hit still in flight, else as soon as the finished board is shown; the result card waits for it.
+                if (it.kind == Fx.WIN && it.player != null) { it.t0 = maxOf(t, seatHit[it.player] ?: 0L); TableFeel.resultWait = st.revision to (it.t0 - t) + TableFeel.resultHold() }
                 items += it
             }
             if (staged) stagedEnd = maxOf(stagedEnd, g.maxOf { it.t0 + it.dur })
@@ -404,11 +752,16 @@ class Battlefield {
         return when (dev.cardstashy.nativeplay.art.CardArt.rarity(c.name)) { "rare", "mythic", "special", "bonus" -> 1; else -> 0 }
     }
 
+    /** Mobile table M10: who is looking at this table (set from each board), so a hit knows whether it is you who is hit. */
+    internal var viewerId: Int? = null
     private fun diff(a: MatchState, b: MatchState, anchors: Anchors): List<List<FxItem>> {
         val viewer = b.viewer
+        viewerId = viewer
         val tNow = now.longValue
         claimed.values.removeAll { it < tNow }
         val claimedNow = claimed.keys.toSet()
+        claimedMoves.values.removeAll { it < tNow }
+        val movedNow = claimedMoves.keys.toSet()
         val bfA = a.players.flatMap { it.battlefield }.associateBy { it.id }
         val bfB = b.players.flatMap { it.battlefield }.associateBy { it.id }
         val handA = a.me.hand.map { it.id }.toSet()
@@ -418,13 +771,39 @@ class Battlefield {
         val draws = mutableListOf<FxItem>(); val casts = mutableListOf<FxItem>(); val resolves = mutableListOf<FxItem>()
         val arrivals = mutableListOf<FxItem>(); val combat = mutableListOf<FxItem>(); val hits = mutableListOf<FxItem>()
         val deaths = mutableListOf<FxItem>(); val counters = mutableListOf<FxItem>()
+        // F7: the finished board has arrived. The loser's orb breaks (or, in a draw, both dim); it waits its turn behind the last strike.
+        val ends = mutableListOf<FxItem>()
+        val nowMs = now.longValue
+        // F5: a loyalty ability that cost 5 or more stops the clock. It never holds the queue (level 1): what Forge reports plays inside it.
+        val clocks = mutableListOf<FxItem>()
+        if (!reduced) TableFeel.clockStop(a, b)?.let { c -> clocks += FxItem(Fx.CLOCK, 1, TableFeel.clockMs(c.cost), card = c.card, from = anchors.rects["c${c.card}"], label = "${c.left}").also { it.points = c.cost } }
+        // The engine does not wait for the grey: once the ability has left the stack the circling is cut short and colour returns.
+        for (it in items) if (it.kind == Fx.CLOCK && b.stack.none { s -> s.ability && s.source?.id == it.card }) it.dur = TableFeel.clockCut(nowMs - it.t0, it.dur)
+        if (!reduced) TableFeel.ending(a, b, struck = seatHit.filterValues { it >= nowMs - TableFeel.WIN_STRUCK_MS }.keys)?.let { e -> val look = TableFeel.profile(TableFeel.mat)
+            ends += FxItem(Fx.WIN, 2, TableFeel.WIN_HOLD_MS, player = e.loser, mine = e.winner == viewer, toKey = e.loser?.let { "orb$it" }, tone = look.win, caster = look.winHi, ids = b.players.map { it.id }.toSet()) }
 
         // Draw (level 1, 350 ms): a card slides off the library into the hand.
         val drawn = b.me.hand.filter { it.id !in handA && it.id !in bfA && it.id !in stackSrcA && a.players.none { p -> p.graveyard.any { g -> g.id == it.id } } }
-        drawn.take(3).forEachIndexed { i, _ -> draws += FxItem(Fx.DRAW, 1, 350, player = viewer, mine = true, fromKey = "lib$viewer", toKey = "hand", delay = i * 90L) }
+        // Match punch P4: a new turn's draw waits for the banner (380 ms in); the untap ripple starts at 140, each tile 50 ms apart.
+        val newTurn = a.turn != b.turn
+        val lead = if (newTurn) DRAW_AT_MS else 0L
+        // P4, your draw (up to three; an opening hand keeps the quick slide): the card itself lifts off your deck (90), flips while
+        // it flies to a spot above the hand at 1.6 (320), holds there in an ice ring (380) and tucks in as the hand spreads (260).
+        // On two screens the hand is below: it leaves through the top screen's bottom edge and the bottom screen shows it.
+        if (drawn.size <= 3 && !DualScreen.active && !reduced) drawn.forEachIndexed { i, c ->
+            draws += FxItem(Fx.DRAW, 1, MY_DRAW_MS, card = c.id, player = viewer, mine = true, fromKey = "lib$viewer", toKey = "hand${c.id}", ghost = c, delay = lead + i * 150L).sounds("CARD-001") }
+        // (A whole new hand is dealt by the fan with its own sound; a card or two that slide in sound once.)
+        else drawn.take(3).forEachIndexed { i, _ -> draws += FxItem(Fx.DRAW, 1, 350, player = viewer, mine = true, fromKey = "lib$viewer", toKey = "hand", delay = lead + i * 90L)
+            .also { if (i == 0 && drawn.size <= 4) it.sounds("CARD-001") } }
+        // The living table F1: a readied land flashes in its own colour (70 %, 240 ms) on the same ripple; Off keeps P4's gold glint.
+        val landFlash = if (TableFeel.mode() == TableFeel.Mode.OFF) emptyMap() else TableFeel.turnChange(a, b)?.flashes.orEmpty().associateBy { it.card }
+        if (newTurn) untapOrder(a, b).forEachIndexed { i, id -> val f = landFlash[id]
+            draws += FxItem(Fx.GLINT, 1, f?.let { TableFeel.UNTAP_FLASH_MS } ?: 260, card = id, tone = f?.tone ?: Color(0xFFF3D27E), delay = UNTAP_AT_MS + i * UNTAP_GAP_MS, power = if (f != null) TableFeel.UNTAP_FLASH else 0f)
+            .also { if (i == 0) it.sounds("untap") } }
         for (p in b.players) if (!p.isViewer && p.id != viewer) {
             val q = a.players.firstOrNull { it.id == p.id } ?: continue
-            if (p.handCount > q.handCount && p.libraryCount < q.libraryCount) draws += FxItem(Fx.DRAW, 1, 350, player = p.id, fromKey = "lib${p.id}", toKey = "cpuhand")
+            // P4, the CPU's draw: a card back, 90 lift + 300, no hold.
+            if (p.handCount > q.handCount && p.libraryCount < q.libraryCount) draws += FxItem(Fx.DRAW, 1, 390, player = p.id, fromKey = "lib${p.id}", toKey = "cpuhand", delay = lead).sounds("CARD-002", vol = .5f)
         }
 
         // Cast (level 2, 450 ms): the card lifts out of the hand to the stack; an ability starts at its permanent.
@@ -437,25 +816,52 @@ class Battlefield {
                 mine -> "hand"
                 else -> "cpuhand"
             }
-            // A CPU spell is the card itself flying to the stack (StackFan); only abilities and your own casts keep the light thread.
-            if (!mine && !s.ability) continue
+            // 0.4.59 T5: a spell, yours or the CPU's, is the card itself flying to the stack (TravelCard); only abilities keep the light thread.
+            if (!s.ability) continue
             casts += FxItem(Fx.CAST, 2, 450, card = null, mine = mine, fromKey = from, toKey = "stackcard", tone = if (mine) Color(0xFFF3D27E) else Color(0xFFFF8A5C))
         }
         // Resolve (level 2, 300 ms): the stack card ripples; a spell with targets sends its light to them.
         val idsB = b.stack.map { it.id }.toSet()
+        /** P6: the cards a resolving spell struck, and when (ms into the resolve): one it killed breaks there, not after everything else. */
+        val boltAt = HashMap<Int, Long>()
         for (s in a.stack) if (s.id !in idsB) {
             val src = s.source?.id
             val becomesPermanent = src != null && src in bfB && src !in bfA
+            // P6: a spell with targets fires at them (abilities and triggers keep the light thread and their own beats).
+            val aimed = if (becomesPermanent || s.ability || s.trigger) emptyList() else s.targets.filter { r -> r.kind == "player" || r.id in bfA }.take(4)
+            val card = s.source
+            val owner = card?.let { c -> b.players.firstOrNull { p -> p.graveyard.any { it.id == c.id } }?.id }
+            if (aimed.isNotEmpty()) {
+                // Friendly: everything it targets is its caster's own. Then no shake, no freeze, green light.
+                val friendly = aimed.all { r -> if (r.kind == "player") r.id == s.controller else bfA[r.id]?.controller == s.controller }
+                val tone = if (friendly) TRIG_GREEN else card?.let { frameTone(cardColors(it)).first } ?: Color(0xFFFF8A5C)
+                aimed.forEachIndexed { i, r ->
+                    val key = if (r.kind == "player") "orb${r.id}" else "c${r.id}"
+                    resolves += FxItem(Fx.FIRE, 2, FIRE_MS, mine = s.controller == viewer, from = stackRect, toKey = key, tone = tone).also { it.lead = i == 0; if (i == 0) it.sounds("bolt") }
+                    if (r.kind != "player") { boltAt[r.id] = FIRE_MS
+                        resolves += FxItem(Fx.BOLT, 1, BOLT_MS, card = r.id, mine = bfA[r.id]?.controller == viewer, from = anchors.rects[key], fromKey = "stackcard", tone = tone, power = if (friendly) 0f else 1f, delay = FIRE_MS)
+                            // The impact: the hit for burn and removal, the soft resolve for a spell on its caster's own card.
+                            .sounds(if (friendly) "resolve" else "CMB-018") }
+                }
+            }
+            // The spent spell goes to its owner's square (Forge put it in that graveyard), 160 after the impact when it fired.
+            if (!becomesPermanent && !s.ability && !s.trigger && card != null && owner != null && stackRect != null)
+                resolves += FxItem(Fx.SPENT, 1, SPENT_MS, mine = owner == viewer, from = stackRect, toKey = "grave$owner", ghost = card, delay = if (aimed.isNotEmpty()) FIRE_MS + 160L else 0L)
+                    .sounds("CARD-018", at = SPENT_MS - 60L) // as it reaches the pile
+            if (aimed.isNotEmpty()) continue
             val target = s.targets.firstOrNull()?.let { r -> if (r.kind == "player") "orb${r.id}" else "c${r.id}" }
             resolves += FxItem(Fx.RESOLVE, if (becomesPermanent) 1 else 2, if (becomesPermanent) 220 else 320, mine = s.controller == viewer, from = stackRect,
                 toKey = if (becomesPermanent) null else target, tone = if (s.controller == viewer) Color(0xFFF3D27E) else Color(0xFFFF8A5C))
+                // A spell with no landing leaves the stack with its own sound (abilities and triggers have theirs on their beats).
+                .also { if (!becomesPermanent && !s.ability && !s.trigger) it.sounds("resolve") }
         }
 
         // Arrivals: travel on an arc to the real slot, land with a 2 % squash and a light sweep (450 ms); tokens form from light (400 ms).
         for ((id, c) in bfB) if (id !in bfA) {
             if (c.token && id in claimedNow) continue
+            if (id in movedNow) continue
             if (c.token && id !in stackSrcA) { arrivals += FxItem(Fx.TOKEN, 1, 400, card = id, mine = c.controller == viewer,
-                delay = runCatching { dev.cardstashy.nativeplay.art.CardArt.holdFor(c.name) }.getOrDefault(0L)); continue }
+                delay = runCatching { dev.cardstashy.nativeplay.art.CardArt.holdFor(c.name) }.getOrDefault(0L)).sounds("token"); continue }
             val fromStack = id in stackSrcA
             val fromHand = id in handA
             val key = when { fromStack -> null; fromHand -> "hand"; c.controller != viewer && !c.token -> "cpuhand"; else -> null }
@@ -463,25 +869,55 @@ class Battlefield {
             val fromCommand = a.players.any { p -> p.command.any { it.id == id } }
             val lvl = entranceLevel(c, fromStack || fromCommand, waiting = b.waitingOnMe)
             val mine = c.controller == viewer
+            // F3: a creature of power 5 or more lands heavy (not a commander's own slam, which is bigger). Its drop ends on the landing's frame.
+            val heavy = if (reduced || lvl == 2) null else TableFeel.landing(c)
+            fun heavyAt(landsAt: Long) = FxItem(Fx.HEAVY, 1, (TableFeel.HEAVY_DROP_MS + TableFeel.HEAVY_AFTER_MS).toLong(), card = id, mine = mine, tone = frameTone(cardColors(c)).first,
+                ids = b.players.firstOrNull { it.id == c.controller }?.battlefield.orEmpty().map { it.id }.filter { it != id }.toSet(), delay = landsAt - TableFeel.HEAVY_DROP_MS.toLong(), note = heavy?.mark.orEmpty())
+            // 0.4.59 T5: a card that travelled here (stack to slot, hand to group) is drawn by TravelCard on its way; its tile stays
+            // clear until it lands, then takes the landing squash (level 0) or its entrance from where it landed (levels 1 and 2).
+            val came = travel?.travel?.takeIf { !reduced && it.cardId == id && it.leg in TRAVEL_LANDS }
+            if (came != null) {
+                // P3: the travelled card lands with its impact. A creature shakes the board 7 dp, anything else 3; a level 1 entrance
+                // adds 30 % (at its drop), a level 2 keeps its big entrance and ends with this landing (after its slam).
+                val base = if (c.isCreature) 1f else 3f / 7f
+                // F3: an ordinary heavy landing waits for the drop (130 ms); a rare's drop already ends at 650.
+                val wait = if (heavy != null && lvl == 0) TableFeel.HEAVY_DROP_MS.toLong() else 0L
+                arrivals += FxItem(Fx.IMPACT, 1, IMPACT_MS, card = id, mine = mine, tone = tone, land = c.isLand, power = if (lvl == 1) base * 1.3f else base,
+                    entrance = if (low) -1 else lvl, delay = came.ms + wait + when (lvl) { 2 -> (E2_SLAM + 150f + 110f).toLong(); 1 -> 650L; else -> 0L }).sounds(landingCue(c))
+                    // F9: the landing is felt by its weight step (Forge's power: 1 to 2 light, 3 to 4 medium, 5 or more heavy).
+                    .also { it.points = if (c.isCreature) TableFeel.weight(c.power).ordinal else 0 }
+                arrivals += when (lvl) {
+                    2 -> FxItem(Fx.ARRIVE, 2, ENTRANCE2_MS, card = id, mine = mine, tone = tone, entrance = 2, delay = came.ms,
+                        title = c.name + "\n" + (if (mine) "Your commander" else "Their commander"))
+                    1 -> FxItem(Fx.ARRIVE, 2, ENTRANCE1_MS, card = id, mine = mine, tone = tone, land = c.isLand, entrance = 1, delay = came.ms)
+                    else -> FxItem(Fx.ARRIVE, 1, 135, card = id, mine = mine, tone = tone, land = c.isLand, delay = came.ms).also { it.p0 = .7f }
+                }
+                if (heavy != null) arrivals += heavyAt(came.ms + wait + (if (lvl == 1) 650L else 0L))
+                continue
+            }
             arrivals += when (lvl) {
                 2 -> FxItem(Fx.ARRIVE, 2, ENTRANCE2_MS, card = id, mine = mine, from = if (fromStack) stackRect else null, fromKey = key, tone = tone,
                     entrance = 2, title = c.name + "\n" + (if (mine) "Your commander" else "Their commander"))
                 1 -> FxItem(Fx.ARRIVE, 2, ENTRANCE1_MS, card = id, mine = mine, from = if (fromStack) stackRect else null, fromKey = key, tone = tone, land = c.isLand, entrance = 1)
                 else -> FxItem(Fx.ARRIVE, if (fromStack && c.isCreature) 2 else 1, 450, card = id, mine = mine,
                     from = if (fromStack) stackRect else null, fromKey = key, tone = tone, land = c.isLand)
-            }
+            // The landing's sound on the frame it touches down: after the arc (315 of 450), the drop (650) or the slam.
+            }.also { it.sounds(landingCue(c), when (lvl) { 2 -> (E2_SLAM + 150f).toLong(); 1 -> 650L; else -> 315L }) }
+            if (heavy != null) arrivals += heavyAt(if (lvl == 1) 650L else 315L)
         }
 
         // Combat: a new attacker leans in; a new blocker sends a pulse down its thread to the attacker.
+        // P5: the new attackers step up one after another (210 each, 95 apart), each with a coral ring.
+        declareOrder(a, b).forEachIndexed { i, id -> combat += FxItem(Fx.ATTACK, 1, 300, card = id, mine = bfB[id]?.controller == viewer, tone = TableFeel.declareRim(), delay = i * DECLARE_GAP_MS)
+            // Each one that steps up after the first sounds 6 % higher (held from the fifth).
+            .sounds("CMB-001", rate = Math.pow(1.06, minOf(i, 4).toDouble()).toFloat()) }
         for ((id, c) in bfB) {
             val o = bfA[id] ?: continue
-            if (c.attacking && !o.attacking) combat += FxItem(Fx.ATTACK, 1, 640, card = id, mine = c.controller == viewer)
-            // A block is a moment (spec 3): the blocker steps in, a gold shield flares over it and BLOCKED slams down; held so it reads.
-            if (c.blocking && !o.blocking) c.blockingIds.firstOrNull()?.let { at -> combat += FxItem(Fx.BLOCK, 2, 1640, card = id, fromKey = "c$id", toKey = "c$at", mine = c.controller == viewer) }
+            // A block is a moment (spec 3, P5): the blocker steps to its attacker, an ice ring flares over it and BLOCKED slams down.
+            if (c.blocking && !o.blocking) c.blockingIds.firstOrNull()?.let { at -> combat += FxItem(Fx.BLOCK, 2, BLOCK_MS, card = id, fromKey = "c$id", toKey = "c$at", mine = c.controller == viewer) }
         }
 
-        // Combat damage lands: every attacker wind-ups, lunges at what it hit (its blocker, else the player) and strikes (level 2, 640 ms).
-        val lungeMs = 1700L; val impactAt = (lungeMs * LUNGE_HIT).toLong()
+        // Combat damage lands: every attacker pulls back, strikes what it hit (its blocker, else the player) and springs home ([Strike]).
         val lost = b.players.any { p -> a.players.firstOrNull { it.id == p.id }?.let { q -> p.life < q.life } == true }
         val dmgNow = bfB.values.any { c -> (bfA[c.id]?.damage ?: 0) < c.damage }
         var lunged = false
@@ -491,15 +927,15 @@ class Battlefield {
         val clashDied = bfA.values.any { it.isCreature && (it.attacking || it.blocking) && it.id !in bfB }
         // Staged (Table spec, 5 Nov: "attacks play out too fast ... can't tell what is hitting and what is blocking"): one attacker
         // at a time in attack order. Each pair dims the rest of the board, joins attacker and blocker (or the player it hits)
-        // with a gold line and a glass tag, then lunge, hit-stop and numbers, and a 500 ms hold before the next pair.
-        val step = impactAt + HIT_STOP + 500L
-        val startOf = HashMap<Int, Long>()
+        // with a gold line and a glass tag, then the strike, its freeze and the numbers: about 800 ms a clash, 1100 a hit to a face (P5).
+        val hitOf = HashMap<Int, Long>()
         val faceOf = HashMap<Int, MutableList<Pair<Long, Int>>>()
         if ((lost || dmgNow || clashDied) && wasCombat && a.turn == b.turn) {
             val said = a.events.lastOrNull { it.type == "attack" && it.attackers.isNotEmpty() }?.attackers?.map { it.first.id }.orEmpty()
             val attackers = bfA.values.filter { it.attacking }.sortedWith(compareBy({ said.indexOf(it.id).let { i -> if (i < 0) Int.MAX_VALUE else i } }, { it.id }))
-            attackers.forEachIndexed { i, o ->
-                val id = o.id; val start = i * step
+            var next = 0L
+            attackers.forEach { o ->
+                val id = o.id; val start = next
                 val blockers = bfA.values.filter { it.blocking && id in it.blockingIds }
                 val defender = when { o.attackTarget?.kind == "player" -> o.attackTarget.id; else -> b.players.firstOrNull { it.id != o.controller }?.id }
                 val to = when {
@@ -507,9 +943,13 @@ class Battlefield {
                     o.attackTarget?.kind == "player" -> "orb${o.attackTarget.id}"
                     o.attackTarget != null -> "c${o.attackTarget.id}"
                     else -> defender?.let { "orb$it" }
-                } ?: return@forEachIndexed
-                startOf[id] = start; blockers.forEach { startOf[it.id] = start }
-                if (blockers.isEmpty() && to.startsWith("orb") && defender != null) faceOf.getOrPut(defender) { mutableListOf() } += start to (o.power ?: 0).coerceAtLeast(0)
+                } ?: return@forEach
+                // The pair is lit and joined for a beat (STAGE_LEAD) before the attacker moves, so who fights whom is read first.
+                val face = to.startsWith("orb"); val step = STAGE_LEAD_MS + Strike.ms(face); next += step
+                val lands = start + STAGE_LEAD_MS + Strike.after(face).toLong()
+                hitOf[id] = lands; blockers.forEach { hitOf[it.id] = lands }
+                o.attackTarget?.takeIf { it.kind == "card" && blockers.isEmpty() }?.let { hitOf[it.id] = lands }
+                if (blockers.isEmpty() && to.startsWith("orb") && defender != null) faceOf.getOrPut(defender) { mutableListOf() } += lands to (o.power ?: 0).coerceAtLeast(0)
                 fun pt(c: Card) = if (c.power != null) " ${c.power}/${c.toughness ?: 0}" else ""
                 val tag = when {
                     blockers.isNotEmpty() -> "${o.name}${pt(o)} blocked by " + blockers.joinToString(" and ") { it.name + pt(it) }
@@ -518,11 +958,12 @@ class Battlefield {
                 }
                 hits += FxItem(Fx.STAGE, 2, step, card = null, mine = o.controller == viewer, fromKey = "c$id", toKey = to, label = tag, delay = start,
                     ids = setOf(id) + blockers.map { it.id } + (o.attackTarget?.takeIf { it.kind == "card" }?.id?.let { setOf(it) } ?: emptySet()))
-                hits += FxItem(Fx.LUNGE, 2, lungeMs, card = id, mine = o.controller == viewer, toKey = to, tone = Color(0xFFFF6A4A), power = if (to.startsWith("orb")) 1f else .8f, delay = start); lunged = true
+                hits += FxItem(Fx.LUNGE, 2, Strike.ms(face), card = id, mine = o.controller == viewer, toKey = to, tone = TableFeel.chargeTone(o), power = if (face) 1f else .8f, delay = start + STAGE_LEAD_MS)
+                    .also { if (face) it.points = (o.power ?: 0).coerceAtLeast(0) }; lunged = true
             }
         }
-        val lag = if (lunged) impactAt + HIT_STOP else 0L
-        fun hitAt(id: Int) = (startOf[id] ?: 0L) + lag
+        val lag = if (lunged) Strike.after(false).toLong() else 0L
+        fun hitAt(id: Int) = hitOf[id] ?: lag
         // Damage (level 2, 350 ms): 70 ms hit-stop, the number pops, a 3 px shake. Life totals move with it.
         for ((id, c) in bfB) {
             val o = bfA[id] ?: continue
@@ -556,26 +997,35 @@ class Battlefield {
             // trample, a burn in the same moment) rides the last one.
             if (loss > 0 && lunged && faces.isNotEmpty()) {
                 var left = loss
-                faces.forEachIndexed { i, (start, power) ->
+                faces.forEachIndexed { i, (lands, power) ->
                     val n = if (i == faces.lastIndex) left else minOf(power, left); left -= n
-                    if (n > 0) hits += FxItem(Fx.LIFE, 3, 950, player = p.id, toKey = "orb${p.id}", delay = start + lag, power = (n / 6f).coerceIn(.35f, 1f), tone = Color(0xFFFF5A4A)).also { it.label = "−$n" }
+                    if (n > 0) hits += FxItem(Fx.LIFE, 3, 950, player = p.id, toKey = "orb${p.id}", delay = lands, power = (n / 6f).coerceIn(.35f, 1f), tone = Color(0xFFFF5A4A)).also { it.label = "−$n"; it.points = n }
                 }
                 continue
             }
             hits += FxItem(Fx.LIFE, if (p.life < q.life) 3 else 1, if (p.life < q.life) 950 else 700, player = p.id, toKey = "orb${p.id}", delay = if (p.life < q.life) lag else 0L, power = ((q.life - p.life) / 6f).coerceIn(.35f, 1f), tone = if (p.life < q.life) Color(0xFFFF5A4A) else Color(0xFF7BE08A))
-                .also { it.label = if (p.life < q.life) "−${q.life - p.life}" else "+${p.life - q.life}" }
+                .also { it.label = if (p.life < q.life) "−${q.life - p.life}" else "+${p.life - q.life}"; it.points = (q.life - p.life).coerceAtLeast(0) }
         }
 
-        // Death (level 2, 600 ms): the holo bands break and drift to the graveyard. Exile and bounce fade where they stood.
-        // A creature killed in the clash breaks on impact (after the hit-stop), not after the whole exchange.
+        // Death (P5): the card greys and shudders (240), flashes and breaks (200), and nine ember streaks carry it to its owner's
+        // square, where the pile answers with a ring. Exile and bounce fade where they stood (600 ms, as before).
+        // A creature killed in the clash breaks on impact (after the freeze), not after the whole exchange.
         for ((id, c) in bfA) if (id !in bfB) {
+            if (id in movedNow) continue
             val rect = anchors.rects["c$id"] ?: continue
             val toGrave = b.players.any { p -> p.graveyard.any { it.id == id } }
             val clash = lunged && c.isCreature && (c.attacking || c.blocking)
-            val item = FxItem(Fx.DEATH, 2, 600, mine = c.controller == viewer, from = rect, toKey = if (toGrave) "grave${c.owner}" else null, ghost = c, delay = if (clash) hitAt(id) + 120 else 0L)
-            if (clash) hits += item else deaths += item
+            val item = FxItem(Fx.DEATH, 2, if (toGrave) DEATH_MS else 600, mine = c.controller == viewer, from = rect, toKey = if (toGrave) "grave${c.owner}" else null, ghost = c, delay = if (clash) hitAt(id) else 0L)
+            // P6: a card a spell struck breaks 300 after its impact (inside the resolve), while the hit still rings.
+            val struckAt = boltAt[id]?.takeIf { toGrave && !clash }
+            val group = if (clash) hits else if (struckAt != null) resolves else deaths
+            if (struckAt != null) { resolves += FxItem(Fx.DEATH, 2, DEATH_MS, mine = c.controller == viewer, from = rect, toKey = "grave${c.owner}", ghost = c, delay = struckAt + 300L)
+                resolves += FxItem(Fx.EMBERS, 1, EMBERS_MS, card = id, mine = c.controller == viewer, from = rect, toKey = "grave${c.owner}", delay = struckAt + 540L); continue }
+            group += item
+            // The embers follow the break and do not hold the table (level 1): the next thing starts while they fly.
+            if (toGrave) group += FxItem(Fx.EMBERS, 1, EMBERS_MS, card = id, mine = c.controller == viewer, from = rect, toKey = "grave${c.owner}", delay = item.delay + 240L)
         }
-        return listOf(draws, casts, resolves, arrivals, combat, hits, deaths, counters).filter { it.isNotEmpty() }
+        return listOf(clocks, draws, casts, resolves, arrivals, combat, hits, deaths, counters, ends).filter { it.isNotEmpty() }
     }
 
     /** The card's own motion this frame (transform and alpha only), applied in its tile's layer. */
@@ -583,9 +1033,12 @@ class Battlefield {
         rev.intValue
         if (stages.isNotEmpty()) scope.dim(id)
         if (spots.isNotEmpty()) scope.spotDim(id)
-        val list = byCard[id] ?: return
+        if (impacts.isNotEmpty() && !reduced) with(scope) { rock(id, anchors) }
+        if (heavies.isNotEmpty() && !reduced) with(scope) { hop(id) }
         if (reduced) return
         val t = now.longValue
+        if (struck.isNotEmpty()) with(scope) { knock(id, anchors, t) }
+        val list = byCard[id] ?: return
         anchors?.version?.intValue
         with(scope) {
             for (it in list) {
@@ -606,53 +1059,80 @@ class Battlefield {
                         alpha = (p / .12f).coerceIn(0f, 1f)
                         if (p >= .7f) { val q = (p - .7f) / .3f; val k = .02f * sin(PI.toFloat() * q); scaleX = 1f + k; scaleY = 1f - k }
                     }
+                    // P3, impact: the tile squashes 14 % and springs back (520 ms), after the landing's 45 ms freeze.
+                    Fx.IMPACT -> if (p >= 0f) { val k = .14f * (1f - elasticOut((p * it.dur / 520f).coerceAtMost(1f))); scaleX = 1f + k; scaleY = 1f - k }
+                    // F3: the heavy drop, on top of whatever brought the tile here: 1.9 times its size and a tile's height up, down in 130 ms.
+                    Fx.HEAVY -> if (p >= 0f) { val ms = p * it.baseMs
+                        if (ms < TableFeel.HEAVY_DROP_MS) { val (sc, up) = TableFeel.dropAt(ms); scaleX *= sc; scaleY *= sc; translationY -= up * size.height } }
                     Fx.TOKEN -> {
                         if (p < 0f) { alpha = 0f; continue }
                         alpha = (p / .55f).coerceIn(0f, 1f)
                         val s = .86f + .14f * easeOutBack(p); scaleX = s; scaleY = s
                     }
+                    // The knock (struck tiles) is already in translationX: the hit's small shake rides on it.
                     Fx.DAMAGE -> if (p >= 0f) {
                         if (p < .2f) { scaleX = 1.04f; scaleY = 1.04f }
-                        else { val q = (p - .2f) / .8f; translationX = 3.dp.toPx() * sin(q * 38f) * (1f - q) }
+                        else { val q = (p - .2f) / .8f; translationX += 3.dp.toPx() * sin(q * 38f) * (1f - q) }
                     }
-                    Fx.ATTACK -> if (p >= 0f) {
-                        // Lifts 14 dp and grows to 1.12 over 320 ms, holds, then settles.
-                        val e = smooth(0f, .5f, p) * (1f - smooth(.82f, 1f, p))
-                        scaleX = 1f + .12f * e; scaleY = 1f + .12f * e; translationY = -(if (it.mine) 1f else -1f) * 14.dp.toPx() * e; shadowElevation = 16f * e
+                    // P6: the aimed card flinches 5 % and springs back; the struck one is knocked 14 dp away from the stack and springs
+                    // (a friendly spell only swells it 6 %).
+                    Fx.AIM -> if (p >= 0f) { val s = 1f - .05f * (1f - elasticOut(p)); scaleX = s; scaleY = s }
+                    Fx.BOLT -> if (p >= 0f) {
+                        val k = 1f - elasticOut((p * BOLT_MS / 420f).coerceAtMost(1f))
+                        if (it.power <= 0f) { scaleX = 1f + .06f * k; scaleY = 1f + .06f * k }
+                        else { val a = anchors?.rects?.get("stackcard"); val b = anchors?.rects?.get("c$id")
+                            if (a != null && b != null) { val dx = b.center.x - a.center.x; val dy = b.center.y - a.center.y; val dist = kotlin.math.hypot(dx, dy).coerceAtLeast(1f)
+                                translationX += dx / dist * 14.dp.toPx() * k; translationY += dy / dist * 14.dp.toPx() * k; rotationZ = (if (dx >= 0f) 3.4f else -3.4f) * k } }
                     }
+                    // P5: a declared attacker steps up in its own tile's layer (attackStep); the effect draws its coral ring only.
+                    Fx.ATTACK -> {}
                     Fx.BLOCK -> if (p >= 0f) {
-                        // Slides 70 dp toward its attacker with an overshoot in 240 ms, holds while the shield and stamp read, then goes home.
+                        // P5: steps toward its attacker with an overshoot in 190 ms, rests while the ice ring and stamp read (360), then goes home.
                         val a = anchors?.rects?.get("c$id"); val b = it.toKey?.let { k -> anchors?.rects?.get(k) }
                         if (a != null && b != null) {
                             val dx = b.center.x - a.center.x; val dy = b.center.y - a.center.y; val dist = kotlin.math.hypot(dx, dy).coerceAtLeast(1f)
-                            val go = (p / .146f).coerceAtMost(1f); val back = smooth(.86f, 1f, p)
+                            val ms = p * BLOCK_MS; val go = (ms / 190f).coerceAtMost(1f); val back = smooth(550f, BLOCK_MS.toFloat(), ms)
                             val off = minOf(70.dp.toPx(), dist * .45f) * easeOutBack(go) * (1f - back)
                             translationX = dx / dist * off; translationY = dy / dist * off; shadowElevation = 14f * (1f - back)
+                            val s = 1f + .04f * easeOutBack(go) * (1f - back); scaleX = s; scaleY = s
                         }
                     }
                     Fx.LUNGE -> if (p >= 0f) {
                         val a = anchors?.rects?.get("c$id"); val b = it.toKey?.let { k -> anchors?.rects?.get(k) }
                         if (a != null && b != null) {
-                            val dx = b.center.x - a.center.x; val dy = b.center.y - a.center.y
+                            // P5 ([Strike]): pull back and swell, strike to contact, held through the freeze, then home.
+                            val face = Strike.face(it); val ms = (t - it.t0).toFloat()
+                            val square = if (face) anchors?.rects?.get("square" + it.toKey!!.removePrefix("orb")) else null
+                            // F6: at a player the charge flies to its landing place beside the picture ([chargeAim]).
+                            val aim = if (face) chargeAim(a, b, square, low) else null; val to = aim ?: b.center
+                            val dx = to.x - a.center.x; val dy = to.y - a.center.y
                             val dist = kotlin.math.hypot(dx, dy).coerceAtLeast(1f); val ux = dx / dist; val uy = dy / dist
-                            // Windup (pull back 10 % of the way, grow to 1.12), lunge to contact, a 110 ms hit-stop, a beat at the target,
-                            // then spring home with an overshoot (420 ms).
-                            val reach = (dist - minOf(b.width, b.height) * .42f - minOf(a.width, a.height) * .3f).coerceAtLeast(0f)
-                            val pull = dist * .10f
-                            val w0 = LUNGE_WIND; val h = LUNGE_HIT; val stop = h + 110f / it.dur; val home = 1f - 420f / it.dur
-                            val off = when {
-                                p < w0 -> -pull * smooth(0f, w0, p)
-                                p < h -> { val q = (p - w0) / (h - w0); -pull + (reach + pull) * q * q * q }
-                                p < home -> reach
-                                else -> { val q = (p - home) / (1f - home); reach * (1f - easeOutBack(q)) }
-                            }
+                            val off = Strike.offset(face, ms, if (aim != null) dist else strikeReach(a, b, face, square), strikePull(dist, density))
                             translationX = ux * off; translationY = uy * off
-                            val sc = when { p < w0 -> 1f + .12f * smooth(0f, w0, p); p < home -> 1.12f; else -> 1.12f - .12f * smooth(home, 1f, p) }
+                            var sc = Strike.scale(face, ms, TableFeel.chargeSwell())
+                            // F6: the picture it flies at is not on the board box, which jolts and pushes in under the card. So the card
+                            // holds its own line in the window (the box's move is taken back out of it) and lands on the place it aimed at.
+                            val turn = pivot
+                            if (aim != null && turn != null) { val (cx, cy, zoom) = camera(t)
+                                val wx = a.center.x + ux * off; val wy = a.center.y + uy * off
+                                translationX = (wx - turn.x - cx * density) / zoom + turn.x - a.center.x; translationY = (wy - turn.y - cy * density) / zoom + turn.y - a.center.y
+                                sc /= zoom }
                             scaleX = sc; scaleY = sc; shadowElevation = 20f
-                            if (p in h..stop) { translationX = ux * reach; translationY = uy * reach }
+                            // It leans back on the pull, into the blow on the strike (a face hit spins in), and straightens going home.
+                            val lean = if (ux >= 0f) 1f else -1f; val w = Strike.wind(face); val h = Strike.hit(face); val home = Strike.homeAt(face)
+                            val far = if (face) -26f else 1.2f
+                            rotationZ = lean * when {
+                                ms < w -> (if (face) 4.6f else -2.3f) * (ms / w)
+                                ms < h -> { val q = (ms - w) / (h - w); (if (face) 4.6f else -2.3f) * (1f - q) + far * q }
+                                ms < home -> far
+                                else -> far * (1f - ((ms - home) / Strike.homeMs(face)).coerceAtMost(1f))
+                            }
                         }
                     }
                     Fx.COUNTER -> if (p >= 0f) { val k = .03f * sin(PI.toFloat() * p); scaleX = 1f + k; scaleY = 1f + k }
+                    // F5: the card the clock stops for lifts 16 dp and grows to 1.14 while the grey is in.
+                    Fx.CLOCK -> if (p >= 0f) { val e = TableFeel.clockIn(p * it.dur, it.dur)
+                        scaleX *= 1f + TableFeel.CLOCK_GROW * e; scaleY *= 1f + TableFeel.CLOCK_GROW * e; translationY -= TableFeel.CLOCK_LIFT.dp.toPx() * e; shadowElevation = 22f * e }
                     // sTrig: 180 ms up to 1.12x and 18 px toward the middle on a 145 px card (so 18/145 of the tile's height), held 260 ms, 180 ms back.
                     Fx.TRIG_SOURCE -> if (p >= 0f) {
                         val ms = p * it.dur; val e = smooth(0f, 180f, ms) * (1f - smooth(440f, 620f, ms))
@@ -667,13 +1147,140 @@ class Battlefield {
     }
 }
 
+/** How far the attacker travels to touch what it strikes: a tile's near edge, or well into a profile picture. */
+internal fun strikeReach(a: Rect, b: Rect, face: Boolean, square: Rect? = null): Float {
+    val dx = b.center.x - a.center.x; val dy = b.center.y - a.center.y
+    val dist = kotlin.math.hypot(dx, dy)
+    if (!face) return (dist - minOf(b.width, b.height) * .42f - minOf(a.width, a.height) * .3f).coerceAtLeast(0f)
+    // The picture sits on its player's square, which is drawn over the board: the attacker stops where its line meets the
+    // square's edge (it is .45 of its size there, and only its tip goes under), so the blow is seen and not hidden under the glass.
+    if (square != null && dist > 1f && !square.contains(a.center)) {
+        val ux = dx / dist; val uy = dy / dist
+        fun slab(o: Float, u: Float, lo: Float, hi: Float): Pair<Float, Float> = if (kotlin.math.abs(u) < 1e-4f) (if (o in lo..hi) Float.NEGATIVE_INFINITY to Float.POSITIVE_INFINITY else Float.POSITIVE_INFINITY to Float.NEGATIVE_INFINITY)
+            else { val t0 = (lo - o) / u; val t1 = (hi - o) / u; minOf(t0, t1) to maxOf(t0, t1) }
+        val (x0, x1) = slab(a.center.x, ux, square.left, square.right); val (y0, y1) = slab(a.center.y, uy, square.top, square.bottom)
+        val enter = maxOf(x0, y0); val leave = minOf(x1, y1)
+        if (enter in 0f..leave) return (enter - maxOf(a.width, a.height) * .45f * .4f).coerceIn(0f, dist)
+    }
+    return (dist - minOf(b.width, b.height) * .25f).coerceAtLeast(0f)
+}
+/**
+ * F6 (the look pass, 12 Nov): where a charging attacker's middle comes to rest at a player. The picture [orb] sits at one end of
+ * its player's [square] with the life total under it. The attacker (small by then, and drawn over the square) lands beside the
+ * picture on the square's open side, a little above the picture's middle, with its near corner on the picture's rim: it touches
+ * what it hits and the life total stays in the clear. Null with Match effects off or with no square: P5's line, as it was.
+ */
+internal fun chargeAim(a: Rect, orb: Rect, square: Rect?, low: Boolean = false): Offset? {
+    if (square == null || !TableFeel.charged(low)) return null
+    val side = if (square.center.x >= orb.center.x) 1f else -1f
+    return Offset(orb.center.x + side * (orb.width / 2 + a.width * TableFeel.CHARGE_FIST * .42f), orb.center.y - orb.height * .12f)
+}
+/** The pull back: a tenth of the way, at most 30 dp. */
+internal fun strikePull(dist: Float, density: Float) = minOf(dist * .1f, 30f * density)
+
 val LocalBattlefield = staticCompositionLocalOf<Battlefield?> { null }
+/** 0.4.59 T5: the cast's travel leg right now (TableScreen provides the controller's), read by TravelCard, the stack and the aura strips. */
+val LocalTravel = androidx.compose.runtime.compositionLocalOf<dev.cardstashy.nativeplay.match.TravelMoment?> { null }
+internal val TRAVEL_LANDS = setOf(dev.cardstashy.nativeplay.match.Director.Leg.TO_SLOT, dev.cardstashy.nativeplay.match.Director.Leg.TO_HOST, dev.cardstashy.nativeplay.match.Director.Leg.TO_GROUP)
+/** Screenshots and tests: where in its leg the travelling card is drawn (0..1); null runs on the frame clock. */
+internal object TravelClock { var fixed: Float? = null }
 /** The table's sound player (id, volume, playback rate); none outside a match and in tests. */
 val LocalTableCue = staticCompositionLocalOf<((String, Float, Float) -> Unit)?> { null }
+/** The sound player's ear for [Battlefield.onPlan]: the board's revision and the cues its effects will play themselves. */
+val LocalTablePlan = staticCompositionLocalOf<((Long, Set<String>) -> Unit)?> { null }
 
 private val MANA_GLOW = mapOf('W' to Color(0xFFFFF1C2), 'U' to Color(0xFF5AB4FF), 'B' to Color(0xFFB08BD8), 'R' to Color(0xFFFF7A4A), 'G' to Color(0xFF6BE08A))
 
 private fun easeOutBack(x: Float): Float { val c1 = 1.70158f; val c3 = c1 + 1f; return 1f + c3 * (x - 1f).let { it * it * it } + c1 * (x - 1f).let { it * it } }
+/** Match punch P4: on a new turn the untap ripple starts 140 ms in (each tile 240 ms, 50 apart) and the draw 380 ms in. */
+internal const val UNTAP_AT_MS = 140L
+internal const val UNTAP_GAP_MS = 50L
+internal const val UNTAP_TURN_MS = 240
+internal const val DRAW_AT_MS = 380L
+/** P4, your draw: lift 90, flip and fly 320, hold 380, tuck 260. */
+internal const val MY_DRAW_MS = 1050L
+
+/** P5: the creatures that have just been declared as attackers, in the order they step up (Forge's attack order, then the board's). */
+internal fun declareOrder(a: MatchState, b: MatchState): List<Int> {
+    val was = a.players.flatMap { it.battlefield }.filter { it.attacking }.map { it.id }.toSet()
+    val now = b.players.flatMap { it.battlefield }.filter { it.attacking && it.id !in was }.map { it.id }
+    if (now.isEmpty()) return now
+    val said = b.events.lastOrNull { it.type == "attack" && it.attackers.isNotEmpty() }?.attackers?.map { it.first.id }.orEmpty().filter { it in now }
+    return said + now.filter { it !in said }
+}
+
+/**
+ * P4: the cards the player whose turn began readied, in the order the ripple runs: the back row (lands) left to right as Forge
+ * lists them, then the rest. Read from the two boards; nothing is predicted.
+ */
+internal fun untapOrder(a: MatchState, b: MatchState): List<Int> {
+    if (a.turn == b.turn) return emptyList()
+    val was = a.players.flatMap { it.battlefield }.filter { it.tapped }.map { it.id }.toSet()
+    val now = b.players.firstOrNull { it.id == b.activePlayer }?.battlefield.orEmpty().filter { !it.tapped && it.id in was }
+    return (now.filter { it.isLand } + now.filter { !it.isLand }).map { it.id }
+}
+
+/** P4: the ice ring and eight sparks around your drawn card as it holds above the hand (the card itself is [DrawnCard]). */
+private fun DrawScope.drawMyDraw(fx: Battlefield, it: FxItem, p: Float, hand: Rect?) {
+    val ms = p * it.dur
+    if (ms < 410f || fx.low || hand == null) return
+    val at = Offset(hand.center.x, hand.top - hand.height * .55f)
+    if (it.once(1)) fx.bits.sparks(at, 8, Color(0xFF5CC8FF), fx.now.longValue, 110f * density, lifeMs = 420, sizePx = 1.5f * density, seed = it.card ?: 0)
+}
+
+/** P4: where your drawn card is at [ms] into its draw: centre (root px), scale against its hand size, how far it has flipped (0 back, 1 face), alpha. */
+internal fun myDrawAt(ms: Float, lib: Offset, spot: Offset, home: Offset, dp: Float): FloatArray {
+    val out = FloatArray(5)
+    when {
+        ms < 90f -> { val e = 1f - (1f - ms / 90f).let { it * it }; out[0] = lib.x; out[1] = lib.y - 18f * dp * e; out[2] = .3f + .2f * e; out[3] = 0f }
+        ms < 410f -> { val q = (ms - 90f) / 320f; val e = 1f - (1f - q).let { it * it * it }
+            out[0] = lib.x + (spot.x - lib.x) * e; out[1] = lib.y - 18f * dp + (spot.y - (lib.y - 18f * dp)) * e; out[2] = .5f + 1.1f * e; out[3] = q }
+        ms < 790f -> { out[0] = spot.x; out[1] = spot.y; out[2] = 1.6f; out[3] = 1f }
+        else -> { val q = ((ms - 790f) / 260f).coerceIn(0f, 1f); val e = q * q * (3f - 2f * q)
+            out[0] = spot.x + (home.x - spot.x) * e; out[1] = spot.y + (home.y - spot.y) * e; out[2] = 1.6f - .6f * e; out[3] = 1f }
+    }
+    out[4] = 1f
+    return out
+}
+
+@Composable
+private fun DrawnCard(it: FxItem, fx: Battlefield, anchors: Anchors, self: Offset, density: androidx.compose.ui.unit.Density) {
+    val card = it.ghost ?: return
+    Box(Modifier.size(66.dp, 92.dp).graphicsLayer {
+            val p = it.p(fx.now.longValue)
+            anchors.version.intValue
+            val lib = it.fromKey?.let { k -> anchors.rects[k] }
+            val tray = anchors.rects["handTray"] ?: anchors.rects["hand"]
+            if (p < 0f || lib == null || tray == null) { alpha = 0f; return@graphicsLayer }
+            val home = it.toKey?.let { k -> anchors.rects[k] }
+            val base = home?.height ?: (tray.height * .86f)
+            val spot = Offset(tray.center.x, tray.top - base * .55f)
+            val at = myDrawAt(p * it.dur, lib.center, spot, home?.center ?: tray.center, density.density)
+            val k = at[2] * base / size.height
+            transformOrigin = androidx.compose.ui.graphics.TransformOrigin(.5f, .5f)
+            translationX = at[0] - self.x - size.width / 2; translationY = at[1] - self.y - size.height / 2
+            // The flip: the back narrows to nothing at the half-way point and the face widens again.
+            scaleX = k * abs(cos(PI.toFloat() * at[3])).coerceAtLeast(.02f); scaleY = k
+            alpha = if (p >= 1f) 0f else 1f
+        }.semantics { contentDescription = "${card.name} drawn" }
+        .clip(RoundedCornerShape(5.dp)).background(Color(0xFF141418))
+        .drawWithContent {
+            drawContent()
+            // The ice ring while it holds above the hand.
+            val ms = it.p(fx.now.longValue) * it.dur
+            if (ms in 410f..790f) drawRoundRect(Color(0xFF5CC8FF).copy(alpha = .9f * (1f - (ms - 410f) / 380f * .5f)), Offset.Zero, size, CornerRadius(5f * density.density), style = Stroke(width = 2.5f * density.density))
+        }) {
+        CardImage(card.name, Modifier.fillMaxSize().graphicsLayer { alpha = if (it.p(fx.now.longValue) * it.dur >= 250f) 1f else 0f }, crop = false)
+        Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (it.p(fx.now.longValue) * it.dur >= 250f) 0f else 1f }) { CardBack(Modifier.fillMaxSize()) }
+    }
+}
+
+/** The preview's E.elastic: 0 at 0, overshooting and ringing down to 1 (a squash springing back). */
+internal fun elasticOut(x: Float): Float = if (x <= 0f) 0f else if (x >= 1f) 1f else Math.pow(2.0, -10.0 * x).toFloat() * sin((x * 10f - .75f) * (2f * PI.toFloat() / 3f)) + 1f
+/** P3: a landing's impact as a whole (the neighbours' 620 ms spring is its longest part). */
+internal const val IMPACT_MS = 620L
+/** Ease out with a small overshoot (the preview's E.back, c = 1.9): 0 at 0, 1 at 1, about 1.12 at its peak. */
+internal fun backOut(x: Float): Float { val c = 1.9f; val y = x - 1f; return 1f + (c + 1f) * y * y * y + c * y * y }
 private fun smooth(e0: Float, e1: Float, x: Float): Float { val t = ((x - e0) / (e1 - e0)).coerceIn(0f, 1f); return t * t * (3f - 2f * t) }
 private fun lerpO(a: Offset, b: Offset, t: Float) = Offset(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)
 
@@ -682,12 +1289,15 @@ private fun lerpO(a: Offset, b: Offset, t: Float) = Offset(a.x + (b.x - a.x) * t
 internal fun FxDriver(fx: Battlefield, st: MatchState) {
     val anchors = LocalAnchors.current
     val view = androidx.compose.ui.platform.LocalView.current
-    SideEffect { fx.onImpact = { kind -> if (AppSettings.haptics) Feel.perform(view, when (kind) { "light" -> "pack-deal"; "heavy" -> "pack-rumble"; else -> "pack-reveal" }) } }
+    // Living table F9: the match's vibration has its own setting ("Match vibration"), and is off in Reduced.
+    SideEffect { fx.onImpact = { kind -> if (TableFeel.vibrates()) Feel.perform(view, TableFeel.vibration(kind), own = true) } }
     val cue = LocalTableCue.current
     val reduced = androidx.compose.runtime.remember { Playmats.reduced(view.context) }
-    SideEffect { fx.onCue = cue; fx.reduced = reduced; fx.low = AppSettings.effects == "minimal" }
+    val plan = LocalTablePlan.current
+    SideEffect { fx.onCue = cue; fx.onPlan = plan; fx.reduced = reduced; fx.low = AppSettings.effects == "minimal"; fx.promptWaiting = st.prompt != null && st.waitingOnMe }
     val trig = LocalTrigger.current
-    SideEffect { fx.trigger(trig, st, anchors); fx.take(st, anchors) }
+    val travel = LocalTravel.current
+    SideEffect { fx.travel = travel; fx.board = st; fx.trigger(trig, st, anchors); fx.take(st, anchors) }
     LaunchedEffect(fx) { if (!Motion.still) while (true) withFrameMillis { fx.tick(it) } }
 }
 
@@ -805,15 +1415,21 @@ internal fun FxLayer(force: Boolean = false) {
     var self by remember { mutableStateOf(Offset.Zero) }
     val tm = rememberTextMeasurer()
     val density = LocalDensity.current
-    Box(Modifier.fillMaxSize().onGloballyPositioned { val b = it.boundsInRoot(); self = b.topLeft; fx.stageCentre = b.center }) {
+    Box(Modifier.fillMaxSize().onGloballyPositioned { val b = it.boundsInRoot(); self = b.topLeft; fx.origin = b.topLeft; fx.stageCentre = b.center }) {
         // Dying cards: the last picture of the card, breaking into holo bands as it drifts to its graveyard.
-        for (it in fx.items) if (it.kind == Fx.DEATH && it.ghost != null && it.from != null) key(it) { Ghost(it, fx, anchors, self, density) }
+        for (it in fx.items) if ((it.kind == Fx.DEATH || (it.kind == Fx.SPENT && !fx.reduced)) && it.ghost != null && it.from != null) key(it) { Ghost(it, fx, anchors, self, density) }
+        // P4: your drawn card itself, on its way from your deck to its place in your hand.
+        if (!fx.reduced) for (it in fx.items) if (it.kind == Fx.DRAW && it.ghost != null) key(it) { DrawnCard(it, fx, anchors, self, density) }
+        // Every Result Names Its Cause: the plates, over the streaks and the dying cards.
+        CausePlates(fx.items.filter { it.kind == Fx.PLATE }, fx, anchors, self)
         Canvas(Modifier.fillMaxSize()) {
             val t = fx.now.longValue
             anchors.version.intValue
             fun rect(k: String?): Rect? = k?.let { anchors.rects[it] }?.translate(-self.x, -self.y)
             var bandAt: Rect? = null
             fun band(): Rect = bandAt ?: trailBand(size.width, size.height, anchors.rects.mapValues { (_, r) -> r.translate(-self.x, -self.y) }, 4.dp.toPx()).also { bandAt = it }
+            // F5: while the clock is stopped, grey lies over everything under this layer but the lifted card and its shield; the effects below are drawn over it, in colour.
+            fx.items.firstOrNull { it.kind == Fx.CLOCK && it.p(t) >= 0f }?.let { drawGrey(TableFeel.clockIn(it.p(t) * it.dur, it.dur), rect("c${it.card}"), rect("loyalty${it.card}")) }
             for (it in fx.items) {
                 val p = it.p(t); if (p < 0f) continue
                 if (fx.reduced) {
@@ -827,32 +1443,64 @@ internal fun FxLayer(force: Boolean = false) {
                         // Reduce motion: the source keeps one still rim; the landing keeps its words (the change, the chip, the line), unmoving.
                         Fx.TRIG_SOURCE -> rect("c${it.card}")?.let { r -> glowRing(r, it.tone, .9f * (1f - smooth(.8f, 1f, p)), 8.dp.toPx()) }
                         Fx.TRIG_LAND -> drawTrigLand(tm, it, p, rect(it.fromKey), rect(it.toKey), still = true, band = band())
+                        Fx.IMPACT -> rect("c${it.card}")?.let { r -> drawImpact(fx, it, p, r) }
                         else -> {}
                     }
                     continue
                 }
                 when (it.kind) {
-                    Fx.DRAW -> drawDraw(it, p, rect(it.fromKey), rect(it.toKey) ?: Rect(size.width / 2 - 20f, size.height - 60f, size.width / 2 + 20f, size.height))
+                    Fx.AIM -> rect(it.toKey)?.let { r -> val q = (p * AIM_MS / 260f).coerceAtMost(1f)
+                        if (q < 1f) drawCircle(it.tone.copy(alpha = .9f * (1f - q)), radius = r.maxDimension * (.95f - .4f * q), center = r.center, style = Stroke(3.dp.toPx() * (1f - .5f * q))) }
+                    Fx.FIRE -> drawFire(it, p, it.from?.translate(-self.x, -self.y), rect(it.toKey))
+                    Fx.BOLT -> (rect("c${it.card}") ?: it.from?.translate(-self.x, -self.y))?.let { r -> drawBolt(fx, it, p, r, rect(it.fromKey)) }
+                    Fx.SPENT -> rect(it.toKey)?.let { g -> val k = (p * SPENT_MS - 320f) / 300f
+                        if (k in 0f..1f) drawCircle(Color(0xFFF3D27E).copy(alpha = .9f * (1f - k)), radius = 15.dp.toPx() + 25.dp.toPx() * (1f - (1f - k) * (1f - k)), center = g.center, style = Stroke((2f * (1f - k) + .6f) * density.density)) }
+                    Fx.GLINT -> rect("c${it.card}")?.let { r -> drawRoundRect(it.tone.copy(alpha = (if (it.power > 0f) it.power else .4f) * (1f - p)), r.topLeft, r.size, CornerRadius(10.dp.toPx())) }
+                    Fx.DRAW -> if (it.ghost != null) drawMyDraw(fx, it, p, rect("handTray") ?: rect("hand")) else drawDraw(it, p, rect(it.fromKey), rect(it.toKey) ?: Rect(size.width / 2 - 20f, size.height - 60f, size.width / 2 + 20f, size.height))
                     Fx.CAST -> drawCast(it, p, rect(it.fromKey) ?: (if (it.mine) Rect(size.width / 2, size.height - 40f, size.width / 2, size.height) else Rect(size.width / 2, 0f, size.width / 2, 20f)), rect(it.toKey))
                     Fx.RESOLVE -> drawResolve(it, p, it.from?.translate(-self.x, -self.y), rect(it.toKey))
                     Fx.ARRIVE -> rect("c${it.card}")?.let { r -> if (it.entrance > 0) drawEntrance(tm, it, p, r, fx.stageCentre?.let { c -> c - self }) else drawArrive(it, p, r) }
                     Fx.TOKEN -> rect("c${it.card}")?.let { r -> drawToken(p, r) }
-                    Fx.ATTACK -> rect("c${it.card}")?.let { r -> glowRing(r, Color(0xFFFFD98A), .9f * smooth(0f, .5f, p) * (1f - smooth(.8f, 1f, p)), 17.dp.toPx()) }
-                    Fx.LUNGE -> drawLunge(it, p, rect("c${it.card}"), rect(it.toKey), fx.low)
+                    Fx.ATTACK -> rect("c${it.card}")?.let { r -> drawDeclare(fx, it, p, r) }
+                    Fx.LUNGE -> drawLunge(fx, it, rect("c${it.card}"), rect(it.toKey), if (Strike.face(it)) rect("square" + it.toKey!!.removePrefix("orb")) else null, if (Strike.face(it)) rect("lifepill" + it.toKey!!.removePrefix("orb")) else null)
                     Fx.BLOCK -> { val a = rect(it.fromKey); val b = rect(it.toKey); if (a != null && b != null) drawBlock(tm, it, p, a, b) }
-                    Fx.DAMAGE -> rect("c${it.card}")?.let { r -> drawHit((p * 3.1f).coerceAtMost(1f), r)
+                    Fx.DAMAGE -> rect("c${it.card}")?.let { r ->
+                        // F6: a charge draws the hit itself, where the cards meet; its two numbers add no flash and no ring at the cards' homes.
+                        if (!it.charged && TableFeel.charged(fx.low) && fx.items.any { l -> l.kind == Fx.LUNGE && (l.card == it.card || l.toKey == "c${it.card}") }) it.charged = true
+                        if (!it.charged) drawHit((p * 3.1f).coerceAtMost(1f), r)
                         // An attacker's number sits lower left and a blocker's upper right, so two never stack and the P/T stays readable.
                         // Away from the clash: a card in the upper half shows it above-left, one in the lower half below-right.
                         val at = if (it.side == 0) r.center.copy(y = r.top + r.height * .3f) else if (r.center.y < size.height / 2) Offset(r.left - r.width * .2f, r.top - r.height * .15f) else Offset(r.right + r.width * .2f, r.bottom + r.height * .05f)
                         bigNumber(tm, it.label, p, at, it.tone, if (size.height < 500.dp.toPx()) 40f else 52f) }
-                    Fx.LIFE -> rect(it.toKey)?.let { r -> if (it.level == 3) faceHit(it, p, r, fx.low) else glowRing(r, it.tone, .8f * (1f - p), 6.dp.toPx(), round = true); pop(tm, it.label, p, Offset(r.center.x, if (r.center.y < size.height / 2) r.bottom + 16.dp.toPx() else r.top - 6.dp.toPx()), it.tone, if (it.level == 3) 34f + 8f * it.power else 20f, down = r.center.y < size.height / 2) }
+                    Fx.LIFE -> rect(it.toKey)?.let { r ->
+                        // F6 (the look pass): a blow to a player is one clean hit. A charge draws it where the card lands; a loss that
+                        // comes without one (a spell, an ability) draws the same burst on the picture, once, in its own colour.
+                        if (it.level == 3 && it.marks and 32 == 0 && TableFeel.charged(fx.low)) { it.marks = it.marks or 32
+                            it.charged = true; it.bursts = fx.items.none { l -> l.kind == Fx.LUNGE && l.toKey == it.toKey } }
+                        if (it.level == 3) faceHit(fx, it, p, r, fx.low, quiet = it.charged, square = rect("square" + it.toKey!!.removePrefix("orb"))) else glowRing(r, it.tone, .8f * (1f - p), 6.dp.toPx(), round = true)
+                        if (it.charged && it.bursts) { val rim = minOf(r.width, r.height) / 2
+                            if (it.once(64)) fx.bits.sparks(r.center, 10, TableFeel.hot(it.tone, .3f), fx.now.longValue, 240.dp.toPx(), lifeMs = 460, sizePx = 2.dp.toPx(), seed = (it.player ?: 0) and 0xff)
+                            hitBurst(p * it.dur, r.center, r.center, rim, it.tone, (it.player ?: 0) and 0xff, null, rect("lifepill" + it.toKey!!.removePrefix("orb"))) }
+                        // The number pops on the struck picture and rises 14 dp off it, so the life total under it ticks down in the clear.
+                        if (it.charged) pop(tm, it.label, p, r.center - Offset(0f, 2.dp.toPx()), it.tone, TableFeel.CHARGE_NUMBER_SP)
+                        else pop(tm, it.label, p, Offset(r.center.x, if (r.center.y < size.height / 2) r.bottom + 16.dp.toPx() else r.top - 6.dp.toPx()), it.tone, if (it.level == 3) 34f + 8f * it.power else 20f, down = r.center.y < size.height / 2) }
                     Fx.COUNTER -> rect("c${it.card}")?.let { r -> drawPour(p, r); pop(tm, it.label, p, Offset(r.center.x, r.top + 4.dp.toPx()), Color(0xFFF3D27E), 15f) }
-                    Fx.DEATH -> if (!fx.low) it.from?.translate(-self.x, -self.y)?.let { r -> drawShards(it, p, r, rect(it.toKey)) }
+                    Fx.DEATH -> if (!fx.low && it.toKey == null) it.from?.translate(-self.x, -self.y)?.let { r -> drawShards(it, p, r, rect(it.toKey)) }
+                    Fx.EMBERS -> if (!fx.low) it.from?.translate(-self.x, -self.y)?.let { r -> drawEmbers(fx, it, p, r, rect(it.toKey)) }
                     Fx.STAGE -> drawStage(tm, it, p, rect(it.fromKey), rect(it.toKey))
                     Fx.TRIG_SOURCE -> rect("c${it.card}")?.let { r -> drawTrigSource(it, p, r) }
                     Fx.TRIG_LAND -> drawTrigLand(tm, it, p, rect(it.fromKey), rect(it.toKey), band = band())
+                    Fx.IMPACT -> rect("c${it.card}")?.let { r -> drawImpact(fx, it, p, r) }
+                    Fx.HEAVY -> rect("c${it.card}")?.let { r -> drawHeavy(fx, it, p, r, self) }
+                    Fx.WIN -> drawWin(fx, it, p, rect(it.toKey), it.ids.mapNotNull { id -> rect("orb$id") })
+                    Fx.CLOCK -> (rect("c${it.card}") ?: it.from?.translate(-self.x, -self.y))?.let { r -> drawClock(tm, it, p, r, rect("loyalty${it.card}")) }
+                    Fx.PLATE -> {} // a composable of its own (CausePlate), over this canvas
                 }
             }
+            // P2: a cast's pay (each land's flash and streak), charge and burst, read from the leg the table is drawing.
+            fx.travel?.let { m -> drawCastPunch(fx, m, ::rect) }
+            // P1: every particle on this one canvas, over the effects. None with reduce motion or Effects Minimal.
+            if (fx.reduced || fx.low) fx.bits.clear() else fx.bits.draw(this, t)
         }
     }
 }
@@ -1000,6 +1648,146 @@ private fun DrawScope.drawTrigLand(tm: androidx.compose.ui.text.TextMeasurer, it
 
 @Composable private fun key(k: Any, content: @Composable () -> Unit) = androidx.compose.runtime.key(k) { content() }
 
+/** The gap between two plates of one result (a plate stays for its result's beat: in 200, read, out 260). */
+internal const val PLATE_GAP_MS = dev.cardstashy.nativeplay.match.Director.PLATE_GAP_MS
+/** The plate's light: exile and return (as the approved preview's "LIGHT"). Gold is [TRIG_GOLD], a loss [TRIG_CORAL]. */
+internal val PLATE_LIGHT = Rule.Cause.Light
+
+/**
+ * One cause plate: where it sits ([key], else [orKey]), its word, its second line, the picture it carries ("" for none), its
+ * colour; [streak]: a trigger's light runs to it first; [about]: the card it is about; [beside]: that card stays on the table.
+ */
+internal data class CausePlateSpec(val key: String, val title: String, val sub: String, val art: String, val tone: Color, val orKey: String? = null, val streak: Boolean = true,
+                                   val about: String = "", val beside: Boolean = false)
+
+/**
+ * EVERY RESULT NAMES ITS CAUSE (approved preview 14 Nov): the plates of one result, in the order they show. Each card it moved
+ * gets its word and "by <the card that did it>"; an Aura that fell off with it says what became of its permanent; cards drawn,
+ * discarded or milled share one plate at the hand or the pile; an ability it countered gets its plate on the card whose ability
+ * it was (a spell: on the stack); a ward that was paid says who paid. Six at most ([Director.Resolution.plateCount]).
+ */
+internal fun causePlates(r: dev.cardstashy.nativeplay.match.Director.Resolution, viewer: Int): List<CausePlateSpec> {
+    // Forge gave the cause no name: the plate says "a trigger" and carries no picture.
+    val by = r.sourceName ?: "a trigger"; val art = r.sourceName.orEmpty()
+    val out = ArrayList<CausePlateSpec>()
+    fun at(m: dev.cardstashy.nativeplay.match.Director.Move) = "c${m.cardId}"
+    fun n(l: List<*>) = if (l.size == 1) "" else " ${l.size}"
+    fun whose(name: String) = if (name.endsWith("s")) "$name'" else "$name's"
+    for ((went, l) in r.moves.groupBy { it.went }) when (went) {
+        dev.cardstashy.nativeplay.match.Director.Went.EXILED -> l.forEach { out += CausePlateSpec(at(it), "EXILED", "by $by", art, PLATE_LIGHT, about = it.cardName.orEmpty()) }
+        dev.cardstashy.nativeplay.match.Director.Went.DESTROYED -> l.forEach { out += CausePlateSpec(at(it), "DESTROYED", "by $by", art, TRIG_CORAL, about = it.cardName.orEmpty()) }
+        dev.cardstashy.nativeplay.match.Director.Went.SACRIFICED -> l.forEach { out += CausePlateSpec(at(it), "SACRIFICED", "to $by", art, TRIG_CORAL, about = it.cardName.orEmpty()) }
+        dev.cardstashy.nativeplay.match.Director.Went.TO_GRAVE -> l.forEach { out += CausePlateSpec(at(it), "TO THE GRAVEYARD", "by $by", art, TRIG_CORAL, about = it.cardName.orEmpty()) }
+        dev.cardstashy.nativeplay.match.Director.Went.TO_HAND -> l.forEach { out += CausePlateSpec(at(it), "RETURNED TO HAND", "by $by", art, PLATE_LIGHT, about = it.cardName.orEmpty()) }
+        // A follow-up: the card that left is the cause ("Sheltered by Ghosts left"); a resolve's own return says "by".
+        dev.cardstashy.nativeplay.match.Director.Went.RETURNED -> l.forEach { out += CausePlateSpec(at(it), "RETURNED", if (r.follow) "$by left" else "by $by", art, PLATE_LIGHT, streak = !r.follow,
+            about = it.cardName.orEmpty(), beside = true) }
+        // The Aura's own picture, on the permanent it was on (so it joins that permanent's own plate in one column), else where
+        // its strip sat; the permanent is the cause.
+        dev.cardstashy.nativeplay.match.Director.Went.FELL_OFF -> l.forEach { out += CausePlateSpec(it.hostId?.let { h -> "c$h" } ?: "aura${it.cardId}", "FELL OFF", "${it.hostName ?: by} ${if (it.hostDied) "died" else "left"}",
+            it.cardName.orEmpty(), TRIG_GOLD, orKey = "aura${it.cardId}", streak = false, about = it.cardName.orEmpty()) }
+        dev.cardstashy.nativeplay.match.Director.Went.DREW -> for ((p, d) in l.groupBy { it.player }) out += if (p == viewer)
+            CausePlateSpec(d.last().cardId?.let { "hand$it" } ?: "handTray", "DREW ${d.size}", "from $by", art, TRIG_GOLD, orKey = "handTray")
+            else CausePlateSpec("cpuhand", "CPU DREW ${d.size}", "from $by", art, TRIG_GOLD)
+        dev.cardstashy.nativeplay.match.Director.Went.DISCARDED -> for ((p, d) in l.groupBy { it.player }) out += CausePlateSpec("grave$p", (if (p == viewer) "DISCARDED" else "CPU DISCARDED") + n(d), "by $by", art, TRIG_CORAL)
+        dev.cardstashy.nativeplay.match.Director.Went.MILLED -> for ((p, d) in l.groupBy { it.player }) out += CausePlateSpec("grave$p", "MILLED ${d.size}", "by $by", art, TRIG_CORAL)
+    }
+    val ward = r.text?.trimStart()?.startsWith("Ward", ignoreCase = true) == true
+    // A countered ability: on the card whose ability it was (it is still on the table), else where the item stood on the stack.
+    for (c in r.countered) out += CausePlateSpec(if (c.ability && c.sourceId != null) "c${c.sourceId}" else "stackcard", if (c.ability) "ABILITY COUNTERED" else "SPELL COUNTERED",
+        if (ward) "${whose(by)} ward was not paid" else "by $by", art, TRIG_CORAL, orKey = "stackcard", streak = false, about = c.sourceName.orEmpty(), beside = c.ability)
+    if (r.paid != null) out += CausePlateSpec("c${r.sourceId}", if (r.paid.all { it.isDigit() }) "WARD ${r.paid}" else "WARD", (if (r.paidBy == viewer) "You" else "CPU") + " paid ${r.paid}", art, TRIG_GOLD,
+        streak = false, about = by, beside = true)
+    return out.take(6)
+}
+
+/**
+ * The cause plates of the moment, each on its card, a little under the card's middle, never off the table's edges. A plate on
+ * a card that stays (a ward paid, a card returned, an ability countered) stands just outside a tile too short to carry it
+ * between its name and its numbers (a phone's), on the side away from the table's middle line. Plates that would cover one
+ * another (a creature destroyed and the Auras that fell off it) stand in one column, running away from the middle line too.
+ */
+@Composable
+private fun CausePlates(plates: List<FxItem>, fx: Battlefield, anchors: Anchors, self: Offset) {
+    if (plates.isEmpty()) return
+    androidx.compose.ui.layout.Layout(content = { for (it in plates) key(it) { CausePlate(it, fx) } }) { ms, c ->
+        val placed = ms.map { it.measure(androidx.compose.ui.unit.Constraints(maxWidth = (c.maxWidth - 12.dp.roundToPx()).coerceAtLeast(0))) }
+        layout(c.maxWidth, c.maxHeight) {
+            anchors.version.intValue
+            val pad = 6.dp.roundToPx(); val gap = 4.dp.roundToPx()
+            val taken = ArrayList<androidx.compose.ui.unit.IntRect>()
+            placed.forEachIndexed { i, pl ->
+                val it = plates[i]
+                val r = (it.toKey?.let { k -> anchors.rects[k] } ?: it.fromKey?.let { k -> anchors.rects[k] })?.translate(-self.x, -self.y) ?: return@forEachIndexed
+                val spot = causePlateSpot(androidx.compose.ui.unit.IntRect(r.left.roundToInt(), r.top.roundToInt(), r.right.roundToInt(), r.bottom.roundToInt()), pl.width, pl.height, it.beside,
+                    c.maxWidth, c.maxHeight, pad, gap, taken)
+                taken += spot
+                pl.place(spot.left, spot.top)
+            }
+        }
+    }
+}
+
+/**
+ * Where one plate of [w] x [h] px stands for the card at [card] on a table of [tableW] x [tableH]: see [CausePlates]. [taken]
+ * are the plates already standing. Pure, so the rule is tested without a screen.
+ */
+internal fun causePlateSpot(card: androidx.compose.ui.unit.IntRect, w: Int, h: Int, beside: Boolean, tableW: Int, tableH: Int, pad: Int, gap: Int,
+                            taken: List<androidx.compose.ui.unit.IntRect>): androidx.compose.ui.unit.IntRect {
+    fun box(x: Int, y: Int) = androidx.compose.ui.unit.IntRect(x, y, x + w, y + h)
+    val maxY = (tableH - h - pad).coerceAtLeast(pad)
+    // Away from the middle line: down for the lower half (yours), up for the upper half.
+    val down = card.center.y >= tableH / 2
+    var x = (card.center.x - w / 2).coerceIn(pad, (tableW - w - pad).coerceAtLeast(pad))
+    var y = if (beside && card.height < h * 2.4f) (if (down) card.bottom + gap else card.top - gap - h) else (card.center.y + card.height * .06f - h / 2f).roundToInt()
+    y = y.coerceIn(pad, maxY)
+    var dir = if (down) 1 else -1
+    repeat(taken.size * 2) {
+        val hit = taken.firstOrNull { it.overlaps(box(x, y)) } ?: return box(x, y)
+        x = hit.left.coerceIn(pad, (tableW - w - pad).coerceAtLeast(pad))
+        var next = if (dir > 0) hit.bottom + gap else hit.top - gap - h
+        // The table ends first: the column turns and runs the other way from its far end.
+        if (next > maxY || next < pad) { dir = -dir; next = if (dir > 0) taken.maxOf { it.bottom } + gap else taken.minOf { it.top } - gap - h }
+        y = next.coerceIn(pad, maxY)
+    }
+    return box(x, y)
+}
+
+/**
+ * A cause plate (the approved preview's plate): dark glass with a rim in its colour, the cause's picture in a ring, its word in
+ * small capitals and the second line under it. It rises 10 dp into place in 200 ms, stands, and leaves upward in 260 ms; with
+ * reduce motion it only fades.
+ */
+@Composable
+private fun CausePlate(it: FxItem, fx: Battlefield) {
+    val shape = RoundedCornerShape(Rule.Radius.Button)
+    androidx.compose.foundation.layout.Row(Modifier
+        .graphicsLayer {
+            val p = it.p(fx.now.longValue)
+            if (p < 0f) { alpha = 0f; return@graphicsLayer }
+            val ms = p * it.dur
+            val inn = smooth(0f, 200f, ms); val out = smooth(it.dur - 260f, it.dur.toFloat(), ms)
+            alpha = inn * (1f - out)
+            if (!fx.reduced) translationY = (10f * (1f - inn) - 6f * out) * density
+        }
+        .shadow(10.dp, shape, clip = false)
+        .background(Brush.verticalGradient(listOf(Rule.Cause.GlassTop, Rule.Cause.GlassBottom)), shape)
+        .border(1.5.dp, it.tone, shape)
+        .padding(start = 7.dp, end = 13.dp, top = 5.dp, bottom = 5.dp)
+        // One sentence for a screen reader: the card it is about, the word, the cause.
+        .clearAndSetSemantics { contentDescription = listOf(it.about, it.label.lowercase(), it.note).filter { s -> s.isNotBlank() }.joinToString(" ") },
+        verticalAlignment = Alignment.CenterVertically) {
+        if (it.art.isNotBlank()) Box(Modifier.size(32.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Rule.Cause.Ink).border(1.5.dp, it.tone, androidx.compose.foundation.shape.CircleShape)) {
+            CardImage(it.art, Modifier.fillMaxSize(), crop = true)
+        }
+        androidx.compose.foundation.layout.Column(Modifier.padding(start = if (it.art.isNotBlank()) 8.dp else 6.dp)) {
+            androidx.compose.material3.Text(it.label, style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, letterSpacing = 1.4.sp, color = it.tone), maxLines = 1)
+            androidx.compose.material3.Text(it.note, style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Rule.Cause.Words), maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        }
+    }
+}
+
 @Composable
 private fun Ghost(it: FxItem, fx: Battlefield, anchors: Anchors, self: Offset, density: androidx.compose.ui.unit.Density) {
     val r = it.from!!
@@ -1015,21 +1803,27 @@ private fun Ghost(it: FxItem, fx: Battlefield, anchors: Anchors, self: Offset, d
             val p = it.p(fx.now.longValue)
             if (p < 0f) { alpha = 1f; return@graphicsLayer }
             if (fx.reduced) { alpha = 1f - smooth(.3f, 1f, p); return@graphicsLayer }
-            anchors.version.intValue
-            val grave = it.toKey?.let { k -> anchors.rects[k] }
             val drift = smooth(.28f, 1f, p)
-            if (grave != null) {
-                translationX = (grave.center.x - r.center.x) * drift
-                translationY = (grave.center.y - r.center.y) * drift
-                val s = 1f + (grave.width / gw - 1f) * drift; scaleX = s; scaleY = s
-                rotationZ = turn * (1f - drift) - 8f * drift * (if (it.mine) 1f else -1f)
-            } else { val s = 1f - .12f * drift; scaleX = s; scaleY = s; rotationZ = turn }
-            alpha = 1f - smooth(.7f, 1f, p)
+            if (it.kind == Fx.SPENT) {
+                // P6, After: the spent spell shrinks to .3 on its way to its owner's graveyard (320 ms, gathering speed) and is gone.
+                val q = (p * SPENT_MS / 320f).coerceAtMost(1f); val e = q * q * q
+                anchors.version.intValue
+                val g = it.toKey?.let { k -> anchors.rects[k] }
+                if (g != null) { translationX = (g.center.x - r.center.x) * e; translationY = (g.center.y - r.center.y) * e }
+                val s = 1f - .7f * e; scaleX = s; scaleY = s; alpha = 1f - smooth(.55f, 1f, q)
+            } else if (it.toKey != null) {
+                // P5, a kill: it shudders where it stands (240), then swells 18 % and is gone (200); its embers carry it to the square.
+                val ms = p * DEATH_MS; val q = (ms / 240f).coerceAtMost(1f); val out = ((ms - 240f) / 200f).coerceIn(0f, 1f)
+                rotationZ = turn + sin(q * 40f) * 2.9f * (1f - q)
+                val s = 1f + .18f * (1f - (1f - out) * (1f - out)); scaleX = s; scaleY = s
+                alpha = 1f - out
+            } else { val s = 1f - .12f * drift; scaleX = s; scaleY = s; rotationZ = turn; alpha = 1f - smooth(.7f, 1f, p) }
         }
         .drawWithContent {
-            if (fx.reduced || fx.low) { drawContent(); return@drawWithContent }
+            if (fx.reduced || fx.low || it.kind == Fx.SPENT) { drawContent(); return@drawWithContent }
             val p = it.p(fx.now.longValue).coerceAtLeast(0f)
-            val brk = smooth(.12f, .55f, p)
+            val kill = it.toKey != null; val ms = p * DEATH_MS
+            val brk = if (kill) smooth(240f, DEATH_MS.toFloat(), ms) else smooth(.12f, .55f, p)
             val n = 6; val bh = size.height / n
             for (i in 0 until n) {
                 val dx = (if (i % 2 == 0) 1f else -1f) * brk * (5f + i * 1.4f) * density.density
@@ -1042,11 +1836,16 @@ private fun Ghost(it: FxItem, fx: Battlefield, anchors: Anchors, self: Offset, d
                 drawLine(Brush.horizontalGradient(listOf(Color(0xFF6FF2FF), Color(0xFFE77CFF), Color(0xFFFFE07A), Color(0xFF6FF2FF))),
                     Offset(-4f, y), Offset(size.width + 4f, y), strokeWidth = 1.6f * density.density, alpha = (.9f * brk * (1f - smooth(.6f, 1f, p))))
             }
+            if (kill) {
+                // It greys as it shudders, then one white flash (160 ms) as it breaks.
+                drawRect(Color(0xFF55524E).copy(alpha = .62f * smooth(0f, 200f, ms)))
+                if (ms >= 240f && ms < 400f) drawRect(Color.White.copy(alpha = 1f - (ms - 240f) / 160f))
+            }
             // The hit-stop: a white flash for the first 70 ms.
-            if (p < .12f) drawRect(Color.White.copy(alpha = .45f * (1f - p / .12f)))
+            else if (p < .12f) drawRect(Color.White.copy(alpha = .45f * (1f - p / .12f)))
         }
         .clip(RoundedCornerShape(10.dp))) {
-        CardImage(it.ghost!!.name, Modifier.fillMaxSize(), crop = true) {
+        CardImage(it.ghost!!.name, Modifier.fillMaxSize(), crop = it.kind != Fx.SPENT) {
             val (a, b) = frameTone(cardColors(it.ghost))
             Box(Modifier.fillMaxSize().drawWithContent { drawRect(Brush.linearGradient(listOf(a, b))) })
         }
@@ -1188,63 +1987,248 @@ private fun DrawScope.drawToken(p: Float, r: Rect) {
     }
 }
 
-/** The strike (spec 3): ghost trails behind the lunge (5 for a clash, 7 for a face), then at contact a white-gold flash
- *  growing to 1.7x, two shock rings (white-gold, then orange 90 ms later, 620 ms) and sparks that fall (28, or 36 at a face). */
-private fun DrawScope.drawLunge(it: FxItem, p: Float, a: Rect?, b: Rect?, low: Boolean = false) {
+/** Draws [block] everywhere but inside the pill [r] (a box with round ends, or corners of [corner] px); all of it when [r] is null. */
+private inline fun DrawScope.clipOut(r: Rect?, corner: Float? = null, block: DrawScope.() -> Unit) {
+    if (r == null) block()
+    else clipPath(androidx.compose.ui.graphics.Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(r, CornerRadius(corner ?: (r.height / 2)))) }, androidx.compose.ui.graphics.ClipOp.Difference) { block() }
+}
+
+/** An attacker's strike: the living table's charge (F6), or P5's strike as it was with Match effects Off and where no particles are drawn. */
+private fun DrawScope.drawLunge(fx: Battlefield, it: FxItem, a: Rect?, b: Rect?, sq: Rect? = null, lifePill: Rect? = null) {
     if (a == null || b == null) return
-    val face = it.toKey?.startsWith("orb") == true
-    val dur = it.dur.toFloat()
-    if (!low && p in LUNGE_WIND..LUNGE_HIT) {
-        val q = ((p - LUNGE_WIND) / (LUNGE_HIT - LUNGE_WIND)).coerceIn(0f, 1f)
-        val dir = b.center - a.center; val len = kotlin.math.hypot(dir.x, dir.y).coerceAtLeast(1f)
-        val ux = dir.x / len; val uy = dir.y / len
-        val reach = (len - minOf(b.width, b.height) * .42f - minOf(a.width, a.height) * .3f).coerceAtLeast(0f); val pull = len * .1f
-        val n = if (face) 7 else 5
-        // The card itself keeps its art: a trail shows only where it has fallen behind the card (no pale cover on the windup).
-        val now = -pull + (reach + pull) * q * q * q
-        for (i in 1..n) {
-            val qi = (q - i * .07f).coerceIn(0f, 1f); val off = -pull + (reach + pull) * qi * qi * qi
-            val apart = smooth(0f, minOf(a.width, a.height) * .9f, kotlin.math.abs(now - off))
-            if (apart <= 0f) continue
-            val w = a.width * 1.12f; val h = a.height * 1.12f; val cx = a.center.x + ux * off; val cy = a.center.y + uy * off
-            drawRoundRect(Color(0xFFFFE2B0).copy(alpha = .5f * apart * (1f - i / (n + 1f)) * (1f - smooth(.85f, 1f, q))), Offset(cx - w / 2, cy - h / 2), Size(w, h), CornerRadius(10f * density))
+    if (TableFeel.charged(fx.low)) drawCharge(fx, it, a, b, sq, lifePill) else drawStrike(fx, it, a, b, sq)
+}
+
+/**
+ * F6, the charge, drawn as the living table preview draws it (the look pass, 12 Nov).
+ * The dash: a streak of the card's own colour from its back edge to where that edge was [TableFeel.CHARGE_TAIL_MS] ago, widest at
+ * the card and tapering to nothing, with a hot core, and sparks thrown back off it.
+ * The hit is one burst and no more: a small white-hot core where the card meets what it strikes, one ring in the card's colour, and
+ * white spikes that taper to a point. At a player none of it is drawn over the life pill: the number ticking down is the pay-off.
+ */
+private fun DrawScope.drawCharge(fx: Battlefield, it: FxItem, a: Rect, b: Rect, sq: Rect?, lifePill: Rect?) {
+    val face = Strike.face(it); val ms = (fx.now.longValue - it.t0).toFloat()
+    val aim = if (face) chargeAim(a, b, sq) else null
+    val dir = (aim ?: b.center) - a.center; val len = kotlin.math.hypot(dir.x, dir.y).coerceAtLeast(1f)
+    val u = Offset(dir.x / len, dir.y / len); val n = Offset(-u.y, u.x)
+    val reach = if (aim != null) len else strikeReach(a, b, face, sq); val pull = strikePull(len, density)
+    val w0 = Strike.wind(face); val h0 = Strike.hit(face)
+    val tone = it.tone; val hot = TableFeel.hot(tone); val plus = androidx.compose.ui.graphics.BlendMode.Plus
+    fun part(seed: Int) = ((seed * 0.6180339f) % 1f + 1f) % 1f
+    fun wedge(from: Offset, half: Float, to: Offset, c: Color, alpha: Float) = drawPath(
+        androidx.compose.ui.graphics.Path().apply { moveTo(from.x + n.x * half, from.y + n.y * half); lineTo(to.x, to.y); lineTo(from.x - n.x * half, from.y - n.y * half); close() },
+        Brush.linearGradient(listOf(c.copy(alpha = alpha), c.copy(alpha = 0f)), from, to), blendMode = plus)
+    // Where the card's line leaves its back edge, and its half-width across the line.
+    val along = minOf(a.width / 2 / abs(u.x).coerceAtLeast(.001f), a.height / 2 / abs(u.y).coerceAtLeast(.001f)); val across = (abs(u.y) * a.width + abs(u.x) * a.height) / 2
+    if (ms in w0..h0) {
+        val sc = Strike.scale(face, ms, TableFeel.chargeSwell())
+        val head = a.center + u * (Strike.offset(face, ms, reach, pull) - along * sc * .8f)
+        val tail = a.center + u * (Strike.offset(face, (ms - TableFeel.CHARGE_TAIL_MS).coerceAtLeast(w0), reach, pull) - along * sc * .8f)
+        val long = (head - tail).getDistance()
+        if (long > 2f * density) {
+            // Light, not a shape: five wedges laid over each other, each narrower, so the middle is bright and the sides fade out.
+            val half = across * sc * TableFeel.CHARGE_TAIL_WIDE; val layers = TableFeel.CHARGE_TAIL_LAYERS
+            for (i in 0 until layers) { val f = i / (layers - 1f)
+                wedge(head, half * (1f - .8f * f), tail, Color(tone.red + (hot.red - tone.red) * f, tone.green + (hot.green - tone.green) * f, tone.blue + (hot.blue - tone.blue) * f), TableFeel.CHARGE_TAIL_ALPHA / layers * (1f + f)) }
+            // Speed lines in it: thin, white-hot at the card, gone before the streak's end.
+            for (j in 0 until TableFeel.CHARGE_TAIL_LINES) { val seed = (it.card ?: 0) * 5 + j * 23
+                val from = head + n * ((part(seed) - .5f) * 1.5f * half); val to = from - u * (long * (.45f + .5f * part(seed + 9)))
+                drawLine(Brush.linearGradient(listOf(Color.White.copy(alpha = .55f), hot.copy(alpha = 0f)), from, to), from, to, strokeWidth = 1.2f * density, cap = androidx.compose.ui.graphics.StrokeCap.Round, blendMode = plus) }
+        }
+        // Sparks off the card's back edge, thrown back along its line.
+        val k = ((ms - w0) / TableFeel.CHARGE_TRAIL_EVERY_MS).toInt()
+        if (k > it.trail) { it.trail = k
+            for (j in 0 until TableFeel.CHARGE_TRAIL_PER) { val seed = ((it.card ?: 0) * 7 + k * 13 + j * 29) and 0xfff
+                fx.bits.sparks(head + n * ((part(seed) - .5f) * 2f * across * sc * .8f), 1, TableFeel.hot(tone, .3f), fx.now.longValue, TableFeel.CHARGE_TRAIL_SPEED * density, dir = kotlin.math.atan2(-u.y, -u.x),
+                    spread = TableFeel.CHARGE_TRAIL_SPREAD, lifeMs = TableFeel.CHARGE_TRAIL_LIFE_MS, sizePx = TableFeel.CHARGE_TRAIL_SIZE * density, seed = seed) }
         }
     }
-    // Contact, then the hit-stop: nothing new draws for 110 ms.
-    val t = (p - LUNGE_HIT) * dur - HIT_STOP
+    // Contact, then the freeze: nothing new draws until it ends.
+    val t = ms - Strike.after(face)
     if (t < 0f) return
-    val at = b.center
-    // Flash: 150 dp of white-gold growing to 1.7x and gone.
+    // Where the card meets what it strikes (a picture's rim on the side the card lands, a tile's near edge), and where the ring and the spikes spread from.
+    val rim = if (face) minOf(b.width, b.height) / 2 else TableFeel.CHARGE_RING_START * density
+    val at = if (!face) b.center - u * (minOf(b.width, b.height) * .42f) else if (aim != null) b.center + (aim - b.center).let { d -> d / d.getDistance().coerceAtLeast(1f) } * rim else b.center - u * rim
+    val mid = if (face) b.center else at
+    val seed = (it.card ?: 0) and 0xff
+    // Sparks, once, when the freeze ends: off a player's picture back the way the card came, off a tile on past it.
+    if (it.once(1)) fx.bits.sparks(at, if (face) 10 else 18, TableFeel.hot(tone, .3f), fx.now.longValue, (if (face) 240f else 480f) * density, dir = if (face) kotlin.math.atan2(-u.y, -u.x) else kotlin.math.atan2(u.y, u.x),
+        spread = if (face) 2.4f else 1.5f, lifeMs = 460, sizePx = 2f * density, seed = seed)
+    hitBurst(t, at, mid, rim, tone, seed, if (face) null else b, lifePill?.takeIf { face })
+}
+
+/**
+ * F6, the hit: one burst and no more, [t] ms after the blow. A white-hot core at [at] (where the two things meet), one ring in
+ * [tone] running out from [rim] px round [mid], and white spikes off that rim that taper to a point. A struck [tile] flashes
+ * white. Nothing of it is drawn over [lifePill]: at a player the number ticking down is the pay-off.
+ */
+private fun DrawScope.hitBurst(t: Float, at: Offset, mid: Offset, rim: Float, tone: Color, seed: Int, tile: Rect?, lifePill: Rect?) {
+    val hot = TableFeel.hot(tone); val plus = androidx.compose.ui.graphics.BlendMode.Plus
+    fun part(n: Int) = ((n * 0.6180339f) % 1f + 1f) % 1f
+    clipOut(lifePill) {
+        val cq = t / TableFeel.CHARGE_CORE_MS
+        if (cq < 1f) { val r = TableFeel.CHARGE_CORE * density * (.7f + .5f * cq)
+            drawCircle(Brush.radialGradient(0f to Color.White.copy(alpha = 1f - cq), .3f to hot.copy(alpha = .8f * (1f - cq)), 1f to Color.Transparent, center = at, radius = r), r, at, blendMode = plus) }
+        // A struck tile flashes white for 220 ms.
+        if (tile != null && t < 220f) drawRoundRect(Color.White.copy(alpha = .5f * (1f - t / 220f)), tile.topLeft, tile.size, CornerRadius(10f * density))
+        val rq = t / TableFeel.CHARGE_RING_MS
+        if (rq < 1f) { val e = 1f - (1f - rq) * (1f - rq) * (1f - rq); val r = rim + TableFeel.CHARGE_RING_OUT * density * e; val wide = TableFeel.CHARGE_RING_FROM * (1f - .6f * rq) * density
+            drawCircle(tone.copy(alpha = .35f * (1f - rq)), r, mid, style = Stroke(wide * 3f), blendMode = plus)
+            drawCircle(hot.copy(alpha = 1f - rq), r, mid, style = Stroke(wide), blendMode = plus) }
+        for (j in 0 until TableFeel.CHARGE_SPIKES) {
+            val q = t / (140f + 100f * part(seed + j * 17 + 5)); if (q >= 1f) continue
+            val e = 1f - (1f - q) * (1f - q) * (1f - q)
+            val ang = (2 * PI).toFloat() * j / TableFeel.CHARGE_SPIKES + (part(seed + j * 7) - .5f) * .3f
+            val d = Offset(cos(ang), sin(ang)); val side = Offset(-d.y, d.x) * (TableFeel.CHARGE_SPIKE_HALF * density)
+            val from = mid + d * (rim + 4f * density); val to = mid + d * (rim + 12f * density + TableFeel.CHARGE_SPIKE_LEN * density * (.45f + .55f * part(seed + j * 11 + 3)) * e)
+            drawPath(androidx.compose.ui.graphics.Path().apply { moveTo(from.x + side.x, from.y + side.y); lineTo(to.x, to.y); lineTo(from.x - side.x, from.y - side.y); close() }, Color.White.copy(alpha = 1f - q), blendMode = plus)
+        }
+    }
+}
+
+/** The strike (spec 3) as it was before the living table: ghost trails behind the lunge (5 for a clash, 7 for a face), then at contact a
+ *  white-gold flash growing to 1.7x, two shock rings (white-gold, then orange 90 ms later, 620 ms) and sparks that fall (28, or 36 at a face). */
+private fun DrawScope.drawStrike(fx: Battlefield, it: FxItem, a: Rect, b: Rect, sq: Rect?) {
+    val face = Strike.face(it); val low = fx.low
+    val ms = (fx.now.longValue - it.t0).toFloat()
+    val dir = b.center - a.center; val len = kotlin.math.hypot(dir.x, dir.y).coerceAtLeast(1f)
+    val ux = dir.x / len; val uy = dir.y / len
+    val reach = strikeReach(a, b, face, sq); val pull = strikePull(len, density)
+    val w0 = Strike.wind(face); val h0 = Strike.hit(face)
+    if (!low && ms in w0..h0) {
+        val n = if (face) 7 else 5
+        // The card itself keeps its art: a trail shows only where it has fallen behind the card (no pale cover on the windup).
+        val now = Strike.offset(face, ms, reach, pull)
+        for (i in 1..n) {
+            val mi = (ms - i * (h0 - w0) * .07f).coerceAtLeast(w0); val off = Strike.offset(face, mi, reach, pull)
+            val apart = smooth(0f, minOf(a.width, a.height) * .9f, kotlin.math.abs(now - off))
+            if (apart <= 0f) continue
+            val sc = Strike.scale(face, mi); val w = a.width * sc; val h = a.height * sc; val cx = a.center.x + ux * off; val cy = a.center.y + uy * off
+            drawRoundRect(Color(0xFFFFE2B0).copy(alpha = .5f * apart * (1f - i / (n + 1f))), Offset(cx - w / 2, cy - h / 2), Size(w, h), CornerRadius(10f * density))
+        }
+    }
+    // Contact, then the freeze: nothing new draws until it ends.
+    val t = ms - Strike.after(face)
+    if (t < 0f) return
+    // Where the blow lands: the struck tile's near edge, or the middle of the profile picture.
+    val at = if (face) b.center else b.center - Offset(ux, uy) * (minOf(b.width, b.height) * .42f)
+    // P5: sparks thrown on past the hit, away from the attacker, with a quick white ring and a soft blob; once, when the freeze ends.
+    if (!low && !face && it.once(1)) {
+        val now = fx.now.longValue; val seed = (it.card ?: 0) and 0xff; val away = kotlin.math.atan2(uy, ux)
+        fx.bits.sparks(at, 24, Color(0xFFFFF3D0), now, 330f * density, dir = away, spread = 1.25f, lifeMs = 520, sizePx = 1.6f * density, seed = seed)
+        fx.bits.sparks(at, 10, Color(0xFFF3D27E), now, 170f * density, lifeMs = 480, sizePx = 1.4f * density, seed = seed + 7)
+        fx.bits.ring(at, 65.dp.toPx(), Color.White, now, lifeMs = 260)
+        fx.bits.blob(at, 60.dp.toPx(), Color(0xFFFFF3D0), now, lifeMs = 160)
+    }
+    // Flash: 150 dp of white-gold growing to 1.7x and gone; and a white flash on both tiles of a clash (240 and 280 ms).
     val fq = (t / 260f).coerceIn(0f, 1f)
     if (fq < 1f) drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = .95f * (1f - fq)), Color(0xFFFFD98A).copy(alpha = .7f * (1f - fq)), Color.Transparent), center = at, radius = 75.dp.toPx() * (1f + .7f * fq)), radius = 75.dp.toPx() * (1f + .7f * fq), center = at)
+    if (!face && t < 280f) drawRoundRect(Color.White.copy(alpha = .8f * (1f - t / 280f)), b.topLeft, b.size, CornerRadius(10f * density))
     // Shock rings: white-gold, then orange 90 ms later (face: and red), 620 ms each.
     val rings = if (face) listOf(Color(0xFFFFF4D6), Color(0xFFFF4A3A), Color(0xFFF0C27A)) else listOf(Color(0xFFFFF0C8), Color(0xFFFF9A3C))
     rings.forEachIndexed { j, col -> val k = ((t - j * 90f) / 620f).coerceIn(0f, 1f); if (k > 0f && k < 1f)
         drawCircle(col.copy(alpha = .9f * (1f - k)), radius = b.maxDimension * (.35f + (if (face) 2.4f else 1.6f) * k), center = at, style = Stroke((6f - 5f * k) * density)) }
-    // Sparks in the fire palette, thrown out and pulled down.
-    val rnd = java.util.Random((it.card?.toLong() ?: 1L) * 31L)
-    val sq = (t / 900f).coerceIn(0f, 1f)
-    if (!low && sq < 1f) for (i in 0 until (if (face) 36 else 28)) {
-        val ang = rnd.nextFloat() * 6.283f; val sp = (60f + rnd.nextFloat() * 160f) * density
-        val col = listOf(Color(0xFFFFF4D6), Color(0xFFFFD98A), Color(0xFFFF9A3C), Color(0xFFFF5A2A))[i % 4]
-        val pos = at + Offset(cos(ang) * sp * sq, sin(ang) * sp * sq + 220f * density * sq * sq)
-        drawCircle(col.copy(alpha = 1f - sq), radius = (1.6f + 2f * rnd.nextFloat()) * density * (1f - sq * .5f), center = pos)
+}
+
+/** P6, Fire: the spell's place on the stack swells 8 % and flashes in its colour (110 ms), then a thick streak crosses to the target (130). */
+private fun DrawScope.drawFire(it: FxItem, p: Float, stack: Rect?, target: Rect?) {
+    val ms = p * FIRE_MS
+    val from = stack?.center ?: Offset(size.width - 80f * density, size.height / 2)
+    if (stack != null && it.lead) { val q = (ms / 200f).coerceAtMost(1f); val grow = stack.minDimension * .04f * (1f - (1f - q) * (1f - q))
+        drawRoundRect(Brush.verticalGradient(listOf(Color.White.copy(alpha = .9f * (1f - q)), it.tone.copy(alpha = .8f * (1f - q))), stack.top, stack.bottom),
+            Offset(stack.left - grow, stack.top - grow), Size(stack.width + 2 * grow, stack.height + 2 * grow), CornerRadius(10f * density)) }
+    if (target == null || ms < 110f) return
+    val q = (ms - 110f) / 130f
+    val hot = Color(1f - (1f - it.tone.red) * .45f, 1f - (1f - it.tone.green) * .45f, 1f - (1f - it.tone.blue) * .45f)
+    streak(from, target.center, q * q * q, hot, 6.dp.toPx(), tail = .55f, bend = .04f)
+}
+
+/**
+ * P6, Impact on the tile at [r]: a 115 ms freeze, a white flash (320), a 12 dp shake pushed in 3.5 %, 18 spikes, 30 sparks, a ring, a
+ * blob and smoke in the spell's colour. A friendly spell has no freeze and no shake: a soft flash, a ring and rising embers in its light.
+ */
+private fun DrawScope.drawBolt(fx: Battlefield, it: FxItem, p: Float, r: Rect, stack: Rect?) {
+    val ms = p * BOLT_MS; val now = fx.now.longValue; val seed = (it.card ?: 0) and 0xff
+    val hostile = it.power > 0f
+    if (hostile && it.once(1)) fx.freeze(115L)
+    if (!fx.low && it.once(2)) {
+        if (hostile) {
+            fx.jolt(12f, 300L, .035f)
+            fx.bits.spikes(r.center, 18, r.maxDimension * 1.25f, it.tone, now, lifeMs = 300, seed = seed)
+            fx.bits.sparks(r.center, 30, it.tone, now, 300f * density, lifeMs = 640, sizePx = 1.7f * density, seed = seed)
+            fx.bits.ring(r.center, 90.dp.toPx(), it.tone, now, lifeMs = 340)
+            fx.bits.blob(r.center, 75.dp.toPx(), it.tone, now, lifeMs = 220)
+            fx.bits.smoke(Offset(r.center.x, r.center.y + r.height * .2f), 7, Color(0xFF8A8478), now, 34f * density, lifeMs = 850, sizePx = r.height * .14f, seed = seed)
+        } else {
+            fx.bits.ring(r.center, r.maxDimension * .9f, it.tone, now, lifeMs = 420)
+            fx.bits.embers(Offset(r.center.x, r.bottom - r.height * .2f), 10, it.tone, now, 60f * density, lifeMs = 800, sizePx = 1.6f * density, seed = seed)
+            fx.bits.blob(r.center, r.maxDimension * .7f, it.tone, now, lifeMs = 360)
+        }
     }
+    if (ms < 320f) drawRoundRect((if (hostile) Color.White else it.tone).copy(alpha = (if (hostile) 1f else .5f) * (1f - ms / 320f)), r.topLeft, r.size, CornerRadius(10f * density))
+}
+
+/** P5, the declare: the attacker's coral ring flares where it now stands, with one ring going out from it (300 ms). */
+private fun DrawScope.drawDeclare(fx: Battlefield, it: FxItem, p: Float, home: Rect) {
+    val ms = p * it.dur
+    val step = fx.advancePx * backOut((ms / DECLARE_MS).coerceAtMost(1f)) * (if (it.mine) -1f else 1f)
+    val r = home.translate(0f, step)
+    glowRing(r, it.tone, .9f * (1f - smooth(.5f, 1f, p)), 14.dp.toPx())
+    val q = (ms / 300f).coerceIn(0f, 1f); val e = 1f - (1f - q) * (1f - q)
+    val grow = r.minDimension * .45f * e
+    drawRoundRect(it.tone.copy(alpha = .9f * (1f - q)), Offset(r.left - grow, r.top - grow), Size(r.width + 2 * grow, r.height + 2 * grow), CornerRadius(10f * density + grow), style = Stroke((3f * (1f - q) + 1f) * density))
+}
+
+/**
+ * P5, a kill's embers: nine streaks, gold and bone, leave the place the card stood for its owner's graveyard (380 to 560 ms each),
+ * with pale sparks and a little smoke where it broke; when the last has landed (580) the pile answers with a gold ring (300).
+ */
+private fun DrawScope.drawEmbers(fx: Battlefield, it: FxItem, p: Float, r: Rect, grave: Rect?) {
+    val ms = p * EMBERS_MS; val seed = (it.card ?: 3)
+    if (it.once(1)) { val now = fx.now.longValue
+        fx.bits.sparks(r.center, 18, Color(0xFFE9DFC8), now, 130f * density, lifeMs = 600, sizePx = 1.5f * density, seed = seed and 0xff)
+        fx.bits.smoke(r.center, 6, Color(0xFF8A8478), now, 30f * density, lifeMs = 800, sizePx = r.height * .14f, seed = seed and 0xff) }
+    val to = grave?.center ?: return
+    val rnd = java.util.Random(seed.toLong() * 131L + 7L)
+    for (i in 0 until 9) {
+        val from = Offset(r.left + rnd.nextFloat() * r.width, r.top + rnd.nextFloat() * r.height)
+        val life = 380f + rnd.nextFloat() * 180f; val bend = (rnd.nextFloat() - .5f) * .6f
+        val q = ms / life
+        if (q < 1f) streak(from, to, q * q * (3f - 2f * q), if (i % 2 == 1) Color(0xFFF3D27E) else Color(0xFFCFC6B4), 3.5f * density, tail = .3f, bend = bend)
+    }
+    val k = (ms - 580f) / 300f
+    if (k in 0f..1f) drawCircle(Color(0xFFF3D27E).copy(alpha = .9f * (1f - k)), radius = 15.dp.toPx() + 25.dp.toPx() * (1f - (1f - k) * (1f - k)), center = to, style = Stroke((2f * (1f - k) + .6f) * density))
 }
 
 /** A hit to a face: a red flash across the board edge, a big shockwave from the orb, sparks, and the life number slamming in. */
-private fun DrawScope.faceHit(it: FxItem, p: Float, r: Rect, low: Boolean = false) {
+private fun DrawScope.faceHit(fx: Battlefield, it: FxItem, p: Float, r: Rect, low: Boolean = false, quiet: Boolean = false, square: Rect? = null) {
     val k = it.power
     val ms = p * it.dur
+    // P5: coral spikes off the square, a ring and sparks, thrown once on the frame the freeze ends.
+    if (!low && !quiet && it.once(1)) {
+        val now = fx.now.longValue; val coral = Color(0xFFFF6A4A); val seed = (it.player ?: 0) and 0xff
+        fx.bits.spikes(r.center, 14, r.maxDimension * (1.2f + .6f * k), coral, now, lifeMs = 300, seed = seed)
+        fx.bits.ring(r.center, r.maxDimension * 1.7f, coral, now, lifeMs = 360)
+        fx.bits.sparks(r.center, (16 + 12 * k).toInt(), coral, now, 290f * density, lifeMs = 600, sizePx = 1.6f * density, seed = seed)
+    }
     // Red at the screen's edges only, peaking near 0.9 and gone by about 700 ms.
-    val vig = (if (ms < 90f) ms / 90f else 1f - smooth(90f, 700f, ms)) * .9f * (.75f + .25f * k)
+    // Mobile table M10 (and match-punch-brief): only when you are hit. Damage to the CPU does not wash the screen red. Yours is
+    // the hit on your own life; with no viewer known (a drawn test), the square in the lower half is yours.
+    val you = fx.viewerId?.let { v -> it.player == v } ?: (r.center.y > size.height / 2)
+    val vig = if (!you) 0f else (if (ms < 90f) ms / 90f else 1f - smooth(90f, 700f, ms)) * .9f * (.75f + .25f * k)
     // The red vignette lives at the screen's edges; the middle of the board stays readable.
     // A band along each edge, as deep on a wide screen's sides as on its top and bottom, so the board stays readable.
     val band = size.minDimension * .24f; val red = Color(0xFFE02A1A).copy(alpha = vig)
-    drawRect(Brush.horizontalGradient(listOf(red, Color.Transparent), 0f, band), Offset.Zero, Size(band, size.height))
-    drawRect(Brush.horizontalGradient(listOf(Color.Transparent, red), size.width - band, size.width), Offset(size.width - band, 0f), Size(band, size.height))
-    drawRect(Brush.verticalGradient(listOf(red, Color.Transparent), 0f, band), Offset.Zero, Size(size.width, band))
-    drawRect(Brush.verticalGradient(listOf(Color.Transparent, red), size.height - band, size.height), Offset(0f, size.height - band), Size(size.width, band))
+    // F6: your own square sits in the screen's corner, inside two of these bands. With the living table on, the red goes round
+    // it and not over it, so your life total is read while it ticks down.
+    clipOut(square?.takeIf { quiet }, 14f * density) {
+        drawRect(Brush.horizontalGradient(listOf(red, Color.Transparent), 0f, band), Offset.Zero, Size(band, size.height))
+        drawRect(Brush.horizontalGradient(listOf(Color.Transparent, red), size.width - band, size.width), Offset(size.width - band, 0f), Size(band, size.height))
+        drawRect(Brush.verticalGradient(listOf(red, Color.Transparent), 0f, band), Offset.Zero, Size(size.width, band))
+        drawRect(Brush.verticalGradient(listOf(Color.Transparent, red), size.height - band, size.height), Offset(0f, size.height - band), Size(size.width, band))
+    }
+    // F6: a charge has drawn its own hit on this picture (one core, one ring, its spikes); the loss adds only the red edges above.
+    if (quiet) return
     for (j in 0..2) { val q = ((p - j * .08f) / .6f).coerceIn(0f, 1f); if (q > 0f)
         drawCircle(it.tone.copy(alpha = .85f * (1f - q)), radius = r.maxDimension * (.5f + (2.4f + 2f * k) * q), center = r.center, style = Stroke((7f - 6f * q) * density)) }
     // The flash: a white-gold burst on the struck portrait only, 150 dp, 120 ms in and 200 ms out.
@@ -1264,34 +2248,36 @@ private fun DrawScope.faceHit(it: FxItem, p: Float, r: Rect, low: Boolean = fals
         drawCircle(Color(0xFFFFB070).copy(alpha = 1f - q), radius = 2.8f * density * (1f - q * .5f), center = r.center + Offset(cos(ang), sin(ang)) * sp) }
 }
 
-/** The block (spec 3): a pulse down the thread, a gold shield ring flaring over the blocker, and BLOCKED slamming from 3x beside it. */
+/** The block (spec 3, P5): a pulse down the thread, an ice ring flaring over the blocker as it steps in, and BLOCKED slamming from 3x beside it. */
 private fun DrawScope.drawBlock(tm: androidx.compose.ui.text.TextMeasurer, it: FxItem, p: Float, a: Rect, b: Rect, still: Boolean = false) {
-    val pulse = (p / .2f).coerceAtMost(1f)
+    val ms = p * BLOCK_MS
+    val pulse = (ms / 190f).coerceAtMost(1f)
     if (!still && pulse < 1f) for (j in 0..1) {
         val q = (pulse * 1.25f - j * .25f).coerceIn(0f, 1f); if (q <= 0f || q >= 1f) continue
         val at = lerpO(a.center, b.center, q)
-        drawCircle(Brush.radialGradient(listOf(Color.White, Color(0xFFF0C27A).copy(alpha = .7f), Color.Transparent), center = at, radius = 12f * density), radius = 12f * density, center = at)
+        drawCircle(Brush.radialGradient(listOf(Color.White, Color(0xFF6AAEFF).copy(alpha = .7f), Color.Transparent), center = at, radius = 12f * density), radius = 12f * density, center = at)
     }
     // Centred on the blocker where its slide put it, the tile plus 12 %.
     val dx = b.center.x - a.center.x; val dy = b.center.y - a.center.y; val dist = kotlin.math.hypot(dx, dy).coerceAtLeast(1f)
-    val slide = if (still) 0f else minOf(70.dp.toPx(), dist * .45f) * easeOutBack((p / .146f).coerceAtMost(1f)) * (1f - smooth(.86f, 1f, p))
+    val slide = if (still) 0f else minOf(70.dp.toPx(), dist * .45f) * easeOutBack((ms / 190f).coerceAtMost(1f)) * (1f - smooth(550f, BLOCK_MS.toFloat(), ms))
     val c = a.center + Offset(dx / dist * slide, dy / dist * slide)
-    val flare = smooth(0f, .55f, p); val out = 1f - smooth(.84f, 1f, p)
+    val flare = smooth(0f, 190f, ms); val out = 1f - smooth(520f, BLOCK_MS.toFloat(), ms)
     // Table thread 19:04Z: shield and stamp 1.4x so they read at phone scale.
     val grow = 1.12f * 1.4f * (1.2f - .2f * flare)
     val sw = a.width * grow; val sh = a.height * grow
     val oval = Rect(c.x - sw / 2, c.y - sh / 2, c.x + sw / 2, c.y + sh / 2)
     val rad = CornerRadius(minOf(sw, sh) * .18f)
-    val gold = Color(0xFFF0C27A)
+    // P5: the block's light is ice blue (the blocker's own ring colour), where the attack's is coral.
+    val gold = Color(0xFF8CC4FF)
     if (!still) drawIntoCanvas { cv ->
         val glow = Paint().asFrameworkPaint().apply { isAntiAlias = true; style = android.graphics.Paint.Style.STROKE; strokeWidth = 14.dp.toPx(); color = gold.copy(alpha = .75f * flare * out).toArgb(); maskFilter = BlurMaskFilter(20.dp.toPx(), BlurMaskFilter.Blur.NORMAL) }
         cv.nativeCanvas.drawRoundRect(oval.left, oval.top, oval.right, oval.bottom, rad.x, rad.y, glow)
         val inner = Paint().asFrameworkPaint().apply { isAntiAlias = true; style = android.graphics.Paint.Style.STROKE; strokeWidth = 11.dp.toPx(); color = gold.copy(alpha = .4f * flare * out).toArgb(); maskFilter = BlurMaskFilter(11.dp.toPx(), BlurMaskFilter.Blur.INNER) }
         cv.nativeCanvas.drawRoundRect(oval.left + 5.dp.toPx(), oval.top + 5.dp.toPx(), oval.right - 5.dp.toPx(), oval.bottom - 5.dp.toPx(), rad.x, rad.y, inner)
     }
-    if (!still) drawRoundRect(Color(0xFFFFE6B0).copy(alpha = .95f * flare * out), oval.topLeft, oval.size, rad, style = Stroke(3.5f * density))
+    if (!still) drawRoundRect(Color(0xFFE2F1FF).copy(alpha = .95f * flare * out), oval.topLeft, oval.size, rad, style = Stroke(3.5f * density))
     // BLOCKED: gold, letter-spaced, -4 degrees, slams from 3x to 1x, held, then fades with the shield.
-    val slam = if (still) 1f else smooth(.1f, .24f, p); if (slam <= 0f) return
+    val slam = if (still) 1f else smooth(60f, 190f, ms); if (slam <= 0f) return
     val k = 3f - 2f * slam
     val style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Black, fontSize = 42.sp, letterSpacing = .18.em, color = gold)
     val lay = tm.measure("BLOCKED", style)
@@ -1301,8 +2287,8 @@ private fun DrawScope.drawBlock(tm: androidx.compose.ui.text.TextMeasurer, it: F
     val alpha = slam.coerceAtMost(1f) * out
     rotate(-4f, at) { scale(k, at) {
         val tl = Offset(at.x - lay.size.width / 2f, at.y - lay.size.height / 2f)
-        for ((dx, dy) in listOf(-2f to 0f, 2f to 0f, 0f to -2f, 0f to 2f)) drawText(tm, "BLOCKED", tl + Offset(dx * density, dy * density), style.copy(color = Color(0xFF2A1A06).copy(alpha = .9f * alpha)))
-        drawText(tm, "BLOCKED", tl, style.copy(brush = Brush.verticalGradient(listOf(Color(0xFFFFF0C8), gold, Color(0xFFC4903A)), tl.y, tl.y + lay.size.height), alpha = alpha))
+        for ((dx, dy) in listOf(-2f to 0f, 2f to 0f, 0f to -2f, 0f to 2f)) drawText(tm, "BLOCKED", tl + Offset(dx * density, dy * density), style.copy(color = Color(0xFF06162A).copy(alpha = .9f * alpha)))
+        drawText(tm, "BLOCKED", tl, style.copy(brush = Brush.verticalGradient(listOf(Color(0xFFF2F9FF), gold, Color(0xFF4A86D0)), tl.y, tl.y + lay.size.height), alpha = alpha))
     } }
 }
 
@@ -1363,5 +2349,112 @@ private fun DrawScope.pop(tm: androidx.compose.ui.text.TextMeasurer, text: Strin
         // A dark outline so the number reads on any art.
         for ((dx, dy) in listOf(-1.5f to 0f, 1.5f to 0f, 0f to -1.5f, 0f to 1.5f)) drawText(tm, text, tl + Offset(dx * density, dy * density), style.copy(color = Color.Black.copy(alpha = .9f * a)))
         drawText(tm, text, tl, style.copy(color = col.copy(alpha = col.alpha * a)))
+    }
+}
+
+/**
+ * 0.4.59 T5, the cast travels: the card itself on its way. To the stack (440 ms, ease-out): from its place in your hand (on two
+ * screens, in through the bottom edge of the top screen) or from the CPU's seat face down, turning face up, growing to the stack
+ * size; the stack card stays clear until it arrives. To its slot or host (380 ms): from the stack, the whole card cropping to its
+ * art as it shrinks into the tile. A land skips the stack: hand (or the CPU's seat) to its group, 380 ms. With reduce motion
+ * nothing moves (the card is simply where it ends) while the same pauses still play.
+ */
+@Composable
+internal fun TravelCard() {
+    val m = LocalTravel.current ?: return
+    val t = m.travel
+    if (t.leg == dev.cardstashy.nativeplay.match.Director.Leg.TAPS || t.leg == dev.cardstashy.nativeplay.match.Director.Leg.REST || t.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_POOL || t.leg == dev.cardstashy.nativeplay.match.Director.Leg.UNTAP) return
+    if (LocalBattlefield.current?.reduced == true) return
+    val anchors = LocalAnchors.current ?: return
+    val name = t.name ?: return
+    val toStack = t.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_STACK
+    // Mobile table M6: a CPU cast grows from the stack card to be read (82 % of the height on a phone, 64 % on a big screen), is held, and returns.
+    val pop = t.leg == dev.cardstashy.nativeplay.match.Director.Leg.POP
+    val fromHand = toStack || t.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_GROUP
+    // T6: Cancel, from the stack back to its place in your hand (on two screens, off the bottom edge to the hand below).
+    val back = t.leg == dev.cardstashy.nativeplay.match.Director.Leg.BACK
+    val dual = DualScreen.active
+    val p = remember(m.key) { androidx.compose.runtime.mutableFloatStateOf(TravelClock.fixed ?: 0f) }
+    val fxB = LocalBattlefield.current
+    val density = LocalDensity.current
+    LaunchedEffect(m.key) {
+        if (TravelClock.fixed != null) return@LaunchedEffect
+        val start = withFrameMillis { it }
+        var shed = start
+        while (p.floatValue < 1f) withFrameMillis { p.floatValue = ((it - start).toFloat() / t.ms.coerceAtLeast(1)).coerceIn(0f, 1f)
+            // P2, Lift: the flying card sheds gold embers (two every 45 ms) from where it is.
+            if (toStack && fxB != null && !fxB.low && it - start > dev.cardstashy.nativeplay.match.Director.LIFT_MS && it - shed >= 45) { shed = it
+                anchors.rects["travelcard"]?.let { r -> fxB.bits.embers(r.center - fxB.origin, 2, Color(0xFFF3D27E), fxB.now.longValue, 34f * density.density, lifeMs = 520, sizePx = 1.2f * density.density, seed = (it % 997).toInt()) } }
+        }
+    }
+    var self by remember { mutableStateOf(Rect.Zero) }
+    /** Where it starts: the stack card (to a slot or host), your hand card, the CPU's seat; on two screens your card enters at the bottom edge. */
+    fun source(dest: Rect): Rect? {
+        val r = anchors.rects
+        if (!fromHand) return r["stackcard"]
+        if (!t.mine) return r["cpuhand"]
+        if (!dual) (r["hand${t.cardId}"] ?: r["hand"])?.let { return it }
+        val w = dest.width; val h = dest.height
+        return Rect(self.center.x - w / 2, self.bottom, self.center.x + w / 2, self.bottom + h)
+    }
+    fun frame(): Rect? {
+        anchors.version.intValue
+        if (pop) {
+            val a = anchors.rects["stackcard"] ?: return null
+            if (self.isEmpty) return a
+            val dp = density.density
+            val h = self.height * (if (ZoneLayout.phone(self.width / dp, self.height / dp)) ZoneLayout.POP_PHONE else ZoneLayout.POP_BIG)
+            val w = h * a.width / a.height.coerceAtLeast(1f)
+            val to = Offset(self.right - w / 2 - 10f * dp, self.center.y)
+            val e = dev.cardstashy.nativeplay.match.Director.popAt((p.floatValue * t.ms).toLong())
+            val c = lerpO(a.center, to, e); val cw = a.width + (w - a.width) * e; val ch = a.height + (h - a.height) * e
+            return Rect(c.x - cw / 2, c.y - ch / 2, c.x + cw / 2, c.y + ch / 2)
+        }
+        val b = if (back) { val s = anchors.rects["stackcard"] ?: return null
+            if (dual) Rect(self.center.x - s.width / 2, self.bottom, self.center.x + s.width / 2, self.bottom + s.height)
+            else t.toKey?.let { anchors.rects[it] } ?: anchors.rects["hand"] ?: return null } else t.toKey?.let { anchors.rects[it] } ?: return null
+        val a = (if (back) anchors.rects["stackcard"] else source(b)) ?: return null
+        val q = p.floatValue
+        // P2, Lift: a wind-up first (the card dips 10 dp away from where it is going and shrinks 4 %, 70 ms), then it flies to the
+        // stack with a small overshoot.
+        val lift = if (toStack) (dev.cardstashy.nativeplay.match.Director.LIFT_MS.toFloat() / t.ms.coerceAtLeast(1)).coerceAtMost(.4f) else 0f
+        val u = if (toStack) ((q - lift) / (1f - lift)).coerceIn(0f, 1f) else q
+        // P3, the dive: on the stack the card rises 6 % and 12 dp (90 ms), then dives to its slot, accelerating, cropping to its tile.
+        val dive = t.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_SLOT
+        val rise = if (dive) (dev.cardstashy.nativeplay.match.Director.RISE_MS.toFloat() / t.ms.coerceAtLeast(1)).coerceAtMost(.5f) else 0f
+        val v = if (dive) ((q - rise) / (1f - rise)).coerceIn(0f, 1f) else q
+        val e = if (toStack) backOut(u) else if (dive) v * v * v else smooth(0f, 1f, q)
+        val wind = if (toStack) (if (q < lift) sin(PI.toFloat() / 2 * q / lift) else 1f - smooth(0f, .35f, u)) else 0f
+        val up = if (dive) (if (q < rise) 1f - (1f - q / rise).let { it * it } else 1f - v) else 0f
+        val c = lerpO(a.center, b.center, e)
+        val arc = (if (dive) 0f else sin(PI.toFloat() * e.coerceIn(0f, 1f)) * 20f * density.density * (if (t.mine) -1f else 1f)) +
+            wind * 10f * density.density * (if (t.mine) 1f else -1f) - up * 12f * density.density
+        val k = 1f - .04f * wind + .06f * up
+        val w = (a.width + (b.width - a.width) * e) * k; val h = (a.height + (b.height - a.height) * e) * k
+        return Rect(c.x - w / 2, c.y - h / 2 + arc, c.x + w / 2, c.y + h / 2 + arc)
+    }
+    val rim = if (t.mine) Color(0xFFE8B95B) else CpuRed
+    val shape = RoundedCornerShape(8.dp)
+    Box(Modifier.fillMaxSize().onGloballyPositioned { self = it.boundsInRoot() }) {
+        Box(Modifier
+            .layout { measurable, c ->
+                val r = frame()
+                val pl = measurable.measure(androidx.compose.ui.unit.Constraints.fixed((r?.width ?: 1f).roundToInt().coerceAtLeast(1), (r?.height ?: 1f).roundToInt().coerceAtLeast(1)))
+                layout(c.maxWidth, c.maxHeight) { pl.place(((r?.left ?: 0f) - self.left).roundToInt(), ((r?.top ?: 0f) - self.top).roundToInt()) }
+            }
+            .graphicsLayer {
+                if (frame() == null) { alpha = 0f; return@graphicsLayer }
+                // The CPU's card turns face up on its way out of the seat.
+                if (!t.mine && fromHand) { rotationY = 180f * (1f - smooth(0f, .6f, p.floatValue)); cameraDistance = 12f * density.density }
+            }
+            .anchorRect("travelcard")
+            .semantics { contentDescription = "$name on its way" }
+            .clip(shape).background(Color(0xFF141418)).border(2.dp, rim, shape)) {
+            // Into a tile the whole card gives way to its art as it shrinks.
+            val crop = !fromHand && !pop
+            CardImage(name, Modifier.fillMaxSize().graphicsLayer { if (crop) alpha = 1f - smooth(.35f, .9f, p.floatValue) }, crop = false)
+            if (crop) CardImage(name, Modifier.fillMaxSize().graphicsLayer { alpha = smooth(.35f, .9f, p.floatValue) }, crop = true)
+            if (!t.mine && fromHand) Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (p.floatValue < .3f) 1f else 0f }) { CardBack(Modifier.fillMaxSize()) }
+        }
     }
 }

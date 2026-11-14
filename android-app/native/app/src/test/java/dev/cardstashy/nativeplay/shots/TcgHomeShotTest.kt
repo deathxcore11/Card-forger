@@ -46,7 +46,8 @@ class TcgHomeShotTest {
         CollectionGame.init(app); CollectionGame.set(g)
         rule.setContent { CollectionHomeRoute(onPlay = {}, onProfile = {}, web = { _, _ -> }, open = {}) }
         rule.waitUntil(60_000) { rule.onAllNodesWithText(deck).fetchSemanticsNodes().isNotEmpty() }
-        rule.waitUntil(120_000) { rule.onAllNodesWithText("Card of the Day").fetchSemanticsNodes().isNotEmpty() && rule.onAllNodesWithText("Original source").fetchSemanticsNodes().isNotEmpty() }
+        // Game-feel home: the label is drawn in capitals, and Meta decks live behind their door (CollectionHomeRouteTest opens it).
+        rule.waitUntil(120_000) { rule.onAllNodesWithText("Card of the Day", ignoreCase = true).fetchSemanticsNodes().isNotEmpty() }
         repeat(30) { Thread.sleep(200); rule.mainClock.advanceTimeBy(200); rule.waitForIdle() }
         rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "tcg-home-${g.id}-390.png").path)
     }

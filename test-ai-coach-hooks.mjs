@@ -35,7 +35,8 @@ assert.ok(!(v.issues || []).some((i) => /outside the commander/.test(i)), "a can
 const weakKeys = pw.parts.filter((x) => x.ratio < 0.9).map((x) => x.key), lands = cands.find((c) => /Land/.test(c.type_line || ""));
 if (lands && weakKeys.includes("Lands")) assert.ok(hooks.probe(lands).find((x) => x.key === "Lands").count > pw.parts.find((x) => x.key === "Lands").count, "Power counts a probed land toward Lands");
 aiReviewPanel("mtg", d, (n) => S.catalog[n.toLowerCase()], pw, hooks);
-let mtgSent; await runAiReview("mtg:hk", () => {}, async (u, init) => { mtgSent = JSON.parse(init.body); return Response.json({}, { status: 500 }); });
+const sentOf = (k) => { const E = coachEntry(k); return { ...E.payload, meta: E.meta, candidates: E.cands.map((x) => ({ name: x.c.name, ...(x.helps.length ? { helps: x.helps.join(", ") } : {}) })) }; };
+await runAiReview("mtg:hk", () => {}, async () => { throw Error("the coach must not use the network"); }); const mtgSent = sentOf("mtg:hk");
 assert.ok(mtgSent.candidates.length <= 25 && mtgSent.candidates.some((c) => c.helps), "candidates carry the Power areas they raise");
 assert.ok(mtgSent.meta.length >= 3 && mtgSent.meta.every((f) => f.cards.length >= 5), "Commander coach receives the top cEDH decks with their cards");
 assert.ok(mtgSent.candidates.findIndex((c) => !c.helps) === -1 || mtgSent.candidates.slice(0, mtgSent.candidates.findIndex((c) => !c.helps)).every((c) => c.helps), "helpers first");
@@ -57,7 +58,7 @@ for (const g of ["ygo", "ptcg"]) {
   assert.ok(Number.isFinite(out.before) && Number.isFinite(out.after), g + ": swap re-scored");
   // End to end: the payload carries facts and a hand, and the candidates go out with the request.
   aiReviewPanel(g, dd, (x) => cache[g][x] || null, p, h);
-  let sent; await runAiReview(g + ":" + dd.id, () => {}, async (u, init) => { sent = JSON.parse(init.body); return Response.json({ error: 1 }, { status: 500 }); });
+  await runAiReview(g + ":" + dd.id, () => {}, async () => { throw Error("the coach must not use the network"); }); const sent = sentOf(g + ":" + dd.id);
   assert.ok(sent.meta.length >= 3 && sent.meta.every((f) => f.share > 0 && f.cards.length >= 5 && f.cards.filter((c) => c.text).length >= 3), g + ": the field's top decks go with their most-played cards and real card text");
   assert.equal(coachEntry(g + ":" + dd.id).meta.length, sent.meta.length, g + ": the field sent is kept with the review");
   console.log(`PASS: ${g === "ygo" ? "Yu-Gi-Oh!" : "Pokémon"} coach receives the field: ${sent.meta.map((f) => `${f.name} ${Math.round(f.share * 100)}%`).join(", ")}.`);

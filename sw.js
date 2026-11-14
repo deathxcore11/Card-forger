@@ -71,7 +71,7 @@ const ASSETS = [
   "./experiments/phase-engine/cpu-public-policy.mjs",
   "./experiments/phase-engine/cpu-public-worker.mjs",
   "./experiments/phase-engine/cpu-legal-candidates.mjs",
-"./experiments/phase-engine/practice-session-record.mjs", "./experiments/phase-engine/turn-budget.mjs", "./experiments/phase-engine/card-placement.mjs", "./experiments/phase-engine/card-stats.mjs", "./experiments/phase-engine/random-outcomes.mjs", "./experiments/phase-engine/human-command.mjs", "./experiments/phase-engine/interaction-surface.mjs", "./experiments/phase-engine/match-authority.mjs", "./experiments/phase-engine/match-input.mjs", "./experiments/phase-engine/catalog-admission.mjs", "./experiments/phase-engine/match-session.mjs", "./experiments/phase-engine/match-table.mjs", "./experiments/phase-engine/practice-authority.mjs", "./experiments/phase-engine/practice-client.mjs", "./experiments/phase-engine/practice-coverage.mjs", "./experiments/phase-engine/practice-preflight.mjs", "./experiments/phase-engine/practice-flow.mjs", "./experiments/phase-engine/practice-presentation.mjs", "./experiments/phase-engine/practice-record.mjs", "./experiments/phase-engine/priority-clock.mjs", "./experiments/phase-engine/priority-scheduler.mjs", "./experiments/phase-engine/protocol-fault.mjs", "./experiments/phase-engine/runtime-assets.mjs", "./experiments/phase-engine/seat-surface.mjs", "./experiments/phase-engine/visible-cpu-policy.mjs", "./experiments/phase-engine/visible-policy-worker.mjs", "./experiments/phase-engine/worker-journal.mjs", "./experiments/phase-engine/match-table.css", "./play-menu.js", "./play-starter-deck.js", "./play-opponent-build.js", "./play-random-queue.js", "./deck-forge.js", "./deck-forge-tags.js", "./play-deck-import.js", "./play-deck-context.js", "./play-card-preparation.js", "./play-catalog-review.js", "./play-setup.js", "./play-player-mat.js", "./play-pregame.js", "./play-card-surface.js", "./play-surface-policy.js", "./play-menu.css", "./desktop-play.js", "./commander-evidence.js", "./commander-combos.js", "./game-changers.js",
+"./experiments/phase-engine/practice-session-record.mjs", "./experiments/phase-engine/turn-budget.mjs", "./experiments/phase-engine/card-placement.mjs", "./experiments/phase-engine/card-stats.mjs", "./experiments/phase-engine/random-outcomes.mjs", "./experiments/phase-engine/human-command.mjs", "./experiments/phase-engine/interaction-surface.mjs", "./experiments/phase-engine/match-authority.mjs", "./experiments/phase-engine/match-input.mjs", "./experiments/phase-engine/catalog-admission.mjs", "./experiments/phase-engine/match-session.mjs", "./experiments/phase-engine/match-table.mjs", "./experiments/phase-engine/practice-authority.mjs", "./experiments/phase-engine/practice-client.mjs", "./experiments/phase-engine/practice-coverage.mjs", "./experiments/phase-engine/practice-preflight.mjs", "./experiments/phase-engine/practice-flow.mjs", "./experiments/phase-engine/practice-presentation.mjs", "./experiments/phase-engine/practice-record.mjs", "./experiments/phase-engine/priority-clock.mjs", "./experiments/phase-engine/priority-scheduler.mjs", "./experiments/phase-engine/protocol-fault.mjs", "./experiments/phase-engine/runtime-assets.mjs", "./experiments/phase-engine/seat-surface.mjs", "./experiments/phase-engine/visible-cpu-policy.mjs", "./experiments/phase-engine/visible-policy-worker.mjs", "./experiments/phase-engine/worker-journal.mjs", "./experiments/phase-engine/match-table.css", "./play-menu.js", "./play-starter-deck.js", "./play-opponent-build.js", "./play-random-queue.js", "./deck-forge.js", "./deck-needs.js", "./deck-meta-prior.js", "./deck-forge-tags.js", "./play-deck-import.js", "./play-deck-context.js", "./play-card-preparation.js", "./play-catalog-review.js", "./play-setup.js", "./play-player-mat.js", "./play-pregame.js", "./play-card-surface.js", "./play-surface-policy.js", "./play-menu.css", "./desktop-play.js", "./commander-evidence.js", "./commander-combos.js", "./game-changers.js",
   "./home-overview.css",
   "./polish.css",
   "./deck-viewer.js",
@@ -170,6 +170,11 @@ const ASSETS = [
   "./pricing-presentation.js",
   "./rule-lessons.js",
   "./scan-vision.js",
+  "./scan-find.js",
+  "./scan-light.js",
+  "./scan-pix.js",
+  "./scan-fuse.js",
+  "./scan-register.js",
   "./scan-signals.js",
   "./price-reference.js",
   "./glass-select.js",
@@ -192,7 +197,10 @@ const ASSETS = [
   "./mtg-route-coverage.js",
 
   "./ai-ask.js", "./ask-navigation.js",
-  "./ai-rules.js",
+  "./judge-ui.js",
+  "./judge-examples.js",
+  "./judge-search.js",
+  "./rules-retrieval.js",
   "./ai-rules-panel.js",
   "./ai-ui.js",
   "./brand.js",
@@ -259,6 +267,9 @@ const ASSETS = [
   "./tour.js",
   "./home-search.js",
   "./universal-search.js",
+  "./answer-search.js",
+  "./answer-run.js", "./answer-state.js", "./deck-colors.js",
+  "./coach-plan.js", "./matchup-plan.js",
   "./search-fan.js",
   "./app-info.js",
   "./tabletop.js", "./tabletop-themes.js", "./game-night.js", "./table-share.js", "./play-by-hand.js", "./war-chest.js",
@@ -329,7 +340,11 @@ self.addEventListener("install", (e) => {
   // Every file is checked with the server so a release never saves an older copy, but a file the
   // page has just downloaded (or that this release did not change) comes back as a bodiless "not
   // modified" instead of being downloaded a second time.
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS.map((a) => new Request(a, { cache: "no-cache" })))));
+  // The start page is saved from "./": the server answers "./index.html" with a redirect to it, and a saved redirected
+  // answer cannot open a page (the first open after every release failed with net::ERR_FAILED, seen 12 Nov).
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS.filter((a) => a !== "./index.html").map((a) => new Request(a, { cache: "no-cache" })))
+    .then(() => fetch(new Request("./", { cache: "no-cache" })))
+    .then((r) => { if (!r.ok || r.redirected) throw new Error("start page not saved"); return c.put("./index.html", r); })));
 });
 // A saved script is re-checked in the background once its copy is older than this.
 const RECHECK_MS = 6 * 3600 * 1000;
@@ -408,7 +423,8 @@ self.addEventListener("fetch", (e) => {
             if (r.ok && r.type === "basic" && !r.redirected) c.put(key, r.clone());
             return r;
           });
-        if (hit) { if (appPage || savedLongAgo(hit)) e.waitUntil(fresh().catch(() => {})); return hit; }
+        // A copy saved by an older worker may be a redirected answer; a page can only open from a plain one.
+        if (hit) { if (appPage || savedLongAgo(hit)) e.waitUntil(fresh().catch(() => {})); return appPage && hit.redirected ? new Response(hit.body, { status: hit.status, statusText: hit.statusText, headers: hit.headers }) : hit; }
         return fresh().catch(() => Response.error());
       }),
     );

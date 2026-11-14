@@ -1,6 +1,7 @@
 // One bounded app-data operation, not one AI call per card. Recommendations stay
 // unsaved until the player reviews the exact list and uses the normal save action.
 import { forgeOptions } from './deck-forge.js';
+import { metaPrior } from './deck-meta-prior.js';
 import { buildDeck, themeQuery, themeQueries, fitsColors, fitsDeck, requestedIntent, inspectMtgTheme, scoreCard } from './builder.js';
 import { cardKey, cardPrice, sumQty, validateDeck } from './core.js';
 import { formatOf, canLead, legalityIn, verifyLeader } from './formats.js';
@@ -184,16 +185,28 @@ export async function prepareMtgDeck(args,x) {
   } catch { warnings.push('Some basic-land printing lookups were unavailable; only existing verified card data and known quotes were used.'); }
  });
  if(!active())return {cancelled:true,note:'The question was closed or replaced. Nothing was saved.'};
+ // Tournament prior (deck-meta-prior.js): the cards current lists in this format play, loaded so the builder can choose them.
+ const prior=metaPrior(typeof args.metaLists==='function'?await args.metaLists():args.metaLists);
+ if(prior.size&&active()){
+  const wanted=[...prior.top(150),...prior.lands(40)].filter(n=>!catalog[cardKey(n)]&&!x.meta?.(n));
+  for(const n of [...prior.top(150),...prior.lands(40)]){const c=x.meta?.(n);if(c&&!catalog[cardKey(c.name)])remember(c);}
+  for(let i=0;i<wanted.length&&active();i+=75)try{
+   const r=await x.api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:wanted.slice(i,i+75).map(name=>({name:name.split(' // ')[0]}))})});
+   for(const c of r?.data||[])remember(c);
+  }catch{}
+ }
+ if(!active())return {cancelled:true,note:'The question was closed or replaced. Nothing was saved.'};
  const own=n=>available(x,n),required=[...new Map([seed,...requiredCards].filter(c=>c&&cardKey(c.name)!==cardKey(lead?.name)).map(c=>[cardKey(c.name),{name:c.name,qty:1}])).values()];
  if(args.flow&&args.preferOwned!==false)for(const c of Object.values(x.S?.catalog||{}))if(c?.name&&available(x,c.name)>0&&!catalog[cardKey(c.name)]&&isLegal(c,f)&&fitsDeck(c,colors,f.commander))remember(c);
  const buildCatalog=Object.fromEntries(Object.entries(catalog).filter(([,c])=>!excludedKeys.has(cardKey(c.name))&&fitsTypeRestrictions(c,args)));
- const options=({format:f.name,seeds:[seed],commander:lead,easy:args.easy===true,preferred:args.preferOwned===true?c=>own(c.name):()=>0,requestedStyle:style,goal,creatureTypesOnly:args.creatureTypesOnly,excludedSubtypes:args.excludedSubtypes,suggestedCards:suggested.filter(Boolean).map(c=>c.name),...forgeOptions(args.forge),excludedCards:excludedCards.map(c=>c.name),catalog:buildCatalog,base:required,colors:colors.length?colors:['C'],available:basis==='total'?()=>0:own,price:quote,budget:limit});
+ const options=({format:f.name,seeds:[seed],commander:lead,easy:args.easy===true,preferred:args.preferOwned===true?c=>own(c.name):()=>0,requestedStyle:style,goal,creatureTypesOnly:args.creatureTypesOnly,excludedSubtypes:args.excludedSubtypes,suggestedCards:suggested.filter(Boolean).map(c=>c.name),...forgeOptions(args.forge),excludedCards:excludedCards.map(c=>c.name),catalog:buildCatalog,prior:prior.size?c=>prior.weight(c.name):null,base:required,colors:colors.length?colors:['C'],available:basis==='total'?()=>0:own,price:quote,budget:limit});
  const alternativeDrafts=[];
  const candidates=loopPackages.flatMap(pkg=>{
   const base=[...new Map([...required,...(pkg?pkg.cards.filter(name=>cardKey(name)!==cardKey(lead?.name)).map(name=>({name,qty:1})):[])].map(r=>[cardKey(r.name),r])).values()];
   return (args.constructionBudgets||[exclusive?Math.max(0,money(limit-.01)):limit]).flatMap(cap=>{
    const decorate=draft=>({...draft,...loopIntent,requiredLoopPackage:pkg?.id||null,internalRequiredCards:pkg?[...pkg.cards]:[]});
-   const primary=buildDeck({...options,base,budget:cap}),drafts=[decorate(primary),...(args.flow?[decorate(buildDeck({...options,base,budget:cap,completionFirst:true}))]:[])];
+   const primary=buildDeck({...options,base,budget:cap}),drafts=[decorate(primary),...(args.flow&&cap!==Infinity?[decorate(buildDeck({...options,base,budget:cap,completionFirst:true}))]:[])];
+   // (The cheapest-first completion is a budget tool. With no spending cap it is only a pile of the cheapest legal cards, and it used to win.)
    if(args.flow&&active()&&alternativeDrafts.length<2){
     const present=new Set(primary.cards.map(r=>cardKey(r.name))),intent=requestedIntent(style),themes=[seed,lead].filter(Boolean).map(commanderTheme),tags=[...new Set([...intent.roles,...themes.flatMap(t=>t.roles)])],tribes=[...new Set([...intent.tribes,...themes.flatMap(t=>t.tribes)])];
     const alternatives=[...new Map(alternativeCards.filter(c=>c&&buildCatalog[cardKey(c.name)]&&isLegal(c,f)&&functionalIn(c,f)&&fitsDeck(c,colors,f.commander)&&!present.has(cardKey(c.name))&&(basis==='owned'?own(c.name)>0:cap===Infinity||basis!=='total'&&own(c.name)>0||quote(c)!==null&&quote(c)<=cap)&&!/\bLand\b/.test(c.type_line||'')).map(c=>[cardKey(c.name),c])).values()].sort((a,b)=>scoreCard(b,tags,tribes,{size:f.size,goal})-scoreCard(a,tags,tribes,{size:f.size,goal})||a.name.localeCompare(b.name)).slice(0,2);

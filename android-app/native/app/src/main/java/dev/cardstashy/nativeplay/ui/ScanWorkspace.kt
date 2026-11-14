@@ -246,7 +246,9 @@ private fun PhotoActions(n: SiteNode, modifier: Modifier) {
 private fun LiveCamera(cam: SiteNode, ui: SiteUi, trayEmpty: Boolean, modifier: Modifier) {
     val host = LocalScanHost.current
     Box(modifier.background(Color.Black)) {
-        if (cam.find { it["id"] == "camSlot" } != null) host.camera(Modifier.fillMaxSize())
+        // The page swaps its empty #camSlot for the "video" it reads frames from (#scanVideo) as soon as its camera is on,
+        // so the preview belongs under either: asking for #camSlot alone left the camera unopened and the view black.
+        if (cam.find { it["id"] == "camSlot" || it["id"] == "scanVideo" } != null) host.camera(Modifier.fillMaxSize())
         cam.elements.firstOrNull { it.has("cam-status") }?.let { s ->
             val green = s.has("green"); val amber = s.has("amber")
             val line = when { green -> Color(0xFF30C48D); amber -> Color(0xFFF5A524); else -> Color(0xFFE5484D) }

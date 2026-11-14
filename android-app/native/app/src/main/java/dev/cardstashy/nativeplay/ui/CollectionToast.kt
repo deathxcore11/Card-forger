@@ -111,6 +111,24 @@ fun CollectionWritesHost(backdrop: androidx.compose.ui.graphics.layer.GraphicsLa
     adding?.let { a -> key(a.id) { AddLotSheet(a, backdrop, onClose = { if (CollectionWrites.adding.value === a) CollectionWrites.adding.value = null }) } }
     val tAdding by CollectionWrites.tAdding.collectAsState()
     tAdding?.let { a -> key(a.id) { TcgAddSheet(a, backdrop, onClose = { if (CollectionWrites.tAdding.value === a) CollectionWrites.tAdding.value = null }) } }
+    val comparing by CollectionWrites.comparing.collectAsState()
+    comparing?.let { o -> key(o.id) { GameAccent(o.game) { CardCompareSheet(o, backdrop, onClose = { if (CollectionWrites.comparing.value === o) CollectionWrites.comparing.value = null }) } } }
+    val judgeChat by CollectionWrites.judging.collectAsState()
+    judgeChat?.let { o -> key(o.id) { GameAccent(o.game) { JudgeSheet(o, backdrop, onClose = { if (CollectionWrites.judging.value === o) CollectionWrites.judging.value = null }) } } }
+    val metaOpen by CollectionWrites.metaDeck.collectAsState()
+    metaOpen?.let { o -> key(o.id) { GameAccent(o.game) {
+        val shut = { if (CollectionWrites.metaDeck.value === o) CollectionWrites.metaDeck.value = null }
+        MetaDeckHost("https://cardstashy.com/#decks/inspiration", close = shut,
+            // A.provenSave: the saved deck's page.
+            deck = { d -> shut(); val id = d.get("id")?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
+                val g = if (d.get("go")?.asString == "tdeck") d.get("game")?.asString ?: o.game else "mtg"
+                if (id.isNotBlank()) CollectionWrites.deckNav?.invoke(id, g) ?: o.web("https://cardstashy.com/" + (if (g == "mtg") "#deck/" else "#tdeck/") + android.net.Uri.encode(id), null) },
+            site = { u, sel -> o.web(u, sel) }, web = o.web)
+    } } }
+    val alerting by CollectionWrites.alerting.collectAsState()
+    alerting?.let { a -> key(a.id) { GameAccent(a.game) { PriceAlertSheet(a, backdrop, onClose = { if (CollectionWrites.alerting.value === a) CollectionWrites.alerting.value = null }) } } }
+    // app.js onAlert: an alert a price seen now set off, as the site's toast (pricehist.js alertText).
+    LaunchedEffect(Unit) { dev.cardstashy.nativeplay.collection.CollectionEngine.alertsFired.collect { f -> f.get("text")?.asString?.let { CollectionWrites.show(it) } } }
     val picking by CollectionWrites.picking.collectAsState()
     picking?.let { pk -> key(pk.id) { DeckPickSheet(pk, backdrop, onBack = { if (CollectionWrites.picking.value === pk) CollectionWrites.picking.value = null }) } }
     val building by CollectionWrites.building.collectAsState()

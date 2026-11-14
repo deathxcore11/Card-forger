@@ -1,4 +1,5 @@
 import {pokemonMetaRoute} from './pokemon-meta-route.js';
+import {deckColorsOf} from './deck-colors.js';
 import {RELEASE} from './release-record.js';
 import {proxyForgePlayRequest} from './deploy/forge-host/src/app-route.mjs';
 import { progressRoute } from './play-econ-route.js';
@@ -6,17 +7,13 @@ import { checkNativeBackendRequest, withNativeResponseHeaders, createSupabaseBea
 import { NATIVE_ORIGIN } from './native-service-policy.js';
 import { SUPABASE } from './config.js';
 import { ANDROID_BETA, ANDROID_BETA_OLD_APK, ANDROID_NATIVE_TEST, androidBetaDownload, nativeTestInfo } from './android-beta.js';
-import {aiMatchupRoute} from './ai-matchup-route.js';
 export {DailyCards} from './daily-card-route.js';
 import {dailyCardRoute} from './daily-card-route.js';
 export {ConditionPriceCache} from './condition-cache.js';
 import {conditionFeedRoute} from './condition-feed-route.js';
 import {weeklyCurationRoute,scheduledWeeklyCuration} from './weekly-curation-route.js';
 import {newsPulseRoute} from './news-pulse-route.js';
-import { aiReviewRoute } from './ai-review-route.js';
-import { aiAskRoute } from './ai-ask-route.js';
 import {mtgWikiReferenceRoute,wikiReferenceRoute} from './mtg-wiki-reference.js';
-import { scanIdentifyRoute } from './scan-identify-route.js';
 export { AiReviewLimits } from './ai-review-route.js';
 import {recentHistoryRoute} from './recent-history.js';
 import {ygoSetPriceRoute} from './ygo-set-prices.js';
@@ -167,18 +164,111 @@ async function fetchTopdeck(env, format, days) {
   if (!r.ok) throw Error(r.status === 401 ? "TopDeck rejected the API key" : r.status === 429 ? "TopDeck rate limit reached" : "TopDeck error " + r.status);
   return { ...normalizeTopdeck(await r.json(), { format, days }), fetchedAt: new Date().toISOString() };
 }
+// Each deck's colours, worked out here once so no phone has to load every card of every deck to answer "best red deck".
+// A card's colours never change, so they are kept for a month and only names not seen before are asked for (75 a request).
+const COLOR_KEY = new Request("https://cardforge.cache/scryfall/card-colors-v1");
+export async function addDeckColors(data, fetchImpl = fetch) {
+  const names = [...new Set((data.decks || []).flatMap((d) => (d.main || []).filter((c) => !c.land).map((c) => String(c.name || "").split(" // ")[0])))].filter(Boolean);
+  if (!names.length) return data;
+  const hit = await caches.default.match(COLOR_KEY).catch(() => null),
+    known = hit ? await hit.json().catch(() => ({})) : {},
+    low = (n) => n.toLowerCase(),
+    missing = names.filter((n) => !(low(n) in known));
+  let added = 0;
+  // At most 12 requests a run: the rest is picked up by the next run, and those decks go out without colours until then.
+  for (let i = 0; i < missing.length && i < 75 * 12; i += 75) {
+    const chunk = missing.slice(i, i + 75);
+    const r = await fetchImpl("https://api.scryfall.com/cards/collection", { method: "POST", headers: { ...UA, Accept: "application/json", "Content-Type": "application/json" }, body: JSON.stringify({ identifiers: chunk.map((name) => ({ name })) }) }).catch(() => null);
+    if (!r?.ok) break;
+    const body = await r.json().catch(() => null);
+    for (const c of body?.data || []) {
+      const row = { type_line: c.type_line || c.card_faces?.[0]?.type_line || "", colors: c.colors?.length ? c.colors : c.card_faces?.[0]?.colors || [] };
+      for (const n of [c.name, String(c.name || "").split(" // ")[0], ...(c.card_faces || []).map((f) => f.name)]) if (n) known[low(n)] = row;
+      added++;
+    }
+    // A name the card database does not know is remembered too, so it is not asked for again every run.
+    for (const nf of body?.not_found || []) if (nf?.name) known[low(nf.name)] = null;
+  }
+  if (added) await caches.default.put(COLOR_KEY, json(known, 200, LAST_GOOD_TTL)).catch(() => {});
+  for (const d of data.decks || []) {
+    const colors = deckColorsOf((d.main || []).filter((c) => !c.land), (n) => known[low(String(n || "").split(" // ")[0])] || null);
+    if (colors != null) d.colors = colors;
+  }
+  return data;
+}
+// The edge cache is separate in every Cloudflare data centre, and the daily refresh only fills the one it runs in. Seen 13 Nov
+// 2026: a phone near a data centre with nothing cached waited 16 to 62 seconds while the Worker rebuilt the whole feed from the
+// tournament pages, and search sat on "Looking…". So each finished feed is also saved once in durable storage that every data
+// centre reads. A request is answered from the nearest copy; rebuilding happens on the daily schedule, never while a phone waits,
+// except the very first time a format is asked for.
+const FEED_STALE_MS = 26 * 60 * 60 * 1000;
+const feedStore = (env) => (env?.DAILY_CARDS ? env.DAILY_CARDS.get(env.DAILY_CARDS.idFromName("shared-feeds-v1")) : null);
+async function savedFeed(env, key) {
+  const store = feedStore(env);
+  if (!store) return null;
+  try {
+    const r = await store.fetch(`https://feeds.internal/?feed=${encodeURIComponent(key)}`);
+    return r.ok ? await r.json() : null;
+  } catch {
+    return null;
+  }
+}
+async function saveFeed(env, key, data) {
+  const store = feedStore(env);
+  if (!store) return;
+  try {
+    // The store answers with the feed's saved days (daily-card-route.js feedHistory), which go out with the feed.
+    const r = await store.fetch(`https://feeds.internal/?feed=${encodeURIComponent(key)}`, { method: "PUT", body: JSON.stringify(data) });
+    return r.ok ? (await r.json()).history || null : null;
+  } catch {
+    return null;
+  }
+}
+// A copy saved before colours were worked out (seen 13 Nov: every live feed, hours after the release that added them) gets
+// them after the reply, so the next reader has them and no phone loads every card of every deck to answer "red deck". One
+// try a quarter of an hour for each feed, so a card database that is down is not asked on every request.
+const needsColors = (d) => !!d?.decks?.length && !d.decks.some((x) => typeof x.colors === "string");
+async function colorSavedFeed(env, format, days, key, data) {
+  const cache = caches.default,
+    tried = new Request(`https://cardforge.cache/mtg/colors-tried/${encodeURIComponent(key)}`);
+  if (await cache.match(tried)) return;
+  await cache.put(tried, json({ at: Date.now() }, 200, 900));
+  const copy = structuredClone(data);
+  await addDeckColors(copy);
+  if (needsColors(copy)) return;
+  await Promise.all([cache.put(mtgKey(format, days), json(copy, 200, 600)), saveFeed(env, key, copy)]);
+}
 async function mtgMeta(env, format, days, ctx, { force = false } = {}) {
-  const cache = caches.default;
+  const cache = caches.default,
+    key = `mtg:${format}${format === "EDH" ? "-mtgtop8" : ""}:${days}`;
   if (!force) {
     const hit = await cache.match(mtgKey(format, days));
     // Empty entries cached by an earlier outage are skipped so they refetch.
     if (hit) {
       const cached = await hit.json();
-      if (cached?.decks?.length) return cached;
+      if (cached?.decks?.length) {
+        if (ctx && needsColors(cached)) ctx.waitUntil(colorSavedFeed(env, format, days, key, cached).catch(() => {}));
+        return cached;
+      }
+    }
+    const saved = await savedFeed(env, key);
+    if (saved?.decks?.length) {
+      const age = Date.now() - (Date.parse(saved.fetchedAt || "") || 0),
+        stale = age > FEED_STALE_MS;
+      const work = [cache.put(mtgKey(format, days), json(saved, 200, stale ? 600 : Math.max(600, Math.min(MTG_TTL, Math.round((FEED_STALE_MS - age) / 1000)))))];
+      // A copy the daily refresh missed is still sent at once; the rebuild runs after the reply.
+      if (stale && ctx) work.push(mtgMeta(env, format, days, null, { force: true }).catch(() => {}));
+      if (!stale && ctx && needsColors(saved)) work.push(colorSavedFeed(env, format, days, key, saved).catch(() => {}));
+      if (ctx) ctx.waitUntil(Promise.all(work));
+      else await work[0];
+      return saved;
     }
   }
   try {
     const data = await fetchMtg(env, format, days);
+    await addDeckColors(data).catch(() => {});
+    const history = await saveFeed(env, key, data);
+    if (history) data.history = history;
     const put = (kind, ttl) => cache.put(mtgKey(format, days, kind), json(data, 200, ttl));
     const work = Promise.all([put("fresh", MTG_TTL), put("good", LAST_GOOD_TTL)]);
     if (ctx) ctx.waitUntil(work);
@@ -188,6 +278,8 @@ async function mtgMeta(env, format, days, ctx, { force = false } = {}) {
     const old = await cache.match(mtgKey(format, days, "good"));
     const oldData = old ? await old.json() : null;
     if (oldData?.decks?.length) return { ...oldData, stale: true, staleReason: e.message };
+    const saved = force ? await savedFeed(env, key) : null;
+    if (saved?.decks?.length) return { ...saved, stale: true, staleReason: e.message };
     throw e;
   }
 }
@@ -241,6 +333,8 @@ export const ANDROID_APPS = [
   { package: "dev.workers.deathxcore11.cardforge2.twa", sha256: ["89:18:F5:EC:D8:0C:08:48:7D:D0:84:9E:A7:84:BF:2A:02:07:0F:5E:D0:B0:AD:82:D3:83:CF:42:2F:60:5D:65"] },
   // Android beta (downloads/): its sign-in link https://cardstashy.com/auth/android/callback opens the app.
   { package: "com.cardstashy.app", sha256: ["E6:E4:01:A6:1B:7B:1B:9A:52:5B:A0:6F:F6:9E:7E:B7:6B:7E:D3:C4:A9:A8:83:1C:61:F1:56:4E:AA:DC:3F:55"] },
+  // The native Android app: the same release certificate, the same sign-in return link (Google and email sign-in).
+  { package: "com.cardstashy.app.nativetest", sha256: ["E6:E4:01:A6:1B:7B:1B:9A:52:5B:A0:6F:F6:9E:7E:B7:6B:7E:D3:C4:A9:A8:83:1C:61:F1:56:4E:AA:DC:3F:55"] },
 ];
 export function assetLinks(apps = ANDROID_APPS) {
   if (!apps.length) return new Response("No Android app registered yet.", { status: 404 });
@@ -285,10 +379,10 @@ const handlers = {
     if (url.pathname === '/api/daily-card') return dailyCardRoute(request, env);
     if (url.pathname === '/api/news') return newsPulseRoute(request, url, ctx);
     if (url.pathname === '/api/community' || url.pathname === '/api/meta/curation') return weeklyCurationRoute(request, url, env);
-    if (url.pathname === "/api/ai/matchup") return aiMatchupRoute(request, env);
-    if (url.pathname === "/api/ai/deck-review") return aiReviewRoute(request, env);
-    if (url.pathname === "/api/ai/ask") return aiAskRoute(request, env);
-    if (url.pathname === "/api/ai/identify-card") return scanIdentifyRoute(request, env);
+    // Ask, the deck coach and the matchup read no longer use AI: the app answers from its own data (answer-search.js, coach-plan.js,
+    // matchup-plan.js), and the scanner reads cards on the device (scan-fuse.js). No route here calls a model any more.
+    if (url.pathname === "/api/ai/matchup" || url.pathname === "/api/ai/deck-review" || url.pathname === "/api/ai/ask" || url.pathname === "/api/ai/identify-card")
+      return new Response(JSON.stringify({ error: "This feature now runs in the app, with no AI. Update CardStashy to use it.", code: "ai_removed" }), { status: 410, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
     // Booster pack artwork for the pack opener, served same-origin and cached for a month.
     const packImage=url.pathname.match(/^\/img\/pack\/(mtg|ptcg|ygo)\.jpg$/);
     if(packImage){

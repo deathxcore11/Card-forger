@@ -104,6 +104,7 @@ private data class Sizes(val sidebar: Dp, val field: Dp, val land: Dp, val hand:
 
 @Composable
 fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -> Unit, resultNote: String? = null, cpuPlate: dev.cardstashy.nativeplay.match.Plate? = null,
+    youPlate: dev.cardstashy.nativeplay.match.Plate? = null,
     storyMusic: dev.cardstashy.nativeplay.audio.TableMusic.StoryMusic? = null, mat: String? = null) {
     val context = LocalContext.current
     val decks = DemoDecks.load(context)
@@ -111,6 +112,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     val beat by controller.beat.collectAsState()
     // A TRIGGER SHOWS ITSELF: the trigger beat now playing (the board draws it; on two screens it stays on the top screen with the board).
     val trig by controller.trigger.collectAsState()
+    val travel by controller.travel.collectAsState()
     // The CPU's last action stays in the feed, quieter, until the next turn's banner.
     var lastBeat by remember { mutableStateOf<Beat?>(null) }
     LaunchedEffect(beat) { beat?.let { lastBeat = it } }
@@ -121,7 +123,10 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     val failure by controller.failure.collectAsState()
     val audio = remember { TableAudio(context) }
     val musicScope = rememberCoroutineScope()
-    val music = remember { dev.cardstashy.nativeplay.audio.TableMusic.init(context); dev.cardstashy.nativeplay.audio.TableMusic(context, musicScope, storyMusic) }
+    // The map on this table, chosen once here (a Story battle's own act mat, else play-playmats.js nextPlaymat): the scene draws it
+    // and the music plays its two songs (specs/stage-music-brief.md), so the two can never differ.
+    val matId = mat ?: remember { Playmats.next(context) }
+    val music = remember { dev.cardstashy.nativeplay.audio.TableMusic.init(context); dev.cardstashy.nativeplay.audio.TableMusic(context, musicScope, storyMusic, matId) }
     // The music lasts only while the table is on screen.
     DisposableEffect(Unit) { onDispose { audio.release(); music.release() } }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { audio.muted = true; music.muted = true; controller.setPaused(true) }
@@ -130,8 +135,10 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     // Keyed on the shown state itself: the board can advance within one revision (one CPU action at a time).
     LaunchedEffect(shown) { shown?.let { audio.update(previous, it); music.update(it); previous = it } }
     audio.fxCues = !Motion.still
+    audio.paying = travel?.travel?.leg.let { it == dev.cardstashy.nativeplay.match.Director.Leg.TAPS || it == dev.cardstashy.nativeplay.match.Director.Leg.TO_POOL }
+    val cuePlan = remember(audio) { { rev: Long, cues: Set<String> -> audio.planned(rev, cues) } }
     val cue = remember(audio) { { id: String, vol: Float, rate: Float -> audio.play(id, vol, rate) } }
-    // The turn clock (cue map): a quiet TT-006 as a fresh prompt window opens, TT-007 each second of the last 10, TT-008 at zero. Yours only.
+    // The turn clock (cue map, butter pass B1): silent as a window opens, TT-007 softly for the last 5 s, TT-008 at zero. Yours only.
     // One loop for the whole match (ClockCues keeps the count across the clock's per-second re-emissions, so no tick is lost).
     LaunchedEffect(audio) {
         val cues = ClockCues { id, vol -> audio.play(id, vol) }
@@ -160,6 +167,18 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     // A line from the table itself ("Block not assigned. Try again."), the site's localError.
     val note by controller.note.collectAsState()
     val anchors = remember { Anchors() }
+    // 0.4.60 G6 (glow-rules.md "The ability opens on the card"): the open card's ability rows, and Activate while Forge lets you use
+    // one: it puts the card down and runs Forge's own activation path (the tap that used to fire at once).
+    val boardLive = live && beat == null && trig == null && travel == null
+    val abilityNow = remember(inspect, shown, boardLive) { inspect?.let { c -> shown?.let { abilityView(c, it, boardLive) } } }
+    val activate: (() -> Unit)? = inspect?.takeIf { abilityNow?.usable == true }?.let { c -> { inspect = null; controller.intents.card(c.id) } }
+    // A tap or A on a ringed permanent opens it with its rows. On two screens the table stays in view above while it is open, so a
+    // second press on the same card is the tag's own: A activates, a tap puts it down.
+    val onAbility: (Card) -> Unit = { c ->
+        when (abilityPress(DualScreen.active, inspect?.id, c.id, TablePad.byPad, activate != null)) {
+            AbilityPress.OPEN -> inspect = c; AbilityPress.ACTIVATE -> activate?.invoke(); AbilityPress.CLOSE -> inspect = null
+        }
+    }
     // The match owns the controller while it is on: the screens under it lend no buttons (ForgeBoard sets X and Start).
     PadScreen(PadActs(opaque = true))
     // A controller's B on the bare table opens the match menu (Concede, Return to Play setup are in it) instead of doing nothing.
@@ -173,8 +192,8 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     // A controller's key press says the same (seen first, never consumed).
     Box(Modifier.fillMaxSize().background(Palette.Night).pointerInput(Unit) { awaitPointerEventScope { while (true) { val e = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial); if (e.type == androidx.compose.ui.input.pointer.PointerEventType.Press) controller.poke() } } }
         .onPreviewKeyEvent { if (Pad.connected.value && it.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) controller.poke(); false }) {
-      CompositionLocalProvider(LocalAnchors provides anchors, LocalTableCue provides cue) {
-        if (mat != null) PlaymatScene(mat, Modifier.fillMaxSize()) else PlaymatScene(Modifier.fillMaxSize()) // a Story battle's own act mat, else play-playmats.js: this match's mat (nextPlaymat), its own shade, the table root see-through
+      CompositionLocalProvider(LocalAnchors provides anchors, LocalTableCue provides cue, LocalTablePlan provides cuePlan) {
+        PlaymatScene(matId, Modifier.fillMaxSize()) // this match's mat, its own shade, the table root see-through
         BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
             val k = if (maxHeight >= 600.dp) 1.45f else if (maxHeight >= 480.dp) 1.2f else 1f
             val sizes = Sizes(sidebar = if (maxWidth >= 1000.dp) 280.dp else 168.dp, field = 46.dp * k, land = 36.dp * k, hand = 60.dp * k, back = 20.dp * k)
@@ -185,21 +204,24 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
                 // The keep is a decision with the same clock as the table's: the ring on Keep (the site's ok key), from LocalMatchClock.
                 stage == Stage.MULLIGAN -> CompositionLocalProvider(LocalMatchClock provides controller.clock.collectAsState().value) {
                     Mulligan(st, live, onOk = { controller.ok() }, onCancel = { controller.cancel() },
-                        onCard = { controller.card(it) }, onDeal = { audio.play("QP-012", .55f) }, onHold = { inspect = it }) }
+                        onCard = { controller.card(it) }, onDeal = { audio.play("QP-012", .55f) }, onHold = { inspect = it },
+                        deck = remember(youPlate) { mullDeckOf(controller.input, youPlate?.name) }) }
                 else -> {
                     var handOrder by remember { mutableStateOf(emptyList<Int>()) }
                     // table-emotes.mjs mount(): the CPU's hello once the match is on; everything goes with the table.
                     LaunchedEffect(Unit) { TableEmotes.start(this) }
                     DisposableEffect(Unit) { onDispose { TableEmotes.destroy() } }
-                    CompositionLocalProvider(LocalMatchClock provides controller.clock.collectAsState().value, LocalTrigger provides trig) {
-                    ForgeBoard(st, live && beat == null && trig == null, controller.intents, selectedHand, { selectedHand = it }, { inspect = it }, { menu = true },
-                        handOrder, { handOrder = it }, menu = matchMenu, afk = if (DualScreen.active) afk else null) {
+                    CompositionLocalProvider(LocalMatchClock provides controller.clock.collectAsState().value, LocalTrigger provides trig, LocalTravel provides travel,
+                        LocalLastMoves provides controller.moves.collectAsState().value, LocalHeld provides controller.held.collectAsState().value) {
+                    ForgeBoard(st, live && beat == null && trig == null && travel == null, controller.intents, selectedHand, { selectedHand = it }, { inspect = it }, { menu = true },
+                        handOrder, { handOrder = it }, menu = matchMenu, afk = if (DualScreen.active) afk else null, onAbility = onAbility,
+                        abilityOpen = inspect?.id?.takeIf { abilityNow != null }) {
                         TableSide(st, controller, beat, live, lastBeat) { inspect = it }
                     }
                     }
                 }
             }
-            banner?.let { b -> BannerView(b.text, b.yours, Modifier.align(Alignment.Center)) }
+            banner?.let { b -> BannerView(b.text, b.yours, Modifier) }
         }
         ((if (DualScreen.active) null else afk) ?: note)?.let { Text(it, style = Type.Label.copy(color = Color(0xFFFFB4A8), fontSize = 14.sp), modifier = Modifier.align(Alignment.TopCenter).padding(top = 96.dp)
             .clip(RoundedCornerShape(999.dp)).background(Color(0xD90C0C0E)).border(1.dp, Palette.Red, RoundedCornerShape(999.dp)).padding(horizontal = 16.dp, vertical = 8.dp)) }
@@ -207,10 +229,14 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
         // Two screens: a card you look at opens on the bottom screen, so the table stays in full view on top (B closes it).
         // Start still opens the match menu from an open inspect (U8: on two screens the ring can't come down to it).
         val inspectStart = PadAct("Menu") { inspect = null; matchMenu.open = true }
-        inspect?.let { c -> if (DualScreen.active) BottomScreen { CardInspect(c, shown?.viewer, inspectStart, beside = true) { inspect = null } } else CardInspect(c, shown?.viewer, inspectStart) { inspect = null } }
+        // 0.4.60 G3: the one inspect view lists what is attached to the card; a tap on one of those opens it in the same view.
+        inspect?.let { c -> val att = attachedOf(shown, shown?.card(c.id)?.takeIf { it.zone == c.zone } ?: c); val openAtt: (Card) -> Unit = { inspect = it }
+            if (DualScreen.active) BottomScreen { CardInspect(c, shown?.viewer, inspectStart, beside = true, attached = att, onAttached = openAtt, ability = abilityNow, onActivate = activate) { inspect = null } }
+            else CardInspect(c, shown?.viewer, inspectStart, attached = att, onAttached = openAtt, ability = abilityNow, onActivate = activate) { inspect = null } }
         if (menu) Menu(onConcede = { menu = false; matchMenu.ask = "concede" }, onLeave = { menu = false; matchMenu.ask = "leave" }, onClose = { menu = false })
         MatchLeaveConfirm(matchMenu)
-        if (stage == Stage.FINISHED) shown?.let { Result(it, audio, onHome, onRematch, resultNote, endReason(it, controller.conceded)) }
+        // Living table F7: the result card waits for the winning hit to be seen (not after a concession).
+        if (stage == Stage.FINISHED) shown?.let { Result(it, audio, onHome, onRematch, resultNote, endReason(it, controller.conceded), holdMs = { if (controller.conceded) 0L else TableFeel.resultWaitFor(it) }) }
         if (stage == Stage.FAILED) Failed(failure ?: "The match stopped.", onHome)
     }
 }
@@ -231,9 +257,18 @@ private fun Loading() {
  * pair sits bottom right: Mulligan (dark glass) and Keep (the gold main button) with the decision's clock running round it.
  */
 @Composable
-internal fun Mulligan(st: MatchState, live: Boolean, onOk: () -> Unit, onCancel: () -> Unit, onCard: (Int) -> Unit, onDeal: () -> Unit, onHold: (Card) -> Unit) {
-    var mulls by remember { androidx.compose.runtime.mutableIntStateOf(0) }
-    val choosing = st.inputType != "InputConfirmMulligan" && st.selection.cards.isNotEmpty()
+internal fun Mulligan(st: MatchState, live: Boolean, onOk: () -> Unit, onCancel: () -> Unit, onCard: (Int) -> Unit, onDeal: () -> Unit, onHold: (Card) -> Unit,
+                      deck: MullDeck? = null) {
+    // 0.4.59 T9: every number from Forge (MulliganProbe on the real engine): it puts the cards on the bottom right after a
+    // mulligan (InputLondonMulligan, "Return N card(s)"), then asks Keep or Mulligan again with the smaller hand.
+    val lines = mulliganLines(st)
+    val mulls = lines.mulls
+    val london = st.inputType == "InputLondonMulligan"
+    // Forge lists no cards to pick while it asks for the bottom; every card in the opening hand is the pick (live 0.4.58: a tap
+    // there only opened the card, so only Auto could answer).
+    val choosing = london || (st.inputType != "InputConfirmMulligan" && st.selection.cards.isNotEmpty())
+    fun pickable(card: Card) = mullPickable(st, live, card)
+    var ringed by remember { mutableStateOf<Int?>(null) }
     val yours = live && st.waitingOnMe
     val youFirst = Regex("(?i)\\byou (are|go|will go)( going)? first").containsMatchIn(st.message) ||
         !Regex("(?i)going first|goes first").containsMatchIn(st.message) && st.activePlayer == st.viewer
@@ -261,31 +296,37 @@ internal fun Mulligan(st: MatchState, live: Boolean, onOk: () -> Unit, onCancel:
             val cardW = minOf((W - 64.dp) / 6.2f, H * .5f / 1.4f)
             Box(Modifier.fillMaxSize().padding(horizontal = 24.dp), contentAlignment = Alignment.Center) {
                 HandFan(st.me.hand, cardW, Modifier.fillMaxWidth().offset(y = (-8).du), angleDeg = 2.5f, dealIn = true,
-                    markOf = { card -> if (card.id in st.selection.chosenCards) Mark.PICKED else if (live && card.id in st.selection.cards) Mark.PICKABLE else Mark.NONE },
-                    onTap = { card -> if (live && card.id in st.selection.cards) { if (choosing) cue?.invoke("QP-015", .8f, 1f); onCard(card.id) } else onHold(card) },
-                    onHold = onHold, onDeal = onDeal, pop = 1.2f)
+                    markOf = { card -> if (card.id in st.selection.chosenCards) Mark.PICKED else if (pickable(card)) Mark.PICKABLE else Mark.NONE },
+                    onTap = { card -> if (pickable(card)) { if (choosing) cue?.invoke("QP-015", .8f, 1f); onCard(card.id) } else onHold(card) },
+                    onHold = onHold, onDeal = onDeal, pop = 1.2f, onCarry = { id -> if (id != null) ringed = id })
             }
             // Three pips (7, 6, 5) and the caption; while putting cards on the bottom, Forge's own line instead.
-            val cards = 7 - mulls
             Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 22.du), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.du)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.du)) {
                     repeat(3) { i -> Box(Modifier.size(9.du).clip(CircleShape).background(if (i == mulls.coerceAtMost(2)) Color(0xFFE8B95B) else Color(0x40FFFFFF))) }
                 }
-                Text(if (choosing) shortMessage(st) else if (cards > 1) "$cards cards \u00B7 you may mulligan to ${cards - 1}" else "$cards card",
+                if (!DualScreen.active) Text(lines.caption, Modifier.anchorRect("mull.caption"),
                     style = sans(sp(14f), FontWeight.Medium, Color(0xFFE6DCC6)), textAlign = TextAlign.Center)
             }
-            if (yours) Row(Modifier.align(Alignment.BottomEnd).padding(end = 28.du, bottom = 18.du), horizontalArrangement = Arrangement.spacedBy(14.du), verticalAlignment = Alignment.CenterVertically) {
+            // Two screens: Keep and Mulligan live on the bottom screen with the card under the ring (MulliganBottom); the top is the hand.
+            if (DualScreen.active) BottomScreen { MulliganBottom(st, lines, st.me.hand.firstOrNull { it.id == ringed } ?: st.me.hand.firstOrNull(), deck, yours, choosing, youFirst,
+                onKeep = { if (!choosing) cue?.invoke("QP-013", 1f, 1f); onOk() }, onMull = { if (!choosing) cue?.invoke("QP-014", 1f, 1f); onCancel() }) }
+            else if (yours) Column(Modifier.align(Alignment.BottomEnd).padding(end = 28.du, bottom = 12.du), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(5.du)) {
+              Row(horizontalArrangement = Arrangement.spacedBy(14.du), verticalAlignment = Alignment.CenterVertically) {
                 // The turn clock's ring is on Keep (GoldPill); its last-10 count stands first in the row, never on Mulligan beside it.
                 TurnCount(d.u)
                 CompositionLocalProvider(LocalTurnCountOutside provides true) {
                 if (!choosing) st.buttons.cancel?.takeIf { st.buttons.cancelEnabled }?.let { label ->
                     Box(Modifier.height(48.du).widthIn(min = 128.du).clip(RoundedCornerShape(999.dp)).background(Color(0xE60C0D12)).border(1.dp, Color(0x26FFFFFF), RoundedCornerShape(999.dp))
-                        .clickable { mulls++; cue?.invoke("QP-014", 1f, 1f); onCancel() }.padding(horizontal = 22.du), contentAlignment = Alignment.Center) {
+                        .clickable { cue?.invoke("QP-014", 1f, 1f); onCancel() }.padding(horizontal = 22.du).anchorRect("mull"), contentAlignment = Alignment.Center) {
                         Text(label, style = sans(sp(16f), FontWeight.Bold, Color(0xFFF3E9D2)), maxLines = 1)
                     }
                 }
-                GoldPill(st.buttons.ok ?: "Keep", st.buttons.okEnabled, Modifier.height(48.du).anchorRect("gold"), d) { if (!choosing) cue?.invoke("QP-013", 1f, 1f); onOk() }
+                GoldPill(st.buttons.ok ?: "Keep", st.buttons.okEnabled, Modifier.height(48.du).anchorRect("gold"), d, press = null) { if (!choosing) cue?.invoke("QP-013", 1f, 1f); onOk() }
                 }
+              }
+              // T9: one line under Mulligan says what it does, with Forge's numbers (one line, under the pair, clear of the caption).
+              if (!choosing && st.buttons.cancelEnabled) lines.mullLine?.let { Text(it, Modifier.anchorRect("mull.line"), style = sans(sp(12f), FontWeight.Medium, Color(0xFFCFC6B2)), maxLines = 1) }
             }
         }
     }
@@ -485,33 +526,13 @@ private fun Hand(st: MatchState, c: MatchController, live: Boolean, sizes: Sizes
 @Composable
 private fun TableSide(st: MatchState, c: MatchController, beat: Beat?, live: Boolean, lastBeat: Beat?, onInspect: (Card) -> Unit) {
     Box(Modifier.fillMaxSize()) {
-        // Arena style: no window. A CPU cast, trigger or ability gets the spotlight (the card big at the right and our glass box
-        // beside it, table-feel spec 2); other beats keep their one line of glass. Your own spell gets the same, in gold, as it lands on the stack.
-        // A CPU cast has no glass box any more (director spec 7): the card itself flies onto the stack and is read there.
+        // Arena style: no window. A CPU trigger or ability gets the spotlight (the card big at the right and our glass box beside
+        // it, table-feel spec 2); other beats keep their one line of glass. A cast, yours or the CPU's, has no side panel any more
+        // (0.4.59 T5, which ends faults 6 and 11): the card itself travels to the stack, rests there with its rim and is read there.
         val spot = beat?.let { spotlightFor(st, it) }?.takeIf { it.verb != "casts" }
-        // Your own spell: up while it is on the stack, at most 1.6 s, and gone 0.7 s after it leaves the stack, on any new step or turn,
-        // or when a CPU beat takes the stage. Each clear runs on its own clock, so a stack change can't cancel it (Randall, test 3:
-        // the pop-up stayed through combat and the CPU's turn when the spell resolved inside the 1.6 s).
-        var mine by remember { mutableStateOf<Pair<Spotlight, Int>?>(null) }
-        val top = st.stack.firstOrNull()
-        val seen = remember { HashSet<Int>() }
-        LaunchedEffect(top?.id) {
-            val t = top ?: return@LaunchedEffect
-            if (t.controller != st.viewer || t.ability || t.source == null || !seen.add(t.id)) return@LaunchedEffect
-            mine = Spotlight(t.source, "You", "cast", t.targets.map { r -> if (r.kind == "player") (if (r.id == st.viewer) "you" else "CPU") else r.name ?: "" }, 1600, yours = true) to t.id
-        }
-        val shownMine = mine
-        LaunchedEffect(shownMine) { if (shownMine != null) { delay(1600); if (mine === shownMine) mine = null } }
-        val stillOn = shownMine != null && st.stack.any { it.id == shownMine.second }
-        LaunchedEffect(shownMine, stillOn) { if (shownMine != null && !stillOn) { delay(700); if (mine === shownMine) mine = null } }
-        val step = st.turn to st.phase
-        var lastStep by remember { mutableStateOf(step) }
-        if (step != lastStep) { lastStep = step; mine = null }
-        if (beat != null && mine != null) mine = null
         when {
             spot != null -> CastSpotlight(spot) { c.next() }
             beat != null -> BeatCaption(beat, Modifier.align(Alignment.TopCenter).padding(top = 58.dp)) { c.next() }
-            mine != null -> CastSpotlight(mine!!.first) { mine = null }
         }
         // native-panel.mjs dock: Forge's own questions (triggers order, costs, damage split, search, choices). Called every frame: the
         // spell-mode back-out acts on the step after a prompt.
@@ -748,11 +769,40 @@ private fun PromptPanel(p: Prompt, st: MatchState, c: MatchController, live: Boo
 
 @Composable
 private fun BannerView(text: String, yours: Boolean, modifier: Modifier) {
-    val a = remember(text) { Animatable(0f) }
-    LaunchedEffect(text) { a.animateTo(1f, tween(260)) }
-    Box(modifier.alpha(a.value).width(420.dp).aspectRatio(5f), contentAlignment = Alignment.Center) {
-        AssetImage(if (yours) "play/turn-you.webp" else "play/turn-cpu.webp", Modifier.fillMaxSize(), maxWidth = 1120, contentScale = ContentScale.Fit)
-        Text(text, style = Type.Title.copy(fontSize = 20.sp), textAlign = TextAlign.Center)
+    // Match punch P4: the banner grows from half size with a bounce (280 ms) over a streak that widens across the board (380), holds
+    // to 950 and fades out (240): gold for your turn, ice blue for the CPU's. It stands inside the board, on the centre line, and
+    // takes no touch. Reduce motion: it fades in and out at full size, no streak.
+    val still = Motion.still || Playmats.reduced(androidx.compose.ui.platform.LocalContext.current)
+    val a = remember(text) { Animatable(if (Motion.still) 1f else 0f) }
+    val grow = remember(text) { Animatable(if (still) 1f else .5f) }
+    val streak = remember(text) { Animatable(0f) }
+    LaunchedEffect(text) {
+        if (Motion.still) return@LaunchedEffect
+        launch { a.animateTo(1f, tween(120)) }
+        if (!still) { launch { grow.animateTo(1f, tween(280, easing = androidx.compose.animation.core.Easing { backOut(it) })) }
+            launch { streak.animateTo(1f, tween(380, easing = androidx.compose.animation.core.Easing { x -> if (x >= 1f) 1f else 1f - Math.pow(2.0, -10.0 * x).toFloat() })) } }
+        delay(950); a.animateTo(0f, tween(240))
+    }
+    val tone = if (yours) Color(0xFFF3D27E) else Color(0xFF5CC8FF)
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxSize()) {
+        val w = maxWidth.value; val h = maxHeight.value
+        val zones = remember(w, h, DualScreen.active) { ZoneLayout.of(w, h, dual = DualScreen.active, k = ZoneLayout.scale(w, h)) }
+        val mid = remember(zones) { ZoneLayout.rows(zones, DualScreen.active).divider }
+        val bw = minOf(420f, zones.board.w * .92f)
+        // The streak: a line of light along the centre line, widening out from the middle and staying inside the board.
+        androidx.compose.foundation.Canvas(Modifier.offset(x = zones.board.x.dp, y = (mid - 30f).dp).size(zones.board.w.dp, 60.dp).alpha(a.value)) {
+            val half = size.width / 2 * streak.value
+            if (half > 1f) { val y = size.height / 2
+                drawLine(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color.Transparent, tone.copy(alpha = .55f), Color.White.copy(alpha = .9f), tone.copy(alpha = .55f), Color.Transparent),
+                    startX = size.width / 2 - half, endX = size.width / 2 + half), androidx.compose.ui.geometry.Offset(size.width / 2 - half, y), androidx.compose.ui.geometry.Offset(size.width / 2 + half, y), strokeWidth = 3.dp.toPx())
+                drawLine(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color.Transparent, tone.copy(alpha = .16f), Color.Transparent),
+                    startX = size.width / 2 - half, endX = size.width / 2 + half), androidx.compose.ui.geometry.Offset(size.width / 2 - half, y), androidx.compose.ui.geometry.Offset(size.width / 2 + half, y), strokeWidth = 26.dp.toPx()) }
+        }
+        Box(Modifier.offset(x = (zones.board.x + zones.board.w / 2 - bw / 2).dp, y = (mid - bw / 10f).dp).width(bw.dp).aspectRatio(5f)
+            .graphicsLayer { alpha = a.value; scaleX = grow.value; scaleY = grow.value }, contentAlignment = Alignment.Center) {
+            AssetImage(if (yours) "play/turn-you.webp" else "play/turn-cpu.webp", Modifier.fillMaxSize(), maxWidth = 1120, contentScale = ContentScale.Fit)
+            Text(text, style = Type.Title.copy(fontSize = 20.sp), textAlign = TextAlign.Center)
+        }
     }
 }
 
@@ -768,15 +818,22 @@ private fun Menu(onConcede: () -> Unit, onLeave: () -> Unit, onClose: () -> Unit
 }
 
 @Composable
-private fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRematch: () -> Unit, note: String? = null, reason: String? = null) {
+internal fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRematch: () -> Unit, note: String? = null, reason: String? = null, holdMs: () -> Long = { 0L }) {
     val won = !st.draw && st.winnerPlayerId == st.viewer
     val draw = st.draw || st.winnerPlayerId == null
     val rise = remember { Animatable(0f) }
-    LaunchedEffect(Unit) { delay(300); audio.play(if (draw) "QP-019" else if (won) "QP-017" else "QP-018"); rise.animateTo(1f, tween(400, easing = FastOutSlowInEasing)) }
-    // A controller: X is Rematch (the gold button), and the ring starts on it; the board under the result lends nothing.
-    PadScreen(PadActs(x = PadAct("Rematch") { onRematch() }, opaque = true))
-    val rematchFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { if (Pad.connected.value) runCatching { rematchFocus.requestFocus() } }
+    // Live 0.4.57: one X on Defeat started a Rematch. As in Arena, X and the ring's start leave to Home; Rematch is a
+    // deliberate step (touch, or the ring right then A). Both wait for the card to finish rising, so an X carried in from the
+    // table does nothing; the board under the result lends nothing either.
+    var armed by remember { mutableStateOf(false) }
+    val homeFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        delay(300 + holdMs()); audio.play(if (draw) "QP-019" else if (won) "QP-017" else "QP-018"); rise.animateTo(1f, tween(400, easing = FastOutSlowInEasing))
+        armed = true
+        // The ring start leaves touch mode first, as the table's does (live 0.4.56): in touch mode a button can't take focus.
+        if (Pad.connected.value) { PadPrompts.inputModes?.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard); runCatching { homeFocus.requestFocus() } }
+    }
+    PadScreen(PadActs(x = if (armed) PadAct("Home") { onHome() } else null, opaque = true))
     Box(Modifier.fillMaxSize().background(Color(0xAA000000).copy(alpha = .67f * rise.value)), contentAlignment = Alignment.Center) {
         Column(Modifier.graphicsLayer { alpha = rise.value; translationY = (1f - rise.value) * 40.dp.toPx() }.width(380.dp).glass(16.dp).padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(Modifier.fillMaxWidth().aspectRatio(5f), contentAlignment = Alignment.Center) {
@@ -788,8 +845,8 @@ private fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRema
             Text("Turn ${st.turn} · You ${st.me.life} · CPU ${st.cpu.life}", style = Type.Body.copy(color = Palette.InkSoft))
             if (note != null) Text(note, style = Type.Body.copy(color = Palette.Gold, fontSize = 13.sp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                GoldButton("Home", true, Modifier.width(150.dp), primary = false, onClick = onHome)
-                GoldButton("Rematch", true, Modifier.width(150.dp).focusRequester(rematchFocus), onClick = onRematch)
+                GoldButton("Home", true, Modifier.width(150.dp).focusRequester(homeFocus), primary = false, onClick = onHome)
+                GoldButton("Rematch", true, Modifier.width(150.dp), onClick = onRematch)
             }
         }
     }

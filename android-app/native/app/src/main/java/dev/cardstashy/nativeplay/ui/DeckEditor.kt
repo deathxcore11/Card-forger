@@ -453,7 +453,7 @@ private fun PlayDeckTab(tab: String, e: DeckEdit.Edit) {
     val want = if (tab == "engine") "playpower|" else "rules|"
     fun take(m: SitePanelModel) { if (m.key.startsWith(want)) panel = m }
     fun panelDo(call: suspend () -> JsonObject) = scope.launch {
-        runCatching { take(SitePanelModel.parse(call())); CollectionEngine.settle(15_000, CollectionEngine.PANEL_MODEL) { j -> if (j.has("key")) take(SitePanelModel.parse(j)) } }
+        runCatching { take(SitePanelModel.parse(call())); CollectionEngine.settle(if (tab == "engine") 120_000 else 15_000, CollectionEngine.PANEL_MODEL) { j -> if (j.has("key")) take(SitePanelModel.parse(j)) } }
     }
     val listSig = if (tab == "engine") e.cards.joinToString(";") { "${it.qty} ${it.name}" } else ""
     LaunchedEffect(tab, e.format, listSig, session?.userId, revision) {

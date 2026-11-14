@@ -63,6 +63,12 @@ assert.equal(inspect([forest,mountain,bluffs]).manaCoverage.status,'unverified')
 assert.equal(inspect([forest,mountain,plains]).manaCoverage.status,'supported');
 assert.equal(inspect([forest,mountain,cataracts]).manaCoverage.status,'unverified');
 assert(!inspect([forest,mountain,cataracts]).issues.some(i=>/No confirmed land source/.test(i)),'a valid conditional filter is not declared impossible');
+// Seen 12 Nov: Strong Modern builds stopped with "No confirmed land source for B mana" over Dismember ({1}{B/P}{B/P}) in a
+// mono-red list and a {U/R} hybrid in a mono-blue list. Outside Commander such costs are payable; a plain {B} still is not.
+const spell=(name,mana_cost,colors)=>({name,type_line:'Instant',oracle_text:'',mana_cost,cmc:3,colors,color_identity:colors});
+const sixty=spells=>inspectDeckPlan({game:'mtg'},[...spells,mountain].map(card=>({name:card.name,card,qty:card===mountain?20:4,zone:'main'})),{});
+assert(!sixty([spell('Phyrexian fixture','{1}{B/P}{B/P}',['B']),spell('Hybrid fixture','{1}{U/R}',['U','R'])]).issues.some(i=>/No confirmed land source/.test(i)),'hybrid and Phyrexian costs need no second colour');
+assert(sixty([spell('Plain black fixture','{1}{B}{B}',['B'])]).issues.some(i=>/No confirmed land source for B/.test(i)),'a plain off-colour cost is still caught');
 const filler={name:'Uncastable fixture',type_line:'Sorcery',oracle_text:'',mana_cost:'{20}',cmc:20};
 const goldfish = last => mtgGoldfish([{qty:1,c:forest},{qty:1,c:mountain},{qty:1,c:last},{qty:20,c:filler}],{size:100,commander,runs:200,seed:19});
 const failed=goldfish(bluffs), passed=goldfish(plains);

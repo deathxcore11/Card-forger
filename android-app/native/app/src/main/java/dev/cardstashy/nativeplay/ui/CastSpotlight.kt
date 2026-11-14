@@ -3,6 +3,8 @@ package dev.cardstashy.nativeplay.ui
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 import android.graphics.BlurMaskFilter
 import androidx.compose.animation.core.Animatable
@@ -22,6 +24,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -38,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -98,6 +102,27 @@ private fun keywordKey(k: String) = k.replace(Regex("([a-z])([A-Z])"), "$1 $2").
 /** Forge spells some keywords with the word twice ("Protection from from black"): say it once. */
 private fun keywordLabel(k: String) = keywordKey(k).replace(Regex("\\b(\\w+) \\1\\b"), "$1").replaceFirstChar { it.uppercase() }
 private fun hintFor(k: String): String? { val key = keywordKey(k); return KEYWORD_HINTS.entries.firstOrNull { key == it.key || key.startsWith(it.key + " ") }?.value }
+
+/**
+ * 0.4.60 G4: one keyword box in the inspect view: the tile's icon ([key], a [TileBadges.KEYWORDS] icon, or null for a keyword the tile
+ * shows as its word), Forge's words for it ([name]) and the KEYWORD_HINTS sentence ([hint], null when there is none).
+ */
+internal data class KeywordBox(val key: String?, val name: String, val hint: String?)
+
+/**
+ * 0.4.60 G4: the keyword boxes of [card], in the tile strip's order (TileBadges.of: the iconic ones in rank order, one per icon,
+ * then the word ones in Forge's order). Names are Forge's own words (TileBadges.currentKeywords); one icon that stands for more
+ * than one of Forge's entries (Protection from black, Protection from red) names them all. The sentence is KEYWORD_HINTS's, never ours.
+ */
+internal fun keywordBoxes(card: Card): List<KeywordBox> {
+    if (card.hidden) return emptyList()
+    val kws = TileBadges.currentKeywords(card)
+    fun rank(key: String) = TileBadges.KEYWORDS.indexOfFirst { it.first == key }
+    val iconic = kws.filter { it.key != null }.groupBy { it.key!! }.entries.sortedBy { rank(it.key) }
+        .map { (key, ks) -> KeywordBox(key, ks.map { it.text }.distinct().joinToString(", "), hintFor(ks.first().text)) }
+    val words = kws.filter { it.key == null }.map { KeywordBox(null, it.label, hintFor(it.text)) }
+    return iconic + words
+}
 
 /** cpuShowHtml's intent: what the play is ("Casting a creature", "Using X's ability"), then who it aims at. */
 internal fun spotlightIntent(s: Spotlight): String {
@@ -163,7 +188,11 @@ fun CastSpotlight(s: Spotlight, modifier: Modifier = Modifier, onTap: () -> Unit
 }
 
 @Composable
-private fun GlassBox(s: Spotlight, w: Dp, h: Dp, timer: Float) {
+private fun GlassBox(s: Spotlight, w: Dp, h: Dp, timer: Float, attached: List<Card> = emptyList(), onAttached: (Card) -> Unit = {},
+    /** 0.4.60 G4: the inspect view's keyword boxes; they replace the keyword lines. [boxesInside]: drawn here under the rules (a short width). */
+    boxes: List<KeywordBox>? = null, boxesInside: Boolean = false,
+    /** 0.4.60 G6: the inspect view's ability rows, under the rules (glow-rules.md "The ability opens on the card"). */
+    ability: AbilityView? = null, onActivate: (() -> Unit)? = null) {
     val c = s.card
     val shape = RoundedCornerShape(18.dp)
     val creature = "Creature" in c.type && c.power != null && c.toughness != null
@@ -196,11 +225,18 @@ private fun GlassBox(s: Spotlight, w: Dp, h: Dp, timer: Float) {
         val lines = c.text.split(Regex("\n+")).map { it.trim() }.filter { it.isNotEmpty() }.take(6)
         if (lines.isNotEmpty()) {
             Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0x1FFFFFFF)))
-            Column(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            // 0.4.60 G4: with the keyword boxes under them the rules keep their full height; the boxes give way (they scroll).
+            Column(if (boxes != null && boxesInside && boxes.isNotEmpty()) Modifier else Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 lines.forEach { l -> SymbolLine(l) }
             }
         }
-        val kws = c.keywords.map { it }.distinct().mapNotNull { k -> hintFor(k)?.let { k to it } }.take(3)
+        // 0.4.60 G6: each ability Forge's text names, its cost and words, with the gold Activate (or why not) in its row.
+        if (ability != null) AbilityRows(c, ability, onActivate)
+        // 0.4.60 G4: no room beside the card: the keyword boxes go under the rules.
+        if (boxes != null && boxesInside && boxes.isNotEmpty()) KeywordBoxes(c, boxes, Modifier.fillMaxWidth().weight(1f, fill = false).verticalScroll(rememberScrollState()), tight = true)
+        // 0.4.60 G3: what is attached to the card (auras, equipment), under the rules as small cards; a tap on one inspects it.
+        if (attached.isNotEmpty()) AttachedRow(c, attached, onAttached)
+        val kws = if (boxes != null) emptyList() else c.keywords.map { it }.distinct().mapNotNull { k -> hintFor(k)?.let { k to it } }.take(3)
         kws.forEach { (k, hint) ->
             val inline = HashMap<String, InlineTextContent>()
             Text(buildAnnotatedString { withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = Color(0xFFF3E9D2))) { append(keywordLabel(k)) }; append(" "); symbols(hint, inline) },
@@ -210,6 +246,68 @@ private fun GlassBox(s: Spotlight, w: Dp, h: Dp, timer: Float) {
         if (s.durationMs > 0) Box(Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(2.dp)).background(Color(0x1FFFFFFF))) {
             Box(Modifier.fillMaxWidth(timer).height(3.dp).background(Brush.horizontalGradient(listOf(Color(0xFFF7DA97), Color(0xFFE8B95B)))))
         }
+    }
+}
+
+/**
+ * 0.4.60 G4: the keyword boxes, one glass box each: the tile's icon in the tile's mark (dark pill, gold hairline, gold icon), the
+ * keyword's name and its sentence with {symbols} drawn by the app's symbol set.
+ * 0.4.60 G5: the dual bottom screen's reading panel draws the same boxes ([prefix] "b.read" names their anchors), two to a row
+ * ([columns]) and lighter ([fill]), as they sit inside its glass.
+ */
+@Composable
+internal fun KeywordBoxes(host: Card, boxes: List<KeywordBox>, modifier: Modifier = Modifier, tight: Boolean = false,
+                          prefix: String = "inspect", columns: Int = 1, fill: Color = Color(0xF00E121C)) {
+    // [tight]: under the rules in the glass box, a little closer together so the rules keep their room.
+    val gap = if (tight) 5.dp else 7.dp
+    @Composable fun One(i: Int, b: KeywordBox, m: Modifier) {
+        val shape = RoundedCornerShape(12.dp)
+        Row(m.anchorRect("${prefix}Kw${host.id}.$i")
+            .clip(shape).background(fill).border(1.dp, Color(0x6BE3C070), shape).padding(horizontal = 11.dp, vertical = if (tight) 6.dp else 9.dp),
+            horizontalArrangement = Arrangement.spacedBy(9.dp), verticalAlignment = Alignment.Top) {
+            if (b.key != null) Box(Modifier.size(24.dp).anchorRect("${prefix}KwIcon${host.id}.$i").clip(RoundedCornerShape(50)).background(Color(0xF0101114))
+                .border(1.dp, Color(0xFFD6AD64), RoundedCornerShape(50)), contentAlignment = Alignment.Center) {
+                BoardIcon(b.key, Color(0xFFF2D496), 24.dp * .74f)
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(b.name, style = sans(13.sp, FontWeight.ExtraBold, Color(0xFFFBF3DF)), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (b.hint != null) {
+                    val inline = HashMap<String, InlineTextContent>()
+                    Text(buildAnnotatedString { symbols(b.hint, inline) }, style = sans(12.sp, FontWeight.Medium, Color(0xFFB8C0CD)).copy(lineHeight = 16.sp), inlineContent = inline)
+                }
+            }
+        }
+    }
+    Column(modifier.anchorRect("${prefix}Kws${host.id}"), verticalArrangement = Arrangement.spacedBy(gap)) {
+        if (columns <= 1) boxes.forEachIndexed { i, b -> One(i, b, Modifier.fillMaxWidth()) }
+        // Side by side, each row as tall as its taller box so the pair lines up.
+        else boxes.withIndex().chunked(columns).forEach { row ->
+            Row(Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(gap)) {
+                row.forEach { (i, b) -> One(i, b, Modifier.weight(1f).fillMaxHeight()) }
+                repeat(columns - row.size) { Box(Modifier.weight(1f)) }
+            }
+        }
+    }
+}
+
+/** 0.4.60 G3: the cards attached to [host], each a small card with its name under it; a tap on one opens it in the same view. */
+@Composable
+private fun AttachedRow(host: Card, attached: List<Card>, onAttached: (Card) -> Unit) {
+    Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0x1FFFFFFF)))
+    Text("ATTACHED", style = sans(11.sp, FontWeight.Bold, GOLD).copy(letterSpacing = .16.em))
+    Row(Modifier.fillMaxWidth().anchorRect("inspectAttached${host.id}"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        attached.take(4).forEach { a ->
+            val shape = RoundedCornerShape(5.dp)
+            Column(Modifier.width(58.dp).anchorRect("inspectAtt${a.id}").semantics { contentDescription = "${a.name}, attached to ${host.name}" }
+                .clickable(remember { MutableInteractionSource() }, null) { onAttached(a) }, horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(Modifier.size(52.dp, 72.dp).clip(shape).border(1.dp, Color(0x66E9C98A), shape).background(Color(0xFF141418))) {
+                    if (!a.hidden) CardImage(a.name, Modifier.fillMaxSize().padding(1.dp), contentScale = ContentScale.Fit, shape = shape)
+                }
+                Spacer(Modifier.height(3.dp))
+                Text(a.name, style = sans(10.sp, FontWeight.Bold, Color(0xFFC9C2B2)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+        if (attached.size > 4) Text("+${attached.size - 4}", style = sans(12.sp, FontWeight.Bold, Color(0xFFC9C2B2)), modifier = Modifier.align(Alignment.CenterVertically))
     }
 }
 
@@ -237,6 +335,13 @@ private fun SymbolLine(line: String) {
  */
 @Composable
 fun CardInspect(card: Card, viewer: Int?, start: PadAct? = null,
+    /** 0.4.60 G3: the cards attached to [card] (attachedOf), listed under the rules; a tap on one calls [onAttached] to inspect it. */
+    attached: List<Card> = emptyList(), onAttached: (Card) -> Unit = {},
+    /**
+     * 0.4.60 G6: the card's ability rows (abilityView) and, while Forge lets you use one, [onActivate]: Forge's own activation path.
+     * The gold Activate in a row, a tap on the row, or a controller's A runs it; a tap anywhere else or B puts the card down.
+     */
+    ability: AbilityView? = null, onActivate: (() -> Unit)? = null,
     /** Two screens: the card shows on the bottom screen beside play. It takes no ring, holds no clock and hides no table button (test4: X on the gold and the clock died while it stayed open). */
     beside: Boolean = false, onClose: () -> Unit) {
     val yours = viewer == null || card.controller == viewer
@@ -259,28 +364,69 @@ fun CardInspect(card: Card, viewer: Int?, start: PadAct? = null,
     LaunchedEffect(Unit) { if (Pad.connected.value && !beside) runCatching { padFocus.requestFocus() } }
     androidx.activity.compose.BackHandler(padOn) { close() }
     if (!beside) PadScreen(PadActs(b = "Close", start = start, opaque = true))
-    val padHere = remember { PadActs(a = "Close") }
+    val act = onActivate?.takeIf { ability?.usable == true }
+    val padHere = remember(act != null) { PadActs(a = if (act != null) "Activate" else "Close") }
     // The whole dimmed page is the target, so it carries no ring of its own; the prompt bar says what A does.
     BoxWithConstraints(Modifier.fillMaxSize().padCover().background(Color(0xB3000000)).then(if (beside) Modifier else Modifier.padActs(padHere).focusRequester(padFocus).onFocusChanged { if (it.isFocused) TablePad.held = true })
+        // 0.4.60 G6: with a usable ability, a controller's A activates it (MainActivity sends A as DPAD_CENTER); a tap still closes.
+        .then(if (act == null || beside) Modifier else Modifier.onPreviewKeyEvent { e ->
+            val k = e.nativeKeyEvent.keyCode
+            if (k == android.view.KeyEvent.KEYCODE_DPAD_CENTER || k == android.view.KeyEvent.KEYCODE_BUTTON_A) {
+                if (e.nativeKeyEvent.action == android.view.KeyEvent.ACTION_UP && !e.nativeKeyEvent.isCanceled) act()
+                true
+            } else false
+        })
         .clickable(remember { MutableInteractionSource() }, null, onClick = close)
         .windowInsetsPadding(WindowInsets.safeDrawing).padding(16.dp)) {
         val cardH = maxHeight * .92f; val cardW = cardH * .716f
         val k = (maxHeight / 560.dp).coerceIn(.64f, 1f)
         val boxW = (340.dp * k).coerceAtMost(maxWidth - cardW - 16.dp)
+        val glass = boxW >= 200.dp
+        // 0.4.60 G4: one glass box per keyword, in a column on the far side of the card from the glass box; when the width is short
+        // (narrower than 180 dp at the glass box's scale) they go under the rules in the glass box instead.
+        val boxes = remember(card) { keywordBoxes(card) }
+        val kwW = (260.dp * k).coerceAtMost(maxWidth - cardW - (if (glass) boxW + 16.dp else 0.dp) - 16.dp)
+        val kwBeside = boxes.isNotEmpty() && (kwW >= 180.dp * k || !glass)
+        // 0.4.60 G6: no glass box (a narrow screen): the ability rows stand beside the card, over any keyword boxes.
+        // G6 review: too narrow even for that (under 160 dp beside the card): the card shrinks and the rows go under it, so touch
+        // always has its Activate.
+        val abUnder = !glass && ability != null && kwW < 160.dp * k
+        val abBeside = !glass && ability != null && !abUnder
         val glow = if (yours) GLOW_YOU else GLOW_CPU
-        Row(Modifier.align(Alignment.Center).graphicsLayer { alpha = enter.value; val z = .96f + .04f * enter.value; scaleX = z; scaleY = z }
-            .semantics { contentDescription = card.name }, horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (boxW >= 200.dp) {
-                val dens = androidx.compose.ui.platform.LocalDensity.current
-                androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(dens.density * k, dens.fontScale)) {
-                    GlassBox(s, boxW / k, cardH / k, 0f)
+        val dens = androidx.compose.ui.platform.LocalDensity.current
+        if (abUnder) {
+            val underW = minOf(maxWidth, 420.dp); val fullH = maxHeight
+            val smallH = minOf(maxHeight * .55f, maxWidth / .716f); val smallW = smallH * .716f
+            Column(Modifier.align(Alignment.Center).width(underW).graphicsLayer { alpha = enter.value }.semantics { contentDescription = card.name },
+                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.size(smallW, smallH).anchorRect("inspectCard${card.id}").clip(RoundedCornerShape(16.dp)).border(2.dp, glow.copy(alpha = .8f), RoundedCornerShape(16.dp))
+                    .background(Color(0xFF141418))) {
+                    if (!card.hidden) CardImage(card.name, Modifier.fillMaxSize().padding(2.dp), contentScale = ContentScale.Fit, shape = RoundedCornerShape(13.dp))
+                }
+                Column(Modifier.fillMaxWidth().heightIn(max = fullH - smallH - 12.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    AbilityRows(card, ability!!, act)
+                    if (boxes.isNotEmpty()) KeywordBoxes(card, boxes, Modifier.fillMaxWidth())
                 }
             }
-            Box(Modifier.size(cardW, cardH).drawBehind {
+        } else Row(Modifier.align(Alignment.Center).graphicsLayer { alpha = enter.value; val z = .96f + .04f * enter.value; scaleX = z; scaleY = z }
+            .semantics { contentDescription = card.name }, horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (glass) {
+                androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(dens.density * k, dens.fontScale)) {
+                    GlassBox(s, boxW / k, cardH / k, 0f, attached, onAttached, boxes = boxes, boxesInside = !kwBeside, ability = ability, onActivate = act)
+                }
+            }
+            Box(Modifier.size(cardW, cardH).anchorRect("inspectCard${card.id}").drawBehind {
                 drawIntoCanvas { cv -> val p = Paint(); p.asFrameworkPaint().apply { maskFilter = BlurMaskFilter(26.dp.toPx(), BlurMaskFilter.Blur.NORMAL); color = glow.copy(alpha = .45f).toArgb() }
                     cv.drawRoundRect(0f, 0f, size.width, size.height, 18.dp.toPx(), 18.dp.toPx(), p) }
             }.clip(RoundedCornerShape(16.dp)).border(2.dp, glow.copy(alpha = .8f), RoundedCornerShape(16.dp)).background(Color(0xFF141418))) {
                 if (!card.hidden) CardImage(card.name, Modifier.fillMaxSize().padding(2.dp), contentScale = ContentScale.Fit, shape = RoundedCornerShape(13.dp))
+            }
+            if ((kwBeside || abBeside) && kwW > 0.dp) androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(dens.density * k, dens.fontScale)) {
+                if (!abBeside) KeywordBoxes(card, boxes, Modifier.width(kwW / k).heightIn(max = cardH / k).verticalScroll(rememberScrollState()))
+                else Column(Modifier.width(kwW / k).heightIn(max = cardH / k).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    AbilityRows(card, ability!!, act)
+                    if (kwBeside) KeywordBoxes(card, boxes, Modifier.fillMaxWidth())
+                }
             }
         }
     }

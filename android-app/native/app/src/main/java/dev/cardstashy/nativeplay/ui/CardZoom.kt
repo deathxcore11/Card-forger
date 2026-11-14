@@ -279,7 +279,6 @@ fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, finish: d
                 }
                 .shadow(36.dp, RoundedCornerShape(radius), ambientColor = Color(0xCC000000), spotColor = Color(0xCC000000))
                 .clip(RoundedCornerShape(radius))
-                .then(if (v.effects && look != null) Modifier.foil(look, foilTilt) else if (v.effects && finish != null) Modifier.finish(finish, foilTilt) else Modifier)
                 .drawWithContent {
                     drawContent()
                     if (!v.effects || Motion.still || !AppSettings.finish) return@drawWithContent
@@ -292,8 +291,13 @@ fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, finish: d
                             center = Offset(cx, cy), radius = rx), radius = rx, center = Offset(cx, cy), alpha = .65f, blendMode = BlendMode.Screen)
                     }
                 }) {
-                Image(base, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                if (hiP != null && hiReady) Image(hiP, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                // Effects: the plain picture stays under the foiled one, so a foil layer the phone cannot draw never leaves the card empty.
+                val foiled = if (v.effects && look != null) Modifier.foil(look, foilTilt) else if (v.effects && finish != null) Modifier.finish(finish, foilTilt) else null
+                if (foiled != null) Image(base, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                Box(Modifier.fillMaxSize().then(foiled ?: Modifier)) {
+                    Image(base, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                    if (hiP != null && hiReady) Image(hiP, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                }
             }
         }
 

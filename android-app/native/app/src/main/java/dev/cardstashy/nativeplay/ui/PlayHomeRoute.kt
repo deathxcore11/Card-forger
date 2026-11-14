@@ -71,6 +71,8 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
             runCatching { (dev.cardstashy.nativeplay.account.Http.call("GET", "https://cardstashy.com/api/daily-card?game=mtg") as? JsonObject)
                 ?.getAsJsonObject("card")?.get("art")?.asString }.getOrNull()
         }
+        // L1: with no picture, or a theme that does not draw it, the opening screen has nothing more to wait for here.
+        if (value == null || !(AppSettings.glass || AppSettings.theme == "aura")) HomeStart.picture.value = true
     }
     var opener by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<PackResult?>(null) }
     val s = state
@@ -98,7 +100,9 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
     val act = PlayHomeActions(
         mode = { when (it) { "quick", "practice", "social" -> onLobby(it); "planeswalk" -> onWeb("https://cardstashy.com/planeswalk.html"); else -> onWeb(SITE_PLAY) } },
         story = { onStory() },
-        view = { when (it) { "switch" -> onCollection(); "collection" -> onTrunk(); "decks" -> onDecks(); "deeds" -> onAchievements(null); "quests" -> onAchievements("quests"); "shop" -> onShop("sets", null); "packs" -> onShop("packs", null); "forge" -> onShop("forge", null); else -> onWeb(SITE_PLAY) } },
+        view = { when (it) { "switch" -> onCollection(); "collection" -> onTrunk(); "decks" -> onDecks(); "deeds" -> onAchievements(null); "quests" -> onAchievements("quests"); "shop" -> onShop("sets", null); "packs" -> onShop("packs", null); "forge" -> onShop("forge", null)
+            // Build a deck: the app's own finder on Play Decks (not the website).
+            "finder" -> { DecksOpen.ask.value = DecksAsk.Finder; onDecks() }; else -> onWeb(SITE_PLAY) } },
         claim = { kind, id -> run { Progress.claim(kind, id, null) } },
         claimDeed = { id, step -> run { Progress.claim("ach", id, step) } },
         forge = { to, times -> run { Progress.forge(to, times) } },
@@ -110,7 +114,8 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
                 scope.launch { val r = openOne(id); if (opener?.note == LOADING) { opener = r; if (r == null) android.widget.Toast.makeText(context, why ?: "That pack didn't open. Try again in a moment.", android.widget.Toast.LENGTH_LONG).show() } }
             } },
         buy = { code -> run { Progress.buy(code) } },
-        deck = { onWeb(SITE_PLAY) },
+        // A deck tile (and the Thor's Open deck) opens that deck on Play Decks.
+        deck = { id -> DecksOpen.ask.value = DecksAsk.Deck(id); onDecks() },
         set = { onShop("sets", it) },
     )
     androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
@@ -135,4 +140,8 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
 }
 
 /** E6a: how long Play Home took to its first drawn frame the first time it opened in this run (Settings, Help shows it). */
-object HomeStart { @Volatile var ms: Long? = null }
+object HomeStart {
+    @Volatile var ms: Long? = null
+    /** Loading brief L1: Play home's one remote picture (the blurred daily card) is decoded, or there is none to wait for. */
+    val picture = kotlinx.coroutines.flow.MutableStateFlow(false)
+}

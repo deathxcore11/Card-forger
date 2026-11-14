@@ -4,7 +4,8 @@
 // and hands their models to the app instead of HTML.
 import {S, blank, meta, cacheCard, slim, inv, uid} from 'WEB/store.js';
 import {cardKey, typeText, cardPrice, mergeDeckCard, exportDeckText, exportDeck, sumQty, aggregateCards, physicalRequirements} from 'WEB/core.js';
-import {validateWorkspace, parseImport, previewImport, printingState, exportCollectionCSV, importErrorsCSV, applyImport, deckRowsFromImport} from 'WEB/confidence.js';
+import {validateWorkspace, parseImport, previewImport, printingState, exportCollectionCSV, importErrorsCSV, applyImport, deckRowsFromImport, backupEnvelope} from 'WEB/confidence.js';
+import {recoverySummary} from 'WEB/recovery-store.js';
 import {normalizeHomeDeckActivity, recordHomeDeckWork} from 'WEB/home-deck-activity.js';
 import {collectionValue, recordValuePoint, withSnapshot} from 'WEB/insights.js';
 import {homeValueCoverage, homeValueModel, homeMetaKey, homeMetaSlides, homeMetaArticle, homeMetaCarousel, homeDeckShelf, homeCommunity, featureArticle} from 'WEB/home-ui.js';
@@ -24,7 +25,8 @@ import {loadCommunity, communitySlides} from 'WEB/community-feed.js';
 import {loadPulse} from 'WEB/news-pulse.js';
 import {collection as collectionPage, decks as decksView, deckPage as deckView, cardSheet as cardView, buySheet as buyView, setsPage as setsView, setPage as setView, rowsFor} from 'WEB/views.js';
 import {loadMagicPrintingPage, mergeMagicCards, searchQuery, rankByName, magicFilterError, hasMagicSearchQuery, magicSearchSpec, scryfallSearchPath} from 'WEB/catalog-tools.js';
-import {search as searchView, mtgFilterChips} from 'WEB/views.js';
+import {search as searchView, mtgFilterChips, compareSheet as compareSheetView} from 'WEB/views.js';
+import {tcgCompareSheet} from 'WEB/tcgcompare.js';
 import {magicOwnedDetail, magicOwnedContext, magicOwnedCurrent, magicOwnedCard} from 'WEB/magic-owned-detail.js';
 import {scanView, registerScanner} from 'WEB/scancam.js';
 import {addScannedEntry} from 'WEB/collection-stack.js';
@@ -41,6 +43,10 @@ import {configureConditionAuth, clearConditionAttempts, forgetConditionAttempt, 
 import {createConditionRefreshScheduler, changedConditionLots, conditionLotIdentity} from 'WEB/condition-refresh-scheduler.js';
 import {locationPicker, rememberLocation} from 'WEB/collection-locations.js';
 import {acquireMissing, parseDeckImport} from 'WEB/deck-flow.js';
+import {alerts as priceAlerts, alertFor, setAlert, onAlert, alertText, priceSeries, recordCardPrice} from 'WEB/pricehist.js';
+import {sharedPoints, loadSharedPoints, mergePoints} from 'WEB/sharedprices.js';
+import {cardDiscoverySpec} from 'WEB/card-discovery.js';
+import {ruleCardContext} from 'WEB/rule-dex.js';
 import {quoteModel, recordQuote, HISTORY_RANGES, modeFor, selectionState, registerWorkbench} from 'WEB/workbench-ui.js';
 import {setHistoryRefresh} from 'WEB/shared-history.js';
 import {loadSharedHistory} from 'WEB/shared-history.js';
@@ -62,10 +68,10 @@ import {packTemplateArt, packArtSources} from 'WEB/pack-wrappers.js';
 import {pkCatalogueSymbolSources, pkRarity} from 'WEB/emblems.js';
 import {rarityKind} from 'WEB/rarity-emblem.js';
 import {cardImage, img as imgHtml} from 'WEB/ui.js';
-import {artworkHTML} from 'WEB/artwork.js';
+import {artworkHTML, artworkSources} from 'WEB/artwork.js';
 import {deckCardCategory} from 'WEB/deck-viewer.js';
 import {massEntryUrl} from 'WEB/buy.js';
-import {interactiveRules, attachRuleLearning} from 'WEB/rule-learning.js';
+import {interactiveRules, attachRuleLearning, openRuleReference} from 'WEB/rule-learning.js';
 import {rulesPage, learnSheet} from 'WEB/rules.js';
 import {showRuleHint} from 'WEB/rule-dex.js';
 import {rollDice, warChestMarkup, chestResume} from 'WEB/war-chest.js';
@@ -76,6 +82,7 @@ import {podSpeed, newGame, proxyList, proxySheetHTML} from 'WEB/extras.js';
 import {formatUpgrades, applyFormatSwap} from 'WEB/format-upgrades.js';
 import {upgradeSuggestions, sourceCredit, mtgjsonDeck, collectionIdeas} from 'WEB/strategy.js';
 import {applySwapsToCards, cardSig} from 'WEB/insights.js';
+import {redealCoachHand} from 'WEB/ai-review.js';
 import {comparePower, bestBudgetDecks, purchaseCost, refineCandidates, towardDeck, spendUp, cardQuality, budgetNotes, variantsFrom, difficultyOf} from 'WEB/deck-optimizer.js';
 import {playRate} from 'WEB/importance.js';
 import {forgeOptions, newForgeSeed} from 'WEB/deck-forge.js';
@@ -97,7 +104,17 @@ import {createDeckPipeline} from 'WEB/deck-pipeline.js';
 import {deckSetupMarkup, deckResultMarkup} from 'WEB/deck-experience.js';
 import * as TcgAll from 'WEB/tcg.js';
 import {setupModel as flowSetupOf, resultModel as flowResultOf, useDocument as flowUseDocument, draw as flowDraw} from '../scripts/deck-flow-models.mjs';
-import {mtgPower, asShown} from 'WEB/power.js';
+import {mtgPower, asShown, shownPower} from 'WEB/power.js';
+import {lotPrice} from 'WEB/insights.js';
+import {makeAskTools} from 'WEB/ai-tools.js';
+import {planQuery, fixChoices, gameOfLabel} from 'WEB/answer-search.js';
+import {answerFor, answerAbout} from 'WEB/answer-run.js';
+import {readGameWikiArticle} from 'WEB/mtg-wiki-client.js';
+import {judgeAnswer, findCardNames} from 'WEB/judge-search.js';
+import {loadRulePack} from 'WEB/rule-corpus.js';
+import {PTCG_GLOSSARY, YGO_GLOSSARY} from 'WEB/game-glossary-data.js';
+import {JUDGE_EXAMPLES} from 'WEB/judge-examples.js';
+import {ENGINE_CARD_NAMES_FILE} from 'WEB/play-engine-names.js';
 // mtg-tags.js loads its tags lazily, and Power is worked out without them until they arrive, then all over again (power.js's
 // signature carries mtgTagsReady()). The engine starts with the same file the site fetches, so each deck's Power is worked out
 // once, and the Power keep's entries from the last visit still match.
@@ -122,19 +139,31 @@ import {Document as SiteDocument, Event as SiteEvent, serialize as domJson, byId
 // for the session only (store.js), so no other Ideas key exists to keep.
 // Home's header and rails paint from what the site keeps too (tcg.js HERO_KEY: today's Card of the Day per game; news-pulse.js and
 // community-feed.js their last feed), so a launch shows them at once instead of after the network.
-const KEPT_KEYS = new Set(['cardforge-meta-v1', 'cardforge-precons-v1', 'cardforge-hero-v2', 'cardforge-pulse-v2', 'cardforge-community-v3']);
+// pricehist.js's saved prices (cardstashy-price-hist-v1: a point per card when its price moves 2% or a week passes) are what search's
+// price memory answers from ("what went up in my collection this week"), so the app keeps them between launches as the site does.
+const KEPT_KEYS = new Set(['cardforge-meta-v1', 'cardforge-precons-v1', 'cardforge-hero-v2', 'cardforge-pulse-v2', 'cardforge-community-v3', 'cardstashy-price-hist-v1']);
 // app.js A.openSetPack's today's-pack claim (cardstashy-today-pack:<game>:<date>:<id>): the Card of the Day comes once a day.
-const kept = k => KEPT_KEYS.has(k) || k.startsWith('cardstashy-today-pack:');
+// pricehist.js's price alerts (cardstashy-price-alerts-v1): the site keeps them per account (account-scope.js privateKey); the app
+// keeps one list per signed-in account the same way (Collection.alertOwner), under ALERTS::app:<account>, and on this device.
+const ALERTS = 'cardstashy-price-alerts-v1';
+let alertOwner = 'guest';
+const alertKey = k => (String(k) === ALERTS ? ALERTS + '::app:' + alertOwner : String(k));
+const kept = k => KEPT_KEYS.has(k) || k.startsWith('cardstashy-today-pack:') || k.startsWith(ALERTS + '::app:');
 const keptDirty = new Set();
-const keptStore = globalThis.localStorage, keptSet = keptStore.setItem, keptRemove = keptStore.removeItem;
-keptStore.setItem = (k, v) => { keptSet(k, v); if (kept(String(k))) keptDirty.add(String(k)); };
-keptStore.removeItem = k => { keptRemove(k); if (kept(String(k))) keptDirty.add(String(k)); };
+const keptStore = globalThis.localStorage, keptSet = keptStore.setItem, keptRemove = keptStore.removeItem, keptGet = keptStore.getItem;
+keptStore.getItem = k => keptGet.call(keptStore, alertKey(k));
+keptStore.setItem = (k, v) => { k = alertKey(k); keptSet.call(keptStore, k, v); if (kept(k)) keptDirty.add(k); };
+keptStore.removeItem = k => { k = alertKey(k); keptRemove.call(keptStore, k); if (kept(k)) keptDirty.add(k); };
+// app.js onAlert: an alert set off by a price seen now; the app shows alertText as its toast (each pump's "alerts").
+let alertsFired = [], alertRun = null;
+onAlert(f => { alertsFired.push({game: f.game, id: f.id, name: f.name, usd: f.usd, text: alertText(f)}); });
 {
   const pump = globalThis.__host.pump;
   globalThis.__host.pump = now => {
-    const out = pump(now);
+    let out = pump(now);
+    if (alertsFired.length) { out = out.slice(0, -1) + ',"alerts":' + JSON.stringify(alertsFired) + '}'; alertsFired = []; }
     if (!keptDirty.size) return out;
-    const stored = {}; for (const k of keptDirty) stored[k] = keptStore.getItem(k); keptDirty.clear();
+    const stored = {}; for (const k of keptDirty) stored[k] = keptGet.call(keptStore, k); keptDirty.clear();
     return out.slice(0, -1) + ',"stored":' + JSON.stringify(stored) + '}';
   };
 }
@@ -1367,6 +1396,10 @@ function tcgScreenCards(g, view, o = {}) {
     : view === 'collection' ? st.collection.map(e => e.cardId) : st.decks.flatMap(d => (d.zones?.main || []).slice(0, 1).map(r => r.cardId));
   const missing = [...new Set(ids.filter(id => tcgNeedsRefresh(g, tcgCardOf(g, id))))];
   if (missing.length) tcgEnsureMany(g, missing, () => {}).catch(() => {});
+  // A Yu-Gi-Oh! lot saved with its release reads its printing, foil and price through the release list (tcg.js savedYgoPresentation,
+  // entryValuation). Only the card page and the Sets tab loaded that list, so until one of them had been opened the Cards tab drew
+  // such a lot plain with a dash for its price (Randall 12 Nov, 0.4.66). Any Yu-Gi-Oh! screen now asks for it once.
+  if (g === 'ygo' && !tcgUi(g).sets.list.length && st.collection.some(e => e.setReleaseId)) tcgCtx.loadSets(g).catch(() => {});
 }
 // tcg.js's set browser and set page handlers, as the site wires them (data-act / data-change / data-input).
 const tcgSetsAct = {
@@ -2627,6 +2660,18 @@ const powerKeep = globalThis.__powerKeep = {map: new Map(), dirty: false,
   put(h, v) { try { let whole = true; const t = JSON.stringify(v, (k, x) => { if ((typeof x === 'number' && !Number.isFinite(x)) || (Array.isArray(x) && x.includes(undefined))) whole = false; return x; });
     if (whole && t !== undefined) { this.map.set(h, JSON.parse(t)); this.dirty = true; } } catch {} }};
 const writeActs = {
+  // app.js A.compareSwap (5353): the second compared card in for the first in the open deck, with a snapshot to compare in Versions.
+  async compareSwap() {
+    const [a, b] = S.ui.compare || [], d = currentDeck();
+    if (!a || !b || !d) return;
+    if (key(a.name) === key(d.commander)) { toasts.push({text: "Change commanders by starting a new deck.", undo: false}); return; }
+    await commit((s) => {
+      const i = s.decks.findIndex((x) => x.id === d.id);
+      let deck = withSnapshot(s.decks[i], "Before swapping " + a.name);
+      deck = mergeDeckCard(mergeDeckCard(deck, a.name, -1), b.name, 1);
+      s.decks[i] = deck;
+    }, {msg: `Swapped ${a.name} → ${b.name}. Compare in Versions.`});
+  },
   // The Scanner (its WebView engine, ScanWeb.kt) saving a batch: app.js scanCtx.addMany / add, here where the workspace is. [items]
   // as scancam.js passes them ({cand, qty, finish, condition, lang, location, captureId}); [single]: app.js mtgScanAdd / c.scanAdd.
   async scanAddMany(d) {
@@ -2963,6 +3008,14 @@ const writeActs = {
     await edit((y) => withSnapshot(y, d.label || "Snapshot"));
     toasts.push({text: (deckOf(d.deck)?.versions || []).length > before ? "Version saved." : "No changes since the last version.", undo: false});
   },
+  // app.js A.coachSwap: one copy of [d].cut out and one of [d].add in (a coach swap on the Power page), the list before it saved as a version.
+  async coachSwap(d) {
+    const x = deckOf(d.deck), edit = editDeckOf(x?.id);
+    if (!x || !x.cards.some((r) => r.name === d.cut)) throw Error("Your deck changed. Open Power again.");
+    await resolveNames([d.add]);
+    const cards = applySwapsToCards(x.cards, [{ cut: d.cut, add: d.add }]);
+    await edit((y) => withSnapshot({ ...withSnapshot(y, "Before coach swap"), cards }, "Coach swap"), { msg: `${d.add} in, ${d.cut} out. Previous list saved in Versions.` });
+  },
   // app.js A.restoreVer (7222): asked first; the current list saved as a version, then the version's lists.
   async restoreVer(d) {
     const x = deckOf(d.deck), edit = editDeckOf(x?.id), v = (x?.versions || []).find((y) => y.id === d.id);
@@ -3038,6 +3091,15 @@ const writeActs = {
     const deck = r.game === 'mtg' ? withSnapshot({...structuredClone(d.deck), id, name, budget: r.budget, versions: []}, 'Generated') : {...structuredClone(d.deck), id, name, format: r.format, createdAt: new Date().toISOString()};
     await commit((s) => { if (r.game === 'mtg') s.decks.push(deck); else { s.tcg ||= {}; s.tcg[r.game] ||= tcgGs(r.game); s.tcg[r.game].decks.push(deck); } }, { msg: 'Saved to My decks.' });
     made = id;
+  },
+  // tcg.js A.tAddToDeck: a Yu-Gi-Oh! or Pokémon card page's Add to deck (A.cardDeckPicker's Deck <select> is [d].deck).
+  async tAddToDeck(d) { tcgFocus(d.game, S.ui.view || 'search'); await siteRun(() => TA.tAddToDeck({dataset: {id: String(d.id)}}), d, {'#tToDeck': d.deck}); },
+  // tcg.js A.tBuild on a card page (⚒ Build decks): its openDeckFlow request comes back as [made], for the app's Build a deck.
+  async tBuildCard(d) {
+    tcgFocus(d.game, S.ui.view || 'search'); flowAskPanel = null; flowAsked = null;
+    // siteRun: tcg.js checks the open #sheet before and after it loads the card (none here; the card page is the app's).
+    await siteRun(() => TA.tBuild({dataset: {id: String(d.id)}}), d);
+    if (flowAsked) made = JSON.stringify(flowAsked);
   },
   // tcg.js A.tSeedGo (the app's Pick cards sheet, its ticked ids): A.tBuildMulti, whose openDeckFlow request comes back as [made].
   async tSeedGo(d) {
@@ -3662,7 +3724,31 @@ function panelRun(f) {
   globalThis.document = panel.doc; globalThis.window = {innerWidth: 390, innerHeight: 844, document: panel.doc, addEventListener() {}, removeEventListener() {}, dispatchEvent() { return true; }, getComputedStyle: () => ({})};
   try { return f(); } finally { for (const k of ['document', 'window']) { if (was[k] === undefined) delete globalThis[k]; else globalThis[k] = was[k]; } }
 }
-const PANEL_ACTS = {ruleHint: t => showRuleHint(t)};
+// app.js A.askRules: the rules chat's context from the pressed button (its game and format, else its learning section's; the card the
+// rule glass is about; the rule it shows), handed to the app, which opens Ask a Judge with it (gap audit H4).
+function judgeContextOf(t) {
+  const scope = t?.closest?.('[data-learning-root]'), game = t?.dataset?.game || scope?.dataset?.game || TcgAll.game();
+  const format = t?.dataset?.ruleFormat ?? scope?.dataset?.ruleFormat ?? '';
+  let cards = [], references = [];
+  const raw = t?.closest?.('[data-rule-card-context]')?.dataset?.ruleCardContext;
+  if (raw) { try { const c = JSON.parse(raw); if (c.game === game) cards = [c]; } catch {} }
+  if (t?.dataset?.rulesReferences) { try { references = JSON.parse(t.dataset.rulesReferences); } catch {} }
+  return {game, format, cards, references};
+}
+// What the site asks its page for (window events): the tab drawn again (the coach's swaps have landed, cards have loaded), or the
+// matchup odds run by themselves the first time Power opens. Here the open panel answers.
+globalThis.Event ||= class { constructor(type) { this.type = type; } };
+globalThis.dispatchEvent = e => {
+  const p = panel, t = e?.type;
+  if (!p?.redraw) return true;
+  try {
+    if (t === 'cardstashy-rerender') p.redraw();
+    else if (t === 'cardstashy-want-matchups' && /^(deck\|mtg\||playpower\|)/.test(p.key)) p.acts.muRun?.();
+    else if (t === 'cardstashy-want-tmatchups' && p.key.startsWith('tdeck|')) p.acts.tMuRun?.();
+  } catch (err) { toasts.push({text: err?.message || String(err), undo: false}); }
+  return true;
+};
+const PANEL_ACTS = {ruleHint: t => showRuleHint(t), askRules: t => { panel.acted = {act: 'askRules', data: {...t.dataset, judge: JSON.stringify(judgeContextOf(t))}}; }};
 // [acts]: the page's own data-act handlers for this panel (a deck tab's, TDECK_ACTS), before the shared ones.
 function panelOpen(key, html, attach, acts = {}) {
   if (panel?.key === key) return;
@@ -3917,6 +4003,11 @@ const MDECK_ACTS = {
   logGame: () => { const v = q => panel.doc.querySelector(q)?.value ?? '';
     panel.acted = {act: 'logGame', data: {result: v('#logResult'), turn: v('#logTurn'), note: v('#logNote')}}; },
   muRun: () => { mtgMuRun(); },
+  // The coach on the Power page (app.js A.coachRedeal, A.amPick, A.coachSwap): another opening hand; an opponent's read opened under
+  // its row (the website opens its matchup sheet; here it reads in place, from the same simulation); a swap saved by the app's write.
+  coachRedeal: t => { redealCoachHand(t.dataset.ai); panel.redraw(); },
+  amPick: t => { const d = currentDeck(); if (!d) return; const st = muState(d); st.read = st.read === t.dataset.name ? null : t.dataset.name; panel.redraw(); },
+  coachSwap: t => { panel.acted = {act: 'coachSwap', data: {cut: t.dataset.cut, add: t.dataset.add}}; },
   // app.js A.suggestFormatUpgrades (4141-4149), verbatim but for render().
   suggestFormatUpgrades: () => { (async () => {
     const d=currentDeck(),B=S.ui.build,f=formatOf(d);if(B.busy)return;
@@ -3973,7 +4064,8 @@ function mtgDeckPanel(id, tab) {
   mtgFocus(); deckOpen(id); S.ui.deckTab = tab;
   const d = (S.state.decks || []).find(x => String(x.id) === String(id)), key = ['deck', 'mtg', id, tab, d?.format || ''].join('|');
   panel = null;
-  const body = () => { const box = new SiteDocument().createElement('div'); box.innerHTML = deckView(); return box.querySelector('.deck-body')?.innerHTML || ''; };
+  // "Pick any other deck" (A.amOpen) is the website's matchup sheet: left out here until the app has its own picker.
+  const body = () => { const box = new SiteDocument().createElement('div'); box.innerHTML = deckView(); const page = box.querySelector('.deck-body'); for (const x of [...(page?.querySelectorAll('[data-act="amOpen"]') || [])]) x.remove(); return page?.innerHTML || ''; };
   const attach = host => PANEL_ATTACH[tab]?.(host);
   panelOpen(key, body(), attach, MDECK_ACTS);
   panel.redraw = () => { mtgFocus(); deckOpen(id); S.ui.deckTab = tab; panelRun(() => { panel.host.innerHTML = body(); attach(panel.host); }); };
@@ -3997,6 +4089,7 @@ function playPowerBody() {
     const box = new SiteDocument().createElement('div'); box.innerHTML = deckView();
     const body = box.querySelector('.deck-body'); if (!body) return '';
     for (const card of [...body.querySelectorAll('.pwp-card')]) if (card.querySelector('h3')?.textContent.trim() === 'Upgrades') card.remove();
+    for (const x of [...body.querySelectorAll('[data-act="amOpen"]')]) x.remove();
     return body.innerHTML;
   });
 }
@@ -4271,7 +4364,6 @@ const scanCtx = {
   // A card's page: the app opens it (acted card / tCard).
   details: (g, c) => { if (panel?.scan) panel.acted = g === "mtg" ? {act: 'card', data: {name: c.name}} : {act: 'tCard', data: {id: c.id, game: g}}; },
 };
-scanCtx.aiAccount=()=>!!cloudInfo().user;
 scanCtx.rememberLocation=(g,name,{createBinder=false}={})=>commit(s=>{rememberLocation(s,g,name,{createBinder});},{rerender:false});
 scanCtx.lookupCandidates=createScannerLookup({requestMagic:api,sources:tcgSources,candById:scanCtx.candById,match:scanCtx.match});
 function scanReady() { if (scanOn) return; scanOn = true; tcgReady(); registerScanner(scanCtx); }
@@ -5451,7 +5543,7 @@ async function appCopyText(t, msg) {
 // request to the app (acted openDeckFlow), which opens the native Build a deck on it.
 let flowPipeline = null;
 flowUseDocument(new SiteDocument());
-const flowPipe = () => { tcgReady(); return flowPipeline ||= createDeckPipeline({S, T: TcgAll, api, resolve, cacheCard, meta, priceOf, inv, tcgCtx}); };
+const flowPipe = () => { tcgReady(); return flowPipeline ||= createDeckPipeline({S, T: TcgAll, api, resolve, resolveNames, cacheCard, meta, priceOf, inv, tcgCtx}); };
 const flowResults = new Map(), flowThemes = {};
 let flowSeq = 0, flowCurrent = 0, flowStatus = '', flowRun = null;
 // Where openDeckFlow's request goes: the panel that was tapped (acted openDeckFlow) or, for a write act, [made].
@@ -5528,7 +5620,406 @@ function seedPickModel(G) {
     empty: text(q('.seed-list > p')), go: text(q('#seedGo'))};
 }
 
+// ---- Compare cards (gap audit H1): app.js A.compareOpen / compareFrom / compareReset / compareLookup / compareSwap and tcg.js
+// A.tCompareOpen / tCompareFrom / tCompareClear / tCompareLookup with their sheets (views.js compareSheet, tcgcompare.js
+// tcgCompareSheet), read back as data. The pair is the site's own (S.ui.compare, tcg.js ui(g).compare).
+let compareRun = null;
+const cmpPair = G => (G === 'mtg' ? (S.ui.compare ||= [null, null]) : (tcgUi(G).compare ||= [null, null]));
+function compareModelOf(G) {
+  const pair = cmpPair(G), html = G === 'mtg' ? compareSheetView() : tcgCompareSheet(G, pair), t = tree(html);
+  const sides = all(one(t, cls('cmp')), cls('cmp-side')).map((n, i) => {
+    if (cls('pick')(n)) return {empty: true, i};
+    const c = pair[i] || {}, spans = all(n, x => x.tag === 'span' && !cls('chip')(x) && !(x.attrs.class || '').includes('mana') && text(x));
+    return {i, name: text(one(n, tagIs('b'))), picture: picture(one(n, tagIs('img'))), id: G === 'mtg' ? '' : String(c.id ?? ''),
+      lines: spans.filter(x => !cls('chips')(x)).map(text).filter(Boolean), chips: all(n, cls('chip')).map(text),
+      facts: all(one(n, cls('cmp-facts')), tagIs('div')).map(f => [text(one(f, tagIs('dt'))), text(one(f, tagIs('dd')))]),
+      effects: text(one(one(n, cls('cmp-effects')), tagIs('p')))};
+  });
+  const panel = one(t, cls('panel')), swap = one(panel, x => x.attrs['data-act'] === 'compareSwap');
+  return {game: G, title: text(one(one(t, cls('sheet-head')), tagIs('h2'))), sides, verdict: text(one(panel, tagIs('p'))), swap: swap ? text(swap) : '',
+    foot: text(one(t, cls('foot'))), clear: !!one(t, x => x.attrs['data-act'] === 'compareReset') || pair.some(Boolean)};
+}
+// ---- The app's own lookups (ai-tools.js makeAskTools: plain app code, no AI). The search box's answer card reads them, and a
+// tapped tile runs tools.open, whose moves (A.card, A.tCard, go, the draft builders) come back to the app as where to go (askDest).
+// The AI chat that once sat on top of them (Ask CardStashy, /api/ai/ask) is gone.
+let askRun = null, askDest = null, askToolsSet = null;
+function askTools() {
+  if (askToolsSet) return askToolsSet;
+  tcgReady();
+  const dest = d => { askDest = d; return true; };
+  const A = {
+    card: t => dest({to: 'card', game: 'mtg', name: t?.dataset?.name || '', id: t?.printing?.id || ''}),
+    tCard: t => dest({to: 'card', game: t?.dataset?.game || TcgAll.game(), id: String(t?.dataset?.id || ''), setId: t?.dataset?.setId || ''}),
+    // The tournament deck's sheet (A.mtgProven / tA.tMetaDeck), opened here as Home's is (provenHome); the app draws it (MetaDeckHost).
+    mtgProven: t => { toasts = []; provenOpened = false; mtgFocus(); mtgProven(t); return dest({to: 'meta', game: 'mtg'}); },
+    tMetaDeck: async t => { const g = TcgAll.game(); toasts = []; provenOpened = false; tcgFocus(g, 'home'); await provenRun(() => TA.tMetaDeck(t)); return dest({to: 'meta', game: g}); },
+    helpOpen: t => dest({to: 'help', id: t?.dataset?.id || ''}),
+    wikiOpen: t => dest({to: 'wiki', game: t?.dataset?.game || TcgAll.game(), topic: t?.dataset?.topic || ''}),
+    setGame: t => { askFocus(t?.dataset?.game || 'mtg'); return true; },
+  };
+  askToolsSet = makeAskTools({S, T: TcgAll, A, go: hash => dest({to: 'route', hash: String(hash || '')}), toast: text => { if (text) toasts.push({text: String(text), undo: false}); },
+    esc, api, resolve, resolveNames, cacheCard, loadSetIndex, loadMetaData: loadMeta, metaState, MTG_META_FORMATS,
+    allMeta: () => Object.fromEntries(Object.entries(allCachedMeta()).map(([k, v]) => [k, v.data])), priceOf, inv, meta, collectionValue, lotPrice, mtgPower, shownPower, tcgCtx,
+    // app.js openTcgBuild: A.tBuild on the card, whose openDeckFlow request the app's Build a deck opens (as tMetaBuild's does).
+    openTcgBuild: async (g, id, budget, format) => {
+      tcgFocus(g, 'decks'); flowAskPanel = null; flowAsked = null;
+      await TA.tBuild({dataset: {id: String(id), format}, initialBudget: budget > 0 ? budget : ''});
+      return dest(flowAsked ? {to: 'build', game: g, request: flowAsked} : {to: 'none'});
+    },
+    // app.js openMtgDraft opens the drafted list in the site's build sheet; the app opens its Build a deck on the same request
+    // (the build-around or commander, format and budget), as the site's own deck builder (deckExperience) does for Ask today.
+    // The deck builder run inside search (ai-tools.js build_now): the same pipeline the Build a deck page runs.
+    buildFlow: (request, options) => flowPipe().build(request, options),
+    openMtgDraft: draft => dest({to: 'build', game: 'mtg', request: {game: 'mtg', seed: draft.commander || draft.buildAround || '', format: draft.format || 'Standard',
+      budget: Number.isFinite(draft.budget) ? draft.budget : ''}})});
+  return askToolsSet;
+}
+function askFocus(G) { tcgReady(); tcgFocus(G, S.ui.view || 'search'); }
+function askShowRun(s) {
+  askDest = null; const run = askRun = {done: false};
+  (async () => { askFocus(s?.game || TcgAll.game()); await askTools().open(s); })().then(() => { run.done = true; run.dest = askDest; }, e => { run.done = true; run.error = String(e?.message || e); });
+}
+// ---- The search box answers questions (Randall 13 Nov: one search, no AI): answer-search.js reads the typed words into one of
+// the app's own lookups (the same ai-tools.js lookups Ask ran), answer-run.js fills the answer card from what it returns. Nothing
+// is posted to /api/ai. The app draws the card ({read chips, say, fact, quote, tiles, buttons, source}); a tile is opened by
+// askShow as before, a button says where the app goes ({to: show | wiki | route | search | discover | judge}).
+let answerOut = null, answerTicket = 0;
+function answerTile(s, i) {
+  let b = null; try { b = one(tree(askTools().preview(s, i, {compact: s.kind === 'card'})), tagIs('button')); } catch {}
+  if (!b) return {show: s, title: s.label || s.ref || '', lines: [], price: '', art: '', label: ''};
+  let show = s; try { show = JSON.parse(b.attrs['data-ask-show']) || s; } catch {}
+  const im = one(b, tagIs('img'));
+  return {show, title: text(one(b, tagIs('b'))) || s.label || '', lines: all(b, tagIs('small')).map(text).filter(Boolean), price: text(one(b, tagIs('em'))) || text(one(b, cls('art-price'))),
+    art: im ? abs(im.attrs.src || '') : '', label: b.attrs['aria-label'] || ''};
+}
+function answerDest(b, plan) {
+  const g = plan.game;
+  if (b.item) return {to: 'show', show: b.item};
+  if (b.judge) return {to: 'judge', game: g, text: plan.P.raw};
+  if (b.build) return {to: 'build', game: b.build.game || g, request: b.build};
+  if (b.discover) { if (g !== 'mtg') return {to: 'discover', game: g, kind: b.discover.kind, value: b.discover.value};
+    const spec = b.discover.kind === 'artist' ? {q: 'a:"' + b.discover.value + '"'} : cardDiscoverySpec(g, b.discover.kind, b.discover.value);
+    return spec?.q ? {to: 'search', game: g, q: spec.q, sort: ''} : {to: 'none'}; }
+  if (b.search) return {to: 'search', game: g, q: b.search.q, sort: b.search.order === 'usd' ? (b.search.dir === 'asc' ? 'usdAsc' : 'usd') : ''};
+  if (b.route && /^#wiki\//.test(b.route)) return {to: 'wiki', game: g, topic: decodeURIComponent(b.route.slice(6))};
+  return {to: 'route', game: g, hash: b.route || ''};
+}
+function answerModel(q, plan, a) {
+  const read = (plan.read || []).map(c => ({label: c.label, kind: c.kind, choices: c.fix && (c.kind === 'format' || c.kind === 'game') ? fixChoices(plan, c.kind) : []}));
+  const base = {q, game: plan.game, intent: plan.intent, hand: plan.hand || '', read};
+  if (!a) return {...base, state: 'none'};
+  let n = 0; const tile = s => answerTile(s, n++);
+  return {...base, state: 'done', answer: {ok: !!a.ok, say: a.say || '', strong: a.strong || '', wiki: a.say === 'From the wiki page', fact: a.fact || null, quote: a.quote || '',
+    // The other asks on the same line sit under the first answer, one per line, in the note's own style.
+    note: [a.note || '', ...[...(a.vs || []), ...(a.also || [])].map(x => x.ask + ': ' + x.text)].filter(Boolean).join('\n'), source: a.source || '',
+    miss: a.miss || '', ask: a.ask ? {ask: a.ask.ask, choices: (a.ask.choices || []).map(c => ({label: c.name, show: {kind: 'set', game: plan.game, ref: String(c.id || c.code), label: c.name}}))} : null,
+    items: (a.items || []).map(tile), moreLabel: a.moreLabel || 'Also', more: (a.more || []).map(tile),
+    // Rows (a deck's cards, the cards that break a format, price moves), a progress bar, and the "Ask more" chips, each a whole question.
+    rows: (a.rows || []).map(r => ({label: r.label, value: r.value || '', tone: r.tone || ''})), meter: a.meter ? {pct: Math.max(0, Math.min(100, Number(a.meter.pct) || 0)), label: a.meter.label || ''} : null,
+    follow: (a.follow || []).map(f => ({label: f.label, q: f.q})),
+    buttons: (a.buttons || []).map(b => ({label: b.label, dest: answerDest(b, plan)})), others: (a.others || []).map(t => ({label: t, dest: {to: 'wiki', game: plan.game, topic: t}}))}};
+}
+// app.js homeAnswer.plan / run, with the open screen's set and card handed in by the app ([o] = {fix: {format, game}, set: {id, code, name}, card: {name}}).
+function answerPlan(g0, q, o = {}) {
+  const fix = o.fix || {}, g = gameOfLabel(fix.game) || g0, mtg = g === 'mtg';
+  tcgReady();
+  const sets = (mtg ? S.ui.sets.list : tcgUi(g).sets?.list) || [];
+  return {g, mtg, sets, plan: planQuery(q, {game: g, about: answerAbout(), myDecks: (mtg ? S.state.decks : TcgAll.gs(g).decks).map(d => d.name), fix: {format: fix.format, game: gameOfLabel(fix.game) || undefined}, formatLast: {mtg: S.ui.mtgMeta?.format || undefined},
+    sets: sets.filter(x => !x.digital).map(x => ({id: mtg ? x.code : x.id, code: x.code || x.id, name: x.name})), screen: {set: o.set || null, card: o.card || null}})};
+}
+function answerStart(g0, q, o = {}) {
+  const my = ++answerTicket; answerOut = null;
+  if (!String(q || '').trim()) { answerOut = {q: '', state: 'none'}; return; }
+  (async () => {
+    let {g, mtg, sets, plan} = answerPlan(g0, q, o);
+    // A question about sets needs the set list: it is loaded once, then the words are read again.
+    if (!sets.length && (/\bset\b|\bsets\b|\bcome out\b|\bcame out\b|\breleased?\b|\bcards? in\b/i.test(q) || plan.intent === 'unknown' || plan.call?.pick === 'maybe')) {
+      try { if (mtg) await loadSetIndex(); else await tcgCtx.loadSets(g); } catch {}
+      if (my !== answerTicket) return;
+      plan = answerPlan(g0, q, o).plan;
+    }
+    if (!plan.call && !plan.missing?.length && plan.intent !== 'unknown') { answerOut = answerModel(q, plan, null); return; }
+    answerOut = {...answerModel(q, plan, null), state: 'loading'};
+    let a = null;
+    try {
+      if (plan.game !== 'mtg') askFocus(plan.game);
+      a = await answerFor(plan, askTools(), {
+        current: () => my === answerTicket,
+        // A rules question: the rulebook kept in the app, read by judge-search.js (no AI).
+        judge: async (game, question) => judgeAnswer(await loadRulePack(game), question, {glossary: game === 'ptcg' ? PTCG_GLOSSARY : game === 'ygo' ? YGO_GLOSSARY : []}),
+        wikiArticle: async (game, title) => { const d = await readGameWikiArticle(game, title); return d?.status === 'available' ? d.article : null; },
+        cardSearch: async ({game, q, order, dir, limit}) => {
+          if (game !== 'mtg') return [];
+          const d = await api('/cards/search?' + new URLSearchParams({q: q + ' game:paper', order, dir, unique: 'cards'})).catch(e => { globalThis.__answerError = String(e?.message || e); return e?.status === 404 ? {data: []} : null; });
+          if (!d) return null; // the card database did not answer: said as that, never as "nothing matched"
+          return (d?.data || []).slice(0, limit || 3).map(c => { cacheCard(c); return {name: c.name, price: Number(c.prices?.usd) || null}; });
+        }});
+    } catch { a = {ok: false, miss: 'That lookup failed. Check your connection and try again.', items: [], more: [], buttons: []}; }
+    if (my !== answerTicket) return;
+    // An answer that is still working (the deck builder making a deck): shown at once as it stands, finished when the build lands.
+    if (a?.finish) {
+      answerOut = {...answerModel(q, plan, a), state: 'loading'};
+      const b = await Promise.resolve().then(() => a.finish()).catch(() => null);
+      if (my !== answerTicket) return;
+      if (b) a = b; else { a = {...a, rows: [], note: 'The deck builder could not finish this one. Open it to build the deck.'}; }
+    }
+    answerOut = answerModel(q, plan, a);
+  })().catch(e => { globalThis.__lastError = String(e?.stack || e); if (my === answerTicket) answerOut = {q, state: 'none'}; });
+}
+// "See them all in Search" for Magic: the words and the sort set on the Search page as app.js homeAnswer.act does, and the search started.
+function answerSearch(q, sort) {
+  mtgFocus(); searchGame = 'mtg';
+  S.ui.db.term = String(q || ''); S.ui.db.filters = sort ? {sort} : {};
+  dbInvalidate();
+  dbSearch().catch(e => toasts.push({text: e?.message || 'Search failed.', undo: false}));
+  return {term: S.ui.db.term, filters: S.ui.db.filters};
+}
+// ---- Ask a Judge, no AI (judge-search.js): the question is read into the rulebook's own terms and answered with the exact rule
+// text from the rulebook kept in the app, as the site's judge-ui.js does. Nothing is sent to an AI service; a card named in the
+// question brings its printed text, and its official rulings when the network is there (a miss just leaves them out).
+const JUDGE_NAMES = {mtg: 'Magic', ptcg: 'Pokémon', ygo: 'Yu-Gi-Oh!'};
+let judge = null, judgeNames = null;
+const judgeRuleNumber = (game, r) => game === 'mtg' ? r.number : 'Page ' + (String(r.number).match(/p(\d+)$/)?.[1] || r.number);
+const judgeRuleHead = (game, r) => game === 'mtg' ? (r.heading || '') : String(r.heading || '').replace(/\s*·\s*PDF page \d+$/, '');
+const judgeDate = v => { const m = String(v || '').match(/^(\d{4})-(\d{2})(?:-(\d{2}))?/); return m ? `${JUDGE_MONTHS[+m[2] - 1]}${m[3] ? ' ' + +m[3] + ',' : ''} ${m[1]}` : String(v || ''); };
+const JUDGE_MONTHS = ['Jan.', 'Feb.', 'March', 'April', 'May', 'June', 'July', 'Aug.', 'Sept.', 'Oct.', 'Nov.', 'Dec.'];
+function judgeLine(e) {
+  if (e.kind === 'question') return {who: 'me', text: e.text};
+  if (e.kind === 'error') return {who: 'error', text: e.text};
+  const a = e.answer, sure = a.status === 'answered';
+  const rules = [a.lead, ...a.rules].filter(Boolean).slice(0, 3).map((r, n) => ({number: judgeRuleNumber(a.game, r), heading: judgeRuleHead(a.game, r), text: r.focus && r.focus !== r.text ? r.focus : r.text,
+    whole: r.focus && r.focus !== r.text ? r.text : '', lead: n === 0 && sure, reference: r.reference, title: [judgeRuleNumber(a.game, r), judgeRuleHead(a.game, r)].filter(Boolean).join(' · '), quote: r.text}));
+  const cards = (a.cards || []).filter(c => c.text || c.rulings.length).map(c => ({name: c.name, text: c.text, rulings: c.rulings.map(r => ({label: 'Official ruling' + (r.date ? ' · ' + judgeDate(r.date) : ''), text: r.text})),
+    note: !c.rulings.length && c.rulingCount ? `This card has ${c.rulingCount} official ruling${c.rulingCount === 1 ? '' : 's'}; none match these words.` : ''}));
+  return {who: 'judge', status: !rules.length && !cards.length ? 'none' : a.status, read: a.read, rules, cards,
+    rulesLabel: sure ? '' : cards.length ? 'Rules for what these cards do' : 'Closest rules I found',
+    terms: (a.terms || []).map(t => ({label: t.label, def: [t.def, ...(t.points || [])].join(' '), ours: !!t.ours})),
+    foot: (a.edition ? `${a.edition.title}, ${judgeDate(a.edition.date)}. ` : '') + 'At an event, the judge there has the final say.',
+    missTitle: 'That isn’t in the rulebook', missText: 'I only answer from the rules. Try naming a keyword, a step of the turn, or what happened at the table.', examples: (JUDGE_EXAMPLES[a.game] || []).slice(0, 2)};
+}
+function judgeModelOf() {
+  const s = judge; if (!s) return {open: false};
+  return {open: true, game: s.game, eyebrow: `${JUDGE_NAMES[s.game]} rulebook · offline`, title: 'Ask a Judge', placeholder: 'Ask about a rule, keyword or card…',
+    hello: 'What happened at the table?', blurb: 'Name a keyword, a step of the turn or a card. You get the exact rule, with its number.',
+    cards: s.cards.map(c => ({name: c.name})), examples: JUDGE_EXAMPLES[s.game] || [], lines: s.entries.map(judgeLine), busy: !!s.busy};
+}
+// A card the Judge shows: its printed text from the app's card data, and its official rulings if they can be read now.
+async function judgeCard(name) {
+  const c = meta(name) || await resolve(name).catch(() => null); if (!c) return null;
+  const text = [c.oracle_text, ...(c.card_faces || []).map(f => f.oracle_text)].filter(Boolean).join('\n');
+  const r = c.id ? await api('/cards/' + encodeURIComponent(c.id) + '/rulings').catch(() => null) : null;
+  return {name: c.name, text, keywords: c.keywords || [], rulings: (r?.data || []).map(x => ({date: x.published_at || '', text: x.comment || ''}))};
+}
+// The card names the app ships (the list the play engine accepts), read once.
+function judgeNameList() {
+  return judgeNames ||= fetch(ENGINE_CARD_NAMES_FILE).then(r => r.ok ? r.text() : '').then(t => new Set(String(t).split('\n').map(n => n.trim().toLowerCase()).filter(Boolean))).catch(() => new Set());
+}
+// The answer for one question: the rulebook, the cards (the ones the Judge was opened on, then names typed in the question), the rules.
+async function judgeWork(s, question) {
+  const pack = await loadRulePack(s.game), cards = [];
+  for (const c of s.cards) {
+    let full = null;
+    if (s.game === 'mtg' && !c.rulings) full = await judgeCard(c.name).catch(() => null);
+    cards.push(full || c);
+  }
+  s.cards = cards.slice();
+  if (s.game === 'mtg') {
+    const names = await judgeNameList(), found = findCardNames(question, names, pack);
+    for (const f of found) {
+      if (cards.some(c => c.name.toLowerCase() === f.name)) continue;
+      const card = await judgeCard(f.name).catch(() => null);
+      if (card) cards.push(card);
+    }
+  }
+  return judgeAnswer(pack, question, {format: s.format, cards, glossary: s.game === 'ptcg' ? PTCG_GLOSSARY : s.game === 'ygo' ? YGO_GLOSSARY : []});
+}
+function judgeAsk(text) {
+  const s = judge, question = String(text || '').trim().slice(0, 400);
+  if (!s || !question || s.busy) return;
+  s.entries.push({kind: 'question', text: question});
+  s.busy = judgeWork(s, question).then(
+    answer => { s.busy = null; if (judge === s) s.entries.push({kind: 'answer', answer}); },
+    e => { s.busy = null; globalThis.__lastError = String(e?.stack || e); if (judge === s) s.entries.push({kind: 'error', text: e?.message || 'The rulebook could not be opened.'}); });
+}
+// ---------------------------------------------------------------- Settings > Backup (gap audit S1): app.js 7564-7670
+// app.js backupPayload (7564), verbatim but for saveable() (the player's own settings.game, as the account keeps it).
+function backupPayload() {
+  const st = saveable(), names = new Set();
+  for (const e of st.collection) names.add(key(e.name));
+  for (const d of [...st.decks, ...(st.references || [])]) for (const c of d.cards) names.add(key(c.name));
+  for (const w of st.wishlist) names.add(key(w.name));
+  const cache = {};
+  for (const n of names) if (S.catalog[n]) cache[n] = S.catalog[n];
+  return JSON.stringify({ ...backupEnvelope(st), cache });
+}
+// app.js readBackup (7625): [text] is the picked file's words (the app checks its size first too, as file.size).
+function readBackup(text) {
+  if (String(text).length > 60e6) throw Error("Backup is larger than 60 MB.");
+  const raw = JSON.parse(text);
+  return { next: normalize(raw), cache: raw.cache && typeof raw.cache === "object" ? raw.cache : {} };
+}
+// app.js replaceWorkspace (391) with recovery, notify and stamp: the copy it replaces is the recovery copy (siteRecovery, which the
+// app keeps in this device's Earlier saves before writing the new one).
+function replaceWith(next) {
+  return queueWorkspaceWrite(async () => {
+    siteRecovery = JSON.stringify(saveable());
+    const valid = normalize(structuredClone(next));
+    valid.lastSavedAt = new Date().toISOString();
+    if (tcgPrev !== undefined) valid.settings.game = S.state.settings?.game;
+    S.state = valid; conditionWorkspaceRevision++; lastUndo = null; commits++;
+    useMyPrices(S.state.myPrices);
+  });
+}
+// app.js C.checkBackup (7630): the line under the buttons.
+function checkBackup(text) {
+  try {
+    const { next } = readBackup(text);
+    return `✓ Valid backup: ${recoverySummary(next).copies} card copies, ${recoverySummary(next).decks} decks across all games, exported ${next.exportedAt ? new Date(next.exportedAt).toLocaleString() : "date unknown"}.`;
+  } catch (e) {
+    return "✕ Not a valid backup: " + e.message;
+  }
+}
+Object.assign(writeActs, {
+  // app.js C.restoreBackup (7638), signed in (the app saves only to an account): [d.text] the picked file.
+  async restoreBackup(d) {
+    try {
+      const { next, cache } = readBackup(d.text);
+      if (!ask(`Replace the workspace across all games with ${recoverySummary(next).copies} card copies and ${recoverySummary(next).decks} decks from this backup? The restored workspace will sync to your other devices. Your current data is saved as a recovery copy first.`, d.confirmed)) return;
+      for (const [k, c] of Object.entries(cache)) if (!S.catalog[k]) S.catalog[k] = slim(c);
+      S.catalogDirty = true;
+      await replaceWith(next);
+      toasts.push({text: "Backup restored.", undo: false});
+    } catch (e) {
+      toasts.push({text: "Restore failed — nothing changed. " + e.message, undo: false});
+    }
+  },
+  // app.js A.restoreRecovery (7593): [d.text] a recovery copy's workspace, [d.at] when it was saved.
+  async restoreRecovery(d) {
+    try {
+      const state = JSON.parse(d.text), summary = recoverySummary(state);
+      if (!ask(`Restore ${summary.copies} card copies, ${summary.decks} decks and ${summary.wishlist} wishlist entries across all games from ${new Date(d.at).toLocaleString()}? This replaces this account's current workspace and will sync to your other devices. Your current workspace will be saved as another recovery copy first.`, d.confirmed)) return;
+      await replaceWith(state);
+      toasts.push({text: 'Recovery copy restored. Your previous workspace remains in Recovery.', undo: false});
+    } catch (error) {
+      toasts.push({text: 'Recovery could not be restored. ' + error.message, undo: false});
+    }
+  },
+});
+
+// ---- Card art saved once (Randall 13 Nov: "Put this saved pop in on art"): every picture a Collection tile, deck row or wishlist
+// row draws, for every game, by the site's own choice of picture (ui.js cardImage for a Magic printing, artwork.js artworkSources
+// for a Yu-Gi-Oh! or Pokémon card): the app saves each once on the phone and draws it from there (art/ArtKeep.kt). Decks first.
+function artKeepList() {
+  const out = [], seen = new Set(), add = u => { u = abs(u || ''); if (u && !seen.has(u)) { seen.add(u); out.push(u); } };
+  const mtgCard = e => (e.printingId && S.state.printings?.[e.printingId]) || meta(e.name);
+  for (const d of S.state.decks || []) for (const c of d.cards || []) { try { add(cardImage(mtgCard(c))); } catch {} }
+  for (const e of S.state.collection || []) { try { add(cardImage(magicOwnedCard(e, S.state.printings?.[e.printingId]))); } catch {} }
+  for (const w of S.state.wishlist || []) { try { add(cardImage(mtgCard(w))); } catch {} }
+  for (const G of ['ygo', 'ptcg']) {
+    let st; try { st = tcgGs(G); } catch { continue; }
+    const ids = [...(st.decks || []).flatMap(d => Object.values(d.zones || {}).flat()), ...(st.collection || []), ...(st.wishlist || [])].map(e => e?.cardId).filter(Boolean);
+    for (const id of ids) { try { const c = tcgCardOf(G, id); if (c) add(artworkSources(c)[0]); } catch {} }
+  }
+  return out;
+}
 globalThis.Collection = {
+  // Card art saved once: every picture the player's decks, collection and wishlist draw (artKeepList).
+  artKeep() { return json({urls: artKeepList()}); },
+  // ---- Ask a Judge (gap audit H4) ----
+  // Opens the rules chat with the site's context ({game, format, cards, references}: app.js A.askRules), kept per context as the site keeps it.
+  judgeOpen(o) { const c = JSON.parse(o || '{}'), game = JUDGE_NAMES[c.game] ? c.game : 'mtg'; judge = {game, format: c.format || '', cards: (c.cards || []).filter(x => x?.name).slice(0, 4).map(x => ({name: x.name, text: x.text || ''})), entries: [], busy: null}; if (c.question) judgeAsk(c.question); return json(judgeModelOf()); },
+  judgeModel() { return json(judgeModelOf()); },
+  judgeFormat(f) { if (judge) judge.format = String(f || ''); return json(judgeModelOf()); },
+  judgeSend(text) { judgeAsk(text); return json(judgeModelOf()); },
+  judgeNew() { if (judge) judge = {...judge, cards: [], entries: [], busy: null}; return json(judgeModelOf()); },
+  judgeDropCards() { if (judge) judge.cards = []; return json(judgeModelOf()); },
+  judgeClose() { judge = null; return '{}'; },
+  // Settings > Backup: the backup file's words (app.js backupPayload) and Check file's line (C.checkBackup).
+  backupPayload() { return backupPayload(); },
+  backupCheck(text) { return checkBackup(text); },
+  // ---- Compare cards (gap audit H1) ----
+  // A tapped tile (its data-ask-show): the site's tools.open; askShowDone() says where the app goes ({dest}) once it is worked out.
+  askShow(item) { let s = null; try { s = JSON.parse(item); } catch {} if (!s) return '{}'; askShowRun(s); return '{}'; },
+  askShowDone() { return json(askRun || {done: true}); },
+  compareModel(G) { return json(compareModelOf(G)); },
+  // A.compareFrom / tCompareFrom, as the app's hold menu: the card fills the first empty side (a full pair starts again from it).
+  // [ref] is the Magic card's name, or a Yu-Gi-Oh! / Pokémon card id; compareDone() says when it is in.
+  compareFrom(G, ref) {
+    const run = compareRun = {done: false};
+    (async () => {
+      const card = G === 'mtg' ? (meta(ref) || await resolve(ref, true)) : (tcgCardOf(G, ref) || await tcgEnsureCard(G, ref));
+      const pair = cmpPair(G), i = pair.findIndex(x => !x);
+      if (i < 0) { pair[0] = card; pair[1] = null; } else pair[i] = card;
+    })().then(() => { run.done = true; }, e => { run.done = true; run.error = String(e?.message || e); });
+    return '{}';
+  },
+  // A.compareLookup / tCompareLookup: side [i] from the typed name; the site's "No card with that name." when nothing matches.
+  compareLookup(G, i, q) {
+    const run = compareRun = {done: false}; q = String(q || '').trim(); i = Number(i);
+    (async () => {
+      if (!q) return;
+      if (G === 'mtg') { cmpPair(G)[i] = await resolve(q, true); return; }
+      const r = await tcgSources[G].search({q, size: 20}).catch(() => null), hit = rankByName(r?.cards || [], q)[0];
+      if (!hit) throw Error("No card with that name.");
+      cmpPair(G)[i] = (await tcgEnsureCard(G, hit.id).catch(() => null)) || hit;
+    })().then(() => { run.done = true; }, e => { run.done = true; run.error = String(e?.message || e); });
+    return '{}';
+  },
+  compareDone() { return json(compareRun || {done: true}); },
+  // A.compareReset ([i] < 0) or tCompareClear (one side).
+  compareClear(G, i) { i = Number(i); const pair = cmpPair(G); if (i < 0) { pair[0] = pair[1] = null; } else pair[i] = null; return json(compareModelOf(G)); },
+  // ---- Price alerts (pricehist.js, app.js A.priceAlert / priceAlertSave / priceAlertClear) ----
+  // The signed-in account whose alerts the site's code reads and writes ('guest' signed out).
+  alertOwner(user) { alertOwner = String(user || 'guest'); return '{}'; },
+  // pricehist.js alertSheet's model for card [id] of game [g]: the price now as A.priceAlert finds it (the card's price history,
+  // else its quote), the two numbers the sheet's fields start with (an alert's own, else 15 % under and 25 % over), and the card's
+  // price history series for the line.
+  alertOpen(g, id, name) {
+    id = String(id || '');
+    let value = priceSeries(g, id).at(-1)?.[1] ?? null, quote = null;
+    try { const card = g === 'mtg' ? meta(name) : tcgCardOf(g, id.split('|')[0]), finish = id.split('|')[1] || (g === 'mtg' ? 'nonfoil' : 'reference');
+      quote = card ? quoteModel(g, card, finish) : null; if (value == null) value = quote?.value ?? null; } catch {}
+    const a = alertFor(g, id), fill = (own, f) => (a ? (own ?? '') : value != null ? (value * f).toFixed(2) : '');
+    // The line: this device's own price checks merged with the site's shared daily prices (sharedprices.js, as the card page's
+    // history merges them: the server's point wins on the same day); the shared ones asked for when none are here yet.
+    const shared = quote ? sharedPoints(quote) : [], sharedAsked = !!quote && !shared.length && (g === 'mtg' || g === 'ygo');
+    if (sharedAsked) loadSharedPoints(quote);
+    const series = mergePoints(priceSeries(g, id).map(([date, v]) => ({date, value: v})), shared).map(p => [p.date, Number(p.value)]);
+    return json({game: g, id, name: name || 'This card', price: value, exists: !!a, below: String(fill(a?.below, .85)), above: String(fill(a?.above, 1.25)),
+      hintBelow: value != null ? (value * .85).toFixed(2) : 'e.g. 5.00', hintAbove: value != null ? (value * 1.25).toFixed(2) : 'e.g. 20.00',
+      series, sharedAsked});
+  },
+  // A.priceAlertSave with the two fields' text: its error line, or the alert saved and its toast.
+  alertSave(g, id, name, belowText, aboveText) {
+    const num = (x) => (x === "" || x == null || !(Number(x) > 0) || !Number.isFinite(Number(x)) ? null : Math.round(Number(x) * 100) / 100),
+      below = num(belowText), above = num(aboveText);
+    if (below == null && above == null) return json({error: "Enter a price above $0 in either field."});
+    if (below != null && above != null && below >= above) return json({error: "The lower price must be less than the upper price."});
+    setAlert(g, String(id), name, {below, above});
+    return json({ok: true, toast: "Alert saved. Checked while you use the app; no background monitoring."});
+  },
+  // A.priceAlertClear.
+  alertClear(g, id) { setAlert(g, String(id), "", {}); return json({ok: true, toast: "Alert removed."}); },
+  // Every alert of this account (the daily check's list).
+  alertList() { return json({alerts: priceAlerts()}); },
+  // The app's daily check (gap audit H2 step 4, new beyond the site, which checks only while open): each alerted card's price
+  // fetched now and recorded as the site records a price it sees (recordCardPrice: pricehist.js checkAlerts, once a day per card);
+  // what it sets off comes out in the pumps' "alerts". alertCheckPoll() says when it is done.
+  alertCheck() {
+    const run = alertRun = {done: false, checked: 0, failed: 0};
+    (async () => {
+      for (const a of priceAlerts()) {
+        const id = String(a.id || '').split('|')[0]; if (!id) continue;
+        try {
+          if (a.game === 'mtg') recordCardPrice('mtg', await api('/cards/' + encodeURIComponent(id)));
+          else await tcgEnsureCard(a.game, id, true);
+          run.checked++;
+        } catch { run.failed++; }
+      }
+    })().finally(() => { run.done = true; });
+    return '{}';
+  },
+  alertCheckPoll() { return json(alertRun || {done: true, checked: 0, failed: 0}); },
   // What the app kept of the site's browser storage (KEPT_KEYS), put back when the bundle starts.
   storeLoad(keptJson) { const o = keptJson ? JSON.parse(keptJson) : {}; for (const [k, v] of Object.entries(o)) if (kept(k) && typeof v === 'string') keptSet(k, v); },
   // The account's workspace row data (cloud.js), normalized as app.js loads it; [catalogJson] is the app's saved catalog.
@@ -5748,6 +6239,15 @@ globalThis.Collection = {
   playPower(deck) { playPowerPanel(deck); return panelModel(); },
   /** The Rules page for [game] (#rules); read again with panelModel. */
   rulesPage(game) { rulesPagePanel(game || 'mtg'); return panelModel(); },
+  // A judge's citation (gap audit H4): rule-learning.js openRuleReference on the Rules page's learning section, as the page's own
+  // "Open exact rule" does; the rule arrives through panelModel. {opened: false} when the page has no such section or the reference is unreadable.
+  ruleOpen(ref) {
+    let r = null; try { r = JSON.parse(ref); } catch {}
+    const root = panel?.key?.startsWith('rulespage|') ? panel.host.querySelector('[data-learning-root]') : null;
+    if (!root || !r || r.game !== root.dataset.game) return json({opened: false});
+    panelRun(() => { openRuleReference(root, r).catch(() => {}); });
+    return panelModel();
+  },
   /** How to play · keywords (A.learnGame: learnSheet) for [game]. */
   learnGame(game) { learnPanel(game || 'mtg'); return panelModel(); },
   // The Scan page's markup for a screen (scanPanel).
@@ -5978,6 +6478,31 @@ globalThis.Collection = {
     return json(searchPageModel(searchGame));
   },
   searchWent() { const w = searchWent; searchWent = null; return json(w); },
+  // app.js A.ruleCards for Yu-Gi-Oh! and Pokémon (a card page's artist, type, archetype, attribute and ability chips): the game's
+  // search set to the chip's filters (card-discovery.js cardDiscoverySpec), then run (tcg.js A.tSearch), or the loaded cards matched
+  // for a Pokémon ability or text. Its error line when the chip names nothing the site can search.
+  discoverySearch(G, kind, value) {
+    // tcg.js A.tArchetype (a Yu-Gi-Oh! card's archetype line, "More <archetype> cards"): the search page on that archetype, a list of its
+    // cards (gap audit card head): its own filter and words, as the site sets them before runSearch.
+    if (kind === 'tArchetype' && G !== 'mtg' && value) {
+      searchGame = G; tcgFocus(G, 'search');
+      TcgAll.invalidateTcgSearch(G, true); const U = tcgUi(G).search;
+      Object.assign(U, {q: '', f: {archetype: value, setName: 'Archetype: ' + value}, discoveryNote: ''});
+      Promise.resolve(TA.tSearch()).catch(e => toasts.push({text: e?.message || 'Search failed.', undo: false}));
+      return json(searchPageModel(G));
+    }
+    const spec = cardDiscoverySpec(G, kind, value);
+    if (!spec || G === 'mtg') return json({error: 'Reopen this card in its game before searching.'});
+    searchGame = G; tcgFocus(G, 'search');
+    TcgAll.invalidateTcgSearch(G, true); const U = tcgUi(G).search;
+    Object.assign(U, {q: '', f: spec.filters, own: '', maxPrice: '', sort: G === 'ygo' ? 'name' : 'new', discoveryNote: ''});
+    if (spec.loadedAbility || spec.loadedText) {
+      const key = (spec.loadedAbility || spec.loadedText).toLocaleLowerCase();
+      const cards = Object.values(tcgCache[G]).filter(c => !c.brief && (spec.loadedAbility ? c.abilities?.some(a => a.name?.toLocaleLowerCase() === key) : ruleCardContext(G, c).text.toLocaleLowerCase().includes(key)));
+      Object.assign(U, {results: cards, ran: true, total: cards.length, more: false, busy: false, error: '', discoveryNote: `${spec.label}. Loaded card data only; this is not a complete catalogue search. Shared text or an Ability name does not prove the same effect or a working combo.`});
+    } else Promise.resolve(TA.tSearch()).catch(e => toasts.push({text: e?.message || 'Search failed.', undo: false}));
+    return json(searchPageModel(G));
+  },
   searchToasts() { const t = toasts.map(x => x.text); toasts = []; return json(t); },
   // tcg.js's saved searches live in this device's storage (cardforge-saved-searches-v1): the app keeps them between visits.
   // suggest.js keeps each game's recent searches (cardstashy-recent-<game>) the same way: both go back and forth as one object.
@@ -5995,6 +6520,16 @@ globalThis.Collection = {
   searchSuggest(game, q) { suggestStart(game || 'mtg', q); return json(suggestOut); },
   searchSuggestModel() { return json(suggestOut); },
   searchRemember(game, q) { rememberSearch(game || 'mtg', q); },
+  // Words handed over from Home's box are a new search: a filter an earlier page left on ("Legal in Commander" from a deck's
+  // review) does not narrow it, as app.js submitHome clears it on the site.
+  searchFresh(game) { if ((game || 'mtg') === 'mtg') { S.ui.db.filters = {color: '', type: '', format: '', maxPrice: ''}; dbInvalidate(); } },
+  // The answer card over the suggestions: searchAnswer reads what is typed and starts its lookup ([opts] = {fix, set, card}; the app
+  // pumps it with settle()); searchAnswerModel reads it (null while the words are read, state 'none' | 'loading' | 'done').
+  searchAnswer(game, q, opts) { let o = {}; try { o = JSON.parse(opts || '{}') || {}; } catch {} answerStart(game || 'mtg', q, o); return json(answerOut); },
+  searchAnswerModel() { return json(answerOut); },
+  // Whether the words are a question the app answers ('answer'), one it can't ('miss': the plain search still runs) or a plain search ('none').
+  searchAsks(game, q) { const p = String(q || '').trim() ? answerPlan(game || 'mtg', q).plan : null; return !p ? 'none' : p.call?.pick === 'maybe' || p.intent === 'unknown' ? 'miss' : p.call || p.missing?.length ? 'answer' : 'none'; },
+  searchAnswerSearch(q, sort) { return json(answerSearch(q, sort || '')); },
   // views.js setsPage(), every set: [opts] = {q, family, release, year, sort} as the app last left them. setsLoad starts the
   // set list's lookup (app.js loadSetIndex; the app pumps it with settle()); setsDo applies a control (setsAct).
   sets(game, opts) {

@@ -115,6 +115,8 @@ class WorkspaceSyncTest {
         // This device's copy before the merge is kept (the site's Recovery), and the engine shows the merged copy.
         assertTrue(WorkspaceSync.recoveryFile(c, u).isFile)
         assertEquals(10, lot(JsonParser.parseString(WorkspaceSync.recoveryFile(c, u).readText()).asJsonObject, "l2")!!["qty"].asInt)
+        // ...and listed in Settings > Backup's Earlier saves with the site's label.
+        assertEquals(listOf("Before loading your account copy"), RecoveryJournal.list(c, u).map { it.label })
         assertEquals(11, lot(JsonParser.parseString(CollectionEngine.saved()).asJsonObject, "l2")!!["qty"].asInt)
         assertEquals("Changes from both devices were combined. The previous device copy is saved in Recovery.", WorkspaceSync.notice.value)
         assertEquals(false, WorkspaceSync.readMeta(c, u)!!.dirty)

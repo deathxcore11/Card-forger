@@ -30,7 +30,42 @@ object TileBadges {
         val state: List<String>, val activation: Boolean, val combat: String?,
         val keywords: List<Keyword>, val keywordsMore: Int, val counters: List<Counter>, val countersMore: Int,
         val plaque: Pair<String, Int>?, val damage: Int, val crew: Int?, val attachments: List<Pair<String, Int>>, val compact: Boolean,
-    )
+        /** 0.4.60 G1: every keyword with an icon, in rank order, uncapped: a creature's bottom strip fits what it can ([stripShown]). */
+        val iconic: List<Keyword> = emptyList(),
+        /**
+         * 0.4.60 G2: keywords Forge lists that have no icon (Toxic 1, Prowess, Infect...), in Forge's order, as Forge words them. A
+         * creature's strip shows them as word marks after the [iconic] ones ([strip]).
+         */
+        val words: List<Keyword> = emptyList(),
+    ) {
+        /** 0.4.60 G2: a creature's strip in order: the iconic marks, then the word marks. */
+        val strip: List<Keyword> get() = iconic + words
+    }
+
+    /**
+     * 0.4.60 G1: how many of [n] keyword marks a strip with room for [slots] marks shows; the rest fold into one "+N" mark, which
+     * takes a slot of its own. No room: nothing.
+     */
+    fun stripShown(n: Int, slots: Int): Int = if (n <= slots) n else (slots - 1).coerceAtLeast(0)
+
+    /** 0.4.60 G1: marks [kh] wide and [gap] apart that fit in [room] (all dp). */
+    fun stripSlots(room: Float, kh: Float, gap: Float): Int = if (kh <= 0f || room < kh - .01f) 0 else ((room + gap + .01f) / (kh + gap)).toInt()
+
+    /**
+     * 0.4.60 G2: the same fit rule for marks of mixed widths (icon marks are square, word marks as wide as their word): how many of
+     * the marks [widths] wide show in a row [room] long with [gap] between them, in order while they fit; when they do not all fit,
+     * one "+N" mark [moreW] wide takes the last place. All dp.
+     */
+    fun stripFit(widths: List<Float>, room: Float, gap: Float, moreW: Float): Int {
+        fun span(k: Int, extra: Float?) = widths.take(k).sum() + (extra ?: 0f) + gap * ((k + (if (extra != null) 1 else 0)) - 1).coerceAtLeast(0)
+        if (span(widths.size, null) <= room + .01f) return widths.size
+        var k = widths.size - 1
+        while (k > 0 && span(k, moreW) > room + .01f) k--
+        return k
+    }
+
+    /** 0.4.60 G1: a squeezed tile (narrower than it is tall) stacks its marks up the left edge, at most two (the second may be "+N"). */
+    const val SQUEEZED_MARKS = 2
 
     /** currentKeywords(card): Forge's own list wins; until a bridge sends one, only keyword-only lines of the rules text count. */
     fun currentKeywords(card: Card): List<Keyword> {
@@ -66,6 +101,8 @@ object TileBadges {
         val keywords = currentKeywords(card)
         fun rank(k: Keyword) = KEYWORDS.indexOfFirst { it.first == k.key }
         val iconic = keywords.filter { it.key != null }.associateBy { it.key }.values.sortedBy { rank(it) }
+        // 0.4.60 G2: the rest as Forge words them (currentKeywords keeps Forge's list, or keyword-only rules lines, never a sentence).
+        val words = keywords.filter { it.key == null }
         val state = buildList {
             if (card.tapped) add("tapped")
             if (creature && card.summoningSick) add("summoning-sick")
@@ -86,7 +123,7 @@ object TileBadges {
             keywords = shown, keywordsMore = iconic.size - shown.size, counters = railShown, countersMore = rail.size - railShown.size,
             plaque = if (plaqueName != null && plaqueValue != null) (if (plaqueName == "LOYALTY") "loyalty" else "defense") to plaqueValue else null,
             damage = damage, crew = if (card.type.contains("Artifact") && card.type.contains("Vehicle")) (card.crew ?: keywords.firstOrNull { Regex("^crew \\d+", RegexOption.IGNORE_CASE).containsMatchIn(it.text) }?.text?.let { Regex("\\d+").find(it)?.value?.toInt() }) else null,
-            attachments = emptyList(), compact = !creature,
+            attachments = emptyList(), compact = !creature, iconic = iconic, words = words,
         )
     }
 }

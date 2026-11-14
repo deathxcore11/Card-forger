@@ -11,7 +11,7 @@ import {recordValueObservation} from './value-history.js';
 import {dailyDate, nextDailyReset} from './daily-clock.js';
 import {ygoRarity} from './ygo-identity.js';
 import {sharedDeckSheet} from './shared-deck-view.js';
-import {finishAttrs,finishPreview,finishArtworkCard,ygoRarityStrip} from './finish-preview.js';
+import {finishAttrs,finishPreview,finishArtworkCard,ygoRarityStrip,setSavedYgoPrintingKey} from './finish-preview.js';
 import {deckBoxMarkup,deckBoxFields,readDeckBox} from './deck-box.js';
 import {contextAction,contextHeader,deckContextShortcuts} from './card-actions.js';
 import {detailSetSummary,detailOwnedSummary,miniPrintingMarkup} from './card-detail-extras.js';
@@ -28,7 +28,7 @@ import {interactiveRules} from './rule-learning.js';
 import {referenceQuote,referenceLabel} from './price-reference.js';
 import {brandMark} from './brand.js';
 import {conditionValue,conditionBadge,conditionName} from './condition-value.js';
-import { aiReviewPanel } from './ai-review.js';
+import { aiReviewPanel, coachModel } from './ai-review.js';
 import { myPrice } from "./mtg-tcgprice.js";
 import { ask, askText } from "./dialog.js";
 import { buyOnTcgplayer, massLines } from "./buy.js";
@@ -62,6 +62,7 @@ import { tileChrome } from "./tiles.js";
 // Yu-Gi-Oh! and Pokémon: collection, search, sets and deck building, sharing one
 // set of screens. Each game's data, rules and formats come from its adapter.
 import { S, uid, slim, meta as mtgDeckMeta } from "./store.js";
+import { searchAnswerMarkup } from "./answer-state.js";
 import { esc, safeHref, usd, empty, bar, options, segmented, referencePrintingPills, ring } from "./ui.js";
 import { competitiveScore } from "./scouting.js";
 import { GAMES, GAME_ICON, GAME_COLOR, GAME_IDS, blankGame, gameOf } from "./games.js";
@@ -234,13 +235,21 @@ const tcgTier = (c, e = null, p = undefined) => tierOf(c?.game, e?.rarity || c?.
 export function savedYgoPresentation(card,entry) {
   if(card?.game!=="ygo"||!entry)return card;
   const scoped=entry.setReleaseId?setContextCard("ygo",card,entry.setReleaseId,currentYgoCatalogue()):card;
-  const key=entry.printing&&entry.rarity?entry.printing+"::"+entry.rarity:"";
+  const saved=entry.printing&&entry.rarity?entry.printing+"::"+entry.rarity:"";
+  // A lot saved with its release but not its printing: when that release holds exactly one printing of the card, the release
+  // itself names it (the card page already shows it that way). Lists then wear the same rarity and foil as the page, never a guess:
+  // an unresolved or ambiguous release, or a saved printing code from another release, still borrows nothing.
+  const pinned=scoped.setContext?.status==="resolved"&&!scoped.setContext.printingAmbiguous?scoped.setContext.printing:null;
+  const key=saved||(pinned&&(!entry.printing||entry.printing===pinned.code)&&(!entry.rarity||entry.rarity===pinned.rarity)?pinned.code+"::"+pinned.rarity:"");
   const q=!entry.setReleaseUnverified&&key?presentationQuote("ygo",scoped,"reference",key,entry.edition||""):null;
   const printing=q?.printing||null;
   return {...scoped,sets:printing?[printing]:[],rarity:printing?.rarity||"",displayPrintingKey:printing?key:"",displayEdition:entry.edition||"",
     ...(scoped.setContext?{setContext:{...scoped.setContext,printings:printing?[printing]:[],printing,printingAmbiguous:!printing}}:{}),
-    savedPrintingUnresolved:!printing};
+    savedPrintingUnresolved:!printing,
+    // Randall's pick (12 Nov): a printing read from the release, not saved on the lot, shines like the page and carries an 'Edition not set' mark.
+    printingFromRelease:!!printing&&!saved};
 }
+setSavedYgoPrintingKey((card,entry)=>savedYgoPresentation(card,entry).displayPrintingKey||'');
 export function tcgRarityAttrs(c,e=null) {
   if(c?.game!=="ygo")return "";
   if(e)c=savedYgoPresentation(c,e);
@@ -753,7 +762,7 @@ export function tcgSearch() {
     ],
     count = `${list.length.toLocaleString()} shown · ${loaded.length.toLocaleString()} loaded${Number.isFinite(U.total) ? ` · ${U.total.toLocaleString()} provider matches before local filters` : ""}`;
   return `${U.discoveryNote?`<p class="note small" role="status">${esc(U.discoveryNote)}</p>`:""}<div class="page-head"><h1>Search cards</h1>${viewControl(g,"search")}</div>
-  <div class="searchbar search-query"><input type="search" data-suggest="${g}" value="${esc(U.q)}" placeholder="${g === "ygo" ? "Name or code (BLZD-EN010)" : "Card name or set + number"}" data-input="tQ" data-enter="tSearch" aria-label="Search cards" autocomplete="off" enterkeyhint="search"><button class="ask-launch" data-act="askOpen" aria-label="Ask AI">${brandMark("assistant-button-mark")}<span>Ask</span></button></div>
+  <div class="searchbar search-query"><input type="search" data-suggest="${g}" value="${esc(U.q)}" placeholder="${g === "ygo" ? "Name or code (BLZD-EN010)" : "Card name or set + number"}" data-input="tQ" data-enter="tSearch" aria-label="Search cards" autocomplete="off" enterkeyhint="search"></div>${searchAnswerMarkup()}
   <div class="search-tools" aria-label="Search shortcuts"><button class="chip tool-chip" data-act="tCompareOpen" aria-label="Compare cards">${actionIcon("compare")}<span>Compare</span></button><button class="chip tool-chip" data-act="go" data-to="#sets" aria-label="Browse sets">${actionIcon("sets")}<span>Sets</span></button><button class="chip tool-chip" data-act="mtgWikiOpen" aria-label="Open Wiki">${actionIcon("wiki")}<span>Wiki</span></button><button class="chip tool-chip" data-act="tRandomCard" aria-label="Random card">${actionIcon("random")}<span>Random</span></button></div>
   ${chips.length ? `<div class="filter-chips" aria-label="Active filters">${chips.map(([k,l]) => `<button class="fchip" data-act="tChip" data-field="${esc(k)}" aria-label="Remove ${esc(l)}"><span class="fchip-label">${esc(l)}</span> <span aria-hidden="true">×</span></button>`).join("")}<button class="link small" data-act="tClear">Clear all</button></div>` : ""}
   ${savedSearches(g).length ? `<div class="saved-searches"><span class="muted small">Saved:</span>${savedSearches(g).map((x,i) => `<span class="schip"><button data-act="tSaved" data-i="${i}">${esc(x.label)}</button><button data-act="tSavedDel" data-i="${i}" aria-label="Delete saved search ${esc(x.label)}">×</button></span>`).join("")}</div>` : ""}
@@ -1053,7 +1062,7 @@ export function tcgCollection() {
       const valuation=entryValuation(c,e), p = valuation.price;
       const t = tcgTier(c, e, p);
       const visual=savedYgoPresentation(c,e);
-      return `<div class="lot" ${tcgRarityAttrs(visual)} data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark(g,e.id)}<button class="lot-art" ${finishAttrs(g,visual,{priceFinish:e.variant,savedVariant:e.variant,savedProductId:e.productId,priceEdition:e.printing&&e.rarity?e.printing+'::'+e.rarity:'',priceYgoEdition:e.edition})}  data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${imgTag(c,"card-img",false,g==="ygo"?p:undefined)}${tileBadges(visual)}${tierGem(t)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem(g, c)}</button><span class="lot-sub">${rowBadges(visual)}${visual?.savedPrintingUnresolved?'<span class="muted">Printing not verified</span> · ':""}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(pokemonVariantProductConflict(c,e)?'Saved product identity mismatch':c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></div><div class="lot-side"><span class="lot-value"><button class="price link" data-act="marketOpen" data-game="${g}" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" data-finish="${esc(e.variant||"reference")}" aria-label="Price history and sellers for ${esc(e.name)}">${p === null ? "—" : usd(p * e.qty)}</button>${conditionBadge(e,[],priceOriginNote(valuation))}${priceOriginBadge(valuation)}</span><span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
+      return `<div class="lot" ${tcgRarityAttrs(visual)} data-tier="${t.key}" style="--i:${Math.min(i, 24)};${tierStyle(t)}">${selectionMark(g,e.id)}<button class="lot-art" ${finishAttrs(g,visual,{priceFinish:e.variant,savedVariant:e.variant,savedProductId:e.productId,priceEdition:e.printing&&e.rarity?e.printing+'::'+e.rarity:visual?.displayPrintingKey||'',priceYgoEdition:e.edition})}  data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" aria-label="Open ${esc(e.name)}">${imgTag(c,"card-img",false,g==="ygo"?p:undefined)}${tileBadges(visual)}${tierGem(t)}</button><div class="lot-info"><button class="lot-name" data-act="tCard" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}">${esc(e.name)}${rowEmblem(g, c)}</button><span class="lot-sub">${rowBadges(visual)}${visual?.savedPrintingUnresolved?'<span class="muted">Printing not verified</span> · ':""}${visual?.printingFromRelease?'<span class="muted edition-unset" title="Read from the saved release. Open the card to pick your printing.">Edition not set</span> · ':""}${esc(setLabel({ e, c }) || "")}${e.printing ? " · " + esc(e.printing) : ""}${e.rarity ? " · " + esc(e.rarity) : ""}${e.variant ? " · " + esc(pokemonVariantProductConflict(c,e)?'Saved product identity mismatch':c?.variants?.find((v) => v.key === e.variant)?.label || e.variantLabel || e.variant) : ""}${e.edition ? " · " + esc({"1st-edition":"First Edition",unlimited:"Unlimited",limited:"Limited Edition"}[e.edition] || e.edition) : ""}${e.location ? " · " + esc(e.location) : ""}</span></div><div class="lot-side"><span class="lot-value"><button class="price link" data-act="marketOpen" data-game="${g}" data-id="${esc(e.cardId)}" data-entry="${esc(e.id)}" data-finish="${esc(e.variant||"reference")}" aria-label="Price history and sellers for ${esc(e.name)}">${p === null ? "—" : usd(p * e.qty)}</button>${conditionBadge(e,[],priceOriginNote(valuation))}${priceOriginBadge(valuation)}</span><span class="stepper"><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="-1" aria-label="One fewer">−</button><b>${e.qty}</b><button data-act="tEntryQty" data-id="${esc(e.id)}" data-delta="1" aria-label="One more">＋</button></span></div></div>`;
     })
     .join("")}</div>${selectionTray(g)}${!rows.length ? empty("No matching cards", "Try a different search or filter.") : ""}${rows.length > (U.limit || 120) ? `<button class="btn ghost block" data-act="tCollMore">Load more · ${rows.length-(U.limit || 120)} remaining</button>` : ""}`
   : empty(`No ${esc(GAMES[g].short)} cards yet`, "Search for a card and tap “Add to collection”, or import a list.", `<button class="btn" data-act="go" data-to="#search">Find cards</button><button class="btn ghost" data-act="tImportColl">Paste a list</button>`)}
@@ -1562,12 +1571,19 @@ function tcgPowerPage(g, d, f, s) {
   const m = pw.match, c = pw.ctx || {};
   const meta = { match: m ? { archetype: m.archetype, sim: m.sim, lists: m.lists, share: m.share, missing: (m.missing || []).slice(0, 3), extra: (m.extra || []).slice(0, 3) } : null, field: c.field || [] };
   const risks = (pw.strategicRisk?.axes || []).map((a) => ({ label: a.label, copies: a.copies }));
-  const mu = tcgMatchupCard(g, d, f, pw, tRows(g, d.zones.main), tRows(g, d.zones.extra));
+  // The coach lives on this page (same layout as Magic): fix first, the opening hand, the field, owned swaps.
+  const hooks = tcgCoachHooks(g, d, f, pw), C = coachModel(g, d, (x) => cardOf(g, x), pw, hooks), mst = muStateT(g, d);
+  let MU = null; try { MU = hooks.matchups(); } catch {}
+  if (!MU && !mst.busy && !mst.error && !mst.auto && metaState(g)?.data) { mst.auto = true; setTimeout(() => globalThis.dispatchEvent?.(new Event("cardstashy-want-tmatchups")), 0); }
+  const oppRow = (x) => { const tone = x.w >= 0.55 ? "up" : x.w <= 0.45 ? "down" : ""; return `<div class="pwp-opp"><span><b>${esc(x.name)}</b>${x.why ? `<small>${esc(x.why)}</small>` : ""}</span><em class="${tone}">${Math.round(x.w * 100)}%<i>${tone === "up" ? "Good" : tone === "down" ? "Tough" : "Close"}</i></em></div>`; };
+  const breaks = (C.pressure || []).slice(0, 2).map((x) => `<p class="pwp-text"><b>${esc(x.threat.replace(/^Something shuts off your /, "").replace(/^./, (ch) => ch.toUpperCase()))}.</b> ${esc(x.impact)} ${esc(x.backup)}</p>`).join("");
+  const fieldCard = `<section class="pwp-card"><div class="pwp-row"><h3>Against the field</h3>${MU ? `<small>2,000 games each${g === "ptcg" ? " · adjusted to real results" : ""}</small>` : ""}</div>${m ? `<p class="pwp-text">Closest tournament list: <b>${esc(m.archetype)}</b>, ${Math.round((m.sim || 0) * 100)}% the same.</p>` : ""}${MU ? [...MU.all].sort((x, y) => Math.abs(y.w - 0.5) - Math.abs(x.w - 0.5)).slice(0, 5).map(oppRow).join("") : mst.busy ? `<p class="pwp-text" role="status">${esc(mst.msg || "Simulating matchups…")}</p>` : mst.error ? `<p class="pwp-text warn-text">${esc(mst.error)}</p><button class="btn ghost pwp-btn" data-act="tMuRun">Try again</button>` : metaState(g)?.data ? `<p class="pwp-text" role="status">Simulating against the decks winning right now…</p>` : `<p class="pwp-text">Load recent tournament decks to see how this list does against them.</p><button class="btn pwp-btn" data-act="tMetaRefresh">Load tournament decks</button>`}${breaks ? `<h3>Where it can break</h3>${breaks}` : ""}</section>`;
+  const coachSwaps = C.swaps.length ? [...C.swaps].sort((x, y) => y.after - y.before - (x.after - x.before)).slice(0, 4).map((x) => `<div class="pwp-sw pwp-own"><span class="o">${esc(x.cut)}</span><i>→</i><span class="n">${esc(x.add)}</span><small>${esc(x.why)}</small><em>Power ${x.before} → ${x.after}</em></div>`).join("") : C.busy ? `<p class="pwp-text" role="status">Trying swaps from the cards you own…</p>` : `<p class="pwp-text">No card you own raises this deck's Power right now.</p>`;
   const U = pw.upgrades;
-  const up = `<section class="pwp-card"><h3>Upgrades</h3>${U ? U.adds.slice(0, 4).map((x) => `<div class="pwp-sw"><span class="n" style="grid-column:1/-1;text-align:left">+ ${esc(x.name)}</span><small>${Math.round(x.share * 100)}% of ${esc(m.archetype)} lists play it · they run ${x.typical}, you run ${x.have}</small></div>`).join("") + (U.cuts.length ? `<small>Few placing lists play: ${U.cuts.slice(0, 4).map((x) => esc(x.name)).join(", ")}</small>` : "") : ""}${pw.metaLoaded ? "" : `<small>Load recent tournament decks to see what lists like yours play.</small><button class="btn pwp-btn" data-act="tMetaRefresh">Load tournament decks</button>`}<details class="pwp-more"><summary>Staples and budget builds</summary>${deckUpgradeTab(g, d, f, s)}</details></section>`;
+  const up = `<section class="pwp-card" id="pwpUpgrades"><div class="pwp-row"><h3>Upgrades</h3><small>from cards you own</small></div>${coachSwaps}${U ? U.adds.slice(0, 4).map((x) => `<div class="pwp-sw"><span class="n" style="grid-column:1/-1;text-align:left">+ ${esc(x.name)}</span><small>${Math.round(x.share * 100)}% of ${esc(m.archetype)} lists play it · they run ${x.typical}, you run ${x.have}</small></div>`).join("") + (U.cuts.length ? `<small>Few placing lists play: ${U.cuts.slice(0, 4).map((x) => esc(x.name)).join(", ")}</small>` : "") : ""}${pw.metaLoaded ? "" : `<small>Load recent tournament decks to see what lists like yours play.</small><button class="btn pwp-btn" data-act="tMetaRefresh">Load tournament decks</button>`}<details class="pwp-more"><summary>Staples and budget builds</summary>${deckUpgradeTab(g, d, f, s)}</details></section>`;
   const foot = `Estimates from this list${gf?.runs ? `: ${gf.runs.toLocaleString()} solitaire trials` : ""}, tournament lists. Not match results.`;
-  const tcgMore = `<details class="pwp-more"><summary>Card odds, roles and Extra Deck</summary><div class="pwp-cols">${deckInsights(g, d, f, s, true)}</div></details><details class="pwp-more"><summary>AI coach</summary>${aiReviewPanel(g, d, x => cardOf(g, x), pw, tcgCoachHooks(g, d, f, pw))}</details>`;
-  return powerPageHtml({ score, tier, plan: pw.plan || pw.lens || "", sub: score == null ? "Power unavailable until the checks pass" : comp == null ? "from the deck's own cards" : "against what is winning now", chips: [], drivers, tempo, wins: { sources, chains, text: sources.length ? "" : gf?.winCon || "" }, meta, risks, matchups: mu, upgrades: up, foot }) + tcgMore;
+  const tcgMore = `<details class="pwp-more"><summary>Card odds, roles and Extra Deck</summary><div class="pwp-cols">${deckInsights(g, d, f, s, true)}</div></details>`;
+  return powerPageHtml({ score, tier, plan: pw.plan || pw.lens || "", sub: score == null ? "Power unavailable until the checks pass" : comp == null ? "from the deck's own cards" : "against what is winning now", chips: [], drivers, tempo, wins: { sources, chains, text: sources.length ? "" : gf?.winCon || "" }, meta, risks, upgrades: up, foot, coach: C, fieldCard, game: g }) + tcgMore;
 }
 
 function deckMatchupsT(g, d, f) {
@@ -1589,7 +1605,7 @@ function realResults(sims, p) {
   });
 }
 
-// AI coach hooks: owned cards that could join this deck, and the app's own re-score of a swap.
+// Deck coach hooks: owned cards that could join this deck, and the app's own re-score of a swap.
 export function tcgCoachHooks(g, d, f, pw) {
   return {
     candidates: () => {
@@ -1612,6 +1628,15 @@ export function tcgCoachHooks(g, d, f, pw) {
         for (const l of lists) for (const r of g === "ygo" ? (l.main || []).map((cid) => ({ key: String(cid), qty: 1 })) : (l.list || []).filter((x) => !/^(?:basic )?\w+ energy$/i.test(x.name)).map((x) => ({ key: x.name, qty: x.qty }))) by.set(r.key, (by.get(r.key) || 0) + r.qty);
         return { name: a.name || id, share: a.share, lists: lists.length, rows: [...by].sort((x, y) => y[1] - x[1]).slice(0, 12).map(([k, n]) => { const c = g === "ygo" ? cardOf(g, k) : byName.get(k); return { name: c?.name || k, qty: Math.max(1, Math.round(n / Math.max(1, lists.length))), c }; }) };
       }).filter((f) => f.rows.length).slice(0, 5);
+    },
+    // The app's matchup simulation against each top deck (null until the field has been simulated once).
+    matchups: () => {
+      const st = muStateT(g, d), fkey = tcgFieldKey(g), field = st.field?.length && st.fieldKey === fkey ? st.field : metaState(g)?.data ? fieldStore.get(fkey) : null;
+      const me = field?.length ? profileOf(g, pw, tRows(g, d.zones.main), tRows(g, d.zones.extra)) : null;
+      if (!me) return null;
+      let sims = computeMatchups(fkey + "|" + listSig({ main: d.zones.main || [], side: d.zones.side || [] }), field, me, () => null, (a, b) => simulateMatchup(g, a, b), 0);
+      if (g === "ptcg") sims = realResults(sims, pw);
+      return { even: 0.5, all: sims.map((m) => ({ name: m.name, w: m.sim.win, why: (m.sim.reasons || []).find((r) => r.length <= 150) || "" })) };
     },
     rescore: (out, add) => {
       if (out.zone === "side") throw Error("main deck only");
@@ -2326,7 +2351,8 @@ export function registerTcg(c) {
     }
   };
   I.tQ = t => (ui().search.q = t.value);
-  A.tSearch = () => runSearch();
+  // A typed question is answered from the app's own data first (app.js answerFirst); anything else searches.
+  A.tSearch = () => c.answerFirst ? c.answerFirst(ui().search.q, () => runSearch()) : runSearch();
   A.tRetrySearch = () => runSearch(false, true);
   A.tMore = () => runSearch(true);
   A.tSearchDetails = () => {
@@ -3256,6 +3282,7 @@ export function registerTcg(c) {
   };
   // ----- matchups -----
   const muDeck = () => gs(g()).decks.find((x) => x.id === S.ui.tdeckId);
+  globalThis.addEventListener?.("cardstashy-want-tmatchups", () => { if (muDeck()) void A.tMuRun(); });
   A.tMuRun = async () => {
 
     const G = g(), d = muDeck();

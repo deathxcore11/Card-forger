@@ -86,9 +86,6 @@ internal object CollectionWrites {
             runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(u)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) } }
         // A file it downloaded (tcg.js A.tExportColl): saved to Downloads, as the browser saves it.
         r["downloaded"]?.takeIf { it.isJsonObject }?.asJsonObject?.let { f -> saveFile(context, f) }
-        // The recovery copy a whole-collection replacement keeps first (app.js commit's recovery: RECOVERY in this device's storage).
-        r["recovery"]?.takeIf { it.isJsonPrimitive }?.asString?.let { t -> Account.session.value?.userId?.let { u ->
-            runCatching { withContext(Dispatchers.IO) { java.io.File(Decks.deviceFile(context.applicationContext, u).parentFile, "recovery-$u.json").writeText(t) } } } }
         val saved = done(r)
         if (kind == "addDelete" && saved) adding.value = null
         if (saved) { settleLater(context); after?.invoke(r) }
@@ -109,9 +106,18 @@ internal object CollectionWrites {
         return WorkspaceSync.lock.withLock {
             if (!ensureCollection(app, s.userId, true, Decks.fullRevision.value)) return null.also { show("Your collection is still loading. Try again in a moment.") }
             val r = CollectionEngine.act(kind, data, ms, onStep)
+            // The recovery copy a whole-workspace replacement keeps first, before the new copy is written (app.js replaceWorkspace:
+            // RECOVERY and the Recovery journal, Settings > Backup's Earlier saves).
+            r["recovery"]?.takeIf { it.isJsonPrimitive }?.asString?.let { t -> withContext(Dispatchers.IO) { keepRecovery(app, s.userId, t, kind) } }
             if ((r["writes"]?.asInt ?: 0) > 0 || CollectionEngine.bg() > 0) { val text = CollectionEngine.saved(); withContext(Dispatchers.IO) { WorkspaceSync.wroteLocally(app, s.userId, text) } }
             r
         }
+    }
+
+    /** [text] (the workspace a write replaced) as RECOVERY (recovery-<user>.json) and in the Recovery journal. */
+    internal fun keepRecovery(app: Context, u: String, text: String, kind: String) {
+        runCatching { java.io.File(Decks.deviceFile(app, u).parentFile, "recovery-$u.json").writeText(text) }
+        runCatching { dev.cardstashy.nativeplay.collection.RecoveryJournal.append(app, u, text, "Before workspace replacement", kind) }
     }
 
     /**
@@ -163,8 +169,50 @@ internal object CollectionWrites {
      * A card page's Add to deck (app.js A.cardDeckPicker): the card, and what the sheet's ✕ (closeSheet: the card page too) and
      * Open Decks do on the page that opened it.
      */
-    data class DeckPick(val game: String, val name: String, val closeAll: () -> Unit, val go: (String) -> Unit, val id: Long = System.nanoTime())
+    data class DeckPick(val game: String, val name: String, val closeAll: () -> Unit, val go: (String) -> Unit, val id: Long = System.nanoTime(), val cardId: String = "")
     val picking = MutableStateFlow<DeckPick?>(null)
+    /** pricehist.js alertSheet (app.js A.priceAlert) for card [cardId] of [game]; [saved] redraws the page that opened it. */
+    data class AlertOpen(val game: String, val cardId: String, val name: String, val saved: () -> Unit = {}, val id: Long = System.nanoTime())
+    val alerting = MutableStateFlow<AlertOpen?>(null)
+    /**
+     * Compare cards (app.js A.compareOpen / compareFrom, tcg.js A.tCompareOpen / tCompareFrom) for [game]; [first] a card to put in the
+     * first empty side (a Magic name, else the card id); [openCard] opens a compared card's page (name, id).
+     */
+    data class CompareOpen(val game: String, val first: String? = null, val openCard: (String, String) -> Unit = { _, _ -> }, val id: Long = System.nanoTime())
+    val comparing = MutableStateFlow<CompareOpen?>(null)
+    /**
+     * Where a tapped tile of a search answer leads for [game]: [go] takes the app there (CollectionEngine.askShow's {to, ...}). The AI chat
+     * this once opened (Ask CardStashy) is gone; [prefill] and [draft] are unused.
+     */
+    data class AskOpen(val game: String, val prefill: String = "", val go: (com.google.gson.JsonObject) -> Unit = {}, val draft: String = "",
+                       val web: (url: String, press: String?) -> Unit = { _, _ -> }, val id: Long = System.nanoTime())
+    /** Ask a Judge (app.js A.askRules, judge-ui.js openJudge; no AI) with the site's [context]: {game, format, cards, question}. */
+    data class JudgeOpen(val context: com.google.gson.JsonObject, val game: String, val id: Long = System.nanoTime())
+    val judging = MutableStateFlow<JudgeOpen?>(null)
+    /** Opens Ask a Judge from a press's context: the engine's (a panel's askRules, its data's judge) or just the game and format. */
+    fun judge(contextJson: String?, game: String = "mtg", format: String = "") {
+        val c = runCatching { com.google.gson.JsonParser.parseString(contextJson ?: "").asJsonObject }.getOrNull()
+            ?: com.google.gson.JsonObject().apply { addProperty("game", game); addProperty("format", format) }
+        judging.value = JudgeOpen(c, c.get("game")?.takeIf { it.isJsonPrimitive }?.asString ?: game)
+    }
+    /** A judge's citation opens that exact rule on the app's Rules page: game, the rule's reference, its title and the quoted words. */
+    @Volatile var ruleRef: ((game: String, ref: com.google.gson.JsonObject, title: String, quote: String) -> Unit)? = null
+    /** A tournament deck's sheet the engine has open (an Ask tile, A.mtgProven / tMetaDeck), drawn over any page (MetaDeckHost). */
+    data class MetaOpen(val game: String, val web: (url: String, press: String?) -> Unit, val id: Long = System.nanoTime())
+    val metaDeck = MutableStateFlow<MetaOpen?>(null)
+    /** The app's own deck page (id, game), set by the app's navigation; null while it isn't there. */
+    @Volatile var deckNav: ((String, String) -> Unit)? = null
+    /** The app's Rules page for a game, on How to play · keywords when learn (A.learnGame), set by the app's navigation. */
+    @Volatile var rulesNav: ((game: String, learn: Boolean) -> Unit)? = null
+    /** The app's Wiki page for a game at a topic (blank: its home), set by the app's navigation. */
+    @Volatile var wikiNav: ((game: String, topic: String) -> Unit)? = null
+    /** Counts alert saves and removals: the Value tab's alert list reads again. */
+    val alertsChanged = MutableStateFlow(0)
+    /** A tap with the site's data-act="priceAlert" dataset (game, id, name). */
+    fun openAlert(d: Map<String, String>, saved: () -> Unit = {}) {
+        val g = d["game"].orEmpty(); val id = d["id"].orEmpty(); if (g.isBlank() || id.isBlank()) return
+        alerting.value = AlertOpen(g, id, d["name"].orEmpty().ifBlank { "This card" }, saved)
+    }
     /** The picker's decks from this device's collection: {decks: [[id, name]], selected}. Null (with a toast) when it can't open. */
     suspend fun deckPickModel(context: Context, game: String): JsonObject? {
         val s = Account.session.value ?: return null.also { show("Sign in to save cards to your collection.") }
@@ -230,7 +278,7 @@ internal object CollectionWrites {
         if (android.os.Build.VERSION.SDK_INT >= 29) {
             val r = c.contentResolver
             val v = android.content.ContentValues().apply {
-                put(android.provider.MediaStore.Downloads.DISPLAY_NAME, name); put(android.provider.MediaStore.Downloads.MIME_TYPE, if (name.endsWith(".csv", true)) "text/csv" else "text/plain")
+                put(android.provider.MediaStore.Downloads.DISPLAY_NAME, name); put(android.provider.MediaStore.Downloads.MIME_TYPE, if (name.endsWith(".csv", true)) "text/csv" else if (name.endsWith(".json", true)) "application/json" else "text/plain")
                 put(android.provider.MediaStore.Downloads.IS_PENDING, 1)
             }
             val uri = r.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, v) ?: error("Couldn’t save the file.")
@@ -446,4 +494,9 @@ internal object CollectionWrites {
     }
     /** The tap a question belongs to, set by [act] just before it runs. */
     private var pendingAsk: Ask? = null
+}
+
+/** Gap audit L1 / L2: each control a native page still hands to the website, logged (adb logcat -s SiteHandoff) to list what is left. */
+internal object SiteHandoff {
+    fun log(where: String, act: String) { runCatching { android.util.Log.i("SiteHandoff", "$where: $act") } }
 }

@@ -17,7 +17,7 @@ class SacrificeProbe {
     @Test fun breakUnderPressure() {
         val repo = File(System.getProperty("repoRoot")); val root = System.getProperty("engineRoot").orEmpty()
         assumeTrue(root.isNotEmpty() && File(root).isDirectory)
-        System.setProperty("user.home", Files.createTempDirectory("forge-home").toString()); System.setProperty("proof.rulesData", File(repo, "forge-rules/current").absolutePath)
+        System.setProperty("user.home", Files.createTempDirectory("forge-home").toString()); System.setProperty("proof.rulesData", File(repo, "forge-rules/app").absolutePath)
         LocalEngine.init(root)
         val hero = deck("Plains" to 44, "Savannah Lions" to 4, "Glory Seeker" to 4, "Elite Vanguard" to 4, "Eager Cadet" to 4)
         val cpu = deck("Swamp" to 56, "Break Under Pressure" to 4)

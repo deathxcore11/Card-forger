@@ -19,6 +19,7 @@ import dev.cardstashy.nativeplay.account.Decks
 import dev.cardstashy.nativeplay.ui.CardGame
 import dev.cardstashy.nativeplay.ui.CollectionDeckRoute
 import dev.cardstashy.nativeplay.ui.CollectionGame
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -114,14 +115,15 @@ class TcgDeckRulesShotTest {
         assertTrue(shows("PDF page 12"))
     }
 
-    /** Ask about the rules is the site's AI (app.js askRules): it opens the website's Rules tab and presses the same button there. */
+    /** Ask about the rules (app.js askRules) opens the app's own Ask a Judge for Pokémon, with the deck's format; never the website (gap audit H4). */
     @Test fun pokemonAsk() {
+        dev.cardstashy.nativeplay.ui.CollectionWrites.judging.value = null
         open(CardGame.PTCG, pikachu, "Pikachu ex")
         tap("Ask about Pokémon rules →")
-        rule.waitUntil(20_000) { webs.isNotEmpty() }
-        val (url, press) = webs.last()
-        assertTrue(url, url.endsWith("#tdeck/$pikachu/rules"))
-        assertTrue(press.orEmpty(), press.orEmpty().contains("[data-act=\"askRules\"]"))
+        rule.waitUntil(20_000) { dev.cardstashy.nativeplay.ui.CollectionWrites.judging.value != null }
+        assertEquals("ptcg", dev.cardstashy.nativeplay.ui.CollectionWrites.judging.value!!.game)
+        assertTrue(webs.toString(), webs.isEmpty())
+        dev.cardstashy.nativeplay.ui.CollectionWrites.judging.value = null
     }
 
     /**
@@ -130,27 +132,29 @@ class TcgDeckRulesShotTest {
      * shows its progress or its answer in the card, never the website).
      */
     @Test fun pokemonPower() {
-        open(CardGame.PTCG, pikachu, "Pikachu ex", tab = "Power", ready = "Simulate matchups")
+        open(CardGame.PTCG, pikachu, "Pikachu ex", tab = "Power", ready = "AGAINST THE FIELD")
         shot("ptcg-power")
         assertTrue(shows("Tier not rated yet")); assertTrue(shows("Draw or search on turn 1"))
-        // Upgrades asks to load tournament decks until they are here (then Against the meta shows what they say).
-        assertTrue(shows("Load tournament decks") || shows("Against the meta", ignoreCase = true))
+        assertTrue(shows("FIX FIRST")); assertTrue(shows("AGAINST THE FIELD"))
         assertTrue(webs.isEmpty())
         tap("Card odds, roles and Extra Deck")
         rule.waitUntil(20_000) { shows("Card by card") }
         rule.onAllNodes(hasText("Opening hand", substring = false)).onFirst().performScrollTo(); settle()
         shot("ptcg-power-full")
-        rule.onNode(hasText("Simulate matchups", substring = false) and hasClickAction()).performScrollTo().performClick()
-        rule.waitUntil(120_000) { listOf("Loading tournament results", "Loading ", "No tournament decks to compare", "Couldn", "still loading", "Simulated against").any { shows(it) } }
+        // The odds run by themselves as Power opens (no Simulate button, no coach window).
+        for (t in listOf("Simulate matchups", "AI coach", "Deck coach")) assertTrue(t, !shows(t))
         assertTrue(webs.isEmpty())
     }
 
     /** Yu-Gi-Oh! Power: Opening hands in place of Ramp; Matchups and Upgrades as on the site. Matchups and Upgrade lab open it too. */
     @Test fun yugiohPower() {
-        open(CardGame.YGO, magician, "Dark Magician", tab = "Power", ready = "Simulate matchups")
+        open(CardGame.YGO, magician, "Dark Magician", tab = "Power", ready = "AGAINST THE FIELD")
         assertTrue(shows("Opening hands", substring = false, ignoreCase = true)); assertTrue(shows("Bricked hand"))
         assertTrue(webs.isEmpty())
+        for (t in listOf("Simulate matchups", "AI coach", "Deck coach")) assertTrue(t, !shows(t))
         shot("ygo-power")
+        rule.onAllNodes(hasText("AGAINST THE FIELD", substring = false)).onFirst().performScrollTo(); settle()
+        shot("ygo-power-2")
     }
 
     /** The War Chest (A.tDeckTab "playtest"): the chest's tools and the sample hand; Dice & coin rolls in place (war-chest.js rollDice). */
@@ -184,7 +188,7 @@ class TcgDeckRulesShotTest {
         assertTrue(webs.last().first, webs.last().first.endsWith("#tdeck/$pikachu/playtest"))
         assertTrue(webs.last().second.orEmpty(), webs.last().second.orEmpty().contains("[data-act=\"chestTool\"][data-tool=\"gameNight\"]"))
         tap("Goldfish")
-        rule.waitUntil(30_000) { shows("Simulate matchups", substring = false) }
+        rule.waitUntil(30_000) { shows("AGAINST THE FIELD", substring = false) }
         assertTrue(webs.size == 1)
     }
 

@@ -134,5 +134,7 @@ object ThumbStore {
     }.getOrDefault(emptyList())
 
     /** Settings: forget every stored thumbnail. */
+    /** How many pictures are saved (Settings > Backup's Remove downloaded pictures says it). */
+    fun files(): Int = if (!ready) 0 else root.walkTopDown().count { it.isFile }
     fun clear() { if (ready) { root.deleteRecursively(); root.mkdirs() } }
 }

@@ -1,5 +1,5 @@
 // The Scanner's engine: the site's scanner (scancam.js registerScanner / scanView, with app.js's scanCtx below) in a hidden WebView,
-// whose canvas, images and text reader (vendor tesseract.js, its core and language data from jsdelivr as on the site) are the
+// whose canvas, images and text reader (vendor tesseract.js with its engine and English data, all from the app's own files) are the
 // browser's own. The app draws the page from its markup (ScanWeb.model: the same tree the Collection engine gives SitePanel), taps
 // and types into it (ScanWeb.tap / type), and feeds the phone's camera in (ScanWeb.frame): the "video" scancam draws from is a canvas
 // each camera frame is painted on. What writes to the collection (adding a batch, a binder for it) goes to the app, which runs it in
@@ -175,7 +175,6 @@ const scanCtx = {
   details: (g, c) => acted(g === "mtg" ? 'card' : 'tCard', g === "mtg" ? {name: c.name} : {id: c.id, game: g}),
 };
 let account = '';
-scanCtx.aiAccount = () => !!account;
 scanCtx.rememberLocation = (g, name, {createBinder = false} = {}) => ask('rememberLocation', {game: g, name, createBinder});
 scanCtx.lookupCandidates = createScannerLookup({requestMagic: api, sources: tcgSources, candById: scanCtx.candById, match: scanCtx.match});
 

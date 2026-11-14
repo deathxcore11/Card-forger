@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay.match
 
+import dev.cardstashy.nativeplay.engine.Card
 import dev.cardstashy.nativeplay.engine.GameEvent
 import dev.cardstashy.nativeplay.engine.MatchState
 import dev.cardstashy.nativeplay.engine.Ref
@@ -17,6 +18,8 @@ import kotlin.math.abs
 object Director {
     enum class Kind { THINK, BANNER, UNTAP, DRAW, LAND, CAST, TRIGGER, ABILITY, RESOLVE, FIZZLE, DAMAGE, LIFE, COUNTERS, ATTACH,
         ENTER, TO_GRAVE, DIES, EXILE, TO_HAND, TOKEN, ATTACK, BLOCK, SHUFFLE,
+        /** Match punch P2b: mana made by hand, or taken back with Undo (no card moves). */
+        MANA,
         /** A TRIGGER SHOWS ITSELF, beat 3: a trigger's resolve with what it changed ([Step.result]). */
         RESULT }
 
@@ -32,7 +35,29 @@ object Director {
         val trig: Trig? = null,
         /** Beat 3: the resolve of a trigger and what it changed, landed on the changed cards. */
         val result: Resolution? = null,
-    ) { val held get() = kind == Kind.THINK || beat != null || banner != null || trig != null || result != null }
+        /** 0.4.59 T5, the cast travels: the card itself moving on this step (hand to stack, its rest, stack to slot or host, a land to its group). */
+        val travel: Travel? = null,
+    ) { val held get() = kind == Kind.THINK || beat != null || banner != null || trig != null || result != null || travel != null }
+
+    /**
+     * 0.4.59 T5: one leg of a card's travel. [TAPS] the paying lands ([taps], in order) turn one by one; [TO_STACK] the card goes from
+     * its hand (yours) or the CPU seat to the stack lane and grows to the stack size; [REST] it lies on the stack with its rim;
+     * [TO_SLOT], [TO_HOST] (an aura onto its creature) and [TO_GROUP] (a land, which skips the stack) end at the anchor [toKey].
+     */
+    /** BACK (T6): Cancel while the spell asked; from the stack back to its place in your hand. */
+    enum class Leg { TAPS, TO_STACK,
+        /** Mobile table M6: a CPU cast, at the stack, grows large to be read ([POP_GROW_MS]), holds ([POP_HOLD_MS]) and returns to stack size ([POP_SHRINK_MS]) before its lands pay. */
+        POP, REST, TO_SLOT, TO_HOST, TO_GROUP, BACK,
+        /** Match punch P2b: lands you tapped by hand ([Travel.taps]) send their light to the floating mana by your square. */
+        TO_POOL,
+        /** P2b: Forge's Undo took the taps back: the lands ([Travel.taps]) turn back with a gold glint and the light returns to them. */
+        UNTAP }
+    data class Travel(val cardId: Int?, val name: String?, val mine: Boolean, val leg: Leg, val toKey: String?, val ms: Long,
+                      val stackId: Int? = null, val taps: List<Int> = emptyList(), val targets: List<Ref> = emptyList(),
+                      /** P2: the burst's size on a cast's rest (.5 when nothing was paid). */
+                      val power: Float = 1f,
+                      /** P2b: how many of a pay's streaks come from the floating mana by your square (mana you made by hand), before the lands'. */
+                      val pool: Int = 0)
 
     /** A trigger going on the stack (Forge's "trigger" event): who, from which card, at what; [resolvedHere] its resolve is in the same poll. */
     data class Trig(val stackId: Int?, val sourceId: Int?, val sourceName: String?, val controller: Int?, val yours: Boolean,
@@ -45,6 +70,23 @@ object Director {
         val up get() = toP + toT > fromP + fromT
     }
     data class LifeChange(val player: Int, val from: Int, val to: Int)
+
+    /**
+     * EVERY RESULT NAMES ITS CAUSE (Randall, 14 Nov: "a card will do something and ill just not know"). What the table calls a
+     * card's move: the zones are Forge's (the zone event), the word is the resolving item's own (its text says "exile",
+     * "destroy", "draw"...). FELL_OFF and a follow-up RETURNED are not a resolve's own doing: see [Resolution.follow].
+     */
+    enum class Went { EXILED, DESTROYED, SACRIFICED, TO_GRAVE, TO_HAND, DREW, DISCARDED, MILLED, RETURNED, FELL_OFF }
+    /** One card Forge moved (a zone event at [seq]); [cardId] is null for a card the viewer cannot see (the CPU's draw). */
+    data class Move(val seq: Long, val cardId: Int?, val cardName: String?, val from: String, val to: String, val player: Int?, val went: Went,
+        /** [Went.FELL_OFF] only: the permanent it was on, and whether that permanent died (a creature to the graveyard) or left another way. */
+        val hostId: Int? = null, val hostName: String? = null, val hostDied: Boolean = false)
+    /** A stack item that left the stack without resolving, while the item that says "counter" resolved (a ward nobody paid). */
+    data class Countered(val stackId: Int?, val sourceId: Int?, val sourceName: String?, val controller: Int?, val ability: Boolean)
+    /** One row of "Last moves": the card that did it ([yours]: on your side) and what it did, in plain words. */
+    data class Line(val sourceId: Int?, val sourceName: String, val yours: Boolean, val text: String, /** Its place in the match (the result's event, then its row): tells two rows with the same words apart. */ val at: Long = 0,
+        /** False when Forge gave the cause no name ([sourceName] is then a stand-in word, and there is no picture to show). */
+        val known: Boolean = true)
 
     /**
      * What one stack item's resolve changed, all as Forge reported it: counters (counters events), power/toughness (snapshot diff),
@@ -60,16 +102,55 @@ object Director {
         val count: Int = 1,
         /** Every stack item this result stands for (one, or the ×N it collapsed). */
         val stackIds: List<Int> = listOfNotNull(stackId),
+        /** The cards Forge moved while it resolved, each with the word its own text gives the move ([Went]). */
+        val moves: List<Move> = emptyList(),
+        /** Its words say the exile lasts "until ... leaves the battlefield": the exiled cards are held by [sourceId]. */
+        val holds: Boolean = false,
+        /** The stack item it countered (it left the stack with no resolve of its own). */
+        val countered: List<Countered> = emptyList(),
+        /** A ward that resolved and left the item it answered on the stack: the cost in its words ("2"), paid by [paidBy]. */
+        val paid: String? = null, val paidBy: Int? = null,
+        /**
+         * Not a stack item: what followed from a card leaving. FELL_OFF moves: the Auras that were on [sourceId] went to the
+         * graveyard with it. RETURNED: [sourceId] held the card in exile ([holds], kept by the controller) and left, so it is back.
+         * [text] is then what became of [sourceId]: "died" or "left".
+         */
+        val follow: Boolean = false,
     ) {
         /** The permanents the result lands on (counters and P/T), in the order Forge changed them. */
         val changed: List<Int> get() = (counters.map { it.cardId } + pt.map { it.cardId }).distinct()
-        val empty get() = counters.isEmpty() && pt.isEmpty() && tokens.isEmpty() && damage.isEmpty() && life.isEmpty()
+        val empty get() = counters.isEmpty() && pt.isEmpty() && tokens.isEmpty() && damage.isEmpty() && life.isEmpty() && !named
+        /** It moved a card, countered an item or had its ward paid: the table names the cause on a plate ([RESULT] for any item, not only a trigger). */
+        val named get() = moves.isNotEmpty() || countered.isNotEmpty() || paid != null
 
-        /** The one trail line ("Optimistic Scavenger: +1/+1 counter on Grizzly Bears"), or null when it changed nothing shown. */
-        fun line(viewer: Int): String? {
-            val who = sourceName ?: "A trigger"
-            if (fizzled) return "$who: no legal targets"
+        /** Its rows for "Last moves": one, or one per Aura that fell off. */
+        fun lines(viewer: Int): List<Line> {
+            fun pile(m: Move) = if (m.player == viewer) "your graveyard" else "the CPU's graveyard"
+            val out = ArrayList<Line>()
+            val fellOff = moves.filter { it.went == Went.FELL_OFF }
+            if (!(follow && fellOff.size == moves.size)) said(viewer)?.let { out += Line(sourceId, sourceName ?: "A trigger", controller == viewer, (if (count > 1) "×$count: " else "") + it, seq * 8, sourceName != null) }
+            // One Aura: its own row. Several off the same permanent: one row, the permanent's, so they do not push the cause off a short list.
+            for ((host, l) in fellOff.groupBy { it.hostId }) out += l.first().let { f ->
+                if (l.size == 1) Line(f.cardId, f.cardName ?: "An Aura", f.player == viewer, "fell off and went to ${pile(f)}", seq * 8 + out.size + 1, f.cardName != null)
+                else Line(host, f.hostName ?: "A permanent", f.player == viewer, (if (f.hostDied) "died" else "left") + ", so its ${l.size} Auras fell off", seq * 8 + out.size + 1, f.hostName != null) }
+            return out
+        }
+
+        /** How many cause plates the table draws for it (one per card moved; cards drawn, discarded or milled share one per player), six at most: its beat is that much longer. */
+        val plateCount: Int get() = (moves.groupBy { it.went }.entries.sumOf { (w, l) -> if (w == Went.DREW || w == Went.DISCARDED || w == Went.MILLED) l.map { it.player }.distinct().size else l.size } +
+            countered.size + (if (paid != null) 1 else 0)).coerceAtMost(6)
+
+        /** What it did, without its name: "exiled Memnite", "drew you a card", "+1/+1 counter on Grizzly Bears". Null when nothing shown changed. */
+        fun said(viewer: Int): String? {
+            if (fizzled) return "no legal targets"
+            fun side(p: Int?) = if (p == viewer) "you" else "the CPU"
+            fun names(l: List<Move>) = l.map { it.cardName ?: "a card" }.joinToString(", ")
+            if (follow) return when {
+                moves.all { it.went == Went.FELL_OFF } -> "left, so ${names(moves)} fell off"
+                else -> "left, so ${names(moves)} return" + if (moves.size == 1) "s" else ""
+            }
             val parts = ArrayList<String>()
+
             for ((_, list) in counters.groupBy { it.cardId }) for ((kind, same) in list.groupBy { it.counter }) {
                 val n = same.sumOf { it.delta }; if (n == 0) continue
                 val on = same.first().cardName ?: "a card"
@@ -85,8 +166,29 @@ object Director {
             }
             for ((t, n) in damage) parts += "$n damage to " + if (t.kind == "player") (if (t.id == viewer) "you" else "CPU") else (t.name ?: "a card")
             for (l in life) if (l.to != l.from) parts += (if (l.player == viewer) "you " else "CPU ") + (if (l.to > l.from) "gain${if (l.player == viewer) "" else "s"} ${l.to - l.from}" else "lose${if (l.player == viewer) "" else "s"} ${l.from - l.to}") + " life"
+            // (The Auras that fell off with a card it moved have rows of their own: [lines].)
+            for ((went, l) in moves.filter { follow || it.went != Went.FELL_OFF }.groupBy { it.went }) parts += when (went) {
+                Went.EXILED -> "exiled ${names(l)}"
+                Went.DESTROYED -> "destroyed ${names(l)}"
+                Went.SACRIFICED -> "sacrificed ${names(l)}"
+                Went.TO_GRAVE -> "put ${names(l)} into the graveyard"
+                Went.TO_HAND -> "returned ${names(l)} to hand"
+                Went.DREW -> l.groupBy { it.player }.map { (p, d) -> "drew ${side(p)} " + if (d.size == 1) "a card" else "${d.size} cards" }.joinToString(", ")
+                Went.DISCARDED -> "discarded " + if (l.any { it.cardName == null }) (if (l.size == 1) "a card" else "${l.size} cards") else names(l)
+                Went.MILLED -> "milled " + if (l.size == 1) (l[0].cardName ?: "a card") else "${l.size} cards"
+                Went.RETURNED -> "returned ${names(l)} to the battlefield"
+                Went.FELL_OFF -> "${names(l)} fell off"
+            }
+            for (c in countered) parts += "countered ${c.sourceName ?: "a spell"}" + if (c.ability) "'s ability" else ""
+            if (paid != null) parts += "ward: ${side(paidBy)} paid ${paid}"
             if (parts.isEmpty()) return null
-            return who + (if (count > 1) " ×$count" else "") + ": " + parts.joinToString(", ")
+            return parts.joinToString(", ")
+        }
+
+        /** The one trail line ("Optimistic Scavenger: +1/+1 counter on Grizzly Bears"), or null when it changed nothing shown. */
+        fun line(viewer: Int): String? {
+            val text = said(viewer) ?: return null
+            return (sourceName ?: "A trigger") + (if (count > 1) " ×$count" else "") + ": " + text
         }
     }
 
@@ -123,11 +225,17 @@ object Director {
      * steps (a test of the bare plan, or a friend match where the other side is a person).
      */
     fun plan(st: MatchState, events: List<GameEvent>, think: ThinkClock? = null, fast: Boolean = false,
-             before: MatchState? = null, triggerIds: Set<Int> = emptySet()): List<Step> {
+             before: MatchState? = null, triggerIds: Set<Int> = emptySet(), held: Map<Int, Int> = emptyMap()): List<Step> {
         val me = st.viewer
         // A TRIGGER SHOWS ITSELF: each resolve tied to what it changed; a trigger's result is its own held step at its resolve.
-        val results = resolutions(before, st, events, triggerIds)
-        val resultAt = results.filter { it.trigger && (it.fizzled || !it.empty) }.associateBy { it.seq }
+        // EVERY RESULT NAMES ITS CAUSE: so is any item's that moved a card, countered an item or had its ward paid.
+        val results = resolutions(before, st, events, triggerIds, held)
+        val resultAt = results.filter { !it.follow && ((it.trigger && (it.fizzled || !it.empty)) || it.named) }.associateBy { it.seq }
+        // The follow-ups play in the order they read (the Auras fall off, then what was held comes back), from the first of their moves.
+        val follows = results.filter { it.follow }
+        val followAt = follows.minOfOrNull { it.seq }
+        fun resultStep(r: Resolution) = Step(Kind.RESULT, if (r.fizzled) FIZZLE_MS else if (r.named) namedMs(r) else RESULT_MS, if (r.fizzled) FIZZLE_MS else if (r.named) NAMED_MIN_MS else RESULT_MS,
+            if (r.fizzled) "CARD-012" else if (r.named) null else "CARD-027", focal = true, cpu = r.controller != null && r.controller != me, cardId = r.sourceId, cardName = r.sourceName, count = r.count, result = r)
         val resolvedHere = results.flatMap { it.stackIds }.toSet()
         // A result collapsed from N copies (×N) gets one source beat for all of them, at its first trigger event in the poll.
         val mergedOf = results.filter { it.stackIds.size > 1 }.flatMap { r -> r.stackIds.map { it to r } }.toMap()
@@ -145,35 +253,91 @@ object Director {
         val out = ArrayList<Step>()
         var explainedLife = false
         fun thinkFor(d: Decision, turn: Int) { if (thinking) out += Step(Kind.THINK, think!!.next(d, turn, fast), 0, cpu = true) }
+        // T5: the lands each side tapped since the board last shown (once per side per poll: the first cast pays with them).
+        val tapsLeft = st.players.associate { p -> p.id to p.battlefield.filter { c -> c.isLand && c.tapped && !c.attacking &&
+            before?.card(c.id)?.let { it.zone == "Battlefield" && !it.tapped } == true }.map { it.id } }.toMutableMap()
+        // P2b: your floating mana before and now. What a cast of yours spent of it (5 streaks at most) pays from the pool.
+        val poolBefore = before?.players?.firstOrNull { it.id == me }?.mana?.values?.sum() ?: 0
+        val poolNow = st.players.firstOrNull { it.id == me }?.mana?.values?.sum() ?: 0
+        var poolSpent = (poolBefore - poolNow).coerceIn(0, 5)
+        // Cards whose cast is in this poll: their move from the stack is part of their travel.
+        val castHere = events.filter { it.type == "cast" && it.source != null }.associate { it.source!!.id to (it.player == me) }
+        /** Whose card is travelling: its controller on the board, else who cast it in this poll. */
+        fun mineOf(id: Int) = st.card(id)?.controller?.takeIf { it >= 0 }?.let { it == me } ?: castHere[id] ?: false
+        val toHost = HashSet<Int>()
+        /** The three legs of a cast (taps, to the stack, the rest); the rest carries [beat] and the read time [restMs]. */
+        // T6: the spell you are choosing targets or paying for already went up (its own leg in the poll that asked).
+        val waiting0 = before?.let { dev.cardstashy.nativeplay.ui.pendingCast(it) }
+        val waitingUp = waiting0?.id
+        // Match punch P2: the card lifts to the stack first, its lands then pay into it (each a flash and a streak), and its rest opens
+        // with the burst. With nothing to pay the pay is skipped and the burst is half size. [readMs] is the read after the burst.
+        fun castLegs(e: GameEvent, mine: Boolean, readMs: Long, beat: Beat?) {
+            val id = e.source?.id; val name = e.source?.name
+            val taps = e.player?.let { tapsLeft.remove(it) }.orEmpty()
+            // P2b: floating mana you made by hand and this cast spent: its streaks leave the pool by your square, before the lands'.
+            val pool = if (mine) poolSpent.also { poolSpent = 0 } else 0
+            if (!(mine && id != null && id == waitingUp)) out += Step(Kind.CAST, TO_STACK_MS, TO_STACK_MS, cpu = !mine, cardId = id, cardName = name, travel = Travel(id, name, mine, Leg.TO_STACK, "stackcard", TO_STACK_MS, e.stackId, targets = e.targets))
+            // M6 (measured from Arena, both players): the card comes out at stack size, grows large and is held to be read with its
+            // caption, then returns to stack size while its lands pay. Your own card that waited on the stack for its target or
+            // its mana popped when it went there (below); it does not pop a second time.
+            val pop = !(mine && id != null && id == waitingUp)
+            if (pop) out += Step(Kind.CAST, POP_MS, POP_MS, focal = true, cpu = !mine, cardId = id, cardName = name, beat = beat,
+                travel = Travel(id, name, mine, Leg.POP, "stackcard", POP_MS, e.stackId, targets = e.targets))
+            if (taps.isNotEmpty() || pool > 0) { val ms = payMs(taps.size + pool)
+                out += Step(Kind.CAST, ms, PAY_MIN_MS, cpu = !mine, cardId = id, cardName = name, travel = Travel(id, name, mine, Leg.TAPS, "stackcard", ms, e.stackId, taps, pool = pool)) }
+            // Your own card read large in its pop needs no second read after the burst.
+            val restMs = BURST_MS + (if (pop && mine) 0L else readMs)
+            out += Step(Kind.CAST, restMs, BURST_MIN_MS + (if (pop) 0L else CAST_READ_PROMPT_MS), focal = true, cpu = !mine, cardId = id, cardName = name, beat = if (pop) null else beat,
+                travel = Travel(id, name, mine, Leg.REST, "stackcard", restMs, e.stackId, targets = e.targets, power = if (taps.isEmpty() && pool == 0) .5f else 1f))
+        }
+        /** The CPU plays a land: its think, then the land from its seat to its group with the caption. */
+        fun cpuLand(card: Ref?, turn: Int) {
+            thinkFor(Decision.LAND, turn)
+            // M6: a land flies 500 and the table pauses 500.
+            out += Step(Kind.LAND, TO_GROUP_MS + 500, 550, "CARD-005", focal = true, cpu = true, cardId = card?.id, cardName = card?.name,
+                beat = Beat(Beat.Kind.LAND, "CPU plays ${card?.name ?: "a land"}", card?.id, card?.name, null),
+                travel = Travel(card?.id, card?.name, false, Leg.TO_GROUP, card?.id?.let { "c$it" }, TO_GROUP_MS))
+        }
+        val landHere = events.filter { it.type == "land" }.mapNotNull { it.card?.id }.toSet()
+        val lastSeq = events.lastOrNull()?.seq
         // Whose turn each event is in: a turn event in the batch changes it; before one, two-player turns alternate.
         val firstTurn = events.firstOrNull { it.type == "turn" }
         var active: Int? = if (firstTurn != null) st.players.map { it.id }.firstOrNull { it != firstTurn.player } else st.activePlayer
+        /** The CPU casts [e]: its think, then its legs (taps, to the stack, the rest with the caption). */
+        fun cpuCast(e: GameEvent) {
+            val targeted = e.targets.isNotEmpty()
+            // On your turn a CPU spell is an answer to you (an instant in response, or passing back while yours is on the stack).
+            val respond = active == me
+            thinkFor(if (respond) Decision.RESPOND else if (targeted) Decision.CAST_TARGETED else Decision.CAST, e.turn)
+            val hits = touchesMe(e.targets)
+            val life = if (hits) lifeChange(st, events) else null
+            if (life != null) explainedLife = true
+            // P2: the card goes from the CPU seat to the stack, its lands pay into it, then it bursts and rests there with the caption:
+            // its arrows 300 + the read (525, or 500 before your prompt).
+            // M6: the read is the pop (the card large, with the caption); after the burst only its arrows' 300 remain.
+            val read = if (targeted) 300L else 0L
+            castLegs(e, mine = false, readMs = read, beat = Beat(if (hits) Beat.Kind.AFFECTS_YOU else Beat.Kind.ACTION, "CPU casts ${e.source?.name ?: "a spell"}", e.source?.id, e.source?.name,
+                    if (hits) targetText(st, e.targets) else null, life?.first, life?.second))
+        }
         loop@ for (e in events) {
             when (e.type) {
                 "turn" -> {
                     active = e.player
-                    if (e.turn > 1) out += Step(Kind.BANNER, 1500, 900, if (e.player == me) "TT-001" else "TT-002", focal = true, cpu = cpu(e.player),
+                    if (e.turn > 1) out += Step(Kind.BANNER, BANNER_MS, 900, if (e.player == me) "TT-001" else "TT-002", focal = true, cpu = cpu(e.player),
                         banner = Banner("Turn ${e.turn} · " + if (e.player == me) "Your turn" else "CPU's turn", e.player == me))
                 }
-                "land" -> if (cpu(e.player)) {
-                    thinkFor(Decision.LAND, e.turn)
-                    out += Step(Kind.LAND, 850, 550, "CARD-005", focal = true, cpu = true, cardId = e.card?.id, cardName = e.card?.name,
-                        beat = Beat(Beat.Kind.LAND, "CPU plays ${e.card?.name ?: "a land"}", e.card?.id, e.card?.name, null))
+                // A land already on the board shown: its play was told from its move (below), in the board before this one.
+                "land" -> if (e.card?.id != null && before?.card(e.card.id)?.zone == "Battlefield") continue@loop
+                else if (cpu(e.player)) cpuLand(e.card, e.turn)
+                else if (e.card != null) {
+                    // T5 item 6: your land skips the stack, hand to its group.
+                    out += Step(Kind.LAND, TO_GROUP_MS, TO_GROUP_MS, cardId = e.card.id, cardName = e.card.name,
+                        travel = Travel(e.card.id, e.card.name, true, Leg.TO_GROUP, "c${e.card.id}", TO_GROUP_MS))
                 }
-                "cast" -> if (cpu(e.player)) {
-                    val targeted = e.targets.isNotEmpty()
-                    // On your turn a CPU spell is an answer to you (an instant in response, or passing back while yours is on the stack).
-                    val respond = active == me
-                    thinkFor(if (respond) Decision.RESPOND else if (targeted) Decision.CAST_TARGETED else Decision.CAST, e.turn)
-                    val hits = touchesMe(e.targets)
-                    val life = if (hits) lifeChange(st, events) else null
-                    if (life != null) explainedLife = true
-                    // payment 340 + the card's flight 430 + its arrows 300 + read time on the stack (shorter before your prompt).
-                    val ms = 340 + 430 + (if (targeted) 300 else 0) + if (waiting) 500 else 850
-                    out += Step(Kind.CAST, ms.toLong(), 1000, "CARD-008", focal = true, cpu = true, cardId = e.source?.id, cardName = e.source?.name,
-                        beat = Beat(if (hits) Beat.Kind.AFFECTS_YOU else Beat.Kind.ACTION, "CPU casts ${e.source?.name ?: "a spell"}", e.source?.id, e.source?.name,
-                            if (hits) targetText(st, e.targets) else null, life?.first, life?.second))
-                } else out += Step(Kind.CAST, 430, 300, "CARD-008", cardId = e.source?.id, cardName = e.source?.name)
+                // A CPU spell already on the stack shown: its cast was told from its move (below), in the board before this one.
+                "cast" -> if (cpu(e.player) && e.source?.id != null && before?.stack?.any { it.source?.id == e.source.id } == true) continue@loop
+                else if (cpu(e.player)) cpuCast(e)
+                else castLegs(e, mine = true, readMs = if (waiting) CAST_READ_PROMPT_MS else CAST_READ_MS, beat = null)
                 "trigger" -> {
                     // Beats 1 and 2 for every trigger, yours or the CPU's: the source lifts and rings; when Forge resolved it in this same
                     // poll its stack item is put up and held to read (900 ms), since no snapshot ever showed it.
@@ -226,8 +390,7 @@ object Director {
                         // Beat 3: the result lands on the card it changed (counter chip, P/T tick, tokens from the source).
                         r != null -> {
                             if (r.life.any { it.player == me && it.to < it.from }) explainedLife = true
-                            Step(Kind.RESULT, if (r.fizzled) FIZZLE_MS else RESULT_MS, if (r.fizzled) FIZZLE_MS else RESULT_MS, if (r.fizzled) "CARD-012" else "CARD-027",
-                                focal = true, cpu = cpu(r.controller), cardId = r.sourceId, cardName = r.sourceName, count = r.count, result = r)
+                            resultStep(r)
                         }
                         e.fizzled -> Step(Kind.FIZZLE, 400, 250, "CARD-012", cardId = e.source?.id ?: e.card?.id)
                         else -> Step(Kind.RESOLVE, 300, 200, cardId = e.source?.id ?: e.card?.id)
@@ -237,11 +400,66 @@ object Director {
                 "life" -> out += Step(Kind.LIFE, 360 + 90L * kotlin.math.abs((e.lifeTo ?: 0) - (e.lifeFrom ?: 0)).coerceAtMost(20), 360,
                     if ((e.lifeTo ?: 0) < (e.lifeFrom ?: 0)) "CMB-005" else "CMB-007", focal = e.player == me)
                 "counters" -> groupOrAdd(out, Step(Kind.COUNTERS, 360, 200, "CARD-027", cardId = e.card?.id))
-                "attach" -> out += Step(Kind.ATTACH, 300, 200, "CARD-028", cardId = e.card?.id)
+                "attach" -> {
+                    // T5 item 5: an aura cast in this poll goes from the stack to its host, unless its move from the stack already did.
+                    val id = e.card?.id; val host = id?.let { st.card(it)?.attachedTo }
+                    out += if (id != null && host != null && id in castHere && toHost.add(id))
+                        Step(Kind.ATTACH, TO_HOST_MS, TO_HOST_MS, cardId = id, cardName = e.card.name, cpu = !mineOf(id),
+                            travel = Travel(id, e.card.name, mineOf(id), Leg.TO_HOST, "c$host", TO_HOST_MS))
+                    else Step(Kind.ATTACH, 300, 200, "CARD-028", cardId = id)
+                }
                 "shuffle" -> out += Step(Kind.SHUFFLE, 400, 200, "CARD-024")
                 "draw" -> groupOrAdd(out, if (e.player == me) Step(Kind.DRAW, 460, 300, "CARD-001", cardId = e.card?.id) else Step(Kind.DRAW, 770, 250, "CARD-002"))
-                "zone" -> zoneStep(e, me)?.let { if (it.kind == Kind.TOKEN || it.kind == Kind.DRAW) groupOrAdd(out, it) else out += it }
+                "zone" -> {
+                    val id = e.card?.id
+                    if (e.seq == followAt) follows.forEach { out += resultStep(it) }
+                    // T5 items 4 and 5: a spell leaving the stack for the battlefield goes to its slot, or an aura to its host.
+                    if (e.from == "Stack" && e.to == "Battlefield" && id != null && !e.token) {
+                        val c = st.card(id); val host = c?.attachedTo
+                        val travel = if (host != null) { toHost += id; Travel(id, e.card.name ?: c.name, mineOf(id), Leg.TO_HOST, "c$host", TO_HOST_MS) }
+                            else Travel(id, e.card.name ?: c?.name, mineOf(id), Leg.TO_SLOT, "c$id", TO_SLOT_MS)
+                        out += Step(Kind.ENTER, travel.ms, travel.ms, focal = true, cpu = !travel.mine, cardId = id, cardName = travel.name, travel = travel)
+                    } else if (e.from == "Stack" && e.to == "Hand" && id != null && waitingUp != null && (id == waitingUp || (e.card.name != null && e.card.name == waiting0.name))) {
+                        // T6: you cancelled while it asked: it goes back to its place in your hand (no card-to-hand sound, no other step).
+                        out += Step(Kind.TO_HAND, BACK_MS, BACK_MS, cardId = id, cardName = e.card.name,
+                            travel = Travel(id, e.card.name, true, Leg.BACK, "hand$id", BACK_MS))
+                    } else if (e.from == "Hand" && e.to == "Stack" && id != null && id !in castHere && dev.cardstashy.nativeplay.ui.pendingCast(st)?.id == id) {
+                        // T6 (Arena clip 1): the card goes to the stack first, then asks for its targets or its mana.
+                        out += Step(Kind.CAST, TO_STACK_MS, TO_STACK_MS, cardId = id, cardName = e.card.name,
+                            travel = Travel(id, e.card.name, true, Leg.TO_STACK, "stackcard", TO_STACK_MS))
+                        // M6: it pops large, then waits at stack size until answered.
+                        out += Step(Kind.CAST, POP_MS, POP_MS, focal = true, cardId = id, cardName = e.card.name,
+                            travel = Travel(id, e.card.name, true, Leg.POP, "stackcard", POP_MS))
+                    } else if (e.from == "Hand" && e.to == "Stack" && id != null && id !in castHere && e.seq == lastSeq &&
+                        cpu(e.player ?: controllerOf(id)) && before?.stack?.any { it.source?.id == id } != true) {
+                        // The host pauses the CPU on its cast and publishes the board then, and may do so before it writes the cast event
+                        // (Forge's handlers for one event run in no fixed order): that board ends on the card's move to the stack. It is the
+                        // cast, told once here with the stack item's own targets; the cast event in the next board is skipped above.
+                        val item = st.stack.firstOrNull { it.source?.id == id }
+                        cpuCast(e.copy(type = "cast", player = e.player ?: controllerOf(id), source = e.card, card = null,
+                            stackId = item?.id, targets = item?.targets.orEmpty()))
+                    } else if (e.from == "Hand" && e.to == "Battlefield" && id != null && !e.token && id !in landHere && e.seq == lastSeq &&
+                        cpu(e.player ?: controllerOf(id)) && st.card(id)?.isLand == true && before?.card(id)?.zone != "Battlefield") {
+                        // The host pauses the CPU on its land play and publishes the board then, before it writes the land event: that
+                        // board ends on the land's move from the hand. It is the land play, told once here; the land event that follows
+                        // in the next board is skipped above (live 0.4.59: the CPU's land flew in twice).
+                        cpuLand(e.card, e.turn)
+                    } else zoneStep(e, me)?.let { if (it.kind == Kind.TOKEN || it.kind == Kind.DRAW) groupOrAdd(out, it) else out += it }
+                }
             }
+        }
+        // P2b, tapping lands by hand (Randall 11 Nov): lands of yours that tapped with no cast to pay for, while your floating mana
+        // grew, send their light to the mana by your square. One step. Forge alone says what was tapped and what is floating.
+        val byHand = tapsLeft[me].orEmpty()
+        if (byHand.isNotEmpty() && poolNow > poolBefore && events.none { it.type in PAID_FOR && it.player == me }) {
+            val ms = poolMs(byHand.size)
+            out += Step(Kind.MANA, ms, PAY_MIN_MS, travel = Travel(null, null, true, Leg.TO_POOL, "manapool", ms, taps = byHand))
+        }
+        // P2b, Undo: lands of yours that stood tapped and are ready again in the same turn, your floating mana gone down with them:
+        // they turn back with a gold glint (240) and the light returns from the pool. One step.
+        if (before != null && before.turn == st.turn && poolNow < poolBefore && events.none { it.type == "turn" || (it.type in PAID_FOR && it.player == me) }) {
+            val back = st.players.firstOrNull { it.id == me }?.battlefield.orEmpty().filter { c -> c.isLand && !c.tapped && before.card(c.id)?.let { it.zone == "Battlefield" && it.tapped } == true }.map { it.id }
+            if (back.isNotEmpty()) out += Step(Kind.MANA, UNDO_MS, UNDO_MS, travel = Travel(null, null, true, Leg.UNTAP, "manapool", UNDO_MS, taps = back))
         }
         // Damage or drain to you that no cast above explains (combat, a trigger resolving): one red caption.
         if (!explainedLife) lifeChange(st, events)?.let { (from, to) ->
@@ -267,6 +485,71 @@ object Director {
      */
     fun passWait(seenAt: Long?, now: Long, base: Long): Long? = seenAt?.let { maxOf(base, STACK_HOLD_MS - (now - it)) }
 
+    /**
+     * 0.4.59 T5: the auto-pass wait with [top] on top of the stack, for every item (a spell rests 900 ms too, not only a trigger):
+     * [base] with nothing there, null while it is not on screen yet ([shown] the items the shown board has), else [passWait].
+     */
+    fun passWaitFor(top: Int?, seenAt: Map<Int, Long>, shown: Collection<Int>, now: Long, base: Long): Long? =
+        if (top == null) base else passWait(seenAt[top]?.takeIf { top in shown }, now, base)
+
+    /** T5 item 1: the paying lands tap one by one, [TAP_GAP_MS] apart, each turning in [TAP_TURN_MS]. */
+/** T6: Cancel, the card from the stack back to your hand. */
+    const val BACK_MS = 380L
+    /** Match punch P2, Pay: the lands turn [TAP_GAP_MS] apart, each with a bounce in [TAP_TURN_MS]. */
+    const val TAP_GAP_MS = 80L
+    const val TAP_TURN_MS = 170L
+    fun tapsMs(n: Int): Long = if (n <= 0) 0 else TAP_GAP_MS * (n - 1) + TAP_TURN_MS
+    /** P2, Pay: a land's streak leaves [STREAK_LEAVE_MS] after its turn starts and reaches the stack card [STREAK_MS] later. */
+    const val STREAK_LEAVE_MS = 60L
+    const val STREAK_MS = 280L
+    /** P2, Charge: each arrival swells the spell 4 % for this long. */
+    const val CHARGE_MS = 160L
+    /** When land [i]'s streak reaches the spell, from the start of the pay. */
+    fun streakArrives(i: Int): Long = TAP_GAP_MS * i + STREAK_LEAVE_MS + STREAK_MS
+    /** P2, Pay as a whole: the last streak in, then 40 ms before the burst. Never under [PAY_MIN_MS] with a prompt waiting. */
+    fun payMs(n: Int): Long = if (n <= 0) 0 else streakArrives(n - 1) + 40L
+    const val PAY_MIN_MS = 200L
+    /** P2b: lands tapped by hand, their streaks to the floating mana (the last one in ends the step). */
+    fun poolMs(n: Int): Long = if (n <= 0) 0 else streakArrives(n - 1)
+    /** P2b: Undo, the land turns back with a gold glint. */
+    const val UNDO_MS = 240L
+    /** Events that mana is spent on: with one of yours in the poll, tapped lands paid for it and are not "by hand". */
+    private val PAID_FOR = setOf("cast", "ability")
+    /** P2, Burst: a 70 ms freeze, then 300 ms of spikes, ring, sparks, push-in and shake. Min 150. */
+    const val BURST_FREEZE_MS = 70L
+    const val BURST_MS = 370L
+    const val BURST_MIN_MS = 150L
+    /** P2, Read: a cast spell stays on the stack this long after its burst (500 before one of your prompts). */
+    const val CAST_READ_MS = 525L
+    const val CAST_READ_PROMPT_MS = 500L
+    /** P2, Lift: the card dips 10 dp and shrinks 4 % ([LIFT_MS]), then flies to the stack with a small overshoot (300). */
+    const val LIFT_MS = 70L
+    const val TO_STACK_MS = 200L
+    /** Mobile table M6 (measured from Arena): out to stack size 200, grow 300, hold 650, shrink 200, the lands pay, drop 400. */
+    const val POP_GROW_MS = 300L
+    const val POP_HOLD_MS = 650L
+    const val POP_SHRINK_MS = 200L
+    const val POP_MS = POP_GROW_MS + POP_HOLD_MS + POP_SHRINK_MS
+    /** How far along its pop a card is at [ms]: 0 at stack size, 1 large. */
+    fun popAt(ms: Long): Float = when {
+        ms <= 0L || ms >= POP_MS -> 0f
+        ms < POP_GROW_MS -> (1f - ms.toFloat() / POP_GROW_MS).let { 1f - it * it * it }
+        ms <= POP_GROW_MS + POP_HOLD_MS -> 1f
+        else -> ((POP_MS - ms).toFloat() / POP_SHRINK_MS).let { it * it * (3f - 2f * it) }
+    }
+    /** T5 items 4 to 6: stack to its slot, stack to its host, a land from the hand to its group. */
+    /**
+     * Match punch P4, the turn banner: 280 in (from half size with a bounce over a widening streak), held to 950, 240 out. The
+     * steps after it start [BANNER_LEAD_MS] in and play under it (the untap ripple from 140, your draw from 380); it never blocks input.
+     */
+    const val BANNER_MS = 1190L
+    const val BANNER_LEAD_MS = 380L
+    /** Match punch P3: on the stack the card rises 6 % and 12 dp ([RISE_MS]), then dives to its slot, accelerating (240). */
+    const val RISE_MS = 90L
+    const val TO_SLOT_MS = 400L
+    const val TO_HOST_MS = 400L
+    const val TO_GROUP_MS = 500L
+
     /** Beat 1, the source's lift and ring (sTrig: 180 up, 260 held, 180 down; the ring 520 ms). */
     const val SOURCE_MS = 520L
     /** Beat 2: a trigger's stack item stays readable at least this long, even when nobody can respond (also with reduced motion). */
@@ -274,9 +557,16 @@ object Director {
     /** Beat 3: the landing (streak, flash, "+1/+1" rising, chip pop) and the P/T plate's green or coral tick. */
     const val RESULT_MS = 1200L
     const val FIZZLE_MS = 700L
+    /** A result with a cause plate (a card moved, an item countered, a ward paid): long enough to read the plate's two lines. */
+    const val NAMED_MS = 1600L
+    /** Two plates of one result come up this far apart; the beat is that much longer per extra plate, so the last one is read too. */
+    const val PLATE_GAP_MS = 140L
+    fun namedMs(r: Resolution): Long = NAMED_MS + PLATE_GAP_MS * (r.plateCount - 1).coerceAtLeast(0)
+    const val NAMED_MIN_MS = 1000L
 
     /** A stack item while the director follows the stack through one poll (top at the end of the list). */
-    private class Entry(val stackId: Int?, val sourceId: Int?, val sourceName: String?, val controller: Int?, val trigger: Boolean, val text: String?, val targets: List<Ref>)
+    private class Entry(val stackId: Int?, val sourceId: Int?, val sourceName: String?, val controller: Int?, val trigger: Boolean, val text: String?, val targets: List<Ref>,
+                        /** Not a spell: a trigger or an activated ability. */ val ability: Boolean = trigger)
 
     /**
      * Each resolve in [events] tied to what it changed, read from Forge's own log and the snapshots around it ([before] the board
@@ -289,12 +579,29 @@ object Director {
      * those counters explain the whole change, else (never across a turn) to the one that targeted it, else to the only resolve in
      * the poll when the card is that resolve's own source.
      * The same trigger from the same source changing the same cards, one after another, is one result with a count.
+     *
+     * EVERY RESULT NAMES ITS CAUSE. A card Forge moved (a zone event that is not the item itself entering or leaving the stack)
+     * belongs to the resolve that follows it by the same rule, and only when that item's own words name the move ([went]): the
+     * bridge writes no cause on a zone event (seen in real matches, 14 Nov), so the words are the check. Two moves are never a
+     * resolve's own and are told as follow-ups ([Resolution.follow]), wherever they stand in the log: an Aura going to the
+     * graveyard in the poll its permanent left the battlefield ([before] had it attached), and a card coming back from exile in
+     * the poll the card that held it ([held]: exiled card to holder, kept by the controller) left the battlefield.
+     * An item that says "counter" and resolves while the item it answers leaves the stack unresolved countered it; a ward that
+     * resolves and leaves that item on the stack was paid.
      */
-    fun resolutions(before: MatchState?, after: MatchState, events: List<GameEvent>, triggerIds: Set<Int> = emptySet()): List<Resolution> {
+    fun resolutions(before: MatchState?, after: MatchState, events: List<GameEvent>, triggerIds: Set<Int> = emptySet(), held: Map<Int, Int> = emptyMap()): List<Resolution> {
+        val sorted = events.sortedBy { it.seq }
+        fun nameOf(r: Ref?) = r?.name ?: r?.id?.let { (after.card(it) ?: before?.card(it))?.name }
+        // The follow-ups, found by what Forge showed: who was attached to whom on the last board, and which cards left the battlefield.
+        val leftField = sorted.filter { it.type == "zone" && it.from == "Battlefield" && it.card != null }.associateBy { it.card!!.id }
+        fun hostOf(id: Int) = before?.card(id)?.takeIf { it.zone == "Battlefield" }?.attachedTo
+        val fell = leftField.values.filter { z -> z.to == "Graveyard" && hostOf(z.card!!.id)?.let { it in leftField } == true }
+        val back = sorted.filter { z -> z.type == "zone" && z.from == "Exile" && z.to == "Battlefield" && z.card != null && held[z.card.id]?.let { it in leftField } == true }
+        val told = (fell + back).map { it.seq }.toSet()
         val snapStack = after.stack + before?.stack.orEmpty()
         fun textOf(id: Int?) = id?.let { i -> snapStack.firstOrNull { it.id == i }?.text?.takeIf { it.isNotBlank() } }
         val stack = ArrayList<Entry>()
-        before?.stack?.reversed()?.forEach { s -> stack += Entry(s.id, s.source?.id, s.source?.name, s.controller, s.trigger || s.id in triggerIds, s.text.takeIf { it.isNotBlank() }, s.targets) }
+        before?.stack?.reversed()?.forEach { s -> stack += Entry(s.id, s.source?.id, s.source?.name, s.controller, s.trigger || s.id in triggerIds, s.text.takeIf { it.isNotBlank() }, s.targets, s.ability || s.trigger || s.id in triggerIds) }
         val pending = ArrayList<GameEvent>()
         val out = ArrayList<Resolution>()
         fun counterDelta(e: GameEvent): Int {
@@ -304,14 +611,16 @@ object Director {
             val now = after.card(id)?.counters?.get(k) ?: 0; val was = before?.card(id)?.counters?.get(k) ?: 0
             return now - was
         }
-        for (e in events.sortedBy { it.seq }) when (e.type) {
+        for (e in sorted) when (e.type) {
             "cast", "trigger", "ability" -> {
                 pending.clear()
-                stack += Entry(e.stackId, e.source?.id, e.source?.name, e.player ?: e.source?.id?.let { after.card(it)?.controller }, e.type == "trigger", textOf(e.stackId), e.targets)
+                stack += Entry(e.stackId, e.source?.id, e.source?.name, e.player ?: e.source?.id?.let { after.card(it)?.controller }, e.type == "trigger", textOf(e.stackId), e.targets, e.type != "cast")
             }
             "counters", "life" -> pending += e
             "damage" -> if (!e.combat) pending += e
-            "zone" -> if (e.token && e.to == "Battlefield") pending += e
+            // A token entering, or a card going from one zone to another (never the item itself going on or off the stack).
+            "zone" -> if (e.seq in told) {} else if (e.token && e.to == "Battlefield") pending += e
+                else if (e.from != null && e.to != null && e.from != "Stack" && e.to != "Stack") pending += e
             "turn", "attack", "block", "land" -> pending.clear()
             "resolve" -> {
                 val src = e.source?.id ?: e.card?.id
@@ -320,13 +629,30 @@ object Director {
                 // A result Forge tied to another resolving card is not this one's.
                 val mine = if (e.fizzled) emptyList() else pending.filter { r -> val by = when (r.type) { "zone" -> r.by; "counters" -> r.source; else -> null }; by == null || by.id == src }
                 pending.clear()
-                fun nameOf(r: Ref?) = r?.name ?: r?.id?.let { (after.card(it) ?: before?.card(it))?.name }
-                out += Resolution(e.seq, entry?.stackId, src, e.source?.name ?: entry?.sourceName ?: src?.let { (after.card(it) ?: before?.card(it))?.name },
-                    entry?.controller ?: src?.let { (after.card(it) ?: before?.card(it))?.controller }, entry?.trigger == true, e.fizzled, entry?.text, entry?.targets.orEmpty(),
+                val card = src?.let { after.card(it) ?: before?.card(it) }
+                // Its own words: the stack item's as Forge showed it, else the card's (a trigger: its "When", "Whenever", "At" lines).
+                val words = (entry?.text ?: card?.text?.let { t -> if (entry?.trigger == true) triggerText(t).ifBlank { t } else t }).orEmpty().lowercase()
+                val moves = mine.filter { it.type == "zone" && !(it.token && it.to == "Battlefield") }.mapNotNull { z ->
+                    went(z, words)?.let { w -> Move(z.seq, z.card?.id, nameOf(z.card), z.from!!, z.to!!, z.player ?: z.card?.id?.let { id -> (after.card(id) ?: before?.card(id))?.owner }, w) } }
+                // The item it answered: one below it that aims at its card (ward), or one it aims at.
+                var countered = emptyList<Countered>(); var paid: String? = null; var paidBy: Int? = null
+                if (!e.fizzled && entry != null && COUNTERS.containsMatchIn(words)) {
+                    val ward = WARD.find(words)
+                    val hit = stack.lastOrNull { o -> (o.controller != entry.controller && o.targets.any { it.kind == "card" && it.id == src }) || entry.targets.any { it.kind == "card" && it.id == o.sourceId } }
+                    if (hit?.stackId != null) {
+                        val gone = after.stack.none { it.id == hit.stackId } && sorted.none { it.type == "resolve" && it.seq > e.seq && (it.source?.id ?: it.card?.id) == hit.sourceId }
+                        if (gone) { stack.remove(hit); countered = listOf(Countered(hit.stackId, hit.sourceId, hit.sourceName ?: hit.sourceId?.let { (after.card(it) ?: before?.card(it))?.name }, hit.controller, hit.ability)) }
+                        else if (ward != null) { paid = ward.groupValues[1].ifBlank { "the cost" }; paidBy = hit.controller }
+                    }
+                }
+                out += Resolution(e.seq, entry?.stackId, src, e.source?.name ?: entry?.sourceName ?: card?.name,
+                    entry?.controller ?: card?.controller, entry?.trigger == true, e.fizzled, entry?.text, entry?.targets.orEmpty(),
                     counters = mine.filter { it.type == "counters" && it.card != null }.map { CounterChange(it.card!!.id, nameOf(it.card), it.counter ?: "", counterDelta(it)) }.filter { it.delta != 0 },
-                    tokens = mine.filter { it.type == "zone" }.mapNotNull { z -> z.card?.let { c -> c.copy(name = nameOf(c)) } },
+                    tokens = mine.filter { it.type == "zone" && it.token && it.to == "Battlefield" }.mapNotNull { z -> z.card?.let { c -> c.copy(name = nameOf(c)) } },
                     damage = mine.filter { it.type == "damage" && it.target != null && (it.amount ?: 0) > 0 }.map { it.target!!.let { t -> t.copy(name = if (t.kind == "card") nameOf(t) else t.name) } to it.amount!! },
-                    life = mine.filter { it.type == "life" && it.player != null && it.lifeFrom != null && it.lifeTo != null }.map { LifeChange(it.player!!, it.lifeFrom!!, it.lifeTo!!) })
+                    life = mine.filter { it.type == "life" && it.player != null && it.lifeFrom != null && it.lifeTo != null }.map { LifeChange(it.player!!, it.lifeFrom!!, it.lifeTo!!) },
+                    moves = moves, holds = moves.any { it.went == Went.EXILED } && UNTIL_LEAVES.containsMatchIn(words),
+                    countered = countered, paid = paid, paidBy = paidBy)
             }
         }
         // Power/toughness that moved without (only) counters: the snapshot diff, given to the resolve that explains it.
@@ -359,13 +685,65 @@ object Director {
         for (r in out) {
             val p = merged.lastOrNull()
             if (p != null && p.trigger && r.trigger && !p.fizzled && !r.fizzled && !p.empty && !r.empty && p.sourceId != null && p.sourceId == r.sourceId &&
-                p.text == r.text && p.targets == r.targets && p.changed.toSet() == r.changed.toSet()) {
+                p.text == r.text && p.targets == r.targets && p.changed.toSet() == r.changed.toSet() && p.countered.isEmpty() && r.countered.isEmpty() && p.paid == null && r.paid == null) {
                 val pt = (p.pt + r.pt).groupBy { it.cardId }.map { (_, l) -> l.first().copy(toP = l.last().toP, toT = l.last().toT) }
                 merged[merged.lastIndex] = r.copy(counters = p.counters + r.counters, pt = pt, tokens = p.tokens + r.tokens, damage = p.damage + r.damage,
-                    life = p.life + r.life, count = p.count + r.count, stackIds = p.stackIds + r.stackIds)
+                    life = p.life + r.life, count = p.count + r.count, stackIds = p.stackIds + r.stackIds, moves = p.moves + r.moves, holds = p.holds || r.holds)
             } else merged += r
         }
+        // The Auras that fell off: with the result that moved their permanent when one did (they leave in its beat, behind it),
+        // else a follow-up of their own with the permanent as its cause. Then what came back, a follow-up of the card that held it.
+        fun follow(cause: Int, seq: Long, moves: List<Move>) = (before?.card(cause) ?: after.card(cause)).let { c ->
+            // Its text is what became of the cause, in one word: a creature that went to the graveyard "died", anything else "left".
+            Resolution(seq, null, cause, c?.name, c?.controller, trigger = false, fizzled = false,
+                text = if (c?.isCreature == true && leftField[cause]?.to == "Graveyard") "died" else "left", targets = emptyList(), stackIds = emptyList(), moves = moves, follow = true) }
+        fun moveOf(z: GameEvent, went: Went, host: Int? = null) = (host?.let { before?.card(it) ?: after.card(it) }).let { h ->
+            Move(z.seq, z.card!!.id, nameOf(z.card), z.from!!, z.to!!, z.player ?: before?.card(z.card.id)?.owner, went,
+                hostId = host, hostName = h?.name, hostDied = h?.isCreature == true && leftField[host]?.to == "Graveyard") }
+        for ((host, zs) in fell.groupBy { hostOf(it.card!!.id)!! }) {
+            val fellOff = zs.map { moveOf(it, Went.FELL_OFF, host) }
+            val k = merged.indexOfLast { r -> !r.follow && r.moves.any { it.cardId == host && it.from == "Battlefield" } }
+            if (k >= 0) merged[k] = merged[k].copy(moves = merged[k].moves + fellOff) else merged += follow(host, zs.minOf { it.seq }, fellOff)
+        }
+        for ((holder, zs) in back.groupBy { held[it.card!!.id]!! }) merged += follow(holder, zs.minOf { it.seq }, zs.map { moveOf(it, Went.RETURNED) })
         return merged
+    }
+
+    /** [held] (exiled card to its holder) without the pairs Forge's board no longer shows: the card left exile, or the holder left the battlefield. */
+    fun stillHeld(held: Map<Int, Int>, st: MatchState): Map<Int, Int> {
+        val exiled = st.players.flatMap { it.exile }.map { it.id }.toSet()
+        val field = st.players.flatMap { it.battlefield }.map { it.id }.toSet()
+        return held.filter { (card, holder) -> card in exiled && holder in field }
+    }
+
+    private val COUNTERS = Regex("\\bcounter (?:it|target|that)\\b")
+    /** Forge's ward item starts "Ward {2}": the cost as the table says it ("2"); blank for a cost that is not mana. */
+    private val WARD = Regex("^ward\\s*(?:\\{([0-9]+)\\})?")
+    private val UNTIL_LEAVES = Regex("until [^.]{0,80}leaves the battlefield")
+
+    /**
+     * The word for a zone move, or null when the resolving item's own [words] (lower case) do not name it: then the move is
+     * not told as that item's doing (a state-based death, a draw step, anything Forge moved for another reason).
+     */
+    private val SAYS = listOf("exile", "destroy", "sacrifice", "draw", "discard", "mill", "return", "put").associateWith { Regex("\\b$it") }
+    internal fun went(z: GameEvent, words: String): Went? {
+        fun says(w: String) = SAYS.getValue(w).containsMatchIn(words)
+        val from = z.from; val to = z.to
+        return when {
+            to == "Exile" -> Went.EXILED.takeIf { says("exile") }
+            from == "Battlefield" && to == "Graveyard" -> when {
+                says("destroy") && !says("sacrifice") -> Went.DESTROYED
+                says("sacrifice") && !says("destroy") -> Went.SACRIFICED
+                says("destroy") || says("sacrifice") -> Went.TO_GRAVE
+                else -> null
+            }
+            from == "Library" && to == "Hand" -> Went.DREW.takeIf { says("draw") }
+            from == "Hand" && to == "Graveyard" -> Went.DISCARDED.takeIf { says("discard") }
+            from == "Library" && to == "Graveyard" -> Went.MILLED.takeIf { says("mill") }
+            to == "Hand" && (from == "Battlefield" || from == "Graveyard") -> Went.TO_HAND.takeIf { says("return") }
+            to == "Battlefield" && (from == "Graveyard" || from == "Exile") -> Went.RETURNED.takeIf { says("return") || says("put") }
+            else -> null
+        }
     }
 
     /**
@@ -378,12 +756,30 @@ object Director {
         val changed = pending.flatMap { it.changed }.toSet()
         val was = before?.players?.flatMap { it.battlefield }?.associateBy { it.id }.orEmpty()
         val added = pending.flatMap { it.counters }.groupBy { it.cardId }
-        return after.copy(players = after.players.map { p -> p.copy(battlefield = p.battlefield.filter { it.id !in tokens }.map { c ->
+        val held = after.copy(players = after.players.map { p -> p.copy(battlefield = p.battlefield.filter { it.id !in tokens }.map { c ->
             if (c.id !in changed) c
             else was[c.id]?.let { o -> c.copy(power = o.power, toughness = o.toughness, counters = o.counters) }
                 // New since the last board: take back only the counters Forge said were added.
                 ?: c.copy(counters = c.counters.mapValues { (k, v) -> v - added[c.id].orEmpty().filter { it.counter == k }.sumOf { it.delta } }.filterValues { it > 0 })
         }) })
+        // EVERY RESULT NAMES ITS CAUSE: a card a result took off the battlefield, or put onto it, stays where the last board had
+        // it until that result's beat, so it leaves (or comes back) under its plate and not before its cause is shown.
+        val moving = pending.flatMap { it.moves }.filter { it.cardId != null && (it.from == "Battlefield" || it.to == "Battlefield") }
+        if (moving.isEmpty() || before == null) return held
+        // An Aura that fell off is kept back only with its permanent (both leave in that result's beat, the Aura still behind it).
+        // When the permanent has already gone (a death no item caused), its Auras go with it and their beat names them afterwards:
+        // an Aura is never shown lying loose.
+        val staying = after.players.flatMap { it.battlefield }.map { it.id }.toSet() + moving.filter { it.went != Went.FELL_OFF && it.from == "Battlefield" }.map { it.cardId!! }
+        val moved = moving.filter { it.went != Went.FELL_OFF || it.hostId in staying }.map { it.cardId!! }.toSet()
+        if (moved.isEmpty()) return held
+        fun keep(now: List<Card>, old: List<Card>): List<Card> {
+            val out = now.filter { it.id !in moved }.toMutableList()
+            old.forEachIndexed { i, c -> if (c.id in moved) out.add(minOf(i, out.size), c) }
+            return out
+        }
+        return held.copy(players = held.players.map { p ->
+            val o = before.players.firstOrNull { it.id == p.id } ?: return@map p
+            p.copy(battlefield = keep(p.battlefield, o.battlefield), graveyard = keep(p.graveyard, o.graveyard), exile = keep(p.exile, o.exile), hand = keep(p.hand, o.hand)) })
     }
 
     /** A trigger's own words when Forge never showed its stack item: the source's lines that start "When", "Whenever" or "At". */
@@ -423,13 +819,22 @@ object Director {
 
     /**
      * How long a held step plays (section 6): full length normally; when a prompt of yours is already waiting or more than
-     * 6 s of steps are queued, a non-focal step plays at its Min and a focal one never under its Min.
+     * [QUEUE_CUT_MS] of steps are queued, a non-focal step plays at its Min and a focal one never under its Min. Butter pass B4
+     * (Randall 14 Nov, "cpu playing too fast"): the CPU's own moves (a cast, a land, an attack, a block, an ability or trigger, a
+     * card's travel) are never cut; only plain steps such as resolves are.
      */
     fun lengthOf(s: Step, waiting: Boolean, queuedMs: Long): Long = when {
         s.kind == Kind.THINK -> s.ms
-        (waiting || queuedMs > 6000) && !s.focal -> s.minMs
+        s.cpu && (s.kind in CPU_MOVES || s.travel != null) -> maxOf(s.ms, s.minMs)
+        (waiting || queuedMs > QUEUE_CUT_MS) && !s.focal -> s.minMs
         else -> maxOf(s.ms, s.minMs)
     }
+    const val QUEUE_CUT_MS = 12_000L
+    private val CPU_MOVES = setOf(Kind.CAST, Kind.LAND, Kind.ATTACK, Kind.BLOCK, Kind.ABILITY, Kind.TRIGGER, Kind.ENTER)
+
+    /** Whether the board's wait counts for [lengthOf]: a chance to respond on the CPU's turn is the very move being shown, so it
+     *  does not hurry that move; your own turn's waits and real questions (a prompt) still do. */
+    fun waitingFor(st: MatchState?): Boolean = st?.waitingOnMe == true && (st.activePlayer == st.viewer || st.prompt != null)
 }
 
 /**
@@ -441,6 +846,9 @@ data class TriggerMoment(val phase: Phase, val sourceId: Int?, val sourceName: S
                          val result: Director.Resolution? = null, val line: String? = null, val key: Long = 0) {
     enum class Phase { SOURCE, STACK, RESULT }
 }
+
+/** 0.4.59 T5: the leg of a card's travel the table is drawing now, from [startedAt] (elapsedRealtime); [key] is new per leg. */
+data class TravelMoment(val travel: Director.Travel, val startedAt: Long, val key: Long)
 
 /** The CPU thinking right now (the dots by its portrait, the lifted card back in its hand), read by the table. */
 object CpuThink {

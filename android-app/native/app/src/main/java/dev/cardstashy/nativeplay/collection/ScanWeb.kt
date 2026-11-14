@@ -85,7 +85,8 @@ object ScanWeb {
         @JavascriptInterface fun model(json: String?) { val j = json ?: return; pushes.trySend(j) }
         @JavascriptInterface fun toast(text: String?) { if (!text.isNullOrBlank()) scope.launch { CollectionWrites.show(text) } }
         @JavascriptInterface fun acted(json: String?) { val j = json ?: return; scope.launch { runCatching { _acted.tryEmit(JsonParser.parseString(j).asJsonObject) } } }
-        @JavascriptInterface fun torch(on: Boolean) { scope.launch { torch(on) } }
+        // ScanWeb.torch, spelled out: a bare torch(on) here is this method again, which looped forever and never reached the camera.
+        @JavascriptInterface fun torch(on: Boolean) { scope.launch { runCatching { ScanWeb.torch.invoke(on) } } }
         @JavascriptInterface fun call(id: Int, name: String?, json: String?) { scope.launch { answer(id, name.orEmpty(), json) } }
     }
 
@@ -152,9 +153,14 @@ object ScanWeb {
                         "/__native/scan-web.js" -> "scan-web.js"
                         "/vendor/tesseract.min.js" -> "vendor/tesseract.min.js"
                         "/vendor/worker.min.js" -> "vendor/worker.min.js"
+                        // The text reader's engine and English data ship in the app, so the first scan needs no download.
+                        "/vendor/tess/tesseract-core-simd-lstm.wasm.js" -> "vendor/tess/tesseract-core-simd-lstm.wasm.js"
+                        "/vendor/tess/eng.traineddata.gz" -> "vendor/tess/eng.traineddata.gz"
                         else -> return null
                     }
-                    return WebResourceResponse("application/javascript", "utf-8", a.assets.open(file))
+                    val stream = runCatching { a.assets.open(file) }.getOrNull() ?: return null
+                    return if (file.endsWith(".gz")) WebResourceResponse("application/octet-stream", null, stream)
+                    else WebResourceResponse("application/javascript", "utf-8", stream)
                 }
                 override fun shouldOverrideUrlLoading(view: WebView, req: WebResourceRequest) = true
                 override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {

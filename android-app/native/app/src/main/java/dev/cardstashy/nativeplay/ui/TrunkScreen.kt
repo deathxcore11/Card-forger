@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -104,6 +105,10 @@ fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Uni
     val all = remember(state) { Trunk.cards(state).sortedBy { it.n } }
     LaunchedEffect(all) { CardFacts.want(all.map { it.o to it.pid }) }
     val sets = remember(state, SetFacts_version()) { Trunk.setRows(state) }
+    // The Sets tab's rows, worked out once per state, set facts, search and format (not on every frame), and only while it shows.
+    val setsVersion = SetFacts_version()
+    val allSets = remember(state, setsVersion, tab == "sets") { if (tab == "sets") Trunk.allSets(state) else emptyList() }
+    val setRowsShown = remember(allSets, setQuery, setFormat) { Trunk.setTabRows(allSets, setQuery, setFormat) }
     val matched = remember(all, facts, filter, sort, sets) { Trunk.sort(Trunk.filter(all, { facts[it] }, filter), { facts[it] }, sort, sets) }
     val shown = remember(matched) { Trunk.holoSplit(matched).take(300) }
     val data = CardData.ready.collectAsState().value.also { if (it == null) CardData.warm(context) }
@@ -155,7 +160,14 @@ fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Uni
                         Box(Modifier.dualLens(lens, "card:" + c.o + if (c.holo) ":h" else "")) { Tile(c, print, facts[c.o], data, onHold = { img, set -> onHold(CardHold(CardPick(c.n, c.o, c.pid ?: print?.get("id")?.asString, if (c.holo) "foil" else "nonfoil"), img, set, c.holo)) }) { onCard(CardPick(c.n, c.o, c.pid ?: print?.get("id")?.asString, if (c.holo) "foil" else "nonfoil")) } }
                     }
                 } else {
-                    item(span = { GridItemSpan(maxLineSpan) }) { SetsTab(state, setQuery, setFormat, { setQuery = it }, { setFormat = it }, onSet) }
+                    // Thor, live 0.4.59 (Randall 11 Nov: "the sets tab ... is super slow"): every set was drawn at once inside one grid
+                    // item and the whole list was rebuilt on each set fact that came in. Now the head is one item and each year line
+                    // and set tile is its own lazy row, so only the rows on screen are drawn.
+                    item(span = { GridItemSpan(maxLineSpan) }, key = "sets-head", contentType = "sets-head") { SetsHead(allSets, setRowsShown.count { it.set != null }, setQuery, setFormat, { setQuery = it }, { setFormat = it }, onSet) }
+                    items(setRowsShown, key = { it.key }, span = { GridItemSpan(maxLineSpan) }, contentType = { if (it.set == null) "year" else "set" }) { r ->
+                        if (r.set == null) Text(r.year, style = Site.Eyebrow, modifier = Modifier.padding(top = 8.dp).testTag("setyear:" + r.year))
+                        else Box(Modifier.testTag("settile:" + r.set.code)) { SetTile(r.set) { onSet(r.set.code) } }
+                    }
                 }
             }
         }
@@ -361,28 +373,21 @@ private fun Tile(c: Trunk.Card, print: JsonObject?, fact: CardFacts.Fact?, data:
     }
 }
 
-/** playSetsTab: search, format chips, "N of M sets · K started", year sections of set tiles with Play progress. */
+/** playSetsTab's head: search, format chips, the Keep collecting row and "N of M sets · K started". The set tiles are the grid's own lazy rows. */
 @Composable
-private fun SetsTab(state: JsonObject, query: String, format: String, onQuery: (String) -> Unit, onFormat: (String) -> Unit, onSet: (String) -> Unit) {
-    SetFacts_version()
-    val all = Trunk.allSets(state)
-    val q = query.trim().lowercase()
-    val list = all.filter { (format.isEmpty() || (if (format == "started") it.owned > 0 else it.format == format)) && (q.isEmpty() || it.name.lowercase().contains(q) || it.code.contains(q)) }
+private fun SetsHead(all: List<Trunk.SetRow>, shown: Int, query: String, format: String, onQuery: (String) -> Unit, onFormat: (String) -> Unit, onSet: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SearchField(query, "Search every set by name or code", onQuery)
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) { Trunk.SET_FORMATS.forEach { (k, l) -> Chip(l, format == k) { onFormat(k) } } }
         // Keep collecting: the sets you've started and not finished, newest first, each with its completion ring.
-        val going = if (q.isEmpty() && format.isEmpty()) all.filter { it.owned > 0 && (it.total == null || it.owned < it.total) }.take(12) else emptyList()
+        val going = remember(all, query, format) { Trunk.keepCollecting(all, query, format) }
         if (going.isNotEmpty()) {
             Text("Keep collecting", style = Site.Eyebrow)
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) { going.forEach { x -> RingTile(x) { onSet(x.code) } } }
         }
-        Text("${"%,d".format(list.size)} of ${"%,d".format(all.size)} sets · ${"%,d".format(all.count { it.owned > 0 })} started", style = small)
-        if (list.isEmpty()) Empty("No sets match", "Try another format or name.")
-        list.groupBy { it.released.take(4).ifBlank { "Other" } }.forEach { (year, rows) ->
-            Text(year, style = Site.Eyebrow, modifier = Modifier.padding(top = 8.dp))
-            rows.forEach { x -> SetTile(x) { onSet(x.code) } }
-        }
+        val started = remember(all) { all.count { it.owned > 0 } }
+        Text("${"%,d".format(shown)} of ${"%,d".format(all.size)} sets · ${"%,d".format(started)} started", style = small)
+        if (shown == 0) Empty("No sets match", "Try another format or name.")
     }
 }
 
@@ -467,8 +472,6 @@ fun TrunkRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
             CardSheet(pick, s, startTab = openTab, act = CardSheetActions(
                 merchant = { code, _ -> open = null; onSet(code) },
                 set = { code -> open = null; onSet(code) },
-                precon = { _, _ -> open = null; onWeb("https://cardstashy.com/#play") },
-                newDeck = { open = null; onWeb("https://cardstashy.com/#play") },
                 toast = toast), onClose = { open = null })
         }
     }

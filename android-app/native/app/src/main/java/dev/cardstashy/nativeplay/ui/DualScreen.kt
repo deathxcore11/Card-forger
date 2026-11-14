@@ -275,9 +275,21 @@ fun TopScreen(content: @Composable () -> Unit) {
     DisposableEffect(slot) { DualScreen.tops += slot; onDispose { DualScreen.tops -= slot } }
 }
 
-/** On the app's root, over everything: the newest [TopScreen] view. */
+/**
+ * On the app's root, over everything: the newest [TopScreen] view. It covers what is drawn behind it, for touch as for the stick
+ * cursor (Randall 10 Nov, live 0.4.57: taps on a card view's text opened the grid card behind it, a tap low right opened Trophies).
+ */
 @Composable
-fun TopScreenHost() { DualScreen.tops.lastOrNull()?.content?.invoke() }
+fun TopScreenHost() {
+    val view = DualScreen.tops.lastOrNull()?.content ?: return
+    Box(Modifier.fillMaxSize().padCover().blockTouchBehind()) { view() }
+}
+
+/**
+ * A full-size pointer node: the hit test stops at this overlay, so the app drawn behind it (the grid, the tab bar) never gets
+ * the touch. It consumes nothing, so the overlay's own taps, scrolls, swipes and pinches work as before.
+ */
+internal fun Modifier.blockTouchBehind(): Modifier = pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent() } }
 
 /** On two screens, the ring on this card puts its [QuickLook] on the bottom; leaving it takes the look away. */
 fun Modifier.quickLook(make: () -> QuickLook): Modifier = if (!DualScreen.active) this else onFocusChanged { f ->

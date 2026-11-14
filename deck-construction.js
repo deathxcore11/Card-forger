@@ -9,7 +9,7 @@ import { comparePower } from './deck-optimizer.js';
 import { engineMap } from './engine-map.js';
 import { strategicRisk } from './strategy-risk.js';
 import {pokemonEnergyCapability} from './deckpower.js';
-import { inspectMtgTheme } from './builder.js';
+import { inspectMtgTheme, castableIn } from './builder.js';
 import { CREATURE_THEMES, fitsTypeRestrictions, readCreatureTypeRestrictions } from './planner.js';
 import {readLoopIntent,inspectManaLoop} from './mtg-combo-packages.js';
 export const DECK_POLICY = Object.freeze({overagePercent:10,overageMaximum:5,maxCandidates:24});
@@ -169,7 +169,10 @@ export function inspectDeckPlan(request,rows,deck={},{includeFinalSupport=true}=
   if(lands.reduce((s,r)=>s+r.qty,0)<Math.floor(main.reduce((s,r)=>s+r.qty,0)*.25))issues.push('The deck has too few lands for the supported construction plan.');
   const sources=lands.map(r=>({name:r.name||r.card?.name,...mtgManaSourceProfile(r.card,{commanderIdentity:cards.find(c=>key(c.name)===key(deck.commander))?.color_identity})})),produces=new Set(sources.flatMap(s=>s.colors)),conditional=new Set(sources.flatMap(s=>s.conditional.flatMap(e=>e.colors)));
   manaCoverage={status:'supported',unconditional:[...produces],conditional:[...conditional],sources:sources.filter(s=>s.conditional.length||s.unknown)};
-  const needed=new Set(cards.filter(c=>! /\bLand\b/.test(c.type_line||'')).flatMap(c=>c.colors||[]));
+  // Hybrid and Phyrexian costs can be paid without every colour printed on the card (builder.js castableIn): outside
+  // Commander a spell the lands' colours already pay for asks for nothing more.
+  const payable=c=>!deck.commander&&castableIn(c,[...produces]);
+  const needed=new Set(cards.filter(c=>! /\bLand\b/.test(c.type_line||'')&&!payable(c)).flatMap(c=>c.colors||[]));
   for(const color of needed)if(!produces.has(color)){
    if(conditional.has(color)||sources.some(s=>s.unknown||s.conditional.some(e=>!e.colors.length))){if(manaCoverage.status!=='insufficient')manaCoverage.status='unverified';notes.push(`${color} mana relies on conditional or unverified land abilities. Input mana, eligible creatures, spending restrictions and simultaneous payment are not established by color coverage.`);}
    else {manaCoverage.status='insufficient';issues.push(`No confirmed land source for ${color} mana.`);}
