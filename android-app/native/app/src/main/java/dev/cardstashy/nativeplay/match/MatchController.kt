@@ -51,6 +51,8 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         const val LAND_MS = 900L; const val ACTION_MS = 2400L; const val AFFECTS_MS = 3600L
         const val ACTION_FLOOR_MS = 1500L; const val AFFECTS_FLOOR_MS = 2400L
         const val GAP_MS = 250L; const val BACKLOG = 3; const val STEP_GAP_MS = 120L
+        /** Rows kept for "Last moves" (the table shows the newest three; the rest feed nothing else). */
+        const val LAST_MOVES = 12
         const val INTO_HAND_MS = 600L; const val QUIET_MS = 1000L; const val FIRST_BANNER_MS = 1600L; const val BANNER_MS = 1400L
         private const val TAG = "MatchController"
         /** T5: the legs that end on the board (the card shows there once its leg starts). */
@@ -80,6 +82,14 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     private val _live = MutableStateFlow(false); val live: StateFlow<Boolean> = _live // shown == latest and Forge waits on you
     private val _failure = MutableStateFlow<String?>(null); val failure: StateFlow<String?> = _failure
     private val _log = MutableStateFlow<List<String>>(emptyList()); val log: StateFlow<List<String>> = _log
+    /** LAST MOVES (Every Result Names Its Cause): each result as it lands, newest last, with the card that did it. The table shows the last three. */
+    private val _moves = MutableStateFlow<List<Director.Line>>(emptyList()); val moves: StateFlow<List<Director.Line>> = _moves
+    /**
+     * Cards held in exile by a permanent: exiled card id to the id of the card whose own words exiled it "until it leaves the
+     * battlefield" (Forge moved the card to exile while that item resolved; the bridge does not send the link itself). Dropped as
+     * soon as either is no longer where it was. Read by the director (the card comes back) and the table (it sits under its holder).
+     */
+    private val _held = MutableStateFlow<Map<Int, Int>>(emptyMap()); val held: StateFlow<Map<Int, Int>> = _held
     /** The phase lights you stopped at (the table's track): priority there is never passed for you. */
     /**
      * A phase light (approved calm v2: tap a light, an orange ring) is Forge's own phase stop (forge-session.mjs setPhaseStop):
@@ -427,7 +437,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             // waits on the held ones (a CPU think, the turn banner, a CPU action's caption), one at a time.
             fresh.forEach { if (it.type == "trigger") it.stackId?.let(triggerIds::add) }
             val before = _shown.value
-            val steps = Director.plan(st, fresh, if (remote == null) thinkClock else null, before = before, triggerIds = triggerIds).filter { it.held }
+            val steps = Director.plan(st, fresh, if (remote == null) thinkClock else null, before = before, triggerIds = triggerIds, held = _held.value).filter { it.held }
             TableLog.line("plan rev=${st.revision} fresh=${fresh.size} [${fresh.joinToString(",") { it.type }}] steps=${steps.size} shown=${_shown.value?.revision} queue=${queue.get()}")
             if (steps.isEmpty()) { show(st) } else {
                 // The board advances one CPU action at a time: a CPU card that a step is about to
@@ -441,7 +451,8 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                 val hiddenStack = steps.mapNotNull { s -> s.trig?.takeIf { !it.resolvedHere }?.stackId }.toMutableSet()
                 val pending = steps.mapNotNull { it.result }.toMutableList()
                 // Top first: the items that resolve first in this poll.
-                val held = pending.flatMap { r -> r.stackIds.mapNotNull { id -> before?.stack?.firstOrNull { it.id == id } } }.toMutableList()
+                // An item a result countered stays up with it, and leaves under its plate.
+                val held = pending.flatMap { r -> (r.stackIds + r.countered.mapNotNull { it.stackId }).mapNotNull { id -> before?.stack?.firstOrNull { it.id == id } } }.toMutableList()
                 // T5, the cast travels: a card on its way stays off the board until its leg to its slot, host or group starts; a cast's
                 // item stays off the stack until it goes up; the lands that paid for it look ready until they tap.
                 val legs = steps.mapNotNull { it.travel }
@@ -532,9 +543,13 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                             val r = step.result
                             // Beat 3: the item leaves the stack and its result lands on the card it changed.
                             pending.remove(r)
-                            held.removeAll { it.id in r.stackIds || (it.source?.id != null && it.source.id == r.sourceId) }
+                            // A follow-up is no stack item: its cause's own items (a trigger of the card that left) stay up.
+                            if (!r.follow) held.removeAll { it.id in r.stackIds || (it.source?.id != null && it.source.id == r.sourceId) || r.countered.any { c -> c.stackId == it.id } }
                             val line = r.line(st.viewer)
                             if (line != null) _log.value = (_log.value + line).takeLast(60)
+                            _moves.value = (_moves.value + r.lines(st.viewer)).takeLast(LAST_MOVES)
+                            // What it exiled "until it leaves the battlefield" is held by it from now on.
+                            if (r.holds && r.sourceId != null) _held.value = _held.value + r.moves.filter { it.went == Director.Went.EXILED && it.cardId != null }.associate { it.cardId!! to r.sourceId }
                             _trigger.value = TriggerMoment(TriggerMoment.Phase.RESULT, r.sourceId, r.sourceName, r.controller == st.viewer, r.stackId, r.count, r, line, ++momentKey)
                             show(board())
                             hold(ms)
@@ -549,6 +564,8 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                 _trigger.value = null
                 show(st)
             }
+            // A held card that is no longer in exile, or whose holder is no longer on the battlefield, is held no more.
+            if (_held.value.isNotEmpty()) _held.value = Director.stillHeld(_held.value, st)
             if (st.finished) { _stage.value = Stage.FINISHED; show(st) }
         }
     }

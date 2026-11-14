@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay.match
 
+import dev.cardstashy.nativeplay.engine.Card
 import dev.cardstashy.nativeplay.engine.GameEvent
 import dev.cardstashy.nativeplay.engine.MatchState
 import dev.cardstashy.nativeplay.engine.Ref
@@ -71,6 +72,19 @@ object Director {
     data class LifeChange(val player: Int, val from: Int, val to: Int)
 
     /**
+     * EVERY RESULT NAMES ITS CAUSE (Randall, 14 Nov: "a card will do something and ill just not know"). What the table calls a
+     * card's move: the zones are Forge's (the zone event), the word is the resolving item's own (its text says "exile",
+     * "destroy", "draw"...). FELL_OFF and a follow-up RETURNED are not a resolve's own doing: see [Resolution.follow].
+     */
+    enum class Went { EXILED, DESTROYED, SACRIFICED, TO_GRAVE, TO_HAND, DREW, DISCARDED, MILLED, RETURNED, FELL_OFF }
+    /** One card Forge moved (a zone event at [seq]); [cardId] is null for a card the viewer cannot see (the CPU's draw). */
+    data class Move(val seq: Long, val cardId: Int?, val cardName: String?, val from: String, val to: String, val player: Int?, val went: Went)
+    /** A stack item that left the stack without resolving, while the item that says "counter" resolved (a ward nobody paid). */
+    data class Countered(val stackId: Int?, val sourceId: Int?, val sourceName: String?, val controller: Int?, val ability: Boolean)
+    /** One row of "Last moves": the card that did it ([yours]: on your side) and what it did, in plain words. */
+    data class Line(val sourceId: Int?, val sourceName: String, val yours: Boolean, val text: String)
+
+    /**
      * What one stack item's resolve changed, all as Forge reported it: counters (counters events), power/toughness (snapshot diff),
      * tokens (zone, token=true), damage and life. Forge applies an item's effects first and fires its resolve last, so the results
      * that belong to a resolve are the ones since the last stack event before it ([resolutions]).
@@ -84,16 +98,45 @@ object Director {
         val count: Int = 1,
         /** Every stack item this result stands for (one, or the ×N it collapsed). */
         val stackIds: List<Int> = listOfNotNull(stackId),
+        /** The cards Forge moved while it resolved, each with the word its own text gives the move ([Went]). */
+        val moves: List<Move> = emptyList(),
+        /** Its words say the exile lasts "until ... leaves the battlefield": the exiled cards are held by [sourceId]. */
+        val holds: Boolean = false,
+        /** The stack item it countered (it left the stack with no resolve of its own). */
+        val countered: List<Countered> = emptyList(),
+        /** A ward that resolved and left the item it answered on the stack: the cost in its words ("2"), paid by [paidBy]. */
+        val paid: String? = null, val paidBy: Int? = null,
+        /**
+         * Not a stack item: what followed from a card leaving. FELL_OFF moves: the Auras that were on [sourceId] went to the
+         * graveyard with it. RETURNED: [sourceId] held the card in exile ([holds], kept by the controller) and left, so it is back.
+         */
+        val follow: Boolean = false,
     ) {
         /** The permanents the result lands on (counters and P/T), in the order Forge changed them. */
         val changed: List<Int> get() = (counters.map { it.cardId } + pt.map { it.cardId }).distinct()
-        val empty get() = counters.isEmpty() && pt.isEmpty() && tokens.isEmpty() && damage.isEmpty() && life.isEmpty()
+        val empty get() = counters.isEmpty() && pt.isEmpty() && tokens.isEmpty() && damage.isEmpty() && life.isEmpty() && !named
+        /** It moved a card, countered an item or had its ward paid: the table names the cause on a plate ([RESULT] for any item, not only a trigger). */
+        val named get() = moves.isNotEmpty() || countered.isNotEmpty() || paid != null
 
-        /** The one trail line ("Optimistic Scavenger: +1/+1 counter on Grizzly Bears"), or null when it changed nothing shown. */
-        fun line(viewer: Int): String? {
-            val who = sourceName ?: "A trigger"
-            if (fizzled) return "$who: no legal targets"
+        /** Its rows for "Last moves": one, or one per Aura that fell off. */
+        fun lines(viewer: Int): List<Line> {
+            fun pile(m: Move) = if (m.player == viewer) "your graveyard" else "the CPU's graveyard"
+            if (follow && moves.all { it.went == Went.FELL_OFF }) return moves.map { Line(it.cardId, it.cardName ?: "An Aura", it.player == viewer, "fell off and went to ${pile(it)}") }
+            val text = said(viewer) ?: return emptyList()
+            return listOf(Line(sourceId, sourceName ?: "A trigger", controller == viewer, (if (count > 1) "×$count: " else "") + text))
+        }
+
+        /** What it did, without its name: "exiled Memnite", "drew you a card", "+1/+1 counter on Grizzly Bears". Null when nothing shown changed. */
+        fun said(viewer: Int): String? {
+            if (fizzled) return "no legal targets"
+            fun side(p: Int?) = if (p == viewer) "you" else "the CPU"
+            fun names(l: List<Move>) = l.map { it.cardName ?: "a card" }.joinToString(", ")
+            if (follow) return when {
+                moves.all { it.went == Went.FELL_OFF } -> "left, so ${names(moves)} fell off"
+                else -> "left, so ${names(moves)} return" + if (moves.size == 1) "s" else ""
+            }
             val parts = ArrayList<String>()
+
             for ((_, list) in counters.groupBy { it.cardId }) for ((kind, same) in list.groupBy { it.counter }) {
                 val n = same.sumOf { it.delta }; if (n == 0) continue
                 val on = same.first().cardName ?: "a card"
@@ -109,8 +152,28 @@ object Director {
             }
             for ((t, n) in damage) parts += "$n damage to " + if (t.kind == "player") (if (t.id == viewer) "you" else "CPU") else (t.name ?: "a card")
             for (l in life) if (l.to != l.from) parts += (if (l.player == viewer) "you " else "CPU ") + (if (l.to > l.from) "gain${if (l.player == viewer) "" else "s"} ${l.to - l.from}" else "lose${if (l.player == viewer) "" else "s"} ${l.from - l.to}") + " life"
+            for ((went, l) in moves.groupBy { it.went }) parts += when (went) {
+                Went.EXILED -> "exiled ${names(l)}"
+                Went.DESTROYED -> "destroyed ${names(l)}"
+                Went.SACRIFICED -> "sacrificed ${names(l)}"
+                Went.TO_GRAVE -> "put ${names(l)} into the graveyard"
+                Went.TO_HAND -> "returned ${names(l)} to hand"
+                Went.DREW -> l.groupBy { it.player }.map { (p, d) -> "drew ${side(p)} " + if (d.size == 1) "a card" else "${d.size} cards" }.joinToString(", ")
+                Went.DISCARDED -> "discarded " + if (l.any { it.cardName == null }) (if (l.size == 1) "a card" else "${l.size} cards") else names(l)
+                Went.MILLED -> "milled " + if (l.size == 1) (l[0].cardName ?: "a card") else "${l.size} cards"
+                Went.RETURNED -> "returned ${names(l)} to the battlefield"
+                Went.FELL_OFF -> "${names(l)} fell off"
+            }
+            for (c in countered) parts += "countered ${c.sourceName ?: "a spell"}" + if (c.ability) "'s ability" else ""
+            if (paid != null) parts += "ward: ${side(paidBy)} paid ${paid}"
             if (parts.isEmpty()) return null
-            return who + (if (count > 1) " ×$count" else "") + ": " + parts.joinToString(", ")
+            return parts.joinToString(", ")
+        }
+
+        /** The one trail line ("Optimistic Scavenger: +1/+1 counter on Grizzly Bears"), or null when it changed nothing shown. */
+        fun line(viewer: Int): String? {
+            val text = said(viewer) ?: return null
+            return (sourceName ?: "A trigger") + (if (count > 1) " ×$count" else "") + ": " + text
         }
     }
 
@@ -147,11 +210,17 @@ object Director {
      * steps (a test of the bare plan, or a friend match where the other side is a person).
      */
     fun plan(st: MatchState, events: List<GameEvent>, think: ThinkClock? = null, fast: Boolean = false,
-             before: MatchState? = null, triggerIds: Set<Int> = emptySet()): List<Step> {
+             before: MatchState? = null, triggerIds: Set<Int> = emptySet(), held: Map<Int, Int> = emptyMap()): List<Step> {
         val me = st.viewer
         // A TRIGGER SHOWS ITSELF: each resolve tied to what it changed; a trigger's result is its own held step at its resolve.
-        val results = resolutions(before, st, events, triggerIds)
-        val resultAt = results.filter { it.trigger && (it.fizzled || !it.empty) }.associateBy { it.seq }
+        // EVERY RESULT NAMES ITS CAUSE: so is any item's that moved a card, countered an item or had its ward paid.
+        val results = resolutions(before, st, events, triggerIds, held)
+        val resultAt = results.filter { !it.follow && ((it.trigger && (it.fizzled || !it.empty)) || it.named) }.associateBy { it.seq }
+        // The follow-ups play in the order they read (the Auras fall off, then what was held comes back), from the first of their moves.
+        val follows = results.filter { it.follow }
+        val followAt = follows.minOfOrNull { it.seq }
+        fun resultStep(r: Resolution) = Step(Kind.RESULT, if (r.fizzled) FIZZLE_MS else if (r.named) NAMED_MS else RESULT_MS, if (r.fizzled) FIZZLE_MS else if (r.named) NAMED_MIN_MS else RESULT_MS,
+            if (r.fizzled) "CARD-012" else if (r.named) null else "CARD-027", focal = true, cpu = r.controller != null && r.controller != me, cardId = r.sourceId, cardName = r.sourceName, count = r.count, result = r)
         val resolvedHere = results.flatMap { it.stackIds }.toSet()
         // A result collapsed from N copies (×N) gets one source beat for all of them, at its first trigger event in the poll.
         val mergedOf = results.filter { it.stackIds.size > 1 }.flatMap { r -> r.stackIds.map { it to r } }.toMap()
@@ -306,8 +375,7 @@ object Director {
                         // Beat 3: the result lands on the card it changed (counter chip, P/T tick, tokens from the source).
                         r != null -> {
                             if (r.life.any { it.player == me && it.to < it.from }) explainedLife = true
-                            Step(Kind.RESULT, if (r.fizzled) FIZZLE_MS else RESULT_MS, if (r.fizzled) FIZZLE_MS else RESULT_MS, if (r.fizzled) "CARD-012" else "CARD-027",
-                                focal = true, cpu = cpu(r.controller), cardId = r.sourceId, cardName = r.sourceName, count = r.count, result = r)
+                            resultStep(r)
                         }
                         e.fizzled -> Step(Kind.FIZZLE, 400, 250, "CARD-012", cardId = e.source?.id ?: e.card?.id)
                         else -> Step(Kind.RESOLVE, 300, 200, cardId = e.source?.id ?: e.card?.id)
@@ -329,6 +397,7 @@ object Director {
                 "draw" -> groupOrAdd(out, if (e.player == me) Step(Kind.DRAW, 460, 300, "CARD-001", cardId = e.card?.id) else Step(Kind.DRAW, 770, 250, "CARD-002"))
                 "zone" -> {
                     val id = e.card?.id
+                    if (e.seq == followAt) follows.forEach { out += resultStep(it) }
                     // T5 items 4 and 5: a spell leaving the stack for the battlefield goes to its slot, or an aura to its host.
                     if (e.from == "Stack" && e.to == "Battlefield" && id != null && !e.token) {
                         val c = st.card(id); val host = c?.attachedTo
@@ -473,9 +542,13 @@ object Director {
     /** Beat 3: the landing (streak, flash, "+1/+1" rising, chip pop) and the P/T plate's green or coral tick. */
     const val RESULT_MS = 1200L
     const val FIZZLE_MS = 700L
+    /** A result with a cause plate (a card moved, an item countered, a ward paid): long enough to read the plate's two lines. */
+    const val NAMED_MS = 1600L
+    const val NAMED_MIN_MS = 1000L
 
     /** A stack item while the director follows the stack through one poll (top at the end of the list). */
-    private class Entry(val stackId: Int?, val sourceId: Int?, val sourceName: String?, val controller: Int?, val trigger: Boolean, val text: String?, val targets: List<Ref>)
+    private class Entry(val stackId: Int?, val sourceId: Int?, val sourceName: String?, val controller: Int?, val trigger: Boolean, val text: String?, val targets: List<Ref>,
+                        /** Not a spell: a trigger or an activated ability. */ val ability: Boolean = trigger)
 
     /**
      * Each resolve in [events] tied to what it changed, read from Forge's own log and the snapshots around it ([before] the board
@@ -488,12 +561,29 @@ object Director {
      * those counters explain the whole change, else (never across a turn) to the one that targeted it, else to the only resolve in
      * the poll when the card is that resolve's own source.
      * The same trigger from the same source changing the same cards, one after another, is one result with a count.
+     *
+     * EVERY RESULT NAMES ITS CAUSE. A card Forge moved (a zone event that is not the item itself entering or leaving the stack)
+     * belongs to the resolve that follows it by the same rule, and only when that item's own words name the move ([went]): the
+     * bridge writes no cause on a zone event (seen in real matches, 14 Nov), so the words are the check. Two moves are never a
+     * resolve's own and are told as follow-ups ([Resolution.follow]), wherever they stand in the log: an Aura going to the
+     * graveyard in the poll its permanent left the battlefield ([before] had it attached), and a card coming back from exile in
+     * the poll the card that held it ([held]: exiled card to holder, kept by the controller) left the battlefield.
+     * An item that says "counter" and resolves while the item it answers leaves the stack unresolved countered it; a ward that
+     * resolves and leaves that item on the stack was paid.
      */
-    fun resolutions(before: MatchState?, after: MatchState, events: List<GameEvent>, triggerIds: Set<Int> = emptySet()): List<Resolution> {
+    fun resolutions(before: MatchState?, after: MatchState, events: List<GameEvent>, triggerIds: Set<Int> = emptySet(), held: Map<Int, Int> = emptyMap()): List<Resolution> {
+        val sorted = events.sortedBy { it.seq }
+        fun nameOf(r: Ref?) = r?.name ?: r?.id?.let { (after.card(it) ?: before?.card(it))?.name }
+        // The follow-ups, found by what Forge showed: who was attached to whom on the last board, and which cards left the battlefield.
+        val leftField = sorted.filter { it.type == "zone" && it.from == "Battlefield" && it.card != null }.associateBy { it.card!!.id }
+        fun hostOf(id: Int) = before?.card(id)?.takeIf { it.zone == "Battlefield" }?.attachedTo
+        val fell = leftField.values.filter { z -> z.to == "Graveyard" && hostOf(z.card!!.id)?.let { it in leftField } == true }
+        val back = sorted.filter { z -> z.type == "zone" && z.from == "Exile" && z.to == "Battlefield" && z.card != null && held[z.card.id]?.let { it in leftField } == true }
+        val told = (fell + back).map { it.seq }.toSet()
         val snapStack = after.stack + before?.stack.orEmpty()
         fun textOf(id: Int?) = id?.let { i -> snapStack.firstOrNull { it.id == i }?.text?.takeIf { it.isNotBlank() } }
         val stack = ArrayList<Entry>()
-        before?.stack?.reversed()?.forEach { s -> stack += Entry(s.id, s.source?.id, s.source?.name, s.controller, s.trigger || s.id in triggerIds, s.text.takeIf { it.isNotBlank() }, s.targets) }
+        before?.stack?.reversed()?.forEach { s -> stack += Entry(s.id, s.source?.id, s.source?.name, s.controller, s.trigger || s.id in triggerIds, s.text.takeIf { it.isNotBlank() }, s.targets, s.ability || s.trigger || s.id in triggerIds) }
         val pending = ArrayList<GameEvent>()
         val out = ArrayList<Resolution>()
         fun counterDelta(e: GameEvent): Int {
@@ -503,14 +593,16 @@ object Director {
             val now = after.card(id)?.counters?.get(k) ?: 0; val was = before?.card(id)?.counters?.get(k) ?: 0
             return now - was
         }
-        for (e in events.sortedBy { it.seq }) when (e.type) {
+        for (e in sorted) when (e.type) {
             "cast", "trigger", "ability" -> {
                 pending.clear()
-                stack += Entry(e.stackId, e.source?.id, e.source?.name, e.player ?: e.source?.id?.let { after.card(it)?.controller }, e.type == "trigger", textOf(e.stackId), e.targets)
+                stack += Entry(e.stackId, e.source?.id, e.source?.name, e.player ?: e.source?.id?.let { after.card(it)?.controller }, e.type == "trigger", textOf(e.stackId), e.targets, e.type != "cast")
             }
             "counters", "life" -> pending += e
             "damage" -> if (!e.combat) pending += e
-            "zone" -> if (e.token && e.to == "Battlefield") pending += e
+            // A token entering, or a card going from one zone to another (never the item itself going on or off the stack).
+            "zone" -> if (e.seq in told) {} else if (e.token && e.to == "Battlefield") pending += e
+                else if (e.from != null && e.to != null && e.from != "Stack" && e.to != "Stack") pending += e
             "turn", "attack", "block", "land" -> pending.clear()
             "resolve" -> {
                 val src = e.source?.id ?: e.card?.id
@@ -519,13 +611,30 @@ object Director {
                 // A result Forge tied to another resolving card is not this one's.
                 val mine = if (e.fizzled) emptyList() else pending.filter { r -> val by = when (r.type) { "zone" -> r.by; "counters" -> r.source; else -> null }; by == null || by.id == src }
                 pending.clear()
-                fun nameOf(r: Ref?) = r?.name ?: r?.id?.let { (after.card(it) ?: before?.card(it))?.name }
-                out += Resolution(e.seq, entry?.stackId, src, e.source?.name ?: entry?.sourceName ?: src?.let { (after.card(it) ?: before?.card(it))?.name },
-                    entry?.controller ?: src?.let { (after.card(it) ?: before?.card(it))?.controller }, entry?.trigger == true, e.fizzled, entry?.text, entry?.targets.orEmpty(),
+                val card = src?.let { after.card(it) ?: before?.card(it) }
+                // Its own words: the stack item's as Forge showed it, else the card's (a trigger: its "When", "Whenever", "At" lines).
+                val words = (entry?.text ?: card?.text?.let { t -> if (entry?.trigger == true) triggerText(t).ifBlank { t } else t }).orEmpty().lowercase()
+                val moves = mine.filter { it.type == "zone" && !(it.token && it.to == "Battlefield") }.mapNotNull { z ->
+                    went(z, words)?.let { w -> Move(z.seq, z.card?.id, nameOf(z.card), z.from!!, z.to!!, z.player ?: z.card?.id?.let { id -> (after.card(id) ?: before?.card(id))?.owner }, w) } }
+                // The item it answered: one below it that aims at its card (ward), or one it aims at.
+                var countered = emptyList<Countered>(); var paid: String? = null; var paidBy: Int? = null
+                if (!e.fizzled && entry != null && COUNTERS.containsMatchIn(words)) {
+                    val ward = WARD.find(words)
+                    val hit = stack.lastOrNull { o -> (o.controller != entry.controller && o.targets.any { it.kind == "card" && it.id == src }) || entry.targets.any { it.kind == "card" && it.id == o.sourceId } }
+                    if (hit?.stackId != null) {
+                        val gone = after.stack.none { it.id == hit.stackId } && sorted.none { it.type == "resolve" && it.seq > e.seq && (it.source?.id ?: it.card?.id) == hit.sourceId }
+                        if (gone) { stack.remove(hit); countered = listOf(Countered(hit.stackId, hit.sourceId, hit.sourceName ?: hit.sourceId?.let { (after.card(it) ?: before?.card(it))?.name }, hit.controller, hit.ability)) }
+                        else if (ward != null) { paid = ward.groupValues[1].ifBlank { "the cost" }; paidBy = hit.controller }
+                    }
+                }
+                out += Resolution(e.seq, entry?.stackId, src, e.source?.name ?: entry?.sourceName ?: card?.name,
+                    entry?.controller ?: card?.controller, entry?.trigger == true, e.fizzled, entry?.text, entry?.targets.orEmpty(),
                     counters = mine.filter { it.type == "counters" && it.card != null }.map { CounterChange(it.card!!.id, nameOf(it.card), it.counter ?: "", counterDelta(it)) }.filter { it.delta != 0 },
-                    tokens = mine.filter { it.type == "zone" }.mapNotNull { z -> z.card?.let { c -> c.copy(name = nameOf(c)) } },
+                    tokens = mine.filter { it.type == "zone" && it.token && it.to == "Battlefield" }.mapNotNull { z -> z.card?.let { c -> c.copy(name = nameOf(c)) } },
                     damage = mine.filter { it.type == "damage" && it.target != null && (it.amount ?: 0) > 0 }.map { it.target!!.let { t -> t.copy(name = if (t.kind == "card") nameOf(t) else t.name) } to it.amount!! },
-                    life = mine.filter { it.type == "life" && it.player != null && it.lifeFrom != null && it.lifeTo != null }.map { LifeChange(it.player!!, it.lifeFrom!!, it.lifeTo!!) })
+                    life = mine.filter { it.type == "life" && it.player != null && it.lifeFrom != null && it.lifeTo != null }.map { LifeChange(it.player!!, it.lifeFrom!!, it.lifeTo!!) },
+                    moves = moves, holds = moves.any { it.went == Went.EXILED } && UNTIL_LEAVES.containsMatchIn(words),
+                    countered = countered, paid = paid, paidBy = paidBy)
             }
         }
         // Power/toughness that moved without (only) counters: the snapshot diff, given to the resolve that explains it.
@@ -558,13 +667,55 @@ object Director {
         for (r in out) {
             val p = merged.lastOrNull()
             if (p != null && p.trigger && r.trigger && !p.fizzled && !r.fizzled && !p.empty && !r.empty && p.sourceId != null && p.sourceId == r.sourceId &&
-                p.text == r.text && p.targets == r.targets && p.changed.toSet() == r.changed.toSet()) {
+                p.text == r.text && p.targets == r.targets && p.changed.toSet() == r.changed.toSet() && p.countered.isEmpty() && r.countered.isEmpty() && p.paid == null && r.paid == null) {
                 val pt = (p.pt + r.pt).groupBy { it.cardId }.map { (_, l) -> l.first().copy(toP = l.last().toP, toT = l.last().toT) }
                 merged[merged.lastIndex] = r.copy(counters = p.counters + r.counters, pt = pt, tokens = p.tokens + r.tokens, damage = p.damage + r.damage,
-                    life = p.life + r.life, count = p.count + r.count, stackIds = p.stackIds + r.stackIds)
+                    life = p.life + r.life, count = p.count + r.count, stackIds = p.stackIds + r.stackIds, moves = p.moves + r.moves, holds = p.holds || r.holds)
             } else merged += r
         }
+        // The follow-ups, each its own result with the card that left as its cause: first the Auras that fell off, then what came back.
+        fun follow(cause: Int, zs: List<GameEvent>, went: Went) = (before?.card(cause) ?: after.card(cause)).let { c ->
+            Resolution(zs.minOf { it.seq }, null, cause, c?.name, c?.controller, trigger = false, fizzled = false, text = null, targets = emptyList(), stackIds = emptyList(),
+                moves = zs.map { z -> Move(z.seq, z.card!!.id, nameOf(z.card), z.from!!, z.to!!, z.player ?: before?.card(z.card.id)?.owner, went) }, follow = true) }
+        for ((host, zs) in fell.groupBy { hostOf(it.card!!.id)!! }) merged += follow(host, zs, Went.FELL_OFF)
+        for ((holder, zs) in back.groupBy { held[it.card!!.id]!! }) merged += follow(holder, zs, Went.RETURNED)
         return merged
+    }
+
+    /** [held] (exiled card to its holder) without the pairs Forge's board no longer shows: the card left exile, or the holder left the battlefield. */
+    fun stillHeld(held: Map<Int, Int>, st: MatchState): Map<Int, Int> {
+        val exiled = st.players.flatMap { it.exile }.map { it.id }.toSet()
+        val field = st.players.flatMap { it.battlefield }.map { it.id }.toSet()
+        return held.filter { (card, holder) -> card in exiled && holder in field }
+    }
+
+    private val COUNTERS = Regex("\\bcounter (?:it|target|that)\\b")
+    /** Forge's ward item starts "Ward {2}": the cost as the table says it ("2"); blank for a cost that is not mana. */
+    private val WARD = Regex("^ward\\s*(?:\\{([0-9]+)\\})?")
+    private val UNTIL_LEAVES = Regex("until [^.]{0,80}leaves the battlefield")
+
+    /**
+     * The word for a zone move, or null when the resolving item's own [words] (lower case) do not name it: then the move is
+     * not told as that item's doing (a state-based death, a draw step, anything Forge moved for another reason).
+     */
+    internal fun went(z: GameEvent, words: String): Went? {
+        fun says(w: String) = Regex("\\b$w").containsMatchIn(words)
+        val from = z.from; val to = z.to
+        return when {
+            to == "Exile" -> Went.EXILED.takeIf { says("exile") }
+            from == "Battlefield" && to == "Graveyard" -> when {
+                says("destroy") && !says("sacrifice") -> Went.DESTROYED
+                says("sacrifice") && !says("destroy") -> Went.SACRIFICED
+                says("destroy") || says("sacrifice") -> Went.TO_GRAVE
+                else -> null
+            }
+            from == "Library" && to == "Hand" -> Went.DREW.takeIf { says("draw") }
+            from == "Hand" && to == "Graveyard" -> Went.DISCARDED.takeIf { says("discard") }
+            from == "Library" && to == "Graveyard" -> Went.MILLED.takeIf { says("mill") }
+            to == "Hand" && (from == "Battlefield" || from == "Graveyard") -> Went.TO_HAND.takeIf { says("return") }
+            to == "Battlefield" && (from == "Graveyard" || from == "Exile") -> Went.RETURNED.takeIf { says("return") || says("put") }
+            else -> null
+        }
     }
 
     /**
@@ -577,12 +728,27 @@ object Director {
         val changed = pending.flatMap { it.changed }.toSet()
         val was = before?.players?.flatMap { it.battlefield }?.associateBy { it.id }.orEmpty()
         val added = pending.flatMap { it.counters }.groupBy { it.cardId }
-        return after.copy(players = after.players.map { p -> p.copy(battlefield = p.battlefield.filter { it.id !in tokens }.map { c ->
+        val held = after.copy(players = after.players.map { p -> p.copy(battlefield = p.battlefield.filter { it.id !in tokens }.map { c ->
             if (c.id !in changed) c
             else was[c.id]?.let { o -> c.copy(power = o.power, toughness = o.toughness, counters = o.counters) }
                 // New since the last board: take back only the counters Forge said were added.
                 ?: c.copy(counters = c.counters.mapValues { (k, v) -> v - added[c.id].orEmpty().filter { it.counter == k }.sumOf { it.delta } }.filterValues { it > 0 })
         }) })
+        // EVERY RESULT NAMES ITS CAUSE: a card a result took off the battlefield, or put onto it, stays where the last board had
+        // it until that result's beat, so it leaves (or comes back) under its plate and not before its cause is shown.
+        val moved = pending.flatMap { it.moves }.filter { it.cardId != null && (it.from == "Battlefield" || it.to == "Battlefield") }.map { it.cardId!! }.toSet()
+        if (moved.isEmpty() || before == null) return held
+        fun keep(now: List<Card>, old: List<Card>): List<Card> {
+            val out = now.filter { it.id !in moved }.toMutableList()
+            old.forEachIndexed { i, c -> if (c.id in moved) out.add(minOf(i, out.size), c) }
+            return out
+        }
+        val back = held.copy(players = held.players.map { p ->
+            val o = before.players.firstOrNull { it.id == p.id } ?: return@map p
+            p.copy(battlefield = keep(p.battlefield, o.battlefield), graveyard = keep(p.graveyard, o.graveyard), exile = keep(p.exile, o.exile), hand = keep(p.hand, o.hand)) })
+        // An Aura kept back after its permanent has gone lies loose until its own beat (it fell off).
+        val onField = back.players.flatMap { it.battlefield }.map { it.id }.toSet()
+        return back.copy(players = back.players.map { p -> p.copy(battlefield = p.battlefield.map { c -> if (c.id in moved && c.attachedTo != null && c.attachedTo !in onField) c.copy(attachedTo = null) else c }) })
     }
 
     /** A trigger's own words when Forge never showed its stack item: the source's lines that start "When", "Whenever" or "At". */
