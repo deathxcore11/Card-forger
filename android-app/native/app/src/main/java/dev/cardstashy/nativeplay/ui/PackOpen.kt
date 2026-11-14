@@ -265,8 +265,8 @@ object PackSfx {
     fun toggle(context: Context) { on = !on; context.getSharedPreferences("play", Context.MODE_PRIVATE).edit().putBoolean("packSound", on).apply() }
     fun toggleTilt(context: Context) { tilt = !tilt; context.getSharedPreferences("play", Context.MODE_PRIVATE).edit().putBoolean("motionTilt", tilt).apply() }
     /** audio.js appSound: an app sound (Collection's chime), on the app-sounds setting alone. */
-    fun app(id: String, volume: Float = .6f) { if (!AppSettings.appSounds) return; val p = pool ?: return; ids[id]?.let { p.play(it, volume, volume, 1, 0, 1f) } }
-    fun play(id: String, volume: Float = 1f, rate: Float = 1f) { if (!on || !AppSettings.appSounds) return; val p = pool ?: return; ids[id]?.let { p.play(it, volume.coerceIn(0f, 1f), volume.coerceIn(0f, 1f), 1, 0, rate) } }
+    fun app(id: String, volume: Float = .6f) { if (!AppSettings.appSounds) return; val p = pool ?: return; val v = volume * AppSettings.effectsGain; ids[id]?.let { p.play(it, v, v, 1, 0, 1f) } }
+    fun play(id: String, volume: Float = 1f, rate: Float = 1f) { if (!on || !AppSettings.appSounds) return; val p = pool ?: return; val v = volume.coerceIn(0f, 1f) * AppSettings.effectsGain; ids[id]?.let { p.play(it, v, v, 1, 0, rate) } }
 }
 
 /** FEELS and PACK_SOUND, by reveal level. */

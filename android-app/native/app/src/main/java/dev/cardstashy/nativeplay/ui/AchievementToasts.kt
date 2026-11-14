@@ -140,9 +140,10 @@ object AchievementToasts {
         if (!AppSettings.sound) return
         val p = pool ?: SoundPool.Builder().setMaxStreams(2).setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()).build().also { pool = it }
         val loaded = ids[id]
-        if (loaded != null) { p.play(loaded, 1f, 1f, 1, 0, 1f); return }
+        val v = AppSettings.effectsGain
+        if (loaded != null) { p.play(loaded, v, v, 1, 0, 1f); return }
         runCatching { context.assets.openFd("sfx/$id.ogg").use { fd -> val sid = p.load(fd, 1); ids[id] = sid
-            p.setOnLoadCompleteListener { sp, s, ok -> if (ok == 0 && s == sid) sp.play(s, 1f, 1f, 1, 0, 1f) } } }
+            p.setOnLoadCompleteListener { sp, s, ok -> if (ok == 0 && s == sid) sp.play(s, v, v, 1, 0, 1f) } } }
     }
 }
 

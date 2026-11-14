@@ -23,6 +23,7 @@ import java.io.File
  * seam sits inside continuous audio. Quick Play, Practice and matches with friends play the two songs of the map on the table
  * (specs/stage-music-brief.md): A, then B after one full loop, and back; B while anyone is at 5 life or less. A Story battle
  * plays its act's own songs; the result gets its short sting and then silence. Silent with "Sound & music" off and in the background.
+ * As loud as Settings' Music volume says (100% is the loudness it always had), and it follows the setting while a song plays.
  */
 class TableMusic(private val context: Context, private val scope: CoroutineScope, private val story: StoryMusic? = null,
     /** The id of the map drawn on this table (the same one PlaymatScene is given). */
@@ -39,6 +40,9 @@ class TableMusic(private val context: Context, private val scope: CoroutineScope
     private var wanted: String? = null
     private var ending = false
     private var closed = false
+    /** Fades running now, and the loudness last given to the song that plays: the setting is followed between fades. */
+    private var fades = 0
+    private var loud = -1f
     @Volatile var muted = false
         set(on) { field = on; main.post { if (on) player?.runCatching { if (isPlaying) pause() } else resume() } }
 
@@ -46,6 +50,9 @@ class TableMusic(private val context: Context, private val scope: CoroutineScope
         override fun run() {
             val p = player; val pts = points
             if (p != null && pts != null && key.endsWith("|loop")) runCatching { if (p.isPlaying && p.currentPosition >= (pts.second * 1000).toInt() - 90) p.seekTo((pts.first * 1000).toInt()) }
+            // Music volume moved in Settings or the match menu: the song follows at once.
+            val want = level(AppSettings.musicVolume)
+            if (p != null && fades == 0 && want != loud) { loud = want; runCatching { p.setVolume(want, want) } }
             if (!closed) main.postDelayed(this, 40)
         }
     }
@@ -100,18 +107,20 @@ class TableMusic(private val context: Context, private val scope: CoroutineScope
             p.setOnCompletionListener { if (!loop && player === p) { player = null; key = ""; p.release() } }
             player = p
             if (!muted) p.start()
-            fade(p, 0f, VOLUME, 1200)
+            fade(p, 0f, 1f, 1200)
         }.onFailure { p.release(); if (player === p) player = null }
-        old?.let { fade(it, VOLUME, 0f, 900) { runCatching { it.release() } } }
+        old?.let { fade(it, 1f, 0f, 900) { runCatching { it.release() } } }
         main.removeCallbacks(track); main.post(track)
     }
 
+    /** [from] and [to] are parts of the music volume (0 silent, 1 as loud as the setting says). */
     private fun fade(p: MediaPlayer, from: Float, to: Float, ms: Long, done: () -> Unit = {}) {
         val t0 = System.currentTimeMillis()
+        fades++
         val step = object : Runnable { override fun run() {
             val f = ((System.currentTimeMillis() - t0) / ms.toFloat()).coerceIn(0f, 1f)
-            runCatching { val v = from + (to - from) * f; p.setVolume(v, v) }
-            if (f < 1f) main.postDelayed(this, 40) else done()
+            runCatching { val v = (from + (to - from) * f) * level(AppSettings.musicVolume); p.setVolume(v, v); if (p === player) loud = v }
+            if (f < 1f) main.postDelayed(this, 40) else { fades--; done() }
         } }
         main.post(step)
     }
@@ -121,7 +130,7 @@ class TableMusic(private val context: Context, private val scope: CoroutineScope
     fun stop() {
         key = ""; wanted = null; job?.cancel()
         val p = player; player = null
-        if (p != null) fade(p, VOLUME, 0f, 600) { runCatching { p.release() } }
+        if (p != null) fade(p, 1f, 0f, 600) { runCatching { p.release() } }
     }
 
     fun release() { closed = true; main.removeCallbacks(track); job?.cancel(); val p = player; player = null; runCatching { p?.release() } }
@@ -145,6 +154,8 @@ class TableMusic(private val context: Context, private val scope: CoroutineScope
         private const val SITE = "https://cardstashy.com"
         private const val REV = "score1" // audio.js MUSIC_REV
         private const val VOLUME = .5f
+        /** The loudness a song is given at Settings' Music volume [percent]: 100 is the loudness the music always had. */
+        internal fun level(percent: Int): Float = VOLUME * percent.coerceIn(0, 100) / 100f
         private val CLIENT by lazy { OkHttpClient() }
         private val MOOD = mapOf("march" to 'A', "duel" to 'A', "tension" to 'A', "lesson" to 'B', "comic" to 'B', "boss" to 'C')
         private val KIND = mapOf("Boss" to 'C', "Lesson" to 'B')

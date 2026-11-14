@@ -102,6 +102,32 @@ object Rule {
         val Ink = androidx.compose.ui.graphics.Color(0xFF141418); val Words = androidx.compose.ui.graphics.Color(0xFFEEF0F4); val Shade = androidx.compose.ui.graphics.Color(0xE6000000)
     }
 
+    /** Console Settings (Randall's pick, 14 Nov 2026): the tones of a row's state and the little pictures in the panel that explains a row. */
+    object Console {
+        private val light get() = AppSettings.theme == "light"
+        val Bad get() = if (light) androidx.compose.ui.graphics.Color(0xFFB3261E) else androidx.compose.ui.graphics.Color(0xFFF08A7E)
+        val Good get() = if (light) androidx.compose.ui.graphics.Color(0xFF17683A) else androidx.compose.ui.graphics.Color(0xFF6FD29A)
+        val Warn get() = if (light) androidx.compose.ui.graphics.Color(0xFF8A5A00) else androidx.compose.ui.graphics.Color(0xFFF3C26B)
+        /** The three colour modes as swatches: ground, then ink. */
+        val SwatchLight = androidx.compose.ui.graphics.Color(0xFFF3F5F8); val SwatchLightInk = androidx.compose.ui.graphics.Color(0xFF172337)
+        val SwatchDark = androidx.compose.ui.graphics.Color(0xFF0F1115); val SwatchDarkInk = androidx.compose.ui.graphics.Color(0xFFEEF0F4)
+        val SwatchAuraTop = androidx.compose.ui.graphics.Color(0xFF1C3A36); val SwatchAuraBottom = androidx.compose.ui.graphics.Color(0xFF0D1113)
+        val SwatchEdge = androidx.compose.ui.graphics.Color(0x66808080)
+        /** The sample card: its face, its gold rim, its glow, and the three bands of a foil's sheen. */
+        val CardTop = androidx.compose.ui.graphics.Color(0xFF42506A); val CardBottom = androidx.compose.ui.graphics.Color(0xFF1C2230)
+        val CardRim = androidx.compose.ui.graphics.Color(0xFFE8B95B)
+        val SmallCardTop = androidx.compose.ui.graphics.Color(0xFF3B4352); val SmallCardBottom = androidx.compose.ui.graphics.Color(0xFF232833)
+        val SheenPink = androidx.compose.ui.graphics.Color(0x80FF78C8); val SheenBlue = androidx.compose.ui.graphics.Color(0x8C78DCFF); val SheenGold = androidx.compose.ui.graphics.Color(0x80FFF096)
+        val CardShade = androidx.compose.ui.graphics.Color(0x80000000)
+        /** The daily log-in celebration: night ground, warm words, the medal's bowl and the unlit part of the week's track. */
+        val Night = androidx.compose.ui.graphics.Color(0xE607080B); val NightSolid = androidx.compose.ui.graphics.Color(0xFF07080B)
+        val Warm = androidx.compose.ui.graphics.Color(0xFFF3E3BD); val Soft = androidx.compose.ui.graphics.Color(0xFFB9BFC9)
+        val MedalTop = androidx.compose.ui.graphics.Color(0xFF3A2F1A); val MedalBottom = androidx.compose.ui.graphics.Color(0xFF14110B)
+        val TrackOff = androidx.compose.ui.graphics.Color(0xFF3A3122); val TrackDot = androidx.compose.ui.graphics.Color(0xFF1B1710); val TrackRim = androidx.compose.ui.graphics.Color(0xFF5A4A2A)
+        /** The match menu's veil over the table. */
+        val Veil = androidx.compose.ui.graphics.Color(0xBD07080B)
+    }
+
     /** Buttons are 44 tall (48 on a Thor case). */
     val ButtonHeight: Dp = 44.dp
     val CaseButtonHeight: Dp = 48.dp

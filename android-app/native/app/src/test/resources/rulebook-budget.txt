@@ -72,7 +72,7 @@ Playmats.kt 0 0 2
 PodRail.kt 0 0 20
 ProfileArtPicker.kt 1 11 1
 ScanWorkspace.kt 0 21 51
-SettingsScreen.kt 2 26 27
+SettingsScreen.kt 0 13 8
 ShelfBar.kt 3 2 8
 ShopScreen.kt 13 13 68
 Showcase.kt 0 0 19
