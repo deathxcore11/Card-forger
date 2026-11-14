@@ -200,7 +200,9 @@ half4 main(float2 fc){
 """
 
     /** What one card face wears: the recipe for its finish (null = nonfoil), the frame boxes and the holo stamp. */
-    data class Look(val recipe: CardData.Recipe?, val frame: CardData.Frame, val stamp: Boolean, val label: String, val image: String? = null) {
+    /** [walker]: a planeswalker in the modern frame, whose 3D window is measured from its picture (foil/DepthLayer.kt). */
+    data class Look(val recipe: CardData.Recipe?, val frame: CardData.Frame, val stamp: Boolean, val label: String, val image: String? = null,
+                    val walker: Boolean = false) {
         val shines get() = recipe != null || stamp
         /** The printing's scan to measure inks from, when this recipe reads them (gilded, neon, textured, raised, oil slick...). */
         val measure: String? get() = image?.takeIf { recipe != null && dev.cardstashy.nativeplay.foil.MtgFoil.needsMaps(recipe.cover, recipe.relief, recipe.film, recipe.pat) }
@@ -222,7 +224,10 @@ half4 main(float2 fc){
         val frame = data.frames[CardData.frameKey(card)] ?: data.frames.getValue("2015")
         val label = when { recipe == null -> "Nonfoil"; p.name.isNotBlank() -> "${p.name} · shown with ${recipe.label.lowercase()}"; else -> recipe.label }
         val image = card?.let { c -> (c.get("image_uris") as? JsonObject ?: (c.getAsJsonArray("card_faces")?.firstOrNull() as? JsonObject)?.get("image_uris") as? JsonObject)?.get("normal")?.takeIf { it.isJsonPrimitive }?.asString }
-        return Look(recipe, frame, CardData.holoStamp(card), label, image)
+        val type = card?.get("type_line")?.takeIf { it.isJsonPrimitive }?.asString
+            ?: ((card?.getAsJsonArray("card_faces")?.firstOrNull() as? JsonObject)?.get("type_line")?.takeIf { it.isJsonPrimitive }?.asString) ?: ""
+        val walker = "Planeswalker" in type && CardData.frameKey(card) == "2015" // frameKey says "borderless" for borderless and full arts
+        return Look(recipe, frame, CardData.holoStamp(card), label, image, walker)
     }
 
     val supported: Boolean get() = Build.VERSION.SDK_INT >= 33 && !testFallback
