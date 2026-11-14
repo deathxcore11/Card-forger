@@ -6,20 +6,36 @@
 export const FOIL_SURFACES=['detail','zoom','large','pack','card'];
 export const foilSurface=surface=>FOIL_SURFACES.includes(surface);
 export const FOIL_VS='attribute vec2 a;varying vec2 v;void main(){v=(a+1.0)*.5;gl_Position=vec4(a,0.0,1.0);}';
-// One full-screen quad program; returns null when the context or shader is unavailable.
+// One WebGL context that draws full-card quads. Programs are added to it with foilContextProgram; returns null
+// when WebGL is unavailable.
 // alpha: the fragment writes premultiplied coverage, so unfoiled pixels stay the page's own <img>.
-export function foilProgram(doc,fragment,uniforms,{alpha=false}={}){
+export function foilContext(doc,{alpha=false}={}){
  const canvas=doc.createElement('canvas'),gl=canvas.getContext('webgl',{alpha,premultipliedAlpha:true,antialias:false,preserveDrawingBuffer:false});if(!gl)return null;
- const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return gl.getShaderParameter(o,gl.COMPILE_STATUS)?o:null;};
- const vs=sh(gl.VERTEX_SHADER,FOIL_VS),fs=sh(gl.FRAGMENT_SHADER,fragment);if(!vs||!fs)return null;
- const prog=gl.createProgram();gl.attachShader(prog,vs);gl.attachShader(prog,fs);gl.linkProgram(prog);if(!gl.getProgramParameter(prog,gl.LINK_STATUS))return null;
- gl.useProgram(prog);gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
- const loc=gl.getAttribLocation(prog,'a');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
- const U={};for(const n of uniforms)U[n]=gl.getUniformLocation(prog,n);
- gl.uniform1i(U.u_card,0);gl.uniform1i(U.u_mask,1);gl.uniform1i(U.u_relief,2);
- const r={canvas,gl,U,maps:new Map(),cards:new Map(),handles:new Set(),lost:false};
+ gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+ gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+ const r={canvas,gl,maps:new Map(),cards:new Map(),handles:new Set(),programs:new Map(),current:null,lost:false};
  canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();r.lost=true;for(const h of r.handles)h.fallback();});
  return r;
+}
+// The program for `key` on a context, compiled the first time it is asked for (null when it does not compile).
+// The result shares the context's canvas, texture caches and mounted handles, and adds its own uniforms (U)
+// and use(), which mountFoilCanvas calls before each draw. Magic keeps one small program per foil type here.
+export function foilContextProgram(ctx,key,fragment,uniforms){
+ if(ctx.programs.has(key))return ctx.programs.get(key);
+ const {gl}=ctx,sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return gl.getShaderParameter(o,gl.COMPILE_STATUS)?o:null;};
+ const make=()=>{
+  const vs=sh(gl.VERTEX_SHADER,FOIL_VS),fs=sh(gl.FRAGMENT_SHADER,fragment);if(!vs||!fs)return null;
+  const prog=gl.createProgram();gl.attachShader(prog,vs);gl.attachShader(prog,fs);gl.bindAttribLocation(prog,0,'a');gl.linkProgram(prog);if(!gl.getProgramParameter(prog,gl.LINK_STATUS))return null;
+  gl.useProgram(prog);ctx.current=prog;
+  const U={};for(const n of uniforms)U[n]=gl.getUniformLocation(prog,n);
+  gl.uniform1i(U.u_card,0);gl.uniform1i(U.u_mask,1);gl.uniform1i(U.u_relief,2);
+  return Object.assign(Object.create(ctx),{U,prog,use(){if(ctx.current!==prog){gl.useProgram(prog);ctx.current=prog;}}});
+ };
+ const r=make();ctx.programs.set(key,r);return r;
+}
+// One context with one program (Yu-Gi-Oh! and Pokémon); returns null when the context or shader is unavailable.
+export function foilProgram(doc,fragment,uniforms,options){
+ const ctx=foilContext(doc,options);return ctx&&foilContextProgram(ctx,'',fragment,uniforms);
 }
 const pot=n=>2**Math.max(5,Math.round(Math.log2(n)));
 // Data maps carry independent values in all four channels, so they are resampled here: a 2D canvas
@@ -148,6 +164,7 @@ export function mountFoilCanvas(overlay,{source,key,surface='detail',program,ana
    const dpr=Math.min(2,globalThis.devicePixelRatio||1),w=Math.max(1,Math.min(1600,Math.round(overlay.clientWidth*dpr))),hh=Math.max(1,Math.round(w*img.naturalHeight/img.naturalWidth));
    const [lx,ly]=foilLight(overlay),id=[lx.toFixed(3),ly.toFixed(3),w,hh,key].join();
    if(id===last&&!canvas.hidden)return;last=id;
+   r0.use?.();
    const {gl,U}=r0;if(r0.canvas.width!==w||r0.canvas.height!==hh){r0.canvas.width=w;r0.canvas.height=hh;}
    bindFoilTextures(r0,img,data,w,hh,key);
    gl.viewport(0,0,w,hh);gl.uniform2f(U.u_tilt,(lx-.5)*2,(ly-.5)*2);gl.uniform2f(U.u_px,w,hh);gl.uniform2f(U.u_texel,1/data.W,1/data.H);gl.uniform1f(U.u_aspect,img.naturalHeight/img.naturalWidth);

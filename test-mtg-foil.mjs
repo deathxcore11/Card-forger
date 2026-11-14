@@ -55,18 +55,43 @@ assert(at(30,20,0)>200&&at(90,20,0)<40,'Gold ink found, neon is not gold');
 assert(at(90,20,1)>200&&at(30,20,1)<40,'Fluorescent ink found, gold is not neon');
 assert(at(60,60,2)>200&&at(30,20,2)<40&&at(60,150,2)<40,'Bare paper found, inks and dark areas are not paper');
 assert(at(12,100,3)>120&&at(60,60,3)<20,'Drawn lines found, flat paper has none');
-// Shader: ink-selective treatments never reach the rules box; patterned sheets are softer there.
-assert.match(MTG_FOIL_FRAGMENT,/if\(mode>1\.5&&\(mode<2\.5\|\|mode>3\.5\)\)cov\*=1\.-text;/);
-assert.match(MTG_FOIL_FRAGMENT,/cov\*=1\.-\.45\*text\*patterned;/);
-assert.match(MTG_FOIL_FRAGMENT,/return mix\(base,shoulder\(T\*F\*1\.35\),clamp\(cover,0\.,1\.\)\);/,'Zero coverage returns the exact source pixel');
+// Shader: ink-selective treatments never reach the rules box, and where the foil does not cover, the
+// card's own pixel is what the ink-over-foil step returns.
+for(const ch of ['r','b','a'])assert.match(MTG_FOIL_FRAGMENT,new RegExp(`cov=mk\\.${ch};`),'ink '+ch+' coverage comes from its own mask');
+assert.match(MTG_FOIL_FRAGMENT,/if\(mode>1\.5&&\(mode<2\.5\|\|\(mode>3\.5&&mode<5\.5\)\)\)cov\*=1\.-text;/,'ink-selective coverage (gold, paper, lines) stays out of the rules box');
+assert.match(MTG_FOIL_FRAGMENT,/vec3 outC=mix\(base,shoulder\(lit\),c\);/,'Zero coverage keeps the source pixel under the foil');
+// The recipe numbers the owner approved with the first foil (mock-up v1), kept as they were shown to him. Later retunes changed
+// these as well as the shader and made the foil look fake to him, so every number must match. Three known differences:
+// step-and-compleat is pattern 22 here (the app's facet foil is 21); the approved shader draws 21 and 22 the same way.
+// Vault Boy and Premium Deck Series cards are an ordinary foil (Vault Boy is a card style, and no source shows the From the Vault
+// bar on Premium Deck Series), so they carry the approved traditional numbers.
+{const A=JSON.parse(await (await import('node:fs/promises')).readFile(new URL('./test-fixtures/finish-effects/mtg-foil-first-approved-recipes.json',import.meta.url),'utf8'));
+ const want=k=>k==='mtg-compleat'?{...A[k],pat:22}:k==='mtg-vaultboy'||k==='mtg-pds'?A['mtg-traditional']:A[k];
+ assert.deepEqual(Object.keys(MTG_FOIL_RECIPES).sort(),Object.keys(A).sort(),'the same foil types as the approved first foil');
+ for(const k of Object.keys(A)){const r=MTG_FOIL_RECIPES[k],got={};for(const n of Object.keys(A[k]))got[n]=r[n]||0;assert.deepEqual(got,want(k),k+' keeps the approved first foil\'s numbers');}}
 // Textured foil keeps the art and text readable: gentle relief and half the printed art left visible.
 {const t=MTG_FOIL_RECIPES['mtg-textured'];assert(t.relief<=.4,'textured relief stays gentle');assert(t.keep>=.4,'textured foil keeps the printed art visible');}
 // Foil index additions: masterpieces, ampersand, silver screen, scroll, Vault Boy, Premium Deck Series,
 // unknown set-specific '...foil' promo types, and the M15 holo stamp on modern rares and mythics.
 {const R=await import('./mtg-foil-recipes.js');
  assert.equal(mtgFoilEffect({set_type:'masterpiece',set:'kld'}),'mtg-masterpiece');assert.equal(mtgFoilEffect({set:'pd2'}),'mtg-pds');
- for(const [p,e] of [['ampersand','mtg-ampersand'],['silverscreen','mtg-silverscreen'],['scroll','mtg-traditional'],['vaultboy','mtg-vaultboy'],['chocobotrackfoil','mtg-traditional'],['textured','mtg-textured']])assert.equal(mtgFoilEffect({promo_types:[p]}),e,p);
+ for(const [p,e] of [['ampersand','mtg-ampersand'],['silverscreen','mtg-silverscreen'],['scroll','mtg-traditional'],['vaultboy','mtg-traditional'],['chocobotrackfoil','mtg-traditional'],['textured','mtg-textured']])assert.equal(mtgFoilEffect({promo_types:[p]}),e,p);
  assert.equal(mtgFoilEffect({promo_types:['boosterfun']}),'mtg-traditional','non-foil promo types keep traditional');
  assert(R.mtgHoloStamp({frame:'2015',rarity:'mythic'}));assert(!R.mtgHoloStamp({frame:'2015',rarity:'common'}));assert(!R.mtgHoloStamp({frame:'2003',rarity:'rare'}));
  for(const k of ['mtg-masterpiece','mtg-ampersand','mtg-silverscreen','mtg-scroll','mtg-vaultboy','mtg-pds','mtg-emblem'])assert(MTG_FOIL_RECIPES[k],k);}
+// One small shader per foil type: every recipe composes to plain GLSL (no directive left behind), a card
+// only carries its own type's lines, and recipes that draw differently never share a program.
+{const {MTG_FOIL_TEMPLATE,composeFoil,foilDefs,foilKey,mtgFoilFragment}=await import('./mtg-foil-shader.js'),R=await import('./mtg-foil-recipes.js');
+ const keys=new Map();
+ for(const [k,r] of Object.entries(MTG_FOIL_RECIPES)){const src=mtgFoilFragment(r),key=foilKey(foilDefs(r));
+  assert.doesNotMatch(src,/^\s*#/m,k+': no preprocessor line reaches the driver');assert.match(src,/void main\(\)/,k);
+  assert(src.length<MTG_FOIL_TEMPLATE.length*.75,k+' compiles only part of the template');
+  if(keys.has(key))assert.equal(keys.get(key),src,'one key, one shader');keys.set(key,src);}
+ assert.doesNotMatch(mtgFoilFragment(MTG_FOIL_RECIPES['mtg-traditional']),/voro\(q\*|u_emblem|shootingStar/,'a traditional foil carries no other type\'s pattern');
+ assert.match(mtgFoilFragment(MTG_FOIL_RECIPES['mtg-oldborder']),/shootingStar\(uv\)/,'old-border keeps its shooting star');
+ assert.throws(()=>composeFoil('#if PAT==1\nx',{PAT:1}),/#if without #endif/);assert.throws(()=>composeFoil('#endif',{}),/without #if/);assert.throws(()=>composeFoil('#if pat\n#endif',{}),/bad condition/);
+ assert.equal(composeFoil('a\n#if X==2\nb\n#elif X>2&&Y\nc\n#else\nd\n#endif\ne',{X:3,Y:1}),'a\nc\ne');assert.equal(composeFoil('#if X\n#if Y\nb\n#else\nc\n#endif\n#else\nd\n#endif',{X:0,Y:1}),'d');
+ // 21 is the native app's facet foil and stamp value 2 its oval stamp: the web numbers must not collide.
+ assert(!Object.values(MTG_PATTERN).includes(21));assert.equal(MTG_PATTERN.compleat,22);
+}
 console.log('PASS: Magic foil router picks each printing\'s treatment from Scryfall data (old border, FTV, textured, surge, galaxy, oil slick, compleat, gilded, neon, serialized, fracture, raised); recipes, frames, finish wiring and ink analysis verified.');
