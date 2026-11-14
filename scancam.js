@@ -1008,14 +1008,22 @@ export function registerScanner(ctx) {
       const w=await stage('ocrWarmup',()=>getWorker(lang,progress)),zone=(name,roi,scale,light=false)=>stage(name,()=>recog(w,regionCanvas(card,roi,scale,light),11,budget));
       const TOP=[0,0,1,.13],FOOT=G==='ygo'?[0,.66,1,.34]:[0,.84,1,.16];
       progress('Checking the number…');
-      // The bottom zone first: it carries the number, set code or passcode, which both confirms the
-      // card and picks the printing. The name is only read when the bottom zone settled nothing.
-      read={name:'',code:await zone('ocrCode',FOOT,3),full:'',stats:'',titles:[]};
+      // The bottom print first: the number, set code or passcode both confirms the card and picks
+      // the printing. Yu-Gi-Oh! keeps its set code under the art and its passcode in the bottom
+      // corner: two small strips read in a fraction of the time the whole lower third takes.
+      const YGO_SET=[.4,.655,.6,.105],YGO_PASS=[0,.895,.65,.095];
+      const foot=async light=>G==='ygo'?joinReads(await zone(light?'ocrSetInverted':'ocrSet',YGO_SET,3,light),await zone(light?'ocrPasscodeInverted':'ocrPasscode',YGO_PASS,3,light)):zone(light?'ocrFooterInverted':'ocrCode',FOOT,3,light);
+      read={name:'',code:await foot(false),full:'',stats:'',titles:[]};
       let f=fuseClues(G,view.pack,view.verdict,read);
-      // Light print on a dark ground: Magic's footer, full-art Pokémon, most Yu-Gi-Oh! names.
-      if(!f.sure){read.code=joinReads(read.code,await zone('ocrFooterInverted',FOOT,3,true));f=fuseClues(G,view.pack,view.verdict,read);}
-      if(!f.sure){read.name=await zone('ocrName',TOP,2);f=fuseClues(G,view.pack,view.verdict,read);}
-      if(!f.sure&&!f.named&&!f.idSeen){read.name=joinReads(read.name,await zone('ocrNameInverted',TOP,2,true));f=fuseClues(G,view.pack,view.verdict,read);}
+      const settled=()=>f.sure||f.idSeen||f.partSeen;
+      // Light print on a dark ground: Magic's footer, full-art Pokémon, many Yu-Gi-Oh! frames.
+      if(!settled()){read.code=joinReads(read.code,await foot(true));f=fuseClues(G,view.pack,view.verdict,read);}
+      // Another layout (pendulum cards, old frames): the whole lower part, once.
+      if(!settled()&&G==='ygo'){read.code=joinReads(read.code,await zone('ocrCode',[0,.76,1,.24],3));f=fuseClues(G,view.pack,view.verdict,read);}
+      // The name can only settle a card that has one printing; otherwise the person chooses the
+      // printing anyway and reading the title would only cost time.
+      if(!f.sure&&f.single){read.name=await zone('ocrName',TOP,2);f=fuseClues(G,view.pack,view.verdict,read);
+        if(!f.sure&&!f.named){read.name=joinReads(read.name,await zone('ocrNameInverted',TOP,2,true));f=fuseClues(G,view.pack,view.verdict,read);}}
       // Keep the title as evidence only where this card's own name was found in it; loose words
       // from a sparse read are not a title.
       read.zoneTitle=read.name;read.name=f.named?view.verdict.name:'';
@@ -1149,7 +1157,7 @@ export function registerScanner(ctx) {
       // Lining a frame up takes real work on a phone: at most about two looks a second.
       if(clockNow()-voteAt<450)return voteLast;
       const G=pictureGame||game(),ready=[G,...GAMES.filter(x=>x!==G)].filter(g=>catalogState(g).status==='ready');if(!ready.length)return null;
-      const w=Math.min(540,frame.width),h=Math.round(w*frame.height/frame.width),c=voteCanvas ||= document.createElement('canvas');
+      const w=Math.min(400,frame.width),h=Math.round(w*frame.height/frame.width),c=voteCanvas ||= document.createElement('canvas');
       if(c.width!==w||c.height!==h){c.width=w;c.height=h;}
       const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(frame,0,0,w,h);
       const rgba=x.getImageData(0,0,w,h).data;if(rgba.length<w*h*4)return null;
@@ -1160,11 +1168,11 @@ export function registerScanner(ctx) {
         if(pix===undefined){PIX_READY[g]=null;loadPix(g,pack).then(p=>{PIX_READY[g]=p||false;},()=>{PIX_READY[g]=false;});}
         if(!pix)continue;
         // The middle-of-frame search is the costly part: one game per look, taking turns, with a pause between.
-        const wide=g===ready[gridTurn%ready.length]&&clockNow()-gridAt>1200;if(wide){gridAt=clockNow();looked=true;}
+        const wide=g===ready[gridTurn%ready.length]&&clockNow()-gridAt>800;if(wide){gridAt=clockNow();looked=true;}
         if(!q&&!wide)continue;
         const v=registerVerdict(g,pack,pix,registerBest(rgba,w,h,q,g,pix.bin,pictureCardKey(g,pack,pix),{fallback:wide}));
         if(wide&&!v?.strong)gridTurn++;
-        if(v?.strong){pictureGame=g;gridTurn=0;voteLast={strong:true,name:v.name,dist:v.dist,g,look:++voteLooks,at:clockNow()};break;}
+        if(v?.strong){pictureGame=g;gridTurn=0;voteLast={strong:true,clear:v.dist<=50&&v.rival-v.dist>=20,name:v.name,dist:v.dist,g,look:++voteLooks,at:clockNow()};break;}
       }
       // A look that skipped the wide search says nothing about a card only the wide search can find.
       if(!voteLast&&!looked&&prior&&clockNow()-prior.at<2600)voteLast=prior;
@@ -1345,7 +1353,7 @@ export function registerScanner(ctx) {
     loop.quality=m;
     // Frames that agree on the picture: two in a row name the card.
     const vote=!captureLock&&m.motion<T.motion?pictureVote(frame):null;
-    loop.vote=vote?.strong?{name:vote.name,look:vote.look,count:loop.vote?.name===vote.name?loop.vote.count+(vote.look!==loop.vote.look?1:0):1}:null;
+    loop.vote=vote?.strong?{name:vote.name,look:vote.look,count:loop.vote?.name===vote.name?loop.vote.count+(vote.look!==loop.vote.look?1:0):vote.clear?2:1}:null;
     const named=!!loop.vote&&loop.vote.count>=2;
     loop.observation={original:frame,proposal:loop.proposal,frameAnalysisMs:clockNow()-freezeAt,signature:loop.signature&&Float32Array.from(loop.signature),quality:{...m},at:Date.now(),selectedGame:game(),defaultsByGame:capturePrefs(),ocrLang:scanLang(),captureMs:frameMs,detectMs:loop.detectMs,geometryUncertain:!found||(found.cropSafe!==true&&!named)};
     if(!found||m.motion>=T.motion||m.sharp<T.sharp)loop.stableAt=0;else loop.stableAt ||=Date.now();

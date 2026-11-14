@@ -11,7 +11,9 @@ import {catalogCandidate} from './scan-catalog.js';
 
 // Picture distances: 0 is the same picture, about 141 unrelated. Measured on the test photos the
 // right card is at most 72 away and the closest wrong card at least 73, so "strong" leaves room.
-export const FUSE=Object.freeze({strong:58,gap:14,same:14,suggest:68,suggestGap:8});
+export const FUSE=Object.freeze({strong:58,gap:20,near:46,nearGap:14,same:14,suggest:68,suggestGap:8});
+// A picture names a card clearly when it is close and well ahead of the next card, or very close and ahead.
+export const pictureClear=(dist,rival)=>(dist<=FUSE.strong&&rival-dist>=FUSE.gap)||(dist<=FUSE.near&&rival-dist>=FUSE.nearGap);
 
 const DIGIT={O:'0',o:'0',Q:'0',D:'0',I:'1',l:'1','|':'1',i:'1','!':'1',S:'5',s:'5',B:'8',Z:'2',z:'2'};
 const LETTER={'0':'O','1':'I','5':'S','8':'B','2':'Z'};
@@ -102,7 +104,7 @@ export function pictureVerdict(g,pack,pix,hashes){
  if(!named.length)return null;
  const other=pixNearest(hashes,pix.bin,1,same)[0],rival=other?other[1]:Infinity;
  const rows=g==='ygo'?named.map(row=>({row,dist})):named.map(row=>({row,dist:row===rec?dist:pixDist(hashes,pix.bin,row)})).filter(x=>x.dist===null||x.dist<=dist+FUSE.same);
- return {dist,rival,strong:dist<=FUSE.strong&&rival-dist>=FUSE.gap,name:pack.rows[named[0]][1],rows};
+ return {dist,rival,strong:pictureClear(dist,rival),name:pack.rows[named[0]][1],rows};
 }
 
 // The same, from a picture lined up by scan-register.js (reg.cards: closest first, one per card).
@@ -115,7 +117,7 @@ export function registerVerdict(g,pack,pix,reg){
  const dist=top.dist;let rival=reg.cards[1]?reg.cards[1].dist:Infinity;
  if(!reg.cards[1]){const set=new Set(named),other=pixNearest(top.hash,pix.bin,1,g==='ygo'?r=>String(pix.ids[r])===top.key:r=>set.has(r))[0];if(other)rival=other[1];}
  const rows=g==='ygo'?named.map(row=>({row,dist})):named.map(row=>({row,dist:row===top.rec?dist:pixDist(top.hash,pix.bin,row)})).filter(x=>x.dist===null||x.dist<=dist+FUSE.same);
- return {dist,rival,strong:dist<=FUSE.strong&&rival-dist>=FUSE.gap,name:pack.rows[named[0]][1],rows,quad:top.quad,flipped:top.flipped};
+ return {dist,rival,strong:pictureClear(dist,rival),name:pack.rows[named[0]][1],rows,quad:top.quad,flipped:top.flipped};
 }
 
 const printKey=(g,r)=>g==='ygo'?`${r[0]}|${r[2]}`:String(r[0]);
@@ -165,7 +167,7 @@ export function fuseClues(g,pack,verdict,read={}){
   if(byId.length&&keys(byId).size===1){proof=named?'picture, name and number':'picture and number';pick=byId;}
   else if(!byId.length&&keys(seen).size===1&&seen[0].clean&&(named||stat)){proof=named?'picture and name':'picture and printed stats';pick=seen;}
   if(pick)return {sure:true,known:true,named,proof,key:printKey(g,pick[0].r),cands:out(pick,{exact:true,why:`Matched by ${proof}`})};
-  return {sure:false,named,idSeen:byId.length>0,known:named||stat||verdict.dist<=FUSE.strong-16,cands:out(byId.length>1?byId:seen,{exact:false,identitySource:'artwork',why:keys(seen).size>1?'Picture matched · choose the printing':'Picture matched · check the card'})};
+  return {sure:false,named,idSeen:byId.length>0,partSeen:seen.some(x=>x.part),single:keys(seen).size===1,known:named||stat||verdict.dist<=FUSE.strong-16,cands:out(byId.length>1?byId:seen,{exact:false,identitySource:'artwork',why:keys(seen).size>1?'Picture matched · choose the printing':'Picture matched · check the card'})};
  }
  if(verdict.dist<=FUSE.suggest&&verdict.rival-verdict.dist>=FUSE.suggestGap)return {sure:false,known:false,cands:out(seen,{exact:false,identitySource:'artwork',why:'Looks like this card · check the card and printing'})};
  return {sure:false,known:false,cands:[]};

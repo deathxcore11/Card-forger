@@ -85,7 +85,8 @@ object ScanWeb {
         @JavascriptInterface fun model(json: String?) { val j = json ?: return; pushes.trySend(j) }
         @JavascriptInterface fun toast(text: String?) { if (!text.isNullOrBlank()) scope.launch { CollectionWrites.show(text) } }
         @JavascriptInterface fun acted(json: String?) { val j = json ?: return; scope.launch { runCatching { _acted.tryEmit(JsonParser.parseString(j).asJsonObject) } } }
-        @JavascriptInterface fun torch(on: Boolean) { scope.launch { torch(on) } }
+        // ScanWeb.torch, spelled out: a bare torch(on) here is this method again, which looped forever and never reached the camera.
+        @JavascriptInterface fun torch(on: Boolean) { scope.launch { runCatching { ScanWeb.torch.invoke(on) } } }
         @JavascriptInterface fun call(id: Int, name: String?, json: String?) { scope.launch { answer(id, name.orEmpty(), json) } }
     }
 

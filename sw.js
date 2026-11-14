@@ -174,6 +174,7 @@ const ASSETS = [
   "./scan-light.js",
   "./scan-pix.js",
   "./scan-fuse.js",
+  "./scan-register.js",
   "./scan-signals.js",
   "./price-reference.js",
   "./glass-select.js",
