@@ -160,6 +160,7 @@ fun DecisionDock(st: MatchState, live: Boolean, intents: TableIntents, onInspect
         when {
             zone != null -> ZoneSearchDialog(ctx, zone, draft)                                                       // :257-307
             !p.supportedExact || (p.method == "order" && !p.ordered) -> SideDock(ctx) { DeadEnd(ctx) }  // :309
+            p.nameCount != null && ctx.replies.text != null -> SideDock(ctx) { NameDialog(ctx) }
             optionalCosts -> SideDock(ctx) { OptionalCosts(ctx, draft) }                                             // :310-326
             p.method in AMOUNT_METHODS && amountSpec(p) != null -> AssignDialog(ctx)                                 // :318-341
             p.method in setOf("confirm", "showConfirmDialog") -> SideDock(ctx) { ConfirmChoice(ctx) }                // :342-346
@@ -635,6 +636,37 @@ private fun InputDialog(ctx: DockCtx) = with(ctx.d) {
     // A controller's X is Confirm; a typed value starts the ring on Confirm, not the field (no keyboard thrown up unasked).
     PadScreen(PadActs(x = if (!ctx.busy) PadAct("Confirm") { confirm() } else null))
     DockButton("Confirm", !ctx.busy, this, if (p.options.isEmpty()) Modifier.padFirst(ctx) else Modifier) { confirm() }
+}
+
+// ---- Name a card (Kai Winn, Pithing Needle): type, pick one of the names offered, Confirm ----
+
+@Composable
+private fun NameDialog(ctx: DockCtx) = with(ctx.d) {
+    val p = ctx.p
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var typed by remember(ctx.st.revision, p.id) { mutableStateOf("") }
+    val names by androidx.compose.runtime.produceState(emptyList<String>()) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { dev.cardstashy.nativeplay.engine.CardNames.all(context) }.getOrDefault(emptyList()) } }
+    val hits = remember(names, typed) { dev.cardstashy.nativeplay.engine.CardNames.suggest(names, typed) }
+    val exact = names.firstOrNull { it.equals(typed.trim(), ignoreCase = true) }
+    val field = Modifier.fillMaxWidth().heightIn(min = 44.du).clip(RoundedCornerShape(6.du)).background(Color(0x851F232B))
+        .border(1.dp, Color(0x31EDC980), RoundedCornerShape(6.du))
+    Column {
+        Text(p.message.ifBlank { "Choose a card name" }, style = ts(12.5f, 17.5f, FontWeight.SemiBold, Color(0xFF9AA2B1)))
+        Spacer(Modifier.height(6.du))
+        BasicTextField(typed, { v -> typed = v.take(200) }, enabled = !ctx.busy, singleLine = true, textStyle = ts(12f, 15.6f),
+            cursorBrush = SolidColor(Color(0xFFEDF0E8)),
+            modifier = field.padFirst(ctx).padding(8.du).semantics { contentDescription = "Card name" })
+        if (typed.trim().length < 2) Text("Type two letters or more", style = ts(11f, 14f, color = Color(0xFF9AA2B1)), modifier = Modifier.padding(top = 4.du))
+        hits.forEach { n ->
+            val on = n.equals(typed.trim(), ignoreCase = true)
+            Spacer(Modifier.height(4.du))
+            DockButton(n, !ctx.busy, this@with, Modifier.fillMaxWidth(), look = if (on) Look.PRESSED else Look.PLAIN, align = TextAlign.Start, height = 36f) { typed = n }
+        }
+    }
+    val confirm: () -> Unit = { exact?.let { ctx.replies.text?.invoke(p.id, it) } }
+    PadScreen(PadActs(x = if (!ctx.busy && exact != null) PadAct("Confirm") { confirm() } else null))
+    DockButton("Confirm", !ctx.busy && exact != null, this) { confirm() }
 }
 
 // ---- A reveal (native-panel.mjs:354-359) ----

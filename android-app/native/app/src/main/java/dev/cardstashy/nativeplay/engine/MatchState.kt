@@ -92,6 +92,9 @@ data class Prompt(
     val supportedExact: Boolean = true,
     /** Forge's message before tidy() (the dock's cpuName works on Forge's own words). */
     val rawMessage: String = "",
+    /** nameChoice.count: "choose a card name" (Kai Winn, Pithing Needle). The bridge sends no list (Forge offers every card,
+     *  about 34,000) and takes the name back as text (replyText). */
+    val nameCount: Int? = null,
 ) {
     /** A prompt this app cannot answer at all (E3c): the bridge did not adapt it, or an order came without its order data. No reply exists; nothing is invented. */
     val deadEnd: Boolean get() = !supportedExact || (method == "order" && !ordered)
@@ -286,6 +289,7 @@ data class MatchState(
                 assignFree = assign?.bool("freeDivision") == true, assignAtLeastOne = assign?.bool("atLeastOne") == true, assignLabel = assign?.str("label") ?: "",
                 hasLethal = assign?.get("lethal")?.isJsonArray == true, hasMaxima = assign?.get("maxima")?.isJsonArray == true,
                 supportedExact = p.bool("supported") == true, rawMessage = shownIn(p.str("message") ?: ""),
+                nameCount = p.obj("nameChoice")?.int("count"),
             )
         }
 
