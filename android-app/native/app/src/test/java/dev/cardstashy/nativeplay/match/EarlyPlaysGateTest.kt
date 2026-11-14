@@ -3,6 +3,7 @@ package dev.cardstashy.nativeplay.match
 import dev.cardstashy.nativeplay.art.CardArt
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.nio.file.Files
@@ -37,9 +38,10 @@ class EarlyPlaysGateTest {
         assertEquals(listOf("A", "Forest"), QuickPlay.firstScreen(listOf("A"), listOf("Forest", "B"), emptyList()))
     }
 
-    /** Randall 13 Nov: after the early plays, the gate waits for the rest of both decks, up to 15 s from its start. */
+    /** Randall 13 Nov: after the early plays, the gate waits for the rest of both decks; 14 Nov: never past 10 s in all. */
     @Test fun wholeDecksWaitedFor() {
-        assertEquals(15_000L, QuickPlay.WHOLE_CAP_MS)
-        assertEquals(15_000L, QuickPlay.wholeWait(0)); assertEquals(7_000L, QuickPlay.wholeWait(8_000)); assertEquals(300L, QuickPlay.wholeWait(20_000))
+        assertEquals(10_000L, QuickPlay.GATE_CAP_MS); assertEquals(9_000L, QuickPlay.WHOLE_CAP_MS)
+        assertTrue(QuickPlay.WHOLE_CAP_MS < QuickPlay.GATE_CAP_MS && QuickPlay.EARLY_CAP_MS < QuickPlay.GATE_CAP_MS)
+        assertEquals(9_000L, QuickPlay.wholeWait(0)); assertEquals(1_000L, QuickPlay.wholeWait(8_000)); assertEquals(300L, QuickPlay.wholeWait(20_000))
     }
 }

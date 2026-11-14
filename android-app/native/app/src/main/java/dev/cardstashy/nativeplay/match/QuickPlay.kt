@@ -150,11 +150,15 @@ object QuickPlay {
         // T1 (Thor run 10 Nov: 15 s of art before every new match): the gate waits only for what the first screen shows (both
         // covers, the basic lands, your opening hand once Forge deals it); every other card keeps loading behind, and each one is
         // decoded ahead the moment it reaches a hand, the stack or the command zone (decodeAhead), before it can land on the felt.
-        val t0 = SystemClock.elapsedRealtime(); val cap = 20_000L
+        val t0 = SystemClock.elapsedRealtime(); val cap = GATE_CAP_MS
         fun left() = (cap - (SystemClock.elapsedRealtime() - t0)).coerceAtLeast(300)
         CardArt.resolveMatch(s.rows)
         val tLookup = SystemClock.elapsedRealtime() - t0
         val names = CardArt.cheapestFirst(s.rows.map { it.first })
+        // Then, behind the gate however it ends (its own caps, or the screen's backstop): every face and battlefield crop of both decks.
+        val behind = java.util.concurrent.atomic.AtomicBoolean(false)
+        fun behind() { if (behind.compareAndSet(false, true)) bg.launch { CardArt.warm(context, names, 60_000, diskCrops = names, progress = false); Log.i(TAG, "art behind: ${CardArt.lastBehind} in ${SystemClock.elapsedRealtime() - t0} ms") } }
+        kotlinx.coroutines.currentCoroutineContext()[kotlinx.coroutines.Job]?.invokeOnCompletion { behind() }
         // L4 (Randall 12 Nov: "in a quick match the art for opponents are usually missing"): the gate also waits for what the CPU
         // plays first, its lands and every card of mana value 3 or less, face decoded and battlefield crop on disk. 8 s at most.
         val early = earlyPlays(s.cpuNames)
@@ -168,8 +172,7 @@ object QuickPlay {
         val rest = names.filter { it !in first }
         val nWhole = if (rest.isEmpty()) 0 else CardArt.warm(context, rest, wholeWait(SystemClock.elapsedRealtime() - t0), diskCrops = rest, detach = true)
         if (nWhole < 0) Log.i(TAG, "art gate: whole-deck cap of $WHOLE_CAP_MS ms reached with ${rest.size} more cards asked; the rest loads behind")
-        // Then, behind: every face and battlefield crop of both decks (not awaited; the opening hand asked below joins it).
-        bg.launch { CardArt.warm(context, names, 60_000, diskCrops = names, progress = false); Log.i(TAG, "art behind: ${CardArt.lastBehind} in ${SystemClock.elapsedRealtime() - t0} ms") }
+        behind()
         val hand = openingHand?.let { f -> kotlinx.coroutines.withTimeoutOrNull(left()) { f.first { it != null } } }
         val n2 = if (hand.isNullOrEmpty()) 0 else CardArt.warm(context, hand, left(), crops = hand, detach = true)
         s.faces.forEach { CardArt.decodeAhead(it) }
@@ -184,8 +187,13 @@ object QuickPlay {
     internal fun warmsOwned(rows: Int, unmetered: Boolean) = rows > 0 && (unmetered || rows <= OWNED_WARM_ROWS)
     /** L4: how long the versus screen waits for the first screen and the CPU's early plays, with a connection. */
     const val EARLY_CAP_MS = 8_000L
+    /**
+     * Randall 14 Nov ("You broke the game", 0.4.76: the versus screen sat on Preparing the table for 20 s and more): the longest the
+     * versus screen waits, everything included (card lookup, first screen, whole decks, opening hand). What misses it loads behind.
+     */
+    const val GATE_CAP_MS = 10_000L
     /** Randall 13 Nov: how long, from the gate's start, the versus screen waits for the whole of both decks with a connection. */
-    const val WHOLE_CAP_MS = 15_000L
+    const val WHOLE_CAP_MS = 9_000L
     /** How long the whole-deck wait may take when [elapsed] ms of the gate have passed: what is left of [WHOLE_CAP_MS], at least 300 ms. */
     internal fun wholeWait(elapsed: Long): Long = (WHOLE_CAP_MS - elapsed).coerceAtLeast(300)
     /** L4: the highest mana value the gate waits for in the CPU's deck. */

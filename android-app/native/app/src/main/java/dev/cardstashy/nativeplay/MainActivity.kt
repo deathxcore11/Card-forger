@@ -638,7 +638,8 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
             // Art and engine load side by side. The beat has been on screen since the pick (t0), so its 0.9 s counts from there,
             // not from now (U2); the CPU's plate still gets 0.4 s before the table opens.
             val minBeat = launch { delay(if ((pick as? Pick.Table)?.story != null) 0 else maxOf(400L, 900L - (SystemClock.elapsedRealtime() - t0))) }
-            QuickPlay.gateArt(context, s, controller.firstHand)
+            // Backstop: a lookup that never answers cannot hold the versus screen past the cap (the gate's own steps keep to it).
+            kotlinx.coroutines.withTimeoutOrNull(QuickPlay.GATE_CAP_MS + 500) { QuickPlay.gateArt(context, s, controller.firstHand) }
             minBeat.join(); versus = false
         }
         // Pick to table, one line per phase from the same start as the Speed line, so a slow run shows which step took the time (U2).
