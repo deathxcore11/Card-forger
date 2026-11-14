@@ -144,3 +144,8 @@ experiments/forge-proof/*
 
 # Planeswalk sources: built into planeswalk.html, never served
 planeswalk-src
+
+# Studio rules and QA notes for people and Claude sessions, not site pages.
+CLAUDE.md
+.claude
+qa

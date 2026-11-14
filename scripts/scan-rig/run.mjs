@@ -28,7 +28,7 @@ for(const g of games){
  const skip=page.getByRole('button',{name:'Skip',exact:true});try{await skip.waitFor({state:'visible',timeout:2500});await skip.click();}catch{}
  if(g!=='mtg'){await page.locator(`#gameTabs [data-game="${g}"]`).click();await page.locator(`#gameTabs [data-game="${g}"][aria-selected="true"]`).waitFor();}
  await page.getByRole('button',{name:'Scanner settings',exact:true}).first().click();
- await page.locator('[data-act="scanCatalogDownload"]').click();
+ // The card data fetches itself now; nothing to press.
  await page.getByText(/local card records ready/).waitFor({timeout:90000});
  await page.locator('#sheet[open] [data-act="closeSheet"]').first().click();
  await page.evaluate(async()=>{const {loadBatch,saveBatch}=await import('/scan-batch.js'),{S}=await import('/store.js');window.__rig={loadBatch,saveBatch,state:()=>S.ui.scan};});
