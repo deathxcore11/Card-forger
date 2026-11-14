@@ -206,7 +206,7 @@ object DepthLayers {
     private class Measured(val hi: IntArray, val hw: Int, val hh: Int, val cut: DepthMatte.Cut, val depth: FloatArray, val lw: Int, val lh: Int,
                            val win: FloatArray, val cardW: Float)
     private suspend fun measure(context: Context, image: String, win0: FloatArray, open: Boolean, wanted: () -> Boolean, walker: Boolean = false): Measured? {
-        val dir = File(context.filesDir, "depth").apply { mkdirs() }
+        val dir = cacheDir(context)
         // The depth cut on disk is the same with or without shards (they are cut from the picture below, in a blink), so it keeps its name.
         val file = File(dir, sha("$VERSION|${key(image, win0, open, null, walker)}") + ".bin")
         val req = ImageRequest.Builder(context).data(image).allowHardware(false).build()
@@ -233,7 +233,8 @@ object DepthLayers {
             val d = DepthModel.run(context, crop) ?: return null
             val loBmp = Bitmap.createScaledBitmap(crop, lw, lh, true)
             val lo = IntArray(lw * lh).also { loBmp.getPixels(it, 0, lw, 0, 0, lw, lh) }
-            val dl = DepthMatte.resize(d, DepthModel.SIZE, DepthModel.SIZE, lw, lh)
+            // Kept at 16 bits, like the file, so the first view and every later one light the same (8 bits banded slow slopes).
+            val dl = DepthMatte.resize(d, DepthModel.SIZE, DepthModel.SIZE, lw, lh).also { a -> for (i in a.indices) a[i] = q16(a[i]) / 65535f }
             val c = (if (open) DepthMatte.cutFull(lo, dl, lw, lh, hi, hw, hh) else DepthMatte.cut(lo, dl, lw, lh, hi, hw, hh, walker))
             Log.i("DepthLayers", "$image ${c.gate}"); write(file, c, dl, lw)
             c to dl
@@ -263,7 +264,7 @@ object DepthLayers {
 
     private suspend fun make(context: Context, key: String, image: String, win0: FloatArray, open: Boolean, facetText: FloatArray?, walker: Boolean,
                              f: MutableStateFlow<Ready?>) {
-        val m = measure(context, image, win0, open, { f.subscriptionCount.value > 0 }, walker) ?: run { if (f.subscriptionCount.value == 0) forget(key); return }
+        val m = measure(context, image, win0, open, { f.subscriptionCount.value > 0 }, walker) ?: run { forget(key, f); return }
         val hi = m.hi; val hw = m.hw; val hh = m.hh; val cut = m.cut
         if (!open) { f.value = window(m, walker); return }
         // The gate said no: a framed card keeps the window-only depth, a full art stays flat (facet shards alone never make a figure).
@@ -277,7 +278,7 @@ object DepthLayers {
         val l = if (open) DepthMatte.layersFull(hi, figure, hw, hh, pad, cut.gate) else DepthMatte.layers(hi, figure, hw, hh, cut.gate)
         val fig = IntArray(l.w * l.h) { i -> (255 shl 24) or (q(l.figure[i]) shl 16) or (q(l.shadow[i]) shl 8) or (if (l.hide[i]) 255 else 0) }
         val box = if (open) floatArrayOf(-pad.toFloat() / hw, -pad.toFloat() / hh, 1 + pad.toFloat() / hw, 1 + pad.toFloat() / hh) else win0
-        f.value = Ready(Bitmap.createBitmap(l.plate, l.w, l.h, Bitmap.Config.ARGB_8888), Bitmap.createBitmap(fig, l.w, l.h, Bitmap.Config.ARGB_8888), box, room = Depth.K_FULL)
+        f.value = Ready(Bitmap.createBitmap(l.plate, l.w, l.h, Bitmap.Config.ARGB_8888), Bitmap.createBitmap(fig, l.w, l.h, Bitmap.Config.ARGB_8888), box, win = win0, room = Depth.K_FULL)
     }
 
     /**
@@ -314,12 +315,24 @@ object DepthLayers {
         return if (any) DepthMatte.resize(b, fw, fh, w, h) else null
     }
 
-    private fun forget(key: String) = synchronized(flows) { flows.remove(key) }
+    /** A null from measure() means "not yet" (no picture, the model not on the phone yet, nobody looking): drop the entry so the next
+     *  open measures again, but only if it is still this flow (a newer ask may have replaced it). */
+    private fun forget(key: String, f: MutableStateFlow<Ready?>) = synchronized(flows) { if (flows[key] === f) flows.remove(key) }
     private fun q(v: Float) = (v.coerceIn(0f, 1f) * 255).roundToInt()
+    private fun q16(v: Float) = (v.coerceIn(0f, 1f) * 65535).roundToInt()
+
+    @Volatile private var swept = false
+    /** One folder per [VERSION]; the first ask after an update deletes the folders and loose files older versions left behind. */
+    private fun cacheDir(context: Context): File {
+        val root = File(context.filesDir, "depth")
+        val dir = File(root, "v$VERSION").apply { mkdirs() }
+        if (!swept) { swept = true; root.listFiles()?.forEach { if (it.name != dir.name) runCatching { it.deleteRecursively() } } }
+        return dir
+    }
     private fun sha(s: String) = MessageDigest.getInstance("SHA-1").digest(s.toByteArray()).joinToString("") { "%02x".format(it) }
 
     /** File: size, the gate's numbers (take 5 adds the edge), the figure at 8 bits when it passed, then the depth at the cut's size
-     *  [lw] x [lh], 8 bits. Null when absent, unreadable or measured at another size. */
+     *  [lw] x [lh], 16 bits big-endian. Null when absent, unreadable or measured at another size. */
     private fun read(file: File, w: Int, h: Int, lw: Int, lh: Int): Pair<DepthMatte.Cut, FloatArray>? = runCatching {
         DataInputStream(GZIPInputStream(file.inputStream().buffered())).use { inp ->
             val fw = inp.readInt(); val fh = inp.readInt()
@@ -327,8 +340,8 @@ object DepthLayers {
             val gate = DepthMatte.Gate(inp.readFloat(), inp.readFloat(), inp.readFloat(), inp.readFloat(), inp.readFloat(), inp.readFloat())
             val fig = if (inp.readBoolean()) ByteArray(w * h).also { inp.readFully(it) }.let { b -> FloatArray(w * h) { (b[it].toInt() and 255) / 255f } } else null
             if (inp.readInt() != lw || inp.readInt() != lh) return null
-            val d = ByteArray(lw * lh).also { inp.readFully(it) }
-            DepthMatte.Cut(w, h, fig, gate) to FloatArray(lw * lh) { (d[it].toInt() and 255) / 255f }
+            val d = ByteArray(lw * lh * 2).also { inp.readFully(it) }
+            DepthMatte.Cut(w, h, fig, gate) to FloatArray(lw * lh) { ((d[2 * it].toInt() and 255) shl 8 or (d[2 * it + 1].toInt() and 255)) / 65535f }
         }
     }.getOrNull()
 
@@ -340,7 +353,7 @@ object DepthLayers {
             o.writeBoolean(cut.figure != null)
             cut.figure?.let { m -> o.write(ByteArray(m.size) { q(m[it]).toByte() }) }
             o.writeInt(depthW); o.writeInt(depth.size / depthW)
-            o.write(ByteArray(depth.size) { q(depth[it]).toByte() })
+            o.write(ByteArray(depth.size * 2) { val v = q16(depth[it / 2]); (if (it % 2 == 0) v shr 8 else v).toByte() })
         }
         tmp.renameTo(file)
     }

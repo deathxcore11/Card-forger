@@ -217,9 +217,10 @@ fun Modifier.depth(finish: CardFinish?, tilt: State<Offset>?): Modifier =
         val live by remember { derivedStateOf { DepthFocus.live(me) } }
         val facetText = (finish as? CardFinish.Magic)?.look?.facetText
         val layers by produceState<DepthLayers.Ready?>(null, live, image, win) {
-            if (!live || image == null) return@produceState
+            // A new picture never wears the last one's layers (a printing switch or a flip changes the image in place).
+            if (!live || image == null) { value = null; return@produceState }
             // A card not measured yet waits until it has settled in view, so opening or swiping past it never starts the model.
-            if (!DepthLayers.known(image, win, open, facetText, walker)) delay(Depth.SETTLE_MS)
+            if (!DepthLayers.known(image, win, open, facetText, walker)) { value = null; delay(Depth.SETTLE_MS) }
             DepthLayers.layers(context.applicationContext, image, win, open, facetText, walker).collect { value = it }
         }
         val blank = remember { FoilMaps.blank }
@@ -229,23 +230,24 @@ fun Modifier.depth(finish: CardFinish?, tilt: State<Offset>?): Modifier =
             val t by tilt
             val w = size.width; val h = size.height
             val l = layers
-            // A full art stays the flat card until its layers are measured: with no frame, nothing may move before the cut is known. So
-            // does a planeswalker, whose window is measured from its picture.
-            if (live && w >= minPx && h > 0f && ((!open && !walker) || l != null)) {
-                val wn = l?.win ?: win
+            // Every card stays the flat card until its layers are measured: take 5 needs the frame's printed outline (rim), a full art
+            // its cut, a planeswalker its window measured from the picture. The layers then ease in, so nothing pops mid-tilt.
+            if (live && w >= minPx && h > 0f && l != null) {
+                val wn = l.win
                 val ww = (wn[2] - wn[0]) * w
-                val room = l?.room ?: Depth.K
-                // Px the plate moves; the sign follows the card's own turn (rotationY = tilt.x * 8 deg), so the plate reads as behind the frame.
-                val sx = Depth.SIGN_X * t.x * room * ww; val sy = Depth.SIGN_Y * t.y * room * ww
-                shader.setInputShader("u_plate", l?.inputs?.first ?: blank.first); shader.setInputShader("u_fig", l?.inputs?.second ?: blank.second)
-                shader.setInputShader("u_rel", l?.relInput ?: blank.first)
-                shader.setFloatUniform("u_lsize", (l?.plate?.width ?: 1).toFloat(), (l?.plate?.height ?: 1).toFloat())
-                shader.setFloatUniform("u_rsize", (l?.rel?.width ?: 1).toFloat(), (l?.rel?.height ?: 1).toFloat())
-                val e = if (l != null) ease.value else 0f
-                shader.setFloatUniform("u_layers", e); shader.setFloatUniform("u_relon", if (l?.rel != null) e else 0f)
-                shader.setFloatUniform("u_lbox", l?.box ?: win); shader.setFloatUniform("u_open", if (open) 1f else 0f)
-                shader.setFloatUniform("u_size", w, h); shader.setFloatUniform("u_win", wn); shader.setFloatUniform("u_rim", l?.rim ?: FloatArray(4))
-                shader.setFloatUniform("u_follow", l?.follow ?: 1f); shader.setFloatUniform("u_walker", if (walker) 1f else 0f)
+                val room = l.room
+                val e = ease.value
+                // Px the plate moves; the sign follows the card's own turn (rotationY = tilt.x * 8 deg), so the plate reads as behind the
+                // frame. It grows in with the layers, so a card measured while tilted settles into its slide instead of jumping.
+                val sx = Depth.SIGN_X * t.x * room * ww * e; val sy = Depth.SIGN_Y * t.y * room * ww * e
+                shader.setInputShader("u_plate", l.inputs.first); shader.setInputShader("u_fig", l.inputs.second)
+                shader.setInputShader("u_rel", l.relInput ?: blank.first)
+                shader.setFloatUniform("u_lsize", l.plate.width.toFloat(), l.plate.height.toFloat())
+                shader.setFloatUniform("u_rsize", (l.rel?.width ?: 1).toFloat(), (l.rel?.height ?: 1).toFloat())
+                shader.setFloatUniform("u_layers", e); shader.setFloatUniform("u_relon", if (l.rel != null) e else 0f)
+                shader.setFloatUniform("u_lbox", l.box); shader.setFloatUniform("u_open", if (open) 1f else 0f)
+                shader.setFloatUniform("u_size", w, h); shader.setFloatUniform("u_win", wn); shader.setFloatUniform("u_rim", l.rim)
+                shader.setFloatUniform("u_follow", l.follow); shader.setFloatUniform("u_walker", if (walker) 1f else 0f)
                 shader.setFloatUniform("u_slide", sx / w, sy / h); shader.setFloatUniform("u_full", room * ww * hypot(1f, 1f))
                 val (lx, ly, lz) = Depth.light(t.x * Depth.TURN, t.y * Depth.TURN); shader.setFloatUniform("u_light", lx, ly, lz)
                 renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "u_card").asComposeRenderEffect()
