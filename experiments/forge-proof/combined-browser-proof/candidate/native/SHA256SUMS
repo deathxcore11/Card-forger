@@ -4,7 +4,7 @@ f53243e1177f394cd233e8cf27d16320ce406c25af4a21f02ae4191ab05238ec  ./EXACT-INPUT.
 dfe69ba274f9316249c07e0dd9d8e4904e77aa9d61c5175f11e080050b423ff0  ./EXPERIMENTAL-CPU.md
 8b1ba204bb69a0ade2bfcf65ef294a920f6bb361b317dba43c7ef29d96332b9b  ./LICENSE
 abb3a884dff038fb6e51e3414bb91a680d072b886c3ddc3137172145ed703a52  ./PROVENANCE.md
-3ebcacdbbd044bfd560319f0423c0abcfe1b02a0a121fec21c71e8ba54036fc5  ./RULES-DATA.md
+726c00b33bdfab039863095b7c0745f6cbed3e24bb3f8e93f9ba004e20f3102f  ./RULES-DATA.md
 0ff14a30d82048d77d040064ad9bd4fe569e120cf72bfc2b3da4d31c8212b8c2  ./adapter/src/cardstashy/forge/BoundedHeuristicPolicy.java
 6dda6a3aafb5cd566f9f2fd7adb41f4fbd63f4912f7ca433af7c9f67d5228099  ./adapter/src/cardstashy/forge/BridgeContractChecks.java
 0794ccfc0427bbc8abcf4eb3a22dc859dbf9ba00c086b39639ec960d687c7189  ./adapter/src/cardstashy/forge/BridgeNativeTerminalChecks.java
@@ -44,6 +44,6 @@ a16268be45e39f98b44cec06a7fa252803395319ae26c6d230dc12d1719ad7da  ./decks/reign-
 ef030f50b12bdbd19922689bc122d8285bb4062e504443c415cd6a90aff74fa1  ./human/src/forge/ai/AvailableActions.java
 b851c3e64696289079c51109f51c925ce141c53ddab651fcdfb9050d695373ac  ./human/src/forge/ai/HumanActionAffordability.java
 b780a4f005b28099aace1ff9c8f811c0ddea464cc0cdec27ce7991c1f5be3365  ./human/src/forge/gamemodes/match/input/InputPayMana.java
-bfacdf45d104f6ecf216c3b865f1aa1f2f32e5cf5f6cb68ee8a0585ec100ea48  ./rules-data/current/cards.json
-8b321264a13950b2cc730beba222b7a0a8d6d0514ee394e95cba44aaa46ceeb3  ./rules-data/current/manifest.json
-3fa5fb2933634234abe142aa1f19d0a43bf8e76813933f92597c4422befedf9f  ./rules-data/current/official-format-facts.json
+166ea484540ea749bdfb68bbbc91adc3f733e6a075e3d28e14a86836c10f1a5a  ./rules-data/current/cards.json
+0d5342fa6ec3bd91260dc6d49acca8a4d13455e627731d407db9a8879a1ff910  ./rules-data/current/manifest.json
+9c7f2a0dfb8040d2c6707ecd28d2bac9df64ed7d18553d0e66afbad0a3143904  ./rules-data/current/official-format-facts.json

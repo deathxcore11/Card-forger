@@ -1,9 +1,9 @@
 {
   ".dockerignore": "22050b43f43a2d9f93d5b863f49b10b3e45c70dfce806512a9a3a9aca1246cd9",
-  "Dockerfile": "ac38319f2ce68827c21bcb59fb566ef3841cd0592ef5a0f3987f342a4e3ee954",
+  "Dockerfile": "c4d055d83c63a18b231878e8d8d98463bea96b6144e20a97b0102571d4499c96",
   "hosting/assemble.sh": "4a631468cef0b41772b24ee82b9a34d0b05601de0faa0103608bc69936243d43",
   "hosting/bootstrap.py": "f527cdd5ba61faab856690aa72fd01a0535be9ff904efdb435eced4258d9859d",
-  "hosting/checkpoint-files.json": "9f3e4a9349386eeef52525dd481318ef0bed21e6306fdf53bf5dfbc110507fac",
+  "hosting/checkpoint-files.json": "26ac6e8bab007d9da43d3916563b2349d4d3be28cf7e0a3b43d0145afb4dc2d8",
   "hosting/gateway.py": "e796deec7aaf397fac3b118530baa8af06671c4f279aa2e4b450fa6edf69135e",
   "native/BASE-CANDIDATE.json": "8efcc09d4f3260904034aa1f2e1e9f9b8d66f1ad8aa3668c404a020b55d0dbbf",
   "native/CONTRACT.md": "3206da2ab12c8a826ff3ca7ce7852a32e82a90cfee232c7e1fe0d21c2e964462",
@@ -11,7 +11,7 @@
   "native/EXPERIMENTAL-CPU.md": "dfe69ba274f9316249c07e0dd9d8e4904e77aa9d61c5175f11e080050b423ff0",
   "native/LICENSE": "8b1ba204bb69a0ade2bfcf65ef294a920f6bb361b317dba43c7ef29d96332b9b",
   "native/PROVENANCE.md": "abb3a884dff038fb6e51e3414bb91a680d072b886c3ddc3137172145ed703a52",
-  "native/RULES-DATA.md": "3ebcacdbbd044bfd560319f0423c0abcfe1b02a0a121fec21c71e8ba54036fc5",
+  "native/RULES-DATA.md": "726c00b33bdfab039863095b7c0745f6cbed3e24bb3f8e93f9ba004e20f3102f",
   "native/adapter/src/cardstashy/forge/BoundedHeuristicPolicy.java": "0ff14a30d82048d77d040064ad9bd4fe569e120cf72bfc2b3da4d31c8212b8c2",
   "native/adapter/src/cardstashy/forge/BridgeContractChecks.java": "6dda6a3aafb5cd566f9f2fd7adb41f4fbd63f4912f7ca433af7c9f67d5228099",
   "native/adapter/src/cardstashy/forge/BridgeNativeTerminalChecks.java": "0794ccfc0427bbc8abcf4eb3a22dc859dbf9ba00c086b39639ec960d687c7189",
@@ -51,7 +51,7 @@
   "native/human/src/forge/ai/AvailableActions.java": "ef030f50b12bdbd19922689bc122d8285bb4062e504443c415cd6a90aff74fa1",
   "native/human/src/forge/ai/HumanActionAffordability.java": "b851c3e64696289079c51109f51c925ce141c53ddab651fcdfb9050d695373ac",
   "native/human/src/forge/gamemodes/match/input/InputPayMana.java": "b780a4f005b28099aace1ff9c8f811c0ddea464cc0cdec27ce7991c1f5be3365",
-  "native/rules-data/current/cards.json": "bfacdf45d104f6ecf216c3b865f1aa1f2f32e5cf5f6cb68ee8a0585ec100ea48",
-  "native/rules-data/current/manifest.json": "8b321264a13950b2cc730beba222b7a0a8d6d0514ee394e95cba44aaa46ceeb3",
-  "native/rules-data/current/official-format-facts.json": "3fa5fb2933634234abe142aa1f19d0a43bf8e76813933f92597c4422befedf9f"
+  "native/rules-data/current/cards.json": "166ea484540ea749bdfb68bbbc91adc3f733e6a075e3d28e14a86836c10f1a5a",
+  "native/rules-data/current/manifest.json": "0d5342fa6ec3bd91260dc6d49acca8a4d13455e627731d407db9a8879a1ff910",
+  "native/rules-data/current/official-format-facts.json": "9c7f2a0dfb8040d2c6707ecd28d2bac9df64ed7d18553d0e66afbad0a3143904"
 }
