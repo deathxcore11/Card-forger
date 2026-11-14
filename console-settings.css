@@ -1,0 +1,98 @@
+/* Settings in the Console look (owner's pick of mock-up 2, 14 Nov 2026). The app's ConsoleSettings.kt, for the web:
+   gold section heads in Cinzel, one 52 px line per setting with its name at the left and its value at the right, the line
+   you are on washed gold from a gold bar, and on a wide screen a panel with the line's picture, name and default. */
+.c-settings{--c-gold:var(--gold);--c-wash:color-mix(in srgb,var(--gold) 20%,transparent)}
+.c-title h1,.settings-dialog-head h2{font-family:Cinzel,Georgia,serif;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.c-settings .settings-tabs{display:flex;gap:0;justify-content:space-between;border:0;border-bottom:1px solid var(--line);background:none;padding:2px 8px 0;margin:6px 0 0;border-radius:0;box-shadow:none;overflow-x:auto;scrollbar-width:none;backdrop-filter:none}
+.c-settings .settings-tabs::-webkit-scrollbar{display:none}
+.c-settings .settings-tabs button{position:relative;flex:0 0 auto;min-width:0;min-height:48px;padding:12px 8px 13px;background:none;border:0;border-radius:0;box-shadow:none;color:var(--muted);font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;outline:none}
+.c-settings .settings-tabs button:focus-visible{color:var(--text);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--gold) 55%,transparent);border-radius:8px}
+.c-settings .settings-tabs button .settings-tab-icon{display:none}
+.c-settings .settings-tabs button[aria-selected="true"]{color:var(--c-gold);background:none}
+.c-settings .settings-tabs button[aria-selected="true"]::after{content:"";position:absolute;left:6px;right:6px;bottom:-1px;height:3px;background:var(--c-gold);clip-path:polygon(0 100%,5px 0,calc(100% - 5px) 0,100% 100%)}
+@media(min-width:700px){.c-settings .settings-tabs{justify-content:flex-start;gap:8px;padding:2px 18px 0}.c-settings .settings-tabs button{padding:12px 12px 13px;font-size:13px;letter-spacing:.11em}}
+.c-save{display:flex;align-items:center;gap:10px;margin:8px 18px 2px;padding:0;background:none;border:0;box-shadow:none;font-size:13px}
+.c-save small{display:none}
+
+.c-body{display:flex;align-items:stretch;min-height:0}
+.c-list{flex:1;min-width:0;padding:2px 0 16px}
+.c-head{display:flex;align-items:center;gap:10px;margin:18px 18px 4px;font:700 11px Cinzel,Georgia,serif;letter-spacing:.16em;text-transform:uppercase;color:var(--c-gold,var(--gold))}
+.c-head::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+.c-line{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:6px 14px 6px 18px;margin:0;border:0;border-radius:0;background:none;color:var(--muted);font:inherit;text-align:left;cursor:pointer;position:relative;-webkit-tap-highlight-color:transparent}
+.c-line::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold);opacity:0;transition:opacity .12s}
+.c-line.on,.c-line:focus-within,.c-line:focus-visible{background:linear-gradient(90deg,color-mix(in srgb,var(--gold) 20%,transparent),color-mix(in srgb,var(--gold) 4%,transparent) 72%,transparent);color:var(--text);outline:none}
+.c-line.on::before,.c-line:focus-within::before,.c-line:focus-visible::before{opacity:1}
+@media(hover:hover){.c-line:hover{background:linear-gradient(90deg,color-mix(in srgb,var(--gold) 12%,transparent),transparent 72%);color:var(--text)}}
+.c-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.c-name{font-size:15px;font-weight:600;line-height:1.25}
+.c-line.on .c-name,.c-line:focus-within .c-name{font-weight:700}
+.c-name.danger{color:var(--bad)}
+.c-state{font-size:12px;color:var(--muted);font-weight:600}
+.c-val{flex:none;min-width:58px;text-align:center;font-weight:700;font-size:14px;color:var(--muted)}
+.c-line.on .c-val,.c-line:focus-within .c-val{color:var(--gold)}
+.c-word{min-width:0;max-width:52%;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-word.good{color:var(--good)}.c-word.warn{color:var(--warn)}.c-word.bad{color:var(--bad)}
+.c-chev{flex:none;display:grid;place-items:center;width:20px;color:var(--muted)}
+.c-chev .ico{width:16px;height:16px}
+.c-line.on .c-chev,.c-line:focus-within .c-chev{color:var(--gold)}
+/* A switch: the checkbox is the line's, its word is drawn after it. */
+.c-switch{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.c-toggle .c-val::after{content:"Off"}
+.c-switch:checked+.c-val::after{content:"On"}
+.c-switch:focus-visible+.c-val{outline:2px solid var(--gold);outline-offset:3px;border-radius:6px}
+/* A level: ten pips' worth of gold track, and its number. */
+.c-settings input.c-range{flex:0 1 160px;width:auto;min-width:96px;height:28px;min-height:0;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;-webkit-appearance:none;appearance:none;cursor:pointer}
+.c-level .c-name{white-space:nowrap}
+.c-range::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--gold) var(--v,100%),color-mix(in srgb,var(--muted) 30%,transparent) var(--v,100%))}
+.c-range::-moz-range-track{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--gold) var(--v,100%),color-mix(in srgb,var(--muted) 30%,transparent) var(--v,100%))}
+.c-range::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;margin-top:-5px;border-radius:50%;background:var(--text);border:2px solid var(--gold)}
+.c-range::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--text);border:2px solid var(--gold)}
+.c-pct{flex:none;width:46px;text-align:right;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums}
+.c-line.on .c-pct,.c-line:focus-within .c-pct{color:var(--gold)}
+/* A choice: its words side by side, the one chosen in gold. */
+.c-choice{display:flex;gap:2px;flex:none}
+.c-choice label{position:relative;cursor:pointer}
+.c-choice input{position:absolute;opacity:0;width:1px;height:1px}
+.c-choice span{display:block;padding:9px 10px;border-radius:9px;font-size:13.5px;font-weight:700;color:var(--muted)}
+.c-choice input:checked+span{color:var(--gold-ink);background:var(--gold)}
+.c-choice input:focus-visible+span{outline:2px solid var(--gold);outline-offset:2px}
+@media(max-width:380px){.c-choice span{padding:9px 7px;font-size:12.5px}}
+/* A line that opens in place. */
+.c-open>summary{list-style:none}
+.c-open>summary::-webkit-details-marker{display:none}
+.c-open[open]>summary .c-chev{transform:rotate(90deg)}
+.c-open-body{padding:6px 18px 14px;display:grid;gap:10px}
+.c-open.settings-disclosure,.c-open.account-delete{margin:0;padding:0;border:0;background:none;box-shadow:none}
+.c-status{margin:0 18px;font-size:13px;color:var(--muted)}
+.c-status:empty{display:none}
+.c-block{padding:4px 18px 8px}
+.c-block .panel,.c-block .info-centre{margin:0}
+/* The panel beside the list on a wide screen. */
+.c-detail{display:none}
+@media(min-width:760px){
+  .c-detail{display:flex;flex-direction:column;gap:10px;width:300px;flex:none;padding:20px;border-left:1px solid var(--line);background:color-mix(in srgb,var(--surface) 88%,transparent);position:sticky;top:0;align-self:flex-start;min-height:320px}
+  .c-pic{display:grid;place-items:center;height:168px;border-radius:12px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line);color:var(--gold)}
+  .c-pic .ico{width:64px;height:64px;stroke-width:1.4}
+  .c-dname{font-size:17px;font-weight:800;color:var(--text)}
+  .c-ddef{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+  .c-ddef:empty{display:none}
+}
+/* Account: the profile strip stays, its lines below it. */
+.c-account .settings-account-layout{display:block}
+.c-account-panel{padding:0;border:0;background:none;box-shadow:none}
+.c-account-panel .account-hub{margin:12px 18px 0}
+.c-account-panel .c-list{padding-top:0}
+:root[data-theme="light"] .c-choice input:checked+span{color:#fff}
+@media(prefers-reduced-motion:reduce){.c-line::before{transition:none}}
+/* The section you are in is marked by its gold bar only: no box from the browser's focus or the old tab chips. */
+.c-settings .settings-tabs button,.c-settings .settings-tabs button:focus,.c-settings .settings-tabs button[aria-selected="true"]{border:0;outline:none;box-shadow:none;background:none}
+.c-settings .settings-tabs button:focus-visible{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--gold) 55%,transparent);border-radius:8px}
+/* A level: its name keeps its width, the track takes what is left. */
+.c-level .c-text{flex:0 0 auto}
+.c-settings .c-level input.c-range{flex:1 1 auto;min-width:72px;max-width:220px;margin-left:auto}
+/* Storage: the numbers, not the small print under them. */
+.c-pane .settings-storage-breakdown .foot{display:none}
+.c-pane .settings-storage-breakdown{margin:6px 18px 4px}
+/* Help: the guides as a list of names, like the rest (no banner, no summary under each). */
+.c-pane .info-centre>header{display:none}
+.c-pane .info-topic>summary .muted{display:none}

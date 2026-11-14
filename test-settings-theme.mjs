@@ -28,10 +28,10 @@ memory.set(THEME_KEY,'light');listeners.get('storage')({key:THEME_KEY,storageAre
 memory.clear();listeners.get('storage')({key:null,storageArea:storage});assert.equal(document.documentElement.dataset.theme,'dark');
 stop();assert.equal(listeners.size,0);
 
-assert.deepEqual(SETTINGS_TABS.map(x=>x[1]),['Profile & account','Appearance','Backup','Help']);
-assert.equal(normalizeSettingsTab('backup'),'recovery');assert.equal(normalizeSettingsTab('anything'),'account');
+assert.deepEqual(SETTINGS_TABS.map(x=>x[1]),['Sound','Display','Account','Data','Help']);
+assert.equal(normalizeSettingsTab('backup'),'recovery');assert.equal(normalizeSettingsTab('data'),'recovery');assert.equal(normalizeSettingsTab('display'),'app');assert.equal(normalizeSettingsTab('help'),'info');assert.equal(normalizeSettingsTab('anything'),'account');
 for (const [tab] of SETTINGS_TABS) {
-  const html=settingsTabs(tab);assert.equal((html.match(/role="tab"/g)||[]).length,4);
+  const html=settingsTabs(tab);assert.equal((html.match(/role="tab"/g)||[]).length,5);
   assert.equal((html.match(/tabindex="0"/g)||[]).length,1);assert.equal((html.match(/aria-selected="true"/g)||[]).length,1);
   assert.match(html,new RegExp(`id="settingsTab-${tab}"[^>]+aria-selected="true" tabindex="0"`));
 }
@@ -39,10 +39,10 @@ const rail={scrollWidth:520,clientWidth:300,offsetLeft:20,scrollLeft:0};
 const buttons=SETTINGS_TABS.map(([id],i)=>({dataset:{id},parentElement:rail,offsetLeft:i*130,offsetWidth:130,setAttribute(name,value){this[name]=value;}}));
 const panes=SETTINGS_TABS.map(([id])=>({id:'settings-'+id}));
 const root={querySelectorAll:selector=>selector==='.settings-pane'?panes:selector==='.settings-save-overview [data-act="settingsTab"]'?[]:buttons};
-assert.equal(activateSettingsTab(root,'app'),'app');assert.deepEqual(panes.map(x=>x.hidden),[true,false,true,true]);
-assert.deepEqual(buttons.map(x=>x.tabIndex),[-1,0,-1,-1]);assert.equal(rail.scrollLeft,0);
-activateSettingsTab(root,'account');assert.equal(rail.scrollLeft,0);
-activateSettingsTab(root,'backup');assert.equal(panes[2].hidden,false);assert.equal(buttons[2]['aria-selected'],'true');
+assert.equal(activateSettingsTab(root,'app'),'app');assert.deepEqual(panes.map(x=>x.hidden),[true,false,true,true,true]);
+assert.deepEqual(buttons.map(x=>x.tabIndex),[-1,0,-1,-1,-1]);assert.equal(rail.scrollLeft,0);
+activateSettingsTab(root,'sound');assert.equal(rail.scrollLeft,0);
+activateSettingsTab(root,'backup');assert.equal(panes[3].hidden,false);assert.equal(buttons[3]['aria-selected'],'true');
 
 const boot=readFileSync(new URL('./theme-init.js',import.meta.url),'utf8');
 for(const value of ['light','dark','aura','unexpected',null]) {
@@ -60,7 +60,7 @@ for (const game of ['mtg','ptcg','ygo']) for (const [tab] of SETTINGS_TABS) {
   for(const action of ['exportBackup','undoRestore','persist','reset','loadExample','replayTour','resetOnboarding','recoveryRefresh']) assert(html.includes(`data-act="${action}"`),action+' remains reachable');
   for(const change of ['restoreBackup','checkBackup','setGlass','setFinishEffects','setHaptics','setTheme'])assert(html.includes(`data-change="${change}"`),change+' remains reachable');
   assert.equal((html.match(/id="recoverySnapshots"/g)||[]).length,1);assert.match(html,/id="recoveryStatus"[^>]+role="status"/);
-  assert.match(html,/id="settings-info"[\s\S]+Replay tutorials[\s\S]+Card databases & prices[\s\S]+About CardStashy/);
+  assert.match(html,/id="settings-info"[\s\S]+Replay tutorials[\s\S]+Card databases and prices[\s\S]+About CardStashy/);
 }
 
 // Small and secondary text, status ink and all game accents exceed AA contrast
@@ -91,7 +91,7 @@ assert.match(css,/body\.glass dialog\.sheet \{background:[^}]+rgba\(246,249,253,
 assert.match(css,/body\.glass #ambient \.amb-art \{[^}]+opacity:\.8/,'the real ambient art is not reduced to invisibility');
 assert.match(css,/prefers-reduced-motion:reduce/);assert.match(css,/background:var\(--surface\);backdrop-filter:none/,'reduced transparency remains solid');
 assert.doesNotMatch(css,/mask-image\s*:/,'Light fade must not change artwork/foil masks');
-console.log('PASS: four accessible Settings tabs, recovery hooks, all-game action preservation, theme persistence/storage failure, cross-tab sync, first-paint boot and AA light ink.');
+console.log('PASS: five accessible Settings sections, recovery hooks, all-game action preservation, theme persistence/storage failure, cross-tab sync, first-paint boot and AA light ink.');
 // The same intrinsic header applies in both themes. No truncated title or font shrink.
 const sharedHeaderCSS=readFileSync('style.css','utf8');
 assert.match(sharedHeaderCSS,/--banner-art-height:clamp\(280px,74vw,420px\); display:grid; grid-template-columns:minmax\(0,1fr\); min-height:var\(--banner-art-height\)/);

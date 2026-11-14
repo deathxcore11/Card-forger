@@ -41,6 +41,7 @@ import {matchupState,resetMatchups,renderMagicMatchupSheet} from './magic-matchu
 import {buildMatchupRequest,matchupImportNotice} from './ai-matchup-core.js';
 import {initAura} from './aura.js';
 import {initTheme,applyTheme,normalizeSettingsTab,activateSettingsTab} from './settings-theme.js';
+import {initConsoleSettings,primeConsoleSettings} from './console-settings.js';
 import {recoveryKey,syncBaselineKey,createRecoverySnapshot,appendRecoverySnapshot,readRecoverySnapshots,createSyncBaseline,recoverySummary} from './recovery-store.js';
 import {mergeLegacyGameHistories,mergeValueHistory} from './value-history.js';
 import {sharedBinderRows,sharedBinderValue} from './community-profile.js';
@@ -3624,7 +3625,8 @@ A.muUndo = async (t) => {
   await commit((s) => { const x = s.decks.find((y) => y.id === d.id); x.results = (x.results || []).filter((g) => g.at !== t.dataset.at); }, { msg: "Game removed." });
 };
 let settingsBaseState=null;
-const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div class="settings-brand-lockup">${brandMark("settings-brand-mark")}<div><p class="eyebrow">CARDSTASHY <span class="settings-scope">· ALL GAMES</span></p><h2 id="settingsDialogTitle">Settings</h2></div></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{if(normalizeSettingsTab(S.ui.settingsTab)==='recovery'){storageDetail();void renderRecoverySnapshots();}},afterClose:scroll=>{profilePicker.close();if(settingsBaseState!==S.state||S.ui.view==='community')render();window.scrollTo({top:scroll,behavior:'instant'});setTimeout(safeIntro,50);}});
+initConsoleSettings(document);
+const settingsPopup=createSettingsDialog({beforeOpen:()=>{settingsBaseState=S.state;},dialog:$("#settingsDialog"),markup:()=>`<header class="settings-dialog-head"><div class="settings-brand-lockup">${brandMark("settings-brand-mark")}<div><p class="eyebrow">CARDSTASHY <span class="settings-scope">· ALL GAMES</span></p><h2 id="settingsDialogTitle">Settings</h2></div></div><button class="icon" data-act="closeSettings" aria-label="Close settings">${ICON.close||'✕'}</button></header>${V.settings({popup:true})}`,afterPaint:()=>{primeConsoleSettings($("#settingsDialog"));if(normalizeSettingsTab(S.ui.settingsTab)==='recovery'){storageDetail();void renderRecoverySnapshots();}},afterClose:scroll=>{profilePicker.close();if(settingsBaseState!==S.state||S.ui.view==='community')render();window.scrollTo({top:scroll,behavior:'instant'});setTimeout(safeIntro,50);}});
 // The avatar is the account hub: profile, friends and sign-in open first.
 A.menu = () => {S.ui.settingsTab='account';settingsPopup.open();if(!accountLocked&&cloudInfo().user)void community.refresh();};
 A.addFriend=()=>community.add();
@@ -4305,6 +4307,7 @@ A.settingsTab = (t) => {
   const tab=normalizeSettingsTab(t.dataset.id);
   S.ui.settingsTab=tab;
   activateSettingsTab(document,tab);
+  primeConsoleSettings(document);
   if(tab==='recovery'){storageDetail();void renderRecoverySnapshots();}
 };
 C.setGridSize=t=>{const result=applyGridSize(t.value);toast(result.saved?'Saved card size on this device.':'Card size changed for this visit. Your browser could not save it.');};

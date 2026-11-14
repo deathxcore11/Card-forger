@@ -11,8 +11,8 @@ const field=passwordField('<input id="pw" type="password">');assert.match(field,
 const input={type:'password',selectionStart:1,selectionEnd:2,focus(){},setSelectionRange(a,b){assert.equal(a,1);assert.equal(b,2);}},button={dataset:{field:'pw'},setAttribute(k,v){this[k]=v;}};
 togglePassword(button,{querySelector:()=>input});assert.equal(input.type,'text');assert.equal(button['aria-label'],'Hide password');togglePassword(button,{querySelector:()=>input});assert.equal(input.type,'password');assert.equal(button['aria-label'],'Show password');
 const auth=signedOutAccount({providers:{google:true,email:true}},'login','<b>PROFILE_FIXTURE</b>');assert(auth.indexOf('id="signEmail"')<auth.indexOf('PROFILE_FIXTURE'));assert.doesNotMatch(auth,/Supabase|SMTP/);assert.match(auth,/At least 8 characters/);
-S.state=blank();const html=settings(),appearance=html.slice(html.indexOf('id="settings-app"'),html.indexOf('id="settings-info"'));
-assert.doesNotMatch(appearance,/installCard|Install CardStashy|Get the Android app/);assert.match(html.slice(html.indexOf('id="settings-recovery"'),html.indexOf('id="settings-app"')),/Install or update CardStashy/);
+S.state=blank();const html=settings(),appearance=html.slice(html.indexOf('id="settings-app"'),html.indexOf('id="settings-account"'));
+assert.doesNotMatch(appearance,/installCard|Install CardStashy|Get the Android app/);assert.match(html.slice(html.indexOf('id="settings-recovery"'),html.indexOf('id="settings-info"')),/Install or update CardStashy/);
 const empty={account:{user:{id:'A'},profile:{}},data:null,busy:true};assert.doesNotMatch(communityPage(empty),/They’ll appear|No pending requests/);assert.doesNotMatch(communityPage({...empty,busy:false,error:'Offline'}),/They’ll appear/);
 const prior={document:globalThis.document,window:globalThis.window};globalThis.document={addEventListener(){}};globalThis.window={addEventListener(){}};
 let who='A',finish,calls=0,changes=[];

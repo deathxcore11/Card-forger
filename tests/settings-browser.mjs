@@ -72,11 +72,11 @@ try{
    await page.locator('[data-act="menu"]').click();
    assert(await page.locator('#settingsDialog').evaluate(n=>n.matches(':modal')));
    assert.equal(page.url(),url);assert.equal(await page.locator('#settingsDialog [data-act="setGame"]').count(),0);
-   assert.deepEqual(await page.locator('.settings-tabs [role=tab] > span:nth-child(2)').allTextContents(),['Profile & account','Appearance','Backup','Help']);
+   assert.deepEqual(await page.locator('.settings-tabs [role=tab] > span:nth-child(2)').allTextContents(),['Sound','Display','Account','Data','Help']);
    // Deterministic real-control regression: a rail scroll between trusted mouse
    // down/up must not be mistaken for a card drag. No click retry or dispatch.
    await page.setViewportSize({width:320,height:900});await page.locator('#settingsTab-app').click();
-   assert(await page.locator('.settings-tabs').evaluate(n=>n.scrollWidth<=n.clientWidth+1),'All four tabs fit in the mobile grid');
+   assert(await page.locator('.settings-tabs').evaluate(n=>n.scrollWidth<=n.clientWidth+1),'All five sections fit in the mobile row');
    await page.locator('#settingsDialog').evaluate(async n=>{n.scrollTop=0;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
    const account=page.locator('#settingsTab-account'),accountBox=await account.boundingBox();assert(accountBox&&accountBox.width>0);
    const traceStart=await page.evaluate(game=>{window.__settingsTraceStep={game,width:320,tab:'account',probe:'non-card-dialog-scroll'};return window.__settingsInteractionTrace.length;},game);
@@ -101,7 +101,7 @@ try{
    }
    for(const width of [320,390,768,1024,1440,390]){
     await page.setViewportSize({width,height:900});
-    for(const tab of ['account','recovery','info','app']){
+    for(const tab of ['sound','account','recovery','info','app']){
      await page.evaluate(step=>{window.__settingsTraceStep=step;},{game,theme,width,tab});
      await page.locator('#settingsTab-'+tab).click();
      assert.equal(await page.locator('.settings-pane:not([hidden])').getAttribute('id'),'settings-'+tab);
@@ -111,7 +111,7 @@ try{
     }
     if([390,768].includes(width))await capture(page,`synthetic-search-settings-${game}-${theme}-${width}`);
     const rail=await page.locator('.settings-tabs').evaluate(n=>({scroll:n.scrollWidth,client:n.clientWidth,overflow:getComputedStyle(n).overflowX}));
-    assert.equal(rail.overflow,'auto');if(width===320)assert(rail.scroll<=rail.client+1,'all four labels fit the mobile grid without a hidden rail');
+    assert.equal(rail.overflow,'auto');if(width===320)assert(rail.scroll<=rail.client+1,'all five labels fit the mobile row without a hidden rail');
    }
    assert.equal(await inventorySnapshot(page),original,'appearance leaves all games and saved quantities unchanged');
    }
@@ -206,7 +206,7 @@ try{
    await page.locator('[data-act="menu"]').click();await page.locator('#settingsTab-app').click();assert(await page.locator('#settingsTheme-light').isChecked());
    await page.locator('#settingsTheme-dark').check();assert.equal(await page.locator('html').getAttribute('data-theme'),'dark');
    await page.locator('[data-act="closeSettings"]').click();
-   app.health();console.log(`PASS: ${game} four Settings tabs, light/dark reload, glass parity, keyboard, Back, fold resize, draft and inventory preservation`);
+   app.health();console.log(`PASS: ${game} five Settings sections, light/dark reload, glass parity, keyboard, Back, fold resize, draft and inventory preservation`);
   }catch(error){failureDiagnostics=await page.evaluate(()=>({step:window.__settingsTraceStep||null,trace:window.__settingsInteractionTrace||[]})).catch(()=>null);await capture(page,`synthetic-search-settings-${game}-failure`,{settle:false}).catch(()=>{});throw error;}finally{await app.context.close();}
  }
 }catch(error){failure=String(error.stack||error);throw error;}finally{const out=new URL('../test-results/',import.meta.url);await mkdir(out,{recursive:true});await writeFile(new URL('synthetic-search-settings-theme-evidence.json',out),JSON.stringify({status:failure?'failed':'passed',evidence,headerChecks,gestureChecks,...(failure?{error:failure,diagnostics:failureDiagnostics}:{})},null,2));await browser.close();await server.close();}
