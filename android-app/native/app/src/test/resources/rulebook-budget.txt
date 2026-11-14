@@ -54,7 +54,7 @@ IdeaSheet.kt 0 13 15
 LessonWhisper.kt 0 0 8
 LobbyScreen.kt 47 29 107
 MatchBottom.kt 2 3 16
-MatchMenu.kt 0 0 27
+MatchMenu.kt 0 0 21
 MetaDeckSheet.kt 0 12 16
 ModeSwitch.kt 0 0 10
 PackOpen.kt 4 3 96

@@ -36,6 +36,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
@@ -120,67 +126,90 @@ class MatchMenu(input: String?, val onConcede: () -> Unit, val onLeave: () -> Un
     }
 }
 
-private const val TRACKER_ICON = "M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM9 9h6M9 13h6"
 private const val LANDS_ICON = "M3 20l6-10 4 6 3-4 5 8z"
 
-/** .forge-menu-panel: under the menu button (top: 100% + 8px, left 0), min-width 220, padding 8, gap 4, radius 16, #11141bf2, #ffffff1a hairline. */
+/** What you can do from the match menu, as lines. Showing the tracker or the history closes the menu, so the table shows it. */
+internal fun matchMenuActions(menu: MatchMenu, stackCount: Int): List<ConsoleRow> = buildList {
+    add(ConsoleRow("resume", "Resume", "Back to the table. The turn clock keeps running while this menu is open.", ConsoleCtl.Go(verb = "Resume") { menu.open = false }))
+    val tracking = menu.tracker != null
+    if (menu.deck.isNotEmpty()) add(ConsoleRow("tracker", "Deck tracker", "What is left in your library, card by card, and what your opponent has shown.",
+        ConsoleCtl.Go(value = if (tracking) "On" else "Off", verb = if (tracking) "Hide" else "Show") { menu.showTracker(if (tracking) null else "deck"); if (!tracking) menu.open = false }))
+    add(ConsoleRow("history", "History and stack", "The match told move by move, and what is on the stack now.",
+        ConsoleCtl.Go(value = if (menu.history) "On" else if (stackCount > 0) "$stackCount on the stack" else "Off", verb = if (menu.history) "Hide" else "Show") { menu.history = !menu.history; if (menu.history) menu.open = false }))
+    add(ConsoleRow("concede", "Concede", "Gives up this match. You are asked first.", ConsoleCtl.Go(verb = "Concede") { menu.open = false; menu.ask = "concede" }, danger = true))
+    add(ConsoleRow("leave", "Return to Play setup", "Ends the match here and goes back to Play setup. You are asked first.", ConsoleCtl.Go(verb = "Leave") { menu.open = false; menu.ask = "leave" }))
+}
+
+/** The settings you reach for mid-game: Settings' own lines (Gameplay's four, and Sound's two volumes), so they read and act the same. */
+internal fun matchMenuSettings(): List<ConsoleRow> = gameplayItems().rows() + soundItems {}.rows().filter { it.id == "music" || it.id == "sfx" }
+
+/**
+ * The match menu in the Console look (Randall's pick of 14 Nov 2026): what you can do at the left, the settings you reach for
+ * mid-game at the right (new: Settings could not be opened from a match), and under them what the line you are on does.
+ * It is called Match menu, not Paused: the turn clock keeps running. On two screens it is the bottom screen, so the table stays
+ * in view; the lines stay on top, unseen, as the ring's stops, and the bottom lights the one the ring is on.
+ */
 @Composable
-internal fun MenuPanel(menu: MatchMenu, stackCount: Int, d: Du, x: Dp, y: Dp) = with(d) {
-    // A tap anywhere else closes the menu. It is no stop for the controller's ring (B and Start close the menu there).
-    Box(Modifier.fillMaxSize().zIndex(39f).focusProperties { canFocus = false }.clickable(remember { MutableInteractionSource() }, null) { menu.open = false })
-    val pop = remember { Animatable(0f) }
+internal fun MenuPanel(menu: MatchMenu, stackCount: Int, @Suppress("UNUSED_PARAMETER") d: Du, @Suppress("UNUSED_PARAMETER") x: Dp, @Suppress("UNUSED_PARAMETER") y: Dp) {
+    // With motion still it is simply there (and a test picture of its first frame shows it).
+    val pop = remember { Animatable(if (Motion.still) 1f else 0f) }
     LaunchedEffect(Unit) { pop.animateTo(1f, tween(if (Motion.still) 0 else 180)) }
-    // A controller: the ring starts on the first row; B and Start close the menu (B would otherwise leave the match). A phone with no pad is as it was.
     val padOn = Pad.connected.collectAsState().value
-    val first = remember { FocusRequester() }
-    LaunchedEffect(Unit) { if (Pad.connected.value) runCatching { first.requestFocus() } }
-    androidx.activity.compose.BackHandler(padOn) { menu.open = false }
-    PadScreen(PadActs(b = "Close", start = PadAct("Close") { menu.open = false }, opaque = true))
-    // Two screens (W3): the menu opens on the bottom so the table stays in view. The rows stay on top as the ring's stops, unseen,
-    // and the bottom lights the row the ring is on; a finger uses the bottom's rows.
+    // Back, B and Start close the menu (B would otherwise leave the match).
+    androidx.activity.compose.BackHandler { menu.open = false }
+    PadScreen(PadActs(b = "Resume", start = PadAct("Resume") { menu.open = false }, opaque = true))
     val dual = DualScreen.active
-    var ringAt by remember { mutableIntStateOf(-1) }
-    data class Item(val label: String, val on: Boolean, val danger: Boolean, val run: () -> Unit)
-    val items = buildList {
-        // On two screens the tracker takes the bottom screen, so the menu steps aside for it (U7).
-        if (menu.deck.isNotEmpty()) add(Item("Deck tracker", menu.tracker != null, false) { menu.showTracker(if (menu.tracker != null) null else "deck"); if (menu.tracker != null) menu.open = false })
-        add(Item("History & stack" + if (stackCount > 0) " · $stackCount" else "", menu.history, false) { menu.history = !menu.history })
-        add(Item("Concede", false, true) { menu.open = false; menu.ask = "concede" })
-        add(Item("Return to Play setup", false, false) { menu.open = false; menu.ask = "leave" })
-    }
-    if (dual) BottomScreen {
-        ShowcaseCase("Match", "Menu", scroll = false) {
-            items.forEachIndexed { i, it ->
-                val shape = RoundedCornerShape(Rule.Radius.Panel)
-                Row(Modifier.fillMaxWidth().heightIn(min = 72.dp).clip(shape).background(if (it.on) Rule.Color.GoldEdge.copy(alpha = .25f) else Rule.Color.Glass)
-                    .border(if (i == ringAt) 2.dp else 1.dp, if (i == ringAt) Rule.Color.CtaTop else Rule.Color.Edge, shape).clickable(onClick = it.run).padding(horizontal = 22.dp),
-                    verticalAlignment = Alignment.CenterVertically) {
-                    Text(it.label, style = Rule.Type.sans(20, FontWeight.Bold, if (it.danger) Rule.Color.Coral else if (it.on) Rule.Color.Gold else Rule.Color.Text), modifier = Modifier.weight(1f))
-                    if (it.on) Text("✓", style = Rule.Type.sans(20, FontWeight.Bold, Rule.Color.Gold))
-                }
+    var focus by remember { mutableStateOf("resume") }
+    val actions = matchMenuActions(menu, stackCount); val settings = matchMenuSettings()
+    if (dual) BottomScreen { Box(Modifier.fillMaxSize().background(Rule.Console.NightSolid)) { MatchMenuBody(actions, settings, focus, { focus = it }, ConsoleRing.NONE, wide = true, short = false) } }
+    val quiet = remember { MutableInteractionSource() }
+    // A tap anywhere else closes the menu. With two screens and no controller the bottom's lines are the only ones (nothing unseen to tap on the table).
+    Box(Modifier.fillMaxSize().zIndex(40f).graphicsLayer { alpha = if (dual) 0f else pop.value }.then(if (dual) Modifier else Modifier.background(Rule.Console.Veil))
+        .focusProperties { canFocus = false }.clickable(quiet, null) { menu.open = false }, contentAlignment = Alignment.Center) {
+        if (!dual || padOn) androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.Center) {
+            val shape = RoundedCornerShape(Rule.Radius.Sheet)
+            val wide = maxWidth >= 560.dp; val short = maxHeight < 440.dp; val tall = maxHeight
+            Box(Modifier.padLayer().onFocusChanged { if (it.hasFocus) TablePad.held = true }.graphicsLayer { val k = .96f + .04f * pop.value; scaleX = k; scaleY = k }
+                .widthIn(max = 780.dp).fillMaxWidth().heightIn(max = tall).clip(shape).background(Brush.verticalGradient(listOf(Site.Surface, Site.Bg))).border(1.dp, Site.Line, shape)
+                .clickable(remember { MutableInteractionSource() }, null) {}) {
+                MatchMenuBody(actions, settings, focus, { focus = it }, ConsoleRing.TAKE, wide = wide, short = short)
             }
         }
     }
-    // With no controller the bottom rows are the only ones (nothing unseen to tap on the table).
-    if (dual && !padOn) return@with
-    Column(Modifier.padLayer().offset(x = x, y = y).zIndex(40f).graphicsLayer { if (dual) alpha = 0f }.onFocusChanged { if (it.hasFocus) TablePad.held = true }.graphicsLayer { alpha = pop.value; translationY = (1 - pop.value) * -6 * u * density }
-        .widthIn(min = 220.du).clip(RoundedCornerShape(16.du)).background(Color(0xF211141B)).border(1.dp, Color(0x1AFFFFFF), RoundedCornerShape(16.du))
-        .padding(8.du), verticalArrangement = Arrangement.spacedBy(4.du)) {
-        var n = 0
-        @Composable fun item(label: String, on: Boolean = false, icon: String? = null, focus: FocusRequester? = null, onClick: () -> Unit) {
-            val idx = n++
-            Row(Modifier.widthIn(min = 204.du).heightIn(min = 42.du).clip(RoundedCornerShape(10.du)).background(if (on) Color(0x1AE8B95B) else Color.Transparent)
-                .onFocusChanged { f -> if (f.isFocused) ringAt = idx else if (ringAt == idx) ringAt = -1 }
-                .then(if (focus != null) Modifier.focusRequester(focus) else Modifier)
-                .clickable(onClick = onClick).padding(horizontal = 12.du), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.du)) {
-                if (icon != null) StrokeIcon(icon, Color(0xFFE9D4A4), 17.du, stroke = 1.8f)
-                Text(label, style = sans(sp(13.5f), FontWeight.SemiBold, if (on) Color(0xFFF4D78F) else Color(0xFFEEF0F3)))
-            }
+}
+
+/** The menu's two lists and the words under them. [wide]: side by side; [short]: no room for the Settings heading (a phone on its side). */
+@Composable
+private fun MatchMenuBody(actions: List<ConsoleRow>, settings: List<ConsoleRow>, focus: String, onFocus: (String) -> Unit, ring: ConsoleRing, wide: Boolean, short: Boolean) {
+    val current = (actions + settings).firstOrNull { it.id == focus } ?: actions.first()
+    // The d-pad's left and right change a setting, so up from the first setting goes back to the actions, and down from the last action on to the settings.
+    val lastAction = remember { FocusRequester() }; val firstSetting = remember { FocusRequester() }
+    val left: @Composable () -> Unit = {
+        actions.forEachIndexed { i, r -> androidx.compose.runtime.key(r.id) {
+            ConsoleLine(r, r.id == current.id, { onFocus(r.id) }, if (r.id == current.id) ring else ring.quiet(),
+                if (i == actions.lastIndex && ring != ConsoleRing.NONE) Modifier.focusRequester(lastAction).focusProperties { down = firstSetting } else Modifier)
+        } }
+    }
+    val right: @Composable () -> Unit = {
+        if (!short || !wide) ConsoleHead("Settings")
+        settings.forEachIndexed { i, r -> androidx.compose.runtime.key(r.id) {
+            ConsoleLine(r, r.id == current.id, { onFocus(r.id) }, ring.quiet(),
+                if (i == 0 && ring != ConsoleRing.NONE) Modifier.focusRequester(firstSetting).focusProperties { up = lastAction } else Modifier)
+        } }
+    }
+    Column(Modifier.fillMaxWidth()) {
+        Text("MATCH MENU", Modifier.padding(start = 18.dp, end = 18.dp, top = if (short) 8.dp else 14.dp, bottom = 4.dp).semantics { heading(); contentDescription = "Match menu" },
+            style = Rule.Type.cinzel(if (short) 16 else 20).copy(letterSpacing = .08.em), maxLines = 1)
+        if (wide) Row(Modifier.weight(1f, fill = false).fillMaxWidth()) {
+            Column(Modifier.weight(.85f).verticalScroll(rememberScrollState())) { left() }
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) { right() }
+        } else Column(Modifier.weight(1f, fill = false).fillMaxWidth().verticalScroll(rememberScrollState())) { left(); right() }
+        // What the line you are on does: one place, one height, so nothing moves as you step.
+        val line = Site.Line
+        Box(Modifier.fillMaxWidth().height(if (short) 38.dp else 52.dp).drawBehind { drawRect(line, size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }
+            .padding(horizontal = 18.dp).semantics { liveRegion = LiveRegionMode.Polite }, contentAlignment = Alignment.CenterStart) {
+            Text(current.about, style = Rule.Type.sans(12, FontWeight.Medium, Site.Muted), maxLines = if (short) 1 else 2, overflow = TextOverflow.Ellipsis)
         }
-        if (menu.deck.isNotEmpty()) item("Deck tracker", menu.tracker != null, TRACKER_ICON, focus = first) { menu.showTracker(if (menu.tracker != null) null else "deck"); if (dual && menu.tracker != null) menu.open = false }
-        item("History & stack" + if (stackCount > 0) " · $stackCount" else "", menu.history, focus = if (menu.deck.isEmpty()) first else null) { menu.history = !menu.history }
-        item("Concede") { menu.open = false; menu.ask = "concede" }
-        item("Return to Play setup") { menu.open = false; menu.ask = "leave" }
     }
 }
 
