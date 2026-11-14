@@ -40,4 +40,6 @@ The bug is not closed until that test exists and fails on the old code.
 - Do not invent features or card data.
 - Pushing to `claude/edit-publish-github-bpm8zu` deploys the live site. Only the
   Release thread pushes there.
-- Roles for review: `.claude/agents/qa-lead.md`, `.claude/agents/release-manager.md`.
+- The studio: `studio/README.md` (departments and the loop), `studio/standards.md` (the bar),
+  `studio/backlog.md` (ranked briefs). Roles are in `.claude/agents/`, passes in `.claude/skills/`.
+- Before a change goes to the release record it gets a polish pass (`.claude/skills/polish-pass`).
