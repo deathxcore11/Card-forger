@@ -3,6 +3,7 @@ package dev.cardstashy.nativeplay.shots
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.captureRoboImage
 import dev.cardstashy.nativeplay.account.Account
@@ -98,8 +99,27 @@ class SettingsShotTest {
     @Test fun appearanceAndHelp() {
         signedIn()
         rule.setContent { SettingsScreen(onBack = {}, onWeb = {}) }
-        rule.onNodeWithText("Appearance").performClick(); rule.waitForIdle(); shot("appearance")
+        rule.onNodeWithText("Look").performClick(); rule.waitForIdle(); shot("appearance")
         rule.onNodeWithText("Help").performClick(); rule.waitForIdle(); shot("help")
+    }
+
+    /** Butter pass B3 (Randall 14 Nov): on a 360 dp phone all four tabs are on screen, and Help opens on the newest notes with the
+     *  history closed behind "Older releases". */
+    @Config(qualifiers = "w360dp-h800dp-xxhdpi")
+    @Test fun tabsFitAndHelpIsShort() {
+        signedIn()
+        rule.setContent { SettingsScreen(onBack = {}, onWeb = {}, startTab = "info") }
+        rule.waitForIdle()
+        val screen = rule.onRoot().fetchSemanticsNode().boundsInRoot
+        for (t in listOf("Account", "Look", "Backup", "Help")) {
+            val b = rule.onAllNodesWithText(t, useUnmergedTree = true).fetchSemanticsNodes().first().boundsInRoot
+            org.junit.Assert.assertTrue("$t at $b is off the screen $screen", b.left >= screen.left && b.right <= screen.right)
+        }
+        val older = rule.onAllNodesWithText("Older releases", substring = true, useUnmergedTree = true).fetchSemanticsNodes()
+        org.junit.Assert.assertEquals(1, older.size)
+        org.junit.Assert.assertTrue("Older releases sits at ${older[0].boundsInRoot.top}", older[0].boundsInRoot.top < screen.bottom * 1.6f)
+        org.junit.Assert.assertEquals(0, rule.onAllNodesWithText(dev.cardstashy.nativeplay.ui.WHATS_NEW.last().second, substring = true, useUnmergedTree = true).fetchSemanticsNodes().size)
+        rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "butter/settings-help-360.png").path)
     }
 
     /** Gap audit S1: the Backup tab as the preview draws it, with an Earlier save on this device (tall enough for all of it). */

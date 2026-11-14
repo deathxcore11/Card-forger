@@ -101,7 +101,8 @@ private object S {
     val Btn get() = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Site.Text)
 }
 
-private enum class Tab(val label: String) { ACCOUNT("Profile & account"), APP("Appearance"), BACKUP("Backup"), INFO("Help") }
+// Butter pass B3 (Randall 14 Nov): four short names that fit a phone, so the strip never scrolls sideways.
+internal enum class Tab(val label: String) { ACCOUNT("Account"), APP("Look"), BACKUP("Backup"), INFO("Help") }
 
 @Composable
 fun SettingsScreen(onBack: () -> Unit, onWeb: (String) -> Unit, startTab: String = "account", onChallenge: ((com.google.gson.JsonObject) -> Unit)? = null,
@@ -109,7 +110,7 @@ fun SettingsScreen(onBack: () -> Unit, onWeb: (String) -> Unit, startTab: String
     BackHandler(onBack = onBack)
     var tab by rememberSaveable { mutableStateOf(when (startTab) { "info" -> Tab.INFO; "app" -> Tab.APP; "recovery", "backup" -> Tab.BACKUP; else -> Tab.ACCOUNT }) }
     val community = remember { CommunityLayerState() }
-    // Controller: LB/RB step the tab row (Profile & account, Appearance, Backup, Help); a full-screen layer, so nothing under it lends buttons.
+    // Controller: LB/RB step the tab row (Account, Look, Backup, Help); a full-screen layer, so nothing under it lends buttons.
     PadScreen(remember { PadActs(tabs = { d -> tab = Tab.entries[(tab.ordinal + d).coerceIn(0, Tab.entries.size - 1)] }, opaque = true) })
     // Two screens (V10): the bottom shows what this device keeps, never an empty mark.
     BottomScreen { SettingsBottom(tab) }
@@ -148,14 +149,13 @@ fun SettingsScreen(onBack: () -> Unit, onWeb: (String) -> Unit, startTab: String
 
 @Composable
 private fun Tabs(tab: Tab, onTab: (Tab) -> Unit) {
-    // One line each (fix list E2): the three share the width while their words fit, else the row scrolls.
+    // The four share the width (butter pass B3): icon over a short name, so they fit a 360 dp phone without scrolling.
     TabsRow(Tab.entries.size, Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Site.Surface2).border(1.dp, Site.Line, RoundedCornerShape(14.dp)).padding(4.dp), gap = 4.dp) { each ->
         Tab.entries.forEach { t ->
             val on = t == tab; val sh = RoundedCornerShape(11.dp)
-            Row(each.heightIn(min = 46.dp).clip(sh).then(if (on) Modifier.background(Site.Surface).border(1.dp, Site.Gold.copy(alpha = .45f), sh) else Modifier)
-                .clickable { onTab(t) }.padding(horizontal = 6.dp, vertical = 8.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                Icon(when (t) { Tab.ACCOUNT -> SiteIcons.Profile; Tab.APP -> SiteIcons.Appearance; Tab.BACKUP -> SiteIcons.Backup; Tab.INFO -> SiteIcons.Help }, 15.dp, if (on) Site.Text else Site.Muted)
-                Spacer(Modifier.width(6.dp))
+            Column(each.heightIn(min = 52.dp).clip(sh).then(if (on) Modifier.background(Site.Surface).border(1.dp, Site.Gold.copy(alpha = .45f), sh) else Modifier)
+                .clickable { onTab(t) }.padding(horizontal = 4.dp, vertical = 7.dp), verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(when (t) { Tab.ACCOUNT -> SiteIcons.Profile; Tab.APP -> SiteIcons.Appearance; Tab.BACKUP -> SiteIcons.Backup; Tab.INFO -> SiteIcons.Help }, 16.dp, if (on) Site.Text else Site.Muted)
                 Text(t.label, style = S.Btn.copy(fontSize = 12.sp, color = if (on) Site.Text else Site.Muted), maxLines = 1, softWrap = false)
             }
         }
@@ -830,7 +830,11 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 // ---------------------------------------------------------------- Help (app-info.js infoPanel + views.js sources/about/legal)
 
 /** This build's notes: short, plain, what a player would notice. */
-private val WHATS_NEW = listOf(
+internal const val NEWEST_NOTES = 5
+internal val WHATS_NEW = listOf(
+    "Star Trek" to "The match engine is the newest Forge, so Elim Garak, Georgiou, Kai Winn and the other new cards play. A card that asks you to name a card gives you a box to type it.",
+    "Match sounds" to "Quieter clock: no sound when a timer starts, only the last 5 seconds tick softly, and the phase tick plays only on your own combat and second main.",
+    "Smoother" to "The table always opens within 10 seconds, the Welcome back reward holds still, and Settings has four tabs that fit with the newest notes first.",
     "Triggers" to "When a card triggers it lifts with a ring (gold yours, coral the CPU's), waits on the stack long enough to read, then its result lands on the cards: counters, power and toughness, tokens.",
     "Match table" to "The rope is gone: your time is a ring around the gold button and the prompt buttons, coral with a sound in the last 10 seconds.",
     "Match table" to "No stop for a CPU spell you can't answer. A card you can cast in answer lights up. Your Main 1 is no longer skipped after your own trigger. An optional pay {1} trigger you can't afford is declined for you and says so.",
@@ -939,11 +943,17 @@ private fun InfoPane(onWeb: (String) -> Unit) {
     }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text("WHAT\u2019S NEW", style = S.Eyebrow)
-        WHATS_NEW.forEach { (tag, line) ->
+        // Butter pass B3 (Randall 14 Nov): the newest notes only; the whole history waits behind one closed row.
+        @Composable fun Note(tag: String, line: String) = Text(androidx.compose.ui.text.buildAnnotatedString {
+            withStyle(androidx.compose.ui.text.SpanStyle(color = Site.Gold, fontWeight = FontWeight.Bold)) { append(tag) }; append("  "); append(line)
+        }, style = S.Small)
+        WHATS_NEW.take(NEWEST_NOTES).forEach { (tag, line) -> Note(tag, line) }
+    }
+    if (WHATS_NEW.size > NEWEST_NOTES) Panel(padding = 14.dp) {
+        Disclosure("Older releases (${WHATS_NEW.size - NEWEST_NOTES} notes)") { WHATS_NEW.drop(NEWEST_NOTES).forEach { (tag, line) ->
             Text(androidx.compose.ui.text.buildAnnotatedString {
                 withStyle(androidx.compose.ui.text.SpanStyle(color = Site.Gold, fontWeight = FontWeight.Bold)) { append(tag) }; append("  "); append(line)
-            }, style = S.Small)
-        }
+            }, style = S.Small) } }
     }
     Box(Modifier.fillMaxWidth().height(1.dp).background(Site.Line))
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
