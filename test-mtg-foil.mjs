@@ -60,6 +60,15 @@ assert(at(12,100,3)>120&&at(60,60,3)<20,'Drawn lines found, flat paper has none'
 for(const ch of ['r','b','a'])assert.match(MTG_FOIL_FRAGMENT,new RegExp(`cov=mk\\.${ch};`),'ink '+ch+' coverage comes from its own mask');
 assert.match(MTG_FOIL_FRAGMENT,/if\(mode>1\.5&&\(mode<2\.5\|\|\(mode>3\.5&&mode<5\.5\)\)\)cov\*=1\.-text;/,'ink-selective coverage (gold, paper, lines) stays out of the rules box');
 assert.match(MTG_FOIL_FRAGMENT,/vec3 outC=mix\(base,shoulder\(lit\),c\);/,'Zero coverage keeps the source pixel under the foil');
+// The recipe numbers the owner approved with the first foil (mock-up v1), kept as they were shown to him. Later retunes changed
+// these as well as the shader and made the foil look fake to him, so every number must match. Three known differences:
+// step-and-compleat is pattern 22 here (the app's facet foil is 21); the approved shader draws 21 and 22 the same way.
+// Vault Boy and Premium Deck Series cards are an ordinary foil (Vault Boy is a card style, and no source shows the From the Vault
+// bar on Premium Deck Series), so they carry the approved traditional numbers.
+{const A=JSON.parse(await (await import('node:fs/promises')).readFile(new URL('./test-fixtures/finish-effects/mtg-foil-first-approved-recipes.json',import.meta.url),'utf8'));
+ const want=k=>k==='mtg-compleat'?{...A[k],pat:22}:k==='mtg-vaultboy'||k==='mtg-pds'?A['mtg-traditional']:A[k];
+ assert.deepEqual(Object.keys(MTG_FOIL_RECIPES).sort(),Object.keys(A).sort(),'the same foil types as the approved first foil');
+ for(const k of Object.keys(A)){const r=MTG_FOIL_RECIPES[k],got={};for(const n of Object.keys(A[k]))got[n]=r[n]||0;assert.deepEqual(got,want(k),k+' keeps the approved first foil\'s numbers');}}
 // Textured foil keeps the art and text readable: gentle relief and half the printed art left visible.
 {const t=MTG_FOIL_RECIPES['mtg-textured'];assert(t.relief<=.4,'textured relief stays gentle');assert(t.keep>=.4,'textured foil keeps the printed art visible');}
 // Foil index additions: masterpieces, ampersand, silver screen, scroll, Vault Boy, Premium Deck Series,
