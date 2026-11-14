@@ -39,15 +39,15 @@
 #content.view-gallery .display-list .lot:not(.wanted) .lot-art::after{display:none!important;animation:none!important}
 :is(.view-compact,.view-symbols) .finish-overlay{display:none!important}
 :is(.view-compact,.view-symbols) .lot-art::after{background:none!important;animation:none!important}
-/* Magic's holographic oval security stamp (rares and mythics, 2015 frame on): a small rainbow that slides
-   across the printed silver oval only, measured from Scryfall scans (centre 50% / 93%, 8.5% x 3% of the card). */
-.finish-holostamp{position:absolute;z-index:5;left:45.75%;top:91.55%;width:8.5%;height:3%;border-radius:50%;pointer-events:none;mix-blend-mode:hard-light;opacity:.5;
- background:linear-gradient(105deg,#ff7ac0,#ffd36e,#8affc1,#6fd6ff,#b08cff,#ff7ac0,#ffd36e,#8affc1,#6fd6ff,#b08cff,#ff7ac0) 0 0/200% 100%;
- -webkit-mask:radial-gradient(closest-side,#000 70%,transparent);mask:radial-gradient(closest-side,#000 70%,transparent);animation:finish-holostamp 3.6s linear infinite}
-.finish-holostamp::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(100deg,transparent 30%,#fff 50%,transparent 70%) 0 0/250% 100%;mix-blend-mode:overlay;animation:finish-holostamp-glint 3.6s ease-in-out infinite}
-.finish-holostamp.on-foil{opacity:.32}
-@keyframes finish-holostamp{to{background-position:-200% 0}}
-@keyframes finish-holostamp-glint{0%,100%{background-position:150% 0}50%{background-position:-50% 0}}
+/* Magic's holographic security stamp. Its box and its mask come from the card picture (mtg-stamp.js): the mask
+   follows the stamp's outline and the brightness of its print, so colour lands on the silver and the printed
+   lines stay dark. Unmeasured, it is invisible. The colour follows the light (--mx, --my) and never runs alone. */
+.finish-holostamp{position:absolute;z-index:5;pointer-events:none;opacity:0;
+ background:linear-gradient(112deg,#ff8fc7,#ffd98a,#9dffcf,#8fdcff,#bfa2ff,#ff8fc7,#ffd98a,#9dffcf,#8fdcff,#bfa2ff,#ff8fc7) var(--mx,50%) var(--my,50%)/320% 320%;
+ -webkit-mask-size:100% 100%;mask-size:100% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
+.finish-holostamp::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 40%,#fff 50%,transparent 60%) var(--mx,50%) 0/260% 100%;opacity:.55}
+.finish-holostamp.mapped{opacity:.6}
+.finish-holostamp.mapped.on-foil{opacity:.5}
 @media(prefers-reduced-motion:reduce){.finish-overlay{display:none!important}.zoom-card-surface{transition:none!important}}
 
 /* A neutral, soft lamp travels with the existing pointer/gyro coordinates.
