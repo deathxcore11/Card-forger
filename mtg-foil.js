@@ -111,8 +111,8 @@ void main(){
  // Fluorescent ink glows under any light, on top of its foil.
  if(mode>2.5&&mode<3.5)outC+=base*mk.g*.45*(.6+.4*spot);
  if(u_r2.z>.5&&u_r2.z<1.5){float s=shootingStar(uv);outC=mix(outC,shoulder(F*1.6+vec3(.15)),s*.9);}
- // M15-era holo stamp: the oval security stamp at the bottom centre flashes silver on its own.
- if(u_r2.z>1.5){vec2 o=(uv-vec2(.5,.925))/vec2(.03,.012);float ov=1.-smoothstep(.8,1.,length(o));vec3 hs=grating(L,V,normalize(vec2(.3,1.)),1500.)*1.5+vec3(.75,.78,.82)*pow(max(dot(N,H),0.),30.)*spot;outC=mix(outC,shoulder(hs+vec3(.2)),ov*.85);}
+ // M15-era holo stamp: light is added to the printed oval in step with its own brightness, so its pattern stays.
+ if(u_r2.z>1.5){vec2 o=(uv-vec2(.5,.925))/vec2(.03,.012);float ov=1.-smoothstep(.8,1.,length(o));vec3 hs=grating(L,V,normalize(vec2(.3,1.)),1500.)*1.5+vec3(.75,.78,.82)*pow(max(dot(N,H),0.),30.)*spot;outC+=ov*hs*(.15+.85*dot(base,vec3(.3,.59,.11)))*.55;}
  gl_FragColor=vec4(toSrgb(clamp(outC,0.,1.)),1.);
 }`;
 const analyze=foilAnalyzer(new URL('./mtg-foil-worker.js',import.meta.url),(data,W,H)=>analyzeMtgCard(data,W,H));

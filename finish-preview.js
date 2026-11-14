@@ -184,7 +184,7 @@ export function attachFinishPreview(root){
   if(p.materialProfile)overlay.dataset.materialProfile=p.materialProfile;
   if(['large','card'].includes(el.dataset.finishSurface)){const phase=String(p.printingId||'').split('').reduce((n,c)=>n+c.charCodeAt(0),0)%80;overlay.style.animationDelay=`-${phase/10}s`;}
   overlay.setAttribute('aria-hidden','true');
-  if(detail){const light=img.ownerDocument.createElement('span');light.className='finish-spotlight';plane.append(light);}
+  if(detail&&p.effect!=='plain'){const light=img.ownerDocument.createElement('span');light.className='finish-spotlight';plane.append(light);}
   if(stamp){const holo=img.ownerDocument.createElement('span');holo.className='finish-holostamp'+(onFoil?' on-foil':'');plane.append(holo);}
   for(const l of layers){if(!FINISH_MASKS[l.mask])continue;const part=img.ownerDocument.createElement('span');part.className=`finish-layer finish-${l.material}${l.mask==='ygo-name'?' finish-name-region':''}`;part.style.clipPath=FINISH_MASKS[l.mask];plane.append(part);}
   if(hasFinishPattern(p.materialProfile)&&FINISH_MASKS[layers[0]?.mask]){const pattern=img.ownerDocument.createElement('span');pattern.className='finish-pattern';pattern.style.clipPath=FINISH_MASKS[layers[0].mask];plane.append(pattern);}

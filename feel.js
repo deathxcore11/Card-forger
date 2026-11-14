@@ -373,6 +373,12 @@ function attachMotionTilt(root, pressed) {
     frame = 0;
     const c = hero();
     if (!motionTiltOn() || reduced() || globalThis.document?.hidden || !c || !last || pressed() === c) return;
+    // A plain (nonfoil) card is paper: it does not lean or catch light when the phone moves.
+    if (c.dataset?.finishEffect === "plain") {
+      if (c.classList.contains("gyro")) { c.classList.remove("gyro", "tilting"); for (const p of ["--tx", "--ty", "--mx", "--my"]) c.style.removeProperty?.(p); }
+      currentCard = null; base = null;
+      return;
+    }
     const clamp = (v) => Math.max(-1, Math.min(1, v / 18));
     if(c!==currentCard){currentCard=c;base=null;}
     if (!base) base = { ...last };
