@@ -7,13 +7,13 @@ Owning specs live in the project's shared `specs/` folder.
 | Rank | Brief | Department | Evidence | Needs preview | Owning spec |
 |---|---|---|---|---|---|
 | 0 | Record one full match on the live build and mark each walk line | QA | No match recorded since 11 Nov | no | `qa/smoke-check.md` B |
-| 1 | Clock sounds: no sound when a timer window opens; ticks only in the last 5 s | Audio | Owner 14 Nov; Read `ui/TurnRing.kt:246` | no (fix) | `butter-pass-brief.md` B1 |
+| 1 | Clock sounds: no sound when a timer window opens; ticks only in the last 5 s; phase tick only on your own turn | Audio | Owner 14 Nov; Read `ui/TurnRing.kt:246`; measured: the cue is an old 1-second file, and the phase tick can play 100 to 200 times a match | no (fix) | `butter-pass-brief.md` B1 |
 | 2 | Welcome back pop-up: tiles fit, packs merged, opaque close | UX, Art | Seen 14 Nov recording 0:00-0:04 | no (fix) | `butter-pass-brief.md` B2 |
 | 3 | Settings: tabs fit the phone, Help shows the newest notes only | UX | Seen 14 Nov recording 0:11-0:25 | no (fix) | `butter-pass-brief.md` B3 |
 | 4 | Every result names its cause (destroy, exile, bounce, sacrifice, discard) | Game feel, UX | Read `match/Director.kt` resolutions() | yes, preview made | `match-table-master.md` |
 | 5 | Nothing resolves in silence (draw, search, mill, "nothing happened") | UX | Read, same place | yes, same preview | `table-info-native.md` I3, M9 |
 | 6 | The last three things stay readable on the table | UX | Read: history is only in the match menu | yes, same preview | `table-info-native.md` I3 |
-| 7 | CPU pace: measure a CPU turn against standard F2 and slow it to match | Game feel | Owner 14 Nov "CPU playing too fast"; think time exists in code, not measured | no (tuning) | `match-director-native.md` |
+| 7 | CPU pace: stop shortening the CPU's moves while a response window is open or the queue is long; then measure a CPU turn against standard F2 | Game feel | Owner 14 Nov "CPU playing too fast"; Read `match/Director.kt` lengthOf(): every non-focal step drops to its minimum when a prompt waits on you or more than 6 s is queued, and think time is capped at 8 s a turn. Written full lengths match Arena's. Not measured | no (tuning) | `match-director-native.md` section 6 |
 | 8 | Art ready before a card lands | Art | Owner 14 Nov "old art or pop-ins"; an art gate exists in code, not seen working | no (fix) once traced | `match-director-native.md` art gate, `loading-screens-brief.md` |
 | 9 | Attachments as cards: equipment behind its host like auras | Art | Owner 14 Nov; Read `ui/ForgeTable.kt:3394` (count badge) | yes | `mobile-table-arena-parity-brief.md` M7 |
 | 10 | The stack explains itself: large art card, text, who, aimed at | UX, Art | Owner 14 Nov; partly built, not seen | yes if the look changes | `table-info-native.md` I1 |
