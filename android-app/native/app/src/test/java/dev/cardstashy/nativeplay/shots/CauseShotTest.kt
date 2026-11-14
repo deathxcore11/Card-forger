@@ -38,8 +38,8 @@ import java.io.File
 
 /**
  * EVERY RESULT NAMES ITS CAUSE, frame by frame on the real boards of CauseProbe's match (table/cause-cpu.jsonl): the plate on
- * the exiled card, the card drawn, the trigger the ward countered, the ward the CPU paid, then the chain: destroyed, the
- * Auras falling off, the held card returning. "Last moves" fills as the controller would fill it, and the exiled card sits
+ * the exiled card, the card drawn, the trigger the ward countered, the ward the CPU paid, then the chain: destroyed with its
+ * Auras falling off in the same beat, the held card returning. "Last moves" fills as the controller would fill it, and the exiled card sits
  * on its Aura while it is held. Drawn at a phone (844 x 390), a Fold (884 x 796) and the Thor's top screen (960 x 540).
  * The effects are queued through Battlefield.trigger, the call the board makes for the controller's beat.
  */
@@ -64,16 +64,15 @@ class CauseShotTest {
         fun results(a: Long, b: Long, triggers: Set<Int>, held: Map<Int, Int> = emptyMap()) = Director.resolutions(cpu[a]!!, cpu[b]!!, fresh(cpu[a]!!, cpu[b]!!), triggers, held)
         val exile = results(71, 75, setOf(7)).single(); val draw = results(128, 132, setOf(11)).single()
         val counter = results(189, 195, setOf(21, 22)).single(); val ward = results(275, 281, setOf(28, 29)).single()
-        val (kill, fell, back) = results(281, 285, setOf(28), holds)
+        val (kill, back) = results(281, 285, setOf(28), holds)
         val b281 = cpu[281]!!; val b285 = cpu[285]!!
         val beats = listOf(
             Beat("1-exiled", cpu[71]!!, cpu[75]!!, exile, holds),
             Beat("2-drew", cpu[128]!!, cpu[132]!!, draw, holds),
             Beat("3-countered", cpu[189]!!, cpu[195]!!, counter, holds),
             Beat("4-ward-paid", cpu[275]!!, b281, ward, holds),
-            Beat("5-destroyed", Director.beforeResults(b285, b281, listOf(kill, fell, back)), Director.beforeResults(b285, b281, listOf(fell, back)), kill, holds),
-            Beat("6-fell-off", Director.beforeResults(b285, b281, listOf(fell, back)), Director.beforeResults(b285, b281, listOf(back)), fell, holds),
-            Beat("7-returned", Director.beforeResults(b285, b281, listOf(back)), b285, back, holds),
+            Beat("5-destroyed", Director.beforeResults(b285, b281, listOf(kill, back)), Director.beforeResults(b285, b281, listOf(back)), kill, holds),
+            Beat("6-returned", Director.beforeResults(b285, b281, listOf(back)), b285, back, holds),
         )
         val sizes = listOf("phone-844x390" to "w844dp-h390dp-land-xxhdpi", "fold-884x796" to "w884dp-h796dp-xhdpi", "thor-top-960x540" to "w960dp-h540dp-land-xhdpi")
         var k = 0L
@@ -103,6 +102,15 @@ class CauseShotTest {
                 val plates = fx.items.filter { it.kind == Fx.PLATE }
                 assertTrue("${b.name}: a plate for every card it names", plates.isNotEmpty())
                 for (p in plates) assertTrue("${b.name}: the plate ${p.label} has a place on the table (${p.toKey}, ${p.fromKey})", anchors.rects[p.toKey] != null || anchors.rects[p.fromKey] != null)
+                // A card that leaves in the beat breaks (or fades) under its plate and its embers fly to the pile; one that returns arrives.
+                // The board changes with the beat and not with a new board from Forge, so the beat itself must queue these.
+                if (b.name == "1-exiled") assertTrue("Memnite fades where it stood", fx.items.any { it.kind == Fx.DEATH && it.ghost?.id == 64 && it.toKey == null })
+                if (b.name == "5-destroyed") {
+                    assertTrue("the Lions break and go to your pile", fx.items.any { it.kind == Fx.DEATH && it.ghost?.id == 33 && it.toKey == "grave0" })
+                    assertEquals("embers for the Lions and both Auras", setOf(33, 40, 3), fx.items.filter { it.kind == Fx.EMBERS }.mapNotNull { it.card }.toSet())
+                    assertEquals("every plate of the beat ends with it", 1, plates.map { it.t0 + it.dur }.distinct().size)
+                }
+                if (b.name == "6-returned") assertTrue("Memnite arrives", fx.items.any { it.kind == Fx.ARRIVE && it.card == 64 })
                 captureRoboImage(File(System.getProperty("shotsDir"), "table/cause-${b.name}-$size.png").path, content = content(b.to, told.toList(), m))
                 // The exiled card sits on the Aura that holds it from its "Exiled" beat on, while the Aura is on the table.
                 if (b.to.players.any { p -> p.exile.any { it.id == 64 } } && b.to.players.any { p -> p.battlefield.any { it.id == 40 } })
@@ -110,7 +118,7 @@ class CauseShotTest {
                 else if (b.name == "1-exiled") error("beat 1 shows Memnite in exile")
                 scratch.delete()
             }
-            assertEquals(8, told.size)
+            assertEquals(7, told.size)
         }
         CardImageTest.art = null
     }

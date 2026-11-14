@@ -88,6 +88,20 @@ object Rule {
         val CtaOffTop = androidx.compose.ui.graphics.Color(0xFF2A2620); val CtaOffBottom = androidx.compose.ui.graphics.Color(0xFF1C1A16); val CtaOffEdge = androidx.compose.ui.graphics.Color(0x33D6AD64); val CtaOffInk = androidx.compose.ui.graphics.Color(0x99D6AD64)
     }
 
+    /**
+     * Every Result Names Its Cause (approved preview, 14 Nov): the cause plate and a "Last moves" row are the same dark glass.
+     * Light is exile and return, Ice the CPU's rows and a card held in exile; yours are the table's trigger gold, a loss its coral.
+     */
+    object Cause {
+        val Light = androidx.compose.ui.graphics.Color(0xFFFFF6DC)
+        val Ice = androidx.compose.ui.graphics.Color(0xFF8FD8FF)
+        val GlassTop = androidx.compose.ui.graphics.Color(0xF7262E44); val GlassBottom = androidx.compose.ui.graphics.Color(0xFA0A0D15)
+        /** An older row's quiet rim (E3C070 at 28 %). */
+        val Rim = androidx.compose.ui.graphics.Color(0x47E3C070)
+        /** Behind a picture that has not arrived, the words, and the shade under the header. */
+        val Ink = androidx.compose.ui.graphics.Color(0xFF141418); val Words = androidx.compose.ui.graphics.Color(0xFFEEF0F4); val Shade = androidx.compose.ui.graphics.Color(0xE6000000)
+    }
+
     /** Buttons are 44 tall (48 on a Thor case). */
     val ButtonHeight: Dp = 44.dp
     val CaseButtonHeight: Dp = 48.dp

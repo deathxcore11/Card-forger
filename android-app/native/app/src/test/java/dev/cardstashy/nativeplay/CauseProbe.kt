@@ -96,7 +96,7 @@ class CauseProbe {
 
     private companion object { /** White first: Savannah Lions and both Auras need it; Murder's two Swamps come after. */ val LANDS = listOf("Plains", "Plains", "Swamp", "Swamp") }
 
-    private val fell = listOf("Sheltered by Ghosts: fell off and went to your graveyard", "Feather of Flight: fell off and went to your graveyard", "Sheltered by Ghosts: left, so Memnite returns")
+    private val fell = listOf("Savannah Lions: died, so its 2 Auras fell off", "Sheltered by Ghosts: left, so Memnite returns")
 
     /** Every result of the whole match and nothing else: no land play, draw step or combat is told as a card's doing. */
     @Test fun youDestroyYourOwn() = assertEquals(listOf("Sheltered by Ghosts: exiled Memnite", "Feather of Flight: drew you a card", "Murder: destroyed Savannah Lions") + fell,

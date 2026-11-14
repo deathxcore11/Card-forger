@@ -78,11 +78,15 @@ object Director {
      */
     enum class Went { EXILED, DESTROYED, SACRIFICED, TO_GRAVE, TO_HAND, DREW, DISCARDED, MILLED, RETURNED, FELL_OFF }
     /** One card Forge moved (a zone event at [seq]); [cardId] is null for a card the viewer cannot see (the CPU's draw). */
-    data class Move(val seq: Long, val cardId: Int?, val cardName: String?, val from: String, val to: String, val player: Int?, val went: Went)
+    data class Move(val seq: Long, val cardId: Int?, val cardName: String?, val from: String, val to: String, val player: Int?, val went: Went,
+        /** [Went.FELL_OFF] only: the permanent it was on, and whether that permanent died (a creature to the graveyard) or left another way. */
+        val hostId: Int? = null, val hostName: String? = null, val hostDied: Boolean = false)
     /** A stack item that left the stack without resolving, while the item that says "counter" resolved (a ward nobody paid). */
     data class Countered(val stackId: Int?, val sourceId: Int?, val sourceName: String?, val controller: Int?, val ability: Boolean)
     /** One row of "Last moves": the card that did it ([yours]: on your side) and what it did, in plain words. */
-    data class Line(val sourceId: Int?, val sourceName: String, val yours: Boolean, val text: String, /** Its place in the match (the result's event, then its row): tells two rows with the same words apart. */ val at: Long = 0)
+    data class Line(val sourceId: Int?, val sourceName: String, val yours: Boolean, val text: String, /** Its place in the match (the result's event, then its row): tells two rows with the same words apart. */ val at: Long = 0,
+        /** False when Forge gave the cause no name ([sourceName] is then a stand-in word, and there is no picture to show). */
+        val known: Boolean = true)
 
     /**
      * What one stack item's resolve changed, all as Forge reported it: counters (counters events), power/toughness (snapshot diff),
@@ -122,10 +126,19 @@ object Director {
         /** Its rows for "Last moves": one, or one per Aura that fell off. */
         fun lines(viewer: Int): List<Line> {
             fun pile(m: Move) = if (m.player == viewer) "your graveyard" else "the CPU's graveyard"
-            if (follow && moves.all { it.went == Went.FELL_OFF }) return moves.mapIndexed { i, it -> Line(it.cardId, it.cardName ?: "An Aura", it.player == viewer, "fell off and went to ${pile(it)}", seq * 8 + i) }
-            val text = said(viewer) ?: return emptyList()
-            return listOf(Line(sourceId, sourceName ?: "A trigger", controller == viewer, (if (count > 1) "×$count: " else "") + text, seq * 8))
+            val out = ArrayList<Line>()
+            val fellOff = moves.filter { it.went == Went.FELL_OFF }
+            if (!(follow && fellOff.size == moves.size)) said(viewer)?.let { out += Line(sourceId, sourceName ?: "A trigger", controller == viewer, (if (count > 1) "×$count: " else "") + it, seq * 8, sourceName != null) }
+            // One Aura: its own row. Several off the same permanent: one row, the permanent's, so they do not push the cause off a short list.
+            for ((host, l) in fellOff.groupBy { it.hostId }) out += l.first().let { f ->
+                if (l.size == 1) Line(f.cardId, f.cardName ?: "An Aura", f.player == viewer, "fell off and went to ${pile(f)}", seq * 8 + out.size + 1, f.cardName != null)
+                else Line(host, f.hostName ?: "A permanent", f.player == viewer, (if (f.hostDied) "died" else "left") + ", so its ${l.size} Auras fell off", seq * 8 + out.size + 1, f.hostName != null) }
+            return out
         }
+
+        /** How many cause plates the table draws for it (one per card moved; cards drawn, discarded or milled share one per player), six at most: its beat is that much longer. */
+        val plateCount: Int get() = (moves.groupBy { it.went }.entries.sumOf { (w, l) -> if (w == Went.DREW || w == Went.DISCARDED || w == Went.MILLED) l.map { it.player }.distinct().size else l.size } +
+            countered.size + (if (paid != null) 1 else 0)).coerceAtMost(6)
 
         /** What it did, without its name: "exiled Memnite", "drew you a card", "+1/+1 counter on Grizzly Bears". Null when nothing shown changed. */
         fun said(viewer: Int): String? {
@@ -153,7 +166,8 @@ object Director {
             }
             for ((t, n) in damage) parts += "$n damage to " + if (t.kind == "player") (if (t.id == viewer) "you" else "CPU") else (t.name ?: "a card")
             for (l in life) if (l.to != l.from) parts += (if (l.player == viewer) "you " else "CPU ") + (if (l.to > l.from) "gain${if (l.player == viewer) "" else "s"} ${l.to - l.from}" else "lose${if (l.player == viewer) "" else "s"} ${l.from - l.to}") + " life"
-            for ((went, l) in moves.groupBy { it.went }) parts += when (went) {
+            // (The Auras that fell off with a card it moved have rows of their own: [lines].)
+            for ((went, l) in moves.filter { follow || it.went != Went.FELL_OFF }.groupBy { it.went }) parts += when (went) {
                 Went.EXILED -> "exiled ${names(l)}"
                 Went.DESTROYED -> "destroyed ${names(l)}"
                 Went.SACRIFICED -> "sacrificed ${names(l)}"
@@ -220,7 +234,7 @@ object Director {
         // The follow-ups play in the order they read (the Auras fall off, then what was held comes back), from the first of their moves.
         val follows = results.filter { it.follow }
         val followAt = follows.minOfOrNull { it.seq }
-        fun resultStep(r: Resolution) = Step(Kind.RESULT, if (r.fizzled) FIZZLE_MS else if (r.named) NAMED_MS else RESULT_MS, if (r.fizzled) FIZZLE_MS else if (r.named) NAMED_MIN_MS else RESULT_MS,
+        fun resultStep(r: Resolution) = Step(Kind.RESULT, if (r.fizzled) FIZZLE_MS else if (r.named) namedMs(r) else RESULT_MS, if (r.fizzled) FIZZLE_MS else if (r.named) NAMED_MIN_MS else RESULT_MS,
             if (r.fizzled) "CARD-012" else if (r.named) null else "CARD-027", focal = true, cpu = r.controller != null && r.controller != me, cardId = r.sourceId, cardName = r.sourceName, count = r.count, result = r)
         val resolvedHere = results.flatMap { it.stackIds }.toSet()
         // A result collapsed from N copies (×N) gets one source beat for all of them, at its first trigger event in the poll.
@@ -545,6 +559,9 @@ object Director {
     const val FIZZLE_MS = 700L
     /** A result with a cause plate (a card moved, an item countered, a ward paid): long enough to read the plate's two lines. */
     const val NAMED_MS = 1600L
+    /** Two plates of one result come up this far apart; the beat is that much longer per extra plate, so the last one is read too. */
+    const val PLATE_GAP_MS = 140L
+    fun namedMs(r: Resolution): Long = NAMED_MS + PLATE_GAP_MS * (r.plateCount - 1).coerceAtLeast(0)
     const val NAMED_MIN_MS = 1000L
 
     /** A stack item while the director follows the stack through one poll (top at the end of the list). */
@@ -674,14 +691,21 @@ object Director {
                     life = p.life + r.life, count = p.count + r.count, stackIds = p.stackIds + r.stackIds, moves = p.moves + r.moves, holds = p.holds || r.holds)
             } else merged += r
         }
-        // The follow-ups, each its own result with the card that left as its cause: first the Auras that fell off, then what came back.
-        fun follow(cause: Int, zs: List<GameEvent>, went: Went) = (before?.card(cause) ?: after.card(cause)).let { c ->
+        // The Auras that fell off: with the result that moved their permanent when one did (they leave in its beat, behind it),
+        // else a follow-up of their own with the permanent as its cause. Then what came back, a follow-up of the card that held it.
+        fun follow(cause: Int, seq: Long, moves: List<Move>) = (before?.card(cause) ?: after.card(cause)).let { c ->
             // Its text is what became of the cause, in one word: a creature that went to the graveyard "died", anything else "left".
-            Resolution(zs.minOf { it.seq }, null, cause, c?.name, c?.controller, trigger = false, fizzled = false,
-                text = if (c?.isCreature == true && leftField[cause]?.to == "Graveyard") "died" else "left", targets = emptyList(), stackIds = emptyList(),
-                moves = zs.map { z -> Move(z.seq, z.card!!.id, nameOf(z.card), z.from!!, z.to!!, z.player ?: before?.card(z.card.id)?.owner, went) }, follow = true) }
-        for ((host, zs) in fell.groupBy { hostOf(it.card!!.id)!! }) merged += follow(host, zs, Went.FELL_OFF)
-        for ((holder, zs) in back.groupBy { held[it.card!!.id]!! }) merged += follow(holder, zs, Went.RETURNED)
+            Resolution(seq, null, cause, c?.name, c?.controller, trigger = false, fizzled = false,
+                text = if (c?.isCreature == true && leftField[cause]?.to == "Graveyard") "died" else "left", targets = emptyList(), stackIds = emptyList(), moves = moves, follow = true) }
+        fun moveOf(z: GameEvent, went: Went, host: Int? = null) = (host?.let { before?.card(it) ?: after.card(it) }).let { h ->
+            Move(z.seq, z.card!!.id, nameOf(z.card), z.from!!, z.to!!, z.player ?: before?.card(z.card.id)?.owner, went,
+                hostId = host, hostName = h?.name, hostDied = h?.isCreature == true && leftField[host]?.to == "Graveyard") }
+        for ((host, zs) in fell.groupBy { hostOf(it.card!!.id)!! }) {
+            val fellOff = zs.map { moveOf(it, Went.FELL_OFF, host) }
+            val k = merged.indexOfLast { r -> !r.follow && r.moves.any { it.cardId == host && it.from == "Battlefield" } }
+            if (k >= 0) merged[k] = merged[k].copy(moves = merged[k].moves + fellOff) else merged += follow(host, zs.minOf { it.seq }, fellOff)
+        }
+        for ((holder, zs) in back.groupBy { held[it.card!!.id]!! }) merged += follow(holder, zs.minOf { it.seq }, zs.map { moveOf(it, Went.RETURNED) })
         return merged
     }
 
@@ -701,8 +725,9 @@ object Director {
      * The word for a zone move, or null when the resolving item's own [words] (lower case) do not name it: then the move is
      * not told as that item's doing (a state-based death, a draw step, anything Forge moved for another reason).
      */
+    private val SAYS = listOf("exile", "destroy", "sacrifice", "draw", "discard", "mill", "return", "put").associateWith { Regex("\\b$it") }
     internal fun went(z: GameEvent, words: String): Went? {
-        fun says(w: String) = Regex("\\b$w").containsMatchIn(words)
+        fun says(w: String) = SAYS.getValue(w).containsMatchIn(words)
         val from = z.from; val to = z.to
         return when {
             to == "Exile" -> Went.EXILED.takeIf { says("exile") }
@@ -739,19 +764,22 @@ object Director {
         }) })
         // EVERY RESULT NAMES ITS CAUSE: a card a result took off the battlefield, or put onto it, stays where the last board had
         // it until that result's beat, so it leaves (or comes back) under its plate and not before its cause is shown.
-        val moved = pending.flatMap { it.moves }.filter { it.cardId != null && (it.from == "Battlefield" || it.to == "Battlefield") }.map { it.cardId!! }.toSet()
-        if (moved.isEmpty() || before == null) return held
+        val moving = pending.flatMap { it.moves }.filter { it.cardId != null && (it.from == "Battlefield" || it.to == "Battlefield") }
+        if (moving.isEmpty() || before == null) return held
+        // An Aura that fell off is kept back only with its permanent (both leave in that result's beat, the Aura still behind it).
+        // When the permanent has already gone (a death no item caused), its Auras go with it and their beat names them afterwards:
+        // an Aura is never shown lying loose.
+        val staying = after.players.flatMap { it.battlefield }.map { it.id }.toSet() + moving.filter { it.went != Went.FELL_OFF && it.from == "Battlefield" }.map { it.cardId!! }
+        val moved = moving.filter { it.went != Went.FELL_OFF || it.hostId in staying }.map { it.cardId!! }.toSet()
+        if (moved.isEmpty()) return held
         fun keep(now: List<Card>, old: List<Card>): List<Card> {
             val out = now.filter { it.id !in moved }.toMutableList()
             old.forEachIndexed { i, c -> if (c.id in moved) out.add(minOf(i, out.size), c) }
             return out
         }
-        val back = held.copy(players = held.players.map { p ->
+        return held.copy(players = held.players.map { p ->
             val o = before.players.firstOrNull { it.id == p.id } ?: return@map p
             p.copy(battlefield = keep(p.battlefield, o.battlefield), graveyard = keep(p.graveyard, o.graveyard), exile = keep(p.exile, o.exile), hand = keep(p.hand, o.hand)) })
-        // An Aura kept back after its permanent has gone lies loose until its own beat (it fell off).
-        val onField = back.players.flatMap { it.battlefield }.map { it.id }.toSet()
-        return back.copy(players = back.players.map { p -> p.copy(battlefield = p.battlefield.map { c -> if (c.id in moved && c.attachedTo != null && c.attachedTo !in onField) c.copy(attachedTo = null) else c }) })
     }
 
     /** A trigger's own words when Forge never showed its stack item: the source's lines that start "When", "Whenever" or "At". */

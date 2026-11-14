@@ -71,38 +71,58 @@ class CauseResultTest {
         assertEquals("Savannah Lions: ward: the CPU paid 2", r.line(me))
     }
 
-    /** Scene 2, the chain: destroyed by the Chupacabra, the Auras fall off, the card Sheltered by Ghosts held comes back. */
+    /**
+     * Scene 2, the chain: destroyed by the Chupacabra, and its Auras fall off with it in the same beat (they are never shown
+     * lying loose); then the card Sheltered by Ghosts held comes back, a beat of its own.
+     */
     @Test fun destroyThenAurasFallOffThenHeldCardReturns() {
         val held = mapOf(64 to 40)
         val all = results(cpu, 281, 285, setOf(28), held)
-        assertEquals(3, all.size)
-        val (kill, fell, back) = all
-        assertEquals(65, kill.sourceId); assertTrue(kill.trigger); assertEquals(1, kill.controller)
+        assertEquals(2, all.size)
+        val (kill, back) = all
+        assertEquals(65, kill.sourceId); assertTrue(kill.trigger); assertEquals(1, kill.controller); assertFalse(kill.follow)
         assertEquals("Ravenous Chupacabra: destroyed Savannah Lions", kill.line(me))
-        assertTrue(fell.follow); assertEquals(33, fell.sourceId); assertEquals(listOf(40, 3), fell.moves.map { it.cardId }); assertTrue(fell.moves.all { it.went == Went.FELL_OFF })
-        assertEquals(listOf(Director.Line(40, "Sheltered by Ghosts", true, "fell off and went to your graveyard"), Director.Line(3, "Feather of Flight", true, "fell off and went to your graveyard")), fell.lines(me).map { it.copy(at = 0) })
+        assertEquals(listOf(Went.DESTROYED, Went.FELL_OFF, Went.FELL_OFF), kill.moves.map { it.went }); assertEquals(listOf(33, 40, 3), kill.moves.map { it.cardId })
+        assertTrue(kill.moves.drop(1).all { it.hostId == 33 && it.hostName == "Savannah Lions" && it.hostDied })
+        // Two Auras off one creature are one row (they must not push the cause off a phone's two rows).
+        assertEquals(listOf(Director.Line(65, "Ravenous Chupacabra", false, "destroyed Savannah Lions"), Director.Line(33, "Savannah Lions", true, "died, so its 2 Auras fell off")),
+            kill.lines(me).map { it.copy(at = 0) })
+        assertEquals(2, kill.lines(me).map { it.at }.distinct().size)
+        assertEquals(3, kill.plateCount); assertEquals(Director.NAMED_MS + 2 * Director.PLATE_GAP_MS, Director.namedMs(kill))
         assertTrue(back.follow); assertEquals(40, back.sourceId); assertEquals(listOf(Went.RETURNED), back.moves.map { it.went })
         assertEquals(listOf(Director.Line(40, "Sheltered by Ghosts", true, "left, so Memnite returns")), back.lines(me).map { it.copy(at = 0) })
-        // Three beats, in the order they read.
-        assertEquals(listOf(kill, fell, back), steps(cpu, 281, 285, setOf(28), held).filter { it.kind == Director.Kind.RESULT }.map { it.result })
-        // The table before each beat: all three still to come, then the Lions gone and its Auras loose, then only Memnite to come.
+        // Two beats, in the order they read; the first is as long as its three plates need.
+        val beats = steps(cpu, 281, 285, setOf(28), held).filter { it.kind == Director.Kind.RESULT }
+        assertEquals(listOf(kill, back), beats.map { it.result }); assertEquals(listOf(Director.namedMs(kill), Director.NAMED_MS), beats.map { it.ms })
+        // The table before each beat: all still to come (the Auras on the Lions), then only Memnite to come, then the real board.
         val before = cpu[281]!!; val after = cpu[285]!!
         val b0 = Director.beforeResults(after, before, all)
-        assertTrue(field(b0).containsAll(listOf(33, 40, 3))); assertFalse(64 in field(b0)); assertEquals(33, b0.card(40)?.attachedTo)
+        assertTrue(field(b0).containsAll(listOf(33, 40, 3))); assertFalse(64 in field(b0)); assertEquals(33, b0.card(40)?.attachedTo); assertEquals(33, b0.card(3)?.attachedTo)
         assertTrue("Memnite is still in exile", b0.players.any { p -> p.exile.any { it.id == 64 } })
-        val b1 = Director.beforeResults(after, before, listOf(fell, back))
-        assertFalse(33 in field(b1)); assertTrue(field(b1).containsAll(listOf(40, 3))); assertNull("fell off: loose, no host", b1.card(40)?.attachedTo)
-        val b2 = Director.beforeResults(after, before, listOf(back))
-        assertFalse(40 in field(b2)); assertFalse(64 in field(b2))
+        val b1 = Director.beforeResults(after, before, listOf(back))
+        assertFalse(33 in field(b1)); assertFalse(40 in field(b1)); assertFalse(3 in field(b1)); assertFalse(64 in field(b1))
         assertTrue(64 in field(Director.beforeResults(after, before, emptyList())))
         // The hold ends with it.
         assertTrue(Director.stillHeld(held, before).isNotEmpty()); assertTrue(Director.stillHeld(held, after).isEmpty())
     }
 
+    /** An Aura whose permanent has already gone is never kept back alone (it would lie loose on the table): it goes with it. */
+    @Test fun anAuraIsNeverShownLooseAfterItsPermanentLeft() {
+        val (kill, _) = results(cpu, 281, 285, setOf(28), mapOf(64 to 40))
+        // The same Auras told as a follow-up of their own (what a death no item caused gives): the Lions are not held back.
+        val alone = kill.copy(moves = kill.moves.filter { it.went == Went.FELL_OFF }, follow = true)
+        val shown = Director.beforeResults(cpu[285]!!, cpu[281]!!, listOf(alone))
+        assertFalse(33 in field(shown)); assertFalse(40 in field(shown)); assertFalse(3 in field(shown))
+        assertEquals(listOf("Savannah Lions: died, so its 2 Auras fell off"), alone.lines(me).map { "${it.sourceName}: ${it.text}" })
+        // One Aura alone keeps the approved words, under its own name.
+        val one = alone.copy(moves = alone.moves.take(1))
+        assertEquals(listOf(Director.Line(40, "Sheltered by Ghosts", true, "fell off and went to your graveyard")), one.lines(me).map { it.copy(at = 0) })
+    }
+
     /** Without the hold on record (the app was restarted mid-match), the return is not told: the table never guesses a cause. */
     @Test fun aReturnWithNoHoldOnRecordIsNotTold() {
         val all = results(cpu, 281, 285, setOf(28))
-        assertEquals(2, all.size); assertTrue(all.none { r -> r.moves.any { it.went == Went.RETURNED } })
+        assertEquals(1, all.size); assertTrue(all.none { r -> r.moves.any { it.went == Went.RETURNED } })
     }
 
     /** A spell names its result too: your own Murder on your own creature. */
@@ -110,8 +130,9 @@ class CauseResultTest {
         val all = results(murder, 182, 186, held = mapOf(64 to 40))
         val kill = all.first()
         assertFalse(kill.trigger); assertEquals("Murder: destroyed Savannah Lions", kill.line(me))
-        assertEquals(listOf(true, true), all.drop(1).map { it.follow })
-        assertEquals(3, steps(murder, 182, 186, held = mapOf(64 to 40)).count { it.kind == Director.Kind.RESULT })
+        assertEquals(listOf(Went.DESTROYED, Went.FELL_OFF, Went.FELL_OFF), kill.moves.map { it.went })
+        assertEquals(listOf(true), all.drop(1).map { it.follow })
+        assertEquals(2, steps(murder, 182, 186, held = mapOf(64 to 40)).count { it.kind == Director.Kind.RESULT })
     }
 
     /** The word comes from the item's own text; a move its text does not name is not told as its doing. */

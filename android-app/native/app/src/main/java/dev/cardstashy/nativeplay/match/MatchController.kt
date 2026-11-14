@@ -546,14 +546,19 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                             // A follow-up is no stack item: its cause's own items (a trigger of the card that left) stay up.
                             if (!r.follow) held.removeAll { it.id in r.stackIds || (it.source?.id != null && it.source.id == r.sourceId) || r.countered.any { c -> c.stackId == it.id } }
                             val line = r.line(st.viewer)
-                            if (line != null) _log.value = (_log.value + line).takeLast(60)
-                            _moves.value = (_moves.value + r.lines(st.viewer)).takeLast(LAST_MOVES)
+                            val rows = r.lines(st.viewer)
+                            // The log: its line, then the rows that are not its own doing (the Auras that fell off with the card it moved).
+                            val also = if (r.follow) emptyList() else rows.filter { it.at != r.seq * 8 }.map { "${it.sourceName}: ${it.text}" }
+                            if (line != null || also.isNotEmpty()) _log.value = (_log.value + listOfNotNull(line) + also).takeLast(60)
+                            _moves.value = (_moves.value + rows).takeLast(LAST_MOVES)
                             // What it exiled "until it leaves the battlefield" is held by it from now on.
                             if (r.holds && r.sourceId != null) _held.value = _held.value + r.moves.filter { it.went == Director.Went.EXILED && it.cardId != null }.associate { it.cardId!! to r.sourceId }
                             _trigger.value = TriggerMoment(TriggerMoment.Phase.RESULT, r.sourceId, r.sourceName, r.controller == st.viewer, r.stackId, r.count, r, line, ++momentKey)
                             show(board())
                             hold(ms)
-                            _trigger.value = null
+                            // The next beat is a result too (a chain): the table stays in the moment through the gap, so it does
+                            // not go live for 120 ms on a board that still holds cards back.
+                            if (steps.getOrNull(i + 1)?.result == null) _trigger.value = null
                             delay(STEP_GAP_MS)
                         }
                         step.travel != null -> hold(ms)

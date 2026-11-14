@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.runtime.Composable
@@ -201,8 +202,8 @@ internal class FxItem(
     val title: String = "",
     /** A trigger landing: the caster's colour (its streak) and the one trail line it carries. */
     val caster: Color = Color.White, val note: String = "",
-    /** A cause plate: the name of the card whose picture it carries. */
-    val art: String = "",
+    /** A cause plate: the name of the card whose picture it carries ("" for none), the card it is about (for a screen reader), and whether that card stays on the table (the plate then keeps off its numbers). */
+    val art: String = "", val about: String = "", val beside: Boolean = false,
 ) {
     var t0 = 0L; var dur = baseMs; var p0 = 0f
     /** Things this effect has thrown once (a freeze, a burst of particles), by bit. */
@@ -434,7 +435,8 @@ class Battlefield {
         dev.cardstashy.nativeplay.match.CombatPace.release()
         bits.clear(); jolts.clear(); frozenTo = -1L
         if (items.isEmpty()) return
-        items.clear(); focalEnd = now.longValue; reindex()
+        // A cause plate is words to read, not motion: it stays for its beat (the controller holds the table that long anyway).
+        items.removeAll { it.kind != Fx.PLATE }; focalEnd = now.longValue; reindex()
     }
 
     /** Staged combat's pairs in flight, so every card can dim while one pair plays out. */
@@ -604,6 +606,8 @@ class Battlefield {
     private var lastMoment = 0L
     /** Cards a trigger's result lands on (and its tokens), until when: the snapshot diff leaves their counter and token effects to it. */
     private val claimed = HashMap<Int, Long>()
+    /** The cards a result's beat took off the battlefield or put onto it (id to the time the claim ends): [trigger] plays their leaving and arriving, so [diff] does not play them a second time. */
+    private val claimedMoves = HashMap<Int, Long>()
 
     /**
      * A TRIGGER SHOWS ITSELF (sTrig, approved 10 Nov): the controller's beat [m] becomes effects. SOURCE: the card lifts and rings in
@@ -646,9 +650,34 @@ class Battlefield {
                 // EVERY RESULT NAMES ITS CAUSE: a plate on each card it moved, on the item it countered, on the card its ward guards.
                 // A trigger's light runs from its source to the card first (a spell has its own strike, P6).
                 val plates = causePlates(r, st.viewer)
-                if (r.trigger) plates.filter { it.streak }.forEachIndexed { i, pl -> add(FxItem(Fx.TRIG_LAND, 1, 420, fromKey = from, toKey = pl.key, tone = pl.tone, caster = caster, delay = i * PLATE_GAP_MS)) }
-                plates.forEachIndexed { i, pl -> add(FxItem(Fx.PLATE, 1, PLATE_MS, fromKey = pl.orKey, toKey = pl.key, tone = pl.tone, label = pl.title, note = pl.sub, art = pl.art,
-                    delay = (if (r.trigger && pl.streak) 220L else 0L) + i * PLATE_GAP_MS)) }
+                // The streak's ring fades by 900 ms (it was written for a long landing): cut shorter it flickers before the plate.
+                if (r.trigger) plates.filter { it.streak }.forEachIndexed { i, pl -> add(FxItem(Fx.TRIG_LAND, 1, 900, fromKey = from, toKey = pl.key, tone = pl.tone, caster = caster, delay = i * PLATE_GAP_MS)) }
+                // Every plate of the result leaves with its beat (the controller holds the table for Director.namedMs, then 120 ms),
+                // so a chain's next plate never rises under an old one.
+                val beat = dev.cardstashy.nativeplay.match.Director.namedMs(r) + 120L
+                plates.forEachIndexed { i, pl ->
+                    val delay = (if (r.trigger && pl.streak) 220L else 0L) + i * PLATE_GAP_MS
+                    add(FxItem(Fx.PLATE, 1, (beat - delay).coerceAtLeast(900L), fromKey = pl.orKey, toKey = pl.key, tone = pl.tone, label = pl.title, note = pl.sub, art = pl.art, about = pl.about, beside = pl.beside, delay = delay)) }
+                // The cards it moved leave or arrive in this beat, under their plates. The board the table shows changes with the
+                // beat and not with a new board from Forge, so the table's own diff never sees it: the break, the embers to the
+                // pile, the fade of an exile and the arrival are queued here (and claimed, should the diff see the same move).
+                for (mv in r.moves) {
+                    val id = mv.cardId ?: continue; val c = st.card(id) ?: continue
+                    val mineCard = c.controller == st.viewer
+                    if (mv.from == "Battlefield") {
+                        val rect = anchors.rects["c$id"] ?: anchors.rects["aura$id"] ?: continue
+                        val grave = mv.to == "Graveyard"
+                        // An Aura that fell off sat behind its permanent as a strip: only its embers fly to the pile.
+                        if (mv.went != dev.cardstashy.nativeplay.match.Director.Went.FELL_OFF)
+                            add(FxItem(Fx.DEATH, 2, if (grave) DEATH_MS else 600, mine = mineCard, from = rect, toKey = if (grave) "grave${c.owner}" else null, ghost = c))
+                        if (grave) add(FxItem(Fx.EMBERS, 1, EMBERS_MS, card = id, mine = mineCard, from = rect, toKey = "grave${c.owner}", delay = 240L))
+                        claimedMoves[id] = until
+                    } else if (mv.to == "Battlefield") {
+                        // A card that was held in exile comes back from where it hung on its holder.
+                        add(FxItem(Fx.ARRIVE, 1, 450, card = id, mine = mineCard, fromKey = "held$id".takeIf { anchors.rects.containsKey(it) }, tone = caster))
+                        claimedMoves[id] = until
+                    }
+                }
                 items.removeAll { (it.kind == Fx.COUNTER || it.kind == Fx.TOKEN) && it.card != null && it.card in claimed }
             }
         }
@@ -731,6 +760,8 @@ class Battlefield {
         val tNow = now.longValue
         claimed.values.removeAll { it < tNow }
         val claimedNow = claimed.keys.toSet()
+        claimedMoves.values.removeAll { it < tNow }
+        val movedNow = claimedMoves.keys.toSet()
         val bfA = a.players.flatMap { it.battlefield }.associateBy { it.id }
         val bfB = b.players.flatMap { it.battlefield }.associateBy { it.id }
         val handA = a.me.hand.map { it.id }.toSet()
@@ -828,6 +859,7 @@ class Battlefield {
         // Arrivals: travel on an arc to the real slot, land with a 2 % squash and a light sweep (450 ms); tokens form from light (400 ms).
         for ((id, c) in bfB) if (id !in bfA) {
             if (c.token && id in claimedNow) continue
+            if (id in movedNow) continue
             if (c.token && id !in stackSrcA) { arrivals += FxItem(Fx.TOKEN, 1, 400, card = id, mine = c.controller == viewer,
                 delay = runCatching { dev.cardstashy.nativeplay.art.CardArt.holdFor(c.name) }.getOrDefault(0L)).sounds("token"); continue }
             val fromStack = id in stackSrcA
@@ -979,6 +1011,7 @@ class Battlefield {
         // square, where the pile answers with a ring. Exile and bounce fade where they stood (600 ms, as before).
         // A creature killed in the clash breaks on impact (after the freeze), not after the whole exchange.
         for ((id, c) in bfA) if (id !in bfB) {
+            if (id in movedNow) continue
             val rect = anchors.rects["c$id"] ?: continue
             val toGrave = b.players.any { p -> p.graveyard.any { it.id == id } }
             val clash = lunged && c.isCreature && (c.attacking || c.blocking)
@@ -1615,50 +1648,64 @@ private fun DrawScope.drawTrigLand(tm: androidx.compose.ui.text.TextMeasurer, it
 
 @Composable private fun key(k: Any, content: @Composable () -> Unit) = androidx.compose.runtime.key(k) { content() }
 
-/** How long a cause plate stays (in 200, read, out 260), and the gap between two plates of one result. */
-internal const val PLATE_MS = 1900L
-internal const val PLATE_GAP_MS = 140L
+/** The gap between two plates of one result (a plate stays for its result's beat: in 200, read, out 260). */
+internal const val PLATE_GAP_MS = dev.cardstashy.nativeplay.match.Director.PLATE_GAP_MS
 /** The plate's light: exile and return (as the approved preview's "LIGHT"). Gold is [TRIG_GOLD], a loss [TRIG_CORAL]. */
-internal val PLATE_LIGHT = Color(0xFFFFF6DC)
+internal val PLATE_LIGHT = Rule.Cause.Light
 
-/** One cause plate: where it sits ([key], else [orKey]), its word, its second line, the picture it carries, its colour; [streak]: light runs to it first. */
-internal data class CausePlateSpec(val key: String, val title: String, val sub: String, val art: String, val tone: Color, val orKey: String? = null, val streak: Boolean = true)
+/**
+ * One cause plate: where it sits ([key], else [orKey]), its word, its second line, the picture it carries ("" for none), its
+ * colour; [streak]: a trigger's light runs to it first; [about]: the card it is about; [beside]: that card stays on the table.
+ */
+internal data class CausePlateSpec(val key: String, val title: String, val sub: String, val art: String, val tone: Color, val orKey: String? = null, val streak: Boolean = true,
+                                   val about: String = "", val beside: Boolean = false)
 
 /**
  * EVERY RESULT NAMES ITS CAUSE (approved preview 14 Nov): the plates of one result, in the order they show. Each card it moved
- * gets its word and "by <the card that did it>"; cards drawn, discarded or milled share one plate at the hand or the pile; an
- * item it countered gets "COUNTERED" on the stack; a ward that was paid says who paid. Six at most.
+ * gets its word and "by <the card that did it>"; an Aura that fell off with it says what became of its permanent; cards drawn,
+ * discarded or milled share one plate at the hand or the pile; an ability it countered gets its plate on the card whose ability
+ * it was (a spell: on the stack); a ward that was paid says who paid. Six at most ([Director.Resolution.plateCount]).
  */
 internal fun causePlates(r: dev.cardstashy.nativeplay.match.Director.Resolution, viewer: Int): List<CausePlateSpec> {
-    val by = r.sourceName ?: "a trigger"
+    // Forge gave the cause no name: the plate says "a trigger" and carries no picture.
+    val by = r.sourceName ?: "a trigger"; val art = r.sourceName.orEmpty()
     val out = ArrayList<CausePlateSpec>()
     fun at(m: dev.cardstashy.nativeplay.match.Director.Move) = "c${m.cardId}"
     fun n(l: List<*>) = if (l.size == 1) "" else " ${l.size}"
+    fun whose(name: String) = if (name.endsWith("s")) "$name'" else "$name's"
     for ((went, l) in r.moves.groupBy { it.went }) when (went) {
-        dev.cardstashy.nativeplay.match.Director.Went.EXILED -> l.forEach { out += CausePlateSpec(at(it), "EXILED", "by $by", by, PLATE_LIGHT) }
-        dev.cardstashy.nativeplay.match.Director.Went.DESTROYED -> l.forEach { out += CausePlateSpec(at(it), "DESTROYED", "by $by", by, TRIG_CORAL) }
-        dev.cardstashy.nativeplay.match.Director.Went.SACRIFICED -> l.forEach { out += CausePlateSpec(at(it), "SACRIFICED", "to $by", by, TRIG_CORAL) }
-        dev.cardstashy.nativeplay.match.Director.Went.TO_GRAVE -> l.forEach { out += CausePlateSpec(at(it), "TO THE GRAVEYARD", "by $by", by, TRIG_CORAL) }
-        dev.cardstashy.nativeplay.match.Director.Went.TO_HAND -> l.forEach { out += CausePlateSpec(at(it), "RETURNED TO HAND", "by $by", by, PLATE_LIGHT) }
+        dev.cardstashy.nativeplay.match.Director.Went.EXILED -> l.forEach { out += CausePlateSpec(at(it), "EXILED", "by $by", art, PLATE_LIGHT, about = it.cardName.orEmpty()) }
+        dev.cardstashy.nativeplay.match.Director.Went.DESTROYED -> l.forEach { out += CausePlateSpec(at(it), "DESTROYED", "by $by", art, TRIG_CORAL, about = it.cardName.orEmpty()) }
+        dev.cardstashy.nativeplay.match.Director.Went.SACRIFICED -> l.forEach { out += CausePlateSpec(at(it), "SACRIFICED", "to $by", art, TRIG_CORAL, about = it.cardName.orEmpty()) }
+        dev.cardstashy.nativeplay.match.Director.Went.TO_GRAVE -> l.forEach { out += CausePlateSpec(at(it), "TO THE GRAVEYARD", "by $by", art, TRIG_CORAL, about = it.cardName.orEmpty()) }
+        dev.cardstashy.nativeplay.match.Director.Went.TO_HAND -> l.forEach { out += CausePlateSpec(at(it), "RETURNED TO HAND", "by $by", art, PLATE_LIGHT, about = it.cardName.orEmpty()) }
         // A follow-up: the card that left is the cause ("Sheltered by Ghosts left"); a resolve's own return says "by".
-        dev.cardstashy.nativeplay.match.Director.Went.RETURNED -> l.forEach { out += CausePlateSpec(at(it), "RETURNED", if (r.follow) "$by left" else "by $by", by, PLATE_LIGHT, streak = !r.follow) }
-        // The Aura's own picture; its permanent is the cause.
-        dev.cardstashy.nativeplay.match.Director.Went.FELL_OFF -> l.forEach { out += CausePlateSpec(at(it), "FELL OFF", "$by ${r.text ?: "left"}", it.cardName ?: by, TRIG_GOLD, orKey = "aura${it.cardId}", streak = false) }
+        dev.cardstashy.nativeplay.match.Director.Went.RETURNED -> l.forEach { out += CausePlateSpec(at(it), "RETURNED", if (r.follow) "$by left" else "by $by", art, PLATE_LIGHT, streak = !r.follow,
+            about = it.cardName.orEmpty(), beside = true) }
+        // The Aura's own picture, on the permanent it was on (so it joins that permanent's own plate in one column), else where
+        // its strip sat; the permanent is the cause.
+        dev.cardstashy.nativeplay.match.Director.Went.FELL_OFF -> l.forEach { out += CausePlateSpec(it.hostId?.let { h -> "c$h" } ?: "aura${it.cardId}", "FELL OFF", "${it.hostName ?: by} ${if (it.hostDied) "died" else "left"}",
+            it.cardName.orEmpty(), TRIG_GOLD, orKey = "aura${it.cardId}", streak = false, about = it.cardName.orEmpty()) }
         dev.cardstashy.nativeplay.match.Director.Went.DREW -> for ((p, d) in l.groupBy { it.player }) out += if (p == viewer)
-            CausePlateSpec(d.last().cardId?.let { "hand$it" } ?: "handTray", "DREW ${d.size}", "from $by", by, TRIG_GOLD, orKey = "handTray")
-            else CausePlateSpec("cpuhand", "CPU DREW ${d.size}", "from $by", by, TRIG_GOLD)
-        dev.cardstashy.nativeplay.match.Director.Went.DISCARDED -> for ((p, d) in l.groupBy { it.player }) out += CausePlateSpec("grave$p", (if (p == viewer) "DISCARDED" else "CPU DISCARDED") + n(d), "by $by", by, TRIG_CORAL)
-        dev.cardstashy.nativeplay.match.Director.Went.MILLED -> for ((p, d) in l.groupBy { it.player }) out += CausePlateSpec("grave$p", "MILLED ${d.size}", "by $by", by, TRIG_CORAL)
+            CausePlateSpec(d.last().cardId?.let { "hand$it" } ?: "handTray", "DREW ${d.size}", "from $by", art, TRIG_GOLD, orKey = "handTray")
+            else CausePlateSpec("cpuhand", "CPU DREW ${d.size}", "from $by", art, TRIG_GOLD)
+        dev.cardstashy.nativeplay.match.Director.Went.DISCARDED -> for ((p, d) in l.groupBy { it.player }) out += CausePlateSpec("grave$p", (if (p == viewer) "DISCARDED" else "CPU DISCARDED") + n(d), "by $by", art, TRIG_CORAL)
+        dev.cardstashy.nativeplay.match.Director.Went.MILLED -> for ((p, d) in l.groupBy { it.player }) out += CausePlateSpec("grave$p", "MILLED ${d.size}", "by $by", art, TRIG_CORAL)
     }
     val ward = r.text?.trimStart()?.startsWith("Ward", ignoreCase = true) == true
-    for (c in r.countered) out += CausePlateSpec("stackcard", "COUNTERED", if (ward) "ward was not paid" else "by $by", by, TRIG_CORAL, orKey = c.sourceId?.let { "c$it" }, streak = false)
-    if (r.paid != null) out += CausePlateSpec("c${r.sourceId}", if (r.paid.all { it.isDigit() }) "WARD ${r.paid}" else "WARD", (if (r.paidBy == viewer) "You" else "CPU") + " paid ${r.paid}", by, TRIG_GOLD, streak = false)
+    // A countered ability: on the card whose ability it was (it is still on the table), else where the item stood on the stack.
+    for (c in r.countered) out += CausePlateSpec(if (c.ability && c.sourceId != null) "c${c.sourceId}" else "stackcard", if (c.ability) "ABILITY COUNTERED" else "SPELL COUNTERED",
+        if (ward) "${whose(by)} ward was not paid" else "by $by", art, TRIG_CORAL, orKey = "stackcard", streak = false, about = c.sourceName.orEmpty(), beside = c.ability)
+    if (r.paid != null) out += CausePlateSpec("c${r.sourceId}", if (r.paid.all { it.isDigit() }) "WARD ${r.paid}" else "WARD", (if (r.paidBy == viewer) "You" else "CPU") + " paid ${r.paid}", art, TRIG_GOLD,
+        streak = false, about = by, beside = true)
     return out.take(6)
 }
 
 /**
- * The cause plates of the moment, each on its card, a little under the card's middle, never off the table's edges. Two plates
- * that would cover one another (two Auras falling off the same creature) stand one under the other instead.
+ * The cause plates of the moment, each on its card, a little under the card's middle, never off the table's edges. A plate on
+ * a card that stays (a ward paid, a card returned, an ability countered) stands just outside a tile too short to carry it
+ * between its name and its numbers (a phone's), on the side away from the table's middle line. Plates that would cover one
+ * another (a creature destroyed and the Auras that fell off it) stand in one column, running away from the middle line too.
  */
 @Composable
 private fun CausePlates(plates: List<FxItem>, fx: Battlefield, anchors: Anchors, self: Offset) {
@@ -1672,18 +1719,38 @@ private fun CausePlates(plates: List<FxItem>, fx: Battlefield, anchors: Anchors,
             placed.forEachIndexed { i, pl ->
                 val it = plates[i]
                 val r = (it.toKey?.let { k -> anchors.rects[k] } ?: it.fromKey?.let { k -> anchors.rects[k] })?.translate(-self.x, -self.y) ?: return@forEachIndexed
-                val x = (r.center.x - pl.width / 2f).roundToInt().coerceIn(pad, (c.maxWidth - pl.width - pad).coerceAtLeast(pad))
-                var y = (r.center.y + r.height * .06f - pl.height / 2f).roundToInt().coerceIn(pad, (c.maxHeight - pl.height - pad).coerceAtLeast(pad))
-                // Under the plates already standing where it would stand; above them when the table ends first.
-                var box = androidx.compose.ui.unit.IntRect(x, y, x + pl.width, y + pl.height)
-                for (n in 0 until taken.size) { val hit = taken.firstOrNull { it.overlaps(box) } ?: break
-                    y = if (hit.bottom + gap + pl.height <= c.maxHeight - pad) hit.bottom + gap else (taken.minOf { it.top } - gap - pl.height).coerceAtLeast(pad)
-                    box = androidx.compose.ui.unit.IntRect(x, y, x + pl.width, y + pl.height) }
-                taken += box
-                pl.place(x, y)
+                val spot = causePlateSpot(androidx.compose.ui.unit.IntRect(r.left.roundToInt(), r.top.roundToInt(), r.right.roundToInt(), r.bottom.roundToInt()), pl.width, pl.height, it.beside,
+                    c.maxWidth, c.maxHeight, pad, gap, taken)
+                taken += spot
+                pl.place(spot.left, spot.top)
             }
         }
     }
+}
+
+/**
+ * Where one plate of [w] x [h] px stands for the card at [card] on a table of [tableW] x [tableH]: see [CausePlates]. [taken]
+ * are the plates already standing. Pure, so the rule is tested without a screen.
+ */
+internal fun causePlateSpot(card: androidx.compose.ui.unit.IntRect, w: Int, h: Int, beside: Boolean, tableW: Int, tableH: Int, pad: Int, gap: Int,
+                            taken: List<androidx.compose.ui.unit.IntRect>): androidx.compose.ui.unit.IntRect {
+    fun box(x: Int, y: Int) = androidx.compose.ui.unit.IntRect(x, y, x + w, y + h)
+    val maxY = (tableH - h - pad).coerceAtLeast(pad)
+    // Away from the middle line: down for the lower half (yours), up for the upper half.
+    val down = card.center.y >= tableH / 2
+    var x = (card.center.x - w / 2).coerceIn(pad, (tableW - w - pad).coerceAtLeast(pad))
+    var y = if (beside && card.height < h * 2.4f) (if (down) card.bottom + gap else card.top - gap - h) else (card.center.y + card.height * .06f - h / 2f).roundToInt()
+    y = y.coerceIn(pad, maxY)
+    var dir = if (down) 1 else -1
+    repeat(taken.size * 2) {
+        val hit = taken.firstOrNull { it.overlaps(box(x, y)) } ?: return box(x, y)
+        x = hit.left.coerceIn(pad, (tableW - w - pad).coerceAtLeast(pad))
+        var next = if (dir > 0) hit.bottom + gap else hit.top - gap - h
+        // The table ends first: the column turns and runs the other way from its far end.
+        if (next > maxY || next < pad) { dir = -dir; next = if (dir > 0) taken.maxOf { it.bottom } + gap else taken.minOf { it.top } - gap - h }
+        y = next.coerceIn(pad, maxY)
+    }
+    return box(x, y)
 }
 
 /**
@@ -1693,7 +1760,7 @@ private fun CausePlates(plates: List<FxItem>, fx: Battlefield, anchors: Anchors,
  */
 @Composable
 private fun CausePlate(it: FxItem, fx: Battlefield) {
-    val shape = RoundedCornerShape(12.dp)
+    val shape = RoundedCornerShape(Rule.Radius.Button)
     androidx.compose.foundation.layout.Row(Modifier
         .graphicsLayer {
             val p = it.p(fx.now.longValue)
@@ -1704,17 +1771,18 @@ private fun CausePlate(it: FxItem, fx: Battlefield) {
             if (!fx.reduced) translationY = (10f * (1f - inn) - 6f * out) * density
         }
         .shadow(10.dp, shape, clip = false)
-        .background(Brush.verticalGradient(listOf(Color(0xF7262E44), Color(0xFA0A0D15))), shape)
+        .background(Brush.verticalGradient(listOf(Rule.Cause.GlassTop, Rule.Cause.GlassBottom)), shape)
         .border(1.5.dp, it.tone, shape)
         .padding(start = 7.dp, end = 13.dp, top = 5.dp, bottom = 5.dp)
-        .semantics { contentDescription = "${it.label} ${it.note}" },
+        // One sentence for a screen reader: the card it is about, the word, the cause.
+        .clearAndSetSemantics { contentDescription = listOf(it.about, it.label.lowercase(), it.note).filter { s -> s.isNotBlank() }.joinToString(" ") },
         verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(32.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFF141418)).border(1.5.dp, it.tone, androidx.compose.foundation.shape.CircleShape)) {
+        if (it.art.isNotBlank()) Box(Modifier.size(32.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Rule.Cause.Ink).border(1.5.dp, it.tone, androidx.compose.foundation.shape.CircleShape)) {
             CardImage(it.art, Modifier.fillMaxSize(), crop = true)
         }
-        androidx.compose.foundation.layout.Column(Modifier.padding(start = 8.dp)) {
-            androidx.compose.material3.Text(it.label, style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.ExtraBold, fontSize = 10.5.sp, letterSpacing = 1.4.sp, color = it.tone), maxLines = 1)
-            androidx.compose.material3.Text(it.note, style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = Color(0xFFEEF0F4)), maxLines = 1,
+        androidx.compose.foundation.layout.Column(Modifier.padding(start = if (it.art.isNotBlank()) 8.dp else 6.dp)) {
+            androidx.compose.material3.Text(it.label, style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, letterSpacing = 1.4.sp, color = it.tone), maxLines = 1)
+            androidx.compose.material3.Text(it.note, style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Rule.Cause.Words), maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         }
     }

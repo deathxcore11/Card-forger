@@ -649,7 +649,7 @@ fun ForgeBoard(
                 // LAST MOVES (Every Result Names Its Cause): in the left strip between the two squares, clear of both crests.
                 val movesTop = (if (pod) zones.leftStrip.y.dp else zones.cpuSquare.bottom.dp + 6.du) + cpuCrestH
                 val movesH = zones.mySquare.y.dp - 6.du - (if (myShield != null) 74.du else 0.dp) - movesTop
-                if (movesH > 0.dp) LastMoves(LocalLastMoves.current, Modifier.offset(x = zones.mySquare.x.dp, y = movesTop).width(zones.mySquare.w.dp).height(movesH), d)
+                if (movesH > 0.dp) LastMoves(Modifier.offset(x = zones.mySquare.x.dp, y = movesTop).width(zones.mySquare.w.dp).height(movesH), d)
             } else {
                 // Z4: chat and the bolt (the Smart emblem; Full Control and auto-pay beside them as before) keep their function, at 44 dp,
                 // just above your square: two to a row (chat and the bolt the row nearest the square), one when the strip is narrower
@@ -662,22 +662,23 @@ fun ForgeBoard(
                 val left = if (zones.mySquare.x.dp + rowW <= zones.mySquare.right.dp) zones.mySquare.x.dp else zones.leftStrip.x.dp + ((room - rowW) / 2).coerceAtLeast(0.dp)
                 val top = if (pod) zones.leftStrip.y.dp else zones.cpuSquare.bottom.dp + 6.du
                 val buttons = listOf<@Composable () -> Unit>({ EmoteButton(Modifier, d, side = btn) }) + emblemsOf(st, intents, d, btn)
-                val stripH = (zones.mySquare.y.dp - 6.du - top).coerceAtLeast(0.dp)
-                var toolsH by remember { mutableStateOf(0.dp) }
-                Box(Modifier.offset(x = left, y = top).width(zones.leftStrip.right.dp - left).height(stripH)) {
-                    // LAST MOVES (Every Result Names Its Cause): the room the strip has left above your tools and the mana (and
-                    // above your crest; its 66 du are free when you have no commander), below the CPU's crest.
-                    val movesH = stripH - toolsH - 6.du - cpuCrestH + (if (myShield == null) 66.du else 0.dp)
-                    if (movesH > 0.dp && toolsH > 0.dp) LastMoves(LocalLastMoves.current, Modifier.align(Alignment.TopStart).offset(y = cpuCrestH)
-                        .width(minOf(zones.mySquare.right.dp, zones.leftStrip.right.dp) - left).height(movesH), d)
-                    Column(Modifier.align(Alignment.BottomStart).wrapContentHeight(Alignment.Bottom, unbounded = true).onSizeChanged { toolsH = with(dockDensity) { it.height.toDp() } }, verticalArrangement = Arrangement.spacedBy(6.du)) {
-                        // The crest's box is 70 du for a 60 du shield: it takes only the shield's height in the strip.
-                        Box(Modifier.height(60.du), contentAlignment = Alignment.Center) { myCrest(Modifier.offset(x = zones.mySquare.x.dp - left - 6.du).wrapContentHeight(unbounded = true)) }
+                Box(Modifier.offset(x = left, y = top).width(zones.leftStrip.right.dp - left).height((zones.mySquare.y.dp - 6.du - top).coerceAtLeast(0.dp))) {
+                  Column(Modifier.fillMaxSize()) {
+                    // LAST MOVES (Every Result Names Its Cause): the room the strip has left above your crest, the mana and your
+                    // tools, below the CPU's crest. The layout gives it what is left over (no measured height kept in state), so
+                    // mana that starts or stops floating costs the board no second pass.
+                    Box(Modifier.weight(1f).padding(top = cpuCrestH, bottom = 6.du).width(minOf(zones.mySquare.right.dp, zones.leftStrip.right.dp) - left)) { LastMoves(Modifier.fillMaxSize(), d) }
+                    Column(Modifier.wrapContentHeight(Alignment.Bottom, unbounded = true), verticalArrangement = Arrangement.spacedBy(6.du)) {
+                        // The crest's box is 70 du for a 60 du shield: it takes only the shield's height in the strip (and none
+                        // without a commander: that room is Last moves').
+                        if (myShield != null) Box(Modifier.height(60.du), contentAlignment = Alignment.Center) { myCrest(Modifier.offset(x = zones.mySquare.x.dp - left - 6.du).wrapContentHeight(unbounded = true)) }
+                        else myCrest(Modifier)
                         ManaPool(me.mana, Modifier.anchorRect("tray2"), d, maxW = zones.leftStrip.right.dp - left)
                         Column(Modifier.anchorRect("tools"), verticalArrangement = Arrangement.spacedBy(6.du)) {
                             for (row in buttons.chunked(perRow).reversed()) Row(horizontalArrangement = Arrangement.spacedBy(gap.coerceAtLeast(0.dp))) { row.forEach { it() } }
                         }
                     }
+                  }
                 }
             }
 
@@ -1351,6 +1352,9 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
     val visible = lay.visible?.dp
     // F6: a row with an attacker in a strike is drawn over the other rows, and that attacker over its own row.
     val strikers = LocalBattlefield.current?.let { it.strikers.value + it.landers.value }.orEmpty()
+    // The permanents that hold a card in exile (Every Result Names Its Cause), worked out once for the row.
+    val heldNow = LocalHeld.current
+    val holding = remember(heldNow) { heldNow.values.toSet() }
     Box(Modifier.offset(x = if (fromLeft) cx else cx - total / 2, y = cy - h / 2).zIndex(if (cards.any { it.id in strikers }) 50f else 0f)) {
         piles.forEachIndexed { i, pile ->
             val px = lay.xs[i].dp
@@ -1370,8 +1374,12 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
                     Tile(card, w, h, land, markOf(card), mine, lookup, tapOf(card), if (onPile != null) { _ -> onPile(pile) } else onInspect, Modifier.offset(x = ax, y = ay).zIndex(z + j + (if (card.id in strikers) 5000f else 0f)), d,
                         count = if (top && pile.size > 1) pile.size else 1, piece = piece, pileTop = top, advance = advance,
                         visibleW = if (top && i < piles.lastIndex) visible else null, squeezed = squeezed)
-                    // Every Result Names Its Cause: a card this permanent (or an Aura on it) holds in exile stays on it, over the next pile's edge.
-                    if (tile != null && pile.size == 1 && LocalHeld.current.isNotEmpty()) HeldOn(card, aurasOn(card, lookup), w, h, advance, mine, lookup, onInspect, Modifier.offset(x = ax, y = ay).zIndex(z + 45f), d)
+                    // Every Result Names Its Cause: a card this permanent (or one under it in its pile, or an Aura on it) holds in exile hangs on it.
+                    if (tile != null && top && holding.isNotEmpty()) {
+                        val strips = if (pile.size == 1) aurasOn(card, lookup) else emptyList()
+                        if (pile.any { it.id in holding } || strips.any { it.id in holding })
+                            HeldOn(card, pile, strips, w, h, advance, mine, lookup, onInspect, Modifier.offset(x = ax, y = ay).zIndex(z + 45f), d)
+                    }
                 }
             }
         }
@@ -1428,23 +1436,24 @@ internal fun aurasOn(card: Card, lookup: (Int) -> Card?): List<Card> =
 internal val BEHIND = Regex("\\b(?:Aura|Equipment)\\b")
 
 /**
- * The cards [card] or an Aura on it holds in exile ([LocalHeld]), as small cards hanging from the holder's top right corner, most of
- * them past its edge (its name stays readable, and the row above keeps its numbers): the tile's own corner, or the right end of
- * the Aura's strip. They turn and step with the tile, as the strips do.
+ * The cards a permanent holds in exile ([LocalHeld]) as small cards hung on its top right corner, most of them past its edge:
+ * [card] (the top of [pile], whose other cards may hold one too) at the tile's own corner, an Aura on it ([auras]) at the right
+ * end of its strip. They rise from just above the tile's name (never more than .06 of the tile over it), so the names of the
+ * holder and of the card to its right stay whole. They turn and step with the tile, as the strips do.
  */
 @Composable
-private fun HeldOn(card: Card, auras: List<Card>, w: Dp, h: Dp, advance: Dp?, mineSide: Boolean, lookup: (Int) -> Card?, onInspect: (Card) -> Unit, modifier: Modifier, d: Du) = with(d) {
+private fun HeldOn(card: Card, pile: List<Card>, auras: List<Card>, w: Dp, h: Dp, advance: Dp?, mineSide: Boolean, lookup: (Int) -> Card?, onInspect: (Card) -> Unit, modifier: Modifier, d: Du) = with(d) {
     val held = LocalHeld.current
     val shown = auras.take(TableGeometry.STRIPS_MAX); val n = shown.size
-    // Each holder with the height of its top edge over the tile's: the tile itself 0, strip i of n its raise.
+    // Each holder with the height of its top edge over the tile's: the pile's cards 0, strip i of n its raise.
     // Only a card the board shows in exile: before its "Exiled" beat it still stands on the battlefield, after its return it is back there.
-    val holders = (listOf(card to 0f) + shown.mapIndexed { i, a -> a to TableGeometry.STRIP * (n - i) })
+    val holders = (pile.map { it to 0f } + shown.mapIndexed { i, a -> a to TableGeometry.STRIP * (n - i) })
         .mapNotNull { (c, up) -> held.filterValues { it == c.id }.keys.mapNotNull(lookup).filter { it.zone == "Exile" }.takeIf { it.isNotEmpty() }?.let { Triple(c, up, it) } }
     if (holders.isEmpty()) return@with
     val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tapSpec(card.id), label = "heldTap")
     val stepUp by attackStep(card)
     Box(modifier.size(w, h).graphicsLayer { rotationZ = turn; attackLayer(card.tapped, stepUp, mineSide, advance?.toPx() ?: (12f * u * density)) }) {
-        for ((holder, up, cards) in holders) HeldCards(cards, holder, w, h, Modifier.offset(x = w * .9f, y = -h * up - h * .02f), onInspect)
+        for ((holder, up, cards) in holders) HeldCards(cards, holder, w, h, Modifier.offset(x = w * .9f, y = -h * maxOf(up + .02f, .34f)), onInspect)
     }
 }
 
