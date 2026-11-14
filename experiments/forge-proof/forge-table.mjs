@@ -14,6 +14,8 @@ import {sym,symbolName,symbolText,manaCost,esc} from '../../ui.js';
 import {haptic} from '../../feel.js';
 import {createTableAudio} from '../../play-table-audio.js';
 import {createTableEmotes} from './table-emotes.mjs';
+import {cHead,cLevel,initConsoleSettings} from '../../console-settings.js';
+import {audioSettings} from '../../audio.js';
 // Outline icons from the CardStashy UI packet (24-unit grid, currentColor).
 const ZONE_ICONS={Library:'M6 3h14v16H6zM3 6v16h14M10 7h6M10 11h6',Graveyard:'M6 20V9a6 6 0 0 1 12 0v11M3 20h18M9 10h6M12 7v7',Exile:'m12 2 10 10-10 10L2 12zM8 12h14M17 7l5 5-5 5',Command:'M3 6l5 5 4-8 4 8 5-5-2 14H5zM5 16h14'};
 // Short enough to read in full on a phone; the button's label still names the whole zone.
@@ -1075,6 +1077,19 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(!panel){panel=doc.createElement('div');panel.className='forge-menu-panel';for(const el of [...menu.children])if(el.tagName!=='SUMMARY')panel.append(el);menu.append(panel);}
   const history=root.querySelector('.play-match-header>button[data-focus-key=table-details]'),bar=root.querySelector('.play-match-header>.forge-tracker-toggles');
   if(history)panel.prepend(history);if(bar)(history||panel.firstChild)?.after?.(bar)??panel.prepend(bar);
+  // The Console look (owner's pick, 14 Nov 2026; the app's MatchMenu.kt): MATCH MENU, Resume first, what you can do at the left,
+  // the settings you reach for mid-game at the right (Settings' own Music and Effects lines, same handlers). Names only.
+  if(!panel.querySelector(':scope>.forge-menu-title')){
+   const title=doc.createElement('h2');title.className='forge-menu-title';title.textContent='Match menu';
+   const resume=doc.createElement('button');resume.type='button';resume.className='forge-menu-resume';resume.textContent='Resume';resume.addEventListener('click',()=>{menu.open=false;menu.querySelector(':scope>summary')?.focus?.({preventScroll:true});});
+   panel.prepend(title,resume);
+   const set=doc.createElement('div');set.className='forge-menu-settings c-settings';panel.append(set);
+   const fill=()=>{const a=audioSettings();set.innerHTML=cHead('Settings')+cLevel({id:'music',name:'Music volume',change:'setMusicVolume',value:a.music*100})+cLevel({id:'sfx',name:'Effects volume',change:'setSfxVolume',value:a.sfx*100});};
+   fill();initConsoleSettings(doc);
+   menu.addEventListener('toggle',()=>{if(menu.open){fill();resume.focus({preventScroll:true});}});
+   menu.addEventListener('keydown',e=>{if(e.key==='Escape'&&menu.open){e.preventDefault();e.stopPropagation();resume.click();}});
+   menu.addEventListener('click',e=>{if(e.target===menu)resume.click();});
+  }
   // "Remember this moment": one tap flags the turn for the match's Chronicle. The match page keeps the flags.
   if(typeof presentation.onRemember==='function'){
    let mark=panel.querySelector(':scope>.forge-remember');
