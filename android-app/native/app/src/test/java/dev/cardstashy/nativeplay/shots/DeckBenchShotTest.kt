@@ -18,6 +18,10 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.performScrollToNode
@@ -123,7 +127,8 @@ class DeckBenchShotTest {
         walk(root)
     }
 
-    private fun run(tag: String, status: Int, nav: Int, scale: Float, gestures: Boolean, shelves: Boolean = false) {
+    /** The Trunk state and the editor on the precon, with the engine's read answered here (shared by every run below). */
+    private fun setUp(): Pair<JsonObject, EditorUi> {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         dev.cardstashy.nativeplay.ui.Foil.testFallback = true
         dev.cardstashy.nativeplay.ui.homeArt = { url -> get(url)?.let { android.graphics.BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() } ?: url }
@@ -151,6 +156,11 @@ class DeckBenchShotTest {
         }
         val ui = EditorUi().apply { adding = false; edit = DeckEdit.open(deck) }
         assertEquals("Island and Swamp come three rows each, as the precon lists them", 6, ui.edit.cards.count { it.name == "Island" || it.name == "Swamp" })
+        return state to ui
+    }
+
+    private fun run(tag: String, status: Int, nav: Int, scale: Float, gestures: Boolean, shelves: Boolean = false) {
+        val (state, ui) = setUp()
 
         WindowCompat.setDecorFitsSystemWindows(rule.activity.window, false)
         rule.setContent {
@@ -203,7 +213,9 @@ class DeckBenchShotTest {
         if (gestures) {
             val d = rule.activity.resources.displayMetrics.density
             val root = rule.onRoot().fetchSemanticsNode().boundsInRoot
-            // Hold a deck card 400 ms, carry it down over the browser: the dock eases down to its small share.
+            // Hold a deck card 400 ms, carry it down over the browser: the dock eases down to its small share. (The deck's curve is
+            // the list's first row on a phone since the deck view redesign, so the list scrolls to the card first.)
+            list.performScrollToNode(hasContentDescription("4 Undercity Dire Rat")); settle()
             val rat = rule.onNode(hasContentDescription("4 Undercity Dire Rat")).fetchSemanticsNode().boundsInRoot
             val grid = rule.onNode(hasContentDescription("Cards to add")).fetchSemanticsNode().boundsInRoot
             val before = ui.edit.cards.filter { it.name == "Undercity Dire Rat" }.sumOf { it.qty }
@@ -271,4 +283,70 @@ class DeckBenchShotTest {
     @Test fun tablet() = run("1024x768", 24, 24, 1f, gestures = false)
     @Config(qualifiers = "w1024dp-h768dp-xhdpi")
     @Test fun tabletBigText() = run("1024x768-130", 24, 24, 1.3f, gestures = false)
+
+    // ---------------------------------------------------------------- the deck view redesign (Randall 14 Nov 15:03Z)
+
+    private fun click(m: androidx.compose.ui.test.SemanticsMatcher) { rule.onAllNodes(m).onFirst().performSemanticsAction(SemanticsActions.OnClick); settle(8) }
+    private fun shotOf(tag: String, name: String) = rule.onNodeWithTag(tag).captureRoboImage(File(shots, "deck-view/$name.png").path)
+    private fun showing(): Int? = rule.onAllNodes(hasText("Show ", substring = true) and hasText("card", substring = true)).fetchSemanticsNodes().firstNotNullOfOrNull { n ->
+        n.config.getOrNull(SemanticsProperties.Text)?.joinToString { it.text }?.let { Regex("Show (\\d+) cards?").find(it)?.groupValues?.get(1)?.toIntOrNull() } }
+
+    /**
+     * The new deck view at one size: the filter bar and the deck header's curve, a curve bar tapped, the Filters panel with a type
+     * picked (its live "Show N cards"), the chips once it closes, the deck by mana value, and Does. [thor]: the top screen keeps the
+     * cards and the panel opens on the bottom screen.
+     */
+    private fun view(name: String, w: Int, h: Int, thor: Boolean = false) {
+        val (state, ui) = setUp()
+        // The builder's role tags (random-build-entry.mjs roleTags), answered here from the card's words.
+        RandomBuild.roleTags = { arr -> JsonObject().apply { arr.forEach { c -> val o = c.asJsonObject; val t = o["oracle_text"]?.asString.orEmpty().lowercase()
+            add(o["name"].asString, JsonArray().apply { if ("draw" in t) add("draw"); if (Regex("counter target|destroy target|exile target|deals \\d+ damage").containsMatchIn(t)) add("removal") }) } } }
+        if (thor) dev.cardstashy.nativeplay.ui.DualScreen.pretend(dev.cardstashy.nativeplay.ui.DualScreen.Panel(2, "Built-in Screen", 1240, 1080, 60f))
+        try {
+            rule.setContent { androidx.compose.foundation.layout.Column {
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.size(w.dp, h.dp).testTag("top")) { DeckEditor(state, ui, {}, {}, {}, {}) }
+                if (thor) androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.size(620.dp, 540.dp).testTag("bottom")) { dev.cardstashy.nativeplay.ui.BottomRoot() }
+            } }
+            settle(40)
+            val b = ui.bench
+            fun both(n: String) { shotOf("top", "$name-$n"); if (thor) shotOf("bottom", "$name-$n-bottom") }
+            both("1-view")
+            assertTrue("the Filters button is on the bar", rule.onAllNodes(hasContentDescription("Filters")).fetchSemanticsNodes().isNotEmpty())
+            assertTrue("the colour buttons are on the bar on Your cards", rule.onAllNodes(hasContentDescription("Show white")).fetchSemanticsNodes().isNotEmpty())
+            // A curve bar: the browser shows that mana value only.
+            click(hasContentDescription("Mana value 2,", substring = true))
+            assertEquals(setOf(2), b.filter.mana)
+            both("2-curve-2")
+            // Filters: the panel (beside the deck, a sheet on the phone, the bottom screen on the Thor) with Instant picked.
+            click(hasContentDescription("Filters", substring = true))
+            assertTrue("the panel is open", b.filters)
+            val before = showing()
+            click(hasText("Instant") and hasClickAction())
+            assertEquals(setOf("Instant"), b.filter.types)
+            val after = showing()
+            assertTrue("the count is live: $before then $after", before != null && after != null && after <= before)
+            both("3-filters")
+            click(hasText("Show ", substring = true) and hasText("card", substring = true) and hasClickAction())
+            assertTrue("Show closes the panel", !b.filters)
+            both("4-chips")
+            assertTrue("a chip for each pick", rule.onAllNodes(hasContentDescription("Take off Instant")).fetchSemanticsNodes().isNotEmpty())
+            // The deck by mana value.
+            click(hasContentDescription("Sort the deck by mana"))
+            assertEquals("mana", b.deckSort)
+            both("5-deck-by-mana")
+            // Does: Removal only, the rest off.
+            rule.runOnUiThread { b.filter = dev.cardstashy.nativeplay.ui.BenchFilter(does = setOf("removal")) }; settle(20)
+            both("6-does-removal")
+        } finally { if (thor) dev.cardstashy.nativeplay.ui.DualScreen.pretend(null) }
+    }
+
+    @Test fun viewPhone() = view("phone-390x844", 390, 844)
+    @Config(qualifiers = "w954dp-h860dp-xxhdpi")
+    @Test fun viewFoldable() = view("fold-954x860", 954, 860)
+    @Config(qualifiers = "w1280dp-h800dp-xhdpi")
+    @Test fun viewTablet() = view("tablet-1280x800", 1280, 800)
+    @Config(qualifiers = "w960dp-h540dp-xhdpi")
+    @Test fun viewPortal() = view("portal-960x540", 960, 540)
+    @Config(qualifiers = "w960dp-h1080dp-xhdpi")
+    @Test fun viewThor() = view("thor-960x540", 960, 540, thor = true)
 }

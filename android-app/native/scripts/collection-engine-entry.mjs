@@ -6357,9 +6357,17 @@ globalThis.Collection = {
     if (game && game !== 'mtg') return json(tcgBenchPool(game, id));
     mtgFocus(); deckOpen(id);
     const by = new Map();
-    for (const e of S.state.collection || []) { if (!(Number(e.qty) > 0)) continue; const k = cardKey(e.name), o = by.get(k) || {name: e.name, own: 0}; o.own += Number(e.qty); by.set(k, o); }
-    return json([...by.values()].map(o => { const c = meta(o.name); return c ? {name: c.name, image: cardImage(c) || '', cmc: Number(c.cmc) || 0,
-      type: c.type_line || c.card_faces?.[0]?.type_line || '', colors: c.colors || c.card_faces?.[0]?.colors || [], own: o.own} : null; }).filter(Boolean));
+    for (const e of S.state.collection || []) { if (!(Number(e.qty) > 0)) continue; const k = cardKey(e.name), o = by.get(k) || {name: e.name, own: 0, sets: new Set()}; o.own += Number(e.qty);
+      if (e.set) o.sets.add(String(e.set).toLowerCase()); by.set(k, o); }
+    return json([...by.values()].map(o => { const c = meta(o.name); if (!c) return null; const faces = c.card_faces || [];
+      return {name: c.name, image: cardImage(c) || '', cmc: Number(c.cmc) || 0,
+      type: c.type_line || faces[0]?.type_line || '', colors: c.colors || faces[0]?.colors || [], own: o.own,
+      // The Deck Bench's filters (deck view redesign, 14 Nov): every colour of every face, rarity, the sets the copies you own are
+      // from, release date, and each face's rules text for the Does filter (deck-forge.js forgeTags reads card_faces).
+      allColors: [...new Set([...(c.colors || []), ...faces.flatMap(f => f.colors || [])])],
+      rarity: c.rarity || '', set: c.set || '', sets: [...o.sets], setName: c.set_name || '', released: c.released_at || '',
+      text: c.oracle_text || faces.map(f => f.oracle_text || '').join('\n'), manaCost: c.mana_cost || '',
+      faces: faces.map(f => ({name: f.name || '', type_line: f.type_line || '', oracle_text: f.oracle_text || '', mana_cost: f.mana_cost || ''}))}; }).filter(Boolean));
   },
   // All cards, shelf by shelf, for a Yu-Gi-Oh! or Pokémon deck (shelvesStart above): the set list and "For this deck", then one set's cards.
   shelvesStart(game, id) { shelvesStart(game, id); return json(shelvesModel(game, id)); },

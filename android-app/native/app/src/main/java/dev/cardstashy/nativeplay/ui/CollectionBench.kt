@@ -88,10 +88,19 @@ fun CollectionBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: 
     val names = remember(m) { m.groups.flatMap { g -> g.cards.map { it.r.name } }.toSet() }
     fun countIn(n: String) = inDeck[n] ?: inDeck[n.split(" // ")[0]] ?: 0
     fun inList(n: String) = n in names || n.split(" // ")[0] in names
+    // The deck rows' mana values (the curve, the list's Mana sort), from the collection's own card data where the pool has it.
+    // A card the collection has none of comes from Scryfall by name (CardFacts), so the curve and the Mana sort still read it.
+    val named by dev.cardstashy.nativeplay.play.CardFacts.cards.collectAsState()
+    val cmcOf = remember(pool, named) { HashMap<String, Double>().apply {
+        named.values.forEach { fx -> val n = fx.card.get("name")?.takeIf { it.isJsonPrimitive }?.asString ?: return@forEach; putIfAbsent(n, fx.m); putIfAbsent(n.split(" // ")[0], fx.m) }
+        pool?.forEach { e -> (e as? JsonObject)?.let { o -> val n = o.get("name")?.asString ?: return@let
+        o.get("cmc")?.takeIf { it.isJsonPrimitive }?.asDouble?.let { put(n, it); put(n.split(" // ")[0], it) } } } } }
+    val unread = remember(m, cmcOf) { m.groups.flatMap { g -> g.cards.filter { c -> c.r.name !in cmcOf && costOf(c.r.mana).isBlank() && !Decks.isBasicLand(c.r.name) }.map { it.r.name } } }
+    LaunchedEffect(unread) { if (unread.isNotEmpty()) dev.cardstashy.nativeplay.play.CardFacts.wantNames(unread) }
     val groups = m.groups.filter { it.cards.isNotEmpty() }.map { g -> BenchGroup(g.name, g.cards.map { c ->
         BenchRow(c.r.name, c.qty, needOf(c.owned, c.own, c.qty), "", artCrop(c.r.art) ?: namedArt(c.r.name), c.r.art ?: "", costOf(c.r.mana),
             c.chromeEmb.map { (src, _) -> src.substringAfterLast('/').substringBefore('.') }.filter { it in COLOURS },
-            c.r.set?.code.orEmpty(), "", c.chromeRarity, c.roles, note = if (c.owned) "" else c.own.orEmpty())
+            c.r.set?.code.orEmpty(), "", c.chromeRarity, c.roles, note = if (c.owned) "" else c.own.orEmpty(), cmc = cmcOf[c.r.name] ?: -1.0)
     }) } + listOfNotNull(m.side?.takeIf { it.rows.isNotEmpty() }?.let { sd -> BenchGroup("Sideboard", sd.rows.map { r ->
         // mtgSideboard's .mini-row: "2× Name" and what is still to get ("Need 2"); a tap opens the card, as on the page.
         BenchRow(r.name, r.qty, needOf(r.ok, r.own, r.qty), "", artCrop(r.art) ?: namedArt(r.name), r.art ?: "", "", emptyList(), "", "", "", r.roles,
@@ -102,13 +111,16 @@ fun CollectionBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: 
         val n = o.get("name")?.asString ?: return@mapNotNull null
         val type = o.get("type")?.asString.orEmpty(); val g = Trunk.group(type); val basic = Decks.isBasicLand(n); val q = countIn(n)
         if (basic && q == 0) return@mapNotNull null
-        val colors = (o.get("colors") as? JsonArray)?.mapNotNull { it.takeIf { c -> c.isJsonPrimitive }?.asString }.orEmpty()
-        if (b.find.isNotBlank() && !n.contains(b.find.trim(), ignoreCase = true)) return@mapNotNull null
-        if (b.colors.isNotEmpty() && colors.none { it in b.colors }) return@mapNotNull null
+        val colors = (o.get("allColors") as? JsonArray ?: o.get("colors") as? JsonArray)?.mapNotNull { it.takeIf { c -> c.isJsonPrimitive }?.asString }.orEmpty()
+        // Find, the colours and the Filters panel are the Bench's own (BenchFilter.kt), read from the tile's facts below.
         if (!when (b.type) { "Creatures" -> g == "Creatures"; "Lands" -> g == "Lands"; "Spells" -> g != "Creatures" && g != "Lands"; else -> true }) return@mapNotNull null
         // The site's deck editing has no copy cap (core.js mergeDeckCard), so + stays on.
+        fun s(k: String) = o.get(k)?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
         BenchTile(n, o.get("image")?.asString.orEmpty().ifBlank { namedArt(n).replace("art_crop", "normal") }, o.get("cmc")?.asDouble ?: 0.0, g == "Lands", basic, q,
-            o.get("own")?.asInt ?: 0, Int.MAX_VALUE, false) }.orEmpty()
+            o.get("own")?.asInt ?: 0, Int.MAX_VALUE, false, colors = colors, typeLine = type, rarity = s("rarity"), set = s("set"), setName = s("setName"), released = s("released"),
+            sets = (o.get("sets") as? JsonArray)?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }.orEmpty(),
+            card = JsonObject().apply { addProperty("name", n); addProperty("type_line", type); addProperty("oracle_text", s("text")); addProperty("mana_cost", s("manaCost"))
+                o.get("cmc")?.let { add("cmc", it) }; (o.get("faces") as? JsonArray)?.takeIf { it.size() > 0 }?.let { add("card_faces", it) } }) }.orEmpty()
     // All cards (Randall 6 Nov 21:43Z, as Play's .yc Your cards / All cards): every card legal in the format from Scryfall, the same
     // search as Play's pool (DeckEditor poolQuery), so a deck can take cards not owned yet; those show grey, "To buy". The site's
     // deck page adds any card by name too (A.deckAdd, Find <format> cards).
@@ -119,12 +131,13 @@ fun CollectionBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: 
     var allMore by remember { mutableStateOf(false) }; var allPage by remember { mutableStateOf(1) }; var allKey by remember { mutableStateOf("") }
     val ownBy = remember(pool) { HashMap<String, Int>().apply { pool?.forEach { e -> (e as? JsonObject)?.let { o -> val n = o.get("name")?.asString ?: return@let
         val k = o.get("own")?.asInt ?: 0; merge(n, k, Int::plus); if (" // " in n) merge(n.split(" // ")[0], k, Int::plus) } } } }
-    fun allQuery(find: String = b.find, colors: Set<String> = b.colors, type: String = b.type): String {
+    fun allQuery(find: String = b.find, colors: Set<String> = b.colors, type: String = b.type, filter: BenchFilter = b.filter): String {
         val q = mutableListOf("game:paper")
         m.format.lowercase().takeIf { it in SCRYFALL_FORMATS }?.let { q += "legal:$it" }
         find.trim().replace(Regex("[\"\\\\]"), "").takeIf { it.isNotEmpty() }?.let { q += "name:\"$it\"" }
         if (colors.isNotEmpty()) q += colors.joinToString(" or ", "(", ")") { "c:" + it.lowercase() }
         ALL_TYPES[type]?.let { q += it }
+        q += BenchFilter.query(filter)
         return q.joinToString(" ")
     }
     fun loadAll(more: Boolean = false) {
@@ -141,22 +154,27 @@ fun CollectionBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: 
         }
     }
     // All cards with nothing typed is shelves (AllShelves.kt, as Play's); a search looks through every card, a page at a time.
-    LaunchedEffect(mode, b.find, b.colors, b.type, m.format) { if (mode == "all" && b.find.isNotBlank()) { if (allKey.isNotEmpty()) kotlinx.coroutines.delay(350); loadAll() } }
+    LaunchedEffect(mode, b.find, b.colors, b.type, BenchFilter.query(b.filter), m.format) { if (mode == "all" && b.find.isNotBlank()) { if (allKey.isNotEmpty()) kotlinx.coroutines.delay(350); loadAll() } }
     val shelves = remember(m.id) { MagicShelves(scope) }
     val facts by dev.cardstashy.nativeplay.play.CardFacts.cards.collectAsState()
     val shelfBase = allQuery("")
     // The deck's colours, worked out off the main thread (the facts map grows with every shelf that lands).
     val identity by androidx.compose.runtime.produceState<String?>(null, facts, names) { value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { deckIdentity(names.filterNot(Decks::isBasicLand)) } }
-    val shelfFit = allQuery("", emptySet(), "All") + " -t:land" + (identity?.let { " id<=$it" } ?: "")
+    val shelfFit = allQuery("", emptySet(), "All", BenchFilter()) + " -t:land" + (identity?.let { " id<=$it" } ?: "")
     LaunchedEffect(mode, shelfBase, shelfFit) { if (mode == "all") { shelves.use(shelfBase, shelfFit); shelves.start() } }
-    LaunchedEffect(mode) { if (mode == "all") androidx.compose.runtime.snapshotFlow { ui.tileGrid.layoutInfo.let { it.visibleItemsInfo.lastOrNull()?.index to it.totalItemsCount } }
-        .collect { (last, total) -> if (last != null && total > 0 && last >= total - 6 && allMore && !allBusy) loadAll(true) } }
+    // all's size and the busy flag are watched too, so a page the Bench's filters hide entirely still brings the next one.
+    LaunchedEffect(mode) { if (mode == "all") androidx.compose.runtime.snapshotFlow { ui.tileGrid.layoutInfo.let { listOf(it.visibleItemsInfo.lastOrNull()?.index, it.totalItemsCount, all.size, allBusy, allMore) } }
+        .collect { (last, total) -> last as Int?; total as Int; if (last != null && total > 0 && last >= total - 6 && allMore && !allBusy) loadAll(true) } }
     fun str(o: JsonObject?, k: String) = o?.get(k)?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
     fun allTile(c: JsonObject): BenchTile { val n = str(c, "name"); val have = ownBy[n] ?: ownBy[n.split(" // ")[0]] ?: 0
         val face = (c.get("card_faces") as? JsonArray)?.firstOrNull() as? JsonObject
         val img = str(c.get("image_uris") as? JsonObject, "normal").ifBlank { str(face?.get("image_uris") as? JsonObject, "normal") }.ifBlank { namedArt(n).replace("art_crop", "normal") }
         return BenchTile(n, img, c.get("cmc")?.takeIf { it.isJsonPrimitive }?.asDouble ?: 0.0, Trunk.group(str(c, "type_line").ifBlank { str(face, "type_line") }) == "Lands",
-            Decks.isBasicLand(n), countIn(n), have, Int.MAX_VALUE, have == 0, lockWord = "To buy") }
+            Decks.isBasicLand(n), countIn(n), have, Int.MAX_VALUE, have == 0, lockWord = "To buy",
+            colors = ((c.get("colors") as? JsonArray)?.toList().orEmpty() + (c.get("card_faces") as? JsonArray)?.flatMap { (it as? JsonObject)?.get("colors") as? JsonArray ?: JsonArray() }.orEmpty())
+                .mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }.distinct(),
+            typeLine = str(c, "type_line").ifBlank { str(face, "type_line") }, rarity = str(c, "rarity"), set = str(c, "set"), setName = str(c, "set_name"),
+            released = str(c, "released_at"), card = c) }
     val allTiles = if (mode != "all") emptyList() else all.map(::allTile)
     // The hero's "owned" (covered/copies) gives the copies still to get; its Power stat is the badge.
     val owned = m.stats.firstOrNull { it.label == "owned" }?.value?.split('/')?.mapNotNull { it.trim().toIntOrNull() }
