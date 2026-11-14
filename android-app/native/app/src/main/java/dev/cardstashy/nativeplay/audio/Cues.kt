@@ -64,6 +64,7 @@ object Cues {
             return Play(name, vol, r.coerceIn(.5f, 2f), cuts)
         }
     }
-    /** Old callers whose volume is part of the moment, not a trim: the CPU's quiet draw, the life ticks. */
-    private val KEEP_TRIM = setOf("CARD-002", "CMB-024")
+    /** Old callers whose volume is part of the moment, not a trim: the CPU's quiet draw, the life ticks, and (butter pass B1,
+     *  Randall 14 Nov) the phase tick and the clock's ticks and time-out, which played at full volume over every caller's level. */
+    internal val KEEP_TRIM = setOf("CARD-002", "CMB-024", "TT-003", "TT-007", "TT-008")
 }

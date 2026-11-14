@@ -138,7 +138,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     audio.paying = travel?.travel?.leg.let { it == dev.cardstashy.nativeplay.match.Director.Leg.TAPS || it == dev.cardstashy.nativeplay.match.Director.Leg.TO_POOL }
     val cuePlan = remember(audio) { { rev: Long, cues: Set<String> -> audio.planned(rev, cues) } }
     val cue = remember(audio) { { id: String, vol: Float, rate: Float -> audio.play(id, vol, rate) } }
-    // The turn clock (cue map): a quiet TT-006 as a fresh prompt window opens, TT-007 each second of the last 10, TT-008 at zero. Yours only.
+    // The turn clock (cue map, butter pass B1): silent as a window opens, TT-007 softly for the last 5 s, TT-008 at zero. Yours only.
     // One loop for the whole match (ClockCues keeps the count across the clock's per-second re-emissions, so no tick is lost).
     LaunchedEffect(audio) {
         val cues = ClockCues { id, vol -> audio.play(id, vol) }

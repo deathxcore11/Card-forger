@@ -79,4 +79,13 @@ class CuesTest {
         clock += 1
         assertNotNull(r.route("CARD-006")); assertNotNull(r.route("CMB-024"))
     }
+
+    /** Butter pass B1 (Randall 14 Nov): the clock and phase ticks keep their callers' quieter levels instead of playing at full volume. */
+    @Test fun clockAndPhaseTicksKeepTheirLevel() {
+        val r = router(has = { true })
+        assertEquals(.35f, r.route("TT-003", .35f)!!.volume, 0f)
+        assertEquals(.35f, r.route("TT-007", .35f)!!.volume, 0f)
+        assertEquals(.6f, r.route("TT-008", .6f)!!.volume, 0f)
+        assertEquals(1f, r.route("TT-001", .5f)!!.volume, 0f)
+    }
 }

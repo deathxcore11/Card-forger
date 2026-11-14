@@ -7,6 +7,12 @@ import dev.cardstashy.nativeplay.engine.MatchState
 
 /** The table sounds of play-table-audio.js, played from the same files on board changes. No music yet. */
 class TableAudio(context: Context) {
+    companion object {
+        internal fun phaseTick(a: MatchState, b: MatchState): Boolean =
+            b.phase != a.phase && b.turn > 0 && b.activePlayer == b.viewer &&
+                (b.phase == "MAIN2" || (b.phase?.startsWith("COMBAT") == true && a.phase?.startsWith("COMBAT") != true))
+    }
+
     private val pool = SoundPool.Builder().setMaxStreams(8)
         .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()).build()
     private val ids = HashMap<String, Int>()
@@ -67,7 +73,9 @@ class TableAudio(context: Context) {
         plan = emptySet()
         if (a == null) return
         if (b.activePlayer != a.activePlayer && b.turn > 0) play(if (b.activePlayer == b.viewer) "TT-001" else "TT-002")
-        else if (b.phase != a.phase && b.turn > 0) play("TT-003", .35f)
+        // Randall 14 Nov: the phase tick on every phase of both players was noise. Only your own turn's move into combat and into the
+        // second main phase still tick.
+        else if (phaseTick(a, b)) play("TT-003", .35f)
         val was = HashMap<Int, dev.cardstashy.nativeplay.engine.Card>()
         for (p in a.players) for (c in p.hand + p.battlefield + p.graveyard + p.exile) was[c.id] = c
         val handIn = b.me.hand.count { was[it.id]?.zone != "Hand" }
