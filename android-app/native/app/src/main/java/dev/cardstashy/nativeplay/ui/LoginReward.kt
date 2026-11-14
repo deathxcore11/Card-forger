@@ -2,6 +2,27 @@ package dev.cardstashy.nativeplay.ui
 
 import androidx.compose.ui.focus.focusProperties
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.em
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -80,7 +101,7 @@ fun LoginRewardPopup(login: JsonObject, week: List<dev.cardstashy.nativeplay.pla
     val scope = rememberCoroutineScope()
     val stamp = login.get("stamp").n().coerceIn(1, 7)
     val all = merged(pieces(login.get("reward") as? JsonObject) + pieces(login.get("monthReward") as? JsonObject))
-    val enter = remember { Animatable(0f) }
+    val enter = remember { Animatable(if (Motion.still) 1f else 0f) }
     val lift = remember { Animatable(0f) }
     var leaving by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { enter.animateTo(1f, spring(dampingRatio = .72f, stiffness = Spring.StiffnessMediumLow)) }
@@ -125,42 +146,106 @@ fun LoginRewardPopup(login: JsonObject, week: List<dev.cardstashy.nativeplay.pla
                 else "Today: " + all.joinToString(", ") { "%,d ${it.label}".format(it.count) } + ".", style = Rule.Type.S15.copy(color = CaseMuted))
         }
     }
-    // One layer for scrim and card: drawn offscreen and faded as a whole, the card never goes see-through over the page on Claim.
-    Box(Modifier.fillMaxSize().graphicsLayer { alpha = enter.value.coerceIn(0f, 1f); compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }.background(Color(0xCC07080B))
+    // The whole screen celebrates the day (Console look, Randall's pick of 14 Nov): slow rays behind the day's number, each reward
+    // on its own medal, the week as a track. One layer, drawn offscreen and faded as a whole, so nothing goes see-through on Claim.
+    val context = LocalContext.current
+    val still = Motion.still || remember { Playmats.reduced(context) }
+    val turn = if (still) 0f else rememberInfiniteTransition(label = "rays").animateFloat(0f, 360f, infiniteRepeatable(tween(50_000, easing = LinearEasing)), label = "turn").value
+    val gold = Rule.Console.CardRim
+    val bonus = bonusLine(pieces(login.get("monthReward") as? JsonObject), all)
+    Box(Modifier.fillMaxSize().graphicsLayer { alpha = enter.value.coerceIn(0f, 1f); compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }.background(Rule.Console.Night)
+        .drawBehind {
+            val c = Offset(size.width / 2, size.height * .4f); val r = size.minDimension * .75f
+            drawCircle(Brush.radialGradient(listOf(gold.copy(alpha = .24f), Color.Transparent), c, r), r, c)
+            rotate(turn, c) { for (i in 0 until 20) drawArc(Brush.radialGradient(0f to gold.copy(alpha = .15f), .72f to Color.Transparent, center = c, radius = r), i * 18f, 6f, true, c - Offset(r, r), Size(r * 2, r * 2)) }
+        }
         .focusProperties { canFocus = false }.clickable(remember { MutableInteractionSource() }, null) {}, contentAlignment = Alignment.Center) {
-        val shape = RoundedCornerShape(26.dp)
-        Column(Modifier.padding(24.dp).widthIn(max = 380.dp).fillMaxWidth()
-            .graphicsLayer { val k = .86f + .14f * enter.value; scaleX = k; scaleY = k }
-            .background(Brush.verticalGradient(listOf(Color(0xFF221B12), Color(0xFF111217))), shape)
-            .border(1.dp, Brush.verticalGradient(listOf(Color(0x99E9C27A), Color(0x22E9C27A))), shape)
-            .padding(horizontal = 22.dp, vertical = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            if (!DualScreen.active) Text("DAY $stamp OF 7", style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.6.sp, color = Color(0xFFB9BFC9)))
-            Text("Welcome back", style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 26.sp, color = Color(0xFFF3E3BD)), textAlign = TextAlign.Center)
-            // The week as seven quiet pips: today's glows, earlier days are filled. On two screens the week is on the bottom.
-            if (!DualScreen.active) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                for (i in 1..7) Box(Modifier.size(if (i == stamp) 14.dp else 10.dp).background(
-                    when { i == stamp -> Color(0xFFE2B866); i < stamp -> Color(0x99D6AD64); else -> Color(0x22FFFFFF) }, CircleShape))
+        BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(24.dp)
+            .graphicsLayer { val k = .86f + .14f * enter.value; scaleX = k; scaleY = k }, contentAlignment = Alignment.Center) {
+            // A screen too short for the column (a phone on its side, the Thor's top): the day and the week at the left, the rewards and Claim at the right.
+            val short = maxHeight < 470.dp
+            val track = !DualScreen.active
+            val medals: @Composable (Boolean) -> Unit = { small ->
+                // The reward rises toward the purse on Claim.
+                Box(Modifier.fillMaxWidth().graphicsLayer { translationY = -lift.value * 260f; alpha = 1f - lift.value * .9f; val k = 1f - .35f * lift.value; scaleX = k; scaleY = k }) { RewardMedals(all, small, still) }
             }
-            // Equal tiles that share the width (each at least 80 dp, four to a row at most); a label never wraps.
-            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().graphicsLayer { translationY = -lift.value * 260f; alpha = 1f - lift.value * .9f; val k = 1f - .35f * lift.value; scaleX = k; scaleY = k }) {
-            val perRow = tilesPerRow(maxWidth.value, all.size)
-            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                all.chunked(perRow).forEach { row -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)) {
-                    row.forEach { p ->
-                        Column(Modifier.weight(1f).widthIn(max = 104.dp).background(Color(0x14FFFFFF), RoundedCornerShape(18.dp)).border(1.dp, Color(0x33D6AD64), RoundedCornerShape(18.dp))
-                            .padding(horizontal = 6.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Icon(p.icon, 34.dp)
-                            Text("%,d".format(p.count), maxLines = 1, softWrap = false, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = Color(0xFFF3E3BD)))
-                            Text(p.label, maxLines = 1, softWrap = false, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = Color(0xFFB9BFC9)))
-                        }
+            val claim: @Composable () -> Unit = {
+                if (bonus != null) Text(bonus, style = Rule.Type.sans(13, FontWeight.SemiBold, Rule.Color.GoldHair), textAlign = TextAlign.Center)
+                GoldCta("Claim", Modifier.widthIn(max = 300.dp).fillMaxWidth(), enabled = !leaving) { claim() }
+            }
+            if (short) Row(Modifier.widthIn(max = 780.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(28.dp)) {
+                Column(Modifier.weight(.85f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(18.dp)) { RewardDay(stamp); if (track) WeekTrack(stamp) }
+                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) { medals(true); claim() }
+            } else Column(Modifier.widthIn(max = 420.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                RewardDay(stamp)
+                Spacer(Modifier.height(8.dp))
+                medals(false)
+                if (track) { Spacer(Modifier.height(6.dp)); WeekTrack(stamp) }
+                claim()
+            }
+        }
+    }
+}
+
+/** "Monthly bonus included: 3 of the 5 packs." The month's part is named, never squeezed in as a tile of its own (butter pass B2). */
+internal fun bonusLine(month: List<Piece>, all: List<Piece>): String? {
+    if (month.isEmpty()) return null
+    return "Monthly bonus included: " + merged(month).joinToString(", ") { m ->
+        val whole = all.firstOrNull { it.icon == m.icon && it.label.removeSuffix("s") == m.label.removeSuffix("s") }
+        if (whole != null && whole.count > m.count) "%,d of the %,d %s".format(m.count, whole.count, whole.label) else "%,d %s".format(m.count, m.label)
+    } + "."
+}
+
+/** DAILY LOG-IN, the day's number, and one line under it. */
+@Composable
+private fun RewardDay(stamp: Int) = Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Text("DAILY LOG-IN", style = Rule.Type.cinzel(12, Rule.Color.GoldHair).copy(letterSpacing = .3.em))
+    Text("Day $stamp", Modifier.semantics { heading() }, style = Rule.Type.cinzel(34, Rule.Console.Warm).copy(shadow = Shadow(Rule.Console.CardRim.copy(alpha = .45f), Offset(0f, 4f), 30f)), textAlign = TextAlign.Center)
+    Text(if (stamp >= 7) "THE WEEK IS COMPLETE" else "WELCOME BACK", style = Rule.Type.sans(12, FontWeight.Bold, Rule.Console.Soft).copy(letterSpacing = .1.em), textAlign = TextAlign.Center)
+}
+
+/**
+ * Each reward on its own medal, in equal cells that share the width (each at least 80 dp, four to a row at most): a label never
+ * wraps and no cell is a sliver. The medals drop in one after another; nothing around them moves.
+ */
+@Composable
+private fun RewardMedals(all: List<Piece>, small: Boolean, still: Boolean) = BoxWithConstraints(Modifier.fillMaxWidth()) {
+    val perRow = tilesPerRow(maxWidth.value, all.size)
+    val rows = all.chunked(perRow)
+    val cell = (maxWidth - 10.dp * (perRow - 1)) / perRow
+    val medal = minOf(if (small) (if (rows.size > 1) 56.dp else 76.dp) else 88.dp, cell - 12.dp)
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(if (small) 8.dp else 14.dp)) {
+        var n = 0
+        rows.forEach { row -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)) {
+            row.forEach { p ->
+                val i = n++
+                val drop = remember { Animatable(if (still) 1f else 0f) }
+                LaunchedEffect(Unit) { if (!still) { kotlinx.coroutines.delay(120L + i * 110L); drop.animateTo(1f, spring(dampingRatio = .6f, stiffness = Spring.StiffnessMediumLow)) } }
+                Column(Modifier.width(cell).graphicsLayer { val d = drop.value; alpha = d.coerceIn(0f, 1f); translationY = (1f - d) * -26.dp.toPx(); val k = 1.25f - .25f * d; scaleX = k; scaleY = k },
+                    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(if (small) 2.dp else 5.dp)) {
+                    val rim = Rule.Console.CardRim
+                    Box(Modifier.padding(6.dp).size(medal).drawBehind { drawCircle(rim.copy(alpha = .12f), size.minDimension / 2 + 6.dp.toPx()) }
+                        .background(Brush.radialGradient(listOf(Rule.Console.MedalTop, Rule.Console.MedalBottom)), CircleShape).border(2.dp, rim, CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(p.icon, medal * .52f)
                     }
-                    repeat(perRow - row.size) { if (all.size > perRow) androidx.compose.foundation.layout.Spacer(Modifier.weight(1f)) }
-                } }
+                    Text("%,d".format(p.count), maxLines = 1, softWrap = false, style = Rule.Type.sans(if (small) 20 else 24, FontWeight.ExtraBold, Rule.Console.Warm))
+                    Text(p.label, maxLines = 1, softWrap = false, style = Rule.Type.sans(12, FontWeight.Bold, Rule.Console.Soft).copy(letterSpacing = .06.em))
+                }
             }
-            }
-            if (login.get("monthReward") is JsonObject) Text("Monthly bonus included.", style = TextStyle(fontFamily = Site.Manrope, fontSize = 13.sp, color = Color(0xFFD6AD64)))
-            GoldCta("Claim", Modifier.fillMaxWidth(), enabled = !leaving) { claim() }
+        } }
+    }
+}
+
+/** The week as a track of seven: the days you have are gold, today is the big one. */
+@Composable
+private fun WeekTrack(stamp: Int) = Row(Modifier.widthIn(max = 336.dp).fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = "Day $stamp of 7" }, verticalAlignment = Alignment.CenterVertically) {
+    val gold = Rule.Console.CardRim
+    for (n in 1..7) {
+        val on = n <= stamp; val now = n == stamp
+        if (n > 1) Box(Modifier.weight(1f).height(3.dp).background(if (on) gold else Rule.Console.TrackOff))
+        Box(Modifier.size(if (now) 36.dp else 26.dp).drawBehind { if (now) drawCircle(gold.copy(alpha = .25f), size.minDimension / 2 + 5.dp.toPx()) }
+            .background(if (on) gold else Rule.Console.TrackDot, CircleShape).then(if (on) Modifier else Modifier.border(1.5.dp, Rule.Console.TrackRim, CircleShape)), contentAlignment = Alignment.Center) {
+            Text("$n", style = Rule.Type.sans(if (now) 15 else 12, FontWeight.ExtraBold, if (on) Rule.Color.CtaInk else Rule.Console.Soft))
         }
     }
 }
