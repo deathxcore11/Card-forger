@@ -28,7 +28,7 @@ export function foilContextProgram(ctx,key,fragment,uniforms){
   const prog=gl.createProgram();gl.attachShader(prog,vs);gl.attachShader(prog,fs);gl.bindAttribLocation(prog,0,'a');gl.linkProgram(prog);if(!gl.getProgramParameter(prog,gl.LINK_STATUS))return null;
   gl.useProgram(prog);ctx.current=prog;
   const U={};for(const n of uniforms)U[n]=gl.getUniformLocation(prog,n);
-  gl.uniform1i(U.u_card,0);gl.uniform1i(U.u_mask,1);gl.uniform1i(U.u_relief,2);if(U.u_emblem)gl.uniform1i(U.u_emblem,3);
+  gl.uniform1i(U.u_card,0);gl.uniform1i(U.u_mask,1);gl.uniform1i(U.u_relief,2);
   return Object.assign(Object.create(ctx),{U,prog,use(){if(ctx.current!==prog){gl.useProgram(prog);ctx.current=prog;}}});
  };
  const r=make();ctx.programs.set(key,r);return r;

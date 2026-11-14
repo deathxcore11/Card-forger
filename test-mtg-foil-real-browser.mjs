@@ -13,8 +13,9 @@ import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {resolve,extname} from 'node:path';
+import {MTG_FOIL_RECIPES} from './mtg-foil-recipes.js';
 import {chromium} from 'playwright';
-const root=process.cwd(),PICTURE='/test-fixtures/finish-effects/avatar-of-burgeoning-echoes-pfra-122p.jpg';
+const root=process.cwd(),APPROVED=await readFile(resolve(root,'test-fixtures/finish-effects/mtg-foil-first-approved.glsl'),'utf8'),PICTURE='/test-fixtures/finish-effects/avatar-of-burgeoning-echoes-pfra-122p.jpg';
 const CARD={id:'pfra-122p',name:'Avatar of Burgeoning Echoes',set:'pfra',collector_number:'122p',layout:'normal',frame:'2015',border_color:'black',rarity:'mythic',promo_types:['promopack','stamped'],finishes:['nonfoil','foil'],image_uris:{normal:PICTURE}};
 // Five places the light can be: the middle and toward each corner.
 const LIGHTS=[[50,45],[22,25],[78,25],[25,75],[76,72]];
@@ -50,34 +51,50 @@ window.measure=async(x,y)=>{
   if(amax>90){const ch=(b[0]+b[1]+b[2]-a[0]-a[1]-a[2])/3;if(d<.16){litN++;lit+=ch;}else if(d>.6){awayN++;away+=(Math.abs(b[0]-a[0])+Math.abs(b[1]-a[1])+Math.abs(b[2]-a[2]))/3;}}}
  return {W,H,dark:dark/n,darkLift:darkLift/Math.max(1,dark),colour:colour/n,white:white/n,lit:lit/Math.max(1,litN),away:away/Math.max(1,awayN),awayN:awayN/n};
 };
-// Every foil type's shader, with and without an emblem, compiled by this browser's own WebGL.
+// Every foil type's shader, compiled by this browser's own WebGL.
 window.compileAll=async()=>{
  const {MTG_FOIL_RECIPES}=await import('/mtg-foil-recipes.js'),{mtgFoilFragment,foilDefs,foilKey}=await import('/mtg-foil-shader.js'),{FOIL_VS}=await import('/foil-gl.js');
  const gl=document.createElement('canvas').getContext('webgl'),seen=new Set(),bad=[];
  const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return gl.getShaderParameter(o,gl.COMPILE_STATUS)?o:null;};
- for(const [k,r] of Object.entries(MTG_FOIL_RECIPES))for(const kind of [0,1,2]){const key=foilKey(foilDefs(r,kind));if(seen.has(key))continue;seen.add(key);
-  const vs=sh(gl.VERTEX_SHADER,FOIL_VS),fs=sh(gl.FRAGMENT_SHADER,mtgFoilFragment(r,kind)),p=gl.createProgram();
-  if(!vs||!fs){bad.push(k+'/'+kind);continue;}gl.attachShader(p,vs);gl.attachShader(p,fs);gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))bad.push(k+'/'+kind);gl.deleteProgram(p);}
+ for(const [k,r] of Object.entries(MTG_FOIL_RECIPES)){const key=foilKey(foilDefs(r));if(seen.has(key))continue;seen.add(key);
+  const vs=sh(gl.VERTEX_SHADER,FOIL_VS),fs=sh(gl.FRAGMENT_SHADER,mtgFoilFragment(r)),p=gl.createProgram();
+  if(!vs||!fs){bad.push(k);continue;}gl.attachShader(p,vs);gl.attachShader(p,fs);gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))bad.push(k);gl.deleteProgram(p);}
  return {programs:seen.size,bad};
 };
-// Several foil types on one page share one WebGL context; two of them carry a big emblem on texture unit 3.
-// Returns, per card, a hash of what was drawn and how far it is from the printed picture inside and outside the emblem.
+// The owner approved the FIRST foil (one shader for every type, mock-up v1) and turned down every later retune.
+// Each foil type's small composed shader must draw what that approved shader draws: same picture, same data
+// maps, same uniforms, drawn by both programs on one context and read back pixel by pixel.
+window.identity=async(pic,ref,lights)=>{
+ const {MTG_FOIL_RECIPES}=await import('/mtg-foil-recipes.js'),{mtgFoilFragment,foilDefs,foilKey,MTG_FOIL_UNIFORMS}=await import('/mtg-foil-shader.js');
+ const {foilContext,foilContextProgram,bindFoilTextures,readFoilPixels}=await import('/foil-gl.js'),{analyzeMtgCard,MTG_FRAMES}=await import('/mtg-foil-analysis.js');
+ const img=new Image();img.src=pic;await img.decode();
+ const px=readFoilPixels(img,372),an=analyzeMtgCard(px.data,px.W,px.H),data={W:px.W,H:px.H,mask:an.mask,relief:an.relief};
+ const ctx=foilContext(document),W=240,H=Math.round(W*img.naturalHeight/img.naturalWidth),box=MTG_FRAMES['2015'],out={},bad=[];
+ const approved=foilContextProgram(ctx,'approved',ref,MTG_FOIL_UNIFORMS);if(!approved)return {bad:['approved shader does not compile']};
+ const draw=(r0,r,[lx,ly])=>{r0.use();const {gl,U}=r0;ctx.canvas.width=W;ctx.canvas.height=H;bindFoilTextures(r0,img,data,W,H,pic);gl.viewport(0,0,W,H);
+  gl.uniform2f(U.u_tilt,(lx-.5)*2,(ly-.5)*2);gl.uniform2f(U.u_px,W,H);gl.uniform2f(U.u_texel,1/data.W,1/data.H);gl.uniform1f(U.u_aspect,img.naturalHeight/img.naturalWidth);
+  gl.uniform4f(U.u_art,...box.art);gl.uniform4f(U.u_text,...box.text);gl.uniform4f(U.u_r1,r.pat,r.tint,r.cover,r.relief);gl.uniform4f(U.u_r2,r.film,r.sparkle,r.stamp||0,r.keep||0);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);const b=new Uint8Array(W*H*4);gl.readPixels(0,0,W,H,gl.RGBA,gl.UNSIGNED_BYTE,b);return b;};
+ for(const [k,r] of Object.entries(MTG_FOIL_RECIPES)){const own=foilContextProgram(ctx,foilKey(foilDefs(r)),mtgFoilFragment(r),MTG_FOIL_UNIFORMS);if(!own){bad.push(k);continue;}
+  let max=0,changed=0;for(const l of lights){const a=draw(approved,r,l),b=draw(own,r,l);for(let i=0;i<a.length;i++){const d=Math.abs(a[i]-b[i]);if(d>max)max=d;}
+   const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0,W,H);const P=x.getImageData(0,0,W,H).data;
+   for(let j=0;j<H;j++)for(let i=0;i<W;i++){const q=(j*W+i)*4,p=((H-1-j)*W+i)*4;if(Math.abs(a[q]-P[p])+Math.abs(a[q+1]-P[p+1])+Math.abs(a[q+2]-P[p+2])>24)changed++;}}
+  out[k]={max,changed:changed/(W*H*lights.length)};}
+ return {out,bad};
+};
+// Several foil types on one page share one WebGL context. Returns, per card, a hash of what was drawn.
 window.gallery=async(pic,rows)=>{
- const {mountMtgFoil}=await import('/mtg-foil.js'),{MTG_EMBLEMS}=await import('/mtg-foil-recipes.js');stage.innerHTML='';
- for(const [t,emblem,w] of rows){stage.insertAdjacentHTML('beforeend','<div class="card" style="display:inline-block;width:'+w+'px;--mx:35%;--my:40%"><img src="'+pic+'"><div class="finish-overlay" style="inset:0"></div></div>');
-  const d=stage.lastChild;await d.querySelector('img').decode();if(!mountMtgFoil(d.querySelector('.finish-overlay'),d.querySelector('img'),t,{surface:'card',emblem}))return null;}
+ const {mountMtgFoil}=await import('/mtg-foil.js');stage.innerHTML='';
+ for(const [t,w] of rows){stage.insertAdjacentHTML('beforeend','<div class="card" style="display:inline-block;width:'+w+'px;--mx:35%;--my:40%"><img src="'+pic+'"><div class="finish-overlay" style="inset:0"></div></div>');
+  const d=stage.lastChild;await d.querySelector('img').decode();if(!mountMtgFoil(d.querySelector('.finish-overlay'),d.querySelector('img'),t,{surface:'card'}))return null;}
  const cards=[...stage.children],canvases=()=>cards.map(d=>d.querySelector('canvas.finish-rarity-gl'));
  for(let i=0;i<150&&!canvases().every(k=>k&&!k.hidden);i++)await new Promise(r=>setTimeout(r,100));
  for(const d of cards)d.style.setProperty('--mx','45%');
  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(r,120))));
  const out=[];
  for(const [i,d] of cards.entries()){const k=canvases()[i];if(!k||k.hidden){out.push(null);continue;}
-  const W=k.width,H=k.height,B=k.getContext('2d').getImageData(0,0,W,H).data,flat=(src)=>{const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});x.imageSmoothingQuality='high';x.drawImage(src,0,0,W,H);return x.getImageData(0,0,W,H).data;};
-  const sum=await crypto.subtle.digest('SHA-1',B),row={hash:[...new Uint8Array(sum)].map(b=>b.toString(16).padStart(2,'0')).join('')},mark=MTG_EMBLEMS[rows[i][1]];
-  if(mark){const e=new Image();e.src='/'+mark.src;await e.decode();const A=flat(d.querySelector('img')),E=flat(e);let inN=0,inD=0,outN=0,outD=0;
-   for(let p=0;p<W*H*4;p+=4){const ch=(Math.abs(B[p]-A[p])+Math.abs(B[p+1]-A[p+1])+Math.abs(B[p+2]-A[p+2]))/3;if(E[p]>=230){inN++;inD+=ch;}else if(E[p]<=4){outN++;outD+=ch;}}
-   Object.assign(row,{inside:inD/Math.max(1,inN),outside:outD/Math.max(1,outN),share:inN/(W*H)});}
-  out.push(row);}
+  const W=k.width,H=k.height,B=k.getContext('2d').getImageData(0,0,W,H).data,sum=await crypto.subtle.digest('SHA-1',B);
+  out.push({hash:[...new Uint8Array(sum)].map(b=>b.toString(16).padStart(2,'0')).join('')});}
  return out;
 };
 window.ready=true;
@@ -109,11 +126,18 @@ try{
  assert(worst('colour')<.1,`strong new colour stays a small part of the card (${(worst('colour')*100).toFixed(1)}%)`);
  assert(worst('white')<.02,`the card is not blown out to white (${(worst('white')*100).toFixed(1)}%)`);
  const built=await page.evaluate(()=>window.compileAll());
- assert.deepEqual(built.bad,[],'every foil type compiles');assert(built.programs>=20,'one program per foil type');
- // Three foil types together on one page, two with an emblem: each must draw exactly what it draws alone on a fresh page,
- // and the Jurassic World emblem must change the card inside its shape and leave the card around it as printed.
- // The picture is the Avatar scan again, not a Jurassic World or D&D card: this proves the draw path, not the look.
- const ROWS=[['mtg-traditional','',220],['mtg-embossed','rex',200],['mtg-ampersand','amp',180]];
+ assert.deepEqual(built.bad,[],'every foil type compiles');assert(built.programs>=19,'one program per foil type');
+ // Every foil type draws exactly what the approved first foil draws (the shader the owner said was good,
+ // kept in test-fixtures as it was shown to him), at three light positions on the real Avatar picture.
+ const same=await page.evaluate(([pic,ref,l])=>window.identity(pic,ref,l),[PICTURE,APPROVED,[[50,45],[22,25],[76,72]].map(([x,y])=>[x/100,y/100])]);
+ if(process.env.FOIL_REPORT)console.log(JSON.stringify(same));
+ assert.deepEqual(same.bad,[],'every foil type and the approved shader compile');
+ assert.deepEqual(Object.keys(same.out).sort(),Object.keys(MTG_FOIL_RECIPES).sort(),'every foil type was compared');
+ for(const [k,v] of Object.entries(same.out))assert(v.max<=1,`${k} draws what the approved first foil draws (largest difference ${v.max} of 255)`);
+ assert(Object.values(same.out).every(v=>v.changed>.002),'the comparison is not of two blank cards: every foil type visibly changes the card');
+ // Three foil types together on one page: each must draw exactly what it draws alone on a fresh page.
+ // The picture is the Avatar scan again: this proves the draw path, not the look of those types.
+ const ROWS=[['mtg-traditional',220],['mtg-embossed',200],['mtg-ampersand',180]];
  const fresh=async rows=>{const p=await browser.newPage({viewport:{width:760,height:560},deviceScaleFactor:1});p.on('pageerror',e=>errors.push(String(e)));p.on('console',m=>{if(/WebGL: INVALID|GL_INVALID/.test(m.text()))errors.push(m.text());});
   await p.goto(base+'/fixture');await p.waitForFunction(()=>window.ready);const r=await p.evaluate(([pic,rows])=>window.gallery(pic,rows),[PICTURE,rows]);await p.close();return r;};
  const together=await fresh(ROWS),alone=[];for(const row of ROWS)alone.push((await fresh([row]))?.[0]);
@@ -121,11 +145,9 @@ try{
  assert(together?.every(Boolean)&&alone.every(Boolean),'every foil type on the shared context is drawn');
  ROWS.forEach((row,i)=>assert.equal(together[i].hash,alone[i].hash,row[0]+' draws the same beside other foil types as it does alone'));
  assert.equal(new Set(together.map(c=>c.hash)).size,ROWS.length,'each foil type draws its own look');
- const rex=together[1];assert(rex.share>.02,'the emblem picture has a shape to check');
- assert(rex.inside>40&&rex.outside<25,'the emblem is foil inside its shape ('+rex.inside.toFixed(1)+' of 255) and the card around it stays as printed ('+rex.outside.toFixed(1)+')');
  assert.deepEqual(errors,[],'no page or shader error in the gallery');
  // The same card set to Nonfoil draws no foil at all.
  await page.evaluate(c=>window.mount(c,'nonfoil'),CARD);await page.waitForTimeout(600);
  assert.equal(await page.evaluate(()=>window.foilShown()),false,'Nonfoil draws no foil');
- console.log(`PASS browser: on the real Avatar of Burgeoning Echoes picture the foil leaves the unlit card as printed (changed by ${worst('away').toFixed(1)}/255), brightens it where the light lands (+${least('lit').toFixed(1)}/255), keeps black ink black and never whites out; all ${built.programs} foil-type shaders compile; three foil types on one page, two with an emblem, each draw as they do alone (software drawing, not a phone).`);
+ console.log(`PASS browser: on the real Avatar of Burgeoning Echoes picture the foil leaves the unlit card as printed (changed by ${worst('away').toFixed(1)}/255), brightens it where the light lands (+${least('lit').toFixed(1)}/255), keeps black ink black and never whites out; all ${built.programs} foil-type shaders compile and each draws what the approved first foil draws (largest difference ${Math.max(...Object.values(same.out).map(v=>v.max))}/255); three foil types on one page each draw as they do alone (software drawing, not a phone).`);
 }finally{await browser.close();await new Promise(r=>server.close(r));}

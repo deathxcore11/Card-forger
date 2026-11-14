@@ -205,7 +205,7 @@ export function attachFinishPreview(root){
   host.append(overlay);if(pop)host.append(pop);mounted.set(el,{img,host,overlay,plane,pop,model:el.dataset.finishModel,src:img.currentSrc});ro?.observe(img);size(el);
   // Yu-Gi-Oh!, Magic and Pokémon cards get the WebGL foil on the plane; the CSS layers stay beneath as the fallback.
   if(p.game==='ygo')mounted.get(el).rarityFoil=mountYgoRarityFoil(plane,img,p.effect,{surface:el.dataset.finishSurface,layout:p.layout,stars:p.stars});
-  else if(p.game==='mtg'&&p.treatment)mounted.get(el).rarityFoil=mountMtgFoil(plane,img,p.treatment,{surface:el.dataset.finishSurface,frame:p.frame,emblem:p.emblem||''});
+  else if(p.game==='mtg'&&p.treatment)mounted.get(el).rarityFoil=mountMtgFoil(plane,img,p.treatment,{surface:el.dataset.finishSurface,frame:p.frame});
   else if(p.game==='ptcg'&&p.treatment)mounted.get(el).rarityFoil=mountPtcgFoil(plane,img,p.treatment,{surface:el.dataset.finishSurface,clip:FINISH_MASKS[layers[0]?.mask]||'',window:!!profile});
   const nameLayer=p.game==='ygo'&&(p.layers||[]).find(l=>l.mask==='ygo-name'),nameMask=nameLayer?ygoNameMask(img):null;
   if(nameMask){

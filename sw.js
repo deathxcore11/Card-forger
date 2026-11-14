@@ -150,8 +150,6 @@ const ASSETS = [
   "./assets/finishes/cosmos.svg",
   "./assets/finishes/gamma-title.svg",
   "./assets/finishes/metal-grain.svg",
-  "./assets/finishes/mtg-emblem-amp.png",
-  "./assets/finishes/mtg-emblem-rex.png",
   "./assets/finishes/omega-title.svg",
   "./assets/finishes/relief-flow.svg",
   "./assets/finishes/starlight.svg",
