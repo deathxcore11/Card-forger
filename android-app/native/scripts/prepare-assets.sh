@@ -2,7 +2,7 @@
 # Fill the native test app's generated inputs (all gitignored):
 #   engine-libs/                     Forge engine jar + its runtime jars, exactly as the beta APK ships them
 #   app/src/main/assets/forge-engine pack.zip + pack.version from the same engine build
-#   app/src/main/assets/forge-rules-seed  the website's current weekly rules bundle (forge-rules/current), installed
+#   app/src/main/assets/forge-rules-seed  the website's rules bundle for this engine (forge-rules/app, refreshed every 3+ days), installed
 #                                    on first launch where CardStashyForge.updateRules would put a download
 #   app/src/main/assets/cards/       Scryfall images for the two demo decks (normal + art_crop) and the Home tiles
 #   app/src/main/assets/{play,sfx}/  the existing playmat, banners and table sounds from the website
@@ -11,16 +11,17 @@
 #   app/src/main/assets/collection-engine.js  the site's Collection Home code for QuickJS (same npm tools)
 #   app/src/main/assets/planeswalk/  Planeswalk's page and its scripts (export-planeswalk.mjs)
 #
-#   ENGINE_TGZ  engine build (default: the pods build plus the lesson match setup and the payment busy-settle fix, patches/setup-stack-busy-settle-on-0dbf4041.patch via forge-engine/rebuild-bridge.sh)
+#   ENGINE_TGZ  engine build (default: Forge cc375dd3 with the Star Trek cards, built by forge-engine/build-engine-upgrade.sh with the
+#               app's bridge, its busy-settle patch, openView and card-name choices)
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")/.." && pwd); REPO=$(cd "$HERE/../.." && pwd)
-ENGINE_TGZ=${ENGINE_TGZ:-/mnt/project-files/android/forge-engine-build/forge-engine-android-e5a0f81-pods-busyfix2.tgz}
+ENGINE_TGZ=${ENGINE_TGZ:-/mnt/project-files/forge-engine-android-cc375dd3-startrek.tgz}
 A="$HERE/app/src/main/assets"; T=$(mktemp -d)
 rm -rf "$HERE/engine-libs" "$A"; mkdir -p "$HERE/engine-libs" "$A/forge-engine" "$A/forge-rules-seed" "$A/cards" "$A/play" "$A/sfx"
 tar -xzf "$ENGINE_TGZ" -C "$T"
 cp "$T"/android/libs/*.jar "$HERE/engine-libs/"
 cp "$T"/android/assets/forge-engine/pack.zip "$T"/android/assets/forge-engine/pack.version "$A/forge-engine/"
-cp "$REPO"/forge-rules/current/{manifest.json,cards.json,official-format-facts.json} "$A/forge-rules-seed/"
+cp "$REPO"/forge-rules/app/{manifest.json,cards.json,official-format-facts.json} "$A/forge-rules-seed/"
 for f in playmat-charcoal-table.webp playmat-charcoal-table-glow.webp turn-you.webp turn-cpu.webp result-win.webp result-loss.webp result-draw.webp; do cp "$REPO/assets/play/$f" "$A/play/"; done
 cp "$REPO/art-packs/planeswalk-codex/Existing_Project_Art/chandra.jpg" "$A/play/planeswalk-tile.jpg" 2>/dev/null || cp "$REPO/assets/planeswalk-tile.jpg" "$A/play/planeswalk-tile.jpg"
 # The sound ids play-table-audio.js uses at the table.

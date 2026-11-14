@@ -27,7 +27,7 @@ class RealMatchTest {
         assumeTrue("ENGINE_ROOT not set", root.isNotEmpty() && File(root).isDirectory)
         val repo = File(System.getProperty("repoRoot"))
         System.setProperty("user.home", Files.createTempDirectory("forge-home").toString())
-        System.setProperty("proof.rulesData", File(repo, "forge-rules/current").absolutePath)
+        System.setProperty("proof.rulesData", File(repo, "forge-rules/app").absolutePath)
         val d = JsonParser.parseString(File(repo, "android-app/native/decks/demo-decks.json").readText()).asJsonObject
         val decks = DemoDecks(d.get("format").asString, d.getAsJsonArray("decks").map { e -> val o = e.asJsonObject
             DemoDeck(o.get("id").asString, o.get("name").asString, o.get("colour").asString, o.get("face").asString,
@@ -91,10 +91,11 @@ class RealMatchTest {
 
     /** The table's choices for a scripted human. */
     internal fun decide(st: MatchState, attacked: HashSet<String>): JsonObject? {
-        fun op(name: String, vararg kv: Pair<String, Any>) = JsonObject().apply { addProperty("op", name); kv.forEach { (k, v) -> if (v is Int) addProperty(k, v) else if (v is Boolean) addProperty(k, v) else if (v is JsonArray) add(k, v) } }
+        fun op(name: String, vararg kv: Pair<String, Any>) = JsonObject().apply { addProperty("op", name); kv.forEach { (k, v) -> if (v is Int) addProperty(k, v) else if (v is Boolean) addProperty(k, v) else if (v is JsonArray) add(k, v) else if (v is String) addProperty(k, v) } }
         st.prompt?.let { p ->
             return when {
                 p.method == "confirm" || p.method == "showConfirmDialog" -> op("reply", "promptId" to p.id, "value" to true)
+                p.nameCount != null -> op("reply", "promptId" to p.id, "value" to "Lightning Bolt")
                 p.assignAmount != null -> op("reply", "promptId" to p.id, "amounts" to JsonArray().apply { p.autoAssign().forEach { add(it) } })
                 p.ordered -> op("reply", "promptId" to p.id, "indexes" to JsonArray().apply { p.destinationIndexes.ifEmpty { p.options.indices.toList() }.forEach { add(it) } })
                 else -> op("reply", "promptId" to p.id, "indexes" to JsonArray().apply { repeat(maxOf(p.min, if (p.max > 0) 1 else 0).coerceAtMost(p.options.size)) { add(it) } })

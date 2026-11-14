@@ -21,7 +21,7 @@ class TriggerTargetProbe {
     @Test fun auraWithTwoTriggers() {
         val repo = File(System.getProperty("repoRoot")); val root = System.getProperty("engineRoot").orEmpty()
         assumeTrue(root.isNotEmpty() && File(root).isDirectory)
-        System.setProperty("user.home", Files.createTempDirectory("forge-home").toString()); System.setProperty("proof.rulesData", File(repo, "forge-rules/current").absolutePath)
+        System.setProperty("user.home", Files.createTempDirectory("forge-home").toString()); System.setProperty("proof.rulesData", File(repo, "forge-rules/app").absolutePath)
         LocalEngine.init(root)
         val hero = deck("Plains" to 48, "Optimistic Scavenger" to 4, "Sheltered by Ghosts" to 4, "Seam Rip" to 4)
         val cpu = deck("Swamp" to 52, "Memnite" to 4, "Ornithopter" to 4)

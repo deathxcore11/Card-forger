@@ -17,7 +17,7 @@ class RevealProbe {
         val root = System.getProperty("engineRoot")
         val repo = File(System.getProperty("repoRoot"))
         System.setProperty("user.home", Files.createTempDirectory("forge-home").toString())
-        System.setProperty("proof.rulesData", File(repo, "forge-rules/current").absolutePath)
+        System.setProperty("proof.rulesData", File(repo, "forge-rules/app").absolutePath)
         LocalEngine.init(root)
         fun deck(id: String, name: String, rows: List<Pair<String, Int>>) = JsonObject().apply {
             addProperty("id", id); addProperty("name", name); addProperty("format", "Vintage")

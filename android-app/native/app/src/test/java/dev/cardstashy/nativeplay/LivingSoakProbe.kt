@@ -81,7 +81,7 @@ class LivingSoakProbe {
         assumeTrue("ENGINE_ROOT not set", root.isNotEmpty() && File(root).isDirectory)
         val repo = File(System.getProperty("repoRoot"))
         System.setProperty("user.home", Files.createTempDirectory("forge-home").toString())
-        System.setProperty("proof.rulesData", File(repo, "forge-rules/current").absolutePath)
+        System.setProperty("proof.rulesData", File(repo, "forge-rules/app").absolutePath)
         val d = JsonParser.parseString(File(repo, "android-app/native/decks/demo-decks.json").readText()).asJsonObject
         val decks = DemoDecks(d.get("format").asString, d.getAsJsonArray("decks").map { e -> val o = e.asJsonObject
             DemoDeck(o.get("id").asString, o.get("name").asString, o.get("colour").asString, o.get("face").asString,

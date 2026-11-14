@@ -21,7 +21,7 @@ class NoTargetProbe {
     @Test fun seamRipWithNothingToExile() {
         val repo = File(System.getProperty("repoRoot")); val root = System.getProperty("engineRoot").orEmpty()
         assumeTrue(root.isNotEmpty() && File(root).isDirectory)
-        System.setProperty("user.home", Files.createTempDirectory("forge-home").toString()); System.setProperty("proof.rulesData", File(repo, "forge-rules/current").absolutePath)
+        System.setProperty("user.home", Files.createTempDirectory("forge-home").toString()); System.setProperty("proof.rulesData", File(repo, "forge-rules/app").absolutePath)
         LocalEngine.init(root)
         val hero = deck("Plains" to 56, "Seam Rip" to 4)
         val cpu = deck("Swamp" to 60)

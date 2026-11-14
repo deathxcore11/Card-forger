@@ -19,7 +19,7 @@ class SagaProbe {
     @Test fun historyOfBenaliaCountsItsChapters() {
         val repo = File(System.getProperty("repoRoot")); val root = System.getProperty("engineRoot").orEmpty()
         assumeTrue(root.isNotEmpty() && File(root).isDirectory)
-        System.setProperty("user.home", Files.createTempDirectory("forge-home").toString()); System.setProperty("proof.rulesData", File(repo, "forge-rules/current").absolutePath)
+        System.setProperty("user.home", Files.createTempDirectory("forge-home").toString()); System.setProperty("proof.rulesData", File(repo, "forge-rules/app").absolutePath)
         LocalEngine.init(root)
         val hero = deck("Plains" to 56, "History of Benalia" to 4)
         val cpu = deck("Forest" to 56, "Memnite" to 4)
