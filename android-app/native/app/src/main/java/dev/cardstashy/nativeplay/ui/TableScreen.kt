@@ -212,7 +212,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
                     LaunchedEffect(Unit) { TableEmotes.start(this) }
                     DisposableEffect(Unit) { onDispose { TableEmotes.destroy() } }
                     CompositionLocalProvider(LocalMatchClock provides controller.clock.collectAsState().value, LocalTrigger provides trig, LocalTravel provides travel,
-                        LocalLastMoves provides controller.moves.collectAsState().value) {
+                        LocalLastMoves provides controller.moves.collectAsState().value, LocalHeld provides controller.held.collectAsState().value) {
                     ForgeBoard(st, live && beat == null && trig == null && travel == null, controller.intents, selectedHand, { selectedHand = it }, { inspect = it }, { menu = true },
                         handOrder, { handOrder = it }, menu = matchMenu, afk = if (DualScreen.active) afk else null, onAbility = onAbility,
                         abilityOpen = inspect?.id?.takeIf { abilityNow != null }) {

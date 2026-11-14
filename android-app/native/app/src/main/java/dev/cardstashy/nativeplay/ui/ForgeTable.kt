@@ -1370,6 +1370,8 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
                     Tile(card, w, h, land, markOf(card), mine, lookup, tapOf(card), if (onPile != null) { _ -> onPile(pile) } else onInspect, Modifier.offset(x = ax, y = ay).zIndex(z + j + (if (card.id in strikers) 5000f else 0f)), d,
                         count = if (top && pile.size > 1) pile.size else 1, piece = piece, pileTop = top, advance = advance,
                         visibleW = if (top && i < piles.lastIndex) visible else null, squeezed = squeezed)
+                    // Every Result Names Its Cause: a card this permanent (or an Aura on it) holds in exile stays on it, over the next pile's edge.
+                    if (tile != null && pile.size == 1 && LocalHeld.current.isNotEmpty()) HeldOn(card, aurasOn(card, lookup), w, h, advance, mine, lookup, onInspect, Modifier.offset(x = ax, y = ay).zIndex(z + 45f), d)
                 }
             }
         }
@@ -1424,6 +1426,27 @@ internal fun aurasOn(card: Card, lookup: (Int) -> Card?): List<Card> =
     card.attachments.mapNotNull(lookup).filter { !it.hidden && BEHIND.containsMatchIn(it.type) }
 /** What sits behind the permanent it is on, as a strip with its name bar (M7, M13). */
 internal val BEHIND = Regex("\\b(?:Aura|Equipment)\\b")
+
+/**
+ * The cards [card] or an Aura on it holds in exile ([LocalHeld]), as small cards hanging from the holder's top right corner, most of
+ * them past its edge (its name stays readable, and the row above keeps its numbers): the tile's own corner, or the right end of
+ * the Aura's strip. They turn and step with the tile, as the strips do.
+ */
+@Composable
+private fun HeldOn(card: Card, auras: List<Card>, w: Dp, h: Dp, advance: Dp?, mineSide: Boolean, lookup: (Int) -> Card?, onInspect: (Card) -> Unit, modifier: Modifier, d: Du) = with(d) {
+    val held = LocalHeld.current
+    val shown = auras.take(TableGeometry.STRIPS_MAX); val n = shown.size
+    // Each holder with the height of its top edge over the tile's: the tile itself 0, strip i of n its raise.
+    // Only a card the board shows in exile: before its "Exiled" beat it still stands on the battlefield, after its return it is back there.
+    val holders = (listOf(card to 0f) + shown.mapIndexed { i, a -> a to TableGeometry.STRIP * (n - i) })
+        .mapNotNull { (c, up) -> held.filterValues { it == c.id }.keys.mapNotNull(lookup).filter { it.zone == "Exile" }.takeIf { it.isNotEmpty() }?.let { Triple(c, up, it) } }
+    if (holders.isEmpty()) return@with
+    val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tapSpec(card.id), label = "heldTap")
+    val stepUp by attackStep(card)
+    Box(modifier.size(w, h).graphicsLayer { rotationZ = turn; attackLayer(card.tapped, stepUp, mineSide, advance?.toPx() ?: (12f * u * density)) }) {
+        for ((holder, up, cards) in holders) HeldCards(cards, holder, w, h, Modifier.offset(x = w * .9f, y = -h * up - h * .02f), onInspect)
+    }
+}
 
 /**
  * T4 (specs/table-look-0459.md, aura look A, Randall 10 Nov): each aura on a creature is a strip behind its tile, raised

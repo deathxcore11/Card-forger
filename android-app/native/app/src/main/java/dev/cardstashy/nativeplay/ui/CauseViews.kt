@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -31,15 +33,20 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.cardstashy.nativeplay.art.CardImage
+import dev.cardstashy.nativeplay.engine.Card
 import dev.cardstashy.nativeplay.match.Director
 
 /** LAST MOVES (Every Result Names Its Cause): the controller's rows, newest last (TableScreen provides them); the table shows the last three. */
 val LocalLastMoves = compositionLocalOf<List<Director.Line>> { emptyList() }
 
-/** The CPU's colour on a cause row (the approved preview's ice blue); yours is [TRIG_GOLD]. */
+/** The cards held in exile by a permanent on the table: exiled card id to its holder's id (the controller's [dev.cardstashy.nativeplay.match.MatchController.held]). */
+val LocalHeld = compositionLocalOf<Map<Int, Int>> { emptyMap() }
+
+/** The CPU's colour on a cause row and round a held card (the approved preview's ice blue); yours is [TRIG_GOLD]. */
 internal val CAUSE_ICE = Color(0xFF8FD8FF)
 /** The most rows "Last moves" shows. */
 internal const val LAST_MOVES_SHOWN = 3
@@ -113,5 +120,30 @@ private fun MoveRow(l: Director.Line, age: Int, d: Du) = with(d) {
         }
         Text(l.text, style = sans(maxOf(sp(10f).value, 10f).sp, FontWeight.SemiBold, Color(0xFFEEF0F4)).copy(lineHeight = maxOf(sp(12.5f).value, 12.5f).sp), maxLines = 3, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 1.du))
+    }
+}
+
+/**
+ * AN EXILED CARD THAT WILL COME BACK STAYS ON THE CARD THAT HOLDS IT (approved preview, 14 Nov): the held cards as small cards
+ * (.4 of a tile, turned 7 degrees, an ice blue rim) hung on their holder's top right corner; [modifier] puts the first one's
+ * top left there. A tap reads the card. It pops in after its "Exiled" plate has been read.
+ */
+@Composable
+internal fun HeldCards(cards: List<Card>, holder: Card, w: Dp, h: Dp, modifier: Modifier, onInspect: (Card) -> Unit) {
+    val quiet = Motion.still || LocalBattlefield.current?.reduced == true
+    cards.take(2).forEachIndexed { i, c ->
+        key(c.id) {
+            val pop = remember { Animatable(if (quiet) 1f else 0f) }
+            LaunchedEffect(Unit) { pop.animateTo(1f, tween(340, delayMillis = 700)) }
+            val shape = RoundedCornerShape(4.dp)
+            Box(modifier.padding(start = (w * .16f) * i).size(w * .4f, h * .4f).anchorRect("held${c.id}")
+                .graphicsLayer { val k = pop.value; scaleX = k; scaleY = k; alpha = k; rotationZ = 7f }
+                .shadow(6.dp, shape, ambientColor = CAUSE_ICE, spotColor = CAUSE_ICE)
+                .clip(shape).background(Color(0xFF141418)).border(1.5.dp, CAUSE_ICE, shape)
+                .clickable { onInspect(c) }
+                .semantics { contentDescription = "${c.name}, held in exile by ${holder.name}" }) {
+                CardImage(c.name, Modifier.fillMaxSize(), crop = true)
+            }
+        }
     }
 }
