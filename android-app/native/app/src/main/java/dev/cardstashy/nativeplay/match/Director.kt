@@ -622,13 +622,22 @@ object Director {
 
     /**
      * How long a held step plays (section 6): full length normally; when a prompt of yours is already waiting or more than
-     * 6 s of steps are queued, a non-focal step plays at its Min and a focal one never under its Min.
+     * [QUEUE_CUT_MS] of steps are queued, a non-focal step plays at its Min and a focal one never under its Min. Butter pass B4
+     * (Randall 14 Nov, "cpu playing too fast"): the CPU's own moves (a cast, a land, an attack, a block, an ability or trigger, a
+     * card's travel) are never cut; only plain steps such as resolves are.
      */
     fun lengthOf(s: Step, waiting: Boolean, queuedMs: Long): Long = when {
         s.kind == Kind.THINK -> s.ms
-        (waiting || queuedMs > 6000) && !s.focal -> s.minMs
+        s.cpu && (s.kind in CPU_MOVES || s.travel != null) -> maxOf(s.ms, s.minMs)
+        (waiting || queuedMs > QUEUE_CUT_MS) && !s.focal -> s.minMs
         else -> maxOf(s.ms, s.minMs)
     }
+    const val QUEUE_CUT_MS = 12_000L
+    private val CPU_MOVES = setOf(Kind.CAST, Kind.LAND, Kind.ATTACK, Kind.BLOCK, Kind.ABILITY, Kind.TRIGGER, Kind.ENTER)
+
+    /** Whether the board's wait counts for [lengthOf]: a chance to respond on the CPU's turn is the very move being shown, so it
+     *  does not hurry that move; your own turn's waits and real questions (a prompt) still do. */
+    fun waitingFor(st: MatchState?): Boolean = st?.waitingOnMe == true && (st.activePlayer == st.viewer || st.prompt != null)
 }
 
 /**

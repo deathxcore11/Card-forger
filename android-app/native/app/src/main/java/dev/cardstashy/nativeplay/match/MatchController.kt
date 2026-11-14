@@ -484,8 +484,10 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                     }
                 }
                 show(board())
+                // Butter pass B4: how long the CPU's moves in this batch are told for (adb logcat -s TableStep).
+                if (steps.any { it.cpu }) TableLog.line("cpu told ${steps.filter { it.cpu }.sumOf { Director.lengthOf(it, Director.waitingFor(latest), 0) }}ms in ${steps.count { it.cpu }} steps")
                 steps.forEachIndexed { i, step ->
-                    val waiting = latest?.waitingOnMe == true
+                    val waiting = Director.waitingFor(latest)
                     val ms = Director.lengthOf(step, waiting, steps.drop(i).sumOf { it.ms })
                     TableLog.line("step ${i + 1}/${steps.size} ${step.kind}${step.travel?.let { " ${it.leg}" } ?: ""} ${step.cardName ?: step.beat?.title ?: step.banner?.text ?: ""} ${ms}ms cpu=${step.cpu} hidden=${hidden.size}")
                     step.travel?.let { startLeg(it, i) }

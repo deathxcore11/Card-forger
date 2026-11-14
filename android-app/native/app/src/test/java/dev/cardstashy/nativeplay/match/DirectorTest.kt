@@ -239,4 +239,20 @@ class DirectorTest {
         val prompted = duel.copy(turn = 0, status = "running", hasPriorityView = false)
         assertTrue(Director.plan(prompted, listOf(ev("land", card = card(1, "Mountain"))), Director.ThinkClock()).none { it.kind == Director.Kind.THINK })
     }
+
+    /** Butter pass B4 (Randall 14 Nov, "cpu playing too fast"): the CPU's moves keep their full length with a prompt waiting and
+     *  a long queue; a chance to respond on the CPU's turn does not count as waiting, a real question does. */
+    @Test fun cpuMovesAreNeverCut() {
+        val steps = Director.plan(duel.copy(prompt = null), duel.events, Director.ThinkClock { .3 })
+        val moves = steps.filter { it.cpu && (it.travel != null || it.kind in setOf(Director.Kind.CAST, Director.Kind.LAND, Director.Kind.ATTACK, Director.Kind.BLOCK, Director.Kind.ABILITY, Director.Kind.TRIGGER, Director.Kind.ENTER)) }
+        assertTrue("the duel has CPU moves", moves.isNotEmpty())
+        for (s in moves) assertEquals("$s", maxOf(s.ms, s.minMs), Director.lengthOf(s, true, 30_000))
+        assertEquals(12_000L, Director.QUEUE_CUT_MS)
+        val cpuTurn = duel.copy(activePlayer = duel.viewer + 1, prompt = null, status = "running", busy = false, inputType = "InputPassPriority",
+            buttons = duel.buttons.copy(ok = "OK", okEnabled = true))
+        if (cpuTurn.waitingOnMe) assertTrue(!Director.waitingFor(cpuTurn))
+        val mine = cpuTurn.copy(activePlayer = duel.viewer)
+        assertEquals(mine.waitingOnMe, Director.waitingFor(mine))
+        assertTrue(!Director.waitingFor(null))
+    }
 }
