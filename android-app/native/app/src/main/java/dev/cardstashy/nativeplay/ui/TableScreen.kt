@@ -211,7 +211,8 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
                     // table-emotes.mjs mount(): the CPU's hello once the match is on; everything goes with the table.
                     LaunchedEffect(Unit) { TableEmotes.start(this) }
                     DisposableEffect(Unit) { onDispose { TableEmotes.destroy() } }
-                    CompositionLocalProvider(LocalMatchClock provides controller.clock.collectAsState().value, LocalTrigger provides trig, LocalTravel provides travel) {
+                    CompositionLocalProvider(LocalMatchClock provides controller.clock.collectAsState().value, LocalTrigger provides trig, LocalTravel provides travel,
+                        LocalLastMoves provides controller.moves.collectAsState().value) {
                     ForgeBoard(st, live && beat == null && trig == null && travel == null, controller.intents, selectedHand, { selectedHand = it }, { inspect = it }, { menu = true },
                         handOrder, { handOrder = it }, menu = matchMenu, afk = if (DualScreen.active) afk else null, onAbility = onAbility,
                         abilityOpen = inspect?.id?.takeIf { abilityNow != null }) {

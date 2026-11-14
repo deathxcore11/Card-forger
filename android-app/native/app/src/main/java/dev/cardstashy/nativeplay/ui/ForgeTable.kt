@@ -620,6 +620,8 @@ fun ForgeBoard(
             // with Forge's tax for the next cast on its badge.
             if (!pod) Crest(CommanderMarks.shield(cpu, st.players), cpu.id, Modifier.offset(x = zones.cpuSquare.right.dp - 52.du, y = zones.cpuSquare.bottom.dp - 1.du).anchorRect("cpucrest"), d, onInspect)
             val myShield = CommanderMarks.shield(me, st.players)
+            // The room the CPU's crest takes under its square (LAST MOVES starts below it).
+            val cpuCrestH = if (!pod && CommanderMarks.shield(cpu, st.players) != null) 62.du else 0.dp
             @Composable fun myCrest(m: Modifier) = Crest(myShield, me.id, m, d, onInspect,
                 playable = myShield?.card?.takeIf { it.zone == "Command" }?.let { markOf(it) == Mark.PLAYABLE } == true) { intents.card(it.id) }
             // Table additions 6: while you declare blocks, what gets through, above your seat. Gone the moment blocks are confirmed.
@@ -644,6 +646,10 @@ fun ForgeBoard(
                     ManaPool(me.mana, Modifier, d)
                 }
                 myCrest(Modifier.offset(x = zones.mySquare.x.dp - 6.du, y = zones.mySquare.y.dp - 74.du))
+                // LAST MOVES (Every Result Names Its Cause): in the left strip between the two squares, clear of both crests.
+                val movesTop = (if (pod) zones.leftStrip.y.dp else zones.cpuSquare.bottom.dp + 6.du) + cpuCrestH
+                val movesH = zones.mySquare.y.dp - 6.du - (if (myShield != null) 74.du else 0.dp) - movesTop
+                if (movesH > 0.dp) LastMoves(LocalLastMoves.current, Modifier.offset(x = zones.mySquare.x.dp, y = movesTop).width(zones.mySquare.w.dp).height(movesH), d)
             } else {
                 // Z4: chat and the bolt (the Smart emblem; Full Control and auto-pay beside them as before) keep their function, at 44 dp,
                 // just above your square: two to a row (chat and the bolt the row nearest the square), one when the strip is narrower
@@ -656,8 +662,15 @@ fun ForgeBoard(
                 val left = if (zones.mySquare.x.dp + rowW <= zones.mySquare.right.dp) zones.mySquare.x.dp else zones.leftStrip.x.dp + ((room - rowW) / 2).coerceAtLeast(0.dp)
                 val top = if (pod) zones.leftStrip.y.dp else zones.cpuSquare.bottom.dp + 6.du
                 val buttons = listOf<@Composable () -> Unit>({ EmoteButton(Modifier, d, side = btn) }) + emblemsOf(st, intents, d, btn)
-                Box(Modifier.offset(x = left, y = top).width(zones.leftStrip.right.dp - left).height((zones.mySquare.y.dp - 6.du - top).coerceAtLeast(0.dp))) {
-                    Column(Modifier.align(Alignment.BottomStart).wrapContentHeight(Alignment.Bottom, unbounded = true), verticalArrangement = Arrangement.spacedBy(6.du)) {
+                val stripH = (zones.mySquare.y.dp - 6.du - top).coerceAtLeast(0.dp)
+                var toolsH by remember { mutableStateOf(0.dp) }
+                Box(Modifier.offset(x = left, y = top).width(zones.leftStrip.right.dp - left).height(stripH)) {
+                    // LAST MOVES (Every Result Names Its Cause): the room the strip has left above your tools and the mana (and
+                    // above your crest; its 66 du are free when you have no commander), below the CPU's crest.
+                    val movesH = stripH - toolsH - 6.du - cpuCrestH + (if (myShield == null) 66.du else 0.dp)
+                    if (movesH > 0.dp && toolsH > 0.dp) LastMoves(LocalLastMoves.current, Modifier.align(Alignment.TopStart).offset(y = cpuCrestH)
+                        .width(minOf(zones.mySquare.right.dp, zones.leftStrip.right.dp) - left).height(movesH), d)
+                    Column(Modifier.align(Alignment.BottomStart).wrapContentHeight(Alignment.Bottom, unbounded = true).onSizeChanged { toolsH = with(dockDensity) { it.height.toDp() } }, verticalArrangement = Arrangement.spacedBy(6.du)) {
                         // The crest's box is 70 du for a 60 du shield: it takes only the shield's height in the strip.
                         Box(Modifier.height(60.du), contentAlignment = Alignment.Center) { myCrest(Modifier.offset(x = zones.mySquare.x.dp - left - 6.du).wrapContentHeight(unbounded = true)) }
                         ManaPool(me.mana, Modifier.anchorRect("tray2"), d, maxW = zones.leftStrip.right.dp - left)
