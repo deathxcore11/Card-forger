@@ -37,7 +37,7 @@ f=fuseClues('ptcg',ptcg,strong([0,1]),{name:'Floette',code:''});assert.equal(f.s
 // A number that was read and belongs to no printing of this picture cancels "sure".
 f=fuseClues('ptcg',ptcg,strong([0]),{name:'Floette',code:'011/198'});assert.equal(f.sure,false);
 // A weak picture only suggests, a far one says nothing.
-f=fuseClues('ptcg',ptcg,{dist:70,rival:80,strong:false,name:'Floette',rows:[{row:0,dist:70}]},{name:'Floette',code:'072/203'});
+f=fuseClues('ptcg',ptcg,{dist:FUSE.suggest-2,rival:FUSE.suggest+10,strong:false,name:'Floette',rows:[{row:0,dist:FUSE.suggest-2}]},{name:'Floette',code:'072/203'});
 assert.equal(f.sure,false);assert.equal(f.cands.length,1);
 f=fuseClues('ptcg',ptcg,{dist:FUSE.suggest+10,rival:FUSE.suggest+12,strong:false,name:'Floette',rows:[{row:0,dist:90}]},{});assert.equal(f.cands.length,0);
 

@@ -19,8 +19,8 @@ import {conditionRetryFeedback} from './condition-value.js';
 import { scanLookupNames, shortTrainerNames, pokemonTitleLabel, nameCandidates, detectGame, anchoredNames, scanNameKey, scanCardNameKey, scanCandidateMatches, ptcgNumbers, ygoSetCodes, mtgCollector } from "./scan.js";
 import {locateCard,flattenCard} from './scan-find.js';
 import {levelFrame,inkFlatten} from './scan-light.js';
-import {pixThumb,pixHashThumb,pixFlip} from './scan-pix.js';
-import {pictureVerdict,fuseClues,candidateKey} from './scan-fuse.js';
+import {FUSE,pictureCardKey,registerVerdict,fuseClues,candidateKey} from './scan-fuse.js';
+import {registerBest} from './scan-register.js';
 import { hashCanvas, nearest, fingerprintCanvas, fingerprintUrl, likeness } from "./scanart.js";
 import { artworkHTML, artworkSources } from "./artwork.js";
 import { openZoom } from "./zoom.js";
@@ -615,14 +615,28 @@ export function loadIndex(g) {
 // records only mean anything beside the catalogue they were built from, so the row count and
 // three sample ids are checked against the catalogue on this device; a mismatch means no picture
 // clue (the text reader still works), never a wrong card.
-const PIX = {};
+const PIX = {}, PIX_RAW = {};
 export function pixAligned(g,meta,pack){return g==='ygo'||(!!meta&&!!pack?.rows&&meta.rows===pack.rows.length&&(meta.samples||[]).every(([i,id])=>pack.rows[i]?.[0]===id));}
 export function loadPix(g,pack) {
   return (PIX[g] ||= (async () => {
     const [b, m, t] = await Promise.all([fetch(`scanidx/${g}-pix-v2.bin`).then((r) => (r.ok ? r.arrayBuffer() : null)), fetch(`scanidx/${g}-pix-v2.json`).then((r) => (r.ok ? r.json() : null)), g === "ygo" ? fetch(`scanidx/ygo-pix-v2-ids.txt`).then((r) => (r.ok ? r.text() : null)) : ""]);
     if (!b || !m || t === null || b.byteLength !== m.records * 48) throw Error("Picture index unavailable");
+    PIX_RAW[g] = true;
     return { bin: new Uint8Array(b), meta: m, ids: g === "ygo" ? t.split("\n").filter(Boolean) : null };
   })().catch(() => { delete PIX[g]; return null; })).then(pix=>pix&&pixAligned(g,pix.meta,pack)?pix:null);
+}
+// The card data the picture engine needs (catalogue + picture index) fetches itself: nobody should
+// have to find a download button before the scanner can recognise a card. One job per game at a
+// time; a saved catalogue that no longer lines up with the picture index is fetched again once.
+const PACK_JOBS = {};
+export function ensurePack(g, progress = () => {}) {
+  return (PACK_JOBS[g] ||= (async () => {
+    let pack = await initCatalog(g).catch(() => null);
+    if (!pack) pack = await downloadCatalog(g, progress).catch(() => null) || (catalogState(g).status === "ready" ? catalogState(g).pack : null);
+    if (pack && !(await loadPix(g, pack)) && PIX_RAW[g]) pack = await downloadCatalog(g, progress).catch(() => null) || pack;
+    if (pack) await loadPix(g, pack);
+    return pack || null;
+  })().then((pack) => { if (!pack) delete PACK_JOBS[g]; return pack; }, () => { delete PACK_JOBS[g]; return null; }));
 }
 // A small picture of index entry [id, path] that allows reading pixels (for the close comparison).
 export function indexThumb(g, [id, path]) {
@@ -644,6 +658,9 @@ export const indexCardId = (g, id) => (g === "ygo" ? id.split(":")[1] : id);
 export function rankWithPicture(g,cands,read={}){
   const ranked=rankScanCandidates(g,cands,read);
   if(read?.pix?.sure&&read.pix.g===g){const proved=cands.filter(c=>c.exact&&candidateKey(g,c)===read.pix.key);if(proved.length)return [...proved,...ranked.filter(c=>candidateKey(g,c)!==read.pix.key)];}
+  // Picture results arrive in the picture's own order (the printing whose art matched, or whose
+  // set code was partly read, first). Text ranking may drop a contradicted one but not reshuffle them.
+  if(cands.length&&cands.every(c=>c.identitySource==='artwork'&&!c.exact)){const kept=new Set(ranked.map(c=>candidateKey(g,c))),stay=cands.filter(c=>kept.has(candidateKey(g,c)));if(stay.length)return stay;}
   if(ranked.length)return ranked;
   return cands.filter(c=>c.identitySource==='artwork').map(c=>({...c,exact:false,identifierConflict:true,why:'Picture matched · the printed code read unclearly · check printing'}));
 }
@@ -935,25 +952,40 @@ export function registerScanner(ctx) {
   // The new first look: find the card's rim in the original frame, lay it flat and upright at
   // its own resolution, even out the light, and ask the picture index which card it looks like.
   // Returns null when no card outline is found (the older crop is used then).
+  // Which card, of which game, a located outline shows. The selected game is tried first, then the
+  // others whose data is on this device: the picture decides the game, not a tab.
+  const GAMES=['mtg','ptcg','ygo'];let pictureGame='';
+  const pictureLook = async (rgba,w,h,q,G,waitMs=0) => {
+    let best=null;
+    const lead=pictureGame&&catalogState(pictureGame).status==='ready'?pictureGame:G;
+    for(const g of [lead,...GAMES.filter(x=>x!==lead)]){
+      let pack=catalogState(g).status==='ready'?catalogState(g).pack:null;
+      if(!pack&&g===G&&waitMs)pack=await Promise.race([ensurePack(g),new Promise(r=>setTimeout(()=>r(null),waitMs))]);
+      const pix=pack?await loadPix(g,pack):null;if(!pix)continue;
+      const verdict=registerVerdict(g,pack,pix,registerBest(rgba,w,h,q,g,pix.bin,pictureCardKey(g,pack,pix)));
+      if(verdict&&(!best||(verdict.strong&&!best.verdict.strong)||(verdict.strong===best.verdict.strong&&verdict.dist<best.verdict.dist)))best={g,pack,verdict};
+      if(verdict?.strong){pictureGame=g;break;}
+    }
+    return best;
+  };
+  // An outline for a frame the finder could not outline: a card held upright in the middle.
+  const uprightQuad=q=>{const len=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);return len(q[0],q[1])>len(q[1],q[2])*1.12?[q[3],q[0],q[1],q[2]]:q;};
+  // The new first look: find the card's rim in the original frame, line it up by its picture
+  // (sleeves, glare and playmats leave the rim a little off), lay it flat and upright at its own
+  // resolution and even out the light. Returns null when no card is found (the older crop is used then).
   const engineView = async (packet,G) => {
     const src=packet.original,w=src.width,h=src.height,rgba=src.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h).data;
     if(!rgba||rgba.length<w*h*4)return null;
-    const found=locateCard(rgba,w,h);if(!found)return null;
-    const len=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);let q=found.quad;
-    if(len(q[0],q[1])>len(q[1],q[2])*1.12)q=[q[3],q[0],q[1],q[2]]; // lying sideways
-    const pack=catalogState(G).status==='ready'?catalogState(G).pack:null,pix=pack?await loadPix(G,pack):null;
-    let verdict=null,flipped=false;
-    if(pix){
-      const thumbs=[1,.975,1.025].map(k=>pixThumb(flattenCard(rgba,w,h,q,252,352,k),252,352));
-      const up=pictureVerdict(G,pack,pix,thumbs.map(t=>pixHashThumb(t,G))),down=pictureVerdict(G,pack,pix,thumbs.map(t=>pixHashThumb(pixFlip(t),G)));
-      flipped=!!down&&(!up||down.dist<up.dist-12);verdict=flipped?down:up;
-    }
-    if(flipped)q=[q[2],q[3],q[0],q[1]];
-    if(!found.snapped&&!verdict?.strong)return null;
+    const found=locateCard(rgba,w,h),len=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+    let q=found?uprightQuad(found.quad):null;
+    const look=await pictureLook(rgba,w,h,q,G,8000),verdict=look?.verdict||null;
+    const usable=!!verdict&&(verdict.strong||(verdict.dist<=FUSE.suggest&&verdict.rival-verdict.dist>=FUSE.suggestGap));
+    if(usable)q=verdict.quad;
+    if(!usable&&!found?.snapped)return null;
     const outW=Math.round(Math.max(360,Math.min(900,(len(q[0],q[1])+len(q[3],q[2]))/2))),outH=Math.round(outW*88/63);
     const card=document.createElement('canvas');card.width=outW;card.height=outH;
-    card.getContext('2d',{willReadFrequently:true}).putImageData(new ImageData(levelFrame(flattenCard(rgba,w,h,q,outW,outH,1.01),outW,outH),outW,outH),0,0);
-    return {g:G,card,verdict,pack,snapped:found.snapped};
+    card.getContext('2d',{willReadFrequently:true}).putImageData(new ImageData(levelFrame(flattenCard(rgba,w,h,q,outW,outH,usable?1.045:1.01),outW,outH),outW,outH),0,0);
+    return {g:usable?look.g:G,card,verdict:usable?verdict:null,pack:usable?look.pack:null,snapped:!!found?.snapped};
   };
   // Capture-local evidence is never stored in shared UI state while reading.
   // A canceled/late result cannot overwrite the next card or a review panel.
@@ -975,12 +1007,14 @@ export function registerScanner(ctx) {
     if(strong){
       const w=await stage('ocrWarmup',()=>getWorker(lang,progress)),zone=(name,roi,scale,light=false)=>stage(name,()=>recog(w,regionCanvas(card,roi,scale,light),11,budget));
       const TOP=[0,0,1,.13],FOOT=G==='ygo'?[0,.66,1,.34]:[0,.84,1,.16];
-      progress('Checking the name and number…');
-      const top=await zone('ocrName',TOP,2);
-      read={name:top,code:await zone('ocrCode',FOOT,3),full:'',stats:'',titles:[]};
+      progress('Checking the number…');
+      // The bottom zone first: it carries the number, set code or passcode, which both confirms the
+      // card and picks the printing. The name is only read when the bottom zone settled nothing.
+      read={name:'',code:await zone('ocrCode',FOOT,3),full:'',stats:'',titles:[]};
       let f=fuseClues(G,view.pack,view.verdict,read);
       // Light print on a dark ground: Magic's footer, full-art Pokémon, most Yu-Gi-Oh! names.
       if(!f.sure){read.code=joinReads(read.code,await zone('ocrFooterInverted',FOOT,3,true));f=fuseClues(G,view.pack,view.verdict,read);}
+      if(!f.sure){read.name=await zone('ocrName',TOP,2);f=fuseClues(G,view.pack,view.verdict,read);}
       if(!f.sure&&!f.named&&!f.idSeen){read.name=joinReads(read.name,await zone('ocrNameInverted',TOP,2,true));f=fuseClues(G,view.pack,view.verdict,read);}
       // Keep the title as evidence only where this card's own name was found in it; loose words
       // from a sparse read are not a title.
@@ -1109,24 +1143,35 @@ export function registerScanner(ctx) {
   // waiting for a perfectly sharp frame. It is a vote only: the capture is then read and proved
   // (or sent to review) exactly like any other.
   const levelPixels=pixels=>{if(!(pixels?.width>0&&pixels.height>0&&pixels.data?.length>=pixels.width*pixels.height*4))return pixels;try{pixels.data.set(levelFrame(pixels.data,pixels.width,pixels.height));}catch{}return pixels;};
-  const livePix={};let voteCanvas=null;
+  let voteCanvas=null,voteAt=0,voteLast=null,voteLooks=0,gridAt=0,gridTurn=0;const PIX_READY={};
   const pictureVote=frame=>{
     try{
-      const G=game(),state=catalogState(G);if(state.status!=='ready')return null;
-      if(livePix[G]===undefined){livePix[G]=null;loadPix(G,state.pack).then(pix=>{livePix[G]=pix||false;},()=>{livePix[G]=false;});}
-      const pix=livePix[G];if(!pix)return null;
+      // Lining a frame up takes real work on a phone: at most about two looks a second.
+      if(clockNow()-voteAt<450)return voteLast;
+      const G=pictureGame||game(),ready=[G,...GAMES.filter(x=>x!==G)].filter(g=>catalogState(g).status==='ready');if(!ready.length)return null;
       const w=Math.min(540,frame.width),h=Math.round(w*frame.height/frame.width),c=voteCanvas ||= document.createElement('canvas');
       if(c.width!==w||c.height!==h){c.width=w;c.height=h;}
       const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(frame,0,0,w,h);
       const rgba=x.getImageData(0,0,w,h).data;if(rgba.length<w*h*4)return null;
-      const found=locateCard(rgba,w,h);if(!found?.snapped)return null;
-      const len=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);let q=found.quad;
-      if(len(q[0],q[1])>len(q[1],q[2])*1.12)q=[q[3],q[0],q[1],q[2]];
-      const thumb=pixThumb(flattenCard(rgba,w,h,q,252,352),252,352),up=pictureVerdict(G,state.pack,pix,pixHashThumb(thumb,G)),down=pictureVerdict(G,state.pack,pix,pixHashThumb(pixFlip(thumb),G));
-      const v=down&&(!up||down.dist<up.dist-12)?down:up;
-      return v?{strong:v.strong,name:v.name,dist:v.dist}:null;
+      const prior=voteLast;let looked=false;voteAt=clockNow();voteLast=null;
+      const found=locateCard(rgba,w,h),q=found?uprightQuad(found.quad):null;
+      for(const g of ready){
+        const pack=catalogState(g).pack,pix=PIX_READY[g];
+        if(pix===undefined){PIX_READY[g]=null;loadPix(g,pack).then(p=>{PIX_READY[g]=p||false;},()=>{PIX_READY[g]=false;});}
+        if(!pix)continue;
+        // The middle-of-frame search is the costly part: one game per look, taking turns, with a pause between.
+        const wide=g===ready[gridTurn%ready.length]&&clockNow()-gridAt>1200;if(wide){gridAt=clockNow();looked=true;}
+        if(!q&&!wide)continue;
+        const v=registerVerdict(g,pack,pix,registerBest(rgba,w,h,q,g,pix.bin,pictureCardKey(g,pack,pix),{fallback:wide}));
+        if(wide&&!v?.strong)gridTurn++;
+        if(v?.strong){pictureGame=g;gridTurn=0;voteLast={strong:true,name:v.name,dist:v.dist,g,look:++voteLooks,at:clockNow()};break;}
+      }
+      // A look that skipped the wide search says nothing about a card only the wide search can find.
+      if(!voteLast&&!looked&&prior&&clockNow()-prior.at<2600)voteLast=prior;
+      return voteLast;
     }catch{return null;}
   };
+  const packFetching=()=>catalogState(game()).status==='downloading';
   const captureBuffer=[];
   let draining=false;
   const updatePending=(id,patch)=>updateBatch(id,patch);
@@ -1154,6 +1199,7 @@ export function registerScanner(ctx) {
     let status='unresolved',recognitionError='';
     try {
       const view=await trace.stage('engine',()=>engineView(packet,entry.game)).catch(()=>null);
+      if(view?.verdict&&view.g!==entry.game)entry.defaultsByGame={...(entry.defaultsByGame||{}),[view.g]:entry.defaultsByGame?.[view.g]||loadPrefs(view.g)};
       let card=view?.card;
       if(!card)card=await trace.stage('crop',()=>cardForCapture(packet));
       const snapshots=entry.defaultsByGame||{[entry.game]:{...loadPrefs(entry.game),...entry.defaults}};
@@ -1162,7 +1208,7 @@ export function registerScanner(ctx) {
       const checkpoint=budget.checkpoint.bind(budget);budget.checkpoint=result=>{if(result.cands?.length&&trace.timings.firstCandidateMs==null)trace.timings.firstCandidateMs=clockNow()-(packet.processingAt||processingAt);return checkpoint(result);};
       try {
         const rawFirst=!view&&(entry.originalOnly||entry.geometryUncertain||packet.proposal?.cropSafe===false);
-        r=await (rawFirst?readOriginalEvidence(packet.original,null,entry,progress,trace,current,budget):readFlow(card,entry.game,snapshots,entry.ocrLang||'eng',progress,trace,current,budget,view));
+        r=await (rawFirst?readOriginalEvidence(packet.original,null,entry,progress,trace,current,budget):readFlow(card,view?.verdict?view.g:entry.game,snapshots,entry.ocrLang||'eng',progress,trace,current,budget,view));
         if(!r.picture&&!r.cands.some(c=>textVerifiedMatch(r.g,c,r.read))&&packet.proposal?.quad&&!rawFirst)r=await readOriginalEvidence(packet.original,r,entry,progress,trace,current,budget);
         // A near-edge card can fail conservative auto geometry while still giving
         // a useful deskew hypothesis. Probe its upright title/footer after the
@@ -1298,13 +1344,13 @@ export function registerScanner(ctx) {
     }else {loop.quad=null;loop.proposal=null;loop.signature=null;prevGray=null;loop.bestCapture=null;}
     loop.quality=m;
     // Frames that agree on the picture: two in a row name the card.
-    const vote=found&&!captureLock&&m.motion<T.motion?pictureVote(frame):null;
-    loop.vote=vote?.strong?{name:vote.name,count:loop.vote?.name===vote.name?loop.vote.count+1:1}:null;
+    const vote=!captureLock&&m.motion<T.motion?pictureVote(frame):null;
+    loop.vote=vote?.strong?{name:vote.name,look:vote.look,count:loop.vote?.name===vote.name?loop.vote.count+(vote.look!==loop.vote.look?1:0):1}:null;
     const named=!!loop.vote&&loop.vote.count>=2;
     loop.observation={original:frame,proposal:loop.proposal,frameAnalysisMs:clockNow()-freezeAt,signature:loop.signature&&Float32Array.from(loop.signature),quality:{...m},at:Date.now(),selectedGame:game(),defaultsByGame:capturePrefs(),ocrLang:scanLang(),captureMs:frameMs,detectMs:loop.detectMs,geometryUncertain:!found||(found.cropSafe!==true&&!named)};
     if(!found||m.motion>=T.motion||m.sharp<T.sharp)loop.stableAt=0;else loop.stableAt ||=Date.now();
-    if (Array.isArray(window.__scanDebug)) {window.__scanDebug.push({ ...m, vw:v.videoWidth,vh:v.videoHeight,retainedWidth:fw,retainedHeight:fh,previewWidth:v.clientWidth,previewHeight:v.clientHeight,detectorPasses:observations.length,sensorOccupancy:found?.fraction||0,boundaryReason:found?.boundary?.reason||'no-proposal' });window.__scanDebug.splice(0,Math.max(0,window.__scanDebug.length-120));}
-    let st = named?{state:'green',icon:'✓',msg:loop.vote.name}:found?.cropSafe===false?{state:'amber',icon:'◎',msg:'Show the whole card on a clear background'}:found?guideState(m, steady):{state:"red",icon:"◎",msg:"Show the whole card, including its name and bottom edge"};
+    if (Array.isArray(window.__scanDebug)) {window.__scanDebug.push({ ...m, vote:loop.vote?{...loop.vote}:null, vw:v.videoWidth,vh:v.videoHeight,retainedWidth:fw,retainedHeight:fh,previewWidth:v.clientWidth,previewHeight:v.clientHeight,detectorPasses:observations.length,sensorOccupancy:found?.fraction||0,boundaryReason:found?.boundary?.reason||'no-proposal' });window.__scanDebug.splice(0,Math.max(0,window.__scanDebug.length-120));}
+    let st = named?{state:'green',icon:'✓',msg:loop.vote.name}:packFetching()?{state:'amber',icon:'…',msg:'Getting card pictures ready (first time only)…'}:found?.cropSafe===false?{state:'amber',icon:'◎',msg:'Show the whole card on a clear background'}:found?guideState(m, steady):{state:"red",icon:"◎",msg:"Show the whole card, including its name and bottom edge"};
     steady = st.state === "green" || (st.state === "amber" && st.msg === "Hold steady…") ? steady + 1 : 0;
     // After an add, wait for a different card (or the card to leave) before capturing again.
     // One automatic capture per card: wait for a different card (or the card to leave) first.
@@ -1329,7 +1375,7 @@ export function registerScanner(ctx) {
     }
     loop.observation.frameAnalysisMs=clockNow()-freezeAt;
     if(loop.bestCapture&&(!canReuseCapture(loop.bestCapture,loop.signature,loop.geometryMotion)||m.motion>=T.motion||loop.bestCapture.selectedGame!==loop.observation.selectedGame||loop.bestCapture.ocrLang!==loop.observation.ocrLang||JSON.stringify(loop.bestCapture.defaultsByGame)!==JSON.stringify(loop.observation.defaultsByGame)))loop.bestCapture=null;
-    if(found&&(found.cropSafe===true||named)&&!captureLock&&m.motion<T.motion&&(named||(m.sharp>=T.sharp&&m.glare<=T.glare))){
+    if((named||found?.cropSafe===true)&&!captureLock&&m.motion<T.motion&&(named||(m.sharp>=T.sharp&&m.glare<=T.glare))){
       const qualityScore=m.sharp/(1+m.motion);
       if(!loop.bestCapture||qualityScore>loop.bestCapture.score){
         loop.bestCapture={...loop.observation,score:qualityScore,stableMs:Date.now()-(loop.stableAt||Date.now()),firstEligibleAt:loop.stableAt};
@@ -1381,7 +1427,7 @@ export function registerScanner(ctx) {
     // Metadata can arrive before the preview is laid out; freeze the available
     // sensor frame in that case and let original-photo recovery handle it.
     const observed=automatic?loop.observation:loop(false);
-    if(automatic&&(!loop.quad||Date.now()-loop.quadAt>1000))return;
+    if(automatic&&!loop.vote&&(!loop.quad||Date.now()-loop.quadAt>1000))return;
     if(automatic&&!loop.vote&&loop.proposal?.cropSafe===true&&(loop.quality?.sharp||0)<T.sharp){setStatus('Keep the name and bottom code readable. Hold steady.');return;}
     const candidate=automatic&&canReuseCapture(loop.bestCapture,loop.signature,loop.geometryMotion)?loop.bestCapture:observed||{...freezeCapture(v),at:Date.now(),selectedGame:game(),defaultsByGame:capturePrefs(),ocrLang:scanLang(),geometryUncertain:true};
     if(!automatic&&captureLock&&Date.now()-(s().lastCaptureAt||0)<600&&sigDiff(captureLock.signature,sourceLockSignature(candidate.original,captureLock.region))<9)return;
@@ -2152,6 +2198,8 @@ export function registerScanner(ctx) {
     if(st.catalogInitGame!==G){
       st.catalogInitGame=G;
       Promise.all([initCatalog(G),catalogManifest().catch(()=>null)]).then(([,m])=>{if(current()){st.catalogMeta=m?.games?.[G];render();}});
+      // Card data for the picture engine: this game first, then the others, with no button to find.
+      (async()=>{for(const g of [G,...['mtg','ptcg','ygo'].filter(x=>x!==G)]){await ensurePack(g).catch(()=>null);if(g===G&&current())render();}})();
     }
     if(!st.ocrWarm){st.ocrWarm=true;getWorker(scanLang(),()=>{}).catch(()=>{});}
     if(st.confirm){

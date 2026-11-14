@@ -11,7 +11,7 @@ import {catalogCandidate} from './scan-catalog.js';
 
 // Picture distances: 0 is the same picture, about 141 unrelated. Measured on the test photos the
 // right card is at most 72 away and the closest wrong card at least 73, so "strong" leaves room.
-export const FUSE=Object.freeze({strong:58,gap:14,same:14,suggest:74,suggestGap:6});
+export const FUSE=Object.freeze({strong:58,gap:14,same:14,suggest:68,suggestGap:8});
 
 const DIGIT={O:'0',o:'0',Q:'0',D:'0',I:'1',l:'1','|':'1',i:'1','!':'1',S:'5',s:'5',B:'8',Z:'2',z:'2'};
 const LETTER={'0':'O','1':'I','5':'S','8':'B','2':'Z'};
@@ -105,6 +105,19 @@ export function pictureVerdict(g,pack,pix,hashes){
  return {dist,rival,strong:dist<=FUSE.strong&&rival-dist>=FUSE.gap,name:pack.rows[named[0]][1],rows};
 }
 
+// The same, from a picture lined up by scan-register.js (reg.cards: closest first, one per card).
+// cardKey gives registerPicture its "same card" key: the passcode for Yu-Gi-Oh!, the name otherwise;
+// records this device's catalogue does not know are left out.
+export const pictureCardKey=(g,pack,pix)=>g==='ygo'?rec=>{const code=String(pix.ids?.[rec]??'');return pack.ids.get(code)?.length?code:null;}:rec=>pack.rows[rec]?scanCardNameKey(g,pack.rows[rec][1]||''):null;
+export function registerVerdict(g,pack,pix,reg){
+ const top=reg?.cards?.[0];if(!top||!pack?.rows||!pix?.bin)return null;
+ const named=g==='ygo'?pack.ids.get(top.key)||[]:pack.names.get(top.key)||[top.rec];if(!named.length)return null;
+ const dist=top.dist;let rival=reg.cards[1]?reg.cards[1].dist:Infinity;
+ if(!reg.cards[1]){const set=new Set(named),other=pixNearest(top.hash,pix.bin,1,g==='ygo'?r=>String(pix.ids[r])===top.key:r=>set.has(r))[0];if(other)rival=other[1];}
+ const rows=g==='ygo'?named.map(row=>({row,dist})):named.map(row=>({row,dist:row===top.rec?dist:pixDist(top.hash,pix.bin,row)})).filter(x=>x.dist===null||x.dist<=dist+FUSE.same);
+ return {dist,rival,strong:dist<=FUSE.strong&&rival-dist>=FUSE.gap,name:pack.rows[named[0]][1],rows,quad:top.quad,flipped:top.flipped};
+}
+
 const printKey=(g,r)=>g==='ygo'?`${r[0]}|${r[2]}`:String(r[0]);
 export const candidateKey=(g,c)=>g==='ygo'?`${c?.card?.id}|${String(c?.print||'').split('|')[0]}`:String(c?.card?.id);
 // Picture verdict + what was read -> a decision.
@@ -134,10 +147,19 @@ export function fuseClues(g,pack,verdict,read={}){
   const [set,num]=mtgPrinted(x.r);
   for(const row of pack.names.get(scanCardNameKey(g,x.r[1]))||[])if(!seen.some(y=>y.row===row)){const r=pack.rows[row],[s2,n2]=mtgPrinted(r);if(s2===set&&n2===num)seen.push({...x,row,r,dist:null,cand:catalogCandidate(pack,row,true)});}
  }
+ // Yu-Gi-Oh!: the set code is tiny print. When only its letters came through ("MAGO" of
+ // MAGO-EN006) and exactly one of this card's printings starts that way, that printing goes
+ // first. It is a lead for the person to confirm, never proof.
+ if(g==='ygo'&&!seen.some(x=>x.id)){
+  const tokens=footer.toUpperCase().split(/[^A-Z0-9]+/).filter(t=>t.length>=3),prefixOf=x=>String(x.r[2]||'').split('-')[0].toUpperCase();
+  const hit=p=>p.length>=3&&tokens.some(t=>(t.length===p.length&&looksLike(t,p))||(p.length>=4&&t.length===p.length-1&&(p.startsWith(t)||p.endsWith(t)))||(p.length>=4&&t.length<=p.length+2&&t.includes(p)));
+  const hits=[...new Set(seen.map(prefixOf))].filter(hit);
+  if(hits.length===1)for(const x of seen)if(prefixOf(x)===hits[0])x.part=true;
+ }
  const keys=list=>new Set(list.map(x=>printKey(g,x.r)));
  const byId=seen.filter(x=>x.id&&x.clean),named=seen.some(x=>x.name),stat=seen.some(x=>x.stats.length>=2);
- const order=list=>[...list].sort((a,b)=>Number(b.id)-Number(a.id)||(a.dist??999)-(b.dist??999));
- const out=(list,extra)=>order(list).slice(0,3).map(x=>({...x.cand,...extra}));
+ const order=list=>[...list].sort((a,b)=>Number(b.id)-Number(a.id)||Number(!!b.part)-Number(!!a.part)||(a.dist??999)-(b.dist??999));
+ const out=(list,extra)=>order(list).slice(0,3).map(x=>({...x.cand,...extra,...(x.part&&!extra.exact?{why:'Picture matched · set code partly read · check the printing'}:{})}));
  if(verdict.strong){
   let proof='',pick=null;
   if(byId.length&&keys(byId).size===1){proof=named?'picture, name and number':'picture and number';pick=byId;}
