@@ -55,7 +55,13 @@ import kotlinx.coroutines.launch
 
 private fun JsonElement?.n(): Int = this?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.asInt ?: 0
 
-private data class Piece(val icon: androidx.compose.ui.graphics.vector.ImageVector, val count: Int, val label: String)
+internal data class Piece(val icon: androidx.compose.ui.graphics.vector.ImageVector, val count: Int, val label: String)
+
+/** Butter pass B2 (Randall 14 Nov, "how shifty that pop up was"): the day's packs and the monthly bonus packs were two tiles and
+ *  the fourth tile was crushed to a sliver. Same reward, one tile: 2 packs + 3 packs = 5 packs. */
+internal fun merged(all: List<Piece>): List<Piece> = all.groupBy { it.icon to it.label.removeSuffix("s") }.values.map { g ->
+    val n = g.sumOf { it.count }; val base = g.first().label.removeSuffix("s")
+    Piece(g.first().icon, n, if (base == "pack" || base == "coin") (if (n == 1) base else base + "s") else g.first().label) }
 
 private fun pieces(r: JsonObject?): List<Piece> = buildList {
     r ?: return@buildList
@@ -65,12 +71,15 @@ private fun pieces(r: JsonObject?): List<Piece> = buildList {
     r.get("packs").n().takeIf { it > 0 }?.let { add(Piece(SiteIcons.Pack, it, if (it == 1) "pack" else "packs")) }
 }
 
+/** How many reward tiles fit a row [widthDp] wide: each at least 80 dp (room for "uncommon") with 10 dp gaps, four at most. */
+internal fun tilesPerRow(widthDp: Float, count: Int): Int = ((widthDp + 10f) / 90f).toInt().coerceIn(1, 4).coerceAtMost(count.coerceAtLeast(1))
+
 @Composable
 fun LoginRewardPopup(login: JsonObject, week: List<dev.cardstashy.nativeplay.play.PlayRules.Reward> = emptyList(), onDone: () -> Unit) {
     val view = LocalView.current
     val scope = rememberCoroutineScope()
     val stamp = login.get("stamp").n().coerceIn(1, 7)
-    val all = pieces(login.get("reward") as? JsonObject) + pieces(login.get("monthReward") as? JsonObject)
+    val all = merged(pieces(login.get("reward") as? JsonObject) + pieces(login.get("monthReward") as? JsonObject))
     val enter = remember { Animatable(0f) }
     val lift = remember { Animatable(0f) }
     var leaving by remember { mutableStateOf(false) }
@@ -116,7 +125,8 @@ fun LoginRewardPopup(login: JsonObject, week: List<dev.cardstashy.nativeplay.pla
                 else "Today: " + all.joinToString(", ") { "%,d ${it.label}".format(it.count) } + ".", style = Rule.Type.S15.copy(color = CaseMuted))
         }
     }
-    Box(Modifier.fillMaxSize().graphicsLayer { alpha = enter.value.coerceIn(0f, 1f) }.background(Color(0xCC07080B))
+    // One layer for scrim and card: drawn offscreen and faded as a whole, the card never goes see-through over the page on Claim.
+    Box(Modifier.fillMaxSize().graphicsLayer { alpha = enter.value.coerceIn(0f, 1f); compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }.background(Color(0xCC07080B))
         .focusProperties { canFocus = false }.clickable(remember { MutableInteractionSource() }, null) {}, contentAlignment = Alignment.Center) {
         val shape = RoundedCornerShape(26.dp)
         Column(Modifier.padding(24.dp).widthIn(max = 380.dp).fillMaxWidth()
@@ -132,16 +142,22 @@ fun LoginRewardPopup(login: JsonObject, week: List<dev.cardstashy.nativeplay.pla
                 for (i in 1..7) Box(Modifier.size(if (i == stamp) 14.dp else 10.dp).background(
                     when { i == stamp -> Color(0xFFE2B866); i < stamp -> Color(0x99D6AD64); else -> Color(0x22FFFFFF) }, CircleShape))
             }
-            Row(Modifier.fillMaxWidth().graphicsLayer { translationY = -lift.value * 260f; alpha = 1f - lift.value * .9f; val k = 1f - .35f * lift.value; scaleX = k; scaleY = k },
-                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)) {
-                all.forEach { p ->
-                    Column(Modifier.background(Color(0x14FFFFFF), RoundedCornerShape(18.dp)).border(1.dp, Color(0x33D6AD64), RoundedCornerShape(18.dp))
-                        .padding(horizontal = 14.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Icon(p.icon, 34.dp)
-                        Text("%,d".format(p.count), style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = Color(0xFFF3E3BD)))
-                        Text(p.label, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = Color(0xFFB9BFC9)))
+            // Equal tiles that share the width (each at least 80 dp, four to a row at most); a label never wraps.
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().graphicsLayer { translationY = -lift.value * 260f; alpha = 1f - lift.value * .9f; val k = 1f - .35f * lift.value; scaleX = k; scaleY = k }) {
+            val perRow = tilesPerRow(maxWidth.value, all.size)
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                all.chunked(perRow).forEach { row -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)) {
+                    row.forEach { p ->
+                        Column(Modifier.weight(1f).widthIn(max = 104.dp).background(Color(0x14FFFFFF), RoundedCornerShape(18.dp)).border(1.dp, Color(0x33D6AD64), RoundedCornerShape(18.dp))
+                            .padding(horizontal = 6.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Icon(p.icon, 34.dp)
+                            Text("%,d".format(p.count), maxLines = 1, softWrap = false, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = Color(0xFFF3E3BD)))
+                            Text(p.label, maxLines = 1, softWrap = false, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = Color(0xFFB9BFC9)))
+                        }
                     }
-                }
+                    repeat(perRow - row.size) { if (all.size > perRow) androidx.compose.foundation.layout.Spacer(Modifier.weight(1f)) }
+                } }
+            }
             }
             if (login.get("monthReward") is JsonObject) Text("Monthly bonus included.", style = TextStyle(fontFamily = Site.Manrope, fontSize = 13.sp, color = Color(0xFFD6AD64)))
             GoldCta("Claim", Modifier.fillMaxWidth(), enabled = !leaving) { claim() }
