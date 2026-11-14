@@ -2207,7 +2207,11 @@ export function registerScanner(ctx) {
       st.catalogInitGame=G;
       Promise.all([initCatalog(G),catalogManifest().catch(()=>null)]).then(([,m])=>{if(current()){st.catalogMeta=m?.games?.[G];render();}});
       // Card data for the picture engine: this game first, then the others, with no button to find.
-      (async()=>{for(const g of [G,...['mtg','ptcg','ygo'].filter(x=>x!==G)]){await ensurePack(g).catch(()=>null);if(g===G&&current())render();}})();
+      (async()=>{
+        // The settings sheet shows this download's state; keep its line true while and after it runs.
+        const sheetLine=g=>{if(g!==game())return;const control=document.querySelector?.('.scan-catalog-settings .scan-catalog-control');if(control)control.outerHTML=catalogControl(g,s());};
+        for(const g of [G,...['mtg','ptcg','ygo'].filter(x=>x!==G)]){await ensurePack(g,()=>sheetLine(g)).catch(()=>null);sheetLine(g);if(g===G&&current())render();}
+      })();
     }
     if(!st.ocrWarm){st.ocrWarm=true;getWorker(scanLang(),()=>{}).catch(()=>{});}
     if(st.confirm){
