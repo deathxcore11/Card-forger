@@ -263,7 +263,7 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
             // views.js:461 .cd-zoom: data-src = the normal image, data-hi = this face's png, data-art = the hero art crop.
             val hi = (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("png")?.ifBlank { null }
                 ?: shown.getAsJsonObject("image_uris")?.s("png")?.ifBlank { null }
-            val look = data?.let { Foil.look(it, shown, finish) }
+            val look = data?.let { Foil.look(it, shown, finish, image) }
             zoomed = if (zoom && image != null) ({ CardZoom(image, hi, heroArt, look,
                 gallery = heroArt?.takeIf { it.isNotBlank() && DualScreen.active }?.let { a -> Gallery(listOf(galleryPiece(a, f.s("name").ifBlank { name },
                     f.s("artist").ifBlank { shown.s("artist") }, f.s("flavor_text").ifBlank { shown.s("flavor_text") }, shown))) }) { zoom = false } }) else null
@@ -459,7 +459,7 @@ private fun Overview(name: String, shown: JsonObject, faces: List<JsonObject>, i
         if (!dual) SetLine(shown, state, act)
         if (!dual) run {
         // The card: drag across it to move the light (the phone's tilt moves it too); tap to enlarge.
-        val look = data?.let { Foil.look(it, shown, finish) }
+        val look = data?.let { Foil.look(it, shown, finish, image) }
         // feel.js attachTilt + attachMotionTilt: the card leans to the finger or the phone, and its light (and foil) follows.
         val lean = rememberCardLean()
         val touch = remember(lean) { androidx.compose.runtime.derivedStateOf { lean.light } }
@@ -892,7 +892,7 @@ private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActi
     // The tilt drives only the card and its foil; the bleeds and tiles never move.
     val image = shown?.let { (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("normal")?.ifBlank { null }
         ?: it.getAsJsonObject("image_uris")?.s("normal")?.ifBlank { null } ?: faces.firstOrNull()?.getAsJsonObject("image_uris")?.s("normal") }
-    val look = if (shown != null) data?.let { Foil.look(it, shown, finish) } else null
+    val look = if (shown != null) data?.let { Foil.look(it, shown, finish, image) } else null
     val shines = look?.takeIf { it.shines }
     val tilt = rememberFoilTilt(live = true)
 
@@ -1015,7 +1015,7 @@ private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActi
             ?: shown.getAsJsonObject("image_uris")?.s("png")?.ifBlank { null }
         val f = faces.getOrElse(face) { faces[0] }
         if (image != null) TopScreen {
-            CardZoom(image, hi, heroArt, data?.let { Foil.look(it, shown, finish) },
+            CardZoom(image, hi, heroArt, data?.let { Foil.look(it, shown, finish, image) },
                 gallery = heroArt?.takeIf { it.isNotBlank() }?.let { a -> Gallery(listOf(galleryPiece(a, f.s("name").ifBlank { name },
                     f.s("artist").ifBlank { shown.s("artist") }, f.s("flavor_text").ifBlank { shown.s("flavor_text") }, shown))) },
                 startArt = zoom == "art") { zoom = null }

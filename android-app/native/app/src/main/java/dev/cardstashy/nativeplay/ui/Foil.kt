@@ -218,16 +218,20 @@ half4 main(float2 fc){
         return listOf("nonfoil", "foil", "etched").firstOrNull { it in have } ?: want
     }
 
-    fun look(data: CardData, card: JsonObject?, finish: String): Look {
+    /** [shown]: the picture on screen ("normal" image URL) when the view can flip a two-faced card: the Look, its 3D layers and the
+     *  planeswalker check then follow that face. Null or no match = the front. */
+    fun look(data: CardData, card: JsonObject?, finish: String, shown: String? = null): Look {
         val p = data.profile(card, finish)
         val recipe = data.recipes[p.treatment]
         val frame = data.frames[CardData.frameKey(card)] ?: data.frames.getValue("2015")
         val label = when { recipe == null -> "Nonfoil"; p.name.isNotBlank() -> "${p.name} · shown with ${recipe.label.lowercase()}"; else -> recipe.label }
-        val image = card?.let { c -> (c.get("image_uris") as? JsonObject ?: (c.getAsJsonArray("card_faces")?.firstOrNull() as? JsonObject)?.get("image_uris") as? JsonObject)?.get("normal")?.takeIf { it.isJsonPrimitive }?.asString }
-        // The face shown is the front: a transform card such as Ajani, Nacatl Pariah (MH3 237) joins both types at the top
+        fun normal(o: JsonObject?) = (o?.get("image_uris") as? JsonObject)?.get("normal")?.takeIf { it.isJsonPrimitive }?.asString
+        val faces = card?.getAsJsonArray("card_faces")?.mapNotNull { it as? JsonObject }.orEmpty()
+        val face = faces.firstOrNull { shown != null && normal(it) == shown } ?: faces.firstOrNull()
+        val image = normal(card) ?: normal(face)
+        // The face shown decides: a transform card such as Ajani, Nacatl Pariah (MH3 237) joins both types at the top
         // ("Creature // Planeswalker") while its front picture is the creature, which must not get a planeswalker's window.
-        val type = ((card?.getAsJsonArray("card_faces")?.firstOrNull() as? JsonObject)?.get("type_line")?.takeIf { it.isJsonPrimitive }?.asString)
-            ?: card?.get("type_line")?.takeIf { it.isJsonPrimitive }?.asString ?: ""
+        val type = face?.get("type_line")?.takeIf { it.isJsonPrimitive }?.asString ?: card?.get("type_line")?.takeIf { it.isJsonPrimitive }?.asString ?: ""
         val walker = "Planeswalker" in type && CardData.frameKey(card) == "2015" // frameKey says "borderless" for borderless and full arts
         return Look(recipe, frame, CardData.holoStamp(card), label, image, walker)
     }

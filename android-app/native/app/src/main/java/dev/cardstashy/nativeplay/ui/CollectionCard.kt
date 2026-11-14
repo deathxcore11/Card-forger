@@ -834,7 +834,7 @@ private fun ArtStack(m: CollectionCardModel, o: CardOverview, act: CollectionCar
         LaunchedEffect(Unit) { if (data == null) dev.cardstashy.nativeplay.play.CardData.warm(ctx) }
         val tcg = m.game != CardGame.MTG
         val finish = Foil.finishFor(m.shown, o.finishKey.ifBlank { "nonfoil" })
-        val look = if (tcg) null else data?.let { Foil.look(it, m.shown, finish) }
+        val look = if (tcg) null else data?.let { Foil.look(it, m.shown, finish, o.image) }
         val worn = remember(o.tcgFinish, o.image) { o.tcgFinish?.let { tcgFinishOf(ctx, m.game, it, o.image) } }
         val lean = rememberCardLean()
         val touch = remember(lean) { derivedStateOf { lean.light } }
@@ -2061,7 +2061,7 @@ private fun DualCollectionCard(m: CollectionCardModel, act: CollectionCardAction
     LaunchedEffect(Unit) { if (data == null) dev.cardstashy.nativeplay.play.CardData.warm(ctx) }
     val tcg = m.game != CardGame.MTG
     val finish = Foil.finishFor(m.shown, o?.finishKey?.ifBlank { "nonfoil" } ?: "nonfoil")
-    val look = if (tcg) null else data?.let { Foil.look(it, m.shown, finish) }
+    val look = if (tcg) null else data?.let { Foil.look(it, m.shown, finish, o?.image) }
     val worn = remember(o?.tcgFinish, o?.image) { o?.tcgFinish?.let { tcgFinishOf(ctx, m.game, it, o.image) } }
     val shines = look?.takeIf { it.shines }
     // The tilt drives only the card and its foil; the bleeds and tiles never move.

@@ -31,4 +31,15 @@ class FoilWalkerTest {
         // The picture is the front face's, the creature.
         assertEquals(ajani.getAsJsonArray("card_faces")[0].asJsonObject.getAsJsonObject("image_uris").get("normal").asString, look.image)
     }
+
+    /** Flipped to the back (the card view's flip passes the picture on screen), the planeswalker face gets the window, measured on
+     *  that face's picture. */
+    @Test fun theFlippedBackFaceIsThePlaneswalker() {
+        val ajani = json("/foil/ajani-nacatl-pariah-mh3-237.json")
+        val back = ajani.getAsJsonArray("card_faces")[1].asJsonObject.getAsJsonObject("image_uris").get("normal").asString
+        val look = Foil.look(data, ajani, "foil", back)
+        assertTrue(look.walker)
+        assertEquals(back, look.image)
+        assertFalse("an unknown picture means the front", Foil.look(data, ajani, "foil", "https://example.invalid/x.jpg").walker)
+    }
 }
