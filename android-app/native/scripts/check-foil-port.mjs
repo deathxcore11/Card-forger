@@ -6,6 +6,7 @@
 // node scripts/check-foil-port.mjs [repo root]   (canvaskit-wasm from CANVASKIT_DIR, or resolvable from here; playwright resolvable)
 // Exit 0: every recipe matches: within 2 of 255 on every pixel, or off by more than 1 on under 0.5% of pixels (oil slick: the two renderers
 // round its grain cells' edges differently). 1: a recipe differs (printed). 2: no CanvasKit or browser to draw with.
+// Not covered: the maps-not-loaded-yet fallback (u_maps 0), facet foil's shards and the oval holo stamp (stamp 2), all app only.
 import {createServer} from 'node:http';import {readFile} from 'node:fs/promises';import {readFileSync} from 'node:fs';
 import {resolve,extname} from 'node:path';import {createRequire} from 'node:module';
 import path from 'node:path';import {fileURLToPath} from 'node:url';
@@ -20,11 +21,16 @@ const AGSL=kt.match(/const val AGSL = """([\s\S]*?)"""/)[1];
 const REF=readFileSync(path.join(root,'test-fixtures','finish-effects','mtg-foil-first-approved.glsl'),'utf8');
 const PICTURE='/test-fixtures/finish-effects/avatar-of-burgeoning-echoes-pfra-122p.jpg';
 const LIGHTS=[[.5,.45],[.22,.25],[.76,.72]];
+// WIDTH: the card's width in px (372 by default; a phone's card view is about 1080, where the fine etched, rainbow-line and scanline
+// detail is drawn instead of faded out). NL: how many of the lights to draw. Both slow CanvasKit down with size.
+const WIDTH=+(process.env.WIDTH||372),NL=Math.min(LIGHTS.length,+(process.env.NL||LIGHTS.length));
 const page_js=`
-window.run=async(pic,ref,lights)=>{
+window.run=async(pic,ref,lights,width)=>{
  const {MTG_FOIL_RECIPES}=await import('/mtg-foil-recipes.js'),{analyzeMtgCard,MTG_FRAMES}=await import('/mtg-foil-analysis.js'),{readFoilPixels}=await import('/foil-gl.js');
  const img=new Image();img.src=pic;await img.decode();
- const px=readFoilPixels(img,372),W=px.W,H=px.H,an=analyzeMtgCard(px.data,W,H);
+ // The site's own reader below its cap (half the scan's width); above it, the scan drawn at that width, as a phone shows it.
+ const px=width<=img.naturalWidth/2?readFoilPixels(img,width):(()=>{const W=width,H=Math.round(W*img.naturalHeight/img.naturalWidth),c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0,W,H);return {W,H,data:x.getImageData(0,0,W,H).data};})();
+ const W=px.W,H=px.H,an=analyzeMtgCard(px.data,W,H);
  const c=document.createElement('canvas');c.width=W;c.height=H;const gl=c.getContext('webgl',{antialias:false,premultipliedAlpha:false,preserveDrawingBuffer:true});
  const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(o));return o;};
  const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,'attribute vec2 a;varying vec2 v;void main(){v=(a+1.0)*.5;gl_Position=vec4(a,0.0,1.0);}'));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,ref));gl.bindAttribLocation(p,0,'a');gl.linkProgram(p);gl.useProgram(p);
@@ -50,7 +56,7 @@ const server=createServer(async(req,res)=>{try{const path=decodeURIComponent(new
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const browser=await chromium.launch({args:['--use-gl=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
 let R;try{const pg=await browser.newPage();pg.on('pageerror',e=>console.log('page',e));await pg.goto(`http://127.0.0.1:${server.address().port}/`);await pg.waitForFunction(()=>window.ready);
- R=await pg.evaluate(([p,ref,l])=>window.run(p,ref,l),[PICTURE,REF,LIGHTS]);}finally{await browser.close();server.close();}
+ R=await pg.evaluate(([p,ref,l,w])=>window.run(p,ref,l,w),[PICTURE,REF,LIGHTS.slice(0,NL),WIDTH]);}finally{await browser.close();server.close();}
 const dec=s=>Uint8Array.from(Buffer.from(s,'base64'));const {W,H}=R;const card=dec(R.card),mask=dec(R.mask),rel=dec(R.relief);
 const appMask=new Uint8Array(W*H*4),appRel=new Uint8Array(W*H*4),blank=new Uint8Array(W*H*4);
 for(let i=0;i<W*H;i++){const k=i*4;appMask.set([mask[k],mask[k+1],mask[k+2],255],k);appRel.set([rel[k],mask[k+3],0,255],k);blank[k+3]=255;}
@@ -60,12 +66,12 @@ let err='';const fx=CK.RuntimeEffect.Make(AGSL,e=>err+=e);if(!fx){console.log('A
 const kids=[shaderOf(card),shaderOf(appMask),shaderOf(appRel),shaderOf(blank),shaderOf(blank)];
 const surf=CK.MakeSurface(W,H);const cv=surf.getCanvas();const paint=new CK.Paint();
 const report={};let worst=0;
-const ONLY=process.env.ONLY?process.env.ONLY.split(','):null,NL=LIGHTS.length;
+const ONLY=process.env.ONLY?process.env.ONLY.split(','):null;
 for(const [k,r] of Object.entries(R.recipes)){if(ONLY&&!ONLY.includes(k))continue;report[k]=[];R.out[k].slice(0,NL).forEach((ref64,li)=>{const [lx,ly]=LIGHTS[li];
  const u=[W,H,W,H,(lx-.5)*2,(ly-.5)*2,H/W,1,W,H,1,...R.box.art,...R.box.text,r.pat,r.tint,r.cover,r.relief,r.film,r.sparkle,r.stamp||0,r.keep||0];
  const s=fx.makeShaderWithChildren(u,kids);paint.setShader(s);cv.clear(CK.TRANSPARENT);cv.drawRect(CK.LTRBRect(0,0,W,H),paint);s.delete();
  const got=cv.readPixels(0,0,{width:W,height:H,colorType:CK.ColorType.RGBA_8888,alphaType:CK.AlphaType.Unpremul,colorSpace:CK.ColorSpace.SRGB});const ref=dec(ref64);
- let max=0,over2=0;for(let i=0;i<W*H;i++)for(let c=0;c<3;c++){const d=Math.abs(got[i*4+c]-ref[i*4+c]);if(d>max)max=d;if(d>1){over2++;break;}}
+ let max=0,over2=0;for(let i=0;i<W*H;i++){let m=0;for(let c=0;c<3;c++)m=Math.max(m,Math.abs(got[i*4+c]-ref[i*4+c]));if(m>max)max=m;if(m>1)over2++;}
  report[k].push({max,over1:+(over2/(W*H)).toFixed(5)});worst=Math.max(worst,max);
 });}
 const same=v=>v.every(x=>x.max<=2||x.over1<.005);
