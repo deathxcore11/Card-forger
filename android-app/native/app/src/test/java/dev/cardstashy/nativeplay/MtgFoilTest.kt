@@ -147,7 +147,9 @@ class MtgFoilTest {
     }
 
     @Test fun onlyInkSelectiveRecipesMeasure() {
-        assertTrue(MtgFoil.needsMaps(cover = 0f, relief = 0f, film = 0f, pat = 1f))    // traditional: its grating follows the drawn lines
+        // Traditional: the first approved foil draws it without maps, so the commonest foil never runs the analysis (review, 14 Nov).
+        assertTrue(!MtgFoil.needsMaps(cover = 0f, relief = 0f, film = 0f, pat = 1f))
+        assertTrue(MtgFoil.needsMaps(cover = 0f, relief = .3f, film = 0f, pat = 17f))  // raised: its relief
         assertTrue(MtgFoil.needsMaps(cover = 0f, relief = 0f, film = 0f, pat = 21f))   // facet: the shards
         assertTrue(!MtgFoil.needsMaps(cover = 1f, relief = 0f, film = 0f, pat = 4f))   // etched frame
         assertTrue(!MtgFoil.needsMaps(cover = 0f, relief = 0f, film = 0f, pat = 11f))  // fracture: a fixed pattern

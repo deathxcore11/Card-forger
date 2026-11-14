@@ -14,8 +14,8 @@ import kotlin.math.roundToInt
  *
  * One change from the site, for Android only: the site keeps "drawn lines" in the mask's alpha and the stroke direction and strength
  * in the relief's G/B/A. Android premultiplies bitmap alpha, which would corrupt them, so the maps here are opaque: the lines move to
- * the relief's green channel and the stroke (cos 2θ, sin 2θ, strength) gets its own map, which steers the grating along the drawn
- * lines (traditional, raised and textured foils), so the rainbow streaks run along the art like real foil pressed under a plate.
+ * the relief's green channel and the stroke (cos 2θ, sin 2θ, strength) gets its own map. Since the first approved foil (14 Nov) only
+ * facet foil reads the stroke, to turn the light along each shard's cut edge.
  *
  * Facet foil (app first, 7 Nov): the printed glass shards are cut, each one its own flat mirror. [facets] finds them once, at analysis
  * time: real connected shards split by their printed neon outlines, each with a fixed hashed tilt, so a shard flashes in one piece.
@@ -34,12 +34,10 @@ object MtgFoil {
     /** Facet foil's pattern number (MTG_PATTERN.facet in the site prototype of 7 Nov). */
     const val FACET = 21f
 
-    /** Patterns whose grating follows the drawn lines (traditional, textured, raised): they read the measured stroke. */
-    fun steered(pat: Float) = abs(pat - 1f) < .5f || abs(pat - 5f) < .5f || abs(pat - 17f) < .5f
-
-    /** True when the recipe reads the measured maps: ink-selective covers, relief, film, the stroke-steered sheets and facet shards.
-     *  Etched and the other fixed patterns look the same without them, so they skip the work. */
-    fun needsMaps(cover: Float, relief: Float, film: Float, pat: Float) = cover > 1.5f || relief > 0f || film > .5f || steered(pat) || abs(pat - FACET) < .5f
+    /** True when the recipe reads the measured maps: ink-selective covers, relief, film, textured foil's height and facet shards.
+     *  Traditional, etched and the other fixed patterns draw the same without them (the first approved foil, ui/Foil.kt, no longer
+     *  steers its grating along the drawn lines), so they skip the work. */
+    fun needsMaps(cover: Float, relief: Float, film: Float, pat: Float) = cover > 1.5f || relief > 0f || film > .5f || abs(pat - 5f) < .5f || abs(pat - FACET) < .5f
 
     /** mask: R gold ink, G fluorescent ink, B bare paper-white, A 255. relief: R smoothed height, G drawn lines, B facet cut edge (0 off
      *  facet foil), A 255. stroke: R/G stroke direction (cos 2θ, sin 2θ as .5 + .5 v), B stroke strength (the site's
