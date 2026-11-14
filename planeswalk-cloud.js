@@ -1,3 +1,4 @@
+import { authStorage } from "./auth-storage.js";
 // Planeswalk cloud: backs up the run, profile and settings to the signed-in account, and logs
 // each finished run (picks, deck, result) for balance. Needs no changes in the game for the
 // backup: it copies every planeswalk.* and pw-* localStorage key. The game calls:
@@ -77,7 +78,7 @@ async function start() {
   if (!configured()) return;
   try {
     const { createClient } = await import(/* @vite-ignore */ LIB);
-    client = createClient(SUPABASE.url, SUPABASE.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
+    client = createClient(SUPABASE.url, SUPABASE.key, { auth: { storage: authStorage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
     const { data } = await client.auth.getSession();
     user = data?.session?.user || null;
     client.auth.onAuthStateChange((_e, session) => { const next = session?.user || null; if (next?.id !== user?.id) { user = next; if (user) setTimeout(() => reconcile().catch(() => {}), 0); } });

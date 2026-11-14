@@ -284,6 +284,7 @@ const ASSETS = [
   "./storage.js",
   "./extras.js",
   "./share.js",
+  "./auth-storage.js",
   "./cloud.js",
   "./app-errors.js",
   "./planeswalk-cloud.js",

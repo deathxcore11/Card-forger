@@ -1,4 +1,5 @@
 import { timedFetch } from "./auth-form.js";
+import { authStorage } from "./auth-storage.js";
 import { mergeAccountWorkspaces, workspaceContentSig } from "./sync-merge.js";
 // Accounts and cloud saving (Supabase). Device storage stays the source the app
 // works from; the account holds a private copy that follows you to other devices.
@@ -155,7 +156,7 @@ export async function initCloud(h, { createClient: factory, startupTimeoutMs=120
   if (!cloudConfigured()) { await changeAccount(null); return; }
   try {
     const createClient = factory || (await boundedStartup(import(/* @vite-ignore */ LIB),startupTimeoutMs)).createClient;
-    client = createClient(SUPABASE.url, SUPABASE.key, { global: { fetch: timedFetch }, auth: { flowType: "pkce", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true } });
+    client = createClient(SUPABASE.url, SUPABASE.key, { global: { fetch: timedFetch }, auth: { storage: authStorage, flowType: "pkce", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true } });
   } catch {
     status.state = "error";
     status.msg = "Couldn’t load the account service. Your cards are still saved on this device.";
