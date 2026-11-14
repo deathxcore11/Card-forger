@@ -10,6 +10,8 @@ import {ygoRarityEffect,ygoRarityRank,ygoRaritySwatch} from './ygo-foil-recipes.
 import {quoteForContext} from './pricing-presentation.js';
 import {mountFinishPop} from './foil-fx.js';
 import {mtgHoloStamp} from './mtg-foil-recipes.js';
+import {stampFor} from './mtg-stamp.js';
+import {readableCopy} from './foil-gl.js';
 export {finishChoices,finishEffect,resolveFinish,selectPreviewFinish,finishArtworkCard} from './finish-effects.js';
 const KEY='cardstashy-finish-effects';
 export const finishEffectsOn=()=>{try{return localStorage.getItem(KEY)!=='off';}catch{return true;}};
@@ -25,11 +27,12 @@ export function entryFinishContext(game,e={},card=null){return game==='mtg'?{pri
 export function finishAttrs(game,c,ctx={},view='large'){
  const p=resolveFinish(game,c,ctx);
  p.materialProfile=finishMaterialProfile(game,c,p);
- return `data-finish-game="${esc(game)}" data-finish-surface="${view}" data-finish-effect="${esc(p.effect)}" data-finish-model="${esc(JSON.stringify(p))}"${game==='mtg'&&mtgOvalStamp(c)?' data-holostamp="1"':''}`;
+ return `data-finish-game="${esc(game)}" data-finish-surface="${view}" data-finish-effect="${esc(p.effect)}" data-finish-model="${esc(JSON.stringify(p))}"${game==='mtg'&&mtgStamped(c)?' data-holostamp="1"':''}`;
 }
-// Magic rares and mythics in the modern frame (2015 on) carry a holographic oval security stamp at the bottom
-// centre, foil or not. Printings Scryfall marks with another stamp (triangle, acorn, heart...) or none are left alone.
-export const mtgOvalStamp=c=>mtgHoloStamp(c)&&(c.security_stamp?c.security_stamp==='oval':true)&&!c.full_art&&(c.layout||'normal')!=='art_series';
+// Modern-frame Magic cards can carry a holographic security stamp at the bottom centre, foil or not: an oval on
+// rares and mythics, a triangle on Universes Beyond, an acorn, a heart, a circle. Which cards have one comes from
+// the printing's data; where it is and what shape it has is read from the picture (mtg-stamp.js), never assumed.
+export const mtgStamped=c=>c?.frame==='2015'&&(c.layout||'normal')!=='art_series'&&(c.security_stamp?(c.security_stamp==='oval'?['rare','mythic'].includes(c.rarity):c.security_stamp!=='arena'):mtgHoloStamp(c));
 // Any MTG card face (grids and lists included, never the compact list or symbols) can show its stamp, even
 // where the full foil overlay is not drawn.
 export function stampEligible(el){
@@ -185,7 +188,13 @@ export function attachFinishPreview(root){
   if(['large','card'].includes(el.dataset.finishSurface)){const phase=String(p.printingId||'').split('').reduce((n,c)=>n+c.charCodeAt(0),0)%80;overlay.style.animationDelay=`-${phase/10}s`;}
   overlay.setAttribute('aria-hidden','true');
   if(detail&&p.effect!=='plain'){const light=img.ownerDocument.createElement('span');light.className='finish-spotlight';plane.append(light);}
-  if(stamp){const holo=img.ownerDocument.createElement('span');holo.className='finish-holostamp'+(onFoil?' on-foil':'');plane.append(holo);}
+  if(stamp){
+   // Hidden until its place and outline are measured on this exact picture; a picture with no readable stamp gets none.
+   const holo=img.ownerDocument.createElement('span'),src=img.currentSrc||img.src;holo.className='finish-holostamp'+(onFoil?' on-foil':'');plane.append(holo);
+   void stampFor(src,()=>readableCopy(src)).then(s=>{if(holo.isConnected===false)return;if(!s){holo.remove?.();return;}
+    for(const [k,v] of [['left',s.x],['top',s.y],['width',s.w],['height',s.h]])holo.style[k]=(v*100).toFixed(3)+'%';
+    holo.style.webkitMaskImage=holo.style.maskImage=`url("${s.url}")`;holo.classList.add('mapped');});
+  }
   for(const l of layers){if(!FINISH_MASKS[l.mask])continue;const part=img.ownerDocument.createElement('span');part.className=`finish-layer finish-${l.material}${l.mask==='ygo-name'?' finish-name-region':''}`;part.style.clipPath=FINISH_MASKS[l.mask];plane.append(part);}
   if(hasFinishPattern(p.materialProfile)&&FINISH_MASKS[layers[0]?.mask]){const pattern=img.ownerDocument.createElement('span');pattern.className='finish-pattern';pattern.style.clipPath=FINISH_MASKS[layers[0].mask];plane.append(pattern);}
   // Foil pass: every real foil (not a plain card) gets the pop layer over the whole card face: rim, glare,

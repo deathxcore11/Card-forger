@@ -373,12 +373,6 @@ function attachMotionTilt(root, pressed) {
     frame = 0;
     const c = hero();
     if (!motionTiltOn() || reduced() || globalThis.document?.hidden || !c || !last || pressed() === c) return;
-    // A plain (nonfoil) card is paper: it does not lean or catch light when the phone moves.
-    if (c.dataset?.finishEffect === "plain") {
-      if (c.classList.contains("gyro")) { c.classList.remove("gyro", "tilting"); for (const p of ["--tx", "--ty", "--mx", "--my"]) c.style.removeProperty?.(p); }
-      currentCard = null; base = null;
-      return;
-    }
     const clamp = (v) => Math.max(-1, Math.min(1, v / 18));
     if(c!==currentCard){currentCard=c;base=null;}
     if (!base) base = { ...last };
@@ -388,9 +382,15 @@ function attachMotionTilt(root, pressed) {
     base.b += (last.b - base.b) * 0.02;
     base.g += (last.g - base.g) * 0.02;
     const x = clamp(last.g - base.g), y = clamp(last.b - base.b);
-    c.classList.add("tilting", "gyro");
-    c.style.setProperty("--tx", `${x * 9}deg`);
-    c.style.setProperty("--ty", `${-y * 9}deg`);
+    // A plain (nonfoil) card is paper: it does not lean with the phone. Only the light position moves,
+    // which is what its holographic stamp answers to.
+    if (c.dataset?.finishEffect === "plain") {
+      if (c.classList.contains("gyro")) { c.classList.remove("gyro", "tilting"); for (const p of ["--tx", "--ty"]) c.style.removeProperty?.(p); }
+    } else {
+      c.classList.add("tilting", "gyro");
+      c.style.setProperty("--tx", `${x * 9}deg`);
+      c.style.setProperty("--ty", `${-y * 9}deg`);
+    }
     c.style.setProperty("--mx", `${50 + x * 45}%`);
     c.style.setProperty("--my", `${50 + y * 45}%`);
   };

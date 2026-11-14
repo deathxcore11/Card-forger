@@ -1,6 +1,6 @@
 // Regression (owner, 2026-11-14, app 0.4.78): Avatar of Burgeoning Echoes (FRA 122, mythic) with Finish = Nonfoil
 // leaned with the phone and caught light like a foil, and its oval security stamp was covered by a sliding
-// pink-to-blue strip. A plain card stays still; the stamp keeps its print.
+// pink-to-blue strip. A plain card stays still; only its stamp answers the light, through a mask read from the picture.
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {finishAttrs} from './finish-preview.js';
@@ -38,24 +38,27 @@ card.dataset.finishEffect='plain';
 turn(30,0);turn(40,12);
 assert(!card.classes.has('gyro')&&!card.classes.has('tilting'),'a plain card does not lean with the phone');
 assert.equal(card.values['--tx'],undefined,'a plain card gets no tilt angle');
+assert.notEqual(card.values['--mx'],undefined,'the light position still moves, for the stamp');
 card.dataset.finishEffect='mtg-foil';
 turn(30,0);turn(40,12);
 assert(card.classes.has('gyro'),'a foil still leans with the phone');
 card.dataset.finishEffect='plain';
 turn(41,13);
-assert(!card.classes.has('gyro')&&!card.classes.has('tilting')&&card.values['--mx']===undefined,'switching the same card to Nonfoil stops the lean and clears the light');
+assert(!card.classes.has('gyro')&&!card.classes.has('tilting')&&card.values['--tx']===undefined,'switching the same card to Nonfoil stops the lean');
 
 // The moving glare belongs to foils only.
 const preview=await readFile(new URL('./finish-preview.js',import.meta.url),'utf8');
 assert.match(preview,/if\(detail&&p\.effect!=='plain'\)\{const light=/,'no spotlight layer is mounted on a plain card');
 
-// Stamp: nothing opaque, nothing that moves on its own.
+// Stamp: invisible until measured on the picture, never a fixed box, never moving on its own.
 const css=await readFile(new URL('./finish-effects.css',import.meta.url),'utf8');
 const rule=css.match(/\.finish-holostamp\{[^}]*\}/)[0],after=css.match(/\.finish-holostamp::after\{[^}]*\}/)[0];
-assert.doesNotMatch(rule+after,/animation/,'the stamp tint does not slide by itself');
+assert.doesNotMatch(rule+after,/animation/,'the stamp colour does not slide by itself');
 assert.doesNotMatch(css,/@keyframes finish-holostamp/);
-assert.doesNotMatch(rule,/hard-light/);
-assert(Number(rule.match(/opacity:([.\d]+)/)[1])<=.25,'the printed stamp shows through the tint');
-assert.match(rule,/var\(--mx,50%\)/,'the tint follows the light');
-assert.doesNotMatch(MTG_FOIL_FRAGMENT,/mix\(outC,shoulder\(hs/,'the foil shader does not paint over the printed stamp');
-console.log('PASS: a Nonfoil card stays still under phone tilt, has no glare layer, and its security stamp keeps its print.');
+assert.match(rule,/opacity:0[;}]/,'an unmeasured stamp draws nothing');
+assert.doesNotMatch(rule,/left:|top:|width:|height:/,'no assumed place or size');
+assert.match(css,/\.finish-holostamp\.mapped\{opacity:\.\d+\}/);
+assert.match(rule,/var\(--mx,50%\)/,'the colour follows the light');
+assert.match(preview,/stampFor\(src,\(\)=>readableCopy\(src\)\)/,'the stamp is measured from the shown picture');
+assert.doesNotMatch(MTG_FOIL_FRAGMENT,/M15|vec2\(\.5,\.925\)/,'the foil shader no longer paints a stamp at a fixed place');
+console.log('PASS: a Nonfoil card stays still under phone tilt, has no glare layer, and its stamp is drawn only where the picture shows one.');
