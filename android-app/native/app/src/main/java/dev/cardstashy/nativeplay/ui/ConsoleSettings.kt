@@ -32,7 +32,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -80,6 +80,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -134,7 +135,7 @@ internal enum class ConsoleRing { FREE, TAKE, STOP, NONE;
 internal enum class ConsolePic { ICON, THEME, GRID, GLOW, FOIL, DEPTH, VOLUME, BUZZ }
 
 /**
- * One line. [about] is what the panel says (two sentences at most: the strip on a phone holds five short lines).
+ * One line. [about] is the few words the panel adds, or nothing when the name says it all.
  * [default] names the value a new install has. [status]: fresh news about the line (a backup was made, a file is not valid).
  */
 internal class ConsoleRow(val id: String, val title: String, val about: String, val ctl: ConsoleCtl, val default: String? = null,
@@ -151,18 +152,22 @@ internal class ConsoleRow(val id: String, val title: String, val about: String, 
         is ConsoleCtl.Info -> c.value
     }
 
-    /** A press (A, or a second tap): a switch flips, a choice goes to the next and round again, a level goes up ten and round to zero. */
-    fun press() = step(1, round = true)
+    /**
+     * A press (A, or a second tap): a switch flips, a choice goes to the next and round again. A level does nothing: a press that
+     * jumped from 100 to silence surprised the polish pass (UX), so a volume moves only with its arrows. True when a value changed.
+     */
+    fun press(): Boolean = if (ctl is ConsoleCtl.Level) false else step(1)
 
-    /** Left (-1) or right (+1). A choice goes round; a level stops at its ends; a switch flips. */
-    fun step(dir: Int, round: Boolean = false) {
+    /** Left (-1) or right (+1). A choice goes round; a level stops at its ends; a switch flips. True when a value changed. */
+    fun step(dir: Int): Boolean {
         when (val c = ctl) {
             is ConsoleCtl.Switch -> c.set(!c.on)
-            is ConsoleCtl.Choice -> { val i = c.options.indexOf(c.value).coerceAtLeast(0); c.set(c.options[(i + dir).mod(c.options.size)]) }
-            is ConsoleCtl.Level -> if (c.enabled) { val n = if (round && dir > 0 && c.value >= 100) 0 else (c.value + 10 * dir).coerceIn(0, 100); if (n != c.value) c.set(n) }
-            is ConsoleCtl.Go -> c.run()
-            is ConsoleCtl.Info -> {}
+            is ConsoleCtl.Choice -> { val i = c.options.indexOf(c.value).coerceAtLeast(0); val n = c.options[(i + dir).mod(c.options.size)]; if (n == c.value) return false; c.set(n) }
+            is ConsoleCtl.Level -> { if (!c.enabled) return false; val n = (c.value + 10 * dir).coerceIn(0, 100); if (n == c.value) return false; c.set(n) }
+            is ConsoleCtl.Go -> { c.run(); return false }
+            is ConsoleCtl.Info -> return false
         }
+        return true
     }
 
     internal val on: Boolean get() = picOn ?: (ctl as? ConsoleCtl.Switch)?.on ?: true
@@ -195,10 +200,13 @@ internal class ConsoleSection(val items: List<ConsoleItem>, val page: ConsolePag
 
 internal fun List<ConsoleItem>.rows(): List<ConsoleRow> = mapNotNull { (it as? ConsoleItem.Line)?.row }
 
-/** The longest [ConsoleRow.about] the phone's strip shows whole: five lines of 13 sp beside the picture on a 360 dp phone. */
-internal const val CONSOLE_ABOUT_MAX = 170
+/**
+ * The longest [ConsoleRow.about]. Randall 14 Nov: "most games don't have descriptions like that", so a line that names itself
+ * has no words at all, and the rest have a few: one short line, never a paragraph.
+ */
+internal const val CONSOLE_ABOUT_MAX = 60
 /** The strip under the list on a phone. One height for every line, so the list never moves as you step through it. */
-internal val CONSOLE_STRIP: Dp = 136.dp
+internal val CONSOLE_STRIP: Dp = 118.dp
 /** From this width the panel stands beside the list. */
 internal val CONSOLE_WIDE: Dp = 700.dp
 
@@ -228,7 +236,9 @@ internal fun ConsoleScreen(title: String, tabs: List<ConsoleTab>, tab: Int, onTa
             val width = maxWidth
             val wide = width >= CONSOLE_WIDE
             val side = wide && !dual
-            val typing = WindowInsets.isImeVisible
+            // The keyboard by the room it takes, not by its flag: the flag can say "visible" for a frame with no keyboard up
+            // (seen in the test pictures, where the strip then went missing).
+            val typing = WindowInsets.ime.getBottom(LocalDensity.current) > 0
             Column(Modifier.fillMaxSize()) {
                 ConsoleHeader(title, onClose)
                 ConsoleTabs(tabs, tab, wide, pad, onTab)
@@ -255,7 +265,7 @@ private fun ConsoleHeader(title: String, onClose: () -> Unit) =
     Row(Modifier.fillMaxWidth().padding(start = 18.dp, end = 12.dp, top = 12.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(title.uppercase(), Modifier.weight(1f).semantics { heading(); contentDescription = title }, style = Rule.Type.cinzel(22).copy(letterSpacing = .08.em), maxLines = 1)
         val shape = RoundedCornerShape(Rule.Radius.Button)
-        Box(Modifier.size(44.dp).clip(shape).background(Site.Surface).border(1.dp, Site.Line, shape)
+        Box(Modifier.size(48.dp).clip(shape).background(Site.Surface).border(1.dp, Site.Line, shape)
             .clickable(onClickLabel = "Close", role = Role.Button, onClick = onClose).semantics { contentDescription = "Close" }, contentAlignment = Alignment.Center) {
             Icon(SiteIcons.Close, 20.dp, Site.Text)
         }
@@ -282,7 +292,7 @@ private fun ConsoleTabs(tabs: List<ConsoleTab>, tab: Int, wide: Boolean, pad: Bo
             tabs.forEachIndexed { i, t ->
                 val on = i == tab
                 val gold = Site.Gold
-                Box(Modifier.heightIn(min = 44.dp).selectable(selected = on, role = Role.Tab) { onTab(i) }.semantics { contentDescription = t.name }
+                Box(Modifier.heightIn(min = 48.dp).selectable(selected = on, role = Role.Tab) { onTab(i) }.semantics { contentDescription = t.name }
                     .drawBehind {
                         if (!on) return@drawBehind
                         val inset = 3.dp.toPx(); val slant = 5.dp.toPx(); val h = 3.dp.toPx()
@@ -323,12 +333,13 @@ internal fun ConsoleLine(r: ConsoleRow, focused: Boolean, onFocus: () -> Unit, r
     val row by rememberUpdatedState(r)
     val toFocus by rememberUpdatedState(onFocus)
     fun changed() { if (AppSettings.haptics) runCatching { view.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK) } }
-    fun step(dir: Int) { toFocus(); row.step(dir); if (row.adjustable) changed() }
-    fun press() { toFocus(); row.press(); if (row.adjustable) changed() }
+    // The tick only when a value really changed: not at a level's end, not on a line that opens a page.
+    fun step(dir: Int) { toFocus(); if (row.step(dir)) changed() }
+    fun press() { toFocus(); if (row.press()) changed() }
     // A controller: the line you are on takes the ring when it appears (the screen opens, the section changes, a page closes).
     val stop = remember { FocusRequester() }
     LaunchedEffect(Unit) { if (focused && Pad.connected.value && (ring == ConsoleRing.TAKE || (ring == ConsoleRing.FREE && !PadPrompts.anyFocus))) runCatching { stop.requestFocus() } }
-    val verb = when (val c = r.ctl) { is ConsoleCtl.Go -> c.verb; is ConsoleCtl.Info -> null; else -> "Change" }
+    val verb = when (val c = r.ctl) { is ConsoleCtl.Go -> c.verb; is ConsoleCtl.Info, is ConsoleCtl.Level -> null; else -> "Change" }
     val acts = remember(verb) { PadActs(a = verb) }
     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
         .then(if (focused) Modifier.background(Brush.horizontalGradient(0f to gold.copy(alpha = .2f), .72f to gold.copy(alpha = .04f), 1f to Color.Transparent)) else Modifier)
@@ -443,7 +454,7 @@ internal fun ConsoleDetail(r: ConsoleRow?, icon: ImageVector, shape: ConsoleDeta
                 }
                 // Fresh news takes the words' place here: the strip has one size.
                 val news = r?.status
-                Text(news?.first ?: r?.about.orEmpty(), style = Rule.Type.sans(13, FontWeight.Medium, news?.second?.ink(Site.Muted) ?: Site.Muted).copy(lineHeight = 18.sp), maxLines = 5, overflow = TextOverflow.Ellipsis)
+                Text(news?.first ?: r?.about.orEmpty(), style = Rule.Type.sans(13, FontWeight.Medium, news?.second?.ink(Site.Muted) ?: Site.Muted).copy(lineHeight = 18.sp), maxLines = 3, overflow = TextOverflow.Ellipsis)
             }
         }
         ConsoleDetailShape.SIDE -> Column(modifier.fillMaxHeight().background(ground).drawBehind { drawRect(line, size = Size(1.dp.toPx(), size.height)) }.padding(20.dp)
@@ -464,7 +475,7 @@ private fun ConsoleDefault(value: String) = Text("DEFAULT: ${value.uppercase()}"
 @Composable
 private fun ConsoleWords(r: ConsoleRow?, title: Int, body: Int) {
     Text(r?.title.orEmpty(), style = Rule.Type.sans(title, FontWeight.ExtraBold))
-    Text(r?.about.orEmpty(), style = Rule.Type.sans(body, FontWeight.Medium, Site.Muted).copy(lineHeight = (body + 6).sp))
+    if (!r?.about.isNullOrBlank()) Text(r?.about.orEmpty(), style = Rule.Type.sans(body, FontWeight.Medium, Site.Muted).copy(lineHeight = (body + 6).sp))
     r?.default?.let { ConsoleDefault(it) }
     r?.status?.let { (words, tone) -> Text(words, style = Rule.Type.sans(body, FontWeight.Bold, tone.ink(Site.Text)).copy(lineHeight = (body + 6).sp)) }
 }
@@ -473,7 +484,9 @@ private fun ConsoleWords(r: ConsoleRow?, title: Int, body: Int) {
 private fun ConsolePicBox(r: ConsoleRow?, icon: ImageVector, scale: Float, modifier: Modifier) {
     val shape = RoundedCornerShape(Rule.Radius.Button)
     Box(modifier.clip(shape).background(Site.Bg).border(1.dp, Site.Line, shape), contentAlignment = Alignment.Center) {
-        Crossfade(r?.id to r?.pic, animationSpec = tween(if (Motion.still) 0 else 140), label = "console-pic") { _ ->
+        // Only a picture that changes fades (polish pass, art): two lines that both show the section's icon do not blink between them.
+        val moving = r?.pic in setOf(ConsolePic.GLOW, ConsolePic.FOIL, ConsolePic.DEPTH, ConsolePic.VOLUME, ConsolePic.BUZZ)
+        Crossfade(if (moving) r?.id to r?.pic else null to r?.pic, animationSpec = tween(if (Motion.still) 0 else 140), label = "console-pic") { _ ->
             Box(Modifier.size(94.dp).graphicsLayer { scaleX = scale; scaleY = scale }, contentAlignment = Alignment.Center) { if (r != null) ConsolePicture(r, icon) else Icon(icon, 42.dp, Site.Gold) }
         }
     }

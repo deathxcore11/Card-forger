@@ -149,39 +149,31 @@ private fun switch(key: String, on: Boolean) = ConsoleCtl.Switch(on) { AppSettin
 /** Mobile table M3 and M4, and the table's two effect levels (Story playmat MOTION-SPEC; the living table F1 to F10). */
 internal fun gameplayItems(): List<ConsoleItem> = listOf(
     ConsoleItem.Head("Your turn"),
-    line("stop", "Stop to respond", "Off: your own spell or trigger on top of the stack resolves by itself. On: the table waits whenever you could play something in response.",
+    line("stop", "Stop to respond", "",
         switch("stopToRespond", AppSettings.stopToRespond), "Off"),
-    line("order", "Ask me to order triggers", "On: when several of your triggers happen together, you choose their order. Off: they are put in order for you.",
+    line("order", "Ask me to order triggers", "",
         switch("askTriggerOrder", AppSettings.askTriggerOrder), "Off"),
     ConsoleItem.Head("The table"),
-    line("tfx", "Table effects", when (AppSettings.effects) {
-        "cinematic" -> "Every light, mote, leaf and flyer on Story mats, plus boss moments."
-        "minimal" -> "A still painted mat with a soft glow. Lightest on battery."
-        else -> "Light rays, glints and glows, with fewer leaves. Follows Reduce motion and battery saver."
-    }, ConsoleCtl.Choice(AppSettings.EFFECTS, AppSettings.effects) { AppSettings.applyEffects(it) }, "Balanced", ConsolePic.GLOW),
-    line("mfx", "Match effects", when (AppSettings.matchEffects) {
-        "off" -> "In a match: the table as it was, with no turn light, mana light, weight or map feel."
-        "reduced" -> "In a match: light and marks stay. No shake, no freeze frames, no clock stop."
-        else -> "In a match: the table's light, the weight of big creatures and the hits, in the map's own style."
-    }, ConsoleCtl.Choice(TableFeel.MODES, AppSettings.matchEffects) { AppSettings.applyMatchEffects(it) }, "Full", ConsolePic.GLOW))
+    line("tfx", "Table effects", "", ConsoleCtl.Choice(AppSettings.EFFECTS, AppSettings.effects) { AppSettings.applyEffects(it) }, "Balanced", ConsolePic.GLOW),
+    line("mfx", "Match effects", "", ConsoleCtl.Choice(TableFeel.MODES, AppSettings.matchEffects) { AppSettings.applyMatchEffects(it) }, "Full", ConsolePic.GLOW))
 
 /** Sound and vibration. [onCredits] opens the stage music's credits. */
 internal fun soundItems(onCredits: () -> Unit): List<ConsoleItem> = listOf(
     ConsoleItem.Head("Sound"),
-    line("sound", "Sound and music", "Match music and table sounds, on or off. Music plays only in matches and Planeswalk. It streams the first time, then stays on this device.",
+    line("sound", "Sound and music", "",
         switch("packSound", AppSettings.sound), "On", ConsolePic.VOLUME),
-    line("music", "Music volume", "How loud the stage music plays in a match.",
+    line("music", "Music volume", "",
         ConsoleCtl.Level(AppSettings.musicVolume, AppSettings.sound) { AppSettings.applyMusicVolume(it) }, "100%", ConsolePic.VOLUME, picOn = AppSettings.sound),
-    line("sfx", "Effects volume", "How loud cards, hits, the clock and the app's soft sounds are.",
+    line("sfx", "Effects volume", "",
         ConsoleCtl.Level(AppSettings.effectsVolume, AppSettings.sound || AppSettings.appSounds) { AppSettings.applyEffectsVolume(it) }, "100%", ConsolePic.VOLUME, picOn = AppSettings.sound || AppSettings.appSounds),
-    line("soft", "Soft sounds in the app", "Outside matches you hear only a few soft sounds, like opening a pack or adding a card. Sound starts after your first tap.",
+    line("soft", "Soft sounds in the app", "",
         switch("appSounds", AppSettings.appSounds), "On", ConsolePic.VOLUME),
     ConsoleItem.Head("Vibration"),
-    line("mvib", "Match vibration", "In a match: landings, hits, the winning hit and the clock stop. Off while Match effects is Reduced.",
+    line("mvib", "Match vibration", "",
         switch("matchVibration", AppSettings.matchVibration), "On", ConsolePic.BUZZ),
-    line("tvib", "Tap vibration", "A light tick when you press buttons and cards, and when a setting changes.", switch("haptics", AppSettings.haptics), "On", ConsolePic.BUZZ),
+    line("tvib", "Tap vibration", "", switch("haptics", AppSettings.haptics), "On", ConsolePic.BUZZ),
     ConsoleItem.Head("Credits"),
-    line("credits", "Stage music credits", "The instrument libraries the stage music is rendered with.", ConsoleCtl.Go(run = onCredits)))
+    line("credits", "Stage music credits", "", ConsoleCtl.Go(run = onCredits)))
 
 private fun soundSection(page: String?, open: (String?) -> Unit) = ConsoleSection(soundItems { open("credits") },
     if (page == "credits") ConsolePage("credits", "Stage music credits") { Text(STAGE_MUSIC_CREDIT, style = S.Small.copy(color = Site.Text)) } else null)
@@ -192,22 +184,22 @@ private fun soundSection(page: String?, open: (String?) -> Unit) = ConsoleSectio
  */
 internal fun displayItems(touch: Boolean, pad: Boolean): List<ConsoleItem> = buildList {
     add(ConsoleItem.Head("Theme"))
-    add(line("theme", "Color mode", "Light, Dark or Aura (soft color from the art you explore), for all three games on this device. Play is always dark.",
+    add(line("theme", "Color mode", "",
         ConsoleCtl.Choice(listOf("light", "dark", "aura"), AppSettings.chosenTheme) { AppSettings.applyTheme(it) }, "Dark", ConsolePic.THEME))
     add(ConsoleItem.Head("Cards"))
-    add(line("size", "Card size", "How big cards are in the card galleries of all three games. List views keep their layout.",
+    add(line("size", "Card size", "",
         ConsoleCtl.Choice(AppSettings.GRID_SIZES, AppSettings.gridSize) { AppSettings.applyGridSize(it) }, "Medium", ConsolePic.GRID))
-    if (touch) add(line("pinch", if (pad) "Resize card grids with two fingers" else "Pinch to resize card grids", "Spread two fingers for larger cards; pinch for smaller cards. Only card grids use this gesture.",
+    if (touch) add(line("pinch", if (pad) "Resize card grids with two fingers" else "Pinch to resize card grids", "",
         ConsoleCtl.Switch(AppSettings.gridPinch) { AppSettings.applyGridPinch(it) }, "Off", ConsolePic.GRID))
-    add(line("foil", "Card lighting and foil", "Soft light follows your tilt in card details. Foil cards shimmer in the gallery.", switch("finishEffects", AppSettings.finish), "On", ConsolePic.FOIL))
-    add(line("depth", "3D cards", "The art sits a little deeper than the frame and shifts as you tilt. Off: the flat card, with its foil as before.", switch("depthCards", AppSettings.depth), "On", ConsolePic.DEPTH))
-    add(line("tilt", "Phone tilt in card views", "Move your phone to move the card and its light. Off: touch only. Follows Reduce motion.", switch("motionTilt", AppSettings.tilt), "On", ConsolePic.DEPTH))
+    add(line("foil", "Card lighting and foil", "", switch("finishEffects", AppSettings.finish), "On", ConsolePic.FOIL))
+    add(line("depth", "3D cards", "", switch("depthCards", AppSettings.depth), "On", ConsolePic.DEPTH))
+    add(line("tilt", "Phone tilt in card views", "", switch("motionTilt", AppSettings.tilt), "On", ConsolePic.DEPTH))
     add(ConsoleItem.Head("Screen"))
-    add(line("glass", "Frosted glass", "Frosted panels over the art. Off: plain solid panels, a little lighter on older phones.", switch("glass", AppSettings.glass), "On"))
+    add(line("glass", "Frosted glass", "", switch("glass", AppSettings.glass), "On"))
     // Dual screen (Randall 8 Nov): on a handheld with a second built-in screen the bottom shows the hand, the stack, the card the ring is on.
     val second = DualScreen.detected
-    add(line("dual", "Dual screen", if (second != null) "Second screen found: ${second.name.ifBlank { "built-in" }}, ${second.width}×${second.height} at ${second.hz.toInt()} Hz. Off keeps everything on one screen."
-        else "No second screen found on this device. On a two-screen handheld the bottom screen shows your hand, the stack and the card the ring is on.",
+    add(line("dual", "Dual screen", if (second != null) "${second.width}×${second.height} screen found."
+        else "No second screen found.",
         ConsoleCtl.Switch(DualScreen.active || (second == null && DualScreen.choice == true)) { DualScreen.set(it) }))
 }
 
@@ -241,7 +233,10 @@ fun SiteButton(label: String, modifier: Modifier = Modifier, ghost: Boolean = fa
 
 @Composable
 private fun LinkText(label: String, small: Boolean = false, color: Color = Site.Gold, onClick: () -> Unit) =
-    Text(label, style = S.Btn.copy(fontSize = if (small) 13.sp else 14.sp, color = color), modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(onClick = onClick).padding(vertical = 6.dp))
+    // 48 dp tall to the finger (polish pass, UX), however small its words.
+    Box(Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(8.dp)).clickable(onClick = onClick), contentAlignment = Alignment.CenterStart) {
+        Text(label, style = S.Btn.copy(fontSize = if (small) 13.sp else 14.sp, color = color), modifier = Modifier.padding(vertical = 6.dp))
+    }
 
 @Composable
 private fun Field(label: String, value: String, onValue: (String) -> Unit, placeholder: String = "", hint: String? = null, password: Boolean = false,
@@ -278,7 +273,7 @@ private fun Disclosure(summary: String, danger: Boolean = false, bold: Boolean =
     var open by remember { mutableStateOf(false) }
     androidx.compose.runtime.LaunchedEffect(force) { if (force > 0) open = true }
     Column(Modifier.fillMaxWidth().animateContentSize()) {
-        Row(Modifier.clip(RoundedCornerShape(10.dp)).clickable { open = !open }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(10.dp)).clickable { open = !open }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(if (open) "▾" else "▸", style = S.Small.copy(color = if (danger) Bad else Site.Text)); Spacer(Modifier.width(6.dp))
             Text(summary, style = S.Small.copy(color = if (danger) Bad else Site.Text, fontWeight = if (bold) FontWeight.Bold else FontWeight.Medium))
         }
@@ -331,7 +326,7 @@ internal fun accountSection(page: String?, open: (String?) -> Unit, onWeb: (Stri
     val scope = rememberCoroutineScope()
     val session by Account.session.collectAsState()
     // Gap audit H2 step 4: the daily price check (collection/PriceAlertDaily.kt), new beyond the website.
-    val price = line("price", "Price alert notifications", "Once a day on Wi-Fi the app checks the cards you set a price alert on and notifies you when one crosses your price, even when the app is closed.",
+    val price = line("price", "Price alert notifications", "",
         ConsoleCtl.Switch(AppSettings.priceAlertDaily) { on ->
             AppSettings.set("priceAlertDaily", on)
             scope.launch { dev.cardstashy.nativeplay.collection.PriceAlertDaily.sync(context, if (on) CollectionEngine.alertList().size() else 0) }
@@ -369,7 +364,7 @@ private fun signedInSection(page: String?, open: (String?) -> Unit, onWeb: (Stri
         add(ConsoleItem.Head("Sync"))
         // accountPanel: "Choose which copy to keep" while the sync waits on the player, otherwise the sync line; an error's words.
         val paused = if (sync.state == WorkspaceSync.State.ERROR && sync.msg.isNotBlank()) ("${sync.msg} Your cards are still saved on this device." to ConsoleTone.BAD) else null
-        if (pend != null) add(line("decide", "Choose which copy to keep", "This device and your account hold different copies. Sync is paused until you choose which one to keep.",
+        if (pend != null) add(line("decide", "Choose which copy to keep", "Sync is paused until you pick a copy.",
             ConsoleCtl.Go(value = "Needs you", tone = ConsoleTone.BAD, verb = "Choose") { CollectionWrites.deciding.value = true }, status = paused))
         else {
             val (label, tone) = when (sync.state) {
@@ -378,35 +373,35 @@ private fun signedInSection(page: String?, open: (String?) -> Unit, onWeb: (Stri
                 WorkspaceSync.State.OFFLINE -> "Offline" to ConsoleTone.PLAIN; WorkspaceSync.State.LOCAL -> "Not confirmed" to ConsoleTone.WARN
             }
             val now = when (sync.state) {
-                WorkspaceSync.State.SYNCED -> sync.at?.let { " Last synced ${siteWhen(it)}." }.orEmpty()
-                WorkspaceSync.State.OFFLINE -> " Offline: it will sync when you’re back online."
-                WorkspaceSync.State.LOCAL -> " Account sync is not confirmed yet."
+                WorkspaceSync.State.SYNCED -> sync.at?.let { " Synced ${siteWhen(it)}." }.orEmpty()
+                WorkspaceSync.State.OFFLINE -> " Syncs when you’re back online."
+                WorkspaceSync.State.LOCAL -> " Not confirmed yet."
                 else -> ""
             }
-            add(line("sync", "Account sync", "Your collection and decks are private. Saved here first, then synced to your account.$now",
+            add(line("sync", "Account sync", now.trim(),
                 ConsoleCtl.Go(value = label, tone = tone, verb = "Sync now") { scope.launch { WorkspaceSync.syncNow(context) } }, status = paused))
         }
         add(ConsoleItem.Head("Friends and privacy"))
         // views.js account-hub-friends: the count, and the requests that wait.
-        add(line("friends", "Friends", "Add friends by username or email, and answer requests." + if (requests > 0) " $requests request${if (requests == 1) "" else "s"} waiting." else "",
+        add(line("friends", "Friends", if (requests > 0) "$requests request${if (requests == 1) "" else "s"} waiting." else "",
             ConsoleCtl.Go(value = listOfNotNull(friends?.let { "$it friend${if (it == 1) "" else "s"}" }, if (requests > 0) "$requests waiting" else null).joinToString(" · ").ifBlank { null },
                 tone = if (requests > 0) ConsoleTone.WARN else ConsoleTone.PLAIN) { community = CommunityView.Panel("friends") }))
         // views.js setPresence; C.setPresence's toasts.
-        add(line("presence", "Show friends what I’m playing", "Accepted friends see your Play screen or match, like “Quick Play · Pauper · turn 7”.",
+        add(line("presence", "Show friends what I’m playing", "",
             ConsoleCtl.Switch(AppSettings.presence) { on ->
                 AppSettings.set("presence", on); scope.launch { dev.cardstashy.nativeplay.play.Presence.setShare(on) }
                 Toast.makeText(context, if (on) "Friends can see what you’re playing." else "Friends no longer see what you’re playing.", Toast.LENGTH_SHORT).show()
             }, "On"))
-        add(line("blocks", "Blocked accounts", "The people you have blocked.", ConsoleCtl.Go { community = CommunityView.Panel("blocks") }))
+        add(line("blocks", "Blocked accounts", "", ConsoleCtl.Go { community = CommunityView.Panel("blocks") }))
         add(ConsoleItem.Head("Notifications")); add(price)
         add(ConsoleItem.Head("Profile and sign-in"))
-        add(line("edit", "Edit profile", "Change your picture, header, username and bio.", ConsoleCtl.Go { open("edit") }))
-        add(line("reset", "Reset password", "Sends a password-reset link to ${session?.email ?: "your email"}.",
+        add(line("edit", "Edit profile", "", ConsoleCtl.Go { open("edit") }))
+        add(line("reset", "Reset password", "",
             ConsoleCtl.Go(value = if (busy == "reset") "Sending…" else null, verb = "Send") {
                 if (busy == null) { busy = "reset"; scope.launch { val e = Account.sendReset(session?.email ?: ""); busy = null; toast(e ?: "Check your email for a password-reset link.") } }
             }))
-        add(line("signout", "Sign out", "Signing out hides this account’s cards and profile on this device. They are here when you sign back in.", ConsoleCtl.Go(verb = "Sign out") { confirmOut = true }))
-        add(line("delete", "Delete account", "Permanently deletes your CardStashy account and the collection, decks and profile synced to it. You type DELETE to confirm.",
+        add(line("signout", "Sign out", "", ConsoleCtl.Go(verb = "Sign out") { confirmOut = true }))
+        add(line("delete", "Delete account", "",
             ConsoleCtl.Go { open("delete") }, danger = true))
     }
     val opened = when (page) {
@@ -609,8 +604,11 @@ internal fun dataSection(page: String?, open: (String?) -> Unit): ConsoleSection
     val types = arrayOf("application/json", "text/plain", "application/octet-stream")
     val store = dev.cardstashy.nativeplay.art.ThumbStore
     val running by store.progress.collectAsState()
-    val used = remember(stamp, running) { store.bytes() + dev.cardstashy.nativeplay.art.ArtKeep.bytes() }
-    val sets = remember(stamp, running) { store.setsSaved() }
+    // The walk over every saved picture runs off the main thread (polish pass, performance): thousands of files froze the tab.
+    val disk by androidx.compose.runtime.produceState<Pair<Long, Int>?>(null, stamp, running) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { (store.bytes() + dev.cardstashy.nativeplay.art.ArtKeep.bytes()) to store.setsSaved() }
+    }
+    val (used, sets) = disk ?: (0L to 0)
     val list = saves.value
 
     val items = buildList {
@@ -618,7 +616,7 @@ internal fun dataSection(page: String?, open: (String?) -> Unit): ConsoleSection
         // The app keeps cards only in an account (CollectionWrites), so signed out there is nothing on this device to back up yet.
         if (user == null) add(ConsoleItem.Block("signed-out") { ConsoleNote("Sign in to save cards to your collection.") })
         else {
-            add(line("export", "Download backup", "Your collection, decks and settings for all three games, in one file. Last saved on this device: ${savedAt?.let { siteWhen(it) } ?: "Not yet"}.",
+            add(line("export", "Download backup", savedAt?.let { "Last saved ${siteWhen(it)}." } ?: "",
                 ConsoleCtl.Go(verb = "Download") {
                     scope.launch {
                         if (!CollectionReady.ready(context)) return@launch
@@ -634,23 +632,22 @@ internal fun dataSection(page: String?, open: (String?) -> Unit): ConsoleSection
                         CollectionWrites.show(message)
                     }
                 }, status = exported))
-            add(line("restore", "Restore backup", "Replaces your collection, decks and settings with a backup file. You review the changes before you confirm.",
+            add(line("restore", "Restore backup", "",
                 ConsoleCtl.Go(verb = "Choose file") { restorePick.launch(types) }))
-            add(line("check", "Check a backup file", "Looks inside a backup file and says whether it is valid. Nothing is changed.",
+            add(line("check", "Check a backup file", "",
                 ConsoleCtl.Go(verb = "Choose file") { checkPick.launch(types) }, status = checked))
             add(ConsoleItem.Head("Earlier saves"))
-            add(line("saves", "Saved on this device", "Copies kept before loading another account version or restoring a backup. Restoring one also updates your online account. Your current cards are saved first.",
+            add(line("saves", "Saved on this device", "",
                 ConsoleCtl.Go(value = if (list == null) "Loading…" else if (list.isEmpty()) "None yet" else "${list.size} ${if (list.size == 1) "copy" else "copies"} · ~${"%.1f".format(savesSize / 1048576.0)} MB", verb = "Refresh") { stamp++ }))
-            if (list != null && list.isEmpty()) add(ConsoleItem.Block("no-saves") { ConsoleNote("No automatic recovery copies yet. Copies saved before sync conflicts and restores will appear here.") })
             list.orEmpty().forEach { item ->
-                add(line("save-${item.id}", item.label, "${recoveryFacts(item)}. Saved ${siteWhen(item.createdAt)}. Open it to download it as a file or to restore it.",
+                add(line("save-${item.id}", item.label, "${recoveryFacts(item)}. Saved ${siteWhen(item.createdAt)}.",
                     ConsoleCtl.Go(value = siteWhen(item.createdAt)) { open("save-${item.id}") }))
             }
         }
         add(ConsoleItem.Head("Storage"))
-        add(line("art", "Saved card art", "Your decks, collection and wishlist pictures save once, and a set’s grid pictures save the first time you open it, so they show at once, and offline, after that.",
-            ConsoleCtl.Info(if (sets == 0 && used < 1048576) "Nothing saved yet" else "${"%,.0f".format(used / 1048576.0)} MB · $sets ${if (sets == 1) "set" else "sets"}")))
-        add(line("clear", "Remove downloaded pictures", "Keeps your cards, decks, earlier saves and unfinished scans. Pictures download again when needed and may be unavailable offline until then.",
+        add(line("art", "Saved card art", "",
+            ConsoleCtl.Info(if (disk == null) "Counting…" else if (sets == 0 && used < 1048576) "Nothing saved yet" else "${"%,.0f".format(used / 1048576.0)} MB · $sets ${if (sets == 1) "set" else "sets"}")))
+        add(line("clear", "Remove downloaded pictures", "",
             ConsoleCtl.Go(verb = "Remove") { confirmClear = true }, status = cleared))
     }
     if (confirmClear) RuleConfirm("Your cards, decks, earlier saves and unfinished scans stay. Pictures download again when needed and may be unavailable offline until then.",
@@ -699,9 +696,10 @@ private fun ConsoleNote(text: String, foot: Boolean = false) =
 /** This build's notes: short, plain, what a player would notice. */
 internal const val NEWEST_NOTES = 5
 internal val WHATS_NEW = listOf(
+    "Settings" to "Settings are six sections, one thing each: Gameplay, Sound, Display, Account, Data and Help. New: Music volume and Effects volume. In a match, the menu holds the settings you reach for mid-game.",
     "Star Trek" to "The match engine is the newest Forge, so Elim Garak, Georgiou, Kai Winn and the other new cards play. A card that asks you to name a card gives you a box to type it.",
     "Match sounds" to "Quieter clock: no sound when a timer starts, only the last 5 seconds tick softly, and the phase tick plays only on your own combat and second main.",
-    "Smoother" to "The table always opens within 10 seconds, the Welcome back reward holds still, and Settings has four tabs that fit with the newest notes first.",
+    "Smoother" to "The table always opens within 10 seconds, the Welcome back reward holds still, and the newest notes come first in Help.",
     "Triggers" to "When a card triggers it lifts with a ring (gold yours, coral the CPU's), waits on the stack long enough to read, then its result lands on the cards: counters, power and toughness, tokens.",
     "Match table" to "The rope is gone: your time is a ring around the gold button and the prompt buttons, coral with a sound in the last 10 seconds.",
     "Match table" to "No stop for a CPU spell you can't answer. A card you can cast in answer lights up. Your Main 1 is no longer skipped after your own trigger. An optional pay {1} trigger you can't afford is declined for you and says so.",
@@ -818,23 +816,23 @@ internal fun helpSection(page: String?, open: (String?) -> Unit, onWeb: (String)
     val shown = findTopics(q)
     val items = buildList {
         add(ConsoleItem.Head("This app"))
-        val about = "You have version $number. The app finds new versions and installs them for you." + (HomeStart.ms?.let { " Last start: Home in $it ms." } ?: "")
+        val about = ""
         // The same update prompt as on launch: "Update to X" when the site has a newer build, otherwise a fresh check.
         add(when {
             waiting != null -> line("version", "Version", about, ConsoleCtl.Go(value = "Update to ${waiting.version}", tone = ConsoleTone.WARN, verb = "Update") { dev.cardstashy.nativeplay.Updater.reopen(context) })
             dev.cardstashy.nativeplay.Updater.upToDate -> line("version", "Version", about, ConsoleCtl.Info("$number · Up to date"))
             else -> line("version", "Version", about, ConsoleCtl.Go(value = number, verb = "Check") { dev.cardstashy.nativeplay.Updater.reopen(context) })
         })
-        add(line("new", "What’s new", "What changed in this version and the ones before it, newest first.", ConsoleCtl.Go { open("new") }))
+        add(line("new", "What’s new", "", ConsoleCtl.Go { open("new") }))
         add(ConsoleItem.Head("Guides"))
         add(ConsoleItem.Block("help-search") {
             Box(Modifier.padding(start = 18.dp, end = 18.dp, top = 6.dp, bottom = 6.dp).widthIn(max = 560.dp)) { Field("", q, { q = it }, "Search help: conditions, scanning, formats…", ime = ImeAction.Search) }
         })
         if (shown.isEmpty()) add(ConsoleItem.Block("help-none") { ConsoleNote("No topic matches. Try a shorter word.") })
-        shown.forEach { t -> add(line("topic-${t.id}", t.title, t.summary, ConsoleCtl.Go { open("topic-${t.id}") })) }
+        shown.forEach { t -> add(line("topic-${t.id}", t.title, "", ConsoleCtl.Go { open("topic-${t.id}") })) }
         add(ConsoleItem.Head("About"))
-        add(line("sources", "Card databases and prices", "Where the card data, pictures and prices of each game come from.", ConsoleCtl.Go { open("sources") }))
-        add(line("about", "About CardStashy", "An independent fan app. Scores and test games are estimates, not win rates.", ConsoleCtl.Go { open("about") }))
+        add(line("sources", "Card databases and prices", "", ConsoleCtl.Go { open("sources") }))
+        add(line("about", "About CardStashy", "", ConsoleCtl.Go { open("about") }))
         add(ConsoleItem.Block("legal") {
             ConsoleNote("CardStashy is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.", foot = true)
         })

@@ -118,6 +118,6 @@ class MatchMenuShotTest {
         assertEquals(listOf("stop", "order", "tfx", "mfx", "music", "sfx"), matchMenuSettings().map { it.id })
         matchMenuSettings().first { it.id == "stop" }.press(); assertTrue("the menu's line is the setting itself", AppSettings.stopToRespond)
         matchMenuSettings().first { it.id == "music" }.step(-1); assertEquals(90, AppSettings.musicVolume)
-        for (r in matchMenuActions(menu, 0) + matchMenuSettings()) assertTrue("${r.id}: ${r.about.length} characters", r.about.isNotBlank() && r.about.length <= CONSOLE_ABOUT_MAX)
+        for (r in matchMenuActions(menu, 0) + matchMenuSettings()) assertTrue("${r.id}: ${r.about.length} characters", r.about.length <= CONSOLE_ABOUT_MAX)
     }
 }

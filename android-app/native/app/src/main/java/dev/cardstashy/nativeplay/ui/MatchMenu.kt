@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
@@ -130,14 +131,14 @@ private const val LANDS_ICON = "M3 20l6-10 4 6 3-4 5 8z"
 
 /** What you can do from the match menu, as lines. Showing the tracker or the history closes the menu, so the table shows it. */
 internal fun matchMenuActions(menu: MatchMenu, stackCount: Int): List<ConsoleRow> = buildList {
-    add(ConsoleRow("resume", "Resume", "Back to the table. The turn clock keeps running while this menu is open.", ConsoleCtl.Go(verb = "Resume") { menu.open = false }))
+    add(ConsoleRow("resume", "Resume", "", ConsoleCtl.Go(verb = "Resume") { menu.open = false }))
     val tracking = menu.tracker != null
-    if (menu.deck.isNotEmpty()) add(ConsoleRow("tracker", "Deck tracker", "What is left in your library, card by card, and what your opponent has shown.",
+    if (menu.deck.isNotEmpty()) add(ConsoleRow("tracker", "Deck tracker", "",
         ConsoleCtl.Go(value = if (tracking) "On" else "Off", verb = if (tracking) "Hide" else "Show") { menu.showTracker(if (tracking) null else "deck"); if (!tracking) menu.open = false }))
-    add(ConsoleRow("history", "History and stack", "The match told move by move, and what is on the stack now.",
+    add(ConsoleRow("history", "History and stack", "",
         ConsoleCtl.Go(value = if (menu.history) "On" else if (stackCount > 0) "$stackCount on the stack" else "Off", verb = if (menu.history) "Hide" else "Show") { menu.history = !menu.history; if (menu.history) menu.open = false }))
-    add(ConsoleRow("concede", "Concede", "Gives up this match. You are asked first.", ConsoleCtl.Go(verb = "Concede") { menu.open = false; menu.ask = "concede" }, danger = true))
-    add(ConsoleRow("leave", "Return to Play setup", "Ends the match here and goes back to Play setup. You are asked first.", ConsoleCtl.Go(verb = "Leave") { menu.open = false; menu.ask = "leave" }))
+    add(ConsoleRow("concede", "Concede", "", ConsoleCtl.Go(verb = "Concede") { menu.open = false; menu.ask = "concede" }, danger = true))
+    add(ConsoleRow("leave", "Return to Play setup", "", ConsoleCtl.Go(verb = "Leave") { menu.open = false; menu.ask = "leave" }))
 }
 
 /** The settings you reach for mid-game: Settings' own lines (Gameplay's four, and Sound's two volumes), so they read and act the same. */
@@ -161,10 +162,12 @@ internal fun MenuPanel(menu: MatchMenu, stackCount: Int, @Suppress("UNUSED_PARAM
     val dual = DualScreen.active
     var focus by remember { mutableStateOf("resume") }
     val actions = matchMenuActions(menu, stackCount); val settings = matchMenuSettings()
-    if (dual) BottomScreen { Box(Modifier.fillMaxSize().background(Rule.Console.NightSolid)) { MatchMenuBody(actions, settings, focus, { focus = it }, ConsoleRing.NONE, wide = true, short = false) } }
+    if (dual) BottomScreen { Box(Modifier.fillMaxSize().background(Rule.Console.NightSolid)) { MatchMenuBody(actions, settings, focus, { focus = it }, ConsoleRing.NONE, wide = true, short = false, fill = true) } }
     val quiet = remember { MutableInteractionSource() }
     // A tap anywhere else closes the menu. With two screens and no controller the bottom's lines are the only ones (nothing unseen to tap on the table).
-    Box(Modifier.fillMaxSize().zIndex(40f).graphicsLayer { alpha = if (dual) 0f else pop.value }.then(if (dual) Modifier else Modifier.background(Rule.Console.Veil))
+    // Only the veil fades in (polish pass, art): the card is whole from its first frame, so it never shows the table through it.
+    val veil = Rule.Console.Veil
+    Box(Modifier.fillMaxSize().zIndex(40f).graphicsLayer { alpha = if (dual) 0f else 1f }.then(if (dual) Modifier else Modifier.drawBehind { drawRect(veil, alpha = pop.value.coerceIn(0f, 1f)) })
         .focusProperties { canFocus = false }.clickable(quiet, null) { menu.open = false }, contentAlignment = Alignment.Center) {
         if (!dual || padOn) androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.Center) {
             val shape = RoundedCornerShape(Rule.Radius.Sheet)
@@ -180,36 +183,36 @@ internal fun MenuPanel(menu: MatchMenu, stackCount: Int, @Suppress("UNUSED_PARAM
 
 /** The menu's two lists and the words under them. [wide]: side by side; [short]: no room for the Settings heading (a phone on its side). */
 @Composable
-private fun MatchMenuBody(actions: List<ConsoleRow>, settings: List<ConsoleRow>, focus: String, onFocus: (String) -> Unit, ring: ConsoleRing, wide: Boolean, short: Boolean) {
+private fun MatchMenuBody(actions: List<ConsoleRow>, settings: List<ConsoleRow>, focus: String, onFocus: (String) -> Unit, ring: ConsoleRing, wide: Boolean, short: Boolean,
+                          fill: Boolean = false) {
     val current = (actions + settings).firstOrNull { it.id == focus } ?: actions.first()
-    // The d-pad's left and right change a setting, so up from the first setting goes back to the actions, and down from the last action on to the settings.
-    val lastAction = remember { FocusRequester() }; val firstSetting = remember { FocusRequester() }
+    // The d-pad's left and right change a setting, so up from the first setting goes back to the actions (to Resume when they stand
+    // side by side, polish pass UX), and down from the last action on to the settings.
+    val firstAction = remember { FocusRequester() }; val lastAction = remember { FocusRequester() }; val firstSetting = remember { FocusRequester() }
     val left: @Composable () -> Unit = {
         actions.forEachIndexed { i, r -> androidx.compose.runtime.key(r.id) {
             ConsoleLine(r, r.id == current.id, { onFocus(r.id) }, if (r.id == current.id) ring else ring.quiet(),
-                if (i == actions.lastIndex && ring != ConsoleRing.NONE) Modifier.focusRequester(lastAction).focusProperties { down = firstSetting } else Modifier)
+                if (ring == ConsoleRing.NONE) Modifier
+                else (if (i == 0) Modifier.focusRequester(firstAction) else Modifier).then(if (i == actions.lastIndex) Modifier.focusRequester(lastAction).focusProperties { down = firstSetting } else Modifier))
         } }
     }
     val right: @Composable () -> Unit = {
         if (!short || !wide) ConsoleHead("Settings")
         settings.forEachIndexed { i, r -> androidx.compose.runtime.key(r.id) {
             ConsoleLine(r, r.id == current.id, { onFocus(r.id) }, ring.quiet(),
-                if (i == 0 && ring != ConsoleRing.NONE) Modifier.focusRequester(firstSetting).focusProperties { up = lastAction } else Modifier)
+                if (i == 0 && ring != ConsoleRing.NONE) Modifier.focusRequester(firstSetting).focusProperties { up = if (wide) firstAction else lastAction } else Modifier)
         } }
     }
-    Column(Modifier.fillMaxWidth()) {
+    // [fill]: the bottom screen is all menu, so the lists take its height and the words sit at its foot.
+    Column(if (fill) Modifier.fillMaxSize() else Modifier.fillMaxWidth()) {
         Text("MATCH MENU", Modifier.padding(start = 18.dp, end = 18.dp, top = if (short) 8.dp else 14.dp, bottom = 4.dp).semantics { heading(); contentDescription = "Match menu" },
             style = Rule.Type.cinzel(if (short) 16 else 20).copy(letterSpacing = .08.em), maxLines = 1)
-        if (wide) Row(Modifier.weight(1f, fill = false).fillMaxWidth()) {
+        if (wide) Row(Modifier.weight(1f, fill = fill).fillMaxWidth()) {
             Column(Modifier.weight(.85f).verticalScroll(rememberScrollState())) { left() }
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) { right() }
-        } else Column(Modifier.weight(1f, fill = false).fillMaxWidth().verticalScroll(rememberScrollState())) { left(); right() }
-        // What the line you are on does: one place, one height, so nothing moves as you step.
-        val line = Site.Line
-        Box(Modifier.fillMaxWidth().height(if (short) 38.dp else 52.dp).drawBehind { drawRect(line, size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }
-            .padding(horizontal = 18.dp).semantics { liveRegion = LiveRegionMode.Polite }, contentAlignment = Alignment.CenterStart) {
-            Text(current.about, style = Rule.Type.sans(12, FontWeight.Medium, Site.Muted), maxLines = if (short) 1 else 2, overflow = TextOverflow.Ellipsis)
-        }
+        } else Column(Modifier.weight(1f, fill = fill).fillMaxWidth().verticalScroll(rememberScrollState())) { left(); right() }
+        // No line of words under the lists (Randall 14 Nov: "look at how simple and not over explained that is"): names and values only.
+        Spacer(Modifier.height(10.dp))
     }
 }
 

@@ -14,6 +14,8 @@ import dev.cardstashy.nativeplay.ui.Piece
 import dev.cardstashy.nativeplay.ui.Rule
 import dev.cardstashy.nativeplay.ui.SiteIcons
 import dev.cardstashy.nativeplay.ui.bonusLine
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -59,12 +61,6 @@ class DailyShotTest {
         RuntimeEnvironment.setQualifiers("w960dp-h540dp-land-xhdpi")
         captureRoboImage(shot("day7-thor-top-960x540")) { Box(Modifier.fillMaxSize().background(Rule.Color.Bar)) { LoginRewardPopup(login, week) {} } }
         RuntimeEnvironment.setQualifiers("w620dp-h540dp-xhdpi")
-        captureRoboImage(shot("day7-thor-bottom-620x540")) {
-            Box(Modifier.fillMaxSize()) {
-                androidx.compose.ui.layout.Layout({ LoginRewardPopup(login, week) {} }) { m, c -> m.forEach { it.measure(c) }; layout(c.maxWidth, c.maxHeight) {} }
-                BottomRoot()
-            }
-        }
     }
 
     /** The monthly bonus is named in words, as part of the tile it belongs to. */
@@ -75,4 +71,35 @@ class DailyShotTest {
         assertEquals("the bonus is the whole tile", "Monthly bonus included: 3 packs.", bonusLine(listOf(Piece(SiteIcons.Pack, 3, "packs")), listOf(Piece(SiteIcons.Pack, 3, "packs"))))
         assertNull("no bonus, no line", bonusLine(emptyList(), listOf(packs)))
     }
+}
+
+/** The daily pop-up's Thor bottom screen, drawn with a compose rule so the screen settles first. */
+@RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [35], qualifiers = "w620dp-h540dp-xhdpi")
+class DailyThorBottomShotTest {
+    private fun shot(name: String) = File(System.getProperty("shotsDir"), "console/daily-$name.png").path
+    private val day7 = """{"day":"2026-11-14","stamp":7,"month":14,"reward":{"seals":{"m":1,"r":1},"packs":2},"monthReward":{"packs":3},"fresh":true}"""
+    private val week = listOf(PlayRules.Reward(coins = 250), PlayRules.Reward(packs = 1), PlayRules.Reward(seals = mapOf("u" to 2)), PlayRules.Reward(coins = 300, packs = 1),
+        PlayRules.Reward(seals = mapOf("r" to 1)), PlayRules.Reward(packs = 2), PlayRules.Reward(packs = 2, seals = mapOf("m" to 1, "r" to 1)))
+    @After fun off() { DualScreen.pretend(null); dev.cardstashy.nativeplay.ui.Motion.still = false }
+
+    /** The Thor's bottom screen: the week and what each day pays. Drawn after the screen has settled (the pop-up puts its view there in its first frame's effects). */
+    @get:org.junit.Rule val rule = androidx.compose.ui.test.junit4.createComposeRule()
+
+    @Test fun thorBottom() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        DualScreen.pretend(DualScreen.Panel(2, "Built-in Screen", 1240, 1080, 60f))
+        val login = JsonParser.parseString(day7).asJsonObject
+        rule.setContent {
+            Box(Modifier.fillMaxSize()) {
+                androidx.compose.ui.layout.Layout({ LoginRewardPopup(login, week) {} }) { m, c -> m.forEach { it.measure(c) }; layout(c.maxWidth, c.maxHeight) {} }
+                BottomRoot()
+            }
+        }
+        rule.waitForIdle()
+        rule.onNodeWithText("Day 7 of 7").assertExists()
+        rule.onRoot().captureRoboImage(shot("day7-thor-bottom-620x540"))
+    }
+
 }

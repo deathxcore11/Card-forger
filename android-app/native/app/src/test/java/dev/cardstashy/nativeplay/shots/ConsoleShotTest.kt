@@ -24,6 +24,7 @@ import dev.cardstashy.nativeplay.ui.rows
 import dev.cardstashy.nativeplay.ui.soundItems
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -88,7 +89,6 @@ class ConsoleShotTest {
         assertEquals("$section: every line has its own id", rows.size, rows.map { it.id }.toSet().size)
         for (r in rows) {
             assertTrue("$section/${r.id} has a name", r.title.isNotBlank())
-            assertTrue("$section/${r.id} says what it does", r.about.isNotBlank())
             assertTrue("$section/${r.id}: ${r.about.length} characters is more than the phone's strip shows ($CONSOLE_ABOUT_MAX): ${r.about}", r.about.length <= CONSOLE_ABOUT_MAX)
             r.status?.let { (words, _) -> assertTrue("$section/${r.id} news", words.isNotBlank()) }
         }
@@ -137,10 +137,11 @@ class ConsoleShotTest {
         row(ConsoleCtl.Choice(words, word) { word = it }).press(); assertEquals("minimal", word)
         row(ConsoleCtl.Choice(words, word) { word = it }).press(); assertEquals("a choice goes round", "cinematic", word)
         row(ConsoleCtl.Choice(words, word) { word = it }).step(-1); assertEquals("minimal", word)
-        row(ConsoleCtl.Level(level) { level = it }).step(1); assertEquals("a level stops at its top", 100, level)
-        row(ConsoleCtl.Level(level) { level = it }).step(-1); assertEquals(90, level)
-        row(ConsoleCtl.Level(100) { level = it }).press(); assertEquals("a press at the top starts again", 0, level)
-        row(ConsoleCtl.Level(level) { level = it }).step(-1); assertEquals("a level stops at zero", 0, level)
+        assertFalse("no tick at a level's top", row(ConsoleCtl.Level(level) { level = it }).step(1)); assertEquals("a level stops at its top", 100, level)
+        assertTrue(row(ConsoleCtl.Level(level) { level = it }).step(-1)); assertEquals(90, level)
+        assertFalse(row(ConsoleCtl.Level(level) { level = it }).press()); assertEquals("a press never jumps a volume", 90, level)
+        level = 0
+        assertFalse(row(ConsoleCtl.Level(level) { level = it }).step(-1)); assertEquals("a level stops at zero", 0, level)
         row(ConsoleCtl.Level(40, enabled = false) { level = it }).step(1); assertEquals("a level that is off does not move", 0, level)
         assertEquals("Balanced", row(ConsoleCtl.Choice(words, "balanced") {}).valueText()); assertEquals("40%", row(ConsoleCtl.Level(40) {}).valueText())
     }

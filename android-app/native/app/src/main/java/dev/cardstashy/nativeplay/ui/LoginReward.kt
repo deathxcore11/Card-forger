@@ -57,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
@@ -100,7 +101,7 @@ fun LoginRewardPopup(login: JsonObject, week: List<dev.cardstashy.nativeplay.pla
     val view = LocalView.current
     val scope = rememberCoroutineScope()
     val stamp = login.get("stamp").n().coerceIn(1, 7)
-    val all = merged(pieces(login.get("reward") as? JsonObject) + pieces(login.get("monthReward") as? JsonObject))
+    val all = remember(login) { merged(pieces(login.get("reward") as? JsonObject) + pieces(login.get("monthReward") as? JsonObject)) }
     val enter = remember { Animatable(if (Motion.still) 1f else 0f) }
     val lift = remember { Animatable(0f) }
     var leaving by remember { mutableStateOf(false) }
@@ -150,14 +151,23 @@ fun LoginRewardPopup(login: JsonObject, week: List<dev.cardstashy.nativeplay.pla
     // on its own medal, the week as a track. One layer, drawn offscreen and faded as a whole, so nothing goes see-through on Claim.
     val context = LocalContext.current
     val still = Motion.still || remember { Playmats.reduced(context) }
-    val turn = if (still) 0f else rememberInfiniteTransition(label = "rays").animateFloat(0f, 360f, infiniteRepeatable(tween(50_000, easing = LinearEasing)), label = "turn").value
+    // The turn is read only where the rays are drawn (polish pass, performance): the screen is not composed again every frame.
+    val turn = if (still) null else rememberInfiniteTransition(label = "rays").animateFloat(0f, 360f, infiniteRepeatable(tween(50_000, easing = LinearEasing)), label = "turn")
     val gold = Rule.Console.CardRim
-    val bonus = bonusLine(pieces(login.get("monthReward") as? JsonObject), all)
-    Box(Modifier.fillMaxSize().graphicsLayer { alpha = enter.value.coerceIn(0f, 1f); compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }.background(Rule.Console.Night)
-        .drawBehind {
+    val bonus = remember(login, all) { bonusLine(pieces(login.get("monthReward") as? JsonObject), all) }
+    // Offscreen only while it fades, so the faded layer is whole; at rest it draws straight to the screen.
+    Box(Modifier.fillMaxSize().graphicsLayer { val e = enter.value; alpha = e.coerceIn(0f, 1f)
+            compositingStrategy = if (e < 1f) androidx.compose.ui.graphics.CompositingStrategy.Offscreen else androidx.compose.ui.graphics.CompositingStrategy.Auto }
+        .background(Rule.Console.Night)
+        .drawWithCache {
+            // One glow brush and one ray brush, made when the size changes, not on every frame.
             val c = Offset(size.width / 2, size.height * .4f); val r = size.minDimension * .75f
-            drawCircle(Brush.radialGradient(listOf(gold.copy(alpha = .24f), Color.Transparent), c, r), r, c)
-            rotate(turn, c) { for (i in 0 until 20) drawArc(Brush.radialGradient(0f to gold.copy(alpha = .15f), .72f to Color.Transparent, center = c, radius = r), i * 18f, 6f, true, c - Offset(r, r), Size(r * 2, r * 2)) }
+            val glow = Brush.radialGradient(listOf(gold.copy(alpha = .24f), Color.Transparent), c, r)
+            val ray = Brush.radialGradient(0f to gold.copy(alpha = .15f), .72f to Color.Transparent, center = c, radius = r)
+            onDrawBehind {
+                drawCircle(glow, r, c)
+                rotate(turn?.value ?: 0f, c) { for (i in 0 until 20) drawArc(ray, i * 18f, 6f, true, c - Offset(r, r), Size(r * 2, r * 2)) }
+            }
         }
         .focusProperties { canFocus = false }.clickable(remember { MutableInteractionSource() }, null) {}, contentAlignment = Alignment.Center) {
         BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(24.dp)
@@ -167,7 +177,7 @@ fun LoginRewardPopup(login: JsonObject, week: List<dev.cardstashy.nativeplay.pla
             val track = !DualScreen.active
             val medals: @Composable (Boolean) -> Unit = { small ->
                 // The reward rises toward the purse on Claim.
-                Box(Modifier.fillMaxWidth().graphicsLayer { translationY = -lift.value * 260f; alpha = 1f - lift.value * .9f; val k = 1f - .35f * lift.value; scaleX = k; scaleY = k }) { RewardMedals(all, small, still) }
+                Box(Modifier.fillMaxWidth().graphicsLayer { translationY = -lift.value * 96.dp.toPx(); alpha = 1f - lift.value * .9f; val k = 1f - .35f * lift.value; scaleX = k; scaleY = k }) { RewardMedals(all, small, still) }
             }
             val claim: @Composable () -> Unit = {
                 if (bonus != null) Text(bonus, style = Rule.Type.sans(13, FontWeight.SemiBold, Rule.Color.GoldHair), textAlign = TextAlign.Center)
@@ -210,7 +220,9 @@ private fun RewardDay(stamp: Int) = Column(horizontalAlignment = Alignment.Cente
  */
 @Composable
 private fun RewardMedals(all: List<Piece>, small: Boolean, still: Boolean) = BoxWithConstraints(Modifier.fillMaxWidth()) {
-    val perRow = tilesPerRow(maxWidth.value, all.size)
+    // Rows as even as they can be (polish pass, art): five rewards are three over two, never four over one.
+    val most = tilesPerRow(maxWidth.value, all.size)
+    val perRow = all.size.coerceAtLeast(1).let { n -> val lines = (n + most - 1) / most; (n + lines - 1) / lines }
     val rows = all.chunked(perRow)
     val cell = (maxWidth - 10.dp * (perRow - 1)) / perRow
     val medal = minOf(if (small) (if (rows.size > 1) 56.dp else 76.dp) else 88.dp, cell - 12.dp)
