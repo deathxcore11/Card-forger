@@ -38,7 +38,7 @@ class CauseResultTest {
         assertEquals(listOf(Went.EXILED), r.moves.map { it.went }); assertEquals(64, r.moves[0].cardId); assertEquals("Memnite", r.moves[0].cardName)
         assertTrue("its words say until it leaves the battlefield", r.holds)
         assertEquals("Sheltered by Ghosts: exiled Memnite", r.line(me))
-        assertEquals(listOf(Director.Line(40, "Sheltered by Ghosts", true, "exiled Memnite")), r.lines(me))
+        assertEquals(listOf(Director.Line(40, "Sheltered by Ghosts", true, "exiled Memnite")), r.lines(me).map { it.copy(at = 0) })
         // It gets its own beat, and Memnite stays on the table until that beat.
         val result = steps(cpu, 71, 75, setOf(7)).single { it.kind == Director.Kind.RESULT }
         assertEquals(r, result.result); assertEquals(Director.NAMED_MS, result.ms)
@@ -80,9 +80,9 @@ class CauseResultTest {
         assertEquals(65, kill.sourceId); assertTrue(kill.trigger); assertEquals(1, kill.controller)
         assertEquals("Ravenous Chupacabra: destroyed Savannah Lions", kill.line(me))
         assertTrue(fell.follow); assertEquals(33, fell.sourceId); assertEquals(listOf(40, 3), fell.moves.map { it.cardId }); assertTrue(fell.moves.all { it.went == Went.FELL_OFF })
-        assertEquals(listOf(Director.Line(40, "Sheltered by Ghosts", true, "fell off and went to your graveyard"), Director.Line(3, "Feather of Flight", true, "fell off and went to your graveyard")), fell.lines(me))
+        assertEquals(listOf(Director.Line(40, "Sheltered by Ghosts", true, "fell off and went to your graveyard"), Director.Line(3, "Feather of Flight", true, "fell off and went to your graveyard")), fell.lines(me).map { it.copy(at = 0) })
         assertTrue(back.follow); assertEquals(40, back.sourceId); assertEquals(listOf(Went.RETURNED), back.moves.map { it.went })
-        assertEquals(listOf(Director.Line(40, "Sheltered by Ghosts", true, "left, so Memnite returns")), back.lines(me))
+        assertEquals(listOf(Director.Line(40, "Sheltered by Ghosts", true, "left, so Memnite returns")), back.lines(me).map { it.copy(at = 0) })
         // Three beats, in the order they read.
         assertEquals(listOf(kill, fell, back), steps(cpu, 281, 285, setOf(28), held).filter { it.kind == Director.Kind.RESULT }.map { it.result })
         // The table before each beat: all three still to come, then the Lions gone and its Auras loose, then only Memnite to come.

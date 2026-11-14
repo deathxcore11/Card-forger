@@ -82,7 +82,7 @@ object Director {
     /** A stack item that left the stack without resolving, while the item that says "counter" resolved (a ward nobody paid). */
     data class Countered(val stackId: Int?, val sourceId: Int?, val sourceName: String?, val controller: Int?, val ability: Boolean)
     /** One row of "Last moves": the card that did it ([yours]: on your side) and what it did, in plain words. */
-    data class Line(val sourceId: Int?, val sourceName: String, val yours: Boolean, val text: String)
+    data class Line(val sourceId: Int?, val sourceName: String, val yours: Boolean, val text: String, /** Its place in the match (the result's event, then its row): tells two rows with the same words apart. */ val at: Long = 0)
 
     /**
      * What one stack item's resolve changed, all as Forge reported it: counters (counters events), power/toughness (snapshot diff),
@@ -109,6 +109,7 @@ object Director {
         /**
          * Not a stack item: what followed from a card leaving. FELL_OFF moves: the Auras that were on [sourceId] went to the
          * graveyard with it. RETURNED: [sourceId] held the card in exile ([holds], kept by the controller) and left, so it is back.
+         * [text] is then what became of [sourceId]: "died" or "left".
          */
         val follow: Boolean = false,
     ) {
@@ -121,9 +122,9 @@ object Director {
         /** Its rows for "Last moves": one, or one per Aura that fell off. */
         fun lines(viewer: Int): List<Line> {
             fun pile(m: Move) = if (m.player == viewer) "your graveyard" else "the CPU's graveyard"
-            if (follow && moves.all { it.went == Went.FELL_OFF }) return moves.map { Line(it.cardId, it.cardName ?: "An Aura", it.player == viewer, "fell off and went to ${pile(it)}") }
+            if (follow && moves.all { it.went == Went.FELL_OFF }) return moves.mapIndexed { i, it -> Line(it.cardId, it.cardName ?: "An Aura", it.player == viewer, "fell off and went to ${pile(it)}", seq * 8 + i) }
             val text = said(viewer) ?: return emptyList()
-            return listOf(Line(sourceId, sourceName ?: "A trigger", controller == viewer, (if (count > 1) "×$count: " else "") + text))
+            return listOf(Line(sourceId, sourceName ?: "A trigger", controller == viewer, (if (count > 1) "×$count: " else "") + text, seq * 8))
         }
 
         /** What it did, without its name: "exiled Memnite", "drew you a card", "+1/+1 counter on Grizzly Bears". Null when nothing shown changed. */
@@ -675,7 +676,9 @@ object Director {
         }
         // The follow-ups, each its own result with the card that left as its cause: first the Auras that fell off, then what came back.
         fun follow(cause: Int, zs: List<GameEvent>, went: Went) = (before?.card(cause) ?: after.card(cause)).let { c ->
-            Resolution(zs.minOf { it.seq }, null, cause, c?.name, c?.controller, trigger = false, fizzled = false, text = null, targets = emptyList(), stackIds = emptyList(),
+            // Its text is what became of the cause, in one word: a creature that went to the graveyard "died", anything else "left".
+            Resolution(zs.minOf { it.seq }, null, cause, c?.name, c?.controller, trigger = false, fizzled = false,
+                text = if (c?.isCreature == true && leftField[cause]?.to == "Graveyard") "died" else "left", targets = emptyList(), stackIds = emptyList(),
                 moves = zs.map { z -> Move(z.seq, z.card!!.id, nameOf(z.card), z.from!!, z.to!!, z.player ?: before?.card(z.card.id)?.owner, went) }, follow = true) }
         for ((host, zs) in fell.groupBy { hostOf(it.card!!.id)!! }) merged += follow(host, zs, Went.FELL_OFF)
         for ((holder, zs) in back.groupBy { held[it.card!!.id]!! }) merged += follow(holder, zs, Went.RETURNED)
