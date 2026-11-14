@@ -44,4 +44,23 @@ class EarlyPlaysGateTest {
         assertTrue(QuickPlay.WHOLE_CAP_MS < QuickPlay.GATE_CAP_MS && QuickPlay.EARLY_CAP_MS < QuickPlay.GATE_CAP_MS)
         assertEquals(9_000L, QuickPlay.wholeWait(0)); assertEquals(1_000L, QuickPlay.wholeWait(8_000)); assertEquals(300L, QuickPlay.wholeWait(20_000))
     }
+
+    /**
+     * Randall 14 Nov ("Never": the table never opened): the match's card lookup waits in Scryfall's queue behind everything else the
+     * app asks. A lookup that does not answer (here a call that blocks 20 s, which cancelling cannot cut short) holds the gate
+     * LOOKUP_CAP_MS at most, and the screen's wait for the gate is bounded the same way.
+     */
+    @Test fun aStuckCardLookupNeverHoldsTheTable() { kotlinx.coroutines.runBlocking {
+        assertTrue(QuickPlay.LOOKUP_CAP_MS < QuickPlay.GATE_CAP_MS)
+        dev.cardstashy.nativeplay.art.ScryfallGate.reset()
+        dev.cardstashy.nativeplay.art.ScryfallGate.send = { _, _ -> Thread.sleep(20_000); dev.cardstashy.nativeplay.art.ScryfallGate.Reply(200, null) }
+        try {
+            val row = com.google.gson.JsonObject().apply { addProperty("name", "Elim Garak, Simple Tailor") }
+            val t0 = System.currentTimeMillis()
+            val done = QuickPlay.lookupWithin(listOf("Elim Garak, Simple Tailor" to row), 600)
+            val took = System.currentTimeMillis() - t0
+            assertTrue("the lookup cannot have finished", !done)
+            assertTrue("held $took ms", took < 2_000)
+        } finally { dev.cardstashy.nativeplay.art.ScryfallGate.reset() }
+    } }
 }

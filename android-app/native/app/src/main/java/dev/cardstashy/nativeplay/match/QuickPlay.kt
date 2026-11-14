@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -152,7 +153,9 @@ object QuickPlay {
         // decoded ahead the moment it reaches a hand, the stack or the command zone (decodeAhead), before it can land on the felt.
         val t0 = SystemClock.elapsedRealtime(); val cap = GATE_CAP_MS
         fun left() = (cap - (SystemClock.elapsedRealtime() - t0)).coerceAtLeast(300)
-        CardArt.resolveMatch(s.rows)
+        // The card lookup shares Scryfall's queue with everything else the app asks (lobby decks, the tracker): it may wait there
+        // a long time, so the gate waits for it LOOKUP_CAP_MS at most and it finishes behind (Randall 14 Nov: the table never opened).
+        if (!lookupWithin(s.rows, minOf(left(), LOOKUP_CAP_MS))) Log.i(TAG, "art gate: card lookup still queued after $LOOKUP_CAP_MS ms; it finishes behind")
         val tLookup = SystemClock.elapsedRealtime() - t0
         val names = CardArt.cheapestFirst(s.rows.map { it.first })
         // Then, behind the gate however it ends (its own caps, or the screen's backstop): every face and battlefield crop of both decks.
@@ -192,6 +195,18 @@ object QuickPlay {
      * versus screen waits, everything included (card lookup, first screen, whole decks, opening hand). What misses it loads behind.
      */
     const val GATE_CAP_MS = 10_000L
+    /** The longest the gate waits for the match's card lookup (Scryfall) before it goes on with what the phone already knows. */
+    const val LOOKUP_CAP_MS = 4_000L
+    /**
+     * The gate, run apart from the screen that waits on it: the screen stops waiting at [GATE_CAP_MS] even if a step inside cannot be
+     * cancelled at once (a network call), and that step finishes behind.
+     */
+    /** The match's card lookup, waited for [ms] at most: true when it finished in time, else it goes on behind. */
+    internal suspend fun lookupWithin(rows: List<Pair<String, JsonObject>>, ms: Long): Boolean {
+        val lookup = bg.async { CardArt.resolveMatch(rows) }
+        return kotlinx.coroutines.withTimeoutOrNull(ms) { lookup.await() } != null
+    }
+    fun gateAsync(context: Context, s: Setup.Ready, openingHand: kotlinx.coroutines.flow.Flow<List<String>?>? = null) = bg.async { gateArt(context, s, openingHand) }
     /** Randall 13 Nov: how long, from the gate's start, the versus screen waits for the whole of both decks with a connection. */
     const val WHOLE_CAP_MS = 9_000L
     /** How long the whole-deck wait may take when [elapsed] ms of the gate have passed: what is left of [WHOLE_CAP_MS], at least 300 ms. */
