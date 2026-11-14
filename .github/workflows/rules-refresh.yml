@@ -52,6 +52,15 @@ jobs:
           last=$(printf '%s\n' "$out" | tail -n 1)
           echo "state=${last%% *}" >> "$GITHUB_OUTPUT"
           echo "version=${last#* }" >> "$GITHUB_OUTPUT"
+      # The app's engine is a newer Forge than the host's, with its own bundle (forge-rules/app/), refreshed the same way.
+      - name: Rebuild the app engine's rules data when it is due
+        id: app
+        run: |
+          out=$(python3 web/scripts/rules-refresh/app.py host web "$RUNNER_TEMP/rules")
+          printf '%s\n' "$out"
+          last=$(printf '%s\n' "$out" | tail -n 1)
+          echo "state=${last%% *}" >> "$GITHUB_OUTPUT"
+          echo "version=${last#* }" >> "$GITHUB_OUTPUT"
       # Only a host whose head is what is deployed is refreshed, so prepared but unreleased
       # host changes are never shipped by this job.
       - name: Require the host head to be the deployed one
@@ -89,15 +98,16 @@ jobs:
           # A push by this job's token starts no workflow, so the deployment is started directly.
           gh workflow run forge-host-deploy.yml --repo "$GITHUB_REPOSITORY" --ref "$HOST_BRANCH"
       - name: Publish the app's copy on the website
-        if: steps.refresh.outputs.state == 'REFRESHED' || steps.refresh.outputs.state == 'SYNCED'
+        if: steps.refresh.outputs.state == 'REFRESHED' || steps.refresh.outputs.state == 'SYNCED' || steps.app.outputs.state == 'APP_REFRESHED'
         env:
           VERSION: ${{ steps.refresh.outputs.version }}
+          APP_VERSION: ${{ steps.app.outputs.version }}
         run: |
           cd web
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add forge-rules/current
-          git commit -q -m "App rules data: $VERSION" -m "The Android app's engine fetches this bundle once per launch (Refresh Forge rules data workflow)."
+          git add forge-rules/current forge-rules/app
+          git commit -q -m "App rules data: $VERSION (app engine: $APP_VERSION)" -m "The Android app's engine fetches this bundle once per launch (Refresh Forge rules data workflow)."
           git push origin "HEAD:$GITHUB_REF_NAME"
       - name: Open an issue when the refresh fails
         if: failure()
