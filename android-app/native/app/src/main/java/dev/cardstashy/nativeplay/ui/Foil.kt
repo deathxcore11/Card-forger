@@ -224,8 +224,10 @@ half4 main(float2 fc){
         val frame = data.frames[CardData.frameKey(card)] ?: data.frames.getValue("2015")
         val label = when { recipe == null -> "Nonfoil"; p.name.isNotBlank() -> "${p.name} · shown with ${recipe.label.lowercase()}"; else -> recipe.label }
         val image = card?.let { c -> (c.get("image_uris") as? JsonObject ?: (c.getAsJsonArray("card_faces")?.firstOrNull() as? JsonObject)?.get("image_uris") as? JsonObject)?.get("normal")?.takeIf { it.isJsonPrimitive }?.asString }
-        val type = card?.get("type_line")?.takeIf { it.isJsonPrimitive }?.asString
-            ?: ((card?.getAsJsonArray("card_faces")?.firstOrNull() as? JsonObject)?.get("type_line")?.takeIf { it.isJsonPrimitive }?.asString) ?: ""
+        // The face shown is the front: a transform card such as Ajani, Nacatl Pariah (MH3 237) joins both types at the top
+        // ("Creature // Planeswalker") while its front picture is the creature, which must not get a planeswalker's window.
+        val type = ((card?.getAsJsonArray("card_faces")?.firstOrNull() as? JsonObject)?.get("type_line")?.takeIf { it.isJsonPrimitive }?.asString)
+            ?: card?.get("type_line")?.takeIf { it.isJsonPrimitive }?.asString ?: ""
         val walker = "Planeswalker" in type && CardData.frameKey(card) == "2015" // frameKey says "borderless" for borderless and full arts
         return Look(recipe, frame, CardData.holoStamp(card), label, image, walker)
     }

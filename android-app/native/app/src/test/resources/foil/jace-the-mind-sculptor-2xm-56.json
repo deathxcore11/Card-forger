@@ -1,0 +1,137 @@
+{
+"object": "card",
+"id": "c8817585-0d32-4d56-9142-0d29512e86a9",
+"oracle_id": "7f77a84e-5a4b-4834-aefa-3cecc175ae8e",
+"multiverse_ids": [
+489729
+],
+"mtgo_id": 82146,
+"tcgplayer_id": 218277,
+"cardmarket_id": 482689,
+"name": "Jace, the Mind Sculptor",
+"lang": "en",
+"released_at": "2020-08-07",
+"uri": "https://api.scryfall.com/cards/c8817585-0d32-4d56-9142-0d29512e86a9",
+"scryfall_uri": "https://scryfall.com/card/2xm/56/jace-the-mind-sculptor?utm_source=api",
+"layout": "normal",
+"highres_image": true,
+"image_status": "highres_scan",
+"image_updated_at": "2026-07-13T08:09:56Z",
+"image_uris": {
+"small": "https://cards.scryfall.io/small/front/c/8/c8817585-0d32-4d56-9142-0d29512e86a9.jpg?1783930196",
+"normal": "https://cards.scryfall.io/normal/front/c/8/c8817585-0d32-4d56-9142-0d29512e86a9.jpg?1783930196",
+"large": "https://cards.scryfall.io/large/front/c/8/c8817585-0d32-4d56-9142-0d29512e86a9.jpg?1783930196",
+"png": "https://cards.scryfall.io/png/front/c/8/c8817585-0d32-4d56-9142-0d29512e86a9.png?1783930196",
+"art_crop": "https://cards.scryfall.io/art_crop/front/c/8/c8817585-0d32-4d56-9142-0d29512e86a9.jpg?1783930196",
+"border_crop": "https://cards.scryfall.io/border_crop/front/c/8/c8817585-0d32-4d56-9142-0d29512e86a9.jpg?1783930196",
+"thumb": "https://cards.scryfall.io/thumb/front/c/8/c8817585-0d32-4d56-9142-0d29512e86a9.webp?1783930196",
+"grid": "https://cards.scryfall.io/grid/front/c/8/c8817585-0d32-4d56-9142-0d29512e86a9.webp?1783930196",
+"display": "https://cards.scryfall.io/display/front/c/8/c8817585-0d32-4d56-9142-0d29512e86a9.webp?1783930196",
+"art": "https://cards.scryfall.io/art/front/c/8/c8817585-0d32-4d56-9142-0d29512e86a9.webp?1783930196",
+"crop": "https://cards.scryfall.io/crop/front/c/8/c8817585-0d32-4d56-9142-0d29512e86a9.webp?1783930196",
+"jpeg": "https://cards.scryfall.io/normal/front/c/8/c8817585-0d32-4d56-9142-0d29512e86a9.jpg?1783930196"
+},
+"mana_cost": "{2}{U}{U}",
+"cmc": 4.0,
+"type_line": "Legendary Planeswalker — Jace",
+"oracle_text": "+2: Look at the top card of target player's library. You may put that card on the bottom of that player's library.\n0: Draw three cards, then put two cards from your hand on top of your library in any order.\n−1: Return target creature to its owner's hand.\n−12: Exile all cards from target player's library, then that player shuffles their hand into their library.",
+"loyalty": "3",
+"colors": [
+"U"
+],
+"color_identity": [
+"U"
+],
+"keywords": [],
+"legalities": {
+"standard": "not_legal",
+"future": "not_legal",
+"historic": "legal",
+"timeless": "legal",
+"gladiator": "legal",
+"pioneer": "not_legal",
+"modern": "legal",
+"legacy": "legal",
+"pauper": "not_legal",
+"vintage": "legal",
+"penny": "not_legal",
+"commander": "legal",
+"oathbreaker": "legal",
+"standardbrawl": "not_legal",
+"brawl": "legal",
+"competitivebrawl": "legal",
+"alchemy": "not_legal",
+"paupercommander": "not_legal",
+"duel": "legal",
+"oldschool": "not_legal",
+"premodern": "not_legal",
+"predh": "legal",
+"tlr": "not_legal"
+},
+"games": [
+"paper",
+"mtgo"
+],
+"reserved": false,
+"game_changer": false,
+"foil": true,
+"nonfoil": true,
+"finishes": [
+"nonfoil",
+"foil"
+],
+"oversized": false,
+"promo": false,
+"reprint": true,
+"variation": false,
+"set_id": "372dafe8-b5d1-4b81-998f-3ae96b59498a",
+"set": "2xm",
+"set_name": "Double Masters",
+"set_type": "masters",
+"set_uri": "https://api.scryfall.com/sets/372dafe8-b5d1-4b81-998f-3ae96b59498a",
+"set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3A2xm&unique=prints",
+"scryfall_set_uri": "https://scryfall.com/sets/2xm?utm_source=api",
+"rulings_uri": "https://api.scryfall.com/cards/c8817585-0d32-4d56-9142-0d29512e86a9/rulings",
+"prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A7f77a84e-5a4b-4834-aefa-3cecc175ae8e&unique=prints",
+"collector_number": "56",
+"digital": false,
+"rarity": "mythic",
+"card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+"artist": "Jason Chan",
+"artist_ids": [
+"8062d5a9-51b6-4822-933f-fa9e9dba8416"
+],
+"illustration_id": "b0ab416a-c7a8-4531-8e6a-00a167db4f76",
+"border_color": "black",
+"frame": "2015",
+"security_stamp": "oval",
+"full_art": false,
+"textless": false,
+"booster": true,
+"story_spotlight": false,
+"edhrec_rank": 3245,
+"preview": {
+"source": "Wizards of the Coast",
+"source_uri": "https://magic.wizards.com/en/articles/archive/card-preview/jace-mind-sculptor-double-masters-2020-07-20",
+"previewed_at": "2020-07-20"
+},
+"prices": {
+"usd": "26.35",
+"usd_foil": "22.27",
+"usd_etched": null,
+"eur": "16.37",
+"eur_foil": "17.98",
+"tix": "1.83"
+},
+"related_uris": {
+"gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=489729&printed=false",
+"tcgplayer_infinite_articles": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Farticles&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Farticles%3FproductLineName%3Dmagic%26q%3DJace%252C%2Bthe%2BMind%2BSculptor",
+"tcgplayer_infinite_decks": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Fdecks&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fdecks%3FproductLineName%3Dmagic%26q%3DJace%252C%2Bthe%2BMind%2BSculptor",
+"edhrec": "https://edhrec.com/route/?cc=Jace%2C+the+Mind+Sculptor"
+},
+"purchase_uris": {
+"tcgplayer": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F218277%3Fpage%3D1",
+"cardmarket": "https://www.cardmarket.com/en/Magic/Products?idProduct=482689&referrer=scryfall&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+"cardhoarder": "https://www.cardhoarder.com/cards/82146?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+}
+}
