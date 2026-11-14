@@ -52,7 +52,7 @@ class CardData(json: JsonObject) {
             "doublerainbow" to "mtg-doublerainbow", "fracturefoil" to "mtg-fracture", "facetfoil" to "mtg-facet", "rainbowfoil" to "mtg-rainbow", "ripplefoil" to "mtg-ripple",
             "manafoil" to "mtg-mana", "dragonscalefoil" to "mtg-dragonscale", "invisibleink" to "mtg-invisible", "silverfoil" to "mtg-silver",
             "firstplacefoil" to "mtg-firstplace", "raisedfoil" to "mtg-raised", "embossed" to "mtg-embossed", "ampersand" to "mtg-ampersand",
-            "silverscreen" to "mtg-silverscreen", "vaultboy" to "mtg-vaultboy")
+            "silverscreen" to "mtg-silverscreen")
         /** Facet foil (FRA borderless shards), app first (7 Nov): the site's prototype row, here until the site's recipe table
          *  carries it (then the site's own row wins). Shards and their cut edges come from MtgFoil.facets. */
         private val FACET = Recipe("mtg-facet", "Facet foil", "2025–today", dev.cardstashy.nativeplay.foil.MtgFoil.FACET, 0f, 0f, 0f, 0f, 0f, 0f, 0f,
