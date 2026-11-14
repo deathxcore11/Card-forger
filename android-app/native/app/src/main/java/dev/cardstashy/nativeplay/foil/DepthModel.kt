@@ -192,7 +192,7 @@ object DepthLayers {
             flows[key] = f
             scope.launch {
                 runCatching { make(context.applicationContext, key, image, win, open, facetText?.takeIf { open }, walker && !open, f) }
-                    .onFailure { Log.w("DepthLayers", "no figure layer for $image", it) }
+                    .onFailure { Log.w("DepthLayers", "no figure layer for $image", it); forget(key, f) }
             }
         }
     }
@@ -230,7 +230,11 @@ object DepthLayers {
             // Another ask for this card may have measured it while this one waited: read again before running the model.
             // Swiping fast through a pager queues cards; the ones nobody is still looking at wait until they open again.
             if (!wanted()) return null
-            val d = DepthModel.run(context, crop) ?: return null
+            // No model on the phone yet (it downloads on first use) or none that runs here: a framed card still gets its window,
+            // the whole picture one rigid plate at the frame's printed outline, as before take 5. Never written to disk.
+            val d = DepthModel.run(context, crop) ?: return if (open) null else
+                Measured(hi, hw, hh, DepthMatte.Cut(lw, lh, null, DepthMatte.Gate(0f, 1f, 0f, edge = 0f)), FloatArray(0), lw, lh, win,
+                    card.width.toFloat() * hw / cw)
             val loBmp = Bitmap.createScaledBitmap(crop, lw, lh, true)
             val lo = IntArray(lw * lh).also { loBmp.getPixels(it, 0, lw, 0, 0, lw, lh) }
             // Kept at 16 bits, like the file, so the first view and every later one light the same (8 bits banded slow slopes).
@@ -266,7 +270,12 @@ object DepthLayers {
                              f: MutableStateFlow<Ready?>) {
         val m = measure(context, image, win0, open, { f.subscriptionCount.value > 0 }, walker) ?: run { forget(key, f); return }
         val hi = m.hi; val hw = m.hw; val hh = m.hh; val cut = m.cut
-        if (!open) { f.value = window(m, walker); return }
+        if (!open) {
+            f.value = window(m, walker)
+            // Without the model this window is only for now: drop the entry, so the next open measures once the model is here.
+            if (m.depth.isEmpty()) forget(key, f)
+            return
+        }
         // The gate said no: a framed card keeps the window-only depth, a full art stays flat (facet shards alone never make a figure).
         val cutFigure = cut.figure ?: return
         // Facet foil (full arts): the figure is the matte part of the print (spec zone 3), so the foil learns it here; and the printed
@@ -299,9 +308,9 @@ object DepthLayers {
         val l = if (ok || walker) DepthMatte.layersWindow(m.hi, fig ?: FloatArray(hw * hh), pin, hw, hh, m.cut.gate, (1 - follow) * room)
                 else DepthMatte.Layers(hw, hh, FloatArray(hw * hh), FloatArray(hw * hh), m.hi, BooleanArray(hw * hh), m.cut.gate)
         val figPx = IntArray(l.w * l.h) { i -> (255 shl 24) or (q(l.figure[i]) shl 16) or (q(l.shadow[i]) shl 8) or (if (l.hide[i]) 255 else 0) }
-        val (rel, rw, rh) = DepthMatte.relief(m.depth, m.lw, m.lh, ww)
+        val rel = if (m.depth.isEmpty()) null else DepthMatte.relief(m.depth, m.lw, m.lh, ww).let { (px, rw, rh) -> Bitmap.createBitmap(px, rw, rh, Bitmap.Config.ARGB_8888) }
         return Ready(Bitmap.createBitmap(l.plate, l.w, l.h, Bitmap.Config.ARGB_8888), Bitmap.createBitmap(figPx, l.w, l.h, Bitmap.Config.ARGB_8888), win,
-            Bitmap.createBitmap(rel, rw, rh, Bitmap.Config.ARGB_8888), win, rim, room, follow)
+            rel, win, rim, room, follow)
     }
 
     /** The facet map's shards (its B, the depth inside each piece) at [w] x [h] over the whole card; null with no shards or no maps. */

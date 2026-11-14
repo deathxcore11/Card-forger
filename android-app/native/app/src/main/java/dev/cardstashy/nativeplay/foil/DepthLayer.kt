@@ -23,6 +23,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import dev.cardstashy.nativeplay.ui.AppSettings
 import dev.cardstashy.nativeplay.ui.Foil
+import dev.cardstashy.nativeplay.ui.Motion
+import dev.cardstashy.nativeplay.ui.Playmats
 import kotlinx.coroutines.delay
 import kotlin.math.hypot
 
@@ -83,13 +85,13 @@ object Depth {
 
     /** The light (from the upper right, in front: the mock-up's) in card space, y up, for a card turned by [yaw] about its upright
      *  axis and [pitch] about its level one: the world light turned back by the card's own turn. */
-    fun light(yaw: Float, pitch: Float): Triple<Float, Float, Float> {
+    fun light(yaw: Float, pitch: Float, out: FloatArray = FloatArray(3)): FloatArray {
         val n = kotlin.math.sqrt(.35f * .35f + .5f * .5f + 1f); var x = .35f / n; var y = .5f / n; var z = 1f / n
         val cp = kotlin.math.cos(-pitch); val sp = kotlin.math.sin(-pitch)
         val y1 = y * cp - z * sp; val z1 = y * sp + z * cp; y = y1; z = z1
         val cy = kotlin.math.cos(-yaw); val sy = kotlin.math.sin(-yaw)
         val x2 = x * cy + z * sy; val z2 = -x * sy + z * cy; x = x2; z = z2
-        return Triple(x, y, z)
+        out[0] = x; out[1] = y; out[2] = z; return out
     }
 
     /** The card picture the figure is measured from. */
@@ -205,7 +207,12 @@ fun Modifier.depth(finish: CardFinish?, tilt: State<Offset>?): Modifier =
         val context = androidx.compose.ui.platform.LocalContext.current
         val plane = remember(finish) { Depth.plane(finish, context.applicationContext) } ?: return@composed this
         val win = plane.win; val open = plane.open
-        if (!AppSettings.depth) return@composed this
+        // Settings "3D cards" off, or "Card lighting & foil effects" off: the flat card.
+        if (!AppSettings.depth || !AppSettings.finish) return@composed this
+        // Reduced motion (Android's "Remove animations", or the app's still mode): no travel, the picture stays put behind the frame;
+        // the frame's outline and the relief light stay.
+        val still = remember { Motion.still || Playmats.reduced(context) }
+        val lit = remember { FloatArray(3) }
         // Only foils get 3D (Randall 14 Nov): a nonfoil Magic card stays the flat card (its holo stamp still shines).
         if (finish is CardFinish.Magic && finish.look.recipe == null) return@composed this
         val walker = !open && (finish as? CardFinish.Magic)?.look?.walker == true
@@ -236,7 +243,7 @@ fun Modifier.depth(finish: CardFinish?, tilt: State<Offset>?): Modifier =
                 val wn = l.win
                 val ww = (wn[2] - wn[0]) * w
                 val room = l.room
-                val e = ease.value
+                val e = if (still) 0f else ease.value
                 // Px the plate moves; the sign follows the card's own turn (rotationY = tilt.x * 8 deg), so the plate reads as behind the
                 // frame. It grows in with the layers, so a card measured while tilted settles into its slide instead of jumping.
                 val sx = Depth.SIGN_X * t.x * room * ww * e; val sy = Depth.SIGN_Y * t.y * room * ww * e
@@ -244,12 +251,12 @@ fun Modifier.depth(finish: CardFinish?, tilt: State<Offset>?): Modifier =
                 shader.setInputShader("u_rel", l.relInput ?: blank.first)
                 shader.setFloatUniform("u_lsize", l.plate.width.toFloat(), l.plate.height.toFloat())
                 shader.setFloatUniform("u_rsize", (l.rel?.width ?: 1).toFloat(), (l.rel?.height ?: 1).toFloat())
-                shader.setFloatUniform("u_layers", e); shader.setFloatUniform("u_relon", if (l.rel != null) e else 0f)
+                shader.setFloatUniform("u_layers", ease.value); shader.setFloatUniform("u_relon", if (l.rel != null) ease.value else 0f)
                 shader.setFloatUniform("u_lbox", l.box); shader.setFloatUniform("u_open", if (open) 1f else 0f)
                 shader.setFloatUniform("u_size", w, h); shader.setFloatUniform("u_win", wn); shader.setFloatUniform("u_rim", l.rim)
                 shader.setFloatUniform("u_follow", l.follow); shader.setFloatUniform("u_walker", if (walker) 1f else 0f)
                 shader.setFloatUniform("u_slide", sx / w, sy / h); shader.setFloatUniform("u_full", room * ww * hypot(1f, 1f))
-                val (lx, ly, lz) = Depth.light(t.x * Depth.TURN, t.y * Depth.TURN); shader.setFloatUniform("u_light", lx, ly, lz)
+                Depth.light(t.x * Depth.TURN, t.y * Depth.TURN, lit); shader.setFloatUniform("u_light", lit[0], lit[1], lit[2])
                 renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "u_card").asComposeRenderEffect()
             } else renderEffect = null
         }
