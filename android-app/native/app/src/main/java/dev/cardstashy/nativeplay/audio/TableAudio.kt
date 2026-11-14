@@ -8,6 +8,8 @@ import dev.cardstashy.nativeplay.engine.MatchState
 /** The table sounds of play-table-audio.js, played from the same files on board changes. No music yet. */
 class TableAudio(context: Context) {
     companion object {
+        /** A cue's loudness at Settings' Effects volume (100% is the loudness it always had). */
+        internal fun gained(volume: Float): Float = (volume * dev.cardstashy.nativeplay.ui.AppSettings.effectsGain).coerceIn(0f, 1f)
         internal fun phaseTick(a: MatchState, b: MatchState): Boolean =
             b.phase != a.phase && b.turn > 0 && b.activePlayer == b.viewer &&
                 (b.phase == "MAIN2" || (b.phase?.startsWith("COMBAT") == true && a.phase?.startsWith("COMBAT") != true))
@@ -47,7 +49,8 @@ class TableAudio(context: Context) {
         asked?.invoke(id)
         val p = router.route(id, volume, rate) ?: return
         if (p.cuts && bigStream != 0) pool.stop(bigStream)
-        val stream = ids[p.name]?.let { pool.play(it, p.volume, p.volume, if (p.name in Cues.BIG) 2 else 1, 0, p.rate) } ?: return
+        val v = gained(p.volume)
+        val stream = ids[p.name]?.let { pool.play(it, v, v, if (p.name in Cues.BIG) 2 else 1, 0, p.rate) } ?: return
         if (p.name in Cues.BIG) bigStream = stream
     }
 

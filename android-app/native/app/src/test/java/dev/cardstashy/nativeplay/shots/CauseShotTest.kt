@@ -41,7 +41,7 @@ import java.io.File
  * the exiled card, the card drawn, the trigger the ward countered, the ward the CPU paid, then the chain: destroyed with its
  * Auras falling off in the same beat, the held card returning. "Last moves" fills as the controller would fill it, and the exiled card sits
  * on its Aura while it is held. Drawn at a phone (844 x 390), a Fold (884 x 796) and the Thor's top screen (960 x 540).
- * The effects are queued through Battlefield.trigger, the call the board makes for the controller's beat.
+ * The effects are queued through Battlefield.trigger, the call the board makes for the controller's beat. The table lies on a real map.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -59,6 +59,9 @@ class CauseShotTest {
     @Test fun frames() {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         CardImageTest.art = { name, crop -> art.resolve(key(name, crop) + ".jpg").takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } }
+        // A real map behind the table (Randall 14 Nov: "We have backgrounds no?"): loaded before the first picture, as a match has it.
+        val mat = "ashen-forge"
+        for (crop in listOf("", "-tall")) kotlinx.coroutines.runBlocking { dev.cardstashy.nativeplay.ui.Playmats.preload(RuntimeEnvironment.getApplication(), mat, crop) }
         val me = cpu[71]!!.viewer
         val holds = mapOf(64 to 40)
         fun results(a: Long, b: Long, triggers: Set<Int>, held: Map<Int, Int> = emptyMap()) = Director.resolutions(cpu[a]!!, cpu[b]!!, fresh(cpu[a]!!, cpu[b]!!), triggers, held)
@@ -87,7 +90,7 @@ class CauseShotTest {
                 fun content(st: MatchState, moves: List<Director.Line>, moment: TriggerMoment?): @androidx.compose.runtime.Composable () -> Unit = {
                     CompositionLocalProvider(LocalAnchors provides anchors, LocalBattlefield provides fx, LocalTrigger provides moment, LocalLastMoves provides moves, LocalHeld provides b.held) {
                         Box(Modifier.fillMaxSize().background(Palette.Night)) {
-                            PlaymatScene(Modifier.fillMaxSize())
+                            PlaymatScene(mat, Modifier.fillMaxSize())
                             ForgeBoard(st, live = false, intents = TableIntents(), selectedHand = null, onSelectHand = {}, onInspect = {}, onMenu = {}, handOrder = emptyList(), onHandOrder = {})
                             FxLayer(force = true)
                         }

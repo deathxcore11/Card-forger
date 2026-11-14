@@ -51,6 +51,16 @@ object AppSettings {
     /** Price alerts' daily check with a phone notification (gap audit H2 step 4, new beyond the site). On by default. */
     var priceAlertDaily by mutableStateOf(true); private set
 
+    /** Console Settings: how loud the stage music and the sound effects play, 0 to 100 in steps of 10. 100 is the loudness before the setting existed. */
+    var musicVolume by mutableStateOf(100); private set
+    var effectsVolume by mutableStateOf(100); private set
+    /** The effects volume as a gain, for every sound that is not music. */
+    val effectsGain: Float get() = effectsVolume / 100f
+    val musicGain: Float get() = musicVolume / 100f
+    fun normalizeVolume(v: Int) = ((v.coerceIn(0, 100) + 5) / 10) * 10
+    fun applyMusicVolume(v: Int) { musicVolume = normalizeVolume(v); prefs?.edit()?.putInt("musicVolume", musicVolume)?.apply() }
+    fun applyEffectsVolume(v: Int) { effectsVolume = normalizeVolume(v); prefs?.edit()?.putInt("effectsVolume", effectsVolume)?.apply() }
+
     fun init(context: Context) {
         val p = context.applicationContext.getSharedPreferences("play", Context.MODE_PRIVATE); prefs = p
         glass = p.getBoolean("glass", true); finish = p.getBoolean("finishEffects", true); tilt = p.getBoolean("motionTilt", true); depth = p.getBoolean("depthCards", true)
@@ -62,6 +72,7 @@ object AppSettings {
         askTriggerOrder = p.getBoolean("askTriggerOrder", false); stopToRespond = p.getBoolean("stopToRespond", false)
         matchVibration = p.getBoolean("matchVibration", true)
         priceAlertDaily = p.getBoolean("priceAlertDaily", true)
+        musicVolume = normalizeVolume(p.getInt("musicVolume", 100)); effectsVolume = normalizeVolume(p.getInt("effectsVolume", 100))
     }
 
     fun set(key: String, on: Boolean) {

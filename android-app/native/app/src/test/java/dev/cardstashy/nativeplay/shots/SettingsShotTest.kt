@@ -1,6 +1,9 @@
 package dev.cardstashy.nativeplay.shots
 
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.onAllNodesWithText
@@ -19,7 +22,10 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
-/** Settings and the art picker in each state, on the Fold's cover screen (390 dp). Compare with parity/web/settings-*.jpg. */
+/**
+ * Settings (the Console look, Randall's pick of 14 Nov) and the art picker in each state, on the Fold's cover screen (390 dp).
+ * ConsoleShotTest draws the same screen at a phone, the Fold and the Thor.
+ */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = "w390dp-h860dp-xxhdpi")
@@ -27,6 +33,8 @@ class SettingsShotTest {
     @get:Rule val rule = createComposeRule()
     init { dev.cardstashy.nativeplay.art.CardArt.init(org.robolectric.RuntimeEnvironment.getApplication()) }
     private fun settle() = repeat(40) { Thread.sleep(150); rule.mainClock.advanceTimeBy(100); rule.waitForIdle() }
+    /** A section's name in the strip under the title. */
+    private fun section(name: String) = rule.onNode(hasContentDescription(name) and isSelectable())
     private fun shot(name: String) = rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "settings-$name.png").path)
 
     private val art = Account.Art("mtg", "x", "Ragavan, Nimble Pilferer", "https://cards.scryfall.io/art_crop/front/a/9/a9738cda-adb1-47fb-9f4c-ecd930228c4d.jpg", 1.37, 1.4, .5, .4)
@@ -83,7 +91,8 @@ class SettingsShotTest {
             rule.setContent { withHost() }
             settle(); shot("account-synced")
             deciding(); rule.waitForIdle(); settle(); shot("account-decide")
-            rule.onNodeWithText("Choose which copy to keep").performClick(); rule.waitForIdle(); settle(); shot("sync-decide-390")
+            // The line, and the panel that explains it, both carry its name.
+            rule.onAllNodesWithText("Choose which copy to keep").onFirst().performClick(); rule.waitForIdle(); settle(); shot("sync-decide-390")
         } finally { undecide() }
     }
 
@@ -96,33 +105,40 @@ class SettingsShotTest {
         } finally { undecide() }
     }
 
-    @Test fun appearanceAndHelp() {
+    /** Each of the six sections opens from the strip, and every one of them draws. */
+    @Test fun sections() {
         signedIn()
         rule.setContent { SettingsScreen(onBack = {}, onWeb = {}) }
-        rule.onNodeWithText("Look").performClick(); rule.waitForIdle(); shot("appearance")
-        rule.onNodeWithText("Help").performClick(); rule.waitForIdle(); shot("help")
+        for (t in listOf("Gameplay", "Sound", "Display", "Account", "Data", "Help")) { section(t).performClick(); rule.waitForIdle(); shot("section-${t.lowercase()}") }
+        rule.onNodeWithText("Guides", useUnmergedTree = true).assertDoesNotExist(); rule.onNodeWithText("GUIDES", useUnmergedTree = true).assertExists()
     }
 
-    /** Butter pass B3 (Randall 14 Nov): on a 360 dp phone all four tabs are on screen, and Help opens on the newest notes with the
-     *  history closed behind "Older releases". */
+    /** Butter pass B3 (Randall 14 Nov), kept through the Console look: on a 360 dp phone all six sections are on screen with no sideways
+     *  scroll, Help is one short list, and What's new opens on the newest notes with the history closed behind "Older releases". */
     @Config(qualifiers = "w360dp-h800dp-xxhdpi")
     @Test fun tabsFitAndHelpIsShort() {
         signedIn()
         rule.setContent { SettingsScreen(onBack = {}, onWeb = {}, startTab = "info") }
         rule.waitForIdle()
         val screen = rule.onRoot().fetchSemanticsNode().boundsInRoot
-        for (t in listOf("Account", "Look", "Backup", "Help")) {
-            val b = rule.onAllNodesWithText(t, useUnmergedTree = true).fetchSemanticsNodes().first().boundsInRoot
+        for (t in listOf("Gameplay", "Sound", "Display", "Account", "Data", "Help")) {
+            val b = section(t).fetchSemanticsNode().boundsInRoot
             org.junit.Assert.assertTrue("$t at $b is off the screen $screen", b.left >= screen.left && b.right <= screen.right)
+            org.junit.Assert.assertTrue("$t is ${b.height} px tall: too small for a finger", b.height >= 44 * 3 - 1)
         }
+        // The whole of Help's first group is on the first screen.
+        val news = rule.onAllNodesWithText("What\u2019s new", useUnmergedTree = true).fetchSemanticsNodes().first().boundsInRoot
+        org.junit.Assert.assertTrue("What's new sits at ${news.top}", news.bottom < screen.bottom)
+        rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "butter/settings-help-360.png").path)
+        rule.onAllNodesWithText("What\u2019s new").onFirst().performClick(); rule.waitForIdle()
         val older = rule.onAllNodesWithText("Older releases", substring = true, useUnmergedTree = true).fetchSemanticsNodes()
         org.junit.Assert.assertEquals(1, older.size)
         org.junit.Assert.assertTrue("Older releases sits at ${older[0].boundsInRoot.top}", older[0].boundsInRoot.top < screen.bottom * 1.6f)
         org.junit.Assert.assertEquals(0, rule.onAllNodesWithText(dev.cardstashy.nativeplay.ui.WHATS_NEW.last().second, substring = true, useUnmergedTree = true).fetchSemanticsNodes().size)
-        rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "butter/settings-help-360.png").path)
+        rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "butter/settings-whats-new-360.png").path)
     }
 
-    /** Gap audit S1: the Backup tab as the preview draws it, with an Earlier save on this device (tall enough for all of it). */
+    /** Gap audit S1: Data, with an Earlier save on this device (tall enough for all of it). The save opens its own page. */
     @Config(qualifiers = "w390dp-h1900dp-xxhdpi")
     @Test fun backup() {
         signedIn()
@@ -133,14 +149,16 @@ class SettingsShotTest {
             "Before workspace replacement", "restore", java.time.Instant.parse("2026-11-12T23:02:00Z"))
         rule.setContent { SettingsScreen(onBack = {}, onWeb = {}, startTab = "recovery") }
         rule.waitForIdle(); settle(); shot("backup")
-        for (t in listOf("Export backup", "Download backup", "Import or check a backup", "Restore backup", "Check file", "Earlier saves",
-                "Before workspace replacement", "4 cards · 1 deck · All games", "Restore…", "Storage & cleanup", "Remove downloaded pictures"))
+        for (t in listOf("Restore backup", "Check a backup file", "EARLIER SAVES", "Saved on this device", "Before workspace replacement", "STORAGE", "Saved card art", "Remove downloaded pictures"))
             rule.onNodeWithText(t).assertExists()
-        rule.onNodeWithText("1 saved recovery copy on this device for this account", substring = true).assertExists()
+        // Download backup is the line the panel is on, so its name shows twice.
+        org.junit.Assert.assertEquals(2, rule.onAllNodesWithText("Download backup").fetchSemanticsNodes().size)
+        rule.onNodeWithText("1 copy", substring = true).assertExists()
+        rule.onNodeWithText("Before workspace replacement").performClick(); rule.waitForIdle(); shot("backup-save")
+        for (t in listOf("4 cards · 1 deck · All games", "Download", "Restore…", "Back")) rule.onNodeWithText(t).assertExists()
     }
 
-    /** settings-theme.js / grid-settings.js: the Appearance pane in each colour mode, tall enough for all three cards. */
-    @Config(qualifiers = "w390dp-h1900dp-xxhdpi")
+    /** settings-theme.js / grid-settings.js: Display in each colour mode. */
     @Test fun appearanceThemes() {
         signedIn()
         rule.setContent { SettingsScreen(onBack = {}, onWeb = {}, startTab = "app") }
