@@ -1,4 +1,4 @@
-// The app's Magic foil (ui/Foil.kt, AGSL) against the site's approved first foil (test-fixtures/finish-effects/mtg-foil-first-approved.glsl):
+// The app's Magic foil (ui/Foil.kt, AGSL) against the site's approved foil (test-fixtures/finish-effects/mtg-foil-new-approved.glsl, 15 Nov):
 // both drawn from the same card pixels and the same measured maps, 1:1 with no resampling, the GLSL by WebGL in Chromium and the AGSL
 // by Skia's own runtime-effect renderer (CanvasKit, CPU, the SkSL front end Android's RuntimeShader uses). Every recipe, three lights,
 // on the real Avatar of Burgeoning Echoes scan. Software drawing on both sides: this proves the port draws what the site draws, not
@@ -19,7 +19,7 @@ try{({chromium}=await import('playwright'));}catch{try{({chromium}=require(requi
 try{CK=await require(process.env.CANVASKIT_DIR?path.join(process.env.CANVASKIT_DIR,'bin','canvaskit.js'):'canvaskit-wasm')();}catch{console.log('no canvaskit-wasm: set CANVASKIT_DIR to its folder');process.exit(2);}
 const kt=readFileSync(path.join(here,'..','app','src','main','java','dev','cardstashy','nativeplay','ui','Foil.kt'),'utf8');
 const AGSL=kt.match(/const val AGSL = """([\s\S]*?)"""/)[1];
-const REF=readFileSync(path.join(root,'test-fixtures','finish-effects','mtg-foil-first-approved.glsl'),'utf8');
+const REF=readFileSync(path.join(root,'test-fixtures','finish-effects','mtg-foil-new-approved.glsl'),'utf8');
 const PICTURE='/test-fixtures/finish-effects/avatar-of-burgeoning-echoes-pfra-122p.jpg';
 const LIGHTS=[[.5,.45],[.22,.25],[.76,.72]];
 // WIDTH: the card's width in px (372 by default; a phone's card view is about 1080, where the fine etched, rainbow-line and scanline

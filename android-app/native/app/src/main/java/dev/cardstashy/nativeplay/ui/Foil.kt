@@ -51,6 +51,8 @@ uniform float2 u_size;uniform float2 u_px;uniform float2 u_tilt;uniform float u_
 uniform float4 u_art;uniform float4 u_text;uniform float4 u_r1;uniform float4 u_r2;uniform float4 u_stamp;uniform float4 u_stampk;
 const float PI=3.14159265;
 float sq(float x){return x*x;}
+// How strongly the foil shows: between the preview's Soft and Natural for every type; oil slick goes past Natural.
+float strength(){return u_r2.x>.5?.9:.5;}
 float3 toLin(float3 c){return mix(c/12.92,pow((c+.055)/1.055,float3(2.4)),step(float3(.04045),c));}
 float3 toSrgb(float3 c){return mix(c*12.92,1.055*pow(max(c,float3(0.)),float3(1./2.4))-.055,step(float3(.0031308),c));}
 float hash(float2 p){p=fract(p*float2(234.34,435.345));p+=dot(p,p+34.23);return fract(p.x*p.y);}
@@ -127,10 +129,10 @@ float3 foil(float pat,float tint,float2 uv,float2 lq,float3 L,float3 V,float3 N,
  if(pat>9.5&&pat<10.5)rb=.5*(rb+mix(float3(1.),hue(abs(dot(r,normalize(float2(-.5,.86))))*4.5),sat))*1.1;
  if(spec<0.)spec=pow(max(dot(N,H),0.),ex);
  float3 metal=tint<.5?float3(1.):tint<1.5?float3(1.,.78,.4):float3(.9,.93,.98);
- float3 col=w*amp*(rb-off)*(1.+1.2*(n-.5)*fs);
+ float3 col=w*amp*mix(.7,1.,strength())*(rb-off)*(1.+1.2*(n-.5)*fs);
  if(tint>.5)col=metal*w*amp*(.25+.3*dot(rb,float3(.333)))+col*.3*step(1.5,tint);
- float env=mix(near,wide,widen);
- f_amb*=metal;f_glare=near*mirror*spec;
+ float env=mix(wide,1.,near*.6);
+ f_amb=max(f_amb,float3(1.));f_amb*=metal;f_glare=near*mirror*spec*.6;
  return f_amb+env*(col*lines+glint*metal)+f_glare*metal*lines;
 }
 // The security stamp's pastel rainbow (finish-effects.css .finish-holostamp): #ff8fc7 #ffd98a #9dffcf #8fdcff #bfa2ff, repeating.
@@ -147,6 +149,15 @@ half4 main(float2 fc){
  float3 L=normalize(float3(lq,.85)-P),V=normalize(float3(.5,.5*u_aspect,2.2)-P),H=normalize(L+V);
  // How much key light reaches this spot: a tight share for the glare, a broad one for hazy sheets.
  float2 dl=P.xy-lq;float near=exp(-dot(dl,dl)/.3),wide=.3+.7*exp(-dot(dl,dl)/1.1);
+ // A room light far away, as a phone is held: the card turns under it. Its mirror image sweeps the card as a long soft
+ // bar, and the colour lies over the whole sheet in wide bands that move with the turn. No round spot (approved 15 Nov).
+ {float yaw=u_tilt.x*.5,pitch=u_tilt.y*.5,cy=cos(yaw),sy=sin(yaw),cp=cos(pitch),sp=sin(pitch);
+  float3 Lw=normalize(float3(.25,-.6,1.)),a3=float3(Lw.x*cy+Lw.z*sy,Lw.y,-Lw.x*sy+Lw.z*cy);
+  L=normalize(float3(a3.x,a3.y*cp+a3.z*sp,-a3.y*sp+a3.z*cp));H=normalize(L+V);
+  lq=float2(.5,.5*u_aspect)+L.xy/max(L.z,.25)*2.2;dl=P.xy-lq;
+  float2 bn=normalize(float2(.8,1.));float across=dot(dl,bn);
+  near=strength()*exp(-across*across/.006)*(.5+.5*exp(-dot(dl,dl)/3.));
+  wide=.62+.38*exp(-dot(dl,dl)/2.5);}
  // Measured maps (MtgFoil): mask R gold ink, G neon ink, B bare paper; relief R height, G drawn lines, B facet cut edge.
  // Until they land (u_maps 0) the covers read as the whole card and the relief as flat.
  float2 mp=uv*u_map;half4 mk=u_mask.eval(mp),rl=u_relief.eval(mp);
@@ -168,14 +179,21 @@ half4 main(float2 fc){
   if(mode>5.5){float3 amb=f_amb,tp=f_top;float gl=f_gloss,lk=f_leak;float3 G=foil(18.,1.,uv,lq,L,V,N,near,wide,grad,height,f_amb,f_gloss,f_leak,f_top,f_glare);float s=smoothstep(.25,.6,float(mk.r))*u_maps*(1.-text);
    F=mix(F,G*1.1,s);f_amb=mix(amb,f_amb,s);f_gloss=mix(gl,1.6,s);f_leak=mix(lk,.3,s);f_top=tp;}
   // Thin film replaces the sheet's colour (oil slick): colour depends on view angle and film thickness.
-  if(u_r2.x>.5){float t=320.+260.*height+120.*hash(floor(uv*float2(120.,168.)));float3 f=film(dot(N,V),t);f_amb=float3(.2);F=f*(.2+wide*(1.1*pow(max(dot(N,H),0.),16.)+.45));}
+  float3 fadd=float3(0.);
+  if(u_r2.x>.5){float t=320.+260.*height+120.*hash(floor(uv*float2(120.,168.)));float3 f=film(dot(N,V),t);f_amb=float3(.2);F=f*(.2+wide*(1.1*pow(max(dot(N,H),0.),16.)+.45));
+   // The film is a clear coat over the ink, so its colour also flows over black ink, in slow swirls that shift with the turn.
+   float2 dq=P.xy-lq;float cT=.7+.3/(1.+dot(dq,dq))+.05*height,t2=420.+330.*vnoise(uv*float2(3.,4.2))+120.*height;
+   fadd=clamp((film(cT,t2)-.5)*1.35+.5,0.,1.)*(.35*wide+.5*near)*.4;}
   // Ink over metal: light ink lets the lit foil through, dark ink hides it; the darkest ink still passes a faint glint of the highlight.
   float keep=u_r2.w,c=clamp(cov*(1.-keep),0.,1.);
   float lum=dot(base,float3(.2126,.7152,.0722)),top=max(base.r,max(base.g,base.b)),vis=mix(.25,1.,smoothstep(.01,.3,lum));
   if(u_r2.x>.5||tint>.5)vis=1.;
+  // Respect the art: on the picture the sheet's colour stays a light veil (ink over foil filters it); on the frame and text box it is full.
+  vis*=mix(1.,.45,art*(1.-step(.5,mode)*step(mode,1.5)));
   float3 Fv=f_amb+(F-f_amb)*vis;
-  float3 lit=base*(1.+.1*(1.-base))*Fv+(1.-top)*f_leak*(f_glare*2.+.5*near)*f_amb;
+  float3 lit=base*(1.+.1*(1.-base))*Fv+(1.-top)*f_leak*f_glare*2.*f_amb*.5;
   outC=mix(base,shoulder(lit),c);
+  outC+=(1.-outC)*fadd*(1.-.6*top)*c;
   // Raised relief: glossy rims where the embossed height turns toward the light.
   if(rel>0.){float rim=pow(max(dot(N,H),0.),24.)*(.3+.7*near)*clamp(length(grad)*30.,0.,1.);outC+=(1.-outC)*float3(1.,.97,.92)*rim*rel*cov*.6;}
   // Facet foil (app only): each printed glass shard is a flat mirror with its own fixed tilt; it flashes in one piece and its
