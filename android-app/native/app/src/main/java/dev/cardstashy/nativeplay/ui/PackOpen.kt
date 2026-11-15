@@ -610,11 +610,19 @@ private fun packSize(set: String, w: Dp, h: Dp, template: Boolean = false, sim: 
     return pw to pw / aspect
 }
 
+/** The 3D pack's box: as tall as the pack the site draws for a product photo (its height rule), as wide as the set's real wrapper. */
+private fun pack3dSize(skin: PackSkin, w: Dp, h: Dp, sim: Boolean, vw: Dp, vh: Dp): Pair<Dp, Dp> {
+    val ph = if (sim) minOf(vw * .56f * (734f / 400f), 250.dp * (734f / 400f), vh - 180.dp, h - 24.dp) else packHeight(w, h)
+    return ph * skin.aspect to ph
+}
+
 @Composable
 private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loading: Boolean = false, eager: Boolean = false,
                    drift: Animatable<Offset, AnimationVector2D>? = null, tiltOn: Boolean = false) {
     val ctx = LocalContext.current
-    val template = remember(pack.set) { pack.look?.template != null || PackTemplate.art(ctx, pack.set) != null } && drift != null
+    // Every Magic set the app carries a real wrapper photo for opens as the 3D pack (Randall 15 Nov); the rest keep the 2D pack.
+    val skin = if (pack.look == null) rememberPackSkin(pack.set) else null
+    val template = (skin != null || remember(pack.set) { pack.look?.template != null || PackTemplate.art(ctx, pack.set) != null }) && drift != null
     // The template pack's parallax (pack-preview.js): a finger over the screen, placed against the pack, or the phone's tilt when
     // pack tilt is on, eased over 120 ms (.pack-tpl-art transition .12s linear). Reduce motion: still. A lifted finger leaves the
     // art where it was unless the tilt takes over again, as on the site.
@@ -633,13 +641,13 @@ private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loadi
             while (true) {
                 val c = awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull() ?: break
                 if (!c.pressed) { if (phone?.value?.live == true) touch = null; break }
-                val (pw, ph) = packSize(pack.set, size.width.toDp(), size.height.toDp(), true, pack.shop != null, vw, vh)
+                val (pw, ph) = if (skin != null) pack3dSize(skin, size.width.toDp(), size.height.toDp(), pack.shop != null, vw, vh) else packSize(pack.set, size.width.toDp(), size.height.toDp(), true, pack.shop != null, vw, vh)
                 val wpx = pw.toPx(); val hpx = ph.toPx()
                 touch = Offset(((c.position.x - (size.width - wpx) / 2f) / wpx * 2f - 1f).coerceIn(-1f, 1f), ((c.position.y - (size.height - hpx) / 2f) / hpx * 2f - 1f).coerceIn(-1f, 1f))
             }
         }
     }, contentAlignment = Alignment.Center) {
-    val (w, h) = packSize(pack.set, maxWidth, maxHeight, template, pack.shop != null, vw, vh)
+    val (w, h) = if (skin != null) pack3dSize(skin, maxWidth, maxHeight, pack.shop != null, vw, vh) else packSize(pack.set, maxWidth, maxHeight, template, pack.shop != null, vw, vh)
     // While the server rolls the pack: a gold aura breathes around it, embers rise and it trembles, harder once tapped.
     val power = if (!loading) 0f else if (Motion.still) .6f else rememberInfiniteTransition(label = "power").animateFloat(0f, 1f, infiniteRepeatable(tween(if (eager) 420 else 900, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "p").value
     val ember = if (!loading) 0f else if (Motion.still) .35f else rememberInfiniteTransition(label = "ember").animateFloat(0f, 1f, infiniteRepeatable(tween(1600, easing = LinearEasing)), label = "e").value
@@ -698,7 +706,8 @@ private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loadi
         // foil-fx.css (it overrides sets-ui.css): pack-slice .34 s; pack-flash .5 s from .3 s; the top crimp's
         // pack-strip .42 s from .3 s; pack-rip-jolt .44 s. The pack stays put; the cards fly out of its top after.
         launch { slice.animateTo(1f, tween(340, easing = CubicBezierEasing(.6f, 0f, .4f, 1f))) }
-        launch { delay(300); strip.animateTo(1f, tween(420, easing = CubicBezierEasing(.3f, .6f, .4f, 1f))) }
+        // The 3D strip rips at once, so it is off before the deal (the stage moves on at 440 ms).
+        launch { delay(if (skin != null) 0 else 300); strip.animateTo(1f, tween(if (skin != null) 430 else 420, easing = CubicBezierEasing(.3f, .6f, .4f, 1f))) }
         launch { delay(300); flash.animateTo(1f, tween(500, easing = CubicBezierEasing(0f, 0f, .58f, 1f))) }
         jolt.animateTo(1f, tween(440, easing = CubicBezierEasing(.4f, 0f, .2f, 1f)))
     }
@@ -708,7 +717,8 @@ private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loadi
         // pack-float: up 8 px with a little turn.
         cameraDistance = 12f * density
         translationY = -8.dp.toPx() * float - 7.dp.toPx() * j
-        rotationY = -6f * float; rotationX = 3f * float
+        // The 3D pack turns itself (below); the flat pack turns as a picture.
+        if (skin == null) { rotationY = -6f * float; rotationX = 3f * float }
         val k = 1f + .035f * j + .02f * power * (if (eager) 1.5f else 1f); scaleX = k; scaleY = k
         if (loading && !Motion.still) rotationZ = (if (eager) 1.6f else .7f) * kotlin.math.sin(power * 6.283f * 3f)
     }.glow(Color(0xFFE8B95B), if (loading) .25f + .4f * power * (if (eager) 1.4f else 1f) else 0f, .08f + .05f * power, .06f + .04f * power, .08f, 36.dp)
@@ -716,8 +726,10 @@ private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loadi
         // A controller's ring starts on the pack, so A tears it (not whatever sits behind the pack).
         .then(LocalPackCardFocus.current?.let { Modifier.focusRequester(it) } ?: Modifier)
         .clickable(remember { MutableInteractionSource() }, dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onTear).semantics { contentDescription = "Open the ${pack.name} pack" }) {
-        // The set's art under Randall's template when the set has one (its painted wrapper until the art is in), else the wrapper.
-        val tpl = TemplatePack(pack.set, pack.name, { drift?.value ?: Offset.Zero }, Modifier.fillMaxSize(), brand = pack.shop != null, override = pack.look?.template?.let { PackTemplate.Art("", it.art, it.x, it.y) }) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true, brand = pack.shop != null, template = false) }
+        // The 3D pack in the set's real wrapper: the finger or the phone's tilt turns it, it breathes a little on its own, and the
+        // strip above the seam rips off as the tear plays. Without a real wrapper: the set's art under Randall's template, else the wrapper.
+        val tpl = if (skin != null) { Pack3DView(skin, Modifier.fillMaxSize()) { val d = drift?.value ?: Offset.Zero
+            PackPose(yaw = -.10f * float + d.x * .5f, pitch = .05f * float - d.y * .22f, tear = strip.value, side = 1f) }; true } else TemplatePack(pack.set, pack.name, { drift?.value ?: Offset.Zero }, Modifier.fillMaxSize(), brand = pack.shop != null, override = pack.look?.template?.let { PackTemplate.Art("", it.art, it.x, it.y) }) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true, brand = pack.shop != null, template = false) }
         // .pack-tpl .pack-crimp, .pack-tpl .pack-sheen { display: none }: the template pack has neither.
         if (!tpl && !Motion.still && !tearing) {
             // pack-sheen-move: a soft rainbow band sweeping across every 3.2 s.
@@ -841,8 +853,9 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
         // The ghost takes the sealed pack's exact place (from = w.getBoundingClientRect()): centred in the whole body.
         val ctx = LocalContext.current
         val template = remember(pack.set) { PackTemplate.art(ctx, pack.set) != null }
+        val skin = if (pack.look == null) rememberPackSkin(pack.set) else null
         val vw = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp; val vh = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
-        val (pw, ph) = packSize(pack.set, bodyW, bodyH, template, pack.shop != null, vw, vh)
+        val (pw, ph) = if (skin != null) pack3dSize(skin, bodyW, bodyH, pack.shop != null, vw, vh) else packSize(pack.set, bodyW, bodyH, template, pack.shop != null, vw, vh)
         val packTop = (bodyH - ph) / 2; val packLeft = (bodyW - pw) / 2
         // Ghost: holds while the cards leave, then sinks 36 % and fades; light glows in its open mouth.
         val ghostHold = min(.8f, (n * gap).toFloat() / (total + 260))
@@ -852,7 +865,9 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
             val e = CubicBezierEasing(.45f, 0f, .55f, 1f).transform(sink)
             translationY = size.height * .36f * e; scaleX = 1f - .1f * e; scaleY = scaleX; alpha = 1f - e
         }) {
-            Box(Modifier.fillMaxSize().drawWithContent { clipRect(top = size.height * .085f) { this@drawWithContent.drawContent() } }) {
+            // The 3D pack stays where the finger left it, its strip gone; the cards rise out of its open top.
+            if (skin != null) Pack3DView(skin, Modifier.fillMaxSize()) { val d = drift(); PackPose(yaw = d.x * .5f, pitch = -d.y * .22f, stripGone = true) }
+            else Box(Modifier.fillMaxSize().drawWithContent { clipRect(top = size.height * .085f) { this@drawWithContent.drawContent() } }) {
                 TemplatePack(pack.set, pack.name, drift, Modifier.fillMaxSize(), brand = pack.shop != null, override = pack.look?.template?.let { PackTemplate.Art("", it.art, it.x, it.y) }) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true, brand = pack.shop != null, template = false) }
             }
             val m = (t / 900f).coerceIn(0f, 1f)
@@ -878,13 +893,22 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
             val inside = (packTop + ph * .42f - cy).toPx(); val above = (packTop - cardH * k * .32f - cy).toPx()
             val spread = (i - mid) * min(14.dp.toPx(), pw.toPx() * .05f)
             fun lerp(a: Float, b: Float, f: Float) = a + (b - a) * f
+            // The 3D pack (Randall 15 Nov, "the way the cards fly out of it"): once clear of the pack each card arcs over to its place,
+            // twirling flat once (a best card twice, higher) and tipping back as it flies, always face down.
+            val best3d = skin != null && i in best
+            // ...never higher than the room above the pack, so a short wide screen keeps the cards in view.
+            val arc = if (skin == null) 0f else min(ph.toPx() * (if (best3d) .34f else .2f), max(0f, (packTop - cardH * k * .82f).toPx()))
+            val turns = if (skin == null) 0f else if (best3d) 2f else 1f
+            val sideDir = if (i < mid) -1f else 1f
             val (x, y, rot, sc) = when {
                 e < .34f -> { val f = e / .34f; listOf(lerp(ox, ox + spread * .4f, f), lerp(inside, above, f), lerp(0f, (i - mid) * 1.5f, f), lerp(k, k * .92f, f)) }
                 e < .4f -> { val f = (e - .34f) / .06f; listOf(lerp(ox + spread * .4f, ox + spread, f), above, lerp((i - mid) * 1.5f, (i - mid) * 3f, f), lerp(k * .92f, k * .9f, f)) }
-                else -> { val f = (e - .4f) / .6f; listOf(lerp(ox + spread, 0f, f), lerp(above, 0f, f), lerp((i - mid) * 3f, 0f, f), lerp(k * .9f, 1f, f)) }
+                else -> { val f = (e - .4f) / .6f; listOf(lerp(ox + spread, 0f, f), lerp(above, 0f, f) - arc * sin(f * PI.toFloat()), lerp((i - mid) * 3f, 0f, f) + sideDir * 360f * turns * f, lerp(k * .9f, 1f, f)) }
             }
+            val tip = if (skin == null || e < .4f) 0f else 24f * sin(((e - .4f) / .6f) * PI.toFloat())
             Box(Modifier.offset(slotX, slotY).width(handW).height(cardH).zIndex(if (e < .4f) 10f + i else 200f + i).graphicsLayer {
                 translationX = x; translationY = y; rotationZ = rot; scaleX = sc; scaleY = sc
+                if (tip != 0f) { cameraDistance = 10f * this.density; rotationX = tip }
             }.glow(Color(0xFFD9CCFF), .35f, .03f, .03f, .1f, 9.dp).clip(RoundedCornerShape(6.dp))) { MagicBack(Modifier.fillMaxSize()) }
         }
     }
