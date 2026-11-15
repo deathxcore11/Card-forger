@@ -62,7 +62,7 @@ Object.assign(SOURCES.ptcg,old);
 const source=fs.readFileSync('scancam.js','utf8');
 assert.doesNotMatch(source,/id="camGuide"/,'camera detection has no fixed guide or mask');
 // Approved 15 Nov 2026: the found card's edge is drawn on the camera, and only an edge that snapped to the rim.
-assert.match(source,/id="camOutline"/);assert.match(source,/if\(hit\?\.snapped\)\{outline\.quad=/,'a rough guess is never drawn');
+assert.match(source,/id="camOutline"/);assert.match(source,/if\(hit\?\.snapped\)\{[\s\S]{0,400}outline\.quad=next;[\s\S]{0,60}\}else outline\.quad=null;/,'a rough guess is never drawn');
 assert.match(source,/if \(s\(\)\.confirm\)/);assert.match(source,/frame=freezeCapture\(v\).original/);assert.doesNotMatch(source,/flattenCapture\(v,/,'live original is frozen before any crop is derived');
 console.log('PASS: all-game identifier gates, Pokémon suffix/number collisions, compact live confirmation, quantity/condition, direct save, duplicate-submit protection, failed-save recovery and camera continuity.');
 

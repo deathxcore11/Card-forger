@@ -47,6 +47,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 object ScanWeb {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _model = MutableStateFlow<SitePanelModel?>(null); val model: StateFlow<SitePanelModel?> = _model
+    /** The found card's edge for the camera preview (scancam.js showOutline); null when there is none to draw. */
+    private val _outline = MutableStateFlow<ScanOutline?>(null); val outline: StateFlow<ScanOutline?> = _outline
     private val _acted = MutableSharedFlow<JsonObject>(extraBufferCapacity = 8); val acted: SharedFlow<JsonObject> = _acted
     /** The flashlight, as scancam's track.applyConstraints asks for it (the screen's camera sets it). */
     @Volatile var torch: (Boolean) -> Unit = {}
@@ -83,6 +85,7 @@ object ScanWeb {
     private class Bridge {
         @JavascriptInterface fun ready() { scope.launch { ready?.complete(true) } }
         @JavascriptInterface fun model(json: String?) { val j = json ?: return; pushes.trySend(j) }
+        @JavascriptInterface fun outline(json: String?) { _outline.value = ScanOutline.parse(json) }
         @JavascriptInterface fun toast(text: String?) { if (!text.isNullOrBlank()) scope.launch { CollectionWrites.show(text) } }
         @JavascriptInterface fun acted(json: String?) { val j = json ?: return; scope.launch { runCatching { _acted.tryEmit(JsonParser.parseString(j).asJsonObject) } } }
         // ScanWeb.torch, spelled out: a bare torch(on) here is this method again, which looped forever and never reached the camera.
@@ -114,9 +117,10 @@ object ScanWeb {
             else { if ((r.get("writes")?.asInt ?: 0) > 0) { CollectionWrites.settleLater(c); refresh() }; reply(id, true, "true") }
             return
         }
+        // A save that fails says why to the scanner's own bar over the Add button: no toast on top of it.
         var made: String? = null
-        val saved = runCatching { CollectionWrites.act(c, kind, d) { r -> made = r.get("made")?.takeIf { it.isJsonPrimitive }?.asString } }.getOrDefault(false)
-        if (!saved) { reply(id, false, "{\"message\":\"Could not save to your collection. Try again.\"}"); return }
+        val (saved, why) = runCatching { CollectionWrites.actTelling(c, kind, d) { r -> made = r.get("made")?.takeIf { it.isJsonPrimitive }?.asString } }.getOrDefault(false to null)
+        if (!saved) { reply(id, false, JsonObject().apply { addProperty("message", why ?: "Not added") }.toString()); return }
         refresh()
         reply(id, true, made?.takeIf { it.isNotEmpty() } ?: "true")
     }

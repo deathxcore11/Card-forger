@@ -2780,7 +2780,7 @@ export function registerTcg(c) {
           addScannedEntry(state, G, { id: uid(), scanCaptureId: captureId, cardId: card.id, name: card.name, key: SOURCES[G].ownKey(card), qty: it.qty, printing, rarity, ...(G==='ygo'?{setReleaseId:it.setReleaseId||'',setReleaseUnverified:!!it.setReleaseUnverified,releaseName:it.releaseName||''}:{}),variant: G === "ptcg" ? finish : "", variantLabel: G === "ptcg" ? variant?.label || "" : "", productId: it.productId || variant?.productId || "", edition: G === "ygo" ? finish : "", condition: it.condition || "Near Mint", language: it.lang || "en", location: it.location || "", addedAt: new Date().toISOString(), source: "scan" });
         }
       },
-      { undo: `Added ${n} scanned card${n === 1 ? "" : "s"}.` },
+      { undo: `Added ${n} · ${items[0]?.location || "Collection"}` },
     );
   };
   c.scanPrice = (cand, finish, selection = {}) => {

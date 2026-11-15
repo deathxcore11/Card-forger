@@ -517,7 +517,9 @@ const sigDiff = (a, b) => (a && b ? a.reduce((x, v, i) => x + Math.abs(v - b[i])
 export const CAPTURE_MAX_EDGE=1280,FINE_MAX_EDGE=2200;
 // The camera outline: look again at most every `every` ms and never spend more than 1/`share` of
 // the time on it; keep a found edge for `keep` ms while later looks miss.
-export const OUTLINE=Object.freeze({every:300,share:3,keep:900});
+// every: shortest gap between edge finds; share: a find may use at most 1/share of the time; keep: how long an edge
+// lasts without a refresh; hold: a still card's edge is trusted this long before it is found again; miss: wait after no edge.
+export const OUTLINE=Object.freeze({every:300,share:6,keep:900,hold:1500,miss:1200,nudge:.004});
 // An outline (corners as fractions of the frame) in the preview's pixels: the preview crops the
 // frame to fill its box (object-fit: cover), so the same crop is applied to the corners.
 export function outlinePoints(quad,fw,fh,cw,ch){
@@ -1450,14 +1452,21 @@ export function registerScanner(ctx) {
   // The card's edge, drawn on the camera. Drawing only: capture and reading never use it.
   // Shown only when the edge snapped to the card's rim (a rough guess is never drawn), re-found
   // a few times a second on a budget of its own, and dropped when the card moves or leaves.
-  const outline={quad:null,at:0,ran:0,cost:0,sent:''};
-  const trustedOutline=(frame,fw,fh,still,now=Date.now())=>{
-    if(!still)outline.quad=null;
-    else if(now-outline.ran>=Math.max(OUTLINE.every,outline.cost*OUTLINE.share)){
+  const outline={quad:null,at:0,ran:0,cost:0,sent:'',missed:false};
+  const trustedOutline=(frame,fw,fh,still,now=Date.now(),busy=false)=>{
+    if(!still){outline.quad=null;outline.ran=0;outline.missed=false;}
+    // A card that has not moved keeps its edge: finding it again every tick was a fifth of the camera loop.
+    else if(busy||now-outline.ran<Math.max(OUTLINE.every,outline.cost*OUTLINE.share,outline.quad?OUTLINE.hold:outline.missed?OUTLINE.miss:0)){if(outline.quad)outline.at=now;}
+    else{
       outline.ran=now;const started=clockNow();let hit=null;
       try{hit=locateCard(frame.getContext('2d',{willReadFrequently:true}).getImageData(0,0,fw,fh).data,fw,fh);}catch{}
-      outline.cost=clockNow()-started;
-      if(hit?.snapped){outline.quad=hit.quad.map(p=>({x:p.x/fw,y:p.y/fh}));outline.at=now;}
+      outline.cost=clockNow()-started;outline.missed=!hit?.snapped;
+      if(hit?.snapped){
+        const next=hit.quad.map(p=>({x:p.x/fw,y:p.y/fh}));
+        // A corner that moved less than a hair keeps the drawn edge, so it does not shimmer.
+        if(!outline.quad||next.some((p,i)=>Math.hypot(p.x-outline.quad[i].x,p.y-outline.quad[i].y)>OUTLINE.nudge))outline.quad=next;
+        outline.at=now;
+      }else outline.quad=null;
     }
     if(outline.quad&&now-outline.at>OUTLINE.keep)outline.quad=null;
     return outline.quad;
@@ -1546,7 +1555,8 @@ export function registerScanner(ctx) {
     if(captureBuffer.length>=CAPTURE_BUFFER_LIMIT)st={state:'amber',icon:'…',msg:'Wait…'};
     else if(rowCount>=BATCH_LIMIT)st={state:'amber',icon:'…',msg:'List full'};
     else if(s().capturePause&&/storage|too large/i.test(s().capturePause))st={state:'amber',icon:'…',msg:s().capturePause};
-    showOutline(v,trustedOutline(frame,fw,fh,m.motion<T.motion),st.state);
+    // Never found on a tick that is about to capture: the edge must not delay a save.
+    showOutline(v,trustedOutline(frame,fw,fh,m.motion<T.motion,Date.now(),st.state==='green'&&!captureLock),st.state);
     s().guide = st;
     s().boundaryReady=!!found&&found.cropSafe===true; // Internal auto-capture gate; no alignment target is drawn.
     const el = document.getElementById("camStatus");
@@ -1653,7 +1663,7 @@ export function registerScanner(ctx) {
   C.scanFile = async (t) => {
     if(suspended)return;
     const files=[...(t.files||[])].filter(f=>f.type.startsWith("image/")),st=s();
-    if(!files.length){if(t.files?.length)toast("Scan a card first");return;}
+    if(!files.length){if(t.files?.length)toast("Pick a photo");return;}
     if((st.mode||"live")==="live"||files.length>1){
       const current=scanCurrent();let queued=0,full=false;
       for(const f of files){

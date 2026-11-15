@@ -4315,7 +4315,7 @@ async function mtgScanAddMany(items) {
         addScannedEntry(s, "mtg", { id: uid(), scanCaptureId: captureId, name: c.name, qty: it.qty, set: c.set.toUpperCase(), setName: c.set_name, collectorNumber: c.collector_number, finish: it.finish, language: it.lang || c.lang || "en", condition: it.condition || "Near Mint", location: it.location || "", reserved: 0, printingId: c.id, oracleId: c.oracle_id, printingVerified: !!(it.cand.exact || it.cand.printingConfirmed), nameVerified: true, raw: { acquisition: "Scanned" } });
       }
     },
-    { undo: `Added ${n} scanned card${n === 1 ? "" : "s"}.` },
+    { undo: `Added ${n} · ${items[0]?.location || "Collection"}` },
   );
 }
 const mtgScanPrice = (cand, finish, selection = {}) => {

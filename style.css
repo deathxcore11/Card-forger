@@ -5365,18 +5365,21 @@ body[data-view="scan"] #content:has(.scan-workspace.is-grid) > .context-guide { 
 /* The found card's edge on the live camera: amber while waiting, green as it is captured. */
 .cam-outline { position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;opacity:0;transition:opacity .18s; }
 .cam-outline.is-on { opacity:1; }
-.cam-outline polygon { fill:none;stroke:var(--warn);stroke-width:3;stroke-linejoin:round;filter:drop-shadow(0 0 6px rgba(0,0,0,.6)); }
-.cam-outline.is-green polygon { stroke:var(--good);stroke-width:4; }
+.cam-outline polygon { fill:none;stroke:var(--warn);stroke-width:3;stroke-dasharray:10 8;stroke-linejoin:round;filter:drop-shadow(0 0 6px rgba(0,0,0,.6)); }
+.cam-outline.is-green polygon { stroke:var(--good);stroke-width:4;stroke-dasharray:none; } /* waiting is dashed, captured is solid: not colour alone */
 @media (prefers-reduced-motion:reduce) { .cam-outline { transition:none; } }
 /* A toast never sits on the Add button, the tray or the nav. */
 body:has(.scan-workspace.is-grid) #toast { bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 104px); }
-body:has(.scan-workspace.is-live) #toast { bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 216px); }
+body:has(.scan-grid-error) #toast { bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 168px); }
+body:has(.scan-select-bar.is-open) #toast { bottom:auto;top:calc(env(safe-area-inset-top) + 76px); }
 .scan-grid-error { display:flex;align-items:center;gap:8px;margin:10px 0 0;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);font-size:14px;font-weight:600;color:var(--text); }
-.scan-grid-error::before { content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--bad); }
+.scan-grid-error.is-failed::before { content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--bad); }
+.scan-grid-error > span { min-width:0; }
 .scan-grid-error em { font-style:normal;font-weight:500;color:var(--muted); }
 .scan-grid-error em::before { content:"· "; }
-.scan-grid-retry { margin-left:auto;min-height:32px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--gold);font:inherit;font-size:13px;cursor:pointer; }
+.scan-grid-retry { position:relative;flex:none;white-space:nowrap;margin-left:auto;min-height:32px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--gold);font:inherit;font-size:13px;cursor:pointer; }
 .scan-grid-retry:disabled { opacity:.5; }
+.scan-grid-retry::after { content:"";position:absolute;inset:-6px 0; } /* a 44 tall tap area around the 32 pill */
 .scan-grid-note { margin:10px 0 0;font-size:13px;color:var(--muted); }
 .scan-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px 10px;margin-top:16px; }
 .scan-tile { display:grid;gap:6px;align-content:start;padding:0;border:0;background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer;border-radius:12px; }
