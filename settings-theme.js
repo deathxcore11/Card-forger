@@ -1,12 +1,16 @@
 import {releaseDot} from './release-status.js';
 import {ICON,actionIcon} from './icons.js';
 import {gridSettings} from './grid-settings.js';
+import {CONSOLE_ICON} from './console-settings.js';
+const SOUND_ICON = CONSOLE_ICON.sound;
 // Appearance belongs to this browser, not the signed-in collection workspace.
 // Never save a theme through the account store or trigger an inventory sync.
 export const THEME_KEY = 'cardstashy-theme';
+// The Console look (owner's pick, 14 Nov 2026): one section per thing, in the app's order. The ids stay as they were
+// (app = Display, recovery = Data, info = Help) so links and saved choices keep working.
 export const SETTINGS_TABS = Object.freeze([
-  ['account', 'Profile & account'], ['app', 'Appearance'],
-  ['recovery', 'Backup'], ['info', 'Help']
+  ['sound', 'Sound'], ['app', 'Display'], ['account', 'Account'],
+  ['recovery', 'Data'], ['info', 'Help']
 ]);
 const storageDefault = () => { try { return globalThis.localStorage; } catch { return null; } };
 export const normalizeTheme = value => ['light','dark','aura'].includes(value) ? value : 'dark';
@@ -37,10 +41,10 @@ export function themeSettings({document = globalThis.document, storage = storage
   const theme = normalizeTheme(document?.documentElement?.dataset.theme || readTheme(storage));
   return `<section class="panel settings-card settings-appearance"><div class="settings-card-heading"><div><p class="eyebrow">APPEARANCE</p><h2>Appearance</h2></div></div><fieldset class="settings-theme"><legend>Color mode</legend><div class="settings-theme-options">${[['light','Light','Bright, soft surfaces'],['dark','Dark','The familiar night view'],['aura','Aura','Soft color from the art you explore']].map(([id,label,description]) => `<label class="settings-theme-choice"><input id="settingsTheme-${id}" name="settingsTheme" type="radio" value="${id}" data-change="setTheme" ${theme === id ? 'checked' : ''}><span class="settings-theme-swatch settings-theme-swatch-${id}" aria-hidden="true"><i></i><i></i><i></i></span><span><b>${label}</b><small>${description}</small></span></label>`).join('')}</div></fieldset><p class="foot">Applies to all three games on this device.</p></section>${gridSettings({document,storage})}`;
 }
-export const normalizeSettingsTab = tab => tab === 'backup' ? 'recovery' : SETTINGS_TABS.some(([id]) => id === tab) ? tab : 'account';
+export const normalizeSettingsTab = tab => tab === 'backup' || tab === 'data' ? 'recovery' : tab === 'display' ? 'app' : tab === 'help' ? 'info' : SETTINGS_TABS.some(([id]) => id === tab) ? tab : 'account';
 export function settingsTabs(tab) {
   tab = normalizeSettingsTab(tab);
-  return `<nav class="settings-tabs" role="tablist" aria-label="Settings sections" aria-orientation="horizontal">${SETTINGS_TABS.map(([id,label]) => `<button type="button" id="settingsTab-${id}" role="tab" aria-controls="settings-${id}" aria-selected="${id === tab}" tabindex="${id === tab ? 0 : -1}" data-act="settingsTab" data-id="${id}">${`<span class="settings-tab-icon" aria-hidden="true">${({account:actionIcon("profile"),recovery:actionIcon("backup"),info:actionIcon("help"),app:actionIcon("appearance")})[id]}</span><span>${label}</span>${id==='recovery'?releaseDot():''}`}</button>`).join('')}</nav>`;
+  return `<nav class="settings-tabs" role="tablist" aria-label="Settings sections" aria-orientation="horizontal">${SETTINGS_TABS.map(([id,label]) => `<button type="button" id="settingsTab-${id}" role="tab" aria-controls="settings-${id}" aria-selected="${id === tab}" tabindex="${id === tab ? 0 : -1}" data-act="settingsTab" data-id="${id}">${`<span class="settings-tab-icon" aria-hidden="true">${({sound:SOUND_ICON,account:actionIcon("profile"),recovery:actionIcon("backup"),info:actionIcon("help"),app:actionIcon("appearance")})[id]}</span><span>${label}</span>${id==='recovery'?releaseDot():''}`}</button>`).join('')}</nav>`;
 }
 export function activateSettingsTab(root, id) {
   const tab = normalizeSettingsTab(id);

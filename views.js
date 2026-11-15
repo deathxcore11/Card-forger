@@ -11,7 +11,9 @@ import {magicOwnedCard} from './magic-owned-detail.js';
 import {myPrintingPrice} from './mtg-tcgprice.js';
 import {renderMagicMatchups} from './magic-matchups-ui.js';
 import {buildMatchupPlan} from './matchup-plan.js';
-import {themeSettings,settingsTabs,normalizeSettingsTab} from './settings-theme.js';
+import {themeSettings,settingsTabs,normalizeSettingsTab,normalizeTheme,readTheme} from './settings-theme.js';
+import {GRID_SIZES,normalizeGridSize,readGridSize,readGridPinch} from './grid-settings.js';
+import {cHead,cSwitch,cLevel,cChoice,cGo,cOpen,cSection} from './console-settings.js';
 import {valuePageOverview,valueTopLots,valuePageAttrs} from './value-page.js';
 import {finishEffectsOn} from './finish-preview.js';
 import {finishAttrs,finishPreview} from './finish-preview.js';
@@ -1999,21 +2001,29 @@ export function accountPanel() {
     label = { synced: "Synced", syncing: "Syncing…", error: "Sync paused", decide: "Needs your decision", offline: "Offline — will sync when you’re back online", local: "Account sync not confirmed" }[st.state] || "Account sync not confirmed";
   const header = profileArt(a.art?.header || S.state.settings.profileHeader) || profileArt(a.art?.avatar || S.state.settings.cardAvatar),
     requests = S.ui.communityRequests || 0, friends = S.ui.communityFriends;
-  return `<section class="panel account"><div class="account-hub">
+  // Console look: who you are, then one line per thing you can do (sync, friends, privacy, profile and sign-in).
+  const syncValue = a.pending ? "Needs you" : label + (st.state === "synced" && st.at ? ` · ${when(st.at)}` : ""),
+    tone = a.pending || st.state === "error" || st.state === "decide" ? "bad" : st.state === "synced" ? "good" : st.state === "local" ? "warn" : "";
+  return `<section class="panel account c-account-panel"><div class="account-hub">
       <div class="account-hub-banner" aria-hidden="true">${header ? `<img src="${esc(header.image)}" alt="" onerror="this.hidden=true">` : ""}</div>
       <div class="account-hub-identity"><span class="account-hub-avatar">${profileAvatar(a.art?.avatar||S.state.settings.cardAvatar,pr)}</span><div><b>${esc(pr.username || pr.display_name || "Collector")}</b><small>${esc(a.user.email || "")}</small><span class="account-hub-meta"><span class="account-hub-privacy">Visible to friends only</span><button class="link small" data-act="myCommunity">View profile</button></span></div></div>
-      <div class="account-hub-actions"><button class="account-hub-friends" data-act="friendsOpen"><span class="account-hub-friends-icon" aria-hidden="true">${actionIcon("friends")}</span><span><b>Friends${requests ? ` <span class="account-inline-count" aria-label="${requests} request${requests===1?"":"s"} waiting">${requests}</span>` : ""}</b><small>${Number.isFinite(friends) ? `${friends} friend${friends===1?"":"s"}` : "Your circle"}${requests ? ` · ${requests} request${requests===1?"":"s"} waiting` : ""} · add by username or email</small></span><span class="account-hub-go" aria-hidden="true">›</span></button></div>
     </div>
-    ${a.pending ? `<button class="btn block" data-act="syncDecide">Choose which copy to keep</button>` : `<div class="sync-line ${st.state}"><span><b>${label}</b>${st.state === "synced" && st.at ? ` · ${esc(when(st.at))}` : ""}</span><button class="btn ghost small" data-act="syncNow">Sync now</button></div>`}
-    ${st.state === "error" && st.msg ? `<p class="small bad-text">${esc(st.msg)} Your cards are still saved on this device.</p>` : ""}
-    <details class="account-hub-edit"><summary class="small"><b>Edit profile</b></summary>${photo}<button class="btn ghost small" data-act="profileHeader">Choose profile header</button>
-      <label class="field">Username <span class="muted small">Your displayed player name. Friends can search for it.</span><input id="pfUser" minlength="3" maxlength="30" required autocomplete="nickname" value="${esc(pr.username || "")}" placeholder="letters, numbers, _"></label>
+    <div class="c-list">${cHead("Sync")}
+    ${a.pending ? cGo({id:"decide", name:"Choose which copy to keep", act:"syncDecide", value:syncValue, tone, icon:"sync"}) : cGo({id:"sync", name:"Account sync", act:"syncNow", value:syncValue, tone, icon:"sync"}).replace('class="c-line c-go"', `class="c-line c-go sync-line ${esc(st.state)}"`)}
+    ${st.state === "error" && st.msg ? `<p class="small bad-text c-status">${esc(st.msg)} Your cards are still saved on this device.</p>` : ""}
+    ${cHead("Friends and privacy")}
+    ${cGo({id:"friends", name:"Friends", act:"friendsOpen", value:[Number.isFinite(friends) ? `${friends} friend${friends===1?"":"s"}` : "", requests ? `${requests} waiting` : ""].filter(Boolean).join(" · "), tone:requests ? "warn" : "", icon:"friends"}).replace('class="c-line c-go"', 'class="c-line c-go account-hub-friends"')}
+    ${cSwitch({id:"presence", name:"Show friends what I’m playing", change:"setPresence", on:presenceShared(), def:"On", icon:"community"})}
+    ${cGo({id:"blocks", name:"Blocked accounts", act:"blockedAccounts", icon:"lock"})}
+    ${cHead("Profile and sign-in")}
+    ${cOpen({id:"edit", name:"Edit profile", icon:"edit", cls:"account-hub-edit", body:`${photo}<button class="btn ghost small" data-act="profileHeader">Choose profile header</button>
+      <label class="field">Username<input id="pfUser" minlength="3" maxlength="30" required autocomplete="nickname" value="${esc(pr.username || "")}" placeholder="letters, numbers, _"></label>
       <label class="field">Bio<textarea id="pfBio" rows="2" maxlength="500">${esc(pr.bio || "")}</textarea></label>
-      <button class="btn small" data-act="saveProfile">Save profile</button>
-    </details>
-    <p class="foot">Your collection and decks are private. Saved here first, then synced to your account.</p>
-    <div class="account-actions"><button class="btn ghost small" data-act="blockedAccounts">Blocked accounts</button><button class="btn ghost small" data-act="accountResetPassword">Reset password</button><button class="btn ghost small" data-act="signOut">Sign out</button></div><p class="foot">Signing out hides this account’s cards and profile on this device.</p>
-    <details class="settings-disclosure settings-danger account-delete"><summary>Delete account</summary><p class="foot">Permanently deletes your CardStashy account and the collection, decks and profile synced to it. You can keep or erase this device's copy afterwards. <a href="delete-account.html" target="_blank" rel="noopener">How account deletion works</a></p><button class="btn ghost danger" data-act="deleteAccount">Delete my account</button></details></section>`;
+      <button class="btn small" data-act="saveProfile">Save profile</button>`})}
+    ${cGo({id:"reset", name:"Reset password", act:"accountResetPassword", icon:"lock"})}
+    ${cGo({id:"signout", name:"Sign out", act:"signOut", icon:"logout"})}
+    ${cOpen({id:"delete", name:"Delete account", danger:true, icon:"delete", cls:"settings-disclosure settings-danger account-delete", body:`<p class="foot"><a href="delete-account.html" target="_blank" rel="noopener">How account deletion works</a></p><button class="btn ghost danger" data-act="deleteAccount">Delete my account</button>`})}
+    </div></section>`;
 }
 
 // Shown when both this device and the account have data, or when they changed separately.
@@ -2046,22 +2056,63 @@ export function settingsSaveCopy(info,state,feedback){
  return {label:current?.text||labels[info.status?.state]||'Online save not confirmed',detail:details[info.status?.state]||'Online saving has not been confirmed.',cls:current?.cls||''};
 }
 export function settings({popup=false}={}) {
+  // Settings in the Console look (owner's pick of mock-up 2, 14 Nov 2026): five sections, one line per setting, names and
+  // values only. The web has no match preferences, so it has no Gameplay section; the app adds one.
   const st = S.state, tab = normalizeSettingsTab(S.ui.settingsTab),account=cloudInfo(),saveCopy=settingsSaveCopy(account,st,S.ui.saveFeedback);
   const recoveryNotice = cloudInfo().status?.recoveryNotice;
-  const saved = esc(st.lastSavedAt ? new Date(st.lastSavedAt).toLocaleString() : "Not yet");
-  return `<div class="settings-page">${popup?'':'<header class="settings-header"><p class="eyebrow">YOUR WORKSPACE</p><h1>Settings</h1><p class="muted">Your account, your data, your preferences.</p></header>'}
-  <div class="settings-save-overview"><span class="settings-save-symbol" aria-hidden="true">${ICON.sync}</span><div><b data-settings-save-status class="save-status ${esc(saveCopy.cls)}" role="status">${esc(saveCopy.label)}</b><small data-settings-save-detail>${esc(saveCopy.detail)}</small></div>${tab==='account'?'':`<button class="link small" data-act="settingsTab" data-id="account">${account.user?'Account':'Sign in'}</button>`}</div>
+  const savedAt = st.lastSavedAt ? new Date(st.lastSavedAt).toLocaleString() : "";
+  const a = audioSettings(), root = globalThis.document?.documentElement;
+  const theme = normalizeTheme(root?.dataset.theme || readTheme()), size = normalizeGridSize(root?.dataset.gridSize || readGridSize()),
+    pinch = root?.dataset.gridPinch === 'on' || (!root?.dataset.gridPinch && readGridPinch());
+  const glass = (() => { try { return localStorage.getItem("cardstashy-glass") !== "off"; } catch { return true; } })();
+  const sound = cSection('sound', tab, cHead('Sound')
+    + cSwitch({id:'sound', name:'Sound and music', change:'setSoundOn', on:a.on, def:'On', icon:'sound'})
+    + cLevel({id:'master', name:'Master volume', change:'setMasterVolume', value:a.master*100})
+    + cLevel({id:'music', name:'Music volume', change:'setMusicVolume', value:a.music*100})
+    + cLevel({id:'sfx', name:'Effects volume', change:'setSfxVolume', value:a.sfx*100})
+    + cSwitch({id:'soft', name:'Soft sounds in the app', change:'setAppSounds', on:a.app !== false, def:'On', icon:'sound'})
+    + cHead('Vibration')
+    + cSwitch({id:'tvib', name:'Tap vibration', change:'setHaptics', on:hapticsOn(), def:'On', icon:'vibrate'}));
+  const display = cSection('app', tab, cHead('Theme')
+    + cChoice({id:'theme', name:'Color mode', change:'setTheme', group:'settingsTheme', options:[['light','Light'],['dark','Dark'],['aura','Aura']], value:theme, def:'Dark', icon:'appearance'})
+    + cHead('Cards')
+    + cChoice({id:'size', name:'Card size', change:'setGridSize', group:'cardGridSize', options:GRID_SIZES.map(id => [id, id[0].toUpperCase() + id.slice(1)]), value:size, def:'Medium', icon:'grid'})
+    + cSwitch({id:'pinch', name:'Pinch to resize card grids', change:'setGridPinch', on:pinch, def:'Off', icon:'grid'})
+    + cSwitch({id:'foil', name:'Card lighting and foil', change:'setFinishEffects', on:finishEffectsOn(), def:'On', icon:'glare'})
+    + cSwitch({id:'tilt', name:'Phone tilt in card views', change:'setMotionTilt', on:motionTiltOn(), def:'On', icon:'flip'})
+    + cHead('Screen')
+    + cSwitch({id:'glass', name:'Frosted glass', change:'setGlass', on:glass, def:'On', icon:'appearance'}));
+  const accountPane = `<div id="settings-account" class="settings-pane c-pane c-account" role="tabpanel" aria-labelledby="settingsTab-account" ${tab === "account" ? "" : "hidden"}>${recoveryNotice ? `<div class="settings-sync-notice"><p class="small" role="status">${esc(recoveryNotice)}</p><button class="link" data-act="settingsTab" data-id="recovery">Review recovery copies →</button></div>` : ""}<div class="settings-account-layout">${accountPanel()}</div></div>`;
+  const data = cSection('recovery', tab, cHead('Backup')
+    + cGo({id:'export', name:'Download backup', act:'exportBackup', value:savedAt ? `Saved ${savedAt}` : '', icon:'download'})
+    + `<p id="backupExportStatus" class="settings-operation-status c-status" role="status" aria-live="polite"></p>`
+    + cGo({id:'restore', name:'Restore backup', file:'restoreBackup', icon:'upload'})
+    + cGo({id:'check', name:'Check a backup file', file:'checkBackup', icon:'check'})
+    + `<p id="backupCheck" class="c-status" role="status"></p>`
+    + cGo({id:'undo', name:'Restore last safety copy', act:'undoRestore', icon:'history'})
+    + cHead('Earlier saves')
+    + cOpen({id:'saves', name:'Saved on this device', icon:'history', cls:'settings-history', body:`<div class="settings-history-body"><div class="settings-recovery-head"><p id="recoveryStatus" class="foot" role="status">Loading recovery copies…</p><button class="btn ghost small" data-act="recoveryRefresh">Refresh</button></div><div id="recoverySnapshots" class="settings-recovery-list" aria-label="Recovery copies"></div></div>`})
+    + cHead('Storage')
+    + `<p id="storageDetail" class="c-status" role="status">Checking device storage…</p><div id="storageBreakdown" class="settings-storage-breakdown c-status" aria-label="Storage details"></div>`
+    + cGo({id:'clear', name:'Remove downloaded pictures', act:'clearCachedImages', icon:'delete'})
+    + cGo({id:'persist', name:'Keep offline data', act:'persist', icon:'offline'})
+    + `<p id="storageActionStatus" class="settings-operation-status c-status" role="status" aria-live="polite"></p>`
+    + cHead('Reset')
+    + cOpen({id:'reset', name:'Reset data and demo collection', danger:true, cls:'settings-disclosure settings-danger account-delete', icon:'warn', body:`<div class="actions wrap"><button class="btn ghost danger" data-act="reset">Clear this device</button><button class="btn ghost" data-act="loadExample">Replace with demo cards</button></div>`})
+    + cHead('Install or update CardStashy') + `<div class="c-block">${releaseDot()}${installCardMarkup(brandStaticMark())}</div>`);
+  const help = cSection('info', tab, cHead('This app')
+    + `<div class="c-block">${versionsMarkup()}</div>`
+    + cGo({id:'tour', name:'Replay tutorials', act:'replayTour', icon:'play', extra:'data-tour="1"'}).replace('class="c-line c-go"', 'class="c-line c-go settings-tour"')
+    + cGo({id:'onboarding', name:'Reset onboarding', act:'resetOnboarding', icon:'refresh'}).replace('class="c-line c-go"', 'class="c-line c-go settings-tour"')
+    + cHead('Guides') + `<div class="c-block">${infoPanel()}</div>`
+    + cHead('About')
+    + cOpen({id:'sources', name:'Card databases and prices', icon:'book', cls:'settings-disclosure settings-source', body:`<ul class="sources"><li><b>Magic:</b> Scryfall card data, images and reference prices; MTGJSON precon lists.</li><li><b>Pokémon:</b> TCGdex card data and images, with supplied TCGplayer and Cardmarket prices.</li><li><b>Yu-Gi-Oh!:</b> YGOPRODeck card data, alternate art, printings and reference prices.</li>${mtgWikiCredit()}<li><b>Imports:</b> Supported text and CSV exports from deck and collection tools.</li></ul><p class="foot">Prices are estimates; check edition, condition and shipping with the seller.</p>`})
+    + cOpen({id:'about', name:'About CardStashy', icon:'info', cls:'settings-disclosure settings-source', body:`<p class="foot">CardStashy is an independent fan app, not affiliated with or endorsed by the publishers. Magic: The Gathering is a trademark of Wizards of the Coast; Yu-Gi-Oh! of Konami; Pokémon of Nintendo, Creatures and GAME FREAK. Cards and art belong to their owners.</p><span class="settings-version">Version ${APP_VERSION}</span>`})
+    + `<p class="foot settings-legal c-block">CardStashy is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. &copy;Wizards of the Coast LLC.</p>`, {panel:false});
+  return `<div class="settings-page c-settings">${popup?'':'<header class="settings-header c-title"><h1>Settings</h1></header>'}
+  <div class="settings-save-overview c-save"><span class="settings-save-symbol" aria-hidden="true">${ICON.sync}</span><div><b data-settings-save-status class="save-status ${esc(saveCopy.cls)}" role="status">${esc(saveCopy.label)}</b><small data-settings-save-detail>${esc(saveCopy.detail)}</small></div>${tab==='account'?'':`<button class="link small" data-act="settingsTab" data-id="account">${account.user?'Account':'Sign in'}</button>`}</div>
   ${settingsTabs(tab)}
-  <div id="settings-account" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-account" ${tab === "account" ? "" : "hidden"}>${recoveryNotice ? `<div class="settings-sync-notice"><p class="small" role="status">${esc(recoveryNotice)}</p><button class="link" data-act="settingsTab" data-id="recovery">Review recovery copies →</button></div>` : ""}<div class="settings-account-layout">${accountPanel()}</div></div>
-  <div id="settings-recovery" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-recovery" ${tab === "recovery" ? "" : "hidden"}>
-  <h2 class="settings-group-title">Backups &amp; offline storage</h2>
-  <section class="panel settings-card settings-backup-card"><div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">${actionIcon("export")}</span><div><p class="eyebrow">A COPY YOU CONTROL</p><h2>Export backup</h2></div></div><p class="muted small">Collection, decks and settings across all three games, together in one file.</p><button class="btn" data-act="exportBackup">Download backup</button><p id="backupExportStatus" class="settings-operation-status" role="status" aria-live="polite">Ready to download your cards, decks and settings.</p><p class="foot">Last saved on this device: ${saved}</p><details class="settings-disclosure"><summary>Import or check a backup</summary><p class="foot">Restore replaces your collection, decks and settings with the backup. You can review the changes before confirming.</p><div class="actions wrap"><label class="btn ghost">Restore backup<input type="file" accept=".json" data-change="restoreBackup" hidden></label><label class="btn ghost">Check file<input type="file" accept=".json" data-change="checkBackup" hidden></label></div><p id="backupCheck" class="muted small" role="status"></p><button class="link" data-act="undoRestore">Restore last safety copy…</button></details></section>
-  <section class="panel settings-card"><div class="settings-card-heading"><div><p class="eyebrow">ON THIS DEVICE</p><h2>Storage &amp; cleanup</h2></div></div><p id="storageDetail" class="muted small" role="status">Checking device storage…</p><div id="storageBreakdown" class="settings-storage-breakdown" aria-label="Storage details"></div><div class="actions wrap"><button class="btn ghost small" data-act="clearCachedImages">Remove downloaded pictures</button><button class="btn ghost small" data-act="persist">Keep offline data</button></div><p class="foot">Removing downloaded pictures keeps your cards, decks, earlier saves and unfinished scans. Pictures download again when needed and may be unavailable offline until then.</p><p class="foot">Keep offline data asks the browser to reduce automatic cleanup. It does not create an online backup or increase photo storage.</p><p id="storageActionStatus" class="settings-operation-status" role="status" aria-live="polite"></p></section>
-  <section class="panel settings-card"><details class="settings-history"><summary><span><b>Earlier saves</b><small>Restore a previous version of your cards and decks</small></span><span aria-hidden="true">${ICON.chevron}</span></summary><div class="settings-history-body"><div class="settings-recovery-head"><p id="recoveryStatus" class="foot" role="status">Loading recovery copies…</p><button class="btn ghost small" data-act="recoveryRefresh">Refresh</button></div><p class="muted small">Saved before loading another account version or restoring a backup. Restoring also updates your online account when signed in. Your current cards and decks are saved first.</p><div id="recoverySnapshots" class="settings-recovery-list" aria-label="Recovery copies"></div></div></details></section>
-  <details class="settings-disclosure settings-danger account-delete"><summary>Reset data and demo collection</summary><p class="foot">Export a backup first. One recovery copy is kept on this device.</p><div class="actions wrap"><button class="btn ghost danger" data-act="reset">Clear this device</button><button class="btn ghost" data-act="loadExample">Replace with demo cards</button></div></details><h2 class="settings-group-title">Install or update CardStashy ${releaseDot()}</h2>${installCardMarkup(brandStaticMark())}</div>
-  <div id="settings-app" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-app" ${tab === "app" ? "" : "hidden"}>${themeSettings()}<section class="panel settings-card"><div class="settings-card-heading"><div><p class="eyebrow">DISPLAY &amp; FEEDBACK</p><h2>Glass, motion &amp; feel</h2></div></div><label class="check"><input type="checkbox" data-change="setGlass" ${(() => { try { return localStorage.getItem("cardstashy-glass") !== "off"; } catch { return true; } })() ? "checked" : ""}> Frosted glass</label><p class="foot">Turn it off for plain solid panels (a little lighter on older phones).</p><label class="check"><input type="checkbox" data-change="setFinishEffects" ${finishEffectsOn()?"checked":""}> Card lighting &amp; foil effects</label><p class="foot">Soft light follows your tilt in card details. Foil cards shimmer automatically in the gallery.</p><label class="check"><input type="checkbox" data-change="setMotionTilt" ${motionTiltOn()?"checked":""}> Phone tilt in card views</label><p class="foot">Move your phone to move the card and light. Turn off to use touch controls. Follows Reduce motion.</p><label class="check"><input type="checkbox" data-change="setHaptics" ${hapticsOn() ? "checked" : ""}> Tap vibration</label><p class="foot">On iPhone this uses the system tap (iOS 18 or later). Animations follow your phone’s “Reduce motion” setting.</p>${cloudInfo().user ? `<label class="check"><input type="checkbox" data-change="setPresence" ${presenceShared() ? "checked" : ""}> Show friends what I’m playing</label><p class="foot">Accepted friends see your Play screen or match, like “Quick Play · Pauper · turn 7”.</p>` : ""}<label class="check"><input type="checkbox" data-change="setSoundOn" ${audioSettings().on ? "checked" : ""}> Sound &amp; music</label><label class="settings-volume">Master <input type="range" min="0" max="100" step="5" aria-label="Master volume" data-change="setMasterVolume" value="${Math.round(audioSettings().master * 100)}"></label><label class="settings-volume">Effects <input type="range" min="0" max="100" step="5" aria-label="Effects volume" data-change="setSfxVolume" value="${Math.round(audioSettings().sfx * 100)}"></label><label class="settings-volume">Music <input type="range" min="0" max="100" step="5" aria-label="Music volume" data-change="setMusicVolume" value="${Math.round(audioSettings().music * 100)}"></label><label class="check"><input type="checkbox" data-change="setAppSounds" ${audioSettings().app !== false ? "checked" : ""}> Soft sounds in the app</label><p class="foot">Music plays only in matches and Planeswalk. Elsewhere you hear only a few soft sounds, like opening a pack or adding a card, if “Soft sounds in the app” is on. Music streams the first time, then stays on this device. Sound starts after your first tap.</p></section>
-
-  <button class="link settings-tour" data-act="resetOnboarding">Reset onboarding</button></div><div id="settings-info" class="settings-pane" role="tabpanel" aria-labelledby="settingsTab-info" ${tab === "info" ? "" : "hidden"}>${versionsMarkup()}${infoPanel()}<div class="settings-help-actions"><button class="btn ghost small settings-tour" data-act="replayTour">▶ Replay tutorials</button></div>  <details class="settings-disclosure settings-source"><summary>Card databases & prices</summary><ul class="sources"><li><b>Magic:</b> Scryfall card data, images and reference prices; MTGJSON precon lists.</li><li><b>Pokémon:</b> TCGdex card data and images, with supplied TCGplayer and Cardmarket prices.</li><li><b>Yu-Gi-Oh!:</b> YGOPRODeck card data, alternate art, printings and reference prices.</li>${mtgWikiCredit()}<li><b>Imports:</b> Supported text and CSV exports from deck and collection tools.</li></ul><p class="foot">Prices are estimates; check edition, condition and shipping with the seller.</p></details><details class="settings-disclosure settings-source"><summary>About CardStashy</summary><p class="foot">Scores and test games are estimates, not win rates. CardStashy is an independent fan app, not affiliated with or endorsed by the publishers. Magic: The Gathering is a trademark of Wizards of the Coast; Yu-Gi-Oh! of Konami; Pokémon of Nintendo, Creatures and GAME FREAK. Cards and art belong to their owners.</p><span class="settings-version">Version ${APP_VERSION}</span></details><p class="foot settings-legal">CardStashy is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. &copy;Wizards of the Coast LLC.</p></div></div>`;
+  ${sound}${display}${accountPane}${data}${help}</div>`;
 }
 
 /* ---------- Deck idea sheet ---------- */

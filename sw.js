@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-native-0480-43197-v569";
+const CACHE = "cardforge-shell-native-0482-43201-v573";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
@@ -101,9 +101,12 @@ const ASSETS = [
   "./pokemon-promo-evidence.js",
 
   "./settings-theme.css",
+  "./console-settings.css",
   "./theme-init.js",
   "./magic-matchups.css",
   "./settings-theme.js",
+  "./console-settings.js",
+  "./daily-login.js",
   "./settings-storage.js",
   "./mobile-tilt.js", "./set-experience.js", "./pack-preview.js", "./pack-wrappers.js", "./pack-art-data.js", "./mtg-boosters.js", "./rarity-emblem.js", "./data-loading.js", "./collector-search.js",
   "./sync-merge.js",

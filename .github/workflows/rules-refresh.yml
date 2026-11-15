@@ -109,6 +109,31 @@ jobs:
           git add forge-rules/current forge-rules/app
           git commit -q -m "App rules data: $VERSION (app engine: $APP_VERSION)" -m "The Android app's engine fetches this bundle once per launch (Refresh Forge rules data workflow)."
           git push origin "HEAD:$GITHUB_REF_NAME"
+      # A new Magic set reaches Play's shop, Trunk and reward packs once its booster is baked (Star Trek, 13 Nov 2026, waited
+      # because the bake last ran 22 Oct). Each day the sets that are out and sell a pack but are not baked yet are added from
+      # MTGJSON, with their cards from Scryfall; the sets already baked are left as they are.
+      # It runs even when a rules step failed, so a bad rules day never holds a new set back.
+      - name: Add the booster of every newly released set
+        if: ${{ !cancelled() }}
+        run: |
+          cd web
+          out=$(node scripts/build-mtg-boosters.mjs --new "$RUNNER_TEMP/mtgjson")
+          printf '%s\n' "$out"
+          last=$(printf '%s\n' "$out" | tail -n 1)
+          if [ "${last%% *}" = NEW ]; then
+            node scripts/bake-mtg-booster-cards.mjs "$RUNNER_TEMP/booster-cards.json"
+            node -e "
+              const fs=require('fs'),i=JSON.parse(fs.readFileSync('data/mtg-boosters/index.json','utf8'));
+              for(const c of process.argv.slice(1)){const d=JSON.parse(fs.readFileSync('data/mtg-boosters/'+c+'.json','utf8'));
+                if(!i.sets[c]||d.set!==c||!d.boosters.length)throw Error(c+' is not baked');
+                for(const b of d.boosters)for(const n of Object.keys(b.c))if(!d.sheets[n]?.cards.length)throw Error(c+': sheet '+n+' is empty');
+                if(!Object.keys(JSON.parse(fs.readFileSync('data/mtg-booster-cards/'+c+'.json','utf8')).cards).length)throw Error(c+': no card facts');}" ${last#NEW }
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add data/mtg-boosters data/mtg-booster-cards
+            git commit -q -m "Play packs for newly released sets: ${last#NEW }" -m "Booster sheets from MTGJSON and card facts from Scryfall, added by the Refresh Forge rules data workflow (run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)."
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
       - name: Open an issue when the refresh fails
         if: failure()
         env:

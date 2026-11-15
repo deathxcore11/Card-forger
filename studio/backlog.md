@@ -49,6 +49,35 @@ card has a 44 dp touch box and no longer covers a name. Audio was skipped: no ne
 | C10 | `studio/standards.md` has no text size floor and no touch size rule; the only floors are in `ui/TextFloors.kt` | UX | Read | no | `studio/standards.md` |
 | C11 | Dimmed gold tool buttons show a square dark box behind the round button (Fold, Thor) | Art | Seen in test pictures; not part of this change | no (fix) | `match-table-master.md` |
 
+## Console Settings, daily pop-up and match menu: what is left (14 Nov 2026)
+
+Built in the app from the owner's pick of mock-up 2 (14 Nov 13:42Z): Settings in six sections with a panel for the line you are on
+(a picture, its default, and a few words only where the name is not enough: owner, 14 Nov 14:43Z), Music volume and Effects volume (new), the daily log-in pop-up as a full-screen celebration, and the match menu with
+the six settings you reach for mid-game (new). Seen in test pictures at phone, Fold and Thor; not on a device.
+
+| Rank | Brief | Department | Evidence | Needs preview | Owning spec |
+|---|---|---|---|---|---|
+| S1 | Device walk of Settings, the daily pop-up and the match menu on a phone, the Fold and the Thor: every section with a finger and with the controller (LB/RB, A, left/right), both volumes heard moving mid-song and mid-match, Claim on day 1 and day 7, the match menu over a live match | QA | Not assessed on a device | no | `qa/smoke-check.md` |
+| S2 | Help topics still describe the AI assistant ("Assistant, Coach & Judge", "AI requests use the app's server", "ask the Home assistant") in the app and in `app-info.js` on the site. Rewrite them from what the no-AI search, Ask a Judge and deck coach really do, app and site together | UX | Read in code | no (fix) | `specs/omni-search-brief.md` |
+| S3 | The same Console Settings, daily pop-up and match menu on the website | UX | Not built | no (approved mock-up) | settings preview RE2XCDRwgwqatGcFLZdybV |
+| S4 | The match menu keeps the turn clock running (it is titled Match menu, not Paused). Pausing the clock while it is open would be a rules change for the builder | Game feel | Read in code | owner's call | `specs/match-table-master.md` |
+| S5 | Planeswalk plays its music at a fixed level: it does not follow Music volume or Effects volume yet | Audio | Read in code | no (fix) | `specs/stage-music-brief.md` |
+| S6 | The match menu closes in one frame (it opens with a 180 ms fade); give the close the same short fade | Game feel | Read in code | no (fix) | this section |
+| S7 | A CPU move can happen unseen under the open match menu, because the clock keeps running. Show a small "Opponent acted" mark on Resume, or replay the beat on close | Game feel | Read in code | yes | `specs/match-table-master.md` |
+| S8 | The gold focus wash jumps from line to line and a value swaps without motion; slide the wash and roll the value (100 ms) | Game feel | Seen in test pictures | yes (new look) | settings preview RE2XCDRwgwqatGcFLZdybV |
+| S9 | Daily pop-up medals drop 110 ms apart; 250 ms with a soft tick each would read as a count-up (new look) | Game feel | Read in code | yes | this section |
+| S10 | With Reduce motion on, Claim still waits 520 ms for a lift that is not drawn; claim at once | Game feel | Read in code | no (fix) | this section |
+| S11 | Concede is drawn red like Delete account; Arena keeps it plain until the confirm. Owner's call | UX | Seen in test pictures | owner's call | this section |
+| S12 | The Thor bottom-screen daily week shows the Pokéball seal mark for a Magic week; pick the seal by game | Art | Seen in test pictures | no (fix) | `specs/thor-two-screens-brief.md` |
+| S13 | Deck tracker card crops are 30 x 22 dp and cut most art to a blur; use the art crop at 40 x 28 | Art | Seen in test pictures | no (fix) | this section |
+| S14 | TableMusic's loop-point runnable (40 ms, there before this change) now also reads Music volume each wake; cheap, but a change listener would let it sleep between loops | Performance | Read in code | no (fix) | this section |
+| S15 | Opening the match menu recomposes the whole table under it; draw the table once into a layer while the menu is up | Performance | Read in code | no (fix) | this section |
+| S16 | A volume step is a 10% jump heard at once; smooth it over 120 ms | Audio | Read in code | no (fix) | this section |
+| S17 | Volume tests check the numbers, not the sound; record a live match at 0, 50 and 100 on a device | QA | Not assessed on a device | no | `qa/smoke-check.md` |
+| S18 | The Help guide search box takes a controller's focus but A does not open a keyboard on the Thor | UX | Read in code | no (fix) | this section |
+| S19 | The daily pop-up's ground is a little see-through, as in the mock-up; check on a bright device that the home screen does not show through | Art | Not assessed on a device | no | this section |
+| S20 | Galaxy Fold cover screen (folded) not drawn in any test picture for Settings, the daily pop-up or the match menu | QA | Not assessed | no | `qa/smoke-check.md` |
+
 ## The parity programme (owner, 14 Nov 2026: "a task force to transform this into an Arena clone, 1 to 1")
 
 Arena's behaviour, flow, timing and feedback, screen by screen, in our own art, layout

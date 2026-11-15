@@ -34,7 +34,7 @@ try{
     await page.locator('#settingsTab-app').click();await page.locator('#settingsTheme-'+theme).check();
     for(const width of widths){
      await page.setViewportSize({width,height:1000});
-     for(const tab of ['account','recovery','info','app']){
+     for(const tab of ['sound','account','recovery','info','app']){
       await page.locator('#settingsTab-'+tab).click();
       await page.locator('#settings-'+tab).waitFor({state:'visible'});
       assert(await page.locator('[data-settings-save-status]').evaluate(n=>n.scrollWidth<=n.clientWidth+1), 'Save status remains fully readable, never shortened by the header ellipsis rule');

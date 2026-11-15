@@ -2647,3 +2647,35 @@ body:has(dialog.play-match-exit[data-answer-first]) .play-match-table[data-forge
  radial-gradient(circle 45vmax at 100% calc(100% + 2vmax),color-mix(in srgb,var(--amb-you-2,#e8b95b) calc(var(--amb-bot)*100%),transparent) 0%,transparent 62%)}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-main>.forge-ambient[data-turn=cpu]{--amb-top:.62;--amb-bot:.16}
 @media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-main>.forge-ambient{transition:none}}
+/* The match menu in the Console look (owner's pick of 14 Nov 2026; the app's MatchMenu.kt): a sheet in the middle over a veil,
+   MATCH MENU in Cinzel, Resume first, what you can do at the left and the settings at the right when there is room. A tap on
+   the veil closes it. The turn clock keeps running, so it is called Match menu, not Paused. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-header>.play-match-menu[open]::before{content:"";position:fixed;inset:0;z-index:39;background:#05070bb8}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-header>.play-match-menu[open]>.forge-menu-panel{position:fixed;inset:0;margin:auto;height:fit-content;transform:none;animation:forge-menu-in .18s ease-out;z-index:40;width:min(780px,calc(100vw - 16px));min-width:0;max-width:none;max-height:calc(100dvh - 16px);backdrop-filter:none;-webkit-backdrop-filter:none;overflow:auto;display:grid;grid-template-columns:1fr;align-content:start;gap:0;padding:0 0 10px!important;border-radius:22px;background:linear-gradient(#171b24,#0e1117);border:1px solid #ffffff1f;box-shadow:0 30px 80px #000c}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel>.forge-menu-title{grid-column:1/-1;margin:0;padding:14px 18px 4px;font:700 20px Cinzel,Georgia,serif;letter-spacing:.08em;text-transform:uppercase;color:#f3ead7}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel>button,:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel .forge-tracker-toggles>button{position:relative;min-height:52px!important;padding:0 18px!important;border-radius:0!important;font:600 15px/1.25 'DM Sans',system-ui,sans-serif!important;color:#c9ccd4!important}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel>:is(button,.forge-tracker-toggles){grid-column:1}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel>button:is(:hover,:focus-visible),:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel .forge-tracker-toggles>button:is(:hover,:focus-visible){background:linear-gradient(90deg,#e8b95b33,#e8b95b0a 72%,transparent)!important;color:#fff!important;outline:none!important;box-shadow:inset 3px 0 0 #e8b95b!important}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel>button[data-focus-key=exit-match]{color:#ff8f86!important}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel>button[aria-pressed=true]::after,:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel .forge-tracker-toggles>button[aria-pressed=true]::after{content:"On";margin-left:auto;font-weight:700;color:#e8b95b}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel>.forge-menu-resume{order:-1}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel>.forge-menu-title{order:-2}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel>button[data-focus-key=exit-match]{order:5}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel>.forge-menu-settings{order:9;grid-column:1/-1;min-width:0}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-settings .c-head{margin:14px 18px 4px}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel>.forge-tracker-toggles{order:1;background:none!important;box-shadow:none!important}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel>button[data-focus-key=table-details]{order:2}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel>.forge-remember{order:3}
+@keyframes forge-menu-in{from{opacity:0}}
+@media(prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-header>.play-match-menu[open]>.forge-menu-panel{animation:none}}
+@media(min-width:560px){
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-header>.play-match-menu[open]>.forge-menu-panel{grid-template-columns:.85fr 1fr;grid-auto-flow:row dense}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel>.forge-menu-settings{grid-column:2;grid-row:2/span 6;align-self:start}
+}
+@media(max-height:440px){:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-settings .c-head{display:none}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel>button,:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel .forge-tracker-toggles>button{min-height:46px!important}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-menu-panel>.forge-menu-title{padding-top:8px;font-size:16px}}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-header .forge-menu-panel :is(button,.forge-tracker-toggles){background:none!important;border:0!important}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-header .forge-menu-panel :is(>button,.forge-tracker-toggles>button):is(:hover,:focus-visible){background:linear-gradient(90deg,#e8b95b33,#e8b95b0a 72%,transparent)!important}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-header:has(>.play-match-menu[open]){z-index:3300!important}
+body:has(.play-match-table .play-match-menu[open]) :is(.forge-emote-bubble,.forge-emote-menu){visibility:hidden}
