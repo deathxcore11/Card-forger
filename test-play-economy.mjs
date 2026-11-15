@@ -26,6 +26,15 @@ assert.deepEqual(r.sets.map(s => s.code), ['fra', 'hob', 'fdn'], 'newest release
 assert.deepEqual(r.unmatched, ['Unknown Future Set'], 'digital-only entries are not data problems');
 assert.equal(rewardSet({standardSets, boosterIndex, scryfallSets: sets, today: '2026-12-05'}).code, 'stk', 'Star Trek takes over by itself once released');
 assert.equal(rewardSet({standardSets, boosterIndex: {sets: {hob: {}, fra: {}}}, scryfallSets: sets, today: '2026-12-05'}).code, 'fra', 'no booster file yet: keep the previous set');
+// A new premier set is Standard the day it is out, before Wizards' page lists it (real Star Trek, 13 Nov 2026); a masters set,
+// a child set or one with no booster file is not, and nothing is added before the set comes out.
+const unlisted = ['Magic: The Gathering | The Hobbit', 'Reality Fracture'];
+const later = [...sets, {code: 'trk', name: 'Star Trek', released_at: '2026-11-13', set_type: 'expansion'},
+  {code: 'mm9', name: 'Modern Masters 9', released_at: '2026-11-13', set_type: 'masters'}, {code: 'sds', name: 'Stardates', released_at: '2026-11-13', set_type: 'expansion', parent_set_code: 'trk'}];
+const withTrk = {sets: {hob: {}, fra: {}, trk: {}, mm9: {}, sds: {}}};
+assert.deepEqual(standardBoosterSets({standardSets: unlisted, boosterIndex: withTrk, scryfallSets: later, today: '2026-11-15'}).sets.map(s => s.code), ['trk', 'fra', 'hob']);
+assert.equal(rewardSet({standardSets: unlisted, boosterIndex: withTrk, scryfallSets: later, today: '2026-11-12'}).code, 'fra', 'not out yet: keep the listed set');
+assert.equal(rewardSet({standardSets: unlisted, boosterIndex: {sets: {hob: {}, fra: {}}}, scryfallSets: later, today: '2026-11-15'}).code, 'fra', 'no booster file yet: keep the listed set');
 // The real Standard list matches a set code for every paper entry.
 const facts = JSON.parse(readFileSync('forge-rules/current/official-format-facts.json', 'utf8'));
 for (const name of facts.standardSets) if (!/digital only/i.test(name)) assert.ok(cleanSetName(name).length > 2, name);

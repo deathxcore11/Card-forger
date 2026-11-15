@@ -1,5 +1,6 @@
 // Which set Play's reward packs come from. Never hardcoded: it is the newest set that is
-//  (a) on Wizards' Standard list (forge-rules/current/official-format-facts.json, refreshed weekly),
+//  (a) on Wizards' Standard list (forge-rules/current/official-format-facts.json, refreshed weekly), or an expansion or core
+//      set released after every set on it (a new set is Standard legal the day it comes out),
 //  (b) has a baked booster file (data/mtg-boosters/index.json), and
 //  (c) has been released, per Scryfall's set list (an expansion or core set).
 // Wizards' list is in page order, not release order, and uses display names, so names are cleaned
@@ -35,6 +36,13 @@ export function standardBoosterSets({standardSets = [], boosterIndex = {}, scryf
     if (!hit) { if (!/digital only/i.test(raw)) unmatched.push(raw); continue; }
     if (!baked[hit.code] || !hit.released_at || hit.released_at > day) continue;
     out.push({code: hit.code, name: hit.name, released: hit.released_at});
+  }
+  // A premier set joins Standard (and Modern) the day it comes out, days before Wizards' page lists it (Star Trek, 13 Nov 2026,
+  // missed Play's Standard shelf and reward packs): an expansion or core set newer than every listed one counts as listed.
+  const newest = out.reduce((m, s) => (s.released > m ? s.released : m), '');
+  if (newest) for (const s of scryfallSets) {
+    if (!s || !KINDS.has(s.set_type) || s.digital || s.parent_set_code || !baked[s.code] || !s.released_at || s.released_at <= newest || s.released_at > day) continue;
+    if (!out.some(x => x.code === s.code)) out.push({code: s.code, name: s.name, released: s.released_at});
   }
   out.sort((a, b) => b.released.localeCompare(a.released) || a.code.localeCompare(b.code));
   return {sets: out, unmatched};
