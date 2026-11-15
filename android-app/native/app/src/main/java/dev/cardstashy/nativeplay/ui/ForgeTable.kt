@@ -176,7 +176,7 @@ internal val PHASE_STEPS = listOf(
     "Combat" to setOf("COMBAT_BEGIN", "COMBAT_DECLARE_ATTACKERS", "COMBAT_DECLARE_BLOCKERS", "COMBAT_FIRST_STRIKE_DAMAGE", "COMBAT_DAMAGE", "COMBAT_END"),
     "Main 2" to setOf("MAIN2"), "End" to setOf("END_OF_TURN", "CLEANUP"))
 
-private val SHORT_STEP = mapOf("UPKEEP" to "To draw", "DRAW" to "To main", "MAIN1" to "To combat", "COMBAT_BEGIN" to "To attackers",
+internal val SHORT_STEP = mapOf("UPKEEP" to "To draw", "DRAW" to "To main", "MAIN1" to "To combat", "COMBAT_BEGIN" to "To attackers",
     "COMBAT_DECLARE_ATTACKERS" to "To blocks", "COMBAT_DECLARE_BLOCKERS" to "To damage", "COMBAT_FIRST_STRIKE_DAMAGE" to "To damage",
     "COMBAT_DAMAGE" to "End combat", "COMBAT_END" to "To main 2", "MAIN2" to "To end step", "END_OF_TURN" to "To cleanup")
 
@@ -201,15 +201,19 @@ internal fun okLabel(st: MatchState): String {
         }
         st.inputType == "InputAttack" -> mine.count { Affordability.owesAttack(it) }.let { must -> if (must > 0) "$must must attack" else mine.count { it.attacking }.let { if (it > 0) "Attack with $it" else "No attacks" } }
         st.inputType == "InputBlock" -> mine.count { it.blocking }.let { if (it > 0) "Block with $it" else "No blocks" }
-        st.inputType?.startsWith("InputPayMana") == true && raw.equals("auto", true) -> "Pay automatically"
+        // Better table scene 2 / gaps item 7: "Pay automatically" was cut on the Fold ("Pay automa…"). The press is the same Forge
+        // auto-pay; its words name the amount owed, as the preview's "Pay 1".
+        st.inputType?.startsWith("InputPayMana") == true && raw.equals("auto", true) -> payLabel(st)
         st.inputType == "InputSelectTargets" -> "Confirm targets"
         else -> raw
     }
 }
 /** W10: your main phase 1, an empty stack, and none of your creatures can attack (all tapped or summoning sick): Forge's cancel is End turn. */
 internal fun noAttackersLeft(st: MatchState): Boolean = st.inputType == "InputPassPriority" && st.phase == "MAIN1" && st.activePlayer == st.viewer && st.stack.isEmpty() &&
-    st.buttons.cancelEnabled && st.buttons.cancel?.trim().equals("end turn", true) &&
-    st.me.battlefield.none { it.isCreature && !it.tapped && !(it.summoningSick && it.keywords.none { k -> Regex("haste", RegexOption.IGNORE_CASE).containsMatchIn(k) }) }
+    st.buttons.cancelEnabled && st.buttons.cancel?.trim().equals("end turn", true) && !canAttackNow(st)
+/** One of your creatures stands untapped and is not summoning sick (or has haste): it could attack. */
+internal fun canAttackNow(st: MatchState): Boolean =
+    st.me.battlefield.any { it.isCreature && !it.tapped && !(it.summoningSick && it.keywords.none { k -> Regex("haste", RegexOption.IGNORE_CASE).containsMatchIn(k) }) }
 /**
  * Randall's 15 Nov recording (gaps list 3): in your second main phase he sat 22 s with "To end step" and "End turn" both showing. With
  * nothing on the stack, one gold End turn (Forge's cancel) is the whole decision, as Arena's one button; a hand card still plays first.
@@ -218,8 +222,50 @@ internal fun main2EndTurn(st: MatchState): Boolean = st.inputType == "InputPassP
     st.stack.isEmpty() && st.buttons.cancelEnabled && st.buttons.cancel?.trim().equals("end turn", true)
 internal fun cancelLabel(st: MatchState): String? {
     val raw = st.buttons.cancel?.takeIf { st.buttons.cancelEnabled } ?: return null
-    return if (st.inputType == "InputPassPriority" && raw.equals("end turn", true)) "End turn" else raw
+    return when {
+        st.inputType == "InputPassPriority" && raw.equals("end turn", true) -> "End turn"
+        // Better table scene 2: your own trigger's "you may pay": its cancel declines the payment, so it reads Not now (a spell's
+        // payment keeps Cancel: that takes the cast back).
+        raw.equals("cancel", true) && optionalTriggerPay(st) -> "Not now"
+        else -> raw
+    }
 }
+
+/** Forge asks for mana for your own trigger on top of the stack (its source is the card paid for): an optional payment. */
+internal fun optionalTriggerPay(st: MatchState): Boolean {
+    if (st.inputType?.startsWith("InputPayMana") != true) return false
+    val top = st.stack.firstOrNull() ?: return false
+    val src = top.source ?: return false
+    return top.ability && top.controller == st.viewer && src.id == st.payment?.forCard
+}
+
+/**
+ * Better table scene 2: the auto-pay press says how much it pays, "Pay 1", from the cost still owed ({2}{W} is 3); "Pay" when the
+ * cost holds an X or Forge's message has none.
+ */
+internal fun payLabel(st: MatchState): String {
+    val owed = st.payment?.remaining?.trim()?.takeIf { it.isNotEmpty() }
+        ?: st.message.lines().map { it.trim() }.firstOrNull { Regex("^pay mana cost:", RegexOption.IGNORE_CASE).containsMatchIn(it) }
+            ?.replace(Regex("^pay mana cost:", RegexOption.IGNORE_CASE), "")?.trim()
+    val symbols = owed?.takeIf { Regex("^(\\{[^{}\\s]{1,8}\\})+$").matches(it) }?.let { o -> Regex("\\{([^}]+)\\}").findAll(o).map { it.groupValues[1] }.toList() } ?: return "Pay"
+    if (symbols.any { it.equals("X", true) || it.equals("Y", true) }) return "Pay"
+    val n = symbols.sumOf { it.toIntOrNull() ?: 1 }
+    return if (n > 0) "Pay $n" else "Pay"
+}
+
+/**
+ * Better table scenes 2, 3, 9: where the gold press goes, as a small line under its words ("No attacks / to second main", "End turn
+ * / to CPU's turn", "Attack / to combat"). Null for every other press (its words already say it).
+ */
+internal fun goldSub(st: MatchState, label: String, endTurn: Boolean): String? = when {
+    endTurn -> st.players.filter { it.id != st.viewer }.singleOrNull()?.name?.trim()?.takeIf { it.isNotEmpty() }?.let { "to $it\u2019s turn" } ?: "to the next turn"
+    label == "No attacks" && st.inputType == "InputAttack" -> "to second main"
+    label == ATTACK_STEP && st.inputType == "InputPassPriority" && st.phase == "MAIN1" -> "to combat"
+    else -> null
+}
+
+/** Better table scene 9: your first main's way on to combat, while a creature can still attack, is the gold "Attack". */
+internal const val ATTACK_STEP = "Attack"
 
 // ---- Colours (play-token-art.js PALETTE / frameTone; .forge-land-color) ----
 
@@ -845,9 +891,6 @@ fun ForgeBoard(
             val quietMax = (clearOf(goldY - 6.du - btnH, goldY - 6.du, 4.du) - dotsW).coerceAtLeast(0.dp)
             val askMax = if (askText != null && askRight != Dp.Unspecified) (W - goldInset - askRight - 12.du).coerceAtLeast(138.du) else Dp.Infinity
             val goldMax = minOf(goldClear, askMax)
-            // With Attack all the gold button stands in the quiet one's row, and Attack all (a glass pill) 8 du into the gold one's.
-            val upperGoldMax = (minOf(clearOf(goldY - 12.du - btnH, goldY + 8.du, 8.du), askMax) - dotsW).coerceAtLeast(0.dp)
-            val attackAllMax = clearOf(goldY + 8.du, goldY + btnH, 4.du)
             // The hand chip (two screens) is centred on the hand; on a phone-sized table it shares the gold button's height and stops
             // 12 du short of where the gold button starts (BB8: "Discard Ultimate Magic: Mete…" ran under it).
             val goldDensity = LocalDensity.current
@@ -1007,19 +1050,18 @@ fun ForgeBoard(
                 val quietM = upperM.onSizeChanged { quietW = with(goldDensity) { it.width.toDp() } }.anchorRect("quiet")
                 val cancelM = if (targeting) quietM.focusRequester(cancelFocus) else quietM
                 val lowerM = Modifier.align(Alignment.TopEnd).offset(x = -edge, y = goldTop)
-                val attackM = Modifier.align(Alignment.TopEnd).offset(x = -edge, y = goldTop + 8.du)
                 // Undo's own spot: never where End turn or the gold step was (U6), never on a pile or its count (BB11), never on the
                 // stack's words. Z1 review: its slot in the right strip (zones.undo), at the foot of the stack slot, 16 du above the
                 // quiet one's place; the stack card stands above it while it shows.
                 val undoM = Modifier.align(Alignment.TopEnd).offset(x = -edge, y = zones.undo.y.dp)
                 // The turn clock's last-10 count stands in the quiet one's row above the gold button: left of the quiet pill when there
-                // is one (its right edge 12 du short of it), else at the right edge (where the quiet one would be). With Attack all the
-                // gold button is itself in that row, so the count goes one row higher at the right edge.
+                // is one (its right edge 12 du short of it), else at the right edge (where the quiet one would be). "All attack" stands
+                // in the quiet one's spot, so the count stands left of it the same way.
                 val pickOne = oneTarget(st) || onePick(st)
                 // The quiet pill's width from its words (GlassPill: 12.5 sp, 14 du each side), so the count is clear of it in the first frame.
-                val quietWords = corner.quiet?.label?.let { w -> with(goldDensity) {
+                val quietWords = (corner.quiet ?: corner.extra)?.label?.let { w -> with(goldDensity) {
                     tuckMeasurer.measure(w, sans(sp(12.5f), FontWeight.SemiBold, Color.White), maxLines = 1).size.width.toDp() + 28.du + 2.dp } } ?: 0.dp
-                val quietShown = corner.kind != TableActions.Kind.ATTACK_ALL && corner.quiet != null
+                val quietShown = corner.quiet != null || (corner.kind == TableActions.Kind.ATTACK_ALL && corner.extra != null)
                 val goldShown = !tucked && (!pickOne || attackAll || (st.selection.min == 0 && st.buttons.okEnabled))
                 // 0.4.59 T6: while the hand is tucked the gold button gives way to a quiet Cancel in its spot; a confirm Forge offers
                 // (several targets, "No target") stays as a glass pill above it. Both report their width for the line's right end.
@@ -1027,7 +1069,7 @@ fun ForgeBoard(
                 @Composable fun pair(content: @Composable () -> Unit) {
                     androidx.compose.runtime.CompositionLocalProvider(LocalTurnCountOutside provides true) { content() }
                     val countRight = W - edge - dotsW - (if (quietShown) maxOf(quietW, quietWords) + 12.du else 0.dp)
-                    val countY0 = if (attackAll) quietTop - 8.du - 32.du else quietTop + (btnH - 32.du) / 2
+                    val countY0 = quietTop + (btnH - 32.du) / 2
                     // Z1 review: where that spot meets a zone box (on a phone the board's corner ends 2 du into the quiet row), the count
                     // drops to just under that box, at most touching the gold button's ring.
                     val zoneBoxes = listOfNotNull(zones.board, zones.handTray, zones.handChip)
@@ -1059,7 +1101,7 @@ fun ForgeBoard(
                 // M3: nothing to press while your own spell or trigger resolves by itself.
                 if (corner.gold?.label == RESOLVING) padX = null
                 // S3: the controller's X is the gold button's press: it dips and sounds as under a finger.
-                if (corner.gold != null) padX = padX?.let { x -> PadAct(x.label, x.run?.let { run -> { GoldPress.pulse.intValue++; run() } }) }
+                if (corner.gold != null) padX = padX?.let { x -> PadAct(corner.gold.label, x.run?.let { run -> { GoldPress.pulse.intValue++; run() } }) }
                 val goldM = lowerM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }
                 pair {
                     when (corner.kind) {
@@ -1068,16 +1110,18 @@ fun ForgeBoard(
                             corner.confirm?.let { GlassPill(it.label, it.enabled, upperM.then(tuckW).focusRequester(goldFocus).anchorRect("confirm"), d, tone = Color(0xFFF3D27E), edge = Color(0x66F3D27E), maxW = quietMax, height = btnH, onClick = press(it)) }
                         }
                         TableActions.Kind.ATTACK_ALL -> {
-                            corner.gold?.let { GoldPill(it.label, it.enabled, upperM.focusRequester(goldFocus).anchorRect("gold").onSizeChanged { goldW = with(goldDensity) { it.width.toDp() } }, d, padKey = padX != null, maxW = upperGoldMax, height = btnH, onClick = press(it)) }
-                            corner.extra?.let { GlassPill(it.label, it.enabled, attackM, d, tone = Color(0xFFFFD9CF), edge = Color(0x88FF8A6A), maxW = attackAllMax, onClick = press(it)) }
+                            // Better table scene 2: the gold "No attacks" keeps its own spot (and its way on, "to second main"); the
+                            // dark "All attack" stands in the quiet one's spot above it, as Arena's pair, in our glass.
+                            corner.extra?.let { GlassPill(it.label, it.enabled, quietM.anchorRect("allattack"), d, maxW = quietMax, height = btnH, onClick = press(it)) }
+                            corner.gold?.let { GoldPill(it.label, it.enabled, goldM, d, padKey = padX != null, maxW = goldMax, height = btnH, sub = it.sub, onClick = press(it)) }
                         }
                         TableActions.Kind.PICK_ONE -> {
                             corner.quiet?.let { GlassPill(it.label, it.enabled, cancelM, d, maxW = quietMax, height = btnH, onClick = press(it)) }
-                            corner.gold?.let { GoldPill(it.label, it.enabled, goldM, d, padKey = padX != null, maxW = goldMax, height = btnH, onClick = press(it)) }
+                            corner.gold?.let { GoldPill(it.label, it.enabled, goldM, d, padKey = padX != null, maxW = goldMax, height = btnH, sub = it.sub, onClick = press(it)) }
                         }
                         TableActions.Kind.SHORT, TableActions.Kind.END_TURN -> {
                             corner.quiet?.let { GlassPill(it.label, it.enabled, quietM, d, maxW = quietMax, height = btnH, onClick = press(it)) }
-                            corner.gold?.let { GoldPill(it.label, it.enabled, goldM, d, padKey = padX != null, maxW = goldMax, height = btnH, onClick = press(it)) }
+                            corner.gold?.let { GoldPill(it.label, it.enabled, goldM, d, padKey = padX != null, maxW = goldMax, height = btnH, sub = it.sub, onClick = press(it)) }
                         }
                         TableActions.Kind.PLAIN -> {
                             // Forge turns its cancel from End turn into "Undo" once a land or a mana tap can be taken back
@@ -1088,7 +1132,7 @@ fun ForgeBoard(
                             undo?.let { GlassPill(it.label, it.enabled, undoM.anchorRect("undo"), d, maxW = zones.undo.w.dp) {
                                 if (android.os.SystemClock.uptimeMillis() - shownAt >= 400) intents.cancel() } }
                             corner.quiet?.let { GlassPill(it.label, it.enabled, cancelM, d, maxW = quietMax, height = btnH, onClick = press(it)) }
-                            corner.gold?.let { GoldPill(it.label, it.enabled, goldM, d, padKey = padX != null, maxW = goldMax, height = btnH, onClick = press(it)) }
+                            corner.gold?.let { GoldPill(it.label, it.enabled, goldM, d, padKey = padX != null, maxW = goldMax, height = btnH, sub = it.sub, onClick = press(it)) }
                         }
                     }
                 }
@@ -1808,9 +1852,15 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         Box(modifier.size(w, h).zIndex(22f)) {
             // The owner's name (your user name, CPU, a friend's name), cut with … so the tag is never wider than the tile.
             val names = LocalSideNames.current
-            Text(if (side) names.first else names.second, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, style = sans(sp(10f), FontWeight.ExtraBold, Color(0xFF0B0D12)).copy(letterSpacing = .06.em),
-                modifier = Modifier.align(Alignment.TopCenter).offset(y = (-9).du).widthIn(max = w).anchorRect("sidetag${card.id}").clip(RoundedCornerShape(999.dp))
-                    .background(if (side) SideYours else SideCpu).border(1.dp, Color(0xCC0B0D12), RoundedCornerShape(999.dp)).padding(horizontal = 6.du, vertical = 1.5f.du))
+            TagPill(if (side) names.first else names.second, if (side) SideYours else SideCpu, Color(0xCC0B0D12), Color(0xFF0B0D12), d,
+                Modifier.align(Alignment.TopCenter).offset(y = (-9).du).anchorRect("sidetag${card.id}"), maxW = w)
+        }
+    }
+    // Better table (scene 2, later 9): a short timed note hanging under the tile ("No mana · skipped"), in the tag pill's shape. It
+    // travels with its card (the card's own effect transform) and never takes a tap.
+    TileTags.shown[card.id]?.let { tag ->
+        Box(modifier.size(w, h).zIndex(23f).then(if (fx != null) Modifier.graphicsLayer { fx.move(this, card.id, anchors); shadowElevation = 0f } else Modifier)) {
+            TimedTileTag(card.id, tag, d, Modifier.align(Alignment.TopCenter).offset(y = h + 3.du).wrapContentWidth(unbounded = true), maxW = w * 1.6f)
         }
     }
     // M14: the loyalty Forge counts, in a shield on the card's bottom edge, always in view.
@@ -2605,7 +2655,9 @@ internal fun GoldPill(text: String, enabled: Boolean, modifier: Modifier, d: Du,
                       /** 0.4.60 Z6: the table's action button passes its 44 dp floor; 44 du otherwise. */
                       height: Dp? = null,
                       /** The match sound pass: the cue of a press (`ui_gold`); null where the press has its own sound (Keep). */
-                      press: String? = "ui_gold", onClick: () -> Unit) = with(d) {
+                      press: String? = "ui_gold",
+                      /** Better table scenes 2, 3, 9: where the press goes ("to second main"), a small line under the words. */
+                      sub: String? = null, onClick: () -> Unit) = with(d) {
     // S3: a press dips the button 4 % and a gleam crosses it (140 ms), with `ui_gold`. The controller's X presses it too ([GoldPress]).
     val cue = LocalTableCue.current
     val dip = remember { Animatable(1f) }
@@ -2634,13 +2686,29 @@ internal fun GoldPill(text: String, enabled: Boolean, modifier: Modifier, d: Du,
             if (keyed) PadKey("X", "")
             // [data-native-key=ok]:after { content: ' ›'; font-size: 20px }. A long label ("Discard Ultimate Magic: Meteor") is cut
             // with … inside the button (BB8); the › stays.
-            Row(Modifier.weight(1f, fill = false)) {
-                // A label is never cut (gaps list 7, 15 Nov: "No attac…", "Pay automa…", "To comb…" on the Fold): its words step down
-                // from 15 sp to the room the button really has, measured by the text itself (the old estimate left out the "›").
-                androidx.compose.foundation.text.BasicText(text, style = sans(sp(15f), FontWeight.Bold, Color(0xFF1B1408)).copy(textAlign = TextAlign.Center), maxLines = 1,
-                    overflow = TextOverflow.Ellipsis, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = sp(9.5f), maxFontSize = sp(15f), stepSize = sp(.5f)),
-                    modifier = Modifier.weight(1f, fill = false).alignByBaseline())
-                if (enabled) Text(" \u203A", style = sans(sp(20f), FontWeight.Bold, Color(0xFF1B1408)), maxLines = 1, modifier = Modifier.alignByBaseline())
+            // Gaps list 7: whether the words still had to be cut, by label, for the shot tests (never read by the table).
+            val anchors = LocalAnchors.current
+            val ink = Color(0xFF1B1408)
+            Column(Modifier.weight(1f, fill = false), horizontalAlignment = Alignment.CenterHorizontally) {
+                Row {
+                    // A label is never cut (gaps list 7, 15 Nov: "No attac…", "Pay automa…", "To comb…" on the Fold): its words step down
+                    // from 15 sp to the room the button really has, measured by the text itself (the old estimate left out the "›").
+                    val big = if (sub != null) sans(sp(15f), FontWeight.Bold, ink).copy(textAlign = TextAlign.Center, lineHeight = sp(16f), platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false))
+                        else sans(sp(15f), FontWeight.Bold, ink).copy(textAlign = TextAlign.Center)
+                    androidx.compose.foundation.text.BasicText(text, style = big, maxLines = 1,
+                        overflow = TextOverflow.Ellipsis, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = sp(9.5f), maxFontSize = sp(15f), stepSize = sp(.5f)),
+                        onTextLayout = { r -> anchors?.sizes?.set("goldcut:$text", if (r.isLineEllipsized(0) || r.hasVisualOverflow) 1f else 0f) },
+                        modifier = Modifier.weight(1f, fill = false).alignByBaseline())
+                    if (enabled) Text(" \u203A", style = sans(sp(20f), FontWeight.Bold, ink).let { if (sub != null) it.copy(lineHeight = sp(16f), platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)) else it },
+                        maxLines = 1, modifier = Modifier.alignByBaseline())
+                }
+                // The destination: smaller, softer ink, a touch of tracking, as the preview's <small>; it steps down before it is cut.
+                if (sub != null) androidx.compose.foundation.text.BasicText(sub,
+                    style = sans(sp(10.5f), FontWeight.SemiBold, ink.copy(alpha = if (enabled) .72f else .6f)).copy(textAlign = TextAlign.Center, letterSpacing = .03.em, lineHeight = sp(12f),
+                        platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = sp(8.5f), maxFontSize = sp(10.5f), stepSize = sp(.5f)),
+                    onTextLayout = { r -> anchors?.sizes?.set("goldcut:$sub", if (r.isLineEllipsized(0) || r.hasVisualOverflow) 1f else 0f) },
+                    modifier = Modifier.padding(top = 1.du).anchorRect("goldsub"))
             }
         }
     }

@@ -18,7 +18,11 @@ internal object TableActions {
     /** Which of the old layouts the corner takes (each draws its buttons in its own places). */
     enum class Kind { TUCKED, ATTACK_ALL, PICK_ONE, SHORT, END_TURN, PLAIN }
 
-    data class Action(val label: String, val press: Press, val enabled: Boolean)
+    /** [sub]: the gold press's destination under its words (Better table: "to second main", "to CPU's turn", "to combat"). */
+    data class Action(val label: String, val press: Press, val enabled: Boolean, val sub: String? = null)
+
+    /** Better table scene 2: the dark button above the gold "No attacks" that sends every creature Forge offers. */
+    const val ALL_ATTACK = "All attack"
 
     /** One line of the three-dot menu: its key, its words, whether it is switched on now, whether it can be pressed now. */
     data class Item(val key: String, val label: String, val on: Boolean, val enabled: Boolean, val about: String)
@@ -54,6 +58,9 @@ internal object TableActions {
         val endTurnGold = selected == null && !discarding && (noAttackersLeft(st) || main2EndTurn(st))
         val ok = if (selected != null) (if (discarding) "Discard ${selected.name}" else if (selected.isLand) "Play land" else "Cast")
             else if (discarding && !st.buttons.okEnabled) "Choose a card to discard" else if (endTurnGold) "End turn" else okLabel(st).let { if (it == RESOLVING && resolveLate) "Resolve" else it }
+                // Better table scene 9: your first main's way on is "Attack" (to combat) while a creature can still attack.
+                .let { if (it == SHORT_STEP["MAIN1"] && st.inputType == "InputPassPriority" && st.phase == "MAIN1" && st.activePlayer == st.viewer && canAttackNow(st)) ATTACK_STEP else it }
+        val sub = if (selected != null || discarding) null else goldSub(st, ok, endTurnGold)
         // End turn takes the gold spot on W10's turn (it presses Forge's cancel); the quiet one keeps the way on to combat.
         val second = if (selected != null) null else if (endTurnGold) okLabel(st).takeIf { !main2EndTurn(st) } else cancelLabel(st)
         // A declaration Forge would refuse (a must-attack creature left out) is not offered as a live button.
@@ -69,16 +76,16 @@ internal object TableActions {
             Affordability.unpayableTrigger(st) != null -> Corner(Kind.PLAIN, Action(RESOLVING, Press.OK, false), null, null, null, null, menu)
             tucked -> Corner(Kind.TUCKED, null, second?.let { Action(it, Press.CANCEL, live) }, null, null,
                 tuckLabels(st).getOrNull(1)?.let { Action(it, Press.OK, live && okOn) }, menu)
-            attackAll -> Corner(Kind.ATTACK_ALL, Action(ok, Press.OK, live && okOn), null, null, Action("Attack all", Press.ATTACK_ALL, live), null, menu)
+            attackAll -> Corner(Kind.ATTACK_ALL, Action(ok, Press.OK, live && okOn, sub), null, null, Action(ALL_ATTACK, Press.ATTACK_ALL, live), null, menu)
             pickOne -> Corner(Kind.PICK_ONE, if (st.selection.min == 0 && st.buttons.okEnabled) Action("No target", Press.OK, live) else null,
                 second?.let { Action(it, Press.CANCEL, live) }, null, null, null, menu)
             // A payment your mana can't finish: Cancel is the gold one, and Pay automatically steps aside.
             short && second != null -> Corner(Kind.SHORT, Action(second, Press.CANCEL, live), if (st.buttons.okEnabled) Action(ok, Press.OK, live) else null, null, null, null, menu)
-            endTurnGold -> Corner(Kind.END_TURN, Action(ok, Press.CANCEL, live), second?.let { Action(it, Press.OK, live && okOn) }, null, null, null, menu)
+            endTurnGold -> Corner(Kind.END_TURN, Action(ok, Press.CANCEL, live, sub), second?.let { Action(it, Press.OK, live && okOn) }, null, null, null, menu)
             else -> {
                 val undo = second?.startsWith("Undo", ignoreCase = true) == true
                 // Mobile table M3: while your own spell or trigger resolves by itself the gold button is not a press.
-                Corner(Kind.PLAIN, Action(ok, if (selected != null) Press.PLAY else Press.OK, live && (selected != null || (okOn && ok != RESOLVING))),
+                Corner(Kind.PLAIN, Action(ok, if (selected != null) Press.PLAY else Press.OK, live && (selected != null || (okOn && ok != RESOLVING)), sub),
                     second?.takeIf { !undo }?.let { Action(it, Press.CANCEL, live) }, second?.takeIf { undo }?.let { Action(it, Press.CANCEL, live) }, null, null, menu)
             }
         }

@@ -811,7 +811,9 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         // card's show (either could leave it asking). It stays declined while Forge still asks it, whatever the revision.
         dev.cardstashy.nativeplay.ui.Affordability.unpayableTrigger(st)?.let { name ->
             Log.i(TableLog.TAG, "decide ${st.phase} turn ${st.turn} input=${st.inputType} -> cancel (optional payment you can't make: $name)")
-            if (declinedAt != st.revision) { declinedAt = st.revision; say("$name: not paid") }
+            if (declinedAt != st.revision) { declinedAt = st.revision; say("$name: not paid")
+                // Better table scene 2: the note also hangs on the trigger's source card itself for a few seconds.
+                st.stack.firstOrNull()?.source?.id?.let { id -> scope.launch(Dispatchers.Main) { dev.cardstashy.nativeplay.ui.TileTags.post(id, dev.cardstashy.nativeplay.ui.NO_MANA_SKIPPED) } } }
             autoJob = scope.launch(Dispatchers.Main) {
                 delay(150)
                 val now = latest
