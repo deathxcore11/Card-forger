@@ -1,0 +1,45 @@
+[
+ {
+  "file": "kirin.jpg",
+  "light": "real",
+  "id": "49966326",
+  "name": "Virtual World Kirin - Lili",
+  "seen": "2026-11-14, app 0.4.82: foil, flash glare in the art"
+ },
+ {
+  "file": "kirin2.jpg",
+  "light": "real",
+  "id": "49966326",
+  "name": "Virtual World Kirin - Lili",
+  "seen": "2026-11-14, app 0.4.82: foil in purple light, card fills the frame"
+ },
+ {
+  "file": "twin2.jpg",
+  "light": "real",
+  "id": "43898403",
+  "name": "Twin Twisters",
+  "seen": "2026-11-14, app 0.4.82: gold rare, flash glare, small in frame. Needs a connection (card text check).",
+  "needs": "network"
+ },
+ {
+  "file": "droll.jpg",
+  "light": "real",
+  "id": "94145021",
+  "name": "Droll & Lock Bird",
+  "seen": "2026-11-13, app 0.4.76: sleeved on a playmat"
+ },
+ {
+  "file": "jizukiru.jpg",
+  "light": "real",
+  "id": "63941210",
+  "name": "Jizukiru, the Star Destroying Kaiju",
+  "seen": "2026-11-13, app 0.4.76: sleeved on a playmat"
+ },
+ {
+  "file": "twin.jpg",
+  "light": "real",
+  "id": "43898403",
+  "name": "Twin Twisters",
+  "seen": "2026-11-13, app 0.4.76: sleeved on a playmat"
+ }
+]

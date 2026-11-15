@@ -11,7 +11,8 @@ import { ask, askText } from "./dialog.js";
 // in the status message. There is no alignment outline or fixed-size target.
 // Thresholds are starting points tuned on test images; they should be refined with real phone photos.
 import { S } from "./store.js";
-import {catalogState,catalogManifest,initCatalog,invalidateCatalogRead,downloadCatalog,removeCatalog,localScanMatch,localIndexCandidate} from "./scan-catalog.js";
+import {catalogState,catalogManifest,initCatalog,invalidateCatalogRead,downloadCatalog,removeCatalog,localScanMatch,localIndexCandidate,catalogCandidate} from "./scan-catalog.js";
+import {textPick} from "./scan-textid.js";
 import { esc } from "./ui.js";
 import {scanTray,scanGridView,tileCandidate,GRID_ICONS} from './scan-grid.js';
 import {savedLocations} from './collection-locations.js';
@@ -150,7 +151,7 @@ export function scanDeadline(work,ms,label,onTimeout=()=>{}) {
 }
 // One logical capture, including its optional clearer-frame revision, owns this
 // finite budget. It is local-only; adapter rounds are not raw HTTP request counts.
-export const SCAN_LIMITS=Object.freeze({ocrCalls:18,initialOCR:12,refinementOCR:6,adapterRounds:3,adapterOperations:12,initialAdapterOperations:8,refinementAdapterOperations:4,refinements:1,refinementWindowMs:20000});
+export const SCAN_LIMITS=Object.freeze({ocrCalls:21,initialOCR:15,refinementOCR:6,adapterRounds:3,adapterOperations:12,initialAdapterOperations:8,refinementAdapterOperations:4,refinements:1,refinementWindowMs:20000});
 export function createScanBudget(now=clockNow){
  let deadline=null,expired=false,ocrCalls=0,adapterRounds=0,revisionOCR=0,revisionRounds=0,adapterOperations=0,revisionOperations=0,refined=false,ownedWorker=null,activeRevision=()=>true;
  const remote=new Map(),operations=new Map();
@@ -240,6 +241,16 @@ function regionCanvas(card, [fx, fy, fw, fh], scale = 2, invert = false) {
     ctx.filter = `grayscale(1) contrast(1.6)${invert ? " invert(1)" : ""}`;
     ctx.drawImage(card, card.width * fx, card.height * fy, rw, card.height * fh, 0, 0, c.width, c.height);
   }
+  return c;
+}
+// The same crop in plain grey, with no ink flattening. Foil and glossy titles (gold or silver
+// letters, a rainbow sheen) often read better untouched than flattened, so the title is read
+// both ways.
+function plainCanvas(card, [fx, fy, fw, fh], scale = 2) {
+  const rw = card.width * fw, k = Math.min(6, Math.max(scale, 1100 / Math.max(1, rw))), c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(rw * k)); c.height = Math.max(1, Math.round(card.height * fh * k));
+  const ctx = c.getContext("2d"); ctx.imageSmoothingQuality = "high"; ctx.filter = "grayscale(1)";
+  ctx.drawImage(card, card.width * fx, card.height * fy, rw, card.height * fh, 0, 0, c.width, c.height);
   return c;
 }
 const recog = async (w, canvas, segmentation = 6, budget=null, observed=null) => {
@@ -503,7 +514,7 @@ const loadImage = (url) =>
   });
 const sigDiff = (a, b) => (a && b ? a.reduce((x, v, i) => x + Math.abs(v - b[i]), 0) / a.length : 255);
 
-export const CAPTURE_MAX_EDGE=1280;
+export const CAPTURE_MAX_EDGE=1280,FINE_MAX_EDGE=2200;
 export const SCAN_ANALYSIS_SIZE=Object.freeze({width:192,height:256});
 // Duplicate identity has a fixed coordinate system chosen by the accepted
 // original. A refined detector quad or resized preview is not a new card.
@@ -539,7 +550,7 @@ const acceptedCaptureLock=candidate=>{
 const clockNow=()=>globalThis.performance?.now?.()??Date.now();
 // The only retained full-size canvas is the immutable original. A quadrilateral
 // is a crop proposal, not proof that all of the card is inside it.
-export function freezeCapture(source,proposal=null) {
+export function freezeCapture(source,proposal=null,{fine:keepFine=false}={}) {
   const w=source.videoWidth||source.naturalWidth||source.width,h=source.videoHeight||source.naturalHeight||source.height;
   if(!(w>0&&h>0))throw Error('This frame is not ready. Try again.');
   const k=Math.min(1,CAPTURE_MAX_EDGE/Math.max(w,h)),original=document.createElement('canvas');
@@ -547,7 +558,10 @@ export function freezeCapture(source,proposal=null) {
   original.getContext('2d').drawImage(source,0,0,original.width,original.height);
   const scaleProposal=p=>({...JSON.parse(JSON.stringify(p)),quad:p.quad?.map(p=>({x:p.x*original.width/w,y:p.y*original.height/h})),alternatives:p.alternatives?.slice(0,2).map(scaleProposal)});
   const cloned=proposal?scaleProposal(proposal):null;
-  return {original,proposal:cloned};
+  // A sharper copy, for reading small print only. It is never stored.
+  let fine=null;
+  if(keepFine&&k<1){const f=Math.min(1,FINE_MAX_EDGE/Math.max(w,h));fine=document.createElement('canvas');fine.width=Math.max(1,Math.round(w*f));fine.height=Math.max(1,Math.round(h*f));fine.getContext('2d').drawImage(source,0,0,fine.width,fine.height);}
+  return {original,proposal:cloned,...(fine?{fine}:{})};
 }
 export function rotateCapture(source,turns=1) {
   const n=((turns%4)+4)%4;if(!n)return source;
@@ -955,14 +969,15 @@ export function registerScanner(ctx) {
   // Which card, of which game, a located outline shows. The selected game is tried first, then the
   // others whose data is on this device: the picture decides the game, not a tab.
   const GAMES=['mtg','ptcg','ygo'];let pictureGame='';
-  const pictureLook = async (rgba,w,h,q,G,waitMs=0) => {
+  const pictureLead=G=>pictureGame&&catalogState(pictureGame).status==='ready'?pictureGame:G;
+  const pictureLook = async (rgba,w,h,q,G,waitMs=0,{games=null,fallback=true}={}) => {
     let best=null;
-    const lead=pictureGame&&catalogState(pictureGame).status==='ready'?pictureGame:G;
-    for(const g of [lead,...GAMES.filter(x=>x!==lead)]){
+    const lead=pictureLead(G);
+    for(const g of games||[lead,...GAMES.filter(x=>x!==lead)]){
       let pack=catalogState(g).status==='ready'?catalogState(g).pack:null;
       if(!pack&&g===G&&waitMs)pack=await Promise.race([ensurePack(g),new Promise(r=>setTimeout(()=>r(null),waitMs))]);
       const pix=pack?await loadPix(g,pack):null;if(!pix)continue;
-      const verdict=registerVerdict(g,pack,pix,registerBest(rgba,w,h,q,g,pix.bin,pictureCardKey(g,pack,pix)));
+      const verdict=registerVerdict(g,pack,pix,registerBest(rgba,w,h,q,g,pix.bin,pictureCardKey(g,pack,pix),{fallback}));
       if(verdict&&(!best||(verdict.strong&&!best.verdict.strong)||(verdict.strong===best.verdict.strong&&verdict.dist<best.verdict.dist)))best={g,pack,verdict};
       if(verdict?.strong){pictureGame=g;break;}
     }
@@ -977,15 +992,49 @@ export function registerScanner(ctx) {
     const src=packet.original,w=src.width,h=src.height,rgba=src.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h).data;
     if(!rgba||rgba.length<w*h*4)return null;
     const found=locateCard(rgba,w,h),len=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-    let q=found?uprightQuad(found.quad):null;
-    const look=await pictureLook(rgba,w,h,q,G,8000),verdict=look?.verdict||null;
-    const usable=!!verdict&&(verdict.strong||(verdict.dist<=FUSE.suggest&&verdict.rival-verdict.dist>=FUSE.suggestGap));
-    if(usable)q=verdict.quad;
-    if(!usable&&!found?.snapped)return null;
-    const outW=Math.round(Math.max(360,Math.min(900,(len(q[0],q[1])+len(q[3],q[2]))/2))),outH=Math.round(outW*88/63);
-    const card=document.createElement('canvas');card.width=outW;card.height=outH;
-    card.getContext('2d',{willReadFrequently:true}).putImageData(new ImageData(levelFrame(flattenCard(rgba,w,h,q,outW,outH,usable?1.045:1.01),outW,outH),outW,outH),0,0);
-    return {g:usable?look.g:G,card,verdict:usable?verdict:null,pack:usable?look.pack:null,snapped:!!found?.snapped};
+    const q0=found?uprightQuad(found.quad):null,snapped=!!found?.snapped;
+    // The card laid flat for reading, cut from the sharpest copy of the frame there is: small
+    // print needs every pixel the camera gave.
+    const fine=packet.fine&&packet.fine.width>w?packet.fine:null;let fineRgba=null;
+    const flat=(q,margin)=>{
+      const k=fine?fine.width/w:1,own=(len(q[0],q[1])+len(q[3],q[2]))/2*k,outW=Math.round(Math.max(360,Math.min(fine?1200:900,own))),outH=Math.round(outW*88/63);
+      if(fine&&!fineRgba)fineRgba=fine.getContext('2d',{willReadFrequently:true}).getImageData(0,0,fine.width,fine.height).data;
+      const card=document.createElement('canvas');card.width=outW;card.height=outH;
+      card.getContext('2d',{willReadFrequently:true}).putImageData(new ImageData(levelFrame(fine?flattenCard(fineRgba,fine.width,fine.height,q.map(p=>({x:p.x*k,y:p.y*fine.height/h})),outW,outH,margin):flattenCard(rgba,w,h,q,outW,outH,margin),outW,outH),outW,outH),0,0);
+      return card;
+    };
+    const usableOf=v=>!!v&&(v.strong||(v.dist<=FUSE.suggest&&v.rival-v.dist>=FUSE.suggestGap));
+    const shortlists=[],keep=look=>{if(look?.verdict?.pool?.length)shortlists.push({g:look.g,pack:look.pack,pool:look.verdict.pool});return look;};
+    const viewOf=(look,g)=>{const verdict=look?.verdict||null,usable=usableOf(verdict);return {g:usable?look.g:g,card:flat(usable?verdict.quad:q0,usable?1.045:1.01),verdict:usable?verdict:null,pack:usable?look.pack:null,snapped,shortlists};};
+    // With a firm outline the picture is compared for the likeliest game only. The card's own
+    // text is read next, which is quicker than comparing pictures for every game and is what
+    // names a foil card under a flash; the other games' pictures are looked at only if the
+    // text names nothing (others()).
+    const lead=pictureLead(G);
+    if(snapped){
+      const look=keep(await pictureLook(rgba,w,h,q0,G,8000,{games:[lead],fallback:false}));
+      const view=viewOf(look,G);
+      if(!view.verdict?.strong)view.others=async()=>{const more=keep(await pictureLook(rgba,w,h,q0,G,0,{games:GAMES.filter(x=>x!==lead),fallback:false}));return usableOf(more?.verdict)&&more.verdict.strong?viewOf(more,G):null;};
+      return view;
+    }
+    const look=keep(await pictureLook(rgba,w,h,q0,G,8000)),usable=usableOf(look?.verdict);
+    if(!usable)return null;
+    return viewOf(look,G);
+  };
+  // The picture was unclear (a foil under a flash) and no name could be read, but the picture
+  // still narrows the card to a dozen look-alikes, and rules text is plain print that reads when
+  // a foil title does not. Fetch those few cards' text and see which one the read text belongs
+  // to. Needs a connection; offered for review only.
+  const shortlistByText=async(list,read)=>{
+    const {g,pack,pool}=list,get=(url,init)=>scanDeadline(async()=>{const r=await fetch(url,init);if(!r.ok)throw Error('Card text unavailable');return r.json();},2500,'Card text');
+    let texts=[];
+    if(g==='ygo'){const d=await get('https://db.ygoprodeck.com/api/v7/cardinfo.php?id='+pool.map(c=>encodeURIComponent(c.key)).join(','));texts=(d?.data||[]).map(c=>({key:String(c.id),text:c.name+' '+(c.desc||'')}));}
+    else if(g==='mtg'){const ids=pool.map(c=>({key:c.key,id:pack.rows[c.rec]?.[0]})).filter(x=>x.id),d=await get('https://api.scryfall.com/cards/collection',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({identifiers:ids.map(x=>({id:x.id}))})});
+      const byId=new Map((d?.data||[]).map(c=>[c.id,c]));texts=ids.map(x=>{const c=byId.get(x.id);return c?{key:x.key,text:[c.name,c.type_line,c.oracle_text,...(c.card_faces||[]).flatMap(f=>[f.type_line,f.oracle_text])].filter(Boolean).join(' ')}:null;}).filter(Boolean);}
+    else return null;
+    const pick=textPick(texts,read);if(!pick)return null;
+    const rows=g==='ygo'?pack.ids.get(pick.key)||[]:pack.names.get(pick.key)||[];if(!rows.length)return null;
+    return {g,cands:rows.map(i=>({...catalogCandidate(pack,i,false),why:'Picture and rules text agree · check printing'}))};
   };
   // Capture-local evidence is never stored in shared UI state while reading.
   // A canceled/late result cannot overwrite the next card or a review panel.
@@ -995,7 +1044,7 @@ export function registerScanner(ctx) {
     finally{control.cancel();}
   };
   const readFlow = async (card, selectedGame, snapshots, lang, progress, trace, active,budget,view=null) => {
-    let G=selectedGame,read;
+    let G=selectedGame,read,priorWhole='';
     const cache=new Map();
     const check=()=>{if(!active())throw Error('Reading interrupted · retry');};
     const stage=(name,fn)=>trace.stage(name,async()=>{check();const result=await fn();check();return result;});
@@ -1030,7 +1079,48 @@ export function registerScanner(ctx) {
       if(f.sure)read.pix={sure:true,g:G,key:f.key,proof:f.proof,dist:view.verdict.dist};
       return budget.checkpoint({cands:f.cands,tried:[view.verdict.name],local:true,picture:true,g:G,read});
     }
-    read=await stage('ocrInitial',()=>readLayout(''));
+    // Quickest first: the title line alone, against every game's names. A title that names one
+    // card settles which card this is in a fraction of a second; the bottom print is then read
+    // once for the printing and the person confirms it.
+    // (Needs the card names on this device; without them the older reading below runs as before.)
+    if(catalogState(G).status==='ready'){
+      const w=await stage('ocrWarmup',()=>getWorker(lang,progress));
+      progress('Reading the name…');
+      const BAND=[0,.012,1,.125],titles=[],title={name:'',code:'',full:'',stats:'',titles};
+      let hitG=null,hit=null;
+      // Twice at most: untouched grey first, then with the ink flattened.
+      for(const [name,make,mode] of [['ocrTitle',()=>plainCanvas(card,BAND,2.5),11],['ocrTitleFlat',()=>regionCanvas(card,BAND,2.5),6]]){
+        let confidence=null;const text=await stage(name,()=>recog(w,make(),mode,budget,c=>confidence=c));
+        titles.push({text,source:'title',confidence});title.name=titles.map(t=>t.text).join('\n');
+        for(const og of [G,...['mtg','ptcg','ygo'].filter(x=>x!==G)]){
+          const res=await scanDeadline(()=>localScanMatch(og,title),SCAN_DEADLINES.local,'Local catalogue',()=>invalidateCatalogRead(og)).catch(()=>null);
+          if(!res?.cands?.length)continue;
+          // Under the selected game any title match counts; another game needs a clean one.
+          if(og===G||!res.fuzzy||(res.textHit&&res.textHit.d<=Math.floor(scanNameKey(res.textHit.name).length*.1))){hitG=og;hit=res;break;}
+        }
+        if(hit)break;
+      }
+      if(hit){
+        G=hitG;const L=LAYOUT[G];progress('Reading the set code and number…');
+        title.code=[await stage('ocrCode',()=>recog(w,regionCanvas(card,L.code,3),6,budget)),L.pass?await stage('ocrPasscode',()=>recog(w,regionCanvas(card,L.pass,3),6,budget)):''].join('\n');
+        const res=await stage('localLookup',()=>scanDeadline(()=>localScanMatch(G,title),SCAN_DEADLINES.local,'Local catalogue',()=>invalidateCatalogRead(G)));
+        if(res.cands?.length)return budget.checkpoint({...res,g:G,read:title,named:true,cands:rankScanCandidates(G,res.cands,title)});
+      }
+      // No name in the title: before reading the rest of the card, the other games' pictures.
+      if(view?.others){const alt=await stage('engineOthers',view.others).catch(()=>null);if(alt?.verdict?.strong)return readFlow(alt.card,alt.g,snapshots,lang,progress,trace,active,budget,alt);}
+      // Still no name: the whole card once. Rules text is plain print that survives glare and
+      // foil, and it usually says the card's own name; the stats and passcode back it up.
+      title.full=await stage('ocrFull',()=>readFull(card,lang,progress,budget));
+      for(const og of [G,...['mtg','ptcg','ygo'].filter(x=>x!==G)]){
+        const res=await scanDeadline(()=>localScanMatch(og,title),SCAN_DEADLINES.local,'Local catalogue',()=>invalidateCatalogRead(og)).catch(()=>null);
+        if(!res?.cands?.length||!res.textHit)continue;
+        if(og===G||res.textHit.backed||(res.textHit.where==='title'&&res.textHit.d<=Math.floor(scanNameKey(res.textHit.name).length*.1))){G=og;return budget.checkpoint({...res,g:G,read:title,named:true,cands:rankScanCandidates(G,res.cands,title)});}
+      }
+      // No name anywhere, but the rules text was read: which of the picture's look-alikes says this?
+      for(const list of view?.shortlists||[]){const pick=await stage('shortlistText',()=>shortlistByText(list,title)).catch(()=>null);if(pick)return budget.checkpoint({cands:pick.cands,tried:[],local:true,g:pick.g,read:title,named:true,picture:true});}
+      priorWhole=title.full;
+    }
+    read=await stage('ocrInitial',()=>readLayout(priorWhole));
     let other=detectGame(`${read.name}\n${read.code}\n${read.full}`);
     if(other&&other!==G){G=other;read=await stage('ocrGameCorrection',()=>readLayout(read.full));}
     // Detail bands affect ranking, not the remote adapter query. Reuse remote
@@ -1038,7 +1128,13 @@ export function registerScanner(ctx) {
     const queryKey=()=>scanQueryKey(G,read);
     const hasIdentifier=()=>scanIdentifierEvidence(G,read).observations.length;
     const lookup=async(remote=false)=>{
-      const local=await stage('localLookup',()=>scanDeadline(()=>localScanMatch(G,read),SCAN_DEADLINES.local,'Local catalogue',()=>invalidateCatalogRead(G)));
+      let local=await stage('localLookup',()=>scanDeadline(()=>localScanMatch(G,read),SCAN_DEADLINES.local,'Local catalogue',()=>invalidateCatalogRead(G)));
+      // Nothing under the selected game: the same text against the other games' names. A name in
+      // the title, or one the card's own numbers back, shows which game the card belongs to.
+      if(!local.cands?.length)for(const og of ['mtg','ptcg','ygo'].filter(x=>x!==G)){
+        const alt=await scanDeadline(()=>localScanMatch(og,read),SCAN_DEADLINES.local,'Local catalogue',()=>invalidateCatalogRead(og)).catch(()=>null);
+        if(alt?.cands?.length&&alt.textHit&&((alt.textHit.where==='title'&&alt.textHit.d<=Math.floor(scanNameKey(alt.textHit.name).length*.1))||alt.textHit.backed)){G=og;local=alt;break;}
+      }
       let result=local,key=queryKey();
       if(local.cands?.length||!budget.latest)budget.checkpoint({...local,g:G,read,cands:rankScanCandidates(G,local.cands||[],read)});
       let prior=null;
@@ -1054,6 +1150,15 @@ export function registerScanner(ctx) {
     // Preserve the fast two-band path when both a name and identifier are read.
     // Otherwise collect useful local evidence before making one remote lookup.
     let r=await lookup(!!hasIdentifier()&&scanLookupNames(G,read).length>0);
+    // The card is named. One more look at the bottom print may pick the printing; after that the
+    // person chooses it, which is quicker than reading the whole card again and again.
+    const named=()=>r.cands.length>0;
+    if(named()&&!r.cands.some(c=>textVerifiedMatch(G,c,read))){
+      const footer=G==='ygo'?[.35,.66,.65,.31]:[0,.83,1,.17];
+      read.code=joinReads(read.code,await stage('ocrFooterRetry',async()=>recog(await getWorker(lang,progress),regionCanvas(card,footer,3),6,budget)));
+      r=await lookup();
+      if(named())return {...r,g:G,read,named:true};
+    }
     if(!r.cands.some(c=>textVerifiedMatch(G,c,read))){
       const roi=G==='ygo'?[.30,.82,.70,.15]:G==='mtg'?[.02,.37,.96,.59]:[.04,.46,.92,.40];
       read.stats=await stage('ocrDetails',async()=>recog(await getWorker(lang,progress),regionCanvas(card,roi,2),6,budget));
@@ -1175,7 +1280,16 @@ export function registerScanner(ctx) {
         if(v?.strong){pictureGame=g;gridTurn=0;voteLast={strong:true,clear:v.dist<=50&&v.rival-v.dist>=20,name:v.name,dist:v.dist,g,look:++voteLooks,at:clockNow()};break;}
       }
       // A look that skipped the wide search says nothing about a card only the wide search can find.
-      if(!voteLast&&!looked&&prior&&clockNow()-prior.at<2600)voteLast=prior;
+      if(!voteLast&&!looked&&prior?.strong&&clockNow()-prior.at<2600)voteLast=prior;
+      // No picture named the card (a foil under a light has no steady picture), but the finder has
+      // a firm, card-shaped outline: that is worth a capture, and the card's text is read from it.
+      if(!voteLast&&found?.snapped&&found.support>=.6&&q){
+        const len=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),cw=(len(q[0],q[1])+len(q[3],q[2]))/2,ch=(len(q[0],q[3])+len(q[1],q[2]))/2,ar=cw/Math.max(1,ch);
+        if(ar>.6&&ar<.84&&cw>=w*.2&&ch<=h*1.02){
+          const cx=(q[0].x+q[1].x+q[2].x+q[3].x)/4/w,cy=(q[0].y+q[1].y+q[2].y+q[3].y)/4/h,still=prior?.outline&&Math.hypot(cx-prior.cx,cy-prior.cy)<.03&&Math.abs(cw/w-prior.cw)<.04;
+          voteLast={strong:false,outline:true,cx,cy,cw:cw/w,steady:still?prior.steady+1:1,look:++voteLooks,at:clockNow()};
+        }
+      }
       return voteLast;
     }catch{return null;}
   };
@@ -1216,15 +1330,19 @@ export function registerScanner(ctx) {
       const checkpoint=budget.checkpoint.bind(budget);budget.checkpoint=result=>{if(result.cands?.length&&trace.timings.firstCandidateMs==null)trace.timings.firstCandidateMs=clockNow()-(packet.processingAt||processingAt);return checkpoint(result);};
       try {
         const rawFirst=!view&&(entry.originalOnly||entry.geometryUncertain||packet.proposal?.cropSafe===false);
-        r=await (rawFirst?readOriginalEvidence(packet.original,null,entry,progress,trace,current,budget):readFlow(card,view?.verdict?view.g:entry.game,snapshots,entry.ocrLang||'eng',progress,trace,current,budget,view));
-        if(!r.picture&&!r.cands.some(c=>textVerifiedMatch(r.g,c,r.read))&&packet.proposal?.quad&&!rawFirst)r=await readOriginalEvidence(packet.original,r,entry,progress,trace,current,budget);
+        r=await (rawFirst?readOriginalEvidence(packet.original,null,entry,progress,trace,current,budget):readFlow(card,view?.verdict?.strong?view.g:entry.game,snapshots,entry.ocrLang||'eng',progress,trace,current,budget,view));
+        if(!r.picture&&!r.named&&!r.cands.some(c=>textVerifiedMatch(r.g,c,r.read))&&packet.proposal?.quad&&!rawFirst)r=await readOriginalEvidence(packet.original,r,entry,progress,trace,current,budget);
         // A near-edge card can fail conservative auto geometry while still giving
         // a useful deskew hypothesis. Probe its upright title/footer after the
         // untouched original, without promoting the crop to safe/auto-ready.
-        if(!r.picture&&!r.cands.some(c=>textVerifiedMatch(r.g,c,r.read))&&(rawFirst||packet.proposal?.orientation?.status==='unverified'))r=await probeOrientations(packet,r,entry,progress,trace,current,budget,rawFirst);
+        if(!r.picture&&!r.named&&!r.cands.length&&!r.cands.some(c=>textVerifiedMatch(r.g,c,r.read))&&(rawFirst||packet.proposal?.orientation?.status==='unverified'))r=await probeOrientations(packet,r,entry,progress,trace,current,budget,rawFirst);
       }
       catch(e){recognitionError=e.message||'Reading failed. Capture saved for retry.';r=budget.latest||r||{g:entry.game,read:{},cands:[],tried:[]};r={...r,cands:r.cands.map(c=>({...c,exact:false}))};}
       if(!current())return;
+      if(!r.cands?.length&&!recognitionError&&view?.shortlists?.length){
+        for(const list of view.shortlists){const pick=await trace.stage('shortlistText',()=>shortlistByText(list,r.read||{})).catch(()=>null);if(pick){r={...r,g:pick.g,cands:pick.cands,named:true,picture:true};break;}}
+        if(!current())return;
+      }
       const G=r.g||entry.game;
       if(entry.initialEvidence){entry.refinementEvidence={game:G,read:r.read||{},cands:r.cands||[]};updatePending(entry.id,{refinementEvidence:entry.refinementEvidence});r=supplementScanEvidence(entry.initialEvidence,{...r,g:G});}
       const read=r.read||{};
@@ -1295,7 +1413,7 @@ export function registerScanner(ctx) {
     if(capture.refinement&&(!prior||!canRefineCapture(captureLock,prior,capture,{paused:!!(s().confirm||s().reviewRequested||s().batchSaving),sourceSignature:sourceLockSignature(source.original,captureLock?.region)})))return false;
     if(!prior&&before.length>=BATCH_LIMIT)return rejectCapture('Batch full. Save or review some cards to continue.');
     if(s().storageBlockedAt!=null&&before.length>=s().storageBlockedAt&&Date.now()<(s().storageBlockedUntil||0))return rejectCapture('Storage full. This card is not queued. Save or review the current batch first.');
-    const started=clockNow(),packet=source.original?freezeCapture(source.original,source.proposal):freezeCapture(source),G=prior?.game||capture.selectedGame||game(),snapshots=prior?.defaultsByGame||capture.defaultsByGame||capturePrefs(),p=snapshots[G]||prefs();
+    const started=clockNow(),packet=source.original?{...freezeCapture(source.original,source.proposal),...(source.fine?{fine:source.fine}:{})}:freezeCapture(source,null,{fine:true}),G=prior?.game||capture.selectedGame||game(),snapshots=prior?.defaultsByGame||capture.defaultsByGame||capturePrefs(),p=snapshots[G]||prefs();
     // Serialize the original once at a fixed readable resolution and quality.
     // We never progressively shrink a card until it happens to fit storage.
     const originalShot=capture.originalShot||packet.original.toDataURL('image/jpeg',.86);
@@ -1355,10 +1473,12 @@ export function registerScanner(ctx) {
     const vote=!captureLock&&m.motion<T.motion?pictureVote(frame):null;
     loop.vote=vote?.strong?{name:vote.name,look:vote.look,count:loop.vote?.name===vote.name?loop.vote.count+(vote.look!==loop.vote.look?1:0):vote.clear?2:1}:null;
     const named=!!loop.vote&&loop.vote.count>=2;
-    loop.observation={original:frame,proposal:loop.proposal,frameAnalysisMs:clockNow()-freezeAt,signature:loop.signature&&Float32Array.from(loop.signature),quality:{...m},at:Date.now(),selectedGame:game(),defaultsByGame:capturePrefs(),ocrLang:scanLang(),captureMs:frameMs,detectMs:loop.detectMs,geometryUncertain:!found||(found.cropSafe!==true&&!named)};
+    // The same firm outline in the same place for three looks (about a second and a half).
+    const outlined=!named&&!!vote?.outline&&vote.steady>=3;loop.outlined=outlined;
+    loop.observation={original:frame,proposal:loop.proposal,frameAnalysisMs:clockNow()-freezeAt,signature:loop.signature&&Float32Array.from(loop.signature),quality:{...m},at:Date.now(),selectedGame:game(),defaultsByGame:capturePrefs(),ocrLang:scanLang(),captureMs:frameMs,detectMs:loop.detectMs,geometryUncertain:!found||(found.cropSafe!==true&&!named&&!outlined)};
     if(!found||m.motion>=T.motion||m.sharp<T.sharp)loop.stableAt=0;else loop.stableAt ||=Date.now();
     if (Array.isArray(window.__scanDebug)) {window.__scanDebug.push({ ...m, vote:loop.vote?{...loop.vote}:null, vw:v.videoWidth,vh:v.videoHeight,retainedWidth:fw,retainedHeight:fh,previewWidth:v.clientWidth,previewHeight:v.clientHeight,detectorPasses:observations.length,sensorOccupancy:found?.fraction||0,boundaryReason:found?.boundary?.reason||'no-proposal' });window.__scanDebug.splice(0,Math.max(0,window.__scanDebug.length-120));}
-    let st = named?{state:'green',icon:'✓',msg:loop.vote.name}:packFetching()?{state:'amber',icon:'…',msg:'Getting card pictures ready (first time only)…'}:found?.cropSafe===false?{state:'amber',icon:'◎',msg:'Show the whole card on a clear background'}:found?guideState(m, steady):{state:"red",icon:"◎",msg:"Show the whole card, including its name and bottom edge"};
+    let st = named?{state:'green',icon:'✓',msg:loop.vote.name}:outlined?{state:'green',icon:'✓',msg:'Reading this card…'}:packFetching()?{state:'amber',icon:'…',msg:'Getting card pictures ready (first time only)…'}:found?.cropSafe===false?{state:'amber',icon:'◎',msg:'Show the whole card on a clear background'}:found?guideState(m, steady):{state:"red",icon:"◎",msg:"Show the whole card, including its name and bottom edge"};
     steady = st.state === "green" || (st.state === "amber" && st.msg === "Hold steady…") ? steady + 1 : 0;
     // After an add, wait for a different card (or the card to leave) before capturing again.
     // One automatic capture per card: wait for a different card (or the card to leave) first.
@@ -1435,9 +1555,9 @@ export function registerScanner(ctx) {
     // Metadata can arrive before the preview is laid out; freeze the available
     // sensor frame in that case and let original-photo recovery handle it.
     const observed=automatic?loop.observation:loop(false);
-    if(automatic&&!loop.vote&&(!loop.quad||Date.now()-loop.quadAt>1000))return;
-    if(automatic&&!loop.vote&&loop.proposal?.cropSafe===true&&(loop.quality?.sharp||0)<T.sharp){setStatus('Keep the name and bottom code readable. Hold steady.');return;}
-    const candidate=automatic&&canReuseCapture(loop.bestCapture,loop.signature,loop.geometryMotion)?loop.bestCapture:observed||{...freezeCapture(v),at:Date.now(),selectedGame:game(),defaultsByGame:capturePrefs(),ocrLang:scanLang(),geometryUncertain:true};
+    if(automatic&&!loop.vote&&!loop.outlined&&(!loop.quad||Date.now()-loop.quadAt>1000))return;
+    if(automatic&&!loop.vote&&!loop.outlined&&loop.proposal?.cropSafe===true&&(loop.quality?.sharp||0)<T.sharp){setStatus('Keep the name and bottom code readable. Hold steady.');return;}
+    const candidate=automatic&&canReuseCapture(loop.bestCapture,loop.signature,loop.geometryMotion)?loop.bestCapture:observed||{...freezeCapture(v,null,{fine:true}),at:Date.now(),selectedGame:game(),defaultsByGame:capturePrefs(),ocrLang:scanLang(),geometryUncertain:true};
     if(!automatic&&captureLock&&Date.now()-(s().lastCaptureAt||0)<600&&sigDiff(captureLock.signature,sourceLockSignature(candidate.original,captureLock.region))<9)return;
     const nextLock=acceptedCaptureLock(candidate);
     greenSince = 0;
@@ -1563,7 +1683,7 @@ export function registerScanner(ctx) {
       const found=detectCardQuad(x.getImageData(0,0,sample.width,sample.height).data,sample.width,sample.height);
       if(found)proposal={...found,quad:found.quad.map(p=>({x:p.x/scale,y:p.y/scale})),alternatives:found.alternatives?.map(p=>({...p,quad:p.quad.map(q=>({x:q.x/scale,y:q.y/scale}))}))};
     }
-    return freezeCapture(r,proposal);
+    return freezeCapture(r,proposal,{fine:true});
   };
   A.scanRead = async () => {
     const st = s(),current=scanCurrent();

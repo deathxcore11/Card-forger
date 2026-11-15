@@ -117,7 +117,9 @@ export function registerVerdict(g,pack,pix,reg){
  const dist=top.dist;let rival=reg.cards[1]?reg.cards[1].dist:Infinity;
  if(!reg.cards[1]){const set=new Set(named),other=pixNearest(top.hash,pix.bin,1,g==='ygo'?r=>String(pix.ids[r])===top.key:r=>set.has(r))[0];if(other)rival=other[1];}
  const rows=g==='ygo'?named.map(row=>({row,dist})):named.map(row=>({row,dist:row===top.rec?dist:pixDist(top.hash,pix.bin,row)})).filter(x=>x.dist===null||x.dist<=dist+FUSE.same);
- return {dist,rival,strong:pictureClear(dist,rival),name:pack.rows[named[0]][1],rows,quad:top.quad,flipped:top.flipped};
+ // pool: the nearest different cards by picture, nearest first. Not a verdict: a shortlist that
+ // other evidence (the card's rules text) can pick from when the picture alone is unclear.
+ return {dist,rival,strong:pictureClear(dist,rival),name:pack.rows[named[0]][1],rows,quad:top.quad,flipped:top.flipped,pool:reg.cards.slice(0,12).map(c=>({key:c.key,rec:c.rec,dist:c.dist}))};
 }
 
 const printKey=(g,r)=>g==='ygo'?`${r[0]}|${r[2]}`:String(r[0]);

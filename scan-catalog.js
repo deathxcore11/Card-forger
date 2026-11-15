@@ -3,6 +3,7 @@ import {rankScanCandidates,nameDistance,collectorKey,scanIdentifierEvidence} fro
 import {readRecord,writeRecord} from './storage.js';
 import {scanLookupNames,scanCardNameKey,ptcgIdentifierKey} from './scan.js';
 import {pokemonIdentityNames,pokemonPrintedIdentifier} from './pokemon-identity.js';
+import {textNameMatch} from './scan-textid.js';
 import {footerHints,catalogueReleases,narrowPrintings,printingFacts,ygoCodeVariants} from './scan-collector.js';
 const states=new Map(),loads=new Map();let manifestPromise;
 const key=g=>'cardstashy-scan-catalog-v1-'+g;
@@ -44,9 +45,12 @@ export function catalogCandidate(pack,i,exact=false){
 }
 export function lookupCatalog(pack,read){
  const g=pack.game,names=scanLookupNames(g,read).map(n=>scanCardNameKey(g,n));
- let bestName=names.find(n=>pack.names.has(n)),fuzzy=false,indexes=[];
+ let bestName=names.find(n=>pack.names.has(n)),fuzzy=false,indexes=[],textHit=null;
  const {observations,identifierConflict,identifierUncertain}=scanIdentifierEvidence(g,read);
  if(!bestName&&names[0]?.length>=5){const hits=[...pack.names.keys()].filter(n=>Math.abs(n.length-names[0].length)<=2).map(n=>[n,nameDistance(n,names[0],2)]).filter(([,d])=>d<=2).sort((a,b)=>a[1]-b[1]);if(hits[0]&&(!hits[1]||hits[0][1]<hits[1][1])){bestName=hits[0][0];fuzzy=true;}}
+ // The title was read roughly, or only the rules text was readable: the catalogue name that best
+ // fits anywhere in what was read (scan-textid.js). Review only, like any fuzzy name.
+ if(!bestName){const hit=textNameMatch(pack,read);if(hit){bestName=hit.key;fuzzy=true;textHit=hit;}}
  if(g==='mtg'){for(const c of observations)indexes.push(...(pack.codes.get(c.set+':'+collectorKey(c.number))||[]));if(bestName&&!fuzzy)indexes=indexes.filter(i=>pack.names.get(bestName)?.includes(i));}
  if(g==='ptcg'){
   for(const c of observations)indexes.push(...(pack.codes.get(ptcgIdentifierKey(c.num,c.total))||[]));
@@ -88,7 +92,7 @@ export function lookupCatalog(pack,read){
  // contradicts every printing; narrowed printings stay for review, never exact.
  const repairWhy=repaired?'Printed code read unclearly · closest real code or passcode · check printing':null;
  const cands=rankScanCandidates(g,[...new Set(indexes)].map(i=>({...catalogCandidate(pack,i,exact),...(why?{why,narrowed,footerNarrowed:true}:repairWhy?{why:repairWhy,footerNarrowed:true}:{})})),read).slice(0,3);
- return {cands,tried:names,local:true,fuzzy,...(narrowed?{narrowed}:{})};
+ return {cands,tried:names,local:true,fuzzy,...(textHit?{textHit:{where:textHit.where,d:textHit.d,backed:textHit.backed,name:pack.rows[textHit.indexes[0]]?.[1]||''}}:{}),...(narrowed?{narrowed}:{})};
 }
 
 export const catalogState=g=>states.get(g)||{status:'idle'};
