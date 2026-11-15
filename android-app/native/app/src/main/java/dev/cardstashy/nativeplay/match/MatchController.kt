@@ -768,6 +768,8 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     /** The newest engine event when you pressed: anything after it (a CPU spell, a trigger) is "something new" and stops the carry. */
     private var passSeq = 0L
     private var carries = 0
+    /** The revision whose unpayable trigger was already announced (one "not paid" chip per ask). */
+    private var declinedAt = -1L
     private val shortCasts = dev.cardstashy.nativeplay.ui.ShortCasts()
     private fun scheduleAutoPass(st: MatchState) {
         autoJob?.cancel()
@@ -801,6 +803,20 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                 delay(ONLY_TARGET_MS)
                 if (_live.value && latest?.revision == st.revision && latest?.inputType == "InputSelectTargets") { autoAnswering = true
                     try { if (t.kind == "player") player(t.id) else card(t.id) } finally { autoAnswering = false } }
+            }
+            return
+        }
+        // Gaps list 2 (15 Nov, 0:25 to 0:27: "Spellbook Vendor: not paid" said, yet Cancel still waited on him): your own trigger's
+        // optional payment with no mana open is declined at once, on Forge's own state, without waiting for a replay or the stack
+        // card's show (either could leave it asking). It stays declined while Forge still asks it, whatever the revision.
+        dev.cardstashy.nativeplay.ui.Affordability.unpayableTrigger(st)?.let { name ->
+            Log.i(TableLog.TAG, "decide ${st.phase} turn ${st.turn} input=${st.inputType} -> cancel (optional payment you can't make: $name)")
+            if (declinedAt != st.revision) { declinedAt = st.revision; say("$name: not paid") }
+            autoJob = scope.launch(Dispatchers.Main) {
+                delay(150)
+                val now = latest
+                if (_live.value && now != null && !now.busy && dev.cardstashy.nativeplay.ui.Affordability.unpayableTrigger(now) == name) {
+                    autoAnswering = true; try { cancel() } finally { autoAnswering = false } }
             }
             return
         }
@@ -840,11 +856,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     private fun decide(st: MatchState): Decision {
         // Randall 10 Nov on 0.4.56 (Spellbook Vendor, "you may pay {1}" with no mana): Arena never asks you to pay what you can't.
         // Your own trigger, resolving on top of the stack, asks for an optional payment you have no mana for: it is declined for
-        // you after its beat, and the table says so. A spell or an ability you start yourself is never cancelled for you.
-        dev.cardstashy.nativeplay.ui.Affordability.unpayableTrigger(st)?.let { name ->
-            say("$name: not paid")
-            return Decision("cancel", "optional payment you can't make: $name", 150)
-        }
+        // you at once in scheduleAutoPass (before this), and the table says so. A spell or an ability you start yourself never is.
         if (st.prompt != null || !st.buttons.okEnabled) return Decision(null, "a question or no button")
         val stopHere = st.phaseStops?.containsKey("${if (st.activePlayer == st.viewer) "you" else "opponent"}:${st.phase}") == true
         if (st.inputType == "InputBlock") {

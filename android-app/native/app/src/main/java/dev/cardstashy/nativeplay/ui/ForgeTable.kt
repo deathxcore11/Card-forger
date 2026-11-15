@@ -210,6 +210,12 @@ internal fun okLabel(st: MatchState): String {
 internal fun noAttackersLeft(st: MatchState): Boolean = st.inputType == "InputPassPriority" && st.phase == "MAIN1" && st.activePlayer == st.viewer && st.stack.isEmpty() &&
     st.buttons.cancelEnabled && st.buttons.cancel?.trim().equals("end turn", true) &&
     st.me.battlefield.none { it.isCreature && !it.tapped && !(it.summoningSick && it.keywords.none { k -> Regex("haste", RegexOption.IGNORE_CASE).containsMatchIn(k) }) }
+/**
+ * Randall's 15 Nov recording (gaps list 3): in your second main phase he sat 22 s with "To end step" and "End turn" both showing. With
+ * nothing on the stack, one gold End turn (Forge's cancel) is the whole decision, as Arena's one button; a hand card still plays first.
+ */
+internal fun main2EndTurn(st: MatchState): Boolean = st.inputType == "InputPassPriority" && st.phase == "MAIN2" && st.activePlayer == st.viewer &&
+    st.stack.isEmpty() && st.buttons.cancelEnabled && st.buttons.cancel?.trim().equals("end turn", true)
 internal fun cancelLabel(st: MatchState): String? {
     val raw = st.buttons.cancel?.takeIf { st.buttons.cancelEnabled } ?: return null
     return if (st.inputType == "InputPassPriority" && raw.equals("end turn", true)) "End turn" else raw
@@ -964,11 +970,11 @@ fun ForgeBoard(
                 // W12: the gold button names the card he picked; with none picked it only asks for one and does nothing.
                 val pickedDiscard = discardingNow && selected != null
                 // W10: your main phase 1, nothing on the stack and no creature able to attack: the step that follows is the end of the turn.
-                val endTurnGold = selected == null && !discardingNow && noAttackersLeft(st)
+                val endTurnGold = selected == null && !discardingNow && (noAttackersLeft(st) || main2EndTurn(st))
                 val ok = if (selected != null) (if (discardingNow) "Discard ${selected.name}" else if (selected.isLand) "Play land" else "Cast")
                     else if (discardingNow && !st.buttons.okEnabled) "Choose a card to discard" else if (endTurnGold) "End turn" else okLabel(st)
                 // End turn takes the gold spot (it presses Forge's cancel); the quiet one keeps the way on to combat.
-                val second = if (selected != null) null else if (endTurnGold) okLabel(st) else cancelLabel(st)
+                val second = if (selected != null) null else if (endTurnGold) okLabel(st).takeIf { !main2EndTurn(st) } else cancelLabel(st)
                 // A declaration Forge would refuse (a must-attack creature left out) is not offered as a live button.
                 val mustLeft = st.inputType == "InputAttack" && st.me.battlefield.any { Affordability.owesAttack(it) }
                 val okOn = st.buttons.okEnabled && !mustLeft
@@ -2629,9 +2635,11 @@ internal fun GoldPill(text: String, enabled: Boolean, modifier: Modifier, d: Du,
             // [data-native-key=ok]:after { content: ' ›'; font-size: 20px }. A long label ("Discard Ultimate Magic: Meteor") is cut
             // with … inside the button (BB8); the › stays.
             Row(Modifier.weight(1f, fill = false)) {
-                // A label is never cut while it can be fitted: its words step down (15 sp to 11) to the room the button has.
-                val goldRoom = if (maxW == Dp.Infinity) Dp.Infinity else maxW - (if (maxW < 138.du) 20.du else 36.du) - (if (keyed) 36.du else 0.dp) - (if (enabled) 10.du else 0.dp)
-                Text(text, style = sans(fitSp(text, 15f, 11f, goldRoom, FontWeight.Bold, d), FontWeight.Bold, Color(0xFF1B1408)), maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false).alignByBaseline())
+                // A label is never cut (gaps list 7, 15 Nov: "No attac…", "Pay automa…", "To comb…" on the Fold): its words step down
+                // from 15 sp to the room the button really has, measured by the text itself (the old estimate left out the "›").
+                androidx.compose.foundation.text.BasicText(text, style = sans(sp(15f), FontWeight.Bold, Color(0xFF1B1408)).copy(textAlign = TextAlign.Center), maxLines = 1,
+                    overflow = TextOverflow.Ellipsis, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = sp(9.5f), maxFontSize = sp(15f), stepSize = sp(.5f)),
+                    modifier = Modifier.weight(1f, fill = false).alignByBaseline())
                 if (enabled) Text(" \u203A", style = sans(sp(20f), FontWeight.Bold, Color(0xFF1B1408)), maxLines = 1, modifier = Modifier.alignByBaseline())
             }
         }
@@ -3201,6 +3209,8 @@ internal fun askLine(st: MatchState): String? {
         return ask
     }
     // A payment your mana can't finish says so above the hand; Cancel is the way out.
+    // Gaps list 2: your own trigger's optional payment with no mana is declined for you, so the line says that, not "Not enough mana".
+    Affordability.unpayableTrigger(st)?.let { return "$it: not paid, no mana open" }
     Affordability.paying(st)?.takeIf { it.short }?.let { return "Not enough mana" + (it.name?.let { n -> " for $n" } ?: "") }
     // The cleanup discard (U1): Forge asks it with no prompt and no input name, so this line is the only place that says so.
     if (discard) {

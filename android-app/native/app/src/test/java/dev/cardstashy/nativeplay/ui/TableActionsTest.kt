@@ -92,6 +92,20 @@ class TableActionsTest {
         assertEquals("Undo", undo.undo?.label); assertNull(undo.quiet)
     }
 
+    @Test fun secondMainIsOneEndTurnButton() {
+        // Randall's 15 Nov recording (gaps list 3): 22 s in Main 2 with "To end step" and "End turn" both showing. Now one gold End turn.
+        val m2 = gold(st(phase = "MAIN2", cancel = "End turn"))
+        assertEquals(Kind.END_TURN, m2.kind)
+        assertEquals("End turn", m2.gold?.label); assertEquals(Press.CANCEL, m2.gold?.press)
+        assertNull("no second button for the same decision", m2.quiet)
+        // A hand card still plays first, and Undo (a land just played) keeps its own slot.
+        val hand = base.me.hand.first()
+        assertEquals(Kind.PLAIN, gold(st(phase = "MAIN2", cancel = "End turn"), selected = hand).kind)
+        assertEquals("Undo", gold(st(phase = "MAIN2", cancel = "Undo")).undo?.label)
+        // The CPU's second main is not yours to end.
+        assertEquals(Kind.PLAIN, gold(st(phase = "MAIN2", active = cpu, ok = "OK", cancel = null)).kind)
+    }
+
     @Test fun theOtherCornersKeepTheirWords() {
         // A one-target pick with "No target" allowed.
         val pick = gold(st("InputSelectTargets", cancel = "Cancel") { it.copy(selection = it.selection.copy(min = 0, max = 1, chosenCards = emptySet(), chosenPlayers = emptySet())) })

@@ -50,11 +50,12 @@ internal object TableActions {
            resolveLate: Boolean = false): Corner {
         val menu = menu(st, live)
         // W10: your main phase 1, nothing on the stack and no creature able to attack: the step that follows is the end of the turn.
-        val endTurnGold = selected == null && !discarding && noAttackersLeft(st)
+        // Gaps list 3 (15 Nov): from your second main phase too, with one button and no "To end step" beside it.
+        val endTurnGold = selected == null && !discarding && (noAttackersLeft(st) || main2EndTurn(st))
         val ok = if (selected != null) (if (discarding) "Discard ${selected.name}" else if (selected.isLand) "Play land" else "Cast")
             else if (discarding && !st.buttons.okEnabled) "Choose a card to discard" else if (endTurnGold) "End turn" else okLabel(st).let { if (it == RESOLVING && resolveLate) "Resolve" else it }
         // End turn takes the gold spot on W10's turn (it presses Forge's cancel); the quiet one keeps the way on to combat.
-        val second = if (selected != null) null else if (endTurnGold) okLabel(st) else cancelLabel(st)
+        val second = if (selected != null) null else if (endTurnGold) okLabel(st).takeIf { !main2EndTurn(st) } else cancelLabel(st)
         // A declaration Forge would refuse (a must-attack creature left out) is not offered as a live button.
         val mustLeft = st.inputType == "InputAttack" && st.me.battlefield.any { Affordability.owesAttack(it) }
         val okOn = st.buttons.okEnabled && !mustLeft
@@ -63,6 +64,9 @@ internal object TableActions {
         val attackAll = offered.isNotEmpty() && st.selection.cards.size >= 2
         val pickOne = oneTarget(st) || onePick(st)
         return when {
+            // Gaps list 2 (15 Nov): your own trigger's optional payment you have no mana for is declined for you at once, so the
+            // corner offers no Cancel or "Pay automatically" for it, only the quiet Resolving step.
+            Affordability.unpayableTrigger(st) != null -> Corner(Kind.PLAIN, Action(RESOLVING, Press.OK, false), null, null, null, null, menu)
             tucked -> Corner(Kind.TUCKED, null, second?.let { Action(it, Press.CANCEL, live) }, null, null,
                 tuckLabels(st).getOrNull(1)?.let { Action(it, Press.OK, live && okOn) }, menu)
             attackAll -> Corner(Kind.ATTACK_ALL, Action(ok, Press.OK, live && okOn), null, null, Action("Attack all", Press.ATTACK_ALL, live), null, menu)
@@ -70,7 +74,7 @@ internal object TableActions {
                 second?.let { Action(it, Press.CANCEL, live) }, null, null, null, menu)
             // A payment your mana can't finish: Cancel is the gold one, and Pay automatically steps aside.
             short && second != null -> Corner(Kind.SHORT, Action(second, Press.CANCEL, live), if (st.buttons.okEnabled) Action(ok, Press.OK, live) else null, null, null, null, menu)
-            endTurnGold -> Corner(Kind.END_TURN, Action(ok, Press.CANCEL, live), Action(second ?: "To combat", Press.OK, live && okOn), null, null, null, menu)
+            endTurnGold -> Corner(Kind.END_TURN, Action(ok, Press.CANCEL, live), second?.let { Action(it, Press.OK, live && okOn) }, null, null, null, menu)
             else -> {
                 val undo = second?.startsWith("Undo", ignoreCase = true) == true
                 // Mobile table M3: while your own spell or trigger resolves by itself the gold button is not a press.

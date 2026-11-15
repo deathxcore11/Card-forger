@@ -537,6 +537,9 @@ private fun TableSide(st: MatchState, c: MatchController, beat: Beat?, live: Boo
         // native-panel.mjs dock: Forge's own questions (triggers order, costs, damage split, search, choices). Called every frame: the
         // spell-mode back-out acts on the step after a prompt.
         if (beat == null) BoxWithConstraints(Modifier.fillMaxSize()) { DecisionDock(st, live, c.intents, onInspect, chromeU(maxWidth, maxHeight), replies = c.dockReplies) }
+        // Gaps list 1 (15 Nov): a one-card scry shows its card (Top and Bottom alone sat 10 s with nothing to read).
+        if (beat == null && live && st.waitingOnMe) ScryOne.of(st)?.let { name ->
+            BoxWithConstraints(Modifier.fillMaxSize()) { ScryOneView(st, name, live, Du(chromeU(maxWidth, maxHeight)), onTop = { c.intents.ok() }, onBottom = { c.intents.cancel() }) } }
     }
 }
 

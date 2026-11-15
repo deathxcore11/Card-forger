@@ -94,6 +94,9 @@ object Glow {
             blockingNow && card.id == blockPick -> Mark.PICKED
             discardAsk && card.id == selectedHand && card.id in st.selection.cards -> Mark.PICKED
             blockingNow && aimed && card.attacking && card.controller != st.viewer -> Mark.TARGET
+            // Gaps list 4 (15 Nov): "Block the CPU's attack?" with no creature lit, so he never blocked. Every creature of yours that
+            // could meet an attacker wears the pick ring, as Arena rings its able blockers.
+            blockingNow && canBlock(card, st) -> Mark.PICKABLE
             card.id in blocked -> Mark.NONE
             card.id in st.selection.chosenCards -> Mark.PICKED
             card.id in st.selection.targetCards -> Mark.TARGET
@@ -101,6 +104,19 @@ object Glow {
             // glow-rules.md rules 1-7: playable (hand, command zone, graveyard, exile), usable (a permanent's ability), or nothing.
             else -> usable(card, st, live, blocked, quiet)
         }
+    }
+
+    /**
+     * While you declare blockers: [card] is your untapped creature, not blocking yet, that Forge offers (or Forge lists nothing, as
+     * InputBlock does) and that could meet at least one attacker by what the cards show (flying, reach, "can't block"). Forge still
+     * judges the block itself.
+     */
+    fun canBlock(card: Card, st: MatchState): Boolean {
+        if (card.controller != st.viewer || card.zone != "Battlefield" || !card.isCreature || card.attacking || card.blocking || card.tapped) return false
+        val offered = st.selection.cards + st.selection.actionable
+        if (offered.isNotEmpty() && card.id !in offered) return false
+        if (blockRefusal(null, card) != null) return false
+        return st.players.filter { it.id != st.viewer }.flatMap { it.battlefield }.any { it.attacking && mayBlock(it, card) && blockRefusal(it, card) == null }
     }
 
     /**
