@@ -19,9 +19,9 @@ const st = (f, prev, steady = 5) => guideState(frameMetrics(f, W, H, g, prev), s
 const ok = frame();
 assert.equal(st(frame({ card: false })).state, "red", "no card → red");
 assert.equal(st(frame({ dx: 30 })).state, "red", "card off to the side → red");
-assert.equal(st(frame({ dark: true })).msg, "Too dark. Find more light");
+assert.equal(st(frame({ dark: true })).msg, "Too dark");
 assert.equal(st(frame({ blur: true })).state, "amber", "blurry → amber");
-assert.match(st(frame({ glare: true })).msg, /glare/, "glare → amber with a glare tip");
+assert.match(st(frame({ glare: true })).msg, /glare/i, "glare → amber with a glare tip");
 assert.equal(st(ok, frame({ dx: 30 })).msg, "Hold steady", "moving → amber");
 assert.equal(st(ok, ok, 0).state, "amber", "not green on the first steady frame");
 assert.equal(st(ok, ok, 5).state, "green", "steady, sharp, aligned → green");
