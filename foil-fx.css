@@ -30,7 +30,8 @@
 .pack-slice{position:absolute;left:0;right:0;top:8.5%;height:3px;pointer-events:none;z-index:4;transform-origin:0 50%;transform:scaleX(0);opacity:0;
  background:linear-gradient(90deg,#ff5fd2,#fff 55%,#9ff0ff);box-shadow:0 0 10px 2px #ff7ad9,0 0 22px 6px #ffffff88;border-radius:3px}
 .pack-wrapper.tearing .pack-slice{animation:pack-slice .34s cubic-bezier(.6,0,.4,1) forwards}
-.pack-flash{position:absolute;inset:-30%;pointer-events:none;z-index:5;opacity:0;background:radial-gradient(circle at 50% 20%,#fff 0%,#fff8 22%,transparent 60%)}
+/* The light is sized by the box, so it is gone before the box's sides (a tall pack showed it as a hard-edged grey slab). */
+.pack-flash{position:absolute;inset:-30%;pointer-events:none;z-index:5;opacity:0;background:radial-gradient(ellipse 50% 45% at 50% 20%,#fff 0%,#fff8 30%,transparent 100%)}
 .pack-wrapper.tearing .pack-flash{animation:pack-flash .5s .3s ease-out both}
 .pack-wrapper.tearing .pack-crimp.top{animation:pack-strip .42s .3s cubic-bezier(.3,.6,.4,1) forwards}
 .pack-wrapper.tearing .pack-body{animation:pack-rip-jolt .44s cubic-bezier(.4,0,.2,1) forwards}
@@ -115,3 +116,11 @@
    the face has landed, so the turn shows the real back then the real front, never a flat grey or empty slab. */
 .pack-focus-card.pack-flipping>:is(.pack-frame,.pack-backlight){opacity:0!important;transition:none}
 .pack-card.pack-flipping::before,.pack-card.pack-flipping::after{opacity:0!important;transition:none}
+
+/* The 3D pack (pack3d.js): the canvas fills the pack's body under the seam and the flash; the 2D art, crimps and sheen step aside.
+   Its float only lifts (the model turns itself). While its photo loads the place stays empty, so the 2D pack never shows first. */
+.pack-3d-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+.pack-wrapper.pack-3d .pack-wrap-art,.pack-wrapper.pack-3d .pack-crimp,.pack-wrapper.pack-3d .pack-sheen{display:none}
+.pack-wrapper.pack-3d:not(.tearing):not(.pack-ghost) .pack-body{animation-name:pack-float-3d}
+@keyframes pack-float-3d{50%{transform:translateY(-8px)}}
+.pack-ghost.pack-3d .pack-wrap-art{clip-path:none}

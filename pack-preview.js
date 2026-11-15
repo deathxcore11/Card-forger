@@ -21,6 +21,7 @@ const PACK_CUES=['PACK-004','PACK-005','PACK-003','PACK-019','PACK-020',...Objec
 const packSoundOn=()=>{const a=audioSettings();return a.on!==false&&a.app!==false;};
 import {catchLight} from './foil-fx.js';
 import {packArtSources,packTemplateArt} from './pack-wrappers.js';
+import {pack3dCode,mountPack3D} from './pack3d.js';
 import {tiltCoordinates,motionTiltOn} from './mobile-tilt.js';
 // A discovery sampler. No collation, print-run odds, purchases or ownership are implied.
 export function sampleSetCards(cards,count=10,random=packRandom){
@@ -317,9 +318,15 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
 <div class="pack-content" hidden><div class="pack-focus"><button class="pack-focus-card" data-pack="focus" data-hold-card aria-label="Card 1"><i class="pack-backlight" aria-hidden="true"></i><i class="pack-frame" aria-hidden="true"></i><span class="pack-face" data-finish-surface="pack"><img alt="" referrerpolicy="no-referrer"><i class="fx-catch" aria-hidden="true"></i></span>${back}<i class="pack-rays" aria-hidden="true"></i></button><p class="pack-focus-meta" aria-live="polite"><b></b><span class="pack-rarity"></span></p></div><div class="pack-hand" role="group" aria-label="Cards in this pack" style="--pack-n:${picks.length}">${hand()}</div>
 <div class="pack-actions"><button class="btn ghost pack-reveal-all" data-pack="reveal-all">Reveal all</button>${play?'':`<div class="pack-tools" role="group" aria-label="This pack"><button class="pack-tool" data-pack="wish" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><span>Wishlist all</span></button><button class="pack-tool" data-pack="buy" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14l-1.4 9.2a2 2 0 0 1-2 1.8H8.4a2 2 0 0 1-2-1.8z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span>Shop list</span></button></div>`}${play&&!onNext?'':`<button class="btn pack-again" data-pack="again">${play?'Open the next pack':'Open a new pack'}</button>`}</div></div><p class="pack-status" role="status" aria-live="polite"></p>`;
  document.body.append(dialog);dialog.tabIndex=-1;dialog.showModal();dialog.focus({preventScroll:true});
+ // Every Magic set with a real wrapper photo opens as the 3D pack (Randall 15 Nov). While it loads the pack's place stays empty,
+ // so the 2D pack never shows first and swaps; if the browser has no WebGL or the photo fails, the 2D pack comes back.
+ let p3d=null;{const code=pack3dCode(game,set),w=dialog.querySelector('.pack-wrapper');if(code&&w&&globalThis.WebGLRenderingContext){w.classList.add('pack-3d','pack-3d-wait');
+  const back2d=()=>{p3d=null;w.classList.remove('pack-3d','pack-3d-wait');w.style.removeProperty('aspect-ratio');};
+  mountPack3D(w.querySelector('.pack-body'),code,{still:reduce()}).then(c=>{if(!c)return back2d();if(disposed)return c.dispose();
+   p3d=c;w.style.aspectRatio=String(c.aspect);w.classList.remove('pack-3d-wait');c.onLost=()=>{c.dispose();back2d();};}).catch(back2d);}}
  // Parallax: the art layer slides against the frame as the pointer moves or the phone tilts (rigid layers, clipped to the window).
- {const tpl=dialog.querySelector('.pack-wrapper.pack-tpl');if(tpl&&!reduce()){let raf=0,px=0,py=0,origin=null;
-  const paint=()=>{raf=0;tpl.style.setProperty('--px',px.toFixed(3));tpl.style.setProperty('--py',py.toFixed(3));};
+ {const tpl=dialog.querySelector('.pack-wrapper.pack-tpl,.pack-wrapper.pack-3d');if(tpl&&!reduce()){let raf=0,px=0,py=0,origin=null;
+  const paint=()=>{raf=0;tpl.style.setProperty('--px',px.toFixed(3));tpl.style.setProperty('--py',py.toFixed(3));p3d?.drift(px,py);};
   const set=(x,y)=>{px=Math.max(-1,Math.min(1,x));py=Math.max(-1,Math.min(1,y));if(!raf)raf=requestAnimationFrame(paint);};
   const move=e=>{const r=tpl.getBoundingClientRect();set((e.clientX-r.left)/r.width*2-1,(e.clientY-r.top)/r.height*2-1);};
   const turn=e=>{if(!motionTiltOn()||!Number.isFinite(e.beta)||!Number.isFinite(e.gamma))return;origin||={beta:e.beta,gamma:e.gamma};const t=tiltCoordinates({beta:e.beta,gamma:e.gamma},origin,screen.orientation?.angle||0);set(t.x,t.y);};
@@ -424,8 +431,10 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  const open=()=>{if(opening||disposed||!dialog.querySelector('.pack-content').hidden)return;opening=true;const w=dialog.querySelector('.pack-wrapper');
   const done=()=>{opening=false;const from=w.getBoundingClientRect(),motion=!reduce();
    // The torn pack stays where it was while the cards fly out of its open top, then sinks away.
-   let ghost=null;if(motion){ghost=w.cloneNode(true);ghost.className='pack-wrapper pack-ghost';ghost.removeAttribute('data-pack');ghost.setAttribute('aria-hidden','true');ghost.tabIndex=-1;
-    Object.assign(ghost.style,{position:'fixed',left:from.left+'px',top:from.top+'px',width:from.width+'px',height:from.height+'px',margin:'0'});dialog.append(ghost);}
+   let ghost=null;if(motion){ghost=w.cloneNode(true);ghost.className='pack-wrapper pack-ghost'+(p3d?' pack-3d':'');ghost.removeAttribute('data-pack');ghost.setAttribute('aria-hidden','true');ghost.tabIndex=-1;
+    Object.assign(ghost.style,{position:'fixed',left:from.left+'px',top:from.top+'px',width:from.width+'px',height:from.height+'px',margin:'0'});dialog.append(ghost);
+    // The 3D pack itself moves into the ghost (a cloned canvas would be blank), its strip gone; it goes home when the ghost does.
+    if(p3d){ghost.querySelector('.pack-3d-canvas')?.remove();p3d.moveTo(ghost.querySelector('.pack-body'));}}
    w.classList.remove('tearing');dialog.querySelector('.pack-sealed').hidden=true;dialog.querySelector('.pack-content').hidden=false;dialog.classList.add('pack-dealt','pack-dealing');show(0);focusCard.focus({preventScroll:true});
    if(!motion){dialog.classList.remove('pack-dealing');return;}
    dialog.classList.add('pack-flying');
@@ -438,12 +447,20 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
     const inside=from.top+from.height*.42-cy,above=from.top-c.height*k*.32-cy,spread=(i-mid)*Math.min(14,from.width*.05);
     b.animate([{transform:`translate(${ox}px,${inside}px) scale(${k})`,zIndex:0,opacity:1,offset:0},{transform:`translate(${ox+spread*.4}px,${above}px) rotate(${(i-mid)*1.5}deg) scale(${k*.92})`,zIndex:0,opacity:1,offset:.34},{transform:`translate(${ox+spread}px,${above}px) rotate(${(i-mid)*3}deg) scale(${k*.9})`,zIndex:200,offset:.4},{zIndex:200,offset:.97}],
      {duration:fly,delay:i*gap,easing:'cubic-bezier(.3,.7,.25,1)',fill:'backwards'});
+    // Out of the 3D pack (Randall 15 Nov, "the way the cards fly out of it"): once clear of the top each card arcs over to its
+    // place, twirling flat once (a best card twice, higher) and tipping back, face down. Never higher than the room above the
+    // pack; the twirl runs on the clock, eased in and out, so a best card peaks near 33° a frame (under the 45° where spin strobes).
+    if(p3d){const best3d=best.has(i),arc=Math.min(from.height*(best3d?.34:.2),Math.max(0,from.top-c.height*k*.82)),turns=best3d?2:1,dir=i<mid?-1:1,s0=.158;
+     const kf=[];for(let j=0;j<=20;j++){const u=j/20,f=Math.max(0,(u-s0)/(1-s0)),spin=f*f*(3-2*f),up=arc*Math.sin(f*Math.PI)/Math.max(.5,k*.9+(1-k*.9)*f),tip=24*Math.sin(f*Math.PI);
+      kf.push({transform:`translateY(${-up}px) perspective(${10*c.height}px) rotateX(${tip}deg) rotate(${dir*360*turns*spin}deg)`,offset:u});}
+     b.animate(kf,{duration:fly,delay:i*gap,easing:'linear',fill:'backwards',composite:'add'});}
     later(()=>{if(suspended)return;if(best.has(i)){haptic('pack-rumble');appSound('PACK-019',{volume:.7,gap:0});appSound('PACK-005',{volume:.55,rate:.94,gap:0});
       b.animate([0,1,2,3,4,5,6].map(k=>({translate:`${k===6?0:(k%2?1:-1)*(3.2-k*.45)}px ${k===6?0:(k%2?-1:1)*1.2}px`})),{duration:300,easing:'ease-out',composite:'add'});b.classList.add('pack-best-land');later(()=>b.classList.remove('pack-best-land'),620);}
      else{appSound('PACK-005',{volume:.55,rate:1+i*.02,gap:0});haptic('pack-deal');}},i*gap+fly-40);});
    // Rotating or unfolding mid-deal moves the layout away from the pack's old place: the torn pack just goes.
-   const dropGhost=()=>ghost.remove();addEventListener('resize',dropGhost,{once:true});
-   ghost.animate([{transform:'none',opacity:1},{transform:'none',opacity:1,offset:Math.min(.8,(n*gap)/(last+260))},{transform:'translateY(36%) scale(.9)',opacity:0}],{duration:last+260,easing:'cubic-bezier(.45,0,.55,1)',fill:'forwards'}).finished.catch(()=>{}).then(()=>{removeEventListener('resize',dropGhost);ghost.remove();});
+   const home3d=()=>p3d?.reset(w.querySelector('.pack-body'));
+   const dropGhost=()=>{home3d();ghost.remove();};addEventListener('resize',dropGhost,{once:true});
+   ghost.animate([{transform:'none',opacity:1},{transform:'none',opacity:1,offset:Math.min(.8,(n*gap)/(last+260))},{transform:'translateY(36%) scale(.9)',opacity:0}],{duration:last+260,easing:'cubic-bezier(.45,0,.55,1)',fill:'forwards'}).finished.catch(()=>{}).then(()=>{removeEventListener('resize',dropGhost);home3d();ghost.remove();});
    // The big card comes up once the hand has landed, face down and ready to turn over.
    focusCard.classList.add('pack-await');
    const landed=()=>{if(!dialog.classList.contains('pack-flying'))return;dialog.classList.remove('pack-flying','pack-dealing');focusCard.classList.remove('pack-await');focusCard.classList.add('pack-rising');later(()=>focusCard.classList.remove('pack-rising'),480);};
@@ -451,12 +468,12 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
    skipDeal=()=>{skipDeal=null;for(const b of cards)for(const a of b.getAnimations())if(!(a instanceof CSSAnimation))a.finish();for(const a of ghost.getAnimations())a.finish();landed();};
    later(()=>{skipDeal=null;landed();},last);};
   haptic('pack-tear');appSound('PACK-004',{gap:0});
-  if(reduce()){done();return;}w.classList.add('tearing');later(done,440);};
+  if(reduce()){done();return;}w.classList.add('tearing');p3d?.tear();later(done,440);};
  // Turning a card over: it lifts off the table as it flips and settles back down.
  const flipLift=(el,lift,ms=560)=>{if(reduce()||!el?.animate)return;el.animate([{translate:'0 0',rotate:'0deg'},{translate:`0 ${-lift}%`,rotate:`${-1.5-lift*.12}deg`,offset:.42},{translate:'0 0',rotate:'0deg'}],{duration:ms,easing:'cubic-bezier(.3,.7,.3,1)',composite:'add'});};
  // Play: the opened cards fly to the collection when the pack is put away (close or next pack).
  const landing=()=>{if(!play||!onLand||dialog.querySelector('.pack-content')?.hidden)return null;return [...dialog.querySelectorAll('.pack-card img[data-pack-src]')].map(img=>{const r=img.getBoundingClientRect(),g=img.cloneNode();g.src=img.dataset.packSrc;g.hidden=false;return r.width&&r.bottom>0&&r.top<innerHeight?{img:g,a:{left:r.left,top:r.top,width:r.width,height:r.height}}:null;}).filter(Boolean);};
- const close=()=>{if(disposed)return;const land=landing();quiet();disposed=true;cancelAnimationFrame(raf);stopTilt();dialog.close();dialog.remove();if(land?.length)onLand(land);};
+ const close=()=>{if(disposed)return;const land=landing();quiet();disposed=true;p3d?.dispose();cancelAnimationFrame(raf);stopTilt();dialog.close();dialog.remove();if(land?.length)onLand(land);};
  // Inspecting a pulled card opens its page above the pack. The pack stays exactly as it is underneath (same pulls,
  // reveals, focused card, nothing re-dealt or replayed), paused while covered, and is back when that page closes.
  let suspended=false;
@@ -528,7 +545,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   // A new pack is a new sealed pack: it waits to be torn open, rather than dealing straight away.
   if(action==='again'){let next=null;if(play){busy=true;b.disabled=true;try{next=await onNext?.();}catch(error){status.textContent=error?.message||'Could not open the next pack.';}finally{busy=false;b.disabled=false;}if(!next?.picks?.length){if(!status.textContent)status.textContent='No more packs to open.';return;}const land=landing();if(land?.length)onLand(land);drawn=next.picks;set=next.set||set;}
    quiet();opening=false;picks=draw();ctxs=packFinishes(game,picks);fill();revealed=new Set();dialog.classList.remove('pack-done','pack-dealt');handEl.innerHTML=hand();wireHold();for(const x of dialog.querySelectorAll('[data-pack="wish"],[data-pack="buy"]'))x.disabled=true;status.textContent='';
-   dialog.querySelector('.pack-content').hidden=true;const sealed=dialog.querySelector('.pack-sealed');sealed.hidden=false;sealed.querySelector('.pack-wrapper')?.classList.remove('tearing');sealed.querySelector('.pack-wrapper')?.focus({preventScroll:true});return;}
+   dialog.querySelector('.pack-content').hidden=true;const sealed=dialog.querySelector('.pack-sealed');sealed.hidden=false;sealed.querySelector('.pack-wrapper')?.classList.remove('tearing');p3d?.reset(sealed.querySelector('.pack-body'));sealed.querySelector('.pack-wrapper')?.focus({preventScroll:true});return;}
   if(['wish','buy'].includes(action)&&revealed.size===picks.length){
    busy=true;b.disabled=true;try{if(action==='wish'){await onWishlist(picks);status.textContent='Saved to your wishlist.';b.textContent='On wishlist';}
     else await onBuy(picks);

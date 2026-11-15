@@ -108,7 +108,7 @@ const ASSETS = [
   "./console-settings.js",
   "./daily-login.js",
   "./settings-storage.js",
-  "./mobile-tilt.js", "./set-experience.js", "./pack-preview.js", "./pack-wrappers.js", "./pack-art-data.js", "./mtg-boosters.js", "./rarity-emblem.js", "./data-loading.js", "./collector-search.js",
+  "./mobile-tilt.js", "./set-experience.js", "./pack-preview.js", "./pack3d.js", "./pack-wrappers.js", "./pack-art-data.js", "./mtg-boosters.js", "./rarity-emblem.js", "./data-loading.js", "./collector-search.js",
   "./sync-merge.js",
   "./recovery-store.js",
   "./magic-card-color.js",
