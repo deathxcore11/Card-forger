@@ -27,6 +27,8 @@ internal object CollectionWrites {
     private val _toast = MutableStateFlow<Toast?>(null); val toast: StateFlow<Toast?> = _toast
     fun dismiss(t: Toast) { if (_toast.value == t) _toast.value = null }
     fun show(text: String, undo: Boolean = false) { _toast.value = Toast(text, undo) }
+    /** How far over the bottom the toast sits, in dp: the Scanner raises it clear of its Add bar, its tray and the nav. */
+    val toastLift = MutableStateFlow(0)
 
     /** dialog.js ask: a question the player answers before the write runs; yes taps again with confirmed (or runs [then]). */
     data class Ask(val question: String, val kind: String, val data: JsonObject, val then: (suspend () -> Unit)? = null, val after: ((JsonObject) -> Unit)? = null,
@@ -90,6 +92,19 @@ internal object CollectionWrites {
         if (kind == "addDelete" && saved) adding.value = null
         if (saved) { settleLater(context); after?.invoke(r) }
         return saved
+    }
+
+    /**
+     * [act] for the Scanner's save: a failure's words go back to the caller (the scanner shows them in its own bar over the Add
+     * button) instead of a toast on top of that button. Saved, or not with the reason when the engine gave one.
+     */
+    suspend fun actTelling(context: Context, kind: String, data: JsonObject, after: ((JsonObject) -> Unit)? = null): Pair<Boolean, String?> {
+        pendingAsk = Ask("", kind, data, after = after)
+        val r = commitAct(context, kind, data, 30_000) ?: return false to null
+        r["error"]?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }?.let { return false to it }
+        val saved = done(r)
+        if (saved) { settleLater(context); after?.invoke(r) }
+        return saved to null
     }
 
     /** A tap that may save nothing (the Scanner's condition price): its raw result ({made, error…}); null when it could not run. */

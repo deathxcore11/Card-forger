@@ -109,6 +109,10 @@ private fun JsonObject?.str(k: String) = this?.get(k)?.takeIf { it.isJsonPrimiti
 /** A card's colours (the front face's for double-faced cards), for the strip's wash and the colour filters. */
 private fun colorsOf(card: JsonObject?): List<String> = (card?.get("colors") as? JsonArray ?: ((card?.get("card_faces") as? JsonArray)?.firstOrNull() as? JsonObject)?.get("colors") as? JsonArray)
     ?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString } ?: emptyList()
+/** Every colour of every face, for the colour filter: a double-faced card shows under its back face's colour too. */
+private fun allColorsOf(card: JsonObject?): List<String> = ((card?.get("colors") as? JsonArray).orEmptyList() +
+    ((card?.get("card_faces") as? JsonArray)?.flatMap { ((it as? JsonObject)?.get("colors") as? JsonArray).orEmptyList() } ?: emptyList())).distinct()
+private fun JsonArray?.orEmptyList(): List<String> = this?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString } ?: emptyList()
 
 @Composable
 fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (CardPick) -> Unit, onPack: (String) -> Unit, toast: (String) -> Unit,
@@ -142,11 +146,13 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
     suspend fun craftCopies(id: String, n: Int): Int { var made = 0; repeat(n) { if (runCatching { Progress.craft(id) }.isSuccess) made++ else return made }; return made }
 
     // ---- pool (app.js poolQuery / loadPool), on the Bench's find, colour and type filters
-    fun poolQuery(find: String = b.find, colors: Set<String> = b.colors, type: String = b.type): String {
+    fun poolQuery(find: String = b.find, colors: Set<String> = b.colors, type: String = b.type, filter: BenchFilter = b.filter): String {
         val q = mutableListOf("legal:${ui.edit.format.lowercase()}", "game:paper")
         find.trim().replace(Regex("[\"\\\\]"), "").takeIf { it.isNotEmpty() }?.let { q += "name:\"$it\"" }
         if (colors.isNotEmpty()) q += colors.joinToString(" or ", "(", ")") { "c:" + it.lowercase() }
         POOL_TYPES[type]?.let { q += it }
+        // The Filters panel's picks Scryfall can search itself (mana value, type, rarity, set); Does and copies are the Bench's own.
+        q += BenchFilter.query(filter)
         if (ui.edit.format == "Commander") ui.edit.cards.mapNotNull { fact(it.name) }.firstOrNull { Regex("Legendary").containsMatchIn(it.t) && Regex("Creature").containsMatchIn(it.t) }
             ?.let { q += "id<=" + it.k.lowercase().ifEmpty { "c" } }
         return q.joinToString(" ")
@@ -166,18 +172,20 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
         }
     }
     // All cards with nothing typed is shelves (below); a search looks through every card, a page at a time.
-    LaunchedEffect(ui.mode, b.find, b.colors, b.type, ui.edit.format) { if (ui.mode == "all" && b.find.isNotBlank()) { if (ui.poolKey.isNotEmpty()) delay(350); loadPool() } }
+    // Only the picks Scryfall searches ask again (BenchFilter.query); Does, copies and Not in this deck are read here.
+    LaunchedEffect(ui.mode, b.find, b.colors, b.type, BenchFilter.query(b.filter), ui.edit.format) { if (ui.mode == "all" && b.find.isNotBlank()) { if (ui.poolKey.isNotEmpty()) delay(350); loadPool() } }
     // ---- All cards, shelf by shelf (AllShelves.kt): "For this deck" is Fill empty slots' own search (A.playFillSlots: the format's
     // most played cards, no lands) in the deck's colours, then a shelf per set with the pool's search, each loaded when it shows.
     val shelves = remember(ui) { MagicShelves(scope) }
     val shelfBase = poolQuery("", b.colors, b.type)
     // The deck's colours, worked out off the main thread (the facts map grows with every shelf that lands).
     val identity by androidx.compose.runtime.produceState<String?>(null, facts, e.cards) { value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { deckIdentity(e.cards.map { it.name }.filterNot(Decks::isBasicLand)) } }
-    val shelfFit = poolQuery("", emptySet(), "All") + " -t:land" + (identity?.let { " id<=$it" } ?: "")
+    val shelfFit = poolQuery("", emptySet(), "All", BenchFilter()) + " -t:land" + (identity?.let { " id<=$it" } ?: "")
     LaunchedEffect(ui.mode, shelfBase, shelfFit) { if (ui.mode == "all") { shelves.use(shelfBase, shelfFit); shelves.start() } }
     // All cards: the next page comes in as the grid nears its end.
-    LaunchedEffect(ui.mode) { if (ui.mode == "all") snapshotFlow { b.tileGrid.layoutInfo.let { it.visibleItemsInfo.lastOrNull()?.index to it.totalItemsCount } }
-        .collect { (last, total) -> if (last != null && total > 0 && last >= total - 6 && ui.poolMore && !ui.poolBusy) loadPool(true) } }
+    // The pool's own size and busy flag are in the watch too: when the Bench's filters hide a whole page, the grid does not grow, and the next page still comes.
+    LaunchedEffect(ui.mode) { if (ui.mode == "all") snapshotFlow { b.tileGrid.layoutInfo.let { listOf(it.visibleItemsInfo.lastOrNull()?.index, it.totalItemsCount, ui.pool.size, ui.poolBusy, ui.poolMore) } }
+        .collect { (last, total) -> last as Int?; total as Int; if (last != null && total > 0 && last >= total - 6 && ui.poolMore && !ui.poolBusy) loadPool(true) } }
 
     // ---- the engine's read: Power, tier (Commander: bracket) and roles, a moment after the list stops changing
     val sig = e.format + "|" + e.cards.joinToString(";") { "${it.qty} ${it.name}" }
@@ -260,22 +268,25 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
     val groups = DeckEdit.groups(e.cards) { fact(it) }.map { (g, rows) -> BenchGroup(g, rows.map { l -> val fx = fact(l.name); val pr = planOf[l.name]; val card = fx?.card
         BenchRow(l.name, l.qty, pr?.miss ?: 0, pr?.seal ?: "", fx?.a?.ifBlank { null } ?: named(l.name, "art_crop"), byName[l.name]?.pimage ?: fx?.i?.ifBlank { null } ?: named(l.name, "normal"),
             fx?.mc ?: "", colorsOf(card), card.str("set"), card.str("collector_number"), card.str("rarity"),
-            (cardRoles?.get(l.name) as? JsonArray)?.mapNotNull { it.takeIf { r -> r.isJsonPrimitive }?.asString } ?: emptyList()) }) }
-    fun keep(name: String, colors: List<String>, group: String): Boolean {
-        if (b.find.isNotBlank() && !name.contains(b.find.trim(), ignoreCase = true)) return false
-        if (b.colors.isNotEmpty() && colors.none { it in b.colors }) return false
+            (cardRoles?.get(l.name) as? JsonArray)?.mapNotNull { it.takeIf { r -> r.isJsonPrimitive }?.asString } ?: emptyList(), cmc = fx?.m ?: -1.0) }) }
+    // Find, the colours and the Filters panel are the Bench's own now (BenchFilter.kt), read from each tile's facts below.
+    fun keep(@Suppress("UNUSED_PARAMETER") name: String, @Suppress("UNUSED_PARAMETER") colors: List<String>, group: String): Boolean {
         return when (b.type) { "Creatures" -> group == "Creatures"; "Lands" -> group == "Lands"; "Spells" -> group != "Creatures" && group != "Lands"; else -> true }
     }
     fun poolTile(c: JsonObject): BenchTile { val n = c.str("name"); val have = owned[n] ?: owned[n.split(" // ")[0]] ?: 0
         val face = (c.get("card_faces") as? JsonArray)?.firstOrNull() as? JsonObject
         return BenchTile(n, (c.get("image_uris") as? JsonObject)?.str("normal")?.ifBlank { null } ?: (face?.get("image_uris") as? JsonObject)?.str("normal")?.ifBlank { null } ?: named(n, "normal"),
             c.get("cmc")?.takeIf { it.isJsonPrimitive }?.asDouble ?: 0.0, Trunk.group(c.str("type_line").ifBlank { face.str("type_line") }) == "Lands",
-            Decks.isBasicLand(n), countIn(n), have, DeckEdit.room(e.cards, n, e.format), have == 0) }
+            Decks.isBasicLand(n), countIn(n), have, DeckEdit.room(e.cards, n, e.format), have == 0,
+            colors = allColorsOf(c), typeLine = c.str("type_line").ifBlank { face.str("type_line") }, rarity = c.str("rarity"), set = c.str("set"), setName = c.str("set_name"),
+            released = c.str("released_at"), card = c) }
     val tiles: List<BenchTile> = if (ui.mode == "all") ui.pool.map(::poolTile)
     else trunk.mapNotNull { c -> val fx = facts[c.o]; val g = Trunk.group(fx?.t ?: ""); val basic = Decks.isBasicLand(c.n); val q = countIn(c.n)
         if (basic && q == 0) return@mapNotNull null
         if (!keep(c.n, colorsOf(fx?.card), g)) return@mapNotNull null
-        BenchTile(c.n, c.pimage ?: fx?.i?.ifBlank { null } ?: named(c.n, "normal"), fx?.m ?: 0.0, g == "Lands", basic, q, c.c, DeckEdit.room(e.cards, c.n, e.format), false) }
+        BenchTile(c.n, c.pimage ?: fx?.i?.ifBlank { null } ?: named(c.n, "normal"), fx?.m ?: 0.0, g == "Lands", basic, q, c.c, DeckEdit.room(e.cards, c.n, e.format), false,
+            colors = allColorsOf(fx?.card), typeLine = fx?.t ?: "", rarity = c.r.ifBlank { fx?.card.str("rarity") }, set = Trunk.setOf(c).ifBlank { fx?.card.str("set") }, sets = c.s,
+            setName = fx?.card?.takeIf { it.str("set") == Trunk.setOf(c) }.str("set_name"), released = fx?.card.str("released_at"), card = fx?.card) }
     val wallet = plan.have
     val model = BenchModel(
         play = true, modeChip = "Play deck", formatChip = "Magic · ${e.format}", title = e.name.ifBlank { "New Play deck" },

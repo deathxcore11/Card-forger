@@ -189,7 +189,9 @@ private fun SiteToast(t: CollectionWrites.Toast, onUndo: () -> Unit, onGone: () 
         launch { y.animateTo(20f, tween(420, easing = CubicBezierEasing(.2f, 1.3f, .3f, 1f))) }
         a.animateTo(0f, tween(200)); onGone()
     }
-    val bottom = maxOf(18.dp, WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+    // On the Scanner the toast never sits on the Add button, the tray or the nav (CollectionWrites.toastLift).
+    val lift by CollectionWrites.toastLift.collectAsState()
+    val bottom = maxOf(18.dp, WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()) + lift.dp
     BoxWithConstraints(Modifier.fillMaxSize().padding(bottom = bottom), contentAlignment = Alignment.BottomCenter) {
         val w = maxWidth
         val shape = RoundedCornerShape(18.dp)

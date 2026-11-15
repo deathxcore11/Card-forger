@@ -158,11 +158,17 @@ internal object Background {
 object DepthLayers {
     /** [plate] the backdrop with the figure filled in; [fig] R what stays at the glass, G the figure's shadow, B where the plate was
      *  filled; both over [box] in card space (the art window, or for a full art the whole card and a margin past its edge). */
-    class Ready(val plate: Bitmap, val fig: Bitmap, val box: FloatArray) {
+    /** Window cards (take 5) also carry: [rel] the relief light over the window (DepthMatte.relief), [win] the window the layers
+     *  cover (a planeswalker's is measured from its picture), [rim] the frame's printed outline inside it (card space: left, top,
+     *  right, bottom), [room] the slide budget (a share of the window's width), [follow] how far the figure moves with the backdrop. */
+    class Ready(val plate: Bitmap, val fig: Bitmap, val box: FloatArray, val rel: Bitmap? = null, val win: FloatArray = box,
+                val rim: FloatArray = FloatArray(4), val room: Float = DepthMatte.SLIDE, val follow: Float = 1f) {
         val inputs by lazy { input(plate) to input(fig) }
+        val relInput by lazy { rel?.let(::input) }
     }
-    /** Bump when the model or the cut changes, so every card is measured again. */
-    private const val VERSION = 2
+    /** Bump when the model or the cut changes, so every card is measured again. 3: take 5 (the cut, the gate, and the depth kept
+     *  for the relief light). */
+    private const val VERSION = 3
     /** Most width the layers are drawn at: sharper than any phone shows the window, small enough to keep a few cards in memory. */
     private const val MAX_WIDTH = 720
     private val scope = CoroutineScope(SupervisorJob() + Background.dispatcher)
@@ -170,21 +176,23 @@ object DepthLayers {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, MutableStateFlow<Ready?>>) = size > 6
     }
 
-    private fun key(image: String, win: FloatArray, open: Boolean, facetText: FloatArray?) =
-        "$image|${win.joinToString(",")}|$open" + (facetText?.let { "|facet|" + it.joinToString(",") } ?: "")
+    private fun key(image: String, win: FloatArray, open: Boolean, facetText: FloatArray?, walker: Boolean = false) =
+        "$image|${win.joinToString(",")}|$open" + (facetText?.let { "|facet|" + it.joinToString(",") } ?: "") + (if (walker) "|walker" else "")
 
     /** True when this card's layers are already in memory (no wait, no model). */
-    fun known(image: String, win: FloatArray, open: Boolean, facetText: FloatArray? = null): Boolean = synchronized(flows) { flows[key(image, win, open, facetText)]?.value != null }
+    fun known(image: String, win: FloatArray, open: Boolean, facetText: FloatArray? = null, walker: Boolean = false): Boolean =
+        synchronized(flows) { flows[key(image, win, open, facetText, walker)]?.value != null }
 
     /** [open] for a full art: no window, the whole card is cut and the card's own edge is the only clip. [facetText]: a facet foil's
-     *  text box; on a full art its glass shards (MtgFoil.facets) then stay at the glass with the figure, rigid, while the art slides behind. */
-    fun layers(context: Context, image: String, win: FloatArray, open: Boolean, facetText: FloatArray? = null): StateFlow<Ready?> = synchronized(flows) {
-        val key = key(image, win, open, facetText)
+     *  text box; on a full art its glass shards (MtgFoil.facets) then stay at the glass with the figure, rigid, while the art slides behind.
+     *  [walker]: a planeswalker; its art window is measured from the picture (DepthMatte.pwWindow), [win] is ignored. */
+    fun layers(context: Context, image: String, win: FloatArray, open: Boolean, facetText: FloatArray? = null, walker: Boolean = false): StateFlow<Ready?> = synchronized(flows) {
+        val key = key(image, win, open, facetText, walker && !open)
         flows[key] ?: MutableStateFlow<Ready?>(null).also { f ->
             flows[key] = f
             scope.launch {
-                runCatching { make(context.applicationContext, key, image, win, open, facetText?.takeIf { open }, f) }
-                    .onFailure { Log.w("DepthLayers", "no figure layer for $image", it) }
+                runCatching { make(context.applicationContext, key, image, win, open, facetText?.takeIf { open }, walker && !open, f) }
+                    .onFailure { Log.w("DepthLayers", "no figure layer for $image", it); forget(key, f) }
             }
         }
     }
@@ -193,14 +201,23 @@ object DepthLayers {
 
     /** The art crop at layer size and its depth cut, read from disk or measured once (the model, one card at a time). Null when the
      *  picture cannot be had, or when [wanted] says nobody is waiting for it any more (a pager swiped past). */
-    private class Measured(val hi: IntArray, val hw: Int, val hh: Int, val cut: DepthMatte.Cut)
-    private suspend fun measure(context: Context, image: String, win: FloatArray, open: Boolean, wanted: () -> Boolean): Measured? {
-        val dir = File(context.filesDir, "depth").apply { mkdirs() }
+    /** [depth] the measured depth at the cut's size [lw] x [lh] (0..1, nearer = higher), [win] the window measured, [cardW] the card's
+     *  width in px at [hi]'s scale. */
+    private class Measured(val hi: IntArray, val hw: Int, val hh: Int, val cut: DepthMatte.Cut, val depth: FloatArray, val lw: Int, val lh: Int,
+                           val win: FloatArray, val cardW: Float)
+    private suspend fun measure(context: Context, image: String, win0: FloatArray, open: Boolean, wanted: () -> Boolean, walker: Boolean = false): Measured? {
+        val dir = cacheDir(context)
         // The depth cut on disk is the same with or without shards (they are cut from the picture below, in a blink), so it keeps its name.
-        val file = File(dir, sha("$VERSION|${key(image, win, open, null)}") + ".bin")
+        val file = File(dir, sha("$VERSION|${key(image, win0, open, null, walker)}") + ".bin")
         val req = ImageRequest.Builder(context).data(image).allowHardware(false).build()
         val src = (CardArt.loader.execute(req) as? SuccessResult)?.image?.toBitmap() ?: return null
         val card = if (src.config == Bitmap.Config.ARGB_8888) src else src.copy(Bitmap.Config.ARGB_8888, false)
+        // A planeswalker's window: three abilities or four, read off the type bar's edge on the card at 468 px tall (the reference's size).
+        val win = if (!walker) win0 else {
+            val gh = 468; val gw = (card.width.toFloat() * gh / card.height).roundToInt().coerceAtLeast(16)
+            val px = IntArray(gw * gh).also { Bitmap.createScaledBitmap(card, gw, gh, true).getPixels(it, 0, gw, 0, 0, gw, gh) }
+            DepthMatte.pwWindow(DepthMatte.gray(px), gw, gh)
+        }
         val x0 = (win[0] * card.width).roundToInt().coerceIn(0, card.width - 1); val y0 = (win[1] * card.height).roundToInt().coerceIn(0, card.height - 1)
         val cw = (win[2] * card.width).roundToInt().coerceAtMost(card.width) - x0; val ch = (win[3] * card.height).roundToInt().coerceAtMost(card.height) - y0
         if (cw < 16 || ch < 16) return null
@@ -208,19 +225,25 @@ object DepthLayers {
         val hw = min(cw, MAX_WIDTH); val hh = (ch.toFloat() * hw / cw).roundToInt()
         val hiBmp = if (hw == cw) crop else Bitmap.createScaledBitmap(crop, hw, hh, true)
         val hi = IntArray(hw * hh).also { hiBmp.getPixels(it, 0, hw, 0, 0, hw, hh) }
-        val cut = read(file, hw, hh) ?: measuring.withLock { read(file, hw, hh) ?: run {
+        val lw = min(cw, DepthMatte.CUT_WIDTH); val lh = (ch.toFloat() * lw / cw).roundToInt()
+        val got = read(file, hw, hh, lw, lh) ?: measuring.withLock { read(file, hw, hh, lw, lh) ?: run {
             // Another ask for this card may have measured it while this one waited: read again before running the model.
             // Swiping fast through a pager queues cards; the ones nobody is still looking at wait until they open again.
             if (!wanted()) return null
-            val d = DepthModel.run(context, crop) ?: return null
-            val lw = min(cw, DepthMatte.CUT_WIDTH); val lh = (ch.toFloat() * lw / cw).roundToInt()
+            // No model on the phone yet (it downloads on first use) or none that runs here: a framed card still gets its window,
+            // the whole picture one rigid plate at the frame's printed outline, as before take 5. Never written to disk.
+            val d = DepthModel.run(context, crop) ?: return if (open) null else
+                Measured(hi, hw, hh, DepthMatte.Cut(lw, lh, null, DepthMatte.Gate(0f, 1f, 0f, edge = 0f)), FloatArray(0), lw, lh, win,
+                    card.width.toFloat() * hw / cw)
             val loBmp = Bitmap.createScaledBitmap(crop, lw, lh, true)
             val lo = IntArray(lw * lh).also { loBmp.getPixels(it, 0, lw, 0, 0, lw, lh) }
-            val dl = DepthMatte.resize(d, DepthModel.SIZE, DepthModel.SIZE, lw, lh)
-            (if (open) DepthMatte.cutFull(lo, dl, lw, lh, hi, hw, hh) else DepthMatte.cut(lo, dl, lw, lh, hi, hw, hh))
-                .also { Log.i("DepthLayers", "$image ${it.gate}"); write(file, it) }
+            // Kept at 16 bits, like the file, so the first view and every later one light the same (8 bits banded slow slopes).
+            val dl = DepthMatte.resize(d, DepthModel.SIZE, DepthModel.SIZE, lw, lh).also { a -> for (i in a.indices) a[i] = q16(a[i]) / 65535f }
+            val c = (if (open) DepthMatte.cutFull(lo, dl, lw, lh, hi, hw, hh) else DepthMatte.cut(lo, dl, lw, lh, hi, hw, hh, walker))
+            Log.i("DepthLayers", "$image ${c.gate}"); write(file, c, dl, lw)
+            c to dl
         } }
-        return Measured(hi, hw, hh, cut)
+        return Measured(hi, hw, hh, got.first, got.second, lw, lh, win, card.width.toFloat() * hw / cw)
     }
 
     private val figured = HashSet<String>()
@@ -243,9 +266,16 @@ object DepthLayers {
         }
     }
 
-    private suspend fun make(context: Context, key: String, image: String, win: FloatArray, open: Boolean, facetText: FloatArray?, f: MutableStateFlow<Ready?>) {
-        val m = measure(context, image, win, open) { f.subscriptionCount.value > 0 } ?: run { if (f.subscriptionCount.value == 0) forget(key); return }
+    private suspend fun make(context: Context, key: String, image: String, win0: FloatArray, open: Boolean, facetText: FloatArray?, walker: Boolean,
+                             f: MutableStateFlow<Ready?>) {
+        val m = measure(context, image, win0, open, { f.subscriptionCount.value > 0 }, walker) ?: run { forget(key, f); return }
         val hi = m.hi; val hw = m.hw; val hh = m.hh; val cut = m.cut
+        if (!open) {
+            f.value = window(m, walker)
+            // Without the model this window is only for now: drop the entry, so the next open measures once the model is here.
+            if (m.depth.isEmpty()) forget(key, f)
+            return
+        }
         // The gate said no: a framed card keeps the window-only depth, a full art stays flat (facet shards alone never make a figure).
         val cutFigure = cut.figure ?: return
         // Facet foil (full arts): the figure is the matte part of the print (spec zone 3), so the foil learns it here; and the printed
@@ -253,11 +283,34 @@ object DepthLayers {
         // shards are the ones the foil maps cut (FoilMaps.mtg, MtgFoil.facets), scaled up: one cut, so glass and shading always agree.
         val shard = facetText?.let { t -> FoilMaps.figure(image, cutFigure, hw, hh); shards(context, image, t, hw, hh) }
         val figure = if (shard == null) cutFigure else FloatArray(hw * hh) { max(cutFigure[it], shard[it]) }
-        val pad = if (open) kotlin.math.ceil(1.6f * Depth.K * hw).toInt() + 3 else 0
+        val pad = if (open) kotlin.math.ceil(1.6f * Depth.K_FULL * hw).toInt() + 3 else 0
         val l = if (open) DepthMatte.layersFull(hi, figure, hw, hh, pad, cut.gate) else DepthMatte.layers(hi, figure, hw, hh, cut.gate)
         val fig = IntArray(l.w * l.h) { i -> (255 shl 24) or (q(l.figure[i]) shl 16) or (q(l.shadow[i]) shl 8) or (if (l.hide[i]) 255 else 0) }
-        val box = if (open) floatArrayOf(-pad.toFloat() / hw, -pad.toFloat() / hh, 1 + pad.toFloat() / hw, 1 + pad.toFloat() / hh) else win
-        f.value = Ready(Bitmap.createBitmap(l.plate, l.w, l.h, Bitmap.Config.ARGB_8888), Bitmap.createBitmap(fig, l.w, l.h, Bitmap.Config.ARGB_8888), box)
+        val box = if (open) floatArrayOf(-pad.toFloat() / hw, -pad.toFloat() / hh, 1 + pad.toFloat() / hw, 1 + pad.toFloat() / hh) else win0
+        f.value = Ready(Bitmap.createBitmap(l.plate, l.w, l.h, Bitmap.Config.ARGB_8888), Bitmap.createBitmap(fig, l.w, l.h, Bitmap.Config.ARGB_8888), box, win = win0, room = Depth.K_FULL)
+    }
+
+    /**
+     * Take 5, a window card: always one plate behind the frame. A figure cut near certain (DepthMatte.cut) sits behind it too, at half
+     * the depth, so the backdrop moves twice as far; a planeswalker's figure runs over the frame and stays at the glass. With no cut
+     * the whole picture is one rigid plate, which cannot tear. Both planes end at the frame's printed outline ([DepthMatte.rim]); the
+     * depth lights the picture (DepthMatte.relief). Same steps as the mock-up Randall saw (web3d.py).
+     */
+    private fun window(m: Measured, walker: Boolean): Ready {
+        val hw = m.hw; val hh = m.hh; val win = m.win; val fig = m.cut.figure
+        val ok = fig != null
+        val room = if (walker && ok) DepthMatte.SLIDE_WALKER else DepthMatte.SLIDE
+        val follow = if (ok) (if (walker) 0f else DepthMatte.FOLLOW) else 1f
+        val rimPx = DepthMatte.rim(m.hi, hw, hh, m.cardW, walker)
+        val ww = win[2] - win[0]; val wh = win[3] - win[1]
+        val rim = floatArrayOf(rimPx[0] * ww / hw, rimPx[1] * wh / hh, rimPx[2] * ww / hw, rimPx[3] * wh / hh)
+        val pin = if (walker) DepthMatte.pwPin(hw, hh, m.cardW) else null
+        val l = if (ok || walker) DepthMatte.layersWindow(m.hi, fig ?: FloatArray(hw * hh), pin, hw, hh, m.cut.gate, (1 - follow) * room)
+                else DepthMatte.Layers(hw, hh, FloatArray(hw * hh), FloatArray(hw * hh), m.hi, BooleanArray(hw * hh), m.cut.gate)
+        val figPx = IntArray(l.w * l.h) { i -> (255 shl 24) or (q(l.figure[i]) shl 16) or (q(l.shadow[i]) shl 8) or (if (l.hide[i]) 255 else 0) }
+        val rel = if (m.depth.isEmpty()) null else DepthMatte.relief(m.depth, m.lw, m.lh, ww).let { (px, rw, rh) -> Bitmap.createBitmap(px, rw, rh, Bitmap.Config.ARGB_8888) }
+        return Ready(Bitmap.createBitmap(l.plate, l.w, l.h, Bitmap.Config.ARGB_8888), Bitmap.createBitmap(figPx, l.w, l.h, Bitmap.Config.ARGB_8888), win,
+            rel, win, rim, room, follow)
     }
 
     /** The facet map's shards (its B, the depth inside each piece) at [w] x [h] over the whole card; null with no shards or no maps. */
@@ -271,29 +324,45 @@ object DepthLayers {
         return if (any) DepthMatte.resize(b, fw, fh, w, h) else null
     }
 
-    private fun forget(key: String) = synchronized(flows) { flows.remove(key) }
+    /** A null from measure() means "not yet" (no picture, the model not on the phone yet, nobody looking): drop the entry so the next
+     *  open measures again, but only if it is still this flow (a newer ask may have replaced it). */
+    private fun forget(key: String, f: MutableStateFlow<Ready?>) = synchronized(flows) { if (flows[key] === f) flows.remove(key) }
     private fun q(v: Float) = (v.coerceIn(0f, 1f) * 255).roundToInt()
+    private fun q16(v: Float) = (v.coerceIn(0f, 1f) * 65535).roundToInt()
+
+    @Volatile private var swept = false
+    /** One folder per [VERSION]; the first ask after an update deletes the folders and loose files older versions left behind. */
+    private fun cacheDir(context: Context): File {
+        val root = File(context.filesDir, "depth")
+        val dir = File(root, "v$VERSION").apply { mkdirs() }
+        if (!swept) { swept = true; root.listFiles()?.forEach { if (it.name != dir.name) runCatching { it.deleteRecursively() } } }
+        return dir
+    }
     private fun sha(s: String) = MessageDigest.getInstance("SHA-1").digest(s.toByteArray()).joinToString("") { "%02x".format(it) }
 
-    /** File: size, the gate's three numbers, then the figure at 8 bits when it passed. Null when absent, unreadable or measured at another size. */
-    private fun read(file: File, w: Int, h: Int): DepthMatte.Cut? = runCatching {
+    /** File: size, the gate's numbers (take 5 adds the edge), the figure at 8 bits when it passed, then the depth at the cut's size
+     *  [lw] x [lh], 16 bits big-endian. Null when absent, unreadable or measured at another size. */
+    private fun read(file: File, w: Int, h: Int, lw: Int, lh: Int): Pair<DepthMatte.Cut, FloatArray>? = runCatching {
         DataInputStream(GZIPInputStream(file.inputStream().buffered())).use { inp ->
             val fw = inp.readInt(); val fh = inp.readInt()
             if (fw != w || fh != h) return null
-            val gate = DepthMatte.Gate(inp.readFloat(), inp.readFloat(), inp.readFloat(), inp.readFloat(), inp.readFloat())
-            if (!inp.readBoolean()) return DepthMatte.Cut(w, h, null, gate)
-            val b = ByteArray(w * h).also { inp.readFully(it) }
-            DepthMatte.Cut(w, h, FloatArray(w * h) { (b[it].toInt() and 255) / 255f }, gate)
+            val gate = DepthMatte.Gate(inp.readFloat(), inp.readFloat(), inp.readFloat(), inp.readFloat(), inp.readFloat(), inp.readFloat())
+            val fig = if (inp.readBoolean()) ByteArray(w * h).also { inp.readFully(it) }.let { b -> FloatArray(w * h) { (b[it].toInt() and 255) / 255f } } else null
+            if (inp.readInt() != lw || inp.readInt() != lh) return null
+            val d = ByteArray(lw * lh * 2).also { inp.readFully(it) }
+            DepthMatte.Cut(w, h, fig, gate) to FloatArray(lw * lh) { ((d[2 * it].toInt() and 255) shl 8 or (d[2 * it + 1].toInt() and 255)) / 65535f }
         }
     }.getOrNull()
 
-    private fun write(file: File, cut: DepthMatte.Cut) = runCatching {
+    private fun write(file: File, cut: DepthMatte.Cut, depth: FloatArray, depthW: Int) = runCatching {
         val tmp = File(file.path + ".tmp")
         DataOutputStream(GZIPOutputStream(tmp.outputStream().buffered())).use { o ->
             o.writeInt(cut.w); o.writeInt(cut.h); o.writeFloat(cut.gate.separation); o.writeFloat(cut.gate.area); o.writeFloat(cut.gate.softEdge)
-            o.writeFloat(cut.gate.weak); o.writeFloat(cut.gate.title)
+            o.writeFloat(cut.gate.weak); o.writeFloat(cut.gate.title); o.writeFloat(cut.gate.edge)
             o.writeBoolean(cut.figure != null)
             cut.figure?.let { m -> o.write(ByteArray(m.size) { q(m[it]).toByte() }) }
+            o.writeInt(depthW); o.writeInt(depth.size / depthW)
+            o.write(ByteArray(depth.size * 2) { val v = q16(depth[it / 2]); (if (it % 2 == 0) v shr 8 else v).toByte() })
         }
         tmp.renameTo(file)
     }

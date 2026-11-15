@@ -192,6 +192,12 @@ object RandomBuild {
         } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Throwable) { null } finally { calls.remove(id) }
     } }
 
+    /**
+     * The Deck Bench's Does filter (random-build-entry.mjs roleTags): the builder's own role tags (deck-forge.js forgeTags) for these
+     * Scryfall cards, {name: [tag, …]}; null if the bundle failed. Tests answer it themselves.
+     */
+    var roleTags: suspend (cards: JsonArray) -> JsonObject? = { cards -> call("roleTags", JsonObject().apply { add("cards", cards) }) }
+
     private val calls = java.util.concurrent.ConcurrentHashMap<Int, CompletableDeferred<JsonObject>>()
     private val callIds = java.util.concurrent.atomic.AtomicInteger()
     private suspend fun call(name: String, a: JsonObject): JsonObject? = withContext(thread) {

@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -33,6 +34,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -74,6 +76,8 @@ internal fun ScanWorkspace(n: SiteNode, ui: SiteUi, mark: Modifier, rest: @Compo
     val tray = n.elements.firstOrNull { it.has("scan-tray") }
     if (live) {
         // #app .scan-workspace.is-camera > .scan-panel fills; the toolbar 12 from the top, 14 in; the tray fixed 10 over the nav, 12 in.
+        // Over the status pill: 118 up with an empty tray, 206 once it holds cards, the pill about 34 tall.
+        ToastLift(if (tray?.has("is-empty") != false) 164 else 252)
         Box(mark.fillMaxSize().background(Color.Black)) {
             panel?.let { ScanPanel(it, ui, true, tray?.has("is-empty") != false, Modifier.fillMaxSize()) }
             bar?.let { ScanToolbar(it, ui, true, Modifier.padding(top = 12.dp, start = 14.dp, end = 14.dp)) }
@@ -82,7 +86,7 @@ internal fun ScanWorkspace(n: SiteNode, ui: SiteUi, mark: Modifier, rest: @Compo
         return
     }
     // Your scans (.is-grid) and Fix card (.is-fixing): the page and its bar fixed over the nav (.scan-grid-bar), as the site has them.
-    if (n.has("is-grid")) { ScanGridPage(n, ui, mark, rest); return }
+    if (n.has("is-grid")) { ToastLift(if (n.find { it.has("scan-grid-error") } != null) 250 else 190); ScanGridPage(n, ui, mark, rest); return }
     Column(mark.fillMaxWidth()) {
         n.elements.forEach { k ->
             when {
@@ -237,6 +241,43 @@ private fun PhotoActions(n: SiteNode, modifier: Modifier) {
     }
 }
 
+/** While this is on screen the app's toast sits [dp] over the bottom: clear of the Add bar, the tray and the nav. */
+@Composable
+private fun ToastLift(dp: Int) {
+    androidx.compose.runtime.DisposableEffect(dp) { CollectionWrites.toastLift.value = dp; onDispose { if (CollectionWrites.toastLift.value == dp) CollectionWrites.toastLift.value = 0 } }
+}
+
+/**
+ * The found card's edge on the camera (style.css .cam-outline): a 3 line in amber while the scanner waits, 4 in green as it captures,
+ * over a soft dark one so it reads on any card; it eases to each new place and fades in and out. Nothing is drawn with no edge.
+ */
+@Composable
+private fun ScanEdge(modifier: Modifier) {
+    val edge by dev.cardstashy.nativeplay.collection.ScanWeb.outline.collectAsState()
+    // One clock for all four corners, read only while drawing, so a moving edge redraws and nothing recomposes.
+    val seen = androidx.compose.runtime.remember { arrayOfNulls<dev.cardstashy.nativeplay.collection.ScanOutline>(2) } // [from, to]
+    val t = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(1f) }
+    val alpha = androidx.compose.animation.core.animateFloatAsState(if (edge != null) 1f else 0f, androidx.compose.animation.core.tween(if (Motion.still) 0 else 180), label = "edge")
+    androidx.compose.runtime.LaunchedEffect(edge) {
+        val next = edge ?: return@LaunchedEffect
+        seen[0] = seen[1] ?: next; seen[1] = next
+        t.snapTo(0f); t.animateTo(1f, androidx.compose.animation.core.tween(if (Motion.still) 0 else 140))
+    }
+    val path = androidx.compose.runtime.remember { androidx.compose.ui.graphics.Path() }
+    androidx.compose.foundation.Canvas(modifier.graphicsLayer { this.alpha = alpha.value }) {
+        val k = t.value
+        val to = seen[1] ?: return@Canvas
+        val b = to.inBox(size.width, size.height); val a = (seen[0] ?: to).inBox(size.width, size.height)
+        fun at(i: Int) = a[i] + (b[i] - a[i]) * k
+        path.rewind(); path.moveTo(at(0), at(1)); path.lineTo(at(2), at(3)); path.lineTo(at(4), at(5)); path.lineTo(at(6), at(7)); path.close()
+        val w = (if (to.green) 4.dp else 3.dp).toPx()
+        drawPath(path, Color(0x73000000), style = Stroke(w + 4.dp.toPx(), join = androidx.compose.ui.graphics.StrokeJoin.Round))
+        // Waiting is dashed, captured is solid: the state is not carried by colour alone.
+        drawPath(path, if (to.green) Color(0xFF30C48D) else Color(0xFFF5A524), style = Stroke(w, join = androidx.compose.ui.graphics.StrokeJoin.Round,
+            pathEffect = if (to.green) null else PathEffect.dashPathEffect(floatArrayOf(10.dp.toPx(), 8.dp.toPx()))))
+    }
+}
+
 /**
  * The live camera (.cam-wrap.immersive): the preview fills it (#camSlot); the status pill (.cam-status: 12 / 700 white on
  * rgba(20,20,24,.85), corners 18, a 2 line red / amber / green) centred 118 over the bottom (206 once the tray holds cards); the rail
@@ -248,7 +289,7 @@ private fun LiveCamera(cam: SiteNode, ui: SiteUi, trayEmpty: Boolean, modifier: 
     Box(modifier.background(Color.Black)) {
         // The page swaps its empty #camSlot for the "video" it reads frames from (#scanVideo) as soon as its camera is on,
         // so the preview belongs under either: asking for #camSlot alone left the camera unopened and the view black.
-        if (cam.find { it["id"] == "camSlot" || it["id"] == "scanVideo" } != null) host.camera(Modifier.fillMaxSize())
+        if (cam.find { it["id"] == "camSlot" || it["id"] == "scanVideo" } != null) { host.camera(Modifier.fillMaxSize()); ScanEdge(Modifier.fillMaxSize()) }
         cam.elements.firstOrNull { it.has("cam-status") }?.let { s ->
             val green = s.has("green"); val amber = s.has("amber")
             val line = when { green -> Color(0xFF30C48D); amber -> Color(0xFFF5A524); else -> Color(0xFFE5484D) }
@@ -401,7 +442,7 @@ private fun ScanGridPage(n: SiteNode, ui: SiteUi, mark: Modifier, rest: @Composa
     val fix = n.elements.firstOrNull { it.has("is-fix-page") }
     val bar = (fix ?: n).elements.firstOrNull { it.has("scan-grid-bar") }
     Box(mark.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(bottom = 96.dp)) {
+        Column(Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(bottom = if (bar?.elements?.any { it.has("scan-grid-error") || it.has("scan-grid-note") } == true) 152.dp else 96.dp)) {
             val parts = if (fix != null) fix.elements else n.elements
             parts.forEach { k ->
                 when {
@@ -526,7 +567,29 @@ private fun ScanTile(t: SiteNode, ui: SiteUi, selecting: Boolean) {
 /** .scan-grid-bar: fixed over the nav, 22 12 in, the page fading into it; the ghost button and the gold one (flex), 52 tall, 16 / 800. */
 @Composable
 private fun GridBar(n: SiteNode, ui: SiteUi, modifier: Modifier) {
-    Row(modifier.fillMaxWidth().background(Brush.verticalGradient(0f to Site.Bg.copy(alpha = 0f), .4f to Site.Bg)).padding(top = 22.dp, bottom = 12.dp),
+  Column(modifier.fillMaxWidth().background(Brush.verticalGradient(0f to Site.Bg.copy(alpha = 0f), .4f to Site.Bg)).padding(top = 22.dp, bottom = 12.dp),
+      verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    // .scan-grid-error: the one message for a save that failed, directly over the buttons: a red dot, what happened (14 / 600), why in a
+    // word (muted), and Retry (a 32 pill, gold words). .scan-grid-note: a muted line in the same place.
+    n.elements.firstOrNull { it.has("scan-grid-error") }?.let { e ->
+        val sh = RoundedCornerShape(12.dp)
+        Row(Modifier.fillMaxWidth().clip(sh).background(Site.Surface2).border(1.dp, Site.Line, sh).padding(horizontal = 12.dp, vertical = 3.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (e.has("is-failed")) Box(Modifier.size(8.dp).clip(CircleShape).background(Color(0xFFF08A7E)))
+            // The words take the room that is left and wrap between words; Retry keeps its own width on any screen.
+            val why = e.elements.firstOrNull { it.tag == "em" }?.text()
+            Text(androidx.compose.ui.text.buildAnnotatedString {
+                append(e.elements.firstOrNull { it.tag == "span" }?.text() ?: e.text())
+                if (!why.isNullOrEmpty()) { pushStyle(androidx.compose.ui.text.SpanStyle(color = Site.Muted, fontWeight = FontWeight.Medium)); append(" · $why"); pop() }
+            }, Modifier.weight(1f), style = cssType(14f, 600, 18f, Site.Text))
+            e.elements.firstOrNull { it.tag == "button" }?.let { b -> val off = "disabled" in b.attrs; val pill = RoundedCornerShape(999.dp)
+                // A 44 tall tap area around the 32 pill.
+                Box(Modifier.alpha(if (off) .5f else 1f).heightIn(min = 44.dp).clickable(enabled = !off) { ui.tap(b.id) }.semantics { role = Role.Button }, contentAlignment = Alignment.Center) {
+                    Box(Modifier.heightIn(min = 32.dp).clip(pill).border(1.dp, Site.Line, pill).padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
+                        Text(b.text(), style = cssType(13f, 600, 16f, Site.Gold), maxLines = 1, softWrap = false) } } }
+        }
+    }
+    n.elements.firstOrNull { it.has("scan-grid-note") }?.let { Text(it.text(), style = cssType(13f, 400, 17f, Site.Muted)) }
+    Row(Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(10.dp, if (n.has("scan-fix-bar")) Alignment.CenterHorizontally else Alignment.Start), verticalAlignment = Alignment.CenterVertically) {
         n.elements.filter { it.tag == "button" && !it.hidden }.forEach { b ->
             val ghost = b.has("ghost"); val off = "disabled" in b.attrs; val sh = RoundedCornerShape(16.dp)
@@ -539,6 +602,7 @@ private fun GridBar(n: SiteNode, ui: SiteUi, modifier: Modifier) {
             }
         }
     }
+  }
 }
 
 /**

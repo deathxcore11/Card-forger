@@ -13,7 +13,7 @@ const releaseKey=value=>text(value).normalize('NFKD').replace(/[\u0300-\u036f]/g
 function selectedRelease(value,releases){
  const raw=text(value).slice(0,160);if(!raw)return null;
  const code=raw.toLowerCase(),key=releaseKey(raw);
- if(!key)throw Error('Enter a valid set name or code.');
+ if(!key)throw Error('Set not found');
  const literalCode=releases?.codes.has(code)||false,codes=literalCode?[code]:(releases?.names||[]).filter(r=>releaseKey(r.name)===key).map(r=>r.code);
  return {raw,code,key,codes,literalCode};
 }
@@ -86,7 +86,7 @@ export function createScannerLookup({requestMagic,sources,candById,match,local=r
  const knownMagicSets=()=>magicSets||=Promise.resolve().then(()=>requestMagic('/sets')).then(page=>(page?.data||[]).slice(0,10000).filter(s=>/^[a-z0-9]{2,8}$/i.test(s?.code||'')&&typeof s.name==='string')).catch(()=>{magicSets=null;return [];});
  return async(game,query,{isCurrent=()=>true}={})=>{
   const name=text(query.name).slice(0,160),number=text(query.number).slice(0,40);
-  if(!name&&!number)throw Error('Enter the card name or bottom number.');
+  if(!name&&!number)throw Error('Type a name or number');
   const pack=await local(game,{number});if(!isCurrent())return [];
   const releases=pack?catalogueReleases(pack):null,q=collectorQuery(game,number,{releases}),selected=selectedRelease(query.set,releases);
   if(!q)throw Error(lookupHelp(game));
@@ -97,7 +97,7 @@ export function createScannerLookup({requestMagic,sources,candById,match,local=r
   // so it only narrows a named card, for review; it never searches the game.
   if(game==='ygo'&&!q.code&&!name)throw Error(lookupHelp(game));
   if(!name&&collectorQueryEmpty(q))throw Error(lookupHelp(game));
-  if(!name&&!q.code&&!q.numbers.length)throw Error('Add the card name, or a number with the set.');
+  if(!name&&!q.code&&!q.numbers.length)throw Error('Type a name or number');
   const narrow=(items,facts)=>query.strictName?{items:items.filter(item=>collectorMatches(game,facts(item),q)),by:'',partial:false}:narrowTyped(game,items,q,facts);
   let found=[],narrowed=null,total=0;
   if(pack){

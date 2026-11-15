@@ -834,12 +834,13 @@ private fun ArtStack(m: CollectionCardModel, o: CardOverview, act: CollectionCar
         LaunchedEffect(Unit) { if (data == null) dev.cardstashy.nativeplay.play.CardData.warm(ctx) }
         val tcg = m.game != CardGame.MTG
         val finish = Foil.finishFor(m.shown, o.finishKey.ifBlank { "nonfoil" })
-        val look = if (tcg) null else data?.let { Foil.look(it, m.shown, finish) }
+        val look = if (tcg) null else data?.let { Foil.look(it, m.shown, finish, o.image) }
         val worn = remember(o.tcgFinish, o.image) { o.tcgFinish?.let { tcgFinishOf(ctx, m.game, it, o.image) } }
         val lean = rememberCardLean()
         val touch = remember(lean) { derivedStateOf { lean.light } }
         val shines = look?.takeIf { it.shines }
-        val tilt = rememberFoilTilt(live = look?.recipe != null || worn != null, touch = touch)
+        val tilt = rememberFoilTilt(live = look?.recipe != null || worn != null, touch = touch,
+            rest = if (look?.recipe == null && worn == null) Offset.Zero else null) // a nonfoil stamp at rest sits at the centre like the site
         // A controller: Y enlarges the card (its tap), holding Y leans it under the light as a finger does; on the card itself A enlarges it.
         val zoomNow by androidx.compose.runtime.rememberUpdatedState(onZoom)
         val padScope = rememberCoroutineScope()
@@ -853,7 +854,7 @@ private fun ArtStack(m: CollectionCardModel, o: CardOverview, act: CollectionCar
             // A Yu-Gi-Oh! card is 59 × 86.
             val w = maxWidth; val cardH = (w - frameW * 2) * (if (m.game == CardGame.YGO) 86f / 59f else 88f / 63f) + frameW * 2
             TierFrame(o.tier, w, cardH, frameW) {
-                val mod = Modifier.fillMaxSize().cardLean(lean, foil = shines != null || worn != null, shape = RoundedCornerShape(6.dp))
+                val mod = Modifier.fillMaxSize().cardLean(lean, foil = look?.recipe != null || worn != null, lamp = worn != null, shape = RoundedCornerShape(6.dp))
                     .pointerInput(Unit) { detectTapGestures(onLongPress = {}) { onZoom() } }.padCardTap(padSource, padPic) { zoomNow() }.semantics { contentDescription = "Enlarge ${m.name}" }
                 if (!tcg) CardPicture(o.image, shines, tilt, mod, shape = RoundedCornerShape(6.dp))
                 else firstOf(o.sources.ifEmpty { listOf(o.image) }).let { p -> if (p != null) CardFace(p, null, tilt, mod, RoundedCornerShape(6.dp), finish = worn)
@@ -2061,11 +2062,12 @@ private fun DualCollectionCard(m: CollectionCardModel, act: CollectionCardAction
     LaunchedEffect(Unit) { if (data == null) dev.cardstashy.nativeplay.play.CardData.warm(ctx) }
     val tcg = m.game != CardGame.MTG
     val finish = Foil.finishFor(m.shown, o?.finishKey?.ifBlank { "nonfoil" } ?: "nonfoil")
-    val look = if (tcg) null else data?.let { Foil.look(it, m.shown, finish) }
+    val look = if (tcg) null else data?.let { Foil.look(it, m.shown, finish, o?.image) }
     val worn = remember(o?.tcgFinish, o?.image) { o?.tcgFinish?.let { tcgFinishOf(ctx, m.game, it, o.image) } }
     val shines = look?.takeIf { it.shines }
-    // The tilt drives only the card and its foil; the bleeds and tiles never move.
-    val tilt = rememberFoilTilt(live = true)
+    // The tilt drives only the card and its foil; the bleeds and tiles never move. A plain card's stamp follows the phone, never drifts.
+    val tilt = rememberFoilTilt(live = look?.recipe != null || worn != null, rest = if (look?.recipe == null && worn == null) Offset.Zero else null,
+        follow = look?.stamp == true)
     val guide = remember(m.guide) { m.guide.flatMap { flatBlocks(it.blocks) } }
     val rulings = guide.firstOrNull { it.kind == "rulings" }?.items.orEmpty().filter { it.runs.isNotEmpty() }
     // Y3: A flips a two-faced card; on any other card it opens the rulings (the bottom tiles take no pad focus).

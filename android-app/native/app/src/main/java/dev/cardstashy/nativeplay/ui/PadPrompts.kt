@@ -84,6 +84,8 @@ class PadActs(
     val page: ((Int) -> Unit)? = null,
     val pageLabel: String = "Page",
     val start: PadAct? = null,
+    /** R3 (press the right stick): a screen's second panel, as the Deck Bench's Filters (deck view redesign, 14 Nov). */
+    val r3: PadAct? = null,
     /** Select (Randall 9 Nov, console convention): the quick menu a long press opens on the thing under the ring. Only the focused
      *  item's counts. [PadAct.run] null = Select long-presses the item itself (PadCursor.holdFocused). */
     val menu: PadAct? = null,
@@ -188,7 +190,7 @@ object PadPrompts {
             x = pick { it.x }, b = pick { it.b },
             tabs = tabsFrom?.tabs, tabsLabel = tabsFrom?.tabsLabel ?: "Tabs",
             page = pageFrom?.page, pageLabel = pageFrom?.pageLabel ?: "Page",
-            start = pick { it.start }, menu = f?.menu, lift = s.firstOrNull()?.lift ?: 0.dp,
+            start = pick { it.start }, r3 = pick { it.r3 }, menu = f?.menu, lift = s.firstOrNull()?.lift ?: 0.dp,
             // Root only while nothing but the root screen and the app's tabs is up (a sheet over Home still shows its B).
             root = s.any { it.root } && s.all { it.root || it.nav },
         )
@@ -206,6 +208,7 @@ object PadPrompts {
             acts.b?.let { add("B" to it) }
             acts.tabs?.let { add("LB RB" to acts.tabsLabel) }
             acts.page?.let { add("LT RT" to acts.pageLabel) }
+            acts.r3?.let { add("R3" to it.label) }
             acts.menu?.let { add("Select" to it.label) }
             acts.start?.let { add("Start" to it.label) }
             if (acts.b == null && !acts.root) add("B" to "Back")
@@ -231,7 +234,8 @@ object PadPrompts {
         val code = event.keyCode
         val ours = code == KeyEvent.KEYCODE_BUTTON_X || code == KeyEvent.KEYCODE_BUTTON_Y || code == KeyEvent.KEYCODE_BUTTON_L1 ||
             code == KeyEvent.KEYCODE_BUTTON_R1 || code == KeyEvent.KEYCODE_BUTTON_L2 || code == KeyEvent.KEYCODE_BUTTON_R2 ||
-            code == KeyEvent.KEYCODE_BUTTON_START || code == KeyEvent.KEYCODE_MENU || code == KeyEvent.KEYCODE_BUTTON_SELECT
+            code == KeyEvent.KEYCODE_BUTTON_START || code == KeyEvent.KEYCODE_MENU || code == KeyEvent.KEYCODE_BUTTON_SELECT ||
+            (code == KeyEvent.KEYCODE_BUTTON_THUMBR && current().r3 != null)
         if (!ours) return false
         val down = event.action == KeyEvent.ACTION_DOWN
         if (down) lastPress = SystemClock.uptimeMillis()
@@ -262,6 +266,7 @@ object PadPrompts {
             KeyEvent.KEYCODE_BUTTON_L2 -> acts.page?.invoke(-1) ?: repeat(6) { dpad(KeyEvent.KEYCODE_DPAD_UP) }
             KeyEvent.KEYCODE_BUTTON_R2 -> acts.page?.invoke(1) ?: repeat(6) { dpad(KeyEvent.KEYCODE_DPAD_DOWN) }
             KeyEvent.KEYCODE_BUTTON_START, KeyEvent.KEYCODE_MENU -> if (event.repeatCount == 0) acts.start?.run?.invoke()
+            KeyEvent.KEYCODE_BUTTON_THUMBR -> if (event.repeatCount == 0) acts.r3?.run?.invoke()
             // Select (Randall 9 Nov): the quick menu a long press opens, on whatever the ring is on, everywhere.
             KeyEvent.KEYCODE_BUTTON_SELECT -> if (event.repeatCount == 0) acts.menu?.run?.invoke() ?: PadCursor.holdFocused()
         }

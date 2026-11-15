@@ -2740,6 +2740,12 @@ export function registerTcg(c) {
   // Save a whole scan session at once: Pokémon finish → variant, Yu-Gi-Oh! finish → edition.
   c.scanAddMany = async (items, G = g()) => {
     if (!SOURCES[G]) throw Error("Choose a supported scan game before saving.");
+    // The scanner checked each release against its own set list. A save can run where none was
+    // loaded yet (the app's Collection engine): load it here, or every checked release looks unknown.
+    if(G==='ygo'&&items.some(it=>it.setReleaseId||it.cand?.setReleaseId)&&!currentYgoCatalogue().length){
+      await loadSets('ygo');
+      if(!currentYgoCatalogue().length)throw Object.assign(Error('Set list unavailable. Connect and try again.'),{code:'SCAN_SETS_UNAVAILABLE'});
+    }
     if(G==='ygo')items=items.map(it=>{
       const setReleaseId=it.setReleaseId||it.cand?.setReleaseId||'',releaseName=it.releaseName||it.cand?.releaseName||'';
       if(setReleaseId){
@@ -2774,7 +2780,7 @@ export function registerTcg(c) {
           addScannedEntry(state, G, { id: uid(), scanCaptureId: captureId, cardId: card.id, name: card.name, key: SOURCES[G].ownKey(card), qty: it.qty, printing, rarity, ...(G==='ygo'?{setReleaseId:it.setReleaseId||'',setReleaseUnverified:!!it.setReleaseUnverified,releaseName:it.releaseName||''}:{}),variant: G === "ptcg" ? finish : "", variantLabel: G === "ptcg" ? variant?.label || "" : "", productId: it.productId || variant?.productId || "", edition: G === "ygo" ? finish : "", condition: it.condition || "Near Mint", language: it.lang || "en", location: it.location || "", addedAt: new Date().toISOString(), source: "scan" });
         }
       },
-      { undo: `Added ${n} scanned card${n === 1 ? "" : "s"}.` },
+      { undo: `Added ${n} · ${items[0]?.location || "Collection"}` },
     );
   };
   c.scanPrice = (cand, finish, selection = {}) => {

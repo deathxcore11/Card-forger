@@ -75,7 +75,7 @@ assert.match(numberOnly[0].why,/275 matches · \d+ of \d+ printings/);
 const setLookup=await lookup('mtg',{name:'Mountain',number:'neo'});
 assert(setLookup.length&&setLookup.every(c=>c.card.set==='neo'));
 await assert.rejects(lookup('mtg',{name:'Mountain',number:'zz9 qq'}),/any order/);
-await assert.rejects(lookup('mtg',{number:'neo'}),/card name/);
+await assert.rejects(lookup('mtg',{number:'neo'}),/Type a name or number/);
 console.log(`PASS: number/set descriptors in any order; Mountain ${mountains.length} → #275 ${byNumber.to} / NEO ${bySet.to} / set+number 1; Pokémon fraction/number/set/151; Yu-Gi-Oh! prefix+number; partial footers narrow but never verify.`);
 
 // Yu-Gi-Oh!: with a name, any part of the code narrows its printings for review:

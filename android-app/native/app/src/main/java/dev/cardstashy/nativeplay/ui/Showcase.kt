@@ -82,7 +82,8 @@ class QuickLook(val key: String, val eyebrow: String, val name: String, val imag
 @Composable
 internal fun QuickLookCase(q: QuickLook) {
     val shines = q.look?.takeIf { it.shines }
-    val tilt = rememberFoilTilt(live = shines != null, phase = q.tiltPhase, tile = false)
+    val tilt = rememberFoilTilt(live = q.look?.recipe != null, phase = q.tiltPhase, tile = false, rest = if (q.look?.recipe == null) androidx.compose.ui.geometry.Offset.Zero else null,
+        follow = q.look?.stamp == true)
     ShowcaseCase(q.eyebrow, q.name, heroWeight = .4f, buttons = q.buttons, hero = if (q.image.isNullOrBlank()) null else { {
         // WHOLE CARD, NEVER CUT: fitted inside the hero column, whatever its shape.
         FittedCard(Modifier.fillMaxSize(), margin = 10.dp) { m -> CardPicture(q.image, shines, tilt, m, shape = CardCorner) }

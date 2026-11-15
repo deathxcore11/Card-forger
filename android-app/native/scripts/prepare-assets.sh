@@ -42,6 +42,8 @@ node "$HERE/scripts/export-story-deeds.mjs" "$REPO" "$A/story-deeds.json"
 node "$HERE/scripts/export-story-lessons.mjs" "$REPO" "$A/story-lessons.json"
 # The pack opener's template (pack-preview.js): the empty-window frame, its window mask and one art per Magic set.
 cp "$REPO/assets/packs/pack-template.webp" "$REPO/assets/packs/pack-window.png" "$A/play/"
+# The 3D pack (ui/Pack3D.kt): Randall's pack model, lightened (scripts/pack3d/export_mesh.py), and every Magic set's real wrapper photo.
+mkdir -p "$A/play/pack3d" && cp "$REPO/assets/packs/pack3d-mesh.bin" "$A/play/pack3d/mesh.bin" && cp "$REPO"/assets/packs/real/*.webp "$A/play/pack3d/"
 # Collection Home's game tabs: the site's card-back art behind each game (game-tabs.css).
 mkdir -p "$A/collection" && cp "$REPO"/game-tab-mtg.jpg "$REPO"/game-tab-ygo.png "$REPO"/game-tab-ptcg.jpg "$A/collection/"
 node "$HERE/scripts/export-pack-art.mjs" "$REPO" "$A/pack-art.json"
