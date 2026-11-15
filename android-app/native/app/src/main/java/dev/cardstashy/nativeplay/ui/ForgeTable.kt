@@ -6,6 +6,9 @@ import androidx.compose.runtime.SideEffect
 import dev.cardstashy.nativeplay.engine.Ref
 import dev.cardstashy.nativeplay.engine.GameEvent
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -30,6 +33,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.DpOffset
 import kotlin.math.PI
 import kotlin.math.sin
 import kotlin.math.roundToInt
@@ -151,6 +155,8 @@ class TableIntents(
     val card: (Int) -> Unit = {}, val player: (Int) -> Unit = {}, val ok: () -> Unit = {}, val cancel: () -> Unit = {},
     val reply: (Int, Boolean?, List<Int>?, List<Int>?) -> Unit = { _, _, _, _ -> },
     val attackAll: (List<Int>) -> Unit = {}, val unblock: (Int, Int) -> Unit = { _, _ -> },
+    /** Better table scene 4: take back every block you made, then declare no blocks. */
+    val noBlocks: () -> Unit = {},
     /** forge-table.mjs dropCombat: this blocker blocks that attacker (blocker, attacker). */
     val block: (Int, Int) -> Unit = { _, _ -> },
     val stop: (String) -> Unit = {}, val mode: (String) -> Unit = {}, val autoPay: (Boolean) -> Unit = {}, val yieldSource: (Int, Boolean) -> Unit = { _, _ -> },
@@ -679,7 +685,12 @@ fun ForgeBoard(
             @Composable fun myCrest(m: Modifier) = Crest(myShield, me.id, m, d, onInspect,
                 playable = myShield?.card?.takeIf { it.zone == "Command" }?.let { markOf(it) == Mark.PLAYABLE } == true) { intents.card(it.id) }
             // Table additions 6: while you declare blocks, what gets through, above your seat. Gone the moment blocks are confirmed.
-            if (blockingNow) damageThrough(st)?.let { t -> ThroughChip(t, me.life, Modifier.offset(x = zones.mySquare.x.dp + 50.du, y = zones.mySquare.bottom.dp - 120.du), d) }
+            // Better table scene 4: one line that updates with each pick ("Blocked · 0 gets through").
+            // It stands on your creature row's line, left of the row (else right of it), as the preview's chip beside the blocker;
+            // with no room either side it keeps its old place above your seat.
+            if (blockingNow) damageThrough(st)?.let { t -> ThroughChip(throughWords(t, me.life, blocksMade(st)), t.n > 0,
+                others(me.battlefield).filter { !it.attacking }.map { it.id }, zones.board.right.dp,
+                DpOffset(zones.mySquare.x.dp + 50.du, zones.mySquare.bottom.dp - 120.du), d) }
             val tools = (if (st.controlMode in setOf("smart", "full")) 2 + (if (st.autoPay != null) 1 else 0) else 0) + 1
             // The dual top's tool row in the chip band: its width (first frame: the tools at their 42 du pitch, the mana not yet measured).
             val dockDensity = LocalDensity.current
@@ -1040,6 +1051,7 @@ fun ForgeBoard(
                     TableActions.Press.CANCEL -> ({ intents.cancel() })
                     TableActions.Press.PLAY -> ({ if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok() })
                     TableActions.Press.ATTACK_ALL -> ({ intents.attackAll(offered.map { it.id }) })
+                    TableActions.Press.NO_BLOCKS -> ({ intents.noBlocks() })
                 }
                 // 0.4.60 Z1: the buttons stand in the right strip's bottom corner on every board (a big board's one row 180 above the
                 // bottom ran across your back row once the board took the full height): the gold step at the bottom, the quiet one above
@@ -1464,17 +1476,72 @@ internal fun damageThrough(st: MatchState): Through? {
     return Through(n, atLeast)
 }
 
-/** The glass chip: "N damage gets through" and "Your life: 20 → X", red border while N > 0; green "Your life stays at X" at 0. */
+/** Better table scene 4: at least one of your creatures blocks an attacker aimed at you. */
+internal fun blocksMade(st: MatchState): Boolean {
+    val atMe = st.players.filter { it.id != st.viewer }.flatMap { it.battlefield }.filter { it.attacking }.map { it.id }.toSet()
+    return st.me.battlefield.any { it.blocking && (it.blockingIds.isEmpty() || it.blockingIds.any { a -> a in atMe }) }
+}
+
+/**
+ * Better table scene 4: the forecast as one line, its lead word apart ("Blocked" · "0 gets through"; "5 gets through" · "Life 20 → 15").
+ * Only what [damageThrough] states: no death is named, since the forecast never works one out (ruling of 2 Nov).
+ */
+internal data class ThroughWords(val lead: String, val rest: List<String>) { val text get() = (listOf(lead) + rest).joinToString(" \u00B7 ") }
+internal fun throughWords(t: Through, life: Int, blocked: Boolean): ThroughWords {
+    val through = (if (t.atLeast) "At least ${t.n}" else "${t.n}") + " gets through"
+    val after = if (t.n > 0) "Life $life \u2192 ${life - t.n}" + (if (t.atLeast) " or less" else "") else null
+    return if (blocked) ThroughWords("Blocked", listOfNotNull(through, after)) else ThroughWords(through, listOfNotNull(after))
+}
+
+/**
+ * The forecast chip: dark glass, a gold hairline, the lead word green while nothing gets through and coral while damage does. It
+ * settles in and turns over to new words with each pick (snapped while pictures are still or motion is reduced).
+ */
 @Composable
-private fun ThroughChip(t: Through, life: Int, modifier: Modifier, d: Du) = with(d) {
-    val hurt = t.n > 0
-    val edge = if (hurt) Color(0xFFFF6A4A) else Color(0xFF7BE08A)
-    val head = when { !hurt -> "No damage gets through"; t.atLeast -> "At least ${t.n} damage gets through"; else -> "${t.n} damage gets through" }
-    val sub = when { !hurt -> "Your life stays at $life"; t.atLeast -> "Your life: $life → ${life - t.n} or less"; else -> "Your life: $life → ${life - t.n}" }
-    Column(modifier.zIndex(30f).clip(RoundedCornerShape(10.du)).background(Color(0xE60C0D12)).border(1.dp, edge, RoundedCornerShape(10.du))
-        .padding(horizontal = 10.du, vertical = 5.du)) {
-        Text(head, style = sans(sp(11.5f), FontWeight.Bold, Color(0xFFF6EEDB)).copy(fontFeatureSettings = "tnum"), maxLines = 1)
-        Text(sub, style = sans(sp(10.5f), FontWeight.SemiBold, edge).copy(fontFeatureSettings = "tnum"), maxLines = 1)
+private fun ThroughChip(w: ThroughWords, hurt: Boolean, row: List<Int>, boardRight: Dp, fallback: DpOffset, d: Du) = with(d) {
+    val anchors = LocalAnchors.current
+    var self by remember { mutableStateOf(Offset.Zero) }
+    val modifier = Modifier.layout { m, c ->
+        val p = m.measure(c.copy(minWidth = 0, minHeight = 0))
+        val v = anchors?.version?.intValue
+        val gap = 14.du.toPx(); val l0 = 8.du.toPx(); val r0 = c.maxWidth.toFloat().takeIf { c.hasBoundedWidth } ?: boardRight.toPx()
+        val rects = row.mapNotNull { id -> anchors?.rects?.get("c$id") }.takeIf { v != null && it.isNotEmpty() }
+        // Whatever else stands on the table (cards, seats, crests, tools, buttons): the chip never lies on it.
+        val screen = c.maxWidth.toFloat() * c.maxHeight.toFloat()
+        val others = anchors?.rects?.filter { (k, r) -> k != "throughchip" && r.width * r.height < screen * .2f && r.width > 0f }?.values.orEmpty()
+        fun free(x: Float, y: Float): Boolean { val box = androidx.compose.ui.geometry.Rect(x + self.x, y + self.y, x + self.x + p.width, y + self.y + p.height)
+            return x >= l0 && x + p.width <= r0 - 8.du.toPx() && others.none { it.overlaps(box) } }
+        val at: IntOffset = rects?.let { rs ->
+            val left = rs.minOf { it.left } - self.x; val right = rs.maxOf { it.right } - self.x
+            val cy = rs.map { it.center.y }.average().toFloat() - self.y
+            val y = cy - p.height / 2f
+            listOf(left - gap - p.width, right + gap).firstOrNull { free(it, y) }?.let { IntOffset(it.roundToInt(), y.roundToInt()) }
+        } ?: IntOffset(fallback.x.roundToPx(), fallback.y.roundToPx())
+        layout(p.width, p.height) { p.place(at) }
+    }
+    Box(Modifier.fillMaxSize().zIndex(30f).onGloballyPositioned { self = it.boundsInRoot().topLeft }) { ThroughChipBody(w, hurt, modifier, d) }
+}
+
+@Composable
+private fun ThroughChipBody(w: ThroughWords, hurt: Boolean, modifier: Modifier, d: Du) = with(d) {
+    val fx = LocalBattlefield.current
+    val calm = Motion.still || fx == null || fx.reduced
+    val tone = if (hurt) Color(0xFFFF7A5C) else Color(0xFF7BE08A)
+    val shown = remember { Animatable(if (calm) 1f else 0f) }
+    LaunchedEffect(Unit) { if (!calm) shown.animateTo(1f, tween(260, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
+    // Each new forecast lands with a short lift of the edge in its tone.
+    val kick = remember { Animatable(0f) }
+    LaunchedEffect(w) { if (!calm) { kick.snapTo(1f); kick.animateTo(0f, tween(420)) } }
+    val shape = RoundedCornerShape(9.du)
+    val edge = lerp(Gold.copy(alpha = .42f), tone, kick.value * .8f)
+    Box(modifier.zIndex(30f).anchorRect("throughchip").graphicsLayer { alpha = shown.value; val k = .94f + .06f * shown.value; scaleX = k; scaleY = k; translationY = (1f - shown.value) * 6f * u * density }
+        .shadow(6.du, shape, ambientColor = Color.Black, spotColor = Color.Black).clip(shape)
+        .background(Brush.verticalGradient(listOf(Color(0xF2141622), Color(0xF20A0B12)))).border(1.dp, edge, shape)
+        .semantics { contentDescription = w.text }.padding(horizontal = 11.du, vertical = 6.du)) {
+        Text(buildAnnotatedString {
+            withStyle(SpanStyle(color = tone, fontWeight = FontWeight.ExtraBold)) { append(w.lead) }
+            for (r in w.rest) { withStyle(SpanStyle(color = Gold.copy(alpha = .7f))) { append("  \u00B7  ") }; append(r) }
+        }, style = sans(sp(12f), FontWeight.SemiBold, Color(0xFFF6EEDB)).copy(fontFeatureSettings = "tnum"), maxLines = 1, softWrap = false)
     }
 }
 
@@ -1585,7 +1652,8 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
     val role: Triple<Color, Float, Color>? = when {
         side != null && mark != Mark.PICKED -> if (side) Triple(SideYours, 2.5f, Color(0x8C5CC8FF)) else Triple(SideCpu, 2.5f, Color(0x8CFF5A4A))
         card.attacking -> Triple(Color(0xFFFF6A4A), 2f, Color(0x99FF5A3A))
-        card.blocking -> Triple(Color(0xFF6AAEFF), 2f, Color(0x995A9CFF))
+        // Better table scene 4: your blocker and its line are gold (the preview's ring-gold and gold join).
+        card.blocking -> Triple(Gold, 2.5f, Color(0x99E8B95B))
         mark == Mark.PICKED -> Triple(Color(0xFFF3D27E), 2.5f, Color(0x8CF3D27E))
         mark == Mark.TARGET -> Triple(Color(0xFFFF9D5C), 2f, Color(0x8CFF9D5C))
         mark == Mark.DISCARD -> Triple(Color(0xFFFF7A6B), 2f, Color(0x8CFF6A5A))
@@ -1959,9 +2027,9 @@ private fun DragLine(drag: BlockDrag, d: Du) = with(d) {
         val a = anchors.rects["c$from"] ?: return@Canvas
         val to = drag.over?.let { anchors.rects["c$it"]?.center } ?: drag.at
         val s0 = a.center - self; val e = to - self
-        drawLine(Color(0x665A9CFF), s0, e, strokeWidth = 9.du.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-        drawLine(Color(0xFF6AAEFF), s0, e, strokeWidth = 3.du.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-        drawCircle(Color(0xFF6AAEFF), 7.du.toPx(), e, style = Stroke(2.du.toPx()))
+        drawLine(Color(0x66E8B95B), s0, e, strokeWidth = 9.du.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+        drawLine(Gold, s0, e, strokeWidth = 3.du.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+        drawCircle(Gold, 7.du.toPx(), e, style = Stroke(2.du.toPx()))
     }
 }
 
@@ -3084,8 +3152,8 @@ private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) 
     val flow = if (flowing) rememberInfiniteTransition(label = "flow").animateFloat(0f, 13f, infiniteRepeatable(tween(1400, easing = LinearEasing)), label = "dash") else remember { mutableFloatStateOf(0f) }
     var self by remember { mutableStateOf(Offset.Zero) }
     val blocking = st.inputType == "InputBlock" && st.prompt == null
-    val colors = mapOf("attack" to Color(0xFFFF6A4A), "block" to Color(0xFF6AAEFF), "target" to Color(0xFFF3D27E))
-    val glows = mapOf("attack" to Color(0xAAFF5A3A), "block" to Color(0xAA5A9CFF), "target" to Color(0xAAF3D27E))
+    val colors = mapOf("attack" to Color(0xFFFF6A4A), "block" to Gold, "target" to Color(0xFFF3D27E))
+    val glows = mapOf("attack" to Color(0xAAFF5A3A), "block" to Color(0xAAE8B95B), "target" to Color(0xAAF3D27E))
     // The x on your own block line takes that block back (forge-table.mjs unblock). Each x is its own small button over the
     // line: a tap layer over the whole board took every tap during blocks, so no card could be picked (Randall, 6 Nov).
     val hits = remember { mutableStateListOf<Pair<Offset, Rel>>() }
@@ -3110,8 +3178,10 @@ private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) 
             val col = if (cpuThread) ThreadCoral else colors.getValue(r.kind)
             val glow = if (cpuThread) ThreadCoral.copy(alpha = .67f) else glows.getValue(r.kind)
             val heldLine = r.kind == "attack" && r.held
-            val dash = when { r.kind == "target" -> null; heldLine -> PathEffect.dashPathEffect(floatArrayOf(3 * k, 9 * k), 0f); else -> PathEffect.dashPathEffect(floatArrayOf(6 * k, 7 * k), -flow.value * k) }
-            val w = (if (r.kind == "target") 2f else 2.5f) * k
+            // Better table scene 4: a block is a solid gold join (the preview's gold arc), a glint running along it.
+            val joined = r.kind == "block"
+            val dash = when { r.kind == "target" || joined -> null; heldLine -> PathEffect.dashPathEffect(floatArrayOf(3 * k, 9 * k), 0f); else -> PathEffect.dashPathEffect(floatArrayOf(6 * k, 7 * k), -flow.value * k) }
+            val w = (if (r.kind == "target") 2f else if (joined) 3.5f else 2.5f) * k
             val alpha = if (heldLine) .22f else .9f
             if (!heldLine) drawIntoCanvas { c ->
                 val gp = Paint().asFrameworkPaint().apply { isAntiAlias = true; style = android.graphics.Paint.Style.STROKE; strokeWidth = w + 2 * k; color = glow.toArgb(); maskFilter = android.graphics.BlurMaskFilter(6 * k, android.graphics.BlurMaskFilter.Blur.NORMAL); pathEffect = dash?.let { android.graphics.DashPathEffect(if (r.kind == "attack" || r.kind == "block") floatArrayOf(6 * k, 7 * k) else floatArrayOf(1f, 0f), flow.value * k) } }
@@ -3125,18 +3195,28 @@ private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) 
                 drawRoundRect(col.copy(alpha = .9f), Offset(b.left - self.x - 3 * k, b.top - self.y - 3 * k), androidx.compose.ui.geometry.Size(b.width + 6 * k, b.height + 6 * k),
                     CornerRadius(6 * k), style = Stroke(2.5f * k))
             }
+            if (joined) {
+                // Both ends are pinned with a gold stud; the glint travels blocker to attacker while motion runs.
+                drawCircle(col, radius = 4.5f * k, center = Offset(sx, sy)); drawCircle(col, radius = 4.5f * k, center = Offset(ex, ey))
+                drawCircle(Color(0xFF2A1E08), radius = 1.8f * k, center = Offset(sx, sy)); drawCircle(Color(0xFF2A1E08), radius = 1.8f * k, center = Offset(ex, ey))
+                if (flowing) {
+                    val f = (flow.value / 13f).coerceIn(0f, 1f); val q = 1f - f
+                    val gx = q * q * sx + 2 * q * f * cx + f * f * ex; val gy = q * q * sy + 2 * q * f * cy + f * f * ey
+                    drawCircle(Brush.radialGradient(listOf(Color(0xFFFFF4D6), Color(0x00E8B95B)), center = Offset(gx, gy), radius = 9f * k), radius = 9f * k, center = Offset(gx, gy))
+                }
+            }
             // Arrowhead (marker 10×10 at 4.5 × stroke, refX 7), along the curve's end tangent.
-            run {
+            if (!joined) run {
                 val tx = ex - cx; val ty = ey - cy; val tl = kotlin.math.hypot(tx, ty).coerceAtLeast(.001f); val dx = tx / tl; val dy = ty / tl
                 val m = 4.5f * w / 10f
                 val tipX = ex + dx * 3 * m; val tipY = ey + dy * 3 * m
                 val head = Path().apply { moveTo(tipX, tipY); lineTo(tipX - dx * 10 * m - dy * 5 * m, tipY - dy * 10 * m + dx * 5 * m); lineTo(tipX - dx * 10 * m + dy * 5 * m, tipY - dy * 10 * m - dx * 5 * m); close() }
                 drawPath(head, col.copy(alpha = alpha))
             }
-            drawCircle(col.copy(alpha = alpha), radius = 3.5f * k, center = Offset(sx, sy))
-            // The ring round the target (rx = min(14, w·0.18)).
+            if (!joined) drawCircle(col.copy(alpha = alpha), radius = 3.5f * k, center = Offset(sx, sy))
+            // The ring round the target (rx = min(14, w·0.18)). A blocked attacker keeps its own red ring instead.
             val rx = minOf(14 * k, b.width * .18f)
-            drawRoundRect(col.copy(alpha = if (heldLine) .22f else 1f), topLeft = Offset(b.left - self.x - 4 * k, b.top - self.y - 4 * k), size = Size(b.width + 8 * k, b.height + 8 * k), cornerRadius = CornerRadius(rx), style = Stroke(2 * k))
+            if (!joined) drawRoundRect(col.copy(alpha = if (heldLine) .22f else 1f), topLeft = Offset(b.left - self.x - 4 * k, b.top - self.y - 4 * k), size = Size(b.width + 8 * k, b.height + 8 * k), cornerRadius = CornerRadius(rx), style = Stroke(2 * k))
             if (r.kind == "block" && blocking && st.card(r.blocker!!)?.controller == st.viewer) {
                 val mx = (sx + 2 * cx + ex) / 4; val my = (sy + 2 * cy + ey) / 4
                 drawCircle(Color(0xF014161D), radius = 11 * k, center = Offset(mx, my))
@@ -3293,7 +3373,7 @@ internal fun askLine(st: MatchState): String? {
     val cpuTop = top != null && top.controller != st.viewer
     val topName = (top?.source?.name ?: top?.text?.split(Regex("\\s+[\\u2014-]\\s+"))?.firstOrNull() ?: "").replace(Regex("\\s*\\(\\d+\\)"), "").trim()
     return when {
-        input == "InputBlock" -> "Block the CPU’s attack?"
+        input == "InputBlock" -> "Choose blockers"
         input == "InputPassPriority" && cpuTop && topName.isNotEmpty() && st.priorityPlayer == st.viewer -> "Respond to $topName?"
         else -> null
     }
@@ -3384,7 +3464,7 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
         b.combat?.let { cb ->
             Box(Modifier.align(Alignment.TopCenter).offset(y = 13.du)) {
                 if (cb == "attacking") badge("attacking", edge = Color(0xFFFF9D5C), ink = Color(0xFFFFB27A), glow = Color(0x99FF8A3D))
-                else badge("blocking", edge = Color(0xFF7FB8FF), ink = Color(0xFFA8CEFF), glow = Color(0x995A9CFF))
+                else badge("blocking", edge = Gold, ink = Color(0xFFF6DFA8), glow = Color(0x99E8B95B))
             }
         }
         // 0.4.60 G1 (glance-marks-brief.md): a creature's keywords are a strip along the bottom edge, left of the P/T plate, big enough

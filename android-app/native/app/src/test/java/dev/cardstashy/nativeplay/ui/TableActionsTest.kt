@@ -125,6 +125,16 @@ class TableActionsTest {
         assertNull(TableActions.of(st("InputSelectTargets", cancel = "Cancel"), true, null, tucked = true, discarding = false).gold)
     }
 
+    /** Better table scene 4: "No blocks" alone while nothing blocks; once a block is made, dark "No blocks" above gold "Block with N". */
+    @Test fun blocksOfferNoBlocksBesideBlockWithN() {
+        val none = gold(st("InputBlock", "COMBAT_DECLARE_BLOCKERS", active = cpu))
+        assertEquals("No blocks", none.gold?.label); assertNull(none.quiet)
+        val one = gold(st("InputBlock", "COMBAT_DECLARE_BLOCKERS", active = cpu) { s -> mine(s) { if (it.id == 108) it.copy(blocking = true) else it } })
+        assertEquals(Kind.PLAIN, one.kind)
+        assertEquals("Block with 1", one.gold?.label); assertEquals(Press.OK, one.gold?.press)
+        assertEquals(TableActions.NO_BLOCKS, one.quiet?.label); assertEquals(Press.NO_BLOCKS, one.quiet?.press); assertTrue(one.quiet!!.enabled)
+    }
+
     /** Better table scenes 2, 3 and gaps list 7: the gold press's words and where it goes. */
     @Test fun goldWordsAndWhereTheyGo() {
         // Main 2: one End turn, to the CPU's turn.

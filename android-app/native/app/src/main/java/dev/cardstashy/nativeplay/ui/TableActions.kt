@@ -13,7 +13,7 @@ import dev.cardstashy.nativeplay.engine.MatchState
  */
 internal object TableActions {
     /** What a press does: Forge's ok, Forge's cancel, play or cast the lifted hand card, or Attack all. */
-    enum class Press { OK, CANCEL, PLAY, ATTACK_ALL }
+    enum class Press { OK, CANCEL, PLAY, ATTACK_ALL, NO_BLOCKS }
 
     /** Which of the old layouts the corner takes (each draws its buttons in its own places). */
     enum class Kind { TUCKED, ATTACK_ALL, PICK_ONE, SHORT, END_TURN, PLAIN }
@@ -23,6 +23,9 @@ internal object TableActions {
 
     /** Better table scene 2: the dark button above the gold "No attacks" that sends every creature Forge offers. */
     const val ALL_ATTACK = "All attack"
+
+    /** Better table scene 4: the dark button above the gold "Block with N" that takes every block back and declares none. */
+    const val NO_BLOCKS = "No blocks"
 
     /** One line of the three-dot menu: its key, its words, whether it is switched on now, whether it can be pressed now. */
     data class Item(val key: String, val label: String, val on: Boolean, val enabled: Boolean, val about: String)
@@ -84,6 +87,9 @@ internal object TableActions {
             endTurnGold -> Corner(Kind.END_TURN, Action(ok, Press.CANCEL, live, sub), second?.let { Action(it, Press.OK, live && okOn) }, null, null, null, menu)
             else -> {
                 val undo = second?.startsWith("Undo", ignoreCase = true) == true
+                // Better table scene 4: once a block is made, "No blocks" stays offered beside the gold "Block with N".
+                val noBlocks = selected == null && second == null && st.inputType == "InputBlock" && st.prompt == null && st.me.battlefield.any { it.blocking }
+                if (noBlocks) return Corner(Kind.PLAIN, Action(ok, Press.OK, live && okOn, sub), Action(NO_BLOCKS, Press.NO_BLOCKS, live), null, null, null, menu)
                 // Mobile table M3: while your own spell or trigger resolves by itself the gold button is not a press.
                 Corner(Kind.PLAIN, Action(ok, if (selected != null) Press.PLAY else Press.OK, live && (selected != null || (okOn && ok != RESOLVING)), sub),
                     second?.takeIf { !undo }?.let { Action(it, Press.CANCEL, live) }, second?.takeIf { undo }?.let { Action(it, Press.CANCEL, live) }, null, null, menu)

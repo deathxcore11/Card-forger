@@ -35,7 +35,8 @@ class MatchBottomWordsTest {
 
     @Test fun blockAsksTheBlock() {
         val st = snap("block")
-        assertEquals("Block the CPU’s attack?", (bottomWords(st, true, hand, hand[0], null, askLine(st)) as BottomWords.Ask).text)
+        // Better table scene 4: the preview's ask line.
+        assertEquals("Choose blockers", (bottomWords(st, true, hand, hand[0], null, askLine(st)) as BottomWords.Ask).text)
     }
 
     // Plain priority is unchanged: the lifted card's words (the lift-then-play flow seen working), and the top keeps its line.

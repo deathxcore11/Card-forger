@@ -10,6 +10,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import com.github.takahirom.roborazzi.captureRoboImage
 import dev.cardstashy.nativeplay.art.CardImageTest
 import dev.cardstashy.nativeplay.engine.MatchState
@@ -86,4 +89,52 @@ class FoldBlockShotTest {
         anchors.rects["stacklabel"]?.let { assertTrue("its label is above the hand: $it", it.bottom / dp < hand.y) }
         assertTrue("the stack card does not cover the planeswalker", !at(walker.id).overlaps(card))
     }
+
+    /**
+     * Better table scene 4: "Choose blockers". Nothing blocked yet: every able blocker wears the ice ring, the gold says "No blocks"
+     * and the chip says what gets through. One block made: the gold join line, "Blocked · 0 gets through", and dark "No blocks"
+     * above gold "Block with 1". Pictures table-look/block-<screen>-pick.png and -blocked.png.
+     */
+    private fun blocks(screen: String) {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        val land = base.me.battlefield.first { it.isLand }; val creature = base.me.battlefield.first { it.isCreature }
+        val foe = base.cpu.battlefield.first { it.isCreature }.copy(id = 970, attacking = true, tapped = true, power = 5, toughness = 5, keywordsKnown = true, keywords = emptyList(), attachments = emptyList())
+        val vendor = creature.copy(id = 941, tapped = false, attacking = false, summoningSick = false, power = 3, toughness = 3, keywordsKnown = true, keywords = emptyList(), attachments = emptyList())
+        val second = vendor.copy(id = 942)
+        fun board(blocking: Boolean): MatchState {
+            val mine = (1..4).map { land.copy(id = 900 + it, tapped = false) } + vendor.copy(blocking = blocking, blockingIds = if (blocking) listOf(foe.id) else emptyList()) + second
+            return base.copy(inputType = "InputBlock", phase = "COMBAT_DECLARE_BLOCKERS", activePlayer = cpu, priorityPlayer = me, stack = emptyList(),
+                buttons = dev.cardstashy.nativeplay.engine.Buttons("OK", "Cancel", true, false), selection = base.selection.copy(cards = emptySet(), actionable = emptySet()),
+                message = "Select creatures to block ${foe.name} (${foe.id}) or select another attacker to declare blockers for.",
+                players = base.players.map { p -> when (p.id) { me -> p.copy(battlefield = mine, life = 20); cpu -> p.copy(battlefield = p.battlefield.filter { !it.isCreature } + foe); else -> p } })
+        }
+        assertEquals("Choose blockers", dev.cardstashy.nativeplay.ui.askLine(board(false)))
+        var st by mutableStateOf(board(false))
+        rule.setContent {
+            CompositionLocalProvider(LocalAnchors provides anchors) {
+                Box(Modifier.fillMaxSize().background(Palette.Night)) {
+                    ForgeBoard(st, live = true, intents = TableIntents(), selectedHand = null, onSelectHand = {}, onInspect = {}, onMenu = {}, handOrder = emptyList(), onHandOrder = {})
+                }
+            }
+        }
+        rule.waitForIdle(); rule.waitForIdle()
+        rule.onRoot().captureRoboImage(java.io.File(System.getProperty("shotsDir"), "table-look/block-$screen-pick.png").path)
+        rule.onNodeWithText("Choose blockers").assertExists()
+        rule.onNodeWithContentDescription("5 gets through \u00B7 Life 20 \u2192 15").assertExists()
+        rule.onNodeWithText("No blocks").assertExists()
+        assertTrue("no dark button before a block", rule.onAllNodesWithText("No blocks").fetchSemanticsNodes().size == 1)
+        st = board(true)
+        rule.waitForIdle(); rule.waitForIdle()
+        rule.onRoot().captureRoboImage(java.io.File(System.getProperty("shotsDir"), "table-look/block-$screen-blocked.png").path)
+        rule.onNodeWithContentDescription("Blocked \u00B7 0 gets through").assertExists()
+        rule.onNodeWithText("Block with 1").assertExists(); rule.onNodeWithText("No blocks").assertExists()
+        val gold = anchors.rects.getValue("gold"); val quiet = anchors.rects.getValue("quiet"); val chip = anchors.rects.getValue("throughchip")
+        assertTrue("No blocks stands above Block with 1", quiet.bottom <= gold.top + 1f)
+        assertTrue("the chip is clear of the buttons", !chip.overlaps(gold) && !chip.overlaps(quiet))
+        assertTrue("the chip is inside the window: $chip", chip.left >= 0f && chip.right <= rule.onRoot().fetchSemanticsNode().size.width)
+        assertTrue("the chip keeps off the cards", listOf(970, 941, 942).none { anchors.rects["c$it"]?.overlaps(chip) == true })
+    }
+
+    @Test fun blocksFold() = blocks("fold")
+    @Config(qualifiers = "w844dp-h390dp-land-xhdpi") @Test fun blocksPhone() = blocks("phone")
 }

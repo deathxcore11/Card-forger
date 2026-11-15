@@ -123,6 +123,19 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         card(attacker); if (!awaitSettled(s.revision)) return@launch; val now = latest ?: return@launch
         if (now.inputType != "InputBlock" || now.prompt != null || now.lastActionError != null) return@launch; if (awaitLive()) { card(blocker); if (awaitSent() && latest?.card(blocker)?.blocking != true) pairs.remove(blocker) } } }
     /**
+     * Better table scene 4, "No blocks" after blocks were made: each of your blocks is taken back the way Forge drops one (its
+     * attacker, then the blocker), then the empty declaration is sent. Stops, sending nothing more, if a block does not come off.
+     */
+    fun noBlocks() { scope.launch {
+        repeat(16) {
+            val s = latest ?: return@launch; if (s.inputType != "InputBlock" || s.prompt != null) return@launch
+            val b = paired(s).me.battlefield.firstOrNull { it.blocking } ?: run { if (awaitLive()) ok(); return@launch }
+            val a = b.blockingIds.firstOrNull() ?: run { say("Block not taken back. Try again."); return@launch }
+            if (!clickPair(a, b.id) || latest?.card(b.id)?.blocking == true) { say("Block not taken back. Try again."); return@launch }
+            pairs.remove(b.id)
+        }
+    } }
+    /**
      * forge-table.mjs dropCombat (block): Forge pairs a block as two clicks, the attacker and then the blocker. A creature
      * already blocking another attacker leaves that block first (it blocks one), and a block that does not take says so.
      */
@@ -195,7 +208,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         return true
     }
     val intents by lazy { dev.cardstashy.nativeplay.ui.TableIntents(card = { card(it) }, stack = { stackItem(it) }, player = { player(it) }, ok = { ok() }, cancel = { cancel() }, reply = { id, v, i, a -> reply(id, v, i, a) },
-        stop = { toggleStop(it) }, attackAll = { attackAll(it) }, unblock = { b, a -> unblock(b, a) }, block = { b, a -> block(b, a) }, mode = { setMode(it) }, autoPay = { setAutoPay(it) }, yieldSource = { id, on -> yieldSource(id, on) }, note = { say(it) }, told = { tell(it) }) }
+        stop = { toggleStop(it) }, attackAll = { attackAll(it) }, unblock = { b, a -> unblock(b, a) }, noBlocks = { noBlocks() }, block = { b, a -> block(b, a) }, mode = { setMode(it) }, autoPay = { setAutoPay(it) }, yieldSource = { id, on -> yieldSource(id, on) }, note = { say(it) }, told = { tell(it) }) }
     val timings = MutableStateFlow<Map<String, Long>>(emptyMap())
 
     /** match-facts.js for this match, and the finished-match hook (play:match-recorded). */
