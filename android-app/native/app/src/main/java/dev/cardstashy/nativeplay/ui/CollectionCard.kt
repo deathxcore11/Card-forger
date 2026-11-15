@@ -854,7 +854,7 @@ private fun ArtStack(m: CollectionCardModel, o: CardOverview, act: CollectionCar
             // A Yu-Gi-Oh! card is 59 × 86.
             val w = maxWidth; val cardH = (w - frameW * 2) * (if (m.game == CardGame.YGO) 86f / 59f else 88f / 63f) + frameW * 2
             TierFrame(o.tier, w, cardH, frameW) {
-                val mod = Modifier.fillMaxSize().cardLean(lean, foil = shines != null || worn != null, shape = RoundedCornerShape(6.dp))
+                val mod = Modifier.fillMaxSize().cardLean(lean, foil = look?.recipe != null || worn != null, lamp = worn != null, shape = RoundedCornerShape(6.dp))
                     .pointerInput(Unit) { detectTapGestures(onLongPress = {}) { onZoom() } }.padCardTap(padSource, padPic) { zoomNow() }.semantics { contentDescription = "Enlarge ${m.name}" }
                 if (!tcg) CardPicture(o.image, shines, tilt, mod, shape = RoundedCornerShape(6.dp))
                 else firstOf(o.sources.ifEmpty { listOf(o.image) }).let { p -> if (p != null) CardFace(p, null, tilt, mod, RoundedCornerShape(6.dp), finish = worn)

@@ -69,6 +69,11 @@ class CardLean {
     var sensor = false
     /** The light as the foil's -1..1 offset, or null when nothing leans the card. */
     val light: Offset? get() = if (pressed || gyro) Offset((mx - .5f) * 2f, (my - .5f) * 2f) else null
+    companion object {
+        /** Whether the card itself turns: a finger always leans it; the phone's tilt leans only a foil (feel.js: a plain card stays
+         *  still, only its light moves so its security stamp can answer). Randall 14-15 Nov: Avatar FRA 122, Torrential Gearhulk KLD 67. */
+        fun leans(foil: Boolean, pressed: Boolean, gyro: Boolean) = pressed || (gyro && foil)
+    }
 }
 
 private val settle = CubicBezierEasing(.2f, .8f, .2f, 1f)
@@ -110,11 +115,14 @@ fun rememberCardLean(): CardLean {
 }
 
 /** Leans the card (see [CardLean]); put it on the card picture's box, outside its clip. [foil]: a foil layer is drawn, so no light spot. */
-fun Modifier.cardLean(lean: CardLean, foil: Boolean, shape: androidx.compose.ui.graphics.Shape = androidx.compose.foundation.shape.RoundedCornerShape(16f)): Modifier = composed {
+/** [foil]: the card wears a foil (a plain card does not turn with the phone and does not play the catch). [lamp]: draw the
+ *  .finish-spotlight lamp. The site hides it wherever a WebGL foil draws (finish-effects.css .rarity-gl) and on plain cards, so a
+ *  Magic card never gets it: Randall 15 Nov, "the bright spot light to show off the foil thats way to distracting". */
+fun Modifier.cardLean(lean: CardLean, foil: Boolean, lamp: Boolean = false, shape: androidx.compose.ui.graphics.Shape = androidx.compose.foundation.shape.RoundedCornerShape(16f)): Modifier = composed {
     val still = Motion.still
     val view = LocalView.current
     val spec = when { lean.pressed && !lean.sensor -> tween<Float>(80, easing = LinearEasing); lean.gyro || lean.sensor -> tween(180, easing = easeOut); else -> tween(350, easing = settle) }
-    val leaning = lean.pressed || lean.gyro
+    val leaning = CardLean.leans(foil, lean.pressed, lean.gyro)
     val rx by animateFloatAsState(if (leaning && !still) lean.ty else 0f, spec, label = "rx")
     val ry by animateFloatAsState(if (leaning && !still) lean.tx else 0f, spec, label = "ry")
     val sc by animateFloatAsState(if (lean.pressed && !lean.sensor && !still) 1.035f else 1f, spec, label = "sc")
@@ -122,7 +130,7 @@ fun Modifier.cardLean(lean: CardLean, foil: Boolean, shape: androidx.compose.ui.
     val shine = remember { Animatable(0f) }
     var seen by remember { mutableStateOf(false) }
     LaunchedEffect(seen) {
-        if (!seen || still || lean.catchDone) return@LaunchedEffect
+        if (!seen || still || lean.catchDone || !foil) return@LaunchedEffect
         delay(150); shine.animateTo(1f, tween(1100, easing = LinearEasing)); lean.catchDone = true
     }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
@@ -167,7 +175,7 @@ fun Modifier.cardLean(lean: CardLean, foil: Boolean, shape: androidx.compose.ui.
         .clip(shape)
         .drawWithContent {
             drawContent()
-            if (still) return@drawWithContent
+            if (still || !lamp) return@drawWithContent
             // finish-effects.css .finish-spotlight: a neutral lamp at the light on every enlarged card, screen blend, .65;
             // shine-once plays finish-catch on it (opacity 0 → .9 → .65, translateX −35 % → 0, 1.1 s ease-out).
             val p = shine.value

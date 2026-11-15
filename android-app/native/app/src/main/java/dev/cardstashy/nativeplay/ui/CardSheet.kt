@@ -473,7 +473,7 @@ private fun Overview(name: String, shown: JsonObject, faces: List<JsonObject>, i
         val padPic = remember { PadActs(a = "Inspect") }
         BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             val w = minOf(maxWidth, 340.dp)
-            CardPicture(image, shines, tilt, Modifier.size(w, w * 88f / 63f).cardLean(lean, foil = shines != null, shape = RoundedCornerShape(16.dp))
+            CardPicture(image, shines, tilt, Modifier.size(w, w * 88f / 63f).cardLean(lean, foil = look?.recipe != null, shape = RoundedCornerShape(16.dp))
                 // Site: a tap opens the zoom; a hold does nothing and the release after it opens nothing (card-actions.js press.held).
                 .pointerInput(Unit) { detectTapGestures(onLongPress = {}) { onZoom() } }.padCardTap(padSource, padPic) { zoomNow() }, shape = RoundedCornerShape(16.dp))
         }
