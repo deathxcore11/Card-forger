@@ -26,7 +26,6 @@ import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.math.tan
@@ -81,7 +80,10 @@ class PackSkin(val front: Bitmap, val back: Bitmap) {
     internal val backPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply { shader = BitmapShader(back, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP) }
 
     companion object {
-        private val cache = android.util.LruCache<String, PackSkin>(4)
+        // Sized by bytes, not count: a 720 px wrapper and its back are about 4 MB, so a few sets stay without crowding the card art.
+        private val cache = object : android.util.LruCache<String, PackSkin>(16 * 1024 * 1024) {
+            override fun sizeOf(key: String, value: PackSkin) = value.front.byteCount + value.back.byteCount
+        }
         fun cached(code: String): PackSkin? = cache.get(code.lowercase())
 
         /** The back: the front mirrored, blurred and darkened, its foil seals kept sharp (as the preview's backTexture). */
@@ -105,18 +107,27 @@ class PackSkin(val front: Bitmap, val back: Bitmap) {
     }
 }
 
-/** The set's skin for the 3D pack, or null while it loads or when the set has no real wrapper photo (the 2D pack shows then). */
+/** The set's skin for the 3D pack; [waiting] while a real wrapper loads (draw nothing then, so the 2D pack never shows first). */
+class PackSkinLoad(val skin: PackSkin?, val waiting: Boolean) { companion object { val None = PackSkinLoad(null, false) } }
+
+/** The set's 3D-pack skin, or the 2D pack (skin null, not waiting) when the set has no real wrapper photo, the phone is older than
+ *  Android 10 (drawVertices is drawn by the GPU only from 10), or the photo fails to load. */
 @Composable
-fun rememberPackSkin(code: String): PackSkin? {
+fun rememberPackSkinLoad(code: String): PackSkinLoad {
     val ctx = LocalContext.current
-    if (HomeTest.noPictures) return null
-    return produceState(PackSkin.cached(code), code) {
-        if (value != null) return@produceState
-        if (Pack3D.mesh(ctx) == null) return@produceState
-        val photo = AssetImages.load(ctx, Pack3D.artPath(code), maxWidth = 720) ?: return@produceState
-        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { PackSkin.make(code, photo.asAndroidBitmap()) }
+    if (HomeTest.noPictures || android.os.Build.VERSION.SDK_INT < 29) return PackSkinLoad.None
+    val wants = remember(code) { Pack3D.mesh(ctx) != null && Pack3D.hasArt(ctx, code) }
+    if (!wants) return PackSkinLoad.None
+    return produceState(PackSkin.cached(code)?.let { PackSkinLoad(it, false) } ?: PackSkinLoad(null, true), code) {
+        if (value.skin != null) return@produceState
+        val photo = AssetImages.load(ctx, Pack3D.artPath(code), maxWidth = 720)
+        value = if (photo == null) PackSkinLoad.None
+        else PackSkinLoad(kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { runCatching { PackSkin.make(code, photo.asAndroidBitmap()) }.getOrNull() }, false)
     }.value
 }
+
+@Composable
+fun rememberPackSkin(code: String): PackSkin? = rememberPackSkinLoad(code).skin
 
 /**
  * Where the pack is in a frame. [yaw] and [pitch] turn it (radians); [tear] 0..1 rips the strip off from the [side] it is torn
@@ -139,12 +150,18 @@ fun Pack3DView(skin: PackSkin, modifier: Modifier, pose: () -> PackPose) {
 class PackRenderer(private val m: Pack3D.Mesh) {
     private val maxV = m.groups.maxOf { it.verts }
     private val maxT = m.groups.maxOf { it.index.size / 3 }
-    // Per-group scratch: screen x y, texture u v (in the bitmap's pixels), depth, colour, highlight.
-    private val sx = FloatArray(maxV); private val sy = FloatArray(maxV); private val sz = FloatArray(maxV)
-    private val nz = FloatArray(maxV); private val lit = IntArray(maxV); private val spec = IntArray(maxV)
-    private val pts = FloatArray(maxV * 2); private val tex = FloatArray(maxV * 2)
-    private val order = IntArray(maxT); private val depth = FloatArray(maxT); private val facing = BooleanArray(maxT)
+    /** One face's frame: screen x y, texture u v (in the bitmap's pixels), depth, colour, inside colour, highlight, per-triangle depth and facing. */
+    private inner class Buf {
+        val sx = FloatArray(maxV); val sy = FloatArray(maxV); val sz = FloatArray(maxV)
+        val lit = IntArray(maxV); val dark = IntArray(maxV); val spec = IntArray(maxV)
+        val pts = FloatArray(maxV * 2); val tex = FloatArray(maxV * 2)
+        val depth = FloatArray(maxT); val facing = BooleanArray(maxT)
+        var count = 0; var index: ShortArray = ShortArray(0); var verts = 0
+    }
+    private val bufs = arrayOf(Buf(), Buf())
     private val idx = ShortArray(maxT * 3)
+    private val faces = arrayOfNulls<Pack3D.Group>(2); private val bmps = arrayOfNulls<Bitmap>(2); private val paints = arrayOfNulls<Paint>(2)
+    private val order = IntArray(2)
     private val inside = Paint(Paint.ANTI_ALIAS_FLAG)
     private val shine = Paint(Paint.ANTI_ALIAS_FLAG).apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.ADD) }
 
@@ -168,18 +185,28 @@ class PackRenderer(private val m: Pack3D.Mesh) {
         if (a <= 0f) return
         val ai = (a * 255).toInt()
         skin.frontPaint.alpha = ai; skin.backPaint.alpha = ai; inside.alpha = ai; shine.alpha = ai
-        val faces = arrayOf(front, back); val bmps = arrayOf(skin.front, skin.back); val paints = arrayOf(skin.frontPaint, skin.backPaint)
+        faces[0] = front; faces[1] = back; bmps[0] = skin.front; bmps[1] = skin.back; paints[0] = skin.frontPaint; paints[1] = skin.backPaint
         // Which face looks at the camera: the front's outward normal (+z) after the turn.
         val frontToCamera = cy * cp
         val far = if (frontToCamera >= 0f) 1 else 0
-        // The inside of both faces first (seen through the torn top), then the face turned away, then the face turned toward us.
-        for (f in 0..1) { project(faces[f], bmps[f], w, h, dist, focal, stretch, cy, syw, cp, sp, cr, sr, p, strip); drawSorted(c, null, wantFacing = false) }
-        for (f in intArrayOf(far, 1 - far)) { project(faces[f], bmps[f], w, h, dist, focal, stretch, cy, syw, cp, sp, cr, sr, p, strip); drawSorted(c, paints[f], wantFacing = true) }
+        order[0] = far; order[1] = 1 - far
+        // Each face is projected once a frame.
+        for (f in 0..1) project(bufs[f], faces[f]!!, bmps[f]!!, w, h, dist, focal, stretch, cy, syw, cp, sp, cr, sr, p, strip)
+        // The inside of the body shows only once the top is open; sealed, it would peek through the crimp's zigzag as dark teeth.
+        // The strip's inside is never shown (it is a thin band and fades as it flies).
+        if (!strip && (p.tear > 0f || p.stripGone)) for (f in 0..1) drawSorted(c, bufs[f], null, wantFacing = false)
+        // Then the face turned away, then the face turned toward us.
+        for (f in order) drawSorted(c, bufs[f], paints[f], wantFacing = true)
     }
+
+    // A key light up and to the right, and its half vector toward a viewer straight ahead (fixed, so worked out once).
+    private val lx = .35f; private val ly = .55f; private val lz = .76f
+    private val hl = sqrt(lx * lx + ly * ly + (lz + 1f) * (lz + 1f))
+    private val hx2 = lx / hl; private val hy2 = ly / hl; private val hz2 = (lz + 1f) / hl
 
 
     /** Moves one face into place, projects it and lights its vertices; fills the per-triangle depth and facing. */
-    private fun project(gr: Pack3D.Group, bmp: Bitmap, w: Float, h: Float, dist: Float, focal: Float, stretch: Float,
+    private fun project(out: Buf, gr: Pack3D.Group, bmp: Bitmap, w: Float, h: Float, dist: Float, focal: Float, stretch: Float,
                         cy: Float, syw: Float, cp: Float, sp: Float, cr: Float, sr: Float, p: PackPose, strip: Boolean) {
         val d = gr.data; val n = gr.verts
         val bw = bmp.width.toFloat(); val bh = bmp.height.toFloat()
@@ -190,8 +217,7 @@ class PackRenderer(private val m: Pack3D.Mesh) {
         val chz = cos(hz); val shz = sin(hz); val chx = cos(hx); val shx = sin(hx)
         val px0 = p.side * m.width / 2f * stretch
         val lift = t * .12f + max(0f, t - .45f) * .25f
-        // A key light up and to the right, and a soft window high behind the camera for the moving sheen.
-        val lx = .35f; val ly = .55f; val lz = .76f
+        val sx = out.sx; val sy = out.sy; val sz = out.sz; val pts = out.pts; val tex = out.tex; val lit = out.lit; val dark = out.dark; val spec = out.spec
         for (i in 0 until n) {
             val o = i * 8
             var x = d[o] * stretch; var y = d[o + 1]; var z = d[o + 2]
@@ -215,7 +241,7 @@ class PackRenderer(private val m: Pack3D.Mesh) {
             val y1 = y * cp - z * sp; val z2 = y * sp + z * cp; y = y1; z = z2
             val ny1 = ny * cp - nzz * sp; val nz2 = ny * sp + nzz * cp; ny = ny1; nzz = nz2
             val k = focal / (dist - z)
-            sx[i] = w / 2f + x * k; sy[i] = h / 2f - y * k; sz[i] = z; nz[i] = nzz
+            sx[i] = w / 2f + x * k; sy[i] = h / 2f - y * k; sz[i] = z
             pts[i * 2] = sx[i]; pts[i * 2 + 1] = sy[i]
             tex[i * 2] = d[o + 6] * bw; tex[i * 2 + 1] = (1f - d[o + 7]) * bh
             // Light: soft ambient plus the key; foil seals shine harder than the printed middle.
@@ -223,18 +249,21 @@ class PackRenderer(private val m: Pack3D.Mesh) {
             val diff = (.62f + .48f * max(0f, nx * lx + ny * ly + nzz * lz)).coerceAtMost(1f)
             val g = (diff * 255).toInt().coerceIn(0, 255)
             lit[i] = (0xFF shl 24) or (g shl 16) or (g shl 8) or g
-            // Half vector toward a viewer straight ahead.
-            val hx2 = lx; val hy2 = ly; val hz2 = lz + 1f; val hl = sqrt(hx2 * hx2 + hy2 * hy2 + hz2 * hz2)
-            val ndh = max(0f, (nx * hx2 + ny * hy2 + nzz * hz2) / hl)
+            // The inside of the pack: dull foil, darker than the outside.
+            val gd = (g * .42f).toInt(); dark[i] = (0xFF shl 24) or (gd shl 16) or (gd shl 8) or (gd + 6).coerceAtMost(255)
+            val ndh = max(0f, nx * hx2 + ny * hy2 + nzz * hz2)
+            // ndh^14 (seals) or ^30 (print) by squaring, not pow.
+            val n2 = ndh * ndh; val n4 = n2 * n2; val n8 = n4 * n4
+            val peak = if (seal) n8 * n4 * n2 else n8 * n8 * n8 * n4 * n2
             // The window: a band of light caught as the pack turns (reflection's upward part).
             val ry2 = 2f * nzz * ny
             val band = (1f - abs(ry2 - .35f) / .22f).coerceIn(0f, 1f)
-            val s = ((if (seal) .55f else .22f) * ndh.pow(if (seal) 14f else 30f) + (if (seal) .35f else .12f) * band * band).coerceIn(0f, 1f)
+            val s = ((if (seal) .55f else .22f) * peak + (if (seal) .35f else .12f) * band * band).coerceIn(0f, 1f)
             val sv = (s * 255).toInt()
             spec[i] = (0xFF shl 24) or (sv shl 16) or (sv shl 8) or sv
         }
         // per triangle
-        val ix = gr.index; val tn = ix.size / 3
+        val ix = gr.index; val tn = ix.size / 3; val facing = out.facing; val depth = out.depth
         for (tI in 0 until tn) {
             val a = ix[tI * 3].toInt() and 0xFFFF; val b = ix[tI * 3 + 1].toInt() and 0xFFFF; val cc = ix[tI * 3 + 2].toInt() and 0xFFFF
             // Screen-space winding: y points down on screen, so a face turned to the camera winds the other way.
@@ -242,15 +271,14 @@ class PackRenderer(private val m: Pack3D.Mesh) {
             facing[tI] = area < 0f
             depth[tI] = sz[a] + sz[b] + sz[cc]
         }
-        curCount = tn; curIndex = ix; curVerts = n
+        out.count = tn; out.index = ix; out.verts = n
     }
-
-    private var curCount = 0; private var curIndex: ShortArray = ShortArray(0); private var curVerts = 0
 
     private val keys = LongArray(maxT)
 
     /** Sorts the projected face's triangles far to near and draws the ones facing (or turned away from) the camera. */
-    private fun drawSorted(c: NativeCanvas, paint: Paint?, wantFacing: Boolean) {
+    private fun drawSorted(c: NativeCanvas, b: Buf, paint: Paint?, wantFacing: Boolean) {
+        val facing = b.facing; val depth = b.depth; val curCount = b.count; val curIndex = b.index; val curVerts = b.verts
         var k = 0
         // Depth (smaller z is farther) in the high bits, the triangle in the low 20: one primitive sort, no allocation.
         for (t in 0 until curCount) if (facing[t] == wantFacing) keys[k++] = (((depth[t] + 50f) * 65536f).toLong() shl 20) or t.toLong()
@@ -260,12 +288,10 @@ class PackRenderer(private val m: Pack3D.Mesh) {
         for (j in 0 until k) { val t = (keys[j] and 0xFFFFF).toInt(); idx[q++] = curIndex[t * 3]; idx[q++] = curIndex[t * 3 + 1]; idx[q++] = curIndex[t * 3 + 2] }
         val vc = curVerts * 2
         if (paint == null) {
-            // The inside of the pack: dull foil, darker than the outside.
-            for (i in 0 until curVerts) { val g = ((lit[i] and 0xFF) * .42f).toInt(); lit[i] = (0xFF shl 24) or (g shl 16) or (g shl 8) or (g + 6).coerceAtMost(255) }
-            c.drawVertices(NativeCanvas.VertexMode.TRIANGLES, vc, pts, 0, null, 0, lit, 0, idx, 0, q, inside)
+            c.drawVertices(NativeCanvas.VertexMode.TRIANGLES, vc, b.pts, 0, null, 0, b.dark, 0, idx, 0, q, inside)
             return
         }
-        c.drawVertices(NativeCanvas.VertexMode.TRIANGLES, vc, pts, 0, tex, 0, lit, 0, idx, 0, q, paint)
-        c.drawVertices(NativeCanvas.VertexMode.TRIANGLES, vc, pts, 0, null, 0, spec, 0, idx, 0, q, shine)
+        c.drawVertices(NativeCanvas.VertexMode.TRIANGLES, vc, b.pts, 0, b.tex, 0, b.lit, 0, idx, 0, q, paint)
+        c.drawVertices(NativeCanvas.VertexMode.TRIANGLES, vc, b.pts, 0, null, 0, b.spec, 0, idx, 0, q, shine)
     }
 }

@@ -83,7 +83,7 @@ class Pack3DTest {
         val px = sealed.getPixel(sealed.width / 2, sealed.height / 2)
         val lum = ((px shr 16) and 255) + ((px shr 8) and 255) + (px and 255)
         assertTrue("the pack's middle is dark ($lum): nothing drawn", lum > 90)
-        for ((name, at) in listOf("tear-200" to 200L, "tear-400" to 400L, "deal-260" to 700L, "deal-650" to 1090L, "deal-900" to 1340L, "landed" to 3200L)) {
+        for ((name, at) in listOf("tear-200" to 200L, "tear-400" to 400L, "deal-260" to 700L, "deal-450" to 890L, "deal-650" to 1090L, "deal-900" to 1340L, "landed" to 3200L)) {
             run++
             rule.mainClock.advanceTimeBy(500)
             rule.onRoot().performTouchInput { click(androidx.compose.ui.geometry.Offset(width / 2f, height / 2f)) }
