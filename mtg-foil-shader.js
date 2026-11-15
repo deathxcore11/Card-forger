@@ -11,8 +11,11 @@
 //   4 varnish    : a clear coat over the whole face that returns a small white gloss.
 // Every length is a share of the card, never of the screen; detail too fine for the card's size on screen
 // fades to its average instead of turning to noise.
-// The look is the one the owner approved first (mock-up, 14 Nov 2026): composed for one card, the shader draws
-// exactly what that mock-up's single shader drew (test-mtg-foil-real-browser.mjs compares them pixel for pixel).
+// The light is a room light far away, as a phone is held (approved 15 Nov 2026, preview look "New"): the card turns
+// under it, colour sweeps the foil in wide bands as it tilts, a soft bar of light passes when it is tipped toward the
+// light, and the printed art keeps its own colours. There is no round spotlight (0.4.82 had one and it left a white
+// haze over the art). Composed for one card, the shader draws exactly what that preview's shader drew
+// (test-mtg-foil-real-browser.mjs compares them pixel for pixel with test-fixtures/finish-effects/mtg-foil-new-approved.glsl).
 // Approximate simulation on reference images, not a physical-foil capture.
 export const MTG_FOIL_TEMPLATE=`uniform vec2 u_tilt;uniform vec2 u_px;uniform vec2 u_texel;uniform float u_aspect;
 uniform vec4 u_art;uniform vec4 u_text;
@@ -20,6 +23,8 @@ uniform vec4 u_r1; // pattern, tint, coverage, relief (the shader is also compos
 uniform vec4 u_r2; // film, sparkle, stamp (1 shooting star), keep (share of the printed art left visible)
 const float PI=3.14159265;
 vec3 f_amb;float f_gloss;float f_leak;vec3 f_top;float f_glare;
+// How strongly the foil shows: between the preview's Soft and Natural for every type; oil slick goes past Natural.
+float strength(){return u_r2.x>.5?.9:.5;}
 vec3 toLin(vec3 c){return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.04045),c));}
 vec3 toSrgb(vec3 c){return mix(c*12.92,1.055*pow(max(c,vec3(0.)),vec3(1./2.4))-.055,step(vec3(.0031308),c));}
 float hash(vec2 p){p=fract(p*vec2(234.34,435.345));p+=dot(p,p+34.23);return fract(p.x*p.y);}
@@ -131,10 +136,10 @@ vec3 foil(float pat,float tint,vec2 uv,vec2 lq,vec3 L,vec3 V,vec3 N,float near,f
  if(pat>9.5&&pat<10.5)rb=.5*(rb+mix(vec3(1.),hue(abs(dot(r,normalize(vec2(-.5,.86))))*4.5),sat))*1.1;
  if(spec<0.)spec=pow(max(dot(N,H),0.),ex);
  vec3 metal=tint<.5?vec3(1.):tint<1.5?vec3(1.,.78,.4):vec3(.9,.93,.98);
- vec3 col=w*amp*(rb-off)*(1.+1.2*(n-.5)*fs);
+ vec3 col=w*amp*mix(.7,1.,strength())*(rb-off)*(1.+1.2*(n-.5)*fs);
  if(tint>.5)col=metal*w*amp*(.25+.3*dot(rb,vec3(.333)))+col*.3*step(1.5,tint);
- float env=mix(near,wide,widen);
- f_amb*=metal;f_glare=near*mirror*spec;
+ float env=mix(wide,1.,near*.6);
+ f_amb=max(f_amb,vec3(1.));f_amb*=metal;f_glare=near*mirror*spec*.6;
  return f_amb+env*(col*lines+glint*metal)+f_glare*metal*lines;
 }
 #if STAMP==1
@@ -150,6 +155,15 @@ vec3 foilShade(vec3 base,vec2 uv,vec4 mk,vec4 rl,vec2 grad){
  vec3 L=normalize(vec3(lq,.85)-P),V=normalize(vec3(.5,.5*u_aspect,2.2)-P),H=normalize(L+V);
  // How much key light reaches this spot: a tight share for the glare, a broad one for hazy sheets.
  vec2 dl=P.xy-lq;float near=exp(-dot(dl,dl)/.3),wide=.3+.7*exp(-dot(dl,dl)/1.1);
+ // A room light far away, as a phone is held: the card turns under it. Its mirror image sweeps the card as a long soft
+ // bar, and the colour lies over the whole sheet in wide bands that move with the turn. No round spot.
+ {float yaw=u_tilt.x*.5,pitch=u_tilt.y*.5,cy=cos(yaw),sy=sin(yaw),cp=cos(pitch),sp=sin(pitch);
+  vec3 Lw=normalize(vec3(.25,-.6,1.)),a=vec3(Lw.x*cy+Lw.z*sy,Lw.y,-Lw.x*sy+Lw.z*cy);
+  L=normalize(vec3(a.x,a.y*cp+a.z*sp,-a.y*sp+a.z*cp));H=normalize(L+V);
+  lq=vec2(.5,.5*u_aspect)+L.xy/max(L.z,.25)*2.2;dl=P.xy-lq;
+  vec2 bn=normalize(vec2(.8,1.));float across=dot(dl,bn);
+  near=strength()*exp(-across*across/.006)*(.5+.5*exp(-dot(dl,dl)/3.));
+  wide=.62+.38*exp(-dot(dl,dl)/2.5);}
  float rel=u_r1.w*(1.-.7*text);vec3 N=normalize(vec3(-grad*rel*9.,1.));
  float pat=u_r1.x,tint=u_r1.y,mode=u_r1.z;
  // Where the foil shows: whole card; frame only (etched art is printed on white); or one ink.
@@ -163,17 +177,26 @@ vec3 foilShade(vec3 base,vec2 uv,vec4 mk,vec4 rl,vec2 grad){
   F=mix(F,G*1.1,s);f_amb=mix(amb,f_amb,s);f_gloss=mix(gl,1.6,s);f_leak=mix(lk,.3,s);f_top=tp;}
 #endif
  // Thin film replaces the sheet's colour (oil slick): colour depends on view angle and film thickness.
+vec3 fadd=vec3(0.);
 #if FILM
- if(u_r2.x>.5){float t=320.+260.*rl.r+120.*hash(floor(uv*vec2(120.,168.)));vec3 f=film(dot(N,V),t);f_amb=vec3(.2);F=f*(.2+wide*(1.1*pow(max(dot(N,H),0.),16.)+.45));}
+ if(u_r2.x>.5){float t=320.+260.*rl.r+120.*hash(floor(uv*vec2(120.,168.)));vec3 f=film(dot(N,V),t);f_amb=vec3(.2);F=f*(.2+wide*(1.1*pow(max(dot(N,H),0.),16.)+.45));
+  // The film is a clear coat over the ink, so its colour also flows over black ink, in slow swirls that shift with the turn.
+  vec2 dq=P.xy-lq;float cT=.7+.3/(1.+dot(dq,dq))+.05*rl.r,t2=420.+330.*vnoise(uv*vec2(3.,4.2))+120.*rl.r;
+  fadd=clamp((film(cT,t2)-.5)*1.35+.5,0.,1.)*(.35*wide+.5*near)*.4;}
 #endif
  // Ink over metal: light ink lets the lit foil through, dark ink hides it; the darkest ink still passes a
  // faint glint of the highlight.
  float keep=u_r2.w,c=clamp(cov*(1.-keep),0.,1.);
  float lum=dot(base,vec3(.2126,.7152,.0722)),top=max(base.r,max(base.g,base.b)),vis=mix(.25,1.,smoothstep(.01,.3,lum));
  if(u_r2.x>.5||tint>.5)vis=1.;
+ // Respect the art: on the picture the sheet's colour stays a light veil (ink over foil filters it); on the frame and text box it is full.
+ vis*=mix(1.,.45,art*(1.-step(.5,mode)*step(mode,1.5)));
  vec3 Fv=f_amb+(F-f_amb)*vis;
- vec3 lit=base*(1.+.1*(1.-base))*Fv+(1.-top)*f_leak*(f_glare*2.+.5*near)*f_amb;
+ vec3 lit=base*(1.+.1*(1.-base))*Fv+(1.-top)*f_leak*f_glare*2.*f_amb*.5;
  vec3 outC=mix(base,shoulder(lit),c);
+#if FILM
+ outC+=(1.-outC)*fadd*(1.-.6*top)*c;
+#endif
  // Raised relief: glossy rims where the embossed height turns toward the light.
 #if RELIEF
  if(rel>0.){float rim=pow(max(dot(N,H),0.),24.)*(.3+.7*near)*clamp(length(grad)*30.,0.,1.);outC+=(1.-outC)*vec3(1.,.97,.92)*rim*rel*cov*.6;}
