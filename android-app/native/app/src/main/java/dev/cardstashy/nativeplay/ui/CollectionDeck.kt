@@ -1125,7 +1125,7 @@ internal fun RowPicture(r: CollRow, modifier: Modifier, shape: androidx.compose.
     val data = if (r.print != null) CardData.ready.collectAsState().value.also { if (it == null) CardData.warm(context) } else null
     val finish = Foil.finishFor(r.print, r.finishKey.ifBlank { "nonfoil" })
     val look = data?.let { Foil.look(it, r.print, finish) }?.takeIf { it.shines }
-    val tilt = if (look != null) rememberFoilTilt(live = true, phase = (r.name.hashCode() and 0xff) / 255f, tile = true) else null
+    val tilt = if (look != null) rememberTileTilt(look, (r.name.hashCode() and 0xff) / 255f) else null
     CardPicture(r.art, look, tilt, modifier, shape)
 }
 

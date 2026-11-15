@@ -443,7 +443,7 @@ private fun LotThumb(l: JsonObject, game: CardGame, w: Dp, h: Dp) {
             val context = LocalContext.current
             val data = if (print != null) CardData.ready.collectAsState().value.also { if (it == null) CardData.warm(context) } else null
             val look = data?.let { Foil.look(it, print, Foil.finishFor(print, fin?.s("key")?.ifBlank { "nonfoil" } ?: "nonfoil")) }?.takeIf { it.shines }
-            val tilt = if (look != null) rememberFoilTilt(live = true, phase = (l.s("name").hashCode() and 0xff) / 255f, tile = true) else null
+            val tilt = if (look != null) rememberTileTilt(look, (l.s("name").hashCode() and 0xff) / 255f) else null
             CardPicture(url, look, tilt, Modifier.fillMaxSize(), RoundedCornerShape(4.dp))
         } else Text(l.s("fallback").ifBlank { "◇" }, style = vsans(9f, 400, MuteV), textAlign = TextAlign.Center)
     }

@@ -6,7 +6,8 @@
 // node scripts/check-foil-port.mjs [repo root]   (canvaskit-wasm from CANVASKIT_DIR, or resolvable from here; playwright resolvable)
 // Exit 0: every recipe matches: within 2 of 255 on every pixel, or off by more than 1 on under 0.5% of pixels (oil slick: the two renderers
 // round its grain cells' edges differently). 1: a recipe differs (printed). 2: no CanvasKit or browser to draw with.
-// Not covered: the maps-not-loaded-yet fallback (u_maps 0), facet foil's shards and the oval holo stamp (stamp 2), all app only.
+// Not covered: the maps-not-loaded-yet fallback (u_maps 0) and facet foil's shards, both app only, and the security stamp (u_stamp,
+// u_stampk, u_smask: left at zero here, so none is drawn; the stamp is the site's mtg-stamp.js, measured by MtgStampTest).
 import {createServer} from 'node:http';import {readFile} from 'node:fs/promises';import {readFileSync} from 'node:fs';
 import {resolve,extname} from 'node:path';import {createRequire} from 'node:module';
 import path from 'node:path';import {fileURLToPath} from 'node:url';
@@ -64,11 +65,13 @@ const info={width:W,height:H,colorType:CK.ColorType.RGBA_8888,alphaType:CK.Alpha
 const shaderOf=b=>CK.MakeImage(info,b,W*4).makeShaderOptions(CK.TileMode.Clamp,CK.TileMode.Clamp,CK.FilterMode.Nearest,CK.MipmapMode.None);
 let err='';const fx=CK.RuntimeEffect.Make(AGSL,e=>err+=e);if(!fx){console.log('AGSL FAIL',err);process.exit(1);}
 const kids=[shaderOf(card),shaderOf(appMask),shaderOf(appRel),shaderOf(blank),shaderOf(blank)];
+while(kids.length<(AGSL.match(/uniform shader /g)||[]).length)kids.push(shaderOf(blank)); // u_smask: no stamp measured
 const surf=CK.MakeSurface(W,H);const cv=surf.getCanvas();const paint=new CK.Paint();
 const report={};let worst=0;
 const ONLY=process.env.ONLY?process.env.ONLY.split(','):null;
 for(const [k,r] of Object.entries(R.recipes)){if(ONLY&&!ONLY.includes(k))continue;report[k]=[];R.out[k].slice(0,NL).forEach((ref64,li)=>{const [lx,ly]=LIGHTS[li];
  const u=[W,H,W,H,(lx-.5)*2,(ly-.5)*2,H/W,1,W,H,1,...R.box.art,...R.box.text,r.pat,r.tint,r.cover,r.relief,r.film,r.sparkle,r.stamp||0,r.keep||0];
+ while(u.length<fx.getUniformFloatCount())u.push(0); // u_stamp, u_stampk: zero, no stamp
  const s=fx.makeShaderWithChildren(u,kids);paint.setShader(s);cv.clear(CK.TRANSPARENT);cv.drawRect(CK.LTRBRect(0,0,W,H),paint);s.delete();
  const got=cv.readPixels(0,0,{width:W,height:H,colorType:CK.ColorType.RGBA_8888,alphaType:CK.AlphaType.Unpremul,colorSpace:CK.ColorSpace.SRGB});const ref=dec(ref64);
  let max=0,over2=0;for(let i=0;i<W*H;i++){let m=0;for(let c=0;c<3;c++)m=Math.max(m,Math.abs(got[i*4+c]-ref[i*4+c]));if(m>max)max=m;if(m>1)over2++;}

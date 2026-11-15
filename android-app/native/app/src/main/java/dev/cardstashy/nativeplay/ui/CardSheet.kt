@@ -464,7 +464,7 @@ private fun Overview(name: String, shown: JsonObject, faces: List<JsonObject>, i
         val lean = rememberCardLean()
         val touch = remember(lean) { androidx.compose.runtime.derivedStateOf { lean.light } }
         val shines = look?.takeIf { it.shines }
-        val tilt = rememberFoilTilt(live = look?.recipe != null, touch = touch)
+        val tilt = rememberFoilTilt(live = look?.recipe != null, touch = touch, rest = if (look?.recipe == null) Offset.Zero else null)
         // A controller: Y enlarges the card (its tap), holding Y leans it under the light as a finger does; on the card itself A enlarges it.
         val zoomNow by androidx.compose.runtime.rememberUpdatedState(onZoom)
         val padScope = rememberCoroutineScope()

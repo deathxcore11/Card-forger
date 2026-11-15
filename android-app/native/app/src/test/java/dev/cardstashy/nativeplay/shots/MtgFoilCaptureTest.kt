@@ -65,7 +65,7 @@ class MtgFoilCaptureTest {
             if (measured) { save(bmp(m.mask), "mask"); save(bmp(m.relief), "relief"); save(bmp(m.stroke), "stroke"); facet?.let { save(bmp(it), "facet") } }
             // The uniforms Modifier.foil sets, so a renderer off the phone draws the same frame (RuntimeShader needs a GPU canvas here).
             File(out, "$id.params.json").writeText(com.google.gson.Gson().toJson(mapOf("recipe" to r.key, "u_r1" to listOf(r.pat, r.tint, r.cover, r.relief),
-                "u_r2" to listOf(r.film, r.sparkle, r.stamp.takeIf { it > 0f } ?: if (look.stamp) 2f else 0f, r.keep), "u_art" to look.frame.art.toList(),
+                "u_r2" to listOf(r.film, r.sparkle, r.stamp, r.keep), "stamp" to look.stamp, "u_art" to look.frame.art.toList(),
                 "u_text" to look.frame.text.toList(), "maps" to measured, "facet" to (m.facet != null), "map" to listOf(aw, ah))))
             println("capture $id ${r.key} pat ${r.pat} maps $measured facets ${m.facet != null}")
         }

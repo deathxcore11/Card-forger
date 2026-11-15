@@ -18,7 +18,14 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import kotlin.math.roundToInt
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -30,17 +37,18 @@ import dev.cardstashy.nativeplay.play.CardData
  * mtg-foil-shader.js) ported line for line to AGSL and drawn over the card image as a render effect, with the same recipe (pattern,
  * tint, coverage, relief, film, sparkle, stamp, keep) picked by mtgFoilProfile from the printing's Scryfall data and the same frame
  * boxes. Each card's inks and relief are measured from its own image like the site's worker (foil/MtgFoil.kt, analyzeMtgCard); until
- * that lands (a fraction of a second, once per card) covers read as the whole card. App only: facet foil (pattern 21) and the M15
- * oval holo stamp (stamp 2). Below Android 13 a rainbow sheen stands in.
+ * that lands (a fraction of a second, once per card) covers read as the whole card. App only: facet foil (pattern 21). The holographic
+ * security stamp, foil or not, is the site's (mtg-stamp.js): found on each card's own picture (foil/MtgStamp.kt, FoilMaps.stamp) and
+ * drawn only there, through its measured outline; unmeasured, none. Below Android 13 a rainbow sheen stands in.
  */
 object Foil {
     // Every constant follows the approved shader. pow(x, 2.) is written sq(x) (AGSL leaves pow undefined for negative bases), texture
     // reads become .eval, the site's global foil terms are inout parameters, and detail is faded by the card's device pixels (u_size).
     // scripts/check-foil-port.mjs draws this and the site's shader from the same inputs and compares them pixel by pixel.
     const val AGSL = """
-uniform shader u_card;uniform shader u_mask;uniform shader u_relief;uniform shader u_stroke;uniform shader u_facet;
+uniform shader u_card;uniform shader u_mask;uniform shader u_relief;uniform shader u_stroke;uniform shader u_facet;uniform shader u_smask;
 uniform float2 u_size;uniform float2 u_px;uniform float2 u_tilt;uniform float u_aspect;uniform float u_on;uniform float2 u_map;uniform float u_maps;
-uniform float4 u_art;uniform float4 u_text;uniform float4 u_r1;uniform float4 u_r2;
+uniform float4 u_art;uniform float4 u_text;uniform float4 u_r1;uniform float4 u_r2;uniform float4 u_stamp;uniform float4 u_stampk;
 const float PI=3.14159265;
 float sq(float x){return x*x;}
 float3 toLin(float3 c){return mix(c/12.92,pow((c+.055)/1.055,float3(2.4)),step(float3(.04045),c));}
@@ -58,7 +66,7 @@ float3 shoulder(float3 x){float3 e=max(x-.8,0.);return min(x,.8)+.2*e/(e+.2);}
 float3 voro(float2 q){float2 n=floor(q),f=fract(q);float d1=8.,d2=8.;float2 id=n;
  for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){float2 o=float2(float(x),float(y)),h=hash2(n+o),r=o+h-f;float d=dot(r,r);if(d<d1){d2=d1;d1=d;id=n+o;}else if(d<d2)d2=d;}
  return float3(id,sqrt(d2)-sqrt(d1));}
-// App only (facet shards and their cut edges, the oval holo stamp): a diffraction grating's spectrum.
+// App only (facet shards and their cut edges): a diffraction grating's spectrum.
 float3 spectrum(float l){float3 c=float3(exp(-sq((l-600.)/70.))+.35*exp(-sq((l-440.)/30.)),exp(-sq((l-540.)/60.)),exp(-sq((l-455.)/40.)));return c*smoothstep(380.,420.,l)*(1.-smoothstep(700.,750.,l));}
 float3 spread(float s,float d){float3 c=float3(0.);for(int m=1;m<=3;m++)c+=spectrum(d*s/float(m))/float(m);return c;}
 float3 grating(float3 L,float3 V,float2 g,float d){return spread(abs(dot(L.xy+V.xy,g)),d);}
@@ -125,6 +133,8 @@ float3 foil(float pat,float tint,float2 uv,float2 lq,float3 L,float3 V,float3 N,
  f_amb*=metal;f_glare=near*mirror*spec;
  return f_amb+env*(col*lines+glint*metal)+f_glare*metal*lines;
 }
+// The security stamp's pastel rainbow (finish-effects.css .finish-holostamp): #ff8fc7 #ffd98a #9dffcf #8fdcff #bfa2ff, repeating.
+float3 pastel(float i){float m=mod(i,5.);return m<.5?float3(1.,.5608,.7804):m<1.5?float3(1.,.851,.5412):m<2.5?float3(.6157,1.,.8118):m<3.5?float3(.5608,.8627,1.):float3(.749,.6353,1.);}
 float shootingStar(float2 uv){float2 c=float2(u_text.x+.035,u_text.w-.03),d=(uv-c)*float2(1.,u_aspect);
  float star=max(0.,1.-(abs(d.x)+abs(d.y))*95.)+max(0.,1.-length(d)*140.);
  float2 t=d;float arc=.004*sin(clamp(t.x*40.,0.,PI));float tail=step(0.,t.x)*step(t.x,.05)*smoothstep(.0022,0.,abs(t.y+arc))*(1.-t.x*20.);
@@ -193,8 +203,20 @@ half4 main(float2 fc){
   outC+=(1.-outC)*coat*mix(.35,1.,c);
   outC=clamp(outC,0.,1.);
  }
- // The M15 oval holo stamp (app only): a silver oval with its own grating, on foil and nonfoil rares alike.
- if(u_r2.z>1.5){float2 o=(uv-float2(.5,.925))/float2(.03,.012);float ov=1.-smoothstep(.8,1.,length(o));float3 hs=grating(L,V,normalize(float2(.3,1.)),1500.)*1.5+float3(.75,.78,.82)*pow(max(dot(N,H),0.),30.)*near;outC=mix(outC,shoulder(hs+float3(.2)),ov*.85);}
+ // Magic's holographic security stamp, foil or not (mtg-stamp.js, finish-effects.css .finish-holostamp): only inside the box measured on
+ // this picture (u_stamp: left, top, width, height of the card; width 0 = not measured or none printed, nothing drawn), through its
+ // measured mask (u_smask R, u_stampk.xy its size), so colour lands on the silver and the printed lines stay dark. A pastel rainbow
+ // (112deg, 320%) and a white glint (100deg, 260%, .55) placed by the light: u_tilt is already the light as -1..1 ((mx - .5) * 2,
+ // CardLean.light, CardZoom), so P = .5 + u_tilt * .5 is the site's --mx/--my itself (a finger: its position; the phone: 50% + tilt 45%);
+ // never running alone, laid over at u_stampk.z (.6 plain, .5 on a foil) in sRGB like the page.
+ if(u_stamp.z>0.){float2 s=(uv-u_stamp.xy)/u_stamp.zw;
+  if(s.x>=0.&&s.y>=0.&&s.x<=1.&&s.y<=1.){float m=float(u_smask.eval(s*u_stampk.xy).r);
+   if(m>.002){float2 bp=u_stamp.zw*u_size,P=clamp(float2(.5)+u_tilt*.5,0.,1.);
+    float t=dot((s+2.2*P)*bp-1.6*bp,float2(.92718,.37461))/(3.2*(bp.x*.92718+bp.y*.37461))+.5;
+    float f=clamp(t,0.,1.)*10.,i=min(floor(f),9.);float3 rb=mix(pastel(i),pastel(i+1.),f-i);
+    float t2=dot(float2((s.x+1.6*P.x-1.3)*bp.x,(s.y-.5)*bp.y),float2(.98481,.17365))/(2.6*bp.x*.98481+bp.y*.17365)+.5;
+    float g=clamp(1.-abs(t2-.5)/.1,0.,1.)*.55;
+    outC=toLin(mix(toSrgb(clamp(outC,0.,1.)),mix(rb,float3(1.),g),m*u_stampk.z));}}}
  return half4(half3(toSrgb(clamp(outC,0.,1.))*a),half(a));
 }
 """
@@ -247,10 +269,15 @@ half4 main(float2 fc){
  */
 fun Modifier.foil(look: Foil.Look, tilt: State<Offset>): Modifier = if (!look.shines) this else composed {
     val dens = LocalDensity.current.density
+    val context = LocalContext.current
+    // The security stamp, measured once on this picture off the main thread (FoilMaps.stamp); until it lands, or when the picture shows
+    // none that can be read, no stamp is drawn (Randall 15 Nov, Torrential Gearhulk KLD 67: a fixed oval sat half over the printed stamp).
+    val stampImage = look.image?.takeIf { look.stamp }
+    val stamp by remember(stampImage) { if (stampImage != null) dev.cardstashy.nativeplay.foil.FoilMaps.stamp(context.applicationContext, stampImage) else kotlinx.coroutines.flow.MutableStateFlow(null) }.collectAsState()
+    val stampOpacity = if (look.recipe != null) .5f else .6f
     if (Foil.supported) {
         val shader = remember { runCatching { RuntimeShader(Foil.AGSL) }.getOrNull() }
         // The printing's own inks, measured once off the main thread (MtgFoil); the foil draws at once and narrows to them when they land.
-        val context = LocalContext.current
         val measured = look.measure
         val facetText = look.facetText
         val maps by remember(measured, facetText) { if (measured != null) dev.cardstashy.nativeplay.foil.FoilMaps.mtg(context.applicationContext, measured, facetText) else kotlinx.coroutines.flow.MutableStateFlow(null) }.collectAsState()
@@ -258,6 +285,7 @@ fun Modifier.foil(look: Foil.Look, tilt: State<Offset>): Modifier = if (!look.sh
         // Drawn-line direction and facet shards (stand-ins until they land, or for a recipe that has none; the shader skips them then).
         val extra = remember(maps) { maps?.let { m -> (m.stroke?.let(dev.cardstashy.nativeplay.foil.FoilMaps::input) ?: dev.cardstashy.nativeplay.foil.FoilMaps.blank.first) to
             (m.facet?.let(dev.cardstashy.nativeplay.foil.FoilMaps::input) ?: dev.cardstashy.nativeplay.foil.FoilMaps.blank.second) } ?: dev.cardstashy.nativeplay.foil.FoilMaps.blank }
+        val stampIn = remember(stamp) { stamp?.let { dev.cardstashy.nativeplay.foil.FoilMaps.input(it.mask) } ?: dev.cardstashy.nativeplay.foil.FoilMaps.blank.first }
         if (shader != null) return@composed this.graphicsLayer {
             val t by tilt
             val w = size.width; val h = size.height
@@ -267,7 +295,11 @@ fun Modifier.foil(look: Foil.Look, tilt: State<Offset>): Modifier = if (!look.sh
                 shader.setFloatUniform("u_tilt", t.x, t.y); shader.setFloatUniform("u_aspect", h / w); shader.setFloatUniform("u_on", if (r != null) 1f else 0f)
                 shader.setFloatUniform("u_art", look.frame.art); shader.setFloatUniform("u_text", look.frame.text)
                 shader.setFloatUniform("u_r1", r?.pat ?: 1f, r?.tint ?: 0f, r?.cover ?: 0f, r?.relief ?: 0f)
-                shader.setFloatUniform("u_r2", r?.film ?: 0f, r?.sparkle ?: 0f, (r?.stamp?.takeIf { it > 0f }) ?: if (look.stamp) 2f else 0f, r?.keep ?: 0f)
+                shader.setFloatUniform("u_r2", r?.film ?: 0f, r?.sparkle ?: 0f, r?.stamp ?: 0f, r?.keep ?: 0f)
+                val st = stamp
+                shader.setInputShader("u_smask", stampIn)
+                shader.setFloatUniform("u_stamp", st?.box ?: FloatArray(4))
+                shader.setFloatUniform("u_stampk", (st?.mask?.width ?: 1).toFloat(), (st?.mask?.height ?: 1).toFloat(), stampOpacity, 0f)
                 val m = maps
                 shader.setInputShader("u_mask", inputs.first); shader.setInputShader("u_relief", inputs.second)
                 shader.setInputShader("u_stroke", extra.first); shader.setInputShader("u_facet", extra.second)
@@ -276,7 +308,8 @@ fun Modifier.foil(look: Foil.Look, tilt: State<Offset>): Modifier = if (!look.sh
             }
         }
     }
-    // Stand-in: the diagonal rainbow band that rolls with the light, and the silver oval stamp.
+    // Stand-in: the diagonal rainbow band that rolls with the light, and the measured security stamp (none until measured).
+    val stampArt = remember(stamp) { stamp?.let { it.alpha.asImageBitmap() } }
     this.drawWithContent {
         drawContent()
         val t = tilt.value
@@ -286,14 +319,34 @@ fun Modifier.foil(look: Foil.Look, tilt: State<Offset>): Modifier = if (!look.sh
                 else -> listOf(Color(0x00FF5A8C), Color(0x66FF6FA0), Color(0x66FFD36A), Color(0x667CFFB0), Color(0x6670C8FF), Color(0x66B58CFF), Color(0x00B58CFF)) }
             drawRect(Brush.linearGradient(tint, Offset(-size.width * .4f + shift, 0f), Offset(size.width * .9f + shift, size.height)), blendMode = BlendMode.Screen)
         }
-        if (look.stamp) {
-            val c = Offset(size.width * .5f, size.height * .925f)
-            drawOval(Brush.linearGradient(listOf(Color(0xFFBFC6D0), Color(0xFFF4F6FA), Color(0xFF9EA8B6)), c - Offset(size.width * .03f, 0f), c + Offset(size.width * .03f, 0f)),
-                topLeft = c - Offset(size.width * .03f, size.height * .012f), size = Size(size.width * .06f, size.height * .024f), alpha = .85f)
+        val st = stamp; val art = stampArt
+        if (st != null && art != null) {
+            // finish-effects.css .finish-holostamp: the mask's outline, a pastel rainbow (112deg, 320%) and a white glint (100deg, 260%)
+            // placed by the light (the site's --mx/--my: tilt is already the light as -1..1), the whole at .6 (.5 on a foil).
+            val bx = st.box[0] * size.width; val by = st.box[1] * size.height; val bw = st.box[2] * size.width; val bh = st.box[3] * size.height
+            val px = (.5f + t.x * .5f).coerceIn(0f, 1f); val py = (.5f + t.y * .5f).coerceIn(0f, 1f)
+            drawIntoCanvas { it.saveLayer(Rect(bx, by, bx + bw, by + bh), Paint().apply { alpha = stampOpacity }) }
+            drawImage(art, srcOffset = IntOffset.Zero, srcSize = IntSize(art.width, art.height), dstOffset = IntOffset(bx.roundToInt(), by.roundToInt()),
+                dstSize = IntSize(bw.roundToInt().coerceAtLeast(1), bh.roundToInt().coerceAtLeast(1)))
+            val c1 = Offset(bx + (1.6f - 2.2f * px) * bw, by + (1.6f - 2.2f * py) * bh); val l1 = 3.2f * (bw * .92718f + bh * .37461f) / 2f
+            drawRect(Brush.linearGradient(STAMP_RAINBOW, c1 - Offset(.92718f, .37461f) * l1, c1 + Offset(.92718f, .37461f) * l1), Offset(bx, by), Size(bw, bh), blendMode = BlendMode.SrcIn)
+            val c2 = Offset(bx + (1.3f - 1.6f * px) * bw, by + .5f * bh); val l2 = (2.6f * bw * .98481f + bh * .17365f) / 2f
+            drawRect(Brush.linearGradient(.4f to Color.White.copy(alpha = 0f), .5f to Color.White, .6f to Color.White.copy(alpha = 0f), start = c2 - Offset(.98481f, .17365f) * l2, end = c2 + Offset(.98481f, .17365f) * l2),
+                Offset(bx, by), Size(bw, bh), alpha = .55f, blendMode = BlendMode.SrcAtop)
+            drawIntoCanvas { it.restore() }
         }
     }
 }
 
+
+/** A list or grid tile's light (finish-preview.js on a thumbnail): a foil shimmers on its own; a nonfoil card shines only through its
+ *  security stamp, which holds still at the centre (the site's --mx/--my 50%) and never drifts by itself. */
+@Composable
+fun rememberTileTilt(look: Foil.Look, phase: Float): State<Offset> =
+    rememberFoilTilt(live = look.recipe != null, phase = phase, tile = true, rest = if (look.recipe == null) Offset.Zero else null)
+
+/** The security stamp's pastel rainbow (finish-effects.css .finish-holostamp), its 11 stops. */
+private val STAMP_RAINBOW = listOf(0xFFFF8FC7, 0xFFFFD98A, 0xFF9DFFCF, 0xFF8FDCFF, 0xFFBFA2FF).let { c -> List(11) { Color(c[it % 5]) } }
 
 /** A card view (CardSheet) in front of a grid: while one is open the grid's foil tiles hold their light still, so the phone draws
  *  the shimmer only where you are looking. */
@@ -303,9 +356,11 @@ object FoilFocus {
     @Composable fun Cover() { androidx.compose.runtime.DisposableEffect(Unit) { covers++; onDispose { covers-- } } }
 }
 
-/** The light's drift when nothing tilts the card: a slow figure-eight, like the site's idle gallery shimmer. */
+/** The light's drift when nothing tilts the card: a slow figure-eight, like the site's idle gallery shimmer. [rest]: where the light
+ *  sits when nothing moves it (not live, no finger, no phone); a nonfoil card whose only shine is its security stamp passes
+ *  Offset.Zero, the site's --mx/--my 50% (finish-effects.css .finish-holostamp never runs alone). */
 @Composable
-fun rememberFoilTilt(live: Boolean = true, phase: Float = 0f, touch: State<Offset?>? = null, tile: Boolean = false): State<Offset> {
+fun rememberFoilTilt(live: Boolean = true, phase: Float = 0f, touch: State<Offset?>? = null, tile: Boolean = false, rest: Offset? = null): State<Offset> {
     val context = LocalContext.current
     val tiltOn = AppSettings.tilt
     // "Card lighting & foil effects" off: the light holds still (finish-preview.js setFinishEffects). A grid [tile] also holds
@@ -314,9 +369,10 @@ fun rememberFoilTilt(live: Boolean = true, phase: Float = 0f, touch: State<Offse
     val phone = if (live && tiltOn) rememberTilt() else null
     val clock = if (live && !Motion.still) androidx.compose.animation.core.rememberInfiniteTransition(label = "foil")
         .animateFloat(0f, 1f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(9000, easing = androidx.compose.animation.core.LinearEasing)), label = "drift") else null
-    return remember(phone, clock, touch) {
+    return remember(phone, clock, touch, rest) {
         androidx.compose.runtime.derivedStateOf {
             touch?.value ?: run {
+                if (rest != null && clock == null && phone == null) return@run rest
                 val p = phone?.value
                 val k = ((clock?.value ?: .18f) + phase) * 2f * Math.PI.toFloat()
                 val idle = Offset(kotlin.math.sin(k) * .55f, kotlin.math.sin(k * 2f) * .25f)

@@ -839,7 +839,8 @@ private fun ArtStack(m: CollectionCardModel, o: CardOverview, act: CollectionCar
         val lean = rememberCardLean()
         val touch = remember(lean) { derivedStateOf { lean.light } }
         val shines = look?.takeIf { it.shines }
-        val tilt = rememberFoilTilt(live = look?.recipe != null || worn != null, touch = touch)
+        val tilt = rememberFoilTilt(live = look?.recipe != null || worn != null, touch = touch,
+            rest = if (look?.recipe == null && worn == null) Offset.Zero else null) // a nonfoil stamp at rest sits at the centre like the site
         // A controller: Y enlarges the card (its tap), holding Y leans it under the light as a finger does; on the card itself A enlarges it.
         val zoomNow by androidx.compose.runtime.rememberUpdatedState(onZoom)
         val padScope = rememberCoroutineScope()

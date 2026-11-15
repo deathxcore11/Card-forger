@@ -61,8 +61,16 @@ class CardData(json: JsonObject) {
         private val SET_MATERIAL = mapOf("dbl" to "mtg-silverscreen")
         private val NOT_MATERIAL = setOf("foil", "serialized", "scroll", "poster", "boosterfun", "universesbeyond")
 
-        /** mtgHoloStamp: rares and mythics in the M15 frame carry the oval holo stamp. */
-        fun holoStamp(c: JsonObject?) = c.s("frame") == "2015" && c.s("rarity") in setOf("rare", "mythic") && c.s("border_color") != "borderless"
+        /** mtgHoloStamp: rares and mythics in the M15 frame carry the oval holo stamp (the rule when a record has no security_stamp). */
+        fun mtgHoloStamp(c: JsonObject?) = c.s("frame") == "2015" && c.s("rarity") in setOf("rare", "mythic") && c.s("border_color") != "borderless"
+        /** mtgStamped (finish-preview.js): modern-frame cards can carry a holographic security stamp, foil or not: an oval on rares and
+         *  mythics, a triangle on Universes Beyond, an acorn, a heart, a circle. Which cards have one comes from the printing's
+         *  security_stamp; where it is and what shape it has is read from the picture (foil/MtgStamp.kt), never assumed. */
+        fun holoStamp(c: JsonObject?): Boolean {
+            if (c.s("frame") != "2015" || c.s("layout").ifEmpty { "normal" } == "art_series") return false
+            val st = c.s("security_stamp")
+            return if (st.isNotEmpty()) (if (st == "oval") c.s("rarity") in setOf("rare", "mythic") else st != "arena") else mtgHoloStamp(c)
+        }
         /** mtgFrameKey. */
         fun frameKey(c: JsonObject?): String {
             val frame = c.s("frame")
