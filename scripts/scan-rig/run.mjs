@@ -42,7 +42,7 @@ for(const g of games){
    await page.getByRole('button',{name:'Read card',exact:true}).click();
    await page.waitForFunction(()=>{const q=window.__rig;return q.loadBatch().some(x=>['ready','review','unresolved'].includes(x.status))&&!q.state().busy;},{},{timeout:150000});
    row.seconds=(Date.now()-t)/1000;
-   const got=await page.evaluate(()=>{const e=window.__rig.loadBatch()[0],s=window.__rig.state();return {status:e.status,reason:e.reason||'',sure:!!e.printingVerified,proof:e.read?.pix?.proof||'',ocr:e.counts?.budget||null,ms:Math.round(e.timings?.totalMs||0),cands:(e.cands||[]).slice(0,3).map(c=>({id:String(c.id),name:c.name,exact:!!c.exact})),read:{name:(e.read?.name||'').slice(0,160),code:(e.read?.code||'').slice(0,240)}};});
+   const got=await page.evaluate(()=>{const e=window.__rig.loadBatch()[0],s=window.__rig.state();return {status:e.status,reason:e.reason||'',sure:!!e.printingVerified,proof:e.read?.pix?.proof||'',ocr:e.counts?.budget||null,ms:Math.round(e.timings?.totalMs||0),timings:Object.fromEntries(Object.entries(e.timings||{}).filter(([,v])=>v>=1).map(([k,v])=>[k,Math.round(v)])),cands:(e.cands||[]).slice(0,3).map(c=>({id:String(c.id),name:c.name,exact:!!c.exact})),read:{name:(e.read?.name||'').slice(0,160),code:(e.read?.code||'').slice(0,240),full:(e.read?.full||'').slice(0,1500)}};});
    Object.assign(row,got);
    const top=got.cands[0];
    row.card=!!top&&(g==='ygo'?top.id===row.want.id:key(top.name)===key(L.name));
@@ -64,3 +64,5 @@ console.log('\n'+line('ALL',results));
 for(const g of games)console.log(line(g,results.filter(r=>r.game===g)));
 for(const l of ['good','dim','glare','warm','tilt'])console.log(line(l,results.filter(r=>r.light===l)));
 await browser.close();server.close();
+// --require-all: every photo must name its card (the real-photo proof set).
+if(process.argv.includes('--require-all')){const missed=results.filter(r=>!r.card);if(missed.length){console.error(`\nFAIL: ${missed.length} of ${results.length} photos did not name their card: ${missed.map(r=>r.file).join(', ')}`);process.exit(1);}console.log(`\nPASS: all ${results.length} photos name their card.`);}
