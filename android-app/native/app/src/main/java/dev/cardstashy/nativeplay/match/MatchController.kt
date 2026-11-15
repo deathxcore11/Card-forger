@@ -173,6 +173,9 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     private suspend fun awaitSent(): Boolean = withTimeoutOrNull(6000) { _sending.first { !it } } != null
     /** A short line over the table ("Block not assigned. Try again."), gone after a few seconds. */
     private val _note = MutableStateFlow<String?>(null); val note: StateFlow<String?> = _note
+    private val _told = MutableStateFlow<String?>(null); val told: StateFlow<String?> = _told
+    /** Better table scene 1: a choice's result on the table ("Scry: 0 top, 1 bottom") for TABLE_BUBBLE_MS. */
+    fun tell(text: String) { scope.launch(Dispatchers.Main) { _told.value = text; delay(dev.cardstashy.nativeplay.ui.TABLE_BUBBLE_MS); if (_told.value == text) _told.value = null } }
     private fun say(text: String) { scope.launch(Dispatchers.Main) { _note.value = text; delay(3500); if (_note.value == text) _note.value = null } }
     private suspend fun awaitLive(): Boolean = withTimeoutOrNull(4000) { _live.first { it } } != null
     private suspend fun awaitSettled(from: Long): Boolean = withTimeoutOrNull(4000) { while (true) { val l = latest; if (l != null && l.revision > from && !l.busy && !_sending.value) break; delay(50) }; true } == true
@@ -192,7 +195,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         return true
     }
     val intents by lazy { dev.cardstashy.nativeplay.ui.TableIntents(card = { card(it) }, stack = { stackItem(it) }, player = { player(it) }, ok = { ok() }, cancel = { cancel() }, reply = { id, v, i, a -> reply(id, v, i, a) },
-        stop = { toggleStop(it) }, attackAll = { attackAll(it) }, unblock = { b, a -> unblock(b, a) }, block = { b, a -> block(b, a) }, mode = { setMode(it) }, autoPay = { setAutoPay(it) }, yieldSource = { id, on -> yieldSource(id, on) }, note = { say(it) }) }
+        stop = { toggleStop(it) }, attackAll = { attackAll(it) }, unblock = { b, a -> unblock(b, a) }, block = { b, a -> block(b, a) }, mode = { setMode(it) }, autoPay = { setAutoPay(it) }, yieldSource = { id, on -> yieldSource(id, on) }, note = { say(it) }, told = { tell(it) }) }
     val timings = MutableStateFlow<Map<String, Long>>(emptyMap())
 
     /** match-facts.js for this match, and the finished-match hook (play:match-recorded). */

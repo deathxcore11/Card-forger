@@ -52,6 +52,9 @@ class ScryArrange private constructor(val kind: ScryKind, private val row: List<
     /** The chip left on the table: "Scry · 2 on top, 1 on the bottom". A side with nothing on it is left out. */
     fun chip(): String = chipFor(kind, right.size, left.size)
 
+    /** The bubble left on the table for three seconds (Better table scene 1): "Scry: 2 top, 1 bottom". */
+    fun result(): String = resultFor(kind, right.size, left.size)
+
     /** True when nothing moved: Done alone keeps every card on top in library order. */
     val untouched: Boolean get() = split == 0 && row == initialRow(row.size)
 
@@ -69,6 +72,9 @@ class ScryArrange private constructor(val kind: ScryKind, private val row: List<
             }
             return kind.word + " · " + parts.joinToString(", ")
         }
+        /** Better table scene 1's bubble: "Scry: 0 top, 1 bottom" / "Surveil: 1 top, 1 graveyard". Both counts always shown. */
+        fun resultFor(kind: ScryKind, top: Int, away: Int): String =
+            "${kind.word}: $top top, $away ${if (kind == ScryKind.SURVEIL) "graveyard" else "bottom"}"
         /** What the CPU's scry shows on the table: only a count, never its cards. */
         fun cpuChip(count: Int) = "CPU scries $count"
         private fun ordinal(n: Int) = when (n) { 2 -> "2nd"; 3 -> "3rd"; else -> "${n}th" }

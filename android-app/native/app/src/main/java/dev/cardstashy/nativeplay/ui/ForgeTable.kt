@@ -158,6 +158,8 @@ class TableIntents(
     val stack: (Int) -> Unit = {},
     /** A short line over the table (the controller's note), e.g. why a creature can't block. */
     val note: (String) -> Unit = {},
+    /** Better table scene 1: what a choice did, as a bubble on the table for TABLE_BUBBLE_MS ("Scry: 0 top, 1 bottom"). */
+    val told: (String) -> Unit = {},
 )
 
 /** The engine phase each light sets a stop on (native-panel.mjs STOP_PHASES). */
@@ -2474,7 +2476,7 @@ private fun StackArc(st: MatchState, d: Du) = with(d) {
 
 /** One stack item as a card: a spell shows its card; a triggered or activated ability shows the source's art, its kind and its text. */
 @Composable
-private fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier, d: Du, onInspect: (Card) -> Unit, small: Boolean = false, pick: ((Int) -> Unit)? = null) = with(d) {
+internal fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier, d: Du, onInspect: (Card) -> Unit, small: Boolean = false, pick: ((Int) -> Unit)? = null) = with(d) {
     val mine = s.controller == st.viewer
     // A stack item Forge offers as a target wears the target role (#ff9d5c) and takes the tap.
     val target = pick != null && s.id in st.selection.stackTargets

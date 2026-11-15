@@ -166,6 +166,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     val afk by controller.afkNote.collectAsState()
     // A line from the table itself ("Block not assigned. Try again."), the site's localError.
     val note by controller.note.collectAsState()
+    val told by controller.told.collectAsState()
     val anchors = remember { Anchors() }
     // 0.4.60 G6 (glow-rules.md "The ability opens on the card"): the open card's ability rows, and Activate while Forge lets you use
     // one: it puts the card down and runs Forge's own activation path (the tap that used to fire at once).
@@ -225,6 +226,9 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
         }
         ((if (DualScreen.active) null else afk) ?: note)?.let { Text(it, style = Type.Label.copy(color = Color(0xFFFFB4A8), fontSize = 14.sp), modifier = Modifier.align(Alignment.TopCenter).padding(top = 96.dp)
             .clip(RoundedCornerShape(999.dp)).background(Color(0xD90C0C0E)).border(1.dp, Palette.Red, RoundedCornerShape(999.dp)).padding(horizontal = 16.dp, vertical = 8.dp)) }
+        // Better table scene 1: what a choice did ("Scry: 0 top, 1 bottom"), three seconds on the table; under the red note when both show.
+        told?.let { t -> BoxWithConstraints(Modifier.fillMaxSize()) { TableBubble(t, Du(chromeU(maxWidth, maxHeight)),
+            Modifier.align(Alignment.TopCenter).padding(top = if ((if (DualScreen.active) null else afk) ?: note != null) 140.dp else 96.dp)) } }
       }
         // Two screens: a card you look at opens on the bottom screen, so the table stays in full view on top (B closes it).
         // Start still opens the match menu from an open inspect (U8: on two screens the ring can't come down to it).
@@ -539,7 +543,8 @@ private fun TableSide(st: MatchState, c: MatchController, beat: Beat?, live: Boo
         if (beat == null) BoxWithConstraints(Modifier.fillMaxSize()) { DecisionDock(st, live, c.intents, onInspect, chromeU(maxWidth, maxHeight), replies = c.dockReplies) }
         // Gaps list 1 (15 Nov): a one-card scry shows its card (Top and Bottom alone sat 10 s with nothing to read).
         if (beat == null && live && st.waitingOnMe) ScryOne.of(st)?.let { name ->
-            BoxWithConstraints(Modifier.fillMaxSize()) { ScryOneView(st, name, live, Du(chromeU(maxWidth, maxHeight)), onTop = { c.intents.ok() }, onBottom = { c.intents.cancel() }) } }
+            BoxWithConstraints(Modifier.fillMaxSize()) { ScryOneView(st, name, live, Du(chromeU(maxWidth, maxHeight)),
+                onTop = { c.intents.ok(); c.intents.told(ScryOne.result(ScryOne.TOP)) }, onBottom = { c.intents.cancel(); c.intents.told(ScryOne.result(ScryOne.BOTTOM)) }) } }
     }
 }
 

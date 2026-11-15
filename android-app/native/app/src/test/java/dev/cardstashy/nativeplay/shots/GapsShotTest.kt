@@ -19,6 +19,13 @@ import dev.cardstashy.nativeplay.ui.Palette
 import dev.cardstashy.nativeplay.ui.ScryOne
 import dev.cardstashy.nativeplay.ui.ScryOneView
 import dev.cardstashy.nativeplay.ui.TableIntents
+import dev.cardstashy.nativeplay.ui.TableBubble
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import dev.cardstashy.nativeplay.ui.chromeU
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -68,6 +75,97 @@ class GapsShotTest {
             message = "Plains (12)\n\nPut Plains on the top or bottom of your library?", phase = "COMBAT_DECLARE_ATTACKERS", activePlayer = base.viewer)
         assertEquals("Plains", ScryOne.of(st))
         shot(st, "scry-one", scry = true)
+        // With no trigger of yours on the stack there is no trigger card, and nothing else goes missing.
+        assertEquals(null, anchors.rects["scrytrigger"])
+        rule.onNodeWithText("Done").assertExists(); rule.onNodeWithText("View table").assertExists()
+    }
+
+    // ---- Better table scene 1: the one-card scry, as the preview draws it, on the Fold and the phone ----
+
+    /** Sorcerer Role's attack trigger on the stack (yours), asking the one-card scry about Plains. */
+    private fun scryAsk(): MatchState { val host = me.first()
+        val role = host.copy(id = 9201, name = "Sorcerer Role", zone = "Battlefield", type = "Token Enchantment \u2014 Aura Role", power = null, toughness = null, token = true,
+            text = "Enchanted creature gets +1/+1 and has \"Whenever this creature attacks, scry 1.\"", attachedTo = host.id)
+        return base.copy(inputType = "InputConfirm", buttons = Buttons("Top", "Bottom", true, true), prompt = null,
+            stack = listOf(StackItem(9200, "Sorcerer Role \u2014 Whenever enchanted creature attacks, scry 1.", role, base.viewer, ability = true, trigger = true)),
+            message = "Plains (12)\n\nPut Plains on the top or bottom of your library?", phase = "COMBAT_DECLARE_ATTACKERS", activePlayer = base.viewer) }
+
+    private fun scryHost(st: MatchState, answered: (Boolean) -> Unit) {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        rule.setContent {
+            var cur by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(st) }
+            var told by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+            // As the table does: the answer goes to Forge (the question leaves) and the result bubble shows on the table.
+            val after = { top: Boolean -> answered(top); told = ScryOne.result(if (top) ScryOne.TOP else ScryOne.BOTTOM)
+                cur = st.copy(inputType = "InputPassPriority", buttons = Buttons("OK", null, true, false), stack = emptyList(), message = "") }
+            CompositionLocalProvider(LocalAnchors provides anchors) {
+                Box(Modifier.fillMaxSize().background(Palette.Night)) {
+                    ForgeBoard(cur, live = true, intents = TableIntents(), selectedHand = null, onSelectHand = {}, onInspect = {}, onMenu = {}, handOrder = emptyList(), onHandOrder = {})
+                    ScryOne.of(cur)?.let { n -> BoxWithConstraints(Modifier.fillMaxSize()) { ScryOneView(cur, n, true, Du(chromeU(maxWidth, maxHeight)), { after(true) }, { after(false) }) } }
+                    told?.let { t -> BoxWithConstraints(Modifier.fillMaxSize()) { TableBubble(t, Du(chromeU(maxWidth, maxHeight)), Modifier.align(androidx.compose.ui.Alignment.TopCenter).padding(top = 96.dp)) } }
+                }
+            }
+        }
+        rule.waitForIdle(); rule.waitForIdle()
+    }
+    private fun cap(name: String) { rule.waitForIdle(); rule.onRoot().captureRoboImage(java.io.File(System.getProperty("shotsDir"), "table-gaps/$name.png").path) }
+    private fun r(key: String) = anchors.rects[key] ?: error("no anchor $key")
+
+    private fun scry(tag: String) {
+        var answer: Boolean? = null
+        scryHost(scryAsk()) { answer = it }
+        cap("scry-better-$tag")
+        for (w in listOf("Scry 1", "Top or bottom of your deck", "BOTTOM", "TOP", "Done", "View table", "YOUR TRIGGER")) rule.onNodeWithText(w).assertExists()
+        for (k in listOf("scrycard", "scryzone:Bottom", "scryzone:Top", "scrydone", "scrytrigger", "peektable")) inside(k)
+        val card = r("scrycard"); val bottom = r("scryzone:Bottom"); val top = r("scryzone:Top")
+        assertTrue("Bottom on the left, Top on the right of the card: $bottom $card $top", bottom.right <= card.left && top.left >= card.right)
+        assertTrue("the trigger card sits right, clear of the pill and Done", r("scrytrigger").top >= r("peektable").bottom && r("scrytrigger").bottom <= r("scrydone").top)
+        assertTrue("the trigger card is clear of the Top zone sideways or above it", r("scrytrigger").left >= top.right - 1 || r("scrytrigger").bottom <= top.top + 1)
+        // Tap the Bottom zone: the card settles into it; nothing is answered until Done.
+        rule.onNode(androidx.compose.ui.test.hasContentDescription("Bottom")).performClick()
+        cap("scry-better-bottom-$tag")
+        assertTrue("the card sits in the Bottom zone: ${r("scrycard")} in $bottom", r("scrycard").center.let { it.x in bottom.left..bottom.right && it.y in bottom.top..bottom.bottom })
+        assertEquals(null, answer)
+        // A tap on the placed card sends it across, and back.
+        rule.onNode(androidx.compose.ui.test.hasContentDescription("Plains, the top card of your library")).performClick(); rule.waitForIdle()
+        assertTrue("tapped across to Top", r("scrycard").center.x in top.left..top.right)
+        rule.onNode(androidx.compose.ui.test.hasContentDescription("Plains, the top card of your library")).performClick(); rule.waitForIdle()
+        // Held "View table": the pill stays, the view hides (seen in the picture).
+        rule.onNode(androidx.compose.ui.test.hasContentDescription("View table")).performTouchInput { down(center) }
+        cap("scry-better-peek-$tag")
+        rule.onNode(androidx.compose.ui.test.hasContentDescription("View table")).performTouchInput { up() }
+        // Done answers Forge's cancel (Bottom) and leaves the bubble.
+        rule.onNodeWithText("Done").performClick(); rule.waitForIdle()
+        assertEquals(false, answer)
+        rule.onNodeWithText("Scry: 0 top, 1 bottom").assertExists()
+        assertEquals(0, rule.onAllNodesWithText("Top or bottom of your deck").fetchSemanticsNodes().size)
+        cap("scry-better-after-$tag")
+        inside("tablebubble")
+    }
+    @Test fun scryFold() = scry("fold")
+    @Config(qualifiers = "w844dp-h390dp-land-xhdpi") @Test fun scryPhone() = scry("phone")
+
+    /** Done alone keeps the card on top (Forge's OK), as the approved row's Done does. */
+    @Test fun scryDoneAloneKeepsOnTop() {
+        var answer: Boolean? = null
+        scryHost(scryAsk()) { answer = it }
+        rule.onNodeWithText("Done").performClick(); rule.waitForIdle()
+        assertEquals(true, answer)
+        rule.onNodeWithText("Scry: 1 top, 0 bottom").assertExists()
+    }
+
+    /** A drag onto the Top zone places it there. */
+    @Test fun scryDragToTop() {
+        var answer: Boolean? = null
+        scryHost(scryAsk()) { answer = it }
+        val top = r("scryzone:Top"); val card = r("scrycard")
+        rule.onNode(androidx.compose.ui.test.hasContentDescription("Plains, the top card of your library")).performTouchInput {
+            down(center); moveBy(androidx.compose.ui.geometry.Offset((top.center.x - card.center.x) / 3f, 0f)); moveBy(androidx.compose.ui.geometry.Offset((top.center.x - card.center.x) / 3f, 0f))
+            moveBy(androidx.compose.ui.geometry.Offset((top.center.x - card.center.x) / 3f, 0f)); up() }
+        rule.waitForIdle()
+        assertTrue("dropped in Top: ${r("scrycard")} / $top", r("scrycard").center.x in top.left..top.right)
+        rule.onNodeWithText("Done").performClick(); rule.waitForIdle()
+        assertEquals(true, answer)
     }
 
     @Test fun main2() = shot(base.copy(inputType = "InputPassPriority", phase = "MAIN2", activePlayer = base.viewer, priorityPlayer = base.viewer, stack = emptyList(),
