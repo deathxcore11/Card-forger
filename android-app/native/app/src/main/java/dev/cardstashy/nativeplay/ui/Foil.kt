@@ -292,7 +292,11 @@ fun Modifier.foil(look: Foil.Look, tilt: State<Offset>): Modifier = if (!look.sh
     // none that can be read, no stamp is drawn (Randall 15 Nov, Torrential Gearhulk KLD 67: a fixed oval sat half over the printed stamp).
     val stampImage = look.image?.takeIf { look.stamp }
     val stamp by remember(stampImage) { if (stampImage != null) dev.cardstashy.nativeplay.foil.FoilMaps.stamp(context.applicationContext, stampImage) else kotlinx.coroutines.flow.MutableStateFlow(null) }.collectAsState()
+    // It fades in when it lands (no pop-in while a binder scrolls); a stamp already measured shows at once.
+    val stampFade by androidx.compose.animation.core.animateFloatAsState(if (stamp != null) 1f else 0f,
+        if (Motion.still) androidx.compose.animation.core.snap() else androidx.compose.animation.core.tween(220), label = "stamp")
     val stampOpacity = if (look.recipe != null) .5f else .6f
+    val stampPaint = remember { Paint() }
     if (Foil.supported) {
         val shader = remember { runCatching { RuntimeShader(Foil.AGSL) }.getOrNull() }
         // The printing's own inks, measured once off the main thread (MtgFoil); the foil draws at once and narrows to them when they land.
@@ -317,7 +321,7 @@ fun Modifier.foil(look: Foil.Look, tilt: State<Offset>): Modifier = if (!look.sh
                 val st = stamp
                 shader.setInputShader("u_smask", stampIn)
                 shader.setFloatUniform("u_stamp", st?.box ?: FloatArray(4))
-                shader.setFloatUniform("u_stampk", (st?.mask?.width ?: 1).toFloat(), (st?.mask?.height ?: 1).toFloat(), stampOpacity, 0f)
+                shader.setFloatUniform("u_stampk", (st?.mask?.width ?: 1).toFloat(), (st?.mask?.height ?: 1).toFloat(), stampOpacity * stampFade, 0f)
                 val m = maps
                 shader.setInputShader("u_mask", inputs.first); shader.setInputShader("u_relief", inputs.second)
                 shader.setInputShader("u_stroke", extra.first); shader.setInputShader("u_facet", extra.second)
@@ -343,7 +347,8 @@ fun Modifier.foil(look: Foil.Look, tilt: State<Offset>): Modifier = if (!look.sh
             // placed by the light (the site's --mx/--my: tilt is already the light as -1..1), the whole at .6 (.5 on a foil).
             val bx = st.box[0] * size.width; val by = st.box[1] * size.height; val bw = st.box[2] * size.width; val bh = st.box[3] * size.height
             val px = (.5f + t.x * .5f).coerceIn(0f, 1f); val py = (.5f + t.y * .5f).coerceIn(0f, 1f)
-            drawIntoCanvas { it.saveLayer(Rect(bx, by, bx + bw, by + bh), Paint().apply { alpha = stampOpacity }) }
+            stampPaint.alpha = stampOpacity * stampFade
+            drawIntoCanvas { it.saveLayer(Rect(bx, by, bx + bw, by + bh), stampPaint) }
             drawImage(art, srcOffset = IntOffset.Zero, srcSize = IntSize(art.width, art.height), dstOffset = IntOffset(bx.roundToInt(), by.roundToInt()),
                 dstSize = IntSize(bw.roundToInt().coerceAtLeast(1), bh.roundToInt().coerceAtLeast(1)))
             val c1 = Offset(bx + (1.6f - 2.2f * px) * bw, by + (1.6f - 2.2f * py) * bh); val l1 = 3.2f * (bw * .92718f + bh * .37461f) / 2f
@@ -378,19 +383,21 @@ object FoilFocus {
  *  sits when nothing moves it (not live, no finger, no phone); a nonfoil card whose only shine is its security stamp passes
  *  Offset.Zero, the site's --mx/--my 50% (finish-effects.css .finish-holostamp never runs alone). */
 @Composable
-fun rememberFoilTilt(live: Boolean = true, phase: Float = 0f, touch: State<Offset?>? = null, tile: Boolean = false, rest: Offset? = null): State<Offset> {
+/** [follow]: the phone's tilt moves the light even when the card is not [live] (no drift): a plain card's security stamp answers the
+ *  phone the way the site's light does (feel.js), while the card itself stays still. */
+fun rememberFoilTilt(live: Boolean = true, phase: Float = 0f, touch: State<Offset?>? = null, tile: Boolean = false, rest: Offset? = null, follow: Boolean = false): State<Offset> {
     val context = LocalContext.current
     val tiltOn = AppSettings.tilt
     // "Card lighting & foil effects" off: the light holds still (finish-preview.js setFinishEffects). A grid [tile] also holds
     // still while a card view covers it (FoilFocus), so only the card in front moves and redraws.
     @Suppress("NAME_SHADOWING") val live = live && AppSettings.finish && !(tile && FoilFocus.covered)
-    val phone = if (live && tiltOn) rememberTilt() else null
+    val phone = if ((live || (follow && AppSettings.finish)) && tiltOn) rememberTilt() else null
     val clock = if (live && !Motion.still) androidx.compose.animation.core.rememberInfiniteTransition(label = "foil")
         .animateFloat(0f, 1f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(9000, easing = androidx.compose.animation.core.LinearEasing)), label = "drift") else null
     return remember(phone, clock, touch, rest) {
         androidx.compose.runtime.derivedStateOf {
             touch?.value ?: run {
-                if (rest != null && clock == null && phone == null) return@run rest
+                if (rest != null && clock == null) return@run phone?.value?.takeIf { it.live }?.let { Offset(it.x * .9f, it.y * .9f) } ?: rest
                 val p = phone?.value
                 val k = ((clock?.value ?: .18f) + phase) * 2f * Math.PI.toFloat()
                 val idle = Offset(kotlin.math.sin(k) * .55f, kotlin.math.sin(k * 2f) * .25f)

@@ -204,7 +204,9 @@ object FoilMaps {
                 if (!watched) { forget(); return@launch }
                 stampGate.withPermit {
                     if (fl.subscriptionCount.value == 0) { forget(); return@withPermit }
-                    val req = ImageRequest.Builder(context).data(image).size(coil3.size.Size.ORIGINAL).allowHardware(false).build()
+                    val req = ImageRequest.Builder(context).data(image).size(coil3.size.Size.ORIGINAL).allowHardware(false)
+                        // Reuses a decode already cached (the foil's maps), never adds a full-size picture to the cache.
+                        .memoryCachePolicy(coil3.request.CachePolicy.READ_ONLY).build()
                     val src = (CardArt.loader.execute(req) as? SuccessResult)?.image?.toBitmap()
                     if (src == null) { forget(); return@withPermit }
                     val bmp = if (src.config == Bitmap.Config.ARGB_8888) src else src.copy(Bitmap.Config.ARGB_8888, false)

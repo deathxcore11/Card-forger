@@ -130,7 +130,7 @@ fun Modifier.cardLean(lean: CardLean, foil: Boolean, lamp: Boolean = false, shap
     val shine = remember { Animatable(0f) }
     var seen by remember { mutableStateOf(false) }
     LaunchedEffect(seen) {
-        if (!seen || still || lean.catchDone || !foil) return@LaunchedEffect
+        if (!seen || still || lean.catchDone || !foil || !lamp) return@LaunchedEffect
         delay(150); shine.animateTo(1f, tween(1100, easing = LinearEasing)); lean.catchDone = true
     }
     val scope = androidx.compose.runtime.rememberCoroutineScope()

@@ -894,7 +894,8 @@ private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActi
         ?: it.getAsJsonObject("image_uris")?.s("normal")?.ifBlank { null } ?: faces.firstOrNull()?.getAsJsonObject("image_uris")?.s("normal") }
     val look = if (shown != null) data?.let { Foil.look(it, shown, finish, image) } else null
     val shines = look?.takeIf { it.shines }
-    val tilt = rememberFoilTilt(live = true)
+    // A plain card's only shine is its security stamp: it follows the phone but never drifts by itself (single-screen rule).
+    val tilt = rememberFoilTilt(live = look?.recipe != null, rest = if (look?.recipe == null) Offset.Zero else null, follow = look?.stamp == true)
 
     TopScreen {
         Box(Modifier.fillMaxSize().background(Rule.Color.Bg)) {
