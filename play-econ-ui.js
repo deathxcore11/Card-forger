@@ -437,7 +437,7 @@ function landPicker(lp, wallet, landUse) {
   else if (focus.id === use) act = '<span class="pe-lp-use">In use</span>';
   else if (owned.has(focus.id)) act = `<button class="btn primary" data-act="playLandUse" data-id="${focus.id}">Use for ${type}s</button>`;
   else if (focus.kind === 's') act = '<span class="pe-lp-how">Found in packs</span>';
-  else { const k = seal(focus); act = `<button class="btn primary" data-act="playLandCraft" data-id="${focus.id}"${have(k) < 1 || lp.busy ? ' disabled' : ''}>${sealIcon(k)}Craft</button><span class="pe-lp-how">or open ${esc(focus.setName)} packs</span>`; }
+  else { const k = seal(focus); act = `<button class="btn primary" data-act="playLandCraft" data-id="${focus.id}"${have(k) < 1 || lp.busy ? ' disabled' : ''}>${sealIcon(k)}Craft</button>`; }
   const tile = s => `<button class="pe-lp-tile${s.id === use ? ' pe-lp-tile--use' : ''}${owned.has(s.id) ? '' : ' pe-lp-tile--lock'}${focus && s.id === focus.id ? ' pe-lp-tile--focus' : ''}" data-act="playLandFocus" data-id="${s.id}" aria-label="${esc(s.setName)} ${type}, ${s.id === use ? 'in use' : owned.has(s.id) ? 'owned' : 'locked'}" aria-pressed="${!!(focus && s.id === focus.id)}">
     <img src="${esc(landStyleImage(s.id))}" alt="" loading="lazy" decoding="async">${owned.has(s.id) ? '' : '<span class="pe-lp-lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>'}${lp.isNew?.(s.id) ? '<span class="pe-lp-new">New</span>' : ''}
     <span class="pe-lp-st">${status(s)}</span><small>${esc(s.setName)}</small></button>`;
@@ -446,9 +446,9 @@ function landPicker(lp, wallet, landUse) {
     <div class="pe-lp-head"><span class="pe-lp-cap">${type} styles</span><b>${n(mine)} owned</b><span class="pe-lp-purse">${['c', 'u'].map(k => `<span title="${k === 'c' ? 'Common' : 'Uncommon'} seals">${sealIcon(k)}${n(have(k))}</span>`).join('')}</span></div>
     ${segmented('playLandSort', lp.sort || 'recent', LAND_SORTS)}
     ${focus ? `<div class="pe-lp-bar"><div class="pe-lp-what"><b>${esc(focus.setName)}</b> <span>#${esc(focus.num)}</span><span>${LAND_KINDS[focus.kind]} · ${esc(focus.artist)}</span></div>${act}</div>` : ''}
+    <button class="btn ghost pe-lp-all" data-act="playLandAll"${owned.has(use) ? '' : ' disabled'}>Use this style in all my decks</button>
     <div class="pe-lp-grid">${shown.map(tile).join('')}</div>
-    ${list.length > shown.length ? `<button class="btn ghost pe-pool-more" data-act="playLandMore">More styles (${n(list.length - shown.length)})</button>` : ''}
-    <button class="btn ghost pe-lp-all" data-act="playLandAll"${owned.has(use) ? '' : ' disabled'}>Use this style in all my decks</button>`;
+    ${list.length > shown.length ? `<button class="btn ghost pe-pool-more" data-act="playLandMore">More styles (${n(list.length - shown.length)})</button>` : ''}`;
 }
 // The deck list's Type / Mana sort: by type (the app's deck order), or by mana value with Lands after the spells (bench-filter.js).
 function deckGroups(typeGroups, sort, mvOf) {
