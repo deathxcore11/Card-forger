@@ -33,6 +33,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.findRootCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -62,6 +65,9 @@ internal class TablePeek { var held by mutableStateOf(false) }
 
 @Composable
 internal fun rememberTablePeek(): TablePeek = remember { TablePeek() }
+
+/** Whether a view over the table has "View table" held now, so the table's own controls it hides come back with the table. */
+internal object TableCover { var peek by mutableStateOf(false) }
 
 /**
  * What hides while the table is peeked at: it fades out (160 ms) and back. It keeps its place and still takes its touches, so a
@@ -109,10 +115,21 @@ internal fun TableBubble(text: String, d: Du, modifier: Modifier = Modifier) = w
     LaunchedEffect(text) { if (!Motion.still) rise.animateTo(1f, spring(dampingRatio = .72f, stiffness = 420f)) }
     val head = text.substringBefore(":", "").takeIf { it.isNotEmpty() && it.length < text.length }
     val gold = Color(0xFFE8B95B)
+    // Review (scene 1): the bubble sits in free felt. From its top-centre place it moves to the nearest band where it covers no
+    // tile name, square or control (TableScreen's freeBandDy), the least-covering one on a crowded phone.
+    val anchors = LocalAnchors.current
+    var at by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
+    var rootH by remember { mutableStateOf(0f) }
     Text(buildAnnotatedString {
             if (head != null) { withStyle(SpanStyle(color = gold, fontWeight = FontWeight.ExtraBold)) { append("$head:") }; append(text.substringAfter(":")) } else append(text)
         }, style = sans(sp(14f), FontWeight.SemiBold, Color(0xFFEEE6D4)), maxLines = 1,
-        modifier = modifier.anchorRect("tablebubble")
+        modifier = modifier.onGloballyPositioned { at = it.boundsInRoot(); rootH = it.findRootCoordinates().size.height.toFloat() }
+            .graphicsLayer {
+                anchors?.version?.intValue
+                if (anchors != null && !at.isEmpty && rootH > 0f)
+                    translationY = freeBandDy(at.deflate(2.dp.toPx()), tableObstacles(anchors), top = 8.dp.toPx(), bottom = rootH * .62f, step = 2.dp.toPx())
+            }
+            .anchorRect("tablebubble")
             .graphicsLayer { val q = rise.value; alpha = q.coerceIn(0f, 1f); translationY = (1f - q) * 14.du.toPx(); val s = .94f + .06f * q; scaleX = s; scaleY = s }
             .drawBehind { drawRoundRect(Color(0x66000000), topLeft = Offset(0f, 6.du.toPx()), size = size, cornerRadius = CornerRadius(12.du.toPx())) }
             .clip(RoundedCornerShape(12.du)).background(Brush.verticalGradient(listOf(Color(0xF5151926), Color(0xF50A0B12))))

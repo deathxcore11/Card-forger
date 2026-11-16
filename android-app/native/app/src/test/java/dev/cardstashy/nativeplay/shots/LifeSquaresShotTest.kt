@@ -117,14 +117,29 @@ class LifeSquaresShotTest {
             assertTrue("$name: the gold bar ${Integer.toHexString(px)}", android.graphics.Color.red(px) >= 200 && android.graphics.Color.green(px) >= 150 && android.graphics.Color.blue(px) < 190)
             println("[squares] $name cpu ${a.rects["square${st.cpu.id}"]} me ${a.rects["square${st.viewer}"]} life ${a.rects["lifepill${st.viewer}"]} ${a.sizes["lifesp${st.viewer}"]} sp")
         }
-        // A Commander game: the damage lines at the foot, clear of the number, the chips and the graveyard.
-        val cmd = state("commander")
-        val (a, _) = draw("$tag-commander", cmd)
+        // A Commander game: the damage lines at the foot, clear of the number, the chips and the graveyard, and the number clear of
+        // the portrait above it (review: with one line on the phone the '38' and '40' touched the portrait ring). One line, and two
+        // (partners or a pod: CommanderMarks.damageShown shows at most two), on your turn (the turn tag under the name) and the CPU's.
+        val one = state("commander")
+        val two = one.copy(players = one.players.map { p -> p.copy(commanderDamage = p.commanderDamage + p.commanderDamage.map { it.copy(from = it.from + 100, commander = "Kraum, Ludevic's Opus", damage = 4) }) })
         val dp = RuntimeEnvironment.getApplication().resources.displayMetrics.density
-        for (p in listOf(cmd.me, cmd.cpu)) {
-            val dmg = a.rects["cmdrdmg${p.id}"]; assertNotNull("$tag commander: no damage lines for ${p.name}", dmg)
-            for (k in listOf("lifepill${p.id}", "piles${p.id}", "orb${p.id}", "lib${p.id}")) assertFalse("$tag commander: damage $dmg meets $k ${a.rects[k]}", dmg!!.deflate(dp / 2).overlaps(a.rects.getValue(k)))
-            assertTrue("$tag commander: ${p.name}'s life under 28 sp", (a.sizes["lifesp${p.id}"] ?: 0f) >= 28f)
+        for ((name, cmd) in listOf("commander" to one, "commander-2lines" to two, "commander-2lines-yours" to two.copy(activePlayer = two.viewer))) {
+            val (a, _) = draw("$tag-$name", cmd)
+            for (p in listOf(cmd.me, cmd.cpu)) {
+                val dmg = a.rects["cmdrdmg${p.id}"]; assertNotNull("$tag $name: no damage lines for ${p.name}", dmg)
+                for (k in listOf("lifepill${p.id}", "piles${p.id}", "orb${p.id}", "lib${p.id}")) assertFalse("$tag $name: damage $dmg meets $k ${a.rects[k]}", dmg!!.deflate(dp / 2).overlaps(a.rects.getValue(k)))
+                val life = a.rects.getValue("lifepill${p.id}"); val orb = a.rects.getValue("orb${p.id}")
+                assertTrue("$tag $name: ${p.name}'s life $life reaches into the portrait $orb", life.top >= orb.bottom - dp / 2)
+                a.rects["turntag${p.id}"]?.let { t -> assertFalse("$tag $name: ${p.name}'s life $life meets the turn tag $t", life.deflate(dp / 2).overlaps(t)) }
+                assertTrue("$tag $name: ${p.name}'s life under the floor", (a.sizes["lifesp${p.id}"] ?: 0f) >= dev.cardstashy.nativeplay.ui.TextFloors.LIFE)
+            }
+        }
+        // A four-player pod: every square's number clear of its portrait.
+        val pod = state("pod")
+        val (a, _) = draw("$tag-pod", pod)
+        for (p in pod.players) {
+            val life = a.rects["lifepill${p.id}"] ?: continue; val orb = a.rects["orb${p.id}"] ?: continue
+            assertFalse("$tag pod: ${p.name}'s life $life meets the portrait $orb", life.deflate(dp / 2).overlaps(orb))
         }
     }
 
@@ -134,6 +149,10 @@ class LifeSquaresShotTest {
     @Test fun theRules() {
         assertTrue(lifeLow(5)); assertTrue(lifeLow(0)); assertTrue(lifeLow(-3)); assertFalse(lifeLow(6))
         assertEquals(34f, heroLifeSp(1f), .01f); assertEquals(48f, heroLifeSp(2f), .01f); assertEquals(28f, heroLifeSp(.6f), .01f)
+        // The number fits the band under the portrait row: full size when there is room, smaller when not, never under the floor.
+        assertEquals(34f, dev.cardstashy.nativeplay.ui.heroFitSp(1f, 60f), .01f)
+        assertEquals(20f, dev.cardstashy.nativeplay.ui.heroFitSp(1f, 20f * dev.cardstashy.nativeplay.ui.HERO_CAP), .01f)
+        assertEquals(dev.cardstashy.nativeplay.ui.TextFloors.LIFE, dev.cardstashy.nativeplay.ui.heroFitSp(1f, 2f), .01f)
         assertEquals("YOUR TURN", turnTag(true)); assertEquals("CPU'S TURN", turnTag(false))
     }
 }

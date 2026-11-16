@@ -101,6 +101,9 @@ class ResultShotTest {
         rule.onAllNodesWithText("-7").fetchSemanticsNodes().let { assertTrue("You −7 shown as Forge has it", it.isNotEmpty()) }
         rule.onAllNodesWithText("15").fetchSemanticsNodes().let { assertTrue("Turns 15", it.isNotEmpty()) }
         assertNotNull("the reason line has room on the Fold", a.rects["result.reason"])
+        // Review: the cause by name, no number that contradicts the −7 above it.
+        assertEquals(1, rule.onAllNodesWithText("Out of life").fetchSemanticsNodes().size)
+        assertEquals(0, rule.onAllNodesWithText("reached 0", substring = true).fetchSemanticsNodes().size)
     }
 
     @Config(qualifiers = "w844dp-h390dp-land-xxhdpi") @Test fun defeatPhone() {

@@ -1460,7 +1460,9 @@ internal fun FxLayer(force: Boolean = false) {
                     when (it.kind) {
                         Fx.BLOCK -> { val a = rect(it.fromKey); val b = rect(it.toKey); if (a != null && b != null) drawBlock(tm, it, p, a, b, still = true) }
                         Fx.DAMAGE -> rect("c${it.card}")?.let { r -> bigNumber(tm, it.label, p, r.center, it.tone, if (size.height < 500.dp.toPx()) 40f else 52f) }
-                        Fx.LIFE -> rect(it.toKey)?.let { r -> pop(tm, it.label, p, Offset(r.center.x, if (r.center.y < size.height / 2) r.bottom + 16.dp.toPx() else r.top - 6.dp.toPx()), it.tone, if (it.level == 3) 34f + 8f * it.power else 20f, down = r.center.y < size.height / 2) }
+                        Fx.LIFE -> rect(it.toKey)?.let { r -> val side = lifeFloatAt(rect("square" + it.toKey!!.removePrefix("orb")), 8.dp.toPx())
+                            if (side != null) pop(tm, it.label, p, side, it.tone, if (it.level == 3) 34f + 8f * it.power else 20f, fromLeft = true)
+                            else pop(tm, it.label, p, Offset(r.center.x, if (r.center.y < size.height / 2) r.bottom + 16.dp.toPx() else r.top - 6.dp.toPx()), it.tone, if (it.level == 3) 34f + 8f * it.power else 20f, down = r.center.y < size.height / 2) }
                         Fx.COUNTER -> rect("c${it.card}")?.let { r -> pop(tm, it.label, p, Offset(r.center.x, r.top + 4.dp.toPx()), Color(0xFFF3D27E), 15f) }
                         Fx.STAGE -> drawStage(tm, it, p, rect(it.fromKey), rect(it.toKey))
                         // Reduce motion: the source keeps one still rim; the landing keeps its words (the change, the chip, the line), unmoving.
@@ -1504,8 +1506,11 @@ internal fun FxLayer(force: Boolean = false) {
                         if (it.charged && it.bursts) { val rim = minOf(r.width, r.height) / 2
                             if (it.once(64)) fx.bits.sparks(r.center, 10, TableFeel.hot(it.tone, .3f), fx.now.longValue, 240.dp.toPx(), lifeMs = 460, sizePx = 2.dp.toPx(), seed = (it.player ?: 0) and 0xff)
                             hitBurst(p * it.dur, r.center, r.center, rim, it.tone, (it.player ?: 0) and 0xff, null, rect("lifepill" + it.toKey!!.removePrefix("orb"))) }
-                        // The number pops on the struck picture and rises 14 dp off it, so the life total under it ticks down in the clear.
-                        if (it.charged) pop(tm, it.label, p, r.center - Offset(0f, 2.dp.toPx()), it.tone, TableFeel.CHARGE_NUMBER_SP)
+                        // Review (scene 7): the number floats beside the square (the burst stays on the picture), so the portrait, the
+                        // name and the life total under it all read while it ticks down.
+                        val side = lifeFloatAt(rect("square" + it.toKey!!.removePrefix("orb")), 8.dp.toPx())
+                        if (side != null) pop(tm, it.label, p, side, it.tone, if (it.charged) TableFeel.CHARGE_NUMBER_SP else if (it.level == 3) 34f + 8f * it.power else 20f, fromLeft = true)
+                        else if (it.charged) pop(tm, it.label, p, r.center - Offset(0f, 2.dp.toPx()), it.tone, TableFeel.CHARGE_NUMBER_SP)
                         else pop(tm, it.label, p, Offset(r.center.x, if (r.center.y < size.height / 2) r.bottom + 16.dp.toPx() else r.top - 6.dp.toPx()), it.tone, if (it.level == 3) 34f + 8f * it.power else 20f, down = r.center.y < size.height / 2) }
                     Fx.COUNTER -> rect("c${it.card}")?.let { r -> drawPour(p, r); pop(tm, it.label, p, Offset(r.center.x, r.top + 4.dp.toPx()), Color(0xFFF3D27E), 15f) }
                     Fx.DEATH -> if (!fx.low && it.toKey == null) it.from?.translate(-self.x, -self.y)?.let { r -> drawShards(it, p, r, rect(it.toKey)) }
@@ -2425,7 +2430,7 @@ private fun DrawScope.bigNumber(tm: androidx.compose.ui.text.TextMeasurer, text:
 }
 
 /** A number pops (1.4× to 1× in the first quarter), rises 14 dp and fades in its last third. */
-private fun DrawScope.pop(tm: androidx.compose.ui.text.TextMeasurer, text: String, p: Float, at: Offset, col: Color, sizeSp: Float, down: Boolean = false) {
+private fun DrawScope.pop(tm: androidx.compose.ui.text.TextMeasurer, text: String, p: Float, at: Offset, col: Color, sizeSp: Float, down: Boolean = false, fromLeft: Boolean = false) {
     if (text.isEmpty()) return
     val s = if (p < .25f) 1.4f - .4f * (p / .25f) else 1f
     val a = 1f - smooth(.66f, 1f, p)
@@ -2433,12 +2438,19 @@ private fun DrawScope.pop(tm: androidx.compose.ui.text.TextMeasurer, text: Strin
     val lay = tm.measure(text, style)
     val y = at.y + (if (down) 10f else -14f) * density * smooth(0f, 1f, p)
     scale(s, Offset(at.x, y)) {
-        val tl = Offset(at.x - lay.size.width / 2f, y - lay.size.height / 2f)
+        val tl = Offset(if (fromLeft) at.x else at.x - lay.size.width / 2f, y - lay.size.height / 2f)
         // A dark outline so the number reads on any art.
         for ((dx, dy) in listOf(-1.5f to 0f, 1.5f to 0f, 0f to -1.5f, 0f to 1.5f)) drawText(tm, text, tl + Offset(dx * density, dy * density), style.copy(color = Color.Black.copy(alpha = .9f * a)))
         drawText(tm, text, tl, style.copy(color = col.copy(alpha = col.alpha * a)))
     }
 }
+
+/**
+ * Better table review (scene 7): a player's life change floats beside their square, never on it: just past the square's right edge
+ * at the height of its picture row, so the portrait, the name and the big life number all stay readable while the burst plays on
+ * the picture. Null without a square (then the number keeps its old place by the picture).
+ */
+internal fun lifeFloatAt(square: Rect?, gap: Float): Offset? = square?.let { Offset(it.right + gap, it.top + it.height * .3f) }
 
 /**
  * Better table scene 6 ("the big card sits on top of your creatures"): where the CPU's popped card is held large. At [share] of the
@@ -2448,7 +2460,7 @@ private fun DrawScope.pop(tm: androidx.compose.ui.text.TextMeasurer, text: Strin
  * All [gap] clear of the targets and of the table's edges. When nothing clears, the place covering least. The card keeps the stack
  * card's shape.
  */
-internal fun popRect(stack: Rect, self: Rect, share: Float, minShare: Float, avoid: List<Rect>, edge: Float, gap: Float): Rect {
+internal fun popRect(stack: Rect, self: Rect, share: Float, minShare: Float, avoid: List<Rect>, edge: Float, gap: Float, furniture: List<Rect> = emptyList()): Rect {
     val aspect = stack.width / stack.height.coerceAtLeast(1f)
     fun at(h: Float, right: Float, cy: Float): Rect {
         val w = h * aspect; val lo = self.top + gap + h / 2; val hi = self.bottom - gap - h / 2
@@ -2456,7 +2468,9 @@ internal fun popRect(stack: Rect, self: Rect, share: Float, minShare: Float, avo
         return Rect(right - w, y - h / 2, right, y + h / 2)
     }
     val keep = avoid.filter { !it.isEmpty }.map { it.inflate(gap) }
-    fun covered(r: Rect) = keep.sumOf { k -> r.intersect(k).let { if (it.width > 0f && it.height > 0f) (it.width * it.height).toDouble() else 0.0 } }
+    // Review: the rest of the table ([furniture]: tiles, squares, controls) is kept clear too, but only the targets are stood beside.
+    val all = keep + furniture.filter { !it.isEmpty }.map { it.inflate(gap / 2) }
+    fun covered(r: Rect) = all.sumOf { k -> r.intersect(k).let { if (it.width > 0f && it.height > 0f) (it.width * it.height).toDouble() else 0.0 } }
     val right = self.right - edge
     val tried = mutableListOf<Rect>()
     val steps = 12
@@ -2466,10 +2480,32 @@ internal fun popRect(stack: Rect, self: Rect, share: Float, minShare: Float, avo
         val h = self.height * (share + (minShare - share) * i / steps)
         for (cy in spots) at(h, right, cy).let { tried += it; if (covered(it) == 0.0) return it }
     }
+    // Review: no larger place is clear, so the card stays the stack card as it stands, in its own place at the right edge, as long
+    // as that covers none of the targets (the stack card is placed off the board's tiles already).
+    if (keep.none { it.overlaps(stack) }) return stack
     val hMin = self.height * minShare
     for (k in keep.sortedByDescending { it.left }) for (cy in listOf(k.center.y, self.top, self.bottom))
         at(hMin, k.left, cy).takeIf { it.left >= self.left + gap }?.let { tried += it; if (covered(it) == 0.0) return it }
-    return tried.minByOrNull { covered(it) } ?: at(self.height * share, right, self.center.y)
+    // Nothing clears: the card stays the stack card as it stands, in its own place at the right edge (scene 6: one readable card,
+    // never a second, larger copy over the board); a place covering less wins only when the stack card itself covers something.
+    return (listOf(stack) + tried).minByOrNull { covered(it) } ?: stack
+}
+
+/** The table's own controls a popped card or a line over the felt keeps off (anchor keys). */
+internal val TABLE_CHROME = listOf("menu", "turn", "phasetrack", "gold", "quiet", "confirm", "cancel", "undo", "allattack", "dots", "stacklabel",
+    "tools", "cpuhand", "hand", "handchip", "throughchip")
+private val SQUARE_KEY = Regex("^square\\d+$")
+
+/**
+ * Better table review (scene 6): what lies on the table now, in root space: every battlefield tile composed at this moment (its
+ * "c<id>", read through [TableZones], so a tile that has left keeps no stale place), the players' squares and, with [chrome], the
+ * table's controls ([TABLE_CHROME]).
+ */
+internal fun tableObstacles(anchors: Anchors, chrome: Boolean = true): List<Rect> {
+    val r = anchors.rects
+    val tiles = (TableZones.mine.keys + TableZones.theirs.keys).mapNotNull { r["c$it"] }
+    val squares = r.filterKeys { SQUARE_KEY.matches(it) }.values
+    return tiles + squares + (if (chrome) TABLE_CHROME.mapNotNull { r[it] } else emptyList())
 }
 
 /**
@@ -2526,8 +2562,11 @@ internal fun TravelCard() {
             val phone = ZoneLayout.phone(self.width / dp, self.height / dp)
             // Better table scene 6: the pop never covers what the spell targets (its tile, its player's portrait): it rises, then
             // shrinks toward the stack card's size, and only then stands beside the target.
+            // Review: and never covers the rest of the table either (other creatures, lands, the squares, the menu, the phase and
+            // the buttons). While it pops the stack card itself is hidden (StackColumn), so the player reads one card, not two.
             val avoid = t.targets.mapNotNull { r -> anchors.rects[if (r.kind == "player") "orb${r.id}" else "c${r.id}"] }
-            val big = popRect(a, self, if (phone) ZoneLayout.POP_PHONE else ZoneLayout.POP_BIG, minOf(if (phone) ZoneLayout.STACK_PHONE else ZoneLayout.STACK_BIG, a.height / self.height.coerceAtLeast(1f)), avoid, 10f * dp, 8f * dp)
+            val big = popRect(a, self, if (phone) ZoneLayout.POP_PHONE else ZoneLayout.POP_BIG, minOf(if (phone) ZoneLayout.STACK_PHONE else ZoneLayout.STACK_BIG, a.height / self.height.coerceAtLeast(1f)), avoid, 10f * dp, 8f * dp,
+                furniture = tableObstacles(anchors))
             val w = big.width; val h = big.height; val to = big.center
             val e = dev.cardstashy.nativeplay.match.Director.popAt((p.floatValue * t.ms).toLong())
             val c = lerpO(a.center, to, e); val cw = a.width + (w - a.width) * e; val ch = a.height + (h - a.height) * e

@@ -94,6 +94,11 @@ fun HandFan(
     arc: Dp = 2.dp,
     /** Mobile table M5: how far a lifted card rises (the hand's foot is below the screen's edge, so it rises until its foot is on screen). */
     liftRise: Dp? = null,
+    /**
+     * Better table review: how far past its own box an outer card's tilted top corner may swing (the strip beside it: your square on
+     * the left, the buttons on the right). A full hand tilts less, so its first card never lies over the square. Unbounded: as drawn.
+     */
+    tiltRoom: Dp = Dp.Infinity,
 ) {
     val cardH = cardW * 1.4f
     val haptic = LocalHapticFeedback.current
@@ -162,6 +167,10 @@ fun HandFan(
         val total = cardW + step * (n - 1).coerceAtLeast(0)
         val start = ((width - total) / 2).coerceAtLeast(0.dp)
         val mid = (n - 1) / 2f
+        // The outer card turns [mid] × the angle about its foot's centre, so its top corner swings out about cardH × sin(angle):
+        // never further than the room left of the first card (and right of the last) plus [tiltRoom].
+        val tilt = if (tiltRoom == Dp.Infinity || mid <= 0f) angleDeg
+            else minOf(angleDeg, Math.toDegrees(kotlin.math.asin(((start + tiltRoom) / cardH).coerceIn(0f, 1f).toDouble())).toFloat() / mid)
         val focusIndex = slots.indexOfFirst { it.id == focus }.takeIf { it >= 0 }
         val lift = focusIndex ?: slots.indexOfFirst { it.id == raised }.takeIf { it >= 0 }
         val popW = cardW * (popScale - 1f)
@@ -315,7 +324,7 @@ fun HandFan(
                     // A card flying out keeps the slot it left from; only the others close the gap.
                     val rest = remember { FloatArray(3) }
                     if (!isLeaving) { rest[0] = with(density) { x.toPx() }; rest[1] = with(density) { (y - if (!isLift && canPlayCb(card)) cardW * (8f / 66f) else 0.dp).toPx() }; // site: a playable card sits 8 px up
-                         rest[2] = if (isLift) 0f else t * angleDeg }
+                         rest[2] = if (isLift) 0f else t * tilt }
                     val ax = rememberSpring(rest[0], fromX, delayMs)
                     val ay = rememberSpring(rest[1], fromY, delayMs)
                     val ar = rememberSpring(rest[2], if (newIndex >= 0) 20f else null, delayMs)

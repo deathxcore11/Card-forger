@@ -91,9 +91,14 @@ class CpuSpellShotTest {
         val card = anchors.rects.getValue("travelcard"); val tile = anchors.rects.getValue("c$target")
         assertNotNull("the line is drawn", anchors.rects["castline"])
         // The band's ends fade out over its 40 dp side padding; its words cover neither the card nor its target.
-        val pad = 40f * RuntimeEnvironment.getApplication().resources.displayMetrics.density
-        val line = anchors.rects.getValue("castline").let { androidx.compose.ui.geometry.Rect(it.left + pad, it.top, it.right - pad, it.bottom) }
+        val dp = RuntimeEnvironment.getApplication().resources.displayMetrics.density
+        val pad = 40f * dp; val inset = dev.cardstashy.nativeplay.ui.CAST_WORDS_INSET * dp
+        val line = anchors.rects.getValue("castline").let { androidx.compose.ui.geometry.Rect(it.left + pad, it.top + inset, it.right - pad, it.bottom - inset) }
         assertTrue("the line's words $line cover neither the card $card nor its target $tile", !line.overlaps(card) && !line.overlaps(tile) && line.left >= 0f)
+        // Review: the line lies in empty felt, over no tile's name bar (the CPU's lands and creatures, yours).
+        for (p in st.players) for (c in p.battlefield) anchors.rects["c${c.id}"]?.let { r ->
+            val bar = androidx.compose.ui.geometry.Rect(r.left, r.top, r.right, r.top + 18 * dp)
+            assertTrue("the line's words $line cover ${c.name}'s name bar $bar", !line.overlaps(bar)) }
         return Triple(card, tile, beat)
     }
 

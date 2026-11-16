@@ -104,8 +104,8 @@ private val ScryDim = Color(0xFF9AA2B1)
 /**
  * The one-card scry over the dimmed table (Better table scene 1): "Scry 1" and "Top or bottom of your deck" at the top, the Bottom
  * zone left and the Top zone right, the card face up over your deck's back in the middle with the playable ice ring, your trigger at
- * the right, "View table" (held) top right and a gold Done. Drag the card onto a zone or tap a zone (a tap on a placed card sends it
- * across); Done answers Forge: Top is its OK ([onTop]), Bottom its cancel ([onBottom]). A controller: LB / RB pick Bottom or Top, X
+ * the right, "View table" (held) top right and a gold Done. Drag the card onto a zone or tap a zone (review: a tap on the card itself
+ * moves nothing, so looking again never flips the choice); Done answers Forge: Top is its OK ([onTop]), Bottom its cancel ([onBottom]). A controller: LB / RB pick Bottom or Top, X
  * is Done, Y held shows the table. Anchors: scrycard, scryzone:Bottom, scryzone:Top, scrydone, scrytrigger, peektable.
  */
 @Composable
@@ -113,6 +113,9 @@ internal fun ScryOneView(st: MatchState, name: String, live: Boolean, d: Du, onT
     var place by remember(name) { mutableIntStateOf(ScryOne.MIDDLE) }
     var answered by remember(name) { mutableStateOf(false) }
     val peek = rememberTablePeek()
+    // The table's controls the view hides (ForgeBoard's scryCover) come back while the table is peeked at.
+    LaunchedEffect(peek.held) { TableCover.peek = peek.held }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { TableCover.peek = false } }
     val done = { if (live && !answered) { answered = true; if (ScryOne.keepsOnTop(place)) onTop() else onBottom() } }
     PadScreen(PadActs(x = if (live) PadAct("Done") { done() } else null, yHold = { peek.held = it },
         tabs = { dir -> place = if (dir < 0) ScryOne.BOTTOM else ScryOne.TOP }, tabsLabel = "Bottom / Top"))
@@ -177,7 +180,7 @@ internal fun ScryOneView(st: MatchState, name: String, live: Boolean, d: Du, onT
                 .graphicsLayer { rotationZ = -5f; alpha = enter.value }
                 .drawBehind { drawRoundRect(Color(0x99000000), topLeft = Offset(0f, 10.du.toPx()), size = size, cornerRadius = CornerRadius(10.du.toPx())) }
                 .clip(RoundedCornerShape(9.du))) { CardBack(Modifier.fillMaxSize()) }
-            // The card, face up, with the ice ring: drag it to a zone, or tap it once placed to send it across.
+            // The card, face up, with the ice ring: drag it to a zone (a tap on it changes nothing).
             val p = pos.value
             val k = (abs(p.x) / dxPx).coerceIn(0f, 1f)
             Box(Modifier.align(Alignment.Center).offset(y = cy).offset { IntOffset(p.x.roundToInt(), p.y.roundToInt()) }.size(cardW, cardH)
@@ -197,7 +200,6 @@ internal fun ScryOneView(st: MatchState, name: String, live: Boolean, d: Du, onT
                             place = to },
                         onDragCancel = { dragging = false; scope.launch { pos.snapTo(target(place)) } }) { change, amount -> change.consume(); scope.launch { pos.snapTo(pos.value + amount) } }
                 }
-                .pointerInput(live) { detectTapGestures { if (live && place != ScryOne.MIDDLE) place = -place } }
                 .drawBehind {
                     val r = 11.du.toPx()
                     drawRoundRect(Color(0xAA000000), topLeft = Offset(0f, 16.du.toPx()), size = size, cornerRadius = CornerRadius(r))

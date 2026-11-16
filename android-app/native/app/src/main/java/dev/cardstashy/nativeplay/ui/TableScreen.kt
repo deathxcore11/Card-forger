@@ -5,6 +5,7 @@ import dev.cardstashy.nativeplay.engine.StackItem
 import kotlin.math.sign
 import kotlinx.coroutines.launch
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.layout.layoutId
 import kotlin.math.PI
 import kotlin.math.sin
@@ -756,14 +757,29 @@ private fun CastLine(parts: List<Pair<String, Boolean>>, red: Boolean, timer: Fl
     val anchors = LocalAnchors.current
     val popping = LocalTravel.current?.travel?.leg == dev.cardstashy.nativeplay.match.Director.Leg.POP
     var at by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
-    Box(modifier.widthIn(max = 620.dp).onGloballyPositioned { at = it.boundsInRoot() }.graphicsLayer {
-            alpha = enter.value; translationY = -6.dp.toPx() * (1f - enter.value)
+    var rootH by remember { mutableStateOf(0f) }
+    Box(modifier.widthIn(max = 620.dp).onGloballyPositioned { at = it.boundsInRoot(); rootH = it.findRootCoordinates().size.height.toFloat() }.graphicsLayer {
             anchors?.version?.intValue
+            // Review: the line lies in empty felt, not over the CPU's lands or creature names. From its top-centre place it moves
+            // down (or up) to the nearest band where its words cover no tile, square, control or the popped card; where no band
+            // is wholly free (a crowded phone) it takes the one covering least, nearest its place.
             val card = if (popping) anchors?.rects?.get("travelcard") else null
+            val pad = 40.dp.toPx(); val inset = CAST_WORDS_INSET.dp.toPx()
+            var dx = 0f
             if (card != null && !at.isEmpty && card.top < at.bottom && card.bottom > at.top) {
-                val words = at.right - 40.dp.toPx()
-                if (words > card.left - 8.dp.toPx()) translationX = -minOf(words - card.left + 8.dp.toPx(), (at.left - 8.dp.toPx()).coerceAtLeast(0f))
+                val words = at.right - pad
+                if (words > card.left - 8.dp.toPx()) dx = -minOf(words - card.left + 8.dp.toPx(), (at.left - 8.dp.toPx()).coerceAtLeast(0f))
             }
+            var dy = 0f
+            if (anchors != null && !at.isEmpty && rootH > 0f) {
+                val words = androidx.compose.ui.geometry.Rect(at.left + pad + dx, at.top + inset, at.right - pad + dx, at.bottom - inset)
+                val keep = tableObstacles(anchors) + listOfNotNull(card)
+                dy = freeBandDy(words, keep, top = 8.dp.toPx(), bottom = rootH * .62f, step = 2.dp.toPx())
+                // Moved down past the card's side: step off it again at the new height.
+                if (card != null && dx == 0f && card.top < at.bottom + dy && card.bottom > at.top + dy && at.right - pad > card.left - 8.dp.toPx())
+                    dx = -minOf(at.right - pad - card.left + 8.dp.toPx(), (at.left - 8.dp.toPx()).coerceAtLeast(0f))
+            }
+            alpha = enter.value; translationX = dx; translationY = dy - 6.dp.toPx() * (1f - enter.value)
         }
         .anchorRect("castline").semantics { contentDescription = parts.joinToString("") { it.first } }
         .clickable(onClick = onTap).background(band).drawBehind {
@@ -775,6 +791,34 @@ private fun CastLine(parts: List<Pair<String, Boolean>>, red: Boolean, timer: Fl
         }.padding(horizontal = 40.dp, vertical = 8.dp), contentAlignment = Alignment.Center) {
         Text(text, style = androidx.compose.ui.text.TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Medium, fontSize = 15.sp, letterSpacing = .9.sp, color = Color(0xFFF3E7C6)),
             textAlign = TextAlign.Center, maxLines = 2)
+    }
+}
+
+/** The cast line's words sit this far (dp) inside its band top and bottom (its 8 dp padding and the letters' own air). */
+internal const val CAST_WORDS_INSET = 10f
+
+/**
+ * Better table review (scene 6): how far (px) to move a line whose [words] sit where they are so they cover none of [keep]: the
+ * nearest free band between [top] and [bottom], searched in [step]s both ways; when none is free, the band covering the least area
+ * (nearest first). 0 when they already cover nothing.
+ */
+internal fun freeBandDy(words: androidx.compose.ui.geometry.Rect, keep: List<androidx.compose.ui.geometry.Rect>, top: Float, bottom: Float, step: Float): Float {
+    fun cover(dy: Float): Float { val r = words.translate(0f, dy)
+        return keep.sumOf { k -> r.intersect(k).let { if (it.width > 0f && it.height > 0f) (it.width * it.height).toDouble() else 0.0 } }.toFloat() }
+    if (cover(0f) == 0f || step <= 0f) return 0f
+    var best = 0f; var least = cover(0f)
+    var k = 1
+    while (true) {
+        var any = false
+        for (dy in listOf(k * step, -k * step)) {
+            if (words.top + dy < top || words.bottom + dy > bottom) continue
+            any = true
+            val c = cover(dy)
+            if (c == 0f) return dy
+            if (c < least) { least = c; best = dy }
+        }
+        if (!any) return best
+        k++
     }
 }
 
@@ -1206,14 +1250,16 @@ internal object ResultMotion {
 internal fun endReason(st: MatchState, conceded: Boolean): String? {
     if (st.draw || st.winnerPlayerId == null) return null
     val lost = st.winnerPlayerId != st.viewer
-    if (lost && conceded) return "You conceded."
+    if (lost && conceded) return "Conceded"
     val p = if (lost) st.me else st.cpu
     val cmd = p.commanderDamage.firstOrNull { it.damage >= 21 }
+    // Better table review: the cause by name, with Forge's own value where it has one; never a number of our own (the stat tile
+    // above shows the life as Forge has it, -7 included, so "life reached 0" read wrong under it).
     return when {
-        p.life <= 0 -> if (lost) "Your life reached 0." else "The CPU's life reached 0."
-        (p.counters["POISON"] ?: 0) >= 10 -> if (lost) "You got ten poison counters." else "The CPU got ten poison counters."
-        cmd != null -> "${cmd.damage} damage from ${cmd.commander}."
-        p.libraryCount == 0 -> if (lost) "You had to draw from an empty library." else "The CPU had to draw from an empty library."
+        p.life <= 0 -> "Out of life"
+        (p.counters["POISON"] ?: 0) >= 10 -> "Poison ${p.counters["POISON"]}"
+        cmd != null -> "Commander damage ${cmd.damage} · ${cmd.commander}"
+        p.libraryCount == 0 -> "Empty library"
         else -> null
     }
 }

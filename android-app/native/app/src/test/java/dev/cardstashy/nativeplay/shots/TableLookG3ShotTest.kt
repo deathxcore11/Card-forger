@@ -173,7 +173,9 @@ class TableLookG3ShotTest {
     /** The scene's Hill Giant: Ethereal Armor on it, the first strike it grants, a +1/+1 counter. */
     private fun scene13(): Pair<MatchState, Card> {
         val (st, giant) = withAura()
-        val g = giant.copy(keywords = listOf("First Strike"), keywordsKnown = true, power = 5, toughness = 5, counters = mapOf("P1P1" to 1))
+        // Review: Forge's live rules text (here an ability a Role grants) is read in words beside the printed card.
+        val g = giant.copy(keywords = listOf("First Strike"), keywordsKnown = true, power = 5, toughness = 5, counters = mapOf("P1P1" to 1),
+            text = listOf(giant.text, "Whenever this creature attacks, scry 1.").filter { it.isNotBlank() }.joinToString("\n"))
         val me = st.me.copy(battlefield = st.me.battlefield.map { if (it.id == g.id) g else it })
         val s2 = st.copy(players = st.players.map { if (it.id == st.viewer) me else it })
         return s2 to s2.card(g.id)!!
@@ -212,6 +214,7 @@ class TableLookG3ShotTest {
         val att = a.rects["inspectAttached${giant.id}"] ?: error("$tag: no Attached row")
         assertTrue("$tag: keyword box off screen", inside(kw)); assertTrue("$tag: Attached row off screen", inside(att))
         assertTrue("$tag: First strike named", rule.onAllNodesWithText("First strike", substring = true).fetchSemanticsNodes().isNotEmpty())
+        assertTrue("$tag: Forge's granted ability is read in words", rule.onAllNodesWithText("scry 1", substring = true).fetchSemanticsNodes().isNotEmpty())
         // The card stands level with its tile (centred on it, unless the screen's edge stops it).
         assertTrue("$tag: the card is not level with its tile", card.top <= tile.center.y && card.bottom >= tile.center.y)
         // The read tile stays lit (no scrim over it) while the rest of the table is only dimmed.

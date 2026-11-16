@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay.ui
 
+import android.os.SystemClock
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -29,13 +30,26 @@ import kotlinx.coroutines.delay
  * whoever knows (the match controller), drawn by the tile itself, gone after [TAG_MS].
  */
 internal object TileTags {
-    data class Tag(val text: String, val seq: Long)
+    /** One tag: its words, its post order and when it was posted ([SystemClock.uptimeMillis]). */
+    data class Tag(val text: String, val seq: Long, val at: Long = 0L)
     private var next = 0L
-    /** The tags showing now, by card id. */
+    /** The tags posted, by card id. A tag is normally removed by its own tile ([TimedTileTag]); [tagFor] ignores one left behind. */
     val shown = mutableStateMapOf<Int, Tag>()
-    fun post(cardId: Int, text: String) { shown[cardId] = Tag(text, ++next) }
+    fun post(cardId: Int, text: String, now: Long = SystemClock.uptimeMillis()) { shown[cardId] = Tag(text, ++next, now) }
     fun clear(cardId: Int, seq: Long) { if (shown[cardId]?.seq == seq) shown.remove(cardId) }
+    /** Every tag goes: a match starts or ends (Forge's card ids repeat from game to game). */
+    fun clearAll() { shown.clear() }
+    /**
+     * The tag to draw on [cardId] now, or null. A tag whose tile was not on the table for its whole life (its card left the
+     * battlefield, or the match ended) is never removed by that tile, so a tag older than its full life plus [STALE_SLACK_MS] is
+     * stale and not shown, even if a card with the same id turns up later.
+     */
+    fun tagFor(cardId: Int, now: Long = SystemClock.uptimeMillis()): Tag? =
+        shown[cardId]?.takeIf { now - it.at <= TAG_MS + TAG_IN_MS + TAG_OUT_MS + STALE_SLACK_MS }
 }
+
+/** How far past its own life a tag may still be read before it counts as left behind (ms): room for a slow frame or a held clock. */
+internal const val STALE_SLACK_MS = 2000L
 
 /** How long a tile tag stays (ms), as the controller's note. */
 internal const val TAG_MS = 3200L

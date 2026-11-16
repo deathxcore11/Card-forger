@@ -126,10 +126,15 @@ class GapsShotTest {
         cap("scry-better-bottom-$tag")
         assertTrue("the card sits in the Bottom zone: ${r("scrycard")} in $bottom", r("scrycard").center.let { it.x in bottom.left..bottom.right && it.y in bottom.top..bottom.bottom })
         assertEquals(null, answer)
-        // A tap on the placed card sends it across, and back.
+        // Review: a tap on the placed card (to look again) never flips the choice; only a zone moves it.
         rule.onNode(androidx.compose.ui.test.hasContentDescription("Plains, the top card of your library")).performClick(); rule.waitForIdle()
-        assertTrue("tapped across to Top", r("scrycard").center.x in top.left..top.right)
-        rule.onNode(androidx.compose.ui.test.hasContentDescription("Plains, the top card of your library")).performClick(); rule.waitForIdle()
+        assertTrue("a tap on the card left it in Bottom", r("scrycard").center.let { it.x in bottom.left..bottom.right })
+        rule.onNode(androidx.compose.ui.test.hasContentDescription("Top")).performClick(); rule.waitForIdle()
+        assertTrue("the Top zone takes it", r("scrycard").center.x in top.left..top.right)
+        rule.onNode(androidx.compose.ui.test.hasContentDescription("Bottom")).performClick(); rule.waitForIdle()
+        // Review: the table's own stack card, buttons, phase box and menu give way under the view (no second trigger card, no old
+        // Top / Bottom pills under Done).
+        assertEquals(0, rule.onAllNodesWithText("Top").fetchSemanticsNodes().size + rule.onAllNodesWithText("Bottom").fetchSemanticsNodes().size)
         // Held "View table": the pill stays, the view hides (seen in the picture).
         rule.onNode(androidx.compose.ui.test.hasContentDescription("View table")).performTouchInput { down(center) }
         cap("scry-better-peek-$tag")

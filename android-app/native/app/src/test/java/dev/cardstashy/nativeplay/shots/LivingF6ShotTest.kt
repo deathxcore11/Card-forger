@@ -123,16 +123,19 @@ class LivingF6ShotTest {
         // The look pass, 12 Nov: the attacker lands beside the picture, on the square's open side, so it touches what it hits.
         val beside = Rect(orb.right + 2 * dp, orb.top, orb.right + home.width * TableFeel.CHARGE_FIST * .8f, orb.bottom)
         assertTrue("the attacker is beside the picture at the hit: ${diff(plain, hit, beside)}", diff(plain, hit, beside) > .3f)
-        // The same hit with its life loss: the number pops on the picture, and the loss adds no burst of its own over the life total.
+        // The same hit with its life loss: the number floats beside the CPU's square (Better table review, scene 7: the portrait, the
+        // name and the life total stay readable), and the loss adds no burst of its own over the life total.
         val life = at(face() + FxItem(Fx.LIFE, 3, 950, player = base.cpu.id, toKey = "orb${base.cpu.id}", tone = Color(0xFFFF5A4A), power = .5f).also { it.label = "−3"; it.points = 3; it.t0 = after }, after + 200, "full-hit-life", burstAt = after)
         val face = Rect(orb.center.x - orb.width * .3f, orb.top + orb.height * .15f, orb.center.x + orb.width * .3f, orb.center.y)
-        assertTrue("the number is on the picture: ${diff(plain, life, face)}", diff(plain, life, face) > .25f)
+        val cpuSq = anchors.rects.getValue("square${base.cpu.id}")
+        val side = Rect(cpuSq.right + 8 * dp, cpuSq.top + cpuSq.height * .3f - 16 * dp, cpuSq.right + 48 * dp, cpuSq.top + cpuSq.height * .3f + 16 * dp)
+        assertTrue("the number floats beside the CPU's square: ${diff(plain, life, side)}", diff(plain, life, side) > .1f)
         assertTrue("the life total is clear of the number and the burst: ${diff(plain, life, inner)}", diff(plain, life, inner) < .12f)
-        // A loss with no charge (a spell at you): the same one burst on your picture, the number on it, and your square's edge
+        // A loss with no charge (a spell at you): the same one burst on your picture, the number beside the square, and its edge
         // glows red, so your life total is read at the red's peak.
         val mineOrb = anchors.rects.getValue("orb${base.viewer}"); val minePill = anchors.rects.getValue("lifepill${base.viewer}")
         val burn = at(listOf(FxItem(Fx.LIFE, 3, 950, player = base.viewer, toKey = "orb${base.viewer}", tone = Color(0xFFFF5A4A), power = .5f).also { it.label = "−3"; it.points = 3 }), 90, "full-burn-you", burstAt = 1)
-        assertTrue("the number is on your picture: ${diff(plain, burn, Rect(mineOrb.center.x - mineOrb.width * .3f, mineOrb.top + mineOrb.height * .15f, mineOrb.center.x + mineOrb.width * .3f, mineOrb.center.y))}",
+        assertTrue("the burst is on your picture: ${diff(plain, burn, Rect(mineOrb.center.x - mineOrb.width * .3f, mineOrb.top + mineOrb.height * .15f, mineOrb.center.x + mineOrb.width * .3f, mineOrb.center.y))}",
             diff(plain, burn, Rect(mineOrb.center.x - mineOrb.width * .3f, mineOrb.top + mineOrb.height * .15f, mineOrb.center.x + mineOrb.width * .3f, mineOrb.center.y)) > .25f)
         assertTrue("your life total is clear of the red and the burst: ${diff(plain, burn, Rect(minePill.left + 3 * dp, minePill.top + 3 * dp, minePill.right - 3 * dp, minePill.bottom - 3 * dp))}",
             diff(plain, burn, Rect(minePill.left + 3 * dp, minePill.top + 3 * dp, minePill.right - 3 * dp, minePill.bottom - 3 * dp)) < .12f)

@@ -116,9 +116,15 @@ class HitSeatShotTest {
         assertTrue("your square's edge glows red: ${diff(plain, you, above)}", diff(plain, you, above) > .5f)
         val px = you.getPixel(sq.center.x.toInt(), (sq.top - 4 * dp).toInt())
         assertTrue("the glow is red: ${Integer.toHexString(px)}", android.graphics.Color.red(px) > android.graphics.Color.green(px) + 40)
-        // The number lands on your picture, and the life total under it still reads.
+        // Review: the burst is on your picture and the number floats beside the square (the preview's "−5" next to the seat), so
+        // the name and the life total under it still read.
         val face = Rect(orb.center.x - orb.width * .3f, orb.top + orb.height * .15f, orb.center.x + orb.width * .3f, orb.center.y)
-        assertTrue("the number is on your picture: ${diff(plain, you, face)}", diff(plain, you, face) > .25f)
+        assertTrue("the burst is on your picture: ${diff(plain, you, face)}", diff(plain, you, face) > .25f)
+        val beside = Rect(sq.right + 10 * dp, sq.top, sq.right + 40 * dp, sq.top + sq.height * .5f)
+        var red = 0; var all = 0
+        for (y in beside.top.toInt() until beside.bottom.toInt() step 2) for (x in beside.left.toInt() until beside.right.toInt() step 2) { all++
+            val c = you.getPixel(x, y); if (android.graphics.Color.red(c) > 200 && android.graphics.Color.green(c) < 140) red++ }
+        assertTrue("the red number floats beside your square: $red of $all", red > all * .03f)
         val inner = Rect(pill.left + 3 * dp, pill.top + 3 * dp, pill.right - 3 * dp, pill.bottom - 3 * dp)
         assertTrue("your life total is clear: ${diff(plain, you, inner)}", diff(plain, you, inner) < .12f)
         // Gone by 800 ms: the square's edge is back to itself.

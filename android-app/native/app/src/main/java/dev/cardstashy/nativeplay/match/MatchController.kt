@@ -241,6 +241,8 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     private val queued get() = queue.get()
 
     fun start() {
+        // Better table review: no tile tag from an earlier match (Forge's card ids repeat) hangs on in this one.
+        dev.cardstashy.nativeplay.ui.TileTags.clearAll()
         poller = scope.launch(Dispatchers.IO) {
             val t0 = SystemClock.elapsedRealtime()
             val s: EngineSession = try { remote?.invoke() ?: LocalSession(ForgeService.start(input)) } catch (t: Throwable) {
@@ -591,7 +593,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             }
             // A held card that is no longer in exile, or whose holder is no longer on the battlefield, is held no more.
             if (_held.value.isNotEmpty()) _held.value = Director.stillHeld(_held.value, st)
-            if (st.finished) { _stage.value = Stage.FINISHED; show(st) }
+            if (st.finished) { _stage.value = Stage.FINISHED; dev.cardstashy.nativeplay.ui.TileTags.clearAll(); show(st) }
         }
     }
 
@@ -833,7 +835,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             Log.i(TableLog.TAG, "decide ${st.phase} turn ${st.turn} input=${st.inputType} -> cancel (optional payment you can't make: $name)")
             if (declinedAt != st.revision) { declinedAt = st.revision; say("$name: not paid")
                 // Better table scene 2: the note also hangs on the trigger's source card itself for a few seconds.
-                st.stack.firstOrNull()?.source?.id?.let { id -> scope.launch(Dispatchers.Main) { dev.cardstashy.nativeplay.ui.TileTags.post(id, dev.cardstashy.nativeplay.ui.NO_MANA_SKIPPED) } } }
+                st.stack.firstOrNull()?.source?.id?.takeIf { id -> st.players.any { p -> p.battlefield.any { it.id == id } } }?.let { id -> scope.launch(Dispatchers.Main) { dev.cardstashy.nativeplay.ui.TileTags.post(id, dev.cardstashy.nativeplay.ui.NO_MANA_SKIPPED) } } }
             autoJob = scope.launch(Dispatchers.Main) {
                 delay(150)
                 val now = latest

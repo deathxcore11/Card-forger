@@ -242,7 +242,9 @@ private fun GlassBox(s: Spotlight, w: Dp, h: Dp, timer: Float, attached: List<Ca
         val intent = spotlightIntent(s)
         if (intent.isNotEmpty()) Text(intent, style = sans(14.sp, FontWeight.SemiBold, Color(0xFFF3E9D2)), maxLines = 2,
             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0x14FFFFFF)).border(1.dp, Color(0x33E9C98A), RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 8.dp))
-        val lines = if (short) emptyList() else c.text.split(Regex("\n+")).map { it.trim() }.filter { it.isNotEmpty() }.take(6)
+        // Review (scene 13): Forge's rules lines show in the short box too. Card.text is the card as it stands now (a granted
+        // "scry 1 on attack", "loses all abilities", changed text), which the printed art beside it cannot say.
+        val lines = c.text.split(Regex("\n+")).map { it.trim() }.filter { it.isNotEmpty() }.take(6)
         if (lines.isNotEmpty()) {
             Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0x1FFFFFFF)))
             // 0.4.60 G4: with the keyword boxes under them the rules keep their full height; the boxes give way (they scroll).

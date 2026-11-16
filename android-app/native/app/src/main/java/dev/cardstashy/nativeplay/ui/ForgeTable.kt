@@ -49,6 +49,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawOutline
@@ -427,6 +428,12 @@ fun ForgeBoard(
         .onFocusChanged { TableZones.ringIn = it.hasFocus }
         .focusGroup()) {
         val d = Du(chromeU(maxWidth, maxHeight))
+        // Better table review (scene 1): while the one-card scry view is up over the table, the table's own stack card, its buttons,
+        // the phase box and the menu give way (they showed through the dimmer as second copies of the view's trigger card and as the
+        // old Bottom / Top pills); "View table" held brings them back with the rest of the table. They keep their places.
+        val scryCover = live && ScryOne.of(st) != null && !TableCover.peek
+        val coverM = Modifier.graphicsLayer { alpha = if (scryCover) 0f else 1f }
+            .then(if (scryCover) Modifier.clearAndSetSemantics { } else Modifier)
         with(d) {
             val W = maxWidth; val H = maxHeight
             val me = st.me
@@ -760,7 +767,7 @@ fun ForgeBoard(
             // 0.4.60 Z1: the menu with the turn beside it, then the phase box, top right in the right strip (nothing in the top middle).
             val menuX = zones.menu.right.dp - 44.du; val menuY = zones.menu.y.dp
             val menuFocus = remember { FocusRequester() }
-            Box(Modifier.offset(x = menuX, y = menuY).size(44.du).anchorRect("menu").clip(CircleShape).background(Color(0x6612141A)).border(1.dp, Color(0x24FFFFFF), CircleShape)
+            Box(Modifier.offset(x = menuX, y = menuY).size(44.du).then(coverM).anchorRect("menu").clip(CircleShape).background(Color(0x6612141A)).border(1.dp, Color(0x24FFFFFF), CircleShape)
                 .focusRequester(menuFocus).onFocusChanged { if (it.isFocused) { TablePad.last = menuFocus
                     android.util.Log.i("PadA", "ring on menu button mode=${PadPrompts.inputModes?.inputMode}", Throwable()) } }
                 .padActs(PadActs(a = "Menu"))
@@ -771,16 +778,17 @@ fun ForgeBoard(
                 if (DualScreen.active && TablePad.last === menuFocus) TableZones.hand?.let { TablePad.last = it }
                 TablePad.restore() } }
             // The menu carries the stack size as a badge (summary[data-count]::after: 18 px gold pill at -4, -4).
-            if (st.stack.isNotEmpty()) Box(Modifier.offset(x = menuX + (44 - 18 + 4).du, y = menuY - 4.du).heightIn(min = 18.du).widthIn(min = 18.du).clip(RoundedCornerShape(9.du)).background(Color(0xFFE8B95B)).padding(horizontal = 5.du),
+            if (st.stack.isNotEmpty()) Box(Modifier.offset(x = menuX + (44 - 18 + 4).du, y = menuY - 4.du).then(coverM).heightIn(min = 18.du).widthIn(min = 18.du).clip(RoundedCornerShape(9.du)).background(Color(0xFFE8B95B)).padding(horizontal = 5.du),
                 contentAlignment = Alignment.Center) { Text("${st.stack.size}", style = sans(sp(11f), FontWeight.ExtraBold, Color(0xFF1B1406))) }
-            Box(Modifier.offset(x = zones.menu.x.dp, y = menuY).width((menuX - 6.du - zones.menu.x.dp).coerceAtLeast(0.dp)).height(44.du).anchorRect("turn"), contentAlignment = Alignment.CenterEnd) {
+            Box(Modifier.offset(x = zones.menu.x.dp, y = menuY).width((menuX - 6.du - zones.menu.x.dp).coerceAtLeast(0.dp)).height(44.du).then(coverM).anchorRect("turn"), contentAlignment = Alignment.CenterEnd) {
                 Text("Turn ${st.turn}", style = sans(sp(12f), FontWeight.Bold, if (st.activePlayer == st.viewer) Sky else Ember).copy(letterSpacing = .48.sp), maxLines = 1, softWrap = false)
             }
-            PhaseTrack(st, stopLights(st), intents.stop, zones.phase.at().anchorRect("phasetrack"), d, width = zones.phase.w.dp, height = zones.phase.h.dp)
+            PhaseTrack(st, stopLights(st), intents.stop, zones.phase.at().then(coverM).anchorRect("phasetrack"), d, width = zones.phase.w.dp, height = zones.phase.h.dp)
 
             // The stack, fanned on the right over its portal, with the arc to its source.
             // T6 (Arena clip 1): the card you are casting waits on top of the stack while it asks for its targets or its mana.
             val lane = laneStack(st)
+            Box(Modifier.fillMaxSize().then(coverM)) {
             if (lane.isNotEmpty()) {
                 // 0.4.60 Z1: the stack card stands in the right strip between the phase box and the buttons and never takes board width.
                 // The card (104 × 145 du) and the words under it (8 + 22 du) shrink together to fit the strip; the height the strip has
@@ -838,6 +846,7 @@ fun ForgeBoard(
                 }
                 StackArc(st, d)
             }
+            }
 
             // The hand: centred 44 du right of the middle (between your seat and the buttons), the middle card's top 67 du above the bottom.
             // T6: the card you cancelled comes back to the place it left, not to the end of its mana value.
@@ -860,6 +869,8 @@ fun ForgeBoard(
             // The fan itself, at any card width: on the table, or on a dual-screen handheld's bottom screen (MatchBottom).
             val fan: @Composable (Dp) -> Unit = { fanW ->
                 HandFan(hand, fanW, Modifier.fillMaxWidth(), raised = selectedHand, angleDeg = if (trayHand != null) ZoneLayout.HAND_TILT else 1.2f, flatLift = DualScreen.active,
+                    // Review: the first card's tilted corner stays off your square (it lies 8 du left of the tray), the last off the buttons.
+                    tiltRoom = if (trayHand != null) 4.du else Dp.Infinity,
                     gap = trayHand?.gap?.dp ?: 4.dp, arc = if (trayHand != null) ZoneLayout.HAND_ARC.dp else 2.dp, pop = trayHand?.pop, liftRise = trayHand?.rise?.dp,
                     markOf = ::markOf,
                     canPlay = { card -> castable(card) },
@@ -1031,6 +1042,7 @@ fun ForgeBoard(
             var padX: PadAct? = null
             // The visible Cancel pill is the last stop of the target walk (live 0.4.57), so it can take the ring.
             val cancelFocus = remember { FocusRequester() }
+            Box(Modifier.fillMaxSize().then(coverM)) {
             if (st.prompt == null && st.waitingOnMe) {
                 // The cleanup discard (U1): a lifted card goes, so its button says Discard, never Play or Cast.
                 val discardingNow = dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) != null
@@ -1164,9 +1176,11 @@ fun ForgeBoard(
                     }
                 }
             }
+            }
             // 0.4.60 Z6: the three-dot button at the quiet row's right end (beside End turn), whenever its menu has a line (Yield while an
             // ability is on top of the stack, whoever's priority it is); its menu opens above it. A controller opens it with LT and its
             // first line takes the ring, so Yield is two presses (LT, A); a finger, two taps.
+            Box(Modifier.fillMaxSize().then(coverM)) {
             if (dotsShown) {
                 val dotsTop = goldY - 6.du - btnH
                 val dotsEdge = W - zones.actions.right.dp
@@ -1182,6 +1196,7 @@ fun ForgeBoard(
                     }
                     LaunchedEffect(Unit) { if (dotsByPad) { androidx.compose.runtime.withFrameNanos { }; runCatching { dotsFocus.requestFocus() } } }
                 }
+            }
             }
             // The table's controller buttons: X the gold button, Start the menu (the same toggle as its button). A hand card or permanent adds its own A and Y.
             // LB/RB step through your hand (lifting each card: on a dual screen's bottom, or the table's own fan); RT is the gold button
@@ -2011,7 +2026,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
     }
     // Better table (scene 2, later 9): a short timed note hanging under the tile ("No mana · skipped"), in the tag pill's shape. It
     // travels with its card (the card's own effect transform) and never takes a tap.
-    TileTags.shown[card.id]?.let { tag ->
+    TileTags.tagFor(card.id)?.let { tag ->
         Box(modifier.size(w, h).zIndex(23f).then(if (fx != null) Modifier.graphicsLayer { fx.move(this, card.id, anchors); shadowElevation = 0f } else Modifier)) {
             TimedTileTag(card.id, tag, d, Modifier.align(Alignment.TopCenter).offset(y = h + 3.du).wrapContentWidth(unbounded = true), maxW = w * 1.6f)
         }
@@ -2217,6 +2232,17 @@ internal const val TURN_SWEEP_MS = 2400
 /** The life digits' height over their sp (DM Sans's figures stand about this tall). */
 internal const val HERO_CAP = .74f
 internal fun heroLifeSp(sH: Float): Float = (34f * sH).coerceIn(28f, 48f)
+/** A square's text line height over its sp (the name and the turn tag). */
+internal const val NAME_LINE = 1.36f
+/** Gap kept between the portrait row and the top of the life digits (dp). */
+internal const val HERO_GAP = 2f
+/**
+ * The height (dp) the life digits may take in a square whose drawn part is [inner] dp tall: below the portrait row ([topRow] dp
+ * from the top, plus [HERO_GAP]) and above the chips ([foot] + [chipH] + [over] from the bottom).
+ */
+internal fun heroBand(inner: Float, topRow: Float, foot: Float, chipH: Float, over: Float): Float = inner - foot - chipH - over - topRow - HERO_GAP
+/** The life number's sp: [heroLifeSp], stepped down only when the [band] under the portrait row is shorter than its digits, never under [TextFloors.LIFE]. */
+internal fun heroFitSp(sH: Float, band: Float): Float = minOf(heroLifeSp(sH), band / HERO_CAP).coerceAtLeast(TextFloors.LIFE)
 /** The square's low-life state: Forge's life at [LOW_LIFE] or less (0 and below too). */
 internal fun lifeLow(shown: Int): Boolean = shown <= LOW_LIFE
 /** The small tag on the active player's square. */
@@ -2335,8 +2361,14 @@ private fun PlayerSquare(p: Player, box: ZoneLayout.Box, who: String, active: Bo
                 SquareChip(p.libraryCount, hand = false, words, chipH, "lib${p.id}", "Deck", d)
             }
             Box(Modifier.align(Alignment.BottomEnd).padding(end = pad, bottom = foot)) { grave(m(19f), m(19f / .716f), maxOf(10f, 11f * s)) }
-            // The hero: the life total, standing on the chips.
-            val heroSp = heroLifeSp(sH)
+            // The hero: the life total, standing on the chips, never reaching up into the portrait row above it. A square squeezed by
+            // Commander damage lines has less height than its width says, so the number fits the band left between the row and the
+            // chips (down to the life floor), and its loss roll lifts and grows only as far as that band allows.
+            val topRow = 5f * sH + maxOf(26f * s, words * NAME_LINE + if (active && inner >= SQUARE_H * .9f) 8f * NAME_LINE else 0f)
+            val band = heroBand(inner, topRow, foot.value, chipH.value, 2.5f * sH)
+            val heroSp = heroFitSp(sH, band)
+            val rest = (band - heroSp * HERO_CAP).coerceAtLeast(0f)
+            val grow = minOf(.18f, rest / (heroSp * HERO_CAP) * .5f); val lift = minOf(8f, rest - heroSp * HERO_CAP * grow)
             anchors?.let { it.sizes["lifesp${p.id}"] = heroSp }
             val k = ((lt.tick.value - 1f) / .4f).coerceIn(0f, 1f)
             val tone = when { k > .02f && lt.up -> Color(0xFF7BE08A); k > .02f -> Color(0xFFFF8A6A); low -> foe; else -> Color(0xFFFFF4D8) }
@@ -2355,8 +2387,8 @@ private fun PlayerSquare(p: Player, box: ZoneLayout.Box, who: String, active: Bo
                     maxLines = 1, softWrap = false,
                     modifier = Modifier.wrapContentHeight(Alignment.CenterVertically, unbounded = true).graphicsLayer {
                         // The count rolls: each step comes in from above on a loss, from below on a gain, and lands with a punch.
-                        translationY = (if (lt.up) 1f else -1f) * 8.dp.toPx() * k
-                        val sc = 1f + .18f * k; scaleX = sc; scaleY = sc
+                        translationY = (if (lt.up) 8.dp.toPx() else -lift.dp.toPx()) * k
+                        val sc = 1f + (if (lt.up) .18f else grow) * k; scaleX = sc; scaleY = sc
                         transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 1f)
                     })
             }
@@ -2747,6 +2779,9 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
         val reducedFx = punchFx?.reduced == true
         val arriving = !reducedFx && travel?.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_STACK && travel.cardId != null && travel.cardId == top.source?.id
         val travelled = travel?.cardId != null && travel.cardId == top.source?.id
+        // Better table review (scene 6): while the CPU's card is held in its pop (TravelCard) it IS this card, so the stack card
+        // gives way and only one copy shows.
+        val popped = !reducedFx && travel?.leg == dev.cardstashy.nativeplay.match.Director.Leg.POP && travelled
         LaunchedEffect(top.id) {
             if (Motion.still || travelled || top.ability || top.controller == st.viewer || top.source == null || !flown.add(top.id)) return@LaunchedEffect
             flyFrom = anchors?.rects?.get("cpuhand")?.center ?: return@LaunchedEffect
@@ -2762,7 +2797,7 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
         var here by remember { mutableStateOf(Offset.Zero) }
         Box(Modifier.offset(x = 44.du, y = 34.du).then(if (anchors != null) Modifier.onGloballyPositioned { val b = it.boundsInRoot(); here = b.center; anchors.put("stacktop", Offset(b.left, b.top + b.height * .3f)); anchors.putRect("stackcard", b); anchors.putRect("stack${top.id}", b) } else Modifier)
             .graphicsLayer {
-                if (arriving) { alpha = 0f; return@graphicsLayer }
+                if (arriving || popped) { alpha = 0f; return@graphicsLayer }
                 // Match punch P2, Charge and Burst: the spell swells as each land's streak reaches it, and again as it bursts.
                 val swell = punchFx?.stackSwell(top.source?.id) ?: 1f
                 if (swell != 1f) { scaleX = swell; scaleY = swell }
