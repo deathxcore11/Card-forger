@@ -5,6 +5,9 @@ import dev.cardstashy.nativeplay.engine.StackItem
 import kotlin.math.sign
 import kotlinx.coroutines.launch
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.layoutId
+import kotlin.math.PI
+import kotlin.math.sin
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -394,14 +397,14 @@ private val MULL_GOLD = Color(0xFFE8B95B)
 
 /** A gold hairline that fades in toward the title, ending in a small diamond beside it ([right]: the right-hand one, mirrored). */
 @Composable
-private fun MullFlourish(right: Boolean, modifier: Modifier) = androidx.compose.foundation.Canvas(modifier) {
+private fun MullFlourish(right: Boolean, modifier: Modifier, tone: Color = MULL_GOLD) = androidx.compose.foundation.Canvas(modifier) {
     val cy = size.height / 2; val r = size.height * .3f
     val tip = if (right) r else size.width - r
     val far = if (right) size.width else 0f
-    drawLine(Brush.horizontalGradient(if (right) listOf(MULL_GOLD, Color.Transparent) else listOf(Color.Transparent, MULL_GOLD), startX = minOf(tip, far), endX = maxOf(tip, far)),
+    drawLine(Brush.horizontalGradient(if (right) listOf(tone, Color.Transparent) else listOf(Color.Transparent, tone), startX = minOf(tip, far), endX = maxOf(tip, far)),
         Offset(far, cy), Offset(tip, cy), strokeWidth = 1.dp.toPx())
     val p = androidx.compose.ui.graphics.Path().apply { moveTo(tip - r, cy); lineTo(tip, cy - r); lineTo(tip + r, cy); lineTo(tip, cy + r); close() }
-    drawPath(p, MULL_GOLD)
+    drawPath(p, tone)
 }
 
 /**
@@ -1003,38 +1006,191 @@ private fun Menu(onConcede: () -> Unit, onLeave: () -> Unit, onClose: () -> Unit
     }
 }
 
+/**
+ * Better table scene 12, an ending with weight. The last hit has burst on the loser's picture ([drawWin] on "orb<loser>",
+ * [TableFeel.resultWaitFor] holds this back until it is seen); then the table dims ([TableDimmer]), a full-width band carries the
+ * word (Defeat in coral, Victory in gold, Draw in plain ink), the match in three numbers (Turns, You, CPU: Forge's values as they
+ * are), and Home and Rematch. The band's hairlines run out from the middle as the word lands with a bounce, a light crosses it
+ * once, the numbers and the buttons rise in after it ([ResultMotion]). Reduce motion: everything only fades. Motion.still shows the
+ * end frame at once; X and the buttons still wait for the rise to finish ([ResultMotion.IN_MS]), so an X carried in from the table
+ * does nothing. Anchors: result.band, result.word, result.stats, result.stat:<label>, result.home, result.rematch, result.reason.
+ */
 @Composable
 internal fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRematch: () -> Unit, note: String? = null, reason: String? = null, holdMs: () -> Long = { 0L }) {
     val won = !st.draw && st.winnerPlayerId == st.viewer
     val draw = st.draw || st.winnerPlayerId == null
-    val rise = remember { Animatable(0f) }
+    val ctx = LocalContext.current.applicationContext
+    val calm = remember { Playmats.reduced(ctx) }
+    // The rise's own clock, in ms (0 .. IN_MS): every part reads its own window of it.
+    val t = remember { Animatable(if (Motion.still) ResultMotion.IN_MS.toFloat() else 0f) }
     // Live 0.4.57: one X on Defeat started a Rematch. As in Arena, X and the ring's start leave to Home; Rematch is a
-    // deliberate step (touch, or the ring right then A). Both wait for the card to finish rising, so an X carried in from the
+    // deliberate step (touch, or the ring right then A). Both wait for the result to finish rising, so an X carried in from the
     // table does nothing; the board under the result lends nothing either.
     var armed by remember { mutableStateOf(false) }
     val homeFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) {
-        delay(300 + holdMs()); audio.play(if (draw) "QP-019" else if (won) "QP-017" else "QP-018"); rise.animateTo(1f, tween(400, easing = FastOutSlowInEasing))
+        delay(300 + holdMs()); audio.play(if (draw) "QP-019" else if (won) "QP-017" else "QP-018")
+        if (Motion.still) delay(ResultMotion.IN_MS) else t.animateTo(ResultMotion.IN_MS.toFloat(), tween(ResultMotion.IN_MS.toInt(), easing = LinearEasing))
         armed = true
         // The ring start leaves touch mode first, as the table's does (live 0.4.56): in touch mode a button can't take focus.
         if (Pad.connected.value) { PadPrompts.inputModes?.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard); runCatching { homeFocus.requestFocus() } }
     }
     PadScreen(PadActs(x = if (armed) PadAct("Home") { onHome() } else null, opaque = true))
-    Box(Modifier.fillMaxSize().background(Color(0xAA000000).copy(alpha = .67f * rise.value)), contentAlignment = Alignment.Center) {
-        Column(Modifier.graphicsLayer { alpha = rise.value; translationY = (1f - rise.value) * 40.dp.toPx() }.width(380.dp).glass(16.dp).padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(Modifier.fillMaxWidth().aspectRatio(5f), contentAlignment = Alignment.Center) {
-                AssetImage(if (draw) "play/result-draw.webp" else if (won) "play/result-win.webp" else "play/result-loss.webp", Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-                Text(if (draw) "Draw" else if (won) "Victory" else "Defeat", style = Type.Title.copy(fontSize = 26.sp))
-            }
-            // Why it ended (V14), then the final board's numbers.
-            if (reason != null) Text(reason, style = Type.Body.copy(color = Palette.Ink), textAlign = TextAlign.Center)
-            Text("Turn ${st.turn} · You ${st.me.life} · CPU ${st.cpu.life}", style = Type.Body.copy(color = Palette.InkSoft))
-            if (note != null) Text(note, style = Type.Body.copy(color = Palette.Gold, fontSize = 13.sp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                GoldButton("Home", true, Modifier.width(150.dp).focusRequester(homeFocus), primary = false, onClick = onHome)
-                GoldButton("Rematch", true, Modifier.width(150.dp), onClick = onRematch)
+    val tone = ResultMotion.tone(won, draw)
+    val ink = ResultMotion.ink(won, draw)
+    val dens = LocalDensity.current.density
+    BoxWithConstraints(Modifier.fillMaxSize().drawBehind { drawRect(TableDimmer.copy(alpha = TableDimmer.alpha * ResultMotion.dim(t.value))) }
+        // The table under the result takes no touch.
+        .pointerInput(Unit) { detectTapGestures { } }) {
+        val W = maxWidth; val H = maxHeight
+        val d = Du(chromeU(W, H))
+        with(d) {
+            val wordSp = ResultMotion.wordSp(W.value, H.value)
+            val word = if (draw) "Draw" else if (won) "Victory" else "Defeat"
+            androidx.compose.ui.layout.Layout(content = {
+                // The band: the preview's .banner, a tone wash across the width with a hairline above and below.
+                Box(Modifier.layoutId("band").fillMaxWidth().anchorRect("result.band")
+                    .drawBehind {
+                        val w = size.width; val h = size.height
+                        val s = if (calm) 1f else ResultMotion.streak(t.value)
+                        val a = if (calm) ResultMotion.dim(t.value) else 1f
+                        if (s <= 0f || a <= 0f) return@drawBehind
+                        val half = w / 2 * s; val l = w / 2 - half; val r = w / 2 + half
+                        drawRect(Brush.horizontalGradient(0f to Color.Transparent, .3f to tone.copy(alpha = .28f * a), .7f to tone.copy(alpha = .28f * a), 1f to Color.Transparent, startX = l, endX = r),
+                            topLeft = Offset(l, 0f), size = androidx.compose.ui.geometry.Size(r - l, h))
+                        // A deeper core behind the word, so it reads on any mat.
+                        drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color(0x5506070D), Color.Transparent)), topLeft = Offset(l, 0f), size = androidx.compose.ui.geometry.Size(r - l, h), alpha = a)
+                        val hair = 1.dp.toPx()
+                        val line = Brush.horizontalGradient(0f to Color.Transparent, .22f to tone.copy(alpha = .6f * a), .5f to ResultMotion.hot(tone).copy(alpha = .95f * a), .78f to tone.copy(alpha = .6f * a), 1f to Color.Transparent, startX = l, endX = r)
+                        drawLine(line, Offset(l, hair / 2), Offset(r, hair / 2), hair)
+                        drawLine(line, Offset(l, h - hair / 2), Offset(r, h - hair / 2), hair)
+                        // The light that runs once along the band after the word lands.
+                        if (!calm) { val q = ResultMotion.sweep(t.value)
+                            if (q > 0f && q < 1f) { val bw = w * .22f; val x = -bw + q * (w + bw)
+                                val k = sin(q * PI.toFloat())
+                                drawRect(Brush.horizontalGradient(listOf(Color.Transparent, Color.White.copy(alpha = .16f * k), Color.Transparent), startX = x, endX = x + bw), topLeft = Offset(x, 0f), size = androidx.compose.ui.geometry.Size(bw, h))
+                                drawLine(Brush.horizontalGradient(listOf(Color.Transparent, Color.White.copy(alpha = .9f * k), Color.Transparent), startX = x, endX = x + bw), Offset(x, hair / 2), Offset(x + bw, hair / 2), hair * 1.5f)
+                                drawLine(Brush.horizontalGradient(listOf(Color.Transparent, Color.White.copy(alpha = .9f * k), Color.Transparent), startX = x, endX = x + bw), Offset(x, h - hair / 2), Offset(x + bw, h - hair / 2), hair * 1.5f) } }
+                    }.padding(vertical = (W.value * .016f).coerceIn(10f, 18f).dp), contentAlignment = Alignment.Center) {
+                    Row(Modifier.graphicsLayer {
+                            val q = ResultMotion.word(t.value)
+                            alpha = (q * 3f).coerceIn(0f, 1f) * (if (calm) ResultMotion.dim(t.value) else 1f)
+                            if (!calm) { val k = .5f + .5f * backOut(q); scaleX = k; scaleY = k }
+                        }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy((wordSp * .3f).dp)) {
+                        MullFlourish(false, Modifier.size((wordSp * 1.1f).dp, (wordSp * .22f).dp), tone)
+                        Text(word, Modifier.anchorRect("result.word"),
+                            style = androidx.compose.ui.text.TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = wordSp.sp, letterSpacing = .24.em, color = ink,
+                                shadow = androidx.compose.ui.graphics.Shadow(tone.copy(alpha = .9f), Offset.Zero, 24f * dens),
+                                platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)), maxLines = 1, softWrap = false)
+                        MullFlourish(true, Modifier.size((wordSp * 1.1f).dp, (wordSp * .22f).dp), tone)
+                    }
+                }
+                // The match in three numbers.
+                Row(Modifier.layoutId("stats").anchorRect("result.stats"), horizontalArrangement = Arrangement.spacedBy(14.du)) {
+                    ResultMotion.stats(st).forEachIndexed { i, (label, n) ->
+                        ResultStat(label, n, low = i > 0 && lifeLow(n), d = d, modifier = Modifier.graphicsLayer {
+                            val q = ResultMotion.stat(t.value, i); alpha = q
+                            if (!calm) { translationY = (1f - q) * 14.du.toPx(); val k = .94f + .06f * q; scaleX = k; scaleY = k } })
+                    }
+                }
+                // Why it ended (V14): one quiet line, left out where the screen is too short for it.
+                if (reason != null) Text(reason, Modifier.layoutId("reason").anchorRect("result.reason").graphicsLayer { alpha = ResultMotion.stat(t.value, 2) },
+                    style = sans(sp(12.5f), FontWeight.Medium, Color(0xFFCFC6B2)).copy(shadow = androidx.compose.ui.graphics.Shadow(Color(0xE606070D), Offset.Zero, 8f * dens)), textAlign = TextAlign.Center, maxLines = 1)
+                Row(Modifier.layoutId("buttons").graphicsLayer {
+                        val q = ResultMotion.buttons(t.value); alpha = q
+                        if (!calm) translationY = (1f - q) * 18.du.toPx() },
+                    horizontalArrangement = Arrangement.spacedBy(16.du), verticalAlignment = Alignment.CenterVertically) {
+                    val minW = maxOf(W * .17f, 132.du)
+                    MullGlass("Home", null, Modifier.height(48.du).widthIn(min = minW).anchorRect("result.home").focusRequester(homeFocus), d, onClick = onHome)
+                    GoldPill("Rematch", true, Modifier.widthIn(min = minW).anchorRect("result.rematch"), d, height = 48.du, onClick = onRematch)
+                }
+                if (note != null) Text(note, Modifier.layoutId("note").graphicsLayer { alpha = ResultMotion.buttons(t.value) },
+                    style = sans(sp(13f), FontWeight.SemiBold, MULL_GOLD), textAlign = TextAlign.Center, maxLines = 2)
+            }, modifier = Modifier.fillMaxSize()) { ms, c ->
+                val free = c.copy(minWidth = 0, minHeight = 0)
+                val band = ms.first { it.layoutId == "band" }.measure(free.copy(minWidth = c.maxWidth))
+                val parts = listOf("stats", "reason", "buttons", "note").mapNotNull { id -> ms.firstOrNull { it.layoutId == id }?.let { id to it.measure(free) } }.toMap()
+                val gap = 14.du.roundToPx(); val margin = 10.du.roundToPx()
+                val tops = ResultMotion.tops(c.maxHeight, band.height, parts["stats"]!!.height, parts["reason"]?.height, parts["buttons"]!!.height, parts["note"]?.height, gap, margin)
+                layout(c.maxWidth, c.maxHeight) {
+                    band.place(0, tops.band)
+                    fun mid(p: androidx.compose.ui.layout.Placeable, y: Int) = p.place((c.maxWidth - p.width) / 2, y)
+                    mid(parts["stats"]!!, tops.stats)
+                    if (tops.reason != null) parts["reason"]?.let { mid(it, tops.reason) }
+                    mid(parts["buttons"]!!, tops.buttons)
+                    if (tops.note != null) parts["note"]?.let { mid(it, tops.note) }
+                }
             }
         }
+    }
+}
+
+/** One of the result's numbers: a dark glass tile, a gold hairline along its top, the value big and heavy, its name small under it. */
+@Composable
+private fun ResultStat(label: String, n: Int, low: Boolean, d: Du, modifier: Modifier) = with(d) {
+    val shape = RoundedCornerShape(10.du)
+    val glow = if (low) CpuRed else MULL_GOLD
+    Column(modifier.anchorRect("result.stat:$label").widthIn(min = 88.du)
+        .drawBehind { drawRoundRect(Color(0x66000000), topLeft = Offset(0f, 5.du.toPx()), size = size, cornerRadius = CornerRadius(10.du.toPx())) }
+        .clip(shape).background(Brush.verticalGradient(listOf(Color(0xF5151926), Color(0xF20C0E16))))
+        .drawWithContent { drawContent()
+            drawLine(Brush.horizontalGradient(listOf(Color.Transparent, MULL_GOLD.copy(alpha = .7f), Color.Transparent)), Offset(size.width * .12f, .5.dp.toPx()), Offset(size.width * .88f, .5.dp.toPx()), 1.dp.toPx()) }
+        .border(1.dp, Color(0xFF3A4260), shape).padding(horizontal = 18.du, vertical = 8.du),
+        horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("$n", style = sans(sp(26f), FontWeight.Black, if (low) Color(0xFFFF8F84) else Color(0xFFFFF4D8)).copy(fontFeatureSettings = "tnum", letterSpacing = (-.01).em,
+            shadow = androidx.compose.ui.graphics.Shadow(glow.copy(alpha = .5f), Offset.Zero, 12f * LocalDensity.current.density)), maxLines = 1, softWrap = false)
+        Text(label.uppercase(), style = sans(sp(11f), FontWeight.SemiBold, Color(0xFF9C978C)).copy(letterSpacing = .12.em), maxLines = 1, softWrap = false)
+    }
+}
+
+/**
+ * Scene 12's numbers and timing, kept pure for the tests. The rise takes [IN_MS] from the moment the result starts: the dimmer
+ * (0..400 ms), the hairlines running out (0..380, an expo ease), the word growing in from half size with a bounce (60..340), the
+ * light crossing the band (300..620), the three numbers one after another (200, 260, 320; 260 ms each) and the buttons (340..620).
+ */
+internal object ResultMotion {
+    const val IN_MS = 620L
+    private fun win(t: Float, from: Float, len: Float) = ((t - from) / len).coerceIn(0f, 1f)
+    private fun cubicOut(x: Float) = 1f - (1f - x) * (1f - x) * (1f - x)
+    fun dim(t: Float) = cubicOut(win(t, 0f, 400f))
+    fun streak(t: Float) = win(t, 0f, 380f).let { x -> if (x >= 1f) 1f else 1f - Math.pow(2.0, -10.0 * x).toFloat() }
+    fun word(t: Float) = win(t, 60f, 280f)
+    fun sweep(t: Float) = win(t, 300f, 320f)
+    fun stat(t: Float, i: Int) = cubicOut(win(t, 200f + 60f * i, 260f))
+    fun buttons(t: Float) = cubicOut(win(t, 340f, 280f))
+
+    /** The tone: coral for a defeat, gold for a victory, plain ink for a draw. */
+    fun tone(won: Boolean, draw: Boolean) = when { draw -> Color(0xFFB9B2A4); won -> Color(0xFFE8B95B); else -> Color(0xFFF0564E) }
+    /** The word's colour: a warm pale of its tone. */
+    fun ink(won: Boolean, draw: Boolean) = when { draw -> Color(0xFFEEE6D4); won -> Color(0xFFFFF4D8); else -> Color(0xFFFFD9D2) }
+    /** The hairline's bright middle. */
+    fun hot(tone: Color) = androidx.compose.ui.graphics.lerp(tone, Color.White, .45f)
+    /** The word's size (sp): 6 % of the width as in the preview, held by the height on a phone, never over 64. */
+    fun wordSp(w: Float, h: Float) = minOf(64f, w * .06f, h * .12f)
+    /** The three numbers, Forge's values as they are (a life below 0 shows below 0). */
+    fun stats(st: MatchState) = listOf("Turns" to st.turn, "You" to st.me.life, "CPU" to st.cpu.life)
+
+    class Tops(val band: Int, val stats: Int, val reason: Int?, val buttons: Int, val note: Int?)
+    /**
+     * Where each part stands: as the preview (the band's top at 30 % of the height, the numbers at 52 %, the buttons at 70 %),
+     * pushed down to keep [gap] between them, then lifted together if the last would leave the screen. A short screen lets the reason
+     * line go first, then the note, so the word, the numbers and the buttons always fit.
+     */
+    fun tops(h: Int, band: Int, stats: Int, reason: Int?, buttons: Int, note: Int?, gap: Int, margin: Int): Tops {
+        fun lay(r: Int?, n: Int?): Tops {
+            val b = (h * .30f).toInt()
+            val s = maxOf((h * .52f).toInt(), b + band + gap)
+            val rs = r?.let { s + stats + gap / 2 }
+            val bu = maxOf((h * .70f).toInt(), (rs?.plus(r) ?: (s + stats)) + gap)
+            val ns = n?.let { bu + buttons + gap * 2 / 3 }
+            val end = (ns?.plus(n) ?: (bu + buttons))
+            val lift = (end - (h - margin)).coerceAtLeast(0).coerceAtMost(maxOf(0, b - margin))
+            return Tops(b - lift, s - lift, rs?.minus(lift), bu - lift, ns?.minus(lift))
+        }
+        fun fits(x: Tops, n: Int?) = (x.note?.plus(n ?: 0) ?: (x.buttons + buttons)) <= h - margin
+        lay(reason, note).let { if (fits(it, note)) return it }
+        lay(null, note).let { if (fits(it, note)) return it }
+        return lay(null, null)
     }
 }
 
