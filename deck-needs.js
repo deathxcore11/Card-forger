@@ -95,6 +95,14 @@ export function cardNeeds(card) {
   if (kinds.source !== '\\b(?:)\\b') add({ id: 'self-sweep', kind: 'conflict', label: 'your own cards it would sweep away', min: () => 0, max: size => size >= 100 ? 11 : 7,
    provides: c => c !== card && !isLand(c) && !isType(c, /\b(?:Instant|Sorcery)\b/) && mv(c) <= limit && isType(c, kinds) });
  }
+ // The same conflict by damage (seen 16 Nov: four Fire Magic, "1/2/3 damage to each creature", beside sixteen small creatures of
+ // its own; Ajani Unrelenting, "4 damage to each creature except for tokens you control"). Damage to the other side only is no conflict.
+ const blasts = [...text.matchAll(/deals? (\d+|x|damage equal to [^.\n]*?) (?:damage )?to each (?:other )?(?:nontoken )?creature(?! (?:your opponents?|an opponent|that player|you don't) controls?)/gi)];
+ if (blasts.length) {
+  const most = Math.max(...blasts.map(m => /^\d+$/.test(m[1]) ? Number(m[1]) : Infinity)), tough = c => { const t = Number(c?.toughness ?? c?.card_faces?.[0]?.toughness); return Number.isFinite(t) ? t : 0; };
+  add({ id: 'self-sweep', kind: 'conflict', label: 'your own creatures it would kill', min: () => 0, max: size => size >= 100 ? 11 : 7,
+   provides: c => c !== card && isType(c, /\bCreature\b/) && tough(c) <= most });
+ }
  memo.set(card, { sig, needs });
  return needs;
 }

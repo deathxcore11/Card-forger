@@ -104,7 +104,7 @@ export function deckResultMarkup(result,id,{coach='',saved=false,saving=false}={
  const sectionCounts=request.game==='ptcg'?['Pokemon','Trainer','Energy'].map(category=>`${rows.filter(r=>r.card?.category===category).reduce((s,r)=>s+r.qty,0)} ${category==='Pokemon'?'Pokémon':category==='Trainer'?'Trainer':'Energy'}`).join(' · '):zones.map(z=>`${rows.filter(r=>r.zone===z).reduce((s,r)=>s+r.qty,0)} ${z==='main'?'main':z==='extra'?'Extra Deck':request.game==='mtg'?'Sideboard':'Side Deck'}`).join(' · ');
  const count=z=>rows.filter(r=>r.zone===z).reduce((s,r)=>s+r.qty,0);
  const budgetLabel=request.budgetMode==='cap'?'cap':'target',delta=result.delta===null?'':result.delta>0?`${usd(result.delta)} over ${budgetLabel}`:result.delta<0?`${usd(-result.delta)} below ${budgetLabel}`:request.budgetMode==='cap'?'At cap':'On target';
- const name=request.seedCard?.name||result.deck.buildAround||'Your deck',random=Number.isFinite(request.randomSeed),draft=!!(result.plan.finalSupport&&result.plan.finalSupport.status!=='supported-conditional');
+ const name=request.seedCard?.name||result.deck.buildAround||'Your deck',random=Number.isFinite(request.randomSeed),draft=!!(result.plan.finalSupport&&result.plan.finalSupport.status!=='supported-conditional'),unmet=result.requestSatisfied===false&&result.closingPlanOnly!==true;
  const loop=manaLoopPresentation(result.plan.combo),mechanic=mechanicPresentation(result.plan.mechanics);
  const hero=cover?.image_uris?.art_crop||cover?.card_faces?.[0]?.image_uris?.art_crop||artOf(cover);
  const cardRow=(r,index)=>{
@@ -116,7 +116,7 @@ export function deckResultMarkup(result,id,{coach='',saved=false,saving=false}={
  const lead=`  ${requestRestrictions(request)}
   ${request.budget!==null?`<p class="small ${result.delta>0?'warn-text':'muted'}">${request.budgetMode==='cap'?'Cap':'Target'} ${usd(request.budget)}${delta?' · '+delta:''}</p>`:''}
   ${rebuildSummary(result.rebuild)}
-  ${result.requestSatisfied===false?'<p class="evidence small warn-text">Some request checks remain unmet or unverified. Review the details before saving.</p>':''}
+  ${unmet?'<p class="evidence small warn-text">Some request checks remain unmet or unverified. Review the details before saving.</p>':''}
   ${pricing.unpriced?`<p class="note warn">${pricing.unpriced} copies are unpriced. The total and budget fit are unverified.</p>`:''}
   ${result.budgetStatus==='outside-target'?'<p class="note warn">This complete candidate exceeds the allowed overage. The loaded pool did not produce a checked list near your target.</p>':''}
   ${prerequisiteSummary(result.plan.theme)}${strategySummary(result.plan.strategy)}${mechanic.summary}${loop.summary}`;
@@ -124,7 +124,7 @@ export function deckResultMarkup(result,id,{coach='',saved=false,saving=false}={
   ${deckShell({game:request.game,source:random?'random':'ai',art:hero||'',title:name,
    back:'<button class="icon light" data-act="closeSheet" aria-label="Back">←</button>',
    badge:random?'Random build':'AI build',format:`<span class="chip dark">${esc(request.formatName)}</span>`,
-   legality:`<span class="review-badge ${result.requestSatisfied===false||draft?'warn':'ok'}">${result.requestSatisfied===false?'Checks unmet':draft?'Draft':'✓ Checked'}</span>`,
+   legality:`<span class="review-badge ${unmet||draft?'warn':'ok'}">${unmet?'Checks unmet':draft?'Draft':'✓ Checked'}</span>`,
    line:`${esc(sectionCounts)}${draft?'<br>Reviewable draft · check the list before saving':''}`,
    stats:[
     {value:String(pricing.copies),label:'cards'},
