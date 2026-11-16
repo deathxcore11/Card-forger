@@ -28,17 +28,28 @@ class SagaProbe {
             add("villain", JsonArray().apply { listOf("Forest", "Forest", "Forest", "Forest", "Forest", "Forest", "Forest", "Forest", "Forest").forEach { add(it) } }) })
             addProperty("noMulligan", true) }
         val s = LocalEngine.start(forgeInput("Modern", hero, cpu, "Easy", startingPlayer = "first", quick = false, setup = setup), 7L)
-        val until = System.currentTimeMillis() + 200_000; var lastRev = -1L; var last = ""
+        val until = System.currentTimeMillis() + 200_000; var lastRev = -1L; var last = ""; val seen = mutableSetOf<String>(); var sagaId: Int? = null
         while (System.currentTimeMillis() < until) {
             val raw = s.call("GET", "/state", null).body(); val st = MatchState.parse(raw) ?: run { Thread.sleep(50); null } ?: continue
             if (st.status == "failed" || st.finished || st.turn > 11) { println("END ${st.status} turn=${st.turn}"); break }
             if (!st.waitingOnMe || st.busy || st.revision == lastRev) { Thread.sleep(40); continue }
             lastRev = st.revision
-            st.me.battlefield.firstOrNull { it.name == "History of Benalia" }?.let { c ->
+            val saga = st.me.battlefield.firstOrNull { it.name == "History of Benalia" }
+            saga?.let { c ->
                 val b = dev.cardstashy.nativeplay.ui.TileBadges.of(c, false)
-                val line = "SAGA turn=${st.turn} type=<<${c.type}>> counters=${c.counters} badges=${b?.counters} plaque=${b?.plaque}"
+                val line = "SAGA turn=${st.turn} id=${c.id} type=<<${c.type}>> counters=${c.counters} badges=${b?.counters} plaque=${b?.plaque}" +
+                    " isSaga=${dev.cardstashy.nativeplay.ui.SagaMarks.isSaga(c)} chapters=${dev.cardstashy.nativeplay.ui.SagaMarks.chapters(c.text)} text=<<${c.text}>>"
                 if (line != last) { println(line); last = line }
             }
+            // Better table scene 10: Forge's own words for a chapter on the stack, and the numeral the stack card would draw from them.
+            for (item in st.stack) if (item.source?.name == "History of Benalia" || item.text.contains("History of Benalia")) {
+                val line = "STACK turn=${st.turn} id=${item.id} ability=${item.ability} src=${item.source?.id}/${item.source?.zone} lore=${item.source?.counters} text=<<${item.text}>>" +
+                    " chapter=${dev.cardstashy.nativeplay.ui.SagaMarks.stackChapter(item)}"
+                if (line !in seen) { println(line); seen += line }
+            }
+            // The saga leaving after its last chapter is Forge's own sacrifice: print where it went.
+            if (saga == null && sagaId != null) (st.me.graveyard + st.me.exile).firstOrNull { it.name == "History of Benalia" }?.let { println("LEFT turn=${st.turn} was=$sagaId now=${it.id} zone=${it.zone}"); sagaId = null }
+            if (saga != null) sagaId = saga.id
             val hand = st.selection.actionable.mapNotNull { st.card(it) }.filter { it.zone == "Hand" }
             val body = JsonObject().apply { addProperty("revision", st.revision)
                 val p = st.prompt

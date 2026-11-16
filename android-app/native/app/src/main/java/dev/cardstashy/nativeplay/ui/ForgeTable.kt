@@ -50,6 +50,8 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -595,7 +597,8 @@ fun ForgeBoard(
                 val reach = TableGeometry.sideReach(fh * TableGeometry.CROP_MIN, fh).dp
                 val frontLeft = zones.board.x.dp + reach
                 // M14: the planeswalkers stand in a column at the right end of their owner's side; the creature rows end short of it.
-                val cpuWalk = walkers(cpu.battlefield); val myWalk = walkers(me.battlefield)
+                // Better table scene 10: a Saga stands in the same column, its chapter marks hanging off its left edge.
+                val cpuWalk = standUp(cpu.battlefield); val myWalk = standUp(me.battlefield)
                 val walkFull = H * (if (zones.phone) Walkers.PHONE else Walkers.BIG)
                 val myWalkCol = if (myWalk.isEmpty()) null else Walkers.column(myWalk.size, walkFull.value, mid.value + 3.du.value,
                     minOf(zones.handTray?.y ?: zones.window.bottom, if (zones.phone) Float.MAX_VALUE else rowsG.myBack.top - 10.du.value) - 4.du.value,
@@ -603,7 +606,8 @@ fun ForgeBoard(
                 val cpuWalkCol = if (cpuWalk.isEmpty()) null else Walkers.column(cpuWalk.size, walkFull.value,
                     if (zones.phone) zones.window.y + 40.du.value else rowsG.cpuBack.bottom + 4.du.value, mid.value - 3.du.value,
                     rowsG.cpuFront.centre - (if (zones.phone) 4.du.value else rowsG.cpuFront.height * .25f), Walkers.GAP.du.value)
-                val walkLane = listOfNotNull(myWalkCol, cpuWalkCol).maxOfOrNull { it.first * Walkers.WIDE }?.let { it.dp + Walkers.INSET.du + 8.du } ?: 0.dp
+                val walkLane = listOf(myWalk to myWalkCol, cpuWalk to cpuWalkCol).mapNotNull { (cs, col) -> col?.let { (wh, _) ->
+                    wh * Walkers.WIDE + (if (cs.any(SagaMarks::isSaga)) SagaMarks.reach(wh, u) else 0f) } }.maxOrNull()?.let { it.dp + Walkers.INSET.du + 8.du } ?: 0.dp
                 val room = boardRight - reach - lane - walkLane - frontLeft
                 val backIn = maxOf(6.du, TableGeometry.sideReach(bh0 * TableGeometry.CROP_MIN, bh0).dp)
                 val backX = zones.board.x.dp + backIn
@@ -1335,10 +1339,16 @@ private data class NameFit(val size: Float, val lines: Int, val cut: Boolean, va
 internal const val SHELF_SHOW = 20f
 /** forge-table.mjs laneFor: creatures in the front row; lands, then the "other" lane (artifacts, enchantments, planeswalkers, battles) in the back row. */
 private fun lands(cards: List<Card>) = cards.filter { it.isLand && !it.isCreature && it.attachedTo == null }
-private fun backOthers(cards: List<Card>) = cards.filter { !it.isLand && !it.isCreature && it.attachedTo == null && !isWalker(it) }
+private fun backOthers(cards: List<Card>) = cards.filter { !it.isLand && !it.isCreature && it.attachedTo == null && !isWalker(it) && !SagaMarks.isSaga(it) }
 /** Mobile table M14: a planeswalker (not one that is also a creature, which fights in the creature row). */
 internal fun isWalker(c: Card) = c.type.contains("Planeswalker") && !c.isCreature && !c.isLand && c.attachedTo == null
 internal fun walkers(cards: List<Card>) = cards.filter(::isWalker)
+/**
+ * Better table scene 10: the whole upright cards of a side, its Sagas then its planeswalkers. A side's column stacks from the
+ * outside in (yours upward from the first, the CPU's downward), so a Saga stands at the outer end and a planeswalker nearer the
+ * line. [isWalker] itself stays for planeswalkers alone (WalkerPlates reads it).
+ */
+internal fun standUp(cards: List<Card>) = cards.filter(SagaMarks::isSaga) + walkers(cards)
 /**
  * M14 (specs/mobile-table-arena-parity-brief.md; placement seen in Arena, phone sizes the brief's): a planeswalker stays a whole
  * upright card at the right end of its owner's side, several in a column, its loyalty in a shield on its bottom edge.
@@ -1959,7 +1969,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         val plate = if (card.isCreature && card.power != null) measurer.measure(ptText, sans(fsFit, FontWeight.Bold, Color.White)).size
             .let { (it.width / dens).dp + ptPad * 2 to (it.height / dens).dp + 2.du } else null
         TileLayer(card, mark == Mark.PLAYABLE || mark == Mark.USABLE, lookup, d, h, if (card.isCreature && card.power != null) (if (piece != null) statPx / u else statPx) else 0f, top = nh?.let { (if (pileTop) nameH else it) + 6.dp },
-            w = w, visibleW = visibleW, plate = plate, plateLeft = left, plaque = !whole, railSkip = if (ctrNet != null) COUNTER_CIRCLE else emptySet())
+            w = w, visibleW = visibleW, plate = plate, plateLeft = left, plaque = !whole, railSkip = (if (ctrNet != null) COUNTER_CIRCLE else emptySet()) + (if (whole && SagaMarks.isSaga(card)) setOf("LORE") else emptySet()))
         // .play-current-stats: right 6px, bottom 2px, 1px 7px, #d6ad64c0 hairline, radius 7, #111114f2, white 700; the toughness reads #ff8f84 while damage is marked
         // (forge-table.mjs data-damaged; Forge's toughness already counts counters, damage is not subtracted).
         // T2: in a fanned pile only the front card wears its numbers; the ones behind show their art.
@@ -2024,6 +2034,10 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
             }
         }
     }
+    // Better table scene 10: a whole Saga's chapter marks off its left edge (its lore is not on the rail as well). They travel with
+    // the card (its own effect transform), as the loyalty shield does.
+    if (whole && SagaMarks.isSaga(card)) ChapterPips(card, h, d, calm = Motion.still || fx == null || fx.reduced,
+        modifier.size(w, h).zIndex(21f).then(if (fx != null) Modifier.graphicsLayer { fx.move(this, card.id, anchors); shadowElevation = 0f } else Modifier))
     // Better table scene 5: the counter circle, on the tile's top-right corner and mostly outside it. It turns and steps with the tile
     // and moves with its effects; a new count lands with a short pop and a flash of its ring.
     if (ctrNet != null) {
@@ -2837,10 +2851,18 @@ internal fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier,
     // Forge writes an ability as "Source — rules text"; with no source card that lead is the name (fix list B7).
     val name = src?.name ?: stackSourceName(s.text)
     val w = 104.du; val h = 145.du
+    // Better table scene 10: a Saga's chapter on the stack is the preview's .abil card, its bottom rounded deep, marked with the
+    // chapter's numeral in place of the ABILITY label.
+    // (Read from the source and its lore, not the trigger flag: Forge's real text is "I, II — Create…", SagaProbe.)
+    val chapter = if (ability) SagaMarks.stackChapter(s) else null
+    val shape = if (chapter != null) RoundedCornerShape(7.du, 7.du, 26.du, 26.du) else RoundedCornerShape(7.du)
     Box(modifier.size(w, h)) {
         Box(Modifier.fillMaxSize().drawBehind {
-            drawRoundRect(rim.copy(alpha = .35f), topLeft = Offset(-6.du.toPx(), -6.du.toPx()), size = Size(size.width + 12.du.toPx(), size.height + 12.du.toPx()), cornerRadius = CornerRadius(12.du.toPx()))
-        }.clip(RoundedCornerShape(7.du)).border(2.dp, rim, RoundedCornerShape(7.du)).background(Color(0xFF1A1714))
+            if (chapter != null) translate(-6.du.toPx(), -6.du.toPx()) {
+                drawOutline(RoundedCornerShape(13.du, 13.du, 32.du, 32.du).createOutline(Size(size.width + 12.du.toPx(), size.height + 12.du.toPx()), layoutDirection, this), rim.copy(alpha = .35f))
+            }
+            else drawRoundRect(rim.copy(alpha = .35f), topLeft = Offset(-6.du.toPx(), -6.du.toPx()), size = Size(size.width + 12.du.toPx(), size.height + 12.du.toPx()), cornerRadius = CornerRadius(12.du.toPx()))
+        }.clip(shape).border(2.dp, rim, shape).background(Color(0xFF1A1714))
             .clickable(enabled = target || src != null) { if (target) pick!!(s.id) else src?.let(onInspect) }) {
             if (!ability && src != null) CardImage(src.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             else Column(Modifier.fillMaxSize().padding(4.du)) {
@@ -2849,14 +2871,21 @@ internal fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier,
                 if (src != null) Box(Modifier.padding(top = 3.du).fillMaxWidth().height(52.du).clip(RoundedCornerShape(3.du))) { CardImage(src.name, Modifier.fillMaxSize(), crop = true) }
                 // A TRIGGER SHOWS ITSELF: an item Forge put up as a trigger says "Trigger" in the caster's colour (gold you, coral CPU).
                 // Mobile table M1: a trigger's card is labelled ABILITY (it said "Trigger").
-                if (s.trigger) Text(ABILITY_LABEL, style = sans(sp(8.5f), FontWeight.ExtraBold, if (mine) Gold else CpuRed).copy(letterSpacing = 1.5.sp), modifier = Modifier.padding(top = 3.du))
+                if (chapter != null) Unit
+                else if (s.trigger) Text(ABILITY_LABEL, style = sans(sp(8.5f), FontWeight.ExtraBold, if (mine) Gold else CpuRed).copy(letterSpacing = 1.5.sp), modifier = Modifier.padding(top = 3.du))
                 else Text(if (s.text.contains("Whenever") || s.text.contains("When ") || s.text.contains("At the beginning")) "Triggered ability" else "Activated ability",
                     style = sans(sp(9f), FontWeight.SemiBold, Color(0xFFD8C9A6)).copy(fontStyle = FontStyle.Italic), modifier = Modifier.padding(top = 3.du))
                 Box(Modifier.padding(top = 3.du).fillMaxWidth().height(1.dp).background(rim.copy(alpha = .5f)))
                 // X13: the ability's words wrap over as many lines as the card has room for, stepping the size down before cutting ("shares a cr…").
-                androidx.compose.foundation.text.BasicText(s.text.substringAfter(" — ", s.text), style = sans(sp(8.5f), FontWeight.Normal, Color(0xFFEEE6D4)), modifier = Modifier.weight(1f).padding(top = 3.du),
+                androidx.compose.foundation.text.BasicText(if (chapter != null) SagaMarks.chapterWords(s.text) else s.text.substringAfter(" — ", s.text), style = sans(sp(8.5f), FontWeight.Normal, Color(0xFFEEE6D4)),
+                    modifier = Modifier.weight(1f).padding(top = 3.du, bottom = if (chapter != null) 20.du else 0.dp),
                     overflow = TextOverflow.Ellipsis, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = sp(6.5f), maxFontSize = sp(8.5f), stepSize = sp(.25f)))
             }
+            // The chapter's numeral at the foot of the card, in the caster's colour.
+            if (chapter != null) Text(SagaMarks.numeral(chapter), maxLines = 1, softWrap = false,
+                style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(16f), color = rim,
+                    shadow = androidx.compose.ui.graphics.Shadow(rim.copy(alpha = .55f), blurRadius = 8f)),
+                modifier = Modifier.align(Alignment.BottomCenter).offset(y = (-4).du).anchorRect("stackchap${s.id}").semantics { contentDescription = "Chapter ${SagaMarks.numeral(chapter)}" })
         }
         if (n > 1) Box(Modifier.align(Alignment.TopEnd).offset(6.du, (-8).du).clip(RoundedCornerShape(999.dp)).background(Brush.radialGradient(listOf(Color(0xFFFFF2C6), Color(0xFFD9B463), Color(0xFFA9822F))))
             .border(2.dp, Color(0xFFFFF3CF), RoundedCornerShape(999.dp)).padding(horizontal = 5.du)) { Text("×$n", style = sans(sp(11f), FontWeight.Bold, Color(0xFF2A1D05))) }
